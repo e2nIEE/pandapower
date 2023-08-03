@@ -5,11 +5,12 @@
 
 import numpy as np
 import pandapower.auxiliary as aux
+from pandapower import VSC_BUS, VSC_INTERNAL_BUS
 from pandapower.build_branch import _switch_branches, _branches_with_oos_buses, \
     _build_branch_ppc, _build_tcsc_ppc
 from pandapower.build_bus import _build_bus_ppc, _calc_pq_elements_and_add_on_ppc, \
     _calc_shunts_and_add_on_ppc, _add_ext_grid_sc_impedance, _add_motor_impedances_ppc, \
-    _build_svc_ppc, _add_load_sc_impedances_ppc, _build_ssc_ppc
+    _build_svc_ppc, _add_load_sc_impedances_ppc, _build_ssc_ppc, _build_vsc_ppc
 from pandapower.build_gen import _build_gen_ppc, _check_voltage_setpoints_at_same_bus, \
     _check_voltage_angles_at_same_bus, _check_for_reference_bus
 from pandapower.opf.make_objective import _make_objective
@@ -20,6 +21,7 @@ from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS
 from pandapower.pypower.idx_ssc import SSC_STATUS, SSC_BUS, SSC_INTERNAL_BUS
 from pandapower.pypower.idx_tcsc import TCSC_STATUS, TCSC_F_BUS, TCSC_T_BUS
 from pandapower.pypower.idx_svc import SVC_STATUS, SVC_BUS
+from pandapower.pypower.idx_vsc import VSC_BUS_DC, VSC_STATUS
 from pandapower.pypower.run_userfcn import run_userfcn
 
 
@@ -122,6 +124,7 @@ def _pd2ppc(net, sequence=None):
     _build_tcsc_ppc(net, ppc, mode)
     _build_svc_ppc(net, ppc, mode)
     _build_ssc_ppc(net, ppc, mode)
+    _build_vsc_ppc(net, ppc, mode)
 
     # Adds P and Q for loads / sgens in ppc['bus'] (PQ nodes)
     if mode == "sc":
@@ -193,6 +196,7 @@ def _init_ppc(net, mode="pf", sequence=None):
            "tcsc": np.array([], dtype=np.complex128),
            "svc": np.array([], dtype=np.complex128),
            "ssc": np.array([], dtype=np.complex128),
+           "vsc": np.array([], dtype=np.float64),
            "gen": np.array([], dtype=float),
            "internal": {
                "Ybus": np.array([], dtype=np.complex128),
@@ -254,6 +258,7 @@ def _ppc2ppci(ppc, net, ppci=None):
     # lookup ppc former order -> consecutive order
     e2i = np.zeros(len(ppc["bus"]), dtype=np.int64)
     e2i[ppc_former_order] = aranged_buses
+    # todo e2i_dc
 
     # save consecutive indices in ppc and ppci
     ppc['bus'][:, BUS_I] = aranged_buses
@@ -274,6 +279,10 @@ def _ppc2ppci(ppc, net, ppci=None):
     ppc['svc'][:, SVC_BUS] = e2i[np.real(ppc["svc"][:, SVC_BUS]).astype(np.int64)].copy()
     ppc['ssc'][:, SSC_BUS] = e2i[np.real(ppc["ssc"][:, SSC_BUS]).astype(np.int64)].copy()
     ppc['ssc'][:, SSC_INTERNAL_BUS] = e2i[np.real(ppc["ssc"][:, SSC_INTERNAL_BUS]).astype(np.int64)].copy()
+    ppc['vsc'][:, VSC_BUS] = e2i[np.real(ppc["vsc"][:, VSC_BUS]).astype(np.int64)].copy()
+    ppc['vsc'][:, VSC_INTERNAL_BUS] = e2i[np.real(ppc["vsc"][:, VSC_INTERNAL_BUS]).astype(np.int64)].copy()
+    #todo:
+    #ppc['vsc'][:, VSC_BUS_DC] = e2i[np.real(ppc["vsc"][:, VSC_BUS_DC]).astype(np.int64)].copy()
     ppc["branch"][:, F_BUS] = e2i[np.real(ppc["branch"][:, F_BUS]).astype(np.int64)].copy()
     ppc["branch"][:, T_BUS] = e2i[np.real(ppc["branch"][:, T_BUS]).astype(np.int64)].copy()
     ppc["tcsc"][:, TCSC_F_BUS] = e2i[np.real(ppc["tcsc"][:, TCSC_F_BUS]).astype(np.int64)].copy()
@@ -311,6 +320,11 @@ def _ppc2ppci(ppc, net, ppci=None):
           bs[n2i[np.real(ppc["ssc"][:, SSC_INTERNAL_BUS]).astype(np.int64)]])
     ppci["internal"]["ssc_is"] = sscs
 
+    vscs = ((ppc["vsc"][:, VSC_STATUS] > 0) &  # ssc status
+          bs[n2i[np.real(ppc["vsc"][:, VSC_BUS]).astype(np.int64)]] &
+          bs[n2i[np.real(ppc["vsc"][:, VSC_INTERNAL_BUS]).astype(np.int64)]])
+    ppci["internal"]["vsc_is"] = vscs
+
     brs = (np.real(ppc["branch"][:, BR_STATUS]).astype(np.int64) &  # branch status
            bs[n2i[np.real(ppc["branch"][:, F_BUS]).astype(np.int64)]] &
            bs[n2i[np.real(ppc["branch"][:, T_BUS]).astype(np.int64)]]).astype(bool)
@@ -333,6 +347,7 @@ def _ppc2ppci(ppc, net, ppci=None):
     ppci["gen"] = ppc["gen"][gs]
     ppci["svc"] = ppc["svc"][svcs]
     ppci["ssc"] = ppc["ssc"][sscs]
+    ppci["vsc"] = ppc["vsc"][vscs]
 
     if 'dcline' in ppc:
         ppci['dcline'] = ppc['dcline']

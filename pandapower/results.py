@@ -141,7 +141,7 @@ def get_relevant_elements(mode="pf"):
         return ["bus", "line", "trafo", "trafo3w", "impedance", "ext_grid",
                 "load", "motor", "sgen", "storage", "shunt", "gen", "ward",
                 "xward", "dcline", "asymmetric_load", "asymmetric_sgen",
-                "switch", "tcsc", "svc", "ssc"]
+                "switch", "tcsc", "svc", "ssc", "vsc"]
     elif mode == "sc":
         return ["bus", "line", "trafo", "trafo3w", "ext_grid", "gen", "sgen", "switch"]
     elif mode == "se":
@@ -183,6 +183,7 @@ def _ppci_bus_to_ppc(result, ppc):
 
     ppc['svc'][result["internal"]['svc_is'], :] = result['svc'][:, :]
     ppc['ssc'][result["internal"]['ssc_is'], :] = result['ssc'][:, :]
+    ppc['vsc'][result["internal"]['vsc_is'], :] = result['vsc'][:, :]
 
 
 def _ppci_branch_to_ppc(result, ppc):

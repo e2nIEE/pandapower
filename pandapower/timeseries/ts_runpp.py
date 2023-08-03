@@ -61,13 +61,14 @@ class TimeSeriesRunpp:
         svc = self.ppci["svc"]
         tcsc = self.ppci["tcsc"]
         ssc = self.ppci["ssc"]
+        vsc = self.ppci["vsc"]
         # compute complex bus power injections [generation - load]
         # self.Cg = _get_Cg(gen_on, bus)
         # Sbus = _get_Sbus(self.baseMVA, bus, gen, self.Cg)
         Sbus = makeSbus(self.baseMVA, bus, gen)
 
         # run the newton power  flow
-        V, success, _, _, _, _, _ = nr_pf.newtonpf(self.Ybus, Sbus, self.V, self.pv, self.pq, self.ppci, options, )
+        V, success, _, _, _, _, _ = nr_pf.newtonpf(self.Ybus, Sbus, self.V, self.pv, self.pq, self.ppci, options)
 
         if not success:
             logger.warning("Loadflow not converged")
@@ -80,7 +81,7 @@ class TimeSeriesRunpp:
         else:
             pfsoln = pfsoln_full
 
-        bus, gen, branch = pfsoln(self.baseMVA, bus, gen, branch, svc, tcsc, ssc, self.Ybus, self.Yf, self.Yt, V, self.ref,
+        bus, gen, branch = pfsoln(self.baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, self.Ybus, self.Yf, self.Yt, V, self.ref,
                                   self.ref_gens, Ibus=self.Ibus)
 
         self.ppci["bus"] = bus
@@ -236,7 +237,7 @@ class TimeSeriesRunpp:
 
         # update Ybus based on this
         options = net._options
-        baseMVA, bus, gen, branch, svc, tcsc, ssc, ref, pv, pq, _, _, V, _ = nr_pf._get_pf_variables_from_ppci(ppci)
+        baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, ref, pv, pq, _, _, V, _ = nr_pf._get_pf_variables_from_ppci(ppci)
         self.ppci, self.Ybus, self.Yf, self.Yt = nr_pf._get_Y_bus(ppci, options, nr_pf.makeYbus_numba, baseMVA, bus,
                                                                   branch)
 

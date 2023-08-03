@@ -53,6 +53,11 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                 ('type', dtype(object)),
                 ('zone', dtype(object)),
                 ('in_service', 'bool'), ],
+        "bus_dc": [('name', dtype(object)),
+                   ('vn_kv', 'f8'),
+                   ('type', dtype(object)),
+                   ('zone', dtype(object)),
+                   ('in_service', 'bool'), ],
         "load": [("name", dtype(object)),
                  ("bus", "u4"),
                  ("p_mw", "f8"),
@@ -168,6 +173,17 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                   ("vm_internal_pu", "f8"),
                   ("va_internal_degree", "f8"),
                   ("set_vm_pu", "f8"),
+                  ("controllable", "bool"),
+                  ("in_service", "bool")],
+        "vsc":   [("name", dtype(object)),
+                  ("bus", "u4"),
+                  ("bus_dc", "u4"),
+                  ("r_ohm", "f8"),
+                  ("x_ohm", "f8"),
+                  ("control_mode_ac", dtype(object)),
+                  ("control_value_ac", "f8"),
+                  ("control_mode_dc", dtype(object)),
+                  ("control_value_dc", "f8"),
                   ("controllable", "bool"),
                   ("in_service", "bool")],
         "ext_grid": [("name", dtype(object)),
@@ -333,12 +349,16 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
         # geodata
         "line_geodata": [("coords", dtype(object))],
         "bus_geodata": [("x", "f8"), ("y", "f8"), ("coords", dtype(object))],
+        "bus_geodata_dc": [("x", "f8"), ("y", "f8"), ("coords", dtype(object))],
 
         # result tables
         "_empty_res_bus": [("vm_pu", "f8"),
                            ("va_degree", "f8"),
                            ("p_mw", "f8"),
                            ("q_mvar", "f8")],
+        "_empty_res_bus_dc": [("vm_pu", "f8"),
+                              ("p_mw", "f8"),
+                              ("q_mvar", "f8")],
         "_empty_res_ext_grid": [("p_mw", "f8"),
                                 ("q_mvar", "f8")],
         "_empty_res_line": [("p_from_mw", "f8"),
@@ -387,6 +407,12 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                              ("vm_pu", "f8"),
                              ("va_degree", "f8")],
         "_empty_res_ssc":   [("q_mvar", "f8"),
+                             ("vm_internal_pu", "f8"),
+                             ("va_internal_degree", "f8"),
+                             ("vm_pu", "f8"),
+                             ("va_degree", "f8")],
+        "_empty_res_vsc":   [("p_mw", "f8"),
+                             ("q_mvar", "f8"),
                              ("vm_internal_pu", "f8"),
                              ("va_internal_degree", "f8"),
                              ("vm_pu", "f8"),
@@ -646,6 +672,71 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b", zone=N
     # column needed by OPF. 0. and 2. are the default maximum / minimum voltages
     _set_value_if_not_nan(net, index, min_vm_pu, "min_vm_pu", "bus", default_val=0.)
     _set_value_if_not_nan(net, index, max_vm_pu, "max_vm_pu", "bus", default_val=2.)
+
+    return index
+
+
+def create_bus_dc(net, vn_kv, name=None, index=None, geodata=None, type="b", zone=None,
+               in_service=True, max_vm_pu=nan, min_vm_pu=nan, coords=None, **kwargs):
+    """
+    todo docstrings
+    Adds one bus in table net["bus"].
+
+    Busses are the nodes of the network that all other elements connect to.
+
+    INPUT:
+        **net** (pandapowerNet) - The pandapower network in which the element is created
+
+        **vn_kv** (float) - The grid voltage level.
+
+    OPTIONAL:
+        **name** (string, default None) - the name for this bus
+
+        **index** (int, default None) - Force a specified ID if it is available. If None, the \
+            index one higher than the highest already existing index is selected.
+
+        **geodata** ((x,y)-tuple, default None) - coordinates used for plotting
+
+        **type** (string, default "b") - Type of the bus. "n" - node,
+        "b" - busbar, "m" - muff
+
+        **zone** (string, None) - grid region
+
+        **in_service** (boolean) - True for in_service or False for out of service
+
+        **max_vm_pu** (float, NAN) - Maximum bus voltage in p.u. - necessary for OPF
+
+        **min_vm_pu** (float, NAN) - Minimum bus voltage in p.u. - necessary for OPF
+
+        **coords** (list (len=2) of tuples (len=2), default None) - busbar coordinates to plot
+        the bus with multiple points. coords is typically a list of tuples (start and endpoint of
+        the busbar) - Example: [(x1, y1), (x2, y2)]
+
+    OUTPUT:
+        **index** (int) - The unique ID of the created element
+
+    EXAMPLE:
+        create_bus(net, name = "bus1")
+    """
+    index = _get_index_with_check(net, "bus_dc", index)
+
+    entries = dict(zip(["name", "vn_kv", "type", "zone", "in_service"],
+                       [name, vn_kv, type, zone, bool(in_service)]))
+
+    _set_entries(net, "bus_dc", index, True, **entries, **kwargs)
+
+    if geodata is not None:
+        if len(geodata) != 2:
+            raise UserWarning("geodata must be given as (x, y) tuple")
+        net["bus_geodata_dc"].loc[index, ["x", "y"]] = geodata
+
+    if coords is not None:
+        net["bus_geodata_dc"].at[index, "coords"] = None
+        net["bus_geodata_dc"].at[index, "coords"] = coords
+
+    # column needed by OPF. 0. and 2. are the default maximum / minimum voltages
+    _set_value_if_not_nan(net, index, min_vm_pu, "min_vm_pu", "bus_dc", default_val=0.)
+    _set_value_if_not_nan(net, index, max_vm_pu, "max_vm_pu", "bus_dc", default_val=2.)
 
     return index
 
@@ -3967,6 +4058,68 @@ def create_ssc(net, bus, r_ohm, x_ohm, set_vm_pu=1., vm_internal_pu=1., va_inter
         "controllable", "in_service"],
         [name, bus, r_ohm, x_ohm, set_vm_pu, vm_internal_pu, va_internal_degree, controllable, in_service]))
     _set_entries(net, "ssc", index, **entries, **kwargs)
+
+    return index
+
+
+def create_vsc(net, bus, bus_dc, r_ohm, x_ohm, control_mode_ac="vm_pu", control_value_ac=1.,
+               control_mode_dc="p_mw", control_value_dc=0.,
+               name=None, controllable=True, in_service=True, index=None, **kwargs):
+    """
+    Creates an VSC converter element - a shunt element with adjustable VSC internal voltage used to connect the \
+    AC grid and the DC grid. The element implements several control modes.
+
+    Does not work if connected to "PV" bus (gen bus, ext_grid bus)
+
+
+    todo
+    INPUT:
+        **net** (pandapowerNet) - The pandapower network in which the element is created
+
+        **bus** (int) - connection bus of the ssc
+
+        **r_ohm** (float) - resistance of the coupling transformer component of ssc
+
+        **x_ohm** (float) - reactance of the coupling transformer component of ssc
+
+        **set_vm_pu** (float) - set-point for the bus voltage magnitude at the connection bus
+
+        **vm_internal_pu (float) -  The voltage magnitude of the voltage source converter VSC at the ssc component.
+                                    if the amplitude of the VSC output voltage is increased above that of the ac system
+                                    voltage, the VSC behaves as a capacitor and reactive power is supplied to the ac
+                                    system, decreasing the output voltage below that of the ac system leads to the VSC
+                                    consuming reactive power acting as reactor.(source PhD Panosyan)
+
+
+        **va_internal_degree (float) - The voltage angle of the voltage source converter VSC at the ssc component.
+
+    OPTIONAL:
+        **name** (list of strs, None) - element name
+
+        **controllable** (bool, True) - whether the element is considered as actively controlling or
+            as a fixed shunt impedance
+
+        **in_service** (bool, True) - True for in_service or False for out of service
+
+        **index** (int, None) - Force a specified ID if it is available. If None, the
+            index one higher than the highest already existing index is selected.
+
+    OUTPUT:
+        **index** (int) - The unique ID of the created ssc
+
+    """
+
+    _check_node_element(net, bus)
+    _check_node_element(net, bus_dc, "bus_dc")
+
+    index = _get_index_with_check(net, "vsc", index)
+
+    entries = dict(zip([
+        "name", "bus", "bus_dc", "r_ohm", "x_ohm", "control_mode_ac", "control_value_ac", "control_mode_dc",
+        "control_value_dc", "controllable", "in_service"],
+        [name, bus, bus_dc, r_ohm, x_ohm, control_mode_ac, control_value_ac, control_mode_dc, control_value_dc,
+         controllable, in_service]))
+    _set_entries(net, "vsc", index, **entries, **kwargs)
 
     return index
 

@@ -44,6 +44,7 @@ from pandapower.pypower.idx_gen import PMIN, PMAX, QMIN, QMAX
 from pandapower.pypower.idx_ssc import SSC_STATUS, SSC_BUS, SSC_INTERNAL_BUS
 
 from pandapower.pypower.idx_tcsc import TCSC_STATUS, TCSC_F_BUS, TCSC_T_BUS
+from pandapower.pypower.idx_vsc import VSC_STATUS, VSC_BUS, VSC_INTERNAL_BUS
 
 try:
     from numba import jit
@@ -672,13 +673,17 @@ def _check_connectivity(ppc):
     nossc = ppc["ssc"][ssc_status, :].shape[0]
     bus_from_ssc = ppc["ssc"][ssc_status, SSC_BUS].real.astype(np.int64)
     bus_to_ssc = ppc["ssc"][ssc_status, SSC_INTERNAL_BUS].real.astype(np.int64)
+    vsc_status = ppc["vsc"][:, VSC_STATUS].real.astype(bool)
+    novsc = ppc["vsc"][vsc_status, :].shape[0]
+    bus_from_vsc = ppc["vsc"][vsc_status, VSC_BUS].real.astype(np.int64)
+    bus_to_vsc = ppc["vsc"][vsc_status, VSC_INTERNAL_BUS].real.astype(np.int64)
 
     # we create a "virtual" bus thats connected to all slack nodes and start the connectivity
     # search at this bus
-    bus_from = np.hstack([bus_from, bus_from_tcsc, bus_from_ssc, slacks])
-    bus_to = np.hstack([bus_to, bus_to_tcsc, bus_to_ssc, np.ones(len(slacks)) * nobus])
+    bus_from = np.hstack([bus_from, bus_from_tcsc, bus_from_ssc, bus_from_vsc, slacks])
+    bus_to = np.hstack([bus_to, bus_to_tcsc, bus_to_ssc, bus_to_vsc, np.ones(len(slacks)) * nobus])
 
-    adj_matrix = sp.sparse.coo_matrix((np.ones(nobranch + notcsc + nossc + len(slacks)),
+    adj_matrix = sp.sparse.coo_matrix((np.ones(nobranch + notcsc + nossc + novsc + len(slacks)),
                                        (bus_from, bus_to)),
                                       shape=(nobus + 1, nobus + 1))
 
@@ -760,7 +765,7 @@ def _select_is_elements_numba(net, isolated_nodes=None, sequence=None):
         set_isolated_buses_oos(bus_in_service, ppc_bus_isolated, net["_pd2ppc_lookups"]["bus"])
     #    mode = net["_options"]["mode"]
     elements = ["load", "motor", "sgen", "asymmetric_load", "asymmetric_sgen", "gen",
-                "ward", "xward", "shunt", "ext_grid", "storage", "svc", "ssc"]  # ,"impedance_load"
+                "ward", "xward", "shunt", "ext_grid", "storage", "svc", "ssc", "vsc"]  # ,"impedance_load"
     is_elements = dict()
     for element in elements:
         len_ = len(net[element].index)
@@ -1041,6 +1046,11 @@ def _check_lightsim2grid_compatibility(net, lightsim2grid, voltage_depend_loads,
             return False
         raise NotImplementedError("option 'lightsim2grid' is True and SSC controllable shunt elements are present, "
                                   "SVC controllable shunt elements not implemented.")
+    if len(net.vsc):
+        if lightsim2grid == "auto":
+            return False
+        raise NotImplementedError("option 'lightsim2grid' is True and VSC controllable shunt elements are present, "
+                                  "VSC controllable shunt elements not implemented.")
 
     return True
 

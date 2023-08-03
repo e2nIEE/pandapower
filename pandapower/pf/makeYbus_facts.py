@@ -31,10 +31,13 @@ def makeYbus_tcsc(Ybus, x_control_tcsc, tcsc_x_l_pu, tcsc_x_cvar_pu, tcsc_fb, tc
     return csr_matrix(Ybus_tcsc)
 
 
-def makeYbus_ssc(Ybus, ssc_y_pu, ssc_fb, ssc_tb, any_ssc):
-    Ybus_ssc = np.zeros(Ybus.shape, dtype=np.complex128)
+def makeYbus_ssc_vsc(Ybus, internal_y_pu, fb, tb, controllable):
+    Ybus_controllable = np.zeros(Ybus.shape, dtype=np.complex128)
+    Ybus_not_controllable = np.zeros(Ybus.shape, dtype=np.complex128)
 
-    if any_ssc:
+    for flag, Ybus_flag in zip([~controllable, controllable], [Ybus_not_controllable, Ybus_controllable]):
+        if not np.any(flag):
+            continue
 
         # size_y = Ybus.shape[0]
         # K_Y = vstack([eye(size_y, format="csr"),
@@ -49,12 +52,14 @@ def makeYbus_ssc(Ybus, ssc_y_pu, ssc_fb, ssc_tb, any_ssc):
         #     Ybus_tcsc[j, i] += -y_tcsc_pu_i
         #     Ybus_tcsc[j, j] += y_tcsc_pu_i
 
-        Ybus_ssc[ssc_fb, ssc_fb] = ssc_y_pu
-        Ybus_ssc[ssc_fb, ssc_tb] = -ssc_y_pu
-        Ybus_ssc[ssc_tb, ssc_fb] = -ssc_y_pu
-        Ybus_ssc[ssc_tb, ssc_tb] = ssc_y_pu
+        # Ybus[ssc_fb[flag], ssc_fb[flag]] = ssc_y_pu[flag]
+        Ybus_flag[fb[flag], tb[flag]] = -internal_y_pu[flag]
+        Ybus_flag[tb[flag], fb[flag]] = -internal_y_pu[flag]
+        # Ybus[ssc_tb[flag], ssc_tb[flag]] = ssc_y_pu[flag]
+        Ybus_flag[np.diag_indices_from(Ybus_flag)] = -Ybus_flag.sum(axis=1)
 
-    return csr_matrix(Ybus_ssc)
+    return csr_matrix(Ybus_not_controllable), csr_matrix(Ybus_controllable), \
+        csr_matrix(Ybus_not_controllable + Ybus_controllable)
 
 
 def makeYbus_hvdc(hvdc_y_pu, hvdc_fb, hvdc_tb):

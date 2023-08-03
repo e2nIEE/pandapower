@@ -61,7 +61,7 @@ def branch_loss_consistent_with_bus_feed_in(net, atol=1e-2):
 
     branch_loss_p = net.res_line.pl_mw.values.sum() + net.res_trafo.pl_mw.values.sum() + \
                     net.res_trafo3w.pl_mw.values.sum() + net.res_impedance.pl_mw.values.sum() + \
-                    net.res_dcline.pl_mw.values.sum() + net.res_tcsc.pl_mw.values.sum()
+                    net.res_dcline.pl_mw.values.sum() + net.res_tcsc.pl_mw.values.sum() # todo add line_dc
     branch_loss_q = net.res_line.ql_mvar.values.sum() + net.res_trafo.ql_mvar.values.sum() + \
                     net.res_trafo3w.ql_mvar.values.sum() + net.res_impedance.ql_mvar.values.sum() + \
                     net.res_dcline.q_to_mvar.values.sum() + net.res_dcline.q_from_mvar.values.sum() + \
@@ -131,6 +131,10 @@ def element_power_consistent_with_bus_power(net, rtol=1e-2, test_q=True):
 
     for idx, tab in net.ssc.iterrows():
         bus_q.at[tab.bus] += net.res_ssc.q_mvar.at[idx]
+
+    for idx, tab in net.vsc.iterrows():
+        bus_p.at[tab.bus] += net.res_vsc.p_mw.at[idx]
+        bus_q.at[tab.bus] += net.res_vsc.q_mvar.at[idx]
 
     assert allclose(net.res_bus.p_mw.values, bus_p.values, equal_nan=True, rtol=rtol)
     if test_q:
