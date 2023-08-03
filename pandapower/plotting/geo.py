@@ -326,7 +326,7 @@ def dump_to_geojson(net, nodes=False, branches=False):
         else:
             iterator = node_geodata.loc[nodes].iterrows()
         for uid, row in iterator:
-            if is_pandapower and row.coords is not None and not pd.isna(row.coords):
+            if is_pandapower and row.coords is not None and not pd.isna(row.coords).all():
                 # [(x, y), (x2, y2)] start and end of bus bar
                 geom = geojson.LineString(row.coords)
             else:
