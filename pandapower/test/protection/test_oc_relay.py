@@ -10,6 +10,10 @@ import pandapower.shortcircuit as sc
 from pandapower.test.helper_functions import assert_net_equal
 from pandapower.protection.protection_devices.ocrelay import OCRelay
 from pandapower.protection.utility_functions import create_sc_bus
+from pandapower.protection import oc_relay_model as oc_protection
+from pandapower.protection.utility_functions import plot_tripped_grid
+from pandapower.protection.utility_functions import create_I_t_plot
+import pandas as pd
 
 try:
     import matplotlib.pyplot as plt
@@ -43,10 +47,24 @@ def test_oc_relay_idmt():
     net_sc = create_sc_bus(net, sc_line_id=4, sc_fraction=0.5)
     sc.calc_sc(net_sc, bus=max(net_sc.bus.index), branch_results=True)
     protection_results = calculate_protection_times(net_sc, scenario='sc')
-    #todo: double check what protection results should be with Gourab
     assert protection_results.trip_melt_time_s.at[0] == 1.4
     assert protection_results.trip_melt_time_s.at[2] == 1.1
     assert protection_results.trip_melt_time_s.at[4] == 0.07
+
+def test_oc_relay_plots():
+    net = oc_relay_net()
+    net.switch.type.at[2] = 'CB_IDMT'
+    net.switch.type.at[3] = 'CB_IDMT'
+    net.switch.type.at[4] = 'CB_IDMT'
+    net.switch.type.at[5] = 'CB_IDMT'
+
+    oc_relay_type_list = ['DTOC', 'DTOC', 'IDMT', 'IDMT', 'IDTOC', 'IDTOC']
+
+    for k in range(4):
+        OCRelay(net, switch_index=k, oc_relay_type=oc_relay_type_list[k], time_settings=[1, 0.5])
+        plt.figure(k)
+        net.protection.object.at[k].plot_protection_characteristic(net=net)
+        plt.show()
 
 
 def test_oc_relay_idtoc():
@@ -59,14 +77,43 @@ def test_oc_relay_idtoc():
     net_sc = create_sc_bus(net, sc_line_id=4, sc_fraction=0.5)
     sc.calc_sc(net_sc, bus=max(net_sc.bus.index), branch_results=True)
     protection_results = calculate_protection_times(net_sc, scenario='sc')
-    #todo: double check what protection results should be with Gourab
     assert protection_results.trip_melt_time_s.at[0] == 1.4
     assert protection_results.trip_melt_time_s.at[2] == 1.1
     assert protection_results.trip_melt_time_s.at[4] == 0.07
 
 
+def test_arjun_implementation_dtoc():
+    # testing arjun's implementation because I am not certain that IDMT and IDTOC are correct
+    net = oc_relay_net()
+    relay_settings_DTOC = oc_protection.oc_parameters(net, time_settings=[0.07, 0.5, 0.3], relay_type='DTOC')
+
+    trip_decisions_DTOC, net_sc = oc_protection.run_fault_scenario_oc(net, sc_line_id=4, sc_location=0.5,
+                                                                      relay_settings=relay_settings_DTOC)
+
+    tripping_time = pd.DataFrame({'switch_id': [0, 1, 2, 3, 4, 5],
+                                  't_gg': [0.07, 0.07, 0.07, 0.07, 0.07, 0.07],
+                                  't_g': [0.5, 0.8, 1.1, 1.4, 1.7, 2.0]})
+    relay_settings = oc_protection.oc_parameters(net, time_settings=tripping_time, relay_type='DTOC')
+    trip_decisions, net_sc = oc_protection.run_fault_scenario_oc(net, sc_line_id=4, sc_location=0.5,
+                                                                 relay_settings=relay_settings)
+
+
+def test_arjun_implementation_idmt():
+    net = oc_relay_net()
+    net.switch.type = 'CB_IDMT'
+    relay_settings_IDMT = oc_protection.oc_parameters(net, time_settings=[1, 0.5], relay_type='IDMT',
+                                                      curve_type='standard_inverse')
+    trip_decisions_IDMT, net_sc = oc_protection.run_fault_scenario_oc(net, sc_line_id=4, sc_location=0.5,
+                                                                      relay_settings=relay_settings_IDMT)
+    df_trip_dec = pd.DataFrame.from_dict(trip_decisions_IDMT)
+
+    a = 1
+
+
+
 def oc_relay_net():
     import pandapower as pp
+
 
     # create an empty network
     net = pp.create_empty_network()

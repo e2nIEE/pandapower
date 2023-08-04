@@ -42,6 +42,8 @@ class OCRelay(ProtectionDevice):
         self.I_gg = None
         self.I_s = None
         self.time_grading = None
+        self.t_g = None
+        self.t_gg = None
         self.create_protection_function(net=net)
 
     def create_protection_function(self, net):
@@ -88,6 +90,8 @@ class OCRelay(ProtectionDevice):
             self._select_k_alpha()
 
         self.time_grading = time_grading(net, self.time_settings)
+        self.t_g = self.time_grading.t_g
+        self.t_gg = self.time_grading.t_gg
 
     def _select_k_alpha(self):
         if self.curve_type == 'standard_inverse':
@@ -125,10 +129,10 @@ class OCRelay(ProtectionDevice):
         if self.oc_relay_type == 'DTOC':
             if i_ka > self.I_gg:
                 self.tripped = True
-                act_time_s = self.time_grading.t_gg.at[self.switch_index]
+                act_time_s = self.t_gg.at[self.switch_index]
             elif i_ka > self.I_g:
                 self.tripped = True
-                act_time_s = self.time_grading.t_g.at[self.switch_index]
+                act_time_s = self.t_g.at[self.switch_index]
             else:
                 self.tripped = False
                 act_time_s = np.inf
@@ -136,8 +140,8 @@ class OCRelay(ProtectionDevice):
         if self.oc_relay_type == 'IDMT':
             if i_ka > self.I_s:
                 self.tripped = True
-                act_time_s = (self.time_grading.t_gg.at[self.switch_index] * self.k) / (((i_ka/self.I_s)**self.alpha)-1)\
-                              + self.time_grading.t_g.at[self.switch_index]
+                act_time_s = (self.t_gg.at[self.switch_index] * self.k) / (((i_ka/self.I_s)**self.alpha)-1)\
+                              + self.t_g.at[self.switch_index]
             else:
                 self.tripped = False
                 act_time_s = np.inf
@@ -145,14 +149,14 @@ class OCRelay(ProtectionDevice):
         if self.oc_relay_type == 'IDTOC':
             if i_ka > self.I_gg:
                 self.tripped = True
-                act_time_s = self.time_grading.t_gg.at[self.switch_index]
+                act_time_s = self.t_gg.at[self.switch_index]
             elif i_ka > self.I_g:
                 self.tripped = True
-                act_time_s = self.time_grading.t_g.at[self.switch_index]
+                act_time_s = self.t_g.at[self.switch_index]
             elif i_ka > self.I_s:
                 self.tripped = True
-                act_time_s = (self.time_grading.t_gg.at[self.switch_index] * self.k) / (((i_ka/self.I_s)**self.alpha)-1)\
-                              + self.time_grading.t_g.at[self.switch_index]
+                act_time_s = (self.t_gg.at[self.switch_index] * self.k) / (((i_ka/self.I_s)**self.alpha)-1)\
+                              + self.t_g.at[self.switch_index]
             else:
                 self.tripped = False
                 act_time_s = np.inf
@@ -165,8 +169,29 @@ class OCRelay(ProtectionDevice):
                              "trip_melt_time_s": act_time_s}
         return protection_result
 
-    def plot_protection_characteristic(self, net):
-        pass
+    def plot_protection_characteristic(self, net, num=35, xlabel="I [A]", ylabel="time [s]",
+                                       title="Time-Current Characteristic of OC Relay"):
+        xmin = 10
+        xmax = 100000
+        ymin = 0.001
+        ymax = 10000
+
+        if self.oc_relay_type == 'DTOC':
+            plt.loglog(0, 0)
+            plt.step([self.I_g, self.I_gg, xmax], [ymax, self.t_g, self.t_gg])
+
+        elif self.oc_relay_type == 'IDMT':
+            x = np.logspace(np.log10(self.I_s+0.001), np.log10(xmax))
+            plt.loglog(x, (self.t_gg.at[self.switch_index] * self.k) / (((x/self.I_s)**self.alpha)-1)
+                       + self.t_g.at[self.switch_index])
+        else:
+            raise ValueError('Plot only implemented for DTOC and IDMT OCRelay')
+        plt.xlabel(xlabel)
+        plt.ylabel(ylabel)
+        plt.xlim(xmin, xmax)
+        plt.ylim(ymin, ymax)
+        plt.title(title)
+        plt.grid(True, which="both", ls="-")
 
     def __str__(self):
         s = 'Protection Device: %s \nType: %s \nName: %s' % (self.__class__.__name__, self.oc_relay_type, self.name)
