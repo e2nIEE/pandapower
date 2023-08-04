@@ -120,15 +120,15 @@ class Fuse(ProtectionDevice):
             act_time_s = 0
 
         protection_result = {"switch_id": self.switch_index,
-                             "prot_type": self.__class__.__name__,
+                             "protection_type": self.__class__.__name__,
                              "trip_melt": self.has_tripped(),
-                             "act_param": self.activation_parameter,
-                             "act_param_val": i_ka,
+                             "activation_parameter": self.activation_parameter,
+                             "activation_parameter_value": i_ka,
                              "trip_melt_time_s": act_time_s}
 
         return protection_result
 
-    def plot_protection_characteristic(self, net, num=35, xlabel="I [kA]", ylabel="time [s]",
+    def plot_protection_characteristic(self, net, num=35, xlabel="I [A]", ylabel="time [s]",
                                        title="Time-Current Characteristic of Fuse"):
         # plots protection characteristic for fuse
         if not MATPLOTLIB_INSTALLED:

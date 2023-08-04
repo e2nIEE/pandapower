@@ -12,3 +12,6 @@ Fuses can be created using the Fuse class:
 
 To run protection calculations, use the calculate_protection_times function:
 .. autofunction:: pandapower.protection.run_protection.calculate_protection_times
+
+Kindly follow the Fuse tutorial on Github for more details.
+https://github.com/e2nIEE/pandapower/blob/develop/tutorials/protection/fuse.ipynb
