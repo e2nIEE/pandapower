@@ -293,10 +293,7 @@ def to_dict_with_coord_transform(net, point_geo_columns, line_geo_columns):
 
 def get_raw_data_from_pickle(filename):
     def read(f):
-        if sys.version_info >= (3, 0):
-            return pickle.load(f, encoding='latin1')
-        else:
-            return pickle.load(f)
+        return pd.read_pickle(f)
 
     if hasattr(filename, 'read'):
         net = read(filename)

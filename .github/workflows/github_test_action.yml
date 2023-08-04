@@ -180,7 +180,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install pytest nbmake pytest-xdist python-igraph numba seaborn
+          python -m pip install pytest nbmake pytest-xdist igraph numba seaborn
           ./.install_julia.sh 1.8
           pip install julia
           python ./.install_pycall.py
