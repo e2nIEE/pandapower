@@ -326,13 +326,13 @@ def dump_to_geojson(net, nodes=False, branches=False):
         else:
             iterator = node_geodata.loc[nodes].iterrows()
         for uid, row in iterator:
-            if is_pandapower and row.coords is not None and not pd.isna(row.coords).any():
-            #     # [(x, y), (x2, y2)] start and end of bus bar
-            #     geom = geojson.LineString(row.coords)
-            # else:
+            if is_pandapower and row.coords is not None and not pd.isna(row.coords).any() and len(row.coords) != 1:
+                # [(x, y), (x2, y2)] start and end of bus bar
+                geom = geojson.LineString(row.coords)
+            else:
                 # this is just a bus with x, y
                 geom = geojson.Point((row.x, row.y))
-                features.append(geojson.Feature(geometry=geom, id=uid, properties=props[uid]))
+            features.append(geojson.Feature(geometry=geom, id=uid, properties=props[uid]))
 
     # build geojson features for branches
     if branches:
