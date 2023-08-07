@@ -44,6 +44,8 @@ class OCRelay(ProtectionDevice):
         self.time_grading = None
         self.t_g = None
         self.t_gg = None
+        self.t_grade = None
+        self.tms = None
         self.create_protection_function(net=net)
 
     def create_protection_function(self, net):
@@ -52,12 +54,13 @@ class OCRelay(ProtectionDevice):
         net_sc = copy.deepcopy(net)
 
         if (net.switch.closed.at[self.switch_index] == True) and (net.switch.et.at[self.switch_index] == 'l'):
-            line_idx = net.switch.element.at[self.switch_index]
+            line_idx = int(net.switch.element.at[self.switch_index])
             net_sc = create_sc_bus(net_sc, line_idx, self.sc_fraction)
             bus_idx = max(net_sc.bus.index)
 
         elif (net.switch.closed.at[self.switch_index] == True) and (net.switch.et.at[self.switch_index] == 't'):
             bus_idx = net.switch.bus.at[self.switch_index]
+            line_idx = None
         else:
             raise ValueError("OC Relay must be connected to line or transformer element")
 
@@ -65,33 +68,43 @@ class OCRelay(ProtectionDevice):
 
         if self.oc_relay_type == 'DTOC':
             if self.pickup_current_manual is None:
-                self.I_g = net_sc.line.max_i_ka.at[line_idx] * self.overload_factor * self.ct_current_factor
-                self.I_gg = net_sc.res_line_sc.ikss_ka.at[line_idx] * self.safety_factor
+                self.I_g = float(net_sc.line.max_i_ka.iloc[line_idx]) * self.overload_factor * self.ct_current_factor
+                self.I_gg = float(net_sc.res_line_sc.ikss_ka.iloc[line_idx]) * self.safety_factor
             else:
-                self.I_g = self.pickup_current_manual.I_g.at[self.switch_index]
-                self.I_gg = self.pickup_current_manual.I_g.at[self.switch_index]
+                self.I_g = float(self.pickup_current_manual.I_g.iloc[self.switch_index])
+                self.I_gg = float(self.pickup_current_manual.I_g.iloc[self.switch_index])
+            self.time_grading = time_grading(net, self.time_settings)
+            self.t_g = float(self.time_grading.t_g[self.switch_index])
+            self.t_gg = float(self.time_grading.t_gg[self.switch_index])
 
         if self.oc_relay_type == 'IDMT':
             if self.pickup_current_manual is None:
-                self.I_s = net_sc.line.max_i_ka.at[line_idx] * self.inverse_overload_factor
+                self.I_s = float(net_sc.line.max_i_ka.iloc[line_idx]) * self.inverse_overload_factor
             else:
-                self.I_s = self.pickup_current_manual.I_s.at[self.switch_index]
+                self.I_s = float(self.pickup_current_manual.I_s.iloc[self.switch_index])
             self._select_k_alpha()
+            self.time_grading = time_grading(net, self.time_settings)
+            self.t_grade = float(self.time_grading.t_g[self.switch_index])
+            self.tms = float(self.time_grading.t_gg[self.switch_index])
 
         if self.oc_relay_type == 'IDTOC':
             if self.pickup_current_manual is None:
-                self.I_g = net_sc.line.max_i_ka.at[line_idx] * self.overload_factor * self.ct_current_factor
-                self.I_gg = net_sc.res_line_sc.ikss_ka.at[line_idx] * self.safety_factor
-                self.I_s = net_sc.line.max_i_ka.at[line_idx] * self.inverse_overload_factor
+                self.I_g = float(net_sc.line.max_i_ka.iloc[line_idx]) * self.overload_factor * self.ct_current_factor
+                self.I_gg = float(net_sc.res_line_sc.ikss_ka.iloc[line_idx]) * self.safety_factor
+                self.I_s = float(net_sc.line.max_i_ka.iloc[line_idx]) * self.inverse_overload_factor
             else:
-                self.I_g = self.pickup_current_manual.I_g.at[self.switch_index]
-                self.I_gg = self.pickup_current_manual.I_g.at[self.switch_index]
-                self.I_s = self.pickup_current_manual.I_s.at[self.switch_index]
+                self.I_g = float(self.pickup_current_manual.I_g.iloc[self.switch_index])
+                self.I_gg = float(self.pickup_current_manual.I_g.iloc[self.switch_index])
+                self.I_s = float(self.pickup_current_manual.I_s.iloc[self.switch_index])
             self._select_k_alpha()
-
-        self.time_grading = time_grading(net, self.time_settings)
-        self.t_g = self.time_grading.t_g
-        self.t_gg = self.time_grading.t_gg
+            # calculate time grading first for DTOC part to obtain t_g and t_gg
+            self.time_grading = time_grading(net, [self.time_settings[0], self.time_settings[1], self.time_settings[2]])
+            self.t_g = float(self.time_grading.t_g[self.switch_index])
+            self.t_gg = float(self.time_grading.t_gg[self.switch_index])
+            # calculate time grading again for IDMT part to obtain t_grade and tms
+            self.time_grading = time_grading(net, [self.time_settings[3], self.time_settings[4]])
+            self.tms = float(self.time_grading.t_gg[self.switch_index])
+            self.t_grade = float(self.time_grading.t_g[self.switch_index])
 
     def _select_k_alpha(self):
         if self.curve_type == 'standard_inverse':
@@ -129,10 +142,10 @@ class OCRelay(ProtectionDevice):
         if self.oc_relay_type == 'DTOC':
             if i_ka > self.I_gg:
                 self.tripped = True
-                act_time_s = self.t_gg.at[self.switch_index]
+                act_time_s = self.t_gg
             elif i_ka > self.I_g:
                 self.tripped = True
-                act_time_s = self.t_g.at[self.switch_index]
+                act_time_s = self.t_g
             else:
                 self.tripped = False
                 act_time_s = np.inf
@@ -140,8 +153,7 @@ class OCRelay(ProtectionDevice):
         if self.oc_relay_type == 'IDMT':
             if i_ka > self.I_s:
                 self.tripped = True
-                act_time_s = (self.t_gg.at[self.switch_index] * self.k) / (((i_ka/self.I_s)**self.alpha)-1)\
-                              + self.t_g.at[self.switch_index]
+                act_time_s = (self.tms * self.k) / (((i_ka/self.I_s)**self.alpha)-1) + self.t_grade
             else:
                 self.tripped = False
                 act_time_s = np.inf
@@ -149,14 +161,13 @@ class OCRelay(ProtectionDevice):
         if self.oc_relay_type == 'IDTOC':
             if i_ka > self.I_gg:
                 self.tripped = True
-                act_time_s = self.t_gg.at[self.switch_index]
+                act_time_s = self.t_gg
             elif i_ka > self.I_g:
                 self.tripped = True
-                act_time_s = self.t_g.at[self.switch_index]
+                act_time_s = self.t_g
             elif i_ka > self.I_s:
                 self.tripped = True
-                act_time_s = (self.t_gg.at[self.switch_index] * self.k) / (((i_ka/self.I_s)**self.alpha)-1)\
-                              + self.t_g.at[self.switch_index]
+                act_time_s = (self.tms * self.k) / (((i_ka / self.I_s)**self.alpha)-1) + self.t_grade
             else:
                 self.tripped = False
                 act_time_s = np.inf
@@ -169,28 +180,29 @@ class OCRelay(ProtectionDevice):
                              "trip_melt_time_s": act_time_s}
         return protection_result
 
-    def plot_protection_characteristic(self, net, num=35, xlabel="I [A]", ylabel="time [s]",
+    def plot_protection_characteristic(self, net, num=35, xlabel="I [A]", ylabel="time [s]", xmin=10, xmax=1000, ymin=0.01, ymax=10000,
                                        title="Time-Current Characteristic of OC Relay"):
-        xmin = 10
-        xmax = 100000
-        ymin = 0.001
-        ymax = 10000
 
         if self.oc_relay_type == 'DTOC':
             plt.loglog(0, 0)
-            plt.step([self.I_g, self.I_gg, xmax], [ymax, self.t_g, self.t_gg])
+            plt.step(np.array([self.I_g*1000, self.I_gg*1000, xmax]), np.array([ymax, self.t_g, self.t_gg]))
 
         elif self.oc_relay_type == 'IDMT':
-            x = np.logspace(np.log10(self.I_s+0.001), np.log10(xmax))
-            plt.loglog(x, (self.t_gg.at[self.switch_index] * self.k) / (((x/self.I_s)**self.alpha)-1)
-                       + self.t_g.at[self.switch_index])
+            x = np.logspace(np.log10((1000*self.I_s)+0.001), np.log10(xmax), 60)
+            plt.loglog(x, (self.tms * self.k) / (((x/(1000*self.I_s))**self.alpha)-1) + self.t_grade)
+
+        elif self.oc_relay_type == 'IDTOC':
+            x = np.logspace(np.log10((1000 * self.I_s) + 0.001), np.log10(1000 * self.I_g), 60)
+            plt.loglog(x, (self.tms * self.k) / (((x / (1000 * self.I_s)) ** self.alpha) - 1) + self.t_grade)
+            plt.step(np.array([self.I_g * 1000, self.I_gg * 1000, xmax]), np.array([
+                (self.tms * self.k) / (((self.I_g /self.I_s) ** self.alpha) - 1) + self.t_grade, self.t_g, self.t_gg]))
         else:
-            raise ValueError('Plot only implemented for DTOC and IDMT OCRelay')
+            raise ValueError('oc_relay_type must be DTOC, IDMT, or IDTOC')
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
         plt.xlim(xmin, xmax)
         plt.ylim(ymin, ymax)
-        plt.title(title)
+        plt.title(title + str(self.switch_index))
         plt.grid(True, which="both", ls="-")
 
     def __str__(self):

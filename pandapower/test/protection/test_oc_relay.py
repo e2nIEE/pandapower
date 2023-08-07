@@ -47,33 +47,15 @@ def test_oc_relay_idmt():
     net_sc = create_sc_bus(net, sc_line_id=4, sc_fraction=0.5)
     sc.calc_sc(net_sc, bus=max(net_sc.bus.index), branch_results=True)
     protection_results = calculate_protection_times(net_sc, scenario='sc')
-    assert protection_results.trip_melt_time_s.at[0] == 1.4
-    assert protection_results.trip_melt_time_s.at[2] == 1.1
-    assert protection_results.trip_melt_time_s.at[4] == 0.07
-
-def test_oc_relay_plots():
-    net = oc_relay_net()
-    net.switch.type.at[2] = 'CB_IDMT'
-    net.switch.type.at[3] = 'CB_IDMT'
-    net.switch.type.at[4] = 'CB_IDMT'
-    net.switch.type.at[5] = 'CB_IDMT'
-
-    oc_relay_type_list = ['DTOC', 'DTOC', 'IDMT', 'IDMT', 'IDTOC', 'IDTOC']
-
-    for k in range(4):
-        OCRelay(net, switch_index=k, oc_relay_type=oc_relay_type_list[k], time_settings=[1, 0.5])
-        plt.figure(k)
-        net.protection.object.at[k].plot_protection_characteristic(net=net)
-        plt.show()
-
+    assert np.isclose(protection_results.trip_melt_time_s.at[0], 4.8211)
+    assert np.isclose(protection_results.trip_melt_time_s.at[2], 4.3211)
+    assert np.isclose(protection_results.trip_melt_time_s.at[4], 3.8211)
 
 def test_oc_relay_idtoc():
     net = oc_relay_net()
     net.switch.type = 'CB_IDTOC'
-
     for k in range(6):
         OCRelay(net, switch_index=k, oc_relay_type='IDTOC', time_settings=[0.07, 0.5, 0.3, 1, 0.5])
-
     net_sc = create_sc_bus(net, sc_line_id=4, sc_fraction=0.5)
     sc.calc_sc(net_sc, bus=max(net_sc.bus.index), branch_results=True)
     protection_results = calculate_protection_times(net_sc, scenario='sc')
@@ -82,39 +64,52 @@ def test_oc_relay_idtoc():
     assert protection_results.trip_melt_time_s.at[4] == 0.07
 
 
-def test_arjun_implementation_dtoc():
-    # testing arjun's implementation because I am not certain that IDMT and IDTOC are correct
+def test_oc_relay_plots():
     net = oc_relay_net()
-    relay_settings_DTOC = oc_protection.oc_parameters(net, time_settings=[0.07, 0.5, 0.3], relay_type='DTOC')
+    net.switch.type.at[2] = 'CB_IDMT'
+    net.switch.type.at[3] = 'CB_IDMT'
+    net.switch.type.at[4] = 'CB_IDTOC'
+    net.switch.type.at[5] = 'CB_IDTOC'
 
-    trip_decisions_DTOC, net_sc = oc_protection.run_fault_scenario_oc(net, sc_line_id=4, sc_location=0.5,
-                                                                      relay_settings=relay_settings_DTOC)
+    oc_relay_type_list = ['DTOC', 'DTOC', 'IDMT', 'IDMT', 'IDTOC', 'IDTOC']
+    time_settings_list = [[0.07, 0.5, 0.3],
+                          [0.07, 0.5, 0.3],
+                          [1, 0.4],
+                          [1, 0.4],
+                          [0.07, 0.5, 0.3, 1, 0.4],
+                          [0.07, 0.5, 0.3, 1, 0.4]]
 
-    tripping_time = pd.DataFrame({'switch_id': [0, 1, 2, 3, 4, 5],
-                                  't_gg': [0.07, 0.07, 0.07, 0.07, 0.07, 0.07],
-                                  't_g': [0.5, 0.8, 1.1, 1.4, 1.7, 2.0]})
-    relay_settings = oc_protection.oc_parameters(net, time_settings=tripping_time, relay_type='DTOC')
-    trip_decisions, net_sc = oc_protection.run_fault_scenario_oc(net, sc_line_id=4, sc_location=0.5,
-                                                                 relay_settings=relay_settings)
+    for k in range(6):
+        OCRelay(net, switch_index=k, oc_relay_type=oc_relay_type_list[k], time_settings=time_settings_list[k])
+
+    net_sc = create_sc_bus(net, sc_line_id=4, sc_fraction=0.5)
+    sc.calc_sc(net_sc, bus=max(net_sc.bus.index), branch_results=True)
+    protection_results = calculate_protection_times(net_sc, scenario='sc')
+    print('\n#################################################\n\n')
+    print(protection_results)
+    for k in range(6):
+        plt.figure(k)
+        net.protection.object.at[k].plot_protection_characteristic(net=net)
 
 
-def test_arjun_implementation_idmt():
+def test_select_k_alpha():
     net = oc_relay_net()
     net.switch.type = 'CB_IDMT'
-    relay_settings_IDMT = oc_protection.oc_parameters(net, time_settings=[1, 0.5], relay_type='IDMT',
-                                                      curve_type='standard_inverse')
-    trip_decisions_IDMT, net_sc = oc_protection.run_fault_scenario_oc(net, sc_line_id=4, sc_location=0.5,
-                                                                      relay_settings=relay_settings_IDMT)
-    df_trip_dec = pd.DataFrame.from_dict(trip_decisions_IDMT)
 
-    a = 1
+    inverse_type_list = ['standard_inverse', 'very_inverse', 'extremely_inverse', 'long_inverse',
+                         'standard_inverse', 'standard_inverse']
+    for q in range(6):
+        OCRelay(net, switch_index=q, oc_relay_type='IDMT', time_settings=[1, 0.5],
+                curve_type=inverse_type_list[q])
 
+    k_list = [0.14, 13.5, 80, 120, 0.14, 0.14]
+    alpha_list = [0.02, 1, 2, 1, 0.02, 0.02]
+    for q in range(6):
+        assert net.protection.object.at[q].k == k_list[q]
+        assert net.protection.object.at[q].alpha == alpha_list[q]
 
 
 def oc_relay_net():
-    import pandapower as pp
-
-
     # create an empty network
     net = pp.create_empty_network()
 
