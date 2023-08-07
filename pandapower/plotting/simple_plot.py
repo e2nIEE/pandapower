@@ -188,6 +188,20 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
         gen_count = 0
         load_count = 0
         if plot_sgens and len(net.sgen):
+            sgen_types_counts = net.sgen[net.sgen.bus == i].type.value_counts()
+            PV = sgen_types_counts.get("PV", 0)
+            WT = sgen_types_counts.get("WT", 0)
+            WYE = sum(sgen_types_counts) - PV - WT
+            types = {}
+            if PV:
+                types["PV"] = PV
+            if WT:
+                types["WT"] = WT
+            if WYE:
+                types["wye"] = WYE
+            sgen_types[i] = types
+            if i not in patch_count_unique:
+                patch_count_unique[i] = {}
             try:
                 sgen_count = len(sgen_types[i])
             except KeyError:
@@ -207,20 +221,7 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
         except ZeroDivisionError: seperation_angle =  None
 
         if plot_sgens and len(net.sgen):
-            sgen_types_counts = net.sgen[net.sgen.bus == i].type.value_counts()
-            PV = sgen_types_counts.get("PV", 0)
-            WT = sgen_types_counts.get("WT", 0)
-            WYE = sum(sgen_types_counts) - PV - WT
-            types = {}
-            if PV:
-                types["PV"] = PV
-            if WT:
-                types["WT"] = WT
-            if WYE:
-                types["wye"] = WYE
-            sgen_types[i] = types
-            if i not in patch_count_unique:
-                patch_count_unique[i] = {}
+
             patch_count_unique[i]['sgen'] = dict(
                 zip(sgen_types[i].keys(), [j * seperation_angle for j in range(sgen_count)]))
 
@@ -238,7 +239,7 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
             if 'load' not in patch_count_unique[i]:
                 patch_count_unique[i]['load'] = []
                 patch_count_unique[i]['load'].extend(
-             [j * seperation_angle + sgen_count + gen_count * seperation_angle for j in range(load_count)])
+             [j * seperation_angle + (sgen_count + gen_count) * seperation_angle for j in range(load_count)])
 
     if plot_sgens and len(net.sgen):
         sgc = create_sgen_collection(net, size=sgen_size, unique_angles=patch_count_unique, orientation=orientation)

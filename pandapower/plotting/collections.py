@@ -1163,7 +1163,6 @@ def create_ext_grid_collection(net, size=1., infofunc=None, orientation=0, picke
     infos = [infofunc(ext_grid_idx) for ext_grid_idx in ext_grids] if infofunc is not None else []
 
     node_coords = net.bus_geodata.loc[ext_grid_buses, ["x", "y"]].values
-    sgen_type = net.sgen.type
     color = kwargs.pop("color", "k")
 
     ext_grid_pc, ext_grid_lc = _create_node_element_collection(
