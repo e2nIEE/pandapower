@@ -44,7 +44,8 @@ from pandapower.pypower.idx_gen import PMIN, PMAX, QMIN, QMAX
 from pandapower.pypower.idx_ssc import SSC_STATUS, SSC_BUS, SSC_INTERNAL_BUS
 
 from pandapower.pypower.idx_tcsc import TCSC_STATUS, TCSC_F_BUS, TCSC_T_BUS
-from pandapower.pypower.idx_vsc import VSC_STATUS, VSC_BUS, VSC_INTERNAL_BUS
+from pandapower.pypower.idx_vsc import VSC_STATUS, VSC_BUS, VSC_INTERNAL_BUS, VSC_BUS_DC
+from .pypower.idx_bus_dc import DC_VMAX, DC_VMIN, DC_BUS_I, DC_BUS_TYPE, DC_NONE
 
 try:
     from numba import jit
@@ -754,36 +755,44 @@ except RuntimeError:
 
 
 def _select_is_elements_numba(net, isolated_nodes=None, sequence=None):
+    ## todo: in_service for dc bus and implenet input parameters for isolated_nodes for dc bus
     # is missing sgen_controllable and load_controllable
     max_bus_idx = np.max(net["bus"].index.values)
     bus_in_service = np.zeros(max_bus_idx + 1, dtype=bool)
     bus_in_service[net["bus"].index.values] = net["bus"]["in_service"].values.astype(bool)
+    max_bus_dc_idx = np.max(net["bus_dc"].index.values)
+    bus_dc_in_service = np.zeros(max_bus_dc_idx + 1, dtype=bool)
+    bus_dc_in_service[net["bus_dc"].index.values] = net["bus_dc"]["in_service"].values.astype(bool)
     if isolated_nodes is not None and len(isolated_nodes) > 0:
         ppc = net["_ppc"] if sequence is None else net["_ppc%s" % sequence]
         ppc_bus_isolated = np.zeros(ppc["bus"].shape[0], dtype=bool)
         ppc_bus_isolated[isolated_nodes] = True
         set_isolated_buses_oos(bus_in_service, ppc_bus_isolated, net["_pd2ppc_lookups"]["bus"])
     #    mode = net["_options"]["mode"]
-    elements = ["load", "motor", "sgen", "asymmetric_load", "asymmetric_sgen", "gen",
-                "ward", "xward", "shunt", "ext_grid", "storage", "svc", "ssc", "vsc"]  # ,"impedance_load"
+    elements_ac = ["load", "motor", "sgen", "asymmetric_load", "asymmetric_sgen", "gen",
+                   "ward", "xward", "shunt", "ext_grid", "storage", "svc", "ssc", "vsc"]  # ,"impedance_load"
+    elements_dc = ["vsc"]
     is_elements = dict()
-    for element in elements:
-        len_ = len(net[element].index)
-        element_in_service = np.zeros(len_, dtype=bool)
-        if len_ > 0:
-            element_df = net[element]
-            set_elements_oos(element_df["bus"].values, element_df["in_service"].values,
-                             bus_in_service, element_in_service)
-        if net["_options"]["mode"] == "opf" and element in ["load", "sgen", "storage"]:
-            if "controllable" in net[element]:
-                controllable = net[element].controllable.fillna(False).values.astype(bool)
-                controllable_is = controllable & element_in_service
-                if controllable_is.any():
-                    is_elements["%s_controllable" % element] = controllable_is
-                    element_in_service = element_in_service & ~controllable_is
-        is_elements[element] = element_in_service
+    for elements, bus_table, bis in zip((elements_ac, elements_dc), ("bus", "bus_dc"), (bus_in_service,bus_dc_in_service)):
+        for element in elements:
+            len_ = len(net[element].index)
+            element_in_service = np.zeros(len_, dtype=bool)
+            if len_ > 0:
+                element_df = net[element]
+                set_elements_oos(element_df[bus_table].values, element_df["in_service"].values,
+                                 bis, element_in_service)
+            # load, sgen, storage only in elements_ac so this will only be executed once:
+            if net["_options"]["mode"] == "opf" and element in ["load", "sgen", "storage"]:
+                if "controllable" in net[element]:
+                    controllable = net[element].controllable.fillna(False).values.astype(bool)
+                    controllable_is = controllable & element_in_service
+                    if controllable_is.any():
+                        is_elements["%s_controllable" % element] = controllable_is
+                        element_in_service = element_in_service & ~controllable_is
+            is_elements[element] = element_in_service
 
     is_elements["bus_is_idx"] = net["bus"].index.values[bus_in_service[net["bus"].index.values]]
+    is_elements["bus_dc_is_idx"] = net["bus_dc"].index.values[bus_dc_in_service[net["bus_dc"].index.values]]
     is_elements["line_is_idx"] = net["line"].index[net["line"].in_service.values]
     return is_elements
 
@@ -952,13 +961,25 @@ def _clean_up(net, res=True):
 def _set_isolated_buses_out_of_service(net, ppc):
     # set disconnected buses out of service
     # first check if buses are connected to branches
-    disco = np.setxor1d(ppc["bus"][:, 0].astype(np.int64),
-                        ppc["branch"][ppc["branch"][:, 10] == 1, :2].real.astype(np.int64).flatten())
+    disco = np.setxor1d(ppc["bus"][:, BUS_I].astype(np.int64),
+                        ppc["branch"][ppc["branch"][:, BR_STATUS] == 1, [F_BUS,T_BUS]].real.astype(np.int64).flatten())
 
     # but also check if they may be the only connection to an ext_grid
-    net._isolated_buses = np.setdiff1d(disco, ppc['bus'][ppc['bus'][:, 1] == REF,
-                                                         :1].real.astype(np.int64))
-    ppc["bus"][net._isolated_buses, 1] = NONE
+    net._isolated_buses = np.setdiff1d(disco, ppc['bus'][ppc['bus'][:, BUS_TYPE] == REF,
+                                                         BUS_I].real.astype(np.int64))
+    ppc["bus"][net._isolated_buses, BUS_TYPE] = NONE
+
+    disco_dc = np.setxor1d(ppc["bus_dc"][:, DC_BUS_I].astype(np.int64),
+                        ppc["vsc"][ppc["vsc"][:, VSC_STATUS] == 1, VSC_BUS_DC].real.astype(np.int64))
+
+    # todo: also consider the dc lines
+    #disco_dc = np.setxor1d(ppc["bus_dc"][:, DC_BUS_I].astype(np.int64),
+    #                    ppc["branch_dc"][ppc["branch_dc"][:, DC_BR_STATUS] == 1, [DC_BR_F_BUS, DC_BR_T_BUS]].real.astype(np.int64).flatten())
+
+    # but also check if they may be the only connection to an ext_grid
+    net._isolated_buses_dc = np.setdiff1d(disco_dc, ppc['bus_dc'][ppc['bus_dc'][:, DC_BUS_TYPE] == REF,
+                                                         DC_BUS_I].real.astype(np.int64))
+    ppc["bus_dc"][net._isolated_buses_dc, DC_BUS_TYPE] = DC_NONE
 
 
 def _write_lookup_to_net(net, element, element_lookup):
@@ -1285,7 +1306,8 @@ def _replace_nans_with_default_limits(net, ppc):
     plim = net._options["p_lim_default"]
 
     for matrix, column, default in [("gen", QMAX, qlim), ("gen", QMIN, -qlim), ("gen", PMIN, -plim),
-                                    ("gen", PMAX, plim), ("bus", VMAX, 2.0), ("bus", VMIN, 0.0)]:
+                                    ("gen", PMAX, plim), ("bus", VMAX, 2.0), ("bus", VMIN, 0.0),
+                                    ("bus_dc", DC_VMAX, 2.0), ("bus_dc", DC_VMIN, 0.0)]:
         limits = ppc[matrix][:, [column]]
         np.copyto(limits, default, where=np.isnan(limits))
         ppc[matrix][:, [column]] = limits

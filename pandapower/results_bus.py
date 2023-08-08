@@ -44,6 +44,13 @@ def _get_bus_v_results(net, ppc, suffix=None):
     net[res_table]["va_degree"] = ppc["bus"][bus_idx][:, VA]
 
 
+def _get_bus_dc_v_results(net, ppc, suffix=None):
+    bus_idx = _get_bus_idx(net, "bus_dc")
+
+    res_table = "res_bus_dc"
+    net[res_table]["vm_pu"] = ppc["bus_dc"][bus_idx][:, VM]
+
+
 def _get_bus_v_results_3ph(net, ppc0, ppc1, ppc2):
     ac = net["_options"]["ac"]
     V012_pu = _V012_from_ppc012(net, ppc0, ppc1, ppc2)
@@ -74,7 +81,7 @@ def _V012_from_ppc012(net, ppc0, ppc1, ppc2):
     return V012_pu
 
 
-def _get_bus_idx(net):
+def _get_bus_idx(net, bus_table="bus"):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     ppi = net["bus"].index.values
     bus_idx = bus_lookup[ppi]
@@ -102,6 +109,15 @@ def _get_bus_results(net, ppc, bus_pq):
 
     # update index in res bus bus
     net["res_bus"].index = net["bus"].index
+
+
+def _get_bus_dc_results(net, ppc, bus_p_dc):
+
+    # write sum of p and q values to bus
+    net["res_bus_dc"]["p_mw"].values[:] = bus_p_dc[:, 0]
+
+    # update index in res bus bus
+    net["res_bus_dc"].index = net["bus_dc"].index
 
 
 def _get_bus_results_3ph(net, bus_pq):

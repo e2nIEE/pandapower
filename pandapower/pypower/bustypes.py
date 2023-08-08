@@ -13,6 +13,7 @@
 
 from numpy import ones, flatnonzero as find
 from pandapower.pypower.idx_bus import BUS_TYPE, REF, PV, PQ
+from pandapower.pypower.idx_bus_dc import DC_BUS_TYPE, DC_REF, DC_P
 from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS
 from scipy.sparse import csr_matrix as sparse
 
@@ -47,3 +48,17 @@ def bustypes(bus, gen):
     pv  = find((bus[:, BUS_TYPE] == PV)) # PV bus indices
     pq  = find((bus[:, BUS_TYPE] == PQ)) # PQ bus indices
     return ref, pv, pq
+
+
+def bustypes_dc(bus_dc):
+    """Builds index lists of each type of bus (DC_REF, DC_P).
+
+    Expects bus_dc have been converted to use internal consecutive bus numbering.
+
+    @param bus: bus data
+    @return: index lists of each bus type
+    """
+    # form index lists for slack, PV, and PQ buses
+    ref = find((bus_dc[:, DC_BUS_TYPE] == DC_REF))  # ref bus index
+    p = find((bus_dc[:, DC_BUS_TYPE] == DC_P))  # P bus indices
+    return ref, p

@@ -22,7 +22,7 @@ from pandapower.pf.pfsoln_numba import pfsoln as pfsoln_full, pf_solution_single
 from pandapower.powerflow import LoadflowNotConverged, _add_auxiliary_elements
 from pandapower.results import _copy_results_ppci_to_ppc, _extract_results, _get_aranged_lookup
 from pandapower.results_branch import _get_branch_flows, _get_line_results, _get_trafo3w_results, _get_trafo_results
-from pandapower.results_bus import write_pq_results_to_element, _get_bus_v_results, _get_bus_results
+from pandapower.results_bus import write_pq_results_to_element, _get_bus_v_results, _get_bus_results, _get_bus_dc_results
 from pandapower.results_gen import _get_gen_results
 from pandapower.timeseries.output_writer import OutputWriter
 
@@ -121,6 +121,7 @@ class TimeSeriesRunpp:
         bus_lookup_aranged = _get_aranged_lookup(net)
         _get_gen_results(net, ppc, bus_lookup_aranged, bus_pq)
         _get_bus_results(net, ppc, bus_pq)
+        _get_bus_dc_results(net, ppc, bus_p_dc)
 
         net["res_bus"].index = net["bus"].index
 

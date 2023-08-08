@@ -7,7 +7,9 @@
 import numpy as np
 
 from pandapower.pf.ppci_variables import bustypes
+from pandapower.pypower.bustypes import bustypes_dc
 from pandapower.pypower.idx_bus import PV, REF, VA, VM, BUS_TYPE, NONE, VMAX, VMIN, SL_FAC as SL_FAC_BUS
+from pandapower.pypower.idx_bus_dc import DC_BUS_TYPE, DC_NONE
 from pandapower.pypower.idx_gen import QMIN, QMAX, PMIN, PMAX, GEN_BUS, PG, VG, QG, MBASE, SL_FAC, gen_cols
 from pandapower.pypower.idx_brch import F_BUS, T_BUS
 from pandapower.auxiliary import _subnetworks, _sum_by_group
@@ -320,6 +322,13 @@ def _check_for_reference_bus(ppc):
     # throw an error since no reference bus is defined
     if len(ref) == 0:
         raise UserWarning("No reference bus is available. Either add an ext_grid or a gen with slack=True")
+
+    bus_dc_relevant = np.flatnonzero(ppc["bus_dc"][:, DC_BUS_TYPE] == DC_NONE)
+    ref_dc, _ = bustypes_dc(ppc["bus_dc"])
+    # throw an error since no reference bus is defined
+    if len(bus_dc_relevant) > 0 and len(ref_dc) == 0:
+        raise UserWarning("No reference bus for the dc grid is available. Add a DC reference bus by setting the "
+                          "DC control mode of at least one VSC converter to 'vm_pu'")
 
 
 def _different_values_at_one_bus(buses, values):

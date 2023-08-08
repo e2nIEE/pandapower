@@ -8,9 +8,9 @@ import numpy as np
 import pandas as pd
 
 from pandapower.results_branch import _get_branch_results, _get_branch_results_3ph
-from pandapower.results_bus import _get_bus_results, _set_buses_out_of_service, \
+from pandapower.results_bus import _get_bus_results, _get_bus_dc_results, _set_buses_out_of_service, \
     _get_shunt_results, _get_p_q_results, _get_bus_v_results, _get_bus_v_results_3ph, _get_p_q_results_3ph, \
-    _get_bus_results_3ph
+    _get_bus_results_3ph, _get_bus_dc_v_results
 from pandapower.results_gen import _get_gen_results, _get_gen_results_3ph
 
 BRANCH_RESULTS_KEYS = ("branch_ikss_f", "branch_ikss_t",
@@ -29,11 +29,13 @@ def _extract_results(net, ppc):
     _set_buses_out_of_service(ppc)
     bus_lookup_aranged = _get_aranged_lookup(net)
     _get_bus_v_results(net, ppc)
+    _get_bus_dc_v_results(net, ppc)
     bus_pq = _get_p_q_results(net, ppc, bus_lookup_aranged)
     _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq)
     _get_branch_results(net, ppc, bus_lookup_aranged, bus_pq)
     _get_gen_results(net, ppc, bus_lookup_aranged, bus_pq)
     _get_bus_results(net, ppc, bus_pq)
+    _get_bus_dc_results(net, ppc, bus_p_dc)
     if net._options["mode"] == "opf":
         _get_costs(net, ppc)
     else:
@@ -138,7 +140,7 @@ def init_element(net, element, suffix=None):
 
 def get_relevant_elements(mode="pf"):
     if mode == "pf" or mode == "opf":
-        return ["bus", "line", "trafo", "trafo3w", "impedance", "ext_grid",
+        return ["bus", "bus_dc", "line", "trafo", "trafo3w", "impedance", "ext_grid",
                 "load", "motor", "sgen", "storage", "shunt", "gen", "ward",
                 "xward", "dcline", "asymmetric_load", "asymmetric_sgen",
                 "switch", "tcsc", "svc", "ssc", "vsc"]

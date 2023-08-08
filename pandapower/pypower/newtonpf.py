@@ -20,6 +20,7 @@ from pandapower import VSC_STATUS, VSC_BUS, VSC_INTERNAL_BUS
 from pandapower.pf.iwamoto_multiplier import _iwamoto_step
 from pandapower.pf.makeYbus_facts import makeYbus_svc, makeYbus_tcsc, makeYft_tcsc, calc_y_svc_pu, makeYbus_ssc_vsc, \
     makeYbus_hvdc
+from pandapower.pypower.idx_bus_dc import DC_PD
 from pandapower.pypower.idx_vsc import VSC_CONTROLLABLE, VSC_MODE_AC, VSC_VALUE_AC, VSC_MODE_DC, VSC_VALUE_DC, VSC_R, \
     VSC_X, VSC_Q, VSC_P, VSC_BUS_DC
 from pandapower.pypower.makeSbus import makeSbus
@@ -80,7 +81,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     svc = ppci['svc']
     ssc = ppci['ssc']
     vsc = ppci['vsc']
-    # bus_dc = ppci['bus_dc']  # todo
+    bus_dc = ppci['bus_dc']
     slack_weights = bus[:, SL_FAC].astype(float64)  ## contribution factors for distributed slack
     tdpf = options.get('tdpf', False)
 
@@ -499,6 +500,11 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         # todo: remove print
         print("VSC P from:", s_vsc_f.real, "VSC Q from:", s_vsc_f.imag)
         print("VSC P to:", s_vsc_t.real, "VSC Q to:", s_vsc_t.imag)
+
+    if any_hvdc:
+        # Yf_hvdc, Yt_hvdc = makeYft_tcsc(Ybus_hvdc, hvdc_fb, hvdc_tb)
+        Pbus_dc = V_dc * Ybus_hvdc.dot(V_dc)
+        bus_dc[:, DC_PD] = Pbus_dc
 
     # todo: remove this
     # Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)

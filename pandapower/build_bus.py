@@ -14,6 +14,8 @@ from pandapower.auxiliary import _sum_by_group, phase_to_sequence, version_check
 from pandapower.pypower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN, BUS_TYPE, NONE, \
     VM, VA, CID, CZD, bus_cols, REF, PV
 from pandapower.pypower.idx_bus_sc import C_MAX, C_MIN, bus_cols_sc
+from .pypower.idx_bus_dc import dc_bus_cols, DC_BUS_TYPE, DC_BUS_AREA, DC_VM, DC_ZONE, DC_VMAX, DC_VMIN, DC_P, DC_BUS_I, \
+    DC_BASE_KV, DC_NONE, DC_REF
 from .pypower.idx_ssc import ssc_cols, SSC_BUS, SSC_R, SSC_X, SSC_SET_VM_PU, SSC_X_CONTROL_VA, SSC_X_CONTROL_VM, \
     SSC_STATUS, SSC_CONTROLLABLE, SSC_INTERNAL_BUS
 from .pypower.idx_svc import svc_cols, SVC_BUS, SVC_SET_VM_PU, SVC_MIN_FIRING_ANGLE, SVC_MAX_FIRING_ANGLE, SVC_STATUS, \
@@ -371,6 +373,70 @@ def _build_bus_ppc(net, ppc, sequence=None):
     net["_pd2ppc_lookups"]["aux"] = aux
 
 
+def _build_bus_dc_ppc(net, ppc):
+    """
+    Generates the ppc["bus_dc"] array and the lookup pandapower indices -> ppc indices
+    """
+    init_vm_pu = net["_options"]["init_vm_pu"]
+    mode = net["_options"]["mode"]
+    numba = net["_options"]["numba"] if "numba" in net["_options"] else False
+
+    # get bus indices
+    bus_index = net["bus_dc"].index.values
+    # get in service elements
+
+    bus_lookup = create_consecutive_bus_lookup(net, bus_index)
+    # todo if dc switches are added, adjust this part to implement @fuse buses@ for bus_dc:
+    #if mode == "nx":
+     #   bus_lookup = create_consecutive_bus_lookup(net, bus_index)
+    #else:
+        # _is_elements = net["_is_elements"]
+        #eg_is_mask = _is_elements['ext_grid']
+        #gen_is_mask = _is_elements['gen']
+        #bus_is_idx = _is_elements['bus_dc_is_idx']
+        #bus_lookup = create_bus_lookup(net, bus_index, bus_is_idx,
+         #                              gen_is_mask, eg_is_mask, numba=numba)
+
+    n_bus_ppc = len(bus_index)
+    # init ppc with empty values
+    ppc["bus_dc"] = np.zeros(shape=(n_bus_ppc, dc_bus_cols), dtype=np.float64)
+    # changes of voltage limits (2 and 0) must be considered in check_opf_data
+    ppc["bus_dc"][:, [DC_BUS_TYPE, DC_BUS_AREA, DC_VM, DC_ZONE, DC_VMAX, DC_VMIN]] = np.array([DC_P, 1, 1, 1, 2, 0], dtype=np.int64)
+
+    # if mode == "sc":
+    #     bus_sc = np.empty(shape=(n_bus_ppc, bus_cols_sc), dtype=np.float64)
+    #     bus_sc.fill(np.nan)
+    #     ppc["bus"] = np.hstack((ppc["bus"], bus_sc))
+
+    # apply consecutive bus numbers
+    ppc["bus_dc"][:, DC_BUS_I] = np.arange(n_bus_ppc)
+
+    n_bus_dc = len(net.bus_dc.index)
+    # init voltages from net
+    ppc["bus_dc"][:n_bus_dc, DC_BASE_KV] = net["bus_dc"]["vn_kv"].values
+    # set buses out of service (BUS_TYPE == 4)
+    in_service = net["bus_dc"]["in_service"].values
+    ppc["bus_dc"][~in_service, DC_BUS_TYPE] = DC_NONE
+    if mode != "nx":
+        set_reference_buses_dc(net, ppc, bus_lookup, mode)
+    # todo: add init vm_pu for DC buses eventually
+    #vm_pu = get_voltage_init_vector(net, init_vm_pu, "magnitude", sequence=sequence)
+    #if vm_pu is not None:
+    #    ppc["bus"][:n_bus_dc, VM] = vm_pu
+
+    if net._options["mode"] == "opf":
+        if "max_vm_pu" in net.bus_dc:
+            ppc["bus_dc"][:n_bus_dc, DC_VMAX] = net["bus_dc"].max_vm_pu.values
+        else:
+            ppc["bus_dc"][:n_bus_dc, DC_VMAX] = 2.  # changes of VMAX must be considered in check_opf_data
+        if "min_vm_pu" in net.bus_dc:
+            ppc["bus_dc"][:n_bus_dc, DC_VMIN] = net["bus_dc"].min_vm_pu.values
+        else:
+            ppc["bus_dc"][:n_bus_dc, DC_VMIN] = 0.  # changes of VMIN must be considered in check_opf_data
+
+    net["_pd2ppc_lookups"]["bus_dc"] = bus_lookup
+
+
 def _fill_auxiliary_buses(net, ppc, bus_lookup, element, bus_column, aux):
     element_bus_idx = bus_lookup[net[element][bus_column].values]
     aux_idx = bus_lookup[aux[element]]
@@ -401,6 +467,14 @@ def set_reference_buses(net, ppc, bus_lookup, mode):
     if gen_slacks.any():
         slack_buses = net.gen["bus"].values[gen_slacks]
         ppc["bus"][bus_lookup[slack_buses], BUS_TYPE] = REF
+
+
+def set_reference_buses_dc(net, ppc, bus_lookup, mode):
+    if mode == "nx":
+        return
+    vsc_dc_slack = net.vsc.control_mode_dc.values == "vm_pu"
+    ref_buses = bus_lookup[net.vsc.bus_dc.values[net._is_elements["vsc"] & vsc_dc_slack]]
+    ppc["bus_dc"][ref_buses, DC_BUS_TYPE] = DC_REF
 
 
 def _calc_pq_elements_and_add_on_ppc(net, ppc, sequence=None):
@@ -623,8 +697,7 @@ def _build_vsc_ppc(net, ppc, mode):
 
     baseMVA = ppc["baseMVA"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    # bus_lookup_dc = net["_pd2ppc_lookups"]["bus"]  # todo
-    bus_lookup_dc = net.bus_dc.index.values
+    bus_lookup_dc = net["_pd2ppc_lookups"]["bus_dc"]
     aux = net["_pd2ppc_lookups"]["aux"]
     f = 0
     t = length
