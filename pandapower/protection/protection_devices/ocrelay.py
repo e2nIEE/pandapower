@@ -118,12 +118,12 @@ class OCRelay(ProtectionDevice):
         # protection function
         net_sc = copy.deepcopy(net)
 
-        if (net.switch.closed.at[self.switch_index] is True) and (net.switch.et.at[self.switch_index] == 'l'):
+        if (net.switch.closed.at[self.switch_index] == True) and (net.switch.et.at[self.switch_index] == 'l'):
             line_idx = int(net.switch.element.at[self.switch_index])
             net_sc = create_sc_bus(net_sc, line_idx, self.sc_fraction)
             bus_idx = max(net_sc.bus.index)
 
-        elif (net.switch.closed.at[self.switch_index] is True) and (net.switch.et.at[self.switch_index] == 't'):
+        elif (net.switch.closed.at[self.switch_index] == True) and (net.switch.et.at[self.switch_index] == "t" or "b"):
             bus_idx = net.switch.bus.at[self.switch_index]
             line_idx = None
         else:
