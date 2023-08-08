@@ -1,0 +1,7 @@
+**Parameter**;**Datatype**;**Explanation**
+p_mw;float;active power consumption of vsc [MW]
+q_mvar;float;reactive power consumption of vsc [MVAr]
+vm_internal_pu;float;voltage magnitude at vsc internal bus [pu]
+va_internal_degree;float;voltage angle at vsc internal bus [degree]
+vm_pu;float;voltage magnitude at vsc ac bus [pu]
+va_degree;float;voltage angle at vsc ac bus [degree]

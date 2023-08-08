@@ -1,0 +1,12 @@
+**Parameter**;**Datatype**;**Value Range**;**Explanation**
+name;string;;name of the VSC
+bus*;integer;;index of ac bus of the ac side of the VSC
+bus_dc*;integer;;index of dc bus of the dc side of the VSC
+r_ohm*;float;:math:`\geq` 0;resistance of the coupling transformer
+x_ohm*;float;:math:`\leq` 0;reactance of the coupling transformer 
+control_mode_ac*;string;; the control mode of the ac side of the VSC
+control_value_ac*;float;; the value of the controlled parameter at the ac bus 
+control_mode_dc*;string;; the control mode of the dc side of the VSC
+control_value_dc*;float;; the value of the controlled parameter at the dc bus 
+controllable*;boolean;True / False;whether the element is considered as actively controlling
+in_service*;boolean;True / False;specifies if the VSC is in service.

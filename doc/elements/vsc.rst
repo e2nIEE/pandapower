@@ -1,41 +1,37 @@
-﻿.. _ssc:
+﻿.. _vsc:
 
 ==============================================
-Static Synchronous Compensator (SSC)
+Voltage Source Converter (VSC)
 ==============================================
 
-We implement the FACTS devices based on the following source:
+We implemented VSC as part of the VSC HVDC FACTS device based on the following source:
 
     A. Panosyan, "Modeling of advanced power transmission system controllers",
     Ph.D. dissertation, Gottfried Wilhelm Leibniz Universität Hannover, 2010.
 
 
-The Static Synchronous Compensator (SSC), also known as STATCOM, is a shunt connected Flexible AC Transmission System
-(FACTS) controller. It connects an AC system to a Voltage Source Converter (VSC) through a coupling transformer.
-The SSC is used for reactive shunt compensation. Since the VSC is not connected to a power source, there is no active
-power exchange between the SSC and the AC system. Consequently, the SSC can only control the voltage magnitude of
-the AC system.
+The Voltage Source Converter (VSC), is a power electronic device used to convert alternating current (AC) to direct
+current (DC) and vice versa. It connects an AC system to a DC system. The VSC is connected with a coupling
+transformer to the ac system. In pandapower the VSC model includes the coupling transformer and considers it via
+the input parameters r\_ohm and x\_ohm.
 
 
 .. seealso::
     :ref:`Unit Systems and Conventions <conventions>`
 
-We demonstrate the use-case of this device in the
-pandapower tutorial: `FACTS <https://github.com/e2nIEE/pandapower/blob/develop/tutorials/FACTS.ipynb>`_.
-
 Create Function
 =====================
 
-.. autofunction:: pandapower.create.create_ssc
+.. autofunction:: pandapower.create.create_vsc
 
 Input Parameters
 =====================
 
-*net.ssc*
+*net.vsc*
 
 .. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.25\linewidth}|p{0.4\linewidth}|
 .. csv-table:: 
-   :file: ssc_par.csv
+   :file: vsc_par.csv
    :delim: ;
    :widths: 10, 10, 25, 40
 
@@ -46,12 +42,14 @@ Electric Model
 =================
 
 
-.. image:: ssc.png
+.. image:: vsc.png
 	:width: 12em
 	:alt: alternate Text
 	:align: center
 
-The SSC is a VSC-based shunt-connected FACTS controller and can thus be modeled as a single-terminal active component.
+Voltage Source Converters VSC are self-commutated converters to connect HVAC and HVDC systems using devices suitable
+for high power electronic applications, such as IGBTs.
+
 The corresponding terminal-admittance equation is given as:
 
 .. math::
@@ -67,10 +65,10 @@ the VSC and the ac system. :math:`\underline{V}_{VSC}` stands for the VSC output
 
 Result Parameters
 ==========================
-*net.res_ssc*
+*net.res_vsc*
 
 .. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.40\linewidth}|
 .. csv-table:: 
-   :file: ssc_res.csv
+   :file: vsc_res.csv
    :delim: ;
    :widths: 10, 10, 40
