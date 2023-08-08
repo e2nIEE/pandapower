@@ -5,7 +5,7 @@ from pandapower.io_utils import JSONSerializableClass
 
 try:
     import pandaplan.core.pplog as pplog
-except:
+except ImportError:
     import logging as pplog
 
 logger = pplog.getLogger(__name__)
@@ -31,7 +31,7 @@ class ProtectionDevice(JSONSerializableClass):
         logger.warning("Method has not been overwritten")
         return False
 
-    def protection_function(self, net):
+    def protection_function(self, net, scenario):
         logger.warning("Method has not been overwritten")
 
     def __repr__(self):

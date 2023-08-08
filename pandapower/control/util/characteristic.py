@@ -13,7 +13,7 @@ from pandapower.io_utils import JSONSerializableClass
 
 try:
     import pandaplan.core.pplog as pplog
-except:
+except ImportError:
     import logging as pplog
 
 logger = pplog.getLogger(__name__)
