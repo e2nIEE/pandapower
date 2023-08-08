@@ -11,34 +11,36 @@
 """Solves the power flow using a full Newton's method.
 """
 import numpy as np
-from numpy import float64, array, angle, sqrt, square, exp, linalg, conj, r_, Inf, arange, zeros, max, \
-    zeros_like, column_stack, flatnonzero, nan_to_num
+from numpy import float64, array, angle, sqrt, square, exp, linalg, conj, r_, Inf, arange, zeros, \
+    max, zeros_like, column_stack, flatnonzero, nan_to_num
 from scipy.sparse import csr_matrix, eye, vstack
 from scipy.sparse.linalg import spsolve
 
 from pandapower.pf.iwamoto_multiplier import _iwamoto_step
-from pandapower.pf.makeYbus_facts import makeYbus_svc, makeYbus_tcsc, makeYft_tcsc, calc_y_svc_pu,makeYbus_ssc
+from pandapower.pf.makeYbus_facts import makeYbus_svc, makeYbus_tcsc, makeYft_tcsc, calc_y_svc_pu, \
+    makeYbus_ssc
 from pandapower.pypower.makeSbus import makeSbus
 from pandapower.pf.create_jacobian import create_jacobian_matrix, get_fastest_jacobian_function
 from pandapower.pypower.idx_gen import PG
 from pandapower.pypower.idx_bus import PD, SL_FAC, BASE_KV
 from pandapower.pypower.idx_brch import BR_R, BR_X, F_BUS, T_BUS
-from pandapower.pypower.idx_brch_tdpf import BR_R_REF_OHM_PER_KM, BR_LENGTH_KM, RATE_I_KA, T_START_C, R_THETA, \
-    WIND_SPEED_MPS, ALPHA, TDPF, OUTER_DIAMETER_M, MC_JOULE_PER_M_K, WIND_ANGLE_DEGREE, SOLAR_RADIATION_W_PER_SQ_M, \
-    GAMMA, EPSILON, T_AMBIENT_C, T_REF_C
+from pandapower.pypower.idx_brch_tdpf import BR_R_REF_OHM_PER_KM, BR_LENGTH_KM, RATE_I_KA, \
+    T_START_C, R_THETA, WIND_SPEED_MPS, ALPHA, TDPF, OUTER_DIAMETER_M, MC_JOULE_PER_M_K, \
+    WIND_ANGLE_DEGREE, SOLAR_RADIATION_W_PER_SQ_M, GAMMA, EPSILON, T_AMBIENT_C, T_REF_C
 from pandapower.pypower.idx_tcsc import TCSC_F_BUS, TCSC_T_BUS, TCSC_X_L, TCSC_X_CVAR, TCSC_SET_P, \
     TCSC_THYRISTOR_FIRING_ANGLE, TCSC_STATUS, TCSC_CONTROLLABLE, TCSC_MIN_FIRING_ANGLE, \
     TCSC_MAX_FIRING_ANGLE, TCSC_PF, TCSC_QF, TCSC_PT, TCSC_QT, TCSC_IF, TCSC_IT, TCSC_X_PU
-from pandapower.pypower.idx_svc import SVC_BUS, SVC_STATUS, SVC_CONTROLLABLE, SVC_X_L, SVC_X_CVAR, SVC_X_PU, \
-    SVC_SET_VM_PU, SVC_THYRISTOR_FIRING_ANGLE, SVC_MAX_FIRING_ANGLE, SVC_MIN_FIRING_ANGLE, SVC_Q
+from pandapower.pypower.idx_svc import SVC_BUS, SVC_STATUS, SVC_CONTROLLABLE, SVC_X_L, SVC_X_CVAR, \
+    SVC_X_PU, SVC_SET_VM_PU, SVC_THYRISTOR_FIRING_ANGLE, SVC_MAX_FIRING_ANGLE, \
+    SVC_MIN_FIRING_ANGLE, SVC_Q
 from pandapower.pypower.idx_ssc import SSC_BUS, SSC_R, SSC_X, SSC_SET_VM_PU, SSC_STATUS, \
     SSC_CONTROLLABLE, SSC_Q, SSC_X_CONTROL_VM, SSC_X_CONTROL_VA, SSC_INTERNAL_BUS
 
 from pandapower.pf.create_jacobian_tdpf import calc_g_b, calc_a0_a1_a2_tau, calc_r_theta, \
     calc_T_frank, calc_i_square_p_loss, create_J_tdpf
 
-from pandapower.pf.create_jacobian_facts import create_J_modification_svc, create_J_modification_tcsc, \
-    create_J_modification_ssc
+from pandapower.pf.create_jacobian_facts import create_J_modification_svc, \
+    create_J_modification_tcsc, create_J_modification_ssc
 
 
 def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
