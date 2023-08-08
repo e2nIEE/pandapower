@@ -20,6 +20,7 @@ OC Relays can be created using the OCRelay class
     :class-doc-from: class
 
 To run protection calculations, use the calculate_protection_times function:
+
 .. autofunction:: pandapower.protection.run_protection.calculate_protection_times
 
 Kindly follow the tutorial of the Over Current Relay (OC relay) for details:
