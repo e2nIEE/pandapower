@@ -2,7 +2,6 @@ from pandapower import std_type_exists, load_std_type
 
 try:
     import matplotlib.pyplot as plt
-
     MATPLOTLIB_INSTALLED = True
 except ImportError:
     MATPLOTLIB_INSTALLED = False
@@ -10,7 +9,6 @@ except ImportError:
 import numpy as np
 from pandapower.control.util.characteristic import LogSplineCharacteristic
 from pandapower.protection.basic_protection_device import ProtectionDevice
-from pandapower.auxiliary import soft_dependency_error, ensure_iterability
 
 
 class Fuse(ProtectionDevice):
@@ -131,8 +129,6 @@ class Fuse(ProtectionDevice):
     def plot_protection_characteristic(self, net, num=35, xlabel="I [A]", ylabel="time [s]",
                                        title="Time-Current Characteristic of Fuse"):
         # plots protection characteristic for fuse
-        if not MATPLOTLIB_INSTALLED:
-            soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
         start = min(net.characteristic.at[self.characteristic_index, "object"].x_vals)
         stop = max(net.characteristic.at[self.characteristic_index, "object"].x_vals)
         c = net.characteristic.at[self.characteristic_index, "object"]

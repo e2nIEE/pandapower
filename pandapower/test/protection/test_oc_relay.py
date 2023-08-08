@@ -1,19 +1,9 @@
-import pytest
-import copy
 import numpy as np
 import pandapower as pp
-from pandapower import load_std_type, create_std_type
-from pandapower.control import plot_characteristic
-from pandapower.protection.protection_devices.fuse import Fuse
 from pandapower.protection.run_protection import calculate_protection_times
 import pandapower.shortcircuit as sc
-from pandapower.test.helper_functions import assert_net_equal
 from pandapower.protection.protection_devices.ocrelay import OCRelay
 from pandapower.protection.utility_functions import create_sc_bus
-from pandapower.protection import oc_relay_model as oc_protection
-from pandapower.protection.utility_functions import plot_tripped_grid
-from pandapower.protection.utility_functions import create_I_t_plot
-import pandas as pd
 from pandapower.protection.utility_functions import plot_tripped_grid_protection_device
 
 try:
@@ -122,7 +112,6 @@ def test_plot_tripped_grid_protection_device():
     sc.calc_sc(net_sc, bus=max(net_sc.bus.index), branch_results=True)
     protection_results = calculate_protection_times(net_sc, scenario='sc')
     plot_tripped_grid_protection_device(net_sc, protection_results, sc_bus=max(net_sc.bus.index), sc_location=0.5)
-    plt.show()
 
 
 def oc_relay_net():
