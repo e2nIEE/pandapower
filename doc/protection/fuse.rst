@@ -8,7 +8,9 @@ pandapower allows users to add fuses to networks and analyze their performance i
 
 Fuses can be created using the Fuse class:
 
-.. autofunction:: pandapower.protection.protection_devices.fuse
+.. autoclass:: pandapower.protection.protection_devices.fuse.Fuse
+    :members:
+    :class-doc-from: class
 
 To run protection calculations, use the calculate_protection_times function:
 .. autofunction:: pandapower.protection.run_protection.calculate_protection_times

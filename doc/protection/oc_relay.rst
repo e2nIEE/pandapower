@@ -14,7 +14,10 @@ To obtain the appropriate operating time for all relays, a time delay mechanism 
 
 OC Relays can be created using the OCRelay class
 
-.. autofunction:: pandapower.protection.protection_devices.oc_relay
+
+..autoclass:: pandapower.protection.protection_devices.oc_relay.OCRelay
+    :members:
+    :class-doc-from: class
 
 To run protection calculations, use the calculate_protection_times function:
 .. autofunction:: pandapower.protection.run_protection.calculate_protection_times
