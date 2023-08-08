@@ -8,6 +8,8 @@ from pandapower.protection.protection_devices.fuse import Fuse
 from pandapower.protection.run_protection import calculate_protection_times
 import pandapower.shortcircuit as sc
 from pandapower.test.helper_functions import assert_net_equal
+from pandapower.protection.utility_functions import plot_tripped_grid_protection_device
+
 
 try:
     import matplotlib.pyplot as plt
@@ -25,11 +27,8 @@ def test_protection_function():
 
     # create fault at bus 3, check that fuse melts in 0.1451 seconds
     sc.calc_sc(net, bus=3, branch_results=True)
-    print("\nnet has fault at bus 3\n")
-    print(net)
 
     protection_result = f3.protection_function(net, scenario="sc")
-    print(protection_result)
     assert protection_result['trip_melt'] == True, 'trip_melt should be True'
     assert net.protection.at[0, "object"].tripped == True, 'Fuse.tripped should be True'
     assert np.isclose(protection_result['trip_melt_time_s'],
@@ -81,6 +80,35 @@ def test_fuse_plot_protection_characteristic():
     Fuse1.plot_protection_characteristic(net)
 
 
+def test_plot_tripped_grid_protection_device1():
+    net = fuse_test_net3()  # create radial network with four switches
+
+    # create list of fuse selections, loop through in for loop
+    fuse_list = ["HV 63A", "Siemens NH-2-630", "Siemens NH-2-425", "Siemens NH-2-315", "Siemens NH-2-224"]
+
+    for k in range(5):
+        Fuse(net=net, switch_index=k, fuse_type=fuse_list[k])
+        sc.calc_sc(net, bus=k, branch_results=True)
+        protection_results = calculate_protection_times(net, scenario='sc')
+        plot_tripped_grid_protection_device(net, protection_results, sc_bus=k, sc_location=0)
+
+
+def test_plot_tripped_grid_protection_device2():
+    net = fuse_test_net4()
+    # assign fuses to switches
+    fuse_list = ['HV 25A', 'Siemens NH-2-400', 'Siemens NH-2-250', 'Siemens NH-2-224', 'Siemens NH-2-200',
+                 'Siemens NH-1-160', 'Siemens NH-1-125', 'Siemens NH-1-100', 'Siemens NH-1-80']
+    for k in range(9):
+        Fuse(net=net, switch_index=k, fuse_type=fuse_list[k])
+
+    # perform short circuit calculation at bus 2
+    sc.calc_sc(net, bus=3, branch_results=True)
+
+    # calculate protection times
+    protection_results = calculate_protection_times(net, scenario='sc')
+    plot_tripped_grid_protection_device(net, protection_results, sc_location=0, sc_bus=3)
+
+
 def test_create_fuse_from_std_type():
     # figure out a clean way to create fuses from std type library
     net = fuse_test_net2()
@@ -109,7 +137,6 @@ def test_calc_prot_times_with_std_lib():
         sc.calc_sc(net_sc, bus=row_index, branch_results=True)
         print("\nnet_sc has fault at bus " + str(row_index) + '\n')
         df_protection_results = calculate_protection_times(net_sc)
-        print(df_protection_results)
 
 
 def test_calc_prot_times_pp_scenario():
@@ -243,7 +270,7 @@ def fuse_test_net3():
     # network with transformer to test HV fuse curve_select
     net = pp.create_empty_network()
     # create buses
-    pp.create_buses(net, nr_buses=4, vn_kv=[20, 0.4, 0.4, 0.4, 0.4], index=[0, 1, 2, 3, 4], name=None, type="n",
+    pp.create_buses(net, nr_buses=5, vn_kv=[20, 0.4, 0.4, 0.4, 0.4], index=[0, 1, 2, 3, 4], name=None, type="n",
                     geodata=[(0, 0), (0, -2), (0, -4), (0, -6), (0, -8)])
     # create external grid
     pp.create_ext_grid(net, 0, vm_pu=1.0, va_degree=0, s_sc_max_mva=100, s_sc_min_mva=50, rx_max=0.1, rx_min=0.1)
@@ -424,7 +451,7 @@ def fuse_test_net4():
     pp.create_switch(net, bus=6, element=7, et='l', type="CB", closed=False)
 
     # define load
-    pp.create_loads(net, buses=[3, 4], p_mw=[0.1, 0.05], q_mvar=0, const_z_percent=0, const_i_percent=0, name=None,
+    pp.create_loads(net, buses=[4, 8], p_mw=[0.1, 0.05], q_mvar=0, const_z_percent=0, const_i_percent=0, name=None,
                     index=[0, 1])
 
     return net

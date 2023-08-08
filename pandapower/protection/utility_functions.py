@@ -229,7 +229,7 @@ def fuse_bus_switches(net, bus_switches):
     return net
 
 
-def plot_tripped_grid(net, trip_decisions, sc_location, bus_size = 0.055,plot_annotations=True):
+def plot_tripped_grid(net, trip_decisions, sc_location, bus_size = 0.055, plot_annotations=True):
     # plot the tripped grid of net_sc
     if MPLCURSORS_INSTALLED:
         mplcursors.cursor(hover=False)
@@ -432,6 +432,227 @@ def plot_tripped_grid(net, trip_decisions, sc_location, bus_size = 0.055,plot_an
         collection.append(switch_annotate)
     plot.draw_collections(collection)
 
+
+def plot_tripped_grid_protection_device(net, trip_decisions, sc_location, sc_bus, bus_size=0.055, plot_annotations=True):
+    # plot the tripped grid of net_sc with networks using ProtectionDevice class
+    if MPLCURSORS_INSTALLED:
+        mplcursors.cursor(hover=False)
+
+    # plot grid and color the according switches - instantaneous tripping red, int backup tripping orange and tripping_time_auto backuo-yellow
+
+    ext_grid_busses = net.ext_grid.bus.values
+    fault_location = [max(net.bus.index)]
+
+    lc = plot.create_line_collection(net, lines = net.line.index, zorder=0)
+
+    bc_extgrid = plot.create_bus_collection(net, buses = ext_grid_busses, zorder=1, size = bus_size, patch_type = "rect")
+
+    bc = plot.create_bus_collection(net, buses = set(net.bus.index) - set(ext_grid_busses) - set(fault_location), zorder=2, color = "black", size = bus_size)
+
+    bc_fault_location = plot.create_bus_collection(net, buses = set(fault_location), zorder=3, color = "red", size = bus_size, patch_type = "circle")
+
+    collection = [lc, bc_extgrid, bc, bc_fault_location ]
+
+    tripping_times = []
+
+    for trip_idx in range(len(trip_decisions)):
+       trip_time= trip_decisions.trip_melt_time_s.at[trip_idx]
+       tripping_times.append(trip_time)
+    tripping_times = [v for v in tripping_times if not isinf(v)]
+    if len(tripping_times) == 0:
+        return
+    backup_tripping_times=copy.deepcopy(tripping_times)
+    backup_tripping_times.remove(min(backup_tripping_times)) and backup_tripping_times.remove(heapq.nsmallest(2,backup_tripping_times)[-1])
+
+    inst_trip_switches = []
+    backup_trip_switches = []
+    inst_backup_switches=[]
+    bus_bus_switches = net.switch.index[net.switch.et == "b"]
+
+    # add trafo to collection
+    if len(net.trafo) > 0:
+        trafo_collection = plot.create_trafo_collection(net, size=2*bus_size)
+        trafo_conn_collection = plot.create_trafo_connection_collection(net)
+        collection.append(trafo_collection)
+        collection.append(trafo_conn_collection)
+    # add load to collection
+    if len(net.load) > 0:
+        load_collection = plot.create_load_collection(net, size=2*bus_size)
+        collection.append(load_collection)
+
+    for trip_idx in range(len(trip_decisions)):
+       trip_decision = trip_decisions.iloc[[trip_idx]]
+       switch_id = trip_decision.switch_id.at[trip_idx]
+       trip = trip_decision.trip_melt.at[trip_idx]
+       trip_time=trip_decision.trip_melt_time_s.at[trip_idx]
+
+       if trip_time== heapq.nsmallest(2,tripping_times)[-1]:
+               inst_backup_switches.append(switch_id)
+
+       if trip_time==min(tripping_times):
+               inst_trip_switches.append(switch_id)
+
+       if trip_time in backup_tripping_times and trip==True:
+
+           backup_trip_switches.append(switch_id)
+
+    dist_to_bus = bus_size * 3.25
+
+    #Inst relay trip, red colour
+    if  len(inst_trip_switches)>0:
+
+        sc_inst = plot.create_line_switch_collection(net, size = bus_size, distance_to_bus = dist_to_bus, color = "red", switches = set(inst_trip_switches) - set(bus_bus_switches))
+        bb_inst = plot.create_bus_bus_switch_collection(net, size=bus_size, helper_line_color="red")
+        collection.append(sc_inst)
+        collection.append(bb_inst)
+
+    #backup relay based on time grade (yellow colour)
+    if len(backup_trip_switches) > 0:
+
+        sc_backup = plot.create_line_switch_collection(net, size=bus_size, distance_to_bus=dist_to_bus, color="yellow", switches = backup_trip_switches)
+        bb_backup = plot.create_bus_bus_switch_collection(net, size=bus_size, helper_line_color="yellow")
+        collection.append(sc_backup)
+        collection.append(bb_backup)
+
+    # orange colour for inst_backup relay
+    if len(inst_backup_switches)>0:
+
+        instant_sc_backup = plot.create_line_switch_collection(net, size=bus_size, distance_to_bus=dist_to_bus, color="orange", switches = inst_backup_switches)
+        instant_bb_backup = plot.create_bus_bus_switch_collection(net, size=bus_size, helper_line_color="orange")
+        collection.append(instant_sc_backup)
+
+    len_sc=len( set(net.switch.index) - set(inst_trip_switches)- set(backup_trip_switches))
+
+    if len_sc != 0:
+
+        #closed switch-black
+        sc = plot.create_line_switch_collection(net, size = bus_size, distance_to_bus = dist_to_bus, color = "black",
+                                            switches = set(net.switch.index) - set(inst_trip_switches)- set(backup_trip_switches) - set(bus_bus_switches))
+        bb = plot.create_bus_bus_switch_collection(net, size = bus_size, helper_line_color="black")
+
+        collection.append(sc)
+        collection.append(bb)
+
+    #make annotations optional (if True then annotate else only plot)
+    if plot_annotations:
+        # line annotations
+        line_text=[]
+        line_geodata=[]
+
+        #for Switches in trip_decisions:
+        for line in net.line.index:
+
+            if line== max(net.line.index):
+                break
+
+            #annotate line_id
+            text_line = r"  line_"+str(line)#+ ",sw_"+str(Switch_index)
+
+            #get bus_index from the line (from switch)
+            get_bus_index= pp.get_connected_buses_at_element(net, element_index=line, element_type='l', respect_in_service=False)
+
+            bus_list=list(get_bus_index)
+
+            #place annotations on middle of the line
+            line_geo_x=(net.bus_geodata.iloc[bus_list[0]].x+ net.bus_geodata.iloc[bus_list[1]].x)/2
+
+            line_geo_y=((net.bus_geodata.iloc[bus_list[0]].y+ net.bus_geodata.iloc[bus_list[1]].y)/2)+0.05
+
+            line_geo_x_y=[line_geo_x,line_geo_y]
+
+            # list of new geo data for line (half position of switch)
+            line_geodata.append(tuple(line_geo_x_y))
+
+
+            fault_current= round(net.res_bus_sc['ikss_ka'].at[sc_bus],2)  #round(Switches['Fault Current'],2)
+
+            line_text.append(text_line)
+
+        #line annotations to collections for plotting
+        line_annotate=plot.create_annotation_collection( texts=line_text, coords=line_geodata, size=0.06, prop=None)
+        collection.append(line_annotate)
+
+        #Bus Annotatations
+        bus_text=[]
+        for i in net.bus_geodata.index:
+            bus_texts='bus_'+str(i)
+
+            bus_text.append(bus_texts)
+
+        bus_text=bus_text[:-1]
+
+        bus_geodata = net.bus_geodata[['x', 'y']]
+
+        #placing bus
+        bus_geodata['x'] = bus_geodata['x'] - 0.11
+        bus_geodata['y'] = bus_geodata['y'] + 0.095
+
+        bus_index= [tuple(x) for x in bus_geodata.to_numpy()]
+        bus_annotate=plot.create_annotation_collection( texts=bus_text, coords=bus_index, size=0.06, prop=None)
+        collection.append(bus_annotate)
+
+        # Short circuit annotations
+        fault_geodata=[]
+
+        fault_text=[]
+
+        fault_texts='    I_sc = '+str(fault_current)+'kA'
+
+        font_size_bus=0.06  # font size of fault location  text
+
+        fault_geo_x=net.bus_geodata.iloc[max(net.bus_geodata.index)][0]
+        fault_geo_y=net.bus_geodata.iloc[max(net.bus_geodata.index)][1]-font_size_bus+0.02
+
+        fault_geo_x_y=[fault_geo_x,fault_geo_y]
+
+        # list of new geo data for line (half position of switch)
+        fault_geodata.append(tuple(fault_geo_x_y))
+
+        fault_text.append(fault_texts)
+        fault_annotate=plot.create_annotation_collection( texts=fault_text, coords=fault_geodata, size=0.06, prop=None)
+
+        collection.append(fault_annotate)
+
+        # sc_location annotation
+        sc_text=[]
+        sc_geodata=[]
+
+        sc_texts='   sc_location: '+str(sc_location*100)+'%'
+
+        #font_size_bus=0.06  # font size of sc location
+
+        sc_geo_x=net.bus_geodata.iloc[max(net.bus_geodata.index)][0]
+
+        sc_geo_y=net.bus_geodata.iloc[max(net.bus_geodata.index)][1]+0.02
+
+        sc_geo_x_y=[sc_geo_x,sc_geo_y]
+
+        # list of new geo data for line (middle of  position of switch)
+        sc_geodata.append(tuple(sc_geo_x_y))
+
+        sc_text.append(sc_texts)
+        sc_annotate=plot.create_annotation_collection( texts=sc_text, coords=sc_geodata, size=0.06, prop=None)
+
+        collection.append(sc_annotate)
+
+        # switch annotations
+        #from pandapower.protection.implemeutility_functions import switch_geodata
+        switch_text=[]
+        for switch_id in trip_decisions.switch_id:
+
+            text_switch= r"sw_"+str(switch_id)
+            switch_text.append(text_switch)
+
+        switch_geodata= switch_geodatas(net, size= bus_size, distance_to_bus=3.25* bus_size)
+        i=0
+        for i in range(len(switch_geodata)):
+
+            switch_geodata[i]['x'] = switch_geodata[i]['x'] - 0.085  #scale the value if annotations overlap
+            switch_geodata[i]['y'] = switch_geodata[i]['y'] + 0.055  #scale the value if annotations overlap
+            i=i+1
+        switch_annotate=plot.create_annotation_collection( texts=switch_text, coords=switch_geodata, size=0.06, prop=None)
+        collection.append(switch_annotate)
+    plot.draw_collections(collection)
 
 def calc_line_intersection(m1, b1, m2, b2):
     xi = (b1-b2) / (m2-m1)

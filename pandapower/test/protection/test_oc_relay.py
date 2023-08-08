@@ -14,6 +14,7 @@ from pandapower.protection import oc_relay_model as oc_protection
 from pandapower.protection.utility_functions import plot_tripped_grid
 from pandapower.protection.utility_functions import create_I_t_plot
 import pandas as pd
+from pandapower.protection.utility_functions import plot_tripped_grid_protection_device
 
 try:
     import matplotlib.pyplot as plt
@@ -37,6 +38,7 @@ def test_oc_relay_dtoc():
     assert protection_results.trip_melt_time_s.at[4] == 0.07
 
 
+
 def test_oc_relay_idmt():
     net = oc_relay_net()
     net.switch.type = 'CB_IDMT'
@@ -50,6 +52,7 @@ def test_oc_relay_idmt():
     assert np.isclose(protection_results.trip_melt_time_s.at[0], 4.8211)
     assert np.isclose(protection_results.trip_melt_time_s.at[2], 4.3211)
     assert np.isclose(protection_results.trip_melt_time_s.at[4], 3.8211)
+
 
 def test_oc_relay_idtoc():
     net = oc_relay_net()
@@ -107,6 +110,19 @@ def test_select_k_alpha():
     for q in range(6):
         assert net.protection.object.at[q].k == k_list[q]
         assert net.protection.object.at[q].alpha == alpha_list[q]
+
+
+def test_plot_tripped_grid_protection_device():
+    net = oc_relay_net()
+
+    for k in range(6):
+        OCRelay(net, switch_index=k, oc_relay_type='DTOC', time_settings=[0.07, 0.5, 0.3])
+
+    net_sc = create_sc_bus(net, sc_line_id=2, sc_fraction=0.5)
+    sc.calc_sc(net_sc, bus=max(net_sc.bus.index), branch_results=True)
+    protection_results = calculate_protection_times(net_sc, scenario='sc')
+    plot_tripped_grid_protection_device(net_sc, protection_results, sc_bus=max(net_sc.bus.index), sc_location=0.5)
+    plt.show()
 
 
 def oc_relay_net():

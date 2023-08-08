@@ -1,6 +1,9 @@
 import copy
-
-from pandapower import std_type_exists, load_std_type
+import numpy as np
+from pandapower.protection.basic_protection_device import ProtectionDevice
+import pandapower.shortcircuit as sc
+from pandapower.protection.oc_relay_model import time_grading
+from pandapower.protection.utility_functions import create_sc_bus
 
 try:
     import matplotlib.pyplot as plt
@@ -9,17 +12,76 @@ try:
 except ImportError:
     MATPLOTLIB_INSTALLED = False
 
-import numpy as np
-from pandapower.control.util.characteristic import LogSplineCharacteristic
-from pandapower.protection.basic_protection_device import ProtectionDevice
-from pandapower.auxiliary import soft_dependency_error, ensure_iterability
-import pandapower.shortcircuit as sc
-from pandapower.protection.oc_relay_model import time_grading
-from pandapower.protection.utility_functions import create_sc_bus, bus_path_multiple_ext_bus, get_line_path,get_line_idx,get_bus_idx,\
-                                                    parallel_lines, plot_tripped_grid, create_I_t_plot
-
-
 class OCRelay(ProtectionDevice):
+    """
+    OC Relay used in circuit protection
+
+    INPUT:
+        **net** (attrdict) - pandapower net
+
+        **switch_index** (int) - index of the switch that the relay acts upon
+
+        **oc_relay_type** (str) - string specifying the type of over-current protection. Must be either "DTOC", "IDMT",
+        or "IDTOC".
+
+        **time_settings** (list of DataFrame) - If given as a list, the time grading will be calculated based on
+        topological grid search, and manual tripping time can be provided as a dataframe by respecting the column names.
+
+                For DTOC:
+                time_settings =[t>>, t>, t_diff] or Dataframe columns as 'switch_id', 't_gg', 't_g'
+
+                - t>> (t_gg): instantaneous tripping time in seconds
+                - t> (t_g):  primary backup tripping time in seconds,
+                - t_diff: time grading delay difference in seconds
+
+
+                For IDMT:
+                time_settings =[tms, t_grade] or Dataframe columns as 'switch_id', 'tms', 't_grade'
+
+                - tms: time multiplier settings in seconds
+                - t_grade:  time grading delay difference in seconds
+
+                For IDTOC:
+                time_settings =[t>>, t>, t_diff, tms,t_grade] or Dataframe columns as 'switch_id', 't_gg', 't_g','tms', 't_grade'
+
+                - t>> (t_gg): instantaneous tripping time in seconds
+                - t> (t_g):  primary backup tripping time in seconds,
+                - t_diff: time grading delay difference in seconds
+                - tms: time multiplier settings in seconds
+                - t_grade:  time grading delay difference in seconds
+
+        **overload_factor** - (float, 1.25)- Allowable overloading on the line used to calculate the pick-up current
+
+        **ct_current_factor** -(float, 1.2) - Current multiplication factor to calculate the pick-up current
+
+        **safety_factor** -(float, 1) - Safety limit for the instantaneous pick-up current
+
+        **inverse_overload_factor** -(float, 1.2)- Allowable inverse overloading to define the pick-up current in IDMT
+        relay
+
+        **pickup_current_manual** - (DataFrame, None) - User-defined relay trip currents can be given as a dataframe.
+
+                DTOC: Dataframe with columns as 'switch_id', 'I_gg', 'I_g'
+
+                IDMT: Dataframe with columns as 'switch_id', 'I_s'
+
+                IDTOC: Dataframe with columns as 'switch_id', 'I_gg', 'I_g', 'I_s'
+
+        **in_service** (bool, True) - specify whether relay is in service
+
+        **overwrite** (bool, True) - specify whether this oc relay should overwrite existing protection devices acting
+        on the switch
+
+        **sc_fraction** (float, 0.95) - Maximum possible extent to which the short circuit can be created on the line
+
+        **curve_type** (str, 'standard_inverse') - specify the type of curve used in IDMT and IDTOC.
+
+            Curve type can be:
+                 - 'standard_inverse'
+                 - 'very_inverse',
+                 - 'extremely_inverse',
+                 - 'long_inverse'
+    """
 
     def __init__(self, net, switch_index, oc_relay_type, time_settings, overload_factor=1.2, ct_current_factor=1.25,
                  safety_factor=1, inverse_overload_factor=1.2, pickup_current_manual=None, in_service=True,
@@ -35,6 +97,7 @@ class OCRelay(ProtectionDevice):
         self.pickup_current_manual = pickup_current_manual
         self.sc_fraction = sc_fraction
         self.curve_type = curve_type
+        self.kwargs = kwargs
 
         self.activation_parameter = "i_ka"
         self.tripped = False
@@ -180,8 +243,8 @@ class OCRelay(ProtectionDevice):
                              "trip_melt_time_s": act_time_s}
         return protection_result
 
-    def plot_protection_characteristic(self, net, num=35, xlabel="I [A]", ylabel="time [s]", xmin=10, xmax=1000, ymin=0.01, ymax=10000,
-                                       title="Time-Current Characteristic of OC Relay"):
+    def plot_protection_characteristic(self, net, num=35, xlabel="I [A]", ylabel="time [s]", xmin=10, xmax=10000,
+                                       ymin=0.01, ymax=10000, title="Time-Current Characteristic of OC Relay "):
 
         if self.oc_relay_type == 'DTOC':
             plt.loglog(0, 0)
