@@ -3,6 +3,8 @@ Change Log
 
 [upcoming release] - 2023-..-..
 -------------------------------
+- [ADDED] patches for PV-plants (:code:`sgen.type = "PV"`) and Windturbines (:code:`sgen.type = "WT"`) to :code:`simple_plot`
+- [ADDED] Documentation for running powerflow using power-grid-model
 - [ADDED] exporting to :code:`GeoJSON` with all properties from :code:`bus`, :code:`res_bus` and :code:`line`, :code:`res_line`
 - [ADDED] function to run powerflow using the power-grid-model library
 - [FIXED] short-circuit calculation: wrong results when :code:`ext_grid` and :code:`gen` elements are connected to the same bus
@@ -20,6 +22,7 @@ Change Log
 - [FIXED] fixed bug in :code:`cim2pp.build_pp_net` when controller for gen is at TopologicalNode instead of ConnectivityNode
 - [CHANGED] adjust default iterations for runpp_3ph
 - [CHANGED] always convert RATE_A to ppc in build_branch (not only when mode == 'opf' as before)
+
 
 
 [2.13.1] - 2023-05-12
