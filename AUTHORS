@@ -2,16 +2,19 @@ Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Ene
 and Energy System Technology (IEE), Kassel. All rights reserved.
 
 pandapower is maintained and developed by a community on `GitHub <https://github.com/e2nIEE/pandapower>`_. Lists of maintainers and contributors can be found here:
+ - `All Contributors <https://github.com/e2nIEE/pandapower/graphs/contributors>`_
  - `pandapower Maintainers <https://github.com/orgs/e2nIEE/teams/pandapower-maintainers>`_
- - `Contributors <https://github.com/e2nIEE/pandapower/graphs/contributors>`_
 
-Previous list of Contributions:
+
+Previous list of Contributors:
     - Leon Thurner
     - Alexander Scheidler
     - Julian Dollichon
     - Florian Schäfer
     - Friederike Meier
     - Jan-Hendrik Menke
+    - Steffen Meinecke
+    - Roman Bolgaryn
     - Jakov Krstulović Opara
     - Winfried Lorenzen
     - Tobias Deß
