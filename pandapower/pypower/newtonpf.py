@@ -299,7 +299,8 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         if tdpf:
             # update the R, g, b for the tdpf_lines, and the Y-matrices
             branch[tdpf_lines, BR_R] = r = r_ref_pu * (1 + alpha_pu * (T - t_ref_pu))
-            Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)  # todo expansion with SSC
+            # todo expansion with SSC and VSC (that are not controllable)
+            Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
             g, b = calc_g_b(r, x)
 
         # todo: adjust the SSC J function to take care about the Ybus_ssc_not_controllable instead
@@ -345,12 +346,9 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
             x_control_svc[svc_controllable] += dx[j6:j6a]
         if any_tcsc_controllable:
             x_control_tcsc[tcsc_controllable] += dx[j6a:j6b]
-        # if any_ssc_controllable:
-        #     x_control_ssc[ssc_controllable] += dx[j6b:j6c]
-        #     x_control_ssc[ssc_controllable] += dx[j6c:j6d]
 
         if tdpf:
-            T = T + dx[j8:][tdpf_lines]  # todo check here if it is still correct
+            T = T + dx[j8:][tdpf_lines]
 
         # iwamoto multiplier to increase convergence
         if iwamoto and not tdpf:
@@ -404,8 +402,8 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         svc[svc_idx, SVC_X_PU] = 1 / y_svc_pu
 
     Yf_tcsc, Yt_tcsc = makeYft_tcsc(Ybus_tcsc, tcsc_fb, tcsc_tb)
+    # todo: move to pf.run_newton_raphson_pf.ppci_to_pfsoln
     if any_tcsc:
-        # todo: move to pf.run_newton_raphson_pf.ppci_to_pfsoln
         baseI = baseMVA / (bus[tcsc_tb, BASE_KV] * sqrt(3))
         i_tcsc_f = Yf_tcsc.dot(V)
         i_tcsc_t = Yt_tcsc.dot(V)
@@ -420,6 +418,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         tcsc[tcsc_branches, TCSC_IT] = np.abs(i_tcsc_t) * baseI
         tcsc[tcsc_branches, TCSC_X_PU] = 1 / calc_y_svc_pu(x_control_tcsc, tcsc_x_l_pu, tcsc_x_cvar_pu)
 
+    # todo: move to pf.run_newton_raphson_pf.ppci_to_pfsoln
     if any_ssc:
         Yf_ssc, Yt_ssc = makeYft_tcsc(Ybus_ssc, ssc_fb, ssc_tb)
         s_ssc_f = conj(Yf_ssc.dot(V)) * V[ssc_fb] * baseMVA
