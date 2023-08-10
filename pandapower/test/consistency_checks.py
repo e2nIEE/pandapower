@@ -37,6 +37,7 @@ def runpp_pgm_3ph_with_consistency_checks(net):
     return True
 
 def consistency_checks(net, rtol=1e-3, test_q=True):
+    # todo checks for the DC system
     indices_consistent(net)
     branch_loss_consistent_with_bus_feed_in(net, rtol)
     element_power_consistent_with_bus_power(net, rtol, test_q)

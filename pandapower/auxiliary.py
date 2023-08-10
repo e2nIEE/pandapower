@@ -1072,6 +1072,10 @@ def _check_lightsim2grid_compatibility(net, lightsim2grid, voltage_depend_loads,
             return False
         raise NotImplementedError("option 'lightsim2grid' is True and VSC controllable shunt elements are present, "
                                   "VSC controllable shunt elements not implemented.")
+    if len(net.bus_dc):
+        if lightsim2grid == "auto":
+            return False
+        raise NotImplementedError("option 'lightsim2grid' is True and DC buses are present, DC buses not implemented.")
 
     return True
 
@@ -1385,9 +1389,15 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
 
     default_max_iteration = {"nr": 10, "iwamoto_nr": 10, "bfsw": 100, "gs": 10000, "fdxb": 30,
                              "fdbx": 30}
-    with_ssc = len(net.ssc.query("in_service & controllable")) > 0
+    with_ssc = len(net.ssc.query("in_service & controllable")) > 0 or \
+               len(net.vsc.query("in_service & controllable")) > 0
     with_facts = len(net.svc.query("in_service & controllable")) > 0 or \
                  len(net.tcsc.query("in_service & controllable")) > 0 or with_ssc
+
+    if with_facts and algorithm != "nr":
+        if algorithm != 'nr':
+            raise NotImplementedError('FACTS devices only implemented for Newton Raphson algorithm.')
+
     if max_iteration == "auto":
         # tdpf is an option rather than algorithm; svc need more iterations to converge
         max_iteration = 30 if tdpf or with_facts else default_max_iteration[algorithm]

@@ -25,6 +25,7 @@ VSC_X_CONTROL_VA = 10  # va degrees
 VSC_X_CONTROL_VM = 11  # (p.u)  vm
 VSC_P = 12  # result for P
 VSC_Q = 13  # result for Q
-VSC_INTERNAL_BUS = 14
+VSC_P_DC = 14  # result for P
+VSC_INTERNAL_BUS = 15
 
-vsc_cols = 15
+vsc_cols = 16

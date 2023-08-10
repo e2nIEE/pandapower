@@ -679,7 +679,7 @@ def _build_ssc_ppc(net, ppc, mode):
         ssc[f:t, SSC_X_CONTROL_VA] = np.deg2rad(net["ssc"]["va_internal_degree"].values)
         ssc[f:t, SSC_X_CONTROL_VM] = net["ssc"]["vm_internal_pu"].values
 
-        ssc[f:t, SSC_STATUS] = net["ssc"]["in_service"].values
+        ssc[f:t, SSC_STATUS] = net._is_elements["ssc"].astype(np.int64)
         ssc[f:t, SSC_CONTROLLABLE] = controllable & net["ssc"]["in_service"].values.astype(bool)
         ppc["bus"][aux["ssc"][~controllable], BUS_TYPE] = PV
         ppc["bus"][aux["ssc"][~controllable], VM] = net["ssc"].loc[~controllable, "vm_internal_pu"].values
@@ -734,7 +734,7 @@ def _build_vsc_ppc(net, ppc, mode):
     vsc[f:t, VSC_MODE_DC] = mode_dc_code
     vsc[f:t, VSC_VALUE_DC] = np.where(mode_dc_code == 0, value_dc, value_dc / baseMVA)
 
-    vsc[f:t, VSC_STATUS] = net["vsc"]["in_service"].values
+    vsc[f:t, VSC_STATUS] = net._is_elements["vsc"].astype(np.int64)
     vsc[f:t, VSC_CONTROLLABLE] = controllable & net["vsc"]["in_service"].values.astype(bool)
     ppc["bus"][aux["vsc"][~controllable], BUS_TYPE] = PV
     # maybe we add this in the future

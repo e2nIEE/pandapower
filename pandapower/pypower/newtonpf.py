@@ -20,7 +20,7 @@ from pandapower import VSC_STATUS, VSC_BUS, VSC_INTERNAL_BUS
 from pandapower.pf.iwamoto_multiplier import _iwamoto_step
 from pandapower.pf.makeYbus_facts import makeYbus_svc, makeYbus_tcsc, makeYft_tcsc, calc_y_svc_pu, makeYbus_ssc_vsc, \
     makeYbus_hvdc
-from pandapower.pypower.idx_bus_dc import DC_PD
+from pandapower.pypower.idx_bus_dc import DC_PD, DC_VM, DC_BUS_TYPE, DC_NONE
 from pandapower.pypower.idx_vsc import VSC_CONTROLLABLE, VSC_MODE_AC, VSC_VALUE_AC, VSC_MODE_DC, VSC_VALUE_DC, VSC_R, \
     VSC_X, VSC_Q, VSC_P, VSC_BUS_DC
 from pandapower.pypower.makeSbus import makeSbus
@@ -504,7 +504,9 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     if any_hvdc:
         # Yf_hvdc, Yt_hvdc = makeYft_tcsc(Ybus_hvdc, hvdc_fb, hvdc_tb)
         Pbus_dc = V_dc * Ybus_hvdc.dot(V_dc)
-        bus_dc[:, DC_PD] = Pbus_dc
+        relevant_bus_dc = flatnonzero(bus_dc[:, DC_BUS_TYPE] != DC_NONE)
+        bus_dc[relevant_bus_dc, DC_PD] = Pbus_dc
+        bus_dc[relevant_bus_dc, DC_VM] = V_dc
 
     # todo: remove this
     # Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
@@ -581,13 +583,14 @@ def _evaluate_Fx_facts(V,pq ,svc_buses=None, svc_set_vm_pu=None, tcsc_controllab
         mis_hvdc = Pbus_hvdc - P_dc
         mis_facts = np.r_[mis_facts, mis_hvdc[dc_p]]
         # todo: remove print
-        print("F:", mis_hvdc, "V:", V_dc, "P:", Pbus_hvdc)
+        print("F:", mis_hvdc, "V_dc:", V_dc, "P:", Pbus_hvdc)
 
         # coupling of P with SSC happens here:
         Sbus_vsc = V * conj(Ybus_vsc * V)
         vsc_set_p_pu = np.array([-Pbus_hvdc[0], -P_dc[1]], dtype=np.float64)  # power sign convention issue
         ####  here used ssc_tb refereing to the q bus
         mis_vsc_p = Sbus_vsc[vsc_tb[vsc_controllable]].real - vsc_set_p_pu
+        # todo: adjust the lookup to work with 1) VSC at ext_grid bus 2) only 1 VSC connected to HVDC line
         old_F[-len(pq) * 2 + pq_lookup[vsc_tb]] = mis_vsc_p
 
 

@@ -17,6 +17,7 @@ from pandapower.build_bus import _calc_pq_elements_and_add_on_ppc, \
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS, RATE_A
 from pandapower.pypower.idx_bus import PD, QD
 from pandapower.pd2ppc import _pd2ppc
+from pandapower.pypower.idx_bus_dc import DC_PD
 from pandapower.pypower.makeSbus import _get_Sbus, _get_Cg, makeSbus
 from pandapower.pf.pfsoln_numba import pfsoln as pfsoln_full, pf_solution_single_slack
 from pandapower.powerflow import LoadflowNotConverged, _add_auxiliary_elements
@@ -117,11 +118,14 @@ class TimeSeriesRunpp:
         bus_pq = np.zeros(shape=(len(net["bus"].index), 2), dtype=float)
         bus_pq[net_bus_idx, 0] = ppc["bus"][ppc_bus_idx, PD] * 1e3
         bus_pq[net_bus_idx, 1] = ppc["bus"][ppc_bus_idx, QD] * 1e3
+        bus_p_dc = np.zeros(shape=(len(net["bus_dc"].index), 1), dtype=np.float64)
+        bus_dc_lookup_aranged = _get_aranged_lookup(net, "bus_dc")
+        bus_p_dc[bus_dc_lookup_aranged, 0] = ppc["bus_dc"][:, DC_PD]  # todo test this
 
         bus_lookup_aranged = _get_aranged_lookup(net)
         _get_gen_results(net, ppc, bus_lookup_aranged, bus_pq)
         _get_bus_results(net, ppc, bus_pq)
-        _get_bus_dc_results(net, ppc, bus_p_dc)
+        _get_bus_dc_results(net, bus_p_dc)
 
         net["res_bus"].index = net["bus"].index
 

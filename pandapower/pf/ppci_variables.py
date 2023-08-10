@@ -15,8 +15,7 @@ def _get_pf_variables_from_ppci(ppci):
     # ppopt = ppoption(ppopt)
 
     # get data for calc
-    baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc = \
-        ppci["baseMVA"], ppci["bus"], ppci["gen"], ppci["branch"], ppci["svc"], ppci["tcsc"], ppci["ssc"], ppci["vsc"]
+    bus, gen = ppci["bus"], ppci["gen"]
 
     ## get bus index lists of each type of bus
     ref, pv, pq = bustypes(bus, gen)
@@ -31,7 +30,8 @@ def _get_pf_variables_from_ppci(ppci):
     V0[gbus] = gen[on, VG] / abs(V0[gbus]) * V0[gbus]
 
     ref_gens = ppci["internal"]["ref_gens"]
-    return baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, ref, pv, pq, on, gbus, V0, ref_gens
+    return ppci["baseMVA"], bus, gen, ppci["branch"], ppci["svc"], ppci["tcsc"], ppci["ssc"], ppci["vsc"], \
+        ref, pv, pq, on, gbus, V0, ref_gens
 
 
 def _store_results_from_pf_in_ppci(ppci, bus, gen, branch, success, iterations, et):

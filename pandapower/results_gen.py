@@ -7,6 +7,7 @@
 import numpy as np
 from numpy import complex128
 from pandapower.pypower.idx_bus import VM, VA,BASE_KV
+from pandapower.pypower.idx_bus_dc import DC_PD
 from pandapower.pypower.idx_gen import PG, QG, GEN_BUS
 
 from pandapower.auxiliary import _sum_by_group, sequence_to_phase, _sum_by_group_nvals, \
@@ -69,6 +70,27 @@ def _get_gen_results_3ph(net, ppc0, ppc1, ppc2, bus_lookup_aranged, pq_bus):
     pq_bus[b_ppc, 3] -= qB_sum
     pq_bus[b_ppc, 4] -= pC_sum
     pq_bus[b_ppc, 5] -= qC_sum
+
+
+def _get_dc_slack_results(net, ppc, bus_dc_lookup_aranged, bus_p_dc):
+    ac = net["_options"]["ac"]
+
+    eg_end = sum(net['ext_grid'].in_service)
+    gen_end = eg_end + len(net['gen'])
+
+    vsc_slack = net["_is_elements"]['vsc'] & (net.vsc.control_mode_dc == "vm_pu")
+    bus_dc_slack = net.vsc.loc[vsc_slack, "bus_dc"].values
+
+    if len(bus_dc_slack) > 0:
+        p = ppc["bus_dc"][bus_dc_lookup_aranged[bus_dc_slack], DC_PD]
+        net.res_vsc.loc[vsc_slack, "p_dc_mw"] = -p
+        net["res_vsc"].index = net['vsc'].index
+    else:
+        p = []  # np.array([])
+
+    b_sum, p_sum, _ = _sum_by_group(bus_dc_slack, p, p)
+    b = bus_dc_lookup_aranged[b_sum.astype(np.int64)]
+    bus_p_dc[b, 0] -= p_sum
 
 
 def _get_ext_grid_results(net, ppc):

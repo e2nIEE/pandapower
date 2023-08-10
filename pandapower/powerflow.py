@@ -54,7 +54,7 @@ def _powerflow(net, **kwargs):
 
     net["converged"] = False
     net["OPF_converged"] = False
-    _add_auxiliary_elements(net)
+    _add_auxiliary_elements(net)  # create gen elements for start and end buses of dcline
 
     if not ac or net["_options"]["init_results"]:
         verify_results(net)

@@ -412,6 +412,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                              ("va_degree", "f8")],
         "_empty_res_vsc":   [("p_mw", "f8"),
                              ("q_mvar", "f8"),
+                             ("p_dc_mw", "f8"),
                              ("vm_internal_pu", "f8"),
                              ("va_internal_degree", "f8"),
                              ("vm_pu", "f8"),
