@@ -680,7 +680,7 @@ def create_bus_dc(net, vn_kv, name=None, index=None, geodata=None, type="b", zon
                in_service=True, max_vm_pu=nan, min_vm_pu=nan, coords=None, **kwargs):
     """
     todo docstrings
-    Adds one bus in table net["bus"].
+    Adds one bus in table net["bus_dc"].
 
     Busses are the nodes of the network that all other elements connect to.
 
@@ -690,7 +690,7 @@ def create_bus_dc(net, vn_kv, name=None, index=None, geodata=None, type="b", zon
         **vn_kv** (float) - The grid voltage level.
 
     OPTIONAL:
-        **name** (string, default None) - the name for this bus
+        **name** (string, default None) - the name for this dc bus
 
         **index** (int, default None) - Force a specified ID if it is available. If None, the \
             index one higher than the highest already existing index is selected.
@@ -704,9 +704,9 @@ def create_bus_dc(net, vn_kv, name=None, index=None, geodata=None, type="b", zon
 
         **in_service** (boolean) - True for in_service or False for out of service
 
-        **max_vm_pu** (float, NAN) - Maximum bus voltage in p.u. - necessary for OPF
+        **max_vm_pu** (float, NAN) - Maximum dc bus voltage in p.u. - necessary for OPF
 
-        **min_vm_pu** (float, NAN) - Minimum bus voltage in p.u. - necessary for OPF
+        **min_vm_pu** (float, NAN) - Minimum dc bus voltage in p.u. - necessary for OPF
 
         **coords** (list (len=2) of tuples (len=2), default None) - busbar coordinates to plot
         the bus with multiple points. coords is typically a list of tuples (start and endpoint of
@@ -716,7 +716,7 @@ def create_bus_dc(net, vn_kv, name=None, index=None, geodata=None, type="b", zon
         **index** (int) - The unique ID of the created element
 
     EXAMPLE:
-        create_bus(net, name = "bus1")
+        create_bus_dc(net, name = "bus1")
     """
     index = _get_index_with_check(net, "bus_dc", index)
 
@@ -4071,33 +4071,30 @@ def create_vsc(net, bus, bus_dc, r_ohm, x_ohm, control_mode_ac="vm_pu", control_
 
     Does not work if connected to "PV" bus (gen bus, ext_grid bus)
 
-
-    todo
     INPUT:
         **net** (pandapowerNet) - The pandapower network in which the element is created
 
-        **bus** (int) - connection bus of the ssc
+        **bus** (int) - connection bus of the VSC
 
-        **r_ohm** (float) - resistance of the coupling transformer component of ssc
+        **bus_dc** (int) - connection bus of the VSC
 
-        **x_ohm** (float) - reactance of the coupling transformer component of ssc
+        **r_ohm** (float) - resistance of the coupling transformer component of VSC
 
-        **set_vm_pu** (float) - set-point for the bus voltage magnitude at the connection bus
+        **x_ohm** (float) - reactance of the coupling transformer component of VSC
 
-        **vm_internal_pu (float) -  The voltage magnitude of the voltage source converter VSC at the ssc component.
-                                    if the amplitude of the VSC output voltage is increased above that of the ac system
-                                    voltage, the VSC behaves as a capacitor and reactive power is supplied to the ac
-                                    system, decreasing the output voltage below that of the ac system leads to the VSC
-                                    consuming reactive power acting as reactor.(source PhD Panosyan)
+        **control_mode_ac** (string) - the control mode of the ac side of the VSC. it could be "vm_pu" or "q_mvar"
 
+        **control_value_ac** (float) - the value of the controlled parameter at the ac bus in "p.u." or "MVAr"
 
-        **va_internal_degree (float) - The voltage angle of the voltage source converter VSC at the ssc component.
+        **control_mode_dc** (string) - the control mode of the dc side of the VSC. it could be "vm_pu" or "p_mw"
+
+        **control_value_dc** (float) - the value of the controlled parameter at the dc bus in "p.u." or "MW"
 
     OPTIONAL:
         **name** (list of strs, None) - element name
 
         **controllable** (bool, True) - whether the element is considered as actively controlling or
-            as a fixed shunt impedance
+            as a fixed voltage source connected via shunt impedance
 
         **in_service** (bool, True) - True for in_service or False for out of service
 
