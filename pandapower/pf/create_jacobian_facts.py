@@ -333,22 +333,16 @@ def create_J_modification_ssc(J, V, Ybus_ssc, f, t, pvpq, pq, pvpq_lookup, pq_lo
 def create_J_modification_hvdc(J, V_dc, Ybus_hvdc, f, t, dc_p, dc_p_lookup):
     J_m = np.zeros_like(J.toarray())
 
-    P = V_dc * Ybus_hvdc.dot(V_dc)
+    # Calculate the first matrix for all elements
+    J_all = Ybus_hvdc.multiply(V_dc)
+    # Calculate the second matrix for diagonal elements only
+    J_diag = np.diag(V_dc) * Ybus_hvdc.dot(V_dc)
+    # Combine them to form the Jacobian
+    J_combined = J_all + J_diag
 
-    offset = J.shape[0] - len(dc_p)
     num_p = len(dc_p)
-    f_in_p = np.isin(f, dc_p)
-    t_in_p = np.isin(t, dc_p)
-
-    # here we assume that the slack bus is always the 0 bus
-    #J_m[offset + dc_p_lookup[t], offset + dc_p_lookup[t]] = P[t] / V_dc[t]
-    J_m[offset + dc_p_lookup[t], offset + dc_p_lookup[t]] = V_dc[t] * Ybus_hvdc.toarray()[t, t]
-
-    # J_m[offset+p_lookup[f[f_in_p]], offset+p_lookup[f[f_in_p]]] = (2 * S_Fii.real + S_Fik.real) / Vmf
-    # J_m[offset+p_lookup[f[f_in_p]], offset+p_lookup[t[f_in_p]]] = S_Fik.real / Vmt
-    # J_m[offset+p_lookup[t[f_in_p]], offset+p_lookup[t[f_in_p]]] = S_Fki.real / Vmf
-    # J_m[offset+p_lookup[t[f_in_p]], offset+p_lookup[t[f_in_p]]] = (2 * S_Fkk.real + S_Fki.real) / Vmt
-    #
+    offset = J.shape[0] - num_p
+    J_m[offset:offset+num_p, offset:offset+num_p] = J_combined[dc_p, :][:, dc_p]
 
     J_m = csr_matrix(J_m)
 

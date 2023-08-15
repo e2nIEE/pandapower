@@ -13,14 +13,15 @@
 import numpy as np
 from numpy import float64, array, angle, sqrt, square, exp, linalg, conj, r_, Inf, arange, zeros, \
     max, zeros_like, column_stack, flatnonzero, nan_to_num
+from pandapower.pypower.idx_brch_dc import DC_BR_R
 from scipy.sparse import csr_matrix, eye, vstack
 from scipy.sparse.linalg import spsolve
 
-from pandapower import VSC_STATUS, VSC_BUS, VSC_INTERNAL_BUS
+from pandapower import VSC_STATUS, VSC_BUS, VSC_INTERNAL_BUS, DC_F_BUS, DC_T_BUS
 from pandapower.pf.iwamoto_multiplier import _iwamoto_step
 from pandapower.pf.makeYbus_facts import makeYbus_svc, makeYbus_tcsc, makeYft_tcsc, calc_y_svc_pu, \
     makeYbus_ssc_vsc, makeYbus_hvdc
-from pandapower.pypower.idx_bus_dc import DC_PD, DC_VM, DC_BUS_TYPE, DC_NONE
+from pandapower.pypower.idx_bus_dc import DC_PD, DC_VM, DC_BUS_TYPE, DC_NONE, DC_BUS_I, DC_REF, DC_P
 from pandapower.pypower.idx_vsc import VSC_CONTROLLABLE, VSC_MODE_AC, VSC_VALUE_AC, VSC_MODE_DC, VSC_VALUE_DC, VSC_R, \
     VSC_X, VSC_Q, VSC_P, VSC_BUS_DC
 from pandapower.pypower.makeSbus import makeSbus
@@ -76,13 +77,14 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
 
     baseMVA = ppci['baseMVA']
     bus = ppci['bus']
+    bus_dc = ppci['bus_dc']
     gen = ppci['gen']
     branch = ppci['branch']
+    branch_dc = ppci['branch_dc']
     tcsc = ppci['tcsc']
     svc = ppci['svc']
     ssc = ppci['ssc']
     vsc = ppci['vsc']
-    bus_dc = ppci['bus_dc']
     slack_weights = bus[:, SL_FAC].astype(float64)  ## contribution factors for distributed slack
     tdpf = options.get('tdpf', False)
 
@@ -136,6 +138,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     vsc_branches = flatnonzero(nan_to_num(vsc[:, VSC_STATUS]))
     vsc_fb = vsc[vsc_branches, [VSC_BUS]].real.astype(np.int64)
     vsc_tb = vsc[vsc_branches, [VSC_INTERNAL_BUS]].real.astype(np.int64)
+    vsc_dc_bus = vsc[vsc_branches, [VSC_BUS_DC]].real.astype(np.int64)
     num_vsc = len(vsc_fb)
     vsc_controllable = vsc[vsc_branches, VSC_CONTROLLABLE].real.astype(bool)
     num_vsc_controllable = sum(vsc_controllable)
@@ -147,22 +150,20 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     any_vsc = num_vsc > 0
     any_vsc_controllable = num_vsc_controllable > 0
 
-    # todo: implement element instead of hard-coding the DC line
-    ## hvdc
-    hvdc_fb = np.array([0], dtype=np.int64)
-    hvdc_tb = np.array([1], dtype=np.int64)
+    hvdc_fb = branch_dc[:, DC_F_BUS].astype(np.int64)
+    hvdc_tb = branch_dc[:, DC_T_BUS].astype(np.int64)
 
     baseR = 110 ** 2 / baseMVA
-    hvdc_y_pu = 1 / (np.array([5], dtype=np.float64) / baseR)  # R = 5 Ohm
-    num_hvdc = len(hvdc_fb)
-    any_hvdc = num_hvdc > 0
-    P_dc = np.zeros(2, dtype=np.int64)
+    hvdc_y_pu = 1 / branch_dc[:, DC_BR_R]
+    num_branch_dc = len(branch_dc)
+    any_branch_dc = num_branch_dc > 0
+    P_dc = np.zeros_like(bus_dc[:, DC_BUS_I], dtype=np.float64)
     p_set_point_index = vsc_controllable & (vsc_mode_dc == 1)
     P_dc[vsc[p_set_point_index, VSC_BUS_DC].astype(np.int64)] = -vsc_value_dc[vsc_mode_dc == 1]
 
-    num_facts_controllable = num_svc_controllable + num_tcsc_controllable + num_hvdc # + 2 * num_ssc_controllable
+    num_facts_controllable = num_svc_controllable + num_tcsc_controllable + num_branch_dc # + 2 * num_ssc_controllable
     any_facts_controllable = num_facts_controllable > 0
-    num_facts = num_svc + num_tcsc + num_ssc + num_hvdc
+    num_facts = num_svc + num_tcsc + num_ssc + num_branch_dc  # todo schould it be num_bus?
 
 
     #
@@ -178,7 +179,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     # initialize
     i = 0
     V = V0
-    V_dc = np.ones(max(r_[hvdc_fb, hvdc_tb]) + 1, dtype=np.float64)  # initial voltage vector for the DC line
+    V_dc = np.ones(len(np.flatnonzero(bus_dc[:, DC_BUS_TYPE] != DC_NONE)), dtype=np.float64)  # initial voltage vector for the DC line
     v_set_point_index = vsc_controllable & (vsc_mode_dc == 0)
     V_dc[vsc[v_set_point_index, VSC_BUS_DC].astype(np.int64)] = vsc_value_dc[v_set_point_index]
 
@@ -240,11 +241,14 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     pq_lookup[pq] = arange(len(pq))
 
     # lookups for the DC system. For now, we assume the DC "from" bus is always slack
-    dc_ref = hvdc_fb.copy()
-    dc_p = hvdc_tb.copy()
+    dc_ref = bus_dc[bus_dc[:, DC_BUS_TYPE] == DC_REF, DC_BUS_I].astype(np.int64)
+    dc_p = bus_dc[bus_dc[:, DC_BUS_TYPE] == DC_P, DC_BUS_I].astype(np.int64)
+    num_dc_p = len(dc_p)
     dc_refp = r_[dc_ref, dc_p]
     dc_p_lookup = zeros(max(dc_refp) + 1, dtype=np.int64)
     dc_p_lookup[dc_p] = arange(len(dc_p))
+    dc_ref_lookup = zeros(max(dc_refp) + 1, dtype=np.int64)
+    dc_ref_lookup[dc_ref] = arange(len(dc_ref))
 
     # get jacobian function
     createJ = get_fastest_jacobian_function(pvpq, pq, numba, dist_slack)
@@ -265,7 +269,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     j6c = j6b + 0 # num_ssc_controllable # ssc Vq angle
     j7 = j6c
     j6d = j6c + 0 # num_ssc_controllable # ssc Vq mag
-    j6e = j6d + num_hvdc  # V of the p-buses of the DC grid
+    j6e = j6d + (num_dc_p if any_branch_dc else 0)  # V of the p-buses of the DC grid
     j8 = j6e
 
     # make initial guess for the slack
@@ -273,12 +277,13 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     # evaluate F(x0)
 
     F = _evaluate_Fx(Ybus + Ybus_svc + Ybus_tcsc + Ybus_ssc + Ybus_vsc, V, Sbus, ref, pv, pq, slack_weights, dist_slack, slack)
-    if any_facts_controllable or any_ssc_controllable:
+    if any_facts_controllable or any_ssc_controllable or any_vsc_controllable:
         mis_facts = _evaluate_Fx_facts(V, pq, svc_buses[svc_controllable], svc_set_vm_pu[svc_controllable],
                                        tcsc_controllable, tcsc_set_p_pu, tcsc_tb, Ybus_tcsc, ssc_fb[ssc_controllable],
                                        ssc_tb[ssc_controllable], Ybus_ssc, ssc_controllable, ssc_set_vm_pu, F,
-                                       pq_lookup, vsc_controllable, vsc_fb, vsc_tb, Ybus_vsc, vsc_mode_ac, vsc_value_ac,
-                                       V_dc, Ybus_hvdc, P_dc, dc_p)
+                                       pq_lookup, vsc_controllable, vsc_fb, vsc_tb, Ybus_vsc, vsc_mode_ac, vsc_mode_dc,
+                                       vsc_value_ac, vsc_dc_bus, V_dc, Ybus_hvdc, P_dc, dc_p, dc_ref, dc_p_lookup,
+                                       dc_ref_lookup)
         F = r_[F, mis_facts]
 
     T_base = 100  # T in p.u. for better convergence
@@ -388,7 +393,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
                                                 vsc_tb[vsc_controllable], refpvpq if dist_slack else pvpq, pq,
                                                 pvpq_lookup, pq_lookup)
             J = J + J_m_vsc
-        if any_hvdc:
+        if any_branch_dc:
             J_m_hvdc = create_J_modification_hvdc(J, V_dc, Ybus_hvdc, hvdc_fb, hvdc_tb, dc_p, dc_p_lookup)
             J = J + J_m_hvdc
 
@@ -405,7 +410,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
             x_control_svc[svc_controllable] += dx[j6:j6a]
         if any_tcsc_controllable:
             x_control_tcsc[tcsc_controllable] += dx[j6a:j6b]
-        if any_hvdc:
+        if any_branch_dc:
             V_dc[dc_p] += dx[j6d:j6e]
 
         if tdpf:
@@ -436,13 +441,14 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         #     Ybus_ssc = makeYbus_ssc(Ybus, ssc_y_pu, ssc_fb, ssc_tb, any_ssc)
 
         F = _evaluate_Fx(Ybus + Ybus_svc + Ybus_tcsc + Ybus_ssc + Ybus_vsc, V, Sbus, ref, pv, pq, slack_weights, dist_slack, slack)
-        if any_facts_controllable or any_ssc_controllable:
+        if any_facts_controllable or any_ssc_controllable or any_vsc_controllable:
             mis_facts = _evaluate_Fx_facts(V, pq, svc_buses[svc_controllable], svc_set_vm_pu[svc_controllable],
                                            tcsc_controllable, tcsc_set_p_pu, tcsc_tb, Ybus_tcsc,
                                            ssc_fb[ssc_controllable], ssc_tb[ssc_controllable], Ybus_ssc,
                                            ssc_controllable, ssc_set_vm_pu, F, pq_lookup, vsc_controllable,
                                            vsc_fb[vsc_controllable], vsc_tb[vsc_controllable], Ybus_vsc, vsc_mode_ac,
-                                           vsc_value_ac, V_dc, Ybus_hvdc, P_dc, dc_p)
+                                           vsc_mode_dc, vsc_value_ac, vsc_dc_bus, V_dc, Ybus_hvdc, P_dc, dc_p, dc_ref,
+                                           dc_p_lookup, dc_ref_lookup)
             F = r_[F, mis_facts]
 
         if tdpf:
@@ -501,7 +507,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         print("VSC P from:", s_vsc_f.real, "VSC Q from:", s_vsc_f.imag)
         print("VSC P to:", s_vsc_t.real, "VSC Q to:", s_vsc_t.imag)
 
-    if any_hvdc:
+    if any_branch_dc:
         # Yf_hvdc, Yt_hvdc = makeYft_tcsc(Ybus_hvdc, hvdc_fb, hvdc_tb)
         Pbus_dc = V_dc * Ybus_hvdc.dot(V_dc)
         relevant_bus_dc = flatnonzero(bus_dc[:, DC_BUS_TYPE] != DC_NONE)
@@ -547,8 +553,8 @@ def _evaluate_Fx_facts(V,pq ,svc_buses=None, svc_set_vm_pu=None, tcsc_controllab
                        Ybus_tcsc=None, ssc_fb=None, ssc_tb=None, Ybus_ssc=None,
                        ssc_controllable=None, ssc_set_vm_pu=None, old_F=None, pq_lookup=None,
                        vsc_controllable=None, vsc_fb=None, vsc_tb=None, Ybus_vsc=None,
-                       vsc_mode_ac=None, vsc_value_ac=None,
-                       V_dc=None, Ybus_hvdc=None, P_dc=None, dc_p=None):
+                       vsc_mode_ac=None, vsc_mode_dc=None, vsc_value_ac=None, vsc_dc_bus=None,
+                       V_dc=None, Ybus_hvdc=None, P_dc=None, dc_p=None, dc_ref=None, dc_p_lookup=None, dc_ref_lookup=None):
     mis_facts = np.array([], dtype=np.float64)
 
     if svc_buses is not None and len(svc_buses) > 0:
@@ -585,14 +591,22 @@ def _evaluate_Fx_facts(V,pq ,svc_buses=None, svc_set_vm_pu=None, tcsc_controllab
         # todo: remove print
         print("F:", mis_hvdc, "V_dc:", V_dc, "P:", Pbus_hvdc)
 
-        # coupling of P with SSC happens here:
+        # coupling of P with VSC happens here:
         Sbus_vsc = V * conj(Ybus_vsc * V)
-        vsc_set_p_pu = np.array([-Pbus_hvdc[0], -P_dc[1]], dtype=np.float64)  # power sign convention issue
-        ####  here used ssc_tb refereing to the q bus
+        # find the connection between the DC buses and VSC buses
+
+        # find the slack DC buses
+        # find the P DC buses
+        vsc_set_p_pu = np.zeros(len(vsc_fb[vsc_controllable]), dtype=np.float64)  # power sign convention issue
+        vsc_dc_p = vsc_dc_bus[vsc_controllable & (vsc_mode_dc==1)]
+        vsc_dc_ref = vsc_dc_bus[vsc_controllable & (vsc_mode_dc==0)]
+
+        vsc_set_p_pu[vsc_mode_dc==1] = -P_dc[dc_p][dc_p_lookup[vsc_dc_p]]  # dc_p
+        vsc_set_p_pu[vsc_mode_dc==0] = -Pbus_hvdc[dc_ref][dc_ref_lookup[vsc_dc_ref]]
+        ####  here used vsc_tb refereing to the q bus
         mis_vsc_p = Sbus_vsc[vsc_tb[vsc_controllable]].real - vsc_set_p_pu
         # todo: adjust the lookup to work with 1) VSC at ext_grid bus 2) only 1 VSC connected to HVDC line
         old_F[-len(pq) * 2 + pq_lookup[vsc_tb]] = mis_vsc_p
-
 
     return mis_facts
 

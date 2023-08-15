@@ -839,10 +839,42 @@ def test_vsc_hvdc():
     pp.create_bus_dc(net, 110, 'A')
     pp.create_bus_dc(net, 110, 'B')
 
+    pp.create_line_dc_from_parameters(net, 0, 1, 100, 0.1, 1)
+
     pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_dc="vm_pu", control_value_dc=1.02)
     pp.create_vsc(net, 2, 1, 0.1, 5, control_value_dc=5)
 
     runpp_with_consistency_checks(net)
+
+
+def test_vsc_multiterminal_hvdc():
+    net = pp.create_empty_network()
+    # AC part
+    pp.create_buses(net, 5, 110)
+    pp.create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
+    pp.create_line_from_parameters(net, 1, 2, 30, 0.0487, 0.13823, 160, 0.664)
+    pp.create_line_from_parameters(net, 0, 3, 30, 0.0487, 0.13823, 160, 0.664)
+    pp.create_line_from_parameters(net, 1, 3, 30, 0.0487, 0.13823, 160, 0.664)
+    pp.create_line_from_parameters(net, 3, 4, 30, 0.0487, 0.13823, 160, 0.664)
+    pp.create_ext_grid(net, 0)
+    pp.create_load(net, 2, 10)
+
+    # DC part
+    pp.create_bus_dc(net, 110, 'A')
+    pp.create_bus_dc(net, 110, 'B')
+    pp.create_bus_dc(net, 110, 'C')
+    pp.create_bus_dc(net, 110, 'D')
+
+    pp.create_line_dc_from_parameters(net, 0, 1, 100, 0.1, 1)
+    pp.create_line_dc_from_parameters(net, 1, 2, 100, 0.1, 1)
+    pp.create_line_dc_from_parameters(net, 1, 3, 100, 0.1, 1)
+
+    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_dc="vm_pu", control_value_dc=1.02)
+    pp.create_vsc(net, 2, 2, 0.1, 5, control_value_dc=5)
+    pp.create_vsc(net, 4, 3, 0.1, 5, control_value_dc=15)
+
+    runpp_with_consistency_checks(net)
+
 
 def test_vsc_hvdc_structure1():
     net = pp.create_empty_network()

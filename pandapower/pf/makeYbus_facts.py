@@ -63,6 +63,8 @@ def makeYbus_ssc_vsc(Ybus, internal_y_pu, fb, tb, controllable):
 
 
 def makeYbus_hvdc(hvdc_y_pu, hvdc_fb, hvdc_tb):
+    if len(hvdc_fb) == 0:
+        return csr_matrix([], dtype=np.float64)
     num_hvdc = np.max(np.r_[hvdc_fb, hvdc_tb]) + 1
     Ybus_hvdc = np.zeros(shape=(num_hvdc, num_hvdc), dtype=np.float64)
     Ybus_hvdc[hvdc_fb, hvdc_tb] = -hvdc_y_pu

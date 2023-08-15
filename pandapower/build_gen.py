@@ -323,6 +323,7 @@ def _check_for_reference_bus(ppc):
     if len(ref) == 0:
         raise UserWarning("No reference bus is available. Either add an ext_grid or a gen with slack=True")
 
+    # todo test this
     bus_dc_relevant = np.flatnonzero(ppc["bus_dc"][:, DC_BUS_TYPE] == DC_NONE)
     ref_dc, _ = bustypes_dc(ppc["bus_dc"])
     # throw an error since no reference bus is defined

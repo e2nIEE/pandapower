@@ -39,12 +39,13 @@ import numbers
 from packaging.version import Version
 
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
+from pandapower.pypower.idx_brch_dc import DC_BR_STATUS, DC_F_BUS, DC_T_BUS
 from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD, VM, VA, REF, VMIN, VMAX, PV
 from pandapower.pypower.idx_gen import PMIN, PMAX, QMIN, QMAX
 from pandapower.pypower.idx_ssc import SSC_STATUS, SSC_BUS, SSC_INTERNAL_BUS
 from pandapower.pypower.idx_tcsc import TCSC_STATUS, TCSC_F_BUS, TCSC_T_BUS
 from pandapower.pypower.idx_vsc import VSC_STATUS, VSC_BUS, VSC_INTERNAL_BUS, VSC_BUS_DC
-from .pypower.idx_bus_dc import DC_VMAX, DC_VMIN, DC_BUS_I, DC_BUS_TYPE, DC_NONE
+from .pypower.idx_bus_dc import DC_VMAX, DC_VMIN, DC_BUS_I, DC_BUS_TYPE, DC_NONE, DC_REF
 
 try:
     from numba import jit
@@ -596,17 +597,21 @@ def _write_to_object_attribute(net, element, index, variable, values):
         setattr(net[element]["object"].at[index], variable, values)
 
 
-def _set_isolated_nodes_out_of_service(ppc, bus_not_reachable):
+def _set_isolated_nodes_out_of_service(ppc, bus_not_reachable, dc=False):
     isolated_nodes = np.where(bus_not_reachable)[0]
     if len(isolated_nodes) > 0:
         logger.debug("There are isolated buses in the network! (%i nodes in the PPC)"%len(isolated_nodes))
         # set buses in ppc out of service
-        ppc['bus'][isolated_nodes, BUS_TYPE] = NONE
+        if dc:
+            ppc['bus_dc'][isolated_nodes, DC_BUS_TYPE] = DC_NONE
+            pus = qus = 0  # DC loads / sgens not implemented
+        else:
+            ppc['bus'][isolated_nodes, BUS_TYPE] = NONE
 
-        pus = abs(ppc['bus'][isolated_nodes, PD] * 1e3).sum()
-        qus = abs(ppc['bus'][isolated_nodes, QD] * 1e3).sum()
-        if pus > 0 or qus > 0:
-            logger.debug("%.0f kW active and %.0f kVar reactive power are unsupplied" % (pus, qus))
+            pus = abs(ppc['bus'][isolated_nodes, PD] * 1e3).sum()
+            qus = abs(ppc['bus'][isolated_nodes, QD] * 1e3).sum()
+            if pus > 0 or qus > 0:
+                logger.debug("%.0f kW active and %.0f kVar reactive power are unsupplied" % (pus, qus))
     else:
         pus = qus = 0
 
@@ -664,7 +669,7 @@ def _check_connectivity(ppc):
     nobus = ppc['bus'].shape[0]
     bus_from = ppc['branch'][br_status, F_BUS].real.astype(np.int64)
     bus_to = ppc['branch'][br_status, T_BUS].real.astype(np.int64)
-    slacks = ppc['bus'][ppc['bus'][:, BUS_TYPE] == 3, BUS_I]
+    slacks = ppc['bus'][ppc['bus'][:, BUS_TYPE] == REF, BUS_I]
     tcsc_status = ppc["tcsc"][:, TCSC_STATUS].real.astype(bool)
     notcsc = ppc["tcsc"][tcsc_status, :].shape[0]
     bus_from_tcsc = ppc["tcsc"][tcsc_status, TCSC_F_BUS].real.astype(np.int64)
@@ -682,10 +687,9 @@ def _check_connectivity(ppc):
     # search at this bus
     bus_from = np.hstack([bus_from, bus_from_tcsc, bus_from_ssc, bus_from_vsc, slacks])
     bus_to = np.hstack([bus_to, bus_to_tcsc, bus_to_ssc, bus_to_vsc, np.ones(len(slacks)) * nobus])
+    nolinks = nobranch + notcsc + nossc + novsc + len(slacks)
 
-    adj_matrix = sp.sparse.coo_matrix((np.ones(nobranch + notcsc + nossc + novsc + len(slacks)),
-                                       (bus_from, bus_to)),
-                                      shape=(nobus + 1, nobus + 1))
+    adj_matrix = sp.sparse.coo_matrix((np.ones(nolinks), (bus_from, bus_to)), shape=(nobus + 1, nobus + 1))
 
     reachable = sp.sparse.csgraph.breadth_first_order(adj_matrix, nobus, False, False)
     # TODO: the former impl. excluded ppc buses that are already oos, but is this necessary ?
@@ -693,7 +697,29 @@ def _check_connectivity(ppc):
     bus_not_reachable = np.ones(ppc["bus"].shape[0] + 1, dtype=bool)
     bus_not_reachable[reachable] = False
     isolated_nodes, pus, qus, ppc = _set_isolated_nodes_out_of_service(ppc, bus_not_reachable)
-    return isolated_nodes, pus, qus
+
+    # DC system
+    br_dc_status = ppc['branch_dc'][:, DC_BR_STATUS].astype(bool)
+    nobranch_dc = ppc['branch_dc'][br_dc_status, :].shape[0]
+    nobus_dc = ppc['bus_dc'].shape[0]
+    slacks_dc = ppc['bus_dc'][ppc['bus_dc'][:, DC_BUS_TYPE] == DC_REF, BUS_I]
+
+    bus_from_dc = ppc['branch_dc'][br_dc_status, DC_F_BUS].real.astype(np.int64)
+    bus_to_dc = ppc['branch_dc'][br_dc_status, DC_T_BUS].real.astype(np.int64)
+
+    bus_from_dc = np.hstack([bus_from_dc, slacks_dc])
+    bus_to_dc = np.hstack([bus_to_dc, np.ones(len(slacks)) * nobus_dc])
+    nolinks_dc = nobranch_dc + len(slacks_dc)
+
+    adj_matrix_dc = sp.sparse.coo_matrix((np.ones(nolinks_dc), (bus_from_dc, bus_to_dc)),
+                                         shape=(nobus_dc + 1, nobus_dc + 1))
+
+    reachable_dc = sp.sparse.csgraph.breadth_first_order(adj_matrix_dc, nobus_dc, False, False)
+    bus_dc_not_reachable = np.ones(ppc["bus_dc"].shape[0] + 1, dtype=bool)
+    bus_dc_not_reachable[reachable_dc] = False
+    isolated_nodes_dc, pus_dc, qus_dc, ppc = _set_isolated_nodes_out_of_service(ppc, bus_dc_not_reachable, dc=True)
+
+    return isolated_nodes, pus, qus, isolated_nodes_dc, pus_dc, qus_dc
 
 
 def _subnetworks(ppc):
@@ -793,6 +819,7 @@ def _select_is_elements_numba(net, isolated_nodes=None, sequence=None):
     is_elements["bus_is_idx"] = net["bus"].index.values[bus_in_service[net["bus"].index.values]]
     is_elements["bus_dc_is_idx"] = net["bus_dc"].index.values[bus_dc_in_service[net["bus_dc"].index.values]]
     is_elements["line_is_idx"] = net["line"].index[net["line"].in_service.values]
+    is_elements["line_dc_is_idx"] = net["line_dc"].index[net["line_dc"].in_service.values]
     return is_elements
 
 
@@ -968,12 +995,11 @@ def _set_isolated_buses_out_of_service(net, ppc):
                                                          BUS_I].real.astype(np.int64))
     ppc["bus"][net._isolated_buses, BUS_TYPE] = NONE
 
+    # check DC buses - not connected to DC lines and not connected to VSC DC side
     disco_dc = np.setxor1d(ppc["bus_dc"][:, DC_BUS_I].astype(np.int64),
-                        ppc["vsc"][ppc["vsc"][:, VSC_STATUS] == 1, VSC_BUS_DC].real.astype(np.int64))
-
-    # todo: also consider the dc lines
-    #disco_dc = np.setxor1d(ppc["bus_dc"][:, DC_BUS_I].astype(np.int64),
-    #                    ppc["branch_dc"][ppc["branch_dc"][:, DC_BR_STATUS] == 1, [DC_BR_F_BUS, DC_BR_T_BUS]].real.astype(np.int64).flatten())
+                           np.union1d(ppc["branch_dc"][ppc["branch_dc"][:, DC_BR_STATUS] == 1,
+                                      [DC_F_BUS, DC_T_BUS]].real.astype(np.int64).flatten(),
+                                      ppc["vsc"][ppc["vsc"][:, VSC_STATUS] == 1, VSC_BUS_DC].real.astype(np.int64)))
 
     # but also check if they may be the only connection to an ext_grid
     net._isolated_buses_dc = np.setdiff1d(disco_dc, ppc['bus_dc'][ppc['bus_dc'][:, DC_BUS_TYPE] == REF,
@@ -1075,6 +1101,11 @@ def _check_lightsim2grid_compatibility(net, lightsim2grid, voltage_depend_loads,
         if lightsim2grid == "auto":
             return False
         raise NotImplementedError("option 'lightsim2grid' is True and DC buses are present, DC buses not implemented.")
+
+    if len(net.line_dc):
+        if lightsim2grid == "auto":
+            return False
+        raise NotImplementedError("option 'lightsim2grid' is True and DC lines are present, DC lines not implemented.")
 
     return True
 
