@@ -177,9 +177,6 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
             use_line_geodata=not use_bus_geodata, zorder=12, color=switch_color)
         collections.append(sc)
 
-    total_patches = len(get_connected_elements_dict(net, element_types=["sgen", "gen", "load"], buses=1)) + len(
-        net.sgen.type.unique())
-
     patch_count_unique = {}
     sgen_types = {}
 

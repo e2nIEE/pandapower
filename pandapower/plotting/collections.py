@@ -961,7 +961,7 @@ def create_busbar_collection(net, buses=None, infofunc=None, cmap=None, norm=Non
     return lc
 
 
-def create_load_collection(net, loads=None, size=1., infofunc=None, orientation=None, picker=False, unique_angles={},
+def create_load_collection(net, loads=None, size=1., infofunc=None, orientation=None, picker=False, unique_angles=None,
                            **kwargs):
     """
     Creates a matplotlib patch collection of pandapower loads.
@@ -990,8 +990,6 @@ def create_load_collection(net, loads=None, size=1., infofunc=None, orientation=
 
         **load_lc** - line collection
     """
-    # sgens = get_index_array(sgens, net.sgen.index)
-
     loads = get_index_array(loads, net.load.index)
     infos = [infofunc(i) for i in range(len(loads))] if infofunc is not None else []
     node_coords = net.bus_geodata.loc[:, ["x", "y"]].values
@@ -1035,9 +1033,7 @@ def create_gen_collection(net, gens=None, size=1.,  infofunc=None, orientation=N
     gens = get_index_array(gens, net.gen.index)
     infos = [infofunc(i) for i in range(len(gens))] if infofunc is not None else []
     node_coords = net.bus_geodata.loc[:, ["x", "y"]].values
-
     color = kwargs.pop("color", "k")
-
     gen_pc, gen_lc = _create_node_element_collection(
         node_coords, gen_patches, size=size,   infos=infos, orientation=orientation,
         picker=picker, line_color=color, unique_angles=unique_angles, **kwargs)
@@ -1072,11 +1068,8 @@ def create_sgen_collection(net, sgens=None, size=1.,  infofunc=None, orientation
 
         **sgen_lc** - line collection
     """
-
     infos = [infofunc(i) for i in range(len(sgens))] if infofunc is not None else []
     node_coords = net.bus_geodata.loc[:, ["x", "y"]].values
-
-
     color = kwargs.pop("color", "k")
     sgen_pc, sgen_lc = _create_node_element_collection(
         node_coords, sgen_patches, size=size,  infos=infos, orientation=orientation,
@@ -1415,34 +1408,4 @@ def add_collections_to_axes(ax, collections, plot_colorbars=True, copy_collectio
 
 
 if __name__ == "__main__":
-    # if 0:
-    #     import pandapower as pp
-    #
-    #     ntw = pp.create_empty_network()
-    #     b1 = pp.create_bus(ntw, 10, geodata=(5, 10))
-    #     b2 = pp.create_bus(ntw, 0.4, geodata=(5, 15))
-    #     b3 = pp.create_bus(ntw, 0.4, geodata=(0, 22))
-    #     b4 = pp.create_bus(ntw, 0.4, geodata=(8, 20))
-    #     pp.create_gen(ntw, b1, p_mw=0.1)
-    #     pp.create_load(ntw, b3, p_mw=0.1)
-    #     pp.create_ext_grid(ntw, b4)
-    #
-    #     pp.create_line(ntw, b2, b3, 2.0, std_type="NAYY 4x50 SE")
-    #     pp.create_line(ntw, b2, b4, 2.0, std_type="NAYY 4x50 SE")
-    #     pp.create_transformer(ntw, b1, b2, std_type="0.63 MVA 10/0.4 kV")
-    #     pp.create_transformer(ntw, b3, b4, std_type="0.63 MVA 10/0.4 kV")
-    #
-    #     bus_col = create_bus_collection(ntw, size=0.2, color="k")
-    #     line_col = create_line_collection(ntw, use_line_geodata=False, color="k", linewidth=3.)
-    #     lt, bt = create_trafo_collection(ntw, size=2, linewidth=3.)
-    #     load_col1, load_col2 = create_load_collection(ntw, linewidth=2.,
-    #                                                   infofunc=lambda x: ("load", x))
-    #     gen1, gen2 = create_gen_collection(ntw, linewidth=2.,
-    #                                        infofunc=lambda x: ("gen", x))
-    #     eg1, eg2 = create_ext_grid_collection(ntw, size=2.,
-    #                                           infofunc=lambda x: ("ext_grid", x))
-    #
-    #     draw_collections([bus_col, line_col, load_col1, load_col2, gen1, gen2, lt, bt, eg1, eg2])
-    # else:
-    #     pass
     pass
