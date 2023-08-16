@@ -21,15 +21,25 @@ logger = logging.getLogger(__name__)
 def get_hoverinfo(net, element, precision=3, sub_index=None):
     hover_index = net[element].index
     if element == "bus":
-        load_str, sgen_str = [], []
+        load_str, sgen_str, vsc_str = [], [], []
         for ln in [net.load.loc[net.load.bus == b, "p_mw"].sum() for b in net.bus.index]:
             load_str.append("Load: {:.3f} MW<br />".format(ln) if ln != 0. else "")
         for s in [net.sgen.loc[net.sgen.bus == b, "p_mw"].sum() for b in net.bus.index]:
             sgen_str.append("Static generation: {:.3f} MW<br />".format(s) if s != 0. else "")
+        for vn in [net.vsc.loc[net.vsc.bus == b, "p_mw"].sum() for b in net.bus.index]:
+            vsc_str.append("VSC: {:.3f} MW<br />".format(vn) if vn != 0. else "")
         hoverinfo = (
                 "Index: " + net.bus.index.astype(str) + '<br />' +
                 "Name: " + net.bus['name'].astype(str) + '<br />' +
-                'V_n: ' + net.bus['vn_kv'].round(precision).astype(str) + ' kV' + '<br />' + load_str + sgen_str).tolist()
+                'V_n: ' + net.bus['vn_kv'].round(precision).astype(str) + ' kV' + '<br />' + load_str + sgen_str + vsc_str).tolist()
+    elif element == "bus_dc":
+        vsc_str = []
+        for vn in [net.vsc.loc[net.vsc.bus_dc == b, "p_mw"].sum() for b in net.bus_dc.index]:
+            vsc_str.append("VSC: {:.3f} MW<br />".format(vn) if vn != 0. else "")
+        hoverinfo = (
+                "Index: " + net.bus_dc.index.astype(str) + '<br />' +
+                "Name: " + net.bus_dc['name'].astype(str) + '<br />' +
+                'V_n: ' + net.bus_dc['vn_kv'].round(precision).astype(str) + ' kV' + '<br />' + vsc_str).tolist()
     elif element == "line":
         hoverinfo = (
                 "Index: " + net.line.index.astype(str) + '<br />' +
@@ -40,6 +50,14 @@ def get_hoverinfo(net, element, precision=3, sub_index=None):
                 + 'X: ' + (net.line['length_km'] * net.line['x_ohm_per_km'] / net.line['parallel']).round(precision).astype(str)
                 + ' Ohm'
                 + net.line['parallel'].apply(lambda x: f'<br />Parallel: {x}' if x > 1 else  '<br />')).tolist()
+    elif element == "line_dc":
+        hoverinfo = (
+                "Index: " + net.line_dc.index.astype(str) + '<br />' +
+                "Name: " + net.line_dc['name'].astype(str) + '<br />' +
+                'Length: ' + net.line_dc['length_km'].round(precision).astype(str) + ' km' + '<br />' +
+                'R: ' + (net.line_dc['length_km'] * net.line['r_ohm_per_km'] / net.line['parallel']).round(precision).astype(str)
+                + ' Ohm' + '<br />'
+                + net.line_dc['parallel'].apply(lambda x: f'<br />Parallel: {x}' if x > 1 else  '<br />')).tolist()
     elif element == "trafo":
         hoverinfo = (
                 "Index: " + net.trafo.index.astype(str) + '<br />' +
