@@ -709,7 +709,7 @@ def _check_connectivity(ppc):
         bus_to_dc = ppc['branch_dc'][br_dc_status, DC_T_BUS].real.astype(np.int64)
 
         bus_from_dc = np.hstack([bus_from_dc, slacks_dc])
-        bus_to_dc = np.hstack([bus_to_dc, np.ones(len(slacks)) * nobus_dc])
+        bus_to_dc = np.hstack([bus_to_dc, np.ones(len(slacks_dc)) * nobus_dc])
         nolinks_dc = nobranch_dc + len(slacks_dc)
 
         adj_matrix_dc = sp.sparse.coo_matrix((np.ones(nolinks_dc), (bus_from_dc, bus_to_dc)),

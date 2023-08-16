@@ -164,9 +164,9 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     p_set_point_index = vsc_controllable & (vsc_mode_dc == 1)
     P_dc[vsc[p_set_point_index, VSC_BUS_DC].astype(np.int64)] = -vsc_value_dc[vsc_mode_dc == 1]
 
-    num_facts_controllable = num_svc_controllable + num_tcsc_controllable + num_branch_dc # + 2 * num_ssc_controllable
-    any_facts_controllable = num_facts_controllable > 0
-    num_facts = num_svc + num_tcsc + num_ssc + num_branch_dc  # todo schould it be num_bus?
+    # J for HVDC is expanded by the number of DC "P" buses (added below)
+    num_facts_controllable = num_svc_controllable + num_tcsc_controllable # + 2 * num_ssc_controllable
+    num_facts = num_svc + num_tcsc + num_ssc  # todo schould it be num_bus?
 
 
     #
@@ -252,6 +252,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     dc_p_lookup[dc_p] = arange(len(dc_p))
     dc_ref_lookup = zeros(max(dc_refp) + 1, dtype=np.int64)
     dc_ref_lookup[dc_ref] = arange(len(dc_ref))
+    num_facts_controllable += num_dc_p
 
     # get jacobian function
     createJ = get_fastest_jacobian_function(pvpq, pq, numba, dist_slack)
@@ -278,7 +279,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     # make initial guess for the slack
     slack = (gen[:, PG].sum() - bus[:, PD].sum()) / baseMVA
     # evaluate F(x0)
-
+    any_facts_controllable = num_facts_controllable > 0
     F = _evaluate_Fx(Ybus + Ybus_svc + Ybus_tcsc + Ybus_ssc + Ybus_vsc, V, Sbus, ref, pv, pq, slack_weights, dist_slack, slack)
     if any_facts_controllable or any_ssc_controllable or any_vsc_controllable:
         mis_facts = _evaluate_Fx_facts(V, pq, svc_buses[svc_controllable], svc_set_vm_pu[svc_controllable],
