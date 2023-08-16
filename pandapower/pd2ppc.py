@@ -351,7 +351,7 @@ def _ppc2ppci(ppc, net, ppci=None):
           bs[n2i[np.real(ppc["ssc"][:, SSC_INTERNAL_BUS]).astype(np.int64)]])
     ppci["internal"]["ssc_is"] = sscs
 
-    vscs = ((ppc["vsc"][:, VSC_STATUS] > 0) &  # ssc status
+    vscs = ((ppc["vsc"][:, VSC_STATUS] > 0) &  # vsc status
           bs[n2i[np.real(ppc["vsc"][:, VSC_BUS]).astype(np.int64)]] &
           bs[n2i[np.real(ppc["vsc"][:, VSC_INTERNAL_BUS]).astype(np.int64)]] &
           bs_dc[n2i_dc[np.real(ppc["vsc"][:, VSC_BUS_DC]).astype(np.int64)]])

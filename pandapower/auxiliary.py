@@ -794,6 +794,12 @@ def _select_is_elements_numba(net, isolated_nodes=None, sequence=None):
         bus_dc_in_service[net["bus_dc"].index.values] = net["bus_dc"]["in_service"].values.astype(bool)
     else:
         bus_dc_in_service = np.array([], dtype=bool)
+    isolated_buses_dc = net.get("_isolated_buses_dc")
+    if isolated_buses_dc is not None and len(isolated_buses_dc) > 0:
+        ppc = net["_ppc"]
+        ppc_bus_dc_isolated = np.zeros(ppc["bus_dc"].shape[0], dtype=bool)
+        ppc_bus_dc_isolated[isolated_buses_dc] = True
+        set_isolated_buses_oos(bus_dc_in_service, ppc_bus_dc_isolated, net["_pd2ppc_lookups"]["bus_dc"])
     if isolated_nodes is not None and len(isolated_nodes) > 0:
         ppc = net["_ppc"] if sequence is None else net["_ppc%s" % sequence]
         ppc_bus_isolated = np.zeros(ppc["bus"].shape[0], dtype=bool)
@@ -821,6 +827,15 @@ def _select_is_elements_numba(net, isolated_nodes=None, sequence=None):
                         is_elements["%s_controllable" % element] = controllable_is
                         element_in_service = element_in_service & ~controllable_is
             is_elements[element] = element_in_service
+
+    if len(net.vsc) > 0 and "aux" in net["_pd2ppc_lookups"]:
+        # reasoning: it can be that there are isolated DC buses. But they are only discovered
+        # after the connectivity check. Afterwards, the connected VSC elements are set out of service
+        # But after this happens, the VSC element auxiliary buses must be set out of service, too
+        # This does not happen because for that we would need to perform another connectivity check
+        # So we do it by hand here:
+        vsc_aux_isolated = net["_pd2ppc_lookups"]["aux"]["vsc"][~is_elements["vsc"]]
+        net._ppc["bus"][vsc_aux_isolated, BUS_TYPE] = NONE
 
     is_elements["bus_is_idx"] = net["bus"].index.values[bus_in_service[net["bus"].index.values]]
     is_elements["bus_dc_is_idx"] = net["bus_dc"].index.values[bus_dc_in_service[net["bus_dc"].index.values]]

@@ -248,11 +248,15 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     dc_p = bus_dc[bus_dc[:, DC_BUS_TYPE] == DC_P, DC_BUS_I].astype(np.int64)
     num_dc_p = len(dc_p)
     dc_refp = r_[dc_ref, dc_p]
-    dc_p_lookup = zeros(max(dc_refp) + 1, dtype=np.int64)
-    dc_p_lookup[dc_p] = arange(len(dc_p))
-    dc_ref_lookup = zeros(max(dc_refp) + 1, dtype=np.int64)
-    dc_ref_lookup[dc_ref] = arange(len(dc_ref))
-    num_facts_controllable += num_dc_p
+    if len(dc_refp) > 0:
+        dc_p_lookup = zeros(max(dc_refp) + 1, dtype=np.int64)
+        dc_p_lookup[dc_p] = arange(len(dc_p))
+        dc_ref_lookup = zeros(max(dc_refp) + 1, dtype=np.int64)
+        dc_ref_lookup[dc_ref] = arange(len(dc_ref))
+        num_facts_controllable += num_dc_p
+    else:
+        dc_p_lookup = np.array([], dtype=np.int64)
+        dc_ref_lookup = np.array([], dtype=np.int64)
 
     # get jacobian function
     createJ = get_fastest_jacobian_function(pvpq, pq, numba, dist_slack)
