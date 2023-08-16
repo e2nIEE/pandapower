@@ -325,18 +325,17 @@ def sgen_patches(node_coords, size, angles, unique_angles, **kwargs):
             circ_topedge = circ_edge + _rotate_dim2(np.array([0, 2 * size]), angle)
             mid_midcirc = node_geo + _rotate_dim2(np.array([0, offset + size]), angle)
 
-            codes, verts = zip(*[
+            codes, verts = zip(*[                               #Blade1
                 (Path.MOVETO, mid_midcirc),
                 (Path.LINETO, circ_topedge,),
                 (Path.LINETO, (circ_topedge + _rotate_dim2(np.array([- blade_coord1, - blade_coord1]), angle)),),
                 (Path.LINETO, (mid_midcirc + _rotate_dim2(np.array([- blade_coord2, + blade_coord2]), angle)),),
-                # Blade1
                 (Path.CLOSEPOLY, mid_midcirc)])
             polys.append(PathPatch(mpath.Path(verts, codes), fc="k", ec="none", lw=200000000))
             polys.append(Circle(mid_circ, size, fc=facecolors[i], ec=edgecolors[i]))
             lines.append((node_geo, circ_edge))
 
-            for j in range(3):
+            for j in range(3): #Blade 2 & 3
                 angle = j * 2 * math.pi / 3
                 rotated_verts = []
                 for vertex in verts:
