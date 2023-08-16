@@ -699,25 +699,28 @@ def _check_connectivity(ppc):
     isolated_nodes, pus, qus, ppc = _set_isolated_nodes_out_of_service(ppc, bus_not_reachable)
 
     # DC system
-    br_dc_status = ppc['branch_dc'][:, DC_BR_STATUS].astype(bool)
-    nobranch_dc = ppc['branch_dc'][br_dc_status, :].shape[0]
     nobus_dc = ppc['bus_dc'].shape[0]
-    slacks_dc = ppc['bus_dc'][ppc['bus_dc'][:, DC_BUS_TYPE] == DC_REF, BUS_I]
+    if nobus_dc > 0:
+        br_dc_status = ppc['branch_dc'][:, DC_BR_STATUS].astype(bool)
+        nobranch_dc = ppc['branch_dc'][br_dc_status, :].shape[0]
+        slacks_dc = ppc['bus_dc'][ppc['bus_dc'][:, DC_BUS_TYPE] == DC_REF, BUS_I]
 
-    bus_from_dc = ppc['branch_dc'][br_dc_status, DC_F_BUS].real.astype(np.int64)
-    bus_to_dc = ppc['branch_dc'][br_dc_status, DC_T_BUS].real.astype(np.int64)
+        bus_from_dc = ppc['branch_dc'][br_dc_status, DC_F_BUS].real.astype(np.int64)
+        bus_to_dc = ppc['branch_dc'][br_dc_status, DC_T_BUS].real.astype(np.int64)
 
-    bus_from_dc = np.hstack([bus_from_dc, slacks_dc])
-    bus_to_dc = np.hstack([bus_to_dc, np.ones(len(slacks)) * nobus_dc])
-    nolinks_dc = nobranch_dc + len(slacks_dc)
+        bus_from_dc = np.hstack([bus_from_dc, slacks_dc])
+        bus_to_dc = np.hstack([bus_to_dc, np.ones(len(slacks)) * nobus_dc])
+        nolinks_dc = nobranch_dc + len(slacks_dc)
 
-    adj_matrix_dc = sp.sparse.coo_matrix((np.ones(nolinks_dc), (bus_from_dc, bus_to_dc)),
-                                         shape=(nobus_dc + 1, nobus_dc + 1))
+        adj_matrix_dc = sp.sparse.coo_matrix((np.ones(nolinks_dc), (bus_from_dc, bus_to_dc)),
+                                             shape=(nobus_dc + 1, nobus_dc + 1))
 
-    reachable_dc = sp.sparse.csgraph.breadth_first_order(adj_matrix_dc, nobus_dc, False, False)
-    bus_dc_not_reachable = np.ones(ppc["bus_dc"].shape[0] + 1, dtype=bool)
-    bus_dc_not_reachable[reachable_dc] = False
-    isolated_nodes_dc, pus_dc, qus_dc, ppc = _set_isolated_nodes_out_of_service(ppc, bus_dc_not_reachable, dc=True)
+        reachable_dc = sp.sparse.csgraph.breadth_first_order(adj_matrix_dc, nobus_dc, False, False)
+        bus_dc_not_reachable = np.ones(ppc["bus_dc"].shape[0] + 1, dtype=bool)
+        bus_dc_not_reachable[reachable_dc] = False
+        isolated_nodes_dc, pus_dc, qus_dc, ppc = _set_isolated_nodes_out_of_service(ppc, bus_dc_not_reachable, dc=True)
+    else:
+        isolated_nodes_dc, pus_dc, qus_dc = np.array([]), 0, 0
 
     return isolated_nodes, pus, qus, isolated_nodes_dc, pus_dc, qus_dc
 
@@ -785,9 +788,12 @@ def _select_is_elements_numba(net, isolated_nodes=None, sequence=None):
     max_bus_idx = np.max(net["bus"].index.values)
     bus_in_service = np.zeros(max_bus_idx + 1, dtype=bool)
     bus_in_service[net["bus"].index.values] = net["bus"]["in_service"].values.astype(bool)
-    max_bus_dc_idx = np.max(net["bus_dc"].index.values)
-    bus_dc_in_service = np.zeros(max_bus_dc_idx + 1, dtype=bool)
-    bus_dc_in_service[net["bus_dc"].index.values] = net["bus_dc"]["in_service"].values.astype(bool)
+    if len(net.bus_dc) > 0:
+        max_bus_dc_idx = np.max(net["bus_dc"].index.values)
+        bus_dc_in_service = np.zeros(max_bus_dc_idx + 1, dtype=bool)
+        bus_dc_in_service[net["bus_dc"].index.values] = net["bus_dc"]["in_service"].values.astype(bool)
+    else:
+        bus_dc_in_service = np.array([], dtype=bool)
     if isolated_nodes is not None and len(isolated_nodes) > 0:
         ppc = net["_ppc"] if sequence is None else net["_ppc%s" % sequence]
         ppc_bus_isolated = np.zeros(ppc["bus"].shape[0], dtype=bool)

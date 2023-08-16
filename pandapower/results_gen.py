@@ -86,7 +86,7 @@ def _get_dc_slack_results(net, ppc, bus_dc_lookup_aranged, bus_p_dc):
         net.res_vsc.loc[vsc_slack, "p_dc_mw"] = -p
         net["res_vsc"].index = net['vsc'].index
     else:
-        p = []  # np.array([])
+        return
 
     b_sum, p_sum, _ = _sum_by_group(bus_dc_slack, p, p)
     b = bus_dc_lookup_aranged[b_sum.astype(np.int64)]

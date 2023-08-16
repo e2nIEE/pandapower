@@ -71,11 +71,13 @@ DC_BR_STATUS   = 7   # initial branch status, 1 - in service, 0 - out of service
 
 # included in power flow solution, not necessarily in input
 DC_PF          = 8   # real power injected at "from" bus end (MW)
-DC_QF          = 9   # reactive power injected at "from" bus end (MVAr)
+DC_IF          = 9   # current injected at "from" bus end (p.u.)
 DC_PT          = 10   # real power injected at "to" bus end (MW)
-DC_QT          = 11   # reactive power injected at "to" bus end (MVAr)
+DC_IT          = 11   # current injected at "to" bus end (p.u.)
 
 DC_BR_R_ASYM = 12   # todo Roman check if necessary
 DC_BR_X_ASYM = 13   # todo Roman check if necessary
 
-branch_dc_cols = 14
+DC_TDPF = 14  ### TDPF not implemented for DC lines
+
+branch_dc_cols = 15

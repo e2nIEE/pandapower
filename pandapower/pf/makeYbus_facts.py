@@ -74,6 +74,52 @@ def makeYbus_hvdc(hvdc_y_pu, hvdc_fb, hvdc_tb):
     return csr_matrix(Ybus_hvdc)
 
 
+def calc_y_svc(x_control, svc_x_l_pu, svc_x_cvar_pu, v_base_kv, baseMVA):
+    x_control = np.deg2rad(x_control)
+    z_base_ohm = np.square(v_base_kv) / baseMVA
+    svc_x_l_pu = svc_x_l_pu / z_base_ohm
+    svc_x_cvar_pu = svc_x_cvar_pu / z_base_ohm
+    y_svc = calc_y_svc_pu(x_control, svc_x_l_pu, svc_x_cvar_pu)
+    y_svc /= z_base_ohm
+    return y_svc
+
+
+def calc_y_svc_pu(x_control, svc_x_l_pu, svc_x_cvar_pu):
+    y_svc = (2 * (np.pi - x_control) + np.sin(2 * x_control) + np.pi * svc_x_l_pu / svc_x_cvar_pu) / (np.pi * svc_x_l_pu)
+    return y_svc
+
+
+def make_Ybus_facts(from_bus, to_bus, y_pu, n):
+    """
+    Construct the bus admittance matrix with an added FACTS device for a power grid.
+
+    This function creates an additional Ybus matrix, which models the connectivity of
+    additional FACTS (Flexible AC Transmission System) devices in the power grid.
+
+    Parameters:
+    - from_bus (array-like): Array of source bus indices for each element.
+    - to_bus (array-like): Array of destination bus indices for each element.
+    - y_pu (array-like): Array of per-unit admittances for each element.
+    - n (int): Total number of buses in the grid.
+
+    Returns:
+    - csr_matrix: A compressed sparse row representation of the bus admittance matrix
+                  incorporating FACTS.
+    """
+    # Combine diagonal elements with off-diagonal elements
+    # Concatenate row and column indices, as well as data
+    # Explanation: first pair is for diagonal data, second pair is for off-diagonal data
+    # At creation of the csr_matrix, data elements at the coinciding indices are added
+    # This feature is useful when you have repeated indices, and you want their values to be aggregated
+    row_indices = np.concatenate([from_bus, to_bus, from_bus, to_bus])
+    col_indices = np.concatenate([from_bus, to_bus, to_bus, from_bus])
+    data = np.concatenate([y_pu, y_pu, -y_pu, -y_pu])
+
+    # Create and return the Ybus matrix using the compressed sparse row format
+    Ybus_facts = csr_matrix((data, (row_indices, col_indices)), shape=(n, n))
+    return Ybus_facts
+
+
 def makeYft_tcsc(Ybus_tcsc, tcsc_fb, tcsc_tb):
     ## build Yf and Yt such that Yf * V is the vector of complex branch currents injected
     ## at each branch's "from" bus, and Yt is the same for the "to" bus end
@@ -92,16 +138,37 @@ def makeYft_tcsc(Ybus_tcsc, tcsc_fb, tcsc_tb):
     return Yf, Yt
 
 
-def calc_y_svc(x_control, svc_x_l_pu, svc_x_cvar_pu, v_base_kv, baseMVA):
-    x_control = np.deg2rad(x_control)
-    z_base_ohm = np.square(v_base_kv) / baseMVA
-    svc_x_l_pu = svc_x_l_pu / z_base_ohm
-    svc_x_cvar_pu = svc_x_cvar_pu / z_base_ohm
-    y_svc = calc_y_svc_pu(x_control, svc_x_l_pu, svc_x_cvar_pu)
-    y_svc /= z_base_ohm
-    return y_svc
+def make_Yft_facts(from_bus, to_bus, y_pu, n):
+    """
+    Construct the Yf and Yt admittance matrices for branches with FACTS devices.
 
+    This function creates the Yf and Yt matrices, which allow to compute
+    the currents injected at the "from" and "to" ends of each branch,
+    respectively. The matrices represent the FACTS (Flexible AC Transmission
+    System) devices in the grid.
 
-def calc_y_svc_pu(x_control, svc_x_l_pu, svc_x_cvar_pu):
-    y_svc = (2 * (np.pi - x_control) + np.sin(2 * x_control) + np.pi * svc_x_l_pu / svc_x_cvar_pu) / (np.pi * svc_x_l_pu)
-    return y_svc
+    Parameters:
+    - from_bus (array-like): Array of source bus indices for each branch.
+    - to_bus (array-like): Array of destination bus indices for each branch.
+    - y_pu (array-like): Array of per-unit admittances for each branch.
+    - n (int): Total number of buses in the grid.
+
+    Returns:
+    - Yf (csr_matrix): Admittance matrix for the "from" end of each branch.
+    - Yt (csr_matrix): Admittance matrix for the "to" end of each branch.
+    """
+
+    # Number of lines (or branches)
+    nl = len(from_bus)
+    rows = np.arange(nl)
+
+    # Common row indices for Yf and Yt matrices
+    row_indices = np.concatenate([rows, rows])
+    # Common column indices for Yf and Yt matrices
+    col_indices = np.concatenate([from_bus, to_bus])
+
+    # Construct Yf and Yt matrices using the CSR format
+    Yf = csr_matrix((np.concatenate([y_pu, -y_pu]), (row_indices, col_indices)), shape=(nl, n))
+    Yt = csr_matrix((np.concatenate([-y_pu, y_pu]), (row_indices, col_indices)), shape=(nl, n))
+
+    return Yf, Yt

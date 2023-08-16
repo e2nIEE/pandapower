@@ -5,7 +5,7 @@
 
 
 import numpy as np
-from scipy.sparse import csr_matrix
+from scipy.sparse import csr_matrix, lil_matrix, diags
 from pandapower.pf.makeYbus_facts import calc_y_svc_pu
 
 
@@ -331,20 +331,18 @@ def create_J_modification_ssc(J, V, Ybus_ssc, f, t, pvpq, pq, pvpq_lookup, pq_lo
     return J_m
 
 def create_J_modification_hvdc(J, V_dc, Ybus_hvdc, f, t, dc_p, dc_p_lookup):
-    J_m = np.zeros_like(J.toarray())
-
     # Calculate the first matrix for all elements
     J_all = Ybus_hvdc.multiply(V_dc)
     # Calculate the second matrix for diagonal elements only
-    J_diag = np.diag(V_dc) * Ybus_hvdc.dot(V_dc)
+    J_diag = diags(V_dc).multiply(Ybus_hvdc.dot(V_dc))
     # Combine them to form the Jacobian
     J_combined = J_all + J_diag
 
     num_p = len(dc_p)
     offset = J.shape[0] - num_p
+    # Create an initial zero sparse matrix for J_m
+    J_m = lil_matrix(J.shape)
     J_m[offset:offset+num_p, offset:offset+num_p] = J_combined[dc_p, :][:, dc_p]
 
-    J_m = csr_matrix(J_m)
-
-    return J_m
+    return J_m.tocsr()
 

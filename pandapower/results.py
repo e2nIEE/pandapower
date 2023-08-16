@@ -79,6 +79,8 @@ def _remove_costs(net):
 
 def _get_aranged_lookup(net, bus_table="bus"):
     # generate bus_lookup net -> consecutive ordering
+    if len(net[bus_table]) == 0:
+        return np.array([], dtype=np.int64)
     maxBus = max(net[bus_table].index.values)
     bus_lookup_aranged = -np.ones(maxBus + 1, dtype=np.int64)
     bus_lookup_aranged[net[bus_table].index.values] = np.arange(len(net[bus_table].index.values))
@@ -143,7 +145,7 @@ def init_element(net, element, suffix=None):
 
 def get_relevant_elements(mode="pf"):
     if mode == "pf" or mode == "opf":
-        return ["bus", "bus_dc", "line", "trafo", "trafo3w", "impedance", "ext_grid",
+        return ["bus", "bus_dc", "line", "line_dc", "trafo", "trafo3w", "impedance", "ext_grid",
                 "load", "motor", "sgen", "storage", "shunt", "gen", "ward",
                 "xward", "dcline", "asymmetric_load", "asymmetric_sgen",
                 "switch", "tcsc", "svc", "ssc", "vsc"]
@@ -198,6 +200,8 @@ def _ppci_branch_to_ppc(result, ppc):
     ppc['branch'][result["internal"]['branch_is'], :branch_cols] = result['branch'][:, :branch_cols]
 
     ppc['tcsc'][result["internal"]['tcsc_is'], :] = result['tcsc'][:, :]
+
+    ppc['branch_dc'][result["internal"]['branch_dc_is'], :] = result['branch_dc'][:, :]
 
 
 def _ppci_gen_to_ppc(result, ppc):

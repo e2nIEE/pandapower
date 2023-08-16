@@ -860,10 +860,10 @@ def test_vsc_multiterminal_hvdc():
     pp.create_load(net, 2, 10)
 
     # DC part
-    pp.create_bus_dc(net, 110, 'A')
-    pp.create_bus_dc(net, 110, 'B')
-    pp.create_bus_dc(net, 110, 'C')
-    pp.create_bus_dc(net, 110, 'D')
+    pp.create_bus_dc(net, 320, 'A')
+    pp.create_bus_dc(net, 320, 'B')
+    pp.create_bus_dc(net, 320, 'C')
+    pp.create_bus_dc(net, 320, 'D')
 
     pp.create_line_dc_from_parameters(net, 0, 1, 100, 0.1, 1)
     pp.create_line_dc_from_parameters(net, 1, 2, 100, 0.1, 1)

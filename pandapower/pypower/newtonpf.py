@@ -13,14 +13,14 @@
 import numpy as np
 from numpy import float64, array, angle, sqrt, square, exp, linalg, conj, r_, Inf, arange, zeros, \
     max, zeros_like, column_stack, flatnonzero, nan_to_num
-from pandapower.pypower.idx_brch_dc import DC_BR_R
+from pandapower.pypower.idx_brch_dc import DC_BR_R, DC_PF, DC_IF, DC_PT, DC_IT, DC_BR_STATUS
 from scipy.sparse import csr_matrix, eye, vstack
 from scipy.sparse.linalg import spsolve
 
 from pandapower import VSC_STATUS, VSC_BUS, VSC_INTERNAL_BUS, DC_F_BUS, DC_T_BUS
 from pandapower.pf.iwamoto_multiplier import _iwamoto_step
 from pandapower.pf.makeYbus_facts import makeYbus_svc, makeYbus_tcsc, makeYft_tcsc, calc_y_svc_pu, \
-    makeYbus_ssc_vsc, makeYbus_hvdc
+    makeYbus_ssc_vsc, make_Ybus_facts, make_Yft_facts
 from pandapower.pypower.idx_bus_dc import DC_PD, DC_VM, DC_BUS_TYPE, DC_NONE, DC_BUS_I, DC_REF, DC_P
 from pandapower.pypower.idx_vsc import VSC_CONTROLLABLE, VSC_MODE_AC, VSC_VALUE_AC, VSC_MODE_DC, VSC_VALUE_DC, VSC_R, \
     VSC_X, VSC_Q, VSC_P, VSC_BUS_DC
@@ -154,10 +154,13 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     hvdc_tb = branch_dc[:, DC_T_BUS].astype(np.int64)
 
     baseR = 110 ** 2 / baseMVA
-    hvdc_y_pu = 1 / branch_dc[:, DC_BR_R]
-    num_branch_dc = len(branch_dc)
+    hvdc_branches = np.flatnonzero(branch_dc[:, DC_BR_STATUS] != 0)
+    num_branch_dc = len(hvdc_branches)
+    hvdc_y_pu = 1 / branch_dc[hvdc_branches, DC_BR_R]
+    relevant_bus_dc = flatnonzero(bus_dc[:, DC_BUS_TYPE] != DC_NONE)
+    num_bus_dc = len(relevant_bus_dc)
     any_branch_dc = num_branch_dc > 0
-    P_dc = np.zeros_like(bus_dc[:, DC_BUS_I], dtype=np.float64)
+    P_dc = np.zeros_like(bus_dc[relevant_bus_dc, DC_BUS_I], dtype=np.float64)
     p_set_point_index = vsc_controllable & (vsc_mode_dc == 1)
     P_dc[vsc[p_set_point_index, VSC_BUS_DC].astype(np.int64)] = -vsc_value_dc[vsc_mode_dc == 1]
 
@@ -179,7 +182,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     # initialize
     i = 0
     V = V0
-    V_dc = np.ones(len(np.flatnonzero(bus_dc[:, DC_BUS_TYPE] != DC_NONE)), dtype=np.float64)  # initial voltage vector for the DC line
+    V_dc = np.ones(num_bus_dc, dtype=np.float64)  # initial voltage vector for the DC line
     v_set_point_index = vsc_controllable & (vsc_mode_dc == 0)
     V_dc[vsc[v_set_point_index, VSC_BUS_DC].astype(np.int64)] = vsc_value_dc[v_set_point_index]
 
@@ -192,7 +195,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     Ybus_vsc_not_controllable, Ybus_vsc_controllable, Ybus_vsc = \
         makeYbus_ssc_vsc(Ybus, vsc_y_pu, vsc_fb, vsc_tb, vsc_controllable)
     # HVDC
-    Ybus_hvdc = makeYbus_hvdc(hvdc_y_pu, hvdc_fb, hvdc_tb)
+    Ybus_hvdc = make_Ybus_facts(hvdc_fb, hvdc_tb, hvdc_y_pu, num_bus_dc)
 
     # to avoid non-convergence due to zero-terms in the Jacobian:
     if any_tcsc_controllable and np.all(V[tcsc_fb] == V[tcsc_tb]):
@@ -473,6 +476,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     Yf_tcsc, Yt_tcsc = makeYft_tcsc(Ybus_tcsc, tcsc_fb, tcsc_tb)
     # todo: move to pf.run_newton_raphson_pf.ppci_to_pfsoln
     if any_tcsc:
+        # todo use make_Ybus_facts, make_Yft_facts
         baseI = baseMVA / (bus[tcsc_tb, BASE_KV] * sqrt(3))
         i_tcsc_f = Yf_tcsc.dot(V)
         i_tcsc_t = Yt_tcsc.dot(V)
@@ -489,6 +493,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
 
     # todo: move to pf.run_newton_raphson_pf.ppci_to_pfsoln
     if any_ssc:
+        # todo use make_Ybus_facts, make_Yft_facts
         Yf_ssc, Yt_ssc = makeYft_tcsc(Ybus_ssc, ssc_fb, ssc_tb)
         s_ssc_f = conj(Yf_ssc.dot(V)) * V[ssc_fb] * baseMVA
         s_ssc_t = conj(Yt_ssc.dot(V)) * V[ssc_tb] * baseMVA
@@ -497,7 +502,9 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         print("SSC P from:", s_ssc_f.real, "SSC Q from:", s_ssc_f.imag)
         print("SSC P to:", s_ssc_t.real, "SSC Q to:", s_ssc_t.imag)
 
+    # todo move this to pfsoln
     if any_vsc:
+        # todo use make_Ybus_facts, make_Yft_facts
         Yf_vsc, Yt_vsc = makeYft_tcsc(Ybus_vsc, vsc_fb, vsc_tb)
         s_vsc_f = conj(Yf_vsc.dot(V)) * V[vsc_fb] * baseMVA
         s_vsc_t = conj(Yt_vsc.dot(V)) * V[vsc_tb] * baseMVA
@@ -507,12 +514,20 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         print("VSC P from:", s_vsc_f.real, "VSC Q from:", s_vsc_f.imag)
         print("VSC P to:", s_vsc_t.real, "VSC Q to:", s_vsc_t.imag)
 
+    # todo move this to pfsoln
     if any_branch_dc:
-        # Yf_hvdc, Yt_hvdc = makeYft_tcsc(Ybus_hvdc, hvdc_fb, hvdc_tb)
+        Yf_hvdc, Yt_hvdc = make_Yft_facts(hvdc_fb, hvdc_tb, hvdc_y_pu, num_bus_dc)
         Pbus_dc = V_dc * Ybus_hvdc.dot(V_dc)
-        relevant_bus_dc = flatnonzero(bus_dc[:, DC_BUS_TYPE] != DC_NONE)
         bus_dc[relevant_bus_dc, DC_PD] = Pbus_dc
         bus_dc[relevant_bus_dc, DC_VM] = V_dc
+        i_hvdc_f = Yf_hvdc.dot(V_dc)
+        p_hvdc_f = i_hvdc_f * V_dc[hvdc_fb] * baseMVA
+        i_hvdc_t = Yt_hvdc.dot(V_dc)
+        p_hvdc_t = i_hvdc_t * V_dc[hvdc_tb] * baseMVA
+        branch_dc[hvdc_branches, DC_PF] = p_hvdc_f.real
+        branch_dc[hvdc_branches, DC_IF] = p_hvdc_f.real
+        branch_dc[hvdc_branches, DC_PT] = p_hvdc_t.real
+        branch_dc[hvdc_branches, DC_IT] = p_hvdc_t.real
 
     # todo: remove this
     # Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
