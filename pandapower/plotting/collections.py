@@ -355,7 +355,7 @@ def _create_complex_branch_collection(coords, patch_maker, size=1, infos=None, r
 
 def create_bus_collection(net, buses=None, size=5, patch_type="circle", color=None, z=None,
                           cmap=None, norm=None, infofunc=None, picker=False, bus_geodata=None,
-                          cbar_title="Bus Voltage [pu]", **kwargs):
+                          cbar_title="Bus Voltage [pu]", bus_table="bus", **kwargs):
     """
     Creates a matplotlib patch collection of pandapower buses.
 
@@ -392,18 +392,27 @@ def create_bus_collection(net, buses=None, size=5, patch_type="circle", color=No
 
         **cbar_title** (str, "Bus Voltage [pu]") - colormap bar title in case of given cmap
 
+        **bus_table** (str, "bus") - element table to use for the buses ("bus", "bus_dc")
+
         **kwargs** - key word arguments are passed to the patch function
 
     OUTPUT:
         **pc** - patch collection
     """
+    if bus_table == "bus":
+        dc = False
+    elif bus_table == "bus_dc":
+        dc = True
+    else:
+        raise NotImplementedError(f"bus table {bus_table} not implemented!")
+
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
-    buses = get_index_array(buses, net.bus.index)
+    buses = get_index_array(buses, net[bus_table].index)
     if len(buses) == 0:
         return None
     if bus_geodata is None:
-        bus_geodata = net["bus_geodata"]
+        bus_geodata = net["bus_geodata"] if not dc else net["bus_dc_geodata"]
 
     coords = list(zip(bus_geodata.loc[buses, "x"].values, bus_geodata.loc[buses, "y"].values))
 
@@ -413,7 +422,7 @@ def create_bus_collection(net, buses=None, size=5, patch_type="circle", color=No
 
     if cmap is not None:
         if z is None:
-            z = net.res_bus.vm_pu.loc[buses]
+            z = net[f"res_{bus_table}"].vm_pu.loc[buses]
         add_cmap_to_collection(pc, cmap, norm, z, cbar_title)
 
     return pc
@@ -421,7 +430,7 @@ def create_bus_collection(net, buses=None, size=5, patch_type="circle", color=No
 
 def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
                            use_bus_geodata=False, infofunc=None, cmap=None, norm=None, picker=False,
-                           z=None, cbar_title="Line Loading [%]", clim=None, plot_colormap=True,
+                           z=None, cbar_title="Line Loading [%]", clim=None, plot_colormap=True, line_table="line",
                            **kwargs):
     """
     Creates a matplotlib line collection of pandapower lines.
@@ -456,29 +465,45 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
 
         **clim** (tuple of floats, None) - setting the norm limits for image scaling
 
+        **line_table** (str, "line") - which element table to use ("line", "line_dc")
+
         **kwargs** - key word arguments are passed to the patch function
 
     OUTPUT:
         **lc** - line collection
     """
+    if line_table == "line":
+        dc = False
+        line_geodata_table = "line_geodata"
+    elif line_table == "line_dc":
+        dc = True
+        line_geodata_table = "line_dc_geodata"
+    else:
+        raise NotImplementedError(f"line table {line_table} not implemented!")
+
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
-    if use_bus_geodata is False and line_geodata is None and net.line_geodata.empty:
+    if use_bus_geodata is False and line_geodata is None and net[line_geodata_table].empty:
         # if bus geodata is available, but no line geodata
         logger.warning("use_bus_geodata is automatically set to True, since net.line_geodata is "
                        "empty.")
         use_bus_geodata = True
 
-    lines = get_index_array(lines, net.line.index)
+    lines = get_index_array(lines, net[line_table].index)
     if len(lines) == 0:
         return None
 
     if use_bus_geodata:
-        coords, lines_with_geo = coords_from_node_geodata(
-            lines, net.line.from_bus.loc[lines].values, net.line.to_bus.loc[lines].values,
-            bus_geodata if bus_geodata is not None else net["bus_geodata"], "line")
+        if not dc:
+            coords, lines_with_geo = coords_from_node_geodata(
+                lines, net.line.from_bus.loc[lines].values, net.line.to_bus.loc[lines].values,
+                bus_geodata if bus_geodata is not None else net["bus_geodata"], "line")
+        else:
+            coords, lines_with_geo = coords_from_node_geodata(
+                lines, net.line_dc.from_bus_dc.loc[lines].values, net.line_dc.to_bus_dc.loc[lines].values,
+                bus_geodata if bus_geodata is not None else net["bus_dc_geodata"], "line_dc")
     else:
-        line_geodata = line_geodata if line_geodata is not None else net.line_geodata
+        line_geodata = line_geodata if line_geodata is not None else net[line_geodata_table]
         lines_with_geo = lines[np.isin(lines, line_geodata.index.values)]
         coords = list(line_geodata.loc[lines_with_geo, 'coords'])
         lines_without_geo = set(lines) - set(lines_with_geo)
@@ -495,7 +520,7 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
 
     if cmap is not None:
         if z is None:
-            z = net.res_line.loading_percent.loc[lines_with_geo]
+            z = net[f"res_{line_table}"].loading_percent.loc[lines_with_geo]
         add_cmap_to_collection(lc, cmap, norm, z, cbar_title, plot_colormap, clim)
 
     return lc

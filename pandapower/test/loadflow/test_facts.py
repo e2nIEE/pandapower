@@ -850,7 +850,7 @@ def test_vsc_hvdc():
 def test_vsc_multiterminal_hvdc():
     net = pp.create_empty_network()
     # AC part
-    pp.create_buses(net, 5, 110)
+    pp.create_buses(net, 5, 110, geodata=((0, 50), (50, 100), (200, 100), (50, 0), (200, 0)))
     pp.create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
     pp.create_line_from_parameters(net, 1, 2, 30, 0.0487, 0.13823, 160, 0.664)
     pp.create_line_from_parameters(net, 0, 3, 30, 0.0487, 0.13823, 160, 0.664)
@@ -860,10 +860,10 @@ def test_vsc_multiterminal_hvdc():
     pp.create_load(net, 2, 10)
 
     # DC part
-    pp.create_bus_dc(net, 320, 'A')
-    pp.create_bus_dc(net, 320, 'B')
-    pp.create_bus_dc(net, 320, 'C')
-    pp.create_bus_dc(net, 320, 'D')
+    pp.create_bus_dc(net, 320, 'A', geodata=(50, 100))
+    pp.create_bus_dc(net, 320, 'B', geodata=(200, 50))
+    pp.create_bus_dc(net, 320, 'C', geodata=(200, 100))
+    pp.create_bus_dc(net, 320, 'D', geodata=(200, 0))
 
     pp.create_line_dc_from_parameters(net, 0, 1, 100, 0.1, 1)
     pp.create_line_dc_from_parameters(net, 1, 2, 100, 0.1, 1)
