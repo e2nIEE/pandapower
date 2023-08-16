@@ -5,11 +5,7 @@
 import sys
 import numpy as np
 try:
-    from matplotlib.patches import RegularPolygon, Arc, Circle, Rectangle, Ellipse, PathPatch, Polygon
-    import matplotlib.path as mpath
-    # import matplotlib.transforms as transforms
-    import math
-
+    from matplotlib.patches import RegularPolygon, Arc, Circle, Rectangle, Ellipse
     MATPLOTLIB_INSTALLED = True
 except ImportError:
     MATPLOTLIB_INSTALLED = False
@@ -23,6 +19,7 @@ except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
+
 
 def node_patches(node_coords, size, patch_type, colors=None, **kwargs):
     """
@@ -161,8 +158,7 @@ def polygon_patches(node_coords, radius, num_edges, color=None, **kwargs):
     return patches
 
 
-
-def load_patches(node_coords, size, angles, unique_angles, **kwargs):
+def load_patches(node_coords, size, angles, **kwargs):
     """
     Creation function of patches for loads.
 
@@ -172,10 +168,6 @@ def load_patches(node_coords, size, angles, unique_angles, **kwargs):
     :type size: float
     :param angles: angles by which to rotate the patches (in radians)
     :type angles: iterable(float), float
-    :param unique_angles: angles for patches
-    :param unique_angles: angles for patches
-    :type size: dict
-    :type size: dict
     :param kwargs: additional keyword arguments (might contain parameters "offset",\
         "patch_edgecolor" and "patch_facecolor")
     :type kwargs:
@@ -186,7 +178,7 @@ def load_patches(node_coords, size, angles, unique_angles, **kwargs):
     """
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
-    offset = kwargs.get("offset", 1.5 * size)
+    offset = kwargs.get("offset", 1.2 * size)
     all_angles = get_angle_list(angles, len(node_coords))
     edgecolor = kwargs.get("patch_edgecolor", "w")
     facecolor = kwargs.get("patch_facecolor", "w")
@@ -198,7 +190,6 @@ def load_patches(node_coords, size, angles, unique_angles, **kwargs):
         unique_angles = {}
 
     for i, node_geo in enumerate(node_coords):
-
         if len(unique_angles) != 0:
             if "load" in unique_angles[i] and unique_angles[i]["load"] != []:
                 try:
@@ -214,10 +205,10 @@ def load_patches(node_coords, size, angles, unique_angles, **kwargs):
         p3 = node_geo + _rotate_dim2(np.array([0, offset + size / 2]), angle)
         polys.append(RegularPolygon(p2, numVertices=3, radius=size, orientation=-angle,fc = "w",ec="k"))
         lines.append((node_geo, p3))
-
     return lines, polys, {"offset", "patch_edgecolor", "patch_facecolor"}
 
-def gen_patches(node_coords, size, angles, unique_angles, **kwargs):
+
+def gen_patches(node_coords, size, angles, **kwargs):
     """
     Creation function of patches for generators.
 
@@ -227,8 +218,6 @@ def gen_patches(node_coords, size, angles, unique_angles, **kwargs):
     :type size: float
     :param angles: angles by which to rotate the patches (in radians)
     :type angles: iterable(float), float
-    :param unique_angles: angles for patches
-    :type size: dict
     :param kwargs: additional keyword arguments (might contain parameters "offset",\
         "patch_edgecolor" and "patch_facecolor")
     :type kwargs:
@@ -270,12 +259,11 @@ def gen_patches(node_coords, size, angles, unique_angles, **kwargs):
         polys.append(
             Arc(p2 + np.array([size / 6.2, size / 2.6]), size / 2, size, theta1=245, theta2=300,
                 ec=edgecolors[i]))
-        lines.append((node_geo, circ_edge))
-
+        lines.append((node_geo, p2 + _rotate_dim2(np.array([0, size]), -all_angles[i])))
     return lines, polys, {"offset", "patch_edgecolor", "patch_facecolor"}
 
 
-def sgen_patches(node_coords, size, angles, unique_angles, **kwargs):
+def sgen_patches(node_coords, size, angles, **kwargs):
     """
     Creation function of patches for static generators.
 
@@ -285,8 +273,6 @@ def sgen_patches(node_coords, size, angles, unique_angles, **kwargs):
     :type size: float
     :param angles: angles by which to rotate the patches (in radians)
     :type angles: iterable(float), float
-    :param unique_angles: angles for patches
-    :type size: dict
     :param kwargs: additional keyword arguments (might contain parameters "offset", "r_triangle",\
         "patch_edgecolor" and "patch_facecolor")
     :type kwargs:
@@ -300,11 +286,6 @@ def sgen_patches(node_coords, size, angles, unique_angles, **kwargs):
     polys, lines = list(), list()
     offset = kwargs.get("offset", 2 * size)
     r_triangle = kwargs.get("r_triangles", size * 0.4)
-    hub_size = size * 0.15  # Hub size
-    blade_coord1 = size * 0.08    # Blade angle coord
-    blade_coord2 = size * 0.22
-    pv_rect_size = size*2
-    pv_tri_size = size
     edgecolor = kwargs.get("patch_edgecolor", "w")
     facecolor = kwargs.get("patch_facecolor", "w")
     edgecolors = get_color_list(edgecolor, len(node_coords))

@@ -262,12 +262,3 @@ def position_on_busbar(net, bus, busbar_coords):
             intersection = busbar_coords[-1]
 
     return intersection
-
-# def multi_check(node_coords):
-#     seen = []
-#     for i, arr in enumerate(node_coords):
-#         if arr[:, 0] in seen:
-#             return print("Repeating entry detected at index 0 of nd array", i)
-#             break
-#     else:
-#         seen.append(arr[:, 0])

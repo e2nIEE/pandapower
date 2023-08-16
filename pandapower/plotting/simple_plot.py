@@ -16,8 +16,6 @@ from pandapower.plotting.collections import create_bus_collection, create_line_c
     create_line_switch_collection, draw_collections, create_bus_bus_switch_collection, create_ext_grid_collection, create_sgen_collection, \
     create_gen_collection, create_load_collection, create_dcline_collection
 from pandapower.plotting.generic_geodata import create_generic_coordinates
-from pandapower import get_connected_elements_dict
-import pandapower as pp
 import math
 
 try:
@@ -29,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_grid_size=1.0,
-                trafo_size=1.0, plot_loads=False, plot_gens=False, plot_sgens=False, orientation=None, load_size=1.0, gen_size=1.0, sgen_size=1.0,
+                trafo_size=1.0, plot_loads=False, plot_gens=False, plot_sgens=False, load_size=1.0, gen_size=1.0, sgen_size=1.0,
                 switch_size=2.0, switch_distance=1.0, plot_line_switches=False, scale_size=True,
                 bus_color='b', line_color='grey',  dcline_color='c', trafo_color='k',
                 ext_grid_color='y', switch_color='k', library='igraph', show_plot=True, ax=None):
@@ -99,7 +97,6 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
         OUTPUT:
             **ax** - axes of figure
     """
-
     # don't hide lines if switches are plotted
     if plot_line_switches:
         respect_switches = False
@@ -246,15 +243,15 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
              [j * seperation_angle + (sgen_count + gen_count) * seperation_angle for j in range(load_count)])
 
     if plot_sgens and len(net.sgen):
-        sgc = create_sgen_collection(net, size=sgen_size,  orientation=orientation,unique_angles=patch_count_unique)
+        sgc = create_sgen_collection(net, size=sgen_size, orientation=0, unique_angles=patch_count_unique)
         collections.append(sgc)
 
     if plot_gens and len(net.gen):
-        gc = create_gen_collection(net, size=gen_size, orientation=orientation,unique_angles=patch_count_unique)
+        gc = create_gen_collection(net, size=gen_size, orientation=0, unique_angles=patch_count_unique)
         collections.append(gc)
 
     if plot_loads and len(net.load):
-        lc = create_load_collection(net, size=load_size, orientation=orientation, unique_angles=patch_count_unique)
+        lc = create_load_collection(net, size=load_size, orientation=0, unique_angles=patch_count_unique)
         collections.append(lc)
 
     if len(net.switch):
@@ -276,4 +273,3 @@ if __name__ == "__main__":
     #    net = nw.create_cigre_network_mv()
     #    net = nw.mv_oberrhein()
     simple_plot(net, bus_size=0.4)
-
