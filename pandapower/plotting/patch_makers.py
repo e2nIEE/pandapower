@@ -194,8 +194,11 @@ def load_patches(node_coords, size, angles, unique_angles, **kwargs):
     facecolors = get_color_list(facecolor, len(node_coords))
     polys, lines = list(), list()
 
-    for i in node_coords.index:
-        node_geo = list(node_coords.loc[i])
+    if unique_angles is None:
+        unique_angles = {}
+
+    for i, node_geo in enumerate(node_coords):
+
         if len(unique_angles) != 0:
             if "load" in unique_angles[i] and unique_angles[i]["load"] != []:
                 try:
@@ -244,8 +247,10 @@ def gen_patches(node_coords, size, angles, unique_angles, **kwargs):
     edgecolors = get_color_list(edgecolor, len(node_coords))
     facecolors = get_color_list(facecolor, len(node_coords))
 
-    for i in node_coords.index:
-        node_geo = list(node_coords.loc[i])
+    if unique_angles is None:
+        unique_angles = {}
+
+    for i, node_geo in enumerate(node_coords):
         if len(unique_angles) != 0:
             if "gen" in unique_angles[i] and unique_angles[i]["gen"] != []:
                 try:
@@ -256,7 +261,6 @@ def gen_patches(node_coords, size, angles, unique_angles, **kwargs):
                 continue
         else:
             angle = all_angles[i] or 0
-
         p2 = node_geo + _rotate_dim2(np.array([0, size + offset]), angle)
         circ_edge = node_geo + _rotate_dim2(np.array([0, offset]), angle)
         polys.append(Circle(p2, size, fc=facecolors[i], ec=edgecolors[i]))
@@ -307,9 +311,10 @@ def sgen_patches(node_coords, size, angles, unique_angles, **kwargs):
     facecolors = get_color_list(facecolor, len(node_coords))
     Path = mpath.Path
 
-    for i in node_coords.index:
-        node_geo = list(node_coords.loc[i])
+    if unique_angles is None:
+        unique_angles = {}
 
+    for i, node_geo in enumerate(node_coords):
         if len(unique_angles) != 0 and "WT" in unique_angles[i]["sgen"]:
             try:
                 angle = unique_angles[i]["sgen"]["WT"] + (angles[i] or 0)
@@ -354,10 +359,7 @@ def sgen_patches(node_coords, size, angles, unique_angles, **kwargs):
 
             polys.append(Circle(mid_midcirc, hub_size, fc="k", ec=edgecolors[i]))  # Center hub
 
-
-
         if len(unique_angles) != 0 and "PV" in unique_angles[i]["sgen"]:
-
             try:
                 angle = unique_angles[i]["sgen"]["PV"] + (angles[i] or 0)
             except IndexError:
@@ -378,9 +380,7 @@ def sgen_patches(node_coords, size, angles, unique_angles, **kwargs):
             triangle_patch = Polygon(triangle_points, ec="k", fc="none")
             polys.append(triangle_patch)
 
-
         if len(unique_angles) != 0 and "wye" in unique_angles[i]["sgen"]:
-
             try:
                 angle = unique_angles[i]["sgen"]["wye"] + (angles[i] or 0)
             except IndexError:
@@ -403,7 +403,6 @@ def sgen_patches(node_coords, size, angles, unique_angles, **kwargs):
             lines.append((node_geo, circ_edge))
             lines.append((perp_foot1, line_end1))
             lines.append((perp_foot2, line_end2))
-
         else:
             continue
 

@@ -222,9 +222,9 @@ def _create_line2d_collection(coords, indices, infos=None, picker=False, **kwarg
     return lc
 
 
-def _create_node_element_collection(node_coords, patch_maker, size=1., unique_angles=None, infos=None,
+def _create_node_element_collection(node_coords, patch_maker, size=1., infos=None,
                                     repeat_infos=(1, 1), orientation=np.pi, picker=False,
-                                    patch_facecolor="w", patch_edgecolor="k", line_color="k",
+                                    patch_facecolor="w", patch_edgecolor="k", line_color="k",unique_angles=None,
                                     **kwargs):
     """
     Creates matplotlib collections of node elements. All node element collections usually consist of
@@ -961,7 +961,7 @@ def create_busbar_collection(net, buses=None, infofunc=None, cmap=None, norm=Non
     return lc
 
 
-def create_load_collection(net, loads=None, size=1., unique_angles={}, infofunc=None, orientation=None, picker=False,
+def create_load_collection(net, loads=None, size=1., infofunc=None, orientation=None, picker=False, unique_angles={},
                            **kwargs):
     """
     Creates a matplotlib patch collection of pandapower loads.
@@ -994,18 +994,17 @@ def create_load_collection(net, loads=None, size=1., unique_angles={}, infofunc=
 
     loads = get_index_array(loads, net.load.index)
     infos = [infofunc(i) for i in range(len(loads))] if infofunc is not None else []
-    node_coords = net.bus_geodata.loc[:, ["x", "y"]]
+    node_coords = net.bus_geodata.loc[:, ["x", "y"]].values
 
     color = kwargs.pop("color", "k")
 
     load_pc, load_lc = _create_node_element_collection(
-        node_coords, load_patches, size=size, unique_angles=unique_angles,  infos=infos, orientation=orientation,
-        picker=picker, line_color=color, **kwargs)
+        node_coords, load_patches, size=size,  infos=infos, orientation=orientation,
+        picker=picker, line_color=color, unique_angles=unique_angles, **kwargs)
     return load_pc, load_lc
 
 
-def create_gen_collection(net, gens=None, size=1., unique_angles=None, infofunc=None, orientation=None, picker=False,
-                          **kwargs):
+def create_gen_collection(net, gens=None, size=1.,  infofunc=None, orientation=None, picker=False,unique_angles=None, **kwargs):
     """
     Creates a matplotlib patch collection of pandapower gens.
 
@@ -1035,18 +1034,17 @@ def create_gen_collection(net, gens=None, size=1., unique_angles=None, infofunc=
     """
     gens = get_index_array(gens, net.gen.index)
     infos = [infofunc(i) for i in range(len(gens))] if infofunc is not None else []
-    node_coords = net.bus_geodata.loc[:, ["x", "y"]]
+    node_coords = net.bus_geodata.loc[:, ["x", "y"]].values
 
     color = kwargs.pop("color", "k")
 
     gen_pc, gen_lc = _create_node_element_collection(
-        node_coords, gen_patches, size=size, unique_angles=unique_angles,  infos=infos, orientation=orientation,
-        picker=picker, line_color=color, **kwargs)
+        node_coords, gen_patches, size=size,   infos=infos, orientation=orientation,
+        picker=picker, line_color=color, unique_angles=unique_angles, **kwargs)
     return gen_pc, gen_lc
 
 
-def create_sgen_collection(net, sgens=None, size=1., unique_angles=None, infofunc=None, orientation=None, picker=False,
-                           **kwargs):
+def create_sgen_collection(net, sgens=None, size=1.,  infofunc=None, orientation=None, picker=False, unique_angles=None, **kwargs):
     """
     Creates a matplotlib patch collection of pandapower sgen.
 
@@ -1076,13 +1074,13 @@ def create_sgen_collection(net, sgens=None, size=1., unique_angles=None, infofun
     """
 
     infos = [infofunc(i) for i in range(len(sgens))] if infofunc is not None else []
-    node_coords = net.bus_geodata.loc[:, ["x", "y"]]
+    node_coords = net.bus_geodata.loc[:, ["x", "y"]].values
 
 
     color = kwargs.pop("color", "k")
     sgen_pc, sgen_lc = _create_node_element_collection(
-        node_coords, sgen_patches, size=size, unique_angles=unique_angles, infos=infos, orientation=orientation,
-        picker=picker, line_color=color, **kwargs)
+        node_coords, sgen_patches, size=size,  infos=infos, orientation=orientation,
+        picker=picker, line_color=color,unique_angles=unique_angles, **kwargs)
     return sgen_pc, sgen_lc
 
 
