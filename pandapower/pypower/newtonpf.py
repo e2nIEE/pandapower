@@ -498,9 +498,6 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         s_ssc_f = conj(Yf_ssc.dot(V)) * V[ssc_fb] * baseMVA
         s_ssc_t = conj(Yt_ssc.dot(V)) * V[ssc_tb] * baseMVA
         ssc[ssc_branches, SSC_Q] = s_ssc_f.imag
-        # todo: remove print
-        print("SSC P from:", s_ssc_f.real, "SSC Q from:", s_ssc_f.imag)
-        print("SSC P to:", s_ssc_t.real, "SSC Q to:", s_ssc_t.imag)
 
     # todo move this to pfsoln
     if any_vsc:
@@ -510,9 +507,6 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         s_vsc_t = conj(Yt_vsc.dot(V)) * V[vsc_tb] * baseMVA
         vsc[vsc_branches, VSC_P] = s_vsc_f.real
         vsc[vsc_branches, VSC_Q] = s_vsc_f.imag
-        # todo: remove print
-        print("VSC P from:", s_vsc_f.real, "VSC Q from:", s_vsc_f.imag)
-        print("VSC P to:", s_vsc_t.real, "VSC Q to:", s_vsc_t.imag)
 
     # todo move this to pfsoln
     if any_branch_dc:
@@ -603,8 +597,6 @@ def _evaluate_Fx_facts(V,pq ,svc_buses=None, svc_set_vm_pu=None, tcsc_controllab
         Pbus_hvdc = V_dc * Ybus_hvdc.dot(V_dc)
         mis_hvdc = Pbus_hvdc - P_dc
         mis_facts = np.r_[mis_facts, mis_hvdc[dc_p]]
-        # todo: remove print
-        print("F:", mis_hvdc, "V_dc:", V_dc, "P:", Pbus_hvdc)
 
         # coupling of P with VSC happens here:
         Sbus_vsc = V * conj(Ybus_vsc * V)
