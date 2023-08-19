@@ -782,23 +782,61 @@ except RuntimeError:
     set_isolated_buses_oos = jit(nopython=True, cache=False)(_python_set_isolated_buses_oos)
 
 
-def _select_is_elements_numba(net, isolated_nodes=None, sequence=None):
-    ## todo: in_service for dc bus and implenet input parameters for isolated_nodes for dc bus
+def _select_is_elements_numba(net, isolated_nodes=None, isolated_nodes_dc=None, sequence=None):
+    """
+    Selects in-service elements in the grid (both AC and DC) based on the network's state
+    and sets this information in the internal lookups.
+    If provided, isolated buses (AC and DC) are additionally considered as not in service.
+    The function sets elements out of service based on their direct connectivity to
+    in-service buses, and also based on controllability flags in 'load', 'sgen', and 'storage'
+    during optimal power flow (OPF) mode.
+
+    Parameters:
+    -----------
+    net : pandapowerNet
+        The grid data structure containing information about the buses, loads, lines, etc.
+
+    isolated_nodes : list or ndarray, optional (default=None)
+        List or array of isolated nodes (AC) in the network. If provided, the isolated nodes are
+        set as out of service.
+
+    isolated_nodes_dc : list or ndarray, optional (default=None)
+        List or array of isolated nodes (DC) in the network. If provided, the isolated DC nodes are
+        set as out of service.
+
+    sequence : str, optional (default=None)
+        Used when multi-sequence data is present in the network (like in fault studies).
+        If provided, it selects the specific sequence data in the network.
+
+    Returns:
+    --------
+    is_elements : dict
+        A dictionary containing boolean arrays or lists representing the in-service state
+        of various elements (like 'load', 'gen', 'line', etc.) in the network.
+
+    Notes:
+    ------
+    1. The function checks and considers both AC and DC elements in the grid.
+    2. If the grid has VSC elements and auxiliary lookup data, the isolated auxiliary buses
+       for the VSC elements are also set out of service.
+    """
     # is missing sgen_controllable and load_controllable
-    max_bus_idx = np.max(net["bus"].index.values)
-    bus_in_service = np.zeros(max_bus_idx + 1, dtype=bool)
-    bus_in_service[net["bus"].index.values] = net["bus"]["in_service"].values.astype(bool)
+    if len(net.bus) > 0:  # preparing for the possibility of not having any AC buses but just DC
+        max_bus_idx = np.max(net["bus"].index.values)
+        bus_in_service = np.zeros(max_bus_idx + 1, dtype=bool)
+        bus_in_service[net["bus"].index.values] = net["bus"]["in_service"].values.astype(bool)
+    else:
+        bus_in_service = np.array([], dtype=bool)
     if len(net.bus_dc) > 0:
         max_bus_dc_idx = np.max(net["bus_dc"].index.values)
         bus_dc_in_service = np.zeros(max_bus_dc_idx + 1, dtype=bool)
         bus_dc_in_service[net["bus_dc"].index.values] = net["bus_dc"]["in_service"].values.astype(bool)
     else:
         bus_dc_in_service = np.array([], dtype=bool)
-    isolated_buses_dc = net.get("_isolated_buses_dc")
-    if isolated_buses_dc is not None and len(isolated_buses_dc) > 0:
+    if isolated_nodes_dc is not None and len(isolated_nodes_dc) > 0:
         ppc = net["_ppc"]
         ppc_bus_dc_isolated = np.zeros(ppc["bus_dc"].shape[0], dtype=bool)
-        ppc_bus_dc_isolated[isolated_buses_dc] = True
+        ppc_bus_dc_isolated[isolated_nodes_dc] = True
         set_isolated_buses_oos(bus_dc_in_service, ppc_bus_dc_isolated, net["_pd2ppc_lookups"]["bus_dc"])
     if isolated_nodes is not None and len(isolated_nodes) > 0:
         ppc = net["_ppc"] if sequence is None else net["_ppc%s" % sequence]
@@ -810,23 +848,24 @@ def _select_is_elements_numba(net, isolated_nodes=None, sequence=None):
                    "ward", "xward", "shunt", "ext_grid", "storage", "svc", "ssc", "vsc"]  # ,"impedance_load"
     elements_dc = ["vsc"]
     is_elements = dict()
-    for elements, bus_table, bis in zip((elements_ac, elements_dc), ("bus", "bus_dc"), (bus_in_service,bus_dc_in_service)):
-        for element in elements:
-            len_ = len(net[element].index)
-            element_in_service = np.zeros(len_, dtype=bool)
-            if len_ > 0:
-                element_df = net[element]
+    for element_table_list, bus_table, bis in zip((elements_ac, elements_dc),
+                                                  ("bus", "bus_dc"), (bus_in_service, bus_dc_in_service)):
+        for element_table in element_table_list:
+            num_elements = len(net[element_table].index)
+            element_in_service = np.zeros(num_elements, dtype=bool)
+            if num_elements > 0:
+                element_df = net[element_table]
                 set_elements_oos(element_df[bus_table].values, element_df["in_service"].values,
                                  bis, element_in_service)
             # load, sgen, storage only in elements_ac so this will only be executed once:
-            if net["_options"]["mode"] == "opf" and element in ["load", "sgen", "storage"]:
-                if "controllable" in net[element]:
-                    controllable = net[element].controllable.fillna(False).values.astype(bool)
-                    controllable_is = controllable & element_in_service
-                    if controllable_is.any():
-                        is_elements["%s_controllable" % element] = controllable_is
-                        element_in_service = element_in_service & ~controllable_is
-            is_elements[element] = element_in_service
+            if net["_options"]["mode"] == "opf" and element_table in ["load", "sgen", "storage"]:
+                if "controllable" in net[element_table]:
+                    controllable = net[element_table].controllable.fillna(False).values.astype(bool)
+                    controllable_in_service = controllable & element_in_service
+                    if controllable_in_service.any():
+                        is_elements["%s_controllable" % element_table] = controllable_in_service
+                        element_in_service = element_in_service & ~controllable_in_service
+            is_elements[element_table] = element_in_service
 
     if len(net.vsc) > 0 and "aux" in net["_pd2ppc_lookups"]:
         # reasoning: it can be that there are isolated DC buses. But they are only discovered

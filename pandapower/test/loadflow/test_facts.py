@@ -51,14 +51,14 @@ def copy_with_impedance(net):
     for i in net.tcsc.index.values:
         pp.create_impedance(net_ref, net.tcsc.from_bus.at[i], net.tcsc.to_bus.at[i], 0,
                             net.res_tcsc.x_ohm.at[i] / baseZ[net.tcsc.to_bus.at[i]], baseMVA,
-                            in_service=net.tcsc.in_service.at[i], name="TCSC")
+                            in_service=net.tcsc.in_service.at[i], name="tcsc")
     net_ref.tcsc.in_service = False
 
     if len(net.svc) > 0:
         # pp.create_loads(net_ref, net.svc.bus.values, 0, net.res_svc.q_mvar.values, in_service=net.svc.in_service.values)
         # create shunts because of Ybus comparison
         q = np.square(net.bus.loc[net.svc.bus.values, 'vn_kv']) / net.res_svc.x_ohm.values
-        pp.create_shunts(net_ref, net.svc.bus.values, q.fillna(0), in_service=net.svc.in_service.values, name="SVC")
+        pp.create_shunts(net_ref, net.svc.bus.values, q.fillna(0), in_service=net.svc.in_service.values, name="svc")
         net_ref.svc.in_service = False
 
     if len(net.ssc) > 0:
@@ -66,10 +66,25 @@ def copy_with_impedance(net):
         in_service = net.ssc.in_service.values
         ssc_bus = net.ssc.bus.values
         aux_bus = pp.create_buses(net_ref, len(net.ssc), net.bus.loc[ssc_bus, "vn_kv"].values)
-        for fb, tb, x, i in zip(ssc_bus, aux_bus, net.ssc.x_ohm.values / baseZ[ssc_bus], in_service):
-            pp.create_impedance(net_ref, fb, tb, 0, x, baseMVA, name="SSC", in_service=i)
+        for fb, tb, r, x, i in zip(ssc_bus, aux_bus, net.ssc.r_ohm.values / baseZ[ssc_bus],
+                                   net.ssc.x_ohm.values / baseZ[ssc_bus], in_service):
+            pp.create_impedance(net_ref, fb, tb, r, x, baseMVA, name="ssc", in_service=i)
         pp.create_gens(net_ref, aux_bus, 0, net.res_ssc.vm_internal_pu.fillna(1), in_service=in_service)
         net_ref.ssc.in_service = False
+
+    if len(net.vsc) > 0:
+        # create shunts because of Ybus comparison
+        in_service = net.vsc.in_service.values
+        vsc_bus = net.vsc.bus.values
+        aux_bus = pp.create_buses(net_ref, len(net.vsc), net.bus.loc[vsc_bus, "vn_kv"].values)
+        for fb, tb, r, x, i in zip(vsc_bus, aux_bus, net.vsc.r_ohm.values / baseZ[vsc_bus],
+                                   net.vsc.x_ohm.values / baseZ[vsc_bus], in_service):
+            pp.create_impedance(net_ref, fb, tb, r, x, baseMVA, name="vsc", in_service=i)
+        g=pp.create_gens(net_ref, aux_bus, 0, net.res_vsc.vm_internal_pu.fillna(1), in_service=in_service)
+        vsc_pv = net.vsc.control_mode_ac.values == "vm_pu"
+        net_ref.gen.loc[g[vsc_pv], "vm_pu"] = net.vsc.loc[vsc_pv, "control_value_ac"].values
+        net_ref.vsc.in_service = False
+        net_ref.bus_dc.loc[net.vsc.bus_dc.values, "in_service"] = False
 
     return net_ref
 
@@ -77,7 +92,7 @@ def copy_with_impedance(net):
 def compare_tcsc_impedance(net, net_ref, idx_tcsc, idx_impedance):
     backup_q = net_ref.res_bus.loc[net.ssc.bus.values, "q_mvar"].copy()
     net_ref.res_bus.loc[net.ssc.bus.values, "q_mvar"] += net_ref.res_impedance.loc[
-        net_ref.impedance.query("name=='SSC'").index, "q_from_mvar"].values
+        net_ref.impedance.query("name=='ssc'").index, "q_from_mvar"].values
     bus_idx = net.bus.index.values
     for col in ("vm_pu", "va_degree", "p_mw", "q_mvar"):
         assert np.allclose(net.res_bus[col], net_ref.res_bus.loc[bus_idx, col], rtol=0, atol=1e-6)
@@ -92,10 +107,11 @@ def compare_tcsc_impedance(net, net_ref, idx_tcsc, idx_impedance):
     net_ref.res_bus.loc[net.ssc.bus.values, "q_mvar"] = backup_q
 
 
-def compare_ssc_impedance_gen(net, net_ref):
-    backup_q = net_ref.res_bus.loc[net.ssc.bus.values, "q_mvar"].copy()
-    net_ref.res_bus.loc[net.ssc.bus.values, "q_mvar"] += net_ref.res_impedance.loc[net_ref.impedance.query(
-        "name=='SSC'").index, "q_from_mvar"].values  ### comparing the original buses in net and net_ref(witout the auxilary buses)
+def compare_ssc_impedance_gen(net, net_ref, element="ssc"):
+    backup_q = net_ref.res_bus.loc[net[element].bus.values, "q_mvar"].copy()
+    ### comparing the original buses in net and net_ref(witout the auxilary buses)
+    net_ref.res_bus.loc[net[element].bus.values, "q_mvar"] += \
+        net_ref.res_impedance.loc[net_ref.impedance.query(f"name=='{element}'").index, "q_from_mvar"].values
     assert np.allclose(np.abs(net._ppc["internal"]["V"][net.bus.index]),
                        np.abs(net_ref._ppc["internal"]["V"][net.bus.index]), rtol=0, atol=1e-6)
 
@@ -103,10 +119,10 @@ def compare_ssc_impedance_gen(net, net_ref):
         assert np.allclose(net.res_bus[col][net.bus.index], net_ref.res_bus[col][net.bus.index], rtol=0, atol=1e-6)
 
     ### compare the internal bus at ssc and the auxilary bus at net_ref
-    in_service = net.ssc.in_service.values
+    in_service = net[element].in_service.values
     for i, j in zip(['vm_internal_pu', 'va_internal_degree'], ['vm_pu', 'va_degree']):
-        assert np.allclose(net.res_ssc[i][in_service], net_ref.res_bus[j][len(net.bus):].values[in_service], rtol=0,
-                           atol=1e-6)
+        assert np.allclose(net[f"res_{element}"][i][in_service],
+                           net_ref.res_bus[j][len(net.bus):].values[in_service], rtol=0, atol=1e-6)
 
     assert np.allclose(np.abs(net._ppc["internal"]["V"][len(net.bus):]),
                        net_ref.res_bus.vm_pu[len(net.bus):][in_service], rtol=0, atol=1e-6)
@@ -125,7 +141,7 @@ def compare_ssc_impedance_gen(net, net_ref):
 
     assert np.allclose(net._ppc["internal"]["Ybus"].toarray(), net_ref._ppc["internal"]["Ybus"].toarray(), rtol=0,
                        atol=1e-6)
-    net_ref.res_bus.loc[net.ssc.bus.values, "q_mvar"] = backup_q
+    net_ref.res_bus.loc[net[element].bus.values, "q_mvar"] = backup_q
 
 
 def add_tcsc_to_line(net, xl, xc, set_p_mw, from_bus, line, side="from_bus"):
@@ -509,7 +525,7 @@ def test_multiple_facts():
     runpp_with_consistency_checks(net)
     net_ref = copy_with_impedance(net)
     pp.runpp(net_ref)
-    compare_tcsc_impedance(net, net_ref, net.tcsc.index, net_ref.impedance.query("name=='TCSC'").index)
+    compare_tcsc_impedance(net, net_ref, net.tcsc.index, net_ref.impedance.query("name=='tcsc'").index)
 
     pp.create_svc(net, 3, 1, -10, 1.01, 90)
     runpp_with_consistency_checks(net)
@@ -519,8 +535,8 @@ def test_multiple_facts():
     runpp_with_consistency_checks(net)
     net_ref = copy_with_impedance(net)
     pp.runpp(net_ref)
-    compare_tcsc_impedance(net, net_ref, net.tcsc.index, net_ref.impedance.query("name=='TCSC'").index)
-    compare_tcsc_impedance(net, net_ref, net.svc.index, net_ref.impedance.query("name=='SVC'").index)
+    compare_tcsc_impedance(net, net_ref, net.tcsc.index, net_ref.impedance.query("name=='tcsc'").index)
+    compare_tcsc_impedance(net, net_ref, net.svc.index, net_ref.impedance.query("name=='svc'").index)
 
 
 def _many_tcsc_test_net():
@@ -571,7 +587,7 @@ def test_multiple_facts_combinations(svc_status, tcsc_status, ssc_status):
     runpp_with_consistency_checks(net)
     net_ref = copy_with_impedance(net)
     pp.runpp(net_ref)
-    compare_tcsc_impedance(net, net_ref, net.tcsc.index, net_ref.impedance.query("name=='TCSC'").index)
+    compare_tcsc_impedance(net, net_ref, net.tcsc.index, net_ref.impedance.query("name=='tcsc'").index)
     compare_ssc_impedance_gen(net, net_ref)
 
     net.svc.controllable = True
@@ -585,7 +601,7 @@ def test_multiple_facts_combinations(svc_status, tcsc_status, ssc_status):
 
     net_ref = copy_with_impedance(net)
     pp.runpp(net_ref)
-    compare_tcsc_impedance(net, net_ref, net.tcsc.index, net_ref.impedance.query("name=='TCSC'").index)
+    compare_tcsc_impedance(net, net_ref, net.tcsc.index, net_ref.impedance.query("name=='tcsc'").index)
     compare_ssc_impedance_gen(net, net_ref)
 
 
@@ -1351,6 +1367,29 @@ def test_minimal_ac():
     net = pp.create_empty_network()
     # AC part
     pp.create_buses(net, 1, 110)
+    pp.create_ext_grid(net, 0, vm_pu=1.02)
+
+    # DC part
+    pp.create_bus_dc(net, 110, 'A')
+
+    pp.create_vsc(net, 0, 0, 0.1, 6, control_value_ac=1.01, control_mode_dc="vm_pu", control_value_dc=1.02)
+
+    with pytest.raises(UserWarning, match="Voltage controlling elements"):
+        pp.runpp(net)
+
+    net.vsc.at[0, "control_value_ac"] = 1.02
+
+    net_copy = copy_with_impedance(net)
+    pp.runpp(net_copy)
+
+    runpp_with_consistency_checks(net)
+    compare_ssc_impedance_gen(net, net_copy, "vsc")
+
+
+def test_minimal_hvdc():
+    net = pp.create_empty_network()
+    # AC part
+    pp.create_buses(net, 1, 110)
     pp.create_ext_grid(net, 0)
 
     # DC part
@@ -1382,7 +1421,11 @@ def test_minimal_one_vsc():
     runpp_with_consistency_checks(net)
 
 
-
+# TODO VSC as slack - cannot work because slack is a Vm-Va bus,
+#  and the VSC is a Vm bus? One way to implement this is to declare
+#  the aux AC bus as slack, then use the result as the P set-point for
+#  the DC bus. This would enable connecting an island AC grid with an HVDC line.
+# TODO test for when the VSC, SSC, TCSC, connect to same buses
 
 if __name__ == "__main__":
     pytest.main([__file__])

@@ -8,85 +8,183 @@ import numpy as np
 from scipy.sparse import csr_matrix
 
 
+def calc_y_svc(x_control_degree, svc_x_l_ohm, svc_x_cvar_ohm, v_base_kv, baseMVA):
+    """
+    Computes the admittance of SVC (Static VAR Compensator) components based on their control angles
+    and reactance values in ohms.
+
+    Parameters:
+    -----------
+    x_control_degree : array-like
+        Thyristor firing angles for the SVCs in degrees.
+    svc_x_l_ohm : array-like
+        Reactance of the SVC's inductor in ohms.
+    svc_x_cvar_ohm : array-like
+        Reactance of the SVC's capacitor in ohms.
+    v_base_kv : array-like
+        Base voltage levels in kV for corresponding SVC elements.
+    baseMVA : float
+        System's base power in MVA.
+
+    Returns:
+    --------
+    array-like
+        Computed admittance values of the SVCs in ohms.
+    """
+    x_control = np.deg2rad(x_control_degree)
+    z_base_ohm = np.square(v_base_kv) / baseMVA
+    svc_x_l_pu = svc_x_l_ohm / z_base_ohm
+    svc_x_cvar_pu = svc_x_cvar_ohm / z_base_ohm
+    y_svc = calc_y_svc_pu(x_control, svc_x_l_pu, svc_x_cvar_pu)
+    y_svc *= z_base_ohm
+    return y_svc
+
+
+def calc_y_svc_pu(x_control, svc_x_l_pu, svc_x_cvar_pu):
+    """
+    Calculates the admittance of SVC elements (Static VAR Compensator) in per unit.
+
+    Parameters:
+    -----------
+    x_control : array-like
+        Thyristor firing angles in radians for the SVCs.
+    svc_x_l_pu : array-like
+        Reactance of the SVC's inductor in per-unit.
+    svc_x_cvar_pu : array-like
+        Reactance of the SVC's capacitor in per-unit.
+
+    Returns:
+    --------
+    array-like
+        Admittance values of the SVCs in per-unit.
+    """
+    y_svc = (2 * (np.pi - x_control) + np.sin(2 * x_control) + np.pi * svc_x_l_pu / svc_x_cvar_pu) / (np.pi * svc_x_l_pu)
+    return y_svc
+
+
 def makeYbus_svc(Ybus, x_control_svc, svc_x_l_pu, svc_x_cvar_pu, svc_buses):
+    """
+    Constructs the SVC (Static VAR Compensator) admittance matrix.
+
+    Parameters:
+    -----------
+    Ybus : csr_matrix
+        The base admittance matrix of the system.
+    x_control_svc : array-like
+        Thyristor firing angles for the SVCs in degrees.
+    svc_x_l_pu : array-like
+        Reactance of the SVC's inductor in per-unit.
+    svc_x_cvar_pu : array-like
+        Reactance of the SVC's capacitor in per-unit.
+    svc_buses : array-like
+        Bus indices where SVCs are connected.
+
+    Returns:
+    --------
+    csr_matrix
+        The admittance matrix for the SVCs.
+    """
     Y_SVC = -1j * calc_y_svc_pu(x_control_svc, svc_x_l_pu, svc_x_cvar_pu)
     Ybus_svc = csr_matrix((Y_SVC, (svc_buses, svc_buses)), shape=Ybus.shape, dtype=np.complex128)
     return Ybus_svc
 
 
 def makeYbus_tcsc(Ybus, x_control_tcsc, tcsc_x_l_pu, tcsc_x_cvar_pu, tcsc_fb, tcsc_tb):
-    Ybus_tcsc = np.zeros(Ybus.shape, dtype=np.complex128)
+    """
+    Constructs the TCSC (Thyristor Controlled Series Capacitor) admittance matrix.
+
+    Parameters:
+    -----------
+    Ybus : csr_matrix
+        The base admittance matrix of the system.
+    x_control_tcsc : array-like
+        Thyristor firing angles for the TCSCs in radians.
+    tcsc_x_l_pu : array-like
+        Reactance of the TCSC's inductor in per-unit.
+    tcsc_x_cvar_pu : array-like
+        Reactance of the TCSC's capacitor in per-unit.
+    tcsc_fb : array-like
+        From-bus indices where TCSCs are connected.
+    tcsc_tb : array-like
+        To-bus indices where TCSCs are connected.
+
+    Returns:
+    --------
+    csr_matrix
+        The updated admittance matrix considering the TCSCs.
+    """
     Y_TCSC = -1j * calc_y_svc_pu(x_control_tcsc, tcsc_x_l_pu, tcsc_x_cvar_pu)
+    Ybus_tcsc = make_Ybus_facts(tcsc_fb, tcsc_tb, Y_TCSC, Ybus.shape[0])
+    return Ybus_tcsc
 
-    # for y_tcsc_pu_i, i, j in zip(Y_TCSC, tcsc_fb, tcsc_tb):
-    #     Ybus_tcsc[i, i] += y_tcsc_pu_i
-    #     Ybus_tcsc[i, j] += -y_tcsc_pu_i
-    #     Ybus_tcsc[j, i] += -y_tcsc_pu_i
-    #     Ybus_tcsc[j, j] += y_tcsc_pu_i
 
-    Ybus_tcsc[tcsc_fb, tcsc_tb] = -Y_TCSC
-    Ybus_tcsc[tcsc_tb, tcsc_fb] = -Y_TCSC
-    Ybus_tcsc[np.diag_indices_from(Ybus_tcsc)] = -Ybus_tcsc.sum(axis=1)
+def makeYft_tcsc(Ybus_tcsc, tcsc_fb, tcsc_tb, x_control_tcsc, tcsc_x_l_pu, tcsc_x_cvar_pu):
+    """
+    Constructs the 'from' and 'to' admittance matrices for the TCSC (Thyristor Controlled Series Capacitor).
 
-    return csr_matrix(Ybus_tcsc)
+    Parameters:
+    -----------
+    Ybus_tcsc : csr_matrix
+        The admittance matrix considering the TCSCs.
+    x_control_tcsc : array-like
+        Thyristor firing angles for the TCSCs in radians.
+    tcsc_x_l_pu : array-like
+        Reactance of the TCSC's inductor in per-unit.
+    tcsc_x_cvar_pu : array-like
+        Reactance of the TCSC's capacitor in per-unit.
+    tcsc_fb : array-like
+        From-bus indices where TCSCs are connected.
+    tcsc_tb : array-like
+        To-bus indices where TCSCs are connected.
+
+    Returns:
+    --------
+    tuple of csr_matrix
+        - Yf : csr_matrix
+            The 'from' admittance matrix for the TCSCs.
+        - Yt : csr_matrix
+            The 'to' admittance matrix for the TCSCs.
+    """
+    Y_TCSC = -1j * calc_y_svc_pu(x_control_tcsc, tcsc_x_l_pu, tcsc_x_cvar_pu)
+    Yf, Yt = make_Yft_facts(tcsc_fb, tcsc_tb, Y_TCSC, Ybus_tcsc.shape[0])
+    return Yf, Yt
 
 
 def makeYbus_ssc_vsc(Ybus, internal_y_pu, fb, tb, controllable):
-    Ybus_controllable = np.zeros(Ybus.shape, dtype=np.complex128)
-    Ybus_not_controllable = np.zeros(Ybus.shape, dtype=np.complex128)
+    """
+    Constructs the admittance matrices for SSCs (Static Synchronous Compensators)
+    and VSCs (Voltage Source Converters).
 
-    for flag, Ybus_flag in zip([~controllable, controllable], [Ybus_not_controllable, Ybus_controllable]):
+    Parameters:
+    -----------
+    Ybus : csr_matrix
+        The base admittance matrix.
+    internal_y_pu : array-like
+        Internal transformer admittance values in per-unit.
+    fb : array-like
+        From bus indices.
+    tb : array-like
+        To bus indices.
+    controllable : array-like
+        Boolean flags indicating if elements are controllable.
+
+    Returns:
+    --------
+    tuple of csr_matrix
+        The not controllable, controllable, and combined admittance matrices.
+    """
+    Ybus_matrices = []
+
+    for flag in [~controllable, controllable]:
         if not np.any(flag):
+            Ybus_matrices.append(csr_matrix(Ybus.shape, dtype=np.complex128))
             continue
+        Ybus_flag = make_Ybus_facts(fb[flag], tb[flag], internal_y_pu[flag], Ybus.shape[0])
+        Ybus_matrices.append(Ybus_flag)
 
-        # size_y = Ybus.shape[0]
-        # K_Y = vstack([eye(size_y, format="csr"),
-        #               csr_matrix((num_ssc, size_y))], format="csr")
-        # Ybus = K_Y * Ybus * K_Y.T  # this extends the Ybus matrix with 0-rows and 0-columns for the "q"-bus of SSC
+    Ybus_not_controllable, Ybus_controllable = Ybus_matrices[0], Ybus_matrices[1]
 
-
-
-        # for y_tcsc_pu_i, i, j in zip(Y_TCSC, tcsc_fb, tcsc_tb):
-        #     Ybus_tcsc[i, i] += y_tcsc_pu_i
-        #     Ybus_tcsc[i, j] += -y_tcsc_pu_i
-        #     Ybus_tcsc[j, i] += -y_tcsc_pu_i
-        #     Ybus_tcsc[j, j] += y_tcsc_pu_i
-
-        # Ybus[ssc_fb[flag], ssc_fb[flag]] = ssc_y_pu[flag]
-        Ybus_flag[fb[flag], tb[flag]] = -internal_y_pu[flag]
-        Ybus_flag[tb[flag], fb[flag]] = -internal_y_pu[flag]
-        # Ybus[ssc_tb[flag], ssc_tb[flag]] = ssc_y_pu[flag]
-        Ybus_flag[np.diag_indices_from(Ybus_flag)] = -Ybus_flag.sum(axis=1)
-
-    return csr_matrix(Ybus_not_controllable), csr_matrix(Ybus_controllable), \
-        csr_matrix(Ybus_not_controllable + Ybus_controllable)
-
-
-def makeYbus_hvdc(hvdc_y_pu, hvdc_fb, hvdc_tb):
-    if len(hvdc_fb) == 0:
-        return csr_matrix([], dtype=np.float64)
-    num_hvdc = np.max(np.r_[hvdc_fb, hvdc_tb]) + 1
-    Ybus_hvdc = np.zeros(shape=(num_hvdc, num_hvdc), dtype=np.float64)
-    Ybus_hvdc[hvdc_fb, hvdc_tb] = -hvdc_y_pu
-    Ybus_hvdc[hvdc_tb, hvdc_fb] = -hvdc_y_pu
-    Ybus_hvdc[np.diag_indices_from(Ybus_hvdc)] = -Ybus_hvdc.sum(axis=1)
-
-    return csr_matrix(Ybus_hvdc)
-
-
-def calc_y_svc(x_control, svc_x_l_pu, svc_x_cvar_pu, v_base_kv, baseMVA):
-    x_control = np.deg2rad(x_control)
-    z_base_ohm = np.square(v_base_kv) / baseMVA
-    svc_x_l_pu = svc_x_l_pu / z_base_ohm
-    svc_x_cvar_pu = svc_x_cvar_pu / z_base_ohm
-    y_svc = calc_y_svc_pu(x_control, svc_x_l_pu, svc_x_cvar_pu)
-    y_svc /= z_base_ohm
-    return y_svc
-
-
-def calc_y_svc_pu(x_control, svc_x_l_pu, svc_x_cvar_pu):
-    y_svc = (2 * (np.pi - x_control) + np.sin(2 * x_control) + np.pi * svc_x_l_pu / svc_x_cvar_pu) / (np.pi * svc_x_l_pu)
-    return y_svc
+    return Ybus_not_controllable, Ybus_controllable, Ybus_not_controllable + Ybus_controllable
 
 
 def make_Ybus_facts(from_bus, to_bus, y_pu, n):
@@ -116,26 +214,8 @@ def make_Ybus_facts(from_bus, to_bus, y_pu, n):
     data = np.concatenate([y_pu, y_pu, -y_pu, -y_pu])
 
     # Create and return the Ybus matrix using the compressed sparse row format
-    Ybus_facts = csr_matrix((data, (row_indices, col_indices)), shape=(n, n))
+    Ybus_facts = csr_matrix((data, (row_indices, col_indices)), shape=(n, n), dtype=np.complex128)
     return Ybus_facts
-
-
-def makeYft_tcsc(Ybus_tcsc, tcsc_fb, tcsc_tb):
-    ## build Yf and Yt such that Yf * V is the vector of complex branch currents injected
-    ## at each branch's "from" bus, and Yt is the same for the "to" bus end
-    Y = Ybus_tcsc.toarray()
-    nl = len(tcsc_fb)
-    nb = Ybus_tcsc.shape[0]
-    i = np.hstack([range(nl), range(nl)])  ## double set of row indices
-
-    Yft = Y[tcsc_fb, tcsc_tb]
-    Yff = -Yft
-    Ytf = Y[tcsc_tb, tcsc_fb]
-    Ytt = -Ytf
-
-    Yf = csr_matrix((np.hstack([Yff, Yft]), (i, np.hstack([tcsc_fb, tcsc_tb]))), (nl, nb))
-    Yt = csr_matrix((np.hstack([Ytf, Ytt]), (i, np.hstack([tcsc_fb, tcsc_tb]))), (nl, nb))
-    return Yf, Yt
 
 
 def make_Yft_facts(from_bus, to_bus, y_pu, n):
