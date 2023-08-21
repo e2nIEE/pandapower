@@ -3,7 +3,7 @@
 import pandas as pd
 import numpy as np
 import pandapower as pp
-from pandapower import toolbox
+from pandapower.toolbox import replace_zero_branches_with_switches
 from pandapower import diagnostic
 
 try:
@@ -242,7 +242,7 @@ def validate_pf_conversion(net, is_unbalanced=False, **kwargs):
 
     """
     logger.debug('starting verification')
-    toolbox.replace_zero_branches_with_switches(net)
+    replace_zero_branches_with_switches(net)
     pf_results = _get_pf_results(net, is_unbalanced=is_unbalanced)
     if "controller" not in net.keys() or len(net.controller) == 0:
         try:
@@ -429,7 +429,7 @@ def _validate_pf_conversion_balanced(net, in_both, all_diffs):
         all_diffs["load_q_diff_is"] = load_q_diff_is
 
     logger.debug('verifying ext_grid')
-    eg_oos = net.ext_grid[net.ext_grid.in_service == False].index
+    eg_oos = net.ext_grid[~net.ext_grid.in_service].index
     ext_grid_p_diff = net.res_ext_grid.pf_p.replace(np.nan, 0).drop(eg_oos) - net.res_ext_grid.p_mw
     ext_grid_q_diff = net.res_ext_grid.pf_q.replace(np.nan, 0).drop(
         eg_oos) - net.res_ext_grid.q_mvar
@@ -557,11 +557,11 @@ def _validate_pf_conversion_unbalanced(net, in_both, all_diffs):
                                                                    max(abs(asymmetric_load_q_diff_is))))
             all_diffs["asymmetric_load_p_diff_is"] = asymmetric_load_p_diff_is
             all_diffs["asymmetric_load_q_diff_is"] = asymmetric_load_q_diff_is
-            
+
         if len(net.ext_grid[net.ext_grid.in_service]) > 0:
 
             logger.debug('verifying ext_grid')
-            
+
             for phase in ["a", "b", "c"]:
                 ext_grid_p_diff = net.res_ext_grid_3ph["pf_p_%s" % phase].replace(np.nan, 0) - \
                     net.res_ext_grid_3ph["p_%s_mw" % phase]

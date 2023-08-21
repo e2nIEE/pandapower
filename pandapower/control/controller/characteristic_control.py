@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
+from pandapower.auxiliary import _detect_read_write_flag, read_from_net, write_to_net
 from pandapower.control.basic_controller import Controller
-from pandapower.toolbox import _detect_read_write_flag, read_from_net, write_to_net
 
 
 class CharacteristicControl(Controller):

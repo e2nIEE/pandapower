@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -14,6 +14,7 @@ import pandas as pd
 
 import pandapower as pp
 import pandapower.networks as pn
+import pandapower.toolbox
 from pandapower.converter import from_ppc, validate_from_ppc, to_ppc
 from pandapower.converter.pypower.from_ppc import _branch_to_which, _gen_to_which
 from pandapower.pypower.idx_bus import \
@@ -51,18 +52,11 @@ def get_testgrids(foldername, filename):
     return ppcs
 
 
-def validate_other_than_py37(ppc, net, max_diff_values):
-    if sys.version_info.minor < 8 and sys.version_info.major == 3:
-        if not validate_from_ppc(ppc, net, max_diff_values=max_diff_values):
-            logger.error("test_pypower_cases() fails for py3.7")
-    else:
-        assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values)
-
-
 def test_from_ppc_simple_against_target():
     ppc = get_testgrids('ppc_testgrids', 'case2_2.json')
     net_by_ppc = from_ppc(ppc)
     net_by_code = pp.from_json(os.path.join(pp.pp_dir, 'test', 'converter', 'case2_2_by_code.json'))
+    pp.reindex_buses(net_by_code, dict(zip(net_by_code.bus.index, net_by_ppc.bus.index)))
     pp.set_user_pf_options(net_by_code)  # for assertion of nets_equal
     pp.runpp(net_by_ppc, trafo_model="pi")
     pp.runpp(net_by_code, trafo_model="pi")
@@ -72,7 +66,7 @@ def test_from_ppc_simple_against_target():
     assert len(net_by_ppc.bus) == len(net_by_code.bus)
     assert len(net_by_ppc.trafo) == len(net_by_code.trafo)
     assert len(net_by_ppc.ext_grid) == len(net_by_code.ext_grid)
-    assert pp.nets_equal(net_by_ppc, net_by_code, check_only_results=True, atol=1e-9)
+    assert pandapower.toolbox.nets_equal(net_by_ppc, net_by_code, check_only_results=True, atol=1e-9)
 
 
 def test_validate_from_ppc_simple_against_target():
@@ -83,32 +77,31 @@ def test_validate_from_ppc_simple_against_target():
 
 def test_ppc_testgrids():
     # check ppc_testgrids
-    name = ['case2_1', 'case2_2', 'case2_3', 'case2_4', 'case3_1', 'case3_2', 'case6', 'case14',
-            'case57']
-    for i in name:
-        ppc = get_testgrids('ppc_testgrids', i+'.json')
+    case_names = ['case2_1', 'case2_2', 'case2_3', 'case2_4', 'case3_1', 'case3_2', 'case6',
+                  'case14', 'case57']
+    for case_name in case_names:
+        ppc = get_testgrids('ppc_testgrids', case_name+'.json')
         net = from_ppc(ppc, f_hz=60)
-        validate_other_than_py37(ppc, net, max_diff_values1)
-        logger.debug(f'{i} has been checked successfully.')
+        assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values1)
+        logger.info(f'{case_name} has been checked successfully.')
 
 
 @pytest.mark.slow
 def test_pypower_cases():
     # check pypower cases
-    name = ['case4gs', 'case6ww', 'case24_ieee_rts', 'case30', 'case39',
-            'case118'] # 'case300'
-    for i in name:
-        ppc = get_testgrids('pypower_cases', i+'.json')
+    case_names = ['case4gs', 'case6ww', 'case24_ieee_rts', 'case30', 'case39', 'case118'] # 'case300'
+    for case_name in case_names:
+        ppc = get_testgrids('pypower_cases', case_name+'.json')
         net = from_ppc(ppc, f_hz=60)
-        validate_other_than_py37(ppc, net, max_diff_values1)
-        logger.debug(f'{i} has been checked successfully.')
+        assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values1)
+        logger.info(f'{case_name} has been checked successfully.')
     # --- Because there is a pypower power flow failure in generator results in case9 (which is not
     # in matpower) another max_diff_values must be used to receive an successful validation
-    max_diff_values2 = {"vm_pu": 1e-6, "va_degree": 1e-5, "p_branch_mw": 1e-3,
-                        "q_branch_mvar": 1e-3, "p_gen_mw": 1e3, "q_gen_mvar": 1e3}
+    max_diff_values2 = {"bus_vm_pu": 1e-6, "bus_va_degree": 1e-5, "branch_p_mw": 1e-3,
+                        "branch_q_mvar": 1e-3, "gen_p_mw": 1e3, "gen_q_mvar": 1e3}
     ppc = get_testgrids('pypower_cases', 'case9.json')
     net = from_ppc(ppc, f_hz=60)
-    validate_other_than_py37(ppc, net, max_diff_values2)
+    assert validate_from_ppc(ppc, net, max_diff_values2)
 
 
 def test_to_and_from_ppc():
@@ -136,13 +129,13 @@ def test_to_and_from_ppc():
         # compare loadflow results
         pp.runpp(net)
         pp.runpp(net2)
-        assert pp.nets_equal(net, net2, check_only_results=True, atol=1e-10)
+        assert pandapower.toolbox.nets_equal(net, net2, check_only_results=True, atol=1e-10)
 
         # compare optimal powerflow results
         if i == 1:
             pp.runopp(net, delta=1e-16)
             pp.runopp(net2, delta=1e-16)
-            assert pp.nets_equal(net, net2, check_only_results=True, atol=1e-10)
+            assert pandapower.toolbox.nets_equal(net, net2, check_only_results=True, atol=1e-10)
 
 
 def test_gencost_pwl():
@@ -281,7 +274,7 @@ def test_gencost_poly_pwl_part_mix():
     net = from_ppc(case6, f_hz=60, check_costs=False)
     assert net.pwl_cost.shape[0] == 2
     assert list(net.pwl_cost.power_type) == ["p", "q"]
-    assert net.pwl_cost.et.tolist() == ["ext_grid", "gen"]
+    assert net.pwl_cost.et.tolist() == ["ext_grid", "sgen"]
     assert net.poly_cost.shape[0] == 3
 
     try:

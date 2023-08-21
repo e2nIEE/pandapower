@@ -4,7 +4,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -52,12 +52,12 @@ def _runpf_pypower(ppci, options, **kwargs):
 
     if ac:  # AC formulation
         if init_va_degree == "dc":
-            ppci = _run_dc_pf(ppci)
+            ppci = _run_dc_pf(ppci, options["recycle"])
             success = True
 
         ppci, success, bus, gen, branch, it = _ac_runpf(ppci, ppopt, numba, recycle)
     else:  ## DC formulation
-        ppci = _run_dc_pf(ppci)
+        ppci = _run_dc_pf(ppci, options["recycle"])
         success = True
 
     et = perf_counter() - t0

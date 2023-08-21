@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
 import pandas as pd
-from packaging import version
+from packaging.version import Version
 
-from pandapower import __version__
+from pandapower._version import __version__, __format_version__
 from pandapower.create import create_empty_network, create_poly_cost
 from pandapower.results import reset_results
 
@@ -24,27 +24,46 @@ def convert_format(net, elements_to_deserialize=None):
     Converts old nets to new format to ensure consistency. The converted net is returned.
     """
     from pandapower.toolbox import set_data_type_of_columns_to_default
-    if isinstance(net.version, str) and version.parse(net.version) >= version.parse(__version__):
+    if not isinstance(net.version, str) or not hasattr(net, 'format_version') or \
+            Version(net.format_version) > Version(net.version):
+        net.format_version = net.version
+    if isinstance(net.format_version, str) and Version(net.format_version) >= Version(__format_version__):
         return net
     _add_nominal_power(net)
     _add_missing_tables(net)
     _rename_columns(net, elements_to_deserialize)
     _add_missing_columns(net, elements_to_deserialize)
     _create_seperate_cost_tables(net, elements_to_deserialize)
-    if version.parse(str(net.version)) < version.parse("2.4.0"):
+    if Version(str(net.format_version)) < Version("2.4.0"):
         _convert_bus_pq_meas_to_load_reference(net, elements_to_deserialize)
-    if isinstance(net.version, float) and net.version < 2:
+    if isinstance(net.format_version, float) and net.format_version < 2:
         _convert_to_generation_system(net, elements_to_deserialize)
         _convert_costs(net)
         _convert_to_mw(net)
         _update_trafo_parameter_names(net, elements_to_deserialize)
         reset_results(net)
-    if isinstance(net.version, float) and net.version < 1.6:
+    if isinstance(net.format_version, float) and net.format_version < 1.6:
         set_data_type_of_columns_to_default(net)
     _convert_objects(net, elements_to_deserialize)
     correct_dtypes(net, error=False)
+    net.format_version = __format_version__
     net.version = __version__
+    _restore_index_names(net)
     return net
+
+
+def _restore_index_names(net):
+    """Restores dataframes index names stored as dictionary. With newer pp to_json() this
+    information is stored to the dataframe its self.
+    """
+    if "index_names" in net.keys():
+        if not isinstance(net["index_names"], dict):
+            raise ValueError("To restore the index names of the dataframes, a dict including this "
+                             f"information is expected, not {type(net['index_names'])}")
+        for key, index_name in net["index_names"].items():
+            if key in net.keys():
+                net[key].index.name = index_name
+        del net["index_names"]
 
 
 def correct_dtypes(net, error):
@@ -155,39 +174,39 @@ def _add_missing_tables(net):
 
 def _create_seperate_cost_tables(net, elements_to_deserialize):
     if _check_elements_to_deserialize('gen', elements_to_deserialize) and "cost_per_kw" in net.gen:
-        for index, cost in net.gen.cost_per_kw.iteritems():
+        for index, cost in net.gen.cost_per_kw.items():
             if not np.isnan(cost):
                 create_poly_cost(net, index, "gen", cp1_eur_per_mw=cost * 1e3)
 
     if _check_elements_to_deserialize('sgen', elements_to_deserialize) and \
             "cost_per_kw" in net.sgen:
-        for index, cost in net.sgen.cost_per_kw.iteritems():
+        for index, cost in net.sgen.cost_per_kw.items():
             if not np.isnan(cost):
                 create_poly_cost(net, index, "sgen", cp1_eur_per_kw=cost)
 
     if _check_elements_to_deserialize('ext_grid', elements_to_deserialize) and \
             "cost_per_kw" in net.ext_grid:
-        for index, cost in net.ext_grid.cost_per_kw.iteritems():
+        for index, cost in net.ext_grid.cost_per_kw.items():
             if not np.isnan(cost):
                 create_poly_cost(net, index, "ext_grid", cp1_eur_per_kw=cost)
 
     if _check_elements_to_deserialize('gen', elements_to_deserialize) and \
             "cost_per_kvar" in net.gen:
-        for index, cost in net.gen.cost_per_kvar.iteritems():
+        for index, cost in net.gen.cost_per_kvar.items():
             if not np.isnan(cost):
                 create_poly_cost(net, index, "ext_grid", cp1_eur_per_mw=0,
                                  cq1_eur_per_mvar=cost * 1e3)
 
     if _check_elements_to_deserialize('sgen', elements_to_deserialize) and \
             "cost_per_kvar" in net.sgen:
-        for index, cost in net.sgen.cost_per_kvar.iteritems():
+        for index, cost in net.sgen.cost_per_kvar.items():
             if not np.isnan(cost):
                 create_poly_cost(net, index, "sgen", cp1_eur_per_mw=0,
                                  cq1_eur_per_mvar=cost * 1e3)
 
     if _check_elements_to_deserialize('ext_grid', elements_to_deserialize) and \
             "cost_per_kvar" in net.ext_grid:
-        for index, cost in net.ext_grid.cost_per_kvar.iteritems():
+        for index, cost in net.ext_grid.cost_per_kvar.items():
             if not np.isnan(cost):
                 create_poly_cost(net, index, "ext_grid", cp1_eur_per_mw=0,
                                  cq1_eur_per_mvar=cost * 1e3)

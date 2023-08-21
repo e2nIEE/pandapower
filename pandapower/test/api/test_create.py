@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -362,8 +362,9 @@ def test_create_lines():
     assert len(net.line_geodata) == 2
     assert net.line.length_km.at[l[0]] == 5
     assert net.line.length_km.at[l[1]] == 5
-    assert net.line.at[l[0], "in_service"] == False  # is actually <class 'numpy.bool_'>
-    assert net.line.at[l[1], "in_service"] == False  # is actually <class 'numpy.bool_'>
+    assert net.line.in_service.dtype == bool
+    assert not net.line.at[l[0], "in_service"]  # is actually <class 'numpy.bool_'>
+    assert not net.line.at[l[1], "in_service"]  # is actually <class 'numpy.bool_'>
     assert net.line_geodata.at[l[0], "coords"] == [(10, 10), (20, 20)]
     assert net.line_geodata.at[l[1], "coords"] == [(10, 10), (20, 20)]
     assert net.line.at[l[0], "name"] == "test"
@@ -395,8 +396,9 @@ def test_create_lines():
     assert len(net.line_geodata) == 2
     assert net.line.at[l[0], "length_km"] == 1
     assert net.line.at[l[1], "length_km"] == 5
-    assert net.line.at[l[0], "in_service"] == True  # is actually <class 'numpy.bool_'>
-    assert net.line.at[l[1], "in_service"] == False  # is actually <class 'numpy.bool_'>
+    assert net.line.in_service.dtype == bool
+    assert net.line.at[l[0], "in_service"]   # is actually <class 'numpy.bool_'>
+    assert not net.line.at[l[1], "in_service"]  # is actually <class 'numpy.bool_'>
     assert net.line_geodata.at[l[0], "coords"] == [(10, 10), (20, 20)]
     assert net.line_geodata.at[l[1], "coords"] == [(100, 10), (200, 20)]
     assert net.line.at[l[0], "name"] == "test1"
@@ -488,8 +490,9 @@ def test_create_lines_from_parameters():
     assert all(net.line["r0_ohm_per_km"].values == 0.1)
     assert all(net.line["g0_us_per_km"].values == 0)
     assert all(net.line["c0_nf_per_km"].values == 0)
-    assert net.line.at[l[0], "in_service"] == False  # is actually <class 'numpy.bool_'>
-    assert net.line.at[l[1], "in_service"] == False  # is actually <class 'numpy.bool_'>
+    assert net.line.in_service.dtype == bool
+    assert not net.line.at[l[0], "in_service"]  # is actually <class 'numpy.bool_'>
+    assert not net.line.at[l[1], "in_service"]  # is actually <class 'numpy.bool_'>
     assert net.line_geodata.at[l[0], "coords"] == [(10, 10), (20, 20)]
     assert net.line_geodata.at[l[1], "coords"] == [(10, 10), (20, 20)]
     assert all(net.line["name"].values == "test")
@@ -540,8 +543,9 @@ def test_create_lines_from_parameters():
     assert net.line.at[l[1], "x0_ohm_per_km"] == 0.25
     assert all(net.line["g0_us_per_km"].values == 0)
     assert all(net.line["c0_nf_per_km"].values == 0)
-    assert net.line.at[l[0], "in_service"] == True  # is actually <class 'numpy.bool_'>
-    assert net.line.at[l[1], "in_service"] == False  # is actually <class 'numpy.bool_'>
+    assert net.line.in_service.dtype == bool
+    assert net.line.at[l[0], "in_service"]   # is actually <class 'numpy.bool_'>
+    assert not net.line.at[l[1], "in_service"] # is actually <class 'numpy.bool_'>
     assert net.line_geodata.at[l[0], "coords"] == [(10, 10), (20, 20)]
     assert net.line_geodata.at[l[1], "coords"] == [(100, 10), (200, 20)]
     assert net.line.at[l[0], "name"] == "test1"
@@ -586,13 +590,56 @@ def test_create_lines_raise_except():
             net,
             [b1, b1],
             [b2, b2],
-            index=[0, 0],
+            index=[0, 1],
             length_km=[10.0, 5.0],
             x_ohm_per_km=[1.0, 1.0],
             r_ohm_per_km=[0.2, 0.2],
             c_nf_per_km=[0, 0],
             max_i_ka=[100, 100],
         )
+
+    with pytest.raises(UserWarning, match="Passed indexes"):
+        pp.create_lines_from_parameters(
+            net,
+            [b1, b1],
+            [b2, b2],
+            index=[2, 2],
+            length_km=[10.0, 5.0],
+            x_ohm_per_km=[1.0, 1.0],
+            r_ohm_per_km=[0.2, 0.2],
+            c_nf_per_km=[0, 0],
+            max_i_ka=[100, 100],
+        )
+
+
+def test_create_lines_optional_columns():
+    #
+    net = pp.create_empty_network()
+    pp.create_buses(net, 5, 110)
+    pp.create_line(net, 0, 1, 10, "48-AL1/8-ST1A 10.0")
+    pp.create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100)
+    pp.create_lines(net, [0, 1], [1, 0], 10, "48-AL1/8-ST1A 10.0")
+    pp.create_lines_from_parameters(net, [3, 4], [4, 3], [10, 11], 1, 1, 1, 100)
+    assert "max_loading_percent" not in net.line.columns
+
+    v = None
+    pp.create_line(net, 0, 1, 10, "48-AL1/8-ST1A 10.0", max_loading_percent=v)
+    pp.create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100, max_loading_percent=v)
+    pp.create_lines(net, [0, 1], [1, 0], 10, "48-AL1/8-ST1A 10.0", max_loading_percent=v)
+    # pp.create_lines(net, [0, 1], [1, 0], 10, "48-AL1/8-ST1A 10.0", max_loading_percent=[v, v])  # would be added
+    pp.create_lines_from_parameters(net, [3, 4], [4, 3], [10, 11], 1, 1, 1, 100, max_loading_percent=v)
+    # pp.create_lines_from_parameters(net, [3, 4], [4, 3], [10, 11], 1, 1, 1, 100, max_loading_percent=[v, v])  # would be added
+    assert "max_loading_percent" not in net.line.columns
+
+    v = np.nan
+    pp.create_line(net, 0, 1, 10, "48-AL1/8-ST1A 10.0", max_loading_percent=v)
+    pp.create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100, max_loading_percent=v)
+    # np.nan is not None:
+    # pp.create_lines(net, [0, 1], [1, 0], 10, "48-AL1/8-ST1A 10.0", max_loading_percent=v)
+    # pp.create_lines(net, [0, 1], [1, 0], 10, "48-AL1/8-ST1A 10.0", max_loading_percent=[v, v])  # would be added
+    # pp.create_lines_from_parameters(net, [3, 4], [4, 3], [10, 11], 1, 1, 1, 100, max_loading_percent=v)
+    # pp.create_lines_from_parameters(net, [3, 4], [4, 3], [10, 11], 1, 1, 1, 100, max_loading_percent=[v, v])
+    assert "max_loading_percent" not in net.line.columns
 
 
 def test_create_line_alpha_temperature():
@@ -619,13 +666,20 @@ def test_create_line_alpha_temperature():
     assert net.line.loc[l2, "temperature_degree_celsius"] == 80
     assert all(net.line.loc[[l1, l3, l4, l5], "temperature_degree_celsius"].isnull())
 
+    # make sure optional columns are not created if None or np.nan:
+    pp.create_line(net, 2, 3, 10, "48-AL1/8-ST1A 10.0", wind_speed_m_per_s=None)
+    pp.create_lines(net, [2], [3], 10, "48-AL1/8-ST1A 10.0", wind_speed_m_per_s=None)
+    pp.create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100, wind_speed_m_per_s=None)
+    pp.create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100, alpha=4.03e-3, wind_speed_m_per_s=np.nan)
+    assert "wind_speed_m_per_s" not in net.line.columns
+
 
 def test_create_transformers_from_parameters():
     # standard
     net = pp.create_empty_network()
     b1 = pp.create_bus(net, 15)
     b2 = pp.create_bus(net, 0.4)
-    pp.create_transformers_from_parameters(
+    index = pp.create_transformers_from_parameters(
         net,
         [b1, b1],
         [b2, b2],
@@ -638,6 +692,21 @@ def test_create_transformers_from_parameters():
         i0_percent=0.3,
         foo=2,
     )
+    with pytest.raises(UserWarning):
+        pp.create_transformers_from_parameters(
+            net,
+            [b1, b1],
+            [b2, b2],
+            vn_hv_kv=[15.0, 15.0],
+            vn_lv_kv=[0.45, 0.45],
+            sn_mva=[0.5, 0.7],
+            vk_percent=[1.0, 1.0],
+            vkr_percent=[0.3, 0.3],
+            pfe_kw=0.2,
+            i0_percent=0.3,
+            foo=2,
+            index=index
+        )
     assert len(net.trafo) == 2
     assert len(net.trafo.vk_percent) == 2
     assert len(net.trafo.vkr_percent) == 2
@@ -1234,9 +1303,10 @@ def test_create_loads():
     assert net.load.q_mvar.at[0] == 0
     assert net.load.q_mvar.at[1] == 0
     assert net.load.q_mvar.at[2] == 0
-    assert net.load.controllable.at[0] == True
-    assert net.load.controllable.at[1] == False
-    assert net.load.controllable.at[2] == False
+    assert net.load.controllable.dtype == bool
+    assert net.load.controllable.at[0]
+    assert not net.load.controllable.at[1]
+    assert not net.load.controllable.at[2]
     assert all(net.load.max_p_mw.values == 0.2)
     assert all(net.load.min_p_mw.values == [0, 0.1, 0])
     assert all(net.load.max_q_mvar.values == 0.2)
@@ -1327,9 +1397,10 @@ def test_create_sgens():
     assert net.sgen.q_mvar.at[0] == 0
     assert net.sgen.q_mvar.at[1] == 0
     assert net.sgen.q_mvar.at[2] == 0
-    assert net.sgen.controllable.at[0] == True
-    assert net.sgen.controllable.at[1] == False
-    assert net.sgen.controllable.at[2] == False
+    assert net.sgen.controllable.dtype == bool
+    assert net.sgen.controllable.at[0]
+    assert not net.sgen.controllable.at[1]
+    assert not net.sgen.controllable.at[2]
     assert all(net.sgen.max_p_mw.values == 0.2)
     assert all(net.sgen.min_p_mw.values == [0, 0.1, 0])
     assert all(net.sgen.max_q_mvar.values == 0.2)
@@ -1428,9 +1499,10 @@ def test_create_gens():
     assert net.gen.p_mw.at[0] == 0
     assert net.gen.p_mw.at[1] == 0
     assert net.gen.p_mw.at[2] == 1
-    assert net.gen.controllable.at[0] == True
-    assert net.gen.controllable.at[1] == False
-    assert net.gen.controllable.at[2] == False
+    assert net.gen.controllable.dtype == bool
+    assert net.gen.controllable.at[0]
+    assert not net.gen.controllable.at[1]
+    assert not net.gen.controllable.at[2]
     assert all(net.gen.max_p_mw.values == 0.2)
     assert all(net.gen.min_p_mw.values == [0, 0.1, 0])
     assert all(net.gen.max_q_mvar.values == 0.2)

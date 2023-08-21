@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -8,7 +8,7 @@ import os
 import pytest
 
 import pandapower.plotting
-from pandapower.test.toolbox import create_test_network
+from pandapower.test.helper_functions import create_test_network
 
 
 def test_html(tmp_path):

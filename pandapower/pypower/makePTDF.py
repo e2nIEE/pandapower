@@ -4,7 +4,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 # Builds the DC PTDF matrix for a given choice of slack.
@@ -67,7 +67,7 @@ def makePTDF(baseMVA, bus, branch, slack=None,
         H = zeros((nbr, nb))
     # compute PTDF for single slack_bus
     if using_sparse_solver:
-        Bbus, Bf, _, _ = makeBdc(bus, branch, return_csr=False)
+        Bbus, Bf, *_ = makeBdc(bus, branch, return_csr=False)
 
         Bbus = Bbus.real
         if result_side == 1:
@@ -87,7 +87,7 @@ def makePTDF(baseMVA, bus, branch, slack=None,
             for i in range(0, Bf.shape[0], 32):
                 H[i:i+32, noslack] = Bbus_fact(Bf[i:i+32, noref].real.toarray().T).T
     else:
-        Bbus, Bf, _, _ = makeBdc(bus, branch)
+        Bbus, Bf, *_ = makeBdc(bus, branch)
         Bbus, Bf = np.real(Bbus.toarray()), np.real(Bf.toarray())
         if result_side == 1:
             Bf *= -1

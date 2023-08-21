@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 import os
 
 import pandapower as pp
+import pandapower.toolbox
 from pandapower import pp_dir
 
 
@@ -60,7 +61,7 @@ def _change_ref_bus(net, ref_bus_idx, ext_grid_p=0):
 
 def sorted_from_json(path, **kwargs):
     net = pp.from_json(path, **kwargs)
-    for elm in pp.pp_elements():
+    for elm in pandapower.toolbox.pp_elements():
         net[elm].sort_index(inplace=True)
     return net
 

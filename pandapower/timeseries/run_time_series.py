@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import tempfile
 from collections.abc import Iterable
@@ -52,19 +52,20 @@ def init_output_writer(net, time_steps):
     output_writer.init_all(net)
 
 
-def print_progress_bar(iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█'):
-    """
-    Call in a loop to create terminal progress bar.
-    the code is mentioned in : https://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console
-    """
-    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
-    filled_length = int(length * iteration // total)
-    bar = fill * filled_length + '-' * (length - filled_length)
-    # logger.info('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix))
-    print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end="")
-    # Print New Line on Complete
-    if iteration == total:
-        print("\n")
+#
+# def print_progress_bar(iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█'):
+#     """
+#     Call in a loop to create terminal progress bar.
+#     the code is mentioned in : https://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console
+#     """
+#     percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+#     filled_length = int(length * iteration // total)
+#     bar = fill * filled_length + '-' * (length - filled_length)
+#     # logger.info('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix))
+#     print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end="")
+#     # Print New Line on Complete
+#     if iteration == total:
+#         print("\n")
 
 
 def controller_not_converged(time_step, ts_variables):
@@ -83,6 +84,7 @@ def control_time_step(controller_order, time_step):
     for levelorder in controller_order:
         for ctrl, net in levelorder:
             ctrl.time_step(net, time_step)
+
 
 def finalize_step(controller_order, time_step):
     for levelorder in controller_order:
@@ -161,7 +163,7 @@ def _check_controller_recyclability(net):
     return recycle
 
 
-def _check_output_writer_recyclability(net, recycle):
+def _check_output_writer_recyclability(net, recycle, run):
     if "output_writer" not in net:
         raise ValueError("OutputWriter not defined")
     ow = net.output_writer.at[0, "object"]
@@ -169,6 +171,11 @@ def _check_output_writer_recyclability(net, recycle):
     recycle["batch_read"] = list()
     recycle["only_v_results"] = False
     new_log_variables = list()
+
+    if hasattr(run, "__name__") and run.__name__ == "rundcpp":
+        recycle["only_v_results"] = False
+        recycle["batch_read"] = False
+        return recycle
 
     for output in ow.log_variables:
         table, variable = output[0], output[1]
@@ -210,7 +217,7 @@ def get_recycle_settings(net, **kwargs):
         recycle = _check_controller_recyclability(net)
         # if still recycle is not None, also check for fast output_writer features
         if recycle is not False:
-            recycle = _check_output_writer_recyclability(net, recycle)
+            recycle = _check_output_writer_recyclability(net, recycle, kwargs.get("run", kwargs.get("run_control_fct")))
 
     return recycle
 
@@ -262,9 +269,9 @@ def init_time_series(net, time_steps, continue_on_divergence=False, verbose=True
     # get run function
     run = kwargs.pop("run", pp.runpp)
     recycle_options = None
-    if hasattr(run, "__name__") and run.__name__ == "runpp":
+    if hasattr(run, "__name__") and (run.__name__ == "runpp" or run.__name__ == "rundcpp"):
         # use faster runpp options if possible
-        recycle_options = get_recycle_settings(net, **kwargs)
+        recycle_options = get_recycle_settings(net, run=run, **kwargs)
 
     init_output_writer(net, time_steps)
     # as base take everything considered when preparing run_control

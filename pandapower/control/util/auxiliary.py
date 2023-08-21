@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import sys
 
 import numpy as np
 from pandas import Index, Series
 
-from pandapower.auxiliary import soft_dependency_error
-from pandapower.toolbox import ensure_iterability
+from pandapower.auxiliary import soft_dependency_error, ensure_iterability
 from .characteristic import SplineCharacteristic
 
 try:

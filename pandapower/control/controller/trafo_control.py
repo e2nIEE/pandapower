@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
+from pandapower.auxiliary import read_from_net, write_to_net, _detect_read_write_flag
 from pandapower.control.basic_controller import Controller
-from pandapower.toolbox import read_from_net, write_to_net, _detect_read_write_flag
-import numbers
 
 try:
     import pandaplan.core.pplog as logging
@@ -89,10 +88,13 @@ class TrafoController(Controller):
 
         if self._read_write_flag == "single_index":
             self.tap_side_coeff = 1 if tap_side == 'hv' else -1
+            if self.side == "hv":
+                self.tap_side_coeff *= -1
             if self.tap_step_percent < 0:
                 self.tap_side_coeff *= -1
         else:
             self.tap_side_coeff = np.where(tap_side=='hv', 1, -1)
+            self.tap_side_coeff[self.side == "hv"] *= -1
             self.tap_side_coeff[self.tap_step_percent < 0] *= -1
 
     def _set_side_trafotable(self, side):

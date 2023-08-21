@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
 import pytest
-
+import sys
 import pandapower as pp
 import pandapower.networks as nw
 from pandapower.estimation import estimate
@@ -119,7 +119,9 @@ def test_opt_lav():
             not np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, atol=5e-2):
         raise AssertionError("Estimation failed!")
 
-
+@pytest.mark.skipif((sys.version_info[0] == 3) & (sys.version_info[1] <= 7), 
+                   reason="This test can fail under Python 3.7 depending"
+                   "on the processing power of the hardware used.")
 def test_ql_qc():
     net = nw.case9()
     net.sn_mva = 1.

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import os
 
@@ -9,7 +9,7 @@ import pytest
 
 from pandapower.pf.create_jacobian_tdpf import calc_r_theta_from_t_rise, calc_i_square_p_loss, calc_g_b, \
     calc_a0_a1_a2_tau, calc_T_ngoko, calc_r_theta, calc_T_frank
-from pandapower.test.toolbox import assert_res_equal
+from pandapower.test.helper_functions import assert_res_equal
 
 import pandas as pd
 import pandapower as pp

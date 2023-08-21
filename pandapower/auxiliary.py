@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -28,11 +28,12 @@
 
 import copy
 from collections.abc import MutableMapping
+import warnings
 
 import numpy as np
 import pandas as pd
 import scipy as sp
-import six
+import numbers
 from packaging import version
 
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
@@ -62,7 +63,20 @@ def soft_dependency_error(fct_name, required_packages):
     required_packages = required_packages if isinstance(required_packages, str) else \
         "','".join(required_packages)
     raise ImportError("Some pandapower functionality use modules outside the setup.py "
-                      "requirements: %s requires '%s'." % (fct_name, required_packages))
+                      f"requirements: {fct_name} requires '{required_packages}'. \n"
+                      f"{required_packages} could not be imported.\n"
+                      "To install all pandapower dependencies, "
+                      "pip install pandapower['all'] can be used.")
+
+
+def warn_and_fix_parameter_renaming(old_parameter_name, new_parameter_name, new_parameter,
+                                    default_value, category=DeprecationWarning, **kwargs):
+    if old_parameter_name in kwargs:
+        warnings.warn(f"Parameter '%s' has been renamed to '%s'." % (
+            old_parameter_name, new_parameter_name), category=category)
+        if new_parameter == default_value:
+            return kwargs.pop(old_parameter_name)
+    return new_parameter
 
 
 class ADict(dict, MutableMapping):
@@ -85,7 +99,7 @@ class ADict(dict, MutableMapping):
         return self.copy(), self._allow_invalid_attributes
 
     def __dir__(self):
-        return list(six.iterkeys(self))
+        return list(self.keys())
 
     def __setstate__(self, state):
         mapping, allow_invalid_attributes = state
@@ -224,7 +238,7 @@ class ADict(dict, MutableMapping):
             'register').
         """
         return (
-                isinstance(key, six.string_types) and
+                isinstance(key, str) and
                 not hasattr(cls, key)
         )
 
@@ -239,37 +253,50 @@ class pandapowerNet(ADict):
 
         for key in self:
             if isinstance(self[key], list):
-                self[key] = pd.DataFrame(np.zeros(0, dtype=self[key]), index=pd.Index([], dtype=np.int64))
+                self[key] = pd.DataFrame(np.zeros(0, dtype=self[key]), index=pd.Index([],
+                                         dtype=np.int64))
 
     def deepcopy(self):
         return copy.deepcopy(self)
 
     def __repr__(self):  # pragma: no cover
-        r = "This pandapower network includes the following parameter tables:"
+        """
+        See Also
+        --------
+        count_elements
+        """
         par = []
         res = []
-        for tb in list(self.keys()):
-            if not tb.startswith("_") and isinstance(self[tb], pd.DataFrame) and len(self[tb]) > 0:
-                if 'res_' in tb:
-                    res.append(tb)
+        for et in list(self.keys()):
+            if not et.startswith("_") and isinstance(self[et], pd.DataFrame) and len(self[et]) > 0:
+                n_rows = self[et].shape[0]
+                if 'res_' in et:
+                    res.append("   - %s (%i %s)" % (et, n_rows, "element" + plural_s(n_rows)))
+                elif et == 'group':
+                    n_groups = len(set(self[et].index))
+                    par.append('   - %s (%i %s, %i %s)' % (
+                        et, n_groups, "group" + plural_s(n_groups), n_rows, "row" + plural_s(n_rows)))
                 else:
-                    par.append(tb)
-        for tb in par:
-            length = len(self[tb])
-            r += "\n   - %s (%s %s)" % (tb, length, "elements" if length > 1 else "element")
-        if res:
-            r += "\n and the following results tables:"
-            for tb in res:
-                length = len(self[tb])
-                r += "\n   - %s (%s %s)" % (tb, length, "elements" if length > 1 else "element")
-        if "res_cost" in self.keys():
-            r += "\n and the following result values:"
-            r += "\n   - %s" % "res_cost"
-        return r
+                    par.append("   - %s (%i %s)" % (et, n_rows, "element" + plural_s(n_rows)))
+        res_cost = [" and the following result values:",
+                    "   - %s" % "res_cost"] if "res_cost" in self.keys() else []
+        if not len(par) + len(res):
+            return "This pandapower network is empty"
+        if len(res):
+            res = [" and the following results tables:"] + res
+        lines = ["This pandapower network includes the following parameter tables:"] + \
+            par + res + res_cost
+        return "\n".join(lines)
 
+
+def plural_s(number):
+    if number > 1:
+        return ""
+    else:
+        return "s"
 
 def _preserve_dtypes(df, dtypes):
-    for item, dtype in list(dtypes.iteritems()):
+    for item, dtype in list(dtypes.items()):
         if df.dtypes.at[item] != dtype:
             if (dtype == bool or dtype == np.bool_) and np.any(df[item].isnull()):
                 raise UserWarning(f"Encountered NaN value(s) in a boolean column {item}! "
@@ -366,7 +393,20 @@ def _get_values(source, selection, lookup):
 
 def ensure_iterability(var, len_=None):
     """
-    Ensures iterability of a variable (and optional length).
+    Ensures iterability of a variable (and also the length if given).
+
+    Examples
+    --------
+    >>> ensure_iterability([1, 2])
+    [1, 2]
+    >>> ensure_iterability(1)
+    [1]
+    >>> ensure_iterability("Hi")
+    ["Hi"]
+    >>> ensure_iterability([1, 2], len_=2)
+    [1, 2]
+    >>> ensure_iterability([1, 2], len_=3)
+    ValueError("Length of variable differs from 3.")
     """
     if hasattr(var, "__iter__") and not isinstance(var, str):
         if isinstance(len_, int) and len(var) != len_:
@@ -375,6 +415,151 @@ def ensure_iterability(var, len_=None):
         len_ = len_ or 1
         var = [var] * len_
     return var
+
+
+def log_to_level(msg, passed_logger, level):
+    if level == "error":
+        passed_logger.error(msg)
+    elif level == "warning":
+        passed_logger.warning(msg)
+    elif level == "info":
+        passed_logger.info(msg)
+    elif level == "debug":
+        passed_logger.debug(msg)
+
+
+def read_from_net(net, element, index, variable, flag='auto'):
+    """
+    Reads values from the specified element table at the specified index in the column according to the specified variable
+    Chooses the method to read based on flag
+
+    Parameters
+    ----------
+    net
+    element : str
+        element table in pandapower net; can also be a results table
+    index : int or array_like
+        index of the element table where values are read from
+    variable : str
+        column of the element table
+    flag : str
+        defines which underlying function to use, can be one of ['auto', 'single_index', 'all_index', 'loc', 'object']
+
+    Returns
+    -------
+    values
+        the values of the variable for the element table according to the index
+    """
+    if flag == "single_index":
+        return _read_from_single_index(net, element, variable, index)
+    elif flag == "all_index":
+        return _read_from_all_index(net, element, variable)
+    elif flag == "loc":
+        return _read_with_loc(net, element, variable, index)
+    elif flag == "object":
+        return _read_from_object_attribute(net, element, variable, index)
+    elif flag == "auto":
+        auto_flag, auto_variable = _detect_read_write_flag(net, element, index, variable)
+        return read_from_net(net, element, index, auto_variable, auto_flag)
+    else:
+        raise NotImplementedError("read: flag must be one of ['auto', 'single_index', 'all_index', 'loc', 'object']")
+
+
+def write_to_net(net, element, index, variable, values, flag='auto'):
+    """
+    Writes values to the specified element table at the specified index in the column according to the specified variable
+    Chooses the method to write based on flag
+
+    Parameters
+    ----------
+    net
+    element : str
+        element table in pandapower net
+    index : int or array_like
+        index of the element table where values are written to
+    variable : str
+        column of the element table
+    flag : str
+        defines which underlying function to use, can be one of ['auto', 'single_index', 'all_index', 'loc', 'object']
+
+    Returns
+    -------
+    None
+    """
+    # write functions faster, depending on type of element_index
+    if flag == "single_index":
+        _write_to_single_index(net, element, index, variable, values)
+    elif flag == "all_index":
+        _write_to_all_index(net, element, variable, values)
+    elif flag == "loc":
+        _write_with_loc(net, element, index, variable, values)
+    elif flag == "object":
+        _write_to_object_attribute(net, element, index, variable, values)
+    elif flag == "auto":
+        auto_flag, auto_variable = _detect_read_write_flag(net, element, index, variable)
+        write_to_net(net, element, index, auto_variable, values, auto_flag)
+    else:
+        raise NotImplementedError("write: flag must be one of ['auto', 'single_index', 'all_index', 'loc', 'object']")
+
+
+def _detect_read_write_flag(net, element, index, variable):
+    if variable.startswith('object'):
+        # write to object attribute
+        return "object", variable.split(".")[1]
+    elif isinstance(index, numbers.Number):
+        # use .at if element_index is integer for speedup
+        return "single_index", variable
+    # commenting this out for now, see issue 609
+    # elif net[element].index.equals(Index(index)):
+    #     # use : indexer if all elements are in index
+    #     return "all_index", variable
+    else:
+        # use common .loc
+        return "loc", variable
+
+
+# read functions:
+def _read_from_single_index(net, element, variable, index):
+    return net[element].at[index, variable]
+
+
+def _read_from_all_index(net, element, variable):
+    return net[element].loc[:, variable].values
+
+
+def _read_with_loc(net, element, variable, index):
+    return net[element].loc[index, variable].values
+
+
+def _read_from_object_attribute(net, element, variable, index):
+    if hasattr(index, '__iter__') and len(index) > 1:
+        values = np.array(shape=index.shape)
+        for i, idx in enumerate(index):
+            values[i] = getattr(net[element]["object"].at[idx], variable)
+    else:
+        values = getattr(net[element]["object"].at[index], variable)
+    return values
+
+
+# write functions:
+def _write_to_single_index(net, element, index, variable, values):
+    net[element].at[index, variable] = values
+
+
+def _write_to_all_index(net, element, variable, values):
+    net[element].loc[:, variable] = values
+
+
+def _write_with_loc(net, element, index, variable, values):
+    net[element].loc[index, variable] = values
+
+
+def _write_to_object_attribute(net, element, index, variable, values):
+    if hasattr(index, '__iter__') and len(index) > 1:
+        for idx, val in zip(index, values):
+            setattr(net[element]["object"].at[idx], variable, val)
+    else:
+        setattr(net[element]["object"].at[index], variable, values)
 
 
 def _set_isolated_nodes_out_of_service(ppc, bus_not_reachable):
@@ -401,7 +586,7 @@ def _check_connectivity_opf(ppc):
     :param ppc: pypower case file
     :return:
     """
-    br_status = ppc['branch'][:, BR_STATUS] == True
+    br_status = ppc['branch'][:, BR_STATUS].astype(bool)
     nobranch = ppc['branch'][br_status, :].shape[0]
     nobus = ppc['bus'].shape[0]
     bus_from = ppc['branch'][br_status, F_BUS].real.astype(int)
@@ -440,7 +625,7 @@ def _check_connectivity(ppc):
     :param ppc: pypower case file
     :return:
     """
-    br_status = ppc['branch'][:, BR_STATUS] == True
+    br_status = ppc['branch'][:, BR_STATUS].astype(bool)
     nobranch = ppc['branch'][br_status, :].shape[0]
     nobus = ppc['bus'].shape[0]
     bus_from = ppc['branch'][br_status, F_BUS].real.astype(int)
@@ -471,7 +656,7 @@ def _subnetworks(ppc):
     :param ppc: pypower case file
     :return:
     """
-    br_status = ppc['branch'][:, BR_STATUS] == True
+    br_status = ppc['branch'][:, BR_STATUS].astype(bool)
     oos_bus = ppc['bus'][:, BUS_TYPE] == NONE
     nobranch = ppc['branch'][br_status, :].shape[0]
     nobus = ppc['bus'].shape[0]
@@ -1276,7 +1461,7 @@ def _init_runse_options(net, v_start, delta_start, calculate_voltage_angles,
                     only_v_results=False)
 
 
-def _internal_stored(net):
+def _internal_stored(net, ac=True):
     """
 
     The function newtonpf() needs these variables as inputs:
@@ -1296,8 +1481,12 @@ def _internal_stored(net):
     if net["_ppc"] is None:
         return False
 
-    mandatory_pf_variables = ["J", "bus", "gen", "branch", "baseMVA", "V", "pv", "pq", "ref",
-                              "Ybus", "Yf", "Yt", "Sbus", "ref_gens"]
+    if ac:
+        mandatory_pf_variables = ["J", "bus", "gen", "branch", "baseMVA", "V", "pv", "pq", "ref",
+                                  "Ybus", "Yf", "Yt", "Sbus", "ref_gens"]
+    else:
+        mandatory_pf_variables = ["bus", "gen", "branch", "baseMVA", "V", "pv", "pq", "ref", "ref_gens",
+                                  "Bbus", "Bf", "Pbusinj", "Pfinj", "Cft", "shift"]
     for var in mandatory_pf_variables:
         if "internal" not in net["_ppc"] or var not in net["_ppc"]["internal"]:
             logger.warning("recycle is set to True, but internal variables are missing")

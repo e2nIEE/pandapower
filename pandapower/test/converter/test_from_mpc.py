@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -10,6 +10,7 @@ import pytest
 
 import pandapower as pp
 import pandapower.networks as pn
+import pandapower.toolbox
 from pandapower.converter import from_mpc
 
 try:
@@ -37,7 +38,7 @@ def test_from_mpc_mat():
     pp.runpp(case24_from_mpc)
 
     assert case24_from_mpc.converged
-    assert pp.nets_equal(case24, case24_from_mpc, check_only_results=True)
+    assert pandapower.toolbox.nets_equal(case24, case24_from_mpc, check_only_results=True)
 
 
 @pytest.mark.skipif(not matpowercaseframes_imported,
@@ -53,7 +54,7 @@ def test_from_mpc_m():
     pp.runpp(case24_m)
 
     assert case24_m.converged
-    assert pp.nets_equal(case24_mat, case24_m)
+    assert pandapower.toolbox.nets_equal(case24_mat, case24_m)
 
 
 if __name__ == '__main__':

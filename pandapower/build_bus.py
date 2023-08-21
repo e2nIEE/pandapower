@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -183,9 +183,9 @@ def create_bus_lookup_numpy(net, bus_index, bus_is_idx, gen_is_mask, eg_is_mask,
 
 def create_bus_lookup(net, bus_index, bus_is_idx, gen_is_mask, eg_is_mask, numba):
     switches_with_pos_z_ohm = net["switch"]["z_ohm"].values > 0
-    if switches_with_pos_z_ohm.any() or numba == False:
+    if switches_with_pos_z_ohm.any() or not numba:
         # if there are any closed bus-bus switches find them
-        closed_bb_switch_mask = ((net["switch"]["closed"].values == True) &
+        closed_bb_switch_mask = (net["switch"]["closed"].values &
                                  (net["switch"]["et"].values == "b") &
                                  np.in1d(net["switch"]["bus"].values, bus_is_idx) &
                                  np.in1d(net["switch"]["element"].values, bus_is_idx))

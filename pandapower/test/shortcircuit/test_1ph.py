@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import pandapower as pp
@@ -522,6 +522,24 @@ def test_trafo():
         sc.calc_sc(net, fault="1ph", case="max")
         assert np.allclose(net.res_bus_sc, res, rtol=0, atol=1e-6), f"failed for vector group {vc}"
         assert np.allclose(net.res_bus_sc.ikss_ka, results[vc], rtol=0, atol=1e-6), f"{vc}: inconsistent results"
+
+
+def test_sc_1ph_impedance():
+    net = pp.create_empty_network()
+    pp.create_buses(net, 2, 110)
+    pp.create_ext_grid(net, 0, s_sc_max_mva=1000, s_sc_min_mva=800,
+                       rx_max=0.1, x0x_max=1, r0x0_max=0.1,
+                       rx_min=0.1, x0x_min=1, r0x0_min=0.1)
+    pp.create_impedance(net, 0, 1, rft_pu=0.2, xft_pu=0.4, sn_mva=50, rtf_pu=0.25, xtf_pu=0.5,
+                        rft0_pu=0.1, xft0_pu=0.2, rtf0_pu=0.05, xtf0_pu=0.1)
+
+    sc.calc_sc(net, fault="1ph")
+
+    assert np.allclose(net.res_bus_sc.ikss_ka, [5.248639, 0.625166], rtol=0, atol=1e-6)
+    assert np.allclose(net.res_bus_sc.rk0_ohm, [1.324394, 12.762198], rtol=0, atol=1e-6)
+    assert np.allclose(net.res_bus_sc.xk0_ohm, [13.243945, 30.821973], rtol=0, atol=1e-6)
+    assert np.allclose(net.res_bus_sc.rk_ohm, [1.3243945, 62.1554916], rtol=0, atol=1e-5)
+    assert np.allclose(net.res_bus_sc.xk_ohm, [13.2439445, 137.5549268], rtol=0, atol=1e-5)
 
 
 if __name__ == "__main__":

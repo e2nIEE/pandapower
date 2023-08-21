@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -30,7 +30,7 @@ def pf_res_plotly(net, cmap="Jet", use_line_geodata=None, on_map=False, projecti
         If no geodata is available, artificial geodata is generated. For advanced plotting see the tutorial
 
         INPUT:
-            **net** - The pandapower format network. If none is provided, mv_oberrhein() will be plotted as an example
+            **net** - The pandapower format network.
 
         OPTIONAL:
             **respect_switches** (bool, False) - Respect switches when artificial geodata is created
@@ -38,13 +38,13 @@ def pf_res_plotly(net, cmap="Jet", use_line_geodata=None, on_map=False, projecti
             **cmap** (str, True) - name of the colormap
 
             **colors_dict** (dict, None) - by default 6 basic colors from default collor palette is used.
-                                                Otherwise, user can define a dictionary in the form: voltage_kv : color
+            Otherwise, user can define a dictionary in the form: voltage_kv : color
 
             **on_map** (bool, False) - enables using mapbox plot in plotly. If provided geodata are not
-                                                    real geo-coordinates in lon/lat form, on_map will be set to False.
+            real geo-coordinates in lon/lat form, on_map will be set to False.
 
             **projection** (String, None) - defines a projection from which network geo-data will be transformed to
-                                            lat-long. For each projection a string can be found at http://spatialreference.org/ref/epsg/
+            lat-long. For each projection a string can be found at http://spatialreference.org/ref/epsg/
 
             **map_style** (str, 'basic') - enables using mapbox plot in plotly
 
@@ -57,7 +57,7 @@ def pf_res_plotly(net, cmap="Jet", use_line_geodata=None, on_map=False, projecti
             **figsize** (float, 1) - aspectratio is multiplied by it in order to get final image size
 
             **aspectratio** (tuple, 'auto') - when 'auto' it preserves original aspect ratio of the network geodata
-                                                    any custom aspectration can be given as a tuple, e.g. (1.2, 1)
+            any custom aspectration can be given as a tuple, e.g. (1.2, 1)
 
             **line_width** (float, 1.0) - width of lines
 
