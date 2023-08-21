@@ -6,6 +6,7 @@ from itertools import combinations
 import pandapower as pp
 import pandas as pd
 from pandapower.auxiliary import ADict
+from pandapower.results import reset_results
 
 try:
     import pandaplan.core.pplog as logging
@@ -157,7 +158,7 @@ def create_loads(net, dict_net, pf_variable_p_loads, is_unbalanced):
                 try:
                     params.buses = get_connection_nodes(net, item, 1)
                 except IndexError:
-                    logger.warn("Cannot add Load '%s': not connected" % params.name)
+                    logger.warning(f"Cannot add Load '{params.name}': not connected")
                     continue
                 params.in_service = monopolar_in_service(item)
                 attr_list = ["sernum", "for_name", "chr_name", 'cpSite.loc_name']
@@ -276,9 +277,9 @@ def create_switches(net, dict_net):
             except IndexError:
                 logger.debug("Cannot add Coup '%s': not connected" % item.loc_name)
                 continue
-            except IndexError:
-                logger.error("Error while exporting Coup '%s'!" % item.loc_name)
-                continue
+            # except IndexError:
+            #     logger.error("Error while exporting Coup '%s'!" % item.loc_name)
+            #     continue
 
             if not item.HasAttribute('isclosed') and not is_fuse:
                 logger.error('switch %s does not have the attribute isclosed!' % item)
@@ -286,20 +287,20 @@ def create_switches(net, dict_net):
                                and (bool(item.isclosed) if item.HasAttribute('isclosed') else True)
             in_service = not bool(item.outserv) if item.HasAttribute('outserv') else True
 
+            in_ka = np.nan
             try:
-                in_ka = np.nan
                 if is_fuse:
                     in_ka = item.GetAttribute("typ_id").GetAttribute("irat") / 1000.
             except:
                 pass
 
             switches_to_create.append({"name": item.loc_name,
-                      "buses": bus1,
-                      "elements": bus2,
-                      "et": "b",
-                      "closed": switch_is_closed and in_service,
-                      "type": switch_types.get(item.aUsage, 'unknown'),
-                      "in_ka": in_ka})
+                                       "buses": bus1,
+                                       "elements": bus2,
+                                       "et": "b",
+                                       "closed": switch_is_closed and in_service,
+                                       "type": switch_types.get(item.aUsage, 'unknown'),
+                                       "in_ka": in_ka})
 
     switches = pd.DataFrame(switches_to_create)
     pp.create_switches(net, **switches.to_dict(orient='list'))
@@ -322,7 +323,7 @@ def from_pf(dict_net, pv_as_slack=True, pf_variable_p_loads='plini', pf_variable
     grid_name = dict_net['ElmNet'].loc_name
     base_sn_mva = dict_net['global_parameters']['base_sn_mva']
     net = pp.create_empty_network(grid_name, sn_mva=base_sn_mva)
-    pp.results.reset_results(net, mode="pf_3ph")
+    reset_results(net, mode="pf_3ph")
     if max_iter is not None:
         pp.set_user_pf_options(net, max_iteration=max_iter)
     logger.info('creating grid %s' % grid_name)
@@ -484,15 +485,18 @@ def add_additional_attributes(item, net, element, element_id, attr_list=None, at
 
 def add_additional_attributes_to_params(item, params, attr_list=None, attr_dict=None):
     """
-    Adds additonal atributes from powerfactory such as sernum or for_name
+    Adds additional attributes from PowerFactory, such as `sernum` or `for_name`, to parameters.
 
-    @param item: powerfactory item
-    @param net: pp net
-    @param element: pp element namme (str). e.g. bus, load, sgen
-    @param element_id: element index in pp net
-    @param attr_list: list of attribtues to add. e.g. ["sernum", "for_name"]
-    @param attr_dict: names of an attribute in powerfactory and in pandapower
-    @return:
+    Parameters
+    ----------
+    item : object
+        The PowerFactory object.
+    params : dict
+        parameters of the object collected for the pandapower create function
+    attr_list : list, optional
+        List of attributes to add, e.g. ["sernum", "for_name"].
+    attr_dict : dict, optional
+        Dictionary mapping names of attributes in PowerFactory to their counterparts in pandapower.
     """
     if attr_dict is None:
         attr_dict = {k: k for k in attr_list}
@@ -825,6 +829,7 @@ def create_line(net, item, flag_graphics, n, is_unbalanced):
 
     if len(line_sections) == 0:
         logger.debug('line <%s> has no sections' % params['name'])
+        # todo: this returns params and not index of the created line
         lid = create_line_normal(net=net, item=item, is_unbalanced=is_unbalanced, **params)
         sid_list = [lid]
         line_dict[item] = sid_list
@@ -1433,7 +1438,7 @@ def make_split_dict(line):
             section = find_section(load, sections)
             split_dict[section] = split_dict.get(section, []).append(load)
 
-    else:ö.
+    else:
         for load in loads:
             split_dict[line] = split_dict.get(line, []).append(load)
     return split_dict
@@ -1719,7 +1724,7 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
             return
 
         params.update(ask(item, pf_variable_p_gen, 'p_mw', 'q_mvar', 'sn_mva'))
-        logger.debug('genstat parameters: ' % params)
+        logger.debug(f"genstat parameters: {params}")
 
         params.in_service = monopolar_in_service(item)
 
@@ -2309,9 +2314,9 @@ def create_coup(net, item, is_fuse=False):
     except IndexError:
         logger.debug("Cannot add Coup '%s': not connected" % name)
         return
-    except IndexError:
-        logger.error("Error while exporting Coup '%s'!" % name)
-        return
+    # except IndexError:
+    #     logger.error("Error while exporting Coup '%s'!" % name)
+    #     return
 
     if not item.HasAttribute('isclosed') and not is_fuse:
         logger.error('switch %s does not have the attribute isclosed!' % item)
