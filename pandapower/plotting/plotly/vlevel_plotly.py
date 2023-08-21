@@ -8,7 +8,7 @@ import pandas as pd
 
 from pandapower.plotting.generic_geodata import create_generic_coordinates
 from pandapower.plotting.plotly.traces import create_bus_trace, create_line_trace, \
-    create_trafo_trace, draw_traces, version_check
+    create_trafo_trace, draw_traces
 from pandapower.plotting.plotly.get_colors import get_plotly_color_palette
 from pandapower.plotting.plotly.mapbox_plot import geo_data_to_latlong
 from pandapower.topology import create_nxgraph, connected_components
@@ -79,9 +79,9 @@ def vlevel_plotly(net, respect_switches=True, use_line_geodata=None, colors_dict
     # getting unique sets of buses for each voltage level
     vlev_bus_dict = {}
     for vl_buses in vlev_buses:
-        if net.bus.loc[vl_buses, 'vn_kv'].unique().shape[0] > 1:
+        if net.bus.loc[list(vl_buses), 'vn_kv'].unique().shape[0] > 1:
             logger.warning('buses from the same voltage level does not have the same vn_kv !?')
-        vn_kv = net.bus.loc[vl_buses, 'vn_kv'].unique()[0]
+        vn_kv = net.bus.loc[list(vl_buses), 'vn_kv'].unique()[0]
         if vlev_bus_dict.get(vn_kv):
             vlev_bus_dict[vn_kv].update(vl_buses)
         else:
@@ -109,8 +109,6 @@ def _draw_colored_bus_groups_plotly(
 
     **bus_groups** - list of tuples consisting of set of bus indices, color, legendgroup
     """
-    version_check()
-
     # create geocoord if none are available
     if 'line_geodata' not in net:
         net.line_geodata = pd.DataFrame(columns=['coords'])

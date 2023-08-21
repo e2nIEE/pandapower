@@ -32,7 +32,6 @@ import pandapower.plotting
 # import pandapower.protection  # no imports available yet
 # import pandapower.pypower  # no imports available yet
 import pandapower.shortcircuit
-import pandapower.test
 import pandapower.timeseries
 import pandapower.toolbox
 import pandapower.topology

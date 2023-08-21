@@ -48,7 +48,10 @@ EXAMPLE- IDTOC Relay:
     import pandapower.protection.example_grids as nw
     net = nw.idtoc_relay_net()
     relay_settings=oc_protection.oc_parameters(net,time_settings= [0.07, 0.5, 0.3,1, 0.5], relay_type='IDTOC',curve_type='standard_inverse' )
-    trip_decisions,net_sc= oc_protection.run_fault_scenario_oc(net,sc_line_id=4,sc_location =0.5,relay_settings)        
+    trip_decisions,net_sc= oc_protection.run_fault_scenario_oc(net,sc_line_id=4,sc_location =0.5,relay_settings)      
+    
+Kindly follow the tutorial of the Over Current Relay (OC relay) for details:
+https://github.com/e2nIEE/pandapower/blob/develop/tutorials/protection/oc_relay.ipynb   
 
 .. seealso::
 	- *Protective Relays: Their Theory and Practice Volume One* by A. R. van. C. Warrington, 2012.   

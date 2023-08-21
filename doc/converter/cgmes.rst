@@ -71,6 +71,10 @@ eq profile
  - ExternalNetworkInjection
  - ACLineSegment
  - Terminal
+ - OperationalLimitSet
+ - OperationalLimitType
+ - CurrentLimit
+ - VoltageLimit
  - DCNode
  - DCEquipmentContainer
  - DCConverterUnit
@@ -78,20 +82,29 @@ eq profile
  - CsConverter
  - VsConverter
  - DCTerminal
+ - ACDCConverterDCTerminal
  - Breaker
  - Disconnector
  - Switch
  - LoadBreakSwitch
  - EnergyConsumer
  - ConformLoad
- - NonConformLoa
+ - NonConformLoad
  - StationSupply
  - GeneratingUnit
+ - WindGeneratingUnit
+ - HydroGeneratingUnit
+ - SolarGeneratingUnit
+ - ThermalGeneratingUnit
+ - NuclearGeneratingUnit
+ - RegulatingControl
+ - SynchronousMachine
  - AsynchronousMachine
  - EnergySource
  - EnergySchedulingType
  - StaticVarCompensator
  - PowerTransformer
+ - PowerTransformerEnd
  - TapChangerControl
  - RatioTapChanger
  - PhaseTapChangerLinear
@@ -104,6 +117,7 @@ eq profile
  - LinearShuntCompensator
  - NonlinearShuntCompensator
  - NonlinearShuntCompensatorPoint
+ - EquivalentBranch
  - EquivalentInjection
  - SeriesCompensator
  - Analog

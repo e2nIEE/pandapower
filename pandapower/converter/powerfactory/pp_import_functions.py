@@ -85,7 +85,7 @@ def create_buses(net, dict_net, flag_graphics):
 def create_loads(net, dict_net, pf_variable_p_loads, is_unbalanced):
     load_param_list = []
     asym_load_param_list = []
-    for load_type in ["ElmLod", "ElmLodlv", "ElmLodmv"]:
+    for load_type in ["ElmLod", "ElmLodlv", "ElmLodmv", "ElmLodlvp"]: # addes ElmLodlv
         for item in dict_net[load_type]:
             try:
                 params = ADict()
@@ -108,6 +108,40 @@ def create_loads(net, dict_net, pf_variable_p_loads, is_unbalanced):
                         logger.error('While creating load %s, error occurred for '
                                      'calculation of q_mvar: %s, %s' % (item, params, err))
                         raise err
+                # added
+                elif load_class == 'ElmLodlvp':
+                    params.update(ask(item, pf_variable_p_loads, dict_net=dict_net,
+                                      variables=('p_mw','sn_mva')))
+                    # # set parent load out of service
+                    # fehler, immer erstes mit namen wird out service gesetzt
+                    # echten elternteil finden!
+                    #parent_load = next(it for it in load_param_list if it["name"] == item.fold_id.loc_name)
+                    # parent_load = next(it for it in load_param_list if it["chr_name"] == item.GetParent().chr_name)
+                    # parent_load["in_service"] = False
+                    
+                    #load of lines, streckenlast als teillast
+                    parent = item.GetParent()
+                    parent_class = parent.GetClassName()
+                    logger.debug('parent class name of ElmLodlvp: %s' % parent_class)
+                    if parent_class == 'ElmLodlv':
+                        # set parent load out of service
+                        parent_load = next(it for it in load_param_list if 
+                                           it["chr_name"] == item.GetParent().chr_name)
+                        parent_load["in_service"] = False
+                        #raise NotImplementedError('ElmLodlvp as not part of ElmLne not implemented')
+                    elif parent_class == 'ElmLne':
+                        logger.debug('creating load that is part of line %s' % parent)
+                        params.update(ask(item, pf_variable_p_loads=pf_variable_p_loads,
+                                                      dict_net=dict_net, variables=('p_mw', 'sn_mva')))
+                        params.name += '(%s)' % parent.loc_name
+                        split_dict = make_split_dict(parent) # parent is a line
+                        # todo remake this
+                        params.bus = split_line_add_bus(net, split_dict)
+                        bus_is_known = True
+                        logger.debug('created bus <%d> in net and changed lines' % params.bus)
+                    
+                    
+                ######
                 elif load_class == 'ElmLodmv':
                     params.update(ask(item, pf_variable_p_loads=pf_variable_p_loads,
                                       dict_net=dict_net, variables=('p_mw', 'sn_mva')))
@@ -127,9 +161,9 @@ def create_loads(net, dict_net, pf_variable_p_loads, is_unbalanced):
                     continue
                 params.in_service = monopolar_in_service(item)
                 attr_list = ["sernum", "for_name", "chr_name", 'cpSite.loc_name']
-                if load_class == 'ElmLodlv':
+                if load_class == 'ElmLodlv' or load_class == 'ElmLodlvp' :
                     attr_list.extend(['pnight', 'cNrCust', 'cPrCust', 'UtilFactor', 'cSmax',
-                                      'cSav', 'ccosphi'])
+                                      'cSav', 'coslini' ]) #'ccosphi'
                 add_additional_attributes_to_params(item, params, attr_list=attr_list)
 
     #TODO                get_pf_load_results(net, item, ld, is_unbalanced)
@@ -596,7 +630,12 @@ def get_connection_nodes(net, item, num_nodes):
     buses = []
     for i in range(num_nodes):
         try:
-            pf_bus = item.GetNode(i)
+            # wenn elmlodlvp, dann bus von elmlodlv parent
+            if item.GetClassName() == 'ElmLodlvp':
+                parent = item.GetParent()
+                pf_bus = parent.GetNode(0)                
+            else:
+                pf_bus = item.GetNode(i)
         except Exception as err:
             logger.error('GetNode failed for %s' % item)
             logger.error(err)
@@ -1299,7 +1338,7 @@ def ask_load_params(item, pf_variable_p_loads, dict_net, variables):
     multiplier = get_power_multiplier(item, pf_variable_p_loads)
     params = ADict()
     if pf_variable_p_loads == 'm:P:bus1' and not item.HasResults(0):
-        raise RuntimeError('load %s does not have results and is ignored' % item.loc_name)
+        raise RuntimeError('load %s does not have results and is ignored' % item.loc_name)   
     if 'p_mw' in variables:
         params.p_mw = ga(item, pf_variable_p_loads) * multiplier
     if 'q_mvar' in variables:
@@ -1318,7 +1357,12 @@ def ask_load_params(item, pf_variable_p_loads, dict_net, variables):
         logger.debug('load parameters: %s' % params)
 
     global_scaling = dict_net['global_parameters']['global_load_scaling']
-    params.scaling = global_scaling * item.scale0 \
+    # loadlvp no scale0, scaling immer 1
+    if item.HasAttribute('scale0'):
+        scale = item.scale0
+    else:
+        scale = 1
+    params.scaling = global_scaling * scale \
                             if pf_variable_p_loads == 'plini' else 1
     if item.HasAttribute('zonefact'):
         params.scaling *= item.zonefact
@@ -1389,7 +1433,7 @@ def make_split_dict(line):
             section = find_section(load, sections)
             split_dict[section] = split_dict.get(section, []).append(load)
 
-    else:
+    else:ö.
         for load in loads:
             split_dict[line] = split_dict.get(line, []).append(load)
     return split_dict

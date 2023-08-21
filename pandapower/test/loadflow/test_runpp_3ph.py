@@ -532,6 +532,34 @@ def test_3ph_with_impedance():
     assert pandapower.toolbox.dataframes_equal(net.res_bus_3ph, net_imp.res_bus_3ph)
 
 
+def test_shunt_3ph():
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, 20.0)
+    b2 = pp.create_bus(net, 20.0)
+    pp.create_ext_grid(net, b1, s_sc_max_mva=1000, rx_max=0.1, x0x_max=1.0, r0x0_max=0.1)
+    pp.create_line_from_parameters(net, b1, b2, length_km=1, r_ohm_per_km=1, x_ohm_per_km=1, c_nf_per_km=1,
+                                   r0_ohm_per_km=1, x0_ohm_per_km=1, c0_nf_per_km=1, max_i_ka=1)
+    pp.create_shunt(net, in_service=True, bus=b2, p_mw=1, q_mvar=1)
+    pp.runpp_3ph(net)
+
+    bus_cols = ["vm_a_pu", "va_a_degree", "vm_b_pu", "va_b_degree", "vm_c_pu", "va_c_degree"]
+    bus_pp = np.abs(net.res_bus_3ph[bus_cols].values)
+    bus_expected = np.abs(np.array([[1.0, 0.0, 1.0, -120.0, 1.0, 120.0],
+                                    [0.9950250311521571, -8.955222949441059e-06, 0.995025031152157, -120.00000895522294,
+                                     0.995025031152157, 119.99999104477705]]))
+
+    assert np.max(np.abs(bus_pp - bus_expected)) < 1e-5
+
+    line_cols = ["p_a_from_mw", "q_a_from_mvar", "p_b_from_mw", "q_b_from_mvar", "q_c_from_mvar", "p_a_to_mw",
+                 "q_a_to_mvar", "p_b_to_mw", "q_b_to_mvar", "p_c_to_mw", "q_c_to_mvar"]
+    line_power_pp = np.abs(net.res_line_3ph[line_cols].values)
+    line_power_expected = np.abs(np.array(
+        [[0.33167495789351165, 0.33163327786948577, 0.33167495789351165, 0.33163327786948565, 0.33163327786948565,
+          -0.3300249368894127, -0.3300249368948133, -0.3300249368894127, -0.3300249368948133, -0.3300249368894127,
+          -0.3300249368948134]]))
+    assert np.max(np.abs(line_power_pp - line_power_expected)) < 1e-5
+
+
 if __name__ == "__main__":
-    # pytest.main(["test_runpp_3ph.py"])
-    test_3ph_with_impedance()
+    pytest.main([__file__, "-xs"])
+

@@ -21,7 +21,7 @@ from pandapower.toolbox.element_selection import branch_element_bus_dict, elemen
 from pandapower.toolbox.result_info import clear_result_tables
 from pandapower.toolbox.data_modification import reindex_elements
 from pandapower.groups import detach_from_groups, attach_to_group, attach_to_groups, isin_group, \
-    check_unique_group_names, element_associated_groups
+    check_unique_group_rows, element_associated_groups
 
 try:
     import pandaplan.core.pplog as logging
@@ -98,12 +98,12 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
     relevant_characteristics = set()
     for col in ("vk_percent_characteristic", "vkr_percent_characteristic"):
         if col in net.trafo.columns:
-            relevant_characteristics |= set(net.trafo[~net.trafo[col].isnull(), col].values)
+            relevant_characteristics |= set(net.trafo.loc[~net.trafo[col].isnull(), col].values)
     for col in (f"vk_hv_percent_characteristic", f"vkr_hv_percent_characteristic",
                 f"vk_mv_percent_characteristic", f"vkr_mv_percent_characteristic",
                 f"vk_lv_percent_characteristic", f"vkr_lv_percent_characteristic"):
         if col in net.trafo3w.columns:
-            relevant_characteristics |= set(net.trafo3w[~net.trafo3w[col].isnull(), col].values)
+            relevant_characteristics |= set(net.trafo3w.loc[~net.trafo3w[col].isnull(), col].values)
     p2.characteristic = net.characteristic.loc[list(relevant_characteristics)]
 
     _select_cost_df(net, p2, "poly_cost")
@@ -320,14 +320,18 @@ def repl_to_line(net, idx, std_type, name=None, in_service=False, **kwargs):
     impedance of the new line and the already existing line is equal to the impedance of the
     replaced line. Or for electrical engineers:
 
-    Z0 = impedance of the existing line
-    Z1 = impedance of the replaced line
-    Z2 = impedance of the created line
+        Z0 = impedance of the existing line
 
-        --- Z2 ---
-    ---|         |---   =  --- Z1 ---
-       --- Z0 ---
+        Z1 = impedance of the replaced line
 
+        Z2 = impedance of the created line
+
+    sketch:
+    ::
+
+            --- Z2 ---
+        ---|          |---   =  --- Z1 ---
+            --- Z0 ---
 
     Parameters
     ----------
@@ -396,23 +400,29 @@ def repl_to_line(net, idx, std_type, name=None, in_service=False, **kwargs):
 def merge_parallel_line(net, idx):
     """
     Changes the impedances of the parallel line so that it equals a single line.
-    Args:
-        net: pandapower net
-        idx: idx of the line to merge
 
-    Returns:
-        net
+        Z0 = impedance of the existing parallel lines
 
-    Z0 = impedance of the existing parallel lines
-    Z1 = impedance of the respective single line
+        Z1 = impedance of the respective single line
 
-        --- Z0 ---
-    ---|         |---   =  --- Z1 ---
-       --- Z0 ---
+    sketch:
+    ::
 
+            --- Z0 ---
+        ---|          |---   =  --- Z1 ---
+            --- Z0 ---
+
+    Parameters
+    ----------
+        net - pandapower net
+
+        idx (int) - idx of the line to merge
+
+    Returns
+    -------
+    net
     """
     # impedance before changing the standard type
-
     r0 = net.line.at[idx, "r_ohm_per_km"]
     p0 = net.line.at[idx, "parallel"]
     x0 = net.line.at[idx, "x_ohm_per_km"]
@@ -1053,7 +1063,7 @@ def _replace_group_member_element_type(
     old_elements = pd.Series(old_elements)
     new_elements = pd.Series(new_elements)
 
-    check_unique_group_names(net)
+    check_unique_group_rows(net)
     gr_et = net.group.loc[net.group.element_type == old_element_type]
     for gr_index in gr_et.index:
         isin = old_elements.isin(gr_et.at[gr_index, "element"])

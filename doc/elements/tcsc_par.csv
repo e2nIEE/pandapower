@@ -1,0 +1,12 @@
+**Parameter**;**Datatype**;**Value Range**;**Explanation**
+name;string;;name of the TCSC
+from_bus*;integer;;index of the from bus where the TCSC is connected
+to_bus*;integer;;index of the to bus where the TCSC is connected
+x_l_ohm*;float;:math:`\geq` 0;impedance of the reactor component of TCSC
+x_cvar_ohm*;float;:math:`\leq` 0;impedance of the fixed capacitor component of TCSC
+set_p_to_mw*;float;;set-point for the power flowing through the TCSC element at the to bus
+thyristor_firing_angle_degree*;float;:math:90 `\leq` 180;the value of thyristor firing angle of TCSC
+controllable*;boolean;True / False;whether the element is considered as actively controlling or as a fixed series impedance
+in_service*;boolean;True / False;specifies if the TCSC is in service.
+min_angle_degree;float;:math:`\geq` 90;minimum value of the thyristor_firing_angle_degree
+max_angle_degree;float;:math:`\leq` 180;maximum value of the thyristor_firing_angle_degree
