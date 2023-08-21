@@ -26,6 +26,16 @@ def rundcpp_with_consistency_checks(net, **kwargs):
     consistency_checks(net, test_q=False)
     return True
 
+def runpp_pgm_with_consistency_checks(net):
+    pp.runpp_pgm(net, error_tolerance_vm_pu=1e-11, symmetric=True)
+    consistency_checks(net)
+    return True
+
+def runpp_pgm_3ph_with_consistency_checks(net):
+    pp.runpp_pgm(net, error_tolerance_vm_pu=1e-11, symmetric=False)
+    consistency_checks_3ph(net)
+    return True
+
 def consistency_checks(net, rtol=1e-3, test_q=True):
     indices_consistent(net)
     branch_loss_consistent_with_bus_feed_in(net, rtol)
@@ -51,10 +61,11 @@ def branch_loss_consistent_with_bus_feed_in(net, atol=1e-2):
 
     branch_loss_p = net.res_line.pl_mw.values.sum() + net.res_trafo.pl_mw.values.sum() + \
                     net.res_trafo3w.pl_mw.values.sum() + net.res_impedance.pl_mw.values.sum() + \
-                    net.res_dcline.pl_mw.values.sum()
+                    net.res_dcline.pl_mw.values.sum() + net.res_tcsc.pl_mw.values.sum()
     branch_loss_q = net.res_line.ql_mvar.values.sum() + net.res_trafo.ql_mvar.values.sum() + \
                     net.res_trafo3w.ql_mvar.values.sum() + net.res_impedance.ql_mvar.values.sum() + \
-                    net.res_dcline.q_to_mvar.values.sum() + net.res_dcline.q_from_mvar.values.sum()
+                    net.res_dcline.q_to_mvar.values.sum() + net.res_dcline.q_from_mvar.values.sum() + \
+                    net.res_tcsc.ql_mvar.values.sum()
 
     try:
         assert isclose(bus_surplus_p, branch_loss_p, atol=atol)
@@ -115,6 +126,11 @@ def element_power_consistent_with_bus_power(net, rtol=1e-2, test_q=True):
         bus_p.at[tab.bus] += net.res_xward.p_mw.at[idx]
         bus_q.at[tab.bus] += net.res_xward.q_mvar.at[idx]
 
+    for idx, tab in net.svc.iterrows():
+        bus_q.at[tab.bus] += net.res_svc.q_mvar.at[idx]
+
+    for idx, tab in net.ssc.iterrows():
+        bus_q.at[tab.bus] += net.res_ssc.q_mvar.at[idx]
 
     assert allclose(net.res_bus.p_mw.values, bus_p.values, equal_nan=True, rtol=rtol)
     if test_q:

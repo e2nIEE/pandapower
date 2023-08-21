@@ -18,4 +18,4 @@ def test_html(tmp_path):
 
 
 if __name__ == "__main__":
-    pytest.main(["test_to_html.py"])
+    pytest.main([__file__, "-xs"])

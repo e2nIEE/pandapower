@@ -111,5 +111,17 @@ def test_missing_gen():
     assert np.allclose(net.res_gen.values, res_gen, equal_nan=True)
 
 
+def test_res_bus_vm():
+    net = nw.case4gs()
+    # run power flow to have bus vm_pu values
+    pp.runpp(net)
+    # now run DC pf and check that the vm_pu values are reset to 1
+    pp.rundcpp(net)
+    assert np.allclose(net.res_bus.loc[net.line.from_bus.values, "vm_pu"], net.res_line.vm_from_pu, equal_nan=True)
+    assert np.allclose(net.res_bus.loc[net.line.from_bus.values, "va_degree"], net.res_line.va_from_degree, equal_nan=True)
+    assert np.allclose(net.res_bus.loc[net.line.to_bus.values, "vm_pu"], net.res_line.vm_to_pu, equal_nan=True)
+    assert np.allclose(net.res_bus.loc[net.line.to_bus.values, "va_degree"], net.res_line.va_to_degree, equal_nan=True)
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

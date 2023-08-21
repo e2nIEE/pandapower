@@ -175,7 +175,7 @@ def reindex_buses(net, bus_lookup):
 
     # --- adapt group link
     if net.group.shape[0]:
-        for row in np.arange(net.group.shape[0], dtype=int)[
+        for row in np.arange(net.group.shape[0], dtype=np.int64)[
                 (net.group.element_type == "bus").values & net.group.reference_column.isnull().values]:
             net.group.element.iat[row] = list(get_indices(net.group.element.iat[row], bus_lookup))
 
@@ -291,7 +291,7 @@ def reindex_elements(net, element_type, new_indices=None, old_indices=None, look
 
     # --- adapt group link
     if net.group.shape[0]:
-        for row in np.arange(net.group.shape[0], dtype=int)[
+        for row in np.arange(net.group.shape[0], dtype=np.int64)[
                 (net.group.element_type == element_type).values & \
                 net.group.reference_column.isnull().values]:
             net.group.element.iat[row] = list(get_indices(net.group.element.iat[row], lookup))

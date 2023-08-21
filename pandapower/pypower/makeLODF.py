@@ -13,15 +13,19 @@
 from numpy import ones, diag, r_, arange
 import numpy as np
 from scipy.sparse import csr_matrix as sparse
+
+from pandapower.pypower.idx_brch import F_BUS, T_BUS
+from pandapower.auxiliary import version_check
+
 try:
     from numba import jit
+    version_check('numba')
 except ImportError: # pragma: no cover
     from pandapower.pf.no_numba import jit
 
-from .idx_brch import F_BUS, T_BUS
 
 
-@jit
+@jit(nopython=True)
 def update_LODF_diag(LODF): # pragma: no cover
     for ix in range(LODF.shape[0]):
         # To preserve the data type of diagnol elments

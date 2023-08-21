@@ -76,7 +76,10 @@ def create_network_dict(app, flag_graphics='GPS'):
 
     logger.info('collecting network elements')
     for obj in set_object_extentions:
-        dict_net[obj] = app.GetCalcRelevantObjects(obj)
+        if obj == 'ElmTerm':
+            dict_net[obj] = app.GetCalcRelevantObjects(obj, 1, 0, 1)
+        else:
+            dict_net[obj] = app.GetCalcRelevantObjects(obj)
 
     if flag_graphics not in ['GPS', 'no geodata']:
         logger.info('gathering graphic objects')

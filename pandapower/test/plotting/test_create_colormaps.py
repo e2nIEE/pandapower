@@ -46,4 +46,4 @@ def test_cmap_logarithmic():
 
 
 if __name__ == "__main__":
-    pytest.main(["test_create_colormaps.py"])
+    pytest.main([__file__, "-xs"])

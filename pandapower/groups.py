@@ -9,10 +9,7 @@ import numpy as np
 import pandas as pd
 import pandas.testing as pdt
 import uuid
-import warnings
-from packaging.version import Version
 
-from pandapower._version import __version__
 from pandapower.auxiliary import ensure_iterability, log_to_level
 from pandapower.create import create_empty_network, _group_parameter_list, _set_multiple_entries, \
     _check_elements_existence, create_group
@@ -78,14 +75,10 @@ def drop_group_and_elements(net, index):
 # ====================================
 
 
-def append_to_group(net, index, element_types, elements, reference_columns=None):
-    msg = ("The name of the function append_to_group() is deprecated with pp.version >= 2.12. "
-           "Use attach_to_group() instead.")
-    if Version(__version__) < Version('2.13'):
-        warnings.warn(msg, category=DeprecationWarning)
-    else:
-        raise DeprecationWarning(msg)
-    return attach_to_group(net, index, element_types, elements, reference_columns=reference_columns)
+def append_to_group(*args, **kwargs):
+    msg = "The name of the function append_to_group() is deprecated with pp.version >= 2.12. " + \
+        "Use attach_to_group() instead."
+    raise DeprecationWarning(msg)
 
 
 def attach_to_groups(net, index, element_types, elements, reference_columns=None):
@@ -170,7 +163,7 @@ def attach_to_group(net, index, element_types, elements, reference_columns=None,
                         f"The reference column of existing group {index} for element "
                         f"type '{et}' and of the elements to append differ. Use "
                         "set_group_reference_column() to change the reference column of net.group "
-                        "before, or pass appropriate data to append_to_group().")
+                        "before, or pass appropriate data to attach_to_group().")
 
             # append
             prev_elm = net.group.element.loc[group_et].at[index]
@@ -196,14 +189,10 @@ def attach_to_group(net, index, element_types, elements, reference_columns=None,
         net.group.sort_index(inplace=True)
 
 
-def drop_from_group(net, index, element_type, element_index):
+def drop_from_group(*args, **kwargs):
     msg = ("The name of the function drop_from_group() is deprecated with pp.version >= 2.12. "
            "Use detach_from_group() instead.")
-    if Version(__version__) < Version('2.13'):
-        warnings.warn(msg, category=DeprecationWarning)
-    else:
-        raise DeprecationWarning(msg)
-    return detach_from_group(net, index, element_type, element_index)
+    raise DeprecationWarning(msg)
 
 
 def detach_from_group(net, index, element_type, element_index):
@@ -226,14 +215,10 @@ def detach_from_group(net, index, element_type, element_index):
     detach_from_groups(net, element_type, element_index, index=index)
 
 
-def drop_from_groups(net, element_type, element_index, index=None):
+def drop_from_groups(*args, **kwargs):
     msg = ("The name of the function drop_from_groups() is deprecated with pp.version >= 2.12. "
            "Use detach_from_groups() instead.")
-    if Version(__version__) < Version('2.13'):
-        warnings.warn(msg, category=DeprecationWarning)
-    else:
-        raise DeprecationWarning(msg)
-    return detach_from_groups(net, element_type, element_index, index=index)
+    raise DeprecationWarning(msg)
 
 
 def detach_from_groups(net, element_type, element_index, index=None):
@@ -256,13 +241,13 @@ def detach_from_groups(net, element_type, element_index, index=None):
     """
     if index is None:
         index = net.group.index
-    element_index = pd.Index(ensure_iterability(element_index), dtype=int)
+    element_index = pd.Index(ensure_iterability(element_index), dtype=np.int64)
 
     to_check = np.isin(net.group.index.values, index)
     to_check &= net.group.element_type.values == element_type
     keep = np.ones(net.group.shape[0], dtype=bool)
 
-    for i in np.arange(len(to_check), dtype=int)[to_check]:
+    for i in np.arange(len(to_check), dtype=np.int64)[to_check]:
         rc = net.group.reference_column.iat[i]
         if rc is None or pd.isnull(rc):
             net.group.element.iat[i] = pd.Index(net.group.element.iat[i]).difference(
@@ -353,14 +338,14 @@ def group_element_index(net, index, element_type):
         indices of the elements of the group in the element table net[element_type]
     """
     if element_type not in net.group.loc[[index], "element_type"].values:
-        return pd.Index([], dtype=int)
+        return pd.Index([], dtype=np.int64)
 
     row = group_row(net, index, element_type)
     element = row.at["element"]
     reference_column = row.at["reference_column"]
 
     if reference_column is None or pd.isnull(reference_column):
-        return pd.Index(element, dtype=int)
+        return pd.Index(element, dtype=np.int64)
 
     return net[element_type].index[net[element_type][reference_column].isin(element)]
 
@@ -441,7 +426,7 @@ def isin_group(net, element_type, element_index, index=None, drop_empty_lines=Tr
 
     ensure_lists_in_group_element_column(net, drop_empty_lines=drop_empty_lines)
 
-    member_idx = pd.Index([], dtype=int)
+    member_idx = pd.Index([], dtype=np.int64)
     for idx in index:
         member_idx = member_idx.union(group_element_index(net, idx, element_type))
 
@@ -515,7 +500,7 @@ def count_group_elements(net, index):
     return pd.Series({
         et: len(elm) if hasattr(elm, "__iter__") and not isinstance(elm, str) else 1 for
         et, elm in zip(*_get_lists_from_df(net.group.loc[[index]], ["element_type", "element"]))},
-        dtype=int)
+        dtype=np.int64)
 
 
 # =================================================
@@ -583,28 +568,24 @@ def compare_group_elements(net, index1, index2):
 # =================================================
 
 
-def check_unique_group_names(net, raise_=False):
+def check_unique_group_names(*args, **kwargs):
     msg = ("Function check_unique_group_names() is deprecated with pp.version >= 2.12. "
            "It is replaced by check_unique_group_rows() and the raise_ parameter defaults to True.")
-    if Version(__version__) < Version('2.13'):
-        warnings.warn(msg, category=DeprecationWarning)
-    else:
-        raise DeprecationWarning(msg)
-    return check_unique_group_rows(net, raise_=raise_)
+    raise DeprecationWarning(msg)
 
 
-def check_unique_group_rows(net, raise_=True, log_level="warning"):
-    """Checks whether all groups have unique names. raise_ decides whether duplicated names lead
+def check_unique_group_rows(net, raise_error=True, log_level="warning"):
+    """Checks whether all groups have unique names. raise_error decides whether duplicated names lead
     to error or log message.
 
     Parameters
     ----------
     net : pandapowerNet
         pandapower net
-    raise_ : bool, optional
+    raise_error : bool, optional
         decides whether duplicated names lead to error or log message., by default False
     log_level : str, optional
-        the level for logs, relevant if raise_ is False
+        the level for logs, relevant if raise_error is False
 
     Notes
     -----
@@ -617,7 +598,7 @@ def check_unique_group_rows(net, raise_=True, log_level="warning"):
         "name"].agg(set)]
     if not all(single_name_per_index):
         warn = "Groups with different names have the same index."
-        if raise_:
+        if raise_error:
             raise UserWarning(warn)
         else:
             log_to_level(warn, logger, log_level)
@@ -1002,7 +983,7 @@ def set_group_reference_column(net, index, reference_column, element_type=None):
             if np.sum(pos_bool) > 1:
                 raise ValueError(
                     f"Group of index {index} has multiple entries for element type '{et}'.")
-            pos = np.arange(len(pos_bool), dtype=int)[pos_bool][0]
+            pos = np.arange(len(pos_bool), dtype=np.int64)[pos_bool][0]
 
             if reference_column is None:
                 net.group.element.iat[pos] = group_element_index(net, index, et).tolist()

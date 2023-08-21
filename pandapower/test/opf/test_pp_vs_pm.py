@@ -94,19 +94,19 @@ def test_case5_pm_pd2ppc():
 
     assert net.ext_grid["in_service"].values.dtype == bool
     assert net.ext_grid["bus"].values.dtype == "uint32"
-    pp.create_ext_grid(net, bus=4, vm_pu=net.res_bus.vm_pu.loc[4])
+    pp.create_ext_grid(net, bus=4, vm_pu=net.res_bus.vm_pu.loc[4], controllable=False)
 
     assert net.ext_grid["bus"].values.dtype == "uint32"
     assert net.ext_grid["in_service"].values.dtype == bool
 
     ppc = _pd2ppc(net)
     ref_idx = int(ppc[0]["bus"][:, BUS_I][ppc[0]["bus"][:, BUS_TYPE] == REF])
-   
+
     vmax1 = ppc[0]["bus"][ref_idx, VMAX]
     vmin1 = ppc[0]["bus"][ref_idx, VMIN]
 
     assert net.ext_grid.vm_pu.values[1] == vmin1
-    assert net.ext_grid.vm_pu.values[1] == vmax1   
+    assert net.ext_grid.vm_pu.values[1] == vmax1
 
 
 def test_opf_ext_grid_controllable():
@@ -164,4 +164,4 @@ if __name__ == "__main__":
     else:
         test_case5_pm_pd2ppc()
         test_opf_ext_grid_controllable_pm()
-        
+

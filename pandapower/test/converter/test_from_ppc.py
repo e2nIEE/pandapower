@@ -295,7 +295,7 @@ def test_case24_from_pypower():
 
 
 def _bool_arr_to_positional_column_vector(arr):
-    return np.arange(len(arr), dtype=int)[arr].reshape((-1, 1))
+    return np.arange(len(arr), dtype=np.int64)[arr].reshape((-1, 1))
 
 
 def overwrite_results_data_of_ppc_pickle(file_name, grid_names):

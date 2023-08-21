@@ -329,7 +329,7 @@ def run_loop(net, ts_variables, run_control_fct=run_control, output_writer_fct=_
         run_time_step(net, time_step, ts_variables, run_control_fct, output_writer_fct, **kwargs)
 
 
-def run_timeseries(net, time_steps=None, continue_on_divergence=False, verbose=True, **kwargs):
+def run_timeseries(net, time_steps=None, continue_on_divergence=False, verbose=True, check_controllers=True, **kwargs):
     """
     Time Series main function
 
@@ -356,7 +356,8 @@ def run_timeseries(net, time_steps=None, continue_on_divergence=False, verbose=T
     # cleanup ppc before first time step
     cleanup(net, ts_variables)
 
-    control_diagnostic(net)
+    if check_controllers:
+        control_diagnostic(net) # produces significant overhead if you run many timeseries of short duration
     run_loop(net, ts_variables, **kwargs)
 
     # cleanup functions after the last time step was calculated
