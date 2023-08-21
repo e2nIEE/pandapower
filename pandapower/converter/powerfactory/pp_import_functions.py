@@ -112,21 +112,16 @@ def create_loads(net, dict_net, pf_variable_p_loads, is_unbalanced):
                 elif load_class == 'ElmLodlvp':
                     params.update(ask(item, pf_variable_p_loads, dict_net=dict_net,
                                       variables=('p_mw','sn_mva')))
-                    # # set parent load out of service
-                    # fehler, immer erstes mit namen wird out service gesetzt
-                    # echten elternteil finden!
-                    #parent_load = next(it for it in load_param_list if it["name"] == item.fold_id.loc_name)
-                    # parent_load = next(it for it in load_param_list if it["chr_name"] == item.GetParent().chr_name)
-                    # parent_load["in_service"] = False
-                    
-                    #load of lines, streckenlast als teillast
                     parent = item.GetParent()
                     parent_class = parent.GetClassName()
                     logger.debug('parent class name of ElmLodlvp: %s' % parent_class)
                     if parent_class == 'ElmLodlv':
                         # set parent load out of service
+                        # parent_load = next(it for it in load_param_list if 
+                        #                     it["chr_name"] == item.GetParent().chr_name)
                         parent_load = next(it for it in load_param_list if 
-                                           it["chr_name"] == item.GetParent().chr_name)
+                                           (it["name"] == item.GetParent().loc_name) and  
+                                           (it["chr_name"] == item.GetParent().chr_name))
                         parent_load["in_service"] = False
                         #raise NotImplementedError('ElmLodlvp as not part of ElmLne not implemented')
                     elif parent_class == 'ElmLne':
@@ -979,6 +974,7 @@ def create_line_sections(net, item_list, line, bus1, bus2, coords, parallel, is_
         section_name = item.loc_name
         bus1 = next(buses_gen)
         bus2 = next(buses_gen)
+        #items_nogeo = []#
 
         sec_coords = None
         if coords:
@@ -989,6 +985,7 @@ def create_line_sections(net, item_list, line, bus1, bus2, coords, parallel, is_
                 # lines_to_create[-1]['coords'] = sec_coords
                 # net.bus_geodata.loc[bus2, ['x', 'y']] = sec_coords[-1]
             except:
+                #items_nogeo.append(item)
                 logger.warning("Could not generate geodata for line !!")
 
         lines_to_create.append(create_line_normal(net=net, item=item, bus1=bus1, bus2=bus2,
@@ -1433,7 +1430,7 @@ def make_split_dict(line):
             section = find_section(load, sections)
             split_dict[section] = split_dict.get(section, []).append(load)
 
-    else:ö.
+    else:#ö.
         for load in loads:
             split_dict[line] = split_dict.get(line, []).append(load)
     return split_dict
