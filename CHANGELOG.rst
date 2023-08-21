@@ -21,6 +21,7 @@ Change Log
 - [FIXED] fixed bug in :code:`cim2pp.build_pp_net` when controller for gen is at TopologicalNode instead of ConnectivityNode
 - [CHANGED] adjust default iterations for runpp_3ph
 - [CHANGED] always convert RATE_A to ppc in build_branch (not only when mode == 'opf' as before)
+- [FIXED] in converter from PowerFactory, collect all buses (even not relevant for the calculation) for connectivity issues
 
 
 [2.13.1] - 2023-05-12
