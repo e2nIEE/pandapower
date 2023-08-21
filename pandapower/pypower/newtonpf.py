@@ -200,10 +200,10 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     # to avoid non-convergence due to zero-terms in the Jacobian:
     if any_tcsc_controllable and np.all(V[tcsc_fb] == V[tcsc_tb]):
         V[tcsc_tb] -= 0.01 + 0.001j
-    if any_ssc_controllable and np.all(V[ssc_fb[ssc_controllable]] == V[ssc_tb[ssc_controllable]]):
-        V[ssc_tb[ssc_controllable]] -= 0.01 + 0.001j
-    if any_vsc_controllable and np.all(V[vsc_fb[vsc_controllable]] == V[vsc_tb[vsc_controllable]]):
-        V[vsc_tb[vsc_controllable]] -= 0.01 + 0.001j
+    # if any_ssc_controllable and np.all(V[ssc_fb[ssc_controllable]] == V[ssc_tb[ssc_controllable]]):
+    #     V[ssc_tb[ssc_controllable]] -= 0.01 + 0.001j
+    # if any_vsc_controllable and np.all(V[vsc_fb[vsc_controllable]] == V[vsc_tb[vsc_controllable]]):
+    #     V[vsc_tb[vsc_controllable]] -= 0.01 + 0.001j
 
     Va = angle(V)
     Vm = abs(V)
@@ -419,7 +419,8 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         if any_tcsc_controllable:
             x_control_tcsc[tcsc_controllable] += dx[j6a:j6b]
         if any_branch_dc:
-            V_dc[dc_p] += dx[j6d:j6e]
+            V_dc[dc_p] += dx[j6d:j6e].real
+            assert np.all(dx[j6d:j6e].imag == 0)  # todo: this check is for testing, remove this
 
         if tdpf:
             T = T + dx[j8:][tdpf_lines]
@@ -478,7 +479,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         svc[svc_idx, SVC_THYRISTOR_FIRING_ANGLE] = x_control_svc
         svc[svc_idx, SVC_X_PU] = 1 / y_svc_pu
 
-    Yf_tcsc, Yt_tcsc = makeYft_tcsc(Ybus_tcsc, tcsc_fb, tcsc_tb)
+    Yf_tcsc, Yt_tcsc = makeYft_tcsc(Ybus_tcsc, tcsc_fb, tcsc_tb, x_control_tcsc, tcsc_x_l_pu, tcsc_x_cvar_pu)
     # todo: move to pf.run_newton_raphson_pf.ppci_to_pfsoln
     if any_tcsc:
         # todo use make_Ybus_facts, make_Yft_facts
@@ -499,7 +500,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     # todo: move to pf.run_newton_raphson_pf.ppci_to_pfsoln
     if any_ssc:
         # todo use make_Ybus_facts, make_Yft_facts
-        Yf_ssc, Yt_ssc = makeYft_tcsc(Ybus_ssc, ssc_fb, ssc_tb)
+        Yf_ssc, Yt_ssc = make_Yft_facts(ssc_fb, ssc_tb, ssc_y_pu, Ybus_ssc.shape[0])
         s_ssc_f = conj(Yf_ssc.dot(V)) * V[ssc_fb] * baseMVA
         s_ssc_t = conj(Yt_ssc.dot(V)) * V[ssc_tb] * baseMVA
         ssc[ssc_branches, SSC_Q] = s_ssc_f.imag
@@ -507,7 +508,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     # todo move this to pfsoln
     if any_vsc:
         # todo use make_Ybus_facts, make_Yft_facts
-        Yf_vsc, Yt_vsc = makeYft_tcsc(Ybus_vsc, vsc_fb, vsc_tb)
+        Yf_vsc, Yt_vsc = make_Yft_facts(vsc_fb, vsc_tb, vsc_y_pu, Ybus_vsc.shape[0])
         s_vsc_f = conj(Yf_vsc.dot(V)) * V[vsc_fb] * baseMVA
         s_vsc_t = conj(Yt_vsc.dot(V)) * V[vsc_tb] * baseMVA
         vsc[vsc_branches, VSC_P] = s_vsc_f.real

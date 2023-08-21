@@ -158,8 +158,8 @@ def _pd2ppc(net, sequence=None):
                 net["_isolated_buses"], _, _ = aux._check_connectivity_opf(ppc)
             else:
                 net["_isolated_buses"], _, _, net["_isolated_buses_dc"], _, _ = aux._check_connectivity(ppc)
-            net["_is_elements_final"] = aux._select_is_elements_numba(net,
-                                                                      net._isolated_buses, sequence)
+            net["_is_elements_final"] = aux._select_is_elements_numba(net, net._isolated_buses,
+                                                                      net._isolated_buses_dc, sequence)
         else:
             ppc["bus"][net._isolated_buses, BUS_TYPE] = NONE
         net["_is_elements"] = net["_is_elements_final"]
