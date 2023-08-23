@@ -236,6 +236,27 @@ def test_trafo(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=1e-2, l_tol=1e
     assert abs(net.res_trafo.loading_percent.at[t2] - load2) < l_tol
 
 
+def test_trafo_2_taps(v_tol=1e-6, i_tol=1e-6, s_tol=1e-2, l_tol=1e-3, va_tol=1e-2):
+    # from pandapower.test.loadflow.test_results import *
+
+    net = pp.create_empty_network()
+    pp.create_bus(net, 110)
+    pp.create_bus(net, 20)
+    pp.create_ext_grid(net, 0)
+    pp.create_transformer_from_parameters(net, 0, 1, 100, 110, 20, 0.5, 12, 14, 0.5,
+                                          tap_side="hv", tap_neutral=0, tap_max=10,
+                                          tap_min=-10, tap_step_percent=2, tap_step_degree=0,
+                                          tap_pos=0, tap_phase_shifter=False,
+                                          tap2_side="hv", tap2_neutral=0, tap2_max=10,
+                                          tap2_min=-10, tap2_step_percent=2, tap2_step_degree=0,
+                                          tap2_pos=0, tap2_phase_shifter=False)
+
+    pp.create_load(net, 1, 10)
+
+    pp.runpp(net)
+    net.res_bus
+
+
 def test_tap_dependent_impedance(result_test_network):
     net = result_test_network
 

@@ -2695,7 +2695,11 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
                                        si0_hv_partial=nan,
                                        pt_percent=nan, oltc=nan, tap_dependent_impedance=nan,
                                        vk_percent_characteristic=None,
-                                       vkr_percent_characteristic=None, xn_ohm=nan, **kwargs):
+                                       vkr_percent_characteristic=None, xn_ohm=nan,
+                                       tap2_side=None, tap2_neutral=nan, tap2_max=nan,
+                                       tap2_min=nan, tap2_step_percent=nan, tap2_step_degree=nan,
+                                       tap2_pos=nan, tap2_phase_shifter=False,
+                                       **kwargs):
     """
     Creates a two-winding transformer in table net["trafo"].
     The trafo parameters are defined through the standard type library.
@@ -2797,6 +2801,24 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
 
         ** only considered in loadflow if calculate_voltage_angles = True
 
+        **tap2_side** (string) - position of the second tap changer ("hv", "lv")
+
+        **tap2_pos** (int, nan) - current tap position of the second tap changer of the transformer. \
+            Defaults to the medium position (tap2_neutral)
+
+        **tap2_neutral** (int, nan) - second tap position where the transformer ratio is equal to the \
+            ratio of the rated voltages
+
+        **tap2_max** (int, nan) - maximal allowed tap position of the second tap changer
+
+        **tap2_min** (int, nan):  minimal allowed tap position of the second tap changer
+
+        **tap2_step_percent** (float) - second tap step size for voltage magnitude in percent
+
+        **tap2_step_degree** (float) - second tap step size for voltage angle in degree*
+
+        **tap2_phase_shifter** (bool) - whether the transformer is an ideal phase shifter*
+
     OUTPUT:
         **index** (int) - The unique ID of the created transformer
 
@@ -2844,6 +2866,15 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
                           "vk_percent_characteristic", "trafo", "Int64")
     _set_value_if_not_nan(net, index, vkr_percent_characteristic,
                           "vkr_percent_characteristic", "trafo", "Int64")
+
+    _set_value_if_not_nan(net, index, tap2_side, "tap2_side", "trafo", dtype=str)
+    _set_value_if_not_nan(net, index, tap2_neutral, "tap2_neutral", "trafo", dtype=np.float64)
+    _set_value_if_not_nan(net, index, tap2_min, "tap2_min", "trafo", dtype=np.float64)
+    _set_value_if_not_nan(net, index, tap2_max, "tap2_max", "trafo", dtype=np.float64)
+    _set_value_if_not_nan(net, index, tap2_step_percent, "tap2_step_percent", "trafo", dtype=np.float64)
+    _set_value_if_not_nan(net, index, tap2_step_degree, "tap2_step_degree", "trafo", dtype=np.float64)
+    _set_value_if_not_nan(net, index, tap2_pos, "tap2_pos", "trafo", dtype=np.float64)
+    _set_value_if_not_nan(net, index, tap2_phase_shifter, "tap2_phase_shifter", "trafo", dtype=bool_)
 
     if not (isnan(vk0_percent) and isnan(vkr0_percent) and isnan(mag0_percent)
             and isnan(mag0_rx) and isnan(si0_hv_partial) and vector_group is None):
