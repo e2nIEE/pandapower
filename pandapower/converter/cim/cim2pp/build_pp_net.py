@@ -1963,6 +1963,13 @@ class CimConverter:
         self.net.bus_geodata.x[start_index_pp_net:] = bus_geo.xPosition[:]
         self.net.bus_geodata.y[start_index_pp_net:] = bus_geo.yPosition[:]
         self.net.bus_geodata.coords[start_index_pp_net:] = bus_geo.coords[:]
+        # reduce to max two coordinates for buses (see pandapower documentation for details)
+        self.net.bus_geodata['coords_length'] = self.net.bus_geodata['coords'].apply(len)
+        self.net.bus_geodata.loc[self.net.bus_geodata['coords_length'] == 1, 'coords'] = np.nan
+        self.net.bus_geodata['coords'] = self.net.bus_geodata.apply(
+            lambda row: [row['coords'][0], row['coords'][-1]] if row['coords_length'] > 2 else row['coords'], axis=1)
+        if 'coords_length' in self.net.bus_geodata.columns:
+            self.net.bus_geodata.drop(columns=['coords_length'], inplace=True)
 
         # the geo coordinates for the lines
         lines = self.net.line.reset_index()
@@ -2010,10 +2017,15 @@ class CimConverter:
         if diagram_name is None:
             diagram_name = self.cim['dl']['Diagram'].sort_values(by='name')['name'].values[0]
         self.logger.debug("Choosing the geo coordinates from diagram %s" % diagram_name)
-        # reduce the source data to the chosen diagram only
-        diagram_rdf_id = self.cim['dl']['Diagram']['rdfId'][self.cim['dl']['Diagram']['name'] == diagram_name].values[0]
-        dl_do = self.cim['dl']['DiagramObject'][self.cim['dl']['DiagramObject']['Diagram'] == diagram_rdf_id]
-        dl_do.rename(columns={'rdfId': 'DiagramObject'}, inplace=True)
+        if diagram_name != 'all':
+            # reduce the source data to the chosen diagram only
+            diagram_rdf_id = \
+                self.cim['dl']['Diagram']['rdfId'][self.cim['dl']['Diagram']['name'] == diagram_name].values[0]
+            dl_do = self.cim['dl']['DiagramObject'][self.cim['dl']['DiagramObject']['Diagram'] == diagram_rdf_id]
+            dl_do.rename(columns={'rdfId': 'DiagramObject'}, inplace=True)
+        else:
+            dl_do = self.cim['dl']['DiagramObject'].copy()
+            dl_do.rename(columns={'rdfId': 'DiagramObject'}, inplace=True)
         dl_data = pd.merge(dl_do, self.cim['dl']['DiagramObjectPoint'], how='left', on='DiagramObject')
         dl_data.drop(columns=['rdfId', 'Diagram', 'DiagramObject'], inplace=True)
         # the coordinates for the buses
@@ -2036,6 +2048,13 @@ class CimConverter:
         self.net.bus_geodata.x[start_index_pp_net:] = bus_geo.xPosition[:]
         self.net.bus_geodata.y[start_index_pp_net:] = bus_geo.yPosition[:]
         self.net.bus_geodata.coords[start_index_pp_net:] = bus_geo.coords[:]
+        # reduce to max two coordinates for buses (see pandapower documentation for details)
+        self.net.bus_geodata['coords_length'] = self.net.bus_geodata['coords'].apply(len)
+        self.net.bus_geodata.loc[self.net.bus_geodata['coords_length'] == 1, 'coords'] = np.nan
+        self.net.bus_geodata['coords'] = self.net.bus_geodata.apply(
+            lambda row: [row['coords'][0], row['coords'][-1]] if row['coords_length'] > 2 else row['coords'], axis=1)
+        if 'coords_length' in self.net.bus_geodata.columns:
+            self.net.bus_geodata.drop(columns=['coords_length'], inplace=True)
 
         # the coordinates for the lines
         lines = self.net.line.reset_index()
