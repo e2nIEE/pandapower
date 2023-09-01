@@ -108,7 +108,7 @@ class CimParser:
                            'referencePriority': int_type, 'sectionNumber': int_type, 'sections': int_type,
                            'maximumSections': int_type, 'endNumber': int_type, 'sequenceNumber': int_type,
                            'neutralStep': int_type, 'lowStep': int_type, 'highStep': int_type, 'normalStep': int_type,
-                           'phaseAngleClock': int_type})
+                           'phaseAngleClock': int_type, 'position': int_type})
         for profile in self.cim.keys():
             for cim_element_type, item in self.cim[profile].items():
                 for col in item.columns:

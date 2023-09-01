@@ -74,7 +74,8 @@ def from_cim(file_list: List[str] = None, encoding: str = 'utf-8', convert_line_
     displaying control room schema). Set it to 'both' to let the converter choose the profile. The converter will
     choose the GL profile first if available, otherwise the DL profile. Optional, default: both.
     diagram_name (str): The name from the Diagram from the diagram layout profile for the geo coordinates. Default: The
-    first diagram sorted ascending by name.
+    first diagram sorted ascending by name. Set the parameter to "all" to use available diagrams for creating the
+    coordinates.
     create_tap_controller (bool): If True, create pandapower controllers for transformer tap changers. If False, skip
     creating them. Default: True
     sn_mva (float): Set the sn_mva from the pandapower net to a specific value. This value is not given in CGMES.
