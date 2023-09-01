@@ -24,6 +24,7 @@ Change Log
 - [FIXED] in converter from PowerFactory, collect all buses (even not relevant for the calculation) for connectivity issues
 - [FIXED] fixed bug in coords conversion in cim2pp, small fixes
 - [CHANGED] cim2pp: added support for multi diagram usage for DL profiles
+- [ADDED] logger messages about the probabilistic load flow calculation (simultaneities) in the powerfactory2pandapower converter for low voltage loads 
 
 
 [2.13.1] - 2023-05-12
