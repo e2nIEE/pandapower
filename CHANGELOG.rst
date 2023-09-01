@@ -21,6 +21,9 @@ Change Log
 - [FIXED] fixed bug in :code:`cim2pp.build_pp_net` when controller for gen is at TopologicalNode instead of ConnectivityNode
 - [CHANGED] adjust default iterations for runpp_3ph
 - [CHANGED] always convert RATE_A to ppc in build_branch (not only when mode == 'opf' as before)
+- [FIXED] in converter from PowerFactory, collect all buses (even not relevant for the calculation) for connectivity issues
+- [FIXED] fixed bug in coords conversion in cim2pp, small fixes
+- [CHANGED] cim2pp: added support for multi diagram usage for DL profiles
 
 
 [2.13.1] - 2023-05-12
