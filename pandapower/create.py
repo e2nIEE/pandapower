@@ -211,7 +211,8 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                     ("from_bus_dc", "u4"),
                     ("to_bus_dc", "u4"),
                     ("length_km", "f8"),
-                    ("r_ohm_per_km", "f8"),  # TODO: check if DC lines also have any shunt components
+                    ("r_ohm_per_km", "f8"),
+                    ("g_us_per_km", "f8"), # TODO: check if DC lines also have any shunt components
                     ("max_i_ka", "f8"),
                     ("df", "f8"),
                     ("parallel", "u4"),
@@ -2390,7 +2391,7 @@ def create_line_dc(net, from_bus_dc, to_bus_dc, length_km, std_type, name=None, 
     """
 
     # check if bus exist to attach the line to
-    _check_branch_element(net, "Line", index, from_bus_dc, to_bus_dc)
+    _check_branch_element(net, "Line_dc", index, from_bus_dc, to_bus_dc, node_name='bus_dc')
 
     index = _get_index_with_check(net, "line_dc", index)
 
@@ -2649,7 +2650,7 @@ def create_lines_dc(net, from_buses_dc, to_buses_dc, length_km, std_type, name=N
             std_type="Not specified yet")
 
     """
-    _check_multiple_branch_elements(net, from_buses_dc, to_buses_dc, "Lines")
+    _check_multiple_branch_elements(net, from_buses_dc, to_buses_dc, "Lines_dc", node_name='bus_dc', plural='(all dc buses)')
 
     index = _get_multiple_index_with_check(net, "line_dc", index, len(from_buses_dc))
 
@@ -2843,9 +2844,9 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
 
 
 def create_line_dc_from_parameters(net, from_bus_dc, to_bus_dc, length_km, r_ohm_per_km, max_i_ka,
-                                   name=None, index=None, type=None, geodata=None, in_service=True, df=1., parallel=1, g_us_per_km=0.,
-                                   max_loading_percent=nan, alpha=nan, temperature_degree_celsius=nan,
-                                   r0_ohm_per_km=nan, g0_us_per_km=0,**kwargs):
+                                   name=None, index=None, type=None, geodata=None, in_service=True, df=1., parallel=1,
+                                   max_loading_percent=nan, alpha=nan, temperature_degree_celsius=nan, g_us_per_km=0.,
+                                   **kwargs):
     """
     Creates a dc line element in net["line_dc"] from dc line parameters.
 
@@ -2859,8 +2860,6 @@ def create_line_dc_from_parameters(net, from_bus_dc, to_bus_dc, length_km, r_ohm
         **length_km** (float) - The dc line length in km
 
         **r_ohm_per_km** (float) - dc line resistance in ohm per km
-
-        **r0_ohm_per_km** (float) - zero sequence dc line resistance in ohm per km
 
         **max_i_ka** (float) - maximum thermal current in kilo Ampere
 
@@ -2931,7 +2930,7 @@ def create_line_dc_from_parameters(net, from_bus_dc, to_bus_dc, length_km, r_ohm
     """
 
     # check if bus exist to attach the dc line to
-    _check_branch_element(net, "Line", index, from_bus_dc, to_bus_dc, node_name="bus_dc")
+    _check_branch_element(net, "Line_dc", index, from_bus_dc, to_bus_dc, node_name="bus_dc")
 
     index = _get_index_with_check(net, "line_dc", index)
 
@@ -2949,15 +2948,6 @@ def create_line_dc_from_parameters(net, from_bus_dc, to_bus_dc, length_km, r_ohm
     tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
 
     _set_entries(net, "line_dc", index, **v, **kwargs)
-
-    nan_0_values = [isnan(r0_ohm_per_km)]
-    if not np_any(nan_0_values):
-        _set_value_if_not_nan(net, index, r0_ohm_per_km, "r0_ohm_per_km", "line_dc")
-        _set_value_if_not_nan(net, index, g0_us_per_km, "g0_us_per_km", "line_dc",
-                                     default_val=0.)
-    elif not np_all(nan_0_values):
-        logger.warning("Zero sequence values are given for only some parameters. Please specify "
-                       "them for all parameters, otherwise they are not set!")
 
     if geodata is not None:
         net["line_dc_geodata"].loc[index, "coords"] = None
@@ -3117,7 +3107,7 @@ def create_lines_from_parameters(net, from_buses, to_buses, length_km, r_ohm_per
 def create_lines_dc_from_parameters(net, from_buses_dc, to_buses_dc, length_km, r_ohm_per_km,
                                     max_i_ka, name=None, index=None, type=None,geodata=None,
                                     in_service=True, df=1., parallel=1, g_us_per_km=0., max_loading_percent=nan, alpha=nan,
-                                    temperature_degree_celsius=nan, r0_ohm_per_km=nan, g0_us_per_km=nan, **kwargs):
+                                    temperature_degree_celsius=nan, **kwargs):
     """
     Convenience function for creating many dc lines at once. Parameters 'from_buses_dc' and 'to_buses_dc'
         must be arrays of equal length. Other parameters may be either arrays of the same length or
@@ -3135,8 +3125,6 @@ def create_lines_dc_from_parameters(net, from_buses_dc, to_buses_dc, length_km, 
 
         **r_ohm_per_km** (list of float) - dc line resistance in ohm per km
 
-        **r0_ohm_per_km** (list of float) - zero sequence dc line resistance in ohm per km
-
         **max_i_ka** (list of float) - maximum thermal current in kilo Ampere
 
     OPTIONAL:
@@ -3153,8 +3141,6 @@ def create_lines_dc_from_parameters(net, from_buses_dc, to_buses_dc, length_km, 
             of line (from 0 to 1)
 
         **g_us_per_km** (list of float, 0) - dielectric conductance in micro Siemens per km
-
-        **g0_us_per_km** (list of float, 0) - zero sequence dielectric conductance in micro Siemens per km
 
         **parallel** (list of integer, 1) - number of parallel line systems
 
@@ -3204,7 +3190,7 @@ def create_lines_dc_from_parameters(net, from_buses_dc, to_buses_dc, length_km, 
         r_ohm_per_km = .01, max_i_ka = 0.4)
 
     """
-    _check_multiple_branch_elements(net, from_buses_dc, to_buses_dc, "Lines")
+    _check_multiple_branch_elements(net, from_buses_dc, to_buses_dc, "Lines_dc",node_name='bus_dc', plural= '(all dc buses)')
 
     index = _get_multiple_index_with_check(net, "line", index, len(from_buses_dc))
 
