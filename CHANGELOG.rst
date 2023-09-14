@@ -25,6 +25,8 @@ Change Log
 - [FIXED] fixed bug in coords conversion in cim2pp, small fixes
 - [CHANGED] cim2pp: added support for multi diagram usage for DL profiles
 - [FIXED] error handling in :code:`plotly/mapbox_plot.py` not raising :code`ImportError` if :code:`geopy`  or :code:`pyproj` are missing
+- [FIXED] powerfactory2pandapower-converter error if a line has two identical coordinates
+- [ADDED] logger messages about the probabilistic load flow calculation (simultaneities) in the powerfactory2pandapower-converter for low voltage loads
 
 
 [2.13.1] - 2023-05-12
