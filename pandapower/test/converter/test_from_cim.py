@@ -573,7 +573,7 @@ def test_smallgrid_GL_bus_geodata(smallgrid_GL):
         smallgrid_GL.bus[smallgrid_GL.bus['origin_id'] == '_0471bd2a-c766-11e1-8775-005056c00008'].index]
     assert -4.844991207122803 == element_0['x'].item()
     assert 55.92612075805664 == element_0['y'].item()
-    assert [[-4.844991207122803, 55.92612075805664]] == element_0['coords'].item()
+    assert math.isnan(element_0['coords'].item())
 
 
 def test_fullgrid_xward(fullgrid):
