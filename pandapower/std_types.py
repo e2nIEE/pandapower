@@ -1120,6 +1120,10 @@ def basic_std_types():
     }
 
 
+def basic_line_dc_std_types():
+    pass
+
+
 def add_basic_std_types(net):
     """Adds basic standard types of the pandapower library to the net provided. These standard types
     are the same types that are available with output of `pandapower.create_empty_network()` and
@@ -1137,13 +1141,15 @@ def add_basic_std_types(net):
     """
 
     if "std_types" not in net:
-        net.std_types = {"line": {}, "trafo": {}, "trafo3w": {}}
+        net.std_types = {"line": {}, "trafo": {}, "trafo3w": {}}  #todo line_dc
 
     linetypes = basic_line_std_types()
+    # linetypes_dc = basic_line_dc_std_types()
     trafotypes = basic_trafo_std_types()
     trafo3wtypes = basic_trafo3w_std_types()
 
     create_std_types(net, data=linetypes, element="line")
+    # create_std_types(net, data=linetypes_dc, element="line_dc")
     create_std_types(net, data=trafotypes, element="trafo")
     create_std_types(net, data=trafo3wtypes, element="trafo3w")
     return linetypes, trafotypes, trafo3wtypes
