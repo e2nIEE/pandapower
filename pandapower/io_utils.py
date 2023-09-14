@@ -24,6 +24,7 @@ from pandapower import __version__
 from pandapower.auxiliary import _preserve_dtypes
 import networkx
 import numpy
+from io import StringIO
 import pandas as pd
 from networkx.readwrite import json_graph
 from numpy import ndarray, generic, equal, isnan, allclose, any as anynp
@@ -506,7 +507,11 @@ class FromSerializableRegistry():
         column_name = self.d.pop('column_name', None)
         column_names = self.d.pop('column_names', None)
 
-        df = pd.read_json(self.obj, precise_float=True, convert_axes=False, **self.d)
+        obj = self.obj
+        if isinstance(obj, str):
+            obj = StringIO(obj)
+
+        df = pd.read_json(obj, precise_float=True, convert_axes=False, **self.d)
 
         if not df.shape[0] or self.d.get("orient", False) == "columns":
             try:
