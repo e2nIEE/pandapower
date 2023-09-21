@@ -38,105 +38,11 @@ class CimConverter:
         self.power_trafo3w: pd.DataFrame = pd.DataFrame()
         self.report_container: ReportContainer = cim_parser.get_report_container()
 
-    def _merge_eq_ssh_profile(self, cim_type: str, add_cim_type_column: bool = False) -> pd.DataFrame:
+    def merge_eq_ssh_profile(self, cim_type: str, add_cim_type_column: bool = False) -> pd.DataFrame:
         df = pd.merge(self.cim['eq'][cim_type], self.cim['ssh'][cim_type], how='left', on='rdfId')
         if add_cim_type_column:
             df[sc['o_cl']] = cim_type
         return df
-
-    def _convert_external_network_injections_cim16(self):
-        time_start = time.time()
-        self.logger.info("Start converting ExternalNetworkInjections.")
-
-        eqssh_eni = self._prepare_external_network_injections_cim16()
-
-        # choose the slack
-        eni_ref_prio_min = eqssh_eni.loc[eqssh_eni['enabled'], 'slack_weight'].min()
-        # check if the slack is a SynchronousMachine
-        sync_machines = self._merge_eq_ssh_profile('SynchronousMachine')
-        regulation_controllers = self._merge_eq_ssh_profile('RegulatingControl')
-        regulation_controllers = regulation_controllers.loc[regulation_controllers['mode'] == 'voltage']
-        regulation_controllers = regulation_controllers[['rdfId', 'targetValue', 'enabled']]
-        regulation_controllers.rename(columns={'rdfId': 'RegulatingControl'}, inplace=True)
-        sync_machines = pd.merge(sync_machines, regulation_controllers, how='left', on='RegulatingControl')
-
-        sync_ref_prio_min = sync_machines.loc[(sync_machines['referencePriority'] > 0) & (sync_machines['enabled']),
-                                              'referencePriority'].min()
-        if pd.isna(eni_ref_prio_min):
-            ref_prio_min = sync_ref_prio_min
-        elif pd.isna(sync_ref_prio_min):
-            ref_prio_min = eni_ref_prio_min
-        else:
-            ref_prio_min = min(eni_ref_prio_min, sync_ref_prio_min)
-
-        eni_slacks = eqssh_eni.loc[(eqssh_eni['slack_weight'] == ref_prio_min) & (eqssh_eni['controllable'])]
-        eni_gens = eqssh_eni.loc[(eqssh_eni['slack_weight'] != ref_prio_min) & (eqssh_eni['controllable'])]
-        eni_sgens = eqssh_eni.loc[~eqssh_eni['controllable']]
-
-        self.copy_to_pp('ext_grid', eni_slacks)
-        self.copy_to_pp('gen', eni_gens)
-        self.copy_to_pp('sgen', eni_sgens)
-
-        self.logger.info("Created %s external networks, %s generators and %s static generators in %ss" %
-                         (eni_slacks.index.size, eni_gens.index.size, eni_sgens.index.size, time.time() - time_start))
-        self.report_container.add_log(Report(
-            level=LogLevel.INFO, code=ReportCode.INFO_CONVERTING,
-            message="Created %s external networks, %s generators and %s static generators from "
-                    "ExternalNetworkInjections in %ss" %
-                    (eni_slacks.index.size, eni_gens.index.size, eni_sgens.index.size, time.time() - time_start)))
-
-    def _prepare_external_network_injections_cim16(self) -> pd.DataFrame:
-
-        eqssh_eni = self._merge_eq_ssh_profile('ExternalNetworkInjection', add_cim_type_column=True)
-
-        # merge with busses
-        eqssh_eni = pd.merge(eqssh_eni, self.bus_merge, how='left', on='rdfId')
-
-        # get the voltage from controllers
-        regulation_controllers = self._merge_eq_ssh_profile('RegulatingControl')
-        regulation_controllers = regulation_controllers.loc[regulation_controllers['mode'] == 'voltage']
-        regulation_controllers = regulation_controllers[['rdfId', 'targetValue', 'enabled']]
-        regulation_controllers.rename(columns={'rdfId': 'RegulatingControl'}, inplace=True)
-
-        eqssh_eni = pd.merge(eqssh_eni, regulation_controllers, how='left', on='RegulatingControl')
-
-        # get slack voltage and angle from SV profile
-        eqssh_eni = pd.merge(eqssh_eni, self.net.bus[['vn_kv', sc['ct']]],
-                             how='left', left_on='index_bus', right_index=True)
-        eqssh_eni = pd.merge(eqssh_eni, self.cim['sv']['SvVoltage'][['TopologicalNode', 'v', 'angle']],
-                             how='left', left_on=sc['ct'], right_on='TopologicalNode')
-        eqssh_eni['controlEnabled'] = eqssh_eni['controlEnabled'] & eqssh_eni['enabled']
-        eqssh_eni['vm_pu'] = eqssh_eni['targetValue'] / eqssh_eni['vn_kv']  # voltage from regulation
-        eqssh_eni['vm_pu'].fillna(eqssh_eni['v'] / eqssh_eni['vn_kv'], inplace=True)  # voltage from measurement
-        eqssh_eni['vm_pu'].fillna(1., inplace=True)  # default voltage
-        eqssh_eni['angle'].fillna(0., inplace=True)  # default angle
-        eqssh_eni['ratedU'] = eqssh_eni['targetValue'][:]  # targetValue in kV
-        eqssh_eni['ratedU'].fillna(eqssh_eni['v'], inplace=True)  # v in kV
-        eqssh_eni['ratedU'].fillna(eqssh_eni['vn_kv'], inplace=True)
-        eqssh_eni['s_sc_max_mva'] = 3 ** .5 * eqssh_eni['ratedU'] * (eqssh_eni['maxInitialSymShCCurrent'] / 1e3)
-        eqssh_eni['s_sc_min_mva'] = 3 ** .5 * eqssh_eni['ratedU'] * (eqssh_eni['minInitialSymShCCurrent'] / 1e3)
-        # get the substations
-        eqssh_eni = pd.merge(eqssh_eni, self.net.bus[[sc['o_id'], 'zone']].rename({sc['o_id']: 'b_id'}, axis=1),
-                             how='left', left_on='ConnectivityNode', right_on='b_id')
-
-        eqssh_eni['referencePriority'].loc[eqssh_eni['referencePriority'] == 0] = np.NaN
-        eqssh_eni['p'] = -eqssh_eni['p']
-        eqssh_eni['q'] = -eqssh_eni['q']
-        eqssh_eni['x0x_max'] = ((eqssh_eni['maxR1ToX1Ratio'] + 1j) /
-                                (eqssh_eni['maxR0ToX0Ratio'] + 1j)).abs() * eqssh_eni['maxZ0ToZ1Ratio']
-
-        eqssh_eni.rename(columns={'rdfId': sc['o_id'], 'rdfId_Terminal': sc['t'], 'zone': sc['sub'],
-                                  'angle': 'va_degree', 'index_bus': 'bus', 'connected': 'in_service',
-                                  'minP': 'min_p_mw', 'maxP': 'max_p_mw', 'minQ': 'min_q_mvar', 'maxQ': 'max_q_mvar',
-                                  'p': 'p_mw', 'q': 'q_mvar', 'controlEnabled': 'controllable',
-                                  'maxR1ToX1Ratio': 'rx_max', 'minR1ToX1Ratio': 'rx_min', 'maxR0ToX0Ratio': 'r0x0_max',
-                                  'referencePriority': 'slack_weight'},
-                         inplace=True)
-        eqssh_eni['scaling'] = 1.
-        eqssh_eni['type'] = None
-        eqssh_eni['slack'] = False
-
-        return eqssh_eni
 
     def _convert_ac_line_segments_cim16(self, convert_line_to_switch, line_r_limit, line_x_limit):
         time_start = time.time()
@@ -403,21 +309,21 @@ class CimConverter:
                     (eqssh_switches.index.size, time.time() - time_start)))
 
     def _prepare_switches_cim16(self) -> pd.DataFrame:
-        eqssh_switches = self._merge_eq_ssh_profile('Breaker', add_cim_type_column=True)
+        eqssh_switches = self.merge_eq_ssh_profile('Breaker', add_cim_type_column=True)
         eqssh_switches['type'] = 'CB'
         start_index_cim_net = eqssh_switches.index.size
         eqssh_switches = \
-            pd.concat([eqssh_switches, self._merge_eq_ssh_profile('Disconnector', add_cim_type_column=True)],
+            pd.concat([eqssh_switches, self.merge_eq_ssh_profile('Disconnector', add_cim_type_column=True)],
                       ignore_index=True, sort=False)
         eqssh_switches.type[start_index_cim_net:] = 'DS'
         start_index_cim_net = eqssh_switches.index.size
         eqssh_switches = \
-            pd.concat([eqssh_switches, self._merge_eq_ssh_profile('LoadBreakSwitch', add_cim_type_column=True)],
+            pd.concat([eqssh_switches, self.merge_eq_ssh_profile('LoadBreakSwitch', add_cim_type_column=True)],
                       ignore_index=True, sort=False)
         eqssh_switches.type[start_index_cim_net:] = 'LBS'
         start_index_cim_net = eqssh_switches.index.size
         # switches needs to be the last which getting appended because of class inherit problem in jpa
-        eqssh_switches = pd.concat([eqssh_switches, self._merge_eq_ssh_profile('Switch', add_cim_type_column=True)],
+        eqssh_switches = pd.concat([eqssh_switches, self.merge_eq_ssh_profile('Switch', add_cim_type_column=True)],
                                    ignore_index=True, sort=False)
         eqssh_switches.type[start_index_cim_net:] = 'LS'
         # drop all duplicates to fix class inherit problem in jpa
@@ -478,7 +384,7 @@ class CimConverter:
                     (eqssh_energy_consumers.index.size, time.time() - time_start)))
 
     def _prepare_energy_consumers_cim16(self) -> pd.DataFrame:
-        eqssh_energy_consumers = self._merge_eq_ssh_profile('EnergyConsumer', add_cim_type_column=True)
+        eqssh_energy_consumers = self.merge_eq_ssh_profile('EnergyConsumer', add_cim_type_column=True)
         eqssh_energy_consumers = pd.merge(eqssh_energy_consumers, self.bus_merge, how='left', on='rdfId')
         eqssh_energy_consumers.rename(columns={'rdfId': sc['o_id'], 'rdfId_Terminal': sc['t'], 'index_bus': 'bus',
                                                'connected': 'in_service', 'p': 'p_mw', 'q': 'q_mvar'}, inplace=True)
@@ -500,7 +406,7 @@ class CimConverter:
                     (eqssh_conform_loads.index.size, time.time() - time_start)))
 
     def _prepare_conform_loads_cim16(self) -> pd.DataFrame:
-        eqssh_conform_loads = self._merge_eq_ssh_profile('ConformLoad', add_cim_type_column=True)
+        eqssh_conform_loads = self.merge_eq_ssh_profile('ConformLoad', add_cim_type_column=True)
         eqssh_conform_loads = pd.merge(eqssh_conform_loads, self.bus_merge, how='left', on='rdfId')
         eqssh_conform_loads.rename(columns={'rdfId': sc['o_id'], 'rdfId_Terminal': sc['t'], 'index_bus': 'bus',
                                             'connected': 'in_service', 'p': 'p_mw', 'q': 'q_mvar'}, inplace=True)
@@ -522,7 +428,7 @@ class CimConverter:
                     (eqssh_non_conform_loads.index.size, time.time() - time_start)))
 
     def _prepare_non_conform_loads_cim16(self) -> pd.DataFrame:
-        eqssh_non_conform_loads = self._merge_eq_ssh_profile('NonConformLoad', add_cim_type_column=True)
+        eqssh_non_conform_loads = self.merge_eq_ssh_profile('NonConformLoad', add_cim_type_column=True)
         eqssh_non_conform_loads = pd.merge(eqssh_non_conform_loads, self.bus_merge, how='left', on='rdfId')
         eqssh_non_conform_loads.rename(columns={'rdfId': sc['o_id'], 'rdfId_Terminal': sc['t'], 'index_bus': 'bus',
                                                 'connected': 'in_service', 'p': 'p_mw', 'q': 'q_mvar'}, inplace=True)
@@ -544,7 +450,7 @@ class CimConverter:
                     (eqssh_station_supplies.index.size, time.time() - time_start)))
 
     def _prepare_station_supplies_cim16(self) -> pd.DataFrame:
-        eqssh_station_supplies = self._merge_eq_ssh_profile('StationSupply', add_cim_type_column=True)
+        eqssh_station_supplies = self.merge_eq_ssh_profile('StationSupply', add_cim_type_column=True)
         eqssh_station_supplies = pd.merge(eqssh_station_supplies, self.bus_merge, how='left', on='rdfId')
         eqssh_station_supplies.rename(columns={'rdfId': sc['o_id'], 'rdfId_Terminal': sc['t'], 'index_bus': 'bus',
                                                'connected': 'in_service', 'p': 'p_mw', 'q': 'q_mvar'}, inplace=True)
@@ -589,14 +495,14 @@ class CimConverter:
         eq_generating_units = pd.concat([eq_generating_units, self.cim['eq']['NuclearGeneratingUnit']], sort=False)
         eq_generating_units['type'].fillna('Nuclear', inplace=True)
         eq_generating_units.rename(columns={'rdfId': 'GeneratingUnit'}, inplace=True)
-        eqssh_synchronous_machines = self._merge_eq_ssh_profile('SynchronousMachine', add_cim_type_column=True)
+        eqssh_synchronous_machines = self.merge_eq_ssh_profile('SynchronousMachine', add_cim_type_column=True)
         if 'type' in eqssh_synchronous_machines.columns:
             eqssh_synchronous_machines.drop(columns=['type'], inplace=True)
         if 'EquipmentContainer' in eqssh_synchronous_machines.columns:
             eqssh_synchronous_machines.drop(columns=['EquipmentContainer'], inplace=True)
         eqssh_synchronous_machines = pd.merge(eqssh_synchronous_machines, eq_generating_units,
                                               how='left', on='GeneratingUnit')
-        eqssh_reg_control = self._merge_eq_ssh_profile('RegulatingControl')[['rdfId', 'mode', 'enabled', 'targetValue', 'Terminal']]
+        eqssh_reg_control = self.merge_eq_ssh_profile('RegulatingControl')[['rdfId', 'mode', 'enabled', 'targetValue', 'Terminal']]
         # if voltage is not on connectivity node, topological node will be used
         eqtp_terminals = pd.merge(self.cim['eq']['Terminal'], self.cim['tp']['Terminal'], how='left', on='rdfId')
         eqtp_terminals.ConnectivityNode.fillna(eqtp_terminals.TopologicalNode, inplace=True)
@@ -622,8 +528,8 @@ class CimConverter:
             (eqssh_synchronous_machines['referencePriority'] > 0) & (eqssh_synchronous_machines['enabled']),
             'referencePriority'].min()
         # get the highest prio from ExternalNetworkInjection and check if the slack is an ExternalNetworkInjection
-        enis = self._merge_eq_ssh_profile('ExternalNetworkInjection')
-        regulation_controllers = self._merge_eq_ssh_profile('RegulatingControl')
+        enis = self.merge_eq_ssh_profile('ExternalNetworkInjection')
+        regulation_controllers = self.merge_eq_ssh_profile('RegulatingControl')
         regulation_controllers = regulation_controllers.loc[regulation_controllers['mode'] == 'voltage']
         regulation_controllers = regulation_controllers[['rdfId', 'targetValue', 'enabled']]
         regulation_controllers.rename(columns={'rdfId': 'RegulatingControl'}, inplace=True)
@@ -691,7 +597,7 @@ class CimConverter:
         eq_generating_units = pd.concat([eq_generating_units, self.cim['eq']['NuclearGeneratingUnit']], sort=False)
         eq_generating_units['type'].fillna('Nuclear', inplace=True)
         eq_generating_units.rename(columns={'rdfId': 'GeneratingUnit'}, inplace=True)
-        eqssh_asynchronous_machines = self._merge_eq_ssh_profile('AsynchronousMachine', add_cim_type_column=True)
+        eqssh_asynchronous_machines = self.merge_eq_ssh_profile('AsynchronousMachine', add_cim_type_column=True)
         # prevent conflict of merging two dataframes each containing column 'name'
         eq_generating_units.drop('name', axis=1, inplace=True)
         eqssh_asynchronous_machines = pd.merge(eqssh_asynchronous_machines, eq_generating_units,
@@ -735,7 +641,7 @@ class CimConverter:
         eq_energy_scheduling_type = \
             pd.concat([self.cim['eq']['EnergySchedulingType'], self.cim['eq_bd']['EnergySchedulingType']], sort=False)
         eq_energy_scheduling_type.rename(columns={'rdfId': 'EnergySchedulingType', 'name': 'type'}, inplace=True)
-        eqssh_energy_sources = self._merge_eq_ssh_profile('EnergySource', add_cim_type_column=True)
+        eqssh_energy_sources = self.merge_eq_ssh_profile('EnergySource', add_cim_type_column=True)
         eqssh_energy_sources = pd.merge(eqssh_energy_sources, eq_energy_scheduling_type, how='left',
                                         on='EnergySchedulingType')
         eqssh_energy_sources = pd.merge(eqssh_energy_sources, self.bus_merge, how='left', on='rdfId')
@@ -767,7 +673,7 @@ class CimConverter:
                     (eq_stat_coms.index.size, time.time() - time_start)))
 
     def _prepare_static_var_compensator_cim16(self) -> pd.DataFrame:
-        eq_stat_coms = self._merge_eq_ssh_profile('StaticVarCompensator', True)
+        eq_stat_coms = self.merge_eq_ssh_profile('StaticVarCompensator', True)
         eq_stat_coms = pd.merge(eq_stat_coms, self.bus_merge, how='left', on='rdfId')
         eq_stat_coms.rename(columns={'q': 'q_mvar'}, inplace=True)
         # get the active power and reactive power from SV profile
@@ -793,7 +699,7 @@ class CimConverter:
                     (eqssh_shunts.index.size, time.time() - time_start)))
 
     def _prepare_linear_shunt_compensator_cim16(self) -> pd.DataFrame:
-        eqssh_shunts = self._merge_eq_ssh_profile('LinearShuntCompensator', add_cim_type_column=True)
+        eqssh_shunts = self.merge_eq_ssh_profile('LinearShuntCompensator', add_cim_type_column=True)
         eqssh_shunts = pd.merge(eqssh_shunts, self.bus_merge, how='left', on='rdfId')
         eqssh_shunts.rename(columns={
             'rdfId': sc['o_id'], 'rdfId_Terminal': sc['t'], 'connected': 'in_service', 'index_bus': 'bus',
@@ -819,7 +725,7 @@ class CimConverter:
                     (eqssh_shunts.index.size, time.time() - time_start)))
 
     def _prepare_nonlinear_shunt_compensator_cim16(self) -> pd.DataFrame:
-        eqssh_shunts = self._merge_eq_ssh_profile('NonlinearShuntCompensator', add_cim_type_column=True)
+        eqssh_shunts = self.merge_eq_ssh_profile('NonlinearShuntCompensator', add_cim_type_column=True)
         eqssh_shunts = pd.merge(eqssh_shunts, self.bus_merge, how='left', on='rdfId')
 
         eqssh_shunts['p'] = float('NaN')
@@ -1047,7 +953,7 @@ class CimConverter:
                     (eqssh_ei_wards.index.size, eqssh_ei_xwards.index.size, time.time() - time_start)))
 
     def _prepare_equivalent_injections_cim16(self) -> pd.DataFrame:
-        eqssh_ei = self._merge_eq_ssh_profile('EquivalentInjection', add_cim_type_column=True)
+        eqssh_ei = self.merge_eq_ssh_profile('EquivalentInjection', add_cim_type_column=True)
         eq_base_voltages = pd.concat([self.cim['eq']['BaseVoltage'][['rdfId', 'nominalVoltage']],
                                       self.cim['eq_bd']['BaseVoltage'][['rdfId', 'nominalVoltage']]], sort=False)
         eq_base_voltages.drop_duplicates(subset=['rdfId'], inplace=True)
@@ -1391,7 +1297,7 @@ class CimConverter:
         #     self.logger.info(one_dup)  # no example for testing found
         eqssh_tap_changers.drop_duplicates(subset=['TransformerEnd'], inplace=True)
         # prepare the controllers
-        eq_ssh_tap_controllers = self._merge_eq_ssh_profile('TapChangerControl')
+        eq_ssh_tap_controllers = self.merge_eq_ssh_profile('TapChangerControl')
         eq_ssh_tap_controllers = \
             eq_ssh_tap_controllers[['rdfId', 'Terminal', 'discrete', 'enabled', 'targetValue', 'targetDeadband']]
         eq_ssh_tap_controllers.rename(columns={'rdfId': 'TapChangerControl'}, inplace=True)
@@ -1930,7 +1836,11 @@ class CimConverter:
 
         # self._convert_connectivity_nodes_cim16()
         # --------- convert external networks ---------
-        self._convert_external_network_injections_cim16()
+        from pandapower.converter.cim.cim2pp.converter_classes import externalNetworkInjectionsCim16
+        enic = externalNetworkInjectionsCim16.ExternalNetworkInjectionsCim16(cimConverter=self)
+        enic.convert_external_network_injections_cim16()
+
+        # self._convert_external_network_injections_cim16()
         # --------- convert lines ---------
         self._convert_ac_line_segments_cim16(convert_line_to_switch, line_r_limit, line_x_limit)
         self._convert_dc_line_segments_cim16()

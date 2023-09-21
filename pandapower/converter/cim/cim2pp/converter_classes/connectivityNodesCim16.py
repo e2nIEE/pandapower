@@ -1,10 +1,13 @@
 import logging
-from typing import Dict, Tuple, List
-import pandas as pd
 import time
+from typing import Tuple
+
+import pandas as pd
+
 from pandapower.converter.cim import cim_tools
-from pandapower.converter.cim.other_classes import ReportContainer, Report, LogLevel, ReportCode
 from pandapower.converter.cim.cim2pp import build_pp_net
+from pandapower.converter.cim.other_classes import Report, LogLevel, ReportCode
+
 logger = logging.getLogger('cim.cim2pp.converter_classes.connectivityNodesCim16')
 
 sc = cim_tools.get_pp_net_special_columns_dict()
