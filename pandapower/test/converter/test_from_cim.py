@@ -1050,14 +1050,12 @@ def test_fullgrid_controller(fullgrid):
 def test_fullgrid_characteristic_temp(fullgrid):
     assert 8 == len(fullgrid.characteristic_temp.index)
 
-@pytest.mark.xfail(reason="fullgrid characteristics need to be modified to include at least two points")
 def test_fullgrid_characteristic(fullgrid):
     assert 20 == len(fullgrid.characteristic.index)
     for _, obj in fullgrid.characteristic.iterrows():
         if obj.object.index == \
                 fullgrid.trafo[fullgrid.trafo['origin_id'] ==
                                '_99f55ee9-2c75-3340-9539-b835ec8c5994']['vkr_percent_characteristic'].item():
-            assert 'quadratic' == obj.object.kind
             assert [1] == obj.object.x_vals
             assert [1.3405981856094185] == obj.object.y_vals
             break

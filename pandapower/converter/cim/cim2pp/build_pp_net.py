@@ -44,210 +44,6 @@ class CimConverter:
             df[sc['o_cl']] = cim_type
         return df
 
-    def _convert_connectivity_nodes_cim16(self):
-        time_start = time.time()
-        self.logger.info("Start converting ConnectivityNodes / TopologicalNodes.")
-        connectivity_nodes, eqssh_terminals = self._prepare_connectivity_nodes_cim16()
-
-        # self._create_busses(connectivity_nodes)
-        self._copy_to_pp('bus', connectivity_nodes)
-
-        # a prepared and modified copy of eqssh_terminals to use for lines, switches, loads, sgens and so on
-        eqssh_terminals = eqssh_terminals[
-            ['rdfId', 'ConductingEquipment', 'ConnectivityNode', 'sequenceNumber', 'connected']].copy()
-        eqssh_terminals.rename(columns={'rdfId': 'rdfId_Terminal'}, inplace=True)
-        eqssh_terminals.rename(columns={'ConductingEquipment': 'rdfId'}, inplace=True)
-        # buses for merging with assets:
-        bus_merge = pd.DataFrame(data=self.net['bus'].loc[:, [sc['o_id'], 'vn_kv']])
-        bus_merge.rename(columns={'vn_kv': 'base_voltage_bus'}, inplace=True)
-        bus_merge.reset_index(level=0, inplace=True)
-        bus_merge.rename(columns={'index': 'index_bus', sc['o_id']: 'ConnectivityNode'}, inplace=True)
-        bus_merge = pd.merge(eqssh_terminals, bus_merge, how='left', on='ConnectivityNode')
-        self.bus_merge = bus_merge
-
-        self.logger.info("Created %s busses in %ss" % (connectivity_nodes.index.size, time.time() - time_start))
-        self.report_container.add_log(Report(
-            level=LogLevel.INFO, code=ReportCode.INFO_CONVERTING,
-            message="Created %s busses from ConnectivityNodes / TopologicalNodes in %ss" %
-                    (connectivity_nodes.index.size, time.time() - time_start)))
-
-    def _prepare_connectivity_nodes_cim16(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
-        # check the model: Bus-Branch or Node-Breaker: In the Bus-Branch model are no ConnectivityNodes
-        node_breaker = True if self.cim['eq']['ConnectivityNode'].index.size > 0 else False
-        # use this dictionary to store the source profile from the element (normal or boundary profile)
-        cn_dict = dict({'eq': {sc['o_prf']: 'eq'}, 'eq_bd': {sc['o_prf']: 'eq_bd'},
-                        'tp': {sc['o_prf']: 'tp'}, 'tp_bd': {sc['o_prf']: 'tp_bd'}})
-        if node_breaker:
-            # Node-Breaker model
-            connectivity_nodes = pd.concat([self.cim['eq']['ConnectivityNode'].assign(**cn_dict['eq']),
-                                            self.cim['eq_bd']['ConnectivityNode'].assign(**cn_dict['eq_bd'])],
-                                           ignore_index=True, sort=False)
-            connectivity_nodes[sc['o_cl']] = 'ConnectivityNode'
-            connectivity_nodes[sc['cnc_id']] = connectivity_nodes['ConnectivityNodeContainer'][:]
-            # the buses are modeled as ConnectivityNode(s), but the voltage is stored as a BaseVoltage
-            # to get the BaseVoltage:
-            # 1: ConnectivityNode -> [ConnectivityNodeContainer] VoltageLevel -> [BaseVoltage] BaseVoltage
-            # 2: ConnectivityNode -> [ConnectivityNodeContainer] Bay -> [VoltageLevel] VoltageLevel ->
-            # [BaseVoltage] BaseVoltage
-            # 3: ConnectivityNode -> [ConnectivityNodeContainer] Substation ||| VoltageLevel -> [Substation] Substation
-            # 4: ConnectivityNodes from the boundary profile have the BaseVoltage in their TopologicalNode
-            # The idea is to add the Bays and Substations to the VoltageLevels to handle them similar to (1)
-            # prepare the bays (2)
-            eq_bay = self.cim['eq']['Bay'].copy()
-            eq_bay.rename(columns={'rdfId': 'ConnectivityNodeContainer'}, inplace=True)
-            eq_bay = pd.merge(self.cim['eq']['ConnectivityNode'][['ConnectivityNodeContainer']], eq_bay,
-                              how='inner', on='ConnectivityNodeContainer')
-            eq_bay.dropna(subset=['VoltageLevel'], inplace=True)
-            eq_bay = pd.merge(eq_bay, self.cim['eq']['VoltageLevel'][['rdfId', 'BaseVoltage', 'Substation']],
-                              how='left', left_on='VoltageLevel', right_on='rdfId')
-            eq_bay.drop(columns=['VoltageLevel', 'rdfId'], inplace=True)
-            eq_bay.rename(columns={'ConnectivityNodeContainer': 'rdfId'}, inplace=True)
-            # now prepare the substations (3)
-            # first get only the needed substation used as ConnectivityNodeContainer in ConnectivityNode
-            eq_subs = pd.merge(self.cim['eq']['ConnectivityNode'][['ConnectivityNodeContainer']].rename(
-                columns={'ConnectivityNodeContainer': 'Substation'}),
-                               self.cim['eq']['Substation'][['rdfId']].rename(columns={'rdfId': 'Substation'}),
-                               how='inner', on='Substation')
-            # now merge them with the VoltageLevel
-            eq_subs = pd.merge(self.cim['eq']['VoltageLevel'][['rdfId', 'BaseVoltage', 'Substation']], eq_subs,
-                               how='inner', on='Substation')
-            eq_subs_duplicates = eq_subs[eq_subs.duplicated(['Substation'], keep='first')]
-            eq_subs['rdfId'] = eq_subs['Substation']
-            if eq_subs_duplicates.index.size > 0:
-                self.logger.warning(
-                    "More than one VoltageLevel refers to one Substation, maybe the voltages from some buses "
-                    "are incorrect, the problematic VoltageLevels and Substations:\n%s" % eq_subs_duplicates)
-                self.report_container.add_log(Report(
-                    level=LogLevel.WARNING, code=ReportCode.WARNING_CONVERTING,
-                    message="More than one VoltageLevel refers to one Substation, maybe the voltages from some buses "
-                            "are incorrect, the problematic VoltageLevels and Substations:\n%s" % eq_subs_duplicates))
-            eq_subs.drop_duplicates(['rdfId'], keep='first', inplace=True)
-            # now merge the VoltageLevel with the ConnectivityNode
-            eq_voltage_levels = self.cim['eq']['VoltageLevel'][['rdfId', 'BaseVoltage', 'Substation']]
-            eq_voltage_levels = pd.concat([eq_voltage_levels, eq_bay], ignore_index=True, sort=False)
-            eq_voltage_levels = pd.concat([eq_voltage_levels, eq_subs], ignore_index=True, sort=False)
-            eq_voltage_levels.drop_duplicates(['rdfId'], keep='first', inplace=True)
-            del eq_bay, eq_subs, eq_subs_duplicates
-            eq_substations = self.cim['eq']['Substation'][['rdfId', 'name']]
-            eq_substations.rename(columns={'rdfId': 'Substation', 'name': 'name_substation'}, inplace=True)
-            eq_voltage_levels = pd.merge(eq_voltage_levels, eq_substations, how='left', on='Substation')
-            eq_voltage_levels.drop_duplicates(subset=['rdfId'], inplace=True)
-            eq_voltage_levels.rename(columns={'rdfId': 'ConnectivityNodeContainer'}, inplace=True)
-
-            connectivity_nodes = pd.merge(connectivity_nodes, eq_voltage_levels, how='left',
-                                          on='ConnectivityNodeContainer')
-            connectivity_nodes[sc['sub_id']] = connectivity_nodes['Substation'][:]
-            # now prepare the BaseVoltage from the boundary profile at the ConnectivityNode (4)
-            eq_bd_cns = pd.merge(self.cim['eq_bd']['ConnectivityNode'][['rdfId']],
-                                 self.cim['tp_bd']['ConnectivityNode'][['rdfId', 'TopologicalNode']],
-                                 how='inner', on='rdfId')
-            # eq_bd_cns.drop(columns=['rdfId'], inplace=True)
-            # eq_bd_cns.rename(columns={'TopologicalNode': 'rdfId'}, inplace=True)
-            eq_bd_cns = pd.merge(eq_bd_cns, self.cim['tp_bd']['TopologicalNode'][['rdfId', 'BaseVoltage']].rename(
-                columns={'rdfId': 'TopologicalNode'}), how='inner', on='TopologicalNode')
-            # eq_bd_cns.drop(columns=['TopologicalNode'], inplace=True)
-            eq_bd_cns.rename(columns={'BaseVoltage': 'BaseVoltage_2', 'TopologicalNode': 'TopologicalNode_2'},
-                             inplace=True)
-            connectivity_nodes = pd.merge(connectivity_nodes, eq_bd_cns, how='left', on='rdfId')
-            connectivity_nodes['BaseVoltage'].fillna(connectivity_nodes['BaseVoltage_2'], inplace=True)
-            connectivity_nodes.drop(columns=['BaseVoltage_2'], inplace=True)
-            # check if there is a mix between BB and NB models
-            terminals_temp = \
-                self.cim['eq']['Terminal'].loc[self.cim['eq']['Terminal']['ConnectivityNode'].isna(), 'rdfId']
-            if terminals_temp.index.size > 0:
-                terminals_temp = pd.merge(terminals_temp, self.cim['tp']['Terminal'][['rdfId', 'TopologicalNode']],
-                                          how='left', on='rdfId')
-                terminals_temp.drop(columns=['rdfId'], inplace=True)
-                terminals_temp.rename(columns={'TopologicalNode': 'rdfId'}, inplace=True)
-                terminals_temp.drop_duplicates(subset=['rdfId'], inplace=True)
-                tp_temp = self.cim['tp']['TopologicalNode'][['rdfId', 'name', 'description', 'BaseVoltage']]
-                tp_temp[sc['o_prf']] = 'tp'
-                tp_temp = pd.concat([tp_temp, self.cim['tp_bd']['TopologicalNode'][['rdfId', 'name', 'BaseVoltage']]],
-                                    sort=False)
-                tp_temp[sc['o_prf']].fillna('tp_bd', inplace=True)
-                tp_temp[sc['o_cl']] = 'TopologicalNode'
-                tp_temp = pd.merge(terminals_temp, tp_temp, how='inner', on='rdfId')
-                connectivity_nodes = pd.concat([connectivity_nodes, tp_temp], ignore_index=True, sort=False)
-        else:
-            # Bus-Branch model
-            # concat the TopologicalNodes from the tp and boundary profile and keep the source profile for each element
-            # as column using the pandas assign method
-            connectivity_nodes = pd.concat([self.cim['tp']['TopologicalNode'].assign(**cn_dict['tp']),
-                                            self.cim['tp_bd']['TopologicalNode'].assign(**cn_dict['tp_bd'])],
-                                           ignore_index=True, sort=False)
-            connectivity_nodes[sc['o_cl']] = 'TopologicalNode'
-            connectivity_nodes['name_substation'] = ''
-        # prepare the voltages from the buses
-        eq_base_voltages = pd.concat([self.cim['eq']['BaseVoltage'][['rdfId', 'nominalVoltage']],
-                                      self.cim['eq_bd']['BaseVoltage'][['rdfId', 'nominalVoltage']]],
-                                     ignore_index=True, sort=False)
-        eq_base_voltages.drop_duplicates(subset=['rdfId'], inplace=True)
-        eq_base_voltages.rename(columns={'rdfId': 'BaseVoltage'}, inplace=True)
-        # make sure that the BaseVoltage has string datatype
-        connectivity_nodes['BaseVoltage'] = connectivity_nodes['BaseVoltage'].astype(str)
-        connectivity_nodes = pd.merge(connectivity_nodes, eq_base_voltages, how='left', on='BaseVoltage')
-        connectivity_nodes.drop(columns=['BaseVoltage'], inplace=True)
-        eqssh_terminals = self.cim['eq']['Terminal'][['rdfId', 'ConnectivityNode', 'ConductingEquipment',
-                                                      'sequenceNumber']]
-        eqssh_terminals = \
-            pd.concat([eqssh_terminals, self.cim['eq_bd']['Terminal'][['rdfId', 'ConductingEquipment',
-                                                                       'ConnectivityNode', 'sequenceNumber']]],
-                      ignore_index=True, sort=False)
-        eqssh_terminals = pd.merge(eqssh_terminals, self.cim['ssh']['Terminal'], how='left', on='rdfId')
-        eqssh_terminals = pd.merge(eqssh_terminals, self.cim['tp']['Terminal'], how='left', on='rdfId')
-        eqssh_terminals['ConnectivityNode'].fillna(eqssh_terminals['TopologicalNode'], inplace=True)
-        # concat the DC terminals
-        dc_terminals = pd.merge(pd.concat([self.cim['eq']['DCTerminal'], self.cim['eq']['ACDCConverterDCTerminal']],
-                                          ignore_index=True, sort=False),
-                                pd.concat([self.cim['ssh']['DCTerminal'], self.cim['ssh']['ACDCConverterDCTerminal']],
-                                          ignore_index=True, sort=False), how='left', on='rdfId')
-        dc_terminals = pd.merge(dc_terminals,
-                                pd.concat([self.cim['tp']['DCTerminal'], self.cim['tp']['ACDCConverterDCTerminal']],
-                                          ignore_index=True, sort=False), how='left', on='rdfId')
-        dc_terminals.rename(columns={'DCNode': 'ConnectivityNode', 'DCConductingEquipment': 'ConductingEquipment',
-                                     'DCTopologicalNode': 'TopologicalNode'}, inplace=True)
-        eqssh_terminals = pd.concat([eqssh_terminals, dc_terminals], ignore_index=True, sort=False)
-        # special fix for concat tp profiles
-        eqssh_terminals.drop_duplicates(subset=['rdfId', 'TopologicalNode'], inplace=True)
-        eqssh_terminals_temp = eqssh_terminals[['ConnectivityNode', 'TopologicalNode']]
-        eqssh_terminals_temp.dropna(subset=['TopologicalNode'], inplace=True)
-        eqssh_terminals_temp.drop_duplicates(inplace=True)
-        connectivity_nodes_size = connectivity_nodes.index.size
-        if node_breaker:
-            connectivity_nodes = pd.merge(connectivity_nodes, eqssh_terminals_temp, how='left', left_on='rdfId',
-                                          right_on='ConnectivityNode')
-        else:
-            connectivity_nodes = pd.merge(connectivity_nodes, eqssh_terminals_temp, how='left', left_on='rdfId',
-                                          right_on='TopologicalNode')
-            eqssh_terminals['ConnectivityNode'] = eqssh_terminals['TopologicalNode'].copy()
-        # fill the column TopologicalNode for the ConnectivityNodes from the eq_bd profile if exists
-        if 'TopologicalNode_2' in connectivity_nodes.columns:
-            connectivity_nodes['TopologicalNode'].fillna(connectivity_nodes['TopologicalNode_2'], inplace=True)
-            connectivity_nodes.drop(columns=['TopologicalNode_2'], inplace=True)
-        if connectivity_nodes.index.size != connectivity_nodes_size:
-            self.logger.warning("There is a problem at the busses!")
-            self.report_container.add_log(Report(
-                level=LogLevel.WARNING, code=ReportCode.WARNING_CONVERTING,
-                message="There is a problem at the busses!"))
-            dups = connectivity_nodes.pivot_table(index=['rdfId'], aggfunc='size')
-            dups = dups.loc[dups != 1]
-            for rdfId, count in dups.items():
-                self.logger.warning("The ConnectivityNode with RDF ID %s has %s TopologicalNodes!" % (rdfId, count))
-                self.logger.warning("The ConnectivityNode data: \n%s" %
-                                    connectivity_nodes[connectivity_nodes['rdfId'] == rdfId])
-                self.report_container.add_log(Report(
-                    level=LogLevel.WARNING, code=ReportCode.WARNING_CONVERTING,
-                    message="The ConnectivityNode with RDF ID %s has %s TopologicalNodes!" % (rdfId, count)))
-            # raise ValueError("The number of ConnectivityNodes increased after merging with Terminals, number of "
-            #                  "ConnectivityNodes before merge: %s, number of ConnectivityNodes after merge: %s" %
-            #                  (connectivity_nodes_size, connectivity_nodes.index.size))
-            connectivity_nodes.drop_duplicates(subset=['rdfId'], keep='first', inplace=True)
-        connectivity_nodes.rename(columns={'rdfId': sc['o_id'], 'TopologicalNode': sc['ct'], 'nominalVoltage': 'vn_kv',
-                                           'name_substation': 'zone'}, inplace=True)
-        connectivity_nodes['in_service'] = True
-        connectivity_nodes['type'] = 'b'
-        return connectivity_nodes, eqssh_terminals
-
     def _convert_external_network_injections_cim16(self):
         time_start = time.time()
         self.logger.info("Start converting ExternalNetworkInjections.")
@@ -277,9 +73,9 @@ class CimConverter:
         eni_gens = eqssh_eni.loc[(eqssh_eni['slack_weight'] != ref_prio_min) & (eqssh_eni['controllable'])]
         eni_sgens = eqssh_eni.loc[~eqssh_eni['controllable']]
 
-        self._copy_to_pp('ext_grid', eni_slacks)
-        self._copy_to_pp('gen', eni_gens)
-        self._copy_to_pp('sgen', eni_sgens)
+        self.copy_to_pp('ext_grid', eni_slacks)
+        self.copy_to_pp('gen', eni_gens)
+        self.copy_to_pp('sgen', eni_sgens)
 
         self.logger.info("Created %s external networks, %s generators and %s static generators in %ss" %
                          (eni_slacks.index.size, eni_gens.index.size, eni_sgens.index.size, time.time() - time_start))
@@ -369,7 +165,7 @@ class CimConverter:
             line_df['df'] = 1.
             line_df['type'] = None
             line_df['std_type'] = None
-            self._copy_to_pp('line', line_df)
+            self.copy_to_pp('line', line_df)
         else:
             line_df = pd.DataFrame(None)
         # -------- switches --------
@@ -384,7 +180,7 @@ class CimConverter:
             switch_df['z_ohm'] = 0
             if switch_df.index.size > 0:
                 switch_df['closed'] = switch_df.connected & switch_df.connected2
-            self._copy_to_pp('switch', switch_df)
+            self.copy_to_pp('switch', switch_df)
         else:
             switch_df = pd.DataFrame(None)
 
@@ -474,7 +270,7 @@ class CimConverter:
         self.logger.info("Start converting DCLineSegments.")
         eq_dc_line_segments = self._prepare_dc_line_segments_cim16()
 
-        self._copy_to_pp('dcline', eq_dc_line_segments)
+        self.copy_to_pp('dcline', eq_dc_line_segments)
 
         self.logger.info("Created %s DC lines in %ss" % (eq_dc_line_segments.index.size, time.time() - time_start))
         self.report_container.add_log(Report(
@@ -599,7 +395,7 @@ class CimConverter:
         time_start = time.time()
         self.logger.info("Start converting Breakers, Disconnectors, LoadBreakSwitches and Switches.")
         eqssh_switches = self._prepare_switches_cim16()
-        self._copy_to_pp('switch', eqssh_switches)
+        self.copy_to_pp('switch', eqssh_switches)
         self.logger.info("Created %s switches in %ss." % (eqssh_switches.index.size, time.time() - time_start))
         self.report_container.add_log(Report(
             level=LogLevel.INFO, code=ReportCode.INFO_CONVERTING,
@@ -674,7 +470,7 @@ class CimConverter:
         time_start = time.time()
         self.logger.info("Start converting EnergyConsumers.")
         eqssh_energy_consumers = self._prepare_energy_consumers_cim16()
-        self._copy_to_pp('load', eqssh_energy_consumers)
+        self.copy_to_pp('load', eqssh_energy_consumers)
         self.logger.info("Created %s loads in %ss." % (eqssh_energy_consumers.index.size, time.time() - time_start))
         self.report_container.add_log(Report(
             level=LogLevel.INFO, code=ReportCode.INFO_CONVERTING,
@@ -696,7 +492,7 @@ class CimConverter:
         time_start = time.time()
         self.logger.info("Start converting ConformLoads.")
         eqssh_conform_loads = self._prepare_conform_loads_cim16()
-        self._copy_to_pp('load', eqssh_conform_loads)
+        self.copy_to_pp('load', eqssh_conform_loads)
         self.logger.info("Created %s loads in %ss." % (eqssh_conform_loads.index.size, time.time() - time_start))
         self.report_container.add_log(Report(
             level=LogLevel.INFO, code=ReportCode.INFO_CONVERTING,
@@ -718,7 +514,7 @@ class CimConverter:
         time_start = time.time()
         self.logger.info("Start converting NonConformLoads.")
         eqssh_non_conform_loads = self._prepare_non_conform_loads_cim16()
-        self._copy_to_pp('load', eqssh_non_conform_loads)
+        self.copy_to_pp('load', eqssh_non_conform_loads)
         self.logger.info("Created %s loads in %ss." % (eqssh_non_conform_loads.index.size, time.time() - time_start))
         self.report_container.add_log(Report(
             level=LogLevel.INFO, code=ReportCode.INFO_CONVERTING,
@@ -740,7 +536,7 @@ class CimConverter:
         time_start = time.time()
         self.logger.info("Start converting StationSupplies.")
         eqssh_station_supplies = self._prepare_station_supplies_cim16()
-        self._copy_to_pp('load', eqssh_station_supplies)
+        self.copy_to_pp('load', eqssh_station_supplies)
         self.logger.info("Created %s loads in %ss." % (eqssh_station_supplies.index.size, time.time() - time_start))
         self.report_container.add_log(Report(
             level=LogLevel.INFO, code=ReportCode.INFO_CONVERTING,
@@ -766,11 +562,11 @@ class CimConverter:
         # convert the SynchronousMachines with voltage control to gens
         eqssh_sm_gens = eqssh_synchronous_machines.loc[(eqssh_synchronous_machines['mode'] == 'voltage') &
                                                        (eqssh_synchronous_machines['enabled'])]
-        self._copy_to_pp('gen', eqssh_sm_gens)
+        self.copy_to_pp('gen', eqssh_sm_gens)
         # now deal with the pq generators
         eqssh_synchronous_machines = eqssh_synchronous_machines.loc[(eqssh_synchronous_machines['mode'] != 'voltage') |
                                                                     (~eqssh_synchronous_machines['enabled'])]
-        self._copy_to_pp('sgen', eqssh_synchronous_machines)
+        self.copy_to_pp('sgen', eqssh_synchronous_machines)
         self.logger.info("Created %s gens and %s sgens in %ss." %
                          (eqssh_sm_gens.index.size, eqssh_synchronous_machines.index.size, time.time() - time_start))
         self.report_container.add_log(Report(
@@ -872,7 +668,7 @@ class CimConverter:
         time_start = time.time()
         self.logger.info("Start converting AsynchronousMachines.")
         eqssh_asynchronous_machines = self._prepare_asynchronous_machines_cim16()
-        self._copy_to_pp('motor', eqssh_asynchronous_machines)
+        self.copy_to_pp('motor', eqssh_asynchronous_machines)
         self.logger.info("Created %s motors in %ss." %
                          (eqssh_asynchronous_machines.index.size, time.time() - time_start))
         self.report_container.add_log(Report(
@@ -926,8 +722,8 @@ class CimConverter:
         eqssh_energy_sources = self._prepare_energy_sources_cim16()
         es_slack = eqssh_energy_sources.loc[eqssh_energy_sources.vm_pu.notna()]
         es_sgen = eqssh_energy_sources.loc[eqssh_energy_sources.vm_pu.isna()]
-        self._copy_to_pp('ext_grid', es_slack)
-        self._copy_to_pp('sgen', es_sgen)
+        self.copy_to_pp('ext_grid', es_slack)
+        self.copy_to_pp('sgen', es_sgen)
         # self._copy_to_pp('sgen', eqssh_energy_sources)
         self.logger.info("Created %s sgens in %ss." % (eqssh_energy_sources.index.size, time.time() - time_start))
         self.report_container.add_log(Report(
@@ -963,7 +759,7 @@ class CimConverter:
         time_start = time.time()
         self.logger.info("Start converting StaticVarCompensator.")
         eq_stat_coms = self._prepare_static_var_compensator_cim16()
-        self._copy_to_pp('shunt', eq_stat_coms)
+        self.copy_to_pp('shunt', eq_stat_coms)
         self.logger.info("Created %s generators in %ss." % (eq_stat_coms.index.size, time.time() - time_start))
         self.report_container.add_log(Report(
             level=LogLevel.INFO, code=ReportCode.INFO_CONVERTING,
@@ -989,7 +785,7 @@ class CimConverter:
         time_start = time.time()
         self.logger.info("Start converting LinearShuntCompensator.")
         eqssh_shunts = self._prepare_linear_shunt_compensator_cim16()
-        self._copy_to_pp('shunt', eqssh_shunts)
+        self.copy_to_pp('shunt', eqssh_shunts)
         self.logger.info("Created %s shunts in %ss." % (eqssh_shunts.index.size, time.time() - time_start))
         self.report_container.add_log(Report(
             level=LogLevel.INFO, code=ReportCode.INFO_CONVERTING,
@@ -1013,7 +809,7 @@ class CimConverter:
         self.logger.info("Start converting NonlinearShuntCompensator.")
         if self.cim['eq']['NonlinearShuntCompensator'].index.size > 0:
             eqssh_shunts = self._prepare_nonlinear_shunt_compensator_cim16()
-            self._copy_to_pp('shunt', eqssh_shunts)
+            self.copy_to_pp('shunt', eqssh_shunts)
         else:
             eqssh_shunts = pd.DataFrame(None)
         self.logger.info("Created %s shunts in %ss." % (eqssh_shunts.index.size, time.time() - time_start))
@@ -1060,7 +856,7 @@ class CimConverter:
         time_start = time.time()
         self.logger.info("Start converting EquivalentBranches.")
         eq_eb = self._prepare_equivalent_branches_cim16()
-        self._copy_to_pp('impedance', eq_eb)
+        self.copy_to_pp('impedance', eq_eb)
         self.logger.info("Created %s impedance elements in %ss." % (eq_eb.index.size, time.time() - time_start))
         self.report_container.add_log(Report(
             level=LogLevel.INFO, code=ReportCode.INFO_CONVERTING,
@@ -1151,7 +947,7 @@ class CimConverter:
         time_start = time.time()
         self.logger.info("Start converting SeriesCompensators.")
         eq_sc = self._prepare_series_compensators_cim16()
-        self._copy_to_pp('impedance', eq_sc)
+        self.copy_to_pp('impedance', eq_sc)
         self.logger.info("Created %s impedance elements in %ss." % (eq_sc.index.size, time.time() - time_start))
         self.report_container.add_log(Report(
             level=LogLevel.INFO, code=ReportCode.INFO_CONVERTING,
@@ -1241,8 +1037,8 @@ class CimConverter:
         # split up to wards and xwards: the wards have no regulation
         eqssh_ei_wards = eqssh_ei.loc[~eqssh_ei.regulationStatus]
         eqssh_ei_xwards = eqssh_ei.loc[eqssh_ei.regulationStatus]
-        self._copy_to_pp('ward', eqssh_ei_wards)
-        self._copy_to_pp('xward', eqssh_ei_xwards)
+        self.copy_to_pp('ward', eqssh_ei_wards)
+        self.copy_to_pp('xward', eqssh_ei_xwards)
         self.logger.info("Created %s wards and %s extended ward elements in %ss." %
                          (eqssh_ei_wards.index.size, eqssh_ei_xwards.index.size, time.time() - time_start))
         self.report_container.add_log(Report(
@@ -1290,14 +1086,14 @@ class CimConverter:
             # process the two winding transformers
             self._create_trafo_characteristics('trafo', power_trafo2w)
             power_trafo2w = self._prepare_trafos_cim16(power_trafo2w)
-            self._copy_to_pp('trafo', power_trafo2w)
+            self.copy_to_pp('trafo', power_trafo2w)
             self.power_trafo2w = power_trafo2w
 
         if power_trafo3w.index.size > 0:
             # process the three winding transformers
             self._create_trafo_characteristics('trafo3w', power_trafo3w)
             power_trafo3w = self._prepare_trafo3w_cim16(power_trafo3w)
-            self._copy_to_pp('trafo3w', power_trafo3w)
+            self.copy_to_pp('trafo3w', power_trafo3w)
             self.power_trafo3w = power_trafo3w
 
         self.logger.info("Created %s 2w trafos and %s 3w trafos in %ss." %
@@ -1912,7 +1708,7 @@ class CimConverter:
                 ContinuousTapControl(self.net, trafotype=trafotype, tid=trafo_id, side=side,
                                      tol=row['c_tol'], in_service=row['c_in_service'], vm_set_pu=row['c_vm_set_pu'])
 
-    def _copy_to_pp(self, pp_type: str, input_df: pd.DataFrame):
+    def copy_to_pp(self, pp_type: str, input_df: pd.DataFrame):
         self.logger.debug("Copy %s datasets to pandapower network with type %s" % (input_df.index.size, pp_type))
         if pp_type not in self.net.keys():
             self.logger.warning("Missing pandapower type %s in the pandapower network!" % pp_type)
@@ -2128,7 +1924,11 @@ class CimConverter:
                       sort=False, ignore_index=True)[['rdfId', 'nominalVoltage']]
 
         # --------- convert busses ---------
-        self._convert_connectivity_nodes_cim16()
+        from pandapower.converter.cim.cim2pp.converter_classes import connectivityNodesCim16
+        cnc = connectivityNodesCim16.ConnectivityNodesCim16(cimConverter=self)
+        cnc.convert_connectivity_nodes_cim16()
+
+        # self._convert_connectivity_nodes_cim16()
         # --------- convert external networks ---------
         self._convert_external_network_injections_cim16()
         # --------- convert lines ---------
