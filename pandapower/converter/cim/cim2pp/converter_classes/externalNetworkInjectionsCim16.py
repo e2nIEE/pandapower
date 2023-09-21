@@ -81,7 +81,8 @@ class ExternalNetworkInjectionsCim16:
         eqssh_eni['s_sc_max_mva'] = 3 ** .5 * eqssh_eni['ratedU'] * (eqssh_eni['maxInitialSymShCCurrent'] / 1e3)
         eqssh_eni['s_sc_min_mva'] = 3 ** .5 * eqssh_eni['ratedU'] * (eqssh_eni['minInitialSymShCCurrent'] / 1e3)
         # get the substations
-        eqssh_eni = pd.merge(eqssh_eni, self.cimConverter.net.bus[[sc['o_id'], 'zone']].rename({sc['o_id']: 'b_id'}, axis=1),
+        eqssh_eni = pd.merge(eqssh_eni,
+                             self.cimConverter.net.bus[[sc['o_id'], 'zone']].rename({sc['o_id']: 'b_id'}, axis=1),
                              how='left', left_on='ConnectivityNode', right_on='b_id')
 
         eqssh_eni['referencePriority'].loc[eqssh_eni['referencePriority'] == 0] = np.NaN

@@ -54,7 +54,8 @@ class ConnectivityNodesCim16:
         if node_breaker:
             # Node-Breaker model
             connectivity_nodes = pd.concat([self.cimConverter.cim['eq']['ConnectivityNode'].assign(**cn_dict['eq']),
-                                            self.cimConverter.cim['eq_bd']['ConnectivityNode'].assign(**cn_dict['eq_bd'])],
+                                            self.cimConverter.cim['eq_bd']['ConnectivityNode'].assign(
+                                                **cn_dict['eq_bd'])],
                                            ignore_index=True, sort=False)
             connectivity_nodes[sc['o_cl']] = 'ConnectivityNode'
             connectivity_nodes[sc['cnc_id']] = connectivity_nodes['ConnectivityNodeContainer'][:]
@@ -72,7 +73,8 @@ class ConnectivityNodesCim16:
             eq_bay = pd.merge(self.cimConverter.cim['eq']['ConnectivityNode'][['ConnectivityNodeContainer']], eq_bay,
                               how='inner', on='ConnectivityNodeContainer')
             eq_bay.dropna(subset=['VoltageLevel'], inplace=True)
-            eq_bay = pd.merge(eq_bay, self.cimConverter.cim['eq']['VoltageLevel'][['rdfId', 'BaseVoltage', 'Substation']],
+            eq_bay = pd.merge(eq_bay,
+                              self.cimConverter.cim['eq']['VoltageLevel'][['rdfId', 'BaseVoltage', 'Substation']],
                               how='left', left_on='VoltageLevel', right_on='rdfId')
             eq_bay.drop(columns=['VoltageLevel', 'rdfId'], inplace=True)
             eq_bay.rename(columns={'ConnectivityNodeContainer': 'rdfId'}, inplace=True)
@@ -83,7 +85,8 @@ class ConnectivityNodesCim16:
                 self.cimConverter.cim['eq']['Substation'][['rdfId']].rename(columns={'rdfId': 'Substation'}),
                 how='inner', on='Substation')
             # now merge them with the VoltageLevel
-            eq_subs = pd.merge(self.cimConverter.cim['eq']['VoltageLevel'][['rdfId', 'BaseVoltage', 'Substation']], eq_subs,
+            eq_subs = pd.merge(self.cimConverter.cim['eq']['VoltageLevel'][['rdfId', 'BaseVoltage', 'Substation']],
+                               eq_subs,
                                how='inner', on='Substation')
             eq_subs_duplicates = eq_subs[eq_subs.duplicated(['Substation'], keep='first')]
             eq_subs['rdfId'] = eq_subs['Substation']
@@ -117,8 +120,9 @@ class ConnectivityNodesCim16:
                                  how='inner', on='rdfId')
             # eq_bd_cns.drop(columns=['rdfId'], inplace=True)
             # eq_bd_cns.rename(columns={'TopologicalNode': 'rdfId'}, inplace=True)
-            eq_bd_cns = pd.merge(eq_bd_cns, self.cimConverter.cim['tp_bd']['TopologicalNode'][['rdfId', 'BaseVoltage']].rename(
-                columns={'rdfId': 'TopologicalNode'}), how='inner', on='TopologicalNode')
+            eq_bd_cns = pd.merge(eq_bd_cns,
+                                 self.cimConverter.cim['tp_bd']['TopologicalNode'][['rdfId', 'BaseVoltage']].rename(
+                                     columns={'rdfId': 'TopologicalNode'}), how='inner', on='TopologicalNode')
             # eq_bd_cns.drop(columns=['TopologicalNode'], inplace=True)
             eq_bd_cns.rename(columns={'BaseVoltage': 'BaseVoltage_2', 'TopologicalNode': 'TopologicalNode_2'},
                              inplace=True)
@@ -127,17 +131,21 @@ class ConnectivityNodesCim16:
             connectivity_nodes.drop(columns=['BaseVoltage_2'], inplace=True)
             # check if there is a mix between BB and NB models
             terminals_temp = \
-                self.cimConverter.cim['eq']['Terminal'].loc[self.cimConverter.cim['eq']['Terminal']['ConnectivityNode'].isna(), 'rdfId']
+                self.cimConverter.cim['eq']['Terminal'].loc[
+                    self.cimConverter.cim['eq']['Terminal']['ConnectivityNode'].isna(), 'rdfId']
             if terminals_temp.index.size > 0:
-                terminals_temp = pd.merge(terminals_temp, self.cimConverter.cim['tp']['Terminal'][['rdfId', 'TopologicalNode']],
+                terminals_temp = pd.merge(terminals_temp,
+                                          self.cimConverter.cim['tp']['Terminal'][['rdfId', 'TopologicalNode']],
                                           how='left', on='rdfId')
                 terminals_temp.drop(columns=['rdfId'], inplace=True)
                 terminals_temp.rename(columns={'TopologicalNode': 'rdfId'}, inplace=True)
                 terminals_temp.drop_duplicates(subset=['rdfId'], inplace=True)
-                tp_temp = self.cimConverter.cim['tp']['TopologicalNode'][['rdfId', 'name', 'description', 'BaseVoltage']]
+                tp_temp = self.cimConverter.cim['tp']['TopologicalNode'][
+                    ['rdfId', 'name', 'description', 'BaseVoltage']]
                 tp_temp[sc['o_prf']] = 'tp'
-                tp_temp = pd.concat([tp_temp, self.cimConverter.cim['tp_bd']['TopologicalNode'][['rdfId', 'name', 'BaseVoltage']]],
-                                    sort=False)
+                tp_temp = pd.concat(
+                    [tp_temp, self.cimConverter.cim['tp_bd']['TopologicalNode'][['rdfId', 'name', 'BaseVoltage']]],
+                    sort=False)
                 tp_temp[sc['o_prf']].fillna('tp_bd', inplace=True)
                 tp_temp[sc['o_cl']] = 'TopologicalNode'
                 tp_temp = pd.merge(terminals_temp, tp_temp, how='inner', on='rdfId')
@@ -147,7 +155,8 @@ class ConnectivityNodesCim16:
             # concat the TopologicalNodes from the tp and boundary profile and keep the source profile for each element
             # as column using the pandas assign method
             connectivity_nodes = pd.concat([self.cimConverter.cim['tp']['TopologicalNode'].assign(**cn_dict['tp']),
-                                            self.cimConverter.cim['tp_bd']['TopologicalNode'].assign(**cn_dict['tp_bd'])],
+                                            self.cimConverter.cim['tp_bd']['TopologicalNode'].assign(
+                                                **cn_dict['tp_bd'])],
                                            ignore_index=True, sort=False)
             connectivity_nodes[sc['o_cl']] = 'TopologicalNode'
             connectivity_nodes['name_substation'] = ''
@@ -162,21 +171,25 @@ class ConnectivityNodesCim16:
         connectivity_nodes = pd.merge(connectivity_nodes, eq_base_voltages, how='left', on='BaseVoltage')
         connectivity_nodes.drop(columns=['BaseVoltage'], inplace=True)
         eqssh_terminals = self.cimConverter.cim['eq']['Terminal'][['rdfId', 'ConnectivityNode', 'ConductingEquipment',
-                                                      'sequenceNumber']]
+                                                                   'sequenceNumber']]
         eqssh_terminals = \
             pd.concat([eqssh_terminals, self.cimConverter.cim['eq_bd']['Terminal'][['rdfId', 'ConductingEquipment',
-                                                                       'ConnectivityNode', 'sequenceNumber']]],
+                                                                                    'ConnectivityNode',
+                                                                                    'sequenceNumber']]],
                       ignore_index=True, sort=False)
         eqssh_terminals = pd.merge(eqssh_terminals, self.cimConverter.cim['ssh']['Terminal'], how='left', on='rdfId')
         eqssh_terminals = pd.merge(eqssh_terminals, self.cimConverter.cim['tp']['Terminal'], how='left', on='rdfId')
         eqssh_terminals['ConnectivityNode'].fillna(eqssh_terminals['TopologicalNode'], inplace=True)
         # concat the DC terminals
-        dc_terminals = pd.merge(pd.concat([self.cimConverter.cim['eq']['DCTerminal'], self.cimConverter.cim['eq']['ACDCConverterDCTerminal']],
-                                          ignore_index=True, sort=False),
-                                pd.concat([self.cimConverter.cim['ssh']['DCTerminal'], self.cimConverter.cim['ssh']['ACDCConverterDCTerminal']],
+        dc_terminals = pd.merge(pd.concat(
+            [self.cimConverter.cim['eq']['DCTerminal'], self.cimConverter.cim['eq']['ACDCConverterDCTerminal']],
+            ignore_index=True, sort=False),
+                                pd.concat([self.cimConverter.cim['ssh']['DCTerminal'],
+                                           self.cimConverter.cim['ssh']['ACDCConverterDCTerminal']],
                                           ignore_index=True, sort=False), how='left', on='rdfId')
         dc_terminals = pd.merge(dc_terminals,
-                                pd.concat([self.cimConverter.cim['tp']['DCTerminal'], self.cimConverter.cim['tp']['ACDCConverterDCTerminal']],
+                                pd.concat([self.cimConverter.cim['tp']['DCTerminal'],
+                                           self.cimConverter.cim['tp']['ACDCConverterDCTerminal']],
                                           ignore_index=True, sort=False), how='left', on='rdfId')
         dc_terminals.rename(columns={'DCNode': 'ConnectivityNode', 'DCConductingEquipment': 'ConductingEquipment',
                                      'DCTopologicalNode': 'TopologicalNode'}, inplace=True)

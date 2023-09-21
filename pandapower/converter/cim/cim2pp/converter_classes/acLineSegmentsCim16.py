@@ -78,7 +78,8 @@ class AcLineSegmentsCim16:
         #   _x01    line1   0.056   ...
         #   _x02    line2   0.471   ...
         # now join with the terminals
-        eq_ac_line_segments = pd.merge(self.cimConverter.cim['eq']['ACLineSegment'], self.cimConverter.bus_merge, how='left', on='rdfId')
+        eq_ac_line_segments = pd.merge(self.cimConverter.cim['eq']['ACLineSegment'], self.cimConverter.bus_merge,
+                                       how='left', on='rdfId')
         eq_ac_line_segments[sc['o_cl']] = 'ACLineSegment'
         # now eq_ac_line_segments looks like:
         #   rdfId   name    r       rdfId_Terminal  connected   ...
