@@ -1,12 +1,10 @@
 import logging
 import math
 import time
-from typing import List
 
 import numpy as np
 import pandas as pd
 
-import pandapower.auxiliary
 from pandapower.converter.cim import cim_tools
 from pandapower.converter.cim.cim2pp import build_pp_net
 from pandapower.converter.cim.other_classes import Report, LogLevel, ReportCode

@@ -3,11 +3,9 @@
 # Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import logging
-import time
 import traceback
 from typing import Dict, List
 
-import numpy as np
 import pandas as pd
 
 import pandapower as pp
