@@ -44,72 +44,6 @@ class CimConverter:
             df[sc['o_cl']] = cim_type
         return df
 
-    def _convert_conform_loads_cim16(self):
-        time_start = time.time()
-        self.logger.info("Start converting ConformLoads.")
-        eqssh_conform_loads = self._prepare_conform_loads_cim16()
-        self.copy_to_pp('load', eqssh_conform_loads)
-        self.logger.info("Created %s loads in %ss." % (eqssh_conform_loads.index.size, time.time() - time_start))
-        self.report_container.add_log(Report(
-            level=LogLevel.INFO, code=ReportCode.INFO_CONVERTING,
-            message="Created %s loads from ConformLoads in %ss." %
-                    (eqssh_conform_loads.index.size, time.time() - time_start)))
-
-    def _prepare_conform_loads_cim16(self) -> pd.DataFrame:
-        eqssh_conform_loads = self.merge_eq_ssh_profile('ConformLoad', add_cim_type_column=True)
-        eqssh_conform_loads = pd.merge(eqssh_conform_loads, self.bus_merge, how='left', on='rdfId')
-        eqssh_conform_loads.rename(columns={'rdfId': sc['o_id'], 'rdfId_Terminal': sc['t'], 'index_bus': 'bus',
-                                            'connected': 'in_service', 'p': 'p_mw', 'q': 'q_mvar'}, inplace=True)
-        eqssh_conform_loads['const_i_percent'] = 0.
-        eqssh_conform_loads['const_z_percent'] = 0.
-        eqssh_conform_loads['scaling'] = 1.
-        eqssh_conform_loads['type'] = None
-        return eqssh_conform_loads
-
-    def _convert_non_conform_loads_cim16(self):
-        time_start = time.time()
-        self.logger.info("Start converting NonConformLoads.")
-        eqssh_non_conform_loads = self._prepare_non_conform_loads_cim16()
-        self.copy_to_pp('load', eqssh_non_conform_loads)
-        self.logger.info("Created %s loads in %ss." % (eqssh_non_conform_loads.index.size, time.time() - time_start))
-        self.report_container.add_log(Report(
-            level=LogLevel.INFO, code=ReportCode.INFO_CONVERTING,
-            message="Created %s loads from NonConformLoads in %ss." %
-                    (eqssh_non_conform_loads.index.size, time.time() - time_start)))
-
-    def _prepare_non_conform_loads_cim16(self) -> pd.DataFrame:
-        eqssh_non_conform_loads = self.merge_eq_ssh_profile('NonConformLoad', add_cim_type_column=True)
-        eqssh_non_conform_loads = pd.merge(eqssh_non_conform_loads, self.bus_merge, how='left', on='rdfId')
-        eqssh_non_conform_loads.rename(columns={'rdfId': sc['o_id'], 'rdfId_Terminal': sc['t'], 'index_bus': 'bus',
-                                                'connected': 'in_service', 'p': 'p_mw', 'q': 'q_mvar'}, inplace=True)
-        eqssh_non_conform_loads['const_i_percent'] = 0.
-        eqssh_non_conform_loads['const_z_percent'] = 0.
-        eqssh_non_conform_loads['scaling'] = 1.
-        eqssh_non_conform_loads['type'] = None
-        return eqssh_non_conform_loads
-
-    def _convert_station_supplies_cim16(self):
-        time_start = time.time()
-        self.logger.info("Start converting StationSupplies.")
-        eqssh_station_supplies = self._prepare_station_supplies_cim16()
-        self.copy_to_pp('load', eqssh_station_supplies)
-        self.logger.info("Created %s loads in %ss." % (eqssh_station_supplies.index.size, time.time() - time_start))
-        self.report_container.add_log(Report(
-            level=LogLevel.INFO, code=ReportCode.INFO_CONVERTING,
-            message="Created %s loads from StationSupplies in %ss." %
-                    (eqssh_station_supplies.index.size, time.time() - time_start)))
-
-    def _prepare_station_supplies_cim16(self) -> pd.DataFrame:
-        eqssh_station_supplies = self.merge_eq_ssh_profile('StationSupply', add_cim_type_column=True)
-        eqssh_station_supplies = pd.merge(eqssh_station_supplies, self.bus_merge, how='left', on='rdfId')
-        eqssh_station_supplies.rename(columns={'rdfId': sc['o_id'], 'rdfId_Terminal': sc['t'], 'index_bus': 'bus',
-                                               'connected': 'in_service', 'p': 'p_mw', 'q': 'q_mvar'}, inplace=True)
-        eqssh_station_supplies['const_i_percent'] = 0.
-        eqssh_station_supplies['const_z_percent'] = 0.
-        eqssh_station_supplies['scaling'] = 1.
-        eqssh_station_supplies['type'] = None
-        return eqssh_station_supplies
-
     def _convert_synchronous_machines_cim16(self):
         time_start = time.time()
         self.logger.info("Start converting SynchronousMachines.")
@@ -1502,9 +1436,15 @@ class CimConverter:
         from .converter_classes.loads import energyConcumersCim16
         energyConcumersCim16.EnergyConsumersCim16(cimConverter=self).convert_energy_consumers_cim16()
         # self._convert_energy_consumers_cim16()
-        self._convert_conform_loads_cim16()
-        self._convert_non_conform_loads_cim16()
-        self._convert_station_supplies_cim16()
+        from.converter_classes.loads import conformLoadsCim16
+        conformLoadsCim16.ConformLoadsCim16(cimConverter=self).convert_conform_loads_cim16()
+        # self._convert_conform_loads_cim16()
+        from .converter_classes.loads import nonConformLoadsCim16
+        nonConformLoadsCim16.NonConformLoadsCim16(cimConverter=self).convert_non_conform_loads_cim16()
+        # self._convert_non_conform_loads_cim16()
+        from .converter_classes.loads import stationSuppliesCim16
+        stationSuppliesCim16.StationSuppliesCim16(cimConverter=self).convert_station_supplies_cim16()
+        # self._convert_station_supplies_cim16()
         # --------- convert generators ---------
         self._convert_synchronous_machines_cim16()
         self._convert_asynchronous_machines_cim16()
