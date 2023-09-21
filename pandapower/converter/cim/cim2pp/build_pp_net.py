@@ -4,7 +4,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import logging
 import math
-from typing import Dict, Tuple, List
+from typing import Dict, List
 import traceback
 import pandapower as pp
 import pandapower.auxiliary
@@ -1480,26 +1480,26 @@ class CimConverter:
                       sort=False, ignore_index=True)[['rdfId', 'nominalVoltage']]
 
         # --------- convert busses ---------
-        from pandapower.converter.cim.cim2pp.converter_classes import connectivityNodesCim16
+        from .converter_classes.connectivitynodes import connectivityNodesCim16
         connectivityNodesCim16.ConnectivityNodesCim16(cimConverter=self).convert_connectivity_nodes_cim16()
         # self._convert_connectivity_nodes_cim16()
         # --------- convert external networks ---------
-        from pandapower.converter.cim.cim2pp.converter_classes import externalNetworkInjectionsCim16
+        from .converter_classes.externalnetworks import externalNetworkInjectionsCim16
         externalNetworkInjectionsCim16.ExternalNetworkInjectionsCim16(cimConverter=self).convert_external_network_injections_cim16()
         # self._convert_external_network_injections_cim16()
         # --------- convert lines ---------
-        from pandapower.converter.cim.cim2pp.converter_classes import acLineSegmentsCim16
+        from .converter_classes.lines import acLineSegmentsCim16
         acLineSegmentsCim16.AcLineSegmentsCim16(cimConverter=self).convert_ac_line_segments_cim16(convert_line_to_switch, line_r_limit, line_x_limit)
         # self._convert_ac_line_segments_cim16(convert_line_to_switch, line_r_limit, line_x_limit)
-        from pandapower.converter.cim.cim2pp.converter_classes import dcLineSegmentsCim16
+        from .converter_classes.lines import dcLineSegmentsCim16
         dcLineSegmentsCim16.DcLineSegmentsCim16(cimConverter=self).convert_dc_line_segments_cim16()
         # self._convert_dc_line_segments_cim16()
         # --------- convert switches ---------
-        from pandapower.converter.cim.cim2pp.converter_classes import switchesCim16
+        from .converter_classes.switches import switchesCim16
         switchesCim16.SwitchesCim16(cimConverter=self).convert_switches_cim16()
         # self._convert_switches_cim16()
         # --------- convert loads ---------
-        from pandapower.converter.cim.cim2pp.converter_classes import energyConcumersCim16
+        from .converter_classes.loads import energyConcumersCim16
         energyConcumersCim16.EnergyConsumersCim16(cimConverter=self).convert_energy_consumers_cim16()
         # self._convert_energy_consumers_cim16()
         self._convert_conform_loads_cim16()
