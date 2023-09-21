@@ -44,44 +44,6 @@ class CimConverter:
             df[sc['o_cl']] = cim_type
         return df
 
-    def _convert_equivalent_injections_cim16(self):
-        time_start = time.time()
-        self.logger.info("Start converting EquivalentInjections.")
-        eqssh_ei = self._prepare_equivalent_injections_cim16()
-        # split up to wards and xwards: the wards have no regulation
-        eqssh_ei_wards = eqssh_ei.loc[~eqssh_ei.regulationStatus]
-        eqssh_ei_xwards = eqssh_ei.loc[eqssh_ei.regulationStatus]
-        self.copy_to_pp('ward', eqssh_ei_wards)
-        self.copy_to_pp('xward', eqssh_ei_xwards)
-        self.logger.info("Created %s wards and %s extended ward elements in %ss." %
-                         (eqssh_ei_wards.index.size, eqssh_ei_xwards.index.size, time.time() - time_start))
-        self.report_container.add_log(Report(
-            level=LogLevel.INFO, code=ReportCode.INFO_CONVERTING,
-            message="Created %s wards and %s extended ward elements from EquivalentInjections in %ss." %
-                    (eqssh_ei_wards.index.size, eqssh_ei_xwards.index.size, time.time() - time_start)))
-
-    def _prepare_equivalent_injections_cim16(self) -> pd.DataFrame:
-        eqssh_ei = self.merge_eq_ssh_profile('EquivalentInjection', add_cim_type_column=True)
-        eq_base_voltages = pd.concat([self.cim['eq']['BaseVoltage'][['rdfId', 'nominalVoltage']],
-                                      self.cim['eq_bd']['BaseVoltage'][['rdfId', 'nominalVoltage']]], sort=False)
-        eq_base_voltages.drop_duplicates(subset=['rdfId'], inplace=True)
-        eq_base_voltages.rename(columns={'rdfId': 'BaseVoltage'}, inplace=True)
-        eqssh_ei = pd.merge(eqssh_ei, eq_base_voltages, how='left', on='BaseVoltage')
-        eqssh_ei = pd.merge(eqssh_ei, self.bus_merge, how='left', on='rdfId')
-        # maybe the BaseVoltage is not given, also get the nominalVoltage from the buses
-        eqssh_ei = pd.merge(eqssh_ei, self.net.bus[['vn_kv']], how='left', left_on='index_bus', right_index=True)
-        eqssh_ei.nominalVoltage.fillna(eqssh_ei.vn_kv, inplace=True)
-        eqssh_ei['regulationStatus'].fillna(False, inplace=True)
-        eqssh_ei['vm_pu'] = eqssh_ei.regulationTarget / eqssh_ei.nominalVoltage
-        eqssh_ei.rename(columns={'rdfId_Terminal': sc['t'], 'rdfId': sc['o_id'], 'connected': 'in_service',
-                                 'index_bus': 'bus', 'p': 'ps_mw', 'q': 'qs_mvar'},
-                        inplace=True)
-        eqssh_ei['pz_mw'] = 0.
-        eqssh_ei['qz_mvar'] = 0.
-        eqssh_ei['r_ohm'] = 0.
-        eqssh_ei['x_ohm'] = .1
-        return eqssh_ei
-
     def _convert_power_transformers_cim16(self):
         time_start = time.time()
         self.logger.info("Start converting PowerTransformers.")
@@ -997,7 +959,9 @@ class CimConverter:
         seriesCompensatorsCim16.SeriesCompensatorsCim16(cimConverter=self).convert_series_compensators_cim16()
         # self._convert_series_compensators_cim16()
         # --------- convert extended ward and ward elements ---------
-        self._convert_equivalent_injections_cim16()
+        from .converter_classes.wards import equivalentInjectionsCim16
+        equivalentInjectionsCim16.EquivalentInjectionsCim16(cimConverter=self).convert_equivalent_injections_cim16()
+        # self._convert_equivalent_injections_cim16()
         # --------- convert transformers ---------
         self._convert_power_transformers_cim16()
 
