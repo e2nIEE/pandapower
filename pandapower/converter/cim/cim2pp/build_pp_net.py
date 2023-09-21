@@ -44,28 +44,6 @@ class CimConverter:
             df[sc['o_cl']] = cim_type
         return df
 
-    def _convert_energy_consumers_cim16(self):
-        time_start = time.time()
-        self.logger.info("Start converting EnergyConsumers.")
-        eqssh_energy_consumers = self._prepare_energy_consumers_cim16()
-        self.copy_to_pp('load', eqssh_energy_consumers)
-        self.logger.info("Created %s loads in %ss." % (eqssh_energy_consumers.index.size, time.time() - time_start))
-        self.report_container.add_log(Report(
-            level=LogLevel.INFO, code=ReportCode.INFO_CONVERTING,
-            message="Created %s loads from EnergyConsumers in %ss." %
-                    (eqssh_energy_consumers.index.size, time.time() - time_start)))
-
-    def _prepare_energy_consumers_cim16(self) -> pd.DataFrame:
-        eqssh_energy_consumers = self.merge_eq_ssh_profile('EnergyConsumer', add_cim_type_column=True)
-        eqssh_energy_consumers = pd.merge(eqssh_energy_consumers, self.bus_merge, how='left', on='rdfId')
-        eqssh_energy_consumers.rename(columns={'rdfId': sc['o_id'], 'rdfId_Terminal': sc['t'], 'index_bus': 'bus',
-                                               'connected': 'in_service', 'p': 'p_mw', 'q': 'q_mvar'}, inplace=True)
-        eqssh_energy_consumers['const_i_percent'] = 0.
-        eqssh_energy_consumers['const_z_percent'] = 0.
-        eqssh_energy_consumers['scaling'] = 1.
-        eqssh_energy_consumers['type'] = None
-        return eqssh_energy_consumers
-
     def _convert_conform_loads_cim16(self):
         time_start = time.time()
         self.logger.info("Start converting ConformLoads.")
@@ -1503,36 +1481,27 @@ class CimConverter:
 
         # --------- convert busses ---------
         from pandapower.converter.cim.cim2pp.converter_classes import connectivityNodesCim16
-        cnc = connectivityNodesCim16.ConnectivityNodesCim16(cimConverter=self)
-        cnc.convert_connectivity_nodes_cim16()
-
+        connectivityNodesCim16.ConnectivityNodesCim16(cimConverter=self).convert_connectivity_nodes_cim16()
         # self._convert_connectivity_nodes_cim16()
         # --------- convert external networks ---------
         from pandapower.converter.cim.cim2pp.converter_classes import externalNetworkInjectionsCim16
-        enic = externalNetworkInjectionsCim16.ExternalNetworkInjectionsCim16(cimConverter=self)
-        enic.convert_external_network_injections_cim16()
-
+        externalNetworkInjectionsCim16.ExternalNetworkInjectionsCim16(cimConverter=self).convert_external_network_injections_cim16()
         # self._convert_external_network_injections_cim16()
         # --------- convert lines ---------
         from pandapower.converter.cim.cim2pp.converter_classes import acLineSegmentsCim16
-        alsc = acLineSegmentsCim16.AcLineSegmentsCim16(cimConverter=self)
-        alsc.convert_ac_line_segments_cim16(convert_line_to_switch, line_r_limit, line_x_limit)
-
+        acLineSegmentsCim16.AcLineSegmentsCim16(cimConverter=self).convert_ac_line_segments_cim16(convert_line_to_switch, line_r_limit, line_x_limit)
         # self._convert_ac_line_segments_cim16(convert_line_to_switch, line_r_limit, line_x_limit)
-
         from pandapower.converter.cim.cim2pp.converter_classes import dcLineSegmentsCim16
-        dlsc = dcLineSegmentsCim16.DcLineSegmentsCim16(cimConverter=self)
-        dlsc.convert_dc_line_segments_cim16()
-
+        dcLineSegmentsCim16.DcLineSegmentsCim16(cimConverter=self).convert_dc_line_segments_cim16()
         # self._convert_dc_line_segments_cim16()
         # --------- convert switches ---------
         from pandapower.converter.cim.cim2pp.converter_classes import switchesCim16
-        swc = switchesCim16.SwitchesCim16(cimConverter=self)
-        swc.convert_switches_cim16()
-
+        switchesCim16.SwitchesCim16(cimConverter=self).convert_switches_cim16()
         # self._convert_switches_cim16()
         # --------- convert loads ---------
-        self._convert_energy_consumers_cim16()
+        from pandapower.converter.cim.cim2pp.converter_classes import energyConcumersCim16
+        energyConcumersCim16.EnergyConsumersCim16(cimConverter=self).convert_energy_consumers_cim16()
+        # self._convert_energy_consumers_cim16()
         self._convert_conform_loads_cim16()
         self._convert_non_conform_loads_cim16()
         self._convert_station_supplies_cim16()
