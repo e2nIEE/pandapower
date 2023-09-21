@@ -44,103 +44,6 @@ class CimConverter:
             df[sc['o_cl']] = cim_type
         return df
 
-    def _convert_static_var_compensator_cim16(self):
-        time_start = time.time()
-        self.logger.info("Start converting StaticVarCompensator.")
-        eq_stat_coms = self._prepare_static_var_compensator_cim16()
-        self.copy_to_pp('shunt', eq_stat_coms)
-        self.logger.info("Created %s generators in %ss." % (eq_stat_coms.index.size, time.time() - time_start))
-        self.report_container.add_log(Report(
-            level=LogLevel.INFO, code=ReportCode.INFO_CONVERTING,
-            message="Created %s generators from StaticVarCompensator in %ss." %
-                    (eq_stat_coms.index.size, time.time() - time_start)))
-
-    def _prepare_static_var_compensator_cim16(self) -> pd.DataFrame:
-        eq_stat_coms = self.merge_eq_ssh_profile('StaticVarCompensator', True)
-        eq_stat_coms = pd.merge(eq_stat_coms, self.bus_merge, how='left', on='rdfId')
-        eq_stat_coms.rename(columns={'q': 'q_mvar'}, inplace=True)
-        # get the active power and reactive power from SV profile
-        eq_stat_coms = pd.merge(eq_stat_coms, self.cim['sv']['SvPowerFlow'][['p', 'q', 'Terminal']],
-                                how='left', left_on='rdfId_Terminal', right_on='Terminal')
-        eq_stat_coms['q_mvar'].fillna(eq_stat_coms['q'], inplace=True)
-        eq_stat_coms.rename(columns={'rdfId_Terminal': sc['t'], 'rdfId': sc['o_id'], 'p': 'p_mw',
-                                     'voltageSetPoint': 'vn_kv', 'index_bus': 'bus', 'connected': 'in_service'},
-                            inplace=True)
-        eq_stat_coms['step'] = 1
-        eq_stat_coms['max_step'] = 1
-        return eq_stat_coms
-
-    def _convert_linear_shunt_compensator_cim16(self):
-        time_start = time.time()
-        self.logger.info("Start converting LinearShuntCompensator.")
-        eqssh_shunts = self._prepare_linear_shunt_compensator_cim16()
-        self.copy_to_pp('shunt', eqssh_shunts)
-        self.logger.info("Created %s shunts in %ss." % (eqssh_shunts.index.size, time.time() - time_start))
-        self.report_container.add_log(Report(
-            level=LogLevel.INFO, code=ReportCode.INFO_CONVERTING,
-            message="Created %s shunts from LinearShuntCompensator in %ss." %
-                    (eqssh_shunts.index.size, time.time() - time_start)))
-
-    def _prepare_linear_shunt_compensator_cim16(self) -> pd.DataFrame:
-        eqssh_shunts = self.merge_eq_ssh_profile('LinearShuntCompensator', add_cim_type_column=True)
-        eqssh_shunts = pd.merge(eqssh_shunts, self.bus_merge, how='left', on='rdfId')
-        eqssh_shunts.rename(columns={
-            'rdfId': sc['o_id'], 'rdfId_Terminal': sc['t'], 'connected': 'in_service', 'index_bus': 'bus',
-            'nomU': 'vn_kv', 'sections': 'step', 'maximumSections': 'max_step'}, inplace=True)
-        y = eqssh_shunts['gPerSection'] + eqssh_shunts['bPerSection'] * 1j
-        s = eqssh_shunts['vn_kv']**2 * np.conj(y)
-        eqssh_shunts['p_mw'] = s.values.real
-        eqssh_shunts['q_mvar'] = s.values.imag
-        return eqssh_shunts
-
-    def _convert_nonlinear_shunt_compensator_cim16(self):
-        time_start = time.time()
-        self.logger.info("Start converting NonlinearShuntCompensator.")
-        if self.cim['eq']['NonlinearShuntCompensator'].index.size > 0:
-            eqssh_shunts = self._prepare_nonlinear_shunt_compensator_cim16()
-            self.copy_to_pp('shunt', eqssh_shunts)
-        else:
-            eqssh_shunts = pd.DataFrame(None)
-        self.logger.info("Created %s shunts in %ss." % (eqssh_shunts.index.size, time.time() - time_start))
-        self.report_container.add_log(Report(
-            level=LogLevel.INFO, code=ReportCode.INFO_CONVERTING,
-            message="Created %s shunts from NonlinearShuntCompensator in %ss." %
-                    (eqssh_shunts.index.size, time.time() - time_start)))
-
-    def _prepare_nonlinear_shunt_compensator_cim16(self) -> pd.DataFrame:
-        eqssh_shunts = self.merge_eq_ssh_profile('NonlinearShuntCompensator', add_cim_type_column=True)
-        eqssh_shunts = pd.merge(eqssh_shunts, self.bus_merge, how='left', on='rdfId')
-
-        eqssh_shunts['p'] = float('NaN')
-        eqssh_shunts['q'] = float('NaN')
-        eqssh_shunts_cols = list(eqssh_shunts.columns.values)
-        nscp = self.cim['eq']['NonlinearShuntCompensatorPoint'][
-            ['NonlinearShuntCompensator', 'sectionNumber', 'b', 'g']].rename(
-            columns={'NonlinearShuntCompensator': 'rdfId'})
-        # calculate p and q from b, g, and all the sections
-        for i in range(1, int(nscp['sectionNumber'].max()) + 1):
-            nscp_t = nscp.loc[nscp['sectionNumber'] == i]
-            eqssh_shunts = pd.merge(eqssh_shunts, nscp_t, how='left', on='rdfId')
-            y = eqssh_shunts['g'] + eqssh_shunts['b'] * 1j
-            s = eqssh_shunts['nomU'] ** 2 * np.conj(y)
-            eqssh_shunts['p_temp'] = s.values.real
-            eqssh_shunts['q_temp'] = s.values.imag
-            if i == 1:
-                eqssh_shunts['p'] = eqssh_shunts['p_temp'][:]
-                eqssh_shunts['q'] = eqssh_shunts['q_temp'][:]
-            else:
-                eqssh_shunts.loc[eqssh_shunts['sections'] >= eqssh_shunts['sectionNumber'], 'p'] = \
-                    eqssh_shunts['p'] + eqssh_shunts['p_temp']
-                eqssh_shunts.loc[eqssh_shunts['sections'] >= eqssh_shunts['sectionNumber'], 'q'] = \
-                    eqssh_shunts['q'] + eqssh_shunts['q_temp']
-            eqssh_shunts = eqssh_shunts[eqssh_shunts_cols]
-        eqssh_shunts.rename(columns={
-            'rdfId': sc['o_id'], 'rdfId_Terminal': sc['t'], 'connected': 'in_service', 'index_bus': 'bus',
-            'nomU': 'vn_kv', 'p': 'p_mw', 'q': 'q_mvar'}, inplace=True)
-        eqssh_shunts['step'] = 1
-        eqssh_shunts['max_step'] = 1
-        return eqssh_shunts
-
     def _convert_equivalent_branches_cim16(self):
         time_start = time.time()
         self.logger.info("Start converting EquivalentBranches.")
@@ -1255,9 +1158,15 @@ class CimConverter:
         energySourcesCim16.EnergySourceCim16(cimConverter=self).convert_energy_sources_cim16()
         # self._convert_energy_sources_cim16()
         # --------- convert shunt elements ---------
-        self._convert_linear_shunt_compensator_cim16()
-        self._convert_nonlinear_shunt_compensator_cim16()
-        self._convert_static_var_compensator_cim16()
+        from .converter_classes.shunts import linearShuntCompensatorCim16
+        linearShuntCompensatorCim16.LinearShuntCompensatorCim16(cimConverter=self).convert_linear_shunt_compensator_cim16()
+        # self._convert_linear_shunt_compensator_cim16()
+        from .converter_classes.shunts import nonLinearShuntCompensatorCim16
+        nonLinearShuntCompensatorCim16.NonLinearShuntCompensatorCim16(cimConverter=self).convert_nonlinear_shunt_compensator_cim16()
+        # self._convert_nonlinear_shunt_compensator_cim16()
+        from .converter_classes.shunts import staticVarCompensatorCim16
+        staticVarCompensatorCim16.StaticVarCompensatorCim16(cimConverter=self).convert_static_var_compensator_cim16()
+        # self._convert_static_var_compensator_cim16()
         # --------- convert impedance elements ---------
         self._convert_equivalent_branches_cim16()
         self._convert_series_compensators_cim16()
