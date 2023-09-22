@@ -12,6 +12,52 @@ from .. import interfaces
 
 logger = logging.getLogger('cim.cim2pp.from_cim')
 
+from .converter_classes.connectivitynodes import connectivityNodesCim16
+from .converter_classes.externalnetworks import externalNetworkInjectionsCim16
+from .converter_classes.lines import acLineSegmentsCim16
+from .converter_classes.lines import dcLineSegmentsCim16
+from .converter_classes.switches import switchesCim16
+from .converter_classes.loads import energyConcumersCim16
+from .converter_classes.loads import conformLoadsCim16
+from .converter_classes.loads import nonConformLoadsCim16
+from .converter_classes.loads import stationSuppliesCim16
+from .converter_classes.generators import synchronousMachinesCim16
+from .converter_classes.generators import asynchronousMachinesCim16
+from .converter_classes.generators import energySourcesCim16
+from .converter_classes.shunts import linearShuntCompensatorCim16
+from .converter_classes.shunts import nonLinearShuntCompensatorCim16
+from .converter_classes.shunts import staticVarCompensatorCim16
+from .converter_classes.impedance import equivalentBranchesCim16
+from .converter_classes.impedance import seriesCompensatorsCim16
+from .converter_classes.wards import equivalentInjectionsCim16
+from .converter_classes.transformers import powerTransformersCim16, tapController
+from .converter_classes.coordinates import geoCoordinatesFromGLCim16
+from .converter_classes.coordinates import coordinatesFromDLCim16
+
+converter_classes: dict = {'connectivityNodesCim16': connectivityNodesCim16,
+                           'externalNetworkInjectionsCim16': externalNetworkInjectionsCim16,
+                           'acLineSegmentsCim16': acLineSegmentsCim16,
+                           'dcLineSegmentsCim16': dcLineSegmentsCim16,
+                           'switchesCim16': switchesCim16,
+                           'energyConcumersCim16': energyConcumersCim16,
+                           'conformLoadsCim16': conformLoadsCim16,
+                           'nonConformLoadsCim16': nonConformLoadsCim16,
+                           'stationSuppliesCim16': stationSuppliesCim16,
+                           'synchronousMachinesCim16': synchronousMachinesCim16,
+                           'asynchronousMachinesCim16': asynchronousMachinesCim16,
+                           'energySourcesCim16': energySourcesCim16,
+                           'linearShuntCompensatorCim16': linearShuntCompensatorCim16,
+                           'nonLinearShuntCompensatorCim16': nonLinearShuntCompensatorCim16,
+                           'staticVarCompensatorCim16': staticVarCompensatorCim16,
+                           'equivalentBranchesCim16': equivalentBranchesCim16,
+                           'seriesCompensatorsCim16': seriesCompensatorsCim16,
+                           'equivalentInjectionsCim16': equivalentInjectionsCim16,
+                           'powerTransformersCim16': powerTransformersCim16,
+                           'tapController': tapController,
+                           'geoCoordinatesFromGLCim16': geoCoordinatesFromGLCim16,
+                           'coordinatesFromDLCim16': coordinatesFromDLCim16,
+                           }
+
 
 def from_cim_dict(cim_parser: cim_classes.CimParser, log_debug=False, convert_line_to_switch: bool = False,
                   line_r_limit: float = 0.1, line_x_limit: float = 0.1,
@@ -42,7 +88,7 @@ def from_cim_dict(cim_parser: cim_classes.CimParser, log_debug=False, convert_li
         repair_cim = repair_cim_class().deserialize(repair_cim, report_container=cim_parser.get_report_container())
         repair_cim.repair(cim_parser.get_cim_dict(), report_container=cim_parser.get_report_container())
 
-    cim_converter = build_pp_net.CimConverter(cim_parser=cim_parser, **kwargs)
+    cim_converter = build_pp_net.CimConverter(cim_parser=cim_parser, converter_classes=converter_classes, **kwargs)
     pp_net = cim_converter.convert_to_pp(convert_line_to_switch=convert_line_to_switch, line_r_limit=line_r_limit,
                                          line_x_limit=line_x_limit, log_debug=log_debug, **kwargs)
 

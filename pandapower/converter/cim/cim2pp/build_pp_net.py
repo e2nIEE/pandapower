@@ -4,14 +4,12 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import logging
 import traceback
-from typing import Dict, List
+from typing import Dict
 
 import pandas as pd
 
 import pandapower as pp
 import pandapower.auxiliary
-from pandapower.control.controller.trafo.ContinuousTapControl import ContinuousTapControl
-from pandapower.control.controller.trafo.DiscreteTapControl import DiscreteTapControl
 from .convert_measurements import CreateMeasurements
 from .. import cim_classes
 from .. import cim_tools
@@ -27,7 +25,7 @@ sc = cim_tools.get_pp_net_special_columns_dict()
 
 class CimConverter:
 
-    def __init__(self, cim_parser: cim_classes.CimParser, **kwargs):
+    def __init__(self, cim_parser: cim_classes.CimParser, converter_classes: Dict, **kwargs):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.cim_parser: cim_classes.CimParser = cim_parser
         self.kwargs = kwargs
@@ -37,46 +35,13 @@ class CimConverter:
         self.power_trafo2w: pd.DataFrame = pd.DataFrame()
         self.power_trafo3w: pd.DataFrame = pd.DataFrame()
         self.report_container: ReportContainer = cim_parser.get_report_container()
+        self.classes_dict = converter_classes
 
     def merge_eq_ssh_profile(self, cim_type: str, add_cim_type_column: bool = False) -> pd.DataFrame:
         df = pd.merge(self.cim['eq'][cim_type], self.cim['ssh'][cim_type], how='left', on='rdfId')
         if add_cim_type_column:
             df[sc['o_cl']] = cim_type
         return df
-
-    def _create_characteristic_object(self, net, trafo_type: str, trafo_id: List, characteristic_df: pd.DataFrame):
-        self.logger.info("Adding characteristic object for trafo_type: %s and trafo_id: %s" % (trafo_type, trafo_id))
-        for variable in ['vkr_percent', 'vk_percent', 'vk_hv_percent', 'vkr_hv_percent', 'vk_mv_percent',
-                         'vkr_mv_percent', 'vk_lv_percent', 'vkr_lv_percent']:
-            if variable in characteristic_df.columns:
-                pandapower.control.create_trafo_characteristics(net, trafo_type, trafo_id, variable,
-                                                                [list(characteristic_df['step'].values)],
-                                                                [list(characteristic_df[variable].values)])
-
-    def _create_tap_controller(self, input_df: pd.DataFrame, trafo_type: str):
-        if not self.kwargs.get('create_tap_controller', True):
-            self.logger.info("Skip creating transformer tap changer controller for transformer type %s." % trafo_type)
-            return
-        for row_index, row in input_df.loc[input_df['TapChangerControl'].notna()].iterrows():
-            trafo_id = self.net[trafo_type].loc[self.net[trafo_type][sc['o_id']] == row[sc['o_id']]].index.values[0]
-            trafotype = '2W' if trafo_type == 'trafo' else '3W'
-            # get the controlled bus (side), assume "lv" as default
-            side = 'lv'
-            if sc['t_hv'] in self.net[trafo_type].columns and \
-                    row['c_Terminal'] in self.net[trafo_type][sc['t_hv']].values:
-                side = 'hv'
-            if sc['t_mv'] in self.net[trafo_type].columns and \
-                    row['c_Terminal'] in self.net[trafo_type][sc['t_mv']].values:
-                side = 'mv'
-            if row['discrete']:
-                self.logger.info("Creating DiscreteTapControl for transformer %s." % row[sc['o_id']])
-                DiscreteTapControl(self.net, trafotype=trafotype, tid=trafo_id, side=side,
-                                   tol=row['c_tol'], in_service=row['c_in_service'],
-                                   vm_lower_pu=row['c_vm_lower_pu'], vm_upper_pu=row['c_vm_upper_pu'])
-            else:
-                self.logger.info("Creating ContinuousTapControl for transformer %s." % row[sc['o_id']])
-                ContinuousTapControl(self.net, trafotype=trafotype, tid=trafo_id, side=side,
-                                     tol=row['c_tol'], in_service=row['c_in_service'], vm_set_pu=row['c_vm_set_pu'])
 
     def copy_to_pp(self, pp_type: str, input_df: pd.DataFrame):
         self.logger.debug("Copy %s datasets to pandapower network with type %s" % (input_df.index.size, pp_type))
@@ -128,71 +93,52 @@ class CimConverter:
 
         # TODO:
         # --------- convert busses ---------
-        from .converter_classes.connectivitynodes import connectivityNodesCim16
-        connectivityNodesCim16.ConnectivityNodesCim16(cimConverter=self).convert_connectivity_nodes_cim16()
+        self.classes_dict['connectivityNodesCim16'].ConnectivityNodesCim16(cimConverter=self).convert_connectivity_nodes_cim16()
         # self._convert_connectivity_nodes_cim16()
         # --------- convert external networks ---------
-        from .converter_classes.externalnetworks import externalNetworkInjectionsCim16
-        externalNetworkInjectionsCim16.ExternalNetworkInjectionsCim16(cimConverter=self).convert_external_network_injections_cim16()
+        self.classes_dict['externalNetworkInjectionsCim16'].ExternalNetworkInjectionsCim16(cimConverter=self).convert_external_network_injections_cim16()
         # self._convert_external_network_injections_cim16()
         # --------- convert lines ---------
-        from .converter_classes.lines import acLineSegmentsCim16
-        acLineSegmentsCim16.AcLineSegmentsCim16(cimConverter=self).convert_ac_line_segments_cim16(convert_line_to_switch, line_r_limit, line_x_limit)
+        self.classes_dict['acLineSegmentsCim16'].AcLineSegmentsCim16(cimConverter=self).convert_ac_line_segments_cim16(convert_line_to_switch, line_r_limit, line_x_limit)
         # self._convert_ac_line_segments_cim16(convert_line_to_switch, line_r_limit, line_x_limit)
-        from .converter_classes.lines import dcLineSegmentsCim16
-        dcLineSegmentsCim16.DcLineSegmentsCim16(cimConverter=self).convert_dc_line_segments_cim16()
+        self.classes_dict['dcLineSegmentsCim16'].DcLineSegmentsCim16(cimConverter=self).convert_dc_line_segments_cim16()
         # self._convert_dc_line_segments_cim16()
         # --------- convert switches ---------
-        from .converter_classes.switches import switchesCim16
-        switchesCim16.SwitchesCim16(cimConverter=self).convert_switches_cim16()
+        self.classes_dict['switchesCim16'].SwitchesCim16(cimConverter=self).convert_switches_cim16()
         # self._convert_switches_cim16()
         # --------- convert loads ---------
-        from .converter_classes.loads import energyConcumersCim16
-        energyConcumersCim16.EnergyConsumersCim16(cimConverter=self).convert_energy_consumers_cim16()
+        self.classes_dict['energyConcumersCim16'].EnergyConsumersCim16(cimConverter=self).convert_energy_consumers_cim16()
         # self._convert_energy_consumers_cim16()
-        from.converter_classes.loads import conformLoadsCim16
-        conformLoadsCim16.ConformLoadsCim16(cimConverter=self).convert_conform_loads_cim16()
+        self.classes_dict['conformLoadsCim16'].ConformLoadsCim16(cimConverter=self).convert_conform_loads_cim16()
         # self._convert_conform_loads_cim16()
-        from .converter_classes.loads import nonConformLoadsCim16
-        nonConformLoadsCim16.NonConformLoadsCim16(cimConverter=self).convert_non_conform_loads_cim16()
+        self.classes_dict['nonConformLoadsCim16'].NonConformLoadsCim16(cimConverter=self).convert_non_conform_loads_cim16()
         # self._convert_non_conform_loads_cim16()
-        from .converter_classes.loads import stationSuppliesCim16
-        stationSuppliesCim16.StationSuppliesCim16(cimConverter=self).convert_station_supplies_cim16()
+        self.classes_dict['stationSuppliesCim16'].StationSuppliesCim16(cimConverter=self).convert_station_supplies_cim16()
         # self._convert_station_supplies_cim16()
         # --------- convert generators ---------
-        from .converter_classes.generators import synchronousMachinesCim16
-        synchronousMachinesCim16.SynchronousMachinesCim16(cimConverter=self).convert_synchronous_machines_cim16()
+        self.classes_dict['synchronousMachinesCim16'].SynchronousMachinesCim16(cimConverter=self).convert_synchronous_machines_cim16()
         # self._convert_synchronous_machines_cim16()
-        from .converter_classes.generators import asynchronousMachinesCim16
-        asynchronousMachinesCim16.AsynchronousMachinesCim16(cimConverter=self).convert_asynchronous_machines_cim16()
+        self.classes_dict['asynchronousMachinesCim16'].AsynchronousMachinesCim16(cimConverter=self).convert_asynchronous_machines_cim16()
         # self._convert_asynchronous_machines_cim16()
-        from .converter_classes.generators import energySourcesCim16
-        energySourcesCim16.EnergySourceCim16(cimConverter=self).convert_energy_sources_cim16()
+        self.classes_dict['energySourcesCim16'].EnergySourceCim16(cimConverter=self).convert_energy_sources_cim16()
         # self._convert_energy_sources_cim16()
         # --------- convert shunt elements ---------
-        from .converter_classes.shunts import linearShuntCompensatorCim16
-        linearShuntCompensatorCim16.LinearShuntCompensatorCim16(cimConverter=self).convert_linear_shunt_compensator_cim16()
+        self.classes_dict['linearShuntCompensatorCim16'].LinearShuntCompensatorCim16(cimConverter=self).convert_linear_shunt_compensator_cim16()
         # self._convert_linear_shunt_compensator_cim16()
-        from .converter_classes.shunts import nonLinearShuntCompensatorCim16
-        nonLinearShuntCompensatorCim16.NonLinearShuntCompensatorCim16(cimConverter=self).convert_nonlinear_shunt_compensator_cim16()
+        self.classes_dict['nonLinearShuntCompensatorCim16'].NonLinearShuntCompensatorCim16(cimConverter=self).convert_nonlinear_shunt_compensator_cim16()
         # self._convert_nonlinear_shunt_compensator_cim16()
-        from .converter_classes.shunts import staticVarCompensatorCim16
-        staticVarCompensatorCim16.StaticVarCompensatorCim16(cimConverter=self).convert_static_var_compensator_cim16()
+        self.classes_dict['staticVarCompensatorCim16'].StaticVarCompensatorCim16(cimConverter=self).convert_static_var_compensator_cim16()
         # self._convert_static_var_compensator_cim16()
         # --------- convert impedance elements ---------
-        from .converter_classes.impedance import equivalentBranchesCim16
-        equivalentBranchesCim16.EquivalentBranchesCim16(cimConverter=self).convert_equivalent_branches_cim16()
+        self.classes_dict['equivalentBranchesCim16'].EquivalentBranchesCim16(cimConverter=self).convert_equivalent_branches_cim16()
         # self._convert_equivalent_branches_cim16()
-        from .converter_classes.impedance import seriesCompensatorsCim16
-        seriesCompensatorsCim16.SeriesCompensatorsCim16(cimConverter=self).convert_series_compensators_cim16()
+        self.classes_dict['seriesCompensatorsCim16'].SeriesCompensatorsCim16(cimConverter=self).convert_series_compensators_cim16()
         # self._convert_series_compensators_cim16()
         # --------- convert extended ward and ward elements ---------
-        from .converter_classes.wards import equivalentInjectionsCim16
-        equivalentInjectionsCim16.EquivalentInjectionsCim16(cimConverter=self).convert_equivalent_injections_cim16()
+        self.classes_dict['equivalentInjectionsCim16'].EquivalentInjectionsCim16(cimConverter=self).convert_equivalent_injections_cim16()
         # self._convert_equivalent_injections_cim16()
         # --------- convert transformers ---------
-        from .converter_classes.transformers import powerTransformersCim16
-        powerTransformersCim16.PowerTransformersCim16(cimConverter=self).convert_power_transformers_cim16()
+        self.classes_dict['powerTransformersCim16'].PowerTransformersCim16(cimConverter=self).convert_power_transformers_cim16()
         # self._convert_power_transformers_cim16()
 
         # create the geo coordinates
@@ -210,8 +156,7 @@ class CimConverter:
                 use_gl_profile:
             try:
                 # TODO:
-                from .converter_classes.coordinates import geoCoordinatesFromGLCim16
-                geoCoordinatesFromGLCim16.GeoCoordinatesFromGLCim16(cimConverter=self).add_geo_coordinates_from_gl_cim16()
+                self.classes_dict['geoCoordinatesFromGLCim16'].GeoCoordinatesFromGLCim16(cimConverter=self).add_geo_coordinates_from_gl_cim16()
                 # self._add_geo_coordinates_from_gl_cim16()
             except Exception as e:
                 self.logger.warning("Creating the geo coordinates failed, returning the net without geo coordinates!")
@@ -229,8 +174,7 @@ class CimConverter:
                 use_dl_profile:
             try:
                 # TODO:
-                from .converter_classes.coordinates import coordinatesFromDLCim16
-                coordinatesFromDLCim16.CoordinatesFromDLCim16(cimConverter=self).add_coordinates_from_dl_cim16(diagram_name=kwargs.get('diagram_name', None))
+                self.classes_dict['coordinatesFromDLCim16'].CoordinatesFromDLCim16(cimConverter=self).add_coordinates_from_dl_cim16(diagram_name=kwargs.get('diagram_name', None))
                 # self._add_coordinates_from_dl_cim16(diagram_name=kwargs.get('diagram_name', None))
             except Exception as e:
                 self.logger.warning("Creating the coordinates failed, returning the net without coordinates!")
@@ -245,29 +189,8 @@ class CimConverter:
         self.net = pp_tools.set_pp_col_types(net=self.net)
 
         # create transformer tap controller
-        if self.power_trafo2w.index.size > 0:
-            # create transformer tap controller
-            self._create_tap_controller(self.power_trafo2w, 'trafo')
-            # create the characteristic objects for transformers
-            characteristic_df_temp = \
-                self.net['characteristic_temp'][['id_characteristic', 'step', 'vk_percent', 'vkr_percent']]
-            for trafo_id, trafo_row in self.net.trafo.dropna(subset=['id_characteristic']).iterrows():
-                characteristic_df = characteristic_df_temp.loc[
-                    characteristic_df_temp['id_characteristic'] == trafo_row['id_characteristic']]
-                self._create_characteristic_object(net=self.net, trafo_type='trafo', trafo_id=[trafo_id],
-                                                   characteristic_df=characteristic_df)
-        if self.power_trafo3w.index.size > 0:
-            # create transformer tap controller
-            self._create_tap_controller(self.power_trafo3w, 'trafo3w')
-            # create the characteristic objects for transformers
-            characteristic_df_temp = \
-                self.net['characteristic_temp'][['id_characteristic', 'step', 'vkr_hv_percent', 'vkr_mv_percent',
-                                                 'vkr_lv_percent', 'vk_hv_percent', 'vk_mv_percent', 'vk_lv_percent']]
-            for trafo_id, trafo_row in self.net.trafo3w.dropna(subset=['id_characteristic']).iterrows():
-                characteristic_df = characteristic_df_temp.loc[
-                    characteristic_df_temp['id_characteristic'] == trafo_row['id_characteristic']]
-                self._create_characteristic_object(net=self.net, trafo_type='trafo3w', trafo_id=[trafo_id],
-                                                   characteristic_df=characteristic_df)
+        # TODO:
+        self.classes_dict['tapController'].TapController(cimConverter=self).create_tap_controller_for_power_transformers()
 
         self.logger.info("Running a power flow.")
         self.report_container.add_log(Report(
