@@ -38,7 +38,7 @@ class NonLinearShuntCompensatorCim16:
 
         eqssh_shunts['p'] = float('NaN')
         eqssh_shunts['q'] = float('NaN')
-        eqssh_shunts_cols = list(eqssh_shunts.columns.values)
+        eqssh_shunts_cols = eqssh_shunts.columns.to_list()
         nscp = self.cimConverter.cim['eq']['NonlinearShuntCompensatorPoint'][
             ['NonlinearShuntCompensator', 'sectionNumber', 'b', 'g']].rename(
             columns={'NonlinearShuntCompensator': 'rdfId'})

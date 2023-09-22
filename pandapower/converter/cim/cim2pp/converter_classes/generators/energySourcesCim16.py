@@ -35,7 +35,8 @@ class EnergySourceCim16:
 
     def _prepare_energy_sources_cim16(self) -> pd.DataFrame:
         eq_energy_scheduling_type = \
-            pd.concat([self.cimConverter.cim['eq']['EnergySchedulingType'], self.cimConverter.cim['eq_bd']['EnergySchedulingType']],
+            pd.concat([self.cimConverter.cim['eq']['EnergySchedulingType'],
+                       self.cimConverter.cim['eq_bd']['EnergySchedulingType']],
                       sort=False)
         eq_energy_scheduling_type.rename(columns={'rdfId': 'EnergySchedulingType', 'name': 'type'}, inplace=True)
         eqssh_energy_sources = self.cimConverter.merge_eq_ssh_profile('EnergySource', add_cim_type_column=True)

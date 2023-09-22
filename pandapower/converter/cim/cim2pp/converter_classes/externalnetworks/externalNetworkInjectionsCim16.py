@@ -30,8 +30,8 @@ class ExternalNetworkInjectionsCim16:
         sync_machines = self.cimConverter.merge_eq_ssh_profile('SynchronousMachine')
         sync_machines = self.get_volate_from_controllers(sync_machines)
 
-        sync_ref_prio_min = sync_machines.loc[(sync_machines['referencePriority'] > 0) & (sync_machines['enabled']),
-        'referencePriority'].min()
+        sync_ref_prio_min = sync_machines.loc[
+            (sync_machines['referencePriority'] > 0) & (sync_machines['enabled']), 'referencePriority'].min()
         if pd.isna(eni_ref_prio_min):
             ref_prio_min = sync_ref_prio_min
         elif pd.isna(sync_ref_prio_min):

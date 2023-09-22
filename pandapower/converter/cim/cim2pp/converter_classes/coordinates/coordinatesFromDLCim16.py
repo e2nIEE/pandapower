@@ -28,8 +28,10 @@ class CoordinatesFromDLCim16:
         if diagram_name != 'all':
             # reduce the source data to the chosen diagram only
             diagram_rdf_id = \
-                self.cimConverter.cim['dl']['Diagram']['rdfId'][self.cimConverter.cim['dl']['Diagram']['name'] == diagram_name].values[0]
-            dl_do = self.cimConverter.cim['dl']['DiagramObject'][self.cimConverter.cim['dl']['DiagramObject']['Diagram'] == diagram_rdf_id]
+                self.cimConverter.cim['dl']['Diagram']['rdfId'][
+                    self.cimConverter.cim['dl']['Diagram']['name'] == diagram_name].values[0]
+            dl_do = self.cimConverter.cim['dl']['DiagramObject'][
+                self.cimConverter.cim['dl']['DiagramObject']['Diagram'] == diagram_rdf_id]
             dl_do.rename(columns={'rdfId': 'DiagramObject'}, inplace=True)
         else:
             dl_do = self.cimConverter.cim['dl']['DiagramObject'].copy()
@@ -51,14 +53,16 @@ class CoordinatesFromDLCim16:
         bus_geo.drop_duplicates([sc['o_id']], keep='first', inplace=True)
         bus_geo.sort_values(by='index', inplace=True)
         start_index_pp_net = self.cimConverter.net.bus_geodata.index.size
-        self.cimConverter.net.bus_geodata = pd.concat([self.cimConverter.net.bus_geodata, pd.DataFrame(None, index=bus_geo['index'].values)],
-                                         ignore_index=False, sort=False)
+        self.cimConverter.net.bus_geodata = pd.concat(
+            [self.cimConverter.net.bus_geodata, pd.DataFrame(None, index=bus_geo['index'].values)],
+            ignore_index=False, sort=False)
         self.cimConverter.net.bus_geodata.x[start_index_pp_net:] = bus_geo.xPosition[:]
         self.cimConverter.net.bus_geodata.y[start_index_pp_net:] = bus_geo.yPosition[:]
         self.cimConverter.net.bus_geodata.coords[start_index_pp_net:] = bus_geo.coords[:]
         # reduce to max two coordinates for buses (see pandapower documentation for details)
         self.cimConverter.net.bus_geodata['coords_length'] = self.cimConverter.net.bus_geodata['coords'].apply(len)
-        self.cimConverter.net.bus_geodata.loc[self.cimConverter.net.bus_geodata['coords_length'] == 1, 'coords'] = np.nan
+        self.cimConverter.net.bus_geodata.loc[
+            self.cimConverter.net.bus_geodata['coords_length'] == 1, 'coords'] = np.nan
         self.cimConverter.net.bus_geodata['coords'] = self.cimConverter.net.bus_geodata.apply(
             lambda row: [row['coords'][0], row['coords'][-1]] if row['coords_length'] > 2 else row['coords'], axis=1)
         if 'coords_length' in self.cimConverter.net.bus_geodata.columns:
@@ -79,8 +83,9 @@ class CoordinatesFromDLCim16:
         # if there are no bus geodata in the GL profile the line geodata from DL has higher priority
         if self.cimConverter.net.line_geodata.index.size > 0 and line_geo.index.size > 0:
             self.cimConverter.net.line_geodata = self.cimConverter.net.line_geodata[0:0]
-        self.cimConverter.net.line_geodata = pd.concat([self.cimConverter.net.line_geodata, line_geo[['coords', 'index']].set_index('index')],
-                                          ignore_index=False, sort=False)
+        self.cimConverter.net.line_geodata = pd.concat(
+            [self.cimConverter.net.line_geodata, line_geo[['coords', 'index']].set_index('index')],
+            ignore_index=False, sort=False)
 
         # now create coordinates which are official not supported by pandapower, e.g. for transformer
         for one_ele in ['trafo', 'trafo3w', 'switch', 'ext_grid', 'load', 'sgen', 'gen', 'impedance', 'dcline', 'shunt',

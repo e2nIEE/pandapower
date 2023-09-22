@@ -21,9 +21,10 @@ class GeoCoordinatesFromGLCim16:
     def add_geo_coordinates_from_gl_cim16(self):
         self.logger.info("Creating the geo coordinates from CGMES GeographicalLocation.")
         time_start = time.time()
-        gl_data = pd.merge(self.cimConverter.cim['gl']['PositionPoint'][['Location', 'xPosition', 'yPosition', 'sequenceNumber']],
-                           self.cimConverter.cim['gl']['Location'][['rdfId', 'PowerSystemResources']], how='left',
-                           left_on='Location', right_on='rdfId')
+        gl_data = pd.merge(
+            self.cimConverter.cim['gl']['PositionPoint'][['Location', 'xPosition', 'yPosition', 'sequenceNumber']],
+            self.cimConverter.cim['gl']['Location'][['rdfId', 'PowerSystemResources']], how='left',
+            left_on='Location', right_on='rdfId')
         gl_data.drop(columns=['Location', 'rdfId'], inplace=True)
         bus_geo = gl_data.rename(columns={'PowerSystemResources': 'Substation'})
         cn = self.cimConverter.cim['eq']['ConnectivityNode'][['rdfId', 'ConnectivityNodeContainer']]
@@ -49,14 +50,16 @@ class GeoCoordinatesFromGLCim16:
         bus_geo.drop_duplicates([sc['o_id']], keep='first', inplace=True)
         bus_geo.sort_values(by='index', inplace=True)
         start_index_pp_net = self.cimConverter.net.bus_geodata.index.size
-        self.cimConverter.net.bus_geodata = pd.concat([self.cimConverter.net.bus_geodata, pd.DataFrame(None, index=bus_geo['index'].values)],
-                                         ignore_index=False, sort=False)
+        self.cimConverter.net.bus_geodata = pd.concat(
+            [self.cimConverter.net.bus_geodata, pd.DataFrame(None, index=bus_geo['index'].values)],
+            ignore_index=False, sort=False)
         self.cimConverter.net.bus_geodata.x[start_index_pp_net:] = bus_geo.xPosition[:]
         self.cimConverter.net.bus_geodata.y[start_index_pp_net:] = bus_geo.yPosition[:]
         self.cimConverter.net.bus_geodata.coords[start_index_pp_net:] = bus_geo.coords[:]
         # reduce to max two coordinates for buses (see pandapower documentation for details)
         self.cimConverter.net.bus_geodata['coords_length'] = self.cimConverter.net.bus_geodata['coords'].apply(len)
-        self.cimConverter.net.bus_geodata.loc[self.cimConverter.net.bus_geodata['coords_length'] == 1, 'coords'] = np.nan
+        self.cimConverter.net.bus_geodata.loc[
+            self.cimConverter.net.bus_geodata['coords_length'] == 1, 'coords'] = np.nan
         self.cimConverter.net.bus_geodata['coords'] = self.cimConverter.net.bus_geodata.apply(
             lambda row: [row['coords'][0], row['coords'][-1]] if row['coords_length'] > 2 else row['coords'], axis=1)
         if 'coords_length' in self.cimConverter.net.bus_geodata.columns:
@@ -76,8 +79,9 @@ class GeoCoordinatesFromGLCim16:
         line_geo.sort_values(by='index', inplace=True)
         # now add the line coordinates
         start_index_pp_net = self.cimConverter.net.line_geodata.index.size
-        self.cimConverter.net.line_geodata = pd.concat([self.cimConverter.net.line_geodata, pd.DataFrame(None, index=line_geo['index'].values)],
-                                          ignore_index=False, sort=False)
+        self.cimConverter.net.line_geodata = pd.concat(
+            [self.cimConverter.net.line_geodata, pd.DataFrame(None, index=line_geo['index'].values)],
+            ignore_index=False, sort=False)
         self.cimConverter.net.line_geodata.coords[start_index_pp_net:] = line_geo.coords[:]
 
         # now create geo coordinates which are official not supported by pandapower, e.g. for transformer

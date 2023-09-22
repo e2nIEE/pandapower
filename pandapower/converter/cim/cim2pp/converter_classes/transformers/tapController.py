@@ -36,8 +36,9 @@ class TapController:
             self._create_tap_controller(self.cimConverter.power_trafo3w, 'trafo3w')
             # create the characteristic objects for transformers
             characteristic_df_temp = \
-                self.cimConverter.net['characteristic_temp'][['id_characteristic', 'step', 'vkr_hv_percent', 'vkr_mv_percent',
-                                                 'vkr_lv_percent', 'vk_hv_percent', 'vk_mv_percent', 'vk_lv_percent']]
+                self.cimConverter.net['characteristic_temp'][
+                    ['id_characteristic', 'step', 'vkr_hv_percent', 'vkr_mv_percent',
+                     'vkr_lv_percent', 'vk_hv_percent', 'vk_mv_percent', 'vk_lv_percent']]
             for trafo_id, trafo_row in self.cimConverter.net.trafo3w.dropna(subset=['id_characteristic']).iterrows():
                 characteristic_df = characteristic_df_temp.loc[
                     characteristic_df_temp['id_characteristic'] == trafo_row['id_characteristic']]
@@ -50,15 +51,16 @@ class TapController:
                          'vkr_mv_percent', 'vk_lv_percent', 'vkr_lv_percent']:
             if variable in characteristic_df.columns:
                 pandapower.control.create_trafo_characteristics(net, trafo_type, trafo_id, variable,
-                                                                [list(characteristic_df['step'].values)],
-                                                                [list(characteristic_df[variable].values)])
+                                                                [characteristic_df['step'].to_list()],
+                                                                [characteristic_df[variable].to_list()])
 
     def _create_tap_controller(self, input_df: pd.DataFrame, trafo_type: str):
         if not self.cimConverter.kwargs.get('create_tap_controller', True):
             self.logger.info("Skip creating transformer tap changer controller for transformer type %s." % trafo_type)
             return
         for row_index, row in input_df.loc[input_df['TapChangerControl'].notna()].iterrows():
-            trafo_id = self.cimConverter.net[trafo_type].loc[self.cimConverter.net[trafo_type][sc['o_id']] == row[sc['o_id']]].index.values[0]
+            trafo_id = self.cimConverter.net[trafo_type].loc[
+                self.cimConverter.net[trafo_type][sc['o_id']] == row[sc['o_id']]].index.values[0]
             trafotype = '2W' if trafo_type == 'trafo' else '3W'
             # get the controlled bus (side), assume "lv" as default
             side = 'lv'
