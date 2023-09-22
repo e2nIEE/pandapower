@@ -4,59 +4,13 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import logging
 import time
-from typing import Union, List, Type
+from typing import Union, List, Type, Dict
 import pandapower.auxiliary
 from . import build_pp_net
 from .. import cim_classes
 from .. import interfaces
 
 logger = logging.getLogger('cim.cim2pp.from_cim')
-
-from .converter_classes.connectivitynodes import connectivityNodesCim16
-from .converter_classes.externalnetworks import externalNetworkInjectionsCim16
-from .converter_classes.lines import acLineSegmentsCim16
-from .converter_classes.lines import dcLineSegmentsCim16
-from .converter_classes.switches import switchesCim16
-from .converter_classes.loads import energyConcumersCim16
-from .converter_classes.loads import conformLoadsCim16
-from .converter_classes.loads import nonConformLoadsCim16
-from .converter_classes.loads import stationSuppliesCim16
-from .converter_classes.generators import synchronousMachinesCim16
-from .converter_classes.generators import asynchronousMachinesCim16
-from .converter_classes.generators import energySourcesCim16
-from .converter_classes.shunts import linearShuntCompensatorCim16
-from .converter_classes.shunts import nonLinearShuntCompensatorCim16
-from .converter_classes.shunts import staticVarCompensatorCim16
-from .converter_classes.impedance import equivalentBranchesCim16
-from .converter_classes.impedance import seriesCompensatorsCim16
-from .converter_classes.wards import equivalentInjectionsCim16
-from .converter_classes.transformers import powerTransformersCim16, tapController
-from .converter_classes.coordinates import geoCoordinatesFromGLCim16
-from .converter_classes.coordinates import coordinatesFromDLCim16
-
-converter_classes: dict = {'connectivityNodesCim16': connectivityNodesCim16,
-                           'externalNetworkInjectionsCim16': externalNetworkInjectionsCim16,
-                           'acLineSegmentsCim16': acLineSegmentsCim16,
-                           'dcLineSegmentsCim16': dcLineSegmentsCim16,
-                           'switchesCim16': switchesCim16,
-                           'energyConcumersCim16': energyConcumersCim16,
-                           'conformLoadsCim16': conformLoadsCim16,
-                           'nonConformLoadsCim16': nonConformLoadsCim16,
-                           'stationSuppliesCim16': stationSuppliesCim16,
-                           'synchronousMachinesCim16': synchronousMachinesCim16,
-                           'asynchronousMachinesCim16': asynchronousMachinesCim16,
-                           'energySourcesCim16': energySourcesCim16,
-                           'linearShuntCompensatorCim16': linearShuntCompensatorCim16,
-                           'nonLinearShuntCompensatorCim16': nonLinearShuntCompensatorCim16,
-                           'staticVarCompensatorCim16': staticVarCompensatorCim16,
-                           'equivalentBranchesCim16': equivalentBranchesCim16,
-                           'seriesCompensatorsCim16': seriesCompensatorsCim16,
-                           'equivalentInjectionsCim16': equivalentInjectionsCim16,
-                           'powerTransformersCim16': powerTransformersCim16,
-                           'tapController': tapController,
-                           'geoCoordinatesFromGLCim16': geoCoordinatesFromGLCim16,
-                           'coordinatesFromDLCim16': coordinatesFromDLCim16,
-                           }
 
 
 def from_cim_dict(cim_parser: cim_classes.CimParser, log_debug=False, convert_line_to_switch: bool = False,
@@ -65,6 +19,7 @@ def from_cim_dict(cim_parser: cim_classes.CimParser, log_debug=False, convert_li
                   repair_cim_class: Type[interfaces.CIMRepair] = None,
                   repair_pp: Union[str, interfaces.PandapowerRepair] = None,
                   repair_pp_class: Type[interfaces.PandapowerRepair] = None,
+                  custom_converter_classes: Dict = None,
                   **kwargs) -> pandapower.auxiliary.pandapowerNet:
     """
     Create a pandapower net from a CIM data structure.
@@ -80,8 +35,37 @@ def from_cim_dict(cim_parser: cim_classes.CimParser, log_debug=False, convert_li
     :param repair_cim_class: The CIMRepair class. Optional, default: None
     :param repair_pp: The PandapowerRepair object or a path to its serialized object. Optional, default: None
     :param repair_pp_class: The PandapowerRepair class. Optional, default: None
+    :param custom_converter_classes: Dict to inject classes for different functionality. Optional, default: None
     :return: The pandapower net.
     """
+
+    converter_classes: dict = {
+        'connectivityNodesCim16': pandapower.converter.cim.cim2pp.converter_classes.connectivitynodes.connectivityNodesCim16,
+        'externalNetworkInjectionsCim16': pandapower.converter.cim.cim2pp.converter_classes.externalnetworks.externalNetworkInjectionsCim16,
+        'acLineSegmentsCim16': pandapower.converter.cim.cim2pp.converter_classes.lines.acLineSegmentsCim16,
+        'dcLineSegmentsCim16': pandapower.converter.cim.cim2pp.converter_classes.lines.dcLineSegmentsCim16,
+        'switchesCim16': pandapower.converter.cim.cim2pp.converter_classes.switches.switchesCim16,
+        'energyConcumersCim16': pandapower.converter.cim.cim2pp.converter_classes.loads.energyConcumersCim16,
+        'conformLoadsCim16': pandapower.converter.cim.cim2pp.converter_classes.loads.conformLoadsCim16,
+        'nonConformLoadsCim16': pandapower.converter.cim.cim2pp.converter_classes.loads.nonConformLoadsCim16,
+        'stationSuppliesCim16': pandapower.converter.cim.cim2pp.converter_classes.loads.stationSuppliesCim16,
+        'synchronousMachinesCim16': pandapower.converter.cim.cim2pp.converter_classes.generators.synchronousMachinesCim16,
+        'asynchronousMachinesCim16': pandapower.converter.cim.cim2pp.converter_classes.generators.asynchronousMachinesCim16,
+        'energySourcesCim16': pandapower.converter.cim.cim2pp.converter_classes.generators.energySourcesCim16,
+        'linearShuntCompensatorCim16': pandapower.converter.cim.cim2pp.converter_classes.shunts.linearShuntCompensatorCim16,
+        'nonLinearShuntCompensatorCim16': pandapower.converter.cim.cim2pp.converter_classes.shunts.nonLinearShuntCompensatorCim16,
+        'staticVarCompensatorCim16': pandapower.converter.cim.cim2pp.converter_classes.shunts.staticVarCompensatorCim16,
+        'equivalentBranchesCim16': pandapower.converter.cim.cim2pp.converter_classes.impedance.equivalentBranchesCim16,
+        'seriesCompensatorsCim16': pandapower.converter.cim.cim2pp.converter_classes.impedance.seriesCompensatorsCim16,
+        'equivalentInjectionsCim16': pandapower.converter.cim.cim2pp.converter_classes.wards.equivalentInjectionsCim16,
+        'powerTransformersCim16': pandapower.converter.cim.cim2pp.converter_classes.transformers.powerTransformersCim16,
+        'tapController': pandapower.converter.cim.cim2pp.converter_classes.transformers.tapController,
+        'geoCoordinatesFromGLCim16': pandapower.converter.cim.cim2pp.converter_classes.coordinates.geoCoordinatesFromGLCim16,
+        'coordinatesFromDLCim16': pandapower.converter.cim.cim2pp.converter_classes.coordinates.coordinatesFromDLCim16,
+    }
+    if custom_converter_classes is not None:
+        for key in custom_converter_classes:
+            converter_classes[key] = custom_converter_classes.get(key)
 
     # repair the input CIM data
     if repair_cim is not None and repair_cim_class is not None:
