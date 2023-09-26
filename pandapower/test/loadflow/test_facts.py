@@ -863,6 +863,7 @@ def test_vsc_hvdc():
     runpp_with_consistency_checks(net)
 
 
+
 def test_vsc_multiterminal_hvdc():
     net = pp.create_empty_network()
     # AC part
@@ -886,6 +887,69 @@ def test_vsc_multiterminal_hvdc():
     pp.create_line_dc_from_parameters(net, 1, 2, 100, 0.1, 1)
     pp.create_line_dc_from_parameters(net, 1, 3, 100, 0.1, 1)
     pp.create_line_dc_from_parameters(net, 1, 4, 100, 0.1, 1)
+
+    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_dc="vm_pu", control_value_dc=1.02)
+    pp.create_vsc(net, 2, 2, 0.1, 5, control_value_dc=5)
+    pp.create_vsc(net, 4, 3, 0.1, 5, control_value_dc=15)
+    pp.create_vsc(net, 3, 4, 0.1, 5, control_mode_dc="vm_pu", control_value_dc=1.02)
+
+    runpp_with_consistency_checks(net)
+
+
+def test_line_dc_bus_dc_structures():
+    net = pp.create_empty_network()
+    # AC part
+    pp.create_buses(net, 3, 110)
+    pp.create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
+    pp.create_line_from_parameters(net, 0, 2, 30, 0.0487, 0.13823, 160, 0.664)
+
+    pp.create_ext_grid(net, 0)
+    pp.create_load(net, 2, 10)
+
+    pp.runpp(net)
+
+    # DC part
+    ## bus structure 1
+    # pp.create_bus_dc(net, 110, 'A')
+    # pp.create_bus_dc(net, 110, 'B')
+    ## bus structure 2
+    pp.create_buses_dc(net,2,110)
+
+
+    ## line structure 1
+    # pp.create_line_dc_from_parameters(net, 0, 1, 100, 0.1, 1)
+
+    ## line structure 2
+    pp.create_line_dc(net,0,1,100,std_type="2400-CU")
+
+    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_dc="vm_pu", control_value_dc=1.02)
+    pp.create_vsc(net, 2, 1, 0.1, 5, control_value_dc=5)
+
+    runpp_with_consistency_checks(net)
+
+
+    net = pp.create_empty_network()
+    # AC part
+    pp.create_buses(net, 5, 110, geodata=((0, 50), (50, 100), (200, 100), (50, 0), (200, 0)))
+    pp.create_lines_from_parameters(net,[0,1,0,1,3],[1,2,3,3,4],30,0.0487, 0.13823, 160, 0.664)
+
+    pp.create_ext_grid(net, 0)
+    pp.create_load(net, 2, 10)
+
+    # DC part
+    pp.create_bus_dc(net, 320, 'A', geodata=(50, 100))
+    pp.create_bus_dc(net, 320, 'B', geodata=(200, 50))
+    pp.create_bus_dc(net, 320, 'C', geodata=(200, 100))
+    pp.create_bus_dc(net, 320, 'D', geodata=(200, 0))
+    pp.create_bus_dc(net, 320, 'E', geodata=(50, 0))
+
+    ## line structure 3
+    # pp.create_lines_dc_from_parameters(net,[0,1,1,1],[1,2,3,4],100,0.01,1)
+    # pp.create_lines_from_parameters()
+    ## line structure 4
+    pp.create_lines_dc(net,[0,1,1,1],[1,2,3,4],100,std_type="2400-CU")
+
+
 
     pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_dc="vm_pu", control_value_dc=1.02)
     pp.create_vsc(net, 2, 2, 0.1, 5, control_value_dc=5)
