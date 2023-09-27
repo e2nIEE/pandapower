@@ -105,7 +105,6 @@ def create_std_types(net, data, element="line", overwrite=True, check_required=T
 
     INPUT:
         **net** - The pandapower network
-
         **data** - dictionary of standard type parameter sets
 
         **element** - "line", "trafo" or "trafo3w"
@@ -222,7 +221,7 @@ def available_std_types(net, element="line"):
             return std_types.convert_objects()
 
 
-def parameter_from_std_type(net, parameter, element="line", fill=None):
+def parameter_from_std_type(net, parameter, element="line",fill=None):
     """
     Loads standard types data for a parameter, which can be used to add an additional parameter,
     that is not included in the original pandapower datastructure but is available in the standard
@@ -299,8 +298,8 @@ def find_std_type_by_parameter(net, data, element="line", epsilon=0.):
     OUTPUT:
         **fitting_types** - list of fitting types or empty list
     """
-    assert epsilon >= 0
     fitting_types = []
+    assert epsilon >= 0
     for name, stp in net.std_types[element].items():
         for p, v in list(data.items()):
             if isinstance(v, float):
@@ -312,6 +311,43 @@ def find_std_type_by_parameter(net, data, element="line", epsilon=0.):
             fitting_types.append(name)
     return fitting_types
 
+def find_std_type_alternative(net, data, element = "line", voltage_rating = "", epsilon = 0.):
+    """
+        Searches for a std_type that fits all values given in the standard types library with the margin of
+        epsilon.
+
+        INPUT:
+            **net** - pandapower network
+
+            **data** - dictionary of standard type parameters
+
+            **element** - type of element ("line" or "trafo")
+
+            **voltage_rating** - voltage rating of the cable ("HV" or "MV" or "LV")
+
+            **epsilon** - tolerance margin for parameter comparison
+
+        OUTPUT:
+            **fitting_types** - list of fitting types or empty list
+        """
+
+    assert epsilon >= 0
+    linetypes = basic_line_std_types()
+    possible_alternatives = []
+    fitting_types = []
+    for p, v in linetypes.items():
+        if voltage_rating == v.get("voltage_rating"):
+            possible_alternatives.append((p, v))
+    for name, stp in possible_alternatives:
+        for p, v in list(data.items()):
+            if isinstance(v, float):
+                if abs(v - stp[p]) > epsilon:
+                    break
+            elif stp[p] != v:
+                break
+        else:
+            fitting_types.append(name)
+    return fitting_types
 
 def add_zero_impedance_parameters(net):
     """
@@ -378,7 +414,8 @@ def basic_line_std_types():
             "max_i_ka": 0.142,
             "type": "cs",
             "q_mm2": 50,
-            "alpha": alpha_al},
+            "alpha": alpha_al,
+            "voltage_rating": "LV"},
         "NAYY 4x120 SE":
         {"c_nf_per_km": 264,
             "r_ohm_per_km": 0.225,
@@ -386,7 +423,8 @@ def basic_line_std_types():
             "max_i_ka": 0.242,
             "type": "cs",
             "q_mm2": 120,
-            "alpha": alpha_al},
+            "alpha": alpha_al,
+         "voltage_rating": "LV"},
         "NAYY 4x150 SE":
         {"c_nf_per_km": 261,
             "r_ohm_per_km": 0.208,
@@ -394,7 +432,8 @@ def basic_line_std_types():
             "max_i_ka": 0.270,
             "type": "cs",
             "q_mm2": 150,
-            "alpha": alpha_al},
+            "alpha": alpha_al,
+         "voltage_rating": "LV"},
 
         # Medium Voltage
         "NA2XS2Y 1x95 RM/25 12/20 kV":
@@ -404,7 +443,8 @@ def basic_line_std_types():
             "max_i_ka": 0.252,
             "type": "cs",
             "q_mm2": 95,
-            "alpha": alpha_al},
+            "alpha": alpha_al,
+         "voltage_rating": "MV"},
         "NA2XS2Y 1x185 RM/25 12/20 kV":
         {"c_nf_per_km": 273,
             "r_ohm_per_km": 0.161,
@@ -412,7 +452,8 @@ def basic_line_std_types():
             "max_i_ka": 0.362,
             "type": "cs",
             "q_mm2": 185,
-            "alpha": alpha_al},
+            "alpha": alpha_al,
+         "voltage_rating": "MV"},
         "NA2XS2Y 1x240 RM/25 12/20 kV":
         {"c_nf_per_km": 304,
             "r_ohm_per_km": 0.122,
@@ -420,7 +461,8 @@ def basic_line_std_types():
             "max_i_ka": 0.421,
             "type": "cs",
             "q_mm2": 240,
-            "alpha": alpha_al},
+            "alpha": alpha_al,
+         "voltage_rating": "MV"},
         "NA2XS2Y 1x95 RM/25 6/10 kV":
         {"c_nf_per_km": 315,
             "r_ohm_per_km": 0.313,
@@ -428,7 +470,8 @@ def basic_line_std_types():
             "max_i_ka": 0.249,
             "type": "cs",
             "q_mm2": 95,
-            "alpha": alpha_al},
+            "alpha": alpha_al,
+         "voltage_rating": "MV"},
         "NA2XS2Y 1x185 RM/25 6/10 kV":
         {"c_nf_per_km": 406,
             "r_ohm_per_km": 0.161,
@@ -436,7 +479,8 @@ def basic_line_std_types():
             "max_i_ka": 0.358,
             "type": "cs",
             "q_mm2": 185,
-            "alpha": alpha_al},
+            "alpha": alpha_al,
+         "voltage_rating": "MV"},
         "NA2XS2Y 1x240 RM/25 6/10 kV":
         {"c_nf_per_km": 456,
             "r_ohm_per_km": 0.122,
@@ -444,7 +488,8 @@ def basic_line_std_types():
             "max_i_ka": 0.416,
             "type": "cs",
             "q_mm2": 240,
-            "alpha": alpha_al},
+            "alpha": alpha_al,
+         "voltage_rating": "MV"},
         # additional MV cables
         "NA2XS2Y 1x150 RM/25 12/20 kV":
         {"c_nf_per_km": 250,
@@ -453,7 +498,8 @@ def basic_line_std_types():
             "max_i_ka": 0.319,
             "type": "cs",
             "q_mm2": 150,
-            "alpha": alpha_al},
+            "alpha": alpha_al,
+         "voltage_rating": "MV"},
         "NA2XS2Y 1x120 RM/25 12/20 kV":
         {"c_nf_per_km": 230,
             "r_ohm_per_km": 0.253,
@@ -461,7 +507,8 @@ def basic_line_std_types():
             "max_i_ka": 0.283,
             "type": "cs",
             "q_mm2": 120,
-            "alpha": alpha_al},
+            "alpha": alpha_al,
+         "voltage_rating": "MV"},
         "NA2XS2Y 1x70 RM/25 12/20 kV":
         {"c_nf_per_km": 190,
             "r_ohm_per_km": 0.443,
@@ -469,7 +516,8 @@ def basic_line_std_types():
             "max_i_ka": 0.220,
             "type": "cs",
             "q_mm2": 70,
-            "alpha": alpha_al},
+            "alpha": alpha_al,
+         "voltage_rating": "MV"},
         "NA2XS2Y 1x150 RM/25 6/10 kV":
         {"c_nf_per_km": 360,
             "r_ohm_per_km": 0.206,
@@ -477,7 +525,8 @@ def basic_line_std_types():
             "max_i_ka": 0.315,
             "type": "cs",
             "q_mm2": 150,
-            "alpha": alpha_al},
+            "alpha": alpha_al,
+         "voltage_rating": "MV"},
         "NA2XS2Y 1x120 RM/25 6/10 kV":
         {"c_nf_per_km": 340,
             "r_ohm_per_km": 0.253,
@@ -485,7 +534,8 @@ def basic_line_std_types():
             "max_i_ka": 0.280,
             "type": "cs",
             "q_mm2": 120,
-            "alpha": alpha_al},
+            "alpha": alpha_al,
+         "voltage_rating": "MV"},
         "NA2XS2Y 1x70 RM/25 6/10 kV":
         {"c_nf_per_km": 280,
             "r_ohm_per_km": 0.443,
@@ -493,7 +543,8 @@ def basic_line_std_types():
             "max_i_ka": 0.217,
             "type": "cs",
             "q_mm2": 70,
-            "alpha": alpha_al},
+            "alpha": alpha_al,
+         "voltage_rating": "MV"},
 
         # High Voltage
         "N2XS(FL)2Y 1x120 RM/35 64/110 kV":
@@ -503,7 +554,8 @@ def basic_line_std_types():
             "max_i_ka": 0.366,
             "type": "cs",
             "q_mm2": 120,
-            "alpha": alpha_cu},
+            "alpha": alpha_cu,
+         "voltage_rating": "HV"},
         "N2XS(FL)2Y 1x185 RM/35 64/110 kV":
         {"c_nf_per_km": 125,
             "r_ohm_per_km": 0.099,
@@ -511,7 +563,8 @@ def basic_line_std_types():
             "max_i_ka": 0.457,
             "type": "cs",
             "q_mm2": 185,
-            "alpha": alpha_cu},
+            "alpha": alpha_cu,
+         "voltage_rating": "HV"},
         "N2XS(FL)2Y 1x240 RM/35 64/110 kV":
         {"c_nf_per_km": 135,
             "r_ohm_per_km": 0.075,
@@ -519,7 +572,8 @@ def basic_line_std_types():
             "max_i_ka": 0.526,
             "type": "cs",
             "q_mm2": 240,
-            "alpha": alpha_cu},
+            "alpha": alpha_cu,
+         "voltage_rating": "HV"},
         "N2XS(FL)2Y 1x300 RM/35 64/110 kV":
         {"c_nf_per_km": 144,
             "r_ohm_per_km": 0.060,
@@ -527,7 +581,8 @@ def basic_line_std_types():
             "max_i_ka": 0.588,
             "type": "cs",
             "q_mm2": 300,
-            "alpha": alpha_cu},
+            "alpha": alpha_cu,
+         "voltage_rating": "HV"},
 
         # Overhead Lines, all from S.742f, Heuck: Elektrische Energieversorgung -
         # Vierweg+Teubner 2013
@@ -541,7 +596,8 @@ def basic_line_std_types():
             "max_i_ka": 0.105,
             "type": "ol",
             "q_mm2": 16,
-            "alpha": alpha_al},
+            "alpha": alpha_al,
+         "voltage_rating": "LV"},
         "24-AL1/4-ST1A 0.4":
         {"c_nf_per_km": 11.25,
             "r_ohm_per_km": 1.2012,
@@ -549,7 +605,8 @@ def basic_line_std_types():
             "max_i_ka": 0.140,
             "type": "ol",
             "q_mm2": 24,
-            "alpha": alpha_al},
+            "alpha": alpha_al,
+         "voltage_rating": "LV"},
         "48-AL1/8-ST1A 0.4":
         {"c_nf_per_km": 12.2,
             "r_ohm_per_km": 0.5939,
@@ -557,7 +614,8 @@ def basic_line_std_types():
             "max_i_ka": .210,
             "type": "ol",
             "q_mm2": 48,
-            "alpha": alpha_al},
+            "alpha": alpha_al,
+         "voltage_rating": "LV"},
         "94-AL1/15-ST1A 0.4":
         {"c_nf_per_km": 13.2,
             "r_ohm_per_km": 0.3060,
@@ -565,7 +623,8 @@ def basic_line_std_types():
             "max_i_ka": 0.350,
             "type": "ol",
             "q_mm2": 94,
-            "alpha": alpha_al},
+            "alpha": alpha_al,
+         "voltage_rating": "LV"},
 
         # Medium Voltage
         "34-AL1/6-ST1A 10.0":
@@ -575,7 +634,8 @@ def basic_line_std_types():
             "max_i_ka": 0.170,
             "type": "ol",
             "q_mm2": 34,
-            "alpha": alpha_al},
+            "alpha": alpha_al,
+         "voltage_rating": "MV"},
         "48-AL1/8-ST1A 10.0":
         {"c_nf_per_km": 10.1,
             "r_ohm_per_km": 0.5939,
@@ -583,7 +643,8 @@ def basic_line_std_types():
             "max_i_ka": 0.210,
             "type": "ol",
             "q_mm2": 48,
-            "alpha": alpha_al},
+            "alpha": alpha_al,
+         "voltage_rating": "MV"},
         "70-AL1/11-ST1A 10.0":
         {"c_nf_per_km": 10.4,
             "r_ohm_per_km": 0.4132,
@@ -591,7 +652,8 @@ def basic_line_std_types():
             "max_i_ka": 0.290,
             "type": "ol",
             "q_mm2": 70,
-            "alpha": alpha_al},
+            "alpha": alpha_al,
+         "voltage_rating": "MV"},
         "94-AL1/15-ST1A 10.0":
         {"c_nf_per_km": 10.75,
             "r_ohm_per_km": 0.3060,
@@ -599,7 +661,8 @@ def basic_line_std_types():
             "max_i_ka": 0.350,
             "type": "ol",
             "q_mm2": 94,
-            "alpha": alpha_al},
+            "alpha": alpha_al,
+         "voltage_rating": "MV"},
         "122-AL1/20-ST1A 10.0":
         {"c_nf_per_km": 11.1,
             "r_ohm_per_km": 0.2376,
@@ -607,7 +670,8 @@ def basic_line_std_types():
             "max_i_ka": 0.410,
             "type": "ol",
             "q_mm2": 122,
-            "alpha": alpha_al},
+            "alpha": alpha_al,
+         "voltage_rating": "MV"},
         "149-AL1/24-ST1A 10.0":
         {"c_nf_per_km": 11.25,
             "r_ohm_per_km": 0.1940,
@@ -615,7 +679,8 @@ def basic_line_std_types():
             "max_i_ka": 0.470,
             "type": "ol",
             "q_mm2": 149,
-            "alpha": alpha_al},
+            "alpha": alpha_al,
+         "voltage_rating": "MV"},
         "34-AL1/6-ST1A 20.0":
         {"c_nf_per_km": 9.15,
             "r_ohm_per_km": 0.8342,
@@ -623,7 +688,8 @@ def basic_line_std_types():
             "max_i_ka": 0.170,
             "type": "ol",
             "q_mm2": 34,
-            "alpha": alpha_al},
+            "alpha": alpha_al,
+         "voltage_rating": "MV"},
         "48-AL1/8-ST1A 20.0":
         {"c_nf_per_km": 9.5,
             "r_ohm_per_km": 0.5939,
@@ -631,7 +697,8 @@ def basic_line_std_types():
             "max_i_ka": 0.210,
             "type": "ol",
             "q_mm2": 48,
-            "alpha": alpha_al},
+            "alpha": alpha_al,
+         "voltage_rating": "MV"},
         "70-AL1/11-ST1A 20.0":
         {"c_nf_per_km": 9.7,
             "r_ohm_per_km": 0.4132,
@@ -639,7 +706,8 @@ def basic_line_std_types():
             "max_i_ka": 0.290,
             "type": "ol",
             "q_mm2": 70,
-            "alpha": alpha_al},
+            "alpha": alpha_al,
+         "voltage_rating": "MV"},
         "94-AL1/15-ST1A 20.0":
         {"c_nf_per_km": 10,
             "r_ohm_per_km": 0.3060,
@@ -647,7 +715,8 @@ def basic_line_std_types():
             "max_i_ka": 0.350,
             "type": "ol",
             "q_mm2": 94,
-            "alpha": alpha_al},
+            "alpha": alpha_al,
+         "voltage_rating": "MV"},
         "122-AL1/20-ST1A 20.0":
         {"c_nf_per_km": 10.3,
             "r_ohm_per_km": 0.2376,
@@ -655,7 +724,8 @@ def basic_line_std_types():
             "max_i_ka": 0.410,
             "type": "ol",
             "q_mm2": 122,
-            "alpha": alpha_al},
+            "alpha": alpha_al,
+         "voltage_rating": "MV"},
         "149-AL1/24-ST1A 20.0":
         {"c_nf_per_km": 10.5,
             "r_ohm_per_km": 0.1940,
@@ -663,7 +733,8 @@ def basic_line_std_types():
             "max_i_ka": 0.470,
             "type": "ol",
             "q_mm2": 149,
-            "alpha": alpha_al},
+            "alpha": alpha_al,
+         "voltage_rating": "MV"},
         "184-AL1/30-ST1A 20.0":
         {"c_nf_per_km": 10.75,
             "r_ohm_per_km": 0.1571,
@@ -671,7 +742,8 @@ def basic_line_std_types():
             "max_i_ka": 0.535,
             "type": "ol",
             "q_mm2": 184,
-            "alpha": alpha_al},
+            "alpha": alpha_al,
+         "voltage_rating": "MV"},
         "243-AL1/39-ST1A 20.0":
         {"c_nf_per_km": 11,
             "r_ohm_per_km": 0.1188,
@@ -679,7 +751,8 @@ def basic_line_std_types():
             "max_i_ka": 0.645,
             "type": "ol",
             "q_mm2": 243,
-            "alpha": alpha_al},
+            "alpha": alpha_al,
+         "voltage_rating": "MV"},
 
         # High Voltage
         # c acd x values are estimated for 4 m conductor distance, single bundle and "Donaumast"
@@ -690,7 +763,8 @@ def basic_line_std_types():
             "max_i_ka": 0.210,
             "type": "ol",
             "q_mm2": 48,
-            "alpha": alpha_al},
+            "alpha": alpha_al,
+         "voltage_rating": "HV"},
         "70-AL1/11-ST1A 110.0":
         {"c_nf_per_km": 8.4,
             "r_ohm_per_km": 0.4132,
@@ -698,7 +772,8 @@ def basic_line_std_types():
             "max_i_ka": 0.290,
             "type": "ol",
             "q_mm2": 70,
-            "alpha": alpha_al},
+            "alpha": alpha_al,
+         "voltage_rating": "HV"},
         "94-AL1/15-ST1A 110.0":
         {"c_nf_per_km": 8.65,
             "r_ohm_per_km": 0.3060,
@@ -706,7 +781,8 @@ def basic_line_std_types():
             "max_i_ka": 0.350,
             "type": "ol",
             "q_mm2": 94,
-            "alpha": alpha_al},
+            "alpha": alpha_al,
+         "voltage_rating": "HV"},
         "122-AL1/20-ST1A 110.0":
         {"c_nf_per_km": 8.5,
             "r_ohm_per_km": 0.2376,
@@ -714,7 +790,8 @@ def basic_line_std_types():
             "max_i_ka": 0.410,
             "type": "ol",
             "q_mm2": 122,
-            "alpha": alpha_al},
+            "alpha": alpha_al,
+         "voltage_rating": "HV"},
         "149-AL1/24-ST1A 110.0":
         {"c_nf_per_km": 8.75,
             "r_ohm_per_km": 0.1940,
@@ -722,7 +799,8 @@ def basic_line_std_types():
             "max_i_ka": 0.470,
             "type": "ol",
             "q_mm2": 149,
-            "alpha": alpha_al},
+            "alpha": alpha_al,
+         "voltage_rating": "HV"},
         "184-AL1/30-ST1A 110.0":
         {"c_nf_per_km": 8.8,
             "r_ohm_per_km": 0.1571,
@@ -730,7 +808,8 @@ def basic_line_std_types():
             "max_i_ka": 0.535,
             "type": "ol",
             "q_mm2": 184,
-            "alpha": alpha_al},
+            "alpha": alpha_al,
+         "voltage_rating": "HV"},
         "243-AL1/39-ST1A 110.0":
         {"c_nf_per_km": 9,
             "r_ohm_per_km": 0.1188,
@@ -738,7 +817,8 @@ def basic_line_std_types():
             "max_i_ka": 0.645,
             "type": "ol",
             "q_mm2": 243,
-            "alpha": alpha_al},
+            "alpha": alpha_al,
+         "voltage_rating": "HV"},
         "305-AL1/39-ST1A 110.0":
         {"c_nf_per_km": 9.2,
             "r_ohm_per_km": 0.0949,
@@ -746,7 +826,8 @@ def basic_line_std_types():
             "max_i_ka": 0.74,
             "type": "ol",
             "q_mm2": 305,
-            "alpha": alpha_al},
+            "alpha": alpha_al,
+         "voltage_rating": "HV"},
         "490-AL1/64-ST1A 110.0":
         {"c_nf_per_km": 9.75,
             "r_ohm_per_km": 0.059,
@@ -754,7 +835,8 @@ def basic_line_std_types():
             "max_i_ka": 0.960,
             "type": "ol",
             "q_mm2": 490,
-            "alpha": alpha_al},
+            "alpha": alpha_al,
+         "voltage_rating": "HV"},
         "679-AL1/86-ST1A 110.0":
         {"c_nf_per_km": 9.95,
             "r_ohm_per_km": 0.042,
@@ -762,7 +844,8 @@ def basic_line_std_types():
             "max_i_ka": 1.150,
             "type": "ol",
             "q_mm2": 679,
-            "alpha": alpha_al},
+            "alpha": alpha_al,
+         "voltage_rating": "HV"},
 
         # Transmission System
         # The following values of c and x depend on the geometries of the  overhead line
@@ -775,7 +858,8 @@ def basic_line_std_types():
          "max_i_ka": 0.96,
          "type": "ol",
          "q_mm2": 490,
-         "alpha": alpha_al},
+         "alpha": alpha_al,
+         "voltage_rating": "HV"},
         "679-AL1/86-ST1A 220.0":
         {"c_nf_per_km": 11.7,
          "r_ohm_per_km": 0.042,
@@ -783,7 +867,8 @@ def basic_line_std_types():
          "max_i_ka": 1.150,
          "type": "ol",
          "q_mm2": 679,
-         "alpha": alpha_al},
+         "alpha": alpha_al,
+         "voltage_rating": "HV"},
         "490-AL1/64-ST1A 380.0":
         {"c_nf_per_km": 11,
          "r_ohm_per_km": 0.059,
@@ -791,7 +876,8 @@ def basic_line_std_types():
          "max_i_ka": 0.96,
          "type": "ol",
          "q_mm2": 490,
-         "alpha": alpha_al},
+         "alpha": alpha_al,
+         "voltage_rating": "HV"},
         "679-AL1/86-ST1A 380.0":
         {"c_nf_per_km": 14.6,
          "r_ohm_per_km": 0.042,
@@ -799,7 +885,8 @@ def basic_line_std_types():
          "max_i_ka": 1.150,
          "type": "ol",
          "q_mm2": 679,
-         "alpha": alpha_al}
+         "alpha": alpha_al,
+         "voltage_rating": "HV"}
     }
     return linetypes
 
@@ -1147,3 +1234,4 @@ def add_basic_std_types(net):
     create_std_types(net, data=trafotypes, element="trafo")
     create_std_types(net, data=trafo3wtypes, element="trafo3w")
     return linetypes, trafotypes, trafo3wtypes
+
