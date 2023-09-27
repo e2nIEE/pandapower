@@ -124,7 +124,7 @@ def get_index_array(indices, net_table_indices):
 
 
 def coords_from_node_geodata(element_indices, from_nodes, to_nodes, node_geodata, table_name,
-                             node_name="Bus", ignore_zero_length=True, replace_missing_coords=False):
+                             node_name="Bus", ignore_zero_length=True):
     """
     Auxiliary function to get the node coordinates for a number of branches with respective from
     and to nodes. The branch elements for which there is no geodata available are not included in
@@ -144,7 +144,6 @@ def coords_from_node_geodata(element_indices, from_nodes, to_nodes, node_geodata
     :type node_name: str, default "Bus"
     :param ignore_zero_length: States if branches should be left out, if their length is zero, i.e.\
         from_node_coords = to_node_coords
-    :param replace_missing_coords: States when no coords are available, they will be replaced with the geometric mean
     :type ignore_zero_length: bool, default True
     :return: Return values are:\
         - coords (list) - list of branch coordinates of shape (N, (2, 2))\
@@ -157,30 +156,9 @@ def coords_from_node_geodata(element_indices, from_nodes, to_nodes, node_geodata
     fb_with_geo, tb_with_geo = from_nodes[have_geo], to_nodes[have_geo]
     elements_without_geo = set(element_indices) - set(elements_with_geo)
 
-    if replace_missing_coords:
-        a = np.log(node_geodata.loc[fb_with_geo, ["x"]])
-        b = np.log(node_geodata.loc[fb_with_geo, ["y"]])
-        replacement_x = np.exp(a.mean()).values[0]
-        replacement_y = np.exp(b.mean()).values[0]
-        max_i = max(max(from_nodes), max(to_nodes)) + 1
-
-        ng = pd.DataFrame(index=range(max_i), columns=node_geodata.columns)
-        ng.loc[from_nodes[have_geo]] = node_geodata.loc[from_nodes[have_geo]]
-        ng.loc[to_nodes[have_geo]] = node_geodata.loc[to_nodes[have_geo]]
-        ng['x'] = ng['x'].fillna(replacement_x)
-        ng['y'] = ng['y'].fillna(replacement_y)
-
-        fb_with_geo = from_nodes
-        tb_with_geo = to_nodes
-
-        logger.warning("Replacing coords for %s" % (len(elements_without_geo)))
-        elements_with_geo = np.array(element_indices)
-    else:
-        ng = node_geodata
-
     coords = [[(x_from, y_from), (x_to, y_to)] for x_from, y_from, x_to, y_to
-              in np.concatenate([ng.loc[fb_with_geo, ["x", "y"]].values,
-                                 ng.loc[tb_with_geo, ["x", "y"]].values], axis=1)
+              in np.concatenate([node_geodata.loc[fb_with_geo, ["x", "y"]].values,
+                                 node_geodata.loc[tb_with_geo, ["x", "y"]].values], axis=1)
               if not ignore_zero_length or not (x_from == x_to and y_from == y_to)]
 
     if len(elements_without_geo) > 0:
@@ -189,13 +167,14 @@ def coords_from_node_geodata(element_indices, from_nodes, to_nodes, node_geodata
     return coords, elements_with_geo
 
 
-def set_line_geodata_from_bus_geodata(net, line_index=None, overwrite=False, replace_missing_coords=False, ignore_zero_length=True):
+def set_line_geodata_from_bus_geodata(net, line_index=None, overwrite=False, ignore_zero_length=True):
     """
     Sets coordinates in net.line_geodata based on the from_bus and to_bus x,y coordinates
     in net.bus_geodata
     :param net: pandapowerNet
     :param line_index: index of lines, coordinates of which will be set from bus geodata (all lines if None)
     :param overwrite: whether the existing coordinates in net.line_geodata must be overwritten
+    :param ignore_zero_length: whether lines with no length will be ignored.
     :return: None
     """
     line_index = line_index if line_index is not None else net.line.index
@@ -208,7 +187,6 @@ def set_line_geodata_from_bus_geodata(net, line_index=None, overwrite=False, rep
                                                              node_geodata=net.bus_geodata,
                                                              table_name="line_geodata",
                                                              node_name="bus_geodata",
-                                                             replace_missing_coords=replace_missing_coords,
                                                              ignore_zero_length=ignore_zero_length)
 
     net.line_geodata = net.line_geodata.reindex(net.line.index)
