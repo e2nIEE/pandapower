@@ -191,5 +191,35 @@ def test_dump_to_geojson():
     assert isinstance(result, FeatureCollection)
     assert dumps(result) == '{"type": "FeatureCollection", "features": [{"type": "Feature", "id": 0, "geometry": {"type": "LineString", "coordinates": [[1, 2], [3, 4]]}, "properties": {"pp_type": "line", "pp_index": 0, "name": "line1", "std_type": "None", "from_bus": 1.0, "to_bus": 7.0, "length_km": 1.0, "r_ohm_per_km": 0.2067, "x_ohm_per_km": 0.1897522, "c_nf_per_km": 720.0, "g_us_per_km": 0.0, "max_i_ka": 0.328, "df": 1.0, "parallel": 1.0, "type": "None", "in_service": 1.0, "ices": 0.389985}}]}'
 
+
+def test_convert_geodata_to_geojson():
+    pytest.importorskip("geojson")
+    pytest.importorskip("pandapower")
+    import pandapower as pp
+    import geojson
+    # Erstelle ein Beispielnetzwerk
+    net = pp.create_empty_network()
+
+    # Füge Busse hinzu
+    pp.create_bus(net, 0, geodata=(10, 20))
+    pp.create_bus(net, 1, geodata=(30, 40))
+
+    # Füge Leitungen hinzu
+    pp.create_line(net, 0, 1, 1, std_type="NAYY 4x50 SE", geodata=[(10, 20), (30, 40)])
+
+    # Rufe die Funktion zum Konvertieren auf
+    geo.convert_geodata_to_geojson(net)
+
+    # Überprüfe die Ergebnisse
+    assert geojson.loads(net.bus.at[0, "geo"]) == geojson.Point((20.0, 10.0))
+    assert geojson.loads(net.bus.at[1, "geo"]) == geojson.Point((40.0, 30.0))
+    assert geojson.loads(net.line.at[0, "geo"]) == geojson.LineString([(20.0, 10.0), (40.0, 30.0)])
+    #TODO: Test could be more exhaustive (e.g. test delete=False, lonlat=True, geo_str=False)
+
+def test_convert_gis_to_geojson():
+    # TODO: implement
+    pytest.skip("Not implemented")
+
+
 if __name__ == "__main__":
     pytest.main(["test_geo.py"])
