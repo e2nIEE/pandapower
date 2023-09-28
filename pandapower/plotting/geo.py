@@ -316,6 +316,7 @@ def dump_to_geojson(
         logger.warning(e)
         return geojson.FeatureCollection([])
 
+    missing_geom = 0
     features = []
     # build geojson features for nodes
     if nodes:
@@ -349,7 +350,7 @@ def dump_to_geojson(
             iterator = node_geodata.loc[nodes].items()
         for ind, geom in iterator:
             if geom is None or geom == "[]":
-                # TODO: warn users about items with missing geometries
+                missing_geom += 1
                 continue
             uid = f"bus-{ind}" if is_pandapower else f"junction-{ind}"
             if type(geom) == str:
@@ -392,12 +393,15 @@ def dump_to_geojson(
             iterator = branch_geodata.loc[branches].items()
         for ind, geom in iterator:
             if geom is None or geom == "[]":
-                # TODO: warn users about items with missing geometries
+                missing_geom += 1
                 continue
             uid = f"line-{ind}" if is_pandapower else f"pipe-{ind}"
             if type(geom):
                 geom = geojson.loads(geom)
             features.append(geojson.Feature(geometry=geom, id=uid, properties=props[uid]))
+
+    if missing_geom:
+        logger.warning(f"{missing_geom} geometries could not be converted to geojson. Please update network geodata!")
 
     # find and set crs if available
     crs_node = None

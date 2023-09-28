@@ -175,7 +175,6 @@ def test_dump_to_geojson():
 
     # test exporting branches
     result = geo.dump_to_geojson(net, branches=True)
-    print(result)
     assert isinstance(result, FeatureCollection)
     assert dumps(result, sort_keys=True) == '{"features": [{"geometry": {"coordinates": [[1, 2], [3, 4]], "type": "LineString"}, "id": "line-0", "properties": {"c_nf_per_km": 720.0, "df": 1.0, "from_bus": 1.0, "g_us_per_km": 0.0, "ices": 0.389985, "in_service": 1.0, "length_km": 1.0, "max_i_ka": 0.328, "name": "line1", "parallel": 1.0, "pp_index": 0, "pp_type": "line", "r_ohm_per_km": 0.2067, "std_type": "None", "to_bus": 7.0, "type": "None", "x_ohm_per_km": 0.1897522}, "type": "Feature"}], "type": "FeatureCollection"}'
 
