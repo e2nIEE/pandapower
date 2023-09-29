@@ -490,7 +490,7 @@ def convert_geodata_to_geojson(
                 coords.append(geo_ldf.loc[l_id].coords)
             coords.append((float(to_coords.x), float(to_coords.y)))
         else:
-            coords: List[List[float]] = [[y, x] if lonlat else [x, y] for x, y in geo_ldf.coords.at[l_id].tolist()]
+            coords: List[List[float]] = [[y, x] if lonlat else [x, y] for x, y in geo_ldf.coords.at[l_id]]
         ls = geojson.LineString(coords)
         ldf.geo.at[l_id] = geojson.dumps(ls) if geo_str else ls
 
