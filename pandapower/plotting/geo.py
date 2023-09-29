@@ -319,7 +319,7 @@ def dump_to_geojson(net, nodes=False, branches=False):
                     coords.append(net.pipe_geodata.loc[uid].coords)
                 coords.append([float(to_coords.x), float(to_coords.y)])
 
-            geom = geojson.LineString(row.coords.tolist() if is_pandapower else coords)
+            geom = geojson.LineString(row.coords if is_pandapower else coords)
             features.append(geojson.Feature(geometry=geom, id=uid, properties=props[uid]))
     # find and set crs if available
     crs_node = None
