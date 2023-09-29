@@ -44,13 +44,12 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
             **line_width** (float, 1.0) - width of lines
 
             **bus_size** (float, 1.0) - Relative size of buses to plot.
-                                        The value bus_size is multiplied with mean_distance_between_buses, which equals the
-                                        distance between
-                                        the max geoocord and the min divided by 200.
-                                        mean_distance_between_buses = sum((net['bus_geodata'].max() - net['bus_geodata'].min()) / 200)
+                                        The value bus_size is multiplied with mean_distance_between_buses, which equals
+                                        the distance between the max geocoord and the min divided by 200.
+                                        mean_distance_between_buses = sum((net.bus.geo.max() - net.bus.geo.min()) / 200)
 
             **ext_grid_size** (float, 1.0) - Relative size of ext_grids to plot. See bus sizes for details.
-                                                Note: ext_grids are plottet as rectangles
+                                                Note: ext_grids are plotted as rectangles
 
             **trafo_size** (float, 1.0) - Relative size of trafos to plot.
 
@@ -96,12 +95,19 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
         OUTPUT:
             **ax** - axes of figure
     """
+    try:
+        if hasattr(net, "bus_geodata") or hasattr(net, "line_geodata"):
+            raise UserWarning("""The supplied network uses an outdated geodata format. Please update your geodata by
+                                 \rrunning `pandapower.plotting.geo.convert_geodata_to_geojson(net)`""")
+    except UserWarning as e:
+        logger.warning(e)
+
     # don't hide lines if switches are plotted
     if plot_line_switches:
         respect_switches = False
 
     # create geocoord if none are available
-    if len(net.line_geodata) == 0 and len(net.bus_geodata) == 0:
+    if len(net.line.geo) == 0 and len(net.bus.geo) == 0:
         logger.warning("No or insufficient geodata available --> Creating artificial coordinates." +
                        " This may take some time")
         create_generic_coordinates(net, respect_switches=respect_switches, library=library)
