@@ -40,7 +40,7 @@ except ImportError:
     geopandas_INSTALLED = False
 
 try:
-    from pyproj import Proj, transform, Transformer
+    from pyproj import Transformer
 
     pyproj_INSTALLED = True
 except ImportError:
@@ -160,9 +160,8 @@ def _convert_xy_epsg(x, y, epsg_in=4326, epsg_out=31467):
     """
     if not pyproj_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "pyproj")
-    in_proj = Proj(init='epsg:%i' % epsg_in)
-    out_proj = Proj(init='epsg:%i' % epsg_out)
-    return transform(in_proj, out_proj, x, y)
+    transformer = Transformer.from_crs(f'EPSG:{epsg_in}', f'EPSG:{epsg_out}', always_xy=True)
+    return transformer.transform(x, y)
 
 
 @deprecated("Use convert_gis_to_geojson instead. Support for geodata will be dropped.")
