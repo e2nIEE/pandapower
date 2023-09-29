@@ -1,5 +1,8 @@
 import numpy as np
 import pandas as pd
+import geojson
+
+from typing_extensions import deprecated
 
 try:
     import pandaplan.core.pplog as logging
@@ -49,8 +52,8 @@ def get_collection_sizes(net, bus_size=1.0, ext_grid_size=1.0, trafo_size=1.0, l
     :return: sizes (dict) - dictionary containing all scaled sizes
     """
 
-    mean_distance_between_buses = sum((net['bus_geodata'].loc[:, ["x", "y"]].max() -
-                                       net['bus_geodata'].loc[:, ["x", "y"]].min()).dropna() / 200)
+    lst = net.bus.geo.apply(geojson.loads).apply(geojson.utils.coords).apply(next).values
+    mean_distance_between_buses = sum(map(lambda a, b: (a-b)/200, *(map(max, zip(*lst)), map(min, zip(*lst)))))
 
     sizes = {
         "bus": bus_size * mean_distance_between_buses,
@@ -155,8 +158,8 @@ def coords_from_node_geodata(element_indices, from_nodes, to_nodes, node_geodata
     elements_with_geo = np.array(element_indices)[have_geo]
     fb_with_geo, tb_with_geo = from_nodes[have_geo], to_nodes[have_geo]
     coords = [[(x_from, y_from), (x_to, y_to)] for x_from, y_from, x_to, y_to
-              in np.concatenate([node_geodata.loc[fb_with_geo, ["x", "y"]].values,
-                                 node_geodata.loc[tb_with_geo, ["x", "y"]].values], axis=1)
+              in np.concatenate([node_geodata.loc[fb_with_geo].apply(geojson.loads).apply(geojson.utils.coords).apply(next).values.tolist(),
+                                 node_geodata.loc[tb_with_geo].apply(geojson.loads).apply(geojson.utils.coords).apply(next).values.tolist()], axis=1)
               if not ignore_zero_length or not (x_from == x_to and y_from == y_to)]
     elements_without_geo = set(element_indices) - set(elements_with_geo)
     if len(elements_without_geo) > 0:
@@ -192,6 +195,7 @@ def set_line_geodata_from_bus_geodata(net, line_index=None, overwrite=False):
         logger.info(f"failed to set coordinates of {num_failed} lines")
 
 
+@deprecated("Use of busbar is not by bus_geodata anymore.")
 def position_on_busbar(net, bus, busbar_coords):
     """
     Checks if the first or the last coordinates of a line are on a bus

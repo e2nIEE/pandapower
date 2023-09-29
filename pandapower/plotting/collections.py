@@ -5,10 +5,14 @@
 import sys
 import copy
 import inspect
+import geojson
+from typing import List, Tuple, Set, Callable, TYPE_CHECKING
+if TYPE_CHECKING:
+    from matplotlib.colors import Normalize, Colormap
 from itertools import combinations
 
 import numpy as np
-from pandas import isnull
+from pandas import isnull, Series, DataFrame
 
 try:
     import matplotlib.pyplot as plt
@@ -25,6 +29,7 @@ except ImportError:
     class TextPath:  # so that the test does not fail
         pass
 
+from pandapower import pandapowerNet
 from pandapower.auxiliary import soft_dependency_error
 from pandapower.plotting.patch_makers import load_patches, node_patches, gen_patches, \
     sgen_patches, ext_grid_patches, trafo_patches, storage_patches
@@ -214,8 +219,8 @@ def _create_line2d_collection(coords, indices, infos=None, picker=False, **kwarg
     """
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
-    # This would be done anyways by matplotlib - doing it explicitly makes it a) clear and
-    # b) prevents unexpected behavior when observing colors being "none"
+    # This would be done anyway by matplotlib - doing it explicitly makes it clear and
+    # prevents unexpected behavior when observing colors being "none"
     lc = LineCollection(coords, picker=picker, **kwargs)
     lc.indices = np.array(indices)
     lc.info = infos if infos is not None else list()
@@ -407,9 +412,9 @@ def create_bus_collection(net, buses=None, size=5, patch_type="circle", color=No
     if len(buses) == 0:
         return None
     if bus_geodata is None:
-        bus_geodata = net["bus_geodata"]
+        bus_geodata = net.bus.geo
 
-    coords = list(zip(bus_geodata.loc[buses, "x"].values, bus_geodata.loc[buses, "y"].values))
+    coords = net.bus.geo.apply(geojson.loads).apply(geojson.utils.coords).apply(next).to_list()
 
     infos = [infofunc(bus) for bus in buses] if infofunc is not None else []
 
@@ -423,9 +428,11 @@ def create_bus_collection(net, buses=None, size=5, patch_type="circle", color=No
     return pc
 
 
-def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
-                           use_bus_geodata=False, infofunc=None, cmap=None, norm=None, picker=False,
-                           z=None, cbar_title="Line Loading [%]", clim=None, plot_colormap=True,
+def create_line_collection(net: pandapowerNet, lines=None,
+                           line_geodata: DataFrame or None = None, bus_geodata: DataFrame or None = None,
+                           use_bus_geodata: bool = False, infofunc: Callable or None = None,
+                           cmap: 'Colormap' = None, norm: 'Normalize' = None, picker: bool = False,
+                           z=None, cbar_title: str = "Line Loading [%]", clim=None, plot_colormap: bool = True,
                            **kwargs):
     """
     Creates a matplotlib line collection of pandapower lines.
@@ -469,10 +476,9 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
     """
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
-    if use_bus_geodata is False and line_geodata is None and net.line_geodata.empty:
+    if use_bus_geodata is False and line_geodata is None and net.line.geo.empty:
         # if bus geodata is available, but no line geodata
-        logger.warning("use_bus_geodata is automatically set to True, since net.line_geodata is "
-                       "empty.")
+        logger.warning("use_bus_geodata is automatically set to True, since net.line_geodata is empty.")
         use_bus_geodata = True
 
     lines = get_index_array(lines, net.line.index)
@@ -482,12 +488,12 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
     if use_bus_geodata:
         coords, lines_with_geo = coords_from_node_geodata(
             lines, net.line.from_bus.loc[lines].values, net.line.to_bus.loc[lines].values,
-            bus_geodata if bus_geodata is not None else net["bus_geodata"], "line")
+            bus_geodata if bus_geodata is not None else net.bus.geo, "line")
     else:
-        line_geodata = line_geodata if line_geodata is not None else net.line_geodata
+        line_geodata: Series[str] = line_geodata if line_geodata is not None else net.line.geo
         lines_with_geo = lines[np.isin(lines, line_geodata.index.values)]
-        coords = list(line_geodata.loc[lines_with_geo, 'coords'])
-        lines_without_geo = set(lines) - set(lines_with_geo)
+        coords: List[Tuple[float, float]] = line_geodata.apply(geojson.loads).apply(geojson.utils.coords).apply(list).to_list()
+        lines_without_geo: Set[int] = set(lines) - set(lines_with_geo)
         if lines_without_geo:
             logger.warning("Could not plot lines %s. %s geodata is missing for those lines!"
                            % (lines_without_geo, "Bus" if use_bus_geodata else "Line"))
@@ -778,7 +784,7 @@ def create_trafo_collection(net, trafos=None, picker=False, size=None, infofunc=
     trafos = get_index_array(trafos, net.trafo.index)
 
     if bus_geodata is None:
-        bus_geodata = net["bus_geodata"]
+        bus_geodata = net.bus.geo
 
     in_geodata = (net.trafo.hv_bus.loc[trafos].isin(bus_geodata.index) &
                   net.trafo.lv_bus.loc[trafos].isin(bus_geodata.index))
@@ -1159,7 +1165,8 @@ def create_ext_grid_collection(net, size=1., infofunc=None, orientation=0, picke
             "Length mismatch between chosen ext_grids and ext_grid_buses."
     infos = [infofunc(ext_grid_idx) for ext_grid_idx in ext_grids] if infofunc is not None else []
 
-    node_coords = net.bus_geodata.loc[ext_grid_buses, ["x", "y"]].values
+    # This code does not support bus bars. It would require the format here to be a bit different.
+    node_coords = net.bus.geo.loc[ext_grid_buses].apply(geojson.loads).apply(geojson.utils.coords).apply(next).values.tolist()
 
     color = kwargs.pop("color", "k")
 
