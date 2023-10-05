@@ -145,18 +145,14 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=pp.
     "cause_index": index of the element ("line", "trafo", "trafo3w") that causes max. loading of this element
     "congestion_caused_mva": overall congestion in the grid in MVA during the N-1 case due to the failure of the element
 
-    Parameters
+    INPUT
     ----------
-    net : pandapowerNet
-    nminus1_cases : dict
+    **net** - pandapowerNet
+    **nminus1_cases** - dict
         describes all N-1 cases, e.g. {"line": {"index": [1, 2, 3]}, "trafo": {"index": [0]}}
         Note: trafo3w is not supported
-    contingency_evaluation_function : func
+    **contingency_evaluation_function** - func
         function to use for power flow calculation, default pp.runpp (but only relevant for N-0 case)
-
-    Returns
-    -------
-    None
     """
     if not lightsim2grid_installed:
         raise UserWarning("lightsim2grid package not installed. "
@@ -331,13 +327,13 @@ def get_element_limits(net):
     """
     Construct the dictionary of element limits
 
-    Parameters
+    INPUT
     ----------
-    net : pandapowerNet
+    **net** - pandapowerNet
 
-    Returns
+    OUTPUT
     -------
-    element_limits : dict
+    **element_limits** - dict
     """
     element_limits = {}
     if "max_vm_pu" in net.bus and "min_vm_pu" in net.bus:
@@ -398,20 +394,19 @@ def check_elements_within_limits(element_limits, contingency_results, nminus1=Fa
     """
     Check if elements are within limits
 
-    Parameters
+    INPUT
     ----------
-    element_limits : dict
-    contingency_results : dict
-    nminus1 : bool
-    branch_tol : float
+    **element_limits** - dict
+    **contingency_results** - dict
+    **nminus1** - bool
+    **branch_tol** - float
         tolerance of the limit violation check for branch limits
-    bus_tol : float
+    **bus_tol** - float
         tolerance of the limit violation check for bus limits
 
-    Returns
+    OUTPUT
     -------
-    bool
-        True if all within limits (no violations), False if any limits violated
+    True if all within limits (no violations), False if any limits violated
     """
     for element, values in contingency_results.items():
         limit = element_limits[element]
@@ -463,18 +458,14 @@ def report_contingency_results(element_limits, contingency_results, branch_tol=1
     """
     Print log messages for elements with violations of limits
 
-    Parameters
+    INPUT
     ----------
-    element_limits : dict
-    contingency_results : dict
-    branch_tol : float
+    **element_limits** - dict
+    **contingency_results** - dict
+    **branch_tol** - float
         tolerance for branch results
-    bus_tol : float
+    **bus_tol** - float
         tolerance for bus results
-
-    Returns
-    -------
-    None
     """
     for element, results in contingency_results.items():
         limit = element_limits[element]
