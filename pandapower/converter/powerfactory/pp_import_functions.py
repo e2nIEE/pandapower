@@ -739,6 +739,11 @@ def get_section_coords(coords, sec_len, start_len, scale_factor):
     for i in range(len(coords) - 1):
         len_i += point_len(coords[i], coords[i + 1])
         logger.debug('i: %d, len_i: %.3f' % (i, len_i * scale_factor))
+        # catch if line has identical coords
+        if not len_i:
+            sec_coords = coords
+            return sec_coords
+
         if len_i * scale_factor > start_len or abs(len_i * scale_factor - start_len) <= tol:
             logger.debug('len_i>start_len: cut coords segment')
             logger.debug('coords[i]: %s, coods[i+1]: %s' % (coords[i], coords[i + 1]))

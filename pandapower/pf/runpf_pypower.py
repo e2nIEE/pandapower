@@ -14,7 +14,7 @@
 
 from time import perf_counter
 from packaging import version
-from numpy import flatnonzero as find, r_, zeros, argmax, real, setdiff1d
+from numpy import flatnonzero as find, r_, zeros, argmax, real, setdiff1d, int64
 
 from pandapower.pypower.idx_bus import PD, QD, BUS_TYPE, PQ, REF
 from pandapower.pypower.idx_gen import PG, QG, QMAX, QMIN, GEN_BUS, GEN_STATUS
@@ -28,6 +28,8 @@ from pandapower.pypower.makeB import makeB
 from pandapower.pypower.ppoption import ppoption
 from pandapower.pypower.fdpf import fdpf
 from pandapower.pypower.gausspf import gausspf
+
+from pandapower.auxiliary import _check_if_numba_is_installed
 
 try:
     import pandaplan.core.pplog as logging
@@ -98,17 +100,7 @@ def _ac_runpf(ppci, ppopt, numba, recycle):
 def _import_numba_extensions_if_flag_is_true(numba):
     ## check if numba is available and the corresponding flag
     if numba:
-        try:
-            from numba._version import version_version as nb_version
-            # get numba Version (in order to use it it must be > 0.25)
-            if version.parse(nb_version) < version.parse("0.25"):
-                logger.warning('Warning: Numba version too old -> Upgrade to a version > 0.25. Numba is disabled\n')
-                numba = False
-
-        except ImportError:
-            # raise UserWarning('numba cannot be imported. Call runpp() with numba=False!')
-            logger.warning('Warning: Numba cannot be imported. Numba is disabled. Call runpp() with Numba=False!\n')
-            numba = False
+        numba = _check_if_numba_is_installed(level=None)
 
     if numba:
         from pandapower.pf.makeYbus_numba import makeYbus
@@ -129,7 +121,7 @@ def _get_Y_bus(ppci, recycle, makeYbus, baseMVA, bus, branch):
 
 
 def _run_ac_pf_without_qlims_enforced(ppci, recycle, makeYbus, ppopt):
-    baseMVA, bus, gen, branch, ref, pv, pq, _, gbus, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
+    baseMVA, bus, gen, branch, svc, tcsc, ssc, ref, pv, pq, *_, gbus, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
 
     ppci, Ybus, Yf, Yt = _get_Y_bus(ppci, recycle, makeYbus, baseMVA, bus, branch)
 
@@ -140,13 +132,13 @@ def _run_ac_pf_without_qlims_enforced(ppci, recycle, makeYbus, ppopt):
     V, success, it = _call_power_flow_function(baseMVA, bus, branch, Ybus, Sbus, V0, ref, pv, pq, ppopt)
 
     ## update data matrices with solution
-    bus, gen, branch = pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, ref_gens)
+    bus, gen, branch = pfsoln(baseMVA, bus, gen, branch, svc, tcsc, ssc, Ybus, Yf, Yt, V, ref, ref_gens)
 
     return ppci, success, bus, gen, branch, it
 
 
 def _run_ac_pf_with_qlims_enforced(ppci, recycle, makeYbus, ppopt):
-    baseMVA, bus, gen, branch, ref, pv, pq, on, gbus, V0, _ = _get_pf_variables_from_ppci(ppci)
+    baseMVA, bus, gen, branch, svc, tcsc, ssc, ref, pv, pq, on, gbus, V0, *_ = _get_pf_variables_from_ppci(ppci)
 
     qlim = ppopt["ENFORCE_Q_LIMS"]
     limited = []  ## list of indices of gens @ Q lims
@@ -182,27 +174,27 @@ def _run_ac_pf_with_qlims_enforced(ppci, recycle, makeYbus, ppopt):
                     ## save corresponding limit values
             fixedQg[mx] = gen[mx, QMAX]
             fixedQg[mn] = gen[mn, QMIN]
-            mx = r_[mx, mn].astype(int)
+            mx = r_[mx, mn].astype(int64)
 
             ## convert to PQ bus
             gen[mx, QG] = fixedQg[mx]  ## set Qg to binding
             for i in mx:  ## [one at a time, since they may be at same bus]
                 gen[i, GEN_STATUS] = 0  ## temporarily turn off gen,
-                bi = gen[i, GEN_BUS].astype(int)  ## adjust load accordingly,
+                bi = gen[i, GEN_BUS].astype(int64)  ## adjust load accordingly,
                 bus[bi, [PD, QD]] = (bus[bi, [PD, QD]] - gen[i, [PG, QG]])
 
-            if len(ref) > 1 and any(bus[gen[mx, GEN_BUS].astype(int), BUS_TYPE] == REF):
+            if len(ref) > 1 and any(bus[gen[mx, GEN_BUS].astype(int64), BUS_TYPE] == REF):
                 raise ValueError('Sorry, pandapower cannot enforce Q '
                                  'limits for slack buses in systems '
                                  'with multiple slacks.')
 
-            changed_gens = gen[mx, GEN_BUS].astype(int)
+            changed_gens = gen[mx, GEN_BUS].astype(int64)
             bus[setdiff1d(changed_gens, ref), BUS_TYPE] = PQ  ## & set bus type to PQ
 
             ## update bus index lists of each type of bus
             ref, pv, pq = bustypes(bus, gen)
 
-            limited = r_[limited, mx].astype(int)
+            limited = r_[limited, mx].astype(int64)
         else:
             break  ## no more generator Q limits violated
 
@@ -210,7 +202,7 @@ def _run_ac_pf_with_qlims_enforced(ppci, recycle, makeYbus, ppopt):
         ## restore injections from limited gens [those at Q limits]
         gen[limited, QG] = fixedQg[limited]  ## restore Qg value,
         for i in limited:  ## [one at a time, since they may be at same bus]
-            bi = gen[i, GEN_BUS].astype(int)  ## re-adjust load,
+            bi = gen[i, GEN_BUS].astype(int64)  ## re-adjust load,
             bus[bi, [PD, QD]] = bus[bi, [PD, QD]] + gen[i, [PG, QG]]
             gen[i, GEN_STATUS] = 1  ## and turn gen back on
 

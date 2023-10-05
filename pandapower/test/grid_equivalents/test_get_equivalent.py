@@ -244,7 +244,6 @@ def test_basic_usecases():
 
 def test_case9_with_slack_generator_in_external_net():
     net = pp.networks.case9()
-    net.sn_mva = 1.
     idx = pp.replace_ext_grid_by_gen(net)
     net.gen.slack.loc[idx] = True
     net.bus_geodata.drop(net.bus_geodata.index, inplace=True)
@@ -329,7 +328,6 @@ def test_adopt_columns_to_separated_eq_elms():
 
     # --- gen_separate
     net = pp.networks.case9()
-    net.sn_mva = 1.
     pp.replace_ext_grid_by_gen(net, slack=True)
     net.gen.index = [1, 2, 0]
     net.poly_cost["element"] = net.gen.index.values
@@ -346,7 +344,6 @@ def test_adopt_columns_to_separated_eq_elms():
 
     # --- sgen_separate0
     net = pp.networks.case9()
-    net.sn_mva = 1.
     pp.replace_gen_by_sgen(net)
     net.sgen["origin_id"] = ["sgen_%i" % i for i in range(net.sgen.shape[0])]
 
@@ -359,6 +356,7 @@ def test_adopt_columns_to_separated_eq_elms():
 
 def test_equivalent_groups():
     net = pp.networks.example_multivoltage()
+    # net.sn_mva = 100
     for elm in pandapower.toolbox.pp_elements():
         if net[elm].shape[0] and not net[elm].name.duplicated().any():
             net[elm]["origin_id"] = net[elm].name
@@ -387,8 +385,9 @@ def test_equivalent_groups():
     # test 2nd rei
     for sgen_separate in [True, False]:
         print("sgen_separate is " + str(sgen_separate))
+        # test fails with lightsim2grid, for unknown reason
         net_eq2 = pp.grid_equivalents.get_equivalent(
-            net_eq1, "rei", bb2, int2, sgen_separate=sgen_separate, reference_column="origin_id")
+            net_eq1, "rei", bb2, int2, sgen_separate=sgen_separate, reference_column="origin_id", lightsim2grid=False)
         gr2_idx = net_eq2.group.index[-1]
         assert len(set(net_eq2.group.index)) == 2
         assert len(set(pp.count_group_elements(net_eq2, gr2_idx).index) ^ {

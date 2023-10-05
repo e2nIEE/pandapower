@@ -13,6 +13,15 @@ from pandapower.results_bus import _get_bus_results, _set_buses_out_of_service, 
     _get_bus_results_3ph
 from pandapower.results_gen import _get_gen_results, _get_gen_results_3ph
 
+BRANCH_RESULTS_KEYS = ("branch_ikss_f", "branch_ikss_t",
+                       "branch_ikss_angle_f", "branch_ikss_angle_t",
+                       "branch_pkss_f", "branch_pkss_t",
+                       "branch_qkss_f", "branch_qkss_t",
+                       "branch_vkss_f", "branch_vkss_t",
+                       "branch_vkss_angle_f", "branch_vkss_angle_t",
+                       "branch_ip_f", "branch_ip_t",
+                       "branch_ith_f", "branch_ith_t")
+
 suffix_mode = {"sc": "sc", "se": "est", "pf_3ph": "3ph"}
 
 
@@ -66,7 +75,7 @@ def _remove_costs(net):
 def _get_aranged_lookup(net):
     # generate bus_lookup net -> consecutive ordering
     maxBus = max(net["bus"].index.values)
-    bus_lookup_aranged = -np.ones(maxBus + 1, dtype=int)
+    bus_lookup_aranged = -np.ones(maxBus + 1, dtype=np.int64)
     bus_lookup_aranged[net["bus"].index.values] = np.arange(len(net["bus"].index.values))
 
     return bus_lookup_aranged
@@ -132,7 +141,7 @@ def get_relevant_elements(mode="pf"):
         return ["bus", "line", "trafo", "trafo3w", "impedance", "ext_grid",
                 "load", "motor", "sgen", "storage", "shunt", "gen", "ward",
                 "xward", "dcline", "asymmetric_load", "asymmetric_sgen",
-                "switch"]
+                "switch", "tcsc", "svc", "ssc"]
     elif mode == "sc":
         return ["bus", "line", "trafo", "trafo3w", "ext_grid", "gen", "sgen", "switch"]
     elif mode == "se":
@@ -172,11 +181,16 @@ def _ppci_bus_to_ppc(result, ppc):
         updated_bus[n_rows_result:, :bus_cols] = ppc['bus'][n_rows_result:, :]
     ppc['bus'] = updated_bus
 
+    ppc['svc'][result["internal"]['svc_is'], :] = result['svc'][:, :]
+    ppc['ssc'][result["internal"]['ssc_is'], :] = result['ssc'][:, :]
+
 
 def _ppci_branch_to_ppc(result, ppc):
     # in service branches and gens are taken from 'internal'
     branch_cols = np.shape(ppc['branch'])[1]
     ppc['branch'][result["internal"]['branch_is'], :branch_cols] = result['branch'][:, :branch_cols]
+
+    ppc['tcsc'][result["internal"]['tcsc_is'], :] = result['tcsc'][:, :]
 
 
 def _ppci_gen_to_ppc(result, ppc):
@@ -202,9 +216,7 @@ def _ppci_internal_to_ppc(result, ppc):
     for key, value in result["internal"].items():
         # Only for sc calculation
         # if branch current matrices have been stored they need to include out of service elements
-        if key in ["branch_ikss_f", "branch_ikss_t",
-                   "branch_ip_f", "branch_ip_t",
-                   "branch_ith_f", "branch_ith_t"]:
+        if key in BRANCH_RESULTS_KEYS:
 
             # n_buses = np.shape(ppc['bus'])[0]
             n_branches = np.shape(ppc['branch'])[0]

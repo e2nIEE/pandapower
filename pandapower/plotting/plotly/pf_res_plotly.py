@@ -6,11 +6,11 @@
 
 import pandas as pd
 
+from pandapower.run import runpp
 from pandapower.plotting.generic_geodata import create_generic_coordinates
 from pandapower.plotting.plotly.mapbox_plot import *
 from pandapower.plotting.plotly.traces import create_bus_trace, create_line_trace, \
-    create_trafo_trace, draw_traces, version_check
-from pandapower.run import runpp
+    create_trafo_trace, draw_traces
 
 try:
     import pandaplan.core.pplog as logging
@@ -79,8 +79,6 @@ def pf_res_plotly(net, cmap="Jet", use_line_geodata=None, on_map=False, projecti
             **figure** (graph_objs._figure.Figure) figure object
 
     """
-
-    version_check()
     if 'res_bus' not in net or net.get('res_bus').shape[0] == 0:
         logger.warning('There are no Power Flow results. A Newton-Raphson power flow will be executed.')
         runpp(net)

@@ -69,8 +69,6 @@ Item/Element Selection
 
 .. autofunction:: pandapower.toolbox.get_connected_switches
 
-.. autofunction:: pandapower.toolbox.get_connected_branches
-
 .. autofunction:: pandapower.toolbox.get_connecting_branches
 
 .. autofunction:: pandapower.toolbox.false_elm_links

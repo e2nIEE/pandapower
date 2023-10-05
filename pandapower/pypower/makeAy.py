@@ -5,7 +5,7 @@
 """Make the A matrix and RHS for the CCV formulation.
 """
 
-from numpy import array, diff, any, zeros, r_, flatnonzero as find
+from numpy import array, diff, any, zeros, r_, flatnonzero as find, int64
 #from scipy.sparse import csr_matrix as sparse
 from scipy.sparse import lil_matrix as sparse
 
@@ -58,14 +58,14 @@ def makeAy(baseMVA, ng, gencost, pgbas, qgbas, ybas):
     ## same order as the compressed column sparse format used by matlab
     ## this should be the quickest.
 
-    m = sum( gencost[iycost, NCOST].astype(int) )  ## total number of cost points
+    m = sum( gencost[iycost, NCOST].astype(int64) )  ## total number of cost points
     Ay = sparse((m - ny, ybas + ny - 1))
     by = array([])
     ## First fill the Pg or Qg coefficients (since their columns come first)
     ## and the rhs
     k = 0
     for i in iycost:
-        ns = gencost[i, NCOST].astype(int)         ## # of cost points segments = ns-1
+        ns = gencost[i, NCOST].astype(int64)         ## # of cost points segments = ns-1
         p = gencost[i, COST:COST + 2 * ns - 1:2] / baseMVA
         c = gencost[i, COST + 1:COST + 2 * ns:2]
         m = diff(c) / diff(p)               ## slopes for Pg (or Qg)
@@ -88,7 +88,7 @@ def makeAy(baseMVA, ng, gencost, pgbas, qgbas, ybas):
     k = 0
     j = 0
     for i in iycost:
-        ns = gencost[i, NCOST].astype(int)
+        ns = gencost[i, NCOST].astype(int64)
         ## FIXME: Bug in SciPy 0.7.2 prevents setting with a sequence
 #        Ay[k:k + ns - 1, ybas + j - 1] = -ones(ns - 1)
         for kk in range(k, k + ns - 1):
