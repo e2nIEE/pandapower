@@ -6,7 +6,7 @@ We can define N-1 cases to be analysed as contingencies. This means that indices
 
 A tutorial that introduces this feature with an example is available at `Contingency analysis <https://github.com/e2nIEE/pandapower/tree/develop/tutorials/contingency_analysis.ipynb>`_
 
-.. autofunction:: pandapower.contingency.run_contingency
+.. autofunction:: pandapower.contingency.contingency.run_contingency
 
 .. autofunction:: pandapower.contingency.run_contingency_ls2g
 
