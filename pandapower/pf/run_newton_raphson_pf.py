@@ -6,7 +6,8 @@
 
 from time import perf_counter
 
-from numpy import flatnonzero as find, r_, zeros, argmax, setdiff1d, union1d, any, int32, sum as np_sum, abs as np_abs
+from numpy import flatnonzero as find, r_, zeros, argmax, setdiff1d, union1d, any, int32, \
+    sum as np_sum, abs as np_abs, int64
 
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_results_from_pf_in_ppci
 from pandapower.pf.run_dc_pf import _run_dc_pf
@@ -18,10 +19,12 @@ from pandapower.pypower.makeYbus import makeYbus as makeYbus_pypower
 from pandapower.pypower.newtonpf import newtonpf
 from pandapower.pypower.pfsoln import _update_v
 from pandapower.pypower.pfsoln import pfsoln as pfsoln_pypower
+from pandapower.auxiliary import version_check
 
 try:
     from pandapower.pf.makeYbus_numba import makeYbus as makeYbus_numba
     from pandapower.pf.pfsoln_numba import pfsoln as pfsoln_numba, pf_solution_single_slack
+    version_check('numba')
     numba_installed = True
 except ImportError:
     numba_installed = False
@@ -88,13 +91,18 @@ def ppci_to_pfsoln(ppci, options, limited_gens=None):
 
         makeYbus, pfsoln = _get_numba_functions(ppci, options)
 
+        # todo: this can be dropped if Ybus is returned from Newton and has the latest Ybus status:
         if options["tdpf"]:
             # needs to be updated to match the new R because of the temperature
             internal["Ybus"], internal["Yf"], internal["Yt"] = makeYbus(internal["baseMVA"], internal["bus"], internal["branch"])
 
-        result_pfsoln = pfsoln(internal["baseMVA"], internal["bus"], internal["gen"], internal["branch"], internal["Ybus"],
-                      internal["Yf"], internal["Yt"], internal["V"], ref, ref_gens, limited_gens=limited_gens)
+        # todo: here Ybus_svc, Ybus_tcsc must be used (Ybus = Ybus + Ybus_svc + Ybus_tcsc)
+        result_pfsoln = pfsoln(internal["baseMVA"], internal["bus"], internal["gen"], internal["branch"],
+                               internal["svc"], internal["tcsc"], internal["ssc"],
+                               internal["Ybus"], internal["Yf"], internal["Yt"], internal["V"],
+                               ref, ref_gens, limited_gens=limited_gens)
         return result_pfsoln
+
 
 def _get_Y_bus(ppci, options, makeYbus, baseMVA, bus, branch):
     recycle = options["recycle"]
@@ -146,7 +154,7 @@ def _get_Sbus(ppci, recycle=None):
 def _run_ac_pf_without_qlims_enforced(ppci, options):
     makeYbus, pfsoln = _get_numba_functions(ppci, options)
 
-    baseMVA, bus, gen, branch, ref, pv, pq, _, _, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
+    baseMVA, bus, gen, branch, svc, tcsc, ssc, ref, pv, pq, *_, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
 
     ppci, Ybus, Yf, Yt = _get_Y_bus(ppci, options, makeYbus, baseMVA, bus, branch)
 
@@ -161,18 +169,23 @@ def _run_ac_pf_without_qlims_enforced(ppci, options):
         r_theta_kelvin_per_mw = None
     else:
         V, success, iterations, J, Vm_it, Va_it, r_theta_kelvin_per_mw, T = newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus)
+        # due to TPDF, SVC, TCSC, the Ybus matrices can be updated in the newtonpf and stored in ppci["internal"],
+        # so we extract them here for later use:
+        Ybus, Ybus_svc, Ybus_tcsc, Ybus_ssc = (ppci["internal"].get(key) for key in ("Ybus", "Ybus_svc", "Ybus_tcsc", "Ybus_ssc"))
+        Ybus = Ybus + Ybus_svc + Ybus_tcsc + Ybus_ssc
 
     # keep "internal" variables in  memory / net["_ppc"]["internal"] -> needed for recycle.
     ppci = _store_internal(ppci, {"J": J, "Vm_it": Vm_it, "Va_it": Va_it, "bus": bus, "gen": gen, "branch": branch,
-                                  "baseMVA": baseMVA, "V": V, "pv": pv, "pq": pq, "ref": ref, "Sbus": Sbus,
-                                  "ref_gens": ref_gens, "Ybus": Ybus, "Yf": Yf, "Yt": Yt,
+                                  "svc": svc, "tcsc": tcsc, "ssc": ssc, "baseMVA": baseMVA, "V": V,
+                                  "pv": pv, "pq": pq, "ref": ref,
+                                  "Sbus": Sbus, "ref_gens": ref_gens, "Ybus": Ybus, "Yf": Yf, "Yt": Yt,
                                   "r_theta_kelvin_per_mw": r_theta_kelvin_per_mw, "T": T})
 
     return ppci, success, iterations
 
 
 def _run_ac_pf_with_qlims_enforced(ppci, options):
-    baseMVA, bus, gen, branch, ref, pv, pq, on, _, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
+    baseMVA, bus, gen, branch, svc, tcsc, ssc, ref, pv, pq, on, *_, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
     bus_backup_p_q = bus[:, [PD, QD]].copy()
     gen_backup_p = gen[:, PG].copy()
 
@@ -209,26 +222,26 @@ def _run_ac_pf_with_qlims_enforced(ppci, options):
             # save corresponding limit values
             fixedQg[mx] = gen[mx, QMAX]
             fixedQg[mn] = gen[mn, QMIN]
-            mx = r_[mx, mn].astype(int)
+            mx = r_[mx, mn].astype(int64)
 
             # convert to PQ bus
             gen[mx, QG] = fixedQg[mx]  # set Qg to binding
-            #            if len(ref) > 1 and any(bus[gen[mx, GEN_BUS].astype(int), BUS_TYPE] == REF):
+            #            if len(ref) > 1 and any(bus[gen[mx, GEN_BUS].astype(np.int64), BUS_TYPE] == REF):
             #                raise ValueError('Sorry, pandapower cannot enforce Q '
             #                                 'limits for slack buses in systems '
             #                                 'with multiple slacks.')
 
-            changed_gens = gen[mx, GEN_BUS].astype(int)
+            changed_gens = gen[mx, GEN_BUS].astype(int64)
             bus[setdiff1d(changed_gens, ref), BUS_TYPE] = PQ  # & set bus type to PQ
 
             # update bus index lists of each type of bus
             ref, pv, pq = bustypes(bus, gen)
 
-            limited = r_[limited, mx].astype(int)
+            limited = r_[limited, mx].astype(int64)
 
             for i in range(len(limited)):  # [one at a time, since they may be at same bus]
                 gen[limited[i], GEN_STATUS] = 0  # temporarily turn off gen,
-                bi = gen[limited[i], GEN_BUS].astype(int)  # adjust load accordingly,
+                bi = gen[limited[i], GEN_BUS].astype(int64)  # adjust load accordingly,
                 bus[bi, [PD, QD]] = (bus[bi, [PD, QD]] - gen[limited[i], [PG, QG]])
         else:
             break  # no more generator Q limits violated

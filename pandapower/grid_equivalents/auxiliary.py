@@ -3,6 +3,8 @@ from pathlib import Path
 from copy import deepcopy
 import numpy as np
 import pandas as pd
+
+import pandapower.toolbox
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci
 from pandapower.pf.run_newton_raphson_pf import _get_numba_functions, _get_Y_bus
@@ -139,7 +141,7 @@ def drop_internal_branch_elements(net, internal_buses, branch_elements=None):
     This function drops all branch elements which have 'internal_buses' connected at all sides of
     the branch element (e.g. for lines at 'from_bus' and 'to_bus').
     """
-    bebd = pp.branch_element_bus_dict()
+    bebd = pandapower.toolbox.branch_element_bus_dict()
     if branch_elements is not None:
         bebd = {elm: bus_types for elm,
                 bus_types in bebd.items() if elm in branch_elements}
@@ -316,10 +318,8 @@ def build_ppc_and_Ybus(net):
     ppc, ppci = _pd2ppc(net)
     net["_ppc"] = ppc
     makeYbus, pfsoln = _get_numba_functions(ppci, net["_options"])
-    baseMVA, bus, gen, branch, _, _, _, _, _, V0, ref_gens = _get_pf_variables_from_ppci(
-        ppci)
-    _, Ybus, _, _ = _get_Y_bus(
-        ppci, net["_options"], makeYbus, baseMVA, bus, branch)
+    baseMVA, bus, gen, branch, *_, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
+    _, Ybus, _, _ = _get_Y_bus(ppci, net["_options"], makeYbus, baseMVA, bus, branch)
 
     net._ppc["internal"]["Ybus"] = Ybus
 
@@ -384,7 +384,7 @@ def ensure_origin_id(net, no_start=0, elms=None):
     Ensures completely filled column 'origin_id' in every pp element.
     """
     if elms is None:
-        elms = pp.pp_elements()
+        elms = pandapower.toolbox.pp_elements()
 
     for elm in elms:
         if "origin_id" not in net[elm].columns:

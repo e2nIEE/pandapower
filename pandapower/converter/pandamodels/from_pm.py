@@ -1,3 +1,9 @@
+# -*- coding: utf-8 -*-
+
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
+
 import math
 import numpy as np
 import pandas as pd
@@ -9,7 +15,7 @@ from pandapower.pypower.idx_bus import VA, VM
 from pandapower.pypower.idx_gen import PG, QG
 from pandapower.results import _extract_results, _copy_results_ppci_to_ppc
 from pandapower.optimal_powerflow import OPFNotConverged
-from pandapower.toolbox_general_issues import pp_elements
+from pandapower.toolbox import pp_elements
 
 
 def read_pm_results_to_net(net, ppc, ppci, result_pm):

@@ -12,7 +12,7 @@
 """
 
 from numpy import asarray, angle, pi, conj, zeros, ones, finfo, c_, ix_, real, flatnonzero as find, \
-    setdiff1d, intersect1d, r_, isin, arange
+    setdiff1d, intersect1d, r_, isin, arange, flatnonzero, nan_to_num, int64
 from scipy.sparse import csr_matrix
 
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT
@@ -22,7 +22,7 @@ from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, PG, QG, QMIN, QMAX, 
 EPS = finfo(float).eps
 
 
-def pfsoln(baseMVA, bus0, gen0, branch0, Ybus, Yf, Yt, V, ref, ref_gens, Ibus=None, limited_gens=None):
+def pfsoln(baseMVA, bus0, gen0, branch0, svc, tcsc, ssc, Ybus, Yf, Yt, V, ref, ref_gens, Ibus=None, limited_gens=None):
     """Updates bus, gen, branch data structures to match power flow soln.
 
     @author: Ray Zimmerman (PSERC Cornell)
@@ -36,7 +36,7 @@ def pfsoln(baseMVA, bus0, gen0, branch0, Ybus, Yf, Yt, V, ref, ref_gens, Ibus=No
     # ----- update Qg for all gens and Pg for slack bus(es) -----
     # generator info
     on = find(gen[:, GEN_STATUS] > 0)  # which generators are on?
-    gbus = gen[on, GEN_BUS].astype(int)  # what buses are they at?
+    gbus = gen[on, GEN_BUS].astype(int64)  # what buses are they at?
 
     # compute total injected bus powers
     Ibus = zeros(len(V)) if Ibus is None else Ibus
@@ -47,20 +47,20 @@ def pfsoln(baseMVA, bus0, gen0, branch0, Ybus, Yf, Yt, V, ref, ref_gens, Ibus=No
 
     if limited_gens is not None and len(limited_gens) > 0:
         on = find((gen[:, GEN_STATUS] > 0) | isin(arange(len(gen)), limited_gens))
-        gbus = gen[on, GEN_BUS].astype(int)
+        gbus = gen[on, GEN_BUS].astype(int64)
 
     _update_p(baseMVA, bus, gen, ref, gbus, Sbus, ref_gens)
 
     # ----- update/compute branch power flows -----
     out = find(branch[:, BR_STATUS] == 0)  # out-of-service branches
-    br = find(branch[:, BR_STATUS]).astype(int)  # in-service branches
+    br = find(branch[:, BR_STATUS]).astype(int64)  # in-service branches
 
     if len(out):
         raise RuntimeError
     # complex power at "from" bus
-    Sf = V[real(branch[br, F_BUS]).astype(int)] * conj(Yf[br, :] * V) * baseMVA
+    Sf = V[real(branch[br, F_BUS]).astype(int64)] * conj(Yf[br, :] * V) * baseMVA
     # complex power injected at "to" bus
-    St = V[real(branch[br, T_BUS]).astype(int)] * conj(Yt[br, :] * V) * baseMVA
+    St = V[real(branch[br, T_BUS]).astype(int64)] * conj(Yt[br, :] * V) * baseMVA
     branch[ix_(br, [PF, QF, PT, QT])] = c_[Sf.real, Sf.imag, St.real, St.imag]
     branch[ix_(out, [PF, QF, PT, QT])] = zeros((len(out), 4))
 

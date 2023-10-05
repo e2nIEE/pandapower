@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
-"""
+
 # Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-
-"""
 
 from time import perf_counter
 import numpy as np
@@ -80,7 +78,7 @@ def _get_elements(params, net, element, phase, typ):
             params['q'+phase+typ] = np.hstack([params['q'+phase+typ],
                                                (elm[active, q_mvar]/3) * vl * sign])
             params['b'+typ] = np.hstack([params['b'+typ],
-                                         elm[active, bus].astype(int)])
+                                         elm[active, bus].astype(np.int64)])
 
         elif element.startswith('asymmetric'):
             vl = elm[active, scaling].ravel()
@@ -98,7 +96,7 @@ def _get_elements(params, net, element, phase, typ):
             params['q'+phase+typ] = np.hstack([params['q'+phase+typ],
                                                elm[active, q[phase]] * vl * sign])
             params['b'+typ] = np.hstack([params['b'+typ],
-                                         elm[active, bus].astype(int)])
+                                         elm[active, bus].astype(np.int64)])
     return params
 
 
@@ -124,8 +122,8 @@ def _load_mapping(net, ppci1):
             params['q'+phase+typ] = np.array([])  # q values from loads/sgens
             params['P'+phase+typ] = np.array([])  # Aggregated Active Power
             params['Q'+phase+typ] = np.array([])  # Aggregated reactive Power
-            params['b'+phase+typ] = np.array([], dtype=int)  # bus map for phases
-            params['b'+typ] = np.array([], dtype=int)  # aggregated bus map(s_abc)
+            params['b'+phase+typ] = np.array([], dtype=np.int64)  # bus map for phases
+            params['b'+typ] = np.array([], dtype=np.int64)  # aggregated bus map(s_abc)
             for element in load_elements:
                 _get_elements(params, net, element, phase, typ)
             # Mapping constant power loads to buses
@@ -364,7 +362,7 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
         overrule_options = {key: val for key, val in net.user_pf_options.items()
                             if key not in passed_parameters.keys()}
     if numba:
-        numba = _check_if_numba_is_installed(numba)
+        numba = _check_if_numba_is_installed()
 
     ac = True
     mode = "pf_3ph"  # TODO: Make valid modes (pf, pf_3ph, se, etc.) available in seperate file (similar to idx_bus.py)
@@ -386,7 +384,7 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
         init = "auto"
     if init == "auto":
         init = "dc" if calculate_voltage_angles else "flat"
-    default_max_iteration = {"nr": 10, "bfsw": 10, "gs": 10000, "fdxb": 30,
+    default_max_iteration = {"nr": 30, "bfsw": 10, "gs": 10000, "fdxb": 30,
                              "fdbx": 30}
     if max_iteration == "auto":
         max_iteration = default_max_iteration["nr"]
@@ -470,7 +468,7 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
     count = 0
     s_mismatch = np.array([[True], [True]], dtype=bool)
     t0 = perf_counter()
-    while (s_mismatch > outer_tolerance_mva).any() and count < 30*max_iteration:
+    while (s_mismatch > outer_tolerance_mva).any() and count < max_iteration:
         # =====================================================================
         #     Voltages and Current transformation for PQ and Slack bus
         # =====================================================================
@@ -521,7 +519,7 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
         v_abc_it = sequence_to_phase(v_012_it)
         count += 1
     et = perf_counter() - t0
-    success = (count < 30 * max_iteration)
+    success = (count < max_iteration)
     for ppc in [ppci0, ppci1, ppci2]:
         ppc["et"] = et
         ppc["success"] = success
@@ -537,12 +535,15 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
     ppci0["bus"][ref, GS] += gs_eg
     ppci0["bus"][ref, BS] += bs_eg
     # Bus, Branch, and Gen  power values
-    bus0, gen0, branch0 = pfsoln(base_mva, bus0, gen0, branch0, y_0_pu, y_0_f, y_0_t, v_012_it[0, :].flatten(),
-                                 sl_bus, ref_gens)
-    bus1, gen1, branch1 = pfsoln(base_mva, bus1, gen1, branch1, y_1_pu, y_1_f, y_1_t, v_012_it[1, :].flatten(),
-                                 sl_bus, ref_gens)
-    bus2, gen2, branch2 = pfsoln(base_mva, bus2, gen2, branch2, y_1_pu, y_1_f, y_1_t, v_012_it[2, :].flatten(),
-                                 sl_bus, ref_gens)
+    svc = ppci0["svc"]  # placeholder
+    tcsc = ppci0["tcsc"]  # placeholder
+    ssc = ppci0["ssc"]  # placeholder
+    bus0, gen0, branch0 = pfsoln(base_mva, bus0, gen0, branch0, svc, tcsc, ssc, y_0_pu, y_0_f, y_0_t,
+                                 v_012_it[0, :].flatten(), sl_bus, ref_gens)
+    bus1, gen1, branch1 = pfsoln(base_mva, bus1, gen1, branch1, svc, tcsc, ssc, y_1_pu, y_1_f, y_1_t,
+                                 v_012_it[1, :].flatten(), sl_bus, ref_gens)
+    bus2, gen2, branch2 = pfsoln(base_mva, bus2, gen2, branch2, svc, tcsc, ssc, y_1_pu, y_1_f, y_1_t,
+                                 v_012_it[2, :].flatten(), sl_bus, ref_gens)
     ppci0 = _store_results_from_pf_in_ppci(ppci0, bus0, gen0, branch0)
     ppci1 = _store_results_from_pf_in_ppci(ppci1, bus1, gen1, branch1)
     ppci2 = _store_results_from_pf_in_ppci(ppci2, bus2, gen2, branch2)
@@ -553,7 +554,7 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
     eg_is_idx = net["ext_grid"].index.values[eg_is_mask]
     eg_idx_ppc = ext_grid_lookup[eg_is_idx]
     """ # 2 ext_grids Fix: Instead of the generator index, bus indices of the generators are used"""
-    eg_bus_idx_ppc = np.real(ppci1["gen"][eg_idx_ppc, GEN_BUS]).astype(int)
+    eg_bus_idx_ppc = np.real(ppci1["gen"][eg_idx_ppc, GEN_BUS]).astype(np.int64)
 
     ppci0["gen"][eg_idx_ppc, PG] = s_012_res[0, eg_bus_idx_ppc].real
     ppci1["gen"][eg_idx_ppc, PG] = s_012_res[1, eg_bus_idx_ppc].real

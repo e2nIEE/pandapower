@@ -23,7 +23,7 @@ def convert_format(net, elements_to_deserialize=None):
     """
     Converts old nets to new format to ensure consistency. The converted net is returned.
     """
-    from pandapower.toolbox_data_modification import set_data_type_of_columns_to_default
+    from pandapower.toolbox import set_data_type_of_columns_to_default
     if not isinstance(net.version, str) or not hasattr(net, 'format_version') or \
             Version(net.format_version) > Version(net.version):
         net.format_version = net.version
@@ -46,6 +46,7 @@ def convert_format(net, elements_to_deserialize=None):
         set_data_type_of_columns_to_default(net)
     _convert_objects(net, elements_to_deserialize)
     correct_dtypes(net, error=False)
+    _add_missing_std_type_tables(net)
     net.format_version = __format_version__
     net.version = __version__
     _restore_index_names(net)
@@ -103,7 +104,7 @@ def correct_dtypes(net, error):
 def _convert_bus_pq_meas_to_load_reference(net, elements_to_deserialize):
     if _check_elements_to_deserialize('measurement', elements_to_deserialize):
         bus_pq_meas_mask = net.measurement.measurement_type.isin(["p", "q"]) & \
-            (net.measurement.element_type == "bus")
+                           (net.measurement.element_type == "bus")
         net.measurement.loc[bus_pq_meas_mask, "value"] *= -1
 
 
@@ -447,3 +448,8 @@ def _check_elements_to_deserialize(element, elements_to_deserialize):
         return True
     else:
         return element in elements_to_deserialize
+
+
+def _add_missing_std_type_tables(net):
+    if "fuse" not in net.std_types:
+        net.std_types["fuse"] = {}

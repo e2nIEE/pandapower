@@ -4,6 +4,7 @@ import operator
 import numpy as np
 import pandas as pd
 import pandapower as pp
+import pandapower.toolbox
 import pandapower.topology as top
 from pandapower.grid_equivalents.auxiliary import drop_internal_branch_elements
 
@@ -166,10 +167,10 @@ def get_boundaries_by_bus_zone_with_boundary_branches(net):
 
     if "all" in set(net.bus.zone.values):
         raise ValueError("'all' is not a proper zone name.")  # all is used later for other purpose
-    branch_elms = pp.pp_elements(bus=False, bus_elements=False, branch_elements=True,
-                                 other_elements=False, res_elements=False)
-    branch_tuples = pp.element_bus_tuples(bus_elements=False, branch_elements=True,
-                                          res_elements=False) + [("switch", "element")]
+    branch_elms = pandapower.toolbox.pp_elements(bus=False, bus_elements=False, branch_elements=True,
+                                                                   other_elements=False, res_elements=False)
+    branch_tuples = pandapower.toolbox.element_bus_tuples(bus_elements=False, branch_elements=True,
+                                                                            res_elements=False) + [("switch", "element")]
     branch_dict = {branch_elm: [] for branch_elm in branch_elms}
     for elm, bus in branch_tuples:
         branch_dict[elm] += [bus]
@@ -212,12 +213,12 @@ def get_boundaries_by_bus_zone_with_boundary_branches(net):
                 this_zone_col = np.zeros(boundaries.shape[0])*np.nan
                 for i, _ in enumerate(buses):
                     this_zone_col[boundaries[zone_cols[i]] == zone] = i
-                this_zone_col = pd.Series(this_zone_col).dropna().astype(int)
-                other_zone_col1 = pd.Series(np.ones(this_zone_col.shape, dtype=int),
+                this_zone_col = pd.Series(this_zone_col).dropna().astype(np.int64)
+                other_zone_col1 = pd.Series(np.ones(this_zone_col.shape, dtype=np.int64),
                                             index=this_zone_col.index) - this_zone_col
                 if len(buses) == 3:
                     other_zone_col1.loc[other_zone_col1 < 0] = 0
-                    other_zone_col2 = pd.Series(3 * np.ones(this_zone_col.shape, dtype=int),
+                    other_zone_col2 = pd.Series(3 * np.ones(this_zone_col.shape, dtype=np.int64),
                                                 index=this_zone_col.index) - \
                         this_zone_col - other_zone_col1
 

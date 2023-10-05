@@ -15,12 +15,13 @@ import pytest
 import pandapower as pp
 import pandapower.control as control
 import pandapower.networks as networks
+import pandapower.toolbox
 import pandapower.topology as topology
 from pandapower import pp_dir
 from pandapower.io_utils import PPJSONEncoder, PPJSONDecoder
-from pandapower.test.toolbox import assert_net_equal, assert_res_equal, create_test_network, create_test_network2
+from pandapower.test.helper_functions import assert_net_equal, assert_res_equal, create_test_network, create_test_network2
 from pandapower.timeseries import DFData
-from pandapower.toolbox_general_issues import nets_equal
+from pandapower.toolbox import nets_equal
 
 try:
     import cryptography.fernet
@@ -66,6 +67,7 @@ def test_pickle(net_in, tmp_path):
     filename = os.path.abspath(str(tmp_path)) + "testfile.p"
     pp.to_pickle(net_in, filename)
     net_out = pp.from_pickle(filename)
+    # pickle sems to changes column types
     assert_net_equal(net_in, net_out)
 
 
@@ -244,8 +246,8 @@ def test_json_encoding_decoding():
 
     # TODO line_geodata isn't the same since tuples inside DataFrames are converted to lists
     #  (see test_json_tuple_in_dataframe)
-    assert pp.nets_equal(net, net1, exclude_elms=["line_geodata", "mg"])
-    assert pp.nets_equal(d["a"], d1["a"], exclude_elms=["line_geodata", "mg"])
+    assert pandapower.toolbox.nets_equal(net, net1, exclude_elms=["line_geodata", "mg"])
+    assert pandapower.toolbox.nets_equal(d["a"], d1["a"], exclude_elms=["line_geodata", "mg"])
     assert d["b"] == d1["b"]
     assert_graphs_equal(net.mg, net1.mg)
 
@@ -498,7 +500,7 @@ def test_json_generalized():
         out = pp.from_json_string(pp.to_json(general_in),
                                   empty_dict_like_object=pp.pandapowerNet({}))
         assert sorted(list(out.keys())) == ["df1", "df2"]
-        assert pp.nets_equal(out, general_in)
+        assert pandapower.toolbox.nets_equal(out, general_in)
 
 
 def test_json_simple_index_type():
@@ -532,7 +534,7 @@ def test_json_index_names():
     assert net_out.bus.index.name == "bus_index"
     assert net_out.line.columns.name == "line_column"
     assert net_out.test_series.index.name == "idx_name"
-    assert pp.nets_equal(net_out, net_in)
+    assert pandapower.toolbox.nets_equal(net_out, net_in)
 
 
 def test_json_multiindex_and_index_names():
@@ -575,7 +577,7 @@ def test_json_dict_of_stuff():
     assert d.keys() == dd.keys()
     assert_net_equal(net1, dd["net1"])
     assert_net_equal(net2, dd["net2"])
-    pp.dataframes_equal(df, dd["df"])
+    pandapower.toolbox.dataframes_equal(df, dd["df"])
     assert text == dd["text"]
 
 
@@ -589,8 +591,15 @@ def test_json_list_of_stuff():
 
     assert_net_equal(net1, loaded_list[0])
     assert_net_equal(net2, loaded_list[1])
-    pp.dataframes_equal(df, loaded_list[2])
+    pandapower.toolbox.dataframes_equal(df, loaded_list[2])
     assert text == loaded_list[3]
+
+
+def test_multi_index():
+    df = pd.DataFrame(columns=["a", "b", "c"], dtype=np.int64)
+    df.set_index(["a", "b"], inplace=True)
+    df2 = pp.from_json_string(pp.to_json(df))
+    assert_frame_equal(df, df2)
 
 
 if __name__ == "__main__":
