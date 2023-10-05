@@ -186,6 +186,7 @@ jobs:
           python ./.install_pycall.py
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           pip install .["all"]
+          pip install lightsim2grid
       - name: List all installed packages
         run: |
           pip list
