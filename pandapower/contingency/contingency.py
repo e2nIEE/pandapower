@@ -54,10 +54,10 @@ def run_contingency(net, nminus1_cases, pf_options=None, pf_options_nminus1=None
         options for power flow calculation in N-1 cases
     write_to_net: bool
         whether to write the results of contingency analysis to net (in "res_" tables). The results will be written for
-        the following additional variables: res_bus[["max_vm_pu", "min_vm_pu"]],
-        {res_line, res_trafo, res_trafo3w}[["max_loading_percent", "min_loading_percent", "causes_overloading",
-        "cause_element", "cause_index"]], res_line[["max_temperature_degree_celsius", "min_temperature_degree_celsius"]]
-        if "tdpf" set to True
+        the following additional variables: table res_bus with columns "max_vm_pu", "min_vm_pu",
+        tables res_line, res_trafo, res_trafo3w with columns "max_loading_percent", "min_loading_percent",
+        "causes_overloading", "cause_element", "cause_index", table res_line with columns
+        "max_temperature_degree_celsius", "min_temperature_degree_celsius" (if "tdpf" set to True)
         "causes_overloading": does this element, when defining the N-1 case, cause overloading of other elements? the
         overloading is defined by net.line["max_loading_percent_nminus1"] (if set) or net.line["max_loading_percent"]
         "cause_element": element ("line", "trafo", "trafo3w") that causes max. loading of this element
@@ -135,10 +135,10 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=pp.
     This function can be passed through to pandapower.timeseries.run_timeseries as the run_control_fct argument.
 
     The results will written for the
-    following additional variables: res_bus[["max_vm_pu", "min_vm_pu"]],
-    {res_line, res_trafo, res_trafo3w}[["max_loading_percent", "min_loading_percent", "causes_overloading",
-    "cause_element", "cause_index"]],
-    res_line[["max_temperature_degree_celsius", "min_temperature_degree_celsius"]] (if "tdpf" set to True)
+    following additional variables: table res_bus with columns "max_vm_pu", "min_vm_pu",
+    tables res_line, res_trafo, res_trafo3w with columns "max_loading_percent", "min_loading_percent",
+    "causes_overloading", "cause_element", "cause_index", table res_line with columns "max_temperature_degree_celsius",
+    "min_temperature_degree_celsius" (if "tdpf" set to True)
     "causes_overloading": does this element, when defining the N-1 case, cause overloading of other elements? the
     overloading is defined by net.line["max_loading_percent_nminus1"] (if set) or net.line["max_loading_percent"]
     "cause_element": element ("line", "trafo", "trafo3w") that causes max. loading of this element
