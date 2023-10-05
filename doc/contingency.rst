@@ -1,6 +1,6 @@
-###########
+#####################
 Contingency analysis
-###########
+#####################
 
 We can define N-1 cases to be analysed as contingencies. This means that indices of net.line, net.trafo, net.trafo3w can be defined as contingencies, which are switched off one at a time. The power system is analyzed with power flow calculations, and the min/max values among all the N-1 cases are obtained for relevant variables.
 
