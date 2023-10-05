@@ -222,13 +222,13 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=pp.
     max_i_ka_limit_all = np.r_[
         net.line.max_i_ka.values, net.trafo.sn_mva.values / (net.trafo.vn_hv_kv.values * np.sqrt(3))]
     max_loading_limit_all = np.r_[net.line["max_loading_percent_nminus1"]
-                                  if "max_loading_percent_nminus1" in net.line.columns
-                                  else net.line["max_loading_percent"] if n_lines > 0 else [],
-                                  net.trafo["max_loading_percent_nminus1"]
-                                  if "max_loading_percent_nminus1" in net.trafo.columns
-                                  else net.trafo["max_loading_percent"] if n_trafos > 0 else []]
+    if "max_loading_percent_nminus1" in net.line.columns
+    else net.line["max_loading_percent"] if n_lines > 0 else [],
+    net.trafo["max_loading_percent_nminus1"]
+    if "max_loading_percent_nminus1" in net.trafo.columns
+    else net.trafo["max_loading_percent"] if n_trafos > 0 else []]
     voltage_all = np.r_[net.bus.loc[net.line.from_bus.values, "vn_kv"].values if n_lines > 0 else [],
-                        net.trafo.vn_hv_kv if n_trafos > 0 else []]
+    net.trafo.vn_hv_kv if n_trafos > 0 else []]
     flows_all_mva = np.nan_to_num(kamps_all * voltage_all * np.sqrt(3))
     flows_limit_all = np.nan_to_num(max_loading_limit_all / 100 * max_i_ka_limit_all * voltage_all * np.sqrt(3))
 
@@ -260,12 +260,14 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=pp.
         net[f"res_{element}"]["causes_overloading"] = False
         if element in nminus1_cases:
             # order of n-1 cases is always sorted, so "vertical" sorting is different than "horizontal"
-            net[f"res_{element}"].loc[net[element].index.values[np.sort(map_index[element])], "causes_overloading"] = causes_overloading
+            net[f"res_{element}"].loc[net[element].index.values[
+                np.sort(map_index[element])], "causes_overloading"] = causes_overloading
         cause_mask = cause_element == "line"
         if "line" in map_index:
             cause_index[cause_mask] = net.line.index.values[np.sort(map_index["line"])[cause_index[cause_mask]]]
         if "trafo" in map_index:
-            cause_index[~cause_mask] = net.trafo.index.values[np.sort(map_index["trafo"])[cause_index[~cause_mask] - n_lines_cases]]
+            cause_index[~cause_mask] = net.trafo.index.values[
+                np.sort(map_index["trafo"])[cause_index[~cause_mask] - n_lines_cases]]
         net[f"res_{element}"]["cause_index"] = cause_index
         net[f"res_{element}"]["cause_element"] = cause_element
 
@@ -274,7 +276,8 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=pp.
         congestion_caused = congestion_mva.sum(axis=1)
         if element in nminus1_cases:
             # order of n-1 cases is always sorted, so "vertical" sorting is different than "horizontal"
-            net[f"res_{element}"].loc[net[element].index.values[np.sort(map_index[element])], "congestion_caused_mva"] = congestion_caused
+            net[f"res_{element}"].loc[net[element].index.values[
+                np.sort(map_index[element])], "congestion_caused_mva"] = congestion_caused
 
 
 def _convert_trafo_phase_shifter(net):
@@ -294,7 +297,8 @@ def _convert_trafo_phase_shifter(net):
     return tap_phase_shifter, tap_pos, shift_degree
 
 
-def _update_contingency_results(net, contingency_results, result_variables, nminus1, cause_element=None, cause_index=None):
+def _update_contingency_results(net, contingency_results, result_variables, nminus1, cause_element=None,
+                                cause_index=None):
     for element, vars in result_variables.items():
         for var in vars:
             val = net[f"res_{element}"][var].values

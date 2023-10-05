@@ -18,6 +18,7 @@ from pandapower.contingency.contingency import _convert_trafo_phase_shifter
 
 try:
     import lightsim2grid
+
     lightsim2grid_installed = True
 except ImportError:
     lightsim2grid_installed = False
@@ -227,14 +228,21 @@ def test_cause_congestion():
             run_for_from_bus_loading(net)
             net[element].at[i, 'in_service'] = True
             idx_overloaded_tr = net.res_trafo.loc[net.res_trafo.loading_percent > net.trafo.max_loading_percent].index
-            congestion_tr = (net.res_trafo.loc[idx_overloaded_tr, 'loading_percent'].values - net.trafo.loc[idx_overloaded_tr, 'max_loading_percent'].values) * net.trafo.loc[idx_overloaded_tr, 'sn_mva'].values / 100
+            congestion_tr = (net.res_trafo.loc[idx_overloaded_tr, 'loading_percent'].values -
+                             net.trafo.loc[idx_overloaded_tr, 'max_loading_percent'].values) * \
+                            net.trafo.loc[idx_overloaded_tr, 'sn_mva'].values / 100
             idx_overloaded_ln = net.res_line.loc[net.res_line.loading_percent > net.line.max_loading_percent].index
-            congestion_ln = (net.res_line.loc[idx_overloaded_ln, 'loading_percent'].values - net.line.loc[idx_overloaded_ln, 'max_loading_percent'].values) * net.line.loc[idx_overloaded_ln, 'max_i_ka'].values * net.bus.loc[net.line.loc[idx_overloaded_ln, 'from_bus'].values, 'vn_kv'].values * np.sqrt(3) / 100
+            congestion_ln = (net.res_line.loc[idx_overloaded_ln, 'loading_percent'].values -
+                             net.line.loc[idx_overloaded_ln, 'max_loading_percent'].values) * \
+                            net.line.loc[idx_overloaded_ln, 'max_i_ka'].values * \
+                            net.bus.loc[net.line.loc[idx_overloaded_ln, 'from_bus'].values, 'vn_kv'].values * \
+                            np.sqrt(3) / 100
             if res[element].at[i, "congestion_caused_mva"] == 0:
                 assert len(congestion_tr) == 0  # just to be sure...
                 assert len(congestion_ln) == 0
             else:
-                assert np.allclose(res[element].at[i, "congestion_caused_mva"], congestion_tr.sum() + congestion_ln.sum(), rtol=0, atol=1e-6)
+                assert np.allclose(res[element].at[i, "congestion_caused_mva"],
+                                   congestion_tr.sum() + congestion_ln.sum(), rtol=0, atol=1e-6)
 
 
 def test_cause_element_index():
