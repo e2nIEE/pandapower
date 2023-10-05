@@ -43,16 +43,16 @@ def run_contingency(net, nminus1_cases, pf_options=None, pf_options_nminus1=None
     calculated N-1 cases. The same convention applies to "temperature_degree_celsius" when applicable.
     This function can be passed through to pandapower.timeseries.run_timeseries as the run_control_fct argument.
 
-    Parameters
+    INPUT
     ----------
-    net : pandapowerNet
-    nminus1_cases : dict
+    **net** - pandapowerNet
+    **nminus1_cases** - dict
         describes all N-1 cases, e.g. {"line": {"index": [1, 2, 3]}, "trafo": {"index": [0]}, "trafo3w": {"index": [1]}}
-    pf_options : dict
+    **pf_options** - dict
         options for power flow calculation in N-0 case
-    pf_options_nminus1 : dict
+    **pf_options_nminus1** - dict
         options for power flow calculation in N-1 cases
-    write_to_net: bool
+    **write_to_net** - bool
         whether to write the results of contingency analysis to net (in "res_" tables). The results will be written for
         the following additional variables: table res_bus with columns "max_vm_pu", "min_vm_pu",
         tables res_line, res_trafo, res_trafo3w with columns "max_loading_percent", "min_loading_percent",
@@ -62,12 +62,12 @@ def run_contingency(net, nminus1_cases, pf_options=None, pf_options_nminus1=None
         overloading is defined by net.line["max_loading_percent_nminus1"] (if set) or net.line["max_loading_percent"]
         "cause_element": element ("line", "trafo", "trafo3w") that causes max. loading of this element
         "cause_index": index of the element ("line", "trafo", "trafo3w") that causes max. loading of this element
-    contingency_evaluation_function : func
+    **contingency_evaluation_function** - func
         function to use for power flow calculation, default pp.runpp
 
-    Returns
+    OUTPUT
     -------
-    contingency_results : dict
+    **contingency_results** - dict
         dict of arrays per element for index, min/max result
     """
     # set up the dict for results and relevant variables
