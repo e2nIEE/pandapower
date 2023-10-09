@@ -186,7 +186,7 @@ def convert_gis_to_geodata(net, node_geodata=True, branch_geodata=True):
 @deprecated("Use convert_geodata_to_geojson instead. Support for gis will be dropped.")
 def convert_geodata_to_gis(net, epsg=31467, node_geodata=True, branch_geodata=True, remove_xy=False):
     """
-    Transforms the bus and line geodata of a net into a geopandaas geodataframe with the respective
+    Transforms the bus and line geodata of a net into a geopandas geodataframe with the respective
     geometries.
 
     :param net: The net for which to convert the geodata
@@ -275,12 +275,20 @@ def convert_crs(net: pandapower.pandapowerNet or 'pandapipes.pandapipesNet', eps
 def dump_to_geojson(
         net: pandapower.pandapowerNet or 'pandapipes.pandapipesNet',
         nodes: bool | List[int] = False,
-        branches: bool | List[int] = False
+        branches: bool | List[int] = False,
+        switches: bool | List[int] = False,
+        trafos: bool | List[int] = False,
+        t_is_3w: bool = False
 ) -> geojson.FeatureCollection:
     """
     This function works for pandapowerNet and pandapipesNet. Documentation will refer to names from pandapower.
     Dumps all primitive values from bus, bus_geodata, res_bus, line, line_geodata and res_line into a geojson object.
     It is recommended to only dump networks using WGS84 for GeoJSON specification compliance.
+
+    Since switches and trafos do not contain their own geodata in pandapower, geodata is taken from the components
+    connected to them. Trafos are always given the geodata from the lv_bus connected at the trafo. Switches are given
+    geodata from the bus the switch is connected to. They do not carry info about where the other components connected
+    to them are located!
 
     :param net: The pandapower network
     :type net: pandapowerNet|pandapipesNet
@@ -288,6 +296,14 @@ def dump_to_geojson(
     :type nodes: bool | list, default False
     :param branches: if True return contains all line data, can be a list of line ids that should be contained
     :type branches: bool | list, default False
+    :param switches: if True return contains all switch data, can be a list of switch ids that should be contained
+    (only supported for pandapowerNet)
+    :type switches: bool | list, default False
+    :param trafos: if True return contains all trafo data, can be a list of trafo ids that should be contained
+    (only supported for pandapowerNet)
+    :type trafos: bool | list, default False
+    :param t_is_3w: if True, the trafos are treated as 3W-trafos
+    :type t_is_3w: bool, default False
     :return: A geojson object.
     :return type: geojson.FeatureCollection
     """
@@ -315,6 +331,15 @@ def dump_to_geojson(
         logger.warning(e)
         return geojson.FeatureCollection([])
 
+    def _get_props(r, c, p) -> None:
+        for col in c:
+            try:
+                p[col] = float(r[col])
+                if math.isnan(p[col]):
+                    p[col] = None
+            except (ValueError, TypeError):
+                p[col] = str(r[col])
+
     missing_geom = 0
     features = []
     # build geojson features for nodes
@@ -333,13 +358,7 @@ def dump_to_geojson(
                     'pp_index': ind,
                 }
                 uid = f"{prop['pp_type']}-{ind}"
-                for c in cols:
-                    try:
-                        prop[c] = float(row[c])
-                        if math.isnan(prop[c]):
-                            prop[c] = None
-                    except (ValueError, TypeError):
-                        prop[c] = str(row[c])
+                _get_props(row, cols, prop)
                 if uid not in props:
                     props[uid] = {}
                 props[uid].update(prop)
@@ -372,13 +391,7 @@ def dump_to_geojson(
                     'pp_index': ind,
                 }
                 uid = f"{prop['pp_type']}-{ind}"
-                for c in cols:
-                    try:
-                        prop[c] = float(row[c])
-                        if math.isnan(prop[c]):
-                            prop[c] = None
-                    except (ValueError, TypeError):
-                        prop[c] = str(row[c])
+                _get_props(row, cols, prop)
                 if uid not in props:
                     props[uid] = {}
                 props[uid].update(prop)
@@ -398,6 +411,56 @@ def dump_to_geojson(
             if type(geom):
                 geom = geojson.loads(geom)
             features.append(geojson.Feature(geometry=geom, id=uid, properties=props[uid]))
+
+    if switches and is_pandapower:
+        if type(switches) == bool:
+            switches = net.switch.index
+        if 'switch' in net.keys():
+            cols = net.switch.columns
+            for ind, row in net.switch.mask(net.switch.isin(switches)).iterrows():
+                prop = {
+                    'pp_type': 'switch',
+                    'pp_index': ind,
+                }
+                uid = f"switch-{ind}"
+                _get_props(row, cols, prop)
+
+                # getting geodata for switches
+                geom = net.bus.geo.at[row.bus]
+                if isinstance(geom, geojson.LineString):
+                    logger.warning(f"LineString geometry not supported for type 'switch'. Skipping switch {ind}")
+                    geom = None
+                if geom is None or geom == "[]":
+                    missing_geom += 1
+                    continue
+                if type(geom) == str:
+                    geom = geojson.loads(geom)
+                features.append(geojson.Feature(geometry=geom, id=uid, properties=prop))
+
+        if trafos and is_pandapower:
+            t_type = 'trafo3w' if t_is_3w else 'trafo'
+            if type(trafos) == bool:
+                trafos = net[t_type].index
+            if t_type in net.keys():
+                cols = net[t_type].columns
+                for ind, row in net[t_type].mask(net[t_type].isin(trafos)).iterrows():
+                    prop = {
+                        'pp_type': t_type,
+                        'pp_index': ind,
+                    }
+                    uid = f"{t_type}-{ind}"
+                    _get_props(row, cols, prop)
+
+                    # getting geodata for switches
+                    geom = net.bus.geo.at[row.lv_bus]
+                    if isinstance(geom, geojson.LineString):
+                        logger.warning(f"LineString geometry not supported for type '{t_type}'. Skipping trafo {ind}")
+                    if geom is None or geom == "[]":
+                        missing_geom += 1
+                        continue
+                    if type(geom) == str:
+                        geom = geojson.loads(geom)
+                    features.append(geojson.Feature(geometry=geom, id=uid, properties=prop))
 
     if missing_geom:
         logger.warning(f"{missing_geom} geometries could not be converted to geojson. Please update network geodata!")
