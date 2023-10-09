@@ -213,9 +213,9 @@ def test_convert_geodata_to_geojson():
     geo.convert_geodata_to_geojson(net)
 
     # Überprüfe die Ergebnisse
-    assert geojson.loads(net.bus.at[0, "geo"]) == geojson.Point((20.0, 10.0))
-    assert geojson.loads(net.bus.at[1, "geo"]) == geojson.Point((40.0, 30.0))
-    assert geojson.loads(net.line.at[0, "geo"]) == geojson.LineString([(20.0, 10.0), (40.0, 30.0)])
+    assert geojson.loads(net.bus.at[0, "geo"]) == geojson.Point((10.0, 20.0))
+    assert geojson.loads(net.bus.at[1, "geo"]) == geojson.Point((30.0, 40.0))
+    assert geojson.loads(net.line.at[0, "geo"]) == geojson.LineString([(10.0, 20.0), (30.0, 40.0)])
     #TODO: Test could be more exhaustive (e.g. test delete=False, lonlat=True, geo_str=False)
 
 def test_convert_gis_to_geojson():
