@@ -1352,9 +1352,9 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
 
     default_max_iteration = {"nr": 10, "iwamoto_nr": 10, "bfsw": 100, "gs": 10000, "fdxb": 30,
                              "fdbx": 30}
-    with_ssc = len(net.ssc.query("in_service & controllable")) > 0
-    with_facts = len(net.svc.query("in_service & controllable")) > 0 or \
-                 len(net.tcsc.query("in_service & controllable")) > 0 or with_ssc
+    with_ssc = len(net.ssc.query("in_service")) > 0
+    with_facts = len(net.svc.query("in_service")) > 0 or \
+                 len(net.tcsc.query("in_service")) > 0 or with_ssc
     if max_iteration == "auto":
         # tdpf is an option rather than algorithm; svc need more iterations to converge
         max_iteration = 30 if tdpf or with_facts else default_max_iteration[algorithm]
@@ -1371,10 +1371,10 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
         init_vm_pu = None
         init_va_degree = None
 
-    # SSC devices can lead to the grid having isolated buses from the point of view of DC power flow, so choose 'flat'
+    # FACTS devices can lead to the grid having isolated buses from the point of view of DC power flow, so choose 'flat'
     if init == "auto":
         if init_va_degree is None or (isinstance(init_va_degree, str) and init_va_degree == "auto"):
-            init_va_degree = "dc" if calculate_voltage_angles and not with_ssc else "flat"
+            init_va_degree = "dc" if calculate_voltage_angles and not with_facts else "flat"
         if init_vm_pu is None or (isinstance(init_vm_pu, str) and init_vm_pu == "auto"):
             init_vm_pu = (net.ext_grid.vm_pu.values.sum() + net.gen.vm_pu.values.sum()) / \
                          (len(net.ext_grid.vm_pu.values) + len(net.gen.vm_pu.values))

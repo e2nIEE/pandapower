@@ -2,6 +2,8 @@ import os
 import pytest
 import math
 import pandas as pd
+
+import pandapower as pp
 from pandapower.test import test_path
 
 from pandapower.converter import from_cim as cim2pp
@@ -70,7 +72,9 @@ def example_multivoltage():
 
     cgmes_files = [os.path.join(folder_path, 'example_multivoltage.zip')]
 
-    return cim2pp.from_cim(file_list=cgmes_files)
+    net = cim2pp.from_cim(file_list=cgmes_files)
+    pp.runpp(net, calculate_voltage_angles="auto")
+    return net
 
 
 def test_example_multivoltage_res_xward(example_multivoltage):

@@ -124,7 +124,7 @@ def test_runpp_init():
     b3 = pp.create_bus(net, vn_kv=0.4)
     tidx = pp.create_transformer(net, hv_bus=b2, lv_bus=b3, std_type="0.25 MVA 20/0.4 kV")
     net.trafo.shift_degree.at[tidx] = 70
-    pp.runpp(net)
+    pp.runpp(net, calculate_voltage_angles="auto")
     va = net.res_bus.va_degree.at[4]
     pp.runpp(net, calculate_voltage_angles=True, init_va_degree="dc")
     assert np.allclose(va - net.trafo.shift_degree.at[tidx], net.res_bus.va_degree.at[4])
@@ -566,11 +566,11 @@ def test_bsfw_algorithm_with_branch_loops():
                    std_type="NA2XS2Y 1x240 RM/25 12/20 kV", name="Line meshed")
     net.switch.loc[:, "closed"] = True
 
-    pp.runpp(net)
+    pp.runpp(net, calculate_voltage_angles="auto")
     vm_nr = net.res_bus.vm_pu
     va_nr = net.res_bus.va_degree
 
-    pp.runpp(net, algorithm='bfsw')
+    pp.runpp(net, algorithm='bfsw', calculate_voltage_angles="auto")
     vm_alg = net.res_bus.vm_pu
     va_alg = net.res_bus.va_degree
     assert np.allclose(vm_nr, vm_alg)
@@ -583,8 +583,8 @@ def test_pypower_algorithms_iter():
     for alg in alg_to_test:
         for net in result_test_network_generator(skip_test_impedance=True):
             try:
-                runpp_with_consistency_checks(net, enforce_q_lims=True, algorithm=alg)
-                runpp_with_consistency_checks(net, enforce_q_lims=False, algorithm=alg)
+                runpp_with_consistency_checks(net, enforce_q_lims=True, algorithm=alg, calculate_voltage_angles="auto")
+                runpp_with_consistency_checks(net, enforce_q_lims=False, algorithm=alg, calculate_voltage_angles="auto")
             except (AssertionError):
                 raise UserWarning("Consistency Error after adding %s" % net.last_added_case)
             except(LoadflowNotConverged):
@@ -928,12 +928,12 @@ def test_storage_pf():
 
 def test_add_element_and_init_results():
     net = simple_four_bus_system()
-    pp.runpp(net, init="flat")
+    pp.runpp(net, init="flat", calculate_voltage_angles="auto")
     pp.create_bus(net, vn_kv=20.)
     pp.create_line(net, from_bus=2, to_bus=3, length_km=1, name="new line" + str(1),
                    std_type="NAYY 4x150 SE")
     try:
-        pp.runpp(net, init="results")
+        pp.runpp(net, init="results", calculate_voltage_angles="auto")
         assert False
     except UserWarning:
         pass
