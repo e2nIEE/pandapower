@@ -418,6 +418,10 @@ def dump_to_geojson(
         if 'switch' in net.keys():
             cols = net.switch.columns
             for ind, row in net.switch.mask(net.switch.isin(switches)).iterrows():
+                if pd.isna(row.bus):
+                    # switch is not connected to a bus! Will count this as missing geometry.
+                    missing_geom += 1
+                    continue
                 prop = {
                     'pp_type': 'switch',
                     'pp_index': ind,
