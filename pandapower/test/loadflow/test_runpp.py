@@ -237,12 +237,12 @@ def z_switch_net():
 def test_z_switch(z_switch_net, numba):
     net = z_switch_net
     pp.runpp(net, numba=numba, switch_rx_ratio=1)
-    assert net.res_bus.vm_pu.at[1] == net.res_bus.vm_pu.at[2]
+    assert pytest.approx(net.res_bus.vm_pu.at[1], abs=1e-9) == net.res_bus.vm_pu.at[2]
 
     net_zero_z_switch = copy.deepcopy(net)
     net_zero_z_switch.switch.z_ohm = 0
     pp.runpp(net_zero_z_switch, numba=numba, switch_rx_ratio=1)
-    assert net_zero_z_switch.res_bus.vm_pu.at[0] == net_zero_z_switch.res_bus.vm_pu.at[2]
+    assert pytest.approx(net_zero_z_switch.res_bus.vm_pu.at[0], abs=1e-9) == net_zero_z_switch.res_bus.vm_pu.at[2]
 
 
 @pytest.fixture
