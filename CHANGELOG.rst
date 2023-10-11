@@ -113,6 +113,7 @@ Change Log
 - [CHANGED] Compatibility with pandas 1.5, dropped "six" dependency
 - [CHANGED] from_ppc(): revision of indexing and naming of elements
 - [CHANGED] Complete revision of validate_from_ppc()
+- [ADDED] helper functions for contingency calculation
 - [CHANGED] Improve defaults, add docstrings and rename parameters of plot_voltage_profile() and plot_loading()
 - [CHANGED] merge_nets(): revised for groups and new behavior regarding indexing; reindex_elements(): revised for groups, don't overwrite column "index" and feature parameter lookup
 - [FIXED] Bug with user_pf_options: _init_runpp_options in auxiliary.py ignored user_pf_options when performing sanity checks
