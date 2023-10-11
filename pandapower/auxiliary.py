@@ -1352,9 +1352,7 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
 
     default_max_iteration = {"nr": 10, "iwamoto_nr": 10, "bfsw": 100, "gs": 10000, "fdxb": 30,
                              "fdbx": 30}
-    with_ssc = len(net.ssc.query("in_service")) > 0
-    with_facts = len(net.svc.query("in_service")) > 0 or \
-                 len(net.tcsc.query("in_service")) > 0 or with_ssc
+    with_facts = net.svc.in_service.any() or net.tcsc.in_service.any() or net.ssc.in_service.any()
     if max_iteration == "auto":
         # tdpf is an option rather than algorithm; svc need more iterations to converge
         max_iteration = 30 if tdpf or with_facts else default_max_iteration[algorithm]
