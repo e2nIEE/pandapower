@@ -387,7 +387,7 @@ class OutputWriter(JSONSerializableClass):
         ppc = net["_ppc"]
         if ppc is None:
             # if no ppc is in net-> create one
-            options = dict(algorithm='nr', calculate_voltage_angles="auto", init="auto",
+            options = dict(algorithm='nr', calculate_voltage_angles=True, init="auto",
                            max_iteration="auto", tolerance_mva=1e-8, trafo_model="t",
                            trafo_loading="current", enforce_q_lims=False, check_connectivity=True,
                            voltage_depend_loads=True, consider_line_temperature=False)

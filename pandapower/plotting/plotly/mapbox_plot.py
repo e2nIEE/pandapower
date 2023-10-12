@@ -15,11 +15,13 @@ except ImportError:
     import logging
 logger = logging.getLogger(__name__)
 
+
 class MapboxTokenMissing(ppException):
     """
     Exception being raised in case loadflow did not converge.
     """
     pass
+
 
 def _on_map_test(x, y):
     """
@@ -33,13 +35,12 @@ def _on_map_test(x, y):
     except ImportError:
         # if geopy is not available there will be no geo-coordinates check
         # therefore if geo-coordinates are not real and user sets on_map=True, an empty map will be plot!
-        logger.warning('Geo-coordinates check cannot be peformed because geopy package not available \n\t--> '
+        raise ImportError('Geo-coordinates check cannot be peformed because geopy package not available \n\t--> '
                        'if geo-coordinates are not in lat/lon format an empty plot may appear...')
-        return True
     try:
         location = geolocator.reverse("{0}, {1}".format(x, y), language='en-US')
     except GeocoderTimedOut:
-        logger.Error("Existing net geodata cannot be geo-located: possible reason: geo-data not in lat/long ->"
+        logger.error("Existing net geodata cannot be geo-located: possible reason: geo-data not in lat/long ->"
                      "try geo_data_to_latlong(net, projection) to transform geodata to lat/long!")
 
     if location.address is None:
@@ -64,9 +65,8 @@ def geo_data_to_latlong(net, projection):
     try:
         from pyproj import Proj, transform
     except ImportError:
-        logger.warning('Geo-coordinates check cannot be peformed because pyproj package not available \n\t--> '
+        raise ImportError('Geo-coordinates check cannot be peformed because pyproj package not available \n\t--> '
                        'if geo-coordinates are not in lat/lon format an empty plot may appear...')
-        return
 
     if projection == 'epsg:4326':
         return
@@ -96,6 +96,7 @@ def geo_data_to_latlong(net, projection):
         logger.warning('Transformation of geodata to lat/long failed!')
         return
 
+
 def set_mapbox_token(token):
     from pandapower import pp_dir
     path = os.path.join(pp_dir, "plotting", "plotly")
@@ -103,10 +104,10 @@ def set_mapbox_token(token):
     with open(filename, "w") as mapbox_file:
         mapbox_file.write(token)
 
+
 def _get_mapbox_token():
     from pandapower import pp_dir
     path = os.path.join(pp_dir, "plotting", "plotly")
     filename = os.path.join(path, 'mapbox_token.txt')
     with open(filename, "r") as mapbox_file:
         return mapbox_file.read()
-

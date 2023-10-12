@@ -386,7 +386,7 @@ def test_tcsc_simple3():
 
     pp.create_tcsc(net, 1, 2, xl, xc, 5, 170, "Test", controllable=True, min_angle_degree=90, max_angle_degree=180)
 
-    runpp_with_consistency_checks(net)
+    runpp_with_consistency_checks(net, init="dc")
 
     net_ref = copy_with_impedance(net)
     pp.runpp(net_ref)
@@ -422,7 +422,7 @@ def test_compare_to_impedance():
 
     pp.create_tcsc(net, 1, 2, xl, xc, -20, 170, "Test", controllable=True, min_angle_degree=90, max_angle_degree=180)
 
-    runpp_with_consistency_checks(net)
+    runpp_with_consistency_checks(net, init="dc")
 
     pp.create_impedance(net_ref, 1, 2, 0, net.res_tcsc.x_ohm.at[0] / baseZ, baseMVA)
 
@@ -438,7 +438,7 @@ def test_compare_to_impedance():
     # compare when not controllable
     net.tcsc.thyristor_firing_angle_degree = net.res_tcsc.thyristor_firing_angle_degree
     net.tcsc.controllable = False
-    runpp_with_consistency_checks(net)
+    runpp_with_consistency_checks(net, init="dc")
 
     compare_tcsc_impedance(net, net_ref, 0, 0)
     assert np.allclose(net._ppc["internal"]["J"].toarray(), net_ref._ppc["internal"]["J"].toarray(), rtol=0, atol=5e-5)
@@ -463,7 +463,7 @@ def test_tcsc_case_study():
     net_ref = net.deepcopy()
 
     pp.create_tcsc(net, f, aux, xl, xc, -100, 100, controllable=True)
-    pp.runpp(net)
+    pp.runpp(net, init="dc")
 
     pp.create_impedance(net_ref, f, aux, 0, net.res_tcsc.at[0, "x_ohm"] / baseZ, baseMVA)
     pp.runpp(net_ref)
@@ -607,14 +607,14 @@ def test_svc_tcsc_case_study():
 
     pp.create_svc(net, net.bus.loc[net.bus.name == "B7"].index.values[0], 1, -10, 1., 90)
 
-    pp.runpp(net)
+    pp.runpp(net, init="dc")
 
     net_ref = copy_with_impedance(net)
     pp.runpp(net_ref)
     compare_tcsc_impedance(net, net_ref, net.tcsc.index, net_ref.impedance.index)
 
     net.gen.slack_weight = 1
-    pp.runpp(net, distributed_slack=True)
+    pp.runpp(net, distributed_slack=True, init="dc")
     net_ref = copy_with_impedance(net)
     pp.runpp(net_ref, distributed_slack=True)
     compare_tcsc_impedance(net, net_ref, net.tcsc.index, net_ref.impedance.index)
