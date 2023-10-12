@@ -178,15 +178,18 @@ def coords_from_node_geodata(element_indices, from_nodes, to_nodes, node_geodata
     else:
         ng = node_geodata
 
-    coords = [[(x_from, y_from), (x_to, y_to)] for x_from, y_from, x_to, y_to
-              in np.concatenate([ng.loc[fb_with_geo, ["x", "y"]].values,
-                                 ng.loc[tb_with_geo, ["x", "y"]].values], axis=1)
-              if not ignore_zero_length or not (x_from == x_to and y_from == y_to)]
+    coordinates = np.concatenate([ng.loc[fb_with_geo, ["x", "y"]].values, ng.loc[tb_with_geo, ["x", "y"]].values], axis=1)
+    zero_length = [(not ignore_zero_length or not (x_from == x_to and y_from == y_to))
+                   for x_from, y_from, x_to, y_to in coordinates]
+    coordinates = coordinates[zero_length]
+    coords = [[(x_from, y_from), (x_to, y_to)] for x_from, y_from, x_to, y_to in coordinates]
 
     if len(elements_without_geo) > 0:
         logger.warning("No coords found for %s %s. %s geodata is missing for those %s!"
                        % (table_name + "s", elements_without_geo, node_name, table_name + "s"))
-    return coords, elements_with_geo
+    if not all(zero_length):
+        logger.warning(f"Skipping zero length {table_name}s {elements_with_geo[[not b for b in zero_length]]}.")
+    return coords, elements_with_geo[zero_length]
 
 
 def set_line_geodata_from_bus_geodata(net, line_index=None, overwrite=False, replace_missing_coords=False, ignore_zero_length=True):
@@ -198,7 +201,8 @@ def set_line_geodata_from_bus_geodata(net, line_index=None, overwrite=False, rep
     :param overwrite: whether the existing coordinates in net.line_geodata must be overwritten
     :return: None
     """
-    line_index = line_index if line_index is not None else net.line.index
+    if not line_index:
+        line_index = net.line.index
     if not overwrite:
         line_index = np.setdiff1d(line_index, net.line_geodata.index)
 
@@ -213,6 +217,7 @@ def set_line_geodata_from_bus_geodata(net, line_index=None, overwrite=False, rep
 
     net.line_geodata = net.line_geodata.reindex(net.line.index)
     net.line_geodata.loc[line_index_successful, 'coords'] = coords
+    net.line_geodata.dropna(inplace=True)  # drop lines without coords
 
     num_failed = len(line_index) - len(line_index_successful)
     if num_failed > 0:
