@@ -340,7 +340,7 @@ def dump_to_geojson(
             except (ValueError, TypeError):
                 p[col] = str(r[col])
 
-    missing_geom = 0
+    missing_geom: List[int] = [0, 0, 0, 0]  # missing nodes, branches, switches, trafos
     features = []
     # build geojson features for nodes
     if nodes:
@@ -368,7 +368,7 @@ def dump_to_geojson(
             iterator = node_geodata.loc[nodes].items()
         for ind, geom in iterator:
             if geom is None or geom == "[]":
-                missing_geom += 1
+                missing_geom[0] += 1
                 continue
             uid = f"bus-{ind}" if is_pandapower else f"junction-{ind}"
             if type(geom) == str:
@@ -405,7 +405,7 @@ def dump_to_geojson(
             iterator = branch_geodata.loc[branches].items()
         for ind, geom in iterator:
             if geom is None or geom == "[]":
-                missing_geom += 1
+                missing_geom[1] += 1
                 continue
             uid = f"line-{ind}" if is_pandapower else f"pipe-{ind}"
             if type(geom):
@@ -420,7 +420,7 @@ def dump_to_geojson(
             for ind, row in net.switch.mask(net.switch.isin(switches)).iterrows():
                 if pd.isna(row.bus):
                     # switch is not connected to a bus! Will count this as missing geometry.
-                    missing_geom += 1
+                    missing_geom[2] += 1
                     continue
                 prop = {
                     'pp_type': 'switch',
@@ -435,7 +435,7 @@ def dump_to_geojson(
                     logger.warning(f"LineString geometry not supported for type 'switch'. Skipping switch {ind}")
                     geom = None
                 if geom is None or geom == "[]":
-                    missing_geom += 1
+                    missing_geom[2] += 1
                     continue
                 if type(geom) == str:
                     geom = geojson.loads(geom)
@@ -460,14 +460,23 @@ def dump_to_geojson(
                     if isinstance(geom, geojson.LineString):
                         logger.warning(f"LineString geometry not supported for type '{t_type}'. Skipping trafo {ind}")
                     if geom is None or geom == "[]":
-                        missing_geom += 1
+                        missing_geom[3] += 1
                         continue
                     if type(geom) == str:
                         geom = geojson.loads(geom)
                     features.append(geojson.Feature(geometry=geom, id=uid, properties=prop))
 
-    if missing_geom:
-        logger.warning(f"{missing_geom} geometries could not be converted to geojson. Please update network geodata!")
+    if any(missing_geom):
+        missing_str = []
+        if missing_geom[0]:
+            missing_str.append(f"{missing_geom[0]} branch geometries")
+        if missing_geom[1]:
+            missing_str.append(f"{missing_geom[1]} node geometries")
+        if missing_geom[2]:
+            missing_str.append(f"{missing_geom[2]} switch geometries")
+        if missing_geom[3]:
+            missing_str.append(f"{missing_geom[3]} trafo geometries")
+        logger.warning(f"{', '.join(missing_str)} could not be converted to geojson. Please update network's geodata!")
 
     # find and set crs if available
     crs_node = None
