@@ -2349,20 +2349,20 @@ def create_trafo3w(net, item, tap_opt='nntap'):
 
     if pf_type.itapzdep:
         x_points = (net.trafo3w.at[tid, "tap_min"], net.trafo3w.at[tid, "tap_neutral"], net.trafo3w.at[tid, "tap_max"])
-        for side in ("h", "m", "l"):
-            vk_min = ga(pf_type, f"uktr3mn_{side}")
-            vk_neutral = net.trafo3w.at[tid, f"vk_{side}v_percent"]
-            vk_max = ga(pf_type, f"uktr3mx_{side}")
-            vkr_min = ga(pf_type, f"uktrr3mn_{side}")
-            vkr_neutral = net.trafo3w.at[tid, f"vkr_{side}v_percent"]
-            vkr_max = ga(pf_type, f"uktrr3mx_{side}")
-            # todo zero-sequence parameters (must be implemented in build_branch first)
-            pp.control.create_trafo_characteristics(net, trafotable="trafo3w", trafo_index=tid,
-                                                    variable=f"vk_{side}v_percent", x_points=x_points,
-                                                    y_points=(vk_min, vk_neutral, vk_max))
-            pp.control.create_trafo_characteristics(net, trafotable="trafo3w", trafo_index=tid,
-                                                    variable=f"vkr_{side}v_percent", x_points=x_points,
-                                                    y_points=(vkr_min, vkr_neutral, vkr_max))
+        side = net.trafo3w.at[tid, "tap_side"]
+        vk_min = ga(pf_type, f"uktr3mn_{side[0]}")
+        vk_neutral = net.trafo3w.at[tid, f"vk_{side}_percent"]
+        vk_max = ga(pf_type, f"uktr3mx_{side[0]}")
+        vkr_min = ga(pf_type, f"uktrr3mn_{side[0]}")
+        vkr_neutral = net.trafo3w.at[tid, f"vkr_{side}_percent"]
+        vkr_max = ga(pf_type, f"uktrr3mx_{side[0]}")
+        # todo zero-sequence parameters (must be implemented in build_branch first)
+        pp.control.create_trafo_characteristics(net, trafotable="trafo3w", trafo_index=tid,
+                                                variable=f"vk_{side}_percent", x_points=x_points,
+                                                y_points=(vk_min, vk_neutral, vk_max))
+        pp.control.create_trafo_characteristics(net, trafotable="trafo3w", trafo_index=tid,
+                                                variable=f"vkr_{side}_percent", x_points=x_points,
+                                                y_points=(vkr_min, vkr_neutral, vkr_max))
 
 
 def propagate_bus_coords(net, bus1, bus2):
