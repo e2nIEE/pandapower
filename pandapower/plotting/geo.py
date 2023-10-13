@@ -23,7 +23,7 @@ except ImportError:
     geopandas_INSTALLED = False
 
 try:
-    from pyproj import Proj, transform, Transformer
+    from pyproj import Transformer
 
     pyproj_INSTALLED = True
 except ImportError:
@@ -106,9 +106,8 @@ def _convert_xy_epsg(x, y, epsg_in=4326, epsg_out=31467):
     """
     if not pyproj_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "pyproj")
-    in_proj = Proj(init='epsg:%i' % epsg_in)
-    out_proj = Proj(init='epsg:%i' % epsg_out)
-    return transform(in_proj, out_proj, x, y)
+    transformer = Transformer.from_crs(f'EPSG:{epsg_in}', f'EPSG:{epsg_out}', always_xy=True)
+    return transformer.transform(x, y)
 
 
 def convert_gis_to_geodata(net, node_geodata=True, branch_geodata=True):
@@ -319,7 +318,7 @@ def dump_to_geojson(net, nodes=False, branches=False):
                     coords.append(net.pipe_geodata.loc[uid].coords)
                 coords.append([float(to_coords.x), float(to_coords.y)])
 
-            geom = geojson.LineString(row.coords.tolist() if is_pandapower else coords)
+            geom = geojson.LineString(row.coords if is_pandapower else coords)
             features.append(geojson.Feature(geometry=geom, id=uid, properties=props[uid]))
     # find and set crs if available
     crs_node = None
