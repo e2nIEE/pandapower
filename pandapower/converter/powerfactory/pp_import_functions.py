@@ -2,6 +2,7 @@ import numpy as np
 import math
 import bisect
 from itertools import combinations
+import re
 
 import pandapower as pp
 from pandas import DataFrame
@@ -258,6 +259,9 @@ def from_pf(dict_net, pv_as_slack=True, pf_variable_p_loads='plini', pf_variable
     elif handle_us != "Nothing":
         raise ValueError("handle_us should be 'Deactivate', 'Drop' or 'Nothing', "
                          "received: %s" % handle_us)
+
+    if is_unbalanced:
+        pp.add_zero_impedance_parameters(net)
 
     logger.info('imported net')
     return net
@@ -2035,7 +2039,7 @@ def create_trafo_type(net, item):
         "pfe_kw": item.pfe,
         "i0_percent": item.curmg,
         "shift_degree": item.nt2ag * 30,
-        "vector_group": item.vecgrp,
+        "vector_group": item.vecgrp[:-1],
         "vk0_percent": item.uk0tr,
         "vkr0_percent": item.ur0tr,
         "mag0_percent": item.zx0hl_n,
@@ -2084,29 +2088,32 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
 
     if not net.bus.vn_kv[bus1] >= net.bus.vn_kv[bus2]:
         logger.error('trafo <%s>: violated condition of HV >= LV!' % name)
-    assert net.bus.vn_kv[bus1] >= net.bus.vn_kv[bus2]
+    # assert net.bus.vn_kv[bus1] >= net.bus.vn_kv[bus2]
 
     # figure out trafo type
     pf_type = item.typ_id
     std_type, type_created = create_trafo_type(net=net, item=pf_type)
 
     # figure out current tap position
-    if tap_opt == "nntap":
-        tap_pos = ga(item, "nntap")
-        logger.debug("got tap %f from nntap" % tap_pos)
+    if pf_type.itapch:
+        if tap_opt == "nntap":
+            tap_pos = ga(item, "nntap")
+            logger.debug("got tap %f from nntap" % tap_pos)
 
-    elif tap_opt == "c:nntap":
-        tap_pos = ga(item, "c:nntap")
-        logger.debug("got tap %f from c:nntap" % tap_pos)
+        elif tap_opt == "c:nntap":
+            tap_pos = ga(item, "c:nntap")
+            logger.debug("got tap %f from c:nntap" % tap_pos)
+        else:
+            raise ValueError('could not read current tap position: tap_opt = %s' % tap_opt)
     else:
-        raise ValueError('could not read current tap position: tap_opt = %s' % tap_opt)
+        tap_pos = pf_type.nntap0
 
-    if std_type is not None and not is_unbalanced:
+    if std_type is not None:
         tid = pp.create_transformer(net, hv_bus=bus1, lv_bus=bus2, name=name,
                                     std_type=std_type, tap_pos=tap_pos,
                                     in_service=in_service, parallel=item.ntnum, df=item.ratfac)
         logger.debug('created trafo at index <%d>' % tid)
-    elif is_unbalanced:
+    else:
         logger.info("Create Trafo 3ph")
         tid = pp.create_transformer_from_parameters(net, hv_bus=bus1, lv_bus=bus2, name=name,
                                     tap_pos=tap_pos,
@@ -2118,10 +2125,6 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
                                     vkr0_percent=pf_type.ur0tr, mag0_percent=pf_type.zx0hl_n,
                                     mag0_rx=pf_type.rtox0_n, si0_hv_partial=pf_type.zx0hl_h,
                                     shift_degree=pf_type.nt2ag * 30)
-    else:
-
-        logger.error("Cannot add Trafo '%s': missing type" % name)
-        return
 
     # add value for voltage setpoint
     net.trafo.loc[tid, 'tap_set_vm_pu'] = item.usetp
@@ -2187,8 +2190,16 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
     add_additional_attributes(item, net, element='trafo', element_id=tid,
                               attr_dict={'e:cpSite.loc_name': 'site', 'for_name': 'equipment'})
     if pf_type.itapzdep:
-        logger.warning('%s: tap dependent impedance of 2W transformers not implemented in '
-                       'Pandapower. There will be deviation of results' % item.loc_name)
+        x_points = (net.trafo.at[tid, "tap_min"], net.trafo.at[tid, "tap_neutral"], net.trafo.at[tid, "tap_max"])
+        vk_min, vk_neutral, vk_max = pf_type.uktmn, net.trafo.at[tid, "vk_percent"], pf_type.uktmx
+        vkr_min, vkr_neutral, vkr_max = pf_type.ukrtmn, net.trafo.at[tid, "vkr_percent"], pf_type.ukrtmx
+        #todo
+        #vk0_min, vk0_max = pf_type.uk0tmn, pf_type.uk0tmx
+        #vkr0_min, vkr0_max = pf_type.uk0rtmn, pf_type.uk0rtmx
+        pp.control.create_trafo_characteristics(net, trafotable="trafo", trafo_index=tid, variable="vk_percent",
+                                                x_points=x_points, y_points=(vk_min, vk_neutral, vk_max))
+        pp.control.create_trafo_characteristics(net, trafotable="trafo", trafo_index=tid, variable="vkr_percent",
+                                                x_points=x_points, y_points=(vkr_min, vkr_neutral, vkr_max))
 
     return tap_changer
 
@@ -2231,8 +2242,7 @@ def create_trafo3w(net, item, tap_opt='nntap'):
         logger.debug("Cannot add Trafo3W '%s': not connected" % item.loc_name)
         return
     logger.debug('%s; %s; %s' % (bus1, bus2, bus3))
-    if not net.bus.vn_kv.at[bus1] > net.bus.vn_kv.at[bus2] and net.bus.vn_kv.at[bus2] >= \
-            net.bus.vn_kv.at[bus3]:
+    if not (net.bus.vn_kv.at[bus1] >= net.bus.vn_kv.at[bus2] >= net.bus.vn_kv.at[bus3]):
         logger.error('trafo <%s>: violated condition of HV > LV!' % item.loc_name)
     # assert net.bus.vn_kv[bus1] > net.bus.vn_kv[bus2] >= net.bus.vn_kv[bus3]
     else:
@@ -2254,6 +2264,15 @@ def create_trafo3w(net, item, tap_opt='nntap'):
         'vkr_hv_percent': pf_type.uktrr3_h,
         'vkr_mv_percent': pf_type.uktrr3_m,
         'vkr_lv_percent': pf_type.uktrr3_l,
+
+        'vk0_hv_percent': pf_type.uk0hm,
+        'vk0_mv_percent': pf_type.uk0ml,
+        'vk0_lv_percent': pf_type.uk0hl,
+        'vkr0_hv_percent': pf_type.ur0hm,
+        'vkr0_mv_percent': pf_type.ur0ml,
+        'vkr0_lv_percent': pf_type.ur0hl,
+        'vector_group': re.sub(r'\d+', '', pf_type.vecgrp),
+
         'pfe_kw': pf_type.pfe,
         'i0_percent': pf_type.curm3,
         'shift_mv_degree': -(pf_type.nt3ag_h - pf_type.nt3ag_m) * 30,
@@ -2329,8 +2348,21 @@ def create_trafo3w(net, item, tap_opt='nntap'):
     # TODO Implement the tap changer controller for 3-winding transformer
 
     if pf_type.itapzdep:
-        logger.warning('%s: tap dependent impedance of 3W transformers not implemented in '
-                       'Pandapower. There will be deviation of results' % item.loc_name)
+        x_points = (net.trafo3w.at[tid, "tap_min"], net.trafo3w.at[tid, "tap_neutral"], net.trafo3w.at[tid, "tap_max"])
+        side = net.trafo3w.at[tid, "tap_side"]
+        vk_min = ga(pf_type, f"uktr3mn_{side[0]}")
+        vk_neutral = net.trafo3w.at[tid, f"vk_{side}_percent"]
+        vk_max = ga(pf_type, f"uktr3mx_{side[0]}")
+        vkr_min = ga(pf_type, f"uktrr3mn_{side[0]}")
+        vkr_neutral = net.trafo3w.at[tid, f"vkr_{side}_percent"]
+        vkr_max = ga(pf_type, f"uktrr3mx_{side[0]}")
+        # todo zero-sequence parameters (must be implemented in build_branch first)
+        pp.control.create_trafo_characteristics(net, trafotable="trafo3w", trafo_index=tid,
+                                                variable=f"vk_{side}_percent", x_points=x_points,
+                                                y_points=(vk_min, vk_neutral, vk_max))
+        pp.control.create_trafo_characteristics(net, trafotable="trafo3w", trafo_index=tid,
+                                                variable=f"vkr_{side}_percent", x_points=x_points,
+                                                y_points=(vkr_min, vkr_neutral, vkr_max))
 
 
 def propagate_bus_coords(net, bus1, bus2):
