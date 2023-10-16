@@ -365,8 +365,8 @@ def create_bus(net, item, flag_graphics, is_unbalanced):
     net.bus.at[bid, "substat"] = substat_descr
     net.bus.at[bid, "folder_id"] = item.fold_id.loc_name
 
-    add_additional_attributes(item, net, "bus", bid,
-                              attr_list=["sernum", "for_name", "chr_name", "cpSite.loc_name"])
+    add_additional_attributes(item, net, "bus", bid, attr_dict={"for_name": "equipment"},
+                              attr_list=["sernum", "chr_name", "cpSite.loc_name"])
 
     # add geo data
     if flag_graphics == 'GPS':
@@ -681,6 +681,7 @@ def create_line(net, item, flag_graphics, n, is_unbalanced):
 
     net.line.loc[sid_list, "line_idx"] = n
     net.line.loc[sid_list, "folder_id"] = item.fold_id.loc_name
+    net.line.loc[sid_list, "equipment"] = item.for_name
     create_connection_switches(net, item, 2, 'l', (params['bus1'], params['bus2']),
                                (sid_list[0], sid_list[-1]))
 
@@ -1589,10 +1590,10 @@ def create_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
         load_type = "load"
 
     net[load_type].loc[ld, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    attr_list = ["sernum", "for_name", "chr_name", 'cpSite.loc_name']
+    attr_list = ["sernum", "chr_name", 'cpSite.loc_name']
     if load_class == 'ElmLodlv':
         attr_list.extend(['pnight', 'cNrCust', 'cPrCust', 'UtilFactor', 'cSmax', 'cSav', 'ccosphi'])
-    add_additional_attributes(item, net, load_type, ld, attr_list=attr_list)
+    add_additional_attributes(item, net, load_type, ld, attr_dict={"for_name": "equipment"}, attr_list=attr_list)
     get_pf_load_results(net, item, ld, is_unbalanced)
 #    if not is_unbalanced:
 #        if item.HasResults(0):  # 'm' results...
@@ -1755,8 +1756,8 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
     logger.debug('created sgen at index <%d>' % sg)
 
     net[element].at[sg, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    add_additional_attributes(item, net, element, sg,
-                              attr_list=["sernum", "for_name", "chr_name", "cpSite.loc_name"])
+    add_additional_attributes(item, net, element, sg, attr_dict={"for_name": "equipment"},
+                              attr_list=["sernum", "chr_name", "cpSite.loc_name"])
     net[element].at[sg, 'scaling'] = dict_net['global_parameters']['global_generation_scaling'] * item.scale0
     get_pf_sgen_results(net, item, sg, is_unbalanced, element=element)
 
@@ -1876,8 +1877,8 @@ def create_sgen_neg_load(net, item, pf_variable_p_loads, dict_net):
     sg = pp.create_sgen(net, **params)
 
     net.sgen.loc[sg, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    add_additional_attributes(item, net, "sgen", sg,
-                              attr_list=["sernum", "for_name", "chr_name", "cpSite.loc_name"])
+    add_additional_attributes(item, net, "sgen", sg, attr_dict={"for_name": "equipment"},
+                              attr_list=["sernum", "chr_name", "cpSite.loc_name"])
 
     if item.HasResults(0):  # 'm' results...
         logger.debug('<%s> has results' % params.name)
@@ -1956,8 +1957,8 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net):
         logger.debug('created sgen at index <%s>' % sid)
 
     net[element].loc[sid, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    add_additional_attributes(item, net, element, sid,
-                              attr_list=["sernum", "for_name", "chr_name", "cpSite.loc_name"])
+    add_additional_attributes(item, net, element, sid, attr_dict={"for_name": "equipment"},
+                              attr_list=["sernum", "chr_name", "cpSite.loc_name"])
 
     if item.HasResults(0):  # 'm' results...
         logger.debug('<%s> has results' % name)
@@ -2004,8 +2005,8 @@ def create_sgen_asm(net, item, pf_variable_p_gen, dict_net):
     sid = pp.create_sgen(net, **params)
 
     net.sgen.loc[sid, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    add_additional_attributes(item, net, "sgen", sid,
-                              attr_list=["sernum", "for_name", "chr_name", "cpSite.loc_name"])
+    add_additional_attributes(item, net, "sgen", sid, attr_dict={"for_name": "equipment"},
+                              attr_list=["sernum", "chr_name", "cpSite.loc_name"])
 
     if item.HasResults(0):
         net.res_sgen.at[sid, 'pf_p'] = ga(item, 'm:P:bus1') * multiplier
@@ -2335,7 +2336,8 @@ def create_trafo3w(net, item, tap_opt='nntap'):
     # create_connection_switches(net, item, 3, 't3', (bus1, bus2, bus3), (tid, tid, tid))
     # logger.debug('created connection switches for trafo 3w successfully')
     add_additional_attributes(item, net, element='trafo3w', element_id=tid,
-                              attr_dict={'cpSite.loc_name': 'site', 'for_name': 'equipment', 'typ_id.loc_name': 'std_type', 'usetp': 'vm_set_pu'})
+                              attr_dict={'cpSite.loc_name': 'site', 'for_name': 'equipment',
+                                         'typ_id.loc_name': 'std_type', 'usetp': 'vm_set_pu'})
 
     # assign loading from power factory results
     if item.HasResults(-1):  # -1 for 'c' results (whatever that is...)

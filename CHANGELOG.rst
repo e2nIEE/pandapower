@@ -28,6 +28,7 @@ Change Log
 - [FIXED] powerfactory2pandapower-converter error if a line has two identical coordinates
 - [ADDED] logger messages about the probabilistic load flow calculation (simultaneities) in the powerfactory2pandapower-converter for low voltage loads
 - [ADDED] matplotlib v3.8.0 support (fixed :code:`plotting_colormaps.ipynb`)
+- [CHANGED] PowerFactory converter - name :code:`for_name` as :code:`equipment` for all elements; also add to line
 
 
 [2.13.1] - 2023-05-12
