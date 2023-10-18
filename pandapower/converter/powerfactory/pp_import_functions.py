@@ -2048,7 +2048,7 @@ def create_trafo_type(net, item):
         "si0_hv_partial": item.zx0hl_h
     }
 
-    if item.dutap != 0:
+    if item.itapch:
         logger.debug('trafo <%s> has tap changer' % name)
         type_data.update({
             "tap_side": ['hv', 'lv', 'ext'][item.tap_side],  # 'ext' not implemented
@@ -2066,7 +2066,8 @@ def create_trafo_type(net, item):
                            "lv side) - not implemented, importing as asymmetrical tap changer at "
                            "side %s. Results will differ." % (item.loc_name, type_data['tap_side']))
 
-    if item.dutap2 != 0:
+    # In PowerFactory, if the first tap changer is absent, the second is also, even if the check was there
+    if item.itapch and item.itapch2:
         logger.debug('trafo <%s> has tap2 changer' % name)
         type_data.update({
             "tap2_side": ['hv', 'lv', 'ext'][item.tap_side2],  # 'ext' not implemented
@@ -2114,6 +2115,7 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
     std_type, type_created = create_trafo_type(net=net, item=pf_type)
 
     # figure out current tap position
+    tap_pos = np.nan
     if pf_type.itapch:
         if tap_opt == "nntap":
             tap_pos = ga(item, "nntap")
@@ -2124,11 +2126,10 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
             logger.debug("got tap %f from c:nntap" % tap_pos)
         else:
             raise ValueError('could not read current tap position: tap_opt = %s' % tap_opt)
-    else:
-        tap_pos = pf_type.nntap0
 
     tap_pos2 = np.nan
-    if pf_type.itapch2:
+    # In PowerFactory, if the first tap changer is absent, the second is also, even if the check was there
+    if pf_type.itapch and pf_type.itapch2:
         if tap_opt == "nntap":
             tap_pos2 = ga(item, "nntap2")
         elif tap_opt == "c:nntap":
