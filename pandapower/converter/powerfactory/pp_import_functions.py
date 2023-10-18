@@ -10,10 +10,10 @@ from pandapower.auxiliary import ADict
 
 try:
     import pandaplan.core.pplog as logging
+    logger = logging.logger
 except ImportError:
     import logging
-
-logger = logging.getLogger(__name__)
+    logger = logging.getLogger(__name__)
 
 
 # make wrapper for GetAttribute
@@ -27,6 +27,7 @@ def from_pf(dict_net, pv_as_slack=True, pf_variable_p_loads='plini', pf_variable
             max_iter=None, is_unbalanced=False):
     logger.debug("__name__: %s" % __name__)
     logger.debug('started from_pf')
+    logger.info(logger.__dict__)
 
     flag_graphics = flag_graphics if flag_graphics in ['GPS', 'no geodata'] else 'graphic objects'
 
@@ -2065,7 +2066,25 @@ def create_trafo_type(net, item):
                            "lv side) - not implemented, importing as asymmetrical tap changer at "
                            "side %s. Results will differ." % (item.loc_name, type_data['tap_side']))
 
-    if 'tap_side' in type_data.keys() and type_data['tap_side'] == 'ext':
+    if item.dutap2 != 0:
+        logger.debug('trafo <%s> has tap2 changer' % name)
+        type_data.update({
+            "tap2_side": ['hv', 'lv', 'ext'][item.tap_side2],  # 'ext' not implemented
+            # see if it is an ideal phase shifter or a complex phase shifter
+            # checking tap_step_percent because a nonzero value for ideal phase shifter can be stored in the object
+            "tap2_step_percent": item.dutap2 if item.tapchtype2 != 1 else 0,
+            "tap2_step_degree": item.dphitap2 if item.tapchtype2 == 1 else item.phitr2,
+            "tap2_phase_shifter": True if item.tapchtype2 == 1 else False,
+            "tap2_max": item.ntpmx2,
+            "tap2_min": item.ntpmn2,
+            "tap2_neutral": item.nntap02
+        })
+        if item.tapchtype2 == 2:
+            logger.warning("trafo %s has symmetrical tap2 changer (tap2 changer at both hv and "
+                           "lv side) - not implemented, importing as asymmetrical tap2 changer at "
+                           "side %s. Results will differ." % (item.loc_name, type_data['tap2_side']))
+
+    if 'tap_side' in type_data.keys() and (type_data.get('tap_side') == 'ext' or type_data.get('tap_side') == 'ext'):
         logger.warning('controlled node of trafo "EXT" not implemented (type <%s>)' % name)
     pp.create_std_type(net, type_data, name, "trafo")
     logger.debug('created trafo type <%s> with params: %s' % (name, type_data))
@@ -2108,10 +2127,17 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
     else:
         tap_pos = pf_type.nntap0
 
+    tap_pos2 = np.nan
+    if pf_type.itapch2:
+        if tap_opt == "nntap":
+            tap_pos2 = ga(item, "nntap2")
+        elif tap_opt == "c:nntap":
+            tap_pos2 = ga(item, "c:nntap2")
+
     if std_type is not None:
         tid = pp.create_transformer(net, hv_bus=bus1, lv_bus=bus2, name=name,
                                     std_type=std_type, tap_pos=tap_pos,
-                                    in_service=in_service, parallel=item.ntnum, df=item.ratfac)
+                                    in_service=in_service, parallel=item.ntnum, df=item.ratfac, tap2_pos=tap_pos2)
         logger.debug('created trafo at index <%d>' % tid)
     else:
         logger.info("Create Trafo 3ph")
@@ -2124,7 +2150,7 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
                                     vector_group=pf_type.vecgrp[:-1], vk0_percent=pf_type.uk0tr,
                                     vkr0_percent=pf_type.ur0tr, mag0_percent=pf_type.zx0hl_n,
                                     mag0_rx=pf_type.rtox0_n, si0_hv_partial=pf_type.zx0hl_h,
-                                    shift_degree=pf_type.nt2ag * 30)
+                                    shift_degree=pf_type.nt2ag * 30, tap2_pos=tap_pos2)
 
     # add value for voltage setpoint
     net.trafo.loc[tid, 'tap_set_vm_pu'] = item.usetp

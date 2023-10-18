@@ -1,12 +1,13 @@
 import os
 import tkinter as tk
 from pandapower.auxiliary import ADict
+
 try:
     import pandaplan.core.pplog as logging
+    logger = logging.logger
 except ImportError:
     import logging
-
-logger = logging.getLogger(__name__)
+    logger = logging.getLogger(__name__)
 
 def cancel(input_panel):
     logger.debug('received a cancel request from the user')
