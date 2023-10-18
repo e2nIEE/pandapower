@@ -38,7 +38,7 @@ def from_cim_dict(cim_parser: cim_classes.CimParser, log_debug=False, convert_li
     :param custom_converter_classes: Dict to inject classes for different functionality. Optional, default: None
     :return: The pandapower net.
     """
-    import pandapower.converter.cim.cim2pp.converter_classes as std_converter_classes
+    from . import converter_classes as std_converter_classes
     converter_classes: dict = {
         'connectivityNodesCim16': std_converter_classes.connectivitynodes.connectivityNodesCim16,
         'externalNetworkInjectionsCim16': std_converter_classes.externalnetworks.externalNetworkInjectionsCim16,

@@ -48,7 +48,7 @@ class CoordinatesFromDLCim16:
         # for the buses which have more than one coordinate
         bus_geo_mult = bus_geo[bus_geo.duplicated(subset=sc['o_id'], keep=False)]
         # now deal with the buses which have more than one coordinate
-        for group_name, df_group in bus_geo_mult.groupby(by=sc['o_id'], sort=False):
+        for _, df_group in bus_geo_mult.groupby(by=sc['o_id'], sort=False):
             bus_geo['coords'][df_group.index.values[0]] = df_group[['xPosition', 'yPosition']].values.tolist()
         bus_geo.drop_duplicates([sc['o_id']], keep='first', inplace=True)
         bus_geo.sort_values(by='index', inplace=True)

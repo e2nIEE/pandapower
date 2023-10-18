@@ -58,7 +58,7 @@ class TapController:
         if not self.cimConverter.kwargs.get('create_tap_controller', True):
             self.logger.info("Skip creating transformer tap changer controller for transformer type %s." % trafo_type)
             return
-        for row_index, row in input_df.loc[input_df['TapChangerControl'].notna()].iterrows():
+        for _, row in input_df.loc[input_df['TapChangerControl'].notna()].iterrows():
             trafo_id = self.cimConverter.net[trafo_type].loc[
                 self.cimConverter.net[trafo_type][sc['o_id']] == row[sc['o_id']]].index.values[0]
             trafotype = '2W' if trafo_type == 'trafo' else '3W'
