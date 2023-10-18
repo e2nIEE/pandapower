@@ -73,7 +73,7 @@ class GeoCoordinatesFromGLCim16:
         line_geo.sort_values(by=[sc['o_id'], 'sequenceNumber'], inplace=True)
         line_geo['coords'] = line_geo[['xPosition', 'yPosition']].values.tolist()
         line_geo['coords'] = line_geo[['coords']].values.tolist()
-        for group_name, df_group in line_geo.groupby(by=sc['o_id']):
+        for _, df_group in line_geo.groupby(by=sc['o_id']):
             line_geo['coords'][df_group.index.values[0]] = df_group[['xPosition', 'yPosition']].values.tolist()
         line_geo.drop_duplicates([sc['o_id']], keep='first', inplace=True)
         line_geo.sort_values(by='index', inplace=True)
