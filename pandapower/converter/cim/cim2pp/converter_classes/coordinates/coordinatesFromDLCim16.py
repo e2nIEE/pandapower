@@ -95,7 +95,7 @@ class CoordinatesFromDLCim16:
             one_ele_df.sort_values(by=[sc['o_id'], 'sequenceNumber'], inplace=True)
             one_ele_df['coords'] = one_ele_df[['xPosition', 'yPosition']].values.tolist()
             one_ele_df['coords'] = one_ele_df[['coords']].values.tolist()
-            for group_name, df_group in one_ele_df.groupby(by=sc['o_id']):
+            for _, df_group in one_ele_df.groupby(by=sc['o_id']):
                 one_ele_df['coords'][df_group.index.values[0]] = df_group[['xPosition', 'yPosition']].values.tolist()
             one_ele_df.drop_duplicates([sc['o_id']], keep='first', inplace=True)
             # now add the coordinates
