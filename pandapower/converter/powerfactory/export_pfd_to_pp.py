@@ -1,6 +1,6 @@
 import pandapower as pp
 from .echo_off import echo_off, echo_on
-from .logger_setup import setup_logger
+from .logger_setup import AppHandler, set_PF_level
 from .pf_export_functions import run_load_flow, create_network_dict
 from .pp_import_functions import from_pf
 from .run_import import choose_imp_dir, clear_dir, prj_dgs_import, prj_import
@@ -204,8 +204,9 @@ if __name__ == '__main__':
         import powerfactory as pf
 
         app = pf.GetApplication()
-        logger, appHandler = setup_logger(app, __name__, 'INFO')
+        app_handler = AppHandler(app, freeze_app_between_messages=True)
+        logger.addHandler(app_handler)
+        set_PF_level(logger, app_handler, 'INFO')
     except:
         pass
-else:
-    logger = logging.getLogger(__name__)
+
