@@ -29,6 +29,7 @@ Change Log
 - [FIXED] powerfactory2pandapower-converter error if a line has two identical coordinates
 - [ADDED] logger messages about the probabilistic load flow calculation (simultaneities) in the powerfactory2pandapower-converter for low voltage loads
 - [ADDED] matplotlib v3.8.0 support (fixed :code:`plotting_colormaps.ipynb`)
+- [ADDED] option to use a second tap changer for the trafo element
 
 
 [2.13.1] - 2023-05-12
