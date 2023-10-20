@@ -1265,7 +1265,8 @@ def ask_unbalanced_load_params(item, pf_variable_p_loads, dict_net, variables):
                             if pf_variable_p_loads == 'plini' else 1
     if item.HasAttribute('zonefact'):
         params.scaling *= item.zonefact
-        return params
+
+    return params
 
 
 def find_section(load, sections):
