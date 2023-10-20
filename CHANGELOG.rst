@@ -24,11 +24,13 @@ Change Log
 - [FIXED] in converter from PowerFactory, collect all buses (even not relevant for the calculation) for connectivity issues
 - [FIXED] bug in coords conversion in cim2pp, small fixes
 - [CHANGED] cim2pp: added support for multi diagram usage for DL profiles
+- [CHANGED] cim2pp: made build_pp_net modular by introducing classes
 - [FIXED] error handling in :code:`plotly/mapbox_plot.py` not raising :code`ImportError` if :code:`geopy`  or :code:`pyproj` are missing
 - [FIXED] powerfactory2pandapower-converter error if a line has two identical coordinates
 - [ADDED] logger messages about the probabilistic load flow calculation (simultaneities) in the powerfactory2pandapower-converter for low voltage loads
 - [ADDED] matplotlib v3.8.0 support (fixed :code:`plotting_colormaps.ipynb`)
 - [CHANGED] PowerFactory converter - name :code:`for_name` as :code:`equipment` for all elements; also add to line
+- [ADDED] option to use a second tap changer for the trafo element
 
 
 [2.13.1] - 2023-05-12

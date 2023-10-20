@@ -9,10 +9,10 @@ import pandapower as pp
 
 try:
     import pandaplan.core.pplog as logging
+    logger = logging.logger
 except ImportError:
     import logging
-
-logger = logging.getLogger(__name__)
+    logger = logging.getLogger(__name__)
 
 from pandapower.converter.powerfactory.echo_off import echo_off, echo_on
 from pandapower.converter.powerfactory.pp_import_functions import from_pf
@@ -131,6 +131,8 @@ def calc(app, input_panel, entry_path_dst, entry_fname, is_to_verify, is_debug, 
     # check if logger is to be in debug mode
     if is_debug():
         pflog.set_PF_level(logger, app_handler, 'DEBUG')
+    else:
+        pflog.set_PF_level(logger, app_handler, 'INFO')
     logger.debug('starting script')
     echo_off(app, err=1, warn=1, info=1)
     # start_button.config(state="disabled")
