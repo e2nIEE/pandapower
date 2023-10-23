@@ -195,7 +195,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     Ybus_vsc_not_controllable, Ybus_vsc_controllable, Ybus_vsc = \
         makeYbus_ssc_vsc(Ybus, vsc_y_pu, vsc_fb, vsc_tb, vsc_controllable)
     # HVDC
-    Ybus_hvdc = make_Ybus_facts(hvdc_fb, hvdc_tb, hvdc_y_pu, num_bus_dc)
+    Ybus_hvdc = make_Ybus_facts(hvdc_fb, hvdc_tb, hvdc_y_pu, num_bus_dc, dtype=np.float64)
 
     # to avoid non-convergence due to zero-terms in the Jacobian:
     if any_tcsc_controllable and np.all(V[tcsc_fb] == V[tcsc_tb]):
