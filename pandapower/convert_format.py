@@ -457,6 +457,8 @@ def _add_missing_std_type_tables(net):
 
 
 def _update_characteristics(net):
+    if "characteristic" not in net or net.characteristic.empty:
+        return
     for c in net.characteristic.object.values:
         if hasattr(c, "interpolator_kind"):
             continue
