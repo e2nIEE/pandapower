@@ -45,6 +45,7 @@ def convert_format(net, elements_to_deserialize=None):
     if isinstance(net.format_version, float) and net.format_version < 1.6:
         set_data_type_of_columns_to_default(net)
     _convert_objects(net, elements_to_deserialize)
+    _update_characteristics(net)
     correct_dtypes(net, error=False)
     _add_missing_std_type_tables(net)
     net.format_version = __format_version__
@@ -453,3 +454,11 @@ def _check_elements_to_deserialize(element, elements_to_deserialize):
 def _add_missing_std_type_tables(net):
     if "fuse" not in net.std_types:
         net.std_types["fuse"] = {}
+
+
+def _update_characteristics(net):
+    for c in net.characteristic.object.values:
+        if hasattr(c, "interpolator_kind"):
+            continue
+        c.interpolator_kind = "interp1d"
+        c.kwargs = {"kind": c.pop("kind"), "bounds_error": False, "fill_value": c.pop("fill_value")}
