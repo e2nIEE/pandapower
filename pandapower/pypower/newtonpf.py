@@ -130,6 +130,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     x_control_ssc = ssc[ssc_branches, SSC_X_CONTROL_VM].real * np.exp(1j * ssc[ssc_branches, SSC_X_CONTROL_VA].real)
     num_ssc_controllable = len(x_control_ssc[ssc_controllable])
     ssc_set_vm_pu = ssc[ssc_branches[ssc_controllable], SSC_SET_VM_PU]
+    ssc_mode_ac = np.zeros_like(ssc_set_vm_pu)
     ssc_y_pu = 1/(ssc[ssc_branches, SSC_R].real + 1j * ssc[ssc_branches, SSC_X].real)
     any_ssc = num_ssc > 0
     any_ssc_controllable = num_ssc_controllable > 0
@@ -394,12 +395,12 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         if any_ssc_controllable:
             J_m_ssc = create_J_modification_ssc(J, V, Ybus_ssc_controllable, ssc_fb[ssc_controllable],
                                                 ssc_tb[ssc_controllable], refpvpq if dist_slack else pvpq, pq,
-                                                pvpq_lookup, pq_lookup)
+                                                pvpq_lookup, pq_lookup, ssc_mode_ac==0)
             J = J + J_m_ssc
         if any_vsc_controllable:
             J_m_vsc = create_J_modification_ssc(J, V, Ybus_vsc_controllable, vsc_fb[vsc_controllable],
                                                 vsc_tb[vsc_controllable], refpvpq if dist_slack else pvpq, pq,
-                                                pvpq_lookup, pq_lookup)
+                                                pvpq_lookup, pq_lookup, vsc_mode_ac==0)
             J = J + J_m_vsc
         if any_branch_dc:
             J_m_hvdc = create_J_modification_hvdc(J, V_dc, Ybus_hvdc, hvdc_fb, hvdc_tb, dc_p, dc_p_lookup)
@@ -590,13 +591,13 @@ def _evaluate_Fx_facts(V,pq ,svc_buses=None, svc_set_vm_pu=None, tcsc_controllab
         old_F[-len(pq)+pq_lookup[ssc_tb]] = mis_ssc_v
 
     if np.any(vsc_controllable):
+        # the mismatch value is written for the aux bus, but calculated based on the AC bus
         ac_mode_v = vsc_mode_ac == 0
         mis_vsc_v = np.abs(V[vsc_fb[ac_mode_v]]) - vsc_value_ac[ac_mode_v]
         old_F[-len(pq)+pq_lookup[vsc_tb[ac_mode_v]]] = mis_vsc_v
-        # todo implement Q
         ac_mode_q = vsc_mode_ac == 1
         Sbus_vsc = V * conj(Ybus_vsc * V)
-        mis_vsc_q = Sbus_vsc[vsc_tb[ac_mode_q]].imag - vsc_value_ac[ac_mode_q]
+        mis_vsc_q = Sbus_vsc[vsc_fb[ac_mode_q]].imag - vsc_value_ac[ac_mode_q]
         old_F[-len(pq) + pq_lookup[vsc_tb[ac_mode_q]]] = mis_vsc_q
 
     if len(dc_p) > 0:

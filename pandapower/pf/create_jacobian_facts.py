@@ -185,7 +185,7 @@ def create_J_modification_tcsc(V, Ybus_tcsc, x_control, svc_controllable, tcsc_c
     return J_m
 
 
-def create_J_modification_ssc(J, V, Ybus_ssc, f, t, pvpq, pq, pvpq_lookup, pq_lookup):
+def create_J_modification_ssc(J, V, Ybus_ssc, f, t, pvpq, pq, pvpq_lookup, pq_lookup, control_mode_v):
     """
     creates the modification Jacobian matrix for SSC (STATCOM)
 
@@ -288,6 +288,8 @@ def create_J_modification_ssc(J, V, Ybus_ssc, f, t, pvpq, pq, pvpq_lookup, pq_lo
 
         J_m[len(pvpq) + pq_lookup[f[f_in_pq]], pvpq_lookup[f[f_in_pvpq]]] = S_Fik.real
         J_m[len(pvpq) + pq_lookup[f[f_in_pq]], pvpq_lookup[t[f_in_pvpq]]] = -S_Fik.real
+        J_m[len(pvpq) + pq_lookup[t[f_in_pq]], pvpq_lookup[f[f_in_pvpq]]] = np.where(control_mode_v, 0, S_Fik.real)  # control mode V or Q
+        J_m[len(pvpq) + pq_lookup[t[f_in_pq]], pvpq_lookup[t[f_in_pvpq]]] = np.where(control_mode_v, 0, -S_Fik.real) # control mode V or Q
 
 
 
@@ -301,9 +303,9 @@ def create_J_modification_ssc(J, V, Ybus_ssc, f, t, pvpq, pq, pvpq_lookup, pq_lo
         # J_C_Q_u[pq_lookup[t[f_in_pq]], pq_lookup[t[f_in_pq]]] = 0
 
         J_m[len(pvpq)+pq_lookup[f[f_in_pq]], len(pvpq)+pq_lookup[f[f_in_pq]]] = (2 * S_Fii.imag + S_Fik.imag) / Vmf
-        J_m[len(pvpq)+pq_lookup[f[f_in_pq]], len(pvpq)+pq_lookup[t[f_in_pq]]] = S_Fik.imag/Vmt
-        J_m[len(pvpq)+pq_lookup[t[f_in_pq]], len(pvpq)+pq_lookup[f[f_in_pq]]] = 1
-        J_m[len(pvpq)+pq_lookup[t[f_in_pq]], len(pvpq)+pq_lookup[t[f_in_pq]]] = 0
+        J_m[len(pvpq)+pq_lookup[f[f_in_pq]], len(pvpq)+pq_lookup[t[f_in_pq]]] = S_Fik.imag / Vmt
+        J_m[len(pvpq)+pq_lookup[t[f_in_pq]], len(pvpq)+pq_lookup[f[f_in_pq]]] = np.where(control_mode_v, 1, (2 * S_Fii.imag + S_Fik.imag) / Vmf)  # control mode V or Q
+        J_m[len(pvpq)+pq_lookup[t[f_in_pq]], len(pvpq)+pq_lookup[t[f_in_pq]]] = np.where(control_mode_v, 0, S_Fik.imag / Vmt)  # control mode V or Q
         #
         # J_C_Q_u[pq_lookup[t[f_in_pq]]+ len(x_control), pq_lookup[f[f_in_pq]]] = 1
         # J_C_Q_u[pq_lookup[t[f_in_pq]]+ len(x_control), pq_lookup[t[f_in_pq]]+ len(x_control)] = 0

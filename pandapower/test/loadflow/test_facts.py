@@ -863,6 +863,29 @@ def test_vsc_hvdc():
     runpp_with_consistency_checks(net)
 
 
+def test_vsc_hvdc_control_q():
+    net = pp.create_empty_network()
+    # AC part
+    pp.create_buses(net, 3, 110)
+    pp.create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
+    pp.create_line_from_parameters(net, 0, 2, 30, 0.0487, 0.13823, 160, 0.664)
+    pp.create_ext_grid(net, 0)
+    pp.create_load(net, 2, 10)
+
+    # DC part
+    pp.create_bus_dc(net, 110, 'A')
+    pp.create_bus_dc(net, 110, 'B')
+
+    pp.create_line_dc_from_parameters(net, 0, 1, 100, 0.1, 1)
+
+    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac="q_mvar", control_value_ac=7.5,
+                  control_mode_dc="vm_pu", control_value_dc=1.02)
+    pp.create_vsc(net, 2, 1, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1.,
+                  control_mode_dc="p_mw", control_value_dc=5)
+
+    runpp_with_consistency_checks(net)
+
+
 
 def test_vsc_multiterminal_hvdc():
     net = pp.create_empty_network()
