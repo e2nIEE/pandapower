@@ -8,10 +8,10 @@ from pandapower import diagnostic
 
 try:
     import pandaplan.core.pplog as logging
+    logger = logging.logger
 except ImportError:
     import logging
-
-logger = logging.getLogger(__name__)
+    logger = logging.getLogger(__name__)
 
 def _get_pf_results(net, is_unbalanced=False):
     if not net["pf_converged"]:

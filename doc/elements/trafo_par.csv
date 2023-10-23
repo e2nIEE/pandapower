@@ -33,3 +33,11 @@ df;float;1 :math:`\geq` df :math:`>` 0;derating factor: maximal current of trans
 in_service*;boolean;True / False;specifies if the transformer is in service
 oltc*;boolean;True / False; specifies if the transformer has an OLTC (short-circuit relevant)
 power_station_unit*;boolean;True / False; specifies if the transformer is part of a power_station_unit (short-circuit relevant).
+tap2_side****;string;"""hv"", ""lv""";defines if tap changer is at the high- or low voltage side
+tap2_neutral****;integer;;rated tap position
+tap2_min****;integer;;minimum tap position
+tap2_max****;integer;;maximum tap position
+tap2_step_percent****;float;:math:`>` 0;tap step size for voltage magnitude [%]
+tap2_step_degree****;float;:math:`\geq` 0;tap step size for voltage angle
+tap2_pos****;integer;;current position of tap changer
+tap2_phase_shifter****;bool;;defines whether the transformer is an ideal phase shifter

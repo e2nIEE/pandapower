@@ -15,12 +15,22 @@ Change Log
 - [FIXED] some fixes and small updates at cim2pp
 - [CHANGED] add numba in the dependencies for Python 3.11 for GitHub test and release actions; revise numba version checks
 - [ADDED] improved documentation for short-circuit calculation (description of the function and the element results)
-- [FIXED] fixed bug in :code:`pp.select_subnet` when using tap dependent impedance
+- [FIXED] bug in :code:`pp.select_subnet` when using tap dependent impedance
 - [ADDED] extensive unit tests for cim2pp converter (element parameter and load flow results)
-- [FIXED] fixed bug in :code:`cim2pp.build_pp_net` when setting default values for converted xwards
-- [FIXED] fixed bug in :code:`cim2pp.build_pp_net` when controller for gen is at TopologicalNode instead of ConnectivityNode
+- [FIXED] bug in :code:`cim2pp.build_pp_net` when setting default values for converted xwards
+- [FIXED] bug in :code:`cim2pp.build_pp_net` when controller for gen is at TopologicalNode instead of ConnectivityNode
 - [CHANGED] adjust default iterations for runpp_3ph
 - [CHANGED] always convert RATE_A to ppc in build_branch (not only when mode == 'opf' as before)
+- [FIXED] in converter from PowerFactory, collect all buses (even not relevant for the calculation) for connectivity issues
+- [FIXED] bug in coords conversion in cim2pp, small fixes
+- [CHANGED] cim2pp: added support for multi diagram usage for DL profiles
+- [CHANGED] cim2pp: made build_pp_net modular by introducing classes
+- [FIXED] error handling in :code:`plotly/mapbox_plot.py` not raising :code`ImportError` if :code:`geopy`  or :code:`pyproj` are missing
+- [FIXED] powerfactory2pandapower-converter error if a line has two identical coordinates
+- [ADDED] logger messages about the probabilistic load flow calculation (simultaneities) in the powerfactory2pandapower-converter for low voltage loads
+- [ADDED] matplotlib v3.8.0 support (fixed :code:`plotting_colormaps.ipynb`)
+- [CHANGED] PowerFactory converter - name :code:`for_name` as :code:`equipment` for all elements; also add to line
+- [ADDED] option to use a second tap changer for the trafo element
 
 
 [2.13.1] - 2023-05-12
@@ -106,6 +116,7 @@ Change Log
 - [CHANGED] Compatibility with pandas 1.5, dropped "six" dependency
 - [CHANGED] from_ppc(): revision of indexing and naming of elements
 - [CHANGED] Complete revision of validate_from_ppc()
+- [ADDED] helper functions for contingency calculation
 - [CHANGED] Improve defaults, add docstrings and rename parameters of plot_voltage_profile() and plot_loading()
 - [CHANGED] merge_nets(): revised for groups and new behavior regarding indexing; reindex_elements(): revised for groups, don't overwrite column "index" and feature parameter lookup
 - [FIXED] Bug with user_pf_options: _init_runpp_options in auxiliary.py ignored user_pf_options when performing sanity checks

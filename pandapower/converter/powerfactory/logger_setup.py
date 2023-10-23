@@ -1,8 +1,11 @@
 from logging import StreamHandler
+
 try:
     import pandaplan.core.pplog as logging
+    logger = logging.logger
 except ImportError:
     import logging
+    logger = logging.getLogger(__name__)
 
 
 class AppHandler(StreamHandler):

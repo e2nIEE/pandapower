@@ -355,7 +355,8 @@ def _create_complex_branch_collection(coords, patch_maker, size=1, infos=None, r
 
 def create_bus_collection(net, buses=None, size=5, patch_type="circle", color=None, z=None,
                           cmap=None, norm=None, infofunc=None, picker=False, bus_geodata=None,
-                          cbar_title="Bus Voltage [pu]", bus_table="bus", **kwargs):
+                          bus_table="bus", cbar_title="Bus Voltage [pu]", clim=None,
+                          plot_colormap=True, **kwargs):
     """
     Creates a matplotlib patch collection of pandapower buses.
 
@@ -392,7 +393,11 @@ def create_bus_collection(net, buses=None, size=5, patch_type="circle", color=No
 
         **cbar_title** (str, "Bus Voltage [pu]") - colormap bar title in case of given cmap
 
+        **clim** (tuple of floats, None) - setting the norm limits for image scaling
+
         **bus_table** (str, "bus") - element table to use for the buses ("bus", "bus_dc")
+
+        **plot_colormap** (bool, True) - flag whether the colormap is actually drawn
 
         **kwargs** - key word arguments are passed to the patch function
 
@@ -423,7 +428,7 @@ def create_bus_collection(net, buses=None, size=5, patch_type="circle", color=No
     if cmap is not None:
         if z is None:
             z = net[f"res_{bus_table}"].vm_pu.loc[buses]
-        add_cmap_to_collection(pc, cmap, norm, z, cbar_title)
+        add_cmap_to_collection(pc, cmap, norm, z, cbar_title, plot_colormap, clim)
 
     return pc
 
@@ -466,6 +471,8 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
         **clim** (tuple of floats, None) - setting the norm limits for image scaling
 
         **line_table** (str, "line") - which element table to use ("line", "line_dc")
+
+        **plot_colormap** (bool, True) - flag whether the colormap is actually drawn
 
         **kwargs** - key word arguments are passed to the patch function
 
