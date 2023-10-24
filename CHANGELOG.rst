@@ -32,6 +32,7 @@ Change Log
 - [CHANGED] PowerFactory converter - name :code:`for_name` as :code:`equipment` for all elements; also add to line
 - [ADDED] option to use a second tap changer for the trafo element
 - [FIXED] :code:`convert_format.py`: update the attributes of the characteristic objects to match the new characteristic
+- [FIXED] fixed the wrong id numbers for pypower powerflow algorithms fdxb and fdbx
 
 
 [2.13.1] - 2023-05-12
