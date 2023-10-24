@@ -151,6 +151,9 @@ def _pd2ppc(net, sequence=None):
     # Also deactivates lines if they are connected to two out of service buses
     _branches_with_oos_buses(net, ppc)
 
+    if "pf" in mode:
+        _check_for_reference_bus(ppc)
+
     if check_connectivity:
         if sequence in [None, 1, 2]:
             # sets islands (multiple isolated nodes) out of service
@@ -168,9 +171,6 @@ def _pd2ppc(net, sequence=None):
         aux._set_isolated_buses_out_of_service(net, ppc)
 
     _build_gen_ppc(net, ppc)
-
-    if "pf" in mode:
-        _check_for_reference_bus(ppc)
 
     aux._replace_nans_with_default_limits(net, ppc)
 
@@ -256,7 +256,7 @@ def _ppc2ppci(ppc, net, ppci=None):
     # get OOS busses and place them at the end of the bus array
     # (there are no OOS busses in the ppci)
     oos_buses = ppc['bus'][:, BUS_TYPE] == NONE
-    oos_buses_dc = ppc['bus_dc'][:, BUS_TYPE] == NONE
+    oos_buses_dc = ppc['bus_dc'][:, BUS_TYPE] == DC_NONE
     ppci['bus'] = ppc['bus'][~oos_buses]
     ppci['bus_dc'] = ppc['bus_dc'][~oos_buses_dc]
     # in ppc the OOS busses are included and at the end of the array

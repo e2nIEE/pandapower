@@ -515,12 +515,15 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         vsc[vsc_branches, VSC_P] = s_vsc_f.real
         vsc[vsc_branches, VSC_Q] = s_vsc_f.imag
 
+    if len(relevant_bus_dc) > 0:
+        # duplication with "if any branch dc" because it is possible to have only vsc and no dc lines:
+        bus_dc[relevant_bus_dc, DC_VM] = V_dc
+
     # todo move this to pfsoln
     if any_branch_dc:
         Yf_hvdc, Yt_hvdc = make_Yft_facts(hvdc_fb, hvdc_tb, hvdc_y_pu, num_bus_dc)
         Pbus_dc = V_dc * Ybus_hvdc.dot(V_dc)
         bus_dc[relevant_bus_dc, DC_PD] = Pbus_dc
-        bus_dc[relevant_bus_dc, DC_VM] = V_dc
         i_hvdc_f = Yf_hvdc.dot(V_dc)
         p_hvdc_f = i_hvdc_f * V_dc[hvdc_fb] * baseMVA
         i_hvdc_t = Yt_hvdc.dot(V_dc)
