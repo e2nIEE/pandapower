@@ -8,6 +8,7 @@ import numpy as np
 from scipy.sparse import csr_matrix, lil_matrix, diags
 from pandapower.pf.makeYbus_facts import calc_y_svc_pu
 
+SMALL_NUMBER = 1e-20
 
 def create_J_modification_svc(J, svc_buses, pvpq, pq, pq_lookup, V, x_control, svc_x_l_pu, svc_x_cvar_pu,
                               nsvc, nsvc_controllable, svc_controllable):
@@ -240,11 +241,13 @@ def create_J_modification_ssc(J, V, Ybus_ssc, f, t, pvpq, pq, pvpq_lookup, pq_lo
 
     f_in_pq = np.isin(f, pq)
     f_in_pvpq = np.isin(f, pvpq)
+    t_in_pq = np.isin(t, pq)
+    t_in_pvpq = np.isin(t, pvpq)
 
     # todo: use _sum_by_group what multiple elements start (or end) at the same bus?
     # J_C_P_d = np.zeros(shape=(len(pvpq) + len(x_control), len(pvpq) + len(x_control)), dtype=np.float64)
     # J_C_P_d = np.zeros(shape=(len(pvpq), len(pvpq)), dtype=np.float64)
-    if np.any(f_in_pvpq):
+    #if np.any(f_in_pvpq):
         # J_C_P_d[pvpq_lookup[f[f_in_pvpq]], pvpq_lookup[f[f_in_pvpq]]] = -S_Fik.imag
         # # J_C_P_d[pvpq_lookup[f[f_in_pvpq]], pvpq_lookup[t[f_in_pvpq]]+ len(x_control)] = S_Fik.imag
         # J_C_P_d[pvpq_lookup[f[f_in_pvpq]], pvpq_lookup[t[f_in_pvpq]]] = S_Fik.imag
@@ -255,57 +258,68 @@ def create_J_modification_ssc(J, V, Ybus_ssc, f, t, pvpq, pq, pvpq_lookup, pq_lo
         # J_C_P_d[pvpq_lookup[t[f_in_pvpq]] , pvpq_lookup[f[f_in_pvpq]]] = S_Fki.imag
         # J_C_P_d[pvpq_lookup[t[f_in_pvpq]] , pvpq_lookup[t[f_in_pvpq]]] = -S_Fki.imag
 
+    if np.any(f_in_pvpq):
         J_m[pvpq_lookup[f[f_in_pvpq]], pvpq_lookup[f[f_in_pvpq]]] = -S_Fik.imag
-        J_m[pvpq_lookup[f[f_in_pvpq]], pvpq_lookup[t[f_in_pvpq]]] = S_Fik.imag
-        J_m[pvpq_lookup[t[f_in_pvpq]] , pvpq_lookup[f[f_in_pvpq]]] = S_Fki.imag
-        J_m[pvpq_lookup[t[f_in_pvpq]] , pvpq_lookup[t[f_in_pvpq]]] = -S_Fki.imag
+    if np.any(f_in_pvpq & t_in_pvpq):
+        J_m[pvpq_lookup[f[f_in_pvpq & t_in_pvpq]], pvpq_lookup[t[f_in_pvpq & t_in_pvpq]]] = S_Fik.imag
+        J_m[pvpq_lookup[t[f_in_pvpq & t_in_pvpq]], pvpq_lookup[f[f_in_pvpq & t_in_pvpq]]] = S_Fki.imag
+    if np.any(t_in_pvpq):
+        J_m[pvpq_lookup[t[t_in_pvpq]], pvpq_lookup[t[t_in_pvpq]]] = -S_Fki.imag
 
 
     # J_C_P_u = np.zeros(shape=(len(pvpq), len(pq)), dtype=np.float64)
     # J_C_P_u = np.zeros(shape=(len(pvpq)+ len(x_control), len(pq)+ len(x_control)), dtype=np.float64)
 
-    if np.any(f_in_pvpq & f_in_pq):  ## TODO check if this conditon includes all cases, and check trough tests
+    #if np.any(f_in_pvpq & f_in_pq):  ## TODO check if this conditon includes all cases, and check trough tests
         # J_C_P_u[pvpq_lookup[f[f_in_pvpq]], pq_lookup[f[f_in_pq]]] = (2 * S_Fii.real + S_Fik.real) / Vmf
         # J_C_P_u[pvpq_lookup[f[f_in_pvpq]], pq_lookup[t[f_in_pq]] ] = S_Fik.real/Vmt
         #
         # J_C_P_u[pvpq_lookup[t[f_in_pvpq]], pq_lookup[f[f_in_pq]]] = S_Fki.real/Vmf
         # J_C_P_u[pvpq_lookup[t[f_in_pvpq]], pq_lookup[t[f_in_pq]]] = (2 * S_Fkk.real + S_Fki.real) / Vmt
 
+    if np.any(f_in_pvpq & f_in_pq):
         J_m[pvpq_lookup[f[f_in_pvpq]], len(pvpq)+pq_lookup[f[f_in_pq]]] = (2 * S_Fii.real + S_Fik.real) / Vmf
-        J_m[pvpq_lookup[f[f_in_pvpq]], len(pvpq)+pq_lookup[t[f_in_pq]] ] = S_Fik.real/Vmt
-        J_m[pvpq_lookup[t[f_in_pvpq]], len(pvpq)+pq_lookup[f[f_in_pq]]] = S_Fki.real/Vmf
-        J_m[pvpq_lookup[t[f_in_pvpq]], len(pvpq)+pq_lookup[t[f_in_pq]]] = (2 * S_Fkk.real + S_Fki.real) / Vmt
+    if np.any(f_in_pvpq & t_in_pq):
+        J_m[pvpq_lookup[f[f_in_pvpq & t_in_pq]], len(pvpq)+pq_lookup[t[f_in_pvpq & t_in_pq]] ] = S_Fik.real/Vmt
+        J_m[pvpq_lookup[t[f_in_pvpq & t_in_pq]], len(pvpq)+pq_lookup[f[f_in_pvpq & t_in_pq]]] = S_Fki.real/Vmf
+    if np.any(t_in_pvpq & t_in_pq):
+        J_m[pvpq_lookup[t[t_in_pvpq & t_in_pq]], len(pvpq)+pq_lookup[t[t_in_pvpq & t_in_pq]]] = (2 * S_Fkk.real + S_Fki.real) / Vmt
 
 
     # J_C_Q_d = np.zeros(shape=(len(pq), len(pvpq)), dtype=np.float64)
     # J_C_Q_d = np.zeros(shape=(len(pq)+ len(x_control), len(pvpq)+ len(x_control)), dtype=np.float64)
-    if np.any(f_in_pvpq & f_in_pq):
+    #if np.any(f_in_pvpq & f_in_pq):
         # J_C_Q_d[pq_lookup[f[f_in_pq]], pvpq_lookup[f[f_in_pvpq]]] = S_Fik.real
         # J_C_Q_d[pq_lookup[f[f_in_pq]], pvpq_lookup[t[f_in_pvpq]]] = -S_Fik.real
         #
         # # J_C_Q_d[pq_lookup[t[f_in_pq]]+ len(x_control), pvpq_lookup[f[f_in_pvpq]]] = 0
         # # J_C_Q_d[pq_lookup[t[f_in_pq]]+ len(x_control), pvpq_lookup[t[f_in_pvpq]]+ len(x_control)] = 0
-
-        J_m[len(pvpq) + pq_lookup[f[f_in_pq]], pvpq_lookup[f[f_in_pvpq]]] = S_Fik.real
-        J_m[len(pvpq) + pq_lookup[f[f_in_pq]], pvpq_lookup[t[f_in_pvpq]]] = -S_Fik.real
-        J_m[len(pvpq) + pq_lookup[t[f_in_pq]], pvpq_lookup[f[f_in_pvpq]]] = np.where(control_mode_v, 0, S_Fik.real)  # control mode V or Q
-        J_m[len(pvpq) + pq_lookup[t[f_in_pq]], pvpq_lookup[t[f_in_pvpq]]] = np.where(control_mode_v, 0, -S_Fik.real) # control mode V or Q
+    if np.any(f_in_pvpq & f_in_pq):
+        J_m[len(pvpq) + pq_lookup[f[f_in_pq]], pvpq_lookup[f[f_in_pvpq]]] = S_Fik.real  # todo: should it be & or |?
+    if np.any(f_in_pq & t_in_pvpq):
+        J_m[len(pvpq) + pq_lookup[f[f_in_pq & t_in_pvpq]], pvpq_lookup[t[f_in_pq & t_in_pvpq]]] = -S_Fik.real
+    if np.any(f_in_pvpq & t_in_pq):
+        J_m[len(pvpq) + pq_lookup[t[f_in_pvpq & t_in_pq]], pvpq_lookup[f[f_in_pvpq & t_in_pq]]] = np.where(control_mode_v, SMALL_NUMBER, S_Fik.real)  # control mode V or Q
+    if np.any(t_in_pq & t_in_pvpq):
+        J_m[len(pvpq) + pq_lookup[t[t_in_pq]], pvpq_lookup[t[t_in_pvpq]]] = np.where(control_mode_v, SMALL_NUMBER, -S_Fik.real) # control mode V or Q
 
 
 
     # J_C_Q_u = np.zeros(shape=(len(pq), len(pq)), dtype=np.float64)
     # J_C_Q_u = np.zeros(shape=(len(pq)+ len(x_control), len(pq)+ len(x_control)), dtype=np.float64)
-    if np.any(f_in_pq):
+    # if np.any(f_in_pq):
         # J_C_Q_u[pq_lookup[f[f_in_pq]], pq_lookup[f[f_in_pq]]] = (2 * S_Fii.imag + S_Fik.imag) / Vmf
         # J_C_Q_u[pq_lookup[f[f_in_pq]], pq_lookup[t[f_in_pq]]] = S_Fik.imag/Vmt
         #
         # J_C_Q_u[pq_lookup[t[f_in_pq]], pq_lookup[f[f_in_pq]]] = 1
         # J_C_Q_u[pq_lookup[t[f_in_pq]], pq_lookup[t[f_in_pq]]] = 0
-
+    if np.any(f_in_pq):
         J_m[len(pvpq)+pq_lookup[f[f_in_pq]], len(pvpq)+pq_lookup[f[f_in_pq]]] = (2 * S_Fii.imag + S_Fik.imag) / Vmf
-        J_m[len(pvpq)+pq_lookup[f[f_in_pq]], len(pvpq)+pq_lookup[t[f_in_pq]]] = S_Fik.imag / Vmt
-        J_m[len(pvpq)+pq_lookup[t[f_in_pq]], len(pvpq)+pq_lookup[f[f_in_pq]]] = np.where(control_mode_v, 1, (2 * S_Fii.imag + S_Fik.imag) / Vmf)  # control mode V or Q
-        J_m[len(pvpq)+pq_lookup[t[f_in_pq]], len(pvpq)+pq_lookup[t[f_in_pq]]] = np.where(control_mode_v, 0, S_Fik.imag / Vmt)  # control mode V or Q
+    if np.any(f_in_pq & t_in_pq):
+        J_m[len(pvpq)+pq_lookup[f[f_in_pq & t_in_pq]], len(pvpq)+pq_lookup[t[f_in_pq & t_in_pq]]] = S_Fik.imag / Vmt
+        J_m[len(pvpq)+pq_lookup[t[f_in_pq & t_in_pq]], len(pvpq)+pq_lookup[f[f_in_pq & t_in_pq]]] = np.where(control_mode_v, 1, (2 * S_Fii.imag + S_Fik.imag) / Vmf)  # control mode V or Q
+    if np.any(t_in_pq):
+        J_m[len(pvpq)+pq_lookup[t[t_in_pq]], len(pvpq)+pq_lookup[t[t_in_pq]]] = np.where(control_mode_v, SMALL_NUMBER, S_Fik.imag / Vmt)  # control mode V or Q
         #
         # J_C_Q_u[pq_lookup[t[f_in_pq]]+ len(x_control), pq_lookup[f[f_in_pq]]] = 1
         # J_C_Q_u[pq_lookup[t[f_in_pq]]+ len(x_control), pq_lookup[t[f_in_pq]]+ len(x_control)] = 0

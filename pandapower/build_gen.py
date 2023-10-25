@@ -364,9 +364,9 @@ def _check_for_reference_bus(ppc):
 
     # todo test this
     bus_dc_relevant = np.flatnonzero(ppc["bus_dc"][:, DC_BUS_TYPE] != DC_NONE)
-    ref_dc, _ = bustypes_dc(ppc["bus_dc"])
+    ref_dc, b2b_dc, _ = bustypes_dc(ppc["bus_dc"])
     # throw an error since no reference bus is defined
-    if len(bus_dc_relevant) > 0 and len(ref_dc) == 0:
+    if len(bus_dc_relevant) > 0 and len(ref_dc) == 0 and len(b2b_dc) == 0:
         raise UserWarning("No reference bus for the dc grid is available. Add a DC reference bus by setting the "
                           "DC control mode of at least one VSC converter to 'vm_pu'")
 

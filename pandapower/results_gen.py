@@ -83,7 +83,9 @@ def _get_dc_slack_results(net, ppc, bus_dc_lookup_aranged, bus_p_dc):
 
     if len(bus_dc_slack) > 0:
         p = ppc["bus_dc"][bus_dc_lookup_aranged[bus_dc_slack], DC_PD]
-        net.res_vsc.loc[vsc_slack, "p_dc_mw"] = -p
+        #p = np.array([2])
+        # todo: check fro different vsc connected at the same bus and obtain the p for the vsc with V DC mode
+        net.res_vsc.loc[vsc_slack, "p_dc_mw"] = -p  # todo: divide by number of slack vsc's at the same bus
         net["res_vsc"].index = net['vsc'].index
     else:
         return

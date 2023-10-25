@@ -40,8 +40,9 @@ additional constants, used to assign/compare values in the C{DC_BUS_TYPE} column
 
 # define DC bus types
 DC_REF = 0
-DC_P = 1
-DC_NONE = 2
+DC_B2B = 1
+DC_P = 2
+DC_NONE = 3
 
 # define the indices
 DC_BUS_I = 0    # DC bus number (1 to 29997)

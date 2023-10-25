@@ -15,7 +15,7 @@ from pandapower.pypower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMI
     VM, VA, CID, CZD, bus_cols, REF, PV
 from pandapower.pypower.idx_bus_sc import C_MAX, C_MIN, bus_cols_sc
 from .pypower.idx_bus_dc import dc_bus_cols, DC_BUS_TYPE, DC_BUS_AREA, DC_VM, DC_ZONE, DC_VMAX, DC_VMIN, DC_P, DC_BUS_I, \
-    DC_BASE_KV, DC_NONE, DC_REF
+    DC_BASE_KV, DC_NONE, DC_REF, DC_B2B
 from .pypower.idx_ssc import ssc_cols, SSC_BUS, SSC_R, SSC_X, SSC_SET_VM_PU, SSC_X_CONTROL_VA, SSC_X_CONTROL_VM, \
     SSC_STATUS, SSC_CONTROLLABLE, SSC_INTERNAL_BUS
 from .pypower.idx_svc import svc_cols, SVC_BUS, SVC_SET_VM_PU, SVC_MIN_FIRING_ANGLE, SVC_MAX_FIRING_ANGLE, SVC_STATUS, \
@@ -477,6 +477,12 @@ def set_reference_buses_dc(net, ppc, bus_lookup, mode):
     vsc_dc_slack = net.vsc.control_mode_dc.values == "vm_pu"
     ref_buses = bus_lookup[net.vsc.bus_dc.values[net._is_elements["vsc"] & vsc_dc_slack]]
     ppc["bus_dc"][ref_buses, DC_BUS_TYPE] = DC_REF
+
+    # identify back-to-back converters:
+    vsc_dc_p = net.vsc.control_mode_dc.values == "p_mw"
+    p_buses = bus_lookup[net.vsc.bus_dc.values[net._is_elements["vsc"] & vsc_dc_p]]
+    b2b_buses = np.intersect1d(ref_buses, p_buses)
+    ppc["bus_dc"][b2b_buses, DC_BUS_TYPE] = DC_B2B
 
 
 def _calc_pq_elements_and_add_on_ppc(net, ppc, sequence=None):

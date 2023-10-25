@@ -36,10 +36,17 @@ def runpp_pgm_3ph_with_consistency_checks(net):
     consistency_checks_3ph(net)
     return True
 
+
+def consistent_b2b_vsc(net, rtol):
+    pass
+
+
 def consistency_checks(net, rtol=1e-3, test_q=True):
     indices_consistent(net)
     branch_loss_consistent_with_bus_feed_in(net, rtol)
     element_power_consistent_with_bus_power(net, rtol, test_q)
+    # consistent_b2b_vsc(net, rtol)  # todo
+
 
 def indices_consistent(net):
     elements = get_relevant_elements()

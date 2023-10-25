@@ -37,7 +37,7 @@ def _extract_results(net, ppc):
     _get_gen_results(net, ppc, bus_lookup_aranged, bus_pq)
     _get_bus_results(net, ppc, bus_pq)
     bus_p_dc = _get_p_dc_results(net, ppc, bus_dc_lookup_aranged)
-    _get_dc_slack_results(net, ppc, bus_dc_lookup_aranged, bus_p_dc)
+    # _get_dc_slack_results(net, ppc, bus_dc_lookup_aranged, bus_p_dc)
     _get_bus_dc_results(net, bus_p_dc)
     if net._options["mode"] == "opf":
         _get_costs(net, ppc)

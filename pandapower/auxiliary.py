@@ -45,7 +45,7 @@ from pandapower.pypower.idx_gen import PMIN, PMAX, QMIN, QMAX
 from pandapower.pypower.idx_ssc import SSC_STATUS, SSC_BUS, SSC_INTERNAL_BUS
 from pandapower.pypower.idx_tcsc import TCSC_STATUS, TCSC_F_BUS, TCSC_T_BUS
 from pandapower.pypower.idx_vsc import VSC_STATUS, VSC_BUS, VSC_INTERNAL_BUS, VSC_BUS_DC
-from .pypower.idx_bus_dc import DC_VMAX, DC_VMIN, DC_BUS_I, DC_BUS_TYPE, DC_NONE, DC_REF
+from .pypower.idx_bus_dc import DC_VMAX, DC_VMIN, DC_BUS_I, DC_BUS_TYPE, DC_NONE, DC_REF, DC_B2B
 
 try:
     from numba import jit
@@ -703,7 +703,8 @@ def _check_connectivity(ppc):
     if nobus_dc > 0:
         br_dc_status = ppc['branch_dc'][:, DC_BR_STATUS].astype(bool)
         nobranch_dc = ppc['branch_dc'][br_dc_status, :].shape[0]
-        slacks_dc = ppc['bus_dc'][ppc['bus_dc'][:, DC_BUS_TYPE] == DC_REF, BUS_I]
+        slacks_dc = ppc['bus_dc'][(ppc['bus_dc'][:, DC_BUS_TYPE] == DC_REF) |
+                                  (ppc['bus_dc'][:, DC_BUS_TYPE] == DC_B2B), BUS_I]
 
         bus_from_dc = ppc['branch_dc'][br_dc_status, DC_F_BUS].real.astype(np.int64)
         bus_to_dc = ppc['branch_dc'][br_dc_status, DC_T_BUS].real.astype(np.int64)
