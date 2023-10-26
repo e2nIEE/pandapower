@@ -647,6 +647,7 @@ def _evaluate_Fx_facts(V,pq ,svc_buses=None, svc_set_vm_pu=None, tcsc_controllab
 
 
         # todo fix this part
+        # a configuration of B2B bus connecting also with DC lines could be implemented here in the future if needed:
         if len(dc_p):
             vsc_set_p_pu[vsc_p] = -P_dc[dc_p][dc_p_lookup[vsc_dc_p_bus]] # dc_p
         if len(dc_ref):

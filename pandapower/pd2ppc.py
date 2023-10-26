@@ -18,7 +18,7 @@ from pandapower.pypower.idx_area import PRICE_REF_BUS
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
 from pandapower.pypower.idx_brch_dc import DC_F_BUS, DC_T_BUS, DC_BR_STATUS
 from pandapower.pypower.idx_bus import NONE, BUS_I, BUS_TYPE
-from pandapower.pypower.idx_bus_dc import DC_BUS_I, DC_BUS_TYPE, DC_NONE
+from pandapower.pypower.idx_bus_dc import DC_BUS_I, DC_BUS_TYPE, DC_NONE, DC_B2B
 from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS
 from pandapower.pypower.idx_ssc import SSC_STATUS, SSC_BUS, SSC_INTERNAL_BUS
 from pandapower.pypower.idx_tcsc import TCSC_STATUS, TCSC_F_BUS, TCSC_T_BUS
@@ -60,6 +60,16 @@ def _pd2ppc_recycle(net, sequence, recycle):
     net[key] = ppc
 
     return ppc, ppci
+
+
+def _check_line_dc_at_b2b_buses(ppci):
+    b2b_buses = ppci["bus_dc"][ppci["bus_dc"][:, DC_BUS_TYPE] == DC_B2B, DC_BUS_I].astype(np.int64)
+    intersect_from = np.intersect1d(ppci["branch_dc"][:, DC_F_BUS].astype(np.int64), b2b_buses)
+    intersect_to = np.intersect1d(ppci["branch_dc"][:, DC_T_BUS].astype(np.int64), b2b_buses)
+    if len(intersect_from) != 0 or len(intersect_to) != 0:
+        raise NotImplementedError("Found DC lines connected to Back-To-Back VSC converter configuration - "
+                                  "not implemented. DC lines can only connect to the DC buses that are not "
+                                  "part of a Back-To-Back configuration.")
 
 
 def _pd2ppc(net, sequence=None):
@@ -178,6 +188,8 @@ def _pd2ppc(net, sequence=None):
     # from "external" ppc format and updates the bus lookup
     # Note: Also reorders buses and gens in ppc
     ppci = _ppc2ppci(ppc, net)
+
+    _check_line_dc_at_b2b_buses(ppci)
 
     if mode == "pf":
         # check if any generators connected to the same bus have different voltage setpoints
