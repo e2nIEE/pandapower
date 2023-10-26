@@ -77,6 +77,20 @@ def example_multivoltage():
     return net
 
 
+@pytest.fixture(scope="session")
+def SimBench_1_HVMVmixed_1_105_0_sw_modified_no_load_flow():
+    folder_path = os.path.join(test_path, "test_files", "example_cim")
+
+    cgmes_files = [os.path.join(folder_path, 'SimBench_1-HVMV-mixed-1.105-0-sw_modified.zip')]
+
+    return cim2pp.from_cim(file_list=cgmes_files, create_res_tables=False)
+
+
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_no_load_flow_res_bus(
+        SimBench_1_HVMVmixed_1_105_0_sw_modified_no_load_flow):
+    assert 0 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified_no_load_flow.res_bus.index)
+
+
 def test_example_multivoltage_res_xward(example_multivoltage):
     assert 2 == len(example_multivoltage.res_xward.index)
     element_0 = example_multivoltage.res_xward.iloc[example_multivoltage.xward[
@@ -1053,6 +1067,7 @@ def test_fullgrid_controller(fullgrid):
 
 def test_fullgrid_characteristic_temp(fullgrid):
     assert 8 == len(fullgrid.characteristic_temp.index)
+
 
 def test_fullgrid_characteristic(fullgrid):
     assert 20 == len(fullgrid.characteristic.index)

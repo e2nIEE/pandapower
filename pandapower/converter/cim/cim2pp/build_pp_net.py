@@ -170,19 +170,20 @@ class CimConverter:
         self.logger.info("Running a power flow.")
         self.report_container.add_log(Report(
             level=LogLevel.INFO, code=ReportCode.INFO, message="Running a power flow."))
-        try:
-            pp.runpp(self.net)
-        except Exception as e:
-            self.logger.error("Failed running a powerflow.")
-            self.logger.exception(e)
-            self.report_container.add_log(Report(
-                level=LogLevel.ERROR, code=ReportCode.ERROR, message="Failed running a powerflow."))
-            self.report_container.add_log(Report(level=LogLevel.EXCEPTION, code=ReportCode.EXCEPTION,
-                                                 message=traceback.format_exc()))
-        else:
-            self.logger.info("Power flow solved normal.")
-            self.report_container.add_log(Report(
-                level=LogLevel.INFO, code=ReportCode.INFO, message="Power flow solved normal."))
+        if kwargs.get('create_res_tables', True):
+            try:
+                pp.runpp(self.net)
+            except Exception as e:
+                self.logger.error("Failed running a powerflow.")
+                self.logger.exception(e)
+                self.report_container.add_log(Report(
+                    level=LogLevel.ERROR, code=ReportCode.ERROR, message="Failed running a powerflow."))
+                self.report_container.add_log(Report(level=LogLevel.EXCEPTION, code=ReportCode.EXCEPTION,
+                                                     message=traceback.format_exc()))
+            else:
+                self.logger.info("Power flow solved normal.")
+                self.report_container.add_log(Report(
+                    level=LogLevel.INFO, code=ReportCode.INFO, message="Power flow solved normal."))
         try:
             create_measurements = kwargs.get('create_measurements', None)
             if create_measurements is not None and create_measurements.lower() == 'sv':
