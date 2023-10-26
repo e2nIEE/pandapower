@@ -1835,6 +1835,56 @@ def test_b2b_line_dc_raise():
         pp.runpp(net)
 
 
+def test_line_dc_and_2_vsc1():
+    net = pp.create_empty_network()
+    # AC part
+    pp.create_buses(net, 4, 110)
+    pp.create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
+    pp.create_line_from_parameters(net, 0, 2, 30, 0.0487, 0.13823, 160, 0.664)
+    pp.create_line_from_parameters(net, 2, 3, 30, 0.0487, 0.13823, 160, 0.664)
+    pp.create_ext_grid(net, 0)
+    pp.create_load(net, 2, 10)
+
+    # DC part
+    pp.create_bus_dc(net, 110, 'A')
+    pp.create_bus_dc(net, 110, 'B')
+
+    pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
+
+    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
+                  control_value_dc=1.02)
+    pp.create_vsc(net, 2, 0, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
+                  control_value_dc=1.02)
+    pp.create_vsc(net, 3, 1, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="p_mw",
+                  control_value_dc=2)
+
+    runpp_with_consistency_checks(net)
+
+
+def test_line_dc_and_2_vsc2():
+    net = pp.create_empty_network()
+    # AC part
+    pp.create_buses(net, 4, 110)
+    pp.create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
+    pp.create_line_from_parameters(net, 0, 2, 30, 0.0487, 0.13823, 160, 0.664)
+    pp.create_line_from_parameters(net, 2, 3, 30, 0.0487, 0.13823, 160, 0.664)
+    pp.create_ext_grid(net, 0)
+    pp.create_load(net, 2, 10)
+
+    # DC part
+    pp.create_bus_dc(net, 110, 'A')
+    pp.create_bus_dc(net, 110, 'B')
+
+    pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
+
+    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="p_mw",
+                  control_value_dc=2)
+    pp.create_vsc(net, 2, 0, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="p_mw",
+                  control_value_dc=2)
+    pp.create_vsc(net, 3, 1, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
+                  control_value_dc=1.02)
+
+    runpp_with_consistency_checks(net)
 
 
 # TODO VSC as slack - cannot work because slack is a Vm-Va bus,

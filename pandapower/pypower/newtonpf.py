@@ -637,26 +637,29 @@ def _evaluate_Fx_facts(V,pq ,svc_buses=None, svc_set_vm_pu=None, tcsc_controllab
         vsc_dc_b2b_bus = np.intersect1d(vsc_dc_bus[vsc_controllable], dc_b2b)    # DC B2B buses
 
         vsc_p = np.isin(vsc_dc_bus, vsc_dc_p_bus)
-        vsc_ref = vsc_mode_dc == 0
+        vsc_ref = np.isin(vsc_dc_bus, vsc_dc_ref_bus)
         vsc_b2b_p = np.isin(vsc_dc_bus, vsc_dc_b2b_bus) & (vsc_mode_dc == 1)
         vsc_b2b_ref = np.isin(vsc_dc_bus, vsc_dc_b2b_bus) & (vsc_mode_dc == 0)
 
-        bbb, _, count_b2b_ref = _sum_by_group(vsc_dc_bus, vsc_b2b_ref.astype(np.float64), vsc_b2b_ref.astype(np.float64))
-        factor_b2b_ref = np.ones(sum(vsc_b2b_ref), dtype=np.float64)
-        factor_b2b_ref = count_b2b_ref[vsc_dc_bus[vsc_b2b_ref]]
+        unique_vsc_dc_bus, c_ref, c_b2b_ref = _sum_by_group(vsc_dc_bus, vsc_ref.astype(np.float64), vsc_b2b_ref.astype(np.float64))
+        count_ref = np.zeros(vsc_dc_bus.max()+1, dtype=np.int64)
+        count_b2b_ref = np.zeros(vsc_dc_bus.max()+1, dtype=np.int64)
+        count_ref[unique_vsc_dc_bus] = c_ref
+        count_b2b_ref[unique_vsc_dc_bus] = c_b2b_ref
 
 
         # todo fix this part
         # a configuration of B2B bus connecting also with DC lines could be implemented here in the future if needed:
         if len(dc_p):
-            vsc_set_p_pu[vsc_p] = -P_dc[dc_p][dc_p_lookup[vsc_dc_p_bus]] # dc_p
+            # vsc_set_p_pu[vsc_p] = -P_dc[dc_p][dc_p_lookup[vsc_dc_p_bus]]
+            vsc_set_p_pu[vsc_p] = vsc_value_dc[vsc_p]
         if len(dc_ref):
             # vsc_set_p_pu[vsc_mode_dc == 1] = -P_dc[dc_ref][dc_ref_lookup[vsc_dc_ref_bus]]  # dc_p
-            vsc_set_p_pu[vsc_ref] = -Pbus_hvdc[dc_ref][dc_ref_lookup[vsc_dc_ref_bus]]
+            vsc_set_p_pu[vsc_ref] = -Pbus_hvdc[dc_ref][dc_ref_lookup[vsc_dc_ref_bus]] / count_ref[vsc_dc_bus[vsc_ref]]
         if len(dc_b2b):
             # vsc_set_p_pu[vsc_mode_dc == 1] = -P_dc[dc_ref][dc_ref_lookup[vsc_dc_ref_bus]]  # dc_p
             vsc_set_p_pu[vsc_b2b_p] = vsc_value_dc[vsc_b2b_p]
-            vsc_set_p_pu[vsc_b2b_ref] = P_dc[dc_b2b][dc_b2b_lookup[vsc_dc_b2b_bus]] / factor_b2b_ref
+            vsc_set_p_pu[vsc_b2b_ref] = P_dc[dc_b2b][dc_b2b_lookup[vsc_dc_b2b_bus]] / count_b2b_ref[vsc_dc_bus[vsc_b2b_ref]]
         ####  here used vsc_tb refereing to the q bus
         mis_vsc_p = Sbus_vsc[vsc_tb[vsc_controllable]].real - vsc_set_p_pu  # this is coupling the AC and the DC sides
         # todo: adjust the lookup to work with 1) VSC at ext_grid bus 2) only 1 VSC connected to HVDC line
