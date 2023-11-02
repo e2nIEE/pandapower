@@ -517,6 +517,7 @@ class PowerTransformersCim16:
         del copy_list, one_item
 
         # detect on which winding a tap changer is attached
+        power_trafo3w['tap_side'] = None
         power_trafo3w.loc[power_trafo3w['step_lv'].notna(), 'tap_side'] = 'lv'
         power_trafo3w.loc[power_trafo3w['step_mv'].notna(), 'tap_side'] = 'mv'
         power_trafo3w.loc[power_trafo3w['step'].notna(), 'tap_side'] = 'hv'
