@@ -180,7 +180,7 @@ class CimConverter:
                     level=LogLevel.ERROR, code=ReportCode.ERROR, message="Failed running a powerflow."))
                 self.report_container.add_log(Report(level=LogLevel.EXCEPTION, code=ReportCode.EXCEPTION,
                                                      message=traceback.format_exc()))
-                if not kwargs.get('ignore_errors', False):
+                if not kwargs.get('ignore_errors', True):
                     raise e
             else:
                 self.logger.info("Power flow solved normal.")
@@ -209,9 +209,10 @@ class CimConverter:
                 level=LogLevel.EXCEPTION, code=ReportCode.EXCEPTION_CONVERTING,
                 message=traceback.format_exc()))
             self.net.measurement = self.net.measurement[0:0]
-            if not kwargs.get('ignore_errors', False):
+            if not kwargs.get('ignore_errors', True):
                 raise e
         try:
+            # TODO: think on whether to remove whole function
             if kwargs.get('update_assets_from_sv', False):
                 CreateMeasurements(self.net, self.cim).update_assets_from_sv()
         except Exception as e:
@@ -223,7 +224,7 @@ class CimConverter:
             self.report_container.add_log(Report(
                 level=LogLevel.EXCEPTION, code=ReportCode.EXCEPTION_CONVERTING,
                 message=traceback.format_exc()))
-            if not kwargs.get('ignore_errors', False):
+            if not kwargs.get('ignore_errors', True):
                 raise e
         # a special fix for BB and NB mixed networks:
         # fuse boundary ConnectivityNodes with their TopologicalNodes
