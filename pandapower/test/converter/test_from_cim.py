@@ -54,7 +54,7 @@ def SimBench_1_HVMVmixed_1_105_0_sw_modified():
 
     cgmes_files = [os.path.join(folder_path, 'SimBench_1-HVMV-mixed-1.105-0-sw_modified.zip')]
 
-    return cim2pp.from_cim(file_list=cgmes_files)
+    return cim2pp.from_cim(file_list=cgmes_files, run_powerflow=True)
 
 
 @pytest.fixture(scope="session")
@@ -63,7 +63,7 @@ def Simbench_1_EHV_mixed__2_no_sw():
 
     cgmes_files = [os.path.join(folder_path, 'Simbench_1-EHV-mixed--2-no_sw.zip')]
 
-    return cim2pp.from_cim(file_list=cgmes_files, create_measurements='SV')
+    return cim2pp.from_cim(file_list=cgmes_files, create_measurements='SV', run_powerflow=True)
 
 
 @pytest.fixture(scope="session")
@@ -83,7 +83,7 @@ def SimBench_1_HVMVmixed_1_105_0_sw_modified_no_load_flow():
 
     cgmes_files = [os.path.join(folder_path, 'SimBench_1-HVMV-mixed-1.105-0-sw_modified.zip')]
 
-    return cim2pp.from_cim(file_list=cgmes_files, create_res_tables=False)
+    return cim2pp.from_cim(file_list=cgmes_files)
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_no_load_flow_res_bus(
