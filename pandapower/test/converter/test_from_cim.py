@@ -729,7 +729,7 @@ def test_fullgrid_trafo(fullgrid):
     assert 0.0 == element_1['pfe_kw'].item()
     assert 0.0 == element_1['i0_percent'].item()
     assert 0.0 == element_1['shift_degree'].item()
-    assert math.isnan(element_1['tap_side'].item())
+    assert None is element_1['tap_side'].item()
     assert pd.isna(element_1['tap_neutral'].item())
     assert pd.isna(element_1['tap_min'].item())
     assert pd.isna(element_1['tap_max'].item())
