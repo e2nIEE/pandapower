@@ -418,6 +418,42 @@ def test_tcsc_simple3():
     #  test results by comparing impedance result to formula; p, q, i by comparing to line results; vm, va by comparing to bus results
 
 
+def test_tcsc_simple3_slack():
+    baseMVA = 100  # MVA
+    baseV = 110  # kV
+    baseI = baseMVA / (baseV * np.sqrt(3))
+    baseZ = baseV ** 2 / baseMVA
+    xl = 0.2
+    xc = -20
+    # plot_z(baseZ, xl, xc)
+
+    # (0)-------------(1)-----------------(3)->
+    #  |-----(TCSC)--(2)-------------------|
+
+    net = pp.create_empty_network(sn_mva=baseMVA)
+    pp.create_buses(net, 4, baseV)
+    pp.create_ext_grid(net, 0)
+    pp.create_line_from_parameters(net, 0, 1, 20, 0.0487, 0.13823, 160, 0.664)
+    pp.create_line_from_parameters(net, 1, 3, 20, 0.0487, 0.13823, 160, 0.664)
+    pp.create_line_from_parameters(net, 2, 3, 20, 0.0487, 0.13823, 160, 0.664)
+    pp.create_line_from_parameters(net, 1, 2, 20, 0.0487, 0.13823, 160, 0.664)
+
+    pp.create_load(net, 2, 100, 40)
+
+    pp.plotting.simple_plot(net)
+    pp.create_tcsc(net, 2,0, xl, xc, 5, 170, "Test", controllable=True, min_angle_degree=90, max_angle_degree=180)
+
+    runpp_with_consistency_checks(net, init="dc")
+
+    net_ref = copy_with_impedance(net)
+    pp.runpp(net_ref)
+    compare_tcsc_impedance(net, net_ref, net.tcsc.index, net_ref.impedance.index)
+
+    # todo:
+    #  test with distributed slack
+    #  test results by comparing impedance result to formula; p, q, i by comparing to line results; vm, va by comparing to bus results
+
+
 def test_compare_to_impedance():
     baseMVA = 100  # MVA
     baseV = 110  # kV
