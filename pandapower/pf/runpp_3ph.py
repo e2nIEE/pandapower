@@ -538,6 +538,7 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
     svc = ppci0["svc"]  # placeholder
     tcsc = ppci0["tcsc"]  # placeholder
     ssc = ppci0["ssc"]  # placeholder
+    vsc = ppci0["vsc"]  # placeholder
     bus0, gen0, branch0 = pfsoln(base_mva, bus0, gen0, branch0, svc, tcsc, ssc, vsc, y_0_pu, y_0_f, y_0_t,
                                  v_012_it[0, :].flatten(), sl_bus, ref_gens)
     bus1, gen1, branch1 = pfsoln(base_mva, bus1, gen1, branch1, svc, tcsc, ssc, vsc, y_1_pu, y_1_f, y_1_t,

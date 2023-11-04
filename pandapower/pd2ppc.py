@@ -134,7 +134,7 @@ def _pd2ppc(net, sequence=None):
     else:
         # Calculates ppc1/ppc2 branch impedances from branch elements
         _build_branch_ppc(net, ppc)
-        _build_branch_dc_ppc(net, ppc)
+    _build_branch_dc_ppc(net, ppc)
 
     _build_tcsc_ppc(net, ppc, mode)
     _build_svc_ppc(net, ppc, mode)
