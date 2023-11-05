@@ -539,9 +539,9 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         i_hvdc_t = Yt_hvdc.dot(V_dc)
         p_hvdc_t = i_hvdc_t * V_dc[hvdc_tb] * baseMVA
         branch_dc[hvdc_branches, DC_PF] = p_hvdc_f.real
-        branch_dc[hvdc_branches, DC_IF] = p_hvdc_f.real
+        branch_dc[hvdc_branches, DC_IF] = i_hvdc_f.real
         branch_dc[hvdc_branches, DC_PT] = p_hvdc_t.real
-        branch_dc[hvdc_branches, DC_IT] = p_hvdc_t.real
+        branch_dc[hvdc_branches, DC_IT] = i_hvdc_t.real
 
     # todo: remove this
     # Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
