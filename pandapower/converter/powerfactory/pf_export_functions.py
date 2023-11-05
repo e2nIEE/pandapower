@@ -21,6 +21,8 @@ def create_network_dict(app, flag_graphics='GPS'):
         'ElmAsm',
         'ElmShnt',
         'ElmVac',
+        'ElmVsc',
+        'ElmVscmono',
 
         # branch elements:
         'ElmLne',
