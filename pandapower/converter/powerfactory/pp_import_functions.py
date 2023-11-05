@@ -2663,10 +2663,12 @@ def _get_vsc_control_modes(item, mono=True):
         raise NotImplementedError(f"control mode for vscmono"
                                   f" {item.loc_name} not implemented: {c_m}")
 
-    # p_set_dc = -item.psetp * scaling  # does not work - in PowerFactory, the P set-point relates to AC side
-    # q_set_ac = -item.qsetp * scaling
-    p_set_dc = -ga(item, f"m:P:{dc_bus_str}")
-    q_set_ac = -ga(item, "m:Q:busac") * scaling
+    if item.HasResults(0):
+        p_set_dc = -ga(item, f"m:P:{dc_bus_str}")
+        q_set_ac = -ga(item, "m:Q:busac") * scaling
+    else:
+        p_set_dc = -item.psetp * scaling  # does not work - in PowerFactory, the P set-point relates to AC side
+        q_set_ac = -item.qsetp * scaling
 
     control_mode_ac, control_mode_dc, control_value_ac, control_value_dc = {
         0: ("", "", None, None),  # Vac-phi
@@ -2760,14 +2762,17 @@ def create_vsc(net, item):
     result_variables = {"pf_p_mw": "m:P:busac",
                         "pf_q_mvar": "m:Q:busac"}
 
-    for res_var_pp, res_var_pf in result_variables.items():
-        res = np.nan
-        if item.HasResults(0):
+    if item.HasResults(0):
+        for res_var_pp, res_var_pf in result_variables.items():
             res = ga(item, res_var_pf)
-        net.res_vsc.at[vid_1, res_var_pp] = -res / 2
-        net.res_vsc.at[vid_2, res_var_pp] = -res / 2
-    net.res_vsc.at[vid_1, "pf_p_dc_mw"] = -ga(item, "m:P:busdm") / 2
-    net.res_vsc.at[vid_2, "pf_p_dc_mw"] = -ga(item, "m:P:busdp") / 2
+            net.res_vsc.at[vid_1, res_var_pp] = -res / 2
+            net.res_vsc.at[vid_2, res_var_pp] = -res / 2
+        net.res_vsc.at[vid_1, "pf_p_dc_mw"] = -ga(item, "m:P:busdm") / 2
+        net.res_vsc.at[vid_2, "pf_p_dc_mw"] = -ga(item, "m:P:busdp") / 2
+    else:
+        net.res_vsc.loc[vid_1, ["pf_p_mw", "pf_q_mvar", "pf_p_dc_mw"]] = np.nan
+        net.res_vsc.loc[vid_2, ["pf_p_mw", "pf_q_mvar", "pf_p_dc_mw"]] = np.nan
+
 
 
 def split_line_at_length(net, line, length_pos):
