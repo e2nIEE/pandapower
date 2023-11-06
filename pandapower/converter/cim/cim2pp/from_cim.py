@@ -114,7 +114,7 @@ def from_cim(file_list: List[str] = None, encoding: str = 'utf-8', convert_line_
     - run_powerflow (bool): Option to run to powerflow inside the converter to create res tables directly.
     Default: False.
     - ignore_errors (bool): Option to disable raising of internal errors. Useful if you need to get a network not matter
-    if there are errors in the conversion. Default: False.
+    if there are errors in the conversion. Default: True.
 
     :param file_list: The path to the CGMES files as a list.
     :param encoding: The encoding from the files. Optional, default: utf-8
