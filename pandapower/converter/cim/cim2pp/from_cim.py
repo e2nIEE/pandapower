@@ -112,7 +112,7 @@ def from_cim(file_list: List[str] = None, encoding: str = 'utf-8', convert_line_
     - sn_mva (float): Set the sn_mva from the pandapower net to a specific value. This value is not given in CGMES.
     Default: None (pandapower default will be chosen)
     - run_powerflow (bool): Option to run to powerflow inside the converter to create res tables directly.
-     Default: False.
+    Default: False.
     - ignore_errors (bool): Option to disable raising of internal errors. Useful if you need to get a network not matter
     if there are errors in the conversion. Default: False.
 
