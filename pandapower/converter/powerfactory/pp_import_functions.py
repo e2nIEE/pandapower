@@ -890,7 +890,7 @@ def create_line_sections(net, item_list, line, bus1, bus2, coords, parallel, is_
     return sid_list
 
 
-def create_line_normal(net, item, bus1, bus2, name, parallel, is_unbalanced, ac):
+def create_line_normal(net, item, bus1, bus2, name, parallel, is_unbalanced, ac, geodata=None):
     pf_type = item.typ_id
     std_type, type_created = create_line_type(net=net, item=pf_type,
                                               cable_in_air=item.inAir if item.HasAttribute(
@@ -904,7 +904,8 @@ def create_line_normal(net, item, bus1, bus2, name, parallel, is_unbalanced, ac)
         'std_type': std_type,
         'parallel': parallel,
         'alpha': pf_type.alpha if pf_type is not None else None,
-        'temperature_degree_celsius': pf_type.tmax if pf_type is not None else None
+        'temperature_degree_celsius': pf_type.tmax if pf_type is not None else None,
+        'geodata': geodata
     }
 
 
