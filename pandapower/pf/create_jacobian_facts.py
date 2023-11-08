@@ -8,7 +8,7 @@ import numpy as np
 from scipy.sparse import csr_matrix, lil_matrix, diags
 from pandapower.pf.makeYbus_facts import calc_y_svc_pu
 
-SMALL_NUMBER = 1e-20
+SMALL_NUMBER = 1e-9
 
 def create_J_modification_svc(J, svc_buses, pvpq, pq, pq_lookup, V, x_control, svc_x_l_pu, svc_x_cvar_pu,
                               nsvc, nsvc_controllable, svc_controllable):

@@ -1651,7 +1651,7 @@ def test_simple_vsc_hvdc():
 
 
 def test_simple_2vsc_hvdc1():
-    np.set_printoptions(linewidth=1000, suppress=True, precision=3)
+    # np.set_printoptions(linewidth=1000, suppress=True, precision=3)
     net = pp.create_empty_network()
     # AC part
     pp.create_buses(net, 3, 110, geodata=((0, 0), (100, 0), (200, 0)))
@@ -1680,7 +1680,7 @@ def test_simple_2vsc_hvdc1():
 
 
 def test_simple_2vsc_hvdc2():
-    np.set_printoptions(linewidth=1000, suppress=True, precision=3)
+    # np.set_printoptions(linewidth=1000, suppress=True, precision=3)
     net = pp.create_empty_network()
     # AC part
     pp.create_buses(net, 3, 110, geodata=((0, 0), (100, 0), (200, 0)))
