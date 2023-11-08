@@ -95,22 +95,26 @@ def from_cim(file_list: List[str] = None, encoding: str = 'utf-8', convert_line_
     """
     Convert a CIM net to a pandapower net from XML files.
     Additional parameters for kwargs:
-    create_measurements (str): Set this parameter to 'SV' to create measurements for the pandapower net from the SV
+    - create_measurements (str): Set this parameter to 'SV' to create measurements for the pandapower net from the SV
     profile. Set it to 'Analog' to create measurements from Analogs. If the parameter is not set or is set to None, no
     measurements will be created.
-    update_assets_from_sv (bool): Set this parameter to True to update the assets (sgens, loads, wards, ...) with values
-    from the SV profile. Default: False.
-    use_GL_or_DL_profile (str): Choose the profile to use for converting coordinates. Set it to 'GL' to use the GL
+    - update_assets_from_sv (bool): Set this parameter to True to update the assets (sgens, loads, wards, ...) with
+    values from the SV profile. Default: False.
+    - use_GL_or_DL_profile (str): Choose the profile to use for converting coordinates. Set it to 'GL' to use the GL
     profile (Usually lat and long coordinates). Set it to 'DL' to use the DL profile (Usually x, y coordinates for
     displaying control room schema). Set it to 'both' to let the converter choose the profile. The converter will
     choose the GL profile first if available, otherwise the DL profile. Optional, default: both.
-    diagram_name (str): The name from the Diagram from the diagram layout profile for the geo coordinates. Default: The
-    first diagram sorted ascending by name. Set the parameter to "all" to use available diagrams for creating the
+    - diagram_name (str): The name from the Diagram from the diagram layout profile for the geo coordinates. Default:
+    The first diagram sorted ascending by name. Set the parameter to "all" to use available diagrams for creating the
     coordinates.
-    create_tap_controller (bool): If True, create pandapower controllers for transformer tap changers. If False, skip
+    - create_tap_controller (bool): If True, create pandapower controllers for transformer tap changers. If False, skip
     creating them. Default: True
-    sn_mva (float): Set the sn_mva from the pandapower net to a specific value. This value is not given in CGMES.
+    - sn_mva (float): Set the sn_mva from the pandapower net to a specific value. This value is not given in CGMES.
     Default: None (pandapower default will be chosen)
+    - run_powerflow (bool): Option to run to powerflow inside the converter to create res tables directly.
+    Default: False.
+    - ignore_errors (bool): Option to disable raising of internal errors. Useful if you need to get a network not matter
+    if there are errors in the conversion. Default: True.
 
     :param file_list: The path to the CGMES files as a list.
     :param encoding: The encoding from the files. Optional, default: utf-8
