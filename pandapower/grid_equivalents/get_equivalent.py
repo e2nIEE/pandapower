@@ -260,7 +260,8 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
     if return_internal:
         logger.debug("Merging of internal and equivalent network begins.")
         net_eq = merge_internal_net_and_equivalent_external_net(
-            net_eq, net_internal, show_computing_time, calc_volt_angles=calculate_voltage_angles)
+            net_eq, net_internal, show_computing_time=show_computing_time,
+            calc_volt_angles=calculate_voltage_angles)
         if len(orig_slack_gens):
             net_eq.gen.slack.loc[net_eq.gen.index.intersection(orig_slack_gens)] = True
         # run final power flow calculation
@@ -379,7 +380,12 @@ def merge_internal_net_and_equivalent_external_net(
         else:
             fuse_bus_column = "name"
     for bus in boundary_buses_inclusive_bswitch:
-        name = merged_net.bus[fuse_bus_column].loc[bus]
+        try:
+            name = merged_net.bus[fuse_bus_column].loc[bus]
+        except:
+            print(fuse_bus_column)
+            print(merged_net.bus.columns)
+            print()
         target_buses = merged_net.bus.index[merged_net.bus[fuse_bus_column] == name]
         if len(target_buses) != 2:
             raise ValueError(
