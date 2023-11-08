@@ -272,7 +272,7 @@ def create_J_modification_ssc(J, V, Ybus_ssc, f, t, pvpq, pq, pvpq_lookup, pq_lo
 
     rows = np.r_[rows, pvpq_lookup[f[f_in_pvpq]], pvpq_lookup[f[f_in_pvpq & t_in_pvpq]], pvpq_lookup[t[f_in_pvpq & t_in_pvpq]], pvpq_lookup[t[t_in_pvpq]]]
     cols = np.r_[cols, pvpq_lookup[f[f_in_pvpq]], pvpq_lookup[t[f_in_pvpq & t_in_pvpq]], pvpq_lookup[f[f_in_pvpq & t_in_pvpq]], pvpq_lookup[t[t_in_pvpq]]]
-    data = np.r_[data, -S_Fik.imag, S_Fik.imag, S_Fki.imag, -S_Fki.imag]
+    data = np.r_[data, -S_Fik.imag[f_in_pvpq], S_Fik.imag[f_in_pvpq & t_in_pvpq], S_Fki.imag[f_in_pvpq & t_in_pvpq], -S_Fki.imag[t_in_pvpq]]
 
 
     # J_C_P_u = np.zeros(shape=(len(pvpq), len(pq)), dtype=np.float64)
@@ -295,7 +295,7 @@ def create_J_modification_ssc(J, V, Ybus_ssc, f, t, pvpq, pq, pvpq_lookup, pq_lo
 
     rows = np.r_[rows, pvpq_lookup[f[f_in_pvpq]], pvpq_lookup[f[f_in_pvpq & t_in_pq]], pvpq_lookup[t[f_in_pvpq & t_in_pq]], pvpq_lookup[t[t_in_pvpq & t_in_pq]]]
     cols = np.r_[cols, len(pvpq)+pq_lookup[f[f_in_pq]], len(pvpq)+pq_lookup[t[f_in_pvpq & t_in_pq]], len(pvpq)+pq_lookup[f[f_in_pvpq & t_in_pq]], len(pvpq)+pq_lookup[t[t_in_pvpq & t_in_pq]]]
-    data = np.r_[data, (2 * S_Fii.real + S_Fik.real) / Vmf, S_Fik.real/Vmt, S_Fki.real/Vmf, (2 * S_Fkk.real + S_Fki.real) / Vmt]
+    data = np.r_[data, ((2 * S_Fii.real + S_Fik.real) / Vmf)[f_in_pvpq], (S_Fik.real/Vmt)[f_in_pvpq & t_in_pq], (S_Fki.real/Vmf)[f_in_pvpq & t_in_pq], ((2 * S_Fkk.real + S_Fki.real) / Vmt)[t_in_pvpq & t_in_pq]]
 
 
     # J_C_Q_d = np.zeros(shape=(len(pq), len(pvpq)), dtype=np.float64)
@@ -317,7 +317,7 @@ def create_J_modification_ssc(J, V, Ybus_ssc, f, t, pvpq, pq, pvpq_lookup, pq_lo
 
     rows = np.r_[rows, len(pvpq) + pq_lookup[f[f_in_pq]], len(pvpq) + pq_lookup[f[f_in_pq & t_in_pvpq]], len(pvpq) + pq_lookup[t[f_in_pvpq & t_in_pq]], len(pvpq) + pq_lookup[t[t_in_pq]]]
     cols = np.r_[cols, pvpq_lookup[f[f_in_pvpq]], pvpq_lookup[t[f_in_pq & t_in_pvpq]], pvpq_lookup[f[f_in_pvpq & t_in_pq]], pvpq_lookup[t[t_in_pvpq]]]
-    data = np.r_[data, S_Fik.real, -S_Fik.real, np.where(control_mode_v, SMALL_NUMBER, S_Fik.real), np.where(control_mode_v, SMALL_NUMBER, -S_Fik.real)]
+    data = np.r_[data, S_Fik.real[f_in_pq], -S_Fik.real[f_in_pq & t_in_pvpq], np.where(control_mode_v, SMALL_NUMBER, S_Fik.real)[f_in_pvpq & t_in_pq], np.where(control_mode_v, SMALL_NUMBER, -S_Fik.real)[t_in_pq]]
 
 
 
@@ -342,7 +342,7 @@ def create_J_modification_ssc(J, V, Ybus_ssc, f, t, pvpq, pq, pvpq_lookup, pq_lo
 
     rows = np.r_[rows, len(pvpq)+pq_lookup[f[f_in_pq]], len(pvpq)+pq_lookup[f[f_in_pq & t_in_pq]], len(pvpq)+pq_lookup[t[f_in_pq & t_in_pq]], len(pvpq)+pq_lookup[t[t_in_pq]]]
     cols = np.r_[cols, len(pvpq)+pq_lookup[f[f_in_pq]], len(pvpq)+pq_lookup[t[f_in_pq & t_in_pq]], len(pvpq)+pq_lookup[f[f_in_pq & t_in_pq]], len(pvpq)+pq_lookup[t[t_in_pq]]]
-    data = np.r_[data, (2 * S_Fii.imag + S_Fik.imag) / Vmf, S_Fik.imag / Vmt, np.where(control_mode_v, 1, (2 * S_Fii.imag + S_Fik.imag) / Vmf), np.where(control_mode_v, SMALL_NUMBER, S_Fik.imag / Vmt)]
+    data = np.r_[data, ((2 * S_Fii.imag + S_Fik.imag) / Vmf)[f_in_pq], (S_Fik.imag / Vmt)[f_in_pq & t_in_pq], np.where(control_mode_v, 1, (2 * S_Fii.imag + S_Fik.imag) / Vmf)[f_in_pq & t_in_pq], np.where(control_mode_v, SMALL_NUMBER, S_Fik.imag / Vmt)[t_in_pq]]
 
     # J_C_P_c = np.zeros(shape=(len(pvpq), nsvc + ntcsc), dtype=np.float64)
     # J_C_Q_c = np.zeros(shape=(len(pq), nsvc + ntcsc + 2 * nssc), dtype=np.float64)
