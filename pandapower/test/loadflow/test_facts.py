@@ -1650,6 +1650,71 @@ def test_simple_vsc_hvdc():
     runpp_with_consistency_checks(net)
 
 
+def test_simple_2vsc_hvdc1():
+    np.set_printoptions(linewidth=1000, suppress=True, precision=3)
+    net = pp.create_empty_network()
+    # AC part
+    pp.create_buses(net, 3, 110, geodata=((0, 0), (100, 0), (200, 0)))
+    pp.create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
+    pp.create_line_from_parameters(net, 1, 2, 30, 0.0487, 0.13823, 160, 0.664)
+    pp.create_ext_grid(net, 0)
+    pp.create_load(net, 1, 10)
+
+    # DC part
+    pp.create_bus_dc(net, 110, 'A', geodata=(100, 10))
+    pp.create_bus_dc(net, 110, 'B', geodata=(200, 10))
+
+    pp.create_bus_dc(net, 110, 'C', geodata=(100, -10))
+    pp.create_bus_dc(net, 110, 'D', geodata=(200, -10))
+
+    pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
+    pp.create_line_dc(net, 2, 3, 100, std_type="2400-CU")
+
+    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac='vm_pu', control_value_ac=1, control_mode_dc="p_mw", control_value_dc=10)
+    pp.create_vsc(net, 2, 1, 0.1, 5, control_mode_ac='vm_pu', control_value_ac=1, control_mode_dc="vm_pu", control_value_dc=1.02)
+
+    pp.create_vsc(net, 1, 2, 0.1, 5, control_mode_ac='vm_pu', control_value_ac=1, control_mode_dc="p_mw", control_value_dc=10)
+    pp.create_vsc(net, 2, 3, 0.1, 5, control_mode_ac='vm_pu', control_value_ac=1, control_mode_dc="vm_pu", control_value_dc=1.02)
+
+    runpp_with_consistency_checks(net)
+
+
+def test_simple_2vsc_hvdc2():
+    np.set_printoptions(linewidth=1000, suppress=True, precision=3)
+    net = pp.create_empty_network()
+    # AC part
+    pp.create_buses(net, 3, 110, geodata=((0, 0), (100, 0), (200, 0)))
+    pp.create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
+    pp.create_line_from_parameters(net, 1, 2, 30, 0.0487, 0.13823, 160, 0.664)
+    pp.create_ext_grid(net, 0)
+    pp.create_load(net, 1, 10)
+
+    # DC part
+    pp.create_bus_dc(net, 110, 'A', geodata=(100, 10))
+    pp.create_bus_dc(net, 110, 'B', geodata=(200, 10))
+
+    pp.create_bus_dc(net, 110, 'C', geodata=(100, -10))
+    pp.create_bus_dc(net, 110, 'D', geodata=(200, -10))
+
+    pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
+    pp.create_line_dc(net, 2, 3, 100, std_type="2400-CU")
+
+    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac='vm_pu', control_value_ac=1, control_mode_dc="p_mw", control_value_dc=10)
+    pp.create_vsc(net, 2, 1, 0.1, 5, control_mode_ac='vm_pu', control_value_ac=1, control_mode_dc="vm_pu", control_value_dc=1.02)
+
+    #pp.create_vsc(net, 1, 2, 0.1, 5, control_mode_ac='vm_pu', control_value_ac=1, control_mode_dc="p_mw", control_value_dc=10)
+    #pp.create_vsc(net, 2, 3, 0.1, 5, control_mode_ac='vm_pu', control_value_ac=1, control_mode_dc="vm_pu", control_value_dc=1.02)
+
+    pp.create_buses(net, 2, 110, geodata=((100, -5), (200, -5)))
+    pp.create_line_from_parameters(net, 1, 3, 30, 0.0487, 0.13823, 160, 0.664)
+    pp.create_line_from_parameters(net, 2, 4, 30, 0.0487, 0.13823, 160, 0.664)
+
+    pp.create_vsc(net, 3, 2, 0.1, 5, control_mode_ac='vm_pu', control_value_ac=1, control_mode_dc="p_mw", control_value_dc=10)
+    pp.create_vsc(net, 4, 3, 0.1, 5, control_mode_ac='vm_pu', control_value_ac=1, control_mode_dc="vm_pu", control_value_dc=1.02)
+
+    runpp_with_consistency_checks(net)
+
+
 def test_b2b_vsc_1():
     net = pp.create_empty_network()
     # AC part
