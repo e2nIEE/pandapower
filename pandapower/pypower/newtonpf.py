@@ -619,15 +619,18 @@ def _evaluate_Fx_facts(V,pq ,svc_buses=None, svc_set_vm_pu=None, tcsc_controllab
         ac_mode_v = vsc_mode_ac == 0
         mis_vsc_v = np.abs(V[vsc_fb[ac_mode_v]]) - vsc_value_ac[ac_mode_v]
         old_F[-len(pq)+pq_lookup[vsc_tb[ac_mode_v]]] = mis_vsc_v
+
+        # Mismatch for Q:
         ac_mode_q = vsc_mode_ac == 1
+        unique_vsc_q_bus, c_q, _ = _sum_by_group(vsc_fb[ac_mode_q], np.ones_like(vsc_fb[ac_mode_q]), np.ones_like(vsc_fb[ac_mode_q]))
+        count_q = np.zeros(vsc_fb.max() + 1, dtype=np.int64)
+        count_q[unique_vsc_q_bus] = c_q
         Sbus_vsc = V * conj(Ybus_vsc * V)
-        mis_vsc_q = Sbus_vsc[vsc_fb[ac_mode_q]].imag * 0.5 - vsc_value_ac[ac_mode_q]  # todo test for when they share same bus
+        mis_vsc_q = Sbus_vsc[vsc_fb[ac_mode_q]].imag / count_q[vsc_fb[ac_mode_q]] - vsc_value_ac[ac_mode_q]  # todo test for when they share same bus
         old_F[-len(pq) + pq_lookup[vsc_tb[ac_mode_q]]] = mis_vsc_q
 
 
         ##### Mismatch for the second VSC variable:
-        # coupling of P with VSC happens here:
-        Sbus_vsc = V * conj(Ybus_vsc * V)  # AC side
         # find the connection between the DC buses and VSC buses
         # find the slack DC buses
         # find the P DC buses
