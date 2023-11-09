@@ -430,7 +430,8 @@ def get_pf_bus_results(net, item, bid, is_unbalanced, system_type):
         res = np.nan
         if item.HasResults(0):
             res = ga(item, res_var_pf)
-        net[bus_type].at[bid, res_var_pp] = res
+        # dc bus voltage can be negative:
+        net[bus_type].at[bid, res_var_pp] = np.abs(res) if "vm_pu" in res_var_pp else res
 
 
 # # This one deletes all the results :(
@@ -2768,8 +2769,8 @@ def create_vsc(net, item):
             res = ga(item, res_var_pf)
             net.res_vsc.at[vid_1, res_var_pp] = -res / 2
             net.res_vsc.at[vid_2, res_var_pp] = -res / 2
-        net.res_vsc.at[vid_1, "pf_p_dc_mw"] = -ga(item, "m:P:busdm") / 2
-        net.res_vsc.at[vid_2, "pf_p_dc_mw"] = -ga(item, "m:P:busdp") / 2
+        net.res_vsc.at[vid_1, "pf_p_dc_mw"] = -ga(item, "m:P:busdm")
+        net.res_vsc.at[vid_2, "pf_p_dc_mw"] = -ga(item, "m:P:busdp")
     else:
         net.res_vsc.loc[vid_1, ["pf_p_mw", "pf_q_mvar", "pf_p_dc_mw"]] = np.nan
         net.res_vsc.loc[vid_2, ["pf_p_mw", "pf_q_mvar", "pf_p_dc_mw"]] = np.nan
