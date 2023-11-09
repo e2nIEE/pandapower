@@ -1987,6 +1987,271 @@ def test_line_dc_and_2_vsc2():
 
     runpp_with_consistency_checks(net)
 
+def test_multi_VSCs():
+
+    net = pp.from_json(r"C:\Users\malfakhouri\Downloads\20191120_testnetz_DC_small_2.json")
+
+    pp.drop_elements(net,element_type='line_dc',element_index=[0,1])
+    pp.drop_elements(net,element_type='vsc',element_index=[0,1,2,3])
+
+
+    pp.create_line_dc_from_parameters(net,0,2,100.0,0.01,1.4,alpha=0.00403,temperature_degree_celsius=80.0)
+    pp.create_line_dc_from_parameters(net,1,3,100.0,0.01,1.4,alpha=0.00403,temperature_degree_celsius=80.0)
+
+    pp.create_vsc(net,1,0,0.0968,24.199806,'vm_pu',1.0,'p_mw',10.000863,controllable=True,in_service=True)
+    pp.create_vsc(net,1,1,0.0968,24.199806,'vm_pu',1.0,'p_mw',10.000863,controllable=True,in_service=True)
+    pp.create_vsc(net,0,2,0.0968,36.299871,'q_mvar',-5.0,'p_mw',10.000863,controllable=True,in_service=True)
+    pp.create_vsc(net,0,3,0.0968,36.299871,'q_mvar',-5.0,'vm_pu',1,controllable=True,in_service=True)
+
+    # net.bus_dc.loc[[0, 2], "in_service"] = False
+    # net.line_dc.loc[0, "in_service"] = False
+
+    # net.vsc.control_mode_dc[net.vsc.index.isin([2,3])] = 'p_mw'
+    # net.vsc.control_value_dc[net.vsc.index.isin([2,3])] = 10.000863
+    #
+    # net.vsc.control_mode_dc[net.vsc.index.isin([0,1])] = 'vm_pu'
+    # net.vsc.control_value_dc[net.vsc.index.isin([0,1])] = 1
+    #
+    #
+    # net.vsc.control_mode_ac[net.vsc.index.isin([2,3])] = 'vm_pu'
+    # net.vsc.control_value_ac[net.vsc.index.isin([2,3])] = 1
+    #
+    # net.vsc.control_mode_ac[net.vsc.index.isin([0,1])] = 'q_mvar'
+    # net.vsc.control_value_ac[net.vsc.index.isin([0,1])] = -5.0
+    #
+
+
+    # net.vsc.in_service[net.vsc.index.isin([0, 2])] = False
+
+    #
+    # net.vsc.control_mode_dc[net.vsc.index.isin([1])] = 'vm_pu'
+    # net.vsc.control_value_dc[net.vsc.index.isin([1])] = 1
+    #
+    # net.vsc.control_mode_dc[net.vsc.index.isin([3])] = 'p_mw'
+    # net.vsc.control_value_dc[net.vsc.index.isin([3])] = 10.000863
+    #
+
+    pd.set_option('display.max_rows', 500)
+    pd.set_option('display.max_columns', 500)
+    pd.set_option('display.width', 1000)
+
+    pp.runpp(net)
+
+
+    # pp.plotting.simple_plot(net)
+
+
+def test_simple_2vsc_hvdc():
+
+    import itertools
+
+    def net_2vsc_1ac_2dc_buses():
+
+        net = pp.create_empty_network()
+        # AC part
+        pp.create_buses(net, 2, 110)
+        pp.create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
+        pp.create_ext_grid(net, 0)
+        pp.create_load(net, 1, 10)
+
+        # DC part
+        pp.create_bus_dc(net, 110, 'A')
+        pp.create_bus_dc(net, 110, 'B')
+
+        pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
+
+        return net
+
+    def net_2vsc_2ac_1dc_buses():
+
+        net = pp.create_empty_network()
+        # AC part
+        pp.create_buses(net, 3, 110)
+        pp.create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
+        pp.create_line_from_parameters(net, 0, 2, 30, 0.0487, 0.13823, 160, 0.664)
+
+        pp.create_ext_grid(net, 0)
+        pp.create_load(net, 1, 10)
+
+        # DC part
+        pp.create_bus_dc(net, 110, 'A')
+        pp.create_bus_dc(net, 110, 'A')
+
+        pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
+
+        return net
+
+    def net_2vsc_1ac_1dc_buses():
+
+        net = pp.create_empty_network()
+        # AC part
+        pp.create_buses(net, 2, 110)
+        pp.create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
+
+        pp.create_ext_grid(net, 0)
+        pp.create_load(net, 1, 10)
+
+        # DC part
+        pp.create_bus_dc(net, 110, 'A')
+        pp.create_bus_dc(net, 110, 'A')
+
+        pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
+
+        return net
+
+
+
+
+    dict1 = {'work':[],"don't work":[],'error':[]}
+    dict2 = {'work':[],"don't work":[],'error':[]}
+    dict3 = {'work':[],"don't work":[],'error':[]}
+
+
+
+    control_mode_ac = ['vm_pu','q_mvar']
+    control_mode_dc = ['vm_pu','p_mw',]
+
+    control_value_ac = [1,-5.0]
+    control_value_dc = [1,10]
+
+    mode = itertools.product(control_mode_ac,control_mode_dc , repeat=2)
+
+    value = itertools.product(control_value_ac,control_value_dc , repeat=2)
+
+    for idx,((i,j,m,n),(q,w,e,r)) in enumerate(zip(mode,value)):
+
+        net = net_2vsc_1ac_2dc_buses()
+
+        if j == n == 'p_mw': ### because there must be a slack for dc
+            continue
+
+        pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac=i, control_value_ac=q, control_mode_dc=j, control_value_dc=w)
+        pp.create_vsc(net, 1, 1, 0.1, 5, control_mode_ac=m, control_value_ac=e, control_mode_dc=n, control_value_dc=r)
+
+        try:
+
+            pp.runpp(net)
+
+            dict1['work'].append(f"pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac={i}, control_value_ac={q}, control_mode_dc={j}, control_value_dc={w})")
+            dict1['work'].append(f"pp.create_vsc(net, 1, 1, 0.1, 5, control_mode_ac={m}, control_value_ac={e}, control_mode_dc={n}, control_value_dc={r})")
+
+
+
+        except Exception as x:
+            dict1["error"].append(x)
+            dict1["error"].append(None)
+            # dict1["don't work"].append(e)
+
+            print(f"Error occurred: {x}")
+            print(f"pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac={i}, control_value_ac={q}, control_mode_dc={j}, control_value_dc={w})")
+            print(f"pp.create_vsc(net, 1, 1, 0.1, 5, control_mode_ac={m}, control_value_ac={e}, control_mode_dc={n}, control_value_dc={r})")
+            dict1["don't work"].append(f"pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac={i}, control_value_ac={q}, control_mode_dc={j}, control_value_dc={w})")
+            dict1["don't work"].append(f"pp.create_vsc(net, 1, 1, 0.1, 5, control_mode_ac={m}, control_value_ac={e}, control_mode_dc={n}, control_value_dc={r})")
+
+            continue
+
+
+
+
+    mode = itertools.product(control_mode_ac,control_mode_dc , repeat=2)
+
+    value = itertools.product(control_value_ac,control_value_dc , repeat=2)
+
+    for idx, ((i, j, m, n), (q, w, e, r)) in enumerate(zip(mode, value)):
+
+        net = net_2vsc_2ac_1dc_buses()
+
+        if j == n == 'p_mw': ### because there must be a slack for dc
+            continue
+
+        # if j != n == 'vm_pu':
+        #
+        #
+        #     continue
+
+        pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac=i, control_value_ac=q, control_mode_dc=j, control_value_dc=w)
+        pp.create_vsc(net, 2, 0, 0.1, 5, control_mode_ac=m, control_value_ac=e, control_mode_dc=n, control_value_dc=r)
+
+
+        try:
+
+            pp.runpp(net)
+
+            dict2['work'].append(f"pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac={i}, control_value_ac={q}, control_mode_dc={j}, control_value_dc={w})")
+            dict2['work'].append(f"pp.create_vsc(net, 2, 0, 0.1, 5, control_mode_ac={m}, control_value_ac={e}, control_mode_dc={n}, control_value_dc={r})")
+
+
+
+        except Exception as x:
+            dict2["error"].append(x)
+            dict2["error"].append(None)
+            # dict2["don't work"].append(e)
+
+            # print(f"Error occurred: {x}")
+            # print(f"pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac={i}, control_value_ac={q}, control_mode_dc={j}, control_value_dc={w})")
+            # print(f"pp.create_vsc(net, 2, 0, 0.1, 5, control_mode_ac={m}, control_value_ac={e}, control_mode_dc={n}, control_value_dc={r})")
+            dict2["don't work"].append(f"pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac={i}, control_value_ac={q}, control_mode_dc={j}, control_value_dc={w})")
+            dict2["don't work"].append(f"pp.create_vsc(net, 2, 0, 0.1, 5, control_mode_ac={m}, control_value_ac={e}, control_mode_dc={n}, control_value_dc={r})")
+
+            continue
+
+
+
+    mode = itertools.product(control_mode_ac,control_mode_dc , repeat=2)
+
+    value = itertools.product(control_value_ac,control_value_dc , repeat=2)
+
+    for idx, ((i, j, m, n), (q, w, e, r)) in enumerate(zip(mode, value)):
+
+        net = net_2vsc_1ac_1dc_buses()
+
+        if j == n == 'p_mw': ### because there must be a slack for dc
+            continue
+
+        # if j != n == 'vm_pu':
+        #
+        #
+        #     continue
+
+        pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac=i, control_value_ac=q, control_mode_dc=j, control_value_dc=w)
+        pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac=m, control_value_ac=e, control_mode_dc=n, control_value_dc=r)
+
+
+        try:
+
+            pp.runpp(net)
+
+            dict3['work'].append(f"pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac={i}, control_value_ac={q}, control_mode_dc={j}, control_value_dc={w})")
+            dict3['work'].append(f"pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac={m}, control_value_ac={e}, control_mode_dc={n}, control_value_dc={r})")
+
+
+
+        except Exception as x:
+            dict3["error"].append(x)
+            dict3["error"].append(None)
+            # dict2["don't work"].append(e)
+
+            print(f"Error occurred: {x}")
+            print(f"pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac={i}, control_value_ac={q}, control_mode_dc={j}, control_value_dc={w})")
+            print(f"pp.create_vsc(net, 2, 0, 0.1, 5, control_mode_ac={m}, control_value_ac={e}, control_mode_dc={n}, control_value_dc={r})")
+            dict3["don't work"].append(f"pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac={i}, control_value_ac={q}, control_mode_dc={j}, control_value_dc={w})")
+            dict3["don't work"].append(f"pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac={m}, control_value_ac={e}, control_mode_dc={n}, control_value_dc={r})")
+
+            continue
+
+
+    df1 = pd.DataFrame.from_dict(dict1,orient='index')
+    df2 = pd.DataFrame.from_dict(dict2,orient='index')
+    df3 = pd.DataFrame.from_dict(dict3,orient='index')
+
+
+    df1.transpose().to_csv(r"C:\Users\malfakhouri\Desktop\VSC\net_2vsc_1ac_2dc_buses.csv", index=False)
+    df2.transpose().to_csv(r"C:\Users\malfakhouri\Desktop\VSC\net_2vsc_2ac_1dc_buses.csv", index=False)
+    df3.transpose().to_csv(r"C:\Users\malfakhouri\Desktop\VSC\net_2vsc_1ac_1dc_buses.csv", index=False)
+
+
+
+
 
 # TODO VSC as slack - cannot work because slack is a Vm-Va bus,
 #  and the VSC is a Vm bus? One way to implement this is to declare
