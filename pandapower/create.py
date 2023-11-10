@@ -4849,7 +4849,7 @@ def create_tcsc(net, from_bus, to_bus, x_l_ohm, x_cvar_ohm, set_p_to_mw,
                 min_angle_degree=90, max_angle_degree=180, **kwargs):
     """
     Creates a TCSC element - series impedance compensator to control series reactance.
-    The TCSC device allows controlling the active power flow throgh the path it is connected in.
+    The TCSC device allows controlling the active power flow through the path it is connected in.
 
     Multiple TCSC elements in net are possible.
     Unfortunately, TCSC is not implemented for the case when multiple TCSC elements
