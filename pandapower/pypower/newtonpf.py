@@ -558,6 +558,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     ppci["internal"]["Ybus_tcsc"] = Ybus_tcsc
     ppci["internal"]["Ybus_ssc"] = Ybus_ssc
     ppci["internal"]["Ybus_vsc"] = Ybus_vsc
+    ppci["internal"]["Ybus_hvdc"] = Ybus_hvdc
     ppci["internal"]["Yf_tcsc"] = Yf_tcsc
     ppci["internal"]["Yt_tcsc"] = Yt_tcsc
     ppci["internal"]["tcsc_fb"] = tcsc_fb
@@ -650,11 +651,16 @@ def _evaluate_Fx_facts(V,pq ,svc_buses=None, svc_set_vm_pu=None, tcsc_controllab
         count_ref[unique_vsc_dc_bus] = c_ref
         count_b2b_ref[unique_vsc_dc_bus] = c_b2b_ref
 
+        unique_vsc_p_bus, c_p, _ = _sum_by_group(vsc_fb[vsc_p], np.ones_like(vsc_fb[vsc_p]), np.ones_like(vsc_fb[vsc_p]))
+        count_p = np.zeros(vsc_fb.max() + 1, dtype=np.int64)
+        count_p[unique_vsc_p_bus] = c_p
+
 
         # todo fix this part
         # a configuration of B2B bus connecting also with DC lines could be implemented here in the future if needed:
         if len(dc_p):
             # vsc_set_p_pu[vsc_p] = -P_dc[dc_p][dc_p_lookup[vsc_dc_p_bus]]
+            # vsc_set_p_pu[vsc_p] = vsc_value_dc[vsc_p] * count_p[vsc_fb[vsc_p]] # todo test for when they share same bus
             vsc_set_p_pu[vsc_p] = vsc_value_dc[vsc_p]  # todo test for when they share same bus
         if len(dc_ref):
             # vsc_set_p_pu[vsc_mode_dc == 1] = -P_dc[dc_ref][dc_ref_lookup[vsc_dc_ref_bus]]  # dc_p
@@ -664,7 +670,10 @@ def _evaluate_Fx_facts(V,pq ,svc_buses=None, svc_set_vm_pu=None, tcsc_controllab
             vsc_set_p_pu[vsc_b2b_p] = vsc_value_dc[vsc_b2b_p]
             vsc_set_p_pu[vsc_b2b_ref] = P_dc[dc_b2b][dc_b2b_lookup[vsc_dc_b2b_bus]] / count_b2b_ref[vsc_dc_bus[vsc_b2b_ref]]
         ####  here used vsc_tb refereing to the q bus
-        mis_vsc_p = Sbus_vsc[vsc_tb[vsc_controllable]].real - vsc_set_p_pu  # this is coupling the AC and the DC sides
+        # S_temp = Sbus_vsc.real
+        # S_temp[vsc_tb[vsc_p]] /= count_p[vsc_fb[vsc_p]]
+        # mis_vsc_p = S_temp[vsc_tb[vsc_controllable]] - vsc_set_p_pu  # this is coupling the AC and the DC sides
+        mis_vsc_p = Sbus_vsc[vsc_tb[vsc_controllable]].real - vsc_set_p_pu  # this is coupling the AC and the DC sides # todo old
         # todo: adjust the lookup to work with 1) VSC at ext_grid bus 2) only 1 VSC connected to HVDC line
         old_F[-len(pq) * 2 + pq_lookup[vsc_tb]] = mis_vsc_p
 
