@@ -2252,6 +2252,87 @@ def test_simple_2vsc_hvdc():
 
 
 
+@pytest.mark.parametrize("control_mode_value",  list(zip(list(product(['vm_pu','q_mvar'],['vm_pu','p_mw'], repeat=2)), list(product([1,-5.0],[1,10], repeat=2)))))
+def test_2vsc_1ac_2dc(control_mode_value):
+
+    net = pp.create_empty_network()
+    # AC part
+    pp.create_buses(net, 2, 110)
+    pp.create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
+    pp.create_ext_grid(net, 0)
+    pp.create_load(net, 1, 10)
+
+    # DC part
+    pp.create_bus_dc(net, 110, 'A')
+    pp.create_bus_dc(net, 110, 'B')
+
+    pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
+
+    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac=control_mode_value[0][0], control_value_ac=control_mode_value[1][0], control_mode_dc=control_mode_value[0][1], control_value_dc=control_mode_value[1][1])
+    pp.create_vsc(net, 1, 1, 0.1, 5, control_mode_ac=control_mode_value[0][2], control_value_ac=control_mode_value[1][2], control_mode_dc=control_mode_value[0][3], control_value_dc=control_mode_value[1][3])
+
+    if net.vsc.control_mode_dc[0] == net.vsc.control_mode_dc[1] == 'p_mw':
+        pytest.skip("Skipping test with two 'p_mw' in control_mode_dc")
+
+    runpp_with_consistency_checks(net)
+
+
+
+@pytest.mark.parametrize("control_mode_value",  list(zip(list(product(['vm_pu','q_mvar'],['vm_pu','p_mw'], repeat=2)), list(product([1,-5.0],[1,10], repeat=2)))))
+def test_2vsc_2ac_1dc(control_mode_value):
+
+    net = pp.create_empty_network()
+    # AC part
+    pp.create_buses(net, 3, 110)
+    pp.create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
+    pp.create_line_from_parameters(net, 0, 2, 30, 0.0487, 0.13823, 160, 0.664)
+
+    pp.create_ext_grid(net, 0)
+    pp.create_load(net, 1, 10)
+
+    # DC part
+    pp.create_bus_dc(net, 110, 'A')
+    pp.create_bus_dc(net, 110, 'A')
+
+    pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
+
+    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac=control_mode_value[0][0], control_value_ac=control_mode_value[1][0], control_mode_dc=control_mode_value[0][1], control_value_dc=control_mode_value[1][1])
+    pp.create_vsc(net, 2, 0, 0.1, 5, control_mode_ac=control_mode_value[0][2], control_value_ac=control_mode_value[1][2], control_mode_dc=control_mode_value[0][3], control_value_dc=control_mode_value[1][3])
+
+    if net.vsc.control_mode_dc[0] == net.vsc.control_mode_dc[1] == 'p_mw':
+        pytest.skip("Skipping test with two 'p_mw' in control_mode_dc")
+
+    runpp_with_consistency_checks(net)
+
+
+@pytest.mark.parametrize("control_mode_value",  list(zip(list(product(['vm_pu','q_mvar'],['vm_pu','p_mw'], repeat=2)), list(product([1,-5.0],[1,10], repeat=2)))))
+def test_2vsc_1ac_1dc(control_mode_value):
+
+    net = pp.create_empty_network()
+    # AC part
+    pp.create_buses(net, 2, 110)
+    pp.create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
+
+    pp.create_ext_grid(net, 0)
+    pp.create_load(net, 1, 10)
+
+    # DC part
+    pp.create_bus_dc(net, 110, 'A')
+    pp.create_bus_dc(net, 110, 'A')
+
+    pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
+
+    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac=control_mode_value[0][0], control_value_ac=control_mode_value[1][0], control_mode_dc=control_mode_value[0][1], control_value_dc=control_mode_value[1][1])
+    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac=control_mode_value[0][2], control_value_ac=control_mode_value[1][2], control_mode_dc=control_mode_value[0][3], control_value_dc=control_mode_value[1][3])
+
+    if net.vsc.control_mode_dc[0] == net.vsc.control_mode_dc[1] == 'p_mw':
+        pytest.skip("Skipping test with two 'p_mw' in control_mode_dc")
+
+    runpp_with_consistency_checks(net)
+
+
+
+
 
 # TODO VSC as slack - cannot work because slack is a Vm-Va bus,
 #  and the VSC is a Vm bus? One way to implement this is to declare
