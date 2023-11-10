@@ -170,7 +170,7 @@ def make_gui(app, project_name, browse_dst, calc):
 
     # row 8
     max_iter = tk.IntVar(input_panel)
-    max_iter.set(10)
+    max_iter.set(30)
     tk.Label(input_panel, anchor='w', text='Max. iterations:').grid(row=8, column=0, sticky=tk.W, pady=0)
 
     iter_entry = tk.Entry(input_panel, width=8)

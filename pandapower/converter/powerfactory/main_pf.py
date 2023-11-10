@@ -115,9 +115,9 @@ def run_verify(net, load_flow_params=None):
     logger.info('Validating import...')
     if load_flow_params is None:
         load_flow_params = {
-            'tolerance_mva': 1e-9,  # tolerance of load flow calculation
-            'calculate_voltage_angles': True,  # set True for meshed networks
-            'init': 'dc',  # initialization of load flow: 'flat', 'dc', 'results'
+            #'tolerance_mva': 1e-9,  # tolerance of load flow calculation
+            # 'calculate_voltage_angles': True,  # set True for meshed networks
+            # 'init': 'dc',  # initialization of load flow: 'flat', 'dc', 'results'
             'PF_MAX_IT': 500  # Pypower option, maximal iterations, passed with kwargs
         }
     logger.debug('load flow params: %s' % load_flow_params)
