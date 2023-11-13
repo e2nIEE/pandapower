@@ -23,7 +23,7 @@ from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS
 from pandapower.pypower.idx_ssc import SSC_STATUS, SSC_BUS, SSC_INTERNAL_BUS
 from pandapower.pypower.idx_tcsc import TCSC_STATUS, TCSC_F_BUS, TCSC_T_BUS
 from pandapower.pypower.idx_svc import SVC_STATUS, SVC_BUS
-from pandapower.pypower.idx_vsc import VSC_BUS_DC, VSC_STATUS
+from pandapower.pypower.idx_vsc import VSC_BUS_DC, VSC_STATUS, VSC_MODE_AC
 from pandapower.pypower.run_userfcn import run_userfcn
 
 
@@ -70,6 +70,16 @@ def _check_line_dc_at_b2b_buses(ppci):
         raise NotImplementedError("Found DC lines connected to Back-To-Back VSC converter configuration - "
                                   "not implemented. DC lines can only connect to the DC buses that are not "
                                   "part of a Back-To-Back configuration.")
+
+
+def _check_vsc_different_ac_control_modes_at_same_bus(ppci):
+    ac_vm_pu_buses = ppci["vsc"][ppci["vsc"][:, VSC_MODE_AC] == 0, VSC_BUS]
+    ac_q_mvar_buses = ppci["vsc"][ppci["vsc"][:, VSC_MODE_AC] == 1, VSC_BUS]
+    ac_bus_intersection = np.intersect1d(ac_vm_pu_buses, ac_q_mvar_buses)
+    if len(ac_bus_intersection) != 0:
+        raise NotImplementedError("Found multiple VSC converters that share the same AC bus and have "
+                                  "different AC control modes - not implemented. VSC converters can only "
+                                  "have the same AC control mode if they share the same AC bus.")
 
 
 def _pd2ppc(net, sequence=None):
@@ -190,6 +200,7 @@ def _pd2ppc(net, sequence=None):
     ppci = _ppc2ppci(ppc, net)
 
     _check_line_dc_at_b2b_buses(ppci)
+    _check_vsc_different_ac_control_modes_at_same_bus(ppci)
 
     if mode == "pf":
         # check if any generators connected to the same bus have different voltage setpoints

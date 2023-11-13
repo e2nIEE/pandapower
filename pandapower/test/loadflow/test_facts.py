@@ -2275,7 +2275,11 @@ def test_2vsc_1ac_2dc(control_mode_ac, control_mode_dc):
     pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac=control_mode_ac[0], control_value_ac=val_ac[control_mode_ac[0]], control_mode_dc=control_mode_dc[0], control_value_dc=val_dc[control_mode_dc[0]])
     pp.create_vsc(net, 1, 1, 0.1, 5, control_mode_ac=control_mode_ac[1], control_value_ac=val_ac[control_mode_ac[1]], control_mode_dc=control_mode_dc[1], control_value_dc=val_dc[control_mode_dc[1]])
 
-    runpp_with_consistency_checks(net)
+    if control_mode_ac[0] == control_mode_ac[1]:
+        runpp_with_consistency_checks(net)
+    else:
+        with pytest.raises(NotImplementedError, match="share the same AC bus"):
+            pp.runpp(net)
 
 
 @pytest.mark.parametrize("control_mode_ac", list(product(['vm_pu', 'q_mvar'], repeat=2)))
@@ -2334,7 +2338,11 @@ def test_2vsc_1ac_1dc(control_mode_ac, control_mode_dc):
     pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac=control_mode_ac[0], control_value_ac=val_ac[control_mode_ac[0]], control_mode_dc=control_mode_dc[0], control_value_dc=val_dc[control_mode_dc[0]])
     pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac=control_mode_ac[1], control_value_ac=val_ac[control_mode_ac[1]], control_mode_dc=control_mode_dc[1], control_value_dc=val_dc[control_mode_dc[1]])
 
-    runpp_with_consistency_checks(net)
+    if control_mode_ac[0] == control_mode_ac[1]:
+        runpp_with_consistency_checks(net)
+    else:
+        with pytest.raises(NotImplementedError, match="share the same AC bus"):
+            pp.runpp(net)
 
 
 
