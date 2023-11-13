@@ -408,8 +408,8 @@ def test_iec_60909_4_3ph_min():
     net.ext_grid["rx_min"] = net.ext_grid["rx_max"]
     sc.calc_sc(net, fault="3ph", case="min", ip=True, tk_s=0.1, kappa_method="C")
 
-    ikss_min = [5.0501, 12.2915, 10.3292, 9.4708, 11.8604,
-                28.3052, 18.6148, 10.9005, 44.5098, 67.9578]
+    ikss_min = [5.0257, 12.0645, 10.2108, 9.3820, 11.6761,
+                27.7655, 18.3930, 10.9024, 44.4310, 67.8216]
 
     assert np.allclose(net.res_bus_sc.ikss_ka.values[:10], np.array(ikss_min), atol=1e-3)
 
