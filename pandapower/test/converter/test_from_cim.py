@@ -54,7 +54,7 @@ def SimBench_1_HVMVmixed_1_105_0_sw_modified():
 
     cgmes_files = [os.path.join(folder_path, 'SimBench_1-HVMV-mixed-1.105-0-sw_modified.zip')]
 
-    return cim2pp.from_cim(file_list=cgmes_files)
+    return cim2pp.from_cim(file_list=cgmes_files, run_powerflow=True)
 
 
 @pytest.fixture(scope="session")
@@ -63,7 +63,7 @@ def Simbench_1_EHV_mixed__2_no_sw():
 
     cgmes_files = [os.path.join(folder_path, 'Simbench_1-EHV-mixed--2-no_sw.zip')]
 
-    return cim2pp.from_cim(file_list=cgmes_files, create_measurements='SV')
+    return cim2pp.from_cim(file_list=cgmes_files, create_measurements='SV', run_powerflow=True)
 
 
 @pytest.fixture(scope="session")
@@ -75,6 +75,20 @@ def example_multivoltage():
     net = cim2pp.from_cim(file_list=cgmes_files)
     pp.runpp(net, calculate_voltage_angles="auto")
     return net
+
+
+@pytest.fixture(scope="session")
+def SimBench_1_HVMVmixed_1_105_0_sw_modified_no_load_flow():
+    folder_path = os.path.join(test_path, "test_files", "example_cim")
+
+    cgmes_files = [os.path.join(folder_path, 'SimBench_1-HVMV-mixed-1.105-0-sw_modified.zip')]
+
+    return cim2pp.from_cim(file_list=cgmes_files)
+
+
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_no_load_flow_res_bus(
+        SimBench_1_HVMVmixed_1_105_0_sw_modified_no_load_flow):
+    assert 0 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified_no_load_flow.res_bus.index)
 
 
 def test_example_multivoltage_res_xward(example_multivoltage):
@@ -715,7 +729,7 @@ def test_fullgrid_trafo(fullgrid):
     assert 0.0 == element_1['pfe_kw'].item()
     assert 0.0 == element_1['i0_percent'].item()
     assert 0.0 == element_1['shift_degree'].item()
-    assert math.isnan(element_1['tap_side'].item())
+    assert None is element_1['tap_side'].item()
     assert pd.isna(element_1['tap_neutral'].item())
     assert pd.isna(element_1['tap_min'].item())
     assert pd.isna(element_1['tap_max'].item())
@@ -1053,6 +1067,7 @@ def test_fullgrid_controller(fullgrid):
 
 def test_fullgrid_characteristic_temp(fullgrid):
     assert 8 == len(fullgrid.characteristic_temp.index)
+
 
 def test_fullgrid_characteristic(fullgrid):
     assert 20 == len(fullgrid.characteristic.index)
