@@ -2250,10 +2250,14 @@ def test_simple_2vsc_hvdc():
     df3.transpose().to_csv(r"C:\Users\malfakhouri\Desktop\VSC\net_2vsc_1ac_1dc_buses.csv", index=False)
 
 
+@pytest.mark.parametrize("control_mode_ac", list(product(['vm_pu', 'q_mvar'], repeat=2)))
+@pytest.mark.parametrize("control_mode_dc", list(product(['vm_pu', 'p_mw'], repeat=2)))
+def test_2vsc_1ac_2dc(control_mode_ac, control_mode_dc):
+    if control_mode_dc[0] == control_mode_dc[1] == 'p_mw':
+        pytest.skip("Skipping test with two 'p_mw' in control_mode_dc")
 
-
-@pytest.mark.parametrize("control_mode_value",  list(zip(list(product(['vm_pu','q_mvar'],['vm_pu','p_mw'], repeat=2)), list(product([1,-5.0],[1,10], repeat=2)))))
-def test_2vsc_1ac_2dc(control_mode_value):
+    val_ac = {"vm_pu": 1, "q_mvar": -5}
+    val_dc = {"vm_pu": 1, "p_mw": 10}
 
     net = pp.create_empty_network()
     # AC part
@@ -2268,18 +2272,20 @@ def test_2vsc_1ac_2dc(control_mode_value):
 
     pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
 
-    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac=control_mode_value[0][0], control_value_ac=control_mode_value[1][0], control_mode_dc=control_mode_value[0][1], control_value_dc=control_mode_value[1][1])
-    pp.create_vsc(net, 1, 1, 0.1, 5, control_mode_ac=control_mode_value[0][2], control_value_ac=control_mode_value[1][2], control_mode_dc=control_mode_value[0][3], control_value_dc=control_mode_value[1][3])
-
-    if net.vsc.control_mode_dc[0] == net.vsc.control_mode_dc[1] == 'p_mw':
-        pytest.skip("Skipping test with two 'p_mw' in control_mode_dc")
+    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac=control_mode_ac[0], control_value_ac=val_ac[control_mode_ac[0]], control_mode_dc=control_mode_dc[0], control_value_dc=val_dc[control_mode_dc[0]])
+    pp.create_vsc(net, 1, 1, 0.1, 5, control_mode_ac=control_mode_ac[1], control_value_ac=val_ac[control_mode_ac[1]], control_mode_dc=control_mode_dc[1], control_value_dc=val_dc[control_mode_dc[1]])
 
     runpp_with_consistency_checks(net)
 
 
+@pytest.mark.parametrize("control_mode_ac", list(product(['vm_pu', 'q_mvar'], repeat=2)))
+@pytest.mark.parametrize("control_mode_dc", list(product(['vm_pu', 'p_mw'], repeat=2)))
+def test_2vsc_2ac_1dc(control_mode_ac, control_mode_dc):
+    if control_mode_dc[0] == control_mode_dc[1] == 'p_mw':
+        pytest.skip("Skipping test with two 'p_mw' in control_mode_dc")
 
-@pytest.mark.parametrize("control_mode_value",  list(zip(list(product(['vm_pu','q_mvar'],['vm_pu','p_mw'], repeat=2)), list(product([1,-5.0],[1,10], repeat=2)))))
-def test_2vsc_2ac_1dc(control_mode_value):
+    val_ac = {"vm_pu": 1, "q_mvar": -5}
+    val_dc = {"vm_pu": 1, "p_mw": 10}
 
     net = pp.create_empty_network()
     # AC part
@@ -2296,17 +2302,20 @@ def test_2vsc_2ac_1dc(control_mode_value):
 
     pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
 
-    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac=control_mode_value[0][0], control_value_ac=control_mode_value[1][0], control_mode_dc=control_mode_value[0][1], control_value_dc=control_mode_value[1][1])
-    pp.create_vsc(net, 2, 0, 0.1, 5, control_mode_ac=control_mode_value[0][2], control_value_ac=control_mode_value[1][2], control_mode_dc=control_mode_value[0][3], control_value_dc=control_mode_value[1][3])
-
-    if net.vsc.control_mode_dc[0] == net.vsc.control_mode_dc[1] == 'p_mw':
-        pytest.skip("Skipping test with two 'p_mw' in control_mode_dc")
+    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac=control_mode_ac[0], control_value_ac=val_ac[control_mode_ac[0]], control_mode_dc=control_mode_dc[0], control_value_dc=val_dc[control_mode_dc[0]])
+    pp.create_vsc(net, 2, 0, 0.1, 5, control_mode_ac=control_mode_ac[1], control_value_ac=val_ac[control_mode_ac[1]], control_mode_dc=control_mode_dc[1], control_value_dc=val_dc[control_mode_dc[1]])
 
     runpp_with_consistency_checks(net)
 
 
-@pytest.mark.parametrize("control_mode_value",  list(zip(list(product(['vm_pu','q_mvar'],['vm_pu','p_mw'], repeat=2)), list(product([1,-5.0],[1,10], repeat=2)))))
-def test_2vsc_1ac_1dc(control_mode_value):
+@pytest.mark.parametrize("control_mode_ac", list(product(['vm_pu', 'q_mvar'], repeat=2)))
+@pytest.mark.parametrize("control_mode_dc", list(product(['vm_pu', 'p_mw'], repeat=2)))
+def test_2vsc_1ac_1dc(control_mode_ac, control_mode_dc):
+    if control_mode_dc[0] == control_mode_dc[1] == 'p_mw':
+        pytest.skip("Skipping test with two 'p_mw' in control_mode_dc")
+
+    val_ac = {"vm_pu": 1, "q_mvar": -5}
+    val_dc = {"vm_pu": 1, "p_mw": 10}
 
     net = pp.create_empty_network()
     # AC part
@@ -2322,11 +2331,8 @@ def test_2vsc_1ac_1dc(control_mode_value):
 
     pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
 
-    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac=control_mode_value[0][0], control_value_ac=control_mode_value[1][0], control_mode_dc=control_mode_value[0][1], control_value_dc=control_mode_value[1][1])
-    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac=control_mode_value[0][2], control_value_ac=control_mode_value[1][2], control_mode_dc=control_mode_value[0][3], control_value_dc=control_mode_value[1][3])
-
-    if net.vsc.control_mode_dc[0] == net.vsc.control_mode_dc[1] == 'p_mw':
-        pytest.skip("Skipping test with two 'p_mw' in control_mode_dc")
+    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac=control_mode_ac[0], control_value_ac=val_ac[control_mode_ac[0]], control_mode_dc=control_mode_dc[0], control_value_dc=val_dc[control_mode_dc[0]])
+    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac=control_mode_ac[1], control_value_ac=val_ac[control_mode_ac[1]], control_mode_dc=control_mode_dc[1], control_value_dc=val_dc[control_mode_dc[1]])
 
     runpp_with_consistency_checks(net)
 
