@@ -721,7 +721,7 @@ def _check_connectivity(ppc):
         bus_dc_not_reachable[reachable_dc] = False
         isolated_nodes_dc, pus_dc, qus_dc, ppc = _set_isolated_nodes_out_of_service(ppc, bus_dc_not_reachable, dc=True)
     else:
-        isolated_nodes_dc, pus_dc, qus_dc = np.array([]), 0, 0
+        isolated_nodes_dc, pus_dc, qus_dc = np.array([], dtype=np.int64), 0, 0
 
     return isolated_nodes, pus, qus, isolated_nodes_dc, pus_dc, qus_dc
 

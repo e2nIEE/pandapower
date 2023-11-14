@@ -179,6 +179,7 @@ def _pd2ppc(net, sequence=None):
             # sets islands (multiple isolated nodes) out of service
             if "opf" in mode:
                 net["_isolated_buses"], _, _ = aux._check_connectivity_opf(ppc)
+                net["_isolated_buses_dc"] = np.array([], dtype=np.int64)
             else:
                 net["_isolated_buses"], _, _, net["_isolated_buses_dc"], _, _ = aux._check_connectivity(ppc)
             net["_is_elements_final"] = aux._select_is_elements_numba(net, net._isolated_buses,
