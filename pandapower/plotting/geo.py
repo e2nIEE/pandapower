@@ -3,7 +3,8 @@
 # Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from typing import List, Tuple, TYPE_CHECKING
+from typing import List, Tuple, TYPE_CHECKING, Dict, Any
+
 # TYPE_CHECKING is used to avoid circular imports, see https://stackoverflow.com/a/39757388
 if TYPE_CHECKING:
     import pandapipes
@@ -331,6 +332,7 @@ def dump_to_geojson(
         logger.warning(e)
         return geojson.FeatureCollection([])
 
+    @deprecated('This internal function should be replaced by lambda functions instead')
     def _get_props(r, c, p) -> None:
         for col in c:
             try:
@@ -348,20 +350,14 @@ def dump_to_geojson(
         for table in (['bus', 'res_bus'] if is_pandapower else ['junction', 'res_junction']):
             if table not in net.keys():
                 continue
-            cols = net[table].columns
-            if 'geo' in cols:
-                cols = cols.drop('geo')
 
-            for ind, row in net[table].iterrows():
-                prop = {
-                    'pp_type': 'bus' if is_pandapower else 'junction',
-                    'pp_index': ind,
-                }
-                uid = f"{prop['pp_type']}-{ind}"
-                _get_props(row, cols, prop)
-                if uid not in props:
-                    props[uid] = {}
-                props[uid].update(prop)
+            tempdf = net[table].copy(deep=True)
+            tempdf['pp_type'] = 'bus' if is_pandapower else 'junction'
+            tempdf['pp_index'] = tempdf.index
+            tempdf.index = tempdf.apply(lambda r: f"{r['pp_type']}-{r['pp_index']}", axis=1)
+            tempdf.drop(columns=['geo'], inplace=True, axis=1, errors='ignore')
+
+            props.update(tempdf.to_dict(orient='index'))
         if isinstance(nodes, bool):
             iterator = node_geodata.items()
         else:
@@ -370,8 +366,8 @@ def dump_to_geojson(
             if geom is None or geom == "[]":
                 missing_geom[0] += 1
                 continue
-            uid = f"bus-{ind}" if is_pandapower else f"junction-{ind}"
-            if type(geom) == str:
+            uid = f"{'bus' if is_pandapower else 'junction'}-{ind}"
+            if isinstance(geom, str):
                 geom = geojson.loads(geom)
             features.append(geojson.Feature(geometry=geom, id=uid, properties=props[uid]))
 
@@ -381,20 +377,14 @@ def dump_to_geojson(
         for table in (['line', 'res_line'] if is_pandapower else ['pipe', 'res_pipe']):
             if table not in net.keys():
                 continue
-            cols = net[table].columns
-            if 'geo' in cols:
-                cols = cols.drop('geo')
 
-            for ind, row in net[table].iterrows():
-                prop = {
-                    'pp_type': 'line' if is_pandapower else 'pipe',
-                    'pp_index': ind,
-                }
-                uid = f"{prop['pp_type']}-{ind}"
-                _get_props(row, cols, prop)
-                if uid not in props:
-                    props[uid] = {}
-                props[uid].update(prop)
+            tempdf = net[table].copy(deep=True)
+            tempdf['pp_type'] = 'line' if is_pandapower else 'pipe'
+            tempdf['pp_index'] = tempdf.index
+            tempdf.index = tempdf.apply(lambda r: f"{r['pp_type']}-{r['pp_index']}", axis=1)
+            tempdf.drop(columns=['geo'], inplace=True, axis=1, errors='ignore')
+
+            props.update(tempdf.to_dict(orient='index'))
 
         # Iterating over pipe_geodata won't work
         # pipe_geodata only contains pipes that have inflection points!
@@ -407,13 +397,13 @@ def dump_to_geojson(
             if geom is None or geom == "[]":
                 missing_geom[1] += 1
                 continue
-            uid = f"line-{ind}" if is_pandapower else f"pipe-{ind}"
-            if type(geom):
+            uid = f"{'line' if is_pandapower else 'pipe'}-{ind}"
+            if isinstance(geom, str):
                 geom = geojson.loads(geom)
             features.append(geojson.Feature(geometry=geom, id=uid, properties=props[uid]))
 
     if switches and is_pandapower:
-        if type(switches) == bool:
+        if isinstance(switches, bool):
             switches = net.switch.index
         if 'switch' in net.keys():
             cols = net.switch.columns
@@ -437,13 +427,13 @@ def dump_to_geojson(
                 if geom is None or geom == "[]":
                     missing_geom[2] += 1
                     continue
-                if type(geom) == str:
+                if isinstance(geom, str):
                     geom = geojson.loads(geom)
                 features.append(geojson.Feature(geometry=geom, id=uid, properties=prop))
 
         if trafos and is_pandapower:
             t_type = 'trafo3w' if t_is_3w else 'trafo'
-            if type(trafos) == bool:
+            if isinstance(trafos, bool):
                 trafos = net[t_type].index
             if t_type in net.keys():
                 cols = net[t_type].columns
@@ -462,7 +452,7 @@ def dump_to_geojson(
                     if geom is None or geom == "[]":
                         missing_geom[3] += 1
                         continue
-                    if type(geom) == str:
+                    if isinstance(geom, str):
                         geom = geojson.loads(geom)
                     features.append(geojson.Feature(geometry=geom, id=uid, properties=prop))
 
@@ -545,6 +535,7 @@ def convert_geodata_to_geojson(
     df["geo"] = "[]"
     a, b = "yx" if lonlat else "xy" # substitute x and y with a and b to reverse them if necessary
 
+    #TODO: convert to lambda
     for b_id in df.index:
         if b_id not in geo_df.index:
             continue
