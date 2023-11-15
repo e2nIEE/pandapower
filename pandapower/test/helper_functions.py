@@ -35,7 +35,7 @@ def create_test_network():
     """
     Creates a simple pandapower test network
     """
-    net = pp.create_empty_network()
+    net = pp.create_empty_network(name='test_network')
     b1 = pp.create_bus(net, name="bus1", vn_kv=10.)
     pp.create_ext_grid(net, b1)
     b2 = pp.create_bus(net, name="bus2", geodata=(1, 2), vn_kv=.4)

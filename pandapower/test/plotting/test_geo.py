@@ -5,61 +5,80 @@
 
 import pytest
 import pandas
+from pathlib import Path
 
 import pandapower.plotting.geo as geo
 from pandapower.test.helper_functions import create_test_network
+import pandapower.networks as pn
 
 
-def test__node_geometries_from_geodata():
+@pytest.fixture(name='net', params=(create_test_network(), pn.mv_oberrhein()))
+def test_network(request):
+    """
+    Fixture which yields different networks for testing.
+    It should yield the test network, a network with geodata and a network with graph layout coordinates.
+    """
+    yield request.param
+
+
+@pytest.fixture
+def get_network_and_result(net, request):
+    """
+    Fixture which yields the network, and its expected result based on running test.
+    """
+    file = Path(
+        request.config.invocation_dir,
+        request.fspath.purebasename,
+        request.keywords.node.originalname,
+        net.name
+    ).with_suffix('.pkl')
+    df = pandas.read_pickle(file)
+    return net, df
+
+
+def test__node_geometries_from_geodata(get_network_and_result):
     pytest.importorskip("geopandas")
-    from geopandas import GeoDataFrame, points_from_xy, testing
+    from geopandas import testing
 
-    net = create_test_network()
+    net, expected = get_network_and_result
+
     result = geo._node_geometries_from_geodata(net.bus_geodata)
-    pdf = pandas.DataFrame({'x': [1., 1.], 'y': [2., 3.], 'coords': [float('nan'), float('nan')]})
-    pdf = pdf.astype({'coords': 'object'})
-    pdf.set_index(pandas.Index([1, 7]), inplace=True)
-    expected = GeoDataFrame(crs="epsg:31467", geometry=points_from_xy(pdf.x, pdf.y), data=pdf)
     testing.assert_geodataframe_equal(result, expected)
 
 
-def test__branch_geometries_from_geodata():
+def test__branch_geometries_from_geodata(get_network_and_result):
     pytest.importorskip("geopandas")
-    pytest.importorskip("shapely")
-    from geopandas import GeoDataFrame, testing
-    from shapely.geometry import LineString
+    from geopandas import testing
 
-    net = create_test_network()
+    net, expected = get_network_and_result
+
     result = geo._branch_geometries_from_geodata(net.line_geodata)
-    pdf = pandas.DataFrame({'coords': [[[1, 2], [3, 4]]], 'geometry': LineString([[1, 2], [3, 4]])})
-    expected = GeoDataFrame(crs="epsg:31467", geometry=pdf.geometry, data=pdf)
     testing.assert_geodataframe_equal(result, expected)
 
 
-def test__transform_node_geometry_to_geodata():
+def test__transform_node_geometry_to_geodata(get_network_and_result):
     pytest.importorskip("geopandas")
-    pytest.importorskip("shapely")
-    from shapely.geometry import Point
+    from geopandas import testing
 
-    net = create_test_network()
+    net, expected = get_network_and_result
+
+
     # Transforming to geodata to test the inverse...
     net.bus_geodata = geo._node_geometries_from_geodata(net.bus_geodata)
     result = geo._transform_node_geometry_to_geodata(net.bus_geodata)
-    expected = pandas.DataFrame({'x': [1., 1.], 'y': [2., 3.], 'coords': [float('nan'), float('nan')], 'geometry': [Point(1., 2.), Point(1., 3.)]})
-    expected.set_index(pandas.Index([1, 7]), inplace=True)
-    result.equals(expected)
+    result.to_pickle(f'test_geo/test__transform_node_geometry_to_geodata/{net.name}.pkl')
+    testing.assert_geodataframe_equal(result, expected)
 
 
-def test__transform_branch_geometry_to_coords():
+def test__transform_branch_geometry_to_coords(get_network_and_result):
     pytest.importorskip("geopandas")
-    pytest.importorskip("shapely")
-    from shapely.geometry import LineString
+    from geopandas import testing
 
-    net = create_test_network()
+    net, expected = get_network_and_result
+
     net.line_geodata = geo._branch_geometries_from_geodata(net.line_geodata)
     result = geo._transform_branch_geometry_to_coords(net.line_geodata)
-    expected = pandas.DataFrame({'coords': [[(1., 2.), (3., 4.)]], 'geometry': LineString([[1, 2], [3, 4]])})
-    result.equals(expected)
+    testing.assert_geodataframe_equal(result, expected)
 
 
 def test__convert_xy_epsg():
@@ -83,13 +102,15 @@ def test__convert_xy_epsg():
     assert result_x == pytest.approx(expected_x)
     assert result_y == pytest.approx(expected_y)
 
+
 def test_convert_gis_to_geodata():
     pytest.importorskip("geopandas")
     pytest.importorskip("shapely")
     from shapely.geometry import Point, LineString
     from geopandas import testing
 
-    converted_node = pandas.DataFrame({'x': [1., 1.], 'y': [2., 3.], 'coords': [float('nan'), float('nan')], 'geometry': [Point(1., 2.), Point(1., 3.)]})
+    converted_node = pandas.DataFrame({'x': [1., 1.], 'y': [2., 3.], 'coords': [float('nan'), float('nan')],
+                                       'geometry': [Point(1., 2.), Point(1., 3.)]})
     converted_node.set_index(pandas.Index([1, 7]), inplace=True)
     converted_branch = pandas.DataFrame({'coords': [[(1., 2.), (3., 4.)]], 'geometry': LineString([[1, 2], [3, 4]])})
 
@@ -216,7 +237,8 @@ def test_convert_geodata_to_geojson():
     assert geojson.loads(net.bus.at[0, "geo"]) == geojson.Point((10.0, 20.0))
     assert geojson.loads(net.bus.at[1, "geo"]) == geojson.Point((30.0, 40.0))
     assert geojson.loads(net.line.at[0, "geo"]) == geojson.LineString([(10.0, 20.0), (30.0, 40.0)])
-    #TODO: Test could be more exhaustive (e.g. test delete=False, lonlat=True, geo_str=False)
+    # TODO: Test could be more exhaustive (e.g. test delete=False, lonlat=True, geo_str=False)
+
 
 def test_convert_gis_to_geojson():
     # TODO: implement
