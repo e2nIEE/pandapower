@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_grid_size=1.0,
                 trafo_size=1.0, plot_loads=False, plot_gens=False, plot_sgens=False, orientation=None, load_size=1.0, gen_size=1.0, sgen_size=1.0,
-                switch_size=2.0, switch_distance=1.0, plot_line_switches=False, scale_size=True,
+                switch_size=2.0, switch_distance=1.0, plot_line_switches=False, scale_size=True, additional_patches=None,
                 bus_color='b', line_color='grey',  dcline_color='c', trafo_color='k',
                 ext_grid_color='y', switch_color='k', library='igraph', show_plot=True, ax=None):
     """
@@ -176,102 +176,190 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
             net, size=switch_size, distance_to_bus=switch_distance,
             use_line_geodata=not use_bus_geodata, zorder=12, color=switch_color)
         collections.append(sc)
+    if additional_patches:
+        patch_count_unique = {}
+        sgen_types = {}
 
+        for index, bus in enumerate(net.bus_geodata.index):
+            sgen_count = 0
+            gen_count = 0
+            load_count = 0
+            if plot_sgens and len(net.sgen):
+                sgen_types_counts = net.sgen[net.sgen.bus == index].type.value_counts()
+                PV = sgen_types_counts.get("PV", 0)
+                WT = sgen_types_counts.get("WT", 0)
+                WYE = sum(sgen_types_counts) - PV - WT
+                types = {}
+                if PV:
+                    types["PV"] = PV
+
+                if WT:
+                    types["WT"] = WT
+
+                if WYE:
+                    types["wye"] = WYE
+                sgen_types[index] = types
+
+                if index not in patch_count_unique:
+                    patch_count_unique[index] = {}
+                try:
+                    sgen_count = len(sgen_types[index])
+                except KeyError:
+                    sgen_count = 0
+
+            if plot_gens and len(net.gen):
+                try:
+                    gen_count = len(pp.get_connected_elements_dict(net, element_types=["gen"], buses=index))
+                except KeyError:
+                    gen_count = 0
+
+            if plot_loads and len(net.load):
+                try:
+                    load_count = len(pp.get_connected_elements_dict(net, element_types=["load"], buses=index))
+                except KeyError:
+                    load_count = 0
+            total_count = sgen_count + gen_count + load_count
+            try: seperation_angle = 2 * math.pi / total_count
+            except ZeroDivisionError: seperation_angle =  None
+
+            if plot_sgens and len(net.sgen):
+                patch_count_unique[index]['sgen'] = dict(
+                    zip(sgen_types[index].keys(), [j * seperation_angle for j in range(sgen_count)]))
+
+            if plot_gens and len(net.gen):
+                if index not in patch_count_unique:
+                    patch_count_unique[index] = {}
+
+                if 'gen' not in patch_count_unique[index]:
+                    patch_count_unique[index]['gen'] = []
+                    patch_count_unique[index]['gen'].extend(
+                 [j * seperation_angle + sgen_count * seperation_angle for j in range(gen_count)])
+
+            if plot_loads and len(net.load):
+                if index not in patch_count_unique:
+                    patch_count_unique[index] = {}
+
+                if 'load' not in patch_count_unique[index]:
+                    patch_count_unique[index]['load'] = []
+                    patch_count_unique[index]['load'].extend(
+                 [j * seperation_angle + (sgen_count + gen_count) * seperation_angle for j in range(load_count)])
+        if plot_sgens and len(net.sgen):
+            sgc = create_sgen_collection(net, size=sgen_size, orientation=orientation, unique_angles=patch_count_unique)
+            collections.append(sgc)
+
+        if plot_gens and len(net.gen):
+            gc = create_gen_collection(net, size=gen_size, orientation=orientation, unique_angles=patch_count_unique)
+            collections.append(gc)
+
+        if plot_loads and len(net.load):
+            lc = create_load_collection(net, size=load_size, orientation=orientation, unique_angles=patch_count_unique)
+            collections.append(lc)
+
+        if len(net.switch):
+            bsc = create_bus_bus_switch_collection(net, size=switch_size)
+            collections.append(bsc)
+
+        ax = draw_collections(collections, ax=ax)
+        if show_plot:
+            if not MATPLOTLIB_INSTALLED:
+                soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
+            plt.show()
+        return ax
+
+    else:
+
+        if plot_sgens and len(net.sgen):
+            sgc = create_sgen_collection(net, size=sgen_size,  orientation=orientation)
+            collections.append(sgc)
+
+        if plot_gens and len(net.gen):
+            gc = create_gen_collection(net, size=gen_size, orientation=orientation)
+            collections.append(gc)
+
+        if plot_loads and len(net.load):
+            lc = create_load_collection(net, size=load_size, orientation=orientation)
+            collections.append(lc)
+
+        if len(net.switch):
+            bsc = create_bus_bus_switch_collection(net, size=switch_size)
+            collections.append(bsc)
+
+        ax = draw_collections(collections, ax=ax)
+        if show_plot:
+            if not MATPLOTLIB_INSTALLED:
+                soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
+            plt.show()
+        return ax
+
+def calculate_unique_angles(net):
     patch_count_unique = {}
     sgen_types = {}
 
-    for i in net.bus_geodata.index:
+    for index, bus in enumerate(net.bus_geodata.index):
         sgen_count = 0
         gen_count = 0
         load_count = 0
-        if plot_sgens and len(net.sgen):
-            sgen_types_counts = net.sgen[net.sgen.bus == i].type.value_counts()
-            PV = sgen_types_counts.get("PV", 0)
-            WT = sgen_types_counts.get("WT", 0)
-            WYE = sum(sgen_types_counts) - PV - WT
-            types = {}
 
-            if PV:
-                types["PV"] = PV
+        sgen_types_counts = net.sgen[net.sgen.bus == index].type.value_counts()
+        PV = sgen_types_counts.get("PV", 0)
+        WT = sgen_types_counts.get("WT", 0)
+        WYE = sum(sgen_types_counts) - PV - WT
+        types = {}
+        if PV:
+            types["PV"] = PV
 
-            if WT:
-                types["WT"] = WT
+        if WT:
+            types["WT"] = WT
 
-            if WYE:
-                types["wye"] = WYE
-            sgen_types[i] = types
+        if WYE:
+            types["wye"] = WYE
+        sgen_types[index] = types
 
-            if i not in patch_count_unique:
-                patch_count_unique[i] = {}
-            try:
-                sgen_count = len(sgen_types[i])
-            except KeyError:
-                sgen_count = 0
+        if index not in patch_count_unique:
+            patch_count_unique[index] = {}
+        try:
+            sgen_count = len(sgen_types[index])
+        except KeyError:
+            sgen_count = 0
 
-        if plot_gens and len(net.gen):
-            try:
-                gen_count = len(pp.get_connected_elements_dict(net, element_types=["gen"], buses=i))
-            except KeyError:
-                gen_count = 0
+        try:
+            gen_count = len(pp.get_connected_elements_dict(net, element_types=["gen"], buses=index))
+        except KeyError:
+            gen_count = 0
 
-        if plot_loads and len(net.load):
-            try:
-                load_count = len(pp.get_connected_elements_dict(net, element_types=["load"], buses=i))
-            except KeyError:
-                load_count = 0
+        try:
+            load_count = len(pp.get_connected_elements_dict(net, element_types=["load"], buses=index))
+        except KeyError:
+            load_count = 0
+
         total_count = sgen_count + gen_count + load_count
-        try: seperation_angle = 2 * math.pi / total_count
-        except ZeroDivisionError: seperation_angle =  None
+        try:
+            seperation_angle = 2 * math.pi / total_count
+        except ZeroDivisionError:
+            seperation_angle = None
 
-        if plot_sgens and len(net.sgen):
-            patch_count_unique[i]['sgen'] = dict(
-                zip(sgen_types[i].keys(), [j * seperation_angle for j in range(sgen_count)]))
+        patch_count_unique[index]['sgen'] = dict(
+            zip(sgen_types[index].keys(), [j * seperation_angle for j in range(sgen_count)]))
 
-        if plot_gens and len(net.gen):
-            if i not in patch_count_unique:
-                patch_count_unique[i] = {}
+        if index not in patch_count_unique:
+            patch_count_unique[index] = {}
 
-            if 'gen' not in patch_count_unique[i]:
-                patch_count_unique[i]['gen'] = []
-                patch_count_unique[i]['gen'].extend(
-             [j * seperation_angle + sgen_count * seperation_angle for j in range(gen_count)])
+        if 'gen' not in patch_count_unique[index]:
+            patch_count_unique[index]['gen'] = []
+            patch_count_unique[index]['gen'].extend(
+                [j * seperation_angle + sgen_count * seperation_angle for j in range(gen_count)])
 
-        if plot_loads and len(net.load):
-            if i not in patch_count_unique:
-                patch_count_unique[i] = {}
+        if index not in patch_count_unique:
+            patch_count_unique[index] = {}
 
-            if 'load' not in patch_count_unique[i]:
-                patch_count_unique[i]['load'] = []
-                patch_count_unique[i]['load'].extend(
-             [j * seperation_angle + (sgen_count + gen_count) * seperation_angle for j in range(load_count)])
-
-    if plot_sgens and len(net.sgen):
-        sgc = create_sgen_collection(net, size=sgen_size,  orientation=orientation,unique_angles=patch_count_unique)
-        collections.append(sgc)
-
-    if plot_gens and len(net.gen):
-        gc = create_gen_collection(net, size=gen_size, orientation=orientation,unique_angles=patch_count_unique)
-        collections.append(gc)
-
-    if plot_loads and len(net.load):
-        lc = create_load_collection(net, size=load_size, orientation=orientation, unique_angles=patch_count_unique)
-        collections.append(lc)
-
-    if len(net.switch):
-        bsc = create_bus_bus_switch_collection(net, size=switch_size)
-        collections.append(bsc)
-
-    ax = draw_collections(collections, ax=ax)
-    if show_plot:
-        if not MATPLOTLIB_INSTALLED:
-            soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
-        plt.show()
-    return ax
-
+        if 'load' not in patch_count_unique[index]:
+            patch_count_unique[index]['load'] = []
+            patch_count_unique[index]['load'].extend(
+                [j * seperation_angle + (sgen_count + gen_count) * seperation_angle for j in range(load_count)])
+    return patch_count_unique
 
 if __name__ == "__main__":
     import pandapower.networks as nw
-
     net = nw.case145()
     #    net = nw.create_cigre_network_mv()
     #    net = nw.mv_oberrhein()
