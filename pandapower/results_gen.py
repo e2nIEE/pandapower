@@ -16,6 +16,7 @@ from pandapower.auxiliary import _sum_by_group, sequence_to_phase, _sum_by_group
 from pandapower.auxiliary import _sum_by_group
 from pandapower.pypower.idx_bus import VM, VA
 from pandapower.pypower.idx_gen import PG, QG
+from pandapower.pypower.idx_vsc import VSC_MODE_AC, VSC_MODE_AC_SL, VSC_P, VSC_Q
 
 
 def _get_gen_results(net, ppc, bus_lookup_aranged, pq_bus):
@@ -27,7 +28,7 @@ def _get_gen_results(net, ppc, bus_lookup_aranged, pq_bus):
     if eg_end > 0:
         b, p, q = _get_ext_grid_results(net, ppc)
     else:
-        b, p, q = [], [], []  # np.array([]), np.array([]), np.array([])
+        b, p, q = np.array([], dtype=np.int64), np.array([], dtype=np.float64), np.array([], dtype=np.float64)
 
     # get results for gens
     if gen_end > eg_end:
@@ -38,6 +39,10 @@ def _get_gen_results(net, ppc, bus_lookup_aranged, pq_bus):
         b = np.hstack([b, net.dcline[["from_bus", "to_bus"]].values.flatten()])
         p = np.hstack([p, net.res_dcline[["p_from_mw", "p_to_mw"]].values.flatten()])
         q = np.hstack([q, net.res_dcline[["q_from_mvar", "q_to_mvar"]].values.flatten()])
+
+    # if len(net.vsc) > 0:
+    #     # not necessary actually because the pq results already read from bus.
+    #     b, p, q = _get_vsc_slack_results(net, ppc, b, p, q)
 
     if not ac:
         q = np.zeros(len(p))
@@ -93,6 +98,31 @@ def _get_dc_slack_results(net, ppc, bus_dc_lookup_aranged, bus_p_dc):
     b_sum, p_sum, _ = _sum_by_group(bus_dc_slack, p, p)
     b = bus_dc_lookup_aranged[b_sum.astype(np.int64)]
     bus_p_dc[b, 0] -= p_sum
+
+
+def _get_vsc_slack_results(net, ppc, b, p, q):
+    ac = net["_options"]["ac"]
+
+    # get results for external grids
+    # todo: is VSC_CONTROLLABLE relevant here?
+    vsc_relevant = net["_is_elements"]['vsc'] & (ppc["vsc"][:, VSC_MODE_AC] == VSC_MODE_AC_SL)
+    # vsc_grid_lookup = net["_pd2ppc_lookups"]["vsc"]
+
+    # read results from ppc for these buses
+    n_res_vsc = len(net.vsc)
+    vsc_p = np.zeros(n_res_vsc)
+    vsc_q = np.zeros(n_res_vsc)
+    vsc_p[vsc_relevant] = ppc["vsc"][vsc_relevant, VSC_P]
+    # results will be processed additionally in results_bus for res_vsc table
+
+    # if ac PF q results are also available
+    if ac:
+        vsc_q[vsc_relevant] = ppc["vsc"][vsc_relevant, VSC_Q]
+
+    # get bus values for pq_bus
+    vsc_b = net['vsc'].bus.values
+
+    return np.r_[b, vsc_b], np.r_[p, vsc_p], np.r_[q, vsc_q]
 
 
 def _get_ext_grid_results(net, ppc):

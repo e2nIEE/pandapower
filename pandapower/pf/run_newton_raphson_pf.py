@@ -154,7 +154,7 @@ def _get_Sbus(ppci, recycle=None):
 def _run_ac_pf_without_qlims_enforced(ppci, options):
     makeYbus, pfsoln = _get_numba_functions(ppci, options)
 
-    baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, ref, pv, pq, *_, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
+    baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, ref, pv, pq, *_, V0, ref_gens = _get_pf_variables_from_ppci(ppci, True)
 
     ppci, Ybus, Yf, Yt = _get_Y_bus(ppci, options, makeYbus, baseMVA, bus, branch)
 

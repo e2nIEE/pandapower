@@ -1508,8 +1508,11 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
         if init_va_degree is None or (isinstance(init_va_degree, str) and init_va_degree == "auto"):
             init_va_degree = "dc" if calculate_voltage_angles and not with_facts else "flat"
         if init_vm_pu is None or (isinstance(init_vm_pu, str) and init_vm_pu == "auto"):
-            init_vm_pu = (net.ext_grid.vm_pu.values.sum() + net.gen.vm_pu.values.sum()) / \
-                         (len(net.ext_grid.vm_pu.values) + len(net.gen.vm_pu.values))
+            init_vm_pu = (net.ext_grid.query("in_service").vm_pu.values.sum() +
+                          net.gen.query("in_service").vm_pu.values.sum() +
+                          net.vsc.query("in_service & (control_mode_ac == 'slack')").control_value_ac.values.sum()) / \
+                         (len(net.ext_grid.query("in_service")) + len(net.gen.query("in_service")) +
+                          len(net.vsc.query("in_service & (control_mode_ac == 'slack')")))
     elif init == "dc":
         init_vm_pu = "flat"
         init_va_degree = "dc"

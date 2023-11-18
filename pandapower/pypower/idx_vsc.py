@@ -36,13 +36,19 @@ columns 0-12 must be included in the input matrix (vsc in ppc dict)
 
 """
 
+VSC_MODE_AC_V = 0
+VSC_MODE_AC_Q = 1
+VSC_MODE_AC_SL = 2
+VSC_MODE_DC_V = 0
+VSC_MODE_DC_P = 1
+
 # define the indices
 VSC_BUS = 0  # f, from bus number
 VSC_INTERNAL_BUS = 1
 VSC_BUS_DC = 2  # f, from bus number
 VSC_R = 3  # (p.u.)
 VSC_X = 4  # (p.u.)
-VSC_MODE_AC = 5  # 0 - vm_pu, 1 - q_mvar
+VSC_MODE_AC = 5  # 0 - vm_pu, 1 - q_mvar, 2 - slack
 VSC_VALUE_AC = 6
 VSC_MODE_DC = 7  # 0 - vm_pu, 1 - p_mw
 VSC_VALUE_DC = 8

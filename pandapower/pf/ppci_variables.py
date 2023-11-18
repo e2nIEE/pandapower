@@ -8,17 +8,17 @@ from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, VG
 from pandapower.pypower.bustypes import bustypes
 from numpy import flatnonzero as find, pi, exp, int64
 
-def _get_pf_variables_from_ppci(ppci):
+def _get_pf_variables_from_ppci(ppci, vsc_ref=False):
     ## default arguments
     if ppci is None:
         ValueError('ppci is empty')
     # ppopt = ppoption(ppopt)
 
     # get data for calc
-    bus, gen = ppci["bus"], ppci["gen"]
+    bus, gen, vsc = ppci["bus"], ppci["gen"], ppci["vsc"]
 
     ## get bus index lists of each type of bus
-    ref, pv, pq = bustypes(bus, gen)
+    ref, pv, pq = bustypes(bus, gen, vsc if vsc_ref else None)
 
     ## generator info
     on = find(gen[:, GEN_STATUS] > 0)  ## which generators are on?
@@ -30,7 +30,7 @@ def _get_pf_variables_from_ppci(ppci):
     V0[gbus] = gen[on, VG] / abs(V0[gbus]) * V0[gbus]
 
     ref_gens = ppci["internal"]["ref_gens"]
-    return ppci["baseMVA"], bus, gen, ppci["branch"], ppci["svc"], ppci["tcsc"], ppci["ssc"], ppci["vsc"], \
+    return ppci["baseMVA"], bus, gen, ppci["branch"], ppci["svc"], ppci["tcsc"], ppci["ssc"], vsc, \
         ref, pv, pq, on, gbus, V0, ref_gens
 
 

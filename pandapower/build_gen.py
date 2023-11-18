@@ -14,7 +14,8 @@ from pandapower.pypower.idx_gen import QMIN, QMAX, PMIN, PMAX, GEN_BUS, PG, VG, 
 from pandapower.pypower.idx_brch import F_BUS, T_BUS
 from pandapower.auxiliary import _subnetworks, _sum_by_group
 from pandapower.pypower.idx_ssc import SSC_BUS, SSC_SET_VM_PU, SSC_CONTROLLABLE
-from pandapower.pypower.idx_vsc import VSC_MODE_AC, VSC_BUS, VSC_VALUE_AC, VSC_CONTROLLABLE
+from pandapower.pypower.idx_vsc import VSC_MODE_AC, VSC_BUS, VSC_VALUE_AC, VSC_CONTROLLABLE, VSC_MODE_AC_V, \
+    VSC_MODE_AC_SL
 
 try:
     import pandaplan.core.pplog as logging
@@ -336,7 +337,9 @@ def _check_voltage_setpoints_at_same_bus(ppc):
     # ssc setpoints:
     ssc_vm = ppc['ssc'][ssc_relevant, SSC_SET_VM_PU]
     # vsc buses:
-    vsc_relevant = np.flatnonzero((ppc['vsc'][:, VSC_MODE_AC] == 0) & (ppc['vsc'][:, VSC_CONTROLLABLE] == 1))
+    vsc_relevant = np.flatnonzero(((ppc['vsc'][:, VSC_MODE_AC] == VSC_MODE_AC_V) |
+                                   (ppc['vsc'][:, VSC_MODE_AC] == VSC_MODE_AC_SL)) &
+                                  (ppc['vsc'][:, VSC_CONTROLLABLE] == 1))
     vsc_bus = ppc['vsc'][vsc_relevant, VSC_BUS].astype(np.int64)
     # vsc setpoints:
     vsc_vm = ppc['vsc'][vsc_relevant, VSC_VALUE_AC]

@@ -21,7 +21,8 @@ from .pypower.idx_ssc import ssc_cols, SSC_BUS, SSC_R, SSC_X, SSC_SET_VM_PU, SSC
 from .pypower.idx_svc import svc_cols, SVC_BUS, SVC_SET_VM_PU, SVC_MIN_FIRING_ANGLE, SVC_MAX_FIRING_ANGLE, SVC_STATUS, \
     SVC_CONTROLLABLE, SVC_X_L, SVC_X_CVAR, SVC_THYRISTOR_FIRING_ANGLE
 from .pypower.idx_vsc import vsc_cols, VSC_BUS, VSC_INTERNAL_BUS, VSC_R, VSC_X, VSC_STATUS, VSC_CONTROLLABLE, \
-    VSC_BUS_DC, VSC_MODE_AC, VSC_VALUE_AC, VSC_MODE_DC, VSC_VALUE_DC
+    VSC_BUS_DC, VSC_MODE_AC, VSC_VALUE_AC, VSC_MODE_DC, VSC_VALUE_DC, VSC_MODE_AC_V, VSC_MODE_AC_Q, VSC_MODE_AC_SL, \
+    VSC_MODE_DC_V, VSC_MODE_DC_P
 
 try:
     from numba import jit
@@ -729,22 +730,26 @@ def _build_vsc_ppc(net, ppc, mode):
     vsc[f:t, VSC_R] = net["vsc"]["r_ohm"].values / baseZ
     vsc[f:t, VSC_X] = net["vsc"]["x_ohm"].values / baseZ
 
-    if np.any(~np.isin(mode_ac, ["vm_pu", "q_mvar"])):
+    if np.any(~np.isin(mode_ac, ["vm_pu", "q_mvar", "slack"])):
         raise NotImplementedError("VSC element only supports the following control modes for AC side: vm_pu, q_mvar")
 
     if np.any(~np.isin(mode_dc, ["vm_pu", "p_mw"])):
         raise NotImplementedError("VSC element only supports the following control modes for AC side: vm_pu, q_mvar")
 
-    mode_ac_code = np.where(mode_ac == "vm_pu", 0, 1)
+    mode_ac_code = np.where(mode_ac == "vm_pu", VSC_MODE_AC_V,
+                            np.where(mode_ac == "q_mvar", VSC_MODE_AC_Q, VSC_MODE_AC_SL))
     vsc[f:t, VSC_MODE_AC] = mode_ac_code
-    vsc[f:t, VSC_VALUE_AC] = np.where(mode_ac_code == 0, value_ac, value_ac / baseMVA)
-    mode_dc_code = np.where(mode_dc == "vm_pu", 0, 1)
+    vsc[f:t, VSC_VALUE_AC] = np.where((mode_ac_code == VSC_MODE_AC_V) | (mode_ac_code == VSC_MODE_AC_SL),
+                                      value_ac, value_ac / baseMVA)
+    mode_dc_code = np.where(mode_dc == "vm_pu", VSC_MODE_DC_V, VSC_MODE_DC_P)
     vsc[f:t, VSC_MODE_DC] = mode_dc_code
-    vsc[f:t, VSC_VALUE_DC] = np.where(mode_dc_code == 0, value_dc, value_dc / baseMVA)
+    vsc[f:t, VSC_VALUE_DC] = np.where(mode_dc == "vm_pu", value_dc, value_dc / baseMVA)
 
     vsc[f:t, VSC_STATUS] = net._is_elements["vsc"].astype(np.int64)
     vsc[f:t, VSC_CONTROLLABLE] = controllable & net["vsc"]["in_service"].values.astype(bool)
     ppc["bus"][aux["vsc"][~controllable], BUS_TYPE] = PV
+    # it has a role of REF but internally it is PQ and we set the behavior of REF with the Jacobian and mismatch:
+    ppc["bus"][bus[mode_ac_code == 2], BUS_TYPE] = REF
     # maybe we add this in the future
     # ppc["bus"][aux["vsc"][~controllable], VM] = net["vsc"].loc[~controllable, "vm_internal_pu"].values
 

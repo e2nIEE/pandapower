@@ -25,7 +25,7 @@ from pandapower.pf.makeYbus_facts import makeYbus_svc, makeYbus_tcsc, makeYft_tc
     makeYbus_ssc_vsc, make_Ybus_facts, make_Yft_facts
 from pandapower.pypower.idx_bus_dc import DC_PD, DC_VM, DC_BUS_TYPE, DC_NONE, DC_BUS_I, DC_REF, DC_P, DC_B2B
 from pandapower.pypower.idx_vsc import VSC_CONTROLLABLE, VSC_MODE_AC, VSC_VALUE_AC, VSC_MODE_DC, VSC_VALUE_DC, VSC_R, \
-    VSC_X, VSC_Q, VSC_P, VSC_BUS_DC, VSC_P_DC
+    VSC_X, VSC_Q, VSC_P, VSC_BUS_DC, VSC_P_DC, VSC_MODE_AC_SL, VSC_MODE_AC_V, VSC_MODE_AC_Q
 from pandapower.pypower.makeSbus import makeSbus
 from pandapower.pf.create_jacobian import create_jacobian_matrix, get_fastest_jacobian_function
 from pandapower.pypower.idx_gen import PG
@@ -402,12 +402,15 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         if any_ssc_controllable:
             J_m_ssc = create_J_modification_ssc(J, V, Ybus_ssc_controllable, ssc_fb[ssc_controllable],
                                                 ssc_tb[ssc_controllable], refpvpq if dist_slack else pvpq, pq,
-                                                pvpq_lookup, pq_lookup, ssc_mode_ac==0)
+                                                pvpq_lookup, pq_lookup,
+                                                ssc_mode_ac == 0, np.full_like(ssc_mode_ac, False, dtype=bool))
             J = J + J_m_ssc
         if any_vsc_controllable:
             J_m_vsc = create_J_modification_ssc(J, V, Ybus_vsc_controllable, vsc_fb[vsc_controllable],
                                                 vsc_tb[vsc_controllable], refpvpq if dist_slack else pvpq, pq,
-                                                pvpq_lookup, pq_lookup, vsc_mode_ac==0)
+                                                pvpq_lookup, pq_lookup,
+                                                (vsc_mode_ac == VSC_MODE_AC_V) | (vsc_mode_ac == VSC_MODE_AC_SL),
+                                                vsc_mode_ac == VSC_MODE_AC_SL)
             J = J + J_m_vsc
         if any_branch_dc:
             J_m_hvdc = create_J_modification_hvdc(J, V_dc, Ybus_hvdc, hvdc_fb, hvdc_tb, dc_p, dc_p_lookup)
@@ -617,12 +620,12 @@ def _evaluate_Fx_facts(V,pq ,svc_buses=None, svc_set_vm_pu=None, tcsc_controllab
     if np.any(vsc_controllable):
         ###### Mismatch for the first VSC variable:
         # the mismatch value is written for the aux bus, but calculated based on the AC bus
-        ac_mode_v = vsc_mode_ac == 0
+        ac_mode_v = (vsc_mode_ac == VSC_MODE_AC_V) | (vsc_mode_ac == VSC_MODE_AC_SL)
         mis_vsc_v = np.abs(V[vsc_fb[ac_mode_v]]) - vsc_value_ac[ac_mode_v]
         old_F[-len(pq)+pq_lookup[vsc_tb[ac_mode_v]]] = mis_vsc_v
 
         # Mismatch for Q:
-        ac_mode_q = vsc_mode_ac == 1
+        ac_mode_q = vsc_mode_ac == VSC_MODE_AC_Q
         unique_vsc_q_bus, c_q, _ = _sum_by_group(vsc_fb[ac_mode_q], np.ones_like(vsc_fb[ac_mode_q]), np.ones_like(vsc_fb[ac_mode_q]))
         count_q = np.zeros(vsc_fb.max() + 1, dtype=np.int64)
         count_q[unique_vsc_q_bus] = c_q
@@ -632,6 +635,11 @@ def _evaluate_Fx_facts(V,pq ,svc_buses=None, svc_set_vm_pu=None, tcsc_controllab
 
 
         ##### Mismatch for the second VSC variable:
+        # Mismatch for AC slack - delta
+        ac_mode_sl = vsc_mode_ac == VSC_MODE_AC_SL
+        mis_vsc_delta = np.angle(V[vsc_fb[ac_mode_sl]]) - 0  # <- here we set delta set point to zero, but can be a parameter in the future
+        old_F[-len(pq) * 2 + pq_lookup[vsc_tb[ac_mode_sl]]] = mis_vsc_delta
+
         # find the connection between the DC buses and VSC buses
         # find the slack DC buses
         # find the P DC buses
@@ -662,6 +670,7 @@ def _evaluate_Fx_facts(V,pq ,svc_buses=None, svc_set_vm_pu=None, tcsc_controllab
             # vsc_set_p_pu[vsc_p] = -P_dc[dc_p][dc_p_lookup[vsc_dc_p_bus]]
             # vsc_set_p_pu[vsc_p] = vsc_value_dc[vsc_p] * count_p[vsc_fb[vsc_p]] # todo test for when they share same bus
             vsc_set_p_pu[vsc_p] = vsc_value_dc[vsc_p]  # todo test for when they share same bus
+            # P_dc[dc_p] = -Sbus_vsc[vsc_tb[vsc_controllable]].real[vsc_p]
         if len(dc_ref):
             # vsc_set_p_pu[vsc_mode_dc == 1] = -P_dc[dc_ref][dc_ref_lookup[vsc_dc_ref_bus]]  # dc_p
             vsc_set_p_pu[vsc_ref] = -Pbus_hvdc[dc_ref][dc_ref_lookup[vsc_dc_ref_bus]] / count_ref[vsc_dc_bus[vsc_ref]]
@@ -675,7 +684,7 @@ def _evaluate_Fx_facts(V,pq ,svc_buses=None, svc_set_vm_pu=None, tcsc_controllab
         # mis_vsc_p = S_temp[vsc_tb[vsc_controllable]] - vsc_set_p_pu  # this is coupling the AC and the DC sides
         mis_vsc_p = Sbus_vsc[vsc_tb[vsc_controllable]].real - vsc_set_p_pu  # this is coupling the AC and the DC sides # todo old
         # todo: adjust the lookup to work with 1) VSC at ext_grid bus 2) only 1 VSC connected to HVDC line
-        old_F[-len(pq) * 2 + pq_lookup[vsc_tb]] = mis_vsc_p
+        old_F[-len(pq) * 2 + pq_lookup[vsc_tb[~ac_mode_sl]]] = mis_vsc_p[~ac_mode_sl]
 
     return mis_facts
 
