@@ -34,6 +34,7 @@ Change Log
 - [ADDED] option to use a second tap changer for the trafo element
 - [CHANGED] parameters of function merge_internal_net_and_equivalent_external_net()
 - [FIXED] :code:`convert_format.py`: update the attributes of the characteristic objects to match the new characteristic
+- [FIXED] additional arguments from mpc saved to net._options: create "_options" if it does not exist
 
 
 [2.13.1] - 2023-05-12
