@@ -9,6 +9,7 @@ import pandapower.auxiliary
 from . import build_pp_net
 from .. import cim_classes
 from .. import interfaces
+from . import converter_classes as std_converter_classes
 
 logger = logging.getLogger('cim.cim2pp.from_cim')
 
@@ -38,8 +39,30 @@ def from_cim_dict(cim_parser: cim_classes.CimParser, log_debug=False, convert_li
     :param custom_converter_classes: Dict to inject classes for different functionality. Optional, default: None
     :return: The pandapower net.
     """
-    from . import converter_classes as std_converter_classes
-    converter_classes: dict = {
+    converter_classes = get_converter_classes()
+    if custom_converter_classes is not None:
+        for key in custom_converter_classes:
+            converter_classes[key] = custom_converter_classes.get(key)
+
+    # repair the input CIM data
+    if repair_cim is not None and repair_cim_class is not None:
+        repair_cim = repair_cim_class().deserialize(repair_cim, report_container=cim_parser.get_report_container())
+        repair_cim.repair(cim_parser.get_cim_dict(), report_container=cim_parser.get_report_container())
+
+    cim_converter = build_pp_net.CimConverter(cim_parser=cim_parser, converter_classes=converter_classes, **kwargs)
+    pp_net = cim_converter.convert_to_pp(convert_line_to_switch=convert_line_to_switch, line_r_limit=line_r_limit,
+                                         line_x_limit=line_x_limit, log_debug=log_debug, **kwargs)
+
+    # repair the output pandapower network
+    if repair_pp is not None and repair_pp_class is not None:
+        repair_pp = repair_pp_class().deserialize(repair_pp, report_container=cim_parser.get_report_container())
+        repair_pp.repair(pp_net, report_container=cim_parser.get_report_container())
+
+    return pp_net
+
+
+def get_converter_classes():
+    converter_classes: Dict[str,classmethod] = {
         'connectivityNodesCim16': std_converter_classes.connectivitynodes.connectivityNodesCim16,
         'externalNetworkInjectionsCim16': std_converter_classes.externalnetworks.externalNetworkInjectionsCim16,
         'acLineSegmentsCim16': std_converter_classes.lines.acLineSegmentsCim16,
@@ -63,25 +86,7 @@ def from_cim_dict(cim_parser: cim_classes.CimParser, log_debug=False, convert_li
         'geoCoordinatesFromGLCim16': std_converter_classes.coordinates.geoCoordinatesFromGLCim16,
         'coordinatesFromDLCim16': std_converter_classes.coordinates.coordinatesFromDLCim16,
     }
-    if custom_converter_classes is not None:
-        for key in custom_converter_classes:
-            converter_classes[key] = custom_converter_classes.get(key)
-
-    # repair the input CIM data
-    if repair_cim is not None and repair_cim_class is not None:
-        repair_cim = repair_cim_class().deserialize(repair_cim, report_container=cim_parser.get_report_container())
-        repair_cim.repair(cim_parser.get_cim_dict(), report_container=cim_parser.get_report_container())
-
-    cim_converter = build_pp_net.CimConverter(cim_parser=cim_parser, converter_classes=converter_classes, **kwargs)
-    pp_net = cim_converter.convert_to_pp(convert_line_to_switch=convert_line_to_switch, line_r_limit=line_r_limit,
-                                         line_x_limit=line_x_limit, log_debug=log_debug, **kwargs)
-
-    # repair the output pandapower network
-    if repair_pp is not None and repair_pp_class is not None:
-        repair_pp = repair_pp_class().deserialize(repair_pp, report_container=cim_parser.get_report_container())
-        repair_pp.repair(pp_net, report_container=cim_parser.get_report_container())
-
-    return pp_net
+    return converter_classes
 
 
 def from_cim(file_list: List[str] = None, encoding: str = 'utf-8', convert_line_to_switch: bool = False,
