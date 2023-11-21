@@ -141,7 +141,7 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
 
 def merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9, **kwargs):
     """Function to concatenate two nets into one data structure. The elements keep their indices
-    unless both nets have the same indices. In that case, net2 elements get reindex. The reindex
+    unless both nets have the same indices. In that case, net2 elements get reindexed. The reindex
     lookup of net2 elements can be retrieved by passing return_net2_reindex_lookup=True.
 
     Parameters
