@@ -103,8 +103,6 @@ def from_cim(file_list: List[str] = None, encoding: str = 'utf-8', convert_line_
     - create_measurements (str): Set this parameter to 'SV' to create measurements for the pandapower net from the SV
     profile. Set it to 'Analog' to create measurements from Analogs. If the parameter is not set or is set to None, no
     measurements will be created.
-    - update_assets_from_sv (bool): Set this parameter to True to update the assets (sgens, loads, wards, ...) with
-    values from the SV profile. Default: False.
     - use_GL_or_DL_profile (str): Choose the profile to use for converting coordinates. Set it to 'GL' to use the GL
     profile (Usually lat and long coordinates). Set it to 'DL' to use the DL profile (Usually x, y coordinates for
     displaying control room schema). Set it to 'both' to let the converter choose the profile. The converter will
