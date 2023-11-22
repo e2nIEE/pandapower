@@ -38,6 +38,9 @@ class CoordinatesFromDLCim16:
             dl_do.rename(columns={'rdfId': 'DiagramObject'}, inplace=True)
         dl_data = pd.merge(dl_do, self.cimConverter.cim['dl']['DiagramObjectPoint'], how='left', on='DiagramObject')
         dl_data.drop(columns=['rdfId', 'Diagram', 'DiagramObject'], inplace=True)
+        # make sure that the columns 'xPosition' and 'yPosition' are floats
+        dl_data['xPosition'] = dl_data['xPosition'].astype(float)
+        dl_data['yPosition'] = dl_data['yPosition'].astype(float)
         # the coordinates for the buses
         buses = self.cimConverter.net.bus.reset_index()
         buses = buses[['index', sc['o_id']]]
