@@ -83,6 +83,12 @@ Item/Element Selection
 
 .. autofunction:: pandapower.toolbox.count_elements
 
+.. autofunction:: pandapower.toolbox.branch_buses_df
+
+.. autofunction:: pandapower.toolbox.branches_parallel_to_bus_bus_switches
+
+.. autofunction:: pandapower.toolbox.check_parallel_branch_to_bus_bus_switch
+
 .. autofunction:: pandapower.toolbox.get_gc_objects_dict
 
 ====================================

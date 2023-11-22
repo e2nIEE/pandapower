@@ -2,6 +2,7 @@
 
 # Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -217,6 +218,60 @@ def test_count_elements():
     received = pandapower.toolbox.count_elements(net, return_empties=True)
     assert len(received.index) == len(pandapower.toolbox.pp_elements())
     assert set(received.index) == pandapower.toolbox.pp_elements()
+
+
+def test_branch_buses_df():
+    net = nw.example_multivoltage()
+    df = pp.branch_buses_df(net, "line")
+    assert np.allclose(df.iloc[:, :2], net.line[["from_bus", "to_bus"]].values)
+    assert set(df.element_type) == {"line"}
+    assert list(df.columns) == ["bus1", "bus2", "element_type", "element_index"]
+
+    df = pp.branch_buses_df(net, "trafo3w", ["hv_bus", "mv_bus", "lv_bus"])
+    assert list(df.columns) == ["bus1", "bus2", "element_type", "element_index"]
+    assert len(df) == 3*len(net.trafo3w)
+
+
+def test_branches_parallel_to_bus_bus_switches():
+    net = nw.example_multivoltage()
+
+    assert pp.branches_parallel_to_bus_bus_switches(net).shape == (0, 4)
+
+    sw_p = pp.create_switch(net, net.trafo.lv_bus.at[0], net.trafo.hv_bus.at[0], "b", closed=False)
+    assert pp.branches_parallel_to_bus_bus_switches(net).shape == (2, 4)
+    assert pp.branches_parallel_to_bus_bus_switches(net, keep="first").shape == (1, 4)
+    assert pp.branches_parallel_to_bus_bus_switches(net, keep="last").shape == (1, 4)
+    assert pp.branches_parallel_to_bus_bus_switches(net, closed_switches_only=True).shape == (0, 4)
+    assert pp.branches_parallel_to_bus_bus_switches(
+        net, switches=net.switch.index.difference([sw_p])).shape == (0, 4)
+
+    # switch bus order of bus-bus switch
+    net.switch.loc[sw_p, ["bus", "element"]] = net.switch.loc[sw_p, ["element", "bus"]].values
+
+    assert pp.branches_parallel_to_bus_bus_switches(
+        net, branch_types=["line", "trafo3w"]).shape == (0, 4)
+    assert pp.branches_parallel_to_bus_bus_switches(
+        net, branch_types=["trafo", "trafo3w"]).shape == (2, 4)
+
+
+def test_check_parallel_branch_to_bus_bus_switch():
+    net = nw.example_multivoltage()
+
+    assert not pp.check_parallel_branch_to_bus_bus_switch(net)
+
+    sw_p = pp.create_switch(net, net.trafo.lv_bus.at[0], net.trafo.hv_bus.at[0], "b", closed=False)
+    assert pp.check_parallel_branch_to_bus_bus_switch(net)
+    assert not pp.check_parallel_branch_to_bus_bus_switch(net, closed_switches_only=True)
+    assert not pp.check_parallel_branch_to_bus_bus_switch(
+        net, switches=net.switch.index.difference([sw_p]))
+
+    # switch bus order of bus-bus switch
+    net.switch.loc[sw_p, ["bus", "element"]] = net.switch.loc[sw_p, ["element", "bus"]].values
+
+    assert not pp.check_parallel_branch_to_bus_bus_switch(
+        net, branch_types=["line", "trafo3w"])
+    assert pp.check_parallel_branch_to_bus_bus_switch(
+        net, branch_types=["trafo", "trafo3w"])
 
 
 if __name__ == '__main__':

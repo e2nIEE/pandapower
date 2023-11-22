@@ -34,6 +34,7 @@ Change Log
 - [ADDED] option to use a second tap changer for the trafo element
 - [CHANGED] parameters of function merge_internal_net_and_equivalent_external_net()
 - [FIXED] :code:`convert_format.py`: update the attributes of the characteristic objects to match the new characteristic
+- [ADDED] toolbox functions branch_buses_df(), branches_parallel_to_bus_bus_switches(), check_parallel_branch_to_bus_bus_switch()
 - [CHANGED] cim2pp: extracted getting default classes, added generic setting datatypes from CGMES XMI schema
 
 

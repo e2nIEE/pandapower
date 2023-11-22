@@ -203,7 +203,7 @@ def get_connected_elements(net, element_type, buses, respect_switches=True, resp
         connected_elements = set(element_table.index[(element_table.bus.isin(buses))])
     elif element_type in ['_equiv_trafo3w']:
         # ignore '_equiv_trafo3w'
-        return {}
+        return set()
     else:
         raise UserWarning(f"Unknown element type {element_type}!")
 
@@ -708,3 +708,164 @@ def count_elements(net, return_empties=False, **kwargs):
     """
     return pd.Series({et: net[et].shape[0] for et in pp_elements(**kwargs) if return_empties or \
                       bool(net[et].shape[0])}, dtype=np.int64)
+
+
+def branch_buses_df(
+        net: pp.pandapowerNet, branch_type: str, bus_columns: list[str] = None) -> pd.DataFrame:
+    """Returns a DataFrame which summarizes the buses to which the elements of defined element_type
+    are connected to.
+
+    Parameters
+    ----------
+    net : pp.pandapowerNet
+        pandapower net
+    branch_type : str
+        branch type, e.g. "trafo", "trafo3w" or "line"
+    bus_columns : list[str]
+        list of bus columns of the element type table; if None, all columns from are used
+
+    Returns
+    -------
+    pd.DataFrame
+        summary of the buses to which the elements of defined element_type are connected to.
+
+    Example
+    -------
+    >>> import pandapower as pp
+    >>> net = pp.networks.example_multivoltage()
+    >>> pp.branch_buses_df(net, "trafo3w")
+       bus1  bus2 element_type  element_index
+    0    33    36      trafo3w              0
+    1    33    37      trafo3w              0
+    2    36    37      trafo3w              0
+    """
+    if bus_columns is None:
+        bus_columns = branch_element_bus_dict()[branch_type]
+    if len(bus_columns) == 2:
+        return net[branch_type][bus_columns].set_axis(["bus1", "bus2"], axis="columns").assign(
+            element_type=branch_type, element_index=net[branch_type].index)
+    elif len(bus_columns) == 3:
+        bus_combis = [[bus_columns[0], bus_columns[1]],
+                      [bus_columns[0], bus_columns[2]],
+                      [bus_columns[1], bus_columns[2]]]
+        return pd.concat([net[branch_type][bus_combi].set_axis(
+            ["bus1", "bus2"], axis="columns").assign(element_type=branch_type, element_index=net[
+            branch_type].index) for bus_combi in bus_combis], ignore_index=True)
+    else:
+        raise NotImplementedError(f"{len(bus_columns)=} is not implemented.")
+
+
+def branches_parallel_to_bus_bus_switches(
+        net: pp.pandapowerNet, branch_types=None, switches=None,
+        closed_switches_only=False, keep=False) -> pd.DataFrame:
+    """Returns a DataFrame of branches and/or bus-bus switches that are in parallel
+
+    Parameters
+    ----------
+    net : pp.pandapowerNet
+        pandapower net
+    branch_types : list[str], optional
+        list of names of branch types to be considered, by default None
+    switches : iterable, optional
+        list of switches to be considered, by default None
+    closed_switches_only : bool, optional
+        if True, the list of considered switches is reduced to only closed switches, by default False
+    keep : bool, optional
+        decides whether the returned DataFrame contains the branches ("last"),
+        the switches ("first") or both (False), by default False
+
+    Returns
+    -------
+    pd.DataFrame
+        branches and/or bus-bus switches that are in parallel
+
+    Note
+    ----
+    The returned branches do not necessarily contain all branches that are parallel to bus-bus
+    switches.
+
+    Example
+    -------
+    >>> import pandapower as pp
+    >>> net = pp.networks.example_multivoltage()
+    >>> pp.create_switch(net, net.trafo.lv_bus.at[0], net.trafo.hv_bus.at[0], "b", closed=False)
+    88
+    >>> pp.branches_parallel_to_bus_bus_switches(net)
+        bus1  bus2 element_type  element_index
+    26    13    17        trafo              0
+    65    13    17       switch             88
+    >>> pp.branches_parallel_to_bus_bus_switches(net, closed_switches_only=True)
+    Empty DataFrame
+    Columns: [bus1, bus2, element_type, element_index]
+    Index: []
+    """
+
+    considered_sw_df = net.switch if switches is None else net.switch.loc[switches]
+    if closed_switches_only:
+        considered_sw_df = considered_sw_df.loc[considered_sw_df.closed]
+    bb_sw = considered_sw_df.loc[considered_sw_df.et == "b", ["bus", "element"]].set_axis(
+        ["bus1", "bus2"], axis="columns")
+    bb_sw = bb_sw.assign(element_type="switch", element_index=bb_sw.index)
+    if not len(bb_sw):
+        return pd.DataFrame({
+            'bus1': int(), 'bus2': int(), 'element_type': str(), 'element_index': int()}, index=[])
+    bebd = branch_element_bus_dict()
+    if branch_types is not None:
+        bebd = {key: val for key, val in bebd.items() if key in branch_types}
+    bra_buses = pd.concat([branch_buses_df(net, et, bus_columns) \
+                           for et, bus_columns in bebd.items()], ignore_index=True)
+
+    # drop duplicates
+    bb_sw.drop_duplicates(subset=["bus1", "bus2"], inplace=True)
+    bra_buses.drop_duplicates(subset=["bus1", "bus2"], inplace=True)
+
+    # order bbs_sw and bra_buses
+    to_order = bb_sw.bus1 > bb_sw.bus2
+    bb_sw.loc[to_order, ["bus1", "bus2"]] = bb_sw.loc[to_order, ["bus2", "bus1"]].values
+    to_order = bra_buses.bus1 > bra_buses.bus2
+    bra_buses.loc[to_order, ["bus1", "bus2"]] = bra_buses.loc[to_order, ["bus2", "bus1"]].values
+
+    # merge bb_sw and bra_buses
+    df = pd.concat([bra_buses, bb_sw], ignore_index=True)
+    df = df.loc[df.duplicated(subset=["bus1", "bus2"], keep=keep)]
+    return df  # further parallel branches in parallel to the returned branches can exist
+
+
+def check_parallel_branch_to_bus_bus_switch(
+        net: pp.pandapowerNet, branch_types=None, switches=None,
+        closed_switches_only=False) -> bool:
+    """Returns a DataFrame of branches and/or bus-bus switches that are in parallel
+
+    Parameters
+    ----------
+    net : pp.pandapowerNet
+        pandapower net
+    branch_types : list[str], optional
+        list of names of branch types to be considered, by default None
+    switches : iterable, optional
+        list of switches to be considered, by default None
+    closed_switches_only : bool, optional
+        if True, the list of considered switches is reduced to only closed switches, by default False
+
+    Returns
+    -------
+    bool
+        whether aa least one branch (of given branch types) is parallel to a bus-bus
+        switches (of the given (closed) switches)
+
+    Example
+    -------
+    >>> import pandapower as pp
+    >>> net = pp.networks.example_multivoltage()
+    >>> pp.create_switch(net, net.trafo.lv_bus.at[0], net.trafo.hv_bus.at[0], "b", closed=False)
+    88
+    >>> pp.check_parallel_branch_to_bus_bus_switch(net)
+    True
+    >>> pp.check_parallel_branch_to_bus_bus_switch(net, closed_switches_only=True)
+    False
+    """
+    return bool(len(
+        branches_parallel_to_bus_bus_switches(
+            net, branch_types=branch_types, switches=switches,
+            closed_switches_only=closed_switches_only)
+    ))
