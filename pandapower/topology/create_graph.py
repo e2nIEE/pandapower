@@ -44,7 +44,7 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
                    include_dclines=True, include_trafos=True, include_trafo3ws=True, include_tcsc=True,
                    nogobuses=None, notravbuses=None, multi=True,
                    calc_branch_impedances=False, branch_impedance_unit="ohm",
-                   library="networkx", include_out_of_service=False):
+                   library="networkx", include_out_of_service=False, include_out_of_service_branches=False):
     """
      Converts a pandapower network into a NetworkX graph, which is a is a simplified representation
      of a network's topology, reduced to nodes and edges. Busses are being represented by nodes
@@ -78,6 +78,9 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
         **include_trafo3ws** (boolean or index, True) - determines, whether or which trafo3ws get
             converted to edges
 
+        **include_tcsc** (boolean or index, True) - determines, whether or which tcsc get
+            converted to edges
+
         **nogobuses** (integer/list, None) - nogobuses are not being considered in the graph
 
         **notravbuses** (integer/list, None) - lines connected to these buses are not being
@@ -99,6 +102,8 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
 
         **include_out_of_service** (bool, False) - defines if out of service buses are included in the nx graph
 
+        **include_out_of_service_branches** (bool, False) - defines if out of service branches are included in the nx graph
+
      OUTPUT:
         **mg** - Returns the required NetworkX graph
 
@@ -107,10 +112,6 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
 
          mg = top.create_nx_graph(net, respect_switches = False)
          # converts the pandapower network "net" to a MultiGraph. Open switches will be ignored.
-
-    Parameters
-    ----------
-    include_tcsc
 
     """
 
@@ -132,7 +133,7 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
 
     line = get_edge_table(net, "line", include_lines)
     if line is not None:
-        indices, parameter, in_service = init_par(line, calc_branch_impedances)
+        indices, parameter, in_service = init_par(line, calc_branch_impedances, include_out_of_service_branches)
         indices[:, F_BUS] = line.from_bus.values
         indices[:, T_BUS] = line.to_bus.values
 
@@ -158,7 +159,7 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
 
     impedance = get_edge_table(net, "impedance", include_impedances)
     if impedance is not None:
-        indices, parameter, in_service = init_par(impedance, calc_branch_impedances)
+        indices, parameter, in_service = init_par(impedance, calc_branch_impedances, include_out_of_service_branches)
         indices[:, F_BUS] = impedance.from_bus.values
         indices[:, T_BUS] = impedance.to_bus.values
 
@@ -174,7 +175,7 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
 
     tcsc = get_edge_table(net, "tcsc", include_tcsc)
     if tcsc is not None:
-        indices, parameter, in_service = init_par(tcsc, calc_branch_impedances)
+        indices, parameter, in_service = init_par(tcsc, calc_branch_impedances, include_out_of_service_branches)
         indices[:, F_BUS] = tcsc.from_bus.values
         indices[:, T_BUS] = tcsc.to_bus.values
 
@@ -189,7 +190,7 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
 
     dclines = get_edge_table(net, "dcline", include_dclines)
     if dclines is not None:
-        indices, parameter, in_service = init_par(dclines, calc_branch_impedances)
+        indices, parameter, in_service = init_par(dclines, calc_branch_impedances, include_out_of_service_branches)
         indices[:, F_BUS] = dclines.from_bus.values
         indices[:, T_BUS] = dclines.to_bus.values
 
@@ -202,7 +203,7 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
 
     trafo = get_edge_table(net, "trafo", include_trafos)
     if trafo is not None:
-        indices, parameter, in_service = init_par(trafo, calc_branch_impedances)
+        indices, parameter, in_service = init_par(trafo, calc_branch_impedances, include_out_of_service_branches)
         indices[:, F_BUS] = trafo.hv_bus.values
         indices[:, T_BUS] = trafo.lv_bus.values
 
@@ -244,7 +245,7 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
             open_trafo3w_buses = net.switch.bus.values[mask]
             open_trafo3w = (open_trafo3w_index + open_trafo3w_buses * 1j).flatten()
         for f, t in combinations(sides, 2):
-            indices, parameter, in_service = init_par(trafo3w, calc_branch_impedances)
+            indices, parameter, in_service = init_par(trafo3w, calc_branch_impedances, include_out_of_service_branches)
             indices[:, F_BUS] = trafo3w["%s_bus" % f].values
             indices[:, T_BUS] = trafo3w["%s_bus" % t].values
             if respect_switches and len(open_trafo3w):
@@ -354,7 +355,7 @@ def get_baseR(net, ppc, buses):
     return np.square(base_kv) / net.sn_mva
 
 
-def init_par(tab, calc_branch_impedances=False):
+def init_par(tab, calc_branch_impedances=False, include_out_of_service_branches=False):
     n = tab.shape[0]
     indices = np.zeros((n, 3), dtype=np.int64)
     indices[:, INDEX] = tab.index
@@ -364,7 +365,7 @@ def init_par(tab, calc_branch_impedances=False):
         parameters = np.zeros((n, 1), dtype=float)
 
     if "in_service" in tab:
-        return indices, parameters, tab.in_service.values.copy()
+        return indices, parameters, tab.in_service.values.copy() | include_out_of_service_branches
     else:
         return indices, parameters
 

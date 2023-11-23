@@ -3,6 +3,7 @@
 # Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import pandas as pd
+import numpy as np
 import pytest
 
 import pandapower as pp
@@ -217,6 +218,67 @@ def test_count_elements():
     received = pandapower.toolbox.count_elements(net, return_empties=True)
     assert len(received.index) == len(pandapower.toolbox.pp_elements())
     assert set(received.index) == pandapower.toolbox.pp_elements()
+
+
+def test_get_substations():
+    net = pp.create_empty_network()
+    pp.create_buses(net, 5, 110)
+    pp.create_buses(net, 5, 20)
+    pp.create_buses(net, 2, 10)
+
+    pp.create_transformer(net, 3, 5, "63 MVA 110/20 kV")
+    pp.create_transformer3w(net, 4, 8, 10, "63/25/38 MVA 110/20/10 kV")
+
+    pp.create_switches(net, buses=[0, 0, 2, 5, 6, 1, 8, 10], elements=[1, 2, 3, 6, 7, 4, 9, 11], et="b")
+    pp.create_switches(net, buses=[3, 5], elements=[0, 0], et=["t", "t"])
+    pp.create_switches(net, buses=[4, 8, 10], elements=[0, 0, 0], et=["t3", "t3", "t3"])
+
+    s = pp.toolbox.get_substations(net, write_to_net=False)
+    assert len(s) == 1
+    assert "substation" not in net.bus.columns
+    pp.toolbox.get_substations(net)
+    assert np.alltrue(net.bus.substation == 0)
+    assert np.array_equal(net.bus.index.values, s[0])
+
+    s1 = pp.toolbox.get_substations(net, include_trafos=False)
+    # 110 kV buses HV side, 20 kV buses for trafo and trafo3w, 10 kV buses for trafo3w
+    assert len(s1) == 4
+    assert len(net.bus.substation.unique()) == 4
+    for c in s1.values():
+        assert len(net.bus.loc[c, "vn_kv"].unique()) == 1
+
+    net.trafo.in_service = False
+    net.trafo3w.in_service = False
+    s11 = pp.toolbox.get_substations(net, include_out_of_service_branches=False)
+    assert len(s11) == 4
+    assert len(net.bus.substation.unique()) == 4
+    for k, v in s11.items():
+        assert np.array_equal(v, s1[k])
+
+    net.switch.closed = False
+    s2 = pp.toolbox.get_substations(net)
+    assert len(s2) == 1
+    assert len(net.bus.substation.unique()) == 1
+    assert np.array_equal(s[0], s2[0])
+
+    s3 = pp.toolbox.get_substations(net, respect_switches=True)
+    assert len(s3) == 0
+    assert np.alltrue(pd.isna(net.bus.substation))
+
+    s4 = pp.toolbox.get_substations(net, respect_switches=True, return_all_buses=True)
+    assert len(s4) == 12
+    assert len(net.bus.substation.unique()) == 12
+
+    # even when al switches open and trafos out of service, find 1 substation:
+    s5 = pp.toolbox.get_substations(net)
+    assert np.alltrue(net.bus.substation == 0)
+    assert np.array_equal(net.bus.index.values, s5[0])
+
+    # even when all buses out of service:
+    net.bus.in_service = False
+    s6 = pp.toolbox.get_substations(net)
+    assert np.alltrue(net.bus.substation == 0)
+    assert np.array_equal(net.bus.index.values, s6[0])
 
 
 if __name__ == '__main__':

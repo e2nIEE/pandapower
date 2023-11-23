@@ -36,6 +36,7 @@ Change Log
 - [FIXED] :code:`convert_format.py`: update the attributes of the characteristic objects to match the new characteristic
 - [FIXED] additional arguments from mpc saved to net._options: create "_options" if it does not exist
 - [CHANGED] cim2pp: extracted getting default classes, added generic setting datatypes from CGMES XMI schema
+- [ADDED] toolbox function :code:`get_substations` that finds all substations based on connectivity analysis of a networkx graph
 
 
 [2.13.1] - 2023-05-12
