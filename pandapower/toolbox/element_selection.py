@@ -710,8 +710,7 @@ def count_elements(net, return_empties=False, **kwargs):
                       bool(net[et].shape[0])}, dtype=np.int64)
 
 
-def branch_buses_df(
-        net: pp.pandapowerNet, branch_type: str, bus_columns: list[str] = None) -> pd.DataFrame:
+def branch_buses_df(net, branch_type, bus_columns=None):
     """Returns a DataFrame which summarizes the buses to which the elements of defined element_type
     are connected to.
 
@@ -756,8 +755,7 @@ def branch_buses_df(
 
 
 def branches_parallel_to_bus_bus_switches(
-        net: pp.pandapowerNet, branch_types=None, switches=None,
-        closed_switches_only=False, keep=False) -> pd.DataFrame:
+        net, branch_types=None, switches=None, closed_switches_only=False, keep=False):
     """Returns a DataFrame of branches and/or bus-bus switches that are in parallel
 
     Parameters
@@ -832,8 +830,7 @@ def branches_parallel_to_bus_bus_switches(
 
 
 def check_parallel_branch_to_bus_bus_switch(
-        net: pp.pandapowerNet, branch_types=None, switches=None,
-        closed_switches_only=False) -> bool:
+        net, branch_types=None, switches=None, closed_switches_only=False):
     """Returns a DataFrame of branches and/or bus-bus switches that are in parallel
 
     Parameters
