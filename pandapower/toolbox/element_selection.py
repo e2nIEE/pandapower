@@ -526,36 +526,41 @@ def get_connecting_branches(net, buses1, buses2, branch_elements=None):
     return {key: val for key, val in found.items() if len(val)}
 
 
-def get_substations(net, include_trafos=True, include_out_of_service_branches=True, respect_switches=False,
-                    return_all_buses=False, write_to_net=True):
+def get_substations(net, include_trafos=True, include_out_of_service_branches=True,
+                    respect_switches=False, return_all_buses=False, write_to_net=True):
     """
-    Finds all substations in net. A substation is a cluster of connected buses. Can be parametrized to consider
-    trafo and trafo3w as relevant connections that define the connected bus clusters (default) or to only consider
-    bus-bus switches as relevant connections to find such clusters (seeing the HV and LV sides of the substation
-    as separate substations).
-    By default, out-of-service transformers still define a relevant connection for the bus clusters. This can be
-    changed by setting the parameter "include_out_of_service" to False. Out-of-service buses are always included.
-    Open switches are considered as relevant connections by default. Setting "respect_switches" to True will ignore
-    open switches and only consider closed switches.
-    Can return only substations with more than 1 bus (default) or also consider a single bus as its own substation.
-    By default, the found substations are also written into the bus table, into the new column "substation" (that is
-    overwritten if it exists)
+    Finds all substations in net. A substation is a cluster of connected buses. The function can
+    be parametrized to consider trafo and trafo3w as relevant connections that define the connected
+    bus clusters (default) or to only consider bus-bus switches as relevant connections to find
+    such clusters (seeing the HV and LV sides of the substation as separate substations).
+    By default, out-of-service transformers still define a relevant connection for the bus clusters.
+    This can be changed by setting the parameter "include_out_of_service" to False.
+    Out-of-service buses are always included. Open switches are considered as relevant connections
+    by default. Setting "respect_switches" to True will ignore open switches and only consider
+    closed switches.
+    Can return only substations with more than 1 bus (default) or also consider a single bus as its
+    own substation. By default, the found substations are also written into the bus table, into the
+    new column "substation" (that is overwritten if it exists)
 
     Parameters
     ----------
     net : pandapowerNet
     include_trafos : bool, default True
-        Whether to consider transformers (trafo and trafo3w) as relevant connections that define a substation
+        Whether to consider transformers (trafo and trafo3w) as relevant connections that define a
+        substation
     include_out_of_service_branches : bool, default True
-        Whether to consider out-of-service transformers as relevant or only the in_service transformers.
+        Whether to consider out-of-service transformers as relevant or only the in_service
+        transformers.
         Note: out-of-service buses are always included
     respect_switches : bool, default False
         Whether to consider all switches or only closed switches as relevant connections
     return_all_buses : bool, default False
-        Whether to only return substations that have more than one bus or to also include single buses as their own
+        Whether to only return substations that have more than one bus or to also include single
+        buses as their own
         substations
     write_to_net : bool, default True
-        Write the found substation into the net.bus.substation column (overwriting data if the column exists)
+        Write the found substation into the net.bus.substation column (overwriting data if the
+        column exists)
 
     Returns
     -------
@@ -563,10 +568,12 @@ def get_substations(net, include_trafos=True, include_out_of_service_branches=Tr
         Dictionary {index: buses} of all found substations
 
     """
-    mg = pp.topology.create_nxgraph(net, respect_switches=respect_switches, include_lines=False,
-                                    include_impedances=False, include_dclines=False, include_trafos=include_trafos,
-                                    include_trafo3ws=include_trafos, include_tcsc=False,
-                                    include_out_of_service=True, include_out_of_service_branches=include_out_of_service_branches)
+    mg = pp.topology.create_nxgraph(
+        net, respect_switches=respect_switches, include_lines=False,
+        include_impedances=False, include_dclines=False, include_trafos=include_trafos,
+        include_trafo3ws=include_trafos, include_tcsc=False,
+        include_out_of_service=True,
+        include_out_of_service_branches=include_out_of_service_branches)
     cc = pp.topology.connected_components(mg)
     if return_all_buses:
         substations = {i: list(c) for i, c in enumerate(cc)}
@@ -818,7 +825,7 @@ def branch_buses_df(net, branch_type, bus_columns=None):
 
 def branches_parallel_to_bus_bus_switches(
         net, branch_types=None, switches=None, closed_switches_only=False, keep=False):
-    """Returns a DataFrame of branches and/or bus-bus switches that are in parallel
+    """Returns a DataFrame of branches and/or bus-bus switches that are directly parallel
 
     Parameters
     ----------
@@ -859,7 +866,6 @@ def branches_parallel_to_bus_bus_switches(
     Columns: [bus1, bus2, element_type, element_index]
     Index: []
     """
-
     considered_sw_df = net.switch if switches is None else net.switch.loc[switches]
     if closed_switches_only:
         considered_sw_df = considered_sw_df.loc[considered_sw_df.closed]
@@ -928,3 +934,61 @@ def check_parallel_branch_to_bus_bus_switch(
             net, branch_types=branch_types, switches=switches,
             closed_switches_only=closed_switches_only)
     ))
+
+
+def branches_parallel_to_bus_bus_switch_clusters(
+        net, branch_types=None, respect_switches=False, write_to_net=True):
+    """
+    Returns a DataFrame containing branches that are in parallel to buses that are connected via
+    bus-bus switches. Theses branches or the parallel bus-bus switches are probably inappropriately
+    modelled.
+
+    Out-of-service buses are always included to the clustering of buses that are connected by
+    bus-bus switches. Open switches are considered as relevant connections by default.
+    Setting "respect_switches" to True will ignore open switches and only consider
+    closed switches for bus clustering.
+
+    Parameters
+    ----------
+    net : pandapowerNet
+    branch_types : list[str], optional
+        list of names of branch types to be considered, by default None
+    respect_switches : bool, default False
+        Whether to consider all switches or only closed switches as relevant connections
+    write_to_net : bool, default True
+        Write the found substation into the net.bus.substation column (overwriting data if the
+        column exists)
+
+    Returns
+    -------
+    pd.DataFrame
+        branches and/or bus-bus switches that are in parallel
+
+    Example
+    -------
+    >>> import pandapower as pp
+    >>> net = pp.networks.example_multivoltage()
+    >>> pp.create_switch(net, net.trafo.lv_bus.at[0], net.trafo.hv_bus.at[0], "b", closed=False)
+    88
+    >>> pp.branches_parallel_to_bus_bus_switches(net)
+        bus1  bus2 element_type  element_index  substation1  substation2
+    26    13    17        trafo              0           0             0
+    """
+    substations = get_substations(
+        net, include_trafos=False, respect_switches=respect_switches, return_all_buses=True,
+        write_to_net=True)
+
+    bebd = branch_element_bus_dict()
+    if branch_types is not None:
+        bebd = {et: bus_columns for et, bus_columns in bebd.items() if et in branch_types}
+
+    buses_bra_subs = pd.concat([branch_buses_df(net, et, bus_columns) \
+                                for et, bus_columns in bebd.items()], ignore_index=True)
+    for i in range(1, 3):
+        buses_bra_subs[f"substation{i}"] = net.bus.substation.loc[buses_bra_subs[
+            f"bus{i}"].values].values
+
+    if not write_to_net:
+        del net.bus["substation"]
+
+    return buses_bra_subs.loc[buses_bra_subs.substation1 == buses_bra_subs.substation2]

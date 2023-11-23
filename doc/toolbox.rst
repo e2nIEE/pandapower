@@ -91,6 +91,8 @@ Item/Element Selection
 
 .. autofunction:: pandapower.toolbox.check_parallel_branch_to_bus_bus_switch
 
+.. autofunction:: pandapower.toolbox.branches_parallel_to_bus_bus_switch_clusters
+
 .. autofunction:: pandapower.toolbox.get_gc_objects_dict
 
 ====================================
