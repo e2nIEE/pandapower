@@ -257,11 +257,8 @@ def get_boundaries_by_bus_zone_with_boundary_branches(net):
 def get_connected_switch_buses_groups(net, buses):
     all_buses = set()
     bus_dict = []
-    mg_sw = top.create_nxgraph(net, include_trafos=False,
-                               include_trafo3ws=False,
-                               respect_switches=True,
-                               include_lines=False,
-                               include_impedances=False)
+    mg_sw = top.create_nxgraph(net, respect_switches=True, include_lines=False, include_impedances=False,
+                               include_trafos=False, include_trafo3ws=False)
     for bbus in buses:
         if bbus in all_buses:
             continue

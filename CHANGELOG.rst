@@ -37,6 +37,7 @@ Change Log
 - [ADDED] toolbox functions branch_buses_df(), branches_parallel_to_bus_bus_switches(), check_parallel_branch_to_bus_bus_switch()
 - [FIXED] additional arguments from mpc saved to net._options: create "_options" if it does not exist
 - [CHANGED] cim2pp: extracted getting default classes, added generic setting datatypes from CGMES XMI schema
+- [ADDED] toolbox function :code:`get_substations` that finds all substations based on connectivity analysis of a networkx graph
 
 
 [2.13.1] - 2023-05-12

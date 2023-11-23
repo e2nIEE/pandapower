@@ -526,6 +526,68 @@ def get_connecting_branches(net, buses1, buses2, branch_elements=None):
     return {key: val for key, val in found.items() if len(val)}
 
 
+def get_substations(net, include_trafos=True, include_out_of_service_branches=True, respect_switches=False,
+                    return_all_buses=False, write_to_net=True):
+    """
+    Finds all substations in net. A substation is a cluster of connected buses. Can be parametrized to consider
+    trafo and trafo3w as relevant connections that define the connected bus clusters (default) or to only consider
+    bus-bus switches as relevant connections to find such clusters (seeing the HV and LV sides of the substation
+    as separate substations).
+    By default, out-of-service transformers still define a relevant connection for the bus clusters. This can be
+    changed by setting the parameter "include_out_of_service" to False. Out-of-service buses are always included.
+    Open switches are considered as relevant connections by default. Setting "respect_switches" to True will ignore
+    open switches and only consider closed switches.
+    Can return only substations with more than 1 bus (default) or also consider a single bus as its own substation.
+    By default, the found substations are also written into the bus table, into the new column "substation" (that is
+    overwritten if it exists)
+
+    Parameters
+    ----------
+    net : pandapowerNet
+    include_trafos : bool, default True
+        Whether to consider transformers (trafo and trafo3w) as relevant connections that define a substation
+    include_out_of_service_branches : bool, default True
+        Whether to consider out-of-service transformers as relevant or only the in_service transformers.
+        Note: out-of-service buses are always included
+    respect_switches : bool, default False
+        Whether to consider all switches or only closed switches as relevant connections
+    return_all_buses : bool, default False
+        Whether to only return substations that have more than one bus or to also include single buses as their own
+        substations
+    write_to_net : bool, default True
+        Write the found substation into the net.bus.substation column (overwriting data if the column exists)
+
+    Returns
+    -------
+    substations : dict
+        Dictionary {index: buses} of all found substations
+
+    """
+    mg = pp.topology.create_nxgraph(net, respect_switches=respect_switches, include_lines=False,
+                                    include_impedances=False, include_dclines=False, include_trafos=include_trafos,
+                                    include_trafo3ws=include_trafos, include_tcsc=False,
+                                    include_out_of_service=True, include_out_of_service_branches=include_out_of_service_branches)
+    cc = pp.topology.connected_components(mg)
+    if return_all_buses:
+        substations = {i: list(c) for i, c in enumerate(cc)}
+    else:
+        substations = {i: list(c) for i, c in enumerate(cc) if len(c) > 1}
+    logger.info(f"Found {len(substations)} substations")
+
+    if write_to_net:
+        if "substation" in net.bus.columns:
+            logger.info("Overwriting the data in the existing column net.bus.substation")
+        else:
+            logger.info("Writing the substation indices to a new column net.bus.substation")
+
+        net.bus["substation"] = pd.Series(index=net.bus.index, dtype="Int64")
+
+        for i, c in substations.items():
+            net.bus.loc[c, "substation"] = i
+
+    return substations
+
+
 def get_gc_objects_dict():
     """
     This function is based on the code in mem_top module

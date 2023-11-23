@@ -164,7 +164,9 @@ def create_generic_coordinates(net, mg=None, library="igraph",
                                respect_switches=False,
                                geodata_table="bus_geodata",
                                buses=None,
-                               overwrite=False):
+                               overwrite=False,
+                               include_out_of_service_buses=False,
+                               include_out_of_service_branches=False):
     """
     This function will add arbitrary geo-coordinates for all buses based on an analysis of branches
     and rings. It will remove out of service buses/lines from the net. The coordinates will be
@@ -182,6 +184,10 @@ def create_generic_coordinates(net, mg=None, library="igraph",
     :type buses: list
     :param overwrite: overwrite existing geodata
     :type overwrite: bool
+    :param include_out_of_service_buses: also include the buses that are out-of-service in the graph
+    :type include_out_of_service_buses: bool
+    :param include_out_of_service_branches: also include the branches that are out-of-service in the graph
+    :type include_out_of_service_branches: bool
     :return: net - pandapower network with added geo coordinates for the buses
 
     :Example:
@@ -197,7 +203,8 @@ def create_generic_coordinates(net, mg=None, library="igraph",
     elif library == "networkx":
         if mg is None:
             nxg = top.create_nxgraph(net, respect_switches=respect_switches,
-                                     include_out_of_service=True)
+                                     include_out_of_service=include_out_of_service_buses,
+                                     include_out_of_service_branches=include_out_of_service_branches)
         else:
             nxg = copy.deepcopy(mg)
         coords = coords_from_nxgraph(nxg)
@@ -220,8 +227,8 @@ def _prepare_geodata_table(net, geodata_table, overwrite):
         net[geodata_table] = pd.DataFrame(columns=["x", "y"])
 
 def fuse_geodata(net):
-    mg = top.create_nxgraph(net, include_lines=False, include_impedances=False,
-                            respect_switches=False)
+    mg = top.create_nxgraph(net, respect_switches=False, include_lines=False, include_impedances=False,
+                            include_out_of_service=True)
     geocoords = set(net.bus_geodata.index)
     for area in top.connected_components(mg):
         if len(area & geocoords) > 1:
