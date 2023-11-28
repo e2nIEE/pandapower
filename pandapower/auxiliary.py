@@ -318,9 +318,9 @@ class pandapowerNet(ADict):
 
 def plural_s(number):
     if number > 1:
-        return ""
-    else:
         return "s"
+    else:
+        return ""
 
 def _preserve_dtypes(df, dtypes):
     for item, dtype in list(dtypes.items()):
