@@ -32,7 +32,10 @@ Change Log
 - [ADDED] matplotlib v3.8.0 support (fixed :code:`plotting_colormaps.ipynb`)
 - [CHANGED] PowerFactory converter - name :code:`for_name` as :code:`equipment` for all elements; also add to line
 - [ADDED] option to use a second tap changer for the trafo element
+- [CHANGED] parameters of function merge_internal_net_and_equivalent_external_net()
 - [FIXED] :code:`convert_format.py`: update the attributes of the characteristic objects to match the new characteristic
+- [FIXED] additional arguments from mpc saved to net._options: create "_options" if it does not exist
+- [CHANGED] cim2pp: extracted getting default classes, added generic setting datatypes from CGMES XMI schema
 
 
 [2.13.1] - 2023-05-12

@@ -673,11 +673,15 @@ def _replace_ext_area_by_impedances_and_shunts(
                                "p_mw": shunt_params.parameter.values.real * net_eq.sn_mva
                                }, index=range(max_idx+1, max_idx+1+shunt_params.shape[0]))
     new_shunts["name"] = "eq_shunt"
-    new_shunts["vn_kv"] = net_eq.bus.vn_kv.loc[new_shunts.bus.values].values
+    isin_sh = new_shunts.bus.isin(net_eq.bus.index)
+    new_shunts.loc[isin_sh, "vn_kv"] = net_eq.bus.vn_kv.loc[new_shunts.bus.loc[isin_sh]].values
     new_shunts["step"] = 1
     new_shunts["max_step"] = 1
     new_shunts["in_service"] = True
     net_eq["shunt"] = pd.concat([net_eq["shunt"], new_shunts])
+    if n_disconnected_new_eq_shunts := sum(~isin_sh):
+        msg = f"{n_disconnected_new_eq_shunts=}, missing buses: {new_shunts.bus.loc[~isin_sh]}"
+        raise ValueError(msg)
 
     runpp_fct(net_eq, calculate_voltage_angles=calc_volt_angles,
               tolerance_mva=1e-6, max_iteration=100)
