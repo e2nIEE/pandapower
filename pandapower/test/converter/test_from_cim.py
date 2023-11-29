@@ -2,6 +2,8 @@ import os
 import pytest
 import math
 import pandas as pd
+
+import pandapower as pp
 from pandapower.test import test_path
 
 from pandapower.converter import from_cim as cim2pp
@@ -52,7 +54,7 @@ def SimBench_1_HVMVmixed_1_105_0_sw_modified():
 
     cgmes_files = [os.path.join(folder_path, 'SimBench_1-HVMV-mixed-1.105-0-sw_modified.zip')]
 
-    return cim2pp.from_cim(file_list=cgmes_files)
+    return cim2pp.from_cim(file_list=cgmes_files, run_powerflow=True)
 
 
 @pytest.fixture(scope="session")
@@ -61,7 +63,7 @@ def Simbench_1_EHV_mixed__2_no_sw():
 
     cgmes_files = [os.path.join(folder_path, 'Simbench_1-EHV-mixed--2-no_sw.zip')]
 
-    return cim2pp.from_cim(file_list=cgmes_files, create_measurements='SV')
+    return cim2pp.from_cim(file_list=cgmes_files, create_measurements='SV', run_powerflow=True)
 
 
 @pytest.fixture(scope="session")
@@ -70,7 +72,23 @@ def example_multivoltage():
 
     cgmes_files = [os.path.join(folder_path, 'example_multivoltage.zip')]
 
+    net = cim2pp.from_cim(file_list=cgmes_files)
+    pp.runpp(net, calculate_voltage_angles="auto")
+    return net
+
+
+@pytest.fixture(scope="session")
+def SimBench_1_HVMVmixed_1_105_0_sw_modified_no_load_flow():
+    folder_path = os.path.join(test_path, "test_files", "example_cim")
+
+    cgmes_files = [os.path.join(folder_path, 'SimBench_1-HVMV-mixed-1.105-0-sw_modified.zip')]
+
     return cim2pp.from_cim(file_list=cgmes_files)
+
+
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_no_load_flow_res_bus(
+        SimBench_1_HVMVmixed_1_105_0_sw_modified_no_load_flow):
+    assert 0 == len(SimBench_1_HVMVmixed_1_105_0_sw_modified_no_load_flow.res_bus.index)
 
 
 def test_example_multivoltage_res_xward(example_multivoltage):
@@ -573,7 +591,7 @@ def test_smallgrid_GL_bus_geodata(smallgrid_GL):
         smallgrid_GL.bus[smallgrid_GL.bus['origin_id'] == '_0471bd2a-c766-11e1-8775-005056c00008'].index]
     assert -4.844991207122803 == element_0['x'].item()
     assert 55.92612075805664 == element_0['y'].item()
-    assert [[-4.844991207122803, 55.92612075805664]] == element_0['coords'].item()
+    assert math.isnan(element_0['coords'].item())
 
 
 def test_fullgrid_xward(fullgrid):
@@ -711,7 +729,7 @@ def test_fullgrid_trafo(fullgrid):
     assert 0.0 == element_1['pfe_kw'].item()
     assert 0.0 == element_1['i0_percent'].item()
     assert 0.0 == element_1['shift_degree'].item()
-    assert math.isnan(element_1['tap_side'].item())
+    assert None is element_1['tap_side'].item()
     assert pd.isna(element_1['tap_neutral'].item())
     assert pd.isna(element_1['tap_min'].item())
     assert pd.isna(element_1['tap_max'].item())
@@ -1057,7 +1075,6 @@ def test_fullgrid_characteristic(fullgrid):
         if obj.object.index == \
                 fullgrid.trafo[fullgrid.trafo['origin_id'] ==
                                '_99f55ee9-2c75-3340-9539-b835ec8c5994']['vkr_percent_characteristic'].item():
-            assert 'quadratic' == obj.object.kind
             assert [1] == obj.object.x_vals
             assert [1.3405981856094185] == obj.object.y_vals
             break

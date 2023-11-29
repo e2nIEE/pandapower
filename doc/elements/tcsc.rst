@@ -98,6 +98,6 @@ Result Parameters
 
 .. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.40\linewidth}|
 .. csv-table:: 
-   :file: svc_res.csv
+   :file: tcsc_res.csv
    :delim: ;
    :widths: 10, 10, 40
