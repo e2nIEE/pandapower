@@ -565,7 +565,7 @@ def test_replace_ext_grid_gen():
     for i in range(2):
         net = nw.example_simple()
         net.ext_grid["uuid"] = "test"
-        pp.runpp(net)
+        pp.runpp(net, calculate_voltage_angles="auto")
         assert list(net.res_ext_grid.index.values) == [0]
         pp.create_group(net, ["line", "ext_grid"], [[0], [0]])
 

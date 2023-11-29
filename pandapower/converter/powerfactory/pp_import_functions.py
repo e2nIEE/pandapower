@@ -2,6 +2,7 @@ import numpy as np
 import math
 import bisect
 from itertools import combinations
+import re
 
 import pandapower as pp
 from pandas import DataFrame
@@ -9,10 +10,10 @@ from pandapower.auxiliary import ADict
 
 try:
     import pandaplan.core.pplog as logging
+    logger = logging.logger
 except ImportError:
     import logging
-
-logger = logging.getLogger(__name__)
+    logger = logging.getLogger(__name__)
 
 
 # make wrapper for GetAttribute
@@ -26,6 +27,7 @@ def from_pf(dict_net, pv_as_slack=True, pf_variable_p_loads='plini', pf_variable
             max_iter=None, is_unbalanced=False):
     logger.debug("__name__: %s" % __name__)
     logger.debug('started from_pf')
+    logger.info(logger.__dict__)
 
     flag_graphics = flag_graphics if flag_graphics in ['GPS', 'no geodata'] else 'graphic objects'
 
@@ -259,6 +261,9 @@ def from_pf(dict_net, pv_as_slack=True, pf_variable_p_loads='plini', pf_variable
         raise ValueError("handle_us should be 'Deactivate', 'Drop' or 'Nothing', "
                          "received: %s" % handle_us)
 
+    if is_unbalanced:
+        pp.add_zero_impedance_parameters(net)
+
     logger.info('imported net')
     return net
 
@@ -361,8 +366,8 @@ def create_bus(net, item, flag_graphics, is_unbalanced):
     net.bus.at[bid, "substat"] = substat_descr
     net.bus.at[bid, "folder_id"] = item.fold_id.loc_name
 
-    add_additional_attributes(item, net, "bus", bid,
-                              attr_list=["sernum", "for_name", "chr_name", "cpSite.loc_name"])
+    add_additional_attributes(item, net, "bus", bid, attr_dict={"for_name": "equipment"},
+                              attr_list=["sernum", "chr_name", "cpSite.loc_name"])
 
     # add geo data
     if flag_graphics == 'GPS':
@@ -677,6 +682,7 @@ def create_line(net, item, flag_graphics, n, is_unbalanced):
 
     net.line.loc[sid_list, "line_idx"] = n
     net.line.loc[sid_list, "folder_id"] = item.fold_id.loc_name
+    net.line.loc[sid_list, "equipment"] = item.for_name
     create_connection_switches(net, item, 2, 'l', (params['bus1'], params['bus2']),
                                (sid_list[0], sid_list[-1]))
 
@@ -739,6 +745,11 @@ def get_section_coords(coords, sec_len, start_len, scale_factor):
     for i in range(len(coords) - 1):
         len_i += point_len(coords[i], coords[i + 1])
         logger.debug('i: %d, len_i: %.3f' % (i, len_i * scale_factor))
+        # catch if line has identical coords
+        if not len_i:
+            sec_coords = coords
+            return sec_coords
+
         if len_i * scale_factor > start_len or abs(len_i * scale_factor - start_len) <= tol:
             logger.debug('len_i>start_len: cut coords segment')
             logger.debug('coords[i]: %s, coods[i+1]: %s' % (coords[i], coords[i + 1]))
@@ -1255,7 +1266,8 @@ def ask_unbalanced_load_params(item, pf_variable_p_loads, dict_net, variables):
                             if pf_variable_p_loads == 'plini' else 1
     if item.HasAttribute('zonefact'):
         params.scaling *= item.zonefact
-        return params
+
+    return params
 
 
 def find_section(load, sections):
@@ -1580,10 +1592,10 @@ def create_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
         load_type = "load"
 
     net[load_type].loc[ld, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    attr_list = ["sernum", "for_name", "chr_name", 'cpSite.loc_name']
+    attr_list = ["sernum", "chr_name", 'cpSite.loc_name']
     if load_class == 'ElmLodlv':
         attr_list.extend(['pnight', 'cNrCust', 'cPrCust', 'UtilFactor', 'cSmax', 'cSav', 'ccosphi'])
-    add_additional_attributes(item, net, load_type, ld, attr_list=attr_list)
+    add_additional_attributes(item, net, load_type, ld, attr_dict={"for_name": "equipment"}, attr_list=attr_list)
     get_pf_load_results(net, item, ld, is_unbalanced)
 #    if not is_unbalanced:
 #        if item.HasResults(0):  # 'm' results...
@@ -1746,8 +1758,8 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
     logger.debug('created sgen at index <%d>' % sg)
 
     net[element].at[sg, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    add_additional_attributes(item, net, element, sg,
-                              attr_list=["sernum", "for_name", "chr_name", "cpSite.loc_name"])
+    add_additional_attributes(item, net, element, sg, attr_dict={"for_name": "equipment"},
+                              attr_list=["sernum", "chr_name", "cpSite.loc_name"])
     net[element].at[sg, 'scaling'] = dict_net['global_parameters']['global_generation_scaling'] * item.scale0
     get_pf_sgen_results(net, item, sg, is_unbalanced, element=element)
 
@@ -1867,8 +1879,8 @@ def create_sgen_neg_load(net, item, pf_variable_p_loads, dict_net):
     sg = pp.create_sgen(net, **params)
 
     net.sgen.loc[sg, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    add_additional_attributes(item, net, "sgen", sg,
-                              attr_list=["sernum", "for_name", "chr_name", "cpSite.loc_name"])
+    add_additional_attributes(item, net, "sgen", sg, attr_dict={"for_name": "equipment"},
+                              attr_list=["sernum", "chr_name", "cpSite.loc_name"])
 
     if item.HasResults(0):  # 'm' results...
         logger.debug('<%s> has results' % params.name)
@@ -1947,8 +1959,8 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net):
         logger.debug('created sgen at index <%s>' % sid)
 
     net[element].loc[sid, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    add_additional_attributes(item, net, element, sid,
-                              attr_list=["sernum", "for_name", "chr_name", "cpSite.loc_name"])
+    add_additional_attributes(item, net, element, sid, attr_dict={"for_name": "equipment"},
+                              attr_list=["sernum", "chr_name", "cpSite.loc_name"])
 
     if item.HasResults(0):  # 'm' results...
         logger.debug('<%s> has results' % name)
@@ -1995,8 +2007,8 @@ def create_sgen_asm(net, item, pf_variable_p_gen, dict_net):
     sid = pp.create_sgen(net, **params)
 
     net.sgen.loc[sid, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    add_additional_attributes(item, net, "sgen", sid,
-                              attr_list=["sernum", "for_name", "chr_name", "cpSite.loc_name"])
+    add_additional_attributes(item, net, "sgen", sid, attr_dict={"for_name": "equipment"},
+                              attr_list=["sernum", "chr_name", "cpSite.loc_name"])
 
     if item.HasResults(0):
         net.res_sgen.at[sid, 'pf_p'] = ga(item, 'm:P:bus1') * multiplier
@@ -2030,7 +2042,7 @@ def create_trafo_type(net, item):
         "pfe_kw": item.pfe,
         "i0_percent": item.curmg,
         "shift_degree": item.nt2ag * 30,
-        "vector_group": item.vecgrp,
+        "vector_group": item.vecgrp[:-1],
         "vk0_percent": item.uk0tr,
         "vkr0_percent": item.ur0tr,
         "mag0_percent": item.zx0hl_n,
@@ -2038,7 +2050,7 @@ def create_trafo_type(net, item):
         "si0_hv_partial": item.zx0hl_h
     }
 
-    if item.dutap != 0:
+    if item.itapch:
         logger.debug('trafo <%s> has tap changer' % name)
         type_data.update({
             "tap_side": ['hv', 'lv', 'ext'][item.tap_side],  # 'ext' not implemented
@@ -2056,7 +2068,26 @@ def create_trafo_type(net, item):
                            "lv side) - not implemented, importing as asymmetrical tap changer at "
                            "side %s. Results will differ." % (item.loc_name, type_data['tap_side']))
 
-    if 'tap_side' in type_data.keys() and type_data['tap_side'] == 'ext':
+    # In PowerFactory, if the first tap changer is absent, the second is also, even if the check was there
+    if item.itapch and item.itapch2:
+        logger.debug('trafo <%s> has tap2 changer' % name)
+        type_data.update({
+            "tap2_side": ['hv', 'lv', 'ext'][item.tap_side2],  # 'ext' not implemented
+            # see if it is an ideal phase shifter or a complex phase shifter
+            # checking tap_step_percent because a nonzero value for ideal phase shifter can be stored in the object
+            "tap2_step_percent": item.dutap2 if item.tapchtype2 != 1 else 0,
+            "tap2_step_degree": item.dphitap2 if item.tapchtype2 == 1 else item.phitr2,
+            "tap2_phase_shifter": True if item.tapchtype2 == 1 else False,
+            "tap2_max": item.ntpmx2,
+            "tap2_min": item.ntpmn2,
+            "tap2_neutral": item.nntap02
+        })
+        if item.tapchtype2 == 2:
+            logger.warning("trafo %s has symmetrical tap2 changer (tap2 changer at both hv and "
+                           "lv side) - not implemented, importing as asymmetrical tap2 changer at "
+                           "side %s. Results will differ." % (item.loc_name, type_data['tap2_side']))
+
+    if 'tap_side' in type_data.keys() and (type_data.get('tap_side') == 'ext' or type_data.get('tap_side') == 'ext'):
         logger.warning('controlled node of trafo "EXT" not implemented (type <%s>)' % name)
     pp.create_std_type(net, type_data, name, "trafo")
     logger.debug('created trafo type <%s> with params: %s' % (name, type_data))
@@ -2079,29 +2110,39 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
 
     if not net.bus.vn_kv[bus1] >= net.bus.vn_kv[bus2]:
         logger.error('trafo <%s>: violated condition of HV >= LV!' % name)
-    assert net.bus.vn_kv[bus1] >= net.bus.vn_kv[bus2]
+    # assert net.bus.vn_kv[bus1] >= net.bus.vn_kv[bus2]
 
     # figure out trafo type
     pf_type = item.typ_id
     std_type, type_created = create_trafo_type(net=net, item=pf_type)
 
     # figure out current tap position
-    if tap_opt == "nntap":
-        tap_pos = ga(item, "nntap")
-        logger.debug("got tap %f from nntap" % tap_pos)
+    tap_pos = np.nan
+    if pf_type.itapch:
+        if tap_opt == "nntap":
+            tap_pos = ga(item, "nntap")
+            logger.debug("got tap %f from nntap" % tap_pos)
 
-    elif tap_opt == "c:nntap":
-        tap_pos = ga(item, "c:nntap")
-        logger.debug("got tap %f from c:nntap" % tap_pos)
-    else:
-        raise ValueError('could not read current tap position: tap_opt = %s' % tap_opt)
+        elif tap_opt == "c:nntap":
+            tap_pos = ga(item, "c:nntap")
+            logger.debug("got tap %f from c:nntap" % tap_pos)
+        else:
+            raise ValueError('could not read current tap position: tap_opt = %s' % tap_opt)
 
-    if std_type is not None and not is_unbalanced:
+    tap_pos2 = np.nan
+    # In PowerFactory, if the first tap changer is absent, the second is also, even if the check was there
+    if pf_type.itapch and pf_type.itapch2:
+        if tap_opt == "nntap":
+            tap_pos2 = ga(item, "nntap2")
+        elif tap_opt == "c:nntap":
+            tap_pos2 = ga(item, "c:nntap2")
+
+    if std_type is not None:
         tid = pp.create_transformer(net, hv_bus=bus1, lv_bus=bus2, name=name,
                                     std_type=std_type, tap_pos=tap_pos,
-                                    in_service=in_service, parallel=item.ntnum, df=item.ratfac)
+                                    in_service=in_service, parallel=item.ntnum, df=item.ratfac, tap2_pos=tap_pos2)
         logger.debug('created trafo at index <%d>' % tid)
-    elif is_unbalanced:
+    else:
         logger.info("Create Trafo 3ph")
         tid = pp.create_transformer_from_parameters(net, hv_bus=bus1, lv_bus=bus2, name=name,
                                     tap_pos=tap_pos,
@@ -2112,11 +2153,7 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
                                     vector_group=pf_type.vecgrp[:-1], vk0_percent=pf_type.uk0tr,
                                     vkr0_percent=pf_type.ur0tr, mag0_percent=pf_type.zx0hl_n,
                                     mag0_rx=pf_type.rtox0_n, si0_hv_partial=pf_type.zx0hl_h,
-                                    shift_degree=pf_type.nt2ag * 30)
-    else:
-
-        logger.error("Cannot add Trafo '%s': missing type" % name)
-        return
+                                    shift_degree=pf_type.nt2ag * 30, tap2_pos=tap_pos2)
 
     # add value for voltage setpoint
     net.trafo.loc[tid, 'tap_set_vm_pu'] = item.usetp
@@ -2182,8 +2219,16 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
     add_additional_attributes(item, net, element='trafo', element_id=tid,
                               attr_dict={'e:cpSite.loc_name': 'site', 'for_name': 'equipment'})
     if pf_type.itapzdep:
-        logger.warning('%s: tap dependent impedance of 2W transformers not implemented in '
-                       'Pandapower. There will be deviation of results' % item.loc_name)
+        x_points = (net.trafo.at[tid, "tap_min"], net.trafo.at[tid, "tap_neutral"], net.trafo.at[tid, "tap_max"])
+        vk_min, vk_neutral, vk_max = pf_type.uktmn, net.trafo.at[tid, "vk_percent"], pf_type.uktmx
+        vkr_min, vkr_neutral, vkr_max = pf_type.ukrtmn, net.trafo.at[tid, "vkr_percent"], pf_type.ukrtmx
+        #todo
+        #vk0_min, vk0_max = pf_type.uk0tmn, pf_type.uk0tmx
+        #vkr0_min, vkr0_max = pf_type.uk0rtmn, pf_type.uk0rtmx
+        pp.control.create_trafo_characteristics(net, trafotable="trafo", trafo_index=tid, variable="vk_percent",
+                                                x_points=x_points, y_points=(vk_min, vk_neutral, vk_max))
+        pp.control.create_trafo_characteristics(net, trafotable="trafo", trafo_index=tid, variable="vkr_percent",
+                                                x_points=x_points, y_points=(vkr_min, vkr_neutral, vkr_max))
 
     return tap_changer
 
@@ -2226,8 +2271,7 @@ def create_trafo3w(net, item, tap_opt='nntap'):
         logger.debug("Cannot add Trafo3W '%s': not connected" % item.loc_name)
         return
     logger.debug('%s; %s; %s' % (bus1, bus2, bus3))
-    if not net.bus.vn_kv.at[bus1] > net.bus.vn_kv.at[bus2] and net.bus.vn_kv.at[bus2] >= \
-            net.bus.vn_kv.at[bus3]:
+    if not (net.bus.vn_kv.at[bus1] >= net.bus.vn_kv.at[bus2] >= net.bus.vn_kv.at[bus3]):
         logger.error('trafo <%s>: violated condition of HV > LV!' % item.loc_name)
     # assert net.bus.vn_kv[bus1] > net.bus.vn_kv[bus2] >= net.bus.vn_kv[bus3]
     else:
@@ -2249,6 +2293,15 @@ def create_trafo3w(net, item, tap_opt='nntap'):
         'vkr_hv_percent': pf_type.uktrr3_h,
         'vkr_mv_percent': pf_type.uktrr3_m,
         'vkr_lv_percent': pf_type.uktrr3_l,
+
+        'vk0_hv_percent': pf_type.uk0hm,
+        'vk0_mv_percent': pf_type.uk0ml,
+        'vk0_lv_percent': pf_type.uk0hl,
+        'vkr0_hv_percent': pf_type.ur0hm,
+        'vkr0_mv_percent': pf_type.ur0ml,
+        'vkr0_lv_percent': pf_type.ur0hl,
+        'vector_group': re.sub(r'\d+', '', pf_type.vecgrp),
+
         'pfe_kw': pf_type.pfe,
         'i0_percent': pf_type.curm3,
         'shift_mv_degree': -(pf_type.nt3ag_h - pf_type.nt3ag_m) * 30,
@@ -2311,7 +2364,8 @@ def create_trafo3w(net, item, tap_opt='nntap'):
     # create_connection_switches(net, item, 3, 't3', (bus1, bus2, bus3), (tid, tid, tid))
     # logger.debug('created connection switches for trafo 3w successfully')
     add_additional_attributes(item, net, element='trafo3w', element_id=tid,
-                              attr_dict={'cpSite.loc_name': 'site', 'for_name': 'equipment', 'typ_id.loc_name': 'std_type', 'usetp': 'vm_set_pu'})
+                              attr_dict={'cpSite.loc_name': 'site', 'for_name': 'equipment',
+                                         'typ_id.loc_name': 'std_type', 'usetp': 'vm_set_pu'})
 
     # assign loading from power factory results
     if item.HasResults(-1):  # -1 for 'c' results (whatever that is...)
@@ -2324,8 +2378,21 @@ def create_trafo3w(net, item, tap_opt='nntap'):
     # TODO Implement the tap changer controller for 3-winding transformer
 
     if pf_type.itapzdep:
-        logger.warning('%s: tap dependent impedance of 3W transformers not implemented in '
-                       'Pandapower. There will be deviation of results' % item.loc_name)
+        x_points = (net.trafo3w.at[tid, "tap_min"], net.trafo3w.at[tid, "tap_neutral"], net.trafo3w.at[tid, "tap_max"])
+        side = net.trafo3w.at[tid, "tap_side"]
+        vk_min = ga(pf_type, f"uktr3mn_{side[0]}")
+        vk_neutral = net.trafo3w.at[tid, f"vk_{side}_percent"]
+        vk_max = ga(pf_type, f"uktr3mx_{side[0]}")
+        vkr_min = ga(pf_type, f"uktrr3mn_{side[0]}")
+        vkr_neutral = net.trafo3w.at[tid, f"vkr_{side}_percent"]
+        vkr_max = ga(pf_type, f"uktrr3mx_{side[0]}")
+        # todo zero-sequence parameters (must be implemented in build_branch first)
+        pp.control.create_trafo_characteristics(net, trafotable="trafo3w", trafo_index=tid,
+                                                variable=f"vk_{side}_percent", x_points=x_points,
+                                                y_points=(vk_min, vk_neutral, vk_max))
+        pp.control.create_trafo_characteristics(net, trafotable="trafo3w", trafo_index=tid,
+                                                variable=f"vkr_{side}_percent", x_points=x_points,
+                                                y_points=(vkr_min, vkr_neutral, vkr_max))
 
 
 def propagate_bus_coords(net, bus1, bus2):

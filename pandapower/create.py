@@ -552,6 +552,12 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                            ("q_mvar", "f8"),
                            ("va_degree", "f8"),
                            ("vm_pu", "f8")],
+        "_empty_res_protection": [("switch_id", "f8"),
+                                  ("prot_type", dtype(object)),
+                                  ("trip_melt", "bool"),
+                                  ("act_param", dtype(object)),
+                                   ("act_param_val", "f8"),
+                                   ("trip_melt_time_s", "f8")],
 
         # internal
         "_ppc": None,
@@ -579,7 +585,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
     if add_stdtypes:
         add_basic_std_types(net)
     else:
-        net.std_types = {"line": {}, "trafo": {}, "trafo3w": {}}
+        net.std_types = {"line": {}, "trafo": {}, "trafo3w": {}, "fuse": {}}
     for mode in ["pf", "se", "sc", "pf_3ph"]:
         reset_results(net, mode)
     net['user_pf_options'] = dict()
@@ -2547,7 +2553,7 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
                        index=None, max_loading_percent=nan, parallel=1, df=1.,
                        tap_dependent_impedance=nan, vk_percent_characteristic=None,
                        vkr_percent_characteristic=None, pt_percent=nan, oltc=nan, xn_ohm=nan,
-                       **kwargs):
+                       tap2_pos=nan, **kwargs):
     """
     Creates a two-winding transformer in table net["trafo"].
     The trafo parameters are defined through the standard type library.
@@ -2611,6 +2617,9 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
 
         **xn_ohm** (float) - impedance of the grounding reactor (Z_N) for shor tcircuit calculation
 
+        **tap2_pos** (int, float, nan) - current tap position of the second tap changer of the transformer. \
+            Defaults to the medium position (tap2_neutral)
+
     OUTPUT:
         **index** (int) - The unique ID of the created transformer
 
@@ -2648,20 +2657,23 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
                                                         and pd.notnull(
             ti["tap_phase_shifter"]) else False
     }
+    if "tap2_phase_shifter" in ti and pd.notnull(ti["tap2_phase_shifter"]):
+        updates["tap2_phase_shifter"] = ti["tap2_phase_shifter"]
     for zero_param in ['vk0_percent', 'vkr0_percent', 'mag0_percent', 'mag0_rx', 'si0_hv_partial']:
         if zero_param in ti:
             updates[zero_param] = ti[zero_param]
     v.update(updates)
-    for tp in ("tap_neutral", "tap_max", "tap_min", "tap_side", "tap_step_percent",
-               "tap_step_degree"):
-        if tp in ti:
-            v[tp] = ti[tp]
-    if ("tap_neutral" in v) and (tap_pos is nan):
-        v["tap_pos"] = v["tap_neutral"]
-    else:
-        v["tap_pos"] = tap_pos
-        if isinstance(tap_pos, float):
-            net.trafo.tap_pos = net.trafo.tap_pos.astype(float)
+    for s, tap_pos_var in (("", tap_pos), ("2", tap2_pos)):  # to enable a second tap changer if available
+        for tp in (f"tap{s}_neutral", f"tap{s}_max", f"tap{s}_min", f"tap{s}_side",
+                   f"tap{s}_step_percent", f"tap{s}_step_degree"):
+            if tp in ti:
+                v[tp] = ti[tp]
+        if (f"tap{s}_neutral" in v) and (tap_pos_var is nan):
+            v[f"tap{s}_pos"] = v[f"tap{s}_neutral"]
+        elif tap_pos_var is not nan:
+            v[f"tap{s}_pos"] = tap_pos_var
+            if isinstance(tap_pos_var, float):
+                net.trafo[f"tap{s}_pos"] = net.trafo[f"tap{s}_pos"].astype(float)
 
     _set_entries(net, "trafo", index, **v, **kwargs)
 
@@ -2678,6 +2690,8 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
 
     # tap_phase_shifter default False
     net.trafo.tap_phase_shifter.fillna(False, inplace=True)
+    if "tap2_phase_shifter" in net.trafo.columns:
+        net.trafo.tap2_phase_shifter = net.trafo.tap2_phase_shifter.fillna(False).astype(bool_)
 
     return index
 
@@ -2695,7 +2709,11 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
                                        si0_hv_partial=nan,
                                        pt_percent=nan, oltc=nan, tap_dependent_impedance=nan,
                                        vk_percent_characteristic=None,
-                                       vkr_percent_characteristic=None, xn_ohm=nan, **kwargs):
+                                       vkr_percent_characteristic=None, xn_ohm=nan,
+                                       tap2_side=None, tap2_neutral=nan, tap2_max=nan,
+                                       tap2_min=nan, tap2_step_percent=nan, tap2_step_degree=nan,
+                                       tap2_pos=nan, tap2_phase_shifter=nan,
+                                       **kwargs):
     """
     Creates a two-winding transformer in table net["trafo"].
     The trafo parameters are defined through the standard type library.
@@ -2795,6 +2813,24 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
 
         **xn_ohm** (float) - impedance of the grounding reactor (Z_N) for shor tcircuit calculation
 
+        **tap2_side** (string) - position of the second tap changer ("hv", "lv")
+
+        **tap2_pos** (int, nan) - current tap position of the second tap changer of the transformer. \
+            Defaults to the medium position (tap2_neutral)
+
+        **tap2_neutral** (int, nan) - second tap position where the transformer ratio is equal to the \
+            ratio of the rated voltages
+
+        **tap2_max** (int, nan) - maximal allowed tap position of the second tap changer
+
+        **tap2_min** (int, nan):  minimal allowed tap position of the second tap changer
+
+        **tap2_step_percent** (float) - second tap step size for voltage magnitude in percent
+
+        **tap2_step_degree** (float) - second tap step size for voltage angle in degree*
+
+        **tap2_phase_shifter** (bool) - whether the transformer is an ideal phase shifter*
+
         ** only considered in loadflow if calculate_voltage_angles = True
 
     OUTPUT:
@@ -2845,6 +2881,16 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
     _set_value_if_not_nan(net, index, vkr_percent_characteristic,
                           "vkr_percent_characteristic", "trafo", "Int64")
 
+    _set_value_if_not_nan(net, index, tap2_side, "tap2_side", "trafo", dtype=str)
+    _set_value_if_not_nan(net, index, tap2_neutral, "tap2_neutral", "trafo", dtype=np.float64)
+    _set_value_if_not_nan(net, index, tap2_min, "tap2_min", "trafo", dtype=np.float64)
+    _set_value_if_not_nan(net, index, tap2_max, "tap2_max", "trafo", dtype=np.float64)
+    _set_value_if_not_nan(net, index, tap2_step_percent, "tap2_step_percent", "trafo", dtype=np.float64)
+    _set_value_if_not_nan(net, index, tap2_step_degree, "tap2_step_degree", "trafo", dtype=np.float64)
+    _set_value_if_not_nan(net, index, tap2_pos if pd.notnull(tap2_pos) else tap2_neutral,
+                          "tap2_pos", "trafo", dtype=np.float64)
+    _set_value_if_not_nan(net, index, tap2_phase_shifter, "tap2_phase_shifter", "trafo", dtype=bool_)
+
     if not (isnan(vk0_percent) and isnan(vkr0_percent) and isnan(mag0_percent)
             and isnan(mag0_rx) and isnan(si0_hv_partial) and vector_group is None):
         _set_value_if_not_nan(net, index, vk0_percent, "vk0_percent", "trafo")
@@ -2871,7 +2917,11 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
                                         mag0_percent=nan, mag0_rx=nan, si0_hv_partial=nan,
                                         pt_percent=nan, oltc=nan, tap_dependent_impedance=nan,
                                         vk_percent_characteristic=None,
-                                        vkr_percent_characteristic=None, xn_ohm=nan, **kwargs):
+                                        vkr_percent_characteristic=None, xn_ohm=nan,
+                                        tap2_side=None, tap2_neutral=nan, tap2_max=nan,
+                                        tap2_min=nan, tap2_step_percent=nan, tap2_step_degree=nan,
+                                        tap2_pos=nan, tap2_phase_shifter=nan,
+                                        **kwargs):
     """
     Creates several two-winding transformers in table net["trafo"].
     The trafo parameters are defined through the standard type library.
@@ -2972,6 +3022,24 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
 
         **xn_ohm** (float) - impedance of the grounding reactor (Z_N) for shor tcircuit calculation
 
+        **tap2_side** (string) - position of the second tap changer ("hv", "lv")
+
+        **tap2_pos** (int, nan) - current tap position of the second tap changer of the transformer. \
+            Defaults to the medium position (tap2_neutral)
+
+        **tap2_neutral** (int, nan) - second tap position where the transformer ratio is equal to the \
+            ratio of the rated voltages
+
+        **tap2_max** (int, nan) - maximal allowed tap position of the second tap changer
+
+        **tap2_min** (int, nan):  minimal allowed tap position of the second tap changer
+
+        **tap2_step_percent** (float) - second tap step size for voltage magnitude in percent
+
+        **tap2_step_degree** (float) - second tap step size for voltage angle in degree*
+
+        **tap2_phase_shifter** (bool) - whether the transformer is an ideal phase shifter*
+
         ** only considered in loadflow if calculate_voltage_angles = True
 
     OUTPUT:
@@ -3014,6 +3082,15 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
     _add_to_entries_if_not_nan(net, "trafo", entries, index, "oltc", oltc, bool_, False)
     _add_to_entries_if_not_nan(net, "trafo", entries, index, "pt_percent", pt_percent)
     _add_to_entries_if_not_nan(net, "trafo", entries, index, "xn_ohm", xn_ohm)
+
+    _add_to_entries_if_not_nan(net, "trafo", entries, index, "tap2_side", tap2_side, dtype=str)
+    _add_to_entries_if_not_nan(net, "trafo", entries, index, "tap2_neutral", tap2_neutral)
+    _add_to_entries_if_not_nan(net, "trafo", entries, index, "tap2_min", tap2_min)
+    _add_to_entries_if_not_nan(net, "trafo", entries, index, "tap2_max", tap2_max)
+    _add_to_entries_if_not_nan(net, "trafo", entries, index, "tap2_step_percent", tap2_step_percent)
+    _add_to_entries_if_not_nan(net, "trafo", entries, index, "tap2_step_degree", tap2_step_degree)
+    _add_to_entries_if_not_nan(net, "trafo", entries, index, "tap2_pos", tap2_pos)
+    _add_to_entries_if_not_nan(net, "trafo", entries, index, "tap2_phase_shifter", tap2_phase_shifter, dtype=bool_)
 
     defaults_to_fill = [("tap_dependent_impedance", False)]
     _set_multiple_entries(net, "trafo", index, defaults_to_fill=defaults_to_fill, **entries,
