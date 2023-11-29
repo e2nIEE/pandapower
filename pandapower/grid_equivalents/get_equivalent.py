@@ -260,7 +260,7 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
     if return_internal:
         logger.debug("Merging of internal and equivalent network begins.")
         net_eq = merge_internal_net_and_equivalent_external_net(
-            net_eq, net_internal, eq_type, show_computing_time,
+            net_eq, net_internal, show_computing_time=show_computing_time,
             calc_volt_angles=calculate_voltage_angles)
         if len(orig_slack_gens):
             net_eq.gen.slack.loc[net_eq.gen.index.intersection(orig_slack_gens)] = True
@@ -327,8 +327,7 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
 
 
 def merge_internal_net_and_equivalent_external_net(
-        net_eq, net_internal, eq_type, show_computing_time=False,
-        calc_volt_angles=False, **kwargs):
+        net_eq, net_internal, fuse_bus_column="auto", show_computing_time=False, **kwargs):
     """
     Merges the internal network and the equivalent external network.
     It is expected that the boundaries occur in both, equivalent net and
@@ -340,9 +339,11 @@ def merge_internal_net_and_equivalent_external_net(
 
         **net_internal** - internal area
 
-        **eq_type**  (str) - equivalent type, such as "rei", "ward" or "xward"
-
     OPTIONAL:
+        **fuse_bus_column**  (str, "auto) - the function expects boundary buses to be in net_eq and
+        in net_internal. These duplicate buses get fused. To identify these buses, the given column is used. Option "auto" provides backward compatibility which is: use "name_equivalent" if
+        existing and "name" otherwise
+
         **show_computing_time** (bool, False)
 
         ****kwargs** - key word arguments for pp.merge_nets()
@@ -368,17 +369,24 @@ def merge_internal_net_and_equivalent_external_net(
     merged_net = pp.merge_nets(
         net_internal, net_eq, validate=kwargs.pop("validate", False),
         net2_reindex_log_level=kwargs.pop("net2_reindex_log_level", "debug"), **kwargs)
-    try:
-        merged_net.gen.max_p_mw[-len(net_eq.gen.max_p_mw):] = net_eq.gen.max_p_mw.values
-        merged_net.gen.min_p_mw[-len(net_eq.gen.max_p_mw):] = net_eq.gen.min_p_mw.values
-    except:
-        pass
 
     # --- fuse or combine the boundary buses in external and internal nets
-    busname_col = "name_equivalent" if "name_equivalent" in merged_net.bus.columns.tolist() else "name"
+    if fuse_bus_column == "auto":
+        if fuse_bus_column in merged_net.bus.columns:
+            raise ValueError(
+                f"{fuse_bus_column=} is ambiguous since the column 'auto' exists in net.bus")
+        if "name_equivalent" in merged_net.bus.columns:
+            fuse_bus_column = "name_equivalent"
+        else:
+            fuse_bus_column = "name"
     for bus in boundary_buses_inclusive_bswitch:
-        name = merged_net.bus[busname_col].loc[bus]
-        target_buses = merged_net.bus.index[merged_net.bus[busname_col] == name]
+        try:
+            name = merged_net.bus[fuse_bus_column].loc[bus]
+        except:
+            print(fuse_bus_column)
+            print(merged_net.bus.columns)
+            print()
+        target_buses = merged_net.bus.index[merged_net.bus[fuse_bus_column] == name]
         if len(target_buses) != 2:
             raise ValueError(
                 "The code expects all boundary buses to occur double. One because "
