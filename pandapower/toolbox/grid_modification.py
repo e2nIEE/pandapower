@@ -287,7 +287,6 @@ def set_isolated_areas_out_of_service(net, respect_switches=True):
         len(net.bus.loc[list(unsupplied)].query('~in_service')), len(unsupplied)))
     set_element_status(net, list(unsupplied), False)
 
-    # TODO: remove this loop after unsupplied_buses are fixed
     for tr3w in net.trafo3w.index.values:
         tr3w_buses = net.trafo3w.loc[tr3w, ['hv_bus', 'mv_bus', 'lv_bus']].values
         if not all(net.bus.loc[tr3w_buses, 'in_service'].values):
