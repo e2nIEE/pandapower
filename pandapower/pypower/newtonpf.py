@@ -25,7 +25,8 @@ from pandapower.pf.makeYbus_facts import makeYbus_svc, makeYbus_tcsc, makeYft_tc
     makeYbus_ssc_vsc, make_Ybus_facts, make_Yft_facts
 from pandapower.pypower.idx_bus_dc import DC_PD, DC_VM, DC_BUS_TYPE, DC_NONE, DC_BUS_I, DC_REF, DC_P, DC_B2B
 from pandapower.pypower.idx_vsc import VSC_CONTROLLABLE, VSC_MODE_AC, VSC_VALUE_AC, VSC_MODE_DC, VSC_VALUE_DC, VSC_R, \
-    VSC_X, VSC_Q, VSC_P, VSC_BUS_DC, VSC_P_DC, VSC_MODE_AC_SL, VSC_MODE_AC_V, VSC_MODE_AC_Q
+    VSC_X, VSC_Q, VSC_P, VSC_BUS_DC, VSC_P_DC, VSC_MODE_AC_SL, VSC_MODE_AC_V, VSC_MODE_AC_Q, VSC_MODE_DC_P, \
+    VSC_MODE_DC_V
 from pandapower.pypower.makeSbus import makeSbus
 from pandapower.pf.create_jacobian import create_jacobian_matrix, get_fastest_jacobian_function
 from pandapower.pypower.idx_gen import PG
@@ -650,8 +651,8 @@ def _evaluate_Fx_facts(V,pq ,svc_buses=None, svc_set_vm_pu=None, tcsc_controllab
 
         vsc_p = np.isin(vsc_dc_bus, vsc_dc_p_bus)
         vsc_ref = np.isin(vsc_dc_bus, vsc_dc_ref_bus)
-        vsc_b2b_p = np.isin(vsc_dc_bus, vsc_dc_b2b_bus) & (vsc_mode_dc == 1)
-        vsc_b2b_ref = np.isin(vsc_dc_bus, vsc_dc_b2b_bus) & (vsc_mode_dc == 0)
+        vsc_b2b_p = np.isin(vsc_dc_bus, vsc_dc_b2b_bus) & (vsc_mode_dc == VSC_MODE_DC_P)
+        vsc_b2b_ref = np.isin(vsc_dc_bus, vsc_dc_b2b_bus) & (vsc_mode_dc == VSC_MODE_DC_V)
 
         unique_vsc_dc_bus, c_ref, c_b2b_ref = _sum_by_group(vsc_dc_bus, vsc_ref.astype(np.float64), vsc_b2b_ref.astype(np.float64))
         count_ref = np.zeros(vsc_dc_bus.max()+1, dtype=np.int64)

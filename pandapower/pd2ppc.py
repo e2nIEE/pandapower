@@ -25,6 +25,7 @@ from pandapower.pypower.idx_tcsc import TCSC_STATUS, TCSC_F_BUS, TCSC_T_BUS
 from pandapower.pypower.idx_svc import SVC_STATUS, SVC_BUS
 from pandapower.pypower.idx_vsc import VSC_BUS_DC, VSC_STATUS, VSC_MODE_AC, VSC_MODE_AC_V, VSC_MODE_AC_Q, VSC_MODE_AC_SL
 from pandapower.pypower.run_userfcn import run_userfcn
+from itertools import combinations
 
 
 def _pd2ppc_recycle(net, sequence, recycle):
@@ -76,7 +77,7 @@ def _check_vsc_different_ac_control_modes_at_same_bus(ppci):
     ac_vm_pu_buses = ppci["vsc"][ppci["vsc"][:, VSC_MODE_AC] == VSC_MODE_AC_V, VSC_BUS]
     ac_q_mvar_buses = ppci["vsc"][ppci["vsc"][:, VSC_MODE_AC] == VSC_MODE_AC_Q, VSC_BUS]
     ac_slack_buses = ppci["vsc"][ppci["vsc"][:, VSC_MODE_AC] == VSC_MODE_AC_SL, VSC_BUS]
-    ac_bus_intersection = np.intersect1d(np.intersect1d(ac_vm_pu_buses, ac_q_mvar_buses), ac_slack_buses)
+    ac_bus_intersection = np.hstack([np.intersect1d(a, b) for a, b in combinations([ac_vm_pu_buses, ac_q_mvar_buses, ac_slack_buses], r=2)])
     if len(ac_bus_intersection) != 0:
         raise NotImplementedError("Found multiple VSC converters that share the same AC bus and have "
                                   "different AC control modes - not implemented. VSC converters can only "
