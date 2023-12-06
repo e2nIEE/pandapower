@@ -645,9 +645,9 @@ def _evaluate_Fx_facts(V,pq ,svc_buses=None, svc_set_vm_pu=None, tcsc_controllab
         # find the slack DC buses
         # find the P DC buses
         vsc_set_p_pu = np.zeros(len(vsc_fb[vsc_controllable]), dtype=np.float64)  # power sign convention issue
-        vsc_dc_p_bus = np.intersect1d(vsc_dc_bus[vsc_controllable], dc_p)    # DC P buses
-        vsc_dc_ref_bus = np.intersect1d(vsc_dc_bus[vsc_controllable], dc_ref)    # DC ref buses
-        vsc_dc_b2b_bus = np.intersect1d(vsc_dc_bus[vsc_controllable], dc_b2b)    # DC B2B buses
+        vsc_dc_p_bus = vsc_dc_bus[vsc_controllable][np.isin(vsc_dc_bus[vsc_controllable], dc_p)]
+        vsc_dc_ref_bus = vsc_dc_bus[vsc_controllable][np.isin(vsc_dc_bus[vsc_controllable], dc_ref)]
+        vsc_dc_b2b_bus = vsc_dc_bus[vsc_controllable][np.isin(vsc_dc_bus[vsc_controllable], dc_b2b)]
 
         vsc_p = np.isin(vsc_dc_bus, vsc_dc_p_bus)
         vsc_ref = np.isin(vsc_dc_bus, vsc_dc_ref_bus)
@@ -673,18 +673,19 @@ def _evaluate_Fx_facts(V,pq ,svc_buses=None, svc_set_vm_pu=None, tcsc_controllab
             vsc_set_p_pu[vsc_p] = vsc_value_dc[vsc_p]  # todo test for when they share same bus
             # P_dc[dc_p] = -Sbus_vsc[vsc_tb[vsc_controllable]].real[vsc_p]
         if len(dc_ref):
-            # vsc_set_p_pu[vsc_mode_dc == 1] = -P_dc[dc_ref][dc_ref_lookup[vsc_dc_ref_bus]]  # dc_p
-
-            # Create a list of tuples containing the original value and its index
-            vsc_dc_bus_idx = np.array(list(enumerate(vsc_dc_bus)))[vsc_ref]  ##TODO: consider define the vscs indices list instead
-
-            # Sort the list of tuples based on the values
-            vsc_dc_bus_sorted = sorted(vsc_dc_bus_idx, key=lambda x: x[1])
-
-            # Create the output array by extracting the indices from the sorted list of tuples
-            vsc_dc_bus_sorted_idx = [i for i, value in vsc_dc_bus_sorted]
-
-            vsc_set_p_pu[vsc_dc_bus_sorted_idx] = -Pbus_hvdc[dc_ref][dc_ref_lookup[vsc_dc_ref_bus]] / count_ref[vsc_dc_bus[vsc_ref]]
+            vsc_set_p_pu[vsc_ref] = -Pbus_hvdc[dc_ref][dc_ref_lookup[vsc_dc_ref_bus]] / count_ref[vsc_dc_bus[vsc_ref]]
+            # # vsc_set_p_pu[vsc_mode_dc == 1] = -P_dc[dc_ref][dc_ref_lookup[vsc_dc_ref_bus]]  # dc_p
+            #
+            # # Create a list of tuples containing the original value and its index
+            # vsc_dc_bus_idx = np.array(list(enumerate(vsc_dc_bus)))[vsc_ref]  ##TODO: consider define the vscs indices list instead
+            #
+            # # Sort the list of tuples based on the values
+            # vsc_dc_bus_sorted = sorted(vsc_dc_bus_idx, key=lambda x: x[1])
+            #
+            # # Create the output array by extracting the indices from the sorted list of tuples
+            # vsc_dc_bus_sorted_idx = [i for i, value in vsc_dc_bus_sorted]
+            #
+            # vsc_set_p_pu[vsc_dc_bus_sorted_idx] = -Pbus_hvdc[dc_ref][dc_ref_lookup[vsc_dc_ref_bus]] / count_ref[vsc_dc_bus[vsc_ref]]
 
         if len(dc_b2b):
             # vsc_set_p_pu[vsc_mode_dc == 1] = -P_dc[dc_ref][dc_ref_lookup[vsc_dc_ref_bus]]  # dc_p

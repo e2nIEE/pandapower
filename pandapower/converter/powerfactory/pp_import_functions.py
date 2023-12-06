@@ -2697,8 +2697,10 @@ def create_vscmono(net, item):
     p_cu_kw = item.Pcu
     vkr = p_cu_kw / (sn_mva * 1e3)  # in ratio, not %
     z_base_ohm = np.square(v_ac) / sn_mva
-    r_ohm = vkr * z_base_ohm
-    x_ohm = np.sqrt(np.square(vk) - np.square(vkr)) * z_base_ohm
+    #r_ohm = vkr * z_base_ohm
+    #x_ohm = np.sqrt(np.square(vk) - np.square(vkr)) * z_base_ohm
+    r_ohm = vkr * net.sn_mva / sn_mva
+    x_ohm = np.sqrt(np.square(vk) - np.square(vkr)) * net.sn_mva / sn_mva
 
     control_mode_ac, control_mode_dc, control_value_ac, control_value_dc = _get_vsc_control_modes(item)
 
