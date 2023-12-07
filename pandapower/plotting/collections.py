@@ -223,7 +223,7 @@ def _create_line2d_collection(coords, indices, infos=None, picker=False, **kwarg
 
 def _create_node_element_collection(node_coords, patch_maker, size=1., infos=None,
                                     repeat_infos=(1, 1), orientation=np.pi, picker=False,
-                                    patch_facecolor="w", patch_edgecolor="k", line_color="k",patch_type=None,unique_angles=None,
+                                    patch_facecolor="w", patch_edgecolor="k", line_color="k",patch_type=None,unique_angles=None,draw_sgens_by_type=None,
                                     **kwargs):
     """
     Creates matplotlib collections of node elements. All node element collections usually consist of
@@ -279,7 +279,7 @@ def _create_node_element_collection(node_coords, patch_maker, size=1., infos=Non
     linewidths = kwargs.pop("linewidth", linewidths)
     linewidths = kwargs.pop("lw", linewidths)
     lines, polys, popped_keywords = patch_maker(
-        node_coords, size, angles,patch_type = patch_type, unique_angles=unique_angles, patch_facecolor=patch_facecolor, patch_edgecolor=patch_edgecolor,
+        node_coords, size, angles,patch_type = patch_type, unique_angles=unique_angles,draw_sgens_by_type=draw_sgens_by_type, patch_facecolor=patch_facecolor, patch_edgecolor=patch_edgecolor,
         **kwargs)
     for kw in set(popped_keywords) & set(kwargs.keys()):
         kwargs.pop(kw)
@@ -1053,7 +1053,7 @@ def create_gen_collection(net, gens=None, size=1.,  infofunc=None, orientation=N
     return gen_pc, gen_lc
 
 
-def create_sgen_collection(net, sgens=None, size=1.,  infofunc=None, orientation=None, picker=False, patch_type=None, unique_angles=None, **kwargs):
+def create_sgen_collection(net, sgens=None, size=1.,  infofunc=None, orientation=None, picker=False, patch_type=None, unique_angles=None,draw_sgens_by_type=None, **kwargs):
     """
     Creates a matplotlib patch collection of pandapower sgen.
 
@@ -1092,7 +1092,7 @@ def create_sgen_collection(net, sgens=None, size=1.,  infofunc=None, orientation
     color = kwargs.pop("color", "k")
     sgen_pc, sgen_lc = _create_node_element_collection(
         node_coords, sgen_patches, size=size,  infos=infos, orientation=orientation,
-        picker=picker, line_color=color,patch_type=patch_type,unique_angles=unique_angles, **kwargs)
+        picker=picker, line_color=color,patch_type=patch_type,unique_angles=unique_angles,draw_sgens_by_type=draw_sgens_by_type, **kwargs)
     return sgen_pc, sgen_lc
 
 
