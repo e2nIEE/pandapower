@@ -118,8 +118,7 @@ class DiscreteTapControl(TrafoController):
 
         vm_pu = read_from_net(net, "res_bus", self.controlled_bus, "vm_pu", self._read_write_flag)
         # this is possible in case the trafo is set out of service by the connectivity check
-        if np.isnan(vm_pu):
-            return True
+        is_nan = np.isnan(vm_pu)
         self.tap_pos = read_from_net(net, self.trafotable, self.controlled_tid, "tap_pos", self._read_write_flag)
 
         reached_limit = np.where(self.tap_side_coeff * self.tap_sign == 1,
@@ -130,5 +129,4 @@ class DiscreteTapControl(TrafoController):
 
         converged = np.logical_or(reached_limit, np.logical_and(self.vm_lower_pu < vm_pu, vm_pu < self.vm_upper_pu))
 
-        return np.all(converged)
-
+        return np.all(np.logical_or(converged, is_nan))

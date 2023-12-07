@@ -99,8 +99,7 @@ class ContinuousTapControl(TrafoController):
 
         vm_pu = read_from_net(net, "res_bus", self.controlled_bus, "vm_pu", self._read_write_flag)
         # this is possible in case the trafo is set out of service by the connectivity check
-        if np.isnan(vm_pu):
-            return True
+        is_nan =  np.isnan(vm_pu)
         self.tap_pos = read_from_net(net, self.trafotable, self.controlled_tid, "tap_pos", self._read_write_flag)
         difference = 1 - self.vm_set_pu / vm_pu
 
@@ -114,4 +113,4 @@ class ContinuousTapControl(TrafoController):
         else:
             converged = np.abs(difference) < self.tol
 
-        return np.all(converged)
+        return np.all(np.logical_or(converged, is_nan))
