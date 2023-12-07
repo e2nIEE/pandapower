@@ -619,27 +619,30 @@ def _evaluate_Fx_facts(V,pq ,svc_buses=None, svc_set_vm_pu=None, tcsc_controllab
         Pbus_hvdc = -P_dc
 
     if np.any(vsc_controllable):
+        Sbus_vsc = V * conj(Ybus_vsc * V)
         ###### Mismatch for the first VSC variable:
         # the mismatch value is written for the aux bus, but calculated based on the AC bus
         ac_mode_v = (vsc_mode_ac == VSC_MODE_AC_V) | (vsc_mode_ac == VSC_MODE_AC_SL)
-        mis_vsc_v = np.abs(V[vsc_fb[ac_mode_v]]) - vsc_value_ac[ac_mode_v]
-        old_F[-len(pq)+pq_lookup[vsc_tb[ac_mode_v]]] = mis_vsc_v
+        if np.any(ac_mode_v):
+            mis_vsc_v = np.abs(V[vsc_fb[ac_mode_v]]) - vsc_value_ac[ac_mode_v]
+            old_F[-len(pq)+pq_lookup[vsc_tb[ac_mode_v]]] = mis_vsc_v
 
         # Mismatch for Q:
         ac_mode_q = vsc_mode_ac == VSC_MODE_AC_Q
-        unique_vsc_q_bus, c_q, _ = _sum_by_group(vsc_fb[ac_mode_q], np.ones_like(vsc_fb[ac_mode_q]), np.ones_like(vsc_fb[ac_mode_q]))
-        count_q = np.zeros(vsc_fb.max() + 1, dtype=np.int64)
-        count_q[unique_vsc_q_bus] = c_q
-        Sbus_vsc = V * conj(Ybus_vsc * V)
-        mis_vsc_q = Sbus_vsc[vsc_fb[ac_mode_q]].imag / count_q[vsc_fb[ac_mode_q]] - vsc_value_ac[ac_mode_q]  # todo test for when they share same bus
-        old_F[-len(pq) + pq_lookup[vsc_tb[ac_mode_q]]] = mis_vsc_q
+        if np.any(ac_mode_q):
+            unique_vsc_q_bus, c_q, _ = _sum_by_group(vsc_fb[ac_mode_q], np.ones_like(vsc_fb[ac_mode_q]), np.ones_like(vsc_fb[ac_mode_q]))
+            count_q = np.zeros(vsc_fb.max() + 1, dtype=np.int64)
+            count_q[unique_vsc_q_bus] = c_q
+            mis_vsc_q = Sbus_vsc[vsc_fb[ac_mode_q]].imag / count_q[vsc_fb[ac_mode_q]] - vsc_value_ac[ac_mode_q]  # todo test for when they share same bus
+            old_F[-len(pq) + pq_lookup[vsc_tb[ac_mode_q]]] = mis_vsc_q
 
 
         ##### Mismatch for the second VSC variable:
         # Mismatch for AC slack - delta
         ac_mode_sl = vsc_mode_ac == VSC_MODE_AC_SL
-        mis_vsc_delta = np.angle(V[vsc_fb[ac_mode_sl]]) - 0  # <- here we set delta set point to zero, but can be a parameter in the future
-        old_F[-len(pq) * 2 + pq_lookup[vsc_tb[ac_mode_sl]]] = mis_vsc_delta
+        if np.any(ac_mode_sl):
+            mis_vsc_delta = np.angle(V[vsc_fb[ac_mode_sl]]) - 0  # <- here we set delta set point to zero, but can be a parameter in the future
+            old_F[-len(pq) * 2 + pq_lookup[vsc_tb[ac_mode_sl]]] = mis_vsc_delta
 
         # find the connection between the DC buses and VSC buses
         # find the slack DC buses
@@ -690,7 +693,7 @@ def _evaluate_Fx_facts(V,pq ,svc_buses=None, svc_set_vm_pu=None, tcsc_controllab
         if len(dc_b2b):
             # vsc_set_p_pu[vsc_mode_dc == 1] = -P_dc[dc_ref][dc_ref_lookup[vsc_dc_ref_bus]]  # dc_p
             vsc_set_p_pu[vsc_b2b_p] = vsc_value_dc[vsc_b2b_p]
-            vsc_set_p_pu[vsc_b2b_ref] = P_dc[dc_b2b][dc_b2b_lookup[vsc_dc_b2b_bus]] / count_b2b_ref[vsc_dc_bus[vsc_b2b_ref]]
+            vsc_set_p_pu[vsc_b2b_ref] = P_dc[dc_b2b][dc_b2b_lookup[vsc_dc_b2b_bus[vsc_b2b_ref]]] / count_b2b_ref[vsc_dc_bus[vsc_b2b_ref]]
         ####  here used vsc_tb refereing to the q bus
         # S_temp = Sbus_vsc.real
         # S_temp[vsc_tb[vsc_p]] /= count_p[vsc_fb[vsc_p]]
