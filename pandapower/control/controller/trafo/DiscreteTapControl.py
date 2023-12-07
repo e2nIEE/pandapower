@@ -3,8 +3,10 @@
 # Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import numpy as np
+
 from pandapower.auxiliary import read_from_net, write_to_net
 from pandapower.control.controller.trafo_control import TrafoController
+
 
 class DiscreteTapControl(TrafoController):
     """
@@ -115,6 +117,9 @@ class DiscreteTapControl(TrafoController):
             return True
 
         vm_pu = read_from_net(net, "res_bus", self.controlled_bus, "vm_pu", self._read_write_flag)
+        # this is possible in case the trafo is set out of service by the connectivity check
+        if np.isnan(vm_pu):
+            return True
         self.tap_pos = read_from_net(net, self.trafotable, self.controlled_tid, "tap_pos", self._read_write_flag)
 
         reached_limit = np.where(self.tap_side_coeff * self.tap_sign == 1,
