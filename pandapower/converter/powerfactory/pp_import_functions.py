@@ -2692,15 +2692,16 @@ def create_vscmono(net, item):
 
     sn_mva = item.Snom
     v_ac = item.Unom
-    v_dc = item.Unomdc
-    vk = item.uk / 100  # in ratio, not in %
     p_cu_kw = item.Pcu
-    vkr = p_cu_kw / (sn_mva * 1e3)  # in ratio, not %
-    z_base_ohm = np.square(v_ac) / sn_mva
-    #r_ohm = vkr * z_base_ohm
-    #x_ohm = np.sqrt(np.square(vk) - np.square(vkr)) * z_base_ohm
-    r_ohm = vkr * net.sn_mva / sn_mva
-    x_ohm = np.sqrt(np.square(vk) - np.square(vkr)) * net.sn_mva / sn_mva
+    vk = item.uk / 100  # in ratio, not in %
+
+    z_vsc_base_ohm = np.square(v_ac) / sn_mva
+    r_pu = p_cu_kw / (1e3 * sn_mva)
+    x_pu = np.sqrt(np.square(vk) - np.square(r_pu))
+    r_ohm = r_pu * z_vsc_base_ohm
+    x_ohm = x_pu * z_vsc_base_ohm
+
+    logger.debug(f"VSCmono: {item.loc_name=}, {sn_mva=}, {v_ac=}, {p_cu_kw=}, {vk=}, {r_ohm=}, {x_ohm=}")
 
     control_mode_ac, control_mode_dc, control_value_ac, control_value_dc = _get_vsc_control_modes(item)
 
@@ -2737,13 +2738,16 @@ def create_vsc(net, item):
 
     sn_mva = item.Snom / 2
     v_ac = item.Unom
-    v_dc = item.Unomdc
-    vk = item.uk / 100  # in ratio, not in %
     p_cu_kw = item.Pcu / 2
-    vkr = p_cu_kw / (sn_mva * 1e3)  # in ratio, not %
-    z_base_ohm = np.square(v_ac) / sn_mva
-    r_ohm = vkr * z_base_ohm
-    x_ohm = np.sqrt(np.square(vk) - np.square(vkr)) * z_base_ohm
+    vk = item.uk / 100  # in ratio, not in %
+
+    z_vsc_base_ohm = np.square(v_ac) / sn_mva
+    r_pu = p_cu_kw / (1e3 * sn_mva)
+    x_pu = np.sqrt(np.square(vk) - np.square(r_pu))
+    r_ohm = r_pu * z_vsc_base_ohm
+    x_ohm = x_pu * z_vsc_base_ohm
+
+    logger.debug(f"VSC: {item.loc_name=}, {sn_mva=}, {v_ac=}, {p_cu_kw=}, {vk=}, {r_ohm=}, {x_ohm=}")
 
     control_mode_ac, control_mode_dc, control_value_ac, control_value_dc = _get_vsc_control_modes(item, mono=False)
 
