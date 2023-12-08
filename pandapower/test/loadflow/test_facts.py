@@ -2084,13 +2084,13 @@ def test_2vsc_1ac_1dc(control_mode_ac, control_mode_dc):
             pp.runpp(net)
 
 
-def test_vsc_slack_minimal():
+def test_vsc_slack_minimal_wrong():  # todo: VSC as slack cannot have DC bus as vm_pu, therefore must be excluded from DC slacks and then raise error that not enough DC slacks
     # np.set_printoptions(linewidth=1000, suppress=True, precision=2)
     # from pandapower.test.loadflow.test_facts import *
     net = pp.create_empty_network()
     # AC part
-    pp.create_buses(net, 2, 110)
-    pp.create_load(net, 1, 10)
+    pp.create_buses(net, 2, 110, geodata=[(200, 0), (400, 0)])
+    pp.create_load(net, 1, 10, 4)
 
     # DC part
     pp.create_bus_dc(net, 110, 'A', geodata=(210, 0))
@@ -2105,7 +2105,57 @@ def test_vsc_slack_minimal():
 
     runpp_with_consistency_checks(net)
 
-    # pp.plotting.simple_plot(net, plot_loads=True)
+    # pp.plotting.simple_plot(net, plot_loads=True, load_size=5)
+
+
+def test_vsc_slack_minimal_wrong2():  # todo runpp must raise error here that DC grid has no slacks because the first VSC is deactivated because its AC bus is not connected to AC slack
+    # np.set_printoptions(linewidth=1000, suppress=True, precision=2)
+    # from pandapower.test.loadflow.test_facts import *
+    net = pp.create_empty_network()
+    # AC part
+    pp.create_buses(net, 2, 110, geodata=[(200, 0), (400, 0)])
+    pp.create_load(net, 1, 10, 4)
+
+    # DC part
+    pp.create_bus_dc(net, 110, 'A', geodata=(210, 0))
+    pp.create_bus_dc(net, 110, 'B', geodata=(390, 0))
+
+    pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
+
+    pp.create_vsc(net, 0, 0, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu", control_value_dc=1.02)
+    pp.create_vsc(net, 1, 1, 0.1, 5, control_mode_ac="slack", control_value_ac=1, control_mode_dc="p_mw", control_value_dc=1)
+
+    pp.runpp(net)
+
+    runpp_with_consistency_checks(net)
+
+    # pp.plotting.simple_plot(net, plot_loads=True, load_size=5)
+
+
+@pytest.mark.xfail(reason="AC bus same as ext_grid bus not implemented")
+def test_vsc_slack_minimal():  # todo: fix that FACTS elements can be connected to ext_grid buses
+    # np.set_printoptions(linewidth=1000, suppress=True, precision=2)
+    # from pandapower.test.loadflow.test_facts import *
+    net = pp.create_empty_network()
+    # AC part
+    pp.create_buses(net, 2, 110, geodata=[(200, 0), (400, 0)])
+    pp.create_load(net, 1, 10, 4)
+    pp.create_ext_grid(net, 0)
+
+    # DC part
+    pp.create_bus_dc(net, 110, 'A', geodata=(210, 0))
+    pp.create_bus_dc(net, 110, 'B', geodata=(390, 0))
+
+    pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
+
+    pp.create_vsc(net, 0, 0, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu", control_value_dc=1.02)
+    pp.create_vsc(net, 1, 1, 0.1, 5, control_mode_ac="slack", control_value_ac=1, control_mode_dc="p_mw", control_value_dc=1)
+
+    # pp.runpp(net)
+
+    runpp_with_consistency_checks(net)
+
+    # pp.plotting.simple_plot(net, plot_loads=True, load_size=5)
 
 
 def test_vsc_slack():
@@ -2117,7 +2167,31 @@ def test_vsc_slack():
     pp.create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
     pp.create_line_from_parameters(net, 2, 3, 30, 0.0487, 0.13823, 160, 0.664)
     pp.create_ext_grid(net, 0)
-    pp.create_load(net, 3, 10)
+    pp.create_load(net, 3, 10, 4)
+
+    # DC part
+    pp.create_bus_dc(net, 110, 'A', geodata=(210, 0))
+    pp.create_bus_dc(net, 110, 'B', geodata=(390, 0))
+
+    pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
+
+    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu", control_value_dc=1.02)
+    pp.create_vsc(net, 2, 1, 0.1, 5, control_mode_ac="slack", control_value_ac=1, control_mode_dc="p_mw", control_value_dc=1)
+
+    runpp_with_consistency_checks(net)
+
+    # pp.plotting.simple_plot(net, plot_loads=True)
+
+
+def test_vsc_slack2():
+    # np.set_printoptions(linewidth=1000, suppress=True, precision=3)
+    # from pandapower.test.loadflow.test_facts import *
+    net = pp.create_empty_network()
+    # AC part
+    pp.create_buses(net, 3, 110, geodata=[(0, 0), (200, 0), (400, 0)])
+    pp.create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
+    pp.create_ext_grid(net, 0)
+    pp.create_load(net, 2, 10, 4)
 
     # DC part
     pp.create_bus_dc(net, 110, 'A', geodata=(210, 0))

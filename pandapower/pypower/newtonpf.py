@@ -643,6 +643,8 @@ def _evaluate_Fx_facts(V,pq ,svc_buses=None, svc_set_vm_pu=None, tcsc_controllab
         if np.any(ac_mode_sl):
             mis_vsc_delta = np.angle(V[vsc_fb[ac_mode_sl]]) - 0  # <- here we set delta set point to zero, but can be a parameter in the future
             old_F[-len(pq) * 2 + pq_lookup[vsc_tb[ac_mode_sl]]] = mis_vsc_delta
+            # this connects the AC slack result and the DC bus P set-point:
+            P_dc[vsc_dc_bus[ac_mode_sl]] = -Sbus_vsc[vsc_tb[ac_mode_sl]].real
 
         # find the connection between the DC buses and VSC buses
         # find the slack DC buses
