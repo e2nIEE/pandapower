@@ -13,8 +13,9 @@ from pandapower.auxiliary import soft_dependency_error
 from pandapower.plotting.plotting_toolbox import get_collection_sizes
 from pandapower.plotting.collections import create_bus_collection, create_line_collection, \
     create_trafo_collection, create_trafo3w_collection, \
-    create_line_switch_collection, draw_collections, create_bus_bus_switch_collection, create_ext_grid_collection, create_sgen_collection, \
-    create_gen_collection, create_load_collection, create_dcline_collection
+    create_line_switch_collection, draw_collections, create_bus_bus_switch_collection, create_ext_grid_collection, \
+    create_sgen_collection, \
+    create_gen_collection, create_load_collection, create_dcline_collection, create_vsc_collection
 from pandapower.plotting.generic_geodata import create_generic_coordinates
 
 try:
@@ -30,7 +31,7 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
                 switch_size=2.0, switch_distance=1.0, plot_line_switches=False, scale_size=True,
                 bus_color='b', line_color='grey',  dcline_color='c', trafo_color='k',
                 ext_grid_color='y', switch_color='k', library='igraph', show_plot=True, ax=None,
-                bus_dc_size=1.0, bus_dc_color="m", line_dc_color="c", vsc_size=2.0, vsc_color="c"):
+                bus_dc_size=1.0, bus_dc_color="m", line_dc_color="c", vsc_size=4.0, vsc_color="orange"):
     """
         Plots a pandapower network as simple as possible. If no geodata is available, artificial
         geodata is generated. For advanced plotting see the tutorial
@@ -149,8 +150,7 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
         collections.append(bc_dc)
     # create VSC collection
     if len(net.vsc) > 0:
-        vsc_ac = create_bus_collection(net, net.vsc.bus.values, size=vsc_size, color=vsc_color,
-                                       patch_type="rect", zorder=10)
+        vsc_ac = create_vsc_collection(net, net.vsc.index, size=vsc_size, color=vsc_color, zorder=12)
         collections.append(vsc_ac)
     # create line_dc collections
     if len(net.line_dc) > 0:

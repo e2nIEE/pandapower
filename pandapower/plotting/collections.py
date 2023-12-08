@@ -27,7 +27,7 @@ except ImportError:
 
 from pandapower.auxiliary import soft_dependency_error
 from pandapower.plotting.patch_makers import load_patches, node_patches, gen_patches, \
-    sgen_patches, ext_grid_patches, trafo_patches, storage_patches
+    sgen_patches, ext_grid_patches, trafo_patches, storage_patches, vsc_patches
 from pandapower.plotting.plotting_toolbox import _rotate_dim2, coords_from_node_geodata, \
     position_on_busbar, get_index_array
 
@@ -936,6 +936,148 @@ def create_trafo3w_collection(net, trafo3ws=None, picker=False, infofunc=None, c
         lc.has_colormap = plot_colormap
         lc.cbar_title = cbar_title
     return lc, pc
+
+
+def create_vsc_collection(net, vscs=None, picker=False, size=None, infofunc=None, cmap=None,
+                          norm=None, z=None, clim=None, cbar_title="VSC power",
+                          plot_colormap=True, bus_geodata=None, bus_dc_geodata=None, **kwargs):
+    """
+    Creates a matplotlib line collection of pandapower transformers.
+
+    Input:
+        **net** (pandapowerNet) - The pandapower network
+
+    OPTIONAL:
+        **vscs** (list, None) - The VSC indices for which the collections are created.
+        If None, all VSCs in the grid are considered.
+
+        **picker** (bool, False) - picker argument passed to the patch collection
+
+        **size** (int, None) - size of VSC symbol squares. Should be >0 and
+        < 0.35*bus_distance
+
+         **infofunc** (function, None) - infofunction for the patch element
+
+        **kwargs** - keyword arguments are passed to the patch function
+
+    OUTPUT:
+        **lc** - line collection
+
+        **pc** - patch collection
+    """
+    if not MATPLOTLIB_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
+
+    vscs = get_index_array(vscs, net.vsc.index)
+
+    if bus_geodata is None:
+        bus_geodata = net["bus_geodata"]
+    if bus_dc_geodata is None:
+        bus_dc_geodata = net["bus_dc_geodata"]
+
+    in_geodata = (net.vsc.bus.loc[vscs].isin(bus_geodata.index) &
+                  net.vsc.bus_dc.loc[vscs].isin(bus_dc_geodata.index))
+    vscs = vscs[in_geodata]
+    vsc_table = net.vsc.loc[vscs]
+
+    coords, vscs_with_geo = coords_from_node_geodata(
+        vscs, vsc_table.bus.values, vsc_table.bus_dc.values, bus_geodata, "vsc", node_geodata_to=bus_dc_geodata)
+
+    if len(vscs_with_geo) == 0:
+        return None
+
+    colors = kwargs.pop("color", "k")
+    linewidths = kwargs.pop("linewidths", 2.)
+    linewidths = kwargs.pop("linewidth", linewidths)
+    linewidths = kwargs.pop("lw", linewidths)
+    if cmap is not None:
+        if z is None:
+            z = net.res_vsc.p_mw
+        colors = [cmap(norm(z.at[idx])) for idx in vscs_with_geo]
+
+    infos = [infofunc(i) for i in range(len(vscs_with_geo))] if infofunc is not None else []
+
+    lc, pc = _create_complex_branch_collection(
+        coords, vsc_patches, size, infos, patch_facecolor="none", patch_edgecolor=colors,
+        line_color=colors, picker=picker, linewidths=linewidths, **kwargs)
+
+    if cmap is not None:
+        z_duplicated = np.repeat(z.values, 2)
+        add_cmap_to_collection(lc, cmap, norm, z_duplicated, cbar_title, plot_colormap, clim)
+    return lc, pc
+
+
+def create_vsc_connection_collection(net, vscs=None, bus_geodata=None, bus_dc_geodata=None, infofunc=None,
+                                     cmap=None, clim=None, norm=None, z=None,
+                                     cbar_title="Transformer Loading", picker=False, **kwargs):
+    """
+    Creates a matplotlib line collection of pandapower VSCs.
+
+    Input:
+        **net** (pandapowerNet) - The pandapower network
+
+    OPTIONAL:
+        **vscs** (list, None) - The VSC indices for which the collections are created.
+        If None, all VSCs in the network are considered.
+
+        **bus_geodata** (DataFrame, None) - coordinates of AC buses to use for plotting
+        If None, net["bus_geodata"] is used
+
+        **bus_dc_geodata** (DataFrame, None) - coordinates of DC buses to use for plotting
+        If None, net["bus_dc_geodata"] is used
+
+        **infofunc** (function, None) - infofunction for the patch element
+
+        **cmap** - colormap for the patch colors
+
+        **clim** (tuple of floats, None) - setting the norm limits for image scaling
+
+        **norm** (matplotlib norm object, None) - matplotlib norm object
+
+        **z** (array, None) - array of values for colormap. Used in case of given
+        cmap. If None net.res_vsc.p_mw is used.
+
+        **cbar_title** (str, "VSC active power [MW]") - colormap bar title in case of given cmap
+
+        **picker** (bool, False) - picker argument passed to the line collection
+
+        **kwargs - keyword arguments are passed to the patch function
+
+    OUTPUT:
+        **lc** - line collection
+    """
+    if not MATPLOTLIB_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
+
+    vscs = get_index_array(vscs, net.vsc.index)
+
+    if bus_geodata is None:
+        bus_geodata = net["bus_geodata"]
+
+    if bus_dc_geodata is None:
+        bus_dc_geodata = net["bus_dc_geodata"]
+
+    in_geodata = (net.vsc.bus.loc[vscs].isin(bus_geodata.index) &
+                  net.vsc.bus_dc.loc[vscs].isin(bus_dc_geodata.index))
+    vscs = vscs[in_geodata]
+    vsc_table = net.vsc.loc[vscs]
+
+    ac_geo = list(zip(bus_geodata.loc[vsc_table["bus"], "x"].values,
+                      bus_geodata.loc[vsc_table["bus_dc"], "y"].values))
+    dc_geo = list(zip(bus_dc_geodata.loc[vsc_table["bus_dc"], "x"].values,
+                      bus_dc_geodata.loc[vsc_table["bus_dc"], "y"].values))
+    vg = list(zip(ac_geo, dc_geo))
+
+    info = [infofunc(v) for v in vscs] if infofunc is not None else []
+
+    lc = _create_line2d_collection(vg, vscs, info, picker=picker, **kwargs)
+
+    if cmap is not None:
+        if z is None:
+            z = net.res_vsc.p_mw.loc[vscs]
+        add_cmap_to_collection(lc, cmap, norm, z, cbar_title, True, clim)
+
+    return lc
 
 
 def create_busbar_collection(net, buses=None, infofunc=None, cmap=None, norm=None, picker=False,
