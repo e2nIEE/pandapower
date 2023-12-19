@@ -27,7 +27,7 @@ log_message_sep = ("\n --------\n")
 
 def diagnostic(net, report_style='detailed', warnings_only=False, return_result_dict=True,
                overload_scaling_factor=0.001, min_r_ohm=0.001, min_x_ohm=0.001, min_r_pu=1e-05,
-               min_x_pu=1e-05, nom_voltage_tolerance=0.3, numba_tolerance=1e-05):
+               min_x_pu=1e-05, nom_voltage_tolerance=0.3, numba_tolerance=1e-05, runpp_function=runpp):
     """
     Tool for diagnosis of pandapower networks. Identifies possible reasons for non converging loadflows.
 
@@ -67,6 +67,9 @@ def diagnostic(net, report_style='detailed', warnings_only=False, return_result_
      - **nom_voltage_tolerance** (float, 0.3): highest allowed relative deviation between nominal \
      voltages and bus voltages
 
+    - **runpp_function** (func, pandapower.run.runpp): power flow function to use during tests \
+    (use with partial to pass arguments to runpp)
+
     OUTPUT:
      - **diag_results** (dict): dict that contains the indices of all elements where errors were found
 
@@ -82,16 +85,16 @@ def diagnostic(net, report_style='detailed', warnings_only=False, return_result_
         (disconnected_elements, {}),
         (different_voltage_levels_connected, {}),
         (impedance_values_close_to_zero, {"min_r_ohm": min_r_ohm, "min_x_ohm": min_x_ohm, "min_r_pu": min_r_pu,
-                                          "min_x_pu": min_x_pu}),
+                                          "min_x_pu": min_x_pu, "runpp_function": runpp_function}),
         (nominal_voltages_dont_match, {"nom_voltage_tolerance": nom_voltage_tolerance}),
         (invalid_values, {}),
-        (overload, {"overload_scaling_factor": overload_scaling_factor}),
-        (wrong_switch_configuration, {}),
+        (overload, {"overload_scaling_factor": overload_scaling_factor, "runpp_function": runpp_function}),
+        (wrong_switch_configuration, {runpp_function: runpp_function}),
         (multiple_voltage_controlling_elements_per_bus, {}),
         (no_ext_grid, {}),
         (wrong_reference_system, {}),
         (deviation_from_std_type, {}),
-        (numba_comparison, {"numba_tolerance": numba_tolerance}),
+        (numba_comparison, {"numba_tolerance": numba_tolerance, "runpp_function": runpp_function}),
         (parallel_switches, {}),
     ]
 
@@ -356,7 +359,7 @@ def multiple_voltage_controlling_elements_per_bus(net):
         return check_results
 
 
-def overload(net, overload_scaling_factor):
+def overload(net, overload_scaling_factor, runpp_function=runpp):
     """
     Checks, if a loadflow calculation converges. If not, checks, if an overload is the reason for
     that by scaling down the loads, gens and sgens to 0.1%.
@@ -377,20 +380,20 @@ def overload(net, overload_scaling_factor):
     sgen_scaling = copy.deepcopy(net.sgen.scaling)
 
     try:
-        runpp(net)
+        runpp_function(net)
     except LoadflowNotConverged:
         check_result['load'] = False
         check_result['generation'] = False
         try:
             net.load.scaling = overload_scaling_factor
-            runpp(net)
+            runpp_function(net)
             check_result['load'] = True
         except:
             net.load.scaling = load_scaling
             try:
                 net.gen.scaling = overload_scaling_factor
                 net.sgen.scaling = overload_scaling_factor
-                runpp(net)
+                runpp_function(net)
                 check_result['generation'] = True
             except:
                 net.sgen.scaling = sgen_scaling
@@ -399,7 +402,7 @@ def overload(net, overload_scaling_factor):
                     net.load.scaling = overload_scaling_factor
                     net.gen.scaling = overload_scaling_factor
                     net.sgen.scaling = overload_scaling_factor
-                    runpp(net)
+                    runpp_function(net)
                     check_result['generation'] = True
                     check_result['load'] = True
                 except:
@@ -411,7 +414,7 @@ def overload(net, overload_scaling_factor):
         return check_result
 
 
-def wrong_switch_configuration(net):
+def wrong_switch_configuration(net, runpp_function=runpp):
     """
     Checks, if a loadflow calculation converges. If not, checks, if the switch configuration is
     the reason for that by closing all switches
@@ -425,11 +428,11 @@ def wrong_switch_configuration(net):
     """
     switch_configuration = copy.deepcopy(net.switch.closed)
     try:
-        runpp(net)
+        runpp_function(net)
     except:
         try:
             net.switch.closed = True
-            runpp(net)
+            runpp_function(net)
             net.switch.closed = switch_configuration
             return True
         except:
@@ -504,7 +507,7 @@ def different_voltage_levels_connected(net):
         return check_results
 
 
-def impedance_values_close_to_zero(net, min_r_ohm, min_x_ohm, min_r_pu, min_x_pu):
+def impedance_values_close_to_zero(net, min_r_ohm, min_x_ohm, min_r_pu, min_x_pu, runpp_function=runpp):
     """
     Checks, if there are lines, xwards or impedances with an impedance value close to zero.
 
@@ -544,7 +547,7 @@ def impedance_values_close_to_zero(net, min_r_ohm, min_x_ohm, min_r_pu, min_x_pu
         line_copy = copy.deepcopy(net.line)
         impedance_copy = copy.deepcopy(net.impedance)
         try:
-            runpp(net)
+            runpp_function(net)
         except:
             try:
                 for key in implausible_elements:
@@ -554,7 +557,7 @@ def impedance_values_close_to_zero(net, min_r_ohm, min_x_ohm, min_r_pu, min_x_pu
                     net[key].in_service.loc[implausible_idx] = False
                     for idx in implausible_idx:
                         pp.create_switch(net, net[key].from_bus.at[idx], net[key].to_bus.at[idx], et="b")
-                runpp(net)
+                runpp_function(net)
                 switch_replacement = True
             except:
                 switch_replacement = False
@@ -805,7 +808,7 @@ def wrong_reference_system(net):
         return check_results
 
 
-def numba_comparison(net, numba_tolerance):
+def numba_comparison(net, numba_tolerance, runpp_function=runpp):
     """
         Compares the results of loadflows with numba=True vs. numba=False.
 
@@ -820,9 +823,9 @@ def numba_comparison(net, numba_tolerance):
             **check_result** (dict)    - Absolute deviations between numba=True/False results.
     """
     check_results = {}
-    runpp(net, numba=True)
+    runpp_function(net, numba=True)
     result_numba_true = copy.deepcopy(net)
-    runpp(net, numba=False)
+    runpp_function(net, numba=False)
     result_numba_false = copy.deepcopy(net)
     res_keys = [key for key in result_numba_true.keys() if
                 (key in ['res_bus', 'res_ext_grid',
