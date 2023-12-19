@@ -77,31 +77,33 @@ def diagnostic(net, report_style='detailed', warnings_only=False, return_result_
     <<< pandapower.diagnostic(net, report_style='compact', warnings_only=True)
 
     """
-    diag_functions = ["missing_bus_indices(net)",
-                      "disconnected_elements(net)",
-                      "different_voltage_levels_connected(net)",
-                      "impedance_values_close_to_zero(net, min_r_ohm, min_x_ohm, min_r_pu, min_x_pu)",
-                      "nominal_voltages_dont_match(net, nom_voltage_tolerance)",
-                      "invalid_values(net)",
-                      "overload(net, overload_scaling_factor)",
-                      "wrong_switch_configuration(net)",
-                      "multiple_voltage_controlling_elements_per_bus(net)",
-                      "no_ext_grid(net)",
-                      "wrong_reference_system(net)",
-                      "deviation_from_std_type(net)",
-                      "numba_comparison(net, numba_tolerance)",
-                      "parallel_switches(net)"]
+    diag_functions = [
+        (missing_bus_indices, {}),
+        (disconnected_elements, {}),
+        (different_voltage_levels_connected, {}),
+        (impedance_values_close_to_zero, {"min_r_ohm": min_r_ohm, "min_x_ohm": min_x_ohm, "min_r_pu": min_r_pu,
+                                          "min_x_pu": min_x_pu}),
+        (nominal_voltages_dont_match, {"nom_voltage_tolerance": nom_voltage_tolerance}),
+        (invalid_values, {}),
+        (overload, {"overload_scaling_factor": overload_scaling_factor}),
+        (wrong_switch_configuration, {}),
+        (multiple_voltage_controlling_elements_per_bus, {}),
+        (no_ext_grid, {}),
+        (wrong_reference_system, {}),
+        (deviation_from_std_type, {}),
+        (numba_comparison, {"numba_tolerance": numba_tolerance}),
+        (parallel_switches, {}),
+    ]
 
     diag_results = {}
     diag_errors = {}
-    for diag_function in diag_functions:
+    for diag_function, kwargs in diag_functions:
         try:
-            diag_result = eval(diag_function)
-            if not diag_result == None:
-                diag_results[diag_function.split("(")[0]] = diag_result
+            diag_result = diag_function(net, **kwargs)
+            if diag_result is not None:
+                diag_results[diag_function.__name__] = diag_result
         except Exception as e:
-            diag_errors[diag_function.split("(")[0]] = e
-
+            diag_errors[diag_function.__name__] = e
 
     diag_params = {
         "overload_scaling_factor": overload_scaling_factor,
