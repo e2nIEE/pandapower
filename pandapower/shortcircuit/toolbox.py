@@ -63,8 +63,7 @@ def detect_power_station_unit(net, mode="auto",
     trafo_lv_bus = net.trafo.loc[required_trafo.index, "lv_bus"].values
     trafo_hv_bus = net.trafo.loc[required_trafo.index, "hv_bus"].values
 
-    g = create_nxgraph(net, respect_switches=True,
-                       nogobuses=None, notravbuses=trafo_hv_bus)
+    g = create_nxgraph(net, respect_switches=True, nogobuses=None, notravbuses=trafo_hv_bus)
 
     for t_ix in required_trafo.index:
         t_lv_bus = required_trafo.at[t_ix, "lv_bus"]

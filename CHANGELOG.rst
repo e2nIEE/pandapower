@@ -35,8 +35,10 @@ Change Log
 - [ADDED] option to use a second tap changer for the trafo element
 - [CHANGED] parameters of function merge_internal_net_and_equivalent_external_net()
 - [FIXED] :code:`convert_format.py`: update the attributes of the characteristic objects to match the new characteristic
+- [ADDED] toolbox functions branch_buses_df(), branches_parallel_to_bus_bus_switches(), check_parallel_branch_to_bus_bus_switch(), branches_parallel_to_bus_bus_switch_clusters()
 - [FIXED] additional arguments from mpc saved to net._options: create "_options" if it does not exist
 - [CHANGED] cim2pp: extracted getting default classes, added generic setting datatypes from CGMES XMI schema
+- [ADDED] toolbox function :code:`get_substations` that finds all substations based on connectivity analysis of a networkx graph
 
 
 [2.13.1] - 2023-05-12

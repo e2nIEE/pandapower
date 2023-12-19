@@ -2,7 +2,9 @@
 
 # Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+import numpy as np
 import pandas as pd
+import numpy as np
 import pytest
 
 import pandapower as pp
@@ -219,5 +221,150 @@ def test_count_elements():
     assert set(received.index) == pandapower.toolbox.pp_elements()
 
 
+def substation_net():
+    net = pp.create_empty_network()
+    pp.create_buses(net, 5, 110)
+    pp.create_buses(net, 5, 20)
+    pp.create_buses(net, 2, 10)
+
+    pp.create_transformer(net, 3, 5, "63 MVA 110/20 kV")
+    pp.create_transformer3w(net, 4, 8, 10, "63/25/38 MVA 110/20/10 kV")
+
+    pp.create_switches(net, buses=[0, 0, 2, 5, 6, 1, 8, 10], elements=[1, 2, 3, 6, 7, 4, 9, 11], et="b")
+    pp.create_switches(net, buses=[3, 5], elements=[0, 0], et=["t", "t"])
+    pp.create_switches(net, buses=[4, 8, 10], elements=[0, 0, 0], et=["t3", "t3", "t3"])
+    return net
+
+
+def test_get_substations():
+    net = substation_net()
+    s = pp.toolbox.get_substations(net, write_to_net=False)
+    assert len(s) == 1
+    assert "substation" not in net.bus.columns
+    pp.toolbox.get_substations(net)
+    assert np.alltrue(net.bus.substation == 0)
+    assert np.array_equal(net.bus.index.values, s[0])
+
+    s1 = pp.toolbox.get_substations(net, include_trafos=False)
+    # 110 kV buses HV side, 20 kV buses for trafo and trafo3w, 10 kV buses for trafo3w
+    assert len(s1) == 4
+    assert len(net.bus.substation.unique()) == 4
+    for c in s1.values():
+        assert len(net.bus.loc[c, "vn_kv"].unique()) == 1
+
+    net.trafo.in_service = False
+    net.trafo3w.in_service = False
+    s11 = pp.toolbox.get_substations(net, include_out_of_service_branches=False)
+    assert len(s11) == 4
+    assert len(net.bus.substation.unique()) == 4
+    for k, v in s11.items():
+        assert np.array_equal(v, s1[k])
+
+    net.switch.closed = False
+    s2 = pp.toolbox.get_substations(net)
+    assert len(s2) == 1
+    assert len(net.bus.substation.unique()) == 1
+    assert np.array_equal(s[0], s2[0])
+
+    s3 = pp.toolbox.get_substations(net, respect_switches=True)
+    assert len(s3) == 0
+    assert np.alltrue(pd.isna(net.bus.substation))
+
+    s4 = pp.toolbox.get_substations(net, respect_switches=True, return_all_buses=True)
+    assert len(s4) == 12
+    assert len(net.bus.substation.unique()) == 12
+
+    # even when al switches open and trafos out of service, find 1 substation:
+    s5 = pp.toolbox.get_substations(net)
+    assert np.alltrue(net.bus.substation == 0)
+    assert np.array_equal(net.bus.index.values, s5[0])
+
+    # even when all buses out of service:
+    net.bus.in_service = False
+    s6 = pp.toolbox.get_substations(net)
+    assert np.alltrue(net.bus.substation == 0)
+    assert np.array_equal(net.bus.index.values, s6[0])
+
+
+def test_branch_buses_df():
+    net = nw.example_multivoltage()
+    df = pp.branch_buses_df(net, "line")
+    assert np.allclose(df.iloc[:, :2], net.line[["from_bus", "to_bus"]].values)
+    assert set(df.element_type) == {"line"}
+    assert list(df.columns) == ["bus1", "bus2", "element_type", "element_index"]
+
+    df = pp.branch_buses_df(net, "trafo3w", ["hv_bus", "mv_bus", "lv_bus"])
+    assert list(df.columns) == ["bus1", "bus2", "element_type", "element_index"]
+    assert len(df) == 3*len(net.trafo3w)
+
+
+def test_branches_parallel_to_bus_bus_switches():
+    net = nw.example_multivoltage()
+
+    assert pp.branches_parallel_to_bus_bus_switches(net).shape == (0, 4)
+
+    sw_p = pp.create_switch(net, net.trafo.lv_bus.at[0], net.trafo.hv_bus.at[0], "b", closed=False)
+    assert pp.branches_parallel_to_bus_bus_switches(net).shape == (2, 4)
+    assert pp.branches_parallel_to_bus_bus_switches(net, keep="first").shape == (1, 4)
+    assert pp.branches_parallel_to_bus_bus_switches(net, keep="last").shape == (1, 4)
+    assert pp.branches_parallel_to_bus_bus_switches(net, closed_switches_only=True).shape == (0, 4)
+    assert pp.branches_parallel_to_bus_bus_switches(
+        net, switches=net.switch.index.difference([sw_p])).shape == (0, 4)
+
+    # switch bus order of bus-bus switch
+    net.switch.loc[sw_p, ["bus", "element"]] = net.switch.loc[sw_p, ["element", "bus"]].values
+
+    assert pp.branches_parallel_to_bus_bus_switches(
+        net, branch_types=["line", "trafo3w"]).shape == (0, 4)
+    assert pp.branches_parallel_to_bus_bus_switches(
+        net, branch_types=["trafo", "trafo3w"]).shape == (2, 4)
+
+
+def test_check_parallel_branch_to_bus_bus_switch():
+    net = nw.example_multivoltage()
+
+    assert not pp.check_parallel_branch_to_bus_bus_switch(net)
+
+    sw_p = pp.create_switch(net, net.trafo.lv_bus.at[0], net.trafo.hv_bus.at[0], "b", closed=False)
+    assert pp.check_parallel_branch_to_bus_bus_switch(net)
+    assert not pp.check_parallel_branch_to_bus_bus_switch(net, closed_switches_only=True)
+    assert not pp.check_parallel_branch_to_bus_bus_switch(
+        net, switches=net.switch.index.difference([sw_p]))
+
+    # switch bus order of bus-bus switch
+    net.switch.loc[sw_p, ["bus", "element"]] = net.switch.loc[sw_p, ["element", "bus"]].values
+
+    assert not pp.check_parallel_branch_to_bus_bus_switch(
+        net, branch_types=["line", "trafo3w"])
+    assert pp.check_parallel_branch_to_bus_bus_switch(
+        net, branch_types=["trafo", "trafo3w"])
+
+
+def test_branches_parallel_to_bus_bus_switch_clusters():
+    net = substation_net()
+    pp.create_bus(net, 10)
+    line = pp.create_line(net, net.bus.index[-2], net.bus.index[-1], 1.3, "NA2XS2Y 1x95 RM/25 6/10 kV")
+    pp.create_switch(net, net.bus.index[-2], line, "l")
+
+    df = pp.toolbox.branches_parallel_to_bus_bus_switch_clusters(net)
+    assert not len(df)
+
+    par1 = pp.create_line(net, net.bus.index[-3], net.bus.index[-2], 1.3, "NA2XS2Y 1x95 RM/25 6/10 kV")
+    par2 = pp.create_line(net, net.bus.index[1], net.bus.index[2], 13, "48-AL1/8-ST1A 110.0")
+
+    df = pp.toolbox.branches_parallel_to_bus_bus_switch_clusters(net)
+    assert len(df) == 2
+    assert list(df.element_type) == ["line"]*2
+    assert list(df.element_index) == [par1, par2]
+
+    net = pp.networks.example_multivoltage()
+    pp.create_switch(net, net.trafo.lv_bus.at[0], net.trafo.hv_bus.at[0], "b", closed=False)
+    df = pp.toolbox.branches_parallel_to_bus_bus_switch_clusters(net)
+    assert len(df) == 1
+    assert dict(df.iloc[0]) == {'bus1': 13, 'bus2': 17, 'element_type': 'trafo',
+                                'element_index': 0, 'substation1': 0, 'substation2': 0}
+
+
 if __name__ == '__main__':
-    pytest.main([__file__, "-x"])
+    # pytest.main([__file__, "-x"])
+    test_branches_parallel_to_bus_bus_switch_clusters()

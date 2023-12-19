@@ -69,6 +69,8 @@ Item/Element Selection
 
 .. autofunction:: pandapower.toolbox.get_connected_switches
 
+.. autofunction:: pandapower.toolbox.get_substations
+
 .. autofunction:: pandapower.toolbox.get_connecting_branches
 
 .. autofunction:: pandapower.toolbox.false_elm_links
@@ -82,6 +84,14 @@ Item/Element Selection
 .. autofunction:: pandapower.toolbox.branch_element_bus_dict
 
 .. autofunction:: pandapower.toolbox.count_elements
+
+.. autofunction:: pandapower.toolbox.branch_buses_df
+
+.. autofunction:: pandapower.toolbox.branches_parallel_to_bus_bus_switches
+
+.. autofunction:: pandapower.toolbox.check_parallel_branch_to_bus_bus_switch
+
+.. autofunction:: pandapower.toolbox.branches_parallel_to_bus_bus_switch_clusters
 
 .. autofunction:: pandapower.toolbox.get_gc_objects_dict
 
