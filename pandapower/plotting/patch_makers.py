@@ -394,7 +394,7 @@ def sgen_patches(node_coords, size, angles,patch_type, unique_angles,draw_sgens_
         unique_angles = {}
 
     for i, node_geo in enumerate(node_coords):
-        if draw_sgens_by_type:
+        if draw_sgens_by_type or draw_sgens_by_type==None:
             if len(unique_angles) != 0 and "WT" in unique_angles[i]["sgen"] or patch_type=="WT":
                 angle = (unique_angles[i]["sgen"]["WT"] + (angles[i] or 0)) or angles[i]
                 wt_patch(node_geo, offset, size, angle, polys, lines, facecolors, edgecolors, blade_coord1, blade_coord2,hub_size, Path, i)
@@ -407,13 +407,17 @@ def sgen_patches(node_coords, size, angles,patch_type, unique_angles,draw_sgens_
                 angle = unique_angles[i]["sgen"]["wye"] + (angles[i] or 0) or angles[i]
                 wye_patch(node_geo, offset, size, r_triangle, angle,polys,lines, facecolors, edgecolors,i)
             if len(unique_angles) == 0 :
+                angle = angles[i]
                 wye_patch(node_geo, offset, size, r_triangle, angle,polys,lines, facecolors, edgecolors,i)
+
+        elif draw_sgens_by_type == False or unique_angles == {}:
+            if unique_angles == {}:
+                angle = angles[i]
+                wye_patch(node_geo, offset, size, r_triangle, angle, polys, lines, facecolors, edgecolors, i)
             else:
-                continue
-        else:
-            for x in range(len(unique_angles[i]["sgen"])):
-                angle = list(unique_angles[i]["sgen"].values())[x]
-                wye_patch(node_geo, offset, size, r_triangle, angle,polys,lines, facecolors, edgecolors,i)
+                for x in range(len(unique_angles[i]["sgen"])):
+                    angle = list(unique_angles[i]["sgen"].values())[x]
+                    wye_patch(node_geo, offset, size, r_triangle, angle,polys,lines, facecolors, edgecolors,i)
 
     return lines, polys, {"offset", "r_triangle", "patch_edgecolor", "patch_facecolor"}
 

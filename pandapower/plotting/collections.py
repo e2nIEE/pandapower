@@ -997,8 +997,8 @@ def create_load_collection(net, loads=None, size=1., infofunc=None, orientation=
     """
     from pandapower.plotting.simple_plot import calculate_unique_angles
 
-    if unique_angles == None:
-        unique_angles = calculate_unique_angles(net)
+    # if unique_angles == None:
+    #     unique_angles = calculate_unique_angles(net)
     loads = get_index_array(loads, net.load.index)
     infos = [infofunc(i) for i in range(len(loads))] if infofunc is not None else []
     node_coords = net.bus_geodata.loc[:, ["x", "y"]].values
@@ -1041,8 +1041,8 @@ def create_gen_collection(net, gens=None, size=1.,  infofunc=None, orientation=N
     """
     from pandapower.plotting.simple_plot import calculate_unique_angles
 
-    if unique_angles == None:
-        unique_angles = calculate_unique_angles(net)
+    # if unique_angles == None:
+    #     unique_angles = calculate_unique_angles(net)
     gens = get_index_array(gens, net.gen.index)
     infos = [infofunc(i) for i in range(len(gens))] if infofunc is not None else []
     node_coords = net.bus_geodata.loc[:, ["x", "y"]].values
@@ -1082,9 +1082,8 @@ def create_sgen_collection(net, sgens=None, size=1.,  infofunc=None, orientation
         **sgen_lc** - line collection
     """
     from pandapower.plotting.simple_plot import calculate_unique_angles
-
-    if unique_angles == None:
-        unique_angles = calculate_unique_angles(net)
+    # if draw_sgens_by_type == True:
+    #     unique_angles = calculate_unique_angles(net)
 
 
     infos = [infofunc(i) for i in range(len(sgens))] if infofunc is not None else []
