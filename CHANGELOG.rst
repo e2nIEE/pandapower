@@ -35,6 +35,7 @@ Change Log
 - [ADDED] option to use a second tap changer for the trafo element
 - [CHANGED] parameters of function merge_internal_net_and_equivalent_external_net()
 - [FIXED] :code:`convert_format.py`: update the attributes of the characteristic objects to match the new characteristic
+- [FIXED] fixed the wrong id numbers for pypower powerflow algorithms fdxb and fdbx
 - [FIXED] additional arguments from mpc saved to net._options: create "_options" if it does not exist
 - [CHANGED] cim2pp: extracted getting default classes, added generic setting datatypes from CGMES XMI schema
 - [ADDED] function :code:`getOTDF` to obtain Outage Transfer Distribution Factors, that can be used to analyse outages using the DC approximation of the power system
