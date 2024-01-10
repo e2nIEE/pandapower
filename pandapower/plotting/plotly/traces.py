@@ -1094,15 +1094,25 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
             for trace in traces:
                 xs += trace.get('x') or trace['lon']
                 ys += trace.get('y') or trace['lat']
-            x_dropna = pd.Series(xs).dropna()
-            y_dropna = pd.Series(ys).dropna()
-            xrange = x_dropna.max() - x_dropna.min()
-            yrange = y_dropna.max() - y_dropna.min()
-            ratio = xrange / yrange
-            if ratio < 1:
-                aspectratio = (ratio, 1.)
+            xs_arr = np.array(xs)
+            ys_arr = np.array(ys)
+            xrange = np.nanmax(xs_arr) - np.nanmin(xs_arr)
+            yrange = np.nanmax(ys_arr) - np.nanmin(ys_arr)
+
+            # the ratio only makes sense, if xrange and yrange != 0
+            if xrange == 0 and yrange == 0:
+                aspectratio = (1, 1)
+            elif xrange == 0:
+                aspectratio = (0.35, 1)
+            elif yrange == 0:
+                aspectratio = (1, 0.35)
+
             else:
-                aspectratio = (1., 1 / ratio)
+                ratio = xrange / yrange
+                if ratio < 1:
+                    aspectratio = (ratio, 1.)
+                else:
+                    aspectratio = (1., 1 / ratio)
 
         aspectratio = np.array(aspectratio) / max(aspectratio)
         fig['layout']['width'], fig['layout']['height'] = ([ar * figsize * 700 for ar in aspectratio])
