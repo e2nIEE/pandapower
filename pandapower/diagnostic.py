@@ -16,6 +16,7 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+from functools import partial
 from pandapower.powerflow import LoadflowNotConverged
 from pandapower.run import runpp
 from pandapower.toolbox import get_connected_elements
@@ -27,7 +28,7 @@ log_message_sep = ("\n --------\n")
 
 def diagnostic(net, report_style='detailed', warnings_only=False, return_result_dict=True,
                overload_scaling_factor=0.001, min_r_ohm=0.001, min_x_ohm=0.001, min_r_pu=1e-05,
-               min_x_pu=1e-05, nom_voltage_tolerance=0.3, numba_tolerance=1e-05, runpp_function=runpp):
+               min_x_pu=1e-05, nom_voltage_tolerance=0.3, numba_tolerance=1e-05, **kwargs):
     """
     Tool for diagnosis of pandapower networks. Identifies possible reasons for non converging loadflows.
 
@@ -67,8 +68,8 @@ def diagnostic(net, report_style='detailed', warnings_only=False, return_result_
      - **nom_voltage_tolerance** (float, 0.3): highest allowed relative deviation between nominal \
      voltages and bus voltages
 
-    - **runpp_function** (func, pandapower.run.runpp): power flow function to use during tests \
-    (use with partial to pass arguments to runpp)
+     - **kwargs** - Keyword arguments for the power flow function to use during tests. If "run" is \
+     in kwargs the default call to runpp() is replaced by the function kwargs["run"]
 
     OUTPUT:
      - **diag_results** (dict): dict that contains the indices of all elements where errors were found
@@ -80,21 +81,22 @@ def diagnostic(net, report_style='detailed', warnings_only=False, return_result_
     <<< pandapower.diagnostic(net, report_style='compact', warnings_only=True)
 
     """
+
     diag_functions = [
         (missing_bus_indices, {}),
         (disconnected_elements, {}),
         (different_voltage_levels_connected, {}),
         (impedance_values_close_to_zero, {"min_r_ohm": min_r_ohm, "min_x_ohm": min_x_ohm, "min_r_pu": min_r_pu,
-                                          "min_x_pu": min_x_pu, "runpp_function": runpp_function}),
+                                          "min_x_pu": min_x_pu, **kwargs}),
         (nominal_voltages_dont_match, {"nom_voltage_tolerance": nom_voltage_tolerance}),
         (invalid_values, {}),
-        (overload, {"overload_scaling_factor": overload_scaling_factor, "runpp_function": runpp_function}),
-        (wrong_switch_configuration, {runpp_function: runpp_function}),
+        (overload, {"overload_scaling_factor": overload_scaling_factor, **kwargs}),
+        (wrong_switch_configuration, kwargs),
         (multiple_voltage_controlling_elements_per_bus, {}),
         (no_ext_grid, {}),
         (wrong_reference_system, {}),
         (deviation_from_std_type, {}),
-        (numba_comparison, {"numba_tolerance": numba_tolerance, "runpp_function": runpp_function}),
+        (numba_comparison, {"numba_tolerance": numba_tolerance, **kwargs}),
         (parallel_switches, {}),
     ]
 
@@ -359,13 +361,16 @@ def multiple_voltage_controlling_elements_per_bus(net):
         return check_results
 
 
-def overload(net, overload_scaling_factor, runpp_function=runpp):
+def overload(net, overload_scaling_factor, **kwargs):
     """
     Checks, if a loadflow calculation converges. If not, checks, if an overload is the reason for
     that by scaling down the loads, gens and sgens to 0.1%.
 
      INPUT:
         **net** (pandapowerNet)         - pandapower network
+
+        **kwargs** - Keyword arguments for power flow function. If "run" is in kwargs the default call to runpp()
+        is replaced by the function kwargs["run"]
 
 
      OUTPUT:
@@ -374,26 +379,28 @@ def overload(net, overload_scaling_factor, runpp_function=runpp):
                                                    'generation_overload', True/False}
 
     """
+    # get function to run power flow
+    run = partial(kwargs.pop("run", runpp), **kwargs)
     check_result = {}
     load_scaling = copy.deepcopy(net.load.scaling)
     gen_scaling = copy.deepcopy(net.gen.scaling)
     sgen_scaling = copy.deepcopy(net.sgen.scaling)
 
     try:
-        runpp_function(net)
+        run(net)
     except LoadflowNotConverged:
         check_result['load'] = False
         check_result['generation'] = False
         try:
             net.load.scaling = overload_scaling_factor
-            runpp_function(net)
+            run(net)
             check_result['load'] = True
         except:
             net.load.scaling = load_scaling
             try:
                 net.gen.scaling = overload_scaling_factor
                 net.sgen.scaling = overload_scaling_factor
-                runpp_function(net)
+                run(net)
                 check_result['generation'] = True
             except:
                 net.sgen.scaling = sgen_scaling
@@ -402,7 +409,7 @@ def overload(net, overload_scaling_factor, runpp_function=runpp):
                     net.load.scaling = overload_scaling_factor
                     net.gen.scaling = overload_scaling_factor
                     net.sgen.scaling = overload_scaling_factor
-                    runpp_function(net)
+                    run(net)
                     check_result['generation'] = True
                     check_result['load'] = True
                 except:
@@ -414,7 +421,7 @@ def overload(net, overload_scaling_factor, runpp_function=runpp):
         return check_result
 
 
-def wrong_switch_configuration(net, runpp_function=runpp):
+def wrong_switch_configuration(net, **kwargs):
     """
     Checks, if a loadflow calculation converges. If not, checks, if the switch configuration is
     the reason for that by closing all switches
@@ -422,17 +429,21 @@ def wrong_switch_configuration(net, runpp_function=runpp):
      INPUT:
         **net** (pandapowerNet)         - pandapower network
 
+        **kwargs** - Keyword arguments for power flow function. If "run" is in kwargs the default call to runpp()
+        is replaced by the function kwargs["run"]
+
      OUTPUT:
         **check_result** (boolean)
 
     """
+    run = partial(kwargs.pop("run", runpp), **kwargs)
     switch_configuration = copy.deepcopy(net.switch.closed)
     try:
-        runpp_function(net)
+        run(net)
     except:
         try:
             net.switch.closed = True
-            runpp_function(net)
+            run(net)
             net.switch.closed = switch_configuration
             return True
         except:
@@ -507,13 +518,15 @@ def different_voltage_levels_connected(net):
         return check_results
 
 
-def impedance_values_close_to_zero(net, min_r_ohm, min_x_ohm, min_r_pu, min_x_pu, runpp_function=runpp):
+def impedance_values_close_to_zero(net, min_r_ohm, min_x_ohm, min_r_pu, min_x_pu, **kwargs):
     """
     Checks, if there are lines, xwards or impedances with an impedance value close to zero.
 
      INPUT:
         **net** (pandapowerNet)         - pandapower network
 
+        **kwargs** - Keyword arguments for power flow function. If "run" is in kwargs the default call to runpp()
+        is replaced by the function kwargs["run"]
 
      OUTPUT:
         **implausible_lines** (list)    - list that contains the indices of all lines with an
@@ -521,6 +534,8 @@ def impedance_values_close_to_zero(net, min_r_ohm, min_x_ohm, min_r_pu, min_x_pu
 
 
     """
+    # get function to run power flow
+    run = partial(kwargs.pop("run", runpp), **kwargs)
     check_results = []
     implausible_elements = {}
 
@@ -547,7 +562,7 @@ def impedance_values_close_to_zero(net, min_r_ohm, min_x_ohm, min_r_pu, min_x_pu
         line_copy = copy.deepcopy(net.line)
         impedance_copy = copy.deepcopy(net.impedance)
         try:
-            runpp_function(net)
+            run(net)
         except:
             try:
                 for key in implausible_elements:
@@ -557,7 +572,7 @@ def impedance_values_close_to_zero(net, min_r_ohm, min_x_ohm, min_r_pu, min_x_pu
                     net[key].in_service.loc[implausible_idx] = False
                     for idx in implausible_idx:
                         pp.create_switch(net, net[key].from_bus.at[idx], net[key].to_bus.at[idx], et="b")
-                runpp_function(net)
+                run(net)
                 switch_replacement = True
             except:
                 switch_replacement = False
@@ -808,24 +823,25 @@ def wrong_reference_system(net):
         return check_results
 
 
-def numba_comparison(net, numba_tolerance, runpp_function=runpp):
+def numba_comparison(net, numba_tolerance, **kwargs):
     """
         Compares the results of loadflows with numba=True vs. numba=False.
 
          INPUT:
             **net** (pandapowerNet)    - pandapower network
-
+            **numba_tolerance** (float) - Maximum absolute deviation allowed between
+                                          numba=True/False results.
          OPTIONAL:
-            **tol** (float, 1e-5)      - Maximum absolute deviation allowed between
-                                         numba=True/False results.
-
+            **kwargs** - Keyword arguments for power flow function. If "run" is in kwargs the default call to runpp()
+                         is replaced by the function kwargs["run"]
          OUTPUT:
             **check_result** (dict)    - Absolute deviations between numba=True/False results.
     """
+    run = partial(kwargs.pop("run", runpp), **kwargs)
     check_results = {}
-    runpp_function(net, numba=True)
+    run(net, numba=True)
     result_numba_true = copy.deepcopy(net)
-    runpp_function(net, numba=False)
+    run(net, numba=False)
     result_numba_false = copy.deepcopy(net)
     res_keys = [key for key in result_numba_true.keys() if
                 (key in ['res_bus', 'res_ext_grid',
