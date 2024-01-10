@@ -62,7 +62,8 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
                 buses_to_add.add(fb)
         buses |= buses_to_add
 
-    if keep_everything_else:
+    if keep_everything_else:  # Info: keep_everything_else might help to keep controllers but
+        # does not help if a part of controllers should be kept
         p2 = copy.deepcopy(net)
         if not include_results:
             clear_result_tables(p2)
