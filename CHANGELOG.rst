@@ -42,6 +42,7 @@ Change Log
 - [ADDED] function :code:`outage_results_OTDF` to obtain the matrix of results for all outage scenarios, with rows as outage scenarios and columns as branch power flows in that scenario
 - [FIXED] add some safeguards for TDPF to avoid numerical issues in some cases
 - [CHANGED] numba version check during init phase, not during calculation, saving about 3% calculation time for a loadflow
+- [ADDED] the function :code:`run_contingency` can raise a captured error if parameter :code:`raise_errors` is passed
 
 [2.13.1] - 2023-05-12
 -------------------------------
