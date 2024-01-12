@@ -99,7 +99,7 @@ try:
         version_check("numba")
         NUMBA_INSTALLED = True
     except UserWarning:
-        msg = f'The numba version is too old.\n'
+        msg = 'The numba version is too old.\n'
         log_to_level(msg, logger, 'warning')
         NUMBA_INSTALLED = False
 except ImportError:
@@ -971,7 +971,7 @@ def _write_lookup_to_net(net, element, element_lookup):
 def _check_if_numba_is_installed(level="warning"):
     if not NUMBA_INSTALLED:
         msg = (
-            f'numba cannot be imported and numba functions are disabled.\n'
+            'numba cannot be imported and numba functions are disabled.\n'
             'Probably the execution is slow.\n'
             'Please install numba to gain a massive speedup.\n'
             '(or if you prefer slow execution, set the flag numba=False to avoid this warning!)')
