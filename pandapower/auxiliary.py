@@ -45,13 +45,6 @@ from pandapower.pypower.idx_ssc import SSC_STATUS, SSC_BUS, SSC_INTERNAL_BUS
 from pandapower.pypower.idx_tcsc import TCSC_STATUS, TCSC_F_BUS, TCSC_T_BUS
 
 try:
-    from numba import jit
-    NUMBA_INSTALLED = True
-except ImportError:
-    from .pf.no_numba import jit
-    NUMBA_INSTALLED = False
-
-try:
     from lightsim2grid.newtonpf import newtonpf_new as newtonpf_ls
     lightsim2grid_available = True
 except ImportError:
@@ -62,6 +55,20 @@ except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
+
+def log_to_level(msg, passed_logger, level):
+    if level == "error":
+        passed_logger.error(msg)
+    elif level == "warning":
+        passed_logger.warning(msg)
+    elif level == "info":
+        passed_logger.info(msg)
+    elif level == "debug":
+        passed_logger.debug(msg)
+    elif level == "UserWarning":
+        raise UserWarning(msg)
+    elif level is None:
+        pass
 
 
 def version_check(package_name, level="UserWarning", ignore_not_installed=False):
@@ -84,6 +91,20 @@ def version_check(package_name, level="UserWarning", ignore_not_installed=False)
             raise PackageNotFoundError(
                 f"Python package '{package_name}', is needed.\r\nPlease install it. "
                 f"Possibly it can be installed via 'pip install {package_name}'.")
+
+
+try:
+    from numba import jit
+    try:
+        version_check("numba")
+        NUMBA_INSTALLED = True
+    except UserWarning:
+        msg = f'The numba version is too old.\n'
+        log_to_level(msg, logger, 'warning')
+        NUMBA_INSTALLED = False
+except ImportError:
+    from .pf.no_numba import jit
+    NUMBA_INSTALLED = False
 
 
 def soft_dependency_error(fct_name, required_packages):
@@ -443,21 +464,6 @@ def ensure_iterability(var, len_=None):
         len_ = len_ or 1
         var = [var] * len_
     return var
-
-
-def log_to_level(msg, passed_logger, level):
-    if level == "error":
-        passed_logger.error(msg)
-    elif level == "warning":
-        passed_logger.warning(msg)
-    elif level == "info":
-        passed_logger.info(msg)
-    elif level == "debug":
-        passed_logger.debug(msg)
-    elif level == "UserWarning":
-        raise UserWarning(msg)
-    elif level is None:
-        pass
 
 
 def read_from_net(net, element, index, variable, flag='auto'):
@@ -963,23 +969,15 @@ def _write_lookup_to_net(net, element, element_lookup):
 
 
 def _check_if_numba_is_installed(level="warning"):
-    msg = (
-        'numba cannot be imported and numba functions are disabled.\n'
-        'Probably the execution is slow.\n'
-        'Please install numba to gain a massive speedup.\n'
-        '(or if you prefer slow execution, set the flag numba=False to avoid this warning!)')
-
     if not NUMBA_INSTALLED:
+        msg = (
+            f'numba cannot be imported and numba functions are disabled.\n'
+            'Probably the execution is slow.\n'
+            'Please install numba to gain a massive speedup.\n'
+            '(or if you prefer slow execution, set the flag numba=False to avoid this warning!)')
         log_to_level(msg, logger, level)
         return False
-    try:
-        version_check("numba")
-        return NUMBA_INSTALLED
-    except UserWarning:
-        if NUMBA_INSTALLED:
-            msg = 'The numba version is too old.\n' + msg
-        log_to_level(msg, logger, level)
-        return False
+    return NUMBA_INSTALLED
 
 
 
