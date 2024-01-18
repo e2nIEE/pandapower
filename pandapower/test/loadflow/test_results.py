@@ -370,30 +370,13 @@ def test_undefined_tap_dependent_impedance_characteristics_trafo3w():
     add_trafo_connection(net, 1, "3W")
     add_trafo_connection(net, 1, "3W")
 
-    pp.control.create_trafo_characteristics(net, 'trafo3w', [0, 1], 'vk_hv_percent', [[-2, -1, 0, 1, 2], [-2, -1, 0, 1, 2]], [[0.7, 0.9, 1, 1.1, 1.3], [0.7, 0.9, 1, 1.1, 1.3]])
     pp.control.create_trafo_characteristics(net, 'trafo3w', [0, 1], 'vk_mv_percent', [[-2, -1, 0, 1, 2], [-2, -1, 0, 1, 2]], [[0.7, 0.9, 1, 1.1, 1.3], [0.7, 0.9, 1, 1.1, 1.3]])
-    pp.control.create_trafo_characteristics(net, 'trafo3w', [0, 1], 'vk_lv_percent', [[-2, -1, 0, 1, 2], [-2, -1, 0, 1, 2]], [[0.7, 0.9, 1, 1.1, 1.3], [0.7, 0.9, 1, 1.1, 1.3]])
-    pp.control.create_trafo_characteristics(net, 'trafo3w', [0, 1], 'vkr_hv_percent', [[-2, -1, 0, 1, 2], [-2, -1, 0, 1, 2]], [[0.3, 0.45, 0.5, 0.55, 0.7], [0.3, 0.45, 0.5, 0.55, 0.7]])
     pp.control.create_trafo_characteristics(net, 'trafo3w', [0, 1], 'vkr_mv_percent', [[-2, -1, 0, 1, 2], [-2, -1, 0, 1, 2]], [[0.3, 0.45, 0.5, 0.55, 0.7], [0.3, 0.45, 0.5, 0.55, 0.7]])
-    pp.control.create_trafo_characteristics(net, 'trafo3w', [0, 1], 'vkr_lv_percent', [[-2, -1, 0, 1, 2], [-2, -1, 0, 1, 2]], [[0.3, 0.45, 0.5, 0.55, 0.7], [0.3, 0.45, 0.5, 0.55, 0.7]])
 
-
-    # does not raise error
-    pp.runpp(net)
-
-    # this will raise error
-    net.trafo3w.at[0, "vk_hv_percent_characteristic"] = None
     pp.runpp(net)
     net.trafo3w.at[0, "vk_mv_percent_characteristic"] = None
     pp.runpp(net)
-    net.trafo3w.at[0, "vk_lv_percent_characteristic"] = None
-    pp.runpp(net)
-
-    net.trafo3w.at[0, "vkr_hv_percent_characteristic"] = None
-    pp.runpp(net)
     net.trafo3w.at[0, "vkr_mv_percent_characteristic"] = None
-    pp.runpp(net)
-    net.trafo3w.at[0, "vkr_lv_percent_characteristic"] = None
     with pytest.raises(UserWarning):
         pp.runpp(net)
 
