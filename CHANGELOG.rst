@@ -41,6 +41,7 @@ Change Log
 - [ADDED] function :code:`getOTDF` to obtain Outage Transfer Distribution Factors, that can be used to analyse outages using the DC approximation of the power system
 - [ADDED] function :code:`outage_results_OTDF` to obtain the matrix of results for all outage scenarios, with rows as outage scenarios and columns as branch power flows in that scenario
 - [FIXED] add some safeguards for TDPF to avoid numerical issues in some cases
+- [FIXED] avoid attaching elements as duplicates to a group where some of the elements already exist
 - [ADDED] the function :code:`run_contingency` can raise a captured error if parameter :code:`raise_errors` is passed
 
 [2.13.1] - 2023-05-12
