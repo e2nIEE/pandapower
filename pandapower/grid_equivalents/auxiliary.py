@@ -362,16 +362,18 @@ def match_controller_and_new_elements(net, net_org):
         else:
             internal_buses = []
         for idx in net.controller.index.tolist():
-            elm = net.controller.object[idx].__dict__["element"]
-            var = net.controller.object[idx].__dict__["variable"]
-            elm_idxs = net.controller.object[idx].__dict__["element_index"]
-            org_elm_buses = list(net_org[elm].bus[elm_idxs].values)
+            et = net.controller.object[idx].__dict__.get("element")
+            # var = net.controller.object[idx].__dict__.get("variable")
+            elm_idxs = net.controller.object[idx].__dict__.get("element_index")
+            if et is None or elm_idxs is None:
+                continue
+            org_elm_buses = list(net_org[et].bus[elm_idxs].values)
 
-            new_elm_idxs = net[elm].index[net[elm].bus.isin(org_elm_buses)].tolist()
+            new_elm_idxs = net[et].index[net[et].bus.isin(org_elm_buses)].tolist()
             if len(new_elm_idxs) == 0:
                 tobe_removed.append(idx)
             else:
-                profile_name = [org_elm_buses.index(a) for a in net[elm].bus[new_elm_idxs].values]
+                profile_name = [org_elm_buses.index(a) for a in net[et].bus[new_elm_idxs].values]
 
                 net.controller.object[idx].__dict__["element_index"] = new_elm_idxs
                 net.controller.object[idx].__dict__["matching_params"]["element_index"] = new_elm_idxs
@@ -466,10 +468,10 @@ def _check_network(net):
     # --- check controller names
     if len(net.controller):
        for i in net.controller.index:
-           elm = net.controller.object[i].__dict__["element"]
-           if len(net[elm]) != len(set(net[elm].name.values)):
+           et = net.controller.object[i].__dict__.get("element")
+           if et is not None and len(net[et]) != len(set(net[et].name.values)):
                raise ValueError("if controllers are used, please give a name for every "
-                                 "element ("+elm+"), and make sure the name is unique.")
+                                 "element ("+et+"), and make sure the name is unique.")
 
 
 def get_boundary_vp(net_eq, bus_lookups):
