@@ -57,8 +57,9 @@ class OutputWriter(JSONSerializableClass):
         **output_path** (string, None) - Path to a folder where the output is written to.
 
         **output_file_type** (string, ".p") - output filetype to use.
-        Allowed file extensions: [.xls, .xlsx, .csv, .p, .json]
+        Allowed file extensions: [.xls, .xlsx, .csv, .csv.*, .p, .json]
         Note: XLS has a maximum number of 256 rows.
+        Note: CSV files can be saved in a compressed format like `.csv.zip`.
 
         **csv_separator** (string, ";") - The separator used when writing to a csv file
 
@@ -226,7 +227,7 @@ class OutputWriter(JSONSerializableClass):
                                              "file_extensions instead, e.g. 'json'.")
                         else:
                             raise ValueError(e)
-                elif self.output_file_type == ".csv":
+                elif "csv" in self.output_file_type.split("."):
                     data.to_csv(file_path, sep=self.csv_separator)
 
     def dump_to_file(self, net, append=False, recycle_options=None):
@@ -244,11 +245,13 @@ class OutputWriter(JSONSerializableClass):
             try:
                 if save_single and self.output_file_type in [".xls", ".xlsx"]:
                     self._save_single_xls_sheet(append)
-                elif self.output_file_type in [".csv", ".xls", ".xlsx", ".json", ".p"]:
+                elif self.output_file_type in [".xls", ".xlsx", ".json", ".p"]:
+                    self._save_separate(append)
+                elif "csv" in self.output_file_type.split("."):
                     self._save_separate(append)
                 else:
                     raise UserWarning(
-                        "Specify output file with .csv, .xls, .xlsx, .p or .json ending")
+                        "Specify output file with .csv, .csv.*, .xls, .xlsx, .p or .json ending")
                 if append:
                     self._init_output()
 
