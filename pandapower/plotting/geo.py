@@ -407,7 +407,7 @@ def dump_to_geojson(
             switches = net.switch.index
         if 'switch' in net.keys():
             cols = net.switch.columns
-            for ind, row in net.switch.mask(net.switch.isin(switches)).iterrows():
+            for ind, row in net.switch.loc[switches].iterrows():
                 if pd.isna(row.bus):
                     # switch is not connected to a bus! Will count this as missing geometry.
                     missing_geom[2] += 1
@@ -437,7 +437,7 @@ def dump_to_geojson(
                 trafos = net[t_type].index
             if t_type in net.keys():
                 cols = net[t_type].columns
-                for ind, row in net[t_type].mask(net[t_type].isin(trafos)).iterrows():
+                for ind, row in net[t_type].loc[trafos].iterrows():
                     prop = {
                         'pp_type': t_type,
                         'pp_index': ind,
