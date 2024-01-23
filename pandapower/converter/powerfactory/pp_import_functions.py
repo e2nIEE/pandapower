@@ -2661,7 +2661,7 @@ def _get_vsc_control_modes(item, mono=True):
 
     c_m = item.i_acdc
 
-    if c_m not in [3, 4, 5, 6]:
+    if c_m not in [0, 3, 4, 5, 6]:
         raise NotImplementedError(f"control mode for vscmono"
                                   f" {item.loc_name} not implemented: {c_m}")
 
@@ -2673,7 +2673,7 @@ def _get_vsc_control_modes(item, mono=True):
         q_set_ac = -item.qsetp * scaling
 
     control_mode_ac, control_mode_dc, control_value_ac, control_value_dc = {
-        0: ("", "", None, None),  # Vac-phi
+        0: ("slack", "p_mw", item.usetp, 0.),  # Vac-phi
         1: ("", "vm_pu", None, None),  # Vdc-phi
         2: ("", "", None, None),  # PWM-phi
         3: ("q_mvar", "vm_pu", q_set_ac, item.usetpdc),  # Vdc-Q
