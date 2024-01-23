@@ -371,7 +371,8 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
 
         if tdpf:
             # update the R, g, b for the tdpf_lines, and the Y-matrices
-            branch[tdpf_lines, BR_R] = r = r_ref_pu * (1 + alpha_pu * (T - t_ref_pu))
+            # here: limit the change of the R to reflect a realistic range of values for T to avoid numerical issues
+            branch[tdpf_lines, BR_R] = r = r_ref_pu * (1 + alpha_pu * np.clip(np.nan_to_num(T - t_ref_pu), -50, 250 / T_base))
             # todo expansion with SSC and VSC (that are not controllable)
             Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
             g, b = calc_g_b(r, x)
