@@ -1,0 +1,1 @@
+This is a tool for conversion of PSS Sincal grid models to pandapower. It was developed by Fraunhofer IEE for specific project needs. In its current form it only supports a subset of Sincal elements and their parameters. It might not function with the latest versions of Sincal and/or pandapower. Use on your own risk.
