@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 try:
-    import pplog
+    import pandaplan.core.pplog as pplog
 except:
     import logging as pplog
 
@@ -25,7 +25,7 @@ class DataSource(JSONSerializableClass):
     def __repr__(self):
         return self.__class__.__name__
 
-    def get_time_step_value(self, time_step, profile_name, scale_factor=1.0):
+    def get_time_step_value(self, time_step, profile_name, scale_factor=1.0):  # pragma: no cover
         """
         This method retrieves values of the data source according to the given parameters.
         For actual parameters look into the DataSource you are actually using.

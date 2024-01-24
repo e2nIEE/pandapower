@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -8,7 +8,7 @@ from pandas import read_json
 from numpy import nan
 import pandapower as pp
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 logger = logging.getLogger(__name__)
@@ -122,15 +122,17 @@ def create_cigre_network_hv(length_km_6a_6b=0.1):
     pp.create_gen(net_cigre_hv, bus12, vm_pu=1.03, p_mw=300, name='Generator 12')
 
     # Shunts
-    pp.create_shunt(net_cigre_hv, bus4, p_mw=0.0, q_mvar=-0.16, name='Shunt 4')
-    pp.create_shunt(net_cigre_hv, bus5, p_mw=0.0, q_mvar=-0.08, name='Shunt 5')
-    pp.create_shunt(net_cigre_hv, bus6a, p_mw=0.0, q_mvar=-0.18, name='Shunt 6a')
+    pp.create_shunt(net_cigre_hv, bus4, p_mw=0.0, q_mvar=-160, name='Shunt 4')
+    pp.create_shunt(net_cigre_hv, bus5, p_mw=0.0, q_mvar=-80, name='Shunt 5')
+    pp.create_shunt(net_cigre_hv, bus6a, p_mw=0.0, q_mvar=-180, name='Shunt 6a')
 
     # Bus geo data
     net_cigre_hv.bus_geodata = read_json(
         """{"x":{"0":4,"1":8,"2":20,"3":16,"4":12,"5":8,"6":12,"7":4,"8":20,"9":0,"10":8,"11":24,
         "12":16},"y":{"0":8.0,"1":8.0,"2":8.0,"3":8.0,"4":8.0,"5":6.0,"6":4.5,"7":1.0,"8":1.0,
-        "9":8.0,"10":12.0,"11":8.0,"12":4.5}}""")
+        "9":8.0,"10":12.0,"11":8.0,"12":4.5},
+        "coords":{"0":NaN,"1":NaN,"2":NaN,"3":NaN,"4":NaN,"5":NaN,"6":NaN,"7":NaN,"8":NaN,
+        "9":NaN,"10":NaN,"11":NaN,"12":NaN}}""")
     # Match bus.index
     net_cigre_hv.bus_geodata = net_cigre_hv.bus_geodata.loc[net_cigre_hv.bus.index]
     return net_cigre_hv
@@ -235,26 +237,26 @@ def create_cigre_network_mv(with_der=False):
 
     # Loads
     # Residential
-    pp.create_load_from_cosphi(net_cigre_mv, buses[0], 15.3, 0.98, "ind", name='Load R1')
-    pp.create_load_from_cosphi(net_cigre_mv, buses[2], 0.285, 0.97, "ind", name='Load R3')
-    pp.create_load_from_cosphi(net_cigre_mv, buses[3], 0.445, 0.97, "ind", name='Load R4')
-    pp.create_load_from_cosphi(net_cigre_mv, buses[4], 0.750, 0.97, "ind", name='Load R5')
-    pp.create_load_from_cosphi(net_cigre_mv, buses[5], 0.565, 0.97, "ind", name='Load R6')
-    pp.create_load_from_cosphi(net_cigre_mv, buses[7], 0.605, 0.97, "ind", name='Load R8')
-    pp.create_load_from_cosphi(net_cigre_mv, buses[9], 0.490, 0.97, "ind", name='Load R10')
-    pp.create_load_from_cosphi(net_cigre_mv, buses[10], 0.340, 0.97, "ind", name='Load R11')
-    pp.create_load_from_cosphi(net_cigre_mv, buses[11], 15.3, 0.98, "ind", name='Load R12')
-    pp.create_load_from_cosphi(net_cigre_mv, buses[13], 0.215, 0.97, "ind", name='Load R14')
+    pp.create_load_from_cosphi(net_cigre_mv, buses[0], 15.3, 0.98, "underexcited", name='Load R1')
+    pp.create_load_from_cosphi(net_cigre_mv, buses[2], 0.285, 0.97, "underexcited", name='Load R3')
+    pp.create_load_from_cosphi(net_cigre_mv, buses[3], 0.445, 0.97, "underexcited", name='Load R4')
+    pp.create_load_from_cosphi(net_cigre_mv, buses[4], 0.750, 0.97, "underexcited", name='Load R5')
+    pp.create_load_from_cosphi(net_cigre_mv, buses[5], 0.565, 0.97, "underexcited", name='Load R6')
+    pp.create_load_from_cosphi(net_cigre_mv, buses[7], 0.605, 0.97, "underexcited", name='Load R8')
+    pp.create_load_from_cosphi(net_cigre_mv, buses[9], 0.490, 0.97, "underexcited", name='Load R10')
+    pp.create_load_from_cosphi(net_cigre_mv, buses[10], 0.340, 0.97, "underexcited", name='Load R11')
+    pp.create_load_from_cosphi(net_cigre_mv, buses[11], 15.3, 0.98, "underexcited", name='Load R12')
+    pp.create_load_from_cosphi(net_cigre_mv, buses[13], 0.215, 0.97, "underexcited", name='Load R14')
 
     # Commercial / Industrial
-    pp.create_load_from_cosphi(net_cigre_mv, buses[0], 5.1, 0.95, "ind", name='Load CI1')
-    pp.create_load_from_cosphi(net_cigre_mv, buses[2], 0.265, 0.85, "ind", name='Load CI3')
-    pp.create_load_from_cosphi(net_cigre_mv, buses[6], 0.090, 0.85, "ind", name='Load CI7')
-    pp.create_load_from_cosphi(net_cigre_mv, buses[8], 0.675, 0.85, "ind", name='Load CI9')
-    pp.create_load_from_cosphi(net_cigre_mv, buses[9], 0.080, 0.85, "ind", name='Load CI10')
-    pp.create_load_from_cosphi(net_cigre_mv, buses[11], 5.28, 0.95, "ind", name='Load CI12')
-    pp.create_load_from_cosphi(net_cigre_mv, buses[12], 0.04, 0.85, "ind", name='Load CI13')
-    pp.create_load_from_cosphi(net_cigre_mv, buses[13], 0.390, 0.85, "ind", name='Load CI14')
+    pp.create_load_from_cosphi(net_cigre_mv, buses[0], 5.1, 0.95, "underexcited", name='Load CI1')
+    pp.create_load_from_cosphi(net_cigre_mv, buses[2], 0.265, 0.85, "underexcited", name='Load CI3')
+    pp.create_load_from_cosphi(net_cigre_mv, buses[6], 0.090, 0.85, "underexcited", name='Load CI7')
+    pp.create_load_from_cosphi(net_cigre_mv, buses[8], 0.675, 0.85, "underexcited", name='Load CI9')
+    pp.create_load_from_cosphi(net_cigre_mv, buses[9], 0.080, 0.85, "underexcited", name='Load CI10')
+    pp.create_load_from_cosphi(net_cigre_mv, buses[11], 5.28, 0.95, "underexcited", name='Load CI12')
+    pp.create_load_from_cosphi(net_cigre_mv, buses[12], 0.04, 0.85, "underexcited", name='Load CI13')
+    pp.create_load_from_cosphi(net_cigre_mv, buses[13], 0.390, 0.85, "underexcited", name='Load CI14')
 
     # Optional distributed energy recources
     if with_der in ["pv_wind", "all"]:
@@ -285,8 +287,11 @@ def create_cigre_network_mv(with_der=False):
     # Bus geo data
     net_cigre_mv.bus_geodata = read_json(
         """{"x":{"0":7.0,"1":4.0,"2":4.0,"3":4.0,"4":2.5,"5":1.0,"6":1.0,"7":8.0,"8":8.0,"9":6.0,
-        "10":4.0,"11":4.0,"12":10.0,"13":10.0,"14":10.0},"y":{"0":16,"1":15,"2":13,"3":11,"4":9,
-        "5":7,"6":3,"7":3,"8":5,"9":5,"10":5,"11":7,"12":15,"13":11,"14":5}}""")
+        "10":4.0,"11":4.0,"12":10.0,"13":10.0,"14":10.0},
+        "y":{"0":16,"1":15,"2":13,"3":11,"4":9,
+        "5":7,"6":3,"7":3,"8":5,"9":5,"10":5,"11":7,"12":15,"13":11,"14":5},
+        "coords":{"0":NaN,"1":NaN,"2":NaN,"3":NaN,"4":NaN,"5":NaN,"6":NaN,"7":NaN,"8":NaN,
+        "9":NaN,"10":NaN,"11":NaN,"12":NaN,"13":NaN,"14":NaN}}""")
     # Match bus.index
     net_cigre_mv.bus_geodata = net_cigre_mv.bus_geodata.loc[net_cigre_mv.bus.index]
     return net_cigre_mv
@@ -522,7 +527,12 @@ def create_cigre_network_lv():
         "10":10.0,"11":11.0,"12":5.0,"13":6.0,"14":7.0,"15":8.0,"16":9.0,"17":8.0,"18":11.0,
         "19":12.0,"20":1.0,"21":2.0,"22":3.0,"23":1.0,"24":2.0,"25":3.0,"26":4.0,"27":5.0,"28":6.0,
         "29":7.0,"30":8.0,"31":9.0,"32":10.0,"33":5.0,"34":6.0,"35":7.0,"36":7.0,"37":6.0,"38":7.0,
-        "39":8.0,"40":8.0,"41":9.0,"42":10.0,"43":11.0}}""")
+        "39":8.0,"40":8.0,"41":9.0,"42":10.0,"43":11.0},
+        "coords":{"0":NaN,"1":NaN,"2":NaN,"3":NaN,"4":NaN,"5":NaN,"6":NaN,"7":NaN,"8":NaN,
+        "9":NaN,"10":NaN,"11":NaN,"12":NaN,"13":NaN,"14":NaN,"15":NaN,"16":NaN,"17":NaN,
+        "18":NaN,"19":NaN,"20":NaN,"21":NaN,"22":NaN,"23":NaN,"24":NaN,"25":NaN,"26":NaN,
+        "27":NaN,"28":NaN,"29":NaN,"30":NaN,"31":NaN,"32":NaN,"33":NaN,"34":NaN,"35":NaN,
+        "36":NaN,"37":NaN,"38":NaN,"39":NaN,"40":NaN,"41":NaN,"42":NaN,"43":NaN}}""")
     # Match bus.index
     net_cigre_lv.bus_geodata = net_cigre_lv.bus_geodata.loc[net_cigre_lv.bus.index]
     return net_cigre_lv

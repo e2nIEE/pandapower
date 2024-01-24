@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -102,4 +102,4 @@ def test_cigre_lv():
     assert net.converged
 
 if __name__ == '__main__':
-    pytest.main(['-x', "test_cigre_networks.py"])
+    pytest.main([__file__, "-xs"])

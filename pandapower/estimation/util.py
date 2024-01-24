@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
@@ -60,8 +60,9 @@ def _get_bus_ppc_mapping(net, bus_to_be_fused):
         set(net.ext_grid.bus)).union(set(net.ward.bus)).union(
         set(net.xward.bus))
     # Run dc pp to get the ppc we need
-    pp.rundcpp(net)
-
+    #pp.rundcpp(net)
+    
+    pp.runpp(net, calculate_voltage_angles=True)
 
     bus_ppci = pd.DataFrame(data=net._pd2ppc_lookups['bus'], columns=["bus_ppci"])
     bus_ppci['bus_with_elements'] = bus_ppci.index.isin(bus_with_elements)
@@ -183,7 +184,7 @@ def add_virtual_pmu_meas_from_loadflow(net, v_std_dev=0.001, i_std_dev=0.1,
                         'trafo3w': {'side': ('hv', 'mv', 'lv'),
                                     'meas_type': ('i_ka', 'ia_degree', 'p_mw', 'q_mvar')}}
 
-    # Added degree result for branches    
+    # Added degree result for branches
     for br_type in branch_meas_type.keys():
         for side in branch_meas_type[br_type]['side']:
             p, q, vm, va = net["res_" + br_type]["p_%s_mw" % side].values, \

@@ -27,7 +27,7 @@ from pandapower.results_gen import _get_gen_results
 from pandapower.timeseries.output_writer import OutputWriter
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 
@@ -58,13 +58,16 @@ class TimeSeriesRunpp:
         bus = self.ppci["bus"]
         branch = self.ppci["branch"]
         gen = self.ppci["gen"]
+        svc = self.ppci["svc"]
+        tcsc = self.ppci["tcsc"]
+        ssc = self.ppci["ssc"]
         # compute complex bus power injections [generation - load]
         # self.Cg = _get_Cg(gen_on, bus)
         # Sbus = _get_Sbus(self.baseMVA, bus, gen, self.Cg)
         Sbus = makeSbus(self.baseMVA, bus, gen)
 
         # run the newton power  flow
-        V, success, _, _, _, _ = nr_pf.newtonpf(self.Ybus, Sbus, self.V, self.pv, self.pq, self.ppci, options)
+        V, success, _, _, _, _, _ = nr_pf.newtonpf(self.Ybus, Sbus, self.V, self.pv, self.pq, self.ppci, options, )
 
         if not success:
             logger.warning("Loadflow not converged")
@@ -77,7 +80,7 @@ class TimeSeriesRunpp:
         else:
             pfsoln = pfsoln_full
 
-        bus, gen, branch = pfsoln(self.baseMVA, bus, gen, branch, self.Ybus, self.Yf, self.Yt, V, self.ref,
+        bus, gen, branch = pfsoln(self.baseMVA, bus, gen, branch, svc, tcsc, ssc, self.Ybus, self.Yf, self.Yt, V, self.ref,
                                   self.ref_gens, Ibus=self.Ibus)
 
         self.ppci["bus"] = bus
@@ -110,7 +113,7 @@ class TimeSeriesRunpp:
         @return:
         """
         # read bus_pq array which contains p and q values for each bus in net
-        bus_pq = np.zeros(shape=(len(net["bus"].index), 2), dtype=np.float)
+        bus_pq = np.zeros(shape=(len(net["bus"].index), 2), dtype=float)
         bus_pq[net_bus_idx, 0] = ppc["bus"][ppc_bus_idx, PD] * 1e3
         bus_pq[net_bus_idx, 1] = ppc["bus"][ppc_bus_idx, QD] * 1e3
 
@@ -233,7 +236,7 @@ class TimeSeriesRunpp:
 
         # update Ybus based on this
         options = net._options
-        baseMVA, bus, gen, branch, ref, pv, pq, _, _, V, _ = nr_pf._get_pf_variables_from_ppci(ppci)
+        baseMVA, bus, gen, branch, svc, tcsc, ssc, ref, pv, pq, _, _, V, _ = nr_pf._get_pf_variables_from_ppci(ppci)
         self.ppci, self.Ybus, self.Yf, self.Yt = nr_pf._get_Y_bus(ppci, options, nr_pf.makeYbus_numba, baseMVA, bus,
                                                                   branch)
 

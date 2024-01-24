@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -14,7 +14,7 @@ from pandapower.auxiliary import _check_connectivity, _add_ppc_options
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.test.consistency_checks import rundcpp_with_consistency_checks
 from pandapower.test.loadflow.result_test_network_generator import result_test_network_generator_dcpp
-from pandapower.test.toolbox import add_grid_connection, create_test_line, assert_net_equal
+from pandapower.test.helper_functions import add_grid_connection, create_test_line, assert_net_equal
 
 
 def test_rundcpp_init():
@@ -85,7 +85,7 @@ def test_test_sn_mva():
         pp.rundcpp(net1)
         pp.rundcpp(net2)
         try:
-            assert_net_equal(net1, net2)
+            assert_net_equal(net1, net2, exclude_elms=["sn_mva"])
         except:
             raise UserWarning("Result difference due to sn_mva after adding %s" % net1.last_added_case)
 
@@ -109,6 +109,18 @@ def test_missing_gen():
     net.pop("res_gen")
     pp.rundcpp(net)
     assert np.allclose(net.res_gen.values, res_gen, equal_nan=True)
+
+
+def test_res_bus_vm():
+    net = nw.case4gs()
+    # run power flow to have bus vm_pu values
+    pp.runpp(net)
+    # now run DC pf and check that the vm_pu values are reset to 1
+    pp.rundcpp(net)
+    assert np.allclose(net.res_bus.loc[net.line.from_bus.values, "vm_pu"], net.res_line.vm_from_pu, equal_nan=True)
+    assert np.allclose(net.res_bus.loc[net.line.from_bus.values, "va_degree"], net.res_line.va_from_degree, equal_nan=True)
+    assert np.allclose(net.res_bus.loc[net.line.to_bus.values, "vm_pu"], net.res_line.vm_to_pu, equal_nan=True)
+    assert np.allclose(net.res_bus.loc[net.line.to_bus.values, "va_degree"], net.res_line.va_to_degree, equal_nan=True)
 
 
 if __name__ == "__main__":

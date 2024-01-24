@@ -14,7 +14,7 @@ Asymmetric Load
 Create Function
 =====================
 
-.. autofunction:: pandapower.create_asymmetric_load
+.. autofunction:: pandapower.create.create_asymmetric_load
 
 
 Input Parameters
@@ -51,6 +51,7 @@ Loads are modelled as PQ-buses in the power flow calculation.
 	:width: 40em
 	:alt: alternate Text
 	:align: center
+
 *Delta Load*
 
 .. image:: asym_del_load.png
@@ -89,6 +90,3 @@ Result Parameters
    :file: load_asymmetric_res.csv
    :delim: ;
    :widths: 10, 10, 45
-
-
-

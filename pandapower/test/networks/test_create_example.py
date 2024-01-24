@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -39,4 +39,4 @@ def test_create_realistic():
 
 
 if __name__ == '__main__':
-    pytest.main(['-x', "test_create_example.py"])
+    pytest.main([__file__, "-xs"])

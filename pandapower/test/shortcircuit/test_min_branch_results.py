@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -13,7 +13,7 @@ import pandapower.shortcircuit as sc
 
 @pytest.fixture
 def feeder_network():
-    net = pp.create_empty_network()
+    net = pp.create_empty_network(sn_mva=11)
     b1 = pp.create_bus(net, 110)
     b2 = pp.create_bus(net, 110)
     b3 = pp.create_bus(net, 110)
@@ -33,4 +33,4 @@ def feeder_network():
 
 
 if __name__ == '__main__':
-    pytest.main(["test_ring.py"])
+    pytest.main([__file__, "-xs"])

@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 import pandapower as pp
-from pandapower.test.toolbox import add_grid_connection, create_test_line
+from pandapower.test.helper_functions import add_grid_connection, create_test_line
 from pandapower.toolbox import nets_equal
+
 
 def result_test_network_generator2(net, sn_mva=1, skip_test_impedance=False):
     """ This is a generator for the result_test_network

@@ -30,22 +30,25 @@ def _check_necessary_opf_parameters(net, logger):
                 else:
                     controllables = net[element_type].index if element_type == 'gen' else []
 
-            missing_col = columns.loc[~columns.isin(net[element_type].columns)].values
-            na_col = [col for col in set(columns)-set(missing_col) if
-                      net[element_type][col].isnull().any()]
-
             # --- logging for missing data in element tables with controllables
-            if len(controllables) and len(missing_col):
-                if element_type != "ext_grid":
-                    logger.error("These columns are missing in " + element_type + ": " +
-                                 str(missing_col))
-                    error = True
-                else:  # "ext_grid" -> no error due to missing columns at ext_grid
-                    logger.debug("These missing columns in ext_grid are considered in OPF as " +
-                                 "+- 1000 TW.: " + str(missing_col))
-            # determine missing values
-            if len(na_col):
-                missing_val.append(element_type)
+            if len(controllables):
+
+                missing_col = columns.loc[~columns.isin(net[element_type].columns)].values
+                na_col = [col for col in set(columns)-set(missing_col) if
+                          net[element_type][col].loc[controllables].isnull().any()]
+
+                if len(missing_col):
+                    if element_type != "ext_grid":
+                        logger.error("These columns are missing in " + element_type + ": " +
+                                     str(missing_col))
+                        error = True
+                    else:  # "ext_grid" -> no error due to missing columns at ext_grid
+                        logger.debug("These missing columns in ext_grid are considered in OPF as " +
+                                     "+- 1000 TW.: " + str(missing_col))
+
+                # determine missing values
+                if len(na_col):
+                    missing_val.append(element_type)
 
     if missing_val:
         logger.info("These elements have missing power constraint values, which are considered " +
@@ -69,3 +72,12 @@ def _check_necessary_opf_parameters(net, logger):
 
     if error:
         raise KeyError("OPF parameters are not set correctly. See error log.")
+
+    # --- log multiple costs to elements
+    cost_check_df = pd.concat([net.poly_cost[["element", "et"]], net.poly_cost[["element", "et"]]],
+                              ignore_index=True)
+    cost_check_df["power_type"] = ["p"]*net.poly_cost.shape[0] + ["q"]*net.poly_cost.shape[0]
+    cost_check_df = pd.concat([cost_check_df, net.pwl_cost[["element", "et", "power_type"]]],
+                              ignore_index=True)
+    if cost_check_df.duplicated().any():
+        raise UserWarning("There are multiple costs to one or multiple elements.")

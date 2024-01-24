@@ -1,15 +1,16 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-
+import sys
 import copy
 
 import networkx as nx
 import pandas as pd
 import numpy as np
 
+from pandapower.auxiliary import soft_dependency_error
 import pandapower.topology as top
 
 try:
@@ -19,7 +20,7 @@ except ImportError:
     IGRAPH_INSTALLED = False
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 
@@ -41,14 +42,9 @@ def build_igraph_from_pp(net, respect_switches=False, buses=None):
     :Example:
         graph, meshed, roots = build_igraph_from_pp(net)
     """
-    try:
-        import igraph as ig
-    except (DeprecationWarning, ImportError):
-        raise ImportError("Please install python-igraph with "
-                          "`pip install python-igraph` or "
-                          "`conda install python-igraph` "
-                          "or from https://www.lfd.uci.edu/~gohlke/pythonlibs")
-    g = ig.Graph(directed=True)
+    if not IGRAPH_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "igraph")
+    g = igraph.Graph(directed=True)
     bus_index = net.bus.index if buses is None else np.array(buses)
     nr_buses = len(bus_index)
     g.add_vertices(nr_buses)
@@ -88,7 +84,8 @@ def build_igraph_from_pp(net, respect_switches=False, buses=None):
     mask = net.switch.et.values == "b"
     if respect_switches:
         mask &= ~open_switches
-    for switch in net.switch[mask].itertuples():
+    bus_mask = _get_element_mask_from_nodes(net, "switch", ["element", "bus"], buses)
+    for switch in net.switch[mask & bus_mask].itertuples():
         g.add_edge(pp_bus_mapping[switch.element],
                    pp_bus_mapping[switch.bus], weight=0.001)
 
@@ -110,9 +107,9 @@ def _get_element_mask_from_nodes(net, element, node_elements, nodes=None):
         for node_element in node_elements:
             mask &= np.isin(net[element][node_element].values, nodes)
     return mask
-    
+
 def _get_switch_mask(net, element, switch_element, open_switches):
-    element_switches = net.switch.et.values == switch_element               
+    element_switches = net.switch.et.values == switch_element
     open_elements = net.switch.element.values[open_switches & element_switches]
     open_element_mask = np.in1d(net[element].index, open_elements, invert=True)
     return open_element_mask
@@ -145,29 +142,32 @@ def coords_from_igraph(graph, roots, meshed=False, calculate_meshed=False):
     return list(zip(*layout.coords))
 
 
-def coords_from_nxgraph(mg=None):
+def coords_from_nxgraph(mg=None, layout_engine='neato'):
     """
     Create a list of generic coordinates from a networkx graph layout.
 
     :param mg: The networkx graph on which the coordinates shall be based
     :type mg: networkx.Graph
+    :param layout_engine: GraphViz Layout Engine for layouting a network. See https://graphviz.org/docs/layouts/
+    :type layout_engine: str
     :return: coords - list of coordinates from the graph layout
     """
     # workaround for bug in agraph
-    for u, v in mg.edges(data=False, keys=False):
+    for u, v in mg.edges(data=False):
         if 'key' in mg[int(u)][int(v)]:
             del mg[int(u)][int(v)]['key']
         if 'key' in mg[int(u)][int(v)][0]:
             del mg[int(u)][int(v)][0]['key']
     # ToDo: Insert fallback layout for nxgraph
-    return list(zip(*(list(nx.drawing.nx_agraph.graphviz_layout(mg, prog='neato').values()))))
+    return list(zip(*(list(nx.drawing.nx_agraph.graphviz_layout(mg, prog=layout_engine).values()))))
 
 
 def create_generic_coordinates(net, mg=None, library="igraph",
                                respect_switches=False,
                                geodata_table="bus_geodata",
                                buses=None,
-                               overwrite=False):
+                               overwrite=False,
+                               layout_engine='neato'):
     """
     This function will add arbitrary geo-coordinates for all buses based on an analysis of branches
     and rings. It will remove out of service buses/lines from the net. The coordinates will be
@@ -177,6 +177,8 @@ def create_generic_coordinates(net, mg=None, library="igraph",
     :type net: pandapowerNet
     :param mg: Existing networkx multigraph, if available. Convenience to save computation time.
     :type mg: networkx.Graph
+    :param respect_switches: respect switches in a network for generic coordinates
+    :type respect_switches: bool
     :param library: "igraph" to use igraph package or "networkx" to use networkx package
     :type library: str
     :param geodata_table: table to write the generic geodatas to
@@ -185,6 +187,8 @@ def create_generic_coordinates(net, mg=None, library="igraph",
     :type buses: list
     :param overwrite: overwrite existing geodata
     :type overwrite: bool
+    :param layout_engine: GraphViz Layout Engine for layouting a network. See https://graphviz.org/docs/layouts/
+    :type layout_engine: str
     :return: net - pandapower network with added geo coordinates for the buses
 
     :Example:
@@ -194,11 +198,7 @@ def create_generic_coordinates(net, mg=None, library="igraph",
     _prepare_geodata_table(net, geodata_table, overwrite)
     if library == "igraph":
         if not IGRAPH_INSTALLED:
-            raise UserWarning("The library igraph is selected for plotting, but not installed "
-                              "correctly. Please install python-igraph with "
-                              "`pip install python-igraph` or "
-                              "`conda install python-igraph` "
-                              "or from https://www.lfd.uci.edu/~gohlke/pythonlibs")
+            soft_dependency_error("build_igraph_from_pp()", "igraph")
         graph, meshed, roots = build_igraph_from_pp(net, respect_switches, buses=buses)
         coords = coords_from_igraph(graph, roots, meshed)
     elif library == "networkx":
@@ -207,7 +207,7 @@ def create_generic_coordinates(net, mg=None, library="igraph",
                                      include_out_of_service=True)
         else:
             nxg = copy.deepcopy(mg)
-        coords = coords_from_nxgraph(nxg)
+        coords = coords_from_nxgraph(nxg, layout_engine=layout_engine)
     else:
         raise ValueError("Unknown library %s - chose 'igraph' or 'networkx'" % library)
     if len(coords):
@@ -222,16 +222,16 @@ def _prepare_geodata_table(net, geodata_table, overwrite):
             net[geodata_table].drop(net[geodata_table].index, inplace=True)
         else:
             raise UserWarning("Table %s is not empty - use overwrite=True to overwrite existing geodata"%geodata_table)
-            
+
     if geodata_table not in net or net[geodata_table] is None:
         net[geodata_table] = pd.DataFrame(columns=["x", "y"])
-    
+
 def fuse_geodata(net):
     mg = top.create_nxgraph(net, include_lines=False, include_impedances=False,
                             respect_switches=False)
     geocoords = set(net.bus_geodata.index)
     for area in top.connected_components(mg):
         if len(area & geocoords) > 1:
-            geo = net.bus_geodata.loc[area & geocoords].values[0]
+            geo = net.bus_geodata.loc[list(area & geocoords)].values[0]
             for bus in area:
                 net.bus_geodata.loc[bus] = geo

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -20,7 +20,7 @@ def test_to_ppc_and_mpc():
     functions = ['case4gs', 'case6ww', 'case30', 'case39']
     for fn in functions:
         # get pypower grids with results
-        ppc_net = get_testgrids(fn, 'pypower_cases.p')
+        ppc_net = get_testgrids('pypower_cases', fn+'.json')
 
         # get pandapower grids
         pandapower_module = __import__('pandapower', fromlist=['networks'])
@@ -50,7 +50,7 @@ def test_to_ppc_and_mpc():
             # get lookup pp2ppc
             bus_lookup = net["_pd2ppc_lookups"]["bus"]
             # check for equality in bus voltages
-            pp_buses = bus_lookup[res_converted_pp['bus'][:, BUS_I].astype(int)]
+            pp_buses = bus_lookup[res_converted_pp['bus'][:, BUS_I].astype(np.int64)]
             res1 = res_converted_pp['bus'][pp_buses, VM:VA + 1]
             res2 = ppc_net['bus'][:, VM:VA + 1]
             assert np.allclose(res1, res2)
@@ -59,4 +59,4 @@ def test_to_ppc_and_mpc():
 
 
 if __name__ == "__main__":
-    pytest.main(["test_to_ppc_and_mpc.py", "-s"])
+    pytest.main([__file__, "-xs"])

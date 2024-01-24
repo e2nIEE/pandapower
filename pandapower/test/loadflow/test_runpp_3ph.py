@@ -7,8 +7,12 @@ Tests 3 phase power flow algorithm
 import pandapower as pp
 import numpy as np
 import pytest
+
+import pandapower.toolbox
 from pandapower.test.loadflow.PF_Results import get_PF_Results
-from pandapower.test.consistency_checks import runpp_3ph_with_consistency_checks
+from pandapower.test.consistency_checks import runpp_3ph_with_consistency_checks, runpp_with_consistency_checks
+import os
+
 
 @pytest.fixture
 def net():
@@ -113,7 +117,9 @@ def test_out_serv_load(net):
     check_it(net)
 
 
-def test_4bus_network():
+@pytest.mark.parametrize("init", ["auto", "results", "flat", "dc"])
+@pytest.mark.parametrize("recycle", [None, {"bus_pq": True, "Ybus": True}, {"bus_pq": True, "Ybus": False}])
+def test_4bus_network(init, recycle):
     v_base = 110                     # 110kV Base Voltage
     mva_base = 100                      # 100 MVA
     net = pp.create_empty_network(sn_mva=mva_base)
@@ -149,7 +155,8 @@ def test_4bus_network():
                               p_c_mw=10, q_c_mvar=5)
     pp.create_asymmetric_load(net, busp, p_a_mw=50, q_a_mvar=20, p_b_mw=60, q_b_mvar=20,
                               p_c_mw=10, q_c_mvar=5)
-    runpp_3ph_with_consistency_checks(net)
+    runpp_3ph_with_consistency_checks(net, init=init, recycle=recycle)
+    runpp_3ph_with_consistency_checks(net, init=init, recycle=recycle)
     assert net['converged']
 
     bus_pp = np.abs(net.res_bus_3ph[['vm_a_pu', 'vm_b_pu', 'vm_c_pu']]
@@ -299,16 +306,86 @@ def test_3ph_two_bus_line_powerfactory():
     assert np.max(np.abs(line_load_pp - line_load_pf)) < 1e-2
 
 
-def check_results(net, vc, result):
-    res_vm_kv = np.concatenate(
-            (
-             net.res_bus_3ph[(net.bus.zone == vc) & (net.bus.in_service)].vm_a_pu,
-             net.res_bus_3ph[(net.bus.zone == vc) & (net.bus.in_service)].vm_b_pu,
-             net.res_bus_3ph[(net.bus.zone == vc) & (net.bus.in_service)].vm_c_pu
-            ), axis=0)
-    assert np.allclose(result, res_vm_kv, atol=1e-4)
-    if not np.allclose(result, res_vm_kv, atol=1e-4):
-        raise ValueError("Incorrect results for vector group %s" % vc, res_vm_kv, result)
+def check_bus_voltages(net, result, trafo_vector_group):
+    res_vm_pu = []
+    ordered_bus_table = net.bus.sort_values(by='name').reset_index(drop=True)
+    for i in range(len(ordered_bus_table)):
+        index = net.bus[net.bus.name == ordered_bus_table['name'][i]].index[0]
+        res_vm_pu.append(net.res_bus_3ph.vm_a_pu[index])
+        res_vm_pu.append(net.res_bus_3ph.vm_b_pu[index])
+        res_vm_pu.append(net.res_bus_3ph.vm_c_pu[index])
+
+    # max_tol = 0
+    # for tol in [1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7]:
+    #     if np.allclose(result, res_vm_pu, atol=tol):
+    #         max_tol = tol
+    # print('Voltage Magnitude for %s is within tolerance of %s' % (trafo_vector_group, max_tol))
+
+    tolerances = {'YNyn': 1e-05,
+                  'Dyn': 1e-05,
+                  'Yzn': 1e-03}
+
+    assert np.allclose(result, res_vm_pu, atol=tolerances[trafo_vector_group], rtol=0), f"Incorrect results for {trafo_vector_group}"
+
+
+def check_line_currents(net, result, trafo_vector_group):
+    res_line_i_ka = []
+    ordered_line_table = net.line.sort_values(by='name').reset_index(drop=True)
+    for i in range(len(ordered_line_table)):
+        index = net.line[net.line.name == ordered_line_table['name'][i]].index[0]
+        res_line_i_ka.append(net.res_line_3ph.i_a_from_ka[index])
+        res_line_i_ka.append(net.res_line_3ph.i_b_from_ka[index])
+        res_line_i_ka.append(net.res_line_3ph.i_c_from_ka[index])
+        res_line_i_ka.append(net.res_line_3ph.i_a_to_ka[index])
+        res_line_i_ka.append(net.res_line_3ph.i_b_to_ka[index])
+        res_line_i_ka.append(net.res_line_3ph.i_c_to_ka[index])
+
+    # max_tol = 0
+    # for tol in [1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7]:
+    #     if np.allclose(result, res_line_i_ka, atol=tol):
+    #         max_tol = tol
+    # print('Line current for %s is within tolerance of %s' % (trafo_vector_group, max_tol))
+
+    tolerances = {'YNyn': 1e-07,
+                  'Dyn': 1e-07,
+                  'Yzn': 1e-04}
+
+    assert np.allclose(result, res_line_i_ka, atol=tolerances[trafo_vector_group])
+    if not np.allclose(result, res_line_i_ka, atol=tolerances[trafo_vector_group]):
+        raise ValueError("Incorrect results for vector group %s" % trafo_vector_group, res_line_i_ka, result)
+
+
+def check_trafo_currents(net, result, trafo_vector_group):
+    res_trafo_i_ka = []
+    ordered_trafo_table = net.trafo.sort_values(by='name').reset_index(drop=True)
+    for i in range(len(ordered_trafo_table)):
+        index = net.trafo[net.trafo.name == ordered_trafo_table['name'][i]].index[0]
+        res_trafo_i_ka.append(net.res_trafo_3ph.i_a_hv_ka[index])
+        res_trafo_i_ka.append(net.res_trafo_3ph.i_b_hv_ka[index])
+        res_trafo_i_ka.append(net.res_trafo_3ph.i_c_hv_ka[index])
+        res_trafo_i_ka.append(net.res_trafo_3ph.i_a_lv_ka[index])
+        res_trafo_i_ka.append(net.res_trafo_3ph.i_b_lv_ka[index])
+        res_trafo_i_ka.append(net.res_trafo_3ph.i_c_lv_ka[index])
+
+    # max_tol = 0
+    # for tol in [1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7]:
+    #     if np.allclose(result, res_trafo_i_ka, atol=tol):
+    #         max_tol = tol
+    # print('Trafo current for %s is within tolerance of %s' % (trafo_vector_group, max_tol))
+
+    tolerances = {'YNyn': 1e-03,
+                  'Dyn': 1e-03,
+                  'Yzn': 1e-03}
+
+    assert np.allclose(result, res_trafo_i_ka, atol=tolerances[trafo_vector_group])
+    if not np.allclose(result, res_trafo_i_ka, atol=tolerances[trafo_vector_group]):
+        raise ValueError("Incorrect results for vector group %s" % trafo_vector_group, res_trafo_i_ka, result)
+
+
+def check_results(net, trafo_vector_group, results):
+    check_bus_voltages(net, results[0], trafo_vector_group)
+    check_line_currents(net, results[1], trafo_vector_group)
+    check_trafo_currents(net, results[2], trafo_vector_group)
 
 
 def make_nw(net, bushv, tap_ps, case, vector_group):
@@ -360,16 +437,14 @@ def make_nw(net, bushv, tap_ps, case, vector_group):
 
 
 def test_trafo_asym():
-    results = get_PF_Results()   # Results taken out from PF
-    for bushv in [10]:
-        for tap_ps in [0]:
-            for loadtyp in ["delta", "wye", "delta_wye", "bal_wye"]:
-                for vc in ["YNyn", "Dyn", "Yzn"]:  # ,"Yyn"]:
-                    net = pp.create_empty_network(sn_mva=100)
-                    make_nw(net, bushv, tap_ps, loadtyp, vc)
-                    runpp_3ph_with_consistency_checks(net)
-                    assert net['converged']
-                    check_results(net, vc, results[bushv][tap_ps][loadtyp][vc])
+    nw_dir = os.path.abspath(os.path.join(pp.pp_dir, "test/loadflow"))
+    # only 3 vector groups are supported in the 3ph power flow
+    for trafo_vector_group in ["YNyn", "Dyn", "Yzn"]:
+        net = pp.from_json(nw_dir + '/runpp_3ph Validation.json')
+        net['trafo'].vector_group = trafo_vector_group
+        runpp_3ph_with_consistency_checks(net)
+        assert net['converged']
+        check_results(net, trafo_vector_group, get_PF_Results(trafo_vector_group))
 
 
 def test_2trafos():
@@ -403,7 +478,7 @@ def test_3ph_isolated_nodes():
                              "c_nf_per_km": 230}, "example_type")
     # Loads on supplied buses
     pp.create_asymmetric_load(net, busk, p_a_mw=50, q_a_mvar=50, p_b_mw=10, q_b_mvar=15,
-                    p_c_mw=10, q_c_mvar=5)
+                              p_c_mw=10, q_c_mvar=5)
     pp.create_load(net, bus=busl, p_mw=7, q_mvar=0.070, name="Load 1")
     # Loads on unsupplied buses
     pp.create_load(net, bus=busy, p_mw=70, q_mvar=70, name="Load Y")
@@ -418,5 +493,73 @@ def test_3ph_isolated_nodes():
                        "p_c_mw", "q_c_mvar"]], 0.0)
 
 
+def test_balanced_power_flow_with_unbalanced_loads_and_sgens():
+    net = pp.create_empty_network(sn_mva=100)
+    make_nw(net, 10, 0, "wye", "Dyn")
+    pp.create_asymmetric_sgen(net, 1, p_a_mw=0.01, p_b_mw=0.02, scaling=0.8)
+    runpp_with_consistency_checks(net)
+
+    vm_pu = net.res_bus.vm_pu
+
+    net.asymmetric_load.in_service = False
+    pp.create_load(net, bus=net.asymmetric_load.bus.iloc[0],
+                   scaling=net.asymmetric_load.scaling.iloc[0],
+                   p_mw=net.asymmetric_load.loc[0, ["p_a_mw", "p_b_mw", "p_c_mw"]].sum(),
+                   q_mvar=net.asymmetric_load.loc[0, ["q_a_mvar", "q_b_mvar", "q_c_mvar"]].sum()
+                   )
+    runpp_with_consistency_checks(net)
+    assert net.res_bus.vm_pu.equals(vm_pu)
+
+    net.asymmetric_sgen.in_service = False
+    pp.create_sgen(net, bus=net.asymmetric_sgen.bus.iloc[0],
+                   scaling=net.asymmetric_sgen.scaling.iloc[0],
+                   p_mw=net.asymmetric_sgen.loc[0, ["p_a_mw", "p_b_mw", "p_c_mw"]].sum(),
+                   q_mvar=net.asymmetric_sgen.loc[0, ["q_a_mvar", "q_b_mvar", "q_c_mvar"]].sum()
+                   )
+    runpp_with_consistency_checks(net)
+    assert net.res_bus.vm_pu.equals(vm_pu)
+
+
+def test_3ph_with_impedance():
+    nw_dir = os.path.abspath(os.path.join(pp.pp_dir, "test/loadflow"))
+    net = pp.from_json(nw_dir + '/runpp_3ph Validation.json')
+    net.line.c_nf_per_km = 0.
+    net.line.c0_nf_per_km = 0.
+    net_imp = net.deepcopy()
+    pp.replace_line_by_impedance(net_imp, net.line.index, 100)
+    pp.runpp_3ph(net)
+    pp.runpp_3ph(net_imp)
+    assert pandapower.toolbox.dataframes_equal(net.res_bus_3ph, net_imp.res_bus_3ph)
+
+
+def test_shunt_3ph():
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, 20.0)
+    b2 = pp.create_bus(net, 20.0)
+    pp.create_ext_grid(net, b1, s_sc_max_mva=1000, rx_max=0.1, x0x_max=1.0, r0x0_max=0.1)
+    pp.create_line_from_parameters(net, b1, b2, length_km=1, r_ohm_per_km=1, x_ohm_per_km=1, c_nf_per_km=1,
+                                   r0_ohm_per_km=1, x0_ohm_per_km=1, c0_nf_per_km=1, max_i_ka=1)
+    pp.create_shunt(net, in_service=True, bus=b2, p_mw=1, q_mvar=1)
+    pp.runpp_3ph(net)
+
+    bus_cols = ["vm_a_pu", "va_a_degree", "vm_b_pu", "va_b_degree", "vm_c_pu", "va_c_degree"]
+    bus_pp = np.abs(net.res_bus_3ph[bus_cols].values)
+    bus_expected = np.abs(np.array([[1.0, 0.0, 1.0, -120.0, 1.0, 120.0],
+                                    [0.9950250311521571, -8.955222949441059e-06, 0.995025031152157, -120.00000895522294,
+                                     0.995025031152157, 119.99999104477705]]))
+
+    assert np.max(np.abs(bus_pp - bus_expected)) < 1e-5
+
+    line_cols = ["p_a_from_mw", "q_a_from_mvar", "p_b_from_mw", "q_b_from_mvar", "q_c_from_mvar", "p_a_to_mw",
+                 "q_a_to_mvar", "p_b_to_mw", "q_b_to_mvar", "p_c_to_mw", "q_c_to_mvar"]
+    line_power_pp = np.abs(net.res_line_3ph[line_cols].values)
+    line_power_expected = np.abs(np.array(
+        [[0.33167495789351165, 0.33163327786948577, 0.33167495789351165, 0.33163327786948565, 0.33163327786948565,
+          -0.3300249368894127, -0.3300249368948133, -0.3300249368894127, -0.3300249368948133, -0.3300249368894127,
+          -0.3300249368948134]]))
+    assert np.max(np.abs(line_power_pp - line_power_expected)) < 1e-5
+
+
 if __name__ == "__main__":
-    pytest.main(["test_runpp_3ph.py"])
+    pytest.main([__file__, "-xs"])
+

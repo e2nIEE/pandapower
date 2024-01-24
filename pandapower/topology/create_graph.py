@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 from itertools import combinations
 
@@ -13,10 +13,11 @@ from pandapower.build_branch import _calc_impedance_parameters_from_dataframe, \
     _trafo_df_from_trafo3w
 from pandapower.build_bus import _build_bus_ppc
 from pandapower.pd2ppc import _init_ppc
+from pandapower.pf.makeYbus_facts import calc_y_svc_pu
 from pandapower.pypower.idx_bus import BASE_KV
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 
@@ -40,7 +41,7 @@ logger = logging.getLogger(__name__)
 
 
 def create_nxgraph(net, respect_switches=True, include_lines=True, include_impedances=True,
-                   include_dclines=True, include_trafos=True, include_trafo3ws=True,
+                   include_dclines=True, include_trafos=True, include_trafo3ws=True, include_tcsc=True,
                    nogobuses=None, notravbuses=None, multi=True,
                    calc_branch_impedances=False, branch_impedance_unit="ohm",
                    library="networkx", include_out_of_service=False):
@@ -64,6 +65,9 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
 
         **include_impedances** (boolean or , True) - determines, whether or which per unit
             impedances (net.impedance) are converted to edges
+
+        **include_tcsc** (boolean or , True) - determines, whether or which TCSC elements (net.tcsc)
+            are converted to edges
 
         **include_dclines** (boolean or index, True) - determines, whether or which dclines get
             converted to edges
@@ -92,7 +96,7 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
             calc_branch_impedances=True. If it is set to "ohm", the parameters 'r_ohm',
             'x_ohm' and 'z_ohm' are added to each branch. If it is set to "pu", the
             parameters are 'r_pu', 'x_pu' and 'z_pu'.
-            
+
         **include_out_of_service** (bool, False) - defines if out of service buses are included in the nx graph
 
      OUTPUT:
@@ -104,11 +108,17 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
          mg = top.create_nx_graph(net, respect_switches = False)
          # converts the pandapower network "net" to a MultiGraph. Open switches will be ignored.
 
+    Parameters
+    ----------
+    include_tcsc
+
     """
 
     if multi:
         if graph_tool_available and library == "graph_tool":
             mg = GraphToolInterface(net.bus.index)
+        elif not graph_tool_available and library == "graph_tool":
+            raise UserWarning("graph_tool selected as the library for topological analysis but it is not installed")
         else:
             mg = nx.MultiGraph()
     else:
@@ -160,6 +170,21 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
             parameter[:, BR_X] = x * baseR
 
         add_edges(mg, indices, parameter, in_service, net, "impedance",
+                  calc_branch_impedances, branch_impedance_unit)
+
+    tcsc = get_edge_table(net, "tcsc", include_tcsc)
+    if tcsc is not None:
+        indices, parameter, in_service = init_par(tcsc, calc_branch_impedances)
+        indices[:, F_BUS] = tcsc.from_bus.values
+        indices[:, T_BUS] = tcsc.to_bus.values
+
+        if calc_branch_impedances:
+            baseR = get_baseR(net, ppc, tcsc.from_bus.values)
+            x = 1 / calc_y_svc_pu(net.tcsc.thyristor_firing_angle_degree, net.tcsc.x_l_ohm / baseR, net.tcsc.x_cvar_ohm / baseR)
+            parameter[:, BR_R] = 0
+            parameter[:, BR_X] = x * (baseR if branch_impedance_unit == "ohm" else 1)
+
+        add_edges(mg, indices, parameter, in_service, net, "tcsc",
                   calc_branch_impedances, branch_impedance_unit)
 
     dclines = get_edge_table(net, "dcline", include_dclines)
@@ -272,7 +297,8 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
     # remove out of service buses
     if not include_out_of_service:
         for b in net.bus.index[~net.bus.in_service.values]:
-            mg.remove_node(b)
+            if b in mg:
+                mg.remove_node(b)
 
     return mg
 
@@ -330,12 +356,12 @@ def get_baseR(net, ppc, buses):
 
 def init_par(tab, calc_branch_impedances=False):
     n = tab.shape[0]
-    indices = np.zeros((n, 3), dtype=np.int)
+    indices = np.zeros((n, 3), dtype=np.int64)
     indices[:, INDEX] = tab.index
     if calc_branch_impedances:
-        parameters = np.zeros((n, 4), dtype=np.float)
+        parameters = np.zeros((n, 4), dtype=float)
     else:
-        parameters = np.zeros((n, 1), dtype=np.float)
+        parameters = np.zeros((n, 1), dtype=float)
 
     if "in_service" in tab:
         return indices, parameters, tab.in_service.values.copy()

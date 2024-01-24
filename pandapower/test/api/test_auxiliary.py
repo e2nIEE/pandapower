@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-
 
 import pytest
 import gc
@@ -10,10 +9,12 @@ import copy
 import numpy as np
 import pandas as pd
 
+from pandapower.control import SplineCharacteristic
+from pandapower.control.util.characteristic import LogSplineCharacteristic
+
 try:
     import geopandas as gpd
     import shapely.geometry
-
     GEOPANDAS_INSTALLED = True
 except ImportError:
     GEOPANDAS_INSTALLED = False
@@ -119,7 +120,7 @@ def test_memory_leaks():
     net = pp.networks.example_simple()
 
     # first, test to check that there are no memory leaks
-    types_dict1 = pp.toolbox.get_gc_objects_dict()
+    types_dict1 = pp.get_gc_objects_dict()
     num = 3
     for _ in range(num):
         net_copy = copy.deepcopy(net)
@@ -128,7 +129,7 @@ def test_memory_leaks():
 
     gc.collect()
 
-    types_dict2 = pp.toolbox.get_gc_objects_dict()
+    types_dict2 = pp.get_gc_objects_dict()
 
     assert types_dict2[pandapower.auxiliary.pandapowerNet] - types_dict1[pandapower.auxiliary.pandapowerNet] == 1
     assert types_dict2[pandapower.control.ContinuousTapControl] - types_dict1.get(
@@ -138,7 +139,7 @@ def test_memory_leaks():
 def test_memory_leaks_demo():
     net = pp.networks.example_simple()
     # first, test to check that there are no memory leaks
-    types_dict1 = pp.toolbox.get_gc_objects_dict()
+    types_dict1 = pp.get_gc_objects_dict()
     # now, demonstrate how a memory leak occurs
     # emulates the earlier behavior before the fix with weakref
     num = 3
@@ -148,13 +149,13 @@ def test_memory_leaks_demo():
 
     # demonstrate how the garbage collector doesn't remove the objects even if called explicitly
     gc.collect()
-    types_dict2 = pp.toolbox.get_gc_objects_dict()
+    types_dict2 = pp.get_gc_objects_dict()
     assert types_dict2[pandapower.auxiliary.pandapowerNet] - types_dict1[pandapower.auxiliary.pandapowerNet] == num
     assert types_dict2[MemoryLeakDemo] - types_dict1.get(MemoryLeakDemo, 0) == num
 
 
 def test_memory_leaks_no_copy():
-    types_dict0 = pp.toolbox.get_gc_objects_dict()
+    types_dict0 = pp.get_gc_objects_dict()
     num = 3
     for _ in range(num):
         net = pp.create_empty_network()
@@ -162,13 +163,13 @@ def test_memory_leaks_no_copy():
         pp.control.ConstControl(net, 'sgen', 'p_mw', 0)
 
     gc.collect()
-    types_dict1 = pp.toolbox.get_gc_objects_dict()
+    types_dict1 = pp.get_gc_objects_dict()
     assert types_dict1[pandapower.control.ConstControl] - types_dict0.get(pandapower.control.ConstControl, 0) == 1
     assert types_dict1[pandapower.auxiliary.pandapowerNet] - types_dict0.get(pandapower.auxiliary.pandapowerNet, 0) <= 1
 
 
 def test_memory_leak_no_copy_demo():
-    types_dict1 = pp.toolbox.get_gc_objects_dict()
+    types_dict1 = pp.get_gc_objects_dict()
     # now, demonstrate how a memory leak occurs
     # emulates the earlier behavior before the fix with weakref
     num = 3
@@ -178,34 +179,140 @@ def test_memory_leak_no_copy_demo():
 
     # demonstrate how the garbage collector doesn't remove the objects even if called explicitly
     gc.collect()
-    types_dict2 = pp.toolbox.get_gc_objects_dict()
+    types_dict2 = pp.get_gc_objects_dict()
     assert types_dict2[pandapower.auxiliary.pandapowerNet] - \
            types_dict1.get(pandapower.auxiliary.pandapowerNet, 0) >= num-1
     assert types_dict2[MemoryLeakDemo] - types_dict1.get(MemoryLeakDemo, 0) == num
 
 
 def test_memory_leak_df():
-    types_dict1 = pp.toolbox.get_gc_objects_dict()
+    types_dict1 = pp.get_gc_objects_dict()
     num = 3
     for _ in range(num):
         df = pd.DataFrame()
         MemoryLeakDemoDF(df)
 
     gc.collect()
-    types_dict2 = pp.toolbox.get_gc_objects_dict()
+    types_dict2 = pp.get_gc_objects_dict()
     assert types_dict2[MemoryLeakDemoDF] - types_dict1.get(MemoryLeakDemoDF, 0) == num
 
 
 def test_memory_leak_dict():
-    types_dict1 = pp.toolbox.get_gc_objects_dict()
+    types_dict1 = pp.get_gc_objects_dict()
     num = 3
     for _ in range(num):
         d = dict()
         MemoryLeakDemoDict(d)
 
     gc.collect()
-    types_dict2 = pp.toolbox.get_gc_objects_dict()
+    types_dict2 = pp.get_gc_objects_dict()
     assert types_dict2[MemoryLeakDemoDict] - types_dict1.get(MemoryLeakDemoDict, 0) <= 1
+
+
+def test_create_trafo_characteristics():
+    net = pp.networks.example_multivoltage()
+
+    # test 2 modes, multiple index and single index, for 2w trafo
+    pp.control.create_trafo_characteristics(net, "trafo", [1], 'vk_percent', [[-2,-1,0,1,2]], [[2,3,4,5,6]])
+    assert "characteristic" in net
+    assert "tap_dependent_impedance" in net.trafo.columns
+    assert net.trafo.tap_dependent_impedance.dtype == np.bool_
+    assert net.trafo.tap_dependent_impedance.at[1]
+    assert not net.trafo.tap_dependent_impedance.at[0]
+    assert "vk_percent_characteristic" in net.trafo.columns
+    assert net.trafo.at[1, 'vk_percent_characteristic'] == 0
+    assert pd.isnull(net.trafo.at[0, 'vk_percent_characteristic'])
+    assert net.trafo.vk_percent_characteristic.dtype == pd.Int64Dtype()
+    assert "vkr_percent_characteristic" not in net.trafo.columns
+
+    pp.control.create_trafo_characteristics(net, "trafo", 1, 'vkr_percent', [-2,-1,0,1,2], [1.323,1.324,1.325,1.326,1.327])
+    assert len(net.characteristic) == 2
+    assert "vkr_percent_characteristic" in net.trafo.columns
+    assert net.trafo.at[1, 'vkr_percent_characteristic'] == 1
+    assert pd.isnull(net.trafo.at[0, 'vkr_percent_characteristic'])
+    assert net.trafo.vkr_percent_characteristic.dtype == pd.Int64Dtype()
+
+    assert isinstance(net.characteristic.object.at[0], pp.control.SplineCharacteristic)
+    assert isinstance(net.characteristic.object.at[1], pp.control.SplineCharacteristic)
+
+    # test for 3w trafo
+    pp.control.create_trafo_characteristics(net, "trafo3w", 0, 'vk_hv_percent', [-8, -4, 0, 4, 8], [8.1, 9.1, 10.1, 11.1, 12.1])
+    assert "tap_dependent_impedance" in net.trafo3w.columns
+    assert net.trafo3w.tap_dependent_impedance.dtype == np.bool_
+    assert net.trafo3w.tap_dependent_impedance.at[0]
+    assert "vk_hv_percent_characteristic" in net.trafo3w.columns
+    assert net.trafo3w.at[0, 'vk_hv_percent_characteristic'] == 2
+    assert net.trafo3w.vk_hv_percent_characteristic.dtype == pd.Int64Dtype()
+    assert "vkr_hv_percent_characteristic" not in net.trafo3w.columns
+    assert "vk_mv_percent_characteristic" not in net.trafo3w.columns
+
+    pp.control.create_trafo_characteristics(net, "trafo3w", 0, 'vk_mv_percent', [-8, -4, 0, 4, 8], [8.1, 9.1, 10.1, 11.1, 12.1])
+    assert net.trafo3w.tap_dependent_impedance.dtype == np.bool_
+    assert net.trafo3w.tap_dependent_impedance.at[0]
+    assert "vk_mv_percent_characteristic" in net.trafo3w.columns
+    assert net.trafo3w.at[0, 'vk_mv_percent_characteristic'] == 3
+    assert net.trafo3w.vk_hv_percent_characteristic.dtype == pd.Int64Dtype()
+    assert "vkr_mv_percent_characteristic" not in net.trafo3w.columns
+    assert "vk_lv_percent_characteristic" not in net.trafo3w.columns
+    assert "vkr_lv_percent_characteristic" not in net.trafo3w.columns
+
+    # this should be enough testing for adding columns
+    # now let's test if it raises errors
+
+    # invalid variable
+    with pytest.raises(UserWarning):
+        pp.control.create_trafo_characteristics(net, "trafo3w", 0, 'vk_percent',
+                                                [-8, -4, 0, 4, 8], [8.1, 9.1, 10.1, 11.1, 12.1])
+
+    # invalid shapes
+    with pytest.raises(UserWarning):
+        pp.control.create_trafo_characteristics(net, "trafo3w", 0, 'vk_hv_percent',
+                                                [-8, -4, 0, 4, 8], [8.1, 9.1, 10.1, 11.1])
+
+    with pytest.raises(UserWarning):
+        pp.control.create_trafo_characteristics(net, "trafo3w", [0], 'vk_hv_percent',
+                                                [-8, -4, 0, 4, 8], [8.1, 9.1, 10.1, 11.1, 12.1])
+
+    with pytest.raises(UserWarning):
+        pp.control.create_trafo_characteristics(net, "trafo3w", [0, 1], 'vk_hv_percent',
+                                                [[-8, -4, 0, 4, 8]], [[8.1, 9.1, 10.1, 11.1, 12.1]])
+
+    with pytest.raises(UserWarning):
+        pp.control.create_trafo_characteristics(net, "trafo3w", [0, 1], 'vk_hv_percent',
+                                                [[-8, -4, 0, 4, 8], [-8, -4, 0, 4, 8]],
+                                                [[8.1, 9.1, 10.1, 11.1, 12.1]])
+
+
+@pytest.mark.parametrize("file_io", (False, True), ids=("Without JSON I/O", "With JSON I/O"))
+def test_characteristic(file_io):
+    net = pp.create_empty_network()
+    c1 = SplineCharacteristic(net, [0,1,2], [0, 1, 4], fill_value=(0, 4))
+    c2 = SplineCharacteristic(net, [0,1,2], [0, 1, 4], interpolator_kind="Pchip", extrapolate=False)
+    c3 = SplineCharacteristic(net, [0,1,2], [0, 1, 4], interpolator_kind="hello")
+    c4 = LogSplineCharacteristic(net, [0,1,2], [0, 1, 4], interpolator_kind="Pchip", extrapolate=False)
+
+    if file_io:
+        net_copy = pp.from_json_string(pp.to_json(net))
+        c1, c2, c3, c4 = net_copy.characteristic.object.values
+
+    assert np.allclose(c1([-1]), [0], rtol=0, atol=1e-6)
+    #assert c1(3) == 4
+    #assert c1(1) == 1
+    #assert c1(2) == 4
+    #assert c1(1.5) == 2.25
+
+
+    # test that unknown kind causes error:
+    with pytest.raises(NotImplementedError):
+        c3([0])
+
+def test_log_characteristic_property():
+    net = pp.create_empty_network()
+    c = LogSplineCharacteristic(net, [10, 1000, 10000], [1000, 0.1, 0.001], interpolator_kind="Pchip", extrapolate=False)
+    c._x_vals
+    c([2])
+
+
 
 
 if __name__ == '__main__':

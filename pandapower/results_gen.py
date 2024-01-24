@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -41,7 +41,7 @@ def _get_gen_results(net, ppc, bus_lookup_aranged, pq_bus):
     if not ac:
         q = np.zeros(len(p))
     b_sum, p_sum, q_sum = _sum_by_group(b, p, q)
-    b = bus_lookup_aranged[b_sum.astype(int)]
+    b = bus_lookup_aranged[b_sum.astype(np.int64)]
     pq_bus[b, 0] -= p_sum
     pq_bus[b, 1] -= q_sum
 
@@ -61,7 +61,7 @@ def _get_gen_results_3ph(net, ppc0, ppc1, ppc2, bus_lookup_aranged, pq_bus):
     if not ac:
         qA, qB, qC = np.copy((np.zeros(len(pA)),)*3)
 
-    b_pp, pA_sum, qA_sum, pB_sum, qB_sum, pC_sum, qC_sum = _sum_by_group_nvals(b.astype(int), pA, qA, pB, qB, pC, qC)
+    b_pp, pA_sum, qA_sum, pB_sum, qB_sum, pC_sum, qC_sum = _sum_by_group_nvals(b.astype(np.int64), pA, qA, pB, qB, pC, qC)
     b_ppc = bus_lookup_aranged[b_pp]
     pq_bus[b_ppc, 0] -= pA_sum
     pq_bus[b_ppc, 1] -= qA_sum
@@ -112,7 +112,7 @@ def _get_ext_grid_results_3ph(net, ppc0, ppc1, ppc2):
     eg_is_idx = net["ext_grid"].index.values[eg_is_mask]
     eg_idx_ppc = ext_grid_lookup[eg_is_idx]
     """ # 2 ext_grids Fix: Instead of the generator index, bus indices of the generators are used"""
-    eg_bus_idx_ppc = np.real(ppc1["gen"][eg_idx_ppc, GEN_BUS]).astype(int)
+    eg_bus_idx_ppc = np.real(ppc1["gen"][eg_idx_ppc, GEN_BUS]).astype(np.int64)
     # read results from ppc for these buses
     V012 = np.array(np.zeros((3, n_res_eg)),dtype = np.complex128)
     V012[:, eg_is_idx] = np.array([ppc["bus"][eg_bus_idx_ppc, VM] * ppc["bus"][eg_bus_idx_ppc, BASE_KV]
@@ -184,7 +184,7 @@ def _get_p_q_gen_results_3ph(net, ppc0, ppc1, ppc2):
     n_res_gen = len(net['gen'])
     gen_idx_ppc = gen_lookup[gen_is_idx]
     """ # 2 ext_grids Fix: Instead of the generator index, bus indices of the generators are used"""
-    gen_bus_idx_ppc = np.real(ppc1["gen"][gen_idx_ppc, GEN_BUS]).astype(int)
+    gen_bus_idx_ppc = np.real(ppc1["gen"][gen_idx_ppc, GEN_BUS]).astype(np.int64)
 
     V012 = np.array(np.zeros((3, n_res_gen)))
     V012[:, gen_is_idx] = np.array([ppc["bus"][gen_bus_idx_ppc, VM]
@@ -250,7 +250,7 @@ def _get_v_gen_results_3ph(net, ppc0, ppc1, ppc2):
     n_res_gen = len(net['gen'])
     gen_idx_ppc = gen_lookup[gen_is_idx]
     """ # 2 ext_grids Fix: Instead of the generator index, bus indices of the generators are used"""
-    gen_bus_idx_ppc = np.real(ppc1["gen"][gen_idx_ppc, GEN_BUS]).astype(int)
+    gen_bus_idx_ppc = np.real(ppc1["gen"][gen_idx_ppc, GEN_BUS]).astype(np.int64)
     V012 = np.array(np.zeros((3, n_res_gen)))
     V012[:, gen_is_mask] = np.array([ppc["bus"][gen_bus_idx_ppc, VM]
                                       * np.exp(1j * np.deg2rad(ppc["bus"][gen_bus_idx_ppc, VA]))

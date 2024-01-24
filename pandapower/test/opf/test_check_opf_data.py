@@ -4,7 +4,7 @@ import pytest
 import pandapower as pp
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 
@@ -93,4 +93,4 @@ def test_opf_data_check_lim_col():
 
 
 if __name__ == "__main__":
-    pytest.main(['-x', "test_check_opf_data.py"])
+    pytest.main([__file__, "-xs"])
