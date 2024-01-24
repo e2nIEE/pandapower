@@ -62,7 +62,8 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
                 buses_to_add.add(fb)
         buses |= buses_to_add
 
-    if keep_everything_else:
+    if keep_everything_else:  # Info: keep_everything_else might help to keep controllers but
+        # does not help if a part of controllers should be kept
         p2 = copy.deepcopy(net)
         if not include_results:
             clear_result_tables(p2)
@@ -141,7 +142,7 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
 
 def merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9, **kwargs):
     """Function to concatenate two nets into one data structure. The elements keep their indices
-    unless both nets have the same indices. In that case, net2 elements get reindex. The reindex
+    unless both nets have the same indices. In that case, net2 elements get reindexed. The reindex
     lookup of net2 elements can be retrieved by passing return_net2_reindex_lookup=True.
 
     Parameters
@@ -287,7 +288,6 @@ def set_isolated_areas_out_of_service(net, respect_switches=True):
         len(net.bus.loc[list(unsupplied)].query('~in_service')), len(unsupplied)))
     set_element_status(net, list(unsupplied), False)
 
-    # TODO: remove this loop after unsupplied_buses are fixed
     for tr3w in net.trafo3w.index.values:
         tr3w_buses = net.trafo3w.loc[tr3w, ['hv_bus', 'mv_bus', 'lv_bus']].values
         if not all(net.bus.loc[tr3w_buses, 'in_service'].values):
@@ -761,14 +761,15 @@ def drop_controllers_at_elements(net, element_type, idx=None):
     idx = ensure_iterability(idx) if idx is not None else net[element_type].index
     to_drop = []
     for i in net.controller.index:
-        elm = net.controller.object[i].__dict__["element"]
-        elm_idx = ensure_iterability(net.controller.object[i].__dict__["element_index"])
-        if element_type == elm:
+        et = net.controller.object[i].__dict__.get("element")
+        elm_idx = ensure_iterability(net.controller.object[i].__dict__.get("element_index", [0.1]))
+        if element_type == et:
             if set(elm_idx) - set(idx) == set():
                 to_drop.append(i)
             else:
                 net.controller.object[i].__dict__["element_index"] = list(set(elm_idx) - set(idx))
-                net.controller.object[i].__dict__["matching_params"]["element_index"] = list(set(elm_idx) - set(idx))
+                net.controller.object[i].__dict__["matching_params"]["element_index"] = list(
+                    set(elm_idx) - set(idx))
     net.controller.drop(to_drop, inplace=True)
 
 

@@ -26,6 +26,9 @@ class GeoCoordinatesFromGLCim16:
             self.cimConverter.cim['gl']['Location'][['rdfId', 'PowerSystemResources']], how='left',
             left_on='Location', right_on='rdfId')
         gl_data.drop(columns=['Location', 'rdfId'], inplace=True)
+        # make sure that the columns 'xPosition' and 'yPosition' are floats
+        gl_data['xPosition'] = gl_data['xPosition'].astype(float)
+        gl_data['yPosition'] = gl_data['yPosition'].astype(float)
         bus_geo = gl_data.rename(columns={'PowerSystemResources': 'Substation'})
         cn = self.cimConverter.cim['eq']['ConnectivityNode'][['rdfId', 'ConnectivityNodeContainer']]
         cn = pd.concat([cn, self.cimConverter.cim['eq_bd']['ConnectivityNode'][['rdfId', 'ConnectivityNodeContainer']]])

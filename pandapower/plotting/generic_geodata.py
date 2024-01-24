@@ -142,29 +142,32 @@ def coords_from_igraph(graph, roots, meshed=False, calculate_meshed=False):
     return list(zip(*layout.coords))
 
 
-def coords_from_nxgraph(mg=None):
+def coords_from_nxgraph(mg=None, layout_engine='neato'):
     """
     Create a list of generic coordinates from a networkx graph layout.
 
     :param mg: The networkx graph on which the coordinates shall be based
     :type mg: networkx.Graph
+    :param layout_engine: GraphViz Layout Engine for layouting a network. See https://graphviz.org/docs/layouts/
+    :type layout_engine: str
     :return: coords - list of coordinates from the graph layout
     """
     # workaround for bug in agraph
-    for u, v in mg.edges(data=False, keys=False):
+    for u, v in mg.edges(data=False):
         if 'key' in mg[int(u)][int(v)]:
             del mg[int(u)][int(v)]['key']
         if 'key' in mg[int(u)][int(v)][0]:
             del mg[int(u)][int(v)][0]['key']
     # ToDo: Insert fallback layout for nxgraph
-    return list(zip(*(list(nx.drawing.nx_agraph.graphviz_layout(mg, prog='neato').values()))))
+    return list(zip(*(list(nx.drawing.nx_agraph.graphviz_layout(mg, prog=layout_engine).values()))))
 
 
 def create_generic_coordinates(net, mg=None, library="igraph",
                                respect_switches=False,
                                geodata_table="bus_geodata",
                                buses=None,
-                               overwrite=False):
+                               overwrite=False,
+                               layout_engine='neato'):
     """
     This function will add arbitrary geo-coordinates for all buses based on an analysis of branches
     and rings. It will remove out of service buses/lines from the net. The coordinates will be
@@ -174,6 +177,8 @@ def create_generic_coordinates(net, mg=None, library="igraph",
     :type net: pandapowerNet
     :param mg: Existing networkx multigraph, if available. Convenience to save computation time.
     :type mg: networkx.Graph
+    :param respect_switches: respect switches in a network for generic coordinates
+    :type respect_switches: bool
     :param library: "igraph" to use igraph package or "networkx" to use networkx package
     :type library: str
     :param geodata_table: table to write the generic geodatas to
@@ -182,6 +187,8 @@ def create_generic_coordinates(net, mg=None, library="igraph",
     :type buses: list
     :param overwrite: overwrite existing geodata
     :type overwrite: bool
+    :param layout_engine: GraphViz Layout Engine for layouting a network. See https://graphviz.org/docs/layouts/
+    :type layout_engine: str
     :return: net - pandapower network with added geo coordinates for the buses
 
     :Example:
@@ -200,7 +207,7 @@ def create_generic_coordinates(net, mg=None, library="igraph",
                                      include_out_of_service=True)
         else:
             nxg = copy.deepcopy(mg)
-        coords = coords_from_nxgraph(nxg)
+        coords = coords_from_nxgraph(nxg, layout_engine=layout_engine)
     else:
         raise ValueError("Unknown library %s - chose 'igraph' or 'networkx'" % library)
     if len(coords):

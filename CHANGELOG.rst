@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2023-..-..
 -------------------------------
+- [ADDED] function to search std_types from the basic standard type library
 - [ADDED] Documentation for running powerflow using power-grid-model
 - [ADDED] exporting to :code:`GeoJSON` with all properties from :code:`bus`, :code:`res_bus` and :code:`line`, :code:`res_line`
 - [ADDED] function to run powerflow using the power-grid-model library
@@ -32,8 +33,18 @@ Change Log
 - [ADDED] matplotlib v3.8.0 support (fixed :code:`plotting_colormaps.ipynb`)
 - [CHANGED] PowerFactory converter - name :code:`for_name` as :code:`equipment` for all elements; also add to line
 - [ADDED] option to use a second tap changer for the trafo element
+- [CHANGED] parameters of function merge_internal_net_and_equivalent_external_net()
 - [FIXED] :code:`convert_format.py`: update the attributes of the characteristic objects to match the new characteristic
-
+- [FIXED] fixed the wrong id numbers for pypower powerflow algorithms fdxb and fdbx
+- [FIXED] additional arguments from mpc saved to net._options: create "_options" if it does not exist
+- [CHANGED] cim2pp: extracted getting default classes, added generic setting datatypes from CGMES XMI schema
+- [ADDED] function :code:`getOTDF` to obtain Outage Transfer Distribution Factors, that can be used to analyse outages using the DC approximation of the power system
+- [CHANGED] DFData datasource behavior to enable timeseries calculation with time-dependent nonnumeric data (ConstControl)
+- [ADDED] function :code:`outage_results_OTDF` to obtain the matrix of results for all outage scenarios, with rows as outage scenarios and columns as branch power flows in that scenario
+- [FIXED] add some safeguards for TDPF to avoid numerical issues in some cases
+- [FIXED] avoid attaching elements as duplicates to a group where some of the elements already exist
+- [ADDED] the function :code:`run_contingency` can raise a captured error if parameter :code:`raise_errors` is passed
+- [FIXED] bugfix for tap dependent impedance characteristics so that not all characteristics columns are necessary
 
 [2.13.1] - 2023-05-12
 -------------------------------
