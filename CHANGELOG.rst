@@ -45,6 +45,7 @@ Change Log
 - [FIXED] avoid attaching elements as duplicates to a group where some of the elements already exist
 - [ADDED] the function :code:`run_contingency` can raise a captured error if parameter :code:`raise_errors` is passed
 - [FIXED] bugfix for tap dependent impedance characteristics so that not all characteristics columns are necessary
+- [ADDED] auxiliary functions ets_to_element_types() and element_types_to_ets() as well as toolbox function get_connected_buses_at_switches() and extension to get_connected_switches()
 
 [2.13.1] - 2023-05-12
 -------------------------------
