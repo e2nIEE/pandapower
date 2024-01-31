@@ -221,22 +221,22 @@ def test_convert_geodata_to_geojson():
     import pandapower as pp
     import geojson
     # Erstelle ein Beispielnetzwerk
-    net = pp.create_empty_network()
+    _net = pp.create_empty_network()
 
     # Füge Busse hinzu
-    pp.create_bus(net, 0, geodata=(10, 20))
-    pp.create_bus(net, 1, geodata=(30, 40))
+    pp.create_bus(_net, 0, geodata=(10, 20))
+    pp.create_bus(_net, 1, geodata=(30, 40))
 
     # Füge Leitungen hinzu
-    pp.create_line(net, 0, 1, 1, std_type="NAYY 4x50 SE", geodata=[(10, 20), (30, 40)])
+    pp.create_line(_net, 0, 1, 1, std_type="NAYY 4x50 SE", geodata=[(10, 20), (30, 40)])
 
     # Rufe die Funktion zum Konvertieren auf
-    geo.convert_geodata_to_geojson(net)
+    geo.convert_geodata_to_geojson(_net)
 
     # Überprüfe die Ergebnisse
-    assert geojson.loads(net.bus.at[0, "geo"]) == geojson.Point((10.0, 20.0))
-    assert geojson.loads(net.bus.at[1, "geo"]) == geojson.Point((30.0, 40.0))
-    assert geojson.loads(net.line.at[0, "geo"]) == geojson.LineString([(10.0, 20.0), (30.0, 40.0)])
+    assert geojson.loads(_net.bus.at[0, "geo"]) == geojson.Point((10.0, 20.0))
+    assert geojson.loads(_net.bus.at[1, "geo"]) == geojson.Point((30.0, 40.0))
+    assert geojson.loads(_net.line.at[0, "geo"]) == geojson.LineString([(10.0, 20.0), (30.0, 40.0)])
     # TODO: Test could be more exhaustive (e.g. test delete=False, lonlat=True, geo_str=False)
 
 

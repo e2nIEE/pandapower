@@ -363,7 +363,7 @@ def dump_to_geojson(
         else:
             iterator = node_geodata.loc[nodes].items()
         for ind, geom in iterator:
-            if geom is None or geom == "[]":
+            if geom is None or pd.isna(geom) or geom == "[]":
                 missing_geom[0] += 1
                 continue
             uid = f"{'bus' if is_pandapower else 'junction'}-{ind}"
@@ -533,7 +533,10 @@ def convert_geodata_to_geojson(
         geo_ldf = net.pipe_geodata
 
     a, b = "yx" if lonlat else "xy"  # substitute x and y with a and b to reverse them if necessary
-    df["geo"] = geo_df.apply(lambda r: geojson.Point([r[a], r[b]]), axis=1)
+    df["geo"] = geo_df.apply(
+        lambda r: geojson.dumps(geojson.Point([r[a], r[b]])) if geo_str else geojson.Point([r[a], r[b]]),
+        axis=1
+    )
 
     ldf["geo"] = "[]"
     for l_id in ldf.index:
