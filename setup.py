@@ -52,7 +52,7 @@ setup(
                       "deepdiff"],
     extras_require={
         "docs": ["numpydoc", "sphinx", "sphinx_rtd_theme"],
-        "plotting": ["plotly", "matplotlib", "igraph", "geopandas", "geojson"],
+        "plotting": ["plotly", "matplotlib", "igraph", "geopandas", "geojson", "typing_extensions"],
         # "shapely", "pyproj" are dependencies of geopandas and so already available;
         # "base64", "hashlib", "zlib" produce installing problems, so they are not included
         "test": ["pytest", "pytest-xdist"],
