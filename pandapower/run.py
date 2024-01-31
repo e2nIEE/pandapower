@@ -91,7 +91,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles=True, init="auto",
                 - "fdbx" fast-decoupled (pypower implementation)
                 - "fdxb" fast-decoupled (pypower implementation)
 
-        **calculate_voltage_angles** (str or bool, "auto") - consider voltage angles in loadflow calculation
+        **calculate_voltage_angles** (str or bool, True) - consider voltage angles in loadflow calculation
 
             If True, voltage angles of ext_grids and transformer shifts are considered in the
             loadflow calculation. Considering the voltage angles is only necessary in meshed

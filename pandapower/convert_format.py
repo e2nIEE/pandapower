@@ -45,6 +45,7 @@ def convert_format(net, elements_to_deserialize=None):
     if isinstance(net.format_version, float) and net.format_version < 1.6:
         set_data_type_of_columns_to_default(net)
     _convert_objects(net, elements_to_deserialize)
+    _update_characteristics(net, elements_to_deserialize)
     correct_dtypes(net, error=False)
     _add_missing_std_type_tables(net)
     net.format_version = __format_version__
@@ -453,3 +454,16 @@ def _check_elements_to_deserialize(element, elements_to_deserialize):
 def _add_missing_std_type_tables(net):
     if "fuse" not in net.std_types:
         net.std_types["fuse"] = {}
+
+
+def _update_characteristics(net, elements_to_deserialize):
+    # new interpolator type has been added to SplineCharacteristic - "pchip", and the attributes have been refactored
+    if not _check_elements_to_deserialize("characteristic", elements_to_deserialize) or \
+            "characteristic" not in net or net.characteristic.empty:
+        return
+    for c in net.characteristic.object.values:
+        # meta check for old SplineCharacteristic (cannot import it here to use isinstance):
+        if not (hasattr(c, "kind") and hasattr(c, "fill_value")):
+            continue
+        c.interpolator_kind = "interp1d"
+        c.kwargs = {"kind": c.__dict__.pop("kind"), "bounds_error": False, "fill_value": c.__dict__.pop("fill_value")}
