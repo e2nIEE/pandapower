@@ -47,6 +47,8 @@ Change Log
 - [FIXED] bugfix for tap dependent impedance characteristics so that not all characteristics columns are necessary
 - [FIXED] minor issues in geojson exporter
 - [ADDED] geodata to geojson converter
+- [CHANGED] dump_to_geojson now requires the geodata to be present in the geo column of a network (see :code:`convert_geodata_to_geojson`)
+- [CHANGED] updated simple_plot to use geojson data instead of bus_geo and line_geo
 - [CHANGED] minor changes to the example networks (mainly added names to identify them in tests)
 
 [2.13.1] - 2023-05-12
