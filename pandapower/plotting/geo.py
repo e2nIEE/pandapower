@@ -532,15 +532,8 @@ def convert_geodata_to_geojson(
         geo_df = net.junction_geodata
         geo_ldf = net.pipe_geodata
 
-    df["geo"] = "[]"
-    a, b = "yx" if lonlat else "xy" # substitute x and y with a and b to reverse them if necessary
-
-    #TODO: convert to lambda
-    for b_id in df.index:
-        if b_id not in geo_df.index:
-            continue
-        p = geojson.Point([geo_df[a].at[b_id], geo_df[b].at[b_id]])
-        df.geo.at[b_id] = geojson.dumps(p) if geo_str else p
+    a, b = "yx" if lonlat else "xy"  # substitute x and y with a and b to reverse them if necessary
+    df["geo"] = geo_df.apply(lambda r: geojson.Point([r[a], r[b]]), axis=1)
 
     ldf["geo"] = "[]"
     for l_id in ldf.index:
