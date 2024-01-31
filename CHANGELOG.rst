@@ -45,6 +45,9 @@ Change Log
 - [FIXED] avoid attaching elements as duplicates to a group where some of the elements already exist
 - [ADDED] the function :code:`run_contingency` can raise a captured error if parameter :code:`raise_errors` is passed
 - [FIXED] bugfix for tap dependent impedance characteristics so that not all characteristics columns are necessary
+- [FIXED] minor issues in geojson exporter
+- [ADDED] geodata to geojson converter
+- [CHANGED] minor changes to the example networks (mainly added names to identify them in tests)
 
 [2.13.1] - 2023-05-12
 -------------------------------
