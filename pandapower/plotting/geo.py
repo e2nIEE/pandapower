@@ -3,7 +3,7 @@
 # Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from typing import List, Tuple, TYPE_CHECKING, Dict, Any
+from typing import List, Tuple, TYPE_CHECKING, Dict, Any, Union
 
 # TYPE_CHECKING is used to avoid circular imports, see https://stackoverflow.com/a/39757388
 if TYPE_CHECKING:
@@ -275,10 +275,10 @@ def convert_crs(net: pandapower.pandapowerNet or 'pandapipes.pandapipesNet', eps
 
 def dump_to_geojson(
         net: pandapower.pandapowerNet or 'pandapipes.pandapipesNet',
-        nodes: bool | List[int] = False,
-        branches: bool | List[int] = False,
-        switches: bool | List[int] = False,
-        trafos: bool | List[int] = False,
+        nodes: Union[bool, List[int]] = False,
+        branches: Union[bool, List[int]] = False,
+        switches: Union[bool,  List[int]] = False,
+        trafos: Union[bool, List[int]] = False,
         t_is_3w: bool = False
 ) -> geojson.FeatureCollection:
     """
