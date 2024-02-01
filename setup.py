@@ -58,7 +58,7 @@ setup(
         "test": ["pytest", "pytest-xdist"],
         "performance": ["ortools"],  # , "lightsim2grid"],
         "pgm": ["power-grid-model-io"],
-        "fileio": ["xlsxwriter", "openpyxl", "cryptography", "geopandas", "psycopg2"],
+        "fileio": ["xlsxwriter", "openpyxl", "cryptography", "geopandas", "psycopg2", "geojson"],
         # "fiona" is a depedency of geopandas and so already available
         "converter": ["matpowercaseframes"],
         "all": ["numpydoc", "sphinx", "sphinx_rtd_theme", "typing_extensions",

@@ -24,6 +24,7 @@ from pandapower import __version__
 from pandapower.auxiliary import _preserve_dtypes
 import networkx
 import numpy
+import geojson
 from io import StringIO
 import pandas as pd
 from networkx.readwrite import json_graph
@@ -564,9 +565,11 @@ class FromSerializableRegistry():
                     df.columns.names = column_names
 
         # recreate jsoned objects
-        for col in ('object', 'controller'):  # "controller" for backwards compatibility
+        for col in ('object', 'controller', 'geo'):  # "controller" for backwards compatibility
             if (col in df.columns):
                 df[col] = df[col].apply(self.pp_hook)
+        if 'geo' in df.columns:
+            df[col] = df[col].apply(json.dumps).apply(geojson.loads)
         return df
 
     @from_serializable.register(class_name='pandapowerNet', module_name='pandapower.auxiliary')#,
