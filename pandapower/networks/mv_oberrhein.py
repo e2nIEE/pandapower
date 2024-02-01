@@ -92,7 +92,10 @@ def mv_oberrhein(scenario="load", cosphi_load=0.98, cosphi_pv=1.0, include_subst
 
         pp.runpp(net0)
         pp.runpp(net1)
+        net0.name = 'MV Oberrhein 0'
+        net1.name = 'MV Oberrhein 1'
         return net0, net1
 
     pp.runpp(net)
+    net.name = 'MV Oberrhein'
     return net

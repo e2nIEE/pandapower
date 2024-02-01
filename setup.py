@@ -51,17 +51,17 @@ setup(
                       "tqdm",
                       "deepdiff"],
     extras_require={
-        "docs": ["numpydoc", "sphinx", "sphinx_rtd_theme"],
-        "plotting": ["plotly", "matplotlib", "igraph", "geopandas", "geojson"],
+        "docs": ["numpydoc", "sphinx", "sphinx_rtd_theme", "typing_extensions"],
+        "plotting": ["plotly", "matplotlib", "igraph", "geopandas", "geojson", "typing_extensions"],
         # "shapely", "pyproj" are dependencies of geopandas and so already available;
         # "base64", "hashlib", "zlib" produce installing problems, so they are not included
-        "test": ["pytest<=7.0", "pytest-xdist"],
+        "test": ["pytest", "pytest-xdist"],
         "performance": ["ortools"],  # , "lightsim2grid"],
         "pgm": ["power-grid-model-io"],
         "fileio": ["xlsxwriter", "openpyxl", "cryptography", "geopandas", "psycopg2"],
         # "fiona" is a depedency of geopandas and so already available
         "converter": ["matpowercaseframes"],
-        "all": ["numpydoc", "sphinx", "sphinx_rtd_theme",
+        "all": ["numpydoc", "sphinx", "sphinx_rtd_theme", "typing_extensions",
                 "plotly>=3.1.1", "matplotlib", "igraph", "geopandas", "geojson",
                 "pytest<=7.0", "pytest-xdist",
                 "ortools",  # lightsim2grid,
