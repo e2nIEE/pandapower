@@ -17,7 +17,7 @@ from pandapower.opf.make_objective import _make_objective
 from pandapower.pypower.idx_area import PRICE_REF_BUS
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
 from pandapower.pypower.idx_brch_dc import DC_F_BUS, DC_T_BUS, DC_BR_STATUS
-from pandapower.pypower.idx_bus import NONE, BUS_I, BUS_TYPE
+from pandapower.pypower.idx_bus import NONE, BUS_I, BUS_TYPE, REF
 from pandapower.pypower.idx_bus_dc import DC_BUS_I, DC_BUS_TYPE, DC_NONE, DC_B2B
 from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS
 from pandapower.pypower.idx_ssc import SSC_STATUS, SSC_BUS, SSC_INTERNAL_BUS
@@ -82,6 +82,15 @@ def _check_vsc_different_ac_control_modes_at_same_bus(ppci):
         raise NotImplementedError("Found multiple VSC converters that share the same AC bus and have "
                                   "different AC control modes - not implemented. VSC converters can only "
                                   "have the same AC control mode if they share the same AC bus.")
+
+
+def _check_slack_at_vsc_bus(ppci):
+    vsc_buses = ppci["vsc"][:, VSC_BUS]
+    ac_slack_buses = ppci["bus"][ppci["bus"][:, BUS_TYPE] == REF, BUS_I]
+    ac_bus_intersection = np.intersect1d(vsc_buses, ac_slack_buses)
+    if len(ac_bus_intersection) != 0:
+        raise NotImplementedError("Found VSC elements connected to AC slack buses - "
+                                  "this configuration is not implemented.")
 
 
 def _pd2ppc(net, sequence=None):
@@ -204,6 +213,7 @@ def _pd2ppc(net, sequence=None):
 
     _check_line_dc_at_b2b_buses(ppci)
     _check_vsc_different_ac_control_modes_at_same_bus(ppci)
+    _check_slack_at_vsc_bus(ppci)
 
     if mode == "pf":
         # check if any generators connected to the same bus have different voltage setpoints

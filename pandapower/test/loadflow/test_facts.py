@@ -1932,6 +1932,23 @@ def test_b2b_vsc_4():
     runpp_with_consistency_checks(net)
 
 
+def test_b2b_vsc_5():
+    net = pp.create_empty_network()
+    # AC part
+    pp.create_buses(net, 2, 110)
+    pp.create_ext_grid(net, 0)
+
+    # DC part
+    pp.create_bus_dc(net, 150, 'A')
+    pp.create_vsc(net, 0, 0, 0.1, 5, control_mode_ac="slack", control_value_ac=1.,
+                  control_mode_dc="p_mw", control_value_dc=0.)
+    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac="q_mvar", control_value_ac=0.,
+                  control_mode_dc="vm_pu", control_value_dc=1.)
+
+    with pytest.raises(NotImplementedError):
+        pp.runpp(net)
+
+
 def test_b2b_line_dc_raise():
     net = pp.create_empty_network()
     # AC part
