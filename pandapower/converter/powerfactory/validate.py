@@ -32,7 +32,7 @@ def _get_pf_results_balanced(net):
                                                'res_switch' in net.keys() else pd.Series(dtype=np.float64)
     pf_bus_vm = net.res_bus.pf_vm_pu.replace(0, np.nan)
     pf_bus_va = net.res_bus.pf_va_degree
-    pf_bus_dc_vm = net.res_bus_dc.pf_vm_pu.replace(0, np.nan)
+    pf_bus_dc_vm = net.res_bus_dc.get("pf_vm_pu", pd.Series(name="pf_vm_pu", dtype=np.float64, index=net.bus_dc.index)).replace(0, np.nan)
     pf_ext_grid_p = net.res_ext_grid.pf_p
     pf_ext_grid_q = net.res_ext_grid.pf_q
     pf_gen_p = net.res_gen.pf_p if len(net.gen) > 0 else pd.Series([], dtype=np.float64)

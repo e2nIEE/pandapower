@@ -86,7 +86,7 @@ def _check_vsc_different_ac_control_modes_at_same_bus(ppci):
 
 def _check_slack_at_vsc_bus(ppci):
     vsc_buses = ppci["vsc"][:, VSC_BUS]
-    ac_slack_buses = ppci["bus"][ppci["bus"][:, BUS_TYPE] == REF, BUS_I]
+    ac_slack_buses = ppci["gen"][ppci["internal"]["ref_gens"], GEN_BUS]
     ac_bus_intersection = np.intersect1d(vsc_buses, ac_slack_buses)
     if len(ac_bus_intersection) != 0:
         raise NotImplementedError("Found VSC elements connected to AC slack buses - "

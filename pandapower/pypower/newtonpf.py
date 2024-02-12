@@ -698,7 +698,8 @@ def _evaluate_Fx_facts(V,pq ,svc_buses=None, svc_set_vm_pu=None, tcsc_controllab
         if len(dc_b2b):
             # vsc_set_p_pu[vsc_mode_dc == 1] = -P_dc[dc_ref][dc_ref_lookup[vsc_dc_ref_bus]]  # dc_p
             vsc_set_p_pu[vsc_b2b_p] = vsc_value_dc[vsc_b2b_p]
-            vsc_set_p_pu[vsc_b2b_ref] = P_dc[dc_b2b][dc_b2b_lookup[vsc_dc_b2b_bus[vsc_b2b_ref]]] / count_b2b_ref[vsc_dc_bus[vsc_b2b_ref]]
+            # vsc_set_p_pu[vsc_b2b_ref] = P_dc[dc_b2b][dc_b2b_lookup[vsc_dc_b2b_bus[vsc_b2b_ref]]] / count_b2b_ref[vsc_dc_bus[vsc_b2b_ref]]
+            vsc_set_p_pu[vsc_b2b_ref] = P_dc[dc_b2b][dc_b2b_lookup[vsc_dc_bus[vsc_b2b_ref]]] / count_b2b_ref[vsc_dc_bus[vsc_b2b_ref]]
         ####  here used vsc_tb refereing to the q bus
         # S_temp = Sbus_vsc.real
         # S_temp[vsc_tb[vsc_p]] /= count_p[vsc_fb[vsc_p]]
