@@ -981,10 +981,11 @@ def replace_zero_branches_with_switches(net, elements=('line', 'impedance'), zer
                                             ].index.tolist())
 
         if elm == 'impedance' and zero_impedance:
-            branch_zero.update(net[elm].loc[(net[elm].rft_pu <= min_rft_pu) &
-                                            (net[elm].xft_pu <= min_xft_pu) &
-                                            (net[elm].rtf_pu <= min_rtf_pu) &
-                                            (net[elm].xtf_pu <= min_xtf_pu)].index.tolist())
+            # using np.abs() here because the impedance parameters can have negative values e.g. after grid reduction:
+            branch_zero.update(net[elm].loc[(np.abs(net[elm].rft_pu) <= min_rft_pu) &
+                                            (np.abs(net[elm].xft_pu) <= min_xft_pu) &
+                                            (np.abs(net[elm].rtf_pu) <= min_rtf_pu) &
+                                            (np.abs(net[elm].xtf_pu) <= min_xtf_pu)].index.tolist())
 
         affected_elements = set()
         for b in branch_zero:

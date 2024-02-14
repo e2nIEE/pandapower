@@ -45,11 +45,14 @@ Change Log
 - [FIXED] avoid attaching elements as duplicates to a group where some of the elements already exist
 - [ADDED] the function :code:`run_contingency` can raise a captured error if parameter :code:`raise_errors` is passed
 - [FIXED] bugfix for tap dependent impedance characteristics so that not all characteristics columns are necessary
+- [FIXED] in function :code:`toolbox.replace_zero_branches_with_switches`, use absolute for the parameters of impedance elements in case they are negative nonzero values
 - [FIXED] minor issues in geojson exporter
 - [ADDED] geodata to geojson converter
 - [CHANGED] dump_to_geojson now requires the geodata to be present in the geo column of a network (see :code:`convert_geodata_to_geojson`)
 - [CHANGED] updated simple_plot to use geojson data instead of bus_geo and line_geo
 - [CHANGED] minor changes to the example networks (mainly added names to identify them in tests)
+- [CHANGED] use of bus_geodata and line_geodata tables to geo column in bus and line table
+- [CHANGED] update most geodata dependant functions to use geo column
 
 [2.13.1] - 2023-05-12
 -------------------------------
