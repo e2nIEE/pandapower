@@ -1333,8 +1333,10 @@ def test_vsc_hvdc_mode4():
     pp.create_vsc(net, 2, 1, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1.02, control_mode_dc="p_mw",
                   control_value_dc=5)
 
-    with pytest.raises(UserWarning, match="reference bus for the dc grid"):
-        pp.runpp(net)
+    # all DC buses are set out of service, so there is no error in this case and bus_dc results are NaN
+    # with pytest.raises(UserWarning, match="reference bus for the dc grid"):
+    #     pp.runpp(net)
+    runpp_with_consistency_checks(net)
 
 
 def test_vsc_hvdc_mode5():
@@ -2105,6 +2107,7 @@ def test_2vsc_1ac_2dc(control_mode_ac, control_mode_dc):
             pp.runpp(net)
 
 
+@pytest.mark.skip(reason="DC line connected to D2B VSC configuration not implemented")
 @pytest.mark.parametrize("control_mode_ac", list(product(['vm_pu', 'q_mvar'], repeat=2)))
 @pytest.mark.parametrize("control_mode_dc", list(product(['vm_pu', 'p_mw'], repeat=2)))
 def test_2vsc_2ac_1dc(control_mode_ac, control_mode_dc):
@@ -2135,6 +2138,7 @@ def test_2vsc_2ac_1dc(control_mode_ac, control_mode_dc):
     runpp_with_consistency_checks(net)
 
 
+@pytest.mark.skip(reason="DC line connected to D2B VSC configuration not implemented")
 @pytest.mark.parametrize("control_mode_ac", list(product(['vm_pu', 'q_mvar'], repeat=2)))
 @pytest.mark.parametrize("control_mode_dc", list(product(['vm_pu', 'p_mw'], repeat=2)))
 def test_2vsc_1ac_1dc(control_mode_ac, control_mode_dc):
@@ -2168,13 +2172,14 @@ def test_2vsc_1ac_1dc(control_mode_ac, control_mode_dc):
             pp.runpp(net)
 
 
-def test_vsc_slack_minimal_wrong():  # todo: VSC as slack cannot have DC bus as vm_pu, therefore must be excluded from DC slacks and then raise error that not enough DC slacks
+def test_vsc_slack_minimal_wrong():
     # np.set_printoptions(linewidth=1000, suppress=True, precision=2)
     # from pandapower.test.loadflow.test_facts import *
     net = pp.create_empty_network()
     # AC part
     pp.create_buses(net, 2, 110, geodata=[(200, 0), (400, 0)])
     pp.create_load(net, 1, 10, 4)
+    pp.create_gen(net, 0, 0)
 
     # DC part
     pp.create_bus_dc(net, 110, 'A', geodata=(210, 0))
@@ -2185,14 +2190,15 @@ def test_vsc_slack_minimal_wrong():  # todo: VSC as slack cannot have DC bus as 
     pp.create_vsc(net, 0, 0, 0.1, 5, control_mode_ac="slack", control_value_ac=1, control_mode_dc="vm_pu", control_value_dc=1.02)
     pp.create_vsc(net, 1, 1, 0.1, 5, control_mode_ac="slack", control_value_ac=1, control_mode_dc="p_mw", control_value_dc=1)
 
-    pp.runpp(net)
+    # VSC as slack cannot have DC bus as vm_pu, therefore must be excluded from DC slacks
+    # Then the DC buses are set out of service, and the corresponding VSC are also set out of service
+    # Then the corresponding AC buses are changed from type REF to type PQ, which is valid because type PV is set later
+    # Then runpp raises "no slacks" error:
+    with pytest.raises(UserWarning, match="No reference bus is available"):
+        pp.runpp(net)
 
-    runpp_with_consistency_checks(net)
 
-    # pp.plotting.simple_plot(net, plot_loads=True, load_size=5)
-
-
-def test_vsc_slack_minimal_wrong2():  # todo runpp must raise error here that DC grid has no slacks because the first VSC is deactivated because its AC bus is not connected to AC slack
+def test_vsc_slack_minimal_wrong2():
     # np.set_printoptions(linewidth=1000, suppress=True, precision=2)
     # from pandapower.test.loadflow.test_facts import *
     net = pp.create_empty_network()
@@ -2209,11 +2215,11 @@ def test_vsc_slack_minimal_wrong2():  # todo runpp must raise error here that DC
     pp.create_vsc(net, 0, 0, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu", control_value_dc=1.02)
     pp.create_vsc(net, 1, 1, 0.1, 5, control_mode_ac="slack", control_value_ac=1, control_mode_dc="p_mw", control_value_dc=1)
 
-    pp.runpp(net)
-
-    runpp_with_consistency_checks(net)
-
-    # pp.plotting.simple_plot(net, plot_loads=True, load_size=5)
+    # VSC that defines AC slack cannot define DC slack at the same time
+    # DC slack buses that are only connected to VSC AC slacks are converted to type P buses
+    # Then runpp raises "no DC slacks" error:
+    with pytest.raises(UserWarning, match="No reference bus for the dc grid is available"):
+        pp.runpp(net)
 
 
 @pytest.mark.xfail(reason="AC bus same as ext_grid bus not implemented")

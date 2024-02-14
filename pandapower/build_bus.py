@@ -463,6 +463,7 @@ def set_reference_buses(net, ppc, bus_lookup, mode):
         return
     eg_buses = bus_lookup[net.ext_grid.bus.values[net._is_elements["ext_grid"]]]
     ppc["bus"][eg_buses, BUS_TYPE] = REF
+    ppc["internal"]["ac_slack_buses"] = set(eg_buses)  # needed later in _select_is_elements_numba
     if mode == "sc":
         gen_slacks = net._is_elements["gen"]  # generators are slacks for short-circuit calculation
     else:
@@ -470,13 +471,15 @@ def set_reference_buses(net, ppc, bus_lookup, mode):
     if gen_slacks.any():
         slack_buses = net.gen["bus"].values[gen_slacks]
         ppc["bus"][bus_lookup[slack_buses], BUS_TYPE] = REF
-
+        ppc["internal"]["ac_slack_buses"] |= set(bus_lookup[slack_buses])  # needed later in _select_is_elements_numba
+    ppc["internal"]["ac_slack_buses"] = list(ppc["internal"]["ac_slack_buses"])
 
 def set_reference_buses_dc(net, ppc, bus_lookup, mode):
     if mode == "nx":
         return
     vsc_dc_slack = net.vsc.control_mode_dc.values == "vm_pu"
-    ref_buses = bus_lookup[net.vsc.bus_dc.values[net._is_elements["vsc"] & vsc_dc_slack]]
+    vsc_ac_slack = net.vsc.control_mode_ac.values == "slack"  # VSC that defines AC slack cannot define DC slack
+    ref_buses = bus_lookup[net.vsc.bus_dc.values[net._is_elements["vsc"] & vsc_dc_slack & ~vsc_ac_slack]]
     ppc["bus_dc"][ref_buses, DC_BUS_TYPE] = DC_REF
 
     # identify back-to-back converters:

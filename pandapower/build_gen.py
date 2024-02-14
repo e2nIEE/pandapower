@@ -366,7 +366,8 @@ def _check_for_reference_bus(ppc):
         raise UserWarning("No reference bus is available. Either add an ext_grid or a gen with slack=True")
 
     # todo test this
-    bus_dc_relevant = np.flatnonzero(ppc["bus_dc"][:, DC_BUS_TYPE] != DC_NONE)
+    bus_dc_type = ppc["bus_dc"][:, DC_BUS_TYPE]
+    bus_dc_relevant = np.flatnonzero(bus_dc_type != DC_NONE)
     ref_dc, b2b_dc, _ = bustypes_dc(ppc["bus_dc"])
     # throw an error since no reference bus is defined
     if len(bus_dc_relevant) > 0 and len(ref_dc) == 0 and len(b2b_dc) == 0:

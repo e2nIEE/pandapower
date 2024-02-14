@@ -9,8 +9,8 @@ import pandas as pd
 from numpy import complex128
 from pandapower import VSC_INTERNAL_BUS
 from pandapower.auxiliary import _sum_by_group, sequence_to_phase, _sum_by_group_nvals
-from pandapower.pypower.idx_bus import VM, VA, PD, QD, LAM_P, LAM_Q, BASE_KV, NONE, BS
-from pandapower.pypower.idx_bus_dc import DC_VM
+from pandapower.pypower.idx_bus import VM, VA, PD, QD, LAM_P, LAM_Q, BASE_KV, NONE, BS, BUS_TYPE, BUS_I
+from pandapower.pypower.idx_bus_dc import DC_VM, DC_BUS_TYPE, DC_NONE, DC_PD, DC_BUS_I
 
 from pandapower.pypower.idx_gen import PG, QG
 from pandapower.build_bus import _get_motor_pq, _get_symmetric_pq_of_unsymetric_element
@@ -27,12 +27,17 @@ logger = logging.getLogger(__name__)
 
 
 def _set_buses_out_of_service(ppc):
-
-    disco = np.where(ppc["bus"][:, 1] == NONE)[0]
+    disco = np.where(ppc["bus"][:, BUS_TYPE] == NONE)[BUS_I]
     ppc["bus"][disco, VM] = np.nan
     ppc["bus"][disco, VA] = np.nan
     ppc["bus"][disco, PD] = 0
     ppc["bus"][disco, QD] = 0
+
+
+def _set_dc_buses_out_of_service(ppc):
+    disco = np.where(ppc["bus_dc"][:, DC_BUS_TYPE] == DC_NONE)[DC_BUS_I]
+    ppc["bus_dc"][disco, DC_VM] = np.nan
+    ppc["bus_dc"][disco, DC_PD] = 0
 
 
 def _get_bus_v_results(net, ppc, suffix=None):

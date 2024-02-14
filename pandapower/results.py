@@ -10,7 +10,7 @@ import pandas as pd
 from pandapower.results_branch import _get_branch_results, _get_branch_results_3ph
 from pandapower.results_bus import _get_bus_results, _get_bus_dc_results, _set_buses_out_of_service, \
     _get_shunt_results, _get_p_q_results, _get_bus_v_results, _get_bus_v_results_3ph, _get_p_q_results_3ph, \
-    _get_bus_results_3ph, _get_bus_dc_v_results, _get_p_dc_results
+    _get_bus_results_3ph, _get_bus_dc_v_results, _get_p_dc_results, _set_dc_buses_out_of_service
 from pandapower.results_gen import _get_gen_results, _get_gen_results_3ph, _get_dc_slack_results
 
 BRANCH_RESULTS_KEYS = ("branch_ikss_f", "branch_ikss_t",
@@ -26,7 +26,8 @@ suffix_mode = {"sc": "sc", "se": "est", "pf_3ph": "3ph"}
 
 
 def _extract_results(net, ppc):
-    _set_buses_out_of_service(ppc)
+    _set_buses_out_of_service(ppc)  # for NaN results in net.res_bus for inactive buses
+    _set_dc_buses_out_of_service(ppc)  # for NaN results in net.res_bus_dc for inactive buses
     bus_lookup_aranged = _get_aranged_lookup(net)
     bus_dc_lookup_aranged = _get_aranged_lookup(net, "bus_dc")
     _get_bus_v_results(net, ppc)

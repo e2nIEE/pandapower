@@ -40,12 +40,12 @@ from packaging.version import Version
 
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
 from pandapower.pypower.idx_brch_dc import DC_BR_STATUS, DC_F_BUS, DC_T_BUS
-from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD, VM, VA, REF, VMIN, VMAX, PV
+from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD, VM, VA, REF, PQ, VMIN, VMAX, PV
 from pandapower.pypower.idx_gen import PMIN, PMAX, QMIN, QMAX
 from pandapower.pypower.idx_ssc import SSC_STATUS, SSC_BUS, SSC_INTERNAL_BUS
 from pandapower.pypower.idx_tcsc import TCSC_STATUS, TCSC_F_BUS, TCSC_T_BUS
-from pandapower.pypower.idx_vsc import VSC_STATUS, VSC_BUS, VSC_INTERNAL_BUS, VSC_BUS_DC
-from .pypower.idx_bus_dc import DC_VMAX, DC_VMIN, DC_BUS_I, DC_BUS_TYPE, DC_NONE, DC_REF, DC_B2B
+from pandapower.pypower.idx_vsc import VSC_STATUS, VSC_BUS, VSC_INTERNAL_BUS, VSC_BUS_DC, VSC_MODE_AC, VSC_MODE_AC_SL
+from .pypower.idx_bus_dc import DC_VMAX, DC_VMIN, DC_BUS_I, DC_BUS_TYPE, DC_NONE, DC_REF, DC_B2B, DC_P
 
 try:
     from numba import jit
@@ -866,7 +866,8 @@ def _select_is_elements_numba(net, isolated_nodes=None, isolated_nodes_dc=None, 
                     if controllable_in_service.any():
                         is_elements["%s_controllable" % element_table] = controllable_in_service
                         element_in_service = element_in_service & ~controllable_in_service
-            is_elements[element_table] = element_in_service
+            # if element_table has both bus and bus_dc e.g. "vsc":
+            is_elements[element_table] = is_elements.get(element_table, True) & element_in_service
 
     if len(net.vsc) > 0 and "aux" in net["_pd2ppc_lookups"]:
         # reasoning: it can be that there are isolated DC buses. But they are only discovered
@@ -875,7 +876,24 @@ def _select_is_elements_numba(net, isolated_nodes=None, isolated_nodes_dc=None, 
         # This does not happen because for that we would need to perform another connectivity check
         # So we do it by hand here:
         vsc_aux_isolated = net["_pd2ppc_lookups"]["aux"]["vsc"][~is_elements["vsc"]]
+        # vsc_aux_isolated = net["_pd2ppc_lookups"]["aux"]["vsc"][~is_elements["vsc"] |
+        #                    ppc_bus_isolated[net["_pd2ppc_lookups"]["aux"]["vsc"]] |
+        #                    ppc_bus_isolated[net._ppc["vsc"][:, VSC_BUS].astype(np.int64)]]
         net._ppc["bus"][vsc_aux_isolated, BUS_TYPE] = NONE
+        # if there are no in service VSC that define the DC slack node, we must change the DC slack to type P
+        bus_dc_slack = net._ppc["bus_dc"][:, DC_BUS_TYPE] == DC_REF
+        bus_dc_with_vsc = net._ppc["vsc"][is_elements["vsc"], VSC_BUS_DC]
+        bus_dc_to_change = bus_dc_slack & (~np.isin(net._ppc["bus_dc"][:, DC_BUS_I], bus_dc_with_vsc))
+        net._ppc["bus_dc"][bus_dc_to_change, DC_BUS_TYPE] = DC_P
+
+        # if the AC bus is defined as REF only because it is connected to a vsc, and the vsc is out of service,
+        # it cannot be a REF bus anymore
+        bus_ac_slack = net._ppc["bus"][:, BUS_TYPE] == REF
+        bus_ac_with_vsc = net._ppc["vsc"][is_elements["vsc"], VSC_BUS]
+        bus_ac_to_change = (bus_ac_slack & (~np.isin(net._ppc["bus"][:, BUS_I], bus_ac_with_vsc)) &
+                            (~np.isin(net._ppc["bus"][:, BUS_I], net._ppc["internal"]["ac_slack_buses"])))
+        # changing just to PQ is OK because the setting of type PV happens later in build_gen
+        net._ppc["bus"][bus_ac_to_change, BUS_TYPE] = PQ
 
     is_elements["bus_is_idx"] = net["bus"].index.values[bus_in_service[net["bus"].index.values]]
     is_elements["bus_dc_is_idx"] = net["bus_dc"].index.values[bus_dc_in_service[net["bus_dc"].index.values]]
