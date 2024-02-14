@@ -569,7 +569,7 @@ class FromSerializableRegistry():
             if (col in df.columns):
                 df[col] = df[col].apply(self.pp_hook)
         if 'geo' in df.columns:
-            df['geo'] = df['geo'].apply(json.dumps).apply(geojson.loads)
+            df['geo'] = df['geo'].dropna().apply(json.dumps).apply(geojson.loads)
         return df
 
     @from_serializable.register(class_name='pandapowerNet', module_name='pandapower.auxiliary')#,
