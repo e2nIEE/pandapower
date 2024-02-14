@@ -31,6 +31,7 @@ from collections.abc import MutableMapping
 import warnings
 from importlib.metadata import version as version_str
 from importlib.metadata import PackageNotFoundError
+from typing_extensions import deprecated
 
 import numpy as np
 import pandas as pd
@@ -283,6 +284,7 @@ class pandapowerNet(ADict):
                 self[key] = pd.DataFrame(np.zeros(0, dtype=self[key]), index=pd.Index([],
                                          dtype=np.int64))
 
+    @deprecated("Use copy.deepcopy(net) instead of net.deepcopy()")
     def deepcopy(self):
         return copy.deepcopy(self)
 
@@ -317,10 +319,8 @@ class pandapowerNet(ADict):
 
 
 def plural_s(number):
-    if number > 1:
-        return "s"
-    else:
-        return ""
+    return "s" if number == 1 else ""
+
 
 def _preserve_dtypes(df, dtypes):
     for item, dtype in list(dtypes.items()):

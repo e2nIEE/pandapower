@@ -6,6 +6,7 @@
 import sys
 import copy
 
+import geojson
 import networkx as nx
 import pandas as pd
 import numpy as np
@@ -164,7 +165,7 @@ def coords_from_nxgraph(mg=None, layout_engine='neato'):
 
 def create_generic_coordinates(net, mg=None, library="igraph",
                                respect_switches=False,
-                               geodata_table="bus_geodata",
+                               geodata_table="bus",
                                buses=None,
                                overwrite=False,
                                layout_engine='neato'):
@@ -211,27 +212,30 @@ def create_generic_coordinates(net, mg=None, library="igraph",
     else:
         raise ValueError("Unknown library %s - chose 'igraph' or 'networkx'" % library)
     if len(coords):
-        net[geodata_table].x = coords[1]
-        net[geodata_table].y = coords[0]
-        net[geodata_table].index = net.bus.index if buses is None else buses
+        net[geodata_table]["geo"] = pd.Series(
+            map(lambda x: geojson.Point((x[1], x[0])), zip(*coords)),
+            index=net[geodata_table].index if buses is None else buses,
+        )
     return net
 
-def _prepare_geodata_table(net, geodata_table, overwrite):
-    if geodata_table in net and net[geodata_table].shape[0]:
-        if overwrite:
-            net[geodata_table].drop(net[geodata_table].index, inplace=True)
-        else:
-            raise UserWarning("Table %s is not empty - use overwrite=True to overwrite existing geodata"%geodata_table)
 
-    if geodata_table not in net or net[geodata_table] is None:
-        net[geodata_table] = pd.DataFrame(columns=["x", "y"])
+def _prepare_geodata_table(net, geodata_table, overwrite):
+    if geodata_table in net and "geo" in net[geodata_table] and net[geodata_table]["geo"].dropna().shape[0]:
+        if overwrite:
+            net[geodata_table].drop("geo", axis=1, inplace=True)
+            net[geodata_table].dropna(how='all', inplace=True)
+        else:
+            raise UserWarning(f"Table {geodata_table} is not empty - use overwrite=True to overwrite existing geodata")
+
+    if geodata_table not in net:
+        net[geodata_table] = pd.DataFrame(columns=["geo"])
 
 def fuse_geodata(net):
     mg = top.create_nxgraph(net, include_lines=False, include_impedances=False,
                             respect_switches=False)
-    geocoords = set(net.bus_geodata.index)
+    geocoords = set(net.bus.dropna(subset=['geo']).index)
     for area in top.connected_components(mg):
         if len(area & geocoords) > 1:
-            geo = net.bus_geodata.loc[list(area & geocoords)].values[0]
+            geo = net.bus.loc[list(area & geocoords), 'geo']
             for bus in area:
-                net.bus_geodata.loc[bus] = geo
+                net.bus.loc[bus, 'geo'] = geo

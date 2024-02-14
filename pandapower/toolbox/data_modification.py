@@ -171,7 +171,8 @@ def reindex_buses(net, bus_lookup):
     # --- adapt link in bus elements
     for element, value in element_bus_tuples():
         net[element][value] = get_indices(net[element][value], bus_lookup)
-    net["bus_geodata"].set_index(get_indices(net["bus_geodata"].index, bus_lookup), inplace=True)
+    if "bus_geodata" in net:
+        net["bus_geodata"].set_index(get_indices(net["bus_geodata"].index, bus_lookup), inplace=True)
 
     # --- adapt group link
     if net.group.shape[0]:

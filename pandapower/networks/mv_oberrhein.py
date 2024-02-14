@@ -10,6 +10,7 @@ import numpy as np
 
 import pandapower as pp
 import pandapower.topology as top
+import pandapower.plotting.geo as geo
 from pandapower import pp_dir
 
 
@@ -94,8 +95,12 @@ def mv_oberrhein(scenario="load", cosphi_load=0.98, cosphi_pv=1.0, include_subst
         pp.runpp(net1)
         net0.name = 'MV Oberrhein 0'
         net1.name = 'MV Oberrhein 1'
+        # TODO: this should be added to the initial data not converted here.
+        geo.convert_geodata_to_geojson(net0)
+        geo.convert_geodata_to_geojson(net1)
         return net0, net1
 
     pp.runpp(net)
     net.name = 'MV Oberrhein'
+    geo.convert_geodata_to_geojson(net)
     return net

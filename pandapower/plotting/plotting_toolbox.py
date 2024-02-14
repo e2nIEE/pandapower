@@ -157,14 +157,15 @@ def coords_from_node_geodata(element_indices, from_nodes, to_nodes, node_geodata
         & np.isin(to_nodes, node_geodata.index.values)
     elements_with_geo = np.array(element_indices)[have_geo]
     fb_with_geo, tb_with_geo = from_nodes[have_geo], to_nodes[have_geo]
-    coords = [[(x_from, y_from), (x_to, y_to)] for x_from, y_from, x_to, y_to
-              in np.concatenate([node_geodata.loc[fb_with_geo].apply(geojson.loads).apply(geojson.utils.coords).apply(next).values.tolist(),
-                                 node_geodata.loc[tb_with_geo].apply(geojson.loads).apply(geojson.utils.coords).apply(next).values.tolist()], axis=1)
+    coords = [[(x_from, y_from), (x_to, y_to)] for [x_from, y_from], [x_to, y_to]
+              in np.concatenate([node_geodata.loc[fb_with_geo].apply(geojson.utils.coords).apply(list).to_list(),
+                                 node_geodata.loc[tb_with_geo].apply(geojson.utils.coords).apply(list).to_list()], axis=1)
               if not ignore_zero_length or not (x_from == x_to and y_from == y_to)]
     elements_without_geo = set(element_indices) - set(elements_with_geo)
     if len(elements_without_geo) > 0:
-        logger.warning("No coords found for %s %s. %s geodata is missing for those %s!"
-                       % (table_name + "s", elements_without_geo, node_name, table_name + "s"))
+        logger.warning(
+            f"No coords found for {table_name}s {elements_without_geo}. {node_name} geodata is missing for those {table_name}s!"
+        )
     return coords, elements_with_geo
 
 

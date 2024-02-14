@@ -5,6 +5,8 @@
 
 from typing import List, Tuple, TYPE_CHECKING, Dict, Any, Union
 
+import numpy as np
+
 # TYPE_CHECKING is used to avoid circular imports, see https://stackoverflow.com/a/39757388
 if TYPE_CHECKING:
     import pandapipes
@@ -184,7 +186,10 @@ def convert_gis_to_geodata(net, node_geodata=True, branch_geodata=True):
         _transform_branch_geometry_to_coords(net.line_geodata)
 
 
-@deprecated("Use convert_geodata_to_geojson instead. Support for gis will be dropped.")
+@deprecated(
+    "Use convert_geodata_to_geojson instead. Support for gis will be dropped.\
+    To get a geodataframe use GeoDataFrame.from_features."
+)
 def convert_geodata_to_gis(net, epsg=31467, node_geodata=True, branch_geodata=True, remove_xy=False):
     """
     Transforms the bus and line geodata of a net into a geopandas geodataframe with the respective
@@ -201,11 +206,15 @@ def convert_geodata_to_gis(net, epsg=31467, node_geodata=True, branch_geodata=Tr
     :param remove_xy: flag if to remove x,y and coords columns from geodata tables
     :return: No output.
     """
-    if node_geodata:
+    converted = False
+    if node_geodata and "bus_geodata" in net:
         net["bus_geodata"] = _node_geometries_from_geodata(net["bus_geodata"], epsg, remove_xy)
-    if branch_geodata:
+        converted = True
+    if branch_geodata and "line_geodata" in net:
         net["line_geodata"] = _branch_geometries_from_geodata(net["line_geodata"], epsg, remove_xy)
-    net["gis_epsg_code"] = epsg
+        converted = True
+    if converted:
+        net["gis_epsg_code"] = epsg
 
 
 @deprecated("Use convert_crs instead. Networks should not use different crs for bus and line geodata.")
@@ -332,7 +341,6 @@ def dump_to_geojson(
         logger.warning(e)
         return geojson.FeatureCollection([])
 
-    @deprecated('This internal function should be replaced by lambda functions instead')
     def _get_props(r, c, p) -> None:
         for col in c:
             try:
@@ -367,8 +375,6 @@ def dump_to_geojson(
                 missing_geom[0] += 1
                 continue
             uid = f"{'bus' if is_pandapower else 'junction'}-{ind}"
-            if isinstance(geom, str):
-                geom = geojson.loads(geom)
             features.append(geojson.Feature(geometry=geom, id=uid, properties=props[uid]))
 
     # build geojson features for branches
@@ -394,12 +400,10 @@ def dump_to_geojson(
         else:
             iterator = branch_geodata.loc[branches].items()
         for ind, geom in iterator:
-            if geom is None or geom == "[]":
+            if geom is None or pd.isna(geom) or geom == "[]":
                 missing_geom[1] += 1
                 continue
             uid = f"{'line' if is_pandapower else 'pipe'}-{ind}"
-            if isinstance(geom, str):
-                geom = geojson.loads(geom)
             features.append(geojson.Feature(geometry=geom, id=uid, properties=props[uid]))
 
     if switches and is_pandapower:
@@ -427,8 +431,6 @@ def dump_to_geojson(
                 if geom is None or geom == "[]":
                     missing_geom[2] += 1
                     continue
-                if isinstance(geom, str):
-                    geom = geojson.loads(geom)
                 features.append(geojson.Feature(geometry=geom, id=uid, properties=prop))
 
         if trafos and is_pandapower:
@@ -452,8 +454,6 @@ def dump_to_geojson(
                     if geom is None or geom == "[]":
                         missing_geom[3] += 1
                         continue
-                    if isinstance(geom, str):
-                        geom = geojson.loads(geom)
                     features.append(geojson.Feature(geometry=geom, id=uid, properties=prop))
 
     if any(missing_geom):
@@ -498,8 +498,7 @@ def dump_to_geojson(
 def convert_geodata_to_geojson(
         net: pandapower.pandapowerNet or 'pandapipes.pandapipesNet',
         delete: bool = True,
-        lonlat: bool = False,
-        geo_str: bool = True) -> None:
+        lonlat: bool = False) -> None:
     """
     Converts bus_geodata and line_geodata to bus.geo and line.geo column entries.
     If used on pandapipesNet, the junction_geodata and pipe_geodata are converted.
@@ -513,8 +512,6 @@ def convert_geodata_to_geojson(
     :type delete: bool, default True
     :param lonlat: If True, the coordinates are expected to be in lonlat format (x=lon, y=lat)
     :type lonlat: bool, default False
-    :param geo_str: If True, the geojson objects are dumped to strings, otherwise they are kept as geojson objects
-    :type geo_str: bool, default True
     """
     is_pandapower = net.__class__.__name__ == 'pandapowerNet'
 
@@ -534,16 +531,18 @@ def convert_geodata_to_geojson(
 
     a, b = "yx" if lonlat else "xy"  # substitute x and y with a and b to reverse them if necessary
     df["geo"] = geo_df.apply(
-        lambda r: geojson.dumps(geojson.Point([r[a], r[b]])) if geo_str else geojson.Point([r[a], r[b]]),
+        lambda r: geojson.Point([r[a], r[b]]),
         axis=1
     )
 
-    ldf["geo"] = "[]"
+    ldf["geo"] = np.nan
     for l_id in ldf.index:
         if l_id not in geo_ldf.index:
             continue
         # pandapipes currently only stores inflection points for pipes. This function will inject start and end points.
-        if not is_pandapower:
+        if is_pandapower:
+            coords: List[Tuple[float, float]] = [(y, x) if lonlat else (x, y) for x, y in geo_ldf.coords.at[l_id]]
+        else:
             coords: List[Tuple[float, float] | Tuple[float, float, float]] = []
             from_coords = geo_df.loc[ldf[l_id].from_junction]
             to_coords = geo_df.loc[ldf[l_id].to_junction]
@@ -551,10 +550,10 @@ def convert_geodata_to_geojson(
             if l_id in net.pipe_geodata:
                 coords.append(geo_ldf.loc[l_id].coords)
             coords.append((float(to_coords.x), float(to_coords.y)))
-        else:
-            coords: List[List[float]] = [[y, x] if lonlat else [x, y] for x, y in geo_ldf.coords.at[l_id]]
+        if not coords:
+            continue
         ls = geojson.LineString(coords)
-        ldf.geo.at[l_id] = geojson.dumps(ls) if geo_str else ls
+        ldf.geo.at[l_id] = ls
 
     if delete:
         if is_pandapower:
@@ -567,8 +566,7 @@ def convert_geodata_to_geojson(
 
 def convert_gis_to_geojson(
         net: pandapower.pandapowerNet or 'pandapipes.pandapipesNet',
-        delete: bool = True,
-        geo_str: bool = True) -> None:
+        delete: bool = True) -> None:
     """
     Transforms the bus and line geodataframes of a net into a geojson object.
 
@@ -576,8 +574,6 @@ def convert_gis_to_geojson(
     :type net: pandapowerNet
     :param delete: If True, the geodataframes are deleted after conversion
     :type delete: bool, default True
-    :param geo_str: If True, the geojson objects are dumped to strings, otherwise they are kept as geojson objects
-    :type geo_str: bool, default True
     :return: No output.
     """
 
@@ -587,19 +583,15 @@ def convert_gis_to_geojson(
     is_pandapower = net.__class__.__name__ == 'pandapowerNet'
 
     if is_pandapower:
-        b_geo = _transform_node_geometry_to_geojson(net["bus_geodata"])
-        l_geo = _transform_branch_geometry_to_geojson(net["line_geodata"])
-        net.bus["geo"] = geojson.dumps(b_geo) if geo_str else b_geo
-        net.line["geo"] = geojson.dumps(l_geo) if geo_str else l_geo
+        net.bus["geo"] = _transform_node_geometry_to_geojson(net["bus_geodata"])
+        net.line["geo"] = _transform_branch_geometry_to_geojson(net["line_geodata"])
 
         if delete:
             del net.bus_geodata
             del net.line_geodata
     else:
-        j_geo = _transform_node_geometry_to_geojson(net["junction_geodata"])
-        p_geo = _transform_branch_geometry_to_geojson(net["pipe_geodata"])
-        net.junction["geo"] = geojson.dumps(j_geo) if geo_str else j_geo
-        net.pipe["geo"] = geojson.dumps(p_geo) if geo_str else p_geo
+        net.junction["geo"] = _transform_node_geometry_to_geojson(net["junction_geodata"])
+        net.pipe["geo"] = _transform_branch_geometry_to_geojson(net["pipe_geodata"])
 
         if delete:
             del net.junction_geodata

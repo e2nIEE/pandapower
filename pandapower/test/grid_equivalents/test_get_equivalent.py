@@ -246,7 +246,6 @@ def test_case9_with_slack_generator_in_external_net():
     net = pp.networks.case9()
     idx = pp.replace_ext_grid_by_gen(net)
     net.gen.slack.loc[idx] = True
-    net.bus_geodata.drop(net.bus_geodata.index, inplace=True)
     pp.runpp(net)
 
     # since the only slack is in the external_buses, we expect get_equivalent() to move the slack

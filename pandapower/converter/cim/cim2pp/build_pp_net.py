@@ -163,10 +163,8 @@ class CimConverter:
                 self.report_container.add_log(Report(
                     level=LogLevel.EXCEPTION, code=ReportCode.EXCEPTION_CONVERTING,
                     message=traceback.format_exc()))
-                self.net.bus_geodata = self.net.bus_geodata[0:0]
-                self.net.line_geodata = self.net.line_geodata[0:0]
         if self.cim['dl']['Diagram'].index.size > 0 and self.cim['dl']['DiagramObject'].index.size > 0 and \
-                self.cim['dl']['DiagramObjectPoint'].index.size > 0 and self.net.bus_geodata.index.size == 0 and \
+                self.cim['dl']['DiagramObjectPoint'].index.size > 0 and self.net.bus.geo.dropna().index.size == 0 and \
                 use_dl_profile:
             try:
                 self.classes_dict['coordinatesFromDLCim16'].CoordinatesFromDLCim16(

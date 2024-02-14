@@ -7,9 +7,13 @@ import copy
 import inspect
 import geojson
 from typing import List, Tuple, Set, Callable, TYPE_CHECKING
+
+import pandas as pd
+
 if TYPE_CHECKING:
     from matplotlib.colors import Normalize, Colormap
 from itertools import combinations
+from typing_extensions import deprecated
 
 import numpy as np
 from pandas import isnull, Series, DataFrame
@@ -414,7 +418,7 @@ def create_bus_collection(net, buses=None, size=5, patch_type="circle", color=No
     if bus_geodata is None:
         bus_geodata = net.bus.geo
 
-    coords = net.bus.geo.apply(geojson.loads).apply(geojson.utils.coords).apply(next).to_list()
+    coords = net.bus.geo.apply(geojson.utils.coords).apply(next).to_list()
 
     infos = [infofunc(bus) for bus in buses] if infofunc is not None else []
 
@@ -445,10 +449,10 @@ def create_line_collection(net: pandapowerNet, lines=None,
         in the network are considered.
 
         **line_geodata** (DataFrame, None) - coordinates to use for plotting. If None,
-        net["line_geodata"] is used
+        net.line["geo"] is used
 
         **bus_geodata** (DataFrame, None) - coordinates to use for plotting
-        If None, net["bus_geodata"] is used
+        If None, net.bus["geo"] is used
 
         **use_bus_geodata** (bool, False) - Defines whether bus or line geodata are used.
 
@@ -476,38 +480,35 @@ def create_line_collection(net: pandapowerNet, lines=None,
     """
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
-    if use_bus_geodata is False and line_geodata is None and net.line.geo.empty:
+    if use_bus_geodata is False and line_geodata is None and ("geo" not in net.line.columns or net.line.geo.empty):
         # if bus geodata is available, but no line geodata
-        logger.warning("use_bus_geodata is automatically set to True, since net.line_geodata is empty.")
+        logger.warning("use_bus_geodata is automatically set to True, since net.line.geo is empty.")
         use_bus_geodata = True
 
     lines = get_index_array(lines, net.line.index)
     if len(lines) == 0:
         return None
 
-    if use_bus_geodata:
-        coords, lines_with_geo = coords_from_node_geodata(
-            lines, net.line.from_bus.loc[lines].values, net.line.to_bus.loc[lines].values,
-            bus_geodata if bus_geodata is not None else net.bus.geo, "line")
-    else:
-        line_geodata: Series[str] = line_geodata if line_geodata is not None else net.line.geo
-        lines_with_geo = lines[np.isin(lines, line_geodata.index.values)]
-        coords: List[Tuple[float, float]] = line_geodata.apply(geojson.loads).apply(geojson.utils.coords).apply(list).to_list()
-        lines_without_geo: Set[int] = set(lines) - set(lines_with_geo)
-        if lines_without_geo:
-            logger.warning("Could not plot lines %s. %s geodata is missing for those lines!"
-                           % (lines_without_geo, "Bus" if use_bus_geodata else "Line"))
+    line_geodata: Series[str] = line_geodata if line_geodata is not None else net.line.geo
+    lines_without_geo = line_geodata.index[line_geodata.isna()]
+    line_geodata = line_geodata.dropna()
+    line_geodata = line_geodata.apply(lambda s: geojson.loads if isinstance(s, str) else s)
+    if lines_without_geo.empty:
+        logger.warning("Could not plot lines %s. %s geodata is missing for those lines!"
+                       % (lines_without_geo, "Bus" if use_bus_geodata else "Line"))
 
-    if len(lines_with_geo) == 0:
+    if len(line_geodata) == 0:
         return None
 
-    infos = [infofunc(line) for line in lines_with_geo] if infofunc else []
+    infos = [infofunc(line) for line in line_geodata.index] if infofunc else []
 
-    lc = _create_line2d_collection(coords, lines_with_geo, infos=infos, picker=picker, **kwargs)
+    coords = line_geodata  #.apply(geojson.utils.coords).apply(list)
+
+    lc = _create_line2d_collection(coords, line_geodata.index, infos=infos, picker=picker, **kwargs)
 
     if cmap is not None:
         if z is None:
-            z = net.res_line.loading_percent.loc[lines_with_geo]
+            z = net.res_line.loading_percent.loc[line_geodata.index]
         add_cmap_to_collection(lc, cmap, norm, z, cbar_title, plot_colormap, clim)
 
     return lc
@@ -568,7 +569,7 @@ def create_dcline_collection(net, dclines=None, bus_geodata=None, infofunc=None,
     if len(lines_with_geo) == 0:
         return None
 
-    infos = [infofunc(line) for line in lines_with_geo] if infofunc else []
+    infos = [infofunc(line) for line in line_geodata.index] if infofunc else []
 
     lc = _create_line2d_collection(coords, lines_with_geo, infos=infos, picker=picker, **kwargs)
 
@@ -672,17 +673,15 @@ def create_trafo_connection_collection(net, trafos=None, bus_geodata=None, infof
     trafos = get_index_array(trafos, net.trafo.index)
 
     if bus_geodata is None:
-        bus_geodata = net["bus_geodata"]
+        bus_geodata = net.bus["geo"]
 
     in_geodata = (net.trafo.hv_bus.loc[trafos].isin(bus_geodata.index) &
                   net.trafo.lv_bus.loc[trafos].isin(bus_geodata.index))
     trafos = trafos[in_geodata]
     trafo_table = net.trafo.loc[trafos]
 
-    hv_geo = list(zip(bus_geodata.loc[trafo_table["hv_bus"], "x"].values,
-                      bus_geodata.loc[trafo_table["hv_bus"], "y"].values))
-    lv_geo = list(zip(bus_geodata.loc[trafo_table["lv_bus"], "x"].values,
-                      bus_geodata.loc[trafo_table["lv_bus"], "y"].values))
+    hv_geo = bus_geodata.loc[trafo_table["hv_bus"]].apply(geojson.utils.coords).apply(next).to_list()  # using next works because bus only has one coordinate pair
+    lv_geo = bus_geodata.loc[trafo_table["lv_bus"]].apply(geojson.utils.coords).apply(next).to_list()
     tg = list(zip(hv_geo, lv_geo))
 
     info = [infofunc(tr) for tr in trafos] if infofunc is not None else []
@@ -784,7 +783,7 @@ def create_trafo_collection(net, trafos=None, picker=False, size=None, infofunc=
     trafos = get_index_array(trafos, net.trafo.index)
 
     if bus_geodata is None:
-        bus_geodata = net.bus.geo
+        bus_geodata = net.bus.geo.dropna()
 
     in_geodata = (net.trafo.hv_bus.loc[trafos].isin(bus_geodata.index) &
                   net.trafo.lv_bus.loc[trafos].isin(bus_geodata.index))
@@ -918,6 +917,7 @@ def create_trafo3w_collection(net, trafo3ws=None, picker=False, infofunc=None, c
     return lc, pc
 
 
+@deprecated
 def create_busbar_collection(net, buses=None, infofunc=None, cmap=None, norm=None, picker=False,
                              z=None, cbar_title="Bus Voltage [p.u.]", clim=None, **kwargs):
     """
@@ -965,7 +965,7 @@ def create_busbar_collection(net, buses=None, infofunc=None, cmap=None, norm=Non
             logger.warning("z is None and no net is provided")
 
     # the busbar is just a line collection with coords from net.bus_geodata
-    lc = create_line_collection(net, lines=buses, line_geodata=net.bus_geodata, bus_geodata=None,
+    lc = create_line_collection(net, lines=buses, line_geodata=net.bus["geo"], bus_geodata=None,
                                 norm=norm, cmap=cmap, infofunc=infofunc, picker=picker, z=z,
                                 cbar_title=cbar_title, clim=clim, **kwargs)
 
@@ -1001,7 +1001,7 @@ def create_load_collection(net, loads=None, size=1., infofunc=None, orientation=
     """
     loads = get_index_array(loads, net.load.index)
     infos = [infofunc(i) for i in range(len(loads))] if infofunc is not None else []
-    node_coords = net.bus_geodata.loc[net.load.loc[loads, "bus"].values, ["x", "y"]].values
+    node_coords = net.bus.loc[net.load.loc[loads, "bus"].values, "geo"].apply(geojson.utils.coords).apply(next).to_list()
 
     color = kwargs.pop("color", "k")
 
@@ -1220,12 +1220,12 @@ def create_line_switch_collection(net, switches=None, size=1, distance_to_bus=3,
         line_buses = {fb, tb}
         target_bus = list(line_buses - {sb})[0]
 
-        if sb not in net.bus_geodata.index or target_bus not in net.bus_geodata.index:
-            logger.warning("Bus coordinates for switch %s not found, skipped switch!" % switch)
+        if sb not in net.bus.index or target_bus not in net.bus.index:
+            logger.warning(f"Bus coordinates for switch {switch} not found, skipped switch!")
             continue
 
         # switch bus and target coordinates
-        pos_sb = net.bus_geodata.loc[sb, ["x", "y"]].values
+        pos_sb = np.array(next(geojson.utils.coords(net.bus.loc[sb, "geo"])))
         pos_tb = np.zeros(2)
 
         use_bus_geodata = False
@@ -1249,7 +1249,7 @@ def create_line_switch_collection(net, switches=None, size=1, distance_to_bus=3,
                 use_bus_geodata = True
 
         if not use_line_geodata or use_bus_geodata:
-            pos_tb = net.bus_geodata.loc[target_bus, ["x", "y"]]
+            pos_tb = np.array(next(geojson.utils.coords(net.bus.loc[target_bus, "geo"])))
 
         # position of switch symbol
         vec = pos_tb - pos_sb
@@ -1264,8 +1264,7 @@ def create_line_switch_collection(net, switches=None, size=1, distance_to_bus=3,
         col = color if net.switch.closed.loc[switch] else "white"
 
         # create switch patch (switch size is respected to center the switch on the line)
-        patch = Rectangle((pos_sw[0] - size / 2, pos_sw[1] - size / 2), size, size, facecolor=col,
-                          edgecolor=color)
+        patch = Rectangle((pos_sw[0] - size / 2, pos_sw[1] - size / 2), size, size, facecolor=col, edgecolor=color)
         # apply rotation
         patch.set_transform(rotation)
 
@@ -1312,12 +1311,13 @@ def create_bus_bus_switch_collection(net, size=1., helper_line_style=':', helper
     for switch in lbs_switches:
         switch_bus = net.switch.bus.loc[switch]
         target_bus = net.switch.element.loc[switch]
-        if switch_bus not in net.bus_geodata.index or target_bus not in net.bus_geodata.index:
+        if switch_bus not in net.bus.index or target_bus not in net.bus.index\
+                or pd.isnull(net.bus.loc[switch_bus, "geo"]) or pd.isnull(net.bus.loc[target_bus, "geo"]):
             logger.warning("Bus coordinates for switch %s not found, skipped switch!" % switch)
             continue
         # switch bus and target coordinates
-        pos_sb = net.bus_geodata.loc[switch_bus, ["x", "y"]].values.astype(np.float64)
-        pos_tb = net.bus_geodata.loc[target_bus, ["x", "y"]].values.astype(np.float64)
+        pos_sb = np.array(next(geojson.utils.coords(net.bus.loc[switch_bus, "geo"])))
+        pos_tb = np.array(next(geojson.utils.coords(net.bus.loc[target_bus, "geo"])))
         # position of switch symbol
         vec = pos_tb - pos_sb
         pos_sw = pos_sb + vec * 0.5 if not np.allclose(pos_sb, pos_tb) else pos_tb

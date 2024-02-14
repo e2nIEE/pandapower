@@ -1,6 +1,7 @@
 import logging
 import time
 
+import geojson
 import numpy as np
 import pandas as pd
 
@@ -41,35 +42,38 @@ class CoordinatesFromDLCim16:
         # make sure that the columns 'xPosition' and 'yPosition' are floats
         dl_data['xPosition'] = dl_data['xPosition'].astype(float)
         dl_data['yPosition'] = dl_data['yPosition'].astype(float)
+        dl_data['geo'] = dl_data.apply(lambda row: geojson.Point((row['xPosition'], row['yPosition'])), axis=1)
         # the coordinates for the buses
         buses = self.cimConverter.net.bus.reset_index()
         buses = buses[['index', sc['o_id']]]
         bus_geo = pd.merge(dl_data, buses, how='inner', left_on='IdentifiedObject', right_on=sc['o_id'])
         bus_geo.sort_values(by=[sc['o_id'], 'sequenceNumber'], inplace=True)
-        bus_geo['coords'] = bus_geo[['xPosition', 'yPosition']].values.tolist()
-        bus_geo['coords'] = bus_geo[['coords']].values.tolist()
+        # bus_geo['coords'] = bus_geo[['xPosition', 'yPosition']].values.tolist()
+        # bus_geo['coords'] = bus_geo[['coords']].values.tolist()
         # for the buses which have more than one coordinate
         bus_geo_mult = bus_geo[bus_geo.duplicated(subset=sc['o_id'], keep=False)]
         # now deal with the buses which have more than one coordinate
-        for _, df_group in bus_geo_mult.groupby(by=sc['o_id'], sort=False):
-            bus_geo['coords'][df_group.index.values[0]] = df_group[['xPosition', 'yPosition']].values.tolist()
+        # TODO: Deal with the buses which have more than one coordinate
+        #for _, df_group in bus_geo_mult.groupby(by=sc['o_id'], sort=False):
+        #    bus_geo['coords'][df_group.index.values[0]] = df_group[['xPosition', 'yPosition']].values.tolist()
         bus_geo.drop_duplicates([sc['o_id']], keep='first', inplace=True)
         bus_geo.sort_values(by='index', inplace=True)
-        start_index_pp_net = self.cimConverter.net.bus_geodata.index.size
-        self.cimConverter.net.bus_geodata = pd.concat(
-            [self.cimConverter.net.bus_geodata, pd.DataFrame(None, index=bus_geo['index'].values)],
-            ignore_index=False, sort=False)
-        self.cimConverter.net.bus_geodata.x[start_index_pp_net:] = bus_geo.xPosition[:]
-        self.cimConverter.net.bus_geodata.y[start_index_pp_net:] = bus_geo.yPosition[:]
-        self.cimConverter.net.bus_geodata.coords[start_index_pp_net:] = bus_geo.coords[:]
+        start_index_pp_net = self.cimConverter.net.bus_geodata.index.size  # TODO?
+        #self.cimConverter.net.bus_geodata = pd.concat(
+        #    [self.cimConverter.net.bus_geodata, pd.DataFrame(None, index=bus_geo['index'].values)],
+        #    ignore_index=False, sort=False)
+        self.cimConverter.net.bus.geo = bus_geo.copy().set_index('index').geo
+        # self.cimConverter.net.bus_geodata.x[start_index_pp_net:] = bus_geo.xPosition[:]
+        # self.cimConverter.net.bus_geodata.y[start_index_pp_net:] = bus_geo.yPosition[:]
+        # self.cimConverter.net.bus_geodata.coords[start_index_pp_net:] = bus_geo.coords[:]
         # reduce to max two coordinates for buses (see pandapower documentation for details)
-        self.cimConverter.net.bus_geodata['coords_length'] = self.cimConverter.net.bus_geodata['coords'].apply(len)
-        self.cimConverter.net.bus_geodata.loc[
-            self.cimConverter.net.bus_geodata['coords_length'] == 1, 'coords'] = np.nan
-        self.cimConverter.net.bus_geodata['coords'] = self.cimConverter.net.bus_geodata.apply(
-            lambda row: [row['coords'][0], row['coords'][-1]] if row['coords_length'] > 2 else row['coords'], axis=1)
-        if 'coords_length' in self.cimConverter.net.bus_geodata.columns:
-            self.cimConverter.net.bus_geodata.drop(columns=['coords_length'], inplace=True)
+        # self.cimConverter.net.bus_geodata['coords_length'] = self.cimConverter.net.bus_geodata['coords'].apply(len)
+        # self.cimConverter.net.bus_geodata.loc[
+        #    self.cimConverter.net.bus_geodata['coords_length'] == 1, 'coords'] = np.nan
+        # self.cimConverter.net.bus_geodata['coords'] = self.cimConverter.net.bus_geodata.apply(
+        #     lambda row: [row['coords'][0], row['coords'][-1]] if row['coords_length'] > 2 else row['coords'], axis=1)
+        # if 'coords_length' in self.cimConverter.net.bus_geodata.columns:
+        #     self.cimConverter.net.bus_geodata.drop(columns=['coords_length'], inplace=True)
 
         # the coordinates for the lines
         lines = self.cimConverter.net.line.reset_index()
