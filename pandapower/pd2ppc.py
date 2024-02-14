@@ -213,7 +213,7 @@ def _pd2ppc(net, sequence=None):
 
     _check_line_dc_at_b2b_buses(ppci)
     _check_vsc_different_ac_control_modes_at_same_bus(ppci)
-    _check_slack_at_vsc_bus(ppci)
+    # _check_slack_at_vsc_bus(ppci)
 
     if mode == "pf":
         # check if any generators connected to the same bus have different voltage setpoints

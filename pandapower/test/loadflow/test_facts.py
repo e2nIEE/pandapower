@@ -1935,8 +1935,34 @@ def test_b2b_vsc_4():
 def test_b2b_vsc_5():
     net = pp.create_empty_network()
     # AC part
-    pp.create_buses(net, 2, 110)
-    pp.create_ext_grid(net, 0)
+    pp.create_buses(net, 5, 110)
+    pp.create_line_from_parameters(net, 1, 3, 30, 0.0487, 0.13823, 160, 0.664)
+    pp.create_line_from_parameters(net, 2, 4, 30, 0.0487, 0.13823, 160, 0.664)
+    pp.create_ext_grid(net, 3)
+    pp.create_ext_grid(net, 4)
+    pp.create_load(net, 0, 40, 10)
+    pp.create_load(net, 2, 80, 20)
+
+
+    # DC part
+    pp.create_bus_dc(net, 150, 'A')
+
+    pp.create_vsc(net, 0, 0, 0.1, 5, control_mode_ac="slack", control_value_ac=1.,
+                  control_mode_dc="p_mw", control_value_dc=0.)
+    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac="q_mvar", control_value_ac=10.,
+                  control_mode_dc="vm_pu", control_value_dc=1.02)
+    pp.create_vsc(net, 2, 0, 0.1, 5, control_mode_ac="q_mvar", control_value_ac=4.,
+                  control_mode_dc="p_mw", control_value_dc=5.)
+    runpp_with_consistency_checks(net)
+
+
+def test_b2b_vsc_6():
+    net = pp.create_empty_network()
+    # AC part
+    pp.create_buses(net, 3, 110)
+    pp.create_line_from_parameters(net, 1, 2, 30, 0.0487, 0.13823, 160, 0.664)
+    pp.create_ext_grid(net, 2)
+    pp.create_load(net, 0, 20, 5)
 
     # DC part
     pp.create_bus_dc(net, 150, 'A')
@@ -1945,8 +1971,26 @@ def test_b2b_vsc_5():
     pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac="q_mvar", control_value_ac=0.,
                   control_mode_dc="vm_pu", control_value_dc=1.)
 
-    with pytest.raises(NotImplementedError):
-        pp.runpp(net)
+    # with pytest.raises(NotImplementedError):
+    #     pp.runpp(net)
+    runpp_with_consistency_checks(net)
+
+
+def test_b2b_vsc_7():
+    net = pp.create_empty_network()
+    # AC part
+    pp.create_buses(net, 2, 110)
+    pp.create_ext_grid(net, 1)  # todo: why is it not working when ext_grid is connected to the VSC AC bus?
+    pp.create_load(net, 0, 20, 5)
+
+    # DC part
+    pp.create_bus_dc(net, 150, 'A')
+    pp.create_vsc(net, 0, 0, 0.1, 5, control_mode_ac="slack", control_value_ac=1.,
+                  control_mode_dc="p_mw", control_value_dc=0.)
+    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac="q_mvar", control_value_ac=0.,
+                  control_mode_dc="vm_pu", control_value_dc=1.)
+
+    runpp_with_consistency_checks(net)
 
 
 def test_b2b_line_dc_raise():
@@ -2240,20 +2284,13 @@ def test_vsc_slack2():
     pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
 
     pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu", control_value_dc=1.02)
-    pp.create_vsc(net, 2, 1, 0.1, 5, control_mode_ac="slack", control_value_ac=1, control_mode_dc="p_mw", control_value_dc=1)
+    pp.create_vsc(net, 2, 1, 0.1, 5, control_mode_ac="slack", control_value_ac=1, control_mode_dc="p_mw", control_value_dc=10)
 
     runpp_with_consistency_checks(net)
 
     # pp.plotting.simple_plot(net, plot_loads=True)
 
 
-
-
-
-# TODO VSC as slack - cannot work because slack is a Vm-Va bus,
-#  and the VSC is a Vm bus? One way to implement this is to declare
-#  the aux AC bus as slack, then use the result as the P set-point for
-#  the DC bus. This would enable connecting an island AC grid with an HVDC line.
 # TODO test for when the VSC, SSC, TCSC, connect to same buses
 
 if __name__ == "__main__":

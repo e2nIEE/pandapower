@@ -283,7 +283,7 @@ def create_J_modification_ssc(J, V, Ybus_ssc, f, t, pvpq, pq, pvpq_lookup, pq_lo
     # todo
     # data = np.r_[data, -S_Fik.imag[f_in_pvpq], S_Fik.imag[f_in_pvpq & t_in_pvpq], S_Fki.imag[f_in_pvpq & t_in_pvpq], -S_Fki.imag[t_in_pvpq]]
     # data = np.r_[data, -S_Fik.imag[f_in_pvpq], S_Fik.imag[f_in_pvpq & t_in_pvpq], one[f_in_pvpq & t_in_pvpq], zero[t_in_pvpq]]
-    data = np.r_[data, -Q_Fik[f_in_pvpq], Q_Fik[f_in_pvpq & t_in_pvpq], np.where(control_delta, one[f_in_pvpq & t_in_pvpq], Q_Fki[f_in_pvpq & t_in_pvpq]), np.where(control_delta, zero[t_in_pvpq], -Q_Fki[t_in_pvpq])]
+    data = np.r_[data, -Q_Fik[f_in_pvpq], Q_Fik[f_in_pvpq & t_in_pvpq], np.where(control_delta[f_in_pvpq & t_in_pvpq], one[f_in_pvpq & t_in_pvpq], Q_Fki[f_in_pvpq & t_in_pvpq]), np.where(control_delta[t_in_pvpq], zero[t_in_pvpq], -Q_Fki[t_in_pvpq])]
 
 
     # # J_C_P_u = np.zeros(shape=(len(pvpq), len(pq)), dtype=np.float64)
@@ -307,7 +307,7 @@ def create_J_modification_ssc(J, V, Ybus_ssc, f, t, pvpq, pq, pvpq_lookup, pq_lo
     rows = np.r_[rows, pvpq_lookup[f[f_in_pvpq]], pvpq_lookup[f[f_in_pvpq & t_in_pq]], pvpq_lookup[t[f_in_pvpq & t_in_pq]], pvpq_lookup[t[t_in_pvpq & t_in_pq]]]
     cols = np.r_[cols, len(pvpq)+pq_lookup[f[f_in_pq]], len(pvpq)+pq_lookup[t[f_in_pvpq & t_in_pq]], len(pvpq)+pq_lookup[f[f_in_pvpq & t_in_pq]], len(pvpq)+pq_lookup[t[t_in_pvpq & t_in_pq]]]
     # data = np.r_[data, ((2 * S_Fii.real + S_Fik.real) / Vmf)[f_in_pvpq], (S_Fik.real/Vmt)[f_in_pvpq & t_in_pq], (S_Fki.real/Vmf)[f_in_pvpq & t_in_pq], ((2 * S_Fkk.real + S_Fki.real) / Vmt)[t_in_pvpq & t_in_pq]]
-    data = np.r_[data, ((2 * P_Fii + P_Fik) / Vmf)[f_in_pvpq], (P_Fik/Vmt)[f_in_pvpq & t_in_pq], np.where(control_delta, zero[f_in_pvpq & t_in_pq], (P_Fki/Vmf)[f_in_pvpq & t_in_pq]), np.where(control_delta, zero[t_in_pq], ((2 * P_Fkk + P_Fki) / Vmt)[t_in_pvpq & t_in_pq])]
+    data = np.r_[data, ((2 * P_Fii + P_Fik) / Vmf)[f_in_pvpq], (P_Fik/Vmt)[f_in_pvpq & t_in_pq], np.where(control_delta[f_in_pvpq & t_in_pq], zero[f_in_pvpq & t_in_pq], (P_Fki/Vmf)[f_in_pvpq & t_in_pq]), np.where(control_delta[t_in_pvpq & t_in_pq], zero[t_in_pvpq & t_in_pq], ((2 * P_Fkk + P_Fki) / Vmt)[t_in_pvpq & t_in_pq])]
 
 
     # # J_C_Q_d = np.zeros(shape=(len(pq), len(pvpq)), dtype=np.float64)
@@ -329,7 +329,7 @@ def create_J_modification_ssc(J, V, Ybus_ssc, f, t, pvpq, pq, pvpq_lookup, pq_lo
 
     rows = np.r_[rows, len(pvpq) + pq_lookup[f[f_in_pq]], len(pvpq) + pq_lookup[f[f_in_pq & t_in_pvpq]], len(pvpq) + pq_lookup[t[f_in_pvpq & t_in_pq]], len(pvpq) + pq_lookup[t[t_in_pq]]]
     cols = np.r_[cols, pvpq_lookup[f[f_in_pvpq]], pvpq_lookup[t[f_in_pq & t_in_pvpq]], pvpq_lookup[f[f_in_pvpq & t_in_pq]], pvpq_lookup[t[t_in_pvpq]]]
-    data = np.r_[data, P_Fik[f_in_pq], -P_Fik[f_in_pq & t_in_pvpq], np.where(control_v, zero[f_in_pvpq & t_in_pq], P_Fik[f_in_pvpq & t_in_pq]), np.where(control_v, zero[t_in_pq], -P_Fik[t_in_pq])]
+    data = np.r_[data, P_Fik[f_in_pq], -P_Fik[f_in_pq & t_in_pvpq], np.where(control_v[f_in_pvpq & t_in_pq], zero[f_in_pvpq & t_in_pq], P_Fik[f_in_pvpq & t_in_pq]), np.where(control_v[t_in_pq], zero[t_in_pq], -P_Fik[t_in_pq])]
 
 
 
@@ -354,7 +354,7 @@ def create_J_modification_ssc(J, V, Ybus_ssc, f, t, pvpq, pq, pvpq_lookup, pq_lo
 
     rows = np.r_[rows, len(pvpq)+pq_lookup[f[f_in_pq]], len(pvpq)+pq_lookup[f[f_in_pq & t_in_pq]], len(pvpq)+pq_lookup[t[f_in_pq & t_in_pq]], len(pvpq)+pq_lookup[t[t_in_pq]]]
     cols = np.r_[cols, len(pvpq)+pq_lookup[f[f_in_pq]], len(pvpq)+pq_lookup[t[f_in_pq & t_in_pq]], len(pvpq)+pq_lookup[f[f_in_pq & t_in_pq]], len(pvpq)+pq_lookup[t[t_in_pq]]]
-    data = np.r_[data, ((2 * Q_Fii + Q_Fik) / Vmf)[f_in_pq], (Q_Fik / Vmt)[f_in_pq & t_in_pq], np.where(control_v, one[f_in_pq & t_in_pq], ((2 * Q_Fii + Q_Fik) / Vmf)[f_in_pq & t_in_pq]), np.where(control_v, zero[t_in_pq], (Q_Fik / Vmt)[t_in_pq])]
+    data = np.r_[data, ((2 * Q_Fii + Q_Fik) / Vmf)[f_in_pq], (Q_Fik / Vmt)[f_in_pq & t_in_pq], np.where(control_v[f_in_pq & t_in_pq], one[f_in_pq & t_in_pq], ((2 * Q_Fii + Q_Fik) / Vmf)[f_in_pq & t_in_pq]), np.where(control_v[t_in_pq], zero[t_in_pq], (Q_Fik / Vmt)[t_in_pq])]
 
     # for vsc ac slack buses:
     # rows = np.r_[rows, ac_slack]
