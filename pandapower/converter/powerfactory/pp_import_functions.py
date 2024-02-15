@@ -2045,7 +2045,7 @@ def create_sgen_asm(net, item, pf_variable_p_gen, dict_net):
     try:
         bus, _ = get_connection_nodes(net, item, 1)
     except IndexError:
-        logger.error("Cannot add Sgen asm '%s': not connected" % name)
+        logger.error("Cannot add Sgen asm '%s': not connected" % item.loc_name)
         return
 
     params = {
@@ -2529,7 +2529,7 @@ def create_shunt(net, item):
     try:
         bus, _ = get_connection_nodes(net, item, 1)
     except IndexError:
-        logger.error("Cannot add Shunt '%s': not connected" % name)
+        logger.error("Cannot add Shunt '%s': not connected" % item.loc_name)
         return
 
     multiplier = get_power_multiplier(item, 'Qact')
@@ -2578,7 +2578,7 @@ def create_zpu(net, item):
     try:
         (bus1, bus2), _ = get_connection_nodes(net, item, 2)
     except IndexError:
-        logger.error("Cannot add ZPU '%s': not connected" % name)
+        logger.error("Cannot add ZPU '%s': not connected" % item.loc_name)
         return
 
     logger.debug('bus1 = %d, bus2 = %d' % (bus1, bus2))
@@ -2615,7 +2615,7 @@ def create_vac(net, item):
     try:
         bus, _ = get_connection_nodes(net, item, 1)
     except IndexError:
-        logger.error("Cannot add VAC '%s': not connected" % name)
+        logger.error("Cannot add VAC '%s': not connected" % item.loc_name)
         return
 
     params = {
@@ -2681,7 +2681,7 @@ def create_sind(net, item):
     try:
         (bus1, bus2), _ = get_connection_nodes(net, item, 2)
     except IndexError:
-        logger.error("Cannot add Sind '%s': not connected" % name)
+        logger.error("Cannot add Sind '%s': not connected" % item.loc_name)
         return
 
     sind = pp.create_series_reactor_as_impedance(net, from_bus=bus1, to_bus=bus2, r_ohm=item.rrea,
@@ -2733,7 +2733,7 @@ def create_vscmono(net, item):
     try:
         (bus, bus_dc), _ = get_connection_nodes(net, item, 2)
     except IndexError:
-        logger.error("Cannot add Vscmono '%s': not connected" % name)
+        logger.error("Cannot add Vscmono '%s': not connected" % item.loc_name)
         return
 
     sn_mva = item.Snom
@@ -2783,7 +2783,7 @@ def create_vsc(net, item):
     try:
         (bus, bus_dc_p, bus_dc_n), _ = get_connection_nodes(net, item, 3)
     except IndexError:
-        logger.error("Cannot add VSC '%s': not connected" % name)
+        logger.error("Cannot add VSC '%s': not connected" % item.loc_name)
         return
 
     sn_mva = item.Snom / 2
