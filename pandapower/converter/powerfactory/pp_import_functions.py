@@ -3,6 +3,7 @@ import math
 import bisect
 from itertools import combinations
 import re
+import numbers
 
 import pandapower as pp
 from pandas import DataFrame
@@ -220,7 +221,7 @@ def from_pf(dict_net, pv_as_slack=True, pf_variable_p_loads='plini', pf_variable
     line_dict = {}
     n = 0
     for n, line in enumerate(dict_net['ElmLne'], 0):
-        create_line(net=net, item=line, flag_graphics=flag_graphics, is_unbalanced=is_unbalanced)
+        create_line(net=net, item=line, flag_graphics=flag_graphics, corridor=n, is_unbalanced=is_unbalanced)
     logger.info('imported %d lines' % (len(net.line.line_idx.unique())) if len(net.line) else 0)
     net.line['section_idx'] = 0
     if dict_net['global_parameters']["iopt_tem"] == 1:
@@ -318,7 +319,14 @@ def add_additional_attributes(item, net, element, element_id, attr_list=None, at
         elif item.HasAttribute(attr):
             chr_name = ga(item, attr)
             if chr_name is not None:
-                net[element].loc[element_id, attr_dict[attr]] = chr_name
+                if isinstance(chr_name, (str, numbers.Number)):
+                    net[element].loc[element_id, attr_dict[attr]] = chr_name
+                elif isinstance(chr_name, list):
+                    if len(chr_name) > 1:
+                        raise NotImplementedError(f"attribute {attr} is a list with more than 1 items - not supported.")
+                    elif len(chr_name) == 0:
+                        continue
+                    net[element].loc[element_id, attr_dict[attr]] = chr_name[0]
 
 
 def create_bus(net, item, flag_graphics, is_unbalanced):
@@ -401,7 +409,7 @@ def create_bus(net, item, flag_graphics, is_unbalanced):
     net[table].at[bid, "substat"] = substat_descr
     net[table].at[bid, "folder_id"] = item.fold_id.loc_name
 
-    add_additional_attributes(item, net, table, bid, attr_dict={"for_name": "equipment"},
+    add_additional_attributes(item, net, table, bid, attr_dict={"for_name": "equipment", "cimRdfId": "origin_id"},
                               attr_list=["sernum", "chr_name", "cpSite.loc_name"])
 
 
@@ -653,7 +661,7 @@ def get_coords_from_grf_object(item):
     return coords
 
 
-def create_line(net, item, flag_graphics, is_unbalanced):
+def create_line(net, item, flag_graphics, corridor, is_unbalanced):
     params = {'parallel': item.nlnum, 'name': item.loc_name}
     logger.debug('>> creating line <%s>' % params['name'])
     logger.debug('line <%s> has <%d> parallel lines' % (params['name'], params['parallel']))
@@ -700,16 +708,11 @@ def create_line(net, item, flag_graphics, is_unbalanced):
         line_dict[item] = sid_list
         logger.debug('created <%d> line sections for line <%s>' % (len(sid_list), params['name']))
 
-    if ac:
-        if not net.line.empty and "line_idx" in net.line:
-            n = net.line.line_idx.max() + 1
-        else:
-            n = 0
-        net.line.loc[sid_list, "line_idx"] = n
-        net.line.loc[sid_list, "folder_id"] = item.fold_id.loc_name
-        net.line.loc[sid_list, "equipment"] = item.for_name
-        create_connection_switches(net, item, 2, 'l', (params['bus1'], params['bus2']),
-                                   (sid_list[0], sid_list[-1]))
+    net.line.loc[sid_list, "line_idx"] = corridor
+    net.line.loc[sid_list, "folder_id"] = item.fold_id.loc_name
+    net.line.loc[sid_list, "equipment"] = item.for_name
+    create_connection_switches(net, item, 2, 'l', (params['bus1'], params['bus2']),
+                               (sid_list[0], sid_list[-1]))
 
     logger.debug('line <%s> created' % params['name'])
 
@@ -959,6 +962,9 @@ def create_line_normal(net, item, bus1, bus2, name, parallel, is_unbalanced, ac,
         lid = pp.create_line_from_parameters(net=net, from_bus=bus1, to_bus=bus2, **params)
 
     net["line" if ac else "line_dc"].loc[lid, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
+    chr_name = item.cimRdfId
+    if chr_name is not None and len(chr_name) > 0:
+        net["line" if ac else "line_dc"].loc[lid, 'origin_id'] = chr_name[0]
 
 #    if item.HasResults(-1):  # -1 for 'c' results (whatever that is...)
 #        loading = ga(item, 'c:loading')
@@ -1230,6 +1236,8 @@ def map_sgen_type_var(pf_sgen_type):
 
 
 def get_power_multiplier(item, var):
+    if item.outserv:
+        return 1.
     if var == "m:P:bus1" and not item.HasResults():
         raise UserWarning(f"{item} does not have results - cannot get power multiplier")
     exponent = item.GetAttributeUnit(var)
@@ -2054,7 +2062,7 @@ def create_sgen_asm(net, item, pf_variable_p_gen, dict_net):
     sid = pp.create_sgen(net, **params)
 
     net.sgen.loc[sid, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    add_additional_attributes(item, net, "sgen", sid, attr_dict={"for_name": "equipment"},
+    add_additional_attributes(item, net, "sgen", sid, attr_dict={"for_name": "equipment", "cimRdfId": "origin_id"},
                               attr_list=["sernum", "chr_name", "cpSite.loc_name"])
 
     if item.HasResults(0):
@@ -2268,7 +2276,7 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
         tap_changer = None
 
     add_additional_attributes(item, net, element='trafo', element_id=tid,
-                              attr_dict={'e:cpSite.loc_name': 'site', 'for_name': 'equipment'})
+                              attr_dict={'e:cpSite.loc_name': 'site', 'for_name': 'equipment', "cimRdfId": "origin_id"})
     if pf_type.itapzdep:
         x_points = (net.trafo.at[tid, "tap_min"], net.trafo.at[tid, "tap_neutral"], net.trafo.at[tid, "tap_max"])
         vk_min, vk_neutral, vk_max = pf_type.uktmn, net.trafo.at[tid, "vk_percent"], pf_type.uktmx
@@ -2416,7 +2424,8 @@ def create_trafo3w(net, item, tap_opt='nntap'):
     # logger.debug('created connection switches for trafo 3w successfully')
     add_additional_attributes(item, net, element='trafo3w', element_id=tid,
                               attr_dict={'cpSite.loc_name': 'site', 'for_name': 'equipment',
-                                         'typ_id.loc_name': 'std_type', 'usetp': 'vm_set_pu'})
+                                         'typ_id.loc_name': 'std_type', 'usetp': 'vm_set_pu',
+                                         "cimRdfId": "origin_id"})
 
     # assign loading from power factory results
     if item.HasResults(-1):  # -1 for 'c' results (whatever that is...)
@@ -2480,6 +2489,8 @@ def create_coup(net, item, is_fuse=False):
     cd = pp.create_switch(net, name=name, bus=bus1, element=bus2, et='b',
                           closed=switch_is_closed,
                           type=switch_usage)
+    add_additional_attributes(item, net, element='switch', element_id=cd,
+                              attr_list=['cpSite.loc_name'], attr_dict={"cimRdfId": "origin_id"})
     logger.debug('created switch at index <%d>, closed = %s, usage = %s' %
                  (cd, switch_is_closed, switch_usage))
 
@@ -2515,13 +2526,13 @@ def create_coup(net, item, is_fuse=False):
 
 
 def create_shunt(net, item):
-    multiplier = get_power_multiplier(item, 'Qact')
-
     try:
         bus, _ = get_connection_nodes(net, item, 1)
     except IndexError:
         logger.error("Cannot add Shunt '%s': not connected" % name)
         return
+
+    multiplier = get_power_multiplier(item, 'Qact')
 
     params = {
         'name': item.loc_name,
@@ -2549,7 +2560,7 @@ def create_shunt(net, item):
         sid = pp.create_shunt(net, p_mw=p_mw, **params)
 
     add_additional_attributes(item, net, element='shunt', element_id=sid,
-                              attr_list=['cpSite.loc_name'])
+                              attr_list=['cpSite.loc_name'], attr_dict={"cimRdfId": "origin_id"})
 
     if item.HasResults(0):
         net.res_shunt.loc[sid, 'pf_p'] = ga(item, 'm:P:bus1') * multiplier
@@ -2586,7 +2597,8 @@ def create_zpu(net, item):
     }
 
     logger.debug('params = %s' % params)
-    pp.create_impedance(net, **params)
+    xid = pp.create_impedance(net, **params)
+    add_additional_attributes(item, net, element='impedance', element_id=xid, attr_list=["cpSite.loc_name"], attr_dict={"cimRdfId": "origin_id"})
 
     # create shunts at the buses connected to the impedance
     if ~np.isclose(item.gi_pu, 0) or ~np.isclose(item.bi_pu, 0):
@@ -2657,7 +2669,7 @@ def create_vac(net, item):
         net['res_%s' % elm].at[xid, "pf_p"] = np.nan
         net['res_%s' % elm].at[xid, "pf_q"] = np.nan
 
-    add_additional_attributes(item, net, element=elm, element_id=xid, attr_list=["cpSite.loc_name"])
+    add_additional_attributes(item, net, element=elm, element_id=xid, attr_list=["cpSite.loc_name"], attr_dict={"cimRdfId": "origin_id"})
 
     logger.debug('added pf_p and pf_q to {} {}: {}'.format(elm, xid, net['res_' + elm].loc[
         xid, ["pf_p", 'pf_q']].values))
