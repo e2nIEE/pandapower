@@ -495,6 +495,7 @@ def get_connection_nodes(net, item, num_nodes):
             pf_bus = None
         if pf_bus is None:
             if num_nodes == 1:
+                logger.error(f"{item} has no connection node")
                 raise IndexError
             buses.append(None)
         else:
@@ -663,7 +664,7 @@ def create_line(net, item, flag_graphics, is_unbalanced):
     try:
         (params['bus1'], params['bus2']), bus_table = get_connection_nodes(net, item, 2)
     except IndexError:
-        logger.debug("Cannot add Line '%s': not connected" % params['name'])
+        logger.error("Cannot add Line '%s': not connected" % params['name'])
         return
     except:
         logger.error("Error while exporting Line '%s'" % params['name'])
@@ -902,7 +903,6 @@ def create_line_normal(net, item, bus1, bus2, name, parallel, is_unbalanced, ac,
         'in_service': not bool(item.outserv),
         'length_km': item.dline,
         'df': item.fline,
-        'std_type': std_type,
         'parallel': parallel,
         'alpha': pf_type.alpha if pf_type is not None else None,
         'temperature_degree_celsius': pf_type.tmax if pf_type is not None else None,
@@ -912,6 +912,7 @@ def create_line_normal(net, item, bus1, bus2, name, parallel, is_unbalanced, ac,
 
     if std_type is not None: #and not is_unbalanced:delete later
         logger.debug('creating normal line with type <%s>' % std_type)
+        params["std_type"] = std_type
         if ac:
             lid = pp.create_line(net, from_bus=bus1, to_bus=bus2, **params)
         else:
@@ -1066,7 +1067,7 @@ def create_ext_net(net, item, pv_as_slack, is_unbalanced):
     try:
         bus1, _ = get_connection_nodes(net, item, 1)
     except IndexError:
-        logger.debug("Cannot add Xnet '%s': not connected" % name)
+        logger.error("Cannot add Xnet '%s': not connected" % name)
         return
 
     logger.debug('found bus <%d> in net' % bus1)
@@ -1598,7 +1599,7 @@ def create_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
             params.bus, _ = get_connection_nodes(net, item, 1)
             logger.debug('found bus <%d> in net' % params.bus)
         except IndexError:
-            logger.debug("Cannot add Load '%s': not connected" % params.name)
+            logger.error("Cannot add Load '%s': not connected" % params.name)
             return
 
     params.in_service = not bool(item.outserv)
@@ -1747,7 +1748,7 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
         try:
             params.bus, _ = get_connection_nodes(net, item, 1)
         except:
-            logger.debug("Cannot add Sgen '%s': not connected" % params.name)
+            logger.error("Cannot add Sgen '%s': not connected" % params.name)
             return
 
         params.update(ask(item, pf_variable_p_gen, 'p_mw', 'q_mvar', 'sn_mva'))
@@ -1903,7 +1904,7 @@ def create_sgen_neg_load(net, item, pf_variable_p_loads, dict_net):
     try:
         params.bus, _ = get_connection_nodes(net, item, 1)
     except IndexError:
-        logger.debug("Cannot add Sgen '%s': not connected" % params.name)
+        logger.error("Cannot add Sgen '%s': not connected" % params.name)
         return
 
     params.update(ask_load_params(item, pf_variable_p_loads=pf_variable_p_loads,
@@ -1959,7 +1960,7 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net):
         try:
             bus1, _ = get_connection_nodes(net, item, 1)
         except IndexError:
-            logger.debug("Cannot add Sgen '%s': not connected" % name)
+            logger.error("Cannot add Sgen '%s': not connected" % name)
             return
 
         logger.debug('sgen <%s> is a %s' % (name, {True: 'motor', False: 'generator'}[is_motor]))
@@ -2033,7 +2034,11 @@ def create_sgen_asm(net, item, pf_variable_p_gen, dict_net):
 
     logger.debug('in_service: %s' % in_service)
 
-    bus, _ = get_connection_nodes(net, item, 1)
+    try:
+        bus, _ = get_connection_nodes(net, item, 1)
+    except IndexError:
+        logger.error("Cannot add Sgen asm '%s': not connected" % name)
+        return
 
     params = {
         'name': item.loc_name,
@@ -2156,6 +2161,10 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
 
     # figure out trafo type
     pf_type = item.typ_id
+    if pf_type is None:
+        logger.error('cannot create transformer <%s>: missing type' % name)
+        return
+
     std_type, type_created = create_trafo_type(net=net, item=pf_type)
 
     # figure out current tap position
@@ -2310,7 +2319,7 @@ def create_trafo3w(net, item, tap_opt='nntap'):
     try:
         (bus1, bus2, bus3), _ = get_connection_nodes(net, item, 3)
     except IndexError:
-        logger.debug("Cannot add Trafo3W '%s': not connected" % item.loc_name)
+        logger.error("Cannot add Trafo3W '%s': not connected" % item.loc_name)
         return
     logger.debug('%s; %s; %s' % (bus1, bus2, bus3))
     if not (net.bus.vn_kv.at[bus1] >= net.bus.vn_kv.at[bus2] >= net.bus.vn_kv.at[bus3]):
@@ -2358,7 +2367,7 @@ def create_trafo3w(net, item, tap_opt='nntap'):
 
     if item.nt3nm != 1:
         logger.warning("trafo3w %s has parallel=%d, this is not implemented. "
-                       "Calculation results will be incorrect." % (item.loc_name, item.nt3mn))
+                       "Calculation results will be incorrect." % (item.loc_name, item.nt3nm))
 
     if item.HasAttribute('t:du3tp_h'):
         steps = [pf_type.du3tp_h, pf_type.du3tp_m, pf_type.du3tp_l]
@@ -2507,7 +2516,13 @@ def create_coup(net, item, is_fuse=False):
 
 def create_shunt(net, item):
     multiplier = get_power_multiplier(item, 'Qact')
-    bus, _ = get_connection_nodes(net, item, 1)
+
+    try:
+        bus, _ = get_connection_nodes(net, item, 1)
+    except IndexError:
+        logger.error("Cannot add Shunt '%s': not connected" % name)
+        return
+
     params = {
         'name': item.loc_name,
         'bus': bus,
@@ -2549,7 +2564,12 @@ def _add_shunt_to_impedance_bus(net, item, bus):
 
 
 def create_zpu(net, item):
-    (bus1, bus2), _ = get_connection_nodes(net, item, 2)
+    try:
+        (bus1, bus2), _ = get_connection_nodes(net, item, 2)
+    except IndexError:
+        logger.error("Cannot add ZPU '%s': not connected" % name)
+        return
+
     logger.debug('bus1 = %d, bus2 = %d' % (bus1, bus2))
 
     # net, from_bus, to_bus, r_pu, x_pu, sn_Mva, name=None, in_service=True, index=None
@@ -2580,7 +2600,12 @@ def create_vac(net, item):
     not tested yet
 
     """
-    bus, _ = get_connection_nodes(net, item, 1)
+    try:
+        bus, _ = get_connection_nodes(net, item, 1)
+    except IndexError:
+        logger.error("Cannot add VAC '%s': not connected" % name)
+        return
+
     params = {
         'name': item.loc_name,
         'bus': bus,
@@ -2641,7 +2666,12 @@ def create_vac(net, item):
 def create_sind(net, item):
     # series reactor is modelled as per-unit impedance, values in Ohm are calculated into values in
     # per unit at creation
-    (bus1, bus2), _ = get_connection_nodes(net, item, 2)
+    try:
+        (bus1, bus2), _ = get_connection_nodes(net, item, 2)
+    except IndexError:
+        logger.error("Cannot add Sind '%s': not connected" % name)
+        return
+
     sind = pp.create_series_reactor_as_impedance(net, from_bus=bus1, to_bus=bus2, r_ohm=item.rrea,
                                                  x_ohm=item.xrea, sn_mva=item.Sn,
                                                  name=item.loc_name,
@@ -2688,7 +2718,11 @@ def _get_vsc_control_modes(item, mono=True):
 
 def create_vscmono(net, item):
 
-    (bus, bus_dc), _ = get_connection_nodes(net, item, 2)
+    try:
+        (bus, bus_dc), _ = get_connection_nodes(net, item, 2)
+    except IndexError:
+        logger.error("Cannot add Vscmono '%s': not connected" % name)
+        return
 
     sn_mva = item.Snom
     v_ac = item.Unom
@@ -2734,7 +2768,11 @@ def create_vscmono(net, item):
 
 
 def create_vsc(net, item):
-    (bus, bus_dc_p, bus_dc_n), _ = get_connection_nodes(net, item, 3)
+    try:
+        (bus, bus_dc_p, bus_dc_n), _ = get_connection_nodes(net, item, 3)
+    except IndexError:
+        logger.error("Cannot add VSC '%s': not connected" % name)
+        return
 
     sn_mva = item.Snom / 2
     v_ac = item.Unom
