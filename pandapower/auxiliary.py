@@ -1066,8 +1066,9 @@ def _clean_up(net, res=True):
 def _set_isolated_buses_out_of_service(net, ppc):
     # set disconnected buses out of service
     # first check if buses are connected to branches
+    # I don't know why this dance with [X, :][:, [Y, Z]] (instead of [X, [Y, Z]]) is necessary:
     disco = np.setxor1d(ppc["bus"][:, BUS_I].astype(np.int64),
-                        ppc["branch"][ppc["branch"][:, BR_STATUS] == 1, [F_BUS,T_BUS]].real.astype(np.int64).flatten())
+                        ppc["branch"][ppc["branch"][:, BR_STATUS] == 1, :][:, [F_BUS,T_BUS]].real.astype(np.int64).flatten())
 
     # but also check if they may be the only connection to an ext_grid
     net._isolated_buses = np.setdiff1d(disco, ppc['bus'][ppc['bus'][:, BUS_TYPE] == REF,
@@ -1076,7 +1077,7 @@ def _set_isolated_buses_out_of_service(net, ppc):
 
     # check DC buses - not connected to DC lines and not connected to VSC DC side
     disco_dc = np.setxor1d(ppc["bus_dc"][:, DC_BUS_I].astype(np.int64),
-                           np.union1d(ppc["branch_dc"][ppc["branch_dc"][:, DC_BR_STATUS] == 1,
+                           np.union1d(ppc["branch_dc"][ppc["branch_dc"][:, DC_BR_STATUS] == 1, :][:,
                                       [DC_F_BUS, DC_T_BUS]].real.astype(np.int64).flatten(),
                                       ppc["vsc"][ppc["vsc"][:, VSC_STATUS] == 1, VSC_BUS_DC].real.astype(np.int64)))
 

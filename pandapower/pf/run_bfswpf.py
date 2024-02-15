@@ -450,7 +450,7 @@ def _run_bfswpf(ppci, options, **kwargs):
     # #----- output results to ppc ------
     ppci["et"] = perf_counter() - time_start  # pf time end
 
-    bus, gen, branch = pfsoln(baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, vsc, Ybus, Yf, Yt, V_final, ref, ref_gens)
+    bus, gen, branch = pfsoln(baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, Ybus, Yf, Yt, V_final, ref, ref_gens)
     # bus, gen, branch = pfsoln_bfsw(baseMVA, bus, gen, branch, V_final, ref, pv, pq, BIBC, ysh_f,ysh_t,Iinj, Sbus)
 
     ppci["success"] = success

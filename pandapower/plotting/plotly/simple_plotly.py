@@ -21,20 +21,22 @@ logger = logging.getLogger(__name__)
 def get_hoverinfo(net, element, precision=3, sub_index=None):
     hover_index = net[element].index
     if element == "bus":
-        load_str, sgen_str, vsc_str = [], [], []
+        # load_str, sgen_str, vsc_str = [], [], []
+        load_str, sgen_str = [], []
         for ln in [net.load.loc[net.load.bus == b, "p_mw"].sum() for b in net.bus.index]:
             load_str.append("Load: {:.3f} MW<br />".format(ln) if ln != 0. else "")
         for s in [net.sgen.loc[net.sgen.bus == b, "p_mw"].sum() for b in net.bus.index]:
             sgen_str.append("Static generation: {:.3f} MW<br />".format(s) if s != 0. else "")
-        for vn in [net.vsc.loc[net.vsc.bus == b, "p_mw"].sum() for b in net.bus.index]:
-            vsc_str.append("VSC: {:.3f} MW<br />".format(vn) if vn != 0. else "")
+        # we do not really need vsc result for every bus:
+        #for vn in [net.res_vsc.loc[net.vsc.bus == b, "p_mw"].fillna(0).sum() for b in net.bus.index]:
+        #    vsc_str.append("VSC: {:.3f} MW<br />".format(vn) if vn != 0. else "")
         hoverinfo = (
                 "Index: " + net.bus.index.astype(str) + '<br />' +
                 "Name: " + net.bus['name'].astype(str) + '<br />' +
-                'V_n: ' + net.bus['vn_kv'].round(precision).astype(str) + ' kV' + '<br />' + load_str + sgen_str + vsc_str).tolist()
+                'V_n: ' + net.bus['vn_kv'].round(precision).astype(str) + ' kV' + '<br />' + load_str + sgen_str).tolist()
     elif element == "bus_dc":
         vsc_str = []
-        for vn in [net.vsc.loc[net.vsc.bus_dc == b, "p_mw"].sum() for b in net.bus_dc.index]:
+        for vn in [net.res_vsc.loc[net.vsc.bus_dc == b, "p_dc_mw"].fillna().sum() for b in net.bus_dc.index]:
             vsc_str.append("VSC: {:.3f} MW<br />".format(vn) if vn != 0. else "")
         hoverinfo = (
                 "Index: " + net.bus_dc.index.astype(str) + '<br />' +
@@ -80,6 +82,13 @@ def get_hoverinfo(net, element, precision=3, sub_index=None):
                 'V_m: ' + net.ext_grid['vm_pu'].round(precision).astype(str) + ' p.u.' + '<br />' +
                 'V_a: ' + net.ext_grid['va_degree'].round(precision).astype(str) + ' °' + '<br />').tolist()
         hover_index = net.ext_grid.bus.tolist()
+    elif element == "vsc":
+        hoverinfo = (
+                "Index: " + net.vsc.index.astype(str) + '<br />' +
+                "Name: " + net.vsc['name'].astype(str) + '<br />' +
+                'P: ' + net.res_vsc['p_mw'].fillna(0).round(precision).astype(str) + ' MW' + '<br />' +
+                'Q: ' + net.res_vsc['q_mvar'].fillna(0).round(precision).astype(str) + ' MVAr' + '<br />').tolist()
+        hover_index = net.vsc.bus.tolist()
     else:
         return None
     hoverinfo = pd.Series(index=hover_index, data=hoverinfo, dtype=object)
