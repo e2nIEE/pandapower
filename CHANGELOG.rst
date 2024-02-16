@@ -43,6 +43,10 @@ Change Log
 - [FIXED] add some safeguards for TDPF to avoid numerical issues in some cases
 - [FIXED] in reindex_elements: fixed index error when reindexing line_geodata
 
+- [FIXED] avoid attaching elements as duplicates to a group where some of the elements already exist
+- [ADDED] the function :code:`run_contingency` can raise a captured error if parameter :code:`raise_errors` is passed
+- [FIXED] bugfix for tap dependent impedance characteristics so that not all characteristics columns are necessary
+- [FIXED] in function :code:`toolbox.replace_zero_branches_with_switches`, use absolute for the parameters of impedance elements in case they are negative nonzero values
 
 [2.13.1] - 2023-05-12
 -------------------------------

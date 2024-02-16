@@ -17,13 +17,15 @@ logger = logging.getLogger(__name__)
 class ConstControl(Controller):
     """
     Class representing a generic time series controller for a specified element and variable.
-    Control strategy: "No Control" -> updates values of specified elements according to timeseries input data.
-    If ConstControl is used without timeseries input data, it will reset the controlled values to the initial values,
-    preserving the initial net state.
-    The timeseries values are written to net during time_step before the initial powerflow run and before other controllers' control_step.
-    It is possible to set attributes of objects that are contained in a net table, e.g. attributes of other controllers. This can be helpful
+    Control strategy: "No Control" -> updates values of specified elements according to timeseries
+    input data. If ConstControl is used without timeseries input data, it will reset the controlled
+    values to the initial values, preserving the initial net state.
+    The timeseries values are written to net during time_step before the initial powerflow run and
+    before other controllers' control_step. It is possible to set attributes of objects that are
+    contained in a net table, e.g. attributes of other controllers. This can be helpful
     e.g. if a voltage setpoint of a transformer tap changer depends on the time step.
-    An attribute of an object in the "object" column of a table (e.g. net.controller["object"] -> net.controller.object.at[0, "vm_set_pu"]
+    An attribute of an object in the "object" column of a
+    table (e.g. net.controller["object"] -> net.controller.object.at[0, "vm_set_pu"]
     can be set if the attribute is specified as "object.attribute" (e.g. "object.vm_set_pu").
 
     INPUT:
@@ -81,7 +83,8 @@ class ConstControl(Controller):
         self.profile_name = profile_name
         self.scale_factor = scale_factor
         self.applied = False
-        self.write_flag, self.variable = _detect_read_write_flag(net, element, element_index, variable)
+        self.write_flag, self.variable = _detect_read_write_flag(
+            net, element, element_index, variable)
         self.set_recycle(net)
 
     def set_recycle(self, net):
@@ -109,7 +112,8 @@ class ConstControl(Controller):
         """
         Get the values of the element from data source
         Write to pandapower net by calling write_to_net()
-        If ConstControl is used without a data_source, it will reset the controlled values to the initial values,
+        If ConstControl is used without a data_source, it will reset the controlled values to the
+        initial values,
         preserving the initial net state.
         """
         self.applied = False
@@ -120,7 +124,8 @@ class ConstControl(Controller):
                                                                profile_name=self.profile_name,
                                                                scale_factor=self.scale_factor)
         if self.values is not None:
-            write_to_net(net, self.element, self.element_index, self.variable, self.values, self.write_flag)
+            write_to_net(net, self.element, self.element_index, self.variable, self.values,
+                         self.write_flag)
 
     def is_converged(self, net):
         """
@@ -130,7 +135,8 @@ class ConstControl(Controller):
 
     def control_step(self, net):
         """
-        Set applied to True, which means that the values set in time_step have been included in the load flow calculation.
+        Set applied to True, which means that the values set in time_step have been included in the
+        load flow calculation.
         """
         self.applied = True
 
