@@ -636,7 +636,7 @@ def drop_elements_simple(net, element_type, element_index):
 
     # logging
     if number := len(element_index) > 0:
-        logger.debug("Dropped %i %s%s!" % (number, element_type, plural_s(number)))
+        logger.debug(f"Dropped {number} {element_type}{plural_s(number)}!")
 
 
 def drop_buses(net, buses, drop_elements=True):
@@ -676,8 +676,7 @@ def drop_trafos(net, trafos, table="trafo"):
     net[table].drop(trafos, inplace=True)
     res_trafos = net["res_" + table].index.intersection(trafos)
     net["res_" + table].drop(res_trafos, inplace=True)
-    logger.debug("Dropped %i %s%s with %i switches" % (
-        len(trafos), table, plural_s(len(trafos)), num_switches))
+    logger.debug(f"Dropped {len(trafos)} {table}{plural_s(len(trafos))} with {num_switches} switches")
 
 
 def drop_lines(net, lines):

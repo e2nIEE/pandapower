@@ -300,13 +300,12 @@ class pandapowerNet(ADict):
             if not et.startswith("_") and isinstance(self[et], pd.DataFrame) and len(self[et]) > 0:
                 n_rows = self[et].shape[0]
                 if 'res_' in et:
-                    res.append("   - %s (%i %s)" % (et, n_rows, "element" + plural_s(n_rows)))
+                    res.append(f"   - {et} ({n_rows} element{plural_s(n_rows)})")
                 elif et == 'group':
                     n_groups = len(set(self[et].index))
-                    par.append('   - %s (%i %s, %i %s)' % (
-                        et, n_groups, "group" + plural_s(n_groups), n_rows, "row" + plural_s(n_rows)))
+                    par.append(f"   - {et} ({n_groups} group{plural_s(n_groups)}, {n_rows} row{plural_s(n_rows)})")
                 else:
-                    par.append("   - %s (%i %s)" % (et, n_rows, "element" + plural_s(n_rows)))
+                    par.append(f"   - {et} ({n_rows} element{plural_s(n_rows)})")
         res_cost = [" and the following result values:",
                     "   - %s" % "res_cost"] if "res_cost" in self.keys() else []
         if not len(par) + len(res):
@@ -319,7 +318,7 @@ class pandapowerNet(ADict):
 
 
 def plural_s(number):
-    return "s" if number == 1 else ""
+    return "" if number == 1 else "s"
 
 
 def _preserve_dtypes(df, dtypes):
