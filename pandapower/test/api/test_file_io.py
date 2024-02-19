@@ -72,9 +72,9 @@ def test_pickle(net_in, tmp_path):
     assert_net_equal(net_in, net_out)
 
 
-@pytest.mark.skipif(not xlsxwriter_INSTALLED or not openpyxl_INSTALLED, reason=("xlsxwriter is "
-                    "mandatory to write excel files and openpyxl to read excels, but is not "
-                    "installed."))
+@pytest.mark.skipif(not xlsxwriter_INSTALLED or not openpyxl_INSTALLED, reason=(
+        "xlsxwriter is mandatory to write excel files and openpyxl to read excels, but is not installed."
+))
 def test_excel(net_in, tmp_path):
     filename = os.path.abspath(str(tmp_path)) + "testfile.xlsx"
     pp.to_excel(net_in, filename)

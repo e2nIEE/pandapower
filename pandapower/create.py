@@ -650,7 +650,7 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b", zone=N
         else:
             raise UserWarning("geodata must be a valid geojson.Point object or coordinate tuple")
     else:
-        geo = np.nan
+        geo = None
 
     if coords is not None:
         raise UserWarning("busbar plotting is not implemented fully and will likely be removed in the future")
@@ -735,7 +735,7 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
                     "geodata must be a valid geojson.Point or coordinate tuple or a list of geojson.Point or tuple"
                 )
     else:
-        geo = np.nan
+        geo = None
 
     entries = {"vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "name": name, "geo": geo}
     _add_to_entries_if_not_nan(net, "bus", entries, index, "min_vm_pu", min_vm_pu)
@@ -2148,8 +2148,7 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
 
     _set_entries(net, "line", index, **v, **kwargs)
 
-    if geodata is not None:
-        net.line.at[index, "geo"] = geodata
+    net.line.at[index, "geo"] = geodata
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "line")
     _set_value_if_not_nan(net, index, alpha, "alpha", "line")
@@ -2426,6 +2425,8 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
 
     if geodata is not None:
         net.line.at[index, "geo"] = geojson.LineString(geodata)
+    else:
+        net.line.at[index, "geo"] = None
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "line")
     _set_value_if_not_nan(net, index, alpha, "alpha", "line")
@@ -2575,6 +2576,9 @@ def create_lines_from_parameters(net, from_buses, to_buses, length_km, r_ohm_per
 
     if geodata is not None:
         _add_multiple_branch_geodata(net, geodata, index)
+    else:
+        for i in index:
+            net.line.at[i, "geo"] = None
 
     return index
 
@@ -5020,7 +5024,6 @@ def _add_to_entries_if_not_nan(net, element_type, entries, index, column, values
 
 def _add_multiple_branch_geodata(net, geodata, index):
     dtypes = net.line.dtypes
-    series = pd.Series(index=index, name="geo", dtype=object)
     # works with single or multiple lists of coordinates
     if isinstance(geodata, list) and all([isinstance(g, tuple) and len(g) == 2 for g in geodata]):
         # geodata is a single list of coordinates

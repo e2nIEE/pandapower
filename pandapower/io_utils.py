@@ -258,6 +258,12 @@ def from_dict_of_dfs(dodfs, net=None):
             if not isinstance(table.index, pd.MultiIndex):
                 table.rename_axis(net[item].index.name, inplace=True)
             net[item] = table
+            # convert geodata to geojson
+            if item in ["bus", "line"]:
+                if "geo" in table.columns:
+                    table.geo = table.geo.apply(
+                        lambda x: geojson.loads(x, cls=PPJSONDecoder) if pd.notna(x) else x
+                    )
         # set the index to be Int
         try:
             net[item].set_index(net[item].index.astype(np.int64), inplace=True)
