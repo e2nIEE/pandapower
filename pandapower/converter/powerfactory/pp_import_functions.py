@@ -709,7 +709,6 @@ def create_line(net, item, flag_graphics, corridor, is_unbalanced):
         line_dict[item] = sid_list
         logger.debug('created <%d> line sections for line <%s>' % (len(sid_list), params['name']))
 
-    logger.warning(f"{sid_list=}, {net.line=}, {net.line_dc=}")
     net[element].loc[sid_list, "line_idx"] = corridor
     net[element].loc[sid_list, "folder_id"] = item.fold_id.loc_name
     net[element].loc[sid_list, "equipment"] = item.for_name
