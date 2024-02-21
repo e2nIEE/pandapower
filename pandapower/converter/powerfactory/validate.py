@@ -1,17 +1,18 @@
 # -*- coding: utf-8 -*-
 
-import pandas as pd
 import numpy as np
 import pandapower as pp
-from pandapower.toolbox import replace_zero_branches_with_switches
+import pandas as pd
 from pandapower import diagnostic
+from pandapower.toolbox import replace_zero_branches_with_switches
 
 try:
     import pandaplan.core.pplog as logging
-    logger = logging.logger
 except ImportError:
     import logging
-    logger = logging.getLogger(__name__)
+
+logger = logging.getLogger(__name__)
+
 
 def _get_pf_results(net, is_unbalanced=False):
     if not net["pf_converged"]:
@@ -28,30 +29,32 @@ def _get_pf_results(net, is_unbalanced=False):
 
 def _get_pf_results_balanced(net):
     pf_switch_status = net.res_switch.pf_closed & \
-               net.res_switch.pf_in_service if len(net.switch) > 0 and \
-                                               'res_switch' in net.keys() else pd.Series(dtype=np.float64)
+                       net.res_switch.pf_in_service if len(net.switch) > 0 and \
+                                                       'res_switch' in net.keys() else pd.Series(dtype=np.float64)
     pf_bus_vm = net.res_bus.pf_vm_pu.replace(0, np.nan)
     pf_bus_va = net.res_bus.pf_va_degree
-    pf_bus_dc_vm = net.res_bus_dc.get("pf_vm_pu", pd.Series(name="pf_vm_pu", dtype=np.float64, index=net.bus_dc.index)).replace(0, np.nan)
-    pf_ext_grid_p = net.res_ext_grid.pf_p
-    pf_ext_grid_q = net.res_ext_grid.pf_q
-    pf_gen_p = net.res_gen.pf_p if len(net.gen) > 0 else pd.Series([], dtype=np.float64)
-    pf_gen_q = net.res_gen.pf_q if len(net.gen) > 0 else pd.Series([], dtype=np.float64)
-    pf_ward_p = net.res_ward.pf_p if len(net.ward) > 0 else pd.Series([], dtype=np.float64)
-    pf_ward_q = net.res_ward.pf_q if len(net.ward) > 0 else pd.Series([], dtype=np.float64)
-    pf_xward_p = net.res_xward.pf_p if len(net.xward) > 0 else pd.Series([], dtype=np.float64)
-    pf_xward_q = net.res_xward.pf_q if len(net.xward) > 0 else pd.Series([], dtype=np.float64)
-    pf_sgen_p = net.res_sgen.pf_p if len(net.sgen) > 0 else pd.Series([], dtype=np.float64)
-    pf_sgen_q = net.res_sgen.pf_q if len(net.sgen) > 0 else pd.Series([], dtype=np.float64)
-    pf_load_p = net.res_load.pf_p if len(net.load) > 0 else pd.Series([], dtype=np.float64)
-    pf_load_q = net.res_load.pf_q if len(net.load) > 0 else pd.Series([], dtype=np.float64)
-    pf_vsc_p = net.res_vsc.pf_p_mw if len(net.vsc) > 0 else pd.Series([], dtype=np.float64)
-    pf_vsc_q = net.res_vsc.pf_q_mvar if len(net.vsc) > 0 else pd.Series([], dtype=np.float64)
-    pf_vsc_p_dc = net.res_vsc.pf_p_dc_mw if len(net.vsc) > 0 else pd.Series([], dtype=np.float64)
-    pf_line_loading = net.res_line.pf_loading if len(net.line) > 0 else pd.Series([], dtype=np.float64)
-    pf_line_dc_loading = net.res_line_dc.pf_loading if len(net.line_dc) > 0 else pd.Series([], dtype=np.float64)
-    pf_trafo_loading = net.res_trafo.pf_loading if len(net.trafo) > 0 else pd.Series([], dtype=np.float64)
-    pf_trafo3w_loading = net.res_trafo3w.pf_loading if len(net.trafo3w) > 0 else pd.Series([], dtype=np.float64)
+    pf_bus_dc_vm = net.res_bus_dc.get("pf_vm_pu",
+                                      pd.Series(name="pf_vm_pu", dtype=np.float64, index=net.bus_dc.index)).replace(0,
+                                                                                                                    np.nan)
+    pf_ext_grid_p = net.res_ext_grid.get("pf_p", pd.Series([], dtype=np.float64))
+    pf_ext_grid_q = net.res_ext_grid.get("pf_q", pd.Series([], dtype=np.float64))
+    pf_gen_p = net.res_gen.get("pf_p", pd.Series([], dtype=np.float64))
+    pf_gen_q = net.res_gen.get("pf_q", pd.Series([], dtype=np.float64))
+    pf_ward_p = net.res_ward.get("pf_p", pd.Series([], dtype=np.float64))
+    pf_ward_q = net.res_ward.get("pf_q", pd.Series([], dtype=np.float64))
+    pf_xward_p = net.res_xward.get("pf_p", pd.Series([], dtype=np.float64))
+    pf_xward_q = net.res_xward.get("pf_q", pd.Series([], dtype=np.float64))
+    pf_sgen_p = net.res_sgen.get("pf_p", pd.Series([], dtype=np.float64))
+    pf_sgen_q = net.res_sgen.get("pf_q", pd.Series([], dtype=np.float64))
+    pf_load_p = net.res_load.get("pf_p", pd.Series([], dtype=np.float64))
+    pf_load_q = net.res_load.get("pf_q", pd.Series([], dtype=np.float64))
+    pf_vsc_p = net.res_vsc.get("pf_p_mw", pd.Series([], dtype=np.float64))
+    pf_vsc_q = net.res_vsc.get("pf_q_mvar", pd.Series([], dtype=np.float64))
+    pf_vsc_p_dc = net.res_vsc.get("pf_p_dc_mw", pd.Series([], dtype=np.float64))
+    pf_line_loading = net.res_line.get("pf_loading", pd.Series([], dtype=np.float64))
+    pf_line_dc_loading = net.res_line_dc.get("pf_loading", pd.Series([], dtype=np.float64))
+    pf_trafo_loading = net.res_trafo.get("pf_loading", pd.Series([], dtype=np.float64))
+    pf_trafo3w_loading = net.res_trafo3w.get("pf_loading", pd.Series([], dtype=np.float64))
 
     pf_results = {
         "pf_bus_vm": pf_bus_vm, "pf_bus_va": pf_bus_va, "pf_bus_dc_vm": pf_bus_dc_vm,
@@ -71,8 +74,8 @@ def _get_pf_results_balanced(net):
 
 def _get_pf_results_unbalanced(net):
     pf_switch_status = net.res_switch.pf_closed & \
-               net.res_switch.pf_in_service if len(net.switch) > 0 and \
-                                               'res_switch' in net.keys() else pd.Series([], dtype=bool)
+                       net.res_switch.pf_in_service if len(net.switch) > 0 and \
+                                                       'res_switch' in net.keys() else pd.Series([], dtype=bool)
     # unbalanced get results
     pf_bus_vm_a = net.res_bus_3ph.pf_vm_a_pu.replace(0, np.nan)
     pf_bus_vm_b = net.res_bus_3ph.pf_vm_b_pu.replace(0, np.nan)
@@ -124,25 +127,25 @@ def _get_pf_results_unbalanced(net):
 
 
     pf_results = {
-        'pf_switch_status': pf_switch_status,"pf_bus_vm_a": pf_bus_vm_a, "pf_bus_vm_b": pf_bus_vm_b,
+        'pf_switch_status': pf_switch_status, "pf_bus_vm_a": pf_bus_vm_a, "pf_bus_vm_b": pf_bus_vm_b,
         "pf_bus_vm_c": pf_bus_vm_c, "pf_bus_va_a": pf_bus_va_a, "pf_bus_va_b": pf_bus_va_b,
         "pf_bus_va_c": pf_bus_va_c,
         "pf_ext_grid_p_a": pf_ext_grid_p_a, "pf_ext_grid_p_b": pf_ext_grid_p_b,
         "pf_ext_grid_p_c": pf_ext_grid_p_c, "pf_ext_grid_q_a": pf_ext_grid_q_a,
         "pf_ext_grid_q_b": pf_ext_grid_q_b, "pf_ext_grid_q_c": pf_ext_grid_q_c,
-        "pf_load_p_a": pf_load_p_a,  "pf_load_p_b": pf_load_p_b,  "pf_load_p_c": pf_load_p_c,
+        "pf_load_p_a": pf_load_p_a, "pf_load_p_b": pf_load_p_b, "pf_load_p_c": pf_load_p_c,
         "pf_load_q_a": pf_load_q_a, "pf_load_q_b": pf_load_q_b, "pf_load_q_c": pf_load_q_c,
-        "pf_sgen_p_a": pf_sgen_p_a,  "pf_sgen_p_b": pf_sgen_p_b,  "pf_sgen_p_c": pf_sgen_p_c,
+        "pf_sgen_p_a": pf_sgen_p_a, "pf_sgen_p_b": pf_sgen_p_b, "pf_sgen_p_c": pf_sgen_p_c,
         "pf_sgen_q_a": pf_sgen_q_a, "pf_sgen_q_b": pf_sgen_q_b, "pf_sgen_q_c": pf_sgen_q_c,
-        "pf_i_a_from_ka" : pf_line_i_a_from_ka, "pf_i_a_to_ka" : pf_line_i_a_to_ka,
-        "pf_i_b_from_ka" : pf_line_i_b_from_ka, "pf_i_b_to_ka" : pf_line_i_b_to_ka,
-        "pf_i_c_from_ka" : pf_line_i_c_from_ka, "pf_i_c_to_ka" : pf_line_i_c_to_ka,
-        "pf_i_n_from_ka" : pf_line_i_n_from_ka, "pf_i_n_to_ka" : pf_line_i_n_to_ka,
+        "pf_i_a_from_ka": pf_line_i_a_from_ka, "pf_i_a_to_ka": pf_line_i_a_to_ka,
+        "pf_i_b_from_ka": pf_line_i_b_from_ka, "pf_i_b_to_ka": pf_line_i_b_to_ka,
+        "pf_i_c_from_ka": pf_line_i_c_from_ka, "pf_i_c_to_ka": pf_line_i_c_to_ka,
+        "pf_i_n_from_ka": pf_line_i_n_from_ka, "pf_i_n_to_ka": pf_line_i_n_to_ka,
         "pf_line_3ph_loading": pf_line_3ph_loading,
-        "pf_i_a_hv_ka" : pf_trafo_i_a_hv_ka, "pf_i_a_lv_ka" : pf_trafo_i_a_lv_ka,
-        "pf_i_b_hv_ka" : pf_trafo_i_b_hv_ka, "pf_i_b_lv_ka" : pf_trafo_i_b_lv_ka,
-        "pf_i_c_hv_ka" : pf_trafo_i_c_hv_ka, "pf_i_c_lv_ka" : pf_trafo_i_c_lv_ka,
-#        "pf_i_n_hv_ka" : pf_trafo_i_n_hv_ka, "pf_i_n_lv_ka" : pf_trafo_i_n_lv_ka,
+        "pf_i_a_hv_ka": pf_trafo_i_a_hv_ka, "pf_i_a_lv_ka": pf_trafo_i_a_lv_ka,
+        "pf_i_b_hv_ka": pf_trafo_i_b_hv_ka, "pf_i_b_lv_ka": pf_trafo_i_b_lv_ka,
+        "pf_i_c_hv_ka": pf_trafo_i_c_hv_ka, "pf_i_c_lv_ka": pf_trafo_i_c_lv_ka,
+        #        "pf_i_n_hv_ka" : pf_trafo_i_n_hv_ka, "pf_i_n_lv_ka" : pf_trafo_i_n_lv_ka,
         "pf_trafo_3ph_loading": pf_trafo_3ph_loading,
 
     }
@@ -190,7 +193,7 @@ def _set_pf_results_unbalanced(net, pf_results):
     if 'res_switch' in net.keys():
         net.res_switch['pf_closed'] = pf_results['pf_switch_status']
 
-    #unbalanced set results
+    # unbalanced set results
     net.res_bus_3ph["pf_vm_a_pu"] = pf_results["pf_bus_vm_a"]
     net.res_bus_3ph["pf_vm_b_pu"] = pf_results["pf_bus_vm_b"]
     net.res_bus_3ph["pf_vm_c_pu"] = pf_results["pf_bus_vm_c"]
@@ -235,8 +238,8 @@ def _set_pf_results_unbalanced(net, pf_results):
     net.res_trafo_3ph["pf_i_b_lv_ka"] = pf_results["pf_i_b_lv_ka"]
     net.res_trafo_3ph["pf_i_c_hv_ka"] = pf_results["pf_i_c_hv_ka"]
     net.res_trafo_3ph["pf_i_c_lv_ka"] = pf_results["pf_i_c_lv_ka"]
-#    net.res_trafo_3ph["pf_i_n_hv_ka"] = pf_results["pf_i_n_hv_ka"]
-#    net.res_trafo_3ph["pf_i_n_lv_ka"] = pf_results["pf_i_n_lv_ka"]
+    #    net.res_trafo_3ph["pf_i_n_hv_ka"] = pf_results["pf_i_n_hv_ka"]
+    #    net.res_trafo_3ph["pf_i_n_lv_ka"] = pf_results["pf_i_n_lv_ka"]
     net.res_trafo_3ph["pf_loading_percent"] = pf_results["pf_trafo_3ph_loading"]
 
 
@@ -256,31 +259,17 @@ def validate_pf_conversion(net, is_unbalanced=False, **kwargs):
 
     """
     logger.debug('starting verification')
-    replace_zero_branches_with_switches(net)
     pf_results = _get_pf_results(net, is_unbalanced=is_unbalanced)
-    if "controller" not in net.keys() or len(net.controller) == 0:
-        try:
-            for arg in 'trafo_model check_connectivity'.split():
-                if arg in kwargs:
-                    kwargs.pop(arg)
-            if is_unbalanced:
-                logger.info("running pandapower 3ph loadflow")
-                pp.runpp_3ph(net, trafo_model="t", check_connectivity=True, **kwargs)
-            else:
-                logger.info("running pandapower loadflow")
-                pp.runpp(net, trafo_model="t", check_connectivity=True, **kwargs)
-        except Exception as err:
-            logger.error('pandapower load flow failed: %s' % err, exc_info=True)
-            diagnostic(net)
-            raise err
+    run_control = "controller" in net.keys() and len(net.controller) > 0
+    for arg in 'trafo_model check_connectivity'.split():
+        if arg in kwargs:
+            kwargs.pop(arg)
+    if is_unbalanced:
+        logger.info("running pandapower 3ph loadflow")
+        pp.runpp_3ph(net, trafo_model="t", check_connectivity=True, run_control=run_control, **kwargs)
     else:
-        import pandapower.control as control
-        try:
-            control.run_control(net, max_iter=50, trafo_model="t", check_connectivity=True, **kwargs)
-        except Exception as err:
-            logger.error('pandapower load flow with converter failed: %s' % err)
-            diagnostic(net)
-            raise err
+        logger.info("running pandapower loadflow")
+        pp.runpp(net, trafo_model="t", check_connectivity=True, run_control=run_control, **kwargs)
 
     all_diffs = dict()
     logger.info('pandapower net converged: %s' % net.converged)
@@ -293,8 +282,7 @@ def validate_pf_conversion(net, is_unbalanced=False, **kwargs):
 
     pf_closed = pf_results['pf_switch_status']
     wrong_switches = net.res_switch.loc[
-            pf_closed != net.switch.loc[pf_closed.index, 'closed']
-    ].index.values if 'res_switch' in net.keys() else []
+        pf_closed != net.switch.loc[pf_closed.index, 'closed']].index.values if 'res_switch' in net.keys() else []
     if len(net.switch) > 0:
         logger.info('%d switches are wrong: %s' % (len(wrong_switches), wrong_switches))
 
@@ -552,7 +540,7 @@ def _validate_pf_conversion_unbalanced(net, in_both, all_diffs):
         for phase in ["a", "b", "c", "n"]:
             for direction in ["from", "to"]:
                 section_currents = pd.concat([net.line[["name", "line_idx"]], net.res_line_3ph[
-                ["i_%s_%s_ka" % (phase, direction), "pf_i_%s_%s_ka" % (phase, direction)]]], axis=1)
+                    ["i_%s_%s_ka" % (phase, direction), "pf_i_%s_%s_ka" % (phase, direction)]]], axis=1)
                 line_currents = section_currents.groupby("line_idx").max()
                 line_currents_diff = line_currents["i_%s_%s_ka" % (phase, direction)] - \
                                      line_currents["pf_i_%s_%s_ka" % (phase, direction)]
@@ -563,12 +551,14 @@ def _validate_pf_conversion_unbalanced(net, in_both, all_diffs):
                     line_id = int(abs(line_currents_diff).idxmax())
                     logger.info("Maximum line current difference between pandapower and powerfactory: %.4f "
                                 "current at phase %s, direction %s of line %d (%s)" % (
-                                max(abs(line_currents_diff)), phase, direction, line_id, net.line.at[line_id, 'name']))
+                                    max(abs(line_currents_diff)), phase, direction, line_id,
+                                    net.line.at[line_id, 'name']))
                 all_diffs["line_currents_%s_%s_diff" % (phase, direction)] = line_currents_diff
 
     if len(net.trafo[net.trafo.in_service]) > 0:
         trafo_idx = net.trafo.query('in_service').index
-        trafo_loading_diff = net.res_trafo_3ph.loc[trafo_idx].loading_percent - net.res_trafo_3ph.loc[trafo_idx].pf_loading_percent
+        trafo_loading_diff = net.res_trafo_3ph.loc[trafo_idx].loading_percent - net.res_trafo_3ph.loc[
+            trafo_idx].pf_loading_percent
         if sum(np.isnan(trafo_loading_diff.values)):
             logger.info("Some trafo loading values are NaN.")
             trafo_loading_diff = trafo_loading_diff.dropna()
@@ -579,11 +569,11 @@ def _validate_pf_conversion_unbalanced(net, in_both, all_diffs):
                             max(abs(trafo_loading_diff)), trafo_id, net.trafo.at[trafo_id, 'name']))
         all_diffs["trafo_loading_diff"] = trafo_loading_diff
 
-        for phase in ["a", "b", "c"]:#, "n"]:
+        for phase in ["a", "b", "c"]:  # , "n"]:
             for side in ["hv", "lv"]:
                 trafo_idx = net.trafo.query('in_service').index
                 trafo_currents_diff = net.res_trafo_3ph.loc[trafo_idx]["i_%s_%s_ka" % (phase, side)] - \
-                net.res_trafo_3ph.loc[trafo_idx]["pf_i_%s_%s_ka" % (phase, side)]
+                                      net.res_trafo_3ph.loc[trafo_idx]["pf_i_%s_%s_ka" % (phase, side)]
                 if sum(np.isnan(trafo_currents_diff.values)):
                     logger.info("Some trafo current values are NaN for phase %s, side %s." % (phase, side))
                     trafo_currents_diff = trafo_currents_diff.dropna()
@@ -591,7 +581,8 @@ def _validate_pf_conversion_unbalanced(net, in_both, all_diffs):
                     trafo_id = int(abs(trafo_currents_diff).idxmax())
                     logger.info("Maximum trafo current difference between pandapower and powerfactory: %.4f "
                                 "current at phase %s, side %s of line %d (%s)" % (
-                                max(abs(trafo_currents_diff)), phase, side, trafo_id, net.trafo.at[trafo_id, 'name']))
+                                    max(abs(trafo_currents_diff)), phase, side, trafo_id,
+                                    net.trafo.at[trafo_id, 'name']))
                 all_diffs["trafo_currents_%s_%s_diff" % (phase, side)] = trafo_currents_diff
 
     if len(net.asymmetric_load[net.asymmetric_load.in_service]) > 0:
@@ -599,13 +590,17 @@ def _validate_pf_conversion_unbalanced(net, in_both, all_diffs):
 
         for phase in ["a", "b", "c"]:
             asymmetric_load_p_diff = net.res_asymmetric_load_3ph["pf_p_%s" % phase].replace(np.nan, 0) - \
-                net.res_asymmetric_load_3ph["p_%s_mw" % phase]
+                                     net.res_asymmetric_load_3ph["p_%s_mw" % phase]
             asymmetric_load_q_diff = net.res_asymmetric_load_3ph["pf_q_%s" % phase].replace(np.nan, 0) - \
-                net.res_asymmetric_load_3ph["q_%s_mvar" % phase]
-            asymmetric_load_p_diff_is = net.res_asymmetric_load_3ph["pf_p_%s" % phase].replace(np.nan, 0) * net.asymmetric_load.loc[
-                net.res_asymmetric_load_3ph["pf_p_%s" % phase].index, 'in_service'] - net.res_asymmetric_load_3ph["p_%s_mw" % phase]
-            asymmetric_load_q_diff_is = net.res_asymmetric_load_3ph["pf_q_%s" % phase].replace(np.nan, 0) * net.asymmetric_load.loc[
-                net.res_asymmetric_load_3ph["pf_q_%s" % phase].index, 'in_service'] - net.res_asymmetric_load_3ph["q_%s_mvar" % phase]
+                                     net.res_asymmetric_load_3ph["q_%s_mvar" % phase]
+            asymmetric_load_p_diff_is = net.res_asymmetric_load_3ph["pf_p_%s" % phase].replace(np.nan, 0) * \
+                                        net.asymmetric_load.loc[
+                                            net.res_asymmetric_load_3ph["pf_p_%s" % phase].index, 'in_service'] - \
+                                        net.res_asymmetric_load_3ph["p_%s_mw" % phase]
+            asymmetric_load_q_diff_is = net.res_asymmetric_load_3ph["pf_q_%s" % phase].replace(np.nan, 0) * \
+                                        net.asymmetric_load.loc[
+                                            net.res_asymmetric_load_3ph["pf_q_%s" % phase].index, 'in_service'] - \
+                                        net.res_asymmetric_load_3ph["q_%s_mvar" % phase]
 
             logger.info("Maximum asymmetric load active power difference between pandapower and powerfactory: "
                         "%.1f MW, in service only: %.1f MW" % (max(abs(asymmetric_load_p_diff)),
@@ -622,18 +617,22 @@ def _validate_pf_conversion_unbalanced(net, in_both, all_diffs):
 
             for phase in ["a", "b", "c"]:
                 ext_grid_p_diff = net.res_ext_grid_3ph["pf_p_%s" % phase].replace(np.nan, 0) - \
-                    net.res_ext_grid_3ph["p_%s_mw" % phase]
+                                  net.res_ext_grid_3ph["p_%s_mw" % phase]
                 ext_grid_q_diff = net.res_ext_grid_3ph["pf_q_%s" % phase].replace(np.nan, 0) - \
-                    net.res_ext_grid_3ph["q_%s_mvar" % phase]
+                                  net.res_ext_grid_3ph["q_%s_mvar" % phase]
                 ext_grid_p_diff_is = net.res_ext_grid_3ph["pf_p_%s" % phase].replace(np.nan, 0) * net.ext_grid.loc[
-                    net.res_ext_grid_3ph["pf_p_%s" % phase].index, 'in_service'] - net.res_ext_grid_3ph["p_%s_mw" % phase]
+                    net.res_ext_grid_3ph["pf_p_%s" % phase].index, 'in_service'] - net.res_ext_grid_3ph[
+                                         "p_%s_mw" % phase]
                 ext_grid_q_diff_is = net.res_ext_grid_3ph["pf_q_%s" % phase].replace(np.nan, 0) * net.ext_grid.loc[
-                    net.res_ext_grid_3ph["pf_q_%s" % phase].index, 'in_service'] - net.res_ext_grid_3ph["q_%s_mvar" % phase]
+                    net.res_ext_grid_3ph["pf_q_%s" % phase].index, 'in_service'] - net.res_ext_grid_3ph[
+                                         "q_%s_mvar" % phase]
 
                 logger.info("Maximum ext_grid active power difference between pandapower and powerfactory: "
-                            "%.1f MW, in service only: %.1f MW" % (max(abs(ext_grid_p_diff)), max(abs(ext_grid_p_diff_is))))
+                            "%.1f MW, in service only: %.1f MW" % (
+                            max(abs(ext_grid_p_diff)), max(abs(ext_grid_p_diff_is))))
                 logger.info("Maximum ext_grid reactive power difference between pandapower and powerfactory: "
-                            "%.1f Mvar, in service only: %.1f Mvar" % (max(abs(ext_grid_q_diff)), max(abs(ext_grid_q_diff_is))))
+                            "%.1f Mvar, in service only: %.1f Mvar" % (
+                            max(abs(ext_grid_q_diff)), max(abs(ext_grid_q_diff_is))))
                 all_diffs["ext_grid_p_diff"] = ext_grid_p_diff_is
                 all_diffs["ext_grid_q_diff"] = ext_grid_q_diff_is
 
@@ -642,13 +641,17 @@ def _validate_pf_conversion_unbalanced(net, in_both, all_diffs):
 
         for phase in ["a", "b", "c"]:
             asymmetric_sgen_p_diff = net.res_asymmetric_sgen_3ph["pf_p_%s" % phase].replace(np.nan, 0) - \
-                net.res_asymmetric_sgen_3ph["p_%s_mw" % phase]
+                                     net.res_asymmetric_sgen_3ph["p_%s_mw" % phase]
             asymmetric_sgen_q_diff = net.res_asymmetric_sgen_3ph["pf_q_%s" % phase].replace(np.nan, 0) - \
-                net.res_asymmetric_sgen_3ph["q_%s_mvar" % phase]
-            asymmetric_sgen_p_diff_is = net.res_asymmetric_sgen_3ph["pf_p_%s" % phase].replace(np.nan, 0) * net.asymmetric_sgen.loc[
-                net.res_asymmetric_sgen_3ph["pf_p_%s" % phase].index, 'in_service'] - net.res_asymmetric_sgen_3ph["p_%s_mw" % phase]
-            asymmetric_sgen_q_diff_is = net.res_asymmetric_sgen_3ph["pf_q_%s" % phase].replace(np.nan, 0) * net.asymmetric_sgen.loc[
-                net.res_asymmetric_sgen_3ph["pf_q_%s" % phase].index, 'in_service'] - net.res_asymmetric_sgen_3ph["q_%s_mvar" % phase]
+                                     net.res_asymmetric_sgen_3ph["q_%s_mvar" % phase]
+            asymmetric_sgen_p_diff_is = net.res_asymmetric_sgen_3ph["pf_p_%s" % phase].replace(np.nan, 0) * \
+                                        net.asymmetric_sgen.loc[
+                                            net.res_asymmetric_sgen_3ph["pf_p_%s" % phase].index, 'in_service'] - \
+                                        net.res_asymmetric_sgen_3ph["p_%s_mw" % phase]
+            asymmetric_sgen_q_diff_is = net.res_asymmetric_sgen_3ph["pf_q_%s" % phase].replace(np.nan, 0) * \
+                                        net.asymmetric_sgen.loc[
+                                            net.res_asymmetric_sgen_3ph["pf_q_%s" % phase].index, 'in_service'] - \
+                                        net.res_asymmetric_sgen_3ph["q_%s_mvar" % phase]
 
             logger.info("Maximum asymmetric sgen active power difference between pandapower and powerfactory: "
                         "%.1f MW, in service only: %.1f MW" % (max(abs(asymmetric_sgen_p_diff)),
@@ -660,4 +663,3 @@ def _validate_pf_conversion_unbalanced(net, in_both, all_diffs):
             all_diffs["asymmetric_sgen_q_diff_is"] = asymmetric_sgen_q_diff_is
 
     return all_diffs
-

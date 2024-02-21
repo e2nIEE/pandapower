@@ -1,25 +1,28 @@
 import os
 import tkinter as tk
+
 from pandapower.auxiliary import ADict
 
 try:
     import pandaplan.core.pplog as logging
-    logger = logging.logger
 except ImportError:
     import logging
-    logger = logging.getLogger(__name__)
 
-def cancel(input_panel):
+logger = logging.getLogger(__name__)
+
+
+def cancel(app, input_panel):
     logger.debug('received a cancel request from the user')
     input_panel.destroy()
     logger.debug('destroyed input panel, will attempt exit()')
     for h in logger.handlers:
         logger.removeHandler(h)
-    exit()
+    exit_gracefully(app, 'exiting script', False)
 
 
 def calc_test(app, **kwargs):
     logger.info('TESTING')
+    exit_gracefully(app, 'test complete', False)
 
 
 def browse_dst_test(input_panel, entry_path_dst):
@@ -121,7 +124,6 @@ def make_gui(app, project_name, browse_dst, calc):
     opt_grf.grid(row=4, column=1, sticky="ew", pady=0)
     opt_grf.config(width=10)
 
-   
     # refresh graphics option menu
     try:
         conf_var_graphics(app, opt_grf, var_graphics)
@@ -135,26 +137,26 @@ def make_gui(app, project_name, browse_dst, calc):
     var_us = tk.StringVar(input_panel)
     var_us.set(US_OPTIONS[0])
     tk.Label(input_panel, anchor='w', text='Unsupplied Elements:').grid(row=5, column=0,
-                                                                             sticky=tk.W,
-                                                                             pady=0)
+                                                                        sticky=tk.W,
+                                                                        pady=0)
 
     opt_us = tk.OptionMenu(input_panel, var_us, *US_OPTIONS)
     opt_us.grid(row=5, column=1, sticky="ew", pady=0)
     opt_us.config(width=10)
-    
+
     params.handle_us = var_us.get
 
     # row 6 col 0-1
     save_as = tk.StringVar(input_panel)
     save_as.set(SAVE_OPTIONS[0])
     tk.Label(input_panel, anchor='w', text='Save As:').grid(row=6, column=0,
-                                                                             sticky=tk.W,
-                                                                             pady=0)
+                                                            sticky=tk.W,
+                                                            pady=0)
 
     opt_save = tk.OptionMenu(input_panel, save_as, *SAVE_OPTIONS)
     opt_save.grid(row=6, column=1, sticky="ew", pady=0)
     opt_save.config(width=10)
-    
+
     params.save_as = save_as.get
 
     # row 7 col 0-1
@@ -165,7 +167,7 @@ def make_gui(app, project_name, browse_dst, calc):
     opt_tap = tk.OptionMenu(input_panel, tap_grf, *TAP_OPTIONS)
     opt_tap.grid(row=7, column=1, sticky="ew", pady=0)
     opt_tap.config(width=10)
-    
+
     params.tap_opt = tap_grf.get
 
     # row 8
@@ -182,33 +184,46 @@ def make_gui(app, project_name, browse_dst, calc):
 
     # row 2 col 2-3
     PV_SL = tk.IntVar()
-    tk.Checkbutton(input_panel, text="Export 'PV' bus as Slack", variable=PV_SL).grid(row=2,
-                                                                                      column=4,
-                                                                                      sticky=tk.W)
+    tk.Checkbutton(input_panel, text="Export 'PV' buses as slack buses", variable=PV_SL).grid(row=2,
+                                                                                              column=4,
+                                                                                              sticky=tk.W)
     params.pv_as_slack = PV_SL.get
+
+    EXPORT_CONTROLLER = tk.IntVar()
+    EXPORT_CONTROLLER.set(1)
+    tk.Checkbutton(input_panel, text="Export controllers", variable=EXPORT_CONTROLLER).grid(row=3,
+                                                                                            column=4,
+                                                                                            sticky=tk.W)
+    params.export_controller = EXPORT_CONTROLLER.get
+
+    REPLACE_ZERO_BRANCHES = tk.IntVar()
+    REPLACE_ZERO_BRANCHES.set(1)
+    tk.Checkbutton(input_panel, text="Replace low-impedance branches with switches",
+                   variable=REPLACE_ZERO_BRANCHES).grid(row=4, column=4, sticky=tk.W)
+    params.replace_zero_branches = REPLACE_ZERO_BRANCHES.get
 
     CV_VERIFY = tk.IntVar()
     CV_VERIFY.set(1)
-    tk.Checkbutton(input_panel, text="Verify conversion", variable=CV_VERIFY).grid(row=3, column=4,
+    tk.Checkbutton(input_panel, text="Verify conversion", variable=CV_VERIFY).grid(row=5, column=4,
                                                                                    sticky=tk.W)
     params.is_to_verify = CV_VERIFY.get
 
+    RUN_DIAGNOSTIC = tk.IntVar()
+    RUN_DIAGNOSTIC.set(1)
+    tk.Checkbutton(input_panel, text="Diagnostic report", variable=RUN_DIAGNOSTIC).grid(row=6,
+                                                                                        column=4,
+                                                                                        sticky=tk.W)
+    params.is_to_diagnostic = RUN_DIAGNOSTIC.get
+
     LOGGER_DEBUG = tk.IntVar()
-    tk.Checkbutton(input_panel, text="Logger in debug mode", variable=LOGGER_DEBUG).grid(row=4,
+    tk.Checkbutton(input_panel, text="Logger in debug mode", variable=LOGGER_DEBUG).grid(row=7,
                                                                                          column=4,
                                                                                          sticky=tk.W)
     params.is_debug = LOGGER_DEBUG.get
 
-    EXPORT_CONTROLLER = tk.IntVar()
-    EXPORT_CONTROLLER.set(1)
-    tk.Checkbutton(input_panel, text="Export Controller", variable=EXPORT_CONTROLLER).grid(row=5,
-                                                                                         column=4,
-                                                                                         sticky=tk.W)
-    params.export_controller = EXPORT_CONTROLLER.get
-    
     # row 2 col 4
     stop_button = tk.Button(input_panel, text='Cancel', width=8,
-                            command=lambda: cancel(input_panel))
+                            command=lambda: cancel(app, input_panel))
     stop_button.grid(row=2, column=7, sticky='e', padx=4, pady=4)
 
     # app, get_dst_dir, input_panel, entry_fname, is_to_verify, is_debug, pv_as_slack,

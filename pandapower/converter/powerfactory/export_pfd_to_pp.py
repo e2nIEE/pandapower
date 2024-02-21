@@ -3,14 +3,14 @@ from .echo_off import echo_off, echo_on
 from .logger_setup import AppHandler, set_PF_level
 from .pf_export_functions import run_load_flow, create_network_dict
 from .pp_import_functions import from_pf
-from .run_import import choose_imp_dir, clear_dir, prj_dgs_import, prj_import
+from .run_import import choose_imp_dir, clear_dir, prj_dgs_import
 
 try:
     import pandaplan.core.pplog as logging
-    logger = logging.logger
 except ImportError:
     import logging
-    logger = logging.getLogger(__name__)
+
+logger = logging.getLogger(__name__)
 
 
 def from_pfd(app, prj_name: str, path_dst=None, pv_as_slack=False, pf_variable_p_loads='plini',
@@ -53,7 +53,8 @@ def from_pfd(app, prj_name: str, path_dst=None, pv_as_slack=False, pf_variable_p
     net = from_pf(dict_net=dict_net, pv_as_slack=pv_as_slack,
                   pf_variable_p_loads=pf_variable_p_loads,
                   pf_variable_p_gen=pf_variable_p_gen, flag_graphics=flag_graphics,
-                  tap_opt=tap_opt, export_controller=export_controller, handle_us=handle_us, is_unbalanced=is_unbalanced)
+                  tap_opt=tap_opt, export_controller=export_controller, handle_us=handle_us,
+                  is_unbalanced=is_unbalanced)
     # save a flag, whether the PowerFactory load flow failed
     app.SetAttributeModeInternal(0)
     net["pf_converged"] = not pf_load_flow_failed
