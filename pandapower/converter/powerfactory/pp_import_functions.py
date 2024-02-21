@@ -2371,6 +2371,7 @@ def create_trafo3w(net, item, tap_opt='nntap'):
         'shift_mv_degree': -(pf_type.nt3ag_h - pf_type.nt3ag_m) * 30,
         'shift_lv_degree': -(pf_type.nt3ag_h - pf_type.nt3ag_l) * 30,
         'tap_at_star_point': pf_type.itapos == 0,
+        'loss_side': {0: 'star', 1: 'hv', 2: 'mv', 3: 'lv'}[pf_type.i3loc],
         'in_service': not bool(item.outserv)
     }
 

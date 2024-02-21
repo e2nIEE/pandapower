@@ -169,7 +169,7 @@ def calc(app, input_panel, entry_path_dst, entry_fname, pv_as_slack, export_cont
                                                    min_r_ohm_per_km=1.5e-3, min_x_ohm_per_km=1.5e-3,
                                                    min_c_nf_per_km=1.5e-3,
                                                    min_rft_pu=1.5e-5, min_xft_pu=1.5e-5, min_rtf_pu=1.5e-5,
-                                                   min_xtf_pu=1.5e-5, min_r_ohm=1.5e-3, min_x_ohm=1.5e-3)
+                                                   min_xtf_pu=1.5e-5) # , min_r_ohm=1.5e-3, min_x_ohm=1.5e-3)
 
         logger.info('saving file to: <%s>' % filepath)
         save_net(net, filepath, save_as())
