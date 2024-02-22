@@ -46,6 +46,8 @@ Change Log
 - [FIXED] bugfix for tap dependent impedance characteristics so that not all characteristics columns are necessary
 - [FIXED] in function :code:`toolbox.replace_zero_branches_with_switches`, use absolute for the parameters of impedance elements in case they are negative nonzero values
 - [FIXED] in :code:`reindex_elements`: fixed index error when reindexing line_geodata
+- [FIXED] bug in :code:`cim2pp`: Changed zero prioritized generators with voltage controller to sgens (like PowerFactory does)
+- [ADDED] cim2pp: added description fields for each asset and added BusbarSection information to nodes
 
 [2.13.1] - 2023-05-12
 -------------------------------
