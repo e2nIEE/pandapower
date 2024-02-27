@@ -436,6 +436,7 @@ def _calc_tap_from_dataframe(net, trafo_df):
                 tap_angles = _replace_nan(tap_step_degree[tap_complex])
                 u1 = vn[tap_complex]
                 du = u1 * _replace_nan(tap_steps)
+                # print(du)
                 vn[tap_complex] = np.sqrt((u1 + du * cos(tap_angles)) ** 2 + (du * sin(tap_angles)) ** 2)
                 trafo_shift[tap_complex] += (arctan(direction * du * sin(tap_angles) /
                                                     (u1 + du * cos(tap_angles))))
@@ -1115,7 +1116,10 @@ def _calculate_3w_tap_changers(t3, t2, sides):
         if any_at_star_point:
             mask_star_point = tap_mask & at_star_point
             t = tap_arrays["tap_step_percent"][side][mask_star_point]
-            tap_arrays["tap_step_percent"][side][mask_star_point] = 100 * t / (100 + t)  # could it also be -t and 0 deg?
+            if tap_arrays["tap_pos"][side][mask_star_point] >= 0.0:
+                tap_arrays["tap_step_percent"][side][mask_star_point] = 100 * t / (100 + t)  # could it also be -t and 0 deg?
+            else:
+                tap_arrays["tap_step_percent"][side][mask_star_point] = 100 * t / (100 - t)
             tap_arrays["tap_side"][side][mask_star_point] = "lv" if side == "hv" else "hv"
             tap_arrays["tap_step_degree"][side][mask_star_point] += 180
     t2.update(tap_arrays)
