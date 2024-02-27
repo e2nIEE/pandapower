@@ -316,7 +316,8 @@ def reindex_elements(net, element_type, new_indices=None, old_indices=None, look
         idx_name = net.line_geodata.index.name
         place_holder = uuid.uuid4()
         net["line_geodata"][place_holder] = net["line_geodata"].index
-        net["line_geodata"].loc[old_indices, place_holder] = get_indices(old_indices, lookup)
+        net["line_geodata"].loc[old_indices.intersection(net.line_geodata.index), place_holder] = (
+            get_indices(old_indices.intersection(net.line_geodata.index), lookup))
         net["line_geodata"].set_index(place_holder, inplace=True)
         net["line_geodata"].index.name = idx_name
 
