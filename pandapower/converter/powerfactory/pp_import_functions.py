@@ -219,6 +219,13 @@ def from_pf(dict_net, pv_as_slack=True, pf_variable_p_loads='plini', pf_variable
         logger.debug(lvp_dict)
         split_all_lines(net, lvp_dict)
 
+    # create station controllers (ElmStactrl):
+    if export_controller:
+        n = 0
+        for n, stactrl in enumerate(dict_net['ElmStactrl'], 1):
+            create_stactrl(net=net, item=stactrl)
+        if n > 0: logger.info('imported %d station controllers' % n)
+
     remove_folder_of_std_types(net)
 
     ### don't import the ElmLodlvp for now...
@@ -2605,6 +2612,101 @@ def create_sind(net, item):
 
     logger.debug('created series reactor %s as per unit impedance at index %d' %
                  (net.impedance.at[sind, 'name'], sind))
+
+
+def create_stactrl(net, item):
+    machines = item.psym
+
+    # implemented only for sgen at this time
+    # find sgens using name:
+    if np.any(net.sgen.name.duplicated()):
+        raise UserWarning("error while creating station controller: sgen names must be unique")
+    sgens = [net.sgen.loc[net.sgen.name == s.loc_name].index.values[0] for s in machines]
+    if len(sgens) != len(machines):
+        raise UserWarning("station controller: could not properly identify the machines")
+
+    distribution = np.array(item.cvqq, dtype=np.float64) / 100.
+
+    if item.imode != 0:
+        raise NotImplementedError(f"{item}: reactive power distribution {item.imode=} not implemented")
+
+    phase = item.i_phase
+    if phase != 0:
+        raise NotImplementedError(f"{item}: phase {item.i_phase=} not implemented")
+
+    # Controlled Node: User selection vs Automatic selection  # User selection
+    if item.selBus != 0:
+        raise NotImplementedError(f"{item}: controlled node selection {item.selBus=} not implemented")
+
+    if item.rembar != item.cpCtrlNode:
+        raise NotImplementedError(f"{item}: {item.rembar} != {item.cpCtrlNode}")
+
+    control_mode = item.i_ctrl
+    if control_mode == 0:  #### VOLTAGE CONTROL
+        controlled_node = item.rembar
+        bus = bus_dict[controlled_node]  # controlled node
+
+        if item.uset_mode == 0:  #### Station controller
+            v_setpoint_pu = item.usetp
+        else:
+            v_setpoint_pu = controlled_node.vtarget  #### Bus target voltage
+
+        if item.i_droop:  # Enable Droop
+            q_control_cubicle = item.pQmeas  # Feld
+            q_control_element = q_control_cubicle.obj_id  # element (e.g. line) of the cubicle
+            q_control_side = q_control_cubicle.obj_bus  # 0=from, 1=to
+            element_class = q_control_element.GetClassName()
+            if element_class != "ElmLne":
+                raise NotImplementedError(f"{item}: only line element flows can be controlled, {element_class=}")
+            line_sections = line_dict[q_control_element]
+            line = line_sections[0] if q_control_side == 0 else line_sections[-1]
+            variable = "q_from_mvar" if q_control_side == 0 else "q_to_mvar"
+
+            bsc = pp.control.BinarySearchControl(net, output_element="sgen", output_variable="q_mvar",
+                                                 output_element_index=sgens, output_values_distribution=distribution,
+                                                 input_element="res_line", input_variable=variable,
+                                                 input_element_index=line,
+                                                 set_point=v_setpoint_pu, tol=1e-3)
+            pp.control.DroopControl(net, q_droop_mvar=item.Srated * 100 / item.ddroop, bus_idx=bus,
+                                    vm_set_pu=v_setpoint_pu, controller_idx=bsc.index)
+        else:
+            pp.control.BinarySearchControl(net, output_element="sgen", output_variable="q_mvar",
+                                           output_element_index=sgens, input_element="res_bus",
+                                           output_values_distribution=distribution, damping_factor=0.9,
+                                           input_variable="vm_pu", input_element_index=bus,
+                                           set_point=v_setpoint_pu, tol=1e-6)
+    elif control_mode == 1:  # Q Control mode
+        if item.iQorient != 0:
+            raise NotImplementedError(f"{item}: Q orientation '-' not supported")
+        # q_control_mode = item.qu_char  # 0: "Const Q", 1: "Q(V) Characteristic", 2: "Q(P) Characteristic"
+        q_control_cubicle = item.p_cub  # Feld
+        # q_control_terminal = q_control_cubicle.cterm  # terminal of the cubicle
+        q_control_element = q_control_cubicle.obj_id  # element (e.g. line) of the cubicle
+        q_control_side = q_control_cubicle.obj_bus  # 0=from, 1=to
+        element_class = q_control_element.GetClassName()
+        if element_class != "ElmLne":
+            raise NotImplementedError(f"{item}: only line element flows can be controlled, {element_class=}")
+        line_sections = line_dict[q_control_element]
+        line = line_sections[0] if q_control_side == 0 else line_sections[-1]
+        variable = "q_from_mvar" if q_control_side == 0 else "q_to_mvar"
+
+        if item.qu_char in [0, 1]:
+            bsc = pp.control.BinarySearchControl(net, output_element="sgen", output_variable="q_mvar",
+                                                 output_element_index=sgens, input_element="res_line",
+                                                 output_values_distribution=distribution, damping_factor=0.9,
+                                                 input_variable=variable, input_element_index=line,
+                                                 set_point=item.qsetp, tol=1e-6)
+            if item.qu_char == 1:
+                controlled_node = item.refbar
+                bus = bus_dict[controlled_node]  # controlled node
+                # using controlled_node.vtarget would be more logical but it is wrong:
+                pp.control.DroopControl(net, q_droop_mvar=item.Srated * 100 / item.ddroop, bus_idx=bus,
+                                        vm_set_pu=item.udeadbup, controller_idx=bsc.index)
+                                        # vm_set_pu=controlled_node.vtarget, controller_idx=bsc.index)
+        else:
+            raise NotImplementedError
+    else:
+        raise NotImplementedError(f"{item}: control mode {item.i_ctrl=} not implemented")
 
 
 def split_line_at_length(net, line, length_pos):

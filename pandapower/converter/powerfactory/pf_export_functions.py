@@ -30,7 +30,7 @@ def create_network_dict(app, flag_graphics='GPS'):
         'ElmSind',
         'StaSwitch',
         'ElmTr2',
-        'ElmTr3'
+        'ElmTr3',
 
         # we don't gather types anymore, because they are not collected for elements that are out
         #  of service
@@ -38,6 +38,9 @@ def create_network_dict(app, flag_graphics='GPS'):
         # 'TypLne',
         # 'TypTr2',
         # 'TypTr3'
+
+        # controllers:
+        'ElmStactrl'
     }
 
     # here define all element types that have to be configured to have MW as power values
