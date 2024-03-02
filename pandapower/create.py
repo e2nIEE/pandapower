@@ -4864,12 +4864,12 @@ def _get_multiple_index_with_check(net, table, index, number, name=None):
     u, c = uni(index, return_counts=True)
     if np.any(c>1):
         raise UserWarning("Passed indexes %s exist multiple times" % (u[c>1]))
-    contained = isin(net[table].index.values, index)
-    if np_any(contained):
+    intersect = intersect1d(index, net[table].index.values)
+    if len(intersect) > 0:
         if name is None:
             name = table.capitalize() + "s"
         raise UserWarning("%s with indexes %s already exist."
-                          % (name, net[table].index.values[contained]))
+                          % (name, intersect))
     return index
 
 
