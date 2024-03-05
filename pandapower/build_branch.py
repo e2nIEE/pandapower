@@ -1113,13 +1113,12 @@ def _calculate_3w_tap_changers(t3, t2, sides):
 
         # t3 trafos with tap changer at star points
         # TODO check this part
-        if any_at_star_point:
+        # could be made more safe/efficient if we don't jump here everytime if
+        # there are ANY star point taps in the grid, although this is handled well by the masks
+        if any_at_star_point: 
             mask_star_point = tap_mask & at_star_point
-            t = tap_arrays["tap_step_percent"][side][mask_star_point]
-            if tap_arrays["tap_pos"][side][mask_star_point] >= 0.0:
-                tap_arrays["tap_step_percent"][side][mask_star_point] = 100 * t / (100 + t)  # could it also be -t and 0 deg?
-            else:
-                tap_arrays["tap_step_percent"][side][mask_star_point] = 100 * t / (100 - t)
+            t = tap_arrays["tap_step_percent"][side][mask_star_point] 
+            tap_arrays["tap_step_percent"][side][mask_star_point] = 100 * (t * tap_arrays["tap_pos"][side][mask_star_point]) / (100 + (t * tap_arrays["tap_pos"][side][mask_star_point])) / tap_arrays["tap_pos"][side][mask_star_point] # could it also be -t and 0 deg?
             tap_arrays["tap_side"][side][mask_star_point] = "lv" if side == "hv" else "hv"
             tap_arrays["tap_step_degree"][side][mask_star_point] += 180
     t2.update(tap_arrays)
