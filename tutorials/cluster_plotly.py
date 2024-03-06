@@ -125,8 +125,8 @@ def cluster_plotly(net, clust_bus, respect_switches=True, use_line_geodata=None,
         net, lines=vlev_lines, use_line_geodata=use_line_geodata,
         respect_switches=respect_switches, legendgroup=str(vn_kv), color='gray',
         width=line_width, trace_name='lines {0} kV'.format(vn_kv))
-    if line_trace_vlev is not None:
-            line_traces += line_trace_vlev
+        if line_trace_vlev is not None:
+                line_traces += line_trace_vlev
 
     trafo_traces = create_trafo_trace(net, color='gray', width=line_width * 2)
 
