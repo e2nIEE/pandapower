@@ -2615,7 +2615,13 @@ def create_sind(net, item):
 
 
 def create_stactrl(net, item):
-    machines = item.psym
+    if item.outserv:
+        logger.info(f"Station controller {item.loc_name} is out of service - skipping")
+        return
+
+    machines = [m for m in item.psym if m is not None]
+    if len(machines) == 0:
+        logger.info(f"No machines controlled by station controller {item.loc_name} - skipping")
 
     # implemented only for sgen at this time
     # find sgens using name:
@@ -2637,9 +2643,6 @@ def create_stactrl(net, item):
     # Controlled Node: User selection vs Automatic selection  # User selection
     if item.selBus != 0:
         raise NotImplementedError(f"{item}: controlled node selection {item.selBus=} not implemented")
-
-    if item.rembar != item.cpCtrlNode:
-        raise NotImplementedError(f"{item}: {item.rembar} != {item.cpCtrlNode}")
 
     control_mode = item.i_ctrl
     if control_mode == 0:  #### VOLTAGE CONTROL
