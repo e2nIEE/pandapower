@@ -48,6 +48,7 @@ Change Log
 - [FIXED] in :code:`reindex_elements`: fixed index error when reindexing line_geodata
 - [FIXED] bug in :code:`cim2pp`: Changed zero prioritized generators with voltage controller to sgens (like PowerFactory does)
 - [ADDED] cim2pp: added description fields for each asset and added BusbarSection information to nodes
+- [CHANGED] allow providing grid_tables as a parameter to the function that downloads net from PostgreSQL
 
 [2.13.1] - 2023-05-12
 -------------------------------
