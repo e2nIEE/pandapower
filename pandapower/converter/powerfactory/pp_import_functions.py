@@ -25,6 +25,10 @@ def ga(element, attr):
 def from_pf(dict_net, pv_as_slack=True, pf_variable_p_loads='plini', pf_variable_p_gen='pgini',
             flag_graphics='GPS', tap_opt="nntap", export_controller=True, handle_us="Deactivate",
             max_iter=None, is_unbalanced=False):
+    global line_dict
+    line_dict = {}
+    global trafo_dict
+    trafo_dict = {}
     logger.debug("__name__: %s" % __name__)
     logger.debug('started from_pf')
     logger.info(logger.__dict__)
@@ -204,8 +208,6 @@ def from_pf(dict_net, pv_as_slack=True, pf_variable_p_loads='plini', pf_variable
     # we do lines last because of propagation of coordinates
     logger.debug('creating lines')
     # create lines:
-    global line_dict
-    line_dict = {}
     n = 0
     for n, line in enumerate(dict_net['ElmLne'], 0):
         create_line(net=net, item=line, flag_graphics=flag_graphics, n=n, is_unbalanced=is_unbalanced)
@@ -218,6 +220,13 @@ def from_pf(dict_net, pv_as_slack=True, pf_variable_p_loads='plini', pf_variable
         lvp_dict = get_lvp_for_lines(dict_net)
         logger.debug(lvp_dict)
         split_all_lines(net, lvp_dict)
+
+    # create station controllers (ElmStactrl):
+    if export_controller:
+        n = 0
+        for n, stactrl in enumerate(dict_net['ElmStactrl'], 1):
+            create_stactrl(net=net, item=stactrl)
+        if n > 0: logger.info('imported %d station controllers' % n)
 
     remove_folder_of_std_types(net)
 
@@ -880,21 +889,18 @@ def create_line_normal(net, item, bus1, bus2, name, parallel, is_unbalanced):
         'in_service': not bool(item.outserv),
         'length_km': item.dline,
         'df': item.fline,
-        'std_type': std_type,
         'parallel': parallel,
         'alpha': pf_type.alpha if pf_type is not None else None,
         'temperature_degree_celsius': pf_type.tmax if pf_type is not None else None
     }
 
-
     if std_type is not None: #and not is_unbalanced:delete later
         logger.debug('creating normal line with type <%s>' % std_type)
-        lid = pp.create_line(net, **params)
+        lid = pp.create_line(net, std_type=std_type, **params)
     else:
         logger.debug('creating normal line <%s> from parameters' % name)
         r_ohm, x_ohm, c_nf = item.R1, item.X1, item.C1
         r0_ohm, x0_ohm, c0_nf = item.R0, item.X0, item.C0
-
 
         if r_ohm == 0 and x_ohm == 0 and c_nf == 0:
             logger.error('Incomplete data for line "%s": missing type and '
@@ -2141,6 +2147,7 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
         tid = pp.create_transformer(net, hv_bus=bus1, lv_bus=bus2, name=name,
                                     std_type=std_type, tap_pos=tap_pos,
                                     in_service=in_service, parallel=item.ntnum, df=item.ratfac, tap2_pos=tap_pos2)
+        trafo_dict[item] = tid
         logger.debug('created trafo at index <%d>' % tid)
     else:
         logger.info("Create Trafo 3ph")
@@ -2154,6 +2161,7 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
                                     vkr0_percent=pf_type.ur0tr, mag0_percent=pf_type.zx0hl_n,
                                     mag0_rx=pf_type.rtox0_n, si0_hv_partial=pf_type.zx0hl_h,
                                     shift_degree=pf_type.nt2ag * 30, tap2_pos=tap_pos2)
+        trafo_dict[item] = tid
 
     # add value for voltage setpoint
     net.trafo.loc[tid, 'tap_set_vm_pu'] = item.usetp
@@ -2605,6 +2613,126 @@ def create_sind(net, item):
 
     logger.debug('created series reactor %s as per unit impedance at index %d' %
                  (net.impedance.at[sind, 'name'], sind))
+
+
+def create_stactrl(net, item):
+    if item.outserv:
+        logger.info(f"Station controller {item.loc_name} is out of service - skipping")
+        return
+
+    machines = [m for m in item.psym if m is not None]
+    if len(machines) == 0 or np.all([s is None for s in machines]):
+        logger.error(f"No machines controlled by station controller {item.loc_name} - skipping")
+        return
+
+    # find gen_element_index using name:
+    if np.any(net.sgen.name.duplicated()):
+        raise UserWarning("error while creating station controller: sgen names must be unique")
+
+    gen_types = []
+    for s in machines:
+        if s.ip_ctrl == 1:
+            gt = "other"
+        elif s.av_mode == "constq":
+            gt = "sgen"
+        elif s.av_mode == "constv":
+            gt = "gen"
+        else:
+            gt = "other"
+        gen_types.append(gt)
+
+    if "other" in gen_types or len(np.unique(gen_types)) > 1:
+        logger.error(f"Generator type not supported {gen_types} for {item.loc_name}")
+        return
+
+    gen_element = gen_types[0]
+    gen_element_index = [net[gen_element].loc[net[gen_element].name == s.loc_name].index.values[0] for s in machines]
+
+    if len(gen_element_index) != len(machines):
+        raise UserWarning("station controller: could not properly identify the machines")
+
+    distribution = np.array(item.cvqq, dtype=np.float64) / 100.
+
+    if item.imode != 0:
+        raise NotImplementedError(f"{item}: reactive power distribution {item.imode=} not implemented")
+
+    phase = item.i_phase
+    if phase != 0:
+        raise NotImplementedError(f"{item}: phase {item.i_phase=} not implemented")
+
+    # Controlled Node: User selection vs Automatic selection  # User selection
+    if item.selBus != 0:
+        raise NotImplementedError(f"{item}: controlled node selection {item.selBus=} not implemented")
+
+    control_mode = item.i_ctrl
+
+    variable = None
+    res_element_table = None
+    res_element_index = None
+    if control_mode == 1 or item.i_droop:
+        q_control_cubicle = item.p_cub if control_mode == 1 else item.pQmeas  # Feld
+        q_control_element = q_control_cubicle.obj_id  # element (e.g. line) of the cubicle
+        q_control_side = q_control_cubicle.obj_bus  # 0=from, 1=to
+        element_class = q_control_element.GetClassName()
+        if element_class == "ElmLne":
+            res_element_table = "res_line"
+            line_sections = line_dict[q_control_element]
+            res_element_index = line_sections[0] if q_control_side == 0 else line_sections[-1]
+            variable = "q_from_mvar" if q_control_side == 0 else "q_to_mvar"
+        elif element_class == "ElmTr2":
+            res_element_table = "res_trafo"
+            res_element_index = trafo_dict[q_control_element]
+            variable = "q_hv_mvar" if q_control_side == 0 else "q_lv_mvar"
+        else:
+            logger.error(f"{item}: only line, trafo element flows can be controlled, {element_class=}")
+            return
+            # raise NotImplementedError(f"{item}: only line, trafo element flows can be controlled, {element_class=}")
+
+    if control_mode == 0:  #### VOLTAGE CONTROL
+        controlled_node = item.rembar
+        bus = bus_dict[controlled_node]  # controlled node
+
+        if item.uset_mode == 0:  #### Station controller
+            v_setpoint_pu = item.usetp
+        else:
+            v_setpoint_pu = controlled_node.vtarget  #### Bus target voltage
+
+        if item.i_droop:  # Enable Droop
+            bsc = pp.control.BinarySearchControl(net, output_element=gen_element, output_variable="q_mvar",
+                                                 output_element_index=gen_element_index, output_values_distribution=distribution,
+                                                 input_element=res_element_table, input_variable=variable,
+                                                 input_element_index=res_element_index,
+                                                 set_point=v_setpoint_pu, tol=1e-3)
+            pp.control.DroopControl(net, q_droop_mvar=item.Srated * 100 / item.ddroop, bus_idx=bus,
+                                    vm_set_pu=v_setpoint_pu, controller_idx=bsc.index)
+        else:
+            pp.control.BinarySearchControl(net, output_element=gen_element, output_variable="q_mvar",
+                                           output_element_index=gen_element_index, input_element="res_bus",
+                                           output_values_distribution=distribution, damping_factor=0.9,
+                                           input_variable="vm_pu", input_element_index=bus,
+                                           set_point=v_setpoint_pu, tol=1e-6)
+    elif control_mode == 1:  # Q Control mode
+        if item.iQorient != 0:
+            raise NotImplementedError(f"{item}: Q orientation '-' not supported")
+        # q_control_mode = item.qu_char  # 0: "Const Q", 1: "Q(V) Characteristic", 2: "Q(P) Characteristic"
+        # q_control_terminal = q_control_cubicle.cterm  # terminal of the cubicle
+        if item.qu_char in [0, 1]:
+            bsc = pp.control.BinarySearchControl(net, output_element=gen_element, output_variable="q_mvar",
+                                                 output_element_index=gen_element_index, input_element=res_element_table,
+                                                 output_values_distribution=distribution, damping_factor=0.9,
+                                                 input_variable=variable, input_element_index=res_element_index,
+                                                 set_point=item.qsetp, tol=1e-6)
+            if item.qu_char == 1:
+                controlled_node = item.refbar
+                bus = bus_dict[controlled_node]  # controlled node
+                # using controlled_node.vtarget would be more logical but it is wrong:
+                pp.control.DroopControl(net, q_droop_mvar=item.Srated * 100 / item.ddroop, bus_idx=bus,
+                                        vm_set_pu=item.udeadbup, controller_idx=bsc.index)
+                                        # vm_set_pu=controlled_node.vtarget, controller_idx=bsc.index)
+        else:
+            raise NotImplementedError
+    else:
+        raise NotImplementedError(f"{item}: control mode {item.i_ctrl=} not implemented")
 
 
 def split_line_at_length(net, line, length_pos):

@@ -10,6 +10,7 @@ from pandapower.control.controller.trafo.VmSetTapControl import VmSetTapControl
 from pandapower.control.controller.trafo.USetTapControl import USetTapControl  # TODO: drop after next release
 from pandapower.control.controller.trafo.TapDependentImpedance import TapDependentImpedance
 from pandapower.control.controller.trafo_control import TrafoController
+from pandapower.control.controller.station_control import BinarySearchControl, DroopControl
 
 # --- Other ---
 from pandapower.control.run_control import *
