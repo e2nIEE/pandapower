@@ -889,21 +889,18 @@ def create_line_normal(net, item, bus1, bus2, name, parallel, is_unbalanced):
         'in_service': not bool(item.outserv),
         'length_km': item.dline,
         'df': item.fline,
-        'std_type': std_type,
         'parallel': parallel,
         'alpha': pf_type.alpha if pf_type is not None else None,
         'temperature_degree_celsius': pf_type.tmax if pf_type is not None else None
     }
 
-
     if std_type is not None: #and not is_unbalanced:delete later
         logger.debug('creating normal line with type <%s>' % std_type)
-        lid = pp.create_line(net, **params)
+        lid = pp.create_line(net, std_type=std_type, **params)
     else:
         logger.debug('creating normal line <%s> from parameters' % name)
         r_ohm, x_ohm, c_nf = item.R1, item.X1, item.C1
         r0_ohm, x0_ohm, c0_nf = item.R0, item.X0, item.C0
-
 
         if r_ohm == 0 and x_ohm == 0 and c_nf == 0:
             logger.error('Incomplete data for line "%s": missing type and '
