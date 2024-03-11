@@ -259,6 +259,10 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
 
     if return_internal:
         logger.debug("Merging of internal and equivalent network begins.")
+        if len(kwargs.get("central_controller_types", [])):
+            net_internal.controller.drop([idx for idx in net_internal.controller.index if any([
+                isinstance(net_internal.controller.object.at[idx], central_controller_type) for
+                central_controller_type in kwargs["central_controller_types"]])], inplace=True)
         net_eq = merge_internal_net_and_equivalent_external_net(
             net_eq, net_internal, show_computing_time=show_computing_time,
             calc_volt_angles=calculate_voltage_angles)
