@@ -25,6 +25,10 @@ def ga(element, attr):
 def from_pf(dict_net, pv_as_slack=True, pf_variable_p_loads='plini', pf_variable_p_gen='pgini',
             flag_graphics='GPS', tap_opt="nntap", export_controller=True, handle_us="Deactivate",
             max_iter=None, is_unbalanced=False):
+    global line_dict
+    line_dict = {}
+    global trafo_dict
+    trafo_dict = {}
     logger.debug("__name__: %s" % __name__)
     logger.debug('started from_pf')
     logger.info(logger.__dict__)
@@ -204,10 +208,6 @@ def from_pf(dict_net, pv_as_slack=True, pf_variable_p_loads='plini', pf_variable
     # we do lines last because of propagation of coordinates
     logger.debug('creating lines')
     # create lines:
-    global line_dict
-    line_dict = {}
-    global trafo_dict
-    trafo_dict = {}
     n = 0
     for n, line in enumerate(dict_net['ElmLne'], 0):
         create_line(net=net, item=line, flag_graphics=flag_graphics, n=n, is_unbalanced=is_unbalanced)
