@@ -39,7 +39,6 @@ Change Log
 - [FIXED] additional arguments from mpc saved to net._options: create "_options" if it does not exist
 - [CHANGED] cim2pp: extracted getting default classes, added generic setting datatypes from CGMES XMI schema
 - [ADDED] function :code:`getOTDF` to obtain Outage Transfer Distribution Factors, that can be used to analyse outages using the DC approximation of the power system
-- [CHANGED] DFData datasource behavior to enable timeseries calculation with time-dependent nonnumeric data (ConstControl)
 - [ADDED] function :code:`outage_results_OTDF` to obtain the matrix of results for all outage scenarios, with rows as outage scenarios and columns as branch power flows in that scenario
 - [FIXED] add some safeguards for TDPF to avoid numerical issues in some cases
 - [FIXED] avoid attaching elements as duplicates to a group where some of the elements already exist
@@ -47,6 +46,12 @@ Change Log
 - [FIXED] bugfix for tap dependent impedance characteristics so that not all characteristics columns are necessary
 - [ADDED] add kwargs passing of get_equivalent() to runpp_fct()
 - [ADDED] auxiliary functions ets_to_element_types() and element_types_to_ets() as well as toolbox function get_connected_buses_at_switches() and extension to get_connected_switches()
+- [FIXED] in function :code:`toolbox.replace_zero_branches_with_switches`, use absolute for the parameters of impedance elements in case they are negative nonzero values
+- [FIXED] in :code:`reindex_elements`: fixed index error when reindexing line_geodata
+- [FIXED] bug in :code:`cim2pp`: Changed zero prioritized generators with voltage controller to sgens (like PowerFactory does)
+- [ADDED] cim2pp: added description fields for each asset and added BusbarSection information to nodes
+- [CHANGED] cim2pp: reformat documentation for reading in files
+- [CHANGED] allow providing grid_tables as a parameter to the function that downloads net from PostgreSQL
 
 [2.13.1] - 2023-05-12
 -------------------------------
