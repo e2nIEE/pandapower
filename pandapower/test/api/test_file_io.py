@@ -55,8 +55,8 @@ except ImportError:
 def net_in(request):
     if request.param == 1:
         net = create_test_network()
-        net.line.at[0, "geo"] = geojson.LineString([(1.1, 2.2), (3.3, 4.4)])
-        net.line.at[1, "geo"] = geojson.LineString([(5.5, 5.5), (6.6, 6.6), (7.7, 7.7)])
+        net.line.at[0, "geo"] = geojson.dumps(geojson.LineString([(1.1, 2.2), (3.3, 4.4)]))
+        net.line.at[1, "geo"] = geojson.dumps(geojson.LineString([(5.5, 5.5), (6.6, 6.6), (7.7, 7.7)]))
         return net
 
 
@@ -130,9 +130,9 @@ def test_json(net_in, tmp_path):
         from shapely.geometry import shape, Point, LineString
         import geopandas as gpd
 
-        bus_geometry = net_geo.bus["geo"].dropna().apply(shape)
+        bus_geometry = net_geo.bus["geo"].dropna().apply(geojson.loads).apply(shape)
         net_geo["bus_geodata"] = gpd.GeoDataFrame(geometry=bus_geometry, crs=f"epsg:4326")
-        line_geometry = net_geo.line["geo"].dropna().apply(shape)
+        line_geometry = net_geo.line["geo"].dropna().apply(geojson.loads).apply(shape)
         net_geo["line_geodata"] = gpd.GeoDataFrame(geometry=line_geometry, crs=f"epsg:4326")
 
         pp.to_json(net_geo, filename)

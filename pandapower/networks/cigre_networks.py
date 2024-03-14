@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
-import geojson
 # Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-
-
+import geojson
 from pandas import read_json
 from numpy import nan
 import pandapower as pp
@@ -170,8 +168,8 @@ def create_cigre_network_mv(with_der=False):
     pp.create_std_type(net_cigre_mv, line_data, name='OHL_CIGRE_MV', element='line')
 
     # Busses
-    bus_geodata = list(map(geojson.Point, zip([7., 4., 4., 4., 2.5, 1., 1., 8., 8., 6., 4., 4., 10., 10., 10.],
-                                              [16., 15., 13., 11., 9., 7., 3., 3., 5., 5., 5., 7., 15., 11., 5.])))
+    bus_geodata = list(zip([7., 4., 4., 4., 2.5, 1., 1., 8., 8., 6., 4., 4., 10., 10., 10.],
+                           [16., 15., 13., 11., 9., 7., 3., 3., 5., 5., 5., 7., 15., 11., 5.]))
     bus0 = pp.create_bus(net_cigre_mv, name='Bus 0', vn_kv=110, type='b', zone='CIGRE_MV', geodata=bus_geodata[0])
     buses = pp.create_buses(net_cigre_mv, 14, name=['Bus %i' % i for i in range(1, 15)], vn_kv=20,
                             type='b', zone='CIGRE_MV', geodata=bus_geodata[1:])
@@ -505,7 +503,7 @@ def create_cigre_network_lv():
     pp.create_switch(net_cigre_lv, bus0, busC0, et='b', closed=True, type='CB', name='S3')
 
     # Bus geo data
-    bus_geodata = list(map(geojson.Point, zip(
+    bus_geodata = list(map(lambda xy: f'{{"type":"Point", "coordinates":[{xy[0]}, {xy[1]}]}}', zip(
         [0.2, 0.2, -1.4583333333, -1.4583333333, -1.4583333333, -1.9583333333, -2.7083333333, -2.7083333333,
          -3.2083333333, -3.2083333333, -3.2083333333, -3.7083333333, -0.9583333333, -1.2083333333, -1.2083333333,
          -1.2083333333, -1.2083333333, -2.2083333333, -2.7083333333, -3.7083333333, 0.2, 0.2, 0.2, 0.2, 1.9166666667,

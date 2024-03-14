@@ -205,11 +205,11 @@ def _simple_plotly_generic(net, respect_separators, use_branch_geodata, on_map, 
             logger.warning(
                 "Map plots not available with artificial coordinates and will be disabled!")
             on_map = False
-    # check if geodata are real geographycal lat/lon coordinates using geopy
+    # check if geodata are real geographical lat/lon coordinates using geopy
     if on_map and projection is not None:
         geo_data_to_latlong(net, projection=projection)
     # ----- Nodes (Buses) ------
-    # initializating node trace
+    # initializing node trace
     hoverinfo = hoverinfo_func(net, element=node_element)
     node_trace = node_trace_func(net, net[node_element].index, size=node_size, color=node_color,
                                     infofunc=hoverinfo)

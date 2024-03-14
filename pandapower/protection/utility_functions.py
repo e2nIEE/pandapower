@@ -44,9 +44,9 @@ def _get_coords_from_bus_idx(net: pp.pandapowerNet, bus_idx: pd.Index) -> List[T
     try:
         bl = net.bus.dropna(subset=["geo"]).loc[bus_idx, 'geo']
         if isinstance(bl, pd.Series):
-            return bl.apply(geojson.utils.coords).apply(next).to_list()
+            return bl.apply(geojson.loads).apply(geojson.utils.coords).apply(next).to_list()
         else:
-            return [next(geojson.utils.coords(bl))]
+            return [next(geojson.utils.coords(geojson.loads(bl)))]
     except KeyError:
         logger.error(f"Bus {bus_idx} not found in net.bus.geo")
     return []
@@ -56,9 +56,9 @@ def _get_coords_from_line_idx(net: pp.pandapowerNet, line_idx: pd.Index) -> List
     try:
         ll = net.line.dropna(subset=["geo"]).loc[line_idx, 'geo']
         if isinstance(ll, pd.Series):
-            return ll.apply(geojson.utils.coords).apply(next).to_list()
+            return ll.apply(geojson.loads).apply(geojson.utils.coords).apply(next).to_list()
         else:
-            return [next(geojson.utils.coords(ll))]
+            return [next(geojson.utils.coords(geojson.loads(ll)))]
     except KeyError:
         logger.error(f"Line {line_idx} not found in net.line.geo")
     return []
@@ -122,7 +122,7 @@ def create_sc_bus(net_copy, sc_line_id, sc_fraction):
     x1, y1 = _get_coords_from_bus_idx(net, aux_line.from_bus)[0]
     x2, y2 = _get_coords_from_bus_idx(net, aux_line.to_bus)[0]
 
-    net.bus.geo.at[max_idx_bus + 1] = geojson.Point((sc_fraction * (x2 - x1) + x1, sc_fraction * (y2 - y1) + y1))
+    net.bus.geo.at[max_idx_bus + 1] = geojson.dumps(geojson.Point((sc_fraction * (x2 - x1) + x1, sc_fraction * (y2 - y1) + y1)), sort_keys=True)
     return net
 
 
@@ -595,7 +595,7 @@ def plot_tripped_grid_protection_device(net, trip_decisions, sc_location, sc_bus
             bus_list = list(get_bus_index)
 
             # place annotations on middle of the line
-            bus_coords = list(zip(*net.bus.geo.iloc[bus_list[0:2]].apply(geojson.utils.coords).apply(next).to_list()))
+            bus_coords = list(zip(*net.bus.geo.iloc[bus_list[0:2]].apply(geojson.loads).apply(geojson.utils.coords).apply(next).to_list()))
             line_geo_x_y = [sum(x) / 2 for x in bus_coords]
             line_geo_x_y[1] += 0.05
 
@@ -618,7 +618,7 @@ def plot_tripped_grid_protection_device(net, trip_decisions, sc_location, sc_bus
 
         bus_text = bus_text[:-1]
 
-        bus_geodata = net.bus.geo.apply(geojson.utils.coords).apply(next).to_list()
+        bus_geodata = net.bus.geo.apply(geojson.loads).apply(geojson.utils.coords).apply(next).to_list()
 
         # placing bus
         bus_geodata = [(x[0] - 0.11, x[1] + 0.095) for x in bus_geodata]
@@ -634,7 +634,7 @@ def plot_tripped_grid_protection_device(net, trip_decisions, sc_location, sc_bus
         fault_text = []
         fault_texts = f'\tI_sc = {fault_current}kA'
 
-        fault_geo_x_y = next(geojson.utils.coords(net.bus.geo.at[max_bus_idx]))
+        fault_geo_x_y = next(geojson.utils.coords(geojson.loads(net.bus.geo.at[max_bus_idx])))
         fault_geo_x_y = (fault_geo_x_y[0], fault_geo_x_y[1] - font_size_bus + 0.02)
 
         # list of new geo data for line (half position of switch)
@@ -652,7 +652,7 @@ def plot_tripped_grid_protection_device(net, trip_decisions, sc_location, sc_bus
 
         # font_size_bus=0.06  # font size of sc location
 
-        sc_geo_x_y = next(geojson.utils.coords(net.bus.geo.at[max_bus_idx]))
+        sc_geo_x_y = next(geojson.utils.coords(geojson.loads(net.bus.geo.at[max_bus_idx])))
         sc_geo_x_y = (sc_geo_x_y[0], sc_geo_x_y[1] + 0.02)
 
         # list of new geo data for line (middle of  position of switch)

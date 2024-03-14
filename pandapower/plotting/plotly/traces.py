@@ -256,7 +256,7 @@ def _create_node_trace(net, nodes=None, size=5, patch_type='circle', color='blue
                       marker=dict(color=color, size=size, symbol=patch_type))
     nodes = net[node_element].index.tolist() if nodes is None else list(nodes)
     node_plot_index = [b for b in nodes if b in list(set(nodes) & set(net[node_element]["geo"].index))]
-    node_trace['x'], node_trace['y'] = zip(*net[node_element].loc[node_plot_index, 'geo'].dropna().apply(geojson.utils.coords).apply(next).to_list())
+    node_trace['x'], node_trace['y'] = zip(*net[node_element].loc[node_plot_index, 'geo'].dropna().apply(geojson.loads).apply(geojson.utils.coords).apply(next).to_list())
     if not isinstance(infofunc, pd.Series) and isinstance(infofunc, Iterable) and \
             len(infofunc) == len(nodes):
         infofunc = pd.Series(index=nodes, data=infofunc)
@@ -315,7 +315,7 @@ def _get_branch_geodata_plotly(net, branches, use_branch_geodata, branch_element
     ys = []
     if use_branch_geodata:
         for line_ind, _ in branches.iterrows():
-            line_coords = list(geojson.utils.coords(net[branch_element].at[line_ind, 'geo']))
+            line_coords = list(geojson.utils.coords(geojson.loads(net[branch_element].at[line_ind, 'geo'])))
             line_x, line_y = list(zip(*line_coords))
             xs += line_x
             xs += [None]
@@ -326,8 +326,8 @@ def _get_branch_geodata_plotly(net, branches, use_branch_geodata, branch_element
         n = node_element
         from_n = 'from_' + n
         to_n = 'to_' + n
-        from_node_xy = net[n].loc[branches[from_n], 'geo'].apply(geojson.utils.coords).apply(next).tolist()
-        to_node_xy = net[n].loc[branches[to_n], 'geo'].apply(geojson.utils.coords).apply(next).tolist()
+        from_node_xy = net[n].loc[branches[from_n], 'geo'].apply(geojson.loads).apply(geojson.utils.coords).apply(next).tolist()
+        to_node_xy = net[n].loc[branches[to_n], 'geo'].apply(geojson.loads).apply(geojson.utils.coords).apply(next).tolist()
         from_node_x, from_node_y = zip(*from_node_xy)
         to_node_x, to_node_y = zip(*to_node_xy)
         # center point added because of the hovertool
@@ -760,8 +760,8 @@ def create_trafo_trace(net, trafos=None, color='green', trafotype='2W', width=5,
 
             trafo_trace['text'] = trafo['name'] if infofunc is None else infofunc.loc[idx]
 
-            from_bus = next(geojson.utils.coords(net.bus.loc[trafo[from_bus1], "geo"]))
-            to_bus = next(geojson.utils.coords(net.bus.loc[trafo[to_bus1], "geo"]))
+            from_bus = next(geojson.utils.coords(geojson.loads(net.bus.loc[trafo[from_bus1], "geo"])))
+            to_bus = next(geojson.utils.coords(geojson.loads(net.bus.loc[trafo[to_bus1], "geo"])))
             trafo_trace["x"] = [from_bus[0], (from_bus[0] + to_bus[0]) / 2, to_bus[0]]
             trafo_trace["y"] = [from_bus[1], (from_bus[1] + to_bus[1]) / 2, to_bus[1]]
 
@@ -864,7 +864,7 @@ def create_weighted_marker_trace(net, elm_type="load", elm_ids=None, column_to_p
                        + str(values_by_bus.loc[values_by_bus < 0]))
 
     # add geodata:
-    xy_list = net[node_element].loc[values_by_bus.index, 'geo'].dropna().apply(geojson.utils.coords).apply(next)
+    xy_list = net[node_element].loc[values_by_bus.index, 'geo'].dropna().apply(geojson.loads).apply(geojson.utils.coords).apply(next)
     x_list, y_list = zip(*xy_list)
 
     # set up hover info:
@@ -927,7 +927,7 @@ def create_scale_trace(net, weighted_trace, down_shift=0):
     unit = scale_info["scale_legend_unit"]  # p_mw...q_mvar ..
 
     # scale trace
-    bus_x, bus_y = zip(*net.bus.geo.dropna().apply(geojson.utils.coords).apply(next))
+    bus_x, bus_y = zip(*net.bus.geo.dropna().apply(geojson.loads).apply(geojson.utils.coords).apply(next))
     x_max, y_max = max(bus_x), max(bus_y)
     x_min, y_min = min(bus_x), min(bus_y)
     x_pos = x_max + (x_max - x_min) * 0.2
