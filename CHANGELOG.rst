@@ -39,7 +39,6 @@ Change Log
 - [FIXED] additional arguments from mpc saved to net._options: create "_options" if it does not exist
 - [CHANGED] cim2pp: extracted getting default classes, added generic setting datatypes from CGMES XMI schema
 - [ADDED] function :code:`getOTDF` to obtain Outage Transfer Distribution Factors, that can be used to analyse outages using the DC approximation of the power system
-- [CHANGED] DFData datasource behavior to enable timeseries calculation with time-dependent nonnumeric data (ConstControl)
 - [ADDED] function :code:`outage_results_OTDF` to obtain the matrix of results for all outage scenarios, with rows as outage scenarios and columns as branch power flows in that scenario
 - [FIXED] add some safeguards for TDPF to avoid numerical issues in some cases
 - [FIXED] avoid attaching elements as duplicates to a group where some of the elements already exist
@@ -53,6 +52,11 @@ Change Log
 - [CHANGED] minor changes to the example networks (mainly added names to identify them in tests)
 - [CHANGED] use of bus_geodata and line_geodata tables to geo column in bus and line table
 - [CHANGED] update most geodata dependant functions to use geo column
+- [FIXED] in :code:`reindex_elements`: fixed index error when reindexing line_geodata
+- [FIXED] bug in :code:`cim2pp`: Changed zero prioritized generators with voltage controller to sgens (like PowerFactory does)
+- [ADDED] cim2pp: added description fields for each asset and added BusbarSection information to nodes
+- [CHANGED] cim2pp: reformat documentation for reading in files
+- [CHANGED] allow providing grid_tables as a parameter to the function that downloads net from PostgreSQL
 
 [2.13.1] - 2023-05-12
 -------------------------------

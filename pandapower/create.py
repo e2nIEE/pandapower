@@ -8,7 +8,7 @@ from operator import itemgetter
 
 import geojson
 import pandas as pd
-from numpy import nan, isnan, arange, dtype, isin, any as np_any, zeros, array, bool_, \
+from numpy import nan, isnan, arange, dtype, isin, any as np_any, array, bool_, \
     all as np_all, float64, intersect1d, unique as uni
 from pandas import isnull
 from pandas.api.types import is_object_dtype
@@ -54,7 +54,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                 ('type', dtype(object)),
                 ('zone', dtype(object)),
                 ('in_service', 'bool'),
-                ('geo', dtype(object))],
+                ('geo', dtype(str))],
         "load": [("name", dtype(object)),
                  ("bus", "u4"),
                  ("p_mw", "f8"),
@@ -192,7 +192,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                  ("parallel", "u4"),
                  ("type", dtype(object)),
                  ("in_service", 'bool'),
-                 ("geo", dtype(object))],
+                 ("geo", dtype(str))],
         "trafo": [("name", dtype(object)),
                   ("std_type", dtype(object)),
                   ("hv_bus", "u4"),
@@ -613,7 +613,7 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b", zone=N
         **index** (int, default None) - Force a specified ID if it is available. If None, the \
             index one higher than the highest already existing index is selected.
 
-        **geodata** ((x,y)-tuple or geojson.Point, default None) - coordinates used for plotting
+        **geodata** ((x,y)-tuple, default None) - coordinates used for plotting
 
         **type** (string, default "b") - Type of the bus. "n" - node,
         "b" - busbar, "m" - muff
@@ -642,13 +642,9 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b", zone=N
         if isinstance(geodata, tuple):
             if len(geodata) != 2:
                 raise UserWarning("geodata must be given as (x, y) tuple")
-            geo = geojson.Point(geodata)
-        elif isinstance(geodata, geojson.Point):
-            if not geodata.is_valid:
-                raise UserWarning("geodata must be a valid geojson.Point object or coordinate tuple")
-            geo = geodata
+            geo = f'{{"type":"Point","coordinates":[{geodata[0]},{geodata[1]}]}}'
         else:
-            raise UserWarning("geodata must be a valid geojson.Point object or coordinate tuple")
+            raise UserWarning("geodata must be a valid coordinate tuple")
     else:
         geo = None
 
@@ -718,18 +714,18 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
         if isinstance(geodata, tuple):
             if len(geodata) != 2:
                 raise UserWarning("geodata must be given as (x, y) tuple")
-            geo = [geojson.Point(geodata)]*nr_buses
+            geo = [geojson.dumps(geojson.Point(geodata), sort_keys=True)]*nr_buses
         elif isinstance(geodata, geojson.Point):
             if not geodata.is_valid:
                 raise UserWarning(
                     "geodata must be a valid geojson.Point or coordinate tuple or a list of geojson.Point or tuple"
                 )
-            geo = [geodata]*nr_buses
+            geo = [geojson.dumps(geodata)]*nr_buses
         elif isinstance(geodata, list) and len(geodata) == nr_buses:
             if all([isinstance(g, tuple) for g in geodata]):
-                geo = [geojson.Point(geod) for geod in geodata]
+                geo = [geojson.dumps(geojson.Point(geod), sort_keys=True) for geod in geodata]
             elif all([isinstance(g, geojson.Point) for g in geodata]):
-                geo = geodata
+                geo = geojson.dumps(geodata, sort_keys=True)
             else:
                 raise UserWarning(
                     "geodata must be a valid geojson.Point or coordinate tuple or a list of geojson.Point or tuple"
@@ -742,19 +738,6 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
     _add_to_entries_if_not_nan(net, "bus", entries, index, "max_vm_pu", max_vm_pu)
     _set_multiple_entries(net, "bus", index, **entries, **kwargs)
 
-    # TODO: update this to write geojson in the network
-    # if geodata is not None:
-    #     # works with a 2-tuple or a matching array
-    #     net.bus_geodata = pd.concat([
-    #         net.bus_geodata,
-    #         pd.DataFrame(zeros((len(index), len(net.bus_geodata.columns)), dtype=np.int64),
-    #                      index=index, columns=net.bus_geodata.columns)])
-    #     net.bus_geodata.loc[index, :] = nan
-    #     net.bus_geodata.loc[index, ["x", "y"]] = geodata
-    # if coords is not None:
-    #     net.bus_geodata = pd.concat(
-    #         [net.bus_geodata, pd.DataFrame(index=index, columns=net.bus_geodata.columns)])
-    #     net["bus_geodata"].loc[index, "coords"] = coords
     return index
 
 
@@ -2148,7 +2131,8 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
 
     _set_entries(net, "line", index, **v, **kwargs)
 
-    net.line.at[index, "geo"] = geodata
+    if geodata:
+        net.line.at[index, "geo"] = geojson.dumps(geojson.LineString([geodata]), sort_keys=True)
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "line")
     _set_value_if_not_nan(net, index, alpha, "alpha", "line")
@@ -2424,7 +2408,7 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
                        "them for all parameters, otherwise they are not set!")
 
     if geodata is not None:
-        net.line.at[index, "geo"] = geojson.LineString(geodata)
+        net.line.at[index, "geo"] = f'{{"type":"LineString", "coordinates":{geodata}}}'
     else:
         net.line.at[index, "geo"] = None
 
@@ -4898,12 +4882,12 @@ def _get_multiple_index_with_check(net, table, index, number, name=None):
     u, c = uni(index, return_counts=True)
     if np.any(c>1):
         raise UserWarning("Passed indexes %s exist multiple times" % (u[c>1]))
-    contained = isin(net[table].index.values, index)
-    if np_any(contained):
+    intersect = intersect1d(index, net[table].index.values)
+    if len(intersect) > 0:
         if name is None:
             name = table.capitalize() + "s"
         raise UserWarning("%s with indexes %s already exist."
-                          % (name, net[table].index.values[contained]))
+                          % (name, intersect))
     return index
 
 
@@ -5027,10 +5011,10 @@ def _add_multiple_branch_geodata(net, geodata, index):
     # works with single or multiple lists of coordinates
     if isinstance(geodata, list) and all([isinstance(g, tuple) and len(g) == 2 for g in geodata]):
         # geodata is a single list of coordinates
-        series = [geojson.LineString(geodata)] * len(index)
+        series = [geojson.dumps(geojson.LineString(geodata), sort_keys=True)] * len(index)
     else:
         # geodata is multiple lists of coordinates
-        series = list(map(geojson.LineString, geodata))
+        series = list(map(lambda gd: geojson.dumps(geojson.LineString(gd), sort_keys=True), geodata))
 
     net.line["geo"] = series
 

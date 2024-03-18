@@ -280,9 +280,9 @@ def test_create_buses():
     assert net.bus.test_kwargs.at[b1[0]] == "dummy_string"
 
     for i in b2:
-        assert net.bus.at[i, "geo"] == geojson.Point((10, 20))
+        assert net.bus.at[i, "geo"] == geojson.dumps(geojson.Point((10, 20)), sort_keys=True)
     for i, ind in enumerate(b3):
-        assert net.bus.at[ind, "geo"] == geojson.Point(geodata[i])
+        assert net.bus.at[ind, "geo"] == geojson.dumps(geojson.Point(geodata[i]), sort_keys=True)
 
 def test_create_lines():
     # standard
@@ -330,8 +330,8 @@ def test_create_lines():
     )
 
     assert len(net.line) == 2
-    assert net.line.at[l[0], "geo"] == geojson.LineString([(1, 1), (2, 2), (3, 3)])
-    assert net.line.at[l[1], "geo"] == geojson.LineString([(1, 1), (1, 2)])
+    assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(1, 1), (2, 2), (3, 3)]), sort_keys=True)
+    assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(1, 1), (1, 2)]), sort_keys=True)
 
     # setting params as single value
     net = pp.create_empty_network()
@@ -357,8 +357,8 @@ def test_create_lines():
     assert net.line.in_service.dtype == bool
     assert not net.line.at[l[0], "in_service"]  # is actually <class 'numpy.bool_'>
     assert not net.line.at[l[1], "in_service"]  # is actually <class 'numpy.bool_'>
-    assert net.line.at[l[0], "geo"] == geojson.LineString([(10, 10), (20, 20)])
-    assert net.line.at[l[1], "geo"] == geojson.LineString([(10, 10), (20, 20)])
+    assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(10, 10), (20, 20)]), sort_keys=True)
+    assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(10, 10), (20, 20)]), sort_keys=True)
     assert net.line.at[l[0], "name"] == "test"
     assert net.line.at[l[1], "name"] == "test"
     assert net.line.at[l[0], "max_loading_percent"] == 90
@@ -390,8 +390,8 @@ def test_create_lines():
     assert net.line.in_service.dtype == bool
     assert net.line.at[l[0], "in_service"]  # is actually <class 'numpy.bool_'>
     assert not net.line.at[l[1], "in_service"]  # is actually <class 'numpy.bool_'>
-    assert net.line.at[l[0], "geo"] == geojson.LineString([(10, 10), (20, 20)])
-    assert net.line.at[l[1], "geo"] == geojson.LineString([(100, 10), (200, 20)])
+    assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(10, 10), (20, 20)]), sort_keys=True)
+    assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(100, 10), (200, 20)]), sort_keys=True)
     assert net.line.at[l[0], "name"] == "test1"
     assert net.line.at[l[1], "name"] == "test2"
     assert net.line.at[l[0], "max_loading_percent"] == 80
@@ -441,8 +441,8 @@ def test_create_lines_from_parameters():
     )
 
     assert len(net.line) == 2
-    assert net.line.at[l[0], "geo"] == geojson.LineString([(1, 1), (2, 2), (3, 3)])
-    assert net.line.at[l[1], "geo"] == geojson.LineString([(1, 1), (1, 2)])
+    assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(1, 1), (2, 2), (3, 3)]), sort_keys=True)
+    assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(1, 1), (1, 2)]), sort_keys=True)
 
     # setting params as single value
     net = pp.create_empty_network()
@@ -481,8 +481,8 @@ def test_create_lines_from_parameters():
     assert net.line.in_service.dtype == bool
     assert not net.line.at[l[0], "in_service"]  # is actually <class 'numpy.bool_'>
     assert not net.line.at[l[1], "in_service"]  # is actually <class 'numpy.bool_'>
-    assert net.line.at[l[0], "geo"] == geojson.LineString([(10, 10), (20, 20)])
-    assert net.line.at[l[1], "geo"] == geojson.LineString([(10, 10), (20, 20)])
+    assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(10, 10), (20, 20)]), sort_keys=True)
+    assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(10, 10), (20, 20)]), sort_keys=True)
     assert all(net.line["name"].values == "test")
     assert all(net.line["max_loading_percent"].values == 90)
     assert all(net.line["parallel"].values == 1)
@@ -533,8 +533,8 @@ def test_create_lines_from_parameters():
     assert net.line.in_service.dtype == bool
     assert net.line.at[l[0], "in_service"]  # is actually <class 'numpy.bool_'>
     assert not net.line.at[l[1], "in_service"]  # is actually <class 'numpy.bool_'>
-    assert net.line.at[l[0], "geo"] == geojson.LineString([(10, 10), (20, 20)])
-    assert net.line.at[l[1], "geo"] == geojson.LineString([(100, 10), (200, 20)])
+    assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(10, 10), (20, 20)]), sort_keys=True)
+    assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(100, 10), (200, 20)]), sort_keys=True)
     assert net.line.at[l[0], "name"] == "test1"
     assert net.line.at[l[1], "name"] == "test2"
     assert net.line.at[l[0], "max_loading_percent"] == 80

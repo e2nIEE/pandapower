@@ -213,7 +213,7 @@ def create_generic_coordinates(net, mg=None, library="igraph",
         raise ValueError("Unknown library %s - chose 'igraph' or 'networkx'" % library)
     if len(coords):
         net[geodata_table]["geo"] = pd.Series(
-            map(lambda x: geojson.Point((x[1], x[0])), zip(*coords)),
+            map(lambda x: geojson.dumps(geojson.Point((x[1], x[0])), sort_keys=True), zip(*coords)),
             index=net[geodata_table].index if buses is None else buses,
         )
     return net

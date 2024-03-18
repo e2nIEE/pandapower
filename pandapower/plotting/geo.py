@@ -119,17 +119,15 @@ def _transform_branch_geometry_to_coords(branch_geo):
 
 def _transform_node_geometry_to_geojson(node_geo):
     """
-    Create geojson from geodataframe geometries
+    Create geojson string from geodataframe geometries
 
     ! forces projection to wgs84 !
 
     :param node_geo: The dataframe containing the node geometries (as shapely points)
     :type node_geo: geopandas.GeoDataFrame
-    :return: A geojson object for the node_geo
+    :return: A geojson string for the node_geo
     """
-    if not geojson_INSTALLED:
-        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "geojson")
-    return geojson.loads(node_geo.to_json(na='drop', show_bbox=True, drop_id=False, to_wgs84=True))
+    return node_geo.to_json(na='drop', show_bbox=True, drop_id=False, to_wgs84=True)
 
 
 def _transform_branch_geometry_to_geojson(branch_geo):
@@ -142,9 +140,7 @@ def _transform_branch_geometry_to_geojson(branch_geo):
     :type branch_geo: geopandas.GeoDataFrame
     :return: A geojson object for the branch_geo
     """
-    if not geojson_INSTALLED:
-        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "geojson")
-    return geojson.loads(branch_geo.to_json(na='drop', show_bbox=True, drop_id=False, to_wgs84=True))
+    return branch_geo.to_json(na='drop', show_bbox=True, drop_id=False, to_wgs84=True)
 
 
 def _convert_xy_epsg(x, y, epsg_in=4326, epsg_out=31467):
@@ -375,7 +371,7 @@ def dump_to_geojson(
                 missing_geom[0] += 1
                 continue
             uid = f"{'bus' if is_pandapower else 'junction'}-{ind}"
-            features.append(geojson.Feature(geometry=geom, id=uid, properties=props[uid]))
+            features.append(geojson.Feature(geometry=geojson.loads(geom), id=uid, properties=props[uid]))
 
     # build geojson features for branches
     if branches:
@@ -404,7 +400,7 @@ def dump_to_geojson(
                 missing_geom[1] += 1
                 continue
             uid = f"{'line' if is_pandapower else 'pipe'}-{ind}"
-            features.append(geojson.Feature(geometry=geom, id=uid, properties=props[uid]))
+            features.append(geojson.Feature(geometry=geojson.loads(geom), id=uid, properties=props[uid]))
 
     if switches and is_pandapower:
         if isinstance(switches, bool):
@@ -424,7 +420,7 @@ def dump_to_geojson(
                 _get_props(row, cols, prop)
 
                 # getting geodata for switches
-                geom = net.bus.geo.at[row.bus]
+                geom = geojson.loads(net.bus.geo.at[row.bus])
                 if isinstance(geom, geojson.LineString):
                     logger.warning(f"LineString geometry not supported for type 'switch'. Skipping switch {ind}")
                     geom = None
@@ -448,7 +444,7 @@ def dump_to_geojson(
                     _get_props(row, cols, prop)
 
                     # getting geodata for switches
-                    geom = net.bus.geo.at[row.lv_bus]
+                    geom = geojson.loads(net.bus.geo.at[row.lv_bus])
                     if isinstance(geom, geojson.LineString):
                         logger.warning(f"LineString geometry not supported for type '{t_type}'. Skipping trafo {ind}")
                     if geom is None or geom == "[]":
@@ -515,9 +511,6 @@ def convert_geodata_to_geojson(
     """
     is_pandapower = net.__class__.__name__ == 'pandapowerNet'
 
-    if not geojson_INSTALLED:
-        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "geojson")
-
     if is_pandapower:
         df = net.bus
         ldf = net.line
@@ -530,10 +523,7 @@ def convert_geodata_to_geojson(
         geo_ldf = net.pipe_geodata
 
     a, b = "yx" if lonlat else "xy"  # substitute x and y with a and b to reverse them if necessary
-    df["geo"] = geo_df.apply(
-        lambda r: geojson.Point([r[a], r[b]]),
-        axis=1
-    )
+    df["geo"] = geo_df.apply(lambda r: f'{{"coordinates": [{r[a]}, {r[b]}], "type": "Point"}}', axis=1)
 
     ldf["geo"] = np.nan
     for l_id in ldf.index:
@@ -541,18 +531,18 @@ def convert_geodata_to_geojson(
             continue
         # pandapipes currently only stores inflection points for pipes. This function will inject start and end points.
         if is_pandapower:
-            coords: List[Tuple[float, float]] = [(y, x) if lonlat else (x, y) for x, y in geo_ldf.coords.at[l_id]]
+            coords: List[List[float]] = [[y, x] if lonlat else [x, y] for x, y in geo_ldf.coords.at[l_id]]
         else:
-            coords: List[Tuple[float, float] | Tuple[float, float, float]] = []
+            coords: List[List[float]] = []
             from_coords = geo_df.loc[ldf[l_id].from_junction]
             to_coords = geo_df.loc[ldf[l_id].to_junction]
-            coords.append((float(from_coords.x), float(from_coords.y)))
+            coords.append([float(from_coords.x), float(from_coords.y)])
             if l_id in net.pipe_geodata:
                 coords.append(geo_ldf.loc[l_id].coords)
-            coords.append((float(to_coords.x), float(to_coords.y)))
+            coords.append([float(to_coords.x), float(to_coords.y)])
         if not coords:
             continue
-        ls = geojson.LineString(coords)
+        ls = f'{{"coordinates": {coords}, "type": "LineString"}}'
         ldf.geo.at[l_id] = ls
 
     if delete:
@@ -576,9 +566,6 @@ def convert_gis_to_geojson(
     :type delete: bool, default True
     :return: No output.
     """
-
-    if not geojson_INSTALLED:
-        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "geojson")
 
     is_pandapower = net.__class__.__name__ == 'pandapowerNet'
 
