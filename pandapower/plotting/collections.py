@@ -1077,7 +1077,7 @@ def create_sgen_collection(net, sgens=None, size=1., infofunc=None, orientation=
     """
     sgens = get_index_array(sgens, net.sgen.index)
     infos = [infofunc(i) for i in range(len(sgens))] if infofunc is not None else []
-    node_coords = net.bus_geodata.loc[net.sgen.loc[sgens, "bus"].values, ["x", "y"]].values
+    node_coords = net.bus.loc[net.sgen.loc[sgens, "bus"].values, "geo"].apply(geojson.loads).apply(geojson.utils.coords).apply(next).to_list()
 
     color = kwargs.pop("color", "k")
 
@@ -1116,7 +1116,7 @@ def create_storage_collection(net, storages=None, size=1., infofunc=None, orient
         **storage_lc** - line collection
     """
     infos = [infofunc(i) for i in range(len(storages))] if infofunc is not None else []
-    node_coords = net.bus_geodata.loc[net.storage.loc[storages, "bus"].values, ["x", "y"]].values
+    node_coords = net.bus.loc[net.storage.loc[storages, "bus"].values, "geo"].apply(geojson.loads).apply(geojson.utils.coords).apply(next).to_list()
 
     color = kwargs.pop("color", "k")
 
@@ -1229,8 +1229,8 @@ def create_line_switch_collection(net, switches=None, size=1, distance_to_bus=3,
         use_bus_geodata = False
 
         if use_line_geodata:
-            if line.name in net.line_geodata.index:
-                line_coords = net.line_geodata.coords.loc[line.name]
+            if line.name in net.line.geo.dropna().index:
+                line_coords = net.line.loc[line.name, "geo"]
                 # check, which end of the line is nearer to the switch bus
                 intersection = position_on_busbar(net, sb, busbar_coords=line_coords)
                 if intersection is not None:
