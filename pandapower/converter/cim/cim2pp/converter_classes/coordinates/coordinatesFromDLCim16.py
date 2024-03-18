@@ -1,8 +1,7 @@
 import logging
 import time
 
-import geojson
-import numpy as np
+import numpy
 import pandas as pd
 
 from pandapower.converter.cim import cim_tools

@@ -49,20 +49,22 @@ setup(
                       "numpy",
                       "packaging",
                       "tqdm",
-                      "deepdiff"],
+                      "deepdiff",
+                      "geojson",
+                      "typing_extensions~=4.9"],
     extras_require={
-        "docs": ["numpydoc", "sphinx", "sphinx_rtd_theme", "typing_extensions"],
-        "plotting": ["plotly", "matplotlib", "igraph", "geopandas", "geojson", "typing_extensions"],
+        "docs": ["numpydoc", "sphinx", "sphinx_rtd_theme"],
+        "plotting": ["plotly", "matplotlib", "igraph", "geopandas"],
         # "shapely", "pyproj" are dependencies of geopandas and so already available;
         # "base64", "hashlib", "zlib" produce installing problems, so they are not included
         "test": ["pytest", "pytest-xdist"],
         "performance": ["ortools"],  # , "lightsim2grid"],
         "pgm": ["power-grid-model-io"],
-        "fileio": ["xlsxwriter", "openpyxl", "cryptography", "geopandas", "psycopg2", "geojson"],
+        "fileio": ["xlsxwriter", "openpyxl", "cryptography", "geopandas", "psycopg2"],
         # "fiona" is a depedency of geopandas and so already available
         "converter": ["matpowercaseframes"],
-        "all": ["numpydoc", "sphinx", "sphinx_rtd_theme", "typing_extensions",
-                "plotly>=3.1.1", "matplotlib", "igraph", "geopandas", "geojson",
+        "all": ["numpydoc", "sphinx", "sphinx_rtd_theme",
+                "plotly>=3.1.1", "matplotlib", "igraph", "geopandas",
                 "pytest<=7.0", "pytest-xdist",
                 "ortools",  # lightsim2grid,
                 "xlsxwriter", "openpyxl", "cryptography",
