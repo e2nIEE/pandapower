@@ -47,8 +47,7 @@ def get_network_and_result(net, request):
     Fixture which yields the network, and its expected result based on running test.
     """
     test_file_path = os.path.dirname(os.path.abspath(__file__))
-    relative_path = f"test_geo\\{request.keywords.node.originalname}\\{net.name}.pkl"
-    full_path = os.path.join(test_file_path, relative_path)
+    full_path = os.path.join(test_file_path, "test_geo", request.keywords.node.originalname, f"{net.name}.pkl")
     df = pd.read_pickle(full_path)
     return net, df
 
