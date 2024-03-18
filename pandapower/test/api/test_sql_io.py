@@ -44,8 +44,8 @@ except ImportError:
 def net_in(request):
     method = pp.networks.__dict__[request.param]
     net = method()
-    net.line_geodata.loc[0, "coords"] = [(1.1, 2.2), (3.3, 4.4)]
-    net.line_geodata.loc[11, "coords"] = [(5.5, 5.5), (6.6, 6.6), (7.7, 7.7)]
+    net.line.loc[0, "geo"] = '{"coordinates": [[1.1, 2.2], [3.3, 4.4]], "type": "LineString"}'
+    net.line.loc[11, "geo"] = '{"coordinates": [[5.5, 5.5], [6.6, 6.6], [7.7, 7.7]], "type": "LineString"}'
     if len(net.trafo) > 0:
         net.trafo.tap_side = "lv"
         pp.control.DiscreteTapControl(net, net.trafo.index.values[0], 0.98, 1.02)
@@ -95,7 +95,7 @@ def assert_postgresql_roundtrip(net_in, **kwargs):
     for element, table in net.items():
         # dictionaries (e.g. std_type) not included
         # json serialization/deserialization of objects not implemented
-        if not isinstance(table, pd.DataFrame) or table.empty or "geodata" in element:
+        if not isinstance(table, pd.DataFrame) or table.empty:
             continue
         # code below: very difficult to compare columns with NaN values due to None vs np.nan and dtypes,
         # "1" vs 1 and dtype object
