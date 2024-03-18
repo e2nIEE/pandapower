@@ -49,57 +49,59 @@ def extend_pp_net_cim(net: pandapowerNet, override: bool = True) -> pandapowerNe
     fill_dict: Dict[str, Dict[str, List[str]]] = dict()
 
     fill_dict['bus'] = dict()
-    fill_dict['bus'][np_str_type] = [sc['o_prf'], sc['ct'], sc['cnc_id'], sc['sub_id'], 'description']
+    fill_dict['bus'][np_str_type] = [sc['o_prf'], sc['ct'], sc['cnc_id'], sc['sub_id'], 'description', 'busbar_id',
+                                     'busbar_name']
 
     fill_dict['ext_grid'] = dict()
-    fill_dict['ext_grid'][np_str_type] = [sc['t'], sc['sub']]
+    fill_dict['ext_grid'][np_str_type] = [sc['t'], sc['sub'], 'description']
     fill_dict['ext_grid'][np_float_type] = ['min_p_mw', 'max_p_mw', 'min_q_mvar', 'max_q_mvar', 'p_mw', 'q_mvar',
                                             's_sc_max_mva', 's_sc_min_mva', 'rx_max', 'rx_min', 'r0x0_max', 'x0x_max']
 
     fill_dict['load'] = dict()
-    fill_dict['load'][np_str_type] = [sc['t']]
+    fill_dict['load'][np_str_type] = [sc['t'], 'description']
     fill_dict['gen'] = dict()
-    fill_dict['gen'][np_str_type] = [sc['t']]
+    fill_dict['gen'][np_str_type] = [sc['t'], 'description']
     fill_dict['gen'][np_float_type] = \
         ['min_p_mw', 'max_p_mw', 'min_q_mvar', 'max_q_mvar', 'vn_kv', 'rdss_ohm', 'xdss_pu', 'cos_phi', 'pg_percent']
     fill_dict['sgen'] = dict()
-    fill_dict['sgen'][np_str_type] = [sc['t']]
+    fill_dict['sgen'][np_str_type] = [sc['t'], 'description']
     fill_dict['sgen'][np_float_type] = ['k', 'rx', 'vn_kv', 'rdss_ohm', 'xdss_pu', 'lrc_pu', 'generator_type']
     fill_dict['motor'] = dict()
-    fill_dict['motor'][np_str_type] = [sc['t']]
+    fill_dict['motor'][np_str_type] = [sc['t'], 'description']
     fill_dict['storage'] = dict()
-    fill_dict['storage'][np_str_type] = [sc['t']]
+    fill_dict['storage'][np_str_type] = [sc['t'], 'description']
     fill_dict['shunt'] = dict()
-    fill_dict['shunt'][np_str_type] = [sc['t']]
+    fill_dict['shunt'][np_str_type] = [sc['t'], 'description']
     fill_dict['ward'] = dict()
-    fill_dict['ward'][np_str_type] = [sc['t']]
+    fill_dict['ward'][np_str_type] = [sc['t'], 'description']
     fill_dict['xward'] = dict()
-    fill_dict['xward'][np_str_type] = [sc['t']]
+    fill_dict['xward'][np_str_type] = [sc['t'], 'description']
 
     fill_dict['line'] = dict()
-    fill_dict['line'][np_str_type] = [sc['t_from'], sc['t_to']]
+    fill_dict['line'][np_str_type] = [sc['t_from'], sc['t_to'], 'description']
     fill_dict['line'][np_float_type] = ['r0_ohm_per_km', 'x0_ohm_per_km', 'c0_nf_per_km', 'g0_us_per_km',
                                         'endtemp_degree']
 
     fill_dict['dcline'] = dict()
-    fill_dict['dcline'][np_str_type] = [sc['t_from'], sc['t_to']]
+    fill_dict['dcline'][np_str_type] = [sc['t_from'], sc['t_to'], 'description']
 
     fill_dict['switch'] = dict()
-    fill_dict['switch'][np_str_type] = [sc['t_bus'], sc['t_ele']]
+    fill_dict['switch'][np_str_type] = [sc['t_bus'], sc['t_ele'], 'description']
 
     fill_dict['impedance'] = dict()
-    fill_dict['impedance'][np_str_type] = [sc['t_from'], sc['t_to']]
+    fill_dict['impedance'][np_str_type] = [sc['t_from'], sc['t_to'], 'description']
     fill_dict['impedance'][np_float_type] = ['rft0_pu', 'xft0_pu', 'rtf0_pu', 'xtf0_pu']
 
     fill_dict['trafo'] = dict()
     fill_dict['trafo'][np_str_type] = [sc['t_hv'], sc['t_lv'], sc['pte_id_hv'], sc['pte_id_lv'], sc['tc'], sc['tc_id'],
-                                       'vector_group', 'id_characteristic']
+                                       'description', 'vector_group', 'id_characteristic']
     fill_dict['trafo'][np_float_type] = ['vk0_percent', 'vkr0_percent', 'xn_ohm']
     fill_dict['trafo'][np_bool_type] = ['power_station_unit', 'oltc']
 
     fill_dict['trafo3w'] = dict()
     fill_dict['trafo3w'][np_str_type] = [sc['t_hv'], sc['t_mv'], sc['t_lv'], sc['pte_id_hv'], sc['pte_id_mv'],
-                                         sc['pte_id_lv'], sc['tc'], sc['tc_id'], 'vector_group', 'id_characteristic']
+                                         sc['pte_id_lv'], sc['tc'], sc['tc_id'], 'description', 'vector_group',
+                                         'id_characteristic']
     fill_dict['trafo3w'][np_float_type] = ['vk0_hv_percent', 'vk0_mv_percent', 'vk0_lv_percent', 'vkr0_hv_percent',
                                            'vkr0_mv_percent', 'vkr0_lv_percent']
     fill_dict['trafo3w'][np_bool_type] = ['power_station_unit']
