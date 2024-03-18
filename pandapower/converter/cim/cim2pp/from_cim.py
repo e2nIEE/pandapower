@@ -103,11 +103,7 @@ def from_cim(file_list: List[str] = None, encoding: str = 'utf-8', convert_line_
     - create_measurements (str): Set this parameter to 'SV' to create measurements for the pandapower net from the SV
     profile. Set it to 'Analog' to create measurements from Analogs. If the parameter is not set or is set to None, no
     measurements will be created.
-    - use_GL_or_DL_profile (str): Choose the profile to use for converting coordinates. Set it to 'GL' to use the GL
-    profile (Usually lat and long coordinates). Set it to 'DL' to use the DL profile (Usually x, y coordinates for
-    displaying control room schema). Set it to 'both' to let the converter choose the profile. The converter will
-    choose the GL profile first if available, otherwise the DL profile. Optional, default: both.
-    - diagram_name (str): The name from the Diagram from the diagram layout profile for the geo coordinates. Default:
+    - diagram_name (str): The name from the Diagram from the DL profile for the diagram coordinates. Default:
     The first diagram sorted ascending by name. Set the parameter to "all" to use available diagrams for creating the
     coordinates.
     - create_tap_controller (bool): If True, create pandapower controllers for transformer tap changers. If False, skip
