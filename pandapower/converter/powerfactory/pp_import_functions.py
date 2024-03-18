@@ -781,7 +781,11 @@ def get_section_coords(coords, sec_len, start_len, scale_factor):
     len_j = 0
     k = 0
     for j in range(i + 1, len(coords)):
-        len_j += point_len(sec_coords[k], coords[j])
+        # todo
+        try:
+            len_j += point_len(sec_coords[k], coords[j])
+        except:
+            logger.error(f"{sec_coords=}, {coords=}, {j=}, {i=}")
         if len_j <= sec_len / scale_factor:
             sec_coords.append(coords[j])
             k += 1
