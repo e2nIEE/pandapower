@@ -915,7 +915,7 @@ def create_trafo3w_collection(net, trafo3ws=None, picker=False, infofunc=None, c
     return lc, pc
 
 
-@deprecated
+@deprecated("Busbar geodata is no longer supported for plotting geodata.")
 def create_busbar_collection(net, buses=None, infofunc=None, cmap=None, norm=None, picker=False,
                              z=None, cbar_title="Bus Voltage [p.u.]", clim=None, **kwargs):
     """
