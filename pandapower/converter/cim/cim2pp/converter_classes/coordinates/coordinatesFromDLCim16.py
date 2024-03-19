@@ -1,7 +1,6 @@
 import logging
 import time
 
-import geojson
 import numpy as np
 import pandas as pd
 
@@ -54,8 +53,7 @@ class CoordinatesFromDLCim16:
             if one_ele != 'line' and one_ele != 'dcline' and one_ele != 'impedance':
                 # only one coordinate for each asset (except line and impedance)
                 one_ele_df.drop_duplicates([sc['o_id']], keep='first', inplace=True)
-                one_ele_df['diagram'] = ('{"type": "Point", "coordinates": [' + one_ele_df["xPosition_s"] + ', ' +
-                                         one_ele_df["yPosition_s"] + ']}')
+                one_ele_df['diagram'] = f'{{"type": "Point", "coordinates": [{one_ele_df["xPosition_s"]}, {one_ele_df["yPosition_s"]}]}}'
             else:
                 # line strings
                 one_ele_df['coords'] = one_ele_df[['xPosition', 'yPosition']].values.tolist()
@@ -65,7 +63,7 @@ class CoordinatesFromDLCim16:
                         ['xPosition', 'yPosition']].values.tolist()
                 one_ele_df.drop_duplicates([sc['o_id']], keep='first', inplace=True)
                 one_ele_df['coords'] = one_ele_df['coords'].astype(str)
-                one_ele_df['diagram'] = ('{"type": "LineString", "coordinates": ' + one_ele_df["coords"] + '}')
+                one_ele_df['diagram'] = f'{{"type": "LineString", "coordinates": {one_ele_df["coords"]}}}'
             # now add the coordinates
             self.cimConverter.net[one_ele]['diagram'] = self.cimConverter.net[one_ele][sc['o_id']].map(
                 one_ele_df.set_index(sc['o_id']).to_dict(orient='dict').get('diagram'))

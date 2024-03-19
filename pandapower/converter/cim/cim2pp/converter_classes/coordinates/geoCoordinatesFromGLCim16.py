@@ -46,8 +46,7 @@ class GeoCoordinatesFromGLCim16:
         bus_geo.sort_values(by=[sc['o_id'], 'sequenceNumber'], inplace=True)
         # only one coordinate for each asset (except line and impedance)
         bus_geo.drop_duplicates([sc['o_id']], keep='first', inplace=True)
-        bus_geo['geo'] = ('{"type": "Point", "coordinates": [' + bus_geo["xPosition_s"] + ', ' +
-                          bus_geo["yPosition_s"] + ']}')
+        bus_geo['geo'] = f'{{"type": "Point", "coordinates": [{bus_geo["xPosition_s"]}, {bus_geo["yPosition_s"]}]}}'
         self.cimConverter.net['bus']['geo'] = self.cimConverter.net['bus'][sc['o_id']].map(
             bus_geo.set_index(sc['o_id']).to_dict(orient='dict').get('geo'))
         # buses = self.cimConverter.net.bus.reset_index()
@@ -109,8 +108,7 @@ class GeoCoordinatesFromGLCim16:
             if one_ele != 'line' and one_ele != 'dcline' and one_ele != 'impedance':
                 # only one coordinate for each asset (except line and impedance)
                 one_ele_df.drop_duplicates([sc['o_id']], keep='first', inplace=True)
-                one_ele_df['geo'] = ('{"type": "Point", "coordinates": [' + one_ele_df["xPosition_s"] + ', ' +
-                                     one_ele_df["yPosition_s"] + ']}')
+                one_ele_df['geo'] = f'{{"type": "Point", "coordinates": [{one_ele_df["xPosition_s"]}, {one_ele_df["yPosition_s"]}]}}'
             else:
                 # line strings
                 one_ele_df['coords'] = one_ele_df[['xPosition', 'yPosition']].values.tolist()
@@ -120,7 +118,7 @@ class GeoCoordinatesFromGLCim16:
                         ['xPosition', 'yPosition']].values.tolist()
                 one_ele_df.drop_duplicates([sc['o_id']], keep='first', inplace=True)
                 one_ele_df['coords'] = one_ele_df['coords'].astype(str)
-                one_ele_df['geo'] = '{"type": "LineString", "coordinates": ' + one_ele_df["coords"] + '}'
+                one_ele_df['geo'] = f'{{"type": "LineString", "coordinates": {one_ele_df["coords"]}}}'
             # now add the coordinates
             self.cimConverter.net[one_ele]['geo'] = self.cimConverter.net[one_ele][sc['o_id']].map(
                 one_ele_df.set_index(sc['o_id']).to_dict(orient='dict').get('geo'))
