@@ -1038,7 +1038,7 @@ def create_gen_collection(net, gens=None, size=1., infofunc=None, orientation=np
     """
     gens = get_index_array(gens, net.gen.index)
     infos = [infofunc(i) for i in range(len(gens))] if infofunc is not None else []
-    node_coords = net.bus_geodata.loc[net.gen.loc[gens, "bus"].values, ["x", "y"]].values
+    node_coords = net.bus.loc[net.gen.loc[gens, "bus"].values, "geo"].apply(geojson.loads).apply(geojson.utils.coords).apply(next).to_list()
 
     color = kwargs.pop("color", "k")
 
