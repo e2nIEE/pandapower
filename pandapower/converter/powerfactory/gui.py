@@ -196,30 +196,39 @@ def make_gui(app, project_name, browse_dst, calc):
                                                                                             sticky=tk.W)
     params.export_controller = EXPORT_CONTROLLER.get
 
-    REPLACE_ZERO_BRANCHES = tk.IntVar()
-    REPLACE_ZERO_BRANCHES.set(1)
-    tk.Checkbutton(input_panel, text="Replace low-impedance branches with switches",
-                   variable=REPLACE_ZERO_BRANCHES).grid(row=4, column=4, sticky=tk.W)
-    params.replace_zero_branches = REPLACE_ZERO_BRANCHES.get
-
     CV_VERIFY = tk.IntVar()
     CV_VERIFY.set(1)
-    tk.Checkbutton(input_panel, text="Verify conversion", variable=CV_VERIFY).grid(row=5, column=4,
+    tk.Checkbutton(input_panel, text="Verify conversion", variable=CV_VERIFY).grid(row=4, column=4,
                                                                                    sticky=tk.W)
     params.is_to_verify = CV_VERIFY.get
 
     RUN_DIAGNOSTIC = tk.IntVar()
     RUN_DIAGNOSTIC.set(1)
-    tk.Checkbutton(input_panel, text="Diagnostic report", variable=RUN_DIAGNOSTIC).grid(row=6,
+    tk.Checkbutton(input_panel, text="Diagnostic report", variable=RUN_DIAGNOSTIC).grid(row=5,
                                                                                         column=4,
                                                                                         sticky=tk.W)
     params.is_to_diagnostic = RUN_DIAGNOSTIC.get
 
     LOGGER_DEBUG = tk.IntVar()
-    tk.Checkbutton(input_panel, text="Logger in debug mode", variable=LOGGER_DEBUG).grid(row=7,
+    tk.Checkbutton(input_panel, text="Logger in debug mode", variable=LOGGER_DEBUG).grid(row=6,
                                                                                          column=4,
                                                                                          sticky=tk.W)
     params.is_debug = LOGGER_DEBUG.get
+
+    REPLACE_ZERO_BRANCHES = tk.IntVar()
+    REPLACE_ZERO_BRANCHES.set(1)
+    tk.Checkbutton(input_panel, text="Replace low-impedance branches with switches",
+                   variable=REPLACE_ZERO_BRANCHES).grid(row=7, column=4, sticky=tk.W)
+    params.replace_zero_branches = REPLACE_ZERO_BRANCHES.get
+
+    tk.Label(input_panel, anchor='w', text='Min. line R and X (Ohm):').grid(row=8, column=4, sticky=tk.W, pady=0)
+
+    min_ohm = tk.Entry(input_panel, width=8)
+    min_ohm.delete(0, tk.END)
+    min_ohm.grid(row=8, column=5, padx=2, pady=2, sticky=tk.W)
+    min_ohm.insert(0, "0.01")
+    # entry_fname.insert(0, 'test') ##for testing
+    params.min_ohm_entry = min_ohm
     
     # row 2 col 4
     stop_button = tk.Button(input_panel, text='Cancel', width=8,

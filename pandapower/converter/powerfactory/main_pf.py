@@ -132,7 +132,7 @@ def run_verify(net, load_flow_params=None):
 
 
 def calc(app, input_panel, entry_path_dst, entry_fname, pv_as_slack, export_controller,
-         replace_zero_branches, is_to_verify, is_to_diagnostic, is_debug,
+         replace_zero_branches, min_ohm_entry, is_to_verify, is_to_diagnostic, is_debug,
          pf_variable_p_loads, pf_variable_p_gen, flag_graphics, handle_us,
          save_as, tap_opt, max_iter_entry):
     # check if logger is to be in debug mode
@@ -167,11 +167,18 @@ def calc(app, input_panel, entry_path_dst, entry_fname, pv_as_slack, export_cont
                          flag_graphics=flag_graphics(), handle_us=handle_us(), save_as=save_as(), tap_opt=tap_opt(),
                          export_controller=export_controller(), max_iter=max_iter)
         if replace_zero_branches():
-            pp.replace_zero_branches_with_switches(net, min_length_km=1e-2,
-                                                   min_r_ohm_per_km=1.5e-3, min_x_ohm_per_km=1.5e-3,
-                                                   min_c_nf_per_km=1.5e-3,
-                                                   min_rft_pu=1.5e-5, min_xft_pu=1.5e-5, min_rtf_pu=1.5e-5,
-                                                   min_xtf_pu=1.5e-5)  # , min_r_ohm=1.5e-3, min_x_ohm=1.5e-3)
+            #pp.replace_zero_branches_with_switches(net, min_length_km=1e-2,
+            #                                       min_r_ohm_per_km=1.5e-3, min_x_ohm_per_km=1.5e-3,
+            #                                       min_c_nf_per_km=1.5e-3,
+            #                                       min_rft_pu=1.5e-5, min_xft_pu=1.5e-5, min_rtf_pu=1.5e-5,
+            #                                       min_xtf_pu=1.5e-5)  # , min_r_ohm=1.5e-3, min_x_ohm=1.5e-3)
+            min_ohm = float(min_ohm_entry.get())
+            to_replace = ((net.line.r_ohm_per_km * net.line.length_km <= min_ohm) |
+                          (net.line.x_ohm_per_km * net.line.length_km <= min_ohm))
+
+            for i in net.line.loc[to_replace].index.values:
+                pp.toolbox.create_replacement_switch_for_branch(net, "line", i)
+                net.line.at[i, "in_service"] = False
 
         logger.info('saving file to: <%s>' % filepath)
         save_net(net, filepath, save_as())

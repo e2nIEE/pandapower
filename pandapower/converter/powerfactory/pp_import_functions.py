@@ -793,7 +793,10 @@ def get_section_coords(coords, sec_len, start_len, scale_factor):
     len_j = 0
     k = 0
     for j in range(i + 1, len(coords)):
-        len_j += point_len(sec_coords[k], coords[j])
+        try:
+            len_j += point_len(sec_coords[k], coords[j])
+        except IndexError:
+            logger.error(f"{j=}, {i=}, {k=}")
         if len_j <= sec_len / scale_factor:
             sec_coords.append(coords[j])
             k += 1
@@ -930,7 +933,7 @@ def create_line_normal(net, item, bus1, bus2, name, parallel, is_unbalanced, geo
             'r0_ohm_per_km': r0_ohm / params['length_km'],
             'x0_ohm_per_km': x0_ohm / params['length_km'],
             'c0_nf_per_km': c0_nf / params['length_km'] * 1e3,  # internal unit for C in PF is uF,
-            'max_i_ka': item.Inom,
+            'max_i_ka': item.Inom if item.Inom != 0 else 1e-3,
             'alpha': pf_type.alpha if pf_type is not None else None
         })
 
@@ -1007,12 +1010,13 @@ def create_line_type(net, item, cable_in_air=False):
 
     line_or_cable = 'cs' if item.cohl_ == 0 else 'ol'
 
+    max_i_ka = item.sline if not cable_in_air else item.InomAir
     type_data = {
         "r_ohm_per_km": item.rline,
         "x_ohm_per_km": item.xline,
         "c_nf_per_km": item.cline*item.frnom/50 * 1e3,  # internal unit for C in PF is uF
         "q_mm2": item.qurs,
-        "max_i_ka": item.sline if not cable_in_air else item.InomAir,
+        "max_i_ka": max_i_ka if max_i_ka != 0 else 1e-3,
         "endtemp_degree": item.rtemp,
         "type": line_or_cable,
         "r0_ohm_per_km": item.rline0,
