@@ -8,6 +8,7 @@ import importlib
 import json
 import numbers
 import os
+import io
 import pickle
 import sys
 import types
@@ -230,7 +231,7 @@ def from_dict_of_dfs(dodfs, net=None):
                     net[c] = ''
             continue
         elif item in ["line_geodata", "bus_geodata"]:
-            table.rename_axis(net[item].index.name, inplace=True)
+            table = table.rename_axis(net[item].index.name)
             df_to_coords(net, item, table)
         elif item.endswith("_std_types"):
             # when loaded from Excel, the lists in the DataFrame cells are strings -> we want to convert them back
@@ -243,7 +244,7 @@ def from_dict_of_dfs(dodfs, net=None):
         elif item.endswith("_profiles"):
             if "profiles" not in net.keys():
                 net["profiles"] = dict()
-            table.rename_axis(None, inplace=True)
+            table = table.rename_axis(None)
             net["profiles"][item[:-9]] = table
             continue  # don't go into try..except
         elif item == "user_pf_options":
@@ -255,7 +256,7 @@ def from_dict_of_dfs(dodfs, net=None):
                     table[json_column] = table[json_column].apply(
                         lambda x: json.loads(x, cls=PPJSONDecoder))
             if not isinstance(table.index, pd.MultiIndex):
-                table.rename_axis(net[item].index.name, inplace=True)
+                table = table.rename_axis(net[item].index.name)
             net[item] = table
         # set the index to be Int
         try:
@@ -488,7 +489,7 @@ class FromSerializableRegistry():
         is_multiindex = self.d.pop('is_multiindex', False)
         index_name = self.d.pop('index_name', None)
         index_names = self.d.pop('index_names', None)
-        ser = pd.read_json(self.obj, precise_float=True, **self.d)
+        ser = pd.read_json(io.StringIO(self.obj, precise_float=True, **self.d))
 
         # restore index name and Multiindex
         if index_name is not None:
@@ -520,7 +521,7 @@ class FromSerializableRegistry():
         if isinstance(obj, str):
             obj = StringIO(obj)
 
-        df = pd.read_json(obj, precise_float=True, convert_axes=False, **self.d)
+        df = pd.read_json(io.StringIO(obj, precise_float=True, convert_axes=False, **self.d))
 
         if not df.shape[0] or self.d.get("orient", False) == "columns":
             try:

@@ -50,7 +50,7 @@ class SwitchesCim16:
             ignore_index=True, sort=False)
         eqssh_switches.type[start_index_cim_net:] = 'LS'
         # drop all duplicates to fix class inherit problem in jpa
-        eqssh_switches.drop_duplicates(subset=['rdfId'], keep='first', inplace=True)
+        eqssh_switches = eqssh_switches.drop_duplicates(subset=['rdfId'], keep='first')
         switch_length_before_merge = eqssh_switches.index.size
         # until now eqssh_switches looks like:
         #   rdfId   name    open    ...
@@ -58,7 +58,7 @@ class SwitchesCim16:
         #   _x02    switch2 False   ...
         # now join with the terminals
         eqssh_switches = pd.merge(eqssh_switches, self.cimConverter.bus_merge, how='left', on='rdfId')
-        eqssh_switches.sort_values(by=['rdfId', 'sequenceNumber'], inplace=True)
+        eqssh_switches = eqssh_switches.sort_values(by=['rdfId', 'sequenceNumber'])
         eqssh_switches.reset_index(inplace=True)
         # copy the columns which are needed to reduce the eqssh_switches to one line per switch
         eqssh_switches['rdfId_Terminal2'] = eqssh_switches['rdfId_Terminal'].copy()
@@ -70,7 +70,7 @@ class SwitchesCim16:
             eqssh_switches.rdfId_Terminal2 = eqssh_switches.rdfId_Terminal2.iloc[1:].reset_index().rdfId_Terminal2
             eqssh_switches.connected2 = eqssh_switches.connected2.iloc[1:].reset_index().connected2
             eqssh_switches.index_bus2 = eqssh_switches.index_bus2.iloc[1:].reset_index().index_bus2
-            eqssh_switches.drop_duplicates(subset=['rdfId'], keep='first', inplace=True)
+            eqssh_switches = eqssh_switches.drop_duplicates(subset=['rdfId'], keep='first')
         else:
             self.logger.error("Something went wrong at switches, seems like that terminals for connection with "
                               "connectivity nodes are missing!")
@@ -87,8 +87,8 @@ class SwitchesCim16:
                     level=LogLevel.WARNING, code=ReportCode.WARNING_CONVERTING,
                     message="The switch with RDF ID %s has %s Terminals!" % (rdfId, count)))
             eqssh_switches = eqssh_switches[0:0]
-        eqssh_switches.rename(columns={'rdfId': sc['o_id'], 'index_bus': 'bus', 'index_bus2': 'element',
-                                       'rdfId_Terminal': sc['t_bus'], 'rdfId_Terminal2': sc['t_ele']}, inplace=True)
+        eqssh_switches = eqssh_switches.rename(columns={'rdfId': sc['o_id'], 'index_bus': 'bus', 'index_bus2': 'element',
+                                       'rdfId_Terminal': sc['t_bus'], 'rdfId_Terminal2': sc['t_ele']})
         eqssh_switches['et'] = 'b'
         eqssh_switches['z_ohm'] = 0
         if eqssh_switches.index.size > 0:

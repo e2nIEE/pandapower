@@ -51,12 +51,12 @@ def test_cost_mixed():
     assert net["OPF_converged"]
     assert np.isclose(net.res_cost, net.res_gen.p_mw.values**2 + 1)
 
-    net.load.controllable.at[0] = True
+    net.load.at[0, "controllable"] = True
     pp.runopp(net)
     assert np.isclose(net.res_cost, net.res_gen.p_mw.values ** 2 + 1)
 
-    net.load.controllable.at[0] = False
-    net.pwl_cost.drop(net.pwl_cost.index, inplace=True)
+    net.load.at[0, "controllable"] = False
+    net.pwl_cost = net.pwl_cost.drop(net.pwl_cost.index)
     pp.create_pwl_cost(net, 0, "ext_grid", [[-1000, 0, -2000], [0, 1000, 2000]], power_type="p")
 
     net.poly_cost.cp1_eur_per_mw.at[0] = 1000

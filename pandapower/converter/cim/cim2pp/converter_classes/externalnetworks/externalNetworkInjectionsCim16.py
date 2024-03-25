@@ -110,6 +110,6 @@ class ExternalNetworkInjectionsCim16:
         regulation_controllers = self.cimConverter.merge_eq_ssh_profile('RegulatingControl')
         regulation_controllers = regulation_controllers.loc[regulation_controllers['mode'] == 'voltage']
         regulation_controllers = regulation_controllers[['rdfId', 'targetValue', 'enabled']]
-        regulation_controllers.rename(columns={'rdfId': 'RegulatingControl'}, inplace=True)
+        regulation_controllers = regulation_controllers.rename(columns={'rdfId': 'RegulatingControl'})
         eqssh_eni = pd.merge(eqssh_eni, regulation_controllers, how='left', on='RegulatingControl')
         return eqssh_eni

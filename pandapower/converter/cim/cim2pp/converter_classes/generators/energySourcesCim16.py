@@ -38,12 +38,12 @@ class EnergySourceCim16:
             pd.concat([self.cimConverter.cim['eq']['EnergySchedulingType'],
                        self.cimConverter.cim['eq_bd']['EnergySchedulingType']],
                       sort=False)
-        eq_energy_scheduling_type.rename(columns={'rdfId': 'EnergySchedulingType', 'name': 'type'}, inplace=True)
+        eq_energy_scheduling_type = eq_energy_scheduling_type.rename(columns={'rdfId': 'EnergySchedulingType', 'name': 'type'})
         eqssh_energy_sources = self.cimConverter.merge_eq_ssh_profile('EnergySource', add_cim_type_column=True)
         eqssh_energy_sources = pd.merge(eqssh_energy_sources, eq_energy_scheduling_type, how='left',
                                         on='EnergySchedulingType')
         eqssh_energy_sources = pd.merge(eqssh_energy_sources, self.cimConverter.bus_merge, how='left', on='rdfId')
-        eqssh_energy_sources.drop_duplicates(['rdfId'], keep='first', inplace=True)
+        eqssh_energy_sources = eqssh_energy_sources.drop_duplicates(['rdfId'], keep='first')
         sgen_type = dict({'WP': 'WP', 'Wind': 'WP', 'PV': 'PV', 'SolarPV': 'PV', 'BioGas': 'BioGas',
                           'OtherRES': 'OtherRES', 'CHP': 'CHP'})  # todo move?
         eqssh_energy_sources['type'] = eqssh_energy_sources['type'].map(sgen_type)
@@ -55,6 +55,6 @@ class EnergySourceCim16:
         eqssh_energy_sources['scaling'] = 1.
         eqssh_energy_sources['current_source'] = True
         eqssh_energy_sources['generator_type'] = 'current_source'
-        eqssh_energy_sources.rename(columns={'rdfId_Terminal': sc['t'], 'rdfId': sc['o_id'], 'connected': 'in_service',
-                                             'index_bus': 'bus'}, inplace=True)
+        eqssh_energy_sources = eqssh_energy_sources.rename(columns={'rdfId_Terminal': sc['t'], 'rdfId': sc['o_id'], 'connected': 'in_service',
+                                             'index_bus': 'bus'})
         return eqssh_energy_sources

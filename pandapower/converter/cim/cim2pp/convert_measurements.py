@@ -44,11 +44,11 @@ class CreateMeasurements:
                                       'PowerSystemResource', 'positiveFlowIn']],
             self.cim['eq']['AnalogValue'][['sensorAccuracy', 'MeasurementValueSource', 'Analog', 'value']],
             how='inner', left_on='rdfId', right_on='Analog')
-        analogs.drop(columns=['rdfId', 'Analog'], inplace=True)
+        analogs = analogs.drop(columns=['rdfId', 'Analog'])
         analogs = pd.merge(analogs, self.cim['eq']['MeasurementValueSource'], how='left',
                            left_on='MeasurementValueSource',
                            right_on='rdfId')
-        analogs.drop(columns=['rdfId', 'MeasurementValueSource'], inplace=True)
+        analogs = analogs.drop(columns=['rdfId', 'MeasurementValueSource'])
         # collect all the assets (line, trafo, trafo3w) and its connections
         assets = pd.DataFrame(None, columns=['element_type', 'side'])
         append_dict = dict({'line': {'from_bus': 'from', 'to_bus': 'to'},
@@ -61,7 +61,7 @@ class CreateMeasurements:
                 temp['element_type'] = element_type
                 temp['side'] = side
                 assets = pd.concat([assets, temp], sort=False)
-        assets.rename(columns={'index': 'element'}, inplace=True)
+        assets = assets.rename(columns={'index': 'element'})
         # now join the analogs with the assets
         psr = pd.merge(analogs, assets, how='inner', left_on='PowerSystemResource', right_on=sc['o_id'])
         # keep only entries which are associated to the terminal from the asset
@@ -96,24 +96,24 @@ class CreateMeasurements:
         sc = cim_tools.get_pp_net_special_columns_dict()
         # get the measurements from the sv profile and set the Terminal as index
         sv_powerflow = self.cim['sv']['SvPowerFlow'][['Terminal', 'p', 'q']]
-        sv_powerflow.set_index('Terminal', inplace=True)
+        sv_powerflow = sv_powerflow.set_index('Terminal')
 
         # ---------------------------------------measure: bus v---------------------------------------------------
         busses_temp = self.net.bus[['name', 'vn_kv', sc['ct']]].copy()
-        busses_temp.reset_index(level=0, inplace=True)
-        busses_temp.rename(columns={'index': 'element', sc['ct']: 'TopologicalNode'}, inplace=True)
+        busses_temp = busses_temp.reset_index(level=0)
+        busses_temp = busses_temp.rename(columns={'index': 'element', sc['ct']: 'TopologicalNode'})
         sv_sv_voltages = pd.merge(self.cim['sv']['SvVoltage'][['TopologicalNode', 'v']], busses_temp,
                                   how='left', on='TopologicalNode')
         # drop all the rows mit vn_kv == np.NaN (no measurements available for that bus)
-        sv_sv_voltages.dropna(subset=['vn_kv'], inplace=True)
+        sv_sv_voltages = sv_sv_voltages.dropna(subset=['vn_kv'])
         sv_sv_voltages.reset_index(inplace=True)
         if 'index' in sv_sv_voltages.columns:
-            sv_sv_voltages.drop(['index'], inplace=True, axis=1)
+            sv_sv_voltages = sv_sv_voltages.drop(['index'], axis=1)
         # value -> voltage ()
         sv_sv_voltages['value'] = sv_sv_voltages.v / sv_sv_voltages.vn_kv
         sv_sv_voltages['value'].replace(0, np.nan, inplace=True)
         # drop all the rows mit value == np.NaN
-        sv_sv_voltages.dropna(subset=['value'], inplace=True)
+        sv_sv_voltages = sv_sv_voltages.dropna(subset=['value'])
         sv_sv_voltages.reset_index(inplace=True)
         sv_sv_voltages['value_stddev'] = sv_sv_voltages.value * 0.001
         sv_sv_voltages['vn_kv_stddev'] = 0.1 / sv_sv_voltages.vn_kv
@@ -136,7 +136,7 @@ class CreateMeasurements:
         line_temp['q_to'] = \
             pd.merge(line_temp[sc['t_to']], sv_powerflow['q'], left_on=sc['t_to'], right_index=True)['q']
 
-        line_temp.dropna(subset=['p_from', 'p_to', 'q_from', 'q_to'], thresh=4, inplace=True)
+        line_temp = line_temp.dropna(subset=['p_from', 'p_to', 'q_from', 'q_to'], thresh=4)
 
         line_temp['stddev_line_from_p'] = abs(line_temp.p_from) * sigma_line + 1.
         line_temp['stddev_line_to_p'] = abs(line_temp.p_to) * sigma_line + 1.
@@ -181,7 +181,7 @@ class CreateMeasurements:
         trafo_temp['q_lv'] = \
             pd.merge(trafo_temp[sc['t_lv']], sv_powerflow['q'], left_on=sc['t_lv'], right_index=True)['q']
 
-        trafo_temp.dropna(subset=['p_hv', 'p_lv', 'q_hv', 'q_lv'], thresh=4, inplace=True)
+        trafo_temp = trafo_temp.dropna(subset=['p_hv', 'p_lv', 'q_hv', 'q_lv'], thresh=4)
 
         trafo_temp['stddev_trafo_hv_p'] = abs(trafo_temp.p_hv) * sigma_trafo + 1.
         trafo_temp['stddev_trafo_lv_p'] = abs(trafo_temp.p_lv) * sigma_trafo + 1.
@@ -230,7 +230,7 @@ class CreateMeasurements:
         trafo3w_temp['q_lv'] = \
             pd.merge(trafo3w_temp[sc['t_lv']], sv_powerflow['q'], left_on=sc['t_lv'], right_index=True)['q']
 
-        trafo3w_temp.dropna(subset=['p_hv', 'p_mv', 'p_lv', 'q_hv', 'q_mv', 'q_lv'], thresh=6, inplace=True)
+        trafo3w_temp = trafo3w_temp.dropna(subset=['p_hv', 'p_mv', 'p_lv', 'q_hv', 'q_mv', 'q_lv'], thresh=6)
 
         trafo3w_temp['stddev_trafo_hv_p'] = abs(trafo3w_temp.p_hv) * sigma_trafo3w + 1.
         trafo3w_temp['stddev_trafo_mv_p'] = abs(trafo3w_temp.p_mv) * sigma_trafo3w + 1.
@@ -275,7 +275,7 @@ class CreateMeasurements:
         self._copy_to_measurement(trafo3w_temp)
 
         # remove NaN values
-        self.net.measurement.dropna(subset=['value'], inplace=True)
+        self.net.measurement = self.net.measurement.dropna(subset=['value'])
         # set the element from float to default uint32
         self._set_measurement_element_datatype()
 

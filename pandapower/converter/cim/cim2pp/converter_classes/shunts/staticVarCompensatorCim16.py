@@ -31,7 +31,7 @@ class StaticVarCompensatorCim16:
     def _prepare_static_var_compensator_cim16(self) -> pd.DataFrame:
         eq_stat_coms = self.cimConverter.merge_eq_ssh_profile('StaticVarCompensator', True)
         eq_stat_coms = pd.merge(eq_stat_coms, self.cimConverter.bus_merge, how='left', on='rdfId')
-        eq_stat_coms.rename(columns={'q': 'q_mvar'}, inplace=True)
+        eq_stat_coms = eq_stat_coms.rename(columns={'q': 'q_mvar'})
         # get the active power and reactive power from SV profile
         eq_stat_coms = pd.merge(eq_stat_coms, self.cimConverter.cim['sv']['SvPowerFlow'][['p', 'q', 'Terminal']],
                                 how='left', left_on='rdfId_Terminal', right_on='Terminal')

@@ -70,7 +70,7 @@ def create_sc_bus(net_copy, sc_line_id, sc_fraction):
     index = max_idx_line+1, r_ohm_per_km = aux_line.r_ohm_per_km, x_ohm_per_km = aux_line.x_ohm_per_km, c_nf_per_km = aux_line.c_nf_per_km, max_i_ka = aux_line.max_i_ka)
 
     if 'endtemp_degree' in net.line.columns:
-        net.line.endtemp_degree.at[sc_line2] = net.line.endtemp_degree.at[sc_line1]
+        net.line.at[sc_line2, "endtemp_degree"] = net.line.endtemp_degree.at[sc_line1]
 
     net.line = net.line.sort_index()
 
@@ -89,8 +89,8 @@ def create_sc_bus(net_copy, sc_line_id, sc_fraction):
     y1 = net.bus_geodata.y.at[aux_line.from_bus]
     y2 = net.bus_geodata.y.at[aux_line.to_bus]
 
-    net.bus_geodata.x.at[max_idx_bus+1] = sc_fraction*(x2-x1) + x1
-    net.bus_geodata.y.at[max_idx_bus+1] = sc_fraction*(y2-y1) + y1
+    net.bus_geodata.at[max_idx_bus+1, "x"] = sc_fraction*(x2-x1) + x1
+    net.bus_geodata.at[max_idx_bus+1, "y"] = sc_fraction*(y2-y1) + y1
 
     return net
 

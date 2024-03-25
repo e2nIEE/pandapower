@@ -48,7 +48,7 @@ def test_continuous_tap_control_lv():
     # increase voltage from 1.0 pu to 1.03 pu
     net.ext_grid.vm_pu = 1.03
     # switch back tap position
-    net.trafo.tap_pos.at[0] = 0
+    net.trafo.at[0, "tap_pos"] = 0
     pp.runpp(net)
 
     logger.info("case2: high voltage")
@@ -66,7 +66,7 @@ def test_continuous_tap_control_lv():
     # increase voltage from 1.0 pu to 1.03 pu
     net.ext_grid.vm_pu = 0.98
     # switch back tap position
-    net.trafo.tap_pos.at[0] = 0
+    net.trafo.at[0, "tap_pos"] = 0
     pp.runpp(net)
 
     logger.info("case2: high voltage")
@@ -116,7 +116,7 @@ def test_continuous_tap_control_hv():
     # increase voltage from 1.0 pu to 1.03 pu
     net.ext_grid.vm_pu = 1.03
     # switch back tap position
-    net.trafo.tap_pos.at[0] = 0
+    net.trafo.at[0, "tap_pos"] = 0
     pp.runpp(net)
 
     logger.info("case2: high voltage")
@@ -134,7 +134,7 @@ def test_continuous_tap_control_hv():
     # increase voltage from 1.0 pu to 1.03 pu
     net.ext_grid.vm_pu = 0.98
     # switch back tap position
-    net.trafo.tap_pos.at[0] = 0
+    net.trafo.at[0, "tap_pos"] = 0
     pp.runpp(net)
 
     logger.info("case2: high voltage")

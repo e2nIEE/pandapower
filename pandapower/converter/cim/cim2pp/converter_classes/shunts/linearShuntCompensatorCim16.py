@@ -32,9 +32,9 @@ class LinearShuntCompensatorCim16:
     def _prepare_linear_shunt_compensator_cim16(self) -> pd.DataFrame:
         eqssh_shunts = self.cimConverter.merge_eq_ssh_profile('LinearShuntCompensator', add_cim_type_column=True)
         eqssh_shunts = pd.merge(eqssh_shunts, self.cimConverter.bus_merge, how='left', on='rdfId')
-        eqssh_shunts.rename(columns={
+        eqssh_shunts = eqssh_shunts.rename(columns={
             'rdfId': sc['o_id'], 'rdfId_Terminal': sc['t'], 'connected': 'in_service', 'index_bus': 'bus',
-            'nomU': 'vn_kv', 'sections': 'step', 'maximumSections': 'max_step'}, inplace=True)
+            'nomU': 'vn_kv', 'sections': 'step', 'maximumSections': 'max_step'})
         y = eqssh_shunts['gPerSection'] + eqssh_shunts['bPerSection'] * 1j
         s = eqssh_shunts['vn_kv'] ** 2 * np.conj(y)
         eqssh_shunts['p_mw'] = s.values.real

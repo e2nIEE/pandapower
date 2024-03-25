@@ -549,7 +549,7 @@ def impedance_values_close_to_zero(net, min_r_ohm, min_x_ohm, min_r_pu, min_x_pu
                     if key == 'xward':
                         continue
                     implausible_idx = implausible_elements[key]
-                    net[key].in_service.loc[implausible_idx] = False
+                    net[key].loc[implausible_idx, "in_service"] = False
                     for idx in implausible_idx:
                         pp.create_switch(net, net[key].from_bus.at[idx], net[key].to_bus.at[idx], et="b")
                 runpp(net)

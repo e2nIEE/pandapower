@@ -426,8 +426,8 @@ def test_elements_connected_to_group():
     pp.create_switches(net, [0, 0, 6], [0, 1, net.line.index[-1]], "l", closed=[True, False, False])
     pp.create_switches(net, [0]*3, [7, 8, 9], "b", closed=[True, False, True])
     pp.create_switches(net, [0]*2, [10, 11], "b", closed=[True, False])
-    net.load.in_service.at[0] = False
-    net.line.in_service.at[4] = False
+    net.load.at[0, "in_service"] = False
+    net.line.at[4, "in_service"] = False
     net.bus.in_service.loc[[3, 9]] = False
 
     # create group

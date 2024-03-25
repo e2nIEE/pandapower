@@ -29,13 +29,13 @@ class ConnectivityNodesCim16:
         # a prepared and modified copy of eqssh_terminals to use for lines, switches, loads, sgens and so on
         eqssh_terminals = eqssh_terminals[
             ['rdfId', 'ConductingEquipment', 'ConnectivityNode', 'sequenceNumber', 'connected']].copy()
-        eqssh_terminals.rename(columns={'rdfId': 'rdfId_Terminal'}, inplace=True)
-        eqssh_terminals.rename(columns={'ConductingEquipment': 'rdfId'}, inplace=True)
+        eqssh_terminals = eqssh_terminals.rename(columns={'rdfId': 'rdfId_Terminal'})
+        eqssh_terminals = eqssh_terminals.rename(columns={'ConductingEquipment': 'rdfId'})
         # buses for merging with assets:
         bus_merge = pd.DataFrame(data=self.cimConverter.net['bus'].loc[:, [sc['o_id'], 'vn_kv']])
-        bus_merge.rename(columns={'vn_kv': 'base_voltage_bus'}, inplace=True)
-        bus_merge.reset_index(level=0, inplace=True)
-        bus_merge.rename(columns={'index': 'index_bus', sc['o_id']: 'ConnectivityNode'}, inplace=True)
+        bus_merge = bus_merge.rename(columns={'vn_kv': 'base_voltage_bus'})
+        bus_merge = bus_merge.reset_index(level=0)
+        bus_merge = bus_merge.rename(columns={'index': 'index_bus', sc['o_id']: 'ConnectivityNode'})
         bus_merge = pd.merge(eqssh_terminals, bus_merge, how='left', on='ConnectivityNode')
         self.cimConverter.bus_merge = bus_merge
 
@@ -69,15 +69,15 @@ class ConnectivityNodesCim16:
             # The idea is to add the Bays and Substations to the VoltageLevels to handle them similar to (1)
             # prepare the bays (2)
             eq_bay = self.cimConverter.cim['eq']['Bay'].copy()
-            eq_bay.rename(columns={'rdfId': 'ConnectivityNodeContainer'}, inplace=True)
+            eq_bay = eq_bay.rename(columns={'rdfId': 'ConnectivityNodeContainer'})
             eq_bay = pd.merge(self.cimConverter.cim['eq']['ConnectivityNode'][['ConnectivityNodeContainer']], eq_bay,
                               how='inner', on='ConnectivityNodeContainer')
-            eq_bay.dropna(subset=['VoltageLevel'], inplace=True)
+            eq_bay = eq_bay.dropna(subset=['VoltageLevel'])
             eq_bay = pd.merge(eq_bay,
                               self.cimConverter.cim['eq']['VoltageLevel'][['rdfId', 'BaseVoltage', 'Substation']],
                               how='left', left_on='VoltageLevel', right_on='rdfId')
-            eq_bay.drop(columns=['VoltageLevel', 'rdfId'], inplace=True)
-            eq_bay.rename(columns={'ConnectivityNodeContainer': 'rdfId'}, inplace=True)
+            eq_bay = eq_bay.drop(columns=['VoltageLevel', 'rdfId'])
+            eq_bay = eq_bay.rename(columns={'ConnectivityNodeContainer': 'rdfId'})
             # now prepare the substations (3)
             # first get only the needed substation used as ConnectivityNodeContainer in ConnectivityNode
             eq_subs = pd.merge(self.cimConverter.cim['eq']['ConnectivityNode'][['ConnectivityNodeContainer']].rename(
@@ -98,18 +98,18 @@ class ConnectivityNodesCim16:
                     level=LogLevel.WARNING, code=ReportCode.WARNING_CONVERTING,
                     message="More than one VoltageLevel refers to one Substation, maybe the voltages from some buses "
                             "are incorrect, the problematic VoltageLevels and Substations:\n%s" % eq_subs_duplicates))
-            eq_subs.drop_duplicates(['rdfId'], keep='first', inplace=True)
+            eq_subs = eq_subs.drop_duplicates(['rdfId'], keep='first')
             # now merge the VoltageLevel with the ConnectivityNode
             eq_voltage_levels = self.cimConverter.cim['eq']['VoltageLevel'][['rdfId', 'BaseVoltage', 'Substation']]
             eq_voltage_levels = pd.concat([eq_voltage_levels, eq_bay], ignore_index=True, sort=False)
             eq_voltage_levels = pd.concat([eq_voltage_levels, eq_subs], ignore_index=True, sort=False)
-            eq_voltage_levels.drop_duplicates(['rdfId'], keep='first', inplace=True)
+            eq_voltage_levels = eq_voltage_levels.drop_duplicates(['rdfId'], keep='first')
             del eq_bay, eq_subs, eq_subs_duplicates
             eq_substations = self.cimConverter.cim['eq']['Substation'][['rdfId', 'name']]
-            eq_substations.rename(columns={'rdfId': 'Substation', 'name': 'name_substation'}, inplace=True)
+            eq_substations = eq_substations.rename(columns={'rdfId': 'Substation', 'name': 'name_substation'})
             eq_voltage_levels = pd.merge(eq_voltage_levels, eq_substations, how='left', on='Substation')
-            eq_voltage_levels.drop_duplicates(subset=['rdfId'], inplace=True)
-            eq_voltage_levels.rename(columns={'rdfId': 'ConnectivityNodeContainer'}, inplace=True)
+            eq_voltage_levels = eq_voltage_levels.drop_duplicates(subset=['rdfId'])
+            eq_voltage_levels = eq_voltage_levels.rename(columns={'rdfId': 'ConnectivityNodeContainer'})
 
             connectivity_nodes = pd.merge(connectivity_nodes, eq_voltage_levels, how='left',
                                           on='ConnectivityNodeContainer')
@@ -128,7 +128,7 @@ class ConnectivityNodesCim16:
                              inplace=True)
             connectivity_nodes = pd.merge(connectivity_nodes, eq_bd_cns, how='left', on='rdfId')
             connectivity_nodes['BaseVoltage'].fillna(connectivity_nodes['BaseVoltage_2'], inplace=True)
-            connectivity_nodes.drop(columns=['BaseVoltage_2'], inplace=True)
+            connectivity_nodes = connectivity_nodes.drop(columns=['BaseVoltage_2'])
             # check if there is a mix between BB and NB models
             terminals_temp = \
                 self.cimConverter.cim['eq']['Terminal'].loc[
@@ -137,9 +137,9 @@ class ConnectivityNodesCim16:
                 terminals_temp = pd.merge(terminals_temp,
                                           self.cimConverter.cim['tp']['Terminal'][['rdfId', 'TopologicalNode']],
                                           how='left', on='rdfId')
-                terminals_temp.drop(columns=['rdfId'], inplace=True)
-                terminals_temp.rename(columns={'TopologicalNode': 'rdfId'}, inplace=True)
-                terminals_temp.drop_duplicates(subset=['rdfId'], inplace=True)
+                terminals_temp = terminals_temp.drop(columns=['rdfId'])
+                terminals_temp = terminals_temp.rename(columns={'TopologicalNode': 'rdfId'})
+                terminals_temp = terminals_temp.drop_duplicates(subset=['rdfId'])
                 tp_temp = self.cimConverter.cim['tp']['TopologicalNode'][
                     ['rdfId', 'name', 'description', 'BaseVoltage']]
                 tp_temp[sc['o_prf']] = 'tp'
@@ -164,12 +164,12 @@ class ConnectivityNodesCim16:
         eq_base_voltages = pd.concat([self.cimConverter.cim['eq']['BaseVoltage'][['rdfId', 'nominalVoltage']],
                                       self.cimConverter.cim['eq_bd']['BaseVoltage'][['rdfId', 'nominalVoltage']]],
                                      ignore_index=True, sort=False)
-        eq_base_voltages.drop_duplicates(subset=['rdfId'], inplace=True)
-        eq_base_voltages.rename(columns={'rdfId': 'BaseVoltage'}, inplace=True)
+        eq_base_voltages = eq_base_voltages.drop_duplicates(subset=['rdfId'])
+        eq_base_voltages = eq_base_voltages.rename(columns={'rdfId': 'BaseVoltage'})
         # make sure that the BaseVoltage has string datatype
         connectivity_nodes['BaseVoltage'] = connectivity_nodes['BaseVoltage'].astype(str)
         connectivity_nodes = pd.merge(connectivity_nodes, eq_base_voltages, how='left', on='BaseVoltage')
-        connectivity_nodes.drop(columns=['BaseVoltage'], inplace=True)
+        connectivity_nodes = connectivity_nodes.drop(columns=['BaseVoltage'])
         eqssh_terminals = self.cimConverter.cim['eq']['Terminal'][['rdfId', 'ConnectivityNode', 'ConductingEquipment',
                                                                    'sequenceNumber']]
         eqssh_terminals = \
@@ -191,13 +191,13 @@ class ConnectivityNodesCim16:
                                 pd.concat([self.cimConverter.cim['tp']['DCTerminal'],
                                            self.cimConverter.cim['tp']['ACDCConverterDCTerminal']],
                                           ignore_index=True, sort=False), how='left', on='rdfId')
-        dc_terminals.rename(columns={'DCNode': 'ConnectivityNode', 'DCConductingEquipment': 'ConductingEquipment',
-                                     'DCTopologicalNode': 'TopologicalNode'}, inplace=True)
+        dc_terminals = dc_terminals.rename(columns={'DCNode': 'ConnectivityNode', 'DCConductingEquipment': 'ConductingEquipment',
+                                     'DCTopologicalNode': 'TopologicalNode'})
         eqssh_terminals = pd.concat([eqssh_terminals, dc_terminals], ignore_index=True, sort=False)
         # special fix for concat tp profiles
-        eqssh_terminals.drop_duplicates(subset=['rdfId', 'TopologicalNode'], inplace=True)
+        eqssh_terminals = eqssh_terminals.drop_duplicates(subset=['rdfId', 'TopologicalNode'])
         eqssh_terminals_temp = eqssh_terminals[['ConnectivityNode', 'TopologicalNode']]
-        eqssh_terminals_temp.dropna(subset=['TopologicalNode'], inplace=True)
+        eqssh_terminals_temp = eqssh_terminals_temp.dropna(subset=['TopologicalNode'])
         eqssh_terminals_temp.drop_duplicates(inplace=True)
         connectivity_nodes_size = connectivity_nodes.index.size
         if node_breaker:
@@ -210,7 +210,7 @@ class ConnectivityNodesCim16:
         # fill the column TopologicalNode for the ConnectivityNodes from the eq_bd profile if exists
         if 'TopologicalNode_2' in connectivity_nodes.columns:
             connectivity_nodes['TopologicalNode'].fillna(connectivity_nodes['TopologicalNode_2'], inplace=True)
-            connectivity_nodes.drop(columns=['TopologicalNode_2'], inplace=True)
+            connectivity_nodes = connectivity_nodes.drop(columns=['TopologicalNode_2'])
         if connectivity_nodes.index.size != connectivity_nodes_size:
             self.logger.warning("There is a problem at the busses!")
             self.cimConverter.report_container.add_log(Report(
@@ -228,17 +228,17 @@ class ConnectivityNodesCim16:
             # raise ValueError("The number of ConnectivityNodes increased after merging with Terminals, number of "
             #                  "ConnectivityNodes before merge: %s, number of ConnectivityNodes after merge: %s" %
             #                  (connectivity_nodes_size, connectivity_nodes.index.size))
-            connectivity_nodes.drop_duplicates(subset=['rdfId'], keep='first', inplace=True)
+            connectivity_nodes = connectivity_nodes.drop_duplicates(subset=['rdfId'], keep='first')
         # add the busbars
         bb = self.cimConverter.cim['eq']['BusbarSection'][['rdfId', 'name']]
-        bb.rename(columns={'rdfId': 'busbar_id', 'name': 'busbar_name'}, inplace=True)
+        bb = bb.rename(columns={'rdfId': 'busbar_id', 'name': 'busbar_name'})
         bb = pd.merge(bb, self.cimConverter.cim['eq']['Terminal'][['ConnectivityNode', 'ConductingEquipment']].rename(
             columns={'ConnectivityNode': 'rdfId', 'ConductingEquipment': 'busbar_id'}), how='left', on='busbar_id')
-        bb.drop_duplicates(subset=['rdfId'], keep='first', inplace=True)
+        bb = bb.drop_duplicates(subset=['rdfId'], keep='first')
         connectivity_nodes = pd.merge(connectivity_nodes, bb, how='left', on='rdfId')
 
-        connectivity_nodes.rename(columns={'rdfId': sc['o_id'], 'TopologicalNode': sc['ct'], 'nominalVoltage': 'vn_kv',
-                                           'name_substation': 'zone'}, inplace=True)
+        connectivity_nodes = connectivity_nodes.rename(columns={'rdfId': sc['o_id'], 'TopologicalNode': sc['ct'], 'nominalVoltage': 'vn_kv',
+                                           'name_substation': 'zone'})
         connectivity_nodes['in_service'] = True
         connectivity_nodes['type'] = 'b'
         return connectivity_nodes, eqssh_terminals

@@ -25,7 +25,7 @@ class GeoCoordinatesFromGLCim16:
             self.cimConverter.cim['gl']['PositionPoint'][['Location', 'xPosition', 'yPosition', 'sequenceNumber']],
             self.cimConverter.cim['gl']['Location'][['rdfId', 'PowerSystemResources']], how='left',
             left_on='Location', right_on='rdfId')
-        gl_data.drop(columns=['Location', 'rdfId'], inplace=True)
+        gl_data = gl_data.drop(columns=['Location', 'rdfId'])
         # make sure that the columns 'xPosition' and 'yPosition' are floats
         gl_data['xPosition'] = gl_data['xPosition'].astype(float)
         gl_data['yPosition'] = gl_data['yPosition'].astype(float)
@@ -34,15 +34,15 @@ class GeoCoordinatesFromGLCim16:
         cn = pd.concat([cn, self.cimConverter.cim['eq_bd']['ConnectivityNode'][['rdfId', 'ConnectivityNodeContainer']]])
         cn = pd.concat([cn, self.cimConverter.cim['tp']['TopologicalNode'][['rdfId', 'ConnectivityNodeContainer']]])
         cn = pd.concat([cn, self.cimConverter.cim['tp_bd']['TopologicalNode'][['rdfId', 'ConnectivityNodeContainer']]])
-        cn.rename(columns={'rdfId': sc['o_id'], 'ConnectivityNodeContainer': 'rdfId'}, inplace=True)
+        cn = cn.rename(columns={'rdfId': sc['o_id'], 'ConnectivityNodeContainer': 'rdfId'})
         cn = pd.merge(cn, self.cimConverter.cim['eq']['VoltageLevel'][['rdfId', 'Substation']], how='left', on='rdfId')
-        cn.drop(columns=['rdfId'], inplace=True)
+        cn = cn.drop(columns=['rdfId'])
         buses = self.cimConverter.net.bus.reset_index()
         buses = buses[['index', sc['o_id']]]
         buses = pd.merge(buses, cn, how='left', on=sc['o_id'])
         bus_geo = pd.merge(bus_geo, buses, how='inner', on='Substation')
-        bus_geo.drop(columns=['Substation'], inplace=True)
-        bus_geo.sort_values(by=[sc['o_id'], 'sequenceNumber'], inplace=True)
+        bus_geo = bus_geo.drop(columns=['Substation'])
+        bus_geo = bus_geo.sort_values(by=[sc['o_id'], 'sequenceNumber'])
         bus_geo['coords'] = bus_geo[['xPosition', 'yPosition']].values.tolist()
         bus_geo['coords'] = bus_geo[['coords']].values.tolist()
         # for the buses which have more than one coordinate
@@ -50,8 +50,8 @@ class GeoCoordinatesFromGLCim16:
         # now deal with the buses which have more than one coordinate
         for _, df_group in bus_geo_mult.groupby(by=sc['o_id'], sort=False):
             bus_geo['coords'][df_group.index.values[0]] = df_group[['xPosition', 'yPosition']].values.tolist()
-        bus_geo.drop_duplicates([sc['o_id']], keep='first', inplace=True)
-        bus_geo.sort_values(by='index', inplace=True)
+        bus_geo = bus_geo.drop_duplicates([sc['o_id']], keep='first')
+        bus_geo = bus_geo.sort_values(by='index')
         start_index_pp_net = self.cimConverter.net.bus_geodata.index.size
         self.cimConverter.net.bus_geodata = pd.concat(
             [self.cimConverter.net.bus_geodata, pd.DataFrame(None, index=bus_geo['index'].values)],
@@ -66,20 +66,20 @@ class GeoCoordinatesFromGLCim16:
         self.cimConverter.net.bus_geodata['coords'] = self.cimConverter.net.bus_geodata.apply(
             lambda row: [row['coords'][0], row['coords'][-1]] if row['coords_length'] > 2 else row['coords'], axis=1)
         if 'coords_length' in self.cimConverter.net.bus_geodata.columns:
-            self.cimConverter.net.bus_geodata.drop(columns=['coords_length'], inplace=True)
+            self.cimConverter.net.bus_geodata = self.cimConverter.net.bus_geodata.drop(columns=['coords_length'])
 
         # the geo coordinates for the lines
         lines = self.cimConverter.net.line.reset_index()
         lines = lines[['index', sc['o_id']]]
         line_geo = gl_data.rename(columns={'PowerSystemResources': sc['o_id']})
         line_geo = pd.merge(line_geo, lines, how='inner', on=sc['o_id'])
-        line_geo.sort_values(by=[sc['o_id'], 'sequenceNumber'], inplace=True)
+        line_geo = line_geo.sort_values(by=[sc['o_id'], 'sequenceNumber'])
         line_geo['coords'] = line_geo[['xPosition', 'yPosition']].values.tolist()
         line_geo['coords'] = line_geo[['coords']].values.tolist()
         for _, df_group in line_geo.groupby(by=sc['o_id']):
             line_geo['coords'][df_group.index.values[0]] = df_group[['xPosition', 'yPosition']].values.tolist()
-        line_geo.drop_duplicates([sc['o_id']], keep='first', inplace=True)
-        line_geo.sort_values(by='index', inplace=True)
+        line_geo = line_geo.drop_duplicates([sc['o_id']], keep='first')
+        line_geo = line_geo.sort_values(by='index')
         # now add the line coordinates
         start_index_pp_net = self.cimConverter.net.line_geodata.index.size
         self.cimConverter.net.line_geodata = pd.concat(
@@ -93,12 +93,12 @@ class GeoCoordinatesFromGLCim16:
             one_ele_df = self.cimConverter.net[one_ele][[sc['o_id']]]
             one_ele_df = pd.merge(gl_data.rename(columns={'PowerSystemResources': sc['o_id']}),
                                   one_ele_df, how='inner', on=sc['o_id'])
-            one_ele_df.sort_values(by=[sc['o_id'], 'sequenceNumber'], inplace=True)
+            one_ele_df = one_ele_df.sort_values(by=[sc['o_id'], 'sequenceNumber'])
             one_ele_df['coords'] = one_ele_df[['xPosition', 'yPosition']].values.tolist()
             one_ele_df['coords'] = one_ele_df[['coords']].values.tolist()
             for _, df_group in one_ele_df.groupby(by=sc['o_id']):
                 one_ele_df['coords'][df_group.index.values[0]] = df_group[['xPosition', 'yPosition']].values.tolist()
-            one_ele_df.drop_duplicates([sc['o_id']], keep='first', inplace=True)
+            one_ele_df = one_ele_df.drop_duplicates([sc['o_id']], keep='first')
             # now add the coordinates
             self.cimConverter.net[one_ele]['coords'] = self.cimConverter.net[one_ele][sc['o_id']].map(
                 one_ele_df.set_index(sc['o_id']).to_dict(orient='dict').get('coords'))

@@ -48,11 +48,11 @@ class AsynchronousMachinesCim16:
         eq_generating_units = pd.concat([eq_generating_units, self.cimConverter.cim['eq']['NuclearGeneratingUnit']],
                                         sort=False)
         eq_generating_units['type'].fillna('Nuclear', inplace=True)
-        eq_generating_units.rename(columns={'rdfId': 'GeneratingUnit'}, inplace=True)
+        eq_generating_units = eq_generating_units.rename(columns={'rdfId': 'GeneratingUnit'})
         eqssh_asynchronous_machines = self.cimConverter.merge_eq_ssh_profile('AsynchronousMachine',
                                                                              add_cim_type_column=True)
         # prevent conflict of merging two dataframes each containing column 'name'
-        eq_generating_units.drop('name', axis=1, inplace=True)
+        eq_generating_units = eq_generating_units.drop('name', axis=1)
         eqssh_asynchronous_machines = pd.merge(eqssh_asynchronous_machines, eq_generating_units,
                                                how='left', on='GeneratingUnit')
         eqssh_asynchronous_machines = pd.merge(eqssh_asynchronous_machines, self.cimConverter.bus_merge, how='left',
@@ -66,12 +66,12 @@ class AsynchronousMachinesCim16:
         eqssh_asynchronous_machines['generator_type'] = 'async'
         eqssh_asynchronous_machines['loading_percent'] = \
             100 * eqssh_asynchronous_machines['p_mw'] / eqssh_asynchronous_machines['ratedMechanicalPower']
-        eqssh_asynchronous_machines.rename(columns={'rdfId_Terminal': sc['t'], 'rdfId': sc['o_id'],
+        eqssh_asynchronous_machines = eqssh_asynchronous_machines.rename(columns={'rdfId_Terminal': sc['t'], 'rdfId': sc['o_id'],
                                                     'connected': 'in_service', 'index_bus': 'bus',
                                                     'rxLockedRotorRatio': 'rx', 'iaIrRatio': 'lrc_pu',
                                                     'ratedPowerFactor': 'cos_phi', 'ratedU': 'vn_kv',
                                                     'efficiency': 'efficiency_n_percent',
-                                                    'ratedMechanicalPower': 'pn_mech_mw'}, inplace=True)
+                                                    'ratedMechanicalPower': 'pn_mech_mw'})
         eqssh_asynchronous_machines['scaling'] = 1
         eqssh_asynchronous_machines['efficiency_percent'] = 100
         return eqssh_asynchronous_machines

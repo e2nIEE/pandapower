@@ -51,8 +51,8 @@ def test_batch_output_reader(simple_test_net):
 
     del net, ow, c
     net = simple_test_net
-    net.output_writer.drop(index=net.output_writer.index, inplace=True)
-    net.controller.drop(index=net.controller.index, inplace=True)
+    net.output_writer = net.output_writer.drop(index=net.output_writer.index)
+    net.controller = net.controller.drop(index=net.controller.index)
     add_const(net, ds, recycle=False)
     ow = OutputWriter(net, output_path=tempfile.gettempdir(), output_file_type=".json", log_variables=list())
     ow.log_variable('res_line', 'i_from_ka')
@@ -121,8 +121,8 @@ def _run_recycle(net, run):
     run_timeseries(net, time_steps, verbose=False, run=run)
     vm_pu = copy.deepcopy(ow.output[_v_var(run)])
     ll = copy.deepcopy(ow.output["res_line.loading_percent"])
-    net.controller.drop(index=net.controller.index, inplace=True)
-    net.output_writer.drop(index=net.output_writer.index, inplace=True)
+    net.controller = net.controller.drop(index=net.controller.index)
+    net.output_writer = net.output_writer.drop(index=net.output_writer.index)
     del ow
     return vm_pu, ll
 

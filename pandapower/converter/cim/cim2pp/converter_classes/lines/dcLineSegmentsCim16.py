@@ -66,11 +66,11 @@ class DcLineSegmentsCim16:
                       ignore_index=True, sort=False),
             how='left', on='rdfId')
         if 'name' in converters.columns:
-            converters.drop(columns=['name'], inplace=True)
+            converters = converters.drop(columns=['name'])
         # merge with the terminals
         converters = pd.merge(converters, self.cimConverter.bus_merge, how='left', on='rdfId')
-        converters.drop(columns=['sequenceNumber'], inplace=True)
-        converters.rename(columns={'rdfId': 'converters'}, inplace=True)
+        converters = converters.drop(columns=['sequenceNumber'])
+        converters = converters.rename(columns={'rdfId': 'converters'})
         converter_terminals = pd.concat(
             [self.cimConverter.cim['eq']['Terminal'], self.cimConverter.cim['eq_bd']['Terminal']],
             ignore_index=True, sort=False)
@@ -81,7 +81,7 @@ class DcLineSegmentsCim16:
                                     how='left', on='ConnectivityNode')
         # get the missing converters (maybe there is a switch or something else between the line and the converter)
         t = self.cimConverter.cim['eq']['DCTerminal'][['DCNode', 'DCConductingEquipment', 'sequenceNumber']]
-        t.rename(columns={'DCNode': 'ConnectivityNode', 'DCConductingEquipment': 'ConductingEquipment'}, inplace=True)
+        t = t.rename(columns={'DCNode': 'ConnectivityNode', 'DCConductingEquipment': 'ConductingEquipment'})
 
         def search_converter(cn_ids: Dict[str, str], visited_cns: List[str]) -> str:
             new_cn_dict = dict()
@@ -116,12 +116,12 @@ class DcLineSegmentsCim16:
                     level=LogLevel.WARNING, code=ReportCode.WARNING_CONVERTING,
                     message="Error processing the DCLineSegments, there is a problem with Terminals in the source "
                             "data!"))
-        dc_line_segments.drop(columns=['ConnectivityNode'], inplace=True)
+        dc_line_segments = dc_line_segments.drop(columns=['ConnectivityNode'])
         dc_line_segments = pd.merge(dc_line_segments, converters_t, how='left', on='converters')
         dc_line_segments['targetUpcc'].fillna(dc_line_segments['base_voltage_bus'], inplace=True)
 
         # copy the columns which are needed to reduce the dc_line_segments to one row per line
-        dc_line_segments.sort_values(by=['rdfId', 'sequenceNumber'], inplace=True)
+        dc_line_segments = dc_line_segments.sort_values(by=['rdfId', 'sequenceNumber'])
         # a list of DC line parameters which are used for each DC line end
         dc_line_segments.reset_index(inplace=True)
         copy_list = ['index_bus', 'rdfId_Terminal', 'connected', 'p', 'ratedUdc', 'targetUpcc', 'base_voltage_bus']
@@ -131,7 +131,7 @@ class DcLineSegmentsCim16:
             # cut the first element from the copied columns
             dc_line_segments[one_item + '2'] = dc_line_segments[one_item + '2'].iloc[1:].reset_index()[one_item + '2']
         del copy_list, one_item
-        dc_line_segments.drop_duplicates(['rdfId'], keep='first', inplace=True)
+        dc_line_segments = dc_line_segments.drop_duplicates(['rdfId'], keep='first')
         dc_line_segments = pd.merge(dc_line_segments,
                                     pd.DataFrame(dc_line_segments.pivot_table(index=['converters'], aggfunc='size'),
                                                  columns=['converter_dups']), how='left', on='converters')
@@ -142,8 +142,8 @@ class DcLineSegmentsCim16:
         dc_line_segments['vm_from_pu'] = dc_line_segments['targetUpcc'] / dc_line_segments['base_voltage_bus']
         dc_line_segments['vm_to_pu'] = dc_line_segments['targetUpcc2'] / dc_line_segments['base_voltage_bus2']
         dc_line_segments['in_service'] = dc_line_segments.connected & dc_line_segments.connected2
-        dc_line_segments.rename(columns={
+        dc_line_segments = dc_line_segments.rename(columns={
             'rdfId': sc['o_id'], 'rdfId_Terminal': sc['t_from'], 'rdfId_Terminal2': sc['t_to'], 'index_bus': 'from_bus',
-            'index_bus2': 'to_bus'}, inplace=True)
+            'index_bus2': 'to_bus'})
 
         return dc_line_segments

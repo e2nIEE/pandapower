@@ -74,7 +74,7 @@ class SeriesCompensatorsCim16:
                     message="The SeriesCompensator with RDF ID %s has %s Terminals!" % (rdfId, count)))
             eq_sc = eq_sc[0:0]
         # sort by RDF ID and the sequenceNumber to make sure r12 and r21 are in the correct order
-        eq_sc.sort_values(by=['rdfId', 'sequenceNumber'], inplace=True)
+        eq_sc = eq_sc.sort_values(by=['rdfId', 'sequenceNumber'])
         # copy the columns which are needed to reduce the eq_sc to one row per equivalent branch
         eq_sc['rdfId_Terminal2'] = eq_sc['rdfId_Terminal'].copy()
         eq_sc['connected2'] = eq_sc['connected'].copy()
@@ -85,7 +85,7 @@ class SeriesCompensatorsCim16:
         eq_sc.rdfId_Terminal2 = eq_sc.rdfId_Terminal2.iloc[1:].reset_index().rdfId_Terminal2
         eq_sc.connected2 = eq_sc.connected2.iloc[1:].reset_index().connected2
         eq_sc.index_bus2 = eq_sc.index_bus2.iloc[1:].reset_index().index_bus2
-        eq_sc.drop_duplicates(['rdfId'], keep='first', inplace=True)
+        eq_sc = eq_sc.drop_duplicates(['rdfId'], keep='first')
         if hasattr(self.cimConverter.net, 'sn_mva'):
             eq_sc['sn_mva'] = self.cimConverter.net['sn_mva']
         else:
@@ -101,6 +101,6 @@ class SeriesCompensatorsCim16:
         eq_sc['rtf0_pu'] = eq_sc['r0'] / eq_sc['z_base']
         eq_sc['xtf0_pu'] = eq_sc['x0'] / eq_sc['z_base']
         eq_sc['in_service'] = eq_sc.connected & eq_sc.connected2
-        eq_sc.rename(columns={'rdfId_Terminal': sc['t_from'], 'rdfId_Terminal2': sc['t_to'], 'rdfId': sc['o_id'],
-                              'index_bus': 'from_bus', 'index_bus2': 'to_bus'}, inplace=True)
+        eq_sc = eq_sc.rename(columns={'rdfId_Terminal': sc['t_from'], 'rdfId_Terminal2': sc['t_to'], 'rdfId': sc['o_id'],
+                              'index_bus': 'from_bus', 'index_bus2': 'to_bus'})
         return eq_sc

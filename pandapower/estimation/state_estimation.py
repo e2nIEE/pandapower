@@ -211,19 +211,19 @@ class StateEstimation:
 
         **calculate_voltage_angles** - (boolean) - Take into account absolute voltage angles and phase
         shifts in transformers, if init is 'slack'. Default is True
-        
+
         **zero_injection** - (str, iterable, None) - Defines which buses are zero injection bus or the method
-        to identify zero injection bus, with 'wls_estimator' virtual measurements will be added, with 
+        to identify zero injection bus, with 'wls_estimator' virtual measurements will be added, with
         'wls_estimator with zero constraints' the buses will be handled as constraints
             "auto": all bus without p,q measurement, without p, q value (load, sgen...) and aux buses will be
-                identified as zero injection bus  
+                identified as zero injection bus
             "aux_bus": only aux bus will be identified as zero injection bus
             None: no bus will be identified as zero injection bus
             iterable: the iterable should contain index of the zero injection bus and also aux bus will be identified
                 as zero-injection bus
 
-        **fuse_buses_with_bb_switch** - (str, iterable, None) - Defines how buses with closed bb switches should 
-        be handled, if fuse buses will only fused to one for calculation, if not fuse, an auxiliary bus and 
+        **fuse_buses_with_bb_switch** - (str, iterable, None) - Defines how buses with closed bb switches should
+        be handled, if fuse buses will only fused to one for calculation, if not fuse, an auxiliary bus and
         auxiliary line will be automatically added to the network to make the buses with different p,q injection
         measurements identifieble
             "all": all buses with bb-switches will be fused, the same as the default behaviour in load flow
@@ -432,7 +432,7 @@ class StateEstimation:
                     # Remove bad measurement:
                     self.logger.debug("Removing measurement: %s"
                                       % self.net.measurement.loc[meas_idx].values[0])
-                    self.net.measurement.drop(meas_idx, inplace=True)
+                    self.net.measurement = self.net.measurement.drop(meas_idx)
                     self.logger.debug("Bad data removed from the set of measurements.")
 
             except np.linalg.linalg.LinAlgError:

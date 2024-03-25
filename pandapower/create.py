@@ -2689,7 +2689,7 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
     _set_value_if_not_nan(net, index, xn_ohm, "xn_ohm", "trafo")
 
     # tap_phase_shifter default False
-    net.trafo.tap_phase_shifter.fillna(False, inplace=True)
+    net.trafo.tap_phase_shifter = net.trafo.tap_phase_shifter.fillna(False)
     if "tap2_phase_shifter" in net.trafo.columns:
         net.trafo.tap2_phase_shifter = net.trafo.tap2_phase_shifter.fillna(False).astype(bool_)
 

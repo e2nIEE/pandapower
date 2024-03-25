@@ -61,10 +61,10 @@ def test_some_sgens_not_controllable():
     net.sgen["min_q_mvar"] = -0.01
     net.sgen["controllable"] = True
     net.load["controllable"] = False
-    net.sgen.controllable[net.sgen.bus == 4] = False
-    net.sgen.controllable[net.sgen.bus == 6] = False
-    net.sgen.controllable[net.sgen.bus == 8] = False
-    net.sgen.controllable[net.sgen.bus == 9] = False
+    net.sgen.loc[net.sgen.bus == 4, "controllable"] = False
+    net.sgen.loc[net.sgen.bus == 6, "controllable"] = False
+    net.sgen.loc[net.sgen.bus == 8, "controllable"] = False
+    net.sgen.loc[net.sgen.bus == 9, "controllable"] = False
 
     for sgen_idx, row in net["sgen"].iterrows():
         cost_sgen = pp.create_poly_cost(net, sgen_idx, 'sgen', cp1_eur_per_mw=1.)

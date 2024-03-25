@@ -115,7 +115,7 @@ def test_cost_pol_q():
 
     net.poly_cost.cq1_eur_per_mvar.at[0] = 0
     net.poly_cost.cq2_eur_per_mvar2.at[0] = 1
-#    net.poly_cost.c.at[0] = np.array([[1, 0, 0]])
+#    net.poly_cost.at[0, "c"] = np.array([[1, 0, 0]])
     # run OPF
     pp.runopp(net)
 

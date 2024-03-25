@@ -22,8 +22,8 @@ def estimate_voltage_vector(net):
     net_graph = create_nxgraph(net, include_trafos=False)
     for _, ext_grid in net.ext_grid.iterrows():
         area = list(connected_component(net_graph, ext_grid.bus))
-        res_bus.vm_pu.loc[area] = ext_grid.vm_pu
-        res_bus.va_degree.loc[area] = ext_grid.va_degree
+        res_bus.loc[area, "vm_pu"] = ext_grid.vm_pu
+        res_bus.loc[area, "va_degree"] = ext_grid.va_degree
     trafos = net.trafo[net.trafo.in_service == 1]
     trafo_index = trafos.index.tolist()
     while len(trafo_index):
@@ -35,8 +35,8 @@ def estimate_voltage_vector(net):
                     shift = trafo.shift_degree if "shift_degree" in trafo else 0
                     ratio = (trafo.vn_hv_kv / trafo.vn_lv_kv) / (net.bus.vn_kv.at[trafo.hv_bus]
                                                                  / net.bus.vn_kv.at[trafo.lv_bus])
-                    res_bus.vm_pu.loc[area] = res_bus.vm_pu.at[trafo.hv_bus] * ratio
-                    res_bus.va_degree.loc[area] = res_bus.va_degree.at[trafo.hv_bus] - shift
+                    res_bus.loc[area, "vm_pu"] = res_bus.vm_pu.at[trafo.hv_bus] * ratio
+                    res_bus.loc[area, "va_degree"] = res_bus.va_degree.at[trafo.hv_bus] - shift
                 except KeyError:
                     raise UserWarning("An out-of-service bus is connected to an in-service "
                                       "transformer. Please set the transformer out of service or"
@@ -48,8 +48,8 @@ def estimate_voltage_vector(net):
             if len(trafo_index) == len(trafos):
                 # after the initial run we could not identify any areas correctly, it's probably a transmission grid
                 # with slack on the LV bus and multiple transformers/gens. do flat init and return
-                res_bus.vm_pu.loc[res_bus.vm_pu.isnull()] = 1.
-                res_bus.va_degree.loc[res_bus.va_degree.isnull()] = 0.
+                res_bus.loc[res_bus.vm_pu.isnull(), "vm_pu"] = 1.
+                res_bus.loc[res_bus.va_degree.isnull(), "va_degree"] = 0.
                 return res_bus
     return res_bus
 
@@ -61,7 +61,7 @@ def _get_bus_ppc_mapping(net, bus_to_be_fused):
         set(net.xward.bus))
     # Run dc pp to get the ppc we need
     #pp.rundcpp(net)
-    
+
     pp.runpp(net, calculate_voltage_angles=True)
 
     bus_ppci = pd.DataFrame(data=net._pd2ppc_lookups['bus'], columns=["bus_ppci"])
@@ -134,7 +134,7 @@ def reset_bb_switch_impedance(net):
     """
     if "z_ohm_ori" in net.switch:
         net.switch["z_ohm"] = net.switch["z_ohm_ori"]
-        net.switch.drop("z_ohm_ori", axis=1, inplace=True)
+        net.switch = net.switch.drop("z_ohm_ori", axis=1)
 
 
 def add_virtual_meas_from_loadflow(net, v_std_dev=0.01, p_std_dev=0.03, q_std_dev=0.03,
