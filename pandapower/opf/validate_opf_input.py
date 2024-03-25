@@ -21,10 +21,8 @@ def _check_necessary_opf_parameters(net, logger):
                 controllables = net[element_type].index
             else:
                 if "controllable" in net[element_type].columns:
-                    if element_type == 'gen':
-                        net[element_type].controllable = net[element_type].controllable.fillna(True)
-                        net[element_type].controllable = net[element_type].controllable.fillna(True
-                        net[element_type].controllable.fillna(False, inplace=True)
+                    to_fill = element_type == 'gen'
+                    net[element_type].controllable = net[element_type].controllable.fillna(to_fill)
                     controllables = net[element_type].index[net[element_type].controllable.astype(
                         bool)]
                 else:
