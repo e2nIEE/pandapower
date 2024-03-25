@@ -385,9 +385,9 @@ def test_multiple_voltage_controlling_elements_per_bus(test_net, diag_params, di
     check_function = 'multiple_voltage_controlling_elements_per_bus'
     diag_params = copy.deepcopy(diag_params)
     report_methods = copy.deepcopy(report_methods)
-    net.gen.bus.at[0] = 0
+    net.gen.at[0, "bus"] = 0
     pp.create_ext_grid(net, 1)
-    net.ext_grid.bus.at[1] = 0
+    net.ext_grid.at[1, "bus"] = 0
 
     check_result = pp.multiple_voltage_controlling_elements_per_bus(net)
     if check_result:
@@ -553,14 +553,14 @@ def test_impedance_values_close_to_zero(test_net, diag_params, diag_errors, repo
     # line test
     net = copy.deepcopy(test_net)
     check_function = 'impedance_values_close_to_zero'
-    net.line.length_km.at[0] = 0
-    net.line.r_ohm_per_km.at[1] = 0
-    net.line.x_ohm_per_km.at[1] = 0
-    net.line.r_ohm_per_km.at[2] = 0
-    net.line.x_ohm_per_km.at[3] = 0
-    net.line.length_km.at[4] = 0
-    net.line.r_ohm_per_km.at[4] = 0
-    net.line.x_ohm_per_km.at[4] = 0
+    net.line.at[0, "length_km"] = 0
+    net.line.at[1, "r_ohm_per_km"] = 0
+    net.line.at[1, "x_ohm_per_km"] = 0
+    net.line.at[2, "r_ohm_per_km"] = 0
+    net.line.at[3, "x_ohm_per_km"] = 0
+    net.line.at[4, "length_km"] = 0
+    net.line.at[4, "r_ohm_per_km"] = 0
+    net.line.at[4, "x_ohm_per_km"] = 0
     net.xward.drop(net.xward.index, inplace=True)
     check_result = pp.impedance_values_close_to_zero(net, diag_params['min_r_ohm'], diag_params['min_x_ohm'],
                                                      diag_params['min_r_pu'], diag_params['min_x_pu'])
@@ -680,8 +680,8 @@ def test_nominal_voltages_dont_match(test_net, diag_params, diag_errors, report_
     report_methods = copy.deepcopy(report_methods)
     trafo_copy = copy.deepcopy(net.trafo)
     trafo3w_copy = copy.deepcopy(net.trafo3w)
-    net.trafo.hv_bus.at[0] = trafo_copy.lv_bus.at[0]
-    net.trafo.lv_bus.at[0] = trafo_copy.hv_bus.at[0]
+    net.trafo.at[0, "hv_bus"] = trafo_copy.lv_bus.at[0]
+    net.trafo.at[0, "lv_bus"] = trafo_copy.hv_bus.at[0]
     check_result = pp.nominal_voltages_dont_match(net, diag_params['nom_voltage_tolerance'])
     if check_result:
         diag_results = {check_function: check_result}
@@ -784,9 +784,9 @@ def test_nominal_voltages_dont_match(test_net, diag_params, diag_errors, report_
 
     net.trafo = copy.deepcopy(trafo_copy)
 
-    net.trafo3w.hv_bus.at[0] = trafo3w_copy.mv_bus.at[0]
-    net.trafo3w.mv_bus.at[0] = trafo3w_copy.lv_bus.at[0]
-    net.trafo3w.lv_bus.at[0] = trafo3w_copy.hv_bus.at[0]
+    net.trafo3w.at[0, "hv_bus"] = trafo3w_copy.mv_bus.at[0]
+    net.trafo3w.at[0, "mv_bus"] = trafo3w_copy.lv_bus.at[0]
+    net.trafo3w.at[0, "lv_bus"] = trafo3w_copy.hv_bus.at[0]
     check_result = pp.nominal_voltages_dont_match(net, diag_params['nom_voltage_tolerance'])
     if check_result:
         diag_results = {check_function: check_result}
@@ -899,9 +899,9 @@ def test_wrong_reference_system(test_net, diag_params, diag_errors, report_metho
     check_function = 'wrong_reference_system'
     diag_params = copy.deepcopy(diag_params)
     report_methods = copy.deepcopy(report_methods)
-    net.load.p_mw.at[0] = -1
-    net.gen.p_mw.at[0] = -1
-    net.sgen.p_mw.at[0] = -1
+    net.load.at[0, "p_mw"] = -1
+    net.gen.at[0, "p_mw"] = -1
+    net.sgen.at[0, "p_mw"] = -1
     check_result = pp.wrong_reference_system(net)
     if check_result:
         diag_results = {check_function: check_result}

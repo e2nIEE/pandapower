@@ -278,8 +278,8 @@ def test_tap_dependent_impedance(result_test_network):
     net.trafo.loc[0, ['vk_percent_characteristic', 'vkr_percent_characteristic']] = idx_vk, idx_vkr
 
     # first, make sure there is no change for neutral
-    net.trafo.tap_pos.at[0] = net.trafo.tap_neutral.at[0]
-    net0.trafo.tap_pos.at[0] = net.trafo.tap_neutral.at[0]
+    net.trafo.at[0, "tap_pos"] = net.trafo.tap_neutral.at[0]
+    net0.trafo.at[0, "tap_pos"] = net.trafo.tap_neutral.at[0]
     pp.runpp(net)
     pp.runpp(net0)
     assert_res_equal(net, net0)
@@ -289,11 +289,11 @@ def test_tap_dependent_impedance(result_test_network):
     for pos, factor in (("tap_min", 0.9), ("tap_max", 1.1)):
         assert isclose(characteristic_vk(net.trafo[pos].at[0]), net.trafo.vk_percent.at[0]*factor, rtol=0, atol=1e-12)
         assert isclose(characteristic_vkr(net.trafo[pos].at[0]), net.trafo.vkr_percent.at[0]*factor, rtol=0, atol=1e-12)
-        net0.trafo.vk_percent.at[0] = net.trafo.vk_percent.at[0]*factor
-        net0.trafo.vkr_percent.at[0] = net.trafo.vkr_percent.at[0]*factor
-        net0.trafo.tap_pos.at[0] = net.trafo[pos].at[0]
+        net0.trafo.at[0, "vk_percent"] = net.trafo.vk_percent.at[0]*factor
+        net0.trafo.at[0, "vkr_percent"] = net.trafo.vkr_percent.at[0]*factor
+        net0.trafo.at[0, "tap_pos"] = net.trafo[pos].at[0]
         pp.runpp(net0)
-        net.trafo.tap_pos.at[0] = net.trafo[pos].at[0]
+        net.trafo.at[0, "tap_pos"] = net.trafo[pos].at[0]
         pp.runpp(net)
         assert_res_equal(net, net0)
 

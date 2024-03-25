@@ -393,8 +393,8 @@ def test_voltage_angles():
                              max_q_mvar=1e-6)
     pp.create_poly_cost(net, 0, "ext_grid", cp1_eur_per_mw=1)
     pp.create_poly_cost(net, load_id, "load", cp1_eur_per_mw=1000)
-    net.trafo3w.shift_lv_degree.at[tidx] = 10
-    net.trafo3w.shift_mv_degree.at[tidx] = 30
+    net.trafo3w.at[tidx, "shift_lv_degree"] = 10
+    net.trafo3w.at[tidx, "shift_mv_degree"] = 30
     net.bus.loc[:, "max_vm_pu"] = 1.1
     net.bus.loc[:, "min_vm_pu"] = .9
 

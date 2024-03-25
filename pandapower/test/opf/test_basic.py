@@ -39,7 +39,7 @@ def simplest_grid():
     pp.create_poly_cost(net, 0, "gen", cp1_eur_per_mw=0.1)
 
     return net
-    
+
 
 @pytest.fixture
 def net_3w_trafo_opf():
@@ -475,8 +475,8 @@ def test_trafo3w_loading():
                              min_q_mvar=-1e6, max_q_mvar=1e6)
     pp.create_poly_cost(net, load_id, "load", cp1_eur_per_mw=-1000)
     # pp.create_xward(net, b4, 1000, 1000, 1000, 1000, 0.1, 0.1, 1.0)
-    net.trafo3w.shift_lv_degree.at[tidx] = 120
-    net.trafo3w.shift_mv_degree.at[tidx] = 80
+    net.trafo3w.at[tidx, "shift_lv_degree"] = 120
+    net.trafo3w.at[tidx, "shift_mv_degree"] = 80
 
     # pp.runopp(net, calculate_voltage_angles = True)  >> Doesn't converge
     for init in ["pf", "flat"]:
