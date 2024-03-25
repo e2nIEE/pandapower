@@ -62,7 +62,8 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
                 buses_to_add.add(fb)
         buses |= buses_to_add
 
-    if keep_everything_else:
+    if keep_everything_else:  # Info: keep_everything_else might help to keep controllers but
+        # does not help if a part of controllers should be kept
         p2 = copy.deepcopy(net)
         if not include_results:
             clear_result_tables(p2)
@@ -760,14 +761,15 @@ def drop_controllers_at_elements(net, element_type, idx=None):
     idx = ensure_iterability(idx) if idx is not None else net[element_type].index
     to_drop = []
     for i in net.controller.index:
-        elm = net.controller.object[i].__dict__["element"]
-        elm_idx = ensure_iterability(net.controller.object[i].__dict__["element_index"])
-        if element_type == elm:
+        et = net.controller.object[i].__dict__.get("element")
+        elm_idx = ensure_iterability(net.controller.object[i].__dict__.get("element_index", [0.1]))
+        if element_type == et:
             if set(elm_idx) - set(idx) == set():
                 to_drop.append(i)
             else:
                 net.controller.object[i].__dict__["element_index"] = list(set(elm_idx) - set(idx))
-                net.controller.object[i].__dict__["matching_params"]["element_index"] = list(set(elm_idx) - set(idx))
+                net.controller.object[i].__dict__["matching_params"]["element_index"] = list(
+                    set(elm_idx) - set(idx))
     net.controller.drop(to_drop, inplace=True)
 
 
@@ -975,10 +977,11 @@ def replace_zero_branches_with_switches(net, elements=('line', 'impedance'), zer
                                             ].index.tolist())
 
         if elm == 'impedance' and zero_impedance:
-            branch_zero.update(net[elm].loc[(net[elm].rft_pu <= min_rft_pu) &
-                                            (net[elm].xft_pu <= min_xft_pu) &
-                                            (net[elm].rtf_pu <= min_rtf_pu) &
-                                            (net[elm].xtf_pu <= min_xtf_pu)].index.tolist())
+            # using np.abs() here because the impedance parameters can have negative values e.g. after grid reduction:
+            branch_zero.update(net[elm].loc[(np.abs(net[elm].rft_pu) <= min_rft_pu) &
+                                            (np.abs(net[elm].xft_pu) <= min_xft_pu) &
+                                            (np.abs(net[elm].rtf_pu) <= min_rtf_pu) &
+                                            (np.abs(net[elm].xtf_pu) <= min_xtf_pu)].index.tolist())
 
         affected_elements = set()
         for b in branch_zero:
