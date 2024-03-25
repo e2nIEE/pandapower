@@ -102,8 +102,8 @@ class PowerTransformersCim16:
             fillna_list = ['tabular_step']
             for one_item in fillna_list:
                 trafo_df[one_item] = trafo_df[one_item].fillna(trafo_df[one_item + '_lv'])
-                trafo_df[one_item] = trafo_df[one_item].fillna(trafo_df[one_item + '_lv']
-            trafo_df.dropna(subset=['r_dev', 'r_dev_lv'], how='all', inplace=True)
+            del fillna_list, one_item
+            trafo_df = trafo_df.dropna(subset=['r_dev', 'r_dev_lv'], how='all')
             fillna_list = ['r_dev', 'r_dev_lv', 'x_dev', 'x_dev_lv']
             for one_item in fillna_list:
                 trafo_df[one_item] = trafo_df[one_item].fillna(0)
@@ -176,8 +176,8 @@ class PowerTransformersCim16:
             for one_item in fillna_list:
                 trafo_df[one_item] = trafo_df[one_item].fillna(trafo_df[one_item + '_mv'])
                 trafo_df[one_item] = trafo_df[one_item].fillna(trafo_df[one_item + '_lv'])
-                trafo_df[one_item] = trafo_df[one_item].fillna(trafo_df[one_item + '_mv']
-            trafo_df.dropna(subset=['r_dev', 'r_dev_mv', 'r_dev_lv'], how='all', inplace=True)
+            del fillna_list, one_item
+            trafo_df = trafo_df.dropna(subset=['r_dev', 'r_dev_mv', 'r_dev_lv'], how='all')
             fillna_list = ['r_dev', 'r_dev_mv', 'r_dev_lv', 'x_dev', 'x_dev_mv', 'x_dev_lv']
             for one_item in fillna_list:
                 trafo_df[one_item] = trafo_df[one_item].fillna(0)
@@ -320,8 +320,8 @@ class PowerTransformersCim16:
                 continue
             current_step = one_df['current_step'].iloc[0]
             one_df = one_df.set_index('step')
-            one_df = one_df.set_index('step''].iloc[0]
-            ptct.drop(drop_index, inplace=True)
+            neutral_step = one_df['neutralStep'].iloc[0]
+            ptct = ptct.drop(drop_index)
             # ptct.loc[keep_index, 'angle'] =
             # one_df.loc[current_step, 'angle'] / max(1, abs(current_step - neutral_step))
             ptct.loc[keep_index, 'angle'] = one_df.loc[current_step, 'angle']  # todo fix if pp supports them

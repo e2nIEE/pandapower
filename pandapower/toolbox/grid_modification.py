@@ -670,8 +670,8 @@ def drop_trafos(net, trafos, table="trafo"):
     # drop the trafos
     detach_from_groups(net, table, trafos)
     net[table] = net[table].drop(trafos)
-    net[table] = net[table].drop(trafoson(trafos)
-    net["res_" + table].drop(res_trafos, inplace=True)
+    res_trafos = net["res_" + table].index.intersection(trafos)
+    net["res_" + table] = net["res_" + table].drop(res_trafos)
     logger.debug("Dropped %i %s%s with %i switches" % (
         len(trafos), table, plural_s(len(trafos)), num_switches))
 

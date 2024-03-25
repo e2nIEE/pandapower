@@ -44,26 +44,26 @@ class SynchronousMachinesCim16:
         eq_generating_units['type'] = 'GeneratingUnit'
         eq_generating_units = pd.concat([eq_generating_units, self.cimConverter.cim['eq']['WindGeneratingUnit']],
                                         sort=False)
-        eq_generating_units['type'].fillna('WP', inplace=True)
+        eq_generating_units['type'] = eq_generating_units['type'].fillna('WP')
         eq_generating_units = pd.concat([eq_generating_units, self.cimConverter.cim['eq']['HydroGeneratingUnit']],
                                         sort=False)
-        eq_generating_units['type'].fillna('Hydro', inplace=True)
+        eq_generating_units['type'] = eq_generating_units['type'].fillna('Hydro')
         eq_generating_units = pd.concat([eq_generating_units, self.cimConverter.cim['eq']['SolarGeneratingUnit']],
                                         sort=False)
-        eq_generating_units['type'].fillna('PV', inplace=True)
+        eq_generating_units['type'] = eq_generating_units['type'].fillna('PV')
         eq_generating_units = pd.concat([eq_generating_units, self.cimConverter.cim['eq']['ThermalGeneratingUnit']],
                                         sort=False)
-        eq_generating_units['type'].fillna('Thermal', inplace=True)
+        eq_generating_units['type'] = eq_generating_units['type'].fillna('Thermal')
         eq_generating_units = pd.concat([eq_generating_units, self.cimConverter.cim['eq']['NuclearGeneratingUnit']],
                                         sort=False)
-        eq_generating_units['type'].fillna('Nuclear', inplace=True)
+        eq_generating_units['type'] = eq_generating_units['type'].fillna('Nuclear')
         eq_generating_units = eq_generating_units.rename(columns={'rdfId': 'GeneratingUnit'})
-        eqssh_synchronous_machines = self.cimConverter.merge_eq_ssh_profile('SynchronousMachine',
-                                                                            add_cim_type_column=True)
+        eqssh_synchronous_machines = self.cimConverter.merge_eq_ssh_profile(
+            'SynchronousMachine', add_cim_type_column=True)
         if 'type' in eqssh_synchronous_machines.columns:
             eqssh_synchronous_machines = eqssh_synchronous_machines.drop(columns=['type'])
-            eqssh_synchronous_machines = eqssh_synchronous_machines.drop(columns=['type']
-            eqssh_synchronous_machines.drop(columns=['EquipmentContainer'], inplace=True)
+        if 'EquipmentContainer' in eqssh_synchronous_machines.columns:
+            eqssh_synchronous_machines = eqssh_synchronous_machines.drop(columns=['EquipmentContainer'])
         eqssh_synchronous_machines = pd.merge(eqssh_synchronous_machines, eq_generating_units,
                                               how='left', on='GeneratingUnit')
         eqssh_reg_control = self.cimConverter.merge_eq_ssh_profile('RegulatingControl')[
