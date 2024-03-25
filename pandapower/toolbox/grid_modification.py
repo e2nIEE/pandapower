@@ -750,8 +750,7 @@ def drop_measurements_at_elements(net, element_type, idx=None, side=None):
     idx = ensure_iterability(idx) if idx is not None else net[element_type].index
     bool1 = net.measurement.element_type == element_type
     bool2 = net.measurement.element.isin(idx)
-    bool3 = net.measurement.side == side if side is not None else pd.Series(
-        [True]*net.measurement.shape[0], index=net.measurement.index)
+    bool3 = net.measurement.side == side if side is not None else np.full(net.measurement.shape[0], 1, dtype=bool)
     to_drop = net.measurement.index[bool1 & bool2 & bool3]
     net.measurement = net.measurement.drop(to_drop)
 
