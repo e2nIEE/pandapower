@@ -241,7 +241,7 @@ def delete_postgresql_net(grid_id, host, user, password, database, schema, grid_
 
 
 def from_sql(conn, schema, grid_id, grid_id_column="grid_id", grid_catalogue_name="grid_catalogue",
-             empty_dict_like_object=None):
+             empty_dict_like_object=None, grid_tables=None):
     """
     Downloads an existing pandapowerNet from a PostgreSQL database.
 
@@ -266,9 +266,10 @@ def from_sql(conn, schema, grid_id, grid_id_column="grid_id", grid_catalogue_nam
     """
     cursor = conn.cursor()
     id_columns = {grid_id_column: grid_id}
-    catalogue_table_name = grid_catalogue_name if schema is None else f"{schema}.{grid_catalogue_name}"
-    check_postgresql_catalogue_table(cursor, catalogue_table_name, grid_id, grid_id_column, download=True)
-    grid_tables = download_sql_table(cursor, "grid_tables" if schema is None else f"{schema}.grid_tables", **id_columns)
+    if grid_tables is None:
+        catalogue_table_name = grid_catalogue_name if schema is None else f"{schema}.{grid_catalogue_name}"
+        check_postgresql_catalogue_table(cursor, catalogue_table_name, grid_id, grid_id_column, download=True)
+        grid_tables = download_sql_table(cursor, "grid_tables" if schema is None else f"{schema}.grid_tables", **id_columns)
 
     d = {}
     for element in grid_tables.table.values:
@@ -430,7 +431,7 @@ def to_postgresql(net, host, user, password, database, schema, include_results=F
 
 
 def from_postgresql(grid_id, host, user, password, database, schema, grid_id_column="grid_id",
-                    grid_catalogue_name="grid_catalogue", empty_dict_like_object=None):
+                    grid_catalogue_name="grid_catalogue", empty_dict_like_object=None, grid_tables=None):
     """
     Downloads an existing pandapowerNet from a PostgreSQL database.
 
@@ -463,6 +464,6 @@ def from_postgresql(grid_id, host, user, password, database, schema, grid_id_col
         raise UserWarning("install the package psycopg2 to use PostgreSQL I/O in pandapower")
 
     with psycopg2.connect(host=host, user=user, password=password, database=database) as conn:
-        net = from_sql(conn, schema, grid_id, grid_id_column, grid_catalogue_name, empty_dict_like_object)
+        net = from_sql(conn, schema, grid_id, grid_id_column, grid_catalogue_name, empty_dict_like_object, grid_tables)
 
     return net
