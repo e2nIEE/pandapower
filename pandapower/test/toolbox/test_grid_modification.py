@@ -579,7 +579,7 @@ def test_replace_ext_grid_gen():
         assert np.allclose(net.gen.vm_pu.values, [1.03, 1.02])
         assert net.res_gen.p_mw.dropna().shape[0] == 2
         assert np.allclose(net.gen.index.values, [0, 4])
-        assert net.gen.uuid.loc[4] == "test"
+        assert net.gen.loc[4, "uuid"] == "test"
         assert net.group.element_type.tolist() == ["line", "gen"]
         assert net.group.element.iat[1] == [4]
 

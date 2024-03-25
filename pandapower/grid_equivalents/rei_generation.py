@@ -592,8 +592,8 @@ def _calclate_equivalent_element_params(net_zpbn, Ybus_eq, bus_lookups,
     non_zero_cr = np.abs(params[cols, rows]) > 1/max_allowed_impedance
     impedance_params["rtf_pu"] = 1e5
     impedance_params["xtf_pu"] = 1e5
-    impedance_params["rtf_pu"].loc[non_zero_cr] = (-1 / params[cols, rows]).real[non_zero_cr]
-    impedance_params["xtf_pu"].loc[non_zero_cr] = (-1 / params[cols, rows]).imag[non_zero_cr]
+    impedance_params.loc[non_zero_cr, "rtf_pu"] = (-1 / params[cols, rows]).real[non_zero_cr]
+    impedance_params.loc[non_zero_cr, "xtf_pu"] = (-1 / params[cols, rows]).imag[non_zero_cr]
 
     t_end = time.perf_counter()
     if show_computing_time:

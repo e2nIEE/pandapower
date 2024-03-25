@@ -258,8 +258,8 @@ def test_with_permuted_index():
 def test_all_currents_with_oos_elements():
 
     net = three_bus_example()
-    net.bus.in_service.loc[2] = False
-    net.line.in_service.loc[1] = False
+    net.bus.loc[2, "in_service"] = False
+    net.line.loc[1, "in_service"] = False
     sc.calc_sc(net, case="max", branch_results=True, return_all_currents=True)
 
     assert np.allclose(net.res_line_sc.ikss_ka.loc[[(0, 0), (0, 1)]].values,

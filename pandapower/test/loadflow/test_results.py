@@ -213,7 +213,7 @@ def test_trafo(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=1e-2, l_tol=1e
     assert abs(net.res_bus.va_degree.at[b3] - va3) < va_tol
 
     # sincal results to check pi-equivalent circuit model
-    net.trafo.parallel.loc[trafos] = 1  # sincal is tested without parallel transformers
+    net.trafo.loc[trafos, "parallel"] = 1  # sincal is tested without parallel transformers
     runpp_with_consistency_checks(net, trafo_model="pi", trafo_loading="current")
 
     load1 = 57.637

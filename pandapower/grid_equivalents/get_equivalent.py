@@ -267,7 +267,7 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
             net_eq, net_internal, show_computing_time=show_computing_time,
             calc_volt_angles=calculate_voltage_angles)
         if len(orig_slack_gens):
-            net_eq.gen.slack.loc[net_eq.gen.index.intersection(orig_slack_gens)] = True
+            net_eq.gen.loc[net_eq.gen.index.intersection(orig_slack_gens), "slack"] = True
         # run final power flow calculation
         net_eq = runpp_fct(net_eq, calculate_voltage_angles=calculate_voltage_angles)
     else:

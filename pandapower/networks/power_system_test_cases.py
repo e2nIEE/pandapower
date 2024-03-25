@@ -318,12 +318,12 @@ def case57(vn_kv_area1=115, vn_kv_area2=500, vn_kv_area3=138, vn_kv_area4=345, v
     Idx_area4 = case57.bus[case57.bus.vn_kv == 130].index
     Idx_area5 = case57.bus[case57.bus.vn_kv == 140].index
     Idx_area6 = case57.bus[case57.bus.vn_kv == 150].index
-    case57.bus.vn_kv.loc[Idx_area1] = vn_kv_area1  # default 115
-    case57.bus.vn_kv.loc[Idx_area2] = vn_kv_area2  # default 500
-    case57.bus.vn_kv.loc[Idx_area3] = vn_kv_area3  # default 138
-    case57.bus.vn_kv.loc[Idx_area4] = vn_kv_area4  # default 345
-    case57.bus.vn_kv.loc[Idx_area5] = vn_kv_area5  # default 230
-    case57.bus.vn_kv.loc[Idx_area6] = vn_kv_area6  # default 161
+    case57.bus.loc[Idx_area1, "vn_kv"] = vn_kv_area1  # default 115
+    case57.bus.loc[Idx_area2, "vn_kv"] = vn_kv_area2  # default 500
+    case57.bus.loc[Idx_area3, "vn_kv"] = vn_kv_area3  # default 138
+    case57.bus.loc[Idx_area4, "vn_kv"] = vn_kv_area4  # default 345
+    case57.bus.loc[Idx_area5, "vn_kv"] = vn_kv_area5  # default 230
+    case57.bus.loc[Idx_area6, "vn_kv"] = vn_kv_area6  # default 161
     return case57
 
 

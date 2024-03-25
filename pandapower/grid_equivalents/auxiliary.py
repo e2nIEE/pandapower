@@ -392,7 +392,7 @@ def ensure_origin_id(net, no_start=0, elms=None):
         if "origin_id" not in net[elm].columns:
             net[elm]["origin_id"] = pd.Series([None]*net[elm].shape[0], dtype=object)
         idxs = net[elm].index[net[elm].origin_id.isnull()]
-        net[elm].origin_id.loc[idxs] = ["%s_%i_%s" % (elm, idx, str(uuid.uuid4())) for idx in idxs]
+        net[elm].loc[idxs, "origin_id"] = ["%s_%i_%s" % (elm, idx, str(uuid.uuid4())) for idx in idxs]
 
 
 def drop_and_edit_cost_functions(net, buses, drop_cost, add_origin_id,
@@ -410,7 +410,7 @@ def drop_and_edit_cost_functions(net, buses, drop_cost, add_origin_id,
                 for elm in set(net[cost_elm].et.values):
                     idx = net[cost_elm].element.index[(net[cost_elm].et == elm) &
                                                       (net[cost_elm].element.isin(net[elm].index))]
-                    net[cost_elm]["bus"].loc[idx] = net[elm].bus.loc[net[cost_elm].element.loc[
+                    net[cost_elm].loc[idx, "bus"] = net[elm].bus.loc[net[cost_elm].element.loc[
                         idx]].values
                 to_drop = net[cost_elm].index[net[cost_elm].bus.isin(buses) |
                                               net[cost_elm].bus.isnull()]
@@ -425,10 +425,10 @@ def drop_and_edit_cost_functions(net, buses, drop_cost, add_origin_id,
                     net[cost_elm]["origin_seq"] = None
                 for elm in set(net[cost_elm].et.values):
                     idx = net[cost_elm].index[net[cost_elm].et == elm]
-                    net[cost_elm]["et_origin_id"].loc[idx] = net[elm].origin_id.loc[net[
+                    net[cost_elm].loc[idx, "et_origin_id"] = net[elm].origin_id.loc[net[
                         cost_elm].element.loc[idx]].values
-                    net[cost_elm]["origin_idx"].loc[idx] = idx
-                    net[cost_elm]["origin_seq"].loc[idx] = [cost_backup.index.tolist().index(t) for t in idx]
+                    net[cost_elm].loc[idx, "origin_idx"] = idx
+                    net[cost_elm].loc[idx, "origin_seq"] = [cost_backup.index.tolist().index(t) for t in idx]
 
 
 def match_cost_functions_and_eq_net(net, boundary_buses, eq_type):
