@@ -1,3 +1,4 @@
+import io
 import pytest
 import numpy as np
 import pandapower as pp
@@ -414,10 +415,10 @@ def test_equivalent_groups():
 
 def test_shifter_degree():
     net = pp.networks.example_multivoltage()
-    net.trafo.shift_degree[0] = 30
-    net.trafo.shift_degree[1] = -60
-    net.trafo3w.shift_mv_degree[0] = 90
-    net.trafo3w.shift_lv_degree[0] = 150
+    net.trafo.at[0, "shift_degree"] = 30
+    net.trafo.at[1, "shift_degree"] = -60
+    net.trafo3w.at[0, "shift_mv_degree"] = 90
+    net.trafo3w.at[0, "shift_lv_degree"] = 150
     pp.runpp(net, calculate_voltage_angles=True)
 
     boundary_buses = list([net.trafo.hv_bus.values[1]]) + list(net.trafo.lv_bus.values) + \
@@ -499,7 +500,7 @@ def test_controller():
 
     # load time series
     json_path = os.path.join(pp_dir, "test", "opf", "cigre_timeseries_15min.json")
-    time_series = pd.read_json(json_path)
+    time_series = pd.read_json(io.StringIO(json_path))
     time_series.sort_index(inplace=True)
     sgen_p = net["sgen"].loc[:, "p_mw"].values
     load_p = net["load"].loc[:, "p_mw"].values
