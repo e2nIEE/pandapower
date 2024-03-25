@@ -12,7 +12,8 @@ import pandapower as pp
 
 try:
     from lightsim2grid.gridmodel import init as init_ls2g
-    from lightsim2grid_cpp import SecurityAnalysisCPP, SolverType
+    from lightsim2grid.securityAnalysis import ContingencyAnalysisCPP
+    from lightsim2grid_cpp import SolverType
 
     lightsim2grid_installed = True
 except ImportError:
@@ -198,7 +199,7 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=pp.
     n_trafos_cases = len(nminus1_cases.get("trafo", {}).get("index", []))
 
     # todo: add option for DC power flow
-    s = SecurityAnalysisCPP(lightsim_grid_model)
+    s = ContingencyAnalysisCPP(lightsim_grid_model)
     s.change_solver(solver_type)
 
     map_index = {}
