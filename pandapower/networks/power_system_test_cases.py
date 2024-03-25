@@ -39,7 +39,7 @@ def _change_ref_bus(net, ref_bus_idx, ext_grid_p=0):
     j = 0
     for i in ext_grid_idx:
         ext_grid_data = net.ext_grid.loc[i]
-        net.ext_grid.drop(i, inplace=True)
+        net.ext_grid = net.ext_grid.drop(i)
         pp.create_gen(net, ext_grid_data.bus, ext_grid_p[j],
                       vm_pu=ext_grid_data.vm_pu, controllable=True,
                       min_q_mvar=ext_grid_data.min_q_mvar, max_q_mvar=ext_grid_data.max_q_mvar,
@@ -48,7 +48,7 @@ def _change_ref_bus(net, ref_bus_idx, ext_grid_p=0):
     # old gen at ref_bus -> ext_grid (and sgen)
     for i in gen_idx:
         gen_data = net.gen.loc[i]
-        net.gen.drop(i, inplace=True)
+        net.gen = net.gen.drop(i)
         if gen_data.bus not in net.ext_grid.bus.values:
             pp.create_ext_grid(net, gen_data.bus, vm_pu=gen_data.vm_pu, va_degree=0.,
                                min_q_mvar=gen_data.min_q_mvar, max_q_mvar=gen_data.max_q_mvar,

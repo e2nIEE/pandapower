@@ -933,7 +933,7 @@ def test_merge_same_bus_generation_plants():
 
     # manipulate net for different functionality checks
     # 1) q_mvar should be summed which is only possible if no gen or ext_grid has the same bus
-    net.gen.drop(net.gen.index[net.gen.bus == 22], inplace=True)
+    net.gen = net.gen.drop(net.gen.index[net.gen.bus == 22])
     net.sgen["q_mvar"] = np.arange(net.sgen.shape[0])
     # 2) remove limit columns or values to check whether merge_same_bus_generation_plants() can
     # handle that

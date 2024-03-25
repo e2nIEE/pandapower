@@ -59,9 +59,9 @@ class NonLinearShuntCompensatorCim16:
                 eqssh_shunts.loc[eqssh_shunts['sections'] >= eqssh_shunts['sectionNumber'], 'q'] = \
                     eqssh_shunts['q'] + eqssh_shunts['q_temp']
             eqssh_shunts = eqssh_shunts[eqssh_shunts_cols]
-        eqssh_shunts.rename(columns={
+        eqssh_shunts = eqssh_shunts.rename(columns={
             'rdfId': sc['o_id'], 'rdfId_Terminal': sc['t'], 'connected': 'in_service', 'index_bus': 'bus',
-            'nomU': 'vn_kv', 'p': 'p_mw', 'q': 'q_mvar'}, inplace=True)
+            'nomU': 'vn_kv', 'p': 'p_mw', 'q': 'q_mvar'})
         eqssh_shunts['step'] = 1
         eqssh_shunts['max_step'] = 1
         return eqssh_shunts

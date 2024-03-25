@@ -778,7 +778,7 @@ def test_zip_loads_out_of_service():
     pp.runpp(net, tolerance_mva=1e-8)
     pp.runpp(net1, tolerance_mva=1e-8)
     assert np.allclose(net1.res_load.loc[oos_load].fillna(0), 0)
-    net1.res_load.drop(oos_load, inplace=True)
+    net1.res_load = net1.res_load.drop(oos_load)
     assert nets_equal(net, net1, check_only_results=True)
 
 

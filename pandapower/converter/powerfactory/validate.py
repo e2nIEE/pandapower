@@ -272,7 +272,7 @@ def validate_pf_conversion(net, is_unbalanced=False, **kwargs):
     logger.info('pandapower net converged: %s' % net.converged)
     _set_pf_results(net, pf_results, is_unbalanced=is_unbalanced)
 
-    net.bus.name.fillna("", inplace=True)
+    net.bus.name = net.bus.name.fillna("")
     only_in_pandapower = np.union1d(net.bus[net.bus.name.str.endswith("_aux")].index,
                                     net.bus[net.bus.type == "ls"].index)
     in_both = np.setdiff1d(net.bus.index, only_in_pandapower)

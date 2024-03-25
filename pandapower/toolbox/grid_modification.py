@@ -532,7 +532,7 @@ def merge_same_bus_generation_plants(net, add_info=True, error=True,
         for elm in gen_df["elm_type"].loc[idxs[1:]].unique():
             dupl_idx_elm = gen_df.loc[gen_df.index.isin(idxs[1:]) &
                                       (gen_df.elm_type == elm), "index"].values
-            net[elm].drop(dupl_idx_elm, inplace=True)
+            net[elm] = net[elm].drop(dupl_idx_elm)
 
         something_merged |= True
     return something_merged
@@ -621,13 +621,13 @@ def drop_elements_simple(net, element_type, element_index):
 
     element_index = ensure_iterability(element_index)
     detach_from_groups(net, element_type, element_index)
-    net[element_type].drop(element_index, inplace=True)
+    net[element_type] = net[element_type].drop(element_index)
 
     # res_element
     res_element_type = "res_" + element_type
     if res_element_type in net.keys() and isinstance(net[res_element_type], pd.DataFrame):
         drop_res_idx = net[res_element_type].index.intersection(element_index)
-        net[res_element_type].drop(drop_res_idx, inplace=True)
+        net[res_element_type] = net[res_element_type].drop(drop_res_idx)
 
     # logging
     if number := len(element_index) > 0:
@@ -640,10 +640,10 @@ def drop_buses(net, buses, drop_elements=True):
     them as well.
     """
     detach_from_groups(net, "bus", buses)
-    net["bus"].drop(buses, inplace=True)
+    net["bus"] = net["bus"].drop(buses)
     net["bus_geodata"].drop(set(buses) & set(net["bus_geodata"].index), inplace=True)
     res_buses = net.res_bus.index.intersection(buses)
-    net["res_bus"].drop(res_buses, inplace=True)
+    net["res_bus"] = net["res_bus"].drop(res_buses)
     if drop_elements:
         drop_elements_at_buses(net, buses)
         drop_measurements_at_elements(net, "bus", idx=buses)
@@ -661,7 +661,7 @@ def drop_trafos(net, trafos, table="trafo"):
     # remove any affected trafo or trafo3w switches
     i = net["switch"].index[(net["switch"]["element"].isin(trafos)) & (net["switch"]["et"] == et)]
     detach_from_groups(net, "switch", i)
-    net["switch"].drop(i, inplace=True)
+    net["switch"] = net["switch"].drop(i)
     num_switches = len(i)
 
     # drop measurements
@@ -669,8 +669,8 @@ def drop_trafos(net, trafos, table="trafo"):
 
     # drop the trafos
     detach_from_groups(net, table, trafos)
-    net[table].drop(trafos, inplace=True)
-    res_trafos = net["res_" + table].index.intersection(trafos)
+    net[table] = net[table].drop(trafos)
+    net[table] = net[table].drop(trafoson(trafos)
     net["res_" + table].drop(res_trafos, inplace=True)
     logger.debug("Dropped %i %s%s with %i switches" % (
         len(trafos), table, plural_s(len(trafos)), num_switches))
@@ -684,17 +684,17 @@ def drop_lines(net, lines):
     # drop connected switches
     i = net["switch"][(net["switch"]["element"].isin(lines)) & (net["switch"]["et"] == "l")].index
     detach_from_groups(net, "switch", i)
-    net["switch"].drop(i, inplace=True)
+    net["switch"] = net["switch"].drop(i)
 
     # drop measurements
     drop_measurements_at_elements(net, "line", idx=lines)
 
     # drop lines and geodata
     detach_from_groups(net, "line", lines)
-    net["line"].drop(lines, inplace=True)
+    net["line"] = net["line"].drop(lines)
     net["line_geodata"].drop(set(lines) & set(net["line_geodata"].index), inplace=True)
     res_lines = net.res_line.index.intersection(lines)
-    net["res_line"].drop(res_lines, inplace=True)
+    net["res_line"] = net["res_line"].drop(res_lines)
     logger.debug("Dropped %i line%s with %i line switches" % (
         len(lines), plural_s(len(lines)), len(i)))
 
@@ -717,12 +717,12 @@ def drop_elements_at_buses(net, buses, bus_elements=True, branch_elements=True,
             else:
                 n_el = net[element_type].shape[0]
                 detach_from_groups(net, element_type, eid)
-                net[element_type].drop(eid, inplace=True)
+                net[element_type] = net[element_type].drop(eid)
                 # res_element_type
                 res_element_type = "res_" + element_type
                 if res_element_type in net.keys() and isinstance(net[res_element_type], pd.DataFrame):
                     res_eid = net[res_element_type].index.intersection(eid)
-                    net[res_element_type].drop(res_eid, inplace=True)
+                    net[res_element_type] = net[res_element_type].drop(res_eid)
                 if net[element_type].shape[0] < n_el:
                     logger.debug("Dropped %d %s elements" % (
                         n_el - net[element_type].shape[0], element_type))
@@ -738,7 +738,7 @@ def drop_elements_at_buses(net, buses, bus_elements=True, branch_elements=True,
 def drop_switches_at_buses(net, buses):
     i = net["switch"][(net["switch"]["bus"].isin(buses)) |
                       ((net["switch"]["element"].isin(buses)) & (net["switch"]["et"] == "b"))].index
-    net["switch"].drop(i, inplace=True)
+    net["switch"] = net["switch"].drop(i)
     logger.debug("Dropped %d switches" % len(i))
 
 
@@ -751,7 +751,7 @@ def drop_measurements_at_elements(net, element_type, idx=None, side=None):
     bool2 = net.measurement.element.isin(idx)
     bool3 = net.measurement.side == side if side is not None else [True]*net.measurement.shape[0]
     to_drop = net.measurement.index[bool1 & bool2 & bool3]
-    net.measurement.drop(to_drop, inplace=True)
+    net.measurement = net.measurement.drop(to_drop)
 
 
 def drop_controllers_at_elements(net, element_type, idx=None):
@@ -770,7 +770,7 @@ def drop_controllers_at_elements(net, element_type, idx=None):
                 net.controller.object[i].__dict__["element_index"] = list(set(elm_idx) - set(idx))
                 net.controller.object[i].__dict__["matching_params"]["element_index"] = list(
                     set(elm_idx) - set(idx))
-    net.controller.drop(to_drop, inplace=True)
+    net.controller = net.controller.drop(to_drop)
 
 
 def drop_controllers_at_buses(net, buses):
@@ -795,7 +795,7 @@ def drop_duplicated_measurements(net, buses=None, keep="first"):
             "measurement_type", "element_type", "side", "element"], keep=keep).empty:
         idx_to_drop = analyzed_meas.index[analyzed_meas.duplicated(subset=[
             "measurement_type", "element_type", "side", "element"], keep=keep)]
-        net.measurement.drop(idx_to_drop, inplace=True)
+        net.measurement = net.measurement.drop(idx_to_drop)
 
 
 def _inner_branches(net, buses, task, branch_elements=None):
@@ -823,7 +823,7 @@ def _inner_branches(net, buses, task, branch_elements=None):
                 elif "trafo" in elm:
                     drop_trafos(net, net[elm].index[inner])
                 else:
-                    net[elm].drop(net[elm].index[inner], inplace=True)
+                    net[elm] = net[elm].drop(net[elm].index[inner])
             elif task == "get":
                 inner_branches[elm] = net[elm].index[inner]
             else:
@@ -997,7 +997,7 @@ def replace_zero_branches_with_switches(net, elements=('line', 'impedance'), zer
             if elm == 'line':
                 drop_lines(net, affected_elements)
             else:
-                net[elm].drop(affected_elements, inplace=True)
+                net[elm] = net[elm].drop(affected_elements)
 
             logger.info('replaced %d %ss by switches' % (len(affected_elements), elm))
         else:
@@ -1200,7 +1200,7 @@ def replace_ext_grid_by_gen(net, ext_grids=None, gen_indices=None, slack=False, 
     _replace_group_member_element_type(net, ext_grids, "ext_grid", new_idx, "gen")
 
     # --- drop replaced ext_grids
-    net.ext_grid.drop(ext_grids, inplace=True)
+    net.ext_grid = net.ext_grid.drop(ext_grids)
 
     # --- adapt cost data
     for table in ["pwl_cost", "poly_cost"]:
@@ -1283,7 +1283,7 @@ def replace_gen_by_ext_grid(net, gens=None, ext_grid_indices=None, cols_to_keep=
     _replace_group_member_element_type(net, gens, "gen", new_idx, "ext_grid")
 
     # --- drop replaced gens
-    net.gen.drop(gens, inplace=True)
+    net.gen = net.gen.drop(gens)
 
     # --- adapt cost data
     for table in ["pwl_cost", "poly_cost"]:
@@ -1367,7 +1367,7 @@ def replace_gen_by_sgen(net, gens=None, sgen_indices=None, cols_to_keep=None,
     _replace_group_member_element_type(net, gens, "gen", new_idx, "sgen")
 
     # --- drop replaced gens
-    net.gen.drop(gens, inplace=True)
+    net.gen = net.gen.drop(gens)
 
     # --- adapt cost data
     for table in ["pwl_cost", "poly_cost"]:
@@ -1466,7 +1466,7 @@ def replace_sgen_by_gen(net, sgens=None, gen_indices=None, cols_to_keep=None,
     _replace_group_member_element_type(net, sgens, "sgen", new_idx, "gen")
 
     # --- drop replaced sgens
-    net.sgen.drop(sgens, inplace=True)
+    net.sgen = net.sgen.drop(sgens)
 
     # --- adapt cost data
     for table in ["pwl_cost", "poly_cost"]:
@@ -1586,7 +1586,7 @@ def replace_pq_elmtype(net, old_element_type, new_element_type, old_indices=None
     _replace_group_member_element_type(net, old_indices, old_element_type, new_idx, new_element_type)
 
     # --- drop replaced old_indices
-    net[old_element_type].drop(old_indices, inplace=True)
+    net[old_element_type] = net[old_element_type].drop(old_indices)
 
     # --- adapt cost data
     for table in ["pwl_cost", "poly_cost"]:
@@ -1720,7 +1720,7 @@ def replace_xward_by_internal_elements(net, xwards=None, set_xward_bus_limits=Fa
     if net.res_xward.shape[0]:
         log_to_level("Implementations to move xward results to new internal elements are missing.",
                      logger, log_level)
-        net.res_xward.drop(xwards, inplace=True)
+        net.res_xward = net.res_xward.drop(xwards)
 
     # --- drop replaced wards
     drop_elements_simple(net, "xward", xwards)

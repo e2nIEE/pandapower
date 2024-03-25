@@ -52,7 +52,7 @@ def drop_group(net, index):
     index : int
         index of the group which should be dropped
     """
-    net.group.drop(index, inplace=True)
+    net.group = net.group.drop(index)
 
 
 def drop_group_and_elements(net, index):
@@ -67,7 +67,7 @@ def drop_group_and_elements(net, index):
         res_et = "res_" + et
         if res_et in net.keys() and net[res_et].shape[0]:
             net[res_et].drop(net[res_et].index.intersection(idx), inplace=True)
-    net.group.drop(index, inplace=True)
+    net.group = net.group.drop(index)
 
 
 # ====================================
@@ -157,7 +157,7 @@ def attach_to_group(net, index, element_types, elements, reference_columns=None,
                     temp_gr = create_group(net, [et], [elm], reference_columns=rc)
                     set_group_reference_column(net, temp_gr, existing_rc, element_type=et)
                     elm = net.group.element.at[temp_gr]
-                    net.group.drop(temp_gr, inplace=True)
+                    net.group = net.group.drop(temp_gr)
                 else:
                     raise UserWarning(
                         f"The reference column of existing group {index} for element "
@@ -870,7 +870,7 @@ def group_res_power_per_bus(net, index):
             pq_sum.index.name = "bus"  # needs to be set for branch elements
             if len(pq_sums.columns.difference(pq_sum.columns)):
                 cols_repl = {old: "p_mw" if "p" in old else "q_mvar" for old in pq_sum.columns}
-                pq_sum.rename(columns=cols_repl, inplace=True)
+                pq_sum = pq_sum.rename(columns=cols_repl)
             pq_sums = pq_sums.add(pq_sum, fill_value=0)
 
     if len(missing_res_idx):

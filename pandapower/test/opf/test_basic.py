@@ -844,8 +844,8 @@ def test_line_temperature():
 @pytest.fixture
 def four_bus_net():
     net = simple_four_bus_system()
-    net.sgen.drop(index=1, inplace=True)
-    net.load.drop(index=1, inplace=True)
+    net.sgen = net.sgen.drop(index=1)
+    net.load = net.load.drop(index=1)
     return net
 
 
@@ -867,7 +867,7 @@ def test_only_gen_slack_vm_setpoint(four_bus_net):
     # tests a net with only gens of which one of them is a a slack
     # The  vmin / vmax vm_pu setpoint should be correct
     net = four_bus_net
-    net.ext_grid.drop(index=net.ext_grid.index, inplace=True)
+    net.ext_grid = net.ext_grid.drop(index=net.ext_grid.index)
     net.bus.loc[:, "min_vm_pu"] = 0.9
     net.bus.loc[:, "max_vm_pu"] = 1.1
     # create two additional slacks with different voltage setpoints

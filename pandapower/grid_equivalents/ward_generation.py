@@ -55,7 +55,7 @@ def _calculate_ward_and_impedance_parameters(Ybus_eq, bus_lookups, show_computin
     return ward_parameter, impedance_parameter
 
 
-def _calculate_xward_and_impedance_parameters(net_external, Ybus_eq, bus_lookups, 
+def _calculate_xward_and_impedance_parameters(net_external, Ybus_eq, bus_lookups,
                                               show_computing_time, power_eq=0):
     """calculates the xwards and the equivalent impedance"""
     t_start = time.perf_counter()
@@ -104,7 +104,7 @@ def create_passive_external_net_for_ward_admittance(
     # drops all power injections
     for elm in ["sgen", "gen", "load", "storage"]:
         target_idx = net[elm].index[net[elm].bus.isin(all_external_buses)]
-        net[elm].drop(target_idx, inplace=True)
+        net[elm] = net[elm].drop(target_idx)
     runpp_fct(net, calculate_voltage_angles=calc_volt_angles)
 
 
@@ -123,7 +123,7 @@ def _replace_external_area_by_wards(net_external, bus_lookups, ward_parameter_no
     # --- drop shunt elements attached to boundary buses
     traget_shunt_idx = net_external.shunt.index[net_external.shunt.bus.isin(bus_lookups[
         "boundary_buses_inclusive_bswitch"])]
-    net_external.shunt.drop(traget_shunt_idx, inplace=True)
+    net_external.shunt = net_external.shunt.drop(traget_shunt_idx)
 
     # --- creat impedance
     sn = net_external.sn_mva
@@ -193,7 +193,7 @@ def _replace_external_area_by_wards(net_external, bus_lookups, ward_parameter_no
 
 def _replace_external_area_by_xwards(net_external, bus_lookups, xward_parameter_no_power,
                                      impedance_parameter, ext_buses_with_xward,
-                                     show_computing_time, calc_volt_angles=True, 
+                                     show_computing_time, calc_volt_angles=True,
                                      runpp_fct=_runpp_except_voltage_angles):
     """replaces the external networks by xwards and equivalent impedance"""
     t_start = time.perf_counter()
@@ -204,7 +204,7 @@ def _replace_external_area_by_xwards(net_external, bus_lookups, xward_parameter_
     # --- drop shunt elements attached to boundary buses
     traget_shunt_idx = net_external.shunt.index[net_external.shunt.bus.isin(bus_lookups[
         "boundary_buses_inclusive_bswitch"])]
-    net_external.shunt.drop(traget_shunt_idx, inplace=True)
+    net_external.shunt = net_external.shunt.drop(traget_shunt_idx)
 
     # --- creat impedance
     sn = net_external.sn_mva

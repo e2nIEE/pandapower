@@ -134,7 +134,7 @@ def reset_bb_switch_impedance(net):
     """
     if "z_ohm_ori" in net.switch:
         net.switch["z_ohm"] = net.switch["z_ohm_ori"]
-        net.switch.drop("z_ohm_ori", axis=1, inplace=True)
+        net.switch = net.switch.drop("z_ohm_ori", axis=1)
 
 
 def add_virtual_meas_from_loadflow(net, v_std_dev=0.01, p_std_dev=0.03, q_std_dev=0.03,

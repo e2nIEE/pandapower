@@ -318,7 +318,7 @@ def reindex_elements(net, element_type, new_indices=None, old_indices=None, look
         net["line_geodata"][place_holder] = net["line_geodata"].index
         net["line_geodata"].loc[old_indices.intersection(net.line_geodata.index), place_holder] = (
             get_indices(old_indices.intersection(net.line_geodata.index), lookup))
-        net["line_geodata"].set_index(place_holder, inplace=True)
+        net["line_geodata"] = net["line_geodata"].set_index(place_holder)
         net["line_geodata"].index.name = idx_name
 
     # --- adapt index in cost dataframes

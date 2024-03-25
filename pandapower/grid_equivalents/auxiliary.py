@@ -157,7 +157,7 @@ def drop_internal_branch_elements(net, internal_buses, branch_elements=None):
             elif "trafo" in elm:
                 pp.drop_trafos(net, idx_to_drop, table=elm)
             else:
-                net[elm].drop(idx_to_drop, inplace=True)
+                net[elm] = net[elm].drop(idx_to_drop)
 
 
 def calc_zpbn_parameters(net, boundary_buses, all_external_buses, slack_as="gen",
@@ -285,14 +285,14 @@ def drop_assist_elms_by_creating_ext_net(net, elms=None):
     for elm in elms:
         target_elm_idx = net[elm].index[net[elm].name.astype(str).str.contains(
             "assist_"+elm, na=False, regex=False)]
-        net[elm].drop(target_elm_idx, inplace=True)
+        net[elm] = net[elm].drop(target_elm_idx)
         if net["res_"+elm].shape[0]:
             res_target_elm_idx = net["res_" +
                                      elm].index.intersection(target_elm_idx)
-            net["res_"+elm].drop(res_target_elm_idx, inplace=True)
+            net["res_"+elm] = net["res_"+elm].drop(res_target_elm_idx)
 
     if "name_equivalent" in net.bus.columns.tolist():
-        net.bus.drop(columns=["name_equivalent"], inplace=True)
+        net.bus = net.bus.drop(columns=["name_equivalent"])
 
 
 def build_ppc_and_Ybus(net):
@@ -378,7 +378,7 @@ def match_controller_and_new_elements(net, net_org):
                 net.controller.object[idx].__dict__["element_index"] = new_elm_idxs
                 net.controller.object[idx].__dict__["matching_params"]["element_index"] = new_elm_idxs
                 net.controller.object[idx].__dict__["profile_name"] = profile_name
-        net.controller.drop(tobe_removed, inplace=True)
+        net.controller = net.controller.drop(tobe_removed)
     # TODO: match the controllers in the external area
 
 def ensure_origin_id(net, no_start=0, elms=None):
@@ -414,7 +414,7 @@ def drop_and_edit_cost_functions(net, buses, drop_cost, add_origin_id,
                         idx]].values
                 to_drop = net[cost_elm].index[net[cost_elm].bus.isin(buses) |
                                               net[cost_elm].bus.isnull()]
-                net[cost_elm].drop(to_drop, inplace=True)
+                net[cost_elm] = net[cost_elm].drop(to_drop)
 
             # add origin_id to cost df and corresponding elms
             if add_origin_id:
@@ -439,13 +439,13 @@ def match_cost_functions_and_eq_net(net, boundary_buses, eq_type):
     for cost_elm in ["poly_cost", "pwl_cost"]:
         if len(net[cost_elm]):
             if "ward" not in eq_type:
-                net[cost_elm].sort_values(by=["origin_seq"], inplace=True)
+                net[cost_elm] = net[cost_elm].sort_values(by=["origin_seq"])
                 net[cost_elm].index = net[cost_elm]["origin_idx"].values
                 for pc in net[cost_elm].itertuples():
                     new_idx = net[pc.et].index[
                         net[pc.et].origin_id == pc.et_origin_id].values
                     net[cost_elm].element[pc.Index] = new_idx[0]
-            net[cost_elm].drop(columns=["bus", "et_origin_id", "origin_idx", "origin_seq"], inplace=True)
+            net[cost_elm] = net[cost_elm].drop(columns=["bus", "et_origin_id", "origin_idx", "origin_seq"])
 
 
 def _check_network(net):
@@ -555,8 +555,8 @@ def replace_motor_by_load(net, all_external_buses):
         p = p_mw if not np.isnan(net.res_bus.vm_pu[m.bus]) and m.in_service else 0.0
         q = q_mvar if not np.isnan(net.res_bus.vm_pu[m.bus]) and m.in_service else 0.0
         net.res_load.loc[li] = p, q
-    net.motor.drop(motors, inplace=True)
-    net.res_motor.drop(motors, inplace=True)
+    net.motor = net.motor.drop(motors)
+    net.res_motor = net.res_motor.drop(motors)
 
 
 if __name__ == "__main__":

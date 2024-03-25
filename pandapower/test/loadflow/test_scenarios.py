@@ -372,7 +372,7 @@ def test_two_oos_buses():
     assert net.res_line.loading_percent.at[l2] > 0
     assert np.isnan(net.res_line.loading_percent.at[l3])
 
-    net.line.drop(l2, inplace=True)
+    net.line = net.line.drop(l2)
     pp.runpp(net)
     assert net.res_line.loading_percent.at[l1] > 0
     assert np.isnan(net.res_line.loading_percent.at[l3])

@@ -199,7 +199,7 @@ def test_compare_pwl_and_poly(net_3w_trafo_opf):
     vm_bus = net.res_bus.vm_pu.values
     va_bus = net.res_bus.va_degree.values
 
-    net.pwl_cost.drop(net.pwl_cost.index, inplace=True)
+    net.pwl_cost = net.pwl_cost.drop(net.pwl_cost.index)
 
     pp.create_poly_cost(net, 0, 'ext_grid', cp1_eur_per_mw=1)
     pp.create_poly_cost(net, 0, 'gen', cp1_eur_per_mw=3)
@@ -252,7 +252,7 @@ def test_pwl():
     assert np.isclose(net.res_gen.p_mw.iloc[0], net.res_gen.p_mw.iloc[1])
     assert np.isclose(net.res_gen.q_mvar.iloc[0], net.res_gen.q_mvar.iloc[1])
 
-    net.pwl_cost.drop(net.pwl_cost.index, inplace=True)
+    net.pwl_cost = net.pwl_cost.drop(net.pwl_cost.index)
     g3 = pp.create_gen(net, bus1, p_mw=80, min_p_mw=0, max_p_mw=80, vm_pu=1.01)
 
     pp.create_pwl_cost(net, g1, 'gen', [[0, 2, 1.], [2, 80, 8.]])
@@ -722,7 +722,7 @@ def test_runpm_ploss_loading():
     ### test loss reduction with Q-optimierung
     assert net.res_line.pl_mw.values.sum() < net_org.res_line.pl_mw.values.sum()
 
-    net.line.drop(columns=["pm_param/target_branch"], inplace=True)
+    net.line = net.line.drop(columns=["pm_param/target_branch"])
     net.trafo["pm_param/target_branch"] = True
     pp.runpm_ploss(net)
 

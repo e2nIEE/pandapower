@@ -1078,7 +1078,7 @@ def create_ext_net(net, item, pv_as_slack, is_unbalanced):
         except AttributeError:
             pass
         elm = 'ext_grid'
-        
+
     get_pf_ext_grid_results(net, item, xid, is_unbalanced)
 
     # if item.HasResults(0):  # 'm' results...
@@ -1229,7 +1229,7 @@ def ask_load_params(item, pf_variable_p_loads, dict_net, variables):
                             if pf_variable_p_loads == 'plini' else 1
     if item.HasAttribute('zonefact'):
         params.scaling *= item.zonefact
-        
+
     # p_mw = p_mw, q_mvar = q_mvar, scaling = scaling
 
     return params
@@ -3017,4 +3017,4 @@ def remove_folder_of_std_types(net):
                     continue
             for st in all_types:
                 net.std_types[element][std_type] = net.std_types[element].pop(st)
-                net[element].std_type.replace(st, std_type, inplace=True)
+                net[element].std_type = net[element].std_type.replace(st, std_type)

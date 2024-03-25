@@ -561,7 +561,7 @@ def test_impedance_values_close_to_zero(test_net, diag_params, diag_errors, repo
     net.line.at[4, "length_km"] = 0
     net.line.at[4, "r_ohm_per_km"] = 0
     net.line.at[4, "x_ohm_per_km"] = 0
-    net.xward.drop(net.xward.index, inplace=True)
+    net.xward = net.xward.drop(net.xward.index)
     check_result = pp.impedance_values_close_to_zero(net, diag_params['min_r_ohm'], diag_params['min_x_ohm'],
                                                      diag_params['min_r_pu'], diag_params['min_x_pu'])
     if check_result:
@@ -624,7 +624,7 @@ def test_impedance_values_close_to_zero(test_net, diag_params, diag_errors, repo
 
     # impedance test
     net = copy.deepcopy(test_net)
-    net.xward.drop(net.xward.index, inplace=True)
+    net.xward = net.xward.drop(net.xward.index)
     net.impedance.rft_pu = 0
     net.impedance.xft_pu = 0
     net.impedance.rtf_pu = 0
@@ -649,7 +649,7 @@ def test_impedance_values_close_to_zero(test_net, diag_params, diag_errors, repo
         assert report_check
 
     net = copy.deepcopy(test_net)
-    net.xward.drop(net.xward.index, inplace=True)
+    net.xward = net.xward.drop(net.xward.index)
     net.impedance.rft_pu = 1
     net.impedance.xft_pu = 1
     net.impedance.rtf_pu = 1
