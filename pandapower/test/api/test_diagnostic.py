@@ -528,7 +528,7 @@ def test_different_voltage_levels_connected(test_net, diag_params, diag_errors, 
     diag_params = copy.deepcopy(diag_params)
     report_methods = copy.deepcopy(report_methods)
     pp.create_switch(net, 41, 45, et = 'b')
-    net.bus.vn_kv.loc[38] = 30
+    net.bus.loc[38, "vn_kv"] = 30
     check_result = pp.different_voltage_levels_connected(net)
     if check_result:
         diag_results = {check_function: check_result}
@@ -967,7 +967,7 @@ def test_deviation_from_std_type(test_net, diag_params, diag_errors, report_meth
     net.line.r_ohm_per_km.loc[0] += 1
     net.line.x_ohm_per_km.loc[6] -= 1
     net.line.c_nf_per_km.loc[14] *= -1
-    net.line.max_i_ka.loc[21] = '5'
+    net.line.loc[21, "max_i_ka"] = '5'
     pp.change_std_type(net, 0, element='trafo', name='160 MVA 380/110 kV')
     net.trafo.vk_percent.loc[0] *= 2
     check_result = pp.deviation_from_std_type(net)

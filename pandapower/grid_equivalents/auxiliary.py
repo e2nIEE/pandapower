@@ -272,8 +272,8 @@ def _ensure_unique_boundary_bus_names(net, boundary_buses):
     """
     assert "name_equivalent" not in net.bus.columns.tolist()
     net.bus["name_equivalent"] = "uuid"
-    net.bus.name_equivalent.loc[boundary_buses] = ["Boundary bus " + str(uuid.uuid1()) for _ in
-                                                   boundary_buses]
+    net.bus.loc[boundary_buses, "name_equivalent"] = ["Boundary bus " + str(uuid.uuid1()) for _ in
+                                                      boundary_buses]
 
 
 def drop_assist_elms_by_creating_ext_net(net, elms=None):

@@ -325,7 +325,7 @@ def reindex_elements(net, element_type, new_indices=None, old_indices=None, look
     for cost_df in ["pwl_cost", "poly_cost"]:
         element_in_cost_df = (net[cost_df].et == element_type) & net[cost_df].element.isin(old_indices)
         if sum(element_in_cost_df):
-            net[cost_df].element.loc[element_in_cost_df] = get_indices(net[cost_df].element[
+            net[cost_df].loc[element_in_cost_df, "element"] = get_indices(net[cost_df].element[
                 element_in_cost_df], lookup)
 
 
