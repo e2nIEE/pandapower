@@ -1,9 +1,9 @@
 try:
     import pandaplan.core.pplog as logging
-    logger = logging.logger
 except ImportError:
     import logging
-    logger = logging.getLogger(__name__)
+
+logger = logging.getLogger(__name__)
 
 def create_network_dict(app, flag_graphics='GPS'):
     # elements to be exported from PowerFactory
