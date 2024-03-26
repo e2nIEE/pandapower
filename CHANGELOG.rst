@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2023-..-..
 -------------------------------
+- [ADDED] function to search std_types from the basic standard type library
 - [ADDED] Documentation for running powerflow using power-grid-model
 - [ADDED] exporting to :code:`GeoJSON` with all properties from :code:`bus`, :code:`res_bus` and :code:`line`, :code:`res_line`
 - [ADDED] function to run powerflow using the power-grid-model library
@@ -35,9 +36,26 @@ Change Log
 - [ADDED] option to use a second tap changer for the trafo element
 - [CHANGED] parameters of function merge_internal_net_and_equivalent_external_net()
 - [FIXED] :code:`convert_format.py`: update the attributes of the characteristic objects to match the new characteristic
+- [FIXED] fixed the wrong id numbers for pypower powerflow algorithms fdxb and fdbx
 - [FIXED] additional arguments from mpc saved to net._options: create "_options" if it does not exist
 - [CHANGED] cim2pp: extracted getting default classes, added generic setting datatypes from CGMES XMI schema
-
+- [ADDED] function :code:`getOTDF` to obtain Outage Transfer Distribution Factors, that can be used to analyse outages using the DC approximation of the power system
+- [ADDED] function :code:`outage_results_OTDF` to obtain the matrix of results for all outage scenarios, with rows as outage scenarios and columns as branch power flows in that scenario
+- [FIXED] add some safeguards for TDPF to avoid numerical issues in some cases
+- [CHANGED] numba version check during init phase, not during calculation, saving about 3% calculation time for a loadflow
+- [FIXED] avoid attaching elements as duplicates to a group where some of the elements already exist
+- [ADDED] the function :code:`run_contingency` can raise a captured error if parameter :code:`raise_errors` is passed
+- [FIXED] bugfix for tap dependent impedance characteristics so that not all characteristics columns are necessary
+- [ADDED] add kwargs passing of get_equivalent() to runpp_fct()
+- [ADDED] auxiliary functions ets_to_element_types() and element_types_to_ets() as well as toolbox function get_connected_buses_at_switches() and extension to get_connected_switches()
+- [FIXED] in function :code:`toolbox.replace_zero_branches_with_switches`, use absolute for the parameters of impedance elements in case they are negative nonzero values
+- [FIXED] in :code:`reindex_elements`: fixed index error when reindexing line_geodata
+- [FIXED] bug in :code:`cim2pp`: Changed zero prioritized generators with voltage controller to sgens (like PowerFactory does)
+- [ADDED] cim2pp: added description fields for each asset and added BusbarSection information to nodes
+- [CHANGED] cim2pp: reformat documentation for reading in files
+- [CHANGED] allow providing grid_tables as a parameter to the function that downloads net from PostgreSQL
+- [FIXED] compatibility with lightsim2grid after new version 0.8.0
+- [ADDED] allow passing custom runpp-function to pp.diagnostic
 
 [2.13.1] - 2023-05-12
 -------------------------------

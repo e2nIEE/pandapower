@@ -169,7 +169,8 @@ def attach_to_group(net, index, element_types, elements, reference_columns=None,
             prev_elm = net.group.element.loc[group_et].at[index]
             prev_elm = [prev_elm] if isinstance(prev_elm, str) or not hasattr(
                 prev_elm, "__iter__") else list(prev_elm)
-            net.group.element.loc[group_et] = [prev_elm + elm]
+            net.group.element.loc[group_et] = [prev_elm + list(pd.Index(elm).difference(
+                pd.Index(prev_elm)))]
 
         # --- prepare adding new rows to net.group (because no other elements of element type et
         # --- already belong to the group)
