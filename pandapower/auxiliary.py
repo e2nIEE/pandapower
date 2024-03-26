@@ -1263,8 +1263,8 @@ def SVabc_from_SV012(S012, V012, n_res=None, idx=None):
         idx = np.ones(n_res, dtype="bool")
     I012 = np.array(np.zeros((3, n_res)), dtype=np.complex128)
     I012[:, idx] = I_from_SV_elementwise(S012[:, idx], V012[:, idx])
-    Vabc = sequence_to_phase(V012[:, idx])
-    Iabc = sequence_to_phase(I012[:, idx])
+    Vabc = sequence_to_phase(V012)
+    Iabc = sequence_to_phase(I012)
     Sabc = S_from_VI_elementwise(Vabc, Iabc)
     return Sabc, Vabc
 
