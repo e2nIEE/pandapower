@@ -363,6 +363,48 @@ def test_undefined_tap_dependent_impedance_characteristics():
         pp.runpp(net)
 
 
+def test_undefined_tap_dependent_impedance_characteristics_trafo3w():
+    # if some characteristic per 1 trafo are undefined, but at least 1 is defined -> OK
+    # if all characteristic per 1 trafo are undefined -> raise error
+    net = create_net()
+    add_trafo_connection(net, 1, "3W")
+    add_trafo_connection(net, 1, "3W")
+    net2 = create_net()
+    add_trafo_connection(net2, 1, "3W")
+    add_trafo_connection(net2, 1, "3W")
+
+    pp.control.create_trafo_characteristics(net, 'trafo3w', [0, 1], 'vk_mv_percent', [[-2, -1, 0, 1, 2], [-2, -1, 0, 1, 2]], [[0.7, 0.9, 1, 1.1, 1.3], [0.7, 0.9, 1, 1.1, 1.3]])
+    pp.control.create_trafo_characteristics(net, 'trafo3w', [0, 1], 'vkr_mv_percent', [[-2, -1, 0, 1, 2], [-2, -1, 0, 1, 2]], [[0.3, 0.45, 0.5, 0.55, 0.7], [0.3, 0.45, 0.5, 0.55, 0.7]])
+
+    pp.control.Characteristic(net2, [-2, -1, 0, 1, 2], [0.7, 0.9, 1, 1.1, 1.3])
+    pp.control.Characteristic(net2, [-2, -1, 0, 1, 2], [0.3, 0.45, 0.5, 0.55, 0.7])
+
+    pp.control.TapDependentImpedance(net2, [0], 0, trafotable="trafo3w", output_variable="vk_mv_percent")
+    pp.control.TapDependentImpedance(net2, [0], 1, trafotable="trafo3w", output_variable="vkr_mv_percent")
+    pp.control.TapDependentImpedance(net2, [1], 0, trafotable="trafo3w", output_variable="vk_mv_percent")
+    pp.control.TapDependentImpedance(net2, [1], 1, trafotable="trafo3w", output_variable="vkr_mv_percent")
+
+    pp.runpp(net)
+    pp.runpp(net2, run_control=True)
+    assert_res_equal(net, net2)
+
+    net.trafo3w.at[0, "vk_mv_percent_characteristic"] = None
+    pp.runpp(net)
+    net2.controller.at[0, "in_service"] = False
+    pp.runpp(net2, run_control=True)
+    assert_res_equal(net, net2)
+
+    net.trafo3w.at[0, "vkr_mv_percent_characteristic"] = None
+    net2.controller.at[1, "in_service"] = False
+    with pytest.raises(UserWarning):
+        pp.runpp(net)
+
+    net.trafo3w.at[0, "tap_dependent_impedance"] = False
+    pp.runpp(net)
+    pp.runpp(net2, run_control=True)
+    assert_res_equal(net, net2)
+
+
 def test_ext_grid(result_test_network, v_tol=1e-6, va_tol=1e-2, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
     net = result_test_network
     runpp_with_consistency_checks(net, calculate_voltage_angles=True)

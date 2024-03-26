@@ -262,7 +262,7 @@ class PowerTransformersCim16:
 
     def _prepare_power_transformers_cim16(self) -> pd.DataFrame:
         eq_power_transformers = self.cimConverter.cim['eq']['PowerTransformer'][
-            ['rdfId', 'name', 'isPartOfGeneratorUnit']]
+            ['rdfId', 'name', 'description', 'isPartOfGeneratorUnit']]
         eq_power_transformers[sc['o_cl']] = 'PowerTransformer'
         eq_power_transformer_ends = self.cimConverter.cim['eq']['PowerTransformerEnd'][
             ['rdfId', 'PowerTransformer', 'endNumber', 'Terminal', 'ratedS', 'ratedU', 'r', 'x', 'b', 'g', 'r0', 'x0',

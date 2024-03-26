@@ -498,6 +498,7 @@ def _get_vk_values(trafo_df, characteristic, trafotype="2W"):
         # must cast to float64 unfortunately, because numpy.vstack casts arrays to object because it doesn't know pandas.NA, np.isnan fails
         all_characteristic_idx = np.vstack([get_trafo_values(
             trafo_df, f"{c}_characteristic").astype(np.float64) for c in char_columns]).T
+        index_column = {c: i for i, c in enumerate(char_columns)}
         # now we check if any trafos that have tap_dependent_impedance have all of the characteristics missing
         all_missing = np.isnan(all_characteristic_idx).all(axis=1) & tap_dependent_impedance
         if np.any(all_missing):
@@ -512,7 +513,7 @@ def _get_vk_values(trafo_df, characteristic, trafotype="2W"):
         if use_tap_dependent_impedance and vk_var in char_columns:
             vals += (_calc_tap_dependent_value(
                 trafo_df, tap_pos, vk_value, vk_var, tap_dependent_impedance,
-                characteristic, all_characteristic_idx[:, c]),)
+                characteristic, all_characteristic_idx[:, index_column[vk_var]]),)
         else:
             vals += (vk_value,)
 

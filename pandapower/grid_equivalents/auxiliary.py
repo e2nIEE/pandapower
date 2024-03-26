@@ -40,7 +40,8 @@ def _runpp_except_voltage_angles(net, **kwargs):
 
 def add_ext_grids_to_boundaries(net, boundary_buses, adapt_va_degree=False,
                                 runpp_fct=_runpp_except_voltage_angles,
-                                calc_volt_angles=True, allow_net_change_for_convergence=False):
+                                calc_volt_angles=True, allow_net_change_for_convergence=False,
+                                **kwargs):
     """
     adds ext_grids for the given network. If the bus results are
     available, ext_grids are created according to the given bus results;
@@ -77,7 +78,7 @@ def add_ext_grids_to_boundaries(net, boundary_buses, adapt_va_degree=False,
         net.gen.slack = False
         try:
             runpp_fct(net, calculate_voltage_angles=calc_volt_angles,
-                      max_iteration=100)
+                      max_iteration=100, **kwargs)
         except pp.LoadflowNotConverged as e:
             if allow_net_change_for_convergence:
 
@@ -89,7 +90,7 @@ def add_ext_grids_to_boundaries(net, boundary_buses, adapt_va_degree=False,
                 for no, idx in enumerate(imp_neg):
                     net.impedance.loc[idx, ["rft_pu", "rtf_pu", "xft_pu", "xtf_pu"]] *= -1
                     try:
-                        runpp_fct(net, calculate_voltage_angles=True, max_iteration=100)
+                        runpp_fct(net, calculate_voltage_angles=True, max_iteration=100, **kwargs)
                         logger.warning("The sign of these impedances were changed to enable a power"
                                     f" flow: {imp_neg[:no]}")
                         break
@@ -109,7 +110,7 @@ def add_ext_grids_to_boundaries(net, boundary_buses, adapt_va_degree=False,
                     if changes:
                         try:
                             runpp_fct(net, calculate_voltage_angles=calc_volt_angles,
-                                    max_iteration=100)
+                                    max_iteration=100, **kwargs)
                             logger.warning("Reactances of these impedances has been increased to "
                                         f"enable a power flow: {is2small}")
                         except pp.LoadflowNotConverged as e:
@@ -132,7 +133,7 @@ def add_ext_grids_to_boundaries(net, boundary_buses, adapt_va_degree=False,
         va_ave = va.sum() / va.shape[0]
         net.ext_grid.va_degree.loc[add_eg] -= va_ave
         runpp_fct(net, calculate_voltage_angles=calc_volt_angles,
-                 max_iteration=100)
+                 max_iteration=100, **kwargs)
     return orig_slack_gens
 
 
@@ -362,16 +363,18 @@ def match_controller_and_new_elements(net, net_org):
         else:
             internal_buses = []
         for idx in net.controller.index.tolist():
-            elm = net.controller.object[idx].__dict__["element"]
-            var = net.controller.object[idx].__dict__["variable"]
-            elm_idxs = net.controller.object[idx].__dict__["element_index"]
-            org_elm_buses = list(net_org[elm].bus[elm_idxs].values)
+            et = net.controller.object[idx].__dict__.get("element")
+            # var = net.controller.object[idx].__dict__.get("variable")
+            elm_idxs = net.controller.object[idx].__dict__.get("element_index")
+            if et is None or elm_idxs is None:
+                continue
+            org_elm_buses = list(net_org[et].bus[elm_idxs].values)
 
-            new_elm_idxs = net[elm].index[net[elm].bus.isin(org_elm_buses)].tolist()
+            new_elm_idxs = net[et].index[net[et].bus.isin(org_elm_buses)].tolist()
             if len(new_elm_idxs) == 0:
                 tobe_removed.append(idx)
             else:
-                profile_name = [org_elm_buses.index(a) for a in net[elm].bus[new_elm_idxs].values]
+                profile_name = [org_elm_buses.index(a) for a in net[et].bus[new_elm_idxs].values]
 
                 net.controller.object[idx].__dict__["element_index"] = new_elm_idxs
                 net.controller.object[idx].__dict__["matching_params"]["element_index"] = new_elm_idxs
@@ -466,10 +469,10 @@ def _check_network(net):
     # --- check controller names
     if len(net.controller):
        for i in net.controller.index:
-           elm = net.controller.object[i].__dict__["element"]
-           if len(net[elm]) != len(set(net[elm].name.values)):
+           et = net.controller.object[i].__dict__.get("element")
+           if et is not None and len(net[et]) != len(set(net[et].name.values)):
                raise ValueError("if controllers are used, please give a name for every "
-                                 "element ("+elm+"), and make sure the name is unique.")
+                                 "element ("+et+"), and make sure the name is unique.")
 
 
 def get_boundary_vp(net_eq, bus_lookups):

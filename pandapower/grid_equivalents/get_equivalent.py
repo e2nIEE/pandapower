@@ -154,7 +154,8 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
     # --- create reference buses
     orig_slack_gens = add_ext_grids_to_boundaries(
         net, boundary_buses, adapt_va_degree, calc_volt_angles=calculate_voltage_angles,
-        allow_net_change_for_convergence=allow_net_change_for_convergence, runpp_fct=runpp_fct)
+        allow_net_change_for_convergence=allow_net_change_for_convergence, runpp_fct=runpp_fct,
+        **kwargs)
 
     # --- replace ward and xward elements by internal elements (load, shunt, impedance, gen)
     ext_buses_with_ward = net.ward.bus[net.ward.bus.isin(all_external_buses)]
@@ -169,7 +170,7 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
     # --- switch from ward injection to ward addmittance if requested
     if eq_type in ["ward", "xward"] and ward_type == "ward_admittance":
         create_passive_external_net_for_ward_admittance(
-            net, all_external_buses, boundary_buses, runpp_fct=runpp_fct)
+            net, all_external_buses, boundary_buses, runpp_fct=runpp_fct, **kwargs)
 
     # --- rei calculations
     if eq_type == "rei":
@@ -259,6 +260,10 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
 
     if return_internal:
         logger.debug("Merging of internal and equivalent network begins.")
+        if len(kwargs.get("central_controller_types", [])):
+            net_internal.controller.drop([idx for idx in net_internal.controller.index if any([
+                isinstance(net_internal.controller.object.at[idx], central_controller_type) for
+                central_controller_type in kwargs["central_controller_types"]])], inplace=True)
         net_eq = merge_internal_net_and_equivalent_external_net(
             net_eq, net_internal, show_computing_time=show_computing_time,
             calc_volt_angles=calculate_voltage_angles)
