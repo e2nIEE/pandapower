@@ -92,51 +92,37 @@ class CimConverter:
                       sort=False, ignore_index=True)[['rdfId', 'nominalVoltage']]
 
         # --------- convert busses ---------
-        self.classes_dict['connectivityNodesCim16'].ConnectivityNodesCim16(
-            cimConverter=self).convert_connectivity_nodes_cim16()
+        self.classes_dict['ConnectivityNodesCim16'](cimConverter=self).convert_connectivity_nodes_cim16()
         # --------- convert external networks ---------
-        self.classes_dict['externalNetworkInjectionsCim16'].ExternalNetworkInjectionsCim16(
+        self.classes_dict['externalNetworkInjectionsCim16'](
             cimConverter=self).convert_external_network_injections_cim16()
         # --------- convert lines ---------
-        self.classes_dict['acLineSegmentsCim16'].AcLineSegmentsCim16(
-            cimConverter=self).convert_ac_line_segments_cim16(convert_line_to_switch, line_r_limit, line_x_limit)
-        self.classes_dict['dcLineSegmentsCim16'].DcLineSegmentsCim16(
-            cimConverter=self).convert_dc_line_segments_cim16()
+        self.classes_dict['acLineSegmentsCim16'](cimConverter=self).convert_ac_line_segments_cim16(
+            convert_line_to_switch, line_r_limit, line_x_limit)
+        self.classes_dict['dcLineSegmentsCim16'](cimConverter=self).convert_dc_line_segments_cim16()
         # --------- convert switches ---------
-        self.classes_dict['switchesCim16'].SwitchesCim16(cimConverter=self).convert_switches_cim16()
+        self.classes_dict['switchesCim16'](cimConverter=self).convert_switches_cim16()
         # --------- convert loads ---------
-        self.classes_dict['energyConcumersCim16'].EnergyConsumersCim16(
-            cimConverter=self).convert_energy_consumers_cim16()
-        self.classes_dict['conformLoadsCim16'].ConformLoadsCim16(cimConverter=self).convert_conform_loads_cim16()
-        self.classes_dict['nonConformLoadsCim16'].NonConformLoadsCim16(
-            cimConverter=self).convert_non_conform_loads_cim16()
-        self.classes_dict['stationSuppliesCim16'].StationSuppliesCim16(
-            cimConverter=self).convert_station_supplies_cim16()
+        self.classes_dict['energyConcumersCim16'](cimConverter=self).convert_energy_consumers_cim16()
+        self.classes_dict['conformLoadsCim16'](cimConverter=self).convert_conform_loads_cim16()
+        self.classes_dict['nonConformLoadsCim16'](cimConverter=self).convert_non_conform_loads_cim16()
+        self.classes_dict['stationSuppliesCim16'](cimConverter=self).convert_station_supplies_cim16()
         # --------- convert generators ---------
-        self.classes_dict['synchronousMachinesCim16'].SynchronousMachinesCim16(
-            cimConverter=self).convert_synchronous_machines_cim16()
-        self.classes_dict['asynchronousMachinesCim16'].AsynchronousMachinesCim16(
-            cimConverter=self).convert_asynchronous_machines_cim16()
-        self.classes_dict['energySourcesCim16'].EnergySourceCim16(
-            cimConverter=self).convert_energy_sources_cim16()
+        self.classes_dict['synchronousMachinesCim16'](cimConverter=self).convert_synchronous_machines_cim16()
+        self.classes_dict['asynchronousMachinesCim16'](cimConverter=self).convert_asynchronous_machines_cim16()
+        self.classes_dict['energySourcesCim16'](cimConverter=self).convert_energy_sources_cim16()
         # --------- convert shunt elements ---------
-        self.classes_dict['linearShuntCompensatorCim16'].LinearShuntCompensatorCim16(
-            cimConverter=self).convert_linear_shunt_compensator_cim16()
-        self.classes_dict['nonLinearShuntCompensatorCim16'].NonLinearShuntCompensatorCim16(
+        self.classes_dict['linearShuntCompensatorCim16'](cimConverter=self).convert_linear_shunt_compensator_cim16()
+        self.classes_dict['nonLinearShuntCompensatorCim16'](
             cimConverter=self).convert_nonlinear_shunt_compensator_cim16()
-        self.classes_dict['staticVarCompensatorCim16'].StaticVarCompensatorCim16(
-            cimConverter=self).convert_static_var_compensator_cim16()
+        self.classes_dict['staticVarCompensatorCim16'](cimConverter=self).convert_static_var_compensator_cim16()
         # --------- convert impedance elements ---------
-        self.classes_dict['equivalentBranchesCim16'].EquivalentBranchesCim16(
-            cimConverter=self).convert_equivalent_branches_cim16()
-        self.classes_dict['seriesCompensatorsCim16'].SeriesCompensatorsCim16(
-            cimConverter=self).convert_series_compensators_cim16()
+        self.classes_dict['equivalentBranchesCim16'](cimConverter=self).convert_equivalent_branches_cim16()
+        self.classes_dict['seriesCompensatorsCim16'](cimConverter=self).convert_series_compensators_cim16()
         # --------- convert extended ward and ward elements ---------
-        self.classes_dict['equivalentInjectionsCim16'].EquivalentInjectionsCim16(
-            cimConverter=self).convert_equivalent_injections_cim16()
+        self.classes_dict['equivalentInjectionsCim16'](cimConverter=self).convert_equivalent_injections_cim16()
         # --------- convert transformers ---------
-        self.classes_dict['powerTransformersCim16'].PowerTransformersCim16(
-            cimConverter=self).convert_power_transformers_cim16()
+        self.classes_dict['powerTransformersCim16'](cimConverter=self).convert_power_transformers_cim16()
 
         # create the geo coordinates
         gl_or_dl = str(self.kwargs.get('use_GL_or_DL_profile', 'both')).lower()
@@ -152,8 +138,7 @@ class CimConverter:
         if self.cim['gl']['Location'].index.size > 0 and self.cim['gl']['PositionPoint'].index.size > 0 and \
                 use_gl_profile:
             try:
-                self.classes_dict['geoCoordinatesFromGLCim16'].GeoCoordinatesFromGLCim16(
-                    cimConverter=self).add_geo_coordinates_from_gl_cim16()
+                self.classes_dict['geoCoordinatesFromGLCim16'](cimConverter=self).add_geo_coordinates_from_gl_cim16()
             except Exception as e:
                 self.logger.warning("Creating the geo coordinates failed, returning the net without geo coordinates!")
                 self.logger.exception(e)
@@ -169,8 +154,8 @@ class CimConverter:
                 self.cim['dl']['DiagramObjectPoint'].index.size > 0 and self.net.bus_geodata.index.size == 0 and \
                 use_dl_profile:
             try:
-                self.classes_dict['coordinatesFromDLCim16'].CoordinatesFromDLCim16(
-                    cimConverter=self).add_coordinates_from_dl_cim16(diagram_name=kwargs.get('diagram_name', None))
+                self.classes_dict['coordinatesFromDLCim16'](cimConverter=self).add_coordinates_from_dl_cim16(
+                    diagram_name=kwargs.get('diagram_name', None))
             except Exception as e:
                 self.logger.warning("Creating the coordinates failed, returning the net without coordinates!")
                 self.logger.exception(e)
@@ -184,8 +169,7 @@ class CimConverter:
         self.net = pp_tools.set_pp_col_types(net=self.net)
 
         # create transformer tap controller
-        self.classes_dict['tapController'].TapController(
-            cimConverter=self).create_tap_controller_for_power_transformers()
+        self.classes_dict['tapController'](cimConverter=self).create_tap_controller_for_power_transformers()
 
         self.logger.info("Running a power flow.")
         self.report_container.add_log(Report(
