@@ -6,13 +6,15 @@ from tkinter.filedialog import askdirectory
 import pandas
 
 import pandapower as pp
+from pandapower import diagnostic
 
 try:
     import pandaplan.core.pplog as logging
-    logger = logging.logger
 except ImportError:
     import logging
-    logger = logging.getLogger(__name__)
+
+logger = logging.getLogger(__name__)
+root_logger = logging.getLogger()
 
 from pandapower.converter.powerfactory.echo_off import echo_off, echo_on
 from pandapower.converter.powerfactory.pp_import_functions import from_pf
@@ -75,12 +77,16 @@ def save_net(net, filepath, save_as):
         raise ValueError('tried to save grid as %s to %s and failed :(' % (save_as, filepath))
 
 
-def exit_gracefully(msg, is_err):
+def exit_gracefully(app, input_panel, msg, is_err):
     if is_err:
         logger.error('Execution terminated: %s' % msg, exc_info=True)
     else:
         logger.info('Execution finished: %s' % msg)
     echo_on(app)
+    input_panel.destroy()
+    # del(app)
+    # quit()
+    sys.exit(1 if is_err else 0)
 
 
 def run_export(app, pv_as_slack, pf_variable_p_loads, pf_variable_p_gen, scale_feeder_loads=False,
@@ -115,9 +121,9 @@ def run_verify(net, load_flow_params=None):
     logger.info('Validating import...')
     if load_flow_params is None:
         load_flow_params = {
-            'tolerance_mva': 1e-9,  # tolerance of load flow calculation
-            'calculate_voltage_angles': True,  # set True for meshed networks
-            'init': 'dc',  # initialization of load flow: 'flat', 'dc', 'results'
+            # 'tolerance_mva': 1e-9,  # tolerance of load flow calculation
+            # 'calculate_voltage_angles': True,  # set True for meshed networks
+            # 'init': 'dc',  # initialization of load flow: 'flat', 'dc', 'results'
             'PF_MAX_IT': 500  # Pypower option, maximal iterations, passed with kwargs
         }
     logger.debug('load flow params: %s' % load_flow_params)
@@ -125,14 +131,15 @@ def run_verify(net, load_flow_params=None):
     return all_diffs
 
 
-def calc(app, input_panel, entry_path_dst, entry_fname, is_to_verify, is_debug, pv_as_slack,
-         pf_variable_p_loads, pf_variable_p_gen, flag_graphics, handle_us, save_as, tap_opt,
-         export_controller, max_iter_entry):
+def calc(app, input_panel, entry_path_dst, entry_fname, pv_as_slack, export_controller,
+         replace_zero_branches, min_ohm_entry, is_to_verify, is_to_diagnostic, is_debug,
+         pf_variable_p_loads, pf_variable_p_gen, flag_graphics, handle_us,
+         save_as, tap_opt, max_iter_entry):
     # check if logger is to be in debug mode
     if is_debug():
-        pflog.set_PF_level(logger, app_handler, 'DEBUG')
+        pflog.set_PF_level(root_logger, app_handler, 'DEBUG')
     else:
-        pflog.set_PF_level(logger, app_handler, 'INFO')
+        pflog.set_PF_level(root_logger, app_handler, 'INFO')
     logger.debug('starting script')
     echo_off(app, err=1, warn=1, info=1)
     # start_button.config(state="disabled")
@@ -140,13 +147,13 @@ def calc(app, input_panel, entry_path_dst, entry_fname, is_to_verify, is_debug, 
     try:
         dst_dir = get_dst_dir(input_panel, entry_path_dst)
     except Exception as err:
-        exit_gracefully(err, True)
+        exit_gracefully(app, input_panel, err, True)
         return
     # ask for file name
     try:
         filename = get_filename(entry_fname, save_as())
     except RuntimeError as err:
-        exit_gracefully(err, True)
+        exit_gracefully(app, input_panel, err, True)
         return
 
     logger.info('the destination directory is: <%s>' % dst_dir)
@@ -159,6 +166,19 @@ def calc(app, input_panel, entry_path_dst, entry_fname, is_to_verify, is_debug, 
         net = run_export(app, pv_as_slack(), pf_variable_p_loads(), pf_variable_p_gen(), scale_feeder_loads=False,
                          flag_graphics=flag_graphics(), handle_us=handle_us(), save_as=save_as(), tap_opt=tap_opt(),
                          export_controller=export_controller(), max_iter=max_iter)
+        if replace_zero_branches():
+            #pp.replace_zero_branches_with_switches(net, min_length_km=1e-2,
+            #                                       min_r_ohm_per_km=1.5e-3, min_x_ohm_per_km=1.5e-3,
+            #                                       min_c_nf_per_km=1.5e-3,
+            #                                       min_rft_pu=1.5e-5, min_xft_pu=1.5e-5, min_rtf_pu=1.5e-5,
+            #                                       min_xtf_pu=1.5e-5)  # , min_r_ohm=1.5e-3, min_x_ohm=1.5e-3)
+            min_ohm = float(min_ohm_entry.get())
+            to_replace = ((net.line.r_ohm_per_km * net.line.length_km <= min_ohm) |
+                          (net.line.x_ohm_per_km * net.line.length_km <= min_ohm))
+
+            for i in net.line.loc[to_replace].index.values:
+                pp.toolbox.create_replacement_switch_for_branch(net, "line", i)
+                net.line.at[i, "in_service"] = False
 
         logger.info('saving file to: <%s>' % filepath)
         save_net(net, filepath, save_as())
@@ -174,11 +194,13 @@ def calc(app, input_panel, entry_path_dst, entry_fname, is_to_verify, is_debug, 
             # logger.info('saving file to: <%s>' % filepath)
             # save_net(net, filepath, save_as())
             # logger.info('exported validated net')
-    # wrapping up
-    exit_gracefully('exiting script', False)
-    input_panel.destroy()
-    logger.removeHandler(app_handler)
-    exit()
+        if is_to_diagnostic():
+            try:
+                diagnostic(net, warnings_only=True)
+            except Exception as err:
+                logger.error('Error in diagnostic for net: %s', err, exc_info=True)
+    root_logger.removeHandler(app_handler)
+    exit_gracefully(app, input_panel, 'exiting script', False)
 
 
 # if called from powerfactory, __name__ is also '__main__'
@@ -196,7 +218,7 @@ if __name__ == '__main__':
         # logger, app_handler = pflog.setup_logger(app, __name__, 'INFO')
         # logger = logging.getLogger(__name__)
         app_handler = pflog.AppHandler(app, freeze_app_between_messages=True)
-        logger.addHandler(app_handler)
+        root_logger.addHandler(app_handler)
 
         logger.info('starting application')
         # user to store the project and folders
@@ -221,6 +243,6 @@ if __name__ == '__main__':
                 'No project is activated. Please activate a project to perform PandaPower '
                 'Export!')
             project_name = 'None'
-            logger.removeHandler(app_handler)
+            root_logger.removeHandler(app_handler)
 
         gui.make_gui(app, project_name, browse_dst, calc)

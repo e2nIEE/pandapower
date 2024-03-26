@@ -167,6 +167,7 @@ def reindex_buses(net, bus_lookup):
     # --- reindex buses
     net.bus.index = get_indices(net.bus.index, bus_lookup)
     net.res_bus.index = get_indices(net.res_bus.index, bus_lookup)
+    net.res_bus_3ph.index = get_indices(net.res_bus_3ph.index, bus_lookup)
 
     # --- adapt link in bus elements
     for element, value in element_bus_tuples():
@@ -315,7 +316,8 @@ def reindex_elements(net, element_type, new_indices=None, old_indices=None, look
         idx_name = net.line_geodata.index.name
         place_holder = uuid.uuid4()
         net["line_geodata"][place_holder] = net["line_geodata"].index
-        net["line_geodata"].loc[old_indices, place_holder] = get_indices(old_indices, lookup)
+        net["line_geodata"].loc[old_indices.intersection(net.line_geodata.index), place_holder] = (
+            get_indices(old_indices.intersection(net.line_geodata.index), lookup))
         net["line_geodata"].set_index(place_holder, inplace=True)
         net["line_geodata"].index.name = idx_name
 

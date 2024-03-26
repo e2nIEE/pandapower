@@ -63,28 +63,33 @@ def from_cim_dict(cim_parser: cim_classes.CimParser, log_debug=False, convert_li
 
 def get_converter_classes():
     converter_classes: Dict[str,classmethod] = {
-        'connectivityNodesCim16': std_converter_classes.connectivitynodes.connectivityNodesCim16,
-        'externalNetworkInjectionsCim16': std_converter_classes.externalnetworks.externalNetworkInjectionsCim16,
-        'acLineSegmentsCim16': std_converter_classes.lines.acLineSegmentsCim16,
-        'dcLineSegmentsCim16': std_converter_classes.lines.dcLineSegmentsCim16,
-        'switchesCim16': std_converter_classes.switches.switchesCim16,
-        'energyConcumersCim16': std_converter_classes.loads.energyConcumersCim16,
-        'conformLoadsCim16': std_converter_classes.loads.conformLoadsCim16,
-        'nonConformLoadsCim16': std_converter_classes.loads.nonConformLoadsCim16,
-        'stationSuppliesCim16': std_converter_classes.loads.stationSuppliesCim16,
-        'synchronousMachinesCim16': std_converter_classes.generators.synchronousMachinesCim16,
-        'asynchronousMachinesCim16': std_converter_classes.generators.asynchronousMachinesCim16,
-        'energySourcesCim16': std_converter_classes.generators.energySourcesCim16,
-        'linearShuntCompensatorCim16': std_converter_classes.shunts.linearShuntCompensatorCim16,
-        'nonLinearShuntCompensatorCim16': std_converter_classes.shunts.nonLinearShuntCompensatorCim16,
-        'staticVarCompensatorCim16': std_converter_classes.shunts.staticVarCompensatorCim16,
-        'equivalentBranchesCim16': std_converter_classes.impedance.equivalentBranchesCim16,
-        'seriesCompensatorsCim16': std_converter_classes.impedance.seriesCompensatorsCim16,
-        'equivalentInjectionsCim16': std_converter_classes.wards.equivalentInjectionsCim16,
-        'powerTransformersCim16': std_converter_classes.transformers.powerTransformersCim16,
-        'tapController': std_converter_classes.transformers.tapController,
-        'geoCoordinatesFromGLCim16': std_converter_classes.coordinates.geoCoordinatesFromGLCim16,
-        'coordinatesFromDLCim16': std_converter_classes.coordinates.coordinatesFromDLCim16,
+        'ConnectivityNodesCim16': std_converter_classes.connectivitynodes.connectivityNodesCim16.ConnectivityNodesCim16,
+        'externalNetworkInjectionsCim16':
+            std_converter_classes.externalnetworks.externalNetworkInjectionsCim16.ExternalNetworkInjectionsCim16,
+        'acLineSegmentsCim16': std_converter_classes.lines.acLineSegmentsCim16.AcLineSegmentsCim16,
+        'dcLineSegmentsCim16': std_converter_classes.lines.dcLineSegmentsCim16.DcLineSegmentsCim16,
+        'switchesCim16': std_converter_classes.switches.switchesCim16.SwitchesCim16,
+        'energyConcumersCim16': std_converter_classes.loads.energyConcumersCim16.EnergyConsumersCim16,
+        'conformLoadsCim16': std_converter_classes.loads.conformLoadsCim16.ConformLoadsCim16,
+        'nonConformLoadsCim16': std_converter_classes.loads.nonConformLoadsCim16.NonConformLoadsCim16,
+        'stationSuppliesCim16': std_converter_classes.loads.stationSuppliesCim16.StationSuppliesCim16,
+        'synchronousMachinesCim16': std_converter_classes.generators.synchronousMachinesCim16.SynchronousMachinesCim16,
+        'asynchronousMachinesCim16':
+            std_converter_classes.generators.asynchronousMachinesCim16.AsynchronousMachinesCim16,
+        'energySourcesCim16': std_converter_classes.generators.energySourcesCim16.EnergySourceCim16,
+        'linearShuntCompensatorCim16':
+            std_converter_classes.shunts.linearShuntCompensatorCim16.LinearShuntCompensatorCim16,
+        'nonLinearShuntCompensatorCim16':
+            std_converter_classes.shunts.nonLinearShuntCompensatorCim16.NonLinearShuntCompensatorCim16,
+        'staticVarCompensatorCim16': std_converter_classes.shunts.staticVarCompensatorCim16.StaticVarCompensatorCim16,
+        'equivalentBranchesCim16': std_converter_classes.impedance.equivalentBranchesCim16.EquivalentBranchesCim16,
+        'seriesCompensatorsCim16': std_converter_classes.impedance.seriesCompensatorsCim16.SeriesCompensatorsCim16,
+        'equivalentInjectionsCim16': std_converter_classes.wards.equivalentInjectionsCim16.EquivalentInjectionsCim16,
+        'powerTransformersCim16': std_converter_classes.transformers.powerTransformersCim16.PowerTransformersCim16,
+        'tapController': std_converter_classes.transformers.tapController.TapController,
+        'geoCoordinatesFromGLCim16':
+            std_converter_classes.coordinates.geoCoordinatesFromGLCim16.GeoCoordinatesFromGLCim16,
+        'coordinatesFromDLCim16': std_converter_classes.coordinates.coordinatesFromDLCim16.CoordinatesFromDLCim16,
     }
     return converter_classes
 

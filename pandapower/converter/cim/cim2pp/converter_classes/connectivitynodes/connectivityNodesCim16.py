@@ -229,6 +229,14 @@ class ConnectivityNodesCim16:
             #                  "ConnectivityNodes before merge: %s, number of ConnectivityNodes after merge: %s" %
             #                  (connectivity_nodes_size, connectivity_nodes.index.size))
             connectivity_nodes.drop_duplicates(subset=['rdfId'], keep='first', inplace=True)
+        # add the busbars
+        bb = self.cimConverter.cim['eq']['BusbarSection'][['rdfId', 'name']]
+        bb.rename(columns={'rdfId': 'busbar_id', 'name': 'busbar_name'}, inplace=True)
+        bb = pd.merge(bb, self.cimConverter.cim['eq']['Terminal'][['ConnectivityNode', 'ConductingEquipment']].rename(
+            columns={'ConnectivityNode': 'rdfId', 'ConductingEquipment': 'busbar_id'}), how='left', on='busbar_id')
+        bb.drop_duplicates(subset=['rdfId'], keep='first', inplace=True)
+        connectivity_nodes = pd.merge(connectivity_nodes, bb, how='left', on='rdfId')
+
         connectivity_nodes.rename(columns={'rdfId': sc['o_id'], 'TopologicalNode': sc['ct'], 'nominalVoltage': 'vn_kv',
                                            'name_substation': 'zone'}, inplace=True)
         connectivity_nodes['in_service'] = True

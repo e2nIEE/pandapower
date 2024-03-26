@@ -811,7 +811,7 @@ def test_fullgrid_shunt(fullgrid):
 
 
 def test_fullgrid_sgen(fullgrid):
-    assert 0 == len(fullgrid.sgen.index)
+    assert 1 == len(fullgrid.sgen.index)
 
 
 def test_fullgrid_pwl_cost(fullgrid):

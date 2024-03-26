@@ -371,7 +371,7 @@ def example_multivoltage():
                              name='Switch %s - %s' % (net.bus.name.at[bus], line['name']))
 
     open_switch_id = net.switch[(net.switch.name == 'Switch Bus MV5 - MV Line5')].index
-    net.switch.closed.loc[open_switch_id] = False
+    net.switch.loc[open_switch_id, "closed"] = False
 
     # LV
     # Bus-line switches

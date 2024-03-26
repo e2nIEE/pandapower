@@ -28,12 +28,6 @@ The recommended way to select the CGMES-files is via the "file_list" parameter.
 It accepts a folder of xml- or zip-files, a single zip-file or several zip-files as a list.
 For example:
 
-Folder of xml or zip files ::
-
-    import os
-    curr_xml_dir = 'example_cim\\test\\'
-    cgmes_files = [curr_xml_dir + x for x in os.listdir(curr_xml_dir)]
-
 Example of a single zip file ::
 
     cgmes_files = r'example_cim\CGMES_v2.4.15_RealGridTestConfiguration_v2.zip'
@@ -43,6 +37,11 @@ Example of several zip files ::
     cgmes_files = [r'example_cim\CGMES_v2.4.15_SmallGridTestConfiguration_Boundary_v3.0.0.zip',
                    r'example_cim\CGMES_v2.4.15_SmallGridTestConfiguration_BaseCase_Complete_v3.0.0.zip']
 
+Folder of xml or zip files ::
+
+    import os
+    curr_xml_dir = 'example_cim\\test'
+    cgmes_files = [curr_xml_dir + os.sep + x for x in os.listdir(curr_xml_dir)]
 
 To start the converter, the following line is used. As a result it returns a pandapower network. ::
 

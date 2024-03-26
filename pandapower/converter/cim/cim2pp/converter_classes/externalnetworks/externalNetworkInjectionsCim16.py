@@ -59,7 +59,7 @@ class ExternalNetworkInjectionsCim16:
 
         eqssh_eni = self.cimConverter.merge_eq_ssh_profile('ExternalNetworkInjection', add_cim_type_column=True)
 
-        # merge with busses
+        # merge with buses
         eqssh_eni = pd.merge(eqssh_eni, self.cimConverter.bus_merge, how='left', on='rdfId')
 
         # get the voltage from controllers
@@ -85,7 +85,9 @@ class ExternalNetworkInjectionsCim16:
                              self.cimConverter.net.bus[[sc['o_id'], 'zone']].rename({sc['o_id']: 'b_id'}, axis=1),
                              how='left', left_on='ConnectivityNode', right_on='b_id')
 
-        eqssh_eni['referencePriority'].loc[eqssh_eni['referencePriority'] == 0] = np.NaN
+        # convert pu generators with prio = 0 to pq generators (PowerFactory does it same)
+        eqssh_eni['referencePriority'].loc[eqssh_eni['referencePriority'] == 0] = -1
+        eqssh_eni['controlEnabled'].loc[eqssh_eni['referencePriority'] == -1] = False
         eqssh_eni['p'] = -eqssh_eni['p']
         eqssh_eni['q'] = -eqssh_eni['q']
         eqssh_eni['x0x_max'] = ((eqssh_eni['maxR1ToX1Ratio'] + 1j) /
