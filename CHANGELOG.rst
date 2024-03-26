@@ -1,7 +1,11 @@
 Change Log
 =============
 
-[upcoming release] - 2023-..-..
+[upcoming release] - 2024-..-..
+-------------------------------
+
+
+[2.14.0] - 2024-03-26
 -------------------------------
 - [ADDED] function to search std_types from the basic standard type library
 - [ADDED] Documentation for running powerflow using power-grid-model

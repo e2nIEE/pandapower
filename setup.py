@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from setuptools import setup, find_packages
@@ -34,7 +34,7 @@ long_description = '\n\n'.join((install, changelog))
 
 setup(
     name='pandapower',
-    version='2.13.1',
+    version='2.14.0',
     author='Leon Thurner, Alexander Scheidler',
     author_email='leon.thurner@retoflow.de, alexander.scheidler@iee.fraunhofer.de',
     description='An easy to use open source tool for power system modeling, analysis and optimization with a high degree of automation.',
