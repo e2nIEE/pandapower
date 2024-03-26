@@ -436,7 +436,6 @@ def _calc_tap_from_dataframe(net, trafo_df):
                 tap_angles = _replace_nan(tap_step_degree[tap_complex])
                 u1 = vn[tap_complex]
                 du = u1 * _replace_nan(tap_steps)
-                # print(du)
                 vn[tap_complex] = np.sqrt((u1 + du * cos(tap_angles)) ** 2 + (du * sin(tap_angles)) ** 2)
                 trafo_shift[tap_complex] += (arctan(direction * du * sin(tap_angles) /
                                                     (u1 + du * cos(tap_angles))))
@@ -1112,13 +1111,12 @@ def _calculate_3w_tap_changers(t3, t2, sides):
         tap_arrays["tap_side"][side][tap_mask] = "hv" if side == "hv" else "lv"
 
         # t3 trafos with tap changer at star points
-        # TODO check this part
-        # could be made more safe/efficient if we don't jump here everytime if
-        # there are ANY star point taps in the grid, although this is handled well by the masks
-        if any_at_star_point: 
-            mask_star_point = tap_mask & at_star_point
-            t = tap_arrays["tap_step_percent"][side][mask_star_point] 
-            tap_arrays["tap_step_percent"][side][mask_star_point] = 100 * (t * tap_arrays["tap_pos"][side][mask_star_point]) / (100 + (t * tap_arrays["tap_pos"][side][mask_star_point])) / tap_arrays["tap_pos"][side][mask_star_point] # could it also be -t and 0 deg?
+        if any_at_star_point & np.any(mask_star_point := (tap_mask & at_star_point)): 
+            t = tap_arrays["tap_step_percent"][side][mask_star_point] * np.exp(1j * np.deg2rad(tap_arrays["tap_step_degree"][side][mask_star_point]))
+            tap_pos = tap_arrays["tap_pos"][side][mask_star_point]
+            t_corrected = 100 * (t * tap_pos) / (100 + (t * tap_pos)) / tap_pos
+            tap_arrays["tap_step_percent"][side][mask_star_point] = np.abs(t_corrected)
             tap_arrays["tap_side"][side][mask_star_point] = "lv" if side == "hv" else "hv"
-            tap_arrays["tap_step_degree"][side][mask_star_point] += 180
+            tap_arrays["tap_step_degree"][side][mask_star_point] = np.rad2deg(np.angle(t_corrected))
+            tap_arrays["tap_step_degree"][side][mask_star_point] -= 180
     t2.update(tap_arrays)
