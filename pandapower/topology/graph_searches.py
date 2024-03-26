@@ -70,7 +70,7 @@ def connected_components(mg, notravbuses=set()):
 
          mg = top.create_nxgraph(net)
 
-         cc = top.connected_components(net, 5)
+         cc = top.connected_components(mg, 5)
 
     """
 

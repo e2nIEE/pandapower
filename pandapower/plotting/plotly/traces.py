@@ -1092,8 +1092,8 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
             xs = []
             ys = []
             for trace in traces:
-                xs += trace.get('x') or trace['lon']
-                ys += trace.get('y') or trace['lat']
+                xs += trace.get('x') or trace.get('lon') or []
+                ys += trace.get('y') or trace.get('lat') or []
             xs_arr = np.array(xs)
             ys_arr = np.array(ys)
             xrange = np.nanmax(xs_arr) - np.nanmin(xs_arr)
