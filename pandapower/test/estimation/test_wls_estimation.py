@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -425,7 +425,7 @@ def test_cigre_network(init='flat'):
                               bus)
 
     # 2. Do state estimation
-    if not estimate(net, init="flat", calculate_voltage_angles=False):
+    if not estimate(net, init="flat", calculate_voltage_angles=True):
         raise AssertionError("Estimation failed!")
 
     v_result = net.res_bus_est.vm_pu.values

@@ -34,46 +34,6 @@ class CreateMeasurements:
             if one_attr in input_df.columns:
                 self.net[pp_type][one_attr][start_index_pp_net:] = input_df[one_attr][:]
 
-    def update_assets_from_sv(self):
-        self.logger.info("--------------------------- Updating assets from SV ---------------------------")
-        time_start = time.time()
-        sc = cim_tools.get_pp_net_special_columns_dict()
-        # get the measurements from the sv profile and set the Terminal as index
-        sv_powerflow = self.cim['sv']['SvPowerFlow'][['Terminal', 'p', 'q']]
-
-        # update sgen
-        temp = self.net.sgen[[sc['o_id'], sc['t'], 'p_mw', 'q_mvar', 'sn_mva']]
-        temp = pd.merge(temp, sv_powerflow, how='left', left_on=sc['t'], right_on='Terminal')
-        # fix load sign
-        temp['p'] = -temp['p']
-        temp['q'] = -temp['q']
-        temp['p'].fillna(temp['p_mw'], inplace=True)
-        temp['q'].fillna(temp['q_mvar'], inplace=True)
-        temp['new_sn_mva'] = (temp['p'] ** 2 + temp['q'] ** 2) ** .5
-        self.net.sgen.p_mw = temp['p'][:]
-        self.net.sgen.q_mvar = temp['q'][:]
-        self.net.sgen.sn_mva = temp[["new_sn_mva", "sn_mva"]].max(axis=1)
-
-        # update load
-        temp = self.net.load[[sc['o_id'], sc['t'], 'p_mw', 'q_mvar']]
-        temp = pd.merge(temp, sv_powerflow, how='left', left_on=sc['t'], right_on='Terminal')
-        temp['p'].fillna(temp['p_mw'], inplace=True)
-        temp['q'].fillna(temp['q_mvar'], inplace=True)
-        self.net.load.p_mw = temp['p'][:]
-        self.net.load.q_mvar = temp['q'][:]
-
-        # update ward
-        temp = self.net.ward[[sc['o_id'], sc['t'], 'ps_mw', 'qs_mvar', 'pz_mw', 'qz_mvar']]
-        temp = pd.merge(temp, sv_powerflow, how='left', left_on=sc['t'], right_on='Terminal')
-        temp['p'].fillna(temp['ps_mw'], inplace=True)
-        temp['q'].fillna(temp['qs_mvar'], inplace=True)
-        self.net.ward.ps_mw = temp['p'][:]
-        self.net.ward.qs_mvar = temp['q'][:]
-        self.net.ward.pz_mw = temp['p'][:]
-        self.net.ward.qz_mvar = temp['q'][:]
-
-        self.logger.info("Needed time for updating the assets: %ss" % (time.time() - time_start))
-
     def create_measurements_from_analog(self):
         self.logger.info("------------------------- Creating measurements from Analog -------------------------")
         time_start = time.time()

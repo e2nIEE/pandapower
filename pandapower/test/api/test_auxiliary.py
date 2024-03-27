@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import pytest
@@ -8,6 +8,9 @@ import gc
 import copy
 import numpy as np
 import pandas as pd
+
+from pandapower.control import SplineCharacteristic
+from pandapower.control.util.characteristic import LogSplineCharacteristic
 
 try:
     import geopandas as gpd
@@ -278,6 +281,38 @@ def test_create_trafo_characteristics():
         pp.control.create_trafo_characteristics(net, "trafo3w", [0, 1], 'vk_hv_percent',
                                                 [[-8, -4, 0, 4, 8], [-8, -4, 0, 4, 8]],
                                                 [[8.1, 9.1, 10.1, 11.1, 12.1]])
+
+
+@pytest.mark.parametrize("file_io", (False, True), ids=("Without JSON I/O", "With JSON I/O"))
+def test_characteristic(file_io):
+    net = pp.create_empty_network()
+    c1 = SplineCharacteristic(net, [0,1,2], [0, 1, 4], fill_value=(0, 4))
+    c2 = SplineCharacteristic(net, [0,1,2], [0, 1, 4], interpolator_kind="Pchip", extrapolate=False)
+    c3 = SplineCharacteristic(net, [0,1,2], [0, 1, 4], interpolator_kind="hello")
+    c4 = LogSplineCharacteristic(net, [0,1,2], [0, 1, 4], interpolator_kind="Pchip", extrapolate=False)
+
+    if file_io:
+        net_copy = pp.from_json_string(pp.to_json(net))
+        c1, c2, c3, c4 = net_copy.characteristic.object.values
+
+    assert np.allclose(c1([-1]), [0], rtol=0, atol=1e-6)
+    #assert c1(3) == 4
+    #assert c1(1) == 1
+    #assert c1(2) == 4
+    #assert c1(1.5) == 2.25
+
+
+    # test that unknown kind causes error:
+    with pytest.raises(NotImplementedError):
+        c3([0])
+
+def test_log_characteristic_property():
+    net = pp.create_empty_network()
+    c = LogSplineCharacteristic(net, [10, 1000, 10000], [1000, 0.1, 0.001], interpolator_kind="Pchip", extrapolate=False)
+    c._x_vals
+    c([2])
+
+
 
 
 if __name__ == '__main__':

@@ -1,14 +1,22 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from builtins import zip
 from builtins import object
+import numpy as np
 
 from numpy import interp
-from scipy.interpolate import interp1d
+from scipy.interpolate import interp1d, PchipInterpolator
 from pandapower.io_utils import JSONSerializableClass
+
+try:
+    import pandaplan.core.pplog as pplog
+except ImportError:
+    import logging as pplog
+
+logger = pplog.getLogger(__name__)
 
 
 class Characteristic(JSONSerializableClass):
@@ -71,6 +79,14 @@ class Characteristic(JSONSerializableClass):
         self.x_vals = x_values
         self.y_vals = y_values
         self.index = super().add_to_net(net, "characteristic")
+
+    # @property
+    # def x_vals(self):
+    #     return self._x_vals
+    #
+    # @property
+    # def y_vals(self):
+    #     return self._y_vals
 
     @classmethod
     def from_points(cls, net, points, **kwargs):
@@ -146,10 +162,10 @@ class SplineCharacteristic(Characteristic):
     """
     json_excludes = ["self", "__class__", "_interpolator"]
 
-    def __init__(self, net, x_values, y_values, kind="quadratic", fill_value="extrapolate", **kwargs):
-        super().__init__(net, x_values=x_values, y_values=y_values, **kwargs)
-        self.fill_value = fill_value
-        self.kind = kind
+    def __init__(self, net, x_values, y_values, interpolator_kind="interp1d", **kwargs):
+        super().__init__(net, x_values=x_values, y_values=y_values)
+        self.kwargs = kwargs
+        self.interpolator_kind = interpolator_kind
 
     @property
     def interpolator(self):
@@ -166,8 +182,12 @@ class SplineCharacteristic(Characteristic):
     @interpolator.getter
     def interpolator(self):
         if not hasattr(self, '_interpolator'):
-            self._interpolator = interp1d(self.x_vals, self.y_vals, kind=self.kind, bounds_error=False,
-                                          fill_value=self.fill_value)
+            if self.interpolator_kind == "interp1d":
+                self._interpolator = default_interp1d(self.x_vals, self.y_vals, **self.kwargs)
+            elif self.interpolator_kind == "Pchip":
+                self._interpolator = PchipInterpolator(self.x_vals, self.y_vals, **self.kwargs)
+            else:
+                raise NotImplementedError(f"Interpolator {self.interpolator_kind} not implemented!")
         return self._interpolator
 
     def __call__(self, x):
@@ -182,3 +202,36 @@ class SplineCharacteristic(Characteristic):
             The interpolated y-value.
         """
         return self.interpolator(x)
+
+
+class LogSplineCharacteristic(SplineCharacteristic):
+
+    def __init__(self, net, x_values, y_values, **kwargs):
+        super().__init__(net, x_values, y_values, **kwargs)
+
+    @property
+    def x_vals(self):
+        return self._x_vals
+
+    @property
+    def y_vals(self):
+        return self._y_vals
+
+    @x_vals.setter
+    def x_vals(self, x_values):
+        if np.any(x_values == 0):
+            logger.warning("zero-values not supported in x_values")
+        self._x_vals = np.log10(x_values)
+
+    @y_vals.setter
+    def y_vals(self, y_values):
+        if np.any(y_values == 0):
+            logger.warning("zero-values not supported in y_values")
+        self._y_vals = np.log10(y_values)
+
+    def __call__(self, x):
+        return np.power(10, self.interpolator(np.log10(x)))
+
+
+def default_interp1d(x, y, kind="quadratic", bounds_error=False, fill_value="extrapolate", **kwargs):
+    return interp1d(x, y, kind=kind, bounds_error=bounds_error, fill_value=fill_value, **kwargs)

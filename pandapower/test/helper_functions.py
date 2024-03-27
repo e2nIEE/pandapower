@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -53,7 +53,7 @@ def create_test_network():
 
     pp.create_line_from_parameters(net, b2, b3, 1, name="line1", r_ohm_per_km=0.2067,
                                    ices=0.389985, c_nf_per_km=720.0, max_i_ka=0.328,
-                                   x_ohm_per_km=0.1897522, geodata=np.array([[1, 2], [3, 4]]))
+                                   x_ohm_per_km=0.1897522, geodata=[[1, 2], [3, 4]])
     # NAYY 1x150RM 0.6/1kV ir
     pp.create_line_from_parameters(net, b1, b4, 1, name="line2", r_ohm_per_km=0.876,
                                    c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876)

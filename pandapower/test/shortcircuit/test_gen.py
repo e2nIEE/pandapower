@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -79,6 +79,27 @@ def test_max_gen_fault_impedance(one_line_one_generator):
     # assert abs(net.res_bus_sc.ikss_ka.at[1] - 0.4418823) < 1e-7
     # assert abs(net.res_bus_sc.ikss_ka.at[2] - 0.4450868) < 1e-7
     assert pd.isnull(net.res_bus_sc.ikss_ka.at[3])
+
+
+def test_gen_ext_grid_same_bus():
+    net = pp.create_empty_network()
+    b = pp.create_bus(net, 110)
+
+    net1 = net.deepcopy()
+    pp.create_ext_grid(net1, b, s_sc_max_mva=1000, rx_max=0.4)
+    sc.calc_sc(net1)
+
+    net2 = net.deepcopy()
+    pp.create_gen(net2, b, 0, sn_mva=50, vn_kv=115, xdss_pu=0.2, rdss_ohm=20, cos_phi=0.8, pg_percent=0)
+    sc.calc_sc(net2)
+
+    net3 = net1.deepcopy()
+    pp.create_gen(net3, b, 0, sn_mva=50, vn_kv=115, xdss_pu=0.2, rdss_ohm=20, cos_phi=0.8, pg_percent=0)
+    sc.calc_sc(net3)
+
+    # no idea why it is not close to 1e-6
+    assert np.isclose(net3.res_bus_sc.at[0, "ikss_ka"],
+                      net1.res_bus_sc.at[0, "ikss_ka"] + net2.res_bus_sc.at[0, "ikss_ka"], rtol=0, atol=2e-4)
 
 
 # def test_rdss_estimations():

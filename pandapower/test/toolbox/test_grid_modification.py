@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
@@ -565,7 +565,7 @@ def test_replace_ext_grid_gen():
     for i in range(2):
         net = nw.example_simple()
         net.ext_grid["uuid"] = "test"
-        pp.runpp(net)
+        pp.runpp(net, calculate_voltage_angles="auto")
         assert list(net.res_ext_grid.index.values) == [0]
         pp.create_group(net, ["line", "ext_grid"], [[0], [0]])
 

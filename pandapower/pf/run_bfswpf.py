@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -377,7 +377,7 @@ def _run_bfswpf(ppci, options, **kwargs):
     """
     time_start = perf_counter()  # starting pf calculation timing
 
-    baseMVA, bus, gen, branch, svc, tcsc, ref, pv, pq, *_, gbus, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
+    baseMVA, bus, gen, branch, svc, tcsc, ssc, ref, pv, pq, *_, gbus, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
 
     enforce_q_lims, tolerance_mva, max_iteration, calculate_voltage_angles, numba = _get_options(options)
 
@@ -450,7 +450,7 @@ def _run_bfswpf(ppci, options, **kwargs):
     # #----- output results to ppc ------
     ppci["et"] = perf_counter() - time_start  # pf time end
 
-    bus, gen, branch = pfsoln(baseMVA, bus, gen, branch, svc, tcsc, Ybus, Yf, Yt, V_final, ref, ref_gens)
+    bus, gen, branch = pfsoln(baseMVA, bus, gen, branch, svc, tcsc, ssc, Ybus, Yf, Yt, V_final, ref, ref_gens)
     # bus, gen, branch = pfsoln_bfsw(baseMVA, bus, gen, branch, V_final, ref, pv, pq, BIBC, ysh_f,ysh_t,Iinj, Sbus)
 
     ppci["success"] = success

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from tempfile import gettempdir
@@ -10,7 +10,7 @@ from pandapower.plotting import create_weighted_marker_trace
 from pandapower.plotting.plotly import simple_plotly
 import pandapower.networks as nw
 try:
-    from plotly import __version__
+    import plotly
     PLOTLY_INSTALLED = True
 except ImportError:
     PLOTLY_INSTALLED = False

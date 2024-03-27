@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
@@ -593,6 +593,13 @@ def test_json_list_of_stuff():
     assert_net_equal(net2, loaded_list[1])
     pandapower.toolbox.dataframes_equal(df, loaded_list[2])
     assert text == loaded_list[3]
+
+
+def test_multi_index():
+    df = pd.DataFrame(columns=["a", "b", "c"], dtype=np.int64)
+    df.set_index(["a", "b"], inplace=True)
+    df2 = pp.from_json_string(pp.to_json(df))
+    assert_frame_equal(df, df2)
 
 
 if __name__ == "__main__":

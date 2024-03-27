@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -28,10 +28,12 @@ V_G         = start + 17
 PS_TRAFO_IX = start + 18
 GS_P        = start + 19
 BS_P        = start + 20
-SKSS        = start + 21
+GS_GEN      = start + 21
+BS_GEN      = start + 22
+SKSS        = start + 23
 
-PHI_IKSS1_DEGREE = start + 22
-PHI_IKSS2_DEGREE = start + 23
-PHI_IKCV_DEGREE  = start + 24
+PHI_IKSS1_DEGREE = start + 24
+PHI_IKSS2_DEGREE = start + 25
+PHI_IKCV_DEGREE  = start + 26
 
-bus_cols_sc = 25
+bus_cols_sc = 27

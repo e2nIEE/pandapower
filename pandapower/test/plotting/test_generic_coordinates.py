@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import pytest
@@ -16,7 +16,7 @@ except ImportError:
     IGRAPH_INSTALLED = False
 
 
-@pytest.mark.skipif(IGRAPH_INSTALLED is False, reason="Requires python-igraph.")
+@pytest.mark.skipif(IGRAPH_INSTALLED is False, reason="Requires igraph.")
 def test_create_generic_coordinates_igraph():
     net = create_test_network()
     net.bus_geodata.drop(net.bus_geodata.index, inplace=True)
@@ -32,7 +32,7 @@ def test_create_generic_coordinates_nx():
     create_generic_coordinates(net, library="networkx")
     assert len(net.bus_geodata) == len(net.bus)
 
-@pytest.mark.skipif(IGRAPH_INSTALLED is False, reason="Requires python-igraph.")
+@pytest.mark.skipif(IGRAPH_INSTALLED is False, reason="Requires igraph.")
 def test_create_generic_coordinates_igraph_custom_table_index():
     net = nw.simple_four_bus_system()
     for buses in [[0,1], [0,2], [0,1,2]]:

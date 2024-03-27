@@ -8,10 +8,9 @@ import math
 
 import numpy as np
 import pandas as pd
-from packaging import version
 from collections.abc import Iterable
 
-from pandapower.auxiliary import soft_dependency_error
+from pandapower.auxiliary import soft_dependency_error, version_check
 from pandapower.plotting.plotly.get_colors import get_plotly_color, get_plotly_cmap
 from pandapower.plotting.plotly.mapbox_plot import _on_map_test, _get_mapbox_token, \
     MapboxTokenMissing
@@ -23,27 +22,16 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 try:
-    from plotly import __version__ as plotly_version
     from plotly.graph_objs.scatter.marker import ColorBar
     from plotly.graph_objs import Figure, Layout
     from plotly.graph_objs.layout import XAxis, YAxis
     from plotly.graph_objs.scatter import Line, Marker
     from plotly.graph_objs.scattermapbox import Line as scmLine
     from plotly.graph_objs.scattermapbox import Marker as scmMarker
+    version_check('plotly')
     PLOTLY_INSTALLED = True
 except ImportError:
     PLOTLY_INSTALLED = False
-
-
-def version_check():
-    if "plotly_version" not in locals() and "plotly_version" not in globals():
-        raise UserWarning("You are trying to use plotly, which is not installed.\r\n"
-                          "Please upgrade your python-plotly installation, "
-                          "e.g., via pip install --upgrade plotly")
-    if version.parse(plotly_version) < version.parse("3.1.1"):
-        raise UserWarning(f"Your plotly version {plotly_version} is no longer supported.\r\n"
-                          "Please upgrade your python-plotly installation, "
-                          "e.g., via pip install --upgrade plotly")
 
 
 def _in_ipynb():
@@ -1104,17 +1092,27 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
             xs = []
             ys = []
             for trace in traces:
-                xs += trace.get('x') or trace['lon']
-                ys += trace.get('y') or trace['lat']
-            x_dropna = pd.Series(xs).dropna()
-            y_dropna = pd.Series(ys).dropna()
-            xrange = x_dropna.max() - x_dropna.min()
-            yrange = y_dropna.max() - y_dropna.min()
-            ratio = xrange / yrange
-            if ratio < 1:
-                aspectratio = (ratio, 1.)
+                xs += trace.get('x') or trace.get('lon') or []
+                ys += trace.get('y') or trace.get('lat') or []
+            xs_arr = np.array(xs)
+            ys_arr = np.array(ys)
+            xrange = np.nanmax(xs_arr) - np.nanmin(xs_arr)
+            yrange = np.nanmax(ys_arr) - np.nanmin(ys_arr)
+
+            # the ratio only makes sense, if xrange and yrange != 0
+            if xrange == 0 and yrange == 0:
+                aspectratio = (1, 1)
+            elif xrange == 0:
+                aspectratio = (0.35, 1)
+            elif yrange == 0:
+                aspectratio = (1, 0.35)
+
             else:
-                aspectratio = (1., 1 / ratio)
+                ratio = xrange / yrange
+                if ratio < 1:
+                    aspectratio = (ratio, 1.)
+                else:
+                    aspectratio = (1., 1 / ratio)
 
         aspectratio = np.array(aspectratio) / max(aspectratio)
         fig['layout']['width'], fig['layout']['height'] = ([ar * figsize * 700 for ar in aspectratio])

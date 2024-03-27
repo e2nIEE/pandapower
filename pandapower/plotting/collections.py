@@ -355,7 +355,7 @@ def _create_complex_branch_collection(coords, patch_maker, size=1, infos=None, r
 
 def create_bus_collection(net, buses=None, size=5, patch_type="circle", color=None, z=None,
                           cmap=None, norm=None, infofunc=None, picker=False, bus_geodata=None,
-                          cbar_title="Bus Voltage [pu]", **kwargs):
+                          cbar_title="Bus Voltage [pu]", clim=None, plot_colormap=True, **kwargs):
     """
     Creates a matplotlib patch collection of pandapower buses.
 
@@ -391,6 +391,10 @@ def create_bus_collection(net, buses=None, size=5, patch_type="circle", color=No
         If None, net["bus_geodata"] is used
 
         **cbar_title** (str, "Bus Voltage [pu]") - colormap bar title in case of given cmap
+        
+        **clim** (tuple of floats, None) - setting the norm limits for image scaling
+
+        **plot_colormap** (bool, True) - flag whether the colormap is actually drawn
 
         **kwargs** - key word arguments are passed to the patch function
 
@@ -414,7 +418,7 @@ def create_bus_collection(net, buses=None, size=5, patch_type="circle", color=No
     if cmap is not None:
         if z is None:
             z = net.res_bus.vm_pu.loc[buses]
-        add_cmap_to_collection(pc, cmap, norm, z, cbar_title)
+        add_cmap_to_collection(pc, cmap, norm, z, cbar_title, plot_colormap, clim)
 
     return pc
 
@@ -455,6 +459,8 @@ def create_line_collection(net, lines=None, line_geodata=None, bus_geodata=None,
         **cbar_title** (str, "Line Loading [%]") - colormap bar title in case of given cmap
 
         **clim** (tuple of floats, None) - setting the norm limits for image scaling
+
+        **plot_colormap** (bool, True) - flag whether the colormap is actually drawn
 
         **kwargs** - key word arguments are passed to the patch function
 
