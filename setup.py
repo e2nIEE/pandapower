@@ -63,7 +63,7 @@ setup(
         "converter": ["matpowercaseframes"],
         "all": ["numpydoc", "sphinx", "sphinx_rtd_theme",
                 "plotly>=3.1.1", "matplotlib", "igraph", "geopandas", "geojson",
-                "pytest<=7.0", "pytest-xdist",
+                "pytest~=7.0", "pytest-xdist",
                 "ortools",  # lightsim2grid,
                 "xlsxwriter", "openpyxl", "cryptography",
                 "psycopg2",  # for PostgreSQL I/O
