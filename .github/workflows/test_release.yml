@@ -1,7 +1,7 @@
 # This workflow will create a Python package and upload it to testPyPi or PyPi
 # Then, it installs pandapower from there and all dependencies and runs tests with different Python versions
 
-name: release
+name: test
 
 # Controls when the action will run.
 on:
