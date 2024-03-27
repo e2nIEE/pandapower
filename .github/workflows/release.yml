@@ -111,15 +111,15 @@ jobs:
           if ${{ matrix.python-version == '3.9' }}; then python -m pip install pypower; fi
           if ${{ matrix.python-version != '3.9' }}; then python -m pip install numba; fi
           if ${{ matrix.python-version == '3.8' || matrix.python-version == '3.10' }}; then python -m pip install lightsim2grid; fi
-      - name: Install Julia
-        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.9'
-        run: |
-          ./.install_julia.sh 1.8
-          pip install julia
-          python ./.install_pycall.py
+#      - name: Install Julia
+#        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.9'
+#        run: |
+#          ./.install_julia.sh 1.8
+#          pip install julia
+#          python ./.install_pycall.py
       - name: List all installed packages
         run: |
           pip list
       - name: Test with pytest
         run: |
-          pytest --splits 2 --group ${{ matrix.group }} --pyargs pandapower.test
+          pytest --group ${{ matrix.group }} --pyargs pandapower.test
