@@ -51,7 +51,8 @@ In the resulting pandapower-network, the following should be noted:
  - Each component-table (bus, line, trafo, etc.) will get an "origin_id" column which points to the original CIM CGMES UUIDs.
  - If the CGMES model is bus-branch, the pandapower buses will be created from the TopologicalNodes.
  - If the CGMES model is node-breaker, the pandapower buses will be created from the ConnectivityNodes.
- - If the CGMES model has geo-coordinates (in the GL profile) they will be translated to bus_geodata and line_geodata respectively.
+ - If the CGMES model has geo-coordinates (in the GL profile) they will be translated to bus.geo and line.geo respectively.
+ - If the CGMES model has diagram coordinates (in the DL profile) they will be translated to bus.diagram and line.diagram respectively.
  - If the CGMES model includes measurements, they will be written to the pandapower measurement-table.
 
 

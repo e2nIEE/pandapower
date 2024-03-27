@@ -196,15 +196,8 @@ def _simple_plotly_generic(net, respect_separators, use_branch_geodata, on_map, 
     settings = dict(on_map=on_map, projection=projection, map_style=map_style, figsize=figsize,
                     aspectratio=aspectratio, filename=filename, auto_open=auto_open,
                     showlegend=showlegend)
-    # create geocoord if none are available
-    branch_geodata = branch_element + "_geodata"
-    node_geodata = node_element + "_geodata"
 
-    if branch_geodata not in net:
-        net[branch_geodata] = pd.DataFrame(columns=['coords'])
-    if node_geodata not in net:
-        net[node_geodata] = pd.DataFrame(columns=["x", "y"])
-    if len(net[node_geodata]) == 0:
+    if len(net[node_element]["geo"].dropna()) == 0:
         logger.warning("No or insufficient geodata available --> Creating artificial coordinates." +
                        " This may take some time...")
         create_generic_coordinates(net, respect_switches=respect_separators)
@@ -212,19 +205,19 @@ def _simple_plotly_generic(net, respect_separators, use_branch_geodata, on_map, 
             logger.warning(
                 "Map plots not available with artificial coordinates and will be disabled!")
             on_map = False
-    # check if geodata are real geographycal lat/lon coordinates using geopy
+    # check if geodata are real geographical lat/lon coordinates using geopy
     if on_map and projection is not None:
         geo_data_to_latlong(net, projection=projection)
     # ----- Nodes (Buses) ------
-    # initializating node trace
+    # initializing node trace
     hoverinfo = hoverinfo_func(net, element=node_element)
     node_trace = node_trace_func(net, net[node_element].index, size=node_size, color=node_color,
                                     infofunc=hoverinfo)
     # ----- branches (Lines) ------
     # if node geodata is available, but no branch geodata
     if use_branch_geodata is None:
-        use_branch_geodata = False if len(net[branch_geodata]) == 0 else True
-    elif use_branch_geodata and len(net[branch_geodata]) == 0:
+        use_branch_geodata = False if len(net[branch_element]["geo"]) == 0 else True
+    elif use_branch_geodata and len(net[branch_element]["geo"]) == 0:
         logger.warning(
             "No or insufficient line geodata available --> only bus geodata will be used.")
         use_branch_geodata = False

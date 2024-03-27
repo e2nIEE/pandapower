@@ -103,8 +103,6 @@ def test_merge_and_split_nets():
     net1 = nw.mv_oberrhein()
     pp.create_poly_cost(net1, 2, "sgen", 8)
     pp.create_poly_cost(net1, 0, "sgen", 9)
-    # TODO there are some geodata values in oberrhein without corresponding lines
-    net1.line_geodata.drop(set(net1.line_geodata.index) - set(net1.line.index), inplace=True)
     n1 = len(net1.bus)
     pp.runpp(net1)
     net2 = nw.create_cigre_network_mv(with_der="pv_wind")
@@ -114,28 +112,28 @@ def test_merge_and_split_nets():
 
     net1_before = copy.deepcopy(net1)
     net2_before = copy.deepcopy(net2)
-    net = pp.merge_nets(net1, net2, net2_reindex_log_level="debug")
-    pp.runpp(net)
+    _net = pp.merge_nets(net1, net2, net2_reindex_log_level="debug")
+    pp.runpp(_net)
 
     # check that merge_nets() doesn't change inputs (but result tables)
     pp.test.assert_net_equal(net1, net1_before, check_without_results=True)
     pp.test.assert_net_equal(net2, net2_before, check_without_results=True)
 
     # check that results of merge_nets() fit
-    assert np.allclose(net.res_bus.vm_pu.iloc[:n1].values, net1.res_bus.vm_pu.values)
-    assert np.allclose(net.res_bus.vm_pu.iloc[n1:].values, net2.res_bus.vm_pu.values)
+    assert np.allclose(_net.res_bus.vm_pu.iloc[:n1].values, net1.res_bus.vm_pu.values)
+    assert np.allclose(_net.res_bus.vm_pu.iloc[n1:].values, net2.res_bus.vm_pu.values)
 
     # check content of merge_nets() output
     assert np.array_equal(
         pd.concat([net1.sgen.name.loc[net1.poly_cost.element],
                    net2.sgen.name.loc[net2.poly_cost.element]]).values,
-        net.sgen.name.loc[net.poly_cost.element].values)
+        _net.sgen.name.loc[_net.poly_cost.element].values)
 
     # check that results stay the same after net split
-    net3 = pp.select_subnet(net, net.bus.index[:n1], include_results=True)
+    net3 = pp.select_subnet(_net, _net.bus.index[:n1], include_results=True)
     assert pandapower.toolbox.dataframes_equal(net3.res_bus[["vm_pu"]], net1.res_bus[["vm_pu"]])
 
-    net4 = pp.select_subnet(net, net.bus.index[n1:], include_results=True)
+    net4 = pp.select_subnet(_net, _net.bus.index[n1:], include_results=True)
     assert np.allclose(net4.res_bus.vm_pu.values, net2.res_bus.vm_pu.values)
 
 

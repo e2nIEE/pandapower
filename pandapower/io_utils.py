@@ -24,6 +24,7 @@ from pandapower import __version__
 from pandapower.auxiliary import _preserve_dtypes
 import networkx
 import numpy
+import geojson
 from io import StringIO
 import pandas as pd
 from networkx.readwrite import json_graph
@@ -166,11 +167,16 @@ def to_dict_of_dfs(net, include_results=False, include_std_types=True, include_p
         elif "object" in value.columns:
             columns = [c for c in value.columns if c != "object"]
             tab = value[columns].copy()
-            tab["object"] = value["object"].apply(lambda x: json.dumps(x, cls=PPJSONEncoder,
-                                                                       indent=2))
+            tab["object"] = value["object"].apply(lambda x: json.dumps(x, cls=PPJSONEncoder, indent=2))
             tab = tab[value.columns]
             if "recycle" in tab.columns:
                 tab["recycle"] = tab["recycle"].apply(json.dumps)
+            dodfs[item] = tab
+        elif "geo" in value.columns:
+            columns = [c for c in value.columns if c != "geo"]
+            tab = value[columns].copy()
+            tab["geo"] = value["geo"].apply(lambda x: json.dumps(x, cls=PPJSONEncoder, indent=2))
+            tab = tab[value.columns]
             dodfs[item] = tab
         else:
             dodfs[item] = value
@@ -257,6 +263,12 @@ def from_dict_of_dfs(dodfs, net=None):
             if not isinstance(table.index, pd.MultiIndex):
                 table.rename_axis(net[item].index.name, inplace=True)
             net[item] = table
+            # convert geodata to geojson
+            if item in ["bus", "line"]:
+                if "geo" in table.columns:
+                    table.geo = table.geo.apply(
+                        lambda x: geojson.loads(x, cls=PPJSONDecoder) if pd.notna(x) else x
+                    )
         # set the index to be Int
         try:
             net[item].set_index(net[item].index.astype(np.int64), inplace=True)
@@ -567,6 +579,8 @@ class FromSerializableRegistry():
         for col in ('object', 'controller'):  # "controller" for backwards compatibility
             if (col in df.columns):
                 df[col] = df[col].apply(self.pp_hook)
+        if 'geo' in df.columns:
+            df['geo'] = df['geo'].dropna().apply(json.dumps).apply(geojson.loads)
         return df
 
     @from_serializable.register(class_name='pandapowerNet', module_name='pandapower.auxiliary')#,

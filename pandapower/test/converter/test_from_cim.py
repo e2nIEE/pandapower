@@ -496,7 +496,7 @@ def test_test_SimBench_1_HVMVmixed_1_105_0_sw_modified_ext_grid(SimBench_1_HVMVm
     assert 0.0 == element_0['max_p_mw'].item()
     assert 0.0 == element_0['min_q_mvar'].item()
     assert 0.0 == element_0['max_q_mvar'].item()
-    assert [[11.3706, 53.601]] == element_0['coords'].item()
+    assert '{"type": "Point", "coordinates": [11.3706, 53.601]}' == element_0['geo'].item()
 
 
 def test_realgrid_sgen(realgrid):
@@ -543,23 +543,25 @@ def test_realgrid_sgen(realgrid):
 
 
 def test_smallgrid_DL_line_geodata(smallgrid_DL):
-    assert 176 == len(smallgrid_DL.line_geodata.index)
-    element_0 = smallgrid_DL.line_geodata.iloc[
-        smallgrid_DL.line[smallgrid_DL.line['origin_id'] == '_0447c6f1-c766-11e1-8775-005056c00008'].index]
-    assert [[162.363632, 128.4656], [162.328033, 134.391541], [181.746033, 134.43364]] == element_0['coords'].item()
+    assert "diagram" in smallgrid_DL.line.columns
+    assert 176 == len(smallgrid_DL.line.loc[smallgrid_DL.line.diagram.notna()].index)
+    element_0 = smallgrid_DL.line[smallgrid_DL.line['origin_id'] == '_0447c6f1-c766-11e1-8775-005056c00008']
+    assert ('{"type": "LineString", "coordinates": [[162.363632, 128.4656], [162.328033, 134.391541], '
+            '[181.746033, 134.43364]]}') == element_0['diagram'].item()
 
-    element_1 = smallgrid_DL.line_geodata.iloc[
-        smallgrid_DL.line[smallgrid_DL.line['origin_id'] == '_044a5f09-c766-11e1-8775-005056c00008'].index]
-    assert [[12.87877, 58.5714264], [12.8923006, 69.33862]] == element_1['coords'].item()
+    element_1 = smallgrid_DL.line[smallgrid_DL.line['origin_id'] == '_044a5f09-c766-11e1-8775-005056c00008']
+    assert '{"type": "LineString", "coordinates": [[12.87877, 58.5714264], [12.8923006, 69.33862]]}' == element_1[
+        'diagram'].item()
 
 
 def test_smallgrid_DL_bus_geodata(smallgrid_DL):
-    assert 118 == len(smallgrid_DL.bus_geodata.index)
-    element_0 = smallgrid_DL.bus_geodata.iloc[
-        smallgrid_DL.bus[smallgrid_DL.bus['origin_id'] == '_0471bd2a-c766-11e1-8775-005056c00008'].index]
-    assert 18.5449734 == element_0['x'].item()
-    assert 11.8253975 == element_0['y'].item()
-    assert [[18.5449734, 11.8253975], [18.5449734, 19.41799]] == element_0['coords'].item()
+    assert "diagram" in smallgrid_DL.bus.columns
+    assert 118 == len(smallgrid_DL.bus.loc[smallgrid_DL.bus.diagram.notna()].index)
+    element_0 = smallgrid_DL.bus[smallgrid_DL.bus['origin_id'] == '_0471bd2a-c766-11e1-8775-005056c00008']
+    assert '{"type": "Point", "coordinates": [18.5449734, 11.8253975]}' == element_0['diagram'].item()
+
+    element_1 = smallgrid_DL.bus[smallgrid_DL.bus['origin_id'] == '_04483c26-c766-11e1-8775-005056c00008']
+    assert '{"type": "Point", "coordinates": [39.15344, 94.86773]}' == element_1['diagram'].item()
 
 
 def test_cim2pp(smallgrid_GL):
@@ -567,31 +569,25 @@ def test_cim2pp(smallgrid_GL):
 
 
 def test_smallgrid_GL_line_geodata(smallgrid_GL):
-    assert 176 == len(smallgrid_GL.line_geodata.index)
-    element_0 = smallgrid_GL.line_geodata.iloc[
-        smallgrid_GL.line[smallgrid_GL.line['origin_id'] == '_0447c6f1-c766-11e1-8775-005056c00008'].index]
-    assert [[-0.741597592830658, 51.33917999267578],
-            [-0.9601190090179443, 51.61038589477539],
-            [-1.0638651847839355, 51.73857879638672],
-            [-1.1654152870178223, 52.01515579223633],
-            [-1.1700644493103027, 52.199188232421875]] == element_0['coords'].item()
-    element_1 = smallgrid_GL.line_geodata.iloc[
-        smallgrid_GL.line[smallgrid_GL.line['origin_id'] == '_044a5f09-c766-11e1-8775-005056c00008'].index]
-    assert [[-3.339864492416382, 58.50086212158203],
-            [-3.3406713008880615, 58.31454086303711],
-            [-3.6551620960235596, 58.135623931884766],
-            [-4.029672145843506, 57.973060607910156],
-            [-4.254667282104492, 57.71146774291992],
-            [-4.405538082122803, 57.53498840332031]] == element_1['coords'].item()
+    assert "geo" in smallgrid_GL.line.columns
+    assert 176 == len(smallgrid_GL.line.loc[smallgrid_GL.line.geo.notna()].index)
+    element_0 = smallgrid_GL.line.loc[smallgrid_GL.line['origin_id'] == '_0447c6f1-c766-11e1-8775-005056c00008']
+    assert ('{"type": "LineString", "coordinates": [[-0.741597592830658, 51.33917999267578], '
+            '[-0.9601190090179443, 51.61038589477539], [-1.0638651847839355, 51.73857879638672], '
+            '[-1.1654152870178223, 52.01515579223633], '
+            '[-1.1700644493103027, 52.199188232421875]]}') == element_0['geo'].item()
+    element_1 = smallgrid_GL.line.loc[smallgrid_GL.line['origin_id'] == '_044a5f09-c766-11e1-8775-005056c00008']
+    assert ('{"type": "LineString", "coordinates": [[-3.339864492416382, 58.50086212158203], '
+            '[-3.3406713008880615, 58.31454086303711], [-3.6551620960235596, 58.135623931884766], '
+            '[-4.029672145843506, 57.973060607910156], [-4.254667282104492, 57.71146774291992], '
+            '[-4.405538082122803, 57.53498840332031]]}') == element_1['geo'].item()
 
 
 def test_smallgrid_GL_bus_geodata(smallgrid_GL):
-    assert 115 == len(smallgrid_GL.bus_geodata.index)
-    element_0 = smallgrid_GL.bus_geodata.iloc[
-        smallgrid_GL.bus[smallgrid_GL.bus['origin_id'] == '_0471bd2a-c766-11e1-8775-005056c00008'].index]
-    assert -4.844991207122803 == element_0['x'].item()
-    assert 55.92612075805664 == element_0['y'].item()
-    assert math.isnan(element_0['coords'].item())
+    assert "geo" in smallgrid_GL.bus.columns
+    assert 115 == len(smallgrid_GL.bus.loc[smallgrid_GL.bus.geo.notna()].index)
+    element_0 = smallgrid_GL.bus.loc[smallgrid_GL.bus['origin_id'] == '_0471bd2a-c766-11e1-8775-005056c00008']
+    assert '{"type": "Point", "coordinates": [-4.844991207122803, 55.92612075805664]}' == element_0['geo'].item()
 
 
 def test_fullgrid_xward(fullgrid):
@@ -864,7 +860,9 @@ def test_fullgrid_load(fullgrid):
 
 
 def test_fullgrid_line_geodata(fullgrid):
-    assert 0 == len(fullgrid.line_geodata.index)
+    assert 'geo' in fullgrid.line.columns
+    assert 0 == len(fullgrid.line.loc[fullgrid.line.geo.notna()].index)
+    assert 'diagram' not in fullgrid.line.columns
 
 
 def test_fullgrid_line(fullgrid):
@@ -1081,7 +1079,9 @@ def test_fullgrid_characteristic(fullgrid):
 
 
 def test_fullgrid_bus_geodata(fullgrid):
-    assert 0 == len(fullgrid.bus_geodata.index)
+    assert 'geo' in fullgrid.bus.columns
+    assert 0 == len(fullgrid.bus.loc[fullgrid.bus.geo.notna()].index)
+    assert 'diagram' not in fullgrid.bus.columns
 
 
 def test_fullgrid_bus(fullgrid):
