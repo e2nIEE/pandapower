@@ -64,4 +64,4 @@ jobs:
 
       - name: Test with pytest
         run: |
-          pytest --split 2 --group ${{ matrix.group }} --pyargs pandapower.test
+          pytest --splits 2 --group ${{ matrix.group }} --pyargs pandapower.test
