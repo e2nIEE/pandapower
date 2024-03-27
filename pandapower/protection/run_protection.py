@@ -21,7 +21,7 @@ def calculate_protection_times(net, scenario="sc"):
     if scenario != "sc" and scenario != "pp":
         raise ValueError("scenario must be either sc or op")
 
-    protection_devices = net.protection.query("in_service").object.values
+    protection_devices = net.protection.loc[net.protection.in_service, "object"].values
     protection_results = []
 
     for p in protection_devices:

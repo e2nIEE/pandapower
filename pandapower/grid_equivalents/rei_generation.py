@@ -158,7 +158,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
 
     net_internal, net_external = _get_internal_and_external_nets(
             net, boundary_buses, all_internal_buses, all_external_buses,
-            show_computing_time, calc_volt_angles=calc_volt_angles, runpp_fct=runpp_fct)
+            show_computing_time, calc_volt_angles=calc_volt_angles, runpp_fct=runpp_fct, **kwargs)
     net_zpbn = net_external
     # --- remove buses without power flow results in net_eq
     pp.drop_buses(net_zpbn, net_zpbn.res_bus.index[net_zpbn.res_bus.vm_pu.isnull()])
@@ -510,7 +510,7 @@ def _create_bus_lookups(net_zpbn, boundary_buses, all_internal_buses,
 def _get_internal_and_external_nets(net, boundary_buses, all_internal_buses,
                                     all_external_buses, show_computing_time=False,
                                     calc_volt_angles=True,
-                                    runpp_fct=_runpp_except_voltage_angles):
+                                    runpp_fct=_runpp_except_voltage_angles, **kwargs):
     "This function identifies the internal area and the external area"
     t_start = time.perf_counter()
     if not all_internal_buses:
@@ -531,11 +531,11 @@ def _get_internal_and_external_nets(net, boundary_buses, all_internal_buses,
     drop_measurements_and_controllers(net_external, net_external.bus.index.tolist())
     pp.drop_buses(net_external, all_internal_buses)
     replace_motor_by_load(net_external, all_external_buses)
-#    add_ext_grids_to_boundaries(net_external, boundary_buses, runpp_fct=runpp_fct)
-#    runpp_fct(net_external, calculate_voltage_angles=calc_volt_angles)
+#    add_ext_grids_to_boundaries(net_external, boundary_buses, runpp_fct=runpp_fct, **kwargs)
+#    runpp_fct(net_external, calculate_voltage_angles=calc_volt_angles, **kwargs)
     _integrate_power_elements_connected_with_switch_buses(net, net_external,
                                                           all_external_buses) # for sgens, gens, and loads
-    runpp_fct(net_external, calculate_voltage_angles=calc_volt_angles)
+    runpp_fct(net_external, calculate_voltage_angles=calc_volt_angles, **kwargs)
     t_end = time.perf_counter()
     if show_computing_time:
         logger.info("\"get_int_and_ext_nets\" " +
@@ -605,7 +605,7 @@ def _calclate_equivalent_element_params(net_zpbn, Ybus_eq, bus_lookups,
 def _replace_ext_area_by_impedances_and_shunts(
         net_eq, bus_lookups, impedance_params, shunt_params, net_internal,
         return_internal, show_computing_time=False, calc_volt_angles=True, imp_threshold=1e-8,
-        runpp_fct=_runpp_except_voltage_angles):
+        runpp_fct=_runpp_except_voltage_angles, **kwargs):
     """
     This function implements the parameters of the equivalent shunts and equivalent impedance
     """
@@ -616,7 +616,7 @@ def _replace_ext_area_by_impedances_and_shunts(
 
     try:
         runpp_fct(net_eq, calculate_voltage_angles=calc_volt_angles,
-                                     tolerance_mva=1e-6, max_iteration=100)
+                                     tolerance_mva=1e-6, max_iteration=100, **kwargs)
     except:
         logger.error("The power flow did not converge.")
 
@@ -684,7 +684,7 @@ def _replace_ext_area_by_impedances_and_shunts(
         raise ValueError(msg)
 
     runpp_fct(net_eq, calculate_voltage_angles=calc_volt_angles,
-              tolerance_mva=1e-6, max_iteration=100)
+              tolerance_mva=1e-6, max_iteration=100, **kwargs)
 
 
 def _integrate_power_elements_connected_with_switch_buses(net, net_external, all_external_buses):

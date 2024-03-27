@@ -4,22 +4,23 @@ from pandapower.auxiliary import ADict
 
 try:
     import pandaplan.core.pplog as logging
-    logger = logging.logger
 except ImportError:
     import logging
-    logger = logging.getLogger(__name__)
 
-def cancel(input_panel):
+logger = logging.getLogger(__name__)
+
+def cancel(app, input_panel):
     logger.debug('received a cancel request from the user')
     input_panel.destroy()
     logger.debug('destroyed input panel, will attempt exit()')
     for h in logger.handlers:
         logger.removeHandler(h)
-    exit()
+    exit_gracefully(app, 'exiting script', False)
 
 
 def calc_test(app, **kwargs):
     logger.info('TESTING')
+    exit_gracefully(app, 'test complete', False)
 
 
 def browse_dst_test(input_panel, entry_path_dst):
@@ -170,7 +171,7 @@ def make_gui(app, project_name, browse_dst, calc):
 
     # row 8
     max_iter = tk.IntVar(input_panel)
-    max_iter.set(10)
+    max_iter.set(30)
     tk.Label(input_panel, anchor='w', text='Max. iterations:').grid(row=8, column=0, sticky=tk.W, pady=0)
 
     iter_entry = tk.Entry(input_panel, width=8)
@@ -182,33 +183,56 @@ def make_gui(app, project_name, browse_dst, calc):
 
     # row 2 col 2-3
     PV_SL = tk.IntVar()
-    tk.Checkbutton(input_panel, text="Export 'PV' bus as Slack", variable=PV_SL).grid(row=2,
-                                                                                      column=4,
-                                                                                      sticky=tk.W)
+    tk.Checkbutton(input_panel, text="Export 'PV' buses as slack buses", variable=PV_SL).grid(row=2,
+                                                                                              column=4,
+                                                                                              sticky=tk.W)
     params.pv_as_slack = PV_SL.get
+
+
+    EXPORT_CONTROLLER = tk.IntVar()
+    EXPORT_CONTROLLER.set(1)
+    tk.Checkbutton(input_panel, text="Export controllers", variable=EXPORT_CONTROLLER).grid(row=3,
+                                                                                            column=4,
+                                                                                            sticky=tk.W)
+    params.export_controller = EXPORT_CONTROLLER.get
 
     CV_VERIFY = tk.IntVar()
     CV_VERIFY.set(1)
-    tk.Checkbutton(input_panel, text="Verify conversion", variable=CV_VERIFY).grid(row=3, column=4,
+    tk.Checkbutton(input_panel, text="Verify conversion", variable=CV_VERIFY).grid(row=4, column=4,
                                                                                    sticky=tk.W)
     params.is_to_verify = CV_VERIFY.get
 
+    RUN_DIAGNOSTIC = tk.IntVar()
+    RUN_DIAGNOSTIC.set(1)
+    tk.Checkbutton(input_panel, text="Diagnostic report", variable=RUN_DIAGNOSTIC).grid(row=5,
+                                                                                        column=4,
+                                                                                        sticky=tk.W)
+    params.is_to_diagnostic = RUN_DIAGNOSTIC.get
+
     LOGGER_DEBUG = tk.IntVar()
-    tk.Checkbutton(input_panel, text="Logger in debug mode", variable=LOGGER_DEBUG).grid(row=4,
+    tk.Checkbutton(input_panel, text="Logger in debug mode", variable=LOGGER_DEBUG).grid(row=6,
                                                                                          column=4,
                                                                                          sticky=tk.W)
     params.is_debug = LOGGER_DEBUG.get
 
-    EXPORT_CONTROLLER = tk.IntVar()
-    EXPORT_CONTROLLER.set(1)
-    tk.Checkbutton(input_panel, text="Export Controller", variable=EXPORT_CONTROLLER).grid(row=5,
-                                                                                         column=4,
-                                                                                         sticky=tk.W)
-    params.export_controller = EXPORT_CONTROLLER.get
+    REPLACE_ZERO_BRANCHES = tk.IntVar()
+    REPLACE_ZERO_BRANCHES.set(1)
+    tk.Checkbutton(input_panel, text="Replace low-impedance branches with switches",
+                   variable=REPLACE_ZERO_BRANCHES).grid(row=7, column=4, sticky=tk.W)
+    params.replace_zero_branches = REPLACE_ZERO_BRANCHES.get
+
+    tk.Label(input_panel, anchor='w', text='Min. line R and X (Ohm):').grid(row=8, column=4, sticky=tk.W, pady=0)
+
+    min_ohm = tk.Entry(input_panel, width=8)
+    min_ohm.delete(0, tk.END)
+    min_ohm.grid(row=8, column=5, padx=2, pady=2, sticky=tk.W)
+    min_ohm.insert(0, "0.01")
+    # entry_fname.insert(0, 'test') ##for testing
+    params.min_ohm_entry = min_ohm
     
     # row 2 col 4
     stop_button = tk.Button(input_panel, text='Cancel', width=8,
-                            command=lambda: cancel(input_panel))
+                            command=lambda: cancel(app, input_panel))
     stop_button.grid(row=2, column=7, sticky='e', padx=4, pady=4)
 
     # app, get_dst_dir, input_panel, entry_fname, is_to_verify, is_debug, pv_as_slack,

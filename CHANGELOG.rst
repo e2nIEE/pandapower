@@ -1,7 +1,11 @@
 Change Log
 =============
 
-[upcoming release] - 2023-..-..
+[upcoming release] - 2024-..-..
+-------------------------------
+
+
+[2.14.0] - 2024-03-26
 -------------------------------
 - [ADDED] function to search std_types from the basic standard type library
 - [ADDED] Documentation for running powerflow using power-grid-model
@@ -41,9 +45,12 @@ Change Log
 - [ADDED] function :code:`getOTDF` to obtain Outage Transfer Distribution Factors, that can be used to analyse outages using the DC approximation of the power system
 - [ADDED] function :code:`outage_results_OTDF` to obtain the matrix of results for all outage scenarios, with rows as outage scenarios and columns as branch power flows in that scenario
 - [FIXED] add some safeguards for TDPF to avoid numerical issues in some cases
+- [CHANGED] numba version check during init phase, not during calculation, saving about 3% calculation time for a loadflow
 - [FIXED] avoid attaching elements as duplicates to a group where some of the elements already exist
 - [ADDED] the function :code:`run_contingency` can raise a captured error if parameter :code:`raise_errors` is passed
 - [FIXED] bugfix for tap dependent impedance characteristics so that not all characteristics columns are necessary
+- [ADDED] add kwargs passing of get_equivalent() to runpp_fct()
+- [ADDED] auxiliary functions ets_to_element_types() and element_types_to_ets() as well as toolbox function get_connected_buses_at_switches() and extension to get_connected_switches()
 - [FIXED] in function :code:`toolbox.replace_zero_branches_with_switches`, use absolute for the parameters of impedance elements in case they are negative nonzero values
 - [FIXED] minor issues in geojson exporter
 - [ADDED] geodata to geojson converter
@@ -57,6 +64,8 @@ Change Log
 - [ADDED] cim2pp: added description fields for each asset and added BusbarSection information to nodes
 - [CHANGED] cim2pp: reformat documentation for reading in files
 - [CHANGED] allow providing grid_tables as a parameter to the function that downloads net from PostgreSQL
+- [FIXED] compatibility with lightsim2grid after new version 0.8.0
+- [ADDED] allow passing custom runpp-function to pp.diagnostic
 
 [2.13.1] - 2023-05-12
 -------------------------------

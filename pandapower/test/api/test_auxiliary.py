@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
-import geojson
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import pytest
 import gc
 import copy
+import geojson
 import numpy as np
 import pandas as pd
 

@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+
+import io
 import geojson
 from pandas import read_json
 from numpy import nan
@@ -125,12 +128,12 @@ def create_cigre_network_hv(length_km_6a_6b=0.1):
     pp.create_shunt(net_cigre_hv, bus6a, p_mw=0.0, q_mvar=-180, name='Shunt 6a')
 
     # Bus geo data
-    net_cigre_hv.bus_geodata = read_json(
+    net_cigre_hv.bus_geodata = read_json(io.StringIO(
         """{"x":{"0":4,"1":8,"2":20,"3":16,"4":12,"5":8,"6":12,"7":4,"8":20,"9":0,"10":8,"11":24,
         "12":16},"y":{"0":8.0,"1":8.0,"2":8.0,"3":8.0,"4":8.0,"5":6.0,"6":4.5,"7":1.0,"8":1.0,
         "9":8.0,"10":12.0,"11":8.0,"12":4.5},
         "coords":{"0":NaN,"1":NaN,"2":NaN,"3":NaN,"4":NaN,"5":NaN,"6":NaN,"7":NaN,"8":NaN,
-        "9":NaN,"10":NaN,"11":NaN,"12":NaN}}""")
+        "9":NaN,"10":NaN,"11":NaN,"12":NaN}}"""))
     # Match bus.index
     net_cigre_hv.bus_geodata = net_cigre_hv.bus_geodata.loc[net_cigre_hv.bus.index]
     return net_cigre_hv
