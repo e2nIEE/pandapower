@@ -56,14 +56,14 @@ setup(
         # "shapely", "pyproj" are dependencies of geopandas and so already available;
         # "base64", "hashlib", "zlib" produce installing problems, so they are not included
         "test": ["pytest", "pytest-xdist"],
-        "performance": ["ortools"],  # , "lightsim2grid"],
+        "performance": ["ortools",  "numba", "lightsim2grid"],
         "pgm": ["power-grid-model-io"],
         "fileio": ["xlsxwriter", "openpyxl", "cryptography", "geopandas", "psycopg2"],
         # "fiona" is a depedency of geopandas and so already available
         "converter": ["matpowercaseframes"],
         "all": ["numpydoc", "sphinx", "sphinx_rtd_theme",
                 "plotly>=3.1.1", "matplotlib", "igraph", "geopandas", "geojson",
-                "pytest~=7.0", "pytest-xdist",
+                "pytest~=8.1", "pytest-xdist",
                 "ortools",  # lightsim2grid,
                 "xlsxwriter", "openpyxl", "cryptography",
                 "psycopg2",  # for PostgreSQL I/O
