@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -99,7 +99,7 @@ try:
         version_check("numba")
         NUMBA_INSTALLED = True
     except UserWarning:
-        msg = f'The numba version is too old.\n'
+        msg = 'The numba version is too old.\n'
         log_to_level(msg, logger, 'warning')
         NUMBA_INSTALLED = False
 except ImportError:
@@ -342,6 +342,29 @@ def plural_s(number):
         return "s"
     else:
         return ""
+
+
+def ets_to_element_types(ets=None):
+    ser = pd.Series(["bus", "line", "trafo", "trafo3w", "impedance"],
+                    index=["b", "l", "t", "t3", "i"])
+    if ets is None:
+        return ser
+    elif isinstance(ets, str):
+        return ser.at[ets]
+    else:
+        return list(ser.loc[ets])
+
+
+def element_types_to_ets(element_types=None):
+    ser1 = ets_to_element_types()
+    ser2 = pd.Series(ser1.index, index=list(ser1))
+    if element_types is None:
+        return ser2
+    elif isinstance(ets, str):
+        return ser2.at[element_types]
+    else:
+        return list(ser2.loc[element_types])
+
 
 def _preserve_dtypes(df, dtypes):
     for item, dtype in list(dtypes.items()):
@@ -971,7 +994,7 @@ def _write_lookup_to_net(net, element, element_lookup):
 def _check_if_numba_is_installed(level="warning"):
     if not NUMBA_INSTALLED:
         msg = (
-            f'numba cannot be imported and numba functions are disabled.\n'
+            'numba cannot be imported and numba functions are disabled.\n'
             'Probably the execution is slow.\n'
             'Please install numba to gain a massive speedup.\n'
             '(or if you prefer slow execution, set the flag numba=False to avoid this warning!)')
@@ -1240,8 +1263,8 @@ def SVabc_from_SV012(S012, V012, n_res=None, idx=None):
         idx = np.ones(n_res, dtype="bool")
     I012 = np.array(np.zeros((3, n_res)), dtype=np.complex128)
     I012[:, idx] = I_from_SV_elementwise(S012[:, idx], V012[:, idx])
-    Vabc = sequence_to_phase(V012[:, idx])
-    Iabc = sequence_to_phase(I012[:, idx])
+    Vabc = sequence_to_phase(V012)
+    Iabc = sequence_to_phase(I012)
     Sabc = S_from_VI_elementwise(Vabc, Iabc)
     return Sabc, Vabc
 

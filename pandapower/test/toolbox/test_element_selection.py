@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import pandas as pd
 import pytest
@@ -123,6 +123,16 @@ def test_get_connected_buses():
     assert list(pp.get_connected_buses(net, [bus4])) == []
 
 
+def test_get_connected_buses_at_switches():
+    net = pp.networks.example_multivoltage()
+    switches = [net.switch.index[net.switch.et == et][0] for et in "blt"]
+    expected = set(net.switch.loc[switches[0], ["bus", "element"]])
+    expected |= set(net.switch.loc[switches, "bus"])
+    expected |= set(net.line.loc[net.switch.at[switches[1], "element"], ["from_bus", "to_bus"]])
+    expected |= set(net.trafo.loc[net.switch.at[switches[1], "element"], ["hv_bus", "lv_bus"]])
+    assert not bool(len(expected - pp.toolbox.get_connected_buses_at_switches(net, switches)))
+
+
 def test_get_false_links():
     net = pp.create_empty_network()
     pp.create_buses(net, 6, 10, index=[0, 1, 3, 4, 6, 7])
@@ -220,4 +230,5 @@ def test_count_elements():
 
 
 if __name__ == '__main__':
-    pytest.main([__file__, "-x"])
+    # pytest.main([__file__, "-x"])
+    test_get_connected_buses_at_switches()

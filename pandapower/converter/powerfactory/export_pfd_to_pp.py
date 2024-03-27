@@ -7,10 +7,10 @@ from .run_import import choose_imp_dir, clear_dir, prj_dgs_import, prj_import
 
 try:
     import pandaplan.core.pplog as logging
-    logger = logging.logger
 except ImportError:
     import logging
-    logger = logging.getLogger(__name__)
+
+logger = logging.getLogger(__name__)
 
 
 def from_pfd(app, prj_name: str, path_dst=None, pv_as_slack=False, pf_variable_p_loads='plini',
