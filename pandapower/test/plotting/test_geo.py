@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import pytest
@@ -82,6 +82,7 @@ def test__convert_xy_epsg():
     expected_x, expected_y = ([3534023, 3500073], [5687359, 5651645])
     assert result_x == pytest.approx(expected_x)
     assert result_y == pytest.approx(expected_y)
+
 
 def test_convert_gis_to_geodata():
     pytest.importorskip("geopandas")
@@ -190,6 +191,7 @@ def test_dump_to_geojson():
     result = geo.dump_to_geojson(net, branches=[0])
     assert isinstance(result, FeatureCollection)
     assert dumps(result) == '{"type": "FeatureCollection", "features": [{"type": "Feature", "id": 0, "geometry": {"type": "LineString", "coordinates": [[1, 2], [3, 4]]}, "properties": {"pp_type": "line", "pp_index": 0, "name": "line1", "std_type": "None", "from_bus": 1.0, "to_bus": 7.0, "length_km": 1.0, "r_ohm_per_km": 0.2067, "x_ohm_per_km": 0.1897522, "c_nf_per_km": 720.0, "g_us_per_km": 0.0, "max_i_ka": 0.328, "df": 1.0, "parallel": 1.0, "type": "None", "in_service": 1.0, "ices": 0.389985}}]}'
+
 
 if __name__ == "__main__":
     pytest.main(["test_geo.py"])

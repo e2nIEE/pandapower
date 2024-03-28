@@ -70,7 +70,7 @@ def connected_components(mg, notravbuses=set()):
 
          mg = top.create_nxgraph(net)
 
-         cc = top.connected_components(net, 5)
+         cc = top.connected_components(mg, 5)
 
     """
 
@@ -130,7 +130,8 @@ def calc_distance_to_bus(net, bus, respect_switches=True, nogobuses=None,
 
 def unsupplied_buses(net, mg=None, slacks=None, respect_switches=True):
     """
-     Finds buses, that are not connected to an external grid.
+     Finds buses, that are not connected electrically (no lines, trafos etc or if respect_switches
+     is True only connected via open switches) to an external grid and that are in service.
 
      INPUT:
         **net** (pandapowerNet) - variable that contains a pandapower network

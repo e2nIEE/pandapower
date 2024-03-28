@@ -458,6 +458,3 @@ def fuse_test_net4():
 
 if __name__ == "__main__":
     pytest.main([__file__, "-s"])
-
-
-

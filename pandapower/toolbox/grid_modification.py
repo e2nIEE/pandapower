@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
@@ -510,9 +510,10 @@ def merge_same_bus_generation_plants(net, add_info=True, error=True,
 
         if "profiles" in net and col == "p_mw":
             elm = "gen" if "gen" in gen_df["elm_type"].loc[idxs[1:]].unique() else "sgen"
-            net.profiles["%s.p_mw" % elm].loc[:, uniq_idx] = net.profiles["%s.p_mw" % elm].loc[
+            elm_p = "%s.p_mw" % elm
+            net.profiles[elm_p].loc[:, uniq_idx] = net.profiles[elm_p].loc[
                 :, gen_df["index"].loc[idxs]].sum(axis=1)
-            net.profiles["%s.p_mw" % elm].drop(columns=gen_df["index"].loc[idxs[1:]], inplace=True)
+            net.profiles[elm_p] = net.profiles[elm_p].drop(columns=gen_df["index"].loc[idxs[1:]])
             if elm == "gen":
                 net.profiles["%s.vm_pu" % elm].drop(columns=gen_df["index"].loc[idxs[1:]],
                                                     inplace=True)
@@ -566,9 +567,9 @@ def fuse_buses(net, b1, b2, drop=True, fuse_bus_measurements=True):
     # --- reroute element connections from b2 to b1
     for element, value in element_bus_tuples():
         if net[element].shape[0]:
-            net[element][value].loc[net[element][value].isin(b2)] = b1
-    net["switch"]["element"].loc[(net["switch"]["et"] == 'b') & (
-                                 net["switch"]["element"].isin(b2))] = b1
+            net[element].loc[net[element][value].isin(b2), value] = b1
+    net["switch"].loc[(net["switch"]["et"] == 'b') & (
+                      net["switch"]["element"].isin(b2)), "element"] = b1
 
     # --- reroute bus measurements from b2 to b1
     if fuse_bus_measurements and net.measurement.shape[0]:
@@ -641,7 +642,7 @@ def drop_buses(net, buses, drop_elements=True):
     """
     detach_from_groups(net, "bus", buses)
     net["bus"] = net["bus"].drop(buses)
-    net["bus_geodata"].drop(set(buses) & set(net["bus_geodata"].index), inplace=True)
+    net["bus_geodata"] = net["bus_geodata"].drop(set(buses) & set(net["bus_geodata"].index))
     res_buses = net.res_bus.index.intersection(buses)
     net["res_bus"] = net["res_bus"].drop(res_buses)
     if drop_elements:
@@ -692,7 +693,7 @@ def drop_lines(net, lines):
     # drop lines and geodata
     detach_from_groups(net, "line", lines)
     net["line"] = net["line"].drop(lines)
-    net["line_geodata"].drop(set(lines) & set(net["line_geodata"].index), inplace=True)
+    net["line_geodata"] = net["line_geodata"].drop(set(lines) & set(net["line_geodata"].index))
     res_lines = net.res_line.index.intersection(lines)
     net["res_line"] = net["res_line"].drop(res_lines)
     logger.debug("Dropped %i line%s with %i line switches" % (
@@ -728,9 +729,9 @@ def drop_elements_at_buses(net, buses, bus_elements=True, branch_elements=True,
                         n_el - net[element_type].shape[0], element_type))
                 # drop costs for the affected elements
                 for cost_elm in ["poly_cost", "pwl_cost"]:
-                    net[cost_elm].drop(net[cost_elm].index[
+                    net[cost_elm] = net[cost_elm].drop(net[cost_elm].index[
                         (net[cost_elm].et == element_type) &
-                        (net[cost_elm].element.isin(eid))], inplace=True)
+                        (net[cost_elm].element.isin(eid))])
     if drop_measurements:
         drop_measurements_at_elements(net, "bus", idx=buses)
 
@@ -1217,7 +1218,7 @@ def replace_ext_grid_by_gen(net, ext_grids=None, gen_indices=None, slack=False, 
         to_add = net.res_ext_grid.loc[pd.Index(ext_grids)[in_res]]
         to_add.index = pd.Index(new_idx)[in_res]
         net.res_gen = pd.concat([net.res_gen, to_add], sort=True)
-        net.res_ext_grid.drop(pd.Index(ext_grids)[in_res], inplace=True)
+        net.res_ext_grid = net.res_ext_grid.drop(pd.Index(ext_grids)[in_res])
     return new_idx
 
 
@@ -1299,7 +1300,7 @@ def replace_gen_by_ext_grid(net, gens=None, ext_grid_indices=None, cols_to_keep=
         to_add = net.res_gen.loc[pd.Index(gens)[in_res]]
         to_add.index = pd.Index(new_idx)[in_res]
         net.res_ext_grid = pd.concat([net.res_ext_grid, to_add], sort=True)
-        net.res_gen.drop(pd.Index(gens)[in_res], inplace=True)
+        net.res_gen = net.res_gen.drop(pd.Index(gens)[in_res])
     return new_idx
 
 
@@ -1383,7 +1384,7 @@ def replace_gen_by_sgen(net, gens=None, sgen_indices=None, cols_to_keep=None,
         to_add = net.res_gen.loc[pd.Index(gens)[in_res]]
         to_add.index = pd.Index(new_idx)[in_res]
         net.res_sgen = pd.concat([net.res_sgen, to_add], sort=True)
-        net.res_gen.drop(pd.Index(gens)[in_res], inplace=True)
+        net.res_gen = net.res_gen.drop(pd.Index(gens)[in_res])
     return new_idx
 
 
@@ -1483,7 +1484,7 @@ def replace_sgen_by_gen(net, sgens=None, gen_indices=None, cols_to_keep=None,
         to_add = net.res_sgen.loc[pd.Index(sgens)[in_res]]
         to_add.index = pd.Index(new_idx)[in_res]
         net.res_gen = pd.concat([net.res_gen, to_add], sort=True)
-        net.res_sgen.drop(pd.Index(sgens)[in_res], inplace=True)
+        net.res_sgen = net.res_sgen.drop(pd.Index(sgens)[in_res])
     return new_idx
 
 
@@ -1603,7 +1604,7 @@ def replace_pq_elmtype(net, old_element_type, new_element_type, old_indices=None
         to_add = net["res_" + old_element_type].loc[pd.Index(old_indices)[in_res]]
         to_add.index = pd.Index(new_idx)[in_res]
         net["res_" + new_element_type] = pd.concat([net["res_" + new_element_type], to_add], sort=True)
-        net["res_" + old_element_type].drop(pd.Index(old_indices)[in_res], inplace=True)
+        net["res_" + old_element_type] = net["res_" + old_element_type].drop(pd.Index(old_indices)[in_res])
     return new_idx
 
 

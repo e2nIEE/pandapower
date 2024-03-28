@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-
+import io
 from pandas import read_json
 from numpy import nan
 import pandapower as pp
@@ -127,12 +127,12 @@ def create_cigre_network_hv(length_km_6a_6b=0.1):
     pp.create_shunt(net_cigre_hv, bus6a, p_mw=0.0, q_mvar=-180, name='Shunt 6a')
 
     # Bus geo data
-    net_cigre_hv.bus_geodata = read_json(
+    net_cigre_hv.bus_geodata = read_json(io.StringIO(
         """{"x":{"0":4,"1":8,"2":20,"3":16,"4":12,"5":8,"6":12,"7":4,"8":20,"9":0,"10":8,"11":24,
         "12":16},"y":{"0":8.0,"1":8.0,"2":8.0,"3":8.0,"4":8.0,"5":6.0,"6":4.5,"7":1.0,"8":1.0,
         "9":8.0,"10":12.0,"11":8.0,"12":4.5},
         "coords":{"0":NaN,"1":NaN,"2":NaN,"3":NaN,"4":NaN,"5":NaN,"6":NaN,"7":NaN,"8":NaN,
-        "9":NaN,"10":NaN,"11":NaN,"12":NaN}}""")
+        "9":NaN,"10":NaN,"11":NaN,"12":NaN}}"""))
     # Match bus.index
     net_cigre_hv.bus_geodata = net_cigre_hv.bus_geodata.loc[net_cigre_hv.bus.index]
     return net_cigre_hv
@@ -285,13 +285,13 @@ def create_cigre_network_mv(with_der=False):
                            name='Residential fuel cell 2', type='Residential fuel cell')
 
     # Bus geo data
-    net_cigre_mv.bus_geodata = read_json(
+    net_cigre_mv.bus_geodata = read_json(io.StringIO(
         """{"x":{"0":7.0,"1":4.0,"2":4.0,"3":4.0,"4":2.5,"5":1.0,"6":1.0,"7":8.0,"8":8.0,"9":6.0,
         "10":4.0,"11":4.0,"12":10.0,"13":10.0,"14":10.0},
         "y":{"0":16,"1":15,"2":13,"3":11,"4":9,
         "5":7,"6":3,"7":3,"8":5,"9":5,"10":5,"11":7,"12":15,"13":11,"14":5},
         "coords":{"0":NaN,"1":NaN,"2":NaN,"3":NaN,"4":NaN,"5":NaN,"6":NaN,"7":NaN,"8":NaN,
-        "9":NaN,"10":NaN,"11":NaN,"12":NaN,"13":NaN,"14":NaN}}""")
+        "9":NaN,"10":NaN,"11":NaN,"12":NaN,"13":NaN,"14":NaN}}"""))
     # Match bus.index
     net_cigre_mv.bus_geodata = net_cigre_mv.bus_geodata.loc[net_cigre_mv.bus.index]
     return net_cigre_mv
@@ -513,7 +513,7 @@ def create_cigre_network_lv():
     pp.create_switch(net_cigre_lv, bus0, busC0, et='b', closed=True, type='CB', name='S3')
 
     # Bus geo data
-    net_cigre_lv.bus_geodata = read_json(
+    net_cigre_lv.bus_geodata = read_json(io.StringIO(
         """{"x":{"0":0.2,"1":0.2,"2":-1.4583333333,"3":-1.4583333333,"4":-1.4583333333,
         "5":-1.9583333333,"6":-2.7083333333,"7":-2.7083333333,"8":-3.2083333333,"9":-3.2083333333,
         "10":-3.2083333333,"11":-3.7083333333,"12":-0.9583333333,"13":-1.2083333333,
@@ -532,7 +532,7 @@ def create_cigre_network_lv():
         "9":NaN,"10":NaN,"11":NaN,"12":NaN,"13":NaN,"14":NaN,"15":NaN,"16":NaN,"17":NaN,
         "18":NaN,"19":NaN,"20":NaN,"21":NaN,"22":NaN,"23":NaN,"24":NaN,"25":NaN,"26":NaN,
         "27":NaN,"28":NaN,"29":NaN,"30":NaN,"31":NaN,"32":NaN,"33":NaN,"34":NaN,"35":NaN,
-        "36":NaN,"37":NaN,"38":NaN,"39":NaN,"40":NaN,"41":NaN,"42":NaN,"43":NaN}}""")
+        "36":NaN,"37":NaN,"38":NaN,"39":NaN,"40":NaN,"41":NaN,"42":NaN,"43":NaN}}"""))
     # Match bus.index
     net_cigre_lv.bus_geodata = net_cigre_lv.bus_geodata.loc[net_cigre_lv.bus.index]
     return net_cigre_lv

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -5046,10 +5046,7 @@ def _set_multiple_entries(net, table, index, preserve_dtypes=True, defaults_to_f
                 net[table][col] = val
 
     # extend the table by the frame we just created
-    try:
-        net[table] = pd.concat([net[table], dd], sort=False)
-    except ValueError:
-        net[table] = pd.concat([net[table], dd[dd.columns]], sort=False)
+    net[table] = pd.concat([net[table], dd[dd.columns[~dd.isnull().all()]]], sort=False)
 
 
     # and preserve dtypes
