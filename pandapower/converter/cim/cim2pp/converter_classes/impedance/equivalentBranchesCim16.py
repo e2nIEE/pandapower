@@ -77,7 +77,7 @@ class EquivalentBranchesCim16:
                     message="The EquivalentBranch with RDF ID %s has %s Terminals!" % (rdfId, count)))
             eq_eb = eq_eb[0:0]
         # sort by RDF ID and the sequenceNumber to make sure r12 and r21 are in the correct order
-        eq_eb.sort_values(by=['rdfId', 'sequenceNumber'], inplace=True)
+        eq_eb = eq_eb.sort_values(by=['rdfId', 'sequenceNumber'])
         # copy the columns which are needed to reduce the eq_eb to one row per equivalent branch
         eq_eb['rdfId_Terminal2'] = eq_eb['rdfId_Terminal'].copy()
         eq_eb['connected2'] = eq_eb['connected'].copy()
@@ -88,7 +88,7 @@ class EquivalentBranchesCim16:
         eq_eb.rdfId_Terminal2 = eq_eb.rdfId_Terminal2.iloc[1:].reset_index().rdfId_Terminal2
         eq_eb.connected2 = eq_eb.connected2.iloc[1:].reset_index().connected2
         eq_eb.index_bus2 = eq_eb.index_bus2.iloc[1:].reset_index().index_bus2
-        eq_eb.drop_duplicates(['rdfId'], keep='first', inplace=True)
+        eq_eb = eq_eb.drop_duplicates(['rdfId'], keep='first')
         if hasattr(self.cimConverter.net, 'sn_mva'):
             eq_eb['sn_mva'] = self.cimConverter.net['sn_mva']
         else:
@@ -104,6 +104,6 @@ class EquivalentBranchesCim16:
         eq_eb['rtf0_pu'] = eq_eb['zeroR21'] / eq_eb['z_base']
         eq_eb['xtf0_pu'] = eq_eb['zeroX21'] / eq_eb['z_base']
         eq_eb['in_service'] = eq_eb.connected & eq_eb.connected2
-        eq_eb.rename(columns={'rdfId_Terminal': sc['t_from'], 'rdfId_Terminal2': sc['t_to'], 'rdfId': sc['o_id'],
-                              'index_bus': 'from_bus', 'index_bus2': 'to_bus'}, inplace=True)
+        eq_eb = eq_eb.rename(columns={'rdfId_Terminal': sc['t_from'], 'rdfId_Terminal2': sc['t_to'], 'rdfId': sc['o_id'],
+                              'index_bus': 'from_bus', 'index_bus2': 'to_bus'})
         return eq_eb

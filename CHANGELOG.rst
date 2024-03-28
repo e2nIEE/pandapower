@@ -66,6 +66,7 @@ Change Log
 - [ADDED] cim2pp: added description fields for each asset and added BusbarSection information to nodes
 - [CHANGED] cim2pp: reformat documentation for reading in files
 - [CHANGED] allow providing grid_tables as a parameter to the function that downloads net from PostgreSQL
+- [FIXED] avoid FutureWarning of pandas 2.2
 - [FIXED] compatibility with lightsim2grid after new version 0.8.0
 - [ADDED] allow passing custom runpp-function to pp.diagnostic
 

@@ -219,7 +219,7 @@ def create_generic_coordinates(net, mg=None, library="igraph",
 def _prepare_geodata_table(net, geodata_table, overwrite):
     if geodata_table in net and net[geodata_table].shape[0]:
         if overwrite:
-            net[geodata_table].drop(net[geodata_table].index, inplace=True)
+            net[geodata_table] = net[geodata_table].drop(net[geodata_table].index)
         else:
             raise UserWarning("Table %s is not empty - use overwrite=True to overwrite existing geodata"%geodata_table)
 
