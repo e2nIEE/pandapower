@@ -1,4 +1,3 @@
-import io
 import pytest
 import os
 import pandapower as pp
@@ -70,7 +69,7 @@ def test_drop_measurements_and_controllers():
 
     # create controllers
     json_path = os.path.join(pp_dir, "test", "opf", "cigre_timeseries_15min.json")
-    time_series = pd.read_json(io.StringIO(json_path))
+    time_series = pd.read_json(json_path)
     load_ts = pd.DataFrame(index=time_series.index.tolist(), columns=net.load.index.tolist())
     gen_ts = pd.DataFrame(index=time_series.index.tolist(), columns=net.gen.index.tolist())
     for t in range(96):
