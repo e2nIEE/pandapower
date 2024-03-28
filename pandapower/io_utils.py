@@ -8,7 +8,6 @@ import importlib
 import json
 import numbers
 import os
-import io
 import pickle
 import sys
 import types
@@ -480,7 +479,7 @@ class FromSerializableRegistry():
     module_name = ''
 
     def __init__(self, obj, d, pp_hook_funct):
-        self.obj = obj
+        self.obj = StringIO(obj) if isinstance(obj, str) else obj
         self.d = d
         self.pp_hook = pp_hook_funct
 
@@ -489,7 +488,7 @@ class FromSerializableRegistry():
         is_multiindex = self.d.pop('is_multiindex', False)
         index_name = self.d.pop('index_name', None)
         index_names = self.d.pop('index_names', None)
-        ser = pd.read_json(io.StringIO(self.obj), precise_float=True, **self.d)
+        ser = pd.read_json(self.obj, precise_float=True, **self.d)
 
         # restore index name and Multiindex
         if index_name is not None:
@@ -517,11 +516,9 @@ class FromSerializableRegistry():
         column_name = self.d.pop('column_name', None)
         column_names = self.d.pop('column_names', None)
 
-        obj = self.obj
-        if isinstance(obj, str):
-            obj = StringIO(obj)
+        obj = StringIO(obj) if isinstance(obj, str) else self.obj
 
-        df = pd.read_json(io.StringIO(obj), precise_float=True, convert_axes=False, **self.d)
+        df = pd.read_json(obj, precise_float=True, convert_axes=False, **self.d)
 
         if not df.shape[0] or self.d.get("orient", False) == "columns":
             try:
