@@ -516,7 +516,7 @@ class FromSerializableRegistry():
         column_name = self.d.pop('column_name', None)
         column_names = self.d.pop('column_names', None)
 
-        obj = StringIO(obj) if isinstance(obj, str) else self.obj
+        obj = StringIO(self.obj) if isinstance(obj, str) else self.obj
 
         df = pd.read_json(obj, precise_float=True, convert_axes=False, **self.d)
 
