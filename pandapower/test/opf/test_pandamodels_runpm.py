@@ -4,7 +4,6 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import os
-import io
 import copy
 from pandapower.control import ConstControl
 from pandapower.timeseries import DFData
@@ -59,7 +58,7 @@ def create_cigre_grid_with_time_series(json_path, net=None, add_ts_constaints=Fa
     net.sgen.loc[8, "type"] = "wind"
 
     # read the example time series
-    time_series = pd.read_json(io.StringIO(json_path))
+    time_series = pd.read_json(json_path)
     time_series.sort_index(inplace=True)
 
     # this example time series has a 15min resolution with 96 time steps for one day
