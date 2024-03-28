@@ -3,7 +3,11 @@ Change Log
 
 [upcoming release] - 2024-..-..
 -------------------------------
+
+[2.14.5] - 2024-03-28
+-------------------------------
 - [CHANGED] added possibility to provide custom weights to switches and transformers (before - always zero) when creating a graph
+- [FIXED] many futurewarnings and deprecation warnings
 
 [2.14.4] - 2024-03-28
 -------------------------------
