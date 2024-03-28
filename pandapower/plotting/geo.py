@@ -512,13 +512,13 @@ def convert_geodata_to_geojson(
     if is_pandapower:
         df = net.bus
         ldf = net.line
-        geo_df = net.bus_geodata
-        geo_ldf = net.line_geodata
+        geo_df = net.bus_geodata if hasattr(net, 'bus_geodata') else pd.DataFrame()
+        geo_ldf = net.line_geodata if hasattr(net, 'line_geodata') else pd.DataFrame()
     else:
         df = net.junction
         ldf = net.pipe
-        geo_df = net.junction_geodata
-        geo_ldf = net.pipe_geodata
+        geo_df = net.junction_geodata if hasattr(net, 'junction_geodata') else pd.DataFrame()
+        geo_ldf = net.pipe_geodata if hasattr(net, 'pipe_geodata') else pd.DataFrame()
 
     a, b = "yx" if lonlat else "xy"  # substitute x and y with a and b to reverse them if necessary
     df["geo"] = geo_df.apply(lambda r: f'{{"coordinates": [{r[a]}, {r[b]}], "type": "Point"}}', axis=1)
@@ -545,11 +545,11 @@ def convert_geodata_to_geojson(
 
     if delete:
         if is_pandapower:
-            del net.bus_geodata
-            del net.line_geodata
+            if hasattr(net, 'bus_geodata'):del net.bus_geodata
+            if hasattr(net, 'line_geodata'): del net.line_geodata
         else:
-            del net.junction_geodata
-            del net.pipe_geodata
+            if hasattr(net, 'junction_geodata'): del net.junction_geodata
+            if hasattr(net, 'pipe_geodata'): del net.pipe_geodata
 
 
 def convert_gis_to_geojson(
