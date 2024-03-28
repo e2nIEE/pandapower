@@ -233,8 +233,9 @@ def from_dict_of_dfs(dodfs, net=None):
                     net[c] = ''
             continue
         elif item in ["line_geodata", "bus_geodata"]:
-            table = table.rename_axis(net[item].index.name)
-            df_to_coords(net, item, table)
+            pass
+        #    table = table.rename_axis(net[item].index.name)
+        #    df_to_coords(net, item, table)
         elif item.endswith("_std_types"):
             # when loaded from Excel, the lists in the DataFrame cells are strings -> we want to convert them back
             # to lists here. There is probably a better way to deal with it.
