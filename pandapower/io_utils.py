@@ -8,7 +8,6 @@ import importlib
 import json
 import numbers
 import os
-import pickle
 import sys
 import types
 import weakref
@@ -21,11 +20,9 @@ import pandas.errors
 from deepdiff.diff import DeepDiff
 from packaging.version import Version
 from pandapower import __version__
-from pandapower.auxiliary import _preserve_dtypes
 import networkx
 import numpy
 import geojson
-from io import StringIO
 import pandas as pd
 from networkx.readwrite import json_graph
 from numpy import ndarray, generic, equal, isnan, allclose, any as anynp
@@ -236,7 +233,7 @@ def from_dict_of_dfs(dodfs, net=None):
                     net[c] = ''
             continue
         elif item in ["line_geodata", "bus_geodata"]:
-            table.rename_axis(net[item].index.name, inplace=True)
+            table = table.rename_axis(net[item].index.name)
             df_to_coords(net, item, table)
         elif item.endswith("_std_types"):
             # when loaded from Excel, the lists in the DataFrame cells are strings -> we want to convert them back
@@ -249,7 +246,7 @@ def from_dict_of_dfs(dodfs, net=None):
         elif item.endswith("_profiles"):
             if "profiles" not in net.keys():
                 net["profiles"] = dict()
-            table.rename_axis(None, inplace=True)
+            table = table.rename_axis(None)
             net["profiles"][item[:-9]] = table
             continue  # don't go into try..except
         elif item == "user_pf_options":
@@ -261,7 +258,7 @@ def from_dict_of_dfs(dodfs, net=None):
                     table[json_column] = table[json_column].apply(
                         lambda x: json.loads(x, cls=PPJSONDecoder))
             if not isinstance(table.index, pd.MultiIndex):
-                table.rename_axis(net[item].index.name, inplace=True)
+                table = table.rename_axis(net[item].index.name)
             net[item] = table
             # convert geodata to geojson
             if item in ["bus", "line"]:
@@ -529,8 +526,6 @@ class FromSerializableRegistry():
         column_names = self.d.pop('column_names', None)
 
         obj = self.obj
-        if isinstance(obj, str):
-            obj = StringIO(obj)
 
         df = pd.read_json(obj, precise_float=True, convert_axes=False, **self.d)
 

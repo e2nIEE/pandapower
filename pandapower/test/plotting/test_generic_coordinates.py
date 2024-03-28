@@ -19,7 +19,7 @@ except ImportError:
 @pytest.mark.skipif(IGRAPH_INSTALLED is False, reason="Requires igraph.")
 def test_create_generic_coordinates_igraph():
     net = create_test_network()
-    net.bus.drop("geo", axis=1, inplace=True)
+    net.bus = net.bus.drop("geo", axis=1)
     create_generic_coordinates(net, library="igraph")
     assert len(net.bus.geo.dropna()) == len(net.bus)
 
@@ -28,7 +28,7 @@ def test_create_generic_coordinates_igraph():
                           "as AtlasViews are accessed with list logic.")
 def test_create_generic_coordinates_nx():
     net = create_test_network()
-    net.bus_geodata.drop(net.bus_geodata.index, inplace=True)
+    net.bus_geodata = net.bus_geodata.drop(net.bus_geodata.index)
     create_generic_coordinates(net, library="networkx")
     assert len(net.bus_geodata) == len(net.bus)
 

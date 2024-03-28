@@ -105,7 +105,7 @@ def create_sc_bus(net_copy, sc_line_id, sc_fraction):
                                               max_i_ka=aux_line.max_i_ka)
 
     if 'endtemp_degree' in net.line.columns:
-        net.line.endtemp_degree.at[sc_line2] = net.line.endtemp_degree.at[sc_line1]
+        net.line.at[sc_line2, "endtemp_degree"] = net.line.endtemp_degree.at[sc_line1]
 
     net.line = net.line.sort_index()
 

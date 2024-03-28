@@ -25,7 +25,7 @@ class GeoCoordinatesFromGLCim16:
             self.cimConverter.cim['gl']['PositionPoint'][['Location', 'xPosition', 'yPosition', 'sequenceNumber']],
             self.cimConverter.cim['gl']['Location'][['rdfId', 'PowerSystemResources']], how='left',
             left_on='Location', right_on='rdfId')
-        gl_data.drop(columns=['Location', 'rdfId'], inplace=True)
+        gl_data = gl_data.drop(columns=['Location', 'rdfId'])
         # make sure that the columns 'xPosition' and 'yPosition' are floats
         gl_data['xPosition'] = gl_data['xPosition'].astype(float)
         gl_data['yPosition'] = gl_data['yPosition'].astype(float)
@@ -37,9 +37,9 @@ class GeoCoordinatesFromGLCim16:
         cn = pd.concat([cn, self.cimConverter.cim['eq_bd']['ConnectivityNode'][['rdfId', 'ConnectivityNodeContainer']]])
         cn = pd.concat([cn, self.cimConverter.cim['tp']['TopologicalNode'][['rdfId', 'ConnectivityNodeContainer']]])
         cn = pd.concat([cn, self.cimConverter.cim['tp_bd']['TopologicalNode'][['rdfId', 'ConnectivityNodeContainer']]])
-        cn.rename(columns={'rdfId': sc['o_id'], 'ConnectivityNodeContainer': 'rdfId'}, inplace=True)
+        cn = cn.rename(columns={'rdfId': sc['o_id'], 'ConnectivityNodeContainer': 'rdfId'})
         cn = pd.merge(cn, self.cimConverter.cim['eq']['VoltageLevel'][['rdfId', 'Substation']], how='left', on='rdfId')
-        cn.drop(columns=['rdfId'], inplace=True)
+        cn = cn.drop(columns=['rdfId'])
         buses = pd.merge(self.cimConverter.net.bus[[sc['o_id']]], cn, how='left', on=sc['o_id'])
         bus_geo = pd.merge(bus_geo, buses, how='inner', on='Substation')
         bus_geo.drop(columns=['Substation'], inplace=True)
@@ -98,7 +98,7 @@ class GeoCoordinatesFromGLCim16:
         #     [self.cimConverter.net.line_geodata, pd.DataFrame(None, index=line_geo['index'].values)],
         #     ignore_index=False, sort=False)
         # self.cimConverter.net.line_geodata.coords[start_index_pp_net:] = line_geo.coords[:]
-        gl_data.rename(columns={'PowerSystemResources': sc['o_id']}, inplace=True)
+        gl_data = gl_data.rename(columns={'PowerSystemResources': sc['o_id']})
         # now create geo coordinates which are official not supported by pandapower, e.g. for transformer
         for one_ele in ['trafo', 'trafo3w', 'switch', 'ext_grid', 'load', 'sgen', 'gen', 'line', 'dcline', 'impedance',
                         'shunt', 'storage', 'ward', 'xward']:

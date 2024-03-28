@@ -32,21 +32,40 @@ class CoordinatesFromDLCim16:
                     self.cimConverter.cim['dl']['Diagram']['name'] == diagram_name].values[0]
             dl_do = self.cimConverter.cim['dl']['DiagramObject'][
                 self.cimConverter.cim['dl']['DiagramObject']['Diagram'] == diagram_rdf_id]
-            dl_do.rename(columns={'rdfId': 'DiagramObject'}, inplace=True)
+            dl_do = dl_do.rename(columns={'rdfId': 'DiagramObject'})
         else:
             dl_do = self.cimConverter.cim['dl']['DiagramObject'].copy()
-            dl_do.rename(columns={'rdfId': 'DiagramObject'}, inplace=True)
+            dl_do = dl_do.rename(columns={'rdfId': 'DiagramObject'})
         dl_data = pd.merge(dl_do, self.cimConverter.cim['dl']['DiagramObjectPoint'], how='left', on='DiagramObject')
-        dl_data.drop(columns=['rdfId', 'Diagram', 'DiagramObject'], inplace=True)
+        dl_data = dl_data.drop(columns=['rdfId', 'Diagram', 'DiagramObject'])
         # make sure that the columns 'xPosition' and 'yPosition' are floats
         dl_data['xPosition'] = dl_data['xPosition'].astype(float)
         dl_data['yPosition'] = dl_data['yPosition'].astype(float)
         dl_data['xPosition_s'] = dl_data['xPosition'].astype(str)
         dl_data['yPosition_s'] = dl_data['yPosition'].astype(str)
 
-        # create coordinates for the different assets bus, line, transformer
-        for one_ele in ['bus', 'trafo', 'trafo3w', 'switch', 'ext_grid', 'load', 'sgen', 'gen', 'line', 'dcline',
-                        'impedance', 'shunt', 'storage', 'ward', 'xward']:
+        # the coordinates for the lines
+        lines = self.cimConverter.net.line.reset_index()
+        lines = lines[['index', sc['o_id']]]
+        line_geo = pd.merge(dl_data, lines, how='inner', left_on='IdentifiedObject', right_on=sc['o_id'])
+        line_geo.sort_values(by=[sc['o_id'], 'sequenceNumber'], inplace=True)
+        line_geo['coords'] = line_geo[['xPosition', 'yPosition']].values.tolist()
+        line_geo['coords'] = line_geo[['coords']].values.tolist()
+        for _, df_group in line_geo.groupby(by=sc['o_id']):
+            line_geo['coords'][df_group.index.values[0]] = df_group[['xPosition', 'yPosition']].values.tolist()
+        line_geo.drop_duplicates([sc['o_id']], keep='first', inplace=True)
+        line_geo.sort_values(by='index', inplace=True)
+        # now add the line coordinates
+        # if there are no bus geodata in the GL profile the line geodata from DL has higher priority
+        if self.cimConverter.net.line_geodata.index.size > 0 and line_geo.index.size > 0:
+            self.cimConverter.net.line_geodata = self.cimConverter.net.line_geodata[0:0]
+        self.cimConverter.net.line_geodata = pd.concat(
+            [self.cimConverter.net.line_geodata, line_geo[['coords', 'index']].set_index('index')],
+            ignore_index=False, sort=False)
+
+        # now create coordinates which are official not supported by pandapower, e.g. for transformer
+        for one_ele in ['trafo', 'trafo3w', 'switch', 'ext_grid', 'load', 'sgen', 'gen', 'impedance', 'dcline', 'shunt',
+                        'storage', 'ward', 'xward']:
             one_ele_df = self.cimConverter.net[one_ele][[sc['o_id']]]
             one_ele_df = pd.merge(dl_data, one_ele_df, how='inner', left_on='IdentifiedObject', right_on=sc['o_id'])
             one_ele_df.sort_values(by=[sc['o_id'], 'sequenceNumber'], inplace=True)
