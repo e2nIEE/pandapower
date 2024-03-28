@@ -149,7 +149,7 @@ def coords_from_node_geodata(element_indices, from_nodes, to_nodes, node_geodata
         from_node_coords = to_node_coords
     :type ignore_zero_length: bool, default True
     :return: Return values are:\
-        - coords (list) - list of branch coordinates of shape (N, (2, 2))\
+        - coords (list) - list of branch coordinates as geojson valid strings
         - elements_with_geo (set) - the indices of branch elements for which coordinates wer found\
             in the node geodata table
     """
@@ -157,7 +157,7 @@ def coords_from_node_geodata(element_indices, from_nodes, to_nodes, node_geodata
         & np.isin(to_nodes, node_geodata.index.values)
     elements_with_geo = np.array(element_indices)[have_geo]
     fb_with_geo, tb_with_geo = from_nodes[have_geo], to_nodes[have_geo]
-    coords = [[(x_from, y_from), (x_to, y_to)] for [x_from, y_from], [x_to, y_to]
+    coords = [[[x_from, y_from], [x_to, y_to]] for [x_from, y_from], [x_to, y_to]
               in np.concatenate([node_geodata.loc[fb_with_geo].apply(geojson.loads).apply(geojson.utils.coords).apply(list).to_list(),
                                  node_geodata.loc[tb_with_geo].apply(geojson.loads).apply(geojson.utils.coords).apply(list).to_list()], axis=1)
               if not ignore_zero_length or not (x_from == x_to and y_from == y_to)]
@@ -171,25 +171,27 @@ def coords_from_node_geodata(element_indices, from_nodes, to_nodes, node_geodata
 
 def set_line_geodata_from_bus_geodata(net, line_index=None, overwrite=False):
     """
-    Sets coordinates in net.line_geodata based on the from_bus and to_bus x,y coordinates
-    in net.bus_geodata
+    Sets coordinates in net.line.geo based on the from_bus and to_bus coordinates
+    in net.bus.geo
     :param net: pandapowerNet
     :param line_index: index of lines, coordinates of which will be set from bus geodata (all lines if None)
     :param overwrite: whether the existing coordinates in net.line_geodata must be overwritten
     :return: None
     """
+    if 'geo' not in net.bus.columns() or net.bus.geo.isnull().all():
+        logger.warning("The function set_line_geodata_from_bus_geodata requires geodata to be present in net.bus.geo")
+        return
     line_index = line_index if line_index is not None else net.line.index
     if not overwrite:
         line_index = np.setdiff1d(line_index, net.line_geodata.index)
 
-    coords, line_index_successful = coords_from_node_geodata(element_indices=line_index,
+    geos, line_index_successful = coords_from_node_geodata(element_indices=line_index,
                                                              from_nodes=net.line.loc[line_index, 'from_bus'].values,
                                                              to_nodes=net.line.loc[line_index, 'to_bus'].values,
                                                              node_geodata=net.net.bus.geo,
-                                                             table_name="line_geodata", node_name="bus_geodata")
+                                                             table_name="line", node_name="bus")
 
-    net.line_geodata = net.line_geodata.reindex(net.line.index)
-    net.line_geodata.loc[line_index_successful, 'coords'] = coords
+    net.line.geo.loc[line_index_successful, 'geo'] = geos
 
     num_failed = len(line_index) - len(line_index_successful)
     if num_failed > 0:
