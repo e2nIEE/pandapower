@@ -1,4 +1,3 @@
-import io
 import pytest
 import numpy as np
 import pandapower as pp
@@ -500,7 +499,7 @@ def test_controller():
 
     # load time series
     json_path = os.path.join(pp_dir, "test", "opf", "cigre_timeseries_15min.json")
-    time_series = pd.read_json(io.StringIO(json_path))
+    time_series = pd.read_json(json_path)
     time_series.sort_index(inplace=True)
     sgen_p = net["sgen"].loc[:, "p_mw"].values
     load_p = net["load"].loc[:, "p_mw"].values
