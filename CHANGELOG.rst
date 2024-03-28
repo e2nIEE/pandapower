@@ -4,6 +4,11 @@ Change Log
 [upcoming release] - 2024-..-..
 -------------------------------
 
+[2.14.4] - 2024-03-28
+-------------------------------
+- [FIXED] internal pgm test returns ANOTHER error when using python 3.8
+- [FIXED] added setuptools to relying tests
+
 [2.14.3] - 2024-03-28
 -------------------------------
 - [FIXED] internal pgm test checked wrong result

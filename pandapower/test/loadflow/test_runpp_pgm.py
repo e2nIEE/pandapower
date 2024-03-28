@@ -57,7 +57,7 @@ def test_runpp_pgm__internal_pgm_error(mock_logger: MagicMock):
         mock_logger.critical.assert_called_once_with("Internal PowerGridError occurred!")
     else:
         mock_logger.critical.assert_called_once_with("Internal ConflictVoltage occurred!")
-        
+
     mock_logger.debug.assert_called_once()
     mock_logger.info.assert_called_once_with("Use validate_input=True to validate your input data.")
 
