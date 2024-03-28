@@ -302,11 +302,9 @@ def dump_to_geojson(
     :type nodes: bool | list, default False
     :param branches: if True return contains all line data, can be a list of line ids that should be contained
     :type branches: bool | list, default False
-    :param switches: if True return contains all switch data, can be a list of switch ids that should be contained
-    (only supported for pandapowerNet)
+    :param switches: if True return contains all switch data, can be a list of switch ids that should be contained (only supported for pandapowerNet)
     :type switches: bool | list, default False
-    :param trafos: if True return contains all trafo data, can be a list of trafo ids that should be contained
-    (only supported for pandapowerNet)
+    :param trafos: if True return contains all trafo data, can be a list of trafo ids that should be contained (only supported for pandapowerNet)
     :type trafos: bool | list, default False
     :param t_is_3w: if True, the trafos are treated as 3W-trafos
     :type t_is_3w: bool, default False
