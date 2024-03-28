@@ -57,7 +57,7 @@ setup(
         # "base64", "hashlib", "zlib" produce installing problems, so they are not included
         "test": ["pytest", "pytest-xdist"],
         "performance": ["ortools",  "numba", "lightsim2grid"],
-        "pgm": ["power-grid-model-io"],
+        "pgm": ["power-grid-model", "power-grid-model-io"],
         "fileio": ["xlsxwriter", "openpyxl", "cryptography", "geopandas", "psycopg2"],
         # "fiona" is a depedency of geopandas and so already available
         "converter": ["matpowercaseframes"],
@@ -68,7 +68,7 @@ setup(
                 "xlsxwriter", "openpyxl", "cryptography",
                 "psycopg2",  # for PostgreSQL I/O
                 "matpowercaseframes",
-                "power-grid-model-io",
+                "power-grid-model", "power-grid-model-io",
                 "numba>=0.25"
                 ]},  # "shapely", "pyproj", "fiona" are dependencies of geopandas and so already available
     # "hashlib", "zlib", "base64" produce installing problems, so it is not included
