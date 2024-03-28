@@ -1,6 +1,7 @@
 import pandapower as pp
 import pytest
 from numpy import array, isclose
+import pandas as pd
 
 @pytest.fixture()
 def base_net():
@@ -47,7 +48,8 @@ def test_contingency_sgen(base_net):
     #    p_min_mw       |\
     #                   | \
     #                   |  \
-    net.pwl_cost.loc[pwl, "points"] = [(0, net.sgen.max_p_mw.at[0], -1)]
+
+    net.pwl_cost.points.loc[pwl] = [(0, net.sgen.max_p_mw.at[0], -1)]
     pp.runopp(net)
 
     assert isclose(net.res_cost, -net.res_sgen.p_mw.at[0], atol=1e-4)

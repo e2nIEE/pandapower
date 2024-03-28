@@ -8,7 +8,6 @@ import importlib
 import json
 import numbers
 import os
-import pickle
 import sys
 import types
 import weakref
@@ -21,10 +20,8 @@ import pandas.errors
 from deepdiff.diff import DeepDiff
 from packaging.version import Version
 from pandapower import __version__
-from pandapower.auxiliary import _preserve_dtypes
 import networkx
 import numpy
-from io import StringIO
 import pandas as pd
 from networkx.readwrite import json_graph
 from numpy import ndarray, generic, equal, isnan, allclose, any as anynp
@@ -479,7 +476,7 @@ class FromSerializableRegistry():
     module_name = ''
 
     def __init__(self, obj, d, pp_hook_funct):
-        self.obj = StringIO(obj) if isinstance(obj, str) else obj
+        self.obj = obj
         self.d = d
         self.pp_hook = pp_hook_funct
 
@@ -516,7 +513,7 @@ class FromSerializableRegistry():
         column_name = self.d.pop('column_name', None)
         column_names = self.d.pop('column_names', None)
 
-        obj = StringIO(self.obj) if isinstance(self.obj, str) else self.obj
+        obj = self.obj
 
         df = pd.read_json(obj, precise_float=True, convert_axes=False, **self.d)
 
