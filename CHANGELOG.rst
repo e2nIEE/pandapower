@@ -4,6 +4,11 @@ Change Log
 [upcoming release] - 2024-..-..
 -------------------------------
 
+[2.14.5] - 2024-03-28
+-------------------------------
+- [CHANGED] added possibility to provide custom weights to switches and transformers (before - always zero) when creating a graph
+- [FIXED] many futurewarnings and deprecation warnings
+
 [2.14.4] - 2024-03-28
 -------------------------------
 - [FIXED] internal pgm test returns ANOTHER error when using python 3.8
@@ -66,6 +71,7 @@ Change Log
 - [ADDED] cim2pp: added description fields for each asset and added BusbarSection information to nodes
 - [CHANGED] cim2pp: reformat documentation for reading in files
 - [CHANGED] allow providing grid_tables as a parameter to the function that downloads net from PostgreSQL
+- [FIXED] avoid FutureWarning of pandas 2.2
 - [FIXED] compatibility with lightsim2grid after new version 0.8.0
 - [ADDED] allow passing custom runpp-function to pp.diagnostic
 

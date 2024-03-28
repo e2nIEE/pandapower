@@ -188,7 +188,7 @@ def drop_same_type_existing_controllers(net, this_ctrl_type, index=None, matchin
         same_type_existing_ctrl = get_controller_index(net, ctrl_type=this_ctrl_type,
                                                        parameters=matching_params)
         if len(same_type_existing_ctrl):
-            net.controller.drop(same_type_existing_ctrl, inplace=True)
+            net.controller = net.controller.drop(same_type_existing_ctrl)
             logger.debug("Controllers " + str(['%i' % idx for idx in same_type_existing_ctrl]) +
                          "got removed because of same type and matching parameters as new " +
                          "controller " + index + ".")
