@@ -1,7 +1,7 @@
 import logging
 import time
 
-import numpy as np
+import numpy
 import pandas as pd
 
 from pandapower.converter.cim import cim_tools
@@ -41,38 +41,18 @@ class CoordinatesFromDLCim16:
         # make sure that the columns 'xPosition' and 'yPosition' are floats
         dl_data['xPosition'] = dl_data['xPosition'].astype(float)
         dl_data['yPosition'] = dl_data['yPosition'].astype(float)
-        dl_data['xPosition_s'] = dl_data['xPosition'].astype(str)
-        dl_data['yPosition_s'] = dl_data['yPosition'].astype(str)
+        dl_data['coords_str'] = '['+dl_data['xPosition'].astype(str)+', '+dl_data['yPosition'].astype(str)+']'
 
-        # the coordinates for the lines
-        lines = self.cimConverter.net.line.reset_index()
-        lines = lines[['index', sc['o_id']]]
-        line_geo = pd.merge(dl_data, lines, how='inner', left_on='IdentifiedObject', right_on=sc['o_id'])
-        line_geo.sort_values(by=[sc['o_id'], 'sequenceNumber'], inplace=True)
-        line_geo['coords'] = line_geo[['xPosition', 'yPosition']].values.tolist()
-        line_geo['coords'] = line_geo[['coords']].values.tolist()
-        for _, df_group in line_geo.groupby(by=sc['o_id']):
-            line_geo['coords'][df_group.index.values[0]] = df_group[['xPosition', 'yPosition']].values.tolist()
-        line_geo.drop_duplicates([sc['o_id']], keep='first', inplace=True)
-        line_geo.sort_values(by='index', inplace=True)
-        # now add the line coordinates
-        # if there are no bus geodata in the GL profile the line geodata from DL has higher priority
-        if self.cimConverter.net.line_geodata.index.size > 0 and line_geo.index.size > 0:
-            self.cimConverter.net.line_geodata = self.cimConverter.net.line_geodata[0:0]
-        self.cimConverter.net.line_geodata = pd.concat(
-            [self.cimConverter.net.line_geodata, line_geo[['coords', 'index']].set_index('index')],
-            ignore_index=False, sort=False)
-
-        # now create coordinates which are official not supported by pandapower, e.g. for transformer
-        for one_ele in ['trafo', 'trafo3w', 'switch', 'ext_grid', 'load', 'sgen', 'gen', 'impedance', 'dcline', 'shunt',
-                        'storage', 'ward', 'xward']:
+        # create coordinates for the different assets bus, line, transformer
+        for one_ele in ['bus', 'trafo', 'trafo3w', 'switch', 'ext_grid', 'load', 'sgen', 'gen', 'line', 'dcline',
+                        'impedance', 'shunt', 'storage', 'ward', 'xward']:
             one_ele_df = self.cimConverter.net[one_ele][[sc['o_id']]]
             one_ele_df = pd.merge(dl_data, one_ele_df, how='inner', left_on='IdentifiedObject', right_on=sc['o_id'])
             one_ele_df.sort_values(by=[sc['o_id'], 'sequenceNumber'], inplace=True)
             if one_ele != 'line' and one_ele != 'dcline' and one_ele != 'impedance':
                 # only one coordinate for each asset (except line and impedance)
-                one_ele_df.drop_duplicates([sc['o_id']], keep='first', inplace=True)
-                one_ele_df['diagram'] = f'{{"type": "Point", "coordinates": [{one_ele_df["xPosition_s"]}, {one_ele_df["yPosition_s"]}]}}'
+                one_ele_df = one_ele_df.drop_duplicates([sc['o_id']], keep='first')
+                one_ele_df['diagram'] = '{"coordinates": ' + one_ele_df["coords_str"] + ', "type": "Point"}'
             else:
                 # line strings
                 one_ele_df['coords'] = one_ele_df[['xPosition', 'yPosition']].values.tolist()
@@ -82,8 +62,8 @@ class CoordinatesFromDLCim16:
                         ['xPosition', 'yPosition']].values.tolist()
                 one_ele_df.drop_duplicates([sc['o_id']], keep='first', inplace=True)
                 one_ele_df['coords'] = one_ele_df['coords'].astype(str)
-                one_ele_df['diagram'] = f'{{"type": "LineString", "coordinates": {one_ele_df["coords"]}}}'
-            # now add the coordinates
+                one_ele_df['diagram'] = '{"coordinates": '+one_ele_df['coords'].astype(str)+', "type": "LineString"}'
+
             self.cimConverter.net[one_ele]['diagram'] = self.cimConverter.net[one_ele][sc['o_id']].map(
                 one_ele_df.set_index(sc['o_id']).to_dict(orient='dict').get('diagram'))
 
