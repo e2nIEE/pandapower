@@ -178,7 +178,7 @@ def set_line_geodata_from_bus_geodata(net, line_index=None, overwrite=False):
     :param overwrite: whether the existing coordinates in net.line_geodata must be overwritten
     :return: None
     """
-    if 'geo' not in net.bus.columns() or net.bus.geo.isnull().all():
+    if 'geo' not in net.bus.columns or net.bus.geo.isnull().all():
         logger.warning("The function set_line_geodata_from_bus_geodata requires geodata to be present in net.bus.geo")
         return
     line_index = line_index if line_index is not None else net.line.index
