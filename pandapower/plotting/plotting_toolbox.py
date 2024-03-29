@@ -188,7 +188,7 @@ def set_line_geodata_from_bus_geodata(net, line_index=None, overwrite=False):
     geos, line_index_successful = coords_from_node_geodata(element_indices=line_index,
                                                              from_nodes=net.line.loc[line_index, 'from_bus'].values,
                                                              to_nodes=net.line.loc[line_index, 'to_bus'].values,
-                                                             node_geodata=net.net.bus.geo,
+                                                             node_geodata=net.bus.geo,
                                                              table_name="line", node_name="bus")
 
     net.line.geo.loc[line_index_successful, 'geo'] = geos
