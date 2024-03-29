@@ -57,7 +57,7 @@ setup(
         "plotting": ["plotly", "matplotlib", "igraph", "geopandas"],
         # "shapely", "pyproj" are dependencies of geopandas and so already available;
         # "base64", "hashlib", "zlib" produce installing problems, so they are not included
-        "test": ["pytest", "pytest-xdist"],
+        "test": ["pytest", "pytest-xdist", "nbmake"],
         "performance": ["ortools",  "numba", "lightsim2grid"],
         "pgm": ["power-grid-model-io"],
         "fileio": ["xlsxwriter", "openpyxl", "cryptography", "geopandas", "psycopg2"],
