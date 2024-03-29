@@ -521,7 +521,8 @@ def convert_geodata_to_geojson(
         geo_ldf = net.pipe_geodata if hasattr(net, 'pipe_geodata') else pd.DataFrame()
 
     a, b = "yx" if lonlat else "xy"  # substitute x and y with a and b to reverse them if necessary
-    df["geo"] = geo_df.apply(lambda r: f'{{"coordinates": [{r[a]}, {r[b]}], "type": "Point"}}', axis=1)
+    if not geo_df.empty:
+        df["geo"] = geo_df.apply(lambda r: f'{{"coordinates": [{r[a]}, {r[b]}], "type": "Point"}}', axis=1)
 
     ldf["geo"] = np.nan
     for l_id in ldf.index:
