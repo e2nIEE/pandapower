@@ -525,7 +525,7 @@ def create_line_collection(net: pandapowerNet, lines=None,
     return lc
 
 
-def create_dcline_collection(net, dclines=None, bus_geodata=None, infofunc=None, cmap=None,
+def create_dcline_collection(net, dclines=None, line_geodata=None, infofunc=None, cmap=None,
                              norm=None, picker=False, z=None, cbar_title="HVDC-Line Loading [%]",
                              clim=None, plot_colormap=True, **kwargs):
     """
@@ -859,7 +859,7 @@ def create_trafo3w_collection(net, trafo3ws=None, picker=False, infofunc=None, c
     trafo3ws = get_index_array(trafo3ws, net.trafo3w.index)
 
     if bus_geodata is None:
-        bus_geodata = net["bus_geodata"]
+        bus_geodata = net.bus.geo.dropna()
 
     in_geodata = (net.trafo3w.hv_bus.loc[trafo3ws].isin(bus_geodata.index) &
                   net.trafo3w.mv_bus.loc[trafo3ws].isin(bus_geodata.index) &
@@ -872,13 +872,14 @@ def create_trafo3w_collection(net, trafo3ws=None, picker=False, infofunc=None, c
     infos = []
     color = kwargs.pop("color", "k")
     linewidth = kwargs.pop("linewidths", 2.)
+    bus_geodata = bus_geodata.apply(geojson.loads)
     if cmap is not None and z is None:
         z = net.res_trafo3w.loading_percent
     for i, idx in enumerate(trafo3w_table.index):
         # get bus geodata
-        p1 = net.bus_geodata[["x", "y"]].loc[net.trafo3w.at[idx, "hv_bus"]].values
-        p2 = net.bus_geodata[["x", "y"]].loc[net.trafo3w.at[idx, "mv_bus"]].values
-        p3 = net.bus_geodata[["x", "y"]].loc[net.trafo3w.at[idx, "lv_bus"]].values
+        p1 = bus_geodata.loc[net.trafo3w.at[idx, "hv_bus"]].coordinates
+        p2 = bus_geodata.loc[net.trafo3w.at[idx, "mv_bus"]].coordinates
+        p3 = bus_geodata.loc[net.trafo3w.at[idx, "lv_bus"]].coordinates
         if np.all(p1 == p2) and np.all(p1 == p3):
             continue
         p = np.array([p1, p2, p3])
