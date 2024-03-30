@@ -416,6 +416,9 @@ def create_bus_collection(net, buses=None, size=5, patch_type="circle", color=No
     if len(buses) == 0:
         return None
 
+    if any(net.bus.geo.isna()):
+        raise AttributeError('net.bus.geo contains NaN values, consider dropping them beforehand.')
+
     coords = net.bus.geo.apply(geojson.loads).apply(geojson.utils.coords).apply(next).to_list()
 
     infos = [infofunc(bus) for bus in buses] if infofunc is not None else []
@@ -490,17 +493,27 @@ def create_line_collection(net: pandapowerNet, lines=None,
     line_geodata: Series[str] = line_geodata if line_geodata is not None else net.line.geo
     lines_without_geo = line_geodata.index[line_geodata.isna()]
     line_geodata = line_geodata.dropna()
-    line_geodata = line_geodata.apply(lambda s: geojson.loads if isinstance(s, str) else s)
-    if lines_without_geo.empty:
-        logger.warning("Could not plot lines %s. %s geodata is missing for those lines!"
-                       % (lines_without_geo, "Bus" if use_bus_geodata else "Line"))
+    # line_geodata = line_geodata.apply(lambda s: geojson.loads if isinstance(s, str) else s)
+    if not lines_without_geo.empty:
+        logger.warning(f'Could not plot lines {lines_without_geo}. {"Bus" if use_bus_geodata else "Line"} geodata is missing for those lines!')
 
     if len(line_geodata) == 0:
-        return None
+        if not use_bus_geodata:
+            return None
+        else:
+            geos, line_index_successful = coords_from_node_geodata(element_indices=net.line.index,
+                                                                   from_nodes=net.line.loc[net.line.index, 'from_bus'].values,
+                                                                   to_nodes=net.line.loc[net.line.index, 'to_bus'].values,
+                                                                   node_geodata=net.bus.geo,
+                                                                   table_name="line",
+                                                                   node_name="bus",
+                                                                   ignore_zero_length=True)
+
+            line_geodata = pd.Series(geos)
 
     infos = [infofunc(line) for line in line_geodata.index] if infofunc else []
 
-    coords = line_geodata  #.apply(geojson.loads).apply(geojson.utils.coords).apply(list)
+    coords = line_geodata.apply(geojson.loads).apply(geojson.utils.coords).apply(list)
 
     lc = _create_line2d_collection(coords, line_geodata.index, infos=infos, picker=picker, **kwargs)
 

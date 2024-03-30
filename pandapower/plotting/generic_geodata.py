@@ -246,11 +246,10 @@ def _prepare_geodata_table(net, geodata_table, overwrite):
         net[geodata_table] = pd.DataFrame(columns=["geo"])
 
 def fuse_geodata(net):
-    mg = top.create_nxgraph(net, include_lines=False, include_impedances=False,
-                            respect_switches=False)
+    mg = top.create_nxgraph(net, include_lines=False, include_impedances=False, respect_switches=False)
     geocoords = set(net.bus.dropna(subset=['geo']).index)
     for area in top.connected_components(mg):
         if len(area & geocoords) > 1:
             geo = net.bus.loc[list(area & geocoords), 'geo']
             for bus in area:
-                net.bus.loc[bus, 'geo'] = geo
+                net.bus.loc[bus, 'geo'] = pd.Series(geo)
