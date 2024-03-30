@@ -28,7 +28,8 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def build_igraph_from_pp(net, respect_switches=False, buses=None, trafo_length_km=0.01, switch_length_km=0.001):
+def build_igraph_from_pp(net, respect_switches=False, buses=None, trafo_length_km=0.01, switch_length_km=0.001,
+                         dcline_length_km=1.0):
     """
     This function uses the igraph library to create an igraph graph for a given pandapower network.
     Lines, transformers and switches are respected.
@@ -54,6 +55,7 @@ def build_igraph_from_pp(net, respect_switches=False, buses=None, trafo_length_k
     pp_bus_mapping = dict(list(zip(bus_index, list(range(nr_buses)))))
     if respect_switches:
         open_switches = ~net.switch.closed.values.astype(bool)
+
     # add lines
     mask = _get_element_mask_from_nodes(net, "line", ["from_bus", "to_bus"], buses)
     if respect_switches:
@@ -62,6 +64,15 @@ def build_igraph_from_pp(net, respect_switches=False, buses=None, trafo_length_k
         g.add_edge(pp_bus_mapping[line.from_bus],
                    pp_bus_mapping[line.to_bus],
                    weight=line.length_km)
+
+    # add dclines
+    mask = _get_element_mask_from_nodes(net, "dcline", ["from_bus", "to_bus"], buses)
+    if respect_switches:
+        mask &= _get_switch_mask(net, "dcline", "l", open_switches)
+    for dcline in net.dcline[mask].itertuples():
+        g.add_edge(pp_bus_mapping[dcline.from_bus],
+                   pp_bus_mapping[dcline.to_bus],
+                   weight=dcline_length_km)
 
     # add trafos
     mask = _get_element_mask_from_nodes(net, "trafo", ["hv_bus", "lv_bus"], buses)
