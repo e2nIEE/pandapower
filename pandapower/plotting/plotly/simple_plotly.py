@@ -71,7 +71,7 @@ def get_hoverinfo(net, element, precision=3, sub_index=None):
 
 
 def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=False,
-                  projection=None, map_style='basic', figsize=1.0, aspectratio='auto',
+                  projection='epsg:4326', map_style='basic', figsize=1.0, aspectratio='auto',
                   line_width=1.0, bus_size=10.0, ext_grid_size=20.0,
                   bus_color="blue", line_color='grey', trafo_color='green',
                   trafo3w_color='green', ext_grid_color="yellow",
