@@ -166,8 +166,9 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
 
     # create trafo3w collection if trafo3w is available
     trafo3w_buses_with_geo_coordinates = [
-        t for t, trafo3w in net.trafo3w.iterrows() if trafo3w.hv_bus in net.bus_geodata.index and
-                                                      trafo3w.mv_bus in net.bus_geodata.index and trafo3w.lv_bus in net.bus_geodata.index]
+        t for t, trafo3w in net.trafo3w.iterrows() if trafo3w.hv_bus in net.bus.geo.index and
+                                                      trafo3w.mv_bus in net.bus.geo.index and
+                                                      trafo3w.lv_bus in net.bus.geo.index]
     if len(trafo3w_buses_with_geo_coordinates) > 0:
         tc = create_trafo3w_collection(net, trafo3w_buses_with_geo_coordinates,
                                        color=trafo_color)
