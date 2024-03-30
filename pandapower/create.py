@@ -642,7 +642,7 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b", zone=N
         if isinstance(geodata, tuple):
             if len(geodata) != 2:
                 raise UserWarning("geodata must be given as (x, y) tuple")
-            geo = f'{{"type":"Point","coordinates":[{geodata[0]},{geodata[1]}]}}'
+            geo = f'{{"type":"Point","coordinates":[{float(geodata[0])},{float(geodata[1])}]}}'
         else:
             raise UserWarning("geodata must be a valid coordinate tuple")
     else:
