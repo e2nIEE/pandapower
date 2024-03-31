@@ -250,6 +250,12 @@ def fuse_geodata(net):
     geocoords = set(net.bus.dropna(subset=['geo']).index)
     for area in top.connected_components(mg):
         if len(area & geocoords) > 1:
-            geo = net.bus.loc[list(area & geocoords), 'geo']
+            geo = net.bus.loc[list(area & geocoords), 'geo'].apply(geojson.loads)
             for bus in area:
-                net.bus.loc[bus, 'geo'] = pd.Series(geo)
+                if len(geo) > 1:
+                    coordinates = [point['coordinates'] for point in geo]
+                    mean_lat = np.mean([coord[1] for coord in coordinates])
+                    mean_lon = np.mean([coord[0] for coord in coordinates])
+                else:
+                    mean_lon, mean_lat = geo.coordinates
+                net.bus.geo.loc[bus] = geojson.dumps(geojson.Point((mean_lon, mean_lat)))

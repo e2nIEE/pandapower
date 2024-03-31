@@ -70,7 +70,7 @@ def get_hoverinfo(net, element, precision=3, sub_index=None):
     return hoverinfo
 
 
-def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=False,
+def simple_plotly(net, respect_switches=True, use_line_geo=None, on_map=False,
                   projection='epsg:4326', map_style='basic', figsize=1.0, aspectratio='auto',
                   line_width=1.0, bus_size=10.0, ext_grid_size=20.0,
                   bus_color="blue", line_color='grey', trafo_color='green',
@@ -87,7 +87,7 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
     OPTIONAL:
         **respect_switches** (bool, True) - Respect switches when artificial geodata is created
 
-        **use_line_geodata** (bool, True) - defines if lines patches are based on
+        **use_line_geo** (bool, True) - defines if lines patches are based on
         net.line_geodata of the lines (True) or on net.bus_geodata of the connected buses (False)
 
         **on_map** (bool, False) - enables using mapbox plot in plotly.
@@ -144,7 +144,7 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
     separator_element = "switch"
     traces, settings = _simple_plotly_generic(net=net,
                                               respect_separators=respect_switches,
-                                              use_branch_geodata=use_line_geodata,
+                                              use_branch_geodata=use_line_geo,
                                               on_map=on_map,
                                               projection=projection,
                                               map_style=map_style,
@@ -234,14 +234,14 @@ def _simple_plotly_generic(net, respect_separators, use_branch_geodata, on_map, 
         hoverinfo = hoverinfo_func(net, element=trans_element)
         trans_trace = create_trafo_trace(net, color=trafo_color, width=branch_width * 5,
                                          infofunc=hoverinfo,
-                                         use_line_geodata=use_branch_geodata)
+                                         use_line_geo=use_branch_geodata)
     # ----- 3W Trafos ------
     if 'trafo3w' in net and len(net.trafo3w):
         hoverinfo = hoverinfo_func(net, element=trans3w_element)
         trans_trace3w = create_trafo_trace(net, color=trafo3w_color, trafotype='3W',
                                            width=branch_width * 5,
                                           trace_name='3W transformers', infofunc=hoverinfo,
-                                          use_line_geodata=use_branch_geodata)
+                                          use_line_geo=use_branch_geodata)
     # ----- Ext grid ------
     # get external grid from _create_node_trace
     if 'ext_grid' in net and len(net.ext_grid):

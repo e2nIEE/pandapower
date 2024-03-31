@@ -249,6 +249,10 @@ def convert_crs(net: pandapower.pandapowerNet or 'pandapipes.pandapipesNet', eps
     if epsg_in == epsg_out:
         return
 
+    if 'geo' in net.bus and 'geo' in net.line and epsg_out == 4326:
+        # by definition geojson is in wgs84
+        return
+
     if not pyproj_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "pyproj")
     transformer = Transformer.from_crs(epsg_in, epsg_out, always_xy=True)

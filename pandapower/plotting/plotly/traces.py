@@ -72,7 +72,7 @@ def get_line_neutral(coord):
 
 
 def create_edge_center_trace(line_trace, size=1, patch_type="circle", color="white", infofunc=None,
-                             trace_name='edge_center', use_line_geodata=False, showlegend=False,
+                             trace_name='edge_center', use_line_geo=False, showlegend=False,
                              legendgroup=None, hoverlabel=None):
     """
     Creates a plotly trace of pandapower buses.
@@ -107,7 +107,7 @@ def create_edge_center_trace(line_trace, size=1, patch_type="circle", color="whi
     if hoverlabel is not None:
         center_trace.update({'hoverlabel': hoverlabel})
 
-    if not use_line_geodata:
+    if not use_line_geo:
         center_trace['x'], center_trace['y'] = (line_trace[0]["x"][1::4], line_trace[0]["y"][1::4])
     else:
         x, y = [], []
@@ -344,7 +344,7 @@ def _get_branch_geodata_plotly(net, branches, use_branch_geodata, branch_element
     return xs[:-1], ys[:-1]
 
 
-def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=False, width=1.0,
+def create_line_trace(net, lines=None, use_line_geo=True, respect_switches=False, width=1.0,
                       color='grey', infofunc=None, trace_name='lines', legendgroup='lines',
                       cmap=None, cbar_title=None, show_colorbar=True, cmap_vals=None, cmin=None,
                       cmax=None, cpos=1.1, cmap_vals_category='loading_percent', hoverlabel=None):
@@ -397,7 +397,7 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
 
     return _create_branch_trace(net=net,
                                 branches=lines,
-                                use_branch_geodata=use_line_geodata,
+                                use_branch_geodata=use_line_geo,
                                 respect_separators=respect_switches,
                                 width=width,
                                 color=color,
@@ -648,7 +648,7 @@ def _create_branch_trace(net, branches=None, use_branch_geodata=True, respect_se
             sorted_idx += no_go_branches_to_plot.index.tolist()
         infofunc = infofunc.loc[sorted_idx]
     center_trace = create_edge_center_trace(branch_traces, color=color, infofunc=infofunc,
-                                            use_line_geodata=use_branch_geodata,
+                                            use_line_geo=use_branch_geodata,
                                             showlegend=False, legendgroup=legendgroup,
                                             hoverlabel=hoverlabel)
     branch_traces.append(center_trace)
@@ -658,7 +658,7 @@ def _create_branch_trace(net, branches=None, use_branch_geodata=True, respect_se
 
 def create_trafo_trace(net, trafos=None, color='green', trafotype='2W', width=5, infofunc=None, cmap=None,
                        trace_name='2W transformers', cmin=None, cmax=None, cmap_vals=None, matching_params=None,
-                       use_line_geodata=None):
+                       use_line_geo=None):
     """
     Creates a plotly trace of pandapower trafos.
 
@@ -769,7 +769,7 @@ def create_trafo_trace(net, trafos=None, color='green', trafotype='2W', width=5,
     trafo_traces[0]["showlegend"] = True
 
     center_trace = create_edge_center_trace(trafo_traces, color=color, infofunc=infofunc,
-                                            use_line_geodata=use_line_geodata,
+                                            use_line_geo=use_line_geo,
                                             showlegend=False, legendgroup=trace_name)
     trafo_traces.append(center_trace)
     return trafo_traces
