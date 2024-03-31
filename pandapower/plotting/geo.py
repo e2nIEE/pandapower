@@ -249,7 +249,9 @@ def convert_crs(net: pandapower.pandapowerNet or 'pandapipes.pandapipesNet', eps
     if epsg_in == epsg_out:
         return
 
-    if 'geo' in net.bus and 'geo' in net.line and epsg_out == 4326:
+    if ('geo' in net.bus and not all(net.bus.geo.isna()) and
+            'geo' in net.line and not all(net.line.geo.isna()) and
+            epsg_out == 4326):
         # by definition geojson is in wgs84
         return
 
