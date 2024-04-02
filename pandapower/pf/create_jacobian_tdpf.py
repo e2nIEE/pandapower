@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -115,7 +115,7 @@ def calc_r_theta(t_air_pu, a0, a1, a2, i_square_pu, p_loss_pu):
     2019, pp. 1-6, doi: 10.1109/EEEIC.2019.8783234.
     """
     t_rise_pu = a0 + a1 * i_square_pu + a2 * np.square(i_square_pu) - t_air_pu
-    r_theta_pu = t_rise_pu / p_loss_pu
+    r_theta_pu = t_rise_pu / np.where(p_loss_pu == 0, 1e-6, p_loss_pu)
     return r_theta_pu
 
 

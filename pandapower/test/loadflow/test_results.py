@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import pandas as pd
 import pytest
@@ -213,7 +213,7 @@ def test_trafo(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=1e-2, l_tol=1e
     assert abs(net.res_bus.va_degree.at[b3] - va3) < va_tol
 
     # sincal results to check pi-equivalent circuit model
-    net.trafo.parallel.loc[trafos] = 1  # sincal is tested without parallel transformers
+    net.trafo.loc[trafos, "parallel"] = 1  # sincal is tested without parallel transformers
     runpp_with_consistency_checks(net, trafo_model="pi", trafo_loading="current")
 
     load1 = 57.637
@@ -234,6 +234,27 @@ def test_trafo(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=1e-2, l_tol=1e
 
     assert abs(net.res_trafo.loading_percent.at[t1] - load1) < l_tol
     assert abs(net.res_trafo.loading_percent.at[t2] - load2) < l_tol
+
+
+def test_trafo_2_taps(v_tol=1e-6, i_tol=1e-6, s_tol=1e-2, l_tol=1e-3, va_tol=1e-2):
+    # from pandapower.test.loadflow.test_results import *
+
+    net = pp.create_empty_network()
+    pp.create_bus(net, 110)
+    pp.create_bus(net, 20)
+    pp.create_ext_grid(net, 0)
+    pp.create_transformer_from_parameters(net, 0, 1, 100, 110, 20, 0.5, 12, 14, 0.5,
+                                          tap_side="hv", tap_neutral=0, tap_max=10,
+                                          tap_min=-10, tap_step_percent=2, tap_step_degree=0,
+                                          tap_pos=0, tap_phase_shifter=False,
+                                          tap2_side="hv", tap2_neutral=0, tap2_max=10,
+                                          tap2_min=-10, tap2_step_percent=2, tap2_step_degree=0,
+                                          tap2_pos=0, tap2_phase_shifter=False)
+
+    pp.create_load(net, 1, 10)
+
+    pp.runpp(net)
+    net.res_bus
 
 
 def test_tap_dependent_impedance(result_test_network):
@@ -257,8 +278,8 @@ def test_tap_dependent_impedance(result_test_network):
     net.trafo.loc[0, ['vk_percent_characteristic', 'vkr_percent_characteristic']] = idx_vk, idx_vkr
 
     # first, make sure there is no change for neutral
-    net.trafo.tap_pos.at[0] = net.trafo.tap_neutral.at[0]
-    net0.trafo.tap_pos.at[0] = net.trafo.tap_neutral.at[0]
+    net.trafo.at[0, "tap_pos"] = net.trafo.tap_neutral.at[0]
+    net0.trafo.at[0, "tap_pos"] = net.trafo.tap_neutral.at[0]
     pp.runpp(net)
     pp.runpp(net0)
     assert_res_equal(net, net0)
@@ -268,11 +289,11 @@ def test_tap_dependent_impedance(result_test_network):
     for pos, factor in (("tap_min", 0.9), ("tap_max", 1.1)):
         assert isclose(characteristic_vk(net.trafo[pos].at[0]), net.trafo.vk_percent.at[0]*factor, rtol=0, atol=1e-12)
         assert isclose(characteristic_vkr(net.trafo[pos].at[0]), net.trafo.vkr_percent.at[0]*factor, rtol=0, atol=1e-12)
-        net0.trafo.vk_percent.at[0] = net.trafo.vk_percent.at[0]*factor
-        net0.trafo.vkr_percent.at[0] = net.trafo.vkr_percent.at[0]*factor
-        net0.trafo.tap_pos.at[0] = net.trafo[pos].at[0]
+        net0.trafo.at[0, "vk_percent"] = net.trafo.vk_percent.at[0]*factor
+        net0.trafo.at[0, "vkr_percent"] = net.trafo.vkr_percent.at[0]*factor
+        net0.trafo.at[0, "tap_pos"] = net.trafo[pos].at[0]
         pp.runpp(net0)
-        net.trafo.tap_pos.at[0] = net.trafo[pos].at[0]
+        net.trafo.at[0, "tap_pos"] = net.trafo[pos].at[0]
         pp.runpp(net)
         assert_res_equal(net, net0)
 
@@ -340,6 +361,48 @@ def test_undefined_tap_dependent_impedance_characteristics():
     net.trafo.at[1, "vk_percent_characteristic"] = None
     with pytest.raises(UserWarning):
         pp.runpp(net)
+
+
+def test_undefined_tap_dependent_impedance_characteristics_trafo3w():
+    # if some characteristic per 1 trafo are undefined, but at least 1 is defined -> OK
+    # if all characteristic per 1 trafo are undefined -> raise error
+    net = create_net()
+    add_trafo_connection(net, 1, "3W")
+    add_trafo_connection(net, 1, "3W")
+    net2 = create_net()
+    add_trafo_connection(net2, 1, "3W")
+    add_trafo_connection(net2, 1, "3W")
+
+    pp.control.create_trafo_characteristics(net, 'trafo3w', [0, 1], 'vk_mv_percent', [[-2, -1, 0, 1, 2], [-2, -1, 0, 1, 2]], [[0.7, 0.9, 1, 1.1, 1.3], [0.7, 0.9, 1, 1.1, 1.3]])
+    pp.control.create_trafo_characteristics(net, 'trafo3w', [0, 1], 'vkr_mv_percent', [[-2, -1, 0, 1, 2], [-2, -1, 0, 1, 2]], [[0.3, 0.45, 0.5, 0.55, 0.7], [0.3, 0.45, 0.5, 0.55, 0.7]])
+
+    pp.control.Characteristic(net2, [-2, -1, 0, 1, 2], [0.7, 0.9, 1, 1.1, 1.3])
+    pp.control.Characteristic(net2, [-2, -1, 0, 1, 2], [0.3, 0.45, 0.5, 0.55, 0.7])
+
+    pp.control.TapDependentImpedance(net2, [0], 0, trafotable="trafo3w", output_variable="vk_mv_percent")
+    pp.control.TapDependentImpedance(net2, [0], 1, trafotable="trafo3w", output_variable="vkr_mv_percent")
+    pp.control.TapDependentImpedance(net2, [1], 0, trafotable="trafo3w", output_variable="vk_mv_percent")
+    pp.control.TapDependentImpedance(net2, [1], 1, trafotable="trafo3w", output_variable="vkr_mv_percent")
+
+    pp.runpp(net)
+    pp.runpp(net2, run_control=True)
+    assert_res_equal(net, net2)
+
+    net.trafo3w.at[0, "vk_mv_percent_characteristic"] = None
+    pp.runpp(net)
+    net2.controller.at[0, "in_service"] = False
+    pp.runpp(net2, run_control=True)
+    assert_res_equal(net, net2)
+
+    net.trafo3w.at[0, "vkr_mv_percent_characteristic"] = None
+    net2.controller.at[1, "in_service"] = False
+    with pytest.raises(UserWarning):
+        pp.runpp(net)
+
+    net.trafo3w.at[0, "tap_dependent_impedance"] = False
+    pp.runpp(net)
+    pp.runpp(net2, run_control=True)
+    assert_res_equal(net, net2)
 
 
 def test_ext_grid(result_test_network, v_tol=1e-6, va_tol=1e-2, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):

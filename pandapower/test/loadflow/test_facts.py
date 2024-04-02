@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -222,8 +222,8 @@ def test_svc(vm_set_pu):
     assert np.isclose(net3.res_bus.at[3, 'va_degree'], net.res_svc.at[0, 'va_degree'], rtol=0, atol=1e-6)
     assert np.isclose(net3.res_bus.at[3, 'q_mvar'], net.res_bus.at[3, 'q_mvar'], rtol=0, atol=1e-6)
 
-    net2.svc.thyristor_firing_angle_degree.at[0] = net.res_svc.thyristor_firing_angle_degree.at[0]
-    net2.svc.controllable.at[0] = False
+    net2.svc.at[0, "thyristor_firing_angle_degree"] = net.res_svc.thyristor_firing_angle_degree.at[0]
+    net2.svc.at[0, "controllable"] = False
     pp.runpp(net2)
     assert np.isclose(net2.res_bus.at[3, 'vm_pu'], net.svc.at[0, 'set_vm_pu'], rtol=0, atol=1e-6)
     assert np.isclose(net2.res_bus.at[3, 'q_mvar'], net.res_bus.at[3, 'q_mvar'], rtol=0, atol=1e-6)
@@ -350,13 +350,13 @@ def test_tcsc_simple2():
     pp.runpp(net_ref)
     compare_tcsc_impedance(net, net_ref, net.tcsc.index, net_ref.impedance.index)
 
-    net.tcsc.controllable.at[0] = True
+    net.tcsc.at[0, "controllable"] = True
     runpp_with_consistency_checks(net)
     net_ref = copy_with_impedance(net)
     pp.runpp(net_ref)
     compare_tcsc_impedance(net, net_ref, net.tcsc.index, net_ref.impedance.index)
 
-    net.tcsc.controllable.at[1] = True
+    net.tcsc.at[1, "controllable"] = True
     runpp_with_consistency_checks(net)
     net_ref = copy_with_impedance(net)
     pp.runpp(net_ref)
@@ -386,7 +386,7 @@ def test_tcsc_simple3():
 
     pp.create_tcsc(net, 1, 2, xl, xc, 5, 170, "Test", controllable=True, min_angle_degree=90, max_angle_degree=180)
 
-    runpp_with_consistency_checks(net)
+    runpp_with_consistency_checks(net, init="dc")
 
     net_ref = copy_with_impedance(net)
     pp.runpp(net_ref)
@@ -422,7 +422,7 @@ def test_compare_to_impedance():
 
     pp.create_tcsc(net, 1, 2, xl, xc, -20, 170, "Test", controllable=True, min_angle_degree=90, max_angle_degree=180)
 
-    runpp_with_consistency_checks(net)
+    runpp_with_consistency_checks(net, init="dc")
 
     pp.create_impedance(net_ref, 1, 2, 0, net.res_tcsc.x_ohm.at[0] / baseZ, baseMVA)
 
@@ -438,7 +438,7 @@ def test_compare_to_impedance():
     # compare when not controllable
     net.tcsc.thyristor_firing_angle_degree = net.res_tcsc.thyristor_firing_angle_degree
     net.tcsc.controllable = False
-    runpp_with_consistency_checks(net)
+    runpp_with_consistency_checks(net, init="dc")
 
     compare_tcsc_impedance(net, net_ref, 0, 0)
     assert np.allclose(net._ppc["internal"]["J"].toarray(), net_ref._ppc["internal"]["J"].toarray(), rtol=0, atol=5e-5)
@@ -463,7 +463,7 @@ def test_tcsc_case_study():
     net_ref = net.deepcopy()
 
     pp.create_tcsc(net, f, aux, xl, xc, -100, 100, controllable=True)
-    pp.runpp(net)
+    pp.runpp(net, init="dc")
 
     pp.create_impedance(net_ref, f, aux, 0, net.res_tcsc.at[0, "x_ohm"] / baseZ, baseMVA)
     pp.runpp(net_ref)
@@ -514,7 +514,7 @@ def test_multiple_facts():
     pp.create_svc(net, 3, 1, -10, 1.01, 90)
     runpp_with_consistency_checks(net)
 
-    net.svc.thyristor_firing_angle_degree.at[0] = net.res_svc.loc[0, "thyristor_firing_angle_degree"]
+    net.svc.at[0, "thyristor_firing_angle_degree"] = net.res_svc.loc[0, "thyristor_firing_angle_degree"]
     net.svc.controllable = False
     runpp_with_consistency_checks(net)
     net_ref = copy_with_impedance(net)
@@ -607,14 +607,14 @@ def test_svc_tcsc_case_study():
 
     pp.create_svc(net, net.bus.loc[net.bus.name == "B7"].index.values[0], 1, -10, 1., 90)
 
-    pp.runpp(net)
+    pp.runpp(net, init="dc")
 
     net_ref = copy_with_impedance(net)
     pp.runpp(net_ref)
     compare_tcsc_impedance(net, net_ref, net.tcsc.index, net_ref.impedance.index)
 
     net.gen.slack_weight = 1
-    pp.runpp(net, distributed_slack=True)
+    pp.runpp(net, distributed_slack=True, init="dc")
     net_ref = copy_with_impedance(net)
     pp.runpp(net_ref, distributed_slack=True)
     compare_tcsc_impedance(net, net_ref, net.tcsc.index, net_ref.impedance.index)
