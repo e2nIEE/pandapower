@@ -245,6 +245,15 @@ def test_select_subnet():
     subnet = pp.select_subnet(net2, buses | elements)
     assert net2.switch[net2.switch.et == 'b'].index.isin(subnet.switch.index).all()
 
+    pp.runpp(net2)
+    net3 = pp.select_subnet(net2, [0, 1], include_results=True)
+    assert len(net3.res_switch) > 0
+    assert net3.switch.index.equals(net3.res_switch.index)
+
+    net3 = pp.select_subnet(net2, [0, 1], include_results=True, keep_everything_else=True)
+    assert len(net3.res_switch) > 0
+    assert net3.switch.index.equals(net3.res_switch.index)
+
 
 def test_add_zones_to_elements():
     net = nw.create_cigre_network_mv()

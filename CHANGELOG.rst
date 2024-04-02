@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2024-..-..
 -------------------------------
+- [FIXED] handling of switch results in :code:`pp.toolbox.select_subnet`
 
 [2.14.6] - 2024-04-02
 -------------------------------
