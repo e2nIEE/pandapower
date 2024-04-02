@@ -271,8 +271,8 @@ def test_convert_geodata_to_geojson():
     geo.convert_geodata_to_geojson(_net)
 
     # Überprüfe die Ergebnisse
-    assert _net.bus.at[0, "geo"] == geojson.dumps(geojson.Point((10, 20)), sort_keys=True)
-    assert _net.bus.at[1, "geo"] == geojson.dumps(geojson.Point((30, 40)), sort_keys=True)
+    assert _net.bus.at[0, "geo"] == geojson.dumps(geojson.Point((10.0, 20.0)), sort_keys=True)
+    assert _net.bus.at[1, "geo"] == geojson.dumps(geojson.Point((30.0, 40.0)), sort_keys=True)
     assert _net.line.at[0, "geo"] == geojson.dumps(geojson.LineString([(10, 20), (30, 40)]), sort_keys=True)
     # TODO: Test could be more exhaustive (e.g. test delete=False, lonlat=True, geo_str=False)
 
