@@ -5,6 +5,7 @@
 
 import copy
 import importlib
+import io
 import json
 import numbers
 import os
@@ -527,6 +528,8 @@ class FromSerializableRegistry():
         column_names = self.d.pop('column_names', None)
 
         obj = self.obj
+        if type(obj) == str and (not os.path.isabs(obj) or not obj.endswith('.json')):
+            obj = io.StringIO(obj)
 
         df = pd.read_json(obj, precise_float=True, convert_axes=False, **self.d)
 
