@@ -2497,8 +2497,13 @@ def create_shunt(net, item):
         'vn_kv': item.ushnm,
         'q_mvar': item.Qact * multiplier
     }
-
-    if item.shtype == 1:
+    
+    if item.shtype == 0:
+        # Shunt is a R-L-C element
+        params['q_mvar'] = -item.qtotn * multiplier
+        p_mw = (item.ushnm ** 2 * item.rrea) / (item.rrea ** 2 + (item.xrea + 1 / (item.bcap * 1e6)) ** 2) * multiplier
+        sid = pp.create_shunt(net, p_mw=p_mw, **params)
+    elif item.shtype == 1:
         # Shunt is an R-L element
         params['q_mvar'] = item.qrean * multiplier
         p_mw = (item.ushnm ** 2 * item.rrea / (item.rrea ** 2 + item.xrea ** 2)) * multiplier
@@ -2507,9 +2512,35 @@ def create_shunt(net, item):
         # Shunt is a capacitor bank
         loss_factor = item.tandc
         sid = pp.create_shunt_as_capacitor(net, loss_factor=loss_factor, **params)
+    elif item.shtype == 3:
+        # Shunt is a R-L-C, Rp element
+        # params['q_mvar'] = -item.qtotn * multiplier
+        Rp = item.rpara
+        Rs = item.rrea
+        Xl = item.xrea
+        Bc = item.bcap * 1e-6
+        R = Rp*(Rp*Rs+Rs**2+Xl**2)/((Rp+Rs)**2 + Xl**2)
+        X = 1/Bc + (Xl*Rp**2)/((Rp+Rs)**2 + Xl**2)
+
+        p_mw = (item.ushnm ** 2 * R) / (R ** 2 + X ** 2) * multiplier
+        params['q_mvar'] = -(item.ushnm ** 2 * X) / (R ** 2 + X ** 2) * multiplier
+        sid = pp.create_shunt(net, p_mw=p_mw, **params)
+    elif item.shtype == 4:
+        # Shunt is a R-L-C1-C2, Rp element
+        # params['q_mvar'] = -item.qtotn * multiplier
+        Rp = item.rpara
+        Rs = item.rrea
+        Xl = item.xrea + 1/(2*np.pi*50*item.c1) * 1e-6
+        Bc = 2*np.pi*50*item.c2 * 1e-6
+        R = Rp*(Rp*Rs+Rs**2+Xl**2)/((Rp+Rs)**2 + Xl**2)
+        X = 1/Bc + (Xl*Rp**2)/((Rp+Rs)**2 + Xl**2)
+
+        p_mw = (item.ushnm ** 2 * R) / (R ** 2 + X ** 2) * multiplier
+        params['q_mvar'] = -(item.ushnm ** 2 * X) / (R ** 2 + X ** 2) * multiplier
+        sid = pp.create_shunt(net, p_mw=p_mw, **params)
     else:
-        # Shunt is an element of R-L-C (0), R-L (1), R-L-C, Rp (3), R-L-C1-C2, Rp (4)
-        logger.warning('Importing of shunt elements that represent anything but capacitor banks '
+        # Shunt is an element of R-L-C, Rp (3), R-L-C1-C2, Rp (4)
+        logger.warning('Importing of shunt elements that represent anything but R-L-C (0), R-L (1), and C (2) '
                        'is not implemented correctly, the results will be inaccurate')
         if item.HasResults(0):
             p_mw = ga(item, 'm:P:bus1') * multiplier
