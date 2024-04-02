@@ -714,7 +714,8 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
         if isinstance(geodata, tuple):
             if len(geodata) != 2:
                 raise UserWarning("geodata must be given as (x, y) tuple")
-            geo = [geojson.dumps(geojson.Point(geodata), sort_keys=True)]*nr_buses
+            x, y = geodata
+            geo = [geojson.dumps(geojson.Point((float(x), float(y))), sort_keys=True)]*nr_buses
         elif isinstance(geodata, geojson.Point):
             if not geodata.is_valid:
                 raise UserWarning(
@@ -723,7 +724,7 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
             geo = [geojson.dumps(geodata)]*nr_buses
         elif isinstance(geodata, list) and len(geodata) == nr_buses:
             if all([isinstance(g, tuple) for g in geodata]):
-                geo = [geojson.dumps(geojson.Point(geod), sort_keys=True) for geod in geodata]
+                geo = [geojson.dumps(geojson.Point((float(x), float(y))), sort_keys=True) for x, y in geodata]
             elif all([isinstance(g, geojson.Point) for g in geodata]):
                 geo = geojson.dumps(geodata, sort_keys=True)
             else:
