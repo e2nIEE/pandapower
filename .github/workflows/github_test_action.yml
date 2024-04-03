@@ -84,7 +84,7 @@ jobs:
         pip list
     - name: Test with pytest
       run: |
-        pytest --splits 2 --group ${{ matrix.group }} -W error
+        pytest -W error --splits 2 --group ${{ matrix.group }}
 
   relying: # packages that rely on pandapower
 
