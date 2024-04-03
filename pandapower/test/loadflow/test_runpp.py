@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -123,7 +123,7 @@ def test_runpp_init():
     b1, b2, l1 = add_grid_connection(net)
     b3 = pp.create_bus(net, vn_kv=0.4)
     tidx = pp.create_transformer(net, hv_bus=b2, lv_bus=b3, std_type="0.25 MVA 20/0.4 kV")
-    net.trafo.shift_degree.at[tidx] = 70
+    net.trafo.at[tidx, "shift_degree"] = 70
     pp.runpp(net, calculate_voltage_angles="auto")
     va = net.res_bus.va_degree.at[4]
     pp.runpp(net, calculate_voltage_angles=True, init_va_degree="dc")
@@ -142,8 +142,8 @@ def test_runpp_init_auxiliary_buses():
     pp.create_load(net, b4, p_mw=5)
     pp.create_xward(net, b4, ps_mw=1, qs_mvar=1, pz_mw=1, qz_mvar=1, r_ohm=0.1, x_ohm=0.1,
                     vm_pu=1.0)
-    net.trafo3w.shift_lv_degree.at[tidx] = 120
-    net.trafo3w.shift_mv_degree.at[tidx] = 80
+    net.trafo3w.at[tidx, "shift_lv_degree"] = 120
+    net.trafo3w.at[tidx, "shift_mv_degree"] = 80
     pp.runpp(net)
     va = net.res_bus.va_degree.at[b2]
     pp.runpp(net, calculate_voltage_angles=True, init_va_degree="dc")
@@ -191,7 +191,7 @@ def test_bus_bus_switches(bus_bus_net):
            net.res_bus.vm_pu.at[6]
     assert net.res_bus.vm_pu.at[0] == net.res_bus.vm_pu.at[7]
 
-    net.bus.in_service.at[5] = False
+    net.bus.at[5, "in_service"] = False
     pp.runpp(net)
     assert net.res_bus.vm_pu.at[3] == net.res_bus.vm_pu.at[6]
     assert net.res_bus.vm_pu.at[0] == net.res_bus.vm_pu.at[7]
@@ -202,10 +202,10 @@ def test_bus_bus_switches(bus_bus_net):
 def test_bus_bus_switches_merges_two_gens(bus_bus_net):
     "buses should not be fused if two gens are connected"
     net = bus_bus_net
-    net.bus.in_service.at[5] = False
+    net.bus.at[5, "in_service"] = False
     pp.create_gen(net, 6, 10)
     pp.create_gen(net, 4, 10)
-    net.bus.in_service.at[5] = True
+    net.bus.at[5, "in_service"] = True
     pp.runpp(net)
     assert net.converged
 
@@ -778,7 +778,7 @@ def test_zip_loads_out_of_service():
     pp.runpp(net, tolerance_mva=1e-8)
     pp.runpp(net1, tolerance_mva=1e-8)
     assert np.allclose(net1.res_load.loc[oos_load].fillna(0), 0)
-    net1.res_load.drop(oos_load, inplace=True)
+    net1.res_load = net1.res_load.drop(oos_load)
     assert nets_equal(net, net1, check_only_results=True)
 
 
@@ -1063,14 +1063,14 @@ def two_ext_grids_at_one_bus():
     assert net.converged
 
     # error is raised after eg2 is set in service
-    net.ext_grid.in_service.at[eg2] = True
+    net.ext_grid.at[eg2, "in_service"] = True
     with pytest.raises(UserWarning):
         pp.runpp(net)
 
     #  error is also raised when eg2 is connected to first ext_grid through bus-bus switch
     b3 = pp.create_bus(net, vn_kv=110)
     pp.create_switch(net, b1, b3, et="b")
-    net.ext_grid.bus.at[eg2] = b3
+    net.ext_grid.at[eg2, "bus"] = b3
     with pytest.raises(UserWarning):
         pp.runpp(net)
 
@@ -1079,8 +1079,8 @@ def two_ext_grids_at_one_bus():
     assert net.converged
 
     # same angle but different voltage magnitude also raises an error
-    net.ext_grid.vm_pu.at[eg2] = 1.02
-    net.ext_grid.va_degree.at[eg2] = 0
+    net.ext_grid.at[eg2, "vm_pu"] = 1.02
+    net.ext_grid.at[eg2, "va_degree"] = 0
     with pytest.raises(UserWarning):
         pp.runpp(net)
 
@@ -1132,7 +1132,7 @@ def test_only_ref_buses():
     assert np.all(net.res_ext_grid.p_mw == 0.)
     assert np.all(net.res_ext_grid.q_mvar == 0.)
 
-    net.ext_grid.vm_pu.at[1] = 0.5
+    net.ext_grid.at[1, "vm_pu"] = 0.5
     pp.runpp(net)
     assert np.allclose(net.res_ext_grid.p_mw.values, np.array([0.25, -0.125]), rtol=0, atol=1e-12)
     assert np.allclose(net.res_ext_grid.q_mvar.values, np.array([0.25, -0.125]), rtol=0, atol=1e-12)
@@ -1180,9 +1180,9 @@ def test_init_results():
     t3_switch = pp.create_switch(net, bus=net.trafo3w.hv_bus.at[t3idx],
                                  element=t3idx, et="t3", closed=False)  # trafo3w switch at hv side
     assert_init_results(net)
-    net.switch.bus.at[t3_switch] = net.trafo3w.mv_bus.at[t3idx]  # trafo3w switch at mv side
+    net.switch.at[t3_switch, "bus"] = net.trafo3w.mv_bus.at[t3idx]  # trafo3w switch at mv side
     assert_init_results(net)
-    net.switch.bus.at[t3_switch] = net.trafo3w.lv_bus.at[t3idx]  # trafo3w switch at lv side
+    net.switch.at[t3_switch, "bus"] = net.trafo3w.lv_bus.at[t3idx]  # trafo3w switch at lv side
     assert_init_results(net)
 
 
@@ -1333,26 +1333,26 @@ def test_tap_dependent_impedance():
     pp.runpp(net_backup)
     assert_res_equal(net, net_backup)
 
-    net.trafo.tap_pos.at[0] = 2
-    net_backup.trafo.tap_pos.at[0] = 2
-    net_backup.trafo.vk_percent.at[0] = 6.5
-    net_backup.trafo.vkr_percent.at[0] = 1.48
+    net.trafo.at[0, "tap_pos"] = 2
+    net_backup.trafo.at[0, "tap_pos"] = 2
+    net_backup.trafo.at[0, "vk_percent"] = 6.5
+    net_backup.trafo.at[0, "vkr_percent"] = 1.48
 
     pp.runpp(net)
     pp.runpp(net_backup)
     assert_res_equal(net, net_backup)
 
-    net.trafo.tap_pos.at[1] = -2
-    net_backup.trafo.tap_pos.at[1] = -2
-    net_backup.trafo.vk_percent.at[1] = 5.4
+    net.trafo.at[1, "tap_pos"] = -2
+    net_backup.trafo.at[1, "tap_pos"] = -2
+    net_backup.trafo.at[1, "vk_percent"] = 5.4
 
     pp.runpp(net)
     pp.runpp(net_backup)
     assert_res_equal(net, net_backup)
 
-    net.trafo3w.tap_pos.at[0] = 2
-    net_backup.trafo3w.tap_pos.at[0] = 2
-    net_backup.trafo3w.vk_hv_percent.at[0] = 1.05
+    net.trafo3w.at[0, "tap_pos"] = 2
+    net_backup.trafo3w.at[0, "tap_pos"] = 2
+    net_backup.trafo3w.at[0, "vk_hv_percent"] = 1.05
 
     pp.runpp(net)
     pp.runpp(net_backup)

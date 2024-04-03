@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
@@ -216,9 +216,9 @@ def _create_seperate_cost_tables(net, elements_to_deserialize):
 
 def _rename_columns(net, elements_to_deserialize):
     if _check_elements_to_deserialize('line', elements_to_deserialize):
-        net.line.rename(columns={'imax_ka': 'max_i_ka'}, inplace=True)
+        net.line = net.line.rename(columns={'imax_ka': 'max_i_ka'})
     if _check_elements_to_deserialize('gen', elements_to_deserialize):
-        net.gen.rename(columns={"qmin_mvar": "min_q_mvar", "qmax_mvar": "max_q_mvar"}, inplace=True)
+        net.gen = net.gen.rename(columns={"qmin_mvar": "min_q_mvar", "qmax_mvar": "max_q_mvar"})
     for typ, data in net.std_types["line"].items():
         if "imax_ka" in data:
             net.std_types["line"][typ]["max_i_ka"] = net.std_types["line"][typ].pop("imax_ka")
@@ -235,11 +235,11 @@ def _rename_columns(net, elements_to_deserialize):
                     net.measurement.loc[bus_measurements, "bus"].values
                 net.measurement.loc[~bus_measurements, "side"] = \
                     net.measurement.loc[~bus_measurements, "bus"].values
-                net.measurement.rename(columns={'type': 'measurement_type'}, inplace=True)
-                net.measurement.drop(["bus"], axis=1, inplace=True)
+                net.measurement = net.measurement.rename(columns={'type': 'measurement_type'})
+                net.measurement = net.measurement.drop(["bus"], axis=1)
     if _check_elements_to_deserialize('controller', elements_to_deserialize):
         if "controller" in net:
-            net["controller"].rename(columns={"controller": "object"}, inplace=True)
+            net["controller"] = net["controller"].rename(columns={"controller": "object"})
     if "options" in net:
         if "recycle" in net["options"]:
             if "Ybus" in net["options"]["recycle"]:
@@ -371,7 +371,7 @@ def _update_trafo_parameter_names(net, elements_to_deserialize):
     for element in update_data:
         replace_cols = {col: _update_column(col) for col in net[element].columns if
                         col.startswith("tp") or col.startswith("vsc")}
-        net[element].rename(columns=replace_cols, inplace=True)
+        net[element] = net[element].rename(columns=replace_cols)
     _update_trafo_type_parameter_names(net)
 
 
@@ -399,16 +399,16 @@ def _set_data_type_of_columns(net):
 
 def _convert_to_mw(net):
     replace = [("kw", "mw"), ("kvar", "mvar"), ("kva", "mva")]
-    for element, tab in net.items():
-        if isinstance(tab, pd.DataFrame):
+    for element in net.keys():
+        if isinstance(net[element], pd.DataFrame):
             for old, new in replace:
-                diff = {column: column.replace(old, new) for column in tab.columns if old in column
-                        and column != "pfe_kw"}
-                tab.rename(columns=diff, inplace=True)
-                if len(tab) == 0:
+                diff = {column: column.replace(old, new) for column in net[element].columns if
+                    old in column and column != "pfe_kw"}
+                net[element] = net[element].rename(columns=diff)
+                if len(net[element]) == 0:
                     continue
                 for old, new in diff.items():
-                    tab[new] *= 1e-3
+                    net[element][new] *= 1e-3
 
     for element, std_types in net.std_types.items():
         for std_type, parameters in std_types.items():

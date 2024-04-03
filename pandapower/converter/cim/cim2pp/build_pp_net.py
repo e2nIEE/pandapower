@@ -219,7 +219,7 @@ class CimConverter:
         # fuse boundary ConnectivityNodes with their TopologicalNodes
         bus_t = self.net.bus.reset_index(level=0, drop=False)
         bus_drop = bus_t.loc[bus_t[sc['o_prf']] == 'eq_bd', ['index', sc['o_id'], 'cim_topnode']]
-        bus_drop.rename(columns={'index': 'b1'}, inplace=True)
+        bus_drop = bus_drop.rename(columns={'index': 'b1'})
         bus_drop = pd.merge(bus_drop, bus_t[['index', sc['o_id']]].rename(columns={'index': 'b2', sc['o_id']: 'o_id2'}),
                             how='inner', left_on='cim_topnode', right_on='o_id2')
         if bus_drop.index.size > 0:

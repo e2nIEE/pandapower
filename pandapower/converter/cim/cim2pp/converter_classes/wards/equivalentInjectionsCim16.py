@@ -38,14 +38,14 @@ class EquivalentInjectionsCim16:
         eq_base_voltages = pd.concat([self.cimConverter.cim['eq']['BaseVoltage'][['rdfId', 'nominalVoltage']],
                                       self.cimConverter.cim['eq_bd']['BaseVoltage'][['rdfId', 'nominalVoltage']]],
                                      sort=False)
-        eq_base_voltages.drop_duplicates(subset=['rdfId'], inplace=True)
-        eq_base_voltages.rename(columns={'rdfId': 'BaseVoltage'}, inplace=True)
+        eq_base_voltages = eq_base_voltages.drop_duplicates(subset=['rdfId'])
+        eq_base_voltages = eq_base_voltages.rename(columns={'rdfId': 'BaseVoltage'})
         eqssh_ei = pd.merge(eqssh_ei, eq_base_voltages, how='left', on='BaseVoltage')
         eqssh_ei = pd.merge(eqssh_ei, self.cimConverter.bus_merge, how='left', on='rdfId')
         # maybe the BaseVoltage is not given, also get the nominalVoltage from the buses
         eqssh_ei = pd.merge(eqssh_ei, self.cimConverter.net.bus[['vn_kv']], how='left', left_on='index_bus',
                             right_index=True)
-        eqssh_ei.nominalVoltage.fillna(eqssh_ei.vn_kv, inplace=True)
+        eqssh_ei.nominalVoltage = eqssh_ei.nominalVoltage.fillna(eqssh_ei.vn_kv)
         eqssh_ei['regulationStatus'].fillna(False, inplace=True)
         eqssh_ei['vm_pu'] = eqssh_ei.regulationTarget / eqssh_ei.nominalVoltage
         eqssh_ei.rename(columns={'rdfId_Terminal': sc['t'], 'rdfId': sc['o_id'], 'connected': 'in_service',

@@ -1,0 +1,51 @@
+# This workflow will create a Python package and upload it to testPyPi or PyPi
+# Then, it installs pandapower from there and all dependencies and runs tests with different Python versions
+
+name: upload
+
+# Controls when the action will run.
+on:
+  # Allows you to run this workflow manually from the Actions tab
+  push:
+    branches:
+      - master
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+
+  upload:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v4
+
+      # Sets up python3
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      # Installs and upgrades pip, installs other dependencies and installs the package from setup.py
+      - name: Install dependencies
+        run: |
+          # Upgrade pip
+          python3 -m pip install --upgrade pip
+          # Install twine
+          python3 -m pip install setuptools wheel twine
+
+      # Upload to PyPI
+      - name: Build and Upload to PyPI
+        run: |
+          python3 setup.py sdist --formats=zip
+          twine check dist/* --strict 
+          python3 -m twine upload dist/*
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI }}
+          TWINE_REPOSITORY: pypi
+
+      - name: Sleep for 300s to make release available
+        uses: juliangruber/sleep-action@v1
+        with:
+          time: 300s

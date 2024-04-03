@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
@@ -383,8 +383,8 @@ def test_create_replacement_switch_for_branch():
     # look that the switch is created properly
     pp.create_replacement_switch_for_branch(net, 'line', line0)
     pp.create_replacement_switch_for_branch(net, 'impedance', impedance0)
-    net.line.in_service.at[line0] = False
-    net.impedance.in_service.at[impedance0] = False
+    net.line.at[line0, "in_service"] = False
+    net.impedance.at[impedance0, "in_service"] = False
 
     assert 'REPLACEMENT_line_0' in net.switch.name.values
     assert 'REPLACEMENT_impedance_0' in net.switch.name.values
@@ -393,8 +393,8 @@ def test_create_replacement_switch_for_branch():
     pp.runpp(net)
 
     # look that the switch is created with the correct closed status
-    net.line.in_service.at[line1] = False
-    net.impedance.in_service.at[impedance1] = False
+    net.line.at[line1, "in_service"] = False
+    net.impedance.at[impedance1, "in_service"] = False
     pp.create_replacement_switch_for_branch(net, 'line', line1)
     pp.create_replacement_switch_for_branch(net, 'impedance', impedance1)
 
@@ -579,7 +579,7 @@ def test_replace_ext_grid_gen():
         assert np.allclose(net.gen.vm_pu.values, [1.03, 1.02])
         assert net.res_gen.p_mw.dropna().shape[0] == 2
         assert np.allclose(net.gen.index.values, [0, 4])
-        assert net.gen.uuid.loc[4] == "test"
+        assert net.gen.loc[4, "uuid"] == "test"
         assert net.group.element_type.tolist() == ["line", "gen"]
         assert net.group.element.iat[1] == [4]
 
@@ -710,7 +710,7 @@ def test_get_connected_elements_empty_in_service():
     #  - element_table was unbound for the element table measurement
     #  see #1592
     net = nw.example_simple()
-    net.bus.in_service.at[6] = False
+    net.bus.at[6, "in_service"] = False
     conn = pp.get_connected_elements_dict(net, [0], respect_switches=False, respect_in_service=True)
     assert conn == {"line": [0], 'ext_grid': [0], 'bus': [1]}
     conn = pp.get_connected_elements_dict(net, [3, 4], respect_switches=False, respect_in_service=True)
@@ -933,12 +933,12 @@ def test_merge_same_bus_generation_plants():
 
     # manipulate net for different functionality checks
     # 1) q_mvar should be summed which is only possible if no gen or ext_grid has the same bus
-    net.gen.drop(net.gen.index[net.gen.bus == 22], inplace=True)
+    net.gen = net.gen.drop(net.gen.index[net.gen.bus == 22])
     net.sgen["q_mvar"] = np.arange(net.sgen.shape[0])
     # 2) remove limit columns or values to check whether merge_same_bus_generation_plants() can
     # handle that
     del net.sgen["max_q_mvar"]
-    net.sgen.min_p_mw.at[1] = np.nan
+    net.sgen.at[1, "min_p_mw"] = np.nan
 
     # prepare expatation values
     dupl_buses = [0, 1, 6, 12, 14, 21, 22]

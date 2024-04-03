@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from collections import defaultdict
@@ -318,14 +318,14 @@ def reindex_elements(net, element_type, new_indices=None, old_indices=None, look
         net["line_geodata"][place_holder] = net["line_geodata"].index
         net["line_geodata"].loc[old_indices.intersection(net.line_geodata.index), place_holder] = (
             get_indices(old_indices.intersection(net.line_geodata.index), lookup))
-        net["line_geodata"].set_index(place_holder, inplace=True)
+        net["line_geodata"] = net["line_geodata"].set_index(place_holder)
         net["line_geodata"].index.name = idx_name
 
     # --- adapt index in cost dataframes
     for cost_df in ["pwl_cost", "poly_cost"]:
         element_in_cost_df = (net[cost_df].et == element_type) & net[cost_df].element.isin(old_indices)
         if sum(element_in_cost_df):
-            net[cost_df].element.loc[element_in_cost_df] = get_indices(net[cost_df].element[
+            net[cost_df].loc[element_in_cost_df, "element"] = get_indices(net[cost_df].element[
                 element_in_cost_df], lookup)
 
 
