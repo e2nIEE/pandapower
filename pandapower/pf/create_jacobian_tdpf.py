@@ -28,7 +28,7 @@ def calc_r_theta_from_t_rise(net, t_rise_degree_celsius):
     Returns
     -------
     r_theta_kelvin_per_mw : array
-        Thermal resistance of the conductors R_{\Theta}
+        Thermal resistance of the conductors R_{\\Theta}
 
     References
     ----------
@@ -102,7 +102,7 @@ def calc_r_theta(t_air_pu, a0, a1, a2, i_square_pu, p_loss_pu):
     Returns
     -------
     r_theta_pu : array
-        Thermal resistance of the conductors R_{\Theta}
+        Thermal resistance of the conductors R_{\\Theta}
 
     References
     ----------
@@ -131,7 +131,7 @@ def calc_T_frank(p_loss_pu, t_air_pu, r_theta_pu, tdpf_delay_s, T0, tau):
     t_air_pu : array
         Air temperature in p.u.
     r_theta_pu : array
-        Thermal resistance of the conductors R_{\Theta}
+        Thermal resistance of the conductors R_{\\Theta}
     tdpf_delay_s : float, None
         Delay for the consideration of thermal inertia in seconds. Describes the time passed after a change
         of current in overhead lines that causes a change of temperature.
