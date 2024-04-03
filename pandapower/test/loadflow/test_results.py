@@ -4,7 +4,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import pandas as pd
 import pytest
-from numpy import in1d, isnan, isclose
+from numpy import in1d, isnan, isclose, allclose
 
 import pandapower as pp
 import pandapower.control
@@ -684,6 +684,20 @@ def test_bus_bus_switch(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3,
     assert abs(net.res_bus.vm_pu.at[b2] - v2) < v_tol
     assert abs(net.res_bus.vm_pu.at[b3] - v2) < v_tol
     assert abs(net.res_bus.vm_pu.at[b2] == net.res_bus.vm_pu.at[b2])
+
+    for col in ("p_from_mw", "p_to_mw", "q_from_mvar", "q_to_mvar", "i_ka", "loading_percent"):
+        assert col in net.res_switch
+
+    assert isclose(net.res_switch.p_from_mw.at[0], 12.3, rtol=0, atol=1e-6)
+    assert allclose(net.res_switch.p_from_mw, [12.3, 34.7], rtol=0, atol=1e-6)
+
+    # now test with some switches that have non-zero impedance:
+    net.switch.loc[[2,3], "z_ohm"] = 1e-3
+    pp.runpp(net)
+
+    assert isclose(net.res_switch.p_from_mw.at[0], 12.3, rtol=0, atol=1e-6)
+    assert allclose(net.res_switch.p_from_mw, [12.3, 34.7], rtol=0, atol=1e-6)
+
 
 
 def test_enforce_q_lims(v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):

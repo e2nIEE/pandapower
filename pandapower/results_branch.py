@@ -41,7 +41,7 @@ def _get_branch_results(net, ppc, bus_lookup_aranged, pq_buses, suffix=None):
     _get_trafo3w_results(net, ppc, s_ft, i_ft, suffix=suffix)
     _get_impedance_results(net, ppc, i_ft, suffix=suffix)
     _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses, suffix=suffix)
-    _get_switch_results(net, i_ft, suffix=suffix)
+    _get_switch_results(net, ppc, i_ft, suffix=suffix)
     _get_tcsc_results(net, ppc, suffix=suffix)
 
 
@@ -670,7 +670,7 @@ def _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses, suffix=Non
     res_xward_df.index = net["xward"].index
 
 
-def _get_switch_results(net, i_ft, suffix=None):
+def _get_switch_results(net, ppc, i_ft, suffix=None):
     if len(net.switch) == 0:
         return
     res_switch_df = "res_switch" if suffix is None else "res_switch%s" % suffix
@@ -680,6 +680,15 @@ def _get_switch_results(net, i_ft, suffix=None):
         with np.errstate(invalid='ignore'):
             i_ka = np.max(i_ft[f:t], axis=1)
         net[res_switch_df].loc[net._impedance_bb_switches, "i_ka"] = i_ka
+
+        pf_mw = ppc["branch"][f:t, PF].real
+        q_from_mvar = ppc["branch"][f:t, QF].real
+        p_from_mw = pf_mw
+
+        pt_mw = ppc["branch"][f:t, PT].real
+        q_to_mvar = ppc["branch"][f:t, QT].real
+        p_to_mw = pt_mw
+
     _copy_switch_results_from_branches(net, suffix)
     if "in_ka" in net.switch.columns:
         net[res_switch_df]["loading_percent"] = net[res_switch_df]["i_ka"].values / net.switch["in_ka"].values * 100
