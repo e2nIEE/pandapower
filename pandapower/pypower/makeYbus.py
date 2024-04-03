@@ -73,6 +73,7 @@ def makeYbus(baseMVA, bus, branch):
            csr_matrix((Ysh, (range(nb), range(nb))), (nb, nb))
     Ybus.sort_indices()
     Ybus.eliminate_zeros()
+    Ybus.sum_duplicates()
 
     return Ybus, Yf, Yt
 
