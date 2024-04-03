@@ -76,6 +76,7 @@ def makeYbus(baseMVA, bus, branch):
     for Y in (Ybus, Yf, Yt):
         Ybus.eliminate_zeros()
         Ybus.sum_duplicates()
+        del Ybus._has_sorted_indices
         Ybus.sort_indices()
         del Ybus._has_canonical_format
 
