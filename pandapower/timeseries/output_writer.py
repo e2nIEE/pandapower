@@ -112,11 +112,12 @@ class OutputWriter(JSONSerializableClass):
         # total time steps to calculate - ensure it is a numpy array of int64:
         if time_steps is None:
             self.time_steps = np.array([], dtype=np.int64)
-        elif isinstance(time_steps, np.ndarray):
-            self.time_steps = time_steps.astype(np.int64)
-        else:
+        elif isinstance(time_steps, (range, list)):
             # can be range, list, etc.
             self.time_steps = np.array(time_steps, dtype=np.int64)
+        else:
+            self.time_steps = time_steps
+
         self.time_step = None
         self.time_step_lookup = None
         # add output_writer to net

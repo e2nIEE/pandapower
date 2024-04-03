@@ -51,17 +51,40 @@ jobs:
       - name: Test with pytest
         if: ${{ matrix.python-version != '3.9' }}
         run: |
-          pytest --splits 2 --group ${{ matrix.group }} -W error
+          pytest --splits 2 --group ${{ matrix.group }}
       - name: Test with pytest and Codecov
         if: ${{ matrix.python-version == '3.9' }}
         run: |
           pip install pytest-cov
-          pytest --cov=./ --cov-report=xml --splits 2 --group ${{ matrix.group }} -W error
+          pytest --cov=./ --cov-report=xml --splits 2 --group ${{ matrix.group }}
       - name: Upload coverage to Codecov
         if: ${{ matrix.python-version == '3.9' }}
         uses: codecov/codecov-action@v1
         with:
           verbose: true
+
+  warnings:
+    # make pytest raise warnings as errors to see if there are warnings
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install pytest pytest-split
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        pip install .["all"]
+    - name: List of installed packages
+      run: |
+        pip list
+    - name: Test with pytest
+      run: |
+        pytest --splits 2 --group ${{ matrix.group }} -W error
 
   relying: # packages that rely on pandapower
 
@@ -192,7 +215,7 @@ jobs:
           pip list
       - name: Test with pytest
         run: |
-          pytest --nbmake -n=auto --nbmake-timeout=900 "./tutorials" -W error
+          pytest --nbmake -n=auto --nbmake-timeout=900 "./tutorials"
   
   docs_check:
     runs-on: ubuntu-latest
