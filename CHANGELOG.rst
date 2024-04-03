@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2024-..-..
 -------------------------------
+- [FIXED] more futurewarnings and deprecation warnings
 
 [2.14.6] - 2024-04-02
 -------------------------------
