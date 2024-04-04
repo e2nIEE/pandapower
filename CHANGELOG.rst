@@ -4,6 +4,7 @@ Change Log
 [upcoming release] - 2024-..-..
 -------------------------------
 - [FIXED] more futurewarnings and deprecation warnings
+- [CHANGED] switched from setup.py to pyproject.toml
 
 [2.14.6] - 2024-04-02
 -------------------------------
