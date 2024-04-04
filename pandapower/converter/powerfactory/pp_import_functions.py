@@ -2562,9 +2562,9 @@ def create_zpu(net, item):
                               attr_dict={"cimRdfId": "origin_id"})
 
     # create shunts at the buses connected to the impedance
-    if ~np.isclose(item.gi_pu, 0) or ~np.isclose(item.bi_pu, 0):
+    if not np.isclose(item.gi_pu, 0) or not np.isclose(item.bi_pu, 0):
         _add_shunt_to_impedance_bus(net, item, bus1)
-    if ~np.isclose(item.gj_pu, 0) or ~np.isclose(item.bj_pu, 0):
+    if not np.isclose(item.gj_pu, 0) or not np.isclose(item.bj_pu, 0):
         _add_shunt_to_impedance_bus(net, item, bus2)
 
 
