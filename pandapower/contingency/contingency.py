@@ -12,7 +12,7 @@ import pandapower as pp
 
 try:
     from lightsim2grid.gridmodel import init as init_ls2g
-    from lightsim2grid.securityAnalysis import ContingencyAnalysisCPP
+    from lightsim2grid.contingencyAnalysis import ContingencyAnalysisCPP
     from lightsim2grid_cpp import SolverType
 
     lightsim2grid_installed = True
