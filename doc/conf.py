@@ -15,7 +15,8 @@ import os
 import sys
 import re
 
-VERSIONFILE = "pandapower/_version.py"
+# parse the version file in panadpower
+VERSIONFILE = "../pandapower/_version.py"
 verstrline = open(VERSIONFILE, "rt").read()
 VSRE = r"^__version__ = ['\"]([^'\"]*)['\"]"
 mo = re.search(VSRE, verstrline, re.M)
