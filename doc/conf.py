@@ -41,7 +41,7 @@ templates_path = ['_templates']
 source_suffix = '.rst'
 
 # load pyproject.toml configuration
-config = SphinxConfig("../pyproject.toml", globals=globals())
+config = SphinxConfig("../pyproject.toml", globalns=globals())
 
 # The encoding of source files.
 #source_encoding = 'utf-8-sig'
