@@ -1436,7 +1436,7 @@ def replace_sgen_by_gen(net, sgens=None, gen_indices=None, cols_to_keep=None,
     # add columns which should be kept from sgen but miss in gen to net.gen
     missing_cols_to_keep = existing_cols_to_keep.difference(net.gen.columns)
     for col in missing_cols_to_keep:
-        net.gen[col] = np.nan
+        net.gen[col] = pd.Series(data=None, dtype=net.sgen[col].dtype, name=col)
 
     # --- create gens
     new_idx = []
@@ -1457,6 +1457,7 @@ def replace_sgen_by_gen(net, sgens=None, gen_indices=None, cols_to_keep=None,
         idx = create_gen(net, sgen.bus, vm_pu=vm_pu, p_mw=sgen.p_mw, name=sgen.name,
                          in_service=sgen.in_service, controllable=controllable, index=index)
         new_idx.append(idx)
+    new_idx = np.array(new_idx, dtype=np.int64)
     net.gen.loc[new_idx, existing_cols_to_keep] = net.sgen.loc[
         sgens, existing_cols_to_keep].values
 

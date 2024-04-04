@@ -2317,7 +2317,7 @@ def create_trafo3w(net, item, tap_opt='nntap'):
         'vkr0_hv_percent': pf_type.ur0hm,
         'vkr0_mv_percent': pf_type.ur0ml,
         'vkr0_lv_percent': pf_type.ur0hl,
-        'vector_group': re.sub(r'\d+', '', pf_type.vecgrp),
+        'vector_group': re.sub(r"\d+", '', pf_type.vecgrp),
 
         'pfe_kw': pf_type.pfe,
         'i0_percent': pf_type.curm3,
