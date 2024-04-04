@@ -689,6 +689,11 @@ def _get_switch_results(net, ppc, i_ft, suffix=None):
         q_to_mvar = ppc["branch"][f:t, QT].real
         p_to_mw = pt_mw
 
+        net[res_switch_df].loc[net._impedance_bb_switches,"p_from_mw"] = p_from_mw
+        net[res_switch_df].loc[net._impedance_bb_switches,"q_from_mvar"] = q_from_mvar
+        net[res_switch_df].loc[net._impedance_bb_switches,"p_to_mw"] = p_to_mw
+        net[res_switch_df].loc[net._impedance_bb_switches,"q_to_mvar"] = q_to_mvar
+
     _copy_switch_results_from_branches(net, suffix)
     if "in_ka" in net.switch.columns:
         net[res_switch_df]["loading_percent"] = net[res_switch_df]["i_ka"].values / net.switch["in_ka"].values * 100

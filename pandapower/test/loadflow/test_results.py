@@ -688,17 +688,31 @@ def test_bus_bus_switch(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3,
     for col in ("p_from_mw", "p_to_mw", "q_from_mvar", "q_to_mvar", "i_ka", "loading_percent"):
         assert col in net.res_switch
 
-    # assert isclose(net.res_switch.p_from_mw.at[0], 12.3, rtol=0, atol=1e-6)
-    # assert allclose(net.res_switch.p_from_mw, [12.3, 34.7], rtol=0, atol=1e-6)
+    assert isnan(net.res_switch.p_from_mw).all()
 
     # now test with some switches that have non-zero impedance:
     net.switch.loc[[2,3], "z_ohm"] = 1e-3
     pp.runpp(net)
 
-    assert isclose(net.res_switch.p_from_mw.at[0], 12.3, rtol=0, atol=1e-6)
-    assert allclose(net.res_switch.p_from_mw, [12.3, 34.7], rtol=0, atol=1e-6)
+    p_from_ref = -0.29816
+    p_to_ref = 0.29816
+    q_from_ref = -0.96063
+    q_to_ref = 0.96063
 
+    assert isclose(net.res_switch.p_from_mw.at[2], p_from_ref, rtol=1e-3, atol=1e-6)
+    assert isclose(net.res_switch.p_to_mw.at[2], p_to_ref, rtol=1e-3, atol=1e-6)
+    assert isclose(net.res_switch.q_from_mvar.at[2], q_from_ref, rtol=1e-3, atol=1e-6)
+    assert isclose(net.res_switch.q_to_mvar.at[2], q_to_ref, rtol=1e-3, atol=1e-6)
 
+    net.switch.loc[[2], "closed"] = False
+    pp.runpp(net)
+
+    assert isnan(net.res_switch.p_from_mw[2])
+
+    # return to normal test net with zero impedance switches:
+    net.switch.loc[[2], "closed"] = True
+    net.switch.loc[[2, 3], "z_ohm"] = 0
+    pp.runpp(net)
 
 def test_enforce_q_lims(v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
     """ Test for enforce_q_lims loadflow option
