@@ -4,7 +4,6 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from setuptools import setup, find_packages
-from pandapower._version import __version__
 import re
 
 with open('README.rst', 'rb') as f:
@@ -12,6 +11,16 @@ with open('README.rst', 'rb') as f:
 
 with open('CHANGELOG.rst', 'rb') as f:
     changelog = f.read().decode('utf-8')
+
+# parse version from _version.py file.
+VERSIONFILE = "pandapower/_version.py"
+verstrline = open(VERSIONFILE, "rt").read()
+VSRE = r"^__version__ = ['\"]([^'\"]*)['\"]"
+mo = re.search(VSRE, verstrline, re.M)
+if mo:
+    version = mo.group(1)
+else:
+    raise RuntimeError("Unable to find version string in %s." % (VERSIONFILE,))
 
 classifiers = [
     'Development Status :: 5 - Production/Stable',
@@ -28,14 +37,14 @@ classifiers = [
 with open('.github/workflows/github_test_action.yml', 'rb') as f:
     lines = f.read().decode('utf-8')
     versions = set(re.findall('3.[8-9]', lines)) | set(re.findall('3.1[0-9]', lines))
-    for version in sorted(versions):
-        classifiers.append('Programming Language :: Python :: %s' % version)
+    for ver in sorted(versions):
+        classifiers.append('Programming Language :: Python :: %s' % ver)
 
 long_description = '\n\n'.join((install, changelog))
 
 setup(
     name='pandapower',
-    version=__version__,
+    version=version,
     author='Leon Thurner, Alexander Scheidler',
     author_email='leon.thurner@retoflow.de, alexander.scheidler@iee.fraunhofer.de',
     description='An easy to use open source tool for power system modeling, analysis and optimization with a high degree of automation.',
