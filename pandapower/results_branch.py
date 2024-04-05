@@ -681,13 +681,11 @@ def _get_switch_results(net, ppc, i_ft, suffix=None):
             i_ka = np.max(i_ft[f:t], axis=1)
         net[res_switch_df].loc[net._impedance_bb_switches, "i_ka"] = i_ka
 
-        pf_mw = ppc["branch"][f:t, PF].real
+        p_from_mw = ppc["branch"][f:t, PF].real
         q_from_mvar = ppc["branch"][f:t, QF].real
-        p_from_mw = pf_mw
 
-        pt_mw = ppc["branch"][f:t, PT].real
+        p_to_mw = ppc["branch"][f:t, PT].real
         q_to_mvar = ppc["branch"][f:t, QT].real
-        p_to_mw = pt_mw
 
         net[res_switch_df].loc[net._impedance_bb_switches,"p_from_mw"] = p_from_mw
         net[res_switch_df].loc[net._impedance_bb_switches,"q_from_mvar"] = q_from_mvar
