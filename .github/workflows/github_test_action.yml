@@ -211,13 +211,13 @@ jobs:
           ./.install_julia.sh 1.9.3
           python -m pip install julia
           python ./.install_pycall.py
-          python -m pip install -e .[all]
+          python -m pip install .[all]
       - name: List all installed packages
         run: |
-          pip list
+          python -m pip list
       - name: Test with pytest
         run: |
-          pytest --nbmake -n=auto --nbmake-timeout=900 "./tutorials"
+          python -m pytest --nbmake -n=auto --nbmake-timeout=900 "./tutorials"
 
   tutorial_warnings_tests:
     runs-on: ubuntu-latest
