@@ -58,7 +58,7 @@ Changelog = "https://github.com/e2nIEE/pandapower/blob/develop/CHANGELOG.rst"
 [project.optional-dependencies]
 docs = ["numpydoc", "matplotlib", "sphinx", "sphinx_rtd_theme", "sphinx-pyproject"]
 plotting = ["plotly>=3.1.1", "matplotlib", "igraph", "geopandas", "geojson"]
-test = ["pytest~=8.1", "pytest-xdist"]
+test = ["pytest~=8.1", "pytest-xdist", "nbmake"]
 performance = ["ortools", "numba>=0.25", "lightsim2grid>=0.8.1"]
 fileio = ["xlsxwriter", "openpyxl", "cryptography", "geopandas", "psycopg2"]
 converter = ["matpowercaseframes"]
@@ -66,7 +66,7 @@ pgm = ["power-grid-model-io"]
 all = [
     "numpydoc", "sphinx", "sphinx_rtd_theme", "sphinx-pyproject",
     "plotly>=3.1.1", "matplotlib", "igraph", "geopandas", "geojson",
-    "pytest~=8.1", "pytest-xdist",
+    "pytest~=8.1", "pytest-xdist", "nbmake",
     "ortools", "numba>=0.25", "lightsim2grid>=0.8.1",
     "xlsxwriter", "openpyxl", "cryptography", "psycopg2",
     "matpowercaseframes",
@@ -79,7 +79,7 @@ all = [
 where = ["pandapower"]
 
 [tool.pytest.ini_options]
-adopt = ["--strict-markers"]
+addopts = ["--strict-markers"]
 markers = [
   "slow: marks tests as slow (deselect with '-m \"not slow\"'), e.g. in run_fast_tests"
 ]
