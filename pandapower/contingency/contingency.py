@@ -97,7 +97,7 @@ def run_contingency(net, nminus1_cases, pf_options=None, pf_options_nminus1=None
     # for n-1
     for element, val in nminus1_cases.items():
         for i in val["index"]:
-            if ~net[element].at[i, "in_service"]:
+            if not net[element].at[i, "in_service"]:
                 continue
             net[element].at[i, 'in_service'] = False
             try:
