@@ -26,7 +26,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-      # Installs and upgrades pip, installs other dependencies and installs the package from setup.py
+      # Installs and upgrades pip, installs other dependencies and installs the package
       - name: Install dependencies
         run: |
           # Upgrade pip
@@ -37,7 +37,7 @@ jobs:
       # Upload to PyPI
       - name: Build and Upload to PyPI
         run: |
-          python3 setup.py sdist --formats=zip
+          python3 -m build
           twine check dist/* --strict 
           python3 -m twine upload dist/*
         env:
