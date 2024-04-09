@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2024-..-..
 -------------------------------
+- [ADDED] extend plotly function: add zoomlevel-parameter and hvdc lines
 - [FIXED] more futurewarnings and deprecation warnings
 
 [2.14.6] - 2024-04-02
