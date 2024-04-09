@@ -391,7 +391,7 @@ def create_bus_collection(net, buses=None, size=5, patch_type="circle", color=No
         If None, net["bus_geodata"] is used
 
         **cbar_title** (str, "Bus Voltage [pu]") - colormap bar title in case of given cmap
-        
+
         **clim** (tuple of floats, None) - setting the norm limits for image scaling
 
         **plot_colormap** (bool, True) - flag whether the colormap is actually drawn
@@ -1122,8 +1122,8 @@ def create_storage_collection(net, storages=None, size=1., infofunc=None, orient
     return storage_pc, storage_lc
 
 
-def create_ext_grid_collection(net, size=1., infofunc=None, orientation=0, picker=False,
-                               ext_grids=None, ext_grid_buses=None, **kwargs):
+def create_ext_grid_collection(net, ext_grids=None, size=1., infofunc=None, orientation=0,
+                               picker=False, ext_grid_buses=None, **kwargs):
     """
     Creates a matplotlib patch collection of pandapower ext_grid. Parameters
     ext_grids, ext_grid_buses can be used to specify, which ext_grids the collection should be
