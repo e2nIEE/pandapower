@@ -5,6 +5,10 @@ Change Log
 -------------------------------
 - [FIXED] more futurewarnings and deprecation warnings
 - [CHANGED] switched from setup.py to pyproject.toml
+- [CHANGED] updated upload_release.py to not call setup.py anymore (see https://packaging.python.org/en/latest/discussions/setup-py-deprecated/)
+- [CHANGED] updated upload_release.py to install the uploadad package and print the version
+- [CHANGED] updated MANIFEST.in to exclude the ci files from the wheel distribution
+
 
 [2.14.6] - 2024-04-02
 -------------------------------
