@@ -2317,7 +2317,7 @@ def create_trafo3w(net, item, tap_opt='nntap'):
         'vkr0_hv_percent': pf_type.ur0hm,
         'vkr0_mv_percent': pf_type.ur0ml,
         'vkr0_lv_percent': pf_type.ur0hl,
-        'vector_group': re.sub(r'\d+', '', pf_type.vecgrp),
+        'vector_group': re.sub(r"\d+", '', pf_type.vecgrp),
 
         'pfe_kw': pf_type.pfe,
         'i0_percent': pf_type.curm3,
@@ -2562,9 +2562,9 @@ def create_zpu(net, item):
                               attr_dict={"cimRdfId": "origin_id"})
 
     # create shunts at the buses connected to the impedance
-    if ~np.isclose(item.gi_pu, 0) or ~np.isclose(item.bi_pu, 0):
+    if not np.isclose(item.gi_pu, 0) or not np.isclose(item.bi_pu, 0):
         _add_shunt_to_impedance_bus(net, item, bus1)
-    if ~np.isclose(item.gj_pu, 0) or ~np.isclose(item.bj_pu, 0):
+    if not np.isclose(item.gj_pu, 0) or not np.isclose(item.bj_pu, 0):
         _add_shunt_to_impedance_bus(net, item, bus2)
 
 
