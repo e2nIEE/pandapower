@@ -75,8 +75,9 @@ all = [
 # "shapely", "pyproj", "fiona" are dependencies of geopandas and should be already available
 # "hashlib", "zlib", "base64" produce install problems, so they are not included
 
-[tool.setuptools]
-packages = ["pandapower"]
+[tool.setuptools.packages]
+find = {}
+
 
 [tool.pytest.ini_options]
 addopts = ["--strict-markers"]
