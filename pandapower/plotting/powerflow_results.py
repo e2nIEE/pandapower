@@ -77,9 +77,9 @@ def plot_voltage_profile(net, ax=None, plot_transformers=True, xlabel="Distance 
         lines = net.line.index
 
     # run plotting code
-    sl_buses = np.r_[
+    sl_buses = np.union1d(
         net.ext_grid.loc[net.ext_grid.in_service, "bus"].values,
-        net.gen.loc[net.gen.slack & net.gen.in_service, "bus"].values]
+        net.gen.loc[net.gen.slack & net.gen.in_service, "bus"].values)
     for eg in sl_buses:
         d = top.calc_distance_to_bus(net, eg)
         for lix, line in net.line[net.line.in_service & net.line.index.isin(lines)].iterrows():
@@ -194,7 +194,7 @@ def plot_loading(net, ax=None, element_type="line", box_color="b", median_color=
     return ax
 
 
-def voltage_profile_to_bus_geodata(net, voltages=None):
+def voltage_profile_to_bus_geodata(net, voltages=None, root_bus=None):
     if voltages is None:
         if not net.converged:
             raise ValueError("no results in this pandapower network")
@@ -204,8 +204,9 @@ def voltage_profile_to_bus_geodata(net, voltages=None):
     sl_buses = np.r_[
         net.ext_grid.loc[net.ext_grid.in_service, "bus"].values,
         net.gen.loc[net.gen.slack & net.gen.in_service, "bus"].values]
-    first_eg = sl_buses[0]
-    mg.add_edges_from([(first_eg, y, {"weight": 0}) for y in sl_buses[1:]])
+    first_eg = sl_buses[0] if root_bus is None else root_bus
+    other_eg = np.setdiff1d(sl_buses, first_eg)
+    mg.add_edges_from([(first_eg, y, {"weight": 0}) for y in other_eg])
     dist = pd.Series(nx.single_source_dijkstra_path_length(mg, first_eg))
 
     bgd = pd.DataFrame({"x": dist.loc[net.bus.index.values].values,
