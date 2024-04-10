@@ -1,4 +1,4 @@
-include LICENSE AUTHORS README.rst requirements.txt CHANGELOG.rst .travis.yml .github/**/*.yml
+include LICENSE AUTHORS README.rst CHANGELOG.rst
 include pandapower/converter/powerfactory/power_factory_files/*
 include pandapower/test/api/input_files/*
 include pandapower/test/test_files/example_cim/*
@@ -10,5 +10,6 @@ global-include *.json
 global-include *.jl
 global-include *.csv
 
+prune .git*
 prune doc*
 prune tutorials*
