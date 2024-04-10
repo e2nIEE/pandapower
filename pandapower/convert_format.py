@@ -330,6 +330,22 @@ def _add_missing_columns(net, elements_to_deserialize):
             'in_ka' not in net.switch:
         net.switch['in_ka'] = np.nan
 
+    # Update the switch table with 'in_ka'
+    if _check_elements_to_deserialize('res_switch', elements_to_deserialize) and \
+            'p_from_mw' not in net.res_switch:
+        net.res_switch['p_from_mw'] = np.nan
+        net.res_switch['q_from_mvar'] = np.nan
+        net.res_switch['p_to_mw'] = np.nan
+        net.res_switch['q_to_mvar'] = np.nan
+
+    # Update the switch table with 'in_ka'
+    if _check_elements_to_deserialize('res_switch_est', elements_to_deserialize) and \
+            'p_from_mw' not in net.res_switch_est:
+        net.res_switch_est['p_from_mw'] = np.nan
+        net.res_switch_est['q_from_mvar'] = np.nan
+        net.res_switch_est['p_to_mw'] = np.nan
+        net.res_switch_est['q_to_mvar'] = np.nan
+
     if _check_elements_to_deserialize('measurement', elements_to_deserialize) and \
             "name" not in net.measurement:
         net.measurement.insert(0, "name", None)

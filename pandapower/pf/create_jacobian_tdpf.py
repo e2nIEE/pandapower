@@ -28,7 +28,7 @@ def calc_r_theta_from_t_rise(net, t_rise_degree_celsius):
     Returns
     -------
     r_theta_kelvin_per_mw : array
-        Thermal resistance of the conductors R_{\Theta}
+        Thermal resistance of the conductors R_{\\Theta}
 
     References
     ----------
@@ -102,7 +102,7 @@ def calc_r_theta(t_air_pu, a0, a1, a2, i_square_pu, p_loss_pu):
     Returns
     -------
     r_theta_pu : array
-        Thermal resistance of the conductors R_{\Theta}
+        Thermal resistance of the conductors R_{\\Theta}
 
     References
     ----------
@@ -131,7 +131,7 @@ def calc_T_frank(p_loss_pu, t_air_pu, r_theta_pu, tdpf_delay_s, T0, tau):
     t_air_pu : array
         Air temperature in p.u.
     r_theta_pu : array
-        Thermal resistance of the conductors R_{\Theta}
+        Thermal resistance of the conductors R_{\\Theta}
     tdpf_delay_s : float, None
         Delay for the consideration of thermal inertia in seconds. Describes the time passed after a change
         of current in overhead lines that causes a change of temperature.
@@ -366,14 +366,14 @@ def calc_h_c(conductor_outer_diameter_m, v_m_per_s, wind_angle_degree, t_air_deg
 def create_J_tdpf(branch, tdpf_lines, alpha_pu, r_ref_pu, pvpq, pq, pvpq_lookup, pq_lookup, tau, tdpf_delay_s, Vm, Va,
                   r_theta_pu, J, r, x, g):
     """
-             / J11 = dP/dd     J12 = dP/dV     J13 = dP/dT  \
+             | J11 = dP/dd     J12 = dP/dV     J13 = dP/dT  |
              | (N-1)x(N-1)     (N-1)x(M)       (N-1)x(R)    |
              |                                              |
              | J21 = dQ/dd     J22 = dQ/dV     J23 = dQ/dT  |
              | (M)x(N-1)       (M)x(M)         (M)x(R)      |
              |                                              |
              | J31 = ddT/dd    J32 = ddT/dV    J33 = ddT/dT |
-             \ (R)x(N-1)       (R)x(M)         (R)x(R)      /
+             | (R)x(N-1)       (R)x(M)         (R)x(R)      |
 
             N = Number of buses
             M = Number of PQ buses
@@ -472,14 +472,14 @@ def get_S_flows(branch, Yf, Yt, baseMVA, V):
 
 def create_J13(branch, tdpf_lines, in_pvpq_f, in_pvpq_t, pvpq, pvpq_lookup, Vm, Va, dg_dT, db_dT):
     """
-         / J11 = dP/dd     J12 = dP/dV     J13 = dP/dT  \
+         | J11 = dP/dd     J12 = dP/dV     J13 = dP/dT  |
          | (N-1)x(N-1)     (N-1)x(M)       (N-1)x(R)    |
          |                                              |
          | J21 = dQ/dd     J22 = dQ/dV     J23 = dQ/dT  |
          | (M)x(N-1)       (M)x(M)         (M)x(R)      |
          |                                              |
          | J31 = ddT/dd    J32 = ddT/dV    J33 = ddT/dT |
-         \ (R)x(N-1)       (R)x(M)         (R)x(R)      /
+         | (R)x(N-1)       (R)x(M)         (R)x(R)      |
 
     N = Number of buses
     M = Number of PQ buses
@@ -536,14 +536,14 @@ def create_J13(branch, tdpf_lines, in_pvpq_f, in_pvpq_t, pvpq, pvpq_lookup, Vm, 
 
 def create_J23(branch, tdpf_lines, in_pq_f, in_pq_t, pq, pq_lookup, Vm, Va, dg_dT, db_dT):
     """
-         / J11 = dP/dd     J12 = dP/dV     J13 = dP/dT  \
+         | J11 = dP/dd     J12 = dP/dV     J13 = dP/dT  |
          | (N-1)x(N-1)     (N-1)x(M)       (N-1)x(R)    |
          |                                              |
          | J21 = dQ/dd     J22 = dQ/dV     J23 = dQ/dT  |
          | (M)x(N-1)       (M)x(M)         (M)x(R)      |
          |                                              |
          | J31 = ddT/dd    J32 = ddT/dV    J33 = ddT/dT |
-         \ (R)x(N-1)       (R)x(M)         (R)x(R)      /
+         | (R)x(N-1)       (R)x(M)         (R)x(R)      |
 
         N = Number of buses
         M = Number of PQ buses
@@ -604,14 +604,14 @@ def create_J23(branch, tdpf_lines, in_pq_f, in_pq_t, pq, pq_lookup, Vm, Va, dg_d
 
 def create_J31(branch, tdpf_lines, in_pvpq_f, in_pvpq_t, pvpq, pvpq_lookup, Vm, Va, C, r_theta_pu, g):
     """
-         / J11 = dP/dd     J12 = dP/dV     J13 = dP/dT  \
+         | J11 = dP/dd     J12 = dP/dV     J13 = dP/dT  |
          | (N-1)x(N-1)     (N-1)x(M)       (N-1)x(R)    |
          |                                              |
          | J21 = dQ/dd     J22 = dQ/dV     J23 = dQ/dT  |
          | (M)x(N-1)       (M)x(M)         (M)x(R)      |
          |                                              |
          | J31 = ddT/dd    J32 = ddT/dV    J33 = ddT/dT |
-         \ (R)x(N-1)       (R)x(M)         (R)x(R)      /
+         | (R)x(N-1)       (R)x(M)         (R)x(R)      |
 
     N = Number of buses
     M = Number of PQ buses
@@ -666,14 +666,14 @@ def create_J31(branch, tdpf_lines, in_pvpq_f, in_pvpq_t, pvpq, pvpq_lookup, Vm, 
 
 def create_J32(branch, tdpf_lines, in_pq_f, in_pq_t, pq, pq_lookup, Vm, Va, C, r_theta_pu, g):
     """
-         / J11 = dP/dd     J12 = dP/dV     J13 = dP/dT  \
+         | J11 = dP/dd     J12 = dP/dV     J13 = dP/dT  |
          | (N-1)x(N-1)     (N-1)x(M)       (N-1)x(R)    |
          |                                              |
          | J21 = dQ/dd     J22 = dQ/dV     J23 = dQ/dT  |
          | (M)x(N-1)       (M)x(M)         (M)x(R)      |
          |                                              |
          | J31 = ddT/dd    J32 = ddT/dV    J33 = ddT/dT |
-         \ (R)x(N-1)       (R)x(M)         (R)x(R)      /
+         | (R)x(N-1)       (R)x(M)         (R)x(R)      |
 
         N = Number of buses
         M = Number of PQ buses
@@ -727,14 +727,14 @@ def create_J32(branch, tdpf_lines, in_pq_f, in_pq_t, pq, pq_lookup, Vm, Va, C, r
 
 def create_J33(branch, tdpf_lines, r_theta_pu, Vm, Va, dg_dT):
     """
-     / J11 = dP/dd     J12 = dP/dV     J13 = dP/dT  \
+     | J11 = dP/dd     J12 = dP/dV     J13 = dP/dT  |
      | (N-1)x(N-1)     (N-1)x(M)       (N-1)x(R)    |
      |                                              |
      | J21 = dQ/dd     J22 = dQ/dV     J23 = dQ/dT  |
      | (M)x(N-1)       (M)x(M)         (M)x(R)      |
      |                                              |
      | J31 = ddT/dd    J32 = ddT/dV    J33 = ddT/dT |
-     \ (R)x(N-1)       (R)x(M)         (R)x(R)      /
+     | (R)x(N-1)       (R)x(M)         (R)x(R)      |
 
     N = Number of buses
     M = Number of PQ buses
