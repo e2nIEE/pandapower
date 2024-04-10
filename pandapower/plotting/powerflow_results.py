@@ -77,7 +77,10 @@ def plot_voltage_profile(net, ax=None, plot_transformers=True, xlabel="Distance 
         lines = net.line.index
 
     # run plotting code
-    for eg in net.ext_grid[net.ext_grid.in_service].bus:
+    sl_buses = np.r_[
+        net.ext_grid.loc[net.ext_grid.in_service, "bus"].values,
+        net.gen.loc[net.gen.slack & net.gen.in_service, "bus"].values]
+    for eg in sl_buses:
         d = top.calc_distance_to_bus(net, eg)
         for lix, line in net.line[net.line.in_service & net.line.index.isin(lines)].iterrows():
             if line.from_bus not in d.index:
@@ -198,8 +201,11 @@ def voltage_profile_to_bus_geodata(net, voltages=None):
         voltages = net.res_bus.vm_pu
 
     mg = top.create_nxgraph(net, respect_switches=True)
-    first_eg = net.ext_grid.bus.values[0]
-    mg.add_edges_from([(first_eg, y, {"weight": 0}) for y in net.ext_grid.bus.values[1:]])
+    sl_buses = np.r_[
+        net.ext_grid.loc[net.ext_grid.in_service, "bus"].values,
+        net.gen.loc[net.gen.slack & net.gen.in_service, "bus"].values]
+    first_eg = sl_buses[0]
+    mg.add_edges_from([(first_eg, y, {"weight": 0}) for y in sl_buses[1:]])
     dist = pd.Series(nx.single_source_dijkstra_path_length(mg, first_eg))
 
     bgd = pd.DataFrame({"x": dist.loc[net.bus.index.values].values,

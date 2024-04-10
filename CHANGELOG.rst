@@ -4,6 +4,7 @@ Change Log
 [upcoming release] - 2024-..-..
 -------------------------------
 - [ADDED] switch results p and q
+- [CHANGED] plotting for voltage profile considers also gens that are slacks and only ext_grids and slack gens that are in service
 
 [2.14.6] - 2024-04-02
 -------------------------------
