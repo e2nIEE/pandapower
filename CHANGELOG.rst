@@ -9,6 +9,7 @@ Change Log
 - [CHANGED] updated MANIFEST.in to exclude the ci files from the wheel distribution
 - [FIXED] further futurewarnings and deprecation warnings
 - [ADDED] switch results p and q
+- [CHANGED] plotting for voltage profile considers also gens that are slacks and only ext_grids and slack gens that are in service
 
 [2.14.6] - 2024-04-02
 -------------------------------
