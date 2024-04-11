@@ -40,7 +40,6 @@ plotting = True
 @pytest.mark.skipif(importlib.util.find_spec('simbench') is None or simulation is None,
                     reason=r'you need to install the package "simbench" first. '
                            r'If you installed simbench and the test is still skipped, you need a sincal instance')
-@pytest.mark.all_grids
 @pytest.mark.slow
 @pytest.mark.parametrize("scenario", scenarios)
 def test_all_simbench_networks(scenario):
