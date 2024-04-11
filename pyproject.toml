@@ -56,9 +56,9 @@ Download = "https://pypi.org/project/pandapower/#files"
 Changelog = "https://github.com/e2nIEE/pandapower/blob/develop/CHANGELOG.rst"
 
 [project.optional-dependencies]
-docs = ["numpydoc", "matplotlib", "sphinx", "sphinx_rtd_theme", "sphinx-pyproject"]
+docs = ["numpydoc", "matplotlib", "sphinx", "sphinx_rtd_theme", "sphinx-pyproject", "geopandas"]
 plotting = ["plotly>=3.1.1", "matplotlib", "igraph", "geopandas", "geojson"]
-test = ["pytest~=8.1", "pytest-xdist", "nbmake"]
+test = ["pytest~=8.1", "pytest-xdist", "nbmake", "pytest-lazy-fixture"]
 performance = ["ortools", "numba>=0.25", "lightsim2grid>=0.8.1"]
 fileio = ["xlsxwriter", "openpyxl", "cryptography", "geopandas", "psycopg2"]
 converter = ["matpowercaseframes"]
@@ -69,7 +69,7 @@ all = [
     "pytest~=8.1", "pytest-xdist", "nbmake",
     "ortools", "numba>=0.25", "lightsim2grid>=0.8.1",
     "xlsxwriter", "openpyxl", "cryptography", "psycopg2",
-    "matpowercaseframes",
+    "matpowercaseframes", "pytest-lazy-fixture",
     "power-grid-model-io"
 ]
 # "shapely", "pyproj", "fiona" are dependencies of geopandas and should be already available
