@@ -602,21 +602,21 @@ def test_gen_network(gen_network_pandapower):
 
     finalize(net, output_folder, file_name, app, sim, doc, sincal_interaction)
 
-
-@pytest.fixture(params=[
-    pytest.lazy_fixture('simple_network_pandapower_1'),
-    pytest.lazy_fixture('simple_network_pandapower_2'),
-    pytest.lazy_fixture('breaker_network_pandapower_1'),
-    pytest.lazy_fixture('breaker_network_pandapower_2'),
-    pytest.lazy_fixture('gen_network_pandapower'),
-    pytest.lazy_fixture('storage_network_pandapower'),
-    pytest.lazy_fixture('dcline_network_pandapower'),
-
-])
-def input(request):
-    return request.param
+test_networks = pytest.mark.parametrize(
+    "input",
+    [
+        pytest.lazy_fixture('simple_network_pandapower_1'),
+        pytest.lazy_fixture('simple_network_pandapower_2'),
+        pytest.lazy_fixture('breaker_network_pandapower_1'),
+        pytest.lazy_fixture('breaker_network_pandapower_2'),
+        pytest.lazy_fixture('gen_network_pandapower'),
+        pytest.lazy_fixture('storage_network_pandapower'),
+        pytest.lazy_fixture('dcline_network_pandapower'),
+    ],
+)
 
 @pytest.mark.skipif(simulation is None, reason=r'you need a sincal instance!')
+@test_networks
 def test_convert_simple_network(input):
     net_pp, name = input
     output_folder = os.path.join(test_path, 'converter', 'test_to_sincal', 'results', 'simple')
