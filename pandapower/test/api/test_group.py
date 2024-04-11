@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import pytest
@@ -331,7 +331,7 @@ def test_detach_and_compare():
         pp.detach_from_group(net, 3, "trafo", 1)
         assert pp.group_element_lists(net, 3)[0] == ["trafo"]
         assert pp.group_element_lists(net, 3)[1] == [typed_list([0, 2], type_)]
-        assert pp.group_element_lists(net, 3)[2] == [None if type_ is int else "name"]
+        assert pp.group_element_lists(net, 3)[2] == [np.nan if type_ is int else "name"]
 
 
 def test_res_power():
@@ -426,8 +426,8 @@ def test_elements_connected_to_group():
     pp.create_switches(net, [0, 0, 6], [0, 1, net.line.index[-1]], "l", closed=[True, False, False])
     pp.create_switches(net, [0]*3, [7, 8, 9], "b", closed=[True, False, True])
     pp.create_switches(net, [0]*2, [10, 11], "b", closed=[True, False])
-    net.load.in_service.at[0] = False
-    net.line.in_service.at[4] = False
+    net.load.at[0, "in_service"] = False
+    net.line.at[4, "in_service"] = False
     net.bus.in_service.loc[[3, 9]] = False
 
     # create group

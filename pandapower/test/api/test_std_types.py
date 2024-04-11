@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -328,7 +328,7 @@ def test_parameter_from_std_type_line():
     assert net.line.endtemp_degree.at[lid2] == endtemp2 #type2 has specified endtemp
     assert net.line.endtemp_degree.at[lid3] == endtemp_fill #line3 has no standard type
 
-    net.line.endtemp_degree.at[lid3] = 10
+    net.line.at[lid3, "endtemp_degree"] = 10
     pp.parameter_from_std_type(net, "endtemp_degree", fill=endtemp_fill)
     assert net.line.endtemp_degree.at[lid3] == 10 #check that existing values arent overwritten
 

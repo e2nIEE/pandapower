@@ -44,26 +44,26 @@ class SynchronousMachinesCim16:
         eq_generating_units['type'] = 'GeneratingUnit'
         eq_generating_units = pd.concat([eq_generating_units, self.cimConverter.cim['eq']['WindGeneratingUnit']],
                                         sort=False)
-        eq_generating_units['type'].fillna('WP', inplace=True)
+        eq_generating_units['type'] = eq_generating_units['type'].fillna('WP')
         eq_generating_units = pd.concat([eq_generating_units, self.cimConverter.cim['eq']['HydroGeneratingUnit']],
                                         sort=False)
-        eq_generating_units['type'].fillna('Hydro', inplace=True)
+        eq_generating_units['type'] = eq_generating_units['type'].fillna('Hydro')
         eq_generating_units = pd.concat([eq_generating_units, self.cimConverter.cim['eq']['SolarGeneratingUnit']],
                                         sort=False)
-        eq_generating_units['type'].fillna('PV', inplace=True)
+        eq_generating_units['type'] = eq_generating_units['type'].fillna('PV')
         eq_generating_units = pd.concat([eq_generating_units, self.cimConverter.cim['eq']['ThermalGeneratingUnit']],
                                         sort=False)
-        eq_generating_units['type'].fillna('Thermal', inplace=True)
+        eq_generating_units['type'] = eq_generating_units['type'].fillna('Thermal')
         eq_generating_units = pd.concat([eq_generating_units, self.cimConverter.cim['eq']['NuclearGeneratingUnit']],
                                         sort=False)
-        eq_generating_units['type'].fillna('Nuclear', inplace=True)
-        eq_generating_units.rename(columns={'rdfId': 'GeneratingUnit'}, inplace=True)
-        eqssh_synchronous_machines = self.cimConverter.merge_eq_ssh_profile('SynchronousMachine',
-                                                                            add_cim_type_column=True)
+        eq_generating_units['type'] = eq_generating_units['type'].fillna('Nuclear')
+        eq_generating_units = eq_generating_units.rename(columns={'rdfId': 'GeneratingUnit'})
+        eqssh_synchronous_machines = self.cimConverter.merge_eq_ssh_profile(
+            'SynchronousMachine', add_cim_type_column=True)
         if 'type' in eqssh_synchronous_machines.columns:
-            eqssh_synchronous_machines.drop(columns=['type'], inplace=True)
+            eqssh_synchronous_machines = eqssh_synchronous_machines.drop(columns=['type'])
         if 'EquipmentContainer' in eqssh_synchronous_machines.columns:
-            eqssh_synchronous_machines.drop(columns=['EquipmentContainer'], inplace=True)
+            eqssh_synchronous_machines = eqssh_synchronous_machines.drop(columns=['EquipmentContainer'])
         eqssh_synchronous_machines = pd.merge(eqssh_synchronous_machines, eq_generating_units,
                                               how='left', on='GeneratingUnit')
         eqssh_reg_control = self.cimConverter.merge_eq_ssh_profile('RegulatingControl')[
@@ -71,11 +71,11 @@ class SynchronousMachinesCim16:
         # if voltage is not on connectivity node, topological node will be used
         eqtp_terminals = pd.merge(self.cimConverter.cim['eq']['Terminal'], self.cimConverter.cim['tp']['Terminal'],
                                   how='left', on='rdfId')
-        eqtp_terminals.ConnectivityNode.fillna(eqtp_terminals.TopologicalNode, inplace=True)
+        eqtp_terminals.ConnectivityNode = eqtp_terminals.ConnectivityNode.fillna(eqtp_terminals.TopologicalNode)
         eqtp_terminals = eqtp_terminals[['rdfId', 'ConnectivityNode']].rename(
             columns={'rdfId': 'Terminal', 'ConnectivityNode': 'reg_control_cnode'})
         eqssh_reg_control = pd.merge(eqssh_reg_control, eqtp_terminals, how='left', on='Terminal')
-        eqssh_reg_control.drop(columns=['Terminal'], inplace=True)
+        eqssh_reg_control = eqssh_reg_control.drop(columns=['Terminal'])
         # add the voltage from the bus
         eqssh_reg_control = pd.merge(eqssh_reg_control, self.cimConverter.net.bus[['vn_kv', sc['o_id']]].rename(
             columns={sc['o_id']: 'reg_control_cnode'}), how='left', on='reg_control_cnode')
@@ -86,10 +86,10 @@ class SynchronousMachinesCim16:
             how='left', on='RegulatingControl')
         eqssh_synchronous_machines = pd.merge(eqssh_synchronous_machines, self.cimConverter.bus_merge, how='left',
                                               on='rdfId')
-        eqssh_synchronous_machines.drop_duplicates(['rdfId'], keep='first', inplace=True)
+        eqssh_synchronous_machines = eqssh_synchronous_machines.drop_duplicates(['rdfId'], keep='first')
         eqssh_synchronous_machines['vm_pu'] = eqssh_synchronous_machines.targetValue / eqssh_synchronous_machines.vn_kv
         eqssh_synchronous_machines['vm_pu'].fillna(1., inplace=True)
-        eqssh_synchronous_machines.rename(columns={'vn_kv': 'bus_voltage'}, inplace=True)
+        eqssh_synchronous_machines = eqssh_synchronous_machines.rename(columns={'vn_kv': 'bus_voltage'})
         eqssh_synchronous_machines['slack'] = False
         # set the slack = True for gens with highest prio
         # get the highest prio from SynchronousMachines
@@ -101,7 +101,7 @@ class SynchronousMachinesCim16:
         regulation_controllers = self.cimConverter.merge_eq_ssh_profile('RegulatingControl')
         regulation_controllers = regulation_controllers.loc[regulation_controllers['mode'] == 'voltage']
         regulation_controllers = regulation_controllers[['rdfId', 'targetValue', 'enabled']]
-        regulation_controllers.rename(columns={'rdfId': 'RegulatingControl'}, inplace=True)
+        regulation_controllers = regulation_controllers.rename(columns={'rdfId': 'RegulatingControl'})
         enis = pd.merge(enis, regulation_controllers, how='left', on='RegulatingControl')
 
         eni_ref_prio_min = enis.loc[(enis['referencePriority'] > 0) & (enis['enabled']), 'referencePriority'].min()
@@ -132,9 +132,9 @@ class SynchronousMachinesCim16:
         eqssh_synchronous_machines['rx'] = eqssh_synchronous_machines['r2'] / eqssh_synchronous_machines['x2']
         eqssh_synchronous_machines['scaling'] = 1.
         eqssh_synchronous_machines['generator_type'] = 'current_source'
-        eqssh_synchronous_machines.rename(columns={'rdfId_Terminal': sc['t'], 'rdfId': sc['o_id'],
+        eqssh_synchronous_machines = eqssh_synchronous_machines.rename(columns={'rdfId_Terminal': sc['t'], 'rdfId': sc['o_id'],
                                                    'connected': 'in_service', 'index_bus': 'bus',
                                                    'minOperatingP': 'min_p_mw', 'maxOperatingP': 'max_p_mw',
                                                    'minQ': 'min_q_mvar', 'maxQ': 'max_q_mvar',
-                                                   'ratedPowerFactor': 'cos_phi'}, inplace=True)
+                                                   'ratedPowerFactor': 'cos_phi'})
         return eqssh_synchronous_machines

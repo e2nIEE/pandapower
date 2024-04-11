@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import os
@@ -40,16 +40,16 @@ def create_cigre_grid_with_time_series(json_path, net=None, add_ts_constaints=Fa
         net = nw.create_cigre_network_mv("pv_wind")
         min_vm_pu = 0.95
         max_vm_pu = 1.05
-    
+
         net["bus"].loc[:, "min_vm_pu"] = min_vm_pu
         net["bus"].loc[:, "max_vm_pu"] = max_vm_pu
         net["line"].loc[:, "max_loading_percent"] = 100.
-    
+
         # close all switches
         net.switch.loc[:, "closed"] = True
         # add storage to bus 10
         pp.create_storage(net, 10, p_mw=0.5, max_e_mwh=.2, soc_percent=0., q_mvar=0., controllable=True)
-    
+
     # set the load type in the cigre grid, since it is not specified
     net["load"].loc[:, "type"] = "residential"
 
@@ -76,7 +76,7 @@ def create_cigre_grid_with_time_series(json_path, net=None, add_ts_constaints=Fa
         sgen_ts.loc[t][:8] = sgen_p * time_series.at[t, "pv"]
         sgen_ts.loc[t][8] = wind_p * time_series.at[t, "wind"]
 
-    # create time series controller for load and sgen 
+    # create time series controller for load and sgen
     ConstControl(net, element="load", variable="p_mw",
                  element_index=net.load.index.tolist(), profile_name=net.load.index.tolist(),
                  data_source=DFData(load_ts))
@@ -199,7 +199,7 @@ def test_compare_pwl_and_poly(net_3w_trafo_opf):
     vm_bus = net.res_bus.vm_pu.values
     va_bus = net.res_bus.va_degree.values
 
-    net.pwl_cost.drop(net.pwl_cost.index, inplace=True)
+    net.pwl_cost = net.pwl_cost.drop(net.pwl_cost.index)
 
     pp.create_poly_cost(net, 0, 'ext_grid', cp1_eur_per_mw=1)
     pp.create_poly_cost(net, 0, 'gen', cp1_eur_per_mw=3)
@@ -252,7 +252,7 @@ def test_pwl():
     assert np.isclose(net.res_gen.p_mw.iloc[0], net.res_gen.p_mw.iloc[1])
     assert np.isclose(net.res_gen.q_mvar.iloc[0], net.res_gen.q_mvar.iloc[1])
 
-    net.pwl_cost.drop(net.pwl_cost.index, inplace=True)
+    net.pwl_cost = net.pwl_cost.drop(net.pwl_cost.index)
     g3 = pp.create_gen(net, bus1, p_mw=80, min_p_mw=0, max_p_mw=80, vm_pu=1.01)
 
     pp.create_pwl_cost(net, g1, 'gen', [[0, 2, 1.], [2, 80, 8.]])
@@ -393,8 +393,8 @@ def test_voltage_angles():
                              max_q_mvar=1e-6)
     pp.create_poly_cost(net, 0, "ext_grid", cp1_eur_per_mw=1)
     pp.create_poly_cost(net, load_id, "load", cp1_eur_per_mw=1000)
-    net.trafo3w.shift_lv_degree.at[tidx] = 10
-    net.trafo3w.shift_mv_degree.at[tidx] = 30
+    net.trafo3w.at[tidx, "shift_lv_degree"] = 10
+    net.trafo3w.at[tidx, "shift_mv_degree"] = 30
     net.bus.loc[:, "max_vm_pu"] = 1.1
     net.bus.loc[:, "min_vm_pu"] = .9
 
@@ -591,41 +591,41 @@ def test_storage_opt():
     assert net._pm["pm_solver"] == "juniper"
     assert net._pm["pm_mip_solver"] == "cbc"
     assert len(net.res_ts_opt) == 5
-    
+
 
     net2 = create_cigre_grid_with_time_series(json_path)
     net2.sn_mva = 100.0
     pp.runpm_storage_opf(net2, from_time_step=0, to_time_step=5)
     storage_results_100 = read_pm_storage_results(net2)
-    
-    assert abs(storage_results_100[0].values - storage_results_1[0].values).max() < 1e-6 
+
+    assert abs(storage_results_100[0].values - storage_results_1[0].values).max() < 1e-6
 
 
 @pytest.mark.slow
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
 def test_runpm_multi_vstab():
-    net = nw.create_cigre_network_mv(with_der="pv_wind")     
+    net = nw.create_cigre_network_mv(with_der="pv_wind")
     net.load['controllable'] = False
     net.sgen['controllable'] = True
     # lower and upper bounds for buses
     net.bus["max_vm_pu"] = 1.1
     net.bus["min_vm_pu"] = 0.9
-    
+
     # lower and upper bounds for external grid
     net.ext_grid["max_q_mvar"] = 10000.0
     net.ext_grid["min_q_mvar"] = -10000.0
     net.ext_grid["max_p_mw"] = 10000.0
     net.ext_grid["min_p_mw"] = -10000.0
-    
+
     # lower and upper bounds for DERs
     net.sgen["max_p_mw"] = net.sgen.p_mw.values
     net.sgen["min_p_mw"] = net.sgen.p_mw.values
     net.sgen["max_q_mvar"] = net.sgen.p_mw.values * 0.328
     net.sgen["min_q_mvar"] = -net.sgen.p_mw.values * 0.328
-    
+
     net.trafo["max_loading_percent"] = 100.0
     net.line["max_loading_percent"] = 100.0
-    
+
     net.bus["pm_param/setpoint_v"] = None # add extra column
     net.bus["pm_param/setpoint_v"].loc[net.sgen.bus] = 0.96
 
@@ -633,15 +633,15 @@ def test_runpm_multi_vstab():
     json_path = os.path.join(pp_dir, "test", "opf", "cigre_timeseries_15min.json")
     create_cigre_grid_with_time_series(json_path, net, True)
 
-    # run time series opf 
+    # run time series opf
     pp.runpm_multi_vstab(net, from_time_step=0, to_time_step=96)
     assert len(net.res_ts_opt) == 96
-    
-    # get opf-results 
+
+    # get opf-results
     y_multi = []
     for t in range(96):
         y_multi.append(net.res_ts_opt[str(t)].res_bus.vm_pu[net.sgen.bus].values.mean() - 0.96)
-    
+
     assert np.array(y_multi).max() < 0.018
     assert np.array(y_multi).min() > -0.002
 
@@ -649,50 +649,50 @@ def test_runpm_multi_vstab():
 @pytest.mark.slow
 @pytest.mark.skipif(julia_installed == False, reason="requires julia installation")
 def test_runpm_qflex_and_multi_qflex():
-    
-    net = nw.create_cigre_network_mv(with_der="pv_wind")  
+
+    net = nw.create_cigre_network_mv(with_der="pv_wind")
     pp.runpp(net)
-    
+
     net.load['controllable'] = False
     net.sgen['controllable'] = True
     # lower and upper bounds for buses
     net.bus["max_vm_pu"] = 1.1
     net.bus["min_vm_pu"] = 0.9
-    
+
     # lower and upper bounds for external grid
     net.ext_grid["max_q_mvar"] = 10000.0
     net.ext_grid["min_q_mvar"] = -10000.0
     net.ext_grid["max_p_mw"] = 10000.0
     net.ext_grid["min_p_mw"] = -10000.0
-    
+
     # lower and upper bounds for DERs
     net.sgen["max_p_mw"] = net.sgen.p_mw.values
     net.sgen["min_p_mw"] = net.sgen.p_mw.values
     net.sgen["max_q_mvar"] = net.sgen.p_mw.values * 0.828
     net.sgen["min_q_mvar"] = -net.sgen.p_mw.values * 0.828
-    
+
     net.trafo["max_loading_percent"] = 100.0
     net.line["max_loading_percent"] = 100.0
-    
+
     net.trafo["pm_param/setpoint_q"] = None # add extra column
     net.trafo["pm_param/setpoint_q"].loc[0] = -5
     net.trafo["pm_param/side"] = None
     net.trafo["pm_param/side"][0] = "lv"
-    
+
     # run opf
     pp.runpm_qflex(net)
     opt_q = net.res_trafo.q_lv_mvar[0]
     assert  abs(opt_q + 5) < 1e-6
-    
+
     # test for multi_qflex
     # load time series data for 96 time steps
     json_path = os.path.join(pp_dir, "test", "opf", "cigre_timeseries_15min.json")
     create_cigre_grid_with_time_series(json_path, net, True)
     pp.runpm_multi_qflex(net, from_time_step=0, to_time_step=96)
-    # get opf-results 
+    # get opf-results
     y_multi = []
     for t in range(96):
-        y_multi.append(abs(abs(net.res_ts_opt[str(t)].res_trafo.q_lv_mvar[0])-5))    
+        y_multi.append(abs(abs(net.res_ts_opt[str(t)].res_trafo.q_lv_mvar[0])-5))
     assert np.array(y_multi).max() < 1e-6
 
 
@@ -722,7 +722,7 @@ def test_runpm_ploss_loading():
     ### test loss reduction with Q-optimierung
     assert net.res_line.pl_mw.values.sum() < net_org.res_line.pl_mw.values.sum()
 
-    net.line.drop(columns=["pm_param/target_branch"], inplace=True)
+    net.line = net.line.drop(columns=["pm_param/target_branch"])
     net.trafo["pm_param/target_branch"] = True
     pp.runpm_ploss(net)
 
