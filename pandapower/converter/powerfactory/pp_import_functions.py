@@ -2500,8 +2500,15 @@ def create_shunt(net, item):
     
     if item.shtype == 0:
         # Shunt is a R-L-C element
+        
         params['q_mvar'] = -item.qtotn * multiplier
         p_mw = (item.ushnm ** 2 * item.rrea) / (item.rrea ** 2 + (item.xrea + 1 / (item.bcap * 1e6)) ** 2) * multiplier
+        R = item.rrea
+        X = -1e6/item.bcap + item.xrea
+
+        p_mw = (item.ushnm ** 2 * R) / (R ** 2 + X ** 2) * multiplier
+        params['q_mvar'] = (item.ushnm ** 2 * X) / (R ** 2 + X ** 2) * multiplier
+        
         sid = pp.create_shunt(net, p_mw=p_mw, **params)
     elif item.shtype == 1:
         # Shunt is an R-L element
@@ -2518,25 +2525,25 @@ def create_shunt(net, item):
         Rp = item.rpara
         Rs = item.rrea
         Xl = item.xrea
-        Bc = item.bcap * 1e-6
+        Bc = -item.bcap * 1e-6
         R = Rp*(Rp*Rs+Rs**2+Xl**2)/((Rp+Rs)**2 + Xl**2)
         X = 1/Bc + (Xl*Rp**2)/((Rp+Rs)**2 + Xl**2)
 
         p_mw = (item.ushnm ** 2 * R) / (R ** 2 + X ** 2) * multiplier
-        params['q_mvar'] = -(item.ushnm ** 2 * X) / (R ** 2 + X ** 2) * multiplier
+        params['q_mvar'] = (item.ushnm ** 2 * X) / (R ** 2 + X ** 2) * multiplier
         sid = pp.create_shunt(net, p_mw=p_mw, **params)
     elif item.shtype == 4:
         # Shunt is a R-L-C1-C2, Rp element
         # params['q_mvar'] = -item.qtotn * multiplier
         Rp = item.rpara
         Rs = item.rrea
-        Xl = item.xrea + 1/(2*np.pi*50*item.c1) * 1e-6
-        Bc = 2*np.pi*50*item.c2 * 1e-6
+        Xl = item.xrea + 1/(-2*np.pi*50*item.c1) * 1e-6
+        Bc = -2*np.pi*50*item.c2 * 1e-6
         R = Rp*(Rp*Rs+Rs**2+Xl**2)/((Rp+Rs)**2 + Xl**2)
         X = 1/Bc + (Xl*Rp**2)/((Rp+Rs)**2 + Xl**2)
 
         p_mw = (item.ushnm ** 2 * R) / (R ** 2 + X ** 2) * multiplier
-        params['q_mvar'] = -(item.ushnm ** 2 * X) / (R ** 2 + X ** 2) * multiplier
+        params['q_mvar'] = (item.ushnm ** 2 * X) / (R ** 2 + X ** 2) * multiplier
         sid = pp.create_shunt(net, p_mw=p_mw, **params)
     else:
         # Shunt is an element of R-L-C, Rp (3), R-L-C1-C2, Rp (4)
