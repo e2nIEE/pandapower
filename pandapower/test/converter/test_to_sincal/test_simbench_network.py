@@ -2,7 +2,6 @@ import os
 
 import numpy as np
 import pytest
-import win32com.client
 
 from pandapower.converter.sincal.pp2sincal.util.main import initialize, convert_pandapower_net, finalize
 from pandapower.test import test_path
@@ -19,6 +18,11 @@ try:
     import simbench
 except ImportError:
     logger.warning(r'you need to install the package "simbench" first')
+
+try:
+    import win32com.client
+except:
+    logger.warning(r'seems like you are not on a windows machine')
 
 try:
     simulation = win32com.client.Dispatch("Sincal.Simulation")

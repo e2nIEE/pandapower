@@ -1,5 +1,4 @@
 import os
-import win32com.client
 import numpy as np
 import pandapower as pp
 import pytest
@@ -13,6 +12,11 @@ except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
+
+try:
+    import win32com.client
+except:
+    logger.warning(r'seems like you are not on a windows machine')
 
 try:
     simulation = win32com.client.Dispatch("Sincal.Simulation")

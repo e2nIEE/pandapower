@@ -1,4 +1,15 @@
-import win32com.client, time
+try:
+    import pandaplan.core.pplog as logging
+except ImportError:
+    import logging
+
+logger = logging.getLogger(__name__)
+
+try:
+    import win32com.client
+except:
+    logger.warning(r'seems like you are not on a windows machine')
+import time
 import os
 from glob import glob
 import shutil
