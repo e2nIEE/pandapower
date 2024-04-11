@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 
-import math
-import pandas as pd
-import numpy as np
-from pandaplan.core.converter.sincal.sincal_utility import *
-
 import logging
+
+from pandapower.converter.sincal.sincal2pp.sincal_utility import *
+
 logger = logging.getLogger(__name__)
 
 try:
@@ -99,9 +97,9 @@ def sincal2pp(filename, use_gis_data=False, variant=1, variant_type="flag"):
     switch_line_df = df.loc[lines_as_switches, :]
     if not switch_line_df.empty:
         closed = (
-            (switch_line_df["in_service_tt"] == 1)
-            & (switch_line_df["in_service_ft"] == 1)
-            & switch_line_df["in_service"]
+                (switch_line_df["in_service_tt"] == 1)
+                & (switch_line_df["in_service_ft"] == 1)
+                & switch_line_df["in_service"]
         )
         pp.create_switches(
             net,
@@ -124,14 +122,14 @@ def sincal2pp(filename, use_gis_data=False, variant=1, variant_type="flag"):
             c: line_df[c].values
             for c in line_df.columns
             if c
-            not in [
-                "_index",
-                "from_bus",
-                "to_bus",
-                "in_service_tt",
-                "in_service_ft",
-                "lty",
-            ]
+               not in [
+                   "_index",
+                   "from_bus",
+                   "to_bus",
+                   "in_service_tt",
+                   "in_service_ft",
+                   "lty",
+               ]
         },
     )
 
@@ -190,9 +188,9 @@ def sincal2pp(filename, use_gis_data=False, variant=1, variant_type="flag"):
     )
     valid_geo["coords"] = valid_geo.apply(
         lambda geo: [[geo["tx_from"], geo["ty_from"]]]
-        + geo.xy_from
-        + geo.xy_to
-        + [[geo["tx_to"], geo["ty_to"]]],
+                    + geo.xy_from
+                    + geo.xy_to
+                    + [[geo["tx_to"], geo["ty_to"]]],
         axis=1,
     )
 
@@ -384,9 +382,10 @@ def sincal2pp(filename, use_gis_data=False, variant=1, variant_type="flag"):
     df = pd.merge(node_terminal_element, d["dcinfeeder"], on="Element_ID", suffixes=("", "_nt"))
     if not df.empty:
         df.Mpl_ID = pd.to_numeric(nteu.Mpl_ID)
-        #nteum = pd.merge(
+
+        # nteum = pd.merge(
         #    nteu, d["manipulation"], on="Mpl_ID", how="left", suffixes=["", "_mpl"]
-        #)
+        # )
 
         def in_service(info):
             return info["Flag_State"] and info["Flag_State_element"]
