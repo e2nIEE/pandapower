@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -110,22 +110,22 @@ def test_gen_ext_grid_same_bus():
 #     g2 = pp.create_gen(net, b2, vn_kv=21., xdss_pu=0.2, cos_phi=0.85, p_mw=0.1, sn_mva=2.5)
 #     b3 = pp.create_bus(net, vn_kv=20.)
 #     g3 = pp.create_gen(net, b3, vn_kv=30., xdss_pu=0.25, cos_phi=0.9, p_mw=0.1, sn_mva=150)
-    
+
 #     sc.calc_sc(net, case="max")
 #     assert np.isclose(net.res_bus_sc.ikss_ka.at[b1], 1.5130509845)
-#     net.gen.rdss_pu.at[g1] = net.gen.xdss_pu.at[g1] * 0.15
+#     net.gen.at[g1, "rdss_pu"] = net.gen.xdss_pu.at[g1] * 0.15
 #     sc.calc_sc(net, case="max")
 #     assert np.isclose(net.res_bus_sc.ikss_ka.at[b1], 1.5130509845)
-    
+
 #     sc.calc_sc(net, case="max")
 #     assert np.isclose(net.res_bus_sc.ikss_ka.at[b2], 0.37894052506)
-#     net.gen.rdss_pu.at[g2] = net.gen.xdss_pu.at[g2] * 0.07
+#     net.gen.at[g2, "rdss_pu"] = net.gen.xdss_pu.at[g2] * 0.07
 #     sc.calc_sc(net, case="max")
 #     assert np.isclose(net.res_bus_sc.ikss_ka.at[b2], 0.37894052506)
-    
+
 #     sc.calc_sc(net, case="max")
 #     assert np.isclose(net.res_bus_sc.ikss_ka.at[b3], 12.789334853)
-#     net.gen.rdss_pu.at[g3] = net.gen.xdss_pu.at[g3] * 0.05
+#     net.gen.at[g3, "rdss_pu"] = net.gen.xdss_pu.at[g3] * 0.05
 #     sc.calc_sc(net, case="max")
 #     assert np.isclose(net.res_bus_sc.ikss_ka.at[b3], 12.789334853)
 

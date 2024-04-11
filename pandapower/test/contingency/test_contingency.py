@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -377,7 +377,7 @@ def get_net(request):
                                                    max_loading_percent=net.trafo.max_loading_percent.values)
     if len(net.trafo) > 0:
         for col in ("tap_neutral", "tap_step_percent", "tap_pos", "tap_step_degree"):
-            net.trafo[col].fillna(0, inplace=True)
+            net.trafo[col] = net.trafo[col].fillna(0)
 
     _randomize_indices(net)
 

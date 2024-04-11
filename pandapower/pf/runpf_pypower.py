@@ -4,7 +4,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -78,7 +78,7 @@ def _get_options(options, **kwargs):
     max_iteration = options["max_iteration"]
 
     # algorithms implemented within pypower
-    algorithm_pypower_dict = {'nr': 1, 'fdbx': 2, 'fdxb': 3, 'gs': 4}
+    algorithm_pypower_dict = {'nr': 1, 'fdxb': 2, 'fdbx': 3, 'gs': 4}
 
     ppopt = ppoption(ENFORCE_Q_LIMS=enforce_q_lims, PF_TOL=tolerance_mva,
                      PF_ALG=algorithm_pypower_dict[algorithm], **kwargs)

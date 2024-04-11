@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
@@ -315,7 +315,7 @@ def test_convert_format_for_pp_objects(net_in):
     # needed to trigger conversion
     net_in.format_version = "2.1.0"
 
-    net_in.controller.rename(columns={'object': 'controller'}, inplace=True)
+    net_in.controller = net_in.controller.rename(columns={'object': 'controller'})
     assert 'controller' in net_in.controller.columns
 
     s = json.dumps(net_in, cls=PPJSONEncoder)
@@ -468,7 +468,7 @@ def test_replace_elements_json_string(net_in):
     net_load = pp.from_json_string(json_string,
                                    replace_elements={r'pandapower.control.controller.const_control':
                                                      r'pandapower.test.api.input_files.test_control',
-                                                     r'ConstControl': r'TestControl'})
+                                                     r'ConstControl': r'MyTestControl'})
     assert net_orig.controller.at[0, 'object'] != net_load.controller.at[0, 'object']
     assert not nets_equal(net_orig, net_load)
 
@@ -597,7 +597,7 @@ def test_json_list_of_stuff():
 
 def test_multi_index():
     df = pd.DataFrame(columns=["a", "b", "c"], dtype=np.int64)
-    df.set_index(["a", "b"], inplace=True)
+    df = df.set_index(["a", "b"])
     df2 = pp.from_json_string(pp.to_json(df))
     assert_frame_equal(df, df2)
 

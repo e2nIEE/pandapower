@@ -12,7 +12,8 @@ import pandapower as pp
 
 try:
     from lightsim2grid.gridmodel import init as init_ls2g
-    from lightsim2grid_cpp import SecurityAnalysisCPP, SolverType
+    from lightsim2grid.contingencyAnalysis import ContingencyAnalysisCPP
+    from lightsim2grid_cpp import SolverType
 
     lightsim2grid_installed = True
 except ImportError:
@@ -72,6 +73,7 @@ def run_contingency(net, nminus1_cases, pf_options=None, pf_options_nminus1=None
     """
     # set up the dict for results and relevant variables
     # ".get" in case the options have been set in pp.set_user_pf_options:
+    raise_errors = kwargs.get("raise_errors", False)
     if "recycle" in kwargs: kwargs["recycle"] = False  # so that we can be sure it doesn't happen
     if pf_options is None: pf_options = net.user_pf_options.get("pf_options", net.user_pf_options)
     if pf_options_nminus1 is None: pf_options_nminus1 = net.user_pf_options.get("pf_options_nminus1",
@@ -95,7 +97,7 @@ def run_contingency(net, nminus1_cases, pf_options=None, pf_options_nminus1=None
     # for n-1
     for element, val in nminus1_cases.items():
         for i in val["index"]:
-            if ~net[element].at[i, "in_service"]:
+            if not net[element].at[i, "in_service"]:
                 continue
             net[element].at[i, 'in_service'] = False
             try:
@@ -104,6 +106,8 @@ def run_contingency(net, nminus1_cases, pf_options=None, pf_options_nminus1=None
                                             cause_element=element, cause_index=i)
             except Exception as err:
                 logger.error(f"{element} {i} causes {err}")
+                if raise_errors:
+                    raise err
             finally:
                 net[element].at[i, 'in_service'] = True
 
@@ -195,7 +199,7 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=pp.
     n_trafos_cases = len(nminus1_cases.get("trafo", {}).get("index", []))
 
     # todo: add option for DC power flow
-    s = SecurityAnalysisCPP(lightsim_grid_model)
+    s = ContingencyAnalysisCPP(lightsim_grid_model)
     s.change_solver(solver_type)
 
     map_index = {}

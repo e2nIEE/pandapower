@@ -96,7 +96,7 @@ class CimParser:
                         self.logger.debug("Setting data type of %s from CIM element %s as type %s" %
                                           (col, cim_element_type, data_type_col_str))
                         if col in default_values.keys():  # todo deprecated due to repair function?
-                            self.cim[profile][cim_element_type][col].fillna(value=default_values[col], inplace=True)
+                            self.cim[profile][cim_element_type][col] = self.cim[profile][cim_element_type][col].fillna(value=default_values[col])
                         if data_type_col == bool_type:
                             self.cim[profile][cim_element_type][col] = \
                                 self.cim[profile][cim_element_type][col].map(to_bool)
@@ -176,17 +176,18 @@ class CimParser:
                 'TieFlow': pd.DataFrame(columns=['rdfId', 'Terminal', 'ControlArea', 'positiveFlowIn']),
                 'ConnectivityNode': pd.DataFrame(columns=['rdfId', 'name', 'description', 'ConnectivityNodeContainer']),
                 'Bay': pd.DataFrame(columns=['rdfId', 'VoltageLevel']),
+                'BusbarSection': pd.DataFrame(columns=['rdfId', 'name']),
                 'Substation': pd.DataFrame(columns=['rdfId', 'name', 'Region']),
                 'GeographicalRegion': pd.DataFrame(columns=['rdfId', 'name']),
                 'SubGeographicalRegion': pd.DataFrame(columns=['rdfId', 'name', 'Region']),
                 'VoltageLevel': pd.DataFrame(columns=['rdfId', 'name', 'shortName', 'BaseVoltage', 'Substation']),
                 'BaseVoltage': pd.DataFrame(columns=['rdfId', 'name', 'nominalVoltage']),
                 'ExternalNetworkInjection': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'minP', 'maxP', 'minQ', 'maxQ', 'BaseVoltage', 'EquipmentContainer',
+                    'rdfId', 'name', 'description', 'minP', 'maxP', 'minQ', 'maxQ', 'BaseVoltage', 'EquipmentContainer',
                     'RegulatingControl', 'governorSCD', 'maxInitialSymShCCurrent', 'minInitialSymShCCurrent',
                     'maxR1ToX1Ratio', 'minR1ToX1Ratio', 'maxR0ToX0Ratio', 'maxZ0ToZ1Ratio']),
                 'ACLineSegment': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'length', 'r', 'x', 'bch', 'gch', 'r0', 'x0', 'b0ch', 'g0ch',
+                    'rdfId', 'name', 'description', 'length', 'r', 'x', 'bch', 'gch', 'r0', 'x0', 'b0ch', 'g0ch',
                     'shortCircuitEndTemperature', 'BaseVoltage']),
                 'Terminal': pd.DataFrame(columns=[
                     'rdfId', 'name', 'ConnectivityNode', 'ConductingEquipment', 'sequenceNumber']),
@@ -199,22 +200,26 @@ class CimParser:
                 'DCNode': pd.DataFrame(columns=['rdfId', 'name', 'DCEquipmentContainer']),
                 'DCEquipmentContainer': pd.DataFrame(columns=['rdfId', 'name']),
                 'DCConverterUnit': pd.DataFrame(columns=['rdfId', 'name', 'Substation', 'operationMode']),
-                'DCLineSegment': pd.DataFrame(columns=['rdfId', 'name', 'EquipmentContainer']),
+                'DCLineSegment': pd.DataFrame(columns=['rdfId', 'name', 'description', 'EquipmentContainer']),
                 'CsConverter': pd.DataFrame(columns=['rdfId', 'BaseVoltage', 'ratedUdc']),
                 'VsConverter': pd.DataFrame(columns=['rdfId', 'name', 'BaseVoltage', 'EquipmentContainer', 'ratedUdc']),
                 'DCTerminal': pd.DataFrame(columns=[
                     'rdfId', 'name', 'DCNode', 'DCConductingEquipment', 'sequenceNumber']),
                 'ACDCConverterDCTerminal': pd.DataFrame(columns=[
                     'rdfId', 'name', 'DCNode', 'DCConductingEquipment', 'sequenceNumber']),
-                'Breaker': pd.DataFrame(columns=['rdfId', 'name', 'EquipmentContainer', 'normalOpen', 'retained']),
-                'Disconnector': pd.DataFrame(columns=['rdfId', 'name', 'EquipmentContainer', 'normalOpen', 'retained']),
-                'Switch': pd.DataFrame(columns=['rdfId', 'name', 'EquipmentContainer', 'normalOpen', 'retained']),
+                'Breaker': pd.DataFrame(columns=[
+                    'rdfId', 'name', 'description', 'EquipmentContainer', 'normalOpen', 'retained']),
+                'Disconnector': pd.DataFrame(columns=[
+                    'rdfId', 'name', 'description', 'EquipmentContainer', 'normalOpen', 'retained']),
+                'Switch': pd.DataFrame(columns=[
+                    'rdfId', 'name', 'description', 'EquipmentContainer', 'normalOpen', 'retained']),
                 'LoadBreakSwitch': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'EquipmentContainer', 'normalOpen', 'retained']),
-                'EnergyConsumer': pd.DataFrame(columns=['rdfId', 'name', 'BaseVoltage', 'EquipmentContainer']),
-                'ConformLoad': pd.DataFrame(columns=['rdfId', 'name']),
-                'NonConformLoad': pd.DataFrame(columns=['rdfId', 'name']),
-                'StationSupply': pd.DataFrame(columns=['rdfId', 'name', 'BaseVoltage']),
+                    'rdfId', 'name', 'description', 'EquipmentContainer', 'normalOpen', 'retained']),
+                'EnergyConsumer': pd.DataFrame(columns=[
+                    'rdfId', 'name', 'description', 'BaseVoltage', 'EquipmentContainer']),
+                'ConformLoad': pd.DataFrame(columns=['rdfId', 'name', 'description']),
+                'NonConformLoad': pd.DataFrame(columns=['rdfId', 'name', 'description']),
+                'StationSupply': pd.DataFrame(columns=['rdfId', 'name', 'description', 'BaseVoltage']),
                 'GeneratingUnit': pd.DataFrame(columns=[
                     'rdfId', 'name', 'nominalP', 'initialP', 'minOperatingP', 'maxOperatingP', 'EquipmentContainer']),
                 'WindGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP']),
@@ -224,18 +229,18 @@ class CimParser:
                 'NuclearGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP']),
                 'RegulatingControl': pd.DataFrame(columns=['rdfId', 'name', 'mode', 'Terminal']),
                 'SynchronousMachine': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'GeneratingUnit', 'EquipmentContainer', 'ratedU', 'ratedS', 'type',
+                    'rdfId', 'name', 'description', 'GeneratingUnit', 'EquipmentContainer', 'ratedU', 'ratedS', 'type',
                     'r2', 'x2', 'ratedPowerFactor', 'voltageRegulationRange', 'minQ', 'maxQ', 'RegulatingControl']),
                 'AsynchronousMachine': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'GeneratingUnit', 'ratedS', 'ratedU', 'ratedPowerFactor', 'rxLockedRotorRatio',
-                    'iaIrRatio', 'efficiency', 'ratedMechanicalPower']),
+                    'rdfId', 'name', 'description', 'GeneratingUnit', 'ratedS', 'ratedU', 'ratedPowerFactor',
+                    'rxLockedRotorRatio', 'iaIrRatio', 'efficiency', 'ratedMechanicalPower']),
                 'EnergySource': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'nominalVoltage', 'EnergySchedulingType', 'BaseVoltage', 'EquipmentContainer',
-                    'voltageAngle', 'voltageMagnitude']),
+                    'rdfId', 'name', 'description', 'nominalVoltage', 'EnergySchedulingType', 'BaseVoltage',
+                    'EquipmentContainer', 'voltageAngle', 'voltageMagnitude']),
                 'EnergySchedulingType': pd.DataFrame(columns=['rdfId', 'name']),
-                'StaticVarCompensator': pd.DataFrame(columns=['rdfId', 'name', 'voltageSetPoint']),
+                'StaticVarCompensator': pd.DataFrame(columns=['rdfId', 'name', 'description', 'voltageSetPoint']),
                 'PowerTransformer': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'EquipmentContainer', 'isPartOfGeneratorUnit']),
+                    'rdfId', 'name', 'description', 'EquipmentContainer', 'isPartOfGeneratorUnit']),
                 'PowerTransformerEnd': pd.DataFrame(columns=[
                     'rdfId', 'name', 'PowerTransformer', 'endNumber', 'Terminal', 'ratedS', 'ratedU',
                     'r', 'x', 'r0', 'x0', 'b', 'g', 'BaseVoltage', 'phaseAngleClock', 'connectionKind', 'grounded',
@@ -264,14 +269,17 @@ class CimParser:
                 'RatioTapChangerTablePoint': pd.DataFrame(columns=['rdfId', 'RatioTapChangerTable', 'step',
                                                                    'r', 'x', 'ratio']),
                 'LinearShuntCompensator': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'nomU', 'gPerSection', 'bPerSection', 'maximumSections']),
-                'NonlinearShuntCompensator': pd.DataFrame(columns=['rdfId', 'name', 'nomU', 'maximumSections']),
+                    'rdfId', 'name', 'description', 'nomU', 'gPerSection', 'bPerSection', 'maximumSections']),
+                'NonlinearShuntCompensator': pd.DataFrame(columns=[
+                    'rdfId', 'name', 'description', 'nomU', 'maximumSections']),
                 'NonlinearShuntCompensatorPoint': pd.DataFrame(columns=[
-                    'rdfId', 'NonlinearShuntCompensator', 'sectionNumber', 'b', 'g']),
-                'EquivalentBranch': pd.DataFrame(columns=['rdfId', 'name', 'BaseVoltage', 'r', 'x', 'r21', 'x21',
-                                                          'zeroR12', 'zeroR21', 'zeroX12', 'zeroX21']),
-                'EquivalentInjection': pd.DataFrame(columns=['rdfId', 'name', 'BaseVoltage', 'r', 'x']),
-                'SeriesCompensator': pd.DataFrame(columns=['rdfId', 'name', 'BaseVoltage', 'r', 'x', 'r0', 'x0']),
+                    'rdfId', 'description', 'NonlinearShuntCompensator', 'sectionNumber', 'b', 'g']),
+                'EquivalentBranch': pd.DataFrame(columns=[
+                    'rdfId', 'name', 'description', 'BaseVoltage', 'r', 'x', 'r21', 'x21', 'zeroR12', 'zeroR21',
+                    'zeroX12', 'zeroX21']),
+                'EquivalentInjection': pd.DataFrame(columns=['rdfId', 'name', 'description', 'BaseVoltage', 'r', 'x']),
+                'SeriesCompensator': pd.DataFrame(columns=[
+                    'rdfId', 'name', 'description', 'BaseVoltage', 'r', 'x', 'r0', 'x0']),
                 'Analog': pd.DataFrame(columns=[
                     'rdfId', 'name', 'measurementType', 'unitSymbol', 'unitMultiplier', 'Terminal',
                     'PowerSystemResource', 'positiveFlowIn']),
@@ -511,7 +519,7 @@ class CimParser:
                 elif col_new.endswith('-ID'):
                     col_new = 'rdfId'
                 ns_dict[prf][element_type_c][col] = col_new
-            prf_content[element_type_c].rename(columns={**ns_dict[prf][element_type_c]}, inplace=True)
+            prf_content[element_type_c] = prf_content[element_type_c].rename(columns={**ns_dict[prf][element_type_c]})
         if prf not in output.keys():
             output[prf] = prf_content
         else:

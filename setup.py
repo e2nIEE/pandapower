@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from setuptools import setup, find_packages
@@ -11,6 +11,16 @@ with open('README.rst', 'rb') as f:
 
 with open('CHANGELOG.rst', 'rb') as f:
     changelog = f.read().decode('utf-8')
+
+# parse version from _version.py file.
+VERSIONFILE = "pandapower/_version.py"
+verstrline = open(VERSIONFILE, "rt").read()
+VSRE = r"^__version__ = ['\"]([^'\"]*)['\"]"
+mo = re.search(VSRE, verstrline, re.M)
+if mo:
+    version = mo.group(1)
+else:
+    raise RuntimeError("Unable to find version string in %s." % (VERSIONFILE,))
 
 classifiers = [
     'Development Status :: 5 - Production/Stable',
@@ -27,14 +37,14 @@ classifiers = [
 with open('.github/workflows/github_test_action.yml', 'rb') as f:
     lines = f.read().decode('utf-8')
     versions = set(re.findall('3.[8-9]', lines)) | set(re.findall('3.1[0-9]', lines))
-    for version in sorted(versions):
-        classifiers.append('Programming Language :: Python :: %s' % version)
+    for ver in sorted(versions):
+        classifiers.append('Programming Language :: Python :: %s' % ver)
 
 long_description = '\n\n'.join((install, changelog))
 
 setup(
     name='pandapower',
-    version='2.13.1',
+    version=version,
     author='Leon Thurner, Alexander Scheidler',
     author_email='leon.thurner@retoflow.de, alexander.scheidler@iee.fraunhofer.de',
     description='An easy to use open source tool for power system modeling, analysis and optimization with a high degree of automation.',
@@ -52,24 +62,22 @@ setup(
                       "deepdiff"],
     extras_require={
         "docs": ["numpydoc", "sphinx", "sphinx_rtd_theme"],
-        "plotting": ["plotly", "matplotlib", "igraph", "geopandas", "geojson"],
+        "plotting": ["plotly>=3.1.1", "matplotlib", "igraph", "geopandas", "geojson"],
         # "shapely", "pyproj" are dependencies of geopandas and so already available;
         # "base64", "hashlib", "zlib" produce installing problems, so they are not included
-        "test": ["pytest", "pytest-xdist"],
-        "performance": ["ortools"],  # , "lightsim2grid"],
-        "pgm": ["power-grid-model-io"],
+        "test": ["pytest~=8.1", "pytest-xdist"],
+        "performance": ["ortools", "numba>=0.25", "lightsim2grid>=0.8.1"],
         "fileio": ["xlsxwriter", "openpyxl", "cryptography", "geopandas", "psycopg2"],
         # "fiona" is a depedency of geopandas and so already available
         "converter": ["matpowercaseframes"],
+        "pgm": ["power-grid-model-io"],
         "all": ["numpydoc", "sphinx", "sphinx_rtd_theme",
                 "plotly>=3.1.1", "matplotlib", "igraph", "geopandas", "geojson",
-                "pytest<=7.0", "pytest-xdist",
-                "ortools",  # lightsim2grid,
-                "xlsxwriter", "openpyxl", "cryptography",
-                "psycopg2",  # for PostgreSQL I/O
+                "pytest~=8.1", "pytest-xdist",
+                "ortools", "numba>=0.25", "lightsim2grid>=0.8.1",
+                "xlsxwriter", "openpyxl", "cryptography", "psycopg2",  # for PostgreSQL I/O
                 "matpowercaseframes",
-                "power-grid-model-io",
-                "numba>=0.25"
+                "power-grid-model-io"
                 ]},  # "shapely", "pyproj", "fiona" are dependencies of geopandas and so already available
     # "hashlib", "zlib", "base64" produce installing problems, so it is not included
     packages=find_packages(),

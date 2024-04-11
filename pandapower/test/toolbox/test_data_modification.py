@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
@@ -173,10 +173,10 @@ def test_continuous_element_numbering():
     net = nw.example_multivoltage()
 
     # Add noises to index with some large number
-    net.line.rename(index={4: 280}, inplace=True)
-    net.trafo.rename(index={0: 300}, inplace=True)
-    net.trafo.rename(index={1: 400}, inplace=True)
-    net.trafo3w.rename(index={0: 540}, inplace=True)
+    net.line = net.line.rename(index={4: 280})
+    net.trafo = net.trafo.rename(index={0: 300})
+    net.trafo = net.trafo.rename(index={1: 400})
+    net.trafo3w = net.trafo3w.rename(index={0: 540})
 
     net.switch.loc[(net.switch.et == "l") & (net.switch.element == 4), "element"] = 280
     net.switch.loc[(net.switch.et == "t") & (net.switch.element == 0), "element"] = 300
