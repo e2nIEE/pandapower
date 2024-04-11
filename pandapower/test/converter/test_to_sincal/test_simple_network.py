@@ -605,20 +605,20 @@ def test_gen_network(gen_network_pandapower):
 test_networks = pytest.mark.parametrize(
     "input",
     [
-        pytest.lazy_fixture('simple_network_pandapower_1'),
-        pytest.lazy_fixture('simple_network_pandapower_2'),
-        pytest.lazy_fixture('breaker_network_pandapower_1'),
-        pytest.lazy_fixture('breaker_network_pandapower_2'),
-        pytest.lazy_fixture('gen_network_pandapower'),
-        pytest.lazy_fixture('storage_network_pandapower'),
-        pytest.lazy_fixture('dcline_network_pandapower'),
+        'simple_network_pandapower_1',
+        'simple_network_pandapower_2',
+        'breaker_network_pandapower_1',
+        'breaker_network_pandapower_2',
+        'gen_network_pandapower',
+        'storage_network_pandapower',
+        'dcline_network_pandapower',
     ],
 )
 
 @pytest.mark.skipif(simulation is None, reason=r'you need a sincal instance!')
 @test_networks
-def test_convert_simple_network(input):
-    net_pp, name = input
+def test_convert_simple_network(input, request):
+    net_pp, name = request.getfixturevalue(input)
     output_folder = os.path.join(test_path, 'converter', 'test_to_sincal', 'results', 'simple')
     file_name = 'conv_' + name + '.sin'
     use_active_net = False
