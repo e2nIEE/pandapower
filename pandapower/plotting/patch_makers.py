@@ -240,7 +240,6 @@ def polygon_patches(node_coords, radius, num_edges, color=None, **kwargs):
     return patches
 
 
-
 def load_patches(node_coords, size, angles, unique_angles, **kwargs):
     """
     Creation function of patches for loads.
@@ -295,6 +294,7 @@ def load_patches(node_coords, size, angles, unique_angles, **kwargs):
         lines.append((node_geo, p3))
 
     return lines, polys, {"offset", "patch_edgecolor", "patch_facecolor"}
+
 
 def gen_patches(node_coords, size, angles, unique_angles, **kwargs):
     """
