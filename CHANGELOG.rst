@@ -10,6 +10,7 @@ Change Log
 - [FIXED] further futurewarnings and deprecation warnings
 - [ADDED] switch results p and q
 - [CHANGED] plotting for voltage profile considers also gens that are slacks and only ext_grids and slack gens that are in service
+- [FIXED] massive performance drag in large grids due to initializing Ybus for FACTS with np.zeros instead of using sparse matrix initialization
 
 [2.14.6] - 2024-04-02
 -------------------------------
