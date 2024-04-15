@@ -12,6 +12,7 @@ Change Log
 - [CHANGED] plotting for voltage profile considers also gens that are slacks and only ext_grids and slack gens that are in service
 - [ADDED] PowerFactory converter: option to export lines with sections as a single line with averaged-out impedance, or export line sections as separate individual lines
 - [FIXED] massive performance drag in large grids due to initializing Ybus for FACTS with np.zeros instead of using sparse matrix initialization
+- [ADDED] extend plotly function: add zoomlevel-parameter and hvdc lines
 
 [2.14.6] - 2024-04-02
 -------------------------------
