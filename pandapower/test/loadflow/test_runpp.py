@@ -592,6 +592,30 @@ def test_pypower_algorithms_iter():
                                   net.last_added_case)
 
 
+def test_bypass_pf():
+    net2 = pp.create_empty_network()
+    pp.create_buses(net2, 2, 380, index=[1, 2])
+    pp.create_line(net2, 1, 2, 150, '490-AL1/64-ST1A 380.0')
+    pp.create_ext_grid(net2, 1)
+    pp.create_ext_grid(net2, 2, va_degree=2)
+
+    net3 = pp.create_empty_network()
+    pp.create_buses(net3, 3, 380, index=[1, 2, 3])
+    pp.create_lines(net3, [1, 2], [2, 3], 75, '490-AL1/64-ST1A 380.0')
+    pp.create_ext_grid(net3, 1)
+    pp.create_ext_grid(net3, 3, va_degree=2)
+
+    pp.runpp(net2, calculate_voltage_angles=True) # _bypass_pf_and_set_results() is used internally
+    pp.runpp(net3, calculate_voltage_angles=True)
+
+    assert np.allclose(net2.res_bus.values, net3.res_bus.values[[0, 2], :])
+    assert np.allclose(net2.res_ext_grid.values, net3.res_ext_grid.values, atol=1e-4)
+    line_cols = pd.Series(net2.res_line.columns)
+    line_cols = list(line_cols.loc[line_cols.str.contains("_to_")])
+    assert np.allclose(net2.res_line[line_cols].iloc[-1], net3.res_line[line_cols].iloc[-1])
+    assert np.isclose(net2.res_line.at[0, "pl_mw"], net3.res_line["pl_mw"].sum())
+
+
 @pytest.mark.xfail
 def test_zip_loads_gridcal():
     # Tests newton power flow considering zip loads against GridCal's pf result
@@ -1450,7 +1474,8 @@ def test_lightsim2grid_option():
 
 
 if __name__ == "__main__":
-    pytest.main([__file__])
+    test_bypass_pf()
+    # pytest.main([__file__])
 #    test_minimal_net()
 #    net = pp.create_empty_network()
 #    b = pp.create_bus(net, 110)
