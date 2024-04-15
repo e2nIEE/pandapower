@@ -135,6 +135,14 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
         **additional_traces** (list, None) - List with additional, user-created traces that will
         be appended to the simple_plotly traces before drawing all traces
 
+        **zoomlevel** (int, 11) - initial mapbox-zoomlevel on a map if `on_map=True`. Small
+        values = less zoom / larger area shown
+
+        **auto_draw_traces** (bool, True) - if True, a figure with the drawn traces is returned.
+        If False, the traces and a dict with settings is returned
+
+        **hvdc_color** (str, "cyan") - color for HVDC lines
+
     OUTPUT:
         **figure** (graph_objs._figure.Figure) figure object
     """
