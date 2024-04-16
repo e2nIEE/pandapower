@@ -8,6 +8,7 @@ import os
 import re
 import tempfile
 import zipfile
+from types import MappingProxyType
 from typing import Dict, List
 import pandas as pd
 import numpy as np
@@ -19,12 +20,14 @@ from .cim_tools import get_cim16_schema
 
 class CimParser:
 
-    def __init__(self, cim: Dict[str, Dict[str, pd.DataFrame]] = None):
+    def __init__(self, cim: Dict[str, Dict[str, pd.DataFrame]] = None, cgmes_version: str = '2.14.5'):
         """
         This class parses CIM files and loads its content to a dictionary of
         CIM profile (dict) -> CIM element type (str) -> CIM elements (DataFrame)
         """
         self.logger = logging.getLogger(self.__class__.__name__)
+        self.cgmes_version = cgmes_version
+        self.__cim_blueprint = self._initialize_cim_data_structure(cgmes_version)
         self.cim: Dict[str, Dict[str, pd.DataFrame]] = cim if cim is not None else self.get_cim_data_structure()
         self.file_names: Dict[str, str] = dict()
         self.report_container = ReportContainer()
@@ -59,7 +62,7 @@ class CimParser:
             self.set_cim_data_types()
         self.logger.info("Finished parsing CIM files.")
         self.report_container.add_log(Report(level=LogLevel.INFO, code=ReportCode.INFO_PARSING,
-                                      message="CIM parser finished parsing CIM files."))
+                                             message="CIM parser finished parsing CIM files."))
         return self
 
     def set_cim_data_types(self) -> CimParser:
@@ -96,7 +99,8 @@ class CimParser:
                         self.logger.debug("Setting data type of %s from CIM element %s as type %s" %
                                           (col, cim_element_type, data_type_col_str))
                         if col in default_values.keys():  # todo deprecated due to repair function?
-                            self.cim[profile][cim_element_type][col] = self.cim[profile][cim_element_type][col].fillna(value=default_values[col])
+                            self.cim[profile][cim_element_type][col] = self.cim[profile][cim_element_type][col].fillna(
+                                value=default_values[col])
                         if data_type_col == bool_type:
                             self.cim[profile][cim_element_type][col] = \
                                 self.cim[profile][cim_element_type][col].map(to_bool)
@@ -164,14 +168,14 @@ class CimParser:
                                              message="CIM parser finished preparing the CIM data."))
         return self
 
-    def get_cim_data_structure(self) -> Dict[str, Dict[str, pd.DataFrame]]:
+    def _initialize_cim16_data_structure(self) -> Dict[str, Dict[str, pd.DataFrame]]:
         """
-           Get the cim data structure used by the converter.
+           Get the cim data structure used by the converter for cgmes version less than 3.
            :return Dict[str, Dict[str, pd.DataFrame]]: The cim data structure used by the converter.
            """
         self.logger.debug("Returning the CIM data structure.")
-        return dict({
-            'eq': {
+        return MappingProxyType({
+            'eq': MappingProxyType({
                 'ControlArea': pd.DataFrame(columns=['rdfId', 'name', 'type']),
                 'TieFlow': pd.DataFrame(columns=['rdfId', 'Terminal', 'ControlArea', 'positiveFlowIn']),
                 'ConnectivityNode': pd.DataFrame(columns=['rdfId', 'name', 'description', 'ConnectivityNodeContainer']),
@@ -286,16 +290,16 @@ class CimParser:
                 'AnalogValue': pd.DataFrame(columns=[
                     'rdfId', 'name', 'sensorAccuracy', 'MeasurementValueSource', 'Analog', 'value']),
                 'MeasurementValueSource': pd.DataFrame(columns=['rdfId', 'name'])
-            },
-            'eq_bd': {
+            }),
+            'eq_bd': MappingProxyType({
                 'ConnectivityNode': pd.DataFrame(columns=['rdfId', 'name', 'ConnectivityNodeContainer']),
                 'BaseVoltage': pd.DataFrame(columns=['rdfId', 'name', 'nominalVoltage']),
                 'Terminal': pd.DataFrame(
                     columns=['rdfId', 'ConnectivityNode', 'ConductingEquipment', 'sequenceNumber']),
                 'EnergySource': pd.DataFrame(columns=['rdfId', 'name', 'nominalVoltage', 'EnergySchedulingType']),
                 'EnergySchedulingType': pd.DataFrame(columns=['rdfId', 'name'])
-            },
-            'ssh': {
+            }),
+            'ssh': MappingProxyType({
                 'ControlArea': pd.DataFrame(columns=['rdfId', 'netInterchange']),
                 'ExternalNetworkInjection': pd.DataFrame(columns=[
                     'rdfId', 'p', 'q', 'referencePriority', 'controlEnabled']),
@@ -331,14 +335,14 @@ class CimParser:
                 'LinearShuntCompensator': pd.DataFrame(columns=['rdfId', 'controlEnabled', 'sections']),
                 'NonlinearShuntCompensator': pd.DataFrame(columns=['rdfId', 'controlEnabled', 'sections']),
                 'EquivalentInjection': pd.DataFrame(columns=['rdfId', 'regulationTarget', 'regulationStatus', 'p', 'q'])
-            },
-            'sv': {
+            }),
+            'sv': MappingProxyType({
                 'SvVoltage': pd.DataFrame(columns=['rdfId', 'TopologicalNode', 'v', 'angle']),
                 'SvPowerFlow': pd.DataFrame(columns=['rdfId', 'Terminal', 'p', 'q']),
                 'SvShuntCompensatorSections': pd.DataFrame(columns=['rdfId', 'ShuntCompensator', 'sections']),
                 'SvTapStep': pd.DataFrame(columns=['rdfId', 'TapChanger', 'position'])
-            },
-            'tp': {
+            }),
+            'tp': MappingProxyType({
                 'TopologicalNode': pd.DataFrame(columns=[
                     'rdfId', 'name', 'description', 'ConnectivityNodeContainer', 'BaseVoltage']),
                 'DCTopologicalNode': pd.DataFrame(columns=['rdfId', 'name', 'DCEquipmentContainer']),
@@ -346,21 +350,21 @@ class CimParser:
                 'Terminal': pd.DataFrame(columns=['rdfId', 'TopologicalNode']),
                 'DCTerminal': pd.DataFrame(columns=['rdfId', 'DCTopologicalNode']),
                 'ACDCConverterDCTerminal': pd.DataFrame(columns=['rdfId', 'DCTopologicalNode'])
-            },
-            'tp_bd': {
+            }),
+            'tp_bd': MappingProxyType({
                 'TopologicalNode': pd.DataFrame(columns=['rdfId', 'name', 'ConnectivityNodeContainer', 'BaseVoltage']),
                 'ConnectivityNode': pd.DataFrame(columns=['rdfId', 'TopologicalNode'])
-            },
-            'dl': {
+            }),
+            'dl': MappingProxyType({
                 'Diagram': pd.DataFrame(columns=['rdfId', 'name']),
                 'DiagramObject': pd.DataFrame(columns=['rdfId', 'IdentifiedObject', 'Diagram', 'name']),
                 'DiagramObjectPoint': pd.DataFrame(columns=[
-                    'rdfId', 'sequenceNumber', 'xPosition', 'yPosition', 'DiagramObject'])},
-            'gl': {
+                    'rdfId', 'sequenceNumber', 'xPosition', 'yPosition', 'DiagramObject'])}),
+            'gl': MappingProxyType({
                 'CoordinateSystem': pd.DataFrame(columns=['rdfId', 'name', 'crsUrn']),
                 'Location': pd.DataFrame(columns=['rdfId', 'PowerSystemResources', 'CoordinateSystem']),
                 'PositionPoint': pd.DataFrame(columns=['rdfId', 'Location', 'sequenceNumber', 'xPosition', 'yPosition'])
-            }})
+            })})
 
     def _parse_element(self, element, parsed=None):
         if parsed is None:
@@ -512,7 +516,7 @@ class CimParser:
                             prf_content[element_type_c][col].values[prf_content[element_type_c][col].str.len().idxmax()]
                         # remove the namespace from the literal
                         prf_content[element_type_c][col] = \
-                            prf_content[element_type_c][col].str[name_space.rfind('.')+1:]
+                            prf_content[element_type_c][col].str[name_space.rfind('.') + 1:]
                 elif col_new.endswith('-about'):
                     col_new = 'rdfId'
                     prf_content[element_type_c][col] = prf_content[element_type_c][col].str[1:]
@@ -550,3 +554,21 @@ class CimParser:
 
     def get_report_container(self) -> ReportContainer:
         return self.report_container
+
+    def _initialize_cim_data_structure(self, cgmes_version: str) -> Dict[str, Dict[str, pd.DataFrame]]:
+        if cgmes_version == '2.14.5':
+            return self._initialize_cim16_data_structure()
+        if cgmes_version == '3.0':
+            return self._initialize_cim100_data_structure()
+        raise NotImplementedError(f"CGMES version {cgmes_version} is not supported.")
+
+    def _initialize_cim100_data_structure(self) -> Dict[str, Dict[str, pd.DataFrame]]:
+        raise NotImplementedError(f"CGMES version {3.0} is not supported yet.")
+
+    def get_cim_data_structure(self) -> Dict[str, Dict[str, pd.DataFrame]]:
+        cim_data_structure = {}
+        for one_profile, one_profile_dict in self.__cim_blueprint.items():
+            cim_data_structure[one_profile] = {}
+            for one_class, one_class_df in one_profile_dict.items():
+                cim_data_structure[one_profile][one_class] = one_class_df.copy(deep=True)
+        return cim_data_structure
