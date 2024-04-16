@@ -986,7 +986,6 @@ def create_line_normal(net, item, bus1, bus2, name, parallel, is_unbalanced, geo
     }
 
     if std_type is not None: #and not is_unbalanced:delete later
-        params["std_type"] = std_type
         logger.debug('creating normal line with type <%s>' % std_type)
         lid = pp.create_line(net, std_type=std_type, **params)
     else:
