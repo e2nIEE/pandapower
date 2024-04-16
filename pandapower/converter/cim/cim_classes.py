@@ -96,7 +96,7 @@ class CimParser:
                         self.logger.debug("Setting data type of %s from CIM element %s as type %s" %
                                           (col, cim_element_type, data_type_col_str))
                         if col in default_values.keys():  # todo deprecated due to repair function?
-                            self.cim[profile][cim_element_type][col].fillna(value=default_values[col], inplace=True)
+                            self.cim[profile][cim_element_type][col] = self.cim[profile][cim_element_type][col].fillna(value=default_values[col])
                         if data_type_col == bool_type:
                             self.cim[profile][cim_element_type][col] = \
                                 self.cim[profile][cim_element_type][col].map(to_bool)
@@ -519,7 +519,7 @@ class CimParser:
                 elif col_new.endswith('-ID'):
                     col_new = 'rdfId'
                 ns_dict[prf][element_type_c][col] = col_new
-            prf_content[element_type_c].rename(columns={**ns_dict[prf][element_type_c]}, inplace=True)
+            prf_content[element_type_c] = prf_content[element_type_c].rename(columns={**ns_dict[prf][element_type_c]})
         if prf not in output.keys():
             output[prf] = prf_content
         else:

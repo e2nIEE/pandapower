@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import pandapower as pp
@@ -47,7 +47,9 @@ def get_controller_order(nets, controller):
         nets = np.array(nets)
     if nets is not np.ndarray:
         nets = np.array(nets)
-    level = controller.level.fillna(0).apply(asarray).values
+    if np.any(controller.level.isnull()):
+        raise UserWarning("controller level cannot be None")
+    level = controller.level.apply(asarray).values
     # list of sorted unique levels
     level_list = sorted(set(np.concatenate(level)))
 

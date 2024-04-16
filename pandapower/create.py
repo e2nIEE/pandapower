@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -392,7 +392,11 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                              ("vm_pu", "f8"),
                              ("va_degree", "f8")],
         "_empty_res_switch": [("i_ka", "f8"),
-                              ("loading_percent", "f8")],
+                              ("loading_percent", "f8"),
+                              ("p_from_mw", "f8"),
+                              ("q_from_mvar", "f8"),
+                              ("p_to_mw", "f8"),
+                              ("q_to_mvar", "f8")],
         "_empty_res_impedance": [("p_from_mw", "f8"),
                                  ("q_from_mvar", "f8"),
                                  ("p_to_mw", "f8"),
@@ -2689,7 +2693,7 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
     _set_value_if_not_nan(net, index, xn_ohm, "xn_ohm", "trafo")
 
     # tap_phase_shifter default False
-    net.trafo.tap_phase_shifter.fillna(False, inplace=True)
+    net.trafo.tap_phase_shifter = net.trafo.tap_phase_shifter.fillna(False)
     if "tap2_phase_shifter" in net.trafo.columns:
         net.trafo.tap2_phase_shifter = net.trafo.tap2_phase_shifter.fillna(False).astype(bool_)
 
@@ -5046,10 +5050,7 @@ def _set_multiple_entries(net, table, index, preserve_dtypes=True, defaults_to_f
                 net[table][col] = val
 
     # extend the table by the frame we just created
-    try:
-        net[table] = pd.concat([net[table], dd], sort=False)
-    except ValueError:
-        net[table] = pd.concat([net[table], dd[dd.columns]], sort=False)
+    net[table] = pd.concat([net[table], dd[dd.columns[~dd.isnull().all()]]], sort=False)
 
 
     # and preserve dtypes

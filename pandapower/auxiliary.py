@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -45,13 +45,6 @@ from pandapower.pypower.idx_ssc import SSC_STATUS, SSC_BUS, SSC_INTERNAL_BUS
 from pandapower.pypower.idx_tcsc import TCSC_STATUS, TCSC_F_BUS, TCSC_T_BUS
 
 try:
-    from numba import jit
-    NUMBA_INSTALLED = True
-except ImportError:
-    from .pf.no_numba import jit
-    NUMBA_INSTALLED = False
-
-try:
     from lightsim2grid.newtonpf import newtonpf_new as newtonpf_ls
     lightsim2grid_available = True
 except ImportError:
@@ -62,6 +55,20 @@ except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
+
+def log_to_level(msg, passed_logger, level):
+    if level == "error":
+        passed_logger.error(msg)
+    elif level == "warning":
+        passed_logger.warning(msg)
+    elif level == "info":
+        passed_logger.info(msg)
+    elif level == "debug":
+        passed_logger.debug(msg)
+    elif level == "UserWarning":
+        raise UserWarning(msg)
+    elif level is None:
+        pass
 
 
 def version_check(package_name, level="UserWarning", ignore_not_installed=False):
@@ -84,6 +91,20 @@ def version_check(package_name, level="UserWarning", ignore_not_installed=False)
             raise PackageNotFoundError(
                 f"Python package '{package_name}', is needed.\r\nPlease install it. "
                 f"Possibly it can be installed via 'pip install {package_name}'.")
+
+
+try:
+    from numba import jit
+    try:
+        version_check("numba")
+        NUMBA_INSTALLED = True
+    except UserWarning:
+        msg = 'The numba version is too old.\n'
+        log_to_level(msg, logger, 'warning')
+        NUMBA_INSTALLED = False
+except ImportError:
+    from .pf.no_numba import jit
+    NUMBA_INSTALLED = False
 
 
 def soft_dependency_error(fct_name, required_packages):
@@ -322,6 +343,29 @@ def plural_s(number):
     else:
         return ""
 
+
+def ets_to_element_types(ets=None):
+    ser = pd.Series(["bus", "line", "trafo", "trafo3w", "impedance"],
+                    index=["b", "l", "t", "t3", "i"])
+    if ets is None:
+        return ser
+    elif isinstance(ets, str):
+        return ser.at[ets]
+    else:
+        return list(ser.loc[ets])
+
+
+def element_types_to_ets(element_types=None):
+    ser1 = ets_to_element_types()
+    ser2 = pd.Series(ser1.index, index=list(ser1))
+    if element_types is None:
+        return ser2
+    elif isinstance(ets, str):
+        return ser2.at[element_types]
+    else:
+        return list(ser2.loc[element_types])
+
+
 def _preserve_dtypes(df, dtypes):
     for item, dtype in list(dtypes.items()):
         if df.dtypes.at[item] != dtype:
@@ -443,21 +487,6 @@ def ensure_iterability(var, len_=None):
         len_ = len_ or 1
         var = [var] * len_
     return var
-
-
-def log_to_level(msg, passed_logger, level):
-    if level == "error":
-        passed_logger.error(msg)
-    elif level == "warning":
-        passed_logger.warning(msg)
-    elif level == "info":
-        passed_logger.info(msg)
-    elif level == "debug":
-        passed_logger.debug(msg)
-    elif level == "UserWarning":
-        raise UserWarning(msg)
-    elif level is None:
-        pass
 
 
 def read_from_net(net, element, index, variable, flag='auto'):
@@ -938,9 +967,9 @@ def _clean_up(net, res=True):
     #            res_bus.drop(xward_buses, inplace=True)
     if len(net["dcline"]) > 0:
         dc_gens = net.gen.index[(len(net.gen) - len(net.dcline) * 2):]
-        net.gen.drop(dc_gens, inplace=True)
+        net.gen = net.gen.drop(dc_gens)
         if res:
-            net.res_gen.drop(dc_gens, inplace=True)
+            net.res_gen = net.res_gen.drop(dc_gens)
 
 
 def _set_isolated_buses_out_of_service(net, ppc):
@@ -963,23 +992,15 @@ def _write_lookup_to_net(net, element, element_lookup):
 
 
 def _check_if_numba_is_installed(level="warning"):
-    msg = (
-        'numba cannot be imported and numba functions are disabled.\n'
-        'Probably the execution is slow.\n'
-        'Please install numba to gain a massive speedup.\n'
-        '(or if you prefer slow execution, set the flag numba=False to avoid this warning!)')
-
     if not NUMBA_INSTALLED:
+        msg = (
+            'numba cannot be imported and numba functions are disabled.\n'
+            'Probably the execution is slow.\n'
+            'Please install numba to gain a massive speedup.\n'
+            '(or if you prefer slow execution, set the flag numba=False to avoid this warning!)')
         log_to_level(msg, logger, level)
         return False
-    try:
-        version_check("numba")
-        return NUMBA_INSTALLED
-    except UserWarning:
-        if NUMBA_INSTALLED:
-            msg = 'The numba version is too old.\n' + msg
-        log_to_level(msg, logger, level)
-        return False
+    return NUMBA_INSTALLED
 
 
 
@@ -1242,8 +1263,8 @@ def SVabc_from_SV012(S012, V012, n_res=None, idx=None):
         idx = np.ones(n_res, dtype="bool")
     I012 = np.array(np.zeros((3, n_res)), dtype=np.complex128)
     I012[:, idx] = I_from_SV_elementwise(S012[:, idx], V012[:, idx])
-    Vabc = sequence_to_phase(V012[:, idx])
-    Iabc = sequence_to_phase(I012[:, idx])
+    Vabc = sequence_to_phase(V012)
+    Iabc = sequence_to_phase(I012)
     Sabc = S_from_VI_elementwise(Vabc, Iabc)
     return Sabc, Vabc
 

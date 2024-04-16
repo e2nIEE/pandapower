@@ -8,10 +8,10 @@ from pandapower import diagnostic
 
 try:
     import pandaplan.core.pplog as logging
-    logger = logging.logger
 except ImportError:
     import logging
-    logger = logging.getLogger(__name__)
+
+logger = logging.getLogger(__name__)
 
 def _get_pf_results(net, is_unbalanced=False):
     if not net["pf_converged"]:
@@ -32,21 +32,21 @@ def _get_pf_results_balanced(net):
                                                'res_switch' in net.keys() else pd.Series(dtype=np.float64)
     pf_bus_vm = net.res_bus.pf_vm_pu.replace(0, np.nan)
     pf_bus_va = net.res_bus.pf_va_degree
-    pf_ext_grid_p = net.res_ext_grid.pf_p
-    pf_ext_grid_q = net.res_ext_grid.pf_q
-    pf_gen_p = net.res_gen.pf_p if len(net.gen) > 0 else pd.Series([], dtype=np.float64)
-    pf_gen_q = net.res_gen.pf_q if len(net.gen) > 0 else pd.Series([], dtype=np.float64)
-    pf_ward_p = net.res_ward.pf_p if len(net.ward) > 0 else pd.Series([], dtype=np.float64)
-    pf_ward_q = net.res_ward.pf_q if len(net.ward) > 0 else pd.Series([], dtype=np.float64)
-    pf_xward_p = net.res_xward.pf_p if len(net.xward) > 0 else pd.Series([], dtype=np.float64)
-    pf_xward_q = net.res_xward.pf_q if len(net.xward) > 0 else pd.Series([], dtype=np.float64)
-    pf_sgen_p = net.res_sgen.pf_p if len(net.sgen) > 0 else pd.Series([], dtype=np.float64)
-    pf_sgen_q = net.res_sgen.pf_q if len(net.sgen) > 0 else pd.Series([], dtype=np.float64)
-    pf_load_p = net.res_load.pf_p if len(net.load) > 0 else pd.Series([], dtype=np.float64)
-    pf_load_q = net.res_load.pf_q if len(net.load) > 0 else pd.Series([], dtype=np.float64)
-    pf_line_loading = net.res_line.pf_loading if len(net.line) > 0 else pd.Series([], dtype=np.float64)
-    pf_trafo_loading = net.res_trafo.pf_loading if len(net.trafo) > 0 else pd.Series([], dtype=np.float64)
-    pf_trafo3w_loading = net.res_trafo3w.pf_loading if len(net.trafo3w) > 0 else pd.Series([], dtype=np.float64)
+    pf_ext_grid_p = net.res_ext_grid.get("pf_p", pd.Series([], dtype=np.float64))
+    pf_ext_grid_q = net.res_ext_grid.get("pf_q", pd.Series([], dtype=np.float64))
+    pf_gen_p = net.res_gen.get("pf_p", pd.Series([], dtype=np.float64))
+    pf_gen_q = net.res_gen.get("pf_q", pd.Series([], dtype=np.float64))
+    pf_ward_p = net.res_ward.get("pf_p", pd.Series([], dtype=np.float64))
+    pf_ward_q = net.res_ward.get("pf_q", pd.Series([], dtype=np.float64))
+    pf_xward_p = net.res_xward.get("pf_p", pd.Series([], dtype=np.float64))
+    pf_xward_q = net.res_xward.get("pf_q", pd.Series([], dtype=np.float64))
+    pf_sgen_p = net.res_sgen.get("pf_p", pd.Series([], dtype=np.float64))
+    pf_sgen_q = net.res_sgen.get("pf_q", pd.Series([], dtype=np.float64))
+    pf_load_p = net.res_load.get("pf_p", pd.Series([], dtype=np.float64))
+    pf_load_q = net.res_load.get("pf_q", pd.Series([], dtype=np.float64))
+    pf_line_loading = net.res_line.get("pf_loading", pd.Series([], dtype=np.float64))
+    pf_trafo_loading = net.res_trafo.get("pf_loading", pd.Series([], dtype=np.float64))
+    pf_trafo3w_loading = net.res_trafo3w.get("pf_loading", pd.Series([], dtype=np.float64))
 
     pf_results = {
         "pf_bus_vm": pf_bus_vm, "pf_bus_va": pf_bus_va, "pf_ext_grid_p": pf_ext_grid_p,
@@ -244,35 +244,23 @@ def validate_pf_conversion(net, is_unbalanced=False, **kwargs):
     logger.debug('starting verification')
     replace_zero_branches_with_switches(net)
     pf_results = _get_pf_results(net, is_unbalanced=is_unbalanced)
-    if "controller" not in net.keys() or len(net.controller) == 0:
-        try:
-            for arg in 'trafo_model check_connectivity'.split():
-                if arg in kwargs:
-                    kwargs.pop(arg)
-            if is_unbalanced:
-                logger.info("running pandapower 3ph loadflow")
-                pp.runpp_3ph(net, trafo_model="t", check_connectivity=True, **kwargs)
-            else:
-                logger.info("running pandapower loadflow")
-                pp.runpp(net, trafo_model="t", check_connectivity=True, **kwargs)
-        except Exception as err:
-            logger.error('pandapower load flow failed: %s' % err, exc_info=True)
-            diagnostic(net)
-            raise err
+
+    run_control = "controller" in net.keys() and len(net.controller) > 0
+    for arg in 'trafo_model check_connectivity'.split():
+        if arg in kwargs:
+            kwargs.pop(arg)
+    if is_unbalanced:
+        logger.info("running pandapower 3ph loadflow")
+        pp.runpp_3ph(net, trafo_model="t", check_connectivity=True, run_control=run_control, **kwargs)
     else:
-        import pandapower.control as control
-        try:
-            control.run_control(net, max_iter=50, trafo_model="t", check_connectivity=True, **kwargs)
-        except Exception as err:
-            logger.error('pandapower load flow with converter failed: %s' % err)
-            diagnostic(net)
-            raise err
+        logger.info("running pandapower loadflow")
+        pp.runpp(net, trafo_model="t", check_connectivity=True, run_control=run_control, **kwargs)
 
     all_diffs = dict()
     logger.info('pandapower net converged: %s' % net.converged)
     _set_pf_results(net, pf_results, is_unbalanced=is_unbalanced)
 
-    net.bus.name.fillna("", inplace=True)
+    net.bus.name = net.bus.name.fillna("")
     only_in_pandapower = np.union1d(net.bus[net.bus.name.str.endswith("_aux")].index,
                                     net.bus[net.bus.type == "ls"].index)
     in_both = np.setdiff1d(net.bus.index, only_in_pandapower)

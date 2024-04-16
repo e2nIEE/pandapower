@@ -27,10 +27,10 @@ class AcLineSegmentsCim16:
         # -------- lines --------
         if 'line' in eq_ac_line_segments['kindOfType'].values:
             line_df = eq_ac_line_segments.loc[eq_ac_line_segments['kindOfType'] == 'line']
-            line_df.rename(columns={
+            line_df = line_df.rename(columns={
                 'rdfId': sc['o_id'], 'rdfId_Terminal': sc['t_from'], 'rdfId_Terminal2': sc['t_to'],
                 'index_bus': 'from_bus', 'index_bus2': 'to_bus', 'length': 'length_km',
-                'shortCircuitEndTemperature': 'endtemp_degree'}, inplace=True)
+                'shortCircuitEndTemperature': 'endtemp_degree'})
             line_df[sc['o_cl']] = 'ACLineSegment'
             line_df['in_service'] = line_df.connected & line_df.connected2
             line_df['r_ohm_per_km'] = abs(line_df.r) / line_df.length_km
@@ -52,9 +52,9 @@ class AcLineSegmentsCim16:
         if 'switch' in eq_ac_line_segments['kindOfType'].values:
             switch_df = eq_ac_line_segments.loc[eq_ac_line_segments['kindOfType'] == 'switch']
 
-            switch_df.rename(columns={
+            switch_df = switch_df.rename(columns={
                 'rdfId': sc['o_id'], 'index_bus': 'bus', 'index_bus2': 'element', 'rdfId_Terminal': sc['t_bus'],
-                'rdfId_Terminal2': sc['t_ele']}, inplace=True)
+                'rdfId_Terminal2': sc['t_ele']})
             switch_df['et'] = 'b'
             switch_df['type'] = None
             switch_df['z_ohm'] = 0
@@ -107,20 +107,20 @@ class AcLineSegmentsCim16:
         eq_ac_line_segments.reset_index(inplace=True)
         # now merge with OperationalLimitSets and CurrentLimits
         eq_operational_limit_sets = self.cimConverter.cim['eq']['OperationalLimitSet'][['rdfId', 'Terminal']]
-        eq_operational_limit_sets.rename(columns={'rdfId': 'rdfId_OperationalLimitSet',
-                                                  'Terminal': 'rdfId_Terminal'}, inplace=True)
+        eq_operational_limit_sets = eq_operational_limit_sets.rename(columns={'rdfId': 'rdfId_OperationalLimitSet',
+                                                  'Terminal': 'rdfId_Terminal'})
         eq_ac_line_segments = pd.merge(eq_ac_line_segments, eq_operational_limit_sets, how='left',
                                        on='rdfId_Terminal')
         eq_current_limits = self.cimConverter.cim['eq']['CurrentLimit'][['rdfId', 'OperationalLimitSet', 'value']]
-        eq_current_limits.rename(columns={'rdfId': 'rdfId_CurrentLimit',
-                                          'OperationalLimitSet': 'rdfId_OperationalLimitSet'}, inplace=True)
+        eq_current_limits = eq_current_limits.rename(columns={'rdfId': 'rdfId_CurrentLimit',
+                                          'OperationalLimitSet': 'rdfId_OperationalLimitSet'})
         eq_ac_line_segments = pd.merge(eq_ac_line_segments, eq_current_limits, how='left',
                                        on='rdfId_OperationalLimitSet')
         eq_ac_line_segments.value = eq_ac_line_segments.value.astype(float)
         # sort by rdfId, sequenceNumber and value. value is max_i_ka, choose the lowest one if more than one is
         # given (A line may have more than one max_i_ka in CIM, different modes e.g. normal)
-        eq_ac_line_segments.sort_values(by=['rdfId', 'sequenceNumber', 'value'], inplace=True)
-        eq_ac_line_segments.drop_duplicates(['rdfId', 'rdfId_Terminal'], keep='first', inplace=True)
+        eq_ac_line_segments = eq_ac_line_segments.sort_values(by=['rdfId', 'sequenceNumber', 'value'])
+        eq_ac_line_segments = eq_ac_line_segments.drop_duplicates(['rdfId', 'rdfId_Terminal'], keep='first')
 
         # copy the columns which are needed to reduce the eq_ac_line_segments to one row per line
         eq_ac_line_segments['rdfId_Terminal2'] = eq_ac_line_segments['rdfId_Terminal'].copy()
@@ -135,7 +135,7 @@ class AcLineSegmentsCim16:
         eq_ac_line_segments.connected2 = eq_ac_line_segments.connected2.iloc[1:].reset_index().connected2
         eq_ac_line_segments.index_bus2 = eq_ac_line_segments.index_bus2.iloc[1:].reset_index().index_bus2
         eq_ac_line_segments.value2 = eq_ac_line_segments.value2.iloc[1:].reset_index().value2
-        eq_ac_line_segments.drop_duplicates(['rdfId'], keep='first', inplace=True)
+        eq_ac_line_segments = eq_ac_line_segments.drop_duplicates(['rdfId'], keep='first')
         # get the max_i_ka
         eq_ac_line_segments['max_i_ka'] = eq_ac_line_segments['value'].fillna(eq_ac_line_segments['value2']) * 1e-3
 

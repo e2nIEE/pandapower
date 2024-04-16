@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -211,7 +211,7 @@ def write_pq_results_to_element(net, ppc, element, suffix=None):
     # P result in mw to element
     net[res_]["p_mw"].values[:] = el_data[p_mw].values * scaling * element_in_service
     if is_controllable:
-        net[res_]["p_mw"].loc[controlled_elements] = ppc["gen"][gen_idx, PG] * gen_sign
+        net[res_].loc[controlled_elements, "p_mw"] = ppc["gen"][gen_idx, PG] * gen_sign
 
     # add results from distributed slack calculation for xwards from ppc instead of the element table
     if net._options['distributed_slack'] and element == "xward" and np.any(net.xward.loc[element_in_service, 'slack_weight'].values != 0):
@@ -221,7 +221,7 @@ def write_pq_results_to_element(net, ppc, element, suffix=None):
         # Q result in mvar to element
         net[res_]["q_mvar"].values[:] = el_data[q_mvar].values * scaling * element_in_service
         if is_controllable:
-            net[res_]["q_mvar"].loc[controlled_elements] = ppc["gen"][gen_idx, QG] * gen_sign
+            net[res_].loc[controlled_elements, "q_mvar"] = ppc["gen"][gen_idx, QG] * gen_sign
     return net
 
 
@@ -489,8 +489,8 @@ def _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq):
             net["res_svc"].loc[:, "q_mvar"] = q_svc  # write all because of zeros
             net["res_svc"].loc[svc_is, "x_ohm"] = ppc["svc"][svc_is, SVC_X_PU] * baseZ[svcidx[svc_is]]
             q = np.hstack([q, q_svc])
-        b = np.hstack([b, svc["bus"].values])   
-            
+        b = np.hstack([b, svc["bus"].values])
+
     # ssc = net["ssc"]  # todo: uncomment this after PandaModels net also has this key
     ssc = net.get("ssc", np.array([]))
     if len(ssc):

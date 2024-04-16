@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import gc
@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 from packaging.version import Version
 
-import pandapower as pp
+from pandapower.auxiliary import ets_to_element_types
 
 from pandapower import __version__
 
@@ -140,7 +140,7 @@ def next_bus(net, bus, element_id, et='line', **kwargs):
 
 def get_connected_elements(net, element_type, buses, respect_switches=True, respect_in_service=False):
     """
-     Returns elements connected to a given bus.
+     Returns elements connected to a given buses.
 
      INPUT:
         **net** (pandapowerNet)
@@ -343,7 +343,7 @@ def get_connected_buses(net, buses, consider=("l", "s", "t", "t3", "i"), respect
 
 def get_connected_buses_at_element(net, element_index, element_type, respect_in_service=False):
     """
-     Returns buses connected to a given line, switch or trafo. In case of a bus switch, two buses
+     Returns buses connected to a given branch element. In case of a bus switch, two buses
      will be returned, else one.
 
      INPUT:
@@ -400,7 +400,37 @@ def get_connected_buses_at_element(net, element_index, element_type, respect_in_
     return cb
 
 
-def get_connected_switches(net, buses, consider=('b', 'l', 't', 't3'), status="all"):
+def get_connected_buses_at_switches(net, switches):
+    """
+    Returns a set of buses connected to given switches.
+
+    INPUT:
+        **net** (pandapowerNet)
+
+        **switches** (single integer or iterable of ints)
+
+    OUTPUT:
+       **buses** (set) - Returns connected buses
+    """
+    if not hasattr(switches, "__iter__"):
+        switches = [switches]
+    switches = np.array(switches)
+    buses = set(net.switch.bus.loc[switches])
+    bebd = branch_element_bus_dict()
+    for element_type, et in zip(["bus", "line", "trafo", "trafo3w"], ["b", "l", "t", "t3"]):
+        is_et = (net.switch.et.loc[switches] == et).values
+        if not any(is_et):
+            continue
+        elif et == "b":
+            buses |= set(net.switch.element.loc[switches[is_et]])
+            continue
+        for bus_col in bebd[element_type]:
+            buses |= set(net[element_type].loc[net.switch.element.loc[switches[is_et]], bus_col])
+    return buses
+
+
+def get_connected_switches(net, buses, consider=('b', 'l', 't', 't3', 'i'), status="all",
+                           include_element_connections=False):
     """
     Returns switches connected to given buses.
 
@@ -410,15 +440,20 @@ def get_connected_switches(net, buses, consider=('b', 'l', 't', 't3'), status="a
         **buses** (single integer or iterable of ints)
 
     OPTIONAL:
-        **consider** (iterable, ("l", "s", "t", "t3))    - Determines, which types of connections
+        **consider** (iterable, ("l", "s", "t", "t3)) -  Determines, which types of connections
                                                       will be considered.
                                                       l: lines
                                                       b: bus-bus-switches
                                                       t: transformers
                                                       t3: 3W transformers
+                                                      i: impedance
 
-        **status** (string, ("all", "closed", "open"))    - Determines, which switches will
+        **status** (string, ("all", "closed", "open")) -  Determines, which switches will
                                                             be considered
+
+        **include_element_connections** (bool, False) - If True, also the other bus of the connected
+        element, e.g. the other line ending, is included
+
     OUTPUT:
        **cl** (set) - Returns connected switches.
     """
@@ -436,6 +471,9 @@ def get_connected_switches(net, buses, consider=('b', 'l', 't', 't3'), status="a
             logger.warning("Unknown switch status \"%s\" selected! "
                            "Selecting all switches by default." % status)
 
+    if include_element_connections:
+        bebd = branch_element_bus_dict()
+
     cs = set()
     for et in consider:
         if et == 'b':
@@ -446,7 +484,14 @@ def get_connected_switches(net, buses, consider=('b', 'l', 't', 't3'), status="a
         else:
             cs |= set(net['switch'].index[(net['switch']['bus'].isin(buses)) &
                                           (net['switch']['et'] == et) & switch_selection])
-
+            if include_element_connections:
+                element_type = ets_to_element_types(et)
+                sw_idx = net.switch.index[(net.switch.et == et) & switch_selection]
+                element_buses = net[element_type].loc[list(net.switch.element.loc[sw_idx]),
+                                                      bebd[element_type]]
+                isin_df = pd.concat([element_buses[col].isin(buses) for col in element_buses],
+                                    axis=1)
+                cs |= set(sw_idx[isin_df.any(axis=1)])
     return cs
 
 
