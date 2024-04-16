@@ -226,9 +226,6 @@ class ConnectivityNodesCim16:
                 self.cimConverter.report_container.add_log(Report(
                     level=LogLevel.WARNING, code=ReportCode.WARNING_CONVERTING,
                     message="The ConnectivityNode with RDF ID %s has %s TopologicalNodes!" % (rdfId, count)))
-            # raise ValueError("The number of ConnectivityNodes increased after merging with Terminals, number of "
-            #                  "ConnectivityNodes before merge: %s, number of ConnectivityNodes after merge: %s" %
-            #                  (connectivity_nodes_size, connectivity_nodes.index.size))
             connectivity_nodes.drop_duplicates(subset=['rdfId'], keep='first', inplace=True)
         # add the busbars
         bb = self.cimConverter.cim['eq']['BusbarSection'][['rdfId', 'name']]
