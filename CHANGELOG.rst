@@ -3,15 +3,16 @@ Change Log
 
 [upcoming release] - 2024-..-..
 -------------------------------
+- [ADDED] switch results p and q
+- [ADDED] PowerFactory converter: option to export lines with sections as a single line with averaged-out impedance, or export line sections as separate individual lines
+- [ADDED] extend plotly function: add zoomlevel-parameter and hvdc lines
+- [CHANGED] plotting for voltage profile considers also gens that are slacks and only ext_grids and slack gens that are in service
 - [CHANGED] switched from setup.py to pyproject.toml
 - [CHANGED] updated upload_release.py to not call setup.py anymore (see https://packaging.python.org/en/latest/discussions/setup-py-deprecated/)
 - [CHANGED] updated upload_release.py to install the uploadad package and print the version
 - [CHANGED] updated MANIFEST.in to exclude the ci files from the wheel distribution
-- [FIXED] further futurewarnings and deprecation warnings
-- [ADDED] switch results p and q
-- [CHANGED] plotting for voltage profile considers also gens that are slacks and only ext_grids and slack gens that are in service
-- [ADDED] PowerFactory converter: option to export lines with sections as a single line with averaged-out impedance, or export line sections as separate individual lines
 - [FIXED] massive performance drag in large grids due to initializing Ybus for FACTS with np.zeros instead of using sparse matrix initialization
+- [FIXED] further futurewarnings and deprecation warnings
 
 [2.14.6] - 2024-04-02
 -------------------------------
