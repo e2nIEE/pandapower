@@ -29,6 +29,8 @@ def from_pf(dict_net, pv_as_slack=True, pf_variable_p_loads='plini', pf_variable
     line_dict = {}
     global trafo_dict
     trafo_dict = {}
+    global switch_dict
+    switch_dict = {}
     logger.debug("__name__: %s" % __name__)
     logger.debug('started from_pf')
     logger.info(logger.__dict__)
@@ -2441,6 +2443,7 @@ def create_coup(net, item, is_fuse=False):
     cd = pp.create_switch(net, name=name, bus=bus1, element=bus2, et='b',
                           closed=switch_is_closed,
                           type=switch_usage)
+    switch_dict[item] = cd
     logger.debug('created switch at index <%d>, closed = %s, usage = %s' %
                  (cd, switch_is_closed, switch_usage))
 
@@ -2687,6 +2690,11 @@ def create_stactrl(net, item):
             res_element_table = "res_trafo"
             res_element_index = trafo_dict[q_control_element]
             variable = "q_hv_mvar" if q_control_side == 0 else "q_lv_mvar"
+        elif element_class == "ElmCoup":
+            res_element_table = "res_switch"
+            res_element_index = switch_dict[q_control_element]
+            net.switch.at[res_element_index, "z_ohm"] = 1e-3
+            variable = "q_from_mvar" if q_control_side == 0 else "q_to_mvar"
         else:
             logger.error(f"{item}: only line, trafo element flows can be controlled, {element_class=}")
             return
