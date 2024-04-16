@@ -211,7 +211,8 @@ class ConnectivityNodesCim16:
         if 'TopologicalNode_2' in connectivity_nodes.columns:
             connectivity_nodes['TopologicalNode'].fillna(connectivity_nodes['TopologicalNode_2'], inplace=True)
             connectivity_nodes.drop(columns=['TopologicalNode_2'], inplace=True)
-        if connectivity_nodes.index.size != connectivity_nodes_size:
+        if connectivity_nodes.index.size != connectivity_nodes_size and not self.cimConverter.kwargs.get(
+                'ignore_errors', False):
             self.logger.warning("There is a problem at the busses!")
             self.cimConverter.report_container.add_log(Report(
                 level=LogLevel.WARNING, code=ReportCode.WARNING_CONVERTING,
