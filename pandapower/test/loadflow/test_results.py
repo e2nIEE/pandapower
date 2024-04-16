@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import pandas as pd
 import pytest
-from numpy import in1d, isnan, isclose
+from numpy import in1d, isnan, isclose, allclose
 
 import pandapower as pp
 import pandapower.control
@@ -213,7 +213,7 @@ def test_trafo(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=1e-2, l_tol=1e
     assert abs(net.res_bus.va_degree.at[b3] - va3) < va_tol
 
     # sincal results to check pi-equivalent circuit model
-    net.trafo.parallel.loc[trafos] = 1  # sincal is tested without parallel transformers
+    net.trafo.loc[trafos, "parallel"] = 1  # sincal is tested without parallel transformers
     runpp_with_consistency_checks(net, trafo_model="pi", trafo_loading="current")
 
     load1 = 57.637
@@ -278,8 +278,8 @@ def test_tap_dependent_impedance(result_test_network):
     net.trafo.loc[0, ['vk_percent_characteristic', 'vkr_percent_characteristic']] = idx_vk, idx_vkr
 
     # first, make sure there is no change for neutral
-    net.trafo.tap_pos.at[0] = net.trafo.tap_neutral.at[0]
-    net0.trafo.tap_pos.at[0] = net.trafo.tap_neutral.at[0]
+    net.trafo.at[0, "tap_pos"] = net.trafo.tap_neutral.at[0]
+    net0.trafo.at[0, "tap_pos"] = net.trafo.tap_neutral.at[0]
     pp.runpp(net)
     pp.runpp(net0)
     assert_res_equal(net, net0)
@@ -289,11 +289,11 @@ def test_tap_dependent_impedance(result_test_network):
     for pos, factor in (("tap_min", 0.9), ("tap_max", 1.1)):
         assert isclose(characteristic_vk(net.trafo[pos].at[0]), net.trafo.vk_percent.at[0]*factor, rtol=0, atol=1e-12)
         assert isclose(characteristic_vkr(net.trafo[pos].at[0]), net.trafo.vkr_percent.at[0]*factor, rtol=0, atol=1e-12)
-        net0.trafo.vk_percent.at[0] = net.trafo.vk_percent.at[0]*factor
-        net0.trafo.vkr_percent.at[0] = net.trafo.vkr_percent.at[0]*factor
-        net0.trafo.tap_pos.at[0] = net.trafo[pos].at[0]
+        net0.trafo.at[0, "vk_percent"] = net.trafo.vk_percent.at[0]*factor
+        net0.trafo.at[0, "vkr_percent"] = net.trafo.vkr_percent.at[0]*factor
+        net0.trafo.at[0, "tap_pos"] = net.trafo[pos].at[0]
         pp.runpp(net0)
-        net.trafo.tap_pos.at[0] = net.trafo[pos].at[0]
+        net.trafo.at[0, "tap_pos"] = net.trafo[pos].at[0]
         pp.runpp(net)
         assert_res_equal(net, net0)
 
@@ -684,6 +684,31 @@ def test_bus_bus_switch(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3,
     assert abs(net.res_bus.vm_pu.at[b2] - v2) < v_tol
     assert abs(net.res_bus.vm_pu.at[b3] - v2) < v_tol
     assert abs(net.res_bus.vm_pu.at[b2] == net.res_bus.vm_pu.at[b2])
+
+    for col in ("p_from_mw", "p_to_mw", "q_from_mvar", "q_to_mvar", "i_ka", "loading_percent"):
+        assert col in net.res_switch
+
+    assert isnan(net.res_switch.p_from_mw).all()
+
+    # now test with some switches that have non-zero impedance:
+    net.switch.loc[[2,3], "z_ohm"] = 1e-3
+    pp.runpp(net)
+
+    p_from_ref = net.res_ext_grid.p_mw[12]
+    p_to_ref = - net.res_line.p_from_mw[28]
+    q_from_ref = net.res_ext_grid.q_mvar[12]
+    q_to_ref = - net.res_line.q_from_mvar[28]
+
+    assert isclose(net.res_switch.p_from_mw.at[2], p_from_ref, rtol=0, atol=1e-6)
+    assert isclose(net.res_switch.p_to_mw.at[2], p_to_ref, rtol=0, atol=1e-6)
+    assert isclose(net.res_switch.q_from_mvar.at[2], q_from_ref, rtol=0, atol=1e-6)
+    assert isclose(net.res_switch.q_to_mvar.at[2], q_to_ref, rtol=0, atol=1e-6)
+
+    # also test with open switch that have non-zero impedance:
+    net.switch.loc[[2], "closed"] = False
+    pp.runpp(net)
+
+    assert isnan(net.res_switch.p_from_mw[2])
 
 
 def test_enforce_q_lims(v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):

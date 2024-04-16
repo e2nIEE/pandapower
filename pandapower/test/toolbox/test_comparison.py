@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
@@ -28,7 +28,7 @@ def test_nets_equal():
     net = copy.deepcopy(original)
 
     # detecting removed element
-    net["bus"].drop(net.bus.index[0], inplace=True)
+    net["bus"] = net["bus"].drop(net.bus.index[0])
     assert not pandapower.toolbox.nets_equal(original, net)
     assert not pandapower.toolbox.nets_equal(net, original)
     net = copy.deepcopy(original)
@@ -51,7 +51,7 @@ def test_nets_equal():
     assert pandapower.toolbox.nets_equal(net, original, atol=0.1)
 
     # check controllers
-    original.trafo.tap_side.fillna("hv", inplace=True)
+    original.trafo.tap_side = original.trafo.tap_side.fillna("hv")
     net1 = original.deepcopy()
     net2 = original.deepcopy()
     pp.control.ContinuousTapControl(net1, 0, 1.0)

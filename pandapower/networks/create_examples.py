@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -371,7 +371,7 @@ def example_multivoltage():
                              name='Switch %s - %s' % (net.bus.name.at[bus], line['name']))
 
     open_switch_id = net.switch[(net.switch.name == 'Switch Bus MV5 - MV Line5')].index
-    net.switch.closed.loc[open_switch_id] = False
+    net.switch.loc[open_switch_id, "closed"] = False
 
     # LV
     # Bus-line switches
