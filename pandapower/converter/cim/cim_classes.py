@@ -428,19 +428,20 @@ class CimParser:
             profile_list = [profile_list]
         for one_profile in profile_list:
             if '/EquipmentCore/' in one_profile or '/EquipmentOperation/' in one_profile or \
-                    '/EquipmentShortCircuit/' in one_profile:
+                    '/EquipmentShortCircuit/' in one_profile or '/CoreEquipment-EU/' in one_profile:
                 return 'eq'
-            elif '/SteadyStateHypothesis/' in one_profile:
+            elif '/SteadyStateHypothesis/' in one_profile or '/SteadyStateHypothesis-EU/' in one_profile:
                 return 'ssh'
-            elif '/StateVariables/' in one_profile:
+            elif '/StateVariables/' in one_profile or '/StateVariables-EU/' in one_profile:
                 return 'sv'
-            elif '/Topology/' in one_profile:
+            elif '/Topology/' in one_profile or '/Topology-EU/' in one_profile:
                 return 'tp'
-            elif '/DiagramLayout/' in one_profile:
+            elif '/DiagramLayout/' in one_profile or '/DiagramLayout-EU/' in one_profile:
                 return 'dl'
-            elif '/GeographicalLocation/' in one_profile:
+            elif '/GeographicalLocation/' in one_profile or '/GeographicalLocation-EU/' in one_profile:
                 return 'gl'
-            elif '/EquipmentBoundary/' in one_profile or '/EquipmentBoundaryOperation/' in one_profile:
+            elif ('/EquipmentBoundary/' in one_profile or '/EquipmentBoundaryOperation/' in one_profile
+                  or '/EquipmentBoundary-EU/' in one_profile):
                 return 'eq_bd'
             elif '/TopologyBoundary/' in one_profile:
                 return 'tp_bd'
