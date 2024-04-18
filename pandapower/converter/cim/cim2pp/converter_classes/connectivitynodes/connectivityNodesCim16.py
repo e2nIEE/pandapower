@@ -211,10 +211,8 @@ class ConnectivityNodesCim16:
         if 'TopologicalNode_2' in connectivity_nodes.columns:
             connectivity_nodes['TopologicalNode'].fillna(connectivity_nodes['TopologicalNode_2'], inplace=True)
             connectivity_nodes = connectivity_nodes.drop(columns=['TopologicalNode_2'])
-        if connectivity_nodes.index.size != connectivity_nodes_size:
-            connectivity_nodes.drop(columns=['TopologicalNode_2'], inplace=True)
         if connectivity_nodes.index.size != connectivity_nodes_size and not self.cimConverter.kwargs.get(
-                'ignore_errors', False):
+                'ignore_errors', True):
             self.logger.warning("There is a problem at the busses!")
             self.cimConverter.report_container.add_log(Report(
                 level=LogLevel.WARNING, code=ReportCode.WARNING_CONVERTING,
@@ -237,19 +235,8 @@ class ConnectivityNodesCim16:
         bb = bb.drop_duplicates(subset=['rdfId'], keep='first')
         connectivity_nodes = pd.merge(connectivity_nodes, bb, how='left', on='rdfId')
 
-        connectivity_nodes = connectivity_nodes.rename(columns={'rdfId': sc['o_id'], 'TopologicalNode': sc['ct'], 'nominalVoltage': 'vn_kv',
-                                           'name_substation': 'zone'})
-            connectivity_nodes.drop_duplicates(subset=['rdfId'], keep='first', inplace=True)
-        # add the busbars
-        bb = self.cimConverter.cim['eq']['BusbarSection'][['rdfId', 'name']]
-        bb.rename(columns={'rdfId': 'busbar_id', 'name': 'busbar_name'}, inplace=True)
-        bb = pd.merge(bb, self.cimConverter.cim['eq']['Terminal'][['ConnectivityNode', 'ConductingEquipment']].rename(
-            columns={'ConnectivityNode': 'rdfId', 'ConductingEquipment': 'busbar_id'}), how='left', on='busbar_id')
-        bb.drop_duplicates(subset=['rdfId'], keep='first', inplace=True)
-        connectivity_nodes = pd.merge(connectivity_nodes, bb, how='left', on='rdfId')
-
-        connectivity_nodes.rename(columns={'rdfId': sc['o_id'], 'TopologicalNode': sc['ct'], 'nominalVoltage': 'vn_kv',
-                                           'name_substation': 'zone'}, inplace=True)
+        connectivity_nodes = connectivity_nodes.rename(columns={'rdfId': sc['o_id'], 'TopologicalNode': sc['ct'],
+                                                                'nominalVoltage': 'vn_kv', 'name_substation': 'zone'})
         connectivity_nodes['in_service'] = True
         connectivity_nodes['type'] = 'b'
         return connectivity_nodes, eqssh_terminals
