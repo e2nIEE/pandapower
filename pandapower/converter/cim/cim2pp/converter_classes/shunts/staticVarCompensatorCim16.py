@@ -37,8 +37,11 @@ class StaticVarCompensatorCim16:
                                 how='left', left_on='rdfId_Terminal', right_on='Terminal')
         eq_stat_coms['q_mvar'].fillna(eq_stat_coms['q'], inplace=True)
         eq_stat_coms.rename(columns={'rdfId_Terminal': sc['t'], 'rdfId': sc['o_id'], 'p': 'p_mw',
-                                     'voltageSetPoint': 'vn_kv', 'index_bus': 'bus', 'connected': 'in_service'},
+                                     'voltageSetPoint': 'vn_kv', 'index_bus': 'bus'},
                             inplace=True)
+        if 'inService' not in eq_stat_coms.columns:
+            eq_stat_coms['inService'] = True
+        eq_stat_coms['in_service'] = eq_stat_coms['connected'] & eq_stat_coms['inService']
         eq_stat_coms['step'] = 1
         eq_stat_coms['max_step'] = 1
         return eq_stat_coms

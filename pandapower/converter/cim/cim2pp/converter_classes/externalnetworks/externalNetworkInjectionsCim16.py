@@ -70,7 +70,9 @@ class ExternalNetworkInjectionsCim16:
                              how='left', left_on='index_bus', right_index=True)
         eqssh_eni = pd.merge(eqssh_eni, self.cimConverter.cim['sv']['SvVoltage'][['TopologicalNode', 'v', 'angle']],
                              how='left', left_on=sc['ct'], right_on='TopologicalNode')
-        eqssh_eni['controlEnabled'] = eqssh_eni['controlEnabled'] & eqssh_eni['enabled']
+        if 'inService' not in eqssh_eni.columns:
+            eqssh_eni['inService'] = True
+        eqssh_eni['controlEnabled'] = eqssh_eni['controlEnabled'] & eqssh_eni['enabled'] & eqssh_eni['inService']
         eqssh_eni['vm_pu'] = eqssh_eni['targetValue'] / eqssh_eni['vn_kv']  # voltage from regulation
         eqssh_eni['vm_pu'].fillna(eqssh_eni['v'] / eqssh_eni['vn_kv'], inplace=True)  # voltage from measurement
         eqssh_eni['vm_pu'].fillna(1., inplace=True)  # default voltage

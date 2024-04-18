@@ -31,8 +31,11 @@ class EnergyConsumersCim16:
     def _prepare_energy_consumers_cim16(self) -> pd.DataFrame:
         eqssh_energy_consumers = self.cimConverter.merge_eq_ssh_profile('EnergyConsumer', add_cim_type_column=True)
         eqssh_energy_consumers = pd.merge(eqssh_energy_consumers, self.cimConverter.bus_merge, how='left', on='rdfId')
-        eqssh_energy_consumers = eqssh_energy_consumers.rename(columns={'rdfId': sc['o_id'], 'rdfId_Terminal': sc['t'], 'index_bus': 'bus',
-                                               'connected': 'in_service', 'p': 'p_mw', 'q': 'q_mvar'})
+        eqssh_energy_consumers = eqssh_energy_consumers.rename(columns={'rdfId': sc['o_id'], 'rdfId_Terminal': sc['t'],
+                                                                        'index_bus': 'bus', 'p': 'p_mw', 'q': 'q_mvar'})
+        if 'inService' not in eqssh_energy_consumers.columns:
+            eqssh_energy_consumers['inService'] = True
+        eqssh_energy_consumers['in_service'] = eqssh_energy_consumers['connected'] & eqssh_energy_consumers['inService']
         eqssh_energy_consumers['const_i_percent'] = 0.
         eqssh_energy_consumers['const_z_percent'] = 0.
         eqssh_energy_consumers['scaling'] = 1.

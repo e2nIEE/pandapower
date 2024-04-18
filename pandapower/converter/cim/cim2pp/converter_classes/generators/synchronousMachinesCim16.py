@@ -133,8 +133,11 @@ class SynchronousMachinesCim16:
         eqssh_synchronous_machines['scaling'] = 1.
         eqssh_synchronous_machines['generator_type'] = 'current_source'
         eqssh_synchronous_machines = eqssh_synchronous_machines.rename(columns={'rdfId_Terminal': sc['t'], 'rdfId': sc['o_id'],
-                                                   'connected': 'in_service', 'index_bus': 'bus',
-                                                   'minOperatingP': 'min_p_mw', 'maxOperatingP': 'max_p_mw',
+                                                   'index_bus': 'bus', 'minOperatingP': 'min_p_mw', 'maxOperatingP': 'max_p_mw',
                                                    'minQ': 'min_q_mvar', 'maxQ': 'max_q_mvar',
                                                    'ratedPowerFactor': 'cos_phi'})
+        if 'inService' not in eqssh_synchronous_machines.columns:
+            eqssh_synchronous_machines['inService'] = True
+        eqssh_synchronous_machines['in_service'] = (eqssh_synchronous_machines['connected']
+                                                    & eqssh_synchronous_machines['inService'])
         return eqssh_synchronous_machines

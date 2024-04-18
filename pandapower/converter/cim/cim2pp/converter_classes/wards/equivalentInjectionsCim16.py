@@ -48,9 +48,12 @@ class EquivalentInjectionsCim16:
         eqssh_ei.nominalVoltage = eqssh_ei.nominalVoltage.fillna(eqssh_ei.vn_kv)
         eqssh_ei['regulationStatus'].fillna(False, inplace=True)
         eqssh_ei['vm_pu'] = eqssh_ei.regulationTarget / eqssh_ei.nominalVoltage
-        eqssh_ei.rename(columns={'rdfId_Terminal': sc['t'], 'rdfId': sc['o_id'], 'connected': 'in_service',
+        eqssh_ei.rename(columns={'rdfId_Terminal': sc['t'], 'rdfId': sc['o_id'],
                                  'index_bus': 'bus', 'p': 'ps_mw', 'q': 'qs_mvar'},
                         inplace=True)
+        if 'inService' not in eqssh_ei.columns:
+            eqssh_ei['inService'] = True
+        eqssh_ei['in_service'] = eqssh_ei['connected'] & eqssh_ei['inService']
         eqssh_ei['pz_mw'] = 0.
         eqssh_ei['qz_mvar'] = 0.
         eqssh_ei['r_ohm'] = 0.
