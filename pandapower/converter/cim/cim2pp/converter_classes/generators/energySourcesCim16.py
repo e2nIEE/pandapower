@@ -56,10 +56,9 @@ class EnergySourceCim16:
         eqssh_energy_sources['scaling'] = 1.
         eqssh_energy_sources['current_source'] = True
         eqssh_energy_sources['generator_type'] = 'current_source'
-        if 'inService' not in eqssh_energy_sources.columns:
-            eqssh_energy_sources['inService'] = True
-        eqssh_energy_sources['in_service'] = (eqssh_energy_sources['connected']
-                                              & eqssh_energy_sources['inService'])
+        if 'inService' in eqssh_energy_sources.columns:
+            eqssh_energy_sources['connected'] = (eqssh_energy_sources['connected']
+                                                 & eqssh_energy_sources['inService'])
         eqssh_energy_sources = eqssh_energy_sources.rename(columns={'rdfId_Terminal': sc['t'], 'rdfId': sc['o_id'],
-                                                                    'index_bus': 'bus'})
+                                                                    'connected': 'in_service', 'index_bus': 'bus'})
         return eqssh_energy_sources

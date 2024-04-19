@@ -60,6 +60,8 @@ class AsynchronousMachinesCim16:
         eqssh_generating_units = eqssh_generating_units.drop('name', axis=1)
         eqssh_asynchronous_machines = pd.merge(eqssh_asynchronous_machines, eqssh_generating_units,
                                                how='left', on='GeneratingUnit')
+        eqssh_asynchronous_machines['inService'] = (eqssh_asynchronous_machines['inService_x']
+                                                    & eqssh_asynchronous_machines['inService_y'])
         eqssh_asynchronous_machines = pd.merge(eqssh_asynchronous_machines, self.cimConverter.bus_merge, how='left',
                                                on='rdfId')
         eqssh_asynchronous_machines['p_mw'] = -eqssh_asynchronous_machines['p']
@@ -71,16 +73,15 @@ class AsynchronousMachinesCim16:
         eqssh_asynchronous_machines['generator_type'] = 'async'
         eqssh_asynchronous_machines['loading_percent'] = \
             100 * eqssh_asynchronous_machines['p_mw'] / eqssh_asynchronous_machines['ratedMechanicalPower']
-        eqssh_asynchronous_machines = eqssh_asynchronous_machines.rename(
-            columns={'rdfId_Terminal': sc['t'], 'rdfId': sc['o_id'],
-                     'index_bus': 'bus', 'rxLockedRotorRatio': 'rx', 'iaIrRatio': 'lrc_pu',
-                     'ratedPowerFactor': 'cos_phi', 'ratedU': 'vn_kv',
-                     'efficiency': 'efficiency_n_percent',
-                     'ratedMechanicalPower': 'pn_mech_mw'})
-        if 'inService' not in eqssh_asynchronous_machines.columns:
-            eqssh_asynchronous_machines['inService'] = True
-        eqssh_asynchronous_machines['in_service'] = (eqssh_asynchronous_machines['connected']
-                                                     & eqssh_asynchronous_machines['inService'])
+        if 'inService' in eqssh_asynchronous_machines.columns:
+            eqssh_asynchronous_machines['connected'] = (eqssh_asynchronous_machines['connected']
+                                                        & eqssh_asynchronous_machines['inService'])
+        eqssh_asynchronous_machines = eqssh_asynchronous_machines.rename(columns={'rdfId_Terminal': sc['t'], 'rdfId': sc['o_id'],
+                                                    'connected': 'in_service', 'index_bus': 'bus',
+                                                    'rxLockedRotorRatio': 'rx', 'iaIrRatio': 'lrc_pu',
+                                                    'ratedPowerFactor': 'cos_phi', 'ratedU': 'vn_kv',
+                                                    'efficiency': 'efficiency_n_percent',
+                                                    'ratedMechanicalPower': 'pn_mech_mw'})
         eqssh_asynchronous_machines['scaling'] = 1
         eqssh_asynchronous_machines['efficiency_percent'] = 100
         return eqssh_asynchronous_machines

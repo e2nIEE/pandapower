@@ -20,14 +20,14 @@ from .cim_tools import get_cim16_schema
 
 class CimParser:
 
-    def __init__(self, cim: Dict[str, Dict[str, pd.DataFrame]] = None, cgmes_version: str = '2.14.5'):
+    def __init__(self, cim: Dict[str, Dict[str, pd.DataFrame]] = None, cgmes_version: str = None):
         """
         This class parses CIM files and loads its content to a dictionary of
         CIM profile (dict) -> CIM element type (str) -> CIM elements (DataFrame)
         """
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.cgmes_version = cgmes_version
-        self.__cim_blueprint = self._initialize_cim_data_structure(cgmes_version)
+        self.cgmes_version = '2.4.15' if cgmes_version is None else cgmes_version
+        self.__cim_blueprint = self._initialize_cim_data_structure(self.cgmes_version)
         self.cim: Dict[str, Dict[str, pd.DataFrame]] = cim if cim is not None else self.get_cim_data_structure()
         self.file_names: Dict[str, str] = dict()
         self.report_container = ReportContainer()
@@ -557,7 +557,7 @@ class CimParser:
         return self.report_container
 
     def _initialize_cim_data_structure(self, cgmes_version: str) -> Dict[str, Dict[str, pd.DataFrame]]:
-        if cgmes_version == '2.14.5':
+        if cgmes_version == '2.4.15':
             return self._initialize_cim16_data_structure()
         if cgmes_version == '3.0':
             return self._initialize_cim100_data_structure()
@@ -737,8 +737,6 @@ class CimParser:
                 'ThermalGeneratingUnit': pd.DataFrame(columns=['rdfId', 'inService']),
                 'SolarGeneratingUnit': pd.DataFrame(columns=['rdfId', 'inService']),
                 'WindGeneratingUnit': pd.DataFrame(columns=['rdfId', 'inService']),
-                # completely missing classes: GroundDisconnector, PowerElectronicsConnection, Fuse, Jumper,
-                # DisconnectingCircuitBreaker, BatteryUnit
             }),
             'sv': MappingProxyType({
                 'SvVoltage': pd.DataFrame(columns=['rdfId', 'TopologicalNode', 'v', 'angle']),

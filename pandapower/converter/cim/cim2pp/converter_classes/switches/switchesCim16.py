@@ -92,7 +92,7 @@ class SwitchesCim16:
         eqssh_switches['et'] = 'b'
         eqssh_switches['z_ohm'] = 0
         if 'inService' not in eqssh_switches.columns:
-            eqssh_switches['inService'] = True  # set to true in case inService is not included in cim classes
+            eqssh_switches['inService'] = True
         if eqssh_switches.index.size > 0:
             eqssh_switches['closed'] = (~eqssh_switches.open & eqssh_switches.connected & eqssh_switches.connected2
                                         & eqssh_switches.inService)
