@@ -16,6 +16,9 @@ from pandapower.plotting.collections import create_bus_collection, create_line_c
     create_line_switch_collection, draw_collections, create_bus_bus_switch_collection, create_ext_grid_collection, create_sgen_collection, \
     create_gen_collection, create_load_collection, create_dcline_collection
 from pandapower.plotting.generic_geodata import create_generic_coordinates
+from pandapower import get_connected_elements_dict
+import pandapower as pp
+import math
 
 try:
     import pandaplan.core.pplog as logging
@@ -26,10 +29,10 @@ logger = logging.getLogger(__name__)
 
 
 def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_grid_size=1.0,
-                trafo_size=1.0, plot_loads=False, plot_gens=False, plot_sgens=False, load_size=1.0, gen_size=1.0, sgen_size=1.0,
+                trafo_size=1.0, plot_loads=False, plot_gens=False, plot_sgens=False, orientation=None, load_size=1.0, gen_size=1.0, sgen_size=1.0,
                 switch_size=2.0, switch_distance=1.0, plot_line_switches=False, scale_size=True,
                 bus_color='b', line_color='grey',  dcline_color='c', trafo_color='k',
-                ext_grid_color='y', switch_color='k', library='igraph', show_plot=True, ax=None):
+                ext_grid_color='y', switch_color='k', library='igraph', show_plot=True, ax=None, draw_sgens_by_type=None):
     """
         Plots a pandapower network as simple as possible. If no geodata is available, artificial
         geodata is generated. For advanced plotting see the tutorial
@@ -96,6 +99,7 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
         OUTPUT:
             **ax** - axes of figure
     """
+
     # don't hide lines if switches are plotted
     if plot_line_switches:
         respect_switches = False
@@ -173,14 +177,22 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
             use_line_geodata=not use_bus_geodata, zorder=12, color=switch_color)
         collections.append(sc)
 
+    if draw_sgens_by_type:
+       angles = calculate_unique_angles(net)
+    else:
+        angles = None
+
     if plot_sgens and len(net.sgen):
-        sgc = create_sgen_collection(net, size=sgen_size, orientation=0)
+        sgc = create_sgen_collection(net, size=sgen_size, orientation=orientation, unique_angles=angles,
+                                     draw_sgens_by_type=draw_sgens_by_type)
         collections.append(sgc)
+
     if plot_gens and len(net.gen):
-        gc = create_gen_collection(net, size=gen_size)
+        gc = create_gen_collection(net, size=gen_size, orientation=orientation, unique_angles=angles)
         collections.append(gc)
+
     if plot_loads and len(net.load):
-        lc = create_load_collection(net, size=load_size)
+        lc = create_load_collection(net, size=load_size, orientation=orientation, unique_angles=angles)
         collections.append(lc)
 
     if len(net.switch):
@@ -194,10 +206,75 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
         plt.show()
     return ax
 
+def calculate_unique_angles(net):
+    patch_count_unique = {}
+    sgen_types = {}
+
+    for index, bus in enumerate(net.bus_geodata.index):
+        sgen_count = 0
+        gen_count = 0
+        load_count = 0
+
+        sgen_types_counts = net.sgen[net.sgen.bus == index].type.value_counts()
+        PV = sgen_types_counts.get("PV", 0)
+        WT = sgen_types_counts.get("WT", 0)
+        WYE = sum(sgen_types_counts) - PV - WT
+        types = {}
+        if PV:
+            types["PV"] = PV
+
+        if WT:
+            types["WT"] = WT
+
+        if WYE:
+            types["wye"] = WYE
+        sgen_types[index] = types
+
+        if index not in patch_count_unique:
+            patch_count_unique[index] = {}
+        try:
+            sgen_count = len(sgen_types[index])
+        except KeyError:
+            sgen_count = 0
+
+        try:
+            gen_count = len(pp.get_connected_elements_dict(net, element_types=["gen"], buses=index))
+        except KeyError:
+            gen_count = 0
+
+        try:
+            load_count = len(pp.get_connected_elements_dict(net, element_types=["load"], buses=index))
+        except KeyError:
+            load_count = 0
+
+        total_count = sgen_count + gen_count + load_count
+        try:
+            seperation_angle = 2 * math.pi / total_count
+        except ZeroDivisionError:
+            seperation_angle = None
+
+        patch_count_unique[index]['sgen'] = dict(
+            zip(sgen_types[index].keys(), [j * seperation_angle for j in range(sgen_count)]))
+
+        if index not in patch_count_unique:
+            patch_count_unique[index] = {}
+
+        if 'gen' not in patch_count_unique[index]:
+            patch_count_unique[index]['gen'] = []
+            patch_count_unique[index]['gen'].extend(
+                [j * seperation_angle + sgen_count * seperation_angle for j in range(gen_count)])
+
+        if index not in patch_count_unique:
+            patch_count_unique[index] = {}
+
+        if 'load' not in patch_count_unique[index]:
+            patch_count_unique[index]['load'] = []
+            patch_count_unique[index]['load'].extend(
+                [j * seperation_angle + (sgen_count + gen_count) * seperation_angle for j in range(load_count)])
+    return patch_count_unique
 
 if __name__ == "__main__":
     import pandapower.networks as nw
-
     net = nw.case145()
     #    net = nw.create_cigre_network_mv()
     #    net = nw.mv_oberrhein()
