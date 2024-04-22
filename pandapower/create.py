@@ -949,7 +949,7 @@ def create_asymmetric_load(net, bus, p_a_mw=0, p_b_mw=0, p_c_mw=0, q_a_mvar=0, q
 
         **q_c_mvar** (float, default 0) - The reactive power for Phase C load
 
-        **sn_kva** (float, default: None) - Nominal power of the load
+        **sn_mva** (float, default: None) - Nominal power of the load
 
         **name** (string, default: None) - The name for this load
 
