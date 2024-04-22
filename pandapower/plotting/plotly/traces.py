@@ -347,7 +347,8 @@ def _get_branch_geodata_plotly(net, branches, use_branch_geodata, branch_element
 def create_line_trace(net, lines=None, use_line_geo=True, respect_switches=False, width=1.0,
                       color='grey', infofunc=None, trace_name='lines', legendgroup='lines',
                       cmap=None, cbar_title=None, show_colorbar=True, cmap_vals=None, cmin=None,
-                      cmax=None, cpos=1.1, cmap_vals_category='loading_percent', hoverlabel=None):
+                      cmax=None, cpos=1.1, cmap_vals_category='loading_percent', hoverlabel=None,
+                      dash="solid"):
     """
     Creates a plotly trace of pandapower lines. It is a power net specific wrapper function for the
     more generic _create_line_trace function.
@@ -415,6 +416,78 @@ def create_line_trace(net, lines=None, use_line_geo=True, respect_switches=False
                                 separator_element=separator_element,
                                 node_element=node_element,
                                 cmap_vals_category=cmap_vals_category,
+                                hoverlabel=hoverlabel,
+                                dash=dash)
+
+def create_dcline_trace(net, dclines=None, width=1.0,
+                        color='grey', infofunc=None, trace_name='hvdc lines', legendgroup='dclines',
+                        cmap=None, cbar_title=None, show_colorbar=True, cmap_vals=None, cmin=None,
+                        cmax=None, cpos=1.1, cmap_vals_category='loading_percent', hoverlabel=None):
+    """
+    Creates a plotly trace of pandapower dclines. It is a power net specific wrapper function for the
+    more generic _create_line_trace function.
+
+    INPUT:
+        **net** (pandapowerNet) - The pandapower network
+
+    OPTIONAL:
+        **dclines** (list, None) - The lines for which the collections are created.
+        If None, all lines in the network are considered.
+
+        **width** (int, 1) - line width
+
+        **infofunc** (pd.Series, None) - hoverinfo for dcline elements. Indices should correspond to
+        the pandapower element indices
+
+        **trace_name** (String, "lines") - name of the trace which will appear in the legend
+
+        **color** (String, "grey") - color of dclines in the trace
+
+        **legendgroup** (String, None) - defines groups of layers that will be displayed in a legend
+        e.g. groups according to voltage level (as used in `vlevel_plotly`)
+
+        **cmap** (String, None) - name of a colormap which exists within plotly if set to True default `Jet`
+        colormap is used, alternative colormaps : Greys, YlGnBu, Greens, YlOrRd,
+        Bluered, RdBu, Reds, Blues, Picnic, Rainbow, Portland, Jet, Hot, Blackbody, Earth, Electric, Viridis
+        To revert the color map, append "_r" to the name.
+
+        **cmap_vals** (list, None) - values used for coloring using colormap
+
+        **show_colorbar** (bool, False) - flag for showing or not corresponding colorbar
+
+        **cbar_title** (String, None) - title for the colorbar
+
+        **cmin** (float, None) - colorbar range minimum
+
+        **cmax** (float, None) - colorbar range maximum
+
+        **cpos** (float, 1.1) - position of the colorbar
+
+        """
+
+    branch_element = "dcline"
+    node_element = "bus"
+    separator_element = "switch"
+
+    return _create_branch_trace(net=net,
+                                branches=dclines,
+                                use_branch_geodata=False,
+                                width=width,
+                                color=color,
+                                infofunc=infofunc,
+                                trace_name=trace_name,
+                                legendgroup=legendgroup,
+                                cmap=cmap,
+                                cbar_title=cbar_title,
+                                show_colorbar=show_colorbar,
+                                cmap_vals=cmap_vals,
+                                cmin=cmin,
+                                cmax=cmax,
+                                cpos=cpos,
+                                branch_element=branch_element,
+                                separator_element=separator_element,
+                                node_element=node_element,
+                                cmap_vals_category=cmap_vals_category,
                                 hoverlabel=hoverlabel)
 
 
@@ -423,7 +496,7 @@ def _create_branch_trace(net, branches=None, use_branch_geodata=True, respect_se
                          legendgroup=None, cmap=None, cbar_title=None, show_colorbar=True,
                          cmap_vals=None, cmin=None, cmax=None, cpos=1.1, branch_element='line',
                          separator_element='switch', node_element='bus',
-                         cmap_vals_category='loading_percent', hoverlabel=None):
+                         cmap_vals_category='loading_percent', hoverlabel=None, dash="solid"):
     """
     Creates a plotly trace of branch elements. The rather generic, non-power net specific names
     were introduced to make it usable in other packages, e.g. for pipe networks.
@@ -493,11 +566,10 @@ def _create_branch_trace(net, branches=None, use_branch_geodata=True, respect_se
                 len(infofunc) == len(branches):
             infofunc = pd.Series(index=branches, data=infofunc)
         if len(infofunc) != len(branches) and len(infofunc) != len(net[branch_element]):
-            raise UserWarning("Different amount of hover info than {}s to "
-                              "plot".format(branch_element))
+            raise UserWarning(f"Different amount of hover info than {branch_element}s to plot")
         assert isinstance(infofunc, pd.Series), \
-            "infofunc should be a pandas series with the net.{}.index to the infofunc " \
-            "contents".format(branch_element)
+            f"infofunc should be a pandas series with the net.{branch_element}.index " \
+            f"to the infofunc contents"
     no_go_branches = set()
     if respect_separators:
         if separator_element == "switch":
@@ -509,8 +581,8 @@ def _create_branch_trace(net, branches=None, use_branch_geodata=True, respect_se
                              set(net[separator_element][(~net[separator_element].in_service) |
                                                         (net[separator_element].opened)])
         else:
-            raise NotImplementedError("respect separtors is only implements for switches, "
-                                      "not for {}s.".format(separator_element))
+            raise NotImplementedError(f"respect separators is only implements for switches, "
+                                      "not for {separator_element}s.")
     branches_to_plot = net[branch_element].loc[list(set(net[branch_element].index) &
                                                     (set(branches) - no_go_branches))]
     no_go_branches_to_plot = None
@@ -565,7 +637,7 @@ def _create_branch_trace(net, branches=None, use_branch_geodata=True, respect_se
                     branch_element, idx, branch['name']))
 
         line_trace = dict(type='scatter', text=[], hoverinfo='text', mode='lines', name=trace_name,
-                          line=Line(width=width, color=color), showlegend=False,
+                          line=Line(width=width, color=color, dash=dash), showlegend=False,
                           legendgroup=legendgroup)
 
         line_trace['x'], line_trace['y'] = _get_branch_geodata_plotly(net,
@@ -953,7 +1025,7 @@ def create_scale_trace(net, weighted_trace, down_shift=0):
                                        color=scale_info.get("scale_marker_color"),
                                        symbol=marker["symbol"],
                                        sizemode=marker["sizemode"]),
-                           text=[f"{scale_size / scale_info['marker_scaling']} {unit}", ""],
+                           text=[f"{scale_size / scale_info['marker_scaling']:.0f} {unit}", ""],
                            textposition="top center",
                            showlegend=False,
                            textfont=dict(family="Helvetica",
@@ -1028,8 +1100,9 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
                 # scattermapboxplot lines do not support dash for some reason, make it a red line instead
                 if "dash" in trace["line"]._props:
                     _prps = dict(trace["line"]._props)
-                    _prps.pop("dash", None)
-                    _prps["color"] = "red"
+                    _prps.pop("dash")
+                    if trace["line"]._props["dash"] != "solid":
+                        _prps["color"] = "red"
                     trace["line"] = scmLine(_prps)
                 else:
                     trace["line"] = scmLine(dict(trace["line"]._props))
@@ -1076,7 +1149,7 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
                                                    lon=pd.Series(traces[0]['lon']).dropna().mean()),
                                        style=map_style,
                                        pitch=0,
-                                       zoom=kwargs.pop('zoomlevel', 11))
+                                       zoom=kwargs.pop('zoomlevel', 3))
 
     # default aspectratio: if on_map use auto, else use 'original'
     aspectratio = 'original' if not on_map and aspectratio == 'auto' else aspectratio
@@ -1113,7 +1186,7 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
         fig['layout']['width'], fig['layout']['height'] = ([ar * figsize * 700 for ar in aspectratio])
 
     # check if called from ipynb or not in order to consider appropriate plot function
-    if _in_ipynb():
+    if _in_ipynb() and auto_open:
         from plotly.offline import init_notebook_mode, iplot as plot
         init_notebook_mode()
         plot(fig, filename=filename)

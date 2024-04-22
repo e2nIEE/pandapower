@@ -4,4 +4,4 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 from .cim2pp import from_cim
 
-__version__ = '3.6.9'
+__version__ = '3.6.10'

@@ -128,7 +128,7 @@ class ConnectivityNodesCim16:
                              inplace=True)
             connectivity_nodes = pd.merge(connectivity_nodes, eq_bd_cns, how='left', on='rdfId')
             connectivity_nodes['BaseVoltage'].fillna(connectivity_nodes['BaseVoltage_2'], inplace=True)
-            connectivity_nodes = connectivity_nodes.drop(columns=['BaseVoltage_2'])
+            connectivity_nodes.drop(columns=['BaseVoltage_2'], inplace=True)
             # check if there is a mix between BB and NB models
             terminals_temp = \
                 self.cimConverter.cim['eq']['Terminal'].loc[
@@ -211,7 +211,8 @@ class ConnectivityNodesCim16:
         if 'TopologicalNode_2' in connectivity_nodes.columns:
             connectivity_nodes['TopologicalNode'].fillna(connectivity_nodes['TopologicalNode_2'], inplace=True)
             connectivity_nodes = connectivity_nodes.drop(columns=['TopologicalNode_2'])
-        if connectivity_nodes.index.size != connectivity_nodes_size:
+        if connectivity_nodes.index.size != connectivity_nodes_size and not self.cimConverter.kwargs.get(
+                'ignore_errors', True):
             self.logger.warning("There is a problem at the busses!")
             self.cimConverter.report_container.add_log(Report(
                 level=LogLevel.WARNING, code=ReportCode.WARNING_CONVERTING,
@@ -225,9 +226,6 @@ class ConnectivityNodesCim16:
                 self.cimConverter.report_container.add_log(Report(
                     level=LogLevel.WARNING, code=ReportCode.WARNING_CONVERTING,
                     message="The ConnectivityNode with RDF ID %s has %s TopologicalNodes!" % (rdfId, count)))
-            # raise ValueError("The number of ConnectivityNodes increased after merging with Terminals, number of "
-            #                  "ConnectivityNodes before merge: %s, number of ConnectivityNodes after merge: %s" %
-            #                  (connectivity_nodes_size, connectivity_nodes.index.size))
             connectivity_nodes = connectivity_nodes.drop_duplicates(subset=['rdfId'], keep='first')
         # add the busbars
         bb = self.cimConverter.cim['eq']['BusbarSection'][['rdfId', 'name']]
@@ -237,8 +235,8 @@ class ConnectivityNodesCim16:
         bb = bb.drop_duplicates(subset=['rdfId'], keep='first')
         connectivity_nodes = pd.merge(connectivity_nodes, bb, how='left', on='rdfId')
 
-        connectivity_nodes = connectivity_nodes.rename(columns={'rdfId': sc['o_id'], 'TopologicalNode': sc['ct'], 'nominalVoltage': 'vn_kv',
-                                           'name_substation': 'zone'})
+        connectivity_nodes = connectivity_nodes.rename(columns={'rdfId': sc['o_id'], 'TopologicalNode': sc['ct'],
+                                                                'nominalVoltage': 'vn_kv', 'name_substation': 'zone'})
         connectivity_nodes['in_service'] = True
         connectivity_nodes['type'] = 'b'
         return connectivity_nodes, eqssh_terminals

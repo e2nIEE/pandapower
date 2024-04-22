@@ -457,7 +457,7 @@ def merge_parallel_line(net, idx):
 
 
 def merge_same_bus_generation_plants(net, add_info=True, error=True,
-                                     gen_elms=["ext_grid", "gen", "sgen"]):
+                                     gen_elms=("ext_grid", "gen", "sgen")):
     """
     Merge generation plants connected to the same buses so that a maximum of one generation plants
     per node remains.
