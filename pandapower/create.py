@@ -708,9 +708,6 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
 
     OUTPUT:
         **index** (int) - The unique indices ID of the created elements
-
-    EXAMPLE:
-        create_bus(net, name = "bus1")
     """
     index = _get_multiple_index_with_check(net, "bus", index, nr_buses)
 
@@ -735,6 +732,8 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
                 raise UserWarning(
                     "geodata must be a valid geojson.Point or coordinate tuple or a list of geojson.Point or tuple"
                 )
+        else:
+            geo = None
     else:
         geo = None
 
