@@ -78,8 +78,8 @@ def run_basic_usecases(eq_type, net=None):
     # UC3b tests whether this also works for 'internal_buses' as empty list
     eq_net3b = pp.grid_equivalents.get_equivalent(
         subnet, eq_type, boundary_buses=[1, 5], internal_buses=[])
-    eq_net3a.sgen.drop(columns=["origin_id"], inplace=True)
-    eq_net3b.sgen.drop(columns=["origin_id"], inplace=True)
+    eq_net3a.sgen = eq_net3a.sgen.drop(columns=["origin_id"])
+    eq_net3b.sgen = eq_net3b.sgen.drop(columns=["origin_id"])
 
     assert set(eq_net3a["group"].index) == set(eq_net3b["group"].index)
     assert pandapower.toolbox.nets_equal(eq_net3a, eq_net3b, exclude_elms=["group"])
@@ -153,7 +153,7 @@ def test_cost_consideration():
 
         if cost_type == "pwl_cost":
             for poly in net.poly_cost.itertuples():
-                net.poly_cost.drop(poly.Index, inplace=True)
+                net.poly_cost = net.poly_cost.drop(poly.Index)
                 pp.create_pwl_cost(net, poly.element, poly.et, [[0, 20, 1]], index=poly.Index)
 
         # eq generation
@@ -245,8 +245,8 @@ def test_basic_usecases():
 def test_case9_with_slack_generator_in_external_net():
     net = pp.networks.case9()
     idx = pp.replace_ext_grid_by_gen(net)
-    net.gen.slack.loc[idx] = True
-    net.bus_geodata.drop(net.bus_geodata.index, inplace=True)
+    net.gen.loc[idx, "slack"] = True
+    net.bus_geodata = net.bus_geodata.drop(net.bus_geodata.index)
     pp.runpp(net)
 
     # since the only slack is in the external_buses, we expect get_equivalent() to move the slack
@@ -266,8 +266,8 @@ def test_case9_with_slack_generator_in_external_net():
         # UC1
         eq_net1 = pp.grid_equivalents.get_equivalent(net, eq_type, boundary_buses, internal_buses)
         eq_net1b = pp.grid_equivalents.get_equivalent(net, eq_type, list(boundary_buses), list(internal_buses))
-        eq_net1.gen.drop(columns=["origin_id"], inplace=True)
-        eq_net1b.gen.drop(columns=["origin_id"], inplace=True)
+        eq_net1.gen = eq_net1.gen.drop(columns=["origin_id"])
+        eq_net1b.gen = eq_net1b.gen.drop(columns=["origin_id"])
         assert pandapower.toolbox.nets_equal(eq_net1, eq_net1b)
         assert net.bus.name.loc[list(boundary_buses | internal_buses | slack_bus)].isin(
             eq_net1.bus.name).all()
@@ -414,10 +414,10 @@ def test_equivalent_groups():
 
 def test_shifter_degree():
     net = pp.networks.example_multivoltage()
-    net.trafo.shift_degree[0] = 30
-    net.trafo.shift_degree[1] = -60
-    net.trafo3w.shift_mv_degree[0] = 90
-    net.trafo3w.shift_lv_degree[0] = 150
+    net.trafo.at[0, "shift_degree"] = 30
+    net.trafo.at[1, "shift_degree"] = -60
+    net.trafo3w.at[0, "shift_mv_degree"] = 90
+    net.trafo3w.at[0, "shift_lv_degree"] = 150
     pp.runpp(net, calculate_voltage_angles=True)
 
     boundary_buses = list([net.trafo.hv_bus.values[1]]) + list(net.trafo.lv_bus.values) + \
@@ -536,7 +536,7 @@ def test_controller():
     assert net_eq.controller.object[0].__dict__["matching_params"]["element_index"] == [0, 2]
 
     # test individual controller:
-    net.controller.drop(net.controller.index, inplace=True)
+    net.controller = net.controller.drop(net.controller.index)
     for li in net.load.index:
         ConstControl(net, element='load', variable='p_mw', element_index=[li],
                      data_source=DFData(load_ts), profile_name=[li])

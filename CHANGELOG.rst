@@ -1,7 +1,42 @@
 Change Log
 =============
 
-[upcoming release] - 2023-..-..
+[upcoming release] - 2024-..-..
+-------------------------------
+- [ADDED] switch results p and q
+- [ADDED] PowerFactory converter: option to export lines with sections as a single line with averaged-out impedance, or export line sections as separate individual lines
+- [ADDED] extend plotly function: add zoomlevel-parameter and hvdc lines
+- [ADDED] added support for reading cgmes v3.0 files
+- [CHANGED] plotting for voltage profile considers also gens that are slacks and only ext_grids and slack gens that are in service
+- [CHANGED] switched from setup.py to pyproject.toml
+- [CHANGED] updated upload_release.py to not call setup.py anymore (see https://packaging.python.org/en/latest/discussions/setup-py-deprecated/)
+- [CHANGED] updated upload_release.py to install the uploadad package and print the version
+- [CHANGED] updated MANIFEST.in to exclude the ci files from the wheel distribution
+- [CHANGED] cim data structure method in cim converter changed to blueprint approach
+- [CHANGED] cim converter: Avoid huge logging output when ignore_erros = True
+- [FIXED] massive performance drag in large grids due to initializing Ybus for FACTS with np.zeros instead of using sparse matrix initialization
+- [FIXED] further futurewarnings and deprecation warnings
+
+[2.14.6] - 2024-04-02
+-------------------------------
+- [FIXED] more futurewarnings and deprecation warnings
+
+[2.14.5] - 2024-03-28
+-------------------------------
+- [CHANGED] added possibility to provide custom weights to switches and transformers (before - always zero) when creating a graph
+- [FIXED] many futurewarnings and deprecation warnings
+
+[2.14.4] - 2024-03-28
+-------------------------------
+- [FIXED] internal pgm test returns ANOTHER error when using python 3.8
+- [FIXED] added setuptools to relying tests
+
+[2.14.3] - 2024-03-28
+-------------------------------
+- [FIXED] internal pgm test checked wrong result
+- [FIXED] 2.14.0 - 2.14.3 just minor release fixes to improve workflow
+
+[2.14.0] - 2024-03-26
 -------------------------------
 - [ADDED] function to search std_types from the basic standard type library
 - [ADDED] Documentation for running powerflow using power-grid-model
@@ -39,13 +74,23 @@ Change Log
 - [FIXED] additional arguments from mpc saved to net._options: create "_options" if it does not exist
 - [CHANGED] cim2pp: extracted getting default classes, added generic setting datatypes from CGMES XMI schema
 - [ADDED] function :code:`getOTDF` to obtain Outage Transfer Distribution Factors, that can be used to analyse outages using the DC approximation of the power system
-- [CHANGED] DFData datasource behavior to enable timeseries calculation with time-dependent nonnumeric data (ConstControl)
 - [ADDED] function :code:`outage_results_OTDF` to obtain the matrix of results for all outage scenarios, with rows as outage scenarios and columns as branch power flows in that scenario
 - [FIXED] add some safeguards for TDPF to avoid numerical issues in some cases
+- [CHANGED] numba version check during init phase, not during calculation, saving about 3% calculation time for a loadflow
 - [FIXED] avoid attaching elements as duplicates to a group where some of the elements already exist
 - [ADDED] the function :code:`run_contingency` can raise a captured error if parameter :code:`raise_errors` is passed
 - [FIXED] bugfix for tap dependent impedance characteristics so that not all characteristics columns are necessary
+- [ADDED] add kwargs passing of get_equivalent() to runpp_fct()
+- [ADDED] auxiliary functions ets_to_element_types() and element_types_to_ets() as well as toolbox function get_connected_buses_at_switches() and extension to get_connected_switches()
 - [FIXED] in function :code:`toolbox.replace_zero_branches_with_switches`, use absolute for the parameters of impedance elements in case they are negative nonzero values
+- [FIXED] in :code:`reindex_elements`: fixed index error when reindexing line_geodata
+- [FIXED] bug in :code:`cim2pp`: Changed zero prioritized generators with voltage controller to sgens (like PowerFactory does)
+- [ADDED] cim2pp: added description fields for each asset and added BusbarSection information to nodes
+- [CHANGED] cim2pp: reformat documentation for reading in files
+- [CHANGED] allow providing grid_tables as a parameter to the function that downloads net from PostgreSQL
+- [FIXED] avoid FutureWarning of pandas 2.2
+- [FIXED] compatibility with lightsim2grid after new version 0.8.0
+- [ADDED] allow passing custom runpp-function to pp.diagnostic
 
 [2.13.1] - 2023-05-12
 -------------------------------

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -99,11 +99,11 @@ def result_test_network_generator_dcpp(sn_mva=1):
 
 def add_test_line(net):
     b1, b2, l1 = add_grid_connection(net, zone="test_line")
-    net.line.parallel.at[l1] = 2
-    net.line.g_us_per_km.at[l1] = 1
+    net.line.at[l1, "parallel"] = 2
+    net.line.at[l1, "g_us_per_km"] = 1
     pp.create_load(net, b2, p_mw=1.2, q_mvar=1.1)
     l2 = create_test_line(net, b1, b2)
-    net.line.g_us_per_km.at[l2] = 1
+    net.line.at[l2, "g_us_per_km"] = 1
     pp.create_switch(net, b2, l2, et="l", closed=False)
     create_test_line(net, b1, b2, in_service=False)
     net.last_added_case = "test_line"
