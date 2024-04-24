@@ -2615,18 +2615,6 @@ def create_shunt(net, item):
         p_mw = (item.ushnm ** 2 * R) / (R ** 2 + X ** 2) * multiplier
         params['q_mvar'] = (item.ushnm ** 2 * X) / (R ** 2 + X ** 2) * multiplier
         sid = pp.create_shunt(net, p_mw=p_mw, **params)
-    else:
-        # Shunt is an element of R-L-C, Rp (3), R-L-C1-C2, Rp (4)
-        logger.warning('Importing of shunt elements that represent anything but R-L-C (0), R-L (1), and C (2) '
-                       'is not implemented correctly, the results will be inaccurate')
-        if item.HasResults(0):
-            p_mw = ga(item, 'm:P:bus1') * multiplier
-        elif item.HasAttribute('c:PRp'):
-            p_mw = ga(item, 'c:PRp') / 1e3 + ga(item, 'c:PL') / 1e3
-        else:
-            logger.warning("Shunt element %s is not implemented, p_mw is set to 0, results will be incorrect!" % item.loc_name)
-            p_mw = 0
-        sid = pp.create_shunt(net, p_mw=p_mw, **params)
 
     add_additional_attributes(item, net, element='shunt', element_id=sid,
                               attr_list=['cpSite.loc_name'], attr_dict={"cimRdfId": "origin_id"})
