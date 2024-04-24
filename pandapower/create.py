@@ -6,8 +6,9 @@
 
 from operator import itemgetter
 
+import geojson
 import pandas as pd
-from numpy import nan, isnan, arange, dtype, isin, any as np_any, zeros, array, bool_, \
+from numpy import nan, isnan, arange, dtype, isin, any as np_any, array, bool_, \
     all as np_all, float64, intersect1d, unique as uni
 from pandas import isnull
 from pandas.api.types import is_object_dtype
@@ -52,7 +53,8 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                 ('vn_kv', 'f8'),
                 ('type', dtype(object)),
                 ('zone', dtype(object)),
-                ('in_service', 'bool'), ],
+                ('in_service', 'bool'),
+                ('geo', dtype(str))],
         "load": [("name", dtype(object)),
                  ("bus", "u4"),
                  ("p_mw", "f8"),
@@ -189,7 +191,8 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                  ("df", "f8"),
                  ("parallel", "u4"),
                  ("type", dtype(object)),
-                 ("in_service", 'bool')],
+                 ("in_service", 'bool'),
+                 ("geo", dtype(str))],
         "trafo": [("name", dtype(object)),
                   ("std_type", dtype(object)),
                   ("hv_bus", "u4"),
@@ -330,9 +333,9 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
             ('element', dtype(object)),
             ('reference_column', dtype(object)),
         ],
-        # geodata
-        "line_geodata": [("coords", dtype(object))],
-        "bus_geodata": [("x", "f8"), ("y", "f8"), ("coords", dtype(object))],
+        # geodata (now as line.geo, bus.geo)
+        # "line_geodata": [("coords", dtype(object))],
+        # "bus_geodata": [("x", "f8"), ("y", "f8"), ("coords", dtype(object))],
 
         # result tables
         "_empty_res_bus": [("vm_pu", "f8"),
@@ -392,7 +395,11 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                              ("vm_pu", "f8"),
                              ("va_degree", "f8")],
         "_empty_res_switch": [("i_ka", "f8"),
-                              ("loading_percent", "f8")],
+                              ("loading_percent", "f8"),
+                              ("p_from_mw", "f8"),
+                              ("q_from_mvar", "f8"),
+                              ("p_to_mw", "f8"),
+                              ("q_to_mvar", "f8")],
         "_empty_res_impedance": [("p_from_mw", "f8"),
                                  ("q_from_mvar", "f8"),
                                  ("p_to_mw", "f8"),
@@ -635,19 +642,22 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b", zone=N
     """
     index = _get_index_with_check(net, "bus", index)
 
-    entries = dict(zip(["name", "vn_kv", "type", "zone", "in_service"],
-                       [name, vn_kv, type, zone, bool(in_service)]))
-
-    _set_entries(net, "bus", index, True, **entries, **kwargs)
-
     if geodata is not None:
-        if len(geodata) != 2:
-            raise UserWarning("geodata must be given as (x, y) tuple")
-        net["bus_geodata"].loc[index, ["x", "y"]] = geodata
+        if isinstance(geodata, tuple):
+            if len(geodata) != 2:
+                raise UserWarning("geodata must be given as (x, y) tuple")
+            geo = f'{{"type":"Point","coordinates":[{float(geodata[0])},{float(geodata[1])}]}}'
+        else:
+            raise UserWarning("geodata must be a valid coordinate tuple")
+    else:
+        geo = None
 
     if coords is not None:
-        net["bus_geodata"].at[index, "coords"] = None
-        net["bus_geodata"].at[index, "coords"] = coords
+        raise UserWarning("busbar plotting is not implemented fully and will likely be removed in the future")
+    entries = dict(zip(["name", "vn_kv", "type", "zone", "in_service", "geo"],
+                       [name, vn_kv, type, zone, bool(in_service), geo]))
+
+    _set_entries(net, "bus", index, True, **entries, **kwargs)
 
     # column needed by OPF. 0. and 2. are the default maximum / minimum voltages
     _set_value_if_not_nan(net, index, min_vm_pu, "min_vm_pu", "bus", default_val=0.)
@@ -676,10 +686,10 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
 
         **vn_kv** (float) - The grid voltage level.
 
-        **geodata** ((x,y)-tuple or list of tuples with length == nr_buses, default None) -
-        coordinates used for plotting
+        **geodata** ((x,y)-tuple or geojson.Point or list of tuples or list of geojson.Point with length == nr_buses,
+            default None) - coordinates used for plotting
 
-        **type** (string, default "b") - Type of the bus. "n" - auxilary node,
+        **type** (string, default "b") - Type of the bus. "n" - auxiliary node,
         "b" - busbar, "m" - muff
 
         **zone** (string, None) - grid region
@@ -691,36 +701,47 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
         **min_vm_pu** (float, NAN) - Minimum bus voltage in p.u. - necessary for OPF
 
         **coords** (list (len=nr_buses) of list (len=2) of tuples (len=2), default None) - busbar
-        coordinates to plot the bus with multiple points. coords is typically a list of tuples
-        (start and endpoint of the busbar) - Example for 3 buses:
-        [[(x11, y11), (x12, y12)], [(x21, y21), (x22, y22)], [(x31, y31), (x32, y32)]]
+            coordinates to plot the bus with multiple points. coords is typically a list of tuples
+            (start and endpoint of the busbar) - Example for 3 buses:
+            [[(x11, y11), (x12, y12)], [(x21, y21), (x22, y22)], [(x31, y31), (x32, y32)]]
 
 
     OUTPUT:
         **index** (int) - The unique indices ID of the created elements
-
-    EXAMPLE:
-        create_bus(net, name = "bus1")
     """
     index = _get_multiple_index_with_check(net, "bus", index, nr_buses)
 
-    entries = {"vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "name": name}
+    if geodata is not None:
+        if isinstance(geodata, tuple):
+            if len(geodata) != 2:
+                raise UserWarning("geodata must be given as (x, y) tuple")
+            x, y = geodata
+            geo = [geojson.dumps(geojson.Point((float(x), float(y))), sort_keys=True)]*nr_buses
+        elif isinstance(geodata, geojson.Point):
+            if not geodata.is_valid:
+                raise UserWarning(
+                    "geodata must be a valid geojson.Point or coordinate tuple or a list of geojson.Point or tuple"
+                )
+            geo = [geojson.dumps(geodata)]*nr_buses
+        elif isinstance(geodata, list) and len(geodata) == nr_buses:
+            if all([isinstance(g, tuple) for g in geodata]):
+                geo = [geojson.dumps(geojson.Point((float(x), float(y))), sort_keys=True) for x, y in geodata]
+            elif all([isinstance(g, geojson.Point) for g in geodata]):
+                geo = geojson.dumps(geodata, sort_keys=True)
+            else:
+                raise UserWarning(
+                    "geodata must be a valid geojson.Point or coordinate tuple or a list of geojson.Point or tuple"
+                )
+        else:
+            geo = None
+    else:
+        geo = None
+
+    entries = {"vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "name": name, "geo": geo}
     _add_to_entries_if_not_nan(net, "bus", entries, index, "min_vm_pu", min_vm_pu)
     _add_to_entries_if_not_nan(net, "bus", entries, index, "max_vm_pu", max_vm_pu)
     _set_multiple_entries(net, "bus", index, **entries, **kwargs)
 
-    if geodata is not None:
-        # works with a 2-tuple or a matching array
-        net.bus_geodata = pd.concat([
-            net.bus_geodata,
-            pd.DataFrame(zeros((len(index), len(net.bus_geodata.columns)), dtype=np.int64),
-                         index=index, columns=net.bus_geodata.columns)])
-        net.bus_geodata.loc[index, :] = nan
-        net.bus_geodata.loc[index, ["x", "y"]] = geodata
-    if coords is not None:
-        net.bus_geodata = pd.concat(
-            [net.bus_geodata, pd.DataFrame(index=index, columns=net.bus_geodata.columns)])
-        net["bus_geodata"].loc[index, "coords"] = coords
     return index
 
 
@@ -742,8 +763,8 @@ def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, 
     OPTIONAL:
         **p_mw** (float, default 0) - The active power of the load
 
-        - postive value   -> load
-        - negative value  -> generation
+        - positive value -> load
+        - negative value -> generation
 
         **q_mvar** (float, default 0) - The reactive power of the load
 
@@ -757,8 +778,8 @@ def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, 
 
         **name** (string, default None) - The name for this load
 
-        **scaling** (float, default 1.) - An OPTIONAL scaling factor to be set customly.
-        Multiplys with p_mw and q_mvar.
+        **scaling** (float, default 1.) - An OPTIONAL scaling factor.
+        Multiplies with p_mw and q_mvar.
 
         **type** (string, 'wye') -  type variable to classify the load: wye/delta
 
@@ -927,7 +948,7 @@ def create_asymmetric_load(net, bus, p_a_mw=0, p_b_mw=0, p_c_mw=0, q_a_mvar=0, q
 
         **q_c_mvar** (float, default 0) - The reactive power for Phase C load
 
-        **sn_kva** (float, default: None) - Nominal power of the load
+        **sn_mva** (float, default: None) - Nominal power of the load
 
         **name** (string, default: None) - The name for this load
 
@@ -2114,9 +2135,8 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
 
     _set_entries(net, "line", index, **v, **kwargs)
 
-    if geodata is not None:
-        net["line_geodata"].loc[index, "coords"] = None
-        net["line_geodata"].at[index, "coords"] = geodata
+    if geodata:
+        net.line.at[index, "geo"] = geojson.dumps(geojson.LineString([geodata]), sort_keys=True)
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "line")
     _set_value_if_not_nan(net, index, alpha, "alpha", "line")
@@ -2255,7 +2275,7 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
     _set_multiple_entries(net, "line", index, **entries, **kwargs)
 
     if geodata is not None:
-        _add_multiple_branch_geodata(net, "line", geodata, index)
+        _add_multiple_branch_geodata(net, geodata, index)
 
     return index
 
@@ -2313,8 +2333,8 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
         **parallel** (integer, 1) - number of parallel line systems
 
         **geodata**
-        (array, default None, shape= (,2L)) -
-        The linegeodata of the line. The first row should be the coordinates
+        (array, default None, shape= (,2)) -
+        The geodata of the line. The first row should be the coordinates
         of bus a and the last should be the coordinates of bus b. The points
         in the middle represent the bending points of the line
 
@@ -2386,20 +2406,19 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
         _set_value_if_not_nan(net, index, r0_ohm_per_km, "r0_ohm_per_km", "line")
         _set_value_if_not_nan(net, index, x0_ohm_per_km, "x0_ohm_per_km", "line")
         _set_value_if_not_nan(net, index, c0_nf_per_km, "c0_nf_per_km", "line")
-        _set_value_if_not_nan(net, index, g0_us_per_km, "g0_us_per_km", "line",
-                                     default_val=0.)
+        _set_value_if_not_nan(net, index, g0_us_per_km, "g0_us_per_km", "line", default_val=0.)
     elif not np_all(nan_0_values):
         logger.warning("Zero sequence values are given for only some parameters. Please specify "
                        "them for all parameters, otherwise they are not set!")
 
     if geodata is not None:
-        net["line_geodata"].loc[index, "coords"] = None
-        net["line_geodata"].at[index, "coords"] = geodata
+        net.line.at[index, "geo"] = f'{{"type":"LineString", "coordinates":{geodata}}}'
+    else:
+        net.line.at[index, "geo"] = None
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "line")
     _set_value_if_not_nan(net, index, alpha, "alpha", "line")
-    _set_value_if_not_nan(net, index, temperature_degree_celsius,
-                          "temperature_degree_celsius", "line")
+    _set_value_if_not_nan(net, index, temperature_degree_celsius, "temperature_degree_celsius", "line")
     _set_value_if_not_nan(net, index, endtemp_degree, "endtemp_degree", "line")
 
     # add optional columns for TDPF if parameters passed to kwargs:
@@ -2466,8 +2485,8 @@ def create_lines_from_parameters(net, from_buses, to_buses, length_km, r_ohm_per
         **parallel** (integer, 1) - number of parallel line systems
 
         **geodata**
-        (array, default None, shape= (,2L)) -
-        The linegeodata of the line. The first row should be the coordinates
+        (array, default None, shape= (,2)) -
+        The geodata of the line. The first row should be the coordinates
         of bus a and the last should be the coordinates of bus b. The points
         in the middle represent the bending points of the line
 
@@ -2544,7 +2563,10 @@ def create_lines_from_parameters(net, from_buses, to_buses, length_km, r_ohm_per
     _set_multiple_entries(net, "line", index, **entries, **kwargs)
 
     if geodata is not None:
-        _add_multiple_branch_geodata(net, "line", geodata, index)
+        _add_multiple_branch_geodata(net, geodata, index)
+    else:
+        for i in index:
+            net.line.at[i, "geo"] = None
 
     return index
 
@@ -4782,8 +4804,8 @@ def create_group(net, element_types, elements, name="", reference_columns=None, 
         index for the dataframe net.group, by default None
 
     EXAMPLES:
-        >>> create_group_from_lists(net, ["bus", "gen"], [[10, 12], [1, 2]])
-        >>> create_group_from_lists(net, ["bus", "gen"], [["Berlin", "Paris"], ["Wind_1", "Nuclear1"]], reference_columns="name")
+        >>> create_group(net, ["bus", "gen"], [[10, 12], [1, 2]])
+        >>> create_group(net, ["bus", "gen"], [["Berlin", "Paris"], ["Wind_1", "Nuclear1"]], reference_columns="name")
     """
     element_types, elements, reference_columns = _group_parameter_list(
         element_types, elements, reference_columns)
@@ -4946,7 +4968,7 @@ def _set_value_if_not_nan(net, index, value, column, element_type, dtype=float64
         name of column
     element_type : str
         element_type type, e.g. "gen"
-    dtyp : Any, optional
+    dtype : Any, optional
         e.g. float64, "Int64", bool_, ..., by default float64
     default_val : Any, optional
         default value to be set if the column exists and value is nan and if the column does not
@@ -4988,21 +5010,19 @@ def _add_to_entries_if_not_nan(net, element_type, entries, index, column, values
         try_astype(entries, column, dtype)
 
 
-def _add_multiple_branch_geodata(net, table, geodata, index):
-    geo_table = f"{table}_geodata"
-    dtypes = net[geo_table].dtypes
-    df = pd.DataFrame(index=index, columns=net[geo_table].columns)
+def _add_multiple_branch_geodata(net, geodata, index):
+    dtypes = net.line.dtypes
     # works with single or multiple lists of coordinates
-    if len(geodata[0]) == 2 and not hasattr(geodata[0][0], "__iter__"):
+    if isinstance(geodata, list) and all([isinstance(g, tuple) and len(g) == 2 for g in geodata]):
         # geodata is a single list of coordinates
-        df["coords"] = [geodata] * len(index)
+        series = [geojson.dumps(geojson.LineString(geodata), sort_keys=True)] * len(index)
     else:
         # geodata is multiple lists of coordinates
-        df["coords"] = geodata
+        series = list(map(lambda gd: geojson.dumps(geojson.LineString(gd), sort_keys=True), geodata))
 
-    net[geo_table] = pd.concat([net[geo_table],df], sort=False)
+    net.line["geo"] = series
 
-    _preserve_dtypes(net[geo_table], dtypes)
+    _preserve_dtypes(net.line, dtypes)
 
 
 def _set_entries(net, table, index, preserve_dtypes=True, **entries):

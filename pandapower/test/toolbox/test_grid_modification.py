@@ -103,8 +103,6 @@ def test_merge_and_split_nets():
     net1 = nw.mv_oberrhein()
     pp.create_poly_cost(net1, 2, "sgen", 8)
     pp.create_poly_cost(net1, 0, "sgen", 9)
-    # TODO there are some geodata values in oberrhein without corresponding lines
-    net1.line_geodata.drop(set(net1.line_geodata.index) - set(net1.line.index), inplace=True)
     n1 = len(net1.bus)
     pp.runpp(net1)
     net2 = nw.create_cigre_network_mv(with_der="pv_wind")
@@ -114,28 +112,28 @@ def test_merge_and_split_nets():
 
     net1_before = copy.deepcopy(net1)
     net2_before = copy.deepcopy(net2)
-    net = pp.merge_nets(net1, net2, net2_reindex_log_level="debug")
-    pp.runpp(net)
+    _net = pp.merge_nets(net1, net2, net2_reindex_log_level="debug")
+    pp.runpp(_net)
 
     # check that merge_nets() doesn't change inputs (but result tables)
     pp.test.assert_net_equal(net1, net1_before, check_without_results=True)
     pp.test.assert_net_equal(net2, net2_before, check_without_results=True)
 
     # check that results of merge_nets() fit
-    assert np.allclose(net.res_bus.vm_pu.iloc[:n1].values, net1.res_bus.vm_pu.values)
-    assert np.allclose(net.res_bus.vm_pu.iloc[n1:].values, net2.res_bus.vm_pu.values)
+    assert np.allclose(_net.res_bus.vm_pu.iloc[:n1].values, net1.res_bus.vm_pu.values)
+    assert np.allclose(_net.res_bus.vm_pu.iloc[n1:].values, net2.res_bus.vm_pu.values)
 
     # check content of merge_nets() output
     assert np.array_equal(
         pd.concat([net1.sgen.name.loc[net1.poly_cost.element],
                    net2.sgen.name.loc[net2.poly_cost.element]]).values,
-        net.sgen.name.loc[net.poly_cost.element].values)
+        _net.sgen.name.loc[_net.poly_cost.element].values)
 
     # check that results stay the same after net split
-    net3 = pp.select_subnet(net, net.bus.index[:n1], include_results=True)
+    net3 = pp.select_subnet(_net, _net.bus.index[:n1], include_results=True)
     assert pandapower.toolbox.dataframes_equal(net3.res_bus[["vm_pu"]], net1.res_bus[["vm_pu"]])
 
-    net4 = pp.select_subnet(net, net.bus.index[n1:], include_results=True)
+    net4 = pp.select_subnet(_net, _net.bus.index[n1:], include_results=True)
     assert np.allclose(net4.res_bus.vm_pu.values, net2.res_bus.vm_pu.values)
 
 
@@ -383,8 +381,8 @@ def test_create_replacement_switch_for_branch():
     # look that the switch is created properly
     pp.create_replacement_switch_for_branch(net, 'line', line0)
     pp.create_replacement_switch_for_branch(net, 'impedance', impedance0)
-    net.line.in_service.at[line0] = False
-    net.impedance.in_service.at[impedance0] = False
+    net.line.at[line0, "in_service"] = False
+    net.impedance.at[impedance0, "in_service"] = False
 
     assert 'REPLACEMENT_line_0' in net.switch.name.values
     assert 'REPLACEMENT_impedance_0' in net.switch.name.values
@@ -393,8 +391,8 @@ def test_create_replacement_switch_for_branch():
     pp.runpp(net)
 
     # look that the switch is created with the correct closed status
-    net.line.in_service.at[line1] = False
-    net.impedance.in_service.at[impedance1] = False
+    net.line.at[line1, "in_service"] = False
+    net.impedance.at[impedance1, "in_service"] = False
     pp.create_replacement_switch_for_branch(net, 'line', line1)
     pp.create_replacement_switch_for_branch(net, 'impedance', impedance1)
 
@@ -579,7 +577,7 @@ def test_replace_ext_grid_gen():
         assert np.allclose(net.gen.vm_pu.values, [1.03, 1.02])
         assert net.res_gen.p_mw.dropna().shape[0] == 2
         assert np.allclose(net.gen.index.values, [0, 4])
-        assert net.gen.uuid.loc[4] == "test"
+        assert net.gen.loc[4, "uuid"] == "test"
         assert net.group.element_type.tolist() == ["line", "gen"]
         assert net.group.element.iat[1] == [4]
 
@@ -710,7 +708,7 @@ def test_get_connected_elements_empty_in_service():
     #  - element_table was unbound for the element table measurement
     #  see #1592
     net = nw.example_simple()
-    net.bus.in_service.at[6] = False
+    net.bus.at[6, "in_service"] = False
     conn = pp.get_connected_elements_dict(net, [0], respect_switches=False, respect_in_service=True)
     assert conn == {"line": [0], 'ext_grid': [0], 'bus': [1]}
     conn = pp.get_connected_elements_dict(net, [3, 4], respect_switches=False, respect_in_service=True)
@@ -933,12 +931,12 @@ def test_merge_same_bus_generation_plants():
 
     # manipulate net for different functionality checks
     # 1) q_mvar should be summed which is only possible if no gen or ext_grid has the same bus
-    net.gen.drop(net.gen.index[net.gen.bus == 22], inplace=True)
+    net.gen = net.gen.drop(net.gen.index[net.gen.bus == 22])
     net.sgen["q_mvar"] = np.arange(net.sgen.shape[0])
     # 2) remove limit columns or values to check whether merge_same_bus_generation_plants() can
     # handle that
     del net.sgen["max_q_mvar"]
-    net.sgen.min_p_mw.at[1] = np.nan
+    net.sgen.at[1, "min_p_mw"] = np.nan
 
     # prepare expatation values
     dupl_buses = [0, 1, 6, 12, 14, 21, 22]

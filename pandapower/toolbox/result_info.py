@@ -415,7 +415,7 @@ def clear_result_tables(net):
     """
     for key in net.keys():
         if isinstance(net[key], pd.DataFrame) and key[:3] == "res" and net[key].shape[0]:
-            net[key].drop(net[key].index, inplace=True)
+            net[key] = net[key].drop(net[key].index)
 
 
 def res_power_columns(element_type, side=0):

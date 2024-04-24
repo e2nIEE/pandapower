@@ -31,6 +31,7 @@ from collections.abc import MutableMapping
 import warnings
 from importlib.metadata import version as version_str
 from importlib.metadata import PackageNotFoundError
+from typing_extensions import deprecated
 
 import numpy as np
 import pandas as pd
@@ -304,6 +305,7 @@ class pandapowerNet(ADict):
                 self[key] = pd.DataFrame(np.zeros(0, dtype=self[key]), index=pd.Index([],
                                          dtype=np.int64))
 
+    @deprecated("Use copy.deepcopy(net) instead of net.deepcopy()")
     def deepcopy(self):
         return copy.deepcopy(self)
 
@@ -319,13 +321,12 @@ class pandapowerNet(ADict):
             if not et.startswith("_") and isinstance(self[et], pd.DataFrame) and len(self[et]) > 0:
                 n_rows = self[et].shape[0]
                 if 'res_' in et:
-                    res.append("   - %s (%i %s)" % (et, n_rows, "element" + plural_s(n_rows)))
+                    res.append(f"   - {et} ({n_rows} element{plural_s(n_rows)})")
                 elif et == 'group':
                     n_groups = len(set(self[et].index))
-                    par.append('   - %s (%i %s, %i %s)' % (
-                        et, n_groups, "group" + plural_s(n_groups), n_rows, "row" + plural_s(n_rows)))
+                    par.append(f"   - {et} ({n_groups} group{plural_s(n_groups)}, {n_rows} row{plural_s(n_rows)})")
                 else:
-                    par.append("   - %s (%i %s)" % (et, n_rows, "element" + plural_s(n_rows)))
+                    par.append(f"   - {et} ({n_rows} element{plural_s(n_rows)})")
         res_cost = [" and the following result values:",
                     "   - %s" % "res_cost"] if "res_cost" in self.keys() else []
         if not len(par) + len(res):
@@ -338,10 +339,8 @@ class pandapowerNet(ADict):
 
 
 def plural_s(number):
-    if number > 1:
-        return "s"
-    else:
-        return ""
+    return "" if number == 1 else "s"
+
 
 
 def ets_to_element_types(ets=None):
@@ -967,9 +966,9 @@ def _clean_up(net, res=True):
     #            res_bus.drop(xward_buses, inplace=True)
     if len(net["dcline"]) > 0:
         dc_gens = net.gen.index[(len(net.gen) - len(net.dcline) * 2):]
-        net.gen.drop(dc_gens, inplace=True)
+        net.gen = net.gen.drop(dc_gens)
         if res:
-            net.res_gen.drop(dc_gens, inplace=True)
+            net.res_gen = net.res_gen.drop(dc_gens)
 
 
 def _set_isolated_buses_out_of_service(net, ppc):

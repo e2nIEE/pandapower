@@ -125,18 +125,7 @@ class CimConverter:
         self.classes_dict['powerTransformersCim16'](cimConverter=self).convert_power_transformers_cim16()
 
         # create the geo coordinates
-        gl_or_dl = str(self.kwargs.get('use_GL_or_DL_profile', 'both')).lower()
-        if gl_or_dl == 'gl':
-            use_gl_profile = True
-            use_dl_profile = False
-        elif gl_or_dl == 'dl':
-            use_gl_profile = False
-            use_dl_profile = True
-        else:
-            use_gl_profile = True
-            use_dl_profile = True
-        if self.cim['gl']['Location'].index.size > 0 and self.cim['gl']['PositionPoint'].index.size > 0 and \
-                use_gl_profile:
+        if self.cim['gl']['Location'].index.size > 0 and self.cim['gl']['PositionPoint'].index.size > 0:
             try:
                 self.classes_dict['geoCoordinatesFromGLCim16'](cimConverter=self).add_geo_coordinates_from_gl_cim16()
             except Exception as e:
@@ -148,11 +137,8 @@ class CimConverter:
                 self.report_container.add_log(Report(
                     level=LogLevel.EXCEPTION, code=ReportCode.EXCEPTION_CONVERTING,
                     message=traceback.format_exc()))
-                self.net.bus_geodata = self.net.bus_geodata[0:0]
-                self.net.line_geodata = self.net.line_geodata[0:0]
         if self.cim['dl']['Diagram'].index.size > 0 and self.cim['dl']['DiagramObject'].index.size > 0 and \
-                self.cim['dl']['DiagramObjectPoint'].index.size > 0 and self.net.bus_geodata.index.size == 0 and \
-                use_dl_profile:
+                self.cim['dl']['DiagramObjectPoint'].index.size > 0:
             try:
                 self.classes_dict['coordinatesFromDLCim16'](cimConverter=self).add_coordinates_from_dl_cim16(
                     diagram_name=kwargs.get('diagram_name', None))
@@ -164,8 +150,6 @@ class CimConverter:
                     message="Creating the coordinates failed, returning the net without coordinates!"))
                 self.report_container.add_log(Report(level=LogLevel.EXCEPTION, code=ReportCode.EXCEPTION_CONVERTING,
                                                      message=traceback.format_exc()))
-                self.net.bus_geodata = self.net.bus_geodata[0:0]
-                self.net.line_geodata = self.net.line_geodata[0:0]
         self.net = pp_tools.set_pp_col_types(net=self.net)
 
         # create transformer tap controller
@@ -219,7 +203,7 @@ class CimConverter:
         # fuse boundary ConnectivityNodes with their TopologicalNodes
         bus_t = self.net.bus.reset_index(level=0, drop=False)
         bus_drop = bus_t.loc[bus_t[sc['o_prf']] == 'eq_bd', ['index', sc['o_id'], 'cim_topnode']]
-        bus_drop.rename(columns={'index': 'b1'}, inplace=True)
+        bus_drop = bus_drop.rename(columns={'index': 'b1'})
         bus_drop = pd.merge(bus_drop, bus_t[['index', sc['o_id']]].rename(columns={'index': 'b2', sc['o_id']: 'o_id2'}),
                             how='inner', left_on='cim_topnode', right_on='o_id2')
         if bus_drop.index.size > 0:

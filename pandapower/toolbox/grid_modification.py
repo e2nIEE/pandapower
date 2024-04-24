@@ -192,8 +192,7 @@ def merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9, **kwargs
         raise FutureWarning(msg1 + msg2 + msg3)
     elif not new_params_passed:
         warnings.warn(msg1 + msg3, category=FutureWarning)
-    return _merge_nets(net1, net2, validate=validate, merge_results=merge_results, tol=tol,
-                           **kwargs)
+    return _merge_nets(net1, net2, validate=validate, merge_results=merge_results, tol=tol, **kwargs)
 
 
 def _merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
@@ -212,9 +211,15 @@ def _merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
         runpp(net2, **runpp_kwargs)
 
     # collect element types to copy from net2 to net (output)
-    elm_types = [elm_type for elm_type, df in net2.items() if not elm_type.startswith("_") and \
-        isinstance(df, pd.DataFrame) and df.shape[0] and elm_type != "dtypes" and \
-            (not elm_type.startswith("res_") or (merge_results and not validate))]
+    elm_types = [elm_type for elm_type, df in net2.items() if (
+            not elm_type.startswith("_")
+            and isinstance(df, pd.DataFrame)
+            and df.shape[0]
+            and (
+                    not elm_type.startswith("res_")
+                    or (merge_results and not validate)
+            )
+    )]
 
     # reindex net2 elements if some indices already exist in net
     reindex_lookup = dict()
@@ -452,7 +457,7 @@ def merge_parallel_line(net, idx):
 
 
 def merge_same_bus_generation_plants(net, add_info=True, error=True,
-                                     gen_elms=["ext_grid", "gen", "sgen"]):
+                                     gen_elms=("ext_grid", "gen", "sgen")):
     """
     Merge generation plants connected to the same buses so that a maximum of one generation plants
     per node remains.
@@ -632,7 +637,7 @@ def drop_elements_simple(net, element_type, element_index):
 
     # logging
     if number := len(element_index) > 0:
-        logger.debug("Dropped %i %s%s!" % (number, element_type, plural_s(number)))
+        logger.debug(f"Dropped {number} {element_type}{plural_s(number)}!")
 
 
 def drop_buses(net, buses, drop_elements=True):
@@ -641,8 +646,7 @@ def drop_buses(net, buses, drop_elements=True):
     them as well.
     """
     detach_from_groups(net, "bus", buses)
-    net["bus"] = net["bus"].drop(buses)
-    net["bus_geodata"] = net["bus_geodata"].drop(set(buses) & set(net["bus_geodata"].index))
+    net["bus"].drop(buses, inplace=True)
     res_buses = net.res_bus.index.intersection(buses)
     net["res_bus"] = net["res_bus"].drop(res_buses)
     if drop_elements:
@@ -673,8 +677,7 @@ def drop_trafos(net, trafos, table="trafo"):
     net[table] = net[table].drop(trafos)
     res_trafos = net["res_" + table].index.intersection(trafos)
     net["res_" + table] = net["res_" + table].drop(res_trafos)
-    logger.debug("Dropped %i %s%s with %i switches" % (
-        len(trafos), table, plural_s(len(trafos)), num_switches))
+    logger.debug(f"Dropped {len(trafos)} {table}{plural_s(len(trafos))} with {num_switches} switches")
 
 
 def drop_lines(net, lines):
@@ -692,12 +695,12 @@ def drop_lines(net, lines):
 
     # drop lines and geodata
     detach_from_groups(net, "line", lines)
-    net["line"] = net["line"].drop(lines)
-    net["line_geodata"] = net["line_geodata"].drop(set(lines) & set(net["line_geodata"].index))
+    net["line"].drop(lines, inplace=True)
+    if "line_geodata" in net:
+        net["line_geodata"].drop(set(lines) & set(net["line_geodata"].index), inplace=True)
     res_lines = net.res_line.index.intersection(lines)
-    net["res_line"] = net["res_line"].drop(res_lines)
-    logger.debug("Dropped %i line%s with %i line switches" % (
-        len(lines), plural_s(len(lines)), len(i)))
+    net["res_line"].drop(res_lines, inplace=True)
+    logger.debug(f"Dropped {len(lines)} line{plural_s(len(lines))} with {len(i)} line switches")
 
 
 def drop_elements_at_buses(net, buses, bus_elements=True, branch_elements=True,
@@ -1194,7 +1197,7 @@ def replace_ext_grid_by_gen(net, ext_grids=None, gen_indices=None, slack=False, 
         idx = create_gen(net, ext_grid.bus, vm_pu=ext_grid.vm_pu, p_mw=p_mw, name=ext_grid.name,
                          in_service=ext_grid.in_service, controllable=True, index=index)
         new_idx.append(idx)
-    net.gen.slack.loc[new_idx] = slack
+    net.gen.loc[new_idx, "slack"] = slack
     net.gen.loc[new_idx, existing_cols_to_keep] = net.ext_grid.loc[
         ext_grids, existing_cols_to_keep].values
 
@@ -1209,8 +1212,8 @@ def replace_ext_grid_by_gen(net, ext_grids=None, gen_indices=None, slack=False, 
             to_change = net[table].index[(net[table].et == "ext_grid") &
                                          (net[table].element.isin(ext_grids))]
             if len(to_change):
-                net[table].et.loc[to_change] = "gen"
-                net[table].element.loc[to_change] = new_idx
+                net[table].loc[to_change, "et"] = "gen"
+                net[table].loc[to_change, "element"] = new_idx
 
     # --- result data
     if net.res_ext_grid.shape[0]:
@@ -1291,8 +1294,8 @@ def replace_gen_by_ext_grid(net, gens=None, ext_grid_indices=None, cols_to_keep=
         if net[table].shape[0]:
             to_change = net[table].index[(net[table].et == "gen") & (net[table].element.isin(gens))]
             if len(to_change):
-                net[table].et.loc[to_change] = "ext_grid"
-                net[table].element.loc[to_change] = new_idx
+                net[table].loc[to_change, "et"] = "ext_grid"
+                net[table].loc[to_change, "element"] = new_idx
 
     # --- result data
     if net.res_gen.shape[0]:
@@ -1375,8 +1378,8 @@ def replace_gen_by_sgen(net, gens=None, sgen_indices=None, cols_to_keep=None,
         if net[table].shape[0]:
             to_change = net[table].index[(net[table].et == "gen") & (net[table].element.isin(gens))]
             if len(to_change):
-                net[table].et.loc[to_change] = "sgen"
-                net[table].element.loc[to_change] = new_idx
+                net[table].loc[to_change, "et"] = "sgen"
+                net[table].loc[to_change, "element"] = new_idx
 
     # --- result data
     if net.res_gen.shape[0]:
@@ -1436,7 +1439,7 @@ def replace_sgen_by_gen(net, sgens=None, gen_indices=None, cols_to_keep=None,
     # add columns which should be kept from sgen but miss in gen to net.gen
     missing_cols_to_keep = existing_cols_to_keep.difference(net.gen.columns)
     for col in missing_cols_to_keep:
-        net.gen[col] = np.nan
+        net.gen[col] = pd.Series(data=None, dtype=net.sgen[col].dtype, name=col)
 
     # --- create gens
     new_idx = []
@@ -1457,6 +1460,7 @@ def replace_sgen_by_gen(net, sgens=None, gen_indices=None, cols_to_keep=None,
         idx = create_gen(net, sgen.bus, vm_pu=vm_pu, p_mw=sgen.p_mw, name=sgen.name,
                          in_service=sgen.in_service, controllable=controllable, index=index)
         new_idx.append(idx)
+    new_idx = np.array(new_idx, dtype=np.int64)
     net.gen.loc[new_idx, existing_cols_to_keep] = net.sgen.loc[
         sgens, existing_cols_to_keep].values
 
@@ -1475,8 +1479,8 @@ def replace_sgen_by_gen(net, sgens=None, gen_indices=None, cols_to_keep=None,
             to_change = net[table].index[(net[table].et == "sgen") &
                                          (net[table].element.isin(sgens))]
             if len(to_change):
-                net[table].et.loc[to_change] = "gen"
-                net[table].element.loc[to_change] = new_idx
+                net[table].loc[to_change, "et"] = "gen"
+                net[table].loc[to_change, "element"] = new_idx
 
     # --- result data
     if net.res_sgen.shape[0]:
@@ -1595,8 +1599,8 @@ def replace_pq_elmtype(net, old_element_type, new_element_type, old_indices=None
             to_change = net[table].index[(net[table].et == old_element_type) &
                                          (net[table].element.isin(old_indices))]
             if len(to_change):
-                net[table].et.loc[to_change] = new_element_type
-                net[table].element.loc[to_change] = new_idx
+                net[table].loc[to_change, "et"] = new_element_type
+                net[table].loc[to_change, "element"] = new_idx
 
     # --- result data
     if net["res_" + old_element_type].shape[0]:
