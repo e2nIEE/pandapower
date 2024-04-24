@@ -2501,19 +2501,20 @@ def create_shunt(net, item):
     if item.shtype == 0:
         # Shunt is a R-L-C element
         
-        params['q_mvar'] = -item.qtotn * multiplier
-        p_mw = (item.ushnm ** 2 * item.rrea) / (item.rrea ** 2 + (item.xrea + 1 / (item.bcap * 1e6)) ** 2) * multiplier
         R = item.rrea
         X = -1e6/item.bcap + item.xrea
 
         p_mw = (item.ushnm ** 2 * R) / (R ** 2 + X ** 2) * multiplier
         params['q_mvar'] = (item.ushnm ** 2 * X) / (R ** 2 + X ** 2) * multiplier
-        
         sid = pp.create_shunt(net, p_mw=p_mw, **params)
     elif item.shtype == 1:
         # Shunt is an R-L element
-        params['q_mvar'] = item.qrean * multiplier
-        p_mw = (item.ushnm ** 2 * item.rrea / (item.rrea ** 2 + item.xrea ** 2)) * multiplier
+        
+        R = item.rrea
+        X = item.xrea
+
+        p_mw = (item.ushnm ** 2 * R) / (R ** 2 + X ** 2) * multiplier
+        params['q_mvar'] = (item.ushnm ** 2 * X) / (R ** 2 + X ** 2) * multiplier
         sid = pp.create_shunt(net, p_mw=p_mw, **params)
     elif item.shtype == 2:
         # Shunt is a capacitor bank
@@ -2521,11 +2522,12 @@ def create_shunt(net, item):
         sid = pp.create_shunt_as_capacitor(net, loss_factor=loss_factor, **params)
     elif item.shtype == 3:
         # Shunt is a R-L-C, Rp element
-        # params['q_mvar'] = -item.qtotn * multiplier
+
         Rp = item.rpara
         Rs = item.rrea
         Xl = item.xrea
         Bc = -item.bcap * 1e-6
+        
         R = Rp*(Rp*Rs+Rs**2+Xl**2)/((Rp+Rs)**2 + Xl**2)
         X = 1/Bc + (Xl*Rp**2)/((Rp+Rs)**2 + Xl**2)
 
@@ -2534,13 +2536,16 @@ def create_shunt(net, item):
         sid = pp.create_shunt(net, p_mw=p_mw, **params)
     elif item.shtype == 4:
         # Shunt is a R-L-C1-C2, Rp element
-        # params['q_mvar'] = -item.qtotn * multiplier
+
         Rp = item.rpara
-        Rs = item.rrea
-        Xl = item.xrea + 1/(-2*np.pi*50*item.c1) * 1e-6
-        Bc = -2*np.pi*50*item.c2 * 1e-6
-        R = Rp*(Rp*Rs+Rs**2+Xl**2)/((Rp+Rs)**2 + Xl**2)
-        X = 1/Bc + (Xl*Rp**2)/((Rp+Rs)**2 + Xl**2)
+        Rs = item.rrea        
+        Xl = item.xrea
+        B1 = 2*np.pi*50*item.c1 * 1e-6
+        B2 = 2*np.pi*50*item.c2 * 1e-6
+
+        Z = Rp * (Rs + 1j * (Xl - 1 / B1)) / (Rp + Rs + 1j * (Xl - 1 / B1)) - 1j / B2
+        R = np.real(Z)
+        X = np.imag(Z)
 
         p_mw = (item.ushnm ** 2 * R) / (R ** 2 + X ** 2) * multiplier
         params['q_mvar'] = (item.ushnm ** 2 * X) / (R ** 2 + X ** 2) * multiplier
