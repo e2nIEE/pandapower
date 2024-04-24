@@ -36,6 +36,9 @@ def from_pf(dict_net, pv_as_slack=True, pf_variable_p_loads='plini', pf_variable
     grid_name = dict_net['ElmNet'].loc_name
     base_sn_mva = dict_net['global_parameters']['base_sn_mva']
     net = pp.create_empty_network(grid_name, sn_mva=base_sn_mva)
+    net['bus_geodata'] = DataFrame(columns=['x', 'y'])
+    net['line_geodata'] = DataFrame(columns=['coords'])
+
     pp.results.reset_results(net, mode="pf_3ph")
     if max_iter is not None:
         pp.set_user_pf_options(net, max_iteration=max_iter)
