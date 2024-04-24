@@ -708,7 +708,8 @@ def create_line(net, item, flag_graphics, create_sections, is_unbalanced):
             sid_list = create_line_sections(net=net, item_list=line_sections, line=item,
                                             coords=coords, is_unbalanced=is_unbalanced, **params)
         else:
-            lidx = create_line_no_sections(net, item, line_sections, params["bus1"], params["bus2"], coords, is_unbalanced)
+            lidx = create_line_no_sections(net, item, line_sections, params["bus1"], params["bus2"], coords,
+                                           is_unbalanced, ac)
             sid_list = [lidx]
         logger.debug('created <%d> line sections for line <%s>' % (len(sid_list), params['name']))
 
@@ -905,7 +906,10 @@ def create_line_sections(net, item_list, line, bus1, bus2, coords, parallel, is_
     return sid_list
 
 
-def create_line_no_sections(net, main_item, item_list, bus1, bus2, coords, is_unbalanced, **kwargs):
+def create_line_no_sections(net, main_item, item_list, bus1, bus2, coords, is_unbalanced, ac, **kwargs):
+    if not ac:
+        raise NotImplementedError("Creating DC lines with sections as DC lines without sections not implemented")
+
     line_name = main_item.loc_name
 
     sec_len = [item.dline for item in item_list]
@@ -959,7 +963,7 @@ def create_line_no_sections(net, main_item, item_list, bus1, bus2, coords, is_un
         if chr_name is not None and len(chr_name) > 0:
             net["line"].loc[lid, 'origin_id'] = chr_name[0]
 
-    get_pf_line_results(net, main_item, lid, is_unbalanced)
+    get_pf_line_results(net, main_item, lid, is_unbalanced, ac)
 
     return lid
 
