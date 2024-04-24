@@ -49,6 +49,7 @@ def _get_pf_results_balanced(net):
     pf_vsc_q = net.res_vsc.get("pf_q_mvar", pd.Series([], dtype=np.float64))
     pf_vsc_p_dc = net.res_vsc.get("pf_p_dc_mw", pd.Series([], dtype=np.float64))
     pf_line_loading = net.res_line.get("pf_loading", pd.Series([], dtype=np.float64))
+    pf_line_dc_loading = net.res_line_dc.get("pf_loading", pd.Series([], dtype=np.float64))
     pf_trafo_loading = net.res_trafo.get("pf_loading", pd.Series([], dtype=np.float64))
     pf_trafo3w_loading = net.res_trafo3w.get("pf_loading", pd.Series([], dtype=np.float64))
 
