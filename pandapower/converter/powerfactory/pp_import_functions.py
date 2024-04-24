@@ -2562,7 +2562,6 @@ def create_shunt(net, item):
         'vn_kv': item.ushnm,
         'q_mvar': item.Qact * multiplier
     }
-    
     if item.shtype == 0:
         # Shunt is a R-L-C element
         
@@ -2603,7 +2602,7 @@ def create_shunt(net, item):
         # Shunt is a R-L-C1-C2, Rp element
 
         Rp = item.rpara
-        Rs = item.rrea        
+        Rs = item.rrea
         Xl = item.xrea
         B1 = 2*np.pi*50*item.c1 * 1e-6
         B2 = 2*np.pi*50*item.c2 * 1e-6
