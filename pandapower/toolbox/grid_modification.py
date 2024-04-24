@@ -192,8 +192,7 @@ def merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9, **kwargs
         raise FutureWarning(msg1 + msg2 + msg3)
     elif not new_params_passed:
         warnings.warn(msg1 + msg3, category=FutureWarning)
-    return _merge_nets(net1, net2, validate=validate, merge_results=merge_results, tol=tol,
-                           **kwargs)
+    return _merge_nets(net1, net2, validate=validate, merge_results=merge_results, tol=tol, **kwargs)
 
 
 def _merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
@@ -212,9 +211,15 @@ def _merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
         runpp(net2, **runpp_kwargs)
 
     # collect element types to copy from net2 to net (output)
-    elm_types = [elm_type for elm_type, df in net2.items() if not elm_type.startswith("_") and \
-        isinstance(df, pd.DataFrame) and df.shape[0] and elm_type != "dtypes" and \
-            (not elm_type.startswith("res_") or (merge_results and not validate))]
+    elm_types = [elm_type for elm_type, df in net2.items() if (
+            not elm_type.startswith("_")
+            and isinstance(df, pd.DataFrame)
+            and df.shape[0]
+            and (
+                    not elm_type.startswith("res_")
+                    or (merge_results and not validate)
+            )
+    )]
 
     # reindex net2 elements if some indices already exist in net
     reindex_lookup = dict()
@@ -632,7 +637,7 @@ def drop_elements_simple(net, element_type, element_index):
 
     # logging
     if number := len(element_index) > 0:
-        logger.debug("Dropped %i %s%s!" % (number, element_type, plural_s(number)))
+        logger.debug(f"Dropped {number} {element_type}{plural_s(number)}!")
 
 
 def drop_buses(net, buses, drop_elements=True):
@@ -641,8 +646,7 @@ def drop_buses(net, buses, drop_elements=True):
     them as well.
     """
     detach_from_groups(net, "bus", buses)
-    net["bus"] = net["bus"].drop(buses)
-    net["bus_geodata"] = net["bus_geodata"].drop(set(buses) & set(net["bus_geodata"].index))
+    net["bus"].drop(buses, inplace=True)
     res_buses = net.res_bus.index.intersection(buses)
     net["res_bus"] = net["res_bus"].drop(res_buses)
     if drop_elements:
@@ -673,8 +677,7 @@ def drop_trafos(net, trafos, table="trafo"):
     net[table] = net[table].drop(trafos)
     res_trafos = net["res_" + table].index.intersection(trafos)
     net["res_" + table] = net["res_" + table].drop(res_trafos)
-    logger.debug("Dropped %i %s%s with %i switches" % (
-        len(trafos), table, plural_s(len(trafos)), num_switches))
+    logger.debug(f"Dropped {len(trafos)} {table}{plural_s(len(trafos))} with {num_switches} switches")
 
 
 def drop_lines(net, lines):
@@ -692,12 +695,12 @@ def drop_lines(net, lines):
 
     # drop lines and geodata
     detach_from_groups(net, "line", lines)
-    net["line"] = net["line"].drop(lines)
-    net["line_geodata"] = net["line_geodata"].drop(set(lines) & set(net["line_geodata"].index))
+    net["line"].drop(lines, inplace=True)
+    if "line_geodata" in net:
+        net["line_geodata"].drop(set(lines) & set(net["line_geodata"].index), inplace=True)
     res_lines = net.res_line.index.intersection(lines)
-    net["res_line"] = net["res_line"].drop(res_lines)
-    logger.debug("Dropped %i line%s with %i line switches" % (
-        len(lines), plural_s(len(lines)), len(i)))
+    net["res_line"].drop(res_lines, inplace=True)
+    logger.debug(f"Dropped {len(lines)} line{plural_s(len(lines))} with {len(i)} line switches")
 
 
 def drop_elements_at_buses(net, buses, bus_elements=True, branch_elements=True,
