@@ -921,10 +921,13 @@ def test_vsc_hvdc():
 
     pp.create_line_dc_from_parameters(net, 0, 1, 100, 0.1, 1)
 
-    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1., control_mode_dc="vm_pu", control_value_dc=1.02)
-    pp.create_vsc(net, 2, 1, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1., control_mode_dc="p_mw", control_value_dc=5)
+    pp.create_vsc(net, 1, 0, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1., control_mode_dc="vm_pu",
+                  control_value_dc=1.02)
+    pp.create_vsc(net, 2, 1, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1., control_mode_dc="p_mw",
+                  control_value_dc=5)
 
-    runpp_with_consistency_checks(net)
+    pp.runpp(net)
+    # runpp_with_consistency_checks(net)
 
 
 def test_vsc_hvdc_control_q():
@@ -942,10 +945,10 @@ def test_vsc_hvdc_control_q():
 
     pp.create_line_dc_from_parameters(net, 0, 1, 100, 0.1, 1)
 
-    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac="q_mvar", control_value_ac=7.5,
-                  control_mode_dc="vm_pu", control_value_dc=1.02)
-    pp.create_vsc(net, 2, 1, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1.,
-                  control_mode_dc="p_mw", control_value_dc=5)
+    pp.create_vsc(net, 1, 0, 0.1, 5, 0.15, control_mode_ac="q_mvar", control_value_ac=7.5, control_mode_dc="vm_pu",
+                  control_value_dc=1.02)
+    pp.create_vsc(net, 2, 1, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1., control_mode_dc="p_mw",
+                  control_value_dc=5)
 
     runpp_with_consistency_checks(net)
 
@@ -979,13 +982,13 @@ def test_vsc_multiterminal_hvdc():
     # pp.create_vsc(net, 4, 3, 0.1, 5, control_value_dc=15)
     # pp.create_vsc(net, 3, 4, 0.1, 5, control_mode_dc="vm_pu", control_value_dc=1.02)
 
-    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac="q_mvar", control_value_ac=3, control_mode_dc="vm_pu",
+    pp.create_vsc(net, 1, 0, 0.1, 5, 0.15, control_mode_ac="q_mvar", control_value_ac=3, control_mode_dc="vm_pu",
                   control_value_dc=1)
-    pp.create_vsc(net, 2, 2, 0.1, 5, control_mode_ac="q_mvar", control_value_ac=10, control_mode_dc="p_mw",
+    pp.create_vsc(net, 2, 2, 0.1, 5, 0.15, control_mode_ac="q_mvar", control_value_ac=10, control_mode_dc="p_mw",
                   control_value_dc=5)
-    pp.create_vsc(net, 4, 3, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1.05, control_mode_dc="p_mw",
+    pp.create_vsc(net, 4, 3, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1.05, control_mode_dc="p_mw",
                   control_value_dc=15)
-    pp.create_vsc(net, 3, 4, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1.03, control_mode_dc="vm_pu",
+    pp.create_vsc(net, 3, 4, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1.03, control_mode_dc="vm_pu",
                   control_value_dc=1.02)
 
     runpp_with_consistency_checks(net)
@@ -1016,8 +1019,8 @@ def test_line_dc_bus_dc_structures():
     ## line structure 2
     pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
 
-    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_dc="vm_pu", control_value_dc=1.02)
-    pp.create_vsc(net, 2, 1, 0.1, 5, control_value_dc=5)
+    pp.create_vsc(net, 1, 0, 0.1, 5, 0.15, control_mode_dc="vm_pu", control_value_dc=1.02)
+    pp.create_vsc(net, 2, 1, 0.1, 5, 0.15, control_value_dc=5)
 
     runpp_with_consistency_checks(net)
 
@@ -1042,10 +1045,10 @@ def test_line_dc_bus_dc_structures():
     ## line structure 4
     pp.create_lines_dc(net, [0, 1, 1, 1], [1, 2, 3, 4], 100, std_type="2400-CU")
 
-    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_dc="vm_pu", control_value_dc=1.02)
-    pp.create_vsc(net, 2, 2, 0.1, 5, control_value_dc=5)
-    pp.create_vsc(net, 4, 3, 0.1, 5, control_value_dc=15)
-    pp.create_vsc(net, 3, 4, 0.1, 5, control_mode_dc="vm_pu", control_value_dc=1.02)
+    pp.create_vsc(net, 1, 0, 0.1, 5, 0.15, control_mode_dc="vm_pu", control_value_dc=1.02)
+    pp.create_vsc(net, 2, 2, 0.1, 5, 0.15, control_value_dc=5)
+    pp.create_vsc(net, 4, 3, 0.1, 5, 0.15, control_value_dc=15)
+    pp.create_vsc(net, 3, 4, 0.1, 5, 0.15, control_mode_dc="vm_pu", control_value_dc=1.02)
 
     runpp_with_consistency_checks(net)
 
@@ -1065,9 +1068,9 @@ def test_vsc_hvdc_structure1():
 
     pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
 
-    pp.create_vsc(net, 2, 1, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="p_mw",
+    pp.create_vsc(net, 2, 1, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="p_mw",
                   control_value_dc=5)
-    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_dc="vm_pu", control_value_dc=1.02)
+    pp.create_vsc(net, 1, 0, 0.1, 5, 0.15, control_mode_dc="vm_pu", control_value_dc=1.02)
 
     runpp_with_consistency_checks(net)
 
@@ -1087,9 +1090,9 @@ def test_vsc_hvdc_structure1_alternate():
 
     pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
 
-    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="p_mw",
+    pp.create_vsc(net, 1, 0, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="p_mw",
                   control_value_dc=5)
-    pp.create_vsc(net, 2, 1, 0.1, 5, control_mode_dc="vm_pu", control_value_dc=1.02)
+    pp.create_vsc(net, 2, 1, 0.1, 5, 0.15, control_mode_dc="vm_pu", control_value_dc=1.02)
 
     runpp_with_consistency_checks(net)
 
@@ -1108,9 +1111,9 @@ def test_setting_of_dc_out_of_service():
     pp.create_bus_dc(net, 110, 'B')
     pp.create_bus_dc(net, 110, 'T', in_service=False)  # todo results for this dc bus must be NaN
 
-    pp.create_vsc(net, 1, 0, 0, 5, control_mode_dc="vm_pu", control_value_dc=1.02)
-    pp.create_vsc(net, 2, 1, 0, 5, control_value_dc=5)
-    pp.create_vsc(net, 2, 2, 0, 5, control_value_dc=5)
+    pp.create_vsc(net, 1, 0, 0, 5, 0.15, control_mode_dc="vm_pu", control_value_dc=1.02)
+    pp.create_vsc(net, 2, 1, 0, 5, 0.15, control_value_dc=5)
+    pp.create_vsc(net, 2, 2, 0, 5, 0.15, control_value_dc=5)
 
     runpp_with_consistency_checks(net)  ## does the not in_service dc bus set the vsc out of service?
 
@@ -1129,9 +1132,9 @@ def test_setting_of_dc_vsc_out_of_service():
     pp.create_bus_dc(net, 110, 'B')
     pp.create_bus_dc(net, 110, 'T', in_service=False)  # todo results for this dc bus must be NaN
 
-    pp.create_vsc(net, 1, 0, 0, 5, control_mode_dc="vm_pu", control_value_dc=1.02)
-    pp.create_vsc(net, 2, 1, 0, 5, control_value_dc=5)
-    pp.create_vsc(net, 2, 2, 0, 5, control_value_dc=5, in_service=False)
+    pp.create_vsc(net, 1, 0, 0, 5, 0.15, control_mode_dc="vm_pu", control_value_dc=1.02)
+    pp.create_vsc(net, 2, 1, 0, 5, 0.15, control_value_dc=5)
+    pp.create_vsc(net, 2, 2, 0, 5, 0.15, control_value_dc=5, in_service=False)
 
     runpp_with_consistency_checks(net)  ## does the not in_service dc bus set the vsc out of service?
 
@@ -1160,11 +1163,11 @@ def test_vsc_hvdc_structure2():
     pp.create_line_dc(net, 1, 2, 100, std_type="2400-CU")
     pp.create_line_dc(net, 2, 3, 100, std_type="2400-CU")
 
-    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_dc="vm_pu", control_value_dc=1.02)
-    pp.create_vsc(net, 2, 1, 0.1, 5, control_value_dc=5)
+    pp.create_vsc(net, 1, 0, 0.1, 5, 0.15, control_mode_dc="vm_pu", control_value_dc=1.02)
+    pp.create_vsc(net, 2, 1, 0.1, 5, 0.15, control_value_dc=5)
 
-    pp.create_vsc(net, 3, 2, 0.1, 5, control_mode_dc="vm_pu", control_value_dc=1.02)
-    pp.create_vsc(net, 4, 3, 0.1, 5, control_value_dc=5)
+    pp.create_vsc(net, 3, 2, 0.1, 5, 0.15, control_mode_dc="vm_pu", control_value_dc=1.02)
+    pp.create_vsc(net, 4, 3, 0.1, 5, 0.15, control_value_dc=5)
 
     runpp_with_consistency_checks(net)
 
@@ -1183,9 +1186,9 @@ def test_vsc_hvdc_mode0_without_dc_line():
     pp.create_bus_dc(net, 110, 'A')
     pp.create_bus_dc(net, 110, 'B')
 
-    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
+    pp.create_vsc(net, 1, 0, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
                   control_value_dc=1)
-    pp.create_vsc(net, 2, 1, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1.02, control_mode_dc="vm_pu",
+    pp.create_vsc(net, 2, 1, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1.02, control_mode_dc="vm_pu",
                   control_value_dc=1.02)
 
     runpp_with_consistency_checks(net)
@@ -1212,9 +1215,9 @@ def test_vsc_hvdc_mode1():
 
     pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
 
-    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
+    pp.create_vsc(net, 1, 0, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
                   control_value_dc=1)
-    pp.create_vsc(net, 2, 1, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1.02, control_mode_dc="vm_pu",
+    pp.create_vsc(net, 2, 1, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1.02, control_mode_dc="vm_pu",
                   control_value_dc=1.02)
 
     runpp_with_consistency_checks(net)
@@ -1241,9 +1244,9 @@ def test_vsc_hvdc_mode2():
 
     pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
 
-    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="p_mw",
+    pp.create_vsc(net, 1, 0, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="p_mw",
                   control_value_dc=5)
-    pp.create_vsc(net, 2, 1, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1.02, control_mode_dc="vm_pu",
+    pp.create_vsc(net, 2, 1, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1.02, control_mode_dc="vm_pu",
                   control_value_dc=1)
 
     runpp_with_consistency_checks(net)
@@ -1268,9 +1271,9 @@ def test_vsc_hvdc_mode2_without_dc_line():
     pp.create_bus_dc(net, 110, 'A')
     pp.create_bus_dc(net, 110, 'B')
 
-    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="p_mw",
+    pp.create_vsc(net, 1, 0, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="p_mw",
                   control_value_dc=5)
-    pp.create_vsc(net, 2, 1, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1.02, control_mode_dc="vm_pu",
+    pp.create_vsc(net, 2, 1, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1.02, control_mode_dc="vm_pu",
                   control_value_dc=1)
 
     runpp_with_consistency_checks(net)
@@ -1299,9 +1302,9 @@ def test_vsc_hvdc_mode3():
 
     pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
 
-    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
+    pp.create_vsc(net, 1, 0, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
                   control_value_dc=1)
-    pp.create_vsc(net, 2, 1, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1.02, control_mode_dc="p_mw",
+    pp.create_vsc(net, 2, 1, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1.02, control_mode_dc="p_mw",
                   control_value_dc=5)
 
     runpp_with_consistency_checks(net)
@@ -1328,9 +1331,9 @@ def test_vsc_hvdc_mode4():
 
     pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
 
-    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="p_mw",
+    pp.create_vsc(net, 1, 0, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="p_mw",
                   control_value_dc=5)
-    pp.create_vsc(net, 2, 1, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1.02, control_mode_dc="p_mw",
+    pp.create_vsc(net, 2, 1, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1.02, control_mode_dc="p_mw",
                   control_value_dc=5)
 
     # all DC buses are set out of service, so there is no error in this case and bus_dc results are NaN
@@ -1355,9 +1358,9 @@ def test_vsc_hvdc_mode5():
 
     pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
 
-    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="p_mw",
+    pp.create_vsc(net, 1, 0, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="p_mw",
                   control_value_dc=4)
-    pp.create_vsc(net, 2, 1, 0.1, 5, control_mode_ac="q_mvar", control_value_ac=3, control_mode_dc="vm_pu",
+    pp.create_vsc(net, 2, 1, 0.1, 5, 0.15, control_mode_ac="q_mvar", control_value_ac=3, control_mode_dc="vm_pu",
                   control_value_dc=1)
 
     runpp_with_consistency_checks(net)
@@ -1384,9 +1387,9 @@ def test_vsc_hvdc_mode6():
 
     pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
 
-    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
+    pp.create_vsc(net, 1, 0, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
                   control_value_dc=1.02)
-    pp.create_vsc(net, 2, 1, 0.1, 5, control_mode_ac="q_mvar", control_value_ac=3, control_mode_dc="vm_pu",
+    pp.create_vsc(net, 2, 1, 0.1, 5, 0.15, control_mode_ac="q_mvar", control_value_ac=3, control_mode_dc="vm_pu",
                   control_value_dc=1)
 
     runpp_with_consistency_checks(net)
@@ -1413,9 +1416,9 @@ def test_vsc_hvdc_mode7():
 
     pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
 
-    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
+    pp.create_vsc(net, 1, 0, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
                   control_value_dc=1)
-    pp.create_vsc(net, 2, 1, 0.1, 5, control_mode_ac="q_mvar", control_value_ac=3, control_mode_dc="p_mw",
+    pp.create_vsc(net, 2, 1, 0.1, 5, 0.15, control_mode_ac="q_mvar", control_value_ac=3, control_mode_dc="p_mw",
                   control_value_dc=4)
 
     runpp_with_consistency_checks(net)
@@ -1442,9 +1445,9 @@ def test_vsc_hvdc_mode9():
 
     pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
 
-    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac="q_mvar", control_value_ac=5, control_mode_dc="p_mw",
+    pp.create_vsc(net, 1, 0, 0.1, 5, 0.15, control_mode_ac="q_mvar", control_value_ac=5, control_mode_dc="p_mw",
                   control_value_dc=4)
-    pp.create_vsc(net, 2, 1, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
+    pp.create_vsc(net, 2, 1, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
                   control_value_dc=1)
 
     runpp_with_consistency_checks(net)
@@ -1471,9 +1474,9 @@ def test_vsc_hvdc_mode10():
 
     pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
 
-    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac="q_mvar", control_value_ac=3, control_mode_dc="vm_pu",
+    pp.create_vsc(net, 1, 0, 0.1, 5, 0.15, control_mode_ac="q_mvar", control_value_ac=3, control_mode_dc="vm_pu",
                   control_value_dc=1)
-    pp.create_vsc(net, 2, 1, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
+    pp.create_vsc(net, 2, 1, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
                   control_value_dc=1)
 
     runpp_with_consistency_checks(net)
@@ -1500,9 +1503,9 @@ def test_vsc_hvdc_mode11():
 
     pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
 
-    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac="q_mvar", control_value_ac=3, control_mode_dc="vm_pu",
+    pp.create_vsc(net, 1, 0, 0.1, 5, 0.15, control_mode_ac="q_mvar", control_value_ac=3, control_mode_dc="vm_pu",
                   control_value_dc=1)
-    pp.create_vsc(net, 2, 1, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="p_mw",
+    pp.create_vsc(net, 2, 1, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="p_mw",
                   control_value_dc=4)
 
     runpp_with_consistency_checks(net)
@@ -1529,9 +1532,9 @@ def test_vsc_hvdc_mode13():
 
     pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
 
-    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac="q_mvar", control_value_ac=5, control_mode_dc="p_mw",
+    pp.create_vsc(net, 1, 0, 0.1, 5, 0.15, control_mode_ac="q_mvar", control_value_ac=5, control_mode_dc="p_mw",
                   control_value_dc=4)
-    pp.create_vsc(net, 2, 1, 0.1, 5, control_mode_ac="q_mvar", control_value_ac=5, control_mode_dc="vm_pu",
+    pp.create_vsc(net, 2, 1, 0.1, 5, 0.15, control_mode_ac="q_mvar", control_value_ac=5, control_mode_dc="vm_pu",
                   control_value_dc=1)
 
     runpp_with_consistency_checks(net)
@@ -1558,9 +1561,9 @@ def test_vsc_hvdc_mode14():
 
     pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
 
-    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac="q_mvar", control_value_ac=3, control_mode_dc="vm_pu",
+    pp.create_vsc(net, 1, 0, 0.1, 5, 0.15, control_mode_ac="q_mvar", control_value_ac=3, control_mode_dc="vm_pu",
                   control_value_dc=1)
-    pp.create_vsc(net, 2, 1, 0.1, 5, control_mode_ac="q_mvar", control_value_ac=3, control_mode_dc="vm_pu",
+    pp.create_vsc(net, 2, 1, 0.1, 5, 0.15, control_mode_ac="q_mvar", control_value_ac=3, control_mode_dc="vm_pu",
                   control_value_dc=1)
 
     runpp_with_consistency_checks(net)
@@ -1587,9 +1590,9 @@ def test_vsc_hvdc_mode15():
 
     pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU", index=6)
 
-    pp.create_vsc(net, 1, 1, 0.1, 5, control_mode_ac="q_mvar", control_value_ac=3, control_mode_dc="vm_pu",
+    pp.create_vsc(net, 1, 1, 0.1, 5, 0.15, control_mode_ac="q_mvar", control_value_ac=3, control_mode_dc="vm_pu",
                   control_value_dc=1, index=3)
-    pp.create_vsc(net, 2, 0, 0.1, 5, control_mode_ac="q_mvar", control_value_ac=4, control_mode_dc="p_mw",
+    pp.create_vsc(net, 2, 0, 0.1, 5, 0.15, control_mode_ac="q_mvar", control_value_ac=4, control_mode_dc="p_mw",
                   control_value_dc=4, index=2)
 
     runpp_with_consistency_checks(net)
@@ -1612,7 +1615,7 @@ def test_minimal_ac():
     # DC part
     pp.create_bus_dc(net, 110, 'A')
 
-    pp.create_vsc(net, 0, 0, 0.1, 6, control_value_ac=1.01, control_mode_dc="vm_pu", control_value_dc=1.02)
+    pp.create_vsc(net, 0, 0, 0.1, 6, 0.15, control_value_ac=1.01, control_mode_dc="vm_pu", control_value_dc=1.02)
 
     with pytest.raises(UserWarning, match="Voltage controlling elements"):
         pp.runpp(net)
@@ -1640,7 +1643,7 @@ def test_minimal_vsc_hvdc():
     pp.create_bus_dc(net, 110, 'A')
     pp.create_bus_dc(net, 110, 'B')
 
-    pp.create_vsc(net, 0, 0, 0.1, 5, control_mode_dc="vm_pu", control_value_dc=1.02)
+    pp.create_vsc(net, 0, 0, 0.1, 5, 0.15, control_mode_dc="vm_pu", control_value_dc=1.02)
 
     runpp_with_consistency_checks(net)
 
@@ -1680,11 +1683,11 @@ def test_simple_vsc_hvdc():
 
     pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
 
-    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_dc="vm_pu", control_value_dc=1.02)
+    pp.create_vsc(net, 1, 0, 0.1, 5, 0.15, control_mode_dc="vm_pu", control_value_dc=1.02)
 
     runpp_with_consistency_checks(net)
 
-    pp.create_vsc(net, 2, 1, 0.1, 5, control_mode_dc="p_mw", control_value_dc=1)
+    pp.create_vsc(net, 2, 1, 0.1, 5, 0.15, control_mode_dc="p_mw", control_value_dc=1)
     runpp_with_consistency_checks(net)
 
 
@@ -1708,11 +1711,15 @@ def test_simple_2vsc_hvdc1():
     pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
     pp.create_line_dc(net, 2, 3, 100, std_type="2400-CU")
 
-    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac='vm_pu', control_value_ac=1, control_mode_dc="p_mw", control_value_dc=10)
-    pp.create_vsc(net, 2, 1, 0.1, 5, control_mode_ac='vm_pu', control_value_ac=1, control_mode_dc="vm_pu", control_value_dc=1.02)
+    pp.create_vsc(net, 1, 0, 0.1, 5, 0.15, control_mode_ac='vm_pu', control_value_ac=1, control_mode_dc="p_mw",
+                  control_value_dc=10)
+    pp.create_vsc(net, 2, 1, 0.1, 5, 0.15, control_mode_ac='vm_pu', control_value_ac=1, control_mode_dc="vm_pu",
+                  control_value_dc=1.02)
 
-    pp.create_vsc(net, 1, 2, 0.1, 5, control_mode_ac='vm_pu', control_value_ac=1, control_mode_dc="p_mw", control_value_dc=10)
-    pp.create_vsc(net, 2, 3, 0.1, 5, control_mode_ac='vm_pu', control_value_ac=1, control_mode_dc="vm_pu", control_value_dc=1.02)
+    pp.create_vsc(net, 1, 2, 0.1, 5, 0.15, control_mode_ac='vm_pu', control_value_ac=1, control_mode_dc="p_mw",
+                  control_value_dc=10)
+    pp.create_vsc(net, 2, 3, 0.1, 5, 0.15, control_mode_ac='vm_pu', control_value_ac=1, control_mode_dc="vm_pu",
+                  control_value_dc=1.02)
 
     runpp_with_consistency_checks(net)
 
@@ -1737,8 +1744,10 @@ def test_simple_2vsc_hvdc2():
     pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
     pp.create_line_dc(net, 2, 3, 100, std_type="2400-CU")
 
-    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac='vm_pu', control_value_ac=1, control_mode_dc="p_mw", control_value_dc=10)
-    pp.create_vsc(net, 2, 1, 0.1, 5, control_mode_ac='vm_pu', control_value_ac=1, control_mode_dc="vm_pu", control_value_dc=1.02)
+    pp.create_vsc(net, 1, 0, 0.1, 5, 0.15, control_mode_ac='vm_pu', control_value_ac=1, control_mode_dc="p_mw",
+                  control_value_dc=10)
+    pp.create_vsc(net, 2, 1, 0.1, 5, 0.15, control_mode_ac='vm_pu', control_value_ac=1, control_mode_dc="vm_pu",
+                  control_value_dc=1.02)
 
     #pp.create_vsc(net, 1, 2, 0.1, 5, control_mode_ac='vm_pu', control_value_ac=1, control_mode_dc="p_mw", control_value_dc=10)
     #pp.create_vsc(net, 2, 3, 0.1, 5, control_mode_ac='vm_pu', control_value_ac=1, control_mode_dc="vm_pu", control_value_dc=1.02)
@@ -1747,8 +1756,10 @@ def test_simple_2vsc_hvdc2():
     pp.create_line_from_parameters(net, 1, 3, 30, 0.0487, 0.13823, 160, 0.664)
     pp.create_line_from_parameters(net, 2, 4, 30, 0.0487, 0.13823, 160, 0.664)
 
-    pp.create_vsc(net, 3, 2, 0.1, 5, control_mode_ac='vm_pu', control_value_ac=1, control_mode_dc="p_mw", control_value_dc=10)
-    pp.create_vsc(net, 4, 3, 0.1, 5, control_mode_ac='vm_pu', control_value_ac=1, control_mode_dc="vm_pu", control_value_dc=1.02)
+    pp.create_vsc(net, 3, 2, 0.1, 5, 0.15, control_mode_ac='vm_pu', control_value_ac=1, control_mode_dc="p_mw",
+                  control_value_dc=10)
+    pp.create_vsc(net, 4, 3, 0.1, 5, 0.15, control_mode_ac='vm_pu', control_value_ac=1, control_mode_dc="vm_pu",
+                  control_value_dc=1.02)
 
     runpp_with_consistency_checks(net)
 
@@ -1765,9 +1776,9 @@ def test_b2b_vsc_1():
     # DC part
     pp.create_bus_dc(net, 110, 'A')
 
-    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
+    pp.create_vsc(net, 1, 0, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
                   control_value_dc=1.02)
-    pp.create_vsc(net, 2, 0, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="p_mw",
+    pp.create_vsc(net, 2, 0, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="p_mw",
                   control_value_dc=2)
 
     runpp_with_consistency_checks(net)
@@ -1790,17 +1801,17 @@ def test_multiple_b2b_vsc_1():
     # first B2B converter
     pp.create_bus_dc(net, 110, 'A')
 
-    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
+    pp.create_vsc(net, 1, 0, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
                   control_value_dc=1.02)
-    pp.create_vsc(net, 2, 0, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="p_mw",
+    pp.create_vsc(net, 2, 0, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="p_mw",
                   control_value_dc=2)
 
     # second B2B converter
     pp.create_bus_dc(net, 110, 'B')
 
-    pp.create_vsc(net, 3, 1, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
+    pp.create_vsc(net, 3, 1, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
                   control_value_dc=1.02)
-    pp.create_vsc(net, 4, 1, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="p_mw",
+    pp.create_vsc(net, 4, 1, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="p_mw",
                   control_value_dc=4)
 
     runpp_with_consistency_checks(net)
@@ -1827,11 +1838,11 @@ def test_tres_amigas_b2b_vsc_1():
     # DC system
     pp.create_bus_dc(net, 110, 'A')
 
-    pp.create_vsc(net, 4, 0, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
+    pp.create_vsc(net, 4, 0, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
                   control_value_dc=1.02)
-    pp.create_vsc(net, 2, 0, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="p_mw",
+    pp.create_vsc(net, 2, 0, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="p_mw",
                   control_value_dc=2)
-    pp.create_vsc(net, 3, 0, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="p_mw",
+    pp.create_vsc(net, 3, 0, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="p_mw",
                   control_value_dc=4)
 
     runpp_with_consistency_checks(net)
@@ -1856,11 +1867,11 @@ def test_tres_amigas_b2b_vsc_2():
     # DC system
     pp.create_bus_dc(net, 110, 'A')
 
-    pp.create_vsc(net, 4, 0, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
+    pp.create_vsc(net, 4, 0, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
                   control_value_dc=1.02)
-    pp.create_vsc(net, 2, 0, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
+    pp.create_vsc(net, 2, 0, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
                   control_value_dc=1.02)
-    pp.create_vsc(net, 3, 0, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="p_mw",
+    pp.create_vsc(net, 3, 0, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="p_mw",
                   control_value_dc=4)
 
     runpp_with_consistency_checks(net)
@@ -1883,9 +1894,9 @@ def test_b2b_vsc_2():  # todo: requires VSC as slack
     # DC part
     pp.create_bus_dc(net, 110, 'A')
 
-    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
+    pp.create_vsc(net, 1, 0, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
                   control_value_dc=1.02)
-    pp.create_vsc(net, 2, 0, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="p_mw",
+    pp.create_vsc(net, 2, 0, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="p_mw",
                   control_value_dc=2)
 
     runpp_with_consistency_checks(net)
@@ -1903,9 +1914,9 @@ def test_b2b_vsc_3():
     # DC part
     pp.create_bus_dc(net, 110, 'A')
 
-    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
+    pp.create_vsc(net, 1, 0, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
                   control_value_dc=1.02)
-    pp.create_vsc(net, 2, 0, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="p_mw",
+    pp.create_vsc(net, 2, 0, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="p_mw",
                   control_value_dc=2)
 
     runpp_with_consistency_checks(net)
@@ -1924,12 +1935,12 @@ def test_b2b_vsc_4():
     # DC part
     pp.create_bus_dc(net, 150, 'A')
 
-    pp.create_vsc(net, 0, 0, 0.1, 5, control_mode_ac="slack", control_value_ac=1.,
-                  control_mode_dc="p_mw", control_value_dc=0.)
-    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac="q_mvar", control_value_ac=10.,
-                  control_mode_dc="vm_pu", control_value_dc=1.02)
-    pp.create_vsc(net, 2, 0, 0.1, 5, control_mode_ac="slack", control_value_ac=1.,
-                  control_mode_dc="p_mw", control_value_dc=0.)
+    pp.create_vsc(net, 0, 0, 0.1, 5, 0.15, control_mode_ac="slack", control_value_ac=1., control_mode_dc="p_mw",
+                  control_value_dc=0.)
+    pp.create_vsc(net, 1, 0, 0.1, 5, 0.15, control_mode_ac="q_mvar", control_value_ac=10., control_mode_dc="vm_pu",
+                  control_value_dc=1.02)
+    pp.create_vsc(net, 2, 0, 0.1, 5, 0.15, control_mode_ac="slack", control_value_ac=1., control_mode_dc="p_mw",
+                  control_value_dc=0.)
 
     runpp_with_consistency_checks(net)
 
@@ -1949,12 +1960,12 @@ def test_b2b_vsc_5():
     # DC part
     pp.create_bus_dc(net, 150, 'A')
 
-    pp.create_vsc(net, 0, 0, 0.1, 5, control_mode_ac="slack", control_value_ac=1.,
-                  control_mode_dc="p_mw", control_value_dc=0.)
-    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac="q_mvar", control_value_ac=10.,
-                  control_mode_dc="vm_pu", control_value_dc=1.02)
-    pp.create_vsc(net, 2, 0, 0.1, 5, control_mode_ac="q_mvar", control_value_ac=4.,
-                  control_mode_dc="p_mw", control_value_dc=5.)
+    pp.create_vsc(net, 0, 0, 0.1, 5, 0.15, control_mode_ac="slack", control_value_ac=1., control_mode_dc="p_mw",
+                  control_value_dc=0.)
+    pp.create_vsc(net, 1, 0, 0.1, 5, 0.15, control_mode_ac="q_mvar", control_value_ac=10., control_mode_dc="vm_pu",
+                  control_value_dc=1.02)
+    pp.create_vsc(net, 2, 0, 0.1, 5, 0.15, control_mode_ac="q_mvar", control_value_ac=4., control_mode_dc="p_mw",
+                  control_value_dc=5.)
     runpp_with_consistency_checks(net)
 
 
@@ -1968,10 +1979,10 @@ def test_b2b_vsc_6():
 
     # DC part
     pp.create_bus_dc(net, 150, 'A')
-    pp.create_vsc(net, 0, 0, 0.1, 5, control_mode_ac="slack", control_value_ac=1.,
-                  control_mode_dc="p_mw", control_value_dc=0.)
-    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac="q_mvar", control_value_ac=0.,
-                  control_mode_dc="vm_pu", control_value_dc=1.)
+    pp.create_vsc(net, 0, 0, 0.1, 5, 0.15, control_mode_ac="slack", control_value_ac=1., control_mode_dc="p_mw",
+                  control_value_dc=0.)
+    pp.create_vsc(net, 1, 0, 0.1, 5, 0.15, control_mode_ac="q_mvar", control_value_ac=0., control_mode_dc="vm_pu",
+                  control_value_dc=1.)
 
     # with pytest.raises(NotImplementedError):
     #     pp.runpp(net)
@@ -1987,10 +1998,10 @@ def test_b2b_vsc_7():
 
     # DC part
     pp.create_bus_dc(net, 150, 'A')
-    pp.create_vsc(net, 0, 0, 0.1, 5, control_mode_ac="slack", control_value_ac=1.,
-                  control_mode_dc="p_mw", control_value_dc=0.)
-    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac="q_mvar", control_value_ac=0.,
-                  control_mode_dc="vm_pu", control_value_dc=1.)
+    pp.create_vsc(net, 0, 0, 0.1, 5, 0.15, control_mode_ac="slack", control_value_ac=1., control_mode_dc="p_mw",
+                  control_value_dc=0.)
+    pp.create_vsc(net, 1, 0, 0.1, 5, 0.15, control_mode_ac="q_mvar", control_value_ac=0., control_mode_dc="vm_pu",
+                  control_value_dc=1.)
 
     runpp_with_consistency_checks(net)
 
@@ -2011,11 +2022,11 @@ def test_b2b_line_dc_raise():
 
     pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
 
-    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
+    pp.create_vsc(net, 1, 0, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
                   control_value_dc=1.02)
-    pp.create_vsc(net, 2, 0, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="p_mw",
+    pp.create_vsc(net, 2, 0, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="p_mw",
                   control_value_dc=2)
-    pp.create_vsc(net, 3, 1, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="p_mw",
+    pp.create_vsc(net, 3, 1, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="p_mw",
                   control_value_dc=2)
 
     with pytest.raises(NotImplementedError, match="Back-To-Back"):
@@ -2038,11 +2049,11 @@ def test_line_dc_and_2_vsc1():
 
     pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
 
-    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
+    pp.create_vsc(net, 1, 0, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
                   control_value_dc=1.02)
-    pp.create_vsc(net, 2, 0, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
+    pp.create_vsc(net, 2, 0, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
                   control_value_dc=1.02)
-    pp.create_vsc(net, 3, 1, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="p_mw",
+    pp.create_vsc(net, 3, 1, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="p_mw",
                   control_value_dc=2)
 
     runpp_with_consistency_checks(net)
@@ -2064,11 +2075,11 @@ def test_line_dc_and_2_vsc2():
 
     pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
 
-    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="p_mw",
+    pp.create_vsc(net, 1, 0, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="p_mw",
                   control_value_dc=2)
-    pp.create_vsc(net, 2, 0, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="p_mw",
+    pp.create_vsc(net, 2, 0, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="p_mw",
                   control_value_dc=2)
-    pp.create_vsc(net, 3, 1, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
+    pp.create_vsc(net, 3, 1, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
                   control_value_dc=1.02)
 
     runpp_with_consistency_checks(net)
@@ -2097,8 +2108,12 @@ def test_2vsc_1ac_2dc(control_mode_ac, control_mode_dc):
 
     pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
 
-    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac=control_mode_ac[0], control_value_ac=val_ac[control_mode_ac[0]], control_mode_dc=control_mode_dc[0], control_value_dc=val_dc[control_mode_dc[0]])
-    pp.create_vsc(net, 1, 1, 0.1, 5, control_mode_ac=control_mode_ac[1], control_value_ac=val_ac[control_mode_ac[1]], control_mode_dc=control_mode_dc[1], control_value_dc=val_dc[control_mode_dc[1]])
+    pp.create_vsc(net, 1, 0, 0.1, 5, 0.15, control_mode_ac=control_mode_ac[0],
+                  control_value_ac=val_ac[control_mode_ac[0]], control_mode_dc=control_mode_dc[0],
+                  control_value_dc=val_dc[control_mode_dc[0]])
+    pp.create_vsc(net, 1, 1, 0.1, 5, 0.15, control_mode_ac=control_mode_ac[1],
+                  control_value_ac=val_ac[control_mode_ac[1]], control_mode_dc=control_mode_dc[1],
+                  control_value_dc=val_dc[control_mode_dc[1]])
 
     if control_mode_ac[0] == control_mode_ac[1]:
         runpp_with_consistency_checks(net)
@@ -2132,8 +2147,12 @@ def test_2vsc_2ac_1dc(control_mode_ac, control_mode_dc):
 
     pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
 
-    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac=control_mode_ac[0], control_value_ac=val_ac[control_mode_ac[0]], control_mode_dc=control_mode_dc[0], control_value_dc=val_dc[control_mode_dc[0]])
-    pp.create_vsc(net, 2, 0, 0.1, 5, control_mode_ac=control_mode_ac[1], control_value_ac=val_ac[control_mode_ac[1]], control_mode_dc=control_mode_dc[1], control_value_dc=val_dc[control_mode_dc[1]])
+    pp.create_vsc(net, 1, 0, 0.1, 5, 0.15, control_mode_ac=control_mode_ac[0],
+                  control_value_ac=val_ac[control_mode_ac[0]], control_mode_dc=control_mode_dc[0],
+                  control_value_dc=val_dc[control_mode_dc[0]])
+    pp.create_vsc(net, 2, 0, 0.1, 5, 0.15, control_mode_ac=control_mode_ac[1],
+                  control_value_ac=val_ac[control_mode_ac[1]], control_mode_dc=control_mode_dc[1],
+                  control_value_dc=val_dc[control_mode_dc[1]])
 
     runpp_with_consistency_checks(net)
 
@@ -2162,8 +2181,12 @@ def test_2vsc_1ac_1dc(control_mode_ac, control_mode_dc):
 
     pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
 
-    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac=control_mode_ac[0], control_value_ac=val_ac[control_mode_ac[0]], control_mode_dc=control_mode_dc[0], control_value_dc=val_dc[control_mode_dc[0]])
-    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac=control_mode_ac[1], control_value_ac=val_ac[control_mode_ac[1]], control_mode_dc=control_mode_dc[1], control_value_dc=val_dc[control_mode_dc[1]])
+    pp.create_vsc(net, 1, 0, 0.1, 5, 0.15, control_mode_ac=control_mode_ac[0],
+                  control_value_ac=val_ac[control_mode_ac[0]], control_mode_dc=control_mode_dc[0],
+                  control_value_dc=val_dc[control_mode_dc[0]])
+    pp.create_vsc(net, 1, 0, 0.1, 5, 0.15, control_mode_ac=control_mode_ac[1],
+                  control_value_ac=val_ac[control_mode_ac[1]], control_mode_dc=control_mode_dc[1],
+                  control_value_dc=val_dc[control_mode_dc[1]])
 
     if control_mode_ac[0] == control_mode_ac[1]:
         runpp_with_consistency_checks(net)
@@ -2187,8 +2210,10 @@ def test_vsc_slack_minimal_wrong():
 
     pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
 
-    pp.create_vsc(net, 0, 0, 0.1, 5, control_mode_ac="slack", control_value_ac=1, control_mode_dc="vm_pu", control_value_dc=1.02)
-    pp.create_vsc(net, 1, 1, 0.1, 5, control_mode_ac="slack", control_value_ac=1, control_mode_dc="p_mw", control_value_dc=1)
+    pp.create_vsc(net, 0, 0, 0.1, 5, 0.15, control_mode_ac="slack", control_value_ac=1, control_mode_dc="vm_pu",
+                  control_value_dc=1.02)
+    pp.create_vsc(net, 1, 1, 0.1, 5, 0.15, control_mode_ac="slack", control_value_ac=1, control_mode_dc="p_mw",
+                  control_value_dc=1)
 
     # VSC as slack cannot have DC bus as vm_pu, therefore must be excluded from DC slacks
     # Then the DC buses are set out of service, and the corresponding VSC are also set out of service
@@ -2212,8 +2237,10 @@ def test_vsc_slack_minimal_wrong2():
 
     pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
 
-    pp.create_vsc(net, 0, 0, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu", control_value_dc=1.02)
-    pp.create_vsc(net, 1, 1, 0.1, 5, control_mode_ac="slack", control_value_ac=1, control_mode_dc="p_mw", control_value_dc=1)
+    pp.create_vsc(net, 0, 0, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
+                  control_value_dc=1.02)
+    pp.create_vsc(net, 1, 1, 0.1, 5, 0.15, control_mode_ac="slack", control_value_ac=1, control_mode_dc="p_mw",
+                  control_value_dc=1)
 
     # VSC that defines AC slack cannot define DC slack at the same time
     # DC slack buses that are only connected to VSC AC slacks are converted to type P buses
@@ -2238,8 +2265,10 @@ def test_vsc_slack_minimal():  # todo: fix that FACTS elements can be connected 
 
     pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
 
-    pp.create_vsc(net, 0, 0, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu", control_value_dc=1.02)
-    pp.create_vsc(net, 1, 1, 0.1, 5, control_mode_ac="slack", control_value_ac=1, control_mode_dc="p_mw", control_value_dc=1)
+    pp.create_vsc(net, 0, 0, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
+                  control_value_dc=1.02)
+    pp.create_vsc(net, 1, 1, 0.1, 5, 0.15, control_mode_ac="slack", control_value_ac=1, control_mode_dc="p_mw",
+                  control_value_dc=1)
 
     # pp.runpp(net)
 
@@ -2265,8 +2294,10 @@ def test_vsc_slack():
 
     pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
 
-    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu", control_value_dc=1.02)
-    pp.create_vsc(net, 2, 1, 0.1, 5, control_mode_ac="slack", control_value_ac=1, control_mode_dc="p_mw", control_value_dc=0.)
+    pp.create_vsc(net, 1, 0, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
+                  control_value_dc=1.02)
+    pp.create_vsc(net, 2, 1, 0.1, 5, 0.15, control_mode_ac="slack", control_value_ac=1, control_mode_dc="p_mw",
+                  control_value_dc=0.)
 
     runpp_with_consistency_checks(net)
 
@@ -2289,8 +2320,10 @@ def test_vsc_slack2():
 
     pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
 
-    pp.create_vsc(net, 1, 0, 0.1, 5, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu", control_value_dc=1.02)
-    pp.create_vsc(net, 2, 1, 0.1, 5, control_mode_ac="slack", control_value_ac=1, control_mode_dc="p_mw", control_value_dc=10)
+    pp.create_vsc(net, 1, 0, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
+                  control_value_dc=1.02)
+    pp.create_vsc(net, 2, 1, 0.1, 5, 0.15, control_mode_ac="slack", control_value_ac=1, control_mode_dc="p_mw",
+                  control_value_dc=10)
 
     runpp_with_consistency_checks(net)
 

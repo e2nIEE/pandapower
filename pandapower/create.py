@@ -180,6 +180,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                   ("bus_dc", "u4"),
                   ("r_ohm", "f8"),
                   ("x_ohm", "f8"),
+                  ("r_dc_ohm", "f8"),
                   ("control_mode_ac", dtype(object)),
                   ("control_value_ac", "f8"),
                   ("control_mode_dc", dtype(object)),
@@ -4734,7 +4735,7 @@ def create_ssc(net, bus, r_ohm, x_ohm, set_vm_pu=1., vm_internal_pu=1., va_inter
     return index
 
 
-def create_vsc(net, bus, bus_dc, r_ohm, x_ohm, control_mode_ac="vm_pu", control_value_ac=1.,
+def create_vsc(net, bus, bus_dc, r_ohm, x_ohm, r_dc_ohm, control_mode_ac="vm_pu", control_value_ac=1.,
                control_mode_dc="p_mw", control_value_dc=0.,
                name=None, controllable=True, in_service=True, index=None, **kwargs):
     """
@@ -4753,6 +4754,8 @@ def create_vsc(net, bus, bus_dc, r_ohm, x_ohm, control_mode_ac="vm_pu", control_
         **r_ohm** (float) - resistance of the coupling transformer component of VSC
 
         **x_ohm** (float) - reactance of the coupling transformer component of VSC
+
+        **r_dc_ohm** (float) - resistance of the internal dc resistance component of VSC
 
         **control_mode_ac** (string) - the control mode of the ac side of the VSC. it could be "vm_pu" or "q_mvar"
 
@@ -4784,9 +4787,9 @@ def create_vsc(net, bus, bus_dc, r_ohm, x_ohm, control_mode_ac="vm_pu", control_
     index = _get_index_with_check(net, "vsc", index)
 
     entries = dict(zip([
-        "name", "bus", "bus_dc", "r_ohm", "x_ohm", "control_mode_ac", "control_value_ac", "control_mode_dc",
+        "name", "bus", "bus_dc", "r_ohm", "x_ohm", "r_dc_ohm", "control_mode_ac", "control_value_ac", "control_mode_dc",
         "control_value_dc", "controllable", "in_service"],
-        [name, bus, bus_dc, r_ohm, x_ohm, control_mode_ac, control_value_ac, control_mode_dc, control_value_dc,
+        [name, bus, bus_dc, r_ohm, x_ohm, r_dc_ohm, control_mode_ac, control_value_ac, control_mode_dc, control_value_dc,
          controllable, in_service]))
     _set_entries(net, "vsc", index, **entries, **kwargs)
 

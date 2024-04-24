@@ -26,7 +26,7 @@ from pandapower.pf.makeYbus_facts import makeYbus_svc, makeYbus_tcsc, makeYft_tc
 from pandapower.pypower.idx_bus_dc import DC_PD, DC_VM, DC_BUS_TYPE, DC_NONE, DC_BUS_I, DC_REF, DC_P, DC_B2B
 from pandapower.pypower.idx_vsc import VSC_CONTROLLABLE, VSC_MODE_AC, VSC_VALUE_AC, VSC_MODE_DC, VSC_VALUE_DC, VSC_R, \
     VSC_X, VSC_Q, VSC_P, VSC_BUS_DC, VSC_P_DC, VSC_MODE_AC_SL, VSC_MODE_AC_V, VSC_MODE_AC_Q, VSC_MODE_DC_P, \
-    VSC_MODE_DC_V
+    VSC_MODE_DC_V, VSC_INTERNAL_BUS_DC, VSC_R_DC
 from pandapower.pypower.makeSbus import makeSbus
 from pandapower.pf.create_jacobian import create_jacobian_matrix, get_fastest_jacobian_function
 from pandapower.pypower.idx_gen import PG
@@ -142,7 +142,8 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     vsc_branches = flatnonzero(nan_to_num(vsc[:, VSC_STATUS]))
     vsc_fb = vsc[vsc_branches, [VSC_BUS]].real.astype(np.int64)
     vsc_tb = vsc[vsc_branches, [VSC_INTERNAL_BUS]].real.astype(np.int64)
-    vsc_dc_bus = vsc[vsc_branches, [VSC_BUS_DC]].real.astype(np.int64)
+    vsc_dc_bus = vsc[vsc_branches, [VSC_INTERNAL_BUS_DC]].real.astype(np.int64)
+    vsc_dc_bus_ext = vsc[vsc_branches, [VSC_BUS_DC]].real.astype(np.int64)
     num_vsc = len(vsc_fb)
     vsc_controllable = vsc[vsc_branches, VSC_CONTROLLABLE].real.astype(bool)
     num_vsc_controllable = sum(vsc_controllable)
@@ -151,6 +152,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     vsc_mode_dc = vsc[vsc_branches[vsc_controllable], VSC_MODE_DC]
     vsc_value_dc = vsc[vsc_branches[vsc_controllable], VSC_VALUE_DC]
     vsc_y_pu = 1 / (vsc[vsc_branches, VSC_R].real + 1j * vsc[vsc_branches, VSC_X].real)
+    vsc_g_pu = np.where(vsc[vsc_branches, VSC_R_DC].real != 0, 1 / vsc[vsc_branches, VSC_R_DC].real, 1e9)
     any_vsc = num_vsc > 0
     any_vsc_controllable = num_vsc_controllable > 0
 
@@ -204,7 +206,8 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     Ybus_vsc_not_controllable, Ybus_vsc_controllable, Ybus_vsc = \
         makeYbus_ssc_vsc(Ybus, vsc_y_pu, vsc_fb, vsc_tb, vsc_controllable)
     # HVDC
-    Ybus_hvdc = make_Ybus_facts(hvdc_fb, hvdc_tb, hvdc_y_pu, num_bus_dc, dtype=np.float64)
+    Ybus_vsc_dc = make_Ybus_facts(vsc_dc_bus, vsc_dc_bus_ext, vsc_g_pu, num_bus_dc, dtype=np.float64)
+    Ybus_hvdc = make_Ybus_facts(hvdc_fb, hvdc_tb, hvdc_y_pu, num_bus_dc, dtype=np.float64) + Ybus_vsc_dc
 
     # to avoid non-convergence due to zero-terms in the Jacobian:
     if any_tcsc_controllable and np.all(V[tcsc_fb] == V[tcsc_tb]):

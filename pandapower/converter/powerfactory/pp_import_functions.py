@@ -2813,7 +2813,7 @@ def create_vscmono(net, item):
         "control_value_dc": control_value_dc
     }
 
-    vid = pp.create_vsc(net, **params)
+    vid = pp.create_vsc(net, 0.01, **params)
     logger.debug(f'created VSC {vid} for vscmono {item.loc_name}')
 
     result_variables = {"pf_p_mw": "m:P:busac",
@@ -2857,8 +2857,8 @@ def create_vsc(net, item):
         "control_value_dc": control_value_dc
     }
 
-    vid_1 = pp.create_vsc(net, bus=bus, bus_dc=bus_dc_n, **params)
-    vid_2 = pp.create_vsc(net, bus=bus, bus_dc=bus_dc_p, **params)
+    vid_1 = pp.create_vsc(net, bus=bus, bus_dc=bus_dc_n, r_dc_ohm=0.01, **params)
+    vid_2 = pp.create_vsc(net, bus=bus, bus_dc=bus_dc_p, r_dc_ohm=0.01, **params)
     logger.debug(f'created two vsc mono {vid_1}, {vid_2} for vsc {item.loc_name}')
 
     result_variables = {"pf_p_mw": "m:P:busac",
