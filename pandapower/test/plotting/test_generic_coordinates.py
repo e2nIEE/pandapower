@@ -19,9 +19,9 @@ except ImportError:
 @pytest.mark.skipif(IGRAPH_INSTALLED is False, reason="Requires igraph.")
 def test_create_generic_coordinates_igraph():
     net = create_test_network()
-    net.bus_geodata = net.bus_geodata.drop(net.bus_geodata.index)
+    net.bus = net.bus.drop("geo", axis=1)
     create_generic_coordinates(net, library="igraph")
-    assert len(net.bus_geodata) == len(net.bus)
+    assert len(net.bus.geo.dropna()) == len(net.bus)
 
 
 @pytest.mark.xfail(reason="The current implementation is not working properly, as multigraph edges "
@@ -35,10 +35,10 @@ def test_create_generic_coordinates_nx():
 @pytest.mark.skipif(IGRAPH_INSTALLED is False, reason="Requires igraph.")
 def test_create_generic_coordinates_igraph_custom_table_index():
     net = nw.simple_four_bus_system()
-    for buses in [[0,1], [0,2], [0,1,2]]:
-        create_generic_coordinates(net, buses=buses, geodata_table="test",
-                                   overwrite=True)
+    for buses in [[0, 1], [0, 2], [0, 1, 2]]:
+        create_generic_coordinates(net, buses=buses, geodata_table="test", overwrite=True)
         assert np.all(net.test.index == buses)
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

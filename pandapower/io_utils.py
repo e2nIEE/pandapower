@@ -5,6 +5,7 @@
 
 import copy
 import importlib
+import io
 import json
 import numbers
 import os
@@ -23,6 +24,7 @@ from packaging.version import Version
 from pandapower import __version__
 import networkx
 import numpy
+import geojson
 import pandas as pd
 from networkx.readwrite import json_graph
 from numpy import ndarray, generic, equal, isnan, allclose, any as anynp
@@ -164,11 +166,16 @@ def to_dict_of_dfs(net, include_results=False, include_std_types=True, include_p
         elif "object" in value.columns:
             columns = [c for c in value.columns if c != "object"]
             tab = value[columns].copy()
-            tab["object"] = value["object"].apply(lambda x: json.dumps(x, cls=PPJSONEncoder,
-                                                                       indent=2))
+            tab["object"] = value["object"].apply(lambda x: json.dumps(x, cls=PPJSONEncoder, indent=2))
             tab = tab[value.columns]
             if "recycle" in tab.columns:
                 tab["recycle"] = tab["recycle"].apply(json.dumps)
+            dodfs[item] = tab
+        elif "geo" in value.columns:
+            columns = [c for c in value.columns if c != "geo"]
+            tab = value[columns].copy()
+            tab["geo"] = value["geo"].apply(lambda x: json.dumps(x, cls=PPJSONEncoder, indent=2))
+            tab = tab[value.columns]
             dodfs[item] = tab
         else:
             dodfs[item] = value
@@ -228,8 +235,9 @@ def from_dict_of_dfs(dodfs, net=None):
                     net[c] = ''
             continue
         elif item in ["line_geodata", "bus_geodata"]:
-            table = table.rename_axis(net[item].index.name)
-            df_to_coords(net, item, table)
+            pass
+        #    table = table.rename_axis(net[item].index.name)
+        #    df_to_coords(net, item, table)
         elif item.endswith("_std_types"):
             # when loaded from Excel, the lists in the DataFrame cells are strings -> we want to convert them back
             # to lists here. There is probably a better way to deal with it.
@@ -255,6 +263,12 @@ def from_dict_of_dfs(dodfs, net=None):
             if not isinstance(table.index, pd.MultiIndex):
                 table = table.rename_axis(net[item].index.name)
             net[item] = table
+            # convert geodata to geojson
+            if item in ["bus", "line"]:
+                if "geo" in table.columns:
+                    table.geo = table.geo.apply(
+                        lambda x: geojson.loads(x, cls=PPJSONDecoder) if pd.notna(x) else x
+                    )
         # set the index to be Int
         try:
             net[item].set_index(net[item].index.astype(np.int64), inplace=True)
@@ -566,6 +580,8 @@ class FromSerializableRegistry():
         for col in ('object', 'controller'):  # "controller" for backwards compatibility
             if (col in df.columns):
                 df[col] = df[col].apply(self.pp_hook)
+        if 'geo' in df.columns:
+            df['geo'] = df['geo'].dropna().apply(json.dumps).apply(geojson.loads)
         return df
 
     @from_serializable.register(class_name='pandapowerNet', module_name='pandapower.auxiliary')#,

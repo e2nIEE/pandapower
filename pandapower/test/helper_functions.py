@@ -7,7 +7,6 @@
 import os
 from copy import deepcopy
 
-import numpy as np
 import pandapower as pp
 import pandapower.toolbox
 
@@ -35,11 +34,11 @@ def create_test_network():
     """
     Creates a simple pandapower test network
     """
-    net = pp.create_empty_network()
+    net = pp.create_empty_network(name='test_network')
     b1 = pp.create_bus(net, name="bus1", vn_kv=10.)
     pp.create_ext_grid(net, b1)
-    b2 = pp.create_bus(net, name="bus2", geodata=(1, 2), vn_kv=.4)
-    b3 = pp.create_bus(net, name="bus3", geodata=(1, 3), vn_kv=.4, index=7)
+    b2 = pp.create_bus(net, name="bus2", geodata=(1., 2.), vn_kv=.4)
+    b3 = pp.create_bus(net, name="bus3", geodata=(1., 3.), vn_kv=.4, index=7)
     b4 = pp.create_bus(net, name="bus4", vn_kv=10.)
     pp.create_transformer_from_parameters(net, b4, b2, vk_percent=3.75,
                                           tap_max=2, vn_lv_kv=0.4,
@@ -53,7 +52,7 @@ def create_test_network():
 
     pp.create_line_from_parameters(net, b2, b3, 1, name="line1", r_ohm_per_km=0.2067,
                                    ices=0.389985, c_nf_per_km=720.0, max_i_ka=0.328,
-                                   x_ohm_per_km=0.1897522, geodata=[[1, 2], [3, 4]])
+                                   x_ohm_per_km=0.1897522, geodata=[[1., 2.], [3., 4.]])
     # NAYY 1x150RM 0.6/1kV ir
     pp.create_line_from_parameters(net, b1, b4, 1, name="line2", r_ohm_per_km=0.876,
                                    c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876)

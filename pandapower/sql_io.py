@@ -237,6 +237,8 @@ def delete_postgresql_net(grid_id, host, user, password, database, schema, grid_
     check_postgresql_catalogue_table(cursor, catalogue_table_name, grid_id, grid_id_column, download=True)
     query = f"DELETE FROM {catalogue_table_name} WHERE {grid_id_column}={grid_id};"
     cursor.execute(query)
+    # query = f'DROP SCHEMA IF EXISTS "{schema}" CASCADE; CREATE SCHEMA IF NOT EXISTS "{schema}";'
+    # cursor.execute(query)
     conn.commit()
 
 
@@ -282,6 +284,9 @@ def from_sql(conn, schema, grid_id, grid_id_column="grid_id", grid_catalogue_nam
         except psycopg2.errors.UndefinedTable as err:
             logger.info(f"skipped {element} due to error: {err}")
             continue
+
+        if 'geo' in tab.columns:
+            tab.geo = tab.geo.replace({'NaN': None})
 
         d[element] = tab
 

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pandapower"
-version = "2.15.0" # File format version '__format_version__' is tracked in _version.py
+version = "3.0.0" # File format version '__format_version__' is tracked in _version.py
 authors = [
     { name = "Leon Thurner", email = "leon.thurner@retoflow.de" },
     { name = "Alexander Scheidler", email = "alexander.scheidler@iee.fraunhofer.de" }
@@ -41,7 +41,9 @@ dependencies = [
     "numpy",
     "packaging",
     "tqdm",
-    "deepdiff"]
+    "deepdiff",
+    "geojson",
+    "typing_extensions~=4.9"]
 keywords = [
     "power system", "network", "analysis", "optimization", "automation", "grid", "electricity", "energy", "engineering", "simulation", "pandapower"
 ]
@@ -57,7 +59,7 @@ Changelog = "https://github.com/e2nIEE/pandapower/blob/develop/CHANGELOG.rst"
 
 [project.optional-dependencies]
 docs = ["numpydoc", "matplotlib", "sphinx", "sphinx_rtd_theme", "sphinx-pyproject"]
-plotting = ["plotly>=3.1.1", "matplotlib", "igraph", "geopandas", "geojson"]
+plotting = ["plotly>=3.1.1", "matplotlib", "igraph", "geopandas"]
 test = ["pytest~=8.1", "pytest-xdist", "nbmake"]
 performance = ["ortools", "numba>=0.25", "lightsim2grid>=0.8.1"]
 fileio = ["xlsxwriter", "openpyxl", "cryptography", "geopandas", "psycopg2"]
@@ -65,7 +67,7 @@ converter = ["matpowercaseframes"]
 pgm = ["power-grid-model-io"]
 all = [
     "numpydoc", "sphinx", "sphinx_rtd_theme", "sphinx-pyproject",
-    "plotly>=3.1.1", "matplotlib", "igraph", "geopandas", "geojson",
+    "plotly>=3.1.1", "matplotlib", "igraph", "geopandas",
     "pytest~=8.1", "pytest-xdist", "nbmake",
     "ortools", "numba>=0.25", "lightsim2grid>=0.8.1",
     "xlsxwriter", "openpyxl", "cryptography", "psycopg2",
