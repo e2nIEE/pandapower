@@ -9,6 +9,7 @@ from packaging.version import Version
 
 from pandapower._version import __version__, __format_version__
 from pandapower.create import create_empty_network, create_poly_cost
+import pandapower.plotting.geo as geo
 from pandapower.results import reset_results
 
 try:
@@ -36,7 +37,7 @@ def convert_format(net, elements_to_deserialize=None):
     _create_seperate_cost_tables(net, elements_to_deserialize)
     if Version(str(net.format_version)) < Version("2.4.0"):
         _convert_bus_pq_meas_to_load_reference(net, elements_to_deserialize)
-    if isinstance(net.format_version, float) and net.format_version < 2:
+    if isinstance(net.format_version, float) and net.format_version < 2:  # Why only run if net.format_version is float?
         _convert_to_generation_system(net, elements_to_deserialize)
         _convert_costs(net)
         _convert_to_mw(net)
@@ -70,7 +71,7 @@ def _restore_index_names(net):
 
 def correct_dtypes(net, error):
     """
-    Corrects all dtypes of pp element tables if possile. If not and error is True, an Error is
+    Corrects all dtypes of pp element tables if possible. If not and error is True, an Error is
     raised.
     """
     empty_net = create_empty_network()
@@ -266,9 +267,10 @@ def _add_missing_columns(net, elements_to_deserialize):
         if "df" not in net[element]:
             net[element]["df"] = 1.0
 
-    if _check_elements_to_deserialize('bus_geodata', elements_to_deserialize) \
-            and "coords" not in net.bus_geodata:
-        net.bus_geodata["coords"] = None
+    if _check_elements_to_deserialize('bus', elements_to_deserialize) \
+            and _check_elements_to_deserialize('bus_geodata', elements_to_deserialize) \
+            and "geo" not in net.bus:
+        net.bus["geo"] = np.nan
     if _check_elements_to_deserialize('trafo3w', elements_to_deserialize) and \
             "tap_at_star_point" not in net.trafo3w:
         net.trafo3w["tap_at_star_point"] = False
@@ -298,9 +300,11 @@ def _add_missing_columns(net, elements_to_deserialize):
         net.sgen["current_source"] = net.sgen["type"].apply(
             func=lambda x: False if x == "motor" else True)
 
-    if _check_elements_to_deserialize('line', elements_to_deserialize) and \
-            "g_us_per_km" not in net.line:
-        net.line["g_us_per_km"] = 0.
+    if _check_elements_to_deserialize('line', elements_to_deserialize):
+        if "g_us_per_km" not in net.line:
+            net.line["g_us_per_km"] = 0.
+        if _check_elements_to_deserialize('line_geodata', elements_to_deserialize) and "geo" not in net.line:
+            net.line["geo"] = np.nan
 
     if _check_elements_to_deserialize('gen', elements_to_deserialize) and \
             "slack" not in net.gen:

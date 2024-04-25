@@ -36,6 +36,9 @@ def from_pf(dict_net, pv_as_slack=True, pf_variable_p_loads='plini', pf_variable
     grid_name = dict_net['ElmNet'].loc_name
     base_sn_mva = dict_net['global_parameters']['base_sn_mva']
     net = pp.create_empty_network(grid_name, sn_mva=base_sn_mva)
+    net['bus_geodata'] = DataFrame(columns=['x', 'y'])
+    net['line_geodata'] = DataFrame(columns=['coords'])
+
     pp.results.reset_results(net, mode="pf_3ph")
     if max_iter is not None:
         pp.set_user_pf_options(net, max_iteration=max_iter)
@@ -2591,27 +2594,57 @@ def create_shunt(net, item):
         'vn_kv': item.ushnm,
         'q_mvar': item.Qact * multiplier
     }
+    if item.shtype == 0:
+        # Shunt is a R-L-C element
+        
+        R = item.rrea
+        X = -1e6/item.bcap + item.xrea
 
-    if item.shtype == 1:
+        p_mw = (item.ushnm ** 2 * R) / (R ** 2 + X ** 2) * multiplier
+        params['q_mvar'] = (item.ushnm ** 2 * X) / (R ** 2 + X ** 2) * multiplier
+        sid = pp.create_shunt(net, p_mw=p_mw, **params)
+    elif item.shtype == 1:
         # Shunt is an R-L element
-        params['q_mvar'] = item.qrean * multiplier
-        p_mw = (item.ushnm ** 2 * item.rrea / (item.rrea ** 2 + item.xrea ** 2)) * multiplier
+        
+        R = item.rrea
+        X = item.xrea
+
+        p_mw = (item.ushnm ** 2 * R) / (R ** 2 + X ** 2) * multiplier
+        params['q_mvar'] = (item.ushnm ** 2 * X) / (R ** 2 + X ** 2) * multiplier
         sid = pp.create_shunt(net, p_mw=p_mw, **params)
     elif item.shtype == 2:
         # Shunt is a capacitor bank
         loss_factor = item.tandc
         sid = pp.create_shunt_as_capacitor(net, loss_factor=loss_factor, **params)
-    else:
-        # Shunt is an element of R-L-C (0), R-L (1), R-L-C, Rp (3), R-L-C1-C2, Rp (4)
-        logger.warning('Importing of shunt elements that represent anything but capacitor banks '
-                       'is not implemented correctly, the results will be inaccurate')
-        if item.HasResults(0):
-            p_mw = ga(item, 'm:P:bus1') * multiplier
-        elif item.HasAttribute('c:PRp'):
-            p_mw = ga(item, 'c:PRp') / 1e3 + ga(item, 'c:PL') / 1e3
-        else:
-            logger.warning("Shunt element %s is not implemented, p_mw is set to 0, results will be incorrect!" % item.loc_name)
-            p_mw = 0
+    elif item.shtype == 3:
+        # Shunt is a R-L-C, Rp element
+
+        Rp = item.rpara
+        Rs = item.rrea
+        Xl = item.xrea
+        Bc = -item.bcap * 1e-6
+        
+        R = Rp*(Rp*Rs+Rs**2+Xl**2)/((Rp+Rs)**2 + Xl**2)
+        X = 1/Bc + (Xl*Rp**2)/((Rp+Rs)**2 + Xl**2)
+
+        p_mw = (item.ushnm ** 2 * R) / (R ** 2 + X ** 2) * multiplier
+        params['q_mvar'] = (item.ushnm ** 2 * X) / (R ** 2 + X ** 2) * multiplier
+        sid = pp.create_shunt(net, p_mw=p_mw, **params)
+    elif item.shtype == 4:
+        # Shunt is a R-L-C1-C2, Rp element
+
+        Rp = item.rpara
+        Rs = item.rrea
+        Xl = item.xrea
+        B1 = 2*np.pi*50*item.c1 * 1e-6
+        B2 = 2*np.pi*50*item.c2 * 1e-6
+
+        Z = Rp * (Rs + 1j * (Xl - 1 / B1)) / (Rp + Rs + 1j * (Xl - 1 / B1)) - 1j / B2
+        R = np.real(Z)
+        X = np.imag(Z)
+
+        p_mw = (item.ushnm ** 2 * R) / (R ** 2 + X ** 2) * multiplier
+        params['q_mvar'] = (item.ushnm ** 2 * X) / (R ** 2 + X ** 2) * multiplier
         sid = pp.create_shunt(net, p_mw=p_mw, **params)
 
     add_additional_attributes(item, net, element='shunt', element_id=sid,

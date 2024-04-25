@@ -98,8 +98,8 @@ def get_hoverinfo(net, element, precision=3, sub_index=None):
     return hoverinfo
 
 
-def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=False,
-                  projection=None, map_style='basic', figsize=1.0, aspectratio='auto',
+def simple_plotly(net, respect_switches=True, use_line_geo=None, on_map=False,
+                  projection='epsg:4326', map_style='basic', figsize=1.0, aspectratio='auto',
                   line_width=1.0, bus_size=10.0, ext_grid_size=20.0,
                   bus_color="blue", line_color='grey', trafo_color='green',
                   trafo3w_color='green', ext_grid_color="yellow",
@@ -115,7 +115,7 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
     OPTIONAL:
         **respect_switches** (bool, True) - Respect switches when artificial geodata is created
 
-        **use_line_geodata** (bool, True) - defines if lines patches are based on
+        **use_line_geo** (bool, True) - defines if lines patches are based on
         net.line_geodata of the lines (True) or on net.bus_geodata of the connected buses (False)
 
         **on_map** (bool, False) - enables using mapbox plot in plotly.
@@ -180,7 +180,7 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
     separator_element = "switch"
     traces, settings = _simple_plotly_generic(net=net,
                                               respect_separators=respect_switches,
-                                              use_branch_geodata=use_line_geodata,
+                                              use_branch_geodata=use_line_geo,
                                               on_map=on_map,
                                               projection=projection,
                                               map_style=map_style,
@@ -235,15 +235,8 @@ def _simple_plotly_generic(net, respect_separators, use_branch_geodata, on_map, 
     settings = dict(on_map=on_map, projection=projection, map_style=map_style, figsize=figsize,
                     aspectratio=aspectratio, filename=filename, auto_open=auto_open,
                     showlegend=showlegend, zoomlevel=zoomlevel)
-    # create geocoord if none are available
-    branch_geodata = branch_element + "_geodata"
-    node_geodata = node_element + "_geodata"
 
-    if branch_geodata not in net:
-        net[branch_geodata] = pd.DataFrame(columns=['coords'])
-    if node_geodata not in net:
-        net[node_geodata] = pd.DataFrame(columns=["x", "y"])
-    if len(net[node_geodata]) == 0:
+    if len(net[node_element]["geo"].dropna()) == 0:
         logger.warning("No or insufficient geodata available --> Creating artificial coordinates." +
                        " This may take some time...")
         create_generic_coordinates(net, respect_switches=respect_separators)
@@ -251,19 +244,19 @@ def _simple_plotly_generic(net, respect_separators, use_branch_geodata, on_map, 
             logger.warning(
                 "Map plots not available with artificial coordinates and will be disabled!")
             on_map = False
-    # check if geodata are real geographycal lat/lon coordinates using geopy
+    # check if geodata are real geographical lat/lon coordinates using geopy
     if on_map and projection is not None:
         geo_data_to_latlong(net, projection=projection)
     # ----- Nodes (Buses) ------
-    # initializating node trace
+    # initializing node trace
     hoverinfo = hoverinfo_func(net, element=node_element)
     node_trace = node_trace_func(net, net[node_element].index, size=node_size, color=node_color,
                                     infofunc=hoverinfo)
     # ----- branches (Lines) ------
     # if node geodata is available, but no branch geodata
     if use_branch_geodata is None:
-        use_branch_geodata = False if len(net[branch_geodata]) == 0 else True
-    elif use_branch_geodata and len(net[branch_geodata]) == 0:
+        use_branch_geodata = False if len(net[branch_element]["geo"]) == 0 else True
+    elif use_branch_geodata and len(net[branch_element]["geo"]) == 0:
         logger.warning(
             "No or insufficient line geodata available --> only bus geodata will be used.")
         use_branch_geodata = False
@@ -281,14 +274,14 @@ def _simple_plotly_generic(net, respect_separators, use_branch_geodata, on_map, 
         hoverinfo = hoverinfo_func(net, element=trans_element)
         trans_trace = create_trafo_trace(net, color=trafo_color, width=branch_width * 5,
                                          infofunc=hoverinfo,
-                                         use_line_geodata=use_branch_geodata)
+                                         use_line_geo=use_branch_geodata)
     # ----- 3W Trafos ------
     if 'trafo3w' in net and len(net.trafo3w):
         hoverinfo = hoverinfo_func(net, element=trans3w_element)
         trans_trace3w = create_trafo_trace(net, color=trafo3w_color, trafotype='3W',
                                            width=branch_width * 5,
                                           trace_name='3W transformers', infofunc=hoverinfo,
-                                          use_line_geodata=use_branch_geodata)
+                                          use_line_geo=use_branch_geodata)
     # ----- Ext grid ------
     # get external grid from _create_node_trace
     if 'ext_grid' in net and len(net.ext_grid):
