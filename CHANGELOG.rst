@@ -6,11 +6,14 @@ Change Log
 - [ADDED] switch results p and q
 - [ADDED] PowerFactory converter: option to export lines with sections as a single line with averaged-out impedance, or export line sections as separate individual lines
 - [ADDED] extend plotly function: add zoomlevel-parameter and hvdc lines
+- [ADDED] added support for reading cgmes v3.0 files
 - [CHANGED] plotting for voltage profile considers also gens that are slacks and only ext_grids and slack gens that are in service
 - [CHANGED] switched from setup.py to pyproject.toml
 - [CHANGED] updated upload_release.py to not call setup.py anymore (see https://packaging.python.org/en/latest/discussions/setup-py-deprecated/)
 - [CHANGED] updated upload_release.py to install the uploadad package and print the version
 - [CHANGED] updated MANIFEST.in to exclude the ci files from the wheel distribution
+- [CHANGED] cim data structure method in cim converter changed to blueprint approach
+- [CHANGED] cim converter: Avoid huge logging output when ignore_erros = True
 - [FIXED] massive performance drag in large grids due to initializing Ybus for FACTS with np.zeros instead of using sparse matrix initialization
 - [FIXED] further futurewarnings and deprecation warnings
 
@@ -80,6 +83,13 @@ Change Log
 - [ADDED] add kwargs passing of get_equivalent() to runpp_fct()
 - [ADDED] auxiliary functions ets_to_element_types() and element_types_to_ets() as well as toolbox function get_connected_buses_at_switches() and extension to get_connected_switches()
 - [FIXED] in function :code:`toolbox.replace_zero_branches_with_switches`, use absolute for the parameters of impedance elements in case they are negative nonzero values
+- [FIXED] minor issues in geojson exporter
+- [ADDED] geodata to geojson converter
+- [CHANGED] dump_to_geojson now requires the geodata to be present in the geo column of a network (see :code:`convert_geodata_to_geojson`)
+- [CHANGED] updated simple_plot to use geojson data instead of bus_geo and line_geo
+- [CHANGED] minor changes to the example networks (mainly added names to identify them in tests)
+- [CHANGED] use of bus_geodata and line_geodata tables to geo column in bus and line table
+- [CHANGED] update most geodata dependant functions to use geo column
 - [FIXED] in :code:`reindex_elements`: fixed index error when reindexing line_geodata
 - [FIXED] bug in :code:`cim2pp`: Changed zero prioritized generators with voltage controller to sgens (like PowerFactory does)
 - [ADDED] cim2pp: added description fields for each asset and added BusbarSection information to nodes
