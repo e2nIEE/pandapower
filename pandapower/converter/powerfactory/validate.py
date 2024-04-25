@@ -28,7 +28,7 @@ def _get_pf_results(net, is_unbalanced=False):
 
 def _get_pf_results_balanced(net):
     pf_switch_status = net.res_switch.pf_closed & \
-               net.res_switch.pf_in_service if len(net.switch) > 0 and \
+               net.res_switch.get("pf_in_service", True) if len(net.switch) > 0 and \
                                                'res_switch' in net.keys() else pd.Series(dtype=np.float64)
     pf_bus_vm = net.res_bus.pf_vm_pu.replace(0, np.nan)
     pf_bus_va = net.res_bus.pf_va_degree
