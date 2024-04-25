@@ -2563,7 +2563,9 @@ def create_shunt(net, item):
         'bus': bus,
         'in_service': monopolar_in_service(item),
         'vn_kv': item.ushnm,
-        'q_mvar': item.Qact * multiplier
+        'q_mvar': item.Qact * multiplier,
+        'step': item.ncapa,
+        'max_step': item.ncapx
     }
     if item.shtype == 0:
         # Shunt is a R-L-C element
