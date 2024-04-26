@@ -75,13 +75,29 @@ class CreateMeasurements:
         psr['value'].loc[psr['measurement_type'] == 'i'] = psr.loc[psr['measurement_type'] == 'i']['value'] / 1e3
         # move the voltage measurements to the buses
         psr = pd.merge(psr, self.net.bus[['vn_kv']], how='inner', left_on='bus', right_index=True)
-        temp = psr.loc[psr['measurement_type'] == 'v']
-        temp['value'] = temp['value'] / temp['vn_kv']
-        temp['std_dev'] = temp['sensorAccuracy'] / temp['vn_kv']
-        temp['element_type'] = 'bus'
-        temp['element'] = temp['bus']
-        temp['side'] = None
-        psr.loc[psr['measurement_type'] == 'v'] = temp
+        psr_v = psr.loc[psr['measurement_type'] == 'v']     
+        psr_v['value'] = psr_v['value'] / psr_v['vn_kv']
+        psr_v['std_dev'] = psr_v['sensorAccuracy'] / psr_v['vn_kv']
+        psr_v['element_type'] = 'bus'
+        psr_v['element'] = psr_v['bus']
+        psr_v['side'] = None
+        psr.loc[psr['measurement_type'] == 'v', psr_v.columns] = psr_v
+
+        #convert amps to ka and assign std_dev values for 'i' measurements
+        psr_i = psr.loc[psr['measurement_type'] == 'i'] 
+        psr_i['value'] = psr_i['value'] / 1e3
+        psr_i['std_dev'] = psr_i['sensorAccuracy'] / 1e3
+        psr.loc[psr['measurement_type'] == 'i', psr_i.columns] = psr_i
+
+        #assign std_dev values for 'p' measurements
+        psr_p = psr.loc[psr['measurement_type'] == 'p'] 
+        psr_p['std_dev'] = psr_p['sensorAccuracy'] 
+        psr.loc[psr['measurement_type'] == 'p', psr_p.columns] = psr_p
+
+        #assign std_dev values for 'q' measurements
+        psr_q = psr.loc[psr['measurement_type'] == 'q'] 
+        psr_q['std_dev'] = psr_q['sensorAccuracy'] 
+        psr.loc[psr['measurement_type'] == 'q', psr_q.columns] = psr_q
 
         self._copy_to_measurement(psr)
 
