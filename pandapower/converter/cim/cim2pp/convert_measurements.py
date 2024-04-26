@@ -71,8 +71,6 @@ class CreateMeasurements:
         psr['measurement_type'] = psr.unitSymbol.map({'W': 'p', 'VAr': 'q', 'A': 'i', 'V': 'v'})
         # change the sign if need
         psr['value'].loc[~psr['positiveFlowIn']] = psr.loc[~psr['positiveFlowIn']]['value'] * (-1)
-        # convert all amperes to ka
-        psr['value'].loc[psr['measurement_type'] == 'i'] = psr.loc[psr['measurement_type'] == 'i']['value'] / 1e3
         # move the voltage measurements to the buses
         psr = pd.merge(psr, self.net.bus[['vn_kv']], how='inner', left_on='bus', right_index=True)
         psr_v = psr.loc[psr['measurement_type'] == 'v']     
