@@ -30,30 +30,35 @@ class AsynchronousMachinesCim16:
                     (eqssh_asynchronous_machines.index.size, time.time() - time_start)))
 
     def _prepare_asynchronous_machines_cim16(self) -> pd.DataFrame:
-        eq_generating_units = self.cimConverter.cim['eq']['WindGeneratingUnit'].copy()
+        eqssh_generating_units = self.cimConverter.merge_eq_ssh_profile('WindGeneratingUnit')
         # a column for the type of the static generator in pandapower
-        eq_generating_units['type'] = 'WP'
-        eq_generating_units = pd.concat([eq_generating_units, self.cimConverter.cim['eq']['GeneratingUnit']],
-                                        sort=False)
-        eq_generating_units['type'].fillna('GeneratingUnit', inplace=True)
-        eq_generating_units = pd.concat([eq_generating_units, self.cimConverter.cim['eq']['HydroGeneratingUnit']],
-                                        sort=False)
-        eq_generating_units['type'].fillna('Hydro', inplace=True)
-        eq_generating_units = pd.concat([eq_generating_units, self.cimConverter.cim['eq']['SolarGeneratingUnit']],
-                                        sort=False)
-        eq_generating_units['type'].fillna('PV', inplace=True)
-        eq_generating_units = pd.concat([eq_generating_units, self.cimConverter.cim['eq']['ThermalGeneratingUnit']],
-                                        sort=False)
-        eq_generating_units['type'].fillna('Thermal', inplace=True)
-        eq_generating_units = pd.concat([eq_generating_units, self.cimConverter.cim['eq']['NuclearGeneratingUnit']],
-                                        sort=False)
-        eq_generating_units['type'].fillna('Nuclear', inplace=True)
-        eq_generating_units = eq_generating_units.rename(columns={'rdfId': 'GeneratingUnit'})
+        eqssh_generating_units['type'] = 'WP'
+        eqssh_generating_units = pd.concat([eqssh_generating_units,
+                                            self.cimConverter.merge_eq_ssh_profile('GeneratingUnit')],
+                                           sort=False)
+        eqssh_generating_units['type'].fillna('GeneratingUnit', inplace=True)
+        eqssh_generating_units = pd.concat([eqssh_generating_units,
+                                            self.cimConverter.merge_eq_ssh_profile('HydroGeneratingUnit')],
+                                           sort=False)
+        eqssh_generating_units['type'].fillna('Hydro', inplace=True)
+        eqssh_generating_units = pd.concat([eqssh_generating_units,
+                                            self.cimConverter.merge_eq_ssh_profile('SolarGeneratingUnit')],
+                                           sort=False)
+        eqssh_generating_units['type'].fillna('PV', inplace=True)
+        eqssh_generating_units = pd.concat([eqssh_generating_units,
+                                            self.cimConverter.merge_eq_ssh_profile('ThermalGeneratingUnit')],
+                                           sort=False)
+        eqssh_generating_units['type'].fillna('Thermal', inplace=True)
+        eqssh_generating_units = pd.concat([eqssh_generating_units,
+                                            self.cimConverter.merge_eq_ssh_profile('NuclearGeneratingUnit')],
+                                           sort=False)
+        eqssh_generating_units['type'].fillna('Nuclear', inplace=True)
+        eqssh_generating_units = eqssh_generating_units.rename(columns={'rdfId': 'GeneratingUnit'})
         eqssh_asynchronous_machines = self.cimConverter.merge_eq_ssh_profile('AsynchronousMachine',
                                                                              add_cim_type_column=True)
         # prevent conflict of merging two dataframes each containing column 'name'
-        eq_generating_units = eq_generating_units.drop('name', axis=1)
-        eqssh_asynchronous_machines = pd.merge(eqssh_asynchronous_machines, eq_generating_units,
+        eqssh_generating_units = eqssh_generating_units.drop('name', axis=1)
+        eqssh_asynchronous_machines = pd.merge(eqssh_asynchronous_machines, eqssh_generating_units,
                                                how='left', on='GeneratingUnit')
         eqssh_asynchronous_machines = pd.merge(eqssh_asynchronous_machines, self.cimConverter.bus_merge, how='left',
                                                on='rdfId')
@@ -66,6 +71,11 @@ class AsynchronousMachinesCim16:
         eqssh_asynchronous_machines['generator_type'] = 'async'
         eqssh_asynchronous_machines['loading_percent'] = \
             100 * eqssh_asynchronous_machines['p_mw'] / eqssh_asynchronous_machines['ratedMechanicalPower']
+        if 'inService' in eqssh_generating_units.columns:
+            eqssh_asynchronous_machines['inService'] = (eqssh_asynchronous_machines['inService_x']
+                                                        & eqssh_asynchronous_machines['inService_y'])
+            eqssh_asynchronous_machines['connected'] = (eqssh_asynchronous_machines['connected']
+                                                        & eqssh_asynchronous_machines['inService'])
         eqssh_asynchronous_machines = eqssh_asynchronous_machines.rename(columns={'rdfId_Terminal': sc['t'], 'rdfId': sc['o_id'],
                                                     'connected': 'in_service', 'index_bus': 'bus',
                                                     'rxLockedRotorRatio': 'rx', 'iaIrRatio': 'lrc_pu',

@@ -38,6 +38,9 @@ class CimConverter:
         self.classes_dict = converter_classes
 
     def merge_eq_ssh_profile(self, cim_type: str, add_cim_type_column: bool = False) -> pd.DataFrame:
+        if cim_type not in self.cim['ssh'].keys():
+            self.logger.debug("No entries found in ssh profile for cim object %s", cim_type)
+            return self.cim['eq'][cim_type].copy()
         df = pd.merge(self.cim['eq'][cim_type], self.cim['ssh'][cim_type], how='left', on='rdfId')
         if add_cim_type_column:
             df[sc['o_cl']] = cim_type

@@ -93,6 +93,9 @@ class ExternalNetworkInjectionsCim16:
         eqssh_eni['x0x_max'] = ((eqssh_eni['maxR1ToX1Ratio'] + 1j) /
                                 (eqssh_eni['maxR0ToX0Ratio'] + 1j)).abs() * eqssh_eni['maxZ0ToZ1Ratio']
 
+        if 'inService' in eqssh_eni.columns:
+            eqssh_eni['connected'] = eqssh_eni['connected'] & eqssh_eni['inService']
+
         eqssh_eni.rename(columns={'rdfId': sc['o_id'], 'rdfId_Terminal': sc['t'], 'zone': sc['sub'],
                                   'angle': 'va_degree', 'index_bus': 'bus', 'connected': 'in_service',
                                   'minP': 'min_p_mw', 'maxP': 'max_p_mw', 'minQ': 'min_q_mvar', 'maxQ': 'max_q_mvar',
