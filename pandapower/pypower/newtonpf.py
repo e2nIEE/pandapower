@@ -531,8 +531,14 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         s_vsc_t = conj(Yt_vsc.dot(V)) * V[vsc_tb] * baseMVA
         vsc[vsc_branches, VSC_P] = s_vsc_f.real
         vsc[vsc_branches, VSC_Q] = s_vsc_f.imag
-        # todo: if the semiconductor losses are implemented for VSC, this will become wrong:
-        vsc[vsc_branches, VSC_P_DC] = s_vsc_t.real
+
+        Yf_vsc_dc, Yt_vsc_dc = make_Yft_facts(vsc_dc_bus, vsc_dc_bus_ext, vsc_g_pu, num_bus_dc)
+        # i_vsc_dc_f = Yf_vsc_dc.dot(V_dc)
+        # p_vsc_dc_f = i_vsc_dc_f * V_dc[vsc_dc_bus] * baseMVA
+        i_vsc_dc_t = Yt_vsc_dc.dot(V_dc)
+        p_vsc_dc_t = i_vsc_dc_t * V_dc[vsc_dc_bus_ext] * baseMVA
+
+        vsc[vsc_branches, VSC_P_DC] = p_vsc_dc_t
 
     if len(relevant_bus_dc) > 0:
         # duplication with "if any branch dc" because it is possible to have only vsc and no dc lines:

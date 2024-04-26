@@ -926,8 +926,8 @@ def test_vsc_hvdc():
     pp.create_vsc(net, 2, 1, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1., control_mode_dc="p_mw",
                   control_value_dc=5)
 
-    pp.runpp(net)
-    # runpp_with_consistency_checks(net)
+    # pp.runpp(net)
+    runpp_with_consistency_checks(net)
 
 
 def test_vsc_hvdc_control_q():
@@ -956,7 +956,7 @@ def test_vsc_hvdc_control_q():
 def test_vsc_multiterminal_hvdc():
     net = pp.create_empty_network()
     # AC part
-    pp.create_buses(net, 5, 110, geodata=((0, 50), (50, 100), (200, 100), (50, 0), (200, 0)))
+    pp.create_buses(net, 5, 110, geodata=[(0, 50), (50, 100), (200, 100), (50, 0), (200, 0)])
     pp.create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
     pp.create_line_from_parameters(net, 1, 2, 30, 0.0487, 0.13823, 160, 0.664)
     pp.create_line_from_parameters(net, 0, 3, 30, 0.0487, 0.13823, 160, 0.664)
@@ -1026,7 +1026,7 @@ def test_line_dc_bus_dc_structures():
 
     net = pp.create_empty_network()
     # AC part
-    pp.create_buses(net, 5, 110, geodata=((0, 50), (50, 100), (200, 100), (50, 0), (200, 0)))
+    pp.create_buses(net, 5, 110, geodata=[(0, 50), (50, 100), (200, 100), (50, 0), (200, 0)])
     pp.create_lines_from_parameters(net, [0, 1, 0, 1, 3], [1, 2, 3, 3, 4], 30, 0.0487, 0.13823, 160, 0.664)
 
     pp.create_ext_grid(net, 0)
@@ -1695,7 +1695,7 @@ def test_simple_2vsc_hvdc1():
     # np.set_printoptions(linewidth=1000, suppress=True, precision=3)
     net = pp.create_empty_network()
     # AC part
-    pp.create_buses(net, 3, 110, geodata=((0, 0), (100, 0), (200, 0)))
+    pp.create_buses(net, 3, 110, geodata=[(0, 0), (100, 0), (200, 0)])
     pp.create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
     pp.create_line_from_parameters(net, 1, 2, 30, 0.0487, 0.13823, 160, 0.664)
     pp.create_ext_grid(net, 0)
@@ -1728,7 +1728,7 @@ def test_simple_2vsc_hvdc2():
     # np.set_printoptions(linewidth=1000, suppress=True, precision=3)
     net = pp.create_empty_network()
     # AC part
-    pp.create_buses(net, 3, 110, geodata=((0, 0), (100, 0), (200, 0)))
+    pp.create_buses(net, 3, 110, geodata=[(0, 0), (100, 0), (200, 0)])
     pp.create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
     pp.create_line_from_parameters(net, 1, 2, 30, 0.0487, 0.13823, 160, 0.664)
     pp.create_ext_grid(net, 0)
@@ -1752,7 +1752,7 @@ def test_simple_2vsc_hvdc2():
     #pp.create_vsc(net, 1, 2, 0.1, 5, control_mode_ac='vm_pu', control_value_ac=1, control_mode_dc="p_mw", control_value_dc=10)
     #pp.create_vsc(net, 2, 3, 0.1, 5, control_mode_ac='vm_pu', control_value_ac=1, control_mode_dc="vm_pu", control_value_dc=1.02)
 
-    pp.create_buses(net, 2, 110, geodata=((100, -5), (200, -5)))
+    pp.create_buses(net, 2, 110, geodata=[(100, -5), (200, -5)])
     pp.create_line_from_parameters(net, 1, 3, 30, 0.0487, 0.13823, 160, 0.664)
     pp.create_line_from_parameters(net, 2, 4, 30, 0.0487, 0.13823, 160, 0.664)
 

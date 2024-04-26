@@ -730,8 +730,8 @@ def _check_connectivity(ppc):
     # DC system
     nobus_dc = ppc['bus_dc'].shape[0]
     if nobus_dc > 0:
-        bus_from_vsc_dc = ppc["vsc"][vsc_status, VSC_BUS_DC].real.astype(np.int64)
-        bus_to_vsc_dc = ppc["vsc"][vsc_status, VSC_INTERNAL_BUS_DC].real.astype(np.int64)
+        bus_from_vsc_dc = ppc["vsc"][vsc_status, VSC_INTERNAL_BUS_DC].real.astype(np.int64)
+        bus_to_vsc_dc = ppc["vsc"][vsc_status, VSC_BUS_DC].real.astype(np.int64)
 
         br_dc_status = ppc['branch_dc'][:, DC_BR_STATUS].astype(bool)
         nobranch_dc = ppc['branch_dc'][br_dc_status, :].shape[0]
@@ -914,7 +914,7 @@ def _select_is_elements_numba(net, isolated_nodes=None, isolated_nodes_dc=None, 
         net._ppc["bus"][vsc_aux_isolated, BUS_TYPE] = NONE
         # if there are no in service VSC that define the DC slack node, we must change the DC slack to type P
         bus_dc_slack = net._ppc["bus_dc"][:, DC_BUS_TYPE] == DC_REF
-        bus_dc_with_vsc = net._ppc["vsc"][is_elements["vsc"], VSC_BUS_DC]
+        bus_dc_with_vsc = np.r_[net._ppc["vsc"][is_elements["vsc"], VSC_BUS_DC], net._ppc["vsc"][is_elements["vsc"], VSC_INTERNAL_BUS_DC]]
         bus_dc_to_change = bus_dc_slack & (~np.isin(net._ppc["bus_dc"][:, DC_BUS_I], bus_dc_with_vsc))
         net._ppc["bus_dc"][bus_dc_to_change, DC_BUS_TYPE] = DC_P
 

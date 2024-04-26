@@ -433,8 +433,7 @@ def _build_bus_dc_ppc(net, ppc):
         in_service = net["bus_dc"]["in_service"].values
 
     ppc["bus_dc"][~in_service, DC_BUS_TYPE] = DC_NONE
-    if mode != "nx":
-        set_reference_buses_dc(net, ppc, bus_lookup, mode)
+
     # todo: add init vm_pu for DC buses eventually
     #vm_pu = get_voltage_init_vector(net, init_vm_pu, "magnitude", sequence=sequence)
     #if vm_pu is not None:
@@ -451,10 +450,13 @@ def _build_bus_dc_ppc(net, ppc):
             ppc["bus_dc"][:n_bus_dc, DC_VMIN] = 0.  # changes of VMIN must be considered in check_opf_data
 
     if nr_vsc > 0:
-        _fill_auxiliary_buses(net, ppc, bus_lookup, "vsc", "bus", aux, "bus_dc")
+        _fill_auxiliary_buses(net, ppc, bus_lookup, "vsc", "bus_dc", aux, "bus_dc")
 
     net["_pd2ppc_lookups"]["bus_dc"] = bus_lookup
     net["_pd2ppc_lookups"]["aux_dc"] = aux
+
+    if mode != "nx":
+        set_reference_buses_dc(net, ppc, bus_lookup, mode)
 
 
 def _fill_auxiliary_buses(net, ppc, bus_lookup, element, bus_column, aux, bus_table="bus"):
@@ -496,12 +498,12 @@ def set_reference_buses_dc(net, ppc, bus_lookup, mode):
         return
     vsc_dc_slack = net.vsc.control_mode_dc.values == "vm_pu"
     vsc_ac_slack = net.vsc.control_mode_ac.values == "slack"  # VSC that defines AC slack cannot define DC slack
-    ref_buses = bus_lookup[net.vsc.bus_dc.values[net._is_elements["vsc"] & vsc_dc_slack & ~vsc_ac_slack]]
+    ref_buses = bus_lookup[net._pd2ppc_lookups["aux_dc"].get("vsc", np.array([], dtype=np.int64))[net._is_elements["vsc"] & vsc_dc_slack & ~vsc_ac_slack]]
     ppc["bus_dc"][ref_buses, DC_BUS_TYPE] = DC_REF
 
     # identify back-to-back converters:
     vsc_dc_p = net.vsc.control_mode_dc.values == "p_mw"
-    p_buses = bus_lookup[net.vsc.bus_dc.values[net._is_elements["vsc"] & vsc_dc_p]]
+    p_buses = bus_lookup[net._pd2ppc_lookups["aux_dc"].get("vsc", np.array([], dtype=np.int64))[net._is_elements["vsc"] & vsc_dc_p]]
     b2b_buses = np.intersect1d(ref_buses, p_buses)
     ppc["bus_dc"][b2b_buses, DC_BUS_TYPE] = DC_B2B
 
