@@ -59,7 +59,7 @@ class AsynchronousMachinesCim16:
         # prevent conflict of merging two dataframes each containing column 'name'
         eqssh_generating_units = eqssh_generating_units.drop('name', axis=1)
         eqssh_asynchronous_machines = pd.merge(eqssh_asynchronous_machines, eqssh_generating_units,
-                                               how='left', on='GeneratingUnit')
+                                               how='left', suffixes=('_x', '_y'), on='GeneratingUnit')
         eqssh_asynchronous_machines = pd.merge(eqssh_asynchronous_machines, self.cimConverter.bus_merge, how='left',
                                                on='rdfId')
         eqssh_asynchronous_machines['p_mw'] = -eqssh_asynchronous_machines['p']
@@ -71,11 +71,10 @@ class AsynchronousMachinesCim16:
         eqssh_asynchronous_machines['generator_type'] = 'async'
         eqssh_asynchronous_machines['loading_percent'] = \
             100 * eqssh_asynchronous_machines['p_mw'] / eqssh_asynchronous_machines['ratedMechanicalPower']
-        if 'inService' in eqssh_generating_units.columns:
-            eqssh_asynchronous_machines['inService'] = (eqssh_asynchronous_machines['inService_x']
-                                                        & eqssh_asynchronous_machines['inService_y'])
+        if 'inService_x' in eqssh_asynchronous_machines.columns:
             eqssh_asynchronous_machines['connected'] = (eqssh_asynchronous_machines['connected']
-                                                        & eqssh_asynchronous_machines['inService'])
+                                                        & eqssh_asynchronous_machines['inService_x']
+                                                        & eqssh_asynchronous_machines['inService_y'])
         eqssh_asynchronous_machines = eqssh_asynchronous_machines.rename(columns={'rdfId_Terminal': sc['t'], 'rdfId': sc['o_id'],
                                                     'connected': 'in_service', 'index_bus': 'bus',
                                                     'rxLockedRotorRatio': 'rx', 'iaIrRatio': 'lrc_pu',
