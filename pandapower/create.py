@@ -642,11 +642,11 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b", zone=N
     """
     index = _get_index_with_check(net, "bus", index)
 
-    if geodata is not None:
+    if geodata:
         if isinstance(geodata, tuple):
             if len(geodata) != 2:
                 raise UserWarning("geodata must be given as (x, y) tuple")
-            geo = f'{{"type":"Point","coordinates":[{float(geodata[0])},{float(geodata[1])}]}}'
+            geo = f'{{"coordinates":[{geodata[0]},{geodata[1]}], "type":"Point"}}'
         else:
             raise UserWarning("geodata must be a valid coordinate tuple")
     else:
@@ -711,31 +711,22 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
     """
     index = _get_multiple_index_with_check(net, "bus", index, nr_buses)
 
-    if geodata is not None:
+    if geodata:
         if isinstance(geodata, tuple):
             if len(geodata) != 2:
-                raise UserWarning("geodata must be given as (x, y) tuple")
+                raise ValueError("geodata must be array of tuples or tuple of (x, y) coordinates")
             x, y = geodata
-            geo = [geojson.dumps(geojson.Point((float(x), float(y))), sort_keys=True)]*nr_buses
+            geo = [f'{{"coordinates": [{x}, {y}], "type": "Point"}}'] * nr_buses
         elif isinstance(geodata, geojson.Point):
-            if not geodata.is_valid:
-                raise UserWarning(
-                    "geodata must be a valid geojson.Point or coordinate tuple or a list of geojson.Point or tuple"
-                )
-            geo = [geojson.dumps(geodata)]*nr_buses
-        elif isinstance(geodata, list) and len(geodata) == nr_buses:
-            if all([isinstance(g, tuple) for g in geodata]):
-                geo = [geojson.dumps(geojson.Point((float(x), float(y))), sort_keys=True) for x, y in geodata]
-            elif all([isinstance(g, geojson.Point) for g in geodata]):
-                geo = geojson.dumps(geodata, sort_keys=True)
-            else:
-                raise UserWarning(
-                    "geodata must be a valid geojson.Point or coordinate tuple or a list of geojson.Point or tuple"
-                )
+            geo = [geojson.dumps(geodata, sort_keys=True)] * nr_buses
+        elif hasattr(geodata, '__iter__'):
+            geo = [f'{{"coordinates": [{x}, {y}], "type": "Point"}}' for (x, y) in geodata]
         else:
-            geo = None
+            raise ValueError("geodata must be array of tuples or tuple of (x, y) coordinates")
+        if len(geo) != nr_buses:
+            raise ValueError("geodata must be array of tuples or tuple of (x, y) coordinates")
     else:
-        geo = None
+        geo = [None] * nr_buses
 
     entries = {"vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "name": name, "geo": geo}
     _add_to_entries_if_not_nan(net, "bus", entries, index, "min_vm_pu", min_vm_pu)
