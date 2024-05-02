@@ -145,12 +145,12 @@ def coords_from_node_geodata(element_indices, from_nodes, to_nodes, node_geodata
     :type table_name: str
     :param node_name: Name of the node type (only for logging)
     :type node_name: str, default "Bus"
-    :param ignore_zero_length: States if branches should be left out, if their length is zero, i.e.\
+    :param ignore_zero_length: States if branches should be left out, if their length is zero, i.e. \
         from_node_coords = to_node_coords
     :type ignore_zero_length: bool, default True
     :return: Return values are:\
         - coords (list) - list of branch coordinates as geojson valid strings
-        - elements_with_geo (set) - the indices of branch elements for which coordinates wer found\
+        - elements_with_geo (set) - the indices of branch elements for which coordinates wer found \
             in the node geodata table
     """
     have_geo = np.isin(from_nodes, node_geodata.index.values) \
