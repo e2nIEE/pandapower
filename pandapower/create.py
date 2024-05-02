@@ -5,7 +5,7 @@ from collections.abc import Iterable
 
 
 from operator import itemgetter
-from typing import Tuple, List
+from typing import Tuple, List, Union
 
 import geojson
 import pandas as pd
@@ -2051,9 +2051,9 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
             higher than the highest already existing index is selected.
 
         **geodata**
-        (array, default None, shape= (,2L)) -
-        The linegeodata of the line. The first row should be the coordinates
-        of bus a and the last should be the coordinates of bus b. The points
+        (Iterable[Tuple[int, int]|Tuple[float, float]], default None) -
+        The linegeodata of the line. The first element should be the coordinates
+        of from_bus and the last should be the coordinates of to_bus. The points
         in the middle represent the bending points of the line
 
         **in_service** (boolean, True) - True for in_service or False for out of service
@@ -2139,8 +2139,9 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
 
     _set_entries(net, "line", index, **v, **kwargs)
 
-    if geodata:
-        net.line.at[index, "geo"] = geojson.dumps(geojson.LineString([geodata]), sort_keys=True)
+    if geodata and hasattr(geodata, '__iter__'):
+        geo = [[x, y] for x, y in geodata]
+        net.line.at[index, "geo"] = f'{{"coordinates": {geo}, "type": "LineString"}}'
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "line")
     _set_value_if_not_nan(net, index, alpha, "alpha", "line")
@@ -2278,7 +2279,7 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
 
     _set_multiple_entries(net, "line", index, **entries, **kwargs)
 
-    if geodata is not None:
+    if geodata:
         _add_multiple_branch_geodata(net, geodata, index)
 
     return index
@@ -5015,15 +5016,19 @@ def _add_to_entries_if_not_nan(net, element_type, entries, index, column, values
         try_astype(entries, column, dtype)
 
 
+
 def _add_multiple_branch_geodata(net, geodata, index):
     dtypes = net.line.dtypes
-    # works with single or multiple lists of coordinates
-    if isinstance(geodata, list) and all([isinstance(g, tuple) and len(g) == 2 for g in geodata]):
-        # geodata is a single list of coordinates
-        series = [geojson.dumps(geojson.LineString(geodata), sort_keys=True)] * len(index)
+    if hasattr(geodata, '__iter__') and all([isinstance(g, tuple) and len(g) == 2 for g in geodata]):
+        # geodata is a single Iterable of coordinate tuples
+        geo = [[x, y] for x, y in geodata]
+        series = [f'{{"coordinates": {geo}, "type": "LineString"}}'] * len(index)
+    elif hasattr(geodata, '__iter__') and all([isinstance(g, Iterable) for g in geodata]):
+        # geodata is Iterable of Iterable of coordinate tuples
+        geo = [[[x, y] for x, y in g] for g in geodata]
+        series = [f'{{"coordinates": {g}, "type": "LineString"}}' for g in geo]
     else:
-        # geodata is multiple lists of coordinates
-        series = list(map(lambda gd: geojson.dumps(geojson.LineString(gd), sort_keys=True), geodata))
+        raise ValueError("geodata must be an Iterable of Iterable of coordinate tuples or an Iterable of coordinate tuples")
 
     net.line["geo"] = series
 
