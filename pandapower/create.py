@@ -2052,7 +2052,7 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
 
         **geodata**
         (Iterable[Tuple[int, int]|Tuple[float, float]], default None) -
-        The linegeodata of the line. The first element should be the coordinates
+        The geodata of the line. The first element should be the coordinates
         of from_bus and the last should be the coordinates of to_bus. The points
         in the middle represent the bending points of the line
 
@@ -2184,9 +2184,9 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
                 index one higher than the highest already existing index is selected.
 
             **geodata**
-            (list of arrays, default None, shape of arrays (,2L)) -
-            The linegeodata of the line. The first row should be the coordinates
-            of bus a and the last should be the coordinates of bus b. The points
+            (Iterable[Iterable[Tuple[x, y]]] or Iterable[Tuple[x, y]], default None) -
+            The geodata of the line. The first element should be the coordinates
+            of from_bus and the last should be the coordinates of to_bus. The points
             in the middle represent the bending points of the line
 
             **in_service** (list of boolean, True) - True for in_service or False for out of service
