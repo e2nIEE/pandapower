@@ -5026,11 +5026,11 @@ def _add_multiple_branch_geodata(net, geodata, index, table="line"):
     elif hasattr(geodata, '__iter__') and all([isinstance(g, Iterable) for g in geodata]):
         # geodata is Iterable of Iterable of coordinate tuples
         geo = [[[x, y] for x, y in g] for g in geodata]
-        series = [f'{{"coordinates": {g}, "type": "LineString"}}' for g in geo]
+        series = pd.Series([f'{{"coordinates": {g}, "type": "LineString"}}' for g in geo], index=index)
     else:
         raise ValueError("geodata must be an Iterable of Iterable of coordinate tuples or an Iterable of coordinate tuples")
 
-    net[table].geo = series
+    net[table].loc[:, "geo"] = series
 
     _preserve_dtypes(net[table], dtypes)
 
