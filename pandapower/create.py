@@ -5017,8 +5017,8 @@ def _add_to_entries_if_not_nan(net, element_type, entries, index, column, values
 
 
 
-def _add_multiple_branch_geodata(net, geodata, index):
-    dtypes = net.line.dtypes
+def _add_multiple_branch_geodata(net, geodata, index, table="line"):
+    dtypes = net[table].dtypes
     if hasattr(geodata, '__iter__') and all([isinstance(g, tuple) and len(g) == 2 for g in geodata]):
         # geodata is a single Iterable of coordinate tuples
         geo = [[x, y] for x, y in geodata]
@@ -5030,9 +5030,9 @@ def _add_multiple_branch_geodata(net, geodata, index):
     else:
         raise ValueError("geodata must be an Iterable of Iterable of coordinate tuples or an Iterable of coordinate tuples")
 
-    net.line["geo"] = series
+    net[table].geo = series
 
-    _preserve_dtypes(net.line, dtypes)
+    _preserve_dtypes(net[table], dtypes)
 
 
 def _set_entries(net, table, index, preserve_dtypes=True, **entries):
