@@ -54,33 +54,38 @@ class AsynchronousMachinesCim16:
                                            sort=False)
         eqssh_generating_units['type'].fillna('Nuclear', inplace=True)
         eqssh_generating_units = eqssh_generating_units.rename(columns={'rdfId': 'GeneratingUnit'})
-        eqssh_asynchronous_machines = self.cimConverter.merge_eq_ssh_profile('AsynchronousMachine',
-                                                                             add_cim_type_column=True)
+        if 'sc' in self.cimConverter.cim.keys():
+            asynchronous_machines = self.cimConverter.merge_eq_other_profiles(['ssh', 'sc'],
+                                                                              'AsynchronousMachine',
+                                                                              add_cim_type_column=True)
+        else:
+            asynchronous_machines = self.cimConverter.merge_eq_ssh_profile('AsynchronousMachine',
+                                                                           add_cim_type_column=True)
         # prevent conflict of merging two dataframes each containing column 'name'
         eqssh_generating_units = eqssh_generating_units.drop('name', axis=1)
-        eqssh_asynchronous_machines = pd.merge(eqssh_asynchronous_machines, eqssh_generating_units,
-                                               how='left', suffixes=('_x', '_y'), on='GeneratingUnit')
-        eqssh_asynchronous_machines = pd.merge(eqssh_asynchronous_machines, self.cimConverter.bus_merge, how='left',
-                                               on='rdfId')
-        eqssh_asynchronous_machines['p_mw'] = -eqssh_asynchronous_machines['p']
-        eqssh_asynchronous_machines['q_mvar'] = -eqssh_asynchronous_machines['q']
-        eqssh_asynchronous_machines['current_source'] = True
-        eqssh_asynchronous_machines['cos_phi_n'] = eqssh_asynchronous_machines['ratedPowerFactor'][:]
-        eqssh_asynchronous_machines['sn_mva'] = \
-            eqssh_asynchronous_machines['ratedS'].fillna(eqssh_asynchronous_machines['nominalP'])
-        eqssh_asynchronous_machines['generator_type'] = 'async'
-        eqssh_asynchronous_machines['loading_percent'] = \
-            100 * eqssh_asynchronous_machines['p_mw'] / eqssh_asynchronous_machines['ratedMechanicalPower']
-        if 'inService_x' in eqssh_asynchronous_machines.columns:
-            eqssh_asynchronous_machines['connected'] = (eqssh_asynchronous_machines['connected']
-                                                        & eqssh_asynchronous_machines['inService_x']
-                                                        & eqssh_asynchronous_machines['inService_y'])
-        eqssh_asynchronous_machines = eqssh_asynchronous_machines.rename(columns={'rdfId_Terminal': sc['t'], 'rdfId': sc['o_id'],
-                                                    'connected': 'in_service', 'index_bus': 'bus',
-                                                    'rxLockedRotorRatio': 'rx', 'iaIrRatio': 'lrc_pu',
-                                                    'ratedPowerFactor': 'cos_phi', 'ratedU': 'vn_kv',
-                                                    'efficiency': 'efficiency_n_percent',
-                                                    'ratedMechanicalPower': 'pn_mech_mw'})
-        eqssh_asynchronous_machines['scaling'] = 1
-        eqssh_asynchronous_machines['efficiency_percent'] = 100
-        return eqssh_asynchronous_machines
+        asynchronous_machines = pd.merge(asynchronous_machines, eqssh_generating_units,
+                                         how='left', suffixes=('_x', '_y'), on='GeneratingUnit')
+        asynchronous_machines = pd.merge(asynchronous_machines, self.cimConverter.bus_merge, how='left',
+                                         on='rdfId')
+        asynchronous_machines['p_mw'] = -asynchronous_machines['p']
+        asynchronous_machines['q_mvar'] = -asynchronous_machines['q']
+        asynchronous_machines['current_source'] = True
+        asynchronous_machines['cos_phi_n'] = asynchronous_machines['ratedPowerFactor'][:]
+        asynchronous_machines['sn_mva'] = \
+            asynchronous_machines['ratedS'].fillna(asynchronous_machines['nominalP'])
+        asynchronous_machines['generator_type'] = 'async'
+        asynchronous_machines['loading_percent'] = \
+            100 * asynchronous_machines['p_mw'] / asynchronous_machines['ratedMechanicalPower']
+        if 'inService_x' in asynchronous_machines.columns:
+            asynchronous_machines['connected'] = (asynchronous_machines['connected']
+                                                  & asynchronous_machines['inService_x']
+                                                  & asynchronous_machines['inService_y'])
+        asynchronous_machines = asynchronous_machines.rename(columns={'rdfId_Terminal': sc['t'], 'rdfId': sc['o_id'],
+                                                                      'connected': 'in_service', 'index_bus': 'bus',
+                                                                      'rxLockedRotorRatio': 'rx', 'iaIrRatio': 'lrc_pu',
+                                                                      'ratedPowerFactor': 'cos_phi', 'ratedU': 'vn_kv',
+                                                                      'efficiency': 'efficiency_n_percent',
+                                                                      'ratedMechanicalPower': 'pn_mech_mw'})
+        asynchronous_machines['scaling'] = 1
+        asynchronous_machines['efficiency_percent'] = 100
+        return asynchronous_machines

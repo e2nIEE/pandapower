@@ -35,7 +35,8 @@ class GeoCoordinatesFromGLCim16:
         cn = self.cimConverter.cim['eq']['ConnectivityNode'][['rdfId', 'ConnectivityNodeContainer']]
         cn = pd.concat([cn, self.cimConverter.cim['eq_bd']['ConnectivityNode'][['rdfId', 'ConnectivityNodeContainer']]])
         cn = pd.concat([cn, self.cimConverter.cim['tp']['TopologicalNode'][['rdfId', 'ConnectivityNodeContainer']]])
-        cn = pd.concat([cn, self.cimConverter.cim['tp_bd']['TopologicalNode'][['rdfId', 'ConnectivityNodeContainer']]])
+        if 'tp_bd' in self.cimConverter.cim.keys():  # check because tp_bd was removed in cgmes 3.0
+            cn = pd.concat([cn, self.cimConverter.cim['tp_bd']['TopologicalNode'][['rdfId', 'ConnectivityNodeContainer']]])
         cn = cn.rename(columns={'rdfId': sc['o_id'], 'ConnectivityNodeContainer': 'rdfId'})
         cn = pd.merge(cn, self.cimConverter.cim['eq']['VoltageLevel'][['rdfId', 'Substation']], how='left', on='rdfId')
         cn = cn.drop(columns=['rdfId'])

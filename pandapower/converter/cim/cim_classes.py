@@ -15,7 +15,7 @@ import numpy as np
 import xml.etree.ElementTree
 import xml.etree.cElementTree as xmlET
 from .other_classes import ReportContainer, Report, LogLevel, ReportCode
-from .cim_tools import get_cim16_schema
+from .cim_tools import get_cim_schema
 
 
 class CimParser:
@@ -24,6 +24,9 @@ class CimParser:
         """
         This class parses CIM files and loads its content to a dictionary of
         CIM profile (dict) -> CIM element type (str) -> CIM elements (DataFrame)
+
+        :param cim: CIM profile structure used for parsing
+        :param cgmes_version: CIM version to use, '2.4.15' or '3.0', default '2.4.15'
         """
         self.logger = logging.getLogger(self.__class__.__name__)
         self.cgmes_version = '2.4.15' if cgmes_version is None else cgmes_version
@@ -81,17 +84,17 @@ class CimParser:
         int_type = pd.Int64Dtype()
         bool_type = pd.BooleanDtype()
         data_types_map = dict({'Float': float_type, 'Integer': int_type, 'Boolean': bool_type})
-        cim_16_schema = get_cim16_schema()
+        cim_schema = get_cim_schema(self.cgmes_version)
         for profile in self.cim.keys():
             for cim_element_type, item in self.cim[profile].items():
                 for col in item.columns:
                     # skip elements which are not available in the schema like FullModel
-                    if cim_element_type not in cim_16_schema[profile]:
+                    if cim_element_type not in cim_schema[profile]:
                         self.logger.debug("Skipping CIM element type %s from profile %s." % (cim_element_type, profile))
                         continue
-                    if col in cim_16_schema[profile][cim_element_type]['fields'].keys() and \
-                            'data_type_prim' in cim_16_schema[profile][cim_element_type]['fields'][col].keys():
-                        data_type_col_str = cim_16_schema[profile][cim_element_type]['fields'][col]['data_type_prim']
+                    if col in cim_schema[profile][cim_element_type]['fields'].keys() and \
+                            'data_type_prim' in cim_schema[profile][cim_element_type]['fields'][col].keys():
+                        data_type_col_str = cim_schema[profile][cim_element_type]['fields'][col]['data_type_prim']
                         if data_type_col_str in data_types_map.keys():
                             data_type_col = data_types_map[data_type_col_str]
                         else:
@@ -445,6 +448,10 @@ class CimParser:
                 return 'eq_bd'
             elif '/TopologyBoundary/' in one_profile:
                 return 'tp_bd'
+            elif '/Operation-EU/' in one_profile:
+                return 'op'
+            elif '/ShortCircuit-EU/' in one_profile:
+                return 'sc'
         if ignore_errors:
             self.logger.warning("The CGMES profile could not be parsed from the XML, returning %s" % default_profile)
             self.report_container.add_log(Report(level=LogLevel.ERROR, code=ReportCode.ERROR_PARSING,
@@ -583,11 +590,9 @@ class CimParser:
                 'BaseVoltage': pd.DataFrame(columns=['rdfId', 'name', 'nominalVoltage']),
                 'ExternalNetworkInjection': pd.DataFrame(columns=[
                     'rdfId', 'name', 'description', 'minP', 'maxP', 'minQ', 'maxQ', 'BaseVoltage', 'EquipmentContainer',
-                    'RegulatingControl', 'governorSCD', 'maxInitialSymShCCurrent', 'minInitialSymShCCurrent',
-                    'maxR1ToX1Ratio', 'minR1ToX1Ratio', 'maxR0ToX0Ratio', 'maxZ0ToZ1Ratio']),
+                    'RegulatingControl', 'governorSCD']),
                 'ACLineSegment': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'description', 'length', 'r', 'x', 'bch', 'gch', 'r0', 'x0', 'b0ch', 'g0ch',
-                    'shortCircuitEndTemperature', 'BaseVoltage']),
+                    'rdfId', 'name', 'description', 'length', 'r', 'x', 'bch', 'gch', 'BaseVoltage']),
                 'Terminal': pd.DataFrame(columns=[
                     'rdfId', 'name', 'ConnectivityNode', 'ConductingEquipment', 'sequenceNumber']),
                 'OperationalLimitSet': pd.DataFrame(columns=['rdfId', 'name', 'Terminal']),
@@ -629,21 +634,18 @@ class CimParser:
                 'RegulatingControl': pd.DataFrame(columns=['rdfId', 'name', 'mode', 'Terminal']),
                 'SynchronousMachine': pd.DataFrame(columns=[
                     'rdfId', 'name', 'description', 'GeneratingUnit', 'EquipmentContainer', 'ratedU', 'ratedS', 'type',
-                    'r2', 'x2', 'ratedPowerFactor', 'voltageRegulationRange', 'minQ', 'maxQ', 'RegulatingControl']),
+                    'ratedPowerFactor', 'minQ', 'maxQ', 'RegulatingControl']),
                 'AsynchronousMachine': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'description', 'GeneratingUnit', 'ratedS', 'ratedU', 'ratedPowerFactor',
-                    'rxLockedRotorRatio', 'iaIrRatio', 'efficiency', 'ratedMechanicalPower']),
+                    'rdfId', 'name', 'description', 'GeneratingUnit', 'ratedS', 'ratedU', 'ratedPowerFactor']),
                 'EnergySource': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'description', 'nominalVoltage', 'EnergySchedulingType', 'BaseVoltage',
-                    'EquipmentContainer', 'voltageAngle', 'voltageMagnitude']),
+                    'rdfId', 'name', 'description', 'nominalVoltage', 'EnergySchedulingType',
+                    'EquipmentContainer']),
                 'EnergySchedulingType': pd.DataFrame(columns=['rdfId', 'name']),
                 'StaticVarCompensator': pd.DataFrame(columns=['rdfId', 'name', 'description', 'voltageSetPoint']),
-                'PowerTransformer': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'description', 'EquipmentContainer', 'isPartOfGeneratorUnit']),
+                'PowerTransformer': pd.DataFrame(columns=['rdfId', 'name', 'description', 'EquipmentContainer']),
                 'PowerTransformerEnd': pd.DataFrame(columns=[
                     'rdfId', 'name', 'PowerTransformer', 'endNumber', 'Terminal', 'ratedS', 'ratedU',
-                    'r', 'x', 'r0', 'x0', 'b', 'g', 'BaseVoltage', 'phaseAngleClock', 'connectionKind', 'grounded',
-                    'xground']),
+                    'r', 'x', 'b', 'g', 'BaseVoltage', 'connectionKind']),
                 'TapChangerControl': pd.DataFrame(columns=['rdfId', 'name', 'mode', 'Terminal']),
                 'RatioTapChanger': pd.DataFrame(columns=[
                     'rdfId', 'name', 'TransformerEnd', 'neutralStep', 'lowStep', 'highStep', 'stepVoltageIncrement',
@@ -679,12 +681,8 @@ class CimParser:
                 'EquivalentInjection': pd.DataFrame(columns=['rdfId', 'name', 'description', 'BaseVoltage', 'r', 'x']),
                 'SeriesCompensator': pd.DataFrame(columns=[
                     'rdfId', 'name', 'description', 'BaseVoltage', 'r', 'x', 'r0', 'x0']),
-                'Analog': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'measurementType', 'unitSymbol', 'unitMultiplier', 'Terminal',
-                    'PowerSystemResource', 'positiveFlowIn']),
-                'AnalogValue': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'sensorAccuracy', 'MeasurementValueSource', 'Analog', 'value']),
-                'MeasurementValueSource': pd.DataFrame(columns=['rdfId', 'name'])
+                'MeasurementValueSource': pd.DataFrame(columns=['rdfId', 'name']),
+                'PetersenCoil': pd.DataFrame(columns=['rdfId', 'name', 'description'])
             }),
             'eq_bd': MappingProxyType({
                 'ConnectivityNode': pd.DataFrame(columns=['rdfId', 'name', 'ConnectivityNodeContainer']),
@@ -693,6 +691,31 @@ class CimParser:
                     columns=['rdfId', 'ConnectivityNode', 'ConductingEquipment', 'sequenceNumber']),
                 'EnergySource': pd.DataFrame(columns=['rdfId', 'name', 'nominalVoltage', 'EnergySchedulingType']),
                 'EnergySchedulingType': pd.DataFrame(columns=['rdfId', 'name'])
+            }),
+            'op': MappingProxyType({  # TODO: value attributes from AnalogValue and DiscreteValue need clarification
+                'Analog': pd.DataFrame(columns=[
+                    'rdfId', 'name', 'measurementType', 'unitSymbol', 'unitMultiplier', 'Terminal',
+                    'PowerSystemResource', 'positiveFlowIn']),
+                'AnalogValue': pd.DataFrame(columns=[
+                    'rdfId', 'name', 'sensorAccuracy', 'MeasurementValueSource', 'Analog', 'value']),
+                'Discrete': pd.DataFrame(columns=[
+                    'rdfId', 'name', 'measurementType', 'unitSymbol', 'unitMultiplier', 'PowerSystemResource']),
+                'DiscreteValue': pd.DataFrame(columns=[
+                    'rdfId', 'name', 'sensorAccuracy', 'MeasurementValueSource', 'Discrete', 'value'])
+            }),
+            'sc': MappingProxyType({
+                'PowerTransformer': pd.DataFrame(columns=['rdfId', 'isPartOfGeneratorUnit']),
+                'PowerTransformerEnd': pd.DataFrame(columns=[
+                    'rdfId', 'r0', 'x0', 'phaseAngleClock', 'grounded', 'xground']),
+                'SynchronousMachine': pd.DataFrame(columns=['rdfId', 'r2', 'x2', 'voltageRegulationRange']),
+                'AsynchronousMachine': pd.DataFrame(columns=[
+                    'rdfId', 'rxLockedRotorRatio', 'iaIrRatio', 'efficiency', 'ratedMechanicalPower']),
+                'ACLineSegment': pd.DataFrame(columns=[
+                    'rdfId', 'r0', 'x0', 'b0ch', 'g0ch', 'shortCircuitEndTemperature']),
+                'PetersenCoil': pd.DataFrame(columns=['rdfId', 'nominalU']),
+                'ExternalNetworkInjection': pd.DataFrame(columns=[
+                    'rdfId', 'maxInitialSymShCCurrent', 'minInitialSymShCCurrent', 'maxR1ToX1Ratio', 'minR1ToX1Ratio',
+                    'maxR0ToX0Ratio', 'maxZ0ToZ1Ratio'])
             }),
             'ssh': MappingProxyType({
                 'ControlArea': pd.DataFrame(columns=['rdfId', 'netInterchange']),
@@ -705,10 +728,10 @@ class CimParser:
                 'VsConverter': pd.DataFrame(columns=[
                     'rdfId', 'p', 'q', 'targetUpcc', 'droop', 'droopCompensation', 'qShare', 'targetUdc', 'targetPpcc',
                     'targetQpcc', 'pPccControl', 'qPccControl', 'inService']),
-                'Breaker': pd.DataFrame(columns=['rdfId', 'open', 'inService']), # locked?
-                'Disconnector': pd.DataFrame(columns=['rdfId', 'open', 'inService']), # locked?
-                'Switch': pd.DataFrame(columns=['rdfId', 'open', 'inService']), # locked?
-                'LoadBreakSwitch': pd.DataFrame(columns=['rdfId', 'open', 'inService']), # locked?
+                'Breaker': pd.DataFrame(columns=['rdfId', 'open', 'inService']),
+                'Disconnector': pd.DataFrame(columns=['rdfId', 'open', 'inService']),
+                'Switch': pd.DataFrame(columns=['rdfId', 'open', 'inService']),
+                'LoadBreakSwitch': pd.DataFrame(columns=['rdfId', 'open', 'inService']),
                 'EnergyConsumer': pd.DataFrame(columns=['rdfId', 'p', 'q', 'inService']),
                 'ConformLoad': pd.DataFrame(columns=['rdfId', 'p', 'q', 'inService']),
                 'NonConformLoad': pd.DataFrame(columns=['rdfId', 'p', 'q', 'inService']),
@@ -717,9 +740,10 @@ class CimParser:
                     'rdfId', 'discrete', 'enabled', 'targetValue', 'targetValueUnitMultiplier']),
                 'SynchronousMachine': pd.DataFrame(columns=[
                     'rdfId', 'p', 'q', 'referencePriority', 'operatingMode', 'controlEnabled', 'inService']),
-                'AsynchronousMachine': pd.DataFrame(columns=['rdfId', 'p', 'q', 'inService']), # controlEnabled?, type?
-                'EnergySource': pd.DataFrame(columns=['rdfId', 'activePower', 'reactivePower', 'inService']),
-                'StaticVarCompensator': pd.DataFrame(columns=['rdfId', 'q', 'inService']), # controlEnabled?
+                'AsynchronousMachine': pd.DataFrame(columns=['rdfId', 'p', 'q', 'inService']),
+                'EnergySource': pd.DataFrame(columns=[
+                    'rdfId', 'activePower', 'reactivePower', 'inService', 'voltageAngle', 'voltageMagnitude']),
+                'StaticVarCompensator': pd.DataFrame(columns=['rdfId', 'q', 'inService']),
                 'TapChangerControl': pd.DataFrame(columns=[
                     'rdfId', 'discrete', 'enabled', 'targetValue', 'targetValueUnitMultiplier', 'targetDeadband']),
                 'RatioTapChanger': pd.DataFrame(columns=['rdfId', 'step', 'controlEnabled']),
@@ -752,10 +776,6 @@ class CimParser:
                 'Terminal': pd.DataFrame(columns=['rdfId', 'TopologicalNode']),
                 'DCTerminal': pd.DataFrame(columns=['rdfId', 'DCTopologicalNode']),
                 'ACDCConverterDCTerminal': pd.DataFrame(columns=['rdfId', 'DCTopologicalNode'])
-            }),
-            'tp_bd': MappingProxyType({
-                'TopologicalNode': pd.DataFrame(columns=['rdfId', 'name', 'ConnectivityNodeContainer', 'BaseVoltage']),
-                'ConnectivityNode': pd.DataFrame(columns=['rdfId', 'TopologicalNode'])
             }),
             'dl': MappingProxyType({
                 'Diagram': pd.DataFrame(columns=['rdfId', 'name']),

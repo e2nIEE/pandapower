@@ -40,9 +40,9 @@ class CreateMeasurements:
         sc = cim_tools.get_pp_net_special_columns_dict()
         # join the Analogs with the AnalogValues and MeasurementValueSources
         analogs = pd.merge(
-            self.cim['eq']['Analog'][['rdfId', 'measurementType', 'unitSymbol', 'unitMultiplier', 'Terminal',
+            self.cim['op']['Analog'][['rdfId', 'measurementType', 'unitSymbol', 'unitMultiplier', 'Terminal',
                                       'PowerSystemResource', 'positiveFlowIn']],
-            self.cim['eq']['AnalogValue'][['sensorAccuracy', 'MeasurementValueSource', 'Analog', 'value']],
+            self.cim['op']['AnalogValue'][['sensorAccuracy', 'MeasurementValueSource', 'Analog', 'value']],
             how='inner', left_on='rdfId', right_on='Analog')
         analogs = analogs.drop(columns=['rdfId', 'Analog'])
         analogs = pd.merge(analogs, self.cim['eq']['MeasurementValueSource'], how='left',
