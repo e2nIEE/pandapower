@@ -721,7 +721,7 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
                 x, y = g
                 geo.append(f'{{"coordinates": [{x}, {y}], "type": "Point"}}')
             else:
-                raise ValueError("geodata must be iterable of tuples of (x, y) coordinates or geojson.Point object")
+                raise ValueError("geodata must be iterable of tuples of (x, y) coordinates")
         if len(geo) == 1:
             geo = [geo[0]] * nr_buses
         if len(geo) != nr_buses:
