@@ -1,3 +1,4 @@
+from io import StringIO
 import networkx as nx
 import numpy as np
 import pandas as pd
@@ -35,29 +36,59 @@ def dataframes_equal(df1, df2, ignore_index_order=True, **kwargs):
         df1 = df1.sort_index().sort_index(axis=1)
         df2 = df2.sort_index().sort_index(axis=1)
 
+    # geo columns are compared later
+    df1_cols = df1.columns.difference({"geo"})
+    df2_cols = df2.columns.difference({"geo"})
+
     # --- pandas implementation
     try:
-        pdt.assert_frame_equal(df1, df2, **kwargs)
-        return True
+        pdt.assert_frame_equal(df1[df1_cols], df2[df2_cols], **kwargs)
     except AssertionError:
         return False
 
-    # --- alternative (old) implementation
-    # if df1.shape == df2.shape:
-    #     if df1.shape[0]:
-    #         # we use numpy.allclose to grant a tolerance on numerical values
-    #         numerical_equal = np.allclose(df1.select_dtypes(include=[np.number]),
-    #                                       df2.select_dtypes(include=[np.number]),
-    #                                       atol=tol, equal_nan=True)
-    #     else:
-    #         numerical_equal = True
-    #     # ... use pandas .equals for the rest, which also evaluates NaNs to be equal
-    #     rest_equal = df1.select_dtypes(exclude=[np.number]).equals(
-    #         df2.select_dtypes(exclude=[np.number]))
+    # --- compare geo columns
+    if "geo" in df1.columns and "geo" in df2.columns:
+        not_eq_warn = "DataFrames do not match in column 'geo'."
+        notnull1 = df1.geo.index[~df1.geo.isnull()]
+        notnull2 = df2.geo.index[~df2.geo.isnull()]
 
-    #     return numerical_equal & rest_equal
-    # else:
-    #     return False
+        if len(notnull1) + len(notnull2) == 0:
+            return True
+
+        # check equal index with geo data
+        if len(notnull1.symmetric_difference(notnull2)):
+            logger.warning(not_eq_warn)
+            return False
+
+        # create DataFrames from geo information
+        df1_geo = pd.concat([pd.read_json(StringIO(df1.geo.at[idx])).assign(**{"idx": idx}) for idx
+                             in notnull1])
+        df2_geo = pd.concat([pd.read_json(StringIO(df2.geo.at[idx])).assign(**{"idx": idx}) for idx
+                             in notnull2])
+
+        # check equal columns and reorder columns of df2_geo
+        if len(df1_geo.columns.symmetric_difference(df2_geo.columns)):
+            logger.warning(not_eq_warn)
+            return False
+        else:
+            df2_geo = df2_geo[df1_geo.columns]
+
+        try:
+            pdt.assert_frame_equal(df1_geo, df2_geo, **kwargs)
+            return True
+        except AssertionError:
+            logger.warning(not_eq_warn)
+            return False
+        return geo_eq
+
+    elif "geo" not in df1.columns and "geo" not in df2.columns:
+        return True
+    elif "geo" not in df1.columns and "geo" in df2.columns:
+        logger.warning("df2 contains column 'geo' but df1 doesn't.")
+        return False
+    else:
+        logger.warning("df1 contains column 'geo' but df2 doesn't.")
+        return False
 
 
 def compare_arrays(x, y):

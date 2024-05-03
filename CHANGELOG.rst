@@ -16,6 +16,14 @@ Change Log
 - [CHANGED] cim converter: Avoid huge logging output when ignore_erros = True
 - [FIXED] massive performance drag in large grids due to initializing Ybus for FACTS with np.zeros instead of using sparse matrix initialization
 - [FIXED] further futurewarnings and deprecation warnings
+- [FIXED] minor issues in geojson exporter
+- [CHANGED] use of bus_geodata and line_geodata tables to geo column in bus and line table
+- [CHANGED] update most geodata dependant functions to use geo column
+- [ADDED] geodata to geojson converter
+- [CHANGED] dump_to_geojson now requires the geodata to be present in the geo column of a network (see :code:`convert_geodata_to_geojson`)
+- [CHANGED] updated simple_plot to use geojson data instead of bus_geo and line_geo
+- [CHANGED] minor changes to the example networks (mainly added names to identify them in tests)
+- [CHANGED] dataframes_equal adapted to properly compare geojson data
 
 [2.14.6] - 2024-04-02
 -------------------------------
