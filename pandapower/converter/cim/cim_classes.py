@@ -288,7 +288,7 @@ class CimParser:
                 'SeriesCompensator': pd.DataFrame(columns=[
                     'rdfId', 'name', 'description', 'BaseVoltage', 'r', 'x', 'r0', 'x0']),
                 'Analog': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'measurementType', 'unitSymbol', 'unitMultiplier', 'Terminal',
+                    'rdfId', 'name', 'description', 'measurementType', 'unitSymbol', 'unitMultiplier', 'Terminal',
                     'PowerSystemResource', 'positiveFlowIn']),
                 'AnalogValue': pd.DataFrame(columns=[
                     'rdfId', 'name', 'sensorAccuracy', 'MeasurementValueSource', 'Analog', 'value']),
@@ -694,7 +694,7 @@ class CimParser:
             }),
             'op': MappingProxyType({  # TODO: value attributes from AnalogValue and DiscreteValue need clarification
                 'Analog': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'measurementType', 'unitSymbol', 'unitMultiplier', 'Terminal',
+                    'rdfId', 'name', 'description', 'measurementType', 'unitSymbol', 'unitMultiplier', 'Terminal',
                     'PowerSystemResource', 'positiveFlowIn']),
                 'AnalogValue': pd.DataFrame(columns=[
                     'rdfId', 'name', 'sensorAccuracy', 'MeasurementValueSource', 'Analog', 'value']),

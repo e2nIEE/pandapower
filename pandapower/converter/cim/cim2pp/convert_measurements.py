@@ -41,12 +41,13 @@ class CreateMeasurements:
         # join the Analogs with the AnalogValues and MeasurementValueSources
         analogs_prf = 'op' if 'op' in self.cim.keys() else 'eq'
         analogs = pd.merge(
-            self.cim[analogs_prf]['Analog'][['rdfId', 'measurementType', 'unitSymbol', 'unitMultiplier', 'Terminal',
-                                             'PowerSystemResource', 'positiveFlowIn']],
+            self.cim[analogs_prf]['Analog'][['rdfId', 'name', 'description', 'measurementType', 'unitSymbol', 'unitMultiplier',
+                                             'Terminal', 'PowerSystemResource', 'positiveFlowIn']],
             self.cim[analogs_prf]['AnalogValue'][['rdfId', 'sensorAccuracy', 'MeasurementValueSource', 'Analog',
                                                   'value']],
             how='inner', left_on='rdfId', right_on='Analog', suffixes=("_Analog", "_AnalogValue"))
-        analogs = analogs.drop(columns=['rdfId_Analog', 'Analog'])
+        analogs = analogs.drop(columns=['rdfId_AnalogValue', 'Analog'])
+        analogs = analogs.rename(columns={'name': 'name_analog'})
         analogs = pd.merge(analogs, self.cim['eq']['MeasurementValueSource'], how='left',
                            left_on='MeasurementValueSource',
                            right_on='rdfId')
@@ -101,8 +102,8 @@ class CreateMeasurements:
         psr.loc[psr['measurement_type'] == 'q', psr_q.columns] = psr_q
 
         psr = psr.drop(columns=[sc['o_id']])
-        psr = psr.rename(columns={'rdfId_AnalogValue': sc['o_id']})
-        psr[sc['o_cl']] = 'AnalogValue'
+        psr = psr.rename(columns={'rdfId_Analog': sc['o_id'], 'name_analog': sc['name']})
+        psr[sc['o_cl']] = 'Analog'
 
         self._copy_to_measurement(psr)
 
@@ -120,6 +121,7 @@ class CreateMeasurements:
         sv_powerflow = sv_powerflow.set_index('Terminal')
         sv_powerflow[sc['o_cl']] = 'SvPowerFlow'
         sv_powerflow[sc['src']] = 'SV'
+        sv_powerflow[sc['desc']] = None
         sv_powerflow = sv_powerflow.rename(columns={'rdfId': sc['o_id']})
 
         # ---------------------------------------measure: bus v---------------------------------------------------
@@ -147,6 +149,7 @@ class CreateMeasurements:
         sv_sv_voltages['side'] = None
         sv_sv_voltages[sc['src']] = 'SV'
         sv_sv_voltages[sc['o_cl']] = 'SvVoltage'
+        sv_sv_voltages[sc['desc']] = None
         sv_sv_voltages = sv_sv_voltages.rename(columns={'rdfId': sc['o_id']})
 
         self._copy_to_measurement(sv_sv_voltages)
