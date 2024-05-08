@@ -25,7 +25,7 @@ def get_pp_net_special_columns_dict() -> Dict[str, str]:
                  'pte_id': 'PowerTransformerEnd_id', 'pte_id_hv': 'PowerTransformerEnd_id_hv',
                  'pte_id_mv': 'PowerTransformerEnd_id_mv', 'pte_id_lv': 'PowerTransformerEnd_id_lv',
                  'cnc_id': 'ConnectivityNodeContainer_id', 'sub_id': 'substation_id', 'src': 'source', 'name': 'name',
-                 'desc': 'description'})
+                 'desc': 'description', 'a_id': 'analog_id'})
 
 
 def extend_pp_net_cim(net: pandapowerNet, override: bool = True) -> pandapowerNet:
@@ -106,6 +106,9 @@ def extend_pp_net_cim(net: pandapowerNet, override: bool = True) -> pandapowerNe
     fill_dict['trafo3w'][np_float_type] = ['vk0_hv_percent', 'vk0_mv_percent', 'vk0_lv_percent', 'vkr0_hv_percent',
                                            'vkr0_mv_percent', 'vkr0_lv_percent']
     fill_dict['trafo3w'][np_bool_type] = ['power_station_unit']
+
+    fill_dict['measurement'] = dict()
+    fill_dict['measurement'][np_str_type] = ['source', 'origin_class', 'origin_id', 'analog_id']
 
     for pp_type, one_fd in fill_dict.items():
         for np_type, fields in fill_dict_all.items():
