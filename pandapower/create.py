@@ -1,17 +1,15 @@
 # -*- coding: utf-8 -*-
-from collections.abc import Iterable
 # Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 from operator import itemgetter
-from typing import Tuple, List, Union
+from typing import Tuple, List, Union, Iterable
 
-import geojson
 import pandas as pd
 from numpy import nan, isnan, arange, dtype, isin, any as np_any, array, bool_, \
     all as np_all, float64, intersect1d, unique as uni
-from pandas import isnull, Series
+from pandas import isnull
 from pandas.api.types import is_object_dtype
 
 from pandapower._version import __version__, __format_version__
