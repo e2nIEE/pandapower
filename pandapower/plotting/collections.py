@@ -481,7 +481,9 @@ def create_line_collection(net: pandapowerNet, lines=None,
     """
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
-    if use_bus_geodata is False and line_geodata is None and ("geo" not in net.line.columns or net.line.geo.empty):
+    if (use_bus_geodata is False and
+            line_geodata is None and
+            ("geo" not in net.line.columns or net.line.geo.isnull().all())):
         # if bus geodata is available, but no line geodata
         logger.warning("use_bus_geodata is automatically set to True, since net.line.geo is empty.")
         use_bus_geodata = True
