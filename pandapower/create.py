@@ -1125,7 +1125,7 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
         **controllable** (bool, NaN) - Whether this generator is controllable by the optimal \
             powerflow; defaults to False if "controllable" column exists in DataFrame
 
-        **k** (float, NaN) - Ratio of nominal current to short circuit current
+        **k** (float, NaN) - Ratio of short circuit current to nominal current
 
         **rx** (float, NaN) - R/X ratio for short circuit impedance. Only relevant if type is \
             specified as motor so that sgen is treated as asynchronous motor. Relevant for \
