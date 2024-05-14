@@ -157,7 +157,7 @@ def coords_from_node_geodata(element_indices, from_nodes, to_nodes, node_geodata
         & np.isin(to_nodes, node_geodata.index.values)
     elements_with_geo = np.array(element_indices)[have_geo]
     fb_with_geo, tb_with_geo = from_nodes[have_geo], to_nodes[have_geo]
-    coords = [geojson.dumps(geojson.LineString([(x_from, y_from), (x_to, y_to)])) for [x_from, y_from], [x_to, y_to]
+    coords = [geojson.dumps(geojson.LineString([(x_from.item(), y_from.item()), (x_to.item(), y_to.item())])) for [x_from, y_from], [x_to, y_to]
               in np.concatenate([node_geodata.loc[fb_with_geo].apply(geojson.loads).apply(geojson.utils.coords).apply(list).to_list(),
                                  node_geodata.loc[tb_with_geo].apply(geojson.loads).apply(geojson.utils.coords).apply(list).to_list()], axis=1)
               if not ignore_zero_length or not (x_from == x_to and y_from == y_to)]

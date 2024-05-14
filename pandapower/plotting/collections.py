@@ -486,6 +486,7 @@ def create_line_collection(net: pandapowerNet, lines=None,
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
 
+        
     def _get_coords_from_geojson(gj_str):
         pattern = r'"coordinates"\s*:\s*((?:\[(?:\[[^]]+],?\s*)+\])|\[[^]]+\])'
         matches = re.findall(pattern, gj_str)
