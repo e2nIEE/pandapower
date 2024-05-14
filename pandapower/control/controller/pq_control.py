@@ -26,7 +26,7 @@ class PQController(ConstControl):
     INPUT:
         **net** (attrdict) - pandapower network
 
-        **gid** (int) - ID of controlled generator
+        **gid** (int[]) - IDs of the controlled elements
 
     OPTIONAL:
 
@@ -81,6 +81,10 @@ class PQController(ConstControl):
         self.p_profile = None
         self.q_profile = None
         self.ts_absolute = ts_absolute
+
+        if not self.ts_absolute and self.sn_mva.isnull().any():
+            logger.warning(f"There are PQ controlled elements with NaN sn_mva values, "
+                           f"although {ts_absolute=}.")
 
         # Init variables for convergence check
         self.max_p_error = max_p_error
@@ -182,6 +186,9 @@ class PQController(ConstControl):
 
             **q_kvar** - Reactive power limited to inverter sizing
         """
+        if n_nan_sn := sum(self.sn_mva.isnull()):
+            logger.warning(f"Limiting to inverter size will result in NaN for the {n_nan_sn} PQ "
+                           "controlled elements with NaN sn_mva values.")
         # limit output to inverter sizing
         if (np.sqrt(p_mw ** 2 + q_mvar ** 2) > self.f_sizing * self.sn_mva).any():
            # limit Q first
@@ -204,5 +211,5 @@ class PQController(ConstControl):
         """
         Reading the actual P and Q state from the respective [self.element] in the net
         """
-        self.p_mw = net[self.element].at[self.gid, "p_mw"]
-        self.q_mvar = net[self.element].at[self.gid, "q_mvar"]
+        self.p_mw = net[self.element].loc[self.gid, "p_mw"]
+        self.q_mvar = net[self.element].loc[self.gid, "q_mvar"]

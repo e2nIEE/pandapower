@@ -21,16 +21,20 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+# TODO: arrays in q_flexibility() und in_area() in allen möglichen Funktionen
 
 # -------------------------------------------------------------------------------------------------
-""" All defined PQV areas of reactive power provision capabilities including those defined in
-VDE-AR-N technical connection rule standards"""
+""" This file defines PQ, QV, and PQV areas of reactive power provision capabilities including those
+defined in VDE-AR-N technical connection rule standards"""
 # -------------------------------------------------------------------------------------------------
 
+""" Base class """
 
-class BasePQVArea(BaseModel):
-    def pq_in_range(self, p, q, vm_pu):
-        pass
+class BaseArea(BaseModel):
+    """ Defines which functionality is common to all area (PQ or QV) classes. """
+    def in_area(self, p, q, vm_pu):
+        min_q, max_q = self.q_flexibility(p, vm_pu)
+        return (min_q <= q) & (max_q >= q)
 
     def q_flexibility(self, p, vm_pu):
         pass
@@ -39,7 +43,27 @@ class BasePQVArea(BaseModel):
         return self.__class__.name
 
 
-class PQAreaPOLYGON(BasePQVArea):
+class BasePQVArea(BaseArea):
+    """ Defines functionality common for mulitple PQVArea classes. """
+    def in_area(self, p, q, vm_pu):
+        return self.pq_area.in_area(p, q, vm_pu) & self.qv_area.in_area(p, q, vm_pu)
+
+    def q_flexibility(self, p, vm_pu):
+        min_q_pq, max_q_pq = self.pq_area.q_flexibility(p)
+        min_q_qv, max_q_qv = self.qv_area.q_flexibility(None, vm_pu)
+        min_q, max_q = np.maximum(min_q_pq, min_q_qv), np.minimum(max_q_pq, max_q_qv)
+        no_flexibility = min_q > max_q
+        if n_no_flex := sum(no_flexibility):
+            logger.debug(f"For {n_no_flex} elements, min_q and max_q were set to the same point of "
+                         "no flexibility.")
+            min_q[no_flexibility] = (min_q[no_flexibility] + min_q[no_flexibility])/2
+            max_q[no_flexibility] = min_q[no_flexibility]
+        return min_q, max_q
+
+
+""" Polygon Areas """
+
+class PQAreaPOLYGON(BaseArea):
     """
     Provides a polygonal area of feasible reactive power provision. The polygonal area can be
     defined by 'p_points' and 'q_points'.
@@ -49,7 +73,6 @@ class PQAreaPOLYGON(BasePQVArea):
     >>> PQAreaDefault(p_points=(0.1, 0.2, 1, 1, 0.2, 0.1, 0.1),
     ...               q_points=(0.1, 0.410775, 0.410775, -0.328684, -0.328684, -0.1, 0.1))
     """
-
     def __init__(self, p_points, q_points):
         self.p_points = p_points
         self.q_points = q_points
@@ -59,79 +82,100 @@ class PQAreaPOLYGON(BasePQVArea):
 
         self.polygon = Polygon([(p, q) for p, q in zip(p_points, q_points)])
 
-    def pq_in_range(self, p, q, vm_pu=None):
-        return self.polygon.contains(Point(p, q))
+    def in_area(self, p, q, vm_pu=None):
+        return self.polygon.contains(Point(p, q)) # TODO: -> array
 
     def q_flexibility(self, p, vm_pu=None):
         assert p >= 0 and p <= 1
         line = LineString([(p, -1), (p, 1)])
         if line.intersects(self.polygon):
-            return [point[1] for point in LineString([(p, -1),
-                    (p, 1)]).intersection(self.polygon).coords]
+            return [point[1] for point in LineString(
+                [(p, -1), (p, 1)]).intersection(self.polygon).coords] # TODO: -> array
         else:
             return (0, 0)
+
+
+class QVAreaPOLYGON(BaseArea):
+    """
+    Provides a polygonal area of feasible reactive power provision. The polygonal area can be
+    defined by 'q_points' and 'vm_points'.
+
+    Example
+    -------
+    >>> QVAreaPOLYGON(q_points=(0.1, 0.410775, 0.410775, -0.328684, -0.328684, -0.1, 0.1),
+    ...               vm_points=(0.9, 1.05, 1.1, 1.1, 1.05, 0.9, 0.9))
+    """
+    def __init__(self, q_points, vm_points):
+        self.q_points = q_points
+        self.vm_points = vm_points
+
+        if not shapely_imported:
+            soft_dependency_error("PQAreaDefault", "shapely")
+
+        self.polygon = Polygon([(vm, q) for vm, q in zip(vm_points, q_points)])
+
+    def in_area(self, p, q, vm_pu):
+        return self.polygon.contains(Point(q, vm_pu)) # TODO: -> array
+
+    def q_flexibility(self, p, vm_pu):
+        assert vm_pu >= 0 and vm_pu <= 2
+        line = LineString([(vm_pu, -1), (vm_pu, 1)])
+        if line.intersects(self.polygon):
+            return [point[1] for point in LineString(
+                [(vm_pu, -1), (vm_pu, 1)]).intersection(self.polygon).coords] # TODO: -> array
+        else:
+            return np.array([0]), np.array([0])
+
+
+class PQVAreaPOLYGON(BasePQVArea):
+    """
+    Provides a polygonal area of feasible reactive power provision. The polygonal area can be
+    defined by 'p_points' and 'q_pq_points' as well as 'q_qv_points' and 'vm_points'.
+
+    Example
+    -------
+    >>> PQVAreaDefault(p_points=(0.1, 0.2, 1, 1, 0.2, 0.1, 0.1),
+    ...                q_pq_points=(0.1, 0.410775, 0.410775, -0.328684, -0.328684, -0.1, 0.1),
+    ...                q_qv_points=(0.1, 0.410775, 0.410775, -0.328684, -0.328684, -0.1, 0.1),
+    ...                vm_points=(0.9, 1.05, 1.1, 1.1, 1.05, 0.9, 0.9))
+    """
+    def __init__(self, p_points, q_pq_points, q_qv_points, vm_points):
+        self.pq_area = PQAreaPOLYGON(p_points, q_pq_points)
+        self.qv_area = QVAreaPOLYGON(q_qv_points, vm_points)
 
 
 """ STATCOM DERs: """
 
 
-class PQAreaSTATCOM(BasePQVArea):
+class PQAreaSTATCOM(BaseArea):
     """
     TODO: Description
+
+    Example
+    -------
+    >>> PQAreaSTATCOM(min_q=-0.328684, max_q=0.410775)
     """
 
-    def __init__(self, min_q=-0.328684, max_q=0.410775):
+    def __init__(self, min_q, max_q):
         self.min_q, self.max_q = min_q, max_q
 
-    def pq_in_range(self, p, q, vm_pu=None):
-        if self.min_q <= q <= self.max_q:
-            return True
-        else:
-            return False
+    def in_area(self, p, q, vm_pu=None):
+        return (self.min_q <= q) & (q <= self.max_q)
 
     def q_flexibility(self, p, vm_pu=None):
-        return (self.min_q, self.max_q)
-
-
-class PQVArea_STATCOM(BasePQVArea):
-    """
-    TODO: Description
-    """
-
-    def __init__(self, min_q=-0.328684, max_q=0.328684):
-        self.min_q, self.max_q = min_q, max_q
-        self.pq_area = PQAreaSTATCOM(min_q=min_q, max_q=max_q)
-        self.qu_area = QVArea4110UserDefined(min_q=min_q, max_q=max_q)
-        # self.linear_factor = -(max_q - min_q) / 0.04
-
-    def pq_in_range(self, p, q, vm_pu):
-        if self.pq_area.pq_in_range(p, q, vm_pu) and self.qu_area.pq_in_range(p, q, vm_pu):
-            return True
-        else:
-            return False
-
-    def q_flexibility(self, p, vm_pu=None):
-        min_q, max_q = self.pq_area.q_flexibility(p=p, vm_pu=vm_pu)
-        q_range_qu_area = self.qu_area.q_flexibility(p=p, vm_pu=vm_pu)
-
-        if max_q < q_range_qu_area[0] or min_q > q_range_qu_area[1]:
-            # when q is not available due to pq_area then no q
-            return min_q, max_q
-        else:
-            return (np.clip(min_q, *q_range_qu_area), np.clip(max_q, *q_range_qu_area))
+        return self.min_q, self.max_q
 
 
 """ HV DERs: """
 
 
-class PQArea4120(BasePQVArea):
+class PQArea4120(BaseArea):
     """
     This class models the PQ area of flexible Q for high-voltage plants according to VDE AR-N-4120.
     It is used to be combined with Voltage dependencies in PQVArea4120V1, PQVArea4120V2 and
     PQVArea4120V3
     """
-
-    def __init__(self, min_q=-0.328684, max_q=0.410775, version=2018):
+    def __init__(self, min_q, max_q, version=2018):
         supported_versions = [2015, 2018]
         p_points = {2015: [0.1, 0.2], 2018: [0.05, 0.2]}
         if version not in supported_versions:
@@ -144,7 +188,7 @@ class PQArea4120(BasePQVArea):
         self.linear_factor_ind = (self.min_q + self.p_points[0]) / self.p_points[0]
         self.linear_factor_cap = (self.max_q - self.p_points[0]) / self.p_points[0]
 
-    def pq_in_range(self, p, q, vm_pu=None):
+    def in_area(self, p, q, vm_pu=None):
         if p < self.p_points[0]:
             return False
         elif p > self.p_points[1]:
@@ -163,16 +207,16 @@ class PQArea4120(BasePQVArea):
             return (self.min_q, self.max_q)
         else:
             return (-self.p_points[0]+(p-self.p_points[0])*self.linear_factor_ind,
-                    self.p_points[0]+(p-self.p_points[0])*self.linear_factor_cap)
+                    self.p_points[0]+(p-self.p_points[0])*self.linear_factor_cap) # TODO: unterschied 110kV vs 220&380 kV
 
 
-class QVArea4120(BasePQVArea):
+class QVArea4120(BaseArea):
     """
-    This class models the PV area of flexible Q for high-voltage plants according to VDE AR-N-4120.
-    It is used to be combined with active power dependencies in PQVArea4120V1, PQVArea4120V2 and
+    This class models the QV area of flexible Q for high-voltage power plants according to
+    VDE AR-N-4120.
+    It is used to be combined with active power dependencies in PQVArea4120V1, PQVArea4120V2, or
     PQVArea4120V3
     """
-
     def __init__(self, min_q, max_q):
         self.min_q, self.max_q = min_q, max_q
 
@@ -181,27 +225,20 @@ class QVArea4120(BasePQVArea):
         self.delta_u = 7.0/110
         self.linear_factor = (self.max_q - self.min_q) / self.delta_u
 
-    def pq_in_range(self, p, q, vm_pu):
-        q_flex_min, q_flex_max = self.q_flexibility(p, vm_pu)
-        if q < q_flex_min or q > q_flex_max:
-            return False
-        else:
-            return True
-
     def q_flexibility(self, p, vm_pu):
         if vm_pu < self.min_u:
-            q_range_qu_area = (self.max_q, self.max_q)
+            q_range_qv_area = (self.max_q, self.max_q)
         elif self.min_u < vm_pu <= self.min_u + self.delta_u:
-            q_range_qu_area = (self.max_q - self.linear_factor * (vm_pu-self.min_u), self.max_q)
+            q_range_qv_area = (self.max_q - self.linear_factor * (vm_pu-self.min_u), self.max_q)
         elif self.min_u+self.delta_u < vm_pu <= self.max_u-self.delta_u:
-            q_range_qu_area = (self.min_q, self.max_q)
+            q_range_qv_area = (self.min_q, self.max_q)
         elif self.max_u-self.delta_u < vm_pu <= self.max_u:
-            q_range_qu_area = (self.min_q, self.min_q + self.linear_factor * (self.max_u-vm_pu))
+            q_range_qv_area = (self.min_q, self.min_q + self.linear_factor * (self.max_u-vm_pu))
         else:
             assert vm_pu > self.max_u
-            q_range_qu_area = (self.min_q, self.min_q)
+            q_range_qv_area = (self.min_q, self.min_q)
 
-        return q_range_qu_area
+        return q_range_qv_area
 
 
 class PQVArea4120V1(BasePQVArea):
@@ -209,28 +246,10 @@ class PQVArea4120V1(BasePQVArea):
     This class models the PQV area of flexible Q for high-voltage plants according to variant 1 of
     VDE AR-N-4120.
     """
-
-    def __init__(self, min_q=-0.227902, max_q=0.484322, version=2018):
-        self.min_q, self.max_q, self.version = min_q, max_q, version
-        self.pq_area = PQArea4120(self.min_q, self.max_q, version=self.version)
-        self.qu_area = QVArea4120(self.min_q, self.max_q)
-
-    def pq_in_range(self, p, q, vm_pu):
-        # Check PQ Area state (Dach-Kurve)
-        if self.pq_area.pq_in_range(p, q, vm_pu) and self.qu_area.pq_in_range(p, q, vm_pu):
-            return True
-        else:
-            return False
-
-    def q_flexibility(self, p, vm_pu=None):
-        min_q, max_q = self.pq_area.q_flexibility(p=p, vm_pu=vm_pu)
-        q_range_qu_area = self.qu_area.q_flexibility(p=p, vm_pu=vm_pu)
-
-        if max_q < q_range_qu_area[0] or min_q > q_range_qu_area[1]:
-            # when q is not available due to pq_area then no q
-            return min_q, max_q
-        else:
-            return (np.clip(min_q, *q_range_qu_area), np.clip(max_q, *q_range_qu_area))
+    def __init__(self, version=2018):
+        min_q, max_q = -0.227902, 0.484322
+        self.pq_area = PQArea4120(min_q, max_q, version=version)
+        self.qv_area = QVArea4120(min_q, max_q)
 
 
 class PQVArea4120V2(PQVArea4120V1):
@@ -238,8 +257,8 @@ class PQVArea4120V2(PQVArea4120V1):
     This class models the PQV area of flexible Q for high-voltage plants according to variant 2 of
     VDE AR-N-4120.
     """
-
-    def __init__(self, min_q=-0.328684, max_q=0.410775, version=2018):
+    def __init__(self, version=2018):
+        min_q, max_q = -0.328684, 0.410775
         super().__init__(min_q, max_q, version=version)
 
 
@@ -248,19 +267,24 @@ class PQVArea4120V3(PQVArea4120V1):
     This class models the PQV area of flexible Q for high-voltage plants according to variant 3 of
     VDE AR-N-4120.
     """
-
-    def __init__(self, min_q=-0.410775, max_q=0.328684, version=2018):
+    def __init__(self, version=2018):
+        min_q, max_q = -0.410775, 0.328684
         super().__init__(min_q, max_q, version=version)
 
 
 """ EHV DERs: """
 
 class PQArea4130(PQArea4120):
-    pass
+    pass  # equals PQArea4120
 
 
 class QVArea4130(QVArea4120):
-
+    """
+    This class models the QV area of flexible Q for extra high voltage power plants according to
+    VDE AR-N-4130.
+    It is used to be combined with active power dependencies in PQVArea4130V1, PQVArea4130V2, or
+    PQVArea4130V3
+    """
     def __init__(self, min_q, max_q, vn, variant):
         self.min_q, self.max_q, self.vn, self.variant = min_q, max_q, vn, variant
         epsilon = 1e-3
@@ -304,35 +328,48 @@ class QVArea4130(QVArea4120):
                 np.interp(vm_pu, self.vm_max_points, self.q_max_points))
 
 class PQVArea4130V1(PQVArea4120V1):
-
-    def __init__(self, min_q=-0.227902, max_q=0.484322, version=2018, vn=380):
-        self.min_q, self.max_q, self.version, self.vn = min_q, max_q, version, vn
-        self.pq_area = PQArea4130(self.min_q, self.max_q, version=self.version)
-        self.qu_area = QVArea4130(self.min_q, self.max_q, vn=self.vn, variant=1)
+    """
+    This class models the PQV area of flexible Q for extra high voltage power plants according to
+    variant 1 of VDE AR-N-4130.
+    """
+    def __init__(self, version=2018, vn=380):
+        min_q, max_q = -0.227902, 0.484322
+        self.pq_area = PQArea4130(min_q, max_q, version=version)
+        self.qv_area = QVArea4130(min_q, max_q, vn=vn, variant=1)
 
 class PQVArea4130V2(PQVArea4130V1):
-
-    def __init__(self, min_q=-0.328684, max_q=0.410775, version=2018, vn=380):
+    """
+    This class models the PQV area of flexible Q for extra high voltage power plants according to
+    variant 2 of VDE AR-N-4130.
+    """
+    def __init__(self, version=2018, vn=380):
+        min_q, max_q = -0.328684, 0.410775
         super().__init__(min_q, max_q, version=version, vn=vn)
-        self.qu_area = QVArea4130(self.min_q, self.max_q, vn=self.vn, variant=2)
+        self.qv_area = QVArea4130(min_q, max_q, vn=vn, variant=2)
 
 
 class PQVArea4130V3(PQVArea4130V1):
-
-    def __init__(self, min_q=-0.410775, max_q=0.328684, version=2018, vn=380):
+    """
+    This class models the PQV area of flexible Q for extra high voltage power plants according to
+    variant 3 of VDE AR-N-4130.
+    """
+    def __init__(self, version=2018, vn=380):
+        min_q, max_q = -0.410775, 0.328684
         super().__init__(min_q, max_q, version=version, vn=vn)
-        self.qu_area = QVArea4130(self.min_q, self.max_q, vn=self.vn, variant=3)
+        self.qv_area = QVArea4130(min_q, max_q, vn=vn, variant=3)
 
 
 """ MV DERs: """
 
 
-class QVArea4110(QVArea4120):
+class PQArea4110(BaseArea):
+    pass  # TODO: missing
+
+class QVArea4110(BaseArea):
     """
     This class models the QV area of flexible Q for medium-voltage plants according to
     VDE AR-N-4110.
     """
-
     def __init__(self, min_q=-0.328684, max_q=0.328684):
         self.min_q, self.max_q = min_q, max_q
         self.min_u, self.max_u = 0.9, 1.1
@@ -342,95 +379,36 @@ class QVArea4110(QVArea4120):
 
     def q_flexibility(self, p, vm_pu):
         if vm_pu < self.min_u:
-            q_range_qu_area = (0, self.max_q)
+            q_range_qv_area = (0, self.max_q)
         elif self.min_u < vm_pu <= self.min_u + self.delta_u:
-            q_range_qu_area = (0 - self.linear_factor_ind * (vm_pu-self.min_u),
+            q_range_qv_area = (0 - self.linear_factor_ind * (vm_pu-self.min_u),
                                self.max_q)
         elif self.min_u+self.delta_u < vm_pu <= self.max_u-self.delta_u:
-            q_range_qu_area = (self.min_q, self.max_q)
+            q_range_qv_area = (self.min_q, self.max_q)
         elif self.max_u-self.delta_u < vm_pu <= self.max_u:
-            q_range_qu_area = (self.min_q, 0 + self.linear_factor_cap * (self.max_u-vm_pu))
+            q_range_qv_area = (self.min_q, 0 + self.linear_factor_cap * (self.max_u-vm_pu))
         else:
             assert vm_pu > self.max_u
-            q_range_qu_area = (self.min_q, 0)
+            q_range_qv_area = (self.min_q, 0)
 
-        return q_range_qu_area
+        return q_range_qv_area
 
-
-class QVArea4110UserDefined(BasePQVArea):
-    """
-    TODO: Description (what difference to QVArea4110 and for what reason/use case?)
-    """
-
-    def __init__(self, min_q, max_q):
-        self.min_q, self.max_q = min_q, max_q
-        self.min_u, self.max_u = 0.92, 1.08
-        self.delta_u = 0.04
-        self.linear_factor = - (self.max_q - self.min_q) / self.delta_u
-
-    def pq_in_range(self, p, q, vm_pu):
-        q_flex_min, q_flex_max = self.q_flexibility(p, vm_pu)
-        if q < q_flex_min or q > q_flex_max:
-            return False
-        else:
-            return True
-
-    def q_flexibility(self, p, vm_pu):
-        if vm_pu < self.min_u:
-            q_range_qu_area = (self.max_q-0.002, self.max_q+0.002)
-        elif self.min_u < vm_pu <= self.min_u + self.delta_u:
-            q_range_qu_area = (self.max_q + self.linear_factor * (vm_pu-self.min_u), self.max_q)
-        elif self.min_u+self.delta_u < vm_pu <= self.max_u-self.delta_u:
-            q_range_qu_area = (self.min_q, self.max_q)
-        elif self.max_u-self.delta_u < vm_pu <= self.max_u:
-            q_range_qu_area = (self.min_q, self.min_q - self.linear_factor * (self.max_u-vm_pu))
-        else:
-            assert vm_pu > self.max_u
-            q_range_qu_area = (self.min_q-0.002, self.min_q+0.002)
-
-        return q_range_qu_area
-
-
-class PQVArea4110User(BasePQVArea):
-    """
-    TODO: Description (what difference to QVArea4110 and for what reason/use case?)
-    """
-
-    def __init__(self):
-        self.pq_area = PQArea4120(min_q=-0.328684, max_q=0.328684)
-        self.qu_area = QVArea4110UserDefined(min_q=-0.328684, max_q=0.328684)
-
-    def pq_in_range(self, p, q, vm_pu):
-        if self.pq_area.pq_in_range(p, q) and self.qu_area.pq_in_range(p, q, vm_pu):
-            return True
-        else:
-            return False
-
-    def q_flexibility(self, p, vm_pu):
-        min_q, max_q = self.pq_area.q_flexibility(p=p, vm_pu=vm_pu)
-        q_range_qu_area = self.qu_area.q_flexibility(p=p, vm_pu=vm_pu)
-
-        if max_q < q_range_qu_area[0] or min_q > q_range_qu_area[1]:
-            # when q is not available due to pq_area then no q
-            return min_q, max_q
-        else:
-            return (np.clip(min_q, *q_range_qu_area), np.clip(max_q, *q_range_qu_area))
-
+class PQVArea4110(BasePQVArea):
+    pass  # TODO: missing
 
 """ LV DERs: """
 
 
-class PQArea4105(BasePQVArea):
+class PQArea4105(BaseArea):
     """
     This class models the PQ area of flexible Q for low-voltage plants according to VDE AR-N-4105.
     """
-
     def __init__(self, min_q=-0.328684, max_q=0.328684):
         self.min_q, self.max_q = min_q, max_q
         self.linear_factor_ind = self.min_q / 0.9
         self.linear_factor_cap = self.max_q / 0.9
 
-    def pq_in_range(self, p, q, vm_pu=None):
+    def in_area(self, p, q, vm_pu=None):
         if p < 0.1:
             return False
         elif q < (p-0.1)*self.linear_factor_ind or q > (p-0.1)*self.linear_factor_cap:
@@ -445,11 +423,10 @@ class PQArea4105(BasePQVArea):
             return ((p-0.1)*self.linear_factor_ind, (p-0.1)*self.linear_factor_cap)
 
 
-class QVAreaLV(QVArea4120):
+class QVArea4105(BaseArea):
     """
-    TODO: Description
+    This class models the QV area of flexible Q for low-voltage plants according to VDE AR-N-4105.
     """
-
     def __init__(self, min_cosphi, max_cosphi):
         self.min_cosphi, self.max_cosphi = min_cosphi, max_cosphi
         self.min_u, self.max_u = 0.9, 1.1
@@ -459,54 +436,30 @@ class QVAreaLV(QVArea4120):
 
     def q_flexibility(self, p, vm_pu):
         if vm_pu < self.min_u:
-            cosphi_range_qu_area = (1, self.max_cosphi)
+            cosphi_range_qv_area = (1, self.max_cosphi)
         elif self.min_u < vm_pu <= self.min_u + self.delta_u:
-            cosphi_range_qu_area = (1 - self.linear_factor_ind * (vm_pu-self.min_u),
+            cosphi_range_qv_area = (1 - self.linear_factor_ind * (vm_pu-self.min_u),
                                     self.max_cosphi)
         elif self.min_u+self.delta_u < vm_pu <= self.max_u-self.delta_u:
-            cosphi_range_qu_area = (self.min_cosphi, self.max_cosphi)
+            cosphi_range_qv_area = (self.min_cosphi, self.max_cosphi)
         elif self.max_u-self.delta_u < vm_pu <= self.max_u:
-            cosphi_range_qu_area = (self.min_cosphi,
+            cosphi_range_qv_area = (self.min_cosphi,
                                     1 - self.linear_factor_cap * (self.max_u-vm_pu))
         else:
             assert vm_pu > self.max_u
-            cosphi_range_qu_area = (self.min_cosphi, 1)
+            cosphi_range_qv_area = (self.min_cosphi, 1)
 
-        q_range_qu_area = (-1 * np.tan(np.arccos(cosphi_range_qu_area[0])),
-                           1 * np.tan(np.arccos(cosphi_range_qu_area[1])))
-        return q_range_qu_area
+        q_range_qv_area = (-1 * np.tan(np.arccos(cosphi_range_qv_area[0])),
+                           1 * np.tan(np.arccos(cosphi_range_qv_area[1])))
+        return q_range_qv_area
 
-
-class PQUArea_PFcapability(BasePQVArea):
+class PQVArea4105(BasePQVArea):
     """
-    TODO: Description
+    This class models the PQV area of flexible Q for low-voltage plants according to VDE AR-N-4105.
     """
-
-    def __init__(self, min_q=-0.328684, max_q=0.328684):
-        self.min_q, self.max_q = min_q, max_q
+    def __init__(self, min_cosphi, max_cosphi, min_q=-0.328684, max_q=0.328684):
         self.pq_area = PQArea4105(min_q=min_q, max_q=max_q)
-        # self.qu_area = QVArea4110(min_q=min_q, max_q=max_q)
-        self.qu_area = QVAreaLV(min_cosphi=0.95, max_cosphi=0.95)
-
-    def pq_in_range(self, p, q, vm_pu):
-        if self.pq_area.pq_in_range(p, q, vm_pu) and\
-                self.qu_area.pq_in_range(p, q, vm_pu):
-            return True
-        else:
-            return False
-
-    def q_flexibility(self, p, vm_pu=None):
-        min_q, max_q = self.pq_area.q_flexibility(p=p, vm_pu=vm_pu)
-        q_range_qu_area = self.qu_area.q_flexibility(p=p, vm_pu=vm_pu)
-
-        if max_q < q_range_qu_area[0] or min_q > q_range_qu_area[1]:
-            # when q is not available due to pq_area then no q
-            return min_q, max_q
-        else:
-            return (np.clip(min_q, *q_range_qu_area), np.clip(max_q, *q_range_qu_area))
-
-
-# TODO Abdullah: Add LV DERs
+        self.qv_area = QVArea4105(min_cosphi, max_cosphi)
 
 
 if __name__ == "__main__":
