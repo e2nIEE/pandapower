@@ -24,6 +24,7 @@ Change Log
 - [CHANGED] updated simple_plot to use geojson data instead of bus_geo and line_geo
 - [CHANGED] minor changes to the example networks (mainly added names to identify them in tests)
 - [CHANGED] dataframes_equal adapted to properly compare geojson data
+- [FIXED] k documentation of sgen
 
 [2.14.6] - 2024-04-02
 -------------------------------
