@@ -422,7 +422,7 @@ def create_bus_collection(net, buses=None, size=5, patch_type="circle", color=No
     if any(net.bus.geo.isna()):
         raise AttributeError('net.bus.geo contains NaN values, consider dropping them beforehand.')
 
-    coords = net.bus.geo.apply(geojson.loads).apply(geojson.utils.coords).apply(next).to_list()
+    coords = net.bus.geo.apply(geojson.loads).apply(geojson.utils.coords).apply(next).loc[buses].to_list()
 
     infos = [infofunc(bus) for bus in buses] if infofunc is not None else []
 
@@ -507,11 +507,11 @@ def create_line_collection(net: pandapowerNet, lines=None,
     if len(lines) == 0:
         return None
 
-    line_geodata: Series[str] = line_geodata if line_geodata is not None else net.line.geo
+    line_geodata: Series[str] = line_geodata.loc[lines] if line_geodata is not None else net.line.geo.loc[lines]
     lines_without_geo = line_geodata.index[line_geodata.isna()]
 
     if use_bus_geodata or not lines_without_geo.empty:
-        elem_indices = net.line.index if use_bus_geodata else lines_without_geo
+        elem_indices = lines if use_bus_geodata else lines_without_geo
         geos, line_index_successful = coords_from_node_geodata(element_indices=elem_indices,
                                                                from_nodes=net.line.loc[elem_indices, 'from_bus'].values,
                                                                to_nodes=net.line.loc[elem_indices, 'to_bus'].values,
