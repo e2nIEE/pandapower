@@ -280,9 +280,8 @@ def test_create_buses():
     assert net.bus.test_kwargs.at[b1[0]] == "dummy_string"
 
     for i in b2:
-        assert net.bus.at[i, "geo"] == geojson.dumps(geojson.Point((10., 20.)), sort_keys=True)
+        assert net.bus.at[i, "geo"] == geojson.dumps(geojson.Point((10, 20)), sort_keys=True)
     for i, ind in enumerate(b3):
-        geodata = [(float(x), float(y)) for x, y in geodata]
         assert net.bus.at[ind, "geo"] == geojson.dumps(geojson.Point(geodata[i]), sort_keys=True)
 
 def test_create_lines():

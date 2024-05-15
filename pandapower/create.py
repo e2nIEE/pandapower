@@ -5,8 +5,8 @@
 
 
 from operator import itemgetter
+from typing import Tuple, List, Union, Iterable
 
-import geojson
 import pandas as pd
 from numpy import nan, isnan, arange, dtype, isin, any as np_any, array, bool_, \
     all as np_all, float64, intersect1d, unique as uni
@@ -153,25 +153,25 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                   ("step", "u4"),
                   ("max_step", "u4"),
                   ("in_service", "bool")],
-        "svc":   [("name", dtype(object)),
-                  ("bus", "u4"),
-                  ("x_l_ohm", "f8"),
-                  ("x_cvar_ohm", "f8"),
-                  ("set_vm_pu", "f8"),
-                  ("thyristor_firing_angle_degree", "f8"),
-                  ("controllable", "bool"),
-                  ("in_service", "bool"),
-                  ("min_angle_degree", "f8"),
-                  ("max_angle_degree", "f8")],
-        "ssc":   [("name", dtype(object)),
-                  ("bus", "u4"),
-                  ("r_ohm", "f8"),
-                  ("x_ohm", "f8"),
-                  ("vm_internal_pu", "f8"),
-                  ("va_internal_degree", "f8"),
-                  ("set_vm_pu", "f8"),
-                  ("controllable", "bool"),
-                  ("in_service", "bool")],
+        "svc": [("name", dtype(object)),
+                ("bus", "u4"),
+                ("x_l_ohm", "f8"),
+                ("x_cvar_ohm", "f8"),
+                ("set_vm_pu", "f8"),
+                ("thyristor_firing_angle_degree", "f8"),
+                ("controllable", "bool"),
+                ("in_service", "bool"),
+                ("min_angle_degree", "f8"),
+                ("max_angle_degree", "f8")],
+        "ssc": [("name", dtype(object)),
+                ("bus", "u4"),
+                ("r_ohm", "f8"),
+                ("x_ohm", "f8"),
+                ("vm_internal_pu", "f8"),
+                ("va_internal_degree", "f8"),
+                ("set_vm_pu", "f8"),
+                ("controllable", "bool"),
+                ("in_service", "bool")],
         "ext_grid": [("name", dtype(object)),
                      ("bus", "u4"),
                      ("vm_pu", "f8"),
@@ -384,16 +384,16 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
         "_empty_res_shunt": [("p_mw", "f8"),
                              ("q_mvar", "f8"),
                              ("vm_pu", "f8")],
-        "_empty_res_svc":   [("thyristor_firing_angle_degree", "f8"),
-                             ("x_ohm", "f8"),
-                             ("q_mvar", "f8"),
-                             ("vm_pu", "f8"),
-                             ("va_degree", "f8")],
-        "_empty_res_ssc":   [("q_mvar", "f8"),
-                             ("vm_internal_pu", "f8"),
-                             ("va_internal_degree", "f8"),
-                             ("vm_pu", "f8"),
-                             ("va_degree", "f8")],
+        "_empty_res_svc": [("thyristor_firing_angle_degree", "f8"),
+                           ("x_ohm", "f8"),
+                           ("q_mvar", "f8"),
+                           ("vm_pu", "f8"),
+                           ("va_degree", "f8")],
+        "_empty_res_ssc": [("q_mvar", "f8"),
+                           ("vm_internal_pu", "f8"),
+                           ("va_internal_degree", "f8"),
+                           ("vm_pu", "f8"),
+                           ("va_degree", "f8")],
         "_empty_res_switch": [("i_ka", "f8"),
                               ("loading_percent", "f8"),
                               ("p_from_mw", "f8"),
@@ -563,8 +563,8 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                                   ("prot_type", dtype(object)),
                                   ("trip_melt", "bool"),
                                   ("act_param", dtype(object)),
-                                   ("act_param_val", "f8"),
-                                   ("trip_melt_time_s", "f8")],
+                                  ("act_param_val", "f8"),
+                                  ("trip_melt_time_s", "f8")],
 
         # internal
         "_ppc": None,
@@ -646,7 +646,7 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b", zone=N
         if isinstance(geodata, tuple):
             if len(geodata) != 2:
                 raise UserWarning("geodata must be given as (x, y) tuple")
-            geo = f'{{"type":"Point","coordinates":[{float(geodata[0])},{float(geodata[1])}]}}'
+            geo = f'{{"coordinates":[{geodata[0]},{geodata[1]}], "type":"Point"}}'
         else:
             raise UserWarning("geodata must be a valid coordinate tuple")
     else:
@@ -686,7 +686,7 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
 
         **vn_kv** (float) - The grid voltage level.
 
-        **geodata** ((x,y)-tuple or geojson.Point or list of tuples or list of geojson.Point with length == nr_buses,
+        **geodata** ((x,y)-tuple or Iterable of (x, y)-tuples with length == nr_buses,
             default None) - coordinates used for plotting
 
         **type** (string, default "b") - Type of the bus. "n" - auxiliary node,
@@ -711,31 +711,33 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
     """
     index = _get_multiple_index_with_check(net, "bus", index, nr_buses)
 
-    if geodata is not None:
-        if isinstance(geodata, tuple):
-            if len(geodata) != 2:
-                raise UserWarning("geodata must be given as (x, y) tuple")
-            x, y = geodata
-            geo = [geojson.dumps(geojson.Point((float(x), float(y))), sort_keys=True)]*nr_buses
-        elif isinstance(geodata, geojson.Point):
-            if not geodata.is_valid:
-                raise UserWarning(
-                    "geodata must be a valid geojson.Point or coordinate tuple or a list of geojson.Point or tuple"
-                )
-            geo = [geojson.dumps(geodata)]*nr_buses
-        elif isinstance(geodata, list) and len(geodata) == nr_buses:
-            if all([isinstance(g, tuple) for g in geodata]):
-                geo = [geojson.dumps(geojson.Point((float(x), float(y))), sort_keys=True) for x, y in geodata]
-            elif all([isinstance(g, geojson.Point) for g in geodata]):
-                geo = geojson.dumps(geodata, sort_keys=True)
+    def _geodata_to_geo_series(data: Union[Iterable[Tuple[float, float]], Tuple[int, int]]) -> List[str]:
+        geo = []
+        for g in data:
+            if isinstance(g, tuple):
+                if len(g) != 2:
+                    raise ValueError("geodata tuples must be of length 2")
+                x, y = g
+                geo.append(f'{{"coordinates": [{x}, {y}], "type": "Point"}}')
             else:
-                raise UserWarning(
-                    "geodata must be a valid geojson.Point or coordinate tuple or a list of geojson.Point or tuple"
-                )
+                raise ValueError("geodata must be iterable of tuples of (x, y) coordinates")
+        if len(geo) == 1:
+            geo = [geo[0]] * nr_buses
+        if len(geo) != nr_buses:
+            raise ValueError("geodata must be a single point or have the same length as nr_buses")
+        return geo
+
+    if geodata:
+        if isinstance(geodata, tuple) and (isinstance(geodata[0], int) or isinstance(geodata[0], float)):
+            geo = _geodata_to_geo_series([geodata])
         else:
-            geo = None
+            assert hasattr(geodata, "__iter__"), "geodata must be an iterable"
+            geo = _geodata_to_geo_series(geodata)
     else:
-        geo = None
+        geo = [None] * nr_buses
+
+    if coords:
+        raise UserWarning("busbar plotting is not implemented fully and will likely be removed in the future")
 
     entries = {"vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "name": name, "geo": geo}
     _add_to_entries_if_not_nan(net, "bus", entries, index, "min_vm_pu", min_vm_pu)
@@ -1176,7 +1178,7 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
     _set_value_if_not_nan(net, index, max_q_mvar, "max_q_mvar", "sgen")
     _set_value_if_not_nan(net, index, controllable, "controllable", "sgen", dtype=bool_,
                           default_val=False)
-    _set_value_if_not_nan(net, index, rx, "rx", "sgen") # rx is always required
+    _set_value_if_not_nan(net, index, rx, "rx", "sgen")  # rx is always required
     if np.isfinite(kappa):
         _set_value_if_not_nan(net, index, kappa, "kappa", "sgen")
     _set_value_if_not_nan(net, index, generator_type, "generator_type", "sgen",
@@ -1300,7 +1302,8 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
                                default_val=False)
     _add_to_entries_if_not_nan(net, "sgen", entries, index, "rx", rx)  # rx is always required
     if np.isfinite(kappa):
-        _add_to_entries_if_not_nan(net, "sgen", entries, index, "kappa", kappa)  # is used for Type C also as a max. current limit
+        _add_to_entries_if_not_nan(net, "sgen", entries, index, "kappa",
+                                   kappa)  # is used for Type C also as a max. current limit
     _add_to_entries_if_not_nan(net, "sgen", entries, index, "generator_type", generator_type,
                                dtype="str", default_val="current_source")
     gen_types = ['current_source', 'async', 'async_doubly_fed']
@@ -1594,8 +1597,8 @@ def create_storages(
     index = _get_multiple_index_with_check(net, "storage", index, len(buses))
 
     entries = {"name": name, "bus": buses, "p_mw": p_mw, "q_mvar": q_mvar, "sn_mva": sn_mva,
-              "scaling": scaling, "soc_percent": soc_percent, "min_e_mwh": min_e_mwh,
-              "max_e_mwh": max_e_mwh, "in_service": in_service, "type": type}
+               "scaling": scaling, "soc_percent": soc_percent, "min_e_mwh": min_e_mwh,
+               "max_e_mwh": max_e_mwh, "in_service": in_service, "type": type}
 
     _add_to_entries_if_not_nan(net, "storage", entries, index, "min_p_mw", min_p_mw)
     _add_to_entries_if_not_nan(net, "storage", entries, index, "max_p_mw", max_p_mw)
@@ -2047,9 +2050,9 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
             higher than the highest already existing index is selected.
 
         **geodata**
-        (array, default None, shape= (,2L)) -
-        The linegeodata of the line. The first row should be the coordinates
-        of bus a and the last should be the coordinates of bus b. The points
+        (Iterable[Tuple[int, int]|Tuple[float, float]], default None) -
+        The geodata of the line. The first element should be the coordinates
+        of from_bus and the last should be the coordinates of to_bus. The points
         in the middle represent the bending points of the line
 
         **in_service** (boolean, True) - True for in_service or False for out of service
@@ -2135,8 +2138,9 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
 
     _set_entries(net, "line", index, **v, **kwargs)
 
-    if geodata:
-        net.line.at[index, "geo"] = geojson.dumps(geojson.LineString([geodata]), sort_keys=True)
+    if geodata and hasattr(geodata, '__iter__'):
+        geo = [[x, y] for x, y in geodata]
+        net.line.at[index, "geo"] = f'{{"coordinates": {geo}, "type": "LineString"}}'
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "line")
     _set_value_if_not_nan(net, index, alpha, "alpha", "line")
@@ -2179,9 +2183,9 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
                 index one higher than the highest already existing index is selected.
 
             **geodata**
-            (list of arrays, default None, shape of arrays (,2L)) -
-            The linegeodata of the line. The first row should be the coordinates
-            of bus a and the last should be the coordinates of bus b. The points
+            (Iterable[Iterable[Tuple[x, y]]] or Iterable[Tuple[x, y]], default None) -
+            The geodata of the line. The first element should be the coordinates
+            of from_bus and the last should be the coordinates of to_bus. The points
             in the middle represent the bending points of the line
 
             **in_service** (list of boolean, True) - True for in_service or False for out of service
@@ -2250,13 +2254,13 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
             entries["type"] = lineparam["type"]
     else:
         lineparam = list(map(load_std_type, [net] * len(std_type), std_type,
-            ['line'] * len(std_type)))
+                             ['line'] * len(std_type)))
         entries["r_ohm_per_km"] = list(map(itemgetter("r_ohm_per_km"), lineparam))
         entries["x_ohm_per_km"] = list(map(itemgetter("x_ohm_per_km"), lineparam))
         entries["c_nf_per_km"] = list(map(itemgetter("c_nf_per_km"), lineparam))
         entries["max_i_ka"] = list(map(itemgetter("max_i_ka"), lineparam))
         entries["g_us_per_km"] = [line_param_dict.get("g_us_per_km", 0) for line_param_dict in \
-            lineparam]
+                                  lineparam]
         entries["type"] = [line_param_dict.get("type", None) for line_param_dict in lineparam]
 
     _add_to_entries_if_not_nan(net, "line", entries, index, "max_loading_percent",
@@ -2274,7 +2278,7 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
 
     _set_multiple_entries(net, "line", index, **entries, **kwargs)
 
-    if geodata is not None:
+    if geodata:
         _add_multiple_branch_geodata(net, geodata, index)
 
     return index
@@ -3878,7 +3882,7 @@ def create_shunt(net, bus, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, name
 
 
 def create_shunts(net, buses, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, name=None,
-                 in_service=True, index=None, **kwargs):
+                  in_service=True, index=None, **kwargs):
     """
     Creates a number of shunt elements
 
@@ -3953,8 +3957,8 @@ def create_shunt_as_capacitor(net, bus, q_mvar, loss_factor, **kwargs):
 
 
 def create_svc(net, bus, x_l_ohm, x_cvar_ohm, set_vm_pu, thyristor_firing_angle_degree,
-                name=None, controllable=True, in_service=True, index=None,
-                min_angle_degree=90, max_angle_degree=180, **kwargs):
+               name=None, controllable=True, in_service=True, index=None,
+               min_angle_degree=90, max_angle_degree=180, **kwargs):
     """
     Creates an SVC element - a shunt element with adjustable impedance used to control the voltage \
         at the connected bus
@@ -4295,7 +4299,7 @@ def create_wards(net, buses, ps_mw, qs_mvar, pz_mw, qz_mvar, name=None, in_servi
     index = _get_multiple_index_with_check(net, "storage", index, len(buses))
 
     entries = {"name": name, "bus": buses, "ps_mw": ps_mw, "qs_mvar": qs_mvar, "pz_mw": pz_mw,
-              "qz_mvar": qz_mvar, "name": name, "in_service": in_service}
+               "qz_mvar": qz_mvar, "name": name, "in_service": in_service}
 
     _set_multiple_entries(net, "ward", index, **entries, **kwargs)
 
@@ -4812,10 +4816,10 @@ def create_group(net, element_types, elements, name="", reference_columns=None, 
 
     _check_elements_existence(net, element_types, elements, reference_columns)
 
-    index = np.array([_get_index_with_check(net, "group", index)]*len(element_types), dtype=np.int64)
+    index = np.array([_get_index_with_check(net, "group", index)] * len(element_types), dtype=np.int64)
 
     entries = dict(zip(["name", "element_type", "element", "reference_column"],
-                       [ name ,  element_types,  elements,  reference_columns]))
+                       [name, element_types, elements, reference_columns]))
 
     _set_multiple_entries(net, "group", index, **entries, **kwargs)
 
@@ -4860,7 +4864,7 @@ def _cost_existance_check(net, element, et, power_type=None):
 def _costs_existance_check(net, elements, et, power_type=None):
     if isinstance(et, str) and (power_type is None or isinstance(power_type, str)):
         poly_exist = (net.poly_cost.element.isin(elements)).values & \
-                    (net.poly_cost.et == et).values
+                     (net.poly_cost.et == et).values
         pwl_exist = (net.pwl_cost.element.isin(elements)).values & \
                     (net.pwl_cost.et == et).values
         if isinstance(power_type, str):
@@ -4875,7 +4879,8 @@ def _costs_existance_check(net, elements, et, power_type=None):
         else:
             cols.append("power_type")
             pwl_df = pd.concat([net.pwl_cost[cols], pd.DataFrame(np.c_[
-                elements, et, [power_type]*len(elements)], columns=cols)])
+                                                                     elements, et, [power_type] * len(elements)],
+                                                                 columns=cols)])
         return poly_df.duplicated().sum() + pwl_df.duplicated().sum()
 
 
@@ -4884,8 +4889,8 @@ def _get_multiple_index_with_check(net, table, index, number, name=None):
         bid = get_free_id(net[table])
         return arange(bid, bid + number, 1)
     u, c = uni(index, return_counts=True)
-    if np.any(c>1):
-        raise UserWarning("Passed indexes %s exist multiple times" % (u[c>1]))
+    if np.any(c > 1):
+        raise UserWarning("Passed indexes %s exist multiple times" % (u[c > 1]))
     intersect = intersect1d(index, net[table].index.values)
     if len(intersect) > 0:
         if name is None:
@@ -5010,19 +5015,23 @@ def _add_to_entries_if_not_nan(net, element_type, entries, index, column, values
         try_astype(entries, column, dtype)
 
 
-def _add_multiple_branch_geodata(net, geodata, index):
-    dtypes = net.line.dtypes
-    # works with single or multiple lists of coordinates
-    if isinstance(geodata, list) and all([isinstance(g, tuple) and len(g) == 2 for g in geodata]):
-        # geodata is a single list of coordinates
-        series = [geojson.dumps(geojson.LineString(geodata), sort_keys=True)] * len(index)
+
+def _add_multiple_branch_geodata(net, geodata, index, table="line"):
+    dtypes = net[table].dtypes
+    if hasattr(geodata, '__iter__') and all([isinstance(g, tuple) and len(g) == 2 for g in geodata]):
+        # geodata is a single Iterable of coordinate tuples
+        geo = [[x, y] for x, y in geodata]
+        series = [f'{{"coordinates": {geo}, "type": "LineString"}}'] * len(index)
+    elif hasattr(geodata, '__iter__') and all([isinstance(g, Iterable) for g in geodata]):
+        # geodata is Iterable of Iterable of coordinate tuples
+        geo = [[[x, y] for x, y in g] for g in geodata]
+        series = pd.Series([f'{{"coordinates": {g}, "type": "LineString"}}' for g in geo], index=index)
     else:
-        # geodata is multiple lists of coordinates
-        series = list(map(lambda gd: geojson.dumps(geojson.LineString(gd), sort_keys=True), geodata))
+        raise ValueError("geodata must be an Iterable of Iterable of coordinate tuples or an Iterable of coordinate tuples")
 
-    net.line["geo"] = series
+    net[table].loc[:, "geo"] = series
 
-    _preserve_dtypes(net.line, dtypes)
+    _preserve_dtypes(net[table], dtypes)
 
 
 def _set_entries(net, table, index, preserve_dtypes=True, **entries):
@@ -5067,7 +5076,6 @@ def _set_multiple_entries(net, table, index, preserve_dtypes=True, defaults_to_f
 
     # extend the table by the frame we just created
     net[table] = pd.concat([net[table], dd[dd.columns[~dd.isnull().all()]]], sort=False)
-
 
     # and preserve dtypes
     if preserve_dtypes:
