@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 # Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -641,7 +642,7 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b", zone=N
     """
     index = _get_index_with_check(net, "bus", index)
 
-    if geodata:
+    if geodata is not None:
         if isinstance(geodata, tuple):
             if len(geodata) != 2:
                 raise UserWarning("geodata must be given as (x, y) tuple")
@@ -651,7 +652,7 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b", zone=N
     else:
         geo = None
 
-    if coords:
+    if coords is not None:
         raise UserWarning("busbar plotting is not implemented fully and will likely be removed in the future")
     entries = dict(zip(["name", "vn_kv", "type", "zone", "in_service", "geo"],
                        [name, vn_kv, type, zone, bool(in_service), geo]))
