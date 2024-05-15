@@ -1,3 +1,6 @@
+import ast
+import re
+
 import numpy as np
 import pandas as pd
 import geojson
@@ -23,6 +26,18 @@ def _rotate_dim2(arr, ang):
     """
     return np.dot(np.array([[np.cos(ang), np.sin(ang)], [-np.sin(ang), np.cos(ang)]]), arr)
 
+
+def _get_coords_from_geojson(gj_str):
+    pattern = r'"coordinates"\s*:\s*((?:\[(?:\[[^]]+],?\s*)+\])|\[[^]]+\])'
+    matches = re.findall(pattern, gj_str)
+
+    if not matches:
+        return None
+    if len(matches) > 1:
+        raise ValueError("More than one match found in GeoJSON string")
+    for m in matches:
+        return ast.literal_eval(m)
+    return None
 
 def get_collection_sizes(net, bus_size=1.0, ext_grid_size=1.0, trafo_size=1.0, load_size=1.0,
                          sgen_size=1.0, switch_size=2.0, switch_distance=1.0, gen_size=1.0):
@@ -157,10 +172,11 @@ def coords_from_node_geodata(element_indices, from_nodes, to_nodes, node_geodata
         & np.isin(to_nodes, node_geodata.index.values)
     elements_with_geo = np.array(element_indices)[have_geo]
     fb_with_geo, tb_with_geo = from_nodes[have_geo], to_nodes[have_geo]
-    coords = [geojson.dumps(geojson.LineString([(x_from, y_from), (x_to, y_to)])) for [x_from, y_from], [x_to, y_to]
-              in np.concatenate([node_geodata.loc[fb_with_geo].apply(geojson.loads).apply(geojson.utils.coords).apply(list).to_list(),
-                                 node_geodata.loc[tb_with_geo].apply(geojson.loads).apply(geojson.utils.coords).apply(list).to_list()], axis=1)
-              if not ignore_zero_length or not (x_from == x_to and y_from == y_to)]
+    node_geodata = node_geodata.apply(_get_coords_from_geojson)
+    coords = [f'{{"coordinates": [[{x_from}, {y_from}], [{x_to}, {y_to}]], "type": "LineString"}}'
+              for [x_from, y_from], [x_to, y_to]
+              in zip(node_geodata.loc[fb_with_geo], node_geodata.loc[tb_with_geo])
+              if not ignore_zero_length or (ignore_zero_length and not (x_from == x_to and y_from == y_to))]
     elements_without_geo = set(element_indices) - set(elements_with_geo)
     if len(elements_without_geo) > 0:
         logger.warning(

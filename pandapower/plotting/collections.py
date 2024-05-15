@@ -531,7 +531,7 @@ def create_line_collection(net: pandapowerNet, lines=None,
 
     coords = [_get_coords_from_geojson(line_gj) for line_gj in line_geodata]
 
-    lc = _create_line2d_collection(coords, line_geodata.index, infos=infos, picker=picker, **kwargs)
+    lc = _create_line2d_collection(coords, line_geodata.index, infos, picker, **kwargs)
 
     if cmap is not None:
         if z is None:
