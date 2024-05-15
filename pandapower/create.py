@@ -2416,7 +2416,7 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
                        "them for all parameters, otherwise they are not set!")
 
     if geodata is not None:
-        net.line.at[index, "geo"] = f'{{"type":"LineString", "coordinates":{geodata}}}'
+        net.line.at[index, "geo"] = f'{{"coordinates":{geodata}, "type":"LineString"}}'
     else:
         net.line.at[index, "geo"] = None
 
