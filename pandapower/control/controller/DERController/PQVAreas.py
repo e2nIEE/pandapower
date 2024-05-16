@@ -21,7 +21,7 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-# TODO: arrays in q_flexibility() und in_area() in allen möglichen Funktionen
+# TODO: vectorize q_flexibility() und in_area() in allen möglichen Funktionen
 
 # -------------------------------------------------------------------------------------------------
 """ This file defines PQ, QV, and PQV areas of reactive power provision capabilities including those
@@ -33,8 +33,8 @@ defined in VDE-AR-N technical connection rule standards"""
 class BaseArea(BaseModel):
     """ Defines which functionality is common to all area (PQ or QV) classes. """
     def in_area(self, p, q, vm_pu):
-        min_q, max_q = self.q_flexibility(p, vm_pu)
-        return (min_q <= q) & (max_q >= q)
+        min_max_q = self.q_flexibility(p, vm_pu)
+        return (min_max_q[:, 0] <= q) & (min_max_q[:, 1] >= q)
 
     def q_flexibility(self, p, vm_pu):
         pass
@@ -49,16 +49,17 @@ class BasePQVArea(BaseArea):
         return self.pq_area.in_area(p, q, vm_pu) & self.qv_area.in_area(p, q, vm_pu)
 
     def q_flexibility(self, p, vm_pu):
-        min_q_pq, max_q_pq = self.pq_area.q_flexibility(p)
-        min_q_qv, max_q_qv = self.qv_area.q_flexibility(None, vm_pu)
-        min_q, max_q = np.maximum(min_q_pq, min_q_qv), np.minimum(max_q_pq, max_q_qv)
-        no_flexibility = min_q > max_q
+        min_max_q = self.pq_area.q_flexibility(p)
+        min_max_q_qv = self.qv_area.q_flexibility(None, vm_pu)
+        min_max_q[:, 0] = np.maximum(min_max_q[:, 0], min_max_q_qv[:, 0])
+        min_max_q[:, 1] = np.minimum(min_max_q[:, 1], min_max_q_qv[:, 1])
+        no_flexibility = min_max_q[:, 0] > min_max_q[:, 1]
         if n_no_flex := sum(no_flexibility):
             logger.debug(f"For {n_no_flex} elements, min_q and max_q were set to the same point of "
                          "no flexibility.")
-            min_q[no_flexibility] = (min_q[no_flexibility] + min_q[no_flexibility])/2
-            max_q[no_flexibility] = min_q[no_flexibility]
-        return min_q, max_q
+            min_max_q[no_flexibility, :] = np.tile(np.sum(min_max_q[no_flexibility], axis=1)/2,
+                                                   (1, 2))
+        return min_max_q
 
 
 """ Polygon Areas """
@@ -83,16 +84,17 @@ class PQAreaPOLYGON(BaseArea):
         self.polygon = Polygon([(p, q) for p, q in zip(p_points, q_points)])
 
     def in_area(self, p, q, vm_pu=None):
-        return self.polygon.contains(Point(p, q)) # TODO: -> array
+        return np.array([self.polygon.contains(Point(pi, qi)) for pi, qi in zip(p, q)])
 
     def q_flexibility(self, p, vm_pu=None):
-        assert p >= 0 and p <= 1
-        line = LineString([(p, -1), (p, 1)])
-        if line.intersects(self.polygon):
-            return [point[1] for point in LineString(
-                [(p, -1), (p, 1)]).intersection(self.polygon).coords] # TODO: -> array
-        else:
-            return (0, 0)
+        def _q_flex(p):
+            line = LineString([(p, -1), (p, 1)])
+            if line.intersects(self.polygon):
+                return [point[1] for point in LineString(
+                    [(p, -1), (p, 1)]).intersection(self.polygon).coords]
+            else:
+                return [0, 0]
+        return np.r_[[_q_flex(pi) for pi in p]]
 
 
 class QVAreaPOLYGON(BaseArea):
@@ -112,19 +114,22 @@ class QVAreaPOLYGON(BaseArea):
         if not shapely_imported:
             soft_dependency_error("PQAreaDefault", "shapely")
 
+        # note that the naming QVAreaPOLYGON might be confusing because, in fact, it is a VQAreaPOLYGON
         self.polygon = Polygon([(vm, q) for vm, q in zip(vm_points, q_points)])
 
     def in_area(self, p, q, vm_pu):
-        return self.polygon.contains(Point(q, vm_pu)) # TODO: -> array
+        return np.array([self.polygon.contains(Point(vmi, qi)) for vmi, qi in zip(vm_pu, q)])
 
     def q_flexibility(self, p, vm_pu):
-        assert vm_pu >= 0 and vm_pu <= 2
-        line = LineString([(vm_pu, -1), (vm_pu, 1)])
-        if line.intersects(self.polygon):
-            return [point[1] for point in LineString(
-                [(vm_pu, -1), (vm_pu, 1)]).intersection(self.polygon).coords] # TODO: -> array
-        else:
-            return np.array([0]), np.array([0])
+        assert all(vm_pu >= 0) and all(vm_pu <= 2)
+        def _q_flex(vm):
+            line = LineString([(vm, -1), (vm, 1)])
+            if line.intersects(self.polygon):
+                return [point[1] for point in LineString(
+                    [(vm, -1), (vm, 1)]).intersection(self.polygon).coords]
+            else:
+                return [0, 0]
+        return np.r_[[_q_flex(vmi) for vmi in vm_pu]]
 
 
 class PQVAreaPOLYGON(BasePQVArea):
@@ -220,22 +225,22 @@ class QVArea4120(BaseArea):
     def __init__(self, min_q, max_q):
         self.min_q, self.max_q = min_q, max_q
 
-        self.max_u = 127.0/110
-        self.min_u = 96.0/110
-        self.delta_u = 7.0/110
-        self.linear_factor = (self.max_q - self.min_q) / self.delta_u
+        self.max_vm = 127.0/110
+        self.min_vm = 96.0/110
+        self.delta_vm = 7.0/110
+        self.linear_factor = (self.max_q - self.min_q) / self.delta_vm
 
     def q_flexibility(self, p, vm_pu):
-        if vm_pu < self.min_u:
+        if vm_pu < self.min_vm:
             q_range_qv_area = (self.max_q, self.max_q)
-        elif self.min_u < vm_pu <= self.min_u + self.delta_u:
-            q_range_qv_area = (self.max_q - self.linear_factor * (vm_pu-self.min_u), self.max_q)
-        elif self.min_u+self.delta_u < vm_pu <= self.max_u-self.delta_u:
+        elif self.min_vm < vm_pu <= self.min_vm + self.delta_vm:
+            q_range_qv_area = (self.max_q - self.linear_factor * (vm_pu-self.min_vm), self.max_q)
+        elif self.min_vm+self.delta_vm < vm_pu <= self.max_vm-self.delta_vm:
             q_range_qv_area = (self.min_q, self.max_q)
-        elif self.max_u-self.delta_u < vm_pu <= self.max_u:
-            q_range_qv_area = (self.min_q, self.min_q + self.linear_factor * (self.max_u-vm_pu))
+        elif self.max_vm-self.delta_vm < vm_pu <= self.max_vm:
+            q_range_qv_area = (self.min_q, self.min_q + self.linear_factor * (self.max_vm-vm_pu))
         else:
-            assert vm_pu > self.max_u
+            assert vm_pu > self.max_vm
             q_range_qv_area = (self.min_q, self.min_q)
 
         return q_range_qv_area
@@ -362,8 +367,11 @@ class PQVArea4130V3(PQVArea4130V1):
 """ MV DERs: """
 
 
-class PQArea4110(BaseArea):
-    pass  # TODO: missing
+class PQArea4110(PQAreaPOLYGON):
+    def __init__(self):
+        p_points = (0.0405, 0.81, 0.81, 0.0405, 0.0405)
+        q_points = (-0.01961505, -0.3923009, 0.3923009, 0.01961505, -0.01961505)
+        super().__init__(p_points, q_points)
 
 class QVArea4110(BaseArea):
     """
@@ -372,29 +380,40 @@ class QVArea4110(BaseArea):
     """
     def __init__(self, min_q=-0.328684, max_q=0.328684):
         self.min_q, self.max_q = min_q, max_q
-        self.min_u, self.max_u = 0.9, 1.1
-        self.delta_u = 0.025
-        self.linear_factor_ind = (0 - self.min_q) / self.delta_u
-        self.linear_factor_cap = (self.max_q - 0) / self.delta_u
+        self.min_vm, self.max_vm = 0.9, 1.1
+        self.delta_vm = 0.025
+        self.linear_factor_ind = (0 - self.min_q) / self.delta_vm
+        self.linear_factor_cap = (self.max_q - 0) / self.delta_vm
 
     def q_flexibility(self, p, vm_pu):
-        if vm_pu < self.min_u:
-            q_range_qv_area = (0, self.max_q)
-        elif self.min_u < vm_pu <= self.min_u + self.delta_u:
-            q_range_qv_area = (0 - self.linear_factor_ind * (vm_pu-self.min_u),
-                               self.max_q)
-        elif self.min_u+self.delta_u < vm_pu <= self.max_u-self.delta_u:
-            q_range_qv_area = (self.min_q, self.max_q)
-        elif self.max_u-self.delta_u < vm_pu <= self.max_u:
-            q_range_qv_area = (self.min_q, 0 + self.linear_factor_cap * (self.max_u-vm_pu))
-        else:
-            assert vm_pu > self.max_u
-            q_range_qv_area = (self.min_q, 0)
 
-        return q_range_qv_area
+        # part = vm_pu > self.max_vm
+        len_ = len(vm_pu)
+        min_max_q = np.c_[[self.min_q]*len_, [0]*len_]
+
+        part = vm_pu < self.min_vm
+        len_ = sum(part)
+        min_max_q[part] = np.c_[[0]*len_, [self.max_q]*len_]
+
+        part = (self.min_vm < vm_pu) & (vm_pu <= self.min_vm + self.delta_vm)
+        min_max_q[part] = np.c_[-self.linear_factor_ind * (vm_pu[part]-self.min_vm),
+                                [self.max_q]*sum(part)]
+
+        part = (self.min_vm+self.delta_vm < vm_pu) & (vm_pu <= self.max_vm-self.delta_vm)
+        min_max_q[part] = np.repeat(np.array([[self.min_q, self.max_q]]), sum(part), axis=0)
+
+        part = (self.max_vm-self.delta_vm < vm_pu) & (vm_pu <= self.max_vm)
+        min_max_q[part] = np.c_[[self.min_q]*sum(part),
+                                self.linear_factor_cap * (-vm_pu[part]+self.max_vm)]
+
+        return min_max_q
 
 class PQVArea4110(BasePQVArea):
-    pass  # TODO: missing
+    def __init__(self, min_q=-0.328684, max_q=0.328684):
+        # alternative to [-0.328684, 0.328684] is [-0.484322, 0.484322] with allowed p reduction
+        # outside [-0.328684, 0.328684]
+        self.pq_area = PQArea4110()
+        self.qv_area = QVArea4110(min_q, max_q)
 
 """ LV DERs: """
 
@@ -429,24 +448,24 @@ class QVArea4105(BaseArea):
     """
     def __init__(self, min_cosphi, max_cosphi):
         self.min_cosphi, self.max_cosphi = min_cosphi, max_cosphi
-        self.min_u, self.max_u = 0.9, 1.1
-        self.delta_u = 0.05
-        self.linear_factor_ind = (1 - self.min_cosphi) / self.delta_u
-        self.linear_factor_cap = (1 - self.max_cosphi) / self.delta_u
+        self.min_vm, self.max_vm = 0.9, 1.1
+        self.delta_vm = 0.05
+        self.linear_factor_ind = (1 - self.min_cosphi) / self.delta_vm
+        self.linear_factor_cap = (1 - self.max_cosphi) / self.delta_vm
 
     def q_flexibility(self, p, vm_pu):
-        if vm_pu < self.min_u:
+        if vm_pu < self.min_vm:
             cosphi_range_qv_area = (1, self.max_cosphi)
-        elif self.min_u < vm_pu <= self.min_u + self.delta_u:
-            cosphi_range_qv_area = (1 - self.linear_factor_ind * (vm_pu-self.min_u),
+        elif self.min_vm < vm_pu <= self.min_vm + self.delta_vm:
+            cosphi_range_qv_area = (1 - self.linear_factor_ind * (vm_pu-self.min_vm),
                                     self.max_cosphi)
-        elif self.min_u+self.delta_u < vm_pu <= self.max_u-self.delta_u:
+        elif self.min_vm+self.delta_vm < vm_pu <= self.max_vm-self.delta_vm:
             cosphi_range_qv_area = (self.min_cosphi, self.max_cosphi)
-        elif self.max_u-self.delta_u < vm_pu <= self.max_u:
+        elif self.max_vm-self.delta_vm < vm_pu <= self.max_vm:
             cosphi_range_qv_area = (self.min_cosphi,
-                                    1 - self.linear_factor_cap * (self.max_u-vm_pu))
+                                    1 - self.linear_factor_cap * (self.max_vm-vm_pu))
         else:
-            assert vm_pu > self.max_u
+            assert vm_pu > self.max_vm
             cosphi_range_qv_area = (self.min_cosphi, 1)
 
         q_range_qv_area = (-1 * np.tan(np.arccos(cosphi_range_qv_area[0])),

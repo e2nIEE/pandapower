@@ -5,6 +5,7 @@
 
 import numpy as np
 
+from pandapower.auxiliary import ensure_iterability
 from pandapower.control.controller.DERController.DERBasics import BaseModel, QVCurve, \
     CosphiVCurve, CosphiPCurve
 
@@ -31,20 +32,25 @@ class QModel(BaseModel):
         return self.__class__.name
 
 
-class QModelQV(QModel):
+class QModelConstQ(QModel):
     """
-    Base class to model that q is determined in dependency of the voltage.
+    Class to model a fixed q value.
     """
 
-    def __init__(self, qv_curve):
-        if isinstance(qv_curve, dict):
-            self.qv_curve = QVCurve(**qv_curve)
+    def __init__(self, q):
+        self.q = q
+
+    def step(self, vm_pu=None, p=None):
+        if p is not None:
+            len_ = len(p)
+        elif vm_pu is not None:
+            len_ = len(vm_pu)
         else:
-            self.qv_curve = qv_curve
+            len_ = None
+        return np.array(ensure_iterability(self.q, len_))
 
-    def step(self, vm_pu, p=None):
-        q = self.qv_curve.step(vm_pu)
-        return q
+    def __str__(self):
+        return self.__class__.name + " ,const_q:" + str(self.q)
 
 
 class QModelCosphiVCurve(QModel):
@@ -62,21 +68,6 @@ class QModelCosphiVCurve(QModel):
     def step(self, vm_pu, p=None):
         assert p is not None and p >= 0
         return self.cosphi_v_curve.step(vm_pu, p)
-
-
-class QModelConstQ(QModel):
-    """
-    Class to model a fixed q value.
-    """
-
-    def __init__(self, q):
-        self.q = q
-
-    def step(self, vm_pu=None, p=None):
-        return self.q
-
-    def __str__(self):
-        return self.__class__.name + " ,const_q:" + str(self.q)
 
 
 class QModelCosphiP(QModel):
@@ -156,6 +147,22 @@ class QModelCosphiPCurve(QModel):
     def step(self, vm_pu=None, p=None):
         assert p is not None and p >= 0
         return self.cosphi_p_curve.step(p)
+
+
+class QModelQV(QModel):
+    """
+    Base class to model that q is determined in dependency of the voltage.
+    """
+
+    def __init__(self, qv_curve):
+        if isinstance(qv_curve, dict):
+            self.qv_curve = QVCurve(**qv_curve)
+        else:
+            self.qv_curve = qv_curve
+
+    def step(self, vm_pu, p=None):
+        q = self.qv_curve.step(vm_pu)
+        return q
 
 
 if __name__ == "__main__":

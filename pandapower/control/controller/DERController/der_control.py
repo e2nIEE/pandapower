@@ -37,7 +37,7 @@ def saturate_sn_mva_step(p, q, q_prio):
 # -------------------------------------------------------------------------------------------------
 
 
-class DERModel:
+class DERModel: # TODO: diese Klasse kann eig gelöscht werden und in den DERController überführt werden
     """
     Class used to model a DERController
     """
@@ -118,9 +118,10 @@ class DERModel:
 
         # Saturation on given pq_area
         if self.pqv_area is not None:
-            if not self.pqv_area.pq_in_range(p=p, q=q, vm_pu=vm_pu):
-                min_q, max_q = self.pqv_area.q_flexibility(p=p, vm_pu=vm_pu)
-                q = np.minimum(np.maximum(q, min_q), max_q)
+            in_area = self.pqv_area.in_area(p=p, q=q, vm_pu=vm_pu)
+            if not all(in_area):
+                min_max_q = self.pqv_area.q_flexibility(p=p[~in_area], vm_pu=vm_pu[~in_area])
+                q[~in_area] = np.minimum(np.maximum(q[~in_area], min_max_q[:, 0]), min_max_q[:, 1])
 
         if self.saturate_sn_mva:
             p, q = saturate_sn_mva_step(p, q, self.q_prio)
@@ -178,6 +179,8 @@ class DERController(PQController):
         self.der_model = DERModel(self.sn_mva, q_model=q_model, pqv_area=pqv_area,
                                   saturate_sn_mva=saturate_sn_mva, q_prio=q_prio)
         self.damping_coef = damping_coef
+        if p_profile is not None:
+            p_profile = ensure_iterability(p_profile, len(gid))
         self.set_p_profile(p_profile, profile_from_name)
 
     def time_step(self, net, time):
