@@ -2,11 +2,14 @@
 
 # Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+
+import re
+import ast
 import sys
 import copy
 import inspect
 import geojson
-from typing import List, Tuple, Set, Callable, TYPE_CHECKING
+from typing import Callable, TYPE_CHECKING
 
 import pandas as pd
 
@@ -431,7 +434,7 @@ def create_bus_collection(net, buses=None, size=5, patch_type="circle", color=No
     if any(net[bus_table].geo.isna()):
         raise AttributeError('net.bus.geo contains NaN values, consider dropping them beforehand.')
 
-    coords = net[bus_table].geo.apply(geojson.loads).apply(geojson.utils.coords).apply(next).to_list()
+    coords = net[bus_table].geo.apply(geojson.loads).apply(geojson.utils.coords).apply(next).loc[buses].to_list()
 
     infos = [infofunc(bus) for bus in buses] if infofunc is not None else []
 
@@ -468,6 +471,7 @@ def create_line_collection(net: pandapowerNet, lines=None,
         If None, net.bus["geo"] is used
 
         **use_bus_geodata** (bool, False) - Defines whether bus or line geodata are used.
+        If False line_geodata is used, if not all lines have line geodata bus geodata is used aswell
 
         **infofunc** (function, None) - infofunction for the patch element
 
@@ -504,6 +508,19 @@ def create_line_collection(net: pandapowerNet, lines=None,
 
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
+
+    def _get_coords_from_geojson(gj_str):
+        pattern = r'"coordinates"\s*:\s*((?:\[(?:\[[^]]+],?\s*)+\])|\[[^]]+\])'
+        matches = re.findall(pattern, gj_str)
+
+        if not matches:
+            return None
+        if len(matches) > 1:
+            raise ValueError("More than one match found in GeoJSON string")
+        for m in matches:
+            return ast.literal_eval(m)
+        return None
+
     if not use_bus_geodata and line_geodata is None and ("geo" not in net[line_table].columns or net[line_table].geo.empty):
         # if bus geodata is available, but no line geodata
         logger.warning("use_bus_geodata is automatically set to True, since net.line.geo is empty.")
@@ -513,50 +530,31 @@ def create_line_collection(net: pandapowerNet, lines=None,
     if len(lines) == 0:
         return None
 
-    # if use_bus_geodata:
-    #     if not dc:
-    #         coords, lines_with_geo = coords_from_node_geodata(
-    #             lines, net.line.from_bus.loc[lines].values, net.line.to_bus.loc[lines].values,
-    #             bus_geodata if bus_geodata is not None else net["bus_geodata"], "line")
-    #     else:
-    #         coords, lines_with_geo = coords_from_node_geodata(
-    #             lines, net.line_dc.from_bus_dc.loc[lines].values, net.line_dc.to_bus_dc.loc[lines].values,
-    #             bus_geodata if bus_geodata is not None else net["bus_dc_geodata"], "line_dc")
-    # else:
-    #     line_geodata = line_geodata if line_geodata is not None else net[line_geodata_table]
-    #     lines_with_geo = lines[np.isin(lines, line_geodata.index.values)]
-    #     coords = list(line_geodata.loc[lines_with_geo, 'coords'])
-    #     lines_without_geo = set(lines) - set(lines_with_geo)
-    #     if lines_without_geo:
-    #         logger.warning("Could not plot lines %s. %s geodata is missing for those lines!"
-    #                        % (lines_without_geo, "Bus" if use_bus_geodata else "Line"))
-
-    line_geodata: Series[str] = line_geodata if line_geodata is not None else net[line_table].geo
+    line_geodata: Series[str] = line_geodata.loc[lines] if line_geodata is not None else net[line_table].geo.loc[lines]
     lines_without_geo = line_geodata.index[line_geodata.isna()]
-    line_geodata = line_geodata.dropna()
-    # line_geodata = line_geodata.apply(lambda s: geojson.loads if isinstance(s, str) else s)
+
+    if use_bus_geodata or not lines_without_geo.empty:
+        elem_indices = lines if use_bus_geodata else lines_without_geo
+        geos, line_index_successful = coords_from_node_geodata(element_indices=elem_indices,
+                                                               from_nodes=net.line.loc[elem_indices, 'from_bus'].values,
+                                                               to_nodes=net.line.loc[elem_indices, 'to_bus'].values,
+                                                               node_geodata=net.bus.geo,
+                                                               table_name="line",
+                                                               node_name="bus",
+                                                               ignore_zero_length=True)
+
+        line_geodata = line_geodata.combine_first(pd.Series(geos, index=line_index_successful))
+
+    lines_without_geo = line_geodata.index[line_geodata.isna()]
     if not lines_without_geo.empty:
-        logger.warning(f'Could not plot lines {lines_without_geo}. {"Bus" if use_bus_geodata else "Line"} geodata is missing for those lines!')
-
-    if len(line_geodata) == 0:
-        if not use_bus_geodata:
-            return None
-        else:
-            geos, line_index_successful = coords_from_node_geodata(element_indices=net.line.index,
-                                                                   from_nodes=net.line.loc[net.line.index, 'from_bus'].values,
-                                                                   to_nodes=net.line.loc[net.line.index, 'to_bus'].values,
-                                                                   node_geodata=net.bus.geo,
-                                                                   table_name="line",
-                                                                   node_name="bus",
-                                                                   ignore_zero_length=True)
-
-            line_geodata = pd.Series(geos)
+        logger.warning(
+            f'Could not plot lines {lines_without_geo}. Bus geodata is missing for those lines!')
 
     infos = [infofunc(line) for line in line_geodata.index] if infofunc else []
 
-    coords = line_geodata.apply(geojson.loads).apply(geojson.utils.coords).apply(list)
+    coords = [_get_coords_from_geojson(line_gj) for line_gj in line_geodata]
 
-    lc = _create_line2d_collection(coords, line_geodata.index, infos=infos, picker=picker, **kwargs)
+    lc = _create_line2d_collection(coords, line_geodata.index, infos, picker, **kwargs)
 
     if cmap is not None:
         if z is None:
@@ -1323,8 +1321,8 @@ def create_storage_collection(net, storages=None, size=1., infofunc=None, orient
     return storage_pc, storage_lc
 
 
-def create_ext_grid_collection(net, size=1., infofunc=None, orientation=0, picker=False,
-                               ext_grids=None, ext_grid_buses=None, **kwargs):
+def create_ext_grid_collection(net, ext_grids=None, size=1., infofunc=None, orientation=0,
+                               picker=False, ext_grid_buses=None, **kwargs):
     """
     Creates a matplotlib patch collection of pandapower ext_grid. Parameters
     ext_grids, ext_grid_buses can be used to specify, which ext_grids the collection should be

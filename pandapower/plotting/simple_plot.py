@@ -131,7 +131,7 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
     bc = create_bus_collection(net, net.bus.index, size=bus_size, color=bus_color, zorder=10)
 
     # if bus geodata is available, but no line geodata
-    use_bus_geodata = len(net.line.geo) == 0
+    use_bus_geodata = len(net.line.geo.dropna()) == 0
     in_service_lines = net.line[net.line.in_service].index
     nogolines = set(net.switch.element[(net.switch.et == "l") & (net.switch.closed == 0)]) \
         if respect_switches else set()
