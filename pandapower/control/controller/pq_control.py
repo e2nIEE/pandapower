@@ -135,7 +135,7 @@ class PQController(ConstControl):
         retrieved from the DataSource. self.profile_scale in turn is being
         passed to get_time_step_value() and applied by the DataSource.
         """
-        if self.data_source:
+        if self.data_source is not None:
             if self.p_profile or self.p_profile == 0:
                 self.p_mw = self.p_ac * \
                             self.data_source.get_time_step_value(time_step=time,

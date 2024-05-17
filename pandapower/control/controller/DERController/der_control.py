@@ -7,7 +7,6 @@ import numpy as np
 
 from pandapower.auxiliary import ensure_iterability
 from pandapower.control.controller.pq_control import PQController
-from pandapower.control.controller.DERController.DERBasics import BaseModel
 from pandapower.control.controller.DERController.QModels import QModel
 from pandapower.control.controller.DERController.PQVAreas import BaseArea
 
@@ -30,102 +29,6 @@ def saturate_sn_mva_step(p, q, q_prio):
             p[to_saturate] = np.clip(p[to_saturate], 0, 1)
             q[to_saturate] = np.sqrt(1-p[to_saturate]**2) * np.sign(q[to_saturate])
     return p, q
-
-
-# -------------------------------------------------------------------------------------------------
-""" DERModel """
-# -------------------------------------------------------------------------------------------------
-
-
-class DERModel: # TODO: diese Klasse kann eig gelöscht werden und in den DERController überführt werden
-    """
-    Class used to model a DERController
-    """
-    def __init__(self, sgen_sn_mva, q_model=None, pqv_area=None, saturate_sn_mva=True, q_prio=True):
-        self.sn_mva = sgen_sn_mva
-        self.q_model = None  # will be filled later
-        self.pqv_area = None  # will be filled later
-        self.saturate_sn_mva = saturate_sn_mva
-        self.q_prio = q_prio
-
-        if q_model is not None:
-            if isinstance(q_model, QModel):
-                self.q_model = q_model
-            else:
-                logger.error("Q model not available")
-
-        if pqv_area is not None:
-            self.pqv_area = pqv_area
-            if not isinstance(pqv_area, BaseArea):
-                msg = "PQV area is expected to be a subclass of BaseArea"
-                logger.warning(msg)
-
-    def __str__(self):
-        return "q_model:" + str(self.q_model) +\
-                ", pqv_area:" + str(self.pqv_area) +\
-                ", saturate_sn_mva:" + str(self.saturate_sn_mva) +\
-                ", q_priority:" + str(self.q_prio)
-
-    def step(self, vm_pu, p_series_mw=None, q_series_mvar=None,
-             p_setpoint_mw=None, q_setpoint_mvar=None):
-
-        # check inputs p_series_mw and p_setpoint_mw
-        if p_series_mw is not None and p_setpoint_mw is not None:
-            raise ValueError("Please provide only one, p_series_mw or p_setpoint_mw")
-        elif p_series_mw is None and p_setpoint_mw is None:
-            p_series_mw = self.sn_mva
-        elif p_series_mw is None:
-            p_series_mw = p_setpoint_mw / self.sn_mva
-
-        # check inputs q_series_mvar and q_setpoint_mvar (is further checked in _step_q)
-        if q_series_mvar is not None and q_setpoint_mvar is not None:
-            raise ValueError("Please provide only one, q_series_mvar or q_setpoint_mvar")
-
-        if np.any(p_series_mw < 0):
-            logger.info("p_series_mw is forced to be greater/equal zero")
-            p_series_mw[p_series_mw < 0] = 0
-
-        """First Step: Calculate/Select P, Q"""
-        p = self._step_p(p_series_mw)
-        q = self._step_q(p_series_mw=p_series_mw, q_setpoint_mvar=q_setpoint_mvar,
-                         q_series_mvar=q_series_mvar, vm_pu=vm_pu)
-
-        """Second Step: Saturates P, Q according to SnMVA/PQ_AREA"""
-        if self.saturate_sn_mva or (self.pqv_area is not None):
-            p, q = self._saturate(p=p, q=q, vm_pu=vm_pu)
-
-        """Third Step: Convert relative P, Q to P_mw, Q_mvar """
-        p_mw, q_mvar = p * self.sn_mva, q * self.sn_mva
-        return p_mw, q_mvar
-
-    def _step_p(self, p_series_mw=None, p_setpoint_mw=None):
-        return p_series_mw / self.sn_mva
-
-    def _step_q(self, p_series_mw=None, q_setpoint_mvar=None, q_series_mvar=None, vm_pu=None):
-        """Q priority: Q setpoint > Q model > Q series"""
-        if q_setpoint_mvar is not None:
-            q = q_setpoint_mvar / self.sn_mva
-        elif self.q_model is not None:
-            q = self.q_model.step(vm_pu=vm_pu, p=p_series_mw/self.sn_mva)
-        else:
-            if q_series_mvar is None:
-                raise Exception("No Q_model and no q_profile available.")
-            q = q_series_mvar / self.sn_mva
-        return q
-
-    def _saturate(self, vm_pu=None, p=None, q=None):
-        assert p is not None and q is not None
-
-        # Saturation on given pq_area
-        if self.pqv_area is not None:
-            in_area = self.pqv_area.in_area(p=p, q=q, vm_pu=vm_pu)
-            if not all(in_area):
-                min_max_q = self.pqv_area.q_flexibility(p=p[~in_area], vm_pu=vm_pu[~in_area])
-                q[~in_area] = np.minimum(np.maximum(q[~in_area], min_max_q[:, 0]), min_max_q[:, 1])
-
-        if self.saturate_sn_mva:
-            p, q = saturate_sn_mva_step(p, q, self.q_prio)
-        return p, q
 
 
 # -------------------------------------------------------------------------------------------------
@@ -152,7 +55,6 @@ class DERController(PQController):
         **pqv_area** (object, None) - an pqv_area, such as provided in this file, should be passed
         to model q values are allowed.
     """
-
     def __init__(self, net, gid, element="sgen",
                  q_model=None, pqv_area=None,
                  saturate_sn_mva=True, q_prio=True, damping_coef=2,
@@ -171,17 +73,27 @@ class DERController(PQController):
                          matching_params=matching_params, initial_powerflow=False,
                          order=order, level=level, **kwargs)
 
-        if n_nan_sn := sum(self.sn_mva.isnull()):
-            logger.error(f"The DERController relates to sn_mva, but for {n_nan_sn} elements "
-                         "sn_mva is NaN.")
-
-        # Init DER Model
-        self.der_model = DERModel(self.sn_mva, q_model=q_model, pqv_area=pqv_area,
-                                  saturate_sn_mva=saturate_sn_mva, q_prio=q_prio)
+        # --- init DER Model params
+        self.q_model = q_model
+        self.pqv_area = pqv_area
+        self.saturate_sn_mva = saturate_sn_mva
+        self.q_prio = q_prio
         self.damping_coef = damping_coef
+
         if p_profile is not None:
             p_profile = ensure_iterability(p_profile, len(gid))
         self.set_p_profile(p_profile, profile_from_name)
+
+        # --- log unexpected param values
+        if n_nan_sn := sum(self.sn_mva.isnull()):
+            logger.error(f"The DERController relates to sn_mva, but for {n_nan_sn} elements "
+                         "sn_mva is NaN.")
+        if self.q_model is not None and not isinstance(self.q_model, QModel):
+            logger.warning(f"The Q model is expected of type QModel, however {type(self.q_model)} "
+                           "is provided.")
+        if self.pqv_area is not None and not isinstance(self.pqv_area, BaseArea):
+            logger.warning(f"The PQV area is expected of type BaseArea, however "
+                           f"{type(self.pqv_area)} is provided.")
 
     def time_step(self, net, time):
         # get new values from profiles
@@ -192,16 +104,28 @@ class DERController(PQController):
 #        self.write_to_net(net)
 
     def is_converged(self, net):
-        v = net.res_bus.loc[self.bus, "vm_pu"]
+        vm_pu = net.res_bus.loc[self.bus, "vm_pu"]
+        p_series_mw = getattr(self, "p_series_mw", getattr(self, "p_mw", self.sn_mva))
+        q_series_mvar = getattr(self, "q_series_mw", self.q_mvar)
 
-        target_p_mw, target_q_mvar =\
-            self.der_model.step(
-                vm_pu=v, p_series_mw=self.p_mw if "p_series_mw" not in vars(self) else
-                self.p_series_mw,
-                q_series_mvar=self.q_mvar if "q_series_mvar" not in vars(self) else
-                self.q_series_mvar)
+        # --- calculate target p and q -------------------------------------------------------------
 
-        # Apply damping factor
+        if np.any(p_series_mw < 0):
+            logger.info("p_series_mw is forced to be greater/equal zero")
+            p_series_mw[p_series_mw < 0] = 0
+
+        # --- First Step: Calculate/Select P, Q
+        p = self._step_p(p_series_mw)
+        q = self._step_q(p_series_mw=p_series_mw, q_series_mvar=q_series_mvar, vm_pu=vm_pu)
+
+        # --- Second Step: Saturates P, Q according to SnMVA/PQ_AREA
+        if self.saturate_sn_mva or (self.pqv_area is not None):
+            p, q = self._saturate(p=p, q=q, vm_pu=vm_pu)
+
+        # --- Third Step: Convert relative P, Q to P_mw, Q_mvar
+        target_p_mw, target_q_mvar = p * self.sn_mva, q * self.sn_mva
+
+        # --- Apply target p and q considering the damping factor coefficient ----------------------
         self.target_p_mw = self.p_mw + (target_p_mw - self.p_mw) / self.damping_coef
         self.target_q_mvar = self.q_mvar + (target_q_mvar - self.q_mvar) / self.damping_coef
 
@@ -212,6 +136,41 @@ class DERController(PQController):
         self.p_mw, self.q_mvar = self.target_p_mw, self.target_q_mvar
 
         self.write_to_net(net)
+
+    def _step_p(self, p_series_mw=None, p_setpoint_mw=None):
+        return p_series_mw / self.sn_mva
+
+    def _step_q(self, p_series_mw=None, q_series_mvar=None, vm_pu=None):
+        """Q priority: Q setpoint > Q model > Q series"""
+        if self.q_model is not None:
+            q = self.q_model.step(vm_pu=vm_pu, p=p_series_mw/self.sn_mva)
+        else:
+            if q_series_mvar is None:
+                raise Exception("No Q_model and no q_profile available.")
+            q = q_series_mvar / self.sn_mva
+        return q
+
+    def _saturate(self, vm_pu=None, p=None, q=None):
+        assert p is not None and q is not None
+
+        # Saturation on given pq_area
+        if self.pqv_area is not None:
+            in_area = self.pqv_area.in_area(p=p, q=q, vm_pu=vm_pu)
+            if not all(in_area):
+                min_max_q = self.pqv_area.q_flexibility(p=p[~in_area], vm_pu=vm_pu[~in_area])
+                q[~in_area] = np.minimum(np.maximum(q[~in_area], min_max_q[:, 0]), min_max_q[:, 1])
+
+        if self.saturate_sn_mva:
+            p, q = saturate_sn_mva_step(p, q, self.q_prio)
+        return p, q
+
+
+    def __str__(self):
+        return super().__str__() +\
+            "q_model:" + str(self.q_model) +\
+            ", pqv_area:" + str(self.pqv_area) +\
+            ", saturate_sn_mva:" + str(self.saturate_sn_mva) +\
+            ", q_priority:" + str(self.q_prio)
 
 
 if __name__ == "__main__":
