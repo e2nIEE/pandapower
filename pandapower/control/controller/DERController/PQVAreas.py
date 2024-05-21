@@ -12,6 +12,7 @@ except ImportError:
     shapely_imported = False
 
 from pandapower.auxiliary import soft_dependency_error
+from pandapower.toolbox.power_factor import cosphi_to_pos, cosphi_from_pos
 from pandapower.control.controller.DERController.DERBasics import BaseModel
 
 try:
@@ -152,7 +153,8 @@ class PQVAreaPOLYGON(BasePQVArea):
 
 class PQAreaSTATCOM(BaseArea):
     """
-    TODO: Description
+    PQAreaSTATCOM provides a simple rectangular reactive power provision area without a dependency on the
+    on the active power.
 
     Example
     -------
@@ -188,11 +190,13 @@ class PQArea4120(BaseArea):
         self.p_points = p_points[version]
         self.min_q, self.max_q = min_q, max_q
 
-        self.linear_factor_ind = (self.min_q + self.p_points[0]) / (self.p_points[1] - self.p_points[0])
-        self.linear_factor_cap = (self.max_q - self.p_points[0]) / (self.p_points[1] - self.p_points[0])
+        self.linear_factor_ind = (self.min_q + self.p_points[0]) / (
+            self.p_points[1] - self.p_points[0])
+        self.linear_factor_cap = (self.max_q - self.p_points[0]) / (
+            self.p_points[1] - self.p_points[0])
 
     def in_area(self, p, q, vm_pu=None):
-        is_in_area = np.ones(len(p), dtpye=bool)
+        is_in_area = np.ones(len(p), dtype=bool)
         is_in_area[p < self.p_points[0]] = False
         if all(~is_in_area):
             return is_in_area
@@ -212,6 +216,7 @@ class PQArea4120(BaseArea):
         part = p < self.p_points[1]
         q_flex[part] = np.c_[-self.p_points[0]+(p[part]-self.p_points[0])*self.linear_factor_ind,
                              self.p_points[0]+(p[part]-self.p_points[0])*self.linear_factor_cap]
+        return q_flex
 
 
 class QVArea4120(BaseArea):
@@ -229,20 +234,28 @@ class QVArea4120(BaseArea):
         self.delta_vm = 7.0/110
         self.linear_factor = (self.max_q - self.min_q) / self.delta_vm
 
-    def q_flexibility(self, p, vm_pu): # TODO
-        if vm_pu < self.min_vm:
-            q_range_qv_area = (self.max_q, self.max_q)
-        elif self.min_vm < vm_pu <= self.min_vm + self.delta_vm:
-            q_range_qv_area = (self.max_q - self.linear_factor * (vm_pu-self.min_vm), self.max_q)
-        elif self.min_vm+self.delta_vm < vm_pu <= self.max_vm-self.delta_vm:
-            q_range_qv_area = (self.min_q, self.max_q)
-        elif self.max_vm-self.delta_vm < vm_pu <= self.max_vm:
-            q_range_qv_area = (self.min_q, self.min_q + self.linear_factor * (self.max_vm-vm_pu))
-        else:
-            assert vm_pu > self.max_vm
-            q_range_qv_area = (self.min_q, self.min_q)
+    def q_flexibility(self, p, vm_pu):
 
-        return q_range_qv_area
+        # part = vm_pu > self.max_vm
+        len_ = len(vm_pu)
+        min_max_q = np.c_[[self.min_q]*len_, [self.max_q]*len_]
+
+        part = vm_pu < self.min_vm
+        len_ = sum(part)
+        min_max_q[part] = np.c_[[self.max_q]*len_, [self.max_q]*len_]
+
+        part = (self.min_vm < vm_pu) & (vm_pu <= self.min_vm + self.delta_vm)
+        min_max_q[part] = np.c_[self.max_q - self.linear_factor * (vm_pu[part]-self.min_vm),
+                                [self.max_q]*sum(part)]
+
+        part = (self.min_vm+self.delta_vm < vm_pu) & (vm_pu <= self.max_vm-self.delta_vm)
+        min_max_q[part] = np.repeat(np.array([[self.min_q, self.max_q]]), sum(part), axis=0)
+
+        part = (self.max_vm-self.delta_vm < vm_pu) & (vm_pu <= self.max_vm)
+        min_max_q[part] = np.c_[[self.min_q]*sum(part),
+                                self.min_q + self.linear_factor * (self.max_vm-vm_pu[part])]
+
+        return min_max_q
 
 
 class PQVArea4120Base(BasePQVArea):
@@ -283,7 +296,7 @@ class PQVArea4120V3(PQVArea4120Base):
 """ EHV DERs: """
 
 class PQArea4130(PQArea4120):
-    pass  # equals PQArea4120 with possible exception for p<0.1 and q>0 (TODO)
+    pass  # equals PQArea4120 with possible exception for p<0.1 and q>0
 
 
 class QVArea4130(QVArea4120):
@@ -436,54 +449,65 @@ class PQArea4105(BaseArea):
         self.linear_factor_ind = self.min_q / 0.9
         self.linear_factor_cap = self.max_q / 0.9
 
-    def in_area(self, p, q, vm_pu=None): # TODO
-        if p < 0.1:
-            return False
-        elif q < (p-0.1)*self.linear_factor_ind or q > (p-0.1)*self.linear_factor_cap:
-            return False
-        else:
-            return True
+    def in_area(self, p, q, vm_pu=None):
+        return ~((p < 0.1) | ((q < (p-0.1)*self.linear_factor_ind) |
+                              (q > (p-0.1)*self.linear_factor_cap)))
 
-    def q_flexibility(self, p, vm_pu=None): # TODO
-        if p < 0.1:
-            return (0, 0)
-        else:
-            return ((p-0.1)*self.linear_factor_ind, (p-0.1)*self.linear_factor_cap)
+    def q_flexibility(self, p, vm_pu=None):
+        min_max_q = np.zeros((len(p), 2))
+        min_max_q[p > 0.1] = np.c_[(p-0.1)*self.linear_factor_ind, (p-0.1)*self.linear_factor_cap]
+        return min_max_q
 
 
 class QVArea4105(BaseArea):
     """
     This class models the QV area of flexible Q for low-voltage plants according to VDE AR-N-4105.
+    cosphi values are applied positive for overexcited=voltage increasing behavior and negative for
+    underexcited=voltage decreasing behavior.
     """
     def __init__(self, min_cosphi, max_cosphi):
-        self.min_cosphi, self.max_cosphi = min_cosphi, max_cosphi
+        pos_cosphis = cosphi_to_pos([min_cosphi, max_cosphi])
+        self.min_cosphi, self.max_cosphi = pos_cosphis[0], pos_cosphis[1]
         self.min_vm, self.max_vm = 0.9, 1.1
         self.delta_vm = 0.05
         self.linear_factor_ind = (1 - self.min_cosphi) / self.delta_vm
         self.linear_factor_cap = (1 - self.max_cosphi) / self.delta_vm
 
-    def q_flexibility(self, p, vm_pu): # TODO
-        if vm_pu < self.min_vm:
-            cosphi_range_qv_area = (1, self.max_cosphi)
-        elif self.min_vm < vm_pu <= self.min_vm + self.delta_vm:
-            cosphi_range_qv_area = (1 - self.linear_factor_ind * (vm_pu-self.min_vm),
-                                    self.max_cosphi)
-        elif self.min_vm+self.delta_vm < vm_pu <= self.max_vm-self.delta_vm:
-            cosphi_range_qv_area = (self.min_cosphi, self.max_cosphi)
-        elif self.max_vm-self.delta_vm < vm_pu <= self.max_vm:
-            cosphi_range_qv_area = (self.min_cosphi,
-                                    1 - self.linear_factor_cap * (self.max_vm-vm_pu))
-        else:
-            assert vm_pu > self.max_vm
-            cosphi_range_qv_area = (self.min_cosphi, 1)
+    def q_flexibility(self, p, vm_pu):
 
-        q_range_qv_area = (-1 * np.tan(np.arccos(cosphi_range_qv_area[0])),
-                           1 * np.tan(np.arccos(cosphi_range_qv_area[1])))
-        return q_range_qv_area
+        # part = vm_pu > self.max_vm
+        len_ = len(vm_pu)
+        min_max_cosphi = np.c_[[self.min_cosphi]*len_, [1]*len_]
+
+        part = vm_pu < self.min_vm
+        len_ = sum(part)
+        min_max_cosphi[part] = np.c_[[1]*len_, [self.max_cosphi]*len_]
+
+        part = (self.min_vm < vm_pu) & (vm_pu <= self.min_vm + self.delta_vm)
+        min_max_cosphi[part] = np.c_[1 - self.linear_factor_ind * (vm_pu[part]-self.min_vm),
+                                     [self.max_cosphi]*sum(part)]
+
+        part = (self.min_vm+self.delta_vm < vm_pu) & (vm_pu <= self.max_vm-self.delta_vm)
+        min_max_cosphi[part] = np.repeat(np.array([[self.min_cosphi, self.max_cosphi]]), sum(part),
+                                         axis=0)
+
+        part = (self.max_vm-self.delta_vm < vm_pu) & (vm_pu <= self.max_vm)
+        min_max_cosphi[part] = np.c_[[self.min_cosphi]*sum(part),
+                                     1 - self.linear_factor_cap * (self.max_vm-vm_pu[part])]
+
+        min_max_cosphi = cosphi_from_pos(min_max_cosphi)
+
+        # convert cosphi values into q values
+        min_max_q = np.tan(np.arccos(min_max_cosphi))
+        return min_max_q
+
 
 class PQVArea4105(BasePQVArea):
     """
     This class models the PQV area of flexible Q for low-voltage plants according to VDE AR-N-4105.
+    For convenience issues, the reactive power minimum and maximum of the QV Area is defined by
+    cosphi values (pos. values -> overexcited, voltage increasing,
+    neg. values -> underexcited, voltage decreasing).
     """
     def __init__(self, min_cosphi, max_cosphi, min_q=-0.328684, max_q=0.328684):
         self.pq_area = PQArea4105(min_q=min_q, max_q=max_q)

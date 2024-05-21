@@ -37,7 +37,7 @@ def plot_pq_area(p, min_max_q, title=None, ax=None, circle_segment=90):
         ax = plt.gca()
     ax.plot(min_max_q[:, 0], p, c="blue", alpha=0.9, label="$Q_{min}$")
     ax.plot(min_max_q[:, 1], p, c="red", alpha=0.9, label="$Q_{max}$")
-    ax.set_xlabel(r"underexcited $\leftarrow------ Q/S_N ------\rightarrow$ overexcited$")
+    ax.set_xlabel(r"underexcited $\leftarrow------ Q/S_N ------\rightarrow$ overexcited")
     ax.set_ylabel("$P/S_N$")
     ax.legend()
     ax.grid(alpha=0.8)
@@ -45,7 +45,7 @@ def plot_pq_area(p, min_max_q, title=None, ax=None, circle_segment=90):
         ax.set_title(title)
     ax.set_ylim(p.min(), p.max())
 
-    x, y = generate_semicircle(0, 0, 1, 90-circle_segment, 90+circle_segment, 1)
+    x, y = generate_circle_segment(0, 0, 1, -circle_segment, circle_segment, 1)
     ax.plot(y, x, '--k', label='$S_{max}$')
 
     y_circ = np.sqrt(1 - p**2)

@@ -201,6 +201,8 @@ def cosphi_pos_neg_from_pq(p, q):
 
     Examples
     --------
+    >>> import numpy as np
+    >>> from pandapower.toolbox import cosphi_pos_neg_from_pq
     >>> np.round(cosphi_pos_neg_from_pq(0.76, 0.25), 5)
     0.94993
     >>> np.round(cosphi_pos_neg_from_pq(0.76, -0.25), 5)
@@ -208,7 +210,7 @@ def cosphi_pos_neg_from_pq(p, q):
     >>> np.round(cosphi_pos_neg_from_pq([0.76, 0.76, 0.76, 0.76], [0.25, -0.25, 0, 0.1]), 5)
     array([ 0.94993,  -0.94993,  1.     ,  0.99145])
     >>> np.round(cosphi_pos_neg_from_pq([0.76, 0.76, -0.76, 0.76, 0, 0.1],
-    >>>                                 [0.25, -0.25, 0.25, 0.1, 0.1, 0]), 5)
+    ...                                 [0.25, -0.25, 0.25, 0.1, 0.1, 0]), 5)
     array([ 0.94993,  -0.94993,  0.94993, 0.99145, nan, 1])
 
     Returns

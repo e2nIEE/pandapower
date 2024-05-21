@@ -24,18 +24,11 @@
 # %%
 # Importing necessary packages
 import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
 import numpy as np
 import pandas as pd
 import pandapower as pp
 import pandapower.control.controller.DERController as DERModels
 from pandapower.control.controller.DERController.der_control_plot import verify_pq_area, verify_qv_area
-
-try:
-    from cycler import cycler
-    cycler_imported = True
-except ImportError:
-    cycler_imported = False
 
 plt.rcParams['text.usetex'] = 'true'
 plt.rcParams['text.latex.preamble'] = r'\usepackage{amssymb} \usepackage{amsmath} \usepackage{xfrac}'
@@ -153,7 +146,7 @@ ow.log_variable("res_sgen", "p_mw")
 ow.log_variable("res_sgen", "q_mvar")
 
 # define DERController
-pq_area = DERModels.PQVArea4110User()
+pq_area = DERModels.PQVArea4110()
 ctrl_sgen_new = pp.control.DERController(
     net, gid=0, q_model=DERModels.QModelConstQ(q=0.5),
     pqv_area=pq_area, saturate_sn_mva=True, q_prio=True,
@@ -176,7 +169,7 @@ ow.log_variable("res_sgen", "p_mw")
 ow.log_variable("res_sgen", "q_mvar")
 
 # define DERController
-pq_area = DERModels.PQVArea4110User()
+pq_area = DERModels.PQVArea4110()
 ctrl_sgen_new = pp.control.DERController(
     net, gid=0, q_model=DERModels.QModelConstQ(q=0.5),
     pqv_area=pq_area, saturate_sn_mva=True, q_prio=False,
@@ -205,7 +198,7 @@ ow.log_variable("res_sgen", "p_mw")
 ow.log_variable("res_sgen", "q_mvar")
 
 # define DERController
-pq_area = DERModels.PQVArea4110User()
+pq_area = DERModels.PQVArea4110()
 ctrl_sgen_new = pp.control.DERController(
     net, gid=0, q_model=DERModels.QModelConstQ(q=0.5), pqv_area=pq_area,
     data_source=data, p_profile="p_0", profile_scale=-1)
@@ -223,7 +216,7 @@ net = simple_test_net()
 ow = pp.timeseries.OutputWriter(net)
 ow.log_variable("res_sgen", "p_mw")
 ow.log_variable("res_sgen", "q_mvar")
-pq_area = DERModels.PQVArea4110User()
+pq_area = DERModels.PQVArea4110()
 
 # Cosphi(P) curve
 ctrl_sgen_new = pp.control.DERController(
@@ -245,7 +238,7 @@ net = simple_test_net()
 ow = pp.timeseries.OutputWriter(net)
 ow.log_variable("res_sgen", "p_mw")
 ow.log_variable("res_sgen", "q_mvar")
-pq_area = DERModels.PQVArea4110User()
+pq_area = DERModels.PQVArea4110()
 
 # Cosphi(P)
 ctrl_sgen_new = pp.control.DERController(
@@ -257,7 +250,7 @@ pp.timeseries.run_timeseries(net, time_steps=range(0, 25))
 plot_function(net, ctrl_sgen_new, ow)
 
 # %% [markdown]
-# ### Q(U) curve
+# ### Q(V) curve
 # ## "explination here"
 
 # %%
@@ -267,9 +260,9 @@ net = simple_test_net()
 ow = pp.timeseries.OutputWriter(net)
 ow.log_variable("res_sgen", "p_mw")
 ow.log_variable("res_sgen", "q_mvar")
-pq_area = DERModels.PQVArea4110User()
+pq_area = DERModels.PQVArea4110()
 
-# Q(U) curve
+# Q(V) curve
 ctrl_sgen_new = pp.control.DERController(
     net, gid=0, q_model=DERModels.QModelQV(qv_curve=DERModels.QVCurve(
         v_points_pu=(0, 0.90, 1.00, 1.02, 2),
@@ -302,26 +295,3 @@ ctrl_sgen_new = pp.control.DERController(
     data_source=data, p_profile="p_0", profile_scale=-8)
 pp.timeseries.run_timeseries(net, time_steps=range(0, 25))
 plot_function(net, ctrl_sgen_new, ow)
-
-# %% [markdown]
-# ### Fix PF capability
-
-# %%
-net = simple_test_net()
-
-# Create, add output and set outputwriter
-ow = pp.timeseries.OutputWriter(net)
-ow.log_variable("res_sgen", "p_mw")
-ow.log_variable("res_sgen", "q_mvar")
-pq_area = DERModels.PQUArea_PFcapability(min_q=-0.33, max_q=0.33)
-ctrl_sgen_new = pp.control.DERController(
-    net, gid=0, q_model=DERModels.QModelConstQ(q=0.2),
-    pqv_area=pq_area, saturate_sn_mva=True, q_prio=False,
-    data_source=data, p_profile="p_0", profile_scale=-1)
-pp.timeseries.run_timeseries(net, time_steps=range(0, 25))
-plot_function(net, ctrl_sgen_new, ow)
-
-# %%
-
-
-

@@ -145,7 +145,7 @@ class QModelCosphiPCurve(QModel):
             self.cosphi_p_curve = cosphi_p_curve
 
     def step(self, vm_pu=None, p=None):
-        assert p is not None and p >= 0
+        assert all(p >= 0)
         return self.cosphi_p_curve.step(p)
 
 
