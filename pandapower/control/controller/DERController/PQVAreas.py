@@ -178,7 +178,7 @@ class PQArea4120(BaseArea):
     """
     This class models the PQ area of flexible Q for high-voltage plants according to VDE AR-N-4120.
     It is used to be combined with Voltage dependencies in PQVArea4120V1, PQVArea4120V2 and
-    PQVArea4120V3
+    PQVArea4120V3.
     """
     def __init__(self, min_q, max_q, version=2018):
         supported_versions = [2015, 2018]
@@ -195,9 +195,9 @@ class PQArea4120(BaseArea):
         self.linear_factor_cap = (self.max_q - self.p_points[0]) / (
             self.p_points[1] - self.p_points[0])
 
-    def in_area(self, p, q, vm_pu=None):
+    def in_area(self, p, q, vm_pu=None, q_max_under_p_point=0.):
         is_in_area = np.ones(len(p), dtype=bool)
-        is_in_area[p < self.p_points[0]] = False
+        is_in_area[(p < self.p_points[0]) & ((q < -0.05) | (q > q_max_under_p_point))] = False
         if all(~is_in_area):
             return is_in_area
         is_in_area[(p > self.p_points[1]) & ((q < self.min_q) | (q > self.max_q))] = False
@@ -210,12 +210,13 @@ class PQArea4120(BaseArea):
     def q_flexibility(self, p, vm_pu=None):
         q_flex = np.c_[[self.min_q]*len(p), [self.max_q]*len(p)]
 
-        part = p < self.p_points[0]
-        q_flex[part] = np.zeros((sum(part), 2))
-
         part = p < self.p_points[1]
         q_flex[part] = np.c_[-self.p_points[0]+(p[part]-self.p_points[0])*self.linear_factor_ind,
                              self.p_points[0]+(p[part]-self.p_points[0])*self.linear_factor_cap]
+
+        part = p < self.p_points[0]
+        q_flex[part] = np.c_[[-0.05]*sum(part), [0]*sum(part)]
+
         return q_flex
 
 
@@ -238,7 +239,7 @@ class QVArea4120(BaseArea):
 
         # part = vm_pu > self.max_vm
         len_ = len(vm_pu)
-        min_max_q = np.c_[[self.min_q]*len_, [self.max_q]*len_]
+        min_max_q = np.c_[[self.min_q]*len_, [self.min_q]*len_]
 
         part = vm_pu < self.min_vm
         len_ = sum(part)
@@ -296,7 +297,19 @@ class PQVArea4120V3(PQVArea4120Base):
 """ EHV DERs: """
 
 class PQArea4130(PQArea4120):
-    pass  # equals PQArea4120 with possible exception for p<0.1 and q>0
+    """
+    This class models the PQ area of flexible Q for extra high-voltage plants according to VDE AR-N-4130.
+    It is used to be combined with Voltage dependencies in PQVArea4130V1, PQVArea4130V2 and
+    PQVArea4130V3.
+    """
+    def in_area(self, p, q, vm_pu=None):
+        return super().in_area(p, q, vm_pu=vm_pu, q_max_under_p_point=0.05)
+
+    def q_flexibility(self, p, vm_pu=None):
+        q_flex = super().q_flexibility(p, vm_pu)
+        part = p < 0.1
+        q_flex[part] = np.c_[[-0.05]*sum(part), [0.05]*sum(part)]
+        return q_flex
 
 
 class QVArea4130(QVArea4120):
@@ -399,6 +412,9 @@ class QVArea4110(BaseArea):
     """
     This class models the QV area of flexible Q for medium-voltage plants according to
     VDE AR-N-4110.
+
+    Note: a interaction with q_prio with the area of 0.95 cosphi and 0.95-1.05 pu is not
+    implemented.
     """
     def __init__(self, min_q=-0.328684, max_q=0.328684):
         self.min_q, self.max_q = min_q, max_q

@@ -54,6 +54,42 @@ class DERController(PQController):
 
         **pqv_area** (object, None) - an pqv_area, such as provided in this file, should be passed
         to model q values are allowed.
+
+        **saturate_sn_mva** (xy, xy) - TODO
+
+        **saturate_sn_mva** (xy, xy) - TODO
+
+        **q_prio** (xy, xy) - TODO
+
+        **damping_coef** (xy, xy) - TODO
+
+        **max_p_error** (xy, xy) - TODO
+
+        **max_q_error** (xy, xy) - TODO
+
+        **p_ac** (xy, xy) - TODO
+
+        **f_sizing** (xy, xy) - TODO
+
+        **data_source** (xy, xy) - TODO
+
+        **p_profile** (xy, xy) - TODO
+
+        **profile_from_name** (xy, xy) - TODO
+
+        **profile_scale** (xy, xy) - TODO
+
+        **in_service** (xy, xy) - TODO
+
+        **ts_absolute** (xy, xy) - TODO
+
+        **order** (xy, xy) - TODO
+
+        **level** (xy, xy) - TODO
+
+        **drop_same_existing_ctrl** (xy, xy) - TODO
+
+        **matching_params** (xy, xy) - TODO
     """
     def __init__(self, net, gid, element="sgen",
                  q_model=None, pqv_area=None,

@@ -35,7 +35,7 @@ plt.rcParams['text.usetex'] = 'true'
 plt.rcParams['text.latex.preamble'] = r'\usepackage{amssymb} \usepackage{amsmath} \usepackage{xfrac}'
 
 # %% [markdown]
-# **Then, we create a simple grid example:**
+# Then, we create a simple **grid example** and some timeseries data to **check multiple active power injection states**.
 
 # %%
 def simple_test_net():
@@ -50,12 +50,8 @@ def simple_test_net():
     ow.log_variable("res_sgen", "p_mw")
     ow.log_variable("res_sgen", "q_mvar")
 
-    return net, ow
+    return net
 
-# %% [markdown]
-# Define some timeseries data to check multiple active power injection states.
-
-# %%
 ts_data = pd.DataFrame({"p_0": np.arange(0, -1.21, -0.05)})
 data = pp.timeseries.DFData(ts_data)
 
@@ -112,6 +108,7 @@ def plot_function(net, ow, der_ctrl=None, pq_area=None, qv_area=None):
 
     plt.tight_layout()
     plt.show()
+    print()
 
 # %% [markdown]
 # ## Q(P) Capability
@@ -126,7 +123,7 @@ net, ow = simple_test_net()
 
 # define PQV area, Q model and DERController
 pqv_area = DERModels.PQVArea4120V2()
-q_model = DERModels.QModelConstQ(q=0.5),
+q_model = DERModels.QModelConstQ(q=0.5)
 ctrl_sgen_new = pp.control.DERController(
     net, gid=0, q_model=q_model, pqv_area=pqv_area, saturate_sn_mva=False,
     data_source=data, p_profile="p_0", profile_scale=-1)
@@ -152,14 +149,14 @@ plot_function(net, ow, ctrl_sgen_new)
 #
 
 # %% [markdown]
-# Let's repeat the last calculation with `saturate_sn_mva=True` and `q_prio=True` to see the difference to the last results (again focus on left plot): There are no dots outside the apparent power circle due to reduced active powers.
+# Let's repeat the last calculation with `saturate_sn_mva=True` and `q_prio=True` (which are both the default values of the DERController) to see the difference to the last results (again focus on left plot): There are no dots outside the apparent power circle due to reduced active powers.
 
 # %%
 # change saturate_sn_mva using a new controller
 net, ow = simple_test_net()
 
 # define PQV area, Q model and DERController
-pqv_area = DERModels.PQVArea4110()
+pqv_area = DERModels.PQVArea4120V2()
 q_model = DERModels.QModelConstQ(q=0.5)
 
 ctrl_sgen_new = pp.control.DERController(
@@ -195,9 +192,8 @@ plot_function(net, ow, ctrl_sgen_new)
 # Note that the apparent power limit is considered simultaneously.
 
 # %%
-# change line length to cause voltage issues
-# run controller
 net, ow = simple_test_net()
+# change line length to cause voltage issues
 net.line["length_km"] = 40
 
 # define PQV area, Q model and DERController
@@ -212,7 +208,7 @@ plot_function(net, ow, ctrl_sgen_new)
 
 # %% [markdown]
 # ### Cosphi(P) curve
-# ## "explination here"
+# ## "explination TODO"
 
 # %%
 net, ow = simple_test_net()
@@ -231,7 +227,7 @@ plot_function(net, ow, ctrl_sgen_new)
 
 # %% [markdown]
 # ### Cosphi(P)
-# ## "explination here"
+# ## "explination TODO"
 
 # %%
 net, ow = simple_test_net()
@@ -249,7 +245,7 @@ plot_function(net, ow, ctrl_sgen_new)
 
 # %% [markdown]
 # ### Q(V) curve
-# ## "explination here"
+# ## "explination TODO"
 
 # %%
 net, ow = simple_test_net()
@@ -270,7 +266,7 @@ plot_function(net, ow, ctrl_sgen_new)
 # %% [markdown]
 # ### Statcom  capability
 # This capability does not depend on active power P, it can provide reactive power Q without active power.
-# <br>
+#
 # min_q, max_q : reactive power limits, adjustable and user defined parameters.
 #
 
