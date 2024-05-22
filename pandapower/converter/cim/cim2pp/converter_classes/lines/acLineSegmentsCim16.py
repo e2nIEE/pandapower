@@ -117,11 +117,15 @@ class AcLineSegmentsCim16:
                                                   'Terminal': 'rdfId_Terminal'})
         ac_line_segments = pd.merge(ac_line_segments, eq_operational_limit_sets, how='left',
                                        on='rdfId_Terminal')
-        eq_current_limits = self.cimConverter.cim['eq']['CurrentLimit'][['rdfId', 'OperationalLimitSet', 'value']]
-        eq_current_limits = eq_current_limits.rename(columns={'rdfId': 'rdfId_CurrentLimit',
+        if 'CurrentLimit' in self.cimConverter.cim['ssh'].keys():
+            current_limits = self.cimConverter.merge_eq_ssh_profile('CurrentLimit')[['rdfId', 'OperationalLimitSet',
+                                                                                     'value']]
+        else:
+            current_limits = self.cimConverter.cim['eq']['CurrentLimit'][['rdfId', 'OperationalLimitSet', 'value']]
+        current_limits = current_limits.rename(columns={'rdfId': 'rdfId_CurrentLimit',
                                           'OperationalLimitSet': 'rdfId_OperationalLimitSet'})
-        ac_line_segments = pd.merge(ac_line_segments, eq_current_limits, how='left',
-                                       on='rdfId_OperationalLimitSet')
+        ac_line_segments = pd.merge(ac_line_segments, current_limits, how='left',
+                                    on='rdfId_OperationalLimitSet')
         ac_line_segments.value = ac_line_segments.value.astype(float)
         # sort by rdfId, sequenceNumber and value. value is max_i_ka, choose the lowest one if more than one is
         # given (A line may have more than one max_i_ka in CIM, different modes e.g. normal)

@@ -354,18 +354,22 @@ class PowerTransformersCim16:
             eq_ssh_tap_controllers[['rdfId', 'Terminal', 'discrete', 'enabled', 'targetValue', 'targetDeadband']]
         eq_ssh_tap_controllers = eq_ssh_tap_controllers.rename(columns={'rdfId': 'TapChangerControl'})
         # first merge with the VoltageLimits
-        eq_vl = self.cimConverter.cim['eq']['VoltageLimit'][['OperationalLimitSet', 'OperationalLimitType', 'value']]
-        eq_vl = pd.merge(eq_vl, self.cimConverter.cim['eq']['OperationalLimitType'][['rdfId', 'limitType']].rename(
+        if 'VoltageLimit' in self.cimConverter.cim['ssh'].keys():
+            vl = self.cimConverter.merge_eq_ssh_profile('VoltageLimit')[['OperationalLimitSet', 'OperationalLimitType',
+                                                                         'value']]
+        else:
+            vl = self.cimConverter.cim['eq']['VoltageLimit'][['OperationalLimitSet', 'OperationalLimitType', 'value']]
+        vl = pd.merge(vl, self.cimConverter.cim['eq']['OperationalLimitType'][['rdfId', 'limitType']].rename(
             columns={'rdfId': 'OperationalLimitType'}), how='left', on='OperationalLimitType')
-        eq_vl = pd.merge(eq_vl, self.cimConverter.cim['eq']['OperationalLimitSet'][['rdfId', 'Terminal']].rename(
+        vl = pd.merge(vl, self.cimConverter.cim['eq']['OperationalLimitSet'][['rdfId', 'Terminal']].rename(
             columns={'rdfId': 'OperationalLimitSet'}), how='left', on='OperationalLimitSet')
-        eq_vl = eq_vl[['value', 'limitType', 'Terminal']]
-        eq_vl_low = eq_vl.loc[eq_vl['limitType'] == 'lowVoltage'][['value', 'Terminal']].rename(
+        vl = vl[['value', 'limitType', 'Terminal']]
+        vl_low = vl.loc[vl['limitType'] == 'lowVoltage'][['value', 'Terminal']].rename(
             columns={'value': 'c_vm_lower_pu'})
-        eq_vl_up = eq_vl.loc[eq_vl['limitType'] == 'highVoltage'][['value', 'Terminal']].rename(
+        vl_up = vl.loc[vl['limitType'] == 'highVoltage'][['value', 'Terminal']].rename(
             columns={'value': 'c_vm_upper_pu'})
-        eq_vl = pd.merge(eq_vl_low, eq_vl_up, how='left', on='Terminal')
-        eq_ssh_tap_controllers = pd.merge(eq_ssh_tap_controllers, eq_vl, how='left', on='Terminal')
+        vl = pd.merge(vl_low, vl_up, how='left', on='Terminal')
+        eq_ssh_tap_controllers = pd.merge(eq_ssh_tap_controllers, vl, how='left', on='Terminal')
         eq_ssh_tap_controllers['c_Terminal'] = eq_ssh_tap_controllers['Terminal'][:]
         eq_ssh_tap_controllers = eq_ssh_tap_controllers.rename(columns={'Terminal': 'rdfId', 'enabled': 'c_in_service',
                                                'targetValue': 'c_vm_set_pu', 'targetDeadband': 'c_tol'})
@@ -491,6 +495,8 @@ class PowerTransformersCim16:
         power_trafo2w['in_service'] = power_trafo2w.connected & power_trafo2w.connected_lv
         power_trafo2w['connectionKind'].fillna('', inplace=True)
         power_trafo2w['connectionKind_lv'].fillna('', inplace=True)
+        power_trafo2w['grounded'] = power_trafo2w['grounded'].fillna(False)
+        power_trafo2w['grounded_lv'] = power_trafo2w['grounded_lv'].fillna(False)
         power_trafo2w.loc[~power_trafo2w['grounded'].astype('bool'), 'connectionKind'] = \
             power_trafo2w.loc[~power_trafo2w['grounded'].astype('bool'), 'connectionKind'].str.replace('n', '')
         power_trafo2w.loc[~power_trafo2w['grounded_lv'].astype('bool'), 'connectionKind_lv'] = \
@@ -624,6 +630,9 @@ class PowerTransformersCim16:
         power_trafo3w['connectionKind'].fillna('', inplace=True)
         power_trafo3w['connectionKind_mv'].fillna('', inplace=True)
         power_trafo3w['connectionKind_lv'].fillna('', inplace=True)
+        power_trafo3w['grounded'] = power_trafo3w['grounded'].fillna(False)
+        power_trafo3w['grounded_mv'] = power_trafo3w['grounded_mv'].fillna(False)
+        power_trafo3w['grounded_lv'] = power_trafo3w['grounded_lv'].fillna(False)
 
         power_trafo3w.loc[~power_trafo3w['grounded'].astype('bool'), 'connectionKind'] = \
             power_trafo3w.loc[~power_trafo3w['grounded'].astype('bool'), 'connectionKind'].str.replace('n', '')

@@ -598,9 +598,9 @@ class CimParser:
                 'OperationalLimitSet': pd.DataFrame(columns=['rdfId', 'name', 'Terminal']),
                 'OperationalLimitType': pd.DataFrame(columns=['rdfId', 'name', 'limitType']),
                 'CurrentLimit': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'OperationalLimitSet', 'OperationalLimitType', 'value']),
+                    'rdfId', 'name', 'OperationalLimitSet', 'OperationalLimitType']),
                 'VoltageLimit': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'OperationalLimitSet', 'OperationalLimitType', 'value']),
+                    'rdfId', 'name', 'OperationalLimitSet', 'OperationalLimitType']),
                 'DCNode': pd.DataFrame(columns=['rdfId', 'name', 'DCEquipmentContainer']),
                 'DCEquipmentContainer': pd.DataFrame(columns=['rdfId', 'name']),
                 'DCConverterUnit': pd.DataFrame(columns=['rdfId', 'name', 'Substation', 'operationMode']),
@@ -625,7 +625,7 @@ class CimParser:
                 'NonConformLoad': pd.DataFrame(columns=['rdfId', 'name', 'description']),
                 'StationSupply': pd.DataFrame(columns=['rdfId', 'name', 'description', 'BaseVoltage']),
                 'GeneratingUnit': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'nominalP', 'initialP', 'minOperatingP', 'maxOperatingP', 'EquipmentContainer']),
+                    'rdfId', 'name', 'nominalP', 'minOperatingP', 'maxOperatingP', 'EquipmentContainer']),
                 'WindGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP']),
                 'HydroGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP']),
                 'SolarGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP']),
@@ -676,11 +676,10 @@ class CimParser:
                 'NonlinearShuntCompensatorPoint': pd.DataFrame(columns=[
                     'rdfId', 'description', 'NonlinearShuntCompensator', 'sectionNumber', 'b', 'g']),
                 'EquivalentBranch': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'description', 'BaseVoltage', 'r', 'x', 'r21', 'x21', 'zeroR12', 'zeroR21',
-                    'zeroX12', 'zeroX21']),
-                'EquivalentInjection': pd.DataFrame(columns=['rdfId', 'name', 'description', 'BaseVoltage', 'r', 'x']),
+                    'rdfId', 'name', 'description', 'BaseVoltage', 'r', 'x', 'r21', 'x21']),
+                'EquivalentInjection': pd.DataFrame(columns=['rdfId', 'name', 'description', 'BaseVoltage']),
                 'SeriesCompensator': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'description', 'BaseVoltage', 'r', 'x', 'r0', 'x0']),
+                    'rdfId', 'name', 'description', 'BaseVoltage', 'r', 'x']),
                 'MeasurementValueSource': pd.DataFrame(columns=['rdfId', 'name']),
                 'PetersenCoil': pd.DataFrame(columns=['rdfId', 'name', 'description'])
             }),
@@ -715,7 +714,10 @@ class CimParser:
                 'PetersenCoil': pd.DataFrame(columns=['rdfId', 'nominalU']),
                 'ExternalNetworkInjection': pd.DataFrame(columns=[
                     'rdfId', 'maxInitialSymShCCurrent', 'minInitialSymShCCurrent', 'maxR1ToX1Ratio', 'minR1ToX1Ratio',
-                    'maxR0ToX0Ratio', 'maxZ0ToZ1Ratio'])
+                    'maxR0ToX0Ratio', 'maxZ0ToZ1Ratio']),
+                'EquivalentBranch': pd.DataFrame(columns=['rdfId', 'zeroR12', 'zeroR21', 'zeroX12', 'zeroX21']),
+                'EquivalentInjection': pd.DataFrame(columns=['rdfId', 'r', 'x']),
+                'SeriesCompensator': pd.DataFrame(columns=['rdfId', 'r0', 'x0']),
             }),
             'ssh': MappingProxyType({
                 'ControlArea': pd.DataFrame(columns=['rdfId', 'netInterchange']),
@@ -761,6 +763,8 @@ class CimParser:
                 'ThermalGeneratingUnit': pd.DataFrame(columns=['rdfId', 'inService']),
                 'SolarGeneratingUnit': pd.DataFrame(columns=['rdfId', 'inService']),
                 'WindGeneratingUnit': pd.DataFrame(columns=['rdfId', 'inService']),
+                'CurrentLimit': pd.DataFrame(columns=['rdfId', 'value']),
+                'VoltageLimit': pd.DataFrame(columns=['rdfId', 'value']),
             }),
             'sv': MappingProxyType({
                 'SvVoltage': pd.DataFrame(columns=['rdfId', 'TopologicalNode', 'v', 'angle']),
