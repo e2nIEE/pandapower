@@ -16,7 +16,7 @@ from pandapower.pypower.idx_gen import PG, QG
 from pandapower.build_bus import _get_motor_pq, _get_symmetric_pq_of_unsymetric_element
 from pandapower.pypower.idx_ssc import SSC_X_CONTROL_VM, SSC_X_CONTROL_VA, SSC_Q, SSC_INTERNAL_BUS
 from pandapower.pypower.idx_svc import SVC_THYRISTOR_FIRING_ANGLE, SVC_Q, SVC_X_PU
-from pandapower.pypower.idx_vsc import VSC_Q, VSC_P, VSC_P_DC, VSC_BUS_DC
+from pandapower.pypower.idx_vsc import VSC_Q, VSC_P, VSC_P_DC, VSC_BUS_DC, VSC_INTERNAL_BUS_DC
 
 try:
     import pandaplan.core.pplog as logging
@@ -608,10 +608,12 @@ def _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq):
         vscidx = bus_lookup[vsc["bus"].values]
         vsc_is = _is_elements["vsc"]
         vsc_tb = ppc["vsc"][vsc_is, VSC_INTERNAL_BUS].real.astype(np.int64)
-        vsc_db = ppc["vsc"][vsc_is, VSC_BUS_DC].real.astype(np.int64)
+        vsc_dc_fb = ppc["vsc"][vsc_is, VSC_BUS_DC].real.astype(np.int64)
+        vsc_dc_tb = ppc["vsc"][vsc_is, VSC_INTERNAL_BUS_DC].real.astype(np.int64)
 
         net["res_vsc"].loc[vsc_is, "vm_internal_pu"] = ppc["bus"][vsc_tb, VM]
-        net["res_vsc"].loc[vsc_is, "vm_dc_pu"] = ppc["bus_dc"][vsc_db, DC_VM]
+        net["res_vsc"].loc[vsc_is, "vm_internal_dc_pu"] = ppc["bus_dc"][vsc_dc_tb, DC_VM]
+        net["res_vsc"].loc[vsc_is, "vm_dc_pu"] = ppc["bus_dc"][vsc_dc_fb, DC_VM]
         p_vsc = ppc["vsc"][:, VSC_P]
         net["res_vsc"].loc[:, "p_mw"] = p_vsc  # write all because of zeros
         p = np.hstack([p, p_vsc])

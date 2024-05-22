@@ -218,7 +218,6 @@ def create_J_modification_ssc(J, V, Ybus_ssc, f, t, pvpq, pq, pvpq_lookup, pq_lo
     """
     #
 
-    J_m = np.zeros_like(J.toarray())
     Vf = V[f]
 
     Vt = V[t]
@@ -384,13 +383,33 @@ def create_J_modification_ssc(J, V, Ybus_ssc, f, t, pvpq, pq, pvpq_lookup, pq_lo
 
     return J_m
 
-def create_J_modification_hvdc(J, V_dc, Ybus_hvdc, f, t, dc_p, dc_p_lookup):
+
+def create_J_modification_hvdc(J, V_dc, Ybus_hvdc, Ybus_vsc_dc, dc_p, dc_p_lookup, vsc_dc_fb, vsc_dc_tb, vsc_dc_slack):
     # Calculate the first matrix for all elements
-    J_all = Ybus_hvdc.multiply(V_dc)
+    J_all = (Ybus_hvdc - Ybus_vsc_dc).multiply(V_dc)
     # Calculate the second matrix for diagonal elements only
-    J_diag = diags(V_dc).multiply(Ybus_hvdc.dot(V_dc))
+    J_diag = diags(V_dc).multiply((Ybus_hvdc - Ybus_vsc_dc).dot(V_dc))
+
+    # Calculate DC modification VSC Jacobian
+    P_Fii = V_dc[vsc_dc_fb] * Ybus_vsc_dc.toarray()[vsc_dc_fb, vsc_dc_fb]#.dot(V_dc[vsc_dc_fb])
+    P_Fkk = V_dc[vsc_dc_tb] * Ybus_vsc_dc.toarray()[vsc_dc_tb, vsc_dc_tb]#.dot(V_dc[vsc_dc_tb])
+
+    P_Fik = V_dc[vsc_dc_fb] * Ybus_vsc_dc.toarray()[vsc_dc_fb, vsc_dc_tb]#.dot(V_dc[vsc_dc_tb])
+    P_Fki = V_dc[vsc_dc_tb] * Ybus_vsc_dc.toarray()[vsc_dc_tb, vsc_dc_fb]#.dot(V_dc[vsc_dc_fb])
+
+    zero = SMALL_NUMBER * np.ones(shape=P_Fii.shape, dtype=np.float64)
+    one = np.ones(shape=P_Fii.shape, dtype=np.float64)
+
+    rows = np.r_[dc_p_lookup[vsc_dc_fb], dc_p_lookup[vsc_dc_fb], dc_p_lookup[vsc_dc_tb], dc_p_lookup[vsc_dc_tb]]
+    cols = np.r_[dc_p_lookup[vsc_dc_fb], dc_p_lookup[vsc_dc_tb], dc_p_lookup[vsc_dc_fb], dc_p_lookup[vsc_dc_tb]]
+    # data = np.r_[2 * P_Fii + P_Fik, P_Fik, np.where(vsc_dc_slack, one, P_Fki), np.where(vsc_dc_slack, zero, 2 * P_Fkk + P_Fki)]
+    data = np.r_[2 * P_Fii + P_Fik, P_Fik, np.where(vsc_dc_slack, one, P_Fik), np.where(vsc_dc_slack, zero, 2 * P_Fii + P_Fik)]
+    # data = np.r_[P_Fik / V_dc[vsc_dc_fb], P_Fik / V_dc[vsc_dc_tb], np.where(vsc_dc_slack, one, P_Fki / V_dc[vsc_dc_fb]), np.where(vsc_dc_slack, zero, P_Fki / V_dc[vsc_dc_tb])]
+    # data = np.r_[-Q_Fik[f_in_pvpq], Q_Fik[f_in_pvpq & t_in_pvpq], np.where(control_delta[f_in_pvpq & t_in_pvpq], one[f_in_pvpq & t_in_pvpq], Q_Fki[f_in_pvpq & t_in_pvpq]), np.where(control_delta[t_in_pvpq], zero[t_in_pvpq], -Q_Fki[t_in_pvpq])]
+
+    J_m_vsc = csr_matrix((data, (rows, cols)), shape=J_all.shape, dtype=np.float64)
     # Combine them to form the Jacobian
-    J_combined = J_all + J_diag
+    J_combined = J_all + J_diag + J_m_vsc
 
     num_p = len(dc_p)
     offset = J.shape[0] - num_p

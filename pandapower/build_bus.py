@@ -498,7 +498,9 @@ def set_reference_buses_dc(net, ppc, bus_lookup, mode):
         return
     vsc_dc_slack = net.vsc.control_mode_dc.values == "vm_pu"
     vsc_ac_slack = net.vsc.control_mode_ac.values == "slack"  # VSC that defines AC slack cannot define DC slack
-    ref_buses = bus_lookup[net._pd2ppc_lookups["aux_dc"].get("vsc", np.array([], dtype=np.int64))[net._is_elements["vsc"] & vsc_dc_slack & ~vsc_ac_slack]]
+    # todo vsc
+    # ref_buses = bus_lookup[net._pd2ppc_lookups["aux_dc"].get("vsc", np.array([], dtype=np.int64))[net._is_elements["vsc"] & vsc_dc_slack & ~vsc_ac_slack]]
+    ref_buses = bus_lookup[net.vsc.bus_dc.values[net._is_elements["vsc"] & vsc_dc_slack & ~vsc_ac_slack]]
     ppc["bus_dc"][ref_buses, DC_BUS_TYPE] = DC_REF
 
     # identify back-to-back converters:

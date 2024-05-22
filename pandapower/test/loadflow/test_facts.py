@@ -5,6 +5,7 @@
 
 
 import pytest
+import copy
 import numpy as np
 import pandas as pd
 from pandas.testing import assert_frame_equal
@@ -48,7 +49,7 @@ def copy_with_impedance(net):
     baseI = baseMVA / (baseV * np.sqrt(3))
     baseZ = baseV ** 2 / baseMVA
 
-    net_ref = net.deepcopy()
+    net_ref = copy.deepcopy(net)
     for i in net.tcsc.index.values:
         pp.create_impedance(net_ref, net.tcsc.from_bus.at[i], net.tcsc.to_bus.at[i], 0,
                             net.res_tcsc.x_ohm.at[i] / baseZ[net.tcsc.to_bus.at[i]], baseMVA,
@@ -212,10 +213,10 @@ def facts_case_study_grid():
 @pytest.mark.parametrize("vm_set_pu", [0.96, 1., 1.04])
 def test_svc(vm_set_pu):
     net = pp.networks.case9()
-    net3 = net.deepcopy()
+    net3 = copy.deepcopy(net)
 
     pp.create_svc(net, bus=3, x_l_ohm=1, x_cvar_ohm=-10, set_vm_pu=vm_set_pu, thyristor_firing_angle_degree=90)
-    net2 = net.deepcopy()
+    net2 = copy.deepcopy(net)
     runpp_with_consistency_checks(net)
     assert 90 <= net.res_svc.at[0, "thyristor_firing_angle_degree"] <= 180
     assert np.isclose(net.res_bus.at[3, 'vm_pu'], net.svc.at[0, 'set_vm_pu'], rtol=0, atol=1e-6)
@@ -267,45 +268,45 @@ def test_2_svcs(vm_set_pu):
     pp.create_line_from_parameters(net, 0, 2, 20, 0.0487, 0.13823, 160, 0.664)
 
     # both not controllable
-    net1 = net.deepcopy()
+    net1 = copy.deepcopy(net)
     pp.create_svc(net1, bus=1, x_l_ohm=1, x_cvar_ohm=-10, set_vm_pu=vm_set_pu, thyristor_firing_angle_degree=145,
                   controllable=False)
     pp.create_svc(net1, bus=2, x_l_ohm=1, x_cvar_ohm=-10, set_vm_pu=vm_set_pu, thyristor_firing_angle_degree=145,
                   controllable=False)
     pp.runpp(net1)
-    net2 = net.deepcopy()
+    net2 = copy.deepcopy(net)
     pp.create_loads(net2, [1, 2], 0, net1.res_svc.q_mvar.values)
     pp.runpp(net2)
     assert_frame_equal(net1.res_bus, net2.res_bus)
 
     # first controllable
-    net1 = net.deepcopy()
+    net1 = copy.deepcopy(net)
     pp.create_svc(net1, bus=1, x_l_ohm=1, x_cvar_ohm=-10, set_vm_pu=vm_set_pu, thyristor_firing_angle_degree=145)
     pp.create_svc(net1, bus=2, x_l_ohm=1, x_cvar_ohm=-10, set_vm_pu=vm_set_pu, thyristor_firing_angle_degree=145,
                   controllable=False)
     pp.runpp(net1)
-    net2 = net.deepcopy()
+    net2 = copy.deepcopy(net)
     pp.create_loads(net2, [1, 2], 0, net1.res_svc.q_mvar.values)
     pp.runpp(net2)
     assert_frame_equal(net1.res_bus, net2.res_bus)
 
     # second controllable
-    net1 = net.deepcopy()
+    net1 = copy.deepcopy(net)
     pp.create_svc(net1, bus=1, x_l_ohm=1, x_cvar_ohm=-10, set_vm_pu=vm_set_pu, thyristor_firing_angle_degree=145,
                   controllable=False)
     pp.create_svc(net1, bus=2, x_l_ohm=1, x_cvar_ohm=-10, set_vm_pu=vm_set_pu, thyristor_firing_angle_degree=145)
     pp.runpp(net1)
-    net2 = net.deepcopy()
+    net2 = copy.deepcopy(net)
     pp.create_loads(net2, [1, 2], 0, net1.res_svc.q_mvar.values)
     pp.runpp(net2)
     assert_frame_equal(net1.res_bus, net2.res_bus)
 
     # both controllable
-    net1 = net.deepcopy()
+    net1 = copy.deepcopy(net)
     pp.create_svc(net1, bus=1, x_l_ohm=1, x_cvar_ohm=-10, set_vm_pu=vm_set_pu, thyristor_firing_angle_degree=145)
     pp.create_svc(net1, bus=2, x_l_ohm=1, x_cvar_ohm=-10, set_vm_pu=vm_set_pu, thyristor_firing_angle_degree=145)
     pp.runpp(net1)
-    net2 = net.deepcopy()
+    net2 = copy.deepcopy(net)
     pp.create_loads(net2, [1, 2], 0, net1.res_svc.q_mvar.values)
     pp.runpp(net2)
     assert_frame_equal(net1.res_bus, net2.res_bus)
@@ -475,7 +476,7 @@ def test_compare_to_impedance():
 
     pp.create_load(net, 3, 100, 40)
 
-    net_ref = net.deepcopy()
+    net_ref = copy.deepcopy(net)
 
     pp.create_tcsc(net, 1, 2, xl, xc, -20, 170, "Test", controllable=True, min_angle_degree=90, max_angle_degree=180)
 
@@ -517,7 +518,7 @@ def test_tcsc_case_study():
     l = net.line.loc[(net.line.from_bus == f) & (net.line.to_bus == t)].index.values[0]
     net.line.loc[l, "from_bus"] = aux
 
-    net_ref = net.deepcopy()
+    net_ref = copy.deepcopy(net)
 
     pp.create_tcsc(net, f, aux, xl, xc, -100, 100, controllable=True)
     pp.runpp(net, init="dc")
@@ -817,14 +818,14 @@ def test_ssc_controllable():
     z_base = np.square(110) / net.sn_mva
     x = 5
     # both not controllable
-    net1 = net.deepcopy()
+    net1 = copy.deepcopy(net)
     pp.create_ssc(net1, 1, 0, x, 1, controllable=False)
     pp.create_ssc(net1, 2, 0, x, 1)
     runpp_with_consistency_checks(net1)
     assert np.isclose(net1.res_ssc.vm_internal_pu.at[0], 1, rtol=0, atol=1e-6)
     assert np.isclose(net1.res_ssc.vm_pu.at[1], 1, rtol=0, atol=1e-6)
 
-    net2 = net.deepcopy()
+    net2 = copy.deepcopy(net)
     pp.create_ssc(net2, 1, 0, x, 1, controllable=False, vm_internal_pu=1.02, va_internal_degree=150)
     runpp_with_consistency_checks(net2)
     assert np.isclose(net2.res_ssc.vm_internal_pu, 1.02, rtol=0, atol=1e-6)
@@ -850,7 +851,7 @@ def test_2_sscs():
     z_base = np.square(110) / net.sn_mva
     x = 5
     # both not controllable
-    net1 = net.deepcopy()
+    net1 = copy.deepcopy(net)
     pp.create_ssc(net1, 1, 0, x, 1, controllable=True)
     pp.create_ssc(net1, 2, 0, x, 1, controllable=True)
     runpp_with_consistency_checks(net1)
@@ -860,7 +861,7 @@ def test_2_sscs():
     compare_ssc_impedance_gen(net1, net2)
 
     # first controllable
-    net1 = net.deepcopy()
+    net1 = copy.deepcopy(net)
     pp.create_ssc(net1, 1, 0, x, 1, in_service=False, controllable=False)
     pp.create_ssc(net1, 2, 0, x, 1, in_service=False, controllable=False)
     pp.runpp(net1)
@@ -871,22 +872,22 @@ def test_2_sscs():
     return
 
     # # second controllable
-    # net1 = net.deepcopy()
+    # net1 = copy.deepcopy(net)
     # pp.create_ssc(net1, 1, 0, 121/z_base, 1, controllable=False)
     # pp.create_ssc(net1, 2, 0, 121/z_base, 1, controllable=True)
     #
     # pp.runpp(net1)
-    # net2 = net.deepcopy()
+    # net2 = copy.deepcopy(net)
     # pp.create_load(net2, [1, 2], 100, 25)
     # pp.runpp(net2)
     # assert_frame_equal(net1.res_bus, net2.res_bus)
     #
     # # both controllable
-    # net1 = net.deepcopy()
+    # net1 = copy.deepcopy(net)
     # pp.create_ssc(net1, 1, 0, 121/z_base, 1, controllable=True)
     # pp.create_ssc(net1, 2, 0, 121/z_base, 1, controllable=True)
     # pp.runpp(net1)
-    # net2 = net.deepcopy()
+    # net2 = copy.deepcopy(net)
     # pp.create_load(net2, [1, 2], 100, 25)
     # pp.runpp(net2)
     # assert_frame_equal(net1.res_bus, net2.res_bus)
@@ -982,14 +983,14 @@ def test_vsc_multiterminal_hvdc():
     # pp.create_vsc(net, 4, 3, 0.1, 5, control_value_dc=15)
     # pp.create_vsc(net, 3, 4, 0.1, 5, control_mode_dc="vm_pu", control_value_dc=1.02)
 
-    pp.create_vsc(net, 1, 0, 0.1, 5, 0.15, control_mode_ac="q_mvar", control_value_ac=3, control_mode_dc="vm_pu",
-                  control_value_dc=1)
-    pp.create_vsc(net, 2, 2, 0.1, 5, 0.15, control_mode_ac="q_mvar", control_value_ac=10, control_mode_dc="p_mw",
-                  control_value_dc=5)
-    pp.create_vsc(net, 4, 3, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1.05, control_mode_dc="p_mw",
-                  control_value_dc=15)
-    pp.create_vsc(net, 3, 4, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1.03, control_mode_dc="vm_pu",
-                  control_value_dc=1.02)
+    pp.create_vsc(net, 1, 0, 0.1, 5, 0.15, control_mode_ac="q_mvar", control_value_ac=3,
+                  control_mode_dc="vm_pu", control_value_dc=1)
+    pp.create_vsc(net, 2, 2, 0.1, 5, 0.15, control_mode_ac="q_mvar", control_value_ac=10,
+                  control_mode_dc="p_mw", control_value_dc=5)
+    pp.create_vsc(net, 4, 3, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1.05,
+                  control_mode_dc="p_mw", control_value_dc=15)
+    pp.create_vsc(net, 3, 4, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1.03,
+                  control_mode_dc="vm_pu", control_value_dc=1.02)
 
     runpp_with_consistency_checks(net)
 
@@ -1199,6 +1200,31 @@ def test_vsc_hvdc_mode0_without_dc_line():
     assert np.isclose(net.res_bus_dc.at[1, 'vm_pu'], net.vsc.at[1, 'control_value_dc'], rtol=0, atol=1e-6)
 
 
+def test_vsc_hvdc_dc_line():
+    net = pp.create_empty_network()
+    # AC part
+    pp.create_buses(net, 2, 110)
+
+    pp.create_ext_grid(net, 0)
+    pp.create_load(net, 1, 10, 5)
+
+    # DC part
+    pp.create_bus_dc(net, 110, 'A')
+    pp.create_bus_dc(net, 110, 'B')
+
+    pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
+
+    pp.create_vsc(net, 0, 0, 0.1, 5, 0.15, control_mode_ac="q_mvar", control_value_ac=0,
+                  control_mode_dc="vm_pu", control_value_dc=1.02)
+    pp.create_vsc(net, 1, 1, 0.1, 5, 0.15, control_mode_ac="slack", control_value_ac=1.02,
+                  control_mode_dc="p_mw", control_value_dc=0)
+
+    pp.runpp(net)
+    runpp_with_consistency_checks(net)
+
+    net.res_vsc
+
+
 def test_vsc_hvdc_mode1():
     net = pp.create_empty_network()
     # AC part
@@ -1215,10 +1241,12 @@ def test_vsc_hvdc_mode1():
 
     pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
 
-    pp.create_vsc(net, 1, 0, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
-                  control_value_dc=1)
-    pp.create_vsc(net, 2, 1, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1.02, control_mode_dc="vm_pu",
-                  control_value_dc=1.02)
+    pp.create_vsc(net, 1, 0, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1,
+                  control_mode_dc="vm_pu", control_value_dc=1.02)
+    pp.create_vsc(net, 2, 1, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1.02,
+                  control_mode_dc="vm_pu", control_value_dc=1)
+
+    pp.runpp(net)
 
     runpp_with_consistency_checks(net)
 
@@ -1248,6 +1276,8 @@ def test_vsc_hvdc_mode2():
                   control_value_dc=5)
     pp.create_vsc(net, 2, 1, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1.02, control_mode_dc="vm_pu",
                   control_value_dc=1)
+
+    # pp.runpp(net)
 
     runpp_with_consistency_checks(net)
 
