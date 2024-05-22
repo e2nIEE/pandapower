@@ -66,7 +66,8 @@ class QModelCosphiVCurve(QModel):
             self.cosphi_v_curve = cosphi_v_curve
 
     def step(self, vm_pu, p=None):
-        assert p is not None and p >= 0
+        assert p is not None
+        assert all(p >= 0)
         return self.cosphi_v_curve.step(vm_pu, p)
 
 
@@ -84,9 +85,9 @@ class QModelCosphiP(QModel):
 
     def step(self, vm_pu=None, p=None,):
         assert p is not None
-        if p < 0:
+        if any(p < 0):
             logger.warning("p < 0 is assumed as p=0 in QModelCosphiP.step()")
-            p = 0
+            p[p< 0] = 0
         return (p * self.q_setpoint)
 
     def __str__(self):
@@ -124,9 +125,9 @@ class QModelCosphiPQ(QModel):
 
     def step(self, vm_pu=None, p=None,):
         assert p is not None
-        if p < 0:
+        if any(p < 0):
             logger.warning("p < 0 is assumed as p=0 QModelCosphiPQ.step()")
-            p = 0
+            p[p < 0] = 0
         return (p/abs(self.cosphi) * self.q_setpoint)
 
     def __str__(self):
@@ -145,6 +146,7 @@ class QModelCosphiPCurve(QModel):
             self.cosphi_p_curve = cosphi_p_curve
 
     def step(self, vm_pu=None, p=None):
+        assert p is not None
         assert all(p >= 0)
         return self.cosphi_p_curve.step(p)
 

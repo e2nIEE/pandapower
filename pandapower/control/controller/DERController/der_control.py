@@ -104,7 +104,7 @@ class DERController(PQController):
 #        self.write_to_net(net)
 
     def is_converged(self, net):
-        vm_pu = net.res_bus.loc[self.bus, "vm_pu"]
+        vm_pu = net.res_bus.loc[self.bus, "vm_pu"].set_axis(self.gid)
         p_series_mw = getattr(self, "p_series_mw", getattr(self, "p_mw", self.sn_mva))
         q_series_mvar = getattr(self, "q_series_mw", self.q_mvar)
 
