@@ -35,31 +35,25 @@ plt.rcParams['text.usetex'] = 'true'
 plt.rcParams['text.latex.preamble'] = r'\usepackage{amssymb} \usepackage{amsmath} \usepackage{xfrac}'
 
 # %% [markdown]
-# Then, we create a simple **grid example** and some timeseries data to **check multiple active power injection states**.
+# Then, we create a simple **grid example** and with identically connected sgens, but with different active power feed-in. This enables to **check multiple active power injection states**.
 
 # %%
-def simple_test_net():
+p_vals = np.arange(0, 1.21, 0.05)
+
+def simple_test_net(p_vals):
     net = pp.create_empty_network()
-    pp.create_buses(net, 2, vn_kv=20)
+    pp.create_buses(net, 1+len(p_vals), vn_kv=20)
     pp.create_ext_grid(net, 0)
-    pp.create_sgen(net, 1, p_mw=1., sn_mva=1.)
-    pp.create_line(net, 0, 1, length_km=5.0, std_type="NAYY 4x50 SE")
-
-    # create outputwriter and define variables to log
-    ow = pp.timeseries.OutputWriter(net)
-    ow.log_variable("res_sgen", "p_mw")
-    ow.log_variable("res_sgen", "q_mvar")
-
+    sgen_buses = list(range(1, len(p_vals)+1))
+    pp.create_sgens(net, sgen_buses, p_mw=p_vals, sn_mva=1.)
+    pp.create_lines(net, [0]*len(p_vals), sgen_buses, length_km=5.0, std_type="NAYY 4x50 SE")
     return net
-
-ts_data = pd.DataFrame({"p_0": np.arange(0, -1.21, -0.05)})
-data = pp.timeseries.DFData(ts_data)
 
 # %% [markdown]
 # **And finally, we define a function that is to plot the P/Q curves and Q/Vm curves from timeseries results:**
 
 # %%
-def plot_function(net, ow, der_ctrl=None, pq_area=None, qv_area=None):
+def plot_function(net, der_ctrl=None, pq_area=None, qv_area=None, ow=None):
 
     # --- get pq_area and qv_area from inputs
     if pq_area is None and der_ctrl is not None:
@@ -84,18 +78,18 @@ def plot_function(net, ow, der_ctrl=None, pq_area=None, qv_area=None):
     if pq_area is not None:
         verify_pq_area(pq_area, pq_area.name(), ax=ax1, circle_segment=28)
         S_N = net.sgen.sn_mva.at[0]
-        xs = ow.output["res_sgen.q_mvar"]/S_N
-        ys = ow.output["res_sgen.p_mw"]/S_N
-        for x, y in zip(xs[0], ys[0]):
+        xs = (net.res_sgen.q_mvar if ow is None else ow.output["res_sgen.q_mvar"][0]) / S_N
+        ys = (net.res_sgen.p_mw if ow is None else ow.output["res_sgen.p_mw"][0]) / S_N
+        for x, y in zip(xs, ys):
             ax1.scatter(x, y, label='Operation points', linestyle='-')
         ax1.set_ylim(0, max(np.max(ys.values), 1)+0.1)
 
     # --- Plot Q/V diagram of allowed area and resulting points
     if qv_area is not None:
         verify_qv_area(qv_area, qv_area.name(), ax=ax2)
-        xs = ow.output['res_bus.vm_pu'][1]
-        ys = ow.output["res_sgen.q_mvar"]/S_N
-        for x, y in zip(xs, ys[0]):
+        xs = net.res_bus.vm_pu.iloc[1:] if ow is None else ow.output['res_bus.vm_pu'][1]
+        ys = (net.res_sgen.q_mvar if ow is None else ow.output["res_sgen.q_mvar"][0]) / S_N
+        for x, y in zip(xs, ys):
             ax2.scatter(x, y, label='Operation points')
 
     # --- if two parts plotted, remove legends of both parts and add a common legend
@@ -108,7 +102,6 @@ def plot_function(net, ow, der_ctrl=None, pq_area=None, qv_area=None):
 
     plt.tight_layout()
     plt.show()
-    print()
 
 # %% [markdown]
 # ## Q(P) Capability
@@ -119,18 +112,17 @@ def plot_function(net, ow, der_ctrl=None, pq_area=None, qv_area=None):
 # The results of the following code, which gets plotted (first look at the plot left!), show that the reactive power is usually limited to `0.33 Sn` which is a power factor of `0.95 overexceited`. If the active power gets lower than `0.2 Sn`, also the reactive power gets reduced.
 
 # %%
-net, ow = simple_test_net()
+net = simple_test_net(p_vals)
 
 # define PQV area, Q model and DERController
 pqv_area = DERModels.PQVArea4120V2()
 q_model = DERModels.QModelConstQ(q=0.5)
 ctrl_sgen_new = pp.control.DERController(
-    net, gid=0, q_model=q_model, pqv_area=pqv_area, saturate_sn_mva=False,
-    data_source=data, p_profile="p_0", profile_scale=-1)
+    net, gid=net.sgen.index, q_model=q_model, pqv_area=pqv_area, saturate_sn_mva=False)
 
 # run power flows and plot
-pp.timeseries.run_timeseries(net, time_steps=range(0, 25))
-plot_function(net, ow, ctrl_sgen_new)
+pp.runpp(net, run_control=True)
+plot_function(net, ctrl_sgen_new)
 
 # %% [markdown]
 # ## Inverter apparent power limitation
@@ -153,36 +145,34 @@ plot_function(net, ow, ctrl_sgen_new)
 
 # %%
 # change saturate_sn_mva using a new controller
-net, ow = simple_test_net()
+net = simple_test_net(p_vals)
 
 # define PQV area, Q model and DERController
 pqv_area = DERModels.PQVArea4120V2()
 q_model = DERModels.QModelConstQ(q=0.5)
 
 ctrl_sgen_new = pp.control.DERController(
-    net, gid=0, q_model=q_model, pqv_area=pqv_area, saturate_sn_mva=True, q_prio=True,
-    data_source=data, p_profile="p_0", profile_scale=-1)
+    net, gid=net.sgen.index, q_model=q_model, pqv_area=pqv_area, saturate_sn_mva=True, q_prio=True)
 
 # run timeseries and plot results
-pp.timeseries.run_timeseries(net, time_steps=range(0, 25))
-plot_function(net, ow, ctrl_sgen_new)
+pp.runpp(net, run_control=True)
+plot_function(net, ctrl_sgen_new)
 
 # %% [markdown]
 # If we consider `q_prio=False`, we can see in the left plot, that, for some operation points, q is reduced to zero to hold apparent power limits:
 
 # %%
 # change q_prio using a new controller
-net, ow = simple_test_net()
+net = simple_test_net(p_vals)
 
 # define PQV area, Q model and DERController
 ctrl_sgen_new = pp.control.DERController(
-    net, gid=0, q_model=DERModels.QModelConstQ(q=0.5),
-    pqv_area=DERModels.PQVArea4110(), saturate_sn_mva=True, q_prio=False,
-    data_source=data, p_profile="p_0", profile_scale=-1)
+    net, gid=net.sgen.index, q_model=DERModels.QModelConstQ(q=0.5),
+    pqv_area=DERModels.PQVArea4120V2(), saturate_sn_mva=True, q_prio=False)
 
 # run timeseries and plot results
-pp.timeseries.run_timeseries(net, time_steps=range(0, 25))
-plot_function(net, ow, ctrl_sgen_new)
+pp.runpp(net, run_control=True)
+plot_function(net, ctrl_sgen_new)
 
 # %% [markdown]
 # ## Q(V) capability and voltage limitation function
@@ -192,63 +182,60 @@ plot_function(net, ow, ctrl_sgen_new)
 # Note that the apparent power limit is considered simultaneously.
 
 # %%
-net, ow = simple_test_net()
+net = simple_test_net(p_vals)
 # change line length to cause voltage issues
 net.line["length_km"] = 40
 
 # define PQV area, Q model and DERController
 ctrl_sgen_new = pp.control.DERController(
-    net, gid=0, q_model=DERModels.QModelConstQ(q=0.5),
-    pqv_area=DERModels.PQVArea4110(),
-    data_source=data, p_profile="p_0", profile_scale=-1)
+    net, gid=net.sgen.index, q_model=DERModels.QModelConstQ(q=0.5),
+    pqv_area=DERModels.PQVArea4120V2())
 
 # run power flows and plot
-pp.timeseries.run_timeseries(net, time_steps=range(0, 25))
-plot_function(net, ow, ctrl_sgen_new)
+pp.runpp(net, run_control=True)
+plot_function(net, ctrl_sgen_new)
 
 # %% [markdown]
 # ### Cosphi(P) curve
 # ## "explination TODO"
 
 # %%
-net, ow = simple_test_net()
-pq_area = DERModels.PQVArea4110()
+net = simple_test_net(p_vals)
 
 # define PQV area, Q model and DERController
+q_model=DERModels.QModelCosphiPCurve(cosphi_p_curve={
+        'p_points':(0, 0.5, 1), 'cosphi_points':(1, 1, 0.95)})
+
 ctrl_sgen_new = pp.control.DERController(
-    net, gid=0, q_model=DERModels.QModelCosphiPCurve(cosphi_p_curve={
-        'p_points':(0, 0.5, 1), 'cosphi_points':(1, 1, 0.95)}),
-    pqv_area=pq_area, saturate_sn_mva=True, q_prio=True,
-    data_source=data, p_profile="p_0", profile_scale=-1)
+    net, gid=net.sgen.index, q_model=q_model, pqv_area=DERModels.PQVArea4120V2())
 
 # run power flows and plot
-pp.timeseries.run_timeseries(net, time_steps=range(0, 25))
-plot_function(net, ow, ctrl_sgen_new)
+pp.runpp(net, run_control=True)
+plot_function(net, ctrl_sgen_new)
 
 # %% [markdown]
 # ### Cosphi(P)
 # ## "explination TODO"
 
 # %%
-net, ow = simple_test_net()
+net = simple_test_net(p_vals)
 
 # define PQV area, Q model and DERController
 q_model = DERModels.QModelCosphiP(cosphi=0.95)
 
 ctrl_sgen_new = pp.control.DERController(
-    net, gid=0, q_model=q_model, pqv_area=DERModels.PQVArea4110(), saturate_sn_mva=True,
-    q_prio=True, data_source=data, p_profile="p_0", profile_scale=-1)
+    net, gid=net.sgen.index, q_model=q_model, pqv_area=DERModels.PQVArea4120V2())
 
 # run power flows and plot
-pp.timeseries.run_timeseries(net, time_steps=range(0, 25))
-plot_function(net, ow, ctrl_sgen_new)
+pp.runpp(net, run_control=True)
+plot_function(net, ctrl_sgen_new)
 
 # %% [markdown]
 # ### Q(V) curve
 # ## "explination TODO"
 
 # %%
-net, ow = simple_test_net()
+net = simple_test_net(p_vals)
 
 # define PQV area, Q model and DERController
 q_model = DERModels.QModelQV(qv_curve=DERModels.QVCurve(
@@ -256,32 +243,51 @@ q_model = DERModels.QModelQV(qv_curve=DERModels.QVCurve(
     q_points=(0.312, 0.312, 0, -0.312, -0.312)))
 
 ctrl_sgen_new = pp.control.DERController(
-    net, gid=0, q_model=q_model, pqv_area=DERModels.PQVArea4110(), saturate_sn_mva=True,
-    q_prio=True, data_source=data, p_profile="p_0", profile_scale=-1)
+    net, gid=net.sgen.index, q_model=q_model, pqv_area=DERModels.PQVArea4120V2())
 
 # run power flows and plot
-pp.timeseries.run_timeseries(net, time_steps=range(0, 25))
-plot_function(net, ow, ctrl_sgen_new)
+pp.runpp(net, run_control=True)
+plot_function(net, ctrl_sgen_new)
 
 # %% [markdown]
-# ### Statcom  capability
-# This capability does not depend on active power P, it can provide reactive power Q without active power.
-#
-# min_q, max_q : reactive power limits, adjustable and user defined parameters.
-#
+# Multiple active power injection states can also be analyzed performing a timeseries calculation of one controller sgen. This is applied here for demonstration reasons. Furthermore, negative active power values are assumed in the timeseries data to show the functionality of profile_sacle.
 
 # %%
-net, ow = simple_test_net()
-net.sgen.sn_mva *= 8
+def simple_test_net_for_timeseries():
+    # this is basically the same grid as simple_test_net() but with only one line to one bus
+    # with one sgen
+    net = pp.create_empty_network()
+    pp.create_buses(net, 2, vn_kv=20)
+    pp.create_ext_grid(net, 0)
+    pp.create_sgen(net, 1, p_mw=1., sn_mva=1.)
+    pp.create_line(net, 0, 1, length_km=5.0, std_type="NAYY 4x50 SE")
+
+    # create outputwriter and define variables to log
+    ow = pp.timeseries.OutputWriter(net)
+    ow.log_variable("res_sgen", "p_mw")
+    ow.log_variable("res_sgen", "q_mvar")
+
+    return net, ow
+
+ts_data = pd.DataFrame({"p_0": -p_vals})
+data = pp.timeseries.DFData(ts_data)
+
+# %% [markdown]
+# ### Statcom capability
+# Statcom capability does not depend on active power P, it can provide reactive power Q without active power.
+# `min_q` and `max_q` are reactive power limits, adjustable and user defined parameters.
+
+# %%
+net, ow = simple_test_net_for_timeseries()
 
 # define PQV area, Q model and DERController
 pq_area = DERModels.PQAreaSTATCOM(min_q=-0.33, max_q=0.33)
 
 ctrl_sgen_new = pp.control.DERController(
     net, gid=0, q_model=DERModels.QModelConstQ(q=0.5),
-    pqv_area=pq_area, saturate_sn_mva=True, q_prio=True,
-    data_source=data, p_profile="p_0", profile_scale=-8)
+    pqv_area=pq_area,
+    data_source=data, p_profile="p_0", profile_scale=-1)
 
 # run power flows and plot
 pp.timeseries.run_timeseries(net, time_steps=range(0, 25))
-plot_function(net, ow, pq_area=pq_area)
+plot_function(net, pq_area=pq_area, ow=ow)
