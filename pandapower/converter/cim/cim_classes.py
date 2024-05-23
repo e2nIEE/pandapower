@@ -649,8 +649,7 @@ class CimParser:
                 'TapChangerControl': pd.DataFrame(columns=['rdfId', 'name', 'mode', 'Terminal']),
                 'RatioTapChanger': pd.DataFrame(columns=[
                     'rdfId', 'name', 'TransformerEnd', 'neutralStep', 'lowStep', 'highStep', 'stepVoltageIncrement',
-                    'neutralU', 'normalStep', 'ltcFlag', 'tculControlMode', 'TapChangerControl',
-                    'RatioTapChangerTable']),
+                    'neutralU', 'normalStep', 'ltcFlag', 'TapChangerControl', 'RatioTapChangerTable']),
                 'PhaseTapChangerLinear': pd.DataFrame(columns=[
                     'rdfId', 'TransformerEnd', 'neutralStep', 'lowStep', 'highStep', 'stepPhaseShiftIncrement',
                     'TapChangerControl']),
@@ -688,7 +687,7 @@ class CimParser:
                 'BaseVoltage': pd.DataFrame(columns=['rdfId', 'name', 'nominalVoltage']),
                 'Terminal': pd.DataFrame(
                     columns=['rdfId', 'ConnectivityNode', 'ConductingEquipment', 'sequenceNumber']),
-                'EnergySource': pd.DataFrame(columns=['rdfId', 'name', 'nominalVoltage', 'EnergySchedulingType']),
+                'EnergySource': pd.DataFrame(columns=['rdfId', 'nominalVoltage']),
                 'EnergySchedulingType': pd.DataFrame(columns=['rdfId', 'name'])
             }),
             'op': MappingProxyType({  # TODO: value attributes from AnalogValue and DiscreteValue need clarification
