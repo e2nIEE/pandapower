@@ -48,7 +48,7 @@ class CreateMeasurements:
             how='inner', left_on='rdfId', right_on='Analog', suffixes=("_Analog", "_AnalogValue"))
         analogs = analogs.drop(columns=['Analog'])
         analogs = analogs.rename(columns={'name': 'name_analog'})
-        analogs = pd.merge(analogs, self.cim['eq']['MeasurementValueSource'], how='left',
+        analogs = pd.merge(analogs, self.cim[analogs_prf]['MeasurementValueSource'], how='left',
                            left_on='MeasurementValueSource',
                            right_on='rdfId')
         analogs = analogs.drop(columns=['rdfId', 'MeasurementValueSource'])
