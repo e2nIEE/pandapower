@@ -313,7 +313,7 @@ def test_fuse_fault_oc_scenario():
     assert net.switch.closed.at[3] == False, 'Fuse 3 should melt, switch 3 should be open'
 
     # after fault is cleared, close the CB at bus 6 so that Load 0 continues to get power
-    net.switch.closed.at[9] = True
+    net.switch.at[9, "closed"] = True
 
     # perform power flow calculation
     pp.runpp(net)
@@ -458,6 +458,3 @@ def fuse_test_net4():
 
 if __name__ == "__main__":
     pytest.main([__file__, "-s"])
-
-
-

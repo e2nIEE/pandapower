@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import pandapower as pp
@@ -31,14 +31,14 @@ def test_continuous_p():
     assert abs(net.res_bus.vm_pu.at[c.controlled_bus] - 1.05) < eps
 
     # power sums up to 15kW
-    net.sgen.p_mw.at[gid] = 5
+    net.sgen.at[gid, "p_mw"] = 5
     pp.runpp(net, run_control=True)
 
     # we expect the tap to converge at 1.0 pu
     assert abs(net.res_bus.vm_pu.at[c.controlled_bus] - 1.) < eps
 
     # generation now cancels load
-    net.sgen.p_mw.at[gid] = 10
+    net.sgen.at[gid, "p_mw"] = 10
     pp.runpp(net, run_control=True)
 
     # we expect the tap to converge at lower voltage limit
@@ -46,15 +46,15 @@ def test_continuous_p():
 
     # testing limits
     # power flowing back
-    net.sgen.p_mw.at[gid] = 30
+    net.sgen.at[gid, "p_mw"] = 30
     pp.runpp(net, run_control=True)
 
     # we expect the tap to converge at lower voltage limit and not drop even lower
     assert abs(net.res_bus.vm_pu.at[c.controlled_bus] - 0.95) < eps
 
     # excessive load
-    net.sgen.p_mw.at[gid] = 0
-    net.load.p_mw.at[lid] = 30
+    net.sgen.at[gid, "p_mw"] = 0
+    net.load.at[lid, "p_mw"] = 30
     pp.runpp(net, run_control=True)
 
     # we expect the tap to converge at upper voltage limit and not to go beyond
@@ -84,14 +84,14 @@ def test_continuous_i():
     assert abs(net.res_bus.vm_pu.at[c.controlled_bus] - 1.05) < eps
 
     # power sums up to 15kW
-    net.sgen.p_mw.at[gid] = 5
+    net.sgen.at[gid, "p_mw"] = 5
     pp.runpp(net, run_control=True)
 
     # we expect the tap to converge at 1.0 pu
     assert abs(net.res_bus.vm_pu.at[c.controlled_bus] - 1.) < eps
 
     # generation now cancels load
-    net.sgen.p_mw.at[gid] = 10
+    net.sgen.at[gid, "p_mw"] = 10
     pp.runpp(net, run_control=True)
 
     # we expect the tap to converge at lower voltage limit
@@ -99,15 +99,15 @@ def test_continuous_i():
 
     # testing limits
     # power flowing back
-    net.sgen.p_mw.at[gid] = 30
+    net.sgen.at[gid, "p_mw"] = 30
     pp.runpp(net, run_control=True)
 
     # we expect the tap to converge at lower voltage limit and not drop even lower
     assert abs(net.res_bus.vm_pu.at[c.controlled_bus] - 0.95) < eps
 
     # excessive load
-    net.sgen.p_mw.at[gid] = 0
-    net.load.p_mw.at[lid] = 30
+    net.sgen.at[gid, "p_mw"] = 0
+    net.load.at[lid, "p_mw"] = 30
     pp.runpp(net, run_control=True)
 
     # we expect the tap to converge at upper voltage limit and not to go beyond

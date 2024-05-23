@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -2689,7 +2689,7 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
     _set_value_if_not_nan(net, index, xn_ohm, "xn_ohm", "trafo")
 
     # tap_phase_shifter default False
-    net.trafo.tap_phase_shifter.fillna(False, inplace=True)
+    net.trafo.tap_phase_shifter = net.trafo.tap_phase_shifter.fillna(False)
     if "tap2_phase_shifter" in net.trafo.columns:
         net.trafo.tap2_phase_shifter = net.trafo.tap2_phase_shifter.fillna(False).astype(bool_)
 
@@ -4864,12 +4864,12 @@ def _get_multiple_index_with_check(net, table, index, number, name=None):
     u, c = uni(index, return_counts=True)
     if np.any(c>1):
         raise UserWarning("Passed indexes %s exist multiple times" % (u[c>1]))
-    contained = isin(net[table].index.values, index)
-    if np_any(contained):
+    intersect = intersect1d(index, net[table].index.values)
+    if len(intersect) > 0:
         if name is None:
             name = table.capitalize() + "s"
         raise UserWarning("%s with indexes %s already exist."
-                          % (name, net[table].index.values[contained]))
+                          % (name, intersect))
     return index
 
 
@@ -5046,10 +5046,7 @@ def _set_multiple_entries(net, table, index, preserve_dtypes=True, defaults_to_f
                 net[table][col] = val
 
     # extend the table by the frame we just created
-    try:
-        net[table] = pd.concat([net[table], dd], sort=False)
-    except ValueError:
-        net[table] = pd.concat([net[table], dd[dd.columns]], sort=False)
+    net[table] = pd.concat([net[table], dd[dd.columns[~dd.isnull().all()]]], sort=False)
 
 
     # and preserve dtypes

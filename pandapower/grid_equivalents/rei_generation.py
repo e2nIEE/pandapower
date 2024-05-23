@@ -158,7 +158,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
 
     net_internal, net_external = _get_internal_and_external_nets(
             net, boundary_buses, all_internal_buses, all_external_buses,
-            show_computing_time, calc_volt_angles=calc_volt_angles, runpp_fct=runpp_fct)
+            show_computing_time, calc_volt_angles=calc_volt_angles, runpp_fct=runpp_fct, **kwargs)
     net_zpbn = net_external
     # --- remove buses without power flow results in net_eq
     pp.drop_buses(net_zpbn, net_zpbn.res_bus.index[net_zpbn.res_bus.vm_pu.isnull()])
@@ -176,7 +176,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
 
         if not np.isnan(Z[elm+"_ground"].values).all():
             if separate:
-                Z.drop([elm+"_integrated_total"], axis=1, inplace=True)
+                Z = Z.drop([elm+"_integrated_total"], axis=1)
 
                 # add buses
                 idxs = Z.index[~np.isnan(Z[elm+"_ground"].values)]
@@ -215,7 +215,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
                 g_buses += list(new_g_buses)
                 t_buses += list(new_t_buses)
             else:
-                Z.drop([elm+"_separate_total"], axis=1, inplace=True)
+                Z = Z.drop([elm+"_separate_total"], axis=1)
                 vn_kv = net_zpbn.bus.vn_kv[all_external_buses].values[0]
                 new_g_bus = pp.create_bus(net_zpbn, vn_kv, name=elm+"_integrated-ground ")
                 i_all_integrated = []
@@ -383,7 +383,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
                                          "aggregated " + elm + ". It is NOT correct at present.")
                             df.element[pc_idx[0]] = net_zpbn[elm].index[net_zpbn[elm].name.str.contains(
                                 "integrated", na=False)][0]
-                            df.drop(pc_idx[1:], inplace=True)
+                            df = df.drop(pc_idx[1:])
                         elif len(pc_idx):
                             related_bus = int(str(net_zpbn[elm].name[idx]).split("_")[-1])
                             pc_idx = df.index[(df.bus == related_bus) &
@@ -398,7 +398,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
                                 pc_idx = df.index[(df.bus == related_bus) &
                                                   (df.et == elm)]
                                 df.element[pc_idx[0]] = idx
-                                df.drop(pc_idx[1:], inplace=True)
+                                df = df.drop(pc_idx[1:])
                             elif len(pc_idx) == 1:
                                 df.element[pc_idx[0]] = idx
             net_zpbn[cost_elm] = df
@@ -510,7 +510,7 @@ def _create_bus_lookups(net_zpbn, boundary_buses, all_internal_buses,
 def _get_internal_and_external_nets(net, boundary_buses, all_internal_buses,
                                     all_external_buses, show_computing_time=False,
                                     calc_volt_angles=True,
-                                    runpp_fct=_runpp_except_voltage_angles):
+                                    runpp_fct=_runpp_except_voltage_angles, **kwargs):
     "This function identifies the internal area and the external area"
     t_start = time.perf_counter()
     if not all_internal_buses:
@@ -525,17 +525,17 @@ def _get_internal_and_external_nets(net, boundary_buses, all_internal_buses,
 
     net_external = deepcopy(net)
     if "group" in net_external:
-        net_external.group.drop(net_external.group.index, inplace=True)
+        net_external.group = net_external.group.drop(net_external.group.index)
     drop_and_edit_cost_functions(net_external, all_internal_buses,
                                  True, True)
     drop_measurements_and_controllers(net_external, net_external.bus.index.tolist())
     pp.drop_buses(net_external, all_internal_buses)
     replace_motor_by_load(net_external, all_external_buses)
-#    add_ext_grids_to_boundaries(net_external, boundary_buses, runpp_fct=runpp_fct)
-#    runpp_fct(net_external, calculate_voltage_angles=calc_volt_angles)
+#    add_ext_grids_to_boundaries(net_external, boundary_buses, runpp_fct=runpp_fct, **kwargs)
+#    runpp_fct(net_external, calculate_voltage_angles=calc_volt_angles, **kwargs)
     _integrate_power_elements_connected_with_switch_buses(net, net_external,
                                                           all_external_buses) # for sgens, gens, and loads
-    runpp_fct(net_external, calculate_voltage_angles=calc_volt_angles)
+    runpp_fct(net_external, calculate_voltage_angles=calc_volt_angles, **kwargs)
     t_end = time.perf_counter()
     if show_computing_time:
         logger.info("\"get_int_and_ext_nets\" " +
@@ -592,8 +592,8 @@ def _calclate_equivalent_element_params(net_zpbn, Ybus_eq, bus_lookups,
     non_zero_cr = np.abs(params[cols, rows]) > 1/max_allowed_impedance
     impedance_params["rtf_pu"] = 1e5
     impedance_params["xtf_pu"] = 1e5
-    impedance_params["rtf_pu"].loc[non_zero_cr] = (-1 / params[cols, rows]).real[non_zero_cr]
-    impedance_params["xtf_pu"].loc[non_zero_cr] = (-1 / params[cols, rows]).imag[non_zero_cr]
+    impedance_params.loc[non_zero_cr, "rtf_pu"] = (-1 / params[cols, rows]).real[non_zero_cr]
+    impedance_params.loc[non_zero_cr, "xtf_pu"] = (-1 / params[cols, rows]).imag[non_zero_cr]
 
     t_end = time.perf_counter()
     if show_computing_time:
@@ -605,7 +605,7 @@ def _calclate_equivalent_element_params(net_zpbn, Ybus_eq, bus_lookups,
 def _replace_ext_area_by_impedances_and_shunts(
         net_eq, bus_lookups, impedance_params, shunt_params, net_internal,
         return_internal, show_computing_time=False, calc_volt_angles=True, imp_threshold=1e-8,
-        runpp_fct=_runpp_except_voltage_angles):
+        runpp_fct=_runpp_except_voltage_angles, **kwargs):
     """
     This function implements the parameters of the equivalent shunts and equivalent impedance
     """
@@ -616,7 +616,7 @@ def _replace_ext_area_by_impedances_and_shunts(
 
     try:
         runpp_fct(net_eq, calculate_voltage_angles=calc_volt_angles,
-                                     tolerance_mva=1e-6, max_iteration=100)
+                                     tolerance_mva=1e-6, max_iteration=100, **kwargs)
     except:
         logger.error("The power flow did not converge.")
 
@@ -625,7 +625,7 @@ def _replace_ext_area_by_impedances_and_shunts(
     # --- drop shunt elements attached to boundary buses
     traget_shunt_idx = net_eq.shunt.index[net_eq.shunt.bus.isin(bus_lookups[
         "boundary_buses_inclusive_bswitch"])]
-    net_eq.shunt.drop(traget_shunt_idx, inplace=True)
+    net_eq.shunt = net_eq.shunt.drop(traget_shunt_idx)
 
     # --- create impedance
     not_very_low_imp = (impedance_params.rft_pu.abs() > imp_threshold) | (
@@ -645,7 +645,7 @@ def _replace_ext_area_by_impedances_and_shunts(
 
     # --- create switches instead of very low impedances
     new_sws = impedance_params[["from_bus", "to_bus"]].loc[~not_very_low_imp].astype(np.int64)
-    new_sws.rename(columns={"from_bus": "bus", "to_bus": "element"}, inplace=True)
+    new_sws = new_sws.rename(columns={"from_bus": "bus", "to_bus": "element"})
     max_idx = net_eq.switch.index.max() if net_eq.switch.shape[0] else 0
     new_sws.index = range(max_idx+1, max_idx+1+sum(~not_very_low_imp))
     new_sws["et"] = "b"
@@ -684,7 +684,7 @@ def _replace_ext_area_by_impedances_and_shunts(
         raise ValueError(msg)
 
     runpp_fct(net_eq, calculate_voltage_angles=calc_volt_angles,
-              tolerance_mva=1e-6, max_iteration=100)
+              tolerance_mva=1e-6, max_iteration=100, **kwargs)
 
 
 def _integrate_power_elements_connected_with_switch_buses(net, net_external, all_external_buses):
