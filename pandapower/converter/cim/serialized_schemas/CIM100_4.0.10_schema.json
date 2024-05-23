@@ -8711,8 +8711,79 @@
         },
         "BoundaryPoint": {
             "rdf_type": " rdf:ID=\"",
-            "label": "cim:BoundaryPoint",
-            "fields": {}
+            "label": "eu:BoundaryPoint",
+            "fields": {
+                "fromEndIsoCode": {
+                    "label": "cim:BoundaryPoint.fromEndIsoCode",
+                    "data_type": "String",
+                    "data_type_prim": "String"
+                },
+                "fromEndName": {
+                    "label": "cim:BoundaryPoint.fromEndName",
+                    "data_type": "String",
+                    "data_type_prim": "String"
+                },
+                "fromEndNameTso": {
+                    "label": "cim:BoundaryPoint.fromEndNameTso",
+                    "data_type": "String",
+                    "data_type_prim": "String"
+                },
+                "toEndIsoCode": {
+                    "label": "cim:BoundaryPoint.toEndIsoCode",
+                    "data_type": "String",
+                    "data_type_prim": "String"
+                },
+                "toEndName": {
+                    "label": "cim:BoundaryPoint.toEndName",
+                    "data_type": "String",
+                    "data_type_prim": "String"
+                },
+                "toEndNameTso": {
+                    "label": "cim:BoundaryPoint.toEndNameTso",
+                    "data_type": "String",
+                    "data_type_prim": "String"
+                },
+                "isDirectCurrent": {
+                    "label": "cim:BoundaryPoint.isDirectCurrent",
+                    "data_type": "Boolean",
+                    "data_type_prim": "Boolean"
+                },
+                "isExcludedFromAreaInterchange": {
+                    "label": "cim:BoundaryPoint.isExcludedFromAreaInterchange",
+                    "data_type": "Boolean",
+                    "data_type_prim": "Boolean"
+                },
+                "ConnectivityNode": {
+                    "label": "cim:BoundaryPoint.ConnectivityNode",
+                    "data_type": " rdf:resource=\"#",
+                    "data_type_prim": " rdf:resource=\"#"
+                },
+                "description": {
+                    "label": "cim:IdentifiedObject.description",
+                    "data_type": "String",
+                    "data_type_prim": "String"
+                },
+                "energyIdentCodeEic": {
+                    "label": "cim:IdentifiedObject.energyIdentCodeEic",
+                    "data_type": "String",
+                    "data_type_prim": "String"
+                },
+                "mRID": {
+                    "label": "cim:IdentifiedObject.mRID",
+                    "data_type": "String",
+                    "data_type_prim": "String"
+                },
+                "name": {
+                    "label": "cim:IdentifiedObject.name",
+                    "data_type": "String",
+                    "data_type_prim": "String"
+                },
+                "shortName": {
+                    "label": "cim:IdentifiedObject.shortName",
+                    "data_type": "String",
+                    "data_type_prim": "String"
+                }
+            }
         },
         "Line": {
             "rdf_type": " rdf:ID=\"",
@@ -10243,40 +10314,74 @@
                 }
             }
         },
-        "FullModel": {
-            "rdf_type": " rdf:ID=\"",
-            "label": "cim:FullModel",
-            "fields": {}
-        },
-        "BusbarSection": {
+        "EquivalentBranch": {
             "rdf_type": " rdf:about=\"#",
-            "label": "cim:BusbarSection",
+            "label": "cim:EquivalentBranch",
             "fields": {
-                "ipMax": {
-                    "label": "cim:BusbarSection.ipMax",
-                    "data_type": "CurrentFlow",
+                "negativeR12": {
+                    "label": "cim:EquivalentBranch.negativeR12",
+                    "data_type": "Resistance",
+                    "data_type_prim": "Float"
+                },
+                "negativeR21": {
+                    "label": "cim:EquivalentBranch.negativeR21",
+                    "data_type": "Resistance",
+                    "data_type_prim": "Float"
+                },
+                "negativeX12": {
+                    "label": "cim:EquivalentBranch.negativeX12",
+                    "data_type": "Reactance",
+                    "data_type_prim": "Float"
+                },
+                "negativeX21": {
+                    "label": "cim:EquivalentBranch.negativeX21",
+                    "data_type": "Reactance",
+                    "data_type_prim": "Float"
+                },
+                "positiveR12": {
+                    "label": "cim:EquivalentBranch.positiveR12",
+                    "data_type": "Resistance",
+                    "data_type_prim": "Float"
+                },
+                "positiveR21": {
+                    "label": "cim:EquivalentBranch.positiveR21",
+                    "data_type": "Resistance",
+                    "data_type_prim": "Float"
+                },
+                "positiveX12": {
+                    "label": "cim:EquivalentBranch.positiveX12",
+                    "data_type": "Reactance",
+                    "data_type_prim": "Float"
+                },
+                "positiveX21": {
+                    "label": "cim:EquivalentBranch.positiveX21",
+                    "data_type": "Reactance",
+                    "data_type_prim": "Float"
+                },
+                "zeroR12": {
+                    "label": "cim:EquivalentBranch.zeroR12",
+                    "data_type": "Resistance",
+                    "data_type_prim": "Float"
+                },
+                "zeroR21": {
+                    "label": "cim:EquivalentBranch.zeroR21",
+                    "data_type": "Resistance",
+                    "data_type_prim": "Float"
+                },
+                "zeroX12": {
+                    "label": "cim:EquivalentBranch.zeroX12",
+                    "data_type": "Reactance",
+                    "data_type_prim": "Float"
+                },
+                "zeroX21": {
+                    "label": "cim:EquivalentBranch.zeroX21",
+                    "data_type": "Reactance",
                     "data_type_prim": "Float"
                 },
                 "mRID": {
                     "label": "cim:IdentifiedObject.mRID",
                     "data_type": "String",
                     "data_type_prim": "String"
-                }
-            }
-        },
-        "NonlinearShuntCompensatorPoint": {
-            "rdf_type": " rdf:about=\"#",
-            "label": "cim:NonlinearShuntCompensatorPoint",
-            "fields": {
-                "b0": {
-                    "label": "cim:NonlinearShuntCompensatorPoint.b0",
-                    "data_type": "Susceptance",
-                    "data_type_prim": "Float"
-                },
-                "g0": {
-                    "label": "cim:NonlinearShuntCompensatorPoint.g0",
-                    "data_type": "Conductance",
-                    "data_type_prim": "Float"
                 }
             }
         },
@@ -10357,6 +10462,43 @@
                 }
             }
         },
+        "FullModel": {
+            "rdf_type": " rdf:ID=\"",
+            "label": "cim:FullModel",
+            "fields": {}
+        },
+        "BusbarSection": {
+            "rdf_type": " rdf:about=\"#",
+            "label": "cim:BusbarSection",
+            "fields": {
+                "ipMax": {
+                    "label": "cim:BusbarSection.ipMax",
+                    "data_type": "CurrentFlow",
+                    "data_type_prim": "Float"
+                },
+                "mRID": {
+                    "label": "cim:IdentifiedObject.mRID",
+                    "data_type": "String",
+                    "data_type_prim": "String"
+                }
+            }
+        },
+        "NonlinearShuntCompensatorPoint": {
+            "rdf_type": " rdf:about=\"#",
+            "label": "cim:NonlinearShuntCompensatorPoint",
+            "fields": {
+                "b0": {
+                    "label": "cim:NonlinearShuntCompensatorPoint.b0",
+                    "data_type": "Susceptance",
+                    "data_type_prim": "Float"
+                },
+                "g0": {
+                    "label": "cim:NonlinearShuntCompensatorPoint.g0",
+                    "data_type": "Conductance",
+                    "data_type_prim": "Float"
+                }
+            }
+        },
         "LinearShuntCompensator": {
             "rdf_type": " rdf:about=\"#",
             "label": "cim:LinearShuntCompensator",
@@ -10409,77 +10551,6 @@
                 },
                 "xn": {
                     "label": "cim:EnergySource.xn",
-                    "data_type": "Reactance",
-                    "data_type_prim": "Float"
-                },
-                "mRID": {
-                    "label": "cim:IdentifiedObject.mRID",
-                    "data_type": "String",
-                    "data_type_prim": "String"
-                }
-            }
-        },
-        "EquivalentBranch": {
-            "rdf_type": " rdf:about=\"#",
-            "label": "cim:EquivalentBranch",
-            "fields": {
-                "negativeR12": {
-                    "label": "cim:EquivalentBranch.negativeR12",
-                    "data_type": "Resistance",
-                    "data_type_prim": "Float"
-                },
-                "negativeR21": {
-                    "label": "cim:EquivalentBranch.negativeR21",
-                    "data_type": "Resistance",
-                    "data_type_prim": "Float"
-                },
-                "negativeX12": {
-                    "label": "cim:EquivalentBranch.negativeX12",
-                    "data_type": "Reactance",
-                    "data_type_prim": "Float"
-                },
-                "negativeX21": {
-                    "label": "cim:EquivalentBranch.negativeX21",
-                    "data_type": "Reactance",
-                    "data_type_prim": "Float"
-                },
-                "positiveR12": {
-                    "label": "cim:EquivalentBranch.positiveR12",
-                    "data_type": "Resistance",
-                    "data_type_prim": "Float"
-                },
-                "positiveR21": {
-                    "label": "cim:EquivalentBranch.positiveR21",
-                    "data_type": "Resistance",
-                    "data_type_prim": "Float"
-                },
-                "positiveX12": {
-                    "label": "cim:EquivalentBranch.positiveX12",
-                    "data_type": "Reactance",
-                    "data_type_prim": "Float"
-                },
-                "positiveX21": {
-                    "label": "cim:EquivalentBranch.positiveX21",
-                    "data_type": "Reactance",
-                    "data_type_prim": "Float"
-                },
-                "zeroR12": {
-                    "label": "cim:EquivalentBranch.zeroR12",
-                    "data_type": "Resistance",
-                    "data_type_prim": "Float"
-                },
-                "zeroR21": {
-                    "label": "cim:EquivalentBranch.zeroR21",
-                    "data_type": "Resistance",
-                    "data_type_prim": "Float"
-                },
-                "zeroX12": {
-                    "label": "cim:EquivalentBranch.zeroX12",
-                    "data_type": "Reactance",
-                    "data_type_prim": "Float"
-                },
-                "zeroX21": {
-                    "label": "cim:EquivalentBranch.zeroX21",
                     "data_type": "Reactance",
                     "data_type_prim": "Float"
                 },
@@ -11584,11 +11655,6 @@
                 }
             }
         },
-        "FullModel": {
-            "rdf_type": " rdf:ID=\"",
-            "label": "cim:FullModel",
-            "fields": {}
-        },
         "CurrentLimit": {
             "rdf_type": " rdf:about=\"#",
             "label": "cim:CurrentLimit",
@@ -11604,6 +11670,27 @@
                     "data_type_prim": "String"
                 }
             }
+        },
+        "VoltageLimit": {
+            "rdf_type": " rdf:about=\"#",
+            "label": "cim:VoltageLimit",
+            "fields": {
+                "value": {
+                    "label": "cim:VoltageLimit.value",
+                    "data_type": "Voltage",
+                    "data_type_prim": "Float"
+                },
+                "mRID": {
+                    "label": "cim:IdentifiedObject.mRID",
+                    "data_type": "String",
+                    "data_type_prim": "String"
+                }
+            }
+        },
+        "FullModel": {
+            "rdf_type": " rdf:ID=\"",
+            "label": "cim:FullModel",
+            "fields": {}
         },
         "Equipment": {
             "rdf_type": " rdf:ID=\"",
@@ -11738,22 +11825,6 @@
                     "label": "cim:Equipment.inService",
                     "data_type": "Boolean",
                     "data_type_prim": "Boolean"
-                },
-                "mRID": {
-                    "label": "cim:IdentifiedObject.mRID",
-                    "data_type": "String",
-                    "data_type_prim": "String"
-                }
-            }
-        },
-        "VoltageLimit": {
-            "rdf_type": " rdf:about=\"#",
-            "label": "cim:VoltageLimit",
-            "fields": {
-                "value": {
-                    "label": "cim:VoltageLimit.value",
-                    "data_type": "Voltage",
-                    "data_type_prim": "Float"
                 },
                 "mRID": {
                     "label": "cim:IdentifiedObject.mRID",
