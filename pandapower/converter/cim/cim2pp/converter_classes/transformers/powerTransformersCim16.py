@@ -495,8 +495,8 @@ class PowerTransformersCim16:
         power_trafo2w['in_service'] = power_trafo2w.connected & power_trafo2w.connected_lv
         power_trafo2w['connectionKind'].fillna('', inplace=True)
         power_trafo2w['connectionKind_lv'].fillna('', inplace=True)
-        power_trafo2w['grounded'] = power_trafo2w['grounded'].fillna(False)
-        power_trafo2w['grounded_lv'] = power_trafo2w['grounded_lv'].fillna(False)
+        power_trafo2w['grounded'] = power_trafo2w['grounded'].fillna(True)
+        power_trafo2w['grounded_lv'] = power_trafo2w['grounded_lv'].fillna(True)
         power_trafo2w.loc[~power_trafo2w['grounded'].astype('bool'), 'connectionKind'] = \
             power_trafo2w.loc[~power_trafo2w['grounded'].astype('bool'), 'connectionKind'].str.replace('n', '')
         power_trafo2w.loc[~power_trafo2w['grounded_lv'].astype('bool'), 'connectionKind_lv'] = \
@@ -630,9 +630,9 @@ class PowerTransformersCim16:
         power_trafo3w['connectionKind'].fillna('', inplace=True)
         power_trafo3w['connectionKind_mv'].fillna('', inplace=True)
         power_trafo3w['connectionKind_lv'].fillna('', inplace=True)
-        power_trafo3w['grounded'] = power_trafo3w['grounded'].fillna(False)
-        power_trafo3w['grounded_mv'] = power_trafo3w['grounded_mv'].fillna(False)
-        power_trafo3w['grounded_lv'] = power_trafo3w['grounded_lv'].fillna(False)
+        power_trafo3w['grounded'] = power_trafo3w['grounded'].fillna(True)
+        power_trafo3w['grounded_mv'] = power_trafo3w['grounded_mv'].fillna(True)
+        power_trafo3w['grounded_lv'] = power_trafo3w['grounded_lv'].fillna(True)
 
         power_trafo3w.loc[~power_trafo3w['grounded'].astype('bool'), 'connectionKind'] = \
             power_trafo3w.loc[~power_trafo3w['grounded'].astype('bool'), 'connectionKind'].str.replace('n', '')
