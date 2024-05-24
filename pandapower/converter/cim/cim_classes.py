@@ -596,7 +596,7 @@ class CimParser:
                 'Terminal': pd.DataFrame(columns=[
                     'rdfId', 'name', 'ConnectivityNode', 'ConductingEquipment', 'sequenceNumber']),
                 'OperationalLimitSet': pd.DataFrame(columns=['rdfId', 'name', 'Terminal']),
-                'OperationalLimitType': pd.DataFrame(columns=['rdfId', 'name', 'limitType']),
+                'OperationalLimitType': pd.DataFrame(columns=['rdfId', 'name', 'kind']),
                 'CurrentLimit': pd.DataFrame(columns=[
                     'rdfId', 'name', 'OperationalLimitSet', 'OperationalLimitType']),
                 'VoltageLimit': pd.DataFrame(columns=[

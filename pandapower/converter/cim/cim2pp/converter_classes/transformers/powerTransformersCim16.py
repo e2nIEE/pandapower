@@ -359,14 +359,15 @@ class PowerTransformersCim16:
                                                                          'value']]
         else:
             vl = self.cimConverter.cim['eq']['VoltageLimit'][['OperationalLimitSet', 'OperationalLimitType', 'value']]
-        vl = pd.merge(vl, self.cimConverter.cim['eq']['OperationalLimitType'][['rdfId', 'limitType']].rename(
+        opl_kind = 'kind' if 'kind' in self.cimConverter.cim['eq']['OperationalLimitType'].columns else 'limitType'
+        vl = pd.merge(vl, self.cimConverter.cim['eq']['OperationalLimitType'][['rdfId', opl_kind]].rename(
             columns={'rdfId': 'OperationalLimitType'}), how='left', on='OperationalLimitType')
         vl = pd.merge(vl, self.cimConverter.cim['eq']['OperationalLimitSet'][['rdfId', 'Terminal']].rename(
             columns={'rdfId': 'OperationalLimitSet'}), how='left', on='OperationalLimitSet')
-        vl = vl[['value', 'limitType', 'Terminal']]
-        vl_low = vl.loc[vl['limitType'] == 'lowVoltage'][['value', 'Terminal']].rename(
+        vl = vl[['value', opl_kind, 'Terminal']]
+        vl_low = vl.loc[vl[opl_kind] == 'lowVoltage'][['value', 'Terminal']].rename(
             columns={'value': 'c_vm_lower_pu'})
-        vl_up = vl.loc[vl['limitType'] == 'highVoltage'][['value', 'Terminal']].rename(
+        vl_up = vl.loc[vl[opl_kind] == 'highVoltage'][['value', 'Terminal']].rename(
             columns={'value': 'c_vm_upper_pu'})
         vl = pd.merge(vl_low, vl_up, how='left', on='Terminal')
         eq_ssh_tap_controllers = pd.merge(eq_ssh_tap_controllers, vl, how='left', on='Terminal')
