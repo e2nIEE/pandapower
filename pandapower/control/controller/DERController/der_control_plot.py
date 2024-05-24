@@ -10,28 +10,32 @@ import matplotlib.pyplot as plt
 from pandaplan.core.control.controller.der_control import *
 
 # Verify functions
-def verify_pq_area(pq_area, title=None, ax=None, circle_segment=90):
+def verify_pq_area(pq_area, title=None, ax=None, saturate_sn_mva:float=np.nan, circle_segment=90):
     """
     Assumption: there is no q restriction at vm = 1 pu
     """
     p = np.linspace(0, 1, 200)
-    min_max_q = pq_area.q_flexibility(p=p, vm_pu=1)
-    plot_pq_area(p, min_max_q, title, ax)
+    min_max_q = pq_area.q_flexibility(p=p, vm=1)
+    plot_pq_area(p, min_max_q, title, ax, saturate_sn_mva=saturate_sn_mva,
+                 circle_segment=circle_segment)
 
 
-def verify_qv_area(qv_area, title=None, p=1, ax=None):
+def verify_qv_area(qv_area, title=None, p=1, ax=None, prune_to_flexibility=False):
     """
     Assumption: all relevant information is in vm = 0.8 .. 1.2 pu
     """
-    vm_pu = np.linspace(0.8, 1.2, 200)
-    min_max_q = qv_area.q_flexibility(p=p, vm_pu=vm_pu)
+    vm = np.linspace(0.8, 1.2, 200)
+    min_max_q = qv_area.q_flexibility(p=p, vm=vm)
     len_ = min_max_q.shape[0]
-    start = min(np.arange(len_, dtype=int)[~np.isclose(min_max_q[:, 0], min_max_q[0, 0])])-1
-    stop = max(np.arange(len_, dtype=int)[~np.isclose(min_max_q[:, 1], min_max_q[-1, 1])])+2
-    plot_qv_area(vm_pu, min_max_q, title, ax)
+    if prune_to_flexibility:
+        start = min(np.arange(len_, dtype=int)[~np.isclose(min_max_q[:, 0], min_max_q[0, 0])])-1
+        stop = max(np.arange(len_, dtype=int)[~np.isclose(min_max_q[:, 1], min_max_q[-1, 1])])+2
+        vm = vm[start:stop]
+        min_max_q = min_max_q[start:stop, :]
+    plot_qv_area(vm, min_max_q, title, ax)
 
 
-def plot_pq_area(p, min_max_q, title=None, ax=None, circle_segment=90):
+def plot_pq_area(p, min_max_q, title=None, ax=None, saturate_sn_mva:float=np.nan, circle_segment=90):
     if ax is None:
         plt.figure()
         ax = plt.gca()
@@ -45,27 +49,29 @@ def plot_pq_area(p, min_max_q, title=None, ax=None, circle_segment=90):
         ax.set_title(title)
     ax.set_ylim(p.min(), p.max())
 
-    x, y = generate_circle_segment(0, 0, 1, -circle_segment, circle_segment, 1)
-    ax.plot(y, x, '--k', label='$S_{max}$')
-
-    y_circ = np.sqrt(1 - p**2)
-    ax.fill_betweenx(p, np.max(np.c_[min_max_q[:, 0], -y_circ], axis=1), np.min(np.c_[min_max_q[:, 1], y_circ], axis=1),
-                     color="green", alpha=0.2)
+    if not np.isnan(saturate_sn_mva):
+        x, y = generate_circle_segment(0, 0, saturate_sn_mva, -circle_segment, circle_segment, 1)
+        ax.plot(y, x, '--k', label='$S_{max}$')
+        y_circ = np.sqrt(saturate_sn_mva**2 - p**2)
+    else:
+        y_circ = np.ones(p.shape)
+    ax.fill_betweenx(p, np.max(np.c_[min_max_q[:, 0], -y_circ], axis=1),
+                     np.min(np.c_[min_max_q[:, 1], y_circ], axis=1), color="green", alpha=0.2)
     plt.tight_layout()
 
 
-def plot_qv_area(v, min_max_q, title=None, ax=None):
+def plot_qv_area(vm, min_max_q, title=None, ax=None):
     if ax is None:
         plt.figure()
         ax = plt.gca()
 
-    ax.plot(v, min_max_q[:, 0], c="blue", alpha=0.9, label="q_min")
-    ax.plot(v, min_max_q[:, 1], c="red", alpha=0.9, label="q_max")
+    ax.plot(vm, min_max_q[:, 0], c="blue", alpha=0.9, label="q_min")
+    ax.plot(vm, min_max_q[:, 1], c="red", alpha=0.9, label="q_max")
     ax.set_xlabel("$v_m$ in pu")
     ax.set_ylabel("$Q/S_N$")
     ax.legend()
     ax.grid(alpha=0.8)
-    ax.fill_between(v, min_max_q[:, 0], min_max_q[:, 1], color="green", alpha=0.2)
+    ax.fill_between(vm, min_max_q[:, 0], min_max_q[:, 1], color="green", alpha=0.2)
 
     if title is not None:
         ax.set_title(title)

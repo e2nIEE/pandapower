@@ -31,11 +31,11 @@ defined in VDE-AR-N technical connection rule standards"""
 
 class BaseArea(BaseModel):
     """ Defines which functionality is common to all area (PQ or QV) classes. """
-    def in_area(self, p, q, vm_pu):
-        min_max_q = self.q_flexibility(p, vm_pu)
+    def in_area(self, p, q, vm):
+        min_max_q = self.q_flexibility(p, vm)
         return (min_max_q[:, 0] <= q) & (min_max_q[:, 1] >= q)
 
-    def q_flexibility(self, p, vm_pu):
+    def q_flexibility(self, p, vm):
         pass
 
     def __str__(self):
@@ -44,12 +44,12 @@ class BaseArea(BaseModel):
 
 class BasePQVArea(BaseArea):
     """ Defines functionality common for mulitple PQVArea classes. """
-    def in_area(self, p, q, vm_pu):
-        return self.pq_area.in_area(p, q, vm_pu) & self.qv_area.in_area(p, q, vm_pu)
+    def in_area(self, p, q, vm):
+        return self.pq_area.in_area(p, q, vm) & self.qv_area.in_area(p, q, vm)
 
-    def q_flexibility(self, p, vm_pu):
+    def q_flexibility(self, p, vm):
         min_max_q = self.pq_area.q_flexibility(p)
-        min_max_q_qv = self.qv_area.q_flexibility(None, vm_pu)
+        min_max_q_qv = self.qv_area.q_flexibility(None, vm)
         min_max_q[:, 0] = np.maximum(min_max_q[:, 0], min_max_q_qv[:, 0])
         min_max_q[:, 1] = np.minimum(min_max_q[:, 1], min_max_q_qv[:, 1])
         no_flexibility = min_max_q[:, 0] > min_max_q[:, 1]
@@ -68,6 +68,8 @@ class PQAreaPOLYGON(BaseArea):
     Provides a polygonal area of feasible reactive power provision. The polygonal area can be
     defined by 'p_points' and 'q_points'.
 
+    Note: Due to generator point of view, negative q values are correspond with underexcited behavior.
+
     Example
     -------
     >>> PQAreaDefault(p_points=(0.1, 0.2, 1, 1, 0.2, 0.1, 0.1),
@@ -82,10 +84,10 @@ class PQAreaPOLYGON(BaseArea):
 
         self.polygon = Polygon([(p, q) for p, q in zip(p_points, q_points)])
 
-    def in_area(self, p, q, vm_pu=None):
+    def in_area(self, p, q, vm=None):
         return np.array([self.polygon.contains(Point(pi, qi)) for pi, qi in zip(p, q)])
 
-    def q_flexibility(self, p, vm_pu=None):
+    def q_flexibility(self, p, vm=None):
         def _q_flex(p):
             line = LineString([(p, -1), (p, 1)])
             if line.intersects(self.polygon):
@@ -100,6 +102,8 @@ class QVAreaPOLYGON(BaseArea):
     """
     Provides a polygonal area of feasible reactive power provision. The polygonal area can be
     defined by 'q_points' and 'vm_points'.
+
+    Note: Due to generator point of view, negative q values are correspond with underexcited behavior.
 
     Example
     -------
@@ -116,11 +120,11 @@ class QVAreaPOLYGON(BaseArea):
         # note that the naming QVAreaPOLYGON might be confusing because, in fact, it is a VQAreaPOLYGON
         self.polygon = Polygon([(vm, q) for vm, q in zip(vm_points, q_points)])
 
-    def in_area(self, p, q, vm_pu):
-        return np.array([self.polygon.contains(Point(vmi, qi)) for vmi, qi in zip(vm_pu, q)])
+    def in_area(self, p, q, vm):
+        return np.array([self.polygon.contains(Point(vmi, qi)) for vmi, qi in zip(vm, q)])
 
-    def q_flexibility(self, p, vm_pu):
-        assert all(vm_pu >= 0) and all(vm_pu <= 2)
+    def q_flexibility(self, p, vm):
+        assert all(vm >= 0) and all(vm <= 2)
         def _q_flex(vm):
             line = LineString([(vm, -1), (vm, 1)])
             if line.intersects(self.polygon):
@@ -128,7 +132,7 @@ class QVAreaPOLYGON(BaseArea):
                     [(vm, -1), (vm, 1)]).intersection(self.polygon).coords]
             else:
                 return [0, 0]
-        return np.r_[[_q_flex(vmi) for vmi in vm_pu]]
+        return np.r_[[_q_flex(vmi) for vmi in vm]]
 
 
 class PQVAreaPOLYGON(BasePQVArea):
@@ -164,10 +168,10 @@ class PQAreaSTATCOM(BaseArea):
     def __init__(self, min_q, max_q):
         self.min_q, self.max_q = min_q, max_q
 
-    def in_area(self, p, q, vm_pu=None):
+    def in_area(self, p, q, vm=None):
         return (self.min_q <= q) & (q <= self.max_q)
 
-    def q_flexibility(self, p, vm_pu=None):
+    def q_flexibility(self, p, vm=None):
         return np.c_[[self.min_q]*len(p), [self.max_q]*len(p)]
 
 
@@ -195,7 +199,7 @@ class PQArea4120(BaseArea):
         self.linear_factor_cap = (self.max_q - self.p_points[0]) / (
             self.p_points[1] - self.p_points[0])
 
-    def in_area(self, p, q, vm_pu=None, q_max_under_p_point=0.):
+    def in_area(self, p, q, vm=None, q_max_under_p_point=0.):
         is_in_area = np.ones(len(p), dtype=bool)
         is_in_area[(p < self.p_points[0]) & ((q < -0.05) | (q > q_max_under_p_point))] = False
         if all(~is_in_area):
@@ -207,7 +211,7 @@ class PQArea4120(BaseArea):
             (q > self.p_points[0]+(p-self.p_points[0])*self.linear_factor_cap)] = False
         return is_in_area
 
-    def q_flexibility(self, p, vm_pu=None):
+    def q_flexibility(self, p, vm=None):
         q_flex = np.c_[[self.min_q]*len(p), [self.max_q]*len(p)]
 
         part = p < self.p_points[1]
@@ -235,26 +239,26 @@ class QVArea4120(BaseArea):
         self.delta_vm = 7.0/110
         self.linear_factor = (self.max_q - self.min_q) / self.delta_vm
 
-    def q_flexibility(self, p, vm_pu):
+    def q_flexibility(self, p, vm):
 
-        # part = vm_pu > self.max_vm
-        len_ = len(vm_pu)
+        # part = vm > self.max_vm
+        len_ = len(vm)
         min_max_q = np.c_[[self.min_q]*len_, [self.min_q]*len_]
 
-        part = vm_pu < self.min_vm
+        part = vm < self.min_vm
         len_ = sum(part)
         min_max_q[part] = np.c_[[self.max_q]*len_, [self.max_q]*len_]
 
-        part = (self.min_vm < vm_pu) & (vm_pu <= self.min_vm + self.delta_vm)
-        min_max_q[part] = np.c_[self.max_q - self.linear_factor * (vm_pu[part]-self.min_vm),
+        part = (self.min_vm < vm) & (vm <= self.min_vm + self.delta_vm)
+        min_max_q[part] = np.c_[self.max_q - self.linear_factor * (vm[part]-self.min_vm),
                                 [self.max_q]*sum(part)]
 
-        part = (self.min_vm+self.delta_vm < vm_pu) & (vm_pu <= self.max_vm-self.delta_vm)
+        part = (self.min_vm+self.delta_vm < vm) & (vm <= self.max_vm-self.delta_vm)
         min_max_q[part] = np.repeat(np.array([[self.min_q, self.max_q]]), sum(part), axis=0)
 
-        part = (self.max_vm-self.delta_vm < vm_pu) & (vm_pu <= self.max_vm)
+        part = (self.max_vm-self.delta_vm < vm) & (vm <= self.max_vm)
         min_max_q[part] = np.c_[[self.min_q]*sum(part),
-                                self.min_q + self.linear_factor * (self.max_vm-vm_pu[part])]
+                                self.min_q + self.linear_factor * (self.max_vm-vm[part])]
 
         return min_max_q
 
@@ -302,11 +306,11 @@ class PQArea4130(PQArea4120):
     It is used to be combined with Voltage dependencies in PQVArea4130V1, PQVArea4130V2 and
     PQVArea4130V3.
     """
-    def in_area(self, p, q, vm_pu=None):
-        return super().in_area(p, q, vm_pu=vm_pu, q_max_under_p_point=0.05)
+    def in_area(self, p, q, vm=None):
+        return super().in_area(p, q, vm=vm, q_max_under_p_point=0.05)
 
-    def q_flexibility(self, p, vm_pu=None):
-        q_flex = super().q_flexibility(p, vm_pu)
+    def q_flexibility(self, p, vm=None):
+        q_flex = super().q_flexibility(p, vm)
         part = p < 0.1
         q_flex[part] = np.c_[[-0.05]*sum(part), [0.05]*sum(part)]
         return q_flex
@@ -357,9 +361,9 @@ class QVArea4130(QVArea4120):
             raise ValueError(
                 f"QVArea4130 is defined for variants 1, 2, and 3 but not for {self.variant}.")
 
-    def q_flexibility(self, p, vm_pu):
-        return np.c_[np.interp(vm_pu, self.vm_min_points, self.q_min_points),
-                     np.interp(vm_pu, self.vm_max_points, self.q_max_points)]
+    def q_flexibility(self, p, vm):
+        return np.c_[np.interp(vm, self.vm_min_points, self.q_min_points),
+                     np.interp(vm, self.vm_max_points, self.q_max_points)]
 
 
 class PQVArea4130Base(BasePQVArea):
@@ -403,131 +407,79 @@ class PQVArea4130V3(PQVArea4130Base):
 
 class PQArea4110(PQAreaPOLYGON):
     def __init__(self):
-        p_points = (0.0405, 0.81, 0.81, 0.0405, 0.0405)
-        q_points = (-0.01961505, -0.3923009, 0.3923009, 0.01961505, -0.01961505)
+        p_points = (0.05, 1, 1, 0.05, 0.0)
+        q_points = (-0.01961505, -0.484322, 0.484322, 0.01961505, -0.01961505)
         super().__init__(p_points, q_points)
 
 
-class QVArea4110(BaseArea):
+class QVArea4110(QVAreaPOLYGON):
     """
     This class models the QV area of flexible Q for medium-voltage plants according to
     VDE AR-N-4110.
-
-    Note: a interaction with q_prio with the area of 0.95 cosphi and 0.95-1.05 pu is not
-    implemented.
     """
-    def __init__(self, min_q=-0.328684, max_q=0.328684):
-        self.min_q, self.max_q = min_q, max_q
-        self.min_vm, self.max_vm = 0.9, 1.1
-        self.delta_vm = 0.025
-        self.linear_factor_ind = (0 - self.min_q) / self.delta_vm
-        self.linear_factor_cap = (self.max_q - 0) / self.delta_vm
+    def __init__(self):
+        q_points =  (0. , -0.484322, -0.484322, 0. , 0.484322, 0.484322, 0. )
+        vm_points = (0.9, 0.95     , 1.1      , 1.1, 1.05    , 0.9     , 0.9)
+        super().__init__(q_points, vm_points)
 
-    def q_flexibility(self, p, vm_pu):
-
-        # part = vm_pu > self.max_vm
-        len_ = len(vm_pu)
-        min_max_q = np.c_[[self.min_q]*len_, [0]*len_]
-
-        part = vm_pu < self.min_vm
-        len_ = sum(part)
-        min_max_q[part] = np.c_[[0]*len_, [self.max_q]*len_]
-
-        part = (self.min_vm < vm_pu) & (vm_pu <= self.min_vm + self.delta_vm)
-        min_max_q[part] = np.c_[-self.linear_factor_ind * (vm_pu[part]-self.min_vm),
-                                [self.max_q]*sum(part)]
-
-        part = (self.min_vm+self.delta_vm < vm_pu) & (vm_pu <= self.max_vm-self.delta_vm)
-        min_max_q[part] = np.repeat(np.array([[self.min_q, self.max_q]]), sum(part), axis=0)
-
-        part = (self.max_vm-self.delta_vm < vm_pu) & (vm_pu <= self.max_vm)
-        min_max_q[part] = np.c_[[self.min_q]*sum(part),
-                                self.linear_factor_cap * (-vm_pu[part]+self.max_vm)]
-
-        return min_max_q
 
 class PQVArea4110(BasePQVArea):
-    def __init__(self, min_q=-0.328684, max_q=0.328684):
-        # alternative to [-0.328684, 0.328684] is [-0.484322, 0.484322] with allowed p reduction
-        # outside [-0.328684, 0.328684]
+    def __init__(self):
         self.pq_area = PQArea4110()
-        self.qv_area = QVArea4110(min_q, max_q)
+        self.qv_area = QVArea4110()
 
 """ LV DERs: """
 
 
-class PQArea4105(BaseArea):
+class PQArea4105(PQAreaPOLYGON):
     """
     This class models the PQ area of flexible Q for low-voltage plants according to VDE AR-N-4105.
+    Plants with S_E,max <= 4.6 kVA should apply variant 1 while S_E,max > 4.6 kVA should apply
+    variant 2.
+
+    Note: To be in line with the other VDE AR N standard (meaning that all values are relative to
+    p_{b,install}), the free area between the minimial reactive power requirements and the maximum
+    apparent power of the inverter is not modeled as 'in_area'.
     """
-    def __init__(self, min_q=-0.328684, max_q=0.328684):
-        self.min_q, self.max_q = min_q, max_q
-        self.linear_factor_ind = self.min_q / 0.9
-        self.linear_factor_cap = self.max_q / 0.9
-
-    def in_area(self, p, q, vm_pu=None):
-        return ~((p < 0.1) | ((q < (p-0.1)*self.linear_factor_ind) |
-                              (q > (p-0.1)*self.linear_factor_cap)))
-
-    def q_flexibility(self, p, vm_pu=None):
-        min_max_q = np.zeros((len(p), 2))
-        min_max_q[p > 0.1] = np.c_[(p-0.1)*self.linear_factor_ind, (p-0.1)*self.linear_factor_cap]
-        return min_max_q
+    def __init__(self, variant):
+        if variant == 1:
+            p_points = (0., 0.95, 0.95, 0.)
+            q_points = (0., -0.328684, 0.328684, 0.)
+        elif variant == 2:
+            p_points = (0., 0.9, 0.9, 0.)
+            q_points = (0., -0.484322, 0.484322, 0.)
+        else:
+            raise ValueError(f"{variant=}")
+        super().__init__(p_points, q_points)
 
 
-class QVArea4105(BaseArea):
+class QVArea4105(QVAreaPOLYGON):
     """
     This class models the QV area of flexible Q for low-voltage plants according to VDE AR-N-4105.
-    cosphi values are applied positive for overexcited=voltage increasing behavior and negative for
-    underexcited=voltage decreasing behavior.
+    Plants with S_E,max <= 4.6 kVA should apply variant 1 while S_E,max > 4.6 kVA should apply
+    variant 2.
     """
-    def __init__(self, min_cosphi, max_cosphi):
-        pos_cosphis = cosphi_to_pos([min_cosphi, max_cosphi])
-        self.min_cosphi, self.max_cosphi = pos_cosphis[0], pos_cosphis[1]
-        self.min_vm, self.max_vm = 0.9, 1.1
-        self.delta_vm = 0.05
-        self.linear_factor_ind = (1 - self.min_cosphi) / self.delta_vm
-        self.linear_factor_cap = (1 - self.max_cosphi) / self.delta_vm
-
-    def q_flexibility(self, p, vm_pu):
-
-        # part = vm_pu > self.max_vm
-        len_ = len(vm_pu)
-        min_max_cosphi = np.c_[[self.min_cosphi]*len_, [1]*len_]
-
-        part = vm_pu < self.min_vm
-        len_ = sum(part)
-        min_max_cosphi[part] = np.c_[[1]*len_, [self.max_cosphi]*len_]
-
-        part = (self.min_vm < vm_pu) & (vm_pu <= self.min_vm + self.delta_vm)
-        min_max_cosphi[part] = np.c_[1 - self.linear_factor_ind * (vm_pu[part]-self.min_vm),
-                                     [self.max_cosphi]*sum(part)]
-
-        part = (self.min_vm+self.delta_vm < vm_pu) & (vm_pu <= self.max_vm-self.delta_vm)
-        min_max_cosphi[part] = np.repeat(np.array([[self.min_cosphi, self.max_cosphi]]), sum(part),
-                                         axis=0)
-
-        part = (self.max_vm-self.delta_vm < vm_pu) & (vm_pu <= self.max_vm)
-        min_max_cosphi[part] = np.c_[[self.min_cosphi]*sum(part),
-                                     1 - self.linear_factor_cap * (self.max_vm-vm_pu[part])]
-
-        min_max_cosphi = cosphi_from_pos(min_max_cosphi)
-
-        # convert cosphi values into q values
-        min_max_q = np.tan(np.arccos(min_max_cosphi))
-        return min_max_q
+    def __init__(self, variant):
+        if variant == 1:
+            q_points =  (0. , -0.328684, -0.328684, 0. , 0.328684, 0.328684, 0. )
+            vm_points = (0.9, 0.95     , 1.1      , 1.1, 1.05    , 0.9     , 0.9)
+        elif variant == 2:
+            q_points =  (0. , -0.484322, -0.484322, 0. , 0.484322, 0.484322, 0. )
+            vm_points = (0.9, 0.95     , 1.1      , 1.1, 1.05    , 0.9     , 0.9)
+        else:
+            raise ValueError(f"{variant=}")
+        super().__init__(q_points, vm_points)
 
 
 class PQVArea4105(BasePQVArea):
     """
     This class models the PQV area of flexible Q for low-voltage plants according to VDE AR-N-4105.
-    For convenience issues, the reactive power minimum and maximum of the QV Area is defined by
-    cosphi values (pos. values -> overexcited, voltage increasing,
-    neg. values -> underexcited, voltage decreasing).
+    Plants with S_E,max <= 4.6 kVA should apply variant 1 while S_E,max > 4.6 kVA should apply
+    variant 2.
     """
-    def __init__(self, min_cosphi, max_cosphi, min_q=-0.328684, max_q=0.328684):
-        self.pq_area = PQArea4105(min_q=min_q, max_q=max_q)
-        self.qv_area = QVArea4105(min_cosphi, max_cosphi)
+    def __init__(self, variant, min_cosphi, max_cosphi):
+        self.pq_area = PQArea4105(variant)
+        self.qv_area = QVArea4105(variant)
 
 
 if __name__ == "__main__":

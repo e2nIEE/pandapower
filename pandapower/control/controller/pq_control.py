@@ -82,10 +82,6 @@ class PQController(ConstControl):
         self.q_profile = None
         self.ts_absolute = ts_absolute
 
-        if not self.ts_absolute and self.sn_mva.isnull().any():
-            logger.warning(f"There are PQ controlled elements with NaN sn_mva values, "
-                           f"although {ts_absolute=}.")
-
         # Init variables for convergence check
         self.max_p_error = max_p_error
         self.max_q_error = max_q_error
@@ -135,6 +131,7 @@ class PQController(ConstControl):
         retrieved from the DataSource. self.profile_scale in turn is being
         passed to get_time_step_value() and applied by the DataSource.
         """
+
         if self.data_source is not None:
             if self.p_profile or self.p_profile == 0:
                 self.p_mw = self.p_ac * \
@@ -149,6 +146,8 @@ class PQController(ConstControl):
                                                                    scale_factor=self.profile_scale)
 
             if not self.ts_absolute:
+                if self.sn_mva.isnull().any():
+                    logger.error(f"There are PQ controlled elements with NaN sn_mva values.")
                 self.p_mw = self.p_mw * self.sn_mva
                 self.q_mvar = self.q_mvar * self.sn_mva
 
