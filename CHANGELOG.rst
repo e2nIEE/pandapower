@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2024-..-..
 -------------------------------
+- [FIXED] error during unbalanced powerflow due to out of service external grids
 
 [2.14.6] - 2024-04-02
 -------------------------------
