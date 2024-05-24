@@ -7,71 +7,80 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-from pandaplan.core.control.controller.der_control import *
-
-# Verify functions
-def verify_pq_area(pq_area, title=None, ax=None, saturate_sn_mva:float=np.nan, circle_segment=90):
+def plot_pq_area(pq_area, **kwargs):
     """
     Assumption: there is no q restriction at vm = 1 pu
     """
-    p = np.linspace(0, 1, 200)
-    min_max_q = pq_area.q_flexibility(p=p, vm=1)
-    plot_pq_area(p, min_max_q, title, ax, saturate_sn_mva=saturate_sn_mva,
-                 circle_segment=circle_segment)
+    p_samples = kwargs.pop("p_samples", None)
+    if p_samples is None:
+        p_samples = np.linspace(0, 1, 200)
+
+    min_max_q = pq_area.q_flexibility(p=p_samples, vm=1)
+
+    _plot_pq_area(min_max_q, p_samples=p_samples, **kwargs)
 
 
-def verify_qv_area(qv_area, title=None, p=1, ax=None, prune_to_flexibility=False):
-    """
-    Assumption: all relevant information is in vm = 0.8 .. 1.2 pu
-    """
-    vm = np.linspace(0.8, 1.2, 200)
-    min_max_q = qv_area.q_flexibility(p=p, vm=vm)
-    len_ = min_max_q.shape[0]
-    if prune_to_flexibility:
-        start = min(np.arange(len_, dtype=int)[~np.isclose(min_max_q[:, 0], min_max_q[0, 0])])-1
-        stop = max(np.arange(len_, dtype=int)[~np.isclose(min_max_q[:, 1], min_max_q[-1, 1])])+2
-        vm = vm[start:stop]
-        min_max_q = min_max_q[start:stop, :]
-    plot_qv_area(vm, min_max_q, title, ax)
-
-
-def plot_pq_area(p, min_max_q, title=None, ax=None, saturate_sn_mva:float=np.nan, circle_segment=90):
+def _plot_pq_area(min_max_q, title=None, ax=None, saturate_sn_pu:float=np.nan, circle_segment=90,
+                  p_samples=None):
+    if p_samples is None:
+        p_samples = np.linspace(0, 1, 200)
     if ax is None:
         plt.figure()
         ax = plt.gca()
-    ax.plot(min_max_q[:, 0], p, c="blue", alpha=0.9, label="$Q_{min}$")
-    ax.plot(min_max_q[:, 1], p, c="red", alpha=0.9, label="$Q_{max}$")
+    ax.plot(min_max_q[:, 0], p_samples, c="blue", alpha=0.9, label="$Q_{min}$")
+    ax.plot(min_max_q[:, 1], p_samples, c="red", alpha=0.9, label="$Q_{max}$")
     ax.set_xlabel(r"underexcited $\leftarrow------ Q/S_N ------\rightarrow$ overexcited")
     ax.set_ylabel("$P/S_N$")
     ax.legend()
     ax.grid(alpha=0.8)
     if title is not None:
         ax.set_title(title)
-    ax.set_ylim(p.min(), p.max())
+    ax.set_ylim(p_samples.min(), p_samples.max())
 
-    if not np.isnan(saturate_sn_mva):
-        x, y = generate_circle_segment(0, 0, saturate_sn_mva, -circle_segment, circle_segment, 1)
-        ax.plot(y, x, '--k', label='$S_{max}$')
-        y_circ = np.sqrt(saturate_sn_mva**2 - p**2)
+    if not np.isnan(saturate_sn_pu):
+        # the output x, y of generate_circle_segment() is used in reverse, since a segment around
+        # 0 degree => east is used instead of around north
+        y, x = generate_circle_segment(0, 0, saturate_sn_pu, -circle_segment, circle_segment, 1)
+        ax.plot(x, y, '--k', label='$S_{max}$')
+        y_circ = np.sqrt(saturate_sn_pu**2 - p_samples**2)
+        x_diff = max(x) - min(x)
+        ax.set_xlim(min(x)-0.05*x_diff, max(x)+0.05*x_diff)
     else:
-        y_circ = np.ones(p.shape)
-    ax.fill_betweenx(p, np.max(np.c_[min_max_q[:, 0], -y_circ], axis=1),
+        y_circ = np.ones(p_samples.shape)
+        x_diff = max(min_max_q[:, 1]) - min(min_max_q[:, 0])
+        ax.set_xlim(min(min_max_q[:, 0])-0.05*x_diff, max(min_max_q[:, 1])+0.05*x_diff)
+    ax.fill_betweenx(p_samples, np.max(np.c_[min_max_q[:, 0], -y_circ], axis=1),
                      np.min(np.c_[min_max_q[:, 1], y_circ], axis=1), color="green", alpha=0.2)
     plt.tight_layout()
 
 
-def plot_qv_area(vm, min_max_q, title=None, ax=None):
+def plot_qv_area(qv_area, title=None, ax=None, prune_to_flexibility=False, vm_samples=None):
+    if vm_samples is None:
+        vm_samples = np.linspace(0.8, 1.2, 200)
+
+    min_max_q = qv_area.q_flexibility(p=0.5, vm=vm_samples) # p should be irrelevant since
+    # it is about QV areas, not about PQV areas
+
+    len_ = min_max_q.shape[0]
+
+    if prune_to_flexibility:
+        start = min(np.arange(len_, dtype=int)[~np.isclose(min_max_q[:, 0], min_max_q[0, 0])])-1
+        stop = max(np.arange(len_, dtype=int)[~np.isclose(min_max_q[:, 1], min_max_q[-1, 1])])+2
+        vm_samples = vm_samples[start:stop]
+        min_max_q = min_max_q[start:stop, :]
+
+    # --- do plotting
     if ax is None:
         plt.figure()
         ax = plt.gca()
 
-    ax.plot(vm, min_max_q[:, 0], c="blue", alpha=0.9, label="q_min")
-    ax.plot(vm, min_max_q[:, 1], c="red", alpha=0.9, label="q_max")
+    ax.plot(vm_samples, min_max_q[:, 0], c="blue", alpha=0.9, label="q_min")
+    ax.plot(vm_samples, min_max_q[:, 1], c="red", alpha=0.9, label="q_max")
     ax.set_xlabel("$v_m$ in pu")
     ax.set_ylabel("$Q/S_N$")
     ax.legend()
     ax.grid(alpha=0.8)
-    ax.fill_between(vm, min_max_q[:, 0], min_max_q[:, 1], color="green", alpha=0.2)
+    ax.fill_between(vm_samples, min_max_q[:, 0], min_max_q[:, 1], color="green", alpha=0.2)
 
     if title is not None:
         ax.set_title(title)
@@ -82,8 +91,8 @@ def generate_circle_segment(center_x, center_y, radius, start, stop, step):
     """
     generates coordinates for a semicircle, centered at center_x, center_y
     generates x and y coordinates for a segment of a circle, centered at center_x, center_y. The
-    segment is given in degree.
-    Which degree means wich direction?
+    segment (start, stop, step) is given in degree.
+    Which degree means which direction?
     0: "east", 90: "north", 180: "west", 270: "south"
 
     Example
@@ -107,20 +116,22 @@ def generate_circle_segment(center_x, center_y, radius, start, stop, step):
 
 
 if __name__ == "__main__":
-    pq_area = PQVArea4120V1()
-    verify_pq_area(pq_area, "PQVArea4120V1")
+    import pandapower.control.controller.DERController as DERModels
+
+    pq_area = DERModels.PQVArea4120V1()
+    plot_pq_area(pq_area, "PQVArea4120V1")
     plt.show()
-    verify_qv_area(pq_area, "PQVArea4120V1")
+    plot_qv_area(pq_area, "PQVArea4120V1")
     plt.show()
 
-    pq_area = PQVArea4120V2()
-    verify_pq_area(pq_area, "PQVArea4120V2")
+    pq_area = DERModels.PQVArea4120V2()
+    plot_pq_area(pq_area, "PQVArea4120V2")
     plt.show()
-    verify_qv_area(pq_area, "PQVArea4120V2")
+    plot_qv_area(pq_area, "PQVArea4120V2")
     plt.show()
 
-    pq_area = PQVArea4120V3()
-    verify_pq_area(pq_area, "PQVArea4120V3")
+    pq_area = DERModels.PQVArea4120V3()
+    plot_pq_area(pq_area, "PQVArea4120V3")
     plt.show()
-    verify_qv_area(pq_area, "PQVArea4120V3")
+    plot_qv_area(pq_area, "PQVArea4120V3")
     plt.show()

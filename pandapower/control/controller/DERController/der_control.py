@@ -194,7 +194,8 @@ class DERController(PQController):
 
     def _saturate_sn_mva_step(self, p, q, vm):
         # Saturation on SnMVA according to priority mode
-        to_saturate = p**2 + q**2 > self.saturate_sn_mva**2
+        sat_s = self.saturate_sn_mva / self.sn_mva # sat_s is relative to sn_mva
+        to_saturate = p**2 + q**2 > sat_s**2
         if any(to_saturate):
             if self.q_prio:
                 if (
@@ -206,11 +207,11 @@ class DERController(PQController):
                     logger.warning(f"Such kind of saturation is performed that is not in line with"
                                    " VDE AR N 4110: p reduction within 0.95 < vm < 1.05 and "
                                    "0.95 < cosphi.")
-                q[to_saturate] = np.clip(q[to_saturate], -self.saturate_sn_mva, self.saturate_sn_mva)
-                p[to_saturate] = np.sqrt(self.saturate_sn_mva**2 - q[to_saturate]**2)
+                q[to_saturate] = np.clip(q[to_saturate], -sat_s[to_saturate], sat_s[to_saturate])
+                p[to_saturate] = np.sqrt(sat_s[to_saturate]**2 - q[to_saturate]**2)
             else:
-                p[to_saturate] = np.clip(p[to_saturate], 0, self.saturate_sn_mva)
-                q[to_saturate] = np.sqrt(self.saturate_sn_mva**2 - p[to_saturate]**2) * np.sign(
+                p[to_saturate] = np.clip(p[to_saturate], 0, sat_s[to_saturate])
+                q[to_saturate] = np.sqrt(sat_s[to_saturate]**2 - p[to_saturate]**2) * np.sign(
                     q[to_saturate])
         return p, q
 

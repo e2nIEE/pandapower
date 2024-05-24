@@ -44,20 +44,42 @@ class BaseArea(BaseModel):
 
 class BasePQVArea(BaseArea):
     """ Defines functionality common for mulitple PQVArea classes. """
+    def __init__(self, raise_merge_overlap=True):
+        self.raise_merge_overlap = raise_merge_overlap
+
     def in_area(self, p, q, vm):
         return self.pq_area.in_area(p, q, vm) & self.qv_area.in_area(p, q, vm)
 
     def q_flexibility(self, p, vm):
+        # PQ area flexibility
         min_max_q = self.pq_area.q_flexibility(p)
-        min_max_q_qv = self.qv_area.q_flexibility(None, vm)
-        min_max_q[:, 0] = np.maximum(min_max_q[:, 0], min_max_q_qv[:, 0])
-        min_max_q[:, 1] = np.minimum(min_max_q[:, 1], min_max_q_qv[:, 1])
         no_flexibility = min_max_q[:, 0] > min_max_q[:, 1]
         if n_no_flex := sum(no_flexibility):
-            logger.debug(f"For {n_no_flex} elements, min_q and max_q were set to the same point of "
-                         "no flexibility.")
-            min_max_q[no_flexibility, :] = np.tile(np.sum(min_max_q[no_flexibility], axis=1)/2,
-                                                   (1, 2))
+            raise ValueError(f"For {n_no_flex} elements, the q flexibility of the PQ area provides "
+                             "max_q < min_q.")
+
+        # QV area flexibility
+        min_max_q_qv = self.qv_area.q_flexibility(None, vm)
+        no_flexibility = min_max_q_qv[:, 0] > min_max_q_qv[:, 1]
+        if n_no_flex := sum(no_flexibility):
+            raise ValueError(f"For {n_no_flex} elements, the q flexibility of the QV area provides "
+                             "max_q < min_q.")
+
+        # merge q flexibility of pq and qv areas
+        min_max_q[:, 0] = np.maximum(min_max_q[:, 0], min_max_q_qv[:, 0])
+        min_max_q[:, 1] = np.minimum(min_max_q[:, 1], min_max_q_qv[:, 1])
+
+        no_flexibility = min_max_q[:, 0] > min_max_q[:, 1]
+        if n_no_flex := sum(no_flexibility):
+            error_msg = (f"For {n_no_flex} elements, max_q > min_q result from considering both "
+                         "the PQ area flexibility and the QV area flexibility.")
+            if self.raise_merge_overlap:
+                raise ValueError(error_msg)
+            else:
+                logger.error(error_msg)
+            min_max_q[no_flexibility, 0] = np.sum(min_max_q[no_flexibility], axis=1)/2
+            min_max_q[no_flexibility, 1] = min_max_q[no_flexibility, 0]
+
         return min_max_q
 
 
@@ -91,8 +113,14 @@ class PQAreaPOLYGON(BaseArea):
         def _q_flex(p):
             line = LineString([(p, -1), (p, 1)])
             if line.intersects(self.polygon):
-                return [point[1] for point in LineString(
+                points = [point[1] for point in LineString(
                     [(p, -1), (p, 1)]).intersection(self.polygon).coords]
+                if len(points) == 1:
+                    return [points[0]]*2
+                elif len(points) == 2:
+                    return points
+                else:
+                    raise ValueError(f"{len(points)=} is wrong. 2 or 1 is expected.")
             else:
                 return [0, 0]
         return np.r_[[_q_flex(pi) for pi in p]]
@@ -147,7 +175,8 @@ class PQVAreaPOLYGON(BasePQVArea):
     ...                q_qv_points=(0.1, 0.410775, 0.410775, -0.328684, -0.328684, -0.1, 0.1),
     ...                vm_points=(0.9, 1.05, 1.1, 1.1, 1.05, 0.9, 0.9))
     """
-    def __init__(self, p_points, q_pq_points, q_qv_points, vm_points):
+    def __init__(self, p_points, q_pq_points, q_qv_points, vm_points, raise_merge_overlap=True):
+        super().__init__(raise_merge_overlap=raise_merge_overlap)
         self.pq_area = PQAreaPOLYGON(p_points, q_pq_points)
         self.qv_area = QVAreaPOLYGON(q_qv_points, vm_points)
 
@@ -184,7 +213,7 @@ class PQArea4120(BaseArea):
     It is used to be combined with Voltage dependencies in PQVArea4120V1, PQVArea4120V2 and
     PQVArea4120V3.
     """
-    def __init__(self, min_q, max_q, version=2018):
+    def __init__(self, min_q, max_q, version=2018, **kwargs):
         supported_versions = [2015, 2018]
         p_points = {2015: [0.1, 0.2], 2018: [0.05, 0.2]}
         if version not in supported_versions:
@@ -193,33 +222,34 @@ class PQArea4120(BaseArea):
         self.version = version
         self.p_points = p_points[version]
         self.min_q, self.max_q = min_q, max_q
+        self.q_max_under_p_point = kwargs.get("q_max_under_p_point", 0.)
 
-        self.linear_factor_ind = (self.min_q + self.p_points[0]) / (
+        self.linear_factor_ind = (self.min_q + 0.1) / (
             self.p_points[1] - self.p_points[0])
-        self.linear_factor_cap = (self.max_q - self.p_points[0]) / (
+        self.linear_factor_cap = (self.max_q - 0.1) / (
             self.p_points[1] - self.p_points[0])
 
-    def in_area(self, p, q, vm=None, q_max_under_p_point=0.):
+    def in_area(self, p, q, vm=None):
         is_in_area = np.ones(len(p), dtype=bool)
-        is_in_area[(p < self.p_points[0]) & ((q < -0.05) | (q > q_max_under_p_point))] = False
+        is_in_area[(p < self.p_points[0]) & ((q < -0.05) | (q > self.q_max_under_p_point))] = False
         if all(~is_in_area):
             return is_in_area
         is_in_area[(p > self.p_points[1]) & ((q < self.min_q) | (q > self.max_q))] = False
         if all(~is_in_area):
             return is_in_area
-        is_in_area[(q < -self.p_points[0]-(p-self.p_points[0])*self.linear_factor_ind) | \
-            (q > self.p_points[0]+(p-self.p_points[0])*self.linear_factor_cap)] = False
+        is_in_area[(q < -0.1-(p-self.p_points[0])*self.linear_factor_ind) | \
+            (q > 0.1+(p-self.p_points[0])*self.linear_factor_cap)] = False
         return is_in_area
 
     def q_flexibility(self, p, vm=None):
         q_flex = np.c_[[self.min_q]*len(p), [self.max_q]*len(p)]
 
         part = p < self.p_points[1]
-        q_flex[part] = np.c_[-self.p_points[0]+(p[part]-self.p_points[0])*self.linear_factor_ind,
-                             self.p_points[0]+(p[part]-self.p_points[0])*self.linear_factor_cap]
+        q_flex[part] = np.c_[-0.1+(p[part]-self.p_points[0])*self.linear_factor_ind,
+                             0.1+(p[part]-self.p_points[0])*self.linear_factor_cap]
 
         part = p < self.p_points[0]
-        q_flex[part] = np.c_[[-0.05]*sum(part), [0]*sum(part)]
+        q_flex[part] = np.c_[[-0.05]*sum(part), [self.q_max_under_p_point]*sum(part)]
 
         return q_flex
 
@@ -268,7 +298,8 @@ class PQVArea4120Base(BasePQVArea):
     This is the base class for the three variants of VDE AR-N-4120. This class is not for direct
     application by the user.
     """
-    def __init__(self, min_q, max_q, version=2018):
+    def __init__(self, min_q, max_q, version=2018, raise_merge_overlap=True):
+        super().__init__(raise_merge_overlap=raise_merge_overlap)
         self.pq_area = PQArea4120(min_q, max_q, version=version)
         self.qv_area = QVArea4120(min_q, max_q)
 
@@ -277,16 +308,18 @@ class PQVArea4120V1(PQVArea4120Base):
     This class models the PQV area of flexible Q for high-voltage plants according to variant 1 of
     VDE AR-N-4120.
     """
-    def __init__(self, version=2018):
-        super().__init__(-0.227902, 0.484322, version=version)
+    def __init__(self, version=2018, raise_merge_overlap=True):
+        super().__init__(-0.227902, 0.484322, version=version,
+                         raise_merge_overlap=raise_merge_overlap)
 
 class PQVArea4120V2(PQVArea4120Base):
     """
     This class models the PQV area of flexible Q for high-voltage plants according to variant 2 of
     VDE AR-N-4120.
     """
-    def __init__(self, version=2018):
-        super().__init__(-0.328684, 0.410775, version=version)
+    def __init__(self, version=2018, raise_merge_overlap=True):
+        super().__init__(-0.328684, 0.410775, version=version,
+                         raise_merge_overlap=raise_merge_overlap)
 
 
 class PQVArea4120V3(PQVArea4120Base):
@@ -294,8 +327,9 @@ class PQVArea4120V3(PQVArea4120Base):
     This class models the PQV area of flexible Q for high-voltage plants according to variant 3 of
     VDE AR-N-4120.
     """
-    def __init__(self, version=2018):
-        super().__init__(-0.410775, 0.328684, version=version)
+    def __init__(self, version=2018, raise_merge_overlap=True):
+        super().__init__(-0.410775, 0.328684, version=version,
+                         raise_merge_overlap=raise_merge_overlap)
 
 
 """ EHV DERs: """
@@ -306,14 +340,8 @@ class PQArea4130(PQArea4120):
     It is used to be combined with Voltage dependencies in PQVArea4130V1, PQVArea4130V2 and
     PQVArea4130V3.
     """
-    def in_area(self, p, q, vm=None):
-        return super().in_area(p, q, vm=vm, q_max_under_p_point=0.05)
-
-    def q_flexibility(self, p, vm=None):
-        q_flex = super().q_flexibility(p, vm)
-        part = p < 0.1
-        q_flex[part] = np.c_[[-0.05]*sum(part), [0.05]*sum(part)]
-        return q_flex
+    def __init__(self, min_q, max_q):
+        super().__init__(min_q, max_q, version=2018, q_max_under_p_point=0.05)
 
 
 class QVArea4130(QVArea4120):
@@ -371,8 +399,9 @@ class PQVArea4130Base(BasePQVArea):
     This is the base class for the three variants of VDE AR-N-4130. This class is not for direct
     application by the user.
     """
-    def __init__(self, min_q, max_q, variant, version=2018, vn=380):
-        self.pq_area = PQArea4130(min_q, max_q, version=version)
+    def __init__(self, min_q, max_q, variant, vn=380, raise_merge_overlap=True):
+        super().__init__(raise_merge_overlap=raise_merge_overlap)
+        self.pq_area = PQArea4130(min_q, max_q)
         self.qv_area = QVArea4130(min_q, max_q, vn=vn, variant=variant)
 
 
@@ -381,16 +410,16 @@ class PQVArea4130V1(PQVArea4130Base):
     This class models the PQV area of flexible Q for extra high voltage power plants according to
     variant 1 of VDE AR-N-4130.
     """
-    def __init__(self, version=2018, vn=380):
-        super().__init__(-0.227902, 0.484322, 1, version=version, vn=vn)
+    def __init__(self, vn=380, raise_merge_overlap=True):
+        super().__init__(-0.227902, 0.484322, 1, vn=vn, raise_merge_overlap=raise_merge_overlap)
 
 class PQVArea4130V2(PQVArea4130Base):
     """
     This class models the PQV area of flexible Q for extra high voltage power plants according to
     variant 2 of VDE AR-N-4130.
     """
-    def __init__(self, version=2018, vn=380):
-        super().__init__(-0.328684, 0.410775, 2, version=version, vn=vn)
+    def __init__(self, vn=380, raise_merge_overlap=True):
+        super().__init__(-0.328684, 0.410775, 2, vn=vn, raise_merge_overlap=raise_merge_overlap)
 
 
 class PQVArea4130V3(PQVArea4130Base):
@@ -398,8 +427,8 @@ class PQVArea4130V3(PQVArea4130Base):
     This class models the PQV area of flexible Q for extra high voltage power plants according to
     variant 3 of VDE AR-N-4130.
     """
-    def __init__(self, version=2018, vn=380):
-        super().__init__(-0.410775, 0.328684, 3, version=version, vn=vn)
+    def __init__(self, vn=380, raise_merge_overlap=True):
+        super().__init__(-0.410775, 0.328684, 3, vn=vn, raise_merge_overlap=raise_merge_overlap)
 
 
 """ MV DERs: """
@@ -407,8 +436,8 @@ class PQVArea4130V3(PQVArea4130Base):
 
 class PQArea4110(PQAreaPOLYGON):
     def __init__(self):
-        p_points = (0.05, 1, 1, 0.05, 0.0)
-        q_points = (-0.01961505, -0.484322, 0.484322, 0.01961505, -0.01961505)
+        p_points = (-1e-7,  0.05, 0.05       , 1.       , 1.      , 0.05      , 0.05, 1e-7, -1e-7)
+        q_points = (-1e-7, -1e-7, -0.01961505, -0.484322, 0.484322, 0.01961505, 0.  , 1e-7, -1e-7)
         super().__init__(p_points, q_points)
 
 
@@ -424,7 +453,8 @@ class QVArea4110(QVAreaPOLYGON):
 
 
 class PQVArea4110(BasePQVArea):
-    def __init__(self):
+    def __init__(self, raise_merge_overlap=True):
+        super().__init__(raise_merge_overlap=raise_merge_overlap)
         self.pq_area = PQArea4110()
         self.qv_area = QVArea4110()
 
@@ -443,10 +473,14 @@ class PQArea4105(PQAreaPOLYGON):
     """
     def __init__(self, variant):
         if variant == 1:
-            p_points = (0., 0.95, 0.95, 0.)
+            # p_points = (0., 0.95, 0.95, 0.)
+            # q_points = (0., -0.312, 0.312, 0.)
+            p_points = (0., 1, 1, 0.)
             q_points = (0., -0.328684, 0.328684, 0.)
         elif variant == 2:
-            p_points = (0., 0.9, 0.9, 0.)
+            # p_points = (0., 0.9, 0.9, 0.)
+            # q_points = (0., -0.36, 0.36, 0.)
+            p_points = (0., 1, 1, 0.)
             q_points = (0., -0.484322, 0.484322, 0.)
         else:
             raise ValueError(f"{variant=}")
@@ -477,7 +511,8 @@ class PQVArea4105(BasePQVArea):
     Plants with S_E,max <= 4.6 kVA should apply variant 1 while S_E,max > 4.6 kVA should apply
     variant 2.
     """
-    def __init__(self, variant, min_cosphi, max_cosphi):
+    def __init__(self, variant, raise_merge_overlap=True):
+        super().__init__(raise_merge_overlap=raise_merge_overlap)
         self.pq_area = PQArea4105(variant)
         self.qv_area = QVArea4105(variant)
 
