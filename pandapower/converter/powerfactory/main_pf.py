@@ -91,7 +91,7 @@ def exit_gracefully(app, input_panel, msg, is_err):
 
 def run_export(app, pv_as_slack, pf_variable_p_loads, pf_variable_p_gen, scale_feeder_loads=False,
                flag_graphics='GPS', handle_us="Deactivate", save_as="JSON", tap_opt="nntap",
-               export_controller=True, max_iter=None):
+               export_controller=True, max_iter=None, create_sections=True):
     # gather objects from the project
     logger.info('gathering network elements')
     dict_net = pef.create_network_dict(app, flag_graphics)
@@ -104,11 +104,10 @@ def run_export(app, pv_as_slack, pf_variable_p_loads, pf_variable_p_gen, scale_f
     logger.info('starting import to pandapower')
     app.SetAttributeModeInternal(1)
 
-    net = from_pf(dict_net, pv_as_slack=pv_as_slack,
-                  pf_variable_p_loads=pf_variable_p_loads,
-                  pf_variable_p_gen=pf_variable_p_gen, flag_graphics=flag_graphics,
-                  tap_opt=tap_opt, export_controller=export_controller,
-                  handle_us=handle_us, max_iter=max_iter)
+    net = from_pf(dict_net, pv_as_slack=pv_as_slack, pf_variable_p_loads=pf_variable_p_loads,
+                  pf_variable_p_gen=pf_variable_p_gen, flag_graphics=flag_graphics, tap_opt=tap_opt,
+                  export_controller=export_controller, handle_us=handle_us, max_iter=max_iter,
+                  create_sections=create_sections)
     # save a flag, whether the PowerFactory load flow failed
     app.SetAttributeModeInternal(0)
     net["pf_converged"] = not pf_load_flow_failed
@@ -134,7 +133,7 @@ def run_verify(net, load_flow_params=None):
 def calc(app, input_panel, entry_path_dst, entry_fname, pv_as_slack, export_controller,
          replace_zero_branches, min_ohm_entry, is_to_verify, is_to_diagnostic, is_debug,
          pf_variable_p_loads, pf_variable_p_gen, flag_graphics, handle_us,
-         save_as, tap_opt, max_iter_entry):
+         save_as, tap_opt, max_iter_entry, create_sections_entry):
     # check if logger is to be in debug mode
     if is_debug():
         pflog.set_PF_level(root_logger, app_handler, 'DEBUG')
@@ -165,7 +164,7 @@ def calc(app, input_panel, entry_path_dst, entry_fname, pv_as_slack, export_cont
         logger.info("max_iter: %s" % max_iter)
         net = run_export(app, pv_as_slack(), pf_variable_p_loads(), pf_variable_p_gen(), scale_feeder_loads=False,
                          flag_graphics=flag_graphics(), handle_us=handle_us(), save_as=save_as(), tap_opt=tap_opt(),
-                         export_controller=export_controller(), max_iter=max_iter)
+                         export_controller=export_controller(), max_iter=max_iter, create_sections=create_sections_entry())
         if replace_zero_branches():
             #pp.replace_zero_branches_with_switches(net, min_length_km=1e-2,
             #                                       min_r_ohm_per_km=1.5e-3, min_x_ohm_per_km=1.5e-3,

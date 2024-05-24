@@ -1,0 +1,43 @@
+{"type": "FeatureCollection", "features": [{
+  "type": "Feature",
+  "id": "line-0",
+  "geometry": {
+    "type": "LineString",
+    "coordinates": [[1, 2], [3, 4]]
+  },
+  "properties": {
+    "pp_type": "line",
+    "pp_index": 0,
+    "name": "line1",
+    "std_type": "None",
+    "from_bus": 1.0,
+    "to_bus": 7.0,
+    "length_km": 1.0,
+    "r_ohm_per_km": 0.2067,
+    "x_ohm_per_km": 0.1897522,
+    "c_nf_per_km": 720.0,
+    "g_us_per_km": 0.0,
+    "max_i_ka": 0.328,
+    "df": 1.0,
+    "parallel": 1.0,
+    "type": "None",
+    "in_service": 1.0,
+    "ices": 0.389985}
+},
+{
+  "type": "Feature",
+  "id": "bus-1",
+  "geometry": {
+    "type": "Point",
+    "coordinates": [1.0, 2.0]
+  },
+  "properties": {
+    "pp_type": "bus",
+    "pp_index": 1,
+    "name": "bus2",
+    "vn_kv": 0.4,
+    "type": "b",
+    "zone": "None",
+    "in_service": 1.0
+  }
+}]}
