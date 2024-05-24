@@ -4,7 +4,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import logging
 import traceback
-from typing import Dict
+from typing import Dict, List
 
 import pandas as pd
 
@@ -43,7 +43,7 @@ class CimConverter:
     def merge_eq_sc_profile(self, cim_type: str, add_cim_type_column: bool = False) -> pd.DataFrame:
         return self.merge_eq_other_profiles(['sc'], cim_type, add_cim_type_column)
 
-    def merge_eq_other_profiles(self, other_profiles: list[str], cim_type: str,
+    def merge_eq_other_profiles(self, other_profiles: List[str], cim_type: str,
                                 add_cim_type_column: bool = False) -> pd.DataFrame:
         df = self.cim['eq'][cim_type]
         for other_profile in other_profiles:
