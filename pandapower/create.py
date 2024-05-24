@@ -5,9 +5,10 @@
 
 
 from operator import itemgetter
+from typing import Tuple, List, Union, Iterable
 
 import pandas as pd
-from numpy import nan, isnan, arange, dtype, isin, any as np_any, zeros, array, bool_, \
+from numpy import nan, isnan, arange, dtype, isin, any as np_any, array, bool_, \
     all as np_all, float64, intersect1d, unique as uni
 from pandas import isnull
 from pandas.api.types import is_object_dtype
@@ -52,7 +53,8 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                 ('vn_kv', 'f8'),
                 ('type', dtype(object)),
                 ('zone', dtype(object)),
-                ('in_service', 'bool'), ],
+                ('in_service', 'bool'),
+                ('geo', dtype(str))],
         "load": [("name", dtype(object)),
                  ("bus", "u4"),
                  ("p_mw", "f8"),
@@ -151,25 +153,25 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                   ("step", "u4"),
                   ("max_step", "u4"),
                   ("in_service", "bool")],
-        "svc":   [("name", dtype(object)),
-                  ("bus", "u4"),
-                  ("x_l_ohm", "f8"),
-                  ("x_cvar_ohm", "f8"),
-                  ("set_vm_pu", "f8"),
-                  ("thyristor_firing_angle_degree", "f8"),
-                  ("controllable", "bool"),
-                  ("in_service", "bool"),
-                  ("min_angle_degree", "f8"),
-                  ("max_angle_degree", "f8")],
-        "ssc":   [("name", dtype(object)),
-                  ("bus", "u4"),
-                  ("r_ohm", "f8"),
-                  ("x_ohm", "f8"),
-                  ("vm_internal_pu", "f8"),
-                  ("va_internal_degree", "f8"),
-                  ("set_vm_pu", "f8"),
-                  ("controllable", "bool"),
-                  ("in_service", "bool")],
+        "svc": [("name", dtype(object)),
+                ("bus", "u4"),
+                ("x_l_ohm", "f8"),
+                ("x_cvar_ohm", "f8"),
+                ("set_vm_pu", "f8"),
+                ("thyristor_firing_angle_degree", "f8"),
+                ("controllable", "bool"),
+                ("in_service", "bool"),
+                ("min_angle_degree", "f8"),
+                ("max_angle_degree", "f8")],
+        "ssc": [("name", dtype(object)),
+                ("bus", "u4"),
+                ("r_ohm", "f8"),
+                ("x_ohm", "f8"),
+                ("vm_internal_pu", "f8"),
+                ("va_internal_degree", "f8"),
+                ("set_vm_pu", "f8"),
+                ("controllable", "bool"),
+                ("in_service", "bool")],
         "ext_grid": [("name", dtype(object)),
                      ("bus", "u4"),
                      ("vm_pu", "f8"),
@@ -189,7 +191,8 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                  ("df", "f8"),
                  ("parallel", "u4"),
                  ("type", dtype(object)),
-                 ("in_service", 'bool')],
+                 ("in_service", 'bool'),
+                 ("geo", dtype(str))],
         "trafo": [("name", dtype(object)),
                   ("std_type", dtype(object)),
                   ("hv_bus", "u4"),
@@ -330,9 +333,9 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
             ('element', dtype(object)),
             ('reference_column', dtype(object)),
         ],
-        # geodata
-        "line_geodata": [("coords", dtype(object))],
-        "bus_geodata": [("x", "f8"), ("y", "f8"), ("coords", dtype(object))],
+        # geodata (now as line.geo, bus.geo)
+        # "line_geodata": [("coords", dtype(object))],
+        # "bus_geodata": [("x", "f8"), ("y", "f8"), ("coords", dtype(object))],
 
         # result tables
         "_empty_res_bus": [("vm_pu", "f8"),
@@ -381,18 +384,22 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
         "_empty_res_shunt": [("p_mw", "f8"),
                              ("q_mvar", "f8"),
                              ("vm_pu", "f8")],
-        "_empty_res_svc":   [("thyristor_firing_angle_degree", "f8"),
-                             ("x_ohm", "f8"),
-                             ("q_mvar", "f8"),
-                             ("vm_pu", "f8"),
-                             ("va_degree", "f8")],
-        "_empty_res_ssc":   [("q_mvar", "f8"),
-                             ("vm_internal_pu", "f8"),
-                             ("va_internal_degree", "f8"),
-                             ("vm_pu", "f8"),
-                             ("va_degree", "f8")],
+        "_empty_res_svc": [("thyristor_firing_angle_degree", "f8"),
+                           ("x_ohm", "f8"),
+                           ("q_mvar", "f8"),
+                           ("vm_pu", "f8"),
+                           ("va_degree", "f8")],
+        "_empty_res_ssc": [("q_mvar", "f8"),
+                           ("vm_internal_pu", "f8"),
+                           ("va_internal_degree", "f8"),
+                           ("vm_pu", "f8"),
+                           ("va_degree", "f8")],
         "_empty_res_switch": [("i_ka", "f8"),
-                              ("loading_percent", "f8")],
+                              ("loading_percent", "f8"),
+                              ("p_from_mw", "f8"),
+                              ("q_from_mvar", "f8"),
+                              ("p_to_mw", "f8"),
+                              ("q_to_mvar", "f8")],
         "_empty_res_impedance": [("p_from_mw", "f8"),
                                  ("q_from_mvar", "f8"),
                                  ("p_to_mw", "f8"),
@@ -556,8 +563,8 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                                   ("prot_type", dtype(object)),
                                   ("trip_melt", "bool"),
                                   ("act_param", dtype(object)),
-                                   ("act_param_val", "f8"),
-                                   ("trip_melt_time_s", "f8")],
+                                  ("act_param_val", "f8"),
+                                  ("trip_melt_time_s", "f8")],
 
         # internal
         "_ppc": None,
@@ -635,19 +642,22 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b", zone=N
     """
     index = _get_index_with_check(net, "bus", index)
 
-    entries = dict(zip(["name", "vn_kv", "type", "zone", "in_service"],
-                       [name, vn_kv, type, zone, bool(in_service)]))
-
-    _set_entries(net, "bus", index, True, **entries, **kwargs)
-
     if geodata is not None:
-        if len(geodata) != 2:
-            raise UserWarning("geodata must be given as (x, y) tuple")
-        net["bus_geodata"].loc[index, ["x", "y"]] = geodata
+        if isinstance(geodata, tuple):
+            if len(geodata) != 2:
+                raise UserWarning("geodata must be given as (x, y) tuple")
+            geo = f'{{"coordinates":[{geodata[0]},{geodata[1]}], "type":"Point"}}'
+        else:
+            raise UserWarning("geodata must be a valid coordinate tuple")
+    else:
+        geo = None
 
     if coords is not None:
-        net["bus_geodata"].at[index, "coords"] = None
-        net["bus_geodata"].at[index, "coords"] = coords
+        raise UserWarning("busbar plotting is not implemented fully and will likely be removed in the future")
+    entries = dict(zip(["name", "vn_kv", "type", "zone", "in_service", "geo"],
+                       [name, vn_kv, type, zone, bool(in_service), geo]))
+
+    _set_entries(net, "bus", index, True, **entries, **kwargs)
 
     # column needed by OPF. 0. and 2. are the default maximum / minimum voltages
     _set_value_if_not_nan(net, index, min_vm_pu, "min_vm_pu", "bus", default_val=0.)
@@ -676,10 +686,10 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
 
         **vn_kv** (float) - The grid voltage level.
 
-        **geodata** ((x,y)-tuple or list of tuples with length == nr_buses, default None) -
-        coordinates used for plotting
+        **geodata** ((x,y)-tuple or Iterable of (x, y)-tuples with length == nr_buses,
+            default None) - coordinates used for plotting
 
-        **type** (string, default "b") - Type of the bus. "n" - auxilary node,
+        **type** (string, default "b") - Type of the bus. "n" - auxiliary node,
         "b" - busbar, "m" - muff
 
         **zone** (string, None) - grid region
@@ -691,36 +701,49 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
         **min_vm_pu** (float, NAN) - Minimum bus voltage in p.u. - necessary for OPF
 
         **coords** (list (len=nr_buses) of list (len=2) of tuples (len=2), default None) - busbar
-        coordinates to plot the bus with multiple points. coords is typically a list of tuples
-        (start and endpoint of the busbar) - Example for 3 buses:
-        [[(x11, y11), (x12, y12)], [(x21, y21), (x22, y22)], [(x31, y31), (x32, y32)]]
+            coordinates to plot the bus with multiple points. coords is typically a list of tuples
+            (start and endpoint of the busbar) - Example for 3 buses:
+            [[(x11, y11), (x12, y12)], [(x21, y21), (x22, y22)], [(x31, y31), (x32, y32)]]
 
 
     OUTPUT:
         **index** (int) - The unique indices ID of the created elements
-
-    EXAMPLE:
-        create_bus(net, name = "bus1")
     """
     index = _get_multiple_index_with_check(net, "bus", index, nr_buses)
 
-    entries = {"vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "name": name}
+    def _geodata_to_geo_series(data: Union[Iterable[Tuple[float, float]], Tuple[int, int]]) -> List[str]:
+        geo = []
+        for g in data:
+            if isinstance(g, tuple):
+                if len(g) != 2:
+                    raise ValueError("geodata tuples must be of length 2")
+                x, y = g
+                geo.append(f'{{"coordinates": [{x}, {y}], "type": "Point"}}')
+            else:
+                raise ValueError("geodata must be iterable of tuples of (x, y) coordinates")
+        if len(geo) == 1:
+            geo = [geo[0]] * nr_buses
+        if len(geo) != nr_buses:
+            raise ValueError("geodata must be a single point or have the same length as nr_buses")
+        return geo
+
+    if geodata:
+        if isinstance(geodata, tuple) and (isinstance(geodata[0], int) or isinstance(geodata[0], float)):
+            geo = _geodata_to_geo_series([geodata])
+        else:
+            assert hasattr(geodata, "__iter__"), "geodata must be an iterable"
+            geo = _geodata_to_geo_series(geodata)
+    else:
+        geo = [None] * nr_buses
+
+    if coords:
+        raise UserWarning("busbar plotting is not implemented fully and will likely be removed in the future")
+
+    entries = {"vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "name": name, "geo": geo}
     _add_to_entries_if_not_nan(net, "bus", entries, index, "min_vm_pu", min_vm_pu)
     _add_to_entries_if_not_nan(net, "bus", entries, index, "max_vm_pu", max_vm_pu)
     _set_multiple_entries(net, "bus", index, **entries, **kwargs)
 
-    if geodata is not None:
-        # works with a 2-tuple or a matching array
-        net.bus_geodata = pd.concat([
-            net.bus_geodata,
-            pd.DataFrame(zeros((len(index), len(net.bus_geodata.columns)), dtype=np.int64),
-                         index=index, columns=net.bus_geodata.columns)])
-        net.bus_geodata.loc[index, :] = nan
-        net.bus_geodata.loc[index, ["x", "y"]] = geodata
-    if coords is not None:
-        net.bus_geodata = pd.concat(
-            [net.bus_geodata, pd.DataFrame(index=index, columns=net.bus_geodata.columns)])
-        net["bus_geodata"].loc[index, "coords"] = coords
     return index
 
 
@@ -742,8 +765,8 @@ def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, 
     OPTIONAL:
         **p_mw** (float, default 0) - The active power of the load
 
-        - postive value   -> load
-        - negative value  -> generation
+        - positive value -> load
+        - negative value -> generation
 
         **q_mvar** (float, default 0) - The reactive power of the load
 
@@ -757,8 +780,8 @@ def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, 
 
         **name** (string, default None) - The name for this load
 
-        **scaling** (float, default 1.) - An OPTIONAL scaling factor to be set customly.
-        Multiplys with p_mw and q_mvar.
+        **scaling** (float, default 1.) - An OPTIONAL scaling factor.
+        Multiplies with p_mw and q_mvar.
 
         **type** (string, 'wye') -  type variable to classify the load: wye/delta
 
@@ -927,7 +950,7 @@ def create_asymmetric_load(net, bus, p_a_mw=0, p_b_mw=0, p_c_mw=0, q_a_mvar=0, q
 
         **q_c_mvar** (float, default 0) - The reactive power for Phase C load
 
-        **sn_kva** (float, default: None) - Nominal power of the load
+        **sn_mva** (float, default: None) - Nominal power of the load
 
         **name** (string, default: None) - The name for this load
 
@@ -1103,7 +1126,7 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
         **controllable** (bool, NaN) - Whether this generator is controllable by the optimal \
             powerflow; defaults to False if "controllable" column exists in DataFrame
 
-        **k** (float, NaN) - Ratio of nominal current to short circuit current
+        **k** (float, NaN) - Ratio of short circuit current to nominal current
 
         **rx** (float, NaN) - R/X ratio for short circuit impedance. Only relevant if type is \
             specified as motor so that sgen is treated as asynchronous motor. Relevant for \
@@ -1155,7 +1178,7 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
     _set_value_if_not_nan(net, index, max_q_mvar, "max_q_mvar", "sgen")
     _set_value_if_not_nan(net, index, controllable, "controllable", "sgen", dtype=bool_,
                           default_val=False)
-    _set_value_if_not_nan(net, index, rx, "rx", "sgen") # rx is always required
+    _set_value_if_not_nan(net, index, rx, "rx", "sgen")  # rx is always required
     if np.isfinite(kappa):
         _set_value_if_not_nan(net, index, kappa, "kappa", "sgen")
     _set_value_if_not_nan(net, index, generator_type, "generator_type", "sgen",
@@ -1279,7 +1302,8 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
                                default_val=False)
     _add_to_entries_if_not_nan(net, "sgen", entries, index, "rx", rx)  # rx is always required
     if np.isfinite(kappa):
-        _add_to_entries_if_not_nan(net, "sgen", entries, index, "kappa", kappa)  # is used for Type C also as a max. current limit
+        _add_to_entries_if_not_nan(net, "sgen", entries, index, "kappa",
+                                   kappa)  # is used for Type C also as a max. current limit
     _add_to_entries_if_not_nan(net, "sgen", entries, index, "generator_type", generator_type,
                                dtype="str", default_val="current_source")
     gen_types = ['current_source', 'async', 'async_doubly_fed']
@@ -1573,8 +1597,8 @@ def create_storages(
     index = _get_multiple_index_with_check(net, "storage", index, len(buses))
 
     entries = {"name": name, "bus": buses, "p_mw": p_mw, "q_mvar": q_mvar, "sn_mva": sn_mva,
-              "scaling": scaling, "soc_percent": soc_percent, "min_e_mwh": min_e_mwh,
-              "max_e_mwh": max_e_mwh, "in_service": in_service, "type": type}
+               "scaling": scaling, "soc_percent": soc_percent, "min_e_mwh": min_e_mwh,
+               "max_e_mwh": max_e_mwh, "in_service": in_service, "type": type}
 
     _add_to_entries_if_not_nan(net, "storage", entries, index, "min_p_mw", min_p_mw)
     _add_to_entries_if_not_nan(net, "storage", entries, index, "max_p_mw", max_p_mw)
@@ -2026,9 +2050,9 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
             higher than the highest already existing index is selected.
 
         **geodata**
-        (array, default None, shape= (,2L)) -
-        The linegeodata of the line. The first row should be the coordinates
-        of bus a and the last should be the coordinates of bus b. The points
+        (Iterable[Tuple[int, int]|Tuple[float, float]], default None) -
+        The geodata of the line. The first element should be the coordinates
+        of from_bus and the last should be the coordinates of to_bus. The points
         in the middle represent the bending points of the line
 
         **in_service** (boolean, True) - True for in_service or False for out of service
@@ -2114,9 +2138,9 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
 
     _set_entries(net, "line", index, **v, **kwargs)
 
-    if geodata is not None:
-        net["line_geodata"].loc[index, "coords"] = None
-        net["line_geodata"].at[index, "coords"] = geodata
+    if geodata and hasattr(geodata, '__iter__'):
+        geo = [[x, y] for x, y in geodata]
+        net.line.at[index, "geo"] = f'{{"coordinates": {geo}, "type": "LineString"}}'
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "line")
     _set_value_if_not_nan(net, index, alpha, "alpha", "line")
@@ -2159,9 +2183,9 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
                 index one higher than the highest already existing index is selected.
 
             **geodata**
-            (list of arrays, default None, shape of arrays (,2L)) -
-            The linegeodata of the line. The first row should be the coordinates
-            of bus a and the last should be the coordinates of bus b. The points
+            (Iterable[Iterable[Tuple[x, y]]] or Iterable[Tuple[x, y]], default None) -
+            The geodata of the line. The first element should be the coordinates
+            of from_bus and the last should be the coordinates of to_bus. The points
             in the middle represent the bending points of the line
 
             **in_service** (list of boolean, True) - True for in_service or False for out of service
@@ -2230,13 +2254,13 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
             entries["type"] = lineparam["type"]
     else:
         lineparam = list(map(load_std_type, [net] * len(std_type), std_type,
-            ['line'] * len(std_type)))
+                             ['line'] * len(std_type)))
         entries["r_ohm_per_km"] = list(map(itemgetter("r_ohm_per_km"), lineparam))
         entries["x_ohm_per_km"] = list(map(itemgetter("x_ohm_per_km"), lineparam))
         entries["c_nf_per_km"] = list(map(itemgetter("c_nf_per_km"), lineparam))
         entries["max_i_ka"] = list(map(itemgetter("max_i_ka"), lineparam))
         entries["g_us_per_km"] = [line_param_dict.get("g_us_per_km", 0) for line_param_dict in \
-            lineparam]
+                                  lineparam]
         entries["type"] = [line_param_dict.get("type", None) for line_param_dict in lineparam]
 
     _add_to_entries_if_not_nan(net, "line", entries, index, "max_loading_percent",
@@ -2254,8 +2278,8 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
 
     _set_multiple_entries(net, "line", index, **entries, **kwargs)
 
-    if geodata is not None:
-        _add_multiple_branch_geodata(net, "line", geodata, index)
+    if geodata:
+        _add_multiple_branch_geodata(net, geodata, index)
 
     return index
 
@@ -2313,8 +2337,8 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
         **parallel** (integer, 1) - number of parallel line systems
 
         **geodata**
-        (array, default None, shape= (,2L)) -
-        The linegeodata of the line. The first row should be the coordinates
+        (array, default None, shape= (,2)) -
+        The geodata of the line. The first row should be the coordinates
         of bus a and the last should be the coordinates of bus b. The points
         in the middle represent the bending points of the line
 
@@ -2386,20 +2410,19 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
         _set_value_if_not_nan(net, index, r0_ohm_per_km, "r0_ohm_per_km", "line")
         _set_value_if_not_nan(net, index, x0_ohm_per_km, "x0_ohm_per_km", "line")
         _set_value_if_not_nan(net, index, c0_nf_per_km, "c0_nf_per_km", "line")
-        _set_value_if_not_nan(net, index, g0_us_per_km, "g0_us_per_km", "line",
-                                     default_val=0.)
+        _set_value_if_not_nan(net, index, g0_us_per_km, "g0_us_per_km", "line", default_val=0.)
     elif not np_all(nan_0_values):
         logger.warning("Zero sequence values are given for only some parameters. Please specify "
                        "them for all parameters, otherwise they are not set!")
 
     if geodata is not None:
-        net["line_geodata"].loc[index, "coords"] = None
-        net["line_geodata"].at[index, "coords"] = geodata
+        net.line.at[index, "geo"] = f'{{"type":"LineString", "coordinates":{geodata}}}'
+    else:
+        net.line.at[index, "geo"] = None
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "line")
     _set_value_if_not_nan(net, index, alpha, "alpha", "line")
-    _set_value_if_not_nan(net, index, temperature_degree_celsius,
-                          "temperature_degree_celsius", "line")
+    _set_value_if_not_nan(net, index, temperature_degree_celsius, "temperature_degree_celsius", "line")
     _set_value_if_not_nan(net, index, endtemp_degree, "endtemp_degree", "line")
 
     # add optional columns for TDPF if parameters passed to kwargs:
@@ -2466,8 +2489,8 @@ def create_lines_from_parameters(net, from_buses, to_buses, length_km, r_ohm_per
         **parallel** (integer, 1) - number of parallel line systems
 
         **geodata**
-        (array, default None, shape= (,2L)) -
-        The linegeodata of the line. The first row should be the coordinates
+        (array, default None, shape= (,2)) -
+        The geodata of the line. The first row should be the coordinates
         of bus a and the last should be the coordinates of bus b. The points
         in the middle represent the bending points of the line
 
@@ -2544,7 +2567,10 @@ def create_lines_from_parameters(net, from_buses, to_buses, length_km, r_ohm_per
     _set_multiple_entries(net, "line", index, **entries, **kwargs)
 
     if geodata is not None:
-        _add_multiple_branch_geodata(net, "line", geodata, index)
+        _add_multiple_branch_geodata(net, geodata, index)
+    else:
+        for i in index:
+            net.line.at[i, "geo"] = None
 
     return index
 
@@ -3856,7 +3882,7 @@ def create_shunt(net, bus, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, name
 
 
 def create_shunts(net, buses, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, name=None,
-                 in_service=True, index=None, **kwargs):
+                  in_service=True, index=None, **kwargs):
     """
     Creates a number of shunt elements
 
@@ -3931,8 +3957,8 @@ def create_shunt_as_capacitor(net, bus, q_mvar, loss_factor, **kwargs):
 
 
 def create_svc(net, bus, x_l_ohm, x_cvar_ohm, set_vm_pu, thyristor_firing_angle_degree,
-                name=None, controllable=True, in_service=True, index=None,
-                min_angle_degree=90, max_angle_degree=180, **kwargs):
+               name=None, controllable=True, in_service=True, index=None,
+               min_angle_degree=90, max_angle_degree=180, **kwargs):
     """
     Creates an SVC element - a shunt element with adjustable impedance used to control the voltage \
         at the connected bus
@@ -4273,7 +4299,7 @@ def create_wards(net, buses, ps_mw, qs_mvar, pz_mw, qz_mvar, name=None, in_servi
     index = _get_multiple_index_with_check(net, "storage", index, len(buses))
 
     entries = {"name": name, "bus": buses, "ps_mw": ps_mw, "qs_mvar": qs_mvar, "pz_mw": pz_mw,
-              "qz_mvar": qz_mvar, "name": name, "in_service": in_service}
+               "qz_mvar": qz_mvar, "name": name, "in_service": in_service}
 
     _set_multiple_entries(net, "ward", index, **entries, **kwargs)
 
@@ -4782,18 +4808,18 @@ def create_group(net, element_types, elements, name="", reference_columns=None, 
         index for the dataframe net.group, by default None
 
     EXAMPLES:
-        >>> create_group_from_lists(net, ["bus", "gen"], [[10, 12], [1, 2]])
-        >>> create_group_from_lists(net, ["bus", "gen"], [["Berlin", "Paris"], ["Wind_1", "Nuclear1"]], reference_columns="name")
+        >>> create_group(net, ["bus", "gen"], [[10, 12], [1, 2]])
+        >>> create_group(net, ["bus", "gen"], [["Berlin", "Paris"], ["Wind_1", "Nuclear1"]], reference_columns="name")
     """
     element_types, elements, reference_columns = _group_parameter_list(
         element_types, elements, reference_columns)
 
     _check_elements_existence(net, element_types, elements, reference_columns)
 
-    index = np.array([_get_index_with_check(net, "group", index)]*len(element_types), dtype=np.int64)
+    index = np.array([_get_index_with_check(net, "group", index)] * len(element_types), dtype=np.int64)
 
     entries = dict(zip(["name", "element_type", "element", "reference_column"],
-                       [ name ,  element_types,  elements,  reference_columns]))
+                       [name, element_types, elements, reference_columns]))
 
     _set_multiple_entries(net, "group", index, **entries, **kwargs)
 
@@ -4838,7 +4864,7 @@ def _cost_existance_check(net, element, et, power_type=None):
 def _costs_existance_check(net, elements, et, power_type=None):
     if isinstance(et, str) and (power_type is None or isinstance(power_type, str)):
         poly_exist = (net.poly_cost.element.isin(elements)).values & \
-                    (net.poly_cost.et == et).values
+                     (net.poly_cost.et == et).values
         pwl_exist = (net.pwl_cost.element.isin(elements)).values & \
                     (net.pwl_cost.et == et).values
         if isinstance(power_type, str):
@@ -4853,7 +4879,8 @@ def _costs_existance_check(net, elements, et, power_type=None):
         else:
             cols.append("power_type")
             pwl_df = pd.concat([net.pwl_cost[cols], pd.DataFrame(np.c_[
-                elements, et, [power_type]*len(elements)], columns=cols)])
+                                                                     elements, et, [power_type] * len(elements)],
+                                                                 columns=cols)])
         return poly_df.duplicated().sum() + pwl_df.duplicated().sum()
 
 
@@ -4862,8 +4889,8 @@ def _get_multiple_index_with_check(net, table, index, number, name=None):
         bid = get_free_id(net[table])
         return arange(bid, bid + number, 1)
     u, c = uni(index, return_counts=True)
-    if np.any(c>1):
-        raise UserWarning("Passed indexes %s exist multiple times" % (u[c>1]))
+    if np.any(c > 1):
+        raise UserWarning("Passed indexes %s exist multiple times" % (u[c > 1]))
     intersect = intersect1d(index, net[table].index.values)
     if len(intersect) > 0:
         if name is None:
@@ -4946,7 +4973,7 @@ def _set_value_if_not_nan(net, index, value, column, element_type, dtype=float64
         name of column
     element_type : str
         element_type type, e.g. "gen"
-    dtyp : Any, optional
+    dtype : Any, optional
         e.g. float64, "Int64", bool_, ..., by default float64
     default_val : Any, optional
         default value to be set if the column exists and value is nan and if the column does not
@@ -4988,21 +5015,23 @@ def _add_to_entries_if_not_nan(net, element_type, entries, index, column, values
         try_astype(entries, column, dtype)
 
 
-def _add_multiple_branch_geodata(net, table, geodata, index):
-    geo_table = f"{table}_geodata"
-    dtypes = net[geo_table].dtypes
-    df = pd.DataFrame(index=index, columns=net[geo_table].columns)
-    # works with single or multiple lists of coordinates
-    if len(geodata[0]) == 2 and not hasattr(geodata[0][0], "__iter__"):
-        # geodata is a single list of coordinates
-        df["coords"] = [geodata] * len(index)
+
+def _add_multiple_branch_geodata(net, geodata, index, table="line"):
+    dtypes = net[table].dtypes
+    if hasattr(geodata, '__iter__') and all([isinstance(g, tuple) and len(g) == 2 for g in geodata]):
+        # geodata is a single Iterable of coordinate tuples
+        geo = [[x, y] for x, y in geodata]
+        series = [f'{{"coordinates": {geo}, "type": "LineString"}}'] * len(index)
+    elif hasattr(geodata, '__iter__') and all([isinstance(g, Iterable) for g in geodata]):
+        # geodata is Iterable of Iterable of coordinate tuples
+        geo = [[[x, y] for x, y in g] for g in geodata]
+        series = pd.Series([f'{{"coordinates": {g}, "type": "LineString"}}' for g in geo], index=index)
     else:
-        # geodata is multiple lists of coordinates
-        df["coords"] = geodata
+        raise ValueError("geodata must be an Iterable of Iterable of coordinate tuples or an Iterable of coordinate tuples")
 
-    net[geo_table] = pd.concat([net[geo_table],df], sort=False)
+    net[table].loc[:, "geo"] = series
 
-    _preserve_dtypes(net[geo_table], dtypes)
+    _preserve_dtypes(net[table], dtypes)
 
 
 def _set_entries(net, table, index, preserve_dtypes=True, **entries):
@@ -5047,7 +5076,6 @@ def _set_multiple_entries(net, table, index, preserve_dtypes=True, defaults_to_f
 
     # extend the table by the frame we just created
     net[table] = pd.concat([net[table], dd[dd.columns[~dd.isnull().all()]]], sort=False)
-
 
     # and preserve dtypes
     if preserve_dtypes:
