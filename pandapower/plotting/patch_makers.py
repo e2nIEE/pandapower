@@ -3,6 +3,8 @@
 # Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import sys
+
+import geojson.utils
 import numpy as np
 try:
     from matplotlib.patches import RegularPolygon, Arc, Circle, Rectangle, Ellipse
@@ -384,6 +386,10 @@ def trafo_patches(coords, size, **kwargs):
     linewidths = kwargs.get("linewidths", 2.)
     linewidths = get_linewidth_list(linewidths, len(coords), name_entries="trafos")
     circles, lines = list(), list()
+
+    # load and extract the coords from the geojson object
+    coords = list(map(lambda x: list(geojson.utils.coords(geojson.loads(x))), coords))
+
     for i, (p1, p2) in enumerate(coords):
         p1 = np.array(p1)
         p2 = np.array(p2)
