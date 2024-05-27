@@ -473,11 +473,13 @@ class PQArea4105(PQAreaPOLYGON):
     """
     def __init__(self, variant):
         if variant == 1:
+            # commented due to the note of the docstring
             # p_points = (0., 0.95, 0.95, 0.)
             # q_points = (0., -0.312, 0.312, 0.)
             p_points = (0., 1, 1, 0.)
             q_points = (0., -0.328684, 0.328684, 0.)
         elif variant == 2:
+            # commented due to the note of the docstring
             # p_points = (0., 0.9, 0.9, 0.)
             # q_points = (0., -0.36, 0.36, 0.)
             p_points = (0., 1, 1, 0.)

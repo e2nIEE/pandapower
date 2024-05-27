@@ -73,9 +73,9 @@ class QModelCosphiVCurve(QModel):
 
 class QModelCosphiP(QModel):
     """
-    Class to model that q is determined in dependency of the active power by a fixed cosphi. q is
-    calculated based on: q = sin(phi) * p instead of q = sin(phi) * s -> It ignores that s changes
-    by changing q.
+    Class to model that q is determined in dependency of the momentary active power by a fixed
+    cosphi. q is calculated based on: `q = sin(phi) * p` instead of `q = sin(phi) * s` -> It ignores
+    that s changes by changing q.
     """
 
     def __init__(self, cosphi: float):
@@ -97,8 +97,8 @@ class QModelCosphiP(QModel):
 class QModelCosphiSn(QModel):
     """
     Class to model that q is determined in dependency of the apparent power by a fixed cosphi. q is
-    calculated based on: q = sin(phi) * s only considering sn_mva and ignoring the actual active
-    power p.
+    calculated based on: `q = sin(phi) * s` only considering sn_mva and ignoring that s changes with
+    p and q.
     """
 
     def __init__(self, cosphi=0.2):
@@ -113,9 +113,9 @@ class QModelCosphiSn(QModel):
 
 class QModelCosphiPQ(QModel):
     """
-    Class to model that q is determined in dependency of the active power by a fixed cosphi. q is
-    calculated based on: q = sin(phi) * s with s = (p**2 + q**2)**0.5 -> the actual cosphi covers
-    the requested cosphi.
+    Class to model that q is determined in dependency of the momentary active power by a fixed
+    cosphi. q is calculated based on: `q = sin(phi) * s` with `s = (p**2 + q**2)**0.5` -> the
+    actual cosphi covers the requested cosphi.
     """
 
     def __init__(self, cosphi: float):

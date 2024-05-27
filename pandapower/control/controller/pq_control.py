@@ -94,18 +94,18 @@ class PQController(ConstControl):
     def set_p_profile(self, p_profile, profile_from_name):
         if profile_from_name:
             if p_profile:
-                logger.warning("P Profile will be discarded "
-                               "since profile_from_name has been set to True.")
-            self.p_profile = "P_%s" % self.name
+                logger.warning("Given parameter 'p_profile' will be discarded "
+                               "since 'profile_from_name' has been set to True.")
+            self.p_profile = [f"P_{name}" for name in self.name]
         else:
             self.p_profile = p_profile
 
     def set_q_profile(self, q_profile, profile_from_name):
         if profile_from_name:
             if q_profile:
-                logger.warning("Q Profile will be discarded "
-                               "since profile_from_name has been set to True.")
-            self.q_profile = "P_%s" % self.name
+                logger.warning("Given parameter 'q_profile' will be discarded "
+                               "since 'profile_from_name' has been set to True.")
+            self.q_profile = [f"Q_{name}" for name in self.name]
         else:
             self.q_profile = q_profile
 

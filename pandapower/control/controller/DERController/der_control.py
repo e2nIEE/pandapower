@@ -69,9 +69,13 @@ class DERController(PQController):
 
         **data_source** ( , None) - A DataSource that contains profiles
 
-        **p_profile** (xy, xy) - ?
+        **p_profile** (str[], None) - The profile names of the controlled elements in the data
+        source for active power time series values
 
-        **profile_from_name** (xy, xy) - ?
+        **profile_from_name** (bool, False) - If True, the profile names of the controlled elements
+        in the data source for active power time series values will be set be the name of the
+        controlled elements, e.g. for controlled sgen "SGEN_1", the active power profile "P_SGEN_1"
+        is applied
 
         **profile_scale** (float, 1.0) - A scaling factor applied to the values of profiles
 
@@ -140,7 +144,7 @@ class DERController(PQController):
 
         if np.any(p_series_mw < 0):
             logger.info("p_series_mw is forced to be greater/equal zero")
-            p_series_mw[p_series_mw < 0] = 0
+            p_series_mw[p_series_mw < 0] = 0.
 
         # --- First Step: Calculate/Select P, Q
         p = self._step_p(p_series_mw)
@@ -210,7 +214,7 @@ class DERController(PQController):
                 q[to_saturate] = np.clip(q[to_saturate], -sat_s[to_saturate], sat_s[to_saturate])
                 p[to_saturate] = np.sqrt(sat_s[to_saturate]**2 - q[to_saturate]**2)
             else:
-                p[to_saturate] = np.clip(p[to_saturate], 0, sat_s[to_saturate])
+                p[to_saturate] = np.clip(p[to_saturate], 0., sat_s[to_saturate])
                 q[to_saturate] = np.sqrt(sat_s[to_saturate]**2 - p[to_saturate]**2) * np.sign(
                     q[to_saturate])
         return p, q
@@ -225,87 +229,4 @@ class DERController(PQController):
 
 
 if __name__ == "__main__":
-    import matplotlib.pyplot as plt
-    import pandapower as pp
-    try:
-        import simbench as sb
-    except ImportError as e:
-        e += "\nFor this example code, simbench is used. Please install it via `pip install simbench`."
-        raise ImportError(e)
-
-    def plot_voltage_range(res_data):
-        assert ("res_bus.vm_pu") in res_data.keys()
-        result = res_data["res_bus.vm_pu"]
-        result.dropna(axis=1, how="all", inplace=True)
-        result["average_v"] = result.values.mean(axis=1)
-        result["max_v"] = result.drop(["average_v"], axis=1).values.max(axis=1)
-        result["min_v"] = result.drop(["average_v"], axis=1).values.min(axis=1)
-        fig = plt.figure()
-        ax_v = fig.add_subplot()
-        result.plot(y=["average_v", "max_v", "min_v"], ax=ax_v, color=["blue", "green", "red"])
-        ax_v.fill_between(result.index, result["max_v"], result["min_v"], facecolor="lightgray")
-        ax_v.set_xlabel("Zeitschritt [15 min]", fontsize=20)
-        ax_v.set_ylabel(r'Spannung [p.u]', fontsize=20)
-        ax_v.xaxis.set_tick_params(labelsize=18)
-        ax_v.yaxis.set_tick_params(labelsize=18)
-        ax_v.legend(fontsize=18, frameon=False, loc='best', ncol=len(result))
-        ax_v.grid()
-        plt.show()
-
-    sb_code = "1-MV-urban--1-sw"
-    num_calc = 100
-    net = sb.get_simbench_net(sb_code)
-    pp.runpp(net)
-    profiles = sb.get_absolute_values(net, profiles_instead_of_study_cases=True)
-    for key, profile in profiles.items():
-        profiles[key] = profile.iloc[4000:4100, :].reset_index(drop=True)
-#        profiles[key] = profile.iloc[200:300, :].reset_index(drop=True)
-
-    sb.apply_const_controllers(net, profiles)
-    ds = pp.timeseries.DFData(profiles[("sgen", "p_mw")])
-    time_steps = np.arange(num_calc)
-
-    for idx in net.sgen.index:
-
-        # Attetion q is NOT in MVAR but relative to SnMVA
-        # c = DERController(net, idx, q_model=QModelConstQ(q=0.1),
-        #               pqv_area=PQVArea4120V2(), saturate_sn_mva=True, q_prio=True,
-        #               data_source=ds)
-
-        c = DERController(net, idx, q_model=pp.toolbox.DERController.QModelQV(
-            qv_curve=pp.toolbox.DERController.QVCurve(
-                v_points_pu=(0, 0.93, 1.05, 1.1, 2),
-                q_points=(0.312, 0.312, 0, -0.312, -0.312)
-            )), pqv_area=pp.toolbox.DERController.PQVArea4120V2(), saturate_sn_mva=True,
-            q_prio=True, data_source=ds)
-        c.set_p_profile(idx, False)
-
-    ow = pp.timeseries.output_writer.OutputWriter(net=net, time_steps=time_steps)
-    ow.log_variable('res_bus', 'vm_pu')
-    ow.log_variable('res_bus', 'va_degree')
-    ow.log_variable('res_sgen', 'p_mw')
-    ow.log_variable('res_sgen', 'q_mvar')
-    pp.timeseries.run_timeseries(net, time_steps)
-
-    res_data = net.output_writer.iloc[0, 0].output
-    # plot_voltage_range(res_data)
-
-    result_q = res_data["res_sgen.q_mvar"]
-    result_u = res_data['res_bus.vm_pu']
-    plt.figure()
-    ax = plt.gca()
-    for s in net.sgen.index:
-        idx_bus = net.sgen.bus.loc[s]
-        plt.scatter(result_u[idx_bus], result_q[s]/net.sgen.sn_mva[s])
-    ax.set_xlabel("u [pu]", fontsize=20)
-    ax.set_ylabel(r'Q [pu]', fontsize=20)
-
-    result_p = res_data["res_sgen.p_mw"]
-    result_q = res_data["res_sgen.q_mvar"]
-    plt.figure()
-    ax = plt.gca()
-    # for s in net.sgen.index:
-    s = 1
-    plt.scatter(result_p.loc[:, s]/net.sgen.sn_mva[s], result_q.loc[:, s]/net.sgen.sn_mva[s])
-    ax.set_xlabel("P [pu]", fontsize=20)
-    ax.set_ylabel(r'Q [pu]', fontsize=20)
+    pass
