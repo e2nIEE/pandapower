@@ -2,9 +2,11 @@
 
 # Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+import os
 import pandas as pd
 import pytest
 from numpy import in1d, isnan, isclose
+import numpy as np
 
 import pandapower as pp
 import pandapower.control
@@ -635,6 +637,24 @@ def test_trafo3w(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=2e-2, l_tol=
     assert abs((net.res_trafo3w.i_mv_ka.at[t3] - imv)) < i_tol
     assert abs((net.res_trafo3w.i_lv_ka.at[t3] - ilv)) < i_tol
 
+@pytest.mark.parametrize("tap_pos", (-1, 2))
+@pytest.mark.parametrize("tap_side", ('hv', 'mv', 'lv'))
+def test_trafo3w_tap(tap_pos, tap_side):
+    net = pp.from_json(os.path.join(pp.pp_dir, "test", "test_files","test_trafo3w_tap.json"))  #
+    net.trafo3w.loc[0, 'tap_at_star_point']= False
+    net.trafo3w.loc[1, 'tap_at_star_point']= True
+    results = pd.read_csv(os.path.join(pp.pp_dir, "test", "test_files", "test_results_files", "trafo_3w_tap_results.csv"), sep=";", decimal=",")
+
+    net.trafo3w.loc[0, "tap_side"] = tap_side
+    net.trafo3w.loc[1, "tap_side"] = tap_side
+    net.trafo3w.loc[0, "tap_pos"] = tap_pos
+    net.trafo3w.loc[1, "tap_pos"] = tap_pos
+    pp.runpp(net)
+
+    for index in range(8):
+        for variable, tol in zip(("vm_pu", "va_degree"), (1e-6, 1e-3)):
+            assert np.isclose(net.res_bus.at[index, variable], results.query("tap_side==@tap_side & tap_pos==@tap_pos & "
+                                                                             "index==@index & element=='bus' & variable==@variable").value, rtol=0, atol=tol), f"failed for bus {index=}, {variable}"
 
 def test_impedance(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
     net = result_test_network
