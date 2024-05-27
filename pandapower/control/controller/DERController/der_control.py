@@ -26,12 +26,27 @@ logger = logging.getLogger(__name__)
 class DERController(PQController):
     """
     Flexible controller to model plenty types of distributed energy resource (DER) control
-    characteristics, such as Q(V), Q(P), cosphi(P), Q(P, V), and restrict the behavior to defined
-    PQV areas.
+    characteristics, such as
 
-    **Note**: sn_mva of the controlled elements is expected to be the rated power (generation) of the
-    elements (called P_{b,installed} in the VDE AR N standards). Scalings and limits are usually
-    relative to that (sn_mva) values.
+    + const Q
+    + cosphi fixed (different types)
+    + cosphi(P) curve
+    + Q(V)
+
+    and restrict the behavior to defined PQV areas, such as
+
+    + PQVArea4130V1, PQVArea4130V2, PQVArea4130V3
+    + PQVArea4120V1, PQVArea4120V2, PQVArea4120V3
+    + PQVArea4110
+    + PQVArea4105
+    + PQAreaSTATCOM
+    + PQVAreaPOLYGON (PQAreaPOLYGON, QVAreaPOLYGON)
+
+    .. tip: For the DER controller, an extensive `tutorial <https://github.com/e2nIEE/pandapower/tree/develop/tutorials>`_ is available.
+
+    .. note:: sn_mva of the controlled elements is expected to be the rated power (generation) of
+        the elements (called P_{b,installed} in the VDE AR N standards). Scalings and limits are
+        usually relative to that (sn_mva) values.
 
     INPUT:
         **net** (pandapower net)
