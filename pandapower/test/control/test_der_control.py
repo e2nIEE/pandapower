@@ -154,13 +154,9 @@ def test_cosphi_of_p_timeseries():
     ds = pp.timeseries.DFData(ts_data)
 
     # Create, add output and set outputwriter
-    ow_no_q = pp.timeseries.OutputWriter(net)
-    ow_no_q.log_variable("res_sgen", "p_mw")
-    ow_no_q.log_variable("res_sgen", "q_mvar")
-    ow_no_q2 = deepcopy(ow_no_q)
-    ow_ue = deepcopy(ow_no_q)
-    ow_ue2 = deepcopy(ow_no_q)
-    ow_oe = deepcopy(ow_no_q)
+    ow = pp.timeseries.OutputWriter(net)
+    ow.log_variable("res_sgen", "p_mw")
+    ow.log_variable("res_sgen", "q_mvar")
 
     DER_no_q = pp.control.DERController(
         net, gid=0, data_source=ds, p_profile="P_0", profile_scale=-2e-3,
@@ -193,38 +189,43 @@ def test_cosphi_of_p_timeseries():
     net.controller["in_service"] = False
     net.controller.in_service.at[DER_ue.index] = True
     pp.timeseries.run_timeseries(net, time_steps=range(len(ts_data)))
+    res_ue = deepcopy(ow.output)
     net.controller["in_service"] = False
     net.controller.in_service.at[DER_ue2.index] = True
     pp.timeseries.run_timeseries(net, time_steps=range(len(ts_data)))
+    res_ue2 = deepcopy(ow.output)
     net.controller["in_service"] = False
     net.controller.in_service.at[DER_oe.index] = True
     pp.timeseries.run_timeseries(net, time_steps=range(len(ts_data)))
+    res_oe = deepcopy(ow.output)
     net.controller["in_service"] = False
     net.controller.in_service.at[DER_no_q.index] = True
     pp.timeseries.run_timeseries(net, time_steps=range(len(ts_data)))
+    res_no_q = deepcopy(ow.output)
     net.controller["in_service"] = False
     net.controller.in_service.at[DER_no_q2.index] = True
     pp.timeseries.run_timeseries(net, time_steps=range(len(ts_data)))
+    res_no_q2 = deepcopy(ow.output)
 
     if False:  # plot cosphi course
         import matplotlib.pyplot as plt
 
-        ows2plot = {
-            "no_q": ow_no_q,
-            "no_q2": ow_no_q2,
-            "ue": ow_ue,
-            "ue2": ow_ue2,
-            "oe": ow_oe,
+        res_to_plot = {
+            "no_q": res_no_q,
+            "no_q2": res_no_q2,
+            "ue": res_ue,
+            "ue2": res_ue2,
+            "oe": res_oe,
         }
         colors = "bgrcmyk"
         fig = plt.figure(figsize=(9, 5))
         ax = fig.gca()
-        for i_key, (key, ow) in enumerate(ows2plot.items()):
+        for i_key, (key, res) in enumerate(res_to_plot.items()):
             cosphi_pos_neg = pp.toolbox.cosphi_pos_neg_from_pq(
-                ow.output["res_sgen.p_mw"], ow.output["res_sgen.q_mvar"])
+                res["res_sgen.p_mw"], res["res_sgen.q_mvar"])
             cosphi_pos_neg[np.isnan(cosphi_pos_neg[0])] = 1
             cosphi_pos = pp.toolbox.cosphi_to_pos(cosphi_pos_neg)
-            x = ow.output["res_sgen.p_mw"].values.flatten()/net.sgen.sn_mva.at[0]
+            x = res["res_sgen.p_mw"].values.flatten()/net.sgen.sn_mva.at[0]
             plt.plot(x, cosphi_pos, label=key, c=colors[i_key], marker="+")
         yticks = ax.get_yticks()
         yticks_signed = deepcopy(yticks)
@@ -238,20 +239,20 @@ def test_cosphi_of_p_timeseries():
         plt.show()
 
     # check results
-    assert np.allclose(ow_no_q.output["res_sgen.q_mvar"].values, 0, atol=1e-5)
-    assert np.allclose(ow_no_q2.output["res_sgen.q_mvar"].values, 0, atol=1e-5)
-    assert (ow_ue.output["res_bus.vm_pu"][1] <= ow_no_q.output["res_bus.vm_pu"][1] + 1e-8).all()
-    assert (ow_oe.output["res_bus.vm_pu"][1] + 1e-8 >= ow_no_q.output["res_bus.vm_pu"][1]).all()
-    assert (ow_ue.output["res_sgen.q_mvar"][0] <= 1e-5).all()
-    assert np.allclose(ow_ue.output["res_sgen.q_mvar"][0],
-                      -ow_oe.output["res_sgen.q_mvar"][0], atol=1e-5)
+    assert np.allclose(res_no_q["res_sgen.q_mvar"].values, 0, atol=1e-5)
+    assert np.allclose(res_no_q2["res_sgen.q_mvar"].values, 0, atol=1e-5)
+    assert (res_ue["res_bus.vm_pu"][1] <= res_no_q["res_bus.vm_pu"][1] + 1e-8).all()
+    assert (res_oe["res_bus.vm_pu"][1] + 1e-8 >= res_no_q["res_bus.vm_pu"][1]).all()
+    assert (res_ue["res_sgen.q_mvar"][0] <= 1e-5).all()
+    assert np.allclose(res_ue["res_sgen.q_mvar"][0],
+                      -res_oe["res_sgen.q_mvar"][0], atol=1e-5)
 
     # diff between ue and ue2
     should_be_same = ((ts_data["P_0"]*-2e-3/sn <= 0.2) | (ts_data["P_0"]*-2e-3/sn >= 0.3)).values
-    assert np.allclose(ow_ue.output["res_sgen.q_mvar"].values[should_be_same, 0],
-                       ow_ue2.output["res_sgen.q_mvar"].values[should_be_same, 0], atol=1e-5)
-    assert np.allclose(ow_ue.output["res_sgen.q_mvar"].values[~should_be_same, 0], 0, atol=1e-5)
-    assert np.all(ow_ue2.output["res_sgen.q_mvar"].values[~should_be_same, 0] > -1e-5)
+    assert np.allclose(res_ue["res_sgen.q_mvar"].values[should_be_same, 0],
+                       res_ue2["res_sgen.q_mvar"].values[should_be_same, 0], atol=1e-5)
+    assert np.allclose(res_ue["res_sgen.q_mvar"].values[~should_be_same, 0], 0, atol=1e-5)
+    assert np.all(res_ue2["res_sgen.q_mvar"].values[~should_be_same, 0] > -1e-5)
 
 
 def test_QModels_with_2Dim_timeseries():
