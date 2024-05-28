@@ -85,8 +85,7 @@ class BasePQVArea(BaseArea):
 """ Polygon Areas """
 
 class PQAreaPOLYGON(BaseArea):
-    """
-    Provides a polygonal area of feasible reactive power provision. The polygonal area can be
+    """ Provides a polygonal area of feasible reactive power provision. The polygonal area can be
     defined by 'p_points' and 'q_points'.
 
     Note: Due to generator point of view, negative q values are correspond with underexcited behavior.
@@ -126,8 +125,7 @@ class PQAreaPOLYGON(BaseArea):
 
 
 class QVAreaPOLYGON(BaseArea):
-    """
-    Provides a polygonal area of feasible reactive power provision. The polygonal area can be
+    """ Provides a polygonal area of feasible reactive power provision. The polygonal area can be
     defined by 'q_points' and 'vm_points'.
 
     Note: Due to generator point of view, negative q values are correspond with underexcited behavior.
@@ -163,8 +161,7 @@ class QVAreaPOLYGON(BaseArea):
 
 
 class PQVAreaPOLYGON(BasePQVArea):
-    """
-    Provides a polygonal area of feasible reactive power provision. The polygonal area can be
+    """ Provides a polygonal area of feasible reactive power provision. The polygonal area can be
     defined by 'p_points' and 'q_pq_points' as well as 'q_qv_points' and 'vm_points'.
 
     Example
@@ -184,9 +181,8 @@ class PQVAreaPOLYGON(BasePQVArea):
 
 
 class PQAreaSTATCOM(BaseArea):
-    """
-    PQAreaSTATCOM provides a simple rectangular reactive power provision area without a dependency on the
-    on the active power.
+    """ PQAreaSTATCOM provides a simple rectangular reactive power provision area without a
+    dependency on the on the active power.
 
     Example
     -------
@@ -207,10 +203,9 @@ class PQAreaSTATCOM(BaseArea):
 
 
 class PQArea4120(BaseArea):
-    """
-    This class models the PQ area of flexible Q for high-voltage plants according to VDE AR-N-4120.
-    It is used to be combined with Voltage dependencies in PQVArea4120V1, PQVArea4120V2 and
-    PQVArea4120V3.
+    """ This class models the PQ area of flexible Q for high-voltage plants according to
+    VDE AR-N-4120. It is used to be combined with Voltage dependencies in PQVArea4120V1,
+    PQVArea4120V2 and PQVArea4120V3.
     """
     def __init__(self, min_q, max_q, version=2018, **kwargs):
         supported_versions = [2015, 2018]
@@ -254,8 +249,7 @@ class PQArea4120(BaseArea):
 
 
 class QVArea4120(BaseArea):
-    """
-    This class models the QV area of flexible Q for high-voltage power plants according to
+    """ This class models the QV area of flexible Q for high-voltage power plants according to
     VDE AR-N-4120.
     It is used to be combined with active power dependencies in PQVArea4120V1, PQVArea4120V2, or
     PQVArea4120V3
@@ -293,8 +287,7 @@ class QVArea4120(BaseArea):
 
 
 class PQVArea4120Base(BasePQVArea):
-    """
-    This is the base class for the three variants of VDE AR-N-4120. This class is not for direct
+    """ This is the base class for the three variants of VDE AR-N-4120. This class is not for direct
     application by the user.
     """
     def __init__(self, min_q, max_q, version=2018, raise_merge_overlap=True):
@@ -303,18 +296,16 @@ class PQVArea4120Base(BasePQVArea):
         self.qv_area = QVArea4120(min_q, max_q)
 
 class PQVArea4120V1(PQVArea4120Base):
-    """
-    This class models the PQV area of flexible Q for high-voltage plants according to variant 1 of
-    VDE AR-N-4120.
+    """ This class models the PQV area of flexible Q for high-voltage plants according to variant 1
+    of VDE AR-N-4120.
     """
     def __init__(self, version=2018, raise_merge_overlap=True):
         super().__init__(-0.227902, 0.484322, version=version,
                          raise_merge_overlap=raise_merge_overlap)
 
 class PQVArea4120V2(PQVArea4120Base):
-    """
-    This class models the PQV area of flexible Q for high-voltage plants according to variant 2 of
-    VDE AR-N-4120.
+    """ This class models the PQV area of flexible Q for high-voltage plants according to variant 2
+    of VDE AR-N-4120.
     """
     def __init__(self, version=2018, raise_merge_overlap=True):
         super().__init__(-0.328684, 0.410775, version=version,
@@ -322,9 +313,8 @@ class PQVArea4120V2(PQVArea4120Base):
 
 
 class PQVArea4120V3(PQVArea4120Base):
-    """
-    This class models the PQV area of flexible Q for high-voltage plants according to variant 3 of
-    VDE AR-N-4120.
+    """ This class models the PQV area of flexible Q for high-voltage plants according to variant 3
+    of VDE AR-N-4120.
     """
     def __init__(self, version=2018, raise_merge_overlap=True):
         super().__init__(-0.410775, 0.328684, version=version,
@@ -334,18 +324,16 @@ class PQVArea4120V3(PQVArea4120Base):
 """ EHV DERs: """
 
 class PQArea4130(PQArea4120):
-    """
-    This class models the PQ area of flexible Q for extra high-voltage plants according to VDE AR-N-4130.
-    It is used to be combined with Voltage dependencies in PQVArea4130V1, PQVArea4130V2 and
-    PQVArea4130V3.
+    """ This class models the PQ area of flexible Q for extra high-voltage plants according to
+    VDE AR-N-4130. It is used to be combined with Voltage dependencies in PQVArea4130V1,
+    PQVArea4130V2 and PQVArea4130V3.
     """
     def __init__(self, min_q, max_q):
         super().__init__(min_q, max_q, version=2018, q_max_under_p_point=0.05)
 
 
 class QVArea4130(QVArea4120):
-    """
-    This class models the QV area of flexible Q for extra high voltage power plants according to
+    """ This class models the QV area of flexible Q for extra high voltage power plants according to
     VDE AR-N-4130.
     It is used to be combined with active power dependencies in PQVArea4130V1, PQVArea4130V2, or
     PQVArea4130V3
@@ -394,8 +382,7 @@ class QVArea4130(QVArea4120):
 
 
 class PQVArea4130Base(BasePQVArea):
-    """
-    This is the base class for the three variants of VDE AR-N-4130. This class is not for direct
+    """ This is the base class for the three variants of VDE AR-N-4130. This class is not for direct
     application by the user.
     """
     def __init__(self, min_q, max_q, variant, vn=380, raise_merge_overlap=True):
@@ -405,26 +392,23 @@ class PQVArea4130Base(BasePQVArea):
 
 
 class PQVArea4130V1(PQVArea4130Base):
-    """
-    This class models the PQV area of flexible Q for extra high voltage power plants according to
-    variant 1 of VDE AR-N-4130.
+    """ This class models the PQV area of flexible Q for extra high voltage power plants according
+    to variant 1 of VDE AR-N-4130.
     """
     def __init__(self, vn=380, raise_merge_overlap=True):
         super().__init__(-0.227902, 0.484322, 1, vn=vn, raise_merge_overlap=raise_merge_overlap)
 
 class PQVArea4130V2(PQVArea4130Base):
-    """
-    This class models the PQV area of flexible Q for extra high voltage power plants according to
-    variant 2 of VDE AR-N-4130.
+    """ This class models the PQV area of flexible Q for extra high voltage power plants according
+    to variant 2 of VDE AR-N-4130.
     """
     def __init__(self, vn=380, raise_merge_overlap=True):
         super().__init__(-0.328684, 0.410775, 2, vn=vn, raise_merge_overlap=raise_merge_overlap)
 
 
 class PQVArea4130V3(PQVArea4130Base):
-    """
-    This class models the PQV area of flexible Q for extra high voltage power plants according to
-    variant 3 of VDE AR-N-4130.
+    """ This class models the PQV area of flexible Q for extra high voltage power plants according
+    to variant 3 of VDE AR-N-4130.
     """
     def __init__(self, vn=380, raise_merge_overlap=True):
         super().__init__(-0.410775, 0.328684, 3, vn=vn, raise_merge_overlap=raise_merge_overlap)
@@ -489,10 +473,9 @@ class PQArea4105(PQAreaPOLYGON):
 
 
 class QVArea4105(QVAreaPOLYGON):
-    """
-    This class models the QV area of flexible Q for low-voltage plants according to VDE AR-N-4105.
-    Plants with S_E,max <= 4.6 kVA should apply variant 1 while S_E,max > 4.6 kVA should apply
-    variant 2.
+    """ This class models the QV area of flexible Q for low-voltage plants according to
+    VDE AR-N-4105. Plants with S_E,max <= 4.6 kVA should apply variant 1 while S_E,max > 4.6 kVA
+    should apply variant 2.
     """
     def __init__(self, variant):
         if variant == 1:
@@ -507,10 +490,9 @@ class QVArea4105(QVAreaPOLYGON):
 
 
 class PQVArea4105(BasePQVArea):
-    """
-    This class models the PQV area of flexible Q for low-voltage plants according to VDE AR-N-4105.
-    Plants with S_E,max <= 4.6 kVA should apply variant 1 while S_E,max > 4.6 kVA should apply
-    variant 2.
+    """ This class models the PQV area of flexible Q for low-voltage plants according to
+    VDE AR-N-4105. Plants with S_E,max <= 4.6 kVA should apply variant 1 while S_E,max > 4.6 kVA
+    should apply variant 2.
     """
     def __init__(self, variant, raise_merge_overlap=True):
         super().__init__(raise_merge_overlap=raise_merge_overlap)

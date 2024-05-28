@@ -19,13 +19,12 @@ logger = logging.getLogger(__name__)
 
 
 # -------------------------------------------------------------------------------------------------
-""" DERController """
+# DERController
 # -------------------------------------------------------------------------------------------------
 
 
 class DERController(PQController):
-    """
-    Flexible controller to model plenty types of distributed energy resource (DER) control
+    """Flexible controller to model plenty types of distributed energy resource (DER) control
     characteristics, such as
 
     + const Q
@@ -56,7 +55,7 @@ class DERController(PQController):
     OPTIONAL:
         **element** (str, "sgen") - element type which is controlled
 
-        **q_model"" (object, None) - an q_model, such as provided in this file, should be passed to
+        **q_model** (object, None) - an q_model, such as provided in this file, should be passed to
         model how the q value should be determined.
 
         **pqv_area** (object, None) - an pqv_area, such as provided in this file, should be passed
