@@ -51,7 +51,7 @@ class DERController(PQController):
     INPUT:
         **net** (pandapower net)
 
-        **gid** (int[]) - IDs of the controlled elements
+        **element_index** (int[]) - IDs of the controlled elements
 
     OPTIONAL:
         **element** (str, "sgen") - element type which is controlled
@@ -99,17 +99,17 @@ class DERController(PQController):
         **ts_absolute** (bool, True) - Whether the time step values are absolute power values or
         scaling factors
     """
-    def __init__(self, net, gid, element="sgen",
+    def __init__(self, net, element_index, element="sgen",
                  q_model=None, pqv_area=None,
                  saturate_sn_mva=np.nan, q_prio=True, damping_coef=2,
                  max_p_error=1e-6, max_q_error=1e-6, p_ac=1., f_sizing=1.,
                  data_source=None, p_profile=None, profile_from_name=False,
                  profile_scale=1.0, in_service=True, ts_absolute=True,
                  order=0, level=0, drop_same_existing_ctrl=False, matching_params=None, **kwargs):
-        gid = list(ensure_iterability(gid))
+        element_index = list(ensure_iterability(element_index))
         if matching_params is None:
-            matching_params = {"gid": gid}
-        super().__init__(net, gid=gid, element=element, max_p_error=max_p_error,
+            matching_params = {"element_index": element_index}
+        super().__init__(net, element_index=element_index, element=element, max_p_error=max_p_error,
                          max_q_error=max_q_error, p_ac=p_ac,
                          f_sizing=f_sizing, data_source=data_source,
                          profile_scale=profile_scale, in_service=in_service,
@@ -126,7 +126,7 @@ class DERController(PQController):
         self.damping_coef = damping_coef
 
         if p_profile is not None:
-            p_profile = ensure_iterability(p_profile, len(gid))
+            p_profile = ensure_iterability(p_profile, len(element_index))
         self.set_p_profile(p_profile, profile_from_name)
 
         # --- log unexpected param values
@@ -151,7 +151,7 @@ class DERController(PQController):
 #        self.write_to_net(net)
 
     def is_converged(self, net):
-        vm = net.res_bus.loc[self.bus, "vm_pu"].set_axis(self.gid)
+        vm = net.res_bus.loc[self.bus, "vm_pu"].set_axis(self.element_index)
         p_series_mw = getattr(self, "p_series_mw", getattr(self, "p_mw", self.sn_mva))
         q_series_mvar = getattr(self, "q_series_mw", self.q_mvar)
 
@@ -236,11 +236,11 @@ class DERController(PQController):
 
 
     def __str__(self):
-        return super().__str__() +\
-            "q_model:" + str(self.q_model) +\
-            ", pqv_area:" + str(self.pqv_area) +\
-            ", saturate_sn_mva:" + str(self.saturate_sn_mva) +\
-            ", q_priority:" + str(self.q_prio)
+        el_id_str = f"len(element_index)={len(self.element_index)}" if len(self.element_index) > 6 \
+            else f"element_index={self.element_index}"
+        return (f"DERController({el_id_str}, q_model={self.q_model}, pqv_area={self.pqv_area}, "
+                f"saturate_sn_mva={self.saturate_sn_mva}, q_prio={self.q_prio}, "
+                f"damping_coef={self.damping_coef})")
 
 
 if __name__ == "__main__":

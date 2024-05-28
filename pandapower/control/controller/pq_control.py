@@ -26,9 +26,11 @@ class PQController(ConstControl):
     INPUT:
         **net** (attrdict) - pandapower network
 
-        **gid** (int[]) - IDs of the controlled elements
+        **element_index** (int[]) - IDs of the controlled elements
 
     OPTIONAL:
+
+        **element** - element table ('sgen', 'load' etc.)
 
         **max_p_error** (float, 0.0001) - Maximum error of active power
 
@@ -49,22 +51,22 @@ class PQController(ConstControl):
 
     """
 
-    def __init__(self, net, gid, element="sgen", max_p_error=0.0001, max_q_error=0.0001, p_ac=1.,
-                 f_sizing=1., data_source=None, profile_scale=1., in_service=True, ts_absolute=True,
-                 order=0, level=0, **kwargs):
-        super().__init__(net, element=element, variable="p_mw", element_index=gid,
+    def __init__(self, net, element_index, element="sgen", max_p_error=0.0001, max_q_error=0.0001,
+                 p_ac=1., f_sizing=1., data_source=None, profile_scale=1., in_service=True,
+                 ts_absolute=True, order=0, level=0, **kwargs):
+        super().__init__(net, element=element, variable="p_mw", element_index=element_index,
                          in_service=in_service, order=order, level=level, **kwargs)
 
         # read attributes from net
-        self.gid = gid
+        self.element_index = element_index
         self.element = element
-        self.bus = net[self.element]["bus"][gid]
-        self.p_mw = net[self.element]["p_mw"][gid]
-        self.q_mvar = net[self.element]["q_mvar"][gid]
-        self.sn_mva = net[self.element]["sn_mva"][gid]
-        self.name = net[self.element]["name"][gid]
-        self.gen_type = net[self.element]["type"][gid]
-        self.element_in_service = net[self.element]["in_service"][gid]
+        self.bus = net[self.element]["bus"][element_index]
+        self.p_mw = net[self.element]["p_mw"][element_index]
+        self.q_mvar = net[self.element]["q_mvar"][element_index]
+        self.sn_mva = net[self.element]["sn_mva"][element_index]
+        self.element_names = net[self.element]["name"][element_index]
+        self.gen_type = net[self.element]["type"][element_index]
+        self.element_in_service = net[self.element]["in_service"][element_index]
 
         self.sign = 1
         if element == "sgen":
@@ -96,7 +98,7 @@ class PQController(ConstControl):
             if p_profile:
                 logger.warning("Given parameter 'p_profile' will be discarded "
                                "since 'profile_from_name' has been set to True.")
-            self.p_profile = [f"P_{name}" for name in self.name]
+            self.p_profile = [f"P_{name}" for name in self.element_names]
         else:
             self.p_profile = p_profile
 
@@ -105,15 +107,15 @@ class PQController(ConstControl):
             if q_profile:
                 logger.warning("Given parameter 'q_profile' will be discarded "
                                "since 'profile_from_name' has been set to True.")
-            self.q_profile = [f"Q_{name}" for name in self.name]
+            self.q_profile = [f"Q_{name}" for name in self.element_names]
         else:
             self.q_profile = q_profile
 
     def __repr__(self):
         rep = super(PQController, self).__repr__()
 
-        for member in ["gid", "bus", "p_mw", "q_mvar", "sn_mva", "name", "gen_type",
-                       "element_in_service", "p_ac",
+        for member in ["element_index", "bus", "p_mw", "q_mvar", "sn_mva", "element_names",
+                       "gen_type", "element_in_service", "p_ac",
                        "f_sizing", "data_source", "profile_scale", "p_profile", "q_profile",
                        "ts_absolute", "max_p_error",
                        "max_q_error"]:
@@ -156,8 +158,8 @@ class PQController(ConstControl):
 
     def write_to_net(self, net):
         # write p, q to bus within the net
-        net[self.element].loc[self.gid, "p_mw"] = self.p_mw
-        net[self.element].loc[self.gid, "q_mvar"] = self.q_mvar
+        net[self.element].loc[self.element_index, "p_mw"] = self.p_mw
+        net[self.element].loc[self.element_index, "q_mvar"] = self.q_mvar
 
     def finalize_control(self, net):
         self.calc_curtailment()
@@ -210,5 +212,11 @@ class PQController(ConstControl):
         """
         Reading the actual P and Q state from the respective [self.element] in the net
         """
-        self.p_mw = net[self.element].loc[self.gid, "p_mw"]
-        self.q_mvar = net[self.element].loc[self.gid, "q_mvar"]
+        self.p_mw = net[self.element].loc[self.element_index, "p_mw"]
+        self.q_mvar = net[self.element].loc[self.element_index, "q_mvar"]
+
+    def __str__(self):
+        if len(self.element_index) > 6:
+            return f"PQController(len(element_index)={len(self.element_index)}"
+        else:
+            return f"PQController(element_index={self.element_index}"

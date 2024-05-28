@@ -12,7 +12,6 @@ except ImportError:
     shapely_imported = False
 
 from pandapower.auxiliary import soft_dependency_error
-from pandapower.toolbox.power_factor import cosphi_to_pos, cosphi_from_pos
 from pandapower.control.controller.DERController.DERBasics import BaseModel
 
 try:
@@ -39,7 +38,7 @@ class BaseArea(BaseModel):
         pass
 
     def __str__(self):
-        return self.__class__.name
+        return self.__class__.name()
 
 
 class BasePQVArea(BaseArea):

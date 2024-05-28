@@ -29,7 +29,7 @@ class QModel(BaseModel):
         pass
 
     def __str__(self):
-        return self.__class__.name
+        return self.__class__.name()
 
 
 class QModelConstQ(QModel):
@@ -50,7 +50,7 @@ class QModelConstQ(QModel):
         return np.array(ensure_iterability(self.q, len_))
 
     def __str__(self):
-        return self.__class__.name + " ,const_q:" + str(self.q)
+        return self.__class__.name() + f"(q={self.q})"
 
 
 class QModelCosphiVCurve(QModel):
@@ -91,7 +91,7 @@ class QModelCosphiP(QModel):
         return (p * self.q_setpoint)
 
     def __str__(self):
-        return self.__class__.name + " ,cosphi:" + str(self.cosphi)
+        return self.__class__.name() + f"(cosphi={self.cosphi})"
 
 
 class QModelCosphiSn(QModel):
@@ -108,7 +108,7 @@ class QModelCosphiSn(QModel):
         return (1 * self.cosphi)
 
     def __str__(self):
-        return self.__class__.name + " ,cosphi:" + str(self.cosphi)
+        return self.__class__.name() + f"(cosphi={self.cosphi})"
 
 
 class QModelCosphiPQ(QModel):
@@ -131,7 +131,7 @@ class QModelCosphiPQ(QModel):
         return (p/abs(self.cosphi) * self.q_setpoint)
 
     def __str__(self):
-        return self.__class__.name + " ,cosphi:" + str(self.cosphi)
+        return self.__class__.name() + f"(cosphi={self.cosphi})"
 
 
 class QModelCosphiPCurve(QModel):
