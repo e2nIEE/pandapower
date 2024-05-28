@@ -162,7 +162,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
 
     baseR = 110 ** 2 / baseMVA
     hvdc_branches = np.flatnonzero(branch_dc[:, DC_BR_STATUS] != 0)
-    num_branch_dc = len(hvdc_branches)
+    num_branch_dc = len(hvdc_branches) + num_vsc  # internal vsc resistance is also a dc branch
     hvdc_y_pu = 1 / branch_dc[hvdc_branches, DC_BR_R]
     relevant_bus_dc = flatnonzero(bus_dc[:, DC_BUS_TYPE] != DC_NONE)
     num_bus_dc = len(relevant_bus_dc)

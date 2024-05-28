@@ -764,19 +764,23 @@ def create_bus_dc(net, vn_kv, name=None, index=None, geodata=None, type="b", zon
     """
     index = _get_index_with_check(net, "bus_dc", index)
 
-    entries = dict(zip(["name", "vn_kv", "type", "zone", "in_service"],
-                       [name, vn_kv, type, zone, bool(in_service)]))
-
-    _set_entries(net, "bus_dc", index, True, **entries, **kwargs)
-
     if geodata is not None:
-        if len(geodata) != 2:
-            raise UserWarning("geodata must be given as (x, y) tuple")
-        net["bus_dc_geodata"].loc[index, ["x", "y"]] = geodata
+        if isinstance(geodata, tuple):
+            if len(geodata) != 2:
+                raise UserWarning("geodata must be given as (x, y) tuple")
+            geo = f'{{"coordinates":[{geodata[0]},{geodata[1]}], "type":"Point"}}'
+        else:
+            raise UserWarning("geodata must be a valid coordinate tuple")
+    else:
+        geo = None
 
     if coords is not None:
-        net["bus_dc_geodata"].at[index, "coords"] = None
-        net["bus_dc_geodata"].at[index, "coords"] = coords
+        raise UserWarning("busbar plotting is not implemented fully and will likely be removed in the future")
+
+    entries = dict(zip(["name", "vn_kv", "type", "zone", "in_service", "geo"],
+                       [name, vn_kv, type, zone, bool(in_service), geo]))
+
+    _set_entries(net, "bus_dc", index, True, **entries, **kwargs)
 
     # column needed by OPF. 0. and 2. are the default maximum / minimum voltages
     _set_value_if_not_nan(net, index, min_vm_pu, "min_vm_pu", "bus_dc", default_val=0.)
