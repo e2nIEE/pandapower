@@ -218,6 +218,10 @@ def from_pf(dict_net, pv_as_slack=True, pf_variable_p_loads='plini', pf_variable
     net.line['section_idx'] = 0
     if dict_net['global_parameters']["iopt_tem"] == 1:
         pp.set_user_pf_options(net, consider_line_temperature=True)
+    if dict_net['global_parameters']["global_load_voltage_dependency"] == 1:
+        pp.set_user_pf_options(net, voltage_depend_loads=True)
+    else:
+        pp.set_user_pf_options(net, voltage_depend_loads=False)
 
     if len(dict_net['ElmLodlvp']) > 0:
         lvp_dict = get_lvp_for_lines(dict_net)
@@ -1616,7 +1620,25 @@ def create_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
     elif load_class == 'ElmLod':
         params.update(ask(item, pf_variable_p_loads=pf_variable_p_loads,
                                       dict_net=dict_net, variables=('p_mw', 'q_mvar')))
-        params.update({"const_z_percent": 100 if item.typ_id is None else 0})
+        load_type = item.typ_id
+        if load_type is None:
+            params["const_z_percent"] = 100
+        else:
+            kpu = load_type.kpu
+            kqu = load_type.kqu
+            if kpu != kqu or load_type.cP != 1 or load_type.cQ != 1:
+                raise UserWarning(f"Load {item.loc_name} ({load_class}) unsupported voltage dependency configuration")
+            elif kpu == 0:
+                params["const_z_percent"] = 0
+                params["const_i_percent"] = 0
+            elif kpu == 1:
+                params["const_z_percent"] = 0
+                params["const_i_percent"] = 100
+            elif kpu == 2:
+                params["const_z_percent"] = 100
+                params["const_i_percent"] = 0
+            else:
+                raise UserWarning(f"Load {item.loc_name} ({load_class}) unsupported voltage dependency configuration")
 
     ### for now - don't import ElmLodlvp
     elif load_class == 'ElmLodlvp':
