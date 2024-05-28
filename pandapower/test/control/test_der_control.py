@@ -159,28 +159,28 @@ def test_cosphi_of_p_timeseries():
     ow.log_variable("res_sgen", "q_mvar")
 
     DER_no_q = pp.control.DERController(
-        net, gid=0, data_source=ds, p_profile="P_0", profile_scale=-2e-3,
+        net, 0, data_source=ds, p_profile="P_0", profile_scale=-2e-3,
         q_model=DERModels.QModelCosphiPCurve({
             'p_points': (0, 0.5, 1),
             'cosphi_points': (1, 1, 1)}))
 
     DER_no_q2 = pp.control.DERController(
-        net, gid=0, data_source=ds, p_profile="P_0", profile_scale=-2e-3)
+        net, 0, data_source=ds, p_profile="P_0", profile_scale=-2e-3)
 
     DER_ue = pp.control.DERController(
-        net, gid=0, data_source=ds, p_profile="P_0", profile_scale=-2e-3,
+        net, 0, data_source=ds, p_profile="P_0", profile_scale=-2e-3,
         q_model=DERModels.QModelCosphiPCurve({
             'p_points': (0, 0.5, 1),
             'cosphi_points': (1, 1, -0.95)}))
 
     DER_ue2 = pp.control.DERController(
-        net, gid=0, data_source=ds, p_profile="P_0", profile_scale=-2e-3,
+        net, 0, data_source=ds, p_profile="P_0", profile_scale=-2e-3,
         q_model=DERModels.QModelCosphiPCurve({
             'p_points': (0, 0.2, 0.25, 0.3, 0.5, 1),
             'cosphi_points': (1, 1, 0.975, 1, 1, -0.95)}))
 
     DER_oe = pp.control.DERController(
-        net, gid=0, data_source=ds, p_profile="P_0", profile_scale=-2e-3,
+        net, 0, data_source=ds, p_profile="P_0", profile_scale=-2e-3,
         q_model=DERModels.QModelCosphiPCurve({
             'p_points': (0, 0.5, 1),
             'cosphi_points': (1, 1, 0.95)}))
