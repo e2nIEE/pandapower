@@ -869,14 +869,14 @@ def test_Ybus_format():
 
     Ybus, Yf, Yt = makeYbus_pypower(ppci["baseMVA"], ppci["bus"], ppci["branch"])
     for Y in (Ybus, Yf, Yt):
-        assert Y.has_canonical_format
         assert Y.has_sorted_indices
+        assert Y.has_canonical_format
 
     if numba_installed:
         Ybus, Yf, Yt = makeYbus_numba(ppci["baseMVA"], ppci["bus"], ppci["branch"])
         for Y in (Ybus, Yf, Yt):
-            assert Y.has_canonical_format
             assert Y.has_sorted_indices
+            assert Y.has_canonical_format
 
 
 def test_storage_pf():

@@ -15,6 +15,9 @@ def makeYbus_svc(Ybus, x_control_svc, svc_x_l_pu, svc_x_cvar_pu, svc_buses):
 
 
 def makeYbus_tcsc(Ybus, x_control_tcsc, tcsc_x_l_pu, tcsc_x_cvar_pu, tcsc_fb, tcsc_tb):
+    if len(x_control_tcsc) == 0:  # todo: this is a temporary fix for the performance issue - a proper fix is wip
+        return csr_matrix(Ybus.shape, dtype=np.float64)
+
     Ybus_tcsc = np.zeros(Ybus.shape, dtype=np.complex128)
     Y_TCSC = -1j * calc_y_svc_pu(x_control_tcsc, tcsc_x_l_pu, tcsc_x_cvar_pu)
 
@@ -32,6 +35,9 @@ def makeYbus_tcsc(Ybus, x_control_tcsc, tcsc_x_l_pu, tcsc_x_cvar_pu, tcsc_fb, tc
 
 
 def makeYbus_ssc(Ybus, ssc_y_pu, ssc_fb, ssc_tb, any_ssc):
+    if not any_ssc:  # todo: this is a temporary fix for the performance issue - a proper fix is wip
+        return csr_matrix(Ybus.shape, dtype=np.float64)
+
     Ybus_ssc = np.zeros(Ybus.shape, dtype=np.complex128)
 
     if any_ssc:

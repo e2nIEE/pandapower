@@ -215,17 +215,24 @@ def make_gui(app, project_name, browse_dst, calc):
                                                                                          sticky=tk.W)
     params.is_debug = LOGGER_DEBUG.get
 
+    CREATE_SECTIONS = tk.IntVar()
+    CREATE_SECTIONS.set(1)
+    tk.Checkbutton(input_panel, text="Create line sections as separate lines", variable=CREATE_SECTIONS).grid(row=7,
+                                                                                         column=4,
+                                                                                         sticky=tk.W)
+    params.create_sections_entry = CREATE_SECTIONS.get
+
     REPLACE_ZERO_BRANCHES = tk.IntVar()
     REPLACE_ZERO_BRANCHES.set(1)
     tk.Checkbutton(input_panel, text="Replace low-impedance branches with switches",
-                   variable=REPLACE_ZERO_BRANCHES).grid(row=7, column=4, sticky=tk.W)
+                   variable=REPLACE_ZERO_BRANCHES).grid(row=8, column=4, sticky=tk.W)
     params.replace_zero_branches = REPLACE_ZERO_BRANCHES.get
 
-    tk.Label(input_panel, anchor='w', text='Min. line R and X (Ohm):').grid(row=8, column=4, sticky=tk.W, pady=0)
+    tk.Label(input_panel, anchor='w', text='Min. line R and X (Ohm):').grid(row=9, column=4, sticky=tk.W, pady=0)
 
     min_ohm = tk.Entry(input_panel, width=8)
     min_ohm.delete(0, tk.END)
-    min_ohm.grid(row=8, column=5, padx=2, pady=2, sticky=tk.W)
+    min_ohm.grid(row=9, column=5, padx=2, pady=2, sticky=tk.W)
     min_ohm.insert(0, "0.01")
     # entry_fname.insert(0, 'test') ##for testing
     params.min_ohm_entry = min_ohm

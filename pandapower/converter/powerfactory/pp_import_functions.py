@@ -25,7 +25,7 @@ def ga(element, attr):
 # import network to pandapower:
 def from_pf(dict_net, pv_as_slack=True, pf_variable_p_loads='plini', pf_variable_p_gen='pgini',
             flag_graphics='GPS', tap_opt="nntap", export_controller=True, handle_us="Deactivate",
-            max_iter=None, is_unbalanced=False):
+            max_iter=None, is_unbalanced=False, create_sections=True):
     logger.debug("__name__: %s" % __name__)
     logger.debug('started from_pf')
     logger.info(logger.__dict__)
@@ -36,6 +36,9 @@ def from_pf(dict_net, pv_as_slack=True, pf_variable_p_loads='plini', pf_variable
     grid_name = dict_net['ElmNet'].loc_name
     base_sn_mva = dict_net['global_parameters']['base_sn_mva']
     net = pp.create_empty_network(grid_name, sn_mva=base_sn_mva)
+    net['bus_geodata'] = DataFrame(columns=['x', 'y'])
+    net['line_geodata'] = DataFrame(columns=['coords'])
+
     pp.results.reset_results(net, mode="pf_3ph")
     if max_iter is not None:
         pp.set_user_pf_options(net, max_iteration=max_iter)
@@ -209,7 +212,8 @@ def from_pf(dict_net, pv_as_slack=True, pf_variable_p_loads='plini', pf_variable
     line_dict = {}
     n = 0
     for n, line in enumerate(dict_net['ElmLne'], 0):
-        create_line(net=net, item=line, flag_graphics=flag_graphics, corridor=n, is_unbalanced=is_unbalanced)
+        create_line(net=net, item=line, flag_graphics=flag_graphics, create_sections=create_sections,
+                    is_unbalanced=is_unbalanced)
     logger.info('imported %d lines' % (len(net.line.line_idx.unique())) if len(net.line) else 0)
     net.line['section_idx'] = 0
     if dict_net['global_parameters']["iopt_tem"] == 1:
@@ -656,7 +660,7 @@ def get_coords_from_grf_object(item):
     return coords
 
 
-def create_line(net, item, flag_graphics, corridor, is_unbalanced):
+def create_line(net, item, flag_graphics, create_sections, is_unbalanced):
     params = {'parallel': item.nlnum, 'name': item.loc_name}
     logger.debug('>> creating line <%s>' % params['name'])
     logger.debug('line <%s> has <%d> parallel lines' % (params['name'], params['parallel']))
@@ -673,6 +677,7 @@ def create_line(net, item, flag_graphics, corridor, is_unbalanced):
         logger.error("Error while exporting Line '%s'" % params['name'])
         return
 
+    corridor = pp.create.get_free_id(net.line)
     line_sections = item.GetContents('*.ElmLnesec')
     # geodata
     if flag_graphics == 'no geodata':
@@ -691,16 +696,19 @@ def create_line(net, item, flag_graphics, corridor, is_unbalanced):
         logger.debug('line <%s> has no sections' % params['name'])
         lid = create_line_normal(net=net, item=item, is_unbalanced=is_unbalanced, **params)
         sid_list = [lid]
-        line_dict[item] = sid_list
         logger.debug('created line <%s> with index <%d>' % (params['name'], lid))
 
     else:
         logger.debug('line <%s> has sections' % params['name'])
-        sid_list = create_line_sections(net=net, item_list=line_sections, line=item,
-                                        coords=coords, is_unbalanced=is_unbalanced, **params)
-        line_dict[item] = sid_list
+        if create_sections:
+            sid_list = create_line_sections(net=net, item_list=line_sections, line=item,
+                                            coords=coords, is_unbalanced=is_unbalanced, **params)
+        else:
+            lidx = create_line_no_sections(net, item, line_sections, params["bus1"], params["bus2"], coords, is_unbalanced)
+            sid_list = [lidx]
         logger.debug('created <%d> line sections for line <%s>' % (len(sid_list), params['name']))
 
+    line_dict[item] = sid_list
     net.line.loc[sid_list, "line_idx"] = corridor
     net.line.loc[sid_list, "folder_id"] = item.fold_id.loc_name
     net.line.loc[sid_list, "equipment"] = item.for_name
@@ -889,6 +897,65 @@ def create_line_sections(net, item_list, line, bus1, bus2, coords, parallel, is_
                 logger.warning("Could not generate geodata for line !!")
 
     return sid_list
+
+
+def create_line_no_sections(net, main_item, item_list, bus1, bus2, coords, is_unbalanced, **kwargs):
+    line_name = main_item.loc_name
+
+    sec_len = [item.dline for item in item_list]
+    total_len = sum(sec_len)
+    weights = [l / total_len for l in sec_len]
+
+    df = [item.fline for item in item_list]
+    parallel = [1 for item in item_list]
+    max_i_ka = min([item.Inom * p * d if item.Inom != 0 else 1e-3 for item, p, d in zip(item_list, parallel, df)])
+    r_ohm_per_km = sum([item.R1 for item in item_list]) / total_len
+    x_ohm_per_km = sum([item.X1 for item in item_list]) / total_len
+    c_nf_per_km = sum([item.C1 * 1e3 for item in item_list]) / total_len  # internal unit for C in PF is uF
+    #g_us_per_km = sum([item.G1 for item in item_list]) / total_len
+    r0_ohm_per_km = sum([item.R0 for item in item_list]) / total_len
+    x0_ohm_per_km = sum([item.X0 for item in item_list]) / total_len
+    c0_nf_per_km = sum([item.C0 * 1e3 for item in item_list]) / total_len  # internal unit for C in PF is uF
+    #g0_us_per_km = sum([item.G0 for item in item_list]) / total_len
+    # r_ohm_per_km = sum([item.rline / p * w for item, p, w in zip(item_list, parallel, weights)])
+    # x_ohm_per_km = sum([item.xline / p * w for item, p, w in zip(item_list, parallel, weights)])
+    # c_nf_per_km = sum([item.cline * item.frnom / 50 * 1e3 / p * w for item, p, w in zip(item_list, parallel, weights)])  # internal unit for C in PF is uF
+    # g_us_per_km = sum([item.gline / p * w for item, p, w in zip(item_list, parallel, weights)])
+    # r0_ohm_per_km = sum([item.rline0 / p * w for item, p, w in zip(item_list, parallel, weights)])
+    # x0_ohm_per_km = sum([item.xline0 / p * w for item, p, w in zip(item_list, parallel, weights)])
+    # c0_nf_per_km = sum([item.cline0 * item.frnom / 50 * 1e3 / p * w for item, p, w in zip(item_list, parallel, weights)])  # internal unit for C in PF is uF
+    # g0_us_per_km = sum([item.gline0 / p * w for item, p, w in zip(item_list, parallel, weights)])
+    #type_list = [item.cohl_ for item in item_list]
+
+    g_us_per_km = 0.
+    g0_us_per_km = 0.
+    endtemp_degree = None
+
+    #endtemp_degree = max([item.rtemp for item in item_list])
+    # q_mm2 = sum([item.qurs * p * w for item, p, w in zip(item_list, parallel, weights)])
+    alpha = sum([item.alpha / p * w for item, p, w in zip(item_list, parallel, weights)]) / total_len
+    # alpha_final = [item.alpha / p * w for item, p, w in zip(item_list, parallel, weights)]
+    # max_temperature_degree_celsius = min([item.tmax for item in item_list])
+    temperature_degree_celsius = max([item.Top for item in item_list])
+
+    lid = pp.create_line_from_parameters(net=net, from_bus=bus1, to_bus=bus2, length_km=total_len,
+                                         r_ohm_per_km=r_ohm_per_km, x_ohm_per_km=x_ohm_per_km, c_nf_per_km=c_nf_per_km,
+                                         max_i_ka=max_i_ka, name=line_name, type=None, geodata=coords,
+                                         g_us_per_km=g_us_per_km, alpha=alpha, parallel=main_item.nlnum,
+                                         temperature_degree_celsius=temperature_degree_celsius,
+                                         r0_ohm_per_km=r0_ohm_per_km, x0_ohm_per_km=x0_ohm_per_km,
+                                         c0_nf_per_km=c0_nf_per_km, g0_us_per_km=g0_us_per_km,
+                                         endtemp_degree=endtemp_degree)
+
+    net.line.loc[lid, 'description'] = ' \n '.join(main_item.desc) if len(main_item.desc) > 0 else ''
+    if hasattr(main_item, "cimRdfId"):
+        chr_name = main_item.cimRdfId
+        if chr_name is not None and len(chr_name) > 0:
+            net["line"].loc[lid, 'origin_id'] = chr_name[0]
+
+    get_pf_line_results(net, main_item, lid, is_unbalanced)
+
+    return lid
 
 
 def create_line_normal(net, item, bus1, bus2, name, parallel, is_unbalanced, geodata=None):
@@ -1549,6 +1616,7 @@ def create_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
     elif load_class == 'ElmLod':
         params.update(ask(item, pf_variable_p_loads=pf_variable_p_loads,
                                       dict_net=dict_net, variables=('p_mw', 'q_mvar')))
+        params.update({"const_z_percent": 100 if item.typ_id is None else 0})
 
     ### for now - don't import ElmLodlvp
     elif load_class == 'ElmLodlvp':
@@ -2317,7 +2385,7 @@ def create_trafo3w(net, item, tap_opt='nntap'):
         'vkr0_hv_percent': pf_type.ur0hm,
         'vkr0_mv_percent': pf_type.ur0ml,
         'vkr0_lv_percent': pf_type.ur0hl,
-        'vector_group': re.sub(r'\d+', '', pf_type.vecgrp),
+        'vector_group': re.sub(r"\d+", '', pf_type.vecgrp),
 
         'pfe_kw': pf_type.pfe,
         'i0_percent': pf_type.curm3,
@@ -2497,27 +2565,57 @@ def create_shunt(net, item):
         'vn_kv': item.ushnm,
         'q_mvar': item.Qact * multiplier
     }
+    if item.shtype == 0:
+        # Shunt is a R-L-C element
+        
+        R = item.rrea
+        X = -1e6/item.bcap + item.xrea
 
-    if item.shtype == 1:
+        p_mw = (item.ushnm ** 2 * R) / (R ** 2 + X ** 2) * multiplier
+        params['q_mvar'] = (item.ushnm ** 2 * X) / (R ** 2 + X ** 2) * multiplier
+        sid = pp.create_shunt(net, p_mw=p_mw, **params)
+    elif item.shtype == 1:
         # Shunt is an R-L element
-        params['q_mvar'] = item.qrean * multiplier
-        p_mw = (item.ushnm ** 2 * item.rrea / (item.rrea ** 2 + item.xrea ** 2)) * multiplier
+        
+        R = item.rrea
+        X = item.xrea
+
+        p_mw = (item.ushnm ** 2 * R) / (R ** 2 + X ** 2) * multiplier
+        params['q_mvar'] = (item.ushnm ** 2 * X) / (R ** 2 + X ** 2) * multiplier
         sid = pp.create_shunt(net, p_mw=p_mw, **params)
     elif item.shtype == 2:
         # Shunt is a capacitor bank
         loss_factor = item.tandc
         sid = pp.create_shunt_as_capacitor(net, loss_factor=loss_factor, **params)
-    else:
-        # Shunt is an element of R-L-C (0), R-L (1), R-L-C, Rp (3), R-L-C1-C2, Rp (4)
-        logger.warning('Importing of shunt elements that represent anything but capacitor banks '
-                       'is not implemented correctly, the results will be inaccurate')
-        if item.HasResults(0):
-            p_mw = ga(item, 'm:P:bus1') * multiplier
-        elif item.HasAttribute('c:PRp'):
-            p_mw = ga(item, 'c:PRp') / 1e3 + ga(item, 'c:PL') / 1e3
-        else:
-            logger.warning("Shunt element %s is not implemented, p_mw is set to 0, results will be incorrect!" % item.loc_name)
-            p_mw = 0
+    elif item.shtype == 3:
+        # Shunt is a R-L-C, Rp element
+
+        Rp = item.rpara
+        Rs = item.rrea
+        Xl = item.xrea
+        Bc = -item.bcap * 1e-6
+        
+        R = Rp*(Rp*Rs+Rs**2+Xl**2)/((Rp+Rs)**2 + Xl**2)
+        X = 1/Bc + (Xl*Rp**2)/((Rp+Rs)**2 + Xl**2)
+
+        p_mw = (item.ushnm ** 2 * R) / (R ** 2 + X ** 2) * multiplier
+        params['q_mvar'] = (item.ushnm ** 2 * X) / (R ** 2 + X ** 2) * multiplier
+        sid = pp.create_shunt(net, p_mw=p_mw, **params)
+    elif item.shtype == 4:
+        # Shunt is a R-L-C1-C2, Rp element
+
+        Rp = item.rpara
+        Rs = item.rrea
+        Xl = item.xrea
+        B1 = 2*np.pi*50*item.c1 * 1e-6
+        B2 = 2*np.pi*50*item.c2 * 1e-6
+
+        Z = Rp * (Rs + 1j * (Xl - 1 / B1)) / (Rp + Rs + 1j * (Xl - 1 / B1)) - 1j / B2
+        R = np.real(Z)
+        X = np.imag(Z)
+
+        p_mw = (item.ushnm ** 2 * R) / (R ** 2 + X ** 2) * multiplier
+        params['q_mvar'] = (item.ushnm ** 2 * X) / (R ** 2 + X ** 2) * multiplier
         sid = pp.create_shunt(net, p_mw=p_mw, **params)
 
     add_additional_attributes(item, net, element='shunt', element_id=sid,
@@ -2562,9 +2660,9 @@ def create_zpu(net, item):
                               attr_dict={"cimRdfId": "origin_id"})
 
     # create shunts at the buses connected to the impedance
-    if ~np.isclose(item.gi_pu, 0) or ~np.isclose(item.bi_pu, 0):
+    if not np.isclose(item.gi_pu, 0) or not np.isclose(item.bi_pu, 0):
         _add_shunt_to_impedance_bus(net, item, bus1)
-    if ~np.isclose(item.gj_pu, 0) or ~np.isclose(item.bj_pu, 0):
+    if not np.isclose(item.gj_pu, 0) or not np.isclose(item.bj_pu, 0):
         _add_shunt_to_impedance_bus(net, item, bus2)
 
 
