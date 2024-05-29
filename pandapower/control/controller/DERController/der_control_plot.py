@@ -21,16 +21,22 @@ def plot_pq_area(pq_area, **kwargs):
 
 
 def _plot_pq_area(min_max_q, title=None, ax=None, saturate_sn_pu:float=np.nan, circle_segment=90,
-                  p_samples=None):
+                  p_samples=None, tex=False):
     if p_samples is None:
         p_samples = np.linspace(0, 1, 200)
+    if tex:
+        texts = "$Q_{min}$", "$Q_{max}$", \
+            r"underexcited $\leftarrow------ Q/S_N ------\rightarrow$ overexcited", "$P/S_N$", \
+            '$S_{max}$'
+    else:
+        texts = "Qmin", "Qmax", "underexcited <------ Q/Sn ------> overexcited", "P/Sn", 'Smax'
     if ax is None:
         plt.figure()
         ax = plt.gca()
-    ax.plot(min_max_q[:, 0], p_samples, c="blue", alpha=0.9, label="$Q_{min}$")
-    ax.plot(min_max_q[:, 1], p_samples, c="red", alpha=0.9, label="$Q_{max}$")
-    ax.set_xlabel(r"underexcited $\leftarrow------ Q/S_N ------\rightarrow$ overexcited")
-    ax.set_ylabel("$P/S_N$")
+    ax.plot(min_max_q[:, 0], p_samples, c="blue", alpha=0.9, label=texts[0])
+    ax.plot(min_max_q[:, 1], p_samples, c="red", alpha=0.9, label=texts[1])
+    ax.set_xlabel(texts[2])
+    ax.set_ylabel(texts[3])
     ax.legend()
     ax.grid(alpha=0.8)
     if title is not None:
@@ -41,7 +47,7 @@ def _plot_pq_area(min_max_q, title=None, ax=None, saturate_sn_pu:float=np.nan, c
         # the output x, y of generate_circle_segment() is used in reverse, since a segment around
         # 0 degree => east is used instead of around north
         y, x = generate_circle_segment(0, 0, saturate_sn_pu, -circle_segment, circle_segment, 1)
-        ax.plot(x, y, '--k', label='$S_{max}$')
+        ax.plot(x, y, '--k', label=texts[4])
         y_circ = np.sqrt(saturate_sn_pu**2 - p_samples**2)
         x_diff = max(x) - min(x)
         ax.set_xlim(min(x)-0.05*x_diff, max(x)+0.05*x_diff)
@@ -54,9 +60,13 @@ def _plot_pq_area(min_max_q, title=None, ax=None, saturate_sn_pu:float=np.nan, c
     plt.tight_layout()
 
 
-def plot_qv_area(qv_area, title=None, ax=None, prune_to_flexibility=False, vm_samples=None):
+def plot_qv_area(qv_area, title=None, ax=None, prune_to_flexibility=False, vm_samples=None, tex=False):
     if vm_samples is None:
         vm_samples = np.linspace(0.8, 1.2, 200)
+    if tex:
+        texts = "$Q_{min}$", "$Q_{max}$", "$v_m$ in pu", "$Q/S_N$"
+    else:
+        texts = "Qmin", "Qmax", "Vm in pu", "Q/Sn"
 
     min_max_q = qv_area.q_flexibility(p=0.5, vm=vm_samples) # p should be irrelevant since
     # it is about QV areas, not about PQV areas
@@ -74,10 +84,10 @@ def plot_qv_area(qv_area, title=None, ax=None, prune_to_flexibility=False, vm_sa
         plt.figure()
         ax = plt.gca()
 
-    ax.plot(vm_samples, min_max_q[:, 0], c="blue", alpha=0.9, label="q_min")
-    ax.plot(vm_samples, min_max_q[:, 1], c="red", alpha=0.9, label="q_max")
-    ax.set_xlabel("$v_m$ in pu")
-    ax.set_ylabel("$Q/S_N$")
+    ax.plot(vm_samples, min_max_q[:, 0], c="blue", alpha=0.9, label=texts[0])
+    ax.plot(vm_samples, min_max_q[:, 1], c="red", alpha=0.9, label=texts[1])
+    ax.set_xlabel(texts[2])
+    ax.set_ylabel(texts[3])
     ax.legend()
     ax.grid(alpha=0.8)
     ax.fill_between(vm_samples, min_max_q[:, 0], min_max_q[:, 1], color="green", alpha=0.2)
