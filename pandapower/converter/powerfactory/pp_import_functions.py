@@ -1624,21 +1624,21 @@ def create_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
         if load_type is None:
             params["const_z_percent"] = 100
         else:
-            kpu = load_type.kpu
-            kqu = load_type.kqu
-            if kpu != kqu or load_type.cP != 1 or load_type.cQ != 1:
+            if (load_type.kpu != load_type.kqu or load_type.kpu0 != load_type.kqu0 or load_type.aP != load_type.aQ or
+                    load_type.bP != load_type.bQ or load_type.cP != load_type.cQ):
                 raise UserWarning(f"Load {item.loc_name} ({load_class}) unsupported voltage dependency configuration")
-            elif kpu == 0:
-                params["const_z_percent"] = 0
-                params["const_i_percent"] = 0
-            elif kpu == 1:
-                params["const_z_percent"] = 0
-                params["const_i_percent"] = 100
-            elif kpu == 2:
-                params["const_z_percent"] = 100
-                params["const_i_percent"] = 0
-            else:
-                raise UserWarning(f"Load {item.loc_name} ({load_class}) unsupported voltage dependency configuration")
+            i = 0
+            z = 0
+            for cc, ee in zip(("aP", "bP", "cP"), ("kpu0", "kpu1", "kpu")):
+                c = ga(load_type, cc)
+                e = ga(load_type, ee)
+                if e == 1:
+                    i += 100 * c
+                elif e == 2:
+                    z += 100 * c
+            params["const_i_percent"] = i
+            params["const_z_percent"] = z
+
 
     ### for now - don't import ElmLodlvp
     elif load_class == 'ElmLodlvp':
