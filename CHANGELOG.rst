@@ -27,6 +27,7 @@ Change Log
 - [FIXED] k documentation of sgen
 - [FIXED] PowerFactory converter: fix trafo3w tap dependent impedance
 - [ADDED] PowerFactory converter: support load types (constI, constZ) and the setting whether to consider voltage dependency of loads
+- [FIXED] deprecation of matplotlib.cm.get_cmap(name) -> matplotlib.colormaps[name]
 
 [2.14.6] - 2024-04-02
 -------------------------------
