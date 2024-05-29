@@ -25,6 +25,7 @@ Change Log
 - [CHANGED] minor changes to the example networks (mainly added names to identify them in tests)
 - [CHANGED] dataframes_equal adapted to properly compare geojson data
 - [FIXED] k documentation of sgen
+- [FIXED] deprecation of matplotlib.cm.get_cmap(name) -> matplotlib.colormaps[name]
 
 [2.14.6] - 2024-04-02
 -------------------------------
