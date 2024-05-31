@@ -29,7 +29,7 @@ def _plot_pq_area(min_max_q, title=None, ax=None, saturate_sn_pu:float=np.nan, c
             r"underexcited $\leftarrow------ Q/S_N ------\rightarrow$ overexcited", "$P/S_N$", \
             '$S_{max}$'
     else:
-        texts = "Qmin", "Qmax", "underexcited <------ Q/Sn ------> overexcited", "P/Sn", 'Smax'
+        texts = "Qmin", "Qmax", "underexcited < ----- Q/Sn ----- > overexcited", "P/Sn", 'Smax'
     if ax is None:
         plt.figure()
         ax = plt.gca()
