@@ -639,22 +639,29 @@ def test_trafo3w(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=2e-2, l_tol=
 
 @pytest.mark.parametrize("tap_pos", (-1, 2))
 @pytest.mark.parametrize("tap_side", ('hv', 'mv', 'lv'))
-def test_trafo3w_tap(tap_pos, tap_side):
+@pytest.mark.parametrize("tap_step_degree", (15, 30))
+def test_trafo3w_tap(tap_pos, tap_side, tap_step_degree):
+    results = pd.read_csv(os.path.join(pp.pp_dir, "test", "test_files", "test_results_files", "trafo_3w_tap_results.csv"), sep=";", decimal=",")
+
+    if results.query("tap_side == @tap_side & tap_pos == @tap_pos & tap_step_degree == @tap_step_degree").empty:
+        pytest.skip(f"Skipping combination: tap_side={tap_side}, tap_pos={tap_pos}, tap_step_degree={tap_step_degree}")
+
     net = pp.from_json(os.path.join(pp.pp_dir, "test", "test_files","test_trafo3w_tap.json"))  #
     net.trafo3w.loc[0, 'tap_at_star_point']= False
     net.trafo3w.loc[1, 'tap_at_star_point']= True
-    results = pd.read_csv(os.path.join(pp.pp_dir, "test", "test_files", "test_results_files", "trafo_3w_tap_results.csv"), sep=";", decimal=",")
 
     net.trafo3w.loc[0, "tap_side"] = tap_side
     net.trafo3w.loc[1, "tap_side"] = tap_side
     net.trafo3w.loc[0, "tap_pos"] = tap_pos
     net.trafo3w.loc[1, "tap_pos"] = tap_pos
+    net.trafo3w.loc[0, "tap_step_degree"] = tap_step_degree
+    net.trafo3w.loc[1, "tap_step_degree"] = tap_step_degree
     pp.runpp(net)
 
     for index in range(8):
         for variable, tol in zip(("vm_pu", "va_degree"), (1e-6, 1e-3)):
-            assert np.isclose(net.res_bus.at[index, variable], results.query("tap_side==@tap_side & tap_pos==@tap_pos & "
-                                                                             "index==@index & element=='bus' & variable==@variable").value, rtol=0, atol=tol), f"failed for bus {index=}, {variable}"
+            assert np.isclose(net.res_bus.at[index, variable], results.query("tap_side==@tap_side & tap_pos==@tap_pos & tap_step_degree==@tap_step_degree &"
+                                                                             "index==@index & element=='bus' & variable==@variable").value, rtol=0, atol=tol), f"failed for bus {index=}, {variable}, value {net.res_bus.at[index, variable]}"
 
 def test_impedance(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
     net = result_test_network
