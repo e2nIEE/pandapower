@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -9,6 +9,7 @@ import os
 import pandapower as pp
 import pandapower.toolbox
 from pandapower import pp_dir
+import pandapower.plotting.geo as geo
 
 
 def _get_cases_path(filename=None):
@@ -39,7 +40,7 @@ def _change_ref_bus(net, ref_bus_idx, ext_grid_p=0):
     j = 0
     for i in ext_grid_idx:
         ext_grid_data = net.ext_grid.loc[i]
-        net.ext_grid.drop(i, inplace=True)
+        net.ext_grid = net.ext_grid.drop(i)
         pp.create_gen(net, ext_grid_data.bus, ext_grid_p[j],
                       vm_pu=ext_grid_data.vm_pu, controllable=True,
                       min_q_mvar=ext_grid_data.min_q_mvar, max_q_mvar=ext_grid_data.max_q_mvar,
@@ -48,7 +49,7 @@ def _change_ref_bus(net, ref_bus_idx, ext_grid_p=0):
     # old gen at ref_bus -> ext_grid (and sgen)
     for i in gen_idx:
         gen_data = net.gen.loc[i]
-        net.gen.drop(i, inplace=True)
+        net.gen = net.gen.drop(i)
         if gen_data.bus not in net.ext_grid.bus.values:
             pp.create_ext_grid(net, gen_data.bus, vm_pu=gen_data.vm_pu, va_degree=0.,
                                min_q_mvar=gen_data.min_q_mvar, max_q_mvar=gen_data.max_q_mvar,
@@ -136,6 +137,8 @@ def case9(**kwargs):
          net = pn.case9()
     """
     case9 = sorted_from_json(_get_cases_path("case9.json", **kwargs))
+    # TODO: add converted net to the json and remove this conversion step.
+    geo.convert_geodata_to_geojson(case9)
     return case9
 
 
@@ -221,6 +224,8 @@ def case30(**kwargs):
          net = pn.case30()
     """
     case30 = sorted_from_json(_get_cases_path("case30.json", **kwargs))
+    # TODO: add converted net to the json and remove this conversion step.
+    geo.convert_geodata_to_geojson(case30)
     return case30
 
 
@@ -283,6 +288,8 @@ def case39(**kwargs):
          net = pn.case39()
     """
     case39 = sorted_from_json(_get_cases_path("case39.json", **kwargs))
+    # TODO: add converted net to the json and remove this conversion step.
+    geo.convert_geodata_to_geojson(case39)
     return case39
 
 
@@ -318,12 +325,12 @@ def case57(vn_kv_area1=115, vn_kv_area2=500, vn_kv_area3=138, vn_kv_area4=345, v
     Idx_area4 = case57.bus[case57.bus.vn_kv == 130].index
     Idx_area5 = case57.bus[case57.bus.vn_kv == 140].index
     Idx_area6 = case57.bus[case57.bus.vn_kv == 150].index
-    case57.bus.vn_kv.loc[Idx_area1] = vn_kv_area1  # default 115
-    case57.bus.vn_kv.loc[Idx_area2] = vn_kv_area2  # default 500
-    case57.bus.vn_kv.loc[Idx_area3] = vn_kv_area3  # default 138
-    case57.bus.vn_kv.loc[Idx_area4] = vn_kv_area4  # default 345
-    case57.bus.vn_kv.loc[Idx_area5] = vn_kv_area5  # default 230
-    case57.bus.vn_kv.loc[Idx_area6] = vn_kv_area6  # default 161
+    case57.bus.loc[Idx_area1, "vn_kv"] = vn_kv_area1  # default 115
+    case57.bus.loc[Idx_area2, "vn_kv"] = vn_kv_area2  # default 500
+    case57.bus.loc[Idx_area3, "vn_kv"] = vn_kv_area3  # default 138
+    case57.bus.loc[Idx_area4, "vn_kv"] = vn_kv_area4  # default 345
+    case57.bus.loc[Idx_area5, "vn_kv"] = vn_kv_area5  # default 230
+    case57.bus.loc[Idx_area6, "vn_kv"] = vn_kv_area6  # default 161
     return case57
 
 
@@ -368,6 +375,8 @@ def case118(**kwargs):
          net = pn.case118()
     """
     case118 = sorted_from_json(_get_cases_path("case118.json", **kwargs))
+    # TODO: add converted net to the json and remove this conversion step.
+    geo.convert_geodata_to_geojson(case118)
     return case118
 
 

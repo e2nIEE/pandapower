@@ -1,7 +1,55 @@
 Change Log
 =============
 
-[upcoming release] - 2023-..-..
+[upcoming release] - 2024-..-..
+-------------------------------
+- [ADDED] switch results p and q
+- [ADDED] PowerFactory converter: option to export lines with sections as a single line with averaged-out impedance, or export line sections as separate individual lines
+- [ADDED] extend plotly function: add zoomlevel-parameter and hvdc lines
+- [ADDED] added support for reading cgmes v3.0 files
+- [ADDED] added support for converting cgmes v3.0
+- [CHANGED] plotting for voltage profile considers also gens that are slacks and only ext_grids and slack gens that are in service
+- [CHANGED] switched from setup.py to pyproject.toml
+- [CHANGED] updated upload_release.py to not call setup.py anymore (see https://packaging.python.org/en/latest/discussions/setup-py-deprecated/)
+- [CHANGED] updated upload_release.py to install the uploadad package and print the version
+- [CHANGED] updated MANIFEST.in to exclude the ci files from the wheel distribution
+- [CHANGED] cim data structure method in cim converter changed to blueprint approach
+- [CHANGED] cim converter: Avoid huge logging output when ignore_erros = True
+- [FIXED] massive performance drag in large grids due to initializing Ybus for FACTS with np.zeros instead of using sparse matrix initialization
+- [FIXED] further futurewarnings and deprecation warnings
+- [FIXED] minor issues in geojson exporter
+- [CHANGED] use of bus_geodata and line_geodata tables to geo column in bus and line table
+- [CHANGED] update most geodata dependant functions to use geo column
+- [ADDED] geodata to geojson converter
+- [CHANGED] dump_to_geojson now requires the geodata to be present in the geo column of a network (see :code:`convert_geodata_to_geojson`)
+- [CHANGED] updated simple_plot to use geojson data instead of bus_geo and line_geo
+- [CHANGED] minor changes to the example networks (mainly added names to identify them in tests)
+- [CHANGED] dataframes_equal adapted to properly compare geojson data
+- [FIXED] k documentation of sgen
+- [FIXED] PowerFactory converter: fix trafo3w tap dependent impedance
+- [ADDED] PowerFactory converter: support load types (constI, constZ) and the setting whether to consider voltage dependency of loads
+- [FIXED] deprecation of matplotlib.cm.get_cmap(name) -> matplotlib.colormaps[name]
+
+[2.14.6] - 2024-04-02
+-------------------------------
+- [FIXED] more futurewarnings and deprecation warnings
+
+[2.14.5] - 2024-03-28
+-------------------------------
+- [CHANGED] added possibility to provide custom weights to switches and transformers (before - always zero) when creating a graph
+- [FIXED] many futurewarnings and deprecation warnings
+
+[2.14.4] - 2024-03-28
+-------------------------------
+- [FIXED] internal pgm test returns ANOTHER error when using python 3.8
+- [FIXED] added setuptools to relying tests
+
+[2.14.3] - 2024-03-28
+-------------------------------
+- [FIXED] internal pgm test checked wrong result
+- [FIXED] 2.14.0 - 2.14.3 just minor release fixes to improve workflow
+
+[2.14.0] - 2024-03-26
 -------------------------------
 - [ADDED] function to search std_types from the basic standard type library
 - [ADDED] Documentation for running powerflow using power-grid-model
@@ -54,6 +102,7 @@ Change Log
 - [ADDED] cim2pp: added description fields for each asset and added BusbarSection information to nodes
 - [CHANGED] cim2pp: reformat documentation for reading in files
 - [CHANGED] allow providing grid_tables as a parameter to the function that downloads net from PostgreSQL
+- [FIXED] avoid FutureWarning of pandas 2.2
 - [FIXED] compatibility with lightsim2grid after new version 0.8.0
 - [ADDED] allow passing custom runpp-function to pp.diagnostic
 

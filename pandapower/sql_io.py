@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -87,10 +87,10 @@ def download_sql_table(cursor, table_name, **id_columns):
     colnames = [desc[0] for desc in cursor.description]
     table = cursor.fetchall()
     df = pd.DataFrame(table, columns=colnames)
-    df.fillna(np.nan, inplace=True)
+    df = df.fillna(np.nan)
     index_name = f"{table_name.split('.')[-1]}_id"
     if index_name in df.columns:
-        df.set_index(index_name, inplace=True)
+        df = df.set_index(index_name)
     if len(id_columns) > 0:
         df.drop(id_columns.keys(), axis=1, inplace=True)
     return df
@@ -237,6 +237,8 @@ def delete_postgresql_net(grid_id, host, user, password, database, schema, grid_
     check_postgresql_catalogue_table(cursor, catalogue_table_name, grid_id, grid_id_column, download=True)
     query = f"DELETE FROM {catalogue_table_name} WHERE {grid_id_column}={grid_id};"
     cursor.execute(query)
+    # query = f'DROP SCHEMA IF EXISTS "{schema}" CASCADE; CREATE SCHEMA IF NOT EXISTS "{schema}";'
+    # cursor.execute(query)
     conn.commit()
 
 
@@ -282,6 +284,9 @@ def from_sql(conn, schema, grid_id, grid_id_column="grid_id", grid_catalogue_nam
         except psycopg2.errors.UndefinedTable as err:
             logger.info(f"skipped {element} due to error: {err}")
             continue
+
+        if 'geo' in tab.columns:
+            tab.geo = tab.geo.replace({'NaN': None})
 
         d[element] = tab
 

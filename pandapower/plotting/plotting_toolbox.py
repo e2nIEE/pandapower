@@ -1,5 +1,11 @@
+import ast
+import re
+
 import numpy as np
 import pandas as pd
+import geojson
+
+from typing_extensions import deprecated
 
 try:
     import pandaplan.core.pplog as logging
@@ -20,6 +26,20 @@ def _rotate_dim2(arr, ang):
     """
     return np.dot(np.array([[np.cos(ang), np.sin(ang)], [-np.sin(ang), np.cos(ang)]]), arr)
 
+
+def _get_coords_from_geojson(gj_str):
+    if pd.isnull(gj_str):
+        return gj_str
+    pattern = r'"coordinates"\s*:\s*((?:\[(?:\[[^]]+],?\s*)+\])|\[[^]]+\])'
+    matches = re.findall(pattern, gj_str)
+
+    if not matches:
+        return None
+    if len(matches) > 1:
+        raise ValueError("More than one match found in GeoJSON string")
+    for m in matches:
+        return ast.literal_eval(m)
+    return None
 
 def get_collection_sizes(net, bus_size=1.0, ext_grid_size=1.0, trafo_size=1.0, load_size=1.0,
                          sgen_size=1.0, switch_size=2.0, switch_distance=1.0, gen_size=1.0):
@@ -49,8 +69,8 @@ def get_collection_sizes(net, bus_size=1.0, ext_grid_size=1.0, trafo_size=1.0, l
     :return: sizes (dict) - dictionary containing all scaled sizes
     """
 
-    mean_distance_between_buses = sum((net['bus_geodata'].loc[:, ["x", "y"]].max() -
-                                       net['bus_geodata'].loc[:, ["x", "y"]].min()).dropna() / 200)
+    lst = net.bus.geo.apply(geojson.loads).apply(geojson.utils.coords).apply(next).values
+    mean_distance_between_buses = sum(map(lambda a, b: (a-b)/200, *(map(max, zip(*lst)), map(min, zip(*lst)))))
 
     sizes = {
         "bus": bus_size * mean_distance_between_buses,
@@ -124,7 +144,7 @@ def get_index_array(indices, net_table_indices):
 
 
 def coords_from_node_geodata(element_indices, from_nodes, to_nodes, node_geodata, table_name,
-                             node_name="Bus", ignore_zero_length=True, replace_missing_coords=False):
+                             node_name="Bus", ignore_zero_length=True):
     """
     Auxiliary function to get the node coordinates for a number of branches with respective from
     and to nodes. The branch elements for which there is no geodata available are not included in
@@ -142,88 +162,79 @@ def coords_from_node_geodata(element_indices, from_nodes, to_nodes, node_geodata
     :type table_name: str
     :param node_name: Name of the node type (only for logging)
     :type node_name: str, default "Bus"
-    :param ignore_zero_length: States if branches should be left out, if their length is zero, i.e.\
+    :param ignore_zero_length: States if branches should be left out, if their length is zero, i.e. \
         from_node_coords = to_node_coords
-    :param replace_missing_coords: States when no coords are available, they will be replaced with the geometric mean
     :type ignore_zero_length: bool, default True
     :return: Return values are:\
-        - coords (list) - list of branch coordinates of shape (N, (2, 2))\
-        - elements_with_geo (set) - the indices of branch elements for which coordinates wer found\
+        - coords (list) - list of branch coordinates as geojson valid strings
+        - elements_with_geo (set) - the indices of branch elements for which coordinates wer found \
             in the node geodata table
     """
-    have_geo = np.isin(from_nodes, node_geodata.index.values) \
+    # reduction of from_nodes, to_nodes, node_geodata to intersection
+    in_geo = np.isin(from_nodes, node_geodata.index.values) \
         & np.isin(to_nodes, node_geodata.index.values)
-    elements_with_geo = np.array(element_indices)[have_geo]
-    fb_with_geo, tb_with_geo = from_nodes[have_geo], to_nodes[have_geo]
-    elements_without_geo = set(element_indices) - set(elements_with_geo)
+    fb_with_geo, tb_with_geo = from_nodes[in_geo], to_nodes[in_geo]
+    if sum(~in_geo):
+        logger.warning(
+            f"No coords found for {table_name}s {np.array(element_indices)[~in_geo]}. {node_name} "
+            f"geodata is missing for those {table_name}s!"
+        )
 
-    if replace_missing_coords:
-        a = np.log(node_geodata.loc[fb_with_geo, ["x"]])
-        b = np.log(node_geodata.loc[fb_with_geo, ["y"]])
-        replacement_x = np.exp(a.mean()).values[0]
-        replacement_y = np.exp(b.mean()).values[0]
-        max_i = max(max(from_nodes), max(to_nodes)) + 1
+    # reduction to not nans
+    fb_geo_is_nan = node_geodata.loc[fb_with_geo].isnull().values
+    tb_geo_is_nan = node_geodata.loc[tb_with_geo].isnull().values
+    not_nan = ~(fb_geo_is_nan | tb_geo_is_nan)
+    if n_nans := len(not_nan) - sum(not_nan):
+        logger.warning(
+            f"NaN coords are returned {n_nans} times for {table_name}s applying {node_name} geodata."
+        )
 
-        ng = pd.DataFrame(index=range(max_i), columns=node_geodata.columns)
-        ng.loc[from_nodes[have_geo]] = node_geodata.loc[from_nodes[have_geo]]
-        ng.loc[to_nodes[have_geo]] = node_geodata.loc[to_nodes[have_geo]]
-        ng['x'] = ng['x'].fillna(replacement_x)
-        ng['y'] = ng['y'].fillna(replacement_y)
-
-        fb_with_geo = from_nodes
-        tb_with_geo = to_nodes
-
-        logger.warning("Replacing coords for %s" % (len(elements_without_geo)))
-        elements_with_geo = np.array(element_indices)
-    else:
-        ng = node_geodata
-
-    coordinates = np.concatenate([ng.loc[fb_with_geo, ["x", "y"]].values, ng.loc[tb_with_geo, ["x", "y"]].values], axis=1)
-    zero_length = [(not ignore_zero_length or not (x_from == x_to and y_from == y_to))
-                   for x_from, y_from, x_to, y_to in coordinates]
-    coordinates = coordinates[zero_length]
-    coords = [[(x_from, y_from), (x_to, y_to)] for x_from, y_from, x_to, y_to in coordinates]
-
-    if len(elements_without_geo) > 0:
-        logger.warning("No coords found for %s %s. %s geodata is missing for those %s!"
-                       % (table_name + "s", elements_without_geo, node_name, table_name + "s"))
-    if not all(zero_length):
-        logger.warning(f"Skipping zero length {table_name}s {elements_with_geo[[not b for b in zero_length]]}.")
-    return coords, elements_with_geo[zero_length]
+    node_geodata = node_geodata.apply(_get_coords_from_geojson)
+    coords = [f'{{"coordinates": [[{x_from}, {y_from}], [{x_to}, {y_to}]], "type": "LineString"}}'
+              for [x_from, y_from], [x_to, y_to]
+              in zip(node_geodata.loc[fb_with_geo[not_nan]],
+                     node_geodata.loc[tb_with_geo[not_nan]])
+              if not ignore_zero_length or (ignore_zero_length and not (x_from == x_to and y_from == y_to))]
+    return coords, np.array(element_indices)[in_geo & not_nan]
 
 
-def set_line_geodata_from_bus_geodata(net, line_index=None, overwrite=False, replace_missing_coords=False, ignore_zero_length=True):
+def set_line_geodata_from_bus_geodata(net, line_index=None, overwrite=False, ignore_zero_length=True):
     """
-    Sets coordinates in net.line_geodata based on the from_bus and to_bus x,y coordinates
-    in net.bus_geodata
+    Sets coordinates in net.line.geo based on the from_bus and to_bus coordinates
+    in net.bus.geo
     :param net: pandapowerNet
-    :param line_index: index of lines, coordinates of which will be set from bus geodata (all lines if None)
-    :param overwrite: whether the existing coordinates in net.line_geodata must be overwritten
+    :param line_index: index of lines, coordinates of which will be set from bus geo (all lines if None)
+    :param overwrite: whether the existing coordinates in net.line.geo must be overwritten
     :return: None
     """
-    if not line_index:
+    if 'geo' not in net.bus.columns or net.bus.geo.isnull().all():
+        logger.warning("The function set_line_geodata_from_bus_geodata requires geodata to be "
+                       "present in net.bus.geo")
+        return
+    if overwrite and line_index is None:
         line_index = net.line.index
-    if not overwrite:
-        line_index = np.setdiff1d(line_index, net.line_geodata.index)
+    elif not overwrite and line_index is None:
+        line_index = net.line.index[net.line.geo.isnull()]
+    elif not overwrite and line_index is not None:
+        line_index = pd.Index(line_index).intersection(net.line.index[net.line.geo.isnull()])
 
-    coords, line_index_successful = coords_from_node_geodata(element_indices=line_index,
-                                                             from_nodes=net.line.loc[line_index, 'from_bus'].values,
-                                                             to_nodes=net.line.loc[line_index, 'to_bus'].values,
-                                                             node_geodata=net.bus_geodata,
-                                                             table_name="line_geodata",
-                                                             node_name="bus_geodata",
-                                                             replace_missing_coords=replace_missing_coords,
-                                                             ignore_zero_length=ignore_zero_length)
+    geos, line_index_successful = coords_from_node_geodata(
+        element_indices=line_index,
+        from_nodes=net.line.loc[line_index, 'from_bus'].values,
+        to_nodes=net.line.loc[line_index, 'to_bus'].values,
+        node_geodata=net.bus.geo,
+        table_name="line",
+        node_name="bus",
+        ignore_zero_length=ignore_zero_length)
 
-    net.line_geodata = net.line_geodata.reindex(net.line.index)
-    net.line_geodata.loc[line_index_successful, 'coords'] = coords
-    net.line_geodata.dropna(inplace=True)  # drop lines without coords
+    net.line.loc[line_index_successful, 'geo'] = geos
 
     num_failed = len(line_index) - len(line_index_successful)
     if num_failed > 0:
         logger.info(f"failed to set coordinates of {num_failed} lines")
 
 
+@deprecated("Use of busbar is not by bus_geodata anymore.")
 def position_on_busbar(net, bus, busbar_coords):
     """
     Checks if the first or the last coordinates of a line are on a bus
