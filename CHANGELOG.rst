@@ -7,6 +7,7 @@ Change Log
 - [ADDED] PowerFactory converter: option to export lines with sections as a single line with averaged-out impedance, or export line sections as separate individual lines
 - [ADDED] extend plotly function: add zoomlevel-parameter and hvdc lines
 - [ADDED] added support for reading cgmes v3.0 files
+- [ADDED] added support for converting cgmes v3.0
 - [CHANGED] plotting for voltage profile considers also gens that are slacks and only ext_grids and slack gens that are in service
 - [CHANGED] switched from setup.py to pyproject.toml
 - [CHANGED] updated upload_release.py to not call setup.py anymore (see https://packaging.python.org/en/latest/discussions/setup-py-deprecated/)
@@ -24,6 +25,10 @@ Change Log
 - [CHANGED] updated simple_plot to use geojson data instead of bus_geo and line_geo
 - [CHANGED] minor changes to the example networks (mainly added names to identify them in tests)
 - [CHANGED] dataframes_equal adapted to properly compare geojson data
+- [FIXED] k documentation of sgen
+- [FIXED] PowerFactory converter: fix trafo3w tap dependent impedance
+- [ADDED] PowerFactory converter: support load types (constI, constZ) and the setting whether to consider voltage dependency of loads
+- [FIXED] deprecation of matplotlib.cm.get_cmap(name) -> matplotlib.colormaps[name]
 
 [2.14.6] - 2024-04-02
 -------------------------------

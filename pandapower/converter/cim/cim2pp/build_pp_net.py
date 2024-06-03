@@ -4,7 +4,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import logging
 import traceback
-from typing import Dict
+from typing import Dict, List
 
 import pandas as pd
 
@@ -38,7 +38,19 @@ class CimConverter:
         self.classes_dict = converter_classes
 
     def merge_eq_ssh_profile(self, cim_type: str, add_cim_type_column: bool = False) -> pd.DataFrame:
-        df = pd.merge(self.cim['eq'][cim_type], self.cim['ssh'][cim_type], how='left', on='rdfId')
+        return self.merge_eq_other_profiles(['ssh'], cim_type, add_cim_type_column)
+
+    def merge_eq_sc_profile(self, cim_type: str, add_cim_type_column: bool = False) -> pd.DataFrame:
+        return self.merge_eq_other_profiles(['sc'], cim_type, add_cim_type_column)
+
+    def merge_eq_other_profiles(self, other_profiles: List[str], cim_type: str,
+                                add_cim_type_column: bool = False) -> pd.DataFrame:
+        df = self.cim['eq'][cim_type]
+        for other_profile in other_profiles:
+            if cim_type not in self.cim[other_profile].keys():
+                self.logger.debug("No entries found in %s profile for cim object %s", other_profile, cim_type)
+                return self.cim['eq'][cim_type].copy()
+            df = pd.merge(df, self.cim[other_profile][cim_type], how='left', on='rdfId')
         if add_cim_type_column:
             df[sc['o_cl']] = cim_type
         return df
