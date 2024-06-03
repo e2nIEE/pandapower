@@ -50,7 +50,9 @@ class ConnectivityNodesCim16:
         node_breaker = True if self.cimConverter.cim['eq']['ConnectivityNode'].index.size > 0 else False
         # use this dictionary to store the source profile from the element (normal or boundary profile)
         cn_dict = dict({'eq': {sc['o_prf']: 'eq'}, 'eq_bd': {sc['o_prf']: 'eq_bd'},
-                        'tp': {sc['o_prf']: 'tp'}, 'tp_bd': {sc['o_prf']: 'tp_bd'}})
+                        'tp': {sc['o_prf']: 'tp'}})
+        if 'tp_bd' in self.cimConverter.cim.keys():  # check because tp_bd was removed in cgmes 3.0
+            cn_dict['tp_bd'] = {sc['o_prf']: 'tp_bd'}
         if node_breaker:
             # Node-Breaker model
             connectivity_nodes = pd.concat([self.cimConverter.cim['eq']['ConnectivityNode'].assign(**cn_dict['eq']),
@@ -114,15 +116,20 @@ class ConnectivityNodesCim16:
             connectivity_nodes = pd.merge(connectivity_nodes, eq_voltage_levels, how='left',
                                           on='ConnectivityNodeContainer')
             connectivity_nodes[sc['sub_id']] = connectivity_nodes['Substation'][:]
-            # now prepare the BaseVoltage from the boundary profile at the ConnectivityNode (4)
-            eq_bd_cns = pd.merge(self.cimConverter.cim['eq_bd']['ConnectivityNode'][['rdfId']],
-                                 self.cimConverter.cim['tp_bd']['ConnectivityNode'][['rdfId', 'TopologicalNode']],
-                                 how='inner', on='rdfId')
-            # eq_bd_cns.drop(columns=['rdfId'], inplace=True)
-            # eq_bd_cns.rename(columns={'TopologicalNode': 'rdfId'}, inplace=True)
-            eq_bd_cns = pd.merge(eq_bd_cns,
-                                 self.cimConverter.cim['tp_bd']['TopologicalNode'][['rdfId', 'BaseVoltage']].rename(
-                                     columns={'rdfId': 'TopologicalNode'}), how='inner', on='TopologicalNode')
+            if 'tp_bd' in self.cimConverter.cim.keys():
+                # now prepare the BaseVoltage from the boundary profile at the ConnectivityNode (4)
+                eq_bd_cns = pd.merge(self.cimConverter.cim['eq_bd']['ConnectivityNode'][['rdfId']],
+                                     self.cimConverter.cim['tp_bd']['ConnectivityNode'][['rdfId', 'TopologicalNode']],
+                                     how='inner', on='rdfId')
+                # eq_bd_cns.drop(columns=['rdfId'], inplace=True)
+                # eq_bd_cns.rename(columns={'TopologicalNode': 'rdfId'}, inplace=True)
+                eq_bd_cns = pd.merge(eq_bd_cns,
+                                     self.cimConverter.cim['tp_bd']['TopologicalNode'][['rdfId', 'BaseVoltage']].rename(
+                                         columns={'rdfId': 'TopologicalNode'}), how='inner', on='TopologicalNode')
+            else:
+                eq_bd_cns = self.cimConverter.cim['eq_bd']['ConnectivityNode'][['rdfId']]
+                eq_bd_cns['BaseVoltage'] = float('NaN')
+                eq_bd_cns['TopologicalNode'] = float('NaN')
             # eq_bd_cns.drop(columns=['TopologicalNode'], inplace=True)
             eq_bd_cns.rename(columns={'BaseVoltage': 'BaseVoltage_2', 'TopologicalNode': 'TopologicalNode_2'},
                              inplace=True)
@@ -143,10 +150,11 @@ class ConnectivityNodesCim16:
                 tp_temp = self.cimConverter.cim['tp']['TopologicalNode'][
                     ['rdfId', 'name', 'description', 'BaseVoltage']]
                 tp_temp[sc['o_prf']] = 'tp'
-                tp_temp = pd.concat(
-                    [tp_temp, self.cimConverter.cim['tp_bd']['TopologicalNode'][['rdfId', 'name', 'BaseVoltage']]],
-                    sort=False)
-                tp_temp[sc['o_prf']].fillna('tp_bd', inplace=True)
+                if 'tp_bd' in self.cimConverter.cim.keys():  # check because tp_bd has been removed in cgmes 3.0
+                    tp_temp = pd.concat(
+                        [tp_temp, self.cimConverter.cim['tp_bd']['TopologicalNode'][['rdfId', 'name', 'BaseVoltage']]],
+                        sort=False)
+                    tp_temp[sc['o_prf']].fillna('tp_bd', inplace=True)
                 tp_temp[sc['o_cl']] = 'TopologicalNode'
                 tp_temp = pd.merge(terminals_temp, tp_temp, how='inner', on='rdfId')
                 connectivity_nodes = pd.concat([connectivity_nodes, tp_temp], ignore_index=True, sort=False)
@@ -154,10 +162,12 @@ class ConnectivityNodesCim16:
             # Bus-Branch model
             # concat the TopologicalNodes from the tp and boundary profile and keep the source profile for each element
             # as column using the pandas assign method
-            connectivity_nodes = pd.concat([self.cimConverter.cim['tp']['TopologicalNode'].assign(**cn_dict['tp']),
-                                            self.cimConverter.cim['tp_bd']['TopologicalNode'].assign(
-                                                **cn_dict['tp_bd'])],
-                                           ignore_index=True, sort=False)
+            connectivity_nodes = self.cimConverter.cim['tp']['TopologicalNode'].assign(**cn_dict['tp'])
+            if 'tp_bd' in self.cimConverter.cim.keys():  # check because tp_bd has been removed in cgmes 3.0
+                connectivity_nodes = pd.concat([connectivity_nodes,
+                                                self.cimConverter.cim['tp_bd']['TopologicalNode'].assign(
+                                                    **cn_dict['tp_bd'])],
+                                               ignore_index=True, sort=False)
             connectivity_nodes[sc['o_cl']] = 'TopologicalNode'
             connectivity_nodes['name_substation'] = ''
         # prepare the voltages from the buses

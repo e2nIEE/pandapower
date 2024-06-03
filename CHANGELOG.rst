@@ -8,6 +8,7 @@ Change Log
 - [ADDED] PowerFactory converter: option to export lines with sections as a single line with averaged-out impedance, or export line sections as separate individual lines
 - [ADDED] extend plotly function: add zoomlevel-parameter and hvdc lines
 - [ADDED] added support for reading cgmes v3.0 files
+- [ADDED] added support for converting cgmes v3.0
 - [CHANGED] plotting for voltage profile considers also gens that are slacks and only ext_grids and slack gens that are in service
 - [CHANGED] switched from setup.py to pyproject.toml
 - [CHANGED] updated upload_release.py to not call setup.py anymore (see https://packaging.python.org/en/latest/discussions/setup-py-deprecated/)

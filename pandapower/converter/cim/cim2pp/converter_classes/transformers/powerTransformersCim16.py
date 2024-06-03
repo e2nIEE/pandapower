@@ -23,15 +23,15 @@ class PowerTransformersCim16:
         time_start = time.time()
         self.logger.info("Start converting PowerTransformers.")
 
-        eq_power_transformers = self._prepare_power_transformers_cim16()
+        power_transformers = self._prepare_power_transformers_cim16()
         # split the power transformers into two and three windings
-        power_trafo_counts = eq_power_transformers.PowerTransformer.value_counts()
+        power_trafo_counts = power_transformers.PowerTransformer.value_counts()
         power_trafo2w = power_trafo_counts[power_trafo_counts == 2].index.tolist()
         power_trafo3w = power_trafo_counts[power_trafo_counts == 3].index.tolist()
 
-        eq_power_transformers = eq_power_transformers.set_index('PowerTransformer')
-        power_trafo2w = eq_power_transformers.loc[power_trafo2w].reset_index()
-        power_trafo3w = eq_power_transformers.loc[power_trafo3w].reset_index()
+        power_transformers = power_transformers.set_index('PowerTransformer')
+        power_trafo2w = power_transformers.loc[power_trafo2w].reset_index()
+        power_trafo3w = power_transformers.loc[power_trafo3w].reset_index()
 
         if power_trafo2w.index.size > 0:
             # process the two winding transformers
@@ -261,10 +261,18 @@ class PowerTransformersCim16:
         self.cimConverter.net['characteristic_temp']['step'] = self.cimConverter.net['characteristic_temp']['step'].astype(int)
 
     def _prepare_power_transformers_cim16(self) -> pd.DataFrame:
-        eq_power_transformers = self.cimConverter.cim['eq']['PowerTransformer'][
-            ['rdfId', 'name', 'description', 'isPartOfGeneratorUnit']]
-        eq_power_transformers[sc['o_cl']] = 'PowerTransformer'
-        eq_power_transformer_ends = self.cimConverter.cim['eq']['PowerTransformerEnd'][
+        if 'sc' in self.cimConverter.cim.keys():
+            power_transformers = self.cimConverter.merge_eq_sc_profile('PowerTransformer')
+        else:
+            power_transformers = self.cimConverter.cim['eq']['PowerTransformer']
+        power_transformers = power_transformers[['rdfId', 'name', 'description', 'isPartOfGeneratorUnit']]
+        power_transformers[sc['o_cl']] = 'PowerTransformer'
+
+        if 'sc' in self.cimConverter.cim.keys():
+            power_transformer_ends = self.cimConverter.merge_eq_sc_profile('PowerTransformerEnd')
+        else:
+            power_transformer_ends = self.cimConverter.cim['eq']['PowerTransformerEnd']
+        power_transformer_ends = power_transformer_ends[
             ['rdfId', 'PowerTransformer', 'endNumber', 'Terminal', 'ratedS', 'ratedU', 'r', 'x', 'b', 'g', 'r0', 'x0',
              'phaseAngleClock', 'connectionKind', 'grounded']]
 
@@ -346,18 +354,23 @@ class PowerTransformersCim16:
             eq_ssh_tap_controllers[['rdfId', 'Terminal', 'discrete', 'enabled', 'targetValue', 'targetDeadband']]
         eq_ssh_tap_controllers = eq_ssh_tap_controllers.rename(columns={'rdfId': 'TapChangerControl'})
         # first merge with the VoltageLimits
-        eq_vl = self.cimConverter.cim['eq']['VoltageLimit'][['OperationalLimitSet', 'OperationalLimitType', 'value']]
-        eq_vl = pd.merge(eq_vl, self.cimConverter.cim['eq']['OperationalLimitType'][['rdfId', 'limitType']].rename(
+        if 'VoltageLimit' in self.cimConverter.cim['ssh'].keys():
+            vl = self.cimConverter.merge_eq_ssh_profile('VoltageLimit')[['OperationalLimitSet', 'OperationalLimitType',
+                                                                         'value']]
+        else:
+            vl = self.cimConverter.cim['eq']['VoltageLimit'][['OperationalLimitSet', 'OperationalLimitType', 'value']]
+        opl_kind = 'kind' if 'kind' in self.cimConverter.cim['eq']['OperationalLimitType'].columns else 'limitType'
+        vl = pd.merge(vl, self.cimConverter.cim['eq']['OperationalLimitType'][['rdfId', opl_kind]].rename(
             columns={'rdfId': 'OperationalLimitType'}), how='left', on='OperationalLimitType')
-        eq_vl = pd.merge(eq_vl, self.cimConverter.cim['eq']['OperationalLimitSet'][['rdfId', 'Terminal']].rename(
+        vl = pd.merge(vl, self.cimConverter.cim['eq']['OperationalLimitSet'][['rdfId', 'Terminal']].rename(
             columns={'rdfId': 'OperationalLimitSet'}), how='left', on='OperationalLimitSet')
-        eq_vl = eq_vl[['value', 'limitType', 'Terminal']]
-        eq_vl_low = eq_vl.loc[eq_vl['limitType'] == 'lowVoltage'][['value', 'Terminal']].rename(
+        vl = vl[['value', opl_kind, 'Terminal']]
+        vl_low = vl.loc[vl[opl_kind] == 'lowVoltage'][['value', 'Terminal']].rename(
             columns={'value': 'c_vm_lower_pu'})
-        eq_vl_up = eq_vl.loc[eq_vl['limitType'] == 'highVoltage'][['value', 'Terminal']].rename(
+        vl_up = vl.loc[vl[opl_kind] == 'highVoltage'][['value', 'Terminal']].rename(
             columns={'value': 'c_vm_upper_pu'})
-        eq_vl = pd.merge(eq_vl_low, eq_vl_up, how='left', on='Terminal')
-        eq_ssh_tap_controllers = pd.merge(eq_ssh_tap_controllers, eq_vl, how='left', on='Terminal')
+        vl = pd.merge(vl_low, vl_up, how='left', on='Terminal')
+        eq_ssh_tap_controllers = pd.merge(eq_ssh_tap_controllers, vl, how='left', on='Terminal')
         eq_ssh_tap_controllers['c_Terminal'] = eq_ssh_tap_controllers['Terminal'][:]
         eq_ssh_tap_controllers = eq_ssh_tap_controllers.rename(columns={'Terminal': 'rdfId', 'enabled': 'c_in_service',
                                                'targetValue': 'c_vm_set_pu', 'targetDeadband': 'c_tol'})
@@ -386,17 +399,17 @@ class PowerTransformersCim16:
         eqssh_tap_changers = pd.merge(eqssh_tap_changers, eq_ssh_tap_controllers, how='left', on='TapChangerControl')
         eqssh_tap_changers = eqssh_tap_changers.rename(columns={'TransformerEnd': sc['pte_id']})
 
-        eq_power_transformers = eq_power_transformers.rename(columns={'rdfId': 'PowerTransformer'})
-        eq_power_transformer_ends = eq_power_transformer_ends.rename(columns={'rdfId': sc['pte_id']})
+        power_transformers = power_transformers.rename(columns={'rdfId': 'PowerTransformer'})
+        power_transformer_ends = power_transformer_ends.rename(columns={'rdfId': sc['pte_id']})
         # add the PowerTransformerEnds
-        eq_power_transformers = pd.merge(eq_power_transformers, eq_power_transformer_ends, how='left',
+        power_transformers = pd.merge(power_transformers, power_transformer_ends, how='left',
                                          on='PowerTransformer')
         # add the Terminal and bus indexes
-        eq_power_transformers = pd.merge(eq_power_transformers, self.cimConverter.bus_merge.drop('rdfId', axis=1),
+        power_transformers = pd.merge(power_transformers, self.cimConverter.bus_merge.drop('rdfId', axis=1),
                                          how='left', left_on='Terminal', right_on='rdfId_Terminal')
         # add the TapChangers
-        eq_power_transformers = pd.merge(eq_power_transformers, eqssh_tap_changers, how='left', on=sc['pte_id'])
-        return eq_power_transformers
+        power_transformers = pd.merge(power_transformers, eqssh_tap_changers, how='left', on=sc['pte_id'])
+        return power_transformers
 
     def _prepare_trafos_cim16(self, power_trafo2w: pd.DataFrame) -> pd.DataFrame:
         power_trafo2w = power_trafo2w.sort_values(['PowerTransformer', 'endNumber']).reset_index()
@@ -483,6 +496,8 @@ class PowerTransformersCim16:
         power_trafo2w['in_service'] = power_trafo2w.connected & power_trafo2w.connected_lv
         power_trafo2w['connectionKind'].fillna('', inplace=True)
         power_trafo2w['connectionKind_lv'].fillna('', inplace=True)
+        power_trafo2w['grounded'] = power_trafo2w['grounded'].fillna(True)
+        power_trafo2w['grounded_lv'] = power_trafo2w['grounded_lv'].fillna(True)
         power_trafo2w.loc[~power_trafo2w['grounded'].astype('bool'), 'connectionKind'] = \
             power_trafo2w.loc[~power_trafo2w['grounded'].astype('bool'), 'connectionKind'].str.replace('n', '')
         power_trafo2w.loc[~power_trafo2w['grounded_lv'].astype('bool'), 'connectionKind_lv'] = \
@@ -616,6 +631,9 @@ class PowerTransformersCim16:
         power_trafo3w['connectionKind'].fillna('', inplace=True)
         power_trafo3w['connectionKind_mv'].fillna('', inplace=True)
         power_trafo3w['connectionKind_lv'].fillna('', inplace=True)
+        power_trafo3w['grounded'] = power_trafo3w['grounded'].fillna(True)
+        power_trafo3w['grounded_mv'] = power_trafo3w['grounded_mv'].fillna(True)
+        power_trafo3w['grounded_lv'] = power_trafo3w['grounded_lv'].fillna(True)
 
         power_trafo3w.loc[~power_trafo3w['grounded'].astype('bool'), 'connectionKind'] = \
             power_trafo3w.loc[~power_trafo3w['grounded'].astype('bool'), 'connectionKind'].str.replace('n', '')
