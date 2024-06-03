@@ -39,16 +39,20 @@ class CreateMeasurements:
         time_start = time.time()
         sc = cim_tools.get_pp_net_special_columns_dict()
         # join the Analogs with the AnalogValues and MeasurementValueSources
+        analogs_prf = 'op' if 'op' in self.cim.keys() else 'eq'
         analogs = pd.merge(
-            self.cim['eq']['Analog'][['rdfId', 'measurementType', 'unitSymbol', 'unitMultiplier', 'Terminal',
-                                      'PowerSystemResource', 'positiveFlowIn']],
-            self.cim['eq']['AnalogValue'][['sensorAccuracy', 'MeasurementValueSource', 'Analog', 'value']],
-            how='inner', left_on='rdfId', right_on='Analog')
-        analogs = analogs.drop(columns=['rdfId', 'Analog'])
-        analogs = pd.merge(analogs, self.cim['eq']['MeasurementValueSource'], how='left',
+            self.cim[analogs_prf]['Analog'][['rdfId', 'name', 'description', 'measurementType', 'unitSymbol',
+                                             'unitMultiplier', 'Terminal', 'PowerSystemResource', 'positiveFlowIn']],
+            self.cim[analogs_prf]['AnalogValue'][['rdfId', 'sensorAccuracy', 'MeasurementValueSource', 'Analog',
+                                                  'value']],
+            how='inner', left_on='rdfId', right_on='Analog', suffixes=("_Analog", "_AnalogValue"))
+        analogs = analogs.drop(columns=['Analog'])
+        analogs = analogs.rename(columns={'name': 'name_analog'})
+        analogs = pd.merge(analogs, self.cim[analogs_prf]['MeasurementValueSource'], how='left',
                            left_on='MeasurementValueSource',
                            right_on='rdfId')
         analogs = analogs.drop(columns=['rdfId', 'MeasurementValueSource'])
+        analogs = analogs.rename(columns={'name': sc['src']})
         # collect all the assets (line, trafo, trafo3w) and its connections
         assets = pd.DataFrame(None, columns=['element_type', 'side'])
         append_dict = dict({'line': {'from_bus': 'from', 'to_bus': 'to'},
@@ -71,17 +75,36 @@ class CreateMeasurements:
         psr['measurement_type'] = psr.unitSymbol.map({'W': 'p', 'VAr': 'q', 'A': 'i', 'V': 'v'})
         # change the sign if need
         psr['value'].loc[~psr['positiveFlowIn']] = psr.loc[~psr['positiveFlowIn']]['value'] * (-1)
-        # convert all amperes to ka
-        psr['value'].loc[psr['measurement_type'] == 'i'] = psr.loc[psr['measurement_type'] == 'i']['value'] / 1e3
         # move the voltage measurements to the buses
         psr = pd.merge(psr, self.net.bus[['vn_kv']], how='inner', left_on='bus', right_index=True)
-        temp = psr.loc[psr['measurement_type'] == 'v']
-        temp['value'] = temp['value'] / temp['vn_kv']
-        temp['std_dev'] = temp['sensorAccuracy'] / temp['vn_kv']
-        temp['element_type'] = 'bus'
-        temp['element'] = temp['bus']
-        temp['side'] = None
-        psr.loc[psr['measurement_type'] == 'v'] = temp
+        psr_v = psr.loc[psr['measurement_type'] == 'v']     
+        psr_v['value'] = psr_v['value'] / psr_v['vn_kv']
+        psr_v['std_dev'] = psr_v['sensorAccuracy'] / psr_v['vn_kv']
+        psr_v['element_type'] = 'bus'
+        psr_v['element'] = psr_v['bus']
+        psr_v['side'] = None
+        psr.loc[psr['measurement_type'] == 'v', psr_v.columns] = psr_v
+
+        #convert amps to ka and assign std_dev values for 'i' measurements
+        psr_i = psr.loc[psr['measurement_type'] == 'i'] 
+        psr_i['value'] = psr_i['value'] / 1e3
+        psr_i['std_dev'] = psr_i['sensorAccuracy'] / 1e3
+        psr.loc[psr['measurement_type'] == 'i', psr_i.columns] = psr_i
+
+        #assign std_dev values for 'p' measurements
+        psr_p = psr.loc[psr['measurement_type'] == 'p'] 
+        psr_p['std_dev'] = psr_p['sensorAccuracy'] 
+        psr.loc[psr['measurement_type'] == 'p', psr_p.columns] = psr_p
+
+        #assign std_dev values for 'q' measurements
+        psr_q = psr.loc[psr['measurement_type'] == 'q'] 
+        psr_q['std_dev'] = psr_q['sensorAccuracy'] 
+        psr.loc[psr['measurement_type'] == 'q', psr_q.columns] = psr_q
+
+        psr = psr.drop(columns=[sc['o_id']])
+        psr = psr.rename(columns={'rdfId_AnalogValue': sc['o_id'], 'name_analog': sc['name'],
+                                  'rdfId_Analog': sc['a_id']})
+        psr[sc['o_cl']] = 'AnalogValue'
 
         self._copy_to_measurement(psr)
 
@@ -95,14 +118,19 @@ class CreateMeasurements:
         time_start = time.time()
         sc = cim_tools.get_pp_net_special_columns_dict()
         # get the measurements from the sv profile and set the Terminal as index
-        sv_powerflow = self.cim['sv']['SvPowerFlow'][['Terminal', 'p', 'q']]
+        sv_powerflow = self.cim['sv']['SvPowerFlow'][['rdfId', 'Terminal', 'p', 'q']]
         sv_powerflow = sv_powerflow.set_index('Terminal')
+        sv_powerflow[sc['o_cl']] = 'SvPowerFlow'
+        sv_powerflow[sc['src']] = 'SV'
+        sv_powerflow[sc['desc']] = None
+        sv_powerflow[sc['a_id']] = None
+        sv_powerflow = sv_powerflow.rename(columns={'rdfId': sc['o_id']})
 
         # ---------------------------------------measure: bus v---------------------------------------------------
         busses_temp = self.net.bus[['name', 'vn_kv', sc['ct']]].copy()
         busses_temp = busses_temp.reset_index(level=0)
         busses_temp = busses_temp.rename(columns={'index': 'element', sc['ct']: 'TopologicalNode'})
-        sv_sv_voltages = pd.merge(self.cim['sv']['SvVoltage'][['TopologicalNode', 'v']], busses_temp,
+        sv_sv_voltages = pd.merge(self.cim['sv']['SvVoltage'][['rdfId', 'TopologicalNode', 'v']], busses_temp,
                                   how='left', on='TopologicalNode')
         # drop all the rows mit vn_kv == np.NaN (no measurements available for that bus)
         sv_sv_voltages = sv_sv_voltages.dropna(subset=['vn_kv'])
@@ -121,6 +149,11 @@ class CreateMeasurements:
         sv_sv_voltages['measurement_type'] = 'v'
         sv_sv_voltages['element_type'] = 'bus'
         sv_sv_voltages['side'] = None
+        sv_sv_voltages[sc['src']] = 'SV'
+        sv_sv_voltages[sc['o_cl']] = 'SvVoltage'
+        sv_sv_voltages[sc['desc']] = None
+        sv_sv_voltages[sc['a_id']] = None
+        sv_sv_voltages = sv_sv_voltages.rename(columns={'rdfId': sc['o_id']})
 
         self._copy_to_measurement(sv_sv_voltages)
 
@@ -150,22 +183,29 @@ class CreateMeasurements:
         line_temp['value'] = line_temp.p_from
         line_temp['std_dev'] = line_temp.stddev_line_from_p
         line_temp['side'] = line_temp.from_bus
+        line_temp = pd.merge(line_temp, sv_powerflow, left_on=sc['t_from'], right_index=True)
         self._copy_to_measurement(line_temp)
+        line_temp = line_temp.drop(columns=sv_powerflow.columns)
         # ---------------------------------------measure: line p to---------------------------------------------------
         line_temp['value'] = line_temp.p_to
         line_temp['std_dev'] = line_temp.stddev_line_to_p
         line_temp['side'] = line_temp.to_bus
+        line_temp = pd.merge(line_temp, sv_powerflow, left_on=sc['t_to'], right_index=True)
         self._copy_to_measurement(line_temp)
+        line_temp = line_temp.drop(columns=sv_powerflow.columns)
         # ---------------------------------------measure: line q from---------------------------------------------------
         line_temp['measurement_type'] = 'q'
         line_temp['value'] = line_temp.q_from
         line_temp['std_dev'] = line_temp.stddev_line_from_q
         line_temp['side'] = line_temp.from_bus
+        line_temp = pd.merge(line_temp, sv_powerflow, left_on=sc['t_from'], right_index=True)
         self._copy_to_measurement(line_temp)
+        line_temp = line_temp.drop(columns=sv_powerflow.columns)
         # ---------------------------------------measure: line q to---------------------------------------------------
         line_temp['value'] = line_temp.q_to
         line_temp['std_dev'] = line_temp.stddev_line_to_q
         line_temp['side'] = line_temp.to_bus
+        line_temp = pd.merge(line_temp, sv_powerflow, left_on=sc['t_to'], right_index=True)
         self._copy_to_measurement(line_temp)
 
         # ---------------------------------------measure: trafo---------------------------------------------------
@@ -195,22 +235,29 @@ class CreateMeasurements:
         trafo_temp['value'] = trafo_temp.p_hv
         trafo_temp['std_dev'] = trafo_temp.stddev_trafo_hv_p
         trafo_temp['side'] = trafo_temp.hv_bus
+        trafo_temp = pd.merge(trafo_temp, sv_powerflow, left_on=sc['t_hv'], right_index=True)
         self._copy_to_measurement(trafo_temp)
+        trafo_temp = trafo_temp.drop(columns=sv_powerflow.columns)
         # ---------------------------------------measure: trafo p lv---------------------------------------------------
         trafo_temp['value'] = trafo_temp.p_lv
         trafo_temp['std_dev'] = trafo_temp.stddev_trafo_lv_p
         trafo_temp['side'] = trafo_temp.lv_bus
+        trafo_temp = pd.merge(trafo_temp, sv_powerflow, left_on=sc['t_lv'], right_index=True)
         self._copy_to_measurement(trafo_temp)
+        trafo_temp = trafo_temp.drop(columns=sv_powerflow.columns)
         # ---------------------------------------measure: trafo q hv---------------------------------------------------
         trafo_temp['measurement_type'] = 'q'
         trafo_temp['value'] = trafo_temp.q_hv
         trafo_temp['std_dev'] = trafo_temp.stddev_trafo_hv_q
         trafo_temp['side'] = trafo_temp.hv_bus
+        trafo_temp = pd.merge(trafo_temp, sv_powerflow, left_on=sc['t_hv'], right_index=True)
         self._copy_to_measurement(trafo_temp)
+        trafo_temp = trafo_temp.drop(columns=sv_powerflow.columns)
         # ---------------------------------------measure: trafo q lv---------------------------------------------------
         trafo_temp['value'] = trafo_temp.q_lv
         trafo_temp['std_dev'] = trafo_temp.stddev_trafo_lv_q
         trafo_temp['side'] = trafo_temp.lv_bus
+        trafo_temp = pd.merge(trafo_temp, sv_powerflow, left_on=sc['t_lv'], right_index=True)
         self._copy_to_measurement(trafo_temp)
 
         # ---------------------------------------measure: trafo3w---------------------------------------------------
@@ -246,32 +293,43 @@ class CreateMeasurements:
         trafo3w_temp['value'] = trafo3w_temp.p_hv
         trafo3w_temp['std_dev'] = trafo3w_temp.stddev_trafo_hv_p
         trafo3w_temp['side'] = trafo3w_temp.hv_bus
+        trafo3w_temp = pd.merge(trafo3w_temp, sv_powerflow, left_on=sc['t_hv'], right_index=True)
         self._copy_to_measurement(trafo3w_temp)
+        trafo3w_temp = trafo3w_temp.drop(columns=sv_powerflow.columns)
         # ---------------------------------------measure: trafo3w p mv---------------------------------------------
         trafo3w_temp['value'] = trafo3w_temp.p_mv
         trafo3w_temp['std_dev'] = trafo3w_temp.stddev_trafo_mv_p
         trafo3w_temp['side'] = trafo3w_temp.mv_bus
+        trafo3w_temp = pd.merge(trafo3w_temp, sv_powerflow, left_on=sc['t_mv'], right_index=True)
         self._copy_to_measurement(trafo3w_temp)
+        trafo3w_temp = trafo3w_temp.drop(columns=sv_powerflow.columns)
         # ---------------------------------------measure: trafo3w p lv---------------------------------------------
         trafo3w_temp['value'] = trafo3w_temp.p_lv
         trafo3w_temp['std_dev'] = trafo3w_temp.stddev_trafo_lv_p
         trafo3w_temp['side'] = trafo3w_temp.lv_bus
+        trafo3w_temp = pd.merge(trafo3w_temp, sv_powerflow, left_on=sc['t_lv'], right_index=True)
         self._copy_to_measurement(trafo3w_temp)
+        trafo3w_temp = trafo3w_temp.drop(columns=sv_powerflow.columns)
         # ---------------------------------------measure: trafo3w q hv---------------------------------------------
         trafo3w_temp['measurement_type'] = 'q'
         trafo3w_temp['value'] = trafo3w_temp.q_hv
         trafo3w_temp['std_dev'] = trafo3w_temp.stddev_trafo_hv_q
         trafo3w_temp['side'] = trafo3w_temp.hv_bus
+        trafo3w_temp = pd.merge(trafo3w_temp, sv_powerflow, left_on=sc['t_hv'], right_index=True)
         self._copy_to_measurement(trafo3w_temp)
+        trafo3w_temp = trafo3w_temp.drop(columns=sv_powerflow.columns)
         # ---------------------------------------measure: trafo3w q mv---------------------------------------------
         trafo3w_temp['value'] = trafo3w_temp.q_mv
         trafo3w_temp['std_dev'] = trafo3w_temp.stddev_trafo_mv_q
         trafo3w_temp['side'] = trafo3w_temp.mv_bus
+        trafo3w_temp = pd.merge(trafo3w_temp, sv_powerflow, left_on=sc['t_mv'], right_index=True)
         self._copy_to_measurement(trafo3w_temp)
+        trafo3w_temp = trafo3w_temp.drop(columns=sv_powerflow.columns)
         # ---------------------------------------measure: trafo3w q lv---------------------------------------------
         trafo3w_temp['value'] = trafo3w_temp.q_lv
         trafo3w_temp['std_dev'] = trafo3w_temp.stddev_trafo_lv_q
         trafo3w_temp['side'] = trafo3w_temp.lv_bus
+        trafo3w_temp = pd.merge(trafo3w_temp, sv_powerflow, left_on=sc['t_lv'], right_index=True)
         self._copy_to_measurement(trafo3w_temp)
 
         # remove NaN values
