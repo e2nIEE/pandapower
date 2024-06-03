@@ -34,25 +34,32 @@ class EquivalentInjectionsCim16:
                     (eqssh_ei_wards.index.size, eqssh_ei_xwards.index.size, time.time() - time_start)))
 
     def _prepare_equivalent_injections_cim16(self) -> pd.DataFrame:
-        eqssh_ei = self.cimConverter.merge_eq_ssh_profile('EquivalentInjection', add_cim_type_column=True)
+        if 'sc' in self.cimConverter.cim.keys():
+            equivalent_injection = self.cimConverter.merge_eq_other_profiles(['ssh', 'sc'], 'EquivalentInjection',
+                                                                             add_cim_type_column=True)
+        else:
+            equivalent_injection = self.cimConverter.merge_eq_ssh_profile('EquivalentInjection',
+                                                                          add_cim_type_column=True)
         eq_base_voltages = pd.concat([self.cimConverter.cim['eq']['BaseVoltage'][['rdfId', 'nominalVoltage']],
                                       self.cimConverter.cim['eq_bd']['BaseVoltage'][['rdfId', 'nominalVoltage']]],
                                      sort=False)
         eq_base_voltages = eq_base_voltages.drop_duplicates(subset=['rdfId'])
         eq_base_voltages = eq_base_voltages.rename(columns={'rdfId': 'BaseVoltage'})
-        eqssh_ei = pd.merge(eqssh_ei, eq_base_voltages, how='left', on='BaseVoltage')
-        eqssh_ei = pd.merge(eqssh_ei, self.cimConverter.bus_merge, how='left', on='rdfId')
+        equivalent_injection = pd.merge(equivalent_injection, eq_base_voltages, how='left', on='BaseVoltage')
+        equivalent_injection = pd.merge(equivalent_injection, self.cimConverter.bus_merge, how='left', on='rdfId')
         # maybe the BaseVoltage is not given, also get the nominalVoltage from the buses
-        eqssh_ei = pd.merge(eqssh_ei, self.cimConverter.net.bus[['vn_kv']], how='left', left_on='index_bus',
-                            right_index=True)
-        eqssh_ei.nominalVoltage = eqssh_ei.nominalVoltage.fillna(eqssh_ei.vn_kv)
-        eqssh_ei['regulationStatus'].fillna(False, inplace=True)
-        eqssh_ei['vm_pu'] = eqssh_ei.regulationTarget / eqssh_ei.nominalVoltage
-        eqssh_ei.rename(columns={'rdfId_Terminal': sc['t'], 'rdfId': sc['o_id'], 'connected': 'in_service',
-                                 'index_bus': 'bus', 'p': 'ps_mw', 'q': 'qs_mvar'},
-                        inplace=True)
-        eqssh_ei['pz_mw'] = 0.
-        eqssh_ei['qz_mvar'] = 0.
-        eqssh_ei['r_ohm'] = 0.
-        eqssh_ei['x_ohm'] = .1
-        return eqssh_ei
+        equivalent_injection = pd.merge(equivalent_injection, self.cimConverter.net.bus[['vn_kv']], how='left',
+                                        left_on='index_bus', right_index=True)
+        equivalent_injection.nominalVoltage = equivalent_injection.nominalVoltage.fillna(equivalent_injection.vn_kv)
+        equivalent_injection['regulationStatus'].fillna(False, inplace=True)
+        equivalent_injection['vm_pu'] = equivalent_injection.regulationTarget / equivalent_injection.nominalVoltage
+        if 'inService' in equivalent_injection.columns:
+            equivalent_injection['connected'] = equivalent_injection['connected'] & equivalent_injection['inService']
+        equivalent_injection.rename(columns={'rdfId_Terminal': sc['t'], 'rdfId': sc['o_id'], 'connected': 'in_service',
+                                             'index_bus': 'bus', 'p': 'ps_mw', 'q': 'qs_mvar'},
+                                    inplace=True)
+        equivalent_injection['pz_mw'] = 0.
+        equivalent_injection['qz_mvar'] = 0.
+        equivalent_injection['r_ohm'] = 0.
+        equivalent_injection['x_ohm'] = .1
+        return equivalent_injection
