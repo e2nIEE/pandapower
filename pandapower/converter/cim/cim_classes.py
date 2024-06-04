@@ -494,11 +494,16 @@ class CimParser:
         else:
             prf = profile_name
         self.file_names[prf] = file
+        self._parse_xml_tree(xml_tree, prf, output)
+
+    def _parse_xml_tree(self, xml_tree: xmlET, profile_name: str, output: Dict | None = None):
+        output = self.cim if output is None else output
         # get all CIM elements to parse
         element_types = pd.Series([ele.tag for ele in list(xml_tree)])
         element_types.drop_duplicates(inplace=True)
         prf_content: Dict[str, pd.DataFrame] = dict()
         ns_dict = dict()
+        prf = profile_name
         if prf not in ns_dict.keys():
             ns_dict[prf] = dict()
         for _, element_type in element_types.items():
@@ -513,7 +518,7 @@ class CimParser:
                 if col_new.endswith('-resource'):
                     col_new = col_new[:-9]
                     # remove the first character of each value if col_new is a CGMES class, e.g. Terminal
-                    # other wise remove the namespace from the literals (e.g. col_new is unitMultiplier, then the
+                    # otherwise remove the namespace from the literals (e.g. col_new is unitMultiplier, then the
                     # value is like http://iec.ch/TC57/2013/CIM-schema-cim16#UnitMultiplier.M
                     if col_new[0].isupper():
                         prf_content[element_type_c][col] = prf_content[element_type_c][col].str[1:]
