@@ -32,13 +32,14 @@ class PQController(ConstControl):
 
         **element** - element table ('sgen', 'load' etc.)
 
-        **max_p_error** (float, 0.0001) - Maximum error of active power
+        **max_p_error** (float, 0.0001) - Maximum absolute error of active power in MW
 
-        **max_q_error** (float, 0.0001) - Maximum error of reactive power
+        **max_q_error** (float, 0.0001) - Maximum absolute error of reactive power in Mvar
 
-        **p_ac** (float, 1.0) - Simultaneity factor applied to P and Q
+        **pq_simultaneity_factor** (float, 1.0) - Simultaneity factor applied to P and Q
 
-        **f_sizing** (float, 1.0) - Sizing of the converter factor limiting P
+        **converter_sizing_pu** (float, 1.0) - Sizing of the converter factor applied to limit the
+        active power (using the internal function limit_to_inverter_sizing())
 
         **data_source** ( , None) - A DataSource that contains profiles
 
@@ -52,7 +53,7 @@ class PQController(ConstControl):
     """
 
     def __init__(self, net, element_index, element="sgen", max_p_error=0.0001, max_q_error=0.0001,
-                 p_ac=1., f_sizing=1., data_source=None, profile_scale=1., in_service=True,
+                 pq_simultaneity_factor=1., converter_sizing_pu=1., data_source=None, profile_scale=1., in_service=True,
                  ts_absolute=True, order=0, level=0, **kwargs):
         super().__init__(net, element=element, variable="p_mw", element_index=element_index,
                          in_service=in_service, order=order, level=level, **kwargs)
@@ -72,10 +73,10 @@ class PQController(ConstControl):
         if element == "sgen":
             self.sign *=-1
         # Simultaneity factor
-        self.p_ac = p_ac
+        self.pq_simultaneity_factor = pq_simultaneity_factor
 
         # Sizing of the AC/DC converter
-        self.f_sizing = f_sizing
+        self.converter_sizing_pu = converter_sizing_pu
 
         # attributes for profile
         self.data_source = data_source
@@ -115,8 +116,8 @@ class PQController(ConstControl):
         rep = super(PQController, self).__repr__()
 
         for member in ["element_index", "bus", "p_mw", "q_mvar", "sn_mva", "element_names",
-                       "gen_type", "element_in_service", "p_ac",
-                       "f_sizing", "data_source", "profile_scale", "p_profile", "q_profile",
+                       "gen_type", "element_in_service", "pq_simultaneity_factor",
+                       "converter_sizing_pu", "data_source", "profile_scale", "p_profile", "q_profile",
                        "ts_absolute", "max_p_error",
                        "max_q_error"]:
             rep += ("\n" + member + ":").ljust(20)
@@ -129,20 +130,20 @@ class PQController(ConstControl):
     def read_profiles(self, time):
         """
         Reads new data if a DataSource and profiles have been set.
-        The simultaneity factor p_ac is being applied directly to the value
+        The simultaneity factor pq_simultaneity_factor is being applied directly to the value
         retrieved from the DataSource. self.profile_scale in turn is being
         passed to get_time_step_value() and applied by the DataSource.
         """
 
         if self.data_source is not None:
             if self.p_profile or self.p_profile == 0:
-                self.p_mw = self.p_ac * \
+                self.p_mw = self.pq_simultaneity_factor * \
                             self.data_source.get_time_step_value(time_step=time,
                                                                  profile_name=self.p_profile,
                                                                  scale_factor=self.profile_scale)
 
             if self.q_profile or self.q_profile == 0:
-                self.q_mvar = self.p_ac * \
+                self.q_mvar = self.pq_simultaneity_factor * \
                               self.data_source.get_time_step_value(time_step=time,
                                                                    profile_name=self.q_profile,
                                                                    scale_factor=self.profile_scale)
@@ -174,28 +175,28 @@ class PQController(ConstControl):
 
     def limit_to_inverter_sizing(self, p_mw, q_mvar):
         """
-        Returns the limited P and Q values in respect to the PVs inverter sizing
+        Returns the limited P and Q values in respect to the SGENs inverter sizing
 
         INPUT:
-            **p_kw** - Active power of [self.element]
+            **p_mw** - Active power of [self.element]
 
-            **q_kvar** - Reactive power of [self.element]
+            **q_mvar** - Reactive power of [self.element]
 
         OUTPUT:
 
-            **p_kw** - Active power limited to inverter sizing
+            **p_mw** - Active power limited to inverter sizing
 
-            **q_kvar** - Reactive power limited to inverter sizing
+            **q_mvar** - Reactive power limited to inverter sizing
         """
         if n_nan_sn := sum(self.sn_mva.isnull()):
             logger.warning(f"Limiting to inverter size will result in NaN for the {n_nan_sn} PQ "
                            "controlled elements with NaN sn_mva values.")
         # limit output to inverter sizing
-        if (np.sqrt(p_mw ** 2 + q_mvar ** 2) > self.f_sizing * self.sn_mva).any():
+        if (np.sqrt(p_mw ** 2 + q_mvar ** 2) > self.converter_sizing_pu * self.sn_mva).any():
            # limit Q first
             # t = q_mvar
-            # q_mvar = sign(q_mvar) * math.sqrt((self.f_sizing * self.sn_mva) ** 2 - p_mw ** 2)
-            sn_mva = self.f_sizing *self.sn_mva
+            # q_mvar = sign(q_mvar) * math.sqrt((self.converter_sizing_pu * self.sn_mva) ** 2 - p_mw ** 2)
+            sn_mva = self.converter_sizing_pu *self.sn_mva
             max_q_mvar = np.sqrt(sn_mva ** 2 - p_mw ** 2)
             q_mvar = np.min((q_mvar*self.sign, max_q_mvar*self.sign))
 
@@ -203,7 +204,7 @@ class PQController(ConstControl):
                              "respect to the inverter sizing.")
             if np.isnan(max_q_mvar).any():  # limit P if it already exceeds Sn
                 q_mvar = 0
-                p_mw = self.f_sizing * self.sn_mva
+                p_mw = self.converter_sizing_pu * self.sn_mva
                 logger.debug("Note: P_mw has been limited and"
                              "q_mvar has been set to 0 in respect to sn_mva ")
         return p_mw, q_mvar

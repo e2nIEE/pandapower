@@ -73,13 +73,11 @@ class DERController(PQController):
         of the control loop. A higher value mean slower changes of p and q towards the latest target
         values
 
-        **max_p_error** (float, 0.0001) - Maximum error of active power
+        **max_p_error** (float, 0.0001) - Maximum absolute error of active power in MW
 
-        **max_q_error** (float, 0.0001) - Maximum error of reactive power
+        **max_q_error** (float, 0.0001) - Maximum absolute error of reactive power in Mvar
 
-        **p_ac** (float, 1.0) - Simultaneity factor applied to P and Q
-
-        **f_sizing** (float, 1.0) - Sizing of the converter factor limiting P
+        **pq_simultaneity_factor** (float, 1.0) - Simultaneity factor applied to P and Q
 
         **data_source** ( , None) - A DataSource that contains profiles
 
@@ -97,11 +95,23 @@ class DERController(PQController):
 
         **ts_absolute** (bool, True) - Whether the time step values are absolute power values or
         scaling factors
+
+    Example
+    -------
+    >>> import pandapower as pp
+    >>> import pandapower.control.controller.DERController as DERModels
+    >>> net = create_cigre_network_mv(with_der=True)
+    >>> controlled_sgens = pp.control.DERController(
+    ...     net, net.sgen.index,
+    ...     q_model=DERModels.QModelCosphiP(cosphi=-0.95),
+    ...     pqv_area=DERModels.PQVArea4120V2()
+    ...     )
+    ... pp.runpp(net, run_control=True)
     """
     def __init__(self, net, element_index, element="sgen",
                  q_model=None, pqv_area=None,
                  saturate_sn_mva=np.nan, q_prio=True, damping_coef=2,
-                 max_p_error=1e-6, max_q_error=1e-6, p_ac=1., f_sizing=1.,
+                 max_p_error=1e-6, max_q_error=1e-6, pq_simultaneity_factor=1., f_sizing=1.,
                  data_source=None, p_profile=None, profile_from_name=False,
                  profile_scale=1.0, in_service=True, ts_absolute=True,
                  order=0, level=0, drop_same_existing_ctrl=False, matching_params=None, **kwargs):
@@ -109,7 +119,7 @@ class DERController(PQController):
         if matching_params is None:
             matching_params = {"element_index": element_index}
         super().__init__(net, element_index=element_index, element=element, max_p_error=max_p_error,
-                         max_q_error=max_q_error, p_ac=p_ac,
+                         max_q_error=max_q_error, pq_simultaneity_factor=pq_simultaneity_factor,
                          f_sizing=f_sizing, data_source=data_source,
                          profile_scale=profile_scale, in_service=in_service,
                          ts_absolute=ts_absolute, initial_run=True,

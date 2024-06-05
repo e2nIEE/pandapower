@@ -151,7 +151,7 @@ class QModelCosphiPCurve(QModel):
         return self.cosphi_p_curve.step(p_pu)
 
 
-class QModelQV(QModel):
+class QModelQVCurve(QModel):
     """
     Base class to model that q is determined in dependency of the voltage.
     """

@@ -37,7 +37,7 @@ def simple_test_net2():
 
 
 def test_qofv():
-    """ Test basic QV curve behaviour of QModelCosphiVCurve and QModelQV. """
+    """ Test basic QV curve behaviour of QModelCosphiVCurve and QModelQVCurve. """
 
     net = simple_test_net()
     p = net.sgen.p_mw.at[0]
@@ -46,7 +46,7 @@ def test_qofv():
     qofv_cosphi = DERModels.QModelCosphiVCurve({
         "vm_points_pu": (0, 0.96, 1., 1.04),
         "cosphi_points": (0.9, 0.9, 1, -0.9)})
-    qofv_q = DERModels.QModelQV({
+    qofv_q = DERModels.QModelQVCurve({
         "vm_points_pu": (0, 0.96, 1., 1.04),
         "q_points_pu": (0.4843221*p/sn, 0.4843221*p/sn, 0., -0.4843221*p/sn)})
 
