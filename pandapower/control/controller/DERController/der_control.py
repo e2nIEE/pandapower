@@ -150,7 +150,7 @@ class DERController(PQController):
 #        self.write_to_net(net)
 
     def is_converged(self, net):
-        vm = net.res_bus.loc[self.bus, "vm_pu"].set_axis(self.element_index)
+        vm_pu = net.res_bus.loc[self.bus, "vm_pu"].set_axis(self.element_index)
         p_series_mw = getattr(self, "p_series_mw", getattr(self, "p_mw", self.sn_mva))
         q_series_mvar = getattr(self, "q_series_mw", self.q_mvar)
 
@@ -161,15 +161,15 @@ class DERController(PQController):
             p_series_mw[p_series_mw < 0] = 0.
 
         # --- First Step: Calculate/Select P, Q
-        p = self._step_p(p_series_mw)
-        q = self._step_q(p_series_mw=p_series_mw, q_series_mvar=q_series_mvar, vm=vm)
+        p_pu = self._step_p(p_series_mw)
+        q_pu = self._step_q(p_series_mw=p_series_mw, q_series_mvar=q_series_mvar, vm_pu=vm_pu)
 
         # --- Second Step: Saturates P, Q according to SnMVA and PQV_AREA
         if self.saturate_sn_mva or (self.pqv_area is not None):
-            p, q = self._saturate(p, q, vm)
+            p_pu, q_pu = self._saturate(p_pu, q_pu, vm_pu)
 
         # --- Third Step: Convert relative P, Q to p_mw, q_mvar
-        target_p_mw, target_q_mvar = p * self.sn_mva, q * self.sn_mva
+        target_p_mw, target_q_mvar = p_pu * self.sn_mva, q_pu * self.sn_mva
 
         # --- Apply target p and q considering the damping factor coefficient ----------------------
         self.target_p_mw = self.p_mw + (target_p_mw - self.p_mw) / self.damping_coef
@@ -183,55 +183,58 @@ class DERController(PQController):
 
         self.write_to_net(net)
 
-    def _step_p(self, p_series_mw=None, p_setpoint_mw=None):
+    def _step_p(self, p_series_mw=None):
         return p_series_mw / self.sn_mva
 
-    def _step_q(self, p_series_mw=None, q_series_mvar=None, vm=None):
+    def _step_q(self, p_series_mw=None, q_series_mvar=None, vm_pu=None):
         """Q priority: Q setpoint > Q model > Q series"""
         if self.q_model is not None:
-            q = self.q_model.step(vm=vm, p=p_series_mw/self.sn_mva)
+            q_pu = self.q_model.step(vm_pu=vm_pu, p_pu=p_series_mw/self.sn_mva)
         else:
             if q_series_mvar is None:
                 raise Exception("No Q_model and no q_profile available.")
-            q = q_series_mvar / self.sn_mva
-        return q
+            q_pu = q_series_mvar / self.sn_mva
+        return q_pu
 
-    def _saturate(self, p, q, vm):
-        assert p is not None and q is not None
+    def _saturate(self, p_pu, q_pu, vm_pu):
+        assert p_pu is not None and q_pu is not None
 
         # Saturation on given pqv_area
         if self.pqv_area is not None:
-            in_area = self.pqv_area.in_area(p, q, vm)
+            in_area = self.pqv_area.in_area(p_pu, q_pu, vm_pu)
             if not all(in_area):
-                min_max_q = self.pqv_area.q_flexibility(p=p[~in_area], vm=vm[~in_area])
-                q[~in_area] = np.minimum(np.maximum(q[~in_area], min_max_q[:, 0]), min_max_q[:, 1])
+                min_max_q_pu = self.pqv_area.q_flexibility(
+                    p_pu=p_pu[~in_area], vm_pu=vm_pu[~in_area])
+                q_pu[~in_area] = np.minimum(np.maximum(
+                    q_pu[~in_area], min_max_q_pu[:, 0]), min_max_q_pu[:, 1])
 
         if not np.isnan(self.saturate_sn_mva):
-            p, q = self._saturate_sn_mva_step(p, q, vm)
-        return p, q
+            p_pu, q_pu = self._saturate_sn_mva_step(p_pu, q_pu, vm_pu)
+        return p_pu, q_pu
 
-    def _saturate_sn_mva_step(self, p, q, vm):
+    def _saturate_sn_mva_step(self, p_pu, q_pu, vm_pu):
         # Saturation on SnMVA according to priority mode
-        sat_s = self.saturate_sn_mva / self.sn_mva # sat_s is relative to sn_mva
-        to_saturate = p**2 + q**2 > sat_s**2
+        sat_s_pu = self.saturate_sn_mva / self.sn_mva # sat_s is relative to sn_mva
+        to_saturate = p_pu**2 + q_pu**2 > sat_s_pu**2
         if any(to_saturate):
             if self.q_prio:
                 if (
                     isinstance(self.pqv_area, PQVArea4110) or isinstance(self.pqv_area, QVArea4110)
                    ) and any(
                     (0.95 < vm[to_saturate]) & (vm[to_saturate] < 1.05) &
-                    (-0.328684 < q[to_saturate]) & any(q[to_saturate] < 0.328684)
+                    (-0.328684 < q_pu[to_saturate]) & any(q_pu[to_saturate] < 0.328684)
                    ):
                     logger.warning(f"Such kind of saturation is performed that is not in line with"
                                    " VDE AR N 4110: p reduction within 0.95 < vm < 1.05 and "
                                    "0.95 < cosphi.")
-                q[to_saturate] = np.clip(q[to_saturate], -sat_s[to_saturate], sat_s[to_saturate])
-                p[to_saturate] = np.sqrt(sat_s[to_saturate]**2 - q[to_saturate]**2)
+                q_pu[to_saturate] = np.clip(q_pu[to_saturate], -sat_s_pu[to_saturate],
+                                            sat_s_pu[to_saturate])
+                p_pu[to_saturate] = np.sqrt(sat_s_pu[to_saturate]**2 - q_pu[to_saturate]**2)
             else:
-                p[to_saturate] = np.clip(p[to_saturate], 0., sat_s[to_saturate])
-                q[to_saturate] = np.sqrt(sat_s[to_saturate]**2 - p[to_saturate]**2) * np.sign(
-                    q[to_saturate])
-        return p, q
+                p_pu[to_saturate] = np.clip(p_pu[to_saturate], 0., sat_s_pu[to_saturate])
+                q_pu[to_saturate] = np.sqrt(sat_s_pu[to_saturate]**2 - p_pu[to_saturate]**2) * \
+                    np.sign(q_pu[to_saturate])
+        return p_pu, q_pu
 
 
     def __str__(self):

@@ -44,11 +44,11 @@ def test_qofv():
     sn = net.sgen.sn_mva.at[0]
 
     qofv_cosphi = DERModels.QModelCosphiVCurve({
-        "v_points_pu": (0, 0.96, 1., 1.04),
+        "vm_points_pu": (0, 0.96, 1., 1.04),
         "cosphi_points": (0.9, 0.9, 1, -0.9)})
     qofv_q = DERModels.QModelQV({
-        "v_points_pu": (0, 0.96, 1., 1.04),
-        "q_points": (0.4843221*p/sn, 0.4843221*p/sn, 0., -0.4843221*p/sn)})
+        "vm_points_pu": (0, 0.96, 1., 1.04),
+        "q_points_pu": (0.4843221*p/sn, 0.4843221*p/sn, 0., -0.4843221*p/sn)})
 
     # the following, applied pqv_area has no influence in this test (vm near 1, p > 0.2 -> no
     # limitation). The functionality is not tested here. It is only tested that using it produces
@@ -161,7 +161,7 @@ def test_cosphi_of_p_timeseries():
     DER_no_q = pp.control.DERController(
         net, 0, data_source=ds, p_profile="P_0", profile_scale=-2e-3,
         q_model=DERModels.QModelCosphiPCurve({
-            'p_points': (0, 0.5, 1),
+            'p_points_pu': (0, 0.5, 1),
             'cosphi_points': (1, 1, 1)}))
 
     DER_no_q2 = pp.control.DERController(
@@ -170,19 +170,19 @@ def test_cosphi_of_p_timeseries():
     DER_ue = pp.control.DERController(
         net, 0, data_source=ds, p_profile="P_0", profile_scale=-2e-3,
         q_model=DERModels.QModelCosphiPCurve({
-            'p_points': (0, 0.5, 1),
+            'p_points_pu': (0, 0.5, 1),
             'cosphi_points': (1, 1, -0.95)}))
 
     DER_ue2 = pp.control.DERController(
         net, 0, data_source=ds, p_profile="P_0", profile_scale=-2e-3,
         q_model=DERModels.QModelCosphiPCurve({
-            'p_points': (0, 0.2, 0.25, 0.3, 0.5, 1),
+            'p_points_pu': (0, 0.2, 0.25, 0.3, 0.5, 1),
             'cosphi_points': (1, 1, 0.975, 1, 1, -0.95)}))
 
     DER_oe = pp.control.DERController(
         net, 0, data_source=ds, p_profile="P_0", profile_scale=-2e-3,
         q_model=DERModels.QModelCosphiPCurve({
-            'p_points': (0, 0.5, 1),
+            'p_points_pu': (0, 0.5, 1),
             'cosphi_points': (1, 1, 0.95)}))
 
     # Run timeseries

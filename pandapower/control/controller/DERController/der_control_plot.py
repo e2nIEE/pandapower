@@ -15,7 +15,7 @@ def plot_pq_area(pq_area, **kwargs):
     if p_samples is None:
         p_samples = np.linspace(0, 1, 200)
 
-    min_max_q = pq_area.q_flexibility(p=p_samples, vm=1)
+    min_max_q = pq_area.q_flexibility(p_pu=p_samples, vm_pu=1)
 
     _plot_pq_area(min_max_q, p_samples=p_samples, **kwargs)
 
@@ -68,7 +68,7 @@ def plot_qv_area(qv_area, title=None, ax=None, prune_to_flexibility=False, vm_sa
     else:
         texts = "Qmin", "Qmax", "Vm in pu", "Q/Sn"
 
-    min_max_q = qv_area.q_flexibility(p=0.5, vm=vm_samples) # p should be irrelevant since
+    min_max_q = qv_area.q_flexibility(p_pu=0.5, vm_pu=vm_samples) # p should be irrelevant since
     # it is about QV areas, not about PQV areas
 
     len_ = min_max_q.shape[0]

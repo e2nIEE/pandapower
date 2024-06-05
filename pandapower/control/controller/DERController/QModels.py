@@ -25,7 +25,7 @@ class QModel(BaseModel):
     def __init__(self, **kwargs):
         pass
 
-    def step(self, vm=None, p=None):
+    def step(self, vm_pu=None, p_pu=None):
         pass
 
     def __str__(self):
@@ -37,20 +37,20 @@ class QModelConstQ(QModel):
     Class to model a fixed q value.
     """
 
-    def __init__(self, q):
-        self.q = q
+    def __init__(self, q_pu):
+        self.q_pu = q_pu
 
-    def step(self, vm=None, p=None):
-        if p is not None:
-            len_ = len(p)
-        elif vm is not None:
-            len_ = len(vm)
+    def step(self, vm_pu=None, p_pu=None):
+        if p_pu is not None:
+            len_ = len(p_pu)
+        elif vm_pu is not None:
+            len_ = len(vm_pu)
         else:
             len_ = None
-        return np.array(ensure_iterability(self.q, len_))
+        return np.array(ensure_iterability(self.q_pu, len_))
 
     def __str__(self):
-        return self.__class__.name() + f"(q={self.q})"
+        return self.__class__.name() + f"(q={self.q_pu})"
 
 
 class QModelCosphiVCurve(QModel):
@@ -65,10 +65,10 @@ class QModelCosphiVCurve(QModel):
         else:
             self.cosphi_v_curve = cosphi_v_curve
 
-    def step(self, vm, p=None):
-        assert p is not None
-        assert all(p >= 0)
-        return self.cosphi_v_curve.step(vm, p)
+    def step(self, vm_pu, p_pu=None):
+        assert p_pu is not None
+        assert all(p_pu >= 0)
+        return self.cosphi_v_curve.step(vm_pu, p_pu)
 
 
 class QModelCosphiP(QModel):
@@ -81,14 +81,14 @@ class QModelCosphiP(QModel):
     def __init__(self, cosphi: float):
         assert -1 <= cosphi <= 1
         self.cosphi = cosphi
-        self.q_setpoint = np.sign(self.cosphi) * np.sqrt(1-self.cosphi**2)
+        self.q_setpoint_pu = np.sign(self.cosphi) * np.sqrt(1-self.cosphi**2)
 
-    def step(self, vm=None, p=None,):
-        assert p is not None
-        if any(p < 0):
+    def step(self, vm_pu=None, p_pu=None,):
+        assert p_pu is not None
+        if any(p_pu < 0):
             logger.warning("p < 0 is assumed as p=0 in QModelCosphiP.step()")
-            p[p< 0] = 0
-        return (p * self.q_setpoint)
+            p_pu[p_pu< 0] = 0
+        return (p_pu * self.q_setpoint_pu)
 
     def __str__(self):
         return self.__class__.name() + f"(cosphi={self.cosphi})"
@@ -104,7 +104,7 @@ class QModelCosphiSn(QModel):
     def __init__(self, cosphi=0.2):
         self.cosphi = cosphi
 
-    def step(self, vm=None, p=None):
+    def step(self, vm_pu=None, p_pu=None):
         return (1 * self.cosphi)
 
     def __str__(self):
@@ -121,14 +121,14 @@ class QModelCosphiPQ(QModel):
     def __init__(self, cosphi: float):
         assert -1 <= cosphi <= 1
         self.cosphi = cosphi
-        self.q_setpoint = np.sign(self.cosphi) * np.sqrt(1-self.cosphi**2)
+        self.q_setpoint_pu = np.sign(self.cosphi) * np.sqrt(1-self.cosphi**2)
 
-    def step(self, vm=None, p=None,):
-        assert p is not None
-        if any(p < 0):
-            logger.warning("p < 0 is assumed as p=0 QModelCosphiPQ.step()")
-            p[p < 0] = 0
-        return (p/abs(self.cosphi) * self.q_setpoint)
+    def step(self, vm_pu=None, p_pu=None,):
+        assert p_pu is not None
+        if any(p_pu < 0):
+            logger.warning("p_pu < 0 is assumed as p_pu=0 QModelCosphiPQ.step()")
+            p_pu[p_pu < 0] = 0
+        return (p_pu/abs(self.cosphi) * self.q_setpoint_pu)
 
     def __str__(self):
         return self.__class__.name() + f"(cosphi={self.cosphi})"
@@ -145,10 +145,10 @@ class QModelCosphiPCurve(QModel):
         else:
             self.cosphi_p_curve = cosphi_p_curve
 
-    def step(self, vm=None, p=None):
-        assert p is not None
-        assert all(p >= 0)
-        return self.cosphi_p_curve.step(p)
+    def step(self, vm_pu=None, p_pu=None):
+        assert p_pu is not None
+        assert all(p_pu >= 0)
+        return self.cosphi_p_curve.step(p_pu)
 
 
 class QModelQV(QModel):
@@ -162,9 +162,9 @@ class QModelQV(QModel):
         else:
             self.qv_curve = qv_curve
 
-    def step(self, vm, p=None):
-        q = self.qv_curve.step(vm)
-        return q
+    def step(self, vm_pu, p_pu=None):
+        q_pu = self.qv_curve.step(vm_pu)
+        return q_pu
 
 
 if __name__ == "__main__":

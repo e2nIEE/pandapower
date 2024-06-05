@@ -27,8 +27,8 @@ class BaseModel:
 
 
 class QVCurve:
-    """ Simple Q(V) controller. The characteristic curve is defined by 'v_points_pu' and
-    'q_points' (relative to sn_mva).
+    """ Simple Q(V) controller. The characteristic curve is defined by 'vm_points_pu' and
+    'q_points_pu' (relative to sn_mva).
 
                                    - Q(Vm)/sn (underexcited)
                                    ^
@@ -50,17 +50,17 @@ class QVCurve:
                 ____/              |
                                    + Q(Vm)/sn (overexcited)
     """
-    def __init__(self, v_points_pu, q_points):
-        self.v_points_pu = v_points_pu
-        self.q_points = q_points
+    def __init__(self, vm_points_pu, q_points_pu):
+        self.vm_points_pu = vm_points_pu
+        self.q_points_pu = q_points_pu
 
     def step(self, vm_pu):
-        return np.interp(vm_pu, self.v_points_pu, self.q_points)
+        return np.interp(vm_pu, self.vm_points_pu, self.q_points_pu)
 
 
 class CosphiVCurve:
     """ Simple Q(V) controller. The characteristic curve is
-    defined by 'v_points_pu' and 'cosphi_points' (pos. values -> overexcited, voltage increasing,
+    defined by 'vm_points_pu' and 'cosphi_points' (pos. values -> overexcited, voltage increasing,
     neg. values -> underexcited, voltage decreasing).
 
                                    - cosphi(Vm) (underexcited)
@@ -83,19 +83,19 @@ class CosphiVCurve:
                 ____/              |
                                    + cosphi(Vm) (overexcited)
     """
-    def __init__(self, v_points_pu, cosphi_points):
-        self.v_points_pu = v_points_pu
+    def __init__(self, vm_points_pu, cosphi_points):
+        self.vm_points_pu = vm_points_pu
         self.cosphi_points = cosphi_points
         self.cosphi_pos = cosphi_to_pos(self.cosphi_points)
 
-    def step(self, vm_pu, p):
-        cosphi = cosphi_from_pos(np.interp(vm_pu, self.v_points_pu, self.cosphi_pos))
-        return np.tan(np.arccos(cosphi)) * p
+    def step(self, vm_pu, p_pu):
+        cosphi = cosphi_from_pos(np.interp(vm_pu, self.vm_points_pu, self.cosphi_pos))
+        return np.tan(np.arccos(cosphi)) * p_pu
 
 
 class CosphiPCurve:
     """ CosphiPCurve is a Q(P) controller, more precisely a cosphi(P) controller. The characteristic
-    curve is defined by 'p_points' and 'cosphi_points' (pos. values -> overexcited, voltage
+    curve is defined by 'p_points_pu' and 'cosphi_points' (pos. values -> overexcited, voltage
     increasing, neg. values -> underexcited, voltage decreasing).
 
     **Exemplary Characteristic curve**::
@@ -114,15 +114,15 @@ class CosphiPCurve:
         0 +--+-----+----+-------------->
            p[0]    p[1]  p[2]
     INPUT:
-        **p_points** (iterable of floats) - active power values (relative to sn_mva) on the
+        **p_points_pu** (iterable of floats) - active power values (relative to sn_mva) on the
         cosphi(P) curve.
 
         **cosphi_points** (iterable of floats) - cosphi values on the cosphi(P) curve. positive
         values lead to positive reactive power values (inductive/overexcited generator), negative
         values mean capactive/underexcited generator
     """
-    def __init__(self, p_points, cosphi_points):
-        self.p_points = np.array(p_points)
+    def __init__(self, p_points_pu, cosphi_points):
+        self.p_points_pu = np.array(p_points_pu)
         self.cosphi_points = np.array(cosphi_points)
         if any(self.cosphi_points > 1):
             raise ValueError("cosphi cannot be higher than 1")
@@ -131,9 +131,9 @@ class CosphiPCurve:
 
         self.cosphi_pos = cosphi_to_pos(self.cosphi_points)
 
-    def step(self, p):
-        cosphi = cosphi_from_pos(np.interp(p, self.p_points, self.cosphi_pos))
-        return np.tan(np.arccos(cosphi)) * p
+    def step(self, p_pu):
+        cosphi = cosphi_from_pos(np.interp(p_pu, self.p_points_pu, self.cosphi_pos))
+        return np.tan(np.arccos(cosphi)) * p_pu
 
 
 if __name__ == "__main__":
