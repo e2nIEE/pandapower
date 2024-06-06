@@ -3,13 +3,14 @@ import pandapower.control.controller
 
 # --- Controller ---
 from pandapower.control.controller.const_control import ConstControl
+from pandapower.control.controller.pq_control import PQController
 from pandapower.control.controller.characteristic_control import CharacteristicControl
 from pandapower.control.controller.trafo.ContinuousTapControl import ContinuousTapControl
 from pandapower.control.controller.trafo.DiscreteTapControl import DiscreteTapControl
 from pandapower.control.controller.trafo.VmSetTapControl import VmSetTapControl
-from pandapower.control.controller.trafo.USetTapControl import USetTapControl  # TODO: drop after next release
 from pandapower.control.controller.trafo.TapDependentImpedance import TapDependentImpedance
 from pandapower.control.controller.trafo_control import TrafoController
+from pandapower.control.controller.DERController.der_control import DERController
 
 # --- Other ---
 from pandapower.control.run_control import *
