@@ -74,12 +74,12 @@ class ExternalNetworkInjectionsCim16:
                        how='left', left_on=sc['ct'], right_on='TopologicalNode')
         eni['controlEnabled'] = eni['controlEnabled'] & eni['enabled']
         eni['vm_pu'] = eni['targetValue'] / eni['vn_kv']  # voltage from regulation
-        eni['vm_pu'].fillna(eni['v'] / eni['vn_kv'], inplace=True)  # voltage from measurement
-        eni['vm_pu'].fillna(1., inplace=True)  # default voltage
-        eni['angle'].fillna(0., inplace=True)  # default angle
+        eni['vm_pu'] = eni['vm_pu'].fillna(eni['v'] / eni['vn_kv'])  # voltage from measurement
+        eni['vm_pu'] = eni['vm_pu'].fillna(1.)  # default voltage
+        eni['angle'] = eni['angle'].fillna(0.)  # default angle
         eni['ratedU'] = eni['targetValue'][:]  # targetValue in kV
-        eni['ratedU'].fillna(eni['v'], inplace=True)  # v in kV
-        eni['ratedU'].fillna(eni['vn_kv'], inplace=True)
+        eni['ratedU'] = eni['ratedU'].fillna(eni['v'])  # v in kV
+        eni['ratedU'] = eni['ratedU'].fillna(eni['vn_kv'])
         eni['s_sc_max_mva'] = 3 ** .5 * eni['ratedU'] * (eni['maxInitialSymShCCurrent'] / 1e3)
         eni['s_sc_min_mva'] = 3 ** .5 * eni['ratedU'] * (eni['minInitialSymShCCurrent'] / 1e3)
         # get the substations
@@ -98,13 +98,12 @@ class ExternalNetworkInjectionsCim16:
         if 'inService' in eni.columns:
             eni['connected'] = eni['connected'] & eni['inService']
 
-        eni.rename(columns={'rdfId': sc['o_id'], 'rdfId_Terminal': sc['t'], 'zone': sc['sub'],
-                            'angle': 'va_degree', 'index_bus': 'bus', 'connected': 'in_service',
-                            'minP': 'min_p_mw', 'maxP': 'max_p_mw', 'minQ': 'min_q_mvar', 'maxQ': 'max_q_mvar',
-                            'p': 'p_mw', 'q': 'q_mvar', 'controlEnabled': 'controllable',
-                            'maxR1ToX1Ratio': 'rx_max', 'minR1ToX1Ratio': 'rx_min', 'maxR0ToX0Ratio': 'r0x0_max',
-                            'referencePriority': 'slack_weight'},
-                   inplace=True)
+        eni = eni.rename(columns={'rdfId': sc['o_id'], 'rdfId_Terminal': sc['t'], 'zone': sc['sub'],
+                                  'angle': 'va_degree', 'index_bus': 'bus', 'connected': 'in_service',
+                                  'minP': 'min_p_mw', 'maxP': 'max_p_mw', 'minQ': 'min_q_mvar', 'maxQ': 'max_q_mvar',
+                                  'p': 'p_mw', 'q': 'q_mvar', 'controlEnabled': 'controllable',
+                                  'maxR1ToX1Ratio': 'rx_max', 'minR1ToX1Ratio': 'rx_min', 'maxR0ToX0Ratio': 'r0x0_max',
+                                  'referencePriority': 'slack_weight'})
         eni['scaling'] = 1.
         eni['type'] = None
         eni['slack'] = False

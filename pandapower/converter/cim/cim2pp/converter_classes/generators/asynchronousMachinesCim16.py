@@ -36,23 +36,23 @@ class AsynchronousMachinesCim16:
         eqssh_generating_units = pd.concat([eqssh_generating_units,
                                             self.cimConverter.merge_eq_ssh_profile('GeneratingUnit')],
                                            sort=False)
-        eqssh_generating_units['type'].fillna('GeneratingUnit', inplace=True)
+        eqssh_generating_units['type'] = eqssh_generating_units['type'].fillna('GeneratingUnit')
         eqssh_generating_units = pd.concat([eqssh_generating_units,
                                             self.cimConverter.merge_eq_ssh_profile('HydroGeneratingUnit')],
                                            sort=False)
-        eqssh_generating_units['type'].fillna('Hydro', inplace=True)
+        eqssh_generating_units['type'] = eqssh_generating_units['type'].fillna('Hydro')
         eqssh_generating_units = pd.concat([eqssh_generating_units,
                                             self.cimConverter.merge_eq_ssh_profile('SolarGeneratingUnit')],
                                            sort=False)
-        eqssh_generating_units['type'].fillna('PV', inplace=True)
+        eqssh_generating_units['type'] = eqssh_generating_units['type'].fillna('PV')
         eqssh_generating_units = pd.concat([eqssh_generating_units,
                                             self.cimConverter.merge_eq_ssh_profile('ThermalGeneratingUnit')],
                                            sort=False)
-        eqssh_generating_units['type'].fillna('Thermal', inplace=True)
+        eqssh_generating_units['type'] = eqssh_generating_units['type'].fillna('Thermal')
         eqssh_generating_units = pd.concat([eqssh_generating_units,
                                             self.cimConverter.merge_eq_ssh_profile('NuclearGeneratingUnit')],
                                            sort=False)
-        eqssh_generating_units['type'].fillna('Nuclear', inplace=True)
+        eqssh_generating_units['type'] = eqssh_generating_units['type'].fillna('Nuclear')
         eqssh_generating_units = eqssh_generating_units.rename(columns={'rdfId': 'GeneratingUnit'})
         if 'sc' in self.cimConverter.cim.keys():
             asynchronous_machines = self.cimConverter.merge_eq_other_profiles(['ssh', 'sc'],
