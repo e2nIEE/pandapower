@@ -110,7 +110,7 @@ class AcLineSegmentsCim16:
                     level=LogLevel.WARNING, code=ReportCode.WARNING_CONVERTING,
                     message="The ACLineSegment with RDF ID %s has %s Terminals!" % (rdfId, count)))
             ac_line_segments = ac_line_segments[0:0]
-        ac_line_segments.reset_index(inplace=True)
+        ac_line_segments = ac_line_segments.reset_index()
         # now merge with OperationalLimitSets and CurrentLimits
         eq_operational_limit_sets = self.cimConverter.cim['eq']['OperationalLimitSet'][['rdfId', 'Terminal']]
         eq_operational_limit_sets = eq_operational_limit_sets.rename(columns={'rdfId': 'rdfId_OperationalLimitSet',

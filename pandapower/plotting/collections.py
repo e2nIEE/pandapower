@@ -1306,7 +1306,7 @@ def create_line_switch_collection(net, switches=None, size=1, distance_to_bus=3,
 
 
 def create_bus_bus_switch_collection(net, size=1., helper_line_style=':', helper_line_size=1.,
-                                     helper_line_color="gray", **kwargs):
+                                     helper_line_color="gray", switches=None, **kwargs):
     """
     Creates a matplotlib patch collection of pandapower bus-bus switches. Switches are plotted in
     the center between two buses with a "helper" line (dashed and thin) being drawn between the
@@ -1328,6 +1328,8 @@ def create_bus_bus_switch_collection(net, size=1., helper_line_style=':', helper
         **helper_line_color** (string, "gray") - Line color of the "helper" line being plotted
         between two buses connected by a bus-bus switch
 
+        **switches** (list, []) - switches to include in the collection
+
         **kwargs - Key word arguments are passed to the patch function
 
     OUTPUT:
@@ -1335,7 +1337,9 @@ def create_bus_bus_switch_collection(net, size=1., helper_line_style=':', helper
     """
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
-    lbs_switches = net.switch.index[net.switch.et == "b"]
+    if switches is None:
+        switches = net.switch.index.to_list()
+    lbs_switches = net.switch.index[(net.switch.et == "b") & (net.switch.index.isin(switches))]
     color = kwargs.pop("color", "k")
     switch_patches = []
     line_patches = []
