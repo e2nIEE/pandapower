@@ -2587,8 +2587,15 @@ def create_shunt(net, item):
         sid = pp.create_shunt(net, p_mw=p_mw, **params)
     elif item.shtype == 2:
         # Shunt is a capacitor bank
-        loss_factor = item.tandc
-        sid = pp.create_shunt_as_capacitor(net, loss_factor=loss_factor, **params)
+        B = item.bcap*1e-6
+        G = item.gparac*1e-6
+        
+        R = G/(G**2 + B**2)
+        X = -B/(G**2 + B**2)
+
+        p_mw = (item.ushnm ** 2 * R) / (R ** 2 + X ** 2) * multiplier
+        params['q_mvar'] = (item.ushnm ** 2 * X) / (R ** 2 + X ** 2) * multiplier
+        sid = pp.create_shunt(net, p_mw=p_mw, **params)
     elif item.shtype == 3:
         # Shunt is a R-L-C, Rp element
 
