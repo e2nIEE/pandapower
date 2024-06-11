@@ -111,11 +111,12 @@ except ImportError:
 def soft_dependency_error(fct_name, required_packages):
     required_packages = required_packages if isinstance(required_packages, str) else \
         "','".join(required_packages)
-    raise ImportError(
-        "Some pandapower functionality use modules outside the setup.py "
-        f"requirements: {fct_name} requires '{required_packages}'. \n"
-        f"{required_packages} could not be imported.\n"
-        'To install all pandapower dependencies, pip install pandapower["all"] can be used.')
+    error_msg = "\n".join([
+        "Some pandapower functionality use optional python packages.",
+        f"{fct_name} requires '{required_packages}' which could not all be imported.",
+        'To install pandapower with all optional dependencies, type `pip install pandapower["all"]`.'
+    ])
+    raise ImportError(error_msg)
 
 
 def warn_and_fix_parameter_renaming(old_parameter_name, new_parameter_name, new_parameter,
