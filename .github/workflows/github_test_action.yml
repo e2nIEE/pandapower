@@ -19,6 +19,8 @@ jobs:
     strategy:
       matrix:
         python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        # Reminder: when removing the support of an old python version here, then don't forget to
+        # remove it also in pyproject.toml 'requires-python'
         group: [ 1, 2 ]
     steps:
       - uses: actions/checkout@v4
@@ -232,7 +234,7 @@ jobs:
       - name: Test with pytest
         run: |
           python -m pytest -W error --nbmake -n=auto --nbmake-timeout=900 "./tutorials"
-  
+
   docs_check:
     runs-on: ubuntu-latest
     strategy:

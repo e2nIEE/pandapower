@@ -141,7 +141,10 @@ class DcLineSegmentsCim16:
         dc_line_segments['loss_percent'] = 0
         dc_line_segments['vm_from_pu'] = dc_line_segments['targetUpcc'] / dc_line_segments['base_voltage_bus']
         dc_line_segments['vm_to_pu'] = dc_line_segments['targetUpcc2'] / dc_line_segments['base_voltage_bus2']
-        dc_line_segments['in_service'] = dc_line_segments.connected & dc_line_segments.connected2
+        if 'inService' not in dc_line_segments.columns:
+            dc_line_segments['inService'] = True
+        dc_line_segments['in_service'] = (dc_line_segments.connected & dc_line_segments.connected2
+                                          & dc_line_segments.inService)
         dc_line_segments = dc_line_segments.rename(columns={
             'rdfId': sc['o_id'], 'rdfId_Terminal': sc['t_from'], 'rdfId_Terminal2': sc['t_to'], 'index_bus': 'from_bus',
             'index_bus2': 'to_bus'})
