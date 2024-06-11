@@ -404,7 +404,7 @@ class CimParser:
         'tp' for Topology, 'tp_bd' for TopologyBoundary
         """
         element_types = pd.Series([ele.tag for ele in list(root)])
-        element_types.drop_duplicates(inplace=True)
+        element_types = element_types.drop_duplicates()
         full_model = element_types.str.find('FullModel')
         if full_model.max() >= 0:
             full_model = element_types[full_model >= 0].values[0]
@@ -500,7 +500,7 @@ class CimParser:
         output = self.cim if output is None else output
         # get all CIM elements to parse
         element_types = pd.Series([ele.tag for ele in list(xml_tree)])
-        element_types.drop_duplicates(inplace=True)
+        element_types = element_types.drop_duplicates()
         prf_content: Dict[str, pd.DataFrame] = dict()
         ns_dict = dict()
         prf = profile_name

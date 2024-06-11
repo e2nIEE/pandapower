@@ -121,8 +121,8 @@ class ConnectivityNodesCim16:
                 eq_bd_cns = pd.merge(self.cimConverter.cim['eq_bd']['ConnectivityNode'][['rdfId']],
                                      self.cimConverter.cim['tp_bd']['ConnectivityNode'][['rdfId', 'TopologicalNode']],
                                      how='inner', on='rdfId')
-                # eq_bd_cns.drop(columns=['rdfId'], inplace=True)
-                # eq_bd_cns.rename(columns={'TopologicalNode': 'rdfId'}, inplace=True)
+                # eq_bd_cns = eq_bd_cns.drop(columns=['rdfId'])
+                # eq_bd_cns = eq_bd_cns.rename(columns={'TopologicalNode': 'rdfId'})
                 eq_bd_cns = pd.merge(eq_bd_cns,
                                      self.cimConverter.cim['tp_bd']['TopologicalNode'][['rdfId', 'BaseVoltage']].rename(
                                          columns={'rdfId': 'TopologicalNode'}), how='inner', on='TopologicalNode')
@@ -130,12 +130,13 @@ class ConnectivityNodesCim16:
                 eq_bd_cns = self.cimConverter.cim['eq_bd']['ConnectivityNode'][['rdfId']]
                 eq_bd_cns['BaseVoltage'] = float('NaN')
                 eq_bd_cns['TopologicalNode'] = float('NaN')
-            # eq_bd_cns.drop(columns=['TopologicalNode'], inplace=True)
-            eq_bd_cns.rename(columns={'BaseVoltage': 'BaseVoltage_2', 'TopologicalNode': 'TopologicalNode_2'},
-                             inplace=True)
+            # eq_bd_cns = eq_bd_cns.drop(columns=['TopologicalNode'])
+            eq_bd_cns = eq_bd_cns.rename(columns={'BaseVoltage': 'BaseVoltage_2',
+                                                  'TopologicalNode': 'TopologicalNode_2'})
             connectivity_nodes = pd.merge(connectivity_nodes, eq_bd_cns, how='left', on='rdfId')
-            connectivity_nodes['BaseVoltage'].fillna(connectivity_nodes['BaseVoltage_2'], inplace=True)
-            connectivity_nodes.drop(columns=['BaseVoltage_2'], inplace=True)
+            connectivity_nodes['BaseVoltage'] = connectivity_nodes['BaseVoltage'].fillna(
+                connectivity_nodes['BaseVoltage_2'])
+            connectivity_nodes = connectivity_nodes.drop(columns=['BaseVoltage_2'])
             # check if there is a mix between BB and NB models
             terminals_temp = \
                 self.cimConverter.cim['eq']['Terminal'].loc[
@@ -154,7 +155,7 @@ class ConnectivityNodesCim16:
                     tp_temp = pd.concat(
                         [tp_temp, self.cimConverter.cim['tp_bd']['TopologicalNode'][['rdfId', 'name', 'BaseVoltage']]],
                         sort=False)
-                    tp_temp[sc['o_prf']].fillna('tp_bd', inplace=True)
+                    tp_temp[sc['o_prf']] = tp_temp[sc['o_prf']].fillna('tp_bd')
                 tp_temp[sc['o_cl']] = 'TopologicalNode'
                 tp_temp = pd.merge(terminals_temp, tp_temp, how='inner', on='rdfId')
                 connectivity_nodes = pd.concat([connectivity_nodes, tp_temp], ignore_index=True, sort=False)
@@ -189,7 +190,8 @@ class ConnectivityNodesCim16:
                       ignore_index=True, sort=False)
         eqssh_terminals = pd.merge(eqssh_terminals, self.cimConverter.cim['ssh']['Terminal'], how='left', on='rdfId')
         eqssh_terminals = pd.merge(eqssh_terminals, self.cimConverter.cim['tp']['Terminal'], how='left', on='rdfId')
-        eqssh_terminals['ConnectivityNode'].fillna(eqssh_terminals['TopologicalNode'], inplace=True)
+        eqssh_terminals['ConnectivityNode'] = eqssh_terminals['ConnectivityNode'].fillna(
+            eqssh_terminals['TopologicalNode'])
         # concat the DC terminals
         dc_terminals = pd.merge(pd.concat(
             [self.cimConverter.cim['eq']['DCTerminal'], self.cimConverter.cim['eq']['ACDCConverterDCTerminal']],
@@ -208,7 +210,7 @@ class ConnectivityNodesCim16:
         eqssh_terminals = eqssh_terminals.drop_duplicates(subset=['rdfId', 'TopologicalNode'])
         eqssh_terminals_temp = eqssh_terminals[['ConnectivityNode', 'TopologicalNode']]
         eqssh_terminals_temp = eqssh_terminals_temp.dropna(subset=['TopologicalNode'])
-        eqssh_terminals_temp.drop_duplicates(inplace=True)
+        eqssh_terminals_temp = eqssh_terminals_temp.drop_duplicates()
         connectivity_nodes_size = connectivity_nodes.index.size
         if node_breaker:
             connectivity_nodes = pd.merge(connectivity_nodes, eqssh_terminals_temp, how='left', left_on='rdfId',
@@ -219,7 +221,8 @@ class ConnectivityNodesCim16:
             eqssh_terminals['ConnectivityNode'] = eqssh_terminals['TopologicalNode'].copy()
         # fill the column TopologicalNode for the ConnectivityNodes from the eq_bd profile if exists
         if 'TopologicalNode_2' in connectivity_nodes.columns:
-            connectivity_nodes['TopologicalNode'].fillna(connectivity_nodes['TopologicalNode_2'], inplace=True)
+            connectivity_nodes['TopologicalNode'] = connectivity_nodes['TopologicalNode'].fillna(
+                connectivity_nodes['TopologicalNode_2'])
             connectivity_nodes = connectivity_nodes.drop(columns=['TopologicalNode_2'])
         if connectivity_nodes.index.size != connectivity_nodes_size and not self.cimConverter.kwargs.get(
                 'ignore_errors', True):
