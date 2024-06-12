@@ -498,7 +498,8 @@ def create_line_collection(net: pandapowerNet, lines=None,
             return ast.literal_eval(m)
         return None
 
-    if use_bus_geodata is False and line_geodata is None and ("geo" not in net.line.columns or net.line.geo.empty):
+    if use_bus_geodata is False and line_geodata is None and (
+            "geo" not in net.line.columns or net.line.geo.isnull().all()):
         # if bus geodata is available, but no line geodata
         logger.warning("use_bus_geodata is automatically set to True, since net.line.geo is empty.")
         use_bus_geodata = True
@@ -507,18 +508,20 @@ def create_line_collection(net: pandapowerNet, lines=None,
     if len(lines) == 0:
         return None
 
-    line_geodata: Series[str] = line_geodata.loc[lines] if line_geodata is not None else net.line.geo.loc[lines]
+    line_geodata: Series[str] = line_geodata.loc[lines] if line_geodata is not None else \
+        net.line.geo.loc[lines]
     lines_without_geo = line_geodata.index[line_geodata.isna()]
 
     if use_bus_geodata or not lines_without_geo.empty:
         elem_indices = lines if use_bus_geodata else lines_without_geo
-        geos, line_index_successful = coords_from_node_geodata(element_indices=elem_indices,
-                                                               from_nodes=net.line.loc[elem_indices, 'from_bus'].values,
-                                                               to_nodes=net.line.loc[elem_indices, 'to_bus'].values,
-                                                               node_geodata=net.bus.geo,
-                                                               table_name="line",
-                                                               node_name="bus",
-                                                               ignore_zero_length=True)
+        geos, line_index_successful = coords_from_node_geodata(
+            element_indices=elem_indices,
+            from_nodes=net.line.loc[elem_indices, 'from_bus'].values,
+            to_nodes=net.line.loc[elem_indices, 'to_bus'].values,
+            node_geodata=net.bus.geo,
+            table_name="line",
+            node_name="bus",
+            ignore_zero_length=True)
 
         line_geodata = line_geodata.combine_first(pd.Series(geos, index=line_index_successful))
 
@@ -1303,7 +1306,7 @@ def create_line_switch_collection(net, switches=None, size=1, distance_to_bus=3,
 
 
 def create_bus_bus_switch_collection(net, size=1., helper_line_style=':', helper_line_size=1.,
-                                     helper_line_color="gray", **kwargs):
+                                     helper_line_color="gray", switches=None, **kwargs):
     """
     Creates a matplotlib patch collection of pandapower bus-bus switches. Switches are plotted in
     the center between two buses with a "helper" line (dashed and thin) being drawn between the
@@ -1325,6 +1328,8 @@ def create_bus_bus_switch_collection(net, size=1., helper_line_style=':', helper
         **helper_line_color** (string, "gray") - Line color of the "helper" line being plotted
         between two buses connected by a bus-bus switch
 
+        **switches** (list, []) - switches to include in the collection
+
         **kwargs - Key word arguments are passed to the patch function
 
     OUTPUT:
@@ -1332,7 +1337,9 @@ def create_bus_bus_switch_collection(net, size=1., helper_line_style=':', helper
     """
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
-    lbs_switches = net.switch.index[net.switch.et == "b"]
+    if switches is None:
+        switches = net.switch.index.to_list()
+    lbs_switches = net.switch.index[(net.switch.et == "b") & (net.switch.index.isin(switches))]
     color = kwargs.pop("color", "k")
     switch_patches = []
     line_patches = []

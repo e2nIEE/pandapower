@@ -129,7 +129,8 @@ def get_global_parameters(app):
         'global_load_scaling': global_load_scaling,
         'global_generation_scaling': global_generation_scaling,
         'global_motor_scaling': global_motor_scaling,
-        'iopt_tem': com_ldf.iopt_tem  # calculate load flow at 20 °C or at max. temperature
+        'iopt_tem': com_ldf.iopt_tem,  # calculate load flow at 20 °C or at max. temperature
+        'global_load_voltage_dependency': com_ldf.iopt_pq  # consider voltage dependency of loads
     }
     return global_parameters
 
