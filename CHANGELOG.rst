@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2024-..-..
 -------------------------------
+- [ADDED] DERController with multiple options to define DER reactive power provision depending on P and V
 - [ADDED] switch results p and q
 - [ADDED] PowerFactory converter: option to export lines with sections as a single line with averaged-out impedance, or export line sections as separate individual lines
 - [ADDED] extend plotly function: add zoomlevel-parameter and hvdc lines
@@ -14,7 +15,8 @@ Change Log
 - [CHANGED] updated upload_release.py to install the uploadad package and print the version
 - [CHANGED] updated MANIFEST.in to exclude the ci files from the wheel distribution
 - [CHANGED] cim data structure method in cim converter changed to blueprint approach
-- [CHANGED] cim converter: Avoid huge logging output when ignore_erros = True
+- [CHANGED] cim converter: Avoid huge logging output when ignore_errors = True
+- [CHANGED] cim parser: Refactor parse source file method
 - [FIXED] massive performance drag in large grids due to initializing Ybus for FACTS with np.zeros instead of using sparse matrix initialization
 - [FIXED] further futurewarnings and deprecation warnings
 - [FIXED] minor issues in geojson exporter

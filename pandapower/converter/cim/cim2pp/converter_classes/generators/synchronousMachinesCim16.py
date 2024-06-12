@@ -93,7 +93,7 @@ class SynchronousMachinesCim16:
                                               on='rdfId')
         synchronous_machines = synchronous_machines.drop_duplicates(['rdfId'], keep='first')
         synchronous_machines['vm_pu'] = synchronous_machines.targetValue / synchronous_machines.vn_kv
-        synchronous_machines['vm_pu'].fillna(1., inplace=True)
+        synchronous_machines['vm_pu'] = synchronous_machines['vm_pu'].fillna(1.)
         synchronous_machines = synchronous_machines.rename(columns={'vn_kv': 'bus_voltage'})
         synchronous_machines['slack'] = False
         # set the slack = True for gens with highest prio
@@ -129,7 +129,7 @@ class SynchronousMachinesCim16:
             synchronous_machines['r2'] * \
             (synchronous_machines['ratedU'] ** 2 / synchronous_machines['ratedS'])
         synchronous_machines['xdss_pu'] = synchronous_machines['x2'][:]
-        synchronous_machines['voltageRegulationRange'].fillna(0., inplace=True)
+        synchronous_machines['voltageRegulationRange'] = synchronous_machines['voltageRegulationRange'].fillna(0.)
         synchronous_machines['pg_percent'] = synchronous_machines['voltageRegulationRange']
         synchronous_machines['k'] = (synchronous_machines['ratedS'] * 1e3 / synchronous_machines[
             'ratedU']) / (synchronous_machines['ratedU'] / (
