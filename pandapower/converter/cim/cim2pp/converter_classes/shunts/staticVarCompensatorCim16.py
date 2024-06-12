@@ -35,10 +35,11 @@ class StaticVarCompensatorCim16:
         # get the active power and reactive power from SV profile
         eq_stat_coms = pd.merge(eq_stat_coms, self.cimConverter.cim['sv']['SvPowerFlow'][['p', 'q', 'Terminal']],
                                 how='left', left_on='rdfId_Terminal', right_on='Terminal')
-        eq_stat_coms['q_mvar'].fillna(eq_stat_coms['q'], inplace=True)
-        eq_stat_coms.rename(columns={'rdfId_Terminal': sc['t'], 'rdfId': sc['o_id'], 'p': 'p_mw',
-                                     'voltageSetPoint': 'vn_kv', 'index_bus': 'bus', 'connected': 'in_service'},
-                            inplace=True)
+        eq_stat_coms['q_mvar'] = eq_stat_coms['q_mvar'].fillna(eq_stat_coms['q'])
+        if 'inService' in eq_stat_coms.columns:
+            eq_stat_coms['connected'] = eq_stat_coms['connected'] & eq_stat_coms['inService']
+        eq_stat_coms = eq_stat_coms.rename(columns={'rdfId_Terminal': sc['t'], 'rdfId': sc['o_id'], 'p': 'p_mw',
+                                           'voltageSetPoint': 'vn_kv', 'index_bus': 'bus', 'connected': 'in_service'})
         eq_stat_coms['step'] = 1
         eq_stat_coms['max_step'] = 1
         return eq_stat_coms

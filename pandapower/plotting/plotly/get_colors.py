@@ -10,6 +10,7 @@ try:
     import matplotlib.pyplot as plt
     import matplotlib.cm as cm
     import matplotlib.colors as mplc
+    from matplotlib import colormaps as mpl_colormaps
     MATPLOTLIB_INSTALLED = True
 except ImportError:
     MATPLOTLIB_INSTALLED = False
@@ -38,7 +39,7 @@ def get_plotly_color_palette(n):
     if 'seaborn' in sys.modules:
         return _to_plotly_palette(seaborn.color_palette("hls", n))
     else:
-        hsv = plt.get_cmap('hsv')
+        hsv = mpl_colormaps['hsv']
         return _to_plotly_palette(hsv(np.linspace(0, 1.0, n)))
 
 
@@ -81,7 +82,7 @@ def _to_plotly_color(scl, transparence=None):
 def get_plotly_cmap(values, cmap_name='jet', cmin=None, cmax=None):
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
-    cmap = cm.get_cmap(cmap_name)
+    cmap = mpl_colormaps[cmap_name]
     if cmin is None:
         cmin = values.min()
     if cmax is None:
