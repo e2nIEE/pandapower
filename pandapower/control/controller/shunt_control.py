@@ -30,7 +30,7 @@ class ShuntController(Controller):
         ext_grid_buses = net.ext_grid.loc[net.ext_grid.in_service, 'bus'].values
         if self.controlled_bus in ext_grid_buses:
             logging.warning("Controlled Bus is Slack Bus - deactivating controller")
-            self.set_active(False)
+            self.set_active(net, False)
 
 # TODO: remove net copy, make similar to secant controller
 class ContinuousShuntController(ShuntController):
@@ -143,3 +143,92 @@ class DiscreteShuntController(ShuntController):
                     # logger.debug(f"step max: {net.shunt.at[self.shunt_index, 'name']}")
                     return True
         return False
+
+class PFDiscreteShuntController(Controller):
+    def __init__(self, net, shunt_index, vm_set_lower_pu, vm_set_upper_pu, time_constant_s, sensitivity_pu_per_percent, 
+                 bus_index=None, reset_at_init=False, in_service=True, order=0, level=0, 
+                 matching_params=None, **kwargs):
+        if matching_params is None:
+            matching_params = {"shunt_index": shunt_index, "bus_index": bus_index}
+        super().__init__(net, in_service=in_service, level=level, order=order,
+                         matching_params=matching_params, **kwargs)
+        
+        self.shunt_index = shunt_index
+        self.element_in_service = net.shunt.loc[self.shunt_index, 'in_service']
+        if bus_index is None:
+            self.controlled_bus = net.shunt.at[self.shunt_index, 'bus']
+        else:
+            self.controlled_bus = bus_index
+            
+        self.step = net.shunt.at[shunt_index, 'step']
+
+        ext_grid_buses = net.ext_grid.loc[net.ext_grid.in_service, 'bus'].values
+        if self.controlled_bus in ext_grid_buses:
+            logging.warning("Controlled Bus is Slack Bus - deactivating controller")
+            self.set_active(net, False)
+        
+        self.vm_set_lower_pu = vm_set_lower_pu
+        self.vm_set_upper_pu = vm_set_upper_pu
+        self.time_constant_s = time_constant_s
+        # self.sensitivity_pu_per_percent = sensitivity_pu_per_percent
+        
+        self.v_set = (vm_set_lower_pu+vm_set_upper_pu)/2
+        
+        self.step_min = 0
+        self.step_max = net.shunt.at[self.shunt_index, 'max_step']
+        
+        # step orientation ( +1 for capacitive shunts, -1 for inductive shunts)
+        orientation = 1
+        if net.shunt.at[self.shunt_index, 'q_mvar'] < 0:
+            orientation = -1
+        
+        self.k = 100 * self.step_max * sensitivity_pu_per_percent * orientation
+        
+        self.increment = int()
+    
+    def initialize_control(self, net):
+        if self.reset_at_init:
+            self.step = 0
+            net.shunt.at[self.shunt_index, 'step'] = 0
+        
+        t_min_ctrl_s = self.time_constant_s
+        for ctrl_idx in net.controller.index:
+            if isinstance(net.controller.object.at[ctrl_idx], PFDiscreteShuntController):
+                t_min_ctrl_s = min(net.controller.object.at[ctrl_idx].time_constant_s, t_min_ctrl_s)
+        
+        k_relax = net['k_relax']
+        
+        self.t1 = self.time_constant_s/(t_min_ctrl_s * k_relax)
+        
+
+    def control_step(self, net):
+        vm_pu = net.res_bus.at[self.controlled_bus, 'vm_pu']
+        self.step = net.shunt.at[self.shunt_index, "step"]
+        
+        # TODO: hier komische Formel für Inkrement Berechnung einfügen
+
+        # Write to net
+        net.shunt.at[self.shunt_index, 'step'] = self.step
+
+    def is_converged(self, net):
+        if not net.shunt.at[self.shunt_index, 'in_service']:
+            return True
+        
+        vm_pu = net.res_bus.at[self.controlled_bus, "vm_pu"]
+        if self.vm_set_lower_pu < vm_pu < self.vm_set_upper_pu:
+            return True
+
+        return False
+
+        
+
+        
+        
+    
+    
+    
+    
+    
+    
+    
+    
