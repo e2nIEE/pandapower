@@ -8,7 +8,6 @@ import geojson.utils
 import numpy as np
 
 try:
-    from matplotlib.text import Text
     from matplotlib.patches import RegularPolygon, Arc, Circle, Rectangle, Ellipse, PathPatch
     from matplotlib.textpath import TextPath
     from matplotlib.transforms import Affine2D
