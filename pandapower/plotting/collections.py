@@ -498,7 +498,8 @@ def create_line_collection(net: pandapowerNet, lines=None,
             return ast.literal_eval(m)
         return None
 
-    if use_bus_geodata is False and line_geodata is None and ("geo" not in net.line.columns or net.line.geo.empty):
+    if use_bus_geodata is False and line_geodata is None and (
+            "geo" not in net.line.columns or net.line.geo.isnull().all()):
         # if bus geodata is available, but no line geodata
         logger.warning("use_bus_geodata is automatically set to True, since net.line.geo is empty.")
         use_bus_geodata = True
@@ -507,18 +508,20 @@ def create_line_collection(net: pandapowerNet, lines=None,
     if len(lines) == 0:
         return None
 
-    line_geodata: Series[str] = line_geodata.loc[lines] if line_geodata is not None else net.line.geo.loc[lines]
+    line_geodata: Series[str] = line_geodata.loc[lines] if line_geodata is not None else \
+        net.line.geo.loc[lines]
     lines_without_geo = line_geodata.index[line_geodata.isna()]
 
     if use_bus_geodata or not lines_without_geo.empty:
         elem_indices = lines if use_bus_geodata else lines_without_geo
-        geos, line_index_successful = coords_from_node_geodata(element_indices=elem_indices,
-                                                               from_nodes=net.line.loc[elem_indices, 'from_bus'].values,
-                                                               to_nodes=net.line.loc[elem_indices, 'to_bus'].values,
-                                                               node_geodata=net.bus.geo,
-                                                               table_name="line",
-                                                               node_name="bus",
-                                                               ignore_zero_length=True)
+        geos, line_index_successful = coords_from_node_geodata(
+            element_indices=elem_indices,
+            from_nodes=net.line.loc[elem_indices, 'from_bus'].values,
+            to_nodes=net.line.loc[elem_indices, 'to_bus'].values,
+            node_geodata=net.bus.geo,
+            table_name="line",
+            node_name="bus",
+            ignore_zero_length=True)
 
         line_geodata = line_geodata.combine_first(pd.Series(geos, index=line_index_successful))
 
