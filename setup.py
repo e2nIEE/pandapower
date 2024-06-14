@@ -34,7 +34,7 @@ long_description = '\n\n'.join((install, changelog))
 
 setup(
     name='pandapower',
-    version='2.14.6',
+    version='2.14.7',
     author='Leon Thurner, Alexander Scheidler',
     author_email='leon.thurner@retoflow.de, alexander.scheidler@iee.fraunhofer.de',
     description='An easy to use open source tool for power system modeling, analysis and optimization with a high degree of automation.',
@@ -52,7 +52,7 @@ setup(
                       "deepdiff"],
     extras_require={
         "docs": ["numpydoc", "sphinx", "sphinx_rtd_theme"],
-        "plotting": ["plotly", "matplotlib", "igraph", "geopandas", "geojson"],
+        "plotting": ["plotly", "matplotlib<3.9", "igraph", "geopandas", "geojson"],
         # "shapely", "pyproj" are dependencies of geopandas and so already available;
         # "base64", "hashlib", "zlib" produce installing problems, so they are not included
         "test": ["pytest", "pytest-xdist"],
@@ -62,7 +62,7 @@ setup(
         # "fiona" is a depedency of geopandas and so already available
         "converter": ["matpowercaseframes"],
         "all": ["numpydoc", "sphinx", "sphinx_rtd_theme",
-                "plotly>=3.1.1", "matplotlib", "igraph", "geopandas", "geojson",
+                "plotly>=3.1.1", "matplotlib<3.9", "igraph", "geopandas", "geojson",
                 "pytest~=8.1", "pytest-xdist",
                 "ortools",  # lightsim2grid,
                 "xlsxwriter", "openpyxl", "cryptography",

@@ -1,8 +1,10 @@
 Change Log
 =============
 
-[upcoming release] - 2024-..-..
+[2.14.7] - 2024-06-14
 -------------------------------
+- [FIXED] read the docs configuration
+- [FIXED] bug caused by new matplotlib version in plotting
 
 [2.14.6] - 2024-04-02
 -------------------------------
