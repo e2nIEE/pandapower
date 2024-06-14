@@ -33,6 +33,17 @@ Change Log
 - [ADDED] PowerFactory converter: support load types (constI, constZ) and the setting whether to consider voltage dependency of loads
 - [FIXED] deprecation of matplotlib.cm.get_cmap(name) -> matplotlib.colormaps[name]
 
+[2.14.7] - 2024-06-14
+-------------------------------
+- [ADDED] added PathPatch TextPatch and Affine2D imports needed for ward and xward patches
+- [ADDED] added ward_patches function to mark wards in a plot
+- [ADDED] added ward_patches function to mark wards in a plot
+- [ADDED] added ward_patches and xward_patches imports used in the wad and xward collections
+- [ADDED] added create_ward_collection function to enable plotting wards
+- [ADDED] added create_xward_collection function to enable plotting xwards
+- [FIXED] git issue #2199: List of colors does not apply to Polygon Patches
+- [CHANGED] Sonar Lint issues for spacing
+
 [2.14.6] - 2024-04-02
 -------------------------------
 - [FIXED] more futurewarnings and deprecation warnings
