@@ -32,7 +32,7 @@ Change Log
 - [ADDED] PowerFactory converter: support load types (constI, constZ) and the setting whether to consider voltage dependency of loads
 - [FIXED] deprecation of matplotlib.cm.get_cmap(name) -> matplotlib.colormaps[name]
 
-[2.14.7] - 2024-14-06
+[2.14.7] - 2024-06-14
 -------------------------------
 - [ADDED] added PathPatch TextPatch and Affine2D imports needed for ward and xward patches
 - [ADDED] added ward_patches function to mark wards in a plot
