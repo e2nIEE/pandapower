@@ -28,6 +28,7 @@ Change Log
 - [CHANGED] minor changes to the example networks (mainly added names to identify them in tests)
 - [CHANGED] dataframes_equal adapted to properly compare geojson data
 - [FIXED] k documentation of sgen
+- [FIXED] error during unbalanced powerflow due to out of service external grids
 - [FIXED] PowerFactory converter: fix trafo3w tap dependent impedance
 - [ADDED] PowerFactory converter: support load types (constI, constZ) and the setting whether to consider voltage dependency of loads
 - [FIXED] deprecation of matplotlib.cm.get_cmap(name) -> matplotlib.colormaps[name]
@@ -92,6 +93,7 @@ Change Log
 - [FIXED] powerfactory2pandapower-converter error if a line has two identical coordinates
 - [ADDED] logger messages about the probabilistic load flow calculation (simultaneities) in the powerfactory2pandapower-converter for low voltage loads
 - [ADDED] matplotlib v3.8.0 support (fixed :code:`plotting_colormaps.ipynb`)
+- [FIXED] bug in plotting_toolbox.py (fixed :code:`coords_from_node_geodata` and :code:`set_line_geodata_from_bus_geodata`)
 - [CHANGED] PowerFactory converter - name :code:`for_name` as :code:`equipment` for all elements; also add to line
 - [ADDED] option to use a second tap changer for the trafo element
 - [CHANGED] parameters of function merge_internal_net_and_equivalent_external_net()

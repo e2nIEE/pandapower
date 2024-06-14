@@ -56,7 +56,7 @@ class DcLineSegmentsCim16:
                 level=LogLevel.ERROR, code=ReportCode.ERROR_CONVERTING,
                 message="Error processing the DCLineSegments, there is a problem with Terminals in the source data!"))
             return pd.DataFrame(None)
-        dc_line_segments.reset_index(inplace=True)
+        dc_line_segments = dc_line_segments.reset_index()
 
         # now merge with the Converters
         converters = pd.merge(
@@ -118,12 +118,12 @@ class DcLineSegmentsCim16:
                             "data!"))
         dc_line_segments = dc_line_segments.drop(columns=['ConnectivityNode'])
         dc_line_segments = pd.merge(dc_line_segments, converters_t, how='left', on='converters')
-        dc_line_segments['targetUpcc'].fillna(dc_line_segments['base_voltage_bus'], inplace=True)
+        dc_line_segments['targetUpcc'] = dc_line_segments['targetUpcc'].fillna(dc_line_segments['base_voltage_bus'])
 
         # copy the columns which are needed to reduce the dc_line_segments to one row per line
         dc_line_segments = dc_line_segments.sort_values(by=['rdfId', 'sequenceNumber'])
         # a list of DC line parameters which are used for each DC line end
-        dc_line_segments.reset_index(inplace=True)
+        dc_line_segments = dc_line_segments.reset_index()
         copy_list = ['index_bus', 'rdfId_Terminal', 'connected', 'p', 'ratedUdc', 'targetUpcc', 'base_voltage_bus']
         for one_item in copy_list:
             # copy the columns which are required for each line end
