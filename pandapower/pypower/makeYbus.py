@@ -71,8 +71,13 @@ def makeYbus(baseMVA, bus, branch):
     ## build Ybus
     Ybus = Cf.T * Yf + Ct.T * Yt + \
            csr_matrix((Ysh, (range(nb), range(nb))), (nb, nb))
-    Ybus.sort_indices()
-    Ybus.eliminate_zeros()
+
+    # for canonical format
+    for Y in (Ybus, Yf, Yt):
+        Y.eliminate_zeros()
+        Y.sum_duplicates()
+        Y.sort_indices()
+        del Y._has_canonical_format
 
     return Ybus, Yf, Yt
 

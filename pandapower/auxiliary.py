@@ -31,6 +31,7 @@ from collections.abc import MutableMapping
 import warnings
 from importlib.metadata import version as version_str
 from importlib.metadata import PackageNotFoundError
+from typing_extensions import deprecated
 
 import numpy as np
 import pandas as pd
@@ -110,11 +111,12 @@ except ImportError:
 def soft_dependency_error(fct_name, required_packages):
     required_packages = required_packages if isinstance(required_packages, str) else \
         "','".join(required_packages)
-    raise ImportError(
-        "Some pandapower functionality use modules outside the setup.py "
-        f"requirements: {fct_name} requires '{required_packages}'. \n"
-        f"{required_packages} could not be imported.\n"
-        'To install all pandapower dependencies, pip install pandapower["all"] can be used.')
+    error_msg = "\n".join([
+        "Some pandapower functionality use optional python packages.",
+        f"{fct_name} requires '{required_packages}' which could not all be imported.",
+        'To install pandapower with all optional dependencies, type `pip install pandapower["all"]`.'
+    ])
+    raise ImportError(error_msg)
 
 
 def warn_and_fix_parameter_renaming(old_parameter_name, new_parameter_name, new_parameter,
@@ -304,6 +306,7 @@ class pandapowerNet(ADict):
                 self[key] = pd.DataFrame(np.zeros(0, dtype=self[key]), index=pd.Index([],
                                          dtype=np.int64))
 
+    @deprecated("Use copy.deepcopy(net) instead of net.deepcopy()")
     def deepcopy(self):
         return copy.deepcopy(self)
 
@@ -319,13 +322,12 @@ class pandapowerNet(ADict):
             if not et.startswith("_") and isinstance(self[et], pd.DataFrame) and len(self[et]) > 0:
                 n_rows = self[et].shape[0]
                 if 'res_' in et:
-                    res.append("   - %s (%i %s)" % (et, n_rows, "element" + plural_s(n_rows)))
+                    res.append(f"   - {et} ({n_rows} element{plural_s(n_rows)})")
                 elif et == 'group':
                     n_groups = len(set(self[et].index))
-                    par.append('   - %s (%i %s, %i %s)' % (
-                        et, n_groups, "group" + plural_s(n_groups), n_rows, "row" + plural_s(n_rows)))
+                    par.append(f"   - {et} ({n_groups} group{plural_s(n_groups)}, {n_rows} row{plural_s(n_rows)})")
                 else:
-                    par.append("   - %s (%i %s)" % (et, n_rows, "element" + plural_s(n_rows)))
+                    par.append(f"   - {et} ({n_rows} element{plural_s(n_rows)})")
         res_cost = [" and the following result values:",
                     "   - %s" % "res_cost"] if "res_cost" in self.keys() else []
         if not len(par) + len(res):
@@ -338,10 +340,8 @@ class pandapowerNet(ADict):
 
 
 def plural_s(number):
-    if number > 1:
-        return "s"
-    else:
-        return ""
+    return "" if number == 1 else "s"
+
 
 
 def ets_to_element_types(ets=None):
