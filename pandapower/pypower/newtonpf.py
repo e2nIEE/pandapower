@@ -481,5 +481,5 @@ def _evaluate_Fx_facts(V,pq ,svc_buses=None, svc_set_vm_pu=None, tcsc_controllab
 
 def _check_for_convergence(F, tol):
     # calc infinity norm
-    return linalg.norm(F, np.inf) < tol
+    return linalg.norm(F, inf) < tol
 

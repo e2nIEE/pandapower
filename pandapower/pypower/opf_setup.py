@@ -14,7 +14,7 @@
 from sys import stdout, stderr
 
 from numpy import array, any, delete, unique, arange, nonzero, pi, r_, ones, inf, \
-    flatnonzero as find, int64
+    flatnonzero as find, int64, full
 from scipy.sparse import hstack, csr_matrix as sparse
 from pandapower.pypower.idx_brch import RATE_A
 from pandapower.pypower.idx_bus import BUS_TYPE, REF, VA, VM, PD, GS, VMAX, VMIN
@@ -149,7 +149,7 @@ def opf_setup(ppc, ppopt):
         ## branch flow constraints
         il = find((branch[:, RATE_A] != 0) & (branch[:, RATE_A] < 1e10))
         nl2 = len(il)         ## number of constrained lines
-        lpf = -inf * ones(nl2)
+        lpf = full(nl2, -inf) * ones(nl2)
         upf = branch[il, RATE_A] / baseMVA - Pfinj[il]
         upt = branch[il, RATE_A] / baseMVA + Pfinj[il]
 
@@ -171,7 +171,7 @@ def opf_setup(ppc, ppopt):
         ycon_vars = ['Pg', 'Qg', 'y']
 
     ## voltage angle reference constraints
-    Vau = inf * ones(nb)
+    Vau = full(nb, inf) * ones(nb)
     Val = -Vau
     Vau[refs] = Va[refs]
     Val[refs] = Va[refs]

@@ -12,7 +12,7 @@
 """
 
 from numpy import array, inf, any, isnan, ones, r_, finfo, \
-    zeros, dot, absolute, log, flatnonzero as find
+    zeros, dot, absolute, log, flatnonzero as find, full
 from numpy.linalg import norm
 from pandapower.pypower.pipsver import pipsver
 from scipy.sparse import vstack, hstack, eye, csr_matrix as sparse
@@ -190,10 +190,10 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None,
     nA = A.shape[0] if A is not None else 0 # number of original linear constr
 
     # default argument values
-    if l is None or len(l) == 0: l = -inf * ones(nA)
-    if u is None or len(u) == 0: u =  inf * ones(nA)
-    if xmin is None or len(xmin) == 0: xmin = -inf * ones(x0.shape[0])
-    if xmax is None or len(xmax) == 0: xmax =  inf * ones(x0.shape[0])
+    if l is None or len(l) == 0: l = full(nA, -inf) * ones(nA)
+    if u is None or len(u) == 0: u =  full(nA, inf) * ones(nA)
+    if xmin is None or len(xmin) == 0: xmin = full(x0.shape[0], -inf) * ones(x0.shape[0])
+    if xmax is None or len(xmax) == 0: xmax = full(x0.shape[0], inf) * ones(x0.shape[0])
     if gh_fcn is None:
         nonlinear = False
         gn = array([])
