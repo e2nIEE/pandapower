@@ -4922,9 +4922,9 @@ def _check_branch_element(net, element_name, index, from_node, to_node, node_nam
 
 def _check_multiple_branch_elements(net, from_nodes, to_nodes, element_name, node_name="bus",
                                     plural="es"):
-    all_nodes = array(list(from_nodes) + list(to_nodes))
-    if np_any(~isin(all_nodes, net[node_name].index.values)):
-        node_not_exist = set(all_nodes) - set(net[node_name].index)
+    all_nodes = set(from_nodes) | set(to_nodes)
+    node_not_exist = all_nodes - set(net[node_name].index)
+    if node_not_exist:
         raise UserWarning("%s trying to attach to non existing %s%s %s"
                           % (element_name, node_name, plural, node_not_exist))
 
