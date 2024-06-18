@@ -134,15 +134,15 @@ class CreateMeasurements:
                                   how='left', on='TopologicalNode')
         # drop all the rows mit vn_kv == np.NaN (no measurements available for that bus)
         sv_sv_voltages = sv_sv_voltages.dropna(subset=['vn_kv'])
-        sv_sv_voltages.reset_index(inplace=True)
+        sv_sv_voltages = sv_sv_voltages.reset_index()
         if 'index' in sv_sv_voltages.columns:
             sv_sv_voltages = sv_sv_voltages.drop(['index'], axis=1)
         # value -> voltage ()
         sv_sv_voltages['value'] = sv_sv_voltages.v / sv_sv_voltages.vn_kv
-        sv_sv_voltages['value'].replace(0, np.nan, inplace=True)
+        sv_sv_voltages['value'] = sv_sv_voltages['value'].replace(0, np.nan)
         # drop all the rows mit value == np.NaN
         sv_sv_voltages = sv_sv_voltages.dropna(subset=['value'])
-        sv_sv_voltages.reset_index(inplace=True)
+        sv_sv_voltages = sv_sv_voltages.reset_index()
         sv_sv_voltages['value_stddev'] = sv_sv_voltages.value * 0.001
         sv_sv_voltages['vn_kv_stddev'] = 0.1 / sv_sv_voltages.vn_kv
         sv_sv_voltages['std_dev'] = sv_sv_voltages[["value_stddev", "vn_kv_stddev"]].max(axis=1)
