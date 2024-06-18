@@ -847,8 +847,8 @@ def test_repl_to_line_with_switch():
                     pp.create_switch(net, bus=bus, element=REPL, closed=False, et="l", type="LBS")
 
             # calculate runpp with REPL
-            net.line.in_service[testindex] = False
-            net.line.in_service[REPL] = True
+            net.line.in_service.loc[testindex] = False
+            net.line.in_service.loc[REPL] = True
             pp.runpp(net)
 
             fbus_repl = net.res_bus.loc[fbus]
@@ -860,9 +860,9 @@ def test_repl_to_line_with_switch():
             # get ne line impedances
             new_idx = pp.repl_to_line(net, testindex, std, in_service=True)
             # activate new idx line
-            net.line.in_service[REPL] = False
-            net.line.in_service[testindex] = True
-            net.line.in_service[new_idx] = True
+            net.line.in_service.loc[REPL] = False
+            net.line.in_service.loc[testindex] = True
+            net.line.in_service.loc[new_idx] = True
             pp.runpp(net)
             # compare lf results
             fbus_ne = net.res_bus.loc[fbus]
@@ -880,9 +880,9 @@ def test_repl_to_line_with_switch():
             assert np.isclose(qloss_repl, qloss_ne)
 
             # and reset to unreinforced state again
-            net.line.in_service[testindex] = True
-            net.line.in_service[new_idx] = False
-            net.line.in_service[REPL] = False
+            net.line.in_service.loc[testindex] = True
+            net.line.in_service.loc[new_idx] = False
+            net.line.in_service.loc[REPL] = False
 
 
 def test_merge_parallel_line():

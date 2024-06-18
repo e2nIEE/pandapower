@@ -65,6 +65,7 @@ performance = ["ortools", "numba>=0.25", "lightsim2grid>=0.8.1"]
 fileio = ["xlsxwriter", "openpyxl", "cryptography", "geopandas", "psycopg2"]
 converter = ["matpowercaseframes"]
 pgm = ["power-grid-model-io"]
+control = ["shapely"]
 all = [
     "numpydoc", "sphinx", "sphinx_rtd_theme", "sphinx-pyproject",
     "plotly>=3.1.1", "matplotlib", "igraph", "geopandas",
