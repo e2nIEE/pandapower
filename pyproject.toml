@@ -38,7 +38,7 @@ dependencies = [
     "pandas>=1.0",
     "networkx>=2.5",
     "scipy",
-    "numpy",
+    "numpy<2.0",
     "packaging",
     "tqdm",
     "deepdiff",
