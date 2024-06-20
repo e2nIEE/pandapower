@@ -384,18 +384,20 @@ def create_J_modification_ssc(J, V, Ybus_ssc, f, t, pvpq, pq, pvpq_lookup, pq_lo
     return J_m
 
 
-def create_J_modification_hvdc(J, V_dc, Ybus_hvdc, Ybus_vsc_dc, dc_p, dc_p_lookup, vsc_dc_fb, vsc_dc_tb, vsc_dc_slack):
+def create_J_modification_hvdc(J, V_dc, Ybus_hvdc, Ybus_vsc_dc, vsc_g_pu, dc_p, dc_p_lookup, vsc_dc_fb, vsc_dc_tb, vsc_dc_slack):
     # Calculate the first matrix for all elements
     J_all = (Ybus_hvdc - Ybus_vsc_dc).multiply(V_dc)
     # Calculate the second matrix for diagonal elements only
     J_diag = diags(V_dc).multiply((Ybus_hvdc - Ybus_vsc_dc).dot(V_dc))
 
     # Calculate DC modification VSC Jacobian
-    P_Fii = V_dc[vsc_dc_fb] * Ybus_vsc_dc.toarray()[vsc_dc_fb, vsc_dc_fb]#.dot(V_dc[vsc_dc_fb])
-    P_Fkk = V_dc[vsc_dc_tb] * Ybus_vsc_dc.toarray()[vsc_dc_tb, vsc_dc_tb]#.dot(V_dc[vsc_dc_tb])
-
-    P_Fik = V_dc[vsc_dc_fb] * Ybus_vsc_dc.toarray()[vsc_dc_fb, vsc_dc_tb]#.dot(V_dc[vsc_dc_tb])
-    P_Fki = V_dc[vsc_dc_tb] * Ybus_vsc_dc.toarray()[vsc_dc_tb, vsc_dc_fb]#.dot(V_dc[vsc_dc_fb])
+    # here we do not use Ybus because it has the y values already summed up for the diagonal entries,
+    # and creating the sparse matrix for J also sums values that share the same indices.
+    # So effectively we achieve the same effect here as if we had the Ybus matrix,
+    # except that we operate at the level of individual VSC still.
+    # Only relevant when more than one VSC connected to the same bus.
+    P_Fii = V_dc[vsc_dc_fb] * vsc_g_pu
+    P_Fik = -V_dc[vsc_dc_fb] * vsc_g_pu
 
     zero = SMALL_NUMBER * np.ones(shape=P_Fii.shape, dtype=np.float64)
     one = np.ones(shape=P_Fii.shape, dtype=np.float64)
@@ -408,13 +410,16 @@ def create_J_modification_hvdc(J, V_dc, Ybus_hvdc, Ybus_vsc_dc, dc_p, dc_p_looku
     # data = np.r_[-Q_Fik[f_in_pvpq], Q_Fik[f_in_pvpq & t_in_pvpq], np.where(control_delta[f_in_pvpq & t_in_pvpq], one[f_in_pvpq & t_in_pvpq], Q_Fki[f_in_pvpq & t_in_pvpq]), np.where(control_delta[t_in_pvpq], zero[t_in_pvpq], -Q_Fki[t_in_pvpq])]
 
     J_m_vsc = csr_matrix((data, (rows, cols)), shape=J_all.shape, dtype=np.float64)
-    # Combine them to form the Jacobian
+
+    # Combine them to form the Jacobian for DC grid including the VSC elements
     J_combined = J_all + J_diag + J_m_vsc
 
+    # Map the J for the DC system to the overall J
     num_p = len(dc_p)
     offset = J.shape[0] - num_p
     # Create an initial zero sparse matrix for J_m
     J_m = lil_matrix(J.shape)
+    # Create the modification J for the DC system to be added to the overall J
     J_m[offset:offset+num_p, offset:offset+num_p] = J_combined[dc_p, :][:, dc_p]
 
     return J_m.tocsr()

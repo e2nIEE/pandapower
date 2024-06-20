@@ -2097,7 +2097,7 @@ def test_line_dc_and_2_vsc2():
     pp.create_line_from_parameters(net, 0, 2, 30, 0.0487, 0.13823, 160, 0.664)
     pp.create_line_from_parameters(net, 2, 3, 30, 0.0487, 0.13823, 160, 0.664)
     pp.create_ext_grid(net, 0)
-    pp.create_load(net, 2, 10)
+    pp.create_load(net, 3, 10)
 
     # DC part
     pp.create_bus_dc(net, 110, 'A')
@@ -2106,9 +2106,9 @@ def test_line_dc_and_2_vsc2():
     pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
 
     pp.create_vsc(net, 1, 0, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="p_mw",
-                  control_value_dc=2)
+                  control_value_dc=-2)
     pp.create_vsc(net, 2, 0, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="p_mw",
-                  control_value_dc=2)
+                  control_value_dc=-2)
     pp.create_vsc(net, 3, 1, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
                   control_value_dc=1.02)
 
