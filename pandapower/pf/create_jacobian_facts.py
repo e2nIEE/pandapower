@@ -21,6 +21,7 @@ def create_J_modification_svc(J, svc_buses, pvpq, pq, pq_lookup, V, x_control, s
     q_svc = np.abs(V[svc_buses]) ** 2 * y_svc
 
     # J_C_Q_u
+    # todo: use sparse matrices like in the other J functions
     J_C_Q_u = np.zeros(shape=(len(pq), len(pq)), dtype=np.float64)
     J_C_Q_u[pq_lookup[svc_buses[in_pq]], pq_lookup[svc_buses[in_pq]]] = 2 * q_svc[in_pq]
     # count pvpq rows and pvpq columns from top left
@@ -186,7 +187,7 @@ def create_J_modification_tcsc(V, Ybus_tcsc, x_control, svc_controllable, tcsc_c
     return J_m
 
 
-def create_J_modification_ssc(J, V, Ybus_ssc, f, t, pvpq, pq, pvpq_lookup, pq_lookup, control_v, control_delta):
+def create_J_modification_ssc_vsc(J, V, y_pu, f, t, pvpq, pq, pvpq_lookup, pq_lookup, control_v, control_delta):
     """
     creates the modification Jacobian matrix for SSC (STATCOM)
 
@@ -195,8 +196,8 @@ def create_J_modification_ssc(J, V, Ybus_ssc, f, t, pvpq, pq, pvpq_lookup, pq_lo
     control_delta
     V
         array of np.complex128
-    Ybus_ssc
-        scipy.sparse.csr_matrix
+    y_pu
+        admittances of the elements
     f
         array of np.int64
     t
@@ -225,13 +226,13 @@ def create_J_modification_ssc(J, V, Ybus_ssc, f, t, pvpq, pq, pvpq_lookup, pq_lo
     Vmf = np.abs(Vf)
     Vmt = np.abs(Vt)
 
-    S_Fii = Vf * np.conj(Ybus_ssc.toarray()[f, f] * Vf)
-    S_Fkk = Vt * np.conj(Ybus_ssc.toarray()[t, t] * Vt)
+    S_Fii = Vf * np.conj(y_pu * Vf)
+    S_Fkk = Vt * np.conj(y_pu * Vt)
     P_Fii, Q_Fii = S_Fii.real, S_Fii.imag
     P_Fkk, Q_Fkk = S_Fkk.real, S_Fkk.imag
 
-    S_Fik = Vf * np.conj(Ybus_ssc.toarray()[f, t] * Vt)
-    S_Fki = Vt * np.conj(Ybus_ssc.toarray()[t, f] * Vf)
+    S_Fik = Vf * np.conj(-y_pu * Vt)
+    S_Fki = Vt * np.conj(-y_pu * Vf)
     P_Fik, Q_Fik = S_Fik.real, S_Fik.imag
     P_Fki, Q_Fki = S_Fki.real, S_Fki.imag
 
@@ -282,7 +283,13 @@ def create_J_modification_ssc(J, V, Ybus_ssc, f, t, pvpq, pq, pvpq_lookup, pq_lo
     # todo
     # data = np.r_[data, -S_Fik.imag[f_in_pvpq], S_Fik.imag[f_in_pvpq & t_in_pvpq], S_Fki.imag[f_in_pvpq & t_in_pvpq], -S_Fki.imag[t_in_pvpq]]
     # data = np.r_[data, -S_Fik.imag[f_in_pvpq], S_Fik.imag[f_in_pvpq & t_in_pvpq], one[f_in_pvpq & t_in_pvpq], zero[t_in_pvpq]]
-    data = np.r_[data, -Q_Fik[f_in_pvpq], Q_Fik[f_in_pvpq & t_in_pvpq], np.where(control_delta[f_in_pvpq & t_in_pvpq], one[f_in_pvpq & t_in_pvpq], Q_Fki[f_in_pvpq & t_in_pvpq]), np.where(control_delta[t_in_pvpq], zero[t_in_pvpq], -Q_Fki[t_in_pvpq])]
+
+    data = np.r_[data, -Q_Fik[f_in_pvpq], Q_Fik[f_in_pvpq & t_in_pvpq],
+                 np.where(control_delta[f_in_pvpq & t_in_pvpq], one[f_in_pvpq & t_in_pvpq], Q_Fki[f_in_pvpq & t_in_pvpq]),
+                 np.where(control_delta[t_in_pvpq], zero[t_in_pvpq], -Q_Fki[t_in_pvpq])]
+    # data = np.r_[data, -Q_Fik[f_in_pvpq], Q_Fik[f_in_pvpq & t_in_pvpq],
+    #              np.where(control_delta[f_in_pvpq & t_in_pvpq], one[f_in_pvpq & t_in_pvpq], Q_Fik[f_in_pvpq & t_in_pvpq]),
+    #              np.where(control_delta[t_in_pvpq], zero[t_in_pvpq], -Q_Fik[t_in_pvpq])]
 
 
     # # J_C_P_u = np.zeros(shape=(len(pvpq), len(pq)), dtype=np.float64)
@@ -306,7 +313,13 @@ def create_J_modification_ssc(J, V, Ybus_ssc, f, t, pvpq, pq, pvpq_lookup, pq_lo
     rows = np.r_[rows, pvpq_lookup[f[f_in_pvpq]], pvpq_lookup[f[f_in_pvpq & t_in_pq]], pvpq_lookup[t[f_in_pvpq & t_in_pq]], pvpq_lookup[t[t_in_pvpq & t_in_pq]]]
     cols = np.r_[cols, len(pvpq)+pq_lookup[f[f_in_pq]], len(pvpq)+pq_lookup[t[f_in_pvpq & t_in_pq]], len(pvpq)+pq_lookup[f[f_in_pvpq & t_in_pq]], len(pvpq)+pq_lookup[t[t_in_pvpq & t_in_pq]]]
     # data = np.r_[data, ((2 * S_Fii.real + S_Fik.real) / Vmf)[f_in_pvpq], (S_Fik.real/Vmt)[f_in_pvpq & t_in_pq], (S_Fki.real/Vmf)[f_in_pvpq & t_in_pq], ((2 * S_Fkk.real + S_Fki.real) / Vmt)[t_in_pvpq & t_in_pq]]
-    data = np.r_[data, ((2 * P_Fii + P_Fik) / Vmf)[f_in_pvpq], (P_Fik/Vmt)[f_in_pvpq & t_in_pq], np.where(control_delta[f_in_pvpq & t_in_pq], zero[f_in_pvpq & t_in_pq], (P_Fki/Vmf)[f_in_pvpq & t_in_pq]), np.where(control_delta[t_in_pvpq & t_in_pq], zero[t_in_pvpq & t_in_pq], ((2 * P_Fkk + P_Fki) / Vmt)[t_in_pvpq & t_in_pq])]
+
+    data = np.r_[data, ((2 * P_Fii + P_Fik) / Vmf)[f_in_pvpq], (P_Fik/Vmt)[f_in_pvpq & t_in_pq],
+                 np.where(control_delta[f_in_pvpq & t_in_pq], zero[f_in_pvpq & t_in_pq], (P_Fki / Vmf)[f_in_pvpq & t_in_pq]),
+                 np.where(control_delta[t_in_pvpq & t_in_pq], zero[t_in_pvpq & t_in_pq], ((2 * P_Fkk + P_Fki) / Vmt)[t_in_pvpq & t_in_pq])]
+    # data = np.r_[data, ((2 * P_Fii + P_Fik) / Vmf)[f_in_pvpq], (P_Fik / Vmt)[f_in_pvpq & t_in_pq],
+    #              np.where(control_delta[f_in_pvpq & t_in_pq], zero[f_in_pvpq & t_in_pq], ((2 * P_Fii + P_Fik) / Vmf)[f_in_pvpq & t_in_pq]),
+    #              np.where(control_delta[t_in_pvpq & t_in_pq], zero[t_in_pvpq & t_in_pq], (P_Fik / Vmt)[t_in_pvpq & t_in_pq])]
 
 
     # # J_C_Q_d = np.zeros(shape=(len(pq), len(pvpq)), dtype=np.float64)
@@ -328,7 +341,12 @@ def create_J_modification_ssc(J, V, Ybus_ssc, f, t, pvpq, pq, pvpq_lookup, pq_lo
 
     rows = np.r_[rows, len(pvpq) + pq_lookup[f[f_in_pq]], len(pvpq) + pq_lookup[f[f_in_pq & t_in_pvpq]], len(pvpq) + pq_lookup[t[f_in_pvpq & t_in_pq]], len(pvpq) + pq_lookup[t[t_in_pq]]]
     cols = np.r_[cols, pvpq_lookup[f[f_in_pvpq]], pvpq_lookup[t[f_in_pq & t_in_pvpq]], pvpq_lookup[f[f_in_pvpq & t_in_pq]], pvpq_lookup[t[t_in_pvpq]]]
-    data = np.r_[data, P_Fik[f_in_pq], -P_Fik[f_in_pq & t_in_pvpq], np.where(control_v[f_in_pvpq & t_in_pq], zero[f_in_pvpq & t_in_pq], P_Fik[f_in_pvpq & t_in_pq]), np.where(control_v[t_in_pq], zero[t_in_pq], -P_Fik[t_in_pq])]
+    data = np.r_[data, P_Fik[f_in_pq], -P_Fik[f_in_pq & t_in_pvpq],
+                 np.where(control_v[f_in_pvpq & t_in_pq], zero[f_in_pvpq & t_in_pq], P_Fik[f_in_pvpq & t_in_pq]),
+                 np.where(control_v[t_in_pq], zero[t_in_pq], -P_Fik[t_in_pq])]
+    # data = np.r_[data, P_Fik[f_in_pq], -P_Fik[f_in_pq & t_in_pvpq],
+    #              np.where(control_v[f_in_pvpq & t_in_pq], zero[f_in_pvpq & t_in_pq], P_Fki[f_in_pvpq & t_in_pq]),
+    #              np.where(control_v[t_in_pq], zero[t_in_pq], -P_Fki[t_in_pq])]
 
 
 
@@ -353,7 +371,12 @@ def create_J_modification_ssc(J, V, Ybus_ssc, f, t, pvpq, pq, pvpq_lookup, pq_lo
 
     rows = np.r_[rows, len(pvpq)+pq_lookup[f[f_in_pq]], len(pvpq)+pq_lookup[f[f_in_pq & t_in_pq]], len(pvpq)+pq_lookup[t[f_in_pq & t_in_pq]], len(pvpq)+pq_lookup[t[t_in_pq]]]
     cols = np.r_[cols, len(pvpq)+pq_lookup[f[f_in_pq]], len(pvpq)+pq_lookup[t[f_in_pq & t_in_pq]], len(pvpq)+pq_lookup[f[f_in_pq & t_in_pq]], len(pvpq)+pq_lookup[t[t_in_pq]]]
-    data = np.r_[data, ((2 * Q_Fii + Q_Fik) / Vmf)[f_in_pq], (Q_Fik / Vmt)[f_in_pq & t_in_pq], np.where(control_v[f_in_pq & t_in_pq], one[f_in_pq & t_in_pq], ((2 * Q_Fii + Q_Fik) / Vmf)[f_in_pq & t_in_pq]), np.where(control_v[t_in_pq], zero[t_in_pq], (Q_Fik / Vmt)[t_in_pq])]
+    data = np.r_[data, ((2 * Q_Fii + Q_Fik) / Vmf)[f_in_pq], (Q_Fik / Vmt)[f_in_pq & t_in_pq],
+                 np.where(control_v[f_in_pq & t_in_pq], one[f_in_pq & t_in_pq], ((2 * Q_Fii + Q_Fik) / Vmf)[f_in_pq & t_in_pq]),
+                 np.where(control_v[t_in_pq], zero[t_in_pq], (Q_Fik / Vmt)[t_in_pq])]
+    # data = np.r_[data, ((2 * Q_Fii + Q_Fik) / Vmf)[f_in_pq], (Q_Fik / Vmt)[f_in_pq & t_in_pq],
+    #              np.where(control_v[f_in_pq & t_in_pq], one[f_in_pq & t_in_pq], ((2 * Q_Fkk + Q_Fki) / Vmf)[f_in_pq & t_in_pq]),
+    #              np.where(control_v[t_in_pq], zero[t_in_pq], (Q_Fkk / Vmt)[t_in_pq])]
 
     # for vsc ac slack buses:
     # rows = np.r_[rows, ac_slack]
@@ -384,7 +407,7 @@ def create_J_modification_ssc(J, V, Ybus_ssc, f, t, pvpq, pq, pvpq_lookup, pq_lo
     return J_m
 
 
-def create_J_modification_hvdc(J, V_dc, Ybus_hvdc, Ybus_vsc_dc, vsc_g_pu, dc_p, dc_p_lookup, vsc_dc_fb, vsc_dc_tb, vsc_dc_slack):
+def create_J_modification_hvdc(J, V_dc, Ybus_hvdc, Ybus_vsc_dc, vsc_g_pu, dc_p, dc_p_lookup, vsc_dc_fb, vsc_dc_tb, vsc_dc_slack, vsc_dc_mode_p):
     # Calculate the first matrix for all elements
     J_all = (Ybus_hvdc - Ybus_vsc_dc).multiply(V_dc)
     # Calculate the second matrix for diagonal elements only
@@ -398,6 +421,8 @@ def create_J_modification_hvdc(J, V_dc, Ybus_hvdc, Ybus_vsc_dc, vsc_g_pu, dc_p, 
     # Only relevant when more than one VSC connected to the same bus.
     P_Fii = V_dc[vsc_dc_fb] * vsc_g_pu
     P_Fik = -V_dc[vsc_dc_fb] * vsc_g_pu
+    P_Fkk = V_dc[vsc_dc_tb] * vsc_g_pu
+    P_Fki = -V_dc[vsc_dc_tb] * vsc_g_pu
 
     zero = SMALL_NUMBER * np.ones(shape=P_Fii.shape, dtype=np.float64)
     one = np.ones(shape=P_Fii.shape, dtype=np.float64)
@@ -405,7 +430,11 @@ def create_J_modification_hvdc(J, V_dc, Ybus_hvdc, Ybus_vsc_dc, vsc_g_pu, dc_p, 
     rows = np.r_[dc_p_lookup[vsc_dc_fb], dc_p_lookup[vsc_dc_fb], dc_p_lookup[vsc_dc_tb], dc_p_lookup[vsc_dc_tb]]
     cols = np.r_[dc_p_lookup[vsc_dc_fb], dc_p_lookup[vsc_dc_tb], dc_p_lookup[vsc_dc_fb], dc_p_lookup[vsc_dc_tb]]
     # data = np.r_[2 * P_Fii + P_Fik, P_Fik, np.where(vsc_dc_slack, one, P_Fki), np.where(vsc_dc_slack, zero, 2 * P_Fkk + P_Fki)]
-    data = np.r_[2 * P_Fii + P_Fik, P_Fik, np.where(vsc_dc_slack, one, P_Fik), np.where(vsc_dc_slack, zero, 2 * P_Fii + P_Fik)]
+    # data = np.r_[2 * P_Fii + P_Fik, P_Fik, np.where(vsc_dc_slack, one, 2 * P_Fii + P_Fik), np.where(vsc_dc_slack, zero, P_Fik)]
+    # it depends on which power must be controlled, at internal node (AC slack mode) or at external node (DC P mode):
+    data = np.r_[2 * P_Fii + P_Fik, P_Fik,
+                 np.where(vsc_dc_slack, one, np.where(vsc_dc_mode_p, 2 * P_Fii + P_Fik, P_Fki)),
+                 np.where(vsc_dc_slack, zero, np.where(vsc_dc_mode_p, P_Fik, 2 * P_Fkk + P_Fki))]
     # data = np.r_[P_Fik / V_dc[vsc_dc_fb], P_Fik / V_dc[vsc_dc_tb], np.where(vsc_dc_slack, one, P_Fki / V_dc[vsc_dc_fb]), np.where(vsc_dc_slack, zero, P_Fki / V_dc[vsc_dc_tb])]
     # data = np.r_[-Q_Fik[f_in_pvpq], Q_Fik[f_in_pvpq & t_in_pvpq], np.where(control_delta[f_in_pvpq & t_in_pvpq], one[f_in_pvpq & t_in_pvpq], Q_Fki[f_in_pvpq & t_in_pvpq]), np.where(control_delta[t_in_pvpq], zero[t_in_pvpq], -Q_Fki[t_in_pvpq])]
 
