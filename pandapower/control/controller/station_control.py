@@ -51,12 +51,10 @@ class BinarySearchControl(Controller):
         self.diff_old = self.diff
         self.diff = self.set_point - input_values
         converged = np.all(np.abs(self.diff) < self.tol)
-        print("BinaryDiff: ", self.diff)
 
         return converged
 
     def control_step(self, net):
-        print(f"{self.output_values_old=}")
         if self.output_values_old is None:
             self.output_values_old, self.output_values = self.output_values, self.output_values + 1e-3
         else:
@@ -68,7 +66,6 @@ class BinarySearchControl(Controller):
             self.output_values_old, self.output_values = self.output_values, x
 
         # write new set values
-        print(f"{self.output_values=}")
         write_to_net(net, self.output_element, self.output_element_index, self.output_variable, self.output_values,
                      self.write_flag)
 
@@ -102,6 +99,5 @@ class DroopControl(Controller):
         vm_pu = read_from_net(net, "res_bus", self.bus_idx, "vm_pu", self.read_flag)
         self.q_set_old_mvar, self.q_set_mvar = self.q_set_mvar, (vm_pu - self.vm_set_pu) * self.q_droop_mvar
         net.controller.at[self.controller_idx, "object"].set_point = self.q_set_mvar
-        print("Qset: ", self.q_set_mvar)
         if self.q_set_old_mvar is not None:
             self.delta = self.q_set_mvar - self.q_set_old_mvar
