@@ -217,10 +217,10 @@ class opf_model(object):
 
             N, M = AorN.shape
             if len(l) == 0:                   ## default l is -Inf
-                l = full(N, -inf) * ones(N)
+                l = full(N, -inf)
 
             if len(u) == 0:                   ## default u is Inf
-                u = full(N, inf) * ones(N)
+                u = full(N, inf)
 
             if len(varsets) == 0:
                 varsets = self.var["order"]
@@ -272,10 +272,10 @@ class opf_model(object):
             v0 = zeros(N)           ## init to zero by default
 
         if vl is None or len(vl) == 0:
-            vl = full(N, -inf) * ones(N)     ## unbounded below by default
+            vl = full(N, -inf)    ## unbounded below by default
 
         if vu is None or len(vu) == 0:
-            vu = full(N, inf) * ones(N)      ## unbounded above by default
+            vu = full(N, inf)      ## unbounded above by default
 
 
         ## add info about this var set
@@ -465,7 +465,7 @@ class opf_model(object):
 
         if self.lin["N"]:
             A = lil_matrix((self.lin["N"], self.var["N"]))
-            u = full(self.lin["N"], inf) * ones(self.lin["N"])
+            u = full(self.lin["N"], inf)
             l = -u
         else:
             A = None

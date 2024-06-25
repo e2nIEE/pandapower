@@ -149,7 +149,7 @@ def opf_setup(ppc, ppopt):
         ## branch flow constraints
         il = find((branch[:, RATE_A] != 0) & (branch[:, RATE_A] < 1e10))
         nl2 = len(il)         ## number of constrained lines
-        lpf = full(nl2, -inf) * ones(nl2)
+        lpf = full(nl2, -inf)
         upf = branch[il, RATE_A] / baseMVA - Pfinj[il]
         upt = branch[il, RATE_A] / baseMVA + Pfinj[il]
 
@@ -171,7 +171,7 @@ def opf_setup(ppc, ppopt):
         ycon_vars = ['Pg', 'Qg', 'y']
 
     ## voltage angle reference constraints
-    Vau = full(nb, inf) * ones(nb)
+    Vau = full(nb, inf)
     Val = -Vau
     Vau[refs] = Va[refs]
     Val[refs] = Va[refs]

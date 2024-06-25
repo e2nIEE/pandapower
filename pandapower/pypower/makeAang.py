@@ -47,7 +47,7 @@ def makeAang(baseMVA, branch, nb, ppopt):
             jj = r_[branch[iang, F_BUS], branch[iang, T_BUS]]
             Aang = sparse((r_[ones(nang), -ones(nang)],
                            (ii, jj)), (nang, nb))
-            uang = full(nang, inf) * ones(nang)
+            uang = full(nang, inf)
             lang = -uang
             lang[iangl] = branch[iang[iangl], ANGMIN] * pi / 180
             uang[iangh] = branch[iang[iangh], ANGMAX] * pi / 180
