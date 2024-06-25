@@ -34,7 +34,7 @@ long_description = '\n\n'.join((install, changelog))
 
 setup(
     name='pandapower',
-    version='2.14.8',
+    version='2.14.9',
     author='Leon Thurner, Alexander Scheidler',
     author_email='leon.thurner@retoflow.de, alexander.scheidler@iee.fraunhofer.de',
     description='An easy to use open source tool for power system modeling, analysis and optimization with a high degree of automation.',
@@ -45,7 +45,7 @@ setup(
     python_requires='>=3.8',
     install_requires=["pandas>=1.0",
                       "networkx>=2.5",
-                      "scipy",
+                      "scipy<1.14",
                       "numpy<2.0",
                       "packaging",
                       "tqdm",
