@@ -45,7 +45,7 @@ setup(
     python_requires='>=3.8',
     install_requires=["pandas>=1.0",
                       "networkx>=2.5",
-                      "scipy",
+                      "scipy<1.14",
                       "numpy<2.0",
                       "packaging",
                       "tqdm",
