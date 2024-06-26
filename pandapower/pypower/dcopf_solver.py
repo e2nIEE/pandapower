@@ -10,7 +10,7 @@ from sys import stderr
 from copy import deepcopy
 
 from numpy import \
-    array, zeros, ones, any, diag, r_, pi, Inf, isnan, arange, c_, dot
+    array, zeros, ones, any, diag, r_, pi, inf, isnan, arange, c_, dot
 
 from numpy import flatnonzero as find
 
@@ -195,8 +195,8 @@ def dcopf_solver(om, ppopt, out_opt=None):
         Varefs = bus[bus[:, BUS_TYPE] == REF, VA] * (pi / 180.0)
 
         lb, ub = xmin.copy(), xmax.copy()
-        lb[xmin == -Inf] = -1e10   ## replace Inf with numerical proxies
-        ub[xmax ==  Inf] =  1e10
+        lb[xmin == -inf] = -1e10   ## replace Inf with numerical proxies
+        ub[xmax ==  inf] =  1e10
         x0 = (lb + ub) / 2;
         # angles set to first reference angle
         x0[vv["i1"]["Va"]:vv["iN"]["Va"]] = Varefs[0]
