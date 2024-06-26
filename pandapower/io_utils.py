@@ -577,11 +577,12 @@ class FromSerializableRegistry():
                     df.columns.names = column_names
 
         # recreate jsoned objects
-        for col in ('object', 'controller'):  # "controller" for backwards compatibility
-            if (col in df.columns):
-                df[col] = df[col].apply(self.pp_hook)
         if 'geo' in df.columns:
             df['geo'] = df['geo'].dropna().apply(json.dumps).apply(geojson.loads)
+        dtp = df.dtypes
+        for col in df.columns:
+            df[col] = df[col].apply(self.pp_hook)
+        df = df.astype(dtype = dtp)
         return df
 
     @from_serializable.register(class_name='pandapowerNet', module_name='pandapower.auxiliary')#,
