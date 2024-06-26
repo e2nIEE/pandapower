@@ -6,6 +6,8 @@ Change Log
 - [FIXED] namespace changes from numpy 2.0 release
 - [CHANGED] inf to np.full(...) with value inf for array operations in pypower folder
 - [CHANGED] node existence check for multiple branch elements from mixed array and set operations to set operations only
+- [FIXED] geopandas version
+- [FIXED] scipy version
 - [ADDED] DERController with multiple options to define DER reactive power provision depending on P and V
 - [ADDED] switch results p and q
 - [ADDED] PowerFactory converter: option to export lines with sections as a single line with averaged-out impedance, or export line sections as separate individual lines
