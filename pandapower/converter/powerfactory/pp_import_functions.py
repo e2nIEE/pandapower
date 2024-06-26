@@ -353,7 +353,7 @@ def create_bus(net, item, flag_graphics, is_unbalanced):
         x, y = 0, 0
 
     # only values > 0+-1e-3 are entered into the bus_geodata
-    if x > 1e-3 or y > 1e-3:
+    if abs(x) > 1e-3 or abs(y) > 1e-3:
         geodata = (x, y)
     else:
         geodata = None
@@ -407,26 +407,6 @@ def create_bus(net, item, flag_graphics, is_unbalanced):
 
     add_additional_attributes(item, net, "bus", bid, attr_dict={"for_name": "equipment", "cimRdfId": "origin_id"},
                               attr_list=["sernum", "chr_name", "cpSite.loc_name"])
-
-    # add geo data
-    if flag_graphics == 'GPS':
-        x = ga(item, 'e:GPSlon')
-        y = ga(item, 'e:GPSlat')
-    elif flag_graphics == 'graphic objects':
-        graphic_object = get_graphic_object(item)
-        if graphic_object:
-            x = ga(graphic_object, 'rCenterX')
-            y = ga(graphic_object, 'rCenterY')
-            # add gr coord data
-        else:
-            x, y = 0, 0
-    else:
-        x, y = 0, 0
-
-    # only values > 0+-1e-3 are entered into the bus_geodata
-    if x > 1e-3 or y > 1e-3:
-        net.bus_geodata.loc[bid, 'x'] = x
-        net.bus_geodata.loc[bid, 'y'] = y
 
 def get_pf_bus_results(net, item, bid, is_unbalanced):
     bus_type = None
@@ -2843,73 +2823,164 @@ def create_stactrl(net, item):
     res_element_index = None
     if control_mode == 1 or item.i_droop:
         q_control_cubicle = item.p_cub if control_mode == 1 else item.pQmeas  # Feld
-        q_control_element = q_control_cubicle.obj_id  # element (e.g. line) of the cubicle
-        q_control_side = q_control_cubicle.obj_bus  # 0=from, 1=to
-        element_class = q_control_element.GetClassName()
-        if element_class == "ElmLne":
-            res_element_table = "res_line"
-            line_sections = line_dict[q_control_element]
-            res_element_index = line_sections[0] if q_control_side == 0 else line_sections[-1]
-            variable = "q_from_mvar" if q_control_side == 0 else "q_to_mvar"
-        elif element_class == "ElmTr2":
-            res_element_table = "res_trafo"
-            res_element_index = trafo_dict[q_control_element]
-            variable = "q_hv_mvar" if q_control_side == 0 else "q_lv_mvar"
-        elif element_class == "ElmCoup":
-            res_element_table = "res_switch"
-            res_element_index = switch_dict[q_control_element]
-            net.switch.at[res_element_index, "z_ohm"] = 1e-3
-            variable = "q_from_mvar" if q_control_side == 0 else "q_to_mvar"
-        else:
-            logger.error(f"{item}: only line, trafo element flows can be controlled, {element_class=}")
-            return
-            # raise NotImplementedError(f"{item}: only line, trafo element flows can be controlled, {element_class=}")
+        if q_control_cubicle.GetClassName() == "StaCubic":
+            q_control_element = q_control_cubicle.obj_id  # element (e.g. line) of the cubicle
+            q_control_side = q_control_cubicle.obj_bus  # 0=from, 1=to
+            element_class = q_control_element.GetClassName()
+            if element_class == "ElmLne":
+                res_element_table = "res_line"
+                line_sections = line_dict[q_control_element]
+                res_element_index = line_sections[0] if q_control_side == 0 else line_sections[-1]
+                variable = "q_from_mvar" if q_control_side == 0 else "q_to_mvar"
+            elif element_class == "ElmTr2":
+                res_element_table = "res_trafo"
+                res_element_index = trafo_dict[q_control_element]
+                variable = "q_hv_mvar" if q_control_side == 0 else "q_lv_mvar"
+            elif element_class == "ElmCoup":
+                res_element_table = "res_switch"
+                res_element_index = switch_dict[q_control_element]
+                net.switch.at[res_element_index, "z_ohm"] = 1e-3
+                variable = "q_from_mvar" if q_control_side == 0 else "q_to_mvar"
+            else:
+                logger.error(f"{item}: only line, trafo element flows can be controlled, {element_class=}")
+                return
+                # raise NotImplementedError(f"{item}: only line, trafo element flows can be controlled, {element_class=}")
+        elif q_control_cubicle.GetClassName() == "ElmBoundary":
+            q_control_element = []
+            q_control_side = []
+            element_class = []
+            res_element_index = []
+            variable = []
+            for cubicles in q_control_cubicle.cubicles:
+                q_control_element.append(cubicles.obj_id)
+                q_control_side.append(cubicles.obj_bus)  # 0=from, 1=to
+                element_class.append(q_control_element[0].GetClassName())
+                #variables.append()
+                print(cubicles.GetFullName())
+            ############################################################################################################################################################################################
+            if element_class[0] == "ElmLne":
+                res_element_table = "res_line"
+                for element in q_control_element:
+                    line_sections = line_dict[element]
+                    if q_control_side == 0:
+                        res_element_index.append(line_sections[0])
+                    else:
+                        res_element_index.append(line_sections[-1])
+                    variable = "q_from_mvar" if q_control_side == 0 else "q_to_mvar"
+            elif element_class[0] == "ElmTr2":
+                res_element_table = "res_trafo"
+                for element in q_control_element:
+                    res_element_index.append = trafo_dict[element]
+                    variable = "q_hv_mvar" if q_control_side == 0 else "q_lv_mvar"
+            elif element_class[0] == "ElmCoup":
+                res_element_table = "res_switch"
+                for element in q_control_element:
+                    res_element_index.append(switch_dict[element])
+                    net.switch.at[res_element_index[-1], "z_ohm"] = 1e-3
+                    variable = "q_from_mvar" if q_control_side == 0 else "q_to_mvar"
+            else:
+                logger.error(f"{item}: only line, trafo element flows can be controlled, {element_classes[0]=}")
+                return
 
-    if control_mode == 0:  #### VOLTAGE CONTROL
-        controlled_node = item.rembar
-        bus = bus_dict[controlled_node]  # controlled node
-
-        if item.uset_mode == 0:  #### Station controller
-            v_setpoint_pu = item.usetp
-        else:
-            v_setpoint_pu = controlled_node.vtarget  #### Bus target voltage
-
-        if item.i_droop:  # Enable Droop
-            bsc = pp.control.BinarySearchControl(net, output_element=gen_element, output_variable="q_mvar",
-                                                 output_element_index=gen_element_index, output_values_distribution=distribution,
-                                                 input_element=res_element_table, input_variable=variable,
-                                                 input_element_index=res_element_index,
-                                                 set_point=v_setpoint_pu, tol=1e-3)
-            pp.control.DroopControl(net, q_droop_mvar=item.Srated * 100 / item.ddroop, bus_idx=bus,
-                                    vm_set_pu=v_setpoint_pu, controller_idx=bsc.index)
-        else:
-            pp.control.BinarySearchControl(net, output_element=gen_element, output_variable="q_mvar",
-                                           output_element_index=gen_element_index, input_element="res_bus",
-                                           output_values_distribution=distribution, damping_factor=0.9,
-                                           input_variable="vm_pu", input_element_index=bus,
-                                           set_point=v_setpoint_pu, tol=1e-6)
-    elif control_mode == 1:  # Q Control mode
-        if item.iQorient != 0:
-            raise NotImplementedError(f"{item}: Q orientation '-' not supported")
-        # q_control_mode = item.qu_char  # 0: "Const Q", 1: "Q(V) Characteristic", 2: "Q(P) Characteristic"
-        # q_control_terminal = q_control_cubicle.cterm  # terminal of the cubicle
-        if item.qu_char in [0, 1]:
-            bsc = pp.control.BinarySearchControl(net, output_element=gen_element, output_variable="q_mvar",
-                                                 output_element_index=gen_element_index, input_element=res_element_table,
-                                                 output_values_distribution=distribution, damping_factor=0.9,
-                                                 input_variable=variable, input_element_index=res_element_index,
-                                                 set_point=item.qsetp, tol=1e-6)
-            if item.qu_char == 1:
-                controlled_node = item.refbar
+            if control_mode == 0:  #### VOLTAGE CONTROL
+                controlled_node = item.rembar
                 bus = bus_dict[controlled_node]  # controlled node
-                # using controlled_node.vtarget would be more logical but it is wrong:
-                pp.control.DroopControl(net, q_droop_mvar=item.Srated * 100 / item.ddroop, bus_idx=bus,
-                                        vm_set_pu=item.udeadbup, controller_idx=bsc.index)
-                                        # vm_set_pu=controlled_node.vtarget, controller_idx=bsc.index)
+
+                if item.uset_mode == 0:  #### Station controller
+                    v_setpoint_pu = item.usetp
+                else:
+                    v_setpoint_pu = controlled_node.vtarget  #### Bus target voltage
+
+                if item.i_droop:  # Enable Droop
+                    bsc = pp.control.BinarySearchControl(net, output_element=gen_element, output_variable="q_mvar",
+                                                         output_element_index=gen_element_index,
+                                                         output_values_distribution=distribution,
+                                                         input_element=res_element_table, input_variable=variable,
+                                                         input_element_index=res_element_index,
+                                                         set_point=v_setpoint_pu, tol=1e-3)
+                    pp.control.DroopControl(net, q_droop_mvar=item.Srated * 100 / item.ddroop, bus_idx=bus,
+                                            vm_set_pu=v_setpoint_pu, controller_idx=bsc.index)
+                else:
+                    pp.control.BinarySearchControl(net, output_element=gen_element, output_variable="q_mvar",
+                                                   output_element_index=gen_element_index, input_element="res_bus",
+                                                   output_values_distribution=distribution, damping_factor=0.9,
+                                                   input_variable="vm_pu", input_element_index=bus,
+                                                   set_point=v_setpoint_pu, tol=1e-6)
+            elif control_mode == 1:  # Q Control mode
+                if item.iQorient != 0:
+                    raise NotImplementedError(f"{item}: Q orientation '-' not supported")
+                # q_control_mode = item.qu_char  # 0: "Const Q", 1: "Q(V) Characteristic", 2: "Q(P) Characteristic"
+                # q_control_terminal = q_control_cubicle.cterm  # terminal of the cubicle
+                if item.qu_char in [0, 1]:
+                    bsc = pp.control.BinarySearchControl(net, output_element=gen_element, output_variable="q_mvar",
+                                                         output_element_index=gen_element_index,
+                                                         input_element=res_element_table,
+                                                         output_values_distribution=distribution, damping_factor=0.9,
+                                                         input_variable=variable, input_element_index=res_element_indexes,
+                                                         set_point=item.qsetp, tol=1e-6)
+                    if item.qu_char == 1:
+                        controlled_node = item.refbar
+                        bus = bus_dict[controlled_node]  # controlled node
+                        # using controlled_node.vtarget would be more logical but it is wrong:
+                        pp.control.DroopControl(net, q_droop_mvar=item.Srated * 100 / item.ddroop, bus_idx=bus,
+                                                vm_set_pu=item.udeadbup, controller_idx=bsc.index)
+                        # vm_set_pu=controlled_node.vtarget, controller_idx=bsc.index)
+                else:
+                    raise NotImplementedError
+            else:
+                raise NotImplementedError(f"{item}: control mode {item.i_ctrl=} not implemented")
+            ############################################################################################################################################################################################
         else:
-            raise NotImplementedError
-    else:
-        raise NotImplementedError(f"{item}: control mode {item.i_ctrl=} not implemented")
+            logger.error(f"{item}: Class not implemented!, {q_control_cubicle.GetClassName()=}")
+            return
+
+
+    if q_control_cubicle.GetClassName() == "StaCubic":
+        if control_mode == 0:  #### VOLTAGE CONTROL
+            controlled_node = item.rembar
+            bus = bus_dict[controlled_node]  # controlled node
+
+            if item.uset_mode == 0:  #### Station controller
+                v_setpoint_pu = item.usetp
+            else:
+                v_setpoint_pu = controlled_node.vtarget  #### Bus target voltage
+
+            if item.i_droop:  # Enable Droop
+                bsc = pp.control.BinarySearchControl(net, output_element=gen_element, output_variable="q_mvar",
+                                                     output_element_index=gen_element_index, output_values_distribution=distribution,
+                                                     input_element=res_element_table, input_variable=variable,
+                                                     input_element_index=res_element_index,
+                                                     set_point=v_setpoint_pu, tol=1e-3)
+                pp.control.DroopControl(net, q_droop_mvar=item.Srated * 100 / item.ddroop, bus_idx=bus,
+                                        vm_set_pu=v_setpoint_pu, controller_idx=bsc.index)
+            else:
+                pp.control.BinarySearchControl(net, output_element=gen_element, output_variable="q_mvar",
+                                               output_element_index=gen_element_index, input_element="res_bus",
+                                               output_values_distribution=distribution, damping_factor=0.9,
+                                               input_variable="vm_pu", input_element_index=bus,
+                                               set_point=v_setpoint_pu, tol=1e-6)
+        elif control_mode == 1:  # Q Control mode
+            if item.iQorient != 0:
+                raise NotImplementedError(f"{item}: Q orientation '-' not supported")
+            # q_control_mode = item.qu_char  # 0: "Const Q", 1: "Q(V) Characteristic", 2: "Q(P) Characteristic"
+            # q_control_terminal = q_control_cubicle.cterm  # terminal of the cubicle
+            if item.qu_char in [0, 1]:
+                bsc = pp.control.BinarySearchControl(net, output_element=gen_element, output_variable="q_mvar",
+                                                     output_element_index=gen_element_index, input_element=res_element_table,
+                                                     output_values_distribution=distribution, damping_factor=0.9,
+                                                     input_variable=variable, input_element_index=res_element_index,
+                                                     set_point=item.qsetp, tol=1e-6)
+                if item.qu_char == 1:
+                    controlled_node = item.refbar
+                    bus = bus_dict[controlled_node]  # controlled node
+                    # using controlled_node.vtarget would be more logical but it is wrong:
+                    pp.control.DroopControl(net, q_droop_mvar=item.Srated * 100 / item.ddroop, bus_idx=bus,
+                                            vm_set_pu=item.udeadbup, controller_idx=bsc.index)
+                                            # vm_set_pu=controlled_node.vtarget, controller_idx=bsc.index)
+            else:
+                raise NotImplementedError
+        else:
+            raise NotImplementedError(f"{item}: control mode {item.i_ctrl=} not implemented")
 
 
 def split_line_at_length(net, line, length_pos):
