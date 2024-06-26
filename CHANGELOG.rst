@@ -3,6 +3,8 @@ Change Log
 
 [upcoming release] - 2024-..-..
 -------------------------------
+- [FIXED] geopandas version
+- [FIXED] scipy version
 - [ADDED] DERController with multiple options to define DER reactive power provision depending on P and V
 - [ADDED] switch results p and q
 - [ADDED] PowerFactory converter: option to export lines with sections as a single line with averaged-out impedance, or export line sections as separate individual lines
@@ -28,9 +30,21 @@ Change Log
 - [CHANGED] minor changes to the example networks (mainly added names to identify them in tests)
 - [CHANGED] dataframes_equal adapted to properly compare geojson data
 - [FIXED] k documentation of sgen
+- [FIXED] error during unbalanced powerflow due to out of service external grids
 - [FIXED] PowerFactory converter: fix trafo3w tap dependent impedance
 - [ADDED] PowerFactory converter: support load types (constI, constZ) and the setting whether to consider voltage dependency of loads
 - [FIXED] deprecation of matplotlib.cm.get_cmap(name) -> matplotlib.colormaps[name]
+
+[2.14.7] - 2024-06-14
+-------------------------------
+- [ADDED] added PathPatch TextPatch and Affine2D imports needed for ward and xward patches
+- [ADDED] added ward_patches function to mark wards in a plot
+- [ADDED] added ward_patches function to mark wards in a plot
+- [ADDED] added ward_patches and xward_patches imports used in the wad and xward collections
+- [ADDED] added create_ward_collection function to enable plotting wards
+- [ADDED] added create_xward_collection function to enable plotting xwards
+- [FIXED] git issue #2199: List of colors does not apply to Polygon Patches
+- [CHANGED] Sonar Lint issues for spacing
 
 [2.14.6] - 2024-04-02
 -------------------------------

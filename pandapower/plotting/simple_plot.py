@@ -109,7 +109,7 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
         respect_switches = False
 
     # create geocoord if none are available
-    if len(net.line.geo) == 0 and len(net.bus.geo) == 0:
+    if (len(net.line.geo) == 0 and len(net.bus.geo) == 0) or (net.line.geo.isna().any() and net.bus.geo.isna().any()):
         logger.warning("No or insufficient geodata available --> Creating artificial coordinates." +
                        " This may take some time")
         create_generic_coordinates(net, respect_switches=respect_switches, library=library)
