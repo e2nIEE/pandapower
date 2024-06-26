@@ -56,7 +56,7 @@ class PowerTransformersCim16:
 
     def _create_trafo_characteristics(self, trafo_type, trafo_df_origin):
         if 'id_characteristic' not in trafo_df_origin.columns:
-            trafo_df_origin['id_characteristic'] = np.NaN
+            trafo_df_origin['id_characteristic'] = np.nan
         if 'characteristic_temp' not in self.cimConverter.net.keys():
             self.cimConverter.net['characteristic_temp'] = pd.DataFrame(
                 columns=['id_characteristic', 'step', 'vk_percent',

@@ -3,6 +3,9 @@ Change Log
 
 [upcoming release] - 2024-..-..
 -------------------------------
+- [FIXED] namespace changes from numpy 2.0 release
+- [CHANGED] inf to np.full(...) with value inf for array operations in pypower folder
+- [CHANGED] node existence check for multiple branch elements from mixed array and set operations to set operations only
 - [FIXED] geopandas version
 - [FIXED] scipy version
 - [ADDED] DERController with multiple options to define DER reactive power provision depending on P and V
