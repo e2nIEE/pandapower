@@ -4,6 +4,8 @@ Change Log
 [upcoming release] - 2024-..-..
 -------------------------------
 - [ADDED] low voltage grid Schutterwald
+- [FIXED] geopandas version
+- [FIXED] scipy version
 - [ADDED] DERController with multiple options to define DER reactive power provision depending on P and V
 - [ADDED] switch results p and q
 - [ADDED] PowerFactory converter: option to export lines with sections as a single line with averaged-out impedance, or export line sections as separate individual lines
