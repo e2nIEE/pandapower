@@ -413,10 +413,9 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
                                                 svc_controllable)
             J = J + J_m_svc
         if any_tcsc:
-            J_m_tcsc = create_J_modification_tcsc(J, V, y_tcsc_pu, x_control_tcsc, svc_controllable, tcsc_controllable,
-                                                  tcsc_x_l_pu, tcsc_x_cvar_pu, tcsc_fb, tcsc_tb,
-                                                  refpvpq if dist_slack else pvpq, pq, pvpq_lookup, pq_lookup,
-                                                  num_svc_controllable, num_tcsc)
+            J_m_tcsc = create_J_modification_tcsc(J, V, y_tcsc_pu, x_control_tcsc, tcsc_controllable, tcsc_x_l_pu,
+                                                  tcsc_fb, tcsc_tb, refpvpq if dist_slack else pvpq, pq, pvpq_lookup,
+                                                  pq_lookup, num_svc_controllable)
             J = J + J_m_tcsc
         if any_ssc_controllable:
             J_m_ssc = create_J_modification_ssc_vsc(J, V, ssc_y_pu[ssc_controllable], ssc_fb[ssc_controllable],
