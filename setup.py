@@ -34,7 +34,7 @@ long_description = '\n\n'.join((install, changelog))
 
 setup(
     name='pandapower',
-    version='2.14.9',
+    version='2.14.10',
     author='Leon Thurner, Alexander Scheidler',
     author_email='leon.thurner@retoflow.de, alexander.scheidler@iee.fraunhofer.de',
     description='An easy to use open source tool for power system modeling, analysis and optimization with a high degree of automation.',
@@ -52,17 +52,17 @@ setup(
                       "deepdiff"],
     extras_require={
         "docs": ["numpydoc", "sphinx", "sphinx_rtd_theme"],
-        "plotting": ["plotly", "matplotlib<3.9", "igraph", "geopandas", "geojson"],
+        "plotting": ["plotly", "matplotlib<3.9", "igraph", "geopandas<1.0", "geojson"],
         # "shapely", "pyproj" are dependencies of geopandas and so already available;
         # "base64", "hashlib", "zlib" produce installing problems, so they are not included
         "test": ["pytest", "pytest-xdist"],
         "performance": ["ortools",  "numba", "lightsim2grid"],
         "pgm": ["power-grid-model-io"],
-        "fileio": ["xlsxwriter", "openpyxl", "cryptography", "geopandas", "psycopg2"],
+        "fileio": ["xlsxwriter", "openpyxl", "cryptography", "geopandas<1.0", "psycopg2"],
         # "fiona" is a depedency of geopandas and so already available
         "converter": ["matpowercaseframes"],
         "all": ["numpydoc", "sphinx", "sphinx_rtd_theme",
-                "plotly>=3.1.1", "matplotlib<3.9", "igraph", "geopandas", "geojson",
+                "plotly>=3.1.1", "matplotlib<3.9", "igraph", "geopandas<1.0", "geojson",
                 "pytest~=8.1", "pytest-xdist",
                 "ortools",  # lightsim2grid,
                 "xlsxwriter", "openpyxl", "cryptography",
