@@ -204,7 +204,9 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         # V_dc[vsc[v_set_point_index, VSC_BUS_DC].astype(np.int64)] = vsc_value_dc[v_set_point_index]
 
     Ybus_svc = makeYbus_svc(Ybus, x_control_svc, svc_x_l_pu, svc_x_cvar_pu, svc_buses)
-    Ybus_tcsc = makeYbus_tcsc(Ybus, x_control_tcsc, tcsc_x_l_pu, tcsc_x_cvar_pu, tcsc_fb, tcsc_tb)
+    y_tcsc_pu = -1j * calc_y_svc_pu(x_control_tcsc, tcsc_x_l_pu, tcsc_x_cvar_pu)
+    Ybus_tcsc = make_Ybus_facts(tcsc_fb, tcsc_tb, y_tcsc_pu, Ybus.shape[0])
+    # Ybus_tcsc = makeYbus_tcsc(Ybus, x_control_tcsc, tcsc_x_l_pu, tcsc_x_cvar_pu, tcsc_fb, tcsc_tb)
     # SSC
     Ybus_ssc_not_controllable, Ybus_ssc_controllable, Ybus_ssc = \
         makeYbus_ssc_vsc(Ybus, ssc_y_pu, ssc_fb, ssc_tb, ssc_controllable)
@@ -406,15 +408,15 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
                           csr_matrix((num_facts_controllable, J.shape[0]))], format="csr")
             J = K_J * J * K_J.T  # this extends the J matrix with 0-rows and 0-columns
         if any_svc:
-            J_m_svc = create_J_modification_svc(J, svc_buses, refpvpq if dist_slack else pvpq, pq, pq_lookup, V,
-                                                x_control_svc, svc_x_l_pu, svc_x_cvar_pu,
-                                                num_svc, num_svc_controllable, svc_controllable)
+            J_m_svc = create_J_modification_svc(J, svc_buses, refpvpq if dist_slack else pvpq, pq, pq_lookup, Vm,
+                                                x_control_svc, svc_x_l_pu, svc_x_cvar_pu, num_svc, num_svc_controllable,
+                                                svc_controllable)
             J = J + J_m_svc
         if any_tcsc:
-            J_m_tcsc = create_J_modification_tcsc(V, Ybus_tcsc, x_control_tcsc, svc_controllable, tcsc_controllable,
+            J_m_tcsc = create_J_modification_tcsc(J, V, y_tcsc_pu, x_control_tcsc, svc_controllable, tcsc_controllable,
                                                   tcsc_x_l_pu, tcsc_x_cvar_pu, tcsc_fb, tcsc_tb,
-                                                  refpvpq if dist_slack else pvpq, pq, pvpq_lookup,
-                                                  pq_lookup, num_svc_controllable, num_tcsc)
+                                                  refpvpq if dist_slack else pvpq, pq, pvpq_lookup, pq_lookup,
+                                                  num_svc_controllable, num_tcsc)
             J = J + J_m_tcsc
         if any_ssc_controllable:
             J_m_ssc = create_J_modification_ssc_vsc(J, V, ssc_y_pu[ssc_controllable], ssc_fb[ssc_controllable],
@@ -472,7 +474,9 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
             Ybus_svc = makeYbus_svc(Ybus, x_control_svc, svc_x_l_pu, svc_x_cvar_pu, svc_buses)
 
         if any_tcsc_controllable:
-            Ybus_tcsc = makeYbus_tcsc(Ybus, x_control_tcsc, tcsc_x_l_pu, tcsc_x_cvar_pu, tcsc_fb, tcsc_tb)
+            y_tcsc_pu = -1j * calc_y_svc_pu(x_control_tcsc, tcsc_x_l_pu, tcsc_x_cvar_pu)
+            Ybus_tcsc = make_Ybus_facts(tcsc_fb, tcsc_tb, y_tcsc_pu, Ybus.shape[0])
+            # Ybus_tcsc = makeYbus_tcsc(Ybus, x_control_tcsc, tcsc_x_l_pu, tcsc_x_cvar_pu, tcsc_fb, tcsc_tb)
         # Ybus_ssc does not change
         # if any_ssc_controllable:
         #     Ybus_ssc = makeYbus_ssc(Ybus, ssc_y_pu, ssc_fb, ssc_tb, any_ssc)
