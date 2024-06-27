@@ -253,7 +253,7 @@ def position_on_busbar(net, bus, busbar_coords):
     intersection = None
     bus_coords = net.bus_geodata.loc[bus, "coords"]
     # Checking if bus has "coords" - if it is a busbar
-    if bus_coords is not None and bus_coords is not np.NaN and busbar_coords is not None:
+    if bus_coords is not None and bus_coords is not np.nan and busbar_coords is not None:
         for i in range(len(bus_coords) - 1):
             try:
                 # Calculating slope of busbar-line. If the busbar-line is vertical ZeroDivisionError
@@ -295,7 +295,7 @@ def position_on_busbar(net, bus, busbar_coords):
                         intersection = busbar_coords[-1]
                         break
     # If the bus has no "coords" it mus be a normal bus
-    elif bus_coords is np.NaN:
+    elif bus_coords is np.nan:
         bus_geo = (net["bus_geodata"].loc[bus, "x"], net["bus_geodata"].loc[bus, "y"])
         # Checking if the first end of the line is on the bus
         if bus_geo == busbar_coords[0]:
