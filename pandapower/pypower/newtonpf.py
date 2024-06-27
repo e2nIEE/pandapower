@@ -409,7 +409,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
             J = K_J * J * K_J.T  # this extends the J matrix with 0-rows and 0-columns
         if any_svc:
             J_m_svc = create_J_modification_svc(J, svc_buses, refpvpq if dist_slack else pvpq, pq, pq_lookup, Vm,
-                                                x_control_svc, svc_x_l_pu, svc_x_cvar_pu, num_svc, num_svc_controllable,
+                                                x_control_svc, svc_x_l_pu, svc_x_cvar_pu, num_svc_controllable,
                                                 svc_controllable)
             J = J + J_m_svc
         if any_tcsc:
@@ -418,13 +418,13 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
                                                   pq_lookup, num_svc_controllable)
             J = J + J_m_tcsc
         if any_ssc_controllable:
-            J_m_ssc = create_J_modification_ssc_vsc(J, V, ssc_y_pu[ssc_controllable], ssc_fb[ssc_controllable],
+            J_m_ssc = create_J_modification_ssc_vsc(J, V, Vm, ssc_y_pu[ssc_controllable], ssc_fb[ssc_controllable],
                                                     ssc_tb[ssc_controllable], refpvpq if dist_slack else pvpq, pq,
                                                     pvpq_lookup, pq_lookup, ssc_mode_ac == 0,
                                                     np.full_like(ssc_mode_ac, False, dtype=bool))
             J = J + J_m_ssc
         if any_vsc_controllable:
-            J_m_vsc = create_J_modification_ssc_vsc(J, V, vsc_y_pu[vsc_controllable], vsc_fb[vsc_controllable],
+            J_m_vsc = create_J_modification_ssc_vsc(J, V, Vm, vsc_y_pu[vsc_controllable], vsc_fb[vsc_controllable],
                                                     vsc_tb[vsc_controllable], refpvpq if dist_slack else pvpq, pq,
                                                     pvpq_lookup, pq_lookup,
                                                     (vsc_mode_ac == VSC_MODE_AC_V) | (vsc_mode_ac == VSC_MODE_AC_SL),
