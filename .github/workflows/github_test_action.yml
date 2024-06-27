@@ -58,12 +58,14 @@ jobs:
           python -m pytest -n=auto --cov=./ --cov-report=xml --splits 2 --group ${{ matrix.group }}
           cp ./coverage.xml ./codecov_coverage.xml
       - name: Upload coverage to Codacy
+        continue-on-error: true
         if: ${{ matrix.python-version == '3.9'}}
         env:
           CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
         run: |
           bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r coverage.xml
       - name: Upload coverage to Codecov
+        continue-on-error: true
         if: ${{ matrix.python-version == '3.9' }}
         uses: codecov/codecov-action@v4
         with:
