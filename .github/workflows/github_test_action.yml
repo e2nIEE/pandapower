@@ -60,10 +60,10 @@ jobs:
       - name: Upload coverage to Codacy
         continue-on-error: true
         if: ${{ matrix.python-version == '3.9'}}
-        env:
-          CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
-        run: |
-          bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r coverage.xml
+        uses: codacy/coverage-reporter-action@v1.3.0
+        with:
+          coverage-reports: coverage.xml
+          project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
       - name: Upload coverage to Codecov
         continue-on-error: true
         if: ${{ matrix.python-version == '3.9' }}
