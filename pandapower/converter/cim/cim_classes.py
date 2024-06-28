@@ -79,7 +79,7 @@ class CimParser:
              'referencePriority': 999999, 'gch': 0., 'g0ch': 0.})  # todo check gch g0ch sections maximumSections
         to_bool = dict({'True': True, 'true': True, 'TRUE': True, True: True,
                         'False': False, 'false': False, 'FALSE': False, False: False,
-                        'nan': False, 'NaN': False, 'NAN': False, 'Nan': False, np.NaN: False})
+                        'nan': False, 'NaN': False, 'NAN': False, 'Nan': False, np.nan: False})
         float_type = float
         int_type = pd.Int64Dtype()
         bool_type = pd.BooleanDtype()
@@ -159,7 +159,7 @@ class CimParser:
                 for column in item.columns:
                     if column not in self.cim[profile][cim_element_type].columns:
                         self.logger.info("Adding missing column %s to CIM element %s" % (column, cim_element_type))
-                        self.cim[profile][cim_element_type][column] = np.NaN
+                        self.cim[profile][cim_element_type][column] = np.nan
 
         # now remove columns which are not needed by the converter (to avoid renaming problems when merging DataFrames)
         for profile in cim_data_structure.keys():
