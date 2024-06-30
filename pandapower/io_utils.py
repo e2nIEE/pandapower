@@ -585,6 +585,7 @@ class FromSerializableRegistry():
         for col in df_obj:
             df[col] = df[col].apply(self.pp_hook)
         df[df_obj.columns] = df[df_obj.columns].astype(dtype = dtyp)
+        df[df_obj.columns][pd.isnull(df_obj.columns)] = None
         return df
 
     @from_serializable.register(class_name='pandapowerNet', module_name='pandapower.auxiliary')#,
