@@ -224,6 +224,8 @@ def _merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
     # reindex net2 elements if some indices already exist in net
     reindex_lookup = dict()
     for elm_type in elm_types:
+        if elm_type not in net:
+            continue
         is_dupl = pd.Series(net2[elm_type].index).isin(net[elm_type].index)
         if any(is_dupl):
             start = max(net1[elm_type].index.max(), net2[elm_type].index[~is_dupl].max()) + 1
@@ -240,9 +242,12 @@ def _merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
 
     # copy dataframes from net2 to net (output)
     for elm_type in elm_types:
-        dtypes = net[elm_type].dtypes
-        net[elm_type] = pd.concat([net[elm_type], net2[elm_type]])
-        _preserve_dtypes(net[elm_type], dtypes)
+        if elm_type in net:
+            dtypes = net[elm_type].dtypes
+            net[elm_type] = pd.concat([net[elm_type], net2[elm_type]])
+            _preserve_dtypes(net[elm_type], dtypes)
+        else:
+            net[elm_type] = net2[elm_type].copy()
 
     # copy standard types of net by data of net2
     for type_ in net.std_types.keys():
