@@ -79,7 +79,7 @@ class CimParser:
              'referencePriority': 999999, 'gch': 0., 'g0ch': 0.})  # todo check gch g0ch sections maximumSections
         to_bool = dict({'True': True, 'true': True, 'TRUE': True, True: True,
                         'False': False, 'false': False, 'FALSE': False, False: False,
-                        'nan': False, 'NaN': False, 'NAN': False, 'Nan': False, np.NaN: False})
+                        'nan': False, 'NaN': False, 'NAN': False, 'Nan': False, np.nan: False})
         float_type = float
         int_type = pd.Int64Dtype()
         bool_type = pd.BooleanDtype()
@@ -159,7 +159,7 @@ class CimParser:
                 for column in item.columns:
                     if column not in self.cim[profile][cim_element_type].columns:
                         self.logger.info("Adding missing column %s to CIM element %s" % (column, cim_element_type))
-                        self.cim[profile][cim_element_type][column] = np.NaN
+                        self.cim[profile][cim_element_type][column] = np.nan
 
         # now remove columns which are not needed by the converter (to avoid renaming problems when merging DataFrames)
         for profile in cim_data_structure.keys():
@@ -404,7 +404,7 @@ class CimParser:
         'tp' for Topology, 'tp_bd' for TopologyBoundary
         """
         element_types = pd.Series([ele.tag for ele in list(root)])
-        element_types.drop_duplicates(inplace=True)
+        element_types = element_types.drop_duplicates()
         full_model = element_types.str.find('FullModel')
         if full_model.max() >= 0:
             full_model = element_types[full_model >= 0].values[0]
@@ -494,11 +494,16 @@ class CimParser:
         else:
             prf = profile_name
         self.file_names[prf] = file
+        self._parse_xml_tree(xml_tree, prf, output)
+
+    def _parse_xml_tree(self, xml_tree: xmlET, profile_name: str, output: Dict | None = None):
+        output = self.cim if output is None else output
         # get all CIM elements to parse
         element_types = pd.Series([ele.tag for ele in list(xml_tree)])
-        element_types.drop_duplicates(inplace=True)
+        element_types = element_types.drop_duplicates()
         prf_content: Dict[str, pd.DataFrame] = dict()
         ns_dict = dict()
+        prf = profile_name
         if prf not in ns_dict.keys():
             ns_dict[prf] = dict()
         for _, element_type in element_types.items():
@@ -513,7 +518,7 @@ class CimParser:
                 if col_new.endswith('-resource'):
                     col_new = col_new[:-9]
                     # remove the first character of each value if col_new is a CGMES class, e.g. Terminal
-                    # other wise remove the namespace from the literals (e.g. col_new is unitMultiplier, then the
+                    # otherwise remove the namespace from the literals (e.g. col_new is unitMultiplier, then the
                     # value is like http://iec.ch/TC57/2013/CIM-schema-cim16#UnitMultiplier.M
                     if col_new[0].isupper():
                         prf_content[element_type_c][col] = prf_content[element_type_c][col].str[1:]

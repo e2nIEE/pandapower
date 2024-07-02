@@ -2417,10 +2417,6 @@ def create_trafo3w(net, item, tap_opt='nntap'):
         'in_service': not bool(item.outserv)
     }
 
-    if params['tap_at_star_point']:
-        logger.warning('%s: implementation for tap changer at star point is not finalized - it can '
-                       'lead to wrong results for voltage' % item.loc_name)
-
     if item.nt3nm != 1:
         logger.warning("trafo3w %s has parallel=%d, this is not implemented. "
                        "Calculation results will be incorrect." % (item.loc_name, item.nt3nm))

@@ -11,8 +11,8 @@
 """Python Interior Point Solver (PIPS).
 """
 
-from numpy import array, Inf, any, isnan, ones, r_, finfo, \
-    zeros, dot, absolute, log, flatnonzero as find
+from numpy import array, inf, any, isnan, ones, r_, finfo, \
+    zeros, dot, absolute, log, flatnonzero as find, full
 from numpy.linalg import norm
 from pandapower.pypower.pipsver import pipsver
 from scipy.sparse import vstack, hstack, eye, csr_matrix as sparse
@@ -190,10 +190,10 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None,
     nA = A.shape[0] if A is not None else 0 # number of original linear constr
 
     # default argument values
-    if l is None or len(l) == 0: l = -Inf * ones(nA)
-    if u is None or len(u) == 0: u =  Inf * ones(nA)
-    if xmin is None or len(xmin) == 0: xmin = -Inf * ones(x0.shape[0])
-    if xmax is None or len(xmax) == 0: xmax =  Inf * ones(x0.shape[0])
+    if l is None or len(l) == 0: l = full(nA, -inf)
+    if u is None or len(u) == 0: u =  full(nA, inf)
+    if xmin is None or len(xmin) == 0: xmin = full(x0.shape[0], -inf)
+    if xmax is None or len(xmax) == 0: xmax = full(x0.shape[0], inf)
     if gh_fcn is None:
         nonlinear = False
         gn = array([])
@@ -324,15 +324,15 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None,
 
     maxh = zeros(1) if len(h) == 0 else max(h)
 
-    gnorm = norm(g, Inf) if len(g) else 0.0
-    lam_norm = norm(lam, Inf) if len(lam) else 0.0
-    mu_norm = norm(mu, Inf) if len(mu) else 0.0
-    znorm = norm(z, Inf) if len(z) else 0.0
+    gnorm = norm(g, inf) if len(g) else 0.0
+    lam_norm = norm(lam, inf) if len(lam) else 0.0
+    mu_norm = norm(mu, inf) if len(mu) else 0.0
+    znorm = norm(z, inf) if len(z) else 0.0
     feascond = \
-        max([gnorm, maxh]) / (1 + max([norm(x, Inf), znorm]))
+        max([gnorm, maxh]) / (1 + max([norm(x, inf), znorm]))
     gradcond = \
-        norm(Lx, Inf) / (1 + max([lam_norm, mu_norm]))
-    compcond = dot(z, mu) / (1 + norm(x, Inf))
+        norm(Lx, inf) / (1 + max([lam_norm, mu_norm]))
+    compcond = dot(z, mu) / (1 + norm(x, inf))
     costcond = absolute(f - f0) / (1 + absolute(f0))
 
     # save history
@@ -458,15 +458,15 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None,
         else:
             maxh = max(h)
 
-        gnorm = norm(g, Inf) if len(g) else 0.0
-        lam_norm = norm(lam, Inf) if len(lam) else 0.0
-        mu_norm = norm(mu, Inf) if len(mu) else 0.0
-        znorm = norm(z, Inf) if len(z) else 0.0
+        gnorm = norm(g, inf) if len(g) else 0.0
+        lam_norm = norm(lam, inf) if len(lam) else 0.0
+        mu_norm = norm(mu, inf) if len(mu) else 0.0
+        znorm = norm(z, inf) if len(z) else 0.0
         feascond = \
-            max([gnorm, maxh]) / (1 + max([norm(x, Inf), znorm]))
+            max([gnorm, maxh]) / (1 + max([norm(x, inf), znorm]))
         gradcond = \
-            norm(Lx, Inf) / (1 + max([lam_norm, mu_norm]))
-        compcond = dot(z, mu) / (1 + norm(x, Inf))
+            norm(Lx, inf) / (1 + max([lam_norm, mu_norm]))
+        compcond = dot(z, mu) / (1 + norm(x, inf))
         costcond = float(absolute(f - f0) / (1 + absolute(f0)))
 
         hist.append({'feascond': feascond, 'gradcond': gradcond,

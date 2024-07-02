@@ -40,10 +40,10 @@ class EquivalentBranchesCim16:
                                columns={'rdfId': 'BaseVoltage'})], ignore_index=True, sort=False),
                        how='left', on='BaseVoltage')
         # the r21 and x21 are optional if they are equal to r and x, so fill up missing values
-        eqb['r21'].fillna(eqb['r'], inplace=True)
-        eqb['x21'].fillna(eqb['x'], inplace=True)
-        eqb['zeroR21'].fillna(eqb['zeroR12'], inplace=True)
-        eqb['zeroX21'].fillna(eqb['zeroX12'], inplace=True)
+        eqb['r21'] = eqb['r21'].fillna(eqb['r'])
+        eqb['x21'] = eqb['x21'].fillna(eqb['x'])
+        eqb['zeroR21'] = eqb['zeroR21'].fillna(eqb['zeroR12'])
+        eqb['zeroX21'] = eqb['zeroX21'].fillna(eqb['zeroX12'])
         # set cim type
         eqb[sc['o_cl']] = 'EquivalentBranch'
 

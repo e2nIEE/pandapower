@@ -7,7 +7,7 @@
 
 import sys
 
-from numpy import array, angle, exp, linalg, conj, r_, Inf
+from numpy import array, angle, exp, linalg, conj, r_, inf
 from scipy.sparse.linalg import splu
 
 from pandapower.pypower.ppoption import ppoption
@@ -60,8 +60,8 @@ def fdpf(Ybus, Sbus, V0, Bp, Bpp, ref, pv, pq, ppopt=None):
     Q = mis[pq].imag
 
     ## check tolerance
-    normP = linalg.norm(P, Inf)
-    normQ = linalg.norm(Q, Inf)
+    normP = linalg.norm(P, inf)
+    normQ = linalg.norm(Q, inf)
     if verbose > 1:
         sys.stdout.write('\niteration     max mismatch (p.u.)  ')
         sys.stdout.write('\ntype   #        P            Q     ')
@@ -98,8 +98,8 @@ def fdpf(Ybus, Sbus, V0, Bp, Bpp, ref, pv, pq, ppopt=None):
         Q = mis[pq].imag
 
         ## check tolerance
-        normP = linalg.norm(P, Inf)
-        normQ = linalg.norm(Q, Inf)
+        normP = linalg.norm(P, inf)
+        normQ = linalg.norm(Q, inf)
         if verbose > 1:
             sys.stdout.write("\n  %s  %3d   %10.3e   %10.3e" %
                              (type,i, normP, normQ))
@@ -123,8 +123,8 @@ def fdpf(Ybus, Sbus, V0, Bp, Bpp, ref, pv, pq, ppopt=None):
         Q = mis[pq].imag
 
         ## check tolerance
-        normP = linalg.norm(P, Inf)
-        normQ = linalg.norm(Q, Inf)
+        normP = linalg.norm(P, inf)
+        normQ = linalg.norm(Q, inf)
         if verbose > 1:
             sys.stdout.write('\n  Q  %3d   %10.3e   %10.3e' % (i, normP, normQ))
         if normP < tol and normQ < tol:

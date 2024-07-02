@@ -56,7 +56,7 @@ class PowerTransformersCim16:
 
     def _create_trafo_characteristics(self, trafo_type, trafo_df_origin):
         if 'id_characteristic' not in trafo_df_origin.columns:
-            trafo_df_origin['id_characteristic'] = np.NaN
+            trafo_df_origin['id_characteristic'] = np.nan
         if 'characteristic_temp' not in self.cimConverter.net.keys():
             self.cimConverter.net['characteristic_temp'] = pd.DataFrame(
                 columns=['id_characteristic', 'step', 'vk_percent',
@@ -72,8 +72,7 @@ class PowerTransformersCim16:
         ptct_ratio = pd.merge(ptct_ratio, self.cimConverter.cim['eq']['RatioTapChangerTablePoint'][
             ['RatioTapChangerTable', 'step', 'r', 'x']], how='left', on='RatioTapChangerTable')
         ptct = pd.concat([ptct, ptct_ratio], ignore_index=True, sort=False)
-        ptct.rename(columns={'step': 'tabular_step', 'r': 'r_dev', 'x': 'x_dev', 'TransformerEnd': sc['pte_id']},
-                    inplace=True)
+        ptct = ptct.rename(columns={'step': 'tabular_step', 'r': 'r_dev', 'x': 'x_dev', 'TransformerEnd': sc['pte_id']})
         ptct = ptct.drop(columns=['PhaseTapChangerTable'])
         if trafo_type == 'trafo':
             trafo_df = trafo_df_origin.sort_values(['PowerTransformer', 'endNumber']).reset_index()
@@ -486,16 +485,16 @@ class PowerTransformersCim16:
                         power_trafo2w.loc[power_trafo2w['angle'].notna()]))
         power_trafo2w['phaseAngleClock_temp'] = power_trafo2w['phaseAngleClock'].copy()
         power_trafo2w['phaseAngleClock'] = power_trafo2w['angle'] / 30
-        power_trafo2w['phaseAngleClock'].fillna(power_trafo2w['angle_lv'] * -1 / 30, inplace=True)
-        power_trafo2w['phaseAngleClock'].fillna(power_trafo2w['phaseAngleClock_temp'], inplace=True)
-        power_trafo2w['phaseAngleClock_lv'].fillna(0, inplace=True)
+        power_trafo2w['phaseAngleClock'] = power_trafo2w['phaseAngleClock'].fillna(power_trafo2w['angle_lv'] * -1 / 30)
+        power_trafo2w['phaseAngleClock'] = power_trafo2w['phaseAngleClock'].fillna(power_trafo2w['phaseAngleClock_temp'])
+        power_trafo2w['phaseAngleClock_lv'] = power_trafo2w['phaseAngleClock_lv'].fillna(0)
         power_trafo2w['shift_degree'] = power_trafo2w['phaseAngleClock'].astype(float).fillna(
             power_trafo2w['phaseAngleClock_lv'].astype(float)) * 30
         power_trafo2w['parallel'] = 1
         power_trafo2w['tap_phase_shifter'] = False
         power_trafo2w['in_service'] = power_trafo2w.connected & power_trafo2w.connected_lv
-        power_trafo2w['connectionKind'].fillna('', inplace=True)
-        power_trafo2w['connectionKind_lv'].fillna('', inplace=True)
+        power_trafo2w['connectionKind'] = power_trafo2w['connectionKind'].fillna('')
+        power_trafo2w['connectionKind_lv'] = power_trafo2w['connectionKind_lv'].fillna('')
         power_trafo2w['grounded'] = power_trafo2w['grounded'].fillna(True)
         power_trafo2w['grounded_lv'] = power_trafo2w['grounded_lv'].fillna(True)
         power_trafo2w.loc[~power_trafo2w['grounded'].astype('bool'), 'connectionKind'] = \
@@ -621,16 +620,17 @@ class PowerTransformersCim16:
                         power_trafo3w.loc[power_trafo3w['angle_mv'].notna()]))
         power_trafo3w['phaseAngleClock_temp'] = power_trafo3w['phaseAngleClock_mv'].copy()
         power_trafo3w['phaseAngleClock_mv'] = power_trafo3w['angle_mv'] * -1 / 30
-        power_trafo3w['phaseAngleClock_mv'].fillna(power_trafo3w['phaseAngleClock_temp'], inplace=True)
-        power_trafo3w['phaseAngleClock_mv'].fillna(0, inplace=True)
-        power_trafo3w['phaseAngleClock_lv'].fillna(0, inplace=True)
+        power_trafo3w['phaseAngleClock_mv'] = power_trafo3w['phaseAngleClock_mv'].fillna(
+            power_trafo3w['phaseAngleClock_temp'])
+        power_trafo3w['phaseAngleClock_mv'] = power_trafo3w['phaseAngleClock_mv'].fillna(0)
+        power_trafo3w['phaseAngleClock_lv'] = power_trafo3w['phaseAngleClock_lv'].fillna(0)
         power_trafo3w['shift_mv_degree'] = power_trafo3w['phaseAngleClock_mv'] * 30
         power_trafo3w['shift_lv_degree'] = power_trafo3w['phaseAngleClock_mv'] * 30
         power_trafo3w['tap_at_star_point'] = False
         power_trafo3w['in_service'] = power_trafo3w.connected & power_trafo3w.connected_mv & power_trafo3w.connected_lv
-        power_trafo3w['connectionKind'].fillna('', inplace=True)
-        power_trafo3w['connectionKind_mv'].fillna('', inplace=True)
-        power_trafo3w['connectionKind_lv'].fillna('', inplace=True)
+        power_trafo3w['connectionKind'] = power_trafo3w['connectionKind'].fillna('')
+        power_trafo3w['connectionKind_mv'] = power_trafo3w['connectionKind_mv'].fillna('')
+        power_trafo3w['connectionKind_lv'] = power_trafo3w['connectionKind_lv'].fillna('')
         power_trafo3w['grounded'] = power_trafo3w['grounded'].fillna(True)
         power_trafo3w['grounded_mv'] = power_trafo3w['grounded_mv'].fillna(True)
         power_trafo3w['grounded_lv'] = power_trafo3w['grounded_lv'].fillna(True)
@@ -644,13 +644,12 @@ class PowerTransformersCim16:
         power_trafo3w['vector_group'] = \
             power_trafo3w.connectionKind + power_trafo3w.connectionKind_mv + power_trafo3w.connectionKind_lv
         power_trafo3w.loc[power_trafo3w['vector_group'] == '', 'vector_group'] = None
-        power_trafo3w.rename(columns={
+        power_trafo3w = power_trafo3w.rename(columns={
             'PowerTransformer': sc['o_id'], 'Terminal': sc['t_hv'], 'Terminal_mv': sc['t_mv'],
             'Terminal_lv': sc['t_lv'], sc['pte_id']: sc['pte_id_hv'], sc['pte_id'] + '_mv': sc['pte_id_mv'],
             sc['pte_id'] + '_lv': sc['pte_id_lv'], 'index_bus': 'hv_bus', 'index_bus_mv': 'mv_bus',
             'index_bus_lv': 'lv_bus', 'neutralStep': 'tap_neutral', 'lowStep': 'tap_min', 'highStep': 'tap_max',
             'step': 'tap_pos', 'stepVoltageIncrement': 'tap_step_percent', 'stepPhaseShiftIncrement': 'tap_step_degree',
             'isPartOfGeneratorUnit': 'power_station_unit', 'ratedU': 'vn_hv_kv', 'ratedU_mv': 'vn_mv_kv',
-            'ratedU_lv': 'vn_lv_kv', 'ratedS': 'sn_hv_mva', 'ratedS_mv': 'sn_mv_mva', 'ratedS_lv': 'sn_lv_mva'},
-            inplace=True)
+            'ratedU_lv': 'vn_lv_kv', 'ratedS': 'sn_hv_mva', 'ratedS_mv': 'sn_mv_mva', 'ratedS_lv': 'sn_lv_mva'})
         return power_trafo3w

@@ -28,6 +28,8 @@ def _rotate_dim2(arr, ang):
 
 
 def _get_coords_from_geojson(gj_str):
+    if pd.isnull(gj_str):
+        return gj_str
     pattern = r'"coordinates"\s*:\s*((?:\[(?:\[[^]]+],?\s*)+\])|\[[^]]+\])'
     matches = re.findall(pattern, gj_str)
 
@@ -168,21 +170,32 @@ def coords_from_node_geodata(element_indices, from_nodes, to_nodes, node_geodata
         - elements_with_geo (set) - the indices of branch elements for which coordinates wer found \
             in the node geodata table
     """
-    have_geo = np.isin(from_nodes, node_geodata.index.values) \
+    # reduction of from_nodes, to_nodes, node_geodata to intersection
+    in_geo = np.isin(from_nodes, node_geodata.index.values) \
         & np.isin(to_nodes, node_geodata.index.values)
-    elements_with_geo = np.array(element_indices)[have_geo]
-    fb_with_geo, tb_with_geo = from_nodes[have_geo], to_nodes[have_geo]
+    fb_with_geo, tb_with_geo = from_nodes[in_geo], to_nodes[in_geo]
+    if sum(~in_geo):
+        logger.warning(
+            f"No coords found for {table_name}s {np.array(element_indices)[~in_geo]}. {node_name} "
+            f"geodata is missing for those {table_name}s!"
+        )
+
+    # reduction to not nans
+    fb_geo_is_nan = node_geodata.loc[fb_with_geo].isnull().values
+    tb_geo_is_nan = node_geodata.loc[tb_with_geo].isnull().values
+    not_nan = ~(fb_geo_is_nan | tb_geo_is_nan)
+    if n_nans := len(not_nan) - sum(not_nan):
+        logger.warning(
+            f"NaN coords are returned {n_nans} times for {table_name}s applying {node_name} geodata."
+        )
+
     node_geodata = node_geodata.apply(_get_coords_from_geojson)
     coords = [f'{{"coordinates": [[{x_from}, {y_from}], [{x_to}, {y_to}]], "type": "LineString"}}'
               for [x_from, y_from], [x_to, y_to]
-              in zip(node_geodata.loc[fb_with_geo], node_geodata.loc[tb_with_geo])
+              in zip(node_geodata.loc[fb_with_geo[not_nan]],
+                     node_geodata.loc[tb_with_geo[not_nan]])
               if not ignore_zero_length or (ignore_zero_length and not (x_from == x_to and y_from == y_to))]
-    elements_without_geo = set(element_indices) - set(elements_with_geo)
-    if len(elements_without_geo) > 0:
-        logger.warning(
-            f"No coords found for {table_name}s {elements_without_geo}. {node_name} geodata is missing for those {table_name}s!"
-        )
-    return coords, elements_with_geo
+    return coords, np.array(element_indices)[in_geo & not_nan]
 
 
 def set_line_geodata_from_bus_geodata(net, line_index=None, overwrite=False, ignore_zero_length=True):
@@ -195,26 +208,26 @@ def set_line_geodata_from_bus_geodata(net, line_index=None, overwrite=False, ign
     :return: None
     """
     if 'geo' not in net.bus.columns or net.bus.geo.isnull().all():
-        logger.warning("The function set_line_geodata_from_bus_geodata requires geodata to be present in net.bus.geo")
+        logger.warning("The function set_line_geodata_from_bus_geodata requires geodata to be "
+                       "present in net.bus.geo")
         return
-    line_index = line_index if line_index is not None else net.line.index
-    if not overwrite:
-        # line_index = np.setdiff1d(line_index, net.line_geodata.index)
-        try:
-            line_index = net.line.geo.index[net.line.geo.isnull()]
-        except AttributeError:
-            # If line.geo is not found, just net.line.index
-            pass
+    if overwrite and line_index is None:
+        line_index = net.line.index
+    elif not overwrite and line_index is None:
+        line_index = net.line.index[net.line.geo.isnull()]
+    elif not overwrite and line_index is not None:
+        line_index = pd.Index(line_index).intersection(net.line.index[net.line.geo.isnull()])
 
-    geos, line_index_successful = coords_from_node_geodata(element_indices=line_index,
-                                                           from_nodes=net.line.loc[line_index, 'from_bus'].values,
-                                                           to_nodes=net.line.loc[line_index, 'to_bus'].values,
-                                                           node_geodata=net.bus.geo,
-                                                           table_name="line",
-                                                           node_name="bus",
-                                                           ignore_zero_length=ignore_zero_length)
+    geos, line_index_successful = coords_from_node_geodata(
+        element_indices=line_index,
+        from_nodes=net.line.loc[line_index, 'from_bus'].values,
+        to_nodes=net.line.loc[line_index, 'to_bus'].values,
+        node_geodata=net.bus.geo,
+        table_name="line",
+        node_name="bus",
+        ignore_zero_length=ignore_zero_length)
 
-    net.line.loc[line_index_successful, 'geo'] = pd.Series(geos)
+    net.line.loc[line_index_successful, 'geo'] = geos
 
     num_failed = len(line_index) - len(line_index_successful)
     if num_failed > 0:
@@ -240,7 +253,7 @@ def position_on_busbar(net, bus, busbar_coords):
     intersection = None
     bus_coords = net.bus_geodata.loc[bus, "coords"]
     # Checking if bus has "coords" - if it is a busbar
-    if bus_coords is not None and bus_coords is not np.NaN and busbar_coords is not None:
+    if bus_coords is not None and bus_coords is not np.nan and busbar_coords is not None:
         for i in range(len(bus_coords) - 1):
             try:
                 # Calculating slope of busbar-line. If the busbar-line is vertical ZeroDivisionError
@@ -282,7 +295,7 @@ def position_on_busbar(net, bus, busbar_coords):
                         intersection = busbar_coords[-1]
                         break
     # If the bus has no "coords" it mus be a normal bus
-    elif bus_coords is np.NaN:
+    elif bus_coords is np.nan:
         bus_geo = (net["bus_geodata"].loc[bus, "x"], net["bus_geodata"].loc[bus, "y"])
         # Checking if the first end of the line is on the bus
         if bus_geo == busbar_coords[0]:
