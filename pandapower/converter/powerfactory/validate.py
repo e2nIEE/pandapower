@@ -421,10 +421,12 @@ def _validate_pf_conversion_balanced(net, in_both, all_diffs):
     ext_grid_p_diff = net.res_ext_grid.pf_p.replace(np.nan, 0).drop(eg_oos) - net.res_ext_grid.p_mw
     ext_grid_q_diff = net.res_ext_grid.pf_q.replace(np.nan, 0).drop(
         eg_oos) - net.res_ext_grid.q_mvar
-    logger.info("Maximum ext_grid active power difference between pandapower and powerfactory: "
-                "%.1f MW" % max(abs(ext_grid_p_diff)))
-    logger.info("Maximum ext_grid reactive power difference between pandapower and powerfactory: "
-                "%.1f Mvar" % max(abs(ext_grid_q_diff)))
+    if len(ext_grid_p_diff):
+        logger.info("Maximum ext_grid active power difference between pandapower and powerfactory: "
+                    "%.1f MW" % max(abs(ext_grid_p_diff)))
+    if len(ext_grid_q_diff):
+        logger.info("Maximum ext_grid reactive power difference between pandapower and powerfactory: "
+                    "%.1f Mvar" % max(abs(ext_grid_q_diff)))
     all_diffs["ext_grid_p_diff"] = ext_grid_p_diff
     all_diffs["ext_grid_q_diff"] = ext_grid_q_diff
 
