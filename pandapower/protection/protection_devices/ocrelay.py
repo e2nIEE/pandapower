@@ -1,9 +1,10 @@
 import copy
 import numpy as np
+import pandas as pd
 from pandapower.protection.basic_protection_device import ProtectionDevice
 import pandapower.shortcircuit as sc
-from pandapower.protection.oc_relay_model import time_grading
-from pandapower.protection.utility_functions import create_sc_bus
+#from pandapower.protection.oc_relay_model import time_grading
+from pandapower.protection.utility_functions import create_sc_bus,bus_path_multiple_ext_bus,get_line_path,parallel_lines
 
 try:
     import matplotlib.pyplot as plt
@@ -274,3 +275,122 @@ class OCRelay(ProtectionDevice):
         s = 'Protection Device: %s \nType: %s \nName: %s' % (self.__class__.__name__, self.oc_relay_type, self.name)
         self.characteristic_index = 1
         return s
+def time_grading(net,time_settings):
+
+    # Automated time grading calculation
+    if isinstance(time_settings,list):
+        if len(time_settings)==3:
+            time_settings=time_settings
+        if len(time_settings)==2:
+            time_settings=[time_settings[0], time_settings[1], time_settings[1]]
+
+        # Get the bus path to each lines from all the ext buses
+        bus_paths=bus_path_multiple_ext_bus(net)
+
+        # Get all the line paths
+        line_paths=[]
+        # get sorted line path (last is the longest line path)
+        for bus_path in bus_paths:
+            line=get_line_path(net, bus_path)
+            line_paths.append(line)
+            sorted_line_path = sorted(line_paths, key=len)
+
+        #assign tg based on longest line path
+        line_length_time={}
+        for line_length in range(0,len(sorted_line_path[-1])) :
+
+            distance_counter=len(sorted_line_path[-1])- line_length
+            t_g=time_settings[1] + (line_length)* time_settings[2]
+            line_length_time[ distance_counter]=t_g
+
+
+        # line_time gets line id and time
+        line_time={}
+        for line in sorted_line_path:
+            line_length=len(line)
+            for length in line_length_time:
+                if line_length==length:
+                    line_time[line[-1]]=line_length_time[length]
+        parallel_line=parallel_lines(net)
+
+        # find the missing lines in line time (due to parallel lines)
+        missing_line=[]
+        for line in net.line.index:
+
+            linecheck = []
+            for key in line_time:
+
+                if line == key:
+                    linecheck.append(True)
+                else:
+                    linecheck.append(False)
+
+            if any(linecheck):
+
+                pass
+            else:
+                missing_line.append(line)
+
+
+        # assign time to parallel line from the original time of line
+
+        for parallel in parallel_line:
+
+            for line in missing_line:
+
+                if parallel[0]==line:
+
+                    if parallel[1] not in line_time:
+                        pass
+
+                    else:
+                        line_time[line]=line_time[parallel[1]]
+
+                if parallel[1]==line:
+
+                    if parallel[0] not in line_time:
+                        pass
+
+                    else:
+                        line_time[line]=line_time[parallel[0]]
+
+
+        # Assign time setting to switches
+        time_switches={}
+        tg_sw_setting=[]
+        for switch in net.switch[net.switch.closed == True].index:
+            line_id=net.switch[net.switch.closed == True].element.at[switch]
+
+            tg = line_time[line_id]
+            time_switches[switch]=tg
+            tgg=time_settings[0]
+            tg_sw_setting.append([switch,tg,tgg])
+
+            # if there is multiple time setting for each switch take only the highest time
+        protection_time_settings = pd.DataFrame(tg_sw_setting)
+        protection_time_settings.columns=["switch_id","t_g","t_gg"]
+        protection_time_settings= protection_time_settings.sort_values(by=['switch_id'])
+        protection_time_settings=protection_time_settings.reset_index(drop=True)
+
+    # Manual time grading settings
+    if isinstance(time_settings, pd.DataFrame):
+        protection_time_settings = pd.DataFrame(columns=["switch_id", "t_gg", "t_g"])
+
+        if time_settings.columns.values.tolist() == ['switch_id', 't_gg', 't_g']:
+            protection_time_settings['switch_id'] = time_settings['switch_id']
+            protection_time_settings['t_g'] = time_settings['t_g']
+            protection_time_settings['t_gg'] = time_settings['t_gg']
+
+        if time_settings.columns.values.tolist() == ['switch_id', 'tms', 't_grade']:
+            protection_time_settings['switch_id'] = time_settings['switch_id']
+            protection_time_settings['t_g'] = time_settings['t_grade']
+            protection_time_settings['t_gg'] = time_settings['tms']
+
+        if time_settings.columns.values.tolist() == ['switch_id', 't_gg', 't_gg', 'tms', 't_grade']:
+            protection_time_settings['switch_id'] = time_settings['switch_id']
+            protection_time_settings['t_g'] = time_settings['t_g']
+            protection_time_settings['t_gg'] = time_settings['t_gg']
+            protection_time_settings['t_grade'] = time_settings['t_grade']
+            protection_time_settings['tms'] = time_settings['tms']
+
+    return protection_time_settings
