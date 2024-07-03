@@ -9,7 +9,7 @@ from pandapower.pd2ppc import _pd2ppc
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci
 from pandapower.pf.run_newton_raphson_pf import _get_numba_functions, _get_Y_bus
 from pandapower.run import _passed_runpp_parameters
-from pandapower.auxiliary import _init_runpp_options, _add_dcline_gens
+from pandapower.auxiliary import _init_runpp_options, _add_dcline_gens, ensure_iterability
 import pandapower as pp
 import uuid
 
@@ -355,7 +355,7 @@ def match_controller_and_new_elements(net, net_org):
     test at present: controllers in the external area are removed.
     """
     if len(net.controller):
-        tobe_removed = []
+        to_be_removed = []
         if "origin_all_internal_buses" in net.bus_lookups and \
                 "boundary_buses_inclusive_bswitch" in net.bus_lookups:
             internal_buses = net.bus_lookups["origin_all_internal_buses"] + \
@@ -363,24 +363,48 @@ def match_controller_and_new_elements(net, net_org):
         else:
             internal_buses = []
         for idx in net.controller.index.tolist():
-            et = net.controller.object[idx].__dict__.get("element")
-            # var = net.controller.object[idx].__dict__.get("variable")
-            elm_idxs = net.controller.object[idx].__dict__.get("element_index")
-            if et is None or elm_idxs is None:
-                continue
-            org_elm_buses = list(net_org[et].bus[elm_idxs].values)
+            _adjust_trafo_controller(net, net_org, to_be_removed, idx)
+            _try_adjust_bus_element_controller(net, net_org, to_be_removed, idx)
 
-            new_elm_idxs = net[et].index[net[et].bus.isin(org_elm_buses)].tolist()
-            if len(new_elm_idxs) == 0:
-                tobe_removed.append(idx)
-            else:
-                profile_name = [org_elm_buses.index(a) for a in net[et].bus[new_elm_idxs].values]
-
-                net.controller.object[idx].__dict__["element_index"] = new_elm_idxs
-                net.controller.object[idx].__dict__["matching_params"]["element_index"] = new_elm_idxs
-                net.controller.object[idx].__dict__["profile_name"] = profile_name
-        net.controller = net.controller.drop(tobe_removed)
+        net.controller = net.controller.drop(to_be_removed)
     # TODO: match the controllers in the external area
+
+
+def _adjust_trafo_controller(net, net_org, to_be_removed, idx):
+    if issubclass(type(net.controller.object.at[idx]), pp.control.TrafoController):
+        tid = ensure_iterability(net.controller.object[idx].__dict__["tid"])
+        trafotable = net.controller.object[idx].__dict__["trafotable"]
+
+        org_hv_buses = list(net_org[trafotable].hv_bus.loc[tid].values)
+        org_lv_buses = list(net_org[trafotable].lv_bus.loc[tid].values)
+        new_tid = net[trafotable].index[net[trafotable].hv_bus.isin(org_hv_buses) &
+                                        net[trafotable].lv_bus.isin(org_lv_buses)].tolist()
+
+        if len(new_tid) == 0:
+            to_be_removed.append(idx)
+
+        net.controller.object[idx].__dict__["tid"] = new_tid
+        net.controller.object[idx].__dict__["matching_params"]["tid"] = new_tid
+
+def _try_adjust_bus_element_controller(net, net_org, to_be_removed, idx):
+    try:
+        et = net.controller.object[idx].__dict__["element"]
+        elm_idxs = net.controller.object[idx].__dict__["element_index"]
+    except KeyError:
+        return
+    else:
+        org_elm_buses = list(net_org[et].bus[elm_idxs].values)
+        new_elm_idxs = net[et].index[net[et].bus.isin(org_elm_buses)].tolist()
+
+        if len(new_elm_idxs) == 0:
+            to_be_removed.append(idx)
+        else:
+            profile_name = [org_elm_buses.index(a) for a in net[et].bus[new_elm_idxs].values]
+
+            net.controller.object[idx].__dict__["element_index"] = new_elm_idxs
+            net.controller.object[idx].__dict__["matching_params"]["element_index"] = new_elm_idxs
+            net.controller.object[idx].__dict__["profile_name"] = profile_name
+
 
 def ensure_origin_id(net, no_start=0, elms=None):
     """
