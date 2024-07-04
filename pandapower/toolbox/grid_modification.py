@@ -769,23 +769,27 @@ def drop_controllers_at_elements(net, element_type, idx=None):
     Drop all the controllers for the given elements (idx).
     """
     idx = ensure_iterability(idx) if idx is not None else net[element_type].index
-    to_drop = []
+    to_drop = list()
     for ctrl_idx in net.controller.index:
-        ctrl_dict = net.controller.at[ctrl_idx, "object"].__dict__
-        et = ctrl_dict.get("element_type")
-        if element_type != et:
-            continue
-        elm_idx = ctrl_dict.get("element_index", [0.1])
-        is_single_value = not hasattr(elm_idx, "__iter__")
-        elm_idx = np.array(ensure_iterability(elm_idx))
-        elm_staying = (~pd.Series(elm_idx).isin(idx)).values
-        if not np.any(elm_staying):
-            to_drop.append(ctrl_idx)
-        elif not is_single_value:
-            ctrl_dict["element_index"] = list(elm_idx[elm_staying])
-            ctrl_dict["matching_params"]["element_index"] = list(elm_idx[elm_staying])
-            _update_further_controller_parameters(net, ctrl_idx, elm_staying)
+        _drop_controller_at_elements(net, element_type, idx, ctrl_idx, to_drop)
     net.controller = net.controller.drop(to_drop)
+
+
+def _drop_controller_at_elements(net, element_type, idx, ctrl_idx, to_drop):
+    ctrl_dict = net.controller.at[ctrl_idx, "object"].__dict__
+    et = ctrl_dict.get("element_type")
+    if element_type != et:
+        return
+    elm_idx = ctrl_dict.get("element_index", [0.1])
+    is_single_value = not hasattr(elm_idx, "__iter__")
+    elm_idx = np.array(ensure_iterability(elm_idx))
+    elm_staying = (~pd.Series(elm_idx).isin(idx)).values
+    if not np.any(elm_staying):
+        to_drop.append(ctrl_idx)
+    elif not is_single_value:
+        ctrl_dict["element_index"] = list(elm_idx[elm_staying])
+        ctrl_dict["matching_params"]["element_index"] = list(elm_idx[elm_staying])
+        _update_further_controller_parameters(net, ctrl_idx, elm_staying)
 
 
 def _update_further_controller_parameters(net, ctrl_idx, elm_staying):
