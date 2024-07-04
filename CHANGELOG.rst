@@ -37,9 +37,9 @@ Change Log
 - [FIXED] error during unbalanced powerflow due to out of service external grids
 - [FIXED] PowerFactory converter: fix trafo3w tap dependent impedance
 - [ADDED] PowerFactory converter: support load types (constI, constZ) and the setting whether to consider voltage dependency of loads
-- [CHANGED] considering trafo controller and improve implementation for other (bus element) controller at grid_equivalent creation
 - [FIXED] deprecation of matplotlib.cm.get_cmap(name) -> matplotlib.colormaps[name]
 - [FIXED] merge_nets failing if net2 has custom DataFrame that is not present in net1
+- [CHANGED] grid_equivalent creation: improved consideration of controller
 - [CHANGED] create consistent parameter names (element_index and element_type) in controllers and groups: Changes for TrafoController: trafotable & trafotype -> element_type, tid -> element_index; Changes for ConstControl and subclasses: element -> element_type; Changes for groups: element -> element_index
 
 [2.14.7] - 2024-06-14
