@@ -657,6 +657,7 @@ def drop_buses(net, buses, drop_elements=True):
     if drop_elements:
         drop_elements_at_buses(net, buses)
         drop_measurements_at_elements(net, "bus", idx=buses)
+        drop_controllers_at_buses(net, buses)
 
 
 def drop_trafos(net, trafos, table="trafo"):
