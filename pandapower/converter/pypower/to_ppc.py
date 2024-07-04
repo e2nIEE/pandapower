@@ -117,7 +117,7 @@ def to_ppc(net, calculate_voltage_angles=False, trafo_model="t", switch_rx_ratio
 
     #  do the conversion
     _, ppci = _pd2ppc(net)
-    ppci['branch'] = ppci['branch'].real
+    ppci['branch'] = ppci['branch'].real # TODO: BR_G löschen und als extra als variable einfügen
     # ppci.pop('internal')
 
     if not take_slack_vm_limits:

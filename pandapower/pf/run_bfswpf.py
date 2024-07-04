@@ -195,7 +195,7 @@ def _makeYsh_bfsw(bus, branch, baseMVA):
     # summation of charging susceptances per each bus
     stat = branch[:, BR_STATUS]  ## ones at in-service branches
     Ys = stat / (branch[:, BR_R] + 1j * branch[:, BR_X])
-    ysh = (- branch[:, BR_G] + 1j * (branch[:, BR_B])) / 2
+    ysh = (branch[:, BR_G] + 1j * branch[:, BR_B]) / 2
     tap = branch[:, TAP]  # * np.exp(1j * np.pi / 180 * branch[:, SHIFT])
 
     ysh_f = Ys * (1 - tap) / (tap * np.conj(tap)) + ysh / (tap * np.conj(tap))

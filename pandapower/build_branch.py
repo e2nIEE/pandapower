@@ -343,13 +343,13 @@ def _wye_delta(r, x, y):
     """
     tidx = np.where(y != 0)
     za_star = (r[tidx] + x[tidx] * 1j) / 2
-    zc_star = -1j / y[tidx]
+    zc_star = 1 / y[tidx]
     zSum_triangle = za_star * za_star + 2 * za_star * zc_star
     zab_triangle = zSum_triangle / zc_star
     zbc_triangle = zSum_triangle / za_star
     r[tidx] = zab_triangle.real
     x[tidx] = zab_triangle.imag
-    y[tidx] = -2j / zbc_triangle
+    y[tidx] = 2 / zbc_triangle
     return r, x, y.real, y.imag
 
 
@@ -367,7 +367,7 @@ def _calc_y_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, sn_mva):
         the form (-b_img, -b_real)
     """
 
-    baseR = np.square(vn_lv) / (3*sn_mva) if mode == 'pf_3ph' else np.square(vn_lv) / sn_mva
+    baseZ = np.square(vn_lv) / (3*sn_mva) if mode == 'pf_3ph' else np.square(vn_lv) / sn_mva
     vn_lv_kv = get_trafo_values(trafo_df, "vn_lv_kv")
     pfe = (get_trafo_values(trafo_df, "pfe_kw") * 1e-3) / 3 if mode == 'pf_3ph'\
         else get_trafo_values(trafo_df, "pfe_kw") * 1e-3
@@ -375,17 +375,17 @@ def _calc_y_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, sn_mva):
 
     ### Calculate subsceptance ###
     vnl_squared = (vn_lv_kv ** 2)/3 if mode == 'pf_3ph' else vn_lv_kv ** 2
-    b_real = pfe / vnl_squared * baseR
+    b_real = pfe / vnl_squared * baseZ
     i0 = get_trafo_values(trafo_df, "i0_percent") / 3 if mode == 'pf_3ph'\
         else get_trafo_values(trafo_df, "i0_percent")
     sn = get_trafo_values(trafo_df, "sn_mva")
     b_img = (i0 / 100. * sn) ** 2 - pfe ** 2
 
     b_img[b_img < 0] = 0
-    b_img = np.sqrt(b_img) * baseR / vnl_squared
-    y = b_real + 1j * b_img * np.sign(i0)
+    b_img = np.sqrt(b_img) * baseZ / vnl_squared
+    # y = b_real + 1j * b_img * np.sign(i0)
     g = b_real / np.square(vn_trafo_lv / vn_lv_kv) * parallel
-    b = b_img / np.square(vn_trafo_lv / vn_lv_kv) * parallel
+    b = -b_img / np.square(vn_trafo_lv / vn_lv_kv) * parallel
     return g, b
 
 

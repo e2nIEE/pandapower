@@ -11,7 +11,7 @@ from pandapower.pypower.idx_bus import \
 from pandapower.pypower.idx_gen import \
     GEN_BUS, PG, QG, QMAX, QMIN, VG, MBASE, GEN_STATUS, PMAX, PMIN
 from pandapower.pypower.idx_brch import \
-    F_BUS, T_BUS, BR_R, BR_X, BR_B, RATE_A, RATE_B, RATE_C, TAP, SHIFT, BR_STATUS, ANGMIN, ANGMAX
+    F_BUS, T_BUS, BR_R, BR_X, BR_B, BR_G, RATE_A, RATE_B, RATE_C, TAP, SHIFT, BR_STATUS, ANGMIN, ANGMAX
 from pandapower.pypower.idx_cost import MODEL, COST, NCOST
 from pandapower.create import create_empty_network, create_buses, create_ext_grid, create_loads, \
     create_sgens, create_gens, create_lines_from_parameters, create_transformers_from_parameters, \
@@ -205,9 +205,10 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
     idx_line = create_lines_from_parameters(
         net, from_buses=net.bus.index[from_bus[is_line]], to_buses=net.bus.index[to_bus[is_line]],
         length_km=1, name=bra_name[is_line],
-        r_ohm_per_km=(ppc['branch'][is_line, BR_R]*Zni[is_line]).real,
-        x_ohm_per_km=(ppc['branch'][is_line, BR_X]*Zni[is_line]).real,
-        c_nf_per_km=(ppc['branch'][is_line, BR_B]/Zni[is_line]/omega*1e9/2).real,
+        r_ohm_per_km=(ppc['branch'][is_line, BR_R]*Zni[is_line]),
+        x_ohm_per_km=(ppc['branch'][is_line, BR_X]*Zni[is_line]),
+        c_nf_per_km=(ppc['branch'][is_line, BR_B]/Zni[is_line]/omega*1e9/2),
+        g_us_per_km=(ppc['branch'][is_line, BR_G]/Zni[is_line]*1e6/2),
         max_i_ka=max_i_ka[is_line].real, type='ol', max_loading_percent=100,
         in_service=ppc['branch'][is_line, BR_STATUS].real.astype(bool))
 
