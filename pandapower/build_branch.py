@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 
 from pandapower.auxiliary import get_values
-from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS, RATE_A, \
+from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, BR_G, TAP, SHIFT, BR_STATUS, RATE_A, \
     BR_R_ASYM, BR_X_ASYM, branch_cols
 from pandapower.pypower.idx_brch_tdpf import BR_R_REF_OHM_PER_KM, BR_LENGTH_KM, RATE_I_KA, T_START_C, R_THETA, \
     WIND_SPEED_MPS, ALPHA, TDPF, OUTER_DIAMETER_M, MC_JOULE_PER_M_K, WIND_ANGLE_DEGREE, SOLAR_RADIATION_W_PER_SQ_M, \
@@ -50,11 +50,11 @@ def _build_branch_ppc(net, ppc):
         raise NotImplementedError("indexing for ppc branch columns not implemented for tdpf and sc together")
     # initialize "normal" ppc branch
     all_branch_columns = branch_cols_tdpf + branch_cols if tdpf else branch_cols
-    ppc["branch"] = np.zeros(shape=(length, all_branch_columns), dtype=np.complex128)
+    ppc["branch"] = np.zeros(shape=(length, all_branch_columns), dtype=np.float64)
     # add optional columns for short-circuit calculation
     # Check if this should be moved to somewhere else
     if mode == "sc":
-        branch_sc = np.empty(shape=(length, branch_cols_sc), dtype=np.complex128)
+        branch_sc = np.empty(shape=(length, branch_cols_sc), dtype=np.float64)
         branch_sc.fill(np.nan)
         ppc["branch"] = np.hstack((ppc["branch"], branch_sc))
     ppc["branch"][:, :13] = np.array([0, 0, 0, 0, 0, 250, 250, 250, 1, 0, 1, -360, 360])
@@ -110,10 +110,11 @@ def _calc_trafo3w_parameter(net, ppc):
     in_service = get_trafo_values(trafo_df, "in_service").astype(np.int64)
     branch[f:t, F_BUS] = bus_lookup[hv_bus]
     branch[f:t, T_BUS] = bus_lookup[lv_bus]
-    r, x, y, ratio, shift = _calc_branch_values_from_trafo_df(net, ppc, trafo_df)
+    r, x, g, b, ratio, shift = _calc_branch_values_from_trafo_df(net, ppc, trafo_df)
     branch[f:t, BR_R] = r
     branch[f:t, BR_X] = x
-    branch[f:t, BR_B] = y
+    branch[f:t, BR_G] = g
+    branch[f:t, BR_B] = b
     branch[f:t, TAP] = ratio
     branch[f:t, SHIFT] = shift
     branch[f:t, BR_STATUS] = in_service
@@ -227,10 +228,11 @@ def _calc_trafo_parameter(net, ppc):
     parallel = trafo["parallel"].values
     branch[f:t, F_BUS] = bus_lookup[trafo["hv_bus"].values]
     branch[f:t, T_BUS] = bus_lookup[trafo["lv_bus"].values]
-    r, x, y, ratio, shift = _calc_branch_values_from_trafo_df(net, ppc)
+    r, x, g, b, ratio, shift = _calc_branch_values_from_trafo_df(net, ppc)
     branch[f:t, BR_R] = r
     branch[f:t, BR_X] = x
-    branch[f:t, BR_B] = y
+    branch[f:t, BR_G] = g
+    branch[f:t, BR_B] = b
     branch[f:t, TAP] = ratio
     branch[f:t, SHIFT] = shift
     branch[f:t, BR_STATUS] = trafo["in_service"].values
@@ -294,8 +296,8 @@ def _calc_branch_values_from_trafo_df(net, ppc, trafo_df=None, sequence=1):
     vn_trafo_hv, vn_trafo_lv, shift = _calc_tap_from_dataframe(net, trafo_df)
     ratio = _calc_nominal_ratio_from_dataframe(ppc, trafo_df, vn_trafo_hv, vn_trafo_lv,
                                                bus_lookup)
-    r, x, y = _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=sequence)
-    return r, x, y, ratio, shift
+    r, x, g, b = _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=sequence)
+    return r, x, g, b, ratio, shift
 
 
 def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=1):
@@ -307,7 +309,7 @@ def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=
 
     if mode == "sc":
         if net._options.get("use_pre_fault_voltage", False):
-            y = _calc_y_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva)
+            g, b = _calc_y_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva)
         else:
             y = 0  # why for sc are we assigning y directly as 0?
         if isinstance(trafo_df, pd.DataFrame):  # 2w trafo is dataframe, 3w trafo is dict
@@ -320,12 +322,12 @@ def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=
                 r *= kt
                 x *= kt
     else:
-        y = _calc_y_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva)
+        g, b = _calc_y_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva)
 
     if trafo_model == "pi":
-        return r, x, y
+        return r, x, g, b
     elif trafo_model == "t":
-        return _wye_delta(r, x, y)
+        return _wye_delta(r, x, g+1j*b)
     else:
         raise ValueError("Unkonwn Transformer Model %s - valid values ar 'pi' or 't'" % trafo_model)
 
@@ -346,7 +348,7 @@ def _wye_delta(r, x, y):
     r[tidx] = zab_triangle.real
     x[tidx] = zab_triangle.imag
     y[tidx] = -2j / zbc_triangle
-    return r, x, y
+    return r, x, y.real, y.imag
 
 
 def _calc_y_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, sn_mva):
@@ -379,8 +381,10 @@ def _calc_y_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, sn_mva):
 
     b_img[b_img < 0] = 0
     b_img = np.sqrt(b_img) * baseR / vnl_squared
-    y = - b_real * 1j - b_img * np.sign(i0)
-    return y / np.square(vn_trafo_lv / vn_lv_kv) * parallel
+    y = b_real + 1j * b_img * np.sign(i0)
+    g = b_real / np.square(vn_trafo_lv / vn_lv_kv) * parallel
+    b = b_img / np.square(vn_trafo_lv / vn_lv_kv) * parallel
+    return g, b
 
 
 def _calc_tap_from_dataframe(net, trafo_df):

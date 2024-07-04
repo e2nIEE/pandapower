@@ -14,7 +14,7 @@
 from numpy import ones, conj, nonzero, any, exp, pi, hstack, real, int64
 from scipy.sparse import csr_matrix
 
-from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, BR_STATUS, SHIFT, TAP, BR_R_ASYM, BR_X_ASYM
+from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, BR_G, BR_STATUS, SHIFT, TAP, BR_R_ASYM, BR_X_ASYM
 from pandapower.pypower.idx_bus import GS, BS
 
 
@@ -90,14 +90,37 @@ def branch_vectors(branch, nl):
                     branch[:, BR_X] + branch[:, BR_X_ASYM]))  ## series admittance
     else:
         Yst = Ysf
-    Bc = stat * branch[:, BR_B]  ## line charging susceptance
+    Bb = stat * branch[:, BR_B]  ## line charging susceptance
+    Bg = stat * branch[:, BR_B]  ## line charging conductance
+    Bc = Bg + 1j * Bb ## line chargine admittance
+    
     tap = ones(nl)  ## default tap ratio = 1
     i = nonzero(real(branch[:, TAP]))  ## indices of non-zero tap ratios
     tap[i] = real(branch[i, TAP])  ## assign non-zero tap ratios
     tap = tap * exp(1j * pi / 180 * branch[:, SHIFT])  ## add phase shifters
 
-    Ytt = Yst + 1j * Bc / 2
-    Yff = (Ysf + 1j * Bc / 2) / (tap * conj(tap))
+    Ytt = Yst + Bc / 2
+    Yff = (Ysf + Bc / 2) / (tap * conj(tap))
     Yft = - Ysf / conj(tap)
     Ytf = - Yst / tap
     return Ytt, Yff, Yft, Ytf
+
+# def branch_vectors(branch, nl):
+#     stat = branch[:, BR_STATUS]  ## ones at in-service branches
+#     Ysf = stat / (branch[:, BR_R] + 1j * branch[:, BR_X])  ## series admittance
+#     if any(branch[:, BR_R_ASYM]) or any(branch[:, BR_X_ASYM]):
+#         Yst = stat / ((branch[:, BR_R] + branch[:, BR_R_ASYM]) + 1j * (
+#                     branch[:, BR_X] + branch[:, BR_X_ASYM]))  ## series admittance
+#     else:
+#         Yst = Ysf
+#     Bc = stat * branch[:, BR_B]  ## line charging susceptance
+#     tap = ones(nl)  ## default tap ratio = 1
+#     i = nonzero(real(branch[:, TAP]))  ## indices of non-zero tap ratios
+#     tap[i] = real(branch[i, TAP])  ## assign non-zero tap ratios
+#     tap = tap * exp(1j * pi / 180 * branch[:, SHIFT])  ## add phase shifters
+
+#     Ytt = Yst + 1j * Bc / 2
+#     Yff = (Ysf + 1j * Bc / 2) / (tap * conj(tap))
+#     Yft = - Ysf / conj(tap)
+#     Ytf = - Yst / tap
+#     return Ytt, Yff, Yft, Ytf

@@ -65,29 +65,30 @@ T_BUS       = 1    # t, to bus number
 BR_R        = 2    # r, resistance (p.u.)
 BR_X        = 3    # x, reactance (p.u.)
 BR_B        = 4    # b, total line charging susceptance (p.u.)
-RATE_A      = 5    # rateA, MVA rating A (long term rating)
-RATE_B      = 6    # rateB, MVA rating B (short term rating)
-RATE_C      = 7    # rateC, MVA rating C (emergency rating)
-TAP         = 8    # ratio, transformer off nominal turns ratio
-SHIFT       = 9    # angle, transformer phase shift angle (degrees)
-BR_STATUS   = 10   # initial branch status, 1 - in service, 0 - out of service
-ANGMIN      = 11   # minimum angle difference, angle(Vf) - angle(Vt) (degrees)
-ANGMAX      = 12   # maximum angle difference, angle(Vf) - angle(Vt) (degrees)
+BR_G        = 5    # g, total line charging conductance (p.u.)
+RATE_A      = 6    # rateA, MVA rating A (long term rating)
+RATE_B      = 7    # rateB, MVA rating B (short term rating)
+RATE_C      = 8    # rateC, MVA rating C (emergency rating)
+TAP         = 9    # ratio, transformer off nominal turns ratio
+SHIFT       = 10    # angle, transformer phase shift angle (degrees)
+BR_STATUS   = 11   # initial branch status, 1 - in service, 0 - out of service
+ANGMIN      = 12   # minimum angle difference, angle(Vf) - angle(Vt) (degrees)
+ANGMAX      = 13   # maximum angle difference, angle(Vf) - angle(Vt) (degrees)
 
 # included in power flow solution, not necessarily in input
-PF          = 13   # real power injected at "from" bus end (MW)
-QF          = 14   # reactive power injected at "from" bus end (MVAr)
-PT          = 15   # real power injected at "to" bus end (MW)
-QT          = 16   # reactive power injected at "to" bus end (MVAr)
+PF          = 14   # real power injected at "from" bus end (MW)
+QF          = 15   # reactive power injected at "from" bus end (MVAr)
+PT          = 16   # real power injected at "to" bus end (MW)
+QT          = 17   # reactive power injected at "to" bus end (MVAr)
 
 # included in opf solution, not necessarily in input
 # assume objective function has units, u
-MU_SF       = 17   # Kuhn-Tucker multiplier on MVA limit at "from" bus (u/MVA)
-MU_ST       = 18   # Kuhn-Tucker multiplier on MVA limit at "to" bus (u/MVA)
-MU_ANGMIN   = 19   # Kuhn-Tucker multiplier lower angle difference limit
-MU_ANGMAX   = 20   # Kuhn-Tucker multiplier upper angle difference limit
+MU_SF       = 18   # Kuhn-Tucker multiplier on MVA limit at "from" bus (u/MVA)
+MU_ST       = 19   # Kuhn-Tucker multiplier on MVA limit at "to" bus (u/MVA)
+MU_ANGMIN   = 20   # Kuhn-Tucker multiplier lower angle difference limit
+MU_ANGMAX   = 21   # Kuhn-Tucker multiplier upper angle difference limit
 
-BR_R_ASYM = 21
-BR_X_ASYM = 22
+BR_R_ASYM = 22
+BR_X_ASYM = 23
 
-branch_cols = 23
+branch_cols = 24
