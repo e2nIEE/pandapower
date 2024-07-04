@@ -37,7 +37,10 @@ def convert_format(net, elements_to_deserialize=None):
     _create_seperate_cost_tables(net, elements_to_deserialize)
     if Version(str(net.format_version)) < Version("2.4.0"):
         _convert_bus_pq_meas_to_load_reference(net, elements_to_deserialize)
-    if isinstance(net.format_version, float) and net.format_version < 2:  # Why only run if net.format_version is float?
+    if Version(net.format_version) < Version("3.0"):
+        _convert_group_element_index(net)
+        _convert_controller_parameter_names(net)
+    if Version(net.format_version) < Version("2.0"):
         _convert_to_generation_system(net, elements_to_deserialize)
         _convert_costs(net)
         _convert_to_mw(net)
@@ -108,6 +111,27 @@ def _convert_bus_pq_meas_to_load_reference(net, elements_to_deserialize):
         bus_pq_meas_mask = net.measurement.measurement_type.isin(["p", "q"]) & \
                            (net.measurement.element_type == "bus")
         net.measurement.loc[bus_pq_meas_mask, "value"] *= -1
+
+
+def _convert_group_element_index(net):
+    if "element" in net.group.columns:
+        if "element_index" in net.group.columns:
+            logger.warning("element cannot be renamed by element_index because columns exist already.")
+        net.group = net.group.rename(columns={"element": "element_index"})
+
+
+def _convert_controller_parameter_names(net):
+    for ctrl_idx in net.controller.index:
+        controller = net.controller.at[ctrl_idx, "object"]
+        if issubclass(controller, pp.control.ConstController):
+            controller.__dict__["element_type"] = controller.__dict__.pop("element")
+        elif issubclass(controller, pp.control.TrafoController):
+            if "tid" in controller.__dict__.keys():
+                controller.__dict__["element_index"] = controller.__dict__.pop("tid")
+            else:
+                controller.__dict__["element_index"] = controller.__dict__.pop("transformer_index")
+            controller.__dict__["element_type"] = controller.__dict__.pop("trafotable")
+            del controller.__dict__["trafotype"]
 
 
 def _convert_to_generation_system(net, elements_to_deserialize):

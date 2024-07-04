@@ -74,16 +74,16 @@ class PQController(ConstControl):
         # read attributes from net
         self.element_index = element_index
         self.element_type = element_type
-        self.bus = net[self.element]["bus"][element_index]
-        self.p_mw = net[self.element]["p_mw"][element_index]
-        self.q_mvar = net[self.element]["q_mvar"][element_index]
-        self.sn_mva = net[self.element]["sn_mva"][element_index]
-        self.element_names = net[self.element]["name"][element_index]
-        self.gen_type = net[self.element]["type"][element_index]
-        self.element_in_service = net[self.element]["in_service"][element_index]
+        self.bus = net[self.element_type]["bus"][element_index]
+        self.p_mw = net[self.element_type]["p_mw"][element_index]
+        self.q_mvar = net[self.element_type]["q_mvar"][element_index]
+        self.sn_mva = net[self.element_type]["sn_mva"][element_index]
+        self.element_names = net[self.element_type]["name"][element_index]
+        self.gen_type = net[self.element_type]["type"][element_index]
+        self.element_in_service = net[self.element_type]["in_service"][element_index]
 
         self.sign = 1
-        if element == "sgen":
+        if element_type == "sgen":
             self.sign *=-1
         # Simultaneity factor
         self.pq_simultaneity_factor = pq_simultaneity_factor
@@ -172,8 +172,8 @@ class PQController(ConstControl):
 
     def write_to_net(self, net):
         # write p, q to bus within the net
-        net[self.element].loc[self.element_index, "p_mw"] = self.p_mw
-        net[self.element].loc[self.element_index, "q_mvar"] = self.q_mvar
+        net[self.element_type].loc[self.element_index, "p_mw"] = self.p_mw
+        net[self.element_type].loc[self.element_index, "q_mvar"] = self.q_mvar
 
     def finalize_control(self, net):
         self.calc_curtailment()
@@ -191,9 +191,9 @@ class PQController(ConstControl):
         Returns the limited P and Q values in respect to the SGENs inverter sizing
 
         INPUT:
-            **p_mw** - Active power of [self.element]
+            **p_mw** - Active power of [self.element_type]
 
-            **q_mvar** - Reactive power of [self.element]
+            **q_mvar** - Reactive power of [self.element_type]
 
         OUTPUT:
 
@@ -224,10 +224,10 @@ class PQController(ConstControl):
 
     def initialize_control(self, net):
         """
-        Reading the actual P and Q state from the respective [self.element] in the net
+        Reading the actual P and Q state from the respective [self.element_type] in the net
         """
-        self.p_mw = net[self.element].loc[self.element_index, "p_mw"]
-        self.q_mvar = net[self.element].loc[self.element_index, "q_mvar"]
+        self.p_mw = net[self.element_type].loc[self.element_index, "p_mw"]
+        self.q_mvar = net[self.element_type].loc[self.element_index, "q_mvar"]
 
     def __str__(self):
         if len(self.element_index) > 6:

@@ -273,8 +273,8 @@ def test_QModels_with_2Dim_timeseries():
     net2 = simple_test_net2()
     net3 = simple_test_net2()
 
-    pp.control.ConstControl(net0, element="sgen", variable="p_mw", element_index=[0, 1],
-                           data_source=ds, profile_name=["P_DER1", "P_DER2"])
+    pp.control.ConstControl(net0, element_type="sgen", variable="p_mw", element_index=[0, 1],
+                            data_source=ds, profile_name=["P_DER1", "P_DER2"])
     net0.sgen["q_mvar"] = 0.1 * net0.sgen["sn_mva"]
     pp.control.DERController(
         net1, [0, 1], data_source=ds, p_profile=["P_DER1", "P_DER2"],
