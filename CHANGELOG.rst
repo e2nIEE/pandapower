@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2024-..-..
 -------------------------------
+- [ADDED] low voltage grid Schutterwald
 - [FIXED] trafo3w with tap changer at star point corrected
 - [FIXED] namespace changes from numpy 2.0 release
 - [CHANGED] inf to np.full(...) with value inf for array operations in pypower folder
