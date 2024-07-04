@@ -121,7 +121,7 @@ def to_ppc(net, calculate_voltage_angles=False, trafo_model="t", switch_rx_ratio
     branch_g = net._ppc["branch"][:, BR_G]
     # delete BR_G column as this is added to pandapower afterwards, keeping it as extra variable
     ppci['branch'] = delete(ppci['branch'], BR_G, axis=1)
-    ppci['branch_g'] = branch_g
+    ppci['branch_g_pu'] = branch_g
     if not take_slack_vm_limits:
         slack_bus = min(net.ext_grid.bus.loc[net.ext_grid.in_service].tolist() + \
                         net.gen.bus.loc[net.gen.slack & net.gen.in_service].tolist())
