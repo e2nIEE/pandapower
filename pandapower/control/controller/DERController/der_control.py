@@ -53,7 +53,7 @@ class DERController(PQController):
         **element_index** (int[]) - IDs of the controlled elements
 
     OPTIONAL:
-        **element** (str, "sgen") - element type which is controlled
+        **element_type** (str, "sgen") - element type which is controlled
 
         **q_model** (object, None) - an q_model, such as provided in this file, should be passed to
         model how the q value should be determined.
@@ -108,7 +108,7 @@ class DERController(PQController):
     ...     )
     ... pp.runpp(net, run_control=True)
     """
-    def __init__(self, net, element_index, element="sgen",
+    def __init__(self, net, element_index, element_type="sgen",
                  q_model=None, pqv_area=None,
                  saturate_sn_mva=np.nan, q_prio=True, damping_coef=2,
                  max_p_error=1e-6, max_q_error=1e-6, pq_simultaneity_factor=1., f_sizing=1.,
@@ -118,7 +118,8 @@ class DERController(PQController):
         element_index = list(ensure_iterability(element_index))
         if matching_params is None:
             matching_params = {"element_index": element_index}
-        super().__init__(net, element_index=element_index, element=element, max_p_error=max_p_error,
+        super().__init__(net, element_index=element_index, element_type=element_type,
+                         max_p_error=max_p_error,
                          max_q_error=max_q_error, pq_simultaneity_factor=pq_simultaneity_factor,
                          f_sizing=f_sizing, data_source=data_source,
                          profile_scale=profile_scale, in_service=in_service,
