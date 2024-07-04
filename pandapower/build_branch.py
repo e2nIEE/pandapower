@@ -194,7 +194,9 @@ def _calc_line_parameter(net, ppc, elm="line", ppc_elm="branch"):
 
         b = 2 * net.f_hz * math.pi * line["c_nf_per_km"].values * 1e-9 * baseR * length_km * parallel
         g = line["g_us_per_km"].values * 1e-6 * baseR * length_km * parallel
-        branch[f:t, BR_B] = b - g * 1j
+        branch[f:t, BR_B] = b
+        branch[f:t, BR_G] = g
+
     # in service of lines
     branch[f:t, BR_STATUS] = line["in_service"].values
     # always set RATE_A for completeness:

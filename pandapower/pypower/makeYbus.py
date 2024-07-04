@@ -91,7 +91,7 @@ def branch_vectors(branch, nl):
     else:
         Yst = Ysf
     Bb = stat * branch[:, BR_B]  ## line charging susceptance
-    Bg = stat * branch[:, BR_B]  ## line charging conductance
+    Bg = stat * branch[:, BR_G]  ## line charging conductance
     Bc = Bg + 1j * Bb ## line chargine admittance
     
     tap = ones(nl)  ## default tap ratio = 1

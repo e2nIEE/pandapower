@@ -9,7 +9,7 @@ from time import perf_counter  # alternatively use import timeit.default_timer a
 
 import numpy as np
 import scipy as sp
-from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, BR_STATUS, SHIFT
+from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, BR_G, TAP, BR_STATUS, SHIFT
 from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, GS, BS
 from pandapower.pypower.idx_gen import GEN_BUS, QG, QMAX, QMIN, GEN_STATUS, VG
 from pandapower.pypower.makeSbus import makeSbus
@@ -195,7 +195,7 @@ def _makeYsh_bfsw(bus, branch, baseMVA):
     # summation of charging susceptances per each bus
     stat = branch[:, BR_STATUS]  ## ones at in-service branches
     Ys = stat / (branch[:, BR_R] + 1j * branch[:, BR_X])
-    ysh = (- branch[:, BR_B].imag + 1j * (branch[:, BR_B].real)) / 2
+    ysh = (- branch[:, BR_G] + 1j * (branch[:, BR_B])) / 2
     tap = branch[:, TAP]  # * np.exp(1j * np.pi / 180 * branch[:, SHIFT])
 
     ysh_f = Ys * (1 - tap) / (tap * np.conj(tap)) + ysh / (tap * np.conj(tap))
