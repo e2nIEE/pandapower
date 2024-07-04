@@ -984,9 +984,12 @@ def _trafo_df_from_trafo3w(net, sequence=1):
     trafo2 = dict()
     sides = ["hv", "mv", "lv"]
     mode = net._options["mode"]
-    loss_side = net._options["trafo3w_losses"].lower()
-    nr_trafos = len(net["trafo3w"])
     t3 = net["trafo3w"]
+    # todo check magnetizing impedance implementation:
+    #loss_side = net._options["trafo3w_losses"].lower()
+    loss_side = t3.loss_side.values if "loss_side" in t3.columns else np.full(len(t3),
+                                                                              net._options["trafo3w_losses"].lower())
+    nr_trafos = len(net["trafo3w"])
     if sequence==1:
         mode_tmp = "type_c" if mode == "sc" and net._options.get("use_pre_fault_voltage", False) else mode
         _calculate_sc_voltages_of_equivalent_transformers(t3, trafo2, mode_tmp, characteristic=net.get(
@@ -1004,8 +1007,11 @@ def _trafo_df_from_trafo3w(net, sequence=1):
     trafo2["hv_bus"] = {"hv": t3.hv_bus.values, "mv": aux_buses, "lv": aux_buses}
     trafo2["lv_bus"] = {"hv": aux_buses, "mv": t3.mv_bus.values, "lv": t3.lv_bus.values}
     trafo2["in_service"] = {side: t3.in_service.values for side in sides}
-    trafo2["i0_percent"] = {side: t3.i0_percent.values if loss_side == side else zeros for side in sides}
-    trafo2["pfe_kw"] = {side: t3.pfe_kw.values if loss_side == side else zeros for side in sides}
+    # todo check magnetizing impedance implementation:
+    #trafo2["i0_percent"] = {side: t3.i0_percent.values if loss_side == side else zeros for side in sides}
+    #trafo2["pfe_kw"] = {side: t3.pfe_kw.values if loss_side == side else zeros for side in sides}
+    trafo2["i0_percent"] = {side: np.where(loss_side == side, t3.i0_percent.values, zeros) for side in sides}
+    trafo2["pfe_kw"] = {side: np.where(loss_side == side, t3.pfe_kw.values, zeros) for side in sides}
     trafo2["vn_hv_kv"] = {side: t3.vn_hv_kv.values for side in sides}
     trafo2["vn_lv_kv"] = {side: t3["vn_%s_kv" % side].values for side in sides}
     trafo2["shift_degree"] = {"hv": np.zeros(nr_trafos), "mv": t3.shift_mv_degree.values,
@@ -1105,8 +1111,12 @@ def _calculate_3w_tap_changers(t3, t2, sides):
         tap_arrays["tap_side"][side][tap_mask] = "hv" if side == "hv" else "lv"
 
         # t3 trafos with tap changer at star points
-        if any_at_star_point:
-            mask_star_point = tap_mask & at_star_point
+        if any_at_star_point & np.any(mask_star_point := (tap_mask & at_star_point)): 
+            t = tap_arrays["tap_step_percent"][side][mask_star_point] * np.exp(1j * np.deg2rad(tap_arrays["tap_step_degree"][side][mask_star_point]))
+            tap_pos = tap_arrays["tap_pos"][side][mask_star_point]
+            t_corrected = 100 * t / (100 + (t * tap_pos))
+            tap_arrays["tap_step_percent"][side][mask_star_point] = np.abs(t_corrected)
             tap_arrays["tap_side"][side][mask_star_point] = "lv" if side == "hv" else "hv"
-            tap_arrays["tap_step_degree"][side][mask_star_point] += 180
+            tap_arrays["tap_step_degree"][side][mask_star_point] = np.rad2deg(np.angle(t_corrected))
+            tap_arrays["tap_step_degree"][side][mask_star_point] -= 180
     t2.update(tap_arrays)

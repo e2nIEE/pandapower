@@ -38,7 +38,7 @@ dependencies = [
     "pandas>=1.0",
     "networkx>=2.5",
     "scipy<1.14",
-    "numpy<2.0",
+    "numpy",
     "packaging",
     "tqdm",
     "deepdiff",
@@ -86,4 +86,16 @@ find = {}
 addopts = ["--strict-markers"]
 markers = [
   "slow: marks tests as slow (deselect with '-m \"not slow\"'), e.g. in run_fast_tests"
+]
+
+[tool.coverage.run]
+omit = [
+    "pandapower/test/*"
+    ]
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "def __str__",
+    "if __name__ == .__main__.:"
 ]

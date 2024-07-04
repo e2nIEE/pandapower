@@ -5,7 +5,7 @@
 """Used to set and retrieve a PYPOWER options vector.
 """
 
-from numpy import Inf
+from numpy import inf
 
 
 PF_OPTIONS = [
@@ -147,7 +147,7 @@ GUROBI_OPTIONS = [
 3 - concurrent (LP only)
 4 - deterministic concurrent (LP only)
 '''),
-    ('grb_timelimit', Inf, 'maximum time allowed for solver (TimeLimit)'),
+    ('grb_timelimit', inf, 'maximum time allowed for solver (TimeLimit)'),
 ('grb_threads', 0, '(auto) maximum number of threads to use (Threads)'),
 ('grb_opt', 0, 'See gurobi_options() for details')
 ]
