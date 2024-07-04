@@ -770,17 +770,40 @@ def drop_controllers_at_elements(net, element_type, idx=None):
     """
     idx = ensure_iterability(idx) if idx is not None else net[element_type].index
     to_drop = []
-    for i in net.controller.index:
-        et = net.controller.object[i].__dict__.get("element_type")
-        elm_idx = ensure_iterability(net.controller.object[i].__dict__.get("element_index", [0.1]))
-        if element_type == et:
-            if set(elm_idx) - set(idx) == set():
-                to_drop.append(i)
-            else:
-                net.controller.object[i].__dict__["element_index"] = list(set(elm_idx) - set(idx))
-                net.controller.object[i].__dict__["matching_params"]["element_index"] = list(
-                    set(elm_idx) - set(idx))
+    for ctrl_idx in net.controller.index:
+        ctrl_dict = net.controller.at[ctrl_idx, "object"].__dict__
+        et = ctrl_dict.get("element_type")
+        if element_type != et:
+            continue
+        elm_idx = ctrl_dict.get("element_index", [0.1])
+        is_single_value = not hasattr(elm_idx, "__iter__")
+        elm_idx = np.array(ensure_iterability(elm_idx))
+        elm_staying = (~pd.Series(elm_idx).isin(idx)).values
+        if not np.any(elm_staying):
+            to_drop.append(ctrl_idx)
+        elif not is_single_value:
+            ctrl_dict["element_index"] = list(elm_idx[elm_staying])
+            ctrl_dict["matching_params"]["element_index"] = list(elm_idx[elm_staying])
+            _update_further_controller_parameters(net, ctrl_idx, elm_staying)
     net.controller = net.controller.drop(to_drop)
+
+
+def _update_further_controller_parameters(net, ctrl_idx, elm_staying):
+    ctrl_dict = net.controller.at[ctrl_idx, "object"].__dict__
+    further_vars_to_adapt = ["bus", "element_names", "gen_type", "element_in_service",
+                             "p_profile", "q_profile", "profile_name", "sn_mva"]
+    for ctrl_col in further_vars_to_adapt:
+        if ctrl_col not in ctrl_dict.keys():
+            continue
+
+        if ctrl_col == "bus":
+            ctrl_dict[ctrl_col] = net[ctrl_dict["element_type"]].loc[
+                ctrl_dict["element_index"], "bus"]
+        elif ctrl_col in ["p_profile", "q_profile", "profile_name"]:
+            if ctrl_dict[ctrl_col] is not None:
+                ctrl_dict[ctrl_col] = list(np.array(ctrl_dict[ctrl_col])[elm_staying])
+        else:
+            ctrl_dict[ctrl_col] = ctrl_dict[ctrl_col].loc[ctrl_dict["element_index"]]
 
 
 def drop_controllers_at_buses(net, buses):
