@@ -771,7 +771,7 @@ def drop_controllers_at_elements(net, element_type, idx=None):
     idx = ensure_iterability(idx) if idx is not None else net[element_type].index
     to_drop = []
     for i in net.controller.index:
-        et = net.controller.object[i].__dict__.get("element")
+        et = net.controller.object[i].__dict__.get("element_type")
         elm_idx = ensure_iterability(net.controller.object[i].__dict__.get("element_index", [0.1]))
         if element_type == et:
             if set(elm_idx) - set(idx) == set():
