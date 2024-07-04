@@ -66,6 +66,8 @@ def from_mpc(mpc_file, f_hz=50, casename_mpc_file='mpc', validate_conversion=Fal
         ppc = _m2ppc(mpc_file, casename_mpc_file)
     net = from_ppc(ppc, f_hz=f_hz, validate_conversion=validate_conversion, **kwargs)
     if "mpc_additional_data" in ppc:
+        if "_options" not in net:
+            net["_options"] = dict()
         net._options.update(ppc["mpc_additional_data"])
         logger.info('added fields %s in net._options' % list(ppc["mpc_additional_data"].keys()))
 

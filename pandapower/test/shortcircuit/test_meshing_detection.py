@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -17,7 +17,7 @@ def meshed_grid():
     net = pp.from_json(os.path.join(pp.pp_dir, "test", "shortcircuit", "sc_test_meshed_grid.json"))
     bid = pp.create_bus(net, vn_kv=10.)
     pp.create_switch(net, net.ext_grid.bus.iloc[0], bid, et="b")
-    net.ext_grid.bus.iloc[0] = bid
+    net.ext_grid.loc[net.ext_grid.index[0], "bus"] = bid
     pp.create_bus(net, vn_kv=0.4, in_service=False)
     return net
 
@@ -85,4 +85,4 @@ def test_min_6_meshed_grid(meshed_grid):
                         1.705064, 0.7136779, 0.9041679, 1.058954, 0.9327717], atol=1e-5)
 
 if __name__ == '__main__':
-    pytest.main(["test_meshing_detection.py", '-xs'])
+    pytest.main([__file__, "-xs"])

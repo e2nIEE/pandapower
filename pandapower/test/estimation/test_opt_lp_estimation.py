@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
@@ -37,8 +37,10 @@ def test_case9_compare_classical_wls_opt_wls():
     net_wls = net.deepcopy()
     estimate(net_wls)
 
-    if not np.allclose(net_wls.res_bus_est.vm_pu, net.res_bus_est.vm_pu, atol=1e-2) or \
-            not np.allclose(net_wls.res_bus_est.va_degree, net.res_bus_est.va_degree, atol=1e-2):
+    if not (np.allclose(net_wls.res_bus_est.vm_pu.copy(), net.res_bus_est.vm_pu.copy(),
+                        atol=1e-2) and
+            np.allclose(net_wls.res_bus_est.va_degree.copy(), net.res_bus_est.va_degree.copy(),
+                        atol=1e-2)):
         raise AssertionError("Estimation failed!")
 
 

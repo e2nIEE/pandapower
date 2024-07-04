@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -29,22 +29,21 @@
 import copy
 from collections.abc import MutableMapping
 import warnings
+from importlib.metadata import version as version_str
+from importlib.metadata import PackageNotFoundError
+from typing_extensions import deprecated
 
 import numpy as np
 import pandas as pd
 import scipy as sp
 import numbers
-from packaging import version
+from packaging.version import Version
 
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
 from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD, VM, VA, REF, VMIN, VMAX, PV
 from pandapower.pypower.idx_gen import PMIN, PMAX, QMIN, QMAX
-
-try:
-    from numba import jit
-    from numba._version import version_version as numba_version
-except ImportError:
-    from .pf.no_numba import jit
+from pandapower.pypower.idx_ssc import SSC_STATUS, SSC_BUS, SSC_INTERNAL_BUS
+from pandapower.pypower.idx_tcsc import TCSC_STATUS, TCSC_F_BUS, TCSC_T_BUS
 
 try:
     from lightsim2grid.newtonpf import newtonpf_new as newtonpf_ls
@@ -58,15 +57,66 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+def log_to_level(msg, passed_logger, level):
+    if level == "error":
+        passed_logger.error(msg)
+    elif level == "warning":
+        passed_logger.warning(msg)
+    elif level == "info":
+        passed_logger.info(msg)
+    elif level == "debug":
+        passed_logger.debug(msg)
+    elif level == "UserWarning":
+        raise UserWarning(msg)
+    elif level is None:
+        pass
+
+
+def version_check(package_name, level="UserWarning", ignore_not_installed=False):
+
+    minimum_version = {'plotly': "3.1.1",
+                       'numba': "0.25",
+                      }
+    if ignore_not_installed and package_name not in minimum_version.keys():
+        return
+
+    try:
+        version = version_str(package_name)
+        if Version(version) < Version(minimum_version.get(package_name, '0.0.0')):
+            log_to_level((
+                f"{package_name} version {version} is no longer supported by pandapower.\r\n"
+                f"Please upgrade your installation. Possibly it can be done via "
+                f"'pip install --upgrade {package_name}'."), logger, level)
+    except PackageNotFoundError:
+        if ignore_not_installed:
+            raise PackageNotFoundError(
+                f"Python package '{package_name}', is needed.\r\nPlease install it. "
+                f"Possibly it can be installed via 'pip install {package_name}'.")
+
+
+try:
+    from numba import jit
+    try:
+        version_check("numba")
+        NUMBA_INSTALLED = True
+    except UserWarning:
+        msg = 'The numba version is too old.\n'
+        log_to_level(msg, logger, 'warning')
+        NUMBA_INSTALLED = False
+except ImportError:
+    from .pf.no_numba import jit
+    NUMBA_INSTALLED = False
+
 
 def soft_dependency_error(fct_name, required_packages):
     required_packages = required_packages if isinstance(required_packages, str) else \
         "','".join(required_packages)
-    raise ImportError("Some pandapower functionality use modules outside the setup.py "
-                      f"requirements: {fct_name} requires '{required_packages}'. \n"
-                      f"{required_packages} could not be imported.\n"
-                      "To install all pandapower dependencies, "
-                      "pip install pandapower['all'] can be used.")
+    error_msg = "\n".join([
+        "Some pandapower functionality use optional python packages.",
+        f"{fct_name} requires '{required_packages}' which could not all be imported.",
+        'To install pandapower with all optional dependencies, type `pip install pandapower["all"]`.'
+    ])
+    raise ImportError(error_msg)
 
 
 def warn_and_fix_parameter_renaming(old_parameter_name, new_parameter_name, new_parameter,
@@ -256,6 +306,7 @@ class pandapowerNet(ADict):
                 self[key] = pd.DataFrame(np.zeros(0, dtype=self[key]), index=pd.Index([],
                                          dtype=np.int64))
 
+    @deprecated("Use copy.deepcopy(net) instead of net.deepcopy()")
     def deepcopy(self):
         return copy.deepcopy(self)
 
@@ -271,13 +322,12 @@ class pandapowerNet(ADict):
             if not et.startswith("_") and isinstance(self[et], pd.DataFrame) and len(self[et]) > 0:
                 n_rows = self[et].shape[0]
                 if 'res_' in et:
-                    res.append("   - %s (%i %s)" % (et, n_rows, "element" + plural_s(n_rows)))
+                    res.append(f"   - {et} ({n_rows} element{plural_s(n_rows)})")
                 elif et == 'group':
                     n_groups = len(set(self[et].index))
-                    par.append('   - %s (%i %s, %i %s)' % (
-                        et, n_groups, "group" + plural_s(n_groups), n_rows, "row" + plural_s(n_rows)))
+                    par.append(f"   - {et} ({n_groups} group{plural_s(n_groups)}, {n_rows} row{plural_s(n_rows)})")
                 else:
-                    par.append("   - %s (%i %s)" % (et, n_rows, "element" + plural_s(n_rows)))
+                    par.append(f"   - {et} ({n_rows} element{plural_s(n_rows)})")
         res_cost = [" and the following result values:",
                     "   - %s" % "res_cost"] if "res_cost" in self.keys() else []
         if not len(par) + len(res):
@@ -290,10 +340,31 @@ class pandapowerNet(ADict):
 
 
 def plural_s(number):
-    if number > 1:
-        return ""
+    return "" if number == 1 else "s"
+
+
+
+def ets_to_element_types(ets=None):
+    ser = pd.Series(["bus", "line", "trafo", "trafo3w", "impedance"],
+                    index=["b", "l", "t", "t3", "i"])
+    if ets is None:
+        return ser
+    elif isinstance(ets, str):
+        return ser.at[ets]
     else:
-        return "s"
+        return list(ser.loc[ets])
+
+
+def element_types_to_ets(element_types=None):
+    ser1 = ets_to_element_types()
+    ser2 = pd.Series(ser1.index, index=list(ser1))
+    if element_types is None:
+        return ser2
+    elif isinstance(ets, str):
+        return ser2.at[element_types]
+    else:
+        return list(ser2.loc[element_types])
+
 
 def _preserve_dtypes(df, dtypes):
     for item, dtype in list(dtypes.items()):
@@ -312,7 +383,8 @@ def get_free_id(df):
     """
     Returns next free ID in a dataframe
     """
-    return np.int64(0) if len(df) == 0 else df.index.values.max() + 1
+    index_values = df.index.get_level_values(0) if isinstance(df.index, pd.MultiIndex) else df.index.values
+    return np.int64(0) if len(df) == 0 else index_values.max() + 1
 
 
 class ppException(Exception):
@@ -370,9 +442,9 @@ def get_indices(selection, lookup, fused_indices=True):
     :return:
     """
     if fused_indices:
-        return np.array([lookup[k] for k in selection], dtype="int")
+        return np.array([lookup[k] for k in selection], dtype=np.int64)
     else:
-        return np.array([lookup["before_fuse"][k] for k in selection], dtype="int")
+        return np.array([lookup["before_fuse"][k] for k in selection], dtype=np.int64)
 
 
 def _get_values(source, selection, lookup):
@@ -415,17 +487,6 @@ def ensure_iterability(var, len_=None):
         len_ = len_ or 1
         var = [var] * len_
     return var
-
-
-def log_to_level(msg, passed_logger, level):
-    if level == "error":
-        passed_logger.error(msg)
-    elif level == "warning":
-        passed_logger.warning(msg)
-    elif level == "info":
-        passed_logger.info(msg)
-    elif level == "debug":
-        passed_logger.debug(msg)
 
 
 def read_from_net(net, element, index, variable, flag='auto'):
@@ -565,7 +626,7 @@ def _write_to_object_attribute(net, element, index, variable, values):
 def _set_isolated_nodes_out_of_service(ppc, bus_not_reachable):
     isolated_nodes = np.where(bus_not_reachable)[0]
     if len(isolated_nodes) > 0:
-        logger.debug("There are isolated buses in the network!")
+        logger.debug("There are isolated buses in the network! (%i nodes in the PPC)"%len(isolated_nodes))
         # set buses in ppc out of service
         ppc['bus'][isolated_nodes, BUS_TYPE] = NONE
 
@@ -589,9 +650,9 @@ def _check_connectivity_opf(ppc):
     br_status = ppc['branch'][:, BR_STATUS].astype(bool)
     nobranch = ppc['branch'][br_status, :].shape[0]
     nobus = ppc['bus'].shape[0]
-    bus_from = ppc['branch'][br_status, F_BUS].real.astype(int)
-    bus_to = ppc['branch'][br_status, T_BUS].real.astype(int)
-    slacks = ppc['bus'][ppc['bus'][:, BUS_TYPE] == 3, BUS_I].astype(int)
+    bus_from = ppc['branch'][br_status, F_BUS].real.astype(np.int64)
+    bus_to = ppc['branch'][br_status, T_BUS].real.astype(np.int64)
+    slacks = ppc['bus'][ppc['bus'][:, BUS_TYPE] == 3, BUS_I].astype(np.int64)
 
     adj_matrix = sp.sparse.coo_matrix((np.ones(nobranch),
                                        (bus_from, bus_to)),
@@ -628,16 +689,24 @@ def _check_connectivity(ppc):
     br_status = ppc['branch'][:, BR_STATUS].astype(bool)
     nobranch = ppc['branch'][br_status, :].shape[0]
     nobus = ppc['bus'].shape[0]
-    bus_from = ppc['branch'][br_status, F_BUS].real.astype(int)
-    bus_to = ppc['branch'][br_status, T_BUS].real.astype(int)
+    bus_from = ppc['branch'][br_status, F_BUS].real.astype(np.int64)
+    bus_to = ppc['branch'][br_status, T_BUS].real.astype(np.int64)
     slacks = ppc['bus'][ppc['bus'][:, BUS_TYPE] == 3, BUS_I]
+    tcsc_status = ppc["tcsc"][:, TCSC_STATUS].real.astype(bool)
+    notcsc = ppc["tcsc"][tcsc_status, :].shape[0]
+    bus_from_tcsc = ppc["tcsc"][tcsc_status, TCSC_F_BUS].real.astype(np.int64)
+    bus_to_tcsc = ppc["tcsc"][tcsc_status, TCSC_T_BUS].real.astype(np.int64)
+    ssc_status = ppc["ssc"][:, SSC_STATUS].real.astype(bool)
+    nossc = ppc["ssc"][ssc_status, :].shape[0]
+    bus_from_ssc = ppc["ssc"][ssc_status, SSC_BUS].real.astype(np.int64)
+    bus_to_ssc = ppc["ssc"][ssc_status, SSC_INTERNAL_BUS].real.astype(np.int64)
 
     # we create a "virtual" bus thats connected to all slack nodes and start the connectivity
     # search at this bus
-    bus_from = np.hstack([bus_from, slacks])
-    bus_to = np.hstack([bus_to, np.ones(len(slacks)) * nobus])
+    bus_from = np.hstack([bus_from, bus_from_tcsc, bus_from_ssc, slacks])
+    bus_to = np.hstack([bus_to, bus_to_tcsc, bus_to_ssc, np.ones(len(slacks)) * nobus])
 
-    adj_matrix = sp.sparse.coo_matrix((np.ones(nobranch + len(slacks)),
+    adj_matrix = sp.sparse.coo_matrix((np.ones(nobranch + notcsc + nossc + len(slacks)),
                                        (bus_from, bus_to)),
                                       shape=(nobus + 1, nobus + 1))
 
@@ -660,8 +729,8 @@ def _subnetworks(ppc):
     oos_bus = ppc['bus'][:, BUS_TYPE] == NONE
     nobranch = ppc['branch'][br_status, :].shape[0]
     nobus = ppc['bus'].shape[0]
-    bus_from = ppc['branch'][br_status, F_BUS].real.astype(int)
-    bus_to = ppc['branch'][br_status, T_BUS].real.astype(int)
+    bus_from = ppc['branch'][br_status, F_BUS].real.astype(np.int64)
+    bus_to = ppc['branch'][br_status, T_BUS].real.astype(np.int64)
     # Note BUS_TYPE is never REF when the generator is out of service.
     slacks = ppc['bus'][ppc['bus'][:, BUS_TYPE] == REF, BUS_I]
 
@@ -719,7 +788,7 @@ def _select_is_elements_numba(net, isolated_nodes=None, sequence=None):
         set_isolated_buses_oos(bus_in_service, ppc_bus_isolated, net["_pd2ppc_lookups"]["bus"])
     #    mode = net["_options"]["mode"]
     elements = ["load", "motor", "sgen", "asymmetric_load", "asymmetric_sgen", "gen",
-                "ward", "xward", "shunt", "ext_grid", "storage"]  # ,"impedance_load"
+                "ward", "xward", "shunt", "ext_grid", "storage", "svc", "ssc"]  # ,"impedance_load"
     is_elements = dict()
     for element in elements:
         len_ = len(net[element].index)
@@ -837,7 +906,7 @@ def _add_opf_options(net, trafo_loading, ac, v_debug=False, **kwargs):
 def _add_sc_options(net, fault, case, lv_tol_percent, tk_s, topology, r_fault_ohm,
                     x_fault_ohm, kappa, ip, ith, branch_results,
                     kappa_method, return_all_currents,
-                    inverse_y):
+                    inverse_y, use_pre_fault_voltage):
     """
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
@@ -855,7 +924,8 @@ def _add_sc_options(net, fault, case, lv_tol_percent, tk_s, topology, r_fault_oh
         "branch_results": branch_results,
         "kappa_method": kappa_method,
         "return_all_currents": return_all_currents,
-        "inverse_y": inverse_y
+        "inverse_y": inverse_y,
+        "use_pre_fault_voltage": use_pre_fault_voltage
     }
     _add_options(net, options)
 
@@ -897,20 +967,20 @@ def _clean_up(net, res=True):
     #            res_bus.drop(xward_buses, inplace=True)
     if len(net["dcline"]) > 0:
         dc_gens = net.gen.index[(len(net.gen) - len(net.dcline) * 2):]
-        net.gen.drop(dc_gens, inplace=True)
+        net.gen = net.gen.drop(dc_gens)
         if res:
-            net.res_gen.drop(dc_gens, inplace=True)
+            net.res_gen = net.res_gen.drop(dc_gens)
 
 
 def _set_isolated_buses_out_of_service(net, ppc):
     # set disconnected buses out of service
     # first check if buses are connected to branches
-    disco = np.setxor1d(ppc["bus"][:, 0].astype(int),
-                        ppc["branch"][ppc["branch"][:, 10] == 1, :2].real.astype(int).flatten())
+    disco = np.setxor1d(ppc["bus"][:, 0].astype(np.int64),
+                        ppc["branch"][ppc["branch"][:, 10] == 1, :2].real.astype(np.int64).flatten())
 
     # but also check if they may be the only connection to an ext_grid
     net._isolated_buses = np.setdiff1d(disco, ppc['bus'][ppc['bus'][:, 1] == REF,
-                                                         :1].real.astype(int))
+                                                         :1].real.astype(np.int64))
     ppc["bus"][net._isolated_buses, 1] = NONE
 
 
@@ -921,24 +991,17 @@ def _write_lookup_to_net(net, element, element_lookup):
     net["_pd2ppc_lookups"][element] = element_lookup
 
 
-def _check_if_numba_is_installed(numba):
-    numba_warning_str = 'numba cannot be imported and numba functions are disabled.\n' \
-                        'Probably the execution is slow.\n' \
-                        'Please install numba to gain a massive speedup.\n' \
-                        '(or if you prefer slow execution, set the flag numba=False to avoid ' + \
-                        'this warning!)\n'
+def _check_if_numba_is_installed(level="warning"):
+    if not NUMBA_INSTALLED:
+        msg = (
+            'numba cannot be imported and numba functions are disabled.\n'
+            'Probably the execution is slow.\n'
+            'Please install numba to gain a massive speedup.\n'
+            '(or if you prefer slow execution, set the flag numba=False to avoid this warning!)')
+        log_to_level(msg, logger, level)
+        return False
+    return NUMBA_INSTALLED
 
-    try:
-        # get numba Version (in order to use it it must be > 0.25)
-        if version.parse(numba_version) < version.parse("0.2.5"):
-            logger.warning('Warning: numba version too old -> Upgrade to a version > 0.25.\n' +
-                           numba_warning_str)
-            numba = False
-    except:
-        logger.warning(numba_warning_str)
-        numba = False
-
-    return numba
 
 
 def _check_lightsim2grid_compatibility(net, lightsim2grid, voltage_depend_loads, algorithm, distributed_slack, tdpf):
@@ -975,6 +1038,29 @@ def _check_lightsim2grid_compatibility(net, lightsim2grid, voltage_depend_loads,
         if lightsim2grid == "auto":
             return False
         raise NotImplementedError("option 'lightsim2grid' is True and tdpf is True, TDPF not implemented yet.")
+
+    if len(net.shunt) and "controllable" in net.shunt and np.any(net.shunt.controllable):
+        if lightsim2grid == "auto":
+            return False
+        raise NotImplementedError("option 'lightsim2grid' is True and SVC controllable shunts are present, "
+                                  "SVC controllable shunts not implemented yet.")
+
+    if len(net.tcsc):
+        if lightsim2grid == "auto":
+            return False
+        raise NotImplementedError("option 'lightsim2grid' is True and TCSC controllable impedances are present, "
+                                  "TCSC controllable impedances not implemented.")
+
+    if len(net.svc):
+        if lightsim2grid == "auto":
+            return False
+        raise NotImplementedError("option 'lightsim2grid' is True and SVC controllable shunt elements are present, "
+                                  "SVC controllable shunt elements not implemented.")
+    if len(net.ssc):
+        if lightsim2grid == "auto":
+            return False
+        raise NotImplementedError("option 'lightsim2grid' is True and SSC controllable shunt elements are present, "
+                                  "SVC controllable shunt elements not implemented.")
 
     return True
 
@@ -1177,8 +1263,8 @@ def SVabc_from_SV012(S012, V012, n_res=None, idx=None):
         idx = np.ones(n_res, dtype="bool")
     I012 = np.array(np.zeros((3, n_res)), dtype=np.complex128)
     I012[:, idx] = I_from_SV_elementwise(S012[:, idx], V012[:, idx])
-    Vabc = sequence_to_phase(V012[:, idx])
-    Iabc = sequence_to_phase(I012[:, idx])
+    Vabc = sequence_to_phase(V012)
+    Iabc = sequence_to_phase(I012)
     Sabc = S_from_VI_elementwise(Vabc, Iabc)
     return Sabc, Vabc
 
@@ -1264,7 +1350,7 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
 
     # check if numba is available and the corresponding flag
     if numba:
-        numba = _check_if_numba_is_installed(numba)
+        numba = _check_if_numba_is_installed()
 
     if voltage_depend_loads:
         if not (np.any(net["load"]["const_z_percent"].values)
@@ -1287,24 +1373,27 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
 
     default_max_iteration = {"nr": 10, "iwamoto_nr": 10, "bfsw": 100, "gs": 10000, "fdxb": 30,
                              "fdbx": 30}
+    with_facts = net.svc.in_service.any() or net.tcsc.in_service.any() or net.ssc.in_service.any()
     if max_iteration == "auto":
-        max_iteration = 30 if tdpf else default_max_iteration[algorithm]  # tdpf is an option rather than algorithm
+        # tdpf is an option rather than algorithm; svc need more iterations to converge
+        max_iteration = 30 if tdpf or with_facts else default_max_iteration[algorithm]
 
     if init != "auto" and (init_va_degree is not None or init_vm_pu is not None):
         raise ValueError("Either define initialization through 'init' or through 'init_vm_pu' and "
                          "'init_va_degree'.")
 
     init_from_results = init == "results" or \
-        (isinstance(init_vm_pu, str) and init_vm_pu == "results") or \
-        (isinstance(init_va_degree, str) and init_va_degree == "results")
+                        (isinstance(init_vm_pu, str) and init_vm_pu == "results") or \
+                        (isinstance(init_va_degree, str) and init_va_degree == "results")
     if init_from_results and len(net.res_bus) == 0:
         init = "auto"
         init_vm_pu = None
         init_va_degree = None
 
+    # FACTS devices can lead to the grid having isolated buses from the point of view of DC power flow, so choose 'flat'
     if init == "auto":
         if init_va_degree is None or (isinstance(init_va_degree, str) and init_va_degree == "auto"):
-            init_va_degree = "dc" if calculate_voltage_angles else "flat"
+            init_va_degree = "dc" if calculate_voltage_angles and not with_facts else "flat"
         if init_vm_pu is None or (isinstance(init_vm_pu, str) and init_vm_pu == "auto"):
             init_vm_pu = (net.ext_grid.vm_pu.values.sum() + net.gen.vm_pu.values.sum()) / \
                          (len(net.ext_grid.vm_pu.values) + len(net.gen.vm_pu.values))
@@ -1322,7 +1411,7 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
         if len(false_slack_weight_elms):
             logger.warning("Currently distributed_slack is implemented for 'ext_grid', 'gen' "
                            "and 'xward' only, not for '" + "', '".join(
-                               false_slack_weight_elms) + "'.")
+                false_slack_weight_elms) + "'.")
         if algorithm != 'nr':
             raise NotImplementedError(
                 'Distributed slack is only implemented for Newton Raphson algorithm.')
@@ -1367,7 +1456,7 @@ def _init_rundcpp_options(net, trafo_model, trafo_loading, recycle, check_connec
     mode = "pf"
     init = 'flat'
 
-    numba = _check_if_numba_is_installed(numba)
+    numba = _check_if_numba_is_installed()
 
     # the following parameters have no effect if ac = False
     calculate_voltage_angles = True
@@ -1390,7 +1479,7 @@ def _init_rundcpp_options(net, trafo_model, trafo_loading, recycle, check_connec
 def _init_runopp_options(net, calculate_voltage_angles, check_connectivity, switch_rx_ratio, delta,
                          init, numba, trafo3w_losses, consider_line_temperature=False, **kwargs):
     if numba:
-        numba = _check_if_numba_is_installed(numba)
+        numba = _check_if_numba_is_installed()
     mode = "opf"
     ac = True
     trafo_model = "t"

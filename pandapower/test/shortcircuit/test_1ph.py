@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import pandapower as pp
@@ -58,16 +58,16 @@ def add_network(net, vector_group):
 def test_1ph_shortcircuit():
     # vector groups without "N" have no impact on the 1ph
     results = {
-                 "Yy":  [0.52209347337, 0.74400073149, 0.74563682772, 0.81607276962]
-                ,"Yyn": [0.52209347337, 2.5145986133,  1.6737892808,  1.1117955913 ]
-                ,"Yd":  [0.52209347337, 0.74400073149, 0.74563682772, 0.81607276962]
-                ,"YNy": [0.6291931171,  0.74400073149, 0.74563682772, 0.81607276962]
-                ,"YNyn":[0.62623661918, 2.9829679356,  1.8895041867,  1.2075537026 ]
-                ,"YNd": [0.75701600162, 0.74400073149, 0.74563682772, 0.81607276962]
-                ,"Dy":  [0.52209347337, 0.74400073149, 0.74563682772, 0.81607276962]
-                ,"Dyn": [0.52209347337, 3.5054043285,  2.1086590382,  1.2980120038 ]
-                ,"Dd":  [0.52209347337, 0.74400073149, 0.74563682772, 0.81607276962]
-               }
+        "Yy": [0.52209347337, 0.74400073149, 0.74563682772, 0.81607276962],
+        "Yyn": [0.52209347337, 2.5145986133, 1.6737892808, 1.1117955913],
+        "Yd": [0.52209347337, 0.74400073149, 0.74563682772, 0.81607276962],
+        "YNy": [0.6291931171, 0.74400073149, 0.74563682772, 0.81607276962],
+        "YNyn": [0.62623661918, 2.9829679356, 1.8895041867, 1.2075537026],
+        "YNd": [0.75701600162, 0.74400073149, 0.74563682772, 0.81607276962],
+        "Dy": [0.52209347337, 0.74400073149, 0.74563682772, 0.81607276962],
+        "Dyn": [0.52209347337, 3.5054043285, 2.1086590382, 1.2980120038],
+        "Dd": [0.52209347337, 0.74400073149, 0.74563682772, 0.81607276962]
+    }
 
     for vc, result in results.items():
         net = pp.create_empty_network(sn_mva=17)
@@ -162,41 +162,41 @@ def test_iec60909_example_4_bus_selection():
                                             "ikss_ka"], 34.89135137)
 
 
-def test_iec60909_example_4_bus_selection_br_res():
+@pytest.mark.parametrize("inverse_y", (True, False), ids=("Inverse Y", "LU factorization"))
+def test_iec60909_example_4_bus_selection_br_res(inverse_y):
     file = os.path.join(pp.pp_dir, "test", "test_files", "IEC60909-4_example.json")
     net = pp.from_json(file)
-    for inv_y in (False, True):
-        sc.calc_sc(net, fault="1ph", inverse_y=inv_y,
-                   bus=net.bus[net.bus.name.isin(("F1", "F2"))].index,
-                   branch_results=True)
-        sc.calc_sc(net, fault="1ph", inverse_y=inv_y,
-                   bus=net.bus[net.bus.name.isin(("F1", "F2"))].index,
-                   branch_results=True, return_all_currents=True)
-        assert np.isclose(net.res_bus_sc.at[net.bus[net.bus.name=="F1"].index[0],
-                                            "ikss_ka"], 35.53066312)
-        assert np.isclose(net.res_bus_sc.at[net.bus[net.bus.name=="F2"].index[0],
-                                            "ikss_ka"], 34.89135137)
+    sc.calc_sc(net, fault="1ph", inverse_y=inverse_y,
+               bus=net.bus[net.bus.name.isin(("F1", "F2"))].index,
+               branch_results=True)
+    sc.calc_sc(net, fault="1ph", inverse_y=inverse_y,
+               bus=net.bus[net.bus.name.isin(("F1", "F2"))].index,
+               branch_results=True, return_all_currents=True)
+    assert np.isclose(net.res_bus_sc.at[net.bus[net.bus.name=="F1"].index[0],
+                                        "ikss_ka"], 35.53066312)
+    assert np.isclose(net.res_bus_sc.at[net.bus[net.bus.name=="F2"].index[0],
+                                        "ikss_ka"], 34.89135137)
 
 
-def test_1ph_with_switches():
-    for inv_y in (False, True):
-        net = pp.create_empty_network(sn_mva=67)
-        vc = "Yy"
-        l1, l2, _ = add_network(net, vc)
-        sc.calc_sc(net, fault="1ph", case="max", inverse_y=inv_y)
-        pp.create_line(net, net.line.to_bus.at[l2], net.line.from_bus.at[l1], length_km=15,
-                       std_type="unsymmetric_line_type", parallel=2.)
-        pp.add_zero_impedance_parameters(net)
-        pp.create_switch(net, bus=net.line.to_bus.at[l2], element=l2, et="l", closed=False)
-        sc.calc_sc(net, fault="1ph", case="max")
-        check_results(net, vc, [0.52209347338, 2.0620266652, 2.3255761263, 2.3066467489])
+@pytest.mark.parametrize("inverse_y", (True, False), ids=("Inverse Y", "LU factorization"))
+def test_1ph_with_switches(inverse_y):
+    net = pp.create_empty_network(sn_mva=67)
+    vc = "Yy"
+    l1, l2, _ = add_network(net, vc)
+    sc.calc_sc(net, fault="1ph", case="max", inverse_y=inverse_y)
+    pp.create_line(net, net.line.to_bus.at[l2], net.line.from_bus.at[l1], length_km=15,
+                   std_type="unsymmetric_line_type", parallel=2.)
+    pp.add_zero_impedance_parameters(net)
+    pp.create_switch(net, bus=net.line.to_bus.at[l2], element=l2, et="l", closed=False)
+    sc.calc_sc(net, fault="1ph", case="max")
+    check_results(net, vc, [0.52209347338, 2.0620266652, 2.3255761263, 2.3066467489])
 
 
 def single_3w_trafo_grid(vector_group, sn_mva=123):
     net = pp.create_empty_network(sn_mva=sn_mva)
-    b1 = pp.create_bus(net, vn_kv=380.)
-    b2 = pp.create_bus(net, vn_kv=110.)
-    b3 = pp.create_bus(net, vn_kv=30.)
+    b1 = pp.create_bus(net, vn_kv=380., geodata=(1,1))
+    b2 = pp.create_bus(net, vn_kv=110., geodata=(0,1))
+    b3 = pp.create_bus(net, vn_kv=30., geodata=(1,0))
     pp.create_ext_grid(net, b1, s_sc_max_mva=1000, s_sc_min_mva=800,
                        rx_max=0.1, x0x_max=1, r0x0_max=0.1,
                        rx_min=0.1, x0x_min=1, r0x0_min=0.1)
@@ -312,8 +312,8 @@ def iec_60909_4_t1():
 def vde_232():
     net = pp.create_empty_network(sn_mva=12)
     # hv buses
-    pp.create_bus(net, 110)
-    pp.create_bus(net, 21)
+    pp.create_bus(net, 110, geodata=(0,0))
+    pp.create_bus(net, 21, geodata=(1,0))
 
     pp.create_ext_grid(net, 0, s_sc_max_mva=13.61213 * 110 * np.sqrt(3), rx_max=0.20328,
                        x0x_max=3.47927, r0x0_max=3.03361*0.20328/3.47927)

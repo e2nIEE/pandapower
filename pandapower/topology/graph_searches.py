@@ -70,7 +70,7 @@ def connected_components(mg, notravbuses=set()):
 
          mg = top.create_nxgraph(net)
 
-         cc = top.connected_components(net, 5)
+         cc = top.connected_components(mg, 5)
 
     """
 
@@ -87,7 +87,7 @@ def connected_components(mg, notravbuses=set()):
 
 
 def calc_distance_to_bus(net, bus, respect_switches=True, nogobuses=None,
-                         notravbuses=None, weight='weight'):
+                         notravbuses=None, weight='weight', g=None):
     """
         Calculates the shortest distance between a source bus and all buses connected to it.
 
@@ -110,6 +110,8 @@ def calc_distance_to_bus(net, bus, respect_switches=True, nogobuses=None,
 
         **weight** (string, None) – Edge data key corresponding to the edge weight.
 
+        **g** (nx.MultiGraph, None) – MultiGraph of the network. If None, the graph will be created.
+
      OUTPUT:
         **dist** - Returns a pandas series with containing all distances to the source bus
                    in km. If weight=None dist is the topological distance (int).
@@ -120,14 +122,16 @@ def calc_distance_to_bus(net, bus, respect_switches=True, nogobuses=None,
          dist = top.calc_distance_to_bus(net, 5)
 
     """
-    g = create_nxgraph(net, respect_switches=respect_switches,
-                       nogobuses=nogobuses, notravbuses=notravbuses)
+    if g is None:
+        g = create_nxgraph(net, respect_switches=respect_switches, nogobuses=nogobuses,
+                           notravbuses=notravbuses)
     return pd.Series(nx.single_source_dijkstra_path_length(g, bus, weight=weight))
 
 
 def unsupplied_buses(net, mg=None, slacks=None, respect_switches=True):
     """
-     Finds buses, that are not connected to an external grid.
+     Finds buses, that are not connected electrically (no lines, trafos etc or if respect_switches
+     is True only connected via open switches) to an external grid and that are in service.
 
      INPUT:
         **net** (pandapowerNet) - variable that contains a pandapower network
@@ -386,7 +390,7 @@ def determine_stubs(net, roots=None, mg=None, respect_switches=False):
     #    n1_buses = mg.nodes()
     _, n1_buses = get_2connected_buses(mg, roots)
     net.bus["on_stub"] = True
-    net.bus.loc[n1_buses, "on_stub"] = False
+    net.bus.loc[list(n1_buses), "on_stub"] = False
     net.line["is_stub"] = ~((net.line.from_bus.isin(n1_buses)) & (net.line.to_bus.isin(n1_buses)))
     stubs = set(net.bus.index) - set(n1_buses)
     return stubs

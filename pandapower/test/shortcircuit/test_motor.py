@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -78,4 +78,4 @@ def test_large_motor(motor_net):
                        [14.695869025, 103.16722971, 0.38693418116], rtol=1e-4)
 
 if __name__ == '__main__':
-    pytest.main([__file__])
+    pytest.main([__file__, "-xs"])

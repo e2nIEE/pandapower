@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
@@ -50,7 +50,7 @@ def test_discrete_tap_control_lv():
     # increase voltage from 1.0 pu to 1.03 pu
     net.ext_grid.vm_pu = 1.03
     # switch back tap position
-    net.trafo.tap_pos.at[0] = 0
+    net.trafo.at[0, "tap_pos"] = 0
     pp.runpp(net)
 
     logger.info("case2: high voltage")
@@ -66,7 +66,7 @@ def test_discrete_tap_control_lv():
     # reduce voltage from 1.03 pu to 0.949 pu
     net.ext_grid.vm_pu = 0.949
     # switch back tap position
-    net.trafo.tap_pos.at[0] = 0
+    net.trafo.at[0, "tap_pos"] = 0
     pp.runpp(net)
 
     logger.info("case2: high voltage")
@@ -110,7 +110,7 @@ def test_discrete_tap_control_hv():
     # increase voltage from 1.0 pu to 1.03 pu
     net.ext_grid.vm_pu = 1.03
     # switch back tap position
-    net.trafo.tap_pos.at[0] = 0
+    net.trafo.at[0, "tap_pos"] = 0
     pp.runpp(net)
 
     logger.info("case2: high voltage")
@@ -126,7 +126,7 @@ def test_discrete_tap_control_hv():
     # increase voltage from 1.0 pu to 1.03 pu
     net.ext_grid.vm_pu = 0.949
     # switch back tap position
-    net.trafo.tap_pos.at[0] = 0
+    net.trafo.at[0, "tap_pos"] = 0
     pp.runpp(net)
 
     logger.info("case2: high voltage")
@@ -181,7 +181,7 @@ def test_discrete_tap_control_lv_from_tap_step_percent():
     # increase voltage from 1.0 pu to 1.03 pu
     net.ext_grid.vm_pu = 1.03
     # switch back tap position
-    net.trafo.tap_pos.at[0] = 0
+    net.trafo.at[0, "tap_pos"] = 0
     pp.runpp(net)
 
     logger.info("case2: high voltage")
@@ -197,7 +197,7 @@ def test_discrete_tap_control_lv_from_tap_step_percent():
     # reduce voltage from 1.03 pu to 0.969 pu
     net.ext_grid.vm_pu = 0.969
     # switch back tap position
-    net.trafo.tap_pos.at[0] = 0
+    net.trafo.at[0, "tap_pos"] = 0
     pp.runpp(net)
 
     logger.info("case2: high voltage")
@@ -252,7 +252,7 @@ def test_discrete_tap_control_hv_from_tap_step_percent():
     # increase voltage from 1.0 pu to 1.03 pu
     net.ext_grid.vm_pu = 1.03
     # switch back tap position
-    net.trafo.tap_pos.at[0] = 0
+    net.trafo.at[0, "tap_pos"] = 0
     pp.runpp(net)
 
     logger.info("case2: high voltage")
@@ -268,7 +268,7 @@ def test_discrete_tap_control_hv_from_tap_step_percent():
     # reduce voltage from 1.03 pu to 0.969 pu
     net.ext_grid.vm_pu = 0.969
     # switch back tap position
-    net.trafo.tap_pos.at[0] = 0
+    net.trafo.at[0, "tap_pos"] = 0
     pp.runpp(net)
 
     logger.info("case2: high voltage")

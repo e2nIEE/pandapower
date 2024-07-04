@@ -31,38 +31,29 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
     """
     This function converts pypower case files to pandapower net structure.
 
-    Parameters
-    ----------
-    ppc : dict
-        The pypower case file.
-    f_hz : int, optional
-        The frequency of the network, by default 50
-    validate_conversion : bool, optional
-        If True, validate_from_ppc is run after conversion.
-        For running the validation, the ppc must already contain the pypower
-        powerflow results or pypower must be installed, by default False
-    kwargs: dict
-        keyword arguments for
+    INPUT:
+        **ppc** (dict) -  The pypower case file.
 
-            - validate_from_ppc if validate_conversion is True
+        **f_hz** (int) - The frequency of the network, by default 50
 
-            - tap_side
+        **validate_conversion** (bool) - If True, validate_from_ppc is run after conversion. For running the validation, the ppc must already contain the pypower powerflow results or pypower must be installed, by default False
 
-            - check_costs is passed as "check" to create_pwl_costs() and create_poly_costs()
+        **kwargs** (dict) - keyword arguments for:
+                            - validate_from_ppc if validate_conversion is True
 
-    Returns
-    -------
-    pandapower.pandapowerNet
-        ppc converted to pandapower net structure
+                            - tap_side
 
-    Examples
-    -------
-    >>> import pandapower
-    >>> from pandapower.test.converter.test_from_ppc import get_testgrids
-    >>> ppc = get_testgrids('pypower_cases', 'case4gs.json')
-    >>> net = pandapower.converter.from_ppc(ppc, f_hz=60)
+                            - check_costs is passed as "check" to create_pwl_costs() and create_poly_costs()
+
+    OUTPUT:
+        **net** - ppc converted to pandapower net structure
+
+    EXAMPLES:
+        >>> import pandapower
+        >>> from pandapower.test.converter.test_from_ppc import get_testgrids
+        >>> ppc = get_testgrids('pypower_cases', 'case4gs.json')
+        >>> net = pandapower.converter.from_ppc(ppc, f_hz=60)
     """
-
     # --- catch common failures
     if pd.Series(ppc['bus'][:, BASE_KV] <= 0).any():
         logger.info('There are false baseKV given in the pypower case file.')
@@ -87,14 +78,13 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
 
 def _from_ppc_bus(net, ppc):
     """ bus data -> create buses, sgen, load, shunt """
-
     # create buses
     idx_buses = create_buses(
         net, ppc['bus'].shape[0], name=ppc.get("bus_name", None),
         vn_kv=ppc['bus'][:, BASE_KV], type="b", zone=ppc['bus'][:, ZONE],
         in_service=(ppc['bus'][:, BUS_TYPE] != 4).astype(bool),
         max_vm_pu=ppc['bus'][:, VMAX], min_vm_pu=ppc['bus'][:, VMIN],
-        index=ppc['bus'][:, BUS_I].astype(int))
+        index=ppc['bus'][:, BUS_I].astype(np.int64))
 
     # create loads
     is_load = (ppc['bus'][:, PD] > 0) | ((ppc['bus'][:, PD] == 0) & (ppc['bus'][:, QD] != 0))
@@ -136,7 +126,7 @@ def _from_ppc_gen(net, ppc):
 
     # create ext_grid
     idx_eg = list()
-    for i in np.arange(n_gen, dtype=int)[is_ext_grid]:
+    for i in np.arange(n_gen, dtype=np.int64)[is_ext_grid]:
         idx_eg.append(create_ext_grid(
             net, bus=net.bus.index[bus_pos[i]], vm_pu=vg_bus_lookup.at[bus_pos[i]],
             va_degree=ppc['bus'][bus_pos[i], VA],
@@ -163,9 +153,9 @@ def _from_ppc_gen(net, ppc):
         max_q_mvar=ppc['gen'][is_sgen, QMAX], min_q_mvar=ppc['gen'][is_sgen, QMIN],
         controllable=True, name=gen_name[is_sgen])
 
-    neg_p_gens = np.arange(n_gen, dtype=int)[(ppc['gen'][:, PG] < 0) & (is_gen | is_sgen)]
-    neg_p_lim_false = np.arange(n_gen, dtype=int)[ppc['gen'][:, PMIN] > ppc['gen'][:, PMAX]]
-    neg_q_lim_false = np.arange(n_gen, dtype=int)[ppc['gen'][:, QMIN] > ppc['gen'][:, QMAX]]
+    neg_p_gens = np.arange(n_gen, dtype=np.int64)[(ppc['gen'][:, PG] < 0) & (is_gen | is_sgen)]
+    neg_p_lim_false = np.arange(n_gen, dtype=np.int64)[ppc['gen'][:, PMIN] > ppc['gen'][:, PMAX]]
+    neg_q_lim_false = np.arange(n_gen, dtype=np.int64)[ppc['gen'][:, QMIN] > ppc['gen'][:, QMAX]]
     if len(neg_p_gens):
         logger.info(f'These gen have PG < 0 and are not converted to ext_grid: {neg_p_gens}.')
     if len(neg_p_lim_false):
@@ -181,8 +171,8 @@ def _from_ppc_gen(net, ppc):
     for is_, idx, et in zip([is_ext_grid, is_gen, is_sgen],
                             [idx_eg, idx_gen, idx_sgen],
                             ["ext_grid", "gen", "sgen"]):
-        gen_lookup["element"].loc[is_] = idx
-        gen_lookup["element_type"].loc[is_] = et
+        gen_lookup.loc[is_, "element"] = idx
+        gen_lookup.loc[is_, "element_type"] = et
     return gen_lookup
 
 
@@ -195,8 +185,8 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
     omega = pi * f_hz  # 1/s
     MAX_VAL = 99999.
 
-    from_bus = _get_bus_pos(ppc, ppc['branch'][:, F_BUS].real.astype(int))
-    to_bus = _get_bus_pos(ppc, ppc['branch'][:, T_BUS].real.astype(int))
+    from_bus = _get_bus_pos(ppc, ppc['branch'][:, F_BUS].real.astype(np.int64))
+    to_bus = _get_bus_pos(ppc, ppc['branch'][:, T_BUS].real.astype(np.int64))
     from_vn_kv = ppc['bus'][from_bus, BASE_KV]
     to_vn_kv = ppc['bus'][to_bus, BASE_KV]
 
@@ -260,7 +250,7 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
         if np.any(is_neg_i0_percent):
             logger.info(
                 'Transformers always behave inductive consumpting but the susceptance of pypower '
-                f'branches {np.arange(len(is_neg_i0_percent), dtype=int)[is_neg_i0_percent]} '
+                f'branches {np.arange(len(is_neg_i0_percent), dtype=np.int64)[is_neg_i0_percent]} '
                 f'(hv_bus, lv_bus)=({hv_bus[is_neg_i0_percent]}, {hv_bus[is_neg_i0_percent]}) '
                 'is positive.')
         vk_percent = np.sign(xk) * zk * sn * 100 / baseMVA
@@ -282,27 +272,27 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
 
     # branch_lookup: which branches are lines, and which ones are transformers
     branch_lookup = pd.DataFrame({"element": [-1] * n_bra, "element_type": [""] * n_bra})
-    branch_lookup["element"].loc[is_line] = idx_line
-    branch_lookup["element_type"].loc[is_line] = "line"
-    branch_lookup["element"].loc[~is_line] = idx_trafo
-    branch_lookup["element_type"].loc[~is_line] = "trafo"
+    branch_lookup.loc[is_line, "element"] = idx_line
+    branch_lookup.loc[is_line, "element_type"] = "line"
+    branch_lookup.loc[~is_line, "element"] = idx_trafo
+    branch_lookup.loc[~is_line, "element_type"] = "trafo"
     return branch_lookup
 
 
 def _get_bus_pos(ppc, bus_names):
     try:
-        return pd.Series(np.arange(ppc["bus"].shape[0], dtype=int), index=ppc["bus"][
+        return pd.Series(np.arange(ppc["bus"].shape[0], dtype=np.int64), index=ppc["bus"][
             :, BUS_I]).loc[bus_names].values
     except:
-        return pd.Series(np.arange(ppc["bus"].shape[0], dtype=int), index=ppc["bus"][
-            :, BUS_I].astype(int)).loc[bus_names].values
+        return pd.Series(np.arange(ppc["bus"].shape[0], dtype=np.int64), index=ppc["bus"][
+            :, BUS_I].astype(np.int64)).loc[bus_names].values
 
 
 def _gen_to_which(ppc, bus_pos=None, flattened=True):
     if bus_pos is None:
         bus_pos = _get_bus_pos(ppc, ppc["gen"][:, GEN_BUS])
     bus_type_df = pd.DataFrame({"bus_type": ppc["bus"][bus_pos, BUS_TYPE],
-                                "bus": ppc["gen"][:, GEN_BUS]}).astype(int)
+                                "bus": ppc["gen"][:, GEN_BUS]}).astype(np.int64)
     bus_type_df = pd.concat([bus_type_df.loc[bus_type_df.bus_type == 3],
                             bus_type_df.loc[bus_type_df.bus_type == 2],
                             bus_type_df.loc[bus_type_df.bus_type == 1],
@@ -318,10 +308,10 @@ def _gen_to_which(ppc, bus_pos=None, flattened=True):
 
 def _branch_to_which(ppc, from_vn_kv=None, to_vn_kv=None, flattened=True):
     if from_vn_kv is None:
-        from_bus = _get_bus_pos(ppc, ppc['branch'][:, F_BUS].real.astype(int))
+        from_bus = _get_bus_pos(ppc, ppc['branch'][:, F_BUS].real.astype(np.int64))
         from_vn_kv = ppc['bus'][from_bus, BASE_KV]
     if to_vn_kv is None:
-        to_bus = _get_bus_pos(ppc, ppc['branch'][:, T_BUS].real.astype(int))
+        to_bus = _get_bus_pos(ppc, ppc['branch'][:, T_BUS].real.astype(np.int64))
         to_vn_kv = ppc['bus'][to_bus, BASE_KV]
     is_line = (from_vn_kv == to_vn_kv) & \
               ((ppc['branch'][:, TAP] == 0) | (ppc['branch'][:, TAP] == 1)) & \
@@ -464,7 +454,7 @@ def _validate_diff_res(diff_res, max_diff_values):
 
 def _gen_q_per_bus_sum(q_array, ppc):
     return pd.DataFrame(
-        np.c_[q_array, ppc["gen"][:, GEN_BUS].astype(int)],
+        np.c_[q_array, ppc["gen"][:, GEN_BUS].astype(np.int64)],
         columns=["q_mvar", "bus"]).groupby("bus").sum()
 
 
@@ -481,36 +471,31 @@ def _log_dict(key=None):
         return log_dict[key]
 
 
-def validate_from_ppc(ppc, net, max_diff_values={
-        "bus_vm_pu": 1e-6, "bus_va_degree": 1e-5, "branch_p_mw": 1e-6, "branch_q_mvar": 1e-6,
-        "gen_p_mw": 1e-6, "gen_q_mvar": 1e-6}):
+def validate_from_ppc(ppc, net, max_diff_values={"bus_vm_pu": 1e-6, "bus_va_degree": 1e-5,
+                                                 "branch_p_mw": 1e-6, "branch_q_mvar": 1e-6,
+                                                 "gen_p_mw": 1e-6, "gen_q_mvar": 1e-6}):
     """
     This function validates the conversion of a pypower case file (ppc) to a pandapower net.
     It compares the power flow calculation results which must be provided within the ppc and the net.
 
-    Parameters
-    ----------
-    ppc : dict
-        _description_
-    net : pandapower.pandapowerNet
-        _description_
-    max_diff_values : dict, optional
-        _description_, by default { "bus_vm_pu": 1e-6, "bus_va_degree": 1e-5, "branch_p_mw": 1e-6,
-        "branch_q_mvar": 1e-6, "gen_p_mw": 1e-6, "gen_q_mvar": 1e-6}
+    INPUT:
+        **ppc** - dict
 
-    Returns
-    -------
-    bool
-        Whether the power flow results matches.
+        **net** - pandapower.pandapowerNet
 
-    Examples
-    ------
-    >>> import pandapower
-    >>> from pandapower.test.converter.test_from_ppc import get_testgrids
-    >>> ppc = get_testgrids('pypower_cases', 'case4gs.json')
-    >>> net = pandapower.converter.from_ppc(ppc, f_hz=50)
-    >>> pandapower.runpp(net)
-    >>> pf_match = pandapower.converter.validate_from_ppc(ppc, net)
+        **max_diff_values** - dict, optional by default { "bus_vm_pu": 1e-6, "bus_va_degree": 1e-5, "branch_p_mw": 1e-6,
+            "branch_q_mvar": 1e-6, "gen_p_mw": 1e-6, "gen_q_mvar": 1e-6}
+
+    OUTPUT:
+    **pf_match** - Whether the power flow results matches.
+
+    EXAMPLES:
+        >>> import pandapower
+        >>> from pandapower.test.converter.test_from_ppc import get_testgrids
+        >>> ppc = get_testgrids('pypower_cases', 'case4gs.json')
+        >>> net = pandapower.converter.from_ppc(ppc, f_hz=50)
+        >>> pandapower.runpp(net)
+        >>> pf_match = pandapower.converter.validate_from_ppc(ppc, net)
     """
     if "_from_ppc_lookups" not in net.keys() or \
             ("gen" not in net._from_ppc_lookups.keys() and len(ppc["gen"]) > 0) or \
@@ -534,11 +519,11 @@ def validate_from_ppc(ppc, net, max_diff_values={
     pp_res = dict.fromkeys(ppc_elms)
 
     # --- bus
-    pp_res["bus"] = net.res_bus.loc[ppc["bus"][:, BUS_I].astype(int), ['vm_pu', 'va_degree']].values
+    pp_res["bus"] = net.res_bus.loc[ppc["bus"][:, BUS_I].astype(np.int64), ['vm_pu', 'va_degree']].values
 
     # --- branch
     pp_res["branch"] = np.zeros(ppc_res["branch"].shape)
-    from_to_buses = -np.ones((ppc_res["branch"].shape[0], 2), dtype=int)
+    from_to_buses = -np.ones((ppc_res["branch"].shape[0], 2), dtype=np.int64)
     for et in net._from_ppc_lookups["branch"].element_type.unique():
         if et == "line":
             from_to_cols = ["from_bus", "to_bus"]
@@ -556,9 +541,9 @@ def validate_from_ppc(ppc, net, max_diff_values={
             net._from_ppc_lookups["branch"].element.loc[is_et], from_to_cols].values
 
     # switch direction as in ppc
-    correct_from_to = np.all(from_to_buses == ppc["branch"][:, F_BUS:T_BUS+1].astype(int), axis=1)
+    correct_from_to = np.all(from_to_buses == ppc["branch"][:, F_BUS:T_BUS+1].astype(np.int64), axis=1)
     switch_from_to = np.all(from_to_buses[:, ::-1] == ppc["branch"][:, F_BUS:T_BUS+1].astype(
-        int), axis=1)
+        np.int64), axis=1)
     if not np.all(correct_from_to | switch_from_to):
         raise ValueError("ppc branch from and to buses don't fit to pandapower from and to + "
                         "hv and lv buses.")

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -8,7 +8,7 @@ import numpy as np
 
 from pandapower.pf.ppci_variables import bustypes
 from pandapower.pypower.idx_bus import PV, REF, VA, VM, BUS_TYPE, NONE, VMAX, VMIN, SL_FAC as SL_FAC_BUS
-from pandapower.pypower.idx_gen import QMIN, QMAX, PMIN, PMAX, GEN_BUS, PG, VG, QG, MBASE, SL_FAC
+from pandapower.pypower.idx_gen import QMIN, QMAX, PMIN, PMAX, GEN_BUS, PG, VG, QG, MBASE, SL_FAC, gen_cols
 from pandapower.pypower.idx_brch import F_BUS, T_BUS
 from pandapower.auxiliary import _subnetworks, _sum_by_group
 
@@ -74,7 +74,7 @@ def add_gen_order(gen_order, element, _is_elements, f):
 
 def _init_ppc_gen(net, ppc, nr_gens):
     # initialize generator matrix
-    ppc["gen"] = np.zeros(shape=(nr_gens, 26), dtype=float)
+    ppc["gen"] = np.zeros(shape=(nr_gens, gen_cols), dtype=np.float64)
     ppc["gen"][:] = np.array([0, 0, 0, 0, 0, 1.,
                               1., 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                               0, 0, 0, 0, 0])
@@ -299,7 +299,7 @@ def add_p_constraints(net, element, is_element, ppc, f, t, delta, inverted=False
 
 def _check_voltage_setpoints_at_same_bus(ppc):
     # generator buses:
-    gen_bus = ppc['gen'][:, GEN_BUS].astype(int)
+    gen_bus = ppc['gen'][:, GEN_BUS].astype(np.int64)
     # generator setpoints:
     gen_vm = ppc['gen'][:, VG]
     if _different_values_at_one_bus(gen_bus, gen_vm):
@@ -310,7 +310,7 @@ def _check_voltage_angles_at_same_bus(net, ppc):
     if net._is_elements["ext_grid"].any():
         gen_va = net.ext_grid.va_degree.values[net._is_elements["ext_grid"]]
         eg_gens = net._pd2ppc_lookups["ext_grid"][net.ext_grid.index[net._is_elements["ext_grid"]]]
-        gen_bus = ppc["gen"][eg_gens, GEN_BUS].astype(int)
+        gen_bus = ppc["gen"][eg_gens, GEN_BUS].astype(np.int64)
         if _different_values_at_one_bus(gen_bus, gen_va):
             raise UserWarning("Ext grids with different voltage angle setpoints connected to the same bus")
 

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -37,5 +37,4 @@ def test_impedance_min(impedance_net):
     assert np.allclose(net.res_bus_sc.ith_ka.values, [0.20375890703, 0.87488745362])
 
 if __name__ == '__main__':
-    pytest.main(['test_impedance.py'])
-
+    pytest.main([__file__, "-xs"])

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -46,7 +46,7 @@ def _run_dc_pf(ppci, recycle=False):
             ppci['internal']['Pbusinj'] = Pbusinj
             ppci['internal']['Pfinj'] = Pfinj
     else:
-        baseMVA, bus, gen, branch, ref, pv, pq, _, _, _, ref_gens = _get_pf_variables_from_ppci(ppci)
+        baseMVA, bus, gen, branch, svc, tcsc, ssc, ref, pv, pq, *_, ref_gens = _get_pf_variables_from_ppci(ppci)
 
         ppci["internal"]['baseMVA'] = baseMVA
         ppci["internal"]['bus'] = bus
@@ -90,7 +90,7 @@ def _run_dc_pf(ppci, recycle=False):
     ##      newPg = oldPg + newPinj - oldPinj
 
     ## ext_grid (ref_gens) buses
-    refgenbus=gen[ref_gens, GEN_BUS].astype(int)
+    refgenbus=gen[ref_gens, GEN_BUS].astype(np.int64)
     ## number of ext_grids (ref_gens) at those buses
     ext_grids_bus=bincount(refgenbus)
     gen[ref_gens, PG] = real(gen[ref_gens, PG] + (B[refgenbus, :] * Va - Pbus[refgenbus]) * baseMVA / ext_grids_bus[refgenbus])

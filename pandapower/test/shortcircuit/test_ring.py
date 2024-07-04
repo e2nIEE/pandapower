@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -62,4 +62,4 @@ def test_kappa_methods():
                        [0.48810547956, 0.91192962511, 0.89331396461, 0.90103415924])
 
 if __name__ == '__main__':
-    pytest.main(["test_ring.py"])
+    pytest.main([__file__, "-xs"])

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import pandapower as pp
@@ -47,7 +47,9 @@ def get_controller_order(nets, controller):
         nets = np.array(nets)
     if nets is not np.ndarray:
         nets = np.array(nets)
-    level = controller.level.fillna(0).apply(asarray).values
+    if np.any(controller.level.isnull()):
+        raise UserWarning("controller level cannot be None")
+    level = controller.level.apply(asarray).values
     # list of sorted unique levels
     level_list = sorted(set(np.concatenate(level)))
 
@@ -59,8 +61,9 @@ def get_controller_order(nets, controller):
         controller_order.append([*zip(rel_controller[order.argsort()], nets[to_add][order.argsort()])])
         # controller_order.append(net.controller[to_add].sort_values(["order"]).object.values)
 
-    logger.debug("levellist: " + str(level_list))
-    logger.debug("order: " + str(controller_order))
+    if logger.level <= pplog.DEBUG:
+        logger.debug("levellist: " + str(level_list))
+        logger.debug("order: " + str(controller_order)) # Note: creates a long string if many controllers are present
 
     return level_list, controller_order
 
@@ -98,8 +101,7 @@ def ctrl_variables_default(net, **kwargs):
     else:
         ctrl_variables["level"], ctrl_variables["controller_order"] = get_controller_order(net, net.controller)
     ctrl_variables["run"] = kwargs.pop('run', pp.runpp)
-    ctrl_variables["initial_run"] = check_for_initial_run(
-        ctrl_variables["controller_order"])
+    ctrl_variables["initial_run"] = check_for_initial_run(ctrl_variables["controller_order"])
     ctrl_variables['continue_on_divergence'] = False
     ctrl_variables['check_each_level'] = True
     ctrl_variables["errors"] = (LoadflowNotConverged, OPFNotConverged, NetCalculationNotConverged)

@@ -174,9 +174,4 @@ def test_pm_tnep_cigre_ac_I():
 
 
 if __name__ == '__main__':
-
-    # pytest.main([__file__])
-    # test_pm_tnep_cigre_ac_I()
-    # test_pm_tnep_cigre()
-    # test_pm_tnep_cigre_only_conversion()
-    test_pm_tnep_cigre_dc()
+    pytest.main([__file__, "-xs"])

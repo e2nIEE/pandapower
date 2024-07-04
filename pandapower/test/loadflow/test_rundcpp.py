@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -34,8 +34,8 @@ def test_rundcpp_init_auxiliary_buses():
     pp.create_load(net, b3, p_mw=5)
     pp.create_load(net, b4, p_mw=5)
     pp.create_xward(net, b4, 1, 1, 1, 1, 0.1, 0.1, 1.0)
-    net.trafo3w.shift_lv_degree.at[tidx] = 120
-    net.trafo3w.shift_mv_degree.at[tidx] = 80
+    net.trafo3w.at[tidx, "shift_lv_degree"] = 120
+    net.trafo3w.at[tidx, "shift_mv_degree"] = 80
     pp.rundcpp(net)
     va = net.res_bus.va_degree.at[b2]
     pp.rundcpp(net)
@@ -109,6 +109,18 @@ def test_missing_gen():
     net.pop("res_gen")
     pp.rundcpp(net)
     assert np.allclose(net.res_gen.values, res_gen, equal_nan=True)
+
+
+def test_res_bus_vm():
+    net = nw.case4gs()
+    # run power flow to have bus vm_pu values
+    pp.runpp(net)
+    # now run DC pf and check that the vm_pu values are reset to 1
+    pp.rundcpp(net)
+    assert np.allclose(net.res_bus.loc[net.line.from_bus.values, "vm_pu"], net.res_line.vm_from_pu, equal_nan=True)
+    assert np.allclose(net.res_bus.loc[net.line.from_bus.values, "va_degree"], net.res_line.va_from_degree, equal_nan=True)
+    assert np.allclose(net.res_bus.loc[net.line.to_bus.values, "vm_pu"], net.res_line.vm_to_pu, equal_nan=True)
+    assert np.allclose(net.res_bus.loc[net.line.to_bus.values, "va_degree"], net.res_line.va_to_degree, equal_nan=True)
 
 
 if __name__ == "__main__":

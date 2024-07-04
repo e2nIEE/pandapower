@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
@@ -236,7 +236,7 @@ def _determine_costs_dict(net, opf_task_overview):
         #                "index"] for idx in idxs}
 
         for cost_df in cost_dfs:
-            idx_with_cost = set(net[cost_df].element[net[cost_df].et == flex_element].astype(int))
+            idx_with_cost = set(net[cost_df].element[net[cost_df].et == flex_element].astype(np.int64))
             if len(idx_with_cost - idx_without_cost):
                 logger.warning("These " + flex_element + "s have cost data but aren't flexible or" +
                                " have both, poly_cost and pwl_cost: " +
@@ -415,7 +415,7 @@ def clear_result_tables(net):
     """
     for key in net.keys():
         if isinstance(net[key], pd.DataFrame) and key[:3] == "res" and net[key].shape[0]:
-            net[key].drop(net[key].index, inplace=True)
+            net[key] = net[key].drop(net[key].index)
 
 
 def res_power_columns(element_type, side=0):

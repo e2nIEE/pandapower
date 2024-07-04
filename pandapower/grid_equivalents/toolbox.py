@@ -105,7 +105,7 @@ def set_bus_zone_by_boundary_branches(net, all_boundary_branches):
                     areas[-1] |= ccl.pop(i)
 
     for i, area in enumerate(areas):
-        net.bus.zone.loc[list(area)] = i
+        net.bus.loc[list(area), "zone"] = i
 
 
 def get_boundaries_by_bus_zone_with_boundary_branches(net):
@@ -213,12 +213,12 @@ def get_boundaries_by_bus_zone_with_boundary_branches(net):
                 this_zone_col = np.zeros(boundaries.shape[0])*np.nan
                 for i, _ in enumerate(buses):
                     this_zone_col[boundaries[zone_cols[i]] == zone] = i
-                this_zone_col = pd.Series(this_zone_col).dropna().astype(int)
-                other_zone_col1 = pd.Series(np.ones(this_zone_col.shape, dtype=int),
+                this_zone_col = pd.Series(this_zone_col).dropna().astype(np.int64)
+                other_zone_col1 = pd.Series(np.ones(this_zone_col.shape, dtype=np.int64),
                                             index=this_zone_col.index) - this_zone_col
                 if len(buses) == 3:
                     other_zone_col1.loc[other_zone_col1 < 0] = 0
-                    other_zone_col2 = pd.Series(3 * np.ones(this_zone_col.shape, dtype=int),
+                    other_zone_col2 = pd.Series(3 * np.ones(this_zone_col.shape, dtype=np.int64),
                                                 index=this_zone_col.index) - \
                         this_zone_col - other_zone_col1
 

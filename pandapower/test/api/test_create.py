@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+from copy import deepcopy
 
+import geojson
 import numpy as np
 import pandas as pd
 import pytest
@@ -66,7 +68,7 @@ def test_convenience_create_functions():
     assert net.sgen.test_kwargs.at[sg0] == "dummy_string"
 
     tol = 1e-6
-    base_z = 110**2 / 100
+    base_z = 110 ** 2 / 100
     sind = pp.create_series_reactor_as_impedance(
         net, b1, b2, r_ohm=100, x_ohm=200, sn_mva=100, test_kwargs="dummy_string"
     )
@@ -213,7 +215,7 @@ def test_nonexistent_bus():
     ]
     for func in create_functions:
         with pytest.raises(
-            Exception
+                Exception
         ):  # exception has to be raised since bus doesn't exist
             func()
     pp.create_bus(net, 0.4)
@@ -222,7 +224,7 @@ def test_nonexistent_bus():
     for func in create_functions:
         func()  # buses exist, element can be created
         with pytest.raises(
-            Exception
+                Exception
         ):  # exception is raised because index already exists
             func()
 
@@ -271,22 +273,16 @@ def test_create_buses():
     # with geodata
     b2 = pp.create_buses(net, 3, 110, geodata=(10, 20))
     # with geodata as array
-    geodata = np.array([[10, 20], [20, 30], [30, 40]])
+    geodata = [(10, 20), (20, 30), (30, 40)]
     b3 = pp.create_buses(net, 3, 110, geodata=geodata)
 
     assert len(net.bus) == 9
-    assert len(net.bus_geodata) == 6
     assert net.bus.test_kwargs.at[b1[0]] == "dummy_string"
 
     for i in b2:
-        assert net.bus_geodata.at[i, "x"] == 10
-        assert net.bus_geodata.at[i, "y"] == 20
-    assert (net.bus_geodata.loc[b3, ["x", "y"]].values == geodata).all()
-
-    # no way of creating buses with not matching shape
-    with pytest.raises(ValueError):
-        pp.create_buses(net, 2, 110, geodata=geodata)
-
+        assert net.bus.at[i, "geo"] == geojson.dumps(geojson.Point((10, 20)), sort_keys=True)
+    for i, ind in enumerate(b3):
+        assert net.bus.at[ind, "geo"] == geojson.dumps(geojson.Point(geodata[i]), sort_keys=True)
 
 def test_create_lines():
     # standard
@@ -302,7 +298,6 @@ def test_create_lines():
         test_kwargs="dummy_string",
     )
     assert len(net.line) == 2
-    assert len(net.line_geodata) == 0
     assert sum(net.line.std_type == "48-AL1/8-ST1A 10.0") == 2
     assert len(set(net.line.r_ohm_per_km)) == 1
     assert all(net.line.test_kwargs == "dummy_string")
@@ -318,7 +313,6 @@ def test_create_lines():
         std_type=["48-AL1/8-ST1A 10.0", "NA2XS2Y 1x240 RM/25 6/10 kV"],
     )
     assert len(net.line) == 2
-    assert len(net.line_geodata) == 0
     assert sum(net.line.std_type == "48-AL1/8-ST1A 10.0") == 1
     assert sum(net.line.std_type == "NA2XS2Y 1x240 RM/25 6/10 kV") == 1
 
@@ -336,9 +330,8 @@ def test_create_lines():
     )
 
     assert len(net.line) == 2
-    assert len(net.line_geodata) == 2
-    assert net.line_geodata.at[l[0], "coords"] == [(1, 1), (2, 2), (3, 3)]
-    assert net.line_geodata.at[l[1], "coords"] == [(1, 1), (1, 2)]
+    assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(1, 1), (2, 2), (3, 3)]), sort_keys=True)
+    assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(1, 1), (1, 2)]), sort_keys=True)
 
     # setting params as single value
     net = pp.create_empty_network()
@@ -359,14 +352,13 @@ def test_create_lines():
     )
 
     assert len(net.line) == 2
-    assert len(net.line_geodata) == 2
     assert net.line.length_km.at[l[0]] == 5
     assert net.line.length_km.at[l[1]] == 5
     assert net.line.in_service.dtype == bool
     assert not net.line.at[l[0], "in_service"]  # is actually <class 'numpy.bool_'>
     assert not net.line.at[l[1], "in_service"]  # is actually <class 'numpy.bool_'>
-    assert net.line_geodata.at[l[0], "coords"] == [(10, 10), (20, 20)]
-    assert net.line_geodata.at[l[1], "coords"] == [(10, 10), (20, 20)]
+    assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(10, 10), (20, 20)]), sort_keys=True)
+    assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(10, 10), (20, 20)]), sort_keys=True)
     assert net.line.at[l[0], "name"] == "test"
     assert net.line.at[l[1], "name"] == "test"
     assert net.line.at[l[0], "max_loading_percent"] == 90
@@ -393,14 +385,13 @@ def test_create_lines():
     )
 
     assert len(net.line) == 2
-    assert len(net.line_geodata) == 2
     assert net.line.at[l[0], "length_km"] == 1
     assert net.line.at[l[1], "length_km"] == 5
     assert net.line.in_service.dtype == bool
-    assert net.line.at[l[0], "in_service"]   # is actually <class 'numpy.bool_'>
+    assert net.line.at[l[0], "in_service"]  # is actually <class 'numpy.bool_'>
     assert not net.line.at[l[1], "in_service"]  # is actually <class 'numpy.bool_'>
-    assert net.line_geodata.at[l[0], "coords"] == [(10, 10), (20, 20)]
-    assert net.line_geodata.at[l[1], "coords"] == [(100, 10), (200, 20)]
+    assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(10, 10), (20, 20)]), sort_keys=True)
+    assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(100, 10), (200, 20)]), sort_keys=True)
     assert net.line.at[l[0], "name"] == "test1"
     assert net.line.at[l[1], "name"] == "test2"
     assert net.line.at[l[0], "max_loading_percent"] == 80
@@ -426,7 +417,6 @@ def test_create_lines_from_parameters():
         test_kwargs=["dummy_string", "dummy_string"],
     )
     assert len(net.line) == 2
-    assert len(net.line_geodata) == 0
     assert len(net.line.x_ohm_per_km) == 2
     assert len(net.line.r_ohm_per_km) == 2
     assert len(net.line.c_nf_per_km) == 2
@@ -451,9 +441,8 @@ def test_create_lines_from_parameters():
     )
 
     assert len(net.line) == 2
-    assert len(net.line_geodata) == 2
-    assert net.line_geodata.at[l[0], "coords"] == [(1, 1), (2, 2), (3, 3)]
-    assert net.line_geodata.at[l[1], "coords"] == [(1, 1), (1, 2)]
+    assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(1, 1), (2, 2), (3, 3)]), sort_keys=True)
+    assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(1, 1), (1, 2)]), sort_keys=True)
 
     # setting params as single value
     net = pp.create_empty_network()
@@ -483,7 +472,6 @@ def test_create_lines_from_parameters():
     )
 
     assert len(net.line) == 2
-    assert len(net.line_geodata) == 2
     assert all(net.line["length_km"].values == 5)
     assert all(net.line["x_ohm_per_km"].values == 1)
     assert all(net.line["r_ohm_per_km"].values == 0.2)
@@ -493,8 +481,8 @@ def test_create_lines_from_parameters():
     assert net.line.in_service.dtype == bool
     assert not net.line.at[l[0], "in_service"]  # is actually <class 'numpy.bool_'>
     assert not net.line.at[l[1], "in_service"]  # is actually <class 'numpy.bool_'>
-    assert net.line_geodata.at[l[0], "coords"] == [(10, 10), (20, 20)]
-    assert net.line_geodata.at[l[1], "coords"] == [(10, 10), (20, 20)]
+    assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(10, 10), (20, 20)]), sort_keys=True)
+    assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(10, 10), (20, 20)]), sort_keys=True)
     assert all(net.line["name"].values == "test")
     assert all(net.line["max_loading_percent"].values == 90)
     assert all(net.line["parallel"].values == 1)
@@ -528,7 +516,6 @@ def test_create_lines_from_parameters():
     )
 
     assert len(net.line) == 2
-    assert len(net.line_geodata) == 2
     assert net.line.at[l[0], "length_km"] == 1
     assert net.line.at[l[1], "length_km"] == 5
     assert net.line.at[l[0], "r_ohm_per_km"] == 1
@@ -544,10 +531,10 @@ def test_create_lines_from_parameters():
     assert all(net.line["g0_us_per_km"].values == 0)
     assert all(net.line["c0_nf_per_km"].values == 0)
     assert net.line.in_service.dtype == bool
-    assert net.line.at[l[0], "in_service"]   # is actually <class 'numpy.bool_'>
-    assert not net.line.at[l[1], "in_service"] # is actually <class 'numpy.bool_'>
-    assert net.line_geodata.at[l[0], "coords"] == [(10, 10), (20, 20)]
-    assert net.line_geodata.at[l[1], "coords"] == [(100, 10), (200, 20)]
+    assert net.line.at[l[0], "in_service"]  # is actually <class 'numpy.bool_'>
+    assert not net.line.at[l[1], "in_service"]  # is actually <class 'numpy.bool_'>
+    assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(10, 10), (20, 20)]), sort_keys=True)
+    assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(100, 10), (200, 20)]), sort_keys=True)
     assert net.line.at[l[0], "name"] == "test1"
     assert net.line.at[l[1], "name"] == "test2"
     assert net.line.at[l[0], "max_loading_percent"] == 80
@@ -558,7 +545,7 @@ def test_create_lines_from_parameters():
     assert net.line.at[l[1], "max_i_ka"] == 200
 
 
-def test_create_lines_raise_except():
+def test_create_lines_raise_errorexcept():
     # standard
     net = pp.create_empty_network()
     b1 = pp.create_bus(net, 10)
@@ -803,7 +790,7 @@ def test_create_transformers_from_parameters():
     assert net.trafo.tap_pos.at[t[1]] == 4
 
 
-def test_create_transformers_raise_except():
+def test_create_transformers_raise_errorexcept():
     # standard
     net = pp.create_empty_network()
     b1 = pp.create_bus(net, 10)
@@ -853,7 +840,7 @@ def test_create_transformers_raise_except():
         foo=2,
     )
     with pytest.raises(
-        UserWarning, match=r"Transformers trying to attach to non existing buses \{2\}"
+            UserWarning, match=r"Transformers trying to attach to non existing buses \{2\}"
     ):
         pp.create_transformers_from_parameters(
             net,
@@ -869,7 +856,7 @@ def test_create_transformers_raise_except():
             foo=2,
         )
     with pytest.raises(
-        UserWarning, match=r"Transformers trying to attach to non existing buses \{3\}"
+            UserWarning, match=r"Transformers trying to attach to non existing buses \{3\}"
     ):
         pp.create_transformers_from_parameters(
             net,
@@ -884,6 +871,88 @@ def test_create_transformers_raise_except():
             i0_percent=0.3,
             foo=2,
         )
+
+
+def test_trafo_2_tap_changers():
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, 110)
+    b2 = pp.create_bus(net, 20)
+    pp.create_transformer(net, b1, b2, "40 MVA 110/20 kV")
+
+    tap2_data = {"tap2_side": "hv",
+                 "tap2_neutral": 0,
+                 "tap2_max": 10,
+                 "tap2_min": -10,
+                 "tap2_step_percent": 1,
+                 "tap2_step_degree": 0,
+                 "tap2_phase_shifter": False}
+
+    for c in tap2_data.keys():
+        assert c not in net.trafo.columns
+
+    std_type = pp.load_std_type(net, "40 MVA 110/20 kV", "trafo")
+
+    pp.create_std_type(net, {**std_type, **tap2_data}, "test_trafo_type", "trafo")
+
+    t = pp.create_transformer(net, b1, b2, "test_trafo_type")
+
+    for c in tap2_data.keys():
+        assert c in net.trafo.columns
+        assert net.trafo.at[t, c] == tap2_data[c]
+
+
+def test_trafo_2_tap_changers_parameters():
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, 110)
+    b2 = pp.create_bus(net, 20)
+
+    std_type = pp.load_std_type(net, "40 MVA 110/20 kV", "trafo")
+    tap2_data = {"tap2_side": "hv",
+                 "tap2_neutral": 0,
+                 "tap2_max": 10,
+                 "tap2_min": -10,
+                 "tap2_step_percent": 1,
+                 "tap2_step_degree": 0,
+                 "tap2_phase_shifter": False}
+
+    pp.create_transformer_from_parameters(net, b1, b2, **std_type)
+
+    for c in tap2_data.keys():
+        assert c not in net.trafo.columns
+
+    t = pp.create_transformer_from_parameters(net, b1, b2, **std_type, **tap2_data)
+
+    for c in tap2_data.keys():
+        assert c in net.trafo.columns
+        assert net.trafo.at[t, c] == tap2_data[c]
+
+
+def test_trafos_2_tap_changers_parameters():
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, 110)
+    b2 = pp.create_bus(net, 20)
+
+    std_type = pp.load_std_type(net, "40 MVA 110/20 kV", "trafo")
+    tap2_data = {"tap2_side": "hv",
+                 "tap2_neutral": 0,
+                 "tap2_max": 10,
+                 "tap2_min": -10,
+                 "tap2_step_percent": 1,
+                 "tap2_step_degree": 0,
+                 "tap2_phase_shifter": False}
+
+    std_type_p = {k: np.array([v, v]) if not isinstance(v, str) else v for k, v in std_type.items()}
+
+    pp.create_transformers_from_parameters(net, [b1, b1], [b2, b2], **std_type_p)
+
+    for c in tap2_data.keys():
+        assert c not in net.trafo.columns
+
+    t = pp.create_transformer_from_parameters(net, b1, b2, **std_type, **tap2_data)
+
+    for c in tap2_data.keys():
+        assert c in net.trafo.columns
+        assert net.trafo.at[t, c] == tap2_data[c]
 
 
 def test_create_transformers3w_from_parameters():
@@ -993,7 +1062,7 @@ def test_create_transformers3w_from_parameters():
     assert all(net.trafo3w.test_kwargs == ["foo", "bar"])
 
 
-def test_create_transformers3w_raise_except():
+def test_create_transformers3w_raise_errorexcept():
     # standard
     net = pp.create_empty_network()
     b1 = pp.create_bus(net, 15)
@@ -1024,8 +1093,8 @@ def test_create_transformers3w_raise_except():
     )
 
     with pytest.raises(
-        UserWarning,
-        match=r"Three winding transformers with indexes \[1\] already exist.",
+            UserWarning,
+            match=r"Three winding transformers with indexes \[1\] already exist.",
     ):
         pp.create_transformers3w_from_parameters(
             net,
@@ -1056,7 +1125,7 @@ def test_create_transformers3w_raise_except():
     b2 = pp.create_bus(net, 0.4)
     b3 = pp.create_bus(net, 0.9)
     with pytest.raises(
-        UserWarning, match=r"Transformers trying to attach to non existing buses \{6\}"
+            UserWarning, match=r"Transformers trying to attach to non existing buses \{6\}"
     ):
         pp.create_transformers3w_from_parameters(
             net,
@@ -1083,7 +1152,7 @@ def test_create_transformers3w_raise_except():
             index=[0, 1],
         )
     with pytest.raises(
-        UserWarning, match=r"Transformers trying to attach to non existing buses \{3\}"
+            UserWarning, match=r"Transformers trying to attach to non existing buses \{3\}"
     ):
         pp.create_transformers3w_from_parameters(
             net,
@@ -1109,8 +1178,8 @@ def test_create_transformers3w_raise_except():
             mag0_percent=0.3,
         )
     with pytest.raises(
-        UserWarning,
-        match=r"Transformers trying to attach to non existing buses \{3, 4\}",
+            UserWarning,
+            match=r"Transformers trying to attach to non existing buses \{3, 4\}",
     ):
         pp.create_transformers3w_from_parameters(
             net,
@@ -1173,7 +1242,7 @@ def test_create_switches():
     assert net.switch.test_kwargs.at[2] == "aaa"
 
 
-def test_create_switches_raise_except():
+def test_create_switches_raise_errorexcept():
     net = pp.create_empty_network()
     # standard
     b1 = pp.create_bus(net, 110)
@@ -1207,7 +1276,7 @@ def test_create_switches_raise_except():
     )
     sw = pp.create_switch(net, bus=b1, element=l1, et="l", z_ohm=0.0)
     with pytest.raises(
-        UserWarning, match=r"Switches with indexes \[0\] already exist."
+            UserWarning, match=r"Switches with indexes \[0\] already exist."
     ):
         pp.create_switches(
             net,
@@ -1218,7 +1287,7 @@ def test_create_switches_raise_except():
             index=[sw, 1, 2],
         )
     with pytest.raises(
-        UserWarning, match=r"Cannot attach to buses \{6\}, they do not exist"
+            UserWarning, match=r"Cannot attach to buses \{6\}, they do not exist"
     ):
         pp.create_switches(
             net, buses=[6, b2, b3], elements=[l1, t1, b4], et=["l", "t", "b"], z_ohm=0.0
@@ -1240,7 +1309,7 @@ def test_create_switches_raise_except():
             net, buses=[b1, b2, b3], elements=[l1, 1, b4], et=["l", "t", "b"], z_ohm=0.0
         )
     with pytest.raises(
-        UserWarning, match="Trafo %s not connected to bus %s" % (t1, b1)
+            UserWarning, match="Trafo %s not connected to bus %s" % (t1, b1)
     ):
         pp.create_switches(
             net,
@@ -1250,7 +1319,7 @@ def test_create_switches_raise_except():
             z_ohm=0.0,
         )
     with pytest.raises(
-        UserWarning, match=r"Cannot attach to bus 6, bus does not exist"
+            UserWarning, match=r"Cannot attach to bus 6, bus does not exist"
     ):
         pp.create_switches(
             net, buses=[b1, b2, b3], elements=[l1, t1, 6], et=["l", "t", "b"], z_ohm=0.0
@@ -1264,7 +1333,7 @@ def test_create_switches_raise_except():
             z_ohm=0.0,
         )
     with pytest.raises(
-        UserWarning, match="Trafo3w %s not connected to bus %s" % (t3w1, b3)
+            UserWarning, match="Trafo3w %s not connected to bus %s" % (t3w1, b3)
     ):
         pp.create_switches(
             net,
@@ -1285,7 +1354,7 @@ def test_create_loads():
         net,
         buses=[b1, b2, b3],
         p_mw=[0, 0, 1],
-        q_mwar=0.0,
+        q_mvar=0.0,
         controllable=[True, False, False],
         max_p_mw=0.2,
         min_p_mw=[0, 0.1, 0],
@@ -1317,7 +1386,7 @@ def test_create_loads():
     )
 
 
-def test_create_loads_raise_except():
+def test_create_loads_raise_errorexcept():
     net = pp.create_empty_network()
     # standard
     b1 = pp.create_bus(net, 110)
@@ -1325,13 +1394,13 @@ def test_create_loads_raise_except():
     b3 = pp.create_bus(net, 110)
 
     with pytest.raises(
-        UserWarning, match=r"Cannot attach to buses \{3, 4, 5\}, they do not exist"
+            UserWarning, match=r"Cannot attach to buses \{3, 4, 5\}, they do not exist"
     ):
         pp.create_loads(
             net,
             buses=[3, 4, 5],
             p_mw=[0, 0, 1],
-            q_mwar=0.0,
+            q_mvar=0.0,
             controllable=[True, False, False],
             max_p_mw=0.2,
             min_p_mw=[0, 0.1, 0],
@@ -1342,7 +1411,7 @@ def test_create_loads_raise_except():
         net,
         buses=[b1, b2, b3],
         p_mw=[0, 0, 1],
-        q_mwar=0.0,
+        q_mvar=0.0,
         controllable=[True, False, False],
         max_p_mw=0.2,
         min_p_mw=[0, 0.1, 0],
@@ -1350,13 +1419,13 @@ def test_create_loads_raise_except():
         min_q_mvar=[0, 0.1, 0],
     )
     with pytest.raises(
-        UserWarning, match=r"Loads with indexes \[0 1 2\] already exist"
+            UserWarning, match=r"Loads with indexes \[0 1 2\] already exist"
     ):
         pp.create_loads(
             net,
             buses=[b1, b2, b3],
             p_mw=[0, 0, 1],
-            q_mwar=0.0,
+            q_mvar=0.0,
             controllable=[True, False, False],
             max_p_mw=0.2,
             min_p_mw=[0, 0.1, 0],
@@ -1364,6 +1433,100 @@ def test_create_loads_raise_except():
             min_q_mvar=[0, 0.1, 0],
             index=l,
         )
+
+
+def test_create_storages():
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, 110)
+    b2 = pp.create_bus(net, 110)
+    b3 = pp.create_bus(net, 110)
+    net_bulk = deepcopy(net)
+
+    pp.create_storage(net, b1, 0, 3, 0.5, controllable=True, max_p_mw=0.2, min_p_mw=0,
+                      max_q_mvar=0.2, min_q_mvar=0, test_kwargs="dummy_string_1")
+    pp.create_storage(net, b2, 0, 5, 0.5, controllable=False, max_p_mw=0.2, min_p_mw=0.1,
+                      max_q_mvar=0.2, min_q_mvar=0.1, test_kwargs="dummy_string_2")
+    pp.create_storage(net, b3, 1, 7, 0.5, max_p_mw=0.2, min_p_mw=0,
+                      max_q_mvar=0.2, min_q_mvar=0, test_kwargs="dummy_string_3")
+
+    pp.create_storages(
+        net_bulk,
+        buses=[b1, b2, b3],
+        p_mw=[0, 0, 1],
+        max_e_mwh=[3, 5, 7],
+        q_mvar=0.5,
+        controllable=[True, False, False],
+        max_p_mw=0.2,
+        min_p_mw=[0, 0.1, 0],
+        max_q_mvar=0.2,
+        min_q_mvar=[0, 0.1, 0],
+        test_kwargs=["dummy_string_1", "dummy_string_2", "dummy_string_3"],
+    )
+
+    assert net.storage.bus.at[0] == b1
+    assert net.storage.bus.at[1] == b2
+    assert net.storage.bus.at[2] == b3
+    assert net.storage.p_mw.at[0] == 0
+    assert net.storage.p_mw.at[1] == 0
+    assert net.storage.p_mw.at[2] == 1
+    assert net.storage.max_e_mwh.at[0] == 3
+    assert net.storage.max_e_mwh.at[1] == 5
+    assert net.storage.max_e_mwh.at[2] == 7
+    assert net.storage.q_mvar.at[0] == 0.5
+    assert net.storage.q_mvar.at[1] == 0.5
+    assert net.storage.q_mvar.at[2] == 0.5
+    assert net.storage.controllable.dtype == bool
+    assert net.storage.controllable.at[0]
+    assert not net.storage.controllable.at[1]
+    assert not net.storage.controllable.at[2]
+    assert all(net.storage.max_p_mw.values == 0.2)
+    assert all(net.storage.min_p_mw.values == [0, 0.1, 0])
+    assert all(net.storage.max_q_mvar.values == 0.2)
+    assert all(net.storage.min_q_mvar.values == [0, 0.1, 0])
+    assert all(
+        net.storage.test_kwargs.values
+        == ["dummy_string_1", "dummy_string_2", "dummy_string_3"]
+    )
+    assert pp.nets_equal(net, net_bulk)
+
+
+def test_create_wards():
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, 110)
+    b2 = pp.create_bus(net, 110)
+    b3 = pp.create_bus(net, 110)
+    net_bulk = deepcopy(net)
+    vals = np.c_[[b1, b2, b3], np.reshape(np.arange(12), (3, 4)), ["asd", None, "123"], [True, False, False]]
+
+    pp.create_ward(net, *vals[0, :])
+    pp.create_ward(net, *vals[1, :])
+    pp.create_ward(net, *vals[2, :])
+
+    pp.create_wards(net_bulk, vals[:, 0], vals[:, 1], vals[:, 2], vals[:, 3], vals[:, 4],
+                    vals[:, 5], vals[:, 6])
+
+    assert net.ward.bus.at[0] == b1
+    assert net.ward.bus.at[1] == b2
+    assert net.ward.bus.at[2] == b3
+    assert net.ward.ps_mw.at[0] == 0
+    assert net.ward.ps_mw.at[1] == 4
+    assert net.ward.ps_mw.at[2] == 8
+    assert net.ward.qs_mvar.at[0] == 1
+    assert net.ward.qs_mvar.at[1] == 5
+    assert net.ward.qs_mvar.at[2] == 9
+    assert net.ward.pz_mw.at[0] == 2
+    assert net.ward.pz_mw.at[1] == 6
+    assert net.ward.pz_mw.at[2] == 10
+    assert net.ward.qz_mvar.at[0] == 3
+    assert net.ward.qz_mvar.at[1] == 7
+    assert net.ward.qz_mvar.at[2] == 11
+    assert net.ward.name.at[0] == "asd"
+    assert net.ward.name.at[1] == None
+    assert net.ward.name.at[2] == "123"
+    assert net.ward.in_service.at[0]
+    assert not net.ward.in_service.at[1]
+    assert not net.ward.in_service.at[2]
+    assert pp.nets_equal(net, net_bulk)
 
 
 def test_create_sgens():
@@ -1376,7 +1539,7 @@ def test_create_sgens():
         net,
         buses=[b1, b2, b3],
         p_mw=[0, 0, 1],
-        q_mwar=0.0,
+        q_mvar=0.0,
         controllable=[True, False, False],
         max_p_mw=0.2,
         min_p_mw=[0, 0.1, 0],
@@ -1411,7 +1574,7 @@ def test_create_sgens():
     assert all(net.sgen.test_kwargs == "dummy_string")
 
 
-def test_create_sgens_raise_except():
+def test_create_sgens_raise_errorexcept():
     net = pp.create_empty_network()
     # standard
     b1 = pp.create_bus(net, 110)
@@ -1419,13 +1582,13 @@ def test_create_sgens_raise_except():
     b3 = pp.create_bus(net, 110)
 
     with pytest.raises(
-        UserWarning, match=r"Cannot attach to buses \{3, 4, 5\}, they do not exist"
+            UserWarning, match=r"Cannot attach to buses \{3, 4, 5\}, they do not exist"
     ):
         pp.create_sgens(
             net,
             buses=[3, 4, 5],
             p_mw=[0, 0, 1],
-            q_mwar=0.0,
+            q_mvar=0.0,
             controllable=[True, False, False],
             max_p_mw=0.2,
             min_p_mw=[0, 0.1, 0],
@@ -1439,7 +1602,7 @@ def test_create_sgens_raise_except():
         net,
         buses=[b1, b2, b3],
         p_mw=[0, 0, 1],
-        q_mwar=0.0,
+        q_mvar=0.0,
         controllable=[True, False, False],
         max_p_mw=0.2,
         min_p_mw=[0, 0.1, 0],
@@ -1450,13 +1613,13 @@ def test_create_sgens_raise_except():
         current_source=True,
     )
     with pytest.raises(
-        UserWarning, match=r"Sgens with indexes \[0 1 2\] already exist"
+            UserWarning, match=r"Sgens with indexes \[0 1 2\] already exist"
     ):
         pp.create_sgens(
             net,
             buses=[b1, b2, b3],
             p_mw=[0, 0, 1],
-            q_mwar=0.0,
+            q_mvar=0.0,
             controllable=[True, False, False],
             max_p_mw=0.2,
             min_p_mw=[0, 0.1, 0],
@@ -1516,7 +1679,7 @@ def test_create_gens():
     assert all(net.gen.test_kwargs == "dummy_string")
 
 
-def test_create_gens_raise_except():
+def test_create_gens_raise_errorexcept():
     net = pp.create_empty_network()
     # standard
     b1 = pp.create_bus(net, 110)
@@ -1524,7 +1687,7 @@ def test_create_gens_raise_except():
     b3 = pp.create_bus(net, 110)
 
     with pytest.raises(
-        UserWarning, match=r"Cannot attach to buses \{3, 4, 5\}, they do not exist"
+            UserWarning, match=r"Cannot attach to buses \{3, 4, 5\}, they do not exist"
     ):
         pp.create_gens(
             net,
@@ -1583,4 +1746,4 @@ def test_create_gens_raise_except():
 
 
 if __name__ == "__main__":
-    pytest.main(["test_create.py"])
+    pytest.main([__file__, "-xs"])

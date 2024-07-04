@@ -4,14 +4,14 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 """Builds the bus admittance matrix and branch admittance matrices.
 """
 
-from numpy import ones, conj, nonzero, any, exp, pi, hstack, real
+from numpy import ones, conj, nonzero, any, exp, pi, hstack, real, int64
 from scipy.sparse import csr_matrix
 
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, BR_STATUS, SHIFT, TAP, BR_R_ASYM, BR_X_ASYM
@@ -52,8 +52,8 @@ def makeYbus(baseMVA, bus, branch):
     Ysh = (bus[:, GS] + 1j * bus[:, BS]) / baseMVA
 
     ## build connection matrices
-    f = real(branch[:, F_BUS]).astype(int)  ## list of "from" buses
-    t = real(branch[:, T_BUS]).astype(int)  ## list of "to" buses
+    f = real(branch[:, F_BUS]).astype(int64)  ## list of "from" buses
+    t = real(branch[:, T_BUS]).astype(int64)  ## list of "to" buses
     ## connection matrix for line & from buses
     Cf = csr_matrix((ones(nl), (range(nl), f)), (nl, nb))
     ## connection matrix for line & to buses
@@ -71,8 +71,13 @@ def makeYbus(baseMVA, bus, branch):
     ## build Ybus
     Ybus = Cf.T * Yf + Ct.T * Yt + \
            csr_matrix((Ysh, (range(nb), range(nb))), (nb, nb))
-    Ybus.sort_indices()
-    Ybus.eliminate_zeros()
+
+    # for canonical format
+    for Y in (Ybus, Yf, Yt):
+        Y.eliminate_zeros()
+        Y.sum_duplicates()
+        Y.sort_indices()
+        del Y._has_canonical_format
 
     return Ybus, Yf, Yt
 

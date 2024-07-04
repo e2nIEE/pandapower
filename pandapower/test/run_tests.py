@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -174,6 +174,7 @@ def run_tutorials(parallel=False, n_cpu=None):
 
 if __name__ == "__main__":
     # get some command line options
-    settings = get_command_line_args()
-    start_tests(**settings)
-    run_tutorials()
+    # settings = get_command_line_args()
+    # start_tests(**settings)
+    # run_tutorials()
+    run_all_tests(parallel=True, n_cpu=4)
