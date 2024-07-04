@@ -207,7 +207,7 @@ def test_merge_with_characteristics():
     net2.trafo.loc[:, "vk_percent_characteristic"] = 0
 
     # merge networks
-    merged = pp.merge_nets(net1, net2, validate=False)
+    merged, lookup = pp.merge_nets(net1, net2, validate=False, return_net2_reindex_lookup=True)
 
     # The second transformer should have the second characteristic
     assert merged.trafo.loc[1, "vk_percent_characteristic"] == 1
