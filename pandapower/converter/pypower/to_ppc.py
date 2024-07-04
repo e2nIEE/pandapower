@@ -3,11 +3,12 @@
 # Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from numpy import allclose
+from numpy import allclose, delete
 
 from pandapower.auxiliary import _add_ppc_options
 from pandapower.powerflow import _pd2ppc
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
+from pandapower.pypower.idx_brch import BR_G
 
 try:
     import pandaplan.core.pplog as logging
@@ -117,9 +118,10 @@ def to_ppc(net, calculate_voltage_angles=False, trafo_model="t", switch_rx_ratio
 
     #  do the conversion
     _, ppci = _pd2ppc(net)
-    ppci['branch'] = ppci['branch'].real # TODO: BR_G löschen und als extra variable einfügen
-    # ppci.pop('internal')
-
+    branch_g = net._ppc["branch"][:, BR_G]
+    # delete BR_G column as this is added to pandapower afterwards, keeping it as extra variable
+    ppci['branch'] = delete(ppci['branch'], BR_G, axis=1)
+    ppci['branch_g'] = branch_g
     if not take_slack_vm_limits:
         slack_bus = min(net.ext_grid.bus.loc[net.ext_grid.in_service].tolist() + \
                         net.gen.bus.loc[net.gen.slack & net.gen.in_service].tolist())
