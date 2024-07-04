@@ -44,6 +44,8 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
                             - tap_side
 
                             - check_costs is passed as "check" to create_pwl_costs() and create_poly_costs()
+                            
+                            - branch_g_name: name of branch_g column if it exists in ppc. if not given, branch G is set to 0
 
     OUTPUT:
         **net** - ppc converted to pandapower net structure
@@ -179,6 +181,11 @@ def _from_ppc_gen(net, ppc):
 def _from_ppc_branch(net, ppc, f_hz, **kwargs):
     """ branch data -> create line, trafo """
     n_bra = ppc["branch"].shape[0]
+    
+    if 'branch_g_name' in kwargs:
+        br_g = ppc['branch_g_name']
+    else:
+        br_g = np.array([0]*n_bra) # get branch_g if it exists
 
     # --- general_parameters
     baseMVA = ppc['baseMVA']  # MVA
@@ -208,7 +215,7 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
         r_ohm_per_km=(ppc['branch'][is_line, BR_R]*Zni[is_line]),
         x_ohm_per_km=(ppc['branch'][is_line, BR_X]*Zni[is_line]),
         c_nf_per_km=(ppc['branch'][is_line, BR_B]/Zni[is_line]/omega*1e9/2),
-        g_us_per_km=(ppc['branch'][is_line, BR_G]/Zni[is_line]*1e6/2),
+        g_us_per_km=(br_g/Zni[is_line]*1e6/2),
         max_i_ka=max_i_ka[is_line].real, type='ol', max_loading_percent=100,
         in_service=ppc['branch'][is_line, BR_STATUS].real.astype(bool))
 
@@ -246,6 +253,7 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
         ratio_is_zero = np.isclose(ratio_1, 0)
         ratio_1[~ratio_is_zero & ~tap_side_is_hv] **= -1
         ratio_1[~ratio_is_zero] -= 1
+        i0_percent = np.sqrt(ppc['branch'][~is_line, BR_B]**2 + br_g**2) * 100 * baseMVA / sn
         i0_percent = -ppc['branch'][~is_line, BR_B].real * 100 * baseMVA / sn
         is_neg_i0_percent = i0_percent < 0
         if np.any(is_neg_i0_percent):
