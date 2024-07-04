@@ -2,7 +2,7 @@
 
 # Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-
+import warnings
 from pandapower.control.controller.const_control import ConstControl
 try:
     from pandaplan.core import pplog
@@ -30,7 +30,7 @@ class PQController(ConstControl):
 
     OPTIONAL:
 
-        **element** - element table ('sgen', 'load' etc.)
+        **element_type** - element table ('sgen', 'load' etc.)
 
         **max_p_error** (float, 0.0001) - Maximum absolute error of active power in MW
 
@@ -52,15 +52,28 @@ class PQController(ConstControl):
 
     """
 
-    def __init__(self, net, element_index, element="sgen", max_p_error=0.0001, max_q_error=0.0001,
-                 pq_simultaneity_factor=1., converter_sizing_pu=1., data_source=None, profile_scale=1., in_service=True,
+    def __init__(self, net, element_index, element_type=None, max_p_error=0.0001,
+                 max_q_error=0.0001, pq_simultaneity_factor=1., converter_sizing_pu=1.,
+                 data_source=None, profile_scale=1., in_service=True,
                  ts_absolute=True, order=0, level=0, **kwargs):
-        super().__init__(net, element=element, variable="p_mw", element_index=element_index,
+        # handle element -> element_type renaming
+        if "element" in kwargs.keys():
+            warnings.warn("Controller parameter 'element' has been changed by 'element_type'.",
+                          category=DeprecationWarning)
+            if element_type is not None:
+                element_type = kwargs.pop("element")
+            else:
+                raise ValueError("Both, 'element_type' and the deprecated controller parameter "
+                                 "'element' were given.")
+        if element_type is None:
+            element_type = "sgen"
+
+        super().__init__(net, element_type=element_type, variable="p_mw", element_index=element_index,
                          in_service=in_service, order=order, level=level, **kwargs)
 
         # read attributes from net
         self.element_index = element_index
-        self.element = element
+        self.element_type = element_type
         self.bus = net[self.element]["bus"][element_index]
         self.p_mw = net[self.element]["p_mw"][element_index]
         self.q_mvar = net[self.element]["q_mvar"][element_index]
