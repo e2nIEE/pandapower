@@ -25,7 +25,7 @@ def test_convert_format(version):
         net = pp.from_json(filename, convert=False)
         if ('version' in net) and (vs.parse(str(net.version)) > vs.parse('2.0.1')):
             _ = pp.from_json(filename, elements_to_deserialize=['bus', 'load'])
-    except:
+    except KeyError:
         raise UserWarning("Can not load network saved in pandapower version %s" % version)
     vm_pu_old = net.res_bus.vm_pu.copy()
     pp.convert_format(net)

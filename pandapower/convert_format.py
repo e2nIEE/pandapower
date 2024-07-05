@@ -122,6 +122,8 @@ def _convert_group_element_index(net):
 
 
 def _convert_controller_parameter_names(net):
+    if not isinstance(net.controller, pd.DataFrame):
+        return
     for ctrl_idx in net.controller.index:
         controller = net.controller.at[ctrl_idx, "object"]
         if issubclass(type(controller), ConstControl):
