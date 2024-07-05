@@ -31,8 +31,8 @@ class TapDependentImpedance(CharacteristicControl):
                  restore=True, in_service=True, order=0, level=0, drop_same_existing_ctrl=False, matching_params=None, **kwargs):
         if matching_params is None:
             matching_params = {"element_index": element_index, 'output_variable': output_variable}
-        super().__init__(net, output_element=element_type, output_variable=output_variable, output_element_index=element_index,
-                         input_element=element_type, input_variable="tap_pos", input_element_index=element_index,
+        super().__init__(net, output_element_type=element_type, output_variable=output_variable, output_element_index=element_index,
+                         input_element_type=element_type, input_variable="tap_pos", input_element_index=element_index,
                          characteristic_index=characteristic_index, tol=tol, in_service=in_service, order=order, level=level,
                          drop_same_existing_ctrl=drop_same_existing_ctrl, matching_params=matching_params, **kwargs)
         self.restore=restore

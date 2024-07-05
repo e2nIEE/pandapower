@@ -319,13 +319,13 @@ def setup_timeseries(net):
     load_profiles = pd.DataFrame(net.load.p_mw.values * (np.random.random((4, len(net.load))) * 0.4 + 0.8),
                                  index=np.arange(4), columns=net.load.index.values)
     dsl = pp.timeseries.DFData(load_profiles)
-    pp.control.ConstControl(net, element="load", variable="p_mw", element_index=net.load.index.values,
+    pp.control.ConstControl(net, element_type="load", variable="p_mw", element_index=net.load.index.values,
                             profile_name=net.load.index.values, data_source=dsl)
 
     gen_profiles = pd.DataFrame(net.gen.p_mw.values * (np.random.random((4, len(net.gen))) * 0.4 + 0.8),
                                 index=np.arange(4), columns=net.gen.index.values)
     dsg = pp.timeseries.DFData(gen_profiles)
-    pp.control.ConstControl(net, element="gen", variable="p_mw", element_index=net.gen.index.values,
+    pp.control.ConstControl(net, element_type="gen", variable="p_mw", element_index=net.gen.index.values,
                             profile_name=net.gen.index.values, data_source=dsg)
 
     ow = pp.timeseries.OutputWriter(net)

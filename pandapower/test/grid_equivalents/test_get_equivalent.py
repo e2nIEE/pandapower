@@ -503,10 +503,10 @@ def test_controller():
         sgen_ts.loc[t] = sgen_p * time_series.at[t, "wind"]
 
     # create control
-    ConstControl(net, element="load", variable="p_mw",
+    ConstControl(net, element_type="load", variable="p_mw",
                  element_index=net.load.index.tolist(), profile_name=net.load.index.tolist(),
                  data_source=DFData(load_ts))
-    ConstControl(net, element="sgen", variable="p_mw",
+    ConstControl(net, element_type="sgen", variable="p_mw",
                  element_index=net.sgen.index.tolist(), profile_name=net.sgen.index.tolist(),
                  data_source=DFData(sgen_ts))
 
@@ -531,7 +531,7 @@ def test_controller():
     # test individual controller:
     net.controller = net.controller.drop(net.controller.index)
     for li in net.load.index:
-        ConstControl(net, element='load', variable='p_mw', element_index=[li],
+        ConstControl(net, element_type='load', variable='p_mw', element_index=[li],
                      data_source=DFData(load_ts), profile_name=[li])
     assert len(net.controller) == 4
     net_eq = pp.grid_equivalents.get_equivalent(net, "rei", [4, 8], [0],

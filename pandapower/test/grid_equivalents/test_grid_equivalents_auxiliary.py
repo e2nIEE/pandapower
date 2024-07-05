@@ -76,15 +76,15 @@ def test_drop_measurements_and_controllers():
         load_ts.loc[t] = net.load.p_mw.values * time_series.at[t, "residential"]
         gen_ts.loc[t] = net.gen.p_mw.values * time_series.at[t, "pv"]
 
-    ConstControl(net, element="load", variable="p_mw", element_index=net.load.index.tolist(),
+    ConstControl(net, element_type="load", variable="p_mw", element_index=net.load.index.tolist(),
                  profile_name=net.load.index.tolist(), data_source=DFData(load_ts))
-    ConstControl(net, element="gen", variable="p_mw", element_index=net.gen.index.tolist(),
+    ConstControl(net, element_type="gen", variable="p_mw", element_index=net.gen.index.tolist(),
                  profile_name=net.gen.index.tolist(), data_source=DFData(gen_ts))
     for i in net.gen.index:
-        ConstControl(net, element="gen", variable="p_mw", element_index=i,
+        ConstControl(net, element_type="gen", variable="p_mw", element_index=i,
                      profile_name=net.gen.index[i], data_source=DFData(gen_ts))
     for i in net.load.index:
-        ConstControl(net, element="load", variable="p_mw", element_index=i,
+        ConstControl(net, element_type="load", variable="p_mw", element_index=i,
                      profile_name=net.load.index[i], data_source=DFData(load_ts))
 
     assert net.controller.object[0].__dict__["element_index"] == [0, 1, 2]

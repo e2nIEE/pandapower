@@ -77,10 +77,10 @@ def create_cigre_grid_with_time_series(json_path, net=None, add_ts_constaints=Fa
         sgen_ts.loc[t][8] = wind_p * time_series.at[t, "wind"]
 
     # create time series controller for load and sgen
-    ConstControl(net, element="load", variable="p_mw",
+    ConstControl(net, element_type="load", variable="p_mw",
                  element_index=net.load.index.tolist(), profile_name=net.load.index.tolist(),
                  data_source=DFData(load_ts))
-    ConstControl(net, element="sgen", variable="p_mw",
+    ConstControl(net, element_type="sgen", variable="p_mw",
                  element_index=net.sgen.index.tolist(), profile_name=net.sgen.index.tolist(),
                  data_source=DFData(sgen_ts))
 
@@ -89,16 +89,16 @@ def create_cigre_grid_with_time_series(json_path, net=None, add_ts_constaints=Fa
         df_qmax[df_qmax.columns] = net.sgen.max_q_mvar
         df_qmin[df_qmin.columns] = net.sgen.min_q_mvar
 
-        ConstControl(net, element="sgen", variable="max_p_mw",
+        ConstControl(net, element_type="sgen", variable="max_p_mw",
                       element_index=net.sgen.index.tolist(), profile_name=net.sgen.index.tolist(),
                       data_source=DFData(sgen_ts))
-        ConstControl(net, element="sgen", variable="min_p_mw",
+        ConstControl(net, element_type="sgen", variable="min_p_mw",
                       element_index=net.sgen.index.tolist(), profile_name=net.sgen.index.tolist(),
                       data_source=DFData(sgen_ts))
-        ConstControl(net, element="sgen", variable="max_q_mvar",
+        ConstControl(net, element_type="sgen", variable="max_q_mvar",
                       element_index=net.sgen.index.tolist(), profile_name=net.sgen.index.tolist(),
                       data_source=DFData(df_qmax))
-        ConstControl(net, element="sgen", variable="min_q_mvar",
+        ConstControl(net, element_type="sgen", variable="min_q_mvar",
                       element_index=net.sgen.index.tolist(), profile_name=net.sgen.index.tolist(),
                       data_source=DFData(df_qmin))
 
