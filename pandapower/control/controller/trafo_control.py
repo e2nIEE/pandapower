@@ -75,7 +75,8 @@ class TrafoController(Controller):
 
     def nothing_to_do(self, net):
         # if the controller shouldn't do anything, return True
-        if self.controlled_element_index is None or (self._read_write_flag != 'single_index' and len(self.controlled_element_index) == 0):
+        if self.controlled_element_index is None or (
+                self._read_write_flag != 'single_index' and len(self.controlled_element_index) == 0):
             return True
         return False
 

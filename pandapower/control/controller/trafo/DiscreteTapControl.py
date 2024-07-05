@@ -2,6 +2,7 @@
 
 # Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+
 import numpy as np
 
 from pandapower.auxiliary import read_from_net, write_to_net
@@ -39,8 +40,10 @@ class DiscreteTapControl(TrafoController):
                  matching_params=None, **kwargs):
         if matching_params is None:
             matching_params = {"element_index": element_index, 'element_type': element_type}
-        super().__init__(net, element_index, side, tol=tol, in_service=in_service, level=level, order=order, element_type=element_type,
-                         drop_same_existing_ctrl=drop_same_existing_ctrl, matching_params=matching_params,
+        super().__init__(net, element_index, side, tol=tol, in_service=in_service, level=level,
+                         order=order, element_type=element_type,
+                         drop_same_existing_ctrl=drop_same_existing_ctrl,
+                         matching_params=matching_params,
                          **kwargs)
 
         self.vm_lower_pu = vm_lower_pu
@@ -50,7 +53,8 @@ class DiscreteTapControl(TrafoController):
         self.vm_set_pu = kwargs.get("vm_set_pu")
 
     @classmethod
-    def from_tap_step_percent(cls, net, element_index, vm_set_pu, side="lv", element_type="trafo", tol=1e-3, in_service=True, order=0,
+    def from_tap_step_percent(cls, net, element_index, vm_set_pu, side="lv", element_type="trafo",
+                              tol=1e-3, in_service=True, order=0,
                               drop_same_existing_ctrl=False, matching_params=None, **kwargs):
         """
         Alternative mode of the controller, which uses a set point for voltage and the value of net.trafo.tap_step_percent to calculate
@@ -66,8 +70,10 @@ class DiscreteTapControl(TrafoController):
 
             **vm_set_pu** (float) - Voltage setpoint in pu
         """
-        self = cls(net, element_index=element_index, vm_lower_pu=None, vm_upper_pu=None, side=side, element_type=element_type, tol=tol,
-                   in_service=in_service, order=order, drop_same_existing_ctrl=drop_same_existing_ctrl,
+        self = cls(net, element_index=element_index, vm_lower_pu=None, vm_upper_pu=None, side=side,
+                   element_type=element_type, tol=tol,
+                   in_service=in_service, order=order,
+                   drop_same_existing_ctrl=drop_same_existing_ctrl,
                    matching_params=matching_params, vm_set_pu=vm_set_pu, **kwargs)
         return self
 
@@ -96,18 +102,21 @@ class DiscreteTapControl(TrafoController):
             return
 
         vm_pu = read_from_net(net, "res_bus", self.controlled_bus, "vm_pu", self._read_write_flag)
-        self.tap_pos = read_from_net(net, self.element_type, self.controlled_element_index, "tap_pos", self._read_write_flag)
+        self.tap_pos = read_from_net(
+            net, self.element_type, self.controlled_element_index, "tap_pos", self._read_write_flag)
 
-        increment = np.where(self.tap_side_coeff * self.tap_sign == 1,
-                             np.where(np.logical_and(vm_pu < self.vm_lower_pu, self.tap_pos > self.tap_min), -1,
-                                      np.where(np.logical_and(vm_pu > self.vm_upper_pu, self.tap_pos < self.tap_max), 1, 0)),
-                             np.where(np.logical_and(vm_pu < self.vm_lower_pu, self.tap_pos < self.tap_max), 1,
-                                      np.where(np.logical_and(vm_pu > self.vm_upper_pu, self.tap_pos > self.tap_min), -1, 0)))
+        increment = np.where(
+            self.tap_side_coeff * self.tap_sign == 1,
+            np.where(np.logical_and(vm_pu < self.vm_lower_pu, self.tap_pos > self.tap_min), -1,
+                     np.where(np.logical_and(vm_pu > self.vm_upper_pu, self.tap_pos < self.tap_max), 1, 0)),
+            np.where(np.logical_and(vm_pu < self.vm_lower_pu, self.tap_pos < self.tap_max), 1,
+                     np.where(np.logical_and(vm_pu > self.vm_upper_pu, self.tap_pos > self.tap_min), -1, 0)))
 
         self.tap_pos += increment
 
         # WRITE TO NET
-        write_to_net(net, self.element_type, self.controlled_element_index, 'tap_pos', self.tap_pos, self._read_write_flag)
+        write_to_net(net, self.element_type, self.controlled_element_index, 'tap_pos',
+                     self.tap_pos, self._read_write_flag)
 
     def is_converged(self, net):
         """
@@ -119,7 +128,8 @@ class DiscreteTapControl(TrafoController):
         vm_pu = read_from_net(net, "res_bus", self.controlled_bus, "vm_pu", self._read_write_flag)
         # this is possible in case the trafo is set out of service by the connectivity check
         is_nan = np.isnan(vm_pu)
-        self.tap_pos = read_from_net(net, self.element_type, self.controlled_element_index, "tap_pos", self._read_write_flag)
+        self.tap_pos = read_from_net(
+            net, self.element_type, self.controlled_element_index, "tap_pos", self._read_write_flag)
 
         reached_limit = np.where(self.tap_side_coeff * self.tap_sign == 1,
                                  (vm_pu < self.vm_lower_pu) & (self.tap_pos == self.tap_min) |
@@ -127,6 +137,7 @@ class DiscreteTapControl(TrafoController):
                                  (vm_pu < self.vm_lower_pu) & (self.tap_pos == self.tap_max) |
                                  (vm_pu > self.vm_upper_pu) & (self.tap_pos == self.tap_min))
 
-        converged = np.logical_or(reached_limit, np.logical_and(self.vm_lower_pu < vm_pu, vm_pu < self.vm_upper_pu))
+        converged = np.logical_or(
+            reached_limit, np.logical_and(self.vm_lower_pu < vm_pu, vm_pu < self.vm_upper_pu))
 
         return np.all(np.logical_or(converged, is_nan))
