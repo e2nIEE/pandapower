@@ -11,6 +11,7 @@ from pandapower._version import __version__, __format_version__
 from pandapower.create import create_empty_network, create_poly_cost
 import pandapower.plotting.geo as geo
 from pandapower.results import reset_results
+from pandapower.control import ConstControl, TrafoController
 
 try:
     import pandaplan.core.pplog as logging
@@ -123,9 +124,9 @@ def _convert_group_element_index(net):
 def _convert_controller_parameter_names(net):
     for ctrl_idx in net.controller.index:
         controller = net.controller.at[ctrl_idx, "object"]
-        if issubclass(controller, pp.control.ConstController):
+        if issubclass(type(controller), ConstControl):
             controller.__dict__["element_type"] = controller.__dict__.pop("element")
-        elif issubclass(controller, pp.control.TrafoController):
+        elif issubclass(type(controller), TrafoController):
             if "tid" in controller.__dict__.keys():
                 controller.__dict__["element_index"] = controller.__dict__.pop("tid")
             else:

@@ -759,7 +759,8 @@ def drop_measurements_at_elements(net, element_type, idx=None, side=None):
     idx = ensure_iterability(idx) if idx is not None else net[element_type].index
     bool1 = net.measurement.element_type == element_type
     bool2 = net.measurement.element.isin(idx)
-    bool3 = net.measurement.side == side if side is not None else np.full(net.measurement.shape[0], 1, dtype=bool)
+    bool3 = net.measurement.side == side if side is not None else np.full(
+        net.measurement.shape[0], 1, dtype=bool)
     to_drop = net.measurement.index[bool1 & bool2 & bool3]
     net.measurement = net.measurement.drop(to_drop)
 
@@ -795,7 +796,9 @@ def _drop_controller_at_elements(net, element_type, idx, ctrl_idx, to_drop):
 def _update_further_controller_parameters(net, ctrl_idx, elm_staying):
     ctrl_dict = net.controller.at[ctrl_idx, "object"].__dict__
     further_vars_to_adapt = ["bus", "element_names", "gen_type", "element_in_service",
-                             "p_profile", "q_profile", "profile_name", "sn_mva"]
+                             "p_profile", "q_profile", "profile_name", "sn_mva", "p_mw", "q_mvar",
+                             "p_series_mw", "q_series_mvar", "target_p_mw", "target_q_mvar",
+                             "p_curtailment"]
     for ctrl_col in further_vars_to_adapt:
         if ctrl_col not in ctrl_dict.keys():
             continue
