@@ -20,7 +20,7 @@ from pandapower.timeseries.run_time_series import run_timeseries, control_diagno
 
 logger = logging.getLogger(__name__)
 
-# @pytest.fixture
+@pytest.fixture
 def simple_test_net():
     net = pp.create_empty_network()
     pp.set_user_pf_options(net, init='dc', calculate_voltage_angles=True)
