@@ -601,7 +601,7 @@ def test_replace_ext_grid_gen():
         assert np.allclose(net.gen.index.values, [0, 4])
         assert net.gen.loc[4, "uuid"] == "test"
         assert net.group.element_type.tolist() == ["line", "gen"]
-        assert net.group.element.iat[1] == [4]
+        assert net.group.element_index.iat[1] == [4]
 
         # replace_gen_by_ext_grid
         if i == 0:

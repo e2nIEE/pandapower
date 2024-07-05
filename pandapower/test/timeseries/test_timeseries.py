@@ -20,7 +20,7 @@ from pandapower.timeseries.run_time_series import run_timeseries, control_diagno
 
 logger = logging.getLogger(__name__)
 
-@pytest.fixture
+# @pytest.fixture
 def simple_test_net():
     net = pp.create_empty_network()
     pp.set_user_pf_options(net, init='dc', calculate_voltage_angles=True)
@@ -199,7 +199,7 @@ def test_timeseries_results(simple_test_net):
     profiles, ds = create_data_source(n_timesteps)
 
     # 1load
-    ConstControl(net, element='load', variable='p_mw', element_index=[0, 1, 2],
+    ConstControl(net, element_type='load', variable='p_mw', element_index=[0, 1, 2],
                  data_source=ds, profile_name=["load1", "load2_mv_p", "load3_hv_p"],
                  scale_factor=0.5)
 
@@ -234,7 +234,7 @@ def test_timeseries_var_func(simple_test_net):
     profiles, ds = create_data_source(n_timesteps)
 
     # 1load
-    ConstControl(net, element='load', variable='p_mw', element_index=[0, 1, 2],
+    ConstControl(net, element_type='load', variable='p_mw', element_index=[0, 1, 2],
                  data_source=ds, profile_name=["load1", "load2_mv_p", "load3_hv_p"],
                  scale_factor=0.5)
 
@@ -271,7 +271,7 @@ def test_time_steps(simple_test_net):
     n_timesteps = 11
     profiles, ds = create_data_source(n_timesteps)
     # 1load
-    ConstControl(net, element='load', variable='p_mw', element_index=[0, 1, 2],
+    ConstControl(net, element_type='load', variable='p_mw', element_index=[0, 1, 2],
                  data_source=ds, profile_name=["load1", "load2_mv_p", "load3_hv_p"])
 
     # correct
@@ -291,7 +291,7 @@ def test_output_dump_after_time(simple_test_net):
     profiles, ds = create_data_source(n_timesteps)
 
     # 1load
-    ConstControl(net, element='load', variable='p_mw', element_index=[0, 1, 2],
+    ConstControl(net, element_type='load', variable='p_mw', element_index=[0, 1, 2],
                  data_source=ds, profile_name=["load1", "load2_mv_p", "load3_hv_p"])
 
     time_steps = range(0, n_timesteps)

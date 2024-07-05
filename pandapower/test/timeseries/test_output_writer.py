@@ -37,7 +37,7 @@ def test_output_writer_log(simple_test_net):
     ds = DFData(df)
 
     # Create gen controller with datasource
-    ct.ConstControl(net, element="load", variable="p_mw", element_index=[0, 2], data_source=ds,
+    ct.ConstControl(net, element_type="load", variable="p_mw", element_index=[0, 2], data_source=ds,
                     profile_name=[0, 2])
 
     # Create, add output and set outputwriter
@@ -78,7 +78,7 @@ def test_output_writer_with_timesteps_set(simple_test_net):
     n_timesteps = 10
     profiles, ds = create_data_source(n_timesteps)
     # 1load
-    ConstControl(net, element='load', variable='p_mw', element_index=[0, 1, 2],
+    ConstControl(net, element_type='load', variable='p_mw', element_index=[0, 1, 2],
                  data_source=ds, profile_name=["load1", "load2_mv_p", "load3_hv_p"])
 
     time_steps = range(0, n_timesteps)
@@ -95,7 +95,7 @@ def test_output_writer_without_timesteps_set(simple_test_net):
     n_timesteps = 5
     profiles, ds = create_data_source(n_timesteps)
     # 1load
-    ConstControl(net, element='load', variable='p_mw', element_index=[0, 1, 2],
+    ConstControl(net, element_type='load', variable='p_mw', element_index=[0, 1, 2],
                  data_source=ds, profile_name=["load1", "load2_mv_p", "load3_hv_p"])
 
     time_steps = range(0, n_timesteps)
@@ -114,7 +114,7 @@ def test_output_writer_without_timesteps_set_repeat(simple_test_net):
     time_steps_to_check = [8, 5, 10]
     profiles, ds = create_data_source(max(time_steps_to_check))
     # 1load
-    ConstControl(net, element='load', variable='p_mw', element_index=[0, 1, 2],
+    ConstControl(net, element_type='load', variable='p_mw', element_index=[0, 1, 2],
                  data_source=ds, profile_name=["load1", "load2_mv_p", "load3_hv_p"])
 
     ow = OutputWriter(net, output_path=tempfile.gettempdir(), output_file_type=".json")
@@ -134,7 +134,7 @@ def test_output_writer_short_data_source(simple_test_net):
     n_timesteps = 10
     profiles, ds = create_data_source(5)
     # 1load
-    ConstControl(net, element='load', variable='p_mw', element_index=[0, 1, 2],
+    ConstControl(net, element_type='load', variable='p_mw', element_index=[0, 1, 2],
                  data_source=ds, profile_name=["load1", "load2_mv_p", "load3_hv_p"])
 
     time_steps = range(0, n_timesteps)
@@ -151,7 +151,7 @@ def test_default_output_writer(simple_test_net):
 
     n_timesteps = 5
     profiles, ds = create_data_source(n_timesteps)
-    ConstControl(net, element='load', variable='p_mw', element_index=[0, 1, 2],
+    ConstControl(net, element_type='load', variable='p_mw', element_index=[0, 1, 2],
                  data_source=ds, profile_name=["load1", "load2_mv_p", "load3_hv_p"])
 
     time_steps = range(0, n_timesteps)
@@ -169,7 +169,7 @@ def test_output_writer_eval_simple(simple_test_net):
     n_timesteps = 1
     profiles, ds = create_data_source(n_timesteps)
     # 1load
-    ConstControl(net, element='load', variable='p_mw', element_index=[0, 1, 2],
+    ConstControl(net, element_type='load', variable='p_mw', element_index=[0, 1, 2],
                  data_source=ds, profile_name=["load1", "load2_mv_p", "load3_hv_p"])
     time_steps = range(0, n_timesteps)
     ow = OutputWriter(net, time_steps, output_path=tempfile.gettempdir(), output_file_type=".json")
@@ -183,7 +183,7 @@ def test_output_writer_multiple_index_definition(simple_test_net):
 
     n_timesteps = 1
     profiles, ds = create_data_source(n_timesteps)
-    ConstControl(net, element='load', variable='p_mw', element_index=[0, 1, 2],
+    ConstControl(net, element_type='load', variable='p_mw', element_index=[0, 1, 2],
                  data_source=ds, profile_name=["load1", "load2_mv_p", "load3_hv_p"])
     time_steps = range(0, n_timesteps)
 
@@ -229,7 +229,7 @@ def test_store_and_load(simple_test_net):
 
     n_timesteps = 2
     profiles, ds = create_data_source(n_timesteps)
-    ConstControl(net, element='load', variable='p_mw', element_index=[0, 1, 2],
+    ConstControl(net, element_type='load', variable='p_mw', element_index=[0, 1, 2],
                  data_source=ds, profile_name=["load1", "load2_mv_p", "load3_hv_p"])
     dirname = tempfile.gettempdir()
     ow = OutputWriter(net, output_path=dirname, output_file_type=".json")
@@ -257,7 +257,7 @@ def test_ppc_log(simple_test_net):
     n_timesteps = 5
     profiles, ds = create_data_source(n_timesteps)
     # 1load
-    ConstControl(net, element='load', variable='p_mw', element_index=[0, 1, 2],
+    ConstControl(net, element_type='load', variable='p_mw', element_index=[0, 1, 2],
                  data_source=ds, profile_name=["load1", "load2_mv_p", "load3_hv_p"],
                  recycle=True)
 
@@ -285,10 +285,10 @@ def test_ow_index():
     ds_p = DFData(p_data)
     ds_v = DFData(v_data)
 
-    ct.ConstControl(net, element='load', variable='p_mw',
+    ct.ConstControl(net, element_type='load', variable='p_mw',
                     element_index=net.load.index.tolist(), data_source=ds_p,
                     profile_name=p_data.columns)
-    ct.ConstControl(net, element='ext_grid', variable='vm_pu',
+    ct.ConstControl(net, element_type='ext_grid', variable='vm_pu',
                     element_index=0, data_source=ds_v,
                     profile_name='0')
 

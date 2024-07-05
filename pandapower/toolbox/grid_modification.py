@@ -1108,7 +1108,7 @@ def _replace_group_member_element_type(
     check_unique_group_rows(net)
     gr_et = net.group.loc[net.group.element_type == old_element_type]
     for gr_index in gr_et.index:
-        isin = old_elements.isin(gr_et.at[gr_index, "element"])
+        isin = old_elements.isin(gr_et.at[gr_index, "element_index"])
         if any(isin):
             attach_to_group(net, gr_index, new_element_type, [new_elements.loc[isin].tolist()],
                             reference_columns=gr_et.at[gr_index, "reference_column"])

@@ -21,11 +21,11 @@ def run_function(request):
     return request.param
 
 
-def add_const(net, ds, recycle, element="load", variable="p_mw", element_index=None, profile_name=None):
+def add_const(net, ds, recycle, element_type="load", variable="p_mw", element_index=None, profile_name=None):
     if element_index is None or profile_name is None:
         element_index = [0, 1, 2]
         profile_name = ["load1", "load2_mv_p", "load3_hv_p"]
-    return ConstControl(net, element=element, variable=variable, element_index=element_index,
+    return ConstControl(net, element_type=element_type, variable=variable, element_index=element_index,
                         data_source=ds, profile_name=profile_name, recycle=recycle)
 
 
@@ -162,14 +162,14 @@ def test_const_gen(simple_test_net, run_function):
     ds = DFData(profiles)
     # 1load
     c1 = add_const(net, ds, recycle=None)
-    c2 = add_const(net, ds, recycle=None, profile_name="gen", element_index=0, element="gen")
+    c2 = add_const(net, ds, recycle=None, profile_name="gen", element_index=0, element_type="gen")
 
     vm_pu, ll = _run_recycle(net, run_function)
     del c1, c2
 
     # calculate the same results without recycle
     c = add_const(net, ds, recycle=False)
-    c2 = add_const(net, ds, recycle=None, profile_name="gen", element_index=0, element="gen")
+    c2 = add_const(net, ds, recycle=None, profile_name="gen", element_index=0, element_type="gen")
     ow = _run_normal(net, run_function)
     assert np.allclose(vm_pu, ow.output[_v_var(run_function)])
     assert np.allclose(ll, ow.output["res_line.loading_percent"])
@@ -185,7 +185,7 @@ def test_const_ext_grid(simple_test_net, run_function):
     # 1load
     c1 = add_const(net, ds, recycle=None)
     c2 = add_const(net, ds, recycle=None, profile_name="ext_grid", variable=_v_var(run_function, False),
-                   element_index=0, element="ext_grid")
+                   element_index=0, element_type="ext_grid")
 
     vm_pu, ll = _run_recycle(net, run_function)
     del c1, c2
@@ -193,7 +193,7 @@ def test_const_ext_grid(simple_test_net, run_function):
     # calculate the same results without recycle
     c = add_const(net, ds, recycle=False)
     c2 = add_const(net, ds, recycle=False, profile_name="ext_grid", variable=_v_var(run_function, False),
-                   element_index=0, element="ext_grid")
+                   element_index=0, element_type="ext_grid")
     ow = _run_normal(net, run_function)
     assert np.allclose(vm_pu, ow.output[_v_var(run_function)])
     assert np.allclose(ll, ow.output["res_line.loading_percent"])
@@ -229,7 +229,7 @@ def test_trafo_tap_dc(simple_test_net, run_function=pp.rundcpp):
     # 1load
     c1 = add_const(net, ds, recycle=None)
     c2 = add_const(net, ds, recycle=None, profile_name="trafo_tap", variable="tap_pos",
-                   element_index=0, element="trafo")
+                   element_index=0, element_type="trafo")
 
     vm_pu, ll = _run_recycle(net, run_function)
     del c1, c2
@@ -237,7 +237,7 @@ def test_trafo_tap_dc(simple_test_net, run_function=pp.rundcpp):
     # calculate the same results without recycle
     c = add_const(net, ds, recycle=False)
     c2 = add_const(net, ds, recycle=None, profile_name="trafo_tap", variable="tap_pos",
-                   element_index=0, element="trafo")
+                   element_index=0, element_type="trafo")
     ow = _run_normal(net, run_function)
     assert np.allclose(vm_pu, ow.output[_v_var(run_function)])
     assert np.allclose(ll, ow.output["res_line.loading_percent"])
@@ -252,7 +252,7 @@ def test_const_pq_gen_trafo_tap(simple_test_net, run_function=pp.runpp):
     # 1load
     c1 = add_const(net, ds, recycle=None)
     c2 = add_const(net, ds, recycle=None, profile_name="ext_grid", variable="vm_pu", element_index=0,
-                   element="ext_grid")
+                   element_type="ext_grid")
     c3 = ContinuousTapControl(net, 0, 1.01, tol=1e-9)
 
     vm_pu, ll = _run_recycle(net, run_function)
@@ -261,7 +261,7 @@ def test_const_pq_gen_trafo_tap(simple_test_net, run_function=pp.runpp):
     # calculate the same results without recycle
     c = add_const(net, ds, recycle=False)
     c2 = add_const(net, ds, recycle=False, profile_name="ext_grid", variable="vm_pu", element_index=0,
-                   element="ext_grid")
+                   element_type="ext_grid")
     c3 = ContinuousTapControl(net, 0, 1.01, recycle=False, tol=1e-9)
     ow = _run_normal(net, run_function)
     assert np.allclose(vm_pu, ow.output[_v_var(run_function)])
@@ -277,9 +277,9 @@ def test_const_pq_gen_trafo_tap_dc(simple_test_net, run_function=pp.rundcpp):
     # 1load
     c1 = add_const(net, ds, recycle=None)
     c2 = add_const(net, ds, recycle=None, profile_name="ext_grid", variable="vm_pu", element_index=0,
-                   element="ext_grid")
+                   element_type="ext_grid")
     c3 = add_const(net, ds, recycle=None, profile_name="trafo_tap", variable="tap_pos",
-                   element_index=0, element="trafo")
+                   element_index=0, element_type="trafo")
 
     vm_pu, ll = _run_recycle(net, run_function)
     del c1, c2, c3
@@ -287,9 +287,9 @@ def test_const_pq_gen_trafo_tap_dc(simple_test_net, run_function=pp.rundcpp):
     # calculate the same results without recycle
     c = add_const(net, ds, recycle=False)
     c2 = add_const(net, ds, recycle=False, profile_name="ext_grid", variable="vm_pu", element_index=0,
-                   element="ext_grid")
+                   element_type="ext_grid")
     c3 = add_const(net, ds, recycle=None, profile_name="trafo_tap", variable="tap_pos",
-                   element_index=0, element="trafo")
+                   element_index=0, element_type="trafo")
     ow = _run_normal(net, run_function)
     assert np.allclose(vm_pu, ow.output[_v_var(run_function)], rtol=0, atol=1e-6)
     assert np.allclose(ll, ow.output["res_line.loading_percent"], rtol=0, atol=1e-6)
@@ -305,9 +305,9 @@ def test_const_pq_gen_trafo_tap_ideal(simple_test_net, run_function):
     # 1load
     c1 = add_const(net, ds, recycle=None)
     c2 = add_const(net, ds, recycle=None, profile_name="ext_grid", variable=_v_var(run_function, False),
-                   element_index=0, element="ext_grid")
+                   element_index=0, element_type="ext_grid")
     c3 = add_const(net, ds, recycle=None, profile_name="trafo_tap", variable="tap_pos",
-                   element_index=0, element="trafo")
+                   element_index=0, element_type="trafo")
 
     vm_pu, ll = _run_recycle(net, run_function)
     del c1, c2, c3
@@ -315,9 +315,9 @@ def test_const_pq_gen_trafo_tap_ideal(simple_test_net, run_function):
     # calculate the same results without recycle
     c = add_const(net, ds, recycle=False)
     c2 = add_const(net, ds, recycle=False, profile_name="ext_grid", variable=_v_var(run_function, False),
-                   element_index=0, element="ext_grid")
+                   element_index=0, element_type="ext_grid")
     c3 = add_const(net, ds, recycle=None, profile_name="trafo_tap", variable="tap_pos",
-                   element_index=0, element="trafo")
+                   element_index=0, element_type="trafo")
     ow = _run_normal(net, run_function)
     assert np.allclose(vm_pu, ow.output[_v_var(run_function)], rtol=0, atol=1e-6)
     assert np.allclose(ll, ow.output["res_line.loading_percent"], rtol=0, atol=1e-6)
@@ -333,9 +333,9 @@ def test_const_pq_gen_trafo_tap_shifter(simple_test_net, run_function):
     # 1load
     c1 = add_const(net, ds, recycle=None)
     c2 = add_const(net, ds, recycle=None, profile_name="ext_grid", variable=_v_var(run_function, False), element_index=0,
-                   element="ext_grid")
+                   element_type="ext_grid")
     c3 = add_const(net, ds, recycle=None, profile_name="trafo_tap", variable="tap_pos",
-                   element_index=0, element="trafo")
+                   element_index=0, element_type="trafo")
 
     vm_pu, ll = _run_recycle(net, run_function)
     del c1, c2, c3
@@ -343,9 +343,9 @@ def test_const_pq_gen_trafo_tap_shifter(simple_test_net, run_function):
     # calculate the same results without recycle
     c = add_const(net, ds, recycle=False)
     c2 = add_const(net, ds, recycle=False, profile_name="ext_grid", variable=_v_var(run_function, False), element_index=0,
-                   element="ext_grid")
+                   element_type="ext_grid")
     c3 = add_const(net, ds, recycle=None, profile_name="trafo_tap", variable="tap_pos",
-                   element_index=0, element="trafo")
+                   element_index=0, element_type="trafo")
     ow = _run_normal(net, run_function)
     assert np.allclose(vm_pu, ow.output[_v_var(run_function)], rtol=0, atol=1e-6)
     assert np.allclose(ll, ow.output["res_line.loading_percent"], rtol=0, atol=1e-6)
