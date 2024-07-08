@@ -9,7 +9,7 @@ from pandapower.pd2ppc import _pd2ppc
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci
 from pandapower.pf.run_newton_raphson_pf import _get_numba_functions, _get_Y_bus
 from pandapower.run import _passed_runpp_parameters
-from pandapower.auxiliary import _init_runpp_options, _add_dcline_gens, ensure_iterability
+from pandapower.auxiliary import _init_runpp_options, _add_dcline_gens
 import pandapower as pp
 import uuid
 
@@ -345,135 +345,6 @@ def drop_measurements_and_controllers(net, buses, skip_controller=False):
 
     # --- dropping controller
     pp.drop_controllers_at_buses(net, buses)
-
-
-def match_controller_and_new_elements(net, net_org):
-    """
-    This function makes the original controllers and the
-    new created sgen to match
-
-    test at present: controllers in the external area are removed.
-    """
-    if len(net.controller):
-        to_be_removed = list()
-        if "origin_all_internal_buses" in net.bus_lookups and \
-                "boundary_buses_inclusive_bswitch" in net.bus_lookups:
-            internal_buses = net.bus_lookups["origin_all_internal_buses"] + \
-                net.bus_lookups["boundary_buses_inclusive_bswitch"]
-        else:
-            internal_buses = []
-        for ctrl_idx in net.controller.index.tolist():
-            _adjust_trafo_controller(net, net_org, to_be_removed, ctrl_idx)
-            _try_adjust_bus_element_controller(net, net_org, to_be_removed, ctrl_idx)
-
-        net.controller = net.controller.drop(to_be_removed)
-
-
-def _adjust_trafo_controller(net, net_org, to_be_removed, ctrl_idx, matching=None):
-    if issubclass(type(net.controller.object.at[ctrl_idx]), pp.control.TrafoController):
-        ctrl_dict = net.controller.at[ctrl_idx, "object"].__dict__
-        tid = ensure_iterability(ctrl_dict["tid"])
-        trafotable = ctrl_dict["trafotable"]
-
-        # --- check which elements should stay in tid
-        spec_matching = _specify_matching(net, net_org, trafotable, matching=matching)
-        if spec_matching == "index":
-            in_net = pd.Series(tid, index=tid).isin(net[trafotable].index)
-        elif spec_matching == "bus_index":
-            in_net = net[trafotable].hv_bus.isin(net_org[trafotable].loc[tid, "hv_bus"].values)
-            in_net &= net[trafotable].lv_bus.isin(net_org[trafotable].loc[tid, "lv_bus"].values)
-            if trafotable == "trafo3w":
-                in_net &= net[trafotable].mv_bus.isin(net_org[trafotable].loc[tid, "mv_bus"].values)
-        else:
-            in_net = net_org[trafotable].loc[tid, spec_matching].isin(
-                net[trafotable][spec_matching].values)
-        new_tid = list(in_net.index[in_net])
-
-        # keep controller only if trafos are kept in tid
-        if len(new_tid) == 0:
-            to_be_removed.append(ctrl_idx)
-
-        # update values in tid
-        ctrl_dict["tid"] = new_tid
-        ctrl_dict["matching_params"]["tid"] = new_tid
-
-        # update values in further controller variables
-        for ctrl_col in ["trafobus", "controlled_tid", "controlled_bus"]:
-            if ctrl_col == "controlled_tid":
-                ctrl_dict[ctrl_col] = ctrl_dict["tid"]
-            else:
-                ctrl_dict[ctrl_col] = net[ctrl_dict["trafotable"]].loc[
-                    ctrl_dict["tid"], ctrl_dict["side"]+"_bus"].values
-
-
-def _specify_matching(net, net_org, element_type, matching=None):
-    # set default matching order
-    if matching is None:
-        matching = ["origin_id", "name", "bus_index"]
-
-    # check whether the first, second, ... matching procedure can be applied
-    for match in matching:
-        if match == "index":
-            is_match = True
-        elif match == "bus_index":
-            is_match = element_type in pp.pp_elements(cost_tables=False, res_elements=False)
-        else:
-            is_match = match in net[element_type].columns and \
-                match in net_org[element_type].columns and \
-                (~net[element_type][match].isnull()).all() and \
-                net[element_type][match].isin(net_org[element_type][match]).all()
-        if is_match:
-            return match
-    if not is_match:
-        raise ValueError("No matching proceedure found.")
-
-
-def _try_adjust_bus_element_controller(net, net_org, to_be_removed, ctrl_idx, matching=None):
-    try:
-        ctrl_dict = net.controller.at[ctrl_idx, "object"].__dict__
-        et = ctrl_dict["element"]
-        elm_idxs = ctrl_dict["element_index"]
-        assert len(elm_idxs), "element_index is expected as an iterable."
-    except (KeyError, TypeError, AssertionError):
-        return
-    else:
-        org_elm_buses = list(net_org[et].bus[elm_idxs].values)
-        new_elm_idxs = net[et].index[net[et].bus.isin(org_elm_buses)].tolist()
-
-        # --- check which elements should stay in tid
-        spec_matching = _specify_matching(net, net_org, et, matching=matching)
-        if spec_matching == "index":
-            in_net = pd.Series(elm_idxs, index=elm_idxs).isin(net[et].index)
-        elif spec_matching == "bus_index":
-            in_net = net[et].bus.isin(net_org[et].loc[et, "hv_bus"].values)
-        else:
-            in_net = net_org[et].loc[elm_idxs, spec_matching].isin(net[et][spec_matching].values)
-        new_et = list(in_net.index[in_net])
-
-        if len(new_elm_idxs) == 0:
-            # keep controller only if trafos are kept in tid
-            to_be_removed.append(ctrl_idx)
-        else:
-            # update values in element_index
-            kept = pd.Series(ctrl_dict["element_index"]).isin(new_et).values
-            ctrl_dict["element_index"] = new_et
-            ctrl_dict["matching_params"]["element_index"] = new_et
-
-            # update values in further controller variables
-            further_vars_to_adapt = ["bus", "element_names", "gen_type", "element_in_service",
-                                     "p_profile", "q_profile", "profile_name", "sn_mva"]
-            for ctrl_col in further_vars_to_adapt:
-                if ctrl_col not in ctrl_dict.keys():
-                    continue
-
-                if ctrl_col == "bus":
-                    ctrl_dict[ctrl_col] = net[ctrl_dict["element"]].loc[
-                        ctrl_dict["element_index"], "bus"]
-                elif ctrl_col in ["p_profile", "q_profile", "profile_name"]:
-                    if ctrl_dict[ctrl_col] is not None:
-                        ctrl_dict[ctrl_col] = list(np.array(ctrl_dict[ctrl_col])[kept])
-                else:
-                    ctrl_dict[ctrl_col] = ctrl_dict[ctrl_col].loc[ctrl_dict["element_index"]]
 
 
 def ensure_origin_id(net, elms=None):

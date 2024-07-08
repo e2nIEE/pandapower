@@ -41,6 +41,9 @@ Change Log
 - [CHANGED] considering trafo controller and improve implementation for other (bus element) controller at grid_equivalent creation
 - [FIXED] deprecation of matplotlib.cm.get_cmap(name) -> matplotlib.colormaps[name]
 - [FIXED] merge_nets failing if net2 has custom DataFrame that is not present in net1
+- [CHANGED] grid_equivalent creation: improved consideration of controller
+- [CHANGED] create consistent parameter names (element and element_index) in controllers -> Changes for TrafoController: trafotable & trafotype -> element, tid -> element_index
+- [CHANGED] parameter renaming in net.group: element -> element_index
 
 [2.14.7] - 2024-06-14
 -------------------------------

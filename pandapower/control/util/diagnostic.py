@@ -25,8 +25,8 @@ def control_diagnostic(net, respect_in_service=True):
     indices = list(net.controller.index)
     for idx in indices:
         current_controller = net.controller.object.loc[idx]
-        parameters = deepcopy(current_controller.matching_params) if "matching_params" in \
-                                                                     current_controller.__dict__ else {}
+        parameters = deepcopy(current_controller.matching_params) if \
+            "matching_params" in current_controller.__dict__ else {}
         if respect_in_service:
             if not net.controller.in_service.at[idx]:
                 continue
@@ -48,15 +48,18 @@ def control_diagnostic(net, respect_in_service=True):
             trafo_ctrl += [idx]
     for idx in trafo_ctrl:
         current_controller = net.controller.object.loc[idx]
-        parameters = {"tid": current_controller.tid, "trafotype": current_controller.trafotype}
+        parameters = {"element_index": current_controller.element_index,
+                      "element": current_controller.element}
         if respect_in_service:
             if not net.controller.in_service.at[idx]:
                 continue
             parameters["in_service"] = True
         trafo_ctrl_at_same_trafo = get_controller_index(net, parameters=parameters, idx=trafo_ctrl)
         if len(trafo_ctrl_at_same_trafo) > 1:
-            logger.info("Trafo Controllers %s at the %s transformer %s probably could affect convergence." %
-                        (str(['%i' % i for i in trafo_ctrl_at_same_trafo]), parameters['trafotype'], parameters["tid"]))
+            logger.info(
+                "Trafo Controllers %s at the %s transformer %s probably could affect convergence." %
+                (str(['%i' % i for i in trafo_ctrl_at_same_trafo]), parameters['element'],
+                 parameters["element_index"]))
             for val in trafo_ctrl_at_same_trafo:
                 trafo_ctrl.remove(val)
 
@@ -73,36 +76,42 @@ def trafo_characteristics_diagnostic(net):
             continue
         # check if there are any missing characteristics
         tap_dependent_impedance = net[trafo_table]['tap_dependent_impedance'].fillna(False).values
-        logger.info(f"{trafo_table}: found {sum(tap_dependent_impedance)} transformer(s) with tap-dependent impedance")
+        logger.info(
+            f"{trafo_table}: found {sum(tap_dependent_impedance)} transformer(s) with tap-dependent"
+            " impedance")
         if len(np.intersect1d(net[trafo_table].columns, cols)) == 0:
             logger.warning("No columns defined for transformer tap characteristics in %s. "
                            "Power flow calculation will raise an error." % trafo_table)
-        elif net[trafo_table].loc[tap_dependent_impedance, np.intersect1d(cols, net[trafo_table].columns)].isnull().all(axis=1).any():
-            logger.warning(f"Some transformers in {trafo_table} table have tap_dependent_impedance set to True, "
-                           f"but no defined characteristics. Power flow calculation will raise an error.")
+        elif net[trafo_table].loc[tap_dependent_impedance, np.intersect1d(
+                cols, net[trafo_table].columns)].isnull().all(axis=1).any():
+            logger.warning(
+                f"Some transformers in {trafo_table} table have tap_dependent_impedance set to "
+                f"True, but no defined characteristics. Power flow calculation will raise an error.")
         for col in cols:
             if col not in net[trafo_table]:
                 logger.info("%s: %s is missing" % (trafo_table, col))
                 continue
             elif net[trafo_table].loc[tap_dependent_impedance, col].isnull().any():
                 logger.info("%s: %s is missing for some transformers" % (trafo_table, col))
-            elif len(set(net[trafo_table].loc[tap_dependent_impedance, col]) - set(net.characteristic.index)) > 0:
+            elif len(set(net[trafo_table].loc[tap_dependent_impedance, col]) - \
+                    set(net.characteristic.index)) > 0:
                 logger.info("%s: %s contains invalid characteristics indices" % (trafo_table, col))
             else:
-                logger.debug(f"{trafo_table}: {col} has {len(net[trafo_table][col].dropna())} characteristics")
+                logger.debug(f"{trafo_table}: {col} has {len(net[trafo_table][col].dropna())} "
+                             "characteristics")
 
             # chack if any characteristics have value at the neutral point that deviates from the transformer parameter
             variable = col.replace("_characteristic", "")
-            for tid in net[trafo_table].index[tap_dependent_impedance]:
-                tap_neutral = net[trafo_table].tap_neutral.fillna(0).at[tid]
-                s_id = net[trafo_table][col].at[tid]
+            for element_index in net[trafo_table].index[tap_dependent_impedance]:
+                tap_neutral = net[trafo_table].tap_neutral.fillna(0).at[element_index]
+                s_id = net[trafo_table][col].at[element_index]
                 if pd.isnull(s_id):
                     continue
                 s = net.characteristic.object.at[s_id]
                 s_val = s(tap_neutral)
-                var_val = net[trafo_table].at[tid, variable]
+                var_val = net[trafo_table].at[element_index, variable]
                 if not np.isclose(s_val, var_val, rtol=0, atol=1e-6):
-                    logger.warning(f"The characteristic value of {s_val} at the neutral tap position {tap_neutral} "
-                                   f"does not match the value {var_val} of {variable} for the {trafo_table} with index {tid} "
-                                   f"(deviation of {s_val-var_val})")
-
+                    logger.warning(
+                        f"The characteristic value of {s_val} at the neutral tap position "
+                        f"{tap_neutral} does not match the value {var_val} of {variable} for the "
+                        f"{trafo_table} with index {element_index} (deviation of {s_val-var_val})")

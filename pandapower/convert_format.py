@@ -9,8 +9,8 @@ from packaging.version import Version
 
 from pandapower._version import __version__, __format_version__
 from pandapower.create import create_empty_network, create_poly_cost
-import pandapower.plotting.geo as geo
 from pandapower.results import reset_results
+from pandapower.control import TrafoController
 
 try:
     import pandaplan.core.pplog as logging
@@ -35,6 +35,8 @@ def convert_format(net, elements_to_deserialize=None):
     _rename_columns(net, elements_to_deserialize)
     _add_missing_columns(net, elements_to_deserialize)
     _create_seperate_cost_tables(net, elements_to_deserialize)
+    if Version(str(net.format_version)) < Version("3.0.0"):
+        _convert_trafo_controller_parameter_names(net)
     if Version(str(net.format_version)) < Version("2.4.0"):
         _convert_bus_pq_meas_to_load_reference(net, elements_to_deserialize)
     if isinstance(net.format_version, float) and net.format_version < 2:  # Why only run if net.format_version is float?
@@ -101,6 +103,20 @@ def correct_dtypes(net, error):
             raise ValueError(msg)
         else:
             logger.info(msg)
+
+
+def _convert_trafo_controller_parameter_names(net):
+    if not isinstance(net.controller, pd.DataFrame):
+        return
+    for ctrl_idx in net.controller.index:
+        controller = net.controller.at[ctrl_idx, "object"]
+        if issubclass(type(controller), TrafoController):
+            if "tid" in controller.__dict__.keys():
+                controller.__dict__["element_index"] = controller.__dict__.pop("tid")
+            else:
+                controller.__dict__["element_index"] = controller.__dict__.pop("transformer_index")
+            controller.__dict__["element_type"] = controller.__dict__.pop("trafotable")
+            del controller.__dict__["trafotype"]
 
 
 def _convert_bus_pq_meas_to_load_reference(net, elements_to_deserialize):

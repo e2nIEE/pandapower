@@ -132,7 +132,7 @@ class CreateMeasurements:
         busses_temp = busses_temp.rename(columns={'index': 'element', sc['ct']: 'TopologicalNode'})
         sv_sv_voltages = pd.merge(self.cim['sv']['SvVoltage'][['rdfId', 'TopologicalNode', 'v']], busses_temp,
                                   how='left', on='TopologicalNode')
-        # drop all the rows mit vn_kv == np.NaN (no measurements available for that bus)
+        # drop all the rows mit vn_kv == np.nan (no measurements available for that bus)
         sv_sv_voltages = sv_sv_voltages.dropna(subset=['vn_kv'])
         sv_sv_voltages = sv_sv_voltages.reset_index()
         if 'index' in sv_sv_voltages.columns:
@@ -140,7 +140,7 @@ class CreateMeasurements:
         # value -> voltage ()
         sv_sv_voltages['value'] = sv_sv_voltages.v / sv_sv_voltages.vn_kv
         sv_sv_voltages['value'] = sv_sv_voltages['value'].replace(0, np.nan)
-        # drop all the rows mit value == np.NaN
+        # drop all the rows mit value == np.nan
         sv_sv_voltages = sv_sv_voltages.dropna(subset=['value'])
         sv_sv_voltages = sv_sv_voltages.reset_index()
         sv_sv_voltages['value_stddev'] = sv_sv_voltages.value * 0.001
