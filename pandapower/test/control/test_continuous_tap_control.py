@@ -247,7 +247,7 @@ def test_continuous_tap_control_side_mv():
         # something to do for the controllers
 
     net_ref = deepcopy(net)
-    ContinuousTapControl(net, 0, side='mv', vm_set_pu=1.02, tol=tol, element_type="trafo3w")
+    ContinuousTapControl(net, 0, side='mv', vm_set_pu=1.02, tol=tol, element="trafo3w")
 
     # --- run control reference
     pp.runpp(net, run_control=True)
@@ -278,7 +278,7 @@ def test_continuous_tap_control_side_hv_reversed_3w():
         # something to do for the controllers
 
     net_ref = deepcopy(net)
-    ContinuousTapControl(net, 0, side='hv', vm_set_pu=1.02, tol=tol, element_type="trafo3w")
+    ContinuousTapControl(net, 0, side='hv', vm_set_pu=1.02, tol=tol, element="trafo3w")
 
     # --- run control reference
     pp.runpp(net, run_control=True)

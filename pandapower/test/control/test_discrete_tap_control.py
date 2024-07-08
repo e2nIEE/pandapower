@@ -380,7 +380,7 @@ def test_continuous_tap_control_side_mv():
         # something to do for the controllers
 
     net_ref = deepcopy(net)
-    DiscreteTapControl(net, 0, vm_lower_pu=1.01, vm_upper_pu=1.03, side='mv', tol=tol, element_type="trafo3w")
+    DiscreteTapControl(net, 0, vm_lower_pu=1.01, vm_upper_pu=1.03, side='mv', tol=tol, element="trafo3w")
 
     # --- run control reference
     pp.runpp(net, run_control=True)
