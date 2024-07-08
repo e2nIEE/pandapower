@@ -22,11 +22,13 @@ Now, these data are stored as geojson strings within the element tables, i.e. :c
 Renaming
 ==========
 
-Parameters were renamed for more consistency in the data, vor allem in the controller objects of :code:`net.controller` and in :code:`net.group`.
-The new 'standard' to define a net element is provided by :code:`element_type` and :code:`element_index`.
+Parameters were renamed for more consistency at controllers :code:`net.controller`.
+With version 3.0, controllers refer to net elements via :code:`element` (shorthand for :code:`type`) and :code:`element_index`.
+This is established by multiple functions/codings in the pandapower package.
+The columns in :code:`net.group` are also changed: To :code:`element_type` and :code:`element_index` to avoid misunderstandings.
+A major rework could include the names :code:`element_type` and :code:`element_index` at any place in the package but has not been implemented (yet?) since it would break large parts of package usage.
 
-For that, the following changes were made:
+To sum up, the following changes were made:
 
-    - ConstControl and subclasses: :code:`trafotable, trafotype` ➔ :code:`element_type`
-    - TrafoController: :code:`trafotable, trafotype` ➔ :code:`element_type`
-    - :code:`net.groups.element` ➔ :code:`net.groups.element_index`
+    - TrafoController parameters: :code:`trafotable, trafotype` ➔ :code:`element_type`; :code:`tid` ➔ :code:`element_index`
+    - Group column: :code:`net.groups.element` ➔ :code:`net.groups.element_index`

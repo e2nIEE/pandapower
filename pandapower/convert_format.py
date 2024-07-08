@@ -119,12 +119,18 @@ def _convert_trafo_controller_parameter_names(net):
     for ctrl_idx in net.controller.index:
         controller = net.controller.at[ctrl_idx, "object"]
         if issubclass(type(controller), TrafoController):
+
             if "tid" in controller.__dict__.keys():
                 controller.__dict__["element_index"] = controller.__dict__.pop("tid")
-            else:
+            elif "transformer_index" in controller.__dict__.keys():
                 controller.__dict__["element_index"] = controller.__dict__.pop("transformer_index")
-            controller.__dict__["element"] = controller.__dict__.pop("trafotable")
-            del controller.__dict__["trafotype"]
+
+            if "trafotable" in controller.__dict__.keys():
+                controller.__dict__["element"] = controller.__dict__.pop("trafotable")
+                if "trafotype" in controller.__dict__.keys():
+                    del controller.__dict__["trafotype"]
+            elif "trafotype" in controller.__dict__.keys():
+                controller.__dict__["element"] = controller.__dict__.pop("trafotype")
 
 
 def _convert_bus_pq_meas_to_load_reference(net, elements_to_deserialize):
