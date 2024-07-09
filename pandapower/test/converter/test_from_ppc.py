@@ -17,12 +17,6 @@ import pandapower.networks as pn
 import pandapower.toolbox
 from pandapower.converter import from_ppc, validate_from_ppc, to_ppc
 from pandapower.converter.pypower.from_ppc import _branch_to_which, _gen_to_which
-from pandapower.pypower.idx_bus import \
-    BUS_I, BUS_TYPE, PD, QD, GS, BS, BUS_AREA, VM, VA, BASE_KV, ZONE, VMAX, VMIN
-from pandapower.pypower.idx_gen import \
-    GEN_BUS, PG, QG, QMAX, QMIN, VG, MBASE, GEN_STATUS, PMAX, PMIN
-from pandapower.pypower.idx_brch import \
-    F_BUS, T_BUS, BR_R, BR_X, BR_B, RATE_A, RATE_B, RATE_C, TAP, SHIFT, PF, QF, PT, QT
 
 try:
     import pypower.case24_ieee_rts as c24
