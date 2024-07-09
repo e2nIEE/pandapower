@@ -26,7 +26,7 @@ class ContinuousTapControl(TrafoController):
 
         **side** (string, "lv") - Side of the transformer where the voltage is controlled
 
-        **element** (float, "trafo") - Trafo type ("trafo" or "trafo3w")
+        **element** (string, "trafo") - Trafo type ("trafo" or "trafo3w")
 
         **in_service** (bool, True) - Indicates if the controller is currently in_service
 

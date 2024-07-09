@@ -26,7 +26,7 @@ class DiscreteTapControl(TrafoController):
 
         **side** (string, "lv") - Side of the transformer where the voltage is controlled (hv or lv)
 
-        **element** (float, "trafo") - Trafo type ("trafo" or "trafo3w")
+        **element** (string, "trafo") - Trafo type ("trafo" or "trafo3w")
 
         **tol** (float, 0.001) - Voltage tolerance band at bus in Percent (default: 1% = 0.01pu)
 
