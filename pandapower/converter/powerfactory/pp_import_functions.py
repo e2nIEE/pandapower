@@ -687,8 +687,9 @@ def create_line(net, item, flag_graphics, create_sections, is_unbalanced):
         return
 
     ac = bus_table == "bus"
+    line_table = "line" if ac else "line_dc"
 
-    corridor = pp.create.get_free_id(net.line)
+    corridor = pp.create.get_free_id(net[line_table])
     line_sections = item.GetContents('*.ElmLnesec')
     # geodata
     if flag_graphics == 'no geodata':
@@ -712,6 +713,8 @@ def create_line(net, item, flag_graphics, create_sections, is_unbalanced):
     else:
         logger.debug('line <%s> has sections' % params['name'])
         if create_sections:
+            if not ac:
+                raise NotImplementedError(f"Export of lines with line sections only implemented for AC lines ({item})")
             sid_list = create_line_sections(net=net, item_list=line_sections, line=item,
                                             coords=coords, is_unbalanced=is_unbalanced, **params)
         else:
@@ -721,9 +724,9 @@ def create_line(net, item, flag_graphics, create_sections, is_unbalanced):
         logger.debug('created <%d> line sections for line <%s>' % (len(sid_list), params['name']))
 
     line_dict[item] = sid_list
-    net.line.loc[sid_list, "line_idx"] = corridor
-    net.line.loc[sid_list, "folder_id"] = item.fold_id.loc_name
-    net.line.loc[sid_list, "equipment"] = item.for_name
+    net[line_table].loc[sid_list, "line_idx"] = corridor
+    net[line_table].loc[sid_list, "folder_id"] = item.fold_id.loc_name
+    net[line_table].loc[sid_list, "equipment"] = item.for_name
 
     if ac:
         create_connection_switches(net, item, 2, 'l', (params['bus1'], params['bus2']),
@@ -1000,45 +1003,49 @@ def create_line_normal(net, item, bus1, bus2, name, parallel, is_unbalanced, ac,
         else:
             lid = pp.create_line_dc(net, from_bus_dc=bus1, to_bus_dc=bus2, **params)
     else:
-        if not ac:
-            raise NotImplementedError(f"creating line_dc from line without std_type is not implemented ({pf_type})")
-
         logger.debug('creating normal line <%s> from parameters' % name)
-        r_ohm, x_ohm, c_nf = item.R1, item.X1, item.C1
-        r0_ohm, x0_ohm, c0_nf = item.R0, item.X0, item.C0
+        r_ohm = item.R1
 
-
-        if r_ohm == 0 and x_ohm == 0 and c_nf == 0:
-            logger.error('Incomplete data for line "%s": missing type and '
-                         'missing parameters R, X, C' % name)
-        if r0_ohm == 0 and x0_ohm == 0 and c0_nf == 0:
-            logger.error('Incomplete data for line "%s": missing type and '
-                         'missing parameters R0, X0, C0' % name)
         params.update({
             'r_ohm_per_km': r_ohm / params['length_km'],
-            'x_ohm_per_km': x_ohm / params['length_km'],
-            'c_nf_per_km': c_nf / params['length_km'] * 1e3,  # internal unit for C in PF is uF
-            'r0_ohm_per_km': r0_ohm / params['length_km'],
-            'x0_ohm_per_km': x0_ohm / params['length_km'],
-            'c0_nf_per_km': c0_nf / params['length_km'] * 1e3,  # internal unit for C in PF is uF,
             'max_i_ka': item.Inom if item.Inom != 0 else 1e-3,
             'alpha': pf_type.alpha if pf_type is not None else None
         })
+        if ac:
+            x_ohm, c_nf = item.X1, item.C1
+            r0_ohm, x0_ohm, c0_nf = item.R0, item.X0, item.C0
 
-        coupling = item.c_ptow
-        if coupling is not None:
-            coupling_type = coupling.GetClassName()
-            if coupling_type == 'TypCabsys':
-                # line is part of "Cable System"
-                params['type'] = 'cs'
-            elif coupling_type == 'ElmTow':
-                params['type'] = 'ol'
+            if r_ohm == 0 and x_ohm == 0 and c_nf == 0:
+                logger.error('Incomplete data for line "%s": missing type and '
+                             'missing parameters R, X, C' % name)
+            if r0_ohm == 0 and x0_ohm == 0 and c0_nf == 0:
+                logger.error('Incomplete data for line "%s": missing type and '
+                             'missing parameters R0, X0, C0' % name)
+
+            params.update({
+                'x_ohm_per_km': x_ohm / params['length_km'],
+                'c_nf_per_km': c_nf / params['length_km'] * 1e3,  # internal unit for C in PF is uF
+                'r0_ohm_per_km': r0_ohm / params['length_km'],
+                'x0_ohm_per_km': x0_ohm / params['length_km'],
+                'c0_nf_per_km': c0_nf / params['length_km'] * 1e3  # internal unit for C in PF is uF,
+            })
+
+            coupling = item.c_ptow
+            if coupling is not None:
+                coupling_type = coupling.GetClassName()
+                if coupling_type == 'TypCabsys':
+                    # line is part of "Cable System"
+                    params['type'] = 'cs'
+                elif coupling_type == 'ElmTow':
+                    params['type'] = 'ol'
+                else:
+                    params['type'] = None
             else:
                 params['type'] = None
-        else:
-            params['type'] = None
 
-        lid = pp.create_line_from_parameters(net=net, from_bus=bus1, to_bus=bus2, **params)
+            lid = pp.create_line_from_parameters(net=net, from_bus=bus1, to_bus=bus2, **params)
+        else:
+            lid = pp.create_line_dc_from_parameters(net, from_bus_dc=bus1, to_bus_dc=bus2, **params)
 
     net["line" if ac else "line_dc"].loc[lid, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
     if hasattr(item, "cimRdfId"):
@@ -2862,13 +2869,15 @@ def create_vscmono(net, item):
         "bus_dc": bus_dc,
         "r_ohm": r_ohm,
         "x_ohm": x_ohm,
+        "r_dc_ohm": item.resLossFactor,
+        "pl_dc_mw": 1e-3 * item.Pnold,
         "control_mode_ac": control_mode_ac,
         "control_mode_dc": control_mode_dc,
         "control_value_ac": control_value_ac,
         "control_value_dc": control_value_dc
     }
 
-    vid = pp.create_vsc(net, 0.01, **params)
+    vid = pp.create_vsc(net, **params)
     logger.debug(f'created VSC {vid} for vscmono {item.loc_name}')
 
     result_variables = {"pf_p_mw": "m:P:busac",
@@ -2906,14 +2915,16 @@ def create_vsc(net, item):
         "controllable": True,
         "r_ohm": r_ohm,
         "x_ohm": x_ohm,
+        "r_dc_ohm": item.resLossFactor / 2,
+        "pl_dc_mw": 1e-3 * item.Pnold / 2,
         "control_mode_ac": control_mode_ac,
         "control_mode_dc": control_mode_dc,
         "control_value_ac": control_value_ac,
         "control_value_dc": control_value_dc
     }
 
-    vid_1 = pp.create_vsc(net, bus=bus, bus_dc=bus_dc_n, r_dc_ohm=0.01, **params)
-    vid_2 = pp.create_vsc(net, bus=bus, bus_dc=bus_dc_p, r_dc_ohm=0.01, **params)
+    vid_1 = pp.create_vsc(net, bus=bus, bus_dc=bus_dc_n, **params)
+    vid_2 = pp.create_vsc(net, bus=bus, bus_dc=bus_dc_p, **params)
     logger.debug(f'created two vsc mono {vid_1}, {vid_2} for vsc {item.loc_name}')
 
     result_variables = {"pf_p_mw": "m:P:busac",

@@ -15,14 +15,14 @@ from pandapower.pypower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMI
     VM, VA, CID, CZD, bus_cols, REF, PV
 from pandapower.pypower.idx_bus_sc import C_MAX, C_MIN, bus_cols_sc
 from .pypower.idx_bus_dc import dc_bus_cols, DC_BUS_TYPE, DC_BUS_AREA, DC_VM, DC_ZONE, DC_VMAX, DC_VMIN, DC_P, DC_BUS_I, \
-    DC_BASE_KV, DC_NONE, DC_REF, DC_B2B
+    DC_BASE_KV, DC_NONE, DC_REF, DC_B2B, DC_PD
 from .pypower.idx_ssc import ssc_cols, SSC_BUS, SSC_R, SSC_X, SSC_SET_VM_PU, SSC_X_CONTROL_VA, SSC_X_CONTROL_VM, \
     SSC_STATUS, SSC_CONTROLLABLE, SSC_INTERNAL_BUS
 from .pypower.idx_svc import svc_cols, SVC_BUS, SVC_SET_VM_PU, SVC_MIN_FIRING_ANGLE, SVC_MAX_FIRING_ANGLE, SVC_STATUS, \
     SVC_CONTROLLABLE, SVC_X_L, SVC_X_CVAR, SVC_THYRISTOR_FIRING_ANGLE
 from .pypower.idx_vsc import vsc_cols, VSC_BUS, VSC_INTERNAL_BUS, VSC_R, VSC_X, VSC_STATUS, VSC_CONTROLLABLE, \
     VSC_BUS_DC, VSC_MODE_AC, VSC_VALUE_AC, VSC_MODE_DC, VSC_VALUE_DC, VSC_MODE_AC_V, VSC_MODE_AC_Q, VSC_MODE_AC_SL, \
-    VSC_MODE_DC_V, VSC_MODE_DC_P, VSC_INTERNAL_BUS_DC, VSC_R_DC
+    VSC_MODE_DC_V, VSC_MODE_DC_P, VSC_INTERNAL_BUS_DC, VSC_R_DC, VSC_PL_DC
 
 try:
     from numba import jit
@@ -462,18 +462,26 @@ def _build_bus_dc_ppc(net, ppc):
 def _fill_auxiliary_buses(net, ppc, bus_lookup, element, bus_column, aux, bus_table="bus"):
     element_bus_idx = bus_lookup[net[element][bus_column].values]
     aux_idx = bus_lookup[aux[element]]
-    ppc[bus_table][aux_idx, BASE_KV] = ppc[bus_table][element_bus_idx, BASE_KV]
+    if bus_table == "bus":
+        base_kv, vmin, vmax, vm = BASE_KV, VMIN, VMAX, VM
+    elif bus_table == "bus_dc":
+        base_kv, vmin, vmax, vm = DC_BASE_KV, DC_VMIN, DC_VMAX, DC_VM
+    else:
+        raise NotImplementedError(f"bus table {bus_table} not supported")
+
+    ppc[bus_table][aux_idx, base_kv] = ppc[bus_table][element_bus_idx, base_kv]
     if net._options["mode"] == "opf":
-        ppc[bus_table][aux_idx, VMIN] = ppc[bus_table][element_bus_idx, VMIN]
-        ppc[bus_table][aux_idx, VMAX] = ppc[bus_table][element_bus_idx, VMAX]
+        ppc[bus_table][aux_idx, vmin] = ppc[bus_table][element_bus_idx, vmin]
+        ppc[bus_table][aux_idx, vmax] = ppc[bus_table][element_bus_idx, vmax]
 
     if net._options["init_vm_pu"] == "results":
-        ppc[bus_table][aux_idx, VM] = net["res_%s" % element]["vm_internal_pu"].values
+        ppc[bus_table][aux_idx, vm] = net["res_%s" % element][
+            "vm_internal_pu" if bus_table == "bus" else "vm_internal_dc_pu"].values
     else:
-        ppc[bus_table][aux_idx, VM] = ppc[bus_table][element_bus_idx, VM]
+        ppc[bus_table][aux_idx, vm] = ppc[bus_table][element_bus_idx, vm]
     if net._options["init_va_degree"] == "results" and bus_table == "bus":
         ppc[bus_table][aux_idx, VA] = net["res_%s" % element]["va_internal_degree"].values
-    else:
+    elif bus_table == "bus":
         ppc[bus_table][aux_idx, VA] = ppc[bus_table][element_bus_idx, VA]
 
 
@@ -521,9 +529,9 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc, sequence=None):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     for element in pq_elements:
         tab = net[element]
-        if not len(tab):
+        if len(tab) == 0:
             continue
-        active = _is_elements[element]
+        active = _is_elements[element].astype(np.float64)
         if element == "load" and voltage_depend_loads:
             if ((tab["const_z_percent"] + tab["const_i_percent"]) > 100).any():
                 raise ValueError("const_z_percent + const_i_percent need to "
@@ -560,11 +568,40 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc, sequence=None):
             b = np.hstack([b, net[element]["bus"].values])
 
     # sum up p & q of bus elements
-    if b.size:
+    if b.size > 0:
         b = bus_lookup[b]
         b, vp, vq = _sum_by_group(b, p, q)
         ppc["bus"][b, PD] = vp
         ppc["bus"][b, QD] = vq
+
+    # init values DC
+    b_dc, p_dc = np.array([], dtype=np.int64), np.array([], dtype=np.float64)
+
+    p_dc_elements = []  # todo add more DC elements like DC loads, DC sgens
+    # p_dc_elements = ["vsc"]  # todo add more DC elements like DC loads, DC sgens
+    bus_dc_lookup = net["_pd2ppc_lookups"]["bus_dc"]
+
+    for element in p_dc_elements:
+        tab = net[element]
+        if len(tab) == 0:
+            continue
+        active = _is_elements[element].astype(np.float64)
+        scaling = tab["scaling"].values if "scaling" in tab.columns else 1.
+        sign = -1 if element == "sgen_dc" else 1  # todo add DC sgen etc.
+        if element == "vsc":
+            # old: we model pl_dc as shsunt resistor instead (here left for reference, can be deleted safely)
+            p_dc = np.hstack([p_dc, tab["pl_dc_mw"].values * active * scaling * sign])
+            # b_dc = np.hstack([b_dc, tab["bus_dc"].values])
+            b_dc = np.hstack([b_dc, net["_pd2ppc_lookups"]["aux_dc"]["vsc"]])
+        else:
+            p_dc = np.hstack([p_dc, tab["p_dc_mw"].values * active * scaling * sign])
+            b_dc = np.hstack([b_dc, tab["bus_dc"].values])
+
+    # sum up p_dc of bus_dc elements
+    if b_dc.size > 0:
+        b_dc = bus_dc_lookup[b_dc]
+        b_dc, vp_dc, _ = _sum_by_group(b_dc, p_dc, p_dc)
+        ppc["bus_dc"][b_dc, DC_PD] = vp_dc
 
 
 def _get_symmetric_pq_of_unsymetric_element(net, element):
@@ -748,6 +785,9 @@ def _build_vsc_ppc(net, ppc, mode):
     baseV = ppc["bus"][bus, BASE_KV]
     baseZ = baseV ** 2 / baseMVA
 
+    baseVDC = ppc["bus_dc"][bus_dc, DC_BASE_KV]
+    baseR = baseVDC ** 2 / baseMVA
+
     vsc[f:t, VSC_BUS] = bus
     vsc[f:t, VSC_INTERNAL_BUS] = bus_lookup[aux["vsc"]]
     vsc[f:t, VSC_BUS_DC] = bus_dc
@@ -755,7 +795,8 @@ def _build_vsc_ppc(net, ppc, mode):
 
     vsc[f:t, VSC_R] = net["vsc"]["r_ohm"].values / baseZ
     vsc[f:t, VSC_X] = net["vsc"]["x_ohm"].values / baseZ
-    vsc[f:t, VSC_R_DC] = net["vsc"]["r_dc_ohm"].values / baseZ
+    vsc[f:t, VSC_R_DC] = net["vsc"]["r_dc_ohm"].values / baseR
+    vsc[f:t, VSC_PL_DC] = net["vsc"]["pl_dc_mw"].values / baseMVA
 
     if np.any(~np.isin(mode_ac, ["vm_pu", "q_mvar", "slack"])):
         raise NotImplementedError("VSC element only supports the following control modes for AC side: vm_pu, q_mvar")
@@ -776,7 +817,7 @@ def _build_vsc_ppc(net, ppc, mode):
     vsc[f:t, VSC_CONTROLLABLE] = controllable & net["vsc"]["in_service"].values.astype(bool)
     ppc["bus"][aux["vsc"][~controllable], BUS_TYPE] = PV
     # it has a role of REF but internally it is PQ and we set the behavior of REF with the Jacobian and mismatch:
-    ppc["bus"][bus[mode_ac_code == 2], BUS_TYPE] = REF
+    ppc["bus"][bus[(mode_ac_code == VSC_MODE_AC_SL) & (ppc["bus"][bus, BUS_TYPE] != NONE)], BUS_TYPE] = REF
     # maybe we add this in the future
     # ppc["bus"][aux["vsc"][~controllable], VM] = net["vsc"].loc[~controllable, "vm_internal_pu"].values
 

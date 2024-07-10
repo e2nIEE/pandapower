@@ -44,7 +44,7 @@ Electric Model
 
 .. image:: vsc.png
 	:width: 12em
-	:alt: alternate Text
+	:alt: VSC electric model
 	:align: center
 
 Voltage Source Converters VSC are self-commutated converters to connect HVAC and HVDC systems using devices suitable

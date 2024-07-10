@@ -1245,10 +1245,7 @@ def test_vsc_hvdc_dc_line():
                   control_mode_ac="slack", control_value_ac=1.02,
                   control_mode_dc="p_mw", control_value_dc=0)
 
-    pp.runpp(net)
     runpp_with_consistency_checks(net)
-
-    net.res_vsc
 
 
 def test_vsc_hvdc_mode1():
@@ -2366,10 +2363,12 @@ def test_vsc_slack_minimal_wrong():
 
     pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
 
-    pp.create_vsc(net, 0, 0, 0.1, 5, 0.15, control_mode_ac="slack", control_value_ac=1, control_mode_dc="vm_pu",
-                  control_value_dc=1.02)
-    pp.create_vsc(net, 1, 1, 0.1, 5, 0.15, control_mode_ac="slack", control_value_ac=1, control_mode_dc="p_mw",
-                  control_value_dc=1)
+    pp.create_vsc(net, 0, 0, 0.1, 5, 0.15,
+                  control_mode_ac="slack", control_value_ac=1,
+                  control_mode_dc="vm_pu", control_value_dc=1.02)
+    pp.create_vsc(net, 1, 1, 0.1, 5, 0.15,
+                  control_mode_ac="slack", control_value_ac=1,
+                  control_mode_dc="p_mw", control_value_dc=1)
 
     # VSC as slack cannot have DC bus as vm_pu, therefore must be excluded from DC slacks
     # Then the DC buses are set out of service, and the corresponding VSC are also set out of service
@@ -2393,10 +2392,12 @@ def test_vsc_slack_minimal_wrong2():
 
     pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
 
-    pp.create_vsc(net, 0, 0, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
-                  control_value_dc=1.02)
-    pp.create_vsc(net, 1, 1, 0.1, 5, 0.15, control_mode_ac="slack", control_value_ac=1, control_mode_dc="p_mw",
-                  control_value_dc=1)
+    pp.create_vsc(net, 0, 0, 0.1, 5, 0.15,
+                  control_mode_ac="vm_pu", control_value_ac=1,
+                  control_mode_dc="vm_pu", control_value_dc=1.02)
+    pp.create_vsc(net, 1, 1, 0.1, 5, 0.15,
+                  control_mode_ac="slack", control_value_ac=1,
+                  control_mode_dc="p_mw", control_value_dc=1)
 
     # VSC that defines AC slack cannot define DC slack at the same time
     # DC slack buses that are only connected to VSC AC slacks are converted to type P buses
@@ -2421,10 +2422,12 @@ def test_vsc_slack_minimal():  # todo: fix that FACTS elements can be connected 
 
     pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
 
-    pp.create_vsc(net, 0, 0, 0.1, 5, 0.15, control_mode_ac="vm_pu", control_value_ac=1, control_mode_dc="vm_pu",
-                  control_value_dc=1.02)
-    pp.create_vsc(net, 1, 1, 0.1, 5, 0.15, control_mode_ac="slack", control_value_ac=1, control_mode_dc="p_mw",
-                  control_value_dc=1)
+    pp.create_vsc(net, 0, 0, 0.1, 5, 0.15,
+                  control_mode_ac="vm_pu", control_value_ac=1,
+                  control_mode_dc="vm_pu", control_value_dc=1.02)
+    pp.create_vsc(net, 1, 1, 0.1, 5, 0.15,
+                  control_mode_ac="slack", control_value_ac=1,
+                  control_mode_dc="p_mw", control_value_dc=1)
 
     # pp.runpp(net)
 
@@ -2488,6 +2491,100 @@ def test_vsc_slack2():
     runpp_with_consistency_checks(net)
 
     # pp.plotting.simple_plot(net, plot_loads=True)
+
+
+def test_vsc_slack_oos():
+    # np.set_printoptions(linewidth=1000, suppress=True, precision=3)
+    # from pandapower.test.loadflow.test_facts import *
+    net = pp.create_empty_network()
+    # AC part
+    pp.create_buses(net, 4, 110, geodata=[(0, 0), (200, 0), (400, 0), (600, 0)])
+    pp.create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
+    pp.create_line_from_parameters(net, 2, 3, 30, 0.0487, 0.13823, 160, 0.664)
+    pp.create_ext_grid(net, 0)
+    pp.create_load(net, 3, 10, 4)
+    net.bus.loc[[2, 3], "in_service"] = False
+
+    # DC part
+    pp.create_bus_dc(net, 110, 'A', geodata=(210, 0))
+    pp.create_bus_dc(net, 110, 'B', geodata=(390, 0))
+
+    pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
+
+    pp.create_vsc(net, 1, 0, 0.1, 5, 0.15,
+                  control_mode_ac="vm_pu", control_value_ac=1,
+                  control_mode_dc="vm_pu", control_value_dc=1.02)
+    pp.create_vsc(net, 2, 1, 0.1, 5, 0.15,
+                  control_mode_ac="slack", control_value_ac=1,
+                  control_mode_dc="p_mw", control_value_dc=0.)
+
+    runpp_with_consistency_checks(net)
+
+
+def test_vsc_dc_r():
+    # np.set_printoptions(linewidth=1000, suppress=True, precision=3)
+    # from pandapower.test.loadflow.test_facts import *
+    net = pp.create_empty_network()
+    # AC part
+    pp.create_buses(net, 3, 110, geodata=[(0, 0), (200, 0), (400, 0)])
+    pp.create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
+    pp.create_ext_grid(net, 0)
+    pp.create_load(net, 2, 10, 4)
+
+    # DC part
+    pp.create_bus_dc(net, 110, 'A', geodata=(210, 0))
+    pp.create_bus_dc(net, 110, 'B', geodata=(390, 0))
+
+    pp.create_line_dc(net, 0, 1, 100, std_type="2400-CU")
+
+    pp.create_vsc(net, 1, 0, 0.1, 5, 0.15,
+                  control_mode_ac="vm_pu", control_value_ac=1,
+                  control_mode_dc="vm_pu", control_value_dc=1.02)
+    pp.create_vsc(net, 2, 1, 0.1, 5, 0.15,
+                  control_mode_ac="slack", control_value_ac=1,
+                  control_mode_dc="p_mw", control_value_dc=10)
+
+    net2 = copy.deepcopy(net)
+    runpp_with_consistency_checks(net)
+
+    net2.vsc.r_dc_ohm = 1e-4
+
+    a1=pp.create_bus_dc(net2, 110)
+    a2=pp.create_bus_dc(net2, 110)
+
+    pp.create_line_dc_from_parameters(net2, 0, a1, 1, 0.15, 1)
+    pp.create_line_dc_from_parameters(net2, a2, 1, 1, 0.15, 1)
+    net2.line_dc.loc[0, ["from_bus_dc", "to_bus_dc"]] = a1, a2
+    runpp_with_consistency_checks(net2)
+
+
+def test_vsc_hvdc_dc_rl():
+    # from pandapower.test.loadflow.test_facts import *
+    net = pp.create_empty_network()
+    # AC part
+    pp.create_buses(net, 3, 110)
+    pp.create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
+    pp.create_line_from_parameters(net, 0, 2, 30, 0.0487, 0.13823, 160, 0.664)
+    pp.create_ext_grid(net, 0)
+    pp.create_load(net, 2, 10, 5)
+
+    # DC part
+    pp.create_bus_dc(net, 110, 'A')
+    pp.create_bus_dc(net, 110, 'B')
+
+    pp.create_line_dc_from_parameters(net, 0, 1, 100, 0.1, 1)
+
+    pp.create_vsc(net, 1, 0, 0.1, 5, 0.5, pl_dc_mw=0.5,
+                  control_mode_ac="vm_pu", control_value_ac=1.,
+                  control_mode_dc="vm_pu", control_value_dc=1.02)
+    pp.create_vsc(net, 2, 1, 0.1, 5, 0.5, pl_dc_mw=0.75,
+                  control_mode_ac="vm_pu", control_value_ac=1.,
+                  control_mode_dc="p_mw", control_value_dc=5)
+
+    pp.runpp(net)
+    net.res_vsc
+
+    runpp_with_consistency_checks(net)
 
 
 # TODO test for when the VSC, SSC, TCSC, connect to same buses

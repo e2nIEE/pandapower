@@ -52,17 +52,18 @@ VSC_BUS_DC = 3  # f, from bus number
 VSC_R = 4  # (p.u.)
 VSC_X = 5  # (p.u.)
 VSC_R_DC = 6  # (p.u.)
-VSC_MODE_AC = 7  # 0 - vm_pu, 1 - q_mvar, 2 - slack
-VSC_VALUE_AC = 8
-VSC_MODE_DC = 9  # 0 - vm_pu, 1 - p_mw
-VSC_VALUE_DC = 10
-VSC_STATUS = 11  # initial branch status, 1 - in service, 0 - out of service
-VSC_CONTROLLABLE = 12
+VSC_PL_DC = 7  # p.u., specifies the no-load losses (initially input as MW and converted to p.u. for ppc)
+VSC_MODE_AC = 8  # 0 - vm_pu, 1 - q_mvar, 2 - slack
+VSC_VALUE_AC = 9
+VSC_MODE_DC = 10  # 0 - vm_pu, 1 - p_mw
+VSC_VALUE_DC = 11
+VSC_STATUS = 12  # initial branch status, 1 - in service, 0 - out of service
+VSC_CONTROLLABLE = 13
 
 # for results:
-VSC_P = 13  # result for P
-VSC_Q = 14  # result for Q
-VSC_P_DC = 15  # result for P
+VSC_P = 14  # result for P
+VSC_Q = 15  # result for Q
+VSC_P_DC = 16  # result for P
 
 
-vsc_cols = 16
+vsc_cols = 17

@@ -187,7 +187,7 @@ def makeYbus_ssc_vsc(Ybus, internal_y_pu, fb, tb, controllable):
     return Ybus_not_controllable, Ybus_controllable, Ybus_not_controllable + Ybus_controllable
 
 
-def make_Ybus_facts(from_bus, to_bus, y_pu, n, dtype=np.complex128):
+def make_Ybus_facts(from_bus, to_bus, y_pu, n, ysf_pu=None, yst_pu=None, dtype=np.complex128):
     """
     Construct the bus admittance matrix with an added FACTS device for a power grid.
 
@@ -212,6 +212,16 @@ def make_Ybus_facts(from_bus, to_bus, y_pu, n, dtype=np.complex128):
     row_indices = np.concatenate([from_bus, to_bus, from_bus, to_bus])
     col_indices = np.concatenate([from_bus, to_bus, to_bus, from_bus])
     data = np.concatenate([y_pu, y_pu, -y_pu, -y_pu])
+
+    if ysf_pu is not None:
+        row_indices = np.r_[row_indices, from_bus]
+        col_indices = np.r_[col_indices, from_bus]
+        data = np.r_[data, ysf_pu]
+
+    if yst_pu is not None:
+        row_indices = np.r_[row_indices, to_bus]
+        col_indices = np.r_[col_indices, to_bus]
+        data = np.r_[data, yst_pu]
 
     # Create and return the Ybus matrix using the compressed sparse row format
     Ybus_facts = csr_matrix((data, (row_indices, col_indices)), shape=(n, n), dtype=dtype)
