@@ -74,7 +74,7 @@ def _calculate_equivalent_Ybus(net_zpbn, bus_lookups, eq_type,
     if eq_type == "xward":
         idx_large_y = np.linspace(0, len(Ybus_new_sequence)-1, len(Ybus_new_sequence))
         idx_large_y = ((idx_large_y >= nb_dict["nb_i"]+nb_dict["nb_b"]) &
-                       (Ybus_new_sequence[:] in net_zpbn._ppc["gen"][:, 0]))
+                       (np.isin(Ybus_new_sequence[:], net_zpbn._ppc["gen"][:, 0])))
         Ybus_sorted[idx_large_y, idx_large_y] = 1e8
 
     # --- calculate calculate equivalent Ybus and equivalent Ybus without_internals
