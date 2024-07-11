@@ -286,65 +286,105 @@ def validate_pf_conversion(net, is_unbalanced=False, **kwargs):
                         max(abs(tr3w_diff_is)), max_diff_idx, net.trafo3w.at[max_diff_idx, 'name']))
 
         
-    # if len(net.sgen[net.sgen.in_service]) > 0:
-    #     logger.debug('verifying sgen')
-    #     is_sgen_idx = net.sgen.loc[net.sgen.in_service].index
-    #     sgen_p_diff = pd.DataFrame(columns=['diff', 'p_mw_pp', 'p_mw_pf'],
-    #                                 index=net.res_sgen.loc[is_sgen_idx].index)
+    if len(net.sgen[net.sgen.in_service]) > 0:
+        logger.debug('verifying sgen')
+        is_sgen_idx = net.sgen.loc[net.sgen.in_service].index
+        sgen_p_diff_is = pd.DataFrame(columns=['diff', 'p_mw_pp', 'p_mw_pf'],
+                                    index=net.res_sgen.loc[is_sgen_idx].index)
         
-    #     sgen_p_diff['diff'] = net.res_sgen.loc[is_sgen_idx, 'pf_p'].replace(np.nan, 0) \
-    #         - net.res_sgen.loc[is_sgen_idx, 'p_mw']
-    #     sgen_p_diff['p_mw_pf'] = net.res_sgen.loc[is_sgen_idx, 'pf_p'].replace(np.nan, 0)
-    #     sgen_p_diff['p_mw_pp'] = net.res_sgen.loc[is_sgen_idx, 'p_mw']
+        _, _, sgen_p_pp_res_is, sgen_p_pf_res_is, _, sgen_diff_is = \
+            calculate_element_diff(net, 'sgen', 'pf_p', 'p_mw')
+        sgen_p_diff_is['diff'] = sgen_diff_is
+        sgen_p_diff_is['p_mw_pp'] = sgen_p_pp_res_is
+        sgen_p_diff_is['p_mw_pf'] = sgen_p_pf_res_is
+        max_diff_idx = abs(sgen_p_diff_is['diff']).idxmax()
+        logger.info("Maximum sgen active power difference between pandapower and powerfactory: %.1f "
+                    "MW at sgen %d (%s)" % (
+                        max(abs(sgen_diff_is)), max_diff_idx, net.sgen.at[max_diff_idx, 'name']))
         
-    #     sgen_q_diff = net.res_sgen.pf_q.replace(np.nan, 0) - net.res_sgen.q_mvar
-    #     sgen_p_diff_is = net.res_sgen.pf_p.replace(np.nan, 0) * net.sgen.loc[
-    #         net.res_sgen.index, 'in_service'] - net.res_sgen.p_mw
-    #     sgen_q_diff_is = net.res_sgen.pf_q.replace(np.nan, 0) * net.sgen.loc[
-    #         net.res_sgen.index, 'in_service'] - net.res_sgen.q_mvar
-    #     logger.info("Maximum sgen active power difference between pandapower and powerfactory: "
-    #                 "%.1f MW, in service only: %.1f MW" % (max(abs(sgen_p_diff['diff'])),
-    #                                                        max(abs(sgen_p_diff_is['diff']))))
-    #     logger.info("Maximum sgen reactive power difference between pandapower and powerfactory: "
-    #                 "%.1f Mvar, in service only: %.1f Mvar" % (max(abs(sgen_q_diff['diff'])),
-    #                                                            max(abs(sgen_q_diff_is['diff']))))
-    #     all_diffs["sgen_p_diff_is"] = sgen_p_diff_is
-    #     all_diffs["sgen_q_diff_is"] = sgen_q_diff_is
+        sgen_q_diff_is = pd.DataFrame(columns=['diff', 'q_mvar_pp', 'q_mvar_pf'],
+                                    index=net.res_sgen.loc[is_sgen_idx].index)
+        
+        _, _, sgen_q_pp_res_is, sgen_q_pf_res_is, _, sgen_diff_is = \
+            calculate_element_diff(net, 'sgen', 'pf_q', 'q_mvar')
+        sgen_q_diff_is['diff'] = sgen_diff_is
+        sgen_q_diff_is['q_mvar_pp'] = sgen_q_pp_res_is
+        sgen_q_diff_is['q_mvar_pf'] = sgen_q_pf_res_is
+        max_diff_idx = abs(sgen_q_diff_is['diff']).idxmax()
+        logger.info("Maximum sgen reactive power difference between pandapower and powerfactory: %.1f "
+                    "Mvar at sgen %d (%s)" % (
+                        max(abs(sgen_diff_is)), max_diff_idx, net.sgen.at[max_diff_idx, 'name']))
+
+        all_diffs["sgen_p_diff_is"] = sgen_p_diff_is
+        all_diffs["sgen_q_diff_is"] = sgen_q_diff_is
 
     if len(net.gen[net.gen.in_service]) > 0:
         logger.debug('verifying gen')
-        gen_p_diff = net.res_gen.pf_p.replace(np.nan, 0) - net.res_gen.p_mw
-        gen_q_diff = net.res_gen.pf_q.replace(np.nan, 0) - net.res_gen.q_mvar
-        gen_p_diff_is = net.res_gen.pf_p.replace(np.nan, 0) * net.gen.loc[
-            net.res_gen.index, 'in_service'] - net.res_gen.p_mw
-        gen_q_diff_is = net.res_gen.pf_q.replace(np.nan, 0) * net.gen.loc[
-            net.res_gen.index, 'in_service'] - net.res_gen.q_mvar
-        logger.info("Maximum gen active power difference between pandapower and powerfactory: "
-                    "%.1f MW, in service only: %.1f MW" % (max(abs(gen_p_diff)),
-                                                           max(abs(gen_p_diff_is))))
-        logger.info("Maximum gen reactive power difference between pandapower and powerfactory: "
-                    "%.1f Mvar, in service only: %.1f Mvar" % (max(abs(gen_q_diff)),
-                                                               max(abs(gen_q_diff_is))))
+        is_gen_idx = net.gen.loc[net.gen.in_service].index
+
+        gen_p_diff_is = pd.DataFrame(columns=['diff', 'p_mw_pp', 'p_mw_pf'],
+                                    index=net.res_gen.loc[is_gen_idx].index)
+        
+        _, _, gen_p_pp_res_is, gen_p_pf_res_is, _, gen_diff_is = \
+            calculate_element_diff(net, 'gen', 'pf_p', 'p_mw')
+        gen_p_diff_is['diff'] = gen_diff_is
+        gen_p_diff_is['p_mw_pp'] = gen_p_pp_res_is
+        gen_p_diff_is['p_mw_pf'] = gen_p_pf_res_is
+        max_diff_idx = abs(gen_p_diff_is['diff']).idxmax()
+        logger.info("Maximum gen active power difference between pandapower and powerfactory: %.1f "
+                    "MW at gen %d (%s)" % (
+                        max(abs(gen_diff_is)), max_diff_idx, net.gen.at[max_diff_idx, 'name']))
+        
+        gen_q_diff_is = pd.DataFrame(columns=['diff', 'q_mvar_pp', 'q_mvar_pf'],
+                                    index=net.res_gen.loc[is_gen_idx].index)
+        
+        _, _, gen_q_pp_res_is, gen_q_pf_res_is, _, gen_diff_is = \
+            calculate_element_diff(net, 'gen', 'pf_q', 'q_mvar')
+        gen_q_diff_is['diff'] = gen_diff_is
+        gen_q_diff_is['q_mvar_pp'] = gen_q_pp_res_is
+        gen_q_diff_is['q_mvar_pf'] = gen_q_pf_res_is
+        max_diff_idx = abs(gen_q_diff_is['diff']).idxmax()
+        logger.info("Maximum gen reactive power difference between pandapower and powerfactory: %.1f "
+                    "Mvar at gen %d (%s)" % (
+                        max(abs(gen_diff_is)), max_diff_idx, net.gen.at[max_diff_idx, 'name']))
+         
         all_diffs["gen_p_diff_is"] = gen_p_diff_is
         all_diffs["gen_q_diff_is"] = gen_q_diff_is
 
+
     if len(net.ward[net.ward.in_service]) > 0:
         logger.debug('verifying ward')
-        ward_p_diff = net.res_ward.pf_p.replace(np.nan, 0) - net.res_ward.p_mw
-        ward_q_diff = net.res_ward.pf_q.replace(np.nan, 0) - net.res_ward.q_mvar
-        ward_p_diff_is = net.res_ward.pf_p.replace(np.nan, 0) * net.ward.loc[
-            net.res_ward.index, 'in_service'] - net.res_ward.p_mw
-        ward_q_diff_is = net.res_ward.pf_q.replace(np.nan, 0) * net.ward.loc[
-            net.res_ward.index, 'in_service'] - net.res_ward.q_mvar
-        logger.info("Maximum ward active power difference between pandapower and powerfactory: "
-                    "%.1f MW, in service only: %.1f MW" % (max(abs(ward_p_diff)),
-                                                           max(abs(ward_p_diff_is))))
-        logger.info("Maximum ward reactive power difference between pandapower and powerfactory: "
-                    "%.1f Mvar, in service only: %.1f Mvar" % (max(abs(ward_q_diff)),
-                                                               max(abs(ward_q_diff_is))))
+        is_ward_idx = net.ward.loc[net.ward.in_service].index
+
+        ward_p_diff_is = pd.DataFrame(columns=['diff', 'p_mw_pp', 'p_mw_pf'],
+                                    index=net.res_ward.loc[is_ward_idx].index)
+        
+        _, _, ward_p_pp_res_is, ward_p_pf_res_is, _, ward_diff_is = \
+            calculate_element_diff(net, 'ward', 'pf_p', 'p_mw')
+        ward_p_diff_is['diff'] = ward_diff_is
+        ward_p_diff_is['p_mw_pp'] = ward_p_pp_res_is
+        ward_p_diff_is['p_mw_pf'] = ward_p_pf_res_is
+        max_diff_idx = abs(ward_p_diff_is['diff']).idxmax()
+        logger.info("Maximum ward active power difference between pandapower and powerfactory: %.1f "
+                    "MW at ward %d (%s)" % (
+                        max(abs(ward_diff_is)), max_diff_idx, net.ward.at[max_diff_idx, 'name']))
+        
+        ward_q_diff_is = pd.DataFrame(columns=['diff', 'q_mvar_pp', 'q_mvar_pf'],
+                                    index=net.res_ward.loc[is_ward_idx].index)
+        
+        _, _, ward_q_pp_res_is, ward_q_pf_res_is, _, ward_diff_is = \
+            calculate_element_diff(net, 'ward', 'pf_q', 'q_mvar')
+        ward_q_diff_is['diff'] = ward_diff_is
+        ward_q_diff_is['q_mvar_pp'] = ward_q_pp_res_is
+        ward_q_diff_is['q_mvar_pf'] = ward_q_pf_res_is
+        max_diff_idx = abs(ward_q_diff_is['diff']).idxmax()
+        logger.info("Maximum ward reactive power difference between pandapower and powerfactory: %.1f "
+                    "Mvar at ward %d (%s)" % (
+                        max(abs(ward_diff_is)), max_diff_idx, net.ward.at[max_diff_idx, 'name']))
+         
         all_diffs["ward_p_diff_is"] = ward_p_diff_is
         all_diffs["ward_q_diff_is"] = ward_q_diff_is
-
+        
     if is_unbalanced:
         _validate_pf_conversion_unbalanced(net, in_both, all_diffs)
     else:
