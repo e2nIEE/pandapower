@@ -11,6 +11,8 @@ from pandapower.control.controller.trafo.VmSetTapControl import VmSetTapControl
 from pandapower.control.controller.trafo.TapDependentImpedance import TapDependentImpedance
 from pandapower.control.controller.trafo_control import TrafoController
 from pandapower.control.controller.DERController.der_control import DERController
+from pandapower.control.controller.shunt_control import DiscreteShuntController
+from pandapower.control.controller.shunt_control import ContinuousShuntController
 
 # --- Other ---
 from pandapower.control.run_control import *
