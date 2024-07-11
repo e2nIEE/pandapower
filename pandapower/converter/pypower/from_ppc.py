@@ -11,13 +11,15 @@ from pandapower.pypower.idx_bus import \
 from pandapower.pypower.idx_gen import \
     GEN_BUS, PG, QG, QMAX, QMIN, VG, MBASE, GEN_STATUS, PMAX, PMIN
 from pandapower.pypower.idx_brch import \
-    F_BUS, T_BUS, BR_R, BR_X, BR_B, BR_G, RATE_A, RATE_B, RATE_C, TAP, SHIFT, BR_STATUS, ANGMIN, ANGMAX
+    F_BUS, T_BUS, BR_R, BR_X, BR_G, BR_B, RATE_A, RATE_B, RATE_C, TAP, SHIFT, BR_STATUS, ANGMIN, ANGMAX
 from pandapower.pypower.idx_cost import MODEL, COST, NCOST
 from pandapower.create import create_empty_network, create_buses, create_ext_grid, create_loads, \
     create_sgens, create_gens, create_lines_from_parameters, create_transformers_from_parameters, \
     create_shunts, create_ext_grid, create_pwl_costs, create_poly_costs
 from pandapower.run import runpp
 
+# BR_B, RATE_A, RATE_B, RATE_C, TAP, SHIFT, BR_STATUS, ANGMIN, ANGMAX = \
+#     BR_B-1, RATE_A-1, RATE_B-1, RATE_C-1, TAP-1, SHIFT-1, BR_STATUS-1, ANGMIN-1, ANGMAX-1
 try:
     import pandaplan.core.pplog as logging
 except ImportError:
@@ -183,7 +185,7 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
     n_bra = ppc["branch"].shape[0]
     
     if 'branch_g_name' in kwargs:
-        br_g = ppc['branch_g_name']
+        br_g = ppc[kwargs['branch_g_name']]
     else:
         br_g = np.array([0]*n_bra) # get branch_g if it exists
 
@@ -215,7 +217,7 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
         r_ohm_per_km=(ppc['branch'][is_line, BR_R]*Zni[is_line]),
         x_ohm_per_km=(ppc['branch'][is_line, BR_X]*Zni[is_line]),
         c_nf_per_km=(ppc['branch'][is_line, BR_B]/Zni[is_line]/omega*1e9/2),
-        g_us_per_km=(br_g/Zni[is_line]*1e6/2),
+        g_us_per_km=(br_g[is_line]/Zni[is_line]*1e6/2),
         max_i_ka=max_i_ka[is_line].real, type='ol', max_loading_percent=100,
         in_service=ppc['branch'][is_line, BR_STATUS].real.astype(bool))
 
@@ -253,8 +255,8 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
         ratio_is_zero = np.isclose(ratio_1, 0)
         ratio_1[~ratio_is_zero & ~tap_side_is_hv] **= -1
         ratio_1[~ratio_is_zero] -= 1
-        i0_percent = np.sqrt(ppc['branch'][~is_line, BR_B]**2 + br_g**2) * 100 * baseMVA / sn
-        i0_percent = -ppc['branch'][~is_line, BR_B].real * 100 * baseMVA / sn
+        i0_percent = -np.sqrt(ppc['branch'][~is_line, BR_B]**2 + br_g[~is_line]**2) * 100 * baseMVA / sn
+        # i0_percent = -ppc['branch'][~is_line, BR_B].real * 100 * baseMVA / sn
         is_neg_i0_percent = i0_percent < 0
         if np.any(is_neg_i0_percent):
             logger.info(

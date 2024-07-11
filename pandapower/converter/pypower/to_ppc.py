@@ -8,7 +8,6 @@ from numpy import allclose, delete
 from pandapower.auxiliary import _add_ppc_options
 from pandapower.powerflow import _pd2ppc
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
-from pandapower.pypower.idx_brch import BR_G
 
 try:
     import pandaplan.core.pplog as logging
@@ -20,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 def to_ppc(net, calculate_voltage_angles=False, trafo_model="t", switch_rx_ratio=2,
            check_connectivity=True, voltage_depend_loads=False, init="results", mode=None,
-           take_slack_vm_limits=True):
+           take_slack_vm_limits=True, delete_branch_g=True):
     """
     This function converts a pandapower net to a pypower case file.
 
@@ -118,10 +117,13 @@ def to_ppc(net, calculate_voltage_angles=False, trafo_model="t", switch_rx_ratio
 
     #  do the conversion
     _, ppci = _pd2ppc(net)
-    branch_g = net._ppc["branch"][:, BR_G]
-    # delete BR_G column as this is added to pandapower afterwards, keeping it as extra variable
-    ppci['branch'] = delete(ppci['branch'], BR_G, axis=1)
-    ppci['branch_g'] = branch_g
+    
+    if delete_branch_g:
+        from pandapower.pypower.idx_brch import BR_G
+        branch_g = net._ppc["branch"][:, BR_G]
+        # delete BR_G column as this is added to pandapower afterwards, keeping it as extra variable
+        ppci['branch'] = delete(ppci['branch'], BR_G, axis=1)
+        ppci['branch_g'] = branch_g
     if not take_slack_vm_limits:
         slack_bus = min(net.ext_grid.bus.loc[net.ext_grid.in_service].tolist() + \
                         net.gen.bus.loc[net.gen.slack & net.gen.in_service].tolist())
