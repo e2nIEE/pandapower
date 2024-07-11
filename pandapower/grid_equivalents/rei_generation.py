@@ -61,7 +61,6 @@ def _calculate_equivalent_Ybus(net_zpbn, bus_lookups, eq_type,
     t_start = time.perf_counter()
     # --- initialization
     Ybus_origin = net_zpbn._ppc["internal"]["Ybus"].todense()
-    Ybus_sorted = net_zpbn._ppc["internal"]["Ybus"].todense()
     bus_lookup_ppc = bus_lookups["bus_lookup_ppc"]
     nb_dict = {}
     for key in bus_lookup_ppc.keys():
@@ -71,14 +70,12 @@ def _calculate_equivalent_Ybus(net_zpbn, bus_lookups, eq_type,
     Ybus_new_sequence = reduce(operator.concat, Ybus_buses)
 
     # --- transform Ybus_origin to Ybus_new according to the Ybus_new_sequence
-    for i in range(len(Ybus_new_sequence)):
-        for j in range(len(Ybus_new_sequence)):
-            # --- if xward, put very large admittance at the diagonals (PV-bus) of Ybus
-            if eq_type == "xward" and i >= nb_dict["nb_i"]+nb_dict["nb_b"] and \
-                    i == j and Ybus_new_sequence[i] in net_zpbn._ppc["gen"][:, 0]:
-                Ybus_sorted[i, j] = 1e8
-            else:
-                Ybus_sorted[i, j] = Ybus_origin[Ybus_new_sequence[i], Ybus_new_sequence[j]]
+    Ybus_sorted = Ybus_origin[:, Ybus_new_sequence][Ybus_new_sequence]
+    if eq_type == "xward":
+        idx_large_y = np.linspace(0, len(Ybus_new_sequence)-1, len(Ybus_new_sequence))
+        idx_large_y = ((idx_large_y >= nb_dict["nb_i"]+nb_dict["nb_b"]) &
+                       (np.isin(Ybus_new_sequence[:], net_zpbn._ppc["gen"][:, 0])))
+        Ybus_sorted[idx_large_y, idx_large_y] = 1e8
 
     # --- calculate calculate equivalent Ybus and equivalent Ybus without_internals
     Ybus_bb = Ybus_sorted[nb_dict["nb_i"]:(nb_dict["nb_i"] + nb_dict["nb_b"] + nb_dict["nb_t"]),
