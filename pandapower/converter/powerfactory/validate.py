@@ -274,30 +274,42 @@ def validate_pf_conversion(net, is_unbalanced=False, **kwargs):
 
     if len(net.trafo3w[net.trafo3w.in_service]) > 0:
         trafo3w_idx = net.trafo3w.query('in_service').index
-        trafo3w_diff = net.res_trafo3w.loc[trafo3w_idx].pf_loading - net.res_trafo3w.loc[
-            trafo3w_idx].loading_percent
-        trafo3w_id = abs(trafo3w_diff).idxmax()
+        trafo3w_diff = pd.DataFrame(columns=['diff', 'loading_percent_pp', 'loading_percent_pf'],
+                                    index=net.res_trafo3w.loc[trafo3w_idx].index)
+        _, _, tr3w_pp_res_is, tr3w_pf_res_is, _, tr3w_diff_is = calculate_element_diff(net, 'trafo3w', 'pf_loading', 'loading_percent')
+        trafo3w_diff['diff'] = tr3w_diff_is
+        trafo3w_diff['loading_percent_pp'] = tr3w_pp_res_is
+        trafo3w_diff['loading_percent_pf'] = tr3w_pf_res_is
+        max_diff_idx = abs(trafo3w_diff['diff']).idxmax()
         logger.info("Maximum trafo3w loading difference between pandapower and powerfactory: %.1f "
                     "percent at trafo3w %d (%s)" % (
-                        max(abs(trafo3w_diff)), trafo3w_id, net.trafo3w.at[trafo3w_id, 'name']))
-        all_diffs["trafo3w_diff"] = trafo3w_diff
+                        max(abs(tr3w_diff_is)), max_diff_idx, net.trafo3w.at[max_diff_idx, 'name']))
 
-    if len(net.sgen[net.sgen.in_service]) > 0:
-        logger.debug('verifying sgen')
-        sgen_p_diff = net.res_sgen.pf_p.replace(np.nan, 0) - net.res_sgen.p_mw
-        sgen_q_diff = net.res_sgen.pf_q.replace(np.nan, 0) - net.res_sgen.q_mvar
-        sgen_p_diff_is = net.res_sgen.pf_p.replace(np.nan, 0) * net.sgen.loc[
-            net.res_sgen.index, 'in_service'] - net.res_sgen.p_mw
-        sgen_q_diff_is = net.res_sgen.pf_q.replace(np.nan, 0) * net.sgen.loc[
-            net.res_sgen.index, 'in_service'] - net.res_sgen.q_mvar
-        logger.info("Maximum sgen active power difference between pandapower and powerfactory: "
-                    "%.1f MW, in service only: %.1f MW" % (max(abs(sgen_p_diff)),
-                                                           max(abs(sgen_p_diff_is))))
-        logger.info("Maximum sgen reactive power difference between pandapower and powerfactory: "
-                    "%.1f Mvar, in service only: %.1f Mvar" % (max(abs(sgen_q_diff)),
-                                                               max(abs(sgen_q_diff_is))))
-        all_diffs["sgen_p_diff_is"] = sgen_p_diff_is
-        all_diffs["sgen_q_diff_is"] = sgen_q_diff_is
+        
+    # if len(net.sgen[net.sgen.in_service]) > 0:
+    #     logger.debug('verifying sgen')
+    #     is_sgen_idx = net.sgen.loc[net.sgen.in_service].index
+    #     sgen_p_diff = pd.DataFrame(columns=['diff', 'p_mw_pp', 'p_mw_pf'],
+    #                                 index=net.res_sgen.loc[is_sgen_idx].index)
+        
+    #     sgen_p_diff['diff'] = net.res_sgen.loc[is_sgen_idx, 'pf_p'].replace(np.nan, 0) \
+    #         - net.res_sgen.loc[is_sgen_idx, 'p_mw']
+    #     sgen_p_diff['p_mw_pf'] = net.res_sgen.loc[is_sgen_idx, 'pf_p'].replace(np.nan, 0)
+    #     sgen_p_diff['p_mw_pp'] = net.res_sgen.loc[is_sgen_idx, 'p_mw']
+        
+    #     sgen_q_diff = net.res_sgen.pf_q.replace(np.nan, 0) - net.res_sgen.q_mvar
+    #     sgen_p_diff_is = net.res_sgen.pf_p.replace(np.nan, 0) * net.sgen.loc[
+    #         net.res_sgen.index, 'in_service'] - net.res_sgen.p_mw
+    #     sgen_q_diff_is = net.res_sgen.pf_q.replace(np.nan, 0) * net.sgen.loc[
+    #         net.res_sgen.index, 'in_service'] - net.res_sgen.q_mvar
+    #     logger.info("Maximum sgen active power difference between pandapower and powerfactory: "
+    #                 "%.1f MW, in service only: %.1f MW" % (max(abs(sgen_p_diff['diff'])),
+    #                                                        max(abs(sgen_p_diff_is['diff']))))
+    #     logger.info("Maximum sgen reactive power difference between pandapower and powerfactory: "
+    #                 "%.1f Mvar, in service only: %.1f Mvar" % (max(abs(sgen_q_diff['diff'])),
+    #                                                            max(abs(sgen_q_diff_is['diff']))))
+    #     all_diffs["sgen_p_diff_is"] = sgen_p_diff_is
+    #     all_diffs["sgen_q_diff_is"] = sgen_q_diff_is
 
     if len(net.gen[net.gen.in_service]) > 0:
         logger.debug('verifying gen')
@@ -340,6 +352,16 @@ def validate_pf_conversion(net, is_unbalanced=False, **kwargs):
 
     return all_diffs
 
+def calculate_element_diff(net, element, pf_variable, pp_variable):
+    logger.debug('verifying '+element)
+    pp_res = net['res_'+element][pp_variable]
+    pf_res = net['res_'+element][pf_variable].replace(np.nan, 0)
+    pp_res_is = net['res_'+element].loc[net[element].in_service, pp_variable]
+    pf_res_is = net['res_'+element].loc[net[element].in_service, pf_variable].replace(np.nan, 0)
+
+    diff = pf_res - pp_res
+    diff_is = pf_res_is - pp_res_is
+    return pp_res, pf_res, pp_res_is, pf_res_is, diff, diff_is
 
 def _validate_pf_conversion_balanced(net, in_both, all_diffs):
     logger.debug('res_bus:\n%s' % net.res_bus)
