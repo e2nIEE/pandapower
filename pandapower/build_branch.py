@@ -16,7 +16,7 @@ from pandapower.auxiliary import get_values
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS, RATE_A, \
     BR_R_ASYM, BR_X_ASYM, branch_cols
 from pandapower.pypower.idx_brch_dc import branch_dc_cols, DC_RATE_A, DC_RATE_B, DC_RATE_C, DC_BR_STATUS, DC_F_BUS, \
-    DC_T_BUS, DC_BR_R, DC_BR_B
+    DC_T_BUS, DC_BR_R, DC_BR_G
 from pandapower.pypower.idx_brch_tdpf import BR_R_REF_OHM_PER_KM, BR_LENGTH_KM, RATE_I_KA, T_START_C, R_THETA, \
     WIND_SPEED_MPS, ALPHA, TDPF, OUTER_DIAMETER_M, MC_JOULE_PER_M_K, WIND_ANGLE_DEGREE, SOLAR_RADIATION_W_PER_SQ_M, \
     GAMMA, EPSILON, T_AMBIENT_C, T_REF_C, branch_cols_tdpf
@@ -276,7 +276,7 @@ def _calc_line_dc_parameter(net, ppc, elm="line_dc", ppc_elm="branch_dc"):
     length_km = line_dc["length_km"].values
     parallel = line_dc["parallel"].values
     base_kv = ppc["bus_dc"][from_bus_dc, DC_BASE_KV]
-    baseR = np.square(base_kv) / net.sn_mva  # todo check how baseR calculation works for DC lines
+    baseR = np.square(base_kv) / net.sn_mva
 
     branch_dc[f:t, DC_F_BUS] = from_bus_dc
     branch_dc[f:t, DC_T_BUS] = to_bus_dc
@@ -308,8 +308,8 @@ def _calc_line_dc_parameter(net, ppc, elm="line_dc", ppc_elm="branch_dc"):
 
     # todo check if DC line_dc model has shunt components
     # b = 2 * net.f_hz * math.pi * line_dc["c_nf_per_km"].values * 1e-9 * baseR * length_km * parallel
-    # g = line_dc["g_us_per_km"].values * 1e-6 * baseR * length_km * parallel
-    # branch_dc[f:t, DC_BR_B] = b - g * 1j
+    g = line_dc["g_us_per_km"].values * 1e-6 * baseR * length_km * parallel
+    branch_dc[f:t, DC_BR_G] = g
 
     # in service of lines
     branch_dc[f:t, DC_BR_STATUS] = line_dc["in_service"].values

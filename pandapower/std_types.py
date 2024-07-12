@@ -1527,6 +1527,7 @@ def basic_fuse_std_types():
 def basic_std_types():
     return {
         "line"   : basic_line_std_types(),
+        "line_dc"   : basic_line_dc_std_types(),
         "trafo"  : basic_trafo_std_types(),
         "trafo3w": basic_trafo3w_std_types(),
         "fuse"   : basic_fuse_std_types()

@@ -63,7 +63,7 @@ they are typically not present in the input matrix
 DC_F_BUS       = 0    # f, from bus number
 DC_T_BUS       = 1    # t, to bus number
 DC_BR_R        = 2    # r, resistance (p.u.)
-DC_BR_B        = 3    # b, total line charging susceptance (p.u.)  # todo Roman check if necessary
+DC_BR_G        = 3    # b, total line charging susceptance (p.u.)  # todo Roman check if necessary
 DC_RATE_A      = 4    # rateA, MVA rating A (long term rating)
 DC_RATE_B      = 5    # rateB, MVA rating B (short term rating)
 DC_RATE_C      = 6    # rateC, MVA rating C (emergency rating)

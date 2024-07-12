@@ -556,7 +556,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         vsc[vsc_branches, VSC_P_DC] = p_vsc_dc_f
         # print(p_vsc_dc_f, p_vsc_dc_t)
         # print(s_vsc_f.real, s_vsc_t.real)
-        # no_load_losses = vsc_gl_pu * V_dc[vsc_dc_fb]
+        # no_load_losses = vsc_gl_pu * np.square(V_dc[vsc_dc_fb])
         # print(f"{no_load_losses=}")
         # print(f"{p_vsc_dc_t + p_vsc_dc_f}")
         # print(f"{p_vsc_dc_t + p_vsc_dc_f + no_load_losses}")
@@ -735,7 +735,7 @@ def _evaluate_Fx_facts(V,pq ,svc_buses=None, svc_set_vm_pu=None, tcsc_controllab
             # vsc_set_p_pu[vsc_dc_p] = -P_dc[dc_p][dc_p_lookup[vsc_dc_p_bus]]
             # vsc_set_p_pu[vsc_dc_p] = vsc_value_dc[vsc_dc_p] * count_p[vsc_fb[vsc_dc_p]] # todo test for when they share same bus
             # vsc_set_p_pu[vsc_dc_p] = vsc_value_dc[vsc_dc_p]  # todo consider count
-            # no_load_losses = vsc_gl_pu * V_dc[vsc_dc_fb]
+            no_load_losses = vsc_gl_pu * np.square(V_dc[vsc_dc_fb])
             vsc_set_p_pu[vsc_dc_p] = -p_vsc_dc_t[vsc_dc_p] #+ no_load_losses[vsc_dc_p]
             # P_dc[dc_p] = -Sbus_vsc[vsc_tb[vsc_controllable]].real[vsc_dc_p]
         if np.any(vsc_dc_ref):
