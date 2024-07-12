@@ -89,8 +89,7 @@ class SynchronousMachinesCim16:
         synchronous_machines = pd.merge(
             synchronous_machines, eqssh_reg_control.rename(columns={'rdfId': 'RegulatingControl'}),
             how='left', on='RegulatingControl')
-        synchronous_machines = pd.merge(synchronous_machines, self.cimConverter.bus_merge, how='left',
-                                              on='rdfId')
+        synchronous_machines = pd.merge(synchronous_machines, self.cimConverter.bus_merge, how='left', on='rdfId')
         synchronous_machines = synchronous_machines.drop_duplicates(['rdfId'], keep='first')
         synchronous_machines['vm_pu'] = synchronous_machines.targetValue / synchronous_machines.vn_kv
         synchronous_machines['vm_pu'] = synchronous_machines['vm_pu'].fillna(1.)
@@ -137,12 +136,12 @@ class SynchronousMachinesCim16:
         synchronous_machines['rx'] = synchronous_machines['r2'] / synchronous_machines['x2']
         synchronous_machines['scaling'] = 1.
         synchronous_machines['generator_type'] = 'current_source'
+        synchronous_machines.loc[synchronous_machines['referencePriority'] == 0, 'referencePriority'] = float('NaN')
+        synchronous_machines['referencePriority'] = synchronous_machines['referencePriority'].astype(float)
         if 'inService' in synchronous_machines.columns:
-            synchronous_machines['connected'] = (synchronous_machines['connected']
-                                                       & synchronous_machines['inService'])
-        synchronous_machines = synchronous_machines.rename(columns={'rdfId_Terminal': sc['t'], 'rdfId': sc['o_id'],
-                                                   'connected': 'in_service', 'index_bus': 'bus',
-                                                   'minOperatingP': 'min_p_mw', 'maxOperatingP': 'max_p_mw',
-                                                   'minQ': 'min_q_mvar', 'maxQ': 'max_q_mvar',
-                                                   'ratedPowerFactor': 'cos_phi'})
+            synchronous_machines['connected'] = (synchronous_machines['connected'] & synchronous_machines['inService'])
+        synchronous_machines = synchronous_machines.rename(columns={
+            'rdfId_Terminal': sc['t'], 'rdfId': sc['o_id'], 'connected': 'in_service', 'index_bus': 'bus',
+            'minOperatingP': 'min_p_mw', 'maxOperatingP': 'max_p_mw', 'minQ': 'min_q_mvar', 'maxQ': 'max_q_mvar',
+            'ratedPowerFactor': 'cos_phi', 'referencePriority': 'slack_weight'})
         return synchronous_machines
