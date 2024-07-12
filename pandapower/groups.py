@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -52,7 +52,7 @@ def drop_group(net, index):
     index : int
         index of the group which should be dropped
     """
-    net.group.drop(index, inplace=True)
+    net.group = net.group.drop(index)
 
 
 def drop_group_and_elements(net, index):
@@ -67,7 +67,7 @@ def drop_group_and_elements(net, index):
         res_et = "res_" + et
         if res_et in net.keys() and net[res_et].shape[0]:
             net[res_et].drop(net[res_et].index.intersection(idx), inplace=True)
-    net.group.drop(index, inplace=True)
+    net.group = net.group.drop(index)
 
 
 # ====================================
@@ -157,7 +157,7 @@ def attach_to_group(net, index, element_types, elements, reference_columns=None,
                     temp_gr = create_group(net, [et], [elm], reference_columns=rc)
                     set_group_reference_column(net, temp_gr, existing_rc, element_type=et)
                     elm = net.group.element.at[temp_gr]
-                    net.group.drop(temp_gr, inplace=True)
+                    net.group = net.group.drop(temp_gr)
                 else:
                     raise UserWarning(
                         f"The reference column of existing group {index} for element "
@@ -169,8 +169,9 @@ def attach_to_group(net, index, element_types, elements, reference_columns=None,
             prev_elm = net.group.element.loc[group_et].at[index]
             prev_elm = [prev_elm] if isinstance(prev_elm, str) or not hasattr(
                 prev_elm, "__iter__") else list(prev_elm)
-            net.group.element.loc[group_et] = [prev_elm + list(pd.Index(elm).difference(
-                pd.Index(prev_elm)))]
+            net.group.iat[np.arange(len(group_et), dtype=int)[group_et][0],
+                          net.group.columns.get_loc("element")] = \
+                prev_elm + list(pd.Index(elm).difference(pd.Index(prev_elm)))
 
         # --- prepare adding new rows to net.group (because no other elements of element type et
         # --- already belong to the group)
@@ -870,7 +871,7 @@ def group_res_power_per_bus(net, index):
             pq_sum.index.name = "bus"  # needs to be set for branch elements
             if len(pq_sums.columns.difference(pq_sum.columns)):
                 cols_repl = {old: "p_mw" if "p" in old else "q_mvar" for old in pq_sum.columns}
-                pq_sum.rename(columns=cols_repl, inplace=True)
+                pq_sum = pq_sum.rename(columns=cols_repl)
             pq_sums = pq_sums.add(pq_sum, fill_value=0)
 
     if len(missing_res_idx):

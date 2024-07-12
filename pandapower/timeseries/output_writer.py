@@ -109,8 +109,17 @@ class OutputWriter(JSONSerializableClass):
         self.output_list = []
         # real time is tracked to save results to disk regularly
         self.cur_realtime = perf_counter()
-        # total time steps to calculate
-        self.time_steps = time_steps
+        # total time steps to calculate - ensure it is a numpy array of int64:
+        if time_steps is None:
+            self.time_steps = np.array([], dtype=np.int64)
+        elif isinstance(time_steps, (range, list)):
+            # can be range, list, etc.
+            self.time_steps = np.array(time_steps, dtype=np.int64)
+        else:
+            self.time_steps = time_steps
+
+        self.time_step = None
+        self.time_step_lookup = None
         # add output_writer to net
         self.add_to_net(net, element="output_writer", index=0, overwrite=True)
         # inits dataframes and numpy arrays which store results
@@ -171,10 +180,11 @@ class OutputWriter(JSONSerializableClass):
     def _init_output(self):
         self.output = dict()
         # init parameters
-        self.output["Parameters"] = pd.DataFrame(False, index=self.time_steps,
-                                                 columns=["time_step", "controller_unstable",
-                                                          "powerflow_failed"])
-        self.output["Parameters"].loc[:, "time_step"] = self.time_steps
+        self.output["Parameters"] = pd.DataFrame(data={
+            "time_step": self.time_steps,
+            "controller_unstable": np.full(len(self.time_steps), fill_value=False, dtype=bool),
+            "powerflow_failed": np.full(len(self.time_steps), fill_value=False, dtype=bool)
+        }, index=self.time_steps)
 
     def _init_np_results(self):
         # inits numpy array (contains results)
@@ -291,7 +301,7 @@ class OutputWriter(JSONSerializableClass):
         # Saves NaNs to for the given time step.
         time_step_idx = self.time_step_lookup[self.time_step]
         for of in self.output_list:
-            self.output["Parameters"].loc[time_step_idx, of.__name__] = np.NaN
+            self.output["Parameters"].loc[time_step_idx, of.__name__] = np.nan
 
     def remove_log_variable(self, table, variable=None):
         """
@@ -544,7 +554,6 @@ class OutputWriter(JSONSerializableClass):
         raise NotImplementedError("Sorry not implemented yet")
 
     def init_timesteps(self, time_steps):
-        self.time_steps = time_steps
         self.time_step = time_steps[0]
         self.time_step_lookup = {t: idx for idx, t in enumerate(time_steps)}
 
