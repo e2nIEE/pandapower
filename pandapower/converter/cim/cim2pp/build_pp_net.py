@@ -68,7 +68,7 @@ class CimConverter:
                                       ignore_index=True, sort=False)
         for one_attr in self.net[pp_type].columns:
             if one_attr in input_df.columns:
-                self.net[pp_type][one_attr][start_index_pp_net:] = input_df[one_attr][:]
+                self.net[pp_type].loc[start_index_pp_net:, one_attr] = (input_df[one_attr][:]).values
 
     # noinspection PyShadowingNames
     def convert_to_pp(self, convert_line_to_switch: bool = False, line_r_limit: float = 0.1,

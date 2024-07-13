@@ -32,7 +32,7 @@ class CreateMeasurements:
                                       ignore_index=True, sort=False)
         for one_attr in self.net[pp_type].columns:
             if one_attr in input_df.columns:
-                self.net[pp_type][one_attr][start_index_pp_net:] = input_df[one_attr][:]
+                self.net[pp_type].loc[start_index_pp_net:, one_attr] = input_df[one_attr][:]
 
     def create_measurements_from_analog(self):
         self.logger.info("------------------------- Creating measurements from Analog -------------------------")

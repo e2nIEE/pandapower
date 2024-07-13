@@ -39,12 +39,12 @@ def _calculate_ward_and_impedance_parameters(Ybus_eq, bus_lookups, show_computin
         for j in range(nb_b_buses_ppc):
             if j > i:
                 if np.abs(params[i, j]) > 1e-10:
-                    impedance_parameter.from_bus[k] = b_buses_pd[i]
-                    impedance_parameter.to_bus[k] = b_buses_pd[j]
-                    impedance_parameter.rft_pu[k] = (-1 / params[i, j]).real
-                    impedance_parameter.xft_pu[k] = (-1 / params[i, j]).imag
-                    impedance_parameter.rtf_pu[k] = (-1 / params[j, i]).real
-                    impedance_parameter.xtf_pu[k] = (-1 / params[j, i]).imag
+                    impedance_parameter.loc[k, 'from_bus'] = b_buses_pd[i]
+                    impedance_parameter.loc[k, 'to_bus'] = b_buses_pd[j]
+                    impedance_parameter.loc[k, 'rft_pu'] = (-1 / params[i, j]).real
+                    impedance_parameter.loc[k, 'xft_pu'] = (-1 / params[i, j]).imag
+                    impedance_parameter.loc[k, 'rtf_pu'] = (-1 / params[j, i]).real
+                    impedance_parameter.loc[k, 'xtf_pu'] = (-1 / params[j, i]).imag
                     k += 1
                 else:
                     impedance_parameter = impedance_parameter[:-1]
@@ -173,9 +173,9 @@ def _replace_external_area_by_wards(net_external, bus_lookups, ward_parameter_no
     eq_power.q_mvar -= \
         pd.concat([net_external.res_ext_grid.q_mvar, net_external.res_gen.q_mvar[slack_gen]])
     for bus in eq_power.bus:
-        net_external.ward.ps_mw[net_external.ward.bus==bus] = \
+        net_external.ward.loc[net_external.ward.bus==bus, 'ps_mw'] = \
             eq_power.p_mw[eq_power.bus==bus].values
-        net_external.ward.qs_mvar[net_external.ward.bus==bus] = \
+        net_external.ward.loc[net_external.ward.bus==bus, 'qs_mvar'] = \
             eq_power.q_mvar[eq_power.bus==bus].values
 
     net_external.poly_cost = net_external.poly_cost[0:0]
@@ -257,9 +257,9 @@ def _replace_external_area_by_xwards(net_external, bus_lookups, xward_parameter_
     eq_power.q_mvar -= \
         pd.concat([net_external.res_ext_grid.q_mvar, net_external.res_gen.q_mvar[slack_gen]])
     for bus in eq_power.bus:
-        net_external.xward.ps_mw[net_external.xward.bus==bus] = \
+        net_external.xward.loc[net_external.xward.bus==bus, 'ps_mw'] = \
             eq_power.p_mw[eq_power.bus==bus].values
-        net_external.xward.qs_mvar[net_external.xward.bus==bus] = \
+        net_external.xward.loc[net_external.xward.bus==bus, 'qs_mvar'] = \
             eq_power.q_mvar[eq_power.bus==bus].values
 
     net_external.poly_cost=net_external.poly_cost[0:0]
