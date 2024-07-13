@@ -91,8 +91,8 @@ def _get_bus_results(net, ppc, ppc_0, bus):
         # in trafo3w, we add very high numbers (1e10) as impedances to block current
         # here, we need to replace such high values by np.inf
         baseZ = ppc_0["bus"][ppc_index, BASE_KV] ** 2 / ppc_0["baseMVA"]
-        net.res_bus_sc["xk0_ohm"].loc[net.res_bus_sc["xk0_ohm"]/baseZ > 1e9] = np.inf
-        net.res_bus_sc["rk0_ohm"].loc[net.res_bus_sc["rk0_ohm"]/baseZ > 1e9] = np.inf
+        net.res_bus_sc.loc[net.res_bus_sc["xk0_ohm"]/baseZ > 1e9, "xk0_ohm"] = np.inf
+        net.res_bus_sc.loc[net.res_bus_sc["rk0_ohm"]/baseZ > 1e9, "rk0_ohm"] = np.inf
     else:
         net.res_bus_sc["ikss_ka"] = ppc["bus"][ppc_index, IKSS1] + ppc["bus"][ppc_index, IKSS2]
         net.res_bus_sc["skss_mw"] = ppc["bus"][ppc_index, SKSS]
@@ -106,8 +106,8 @@ def _get_bus_results(net, ppc, ppc_0, bus):
     net.res_bus_sc["xk_ohm"] = ppc["bus"][ppc_index, X_EQUIV_OHM]
     # if for some reason (e.g. contribution of ext_grid set close to 0) we used very high values for rk, xk, we replace them by np.inf
     baseZ = ppc["bus"][ppc_index, BASE_KV] ** 2 / ppc["baseMVA"]
-    net.res_bus_sc["rk_ohm"].loc[net.res_bus_sc["rk_ohm"] / baseZ > 1e9] = np.inf
-    net.res_bus_sc["xk_ohm"].loc[net.res_bus_sc["xk_ohm"] / baseZ > 1e9] = np.inf
+    net.res_bus_sc.loc[net.res_bus_sc["rk_ohm"] / baseZ > 1e9, "rk_ohm"] = np.inf
+    net.res_bus_sc.loc[net.res_bus_sc["xk_ohm"] / baseZ > 1e9, "xk_ohm"] = np.inf
 
     net.res_bus_sc = net.res_bus_sc.loc[bus, :]
 

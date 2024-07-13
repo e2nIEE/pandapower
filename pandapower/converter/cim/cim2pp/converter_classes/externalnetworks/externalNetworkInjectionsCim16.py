@@ -88,9 +88,9 @@ class ExternalNetworkInjectionsCim16:
                        how='left', left_on='ConnectivityNode', right_on='b_id')
 
         # convert pu generators with prio = 0 to pq generators (PowerFactory does it same)
-        eni['referencePriority'].loc[eni['referencePriority'] == 0] = -1
+        eni.loc[eni['referencePriority'] == 0, 'referencePriority'] = -1
         eni['referencePriority'] = eni['referencePriority'].astype(float)
-        eni['controlEnabled'].loc[eni['referencePriority'] == -1] = False
+        eni.loc[eni['referencePriority'] == -1, 'controlEnabled'] = False
         eni['p'] = -eni['p']
         eni['q'] = -eni['q']
         eni['x0x_max'] = ((eni['maxR1ToX1Ratio'] + 1j) /
