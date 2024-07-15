@@ -184,7 +184,6 @@ def from_pf(dict_net, pv_as_slack=True, pf_variable_p_loads='plini', pf_variable
     for n, sind in enumerate(dict_net['ElmSind'], 1):
         create_sind(net=net, item=sind)
     if n > 0: logger.info('imported %d SIND' % n)
-    
     # create series capacity as impedance (ElmScap):
     n = 0
     for n, scap in enumerate(dict_net['ElmScap'], 1):
@@ -2789,7 +2788,7 @@ def create_scap(net, item):
     
     if (item.gcap==0) or (item.bcap==0):
         logger.info('not creating series capacitor for %s' % item.loc_name)
-    else: 
+    else:
         r_ohm = item.gcap/(item.gcap**2 + item.bcap**2)
         x_ohm = -item.bcap/(item.gcap**2 + item.bcap**2)
         scap = pp.create_series_reactor_as_impedance(net, from_bus=bus1, to_bus=bus2, r_ohm=r_ohm,
