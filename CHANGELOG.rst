@@ -44,6 +44,7 @@ Change Log
 - [CHANGED] grid_equivalent creation: improved consideration of controller
 - [CHANGED] create consistent parameter names (element and element_index) in controllers -> Changes for TrafoController: trafotable & trafotype -> element, tid -> element_index
 - [CHANGED] parameter renaming in net.group: element -> element_index
+- [FIXED] fixed some small bugs in the CGMES converter and improved its speed
 
 [2.14.7] - 2024-06-14
 -------------------------------
