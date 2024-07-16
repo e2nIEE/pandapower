@@ -2776,15 +2776,13 @@ def create_sind(net, item):
                  (net.impedance.at[sind, 'name'], sind))
 
 def create_scap(net, item):
-    # series reactor is modelled as per-unit impedance, values in Ohm are calculated into values in
+    # series capacitor is modelled as per-unit impedance, values in Ohm are calculated into values in
     # per unit at creation
     try:
         (bus1, bus2) = get_connection_nodes(net, item, 2)
     except IndexError:
         logger.error("Cannot add Scap '%s': not connected" % item.loc_name)
         return
-    
-    bus1, bus2 = get_connection_nodes(net, item, 2)
     
     if (item.gcap==0) or (item.bcap==0):
         logger.info('not creating series capacitor for %s' % item.loc_name)
@@ -2796,7 +2794,7 @@ def create_scap(net, item):
                                                      name=item.loc_name,
                                                      in_service=not bool(item.outserv))
     
-        logger.debug('created series reactor %s as per unit impedance at index %d' %
+        logger.debug('created series capacitor %s as per unit impedance at index %d' %
                      (net.impedance.at[scap, 'name'], scap))
 
 
