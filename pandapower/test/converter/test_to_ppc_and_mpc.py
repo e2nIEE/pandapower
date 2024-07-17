@@ -32,7 +32,7 @@ def test_to_ppc_and_mpc():
         pp.runpp(net)
 
         # convert pandapower grids to ppc
-        ppc = cv.to_ppc(net, delete_branch_g=False)
+        ppc = cv.to_ppc(net)
         # convert pandapower grids to mpc (no result validation)
         mpc = cv.to_mpc(net)
 
