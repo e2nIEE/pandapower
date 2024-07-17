@@ -255,8 +255,8 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
         ratio_is_zero = np.isclose(ratio_1, 0)
         ratio_1[~ratio_is_zero & ~tap_side_is_hv] **= -1
         ratio_1[~ratio_is_zero] -= 1
-        i0_percent = -np.sqrt(ppc['branch'][~is_line, BR_B]**2 + br_g[~is_line]**2) * 100 * baseMVA / sn
-        # i0_percent = -ppc['branch'][~is_line, BR_B].real * 100 * baseMVA / sn
+        #i0_percent = np.sqrt(ppc['branch'][~is_line, BR_B]**2 + br_g[~is_line]**2) * 100 * baseMVA / sn
+        i0_percent = -ppc['branch'][~is_line, BR_B].real * 100 * baseMVA / sn
         is_neg_i0_percent = i0_percent < 0
         if np.any(is_neg_i0_percent):
             logger.info(

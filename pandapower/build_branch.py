@@ -313,7 +313,7 @@ def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=
         if net._options.get("use_pre_fault_voltage", False):
             g, b = _calc_y_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva)
         else:
-            y = 0  # why for sc are we assigning y directly as 0?
+            g, b = 0, 0  # why for sc are we assigning y directly as 0?
         if isinstance(trafo_df, pd.DataFrame):  # 2w trafo is dataframe, 3w trafo is dict
             bus_lookup = net._pd2ppc_lookups["bus"]
             cmax = ppc["bus"][bus_lookup[net.trafo.lv_bus.values], C_MAX]
@@ -353,7 +353,7 @@ def _wye_delta(r, x, y):
     return r, x, y.real, y.imag
 
 
-def _calc_y_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, sn_mva):
+def _calc_y_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net_sn_mva):
     """
     Calculate the subsceptance y from the transformer dataframe.
 
@@ -367,7 +367,7 @@ def _calc_y_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, sn_mva):
         the form (-b_img, -b_real)
     """
 
-    baseZ = np.square(vn_lv) / (3*sn_mva) if mode == 'pf_3ph' else np.square(vn_lv) / sn_mva
+    baseZ = np.square(vn_lv) / (3*net_sn_mva) if mode == 'pf_3ph' else np.square(vn_lv) / net_sn_mva
     vn_lv_kv = get_trafo_values(trafo_df, "vn_lv_kv")
     pfe = (get_trafo_values(trafo_df, "pfe_kw") * 1e-3) / 3 if mode == 'pf_3ph'\
         else get_trafo_values(trafo_df, "pfe_kw") * 1e-3
@@ -382,10 +382,57 @@ def _calc_y_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, sn_mva):
     b_img = (i0 / 100. * sn) ** 2 - pfe ** 2
 
     b_img[b_img < 0] = 0
-    b_img = np.sqrt(b_img) * baseZ / vnl_squared
+    b_img = np.sqrt(b_img) * baseZ / vnl_squared * np.sign(i0) # was macht das sign?
     # y = b_real + 1j * b_img * np.sign(i0)
     g = b_real / np.square(vn_trafo_lv / vn_lv_kv) * parallel
-    b = -b_img / np.square(vn_trafo_lv / vn_lv_kv) * parallel
+    b = -b_img / np.square(vn_trafo_lv / vn_lv_kv) * parallel # warum -b_img
+    return g, b
+
+def _backup_calc_y_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net_sn_mva):
+    """
+    Calculate the subsceptance y from the transformer dataframe.
+
+    INPUT:
+
+        **trafo** (Dataframe) - The dataframe in net.trafo
+        which contains transformer calculation values.
+
+    OUTPUT:
+        **subsceptance** (1d array, np.complex128) - The subsceptance in pu in
+        the form (-b_img, -b_real)
+    """
+
+    baseZ = np.square(vn_lv) / (3*net_sn_mva) if mode == 'pf_3ph' else np.square(vn_lv) / net_sn_mva
+    vn_lv_kv = get_trafo_values(trafo_df, "vn_lv_kv")
+    pfe_mw = (get_trafo_values(trafo_df, "pfe_kw") * 1e-3) / 3 if mode == 'pf_3ph'\
+        else get_trafo_values(trafo_df, "pfe_kw") * 1e-3
+    parallel = get_trafo_values(trafo_df, "parallel")
+    trafo_sn_mva = get_trafo_values(trafo_df, "sn_mva")
+
+    ### Calculate subsceptance ###
+    vnl_squared = (vn_lv_kv ** 2)/3 if mode == 'pf_3ph' else vn_lv_kv ** 2
+    #b_real = pfe / vnl_squared * baseZ
+    # g = pfe_mw / trafo_sn_mva * parallel / np.square(vn_trafo_lv / vn_lv_kv) / net_sn_mva
+    g = pfe_mw / vnl_squared * baseZ * parallel / np.square(vn_trafo_lv / vn_lv_kv)
+    # g = pfe_mw / vnl_squared * baseZ * parallel * np.square(vn_lv / vn_trafo_lv)
+
+    i0 = get_trafo_values(trafo_df, "i0_percent") / 3 if mode == 'pf_3ph'\
+        else get_trafo_values(trafo_df, "i0_percent")
+        
+    ym = i0 / 100 * trafo_sn_mva * parallel / np.square(vn_trafo_lv / vn_lv_kv)
+    # ym = i0 / 100 * trafo_sn_mva * parallel * np.square(vn_lv / vn_trafo_lv)
+    
+    b = -np.sqrt(np.square(ym) - np.square(g)) * baseZ / vnl_squared
+    b = -np.sqrt(np.square(ym) - np.square(g)) * np.square(vn_lv / vn_lv_kv) / net_sn_mva
+    # b = -np.sqrt(np.square(ym) - np.square(g)) / net_sn_mva
+
+    # b_img = (i0 / 100. * trafo_sn_mva) ** 2 - pfe ** 2
+
+    # b_img[b_img < 0] = 0
+    # b_img = np.sqrt(b_img) * baseZ / vnl_squared
+    # # y = b_real + 1j * b_img * np.sign(i0)
+    # g = b_real / np.square(vn_trafo_lv / vn_lv_kv) * parallel
+    # b = -b_img / np.square(vn_trafo_lv / vn_lv_kv) * parallel
     return g, b
 
 

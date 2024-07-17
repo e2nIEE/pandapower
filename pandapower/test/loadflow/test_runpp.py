@@ -1194,7 +1194,7 @@ def assert_init_results(net):
 
 
 def test_wye_delta():
-    from pandapower.pypower.idx_brch import BR_R, BR_X, BR_B
+    from pandapower.pypower.idx_brch import BR_R, BR_X, BR_B, BR_G
     net = pp.create_empty_network()
     pp.create_bus(net, vn_kv=110)
     pp.create_buses(net, nr_buses=4, vn_kv=20)
@@ -1210,13 +1210,13 @@ def test_wye_delta():
     pp.runpp(net, trafo_model="pi")
     f, t = net._pd2ppc_lookups["branch"]["trafo"]
     assert np.isclose(net.res_trafo.p_hv_mw.at[trafo], -7.560996, rtol=1e-7)
-    assert np.allclose(net._ppc["branch"][f:t, [BR_R, BR_X, BR_B]].flatten(),
-                       np.array([0.0001640 + 0.j, 0.0047972 + 0.j, -0.0105000 - 0.014j]),
+    assert np.allclose(net._ppc["branch"][f:t, [BR_R, BR_X, BR_B, BR_G]].flatten(),
+                       np.array([0.0001640, 0.0047972, -0.0105000, 0.014]),
                        rtol=1e-7)
 
     pp.runpp(net, trafo_model="t")
-    assert np.allclose(net._ppc["branch"][f:t, [BR_R, BR_X, BR_B]].flatten(),
-                       np.array([0.00016392 + 0.j, 0.00479726 + 0.j, -0.01050009 - 0.01399964j]))
+    assert np.allclose(net._ppc["branch"][f:t, [BR_R, BR_X, BR_B, BR_G]].flatten(),
+                       np.array([0.00016392, 0.00479726, -0.01050009, 0.01399964]))
     assert np.isclose(net.res_trafo.p_hv_mw.at[trafo], -7.561001, rtol=1e-7)
 
 

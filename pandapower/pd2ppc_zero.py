@@ -495,7 +495,7 @@ def _add_trafo3w_sc_impedance_zero(net, ppc):
     branch[f:t, F_BUS] = bus_lookup[hv_bus]
     branch[f:t, T_BUS] = bus_lookup[lv_bus]
 
-    r, x, _, ratio, shift = _calc_branch_values_from_trafo_df(net, ppc, trafo_df, sequence=0)
+    r, x, _, _, ratio, shift = _calc_branch_values_from_trafo_df(net, ppc, trafo_df, sequence=0)
 
     # Y0y0d5,  YN0y0d5,  Y0yn0d5,  YN0yn0d5, Y0y0y0, Y0d5d5,
     # YN0d5d5,  Y0d5y0,  Y0y0d11  und  D0d0d0
