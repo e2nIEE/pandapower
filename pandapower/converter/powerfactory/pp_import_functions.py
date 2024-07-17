@@ -2668,6 +2668,18 @@ def create_zpu(net, item):
         'xft_pu': item.x_pu,
         'rtf_pu': item.r_pu_ji,
         'xtf_pu': item.x_pu_ji,
+        'rft0_pu': item.r0_pu,
+        'xft0_pu': item.x0_pu,
+        'rtf0_pu': item.r0_pu_ji,
+        'xtf0_pu': item.x0_pu_ji,
+        'gf_pu': item.gi_pu,
+        'bf_pu': item.bi_pu,
+        'gt_pu': item.gj_pu,
+        'bt_pu': item.bj_pu,
+        'gf0_pu': item.gi0_pu,
+        'bf0_pu': item.bi0_pu,
+        'gt0_pu': item.gj0_pu,
+        'bt0_pu': item.bj0_pu,
         'sn_mva': item.Sn,
         'in_service': not bool(item.outserv)
     }
@@ -2676,12 +2688,6 @@ def create_zpu(net, item):
     xid = pp.create_impedance(net, **params)
     add_additional_attributes(item, net, element='impedance', element_id=xid, attr_list=["cpSite.loc_name"],
                               attr_dict={"cimRdfId": "origin_id"})
-
-    # create shunts at the buses connected to the impedance
-    if not np.isclose(item.gi_pu, 0) or not np.isclose(item.bi_pu, 0):
-        _add_shunt_to_impedance_bus(net, item, bus1)
-    if not np.isclose(item.gj_pu, 0) or not np.isclose(item.bj_pu, 0):
-        _add_shunt_to_impedance_bus(net, item, bus2)
 
 
 def create_vac(net, item):

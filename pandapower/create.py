@@ -253,6 +253,10 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                       ("xft_pu", "f8"),
                       ("rtf_pu", "f8"),
                       ("xtf_pu", "f8"),
+                      ("gf_pu", "f8"),
+                      ("bf_pu", "f8"),
+                      ("gt_pu", "f8"),
+                      ("bt_pu", "f8"),
                       ("sn_mva", "f8"),
                       ("in_service", 'bool')],
         "tcsc": [("name", dtype(object)),
@@ -4076,7 +4080,9 @@ def create_ssc(net, bus, r_ohm, x_ohm, set_vm_pu=1., vm_internal_pu=1., va_inter
 
 def create_impedance(net, from_bus, to_bus, rft_pu, xft_pu, sn_mva, rtf_pu=None, xtf_pu=None,
                      name=None, in_service=True, index=None,
-                     rft0_pu=None, xft0_pu=None, rtf0_pu=None, xtf0_pu=None, **kwargs):
+                     rft0_pu=None, xft0_pu=None, rtf0_pu=None, xtf0_pu=None,
+                     gf_pu=0, bf_pu=0, gt_pu=None, bt_pu=None,
+                     gf0_pu=None, bf0_pu=None, gt0_pu=None, bt0_pu=None, **kwargs):
     """
     Creates an per unit impedance element
 
@@ -4114,9 +4120,23 @@ def create_impedance(net, from_bus, to_bus, rft_pu, xft_pu, sn_mva, rtf_pu=None,
     if xft0_pu is not None and xtf0_pu is None:
         xtf0_pu = xft0_pu
 
-    columns = ["from_bus", "to_bus", "rft_pu", "xft_pu", "rtf_pu", "xtf_pu", "name", "sn_mva",
-               "in_service"]
-    values = [from_bus, to_bus, rft_pu, xft_pu, rtf_pu, xtf_pu, name, sn_mva, in_service]
+    if gt_pu is None:
+        gt_pu = gf_pu
+    if bt_pu is None:
+        bt_pu = bf_pu
+    if gf0_pu is not None and gt0_pu is None:
+        gt0_pu = gf0_pu
+    if bf0_pu is not None and bt0_pu is None:
+        bt0_pu = bf0_pu
+
+    columns = ["from_bus", "to_bus",
+               "rft_pu", "xft_pu", "rtf_pu", "xtf_pu",
+               "gf_pu", "bf_pu", "gt_pu", "bt_pu",
+               "name", "sn_mva", "in_service"]
+    values = [from_bus, to_bus,
+              rft_pu, xft_pu, rtf_pu, xtf_pu,
+              gf_pu, bf_pu, gt_pu, bt_pu,
+              name, sn_mva, in_service]
     entries = dict(zip(columns, values))
     _set_entries(net, "impedance", index, **entries, **kwargs)
 
@@ -4125,6 +4145,12 @@ def create_impedance(net, from_bus, to_bus, rft_pu, xft_pu, sn_mva, rtf_pu=None,
         _set_value_if_not_nan(net, index, xft0_pu, "xft0_pu", "impedance")
         _set_value_if_not_nan(net, index, rtf0_pu, "rtf0_pu", "impedance")
         _set_value_if_not_nan(net, index, xtf0_pu, "xtf0_pu", "impedance")
+
+    if gf0_pu is not None:
+        _set_value_if_not_nan(net, index, gf0_pu, "gf0_pu", "impedance")
+        _set_value_if_not_nan(net, index, bf0_pu, "bf0_pu", "impedance")
+        _set_value_if_not_nan(net, index, gt0_pu, "gt0_pu", "impedance")
+        _set_value_if_not_nan(net, index, bt0_pu, "bt0_pu", "impedance")
 
     return index
 

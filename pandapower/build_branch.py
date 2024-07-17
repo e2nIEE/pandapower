@@ -13,7 +13,7 @@ import pandas as pd
 
 from pandapower.auxiliary import get_values
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, BR_G, TAP, SHIFT, BR_STATUS, RATE_A, \
-    BR_R_ASYM, BR_X_ASYM, branch_cols
+    BR_R_ASYM, BR_X_ASYM, BR_G_ASYM, BR_B_ASYM, branch_cols
 from pandapower.pypower.idx_brch_tdpf import BR_R_REF_OHM_PER_KM, BR_LENGTH_KM, RATE_I_KA, T_START_C, R_THETA, \
     WIND_SPEED_MPS, ALPHA, TDPF, OUTER_DIAMETER_M, MC_JOULE_PER_M_K, WIND_ANGLE_DEGREE, SOLAR_RADIATION_W_PER_SQ_M, \
     GAMMA, EPSILON, T_AMBIENT_C, T_REF_C, branch_cols_tdpf
@@ -643,11 +643,15 @@ def _calc_impedance_parameter(net, ppc):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     f, t = net["_pd2ppc_lookups"]["branch"]["impedance"]
     branch = ppc["branch"]
-    rij, xij, r_asym, x_asym = _calc_impedance_parameters_from_dataframe(net)
+    rij, xij, r_asym, x_asym, gi, bi, g_asym, b_asym = _calc_impedance_parameters_from_dataframe(net)
     branch[f:t, BR_R] = rij
     branch[f:t, BR_X] = xij
     branch[f:t, BR_R_ASYM] = r_asym
     branch[f:t, BR_X_ASYM] = x_asym
+    branch[f:t, BR_G] = gi
+    branch[f:t, BR_B] = bi
+    branch[f:t, BR_G_ASYM] = g_asym
+    branch[f:t, BR_B_ASYM] = b_asym
     branch[f:t, F_BUS] = bus_lookup[net.impedance["from_bus"].values]
     branch[f:t, T_BUS] = bus_lookup[net.impedance["to_bus"].values]
     branch[f:t, BR_STATUS] = net["impedance"]["in_service"].values
@@ -692,6 +696,10 @@ def _calc_impedance_parameters_from_dataframe(net, zero_sequence=False):
     xij = impedance[f"xft{suffix}_pu"].values
     rji = impedance[f"rtf{suffix}_pu"].values
     xji = impedance[f"xtf{suffix}_pu"].values
+    gi = impedance[f"gf{suffix}_pu"].values
+    bi = impedance[f"bf{suffix}_pu"].values
+    gj = impedance[f"gt{suffix}_pu"].values
+    bj = impedance[f"bt{suffix}_pu"].values
 
     mode = net["_options"]["mode"]
     sn_factor = 3. if mode == 'pf_3ph' else 1.
@@ -702,9 +710,16 @@ def _calc_impedance_parameters_from_dataframe(net, zero_sequence=False):
     x_f = (xij * sn_factor) / sn_impedance * sn_net
     r_t = (rji * sn_factor) / sn_impedance * sn_net
     x_t = (xji * sn_factor) / sn_impedance * sn_net
+    # todo sn_factor + formulas in general for g_f, b_f, g_t, b_t
+    g_f = (gi * sn_factor) / sn_impedance * sn_net
+    b_f = (bi * sn_factor) / sn_impedance * sn_net
+    g_t = (gj * sn_factor) / sn_impedance * sn_net
+    b_t = (bj * sn_factor) / sn_impedance * sn_net
     r_asym = r_t - r_f
     x_asym = x_t - x_f
-    return r_f, x_f, r_asym, x_asym
+    g_asym = g_t - g_f
+    b_asym = b_t - b_f
+    return r_f, x_f, r_asym, x_asym, gi, bi, g_asym, b_asym
 
 
 def _calc_xward_parameter(net, ppc):

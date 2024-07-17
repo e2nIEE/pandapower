@@ -183,11 +183,10 @@ def _from_ppc_gen(net, ppc):
 def _from_ppc_branch(net, ppc, f_hz, **kwargs):
     """ branch data -> create line, trafo """
     n_bra = ppc["branch"].shape[0]
-    
-    if 'branch_g_name' in kwargs:
-        br_g = ppc[kwargs['branch_g_name']]
-    else:
-        br_g = np.array([0]*n_bra) # get branch_g if it exists
+
+    br_g = ppc.get("branch_g", np.zeros(n_bra, dtype=np.float64))
+    br_g_asym = ppc.get("branch_g_asym", np.zeros(n_bra, dtype=np.float64))
+    br_b_asym = ppc.get("branch_b_asym", np.zeros(n_bra, dtype=np.float64))
 
     # --- general_parameters
     baseMVA = ppc['baseMVA']  # MVA
