@@ -4084,24 +4084,91 @@ def create_impedance(net, from_bus, to_bus, rft_pu, xft_pu, sn_mva, rtf_pu=None,
                      gf_pu=0, bf_pu=0, gt_pu=None, bt_pu=None,
                      gf0_pu=None, bf0_pu=None, gt0_pu=None, bt0_pu=None, **kwargs):
     """
-    Creates an per unit impedance element
+    Creates an impedance element in per unit (pu).
 
-    INPUT:
-        **net** (pandapowerNet) - The pandapower network in which the element is created
+    Parameters
+    ----------
+    net : pandapowerNet
+        The pandapower grid model in which the element is created.
 
-        **from_bus** (int) - starting bus of the impedance
+    from_bus : int
+        The starting bus of the impedance element.
 
-        **to_bus** (int) - ending bus of the impedance
+    to_bus : int
+        The ending bus of the impedance element.
 
-        **r_pu** (float) - real part of the impedance in per unit
+    rft_pu : float
+        The real part of the impedance from 'from_bus' to 'to_bus' in per unit.
 
-        **x_pu** (float) - imaginary part of the impedance in per unit
+    xft_pu : float
+        The imaginary part of the impedance from 'from_bus' to 'to_bus' in per unit.
 
-        **sn_mva** (float) - rated power of the impedance in MVA
+    sn_mva : float
+        The rated power of the impedance element in MVA.
 
-    OUTPUT:
+    rtf_pu : float, optional
+        The real part of the impedance from 'to_bus' to 'from_bus' in per unit. Defaults to `rft_pu`.
 
-        impedance id
+    xtf_pu : float, optional
+        The imaginary part of the impedance from 'to_bus' to 'from_bus' in per unit. Defaults to `xft_pu`.
+
+    name : str, optional
+        The name of the impedance element. Default is None.
+
+    in_service : bool, optional
+        The service status of the impedance element. Default is True.
+
+    index : int, optional
+        The index of the impedance element. Default is None.
+
+    rft0_pu : float, optional
+        The zero-sequence real part of the impedance from 'from_bus' to 'to_bus' in per unit. Default is None.
+
+    xft0_pu : float, optional
+        The zero-sequence imaginary part of the impedance from 'from_bus' to 'to_bus' in per unit. Default is None.
+
+    rtf0_pu : float, optional
+        The zero-sequence real part of the impedance from 'to_bus' to 'from_bus' in per unit. Default is `rft0_pu`.
+
+    xtf0_pu : float, optional
+        The zero-sequence imaginary part of the impedance from 'to_bus' to 'from_bus' in per unit. Default is `xft0_pu`.
+
+    gf_pu : float, optional
+        Conductance at the 'from_bus' in per unit. Default is 0.
+
+    bf_pu : float, optional
+        Susceptance at the 'from_bus' in per unit. Default is 0.
+
+    gt_pu : float, optional
+        Conductance at the 'to_bus' in per unit. Defaults to `gf_pu`.
+
+    bt_pu : float, optional
+        Susceptance at the 'to_bus' in per unit. Defaults to `bf_pu`.
+
+    gf0_pu : float, optional
+        The zero-sequence conductance at the 'from_bus' in per unit. Default is None.
+
+    bf0_pu : float, optional
+        The zero-sequence susceptance at the 'from_bus' in per unit. Default is None.
+
+    gt0_pu : float, optional
+        The zero-sequence conductance at the 'to_bus' in per unit. Defaults to `gf0_pu`.
+
+    bt0_pu : float, optional
+        The zero-sequence susceptance at the 'to_bus' in per unit. Defaults to `bf0_pu`.
+
+    kwargs : dict, optional
+        Additional arguments (for additional columns in net.impedance table).
+
+    Returns
+    -------
+    int
+        The index of the created impedance element.
+
+    Raises
+    ------
+    UserWarning
+        If required impedance parameters are missing.
     """
     index = _get_index_with_check(net, "impedance", index)
 

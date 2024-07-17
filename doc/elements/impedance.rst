@@ -60,6 +60,12 @@ The asymetric impedance results in an asymetric nodal point admittance matrix:
     \end{bmatrix}
 
 
+Optionally, the impedance element can also have conductance and susceptance at the "from" and "to" buses. In this case,
+the electric model becomes similar to the line model. It is possible to have different values of susceptance and
+conductance for the "from" and "to" bus, as is in the case of the resistance and reactance. This provides for
+flexibility in modeling an impedance branch element, which will be especially useful when modeling grid equivalents.
+
+
 Result Parameters
 ==========================
 *net.res_impedance*

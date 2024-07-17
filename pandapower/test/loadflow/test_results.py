@@ -812,5 +812,25 @@ def test_open(result_test_network):
 
     assert isnan(net['res_line'].at[lines.index[1], "i_ka"])
 
+
+def test_impedance_g_b():
+    # from pandapower.test.loadflow.test_results import *
+    net = pp.create_empty_network(sn_mva=100)
+    pp.create_bus(net, 110)
+    pp.create_bus(net, 20)
+    pp.create_ext_grid(net, 0)
+    pp.create_impedance(net, 0, 1, rft_pu=0.002, xft_pu=0.004, rtf_pu=0.005, xtf_pu=0.008,
+                        gf_pu=0.001, bf_pu=0.003, gt_pu=0.006, bt_pu=0.007, sn_mva=10)
+    pp.create_load(net, 1, 20, 4)
+
+    runpp_with_consistency_checks(net)
+    assert np.allclose(net.res_bus.vm_pu, [1.000000, 0.986544], rtol=0, atol=1e-6)
+    assert np.allclose(net.res_bus.va_degree, [0.000000, -0.817801], rtol=0, atol=1e-6)
+    assert np.allclose(net.res_impedance.p_from_mw, [41.728161], rtol=0, atol=1e-6)
+    assert np.allclose(net.res_impedance.q_from_mvar, [13.002414], rtol=0, atol=1e-6)
+    assert np.allclose(net.res_impedance.p_to_mw, [-19.999918], rtol=0, atol=1e-6)
+    assert np.allclose(net.res_impedance.q_to_mvar, [-3.999869], rtol=0, atol=1e-6)
+
+
 if __name__ == "__main__":
     pytest.main(["-xs"])
