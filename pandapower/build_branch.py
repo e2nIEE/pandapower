@@ -110,11 +110,13 @@ def _calc_trafo3w_parameter(net, ppc):
     in_service = get_trafo_values(trafo_df, "in_service").astype(np.int64)
     branch[f:t, F_BUS] = bus_lookup[hv_bus]
     branch[f:t, T_BUS] = bus_lookup[lv_bus]
-    r, x, g, b, ratio, shift = _calc_branch_values_from_trafo_df(net, ppc, trafo_df)
+    r, x, g, b, g_asym, b_asym, ratio, shift = _calc_branch_values_from_trafo_df(net, ppc, trafo_df)
     branch[f:t, BR_R] = r
     branch[f:t, BR_X] = x
     branch[f:t, BR_G] = g
     branch[f:t, BR_B] = b
+    branch[f:t, BR_G_ASYM] = g_asym
+    branch[f:t, BR_B_ASYM] = b_asym
     branch[f:t, TAP] = ratio
     branch[f:t, SHIFT] = shift
     branch[f:t, BR_STATUS] = in_service
@@ -230,11 +232,13 @@ def _calc_trafo_parameter(net, ppc):
     parallel = trafo["parallel"].values
     branch[f:t, F_BUS] = bus_lookup[trafo["hv_bus"].values]
     branch[f:t, T_BUS] = bus_lookup[trafo["lv_bus"].values]
-    r, x, g, b, ratio, shift = _calc_branch_values_from_trafo_df(net, ppc)
+    r, x, g, b, g_asym, b_asym, ratio, shift = _calc_branch_values_from_trafo_df(net, ppc)
     branch[f:t, BR_R] = r
     branch[f:t, BR_X] = x
     branch[f:t, BR_G] = g
     branch[f:t, BR_B] = b
+    branch[f:t, BR_G_ASYM] = g_asym
+    branch[f:t, BR_B_ASYM] = b_asym
     branch[f:t, TAP] = ratio
     branch[f:t, SHIFT] = shift
     branch[f:t, BR_STATUS] = trafo["in_service"].values
@@ -298,8 +302,8 @@ def _calc_branch_values_from_trafo_df(net, ppc, trafo_df=None, sequence=1):
     vn_trafo_hv, vn_trafo_lv, shift = _calc_tap_from_dataframe(net, trafo_df)
     ratio = _calc_nominal_ratio_from_dataframe(ppc, trafo_df, vn_trafo_hv, vn_trafo_lv,
                                                bus_lookup)
-    r, x, g, b = _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=sequence)
-    return r, x, g, b, ratio, shift
+    r, x, g, b, g_asym, b_asym = _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=sequence)
+    return r, x, g, b, g_asym, b_asym, ratio, shift
 
 
 def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=1):
@@ -327,30 +331,40 @@ def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=
         g, b = _calc_y_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva)
 
     if trafo_model == "pi":
-        return r, x, g, b
+        return r, x, g, b, 0, 0  # g_asym and b_asym are 0 here
     elif trafo_model == "t":
-        return _wye_delta(r, x, g+1j*b)
+        r_ratio = trafo_df["leakage_resistance_ratio_hv"].values if "leakage_resistance_ratio_hv" in trafo_df else 0.5
+        x_ratio = trafo_df["leakage_reactance_ratio_hv"].values if "leakage_reactance_ratio_hv" in trafo_df else 0.5
+        return _wye_delta(r, x, g, b, r_ratio, x_ratio)
     else:
         raise ValueError("Unkonwn Transformer Model %s - valid values ar 'pi' or 't'" % trafo_model)
 
 
-def _wye_delta(r, x, y):
+def _wye_delta(r, x, g, b, r_ratio, x_ratio):
     """
     20.05.2016 added by Lothar Löwer
 
     Calculate transformer Pi-Data based on T-Data
 
     """
-    tidx = np.where(y != 0)
-    za_star = (r[tidx] + x[tidx] * 1j) / 2
-    zc_star = 1 / y[tidx]
-    zSum_triangle = za_star * za_star + 2 * za_star * zc_star
+    tidx = (g != 0) | (b != 0)
+    za_star = r[tidx] * r_ratio + x[tidx] * x_ratio * 1j
+    zb_star = r[tidx] * (1 - r_ratio) + x[tidx] * (1 - x_ratio) * 1j
+    zc_star = 1 / (g + 1j*b)[tidx]
+    zSum_triangle = za_star * zb_star + za_star * zc_star + zb_star * zc_star
     zab_triangle = zSum_triangle / zc_star
+    zac_triangle = zSum_triangle / zb_star
     zbc_triangle = zSum_triangle / za_star
     r[tidx] = zab_triangle.real
     x[tidx] = zab_triangle.imag
-    y[tidx] = 2 / zbc_triangle
-    return r, x, y.real, y.imag
+    # 2 because in makeYbus Bcf, Bct are divided by 2 (maybe change it?)
+    g[tidx] = 2 / zac_triangle.real
+    b[tidx] = 2 / zac_triangle.imag
+    g_asym = np.zeros_like(g)
+    b_asym = np.zeros_like(b)
+    g_asym[tidx] = 2 / zbc_triangle.real - g[tidx]
+    b_asym[tidx] = 2 / zbc_triangle.imag - b[tidx]
+    return r, x, g, b, g_asym, b_asym
 
 
 def _calc_y_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net_sn_mva):
@@ -711,10 +725,11 @@ def _calc_impedance_parameters_from_dataframe(net, zero_sequence=False):
     r_t = (rji * sn_factor) / sn_impedance * sn_net
     x_t = (xji * sn_factor) / sn_impedance * sn_net
     # todo sn_factor + formulas in general for g_f, b_f, g_t, b_t
-    g_f = (gi * sn_factor) / sn_impedance * sn_net
-    b_f = (bi * sn_factor) / sn_impedance * sn_net
-    g_t = (gj * sn_factor) / sn_impedance * sn_net
-    b_t = (bj * sn_factor) / sn_impedance * sn_net
+    # 2 because Bcf, Bct is divided by 2 in makeYbus (maybe change?)
+    g_f = 2 * (gi * sn_factor) / sn_impedance * sn_net
+    b_f = 2 * (bi * sn_factor) / sn_impedance * sn_net
+    g_t = 2 * (gj * sn_factor) / sn_impedance * sn_net
+    b_t = 2 * (bj * sn_factor) / sn_impedance * sn_net
     r_asym = r_t - r_f
     x_asym = x_t - x_f
     g_asym = g_t - g_f
