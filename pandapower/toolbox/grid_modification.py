@@ -1112,6 +1112,8 @@ def replace_line_by_impedance(net, index=None, sn_mva=None, only_valid_replace=T
         raise ValueError("index and sn_mva must have the same length.")
 
     parallel = net.line["parallel"].values
+    length_km = net.line["length_km"].values
+    cols = net.line.columns
 
     i = 0
     new_index = []
@@ -1124,14 +1126,19 @@ def replace_line_by_impedance(net, index=None, sn_mva=None, only_valid_replace=T
                          "converted to impedances, which do not model such parameters.")
         vn = net.bus.vn_kv.at[line_.from_bus]
         Zni = vn ** 2 / sn_mva[i]
-        par = parallel[idx]
+        p = parallel[idx]
+        l = length_km[idx]
         new_index.append(create_impedance(
             net, line_.from_bus, line_.to_bus,
-            rft_pu=line_.r_ohm_per_km * line_.length_km / par / Zni,
-            xft_pu=line_.x_ohm_per_km * line_.length_km / par / Zni,
+            rft_pu=line_.r_ohm_per_km * l / p / Zni,
+            xft_pu=line_.x_ohm_per_km * l / p / Zni,
+            gf_pu=line_.g_us_per_km * 1e-6 * Zni * l * p,
+            bf_pu=2 * net.f_hz * np.pi * line_.c_nf_per_km * 1e-9 * Zni * l * p,
             sn_mva=sn_mva[i],
-            rft0_pu=line_.r0_ohm_per_km * line_.length_km / par / Zni if "r0_ohm_per_km" in net.line.columns else None,
-            xft0_pu=line_.x0_ohm_per_km * line_.length_km / par / Zni if "x0_ohm_per_km" in net.line.columns else None,
+            rft0_pu=line_.r0_ohm_per_km * l / p / Zni if "r0_ohm_per_km" in cols else None,
+            xft0_pu=line_.x0_ohm_per_km * l / p / Zni if "x0_ohm_per_km" in cols else None,
+            gf0_pu=line_.g0_us_per_km * 1e-6 * Zni * l * p if "g0_us_per_km" in cols else None,
+            bf0_pu=2 * net.f_hz * np.pi * line_.c0_nf_per_km * 1e-9 * Zni * l * p if "c0_nf_per_km" in cols else None,
             name=line_.name,
             in_service=line_.in_service))
         i += 1

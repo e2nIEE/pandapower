@@ -373,6 +373,7 @@ def add_zero_impedance_parameters(net):
     parameter_from_std_type(net, "mag0_percent", element="trafo")
     parameter_from_std_type(net, "mag0_rx", element="trafo")
     parameter_from_std_type(net, "si0_hv_partial", element="trafo")
+    parameter_from_std_type(net, "g0_nf_per_km")
     parameter_from_std_type(net, "c0_nf_per_km")
     parameter_from_std_type(net, "r0_ohm_per_km")
     parameter_from_std_type(net, "x0_ohm_per_km")

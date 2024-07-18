@@ -21,6 +21,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 home = str(Path.home())
 desktop = os.path.join(home, "Desktop")
+impedance_columns = ["from_bus", "to_bus", "rft_pu", "xft_pu", "rtf_pu", "xtf_pu", "gf_pu", "bf_pu", "gt_pu", "bt_pu"]
 
 
 def _runpp_except_voltage_angles(net, **kwargs):

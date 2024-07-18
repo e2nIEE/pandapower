@@ -3,12 +3,12 @@
 # Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from numpy import allclose, delete
+from numpy import allclose, delete, any
 
 from pandapower.auxiliary import _add_ppc_options
 from pandapower.powerflow import _pd2ppc
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
-from pandapower.pypower.idx_brch import BR_G, BR_G_ASYM, BR_B_ASYM
+from pandapower.pypower.idx_brch import BR_G, BR_G_ASYM, BR_B_ASYM, BR_R_ASYM, BR_X_ASYM
 
 try:
     import pandaplan.core.pplog as logging
@@ -119,11 +119,14 @@ def to_ppc(net, calculate_voltage_angles=False, trafo_model="t", switch_rx_ratio
     #  do the conversion
     _, ppci = _pd2ppc(net)
 
-    # delete BR_G column as this is added to pandapower afterwards, keeping it as extra variable
-    ppci['branch_g'] = net._ppc["branch"][:, BR_G]
-    ppci['branch_g_asym'] = net._ppc["branch"][:, BR_G_ASYM]
-    ppci['branch_b_asym'] = net._ppc["branch"][:, BR_B_ASYM]
-    ppci['branch'] = delete(ppci['branch'], [BR_G, BR_G_ASYM, BR_B_ASYM], axis=1)
+    # delete BR_G column as this is added to pandapower afterward, keeping it as extra variable
+    # only keep the additional variables in ppc if any values are non-zero
+    # todo: test saving & retrieving the data columns with to_ppc, from_ppc
+    for ppc_name, brch_col in zip(['branch_r_asym', 'branch_x_asym', 'branch_g', 'branch_g_asym', 'branch_b_asym'],
+                                  [BR_R_ASYM, BR_X_ASYM, BR_G, BR_G_ASYM, BR_B_ASYM]):
+        if any(col := net._ppc["branch"][:, brch_col]):
+            ppci[ppc_name] = col
+    ppci['branch'] = delete(ppci['branch'], [BR_R_ASYM, BR_G_ASYM, BR_G, BR_G_ASYM, BR_B_ASYM], axis=1)
     if not take_slack_vm_limits:
         slack_bus = min(net.ext_grid.bus.loc[net.ext_grid.in_service].tolist() + \
                         net.gen.bus.loc[net.gen.slack & net.gen.in_service].tolist())

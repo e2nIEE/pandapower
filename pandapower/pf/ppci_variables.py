@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-
+from pandapower.pypower.idx_brch import branch_cols
 # Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from pandapower.pypower.idx_bus import VM, VA
 from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, VG
 from pandapower.pypower.bustypes import bustypes
-from numpy import flatnonzero as find, pi, exp, int64
+from numpy import flatnonzero as find, pi, exp, int64, hstack, zeros, float64
 
 def _get_pf_variables_from_ppci(ppci):
     ## default arguments
@@ -17,6 +17,12 @@ def _get_pf_variables_from_ppci(ppci):
     # get data for calc
     baseMVA, bus, gen, branch, svc, tcsc, ssc = \
         ppci["baseMVA"], ppci["bus"], ppci["gen"], ppci["branch"], ppci["svc"], ppci["tcsc"], ppci["ssc"]
+
+    # if ppc["branch"] comes from the pypower -> pandapower converter, it has fewer columns than ppc in pandapower
+    # because it is lacking BR_R_ASYM, BR_X_ASYM, BR_G, BR_G_ASYM, BR_B_ASYM, and it is OK to use 0 as default values
+    br_shape = branch.shape
+    if br_shape[1] < branch_cols:
+        branch = hstack([branch, zeros(shape=(br_shape[0], branch_cols - br_shape[1]), dtype=float64)])
 
     ## get bus index lists of each type of bus
     ref, pv, pq = bustypes(bus, gen)
