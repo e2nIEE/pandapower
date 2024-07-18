@@ -43,6 +43,7 @@ Change Log
 - [FIXED] merge_nets failing if net2 has custom DataFrame that is not present in net1
 - [FIXED] fixed some small bugs in the CGMES converter and improved its speed
 - [ADDED] shunt components G and B for impedance elements
+- [ADDED] support for unequal leakage resistance and reactance for HV and LV sides of a 2W-transformer
 
 [2.14.7] - 2024-06-14
 -------------------------------

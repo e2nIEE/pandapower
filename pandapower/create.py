@@ -2861,6 +2861,10 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
 
         **tap2_phase_shifter** (bool) - whether the transformer is an ideal phase shifter*
 
+        **leakage_resistance_ratio_hv** (bool) - ratio of transformer short-circuit resistance on HV side (default 0.5)
+
+        **leakage_reactance_ratio_hv** (bool) - ratio of transformer short-circuit reactance on HV side (default 0.5)
+
         ** only considered in loadflow if calculate_voltage_angles = True
 
     OUTPUT:

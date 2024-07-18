@@ -838,6 +838,26 @@ def test_impedance_g_b():
     assert np.allclose(net.res_bus.va_degree, [0.000000, -0.814414], rtol=0, atol=1e-6)
 
 
+def test_trafo_unequal_r_x_hv_lv():
+    net = pp.create_empty_network(sn_mva=10)
+    pp.create_bus(net, 110)
+    pp.create_bus(net, 20)
+    pp.create_ext_grid(net, 0)
+    pp.create_transformer_from_parameters(net, 0, 1, 150, 120, 19,
+                                          1, 3, 20, 0.12, tap_side="hv",
+                                          tap_neutral=0, tap_max=2, tap_min=-2, tap_step_percent=5, tap_step_degree=30,
+                                          tap_pos=-2, leakage_resistance_ratio_hv=0.6, leakage_reactance_ratio_hv=0.2)
+    pp.create_load(net, 1, 100, 20)
+
+    runpp_with_consistency_checks(net)
+    assert np.allclose(net.res_bus.vm_pu, [1.000000, 0.941818], rtol=0, atol=1e-6)
+    assert np.allclose(net.res_bus.va_degree, [0.000000, 2.122982], rtol=0, atol=1e-6)
+    assert np.allclose(net.res_trafo.p_hv_mw, [100.725785], rtol=0, atol=1e-5)
+    assert np.allclose(net.res_trafo.q_hv_mvar, [22.173582], rtol=0, atol=1e-4)
+    assert np.allclose(net.res_trafo.p_lv_mw, [-99.999992], rtol=0, atol=1e-5)
+    assert np.allclose(net.res_trafo.q_lv_mvar, [-19.999978], rtol=0, atol=1e-4)
+
+
 if __name__ == "__main__":
     # pytest.main(["-xs"])
     test_impedance_g_b()
