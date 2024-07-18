@@ -728,15 +728,15 @@ def _calc_impedance_parameters_from_dataframe(net, zero_sequence=False):
     x_t = (xji * sn_factor) / sn_impedance * sn_net
     # todo sn_factor + formulas in general for g_f, b_f, g_t, b_t
     # 2 because Bcf, Bct is divided by 2 in makeYbus (maybe change?)
-    g_f = 2 * (gi * sn_factor) / sn_impedance * sn_net
-    b_f = 2 * (bi * sn_factor) / sn_impedance * sn_net
-    g_t = 2 * (gj * sn_factor) / sn_impedance * sn_net
-    b_t = 2 * (bj * sn_factor) / sn_impedance * sn_net
+    g_f = 2 * (gi * sn_factor) * sn_impedance / sn_net
+    b_f = 2 * (bi * sn_factor) * sn_impedance / sn_net
+    g_t = 2 * (gj * sn_factor) * sn_impedance / sn_net
+    b_t = 2 * (bj * sn_factor) * sn_impedance / sn_net
     r_asym = r_t - r_f
     x_asym = x_t - x_f
     g_asym = g_t - g_f
     b_asym = b_t - b_f
-    return r_f, x_f, r_asym, x_asym, gi, bi, g_asym, b_asym
+    return r_f, x_f, r_asym, x_asym, g_f, b_f, g_asym, b_asym
 
 
 def _calc_xward_parameter(net, ppc):
