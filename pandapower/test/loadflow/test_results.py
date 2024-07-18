@@ -821,9 +821,9 @@ def test_impedance_g_b():
     pp.create_ext_grid(net, 0)
     # pp.create_impedance(net, 0, 1, rft_pu=0.002, xft_pu=0.004, rtf_pu=0.005, xtf_pu=0.008,
     #                     gf_pu=0.001, bf_pu=0.003, gt_pu=0.006, bt_pu=0.007, sn_mva=10)
-    pp.create_impedance(net, 0, 1, rft_pu=0.002, xft_pu=0.004, rtf_pu=0.005, xtf_pu=0.008,
-                        gf_pu=0.001, bf_pu=0.003, gt_pu=None, bt_pu=None, sn_mva=10)
-    pp.create_load(net, 1, 20, 4)
+    pp.create_impedance(net, 0, 1, rft_pu=0.0, xft_pu=0.04, rtf_pu=None, xtf_pu=None,
+                        gf_pu=0.0, bf_pu=0.02, gt_pu=None, bt_pu=None, sn_mva=100)
+    # pp.create_load(net, 1, 20, 4)
 
     runpp_with_consistency_checks(net)
 
