@@ -2712,7 +2712,8 @@ def create_vac(net, item):
     except IndexError:
         logger.error("Cannot add VAC '%s': not connected" % item.loc_name)
         return
-
+    
+    in_service = monopolar_in_service(item)
     params = {
         'name': item.loc_name,
         'bus': bus,
@@ -2720,7 +2721,7 @@ def create_vac(net, item):
         'qs_mvar': item.Qload - item.Qgen,
         'pz_mw': item.Pzload,
         'qz_mvar': item.Qzload,
-        'in_service': not bool(item.outserv)
+        'in_service': in_service
     }
 
     if item.itype == 3:
@@ -2830,8 +2831,9 @@ def create_svc(net, item, pv_as_slack, pf_variable_p_gen, dict_net):
    
     logger.debug('creating sym %s as gen' % name)
     vm_pu = item.usetp
+    in_service = monopolar_in_service(item)
     sid = pp.create_gen(net, bus=bus1, p_mw=0, vm_pu=vm_pu,
-                        name=name, type="SVC", in_service=not bool(item.outserv))
+                        name=name, type="SVC", in_service=in_service)
     element = 'gen'
     
     if sid is None or element is None:
