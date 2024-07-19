@@ -357,15 +357,15 @@ def _wye_delta(r, x, g, b, r_ratio, x_ratio):
     zbc_triangle = zSum_triangle / za_star
     r[tidx] = zab_triangle.real
     x[tidx] = zab_triangle.imag
-    # 2 because in makeYbus Bcf, Bct are divided by 2 (maybe change it?)
-    yf = 2 / zac_triangle
-    yt = 2 / zbc_triangle
-    g[tidx] = yf.real
-    b[tidx] = yf.imag
+    yf = 1 / zac_triangle
+    yt = 1 / zbc_triangle
+    # 2 because in makeYbus Bcf, Bct are divided by 2:
+    g[tidx] = yf.real * 2
+    b[tidx] = yf.imag * 2
     g_asym = np.zeros_like(g)
     b_asym = np.zeros_like(b)
-    g_asym[tidx] = yt.real - g[tidx]
-    b_asym[tidx] = yt.imag - b[tidx]
+    g_asym[tidx] = 2 * yt.real - g[tidx]
+    b_asym[tidx] = 2 * yt.imag - b[tidx]
     return r, x, g, b, g_asym, b_asym
 
 
