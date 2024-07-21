@@ -3,6 +3,13 @@ Change Log
 
 [upcoming release] - 2024-..-..
 -------------------------------
+- [ADDED] low voltage grid Schutterwald
+- [FIXED] trafo3w with tap changer at star point corrected
+- [FIXED] namespace changes from numpy 2.0 release
+- [CHANGED] inf to np.full(...) with value inf for array operations in pypower folder
+- [CHANGED] node existence check for multiple branch elements from mixed array and set operations to set operations only
+- [FIXED] geopandas version
+- [FIXED] scipy version
 - [ADDED] DERController with multiple options to define DER reactive power provision depending on P and V
 - [ADDED] switch results p and q
 - [ADDED] PowerFactory converter: option to export lines with sections as a single line with averaged-out impedance, or export line sections as separate individual lines
@@ -31,7 +38,10 @@ Change Log
 - [FIXED] error during unbalanced powerflow due to out of service external grids
 - [FIXED] PowerFactory converter: fix trafo3w tap dependent impedance
 - [ADDED] PowerFactory converter: support load types (constI, constZ) and the setting whether to consider voltage dependency of loads
+- [CHANGED] vectorization of y_bus reordering in _calculate_equivalent_Ybus() within get_equivalent()
 - [FIXED] deprecation of matplotlib.cm.get_cmap(name) -> matplotlib.colormaps[name]
+- [FIXED] merge_nets failing if net2 has custom DataFrame that is not present in net1
+- [FIXED] fixed some small bugs in the CGMES converter and improved its speed
 
 [2.14.7] - 2024-06-14
 -------------------------------

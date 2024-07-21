@@ -304,7 +304,7 @@ class OutputWriter(JSONSerializableClass):
         # Saves NaNs to for the given time step.
         time_step_idx = self.time_step_lookup[self.time_step]
         for of in self.output_list:
-            self.output["Parameters"].loc[time_step_idx, of.__name__] = np.NaN
+            self.output["Parameters"].loc[time_step_idx, of.__name__] = np.nan
 
     def remove_log_variable(self, table, variable=None):
         """
