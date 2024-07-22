@@ -432,8 +432,8 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
                                                     vsc_mode_ac == VSC_MODE_AC_SL)
             J = J + J_m_vsc
         if any_branch_dc:
-            J_m_hvdc = create_J_modification_hvdc(J, V_dc, Ybus_hvdc, Ybus_vsc_dc, vsc_g_pu, dc_p, dc_p_lookup,
-                                                  vsc_dc_fb, vsc_dc_tb, vsc_dc_mode_v, vsc_dc_mode_p)
+            J_m_hvdc = create_J_modification_hvdc(J, V_dc, Ybus_hvdc, Ybus_vsc_dc, vsc_g_pu, vsc_gl_pu, dc_p,
+                                                  dc_p_lookup, vsc_dc_fb, vsc_dc_tb, vsc_dc_mode_v, vsc_dc_mode_p)
             J = J + J_m_hvdc
 
         dx = -1 * spsolve(J, F, permc_spec=permc_spec, use_umfpack=use_umfpack)

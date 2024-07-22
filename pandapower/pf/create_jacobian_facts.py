@@ -530,7 +530,8 @@ def create_J_modification_ssc_vsc(J, V, Vm, y_pu, f, t, pvpq, pq, pvpq_lookup, p
     return J_m
 
 
-def create_J_modification_hvdc(J, V_dc, Ybus_hvdc, Ybus_vsc_dc, vsc_g_pu, dc_p, dc_p_lookup, vsc_dc_fb, vsc_dc_tb, vsc_dc_slack, vsc_dc_mode_p):
+def create_J_modification_hvdc(J, V_dc, Ybus_hvdc, Ybus_vsc_dc, vsc_g_pu, vsc_gl_pu, dc_p, dc_p_lookup,
+                               vsc_dc_fb, vsc_dc_tb, vsc_dc_slack, vsc_dc_mode_p):
     # Calculate the first matrix for all elements
     J_all = (Ybus_hvdc - Ybus_vsc_dc).multiply(V_dc)
     # Calculate the second matrix for diagonal elements only
@@ -542,10 +543,12 @@ def create_J_modification_hvdc(J, V_dc, Ybus_hvdc, Ybus_vsc_dc, vsc_g_pu, dc_p, 
     # So effectively we achieve the same effect here as if we had the Ybus matrix,
     # except that we operate at the level of individual VSC still.
     # Only relevant when more than one VSC connected to the same bus.
-    P_Fii = V_dc[vsc_dc_fb] * vsc_g_pu
-    P_Fik = -V_dc[vsc_dc_fb] * vsc_g_pu
-    P_Fkk = V_dc[vsc_dc_tb] * vsc_g_pu
-    P_Fki = -V_dc[vsc_dc_tb] * vsc_g_pu
+    Vmf = V_dc[vsc_dc_fb]
+    Vmt = V_dc[vsc_dc_tb]
+    P_Fii = Vmf * (vsc_g_pu + vsc_gl_pu) * Vmf
+    P_Fik = -Vmf * vsc_g_pu * Vmt
+    P_Fkk = Vmt * vsc_g_pu * Vmt
+    P_Fki = -Vmt * vsc_g_pu * Vmf
 
     zero = SMALL_NUMBER * np.ones(shape=P_Fii.shape, dtype=np.float64)
     one = np.ones(shape=P_Fii.shape, dtype=np.float64)
@@ -555,9 +558,9 @@ def create_J_modification_hvdc(J, V_dc, Ybus_hvdc, Ybus_vsc_dc, vsc_g_pu, dc_p, 
     # data = np.r_[2 * P_Fii + P_Fik, P_Fik, np.where(vsc_dc_slack, one, P_Fki), np.where(vsc_dc_slack, zero, 2 * P_Fkk + P_Fki)]
     # data = np.r_[2 * P_Fii + P_Fik, P_Fik, np.where(vsc_dc_slack, one, 2 * P_Fii + P_Fik), np.where(vsc_dc_slack, zero, P_Fik)]
     # it depends on which power must be controlled, at internal node (AC slack mode) or at external node (DC P mode):
-    data = np.r_[2 * P_Fii + P_Fik, P_Fik,
-                 np.where(vsc_dc_slack, one, np.where(vsc_dc_mode_p, 2 * P_Fii + P_Fik, P_Fki)),
-                 np.where(vsc_dc_slack, zero, np.where(vsc_dc_mode_p, P_Fik, 2 * P_Fkk + P_Fki))]
+    data = np.r_[(2 * P_Fii + P_Fik) / Vmf, P_Fik / Vmt,
+                 np.where(vsc_dc_slack, one, np.where(vsc_dc_mode_p, (2 * P_Fii + P_Fik) / Vmf, P_Fki / Vmf)),
+                 np.where(vsc_dc_slack, zero, np.where(vsc_dc_mode_p, P_Fik / Vmt, (2 * P_Fkk + P_Fki) / Vmt))]
     # data = np.r_[P_Fik / V_dc[vsc_dc_fb], P_Fik / V_dc[vsc_dc_tb], np.where(vsc_dc_slack, one, P_Fki / V_dc[vsc_dc_fb]), np.where(vsc_dc_slack, zero, P_Fki / V_dc[vsc_dc_tb])]
     # data = np.r_[-Q_Fik[f_in_pvpq], Q_Fik[f_in_pvpq & t_in_pvpq], np.where(control_delta[f_in_pvpq & t_in_pvpq], one[f_in_pvpq & t_in_pvpq], Q_Fki[f_in_pvpq & t_in_pvpq]), np.where(control_delta[t_in_pvpq], zero[t_in_pvpq], -Q_Fki[t_in_pvpq])]
 
