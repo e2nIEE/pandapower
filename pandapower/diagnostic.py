@@ -8,6 +8,7 @@ import copy
 import pandas as pd
 import numpy as np
 import pandapower as pp
+from pandapower import replace_xward_by_ward
 
 try:
     import pandaplan.core.pplog as logging
@@ -545,12 +546,14 @@ def impedance_values_close_to_zero(net, min_r_ohm, min_x_ohm, min_r_pu, min_x_pu
     xward = net.xward[((net.xward.r_ohm.abs() <= min_r_ohm)
                       | (net.xward.x_ohm.abs() <= min_x_ohm)) & net.xward.in_service].index
 
-    # todo base impedance for ohm
-    impedance_z_base_ohm = 0
-    impedance = net.impedance[((net.impedance.rft_pu.abs() <= min_r_pu)
-                              | (net.impedance.xft_pu.abs() <= min_x_pu)
-                              | (net.impedance.rtf_pu.abs() <= min_r_pu)
-                              | (net.impedance.xtf_pu.abs() <= min_x_pu)) & net.impedance.in_service].index
+    impedance_z_base_ohm = np.square(np.max(net.bus.loc[net.impedance.from_bus.values, "vn_kv"],
+                                            net.bus.loc[net.impedance.to_bus.values, "vn_kv"])) / net.sn_mva
+    min_r_pu_impedance = min_r_ohm / impedance_z_base_ohm
+    min_x_pu_impedance = min_x_ohm / impedance_z_base_ohm
+    impedance = net.impedance[((net.impedance.rft_pu.abs() <= min_r_pu_impedance)
+                              | (net.impedance.xft_pu.abs() <= min_x_pu_impedance)
+                              | (net.impedance.rtf_pu.abs() <= min_r_pu_impedance)
+                              | (net.impedance.xtf_pu.abs() <= min_x_pu_impedance)) & net.impedance.in_service].index
     if len(line) > 0:
         implausible_elements['line'] = list(line)
     if len(xward) > 0:
@@ -563,25 +566,30 @@ def impedance_values_close_to_zero(net, min_r_ohm, min_x_ohm, min_r_pu, min_x_pu
         switch_copy = copy.deepcopy(net.switch)
         line_copy = copy.deepcopy(net.line)
         impedance_copy = copy.deepcopy(net.impedance)
+        ward_copy = copy.deepcopy(net.ward)
+        xward_copy = copy.deepcopy(net.xward)
         try:
             run(net)
-        except:
+        except LoadflowNotConverged:
             try:
                 for key in implausible_elements:
-                    if key == 'xward':
-                        continue
                     implausible_idx = implausible_elements[key]
                     net[key].loc[implausible_idx, "in_service"] = False
-                    for idx in implausible_idx:
-                        pp.create_switch(net, net[key].from_bus.at[idx], net[key].to_bus.at[idx], et="b")
+                    if key == 'xward':
+                        replace_xward_by_ward(net, implausible_idx)
+                    else:
+                        for idx in implausible_idx:
+                            pp.create_switch(net, net[key].from_bus.at[idx], net[key].to_bus.at[idx], et="b")
                 run(net)
                 switch_replacement = True
-            except:
+            except LoadflowNotConverged:
                 switch_replacement = False
             check_results.append({"loadflow_converges_with_switch_replacement": switch_replacement})
         net.switch = switch_copy
         net.line = line_copy
         net.impedance = impedance_copy
+        net.ward = ward_copy
+        net.xward = xward_copy
     if implausible_elements:
         return check_results
 

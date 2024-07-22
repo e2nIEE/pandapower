@@ -176,8 +176,25 @@ def calc(app, input_panel, entry_path_dst, entry_fname, pv_as_slack, export_cont
                           (net.line.x_ohm_per_km * net.line.length_km <= min_ohm))
 
             for i in net.line.loc[to_replace].index.values:
-                pp.toolbox.create_replacement_switch_for_branch(net, "line", i)
+                pp.create_replacement_switch_for_branch(net, "line", i)
                 net.line.at[i, "in_service"] = False
+
+            xward = net.xward[((net.xward.r_ohm.abs() <= min_ohm)
+                               | (net.xward.x_ohm.abs() <= min_ohm)) & net.xward.in_service].index
+            pp.replace_xward_by_ward(net, index=xward, drop=False)
+
+            impedance_z_base_ohm = np.square(np.max(net.bus.loc[net.impedance.from_bus.values, "vn_kv"],
+                                                    net.bus.loc[net.impedance.to_bus.values, "vn_kv"])) / net.sn_mva
+            min_r_pu_impedance = min_ohm / impedance_z_base_ohm
+            min_x_pu_impedance = min_ohm / impedance_z_base_ohm
+            impedance = net.impedance[((net.impedance.rft_pu.abs() <= min_r_pu_impedance)
+                                       | (net.impedance.xft_pu.abs() <= min_x_pu_impedance)
+                                       | (net.impedance.rtf_pu.abs() <= min_r_pu_impedance)
+                                       | (net.impedance.xtf_pu.abs() <= min_x_pu_impedance)) &
+                                      net.impedance.in_service].index
+            for i in net.impedance.loc[impedance].index.values:
+                pp.create_replacement_switch_for_branch(net, "impedance", i)
+                net.impedance.at[i, "in_service"] = False
 
         logger.info('saving file to: <%s>' % filepath)
         save_net(net, filepath, save_as())

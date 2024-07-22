@@ -14,7 +14,7 @@ from pandapower.auxiliary import pandapowerNet, _preserve_dtypes, ensure_iterabi
 from pandapower.std_types import change_std_type
 from pandapower.create import create_switch, create_line_from_parameters, \
     create_impedance, create_empty_network, create_gen, create_ext_grid, \
-    create_load, create_shunt, create_bus, create_sgen, create_storage
+    create_load, create_shunt, create_bus, create_sgen, create_storage, create_ward
 from pandapower.run import runpp
 from pandapower.toolbox.element_selection import branch_element_bus_dict, element_bus_tuples, pp_elements, \
     get_connected_elements, get_connected_elements_dict, next_bus
@@ -1734,3 +1734,52 @@ def replace_xward_by_internal_elements(net, xwards=None, set_xward_bus_limits=Fa
 
     # --- drop replaced wards
     drop_elements_simple(net, "xward", xwards)
+
+
+def replace_xward_by_ward(net, index=None, drop=True):
+    """
+    Replace xward elements by ward elements in the given grid model.
+    The series impedance component of xward is ignored and lost after the replacement.
+
+    This function replaces xward elements in a pandapower net with equivalent ward elements (sans series impedance).
+    The original xward elements can be dropped (default) or set out of service.
+
+    Parameters:
+    -----------
+    net : pandapowerNet
+        The pandapower grid containing the xward elements to be replaced.
+
+    index : int, list of int, or None, optional (default: None)
+        The index or list of indices of the xward elements to replace.
+        If None, all xward elements in the grid will be replaced.
+
+    drop : bool, optional (default: True)
+        If True, the original xward elements will be removed from the grid.
+        If False, the xward elements will be set out of service instead of being removed.
+
+    Returns:
+    --------
+    new_index : list of int
+        A list of indices of the newly created ward elements in the network.
+
+    Notes:
+    ------
+    The function ensures that the group membership and associated element type of the replaced
+    elements are updated accordingly.
+    """
+    index = list(ensure_iterability(index)) if index is not None else list(net.impedance.index)
+
+    new_index = []
+    for xi in index:
+        wi = create_ward(net, net.xward.at[xi, "bus"], net.xward.at[xi, "ps_mw"], net.xward.at[xi, "qs_mvar"],
+                         net.xward.at[xi, "pz_mw"], net.xward.at[xi, "qz_mvar"], net.xward.at[xi, "name"],
+                         net.xward.at[xi, "in_service"])
+        new_index.append(wi)
+
+    _replace_group_member_element_type(net, index, "xward", new_index, "ward",
+                                       detach_from_gr=False)
+    if drop:
+        drop_elements_simple(net, "xward", index)
+    else:
+        net.xward.loc[index, "in_service"] = False
+    return new_index
