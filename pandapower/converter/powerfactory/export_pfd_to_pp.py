@@ -13,7 +13,8 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def from_pfd(app, prj_name: str, path_dst=None, pv_as_slack=False, pf_variable_p_loads='plini',
+def from_pfd(app, prj_name: str, variant_name=None, scenario_name=None, path_dst=None, 
+             pv_as_slack=False, pf_variable_p_loads='plini',
              pf_variable_p_gen='pgini', flag_graphics='GPS', tap_opt='nntap',
              export_controller=True, handle_us="Deactivate", is_unbalanced=False, create_sections=True):
     """
@@ -44,6 +45,23 @@ def from_pfd(app, prj_name: str, path_dst=None, pv_as_slack=False, pf_variable_p
         raise RuntimeError('Project %s could not be found or activated' % prj_name)
 
     prj = app.GetActiveProject()
+    
+    if (variant_name is not None) and (scenario_name is not None):
+        variants_folder = app.GetProjectFolder('scheme')
+        variants = variants_folder.GetContents()
+        for variant in variants:
+            if variant.loc_name == variant_name:
+                break
+        # found variant and activate it
+        variant.Activate()
+    
+        scenario_name = "Ausbaustufe_test"
+        scenarios = variant.GetContents()
+        for scenario in scenarios:
+            if scenario.loc_name == scenario_name:
+                break
+        # found scenario and activate it
+        scenario.Activate()
 
     logger.info('gathering network elements')
     dict_net = create_network_dict(app, flag_graphics)
