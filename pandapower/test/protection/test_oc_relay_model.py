@@ -1,5 +1,5 @@
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import pytest
@@ -135,7 +135,7 @@ def test_oc_get_measurement_at_relay_location(sc_line_id=3, sc_location=0.3,  se
     # create sc for given line and location
     net_sc = create_sc_bus(net, sc_line_id, sc_location)
     sc.calc_sc(net_sc, bus=max(net_sc.bus.index), branch_results=True)
-    i_ka= oc.oc_get_measurement_at_relay_location(net_sc,settings=settings.iloc[0])
+    i_ka = oc.oc_get_measurement_at_relay_location(net_sc, settings=settings.iloc[0])
 
     assert np.isclose(i_ka, 2.410070123674386, rtol=0.001), 'I_ka at the given location should be within 0.001 kA relative tolerence with calculated value'
 

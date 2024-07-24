@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -41,7 +41,7 @@ def _get_branch_results(net, ppc, bus_lookup_aranged, pq_buses, suffix=None):
     _get_trafo3w_results(net, ppc, s_ft, i_ft, suffix=suffix)
     _get_impedance_results(net, ppc, i_ft, suffix=suffix)
     _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses, suffix=suffix)
-    _get_switch_results(net, i_ft, suffix=suffix)
+    _get_switch_results(net, ppc, i_ft, suffix=suffix)
     _get_tcsc_results(net, ppc, suffix=suffix)
 
 
@@ -341,7 +341,7 @@ def _get_trafo_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t
     if len(gap_trafo_index > 0):
         for i_trafo in gap_trafo_index:
             Iabc_sum = [0, 0, 0]
-            lv_bus = net.trafo.lv_bus[i_trafo]
+            lv_bus = net.trafo.lv_bus.iat[i_trafo]
             V_bus_abc = np.array([[net.res_bus_3ph['vm_a_pu'][lv_bus] * net.bus['vn_kv'][lv_bus]],
                                   [net.res_bus_3ph['vm_b_pu'][lv_bus] * net.bus['vn_kv'][lv_bus]],
                                   [net.res_bus_3ph['vm_c_pu'][lv_bus] * net.bus['vn_kv'][lv_bus]]])
@@ -670,7 +670,7 @@ def _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses, suffix=Non
     res_xward_df.index = net["xward"].index
 
 
-def _get_switch_results(net, i_ft, suffix=None):
+def _get_switch_results(net, ppc, i_ft, suffix=None):
     if len(net.switch) == 0:
         return
     res_switch_df = "res_switch" if suffix is None else "res_switch%s" % suffix
@@ -680,6 +680,18 @@ def _get_switch_results(net, i_ft, suffix=None):
         with np.errstate(invalid='ignore'):
             i_ka = np.max(i_ft[f:t], axis=1)
         net[res_switch_df].loc[net._impedance_bb_switches, "i_ka"] = i_ka
+
+        p_from_mw = ppc["branch"][f:t, PF].real
+        q_from_mvar = ppc["branch"][f:t, QF].real
+
+        p_to_mw = ppc["branch"][f:t, PT].real
+        q_to_mvar = ppc["branch"][f:t, QT].real
+
+        net[res_switch_df].loc[net._impedance_bb_switches,"p_from_mw"] = p_from_mw
+        net[res_switch_df].loc[net._impedance_bb_switches,"q_from_mvar"] = q_from_mvar
+        net[res_switch_df].loc[net._impedance_bb_switches,"p_to_mw"] = p_to_mw
+        net[res_switch_df].loc[net._impedance_bb_switches,"q_to_mvar"] = q_to_mvar
+
     _copy_switch_results_from_branches(net, suffix)
     if "in_ka" in net.switch.columns:
         net[res_switch_df]["loading_percent"] = net[res_switch_df]["i_ka"].values / net.switch["in_ka"].values * 100

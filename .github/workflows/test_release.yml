@@ -1,0 +1,66 @@
+# This workflow will create a Python package and upload it to testPyPi or PyPi
+# Then, it installs pandapower from there and all dependencies and runs tests with different Python versions
+
+name: test
+
+# Controls when the action will run.
+on:
+  # Allows you to run this workflow manually from the Actions tab
+  push:
+    branches:
+      - release/*
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        os:  [ ubuntu-latest, windows-latest ]
+        group: [ 1, 2 ]
+
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install pandapower & dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install igraph pytest-split seaborn matplotlib plotly geopandas ortools xlsxwriter openpyxl cryptography psycopg2 matpowercaseframes
+          pip install -e .
+
+      - name: Install specific dependencies (Windows)
+        if: matrix.os  == 'windows-latest'
+        run: |
+          if ( '${{ matrix.python-version }}'  -eq '3.9' ) { python -m pip install pypower }
+          if ( '${{ matrix.python-version }}'  -ne '3.9' ) { python -m pip install numba }
+          if ( '${{ matrix.python-version }}'  -eq '3.8' -or '${{ matrix.python-version }}'  -eq '3.10' ) { python -m pip install lightsim2grid }
+
+      - name: Install specific dependencies (Ubuntu)
+        if: matrix.os  == 'ubuntu-latest'
+        run: |
+          if ${{ matrix.python-version == '3.9' }}; then python -m pip install pypower; fi
+          if ${{ matrix.python-version != '3.9' }}; then python -m pip install numba; fi
+          if ${{ matrix.python-version == '3.8' || matrix.python-version == '3.10' }}; then python -m pip install lightsim2grid; fi
+
+#      - name: Install Julia
+#        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.9'
+#        run: |
+#          ./.install_julia.sh 1.8
+#          pip install julia
+#          python ./.install_pycall.py
+
+      - name: List all installed packages
+        run: |
+          pip list
+
+      - name: Test with pytest
+        run: |
+          pytest --splits 2 --group ${{ matrix.group }} --pyargs pandapower.test

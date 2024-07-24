@@ -75,7 +75,7 @@ body:
     validations:
       required: true
   - type: checkboxes
-    id: checks
+    id: label_checks
     attributes:
       label: Label
       description: Choose `labels` at the right side (e.g. `bug`, `controller`, `OPF`...).

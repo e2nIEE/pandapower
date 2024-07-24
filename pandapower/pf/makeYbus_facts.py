@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -15,6 +15,9 @@ def makeYbus_svc(Ybus, x_control_svc, svc_x_l_pu, svc_x_cvar_pu, svc_buses):
 
 
 def makeYbus_tcsc(Ybus, x_control_tcsc, tcsc_x_l_pu, tcsc_x_cvar_pu, tcsc_fb, tcsc_tb):
+    if len(x_control_tcsc) == 0:  # todo: this is a temporary fix for the performance issue - a proper fix is wip
+        return csr_matrix(Ybus.shape, dtype=np.float64)
+
     Ybus_tcsc = np.zeros(Ybus.shape, dtype=np.complex128)
     Y_TCSC = -1j * calc_y_svc_pu(x_control_tcsc, tcsc_x_l_pu, tcsc_x_cvar_pu)
 
@@ -29,6 +32,35 @@ def makeYbus_tcsc(Ybus, x_control_tcsc, tcsc_x_l_pu, tcsc_x_cvar_pu, tcsc_fb, tc
     Ybus_tcsc[np.diag_indices_from(Ybus_tcsc)] = -Ybus_tcsc.sum(axis=1)
 
     return csr_matrix(Ybus_tcsc)
+
+
+def makeYbus_ssc(Ybus, ssc_y_pu, ssc_fb, ssc_tb, any_ssc):
+    if not any_ssc:  # todo: this is a temporary fix for the performance issue - a proper fix is wip
+        return csr_matrix(Ybus.shape, dtype=np.float64)
+
+    Ybus_ssc = np.zeros(Ybus.shape, dtype=np.complex128)
+
+    if any_ssc:
+
+        # size_y = Ybus.shape[0]
+        # K_Y = vstack([eye(size_y, format="csr"),
+        #               csr_matrix((num_ssc, size_y))], format="csr")
+        # Ybus = K_Y * Ybus * K_Y.T  # this extends the Ybus matrix with 0-rows and 0-columns for the "q"-bus of SSC
+
+
+
+        # for y_tcsc_pu_i, i, j in zip(Y_TCSC, tcsc_fb, tcsc_tb):
+        #     Ybus_tcsc[i, i] += y_tcsc_pu_i
+        #     Ybus_tcsc[i, j] += -y_tcsc_pu_i
+        #     Ybus_tcsc[j, i] += -y_tcsc_pu_i
+        #     Ybus_tcsc[j, j] += y_tcsc_pu_i
+
+        Ybus_ssc[ssc_fb, ssc_fb] = ssc_y_pu
+        Ybus_ssc[ssc_fb, ssc_tb] = -ssc_y_pu
+        Ybus_ssc[ssc_tb, ssc_fb] = -ssc_y_pu
+        Ybus_ssc[ssc_tb, ssc_tb] = ssc_y_pu
+
+    return csr_matrix(Ybus_ssc)
 
 
 def makeYft_tcsc(Ybus_tcsc, tcsc_fb, tcsc_tb):

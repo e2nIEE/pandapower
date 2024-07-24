@@ -7,7 +7,7 @@
 
 import sys
 
-from numpy import linalg, conj, r_, Inf
+from numpy import linalg, conj, r_, inf
 
 from pandapower.pypower.ppoption import ppoption
 
@@ -61,7 +61,7 @@ def gausspf(Ybus, Sbus, V0, ref, pv, pq, ppopt=None):
              mis[pq].imag   ]
 
     ## check tolerance
-    normF = linalg.norm(F, Inf)
+    normF = linalg.norm(F, inf)
     if verbose > 1:
         sys.stdout.write('\n it    max P & Q mismatch (p.u.)')
         sys.stdout.write('\n----  ---------------------------')
@@ -98,7 +98,7 @@ def gausspf(Ybus, Sbus, V0, ref, pv, pq, ppopt=None):
                  mis[pq].imag  ]
 
         ## check for convergence
-        normF = linalg.norm(F, Inf)
+        normF = linalg.norm(F, inf)
         if verbose > 1:
             sys.stdout.write('\n%3d        %10.3e' % (i, normF))
         if normF < tol:

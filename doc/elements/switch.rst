@@ -55,3 +55,14 @@ Closed bus-element switches are ignored:
 	:width: 30em
 	:alt: alternate Text
 	:align: center
+
+
+Result Parameters
+==========================
+*net.res_switch*
+
+.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.40\linewidth}|
+.. csv-table::
+   :file: switch_res.csv
+   :delim: ;
+   :widths: 10, 10, 40

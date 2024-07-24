@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import pandapower as pp
@@ -194,9 +194,9 @@ def test_1ph_with_switches(inverse_y):
 
 def single_3w_trafo_grid(vector_group, sn_mva=123):
     net = pp.create_empty_network(sn_mva=sn_mva)
-    b1 = pp.create_bus(net, vn_kv=380.)
-    b2 = pp.create_bus(net, vn_kv=110.)
-    b3 = pp.create_bus(net, vn_kv=30.)
+    b1 = pp.create_bus(net, vn_kv=380., geodata=(1,1))
+    b2 = pp.create_bus(net, vn_kv=110., geodata=(0,1))
+    b3 = pp.create_bus(net, vn_kv=30., geodata=(1,0))
     pp.create_ext_grid(net, b1, s_sc_max_mva=1000, s_sc_min_mva=800,
                        rx_max=0.1, x0x_max=1, r0x0_max=0.1,
                        rx_min=0.1, x0x_min=1, r0x0_min=0.1)
@@ -312,8 +312,8 @@ def iec_60909_4_t1():
 def vde_232():
     net = pp.create_empty_network(sn_mva=12)
     # hv buses
-    pp.create_bus(net, 110)
-    pp.create_bus(net, 21)
+    pp.create_bus(net, 110, geodata=(0,0))
+    pp.create_bus(net, 21, geodata=(1,0))
 
     pp.create_ext_grid(net, 0, s_sc_max_mva=13.61213 * 110 * np.sqrt(3), rx_max=0.20328,
                        x0x_max=3.47927, r0x0_max=3.03361*0.20328/3.47927)

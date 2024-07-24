@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -25,8 +25,8 @@ def test_create_empty_network_with_transformer():
     assert len(net.bus.index) == 2
     assert len(net.trafo.index) == 1
     assert len(net.ext_grid.index) == 1
-    assert net.bus.vn_kv.loc[0] == v_os
-    assert net.bus.vn_kv.loc[1] == v_us
+    assert net.bus.loc[0, "vn_kv"] == v_os
+    assert net.bus.loc[1, "vn_kv"] == v_us
 
 
 def test_add_lines_and_loads():

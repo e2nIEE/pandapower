@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -117,13 +117,14 @@ def _calc_trafo3w_parameter(net, ppc):
     branch[f:t, TAP] = ratio
     branch[f:t, SHIFT] = shift
     branch[f:t, BR_STATUS] = in_service
-    if net["_options"]["mode"] == "opf":
-        if "max_loading_percent" in trafo_df:
-            max_load = get_trafo_values(trafo_df, "max_loading_percent")
-            sn_mva = get_trafo_values(trafo_df, "sn_mva")
-            branch[f:t, RATE_A] = max_load / 100. * sn_mva
-        else:
-            branch[f:t, RATE_A] = np.nan
+    # always set RATE_A for completeness
+    if "max_loading_percent" in trafo_df:
+        max_load = get_trafo_values(trafo_df, "max_loading_percent")
+        sn_mva = get_trafo_values(trafo_df, "sn_mva")
+        branch[f:t, RATE_A] = max_load / 100. * sn_mva
+    else:
+        # PowerModels considers "0" as "no limit" - we set the limit here to 0 for consistency with line and trafo
+        branch[f:t, RATE_A] = 0
 
 
 def _calc_line_parameter(net, ppc, elm="line", ppc_elm="branch"):
@@ -195,14 +196,14 @@ def _calc_line_parameter(net, ppc, elm="line", ppc_elm="branch"):
         branch[f:t, BR_B] = b - g * 1j
     # in service of lines
     branch[f:t, BR_STATUS] = line["in_service"].values
-    if net._options["mode"] == "opf":
-        # RATE_A is conisdered by the (PowerModels) OPF. If zero -> unlimited
-        max_load = line.max_loading_percent.values if "max_loading_percent" in line else 0.
-        vr = net.bus.loc[line["from_bus"].values, "vn_kv"].values * np.sqrt(3.)
-        max_i_ka = line.max_i_ka.values
-        df = line.df.values
-        # This calculates the maximum apparent power at 1.0 p.u.
-        branch[f:t, RATE_A] = max_load / 100. * max_i_ka * df * parallel * vr
+    # always set RATE_A for completeness:
+    # RATE_A is conisdered by the (PowerModels) OPF. If zero -> unlimited
+    max_load = line.max_loading_percent.values if "max_loading_percent" in line else 0.
+    vr = net.bus.loc[line["from_bus"].values, "vn_kv"].values * np.sqrt(3.)
+    max_i_ka = line.max_i_ka.values
+    df = line.df.values
+    # This calculates the maximum apparent power at 1.0 p.u.
+    branch[f:t, RATE_A] = max_load / 100. * max_i_ka * df * parallel * vr
 
 
 def _calc_trafo_parameter(net, ppc):
@@ -236,11 +237,11 @@ def _calc_trafo_parameter(net, ppc):
     if any(trafo.df.values <= 0):
         raise UserWarning("Rating factor df must be positive. Transformers with false "
                           "rating factors: %s" % trafo.query('df<=0').index.tolist())
-    if net._options["mode"] == "opf":
-        max_load = trafo.max_loading_percent.values if "max_loading_percent" in trafo else 0
-        sn_mva = trafo.sn_mva.values
-        df = trafo.df.values
-        branch[f:t, RATE_A] = max_load / 100. * sn_mva * df * parallel
+    # always set RATE_A for completeness
+    max_load = trafo.max_loading_percent.values if "max_loading_percent" in trafo else 0
+    sn_mva = trafo.sn_mva.values
+    df = trafo.df.values
+    branch[f:t, RATE_A] = max_load / 100. * sn_mva * df * parallel
 
 
 def get_trafo_values(trafo_df, par):
@@ -411,42 +412,45 @@ def _calc_tap_from_dataframe(net, trafo_df):
     if mode == "sc" and not net._options.get("use_pre_fault_voltage", False): # todo type c?
         return vnh, vnl, trafo_shift
 
-    tap_pos = get_trafo_values(trafo_df, "tap_pos")
-    tap_neutral = get_trafo_values(trafo_df, "tap_neutral")
-    tap_diff = tap_pos - tap_neutral
-    tap_phase_shifter = get_trafo_values(trafo_df, "tap_phase_shifter")
-    tap_side = get_trafo_values(trafo_df, "tap_side")
-    tap_step_percent = get_trafo_values(trafo_df, "tap_step_percent")
-    tap_step_degree = get_trafo_values(trafo_df, "tap_step_degree")
+    for t in ("", "2"):
+        if f"tap{t}_pos" not in trafo_df:
+            continue
+        tap_pos = get_trafo_values(trafo_df, f"tap{t}_pos")
+        tap_neutral = get_trafo_values(trafo_df, f"tap{t}_neutral")
+        tap_diff = tap_pos - tap_neutral
+        tap_phase_shifter = get_trafo_values(trafo_df, f"tap{t}_phase_shifter")
+        tap_side = get_trafo_values(trafo_df, f"tap{t}_side")
+        tap_step_percent = get_trafo_values(trafo_df, f"tap{t}_step_percent")
+        tap_step_degree = get_trafo_values(trafo_df, f"tap{t}_step_degree")
 
-    cos = lambda x: np.cos(np.deg2rad(x))
-    sin = lambda x: np.sin(np.deg2rad(x))
-    arctan = lambda x: np.rad2deg(np.arctan(x))
+        cos = lambda x: np.cos(np.deg2rad(x))
+        sin = lambda x: np.sin(np.deg2rad(x))
+        arctan = lambda x: np.rad2deg(np.arctan(x))
 
-    for side, vn, direction in [("hv", vnh, 1), ("lv", vnl, -1)]:
-        phase_shifters = tap_phase_shifter & (tap_side == side)
-        tap_complex = np.isfinite(tap_step_percent) & np.isfinite(tap_pos) & (tap_side == side) & \
-            ~phase_shifters
-        if tap_complex.any():
-            tap_steps = tap_step_percent[tap_complex] * tap_diff[tap_complex] / 100
-            tap_angles = _replace_nan(tap_step_degree[tap_complex])
-            u1 = vn[tap_complex]
-            du = u1 * _replace_nan(tap_steps)
-            vn[tap_complex] = np.sqrt((u1 + du * cos(tap_angles)) ** 2 + (du * sin(tap_angles)) ** 2)
-            trafo_shift[tap_complex] += (arctan(direction * du * sin(tap_angles) /
-                                                (u1 + du * cos(tap_angles))))
-        if phase_shifters.any():
-            degree_is_set = _replace_nan(tap_step_degree[phase_shifters]) != 0
-            percent_is_set = _replace_nan(tap_step_percent[phase_shifters]) != 0
-            if (degree_is_set & percent_is_set).any():
-                raise UserWarning(
-                    "Both tap_step_degree and tap_step_percent set for ideal phase shifter")
-            trafo_shift[phase_shifters] += np.where(
-                (degree_is_set),
-                (direction * tap_diff[phase_shifters] * tap_step_degree[phase_shifters]),
-                (direction * 2 * np.rad2deg(np.arcsin(tap_diff[phase_shifters] * \
-                                                      tap_step_percent[phase_shifters] / 100 / 2)))
-            )
+        for side, vn, direction in [("hv", vnh, 1), ("lv", vnl, -1)]:
+            phase_shifters = tap_phase_shifter & (tap_side == side)
+            tap_complex = np.isfinite(tap_step_percent) & np.isfinite(tap_pos) & (tap_side == side) & \
+                ~phase_shifters
+            if tap_complex.any():
+                tap_steps = tap_step_percent[tap_complex] * tap_diff[tap_complex] / 100
+                tap_angles = _replace_nan(tap_step_degree[tap_complex])
+                u1 = vn[tap_complex]
+                du = u1 * _replace_nan(tap_steps)
+                vn[tap_complex] = np.sqrt((u1 + du * cos(tap_angles)) ** 2 + (du * sin(tap_angles)) ** 2)
+                trafo_shift[tap_complex] += (arctan(direction * du * sin(tap_angles) /
+                                                    (u1 + du * cos(tap_angles))))
+            if phase_shifters.any():
+                degree_is_set = _replace_nan(tap_step_degree[phase_shifters]) != 0
+                percent_is_set = _replace_nan(tap_step_percent[phase_shifters]) != 0
+                if (degree_is_set & percent_is_set).any():
+                    raise UserWarning(
+                        "Both tap_step_degree and tap_step_percent set for ideal phase shifter")
+                trafo_shift[phase_shifters] += np.where(
+                    (degree_is_set),
+                    (direction * tap_diff[phase_shifters] * tap_step_degree[phase_shifters]),
+                    (direction * 2 * np.rad2deg(np.arcsin(tap_diff[phase_shifters] * \
+                                                          tap_step_percent[phase_shifters] / 100 / 2)))
+                )
     return vnh, vnl, trafo_shift
 
 
@@ -494,6 +498,7 @@ def _get_vk_values(trafo_df, characteristic, trafotype="2W"):
         # must cast to float64 unfortunately, because numpy.vstack casts arrays to object because it doesn't know pandas.NA, np.isnan fails
         all_characteristic_idx = np.vstack([get_trafo_values(
             trafo_df, f"{c}_characteristic").astype(np.float64) for c in char_columns]).T
+        index_column = {c: i for i, c in enumerate(char_columns)}
         # now we check if any trafos that have tap_dependent_impedance have all of the characteristics missing
         all_missing = np.isnan(all_characteristic_idx).all(axis=1) & tap_dependent_impedance
         if np.any(all_missing):
@@ -508,7 +513,7 @@ def _get_vk_values(trafo_df, characteristic, trafotype="2W"):
         if use_tap_dependent_impedance and vk_var in char_columns:
             vals += (_calc_tap_dependent_value(
                 trafo_df, tap_pos, vk_value, vk_var, tap_dependent_impedance,
-                characteristic, all_characteristic_idx[:, c]),)
+                characteristic, all_characteristic_idx[:, index_column[vk_var]]),)
         else:
             vals += (vk_value,)
 
@@ -979,9 +984,12 @@ def _trafo_df_from_trafo3w(net, sequence=1):
     trafo2 = dict()
     sides = ["hv", "mv", "lv"]
     mode = net._options["mode"]
-    loss_side = net._options["trafo3w_losses"].lower()
-    nr_trafos = len(net["trafo3w"])
     t3 = net["trafo3w"]
+    # todo check magnetizing impedance implementation:
+    #loss_side = net._options["trafo3w_losses"].lower()
+    loss_side = t3.loss_side.values if "loss_side" in t3.columns else np.full(len(t3),
+                                                                              net._options["trafo3w_losses"].lower())
+    nr_trafos = len(net["trafo3w"])
     if sequence==1:
         mode_tmp = "type_c" if mode == "sc" and net._options.get("use_pre_fault_voltage", False) else mode
         _calculate_sc_voltages_of_equivalent_transformers(t3, trafo2, mode_tmp, characteristic=net.get(
@@ -999,8 +1007,11 @@ def _trafo_df_from_trafo3w(net, sequence=1):
     trafo2["hv_bus"] = {"hv": t3.hv_bus.values, "mv": aux_buses, "lv": aux_buses}
     trafo2["lv_bus"] = {"hv": aux_buses, "mv": t3.mv_bus.values, "lv": t3.lv_bus.values}
     trafo2["in_service"] = {side: t3.in_service.values for side in sides}
-    trafo2["i0_percent"] = {side: t3.i0_percent.values if loss_side == side else zeros for side in sides}
-    trafo2["pfe_kw"] = {side: t3.pfe_kw.values if loss_side == side else zeros for side in sides}
+    # todo check magnetizing impedance implementation:
+    #trafo2["i0_percent"] = {side: t3.i0_percent.values if loss_side == side else zeros for side in sides}
+    #trafo2["pfe_kw"] = {side: t3.pfe_kw.values if loss_side == side else zeros for side in sides}
+    trafo2["i0_percent"] = {side: np.where(loss_side == side, t3.i0_percent.values, zeros) for side in sides}
+    trafo2["pfe_kw"] = {side: np.where(loss_side == side, t3.pfe_kw.values, zeros) for side in sides}
     trafo2["vn_hv_kv"] = {side: t3.vn_hv_kv.values for side in sides}
     trafo2["vn_lv_kv"] = {side: t3["vn_%s_kv" % side].values for side in sides}
     trafo2["shift_degree"] = {"hv": np.zeros(nr_trafos), "mv": t3.shift_mv_degree.values,
@@ -1008,7 +1019,7 @@ def _trafo_df_from_trafo3w(net, sequence=1):
     trafo2["tap_phase_shifter"] = {side: np.zeros(nr_trafos).astype(bool) for side in sides}
     trafo2["parallel"] = {side: np.ones(nr_trafos) for side in sides}
     trafo2["df"] = {side: np.ones(nr_trafos) for side in sides}
-    if net._options["mode"] == "opf" and "max_loading_percent" in net.trafo3w:
+    if "max_loading_percent" in net.trafo3w:
         trafo2["max_loading_percent"] = {side: net.trafo3w.max_loading_percent.values for side in sides}
     return {var: np.concatenate([trafo2[var][side] for side in sides]) for var in trafo2.keys()}
 
@@ -1100,8 +1111,12 @@ def _calculate_3w_tap_changers(t3, t2, sides):
         tap_arrays["tap_side"][side][tap_mask] = "hv" if side == "hv" else "lv"
 
         # t3 trafos with tap changer at star points
-        if any_at_star_point:
-            mask_star_point = tap_mask & at_star_point
+        if any_at_star_point & np.any(mask_star_point := (tap_mask & at_star_point)): 
+            t = tap_arrays["tap_step_percent"][side][mask_star_point] * np.exp(1j * np.deg2rad(tap_arrays["tap_step_degree"][side][mask_star_point]))
+            tap_pos = tap_arrays["tap_pos"][side][mask_star_point]
+            t_corrected = 100 * t / (100 + (t * tap_pos))
+            tap_arrays["tap_step_percent"][side][mask_star_point] = np.abs(t_corrected)
             tap_arrays["tap_side"][side][mask_star_point] = "lv" if side == "hv" else "hv"
-            tap_arrays["tap_step_degree"][side][mask_star_point] += 180
+            tap_arrays["tap_step_degree"][side][mask_star_point] = np.rad2deg(np.angle(t_corrected))
+            tap_arrays["tap_step_degree"][side][mask_star_point] -= 180
     t2.update(tap_arrays)

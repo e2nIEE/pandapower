@@ -7,8 +7,9 @@
 import pandas as pd
 
 from pandapower.plotting.generic_geodata import create_generic_coordinates
-from pandapower.plotting.plotly.traces import create_bus_trace, create_line_trace, version_check, \
-    create_scale_trace,  create_trafo_trace, draw_traces, _create_node_trace, _create_branch_trace
+from pandapower.plotting.plotly.traces import create_bus_trace, create_line_trace, \
+    create_dcline_trace, create_scale_trace,  create_trafo_trace, draw_traces, \
+    _create_node_trace, _create_branch_trace
 from pandapower.plotting.plotly.mapbox_plot import *
 
 try:
@@ -70,13 +71,13 @@ def get_hoverinfo(net, element, precision=3, sub_index=None):
     return hoverinfo
 
 
-def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=False,
-                  projection=None, map_style='basic', figsize=1.0, aspectratio='auto',
+def simple_plotly(net, respect_switches=True, use_line_geo=None, on_map=False,
+                  projection='epsg:4326', map_style='basic', figsize=1.0, aspectratio='auto',
                   line_width=1.0, bus_size=10.0, ext_grid_size=20.0,
                   bus_color="blue", line_color='grey', trafo_color='green',
                   trafo3w_color='green', ext_grid_color="yellow",
                   filename='temp-plot.html', auto_open=True, showlegend=True,
-                  additional_traces=None):
+                  additional_traces=None, zoomlevel=11, auto_draw_traces=True, hvdc_color='cyan'):
     """
     Plots a pandapower network as simple as possible in plotly.
     If no geodata is available, artificial geodata is generated. For advanced plotting see the tutorial
@@ -87,7 +88,7 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
     OPTIONAL:
         **respect_switches** (bool, True) - Respect switches when artificial geodata is created
 
-        **use_line_geodata** (bool, True) - defines if lines patches are based on
+        **use_line_geo** (bool, True) - defines if lines patches are based on
         net.line_geodata of the lines (True) or on net.bus_geodata of the connected buses (False)
 
         **on_map** (bool, False) - enables using mapbox plot in plotly.
@@ -134,6 +135,14 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
         **additional_traces** (list, None) - List with additional, user-created traces that will
         be appended to the simple_plotly traces before drawing all traces
 
+        **zoomlevel** (int, 11) - initial mapbox-zoomlevel on a map if `on_map=True`. Small
+        values = less zoom / larger area shown
+
+        **auto_draw_traces** (bool, True) - if True, a figure with the drawn traces is returned.
+        If False, the traces and a dict with settings is returned
+
+        **hvdc_color** (str, "cyan") - color for HVDC lines
+
     OUTPUT:
         **figure** (graph_objs._figure.Figure) figure object
     """
@@ -144,7 +153,7 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
     separator_element = "switch"
     traces, settings = _simple_plotly_generic(net=net,
                                               respect_separators=respect_switches,
-                                              use_branch_geodata=use_line_geodata,
+                                              use_branch_geodata=use_line_geo,
                                               on_map=on_map,
                                               projection=projection,
                                               map_style=map_style,
@@ -168,7 +177,9 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
                                               hoverinfo_func=get_hoverinfo,
                                               filename=filename,
                                               auto_open=auto_open,
-                                              showlegend=showlegend)
+                                              showlegend=showlegend,
+                                              zoomlevel=zoomlevel,
+                                              hvdc_color=hvdc_color)
     if additional_traces:
         if isinstance(additional_traces, dict):
             additional_traces = [additional_traces]
@@ -182,9 +193,10 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
                 shift += len(weighted_trace["meta"]["scale_marker_size"])
 
         traces.extend(additional_traces)
-
-    return draw_traces(traces, **settings)
-
+    if auto_draw_traces:
+        return draw_traces(traces, **settings)
+    else:
+        return traces, settings
 
 def _simple_plotly_generic(net, respect_separators, use_branch_geodata, on_map, projection, map_style,
                            figsize, aspectratio, branch_width, node_size, ext_grid_size, node_color,
@@ -192,20 +204,12 @@ def _simple_plotly_generic(net, respect_separators, use_branch_geodata, on_map, 
                            node_element, branch_element, trans_element, trans3w_element,
                            separator_element, branch_trace_func, node_trace_func,
                            hoverinfo_func, filename='temp-plot.html', auto_open=True,
-                           showlegend=True):
-    version_check()
+                           showlegend=True, zoomlevel=11, hvdc_color="cyan"):
     settings = dict(on_map=on_map, projection=projection, map_style=map_style, figsize=figsize,
                     aspectratio=aspectratio, filename=filename, auto_open=auto_open,
-                    showlegend=showlegend)
-    # create geocoord if none are available
-    branch_geodata = branch_element + "_geodata"
-    node_geodata = node_element + "_geodata"
+                    showlegend=showlegend, zoomlevel=zoomlevel)
 
-    if branch_geodata not in net:
-        net[branch_geodata] = pd.DataFrame(columns=['coords'])
-    if node_geodata not in net:
-        net[node_geodata] = pd.DataFrame(columns=["x", "y"])
-    if len(net[node_geodata]) == 0:
+    if len(net[node_element]["geo"].dropna()) == 0:
         logger.warning("No or insufficient geodata available --> Creating artificial coordinates." +
                        " This may take some time...")
         create_generic_coordinates(net, respect_switches=respect_separators)
@@ -213,19 +217,19 @@ def _simple_plotly_generic(net, respect_separators, use_branch_geodata, on_map, 
             logger.warning(
                 "Map plots not available with artificial coordinates and will be disabled!")
             on_map = False
-    # check if geodata are real geographycal lat/lon coordinates using geopy
+    # check if geodata are real geographical lat/lon coordinates using geopy
     if on_map and projection is not None:
         geo_data_to_latlong(net, projection=projection)
     # ----- Nodes (Buses) ------
-    # initializating node trace
+    # initializing node trace
     hoverinfo = hoverinfo_func(net, element=node_element)
     node_trace = node_trace_func(net, net[node_element].index, size=node_size, color=node_color,
                                     infofunc=hoverinfo)
     # ----- branches (Lines) ------
     # if node geodata is available, but no branch geodata
     if use_branch_geodata is None:
-        use_branch_geodata = False if len(net[branch_geodata]) == 0 else True
-    elif use_branch_geodata and len(net[branch_geodata]) == 0:
+        use_branch_geodata = False if len(net[branch_element]["geo"]) == 0 else True
+    elif use_branch_geodata and len(net[branch_element]["geo"]) == 0:
         logger.warning(
             "No or insufficient line geodata available --> only bus geodata will be used.")
         use_branch_geodata = False
@@ -237,19 +241,20 @@ def _simple_plotly_generic(net, respect_separators, use_branch_geodata, on_map, 
     trans_trace = []
     trans_trace3w = []
     ext_grid_trace = []
+    dc_line_trace = []
     # ----- Trafos ------
     if 'trafo' in net and len(net.trafo):
         hoverinfo = hoverinfo_func(net, element=trans_element)
         trans_trace = create_trafo_trace(net, color=trafo_color, width=branch_width * 5,
                                          infofunc=hoverinfo,
-                                         use_line_geodata=use_branch_geodata)
+                                         use_line_geo=use_branch_geodata)
     # ----- 3W Trafos ------
     if 'trafo3w' in net and len(net.trafo3w):
         hoverinfo = hoverinfo_func(net, element=trans3w_element)
         trans_trace3w = create_trafo_trace(net, color=trafo3w_color, trafotype='3W',
                                            width=branch_width * 5,
                                           trace_name='3W transformers', infofunc=hoverinfo,
-                                          use_line_geodata=use_branch_geodata)
+                                          use_line_geo=use_branch_geodata)
     # ----- Ext grid ------
     # get external grid from _create_node_trace
     if 'ext_grid' in net and len(net.ext_grid):
@@ -259,8 +264,12 @@ def _simple_plotly_generic(net, respect_separators, use_branch_geodata, on_map, 
                                             patch_type=marker_type, color=ext_grid_color,
                                             infofunc=hoverinfo, trace_name='external grid',
                                             node_element=node_element, branch_element=branch_element)
+    # ----- HVDC lines ------
+    if 'dcline' in net and len(net.dcline):
+        dc_line_trace = create_dcline_trace(net, color=hvdc_color)
 
-    return branch_traces + trans_trace + trans_trace3w + ext_grid_trace + node_trace, settings
+    return branch_traces + trans_trace + trans_trace3w + ext_grid_trace + node_trace + dc_line_trace,\
+           settings
 
 
 if __name__ == '__main__':

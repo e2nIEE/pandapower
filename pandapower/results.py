@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -141,7 +141,7 @@ def get_relevant_elements(mode="pf"):
         return ["bus", "line", "trafo", "trafo3w", "impedance", "ext_grid",
                 "load", "motor", "sgen", "storage", "shunt", "gen", "ward",
                 "xward", "dcline", "asymmetric_load", "asymmetric_sgen",
-                "switch", "tcsc", "svc"]
+                "switch", "tcsc", "svc", "ssc"]
     elif mode == "sc":
         return ["bus", "line", "trafo", "trafo3w", "ext_grid", "gen", "sgen", "switch"]
     elif mode == "se":
@@ -182,6 +182,7 @@ def _ppci_bus_to_ppc(result, ppc):
     ppc['bus'] = updated_bus
 
     ppc['svc'][result["internal"]['svc_is'], :] = result['svc'][:, :]
+    ppc['ssc'][result["internal"]['ssc_is'], :] = result['ssc'][:, :]
 
 
 def _ppci_branch_to_ppc(result, ppc):

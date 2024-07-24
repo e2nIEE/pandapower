@@ -185,3 +185,13 @@ The state estimation results are put into *net.res_line_est* with the same defin
    :file: line_res.csv
    :delim: ;
    :widths: 15, 10, 55
+
+*net.res_line_sc*
+
+The short-circuit (SC) results are put into *net.res_line_sc* with following definitions:
+
+.. tabularcolumns:: |p{0.15\linewidth}|p{0.10\linewidth}|p{0.55\linewidth}|
+.. csv-table:: 
+   :file: line_res_sc.csv
+   :delim: ;
+   :widths: 15, 10, 55

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -128,6 +128,9 @@ def element_power_consistent_with_bus_power(net, rtol=1e-2, test_q=True):
 
     for idx, tab in net.svc.iterrows():
         bus_q.at[tab.bus] += net.res_svc.q_mvar.at[idx]
+
+    for idx, tab in net.ssc.iterrows():
+        bus_q.at[tab.bus] += net.res_ssc.q_mvar.at[idx]
 
     assert allclose(net.res_bus.p_mw.values, bus_p.values, equal_nan=True, rtol=rtol)
     if test_q:

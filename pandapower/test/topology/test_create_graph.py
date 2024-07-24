@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from itertools import combinations
@@ -127,7 +127,7 @@ def test_trafo3w():
             assert set(mg.get_edge_data(f, t).keys()) == {("trafo3w", t1)}
             assert set(mg.nodes()) == set(net.bus.index)
 
-        net.trafo3w.in_service.at[t2] = True
+        net.trafo3w.at[t2, "in_service"] = True
         mg = create_nxgraph(net, library=library)
         for f, t in combinations([hv, mv, lv], 2):
             assert set(mg.get_edge_data(f, t).keys()) == {("trafo3w", t1), ("trafo3w", t2)}
@@ -142,7 +142,7 @@ def test_trafo3w():
                 else:
                     assert set(mg.get_edge_data(f, t).keys()) == {("trafo3w", t1), ("trafo3w", t2)}
                 assert set(mg.nodes()) == set(net.bus.index)
-            net.switch.closed.at[sw] = True
+            net.switch.at[sw, "closed"] = True
 
 
 def test_trafo3w_impedances(network_with_trafo3ws):
@@ -215,12 +215,12 @@ def test_bus_bus_switches():
         s = net.switch.index[0]
         f, t = net.switch.bus.iloc[0], net.switch.element.iloc[0]
 
-        net.switch.closed.at[s] = True
+        net.switch.at[s, "closed"] = True
         mg = create_nxgraph(net, library=library)
         assert set(mg.get_edge_data(f, t)) == {("switch", s)}
         assert set(mg.nodes()) == set(net.bus.index)
 
-        net.switch.closed.at[s] = False
+        net.switch.at[s, "closed"] = False
         mg = create_nxgraph(net, library=library)
         assert mg.get_edge_data(f, t) is None
         assert set(mg.nodes()) == set(net.bus.index)

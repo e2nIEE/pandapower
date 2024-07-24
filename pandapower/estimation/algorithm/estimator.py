@@ -4,12 +4,15 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
+from scipy.stats import chi2
+
+from pandapower.auxiliary import version_check
 try:
     from numba import jit
+    version_check('numba')
 except ImportError:
     from pandapower.pf.no_numba import jit
 
-from scipy.stats import chi2
 
 from pandapower.estimation.algorithm.matrix_base import BaseAlgebra
 from pandapower.estimation.ppc_conversion import ExtendedPPCI

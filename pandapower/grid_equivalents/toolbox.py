@@ -105,7 +105,7 @@ def set_bus_zone_by_boundary_branches(net, all_boundary_branches):
                     areas[-1] |= ccl.pop(i)
 
     for i, area in enumerate(areas):
-        net.bus.zone.loc[list(area)] = i
+        net.bus.loc[list(area), "zone"] = i
 
 
 def get_boundaries_by_bus_zone_with_boundary_branches(net):

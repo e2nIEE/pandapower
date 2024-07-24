@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -47,7 +47,7 @@ def test_0gen_2ext_grid():
     pp.create_ext_grid(net, 1)
     net.gen = net.gen.drop(0)
     net.trafo.shift_degree = 150
-    net.ext_grid.in_service.at[1] = False
+    net.ext_grid.at[1, "in_service"] = False
     pp.create_ext_grid(net, 3)
 
     pp.runpp(net, init='dc', calculate_voltage_angles=True)
@@ -68,9 +68,9 @@ def test_0gen_2ext_grid_decoupled():
     net.gen = net.gen.drop(0)
     net.shunt.q_mvar *= -1
     pp.create_ext_grid(net, 1)
-    net.ext_grid.in_service.at[1] = False
+    net.ext_grid.at[1, "in_service"] = False
     pp.create_ext_grid(net, 3)
-    net.ext_grid.in_service.at[2] = False
+    net.ext_grid.at[2, "in_service"] = False
     auxbus = pp.create_bus(net, name="bus1", vn_kv=10.)
     net.trafo.shift_degree = 150
     pp.create_std_type(net, {"type": "cs", "r_ohm_per_km": 0.876,  "q_mm2": 35.0,
@@ -225,8 +225,8 @@ def test_transformer_phase_shift():
     b2b_angle = net.res_bus.va_degree.at[4]
     b3b_angle = net.res_bus.va_degree.at[5]
 
-    net.trafo.tap_pos.at[0] = 1
-    net.trafo.tap_pos.at[2] = 1
+    net.trafo.at[0, "tap_pos"] = 1
+    net.trafo.at[2, "tap_pos"] = 1
     pp.runpp(net, init="dc", calculate_voltage_angles=True)
     assert np.isclose(b2a_angle - net.res_bus.va_degree.at[1], 10)
     assert np.isclose(b3a_angle - net.res_bus.va_degree.at[2], 10)
@@ -259,12 +259,12 @@ def test_transformer_phase_shift_complex():
         assert np.isclose(net.res_bus.vm_pu.at[b2], test_ref[0], rtol=1e-4)
         assert np.isclose(net.res_bus.va_degree.at[b2], test_ref[1], rtol=1e-4)
 
-        net.trafo.tap_pos.at[0] = 2
+        net.trafo.at[0, "tap_pos"] = 2
         pp.runpp(net, init="dc", calculate_voltage_angles=True)
         assert np.isclose(net.res_bus.vm_pu.at[b2], test_tap_pos[side][0], rtol=1e-4)
         assert np.isclose(net.res_bus.va_degree.at[b2], test_tap_pos[side][1], rtol=1e-4)
 
-        net.trafo.tap_pos.at[0] = -2
+        net.trafo.at[0, "tap_pos"] = -2
         pp.runpp(net, init="dc", calculate_voltage_angles=True)
         assert np.isclose(net.res_bus.vm_pu.at[b2], test_tap_neg[side][0], rtol=1e-4)
         assert np.isclose(net.res_bus.va_degree.at[b2], test_tap_neg[side][1], rtol=1e-4)
@@ -307,14 +307,14 @@ def test_transformer3w_phase_shift():
         assert np.isclose(net.res_bus.vm_pu.at[b3], test_ref[1][0], rtol=1e-4)
         assert np.isclose(net.res_bus.va_degree.at[b3], test_ref[1][1], rtol=1e-4)
 
-        net.trafo3w.tap_pos.at[0] = 2
+        net.trafo3w.at[0, "tap_pos"] = 2
         pp.runpp(net, init="dc", calculate_voltage_angles=True)
         assert np.isclose(net.res_bus.vm_pu.at[b2], test_tap_pos[side][0][0], rtol=1e-4)
         assert np.isclose(net.res_bus.va_degree.at[b2], test_tap_pos[side][0][1], rtol=1e-4)
         assert np.isclose(net.res_bus.vm_pu.at[b3], test_tap_pos[side][1][0], rtol=1e-4)
         assert np.isclose(net.res_bus.va_degree.at[b3], test_tap_pos[side][1][1], rtol=1e-4)
 
-        net.trafo3w.tap_pos.at[0] = -2
+        net.trafo3w.at[0, "tap_pos"] = -2
         pp.runpp(net, init="dc", calculate_voltage_angles=True)
         assert np.isclose(net.res_bus.vm_pu.at[b2], test_tap_neg[side][0][0], rtol=1e-4)
         assert np.isclose(net.res_bus.va_degree.at[b2], test_tap_neg[side][0][1], rtol=1e-4)
@@ -372,7 +372,7 @@ def test_two_oos_buses():
     assert net.res_line.loading_percent.at[l2] > 0
     assert np.isnan(net.res_line.loading_percent.at[l3])
 
-    net.line.drop(l2, inplace=True)
+    net.line = net.line.drop(l2)
     pp.runpp(net)
     assert net.res_line.loading_percent.at[l1] > 0
     assert np.isnan(net.res_line.loading_percent.at[l3])
@@ -434,7 +434,7 @@ def test_trafo3w_switches(network_with_trafo3ws):
     assert np.isnan(net.res_trafo3w.p_hv_mw.at[t3]) == 0
 
     # open switch at mv side - mv is disconnected, lv is connected
-    net.switch.bus.at[s1] = mv
+    net.switch.at[s1, "bus"] = mv
     runpp_with_consistency_checks(net)
 
     assert np.isnan(net.res_bus.vm_pu.at[mv])
@@ -444,7 +444,7 @@ def test_trafo3w_switches(network_with_trafo3ws):
     assert 0.490 < net.res_trafo3w.p_hv_mw.at[t3] < 0.510
 
     # open switch at lv side - lv is disconnected, mv is connected
-    net.switch.bus.at[s1] = lv
+    net.switch.at[s1, "bus"] = lv
     runpp_with_consistency_checks(net)
 
     assert np.isnan(net.res_bus.vm_pu.at[lv])
@@ -541,8 +541,8 @@ def test_switch_results():
     net = nw.simple_mv_open_ring_net()
     net.ext_grid["s_sc_max_mva"] = 1000
     net.ext_grid['rx_max'] = 0.1
-    
-    switch_trafo_hv = pp.create_switch(net, bus=0, element=0, et="t") 
+
+    switch_trafo_hv = pp.create_switch(net, bus=0, element=0, et="t")
     switch_trafo_lv = pp.create_switch(net, bus=1, element=0, et="t")
 
     closed_line_switch = 1
@@ -556,17 +556,17 @@ def test_switch_results():
     in_ka = 0.1
     pp.create_load(net, new_bus, p_mw=1.5)
     closed_bb_switch_impedance = pp.create_switch(net, bus=new_bus, element=4, et="b", z_ohm=0.1, in_ka=in_ka)
-    
+
     new_bus = pp.create_bus(net, vn_kv=20.0)
     pp.create_load(net, new_bus, p_mw=1.5)
     open_bb_switch = pp.create_switch(net, bus=new_bus, element=6, et="b", closed=False)
 
-    
+
     pp.runpp(net)
-    
+
     assert np.isclose(net.res_switch.i_ka.at[open_line_switch], 0)
     assert np.isclose(net.res_switch.i_ka.at[open_bb_switch], 0)
-    
+
     assert np.isnan(net.res_switch.i_ka.at[closed_bb_switch])
     assert np.isclose(net.res_switch.i_ka.at[closed_bb_switch_impedance], 0.04378035814760788)
     loading = net.res_switch.i_ka.at[closed_bb_switch_impedance] / in_ka * 100
@@ -574,7 +574,7 @@ def test_switch_results():
 
     line = net.switch.element.at[closed_line_switch]
     assert np.isclose(net.res_switch.i_ka.at[closed_line_switch], net.res_line.i_ka.at[line])
-    
+
     trafo = net.switch.element.at[switch_trafo_hv]
     assert np.isclose(net.res_switch.i_ka.at[switch_trafo_hv], abs(net.res_trafo.i_hv_ka.at[trafo]))
     assert np.isclose(net.res_switch.i_ka.at[switch_trafo_lv], abs(net.res_trafo.i_lv_ka.at[trafo]))
@@ -584,12 +584,12 @@ def test_switch_results():
 
     assert np.isclose(net.res_switch_sc.ikss_ka.at[open_line_switch], 0)
     assert np.isclose(net.res_switch_sc.ikss_ka.at[open_bb_switch], 0)
-    
+
     assert np.isnan(net.res_switch_sc.ikss_ka.at[closed_bb_switch])
     assert np.isclose(net.res_switch_sc.ikss_ka.at[closed_bb_switch_impedance], 4.555211220391998)
 
     assert np.isclose(net.res_switch_sc.ikss_ka.at[closed_line_switch], net.res_line_sc.ikss_ka.at[line])
-    
+
     assert np.isclose(net.res_switch_sc.ikss_ka.at[switch_trafo_hv], abs(net.res_trafo_sc.ikss_hv_ka.at[trafo]))
     assert np.isclose(net.res_switch_sc.ikss_ka.at[switch_trafo_lv], abs(net.res_trafo_sc.ikss_lv_ka.at[trafo]))
 

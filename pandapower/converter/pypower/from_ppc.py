@@ -171,8 +171,8 @@ def _from_ppc_gen(net, ppc):
     for is_, idx, et in zip([is_ext_grid, is_gen, is_sgen],
                             [idx_eg, idx_gen, idx_sgen],
                             ["ext_grid", "gen", "sgen"]):
-        gen_lookup["element"].loc[is_] = idx
-        gen_lookup["element_type"].loc[is_] = et
+        gen_lookup.loc[is_, "element"] = idx
+        gen_lookup.loc[is_, "element_type"] = et
     return gen_lookup
 
 
@@ -272,10 +272,10 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
 
     # branch_lookup: which branches are lines, and which ones are transformers
     branch_lookup = pd.DataFrame({"element": [-1] * n_bra, "element_type": [""] * n_bra})
-    branch_lookup["element"].loc[is_line] = idx_line
-    branch_lookup["element_type"].loc[is_line] = "line"
-    branch_lookup["element"].loc[~is_line] = idx_trafo
-    branch_lookup["element_type"].loc[~is_line] = "trafo"
+    branch_lookup.loc[is_line, "element"] = idx_line
+    branch_lookup.loc[is_line, "element_type"] = "line"
+    branch_lookup.loc[~is_line, "element"] = idx_trafo
+    branch_lookup.loc[~is_line, "element_type"] = "trafo"
     return branch_lookup
 
 

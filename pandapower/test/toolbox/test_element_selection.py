@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import pandas as pd
 import pytest
@@ -123,6 +123,16 @@ def test_get_connected_buses():
     assert list(pp.get_connected_buses(net, [bus4])) == []
 
 
+def test_get_connected_buses_at_switches():
+    net = pp.networks.example_multivoltage()
+    switches = [net.switch.index[net.switch.et == et][0] for et in "blt"]
+    expected = set(net.switch.loc[switches[0], ["bus", "element"]])
+    expected |= set(net.switch.loc[switches, "bus"])
+    expected |= set(net.line.loc[net.switch.at[switches[1], "element"], ["from_bus", "to_bus"]])
+    expected |= set(net.trafo.loc[net.switch.at[switches[1], "element"], ["hv_bus", "lv_bus"]])
+    assert not bool(len(expected - pp.toolbox.get_connected_buses_at_switches(net, switches)))
+
+
 def test_get_false_links():
     net = pp.create_empty_network()
     pp.create_buses(net, 6, 10, index=[0, 1, 3, 4, 6, 7])
@@ -130,7 +140,7 @@ def test_get_false_links():
     # --- gens
     pp.create_gens(net, [0, 1, 3], 5)
     # manipulate to not existing
-    net.gen.bus.at[1] = 999
+    net.gen.at[1, "bus"] = 999
 
     # --- sgens
     pp.create_sgens(net, [0, 1, 3], 5)
@@ -139,8 +149,8 @@ def test_get_false_links():
     for fbus, tbus in zip([0, 1, 4, 6, 7], [1, 4, 6, 7, 3]):
         pp.create_line(net, fbus, tbus, 2., "NA2XS2Y 1x185 RM/25 6/10 kV")
     # manipulate to not existing
-    net.line.from_bus.at[1] = 2
-    net.line.to_bus.at[4] = 999
+    net.line.at[1, "from_bus"] = 2
+    net.line.at[4, "to_bus"] = 999
 
     # --- measurements
     pp.create_measurement(net, "v", "bus", 1.01, 5, 1)
@@ -149,8 +159,8 @@ def test_get_false_links():
     pp.create_measurement(net, "v", "bus", 1.01, 5, 6)
     pp.create_measurement(net, "i", "line", 0.41, 1, 1, side="from")
     # manipulate to not existing
-    net.measurement.element.at[1] = 999
-    net.measurement.element.at[3] = 999
+    net.measurement.at[1, "element"] = 999
+    net.measurement.at[3, "element"] = 999
 
     # --- poly_cost
     pp.create_poly_cost(net, 0, "gen", 5)
@@ -158,8 +168,8 @@ def test_get_false_links():
     pp.create_poly_cost(net, 0, "sgen", 5)
     pp.create_poly_cost(net, 1, "sgen", 5)
     # manipulate to not existing
-    net.poly_cost.element.at[1] = 999
-    net.poly_cost.element.at[2] = 999
+    net.poly_cost.at[1, "element"] = 999
+    net.poly_cost.at[2, "element"] = 999
 
     expected = {"gen": {1},
                 "line": {1, 4},
@@ -220,4 +230,5 @@ def test_count_elements():
 
 
 if __name__ == '__main__':
-    pytest.main([__file__, "-x"])
+    # pytest.main([__file__, "-x"])
+    test_get_connected_buses_at_switches()

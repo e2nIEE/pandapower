@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -102,6 +102,7 @@ def _get_ext_grid_results(net, ppc):
 
     return b, p, q
 
+
 def _get_ext_grid_results_3ph(net, ppc0, ppc1, ppc2):
     # get results for external grids
     eg_is_mask = net["_is_elements"]['ext_grid']
@@ -124,7 +125,7 @@ def _get_ext_grid_results_3ph(net, ppc0, ppc1, ppc2):
                                    * ppc["gen"][eg_idx_ppc, QG]) \
                                     for ppc in [ppc0, ppc1, ppc2]])
 
-    Sabc, Vabc = SVabc_from_SV012(S012, V012/ np.sqrt(3), n_res=n_res_eg, idx=eg_idx_ppc)
+    Sabc, Vabc = SVabc_from_SV012(S012, V012 / np.sqrt(3), n_res=n_res_eg, idx=eg_idx_ppc)
 
     pA, pB, pC = map(lambda x: x.flatten(), np.real(Sabc))
     qA, qB, qC = map(lambda x: x.flatten(), np.imag(Sabc))

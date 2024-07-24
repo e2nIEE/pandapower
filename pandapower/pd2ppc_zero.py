@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 and Energy System Technology (IEE), Kassel. All rights reserved.
 
 """
@@ -11,7 +11,7 @@ import numpy as np
 from itertools import product
 
 import pandapower.auxiliary as aux
-from pandapower.build_bus import _build_bus_ppc, _build_svc_ppc
+from pandapower.build_bus import _build_bus_ppc, _build_svc_ppc, _build_ssc_ppc
 from pandapower.build_gen import _build_gen_ppc
 # from pandapower.pd2ppc import _ppc2ppci, _init_ppc
 from pandapower.pypower.idx_brch import BR_B, BR_R, BR_X, F_BUS, T_BUS, branch_cols, BR_STATUS, SHIFT, TAP, BR_R_ASYM, \
@@ -43,6 +43,7 @@ def _pd2ppc_zero(net, k_st, sequence=0):
     _build_gen_ppc(net, ppc)
     _build_svc_ppc(net, ppc, "sc")   # needed for shape reasons
     _build_tcsc_ppc(net, ppc, "sc")  # needed for shape reasons
+    _build_ssc_ppc(net, ppc, "sc")  # needed for shape reasons
     _add_gen_sc_impedance_zero(net, ppc)
     _add_ext_grid_sc_impedance_zero(net, ppc)
     _build_branch_ppc_zero(net, ppc, k_st)
@@ -391,7 +392,8 @@ def _add_ext_grid_sc_impedance_zero(net, ppc):
     else:
         case = "max"
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    eg = net["ext_grid"][net._is_elements["ext_grid"]]
+    is_egs = net._is_elements["ext_grid"]
+    eg = net["ext_grid"][is_egs]
     if len(eg) == 0:
         return
     eg_buses = eg.bus.values
@@ -419,12 +421,8 @@ def _add_ext_grid_sc_impedance_zero(net, ppc):
     eg["x"] = x_grid
 
     # ext_grid zero sequence impedance
-    if case == "max":
-        x0_grid = net.ext_grid["x0x_%s" % case].values * x_grid
-        r0_grid = net.ext_grid["r0x0_%s" % case].values * x0_grid
-    elif case == "min":
-        x0_grid = net.ext_grid["x0x_%s" % case].values * x_grid
-        r0_grid = net.ext_grid["r0x0_%s" % case].values * x0_grid
+    x0_grid = net.ext_grid[is_egs]["x0x_%s" % case].values * x_grid
+    r0_grid = net.ext_grid[is_egs]["r0x0_%s" % case].values * x0_grid
     y0_grid = 1 / (r0_grid + x0_grid*1j)
 
     buses, gs, bs = aux._sum_by_group(eg_buses_ppc, y0_grid.real, y0_grid.imag)

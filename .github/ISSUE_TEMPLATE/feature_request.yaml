@@ -17,7 +17,7 @@ body:
         - label: >
             Browse the repository, [tutorials](https://github.com/e2nIEE/pandapower/tree/develop/tutorials) and [tests](https://github.com/e2nIEE/pandapower/tree/develop/pandapower/test) for already existing functionalities
   - type: checkboxes
-    id: checks
+    id: feature_checks
     attributes:
       label: Feature Type
       description: Please check what type of feature request you would like to propose.
@@ -34,7 +34,6 @@ body:
       label: Problem Description
       description: >
         Please describe what problem the feature would solve.
-      placeholder: >
     validations:
       required: true
   - type: textarea
@@ -43,8 +42,6 @@ body:
       label: Feature Description
       description: >
         Please describe how the new feature would be implemented.
-      placeholder: >
-
     validations:
       required: true
   - type: textarea
@@ -55,7 +52,7 @@ body:
         Please provide any relevant GitHub issues, code examples or references that help describe and support
         the feature request.
   - type: checkboxes
-    id: checks
+    id: label_checks
     attributes:
       label: Label
       description: Choose `labels` at the right side (e.g. `bug`, `controller`, `OPF`...).

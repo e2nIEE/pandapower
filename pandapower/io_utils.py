@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
 import importlib
+import io
 import json
 import numbers
 import os
-import pickle
+import io
 import sys
 import types
 import weakref
@@ -21,9 +22,9 @@ import pandas.errors
 from deepdiff.diff import DeepDiff
 from packaging.version import Version
 from pandapower import __version__
-from pandapower.auxiliary import _preserve_dtypes
 import networkx
 import numpy
+import geojson
 import pandas as pd
 from networkx.readwrite import json_graph
 from numpy import ndarray, generic, equal, isnan, allclose, any as anynp
@@ -123,9 +124,13 @@ def to_dict_of_dfs(net, include_results=False, include_std_types=True, include_p
         elif item == "std_types":
             if not include_std_types:
                 continue
-            for t in net.std_types.keys():  # which are ["line", "trafo", "trafo3w"]
+            for t in net.std_types.keys():  # which are ["line", "trafo", "trafo3w", "fuse"]
                 if net.std_types[t]:  # avoid empty excel sheets for std_types if empty
-                    dodfs["%s_std_types" % t] = pd.DataFrame(net.std_types[t]).T
+                    type_df = pd.DataFrame(net.std_types[t]).T
+                    if t == "fuse":
+                        for c in type_df.columns:
+                            type_df[c] = type_df[c].apply(lambda x: str(x) if isinstance(x, list) else x)
+                    dodfs["%s_std_types" % t] = type_df
             continue
         elif item == "profiles":
             for t in net.profiles.keys():  # which could be e.g. "sgen", "gen", "load", ...
@@ -161,11 +166,16 @@ def to_dict_of_dfs(net, include_results=False, include_std_types=True, include_p
         elif "object" in value.columns:
             columns = [c for c in value.columns if c != "object"]
             tab = value[columns].copy()
-            tab["object"] = value["object"].apply(lambda x: json.dumps(x, cls=PPJSONEncoder,
-                                                                       indent=2))
+            tab["object"] = value["object"].apply(lambda x: json.dumps(x, cls=PPJSONEncoder, indent=2))
             tab = tab[value.columns]
             if "recycle" in tab.columns:
                 tab["recycle"] = tab["recycle"].apply(json.dumps)
+            dodfs[item] = tab
+        elif "geo" in value.columns:
+            columns = [c for c in value.columns if c != "geo"]
+            tab = value[columns].copy()
+            tab["geo"] = value["geo"].apply(lambda x: json.dumps(x, cls=PPJSONEncoder, indent=2))
+            tab = tab[value.columns]
             dodfs[item] = tab
         else:
             dodfs[item] = value
@@ -225,15 +235,21 @@ def from_dict_of_dfs(dodfs, net=None):
                     net[c] = ''
             continue
         elif item in ["line_geodata", "bus_geodata"]:
-            table.rename_axis(net[item].index.name, inplace=True)
-            df_to_coords(net, item, table)
+            pass
+        #    table = table.rename_axis(net[item].index.name)
+        #    df_to_coords(net, item, table)
         elif item.endswith("_std_types"):
+            # when loaded from Excel, the lists in the DataFrame cells are strings -> we want to convert them back
+            # to lists here. There is probably a better way to deal with it.
+            if item.startswith("fuse"):
+                for c in table.columns:
+                    table[c] = table[c].apply(lambda x: json.loads(x) if isinstance(x, str) and x.startswith("[") else x)
             net["std_types"][item[:-10]] = table.T.to_dict()
             continue  # don't go into try..except
         elif item.endswith("_profiles"):
             if "profiles" not in net.keys():
                 net["profiles"] = dict()
-            table.rename_axis(None, inplace=True)
+            table = table.rename_axis(None)
             net["profiles"][item[:-9]] = table
             continue  # don't go into try..except
         elif item == "user_pf_options":
@@ -245,13 +261,19 @@ def from_dict_of_dfs(dodfs, net=None):
                     table[json_column] = table[json_column].apply(
                         lambda x: json.loads(x, cls=PPJSONDecoder))
             if not isinstance(table.index, pd.MultiIndex):
-                table.rename_axis(net[item].index.name, inplace=True)
+                table = table.rename_axis(net[item].index.name)
             net[item] = table
+            # convert geodata to geojson
+            if item in ["bus", "line"]:
+                if "geo" in table.columns:
+                    table.geo = table.geo.apply(
+                        lambda x: geojson.loads(x, cls=PPJSONDecoder) if pd.notna(x) else x
+                    )
         # set the index to be Int
         try:
             net[item].set_index(net[item].index.astype(np.int64), inplace=True)
-        except TypeError:
-            # TypeError: if not int index (e.g. str)
+        except (TypeError, ValueError):
+            # TypeError or ValueError: if not int index (e.g. str)
             pass
     if "dtypes" in dodfs:
         restore_all_dtypes(net, dodfs["dtypes"])
@@ -293,10 +315,7 @@ def to_dict_with_coord_transform(net, point_geo_columns, line_geo_columns):
 
 def get_raw_data_from_pickle(filename):
     def read(f):
-        if sys.version_info >= (3, 0):
-            return pickle.load(f, encoding='latin1')
-        else:
-            return pickle.load(f)
+        return pd.read_pickle(f)
 
     if hasattr(filename, 'read'):
         net = read(filename)
@@ -368,8 +387,9 @@ def isinstance_partial(obj, cls):
 
 def check_net_version(net):
     if Version(net["format_version"]) > Version(__version__):
-        logger.warning("pandapowerNet-version is newer than your pandapower version. Please update"
-                       " pandapower `pip install --upgrade pandapower`.")
+        logger.warning(f"pandapowerNet-version ({net['format_version']}) is newer than your "
+                       f"pandapower version ({__version__}). Please update pandapower "
+                       "`pip install --upgrade pandapower`.")
 
 
 class PPJSONEncoder(json.JSONEncoder):
@@ -509,7 +529,11 @@ class FromSerializableRegistry():
         column_name = self.d.pop('column_name', None)
         column_names = self.d.pop('column_names', None)
 
-        df = pd.read_json(self.obj, precise_float=True, convert_axes=False, **self.d)
+        obj = self.obj
+        if type(obj) == str and (not os.path.isabs(obj) or not obj.endswith('.json')):
+            obj = io.StringIO(obj)
+
+        df = pd.read_json(obj, precise_float=True, convert_axes=False, **self.d)
 
         if not df.shape[0] or self.d.get("orient", False) == "columns":
             try:
@@ -556,6 +580,8 @@ class FromSerializableRegistry():
         for col in ('object', 'controller'):  # "controller" for backwards compatibility
             if (col in df.columns):
                 df[col] = df[col].apply(self.pp_hook)
+        if 'geo' in df.columns:
+            df['geo'] = df['geo'].dropna().apply(json.dumps).apply(geojson.loads)
         return df
 
     @from_serializable.register(class_name='pandapowerNet', module_name='pandapower.auxiliary')#,
@@ -1082,7 +1108,7 @@ def controller_to_serializable(obj):
 def mkdirs_if_not_existent(dir_to_create):
     already_exist = os.path.isdir(dir_to_create)
     os.makedirs(dir_to_create, exist_ok=True)
-    return ~already_exist
+    return not already_exist
 
 
 if SHAPELY_INSTALLED:

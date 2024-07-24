@@ -1,6 +1,6 @@
 import pandapower as pp
 from .echo_off import echo_off, echo_on
-from .logger_setup import setup_logger
+from .logger_setup import AppHandler, set_PF_level
 from .pf_export_functions import run_load_flow, create_network_dict
 from .pp_import_functions import from_pf
 from .run_import import choose_imp_dir, clear_dir, prj_dgs_import, prj_import
@@ -10,10 +10,12 @@ try:
 except ImportError:
     import logging
 
+logger = logging.getLogger(__name__)
+
 
 def from_pfd(app, prj_name: str, path_dst=None, pv_as_slack=False, pf_variable_p_loads='plini',
              pf_variable_p_gen='pgini', flag_graphics='GPS', tap_opt='nntap',
-             export_controller=True, handle_us="Deactivate", is_unbalanced=False):
+             export_controller=True, handle_us="Deactivate", is_unbalanced=False, create_sections=True):
     """
 
     Args:
@@ -48,10 +50,10 @@ def from_pfd(app, prj_name: str, path_dst=None, pv_as_slack=False, pf_variable_p
     pf_load_flow_failed = run_load_flow(app)
     logger.info('exporting network to pandapower')
     app.SetAttributeModeInternal(1)
-    net = from_pf(dict_net=dict_net, pv_as_slack=pv_as_slack,
-                  pf_variable_p_loads=pf_variable_p_loads,
-                  pf_variable_p_gen=pf_variable_p_gen, flag_graphics=flag_graphics,
-                  tap_opt=tap_opt, export_controller=export_controller, handle_us=handle_us, is_unbalanced=is_unbalanced)
+    net = from_pf(dict_net=dict_net, pv_as_slack=pv_as_slack, pf_variable_p_loads=pf_variable_p_loads,
+                  pf_variable_p_gen=pf_variable_p_gen, flag_graphics=flag_graphics, tap_opt=tap_opt,
+                  export_controller=export_controller, handle_us=handle_us, is_unbalanced=is_unbalanced,
+                  create_sections=create_sections)
     # save a flag, whether the PowerFactory load flow failed
     app.SetAttributeModeInternal(0)
     net["pf_converged"] = not pf_load_flow_failed
@@ -68,7 +70,7 @@ def from_pfd(app, prj_name: str, path_dst=None, pv_as_slack=False, pf_variable_p
 
 # experimental feature
 def execute(app, path_src, path_dst, pv_as_slack, scale_feeder_loads=False, var_load='plini',
-            var_gen='pgini', flag_graphics='GPS'):
+            var_gen='pgini', flag_graphics='GPS', create_sections=True):
     """
     Executes import of a .dgs file, runs load flow, and exports net as .p
     Args:
@@ -94,8 +96,8 @@ def execute(app, path_src, path_dst, pv_as_slack, scale_feeder_loads=False, var_
     run_load_flow(app, scale_feeder_loads, gen_scaling=0)
     logger.info('exporting network to pandapower')
     app.SetAttributeModeInternal(1)
-    net = from_pf(dict_net, pv_as_slack=pv_as_slack, pf_variable_p_loads=var_load,
-                  pf_variable_p_gen=var_gen, flag_graphics=flag_graphics)
+    net = from_pf(dict_net, pv_as_slack=pv_as_slack, pf_variable_p_loads=var_load, pf_variable_p_gen=var_gen,
+                  flag_graphics=flag_graphics, create_sections=create_sections)
     app.SetAttributeModeInternal(0)
 
     logger.info(net)
@@ -202,8 +204,9 @@ if __name__ == '__main__':
         import powerfactory as pf
 
         app = pf.GetApplication()
-        logger, appHandler = setup_logger(app, __name__, 'INFO')
+        app_handler = AppHandler(app, freeze_app_between_messages=True)
+        logger.addHandler(app_handler)
+        set_PF_level(logger, app_handler, 'INFO')
     except:
         pass
-else:
-    logger = logging.getLogger(__name__)
+

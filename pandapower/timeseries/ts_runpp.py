@@ -60,6 +60,7 @@ class TimeSeriesRunpp:
         gen = self.ppci["gen"]
         svc = self.ppci["svc"]
         tcsc = self.ppci["tcsc"]
+        ssc = self.ppci["ssc"]
         # compute complex bus power injections [generation - load]
         # self.Cg = _get_Cg(gen_on, bus)
         # Sbus = _get_Sbus(self.baseMVA, bus, gen, self.Cg)
@@ -79,7 +80,7 @@ class TimeSeriesRunpp:
         else:
             pfsoln = pfsoln_full
 
-        bus, gen, branch = pfsoln(self.baseMVA, bus, gen, branch, svc, tcsc, self.Ybus, self.Yf, self.Yt, V, self.ref,
+        bus, gen, branch = pfsoln(self.baseMVA, bus, gen, branch, svc, tcsc, ssc, self.Ybus, self.Yf, self.Yt, V, self.ref,
                                   self.ref_gens, Ibus=self.Ibus)
 
         self.ppci["bus"] = bus
@@ -235,7 +236,7 @@ class TimeSeriesRunpp:
 
         # update Ybus based on this
         options = net._options
-        baseMVA, bus, gen, branch, svc, tcsc, ref, pv, pq, _, _, V, _ = nr_pf._get_pf_variables_from_ppci(ppci)
+        baseMVA, bus, gen, branch, svc, tcsc, ssc, ref, pv, pq, _, _, V, _ = nr_pf._get_pf_variables_from_ppci(ppci)
         self.ppci, self.Ybus, self.Yf, self.Yt = nr_pf._get_Y_bus(ppci, options, nr_pf.makeYbus_numba, baseMVA, bus,
                                                                   branch)
 

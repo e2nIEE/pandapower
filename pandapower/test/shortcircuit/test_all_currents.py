@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -258,8 +258,8 @@ def test_with_permuted_index():
 def test_all_currents_with_oos_elements():
 
     net = three_bus_example()
-    net.bus.in_service.loc[2] = False
-    net.line.in_service.loc[1] = False
+    net.bus.loc[2, "in_service"] = False
+    net.line.loc[1, "in_service"] = False
     sc.calc_sc(net, case="max", branch_results=True, return_all_currents=True)
 
     assert np.allclose(net.res_line_sc.ikss_ka.loc[[(0, 0), (0, 1)]].values,
@@ -325,8 +325,8 @@ def add_aux_trafo(net, trafo_idx):
 @pytest.mark.parametrize("inverse_y", (True, False), ids=("Inverse Y", "LU factorization"))
 def test_branch_all_currents_trafo_simple_other_voltage3(inverse_y):
     net = net_transformer_simple_3()
-    net.trafo.vn_hv_kv.at[1] = 31
-    net.trafo.vn_hv_kv.at[2] = 11
+    net.trafo.at[1, "vn_hv_kv"] = 31
+    net.trafo.at[2, "vn_hv_kv"] = 11
 
     sc.calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=6, inverse_y=inverse_y)
 
@@ -350,8 +350,8 @@ def test_branch_all_currents_trafo_simple_other_voltage3(inverse_y):
     relevant = [i for i, c in enumerate(net.res_trafo_sc.columns) if not np.all(np.isnan(net.res_trafo_sc[c]))]
     assert np.allclose(net.res_trafo_sc.iloc[:, relevant].values, res_trafo_sc[:, relevant], rtol=0, atol=1e-6)
 
-    net.trafo.vn_hv_kv.at[1] = 29
-    net.trafo.vn_hv_kv.at[2] = 9
+    net.trafo.at[1, "vn_hv_kv"] = 29
+    net.trafo.at[2, "vn_hv_kv"] = 9
 
     sc.calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=6, inverse_y=inverse_y)
 
@@ -375,8 +375,8 @@ def test_branch_all_currents_trafo_simple_other_voltage3(inverse_y):
     relevant = [i for i, c in enumerate(net.res_trafo_sc.columns) if not np.all(np.isnan(net.res_trafo_sc[c]))]
     assert np.allclose(net.res_trafo_sc.iloc[:, relevant].values, res_trafo_sc[:, relevant], rtol=0, atol=1e-6)
 
-    net.trafo.vn_hv_kv.at[1] = 31
-    net.trafo.vn_hv_kv.at[2] = 11
+    net.trafo.at[1, "vn_hv_kv"] = 31
+    net.trafo.at[2, "vn_hv_kv"] = 11
 
     sc.calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=4, inverse_y=inverse_y)
     assert np.allclose(net.res_bus_sc.loc[4].values,
@@ -395,10 +395,10 @@ def test_branch_all_currents_trafo_simple_other_voltage3(inverse_y):
     relevant = [i for i, c in enumerate(net.res_trafo_sc.columns) if not np.all(np.isnan(net.res_trafo_sc[c]))]
     assert np.allclose(net.res_trafo_sc.iloc[:, relevant].values, res_trafo_sc[:, relevant], rtol=0, atol=1e-6)
 
-    net.trafo.vn_hv_kv.at[1] = 30
-    net.trafo.vn_hv_kv.at[2] = 10
-    net.trafo.vn_lv_kv.at[1] = 9
-    net.trafo.vn_lv_kv.at[2] = 0.42
+    net.trafo.at[1, "vn_hv_kv"] = 30
+    net.trafo.at[2, "vn_hv_kv"] = 10
+    net.trafo.at[1, "vn_lv_kv"] = 9
+    net.trafo.at[2, "vn_lv_kv"] = 0.42
 
     sc.calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=6, inverse_y=inverse_y)
 
@@ -427,8 +427,8 @@ def test_type_c_trafo_simple_other_voltage4(inverse_y):
     net = net_transformer_simple_4()
     net.sgen.in_service = False
 
-    # net.trafo.vn_hv_kv.at[1] = 31
-    net.trafo.vn_hv_kv.at[2] = 11
+    # net.trafo.at[1, "vn_hv_kv"] = 31
+    net.trafo.at[2, "vn_hv_kv"] = 11
 
     pp.runpp(net)
     sc.calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=6, use_pre_fault_voltage=True, inverse_y=inverse_y)
@@ -483,8 +483,8 @@ def test_type_c_trafo_simple_other_voltage4_sgen(inverse_y):
     pp.create_load(net, 7, 10, 3)
     pp.create_switch(net, 6, 4, 'l', False)
 
-    net.trafo.vn_hv_kv.at[1] = 31
-    net.trafo.vn_lv_kv.at[2] = 0.42
+    net.trafo.at[1, "vn_hv_kv"] = 31
+    net.trafo.at[2, "vn_lv_kv"] = 0.42
 
     pp.runpp(net)
     sc.calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=6, use_pre_fault_voltage=True,

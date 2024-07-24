@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
@@ -9,7 +9,7 @@ from pandapower.build_branch import _switch_branches, _branches_with_oos_buses, 
     _build_branch_ppc, _build_tcsc_ppc
 from pandapower.build_bus import _build_bus_ppc, _calc_pq_elements_and_add_on_ppc, \
     _calc_shunts_and_add_on_ppc, _add_ext_grid_sc_impedance, _add_motor_impedances_ppc, \
-    _build_svc_ppc, _add_load_sc_impedances_ppc
+    _build_svc_ppc, _add_load_sc_impedances_ppc, _build_ssc_ppc
 from pandapower.build_gen import _build_gen_ppc, _check_voltage_setpoints_at_same_bus, \
     _check_voltage_angles_at_same_bus, _check_for_reference_bus
 from pandapower.opf.make_objective import _make_objective
@@ -17,6 +17,7 @@ from pandapower.pypower.idx_area import PRICE_REF_BUS
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
 from pandapower.pypower.idx_bus import NONE, BUS_I, BUS_TYPE
 from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS
+from pandapower.pypower.idx_ssc import SSC_STATUS, SSC_BUS, SSC_INTERNAL_BUS
 from pandapower.pypower.idx_tcsc import TCSC_STATUS, TCSC_F_BUS, TCSC_T_BUS
 from pandapower.pypower.idx_svc import SVC_STATUS, SVC_BUS
 from pandapower.pypower.run_userfcn import run_userfcn
@@ -120,6 +121,7 @@ def _pd2ppc(net, sequence=None):
 
     _build_tcsc_ppc(net, ppc, mode)
     _build_svc_ppc(net, ppc, mode)
+    _build_ssc_ppc(net, ppc, mode)
 
     # Adds P and Q for loads / sgens in ppc['bus'] (PQ nodes)
     if mode == "sc":
@@ -190,6 +192,7 @@ def _init_ppc(net, mode="pf", sequence=None):
            "branch": np.array([], dtype=np.complex128),
            "tcsc": np.array([], dtype=np.complex128),
            "svc": np.array([], dtype=np.complex128),
+           "ssc": np.array([], dtype=np.complex128),
            "gen": np.array([], dtype=float),
            "internal": {
                "Ybus": np.array([], dtype=np.complex128),
@@ -269,6 +272,8 @@ def _ppc2ppci(ppc, net, ppci=None):
     # update branch, gen and areas bus numbering
     ppc['gen'][:, GEN_BUS] = e2i[np.real(ppc["gen"][:, GEN_BUS]).astype(np.int64)].copy()
     ppc['svc'][:, SVC_BUS] = e2i[np.real(ppc["svc"][:, SVC_BUS]).astype(np.int64)].copy()
+    ppc['ssc'][:, SSC_BUS] = e2i[np.real(ppc["ssc"][:, SSC_BUS]).astype(np.int64)].copy()
+    ppc['ssc'][:, SSC_INTERNAL_BUS] = e2i[np.real(ppc["ssc"][:, SSC_INTERNAL_BUS]).astype(np.int64)].copy()
     ppc["branch"][:, F_BUS] = e2i[np.real(ppc["branch"][:, F_BUS]).astype(np.int64)].copy()
     ppc["branch"][:, T_BUS] = e2i[np.real(ppc["branch"][:, T_BUS]).astype(np.int64)].copy()
     ppc["tcsc"][:, TCSC_F_BUS] = e2i[np.real(ppc["tcsc"][:, TCSC_F_BUS]).astype(np.int64)].copy()
@@ -301,6 +306,11 @@ def _ppc2ppci(ppc, net, ppci=None):
           bs[n2i[np.real(ppc["svc"][:, SVC_BUS]).astype(np.int64)]])
     ppci["internal"]["svc_is"] = svcs
 
+    sscs = ((ppc["ssc"][:, SSC_STATUS] > 0) &  # ssc status
+          bs[n2i[np.real(ppc["ssc"][:, SSC_BUS]).astype(np.int64)]] &
+          bs[n2i[np.real(ppc["ssc"][:, SSC_INTERNAL_BUS]).astype(np.int64)]])
+    ppci["internal"]["ssc_is"] = sscs
+
     brs = (np.real(ppc["branch"][:, BR_STATUS]).astype(np.int64) &  # branch status
            bs[n2i[np.real(ppc["branch"][:, F_BUS]).astype(np.int64)]] &
            bs[n2i[np.real(ppc["branch"][:, T_BUS]).astype(np.int64)]]).astype(bool)
@@ -322,6 +332,7 @@ def _ppc2ppci(ppc, net, ppci=None):
 
     ppci["gen"] = ppc["gen"][gs]
     ppci["svc"] = ppc["svc"][svcs]
+    ppci["ssc"] = ppc["ssc"][sscs]
 
     if 'dcline' in ppc:
         ppci['dcline'] = ppc['dcline']
