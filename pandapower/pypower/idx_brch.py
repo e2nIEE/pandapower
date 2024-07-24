@@ -64,7 +64,7 @@ F_BUS       = 0    # f, from bus number
 T_BUS       = 1    # t, to bus number
 BR_R        = 2    # r, resistance (p.u.)
 BR_X        = 3    # x, reactance (p.u.)
-BR_B        = 4    # g, total line charging conductance (p.u.)
+BR_B        = 4    # b, total line charging susceptance (p.u.)
 RATE_A      = 5    # rateA, MVA rating A (long term rating)
 RATE_B      = 6    # rateB, MVA rating B (short term rating)
 RATE_C      = 7    # rateC, MVA rating C (emergency rating)
@@ -89,7 +89,7 @@ MU_ANGMAX   = 20   # Kuhn-Tucker multiplier upper angle difference limit
 
 BR_R_ASYM = 21
 BR_X_ASYM = 22
-BR_G      = 23    # b, total line charging susceptance (p.u.)
+BR_G      = 23    # g, total line charging conductance (p.u.)
 BR_G_ASYM = 24
 BR_B_ASYM = 25
 
