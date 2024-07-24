@@ -35,6 +35,8 @@ def convert_format(net, elements_to_deserialize=None):
     _rename_columns(net, elements_to_deserialize)
     _add_missing_columns(net, elements_to_deserialize)
     _create_seperate_cost_tables(net, elements_to_deserialize)
+    if Version(str(net.format_version)) < Version("3.0.0"):
+        _convert_geo_data(net)
     if Version(str(net.format_version)) < Version("2.4.0"):
         _convert_bus_pq_meas_to_load_reference(net, elements_to_deserialize)
     if isinstance(net.format_version, float) and net.format_version < 2:  # Why only run if net.format_version is float?
@@ -53,6 +55,11 @@ def convert_format(net, elements_to_deserialize=None):
     net.version = __version__
     _restore_index_names(net)
     return net
+
+
+def _convert_geo_data(net):
+    if hasattr(net, 'bus_geodata') or hasattr(net, 'line_geodata'):
+        geo.convert_geodata_to_geojson(net)
 
 
 def _restore_index_names(net):
