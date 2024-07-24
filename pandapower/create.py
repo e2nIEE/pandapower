@@ -2262,6 +2262,12 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
         entries["g_us_per_km"] = [line_param_dict.get("g_us_per_km", 0) for line_param_dict in \
                                   lineparam]
         entries["type"] = [line_param_dict.get("type", None) for line_param_dict in lineparam]
+        try:
+            entries["r0_ohm_per_km"] = list(map(itemgetter("r0_ohm_per_km"), lineparam))
+            entries["x0_ohm_per_km"] = list(map(itemgetter("x0_ohm_per_km"), lineparam))
+            entries["c0_nf_per_km"] = list(map(itemgetter("c0_nf_per_km"), lineparam))
+        except:
+            pass
 
     _add_to_entries_if_not_nan(net, "line", entries, index, "max_loading_percent",
                                max_loading_percent)
