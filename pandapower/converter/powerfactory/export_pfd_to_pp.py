@@ -52,17 +52,25 @@ def from_pfd(app, prj_name: str, variant_name=None, scenario_name=None, path_dst
         for variant in variants:
             if variant.loc_name == variant_name:
                 break
+            else:
+                raise UserWarning(f"{variant_name} does not exist in PowerFactory.")
         # found variant and activate it
         variant.Activate()
     
-        scenario_name = "Ausbaustufe_test"
         scenarios = variant.GetContents()
         for scenario in scenarios:
             if scenario.loc_name == scenario_name:
                 break
+            else:
+                raise UserWarning(f"{scenario_name} does not exist in PowerFactory.")
         # found scenario and activate it
         scenario.Activate()
-
+    elif (variant_name is None) and (scenario_name is not None):
+        raise UserWarning(f"scenario_name {scenario_name} is chosen but no variant_name.")
+    elif (variant_name is not None) and (scenario_name is None): 
+        raise UserWarning(f"variant_name {variant_name} is chosen but no scenario_name.")
+        
+        
     logger.info('gathering network elements')
     dict_net = create_network_dict(app, flag_graphics)
     pf_load_flow_failed = run_load_flow(app)
