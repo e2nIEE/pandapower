@@ -2814,7 +2814,7 @@ def create_scap(net, item):
                      (net.impedance.at[scap, 'name'], scap))
         
 def create_svc(net, item, pv_as_slack, pf_variable_p_gen, dict_net):
-    # SVC is controlled and therefore modelled the same way as a voltage controlled synchron machine (gen)
+    # SVC is voltage controlled and therefore modelled the same way as a voltage controlled synchron machine (gen)
     # TODO: at least implement a uncontrolled svc as synchron machine with const. Q
     # TODO: transfer item entries for usage of pp.create_svc, x_l_ohm, x_cvar_ohm, 
     #       thyristor_firing_angle must be computed
@@ -2826,33 +2826,34 @@ def create_svc(net, item, pv_as_slack, pf_variable_p_gen, dict_net):
     try:
         bus1 = get_connection_nodes(net, item, 1)
     except IndexError:
-        logger.error("Cannot add Sgen '%s': not connected" % name)
+        logger.error("Cannot add SVC '%s': not connected" % name)
         return
-   
-    logger.debug('creating sym %s as gen' % name)
-    vm_pu = item.usetp
-    in_service = monopolar_in_service(item)
-    sid = pp.create_gen(net, bus=bus1, p_mw=0, vm_pu=vm_pu,
-                        name=name, type="SVC", in_service=in_service)
-    element = 'gen'
     
-    if sid is None or element is None:
-        logger.error('Error! SVC not created')
-    logger.debug('created svc at index <%s>' % sid)
-    
-    net[element].loc[sid, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    add_additional_attributes(item, net, element, sid, attr_dict={"for_name": "equipment"},
-                              attr_list=["sernum", "chr_name", "cpSite.loc_name"])
-    
-    if item.HasResults(0):  # 'm' results...
-        logger.debug('<%s> has results' % name)
-        net['res_' + element].at[sid, "pf_p"] = ga(item, 'm:P:bus1') #* multiplier
-        net['res_' + element].at[sid, "pf_q"] = ga(item, 'm:Q:bus1') #* multiplier
-    else:
-        net['res_' + element].at[sid, "pf_p"] = np.nan
-        net['res_' + element].at[sid, "pf_q"] = np.nan
-    
-    logger.info('not creating svc for %s' % item.loc_name)
+    if item.i_ctrl==1: # 0: no control, 1: voltage control, 2: reactive power control
+        logger.debug('creating SVC %s as gen' % name)
+        vm_pu = item.usetp
+        in_service = monopolar_in_service(item)
+        svc = pp.create_gen(net, bus=bus1, p_mw=0, vm_pu=vm_pu,
+                            name=name, type="SVC", in_service=in_service)
+        element = 'gen'
+        
+        if svc is None or element is None:
+            logger.error('Error! SVC not created')
+        logger.debug('created svc at index <%s>' % svc)
+        
+        net[element].loc[svc, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
+        add_additional_attributes(item, net, element, svc, attr_dict={"for_name": "equipment"},
+                                  attr_list=["sernum", "chr_name", "cpSite.loc_name"])
+        
+        if item.HasResults(0):  # 'm' results...
+            logger.debug('<%s> has results' % name)
+            net['res_' + element].at[svc, "pf_p"] = ga(item, 'm:P:bus1') #* multiplier
+            net['res_' + element].at[svc, "pf_q"] = ga(item, 'm:Q:bus1') #* multiplier
+        else:
+            net['res_' + element].at[svc, "pf_p"] = np.nan
+            net['res_' + element].at[svc, "pf_q"] = np.nan
+    else:    
+        logger.info('not creating SVC for %s' % item.loc_name)
 
 
 def split_line_at_length(net, line, length_pos):
