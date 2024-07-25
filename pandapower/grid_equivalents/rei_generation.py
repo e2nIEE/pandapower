@@ -687,15 +687,18 @@ def _replace_ext_area_by_impedances_and_shunts(
 def _integrate_power_elements_connected_with_switch_buses(net, net_external, all_external_buses):
     all_buses, bus_dict = get_connected_switch_buses_groups(net_external,
                                                             all_external_buses)
+    sgen = net.sgen[(net["sgen"].in_service == True) & ~((net["sgen"].p_mw==0) & (net["sgen"].q_mvar==0))]
+    load = net.load[(net["load"].in_service == True) & ~((net["load"].p_mw==0) & (net["load"].q_mvar==0))]
+    gen = net.gen[net["gen"].in_service == True]
+    
     for elm in ["sgen", "load", "gen"]:
         for bd in bus_dict:
-            if elm != "gen":
-                connected_elms = net[elm].index[(net[elm].bus.isin(bd)) &
-                                                (net[elm].in_service==True) &
-                                                ~((net[elm].p_mw==0) & (net[elm].q_mvar==0))]
+            if elm == "sgen":
+                connected_elms = sgen.index[sgen.bus.isin(bd)]
+            elif elm == "load":
+                connected_elms = load.index[load.bus.isin(bd)]
             else:
-                connected_elms = net[elm].index[(net[elm].bus.isin(bd)) &
-                                                (net[elm].in_service==True)]
+                connected_elms = gen.index[gen.bus.isin(bd)]
             if len(connected_elms) <= 1:
                 continue
             else:  # There ars some "external" elements connected with bus-bus switches.
