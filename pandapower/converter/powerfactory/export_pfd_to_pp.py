@@ -13,7 +13,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def from_pfd(app, prj_name: str, variant_name=None, scenario_name=None, path_dst=None, 
+def from_pfd(app, prj_name: str, variant_name=None, scenario_name=None, include_hidden_bus=True, path_dst=None, 
              pv_as_slack=False, pf_variable_p_loads='plini',
              pf_variable_p_gen='pgini', flag_graphics='GPS', tap_opt='nntap',
              export_controller=True, handle_us="Deactivate", is_unbalanced=False, create_sections=True):
@@ -72,7 +72,7 @@ def from_pfd(app, prj_name: str, variant_name=None, scenario_name=None, path_dst
         
         
     logger.info('gathering network elements')
-    dict_net = create_network_dict(app, flag_graphics)
+    dict_net = create_network_dict(app, include_hidden_bus, flag_graphics)
     pf_load_flow_failed = run_load_flow(app)
     logger.info('exporting network to pandapower')
     app.SetAttributeModeInternal(1)
