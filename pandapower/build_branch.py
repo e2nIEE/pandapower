@@ -721,7 +721,12 @@ def _calc_impedance_parameters_from_dataframe(net, zero_sequence=False):
     sn_factor = 3. if mode == 'pf_3ph' else 1.
     sn_impedance = impedance["sn_mva"].values
     sn_net = net.sn_mva
-
+    
+    # background for the sn_calculations in the next lines:
+      # r_ij_ohm = r_ij * v**2 / sn_impedance
+      # r_ij_pu_branch = r_ij_ohm / (v**2 / sn_net)
+      # r_ij_pu_branch = r_ij / sn_impedance / (1 / sn_net)
+    
     r_f = (rij * sn_factor) / sn_impedance * sn_net
     x_f = (xij * sn_factor) / sn_impedance * sn_net
     r_t = (rji * sn_factor) / sn_impedance * sn_net
