@@ -59,7 +59,7 @@ class SwitchesCim16:
         # now join with the terminals
         eqssh_switches = pd.merge(eqssh_switches, self.cimConverter.bus_merge, how='left', on='rdfId')
         eqssh_switches = eqssh_switches.sort_values(by=['rdfId', 'sequenceNumber'])
-        eqssh_switches.reset_index(inplace=True)
+        eqssh_switches = eqssh_switches.reset_index()
         # copy the columns which are needed to reduce the eqssh_switches to one line per switch
         eqssh_switches['rdfId_Terminal2'] = eqssh_switches['rdfId_Terminal'].copy()
         eqssh_switches['connected2'] = eqssh_switches['connected'].copy()
@@ -91,6 +91,9 @@ class SwitchesCim16:
                                        'rdfId_Terminal': sc['t_bus'], 'rdfId_Terminal2': sc['t_ele']})
         eqssh_switches['et'] = 'b'
         eqssh_switches['z_ohm'] = 0
+        if 'inService' not in eqssh_switches.columns:
+            eqssh_switches['inService'] = True
         if eqssh_switches.index.size > 0:
-            eqssh_switches['closed'] = ~eqssh_switches.open & eqssh_switches.connected & eqssh_switches.connected2
+            eqssh_switches['closed'] = (~eqssh_switches.open & eqssh_switches.connected & eqssh_switches.connected2
+                                        & eqssh_switches.inService)
         return eqssh_switches

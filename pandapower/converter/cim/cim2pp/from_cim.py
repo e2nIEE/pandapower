@@ -100,7 +100,8 @@ def from_cim(file_list: List[str] = None, encoding: str = 'utf-8', convert_line_
              repair_cim_class: Type[interfaces.CIMRepair] = None,
              repair_pp: Union[str, interfaces.PandapowerRepair] = None,
              repair_pp_class: Type[interfaces.PandapowerRepair] = None,
-             custom_converter_classes: Dict = None, **kwargs) -> \
+             custom_converter_classes: Dict = None,
+             cgmes_version: str = '2.4.15', **kwargs) -> \
         pandapower.auxiliary.pandapowerNet:
     """
     Convert a CIM net to a pandapower net from XML files.
@@ -132,11 +133,12 @@ def from_cim(file_list: List[str] = None, encoding: str = 'utf-8', convert_line_
     :param repair_pp: The PandapowerRepair object or a path to its serialized object. Optional, default: None
     :param repair_pp_class: The PandapowerRepair class. Optional, default: None
     :param custom_converter_classes: Dict to inject classes for different functionality. Optional, default: None
+    :param cgmes_version: The CGMES version of the files, can be 3.0 or 2.4.15. Optional, default: 2.4.15
     :return: The pandapower net.
     """
     time_start_parsing = time.time()
 
-    cim_parser = cim_classes.CimParser()
+    cim_parser = cim_classes.CimParser(cgmes_version=cgmes_version)
     cim_parser.parse_files(file_list=file_list, encoding=encoding, prepare_cim_net=True, set_data_types=True)
 
     time_start_converting = time.time()

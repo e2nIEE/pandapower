@@ -4,7 +4,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import logging
 import traceback
-from typing import Dict
+from typing import Dict, List
 
 import pandas as pd
 
@@ -38,7 +38,19 @@ class CimConverter:
         self.classes_dict = converter_classes
 
     def merge_eq_ssh_profile(self, cim_type: str, add_cim_type_column: bool = False) -> pd.DataFrame:
-        df = pd.merge(self.cim['eq'][cim_type], self.cim['ssh'][cim_type], how='left', on='rdfId')
+        return self.merge_eq_other_profiles(['ssh'], cim_type, add_cim_type_column)
+
+    def merge_eq_sc_profile(self, cim_type: str, add_cim_type_column: bool = False) -> pd.DataFrame:
+        return self.merge_eq_other_profiles(['sc'], cim_type, add_cim_type_column)
+
+    def merge_eq_other_profiles(self, other_profiles: List[str], cim_type: str,
+                                add_cim_type_column: bool = False) -> pd.DataFrame:
+        df = self.cim['eq'][cim_type]
+        for other_profile in other_profiles:
+            if cim_type not in self.cim[other_profile].keys():
+                self.logger.debug("No entries found in %s profile for cim object %s", other_profile, cim_type)
+                return self.cim['eq'][cim_type].copy()
+            df = pd.merge(df, self.cim[other_profile][cim_type], how='left', on='rdfId')
         if add_cim_type_column:
             df[sc['o_cl']] = cim_type
         return df
@@ -51,12 +63,9 @@ class CimConverter:
                 level=LogLevel.WARNING, code=ReportCode.WARNING_CONVERTING,
                 message="Missing pandapower type %s in the pandapower network!" % pp_type))
             return
-        start_index_pp_net = self.net[pp_type].index.size
-        self.net[pp_type] = pd.concat([self.net[pp_type], pd.DataFrame(None, index=[list(range(input_df.index.size))])],
+        self.net[pp_type] = pd.concat([self.net[pp_type],
+                                      input_df[list(set(self.net[pp_type].columns).intersection(input_df.columns))]],
                                       ignore_index=True, sort=False)
-        for one_attr in self.net[pp_type].columns:
-            if one_attr in input_df.columns:
-                self.net[pp_type][one_attr][start_index_pp_net:] = input_df[one_attr][:]
 
     # noinspection PyShadowingNames
     def convert_to_pp(self, convert_line_to_switch: bool = False, line_r_limit: float = 0.1,

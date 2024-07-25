@@ -11,7 +11,7 @@
 """Solves the power flow using a full Newton's method.
 """
 import numpy as np
-from numpy import float64, array, angle, sqrt, square, exp, linalg, conj, r_, Inf, arange, zeros, \
+from numpy import float64, array, angle, sqrt, square, exp, linalg, conj, r_, inf, arange, zeros, \
     max, zeros_like, column_stack, flatnonzero, nan_to_num
 from scipy.sparse import csr_matrix, eye, vstack
 from scipy.sparse.linalg import spsolve
@@ -481,5 +481,5 @@ def _evaluate_Fx_facts(V,pq ,svc_buses=None, svc_set_vm_pu=None, tcsc_controllab
 
 def _check_for_convergence(F, tol):
     # calc infinity norm
-    return linalg.norm(F, Inf) < tol
+    return linalg.norm(F, inf) < tol
 

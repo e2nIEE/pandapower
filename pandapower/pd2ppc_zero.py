@@ -392,7 +392,8 @@ def _add_ext_grid_sc_impedance_zero(net, ppc):
     else:
         case = "max"
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    eg = net["ext_grid"][net._is_elements["ext_grid"]]
+    is_egs = net._is_elements["ext_grid"]
+    eg = net["ext_grid"][is_egs]
     if len(eg) == 0:
         return
     eg_buses = eg.bus.values
@@ -420,12 +421,8 @@ def _add_ext_grid_sc_impedance_zero(net, ppc):
     eg["x"] = x_grid
 
     # ext_grid zero sequence impedance
-    if case == "max":
-        x0_grid = net.ext_grid["x0x_%s" % case].values * x_grid
-        r0_grid = net.ext_grid["r0x0_%s" % case].values * x0_grid
-    elif case == "min":
-        x0_grid = net.ext_grid["x0x_%s" % case].values * x_grid
-        r0_grid = net.ext_grid["r0x0_%s" % case].values * x0_grid
+    x0_grid = net.ext_grid[is_egs]["x0x_%s" % case].values * x_grid
+    r0_grid = net.ext_grid[is_egs]["r0x0_%s" % case].values * x0_grid
     y0_grid = 1 / (r0_grid + x0_grid*1j)
 
     buses, gs, bs = aux._sum_by_group(eg_buses_ppc, y0_grid.real, y0_grid.imag)

@@ -13,7 +13,8 @@ from pandapower.auxiliary import soft_dependency_error
 from pandapower.plotting.plotting_toolbox import get_collection_sizes
 from pandapower.plotting.collections import create_bus_collection, create_line_collection, \
     create_trafo_collection, create_trafo3w_collection, \
-    create_line_switch_collection, draw_collections, create_bus_bus_switch_collection, create_ext_grid_collection, create_sgen_collection, \
+    create_line_switch_collection, draw_collections, create_bus_bus_switch_collection, \
+    create_ext_grid_collection, create_sgen_collection, \
     create_gen_collection, create_load_collection, create_dcline_collection
 from pandapower.plotting.generic_geodata import create_generic_coordinates
 
@@ -26,7 +27,8 @@ logger = logging.getLogger(__name__)
 
 
 def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_grid_size=1.0,
-                trafo_size=1.0, plot_loads=False, plot_gens=False, plot_sgens=False, load_size=1.0, gen_size=1.0, sgen_size=1.0,
+                trafo_size=1.0, plot_loads=False, plot_gens=False, plot_sgens=False, load_size=1.0,
+                gen_size=1.0, sgen_size=1.0,
                 switch_size=2.0, switch_distance=1.0, plot_line_switches=False, scale_size=True,
                 bus_color='b', line_color='grey',  dcline_color='c', trafo_color='k',
                 ext_grid_color='y', switch_color='k', library='igraph', show_plot=True, ax=None):
@@ -107,7 +109,7 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
         respect_switches = False
 
     # create geocoord if none are available
-    if len(net.line.geo) == 0 and len(net.bus.geo) == 0:
+    if (len(net.line.geo) == 0 and len(net.bus.geo) == 0) or (net.line.geo.isna().any() and net.bus.geo.isna().any()):
         logger.warning("No or insufficient geodata available --> Creating artificial coordinates." +
                        " This may take some time")
         create_generic_coordinates(net, respect_switches=respect_switches, library=library)

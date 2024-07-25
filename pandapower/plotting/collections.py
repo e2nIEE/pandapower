@@ -39,7 +39,7 @@ except ImportError:
 from pandapower import pandapowerNet
 from pandapower.auxiliary import soft_dependency_error
 from pandapower.plotting.patch_makers import load_patches, node_patches, gen_patches, \
-    sgen_patches, ext_grid_patches, trafo_patches, storage_patches
+    sgen_patches, ext_grid_patches, trafo_patches, storage_patches, ward_patches, xward_patches
 from pandapower.plotting.plotting_toolbox import _rotate_dim2, coords_from_node_geodata, \
     position_on_busbar, get_index_array
 
@@ -517,18 +517,20 @@ def create_line_collection(net: pandapowerNet, lines=None,
     if len(lines) == 0:
         return None
 
-    line_geodata: Series[str] = line_geodata.loc[lines] if line_geodata is not None else net.line.geo.loc[lines]
+    line_geodata: Series[str] = line_geodata.loc[lines] if line_geodata is not None else \
+        net.line.geo.loc[lines]
     lines_without_geo = line_geodata.index[line_geodata.isna()]
 
     if use_bus_geodata or not lines_without_geo.empty:
         elem_indices = lines if use_bus_geodata else lines_without_geo
-        geos, line_index_successful = coords_from_node_geodata(element_indices=elem_indices,
-                                                               from_nodes=net.line.loc[elem_indices, 'from_bus'].values,
-                                                               to_nodes=net.line.loc[elem_indices, 'to_bus'].values,
-                                                               node_geodata=net.bus.geo,
-                                                               table_name="line",
-                                                               node_name="bus",
-                                                               ignore_zero_length=True)
+        geos, line_index_successful = coords_from_node_geodata(
+            element_indices=elem_indices,
+            from_nodes=net.line.loc[elem_indices, 'from_bus'].values,
+            to_nodes=net.line.loc[elem_indices, 'to_bus'].values,
+            node_geodata=net.bus.geo,
+            table_name="line",
+            node_name="bus",
+            ignore_zero_length=True)
 
         line_geodata = line_geodata.combine_first(pd.Series(geos, index=line_index_successful))
 
@@ -1313,7 +1315,7 @@ def create_line_switch_collection(net, switches=None, size=1, distance_to_bus=3,
 
 
 def create_bus_bus_switch_collection(net, size=1., helper_line_style=':', helper_line_size=1.,
-                                     helper_line_color="gray", **kwargs):
+                                     helper_line_color="gray", switches=None, **kwargs):
     """
     Creates a matplotlib patch collection of pandapower bus-bus switches. Switches are plotted in
     the center between two buses with a "helper" line (dashed and thin) being drawn between the
@@ -1335,6 +1337,8 @@ def create_bus_bus_switch_collection(net, size=1., helper_line_style=':', helper
         **helper_line_color** (string, "gray") - Line color of the "helper" line being plotted
         between two buses connected by a bus-bus switch
 
+        **switches** (list, []) - switches to include in the collection
+
         **kwargs - Key word arguments are passed to the patch function
 
     OUTPUT:
@@ -1342,7 +1346,9 @@ def create_bus_bus_switch_collection(net, size=1., helper_line_style=':', helper
     """
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
-    lbs_switches = net.switch.index[net.switch.et == "b"]
+    if switches is None:
+        switches = net.switch.index.to_list()
+    lbs_switches = net.switch.index[(net.switch.et == "b") & (net.switch.index.isin(switches))]
     color = kwargs.pop("color", "k")
     switch_patches = []
     line_patches = []
@@ -1377,6 +1383,101 @@ def create_bus_bus_switch_collection(net, size=1., helper_line_style=':', helper
     helper_lines = LineCollection(line_patches, linestyles=helper_line_style,
                                   linewidths=helper_line_size, colors=helper_line_color)
     return switches, helper_lines
+
+
+def create_ward_collection(net, wards=None, ward_buses=None, size=5., bus_geodata=None, infofunc=None, picker=False,
+                           orientation=0, **kwargs):
+    """
+    Creates a matplotlib patch collection of pandapower wards. Wards are plotted as a grounded impedance.
+
+    INPUT:
+        **net** (pandapowerNet) - The pandapower network
+
+    OPTIONAL:
+
+        **wards** (list of ints, None) - the wards to include in the collection
+
+        **ward_buses** (list of ints, None) - the buses connected to the wards
+
+        **size** (float, 1) - patch size
+
+        **infofunc** (function, None) - infofunction for the patch elem
+
+        **picker** (bool, False) - picker argument passed to the patch collectionent
+
+        **orientation** (float, np.pi) - orientation of static generator collection. pi is directed\
+        downwards, increasing values lead to clockwise direction changes.
+
+        **kwargs - key word arguments are passed to the patch function
+
+    OUTPUT:
+        **ward_pc** - patch collection
+
+        **ward_lc** - line collection
+    """
+    wards = get_index_array(wards, net.ward.index)
+    if ward_buses is None:
+        ward_buses = net.ward.bus.loc[wards].values
+    else:
+        assert len(wards) == len(ward_buses), \
+            "Length mismatch between chosen xwards and xward_buses."
+    infos = [infofunc(i) for i in range(len(wards))] if infofunc is not None else []
+    node_coords = net.bus.geo.loc[ward_buses].apply(geojson.loads).apply(geojson.utils.coords).apply(next).values.tolist()
+
+    color = kwargs.pop("color", "k")
+
+    ward_pc, ward_lc = _create_node_element_collection(
+        node_coords, ward_patches, size=size, infos=infos, orientation=orientation,
+        picker=picker, line_color=color, **kwargs) # patch_facecolor=color, patch_edgecolor=color
+    return ward_pc, ward_lc
+
+
+def create_xward_collection(net, xwards=None, xward_buses=None, size=5., bus_geodata=None, infofunc=None, picker=False,
+                            orientation=0, **kwargs):
+    """
+    Creates a matplotlib patch collection of pandapower xwards. Extended wards are plotted as a grounded impedance with
+    a generator.
+
+    INPUT:
+        **net** (pandapowerNet) - The pandapower network
+
+    OPTIONAL:
+
+        **xwards** (list of ints, None) - the wards to include in the collection
+
+        **xward_buses** (list of ints, None) - the buses connected to the wards
+
+        **size** (float, 1) - patch size
+
+        **infofunc** (function, None) - infofunction for the patch elem
+
+        **picker** (bool, False) - picker argument passed to the patch collectionent
+
+        **orientation** (float, np.pi) - orientation of static generator collection. pi is directed\
+        downwards, increasing values lead to clockwise direction changes.
+
+        **kwargs - key word arguments are passed to the patch function
+
+    OUTPUT:
+        **ward_pc** - patch collection
+
+        **ward_lc** - line collection
+    """
+    xwards = get_index_array(xwards, net.xward.index)
+    if xward_buses is None:
+        xward_buses = net.xward.bus.loc[xwards].values
+    else:
+        assert len(xwards) == len(xward_buses), \
+            "Length mismatch between chosen xwards and xward_buses."
+    infos = [infofunc(i) for i in range(len(xwards))] if infofunc is not None else []
+    node_coords = net.bus.geo.loc[xward_buses].apply(geojson.loads).apply(geojson.utils.coords).apply(next).values.tolist()
+
+    color = kwargs.pop("color", "w")
+
+    xward_pc, xward_lc = _create_node_element_collection(
+        node_coords, xward_patches, size=size, infos=infos, orientation=orientation,
+        picker=picker, line_color=color, **kwargs)
+    return xward_pc, xward_lc
 
 
 def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True, set_aspect=True,

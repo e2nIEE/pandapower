@@ -190,6 +190,28 @@ def test_merge_with_groups():
     assert list(pp.group_element_index(net, 4, "line")) == list(np.array([1, 3], dtype=np.int64) + \
         net1.line.shape[0])
 
+def test_merge_with_characteristics():
+    from pandapower.networks.simple_pandapower_test_networks import simple_four_bus_system
+    from pandapower.control.util.characteristic import Characteristic
+
+    # create two networks
+    net1 = simple_four_bus_system()
+    net2 = simple_four_bus_system()
+
+    # create two characteristic
+    Characteristic(net1, x_values=[0.85, 1.15], y_values=[5, 15])
+    Characteristic(net2, x_values=[0.95, 1.05], y_values=[10, 20])
+
+    # assign the characteristic ids to the trafos
+    net1.trafo.loc[:, "vk_percent_characteristic"] = 0
+    net2.trafo.loc[:, "vk_percent_characteristic"] = 0
+
+    # merge networks
+    merged, lookup = pp.merge_nets(net1, net2, validate=False, return_net2_reindex_lookup=True)
+
+    # The second transformer should have the second characteristic
+    assert merged.trafo.loc[1, "vk_percent_characteristic"] == 1
+
 
 def test_select_subnet():
     # This network has switches of type 'l' and 't'
@@ -847,8 +869,8 @@ def test_repl_to_line_with_switch():
                     pp.create_switch(net, bus=bus, element=REPL, closed=False, et="l", type="LBS")
 
             # calculate runpp with REPL
-            net.line.in_service[testindex] = False
-            net.line.in_service[REPL] = True
+            net.line.in_service.loc[testindex] = False
+            net.line.in_service.loc[REPL] = True
             pp.runpp(net)
 
             fbus_repl = net.res_bus.loc[fbus]
@@ -860,9 +882,9 @@ def test_repl_to_line_with_switch():
             # get ne line impedances
             new_idx = pp.repl_to_line(net, testindex, std, in_service=True)
             # activate new idx line
-            net.line.in_service[REPL] = False
-            net.line.in_service[testindex] = True
-            net.line.in_service[new_idx] = True
+            net.line.in_service.loc[REPL] = False
+            net.line.in_service.loc[testindex] = True
+            net.line.in_service.loc[new_idx] = True
             pp.runpp(net)
             # compare lf results
             fbus_ne = net.res_bus.loc[fbus]
@@ -880,9 +902,9 @@ def test_repl_to_line_with_switch():
             assert np.isclose(qloss_repl, qloss_ne)
 
             # and reset to unreinforced state again
-            net.line.in_service[testindex] = True
-            net.line.in_service[new_idx] = False
-            net.line.in_service[REPL] = False
+            net.line.in_service.loc[testindex] = True
+            net.line.in_service.loc[new_idx] = False
+            net.line.in_service.loc[REPL] = False
 
 
 def test_merge_parallel_line():

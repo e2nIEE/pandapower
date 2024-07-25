@@ -31,6 +31,8 @@ class NonConformLoadsCim16:
     def _prepare_non_conform_loads_cim16(self) -> pd.DataFrame:
         eqssh_non_conform_loads = self.cimConverter.merge_eq_ssh_profile('NonConformLoad', add_cim_type_column=True)
         eqssh_non_conform_loads = pd.merge(eqssh_non_conform_loads, self.cimConverter.bus_merge, how='left', on='rdfId')
+        if 'inService' in eqssh_non_conform_loads.columns:
+            eqssh_non_conform_loads['connected'] = eqssh_non_conform_loads['connected'] & eqssh_non_conform_loads['inService']
         eqssh_non_conform_loads = eqssh_non_conform_loads.rename(columns={'rdfId': sc['o_id'], 'rdfId_Terminal': sc['t'], 'index_bus': 'bus',
                                                 'connected': 'in_service', 'p': 'p_mw', 'q': 'q_mvar'})
         eqssh_non_conform_loads['const_i_percent'] = 0.

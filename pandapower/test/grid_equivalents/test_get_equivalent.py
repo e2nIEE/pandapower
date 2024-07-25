@@ -16,12 +16,6 @@ from pandapower.grid_equivalents.ward_generation import \
     create_passive_external_net_for_ward_admittance
 from pandapower.grid_equivalents.auxiliary import _runpp_except_voltage_angles
 
-try:
-    from misc.groups import Group
-    group_imported = True
-except ImportError:
-    group_imported = False
-
 
 def create_test_net():
     net = pp.create_empty_network()

@@ -48,7 +48,7 @@ class CoordinatesFromDLCim16:
                         'impedance', 'shunt', 'storage', 'ward', 'xward']:
             one_ele_df = self.cimConverter.net[one_ele][[sc['o_id']]]
             one_ele_df = pd.merge(dl_data, one_ele_df, how='inner', left_on='IdentifiedObject', right_on=sc['o_id'])
-            one_ele_df.sort_values(by=[sc['o_id'], 'sequenceNumber'], inplace=True)
+            one_ele_df = one_ele_df.sort_values(by=[sc['o_id'], 'sequenceNumber'])
             if one_ele != 'line' and one_ele != 'dcline' and one_ele != 'impedance':
                 # only one coordinate for each asset (except line and impedance)
                 one_ele_df = one_ele_df.drop_duplicates([sc['o_id']], keep='first')
@@ -60,7 +60,7 @@ class CoordinatesFromDLCim16:
                 for _, df_group in one_ele_df.groupby(by=sc['o_id']):
                     one_ele_df['coords'][df_group.index.values[0]] = df_group[
                         ['xPosition', 'yPosition']].values.tolist()
-                one_ele_df.drop_duplicates([sc['o_id']], keep='first', inplace=True)
+                one_ele_df = one_ele_df.drop_duplicates([sc['o_id']], keep='first')
                 one_ele_df['coords'] = one_ele_df['coords'].astype(str)
                 one_ele_df['diagram'] = '{"coordinates": '+one_ele_df['coords'].astype(str)+', "type": "LineString"}'
 

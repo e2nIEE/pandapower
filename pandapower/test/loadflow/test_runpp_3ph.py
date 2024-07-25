@@ -117,6 +117,14 @@ def test_out_serv_load(net):
     check_it(net)
 
 
+def test_2bus_network_one_of_two_ext_grids_oos(net):
+    """ Out of service ext_grids should not affect the unbalanced powerflow"""
+    pp.create_ext_grid(net, bus=1, vm_pu=1.0, s_sc_max_mva=5000, rx_max=0.1,
+                       r0x0_max=0.1, x0x_max=1.0, in_service=False)
+    pp.runpp_3ph(net)
+    assert net['converged']
+
+
 @pytest.mark.parametrize("init", ["auto", "results", "flat", "dc"])
 @pytest.mark.parametrize("recycle", [None, {"bus_pq": True, "Ybus": True}, {"bus_pq": True, "Ybus": False}])
 def test_4bus_network(init, recycle):
