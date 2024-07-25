@@ -57,7 +57,7 @@ def _build_branch_ppc(net, ppc):
         branch_sc = np.empty(shape=(length, branch_cols_sc), dtype=np.float64)
         branch_sc.fill(np.nan)
         ppc["branch"] = np.hstack((ppc["branch"], branch_sc))
-    ppc["branch"][:, :13] = np.array([0, 0, 0, 0, 0, 250, 250, 250, 1, 0, 1, -360, 360])
+    ppc["branch"][:, :13] = np.array([0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, -360, 360])
     if "line" in lookup:
         _calc_line_parameter(net, ppc)
     if "trafo" in lookup:
@@ -126,8 +126,8 @@ def _calc_trafo3w_parameter(net, ppc):
         sn_mva = get_trafo_values(trafo_df, "sn_mva")
         branch[f:t, RATE_A] = max_load / 100. * sn_mva
     else:
-        # PowerModels considers "0" as "no limit" - we set the limit here to 0 for consistency with line and trafo
-        branch[f:t, RATE_A] = 0
+        sn_mva = get_trafo_values(trafo_df, "sn_mva")
+        branch[f:t, RATE_A] = sn_mva
 
 
 def _calc_line_parameter(net, ppc, elm="line", ppc_elm="branch"):
@@ -203,6 +203,7 @@ def _calc_line_parameter(net, ppc, elm="line", ppc_elm="branch"):
     branch[f:t, BR_STATUS] = line["in_service"].values
     # always set RATE_A for completeness:
     # RATE_A is conisdered by the (PowerModels) OPF. If zero -> unlimited
+    # TODO: check why OPF test fails if 100 instead of 0
     max_load = line.max_loading_percent.values if "max_loading_percent" in line else 0.
     vr = net.bus.loc[line["from_bus"].values, "vn_kv"].values * np.sqrt(3.)
     max_i_ka = line.max_i_ka.values
@@ -246,7 +247,7 @@ def _calc_trafo_parameter(net, ppc):
         raise UserWarning("Rating factor df must be positive. Transformers with false "
                           "rating factors: %s" % trafo.query('df<=0').index.tolist())
     # always set RATE_A for completeness
-    max_load = trafo.max_loading_percent.values if "max_loading_percent" in trafo else 0
+    max_load = trafo.max_loading_percent.values if "max_loading_percent" in trafo else 100
     sn_mva = trafo.sn_mva.values
     df = trafo.df.values
     branch[f:t, RATE_A] = max_load / 100. * sn_mva * df * parallel
@@ -668,6 +669,7 @@ def _calc_impedance_parameter(net, ppc):
     branch[f:t, BR_B] = bi
     branch[f:t, BR_G_ASYM] = g_asym
     branch[f:t, BR_B_ASYM] = b_asym
+    branch[f:t, RATE_A] = net.impedance["sn_mva"].values
     branch[f:t, F_BUS] = bus_lookup[net.impedance["from_bus"].values]
     branch[f:t, T_BUS] = bus_lookup[net.impedance["to_bus"].values]
     branch[f:t, BR_STATUS] = net["impedance"]["in_service"].values
