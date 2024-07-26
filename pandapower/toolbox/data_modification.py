@@ -283,6 +283,17 @@ def reindex_elements(net, element_type, new_indices=None, old_indices=None, look
         reindex_buses(net, lookup)
         return
 
+    if element_type == "characteristic":
+        for old_id, new_id in lookup.items():
+            for ele in ['vk_percent_characteristic', 'vkr_percent_characteristic']:
+                if ele in net.trafo:
+                    net.trafo.loc[net.trafo[ele] == old_id, ele] = new_id
+
+            for ele in ['vk_hv_percent_characteristic', 'vkr_hv_percent_characteristic', 'vk_mv_percent_characteristic',
+                        'vkr_mv_percent_characteristic', 'vk_lv_percent_characteristic', 'vkr_lv_percent_characteristic']:
+                if ele in net.trafo3w:
+                    net.trafo3w.loc[net.trafo3w[ele] == old_id, ele] = new_id
+
     # --- reindex
     new_index = pd.Series(net[element_type].index, index=net[element_type].index)
     if element_type != "group":
