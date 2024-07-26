@@ -94,11 +94,6 @@ jobs:
           python -m pip install pytest-cov
           python -m pytest -n=auto --cov=./ --cov-report=xml --splits 2 --group ${{ matrix.group }}
           cp ./coverage.xml ./coverage-${{ matrix.group }}.xml
-      - name: Upload coverage as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-${{ matrix.group }}
-          path: ./coverage-${{ matrix.group }}.xml
   upload-coverage:
     runs-on: ubuntu-latest
     needs: build
