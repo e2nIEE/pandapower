@@ -1890,25 +1890,25 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
         # create...
         pstac = item.c_pstac  # "None" if station controller is not available
         if pstac is not None and export_ctrl:
-            #if pstac.i_droop:
-            #    av_mode = 'constq'
-            #else:
-            match pstac.i_ctrl:
-                case 0:
-                    av_mode = 'constv'
-                case 1:
-                    av_mode = 'constq'
-                case 2:
-                    av_mode = 'cosphi'
-                    logger.error('Error! av_mode cosphi not implemented')
-                    return
-                case 3:
-                    av_mode = 'tanphi'
-                    logger.error('Error! av_mode tanphi not implemented')
-                    return
-                case _:
-                    logger.error('Error! av_mode undefined')
-                    return
+            if pstac.i_droop:
+                av_mode = 'constq'
+            else:
+                match pstac.i_ctrl:
+                    case 0:
+                        av_mode = 'constq'
+                    case 1:
+                        av_mode = 'constq'
+                    case 2:
+                        av_mode = 'cosphi'
+                        logger.error('Error! av_mode cosphi not implemented')
+                        return
+                    case 3:
+                        av_mode = 'tanphi'
+                        logger.error('Error! av_mode tanphi not implemented')
+                        return
+                    case _:
+                        logger.error('Error! av_mode undefined')
+                        return
         if av_mode == 'constv':
             logger.debug('av_mode: %s - creating as gen' % av_mode)
             params.vm_pu = item.usetp
@@ -2102,22 +2102,22 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
         pstac = item.c_pstac
         # "None" if station controller is not available
         if pstac is not None and export_ctrl:
-            #if pstac.i_droop:
-            #    av_mode = 'constq'
-            #else:
-            i_ctrl = pstac.i_ctrl
-            if i_ctrl == 0:
-                av_mode = 'constv'
-            elif i_ctrl == 1:
+            if pstac.i_droop:
                 av_mode = 'constq'
-            elif i_ctrl == 2:
-                av_mode = 'cosphi'
-                logger.error('Error! avmode cosphi not implemented')
-                return
-            elif i_ctrl == 3:
-                av_mode = 'tanphi'
-                logger.error('Error! avmode tanphi not implemented')
-                return
+            else:
+                i_ctrl = pstac.i_ctrl
+                if i_ctrl == 0:
+                    av_mode = 'constq'
+                elif i_ctrl == 1:
+                    av_mode = 'constq'
+                elif i_ctrl == 2:
+                    av_mode = 'cosphi'
+                    logger.error('Error! avmode cosphi not implemented')
+                    return
+                elif i_ctrl == 3:
+                    av_mode = 'tanphi'
+                    logger.error('Error! avmode tanphi not implemented')
+                    return
 
         logger.debug('av_mode: %s' % av_mode)
         if av_mode == 'constv':
@@ -2882,19 +2882,19 @@ def create_stactrl(net, item):
 
     # Overwrite gen_type if local control differs from station controller type
     if control_mode is not None:
-        #if item.i_droop:
-        #    for i in range(len(gen_types)):
-        #        gen_types[i] = "sgen"
-        #else:
-        match control_mode:
-            case 0:
-                for i in range(len(gen_types)):
-                    gen_types[i] = "gen"
-            case 1:
-                for i in range(len(gen_types)):
-                    gen_types[i] = "sgen"
-            case _:
-                print("station control type not supported!")
+        if item.i_droop:
+            for i in range(len(gen_types)):
+                gen_types[i] = "sgen"
+        else:
+            match control_mode:
+                case 0:
+                    for i in range(len(gen_types)):
+                        gen_types[i] = "sgen"
+                case 1:
+                    for i in range(len(gen_types)):
+                        gen_types[i] = "sgen"
+                case _:
+                    print("station control type not supported!")
 
     gen_element = gen_types[0]
     gen_element_index = []
@@ -2978,6 +2978,7 @@ def create_stactrl(net, item):
             return
     elif control_mode == 0:
         print("voltage control")
+        res_element_table = "res_bus"
 
     input_busses = []
     output_busses = []
@@ -3006,11 +3007,12 @@ def create_stactrl(net, item):
     for n in range(len(input_busses)):
         for m in range(len(output_busses)):
             has_path = has_path or nx.has_path(top, input_busses[n], output_busses[m])
-    if has_path is False:
+    if not has_path and not control_mode == 0 and not item.i_droop:
         return
 
     if control_mode == 0:  #### VOLTAGE CONTROL
-        controlled_node = item.rembar
+        #controlled_node = item.rembar
+        controlled_node = item.cpCtrlNode
         bus = bus_dict[controlled_node]  # controlled node
 
         if item.uset_mode == 0:  #### Station controller

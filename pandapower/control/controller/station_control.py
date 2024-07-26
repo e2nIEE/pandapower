@@ -52,7 +52,10 @@ class BinarySearchControl(Controller):
                 case "res_switch":
                     #print("switch")
                     #print([net[input_element].pf_in_service[self.input_element_index[i]]])
-                    self.input_element_in_service.append(net[self.input_element].pf_in_service[self.input_element_index[i]])
+                    self.input_element_in_service.append(
+                        net[self.input_element].pf_in_service[self.input_element_index[i]])
+                case "res_bus":
+                    self.input_element_in_service.append(net.bus.in_service[self.input_element_index[i]])
             if isinstance(input_variable, list):
                 read_flag_temp, input_variable_temp = _detect_read_write_flag(net, self.input_element,
                                                                               self.input_element_index[i],
@@ -78,7 +81,6 @@ class BinarySearchControl(Controller):
         self.in_service = net.controller.in_service[self.index]
         if not self.in_service:
             return True
-        # if output_element or input_element not in_service, return True
         self.input_element_in_service.clear()
         self.output_element_in_service.clear()
         for i in range(len(self.input_element_index)):
@@ -88,7 +90,9 @@ class BinarySearchControl(Controller):
                 case "res_trafo":
                     self.input_element_in_service.append(net.trafo.in_service[self.input_element_index[i]])
                 case "res_switch":
-                    self.input_element_in_service.append(True)#net[self.input_element].pf_in_service[self.input_element_index[i]])
+                    self.input_element_in_service.append(net.switch.closed[self.input_element_index[i]])
+                case "res_bus":
+                    self.input_element_in_service.append(net.bus.in_service[self.input_element_index[i]])
         for i in range(len(self.output_element_index)):
             match self.output_element:
                 case "gen":
@@ -98,7 +102,6 @@ class BinarySearchControl(Controller):
         # check if at least one input and one output element is in_service
         if not (any(self.input_element_in_service) and any(self.output_element_in_service)):
             converged = True
-            # all(self.input_element_in_service) and not all(self.output_element_in_service)):
             print("Either Input or Output Element not in Service!")
             return converged
         # read input values
@@ -172,33 +175,33 @@ class DroopControl(Controller):
         self.vm_pu_old = self.vm_pu
         self.vm_pu = read_from_net(net, "res_bus", self.bus_idx, "vm_pu", self.read_flag)
         delta = 0
-        if not self.voltage_control:
-            if self.vm_pu_old is not None:
-                delta = self.vm_pu - self.vm_pu_old
-            if self.lb_voltage is not None and self.ub_voltage is not None:
-                match self.vm_pu:
-                    case self.vm_pu if self.vm_pu > self.ub_voltage:
-                        self.q_set_old_mvar, self.q_set_mvar = (
-                            self.q_set_mvar, -(self.ub_voltage - self.vm_pu) * self.q_droop_mvar)
-                    case  self.vm_pu if self.vm_pu < self.lb_voltage:
-                        self.q_set_old_mvar, self.q_set_mvar = (
-                            self.q_set_mvar, -(self.lb_voltage - self.vm_pu) * self.q_droop_mvar)
-            else:
-                self.q_set_old_mvar, self.q_set_mvar = self.q_set_mvar, (self.vm_pu - self.vm_set_pu) * self.q_droop_mvar
-            net.controller.at[self.controller_idx, "object"].set_point = self.q_set_mvar
-            if self.q_set_old_mvar is not None:
-                self.delta = self.q_set_mvar - self.q_set_old_mvar
-
-            if self.index == 28:
-                print("#########################################")
-                print("Regler: ", self.index)
-                print("Setpoint: ", self.vm_set_pu)
-                print("Spannung pre: ", self.vm_pu_old)
-                print("Spannung post: ", self.vm_pu)
-                print("Delta Q: ", self.delta)
-                print("Delta U: ", delta)
-                print("Q setpoint: ", self.q_set_mvar)
-                print("#########################################")
+        #if not self.voltage_control:
+        if self.vm_pu_old is not None:
+            delta = self.vm_pu - self.vm_pu_old
+        if self.lb_voltage is not None and self.ub_voltage is not None:
+            match self.vm_pu:
+                case self.vm_pu if self.vm_pu > self.ub_voltage:
+                    self.q_set_old_mvar, self.q_set_mvar = (
+                        self.q_set_mvar, -(self.ub_voltage - self.vm_pu) * self.q_droop_mvar)
+                case  self.vm_pu if self.vm_pu < self.lb_voltage:
+                    self.q_set_old_mvar, self.q_set_mvar = (
+                        self.q_set_mvar, -(self.lb_voltage - self.vm_pu) * self.q_droop_mvar)
         else:
-            print("Voltage Control")
+            self.q_set_old_mvar, self.q_set_mvar = self.q_set_mvar, (self.vm_pu - self.vm_set_pu) * self.q_droop_mvar
+        net.controller.at[self.controller_idx, "object"].set_point = self.q_set_mvar
+        if self.q_set_old_mvar is not None:
+            self.delta = self.q_set_mvar - self.q_set_old_mvar
+
+        if self.index == 28:
+            print("#########################################")
+            print("Regler: ", self.index)
+            print("Setpoint: ", self.vm_set_pu)
+            print("Spannung pre: ", self.vm_pu_old)
+            print("Spannung post: ", self.vm_pu)
+            print("Delta Q: ", self.delta)
+            print("Delta U: ", delta)
+            print("Q setpoint: ", self.q_set_mvar)
+            print("#########################################")
+            #else:
+            #    print("Voltage Control")
 
