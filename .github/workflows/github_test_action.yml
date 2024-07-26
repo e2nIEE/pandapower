@@ -80,7 +80,7 @@ jobs:
           python -m pip install pytest pytest-split
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           python -m pip install .["all"]
-          python -m pip install pypower; fi
+          python -m pip install pypower
       - name: Install Julia
         run: |
           ./.install_julia.sh 1.9.3
