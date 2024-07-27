@@ -155,7 +155,7 @@ def _make_bibc_bcbv(bus, branch, graph):
         #       [M  N   ]
         A = DLF_loop[0:nobus - 1, 0:nobus - 1]
         M = DLF_loop[nobus - 1:, 0:nobus - 1]
-        N = DLF_loop[nobus - 1:, nobus - 1:].A
+        N = DLF_loop[nobus - 1:, nobus - 1:].toarray()
         # considering the fact that number of loops is relatively small, N matrix is expected to be small and dense
         # ...in that case dense version is more efficient, i.e. N is transformed to dense and
         # inverted using sp.linalg.inv(N)
