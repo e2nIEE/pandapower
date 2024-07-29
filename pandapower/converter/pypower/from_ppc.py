@@ -269,8 +269,8 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
         br_b = ppc['branch'][is_trafo, BR_B]
         if np.any(br_b > 0):
             logger.warning("some BR_B of transformers in ppc['branch'] are positive, but transformers are inductive, therefore their B should be negative")
-        # i0_percent = np.sqrt(br_b**2 + br_g[is_trafo]**2) * 100 * baseMVA / sn
-        i0_percent = -ppc['branch'][is_trafo, BR_B] * 100 * baseMVA / sn
+        i0_percent = np.sqrt(br_b**2 + br_g[is_trafo]**2) * 100 * baseMVA / sn
+        # i0_percent = -ppc['branch'][is_trafo, BR_B] * 100 * baseMVA / sn
         is_neg_i0_percent = i0_percent < 0
         if np.any(is_neg_i0_percent):
             logger.info(
@@ -312,9 +312,9 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
         rft_pu = ppc['branch'][is_impedance, BR_R] / baseMVA * sn_mva
         xft_pu = ppc['branch'][is_impedance, BR_X] / baseMVA * sn_mva
         bf_pu = ppc['branch'][is_impedance, BR_B] * baseMVA / sn_mva / 2
-        gf_pu = br_g * baseMVA / sn_mva / 2
+        gf_pu = br_g[is_impedance] * baseMVA / sn_mva / 2
         r_asym_pu = br_r_asym[is_impedance] / baseMVA * sn_mva
-        x_asym_pu = br_r_asym[is_impedance] / baseMVA * sn_mva
+        x_asym_pu = br_x_asym[is_impedance] / baseMVA * sn_mva
         g_asym_pu = br_g_asym[is_impedance] * baseMVA / sn_mva / 2
         b_asym_pu = br_b_asym[is_impedance] * baseMVA / sn_mva / 2
 
