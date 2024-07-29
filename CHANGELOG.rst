@@ -42,6 +42,7 @@ Change Log
 - [FIXED] deprecation of matplotlib.cm.get_cmap(name) -> matplotlib.colormaps[name]
 - [FIXED] merge_nets failing if net2 has custom DataFrame that is not present in net1
 - [FIXED] fixed some small bugs in the CGMES converter and improved its speed
+- [CHANGED] vectorization of switch bus and element checks in create_switches()
 
 [2.14.7] - 2024-06-14
 -------------------------------
