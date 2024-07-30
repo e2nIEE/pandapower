@@ -350,6 +350,11 @@ def dump_to_geojson(
             except (ValueError, TypeError):
                 p[col] = str(r[col])
 
+    def update_props(r: pd.Series) -> None:
+        if r.name not in props:
+            props[r.name] = {}
+        props[r.name].update(r.to_dict())
+
     missing_geom: List[int] = [0, 0, 0, 0]  # missing nodes, branches, switches, trafos
     features = []
     # build geojson features for nodes
@@ -365,7 +370,7 @@ def dump_to_geojson(
             tempdf.index = tempdf.apply(lambda r: f"{r['pp_type']}-{r['pp_index']}", axis=1)
             tempdf.drop(columns=['geo'], inplace=True, axis=1, errors='ignore')
 
-            props.update(tempdf.to_dict(orient='index'))
+            tempdf.apply(update_props, axis=1)
         if isinstance(nodes, bool):
             iterator = node_geodata.items()
         else:
@@ -390,7 +395,7 @@ def dump_to_geojson(
             tempdf.index = tempdf.apply(lambda r: f"{r['pp_type']}-{r['pp_index']}", axis=1)
             tempdf.drop(columns=['geo'], inplace=True, axis=1, errors='ignore')
 
-            props.update(tempdf.to_dict(orient='index'))
+            tempdf.apply(update_props, axis=1)
 
         # Iterating over pipe_geodata won't work
         # pipe_geodata only contains pipes that have inflection points!
