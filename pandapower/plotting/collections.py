@@ -51,6 +51,19 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
+def _get_coords_from_geojson(gj_str):
+    pattern = r'"coordinates"\s*:\s*((?:\[(?:\[[^]]+],?\s*)+\])|\[[^]]+\])'
+    matches = re.findall(pattern, gj_str)
+
+    if not matches:
+        return None
+    if len(matches) > 1:
+        raise ValueError("More than one match found in GeoJSON string")
+    for m in matches:
+        return ast.literal_eval(m)
+    return None
+
+
 class CustomTextPath(TextPath):
     """
     Create a path from the text. This class provides functionality for deepcopy, which is not
@@ -422,7 +435,16 @@ def create_bus_collection(net, buses=None, size=5, patch_type="circle", color=No
     if any(net.bus.geo.isna()):
         raise AttributeError('net.bus.geo contains NaN values, consider dropping them beforehand.')
 
-    coords = net.bus.geo.apply(geojson.loads).apply(geojson.utils.coords).apply(next).loc[buses].to_list()
+    if bus_geodata is None:
+        bus_geodata = net.bus.geo.apply(_get_coords_from_geojson)
+
+    buses_with_geo = buses[np.isin(buses, bus_geodata.index.values)]
+    if len(buses_with_geo) < len(buses):
+        logger.warning(
+            f"The following buses cannot be displayed as there is on geodata available: {set(buses)-set(buses_with_geo)}"
+        )
+
+    coords = bus_geodata.loc[buses_with_geo].values
 
     infos = [infofunc(bus) for bus in buses] if infofunc is not None else []
 
@@ -486,20 +508,7 @@ def create_line_collection(net: pandapowerNet, lines=None,
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
 
-    def _get_coords_from_geojson(gj_str):
-        pattern = r'"coordinates"\s*:\s*((?:\[(?:\[[^]]+],?\s*)+\])|\[[^]]+\])'
-        matches = re.findall(pattern, gj_str)
-
-        if not matches:
-            return None
-        if len(matches) > 1:
-            raise ValueError("More than one match found in GeoJSON string")
-        for m in matches:
-            return ast.literal_eval(m)
-        return None
-
-    if use_bus_geodata is False and line_geodata is None and (
-            "geo" not in net.line.columns or net.line.geo.isnull().all()):
+    if use_bus_geodata is False and line_geodata is None and ("geo" not in net.line.columns or net.line.geo.empty):
         # if bus geodata is available, but no line geodata
         logger.warning("use_bus_geodata is automatically set to True, since net.line.geo is empty.")
         use_bus_geodata = True
