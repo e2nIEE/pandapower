@@ -1863,6 +1863,13 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
             logger.debug('av_mode: %s - creating as gen' % av_mode)
             params.vm_pu = item.usetp
             del params['q_mvar']
+            
+            # add reactive and active power limits
+            params.min_q_mvar = item.cQ_min
+            params.max_q_mvar = item.cQ_max
+            params.min_p_mw = item.Pmin_uc
+            params.max_p_mw = item.Pmax_uc
+            
             sg = pp.create_gen(net, **params)
             element = 'gen'
         else:
@@ -1870,6 +1877,12 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
                 sg = pp.create_asymmetric_sgen(net, **params)
                 element = "asymmetric_sgen"
             else:
+                # add reactive and active power limits
+                params.min_q_mvar = item.cQ_min
+                params.max_q_mvar = item.cQ_max
+                params.min_p_mw = item.Pmin_uc
+                params.max_p_mw = item.Pmax_uc
+                
                 sg = pp.create_sgen(net, **params)
                 element = 'sgen'
     logger.debug('created sgen at index <%d>' % sg)
@@ -2053,13 +2066,32 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net):
         if av_mode == 'constv':
             logger.debug('creating sym %s as gen' % name)
             vm_pu = item.usetp
-            sid = pp.create_gen(net, bus=bus1, p_mw=p_mw, vm_pu=vm_pu,
-                                name=name, type=cat, in_service=in_service, scaling=global_scaling)
+            if item.iqtype == 1:
+                type = item.typ_id                
+                sid = pp.create_gen(net, bus=bus1, p_mw=p_mw, vm_pu=vm_pu,
+                                    min_q_mvar=type.Q_min, max_q_mvar=type.Q_max, 
+                                    min_p_mw=item.Pmin_uc, max_p_mw=item.Pmax_uc,
+                                    name=name, type=cat, in_service=in_service, scaling=global_scaling)
+            else:
+                sid = pp.create_gen(net, bus=bus1, p_mw=p_mw, vm_pu=vm_pu,
+                                    min_q_mvar=item.cQ_min, max_q_mvar=item.cQ_max, 
+                                    min_p_mw=item.Pmin_uc, max_p_mw=item.Pmax_uc,
+                                    name=name, type=cat, in_service=in_service, scaling=global_scaling)   
             element = 'gen'
         elif av_mode == 'constq':
             q_mvar = ngnum * item.qgini * multiplier
-            sid = pp.create_sgen(net, bus=bus1, p_mw=p_mw, q_mvar=q_mvar,
-                                 name=name, type=cat, in_service=in_service, scaling=global_scaling)
+            if item.iqtype == 1:
+                type = item.typ_id                
+                sid = pp.create_sgen(net, bus=bus1, p_mw=p_mw, q_mvar=q_mvar,
+                                    min_q_mvar=type.Q_min, max_q_mvar=type.Q_max, 
+                                    min_p_mw=item.Pmin_uc, max_p_mw=item.Pmax_uc,
+                                    name=name, type=cat, in_service=in_service, scaling=global_scaling)
+            else:
+                sid = pp.create_sgen(net, bus=bus1, p_mw=p_mw, q_mvar=q_mvar,
+                                    min_q_mvar=item.cQ_min, max_q_mvar=item.cQ_max, 
+                                    min_p_mw=item.Pmin_uc, max_p_mw=item.Pmax_uc,
+                                    name=name, type=cat, in_service=in_service, scaling=global_scaling)  
+            
             element = 'sgen'
 
         if sid is None or element is None:
