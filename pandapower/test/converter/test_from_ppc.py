@@ -64,7 +64,7 @@ def test_from_ppc_simple_against_target():
     assert type(net_by_ppc) == type(net_by_code)
     assert net_by_ppc.converged
     assert len(net_by_ppc.bus) == len(net_by_code.bus)
-    assert len(net_by_ppc.trafo) == len(net_by_code.trafo)
+    assert len(net_by_ppc.impedance) == len(net_by_code.impedance)
     assert len(net_by_ppc.ext_grid) == len(net_by_code.ext_grid)
     assert pandapower.toolbox.nets_equal(net_by_ppc, net_by_code, check_only_results=True, atol=1e-9)
 
@@ -344,19 +344,4 @@ def overwrite_results_data_of_ppc_pickle(file_name, grid_names):
 
 
 if __name__ == '__main__':
-    if 0:
-        pytest.main([__file__, "-xs"])
-    else:
-        test_from_ppc_simple_against_target()
-        test_validate_from_ppc_simple_against_target()
-        test_ppc_testgrids()
-        test_pypower_cases()
-        test_to_and_from_ppc()
-        test_gencost_pwl()
-        test_gencost_pwl_q()
-        test_gencost_poly_part()
-        test_gencost_poly_q()
-        test_gencost_poly_q_part()
-        test_gencost_poly_pwl()
-        test_gencost_poly_pwl_part_mix()
-        pass
+    pytest.main([__file__, "-xs"])

@@ -33,4 +33,3 @@ def test_data_source():
 
 if __name__ == '__main__':
     pytest.main(['-x', '-s', __file__])
-    # pytest.main(['-x', __file__])

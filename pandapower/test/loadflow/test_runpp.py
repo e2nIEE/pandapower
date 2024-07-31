@@ -1451,16 +1451,3 @@ def test_lightsim2grid_option():
 
 if __name__ == "__main__":
     pytest.main([__file__])
-#    test_minimal_net()
-#    net = pp.create_empty_network()
-#    b = pp.create_bus(net, 110)
-#    pp.create_ext_grid(net, b)
-#    runpp_with_consistency_checks(net)
-#
-#    pp.create_load(net, b, p_mw=0.1)
-#    runpp_with_consistency_checks(net)
-#
-#    b2 = pp.create_bus(net, 110)
-#    pp.create_switch(net, b, b2, 'b')
-#    pp.create_sgen(net, b2, p_mw=0.2)
-#    runpp_with_consistency_checks(net)

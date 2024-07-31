@@ -119,12 +119,4 @@ def test_check_network():
 
 
 if __name__ == "__main__":
-    if 0:
-        pytest.main(['-x', __file__])
-    else:
-        # test_drop_internal_branch_elements()
-        test_drop_measurements_and_controllers()
-        # test_check_validity()
-        # test_trafo_phase_shifter()
-        # test_check_validity()
-    pass
+    pytest.main(['-x', __file__])

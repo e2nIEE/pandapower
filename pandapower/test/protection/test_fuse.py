@@ -457,5 +457,4 @@ def fuse_test_net4():
     return net
 
 if __name__ == "__main__":
-    # pytest.main([__file__, "-s"])
-    test_protection_function()
+    pytest.main([__file__, "-s"])
