@@ -57,7 +57,7 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
         >>> net = pandapower.converter.from_ppc(ppc, f_hz=60)
     """
     # --- catch common failures
-    if pd.Series(ppc['bus'][:, BASE_KV] <= 0).any():
+    if np.any(ppc['bus'][:, BASE_KV] <= 0):
         logger.info('There are false baseKV given in the pypower case file.')
 
     net = create_empty_network(f_hz=f_hz, sn_mva=ppc["baseMVA"])
