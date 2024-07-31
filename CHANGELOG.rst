@@ -42,7 +42,9 @@ Change Log
 - [FIXED] deprecation of matplotlib.cm.get_cmap(name) -> matplotlib.colormaps[name]
 - [FIXED] merge_nets failing if net2 has custom DataFrame that is not present in net1
 - [FIXED] fixed some small bugs in the CGMES converter and improved its speed
-- [ADDED] shunt components G and B for impedance elements
+- [CHANGED] split BR_B in ppc['branch'] (complex number) into BR_B and BR_G, BR_G is added as a new column, ppc['branch'] dtype changed to float64
+- [ADDED] the possibility to have unequal values for branch G and B for from and to buses by means of new columns in ppc['branch'] BR_B_ASYM and BR_G_ASYM
+- [ADDED] shunt components G and B for impedance elements, also supports unequal G and B parameters for from and to bus
 - [ADDED] support for unequal leakage resistance and reactance for HV and LV sides of a 2W-transformer
 
 [2.14.7] - 2024-06-14
