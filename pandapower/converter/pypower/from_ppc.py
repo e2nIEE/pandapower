@@ -378,8 +378,6 @@ def _branch_to_which(ppc, from_vn_kv=None, to_vn_kv=None, flattened=True):
     is_trafo = (ppc['branch'][:, TAP] != 0) & (ppc['branch'][:, TAP] != 1) | \
                 (ppc['branch'][:, SHIFT] != 0)
     is_impedance = ~is_line & ~is_trafo
-    is_trafo = is_trafo | is_impedance
-    is_impedance = np.zeros_like(is_impedance, dtype=bool)
     to_vn_is_leq = to_vn_kv[is_trafo] <= from_vn_kv[is_trafo]
     return is_line, is_trafo, is_impedance, to_vn_is_leq
 
@@ -589,7 +587,7 @@ def validate_from_ppc(ppc, net, max_diff_values={"bus_vm_pu": 1e-6, "bus_va_degr
     pp_res["branch"] = np.zeros(ppc_res["branch"].shape)
     from_to_buses = -np.ones((ppc_res["branch"].shape[0], 2), dtype=np.int64)
     for et in net._from_ppc_lookups["branch"].element_type.unique():
-        if et == "line":
+        if et == "line" or et == "impedance":
             from_to_cols = ["from_bus", "to_bus"]
             res_cols = ['p_from_mw', 'q_from_mvar', 'p_to_mw', 'q_to_mvar']
         elif et == "trafo":
