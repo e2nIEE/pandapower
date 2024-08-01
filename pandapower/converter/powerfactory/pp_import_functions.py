@@ -7,6 +7,7 @@ from itertools import combinations
 import numpy as np
 import pandapower as pp
 from pandapower.auxiliary import ADict
+import pandapower.control as control
 from pandas import DataFrame, Series
 
 try:
@@ -140,8 +141,8 @@ def from_pf(dict_net, pv_as_slack=True, pf_variable_p_loads='plini', pf_variable
     # create trafos:
     n = 0
     for n, trafo in enumerate(dict_net['ElmTr2'], 1):
-        create_trafo(net=net, item=trafo, tap_opt=tap_opt, export_controller=export_controller,
-                     is_unbalanced=is_unbalanced)
+        create_trafo(net=net, item=trafo, export_controller=export_controller, tap_opt=tap_opt,
+                     is_unbalanced=is_unbalanced, hunting_limit=dict_net["lvp_params"]["hunting_limit"])
     if n > 0: logger.info('imported %d trafos' % n)
 
     logger.debug('creating 3W-transformers')
@@ -1626,7 +1627,9 @@ def create_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
         else:
             if (load_type.kpu != load_type.kqu or load_type.kpu0 != load_type.kqu0 or load_type.aP != load_type.aQ or
                     load_type.bP != load_type.bQ or load_type.cP != load_type.cQ):
-                raise UserWarning(f"Load {item.loc_name} ({load_class}) unsupported voltage dependency configuration")
+                logger.warning(f"Load {item.loc_name} ({load_class}) has unsupported voltage dependency configuration!"
+                               f"Only the P parameters will be used to specify the voltage dependency of this load")
+                # todo implement load voltage dependency in this case using CharacteristicControl
             i = 0
             z = 0
             for cc, ee in zip(("aP", "bP", "cP"), ("kpu0", "kpu1", "kpu")):
@@ -2162,13 +2165,13 @@ def create_trafo_type(net, item):
         "vkr0_percent": item.ur0tr,
         "mag0_percent": item.zx0hl_n,
         "mag0_rx": item.rtox0_n,
-        "si0_hv_partial": item.zx0hl_h
+        "si0_hv_partial": item.zx0hl_h,
+        "tap_side": ['hv', 'lv', 'ext'][item.tap_side],  # 'ext' not implemented
     }
 
     if item.itapch:
         logger.debug('trafo <%s> has tap changer' % name)
         type_data.update({
-            "tap_side": ['hv', 'lv', 'ext'][item.tap_side],  # 'ext' not implemented
             # see if it is an ideal phase shifter or a complex phase shifter
             # checking tap_step_percent because a nonzero value for ideal phase shifter can be stored in the object
             "tap_step_percent": item.dutap if item.tapchtype != 1 else 0,
@@ -2209,7 +2212,7 @@ def create_trafo_type(net, item):
     return name, True
 
 
-def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanced=False):
+def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanced=False, hunting_limit=None):
     name = item.loc_name  # type: str
     logger.debug('>> creating trafo <%s>' % name)
     in_service = not bool(item.outserv)  # type: bool
@@ -2286,9 +2289,8 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
     create_connection_switches(net, item, 2, 't', (bus1, bus2), (tid, tid))
 
     # adding tap changer
-    if export_controller and item.HasAttribute('ntrcn') and item.HasAttribute('i_cont') \
-            and item.ntrcn == 1:
-        import pandapower.control as control
+    if (export_controller and pf_type.itapch and item.HasAttribute('ntrcn') and
+            item.HasAttribute('i_cont') and item.ntrcn == 1):
         if item.t2ldc == 0:
             logger.debug('tap controller of trafo <%s> at hv' % name)
             side = 'hv'
@@ -2313,7 +2315,8 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
             logger.debug('trafo <%s> has discrete tap controller with '
                          'u_low = %.3f, u_up = %.3f, side = %s' % (name, vm_lower_pu, vm_upper_pu, side))
             try:
-                control.DiscreteTapControl(net, tid, side=side, vm_lower_pu=vm_lower_pu, vm_upper_pu=vm_upper_pu)
+                control.DiscreteTapControl(net, tid, side=side, vm_lower_pu=vm_lower_pu, vm_upper_pu=vm_upper_pu,
+                                           hunting_limit=hunting_limit)
             except BaseException as err:
                 logger.error('error while creating discrete tap controller at trafo <%s>' % name)
                 logger.error('Error: %s' % err)

@@ -935,6 +935,10 @@ def create_replacement_switch_for_branch(net, element_type, element_index):
     switch_name = 'REPLACEMENT_%s_%d' % (element_type, element_index)
     sid = create_switch(net, name=switch_name, bus=bus_i, element=bus_j, et='b', closed=is_closed,
                         type='CB')
+    # to enable unproblematic validation for the pf converter
+    for col in ("pf_closed", "pf_in_service"):
+        if col in net.res_switch.columns:
+            net.res_switch.loc[sid, col] = is_closed
     logger.debug('created switch %s (%d) as replacement for %s %s' %
                  (switch_name, sid, element_type, element_index))
     return sid
@@ -1772,7 +1776,7 @@ def replace_xward_by_ward(net, index=None, drop=True):
     new_index = []
     for xi in index:
         wi = create_ward(net, net.xward.at[xi, "bus"], net.xward.at[xi, "ps_mw"], net.xward.at[xi, "qs_mvar"],
-                         net.xward.at[xi, "pz_mw"], net.xward.at[xi, "qz_mvar"], net.xward.at[xi, "name"],
+                         net.xward.at[xi, "pz_mw"], net.xward.at[xi, "qz_mvar"], f"REPLACEMENT_xward_{xi}",
                          net.xward.at[xi, "in_service"])
         new_index.append(wi)
 

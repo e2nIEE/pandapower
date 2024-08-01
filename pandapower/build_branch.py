@@ -330,6 +330,7 @@ def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=
         raise ValueError("Unkonwn Transformer Model %s - valid values ar 'pi' or 't'" % trafo_model)
 
 
+@np.errstate(all="raise")
 def _wye_delta(r, x, y):
     """
     20.05.2016 added by Lothar Löwer

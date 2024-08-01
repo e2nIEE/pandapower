@@ -276,7 +276,7 @@ def validate_pf_conversion(net, is_unbalanced=False, **kwargs):
         trafo3w_idx = net.trafo3w.query('in_service').index
         trafo3w_diff = net.res_trafo3w.loc[trafo3w_idx].pf_loading - net.res_trafo3w.loc[
             trafo3w_idx].loading_percent
-        trafo3w_id = abs(trafo3w_diff).idxmax()
+        trafo3w_id = abs(trafo3w_diff.fillna(0)).idxmax()
         logger.info("Maximum trafo3w loading difference between pandapower and powerfactory: %.1f "
                     "percent at trafo3w %d (%s)" % (
                         max(abs(trafo3w_diff)), trafo3w_id, net.trafo3w.at[trafo3w_id, 'name']))
