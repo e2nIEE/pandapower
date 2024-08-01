@@ -11,7 +11,7 @@
 """Builds the bus admittance matrix and branch admittance matrices.
 """
 
-from numpy import ones, conj, nonzero, any, exp, pi, hstack, real, int64
+from numpy import ones, conj, nonzero, any, exp, pi, hstack, real, int64, errstate
 from scipy.sparse import csr_matrix
 
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, BR_G, BR_STATUS, SHIFT, TAP, BR_R_ASYM, \
@@ -83,6 +83,7 @@ def makeYbus(baseMVA, bus, branch):
     return Ybus, Yf, Yt
 
 
+@errstate(all="raise")
 def branch_vectors(branch, nl):
     stat = branch[:, BR_STATUS]  # ones at in-service branches
     Ysf = stat / (branch[:, BR_R] + 1j * branch[:, BR_X])  # series admittance

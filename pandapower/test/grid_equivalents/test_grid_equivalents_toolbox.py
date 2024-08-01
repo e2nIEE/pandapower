@@ -156,5 +156,4 @@ def test_append_set_to_dict():
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, '-x'])
-
+    pytest.main([__file__, "-xs"])

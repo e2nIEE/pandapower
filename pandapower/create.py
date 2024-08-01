@@ -2703,7 +2703,8 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
         elif tap_pos_var is not nan:
             v[f"tap{s}_pos"] = tap_pos_var
             if isinstance(tap_pos_var, float):
-                net.trafo[f"tap{s}_pos"] = net.trafo[f"tap{s}_pos"].astype(float)
+                net.trafo[f"tap{s}_pos"] = net.trafo.get(f"tap{s}_pos",
+                                                         np.full(len(net.trafo), np.nan)).astype(np.float64)
 
     _set_entries(net, "trafo", index, **v, **kwargs)
 

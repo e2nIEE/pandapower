@@ -854,4 +854,4 @@ def test_trafo_unequal_r_x_hv_lv():
 
 
 if __name__ == "__main__":
-    pytest.main(["-xs"])
+    pytest.main([__file__, "-xs"])

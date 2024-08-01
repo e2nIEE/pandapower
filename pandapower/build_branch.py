@@ -341,6 +341,7 @@ def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=
         raise ValueError("Unkonwn Transformer Model %s - valid values ar 'pi' or 't'" % trafo_model)
 
 
+@np.errstate(all="raise")
 def _wye_delta(r, x, g, b, r_ratio, x_ratio):
     """
     20.05.2016 added by Lothar Löwer
@@ -401,7 +402,7 @@ def _calc_y_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net_sn_mva):
     b_mva_squared = np.square(ym_mva) - np.square(pfe_mw)
     b_mva_squared[b_mva_squared < 0] = 0
     b_mva = -np.sqrt(b_mva_squared)
-    
+
     g_pu = g_mva / vnl_squared * baseZ * parallel / np.square(vn_trafo_lv / vn_lv_kv)
     b_pu = b_mva / vnl_squared * baseZ * parallel / np.square(vn_trafo_lv / vn_lv_kv)
     return g_pu, b_pu
@@ -677,12 +678,12 @@ def _calc_impedance_parameters_from_dataframe(net, zero_sequence=False):
     sn_factor = 3. if mode == 'pf_3ph' else 1.
     sn_impedance = impedance["sn_mva"].values
     sn_net = net.sn_mva
-    
+
     # background for the sn_calculations in the next lines:
       # r_ij_ohm = r_ij * v**2 / sn_impedance
       # r_ij_pu_branch = r_ij_ohm / (v**2 / sn_net)
       # r_ij_pu_branch = r_ij / sn_impedance / (1 / sn_net)
-    
+
     r_f = (rij * sn_factor) / sn_impedance * sn_net
     x_f = (xij * sn_factor) / sn_impedance * sn_net
     r_t = (rji * sn_factor) / sn_impedance * sn_net

@@ -230,4 +230,4 @@ def test_count_elements():
 
 
 if __name__ == '__main__':
-    pytest.main([__file__, "-x"])
+    pytest.main([__file__, "-xs"])

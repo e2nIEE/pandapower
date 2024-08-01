@@ -28,7 +28,7 @@ def _get_pf_results(net, is_unbalanced=False):
 
 def _get_pf_results_balanced(net):
     pf_switch_status = net.res_switch.pf_closed & \
-               net.res_switch.pf_in_service if len(net.switch) > 0 and \
+               net.res_switch.get("pf_in_service", True) if len(net.switch) > 0 and \
                                                'res_switch' in net.keys() else pd.Series(dtype=np.float64)
     pf_bus_vm = net.res_bus.pf_vm_pu.replace(0, np.nan)
     pf_bus_va = net.res_bus.pf_va_degree
@@ -62,7 +62,7 @@ def _get_pf_results_balanced(net):
 
 def _get_pf_results_unbalanced(net):
     pf_switch_status = net.res_switch.pf_closed & \
-               net.res_switch.pf_in_service if len(net.switch) > 0 and \
+               net.res_switch.get("pf_in_service", True) if len(net.switch) > 0 and \
                                                'res_switch' in net.keys() else pd.Series([], dtype=bool)
     # unbalanced get results
     pf_bus_vm_a = net.res_bus_3ph.pf_vm_a_pu.replace(0, np.nan)
@@ -276,7 +276,7 @@ def validate_pf_conversion(net, is_unbalanced=False, **kwargs):
         trafo3w_idx = net.trafo3w.query('in_service').index
         trafo3w_diff = net.res_trafo3w.loc[trafo3w_idx].pf_loading - net.res_trafo3w.loc[
             trafo3w_idx].loading_percent
-        trafo3w_id = abs(trafo3w_diff).idxmax()
+        trafo3w_id = abs(trafo3w_diff.fillna(0)).idxmax()
         logger.info("Maximum trafo3w loading difference between pandapower and powerfactory: %.1f "
                     "percent at trafo3w %d (%s)" % (
                         max(abs(trafo3w_diff)), trafo3w_id, net.trafo3w.at[trafo3w_id, 'name']))

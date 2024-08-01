@@ -593,5 +593,6 @@ def test_switch_results():
     assert np.isclose(net.res_switch_sc.ikss_ka.at[switch_trafo_hv], abs(net.res_trafo_sc.ikss_hv_ka.at[trafo]))
     assert np.isclose(net.res_switch_sc.ikss_ka.at[switch_trafo_lv], abs(net.res_trafo_sc.ikss_lv_ka.at[trafo]))
 
+
 if __name__ == "__main__":
-    pytest.main(["-xs", __file__])
+    pytest.main([__file__, "-xs"])

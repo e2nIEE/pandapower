@@ -456,6 +456,9 @@ def _update_object_attributes(obj):
         if key in obj.__dict__:
             obj.__dict__[val] = obj.__dict__.pop(key)
 
+    if "vm_lower_pu" in obj.__dict__ and "hunting_limit" not in obj.__dict__:
+        obj.__dict__["hunting_limit"] = None
+
 
 def _convert_objects(net, elements_to_deserialize):
     """

@@ -41,7 +41,7 @@ jobs:
       - name: Install Julia
         if: ${{ matrix.python-version == '3.9' }}
         run: |
-          ./.install_julia.sh 1.9.3
+          ./.install_julia.sh 1.10.4
           python -m pip install julia
           python ./.install_pycall.py
       - name: List of installed packages
@@ -231,7 +231,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install pytest nbmake pytest-xdist igraph numba seaborn
-          ./.install_julia.sh 1.9.3
+          ./.install_julia.sh 1.10.4
           python -m pip install julia
           python ./.install_pycall.py
           python -m pip install jupyter
@@ -257,7 +257,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install .[all]
           python -m pip install pytest nbmake pytest-xdist igraph numba seaborn
-          ./.install_julia.sh 1.9.3
+          ./.install_julia.sh 1.10.4
           python -m pip install julia
           python ./.install_pycall.py
       - name: List all installed packages

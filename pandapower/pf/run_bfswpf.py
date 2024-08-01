@@ -15,20 +15,13 @@ from pandapower.pypower.idx_gen import GEN_BUS, QG, QMAX, QMIN, GEN_STATUS, VG
 from pandapower.pypower.makeSbus import makeSbus
 from scipy.sparse import csr_matrix, csgraph
 
-from pandapower.auxiliary import ppException
+from pandapower.auxiliary import LoadflowNotConverged
 from pandapower.pypower.bustypes import bustypes
 from pandapower.pypower.newtonpf import _evaluate_Fx, _check_for_convergence
 from pandapower.pypower.pfsoln import pfsoln
 from pandapower.pf.run_newton_raphson_pf import _get_Y_bus
 from pandapower.pf.runpf_pypower import _import_numba_extensions_if_flag_is_true
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci
-
-
-class LoadflowNotConverged(ppException):
-    """
-    Exception being raised in case loadflow did not converge.
-    """
-    pass
 
 
 def _make_bibc_bcbv(bus, branch, graph):

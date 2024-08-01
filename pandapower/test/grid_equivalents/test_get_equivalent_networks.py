@@ -206,4 +206,4 @@ def calc_max_error(net_org, net_eq, return_internal, va_degree=True):
 
 
 if __name__ == "__main__":
-    pytest.main(['-x', __file__])
+    pytest.main([__file__, "-xs"])

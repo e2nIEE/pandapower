@@ -17,6 +17,8 @@ try:
 except ImportError:
     UnsupportedPythonError = Exception
 try:
+    from julia.api import Julia
+    Julia(compiled_modules=False)
     from julia import Main
 
     julia_installed = True
@@ -160,3 +162,4 @@ def test_opf_ext_grid_controllable_pm():
 
 if __name__ == "__main__":
     pytest.main([__file__, "-xs"])
+

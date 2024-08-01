@@ -11,10 +11,9 @@ import pandas as pd
 import geojson
 from collections.abc import Iterable
 
-from pandapower.auxiliary import soft_dependency_error, version_check
+from pandapower.auxiliary import soft_dependency_error, version_check, MapboxTokenMissing
 from pandapower.plotting.plotly.get_colors import get_plotly_color, get_plotly_cmap
-from pandapower.plotting.plotly.mapbox_plot import _on_map_test, _get_mapbox_token, \
-    MapboxTokenMissing
+from pandapower.plotting.plotly.mapbox_plot import _on_map_test, _get_mapbox_token
 
 try:
     import pandaplan.core.pplog as logging
