@@ -773,4 +773,4 @@ def test_ac_opf_differnt_snmva():
 
 
 if __name__ == '__main__':
-    pytest.main(['-x', __file__])
+    pytest.main([__file__, "-xs"])

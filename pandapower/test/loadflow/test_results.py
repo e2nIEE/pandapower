@@ -812,5 +812,6 @@ def test_open(result_test_network):
 
     assert isnan(net['res_line'].at[lines.index[1], "i_ka"])
 
+
 if __name__ == "__main__":
-    pytest.main(["-xs"])
+    pytest.main([__file__, "-xs"])

@@ -1450,7 +1450,7 @@ def test_lightsim2grid_option():
 
 
 if __name__ == "__main__":
-    pytest.main([__file__])
+    pytest.main([__file__, "-xs"])
 #    test_minimal_net()
 #    net = pp.create_empty_network()
 #    b = pp.create_bus(net, 110)

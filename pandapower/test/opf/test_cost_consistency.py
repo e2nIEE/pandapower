@@ -168,5 +168,6 @@ def test_contingency_gen(base_net):
 
     assert isclose(net.res_cost, -net.res_gen.p_mw.at[0], atol=1e-3)
 
+
 if __name__ == "__main__":
-    pytest.main(['-s', __file__])
+    pytest.main([__file__, "-xs"])
