@@ -334,8 +334,8 @@ def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=
     if trafo_model == "pi":
         return r, x, g, b, 0, 0  # g_asym and b_asym are 0 here
     elif trafo_model == "t":
-        r_ratio = trafo_df["leakage_resistance_ratio_hv"].values if "leakage_resistance_ratio_hv" in trafo_df else 0.5
-        x_ratio = trafo_df["leakage_reactance_ratio_hv"].values if "leakage_reactance_ratio_hv" in trafo_df else 0.5
+        r_ratio = get_trafo_values(trafo_df, "leakage_resistance_ratio_hv") if "leakage_resistance_ratio_hv" in trafo_df else np.full_like(r, fill_value=0.5, dtype=np.float64)
+        x_ratio = get_trafo_values(trafo_df, "leakage_reactance_ratio_hv") if "leakage_reactance_ratio_hv" in trafo_df else np.full_like(r, fill_value=0.5, dtype=np.float64)
         return _wye_delta(r, x, g, b, r_ratio, x_ratio)
     else:
         raise ValueError("Unkonwn Transformer Model %s - valid values ar 'pi' or 't'" % trafo_model)
@@ -350,8 +350,8 @@ def _wye_delta(r, x, g, b, r_ratio, x_ratio):
 
     """
     tidx = (g != 0) | (b != 0)
-    za_star = r[tidx] * r_ratio + x[tidx] * x_ratio * 1j
-    zb_star = r[tidx] * (1 - r_ratio) + x[tidx] * (1 - x_ratio) * 1j
+    za_star = r[tidx] * r_ratio[tidx] + x[tidx] * x_ratio[tidx] * 1j
+    zb_star = r[tidx] * (1 - r_ratio[tidx]) + x[tidx] * (1 - x_ratio[tidx]) * 1j
     zc_star = 1 / (g + 1j*b)[tidx]
     zSum_triangle = za_star * zb_star + za_star * zc_star + zb_star * zc_star
     zab_triangle = zSum_triangle / zc_star
@@ -1027,7 +1027,6 @@ def get_is_lines(net):
 
 
 def _trafo_df_from_trafo3w(net, sequence=1):
-    nr_trafos = len(net["trafo3w"])
     trafo2 = dict()
     sides = ["hv", "mv", "lv"]
     mode = net._options["mode"]
@@ -1066,6 +1065,9 @@ def _trafo_df_from_trafo3w(net, sequence=1):
     trafo2["tap_phase_shifter"] = {side: np.zeros(nr_trafos).astype(bool) for side in sides}
     trafo2["parallel"] = {side: np.ones(nr_trafos) for side in sides}
     trafo2["df"] = {side: np.ones(nr_trafos) for side in sides}
+    # even though this is not relevant (at least now), the values cannot be empty:
+    trafo2["leakage_resistance_ratio_hv"] = {side: np.full(nr_trafos, fill_value=0.5, dtype=np.float64) for side in sides}
+    trafo2["leakage_reactance_ratio_hv"] = {side: np.full(nr_trafos, fill_value=0.5, dtype=np.float64) for side in sides}
     if "max_loading_percent" in net.trafo3w:
         trafo2["max_loading_percent"] = {side: net.trafo3w.max_loading_percent.values for side in sides}
     return {var: np.concatenate([trafo2[var][side] for side in sides]) for var in trafo2.keys()}
