@@ -11,7 +11,7 @@ import warnings
 import pandapower as pp
 
 try:
-    from lightsim2grid.gridmodel import init as init_ls2g
+    from lightsim2grid.gridmodel.from_pandapower import init as init_ls2g
     from lightsim2grid.contingencyAnalysis import ContingencyAnalysisCPP
     from lightsim2grid_cpp import SolverType
 
