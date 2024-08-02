@@ -814,7 +814,6 @@ def test_open(result_test_network):
 
 
 def test_impedance_g_b():
-    # from pandapower.test.loadflow.test_results import *
     net = pp.create_empty_network(sn_mva=100)
     pp.create_bus(net, 110)
     pp.create_bus(net, 20)
