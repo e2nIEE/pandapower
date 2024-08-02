@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import copy
 
 # Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
@@ -121,6 +122,26 @@ def test_with_lightsim2grid(get_net, get_case):
     assert np.array_equal(res["line"]["causes_overloading"], net.res_line.causes_overloading.values)
     if len(net.trafo) > 0:
         assert np.array_equal(res["trafo"]["causes_overloading"], net.res_trafo.causes_overloading.values)
+
+    for s in ("min", "max"):
+        assert np.allclose(res["bus"][f"{s}_vm_pu"], net.res_bus[f"{s}_vm_pu"].values, atol=1e-9, rtol=0), s
+        assert np.allclose(np.nan_to_num(res["line"][f"{s}_loading_percent"]),
+                           net.res_line[f"{s}_loading_percent"].values, atol=1e-6, rtol=0), s
+        if len(net.trafo) > 0:
+            assert np.allclose(np.nan_to_num(res["trafo"][f"{s}_loading_percent"]),
+                               net.res_trafo[f"{s}_loading_percent"].values, atol=1e-6, rtol=0), s
+
+
+@pytest.mark.skipif(not lightsim2grid_installed, reason="lightsim2grid package is not installed")
+def test_case118():
+    net = pp.networks.case118()
+    net2 = copy.deepcopy(net)
+    nminus1_cases = {"line": {"index": net.line.index.values},
+                     "trafo": {"index": net.trafo.index.values}}
+
+    res = pp.contingency.run_contingency(net2, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading)
+
+    pp.contingency.run_contingency_ls2g(net, nminus1_cases)
 
     for s in ("min", "max"):
         assert np.allclose(res["bus"][f"{s}_vm_pu"], net.res_bus[f"{s}_vm_pu"].values, atol=1e-9, rtol=0), s

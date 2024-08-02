@@ -1364,7 +1364,10 @@ def test_lightsim2grid():
     # test several nets
     for net in result_test_network_generator():
         try:
+            net_ref = copy.deepcopy(net)
+            pp.runpp(net_ref, lightsim2grid=False)
             runpp_with_consistency_checks(net, lightsim2grid=True)
+            assert_res_equal(net, net_ref)
         except AssertionError:
             raise UserWarning("Consistency Error after adding %s" % net.last_added_case)
         except LoadflowNotConverged:
@@ -1372,6 +1375,15 @@ def test_lightsim2grid():
         except NotImplementedError as err:
             assert len(net.ext_grid) > 1
             assert "multiple ext_grids are found" in str(err)
+
+
+@pytest.mark.skipif(not lightsim2grid_available, reason="lightsim2grid is not installed")
+def test_lightsim2grid_case118():
+    net = pp.networks.case118()
+    net_ref = copy.deepcopy(net)
+    pp.runpp(net_ref, lightsim2grid=False)
+    runpp_with_consistency_checks(net, lightsim2grid=True)
+    assert_res_equal(net, net_ref)
 
 
 @pytest.mark.skipif(not lightsim2grid_available, reason="lightsim2grid is not installed")
