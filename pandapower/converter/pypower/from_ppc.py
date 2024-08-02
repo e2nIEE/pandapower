@@ -185,7 +185,7 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
     # todo how to preserve this information (g, r_asym, x_asym, g_asym, b_asym):
     #  * for branches that are not transformers but non-zero r_asym, x_asym, g_asym, b_asym
     #       - create as impedance instead of line
-    #  * for branches that are transfromers but have non-zero g_asym, b_asym:
+    #  * for branches that are transfromers but have non-zero g_asym, b_asym: --> not done yet
     #       - write a new function to convert delta to wye
     #       - obtain the values for rft, rtf, xft, xtf
     #       - calculate ratios for HV portion of r and x
@@ -279,8 +279,8 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
                 f'(hv_bus, lv_bus)=({hv_bus[is_neg_i0_percent]}, {hv_bus[is_neg_i0_percent]}) '
                 'is positive.')
 
-        # pfe_kw = br_g[is_trafo] * baseMVA * 1e3 
-        pfe_kw=0.
+        pfe_kw = br_g[is_trafo] * baseMVA * 1e3 
+
         vk_percent = np.sign(xk) * zk * sn * 100 / baseMVA
         vk_percent[~tap_side_is_hv] /= (1+ratio_1[~tap_side_is_hv])**2
         vkr_percent = rk * sn * 100 / baseMVA
