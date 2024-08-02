@@ -13,7 +13,7 @@ except ImportError:
     logger.info(r'you need to install the package "simbench" first, if you want to run the simbench related scripts')
 
 def pp2sincal(net_pp, output_folder, file_name, use_active_net=False, plotting=True, use_ui=False,
-              sincal_interaction=False, delete_files=True):
+              sincal_interaction=False, delete_files=True, dc_as_sync=False, individual_fcts=None):
     '''
     Executes the three main steps, `initialize`, `convert_pandapower_net` and `finalize`.
 
@@ -38,9 +38,9 @@ def pp2sincal(net_pp, output_folder, file_name, use_active_net=False, plotting=T
     :rtype: None
     '''
     net, app, sim, doc = initialize(output_folder, file_name, use_active_net, use_ui,
-                                    sincal_interaction, delete_files)
-    convert_pandapower_net(net, net_pp, doc, plotting)
-    finalize(net, output_folder, file_name, app, sim, doc, sincal_interaction)
+                                         sincal_interaction, delete_files)
+    convert_pandapower_net(net, net_pp, doc, plotting, dc_as_sync)
+    finalize(net, net_pp, output_folder, file_name, app, sim, doc, sincal_interaction, individual_fcts)
 
 
 def convert_simbench_network(simbench_code, output_folder, use_active_net=False, plotting=True,

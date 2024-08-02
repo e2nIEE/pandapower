@@ -7,9 +7,8 @@ import pandas as pd
 import pandapower as pp
 from pandapower.converter.sincal.pp2sincal.util.finalization import write_to_net, close_net
 from pandapower.converter.sincal.pp2sincal.util.initialization import create_simulation_environment, initialize_net
-from pandapower.converter.sincal.pp2sincal.util.toolbox import _unique_naming, _number_of_elements, _scale_geo_data, \
-    _adapt_area_tile, \
-    _initialize_voltage_level, _set_calc_params, _adapt_geo_coordinates
+from pandapower.converter.sincal.pp2sincal.util.toolbox import _unique_naming, _number_of_elements, _scaling, \
+    _initialize_voltage_level, _set_calc_params, _get_vector_group, _adapt_geo_coordinates
 
 try:
     import pandaplan.core.pplog as logging
@@ -17,24 +16,6 @@ except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
-
-
-def pp_preparation(net_pp):
-    '''
-    Preperation of the pandapower network in order to convert it to Sincal. Each element gets a
-    unique name. The function returns the number of elements which enables a nice display of the different elements.
-
-    :param net_pp: The pandapower network that shall be converted
-    :type net_pp: pandapowerNet
-    :return: Number of elements
-    :rtype: Tuple
-    '''
-    pp.set_user_pf_options(net_pp, trafo_model='pi')
-    pp.runpp(net_pp, calculate_voltage_angles=True)
-    _unique_naming(net_pp)
-    elements = _number_of_elements(net_pp)
-    _scale_geo_data(net_pp)
-    return elements
 
 
 def net_preparation(net, net_pp, doc):
@@ -51,14 +32,19 @@ def net_preparation(net, net_pp, doc):
     :return: (net, voltage_level_dict)
     :rtype: Tuple
     '''
-    _adapt_area_tile(net, net_pp)
+    _scaling(net, net_pp)
     if not doc is None:
         doc.Reload()
     time.sleep(0.5)
-    _adapt_geo_coordinates(net, net_pp)
+    pp.set_user_pf_options(net_pp, trafo_model='pi')
+    pp.runpp(net_pp, calculate_voltage_angles=True)
+    _unique_naming(net_pp)
+    elements = _number_of_elements(net_pp)
+    #_adapt_geo_coordinates(net, net_pp)
     voltage_level_dict = _initialize_voltage_level(net, net_pp)
     _set_calc_params(net)
-    return net, voltage_level_dict
+    net_pp.update({'sincal_lookup': pd.DataFrame(columns=['table_name', 'id', 'pp_element', 'pp_index'])})
+    return net, voltage_level_dict, elements
 
 
 def initialize(output_folder, file_name, use_active_net=False, use_ui=True,
@@ -88,7 +74,7 @@ def initialize(output_folder, file_name, use_active_net=False, use_ui=True,
     return net, app, sim, doc
 
 
-def finalize(net, output_folder, file_name, app, sim, doc, sincal_interaction=False):
+def finalize(net, net_pp, output_folder, file_name, app, sim, doc, sincal_interaction=False, individual_fcts=None):
     '''
     The function finalizes the conversion process by closing the sincal network model (net)
     and frees all variables.
@@ -114,9 +100,11 @@ def finalize(net, output_folder, file_name, app, sim, doc, sincal_interaction=Fa
     write_to_net(net, doc)
     if not sincal_interaction:
         close_net(app, sim, doc, output_folder, file_name)
+    if individual_fcts is not None:
+        individual_fcts(net_pp, file_name, output_folder)
 
 
-def convert_pandapower_net(net, net_pp, doc, plotting=True):
+def convert_pandapower_net(net, net_pp, doc, plotting=True, dc_as_sync=False):
     '''
     Conversion of a pandapowerNet to a sincal network.
 
@@ -132,11 +120,14 @@ def convert_pandapower_net(net, net_pp, doc, plotting=True):
     :rtype: None
     '''
 
-    elements = pp_preparation(net_pp)
-    net, voltage_level_dict = net_preparation(net, net_pp, doc)
+    net, voltage_level_dict, elements = net_preparation(net, net_pp, doc)
     create_bus(net, net_pp, voltage_level_dict, plotting)
     create_load(net, net_pp, elements, plotting)
-    create_sgen(net, net_pp, elements, plotting)
+    if dc_as_sync:
+        create_synchronous(net, net_pp, elements, net_pp.sgen, plotting, power_flow_type='pq')
+    else:
+        create_sgen(net, net_pp, elements, plotting)
+    create_asymmetric_sgen(net, net_pp, elements, power_flow_type='pq')
     create_ext_grid(net, net_pp, elements, plotting)
     create_gen(net, net_pp, elements, plotting)
     create_storage(net, net_pp, elements, plotting)
@@ -156,6 +147,7 @@ def create_bus(net, net_pp, voltage_level_dict, plotting=True, buses=None, buses
     :param net_pp: The pandapower network that shall be converted
     :type net_pp: pandapowerNet
     :param voltage_level_dict:
+    :param voltage_level_dict
     :type voltage_level_dict:
     :param plotting: Flag to graphically display Elements
     :type plotting: boolean
@@ -177,11 +169,16 @@ def create_bus(net, net_pp, voltage_level_dict, plotting=True, buses=None, buses
         net.SetParameter("NetworkLevel", voltage_level_dict[bus.vn_kv])
         b = net.CreateNode(bus['Sinc_Name'])
         n_id = b.GetValue("Node_ID")
+        b.SetValue('Un', bus.vn_kv)
         buses.Node_ID.at[idx] = n_id
 
         b.SetValue('Node_ID', bus.name)
-        t = {'n': 1, 'b': 1, 'm': 3, 'db': 2, 'auxiliary': 3}[bus.type]
+        t = {'n': 1, 'b': 1, 'ha': 1, 'm': 3, 'db': 2, 'auxiliary': 3, 'Muffe': 3}[bus.type]
         b.SetValue('Flag_Type', t)
+        net_pp['sincal_lookup'] = pd.concat([net_pp['sincal_lookup'],
+                                             pd.Series(['node', n_id, 'bus', idx],
+                                                       index=['table_name', 'id', 'pp_element',
+                                                              'pp_index']).to_frame().T])
         if plotting:
             tile = net.GetCommonObject("GraphicAreaTile", 1)
             factor = tile.GetValue('ScalePaper')
@@ -190,12 +187,12 @@ def create_bus(net, net_pp, voltage_level_dict, plotting=True, buses=None, buses
                 gnode = net.GetCommonObject("GraphicNode", n_id)
                 coord_x = gnode.GetValue('NodeStartX')
                 gnode.SetValue("SymType", 3)
-                gnode.SetValue('NodeStartX', coord_x - 0.005 * factor)
-                gnode.SetValue('NodeEndX', coord_x + 0.005 * factor)
+                gnode.SetValue('NodeStartX', coord_x - factor)
+                gnode.SetValue('NodeEndX', coord_x + factor)
                 gnode.Update()
             gtext = net.GetCommonObject("GraphicText", n_id)
             pos = gtext.GetValue("Pos2")
-            pos += pos + 0.015 * factor / 4
+            pos += pos + factor / 4
             gtext.SetValue("Pos2", pos)
             gtext.SetValue("Visible", 0)
             gtext.Update()
@@ -205,7 +202,7 @@ def create_bus(net, net_pp, voltage_level_dict, plotting=True, buses=None, buses
         net.OpenEx()
 
 
-def create_load(net, net_pp, elements, plotting=True, loads=None):
+def create_load(net, net_pp, elements, plotting=True, loads=None, corresponding='load'):
     '''
     The function creates an electrical aquivalent element of the chosen pandapower-loads in the
     sincal electrical Database Object (net). If plotting=True a graphical element will also be created.
@@ -236,6 +233,10 @@ def create_load(net, net_pp, elements, plotting=True, loads=None):
         ld.SetValue('fP', load.scaling)
         ld.SetValue('fQ', load.scaling)
         geo = net_pp.bus_geodata.loc[load.bus, :]
+        net_pp['sincal_lookup'] = pd.concat([net_pp['sincal_lookup'],
+                                             pd.Series(['element', e_id, corresponding, idx],
+                                                       index=['table_name', 'id', 'pp_element',
+                                                              'pp_index']).to_frame().T])
         if plotting:
             tile = net.GetCommonObject("GraphicAreaTile", 1)
             factor = tile.GetValue('ScalePaper')
@@ -271,7 +272,7 @@ def create_load(net, net_pp, elements, plotting=True, loads=None):
         net.OpenEx()
 
 
-def create_sgen(net, net_pp, elements, plotting=True, sgens=None, pv=False):
+def create_sgen(net, net_pp, elements, plotting=True, sgens=None, power_flow_type='pq', corresponding='sgen'):
     '''
     The function creates an electrical aquivalent element of the chosen pandapower-sgens in the
     sincal electrical Database Object (net). If plotting=True a graphical element will also be created.
@@ -283,9 +284,11 @@ def create_sgen(net, net_pp, elements, plotting=True, sgens=None, pv=False):
     :param elements: Number of connected elements to all busses
     :type elements: Tuple
     :param plotting: Flag to graphically display Elements
-    :type plotting: boolean
+    :type plotting: boolean, False
     :param sgens: DataFrame with sgens to convert, if None all sgens will be converted.
     :type sgens: DataFrame, None
+    :param pv: Flag if sgens are connected to a PV or a PQ node
+    :type pv: boolean, False
     :return: None
     :rtype: None
     '''
@@ -300,15 +303,19 @@ def create_sgen(net, net_pp, elements, plotting=True, sgens=None, pv=False):
         sgens.Element_ID.at[idx] = e_id
         s.SetValue('Sn', sgen.sn_mva)
         s.SetValue('P', sgen.p_mw)
-        if pv:
+        if power_flow_type == 'pv':
             s.SetValue('Flag_Lf', 4)
             s.SetValue('u', sgen.vm_pu * 100)
-        else:
+        elif power_flow_type == 'pq':
             s.SetValue('fP', sgen.scaling)
             s.SetValue('Q', sgen.q_mvar)
             s.SetValue('fQ', sgen.scaling)
         s.SetValue('Umax_Inverter', v_max * 100)
         s.SetValue('Umin_Inverter', v_min * 100)
+        net_pp['sincal_lookup'] = pd.concat([net_pp['sincal_lookup'],
+                                             pd.Series(['element', e_id, corresponding, idx],
+                                                       index=['table_name', 'id', 'pp_element',
+                                                              'pp_index']).to_frame().T])
         if plotting:
             tile = net.GetCommonObject("GraphicAreaTile", 1)
             factor = tile.GetValue('ScalePaper')
@@ -344,6 +351,212 @@ def create_sgen(net, net_pp, elements, plotting=True, sgens=None, pv=False):
         net.OpenEx()
 
 
+def create_synchronous(net, net_pp, elements, synchronous, plotting=True, power_flow_type='pv'):
+    '''
+    The function creates an electrical aquivalent element of all elements that can be modelled as synchronous model
+    in the sincal electrical Database Object (net). If plotting=True a graphical element will also be created.
+
+    :param net: Sincal electrical Database Object
+    :type net: object
+    :param net_pp: The pandapower network that shall be converted
+    :type net_pp: pandapowerNet
+    :param elements: Number of connected elements to all busses
+    :type elements: int
+    :param elements: Number of connected elements to all busses
+    :type elements: int
+    :param plotting: Flag to graphically display Elements
+    :type plotting: boolean, False
+    :param sgens: DataFrame with sgens to convert, if None all sgens will be converted.
+    :type sgens: DataFrame, None
+    :param pv: Flag if sgens are connected to a PV or a PQ node
+    :type pv: boolean, False
+    :return: None
+    :rtype: None
+    '''
+
+    synchronous['Element_ID'] = None
+    v_max = net_pp.res_bus.vm_pu.max()
+    v_min = net_pp.res_bus.vm_pu.min()
+    for idx, sync in synchronous.iterrows():
+        s = net.CreateElement('SynchronousMachine', sync['Sinc_Name'], net_pp.bus.loc[sync.bus, 'Sinc_Name'])
+        if power_flow_type == 'pv':
+            s.setValue('Flag_Lf', 6)
+            s.SetValue('Sn', sync.sn_mva)
+            s.SetValue('P', sync.p_mw)
+            s.SetValue('u', sync.vm_pu * 100)
+            s.SetValue('fP', sync.scaling)
+        elif power_flow_type == 'pq':
+            s.setValue('Flag_Lf', 2)
+            s.SetValue('Sn', sync.sn_mva)
+            s.SetValue('P', sync.p_mw)
+            s.SetValue('Q', sync.q_mvar)
+            s.SetValue('fP', sync.scaling)
+            s.SetValue('fQ', sync.scaling)
+
+        e_id = s.GetValue("Element_ID")
+        synchronous.Element_ID.at[idx] = e_id
+        s.SetValue('Umax_Inverter', v_max * 100)
+        s.SetValue('Umin_Inverter', v_min * 100)
+        net_pp['sincal_lookup'] = pd.concat([net_pp['sincal_lookup'],
+                                             pd.Series(['element', e_id, 'sgen', idx],
+                                                       index=['table_name', 'id', 'pp_element',
+                                                              'pp_index']).to_frame().T])
+        if plotting:
+            tile = net.GetCommonObject("GraphicAreaTile", 1)
+            factor = tile.GetValue('ScalePaper')
+            x = 0.015 * np.sin(np.deg2rad(elements[0][sync.bus] * elements[1][sync.bus] + 100))
+            y = np.sqrt(0.015 ** 2 - x ** 2)
+            if (elements[0][sync.bus] * elements[1][sync.bus] + 10 > 180) and \
+                    (elements[0][sync.bus] * elements[1][sync.bus] + 10 < 360):
+                y = - y
+            geo = net_pp.bus_geodata.loc[sync.bus, :]
+            s.CreateGraphic(geo.x + x * factor, geo.y + y * factor)
+            t_id = s.GetValue('Terminal1.Terminal_ID')
+            gterminal = net.GetCommonObject("GraphicTerminal", t_id)
+            gterminal.SetValue('SwtNodePos', 15)
+            gterminal.SetValue('SwtFactor', 20)
+            gterminal.Update()
+            gt_id = gterminal.GetValue('GraphicText_ID')
+            gtext = net.GetCommonObject("GraphicText", gt_id)
+            gtext.SetValue("Pos1", x * factor / 2)
+            gtext.SetValue("Pos2", y * factor / 2)
+            gtext.Update()
+            gelement = net.GetCommonObject("GraphicElement", e_id)
+            gelement.SetValue('SymbolSize', 30)
+            gelement.Update()
+            gt_id = gelement.GetValue('GraphicText_ID1')
+            gtexte = net.GetCommonObject("GraphicText", gt_id)
+            pos = gtexte.GetValue("Pos2")
+            gtexte.SetValue("Pos2", pos + 0.015 * factor / 4)
+            gtexte.Update()
+            elements[1][sync.bus] += 1
+        s.Update()
+    if len(net_pp.sgen) > 500:
+        net.Close()
+        net.OpenEx()
+
+
+def create_asymmetric_sgen(net, net_pp, elements, plotting=True, sgens=None, power_flow_type='pv'):
+    '''
+    The function creates an electrical aquivalent element of all elements that can be modelled as synchronous model
+    in the sincal electrical Database Object (net). If plotting=True a graphical element will also be created.
+
+    :param net: Sincal electrical Database Object
+    :type net: object
+    :param net_pp: The pandapower network that shall be converted
+    :type net_pp: pandapowerNet
+    :param elements: Number of connected elements to all busses
+    :type elements: int
+    :param elements: Number of connected elements to all busses
+    :type elements: int
+    :param plotting: Flag to graphically display Elements
+    :type plotting: boolean, False
+    :param sgens: DataFrame with sgens to convert, if None all sgens will be converted.
+    :type sgens: DataFrame, None
+    :param pv: Flag if sgens are connected to a PV or a PQ node
+    :type pv: boolean, False
+    :return: None
+    :rtype: None
+    '''
+
+    if sgens is None:
+        sgens = net_pp.asymmetric_sgen
+    sgens['Element_ID_a'] = sgens['Element_ID_b'] = sgens['Element_ID_c'] = None
+    v_max = net_pp.res_bus.vm_pu.max()
+    v_min = net_pp.res_bus.vm_pu.min()
+
+    def _set_values(s, e_id, power_flow_type, phase):
+        if power_flow_type == 'pv':
+            s.setValue('Flag_Lf', 6)
+            s.SetValue('Sn', sgen.sn_mva)
+            s.SetValue('P', sgen['p_%s_mw' % phase])
+            s.SetValue('u', sgen.vm_pu * 100)
+            s.SetValue('fP', sgen.scaling)
+        elif power_flow_type == 'pq':
+            s.setValue('Flag_Lf', 2)
+            s.SetValue('Sn', sgen.sn_mva)
+            s.SetValue('P', sgen['p_%s_mw' % phase])
+            s.SetValue('Q', sgen['q_%s_mvar' % phase])
+            s.SetValue('fP', sgen.scaling)
+            s.SetValue('fQ', sgen.scaling)
+        t_id = s.GetValue('Terminal1.Terminal_ID')
+        terminal = net.GetCommonObject("Terminal", t_id)
+        if phase == 'a':
+            terminal.SetValue('Flag_Terminal', 1)
+        elif phase == 'b':
+            terminal.SetValue('Flag_Terminal', 2)
+        elif phase == 'c':
+            terminal.SetValue('Flag_Terminal', 3)
+        s.SetValue('Umax_Inverter', v_max * 100)
+        s.SetValue('Umin_Inverter', v_min * 100)
+        terminal.Update()
+        sgens['Element_ID_%s' % phase].at[idx] = e_id
+        net_pp['sincal_lookup'] = pd.concat([net_pp['sincal_lookup'],
+                                             pd.Series(['element', e_id, 'asymmetric_sgen', idx],
+                                                       index=['table_name', 'id', 'pp_element',
+                                                              'pp_index']).to_frame().T])
+    def _set_graphic(s, sgen, e_id, add):
+        x = 0.015 * np.sin(np.deg2rad(elements[0][sgen.bus] * elements[1][sgen.bus] + 100 + add))
+        y = np.sqrt(0.015 ** 2 - x ** 2)
+        if (elements[0][sgen.bus] * elements[1][sgen.bus] + 10 > 180) and \
+                (elements[0][sgen.bus] * elements[1][sgen.bus] + 10 < 360):
+            y = - y
+        geo = net_pp.bus_geodata.loc[sgen.bus, :]
+        s.CreateGraphic(geo.x + x * factor, geo.y + y * factor)
+        t_id = s.GetValue('Terminal1.Terminal_ID')
+        gterminal = net.GetCommonObject("GraphicTerminal", t_id)
+        gterminal.SetValue('SwtNodePos', 15)
+        gterminal.SetValue('SwtFactor', 20)
+        gterminal.Update()
+        gt_id = gterminal.GetValue('GraphicText_ID')
+        gtext = net.GetCommonObject("GraphicText", gt_id)
+        gtext.SetValue("Pos1", x * factor / 2)
+        gtext.SetValue("Pos2", y * factor / 2)
+        gtext.Update()
+        gelement = net.GetCommonObject("GraphicElement", e_id)
+        gelement.SetValue('SymbolSize', 30)
+        gelement.Update()
+        gt_id = gelement.GetValue('GraphicText_ID1')
+        gtexte = net.GetCommonObject("GraphicText", gt_id)
+        pos = gtexte.GetValue("Pos2")
+        gtexte.SetValue("Pos2", pos + 0.015 * factor / 4)
+        gtexte.Update()
+
+    for idx, sgen in sgens.iterrows():
+        if sgen.p_a_mw != 0 or sgen.q_a_mvar != 0:
+            s1 = net.CreateElement('SynchronousMachine', sgen['Sinc_Name'], net_pp.bus.loc[sgen.bus, 'Sinc_Name'])
+            e_id1 = s1.GetValue("Element_ID")
+            _set_values(s1, e_id1, power_flow_type, phase='a')
+        else:
+            s1 = None
+        if sgen.p_b_mw != 0 or sgen.q_b_mvar != 0:
+            s2 = net.CreateElement('SynchronousMachine', sgen['Sinc_Name'], net_pp.bus.loc[sgen.bus, 'Sinc_Name'])
+            e_id2 = s2.GetValue("Element_ID")
+            _set_values(s2, e_id2, power_flow_type, phase='b')
+        else:
+            s2 = None
+        if sgen.p_c_mw != 0 or sgen.q_c_mvar != 0:
+            s3 = net.CreateElement('SynchronousMachine', sgen['Sinc_Name'], net_pp.bus.loc[sgen.bus, 'Sinc_Name'])
+            e_id3 = s3.GetValue("Element_ID")
+            _set_values(s3, e_id3, power_flow_type, phase='c')
+        else:
+            s3 = None
+
+        if plotting:
+            tile = net.GetCommonObject("GraphicAreaTile", 1)
+            factor = tile.GetValue('ScalePaper')
+            if s1 is not None: _set_graphic(s1, sgen, e_id1, 0)
+            if s2 is not None: _set_graphic(s2, sgen, e_id2, -10)
+            if s3 is not None: _set_graphic(s3, sgen, e_id3, 10)
+            elements[1][sgen.bus] += 1
+        if s1 is not None: s1.Update()
+        if s2 is not None: s2.Update()
+        if s3 is not None: s3.Update()
+    if len(net_pp.sgen) > 500:
+        net.Close()
+        net.OpenEx()
+
+
 def create_ext_grid(net, net_pp, elements, plotting=True, ext_grids=None):
     '''
     The function creates an electrical aquivalent element of the chosen pandapower-ext_grids in the
@@ -372,6 +585,10 @@ def create_ext_grid(net, net_pp, elements, plotting=True, ext_grids=None):
 
         ext.SetValue('Flag_Lf', 3)
         ext.SetValue('u', ext_grid.vm_pu * 100)
+        net_pp['sincal_lookup'] = pd.concat([net_pp['sincal_lookup'],
+                                             pd.Series(['element', e_id, 'ext_grid', idx],
+                                                       index=['table_name', 'id', 'pp_element',
+                                                              'pp_index']).to_frame().T])
         if plotting:
             tile = net.GetCommonObject("GraphicAreaTile", 1)
             factor = tile.GetValue('ScalePaper')
@@ -440,16 +657,21 @@ def create_trafo(net, net_pp, plotting=False, trafos=None):
         t.SetValue('i0', trafo.i0_percent)
         t.SetValue('rohl', trafo.tap_min)
         t.SetValue('rohm', trafo.tap_neutral)
-        t.SetValue('AddRotate', trafo.shift_degree)
+        t.SetValue('VecGrp', _get_vector_group(trafo.vector_group, trafo.shift_degree))
         t.SetValue('rohu', trafo.tap_max)
         t.SetValue('roh', trafo.tap_pos)
         t.SetValue('ukr', trafo.tap_step_percent)
         t.SetValue('Flag_fr', trafo.df)
+
         if not trafo.tap_side is None:
             t.SetValue('Flag_ConNode', {'hv': 1, 'lv': 2}[trafo.tap_side])
             t.SetValue('Flag_Input', 4099)
         if not trafo.std_type is None:
             t.SetValue('Description', 'std_type: ' + trafo.std_type)
+        net_pp['sincal_lookup'] = pd.concat([net_pp['sincal_lookup'],
+                                             pd.Series(['element', e_id, 'trafo', idx],
+                                                       index=['table_name', 'id', 'pp_element',
+                                                              'pp_index']).to_frame().T])
         if plotting:
             tile = net.GetCommonObject("GraphicAreaTile", 1)
             factor = tile.GetValue('ScalePaper')
@@ -546,6 +768,7 @@ def create_line(net, net_pp, plotting=True, lines=None):
         lines = net_pp.line
     lines['Element_ID'] = None
     bus_ocr = dict()
+
     for b in net_pp.bus.index:
         to_bus = net_pp.line.loc[net_pp.line.from_bus == b, 'to_bus']
         from_bus = net_pp.line.loc[net_pp.line.to_bus == b, 'from_bus']
@@ -555,6 +778,7 @@ def create_line(net, net_pp, plotting=True, lines=None):
             continue
         uni_bus = pd.Series(np.zeros(len(uni_bus)), index=uni_bus.tolist())
         bus_ocr[b] = dict(uni_bus)
+
     for idx, line in lines.iterrows():
         ln = net.CreateElement('Line', line['Sinc_Name'], net_pp.bus.loc[line.from_bus, 'Sinc_Name'],
                                net_pp.bus.loc[line.to_bus, 'Sinc_Name'])
@@ -565,20 +789,31 @@ def create_line(net, net_pp, plotting=True, lines=None):
         ln.SetValue('r', line.r_ohm_per_km)
         ln.SetValue('x', line.x_ohm_per_km)
         ln.SetValue('c', line.c_nf_per_km)
+        ln.SetValue('Flag_Z0_Input', 2)
+        if 'r0_ohm_per_km' in line.index:
+            ln.SetValue('r0', line.r0_ohm_per_km)
+            ln.SetValue('x0', line.x0_ohm_per_km)
+            ln.SetValue('c0', line.c0_nf_per_km)
+            ln.SetValue('Flag_Input', 7)
         ln.SetValue('Ith', line.max_i_ka)
         ln.SetValue('Flag_lineTyp', line.type)
         ln.SetValue('Flag_ParSys', line.parallel)
         ln.SetValue('Flag_fr', line.df)
         if not line.std_type is None:
             ln.SetValue('Description', 'std_type: ' + line.std_type)
+        net_pp['sincal_lookup'] = pd.concat([net_pp['sincal_lookup'],
+                                             pd.Series(['element', e_id, 'line', idx],
+                                                       index=['table_name', 'id', 'pp_element',
+                                                              'pp_index']).to_frame().T])
         if plotting:
+            line_geodata = net_pp.line_geodata.loc[line.name, 'coords']
             tile = net.GetCommonObject("GraphicAreaTile", 1)
             factor = tile.GetValue('ScalePaper')
-            bus_geo_from = net_pp.bus_geodata.loc[line.from_bus]
-            bus_geo_to = net_pp.bus_geodata.loc[line.to_bus]
+            bus_geo_from = line_geodata[0]
+            bus_geo_to = line_geodata[-1]
             ln.CreateGraphic()
-            t_id = ln.GetValue('Terminal1.Terminal_ID')
-            gterminal = net.GetCommonObject("GraphicTerminal", t_id)
+            t_id1 = ln.GetValue('Terminal1.Terminal_ID')
+            gterminal = net.GetCommonObject("GraphicTerminal", t_id1)
             gterminal.SetValue('SwtNodePos', 15)
             gterminal.SetValue('SwtFactor', 20)
             fb = line.from_bus
@@ -598,21 +833,21 @@ def create_line(net, net_pp, plotting=True, lines=None):
             gterminal.Update()
             gt_id = gterminal.GetValue('GraphicText_ID')
             gtext = net.GetCommonObject("GraphicText", gt_id)
-            x = 0.1 * (bus_geo_to.x - bus_geo_from.x)
-            y = 0.1 * (bus_geo_to.y - bus_geo_from.y)
+            x = 0.1 * (bus_geo_to[0] - bus_geo_from[0])
+            y = 0.1 * (bus_geo_to[1] - bus_geo_from[1])
             gtext.SetValue("Pos1", x)
             gtext.SetValue("Pos2", y)
             gtext.SetValue("Visible", 0)
             gtext.Update()
 
-            t_id = ln.GetValue('Terminal2.Terminal_ID')
-            gterminal = net.GetCommonObject("GraphicTerminal", t_id)
+            t_id2 = ln.GetValue('Terminal2.Terminal_ID')
+            gterminal = net.GetCommonObject("GraphicTerminal", t_id2)
             gterminal.SetValue('SwtNodePos', 15)
             gterminal.SetValue('SwtFactor', 20)
             gt_id = gterminal.GetValue('GraphicText_ID')
             gtext = net.GetCommonObject("GraphicText", gt_id)
-            x = 0.1 * (bus_geo_from.x - bus_geo_to.x)
-            y = 0.1 * (bus_geo_from.y - bus_geo_to.y)
+            x = 0.1 * (bus_geo_from[0] - bus_geo_to[0])
+            y = 0.1 * (bus_geo_from[1] - bus_geo_to[1])
             gtext.SetValue("Pos1", x)
             gtext.SetValue("Pos2", y)
             gtext.SetValue("Visible", 0)
@@ -637,23 +872,42 @@ def create_line(net, net_pp, plotting=True, lines=None):
                 else:
                     gterminal.SetValue('PosX', nx + bus_ocr[tb][fb] / 2 * 0.02 * factor + 0.01 * factor)
                 bus_ocr[tb][fb] += 1
+
+            if len(line_geodata) > 2:
+                length = int(len(line_geodata) / 2)
+                for i, l_geo in enumerate(line_geodata[1:length][::-1]):
+                    bu = net.CreateObject("GraphicBucklePoint")
+                    bu.SetValue('GraphicTerminal_ID', t_id1)
+                    bu.SetValue('PosX', l_geo[0])
+                    bu.SetValue('PosY', l_geo[1])
+                    bu.SetValue('NoPoint', i + 1)
+                    bu.Update()
+                for i, l_geo in enumerate(line_geodata[length:-1]):
+                    bu = net.CreateObject("GraphicBucklePoint")
+                    bu.SetValue('GraphicTerminal_ID', t_id2)
+                    bu.SetValue('PosX', l_geo[0])
+                    bu.SetValue('PosY', l_geo[1])
+                    bu.SetValue('NoPoint', i + 1)
+                    bu.Update()
             gterminal.Update()
         ln.Update()
-    for b in bus_ocr.keys():
-        n_id = net_pp.bus.loc[b, 'Node_ID']
-        gn = net.GetCommonObject("GraphicNode", n_id)
-        coords_x = gn.GetValue('NodeStartX')
-        coorde_x = gn.GetValue('NodeEndX')
-        coord_x = (coorde_x + coords_x) / 2
-        maximum = max(bus_ocr[b].values())
-        comp = (round(maximum / 2 + 0.1) - 1) * 0.02 * factor + 0.01 * factor
-        if (maximum == 1) and (coord_x + comp > coorde_x):
-            continue
-        elif coord_x + comp > coorde_x:
-            gn.SetValue('NodeStartX', coord_x - comp)
-            gn.SetValue('NodeEndX', coord_x + comp)
-        gn.SetValue("SymType", 3)
-        gn.Update()
+    # ToDo: needs to be redone
+    # for b in bus_ocr.keys():
+    # n_id = net_pp.bus.loc[b, 'Node_ID']
+    # gn = net.GetCommonObject("GraphicNode", n_id)
+
+    # coords_x = gn.GetValue('NodeStartX')
+    # coorde_x = gn.GetValue('NodeEndX')
+    # coord_x = (coorde_x + coords_x) / 2
+    # maximum = max(bus_ocr[b].values())
+    # comp = (round(maximum / 2 + 0.1) - 1) * 0.02 * factor + 0.01 * factor
+    # if (maximum == 1) and (coord_x + comp > coorde_x):
+    #    continue
+    # elif coord_x + comp > coorde_x:
+    #    gn.SetValue('NodeStartX', coord_x - comp)
+    #    gn.SetValue('NodeEndX', coord_x + comp)
+    # gn.SetValue("SymType", 3)
+    # gn.Update()
     if len(net_pp.line) > 500:
         net.Close()
         net.OpenEx()
@@ -699,7 +953,10 @@ def create_switch(net, net_pp, plotting=True, switches=None):
 
             b_tid = cnnctr.GetValue("Terminal1.Terminal_ID")
             brk_b.SetValue("Terminal_ID", b_tid)
-
+            net_pp['sincal_lookup'] = pd.concat([net_pp['sincal_lookup'],
+                                                 pd.Series(['element', e_id, 'switch', idx],
+                                                           index=['table_name', 'id', 'pp_element',
+                                                                  'pp_index']).to_frame().T])
             if plotting:
                 tile = net.GetCommonObject("GraphicAreaTile", 1)
                 factor = tile.GetValue('ScalePaper')
@@ -766,6 +1023,10 @@ def create_switch(net, net_pp, plotting=True, switches=None):
                 brk_l.SetValue("Terminal_ID", l_tid1)
             else:
                 brk_l.SetValue("Terminal_ID", l_tid2)
+            net_pp['sincal_lookup'] = pd.concat([net_pp['sincal_lookup'],
+                                                 pd.Series(['element', e_id, 'switch', idx],
+                                                           index=['table_name', 'id', 'pp_element',
+                                                                  'pp_index']).to_frame().T])
             if plotting:
                 tile = net.GetCommonObject("GraphicAreaTile", 1)
                 factor = tile.GetValue('ScalePaper')
@@ -808,6 +1069,10 @@ def create_switch(net, net_pp, plotting=True, switches=None):
                 brk_t.SetValue("Terminal_ID", t_tid1)
             else:
                 brk_t.SetValue("Terminal_ID", t_tid2)
+            net_pp['sincal_lookup'] = pd.concat([net_pp['sincal_lookup'],
+                                                 pd.Series(['element', e_id, 'switch', idx],
+                                                           index=['table_name', 'id', 'pp_element',
+                                                                  'pp_index']).to_frame().T])
             if plotting:
                 tile = net.GetCommonObject("GraphicAreaTile", 1)
                 factor = tile.GetValue('ScalePaper')
@@ -859,6 +1124,10 @@ def create_gen(net, net_pp, elements, plotting=True, gens=None):
         g.SetValue('Flag_Lf', 11)
         g.SetValue('P', gen.p_mw)
         g.SetValue('u', gen.vm_pu * 100)
+        net_pp['sincal_lookup'] = pd.concat([net_pp['sincal_lookup'],
+                                             pd.Series(['element', e_id, 'gen', idx],
+                                                       index=['table_name', 'id', 'pp_element',
+                                                              'pp_index']).to_frame().T])
         if plotting:
             tile = net.GetCommonObject("GraphicAreaTile", 1)
             factor = tile.GetValue('ScalePaper')
@@ -915,8 +1184,8 @@ def create_storage(net, net_pp, elements, plotting=True, storages=None):
     storage_loads = storages.loc[storages.p_mw >= 0]
     storage_sgens = copy.deepcopy(storages.loc[storages.p_mw < 0])
     storage_sgens.p_mw.values[:] = np.abs(storage_sgens.p_mw.values)
-    create_load(net, net_pp, elements, plotting, storage_loads)
-    create_sgen(net, net_pp, elements, plotting, storage_sgens)
+    create_load(net, net_pp, elements, plotting, storage_loads, corresponding='storage')
+    create_sgen(net, net_pp, elements, plotting, storage_sgens, corresponding='storage')
     if len(net_pp.storage) > 500:
         net.Close()
         net.OpenEx()
@@ -949,7 +1218,7 @@ def create_dcline(net, net_pp, elements, plotting=True, dcline=None):
     dcline_from['sn_mva'] = np.sqrt(dcline_from['p_mw'] ** 2 + res_dcline_from['q_from_mvar'] ** 2)
     dcline_from['Sinc_Name'] = 'from_' + dcline_from['Sinc_Name']
 
-    create_sgen(net, net_pp, elements, plotting, dcline_from, True)
+    create_sgen(net, net_pp, elements, plotting, dcline_from, 'pv', corresponding='dc_line')
 
     dcline_to = copy.deepcopy(dcline)
     res_dcline_to = net_pp.res_dcline.loc[dcline_to.index, :]
@@ -958,7 +1227,7 @@ def create_dcline(net, net_pp, elements, plotting=True, dcline=None):
     dcline_to['sn_mva'] = np.sqrt(dcline_to['p_mw'] ** 2 + res_dcline_to['q_to_mvar'] ** 2)
     dcline_to['Sinc_Name'] = 'to_' + dcline_to['Sinc_Name']
 
-    create_sgen(net, net_pp, elements, plotting, dcline_to, True)
+    create_sgen(net, net_pp, elements, plotting, dcline_to, 'pv', corresponding='dc_line')
     if len(net_pp.dcline) > 500:
         net.Close()
         net.OpenEx()

@@ -89,6 +89,7 @@ def sincal2pp(filename, use_gis_data=False, variant=1, variant_type="flag"):
     node_terminal_element = pd.merge(
         nt, d["element"], on="Element_ID", suffixes=["", "_element"]
     )
+    node_terminal_element.sort_values('Element_ID', inplace=True)
 
     # LINE ####################################################################################
     df = pd.read_sql(sql_line(variant_id), connection)
@@ -96,10 +97,13 @@ def sincal2pp(filename, use_gis_data=False, variant=1, variant_type="flag"):
     lines_as_switches = df["lty"] == 3
     switch_line_df = df.loc[lines_as_switches, :]
     if not switch_line_df.empty:
+        df_breaker = pd.read_sql(sql_breaker(variant_id), connection)
+        switch_line_df = switch_line_df.merge(df_breaker, left_on='_index', right_on='element', how='left')
         closed = (
                 (switch_line_df["in_service_tt"] == 1)
                 & (switch_line_df["in_service_ft"] == 1)
                 & switch_line_df["in_service"]
+                & (switch_line_df["in_service_b"] == 1)
         )
         pp.create_switches(
             net,
@@ -117,7 +121,7 @@ def sincal2pp(filename, use_gis_data=False, variant=1, variant_type="flag"):
         net,
         line_df.from_bus.values,
         line_df.to_bus.values,
-        index=line_df["_index"],
+        #index=line_df["_index"],
         **{
             c: line_df[c].values
             for c in line_df.columns
@@ -146,7 +150,7 @@ def sincal2pp(filename, use_gis_data=False, variant=1, variant_type="flag"):
     )
 
     pp.replace_zero_branches_with_switches(
-        net, in_service_only=False, min_length_km=0.001, drop_affected=True
+        net, in_service_only=False, min_length_km=0.0001, drop_affected=True
     )
     # LINE_GEODATA ########################################################################
     terminal_graphics_from = pd.read_sql(sql_line_geodata(1, variant_id), connection)
@@ -201,6 +205,10 @@ def sincal2pp(filename, use_gis_data=False, variant=1, variant_type="flag"):
     df = pd.read_sql(sql_trafo_2w(variant_id), connection)
     df["tap_side"] = df["Flag_ConNode"].apply(lambda fl: ["hv", "lv"][fl - 1])
     df["name"] = df["name"].str.strip()
+    vg = get_vector_group(df['VecGrp'].values)
+    df["vector_group"] = vg[0]
+    df["shift_degree"] = vg[1]
+
 
     trafo_dict = {
         "hv_buses": "hv_bus",
@@ -212,6 +220,7 @@ def sincal2pp(filename, use_gis_data=False, variant=1, variant_type="flag"):
         "vkr_percent": "ur",
         "pfe_kw": "Vfe",
         "i0_percent": "i0",
+        "shift_degree": "AddRotate",
         "tap_min": "rohl",
         "tap_neutral": "rohm",
         "tap_max": "rohu",
@@ -221,6 +230,8 @@ def sincal2pp(filename, use_gis_data=False, variant=1, variant_type="flag"):
         "name": "name",
         "in_service": "fs",
         "Sincal_Element_ID": "Element_ID",
+        "vector_group": "vector_group",
+        "shift_degree": "shift_degree"
     }
     pp.create_transformers_from_parameters(
         net, **{k: df[v].values for k, v in trafo_dict.items()}
@@ -391,8 +402,8 @@ def sincal2pp(filename, use_gis_data=False, variant=1, variant_type="flag"):
             return info["Flag_State"] and info["Flag_State_element"]
 
         # Sincal 15 added column Node_ID to DCInfeeder
-        id_column = "Node_ID_x" if "Node_ID" in d["dcinfeeder"].columns else "Node_ID"
-
+        #id_column = "Node_ID_x" if "Node_ID" in d["dcinfeeder"].columns else "Node_ID"
+        id_column = "Node_ID"
         for i, (_, l) in enumerate(df.iterrows(), 1):
             updt(len(df), i, "dc infeeder as sgen")
             if l["Flag_Connect"] == 2:
@@ -454,20 +465,37 @@ def sincal2pp(filename, use_gis_data=False, variant=1, variant_type="flag"):
     for i, (_, l) in enumerate(df.iterrows(), 1):
         updt(len(df), i, "sgens")
         p_mw, q_mvar, scaling = calc_pqsc(l, net)
-        loid = pp.create_sgen(
-            net,
-            l["bus"],
-            p_mw=p_mw,
-            q_mvar=q_mvar,
-            name=l["name"].strip(),
-            scaling=scaling,
-            sn_mva=l["Sn"],
-            in_service=l["in_service"],
-        )
+        if l['phase'] == 7:
+            loid = pp.create_sgen(
+                net,
+                l["bus"],
+                p_mw=p_mw,
+                q_mvar=q_mvar,
+                name=l["name"].strip(),
+                scaling=scaling,
+                sn_mva=l["Sn"],
+                in_service=l["in_service"],
+            )
+            net.sgen.loc[loid, "Sincal_Element_ID"] = l["Element_ID"]
+            if l["mpl"] is not None:
+                net.sgen.loc[loid, "mpl"] = l["mpl"].strip()
+        else:
+            suffix = 'a' if l['phase'] == 1 else 'b' if l['phase'] == 2 else 'c'
+            loid = pp.create_asymmetric_sgen(
+                net,
+                l["bus"],
+                name=l["name"].strip(),
+                scaling=scaling,
+                sn_mva=l["Sn"],
+                in_service=l["in_service"],
+            )
+            net.asymmetric_sgen.loc[loid, 'p_%s_mw' % suffix] = p_mw
+            net.asymmetric_sgen.loc[loid, 'q_%s_mvar' % suffix] = q_mvar
+            net.asymmetric_sgen.loc[loid, "Sincal_Element_ID"] = l["Element_ID"]
+            if l["mpl"] is not None:
+                net.asymmetric_sgen.loc[loid, "mpl"] = l["mpl"].strip()
         # no **kwargs in create_sgen
-        net.sgen.loc[loid, "Sincal_Element_ID"] = l["Element_ID"]
-        if l["mpl"] is not None:
-            net.sgen.loc[loid, "mpl"] = l["mpl"].strip()
+
     connection.close()
     del connection
     logger.info("done")
@@ -497,6 +525,22 @@ def validate_sincal_conversion(filename, net, bus_lookup=None):
 
     return md
 
+def get_vector_group(sincal_id):
+    vector_group = np.zeros_like(sincal_id).astype(str)
+    shift = np.zeros_like(sincal_id)
+    mask_yy0 = sincal_id == 6
+    mask_ynd5 = sincal_id == 26
+    mask_yzn5 = sincal_id == 30
+    mask_dyn5 = sincal_id == 24
+    vector_group[mask_yy0] = 'yy'
+    vector_group[mask_ynd5] = 'ynd'
+    vector_group[mask_yzn5] = 'ynz'
+    vector_group[mask_dyn5] = 'dyn'
+    shift[mask_yy0] = 0
+    shift[mask_ynd5] = 150
+    shift[mask_yzn5] = 150
+    shift[mask_dyn5] = 150
+    return vector_group, shift
 
 if __name__ == "__main__":
     pass

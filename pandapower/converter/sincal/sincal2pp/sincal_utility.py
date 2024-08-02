@@ -33,6 +33,7 @@ def query_node_dict(connection, variant):
     for v in [
         "Node",
         "Line",
+        "Breaker",
         "Load",
         "VoltageLevel",
         "GraphicNode",
@@ -97,6 +98,20 @@ def sql_line(variant_id):
         "tt.Variant_ID=%d" % tuple([variant_id] * 6)
     )
 
+def sql_breaker(variant_id):
+    return (
+        "SELECT b.Breaker_ID as _b_index, "
+        "b.Name as b_name, "
+        "b.Flag_State as in_service_b, "
+        "l.Element_ID as element "
+        "FROM Breaker b, Terminal t, Line l "
+        "WHERE "
+        "b.Terminal_ID=t.Terminal_ID and "
+        "t.Element_ID=l.Element_ID and "
+        "l.Variant_ID=%d and "
+        "b.Variant_ID=%d and "
+        "t.Variant_ID=%d" % tuple([variant_id] * 3)
+    )
 
 def sql_line_geodata(terminal_no, variant_id):
     return """
@@ -233,7 +248,7 @@ def sql_shunt(variant_id):
 
 def sql_synchronous_machine():
     return """SELECT t.Element_ID as Element_ID, n.Node_ID as bus, Flag_Lf, m.P, m.Q, m.fP, m.fQ, m.cosphi, m.S, m.fS, m.Sn,
-               e.Name as name, t.Flag_State as in_service, mp.Name as mpl, ot.Name as got FROM
+               e.Name as name, t.Flag_State as in_service, t.Flag_Terminal as phase, mp.Name as mpl, ot.Name as got FROM
                (((((Node n INNER JOIN Terminal t ON  t.Node_ID=n.Node_ID)
                INNER JOIN Element e ON t.Element_ID=e.Element_ID)
                INNER JOIN SynchronousMachine m ON e.Element_ID=m.Element_ID)
