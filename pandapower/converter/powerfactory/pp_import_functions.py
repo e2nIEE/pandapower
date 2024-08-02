@@ -166,25 +166,43 @@ def from_pf(dict_net, pv_as_slack=True, pf_variable_p_loads='plini', pf_variable
     for n, fuse in enumerate(dict_net['RelFuse'], 1):
         create_coup(net=net, item=fuse, is_fuse=True)
     if n > 0: logger.info('imported %d fuses' % n)
-
+    
+    logger.debug('creating shunts')
     # create shunts (ElmShnt):
     n = 0
     for n, shunt in enumerate(dict_net['ElmShnt'], 1):
         create_shunt(net=net, item=shunt)
     if n > 0: logger.info('imported %d shunts' % n)
-
+    
+    logger.debug('creating impedances')
     # create zpu (ElmZpu):
     n = 0
     for n, zpu in enumerate(dict_net['ElmZpu'], 1):
         create_zpu(net=net, item=zpu)
     if n > 0: logger.info('imported %d impedances' % n)
-
-    # create series impedance (ElmSind):
+    
+    logger.debug('creating series inductivity as impedance')
+    # create series inductivity as impedance (ElmSind):
     n = 0
     for n, sind in enumerate(dict_net['ElmSind'], 1):
         create_sind(net=net, item=sind)
     if n > 0: logger.info('imported %d SIND' % n)
-
+    
+    logger.debug('creating series capacity as impedance')
+    # create series capacity as impedance (ElmScap):
+    n = 0
+    for n, scap in enumerate(dict_net['ElmScap'], 1):
+        create_scap(net=net, item=scap)
+    if n > 0: logger.info('imported %d SCAP' % n)
+    
+    logger.debug('creating static var compensator')
+    # create static var compensator (SVC) with control same as voltage controlled synchron machine (ElmSvs):
+    n = 0
+    for n, svc in enumerate(dict_net['ElmSvs'], 1):
+        create_svc(net=net, item=svc, pv_as_slack=pv_as_slack,
+                        pf_variable_p_gen=pf_variable_p_gen, dict_net=dict_net)
+    if n > 0: logger.info('imported %d SVC' % n)
+    
     # create vac (ElmVac):
     n = 0
     for n, vac in enumerate(dict_net['ElmVac'], 1):
@@ -2694,7 +2712,8 @@ def create_vac(net, item):
     except IndexError:
         logger.error("Cannot add VAC '%s': not connected" % item.loc_name)
         return
-
+    
+    in_service = monopolar_in_service(item)
     params = {
         'name': item.loc_name,
         'bus': bus,
@@ -2702,7 +2721,7 @@ def create_vac(net, item):
         'qs_mvar': item.Qload - item.Qgen,
         'pz_mw': item.Pzload,
         'qz_mvar': item.Qzload,
-        'in_service': not bool(item.outserv)
+        'in_service': in_service
     }
 
     if item.itype == 3:
@@ -2769,6 +2788,72 @@ def create_sind(net, item):
 
     logger.debug('created series reactor %s as per unit impedance at index %d' %
                  (net.impedance.at[sind, 'name'], sind))
+
+def create_scap(net, item):
+    # series reactor is modelled as per-unit impedance, values in Ohm are calculated into values in
+    # per unit at creation
+    try:
+        (bus1, bus2) = get_connection_nodes(net, item, 2)
+    except IndexError:
+        logger.error("Cannot add Scap '%s': not connected" % item.loc_name)
+        return
+    
+    bus1, bus2 = get_connection_nodes(net, item, 2)
+    
+    if (item.gcap==0) or (item.bcap==0):
+        logger.info('not creating series capacitor for %s' % item.loc_name)
+    else:
+        r_ohm = item.gcap/(item.gcap**2 + item.bcap**2)
+        x_ohm = -item.bcap/(item.gcap**2 + item.bcap**2)
+        scap = pp.create_series_reactor_as_impedance(net, from_bus=bus1, to_bus=bus2, r_ohm=r_ohm,
+                                                     x_ohm=x_ohm, sn_mva=item.Sn,
+                                                     name=item.loc_name,
+                                                     in_service=not bool(item.outserv))
+    
+        logger.debug('created series reactor %s as per unit impedance at index %d' %
+                     (net.impedance.at[scap, 'name'], scap))
+        
+def create_svc(net, item, pv_as_slack, pf_variable_p_gen, dict_net):
+    # SVC is voltage controlled and therefore modelled the same way as a voltage controlled synchron machine (gen)
+    # TODO: at least implement a uncontrolled svc as synchron machine with const. Q
+    # TODO: transfer item entries for usage of pp.create_svc, x_l_ohm, x_cvar_ohm, 
+    #       thyristor_firing_angle must be computed
+    name = item.loc_name
+    sid = None
+    element = None
+    logger.debug('>> creating synchronous machine <%s>' % name)
+   
+    try:
+        bus1 = get_connection_nodes(net, item, 1)
+    except IndexError:
+        logger.error("Cannot add SVC '%s': not connected" % name)
+        return
+    
+    if item.i_ctrl==1: # 0: no control, 1: voltage control, 2: reactive power control
+        logger.debug('creating SVC %s as gen' % name)
+        vm_pu = item.usetp
+        in_service = monopolar_in_service(item)
+        svc = pp.create_gen(net, bus=bus1, p_mw=0, vm_pu=vm_pu,
+                            name=name, type="SVC", in_service=in_service)
+        element = 'gen'
+        
+        if svc is None or element is None:
+            logger.error('Error! SVC not created')
+        logger.debug('created svc at index <%s>' % svc)
+        
+        net[element].loc[svc, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
+        add_additional_attributes(item, net, element, svc, attr_dict={"for_name": "equipment"},
+                                  attr_list=["sernum", "chr_name", "cpSite.loc_name"])
+        
+        if item.HasResults(0):  # 'm' results...
+            logger.debug('<%s> has results' % name)
+            net['res_' + element].at[svc, "pf_p"] = ga(item, 'm:P:bus1') #* multiplier
+            net['res_' + element].at[svc, "pf_q"] = ga(item, 'm:Q:bus1') #* multiplier
+        else:
+            net['res_' + element].at[svc, "pf_p"] = np.nan
+            net['res_' + element].at[svc, "pf_q"] = np.nan
+    else:    
+        logger.info('not creating SVC for %s' % item.loc_name)
 
 
 def split_line_at_length(net, line, length_pos):
