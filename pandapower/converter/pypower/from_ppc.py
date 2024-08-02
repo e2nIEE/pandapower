@@ -279,8 +279,8 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
                 f'(hv_bus, lv_bus)=({hv_bus[is_neg_i0_percent]}, {hv_bus[is_neg_i0_percent]}) '
                 'is positive.')
 
-        # pfe_kw = br_g[is_trafo] * baseMVA * 1e3 
-        pfe_kw = 0.
+        pfe_kw = br_g[is_trafo] * baseMVA * 1e3 
+        # pfe_kw = 0.
         vk_percent = np.sign(xk) * zk * sn * 100 / baseMVA
         vk_percent[~tap_side_is_hv] /= (1+ratio_1[~tap_side_is_hv])**2
         vkr_percent = rk * sn * 100 / baseMVA
