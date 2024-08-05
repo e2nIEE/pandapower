@@ -76,10 +76,8 @@ def create_network_dict(app, include_hidden_bus, flag_graphics='GPS'):
 
     logger.info('collecting network elements')
     for obj in set_object_extentions:
-        if (obj == 'ElmTerm') and (include_hidden_bus==True):
+        if (obj == 'ElmTerm'):
             dict_net[obj] = app.GetCalcRelevantObjects(obj, 1, 0, 1)
-        elif (obj == 'ElmTerm') and (include_hidden_bus==False):
-            dict_net[obj] = app.GetCalcRelevantObjects(obj) # default: 1,0,0
         else:
             dict_net[obj] = app.GetCalcRelevantObjects(obj)
 

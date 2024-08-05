@@ -13,8 +13,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def from_pfd(app, prj_name: str, variant_name=None, scenario_name=None, include_hidden_bus=True, path_dst=None, 
-             pv_as_slack=False, pf_variable_p_loads='plini',
+def from_pfd(app, prj_name: str, path_dst=None, pv_as_slack=False, pf_variable_p_loads='plini',
              pf_variable_p_gen='pgini', flag_graphics='GPS', tap_opt='nntap',
              export_controller=True, handle_us="Deactivate", is_unbalanced=False, create_sections=True):
     """
@@ -44,35 +43,10 @@ def from_pfd(app, prj_name: str, variant_name=None, scenario_name=None, include_
     if res == 1:
         raise RuntimeError('Project %s could not be found or activated' % prj_name)
 
-    prj = app.GetActiveProject()
-    
-    if (variant_name is not None) and (scenario_name is not None):
-        variants_folder = app.GetProjectFolder('scheme')
-        variants = variants_folder.GetContents()
-        for variant in variants:
-            if variant.loc_name == variant_name:
-                break
-            else:
-                raise UserWarning(f"{variant_name} does not exist in PowerFactory.")
-        # found variant and activate it
-        variant.Activate()
-    
-        scenarios = variant.GetContents()
-        for scenario in scenarios:
-            if scenario.loc_name == scenario_name:
-                break
-            else:
-                raise UserWarning(f"{scenario_name} does not exist in PowerFactory.")
-        # found scenario and activate it
-        scenario.Activate()
-    elif (variant_name is None) and (scenario_name is not None):
-        raise UserWarning(f"scenario_name {scenario_name} is chosen but no variant_name.")
-    elif (variant_name is not None) and (scenario_name is None): 
-        raise UserWarning(f"variant_name {variant_name} is chosen but no scenario_name.")
-        
+    prj = app.GetActiveProject()        
         
     logger.info('gathering network elements')
-    dict_net = create_network_dict(app, include_hidden_bus, flag_graphics)
+    dict_net = create_network_dict(app, flag_graphics)
     pf_load_flow_failed = run_load_flow(app)
     logger.info('exporting network to pandapower')
     app.SetAttributeModeInternal(1)

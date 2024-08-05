@@ -10,7 +10,7 @@ from pandapower.pypower.idx_bus import PD, QD
 from pandapower.pypower.idx_gen import GEN_BUS, PG, QG, GEN_STATUS
 from scipy.sparse import csr_matrix as sparse
 
-from pandapower.pypower.idx_bus import CID, CZD
+from pandapower.pypower.idx_bus import CID, CID_Q, CZD, CZD_Q
 
 
 def _get_Sbus(baseMVA, bus, gen_on, Cg, vm=None):
@@ -28,7 +28,20 @@ def _get_Sload(bus, vm):
         cz = bus[:, CZD]
         cp = (1 - ci - cz)
         volt_depend = cp + ci * vm + cz * vm ** 2
-        S_load *= volt_depend
+        
+        cz_q = bus[:, CZD_Q]
+        ci_q = bus[:, CID_Q]
+        cq = (1 - ci_q - cz_q)
+        volt_depend_q = cq + ci_q * vm + cz_q * vm ** 2
+        
+        #volt_depend_complex = volt_depend + volt_depend_q*1j
+        #S_load *= volt_depend_complex ####??? nur auf complex???
+        
+        S_load_real = S_load.real * volt_depend
+        S_load_imag = S_load.imag * volt_depend_q
+        
+        S_load = S_load_real+S_load_imag*1j
+        
     return S_load
 
 

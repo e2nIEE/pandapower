@@ -747,7 +747,8 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
     return index
 
 
-def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, sn_mva=nan,
+def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, 
+                const_z_q_percent=0, const_i_q_percent=0, sn_mva=nan,
                 name=None, scaling=1., index=None, in_service=True, type='wye', max_p_mw=nan,
                 min_p_mw=nan, max_q_mvar=nan, min_q_mvar=nan, controllable=nan, **kwargs):
     """
@@ -770,10 +771,16 @@ def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, 
 
         **q_mvar** (float, default 0) - The reactive power of the load
 
-        **const_z_percent** (float, default 0) - percentage of p_mw and q_mvar that will be \
+        **const_z_percent** (float, default 0) - percentage of p_mw that will be \
             associated to constant impedance load at rated voltage
 
-        **const_i_percent** (float, default 0) - percentage of p_mw and q_mvar that will be \
+        **const_i_percent** (float, default 0) - percentage of p_mw that will be \
+            associated to constant current load at rated voltage
+        
+        **const_z_q_percent** (float, default 0) - percentage of q_mvar that will be \
+            associated to constant impedance load at rated voltage
+
+        **const_i_q_percent** (float, default 0) - percentage of q_mvar that will be \
             associated to constant current load at rated voltage
 
         **sn_mva** (float, default None) - Nominal power of the load
@@ -816,10 +823,12 @@ def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, 
 
     index = _get_index_with_check(net, "load", index)
 
-    entries = dict(zip(["name", "bus", "p_mw", "const_z_percent", "const_i_percent", "scaling",
+    entries = dict(zip(["name", "bus", "p_mw", "const_z_percent", "const_i_percent",
+                        "const_z_q_percent", "const_i_q_percent", "scaling",
                         "q_mvar", "sn_mva", "in_service", "type"],
-                       [name, bus, p_mw, const_z_percent, const_i_percent, scaling, q_mvar, sn_mva,
-                        bool(in_service), type]))
+                       [name, bus, p_mw, const_z_percent, const_i_percent,
+                        const_z_q_percent, const_i_q_percent, scaling, 
+                        q_mvar, sn_mva, bool(in_service), type]))
 
     _set_entries(net, "load", index, True, **entries, **kwargs)
 

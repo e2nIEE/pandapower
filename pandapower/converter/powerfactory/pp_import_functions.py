@@ -1624,21 +1624,34 @@ def create_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
         if load_type is None:
             params["const_z_percent"] = 100
         else:
-            if (load_type.kpu != load_type.kqu or load_type.kpu0 != load_type.kqu0 or load_type.aP != load_type.aQ or
-                    load_type.bP != load_type.bQ or load_type.cP != load_type.cQ):
+            if (load_type.kpu != load_type.kqu or load_type.kpu0 != load_type.kqu0):
                 raise UserWarning(f"Load {item.loc_name} ({load_class}) unsupported voltage dependency configuration")
-            i = 0
-            z = 0
-            for cc, ee in zip(("aP", "bP", "cP"), ("kpu0", "kpu1", "kpu")):
-                c = ga(load_type, cc)
-                e = ga(load_type, ee)
-                if e == 1:
-                    i += 100 * c
-                elif e == 2:
-                    z += 100 * c
-            params["const_i_percent"] = i
-            params["const_z_percent"] = z
-
+            else:
+                i_p = 0
+                z_p = 0
+                i_q = 0
+                z_q = 0
+                for cc_p, ee_p, cc_q, ee_q in zip(("aP", "bP", "cP"), ("kpu0", "kpu1", "kpu"),
+                                      ("aQ", "bQ", "cQ"), ("kqu0", "kqu1", "kqu")):
+                    c_p = ga(load_type, cc_p)
+                    e_p = ga(load_type, ee_p)
+                    if e_p == 1:
+                        i_p += 100 * c_p
+                    elif e_p == 2:
+                        z_p += 100 * c_p
+                        
+                    c_q = ga(load_type, cc_q)
+                    e_q = ga(load_type, ee_q)
+                    if e_q == 1:
+                        i_q += 100 * c_q
+                    elif e_q == 2:
+                        z_q += 100 * c_q
+                # params["const_i_p_percent"] = i_p
+                # params["const_z_p_percent"] = z_p
+                params["const_i_percent"] = i_p
+                params["const_z_percent"] = z_p
+                params["const_i_q_percent"] = i_q
+                params["const_z_q_percent"] = z_q
 
     ### for now - don't import ElmLodlvp
     elif load_class == 'ElmLodlvp':
