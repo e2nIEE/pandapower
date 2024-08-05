@@ -154,7 +154,8 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     vsc_value_dc = vsc[vsc_branches[vsc_controllable], VSC_VALUE_DC]
     vsc_y_pu = 1 / (vsc[vsc_branches, VSC_R] + 1j * vsc[vsc_branches, VSC_X].real)
     # make sure this is not 0 in the inputs!
-    vsc_g_pu = 1 / vsc[vsc_branches, VSC_R_DC]
+    with np.errstate(all="raise"):
+        vsc_g_pu = 1 / vsc[vsc_branches, VSC_R_DC]
     vsc_gl_pu = vsc[vsc_branches, VSC_PL_DC] # / np.square(bus_dc[vsc[vsc_branches, VSC_BUS_DC].astype(np.int64), DC_BASE_KV])
     any_vsc = num_vsc > 0
     any_vsc_controllable = num_vsc_controllable > 0
@@ -167,7 +168,8 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     baseR = 110 ** 2 / baseMVA
     hvdc_branches = np.flatnonzero(branch_dc[:, DC_BR_STATUS] != 0)
     num_branch_dc = len(hvdc_branches) + num_vsc  # internal vsc resistance is also a dc branch
-    hvdc_y_pu = 1 / branch_dc[hvdc_branches, DC_BR_R]
+    with np.errstate(all="raise"):
+        hvdc_y_pu = 1 / branch_dc[hvdc_branches, DC_BR_R]
     relevant_bus_dc = flatnonzero(bus_dc[:, DC_BUS_TYPE] != DC_NONE)
     num_bus_dc = len(relevant_bus_dc)
     any_branch_dc = num_branch_dc > 0

@@ -62,6 +62,7 @@ def calc_y_svc_pu(x_control, svc_x_l_pu, svc_x_cvar_pu):
     return y_svc
 
 
+@np.errstate(all="raise")
 def makeYbus_svc(Ybus, x_control_svc, svc_x_l_pu, svc_x_cvar_pu, svc_buses):
     """
     Constructs the SVC (Static VAR Compensator) admittance matrix.
@@ -218,6 +219,7 @@ def make_Ybus_facts(from_bus, to_bus, y_pu, n, ysf_pu=0, yst_pu=0, dtype=np.comp
     return Ybus_facts
 
 
+@np.errstate(all="raise")
 def make_Yft_facts(from_bus, to_bus, y_pu, n, ysf_pu=0, yst_pu=0):
     """
     Construct the Yf and Yt admittance matrices for branches with FACTS devices.

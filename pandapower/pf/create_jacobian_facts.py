@@ -530,6 +530,7 @@ def create_J_modification_ssc_vsc(J, V, Vm, y_pu, f, t, pvpq, pq, pvpq_lookup, p
     return J_m
 
 
+@np.errstate(all="raise")
 def create_J_modification_hvdc(J, V_dc, Ybus_hvdc, Ybus_vsc_dc, vsc_g_pu, vsc_gl_pu, dc_p, dc_p_lookup,
                                vsc_dc_fb, vsc_dc_tb, vsc_dc_slack, vsc_dc_mode_p):
     # Calculate the first matrix for all elements
