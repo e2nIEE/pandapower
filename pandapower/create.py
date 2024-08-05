@@ -3806,7 +3806,7 @@ def create_switches(net, buses, elements, et, closed=True, type=None, name=None,
                                        ("t3", "trafo3w", ["hv_bus", "mv_bus", "lv_bus"])]:
         bus_not_connected_mask = ~elements_s[et_s == typ].isin(net[table].index)
         if np_any(bus_not_connected_mask):
-            raise UserWarning("%s busses do not exist: %s" %
+            raise UserWarning("%s buses do not exist: %s" %
                               (table.capitalize(), elements_s[et_s == typ][bus_not_connected_mask].to_list()))
         merged = pd.merge(buses_s[et_s == typ].set_axis(elements_s[et_s == typ]), 
                           net[table][joining_busses], left_index=True, right_index=True)

@@ -1292,7 +1292,7 @@ def test_create_switches_raise_errorexcept():
         pp.create_switches(
             net, buses=[6, b2, b3], elements=[l1, t1, b4], et=["l", "t", "b"], z_ohm=0.0
         )
-    with pytest.raises(UserWarning, match=r"Line busses do not exist: \[1\]"):
+    with pytest.raises(UserWarning, match=r"Line buses do not exist: \[1\]"):
         pp.create_switches(
             net, buses=[b1, b2, b3], elements=[1, t1, b4], et=["l", "t", "b"], z_ohm=0.0
         )
@@ -1304,7 +1304,7 @@ def test_create_switches_raise_errorexcept():
             et=["l", "t", "b"],
             z_ohm=0.0,
         )
-    with pytest.raises(UserWarning, match=r"Trafo busses do not exist: \[1\]"):
+    with pytest.raises(UserWarning, match=r"Trafo buses do not exist: \[1\]"):
         pp.create_switches(
             net, buses=[b1, b2, b3], elements=[l1, 1, b4], et=["l", "t", "b"], z_ohm=0.0
         )
@@ -1324,7 +1324,7 @@ def test_create_switches_raise_errorexcept():
         pp.create_switches(
             net, buses=[b1, b2, b3], elements=[l1, t1, 6], et=["l", "t", "b"], z_ohm=0.0
         )
-    with pytest.raises(UserWarning, match=r"Trafo3w busses do not exist: \[1\]"):
+    with pytest.raises(UserWarning, match=r"Trafo3w buses do not exist: \[1\]"):
         pp.create_switches(
             net,
             buses=[b1, b2, b3],
