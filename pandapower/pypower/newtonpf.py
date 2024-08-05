@@ -153,7 +153,8 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     vsc_mode_dc = vsc[vsc_branches[vsc_controllable], VSC_MODE_DC]
     vsc_value_dc = vsc[vsc_branches[vsc_controllable], VSC_VALUE_DC]
     vsc_y_pu = 1 / (vsc[vsc_branches, VSC_R] + 1j * vsc[vsc_branches, VSC_X].real)
-    vsc_g_pu = np.where(vsc[vsc_branches, VSC_R_DC] != 0, 1 / vsc[vsc_branches, VSC_R_DC], 1e9)
+    # make sure this is not 0 in the inputs!
+    vsc_g_pu = 1 / vsc[vsc_branches, VSC_R_DC]
     vsc_gl_pu = vsc[vsc_branches, VSC_PL_DC] # / np.square(bus_dc[vsc[vsc_branches, VSC_BUS_DC].astype(np.int64), DC_BASE_KV])
     any_vsc = num_vsc > 0
     any_vsc_controllable = num_vsc_controllable > 0

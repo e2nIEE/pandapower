@@ -2877,6 +2877,9 @@ def create_vscmono(net, item):
         "control_value_dc": control_value_dc
     }
 
+    if params["r_dc_ohm"] == 0:
+        logger.warning(f"VSCmono element {params['name']} has no DC resistive loss factor - power flow will not converge!")
+
     vid = pp.create_vsc(net, **params)
     logger.debug(f'created VSC {vid} for vscmono {item.loc_name}')
 
@@ -2922,6 +2925,9 @@ def create_vsc(net, item):
         "control_value_ac": control_value_ac,
         "control_value_dc": control_value_dc
     }
+
+    if params["r_dc_ohm"] == 0:
+        logger.warning(f"VSC element {params['name']} has no DC resistive loss factor - power flow will not converge!")
 
     vid_1 = pp.create_vsc(net, bus=bus, bus_dc=bus_dc_n, **params)
     vid_2 = pp.create_vsc(net, bus=bus, bus_dc=bus_dc_p, **params)

@@ -113,6 +113,7 @@ def diagnostic(net, report_style='detailed', warnings_only=False, return_result_
     diag_params = {
         "overload_scaling_factor": overload_scaling_factor,
         "min_r_ohm": min_r_ohm,
+        "min_r_dc_ohm": min_r_ohm,
         "min_x_ohm": min_x_ohm,
         "min_r_pu": min_r_pu,
         "min_x_pu": min_x_pu,
@@ -549,18 +550,32 @@ def impedance_values_close_to_zero(net, min_r_ohm, min_x_ohm, min_r_pu, min_x_pu
                               | (net.impedance.xft_pu <= min_x_pu)
                               | (net.impedance.rtf_pu <= min_r_pu)
                               | (net.impedance.xtf_pu <= min_x_pu)) & net.impedance.in_service].index
+
+    vsc = net.vsc.loc[((net.vsc.r_ohm <= min_r_ohm)
+                       | (net.vsc.x_ohm <= min_x_ohm)
+                       | (net.vsc.r_dc_ohm <= min_r_ohm)) & net.vsc.in_service].index
+
+    line_dc = net.line_dc.loc[((net.line_dc.r_ohm_per_km * net.line_dc.length_km) <= min_r_ohm) &
+                              net.line_dc.in_service].index
+
     if len(line) > 0:
         implausible_elements['line'] = list(line)
     if len(xward) > 0:
         implausible_elements['xward'] = list(xward)
     if len(impedance) > 0:
         implausible_elements['impedance'] = list(impedance)
+    if len(vsc) > 0:
+        implausible_elements['vsc'] = list(vsc)
+    if len(line_dc) > 0:
+        implausible_elements['line_dc'] = list(line_dc)
     check_results.append(implausible_elements)
     # checks if loadflow converges when implausible lines or impedances are replaced by switches
     if ("line" in implausible_elements) or ("impedance" in implausible_elements):
         switch_copy = copy.deepcopy(net.switch)
         line_copy = copy.deepcopy(net.line)
         impedance_copy = copy.deepcopy(net.impedance)
+        vsc_copy = copy.deepcopy(net.vsc)
+        line_dc_copy = copy.deepcopy(net.line_dc)
         try:
             run(net)
         except:
@@ -568,6 +583,12 @@ def impedance_values_close_to_zero(net, min_r_ohm, min_x_ohm, min_r_pu, min_x_pu
                 for key in implausible_elements:
                     if key == 'xward':
                         continue
+                    if key == 'vsc':
+                        net.vsc.x_ohm = np.fmax(net.vsc.x_ohm, 0.5)
+                        net.vsc.r_dc_ohm = np.fmax(net.vsc.r_dc_ohm, 0.5)
+                    if key == 'line_dc':
+                        net.line_dc.length_km = np.fmax(net.line_dc.length_km, 0.5)
+                        net.line_dc.r_dc_ohm = np.fmax(net.line_dc.r_dc_ohm, 0.5)
                     implausible_idx = implausible_elements[key]
                     net[key].loc[implausible_idx, "in_service"] = False
                     for idx in implausible_idx:
@@ -580,6 +601,8 @@ def impedance_values_close_to_zero(net, min_r_ohm, min_x_ohm, min_r_pu, min_x_pu
         net.switch = switch_copy
         net.line = line_copy
         net.impedance = impedance_copy
+        net.vsc = vsc_copy
+        net.line_dc = line_dc_copy
     if implausible_elements:
         return check_results
 
