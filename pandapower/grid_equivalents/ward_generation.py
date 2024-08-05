@@ -173,9 +173,9 @@ def _replace_external_area_by_wards(net_external, bus_lookups, ward_parameter_no
     eq_power.q_mvar -= \
         pd.concat([net_external.res_ext_grid.q_mvar, net_external.res_gen.q_mvar[slack_gen]])
     for bus in eq_power.bus:
-        net_external.ward.ps_mw[net_external.ward.bus==bus] = \
+        net_external.ward.ps_mw[(net_external.ward.bus==bus) & (net_external.ward.ps_mw == 0.0)] = \
             eq_power.p_mw[eq_power.bus==bus].values
-        net_external.ward.qs_mvar[net_external.ward.bus==bus] = \
+        net_external.ward.qs_mvar[(net_external.ward.bus==bus) & (net_external.ward.qs_mvar == 0.0)] = \
             eq_power.q_mvar[eq_power.bus==bus].values
 
     net_external.poly_cost = net_external.poly_cost[0:0]
