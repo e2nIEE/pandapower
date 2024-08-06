@@ -37,13 +37,14 @@ classifiers = [
 dependencies = [
     "pandas>=1.0",
     "networkx>=2.5",
-    "scipy",
+    "scipy<1.14",
     "numpy",
     "packaging",
     "tqdm",
     "deepdiff",
     "geojson",
-    "typing_extensions~=4.9"]
+    "typing_extensions~=4.9",
+]
 keywords = [
     "power system", "network", "analysis", "optimization", "automation", "grid", "electricity", "energy", "engineering", "simulation", "pandapower"
 ]
@@ -59,18 +60,18 @@ Changelog = "https://github.com/e2nIEE/pandapower/blob/develop/CHANGELOG.rst"
 
 [project.optional-dependencies]
 docs = ["numpydoc", "matplotlib", "sphinx", "sphinx_rtd_theme", "sphinx-pyproject"]
-plotting = ["plotly>=3.1.1", "matplotlib", "igraph", "geopandas"]
+plotting = ["plotly>=3.1.1", "matplotlib", "igraph", "geopandas<1.0"]
 test = ["pytest~=8.1", "pytest-xdist", "nbmake"]
-performance = ["ortools", "numba>=0.25", "lightsim2grid>=0.8.1"]
+performance = ["ortools", "numba>=0.25", "lightsim2grid~=0.8.1"]
 fileio = ["xlsxwriter", "openpyxl", "cryptography", "geopandas", "psycopg2"]
 converter = ["matpowercaseframes"]
 pgm = ["power-grid-model-io"]
 control = ["shapely"]
 all = [
     "numpydoc", "sphinx", "sphinx_rtd_theme", "sphinx-pyproject",
-    "plotly>=3.1.1", "matplotlib", "igraph", "geopandas",
+    "plotly>=3.1.1", "matplotlib", "igraph", "geopandas<1.0",
     "pytest~=8.1", "pytest-xdist", "nbmake",
-    "ortools", "numba>=0.25", "lightsim2grid>=0.8.1",
+    "ortools", "numba>=0.25", "lightsim2grid~=0.8.1",
     "xlsxwriter", "openpyxl", "cryptography", "psycopg2",
     "matpowercaseframes",
     "power-grid-model-io"
@@ -86,4 +87,16 @@ find = {}
 addopts = ["--strict-markers"]
 markers = [
   "slow: marks tests as slow (deselect with '-m \"not slow\"'), e.g. in run_fast_tests"
+]
+
+[tool.coverage.run]
+omit = [
+    "pandapower/test/*"
+    ]
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "def __str__",
+    "if __name__ == .__main__.:"
 ]

@@ -6,7 +6,7 @@
 programming) problems.
 """
 
-from numpy import Inf, ones, zeros, dot
+from numpy import inf, ones, zeros, dot, full
 
 from scipy.sparse import csr_matrix as sparse
 
@@ -152,8 +152,8 @@ def qps_pips(H, c, A, l, u, xmin=None, xmax=None, x0=None, opt=None):
     else:
         nx = p['H'].shape[0]
 
-    p['xmin'] = -Inf * ones(nx) if 'xmin' not in p else p['xmin']
-    p['xmax'] =  Inf * ones(nx) if 'xmax' not in p else p['xmax']
+    p['xmin'] = full(nx, -inf) if 'xmin' not in p else p['xmin']
+    p['xmax'] = full(nx, inf) if 'xmax' not in p else p['xmax']
 
     p['c'] = zeros(nx) if p['c'] is None else p['c']
 
