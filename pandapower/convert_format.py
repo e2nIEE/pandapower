@@ -5,6 +5,8 @@
 
 import numpy as np
 import pandas as pd
+from typing import Union, Callable, Any
+
 from packaging.version import Version
 
 from pandapower._version import __version__, __format_version__
@@ -18,6 +20,14 @@ except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
+
+
+def _compare_version(
+        net_version,
+        compare_version: Union[str, int],
+        compare: Callable[[Version, Version], bool] = lambda x, y: x < y
+) -> bool:
+    return compare(Version(str(net_version)), Version(str(compare_version)))
 
 
 def convert_format(net, elements_to_deserialize=None):
@@ -35,8 +45,6 @@ def convert_format(net, elements_to_deserialize=None):
     _rename_columns(net, elements_to_deserialize)
     _add_missing_columns(net, elements_to_deserialize)
     _create_seperate_cost_tables(net, elements_to_deserialize)
-    if Version(str(net.format_version)) < Version("3.0.0"):
-        _convert_geo_data(net)
     if Version(str(net.format_version)) < Version("2.4.0"):
         _convert_bus_pq_meas_to_load_reference(net, elements_to_deserialize)
     if isinstance(net.format_version, float) and net.format_version < 2:  # Why only run if net.format_version is float?
@@ -51,6 +59,7 @@ def convert_format(net, elements_to_deserialize=None):
     _update_characteristics(net, elements_to_deserialize)
     correct_dtypes(net, error=False)
     _add_missing_std_type_tables(net)
+    _convert_geo_data(net)
     net.format_version = __format_version__
     net.version = __version__
     _restore_index_names(net)
@@ -59,6 +68,9 @@ def convert_format(net, elements_to_deserialize=None):
 
 def _convert_geo_data(net):
     if hasattr(net, 'bus_geodata') or hasattr(net, 'line_geodata'):
+        if _compare_version(net.format_version, "1.6"):
+            net.bus_geodata = pd.DataFrame.from_dict(net.bus_geodata)
+            net.line_geodata = pd.DataFrame.from_dict(net.line_geodata)
         geo.convert_geodata_to_geojson(net)
 
 
@@ -430,7 +442,7 @@ def _convert_to_mw(net):
         if isinstance(net[element], pd.DataFrame):
             for old, new in replace:
                 diff = {column: column.replace(old, new) for column in net[element].columns if
-                    old in column and column != "pfe_kw"}
+                        old in column and column != "pfe_kw"}
                 net[element] = net[element].rename(columns=diff)
                 if len(net[element]) == 0:
                     continue
