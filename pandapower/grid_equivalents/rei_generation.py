@@ -685,20 +685,22 @@ def _replace_ext_area_by_impedances_and_shunts(
 
 
 def _integrate_power_elements_connected_with_switch_buses(net, net_external, all_external_buses):
-    all_buses, bus_dict = get_connected_switch_buses_groups(net_external,
-                                                            all_external_buses)
-    sgen = net.sgen[(net["sgen"].in_service == True) & ~((net["sgen"].p_mw==0) & (net["sgen"].q_mvar==0))]
-    load = net.load[(net["load"].in_service == True) & ~((net["load"].p_mw==0) & (net["load"].q_mvar==0))]
-    gen = net.gen[net["gen"].in_service == True]
-    
+    _, bus_dict = get_connected_switch_buses_groups(net_external, all_external_buses)
+    active_sgen = net.sgen[(net.sgen.in_service) & ~((net["sgen"].p_mw==0) & (net["sgen"].q_mvar==0))]
+    active_load = net.load[(net.load.in_service) & ~((net["load"].p_mw==0) & (net["load"].q_mvar==0))]
+    active_gen = net.gen[net.gen.in_service]
+
     for elm in ["sgen", "load", "gen"]:
         for bd in bus_dict:
             if elm == "sgen":
-                connected_elms = sgen.index[sgen.bus.isin(bd)]
+                connected_elms = active_sgen.index[active_sgen.bus.isin(bd)]
             elif elm == "load":
-                connected_elms = load.index[load.bus.isin(bd)]
+                connected_elms = active_load.index[active_load.bus.isin(bd)]
+            elif elm == "gen":
+                connected_elms = active_gen.index[active_gen.bus.isin(bd)]
             else:
-                connected_elms = gen.index[gen.bus.isin(bd)]
+                raise ValueError(f"{elm=} not supported in "
+                                 "_integrate_power_elements_connected_with_switch_buses()")
             if len(connected_elms) <= 1:
                 continue
             else:  # There ars some "external" elements connected with bus-bus switches.
