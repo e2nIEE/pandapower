@@ -44,7 +44,7 @@ dependencies = [
     "deepdiff",
     "geojson",
     "typing_extensions~=4.9",
-    "lightsim2grid>=0.8.1"
+    "lightsim2grid~=0.8.1"
 ]
 keywords = [
     "power system", "network", "analysis", "optimization", "automation", "grid", "electricity", "energy", "engineering", "simulation", "pandapower"
@@ -72,7 +72,7 @@ all = [
     "numpydoc", "sphinx", "sphinx_rtd_theme", "sphinx-pyproject",
     "plotly>=3.1.1", "matplotlib", "igraph", "geopandas<1.0",
     "pytest~=8.1", "pytest-xdist", "nbmake",
-    "ortools", "numba>=0.25", "lightsim2grid>=0.8.1",
+    "ortools", "numba>=0.25", "lightsim2grid~=0.8.1",
     "xlsxwriter", "openpyxl", "cryptography", "psycopg2",
     "matpowercaseframes",
     "power-grid-model-io"
