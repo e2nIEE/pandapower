@@ -19,6 +19,7 @@ def _get_pf_variables_from_ppci(ppci, vsc_ref=False):
 
     # if ppc["branch"] comes from the pypower -> pandapower converter, it has fewer columns than ppc in pandapower
     # because it is lacking BR_R_ASYM, BR_X_ASYM, BR_G, BR_G_ASYM, BR_B_ASYM, and it is OK to use 0 as default values
+    branch = ppci["branch"]
     br_shape = branch.shape
     if br_shape[1] < branch_cols:
         branch = hstack([branch, zeros(shape=(br_shape[0], branch_cols - br_shape[1]), dtype=float64)])
@@ -36,7 +37,7 @@ def _get_pf_variables_from_ppci(ppci, vsc_ref=False):
     V0[gbus] = gen[on, VG] / abs(V0[gbus]) * V0[gbus]
 
     ref_gens = ppci["internal"]["ref_gens"]
-    return ppci["baseMVA"], bus, gen, ppci["branch"], ppci["svc"], ppci["tcsc"], ppci["ssc"], vsc, \
+    return ppci["baseMVA"], bus, gen, branch, ppci["svc"], ppci["tcsc"], ppci["ssc"], vsc, \
         ref, pv, pq, on, gbus, V0, ref_gens
 
 

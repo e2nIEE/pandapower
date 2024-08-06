@@ -132,6 +132,7 @@ def test_with_lightsim2grid(get_net, get_case):
                                net.res_trafo[f"{s}_loading_percent"].values, atol=1e-6, rtol=0), s
 
 
+@pytest.mark.xfail(reason="remove this xfail when new version of lightsim2grid available")
 @pytest.mark.skipif(not lightsim2grid_installed, reason="lightsim2grid package is not installed")
 def test_case118():
     net = pp.networks.case118()
@@ -152,6 +153,7 @@ def test_case118():
                                net.res_trafo[f"{s}_loading_percent"].values, atol=1e-6, rtol=0), s
 
 
+@pytest.mark.xfail(reason="remove this xfail when new version of lightsim2grid available")
 @pytest.mark.skipif(not lightsim2grid_installed, reason="lightsim2grid package is not installed")
 def test_unequal_trafo_hv_lv_impedances():
     net = pp.create_empty_network()
@@ -402,7 +404,16 @@ def _randomize_indices(net):
         pp.reindex_elements(net, element, new_index)
 
 
-@pytest.fixture(params=["case9", "case14", "case118"])
+def test_reminder_bring_back_case118():
+    from packaging.version import Version
+    if lightsim2grid_installed and Version(lightsim2grid.__version__) > Version("0.9.0"):
+        raise UserWarning("bring back case 118 and remove xfail for test_unequal_trafo_impedances and test_case118")
+
+
+# todo: bring back case 118 when lightsim2grid new version is released
+#  (created a test that fails if lightsim2grid new version is available so that this is not missed (above)
+# @pytest.fixture(params=["case9", "case14", "case118"])
+@pytest.fixture(params=["case9", "case14"])
 def get_net(request):
     # pandapower and lightsim2grid behave differently when the grid becomes isolated from the ext_grid:
     # pandapower selects next gen and uses it as ext_grid, and lightsim2grid does not and therefore has nan for results
