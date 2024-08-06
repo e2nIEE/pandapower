@@ -496,8 +496,10 @@ def _check_elements_to_deserialize(element, elements_to_deserialize):
 
 
 def _add_missing_std_type_tables(net):
-    if "fuse" not in net.std_types:
-        net.std_types["fuse"] = {}
+    type_names = ("fuse", "line_dc")
+    for tn in type_names:
+        if tn not in net.std_types:
+            net.std_types[tn] = {}
 
 
 def _update_characteristics(net, elements_to_deserialize):
