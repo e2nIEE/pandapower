@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2024-..-..
 -------------------------------
+- [ADDED] pf2pp: min/max q_mvar and min/max p_mw limits for sgens and gen will be converted
 - [FIXED] using loc to remove the warning
 - [FIXED] replacing deprecated H and A from scipy.sparse.csc_matrix
 - [ADDED] low voltage grid Schutterwald
