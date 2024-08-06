@@ -71,7 +71,7 @@ def plot_voltage_profile(net, ax=None, plot_transformers=True, xlabel="Distance 
     if ax is None:
         plt.figure(facecolor="white", dpi=120)
         ax = plt.gca()
-    if not net.converged:
+    if not net.converged and not net.OPF_converged:
         raise ValueError("no results in this pandapower network")
     if lines is None:
         lines = net.line.index

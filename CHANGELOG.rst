@@ -3,6 +3,8 @@ Change Log
 
 [upcoming release] - 2024-..-..
 -------------------------------
+- [FIXED] using loc to remove the warning
+- [FIXED] replacing deprecated H and A from scipy.sparse.csc_matrix
 - [ADDED] low voltage grid Schutterwald
 - [FIXED] trafo3w with tap changer at star point corrected
 - [FIXED] namespace changes from numpy 2.0 release
@@ -43,6 +45,7 @@ Change Log
 - [FIXED] merge_nets failing if net2 has custom DataFrame that is not present in net1
 - [FIXED] fixed some small bugs in the CGMES converter and improved its speed
 - [CHANGED] vectorization of switch bus and element checks in create_switches()
+- [ADDED] Add VSC element, dc buses, dc lines, and hybrid AC/DC power flow calculation
 
 [2.14.7] - 2024-06-14
 -------------------------------
