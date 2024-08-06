@@ -44,7 +44,6 @@ dependencies = [
     "deepdiff",
     "geojson",
     "typing_extensions~=4.9",
-    "lightsim2grid~=0.8.1"
 ]
 keywords = [
     "power system", "network", "analysis", "optimization", "automation", "grid", "electricity", "energy", "engineering", "simulation", "pandapower"
