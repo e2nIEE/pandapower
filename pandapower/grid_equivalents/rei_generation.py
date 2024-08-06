@@ -314,7 +314,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
         else:
             if elm == "gen" and bus in net.ext_grid.bus.values and \
                     net.ext_grid.in_service[net.ext_grid.bus == bus].values[0]:
-                net_zpbn[elm].name[elm_idx] = str(net.ext_grid.name[
+                net_zpbn[elm].loc[elm_idx, 'name'] = str(net.ext_grid.name[
                     net.ext_grid.bus == bus].values[0]) + "-" + net_zpbn[elm].name[elm_idx]
                 ext_grid_cols = list(set(elm_org.columns) & set(net.ext_grid.columns) - \
                     {"name", "bus", "p_mw", "sn_mva", "in_service", "scaling"})
@@ -323,7 +323,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
             else:
                 names = elm_org.name[elm_org.bus == bus].values
                 names = [str(n) for n in names]
-                net_zpbn[elm].name[elm_idx] = "//".join(names) + "-" + net_zpbn[elm].name[elm_idx]
+                net_zpbn[elm].loc[elm_idx, 'name'] = "//".join(names) + "-" + net_zpbn[elm].name[elm_idx]
                 if len(names) > 1:
                     net_zpbn[elm].loc[elm_idx, list(other_cols_number)] = \
                         elm_org[list(other_cols_number)][elm_org.bus == bus].sum(axis=0)
@@ -358,10 +358,10 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
     for cost_elm in ["poly_cost", "pwl_cost"]:
         if len(net[cost_elm]):
             df = net_zpbn[cost_elm].copy()
-            df.et[(df.et == "ext_grid") &
-                  (~df.bus.isin(boundary_buses))] = "gen"
-            df.et[(df.et.isin(["storage", "dcline"]) &
-                             (~df.bus.isin(boundary_buses)))] = "load"
+            df.loc[(df.et == "ext_grid") &
+                  (~df.bus.isin(boundary_buses)), 'et'] = "gen"
+            df.loc[(df.et.isin(["storage", "dcline"]) &
+                             (~df.bus.isin(boundary_buses))), 'et'] = "load"
 
             logger.debug("During the equivalencing, also in polt_cost, " +
                          "storages and dclines are treated as loads, and" +
@@ -397,7 +397,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
                                 df.element[pc_idx[0]] = idx
                                 df = df.drop(pc_idx[1:])
                             elif len(pc_idx) == 1:
-                                df.element[pc_idx[0]] = idx
+                                df.loc[pc_idx[0], 'element'] = idx
             net_zpbn[cost_elm] = df
 
     drop_and_edit_cost_functions(net_zpbn, [], False, True, False)
@@ -701,5 +701,5 @@ def _integrate_power_elements_connected_with_switch_buses(net, net_external, all
             else:  # There ars some "external" elements connected with bus-bus switches.
                    # They will be aggregated.
                 elm1 = connected_elms[0]
-                net[elm].bus[connected_elms] = net[elm].bus[elm1]
-                net_external[elm].bus[connected_elms] = net_external[elm].bus[elm1]
+                net[elm].loc[connected_elms, 'bus'] = net[elm].bus[elm1]
+                net_external[elm].loc[connected_elms, 'bus'] = net_external[elm].bus[elm1]
