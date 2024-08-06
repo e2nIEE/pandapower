@@ -290,12 +290,13 @@ def from_pf(dict_net, pv_as_slack=True, pf_variable_p_loads='plini', pf_variable
         pp.add_zero_impedance_parameters(net)
 
     logger.info('imported net')
-
+    #######################################################
+    # For Elia Grid, need to be removed when merging
     pp.toolbox.replace_zero_branches_with_switches(net, min_length_km=0.0, min_r_ohm_per_km=0,
                                                    min_x_ohm_per_km=0, min_c_nf_per_km=0,
                                                    min_rft_pu=0, min_xft_pu=0)
-
-    net.xward.x_ohm[net.xward.x_ohm == 1e-6] = 1e-2
+    net.xward.loc[net.xward.x_ohm == 1e-6, "x_ohm"] = 1e-2
+    ########################################################
 
     return net
 
@@ -1868,22 +1869,21 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
             if pstac.i_droop:
                 av_mode = 'constq'
             else:
-                match pstac.i_ctrl:
-                    case 0:
-                        av_mode = 'constq'
-                    case 1:
-                        av_mode = 'constq'
-                    case 2:
-                        av_mode = 'cosphi'
-                        logger.error('Error! av_mode cosphi not implemented')
-                        return
-                    case 3:
-                        av_mode = 'tanphi'
-                        logger.error('Error! av_mode tanphi not implemented')
-                        return
-                    case _:
-                        logger.error('Error! av_mode undefined')
-                        return
+                if pstac.i_ctrl == 0:
+                    av_mode = 'constq'
+                elif pstac.i_ctrl == 1:
+                    av_mode = 'constq'
+                elif pstac.i_ctrl == 2:
+                    av_mode = 'cosphi'
+                    logger.error('Error! av_mode cosphi not implemented')
+                    return
+                elif pstac.i_ctrl == 3:
+                    av_mode = 'tanphi'
+                    logger.error('Error! av_mode tanphi not implemented')
+                    return
+                else:
+                    logger.error('Error! av_mode undefined')
+                    return
         if av_mode == 'constv':
             logger.debug('av_mode: %s - creating as gen' % av_mode)
             params.vm_pu = item.usetp
@@ -2860,15 +2860,14 @@ def create_stactrl(net, item):
             for i in range(len(gen_types)):
                 gen_types[i] = "sgen"
         else:
-            match control_mode:
-                case 0:
-                    for i in range(len(gen_types)):
-                        gen_types[i] = "sgen"
-                case 1:
-                    for i in range(len(gen_types)):
-                        gen_types[i] = "sgen"
-                case _:
-                    print("station control type not supported!")
+            if control_mode == 0:
+                for i in range(len(gen_types)):
+                    gen_types[i] = "sgen"
+            elif control_mode == 1:
+                for i in range(len(gen_types)):
+                    gen_types[i] = "sgen"
+            else:
+                print("station control type not supported!")
 
     gen_element = gen_types[0]
     gen_element_index = []
@@ -2955,23 +2954,21 @@ def create_stactrl(net, item):
 
     input_busses = []
     output_busses = []
-    match res_element_table:
-        case "res_line":
-            for index in res_element_index:
-                input_busses.append(net.line.at[index, 'to_bus'])
-        case "res_trafo":
-            for index in res_element_index:
-                input_busses.append(net.trafo.at[index, 'hv_bus'])
-        case "res_switch":
-            for index in res_element_index:
-                input_busses.append(net.switch.at[index, 'bus'])
-    match gen_element:
-        case "gen":
-            for index in gen_element_index:
-                output_busses.append(net.gen.at[index, 'bus'])
-        case "sgen":
-            for index in gen_element_index:
-                output_busses.append(net.sgen.at[index, 'bus'])
+    if res_element_table ==  "res_line":
+        for index in res_element_index:
+            input_busses.append(net.line.at[index, 'to_bus'])
+    elif res_element_table == "res_trafo":
+        for index in res_element_index:
+            input_busses.append(net.trafo.at[index, 'hv_bus'])
+    elif res_element_table == "res_switch":
+        for index in res_element_index:
+            input_busses.append(net.switch.at[index, 'bus'])
+    if gen_element == "gen":
+        for index in gen_element_index:
+            output_busses.append(net.gen.at[index, 'bus'])
+    elif gen_element == "sgen":
+        for index in gen_element_index:
+            output_busses.append(net.sgen.at[index, 'bus'])
 
     top = pp.topology.create_nxgraph(net, respect_switches=True, include_lines=True, include_trafos=True,
                                      include_impedances=True, nogobuses=None, notravbuses=None, multi=True,
