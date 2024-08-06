@@ -290,14 +290,6 @@ def from_pf(dict_net, pv_as_slack=True, pf_variable_p_loads='plini', pf_variable
         pp.add_zero_impedance_parameters(net)
 
     logger.info('imported net')
-    #######################################################
-    # For Elia Grid, need to be removed when merging
-    pp.toolbox.replace_zero_branches_with_switches(net, min_length_km=0.0, min_r_ohm_per_km=0,
-                                                   min_x_ohm_per_km=0, min_c_nf_per_km=0,
-                                                   min_rft_pu=0, min_xft_pu=0)
-    net.xward.loc[net.xward.x_ohm == 1e-6, "x_ohm"] = 1e-2
-    ########################################################
-
     return net
 
 
