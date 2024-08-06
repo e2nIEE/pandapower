@@ -1,8 +1,6 @@
 import numbers
 import numpy as np
 
-import pandapower as pp
-
 from pandapower.control.basic_controller import Controller
 from pandapower.auxiliary import _detect_read_write_flag, read_from_net, write_to_net
 
@@ -44,29 +42,29 @@ class BinarySearchControl(Controller):
         self.read_flag = []
         self.input_variable = []
         self.input_element_in_service = []
-        for i in range(len(self.input_element_index)):
+        counter = 0
+        for input_index in self.input_element_index:
             if self.input_element == "res_line":
-                self.input_element_in_service.append(net.line.in_service[self.input_element_index[i]])
+                self.input_element_in_service.append(net.line.in_service[input_index])
             elif self.input_element == "res_trafo":
-                self.input_element_in_service.append(net.trafo.in_service[self.input_element_index[i]])
+                self.input_element_in_service.append(net.trafo.in_service[input_index])
             elif self.input_element == "res_switch":
                 self.input_element_in_service.append(
-                    net[self.input_element].pf_in_service[self.input_element_index[i]])
+                    net[self.input_element].pf_in_service[input_index])
             elif self.input_element == "res_bus":
-                self.input_element_in_service.append(net.bus.in_service[self.input_element_index[i]])
+                self.input_element_in_service.append(net.bus.in_service[input_index])
 
             if isinstance(input_variable, list):
                 read_flag_temp, input_variable_temp = _detect_read_write_flag(net, self.input_element,
-                                                                              self.input_element_index[i],
-                                                                              input_variable[i])
+                                                                              input_index,
+                                                                              input_variable[counter])
             else:
                 read_flag_temp, input_variable_temp = _detect_read_write_flag(net, self.input_element,
-                                                                              self.input_element_index[i],
+                                                                              input_index,
                                                                               input_variable)
             self.read_flag.append(read_flag_temp)
             self.input_variable.append(input_variable_temp)
-        # self.read_flag, self.input_variable = _detect_read_write_flag(net, input_element, input_element_index,
-        #                                                              input_variable[0])
+            counter += 1
 
     def initialize_control(self, net):
         self.output_values = read_from_net(net, self.output_element, self.output_element_index, self.output_variable,
@@ -82,29 +80,31 @@ class BinarySearchControl(Controller):
             return True
         self.input_element_in_service.clear()
         self.output_element_in_service.clear()
-        for i in range(len(self.input_element_index)):
+        for input_index in self.input_element_index:
             if self.input_element == "res_line":
-                self.input_element_in_service.append(net.line.in_service[self.input_element_index[i]])
+                self.input_element_in_service.append(net.line.in_service[input_index])
             elif self.input_element == "res_trafo":
-                self.input_element_in_service.append(net.trafo.in_service[self.input_element_index[i]])
+                self.input_element_in_service.append(net.trafo.in_service[input_index])
             elif self.input_element == "res_switch":
-                self.input_element_in_service.append(net.switch.closed[self.input_element_index[i]])
+                self.input_element_in_service.append(net.switch.closed[input_index])
             elif self.input_element == "res_bus":
-                self.input_element_in_service.append(net.bus.in_service[self.input_element_index[i]])
-        for i in range(len(self.output_element_index)):
+                self.input_element_in_service.append(net.bus.in_service[input_index])
+        for output_index in self.output_element_index:
             if self.output_element == "gen":
-                self.output_element_in_service.append(net.gen.in_service[self.output_element_index[i]])
-            elif self.output_element ==  "sgen":
-                self.output_element_in_service.append(net.sgen.in_service[self.output_element_index[i]])
+                self.output_element_in_service.append(net.gen.in_service[output_index])
+            elif self.output_element == "sgen":
+                self.output_element_in_service.append(net.sgen.in_service[output_index])
         # check if at least one input and one output element is in_service
         if not (any(self.input_element_in_service) and any(self.output_element_in_service)):
             self.converged = True
             return self.converged
         # read input values
         input_values = []
-        for i in range(len(self.input_element_index)):
-            input_values.append(read_from_net(net, self.input_element, self.input_element_index[i],
-                                              self.input_variable[i], self.read_flag[i]))
+        counter = 0
+        for input_index in self.input_element_index:
+            input_values.append(read_from_net(net, self.input_element, input_index,
+                                              self.input_variable[counter], self.read_flag[counter]))
+            counter += 1
         # read previous set values
         # compare old and new set values
         if self.bus_idx is None:
@@ -167,7 +167,6 @@ class DroopControl(Controller):
         self.converged = False
 
     def is_converged(self, net):
-        # return self.diff is not None and np.all(np.abs(self.delta) < self.tol)
         self.diff = (net.controller.at[self.controller_idx, "object"].set_point -
                      read_from_net(net, "res_bus", self.bus_idx, "vm_pu", self.read_flag))
         if self.bus_idx is None:
@@ -180,10 +179,7 @@ class DroopControl(Controller):
     def control_step(self, net):
         self.vm_pu_old = self.vm_pu
         self.vm_pu = read_from_net(net, "res_bus", self.bus_idx, "vm_pu", self.read_flag)
-        delta = 0
         if not self.voltage_ctrl:
-            if self.vm_pu_old is not None:
-                delta = self.vm_pu - self.vm_pu_old
             if self.lb_voltage is not None and self.ub_voltage is not None:
                 if self.vm_pu > self.ub_voltage:
                     self.q_set_old_mvar, self.q_set_mvar = (
@@ -203,8 +199,9 @@ class DroopControl(Controller):
             input_variable = net.controller.at[self.controller_idx, "object"].input_variable
             read_flag = net.controller.at[self.controller_idx, "object"].read_flag
             input_values = []
-            for i in range(len(input_element_index)):
-                input_values.append(read_from_net(net, input_element, input_element_index[i],
-                                                  input_variable[i], read_flag[i]))
+            counter = 0
+            for input_index in input_element_index:
+                input_values.append(read_from_net(net, input_element, input_index,
+                                                  input_variable[counter], read_flag[counter]))
             self.vm_set_pu_new = self.vm_set_pu + sum(input_values) / self.q_droop_mvar
             net.controller.at[self.controller_idx, "object"].set_point = self.vm_set_pu_new
