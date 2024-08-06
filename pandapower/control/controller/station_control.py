@@ -45,16 +45,16 @@ class BinarySearchControl(Controller):
         self.input_variable = []
         self.input_element_in_service = []
         for i in range(len(self.input_element_index)):
-            match self.input_element:
-                case "res_line":
-                    self.input_element_in_service.append(net.line.in_service[self.input_element_index[i]])
-                case "res_trafo":
-                    self.input_element_in_service.append(net.trafo.in_service[self.input_element_index[i]])
-                case "res_switch":
-                    self.input_element_in_service.append(
-                        net[self.input_element].pf_in_service[self.input_element_index[i]])
-                case "res_bus":
-                    self.input_element_in_service.append(net.bus.in_service[self.input_element_index[i]])
+            if self.input_element == "res_line":
+                self.input_element_in_service.append(net.line.in_service[self.input_element_index[i]])
+            elif self.input_element == "res_trafo":
+                self.input_element_in_service.append(net.trafo.in_service[self.input_element_index[i]])
+            elif self.input_element == "res_switch":
+                self.input_element_in_service.append(
+                    net[self.input_element].pf_in_service[self.input_element_index[i]])
+            elif self.input_element == "res_bus":
+                self.input_element_in_service.append(net.bus.in_service[self.input_element_index[i]])
+
             if isinstance(input_variable, list):
                 read_flag_temp, input_variable_temp = _detect_read_write_flag(net, self.input_element,
                                                                               self.input_element_index[i],
@@ -83,21 +83,19 @@ class BinarySearchControl(Controller):
         self.input_element_in_service.clear()
         self.output_element_in_service.clear()
         for i in range(len(self.input_element_index)):
-            match self.input_element:
-                case "res_line":
-                    self.input_element_in_service.append(net.line.in_service[self.input_element_index[i]])
-                case "res_trafo":
-                    self.input_element_in_service.append(net.trafo.in_service[self.input_element_index[i]])
-                case "res_switch":
-                    self.input_element_in_service.append(net.switch.closed[self.input_element_index[i]])
-                case "res_bus":
-                    self.input_element_in_service.append(net.bus.in_service[self.input_element_index[i]])
+            if self.input_element == "res_line":
+                self.input_element_in_service.append(net.line.in_service[self.input_element_index[i]])
+            elif self.input_element == "res_trafo":
+                self.input_element_in_service.append(net.trafo.in_service[self.input_element_index[i]])
+            elif self.input_element == "res_switch":
+                self.input_element_in_service.append(net.switch.closed[self.input_element_index[i]])
+            elif self.input_element == "res_bus":
+                self.input_element_in_service.append(net.bus.in_service[self.input_element_index[i]])
         for i in range(len(self.output_element_index)):
-            match self.output_element:
-                case "gen":
-                    self.output_element_in_service.append(net.gen.in_service[self.output_element_index[i]])
-                case "sgen":
-                    self.output_element_in_service.append(net.sgen.in_service[self.output_element_index[i]])
+            if self.output_element == "gen":
+                self.output_element_in_service.append(net.gen.in_service[self.output_element_index[i]])
+            elif self.output_element ==  "sgen":
+                self.output_element_in_service.append(net.sgen.in_service[self.output_element_index[i]])
         # check if at least one input and one output element is in_service
         if not (any(self.input_element_in_service) and any(self.output_element_in_service)):
             self.converged = True
@@ -187,13 +185,12 @@ class DroopControl(Controller):
             if self.vm_pu_old is not None:
                 delta = self.vm_pu - self.vm_pu_old
             if self.lb_voltage is not None and self.ub_voltage is not None:
-                match self.vm_pu:
-                    case self.vm_pu if self.vm_pu > self.ub_voltage:
-                        self.q_set_old_mvar, self.q_set_mvar = (
-                            self.q_set_mvar, -(self.ub_voltage - self.vm_pu) * self.q_droop_mvar)
-                    case self.vm_pu if self.vm_pu < self.lb_voltage:
-                        self.q_set_old_mvar, self.q_set_mvar = (
-                            self.q_set_mvar, -(self.lb_voltage - self.vm_pu) * self.q_droop_mvar)
+                if self.vm_pu > self.ub_voltage:
+                    self.q_set_old_mvar, self.q_set_mvar = (
+                        self.q_set_mvar, -(self.ub_voltage - self.vm_pu) * self.q_droop_mvar)
+                elif self.vm_pu < self.lb_voltage:
+                    self.q_set_old_mvar, self.q_set_mvar = (
+                        self.q_set_mvar, -(self.lb_voltage - self.vm_pu) * self.q_droop_mvar)
             else:
                 self.q_set_old_mvar, self.q_set_mvar = self.q_set_mvar, (
                                                                                 self.vm_pu - self.vm_set_pu) * self.q_droop_mvar
