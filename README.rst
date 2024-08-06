@@ -3,7 +3,7 @@
     <a href="https://www.pandapower.org">
        <picture>
          <source media="(prefers-color-scheme: dark)" srcset="https://www.pandapower.org/images/pp_light.svg">
-         <source media="(prefers-color-scheme: light)" srcset="https:////www.pandapower.org/images/pp.svg">
+         <source media="(prefers-color-scheme: light)" srcset="https://www.pandapower.org/images/pp.svg">
          <img alt="logo" src="//www.pandapower.org/images/pp.svg">
        </picture>
     </a>
