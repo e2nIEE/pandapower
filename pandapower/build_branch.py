@@ -10,15 +10,19 @@ from functools import partial
 
 import numpy as np
 import pandas as pd
+from pandapower import DC_BUS_TYPE
 
 from pandapower.auxiliary import get_values
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS, RATE_A, \
     BR_R_ASYM, BR_X_ASYM, branch_cols
+from pandapower.pypower.idx_brch_dc import branch_dc_cols, DC_RATE_A, DC_RATE_B, DC_RATE_C, DC_BR_STATUS, DC_F_BUS, \
+    DC_T_BUS, DC_BR_R, DC_BR_G
 from pandapower.pypower.idx_brch_tdpf import BR_R_REF_OHM_PER_KM, BR_LENGTH_KM, RATE_I_KA, T_START_C, R_THETA, \
     WIND_SPEED_MPS, ALPHA, TDPF, OUTER_DIAMETER_M, MC_JOULE_PER_M_K, WIND_ANGLE_DEGREE, SOLAR_RADIATION_W_PER_SQ_M, \
     GAMMA, EPSILON, T_AMBIENT_C, T_REF_C, branch_cols_tdpf
 from pandapower.pypower.idx_brch_sc import branch_cols_sc
-from pandapower.pypower.idx_bus import BASE_KV, VM, VA
+from pandapower.pypower.idx_bus import BASE_KV, VM, VA, BUS_TYPE, BUS_AREA, ZONE, VMAX, VMIN, PQ
+from pandapower.pypower.idx_bus_dc import DC_BUS_AREA, DC_VM, DC_ZONE, DC_VMAX, DC_VMIN, DC_P, DC_BASE_KV
 from pandapower.pypower.idx_bus_sc import C_MIN, C_MAX
 from pandapower.pypower.idx_tcsc import TCSC_F_BUS, TCSC_T_BUS, TCSC_X_L, TCSC_X_CVAR, TCSC_SET_P, \
     TCSC_THYRISTOR_FIRING_ANGLE, TCSC_STATUS, TCSC_CONTROLLABLE, tcsc_cols, TCSC_MIN_FIRING_ANGLE, TCSC_MAX_FIRING_ANGLE
@@ -72,6 +76,41 @@ def _build_branch_ppc(net, ppc):
         _calc_switch_parameter(net, ppc)
 
 
+def _build_branch_dc_ppc(net, ppc):
+    """
+    Takes the empty ppc network and fills it with the branch values. The branch
+    datatype will be np.complex 128 afterwards.
+
+    .. note:: The order of branches in the ppc is:
+            1. Lines
+            2. Transformers
+            3. 3W Transformers (each 3W Transformer takes up three branches)
+            4. Impedances
+            5. Internal branch for extended ward
+
+    **INPUT**:
+        **net** -The pandapower format network
+
+        **ppc** - The PYPOWER format network to fill in values
+
+    """
+    mode = net._options["mode"]
+    length = _initialize_branch_lookup(net, dc=True)
+    lookup = net._pd2ppc_lookups["branch_dc"]
+    tdpf = net._options["tdpf"]
+    # todo: check how it works when calculating SC
+    # if mode == "sc":
+    #     raise NotImplementedError("indexing for ppc branch columns not implemented for tdpf and sc together")
+    # initialize "normal" ppc branch
+    all_branch_columns = branch_cols_tdpf + branch_dc_cols if tdpf else branch_dc_cols
+    ppc["branch_dc"] = np.zeros(shape=(length, all_branch_columns), dtype=np.float64)
+    ppc["branch_dc"][:, [DC_RATE_A, DC_RATE_B, DC_RATE_C, DC_BR_STATUS]] = np.array([250, 250, 250, 1])
+    if mode != "pf":
+        return
+    if "line_dc" in lookup:
+        _calc_line_dc_parameter(net, ppc)
+
+
 def _build_tcsc_ppc(net, ppc, mode):
     length = len(net.tcsc)
     ppc["tcsc"] = np.zeros(shape=(length, tcsc_cols), dtype=np.float64)
@@ -82,21 +121,23 @@ def _build_tcsc_ppc(net, ppc, mode):
         _calc_tcsc_parameter(net, ppc)
 
 
-def _initialize_branch_lookup(net):
+def _initialize_branch_lookup(net, dc=False):
     start = 0
     end = 0
-    net._pd2ppc_lookups["branch"] = {}
-    for element in ["line", "trafo", "trafo3w", "impedance", "xward"]:
+    table = "branch" if not dc else "branch_dc"
+    net._pd2ppc_lookups[table] = {}
+    elements = ["line", "trafo", "trafo3w", "impedance", "xward"] if not dc else ["line_dc"]
+    for element in elements:
         if len(net[element]) > 0:
             if element == "trafo3w":
                 end = start + len(net[element]) * 3
             else:
                 end = start + len(net[element])
-            net._pd2ppc_lookups["branch"][element] = (start, end)
+            net._pd2ppc_lookups[table][element] = (start, end)
             start = end
-    if "_impedance_bb_switches" in net and net._impedance_bb_switches.any():
+    if "_impedance_bb_switches" in net and net._impedance_bb_switches.any() and not dc:
         end = start + net._impedance_bb_switches.sum()
-        net._pd2ppc_lookups["branch"]["switch"] = (start, end)
+        net._pd2ppc_lookups[table]["switch"] = (start, end)
     return end
 
 
@@ -204,6 +245,82 @@ def _calc_line_parameter(net, ppc, elm="line", ppc_elm="branch"):
     df = line.df.values
     # This calculates the maximum apparent power at 1.0 p.u.
     branch[f:t, RATE_A] = max_load / 100. * max_i_ka * df * parallel * vr
+
+
+def _calc_line_dc_parameter(net, ppc, elm="line_dc", ppc_elm="branch_dc"):
+    """
+    calculates the line_dc parameter in per unit.
+
+    **INPUT**:
+        **net** - The pandapower format network
+
+        **ppc** - the ppc array
+
+    **OPTIONAL**:
+        **elm** - The pandapower element (normally "line_dc")
+
+        **ppc_elm** - The ppc element (normally "branch_dc")
+
+    **RETURN**:
+        **t** - Temporary line_dc parameter. Which is a complex128
+                Nunmpy array. with the following order:
+                0:bus_a; 1:bus_b; 2:r_pu; 3:x_pu; 4:b_pu
+    """
+    f, t = net._pd2ppc_lookups[ppc_elm][elm]
+    branch_dc = ppc[ppc_elm]
+    mode = net["_options"]["mode"]
+    bus_lookup = net["_pd2ppc_lookups"]["bus_dc"]
+    line_dc = net[elm]
+    from_bus_dc = bus_lookup[line_dc["from_bus_dc"].values.astype(np.int64)]
+    to_bus_dc = bus_lookup[line_dc["to_bus_dc"].values.astype(np.int64)]
+    length_km = line_dc["length_km"].values
+    parallel = line_dc["parallel"].values
+    base_kv = ppc["bus_dc"][from_bus_dc, DC_BASE_KV]
+    baseR = np.square(base_kv) / net.sn_mva
+
+    branch_dc[f:t, DC_F_BUS] = from_bus_dc
+    branch_dc[f:t, DC_T_BUS] = to_bus_dc
+    branch_dc[f:t, DC_BR_R] = line_dc["r_ohm_per_km"].values * length_km / baseR / parallel
+
+    if net._options["tdpf"]:
+        # todo implement idx_brch_dc_tdpf
+        raise NotImplementedError("temperature-related calculation for line_dc not implemented")
+        # branch_dc[f:t, TDPF] = line_dc["in_service"].values & line_dc["tdpf"].fillna(False).values.astype(bool)
+        # branch_dc[f:t, BR_R_REF_OHM_PER_KM] = line_dc["r_ohm_per_km"].values / parallel
+        # branch_dc[f:t, BR_LENGTH_KM] = length_km
+        # branch_dc[f:t, RATE_I_KA] = line_dc["max_i_ka"].values * line_dc["df"].values * parallel
+        # branch_dc[f:t, T_START_C] = line_dc["temperature_degree_celsius"].values
+        # branch_dc[f:t, T_REF_C] = line_dc["reference_temperature_degree_celsius"].values
+        # branch_dc[f:t, T_AMBIENT_C] = line_dc["air_temperature_degree_celsius"].values
+        # branch_dc[f:t, ALPHA] = line_dc["alpha"].values
+        # branch_dc[f:t, WIND_SPEED_MPS] = line_dc.get("wind_speed_m_per_s", default=np.nan)
+        # branch_dc[f:t, WIND_ANGLE_DEGREE] = line_dc.get("wind_angle_degree", default=np.nan)
+        # branch_dc[f:t, SOLAR_RADIATION_W_PER_SQ_M] = line_dc.get("solar_radiation_w_per_sq_m", default=np.nan)
+        # branch_dc[f:t, GAMMA] = line_dc.get("solar_absorptivity", default=np.nan)
+        # branch_dc[f:t, EPSILON] = line_dc.get("emissivity", default=np.nan)
+        # branch_dc[f:t, R_THETA] = line_dc.get("r_theta_kelvin_per_mw", default=np.nan)
+        # branch_dc[f:t, OUTER_DIAMETER_M] = line_dc.get("conductor_outer_diameter_m", default=np.nan)
+        # branch_dc[f:t, MC_JOULE_PER_M_K] = line_dc.get("mc_joule_per_m_k", default=np.nan)
+
+    # temperature correction
+    if net["_options"]["consider_line_temperature"]:
+        branch_dc[f:t, DC_BR_R] *= _end_temperature_correction_factor(net)
+
+    # todo check if DC line_dc model has shunt components
+    # b = 2 * net.f_hz * math.pi * line_dc["c_nf_per_km"].values * 1e-9 * baseR * length_km * parallel
+    g = line_dc["g_us_per_km"].values * 1e-6 * baseR * length_km * parallel
+    branch_dc[f:t, DC_BR_G] = g
+
+    # in service of lines
+    branch_dc[f:t, DC_BR_STATUS] = line_dc["in_service"].values
+    # always set RATE_A for completeness:
+    # RATE_A is conisdered by the (PowerModels) OPF. If zero -> unlimited
+    max_load = line_dc.max_loading_percent.values if "max_loading_percent" in line_dc else 0.
+    vr = net.bus_dc.loc[line_dc["from_bus_dc"].values, "vn_kv"].values * np.sqrt(3.)
+    max_i_ka = line_dc.max_i_ka.values
+    df = line_dc.df.values
+    # This calculates the maximum apparent power at 1.0 p.u.
+    branch_dc[f:t, DC_RATE_A] = max_load / 100. * max_i_ka * df * parallel * vr
 
 
 def _calc_trafo_parameter(net, ppc):
@@ -763,7 +880,7 @@ def _switch_branches(net, ppc):
             ppc["branch"][sw_branch_index[mask], side] = new_indices[mask]
 
 
-def _branches_with_oos_buses(net, ppc):
+def _branches_with_oos_buses(net, ppc, dc=False):
     """
     Updates the ppc["branch"] matrix with the changed from or to values
     if the branch is connected to an out of service bus
@@ -777,22 +894,27 @@ def _branches_with_oos_buses(net, ppc):
         **ppc** - The PYPOWER format network to fill in values
         **bus_is** - The in service buses
     """
-    bus_lookup = net["_pd2ppc_lookups"]["bus"]
+    line_table = "line_dc" if dc else "line"
+    bus_table = "bus_dc" if dc else "bus"
+    branch_table = "branch_dc" if dc else "branch"
+
+    bus_lookup = net["_pd2ppc_lookups"][bus_table]
     # get in service elements
     _is_elements = net["_is_elements"]
-    bus_is_idx = _is_elements['bus_is_idx']
-    line_is_idx = _is_elements['line_is_idx']
+    bus_is_idx = _is_elements[f"{bus_table}_is_idx"]
+    line_is_idx = _is_elements[f"{line_table}_is_idx"]
 
-    n_oos_buses = len(net['bus']) - len(bus_is_idx)
+    n_oos_buses = len(net[bus_table]) - len(bus_is_idx)
 
     # only filter lines at oos buses if oos buses exists
     if n_oos_buses > 0:
-        n_bus = len(ppc["bus"])
-        future_buses = [ppc["bus"]]
+        n_bus = len(ppc[bus_table])
+        future_buses = [ppc[bus_table]]
         # out of service buses
-        bus_oos = np.setdiff1d(net['bus'].index.values, bus_is_idx)
+        bus_oos = np.setdiff1d(net[bus_table].index.values, bus_is_idx)
         # from buses of line
-        line_buses = net["line"][["from_bus", "to_bus"]].loc[line_is_idx].values
+        ft_cols = ["from_bus_dc", "to_bus_dc"] if dc else ["from_bus", "to_bus"]
+        line_buses = net[line_table][ft_cols].loc[line_is_idx].values
         f_bus = line_buses[:, 0]
         t_bus = line_buses[:, 1]
 
@@ -817,7 +939,7 @@ def _branches_with_oos_buses(net, ppc):
             ls_info = np.zeros((n_oos_buses_at_lines, 3), dtype=np.int64)
             ls_info[:, 0] = mask_to[mask_or] & ~mask_from[mask_or]
             ls_info[:, 1] = oos_buses_at_lines
-            ls_info[:, 2] = np.nonzero(np.in1d(net['line'].index, line_is_idx[mask_or]))[0]
+            ls_info[:, 2] = np.nonzero(np.in1d(net[line_table].index, line_is_idx[mask_or]))[0]
 
             # ls_info = list(map(mapfunc,
             #               line_switches["bus"].values,
@@ -829,22 +951,29 @@ def _branches_with_oos_buses(net, ppc):
             # ls_info = np.array(ls_info, dtype=np.int64)
 
             # build new buses
-            new_ls_buses = np.zeros(shape=(n_oos_buses_at_lines, ppc["bus"].shape[1]), dtype=float)
+            new_ls_buses = np.zeros(shape=(n_oos_buses_at_lines, ppc[bus_table].shape[1]), dtype=np.float64)
             new_indices = np.arange(n_bus, n_bus + n_oos_buses_at_lines)
             # the newly created buses
-            new_ls_buses[:, :15] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1.1, 0.9, 0, 0])
+            if dc:
+                ppc_col_var = [DC_BUS_TYPE, DC_BUS_AREA, DC_VM, DC_ZONE, DC_VMAX, DC_VMIN]
+                ppc_col_val = np.array([DC_P, 1, 1, 1, 2, 0], dtype=np.int64)
+            else:
+                ppc_col_var = [BUS_TYPE, BUS_AREA, VM, ZONE, VMAX, VMIN]
+                ppc_col_val = np.array([PQ, 1, 1, 1, 2, 0], dtype=np.int64)
+            new_ls_buses[:, ppc_col_var] = ppc_col_val
             new_ls_buses[:, 0] = new_indices
-            new_ls_buses[:, BASE_KV] = get_values(ppc["bus"][:, BASE_KV], ls_info[:, 1], bus_lookup)
+            new_ls_buses[:, DC_BASE_KV if dc else BASE_KV] = \
+                get_values(ppc[bus_table][:, DC_BASE_KV if dc else BASE_KV], ls_info[:, 1], bus_lookup)
 
             future_buses.append(new_ls_buses)
 
             # re-route the end of lines to a new bus
-            ppc["branch"][ls_info[ls_info[:, 0].astype(bool), 2], 1] = \
+            ppc[branch_table][ls_info[ls_info[:, 0].astype(bool), 2], 1] = \
                 new_indices[ls_info[:, 0].astype(bool)]
-            ppc["branch"][ls_info[np.logical_not(ls_info[:, 0]), 2], 0] = \
+            ppc[branch_table][ls_info[np.logical_not(ls_info[:, 0]), 2], 0] = \
                 new_indices[np.logical_not(ls_info[:, 0])]
 
-            ppc["bus"] = np.vstack(future_buses)
+            ppc[bus_table] = np.vstack(future_buses)
 
 
 def _calc_switch_parameter(net, ppc):
@@ -879,7 +1008,7 @@ def _calc_switch_parameter(net, ppc):
     branch[f:t, BR_X] = z_switch / baseR * xz_ratio
 
 
-def _end_temperature_correction_factor(net, short_circuit=False):
+def _end_temperature_correction_factor(net, short_circuit=False, dc=False):
     """
     Function to calculate resistance correction factor for the given temperature ("endtemp_degree").
     When multiplied by the factor, the value of r_ohm_per_km will correspond to the resistance at
@@ -913,25 +1042,26 @@ def _end_temperature_correction_factor(net, short_circuit=False):
 
     """
 
+    element = "line_dc" if dc else "line"
     if short_circuit:
         # endtemp_degree is line temperature that is reached as the result of a short circuit
         # this value is the property of the lines
-        if "endtemp_degree" not in net.line.columns:
-            raise UserWarning("Specify end temperature for lines in net.line.endtemp_degree")
+        if "endtemp_degree" not in net[element].columns:
+            raise UserWarning(f"Specify end temperature for {element}s in net.{element}.endtemp_degree")
 
-        delta_t_degree_celsius = net.line.endtemp_degree.values.astype(np.float64) - 20
+        delta_t_degree_celsius = net[element].endtemp_degree.values.astype(np.float64) - 20
         # alpha is the temperature correction factor for the electric resistance of the material
         # formula from standard, used this way in short-circuit calculation
         alpha = 4e-3
     else:
         # temperature_degree_celsius is line temperature for load flow calculation
-        if "temperature_degree_celsius" not in net.line.columns:
-            raise UserWarning("Specify line temperature in net.line.temperature_degree_celsius")
+        if "temperature_degree_celsius" not in net[element].columns:
+            raise UserWarning(f"Specify {element} temperature in net.{element}.temperature_degree_celsius")
 
-        delta_t_degree_celsius = net.line.temperature_degree_celsius.values.astype(np.float64) - 20
+        delta_t_degree_celsius = net[element].temperature_degree_celsius.values.astype(np.float64) - 20
 
-        if 'alpha' in net.line.columns:
-            alpha = net.line.alpha.values.astype(np.float64)
+        if 'alpha' in net[element].columns:
+            alpha = net[element].alpha.values.astype(np.float64)
         else:
             alpha = 4e-3
 
@@ -984,9 +1114,12 @@ def _trafo_df_from_trafo3w(net, sequence=1):
     trafo2 = dict()
     sides = ["hv", "mv", "lv"]
     mode = net._options["mode"]
-    loss_side = net._options["trafo3w_losses"].lower()
-    nr_trafos = len(net["trafo3w"])
     t3 = net["trafo3w"]
+    # todo check magnetizing impedance implementation:
+    #loss_side = net._options["trafo3w_losses"].lower()
+    loss_side = t3.loss_side.values if "loss_side" in t3.columns else np.full(len(t3),
+                                                                              net._options["trafo3w_losses"].lower())
+    nr_trafos = len(net["trafo3w"])
     if sequence==1:
         mode_tmp = "type_c" if mode == "sc" and net._options.get("use_pre_fault_voltage", False) else mode
         _calculate_sc_voltages_of_equivalent_transformers(t3, trafo2, mode_tmp, characteristic=net.get(
@@ -1004,8 +1137,11 @@ def _trafo_df_from_trafo3w(net, sequence=1):
     trafo2["hv_bus"] = {"hv": t3.hv_bus.values, "mv": aux_buses, "lv": aux_buses}
     trafo2["lv_bus"] = {"hv": aux_buses, "mv": t3.mv_bus.values, "lv": t3.lv_bus.values}
     trafo2["in_service"] = {side: t3.in_service.values for side in sides}
-    trafo2["i0_percent"] = {side: t3.i0_percent.values if loss_side == side else zeros for side in sides}
-    trafo2["pfe_kw"] = {side: t3.pfe_kw.values if loss_side == side else zeros for side in sides}
+    # todo check magnetizing impedance implementation:
+    #trafo2["i0_percent"] = {side: t3.i0_percent.values if loss_side == side else zeros for side in sides}
+    #trafo2["pfe_kw"] = {side: t3.pfe_kw.values if loss_side == side else zeros for side in sides}
+    trafo2["i0_percent"] = {side: np.where(loss_side == side, t3.i0_percent.values, zeros) for side in sides}
+    trafo2["pfe_kw"] = {side: np.where(loss_side == side, t3.pfe_kw.values, zeros) for side in sides}
     trafo2["vn_hv_kv"] = {side: t3.vn_hv_kv.values for side in sides}
     trafo2["vn_lv_kv"] = {side: t3["vn_%s_kv" % side].values for side in sides}
     trafo2["shift_degree"] = {"hv": np.zeros(nr_trafos), "mv": t3.shift_mv_degree.values,
@@ -1105,8 +1241,12 @@ def _calculate_3w_tap_changers(t3, t2, sides):
         tap_arrays["tap_side"][side][tap_mask] = "hv" if side == "hv" else "lv"
 
         # t3 trafos with tap changer at star points
-        if any_at_star_point:
-            mask_star_point = tap_mask & at_star_point
+        if any_at_star_point & np.any(mask_star_point := (tap_mask & at_star_point)): 
+            t = tap_arrays["tap_step_percent"][side][mask_star_point] * np.exp(1j * np.deg2rad(tap_arrays["tap_step_degree"][side][mask_star_point]))
+            tap_pos = tap_arrays["tap_pos"][side][mask_star_point]
+            t_corrected = 100 * t / (100 + (t * tap_pos))
+            tap_arrays["tap_step_percent"][side][mask_star_point] = np.abs(t_corrected)
             tap_arrays["tap_side"][side][mask_star_point] = "lv" if side == "hv" else "hv"
-            tap_arrays["tap_step_degree"][side][mask_star_point] += 180
+            tap_arrays["tap_step_degree"][side][mask_star_point] = np.rad2deg(np.angle(t_corrected))
+            tap_arrays["tap_step_degree"][side][mask_star_point] -= 180
     t2.update(tap_arrays)

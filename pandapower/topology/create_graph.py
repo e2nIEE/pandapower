@@ -42,6 +42,7 @@ logger = logging.getLogger(__name__)
 
 def create_nxgraph(net, respect_switches=True, include_lines=True, include_impedances=True,
                    include_dclines=True, include_trafos=True, include_trafo3ws=True, include_tcsc=True,
+                   include_vsc=True, include_line_dc=True,
                    nogobuses=None, notravbuses=None, multi=True,
                    calc_branch_impedances=False, branch_impedance_unit="ohm",
                    library="networkx", include_out_of_service=False,
@@ -68,6 +69,12 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
             impedances (net.impedance) are converted to edges
 
         **include_tcsc** (boolean or , True) - determines, whether or which TCSC elements (net.tcsc)
+            are converted to edges
+
+        **include_vsc** (boolean or , True) - determines, whether or which VSC elements (net.vsc)
+            are converted to edges
+
+        **include_line_dc** (boolean or , True) - determines, whether or which DC line elements (net.line_dc)
             are converted to edges
 
         **include_dclines** (boolean or index, True) - determines, whether or which dclines get

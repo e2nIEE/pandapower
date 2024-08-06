@@ -505,3 +505,49 @@ def xward_patches(node_coords, size, angles, **kwargs):
         polys.append(text_patch)
 
     return lines, polys, {"offset", "patch_edgecolor", "patch_facecolor"}
+
+
+def vsc_patches(coords, size, **kwargs):
+    """
+    Creates a list of patches and line coordinates representing VSCs each connecting an AC and a DC
+    node.
+
+    :param coords: list of connecting node coordinates (usually should be \
+        `[((x11, y11), (x12, y12)), ((x21, y21), (x22, y22)), ...]`)
+    :type coords: (N, (2, 2)) shaped iterable
+    :param size: size of the VSC patches
+    :type size: float
+    :param kwargs: additional keyword arguments (might contain parameters "patch_edgecolor" and\
+        "patch_facecolor")
+    :type kwargs:
+    :return: Return values are: \
+        - lines (list) - list of coordinates for lines connecting nodes and VSC patches\
+        - squares (list of Rectangle) - list containing the VSC patches (squares)
+    """
+    if not MATPLOTLIB_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
+    edgecolor = kwargs.get("patch_edgecolor", "w")
+    facecolor = kwargs.get("patch_facecolor", "w")
+    edgecolors = get_color_list(edgecolor, len(coords))
+    facecolors = get_color_list(facecolor, len(coords))
+    linewidths = kwargs.get("linewidths", 2.)
+    linewidths = get_linewidth_list(linewidths, len(coords), name_entries="vscs")
+    squares, lines = list(), list()
+    for i, (p1, p2) in enumerate(coords):
+        p1 = np.array(p1)
+        p2 = np.array(p2)
+        if np.all(p1 == p2):
+            continue
+        d = np.sqrt(np.sum((p1 - p2) ** 2))  # distance
+        if size is None:
+            size_this = np.sqrt(d) / 3
+        else:
+            size_this = size
+        xy1 = p1 - np.array([size_this, size_this])
+        xy2 = p2 - np.array([size_this, size_this])
+        squares.append(Rectangle(xy1, size_this * 2, size_this * 2, fc=facecolors[i], ec=edgecolors[i],
+                                 lw=linewidths[i], hatch="+++"))
+        squares.append(Rectangle(xy2, size_this * 2, size_this * 2, fc=facecolors[i], ec=edgecolors[i],
+                                 lw=linewidths[i], hatch="---"))
+        lines.append([p1, p2])
+    return lines, squares, {"patch_edgecolor", "patch_facecolor"}

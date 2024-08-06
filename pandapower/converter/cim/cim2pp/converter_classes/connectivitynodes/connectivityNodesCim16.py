@@ -210,7 +210,7 @@ class ConnectivityNodesCim16:
         eqssh_terminals = eqssh_terminals.drop_duplicates(subset=['rdfId', 'TopologicalNode'])
         eqssh_terminals_temp = eqssh_terminals[['ConnectivityNode', 'TopologicalNode']]
         eqssh_terminals_temp = eqssh_terminals_temp.dropna(subset=['TopologicalNode'])
-        eqssh_terminals_temp = eqssh_terminals_temp.drop_duplicates()
+        eqssh_terminals_temp = eqssh_terminals_temp.drop_duplicates(subset=['ConnectivityNode'])
         connectivity_nodes_size = connectivity_nodes.index.size
         if node_breaker:
             connectivity_nodes = pd.merge(connectivity_nodes, eqssh_terminals_temp, how='left', left_on='rdfId',
