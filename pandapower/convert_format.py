@@ -5,6 +5,8 @@
 
 import numpy as np
 import pandas as pd
+from typing import Union, Callable, Any
+
 from packaging.version import Version
 
 from pandapower._version import __version__, __format_version__
@@ -18,6 +20,14 @@ except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
+
+
+def _compare_version(
+        net_version,
+        compare_version: Union[str, int],
+        compare: Callable[[Version, Version], bool] = lambda x, y: x < y
+) -> bool:
+    return compare(Version(str(net_version)), Version(str(compare_version)))
 
 
 def convert_format(net, elements_to_deserialize=None):
@@ -56,6 +66,18 @@ def convert_format(net, elements_to_deserialize=None):
     net.version = __version__
     _restore_index_names(net)
     return net
+
+
+def _convert_geo_data(net, elements_to_deserialize=None):
+    if ((_check_elements_to_deserialize('bus_geodata', elements_to_deserialize)
+         and _check_elements_to_deserialize('bus', elements_to_deserialize))
+        or (_check_elements_to_deserialize('line_geodata', elements_to_deserialize)
+         and _check_elements_to_deserialize('line', elements_to_deserialize))):
+        if hasattr(net, 'bus_geodata') or hasattr(net, 'line_geodata'):
+            if _compare_version(net.format_version, "1.6"):
+                net.bus_geodata = pd.DataFrame.from_dict(net.bus_geodata)
+                net.line_geodata = pd.DataFrame.from_dict(net.line_geodata)
+            geo.convert_geodata_to_geojson(net)
 
 
 def _restore_index_names(net):
@@ -453,7 +475,7 @@ def _convert_to_mw(net):
         if isinstance(net[element], pd.DataFrame):
             for old, new in replace:
                 diff = {column: column.replace(old, new) for column in net[element].columns if
-                    old in column and column != "pfe_kw"}
+                        old in column and column != "pfe_kw"}
                 net[element] = net[element].rename(columns=diff)
                 if len(net[element]) == 0:
                     continue
@@ -502,8 +524,10 @@ def _check_elements_to_deserialize(element, elements_to_deserialize):
 
 
 def _add_missing_std_type_tables(net):
-    if "fuse" not in net.std_types:
-        net.std_types["fuse"] = {}
+    type_names = ("fuse", "line_dc")
+    for tn in type_names:
+        if tn not in net.std_types:
+            net.std_types[tn] = {}
 
 
 def _update_characteristics(net, elements_to_deserialize):
