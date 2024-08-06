@@ -972,7 +972,7 @@ def set_group_reference_column(net, index, reference_column, element_type=None):
                 net[et][reference_column] = pd.Series([None]*net[et].shape[0], dtype=object)
             if pd.api.types.is_object_dtype(net[et][reference_column]):
                 idxs = net[et].index[net[et][reference_column].isnull()]
-                net[et][reference_column].loc[idxs] = ["%s_%i_%s" % (et, idx, str(
+                net[et].loc[idxs, reference_column] = ["%s_%i_%s" % (et, idx, str(
                     uuid.uuid4())) for idx in idxs]
 
             # determine duplicated values which would corrupt Groups functionality
