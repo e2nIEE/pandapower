@@ -898,8 +898,8 @@ def test_storage_pf():
     res_gen_beh = runpp_with_consistency_checks(net)
     res_ll_stor = net["res_line"].loading_percent.iloc[0]
 
-    net["storage"].in_service.iloc[0] = False
-    net["sgen"].in_service.iloc[1] = True
+    net["storage"].loc[0, 'in_service'] = False
+    net["sgen"].loc[1, 'in_service'] = True
 
     runpp_with_consistency_checks(net)
     res_ll_sgen = net["res_line"].loading_percent.iloc[0]
@@ -908,15 +908,15 @@ def test_storage_pf():
 
     # test load behaviour
     pp.create_load(net, b1, p_mw=0.01, in_service=False)
-    net["storage"].in_service.iloc[0] = True
-    net["storage"].p_mw.iloc[0] = 0.01
-    net["sgen"].in_service.iloc[1] = False
+    net["storage"].loc[0, 'in_service'] = True
+    net["storage"].loc[0, 'p_mw'] = 0.01
+    net["sgen"].loc[1, 'in_service'] = False
 
     res_load_beh = runpp_with_consistency_checks(net)
     res_ll_stor = net["res_line"].loading_percent.iloc[0]
 
-    net["storage"].in_service.iloc[0] = False
-    net["load"].in_service.iloc[1] = True
+    net["storage"].loc[0, 'in_service'] = False
+    net["load"].loc[1, 'in_service'] = True
 
     runpp_with_consistency_checks(net)
     res_ll_load = net["res_line"].loading_percent.iloc[0]
