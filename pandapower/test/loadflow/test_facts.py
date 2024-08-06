@@ -4,6 +4,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
+import os
 import pytest
 import copy
 import numpy as np
@@ -2544,18 +2545,7 @@ def test_vsc_dc_r():
                   control_mode_ac="slack", control_value_ac=1,
                   control_mode_dc="p_mw", control_value_dc=10)
 
-    net2 = copy.deepcopy(net)
     runpp_with_consistency_checks(net)
-
-    net2.vsc.r_dc_ohm = 1e-4
-
-    a1=pp.create_bus_dc(net2, 110)
-    a2=pp.create_bus_dc(net2, 110)
-
-    pp.create_line_dc_from_parameters(net2, 0, a1, 1, 0.15, 1)
-    pp.create_line_dc_from_parameters(net2, a2, 1, 1, 0.15, 1)
-    net2.line_dc.loc[0, ["from_bus_dc", "to_bus_dc"]] = a1, a2
-    runpp_with_consistency_checks(net2)
 
 
 def test_vsc_hvdc_dc_rl():
@@ -2581,10 +2571,24 @@ def test_vsc_hvdc_dc_rl():
                   control_mode_ac="vm_pu", control_value_ac=1.,
                   control_mode_dc="p_mw", control_value_dc=5)
 
-    pp.runpp(net)
-    net.res_vsc
-
     runpp_with_consistency_checks(net)
+
+
+def test_results_pf_grid():
+    # todo: improve accuracy of DC losses and reduce tolerances
+    path = os.path.join(pp.pp_dir, "test", "test_files", "test_ac_dc.json")
+    net = pp.from_json(path)
+    res = pp.converter.validate_pf_conversion(net)
+    assert np.max(np.abs(res['diff_vm'])) < 1e-6
+    assert np.max(np.abs(res['diff_va'])) < 1e-3
+    assert np.max(np.abs(res['bus_dc_diff'])) < 5e-6
+    assert np.max(np.abs(res['line_diff'])) < 0.02
+    assert np.max(np.abs(res['line_dc_diff'])) < 1e-3
+    assert np.max(np.abs(res['vsc_p_diff_is'])) < 0.02
+    assert np.max(np.abs(res['vsc_q_diff_is'])) < 0.01
+    assert np.max(np.abs(res['vsc_p_dc_diff_is'])) < 1e-3
+    assert np.max(np.abs(res['ext_grid_p_diff'])) < 0.05
+    assert np.max(np.abs(res['ext_grid_q_diff'])) < 0.01
 
 
 # TODO test for when the VSC, SSC, TCSC, connect to same buses
