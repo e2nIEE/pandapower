@@ -2946,7 +2946,7 @@ def create_stactrl(net, item):
 
     input_busses = []
     output_busses = []
-    if res_element_table ==  "res_line":
+    if res_element_table == "res_line":
         for index in res_element_index:
             input_busses.append(net.line.at[index, 'to_bus'])
     elif res_element_table == "res_trafo":
@@ -3008,8 +3008,8 @@ def create_stactrl(net, item):
             raise NotImplementedError(f"{item}: Q orientation '-' not supported")
         # q_control_mode = item.qu_char  # 0: "Const Q", 1: "Q(V) Characteristic", 2: "Q(P) Characteristic"
         # q_control_terminal = q_control_cubicle.cterm  # terminal of the cubicle
-        if item.qu_char in [0, 1]:
-            bsc = pp.control.BinarySearchControl(net, ctrl_in_service=stactrl_in_service,
+        if item.qu_char == 0:
+            pp.control.BinarySearchControl(net, ctrl_in_service=stactrl_in_service,
                                                  output_element=gen_element, output_variable="q_mvar",
                                                  output_element_index=gen_element_index,
                                                  output_element_in_service=gen_element_in_service,
@@ -3017,12 +3017,20 @@ def create_stactrl(net, item):
                                                  output_values_distribution=distribution, damping_factor=0.9,
                                                  input_variable=variable, input_element_index=res_element_index,
                                                  set_point=item.qsetp, tol=1e-6)
-            if item.qu_char == 1:
-                controlled_node = item.refbar
-                bus = bus_dict[controlled_node]  # controlled node
-                pp.control.DroopControl(net, q_droop_mvar=item.Srated * 100 / item.ddroop, bus_idx=bus,
-                                        vm_set_pu=item.udeadbup, vm_set_ub=item.udeadbup, vm_set_lb=item.udeadblow,
-                                        controller_idx=bsc.index, voltage_ctrl=False)
+        elif item.qu_char == 1:
+            controlled_node = item.refbar
+            bus = bus_dict[controlled_node]  # controlled node
+            bsc = pp.control.BinarySearchControl(net, ctrl_in_service=stactrl_in_service,
+                                                 output_element=gen_element, output_variable="q_mvar",
+                                                 output_element_index=gen_element_index,
+                                                 output_element_in_service=gen_element_in_service,
+                                                 input_element=res_element_table,
+                                                 output_values_distribution=distribution, damping_factor=0.9,
+                                                 input_variable=variable, input_element_index=res_element_index,
+                                                 set_point=item.qsetp, bus_idx=bus, tol=1e-6)
+            pp.control.DroopControl(net, q_droop_mvar=item.Srated * 100 / item.ddroop, bus_idx=bus,
+                                    vm_set_pu=item.udeadbup, vm_set_ub=item.udeadbup, vm_set_lb=item.udeadblow,
+                                    controller_idx=bsc.index, voltage_ctrl=False)
         else:
             raise NotImplementedError
     else:
