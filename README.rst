@@ -101,8 +101,8 @@ Operation at the Fraunhofer Institute for Energy Economics and Energy System Tec
     <a href="https://www.iee.fraunhofer.de/en.html">
        <picture>
          <source media="(prefers-color-scheme: dark)" srcset="https://www.pandapower.org/images/contact/Logo_Fraunhofer_IEE_negativ.png">
-         <source media="(prefers-color-scheme: light)" srcset="https:////www.pandapower.org/images/contact/Logo_Fraunhofer_IEE.png">
-         <img alt="logo" src="//www.pandapower.org/images/contact/Logo_Fraunhofer_IEE.png" width=500 >
+         <source media="(prefers-color-scheme: light)" srcset="https://www.pandapower.org/images/contact/Logo_Fraunhofer_IEE.png">
+         <img alt="logo" src="https://www.pandapower.org/images/contact/Logo_Fraunhofer_IEE.png" width=500 >
        </picture>
     </a>
 
