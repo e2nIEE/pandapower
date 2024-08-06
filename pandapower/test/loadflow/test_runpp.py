@@ -347,7 +347,7 @@ def get_isolated(net):
 def test_connectivity_check_island_without_pv_bus():
     # Network with islands without pv bus -> all buses in island should be set out of service
     net = create_cigre_network_mv(with_der=False)
-    iso_buses, iso_p, iso_q = get_isolated(net)
+    iso_buses, iso_p, iso_q, *_ = get_isolated(net)
     assert len(iso_buses) == 0
     assert np.isclose(iso_p, 0)
     assert np.isclose(iso_q, 0)
@@ -357,7 +357,7 @@ def test_connectivity_check_island_without_pv_bus():
     pp.create_line(net, isolated_bus2, isolated_bus1, length_km=1,
                    std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV",
                    name="IsolatedLine")
-    iso_buses, iso_p, iso_q = get_isolated(net)
+    iso_buses, iso_p, iso_q, *_ = get_isolated(net)
     assert len(iso_buses) == 2
     assert np.isclose(iso_p, 0)
     assert np.isclose(iso_q, 0)
@@ -366,7 +366,7 @@ def test_connectivity_check_island_without_pv_bus():
     pp.create_sgen(net, isolated_bus2, p_mw=0.15, q_mvar=0.01)
 
     # with pytest.warns(UserWarning):
-    iso_buses, iso_p, iso_q = get_isolated(net)
+    iso_buses, iso_p, iso_q, *_ = get_isolated(net)
     assert len(iso_buses) == 2
     assert np.isclose(iso_p, 350)
     assert np.isclose(iso_q, 30)
@@ -377,7 +377,7 @@ def test_connectivity_check_island_without_pv_bus():
 def test_connectivity_check_island_with_one_pv_bus():
     # Network with islands with one PV bus -> PV bus should be converted to the reference bus
     net = create_cigre_network_mv(with_der=False)
-    iso_buses, iso_p, iso_q = get_isolated(net)
+    iso_buses, iso_p, iso_q, *_ = get_isolated(net)
     assert len(iso_buses) == 0
     assert np.isclose(iso_p, 0)
     assert np.isclose(iso_q, 0)
@@ -391,7 +391,7 @@ def test_connectivity_check_island_with_one_pv_bus():
     pp.create_line(net, isolated_gen, isolated_bus1, length_km=1,
                    std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV", name="IsolatedLineToGen")
     # with pytest.warns(UserWarning):
-    iso_buses, iso_p, iso_q = get_isolated(net)
+    iso_buses, iso_p, iso_q, *_ = get_isolated(net)
 
     # assert len(iso_buses) == 0
     # assert np.isclose(iso_p, 0)
@@ -413,7 +413,7 @@ def test_connectivity_check_island_with_multiple_pv_buses():
     # Network with islands an multiple PV buses in the island -> Error should be thrown since it
     # would be random to choose just some PV bus as the reference bus
     net = create_cigre_network_mv(with_der=False)
-    iso_buses, iso_p, iso_q = get_isolated(net)
+    iso_buses, iso_p, iso_q, *_ = get_isolated(net)
     assert len(iso_buses) == 0
     assert np.isclose(iso_p, 0)
     assert np.isclose(iso_q, 0)
@@ -435,7 +435,7 @@ def test_connectivity_check_island_with_multiple_pv_buses():
                    std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV",
                    name="IsolatedLine")
     # ToDo with pytest.warns(UserWarning):
-    iso_buses, iso_p, iso_q = get_isolated(net)
+    iso_buses, iso_p, iso_q, *_ = get_isolated(net)
 
 
 def test_isolated_in_service_bus_at_oos_line():
@@ -849,7 +849,7 @@ def test_get_internal():
     Ybus = ppc["internal"]["Ybus"]
 
     _, ppci = _pd2ppc(net)
-    baseMVA, bus, gen, branch, svc, tcsc, ssc, ref, pv, pq, _, _, V0, _ = _get_pf_variables_from_ppci(ppci)
+    baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, ref, pv, pq, _, _, V0, _ = _get_pf_variables_from_ppci(ppci)
 
     pvpq = np.r_[pv, pq]
     dist_slack = False
