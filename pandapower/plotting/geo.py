@@ -523,13 +523,13 @@ def convert_geodata_to_geojson(
     if is_pandapower:
         df = net.bus
         ldf = net.line
-        geo_df = net.bus_geodata if hasattr(net, 'bus_geodata') else pd.DataFrame()
-        geo_ldf = net.line_geodata if hasattr(net, 'line_geodata') else pd.DataFrame()
+        geo_df = net.bus_geodata if (hasattr(net, 'bus_geodata') and isinstance(net.bus_geodata, pd.DataFrame)) else pd.DataFrame()
+        geo_ldf = net.line_geodata if (hasattr(net, 'line_geodata') and isinstance(net.line_geodata, pd.DataFrame)) else pd.DataFrame()
     else:
         df = net.junction
         ldf = net.pipe
-        geo_df = net.junction_geodata if hasattr(net, 'junction_geodata') else pd.DataFrame()
-        geo_ldf = net.pipe_geodata if hasattr(net, 'pipe_geodata') else pd.DataFrame()
+        geo_df = net.junction_geodata if (hasattr(net, 'junction_geodata') and isinstance(net.junction_geodata, pd.DataFrame)) else pd.DataFrame()
+        geo_ldf = net.pipe_geodata if (hasattr(net, 'pipe_geodata') and isinstance(net.pipe_geodata, pd.DataFrame)) else pd.DataFrame()
 
     a, b = "yx" if lonlat else "xy"  # substitute x and y with a and b to reverse them if necessary
     if not geo_df.empty:

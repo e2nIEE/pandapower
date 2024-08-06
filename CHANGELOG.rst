@@ -3,6 +3,8 @@ Change Log
 
 [upcoming release] - 2024-..-..
 -------------------------------
+- [FIXED] using loc to remove the warning
+- [FIXED] replacing deprecated H and A from scipy.sparse.csc_matrix
 - [ADDED] low voltage grid Schutterwald
 - [FIXED] trafo3w with tap changer at star point corrected
 - [FIXED] namespace changes from numpy 2.0 release
@@ -50,6 +52,7 @@ Change Log
 - [ADDED] the possibility to have unequal values for branch G and B for from and to buses by means of new columns in ppc['branch'] BR_B_ASYM and BR_G_ASYM
 - [ADDED] shunt components G and B for impedance elements, also supports unequal G and B parameters for from and to bus
 - [ADDED] support for unequal leakage resistance and reactance for HV and LV sides of a 2W-transformer
+- [ADDED] Add VSC element, dc buses, dc lines, and hybrid AC/DC power flow calculation
 
 [2.14.7] - 2024-06-14
 -------------------------------

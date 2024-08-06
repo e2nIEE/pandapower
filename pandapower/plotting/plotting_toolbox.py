@@ -144,7 +144,7 @@ def get_index_array(indices, net_table_indices):
 
 
 def coords_from_node_geodata(element_indices, from_nodes, to_nodes, node_geodata, table_name,
-                             node_name="Bus", ignore_zero_length=True):
+                             node_name="Bus", ignore_zero_length=True, node_geodata_to=None):
     """
     Auxiliary function to get the node coordinates for a number of branches with respective from
     and to nodes. The branch elements for which there is no geodata available are not included in
@@ -165,6 +165,8 @@ def coords_from_node_geodata(element_indices, from_nodes, to_nodes, node_geodata
     :param ignore_zero_length: States if branches should be left out, if their length is zero, i.e. \
         from_node_coords = to_node_coords
     :type ignore_zero_length: bool, default True
+    :param node_geodata_to: Dataframe containing x and y coordinates of the "to" nodes (optional, default node_geodata)
+    :type node_geodata_to: pd.DataFrame
     :return: Return values are:\
         - coords (list) - list of branch coordinates as geojson valid strings
         - elements_with_geo (set) - the indices of branch elements for which coordinates wer found \

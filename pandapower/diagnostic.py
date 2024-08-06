@@ -117,6 +117,7 @@ def diagnostic(net, report_style='detailed', warnings_only=False, return_result_
     diag_params = {
         "overload_scaling_factor": overload_scaling_factor,
         "min_r_ohm": min_r_ohm,
+        "min_r_dc_ohm": min_r_ohm,
         "min_x_ohm": min_x_ohm,
         "min_r_pu": max_r_ohm,
         "min_x_pu": max_x_ohm,
@@ -599,7 +600,12 @@ def implausible_impedance_values(net, min_r_ohm, min_x_ohm, max_r_ohm, max_x_ohm
           (net.trafo3w.vk_lv_percent / 100 * np.square(net.trafo3w.vn_hv_kv) / net.trafo3w.sn_lv_mva >= max_x_ohm) |
           (net.trafo3w.vk_lv_percent / 100 * np.square(net.trafo3w.vn_lv_kv) / net.trafo3w.sn_lv_mva <= min_x_ohm)) &
          net.trafo3w.in_service)].index
+    vsc = net.vsc.loc[((net.vsc.r_ohm <= min_r_ohm)
+                       | (net.vsc.x_ohm <= min_x_ohm)
+                       | (net.vsc.r_dc_ohm <= min_r_ohm)) & net.vsc.in_service].index
 
+    line_dc = net.line_dc.loc[((net.line_dc.r_ohm_per_km * net.line_dc.length_km) <= min_r_ohm) &
+                              net.line_dc.in_service].index
     if len(line) > 0:
         implausible_elements['line'] = list(line)
     if len(xward) > 0:
@@ -610,12 +616,18 @@ def implausible_impedance_values(net, min_r_ohm, min_x_ohm, max_r_ohm, max_x_ohm
         implausible_elements['trafo'] = list(trafo)
     if len(trafo3w) > 0:
         implausible_elements['trafo3w'] = list(trafo3w)
+    if len(vsc) > 0:
+        implausible_elements['vsc'] = list(vsc)
+    if len(line_dc) > 0:
+        implausible_elements['line_dc'] = list(line_dc)
     check_results.append(implausible_elements)
     # checks if loadflow converges when implausible lines or impedances are replaced by switches
     if ("line" in implausible_elements) or ("impedance" in implausible_elements) or ("xward" in implausible_elements):
         switch_copy = copy.deepcopy(net.switch)
         line_copy = copy.deepcopy(net.line)
         impedance_copy = copy.deepcopy(net.impedance)
+        vsc_copy = copy.deepcopy(net.vsc)
+        line_dc_copy = copy.deepcopy(net.line_dc)
         ward_copy = copy.deepcopy(net.ward)
         xward_copy = copy.deepcopy(net.xward)
         trafo_copy = copy.deepcopy(net.trafo)
@@ -626,6 +638,12 @@ def implausible_impedance_values(net, min_r_ohm, min_x_ohm, max_r_ohm, max_x_ohm
             try:
                 for key in implausible_elements:
                     implausible_idx = implausible_elements[key]
+                    if key == 'vsc':
+                        net.vsc.x_ohm = np.fmax(net.vsc.x_ohm, 0.5)
+                        net.vsc.r_dc_ohm = np.fmax(net.vsc.r_dc_ohm, 0.5)
+                    if key == 'line_dc':
+                        net.line_dc.length_km = np.fmax(net.line_dc.length_km, 0.5)
+                        net.line_dc.r_dc_ohm = np.fmax(net.line_dc.r_dc_ohm, 0.5)
                     net[key].loc[implausible_idx, "in_service"] = False
                     if key == 'xward':
                         replace_xward_by_ward(net, implausible_idx)
@@ -654,6 +672,8 @@ def implausible_impedance_values(net, min_r_ohm, min_x_ohm, max_r_ohm, max_x_ohm
         net.switch = switch_copy
         net.line = line_copy
         net.impedance = impedance_copy
+        net.vsc = vsc_copy
+        net.line_dc = line_dc_copy
         net.ward = ward_copy
         net.xward = xward_copy
         net.trafo = trafo_copy

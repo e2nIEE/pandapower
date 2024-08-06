@@ -162,7 +162,7 @@ def test_continuous_tap_control_vectorized_lv():
         pp.create_transformer(net, hv, lv, "63 MVA 110/20 kV")
         pp.create_load(net, lv, 25*(lv-8), 25*(lv-8) * 0.4)
     pp.set_user_pf_options(net, init='dc', calculate_voltage_angles=True)
-    net.trafo.tap_side.iloc[3:] = "lv"
+    net.trafo.loc[3:, 'tap_side'] = "lv"
     tol = 1e-4
     # --- run loadflow
     pp.runpp(net)
@@ -200,7 +200,7 @@ def test_continuous_tap_control_vectorized_hv():
         pp.create_transformer(net, hv, lv, "63 MVA 110/20 kV")
         pp.create_load(net, hv, 2.5*(hv-8), 2.5*(hv-8) * 0.4)
     pp.set_user_pf_options(net, init='dc', calculate_voltage_angles=True)
-    net.trafo.tap_side.iloc[3:] = "lv"
+    net.trafo.loc[3:, 'tap_side'] = "lv"
     tol = 1e-4
     # --- run loadflow
     pp.runpp(net)
