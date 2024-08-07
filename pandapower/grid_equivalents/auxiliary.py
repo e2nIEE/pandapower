@@ -21,6 +21,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 home = str(Path.home())
 desktop = os.path.join(home, "Desktop")
+impedance_columns = ["from_bus", "to_bus", "rft_pu", "xft_pu", "rtf_pu", "xtf_pu", "gf_pu", "bf_pu", "gt_pu", "bt_pu"]
 
 
 def _runpp_except_voltage_angles(net, **kwargs):
@@ -158,7 +159,7 @@ def drop_internal_branch_elements(net, internal_buses, branch_elements=None):
             elif "trafo" in elm:
                 pp.drop_trafos(net, idx_to_drop, table=elm)
             else:
-                net[elm].drop(idx_to_drop, inplace=True)
+                net[elm] = net[elm].drop(idx_to_drop)
 
 
 def calc_zpbn_parameters(net, boundary_buses, all_external_buses, slack_as="gen",
@@ -206,16 +207,16 @@ def calc_zpbn_parameters(net, boundary_buses, all_external_buses, slack_as="gen"
             if i in net[ele].bus.values and net[ele].in_service[net[ele].bus == i].values.any():
                 ind = list(net[ele].index[net[ele].bus == i].values)
                 # act. values --> ref. values:
-                S[power][k] += sum(net[res_ele].p_mw[ind].values * sign) / net.sn_mva + \
+                S.loc[k, power] += sum(net[res_ele].p_mw[ind].values * sign) / net.sn_mva + \
                     1j * sum(net[res_ele].q_mvar[ind].values *
                              sign) / net.sn_mva
-                S[sn][k] = sum(net[ele].sn_mva[ind].values) + \
+                S.loc[k, sn] = sum(net[ele].sn_mva[ind].values) + \
                     1j * 0 if ele != "ext_grid" else 1e6 + 1j * 0
                 S[power.replace('_separate', '_integrated')] += S[power][k]
                 S[sn.replace('_separate', '_integrated')] += S[sn][k]
-        S.ext_bus[k] = all_external_buses[k]
-        S.v_m[k] = net.res_bus.vm_pu[i]
-        S.v_cpx[k] = S.v_m[k] * \
+        S.loc[k, 'ext_bus'] = all_external_buses[k]
+        S.loc[k, 'v_m'] = net.res_bus.vm_pu[i]
+        S.loc[k, 'v_cpx'] = S.v_m[k] * \
             np.exp(1j * net.res_bus.va_degree[i] * np.pi / 180)
         k = k + 1
 
@@ -273,8 +274,8 @@ def _ensure_unique_boundary_bus_names(net, boundary_buses):
     """
     assert "name_equivalent" not in net.bus.columns.tolist()
     net.bus["name_equivalent"] = "uuid"
-    net.bus.name_equivalent.loc[boundary_buses] = ["Boundary bus " + str(uuid.uuid1()) for _ in
-                                                   boundary_buses]
+    net.bus.loc[boundary_buses, "name_equivalent"] = ["Boundary bus " + str(uuid.uuid1()) for _ in
+                                                      boundary_buses]
 
 
 def drop_assist_elms_by_creating_ext_net(net, elms=None):
@@ -286,14 +287,14 @@ def drop_assist_elms_by_creating_ext_net(net, elms=None):
     for elm in elms:
         target_elm_idx = net[elm].index[net[elm].name.astype(str).str.contains(
             "assist_"+elm, na=False, regex=False)]
-        net[elm].drop(target_elm_idx, inplace=True)
+        net[elm] = net[elm].drop(target_elm_idx)
         if net["res_"+elm].shape[0]:
             res_target_elm_idx = net["res_" +
                                      elm].index.intersection(target_elm_idx)
-            net["res_"+elm].drop(res_target_elm_idx, inplace=True)
+            net["res_"+elm] = net["res_"+elm].drop(res_target_elm_idx)
 
     if "name_equivalent" in net.bus.columns.tolist():
-        net.bus.drop(columns=["name_equivalent"], inplace=True)
+        net.bus = net.bus.drop(columns=["name_equivalent"])
 
 
 def build_ppc_and_Ybus(net):
@@ -379,7 +380,7 @@ def match_controller_and_new_elements(net, net_org):
                 net.controller.object[idx].__dict__["element_index"] = new_elm_idxs
                 net.controller.object[idx].__dict__["matching_params"]["element_index"] = new_elm_idxs
                 net.controller.object[idx].__dict__["profile_name"] = profile_name
-        net.controller.drop(tobe_removed, inplace=True)
+        net.controller = net.controller.drop(tobe_removed)
     # TODO: match the controllers in the external area
 
 def ensure_origin_id(net, no_start=0, elms=None):
@@ -393,7 +394,7 @@ def ensure_origin_id(net, no_start=0, elms=None):
         if "origin_id" not in net[elm].columns:
             net[elm]["origin_id"] = pd.Series([None]*net[elm].shape[0], dtype=object)
         idxs = net[elm].index[net[elm].origin_id.isnull()]
-        net[elm].origin_id.loc[idxs] = ["%s_%i_%s" % (elm, idx, str(uuid.uuid4())) for idx in idxs]
+        net[elm].loc[idxs, "origin_id"] = ["%s_%i_%s" % (elm, idx, str(uuid.uuid4())) for idx in idxs]
 
 
 def drop_and_edit_cost_functions(net, buses, drop_cost, add_origin_id,
@@ -411,11 +412,11 @@ def drop_and_edit_cost_functions(net, buses, drop_cost, add_origin_id,
                 for elm in set(net[cost_elm].et.values):
                     idx = net[cost_elm].element.index[(net[cost_elm].et == elm) &
                                                       (net[cost_elm].element.isin(net[elm].index))]
-                    net[cost_elm]["bus"].loc[idx] = net[elm].bus.loc[net[cost_elm].element.loc[
+                    net[cost_elm].loc[idx, "bus"] = net[elm].bus.loc[net[cost_elm].element.loc[
                         idx]].values
                 to_drop = net[cost_elm].index[net[cost_elm].bus.isin(buses) |
                                               net[cost_elm].bus.isnull()]
-                net[cost_elm].drop(to_drop, inplace=True)
+                net[cost_elm] = net[cost_elm].drop(to_drop)
 
             # add origin_id to cost df and corresponding elms
             if add_origin_id:
@@ -426,10 +427,10 @@ def drop_and_edit_cost_functions(net, buses, drop_cost, add_origin_id,
                     net[cost_elm]["origin_seq"] = None
                 for elm in set(net[cost_elm].et.values):
                     idx = net[cost_elm].index[net[cost_elm].et == elm]
-                    net[cost_elm]["et_origin_id"].loc[idx] = net[elm].origin_id.loc[net[
+                    net[cost_elm].loc[idx, "et_origin_id"] = net[elm].origin_id.loc[net[
                         cost_elm].element.loc[idx]].values
-                    net[cost_elm]["origin_idx"].loc[idx] = idx
-                    net[cost_elm]["origin_seq"].loc[idx] = [cost_backup.index.tolist().index(t) for t in idx]
+                    net[cost_elm].loc[idx, "origin_idx"] = idx
+                    net[cost_elm].loc[idx, "origin_seq"] = [cost_backup.index.tolist().index(t) for t in idx]
 
 
 def match_cost_functions_and_eq_net(net, boundary_buses, eq_type):
@@ -440,13 +441,13 @@ def match_cost_functions_and_eq_net(net, boundary_buses, eq_type):
     for cost_elm in ["poly_cost", "pwl_cost"]:
         if len(net[cost_elm]):
             if "ward" not in eq_type:
-                net[cost_elm].sort_values(by=["origin_seq"], inplace=True)
+                net[cost_elm] = net[cost_elm].sort_values(by=["origin_seq"])
                 net[cost_elm].index = net[cost_elm]["origin_idx"].values
                 for pc in net[cost_elm].itertuples():
                     new_idx = net[pc.et].index[
                         net[pc.et].origin_id == pc.et_origin_id].values
-                    net[cost_elm].element[pc.Index] = new_idx[0]
-            net[cost_elm].drop(columns=["bus", "et_origin_id", "origin_idx", "origin_seq"], inplace=True)
+                    net[cost_elm].loc[pc.Index, 'element'] = new_idx[0]
+            net[cost_elm] = net[cost_elm].drop(columns=["bus", "et_origin_id", "origin_idx", "origin_seq"])
 
 
 def _check_network(net):
@@ -511,7 +512,7 @@ def adaptation_phase_shifter(net, v_boundary, p_boundary):
                                 net[e].to_bus[i] = hb
                         elif e == "trafo":
                             if net[e].hv_bus[i] == lb:
-                                net[e].hv_bus[i] = hb
+                                net[e].loc[i, 'hv_bus'] = hb
                             else:
                                 net[e].lv_bus[i] = hb
                         elif e == "trafo3w":
@@ -524,7 +525,7 @@ def adaptation_phase_shifter(net, v_boundary, p_boundary):
                         elif e in ["bus", "load", "sgen", "gen", "shunt", "ward", "xward"]:
                             pass
                         else:
-                            net[e].bus[i] = hb
+                            net[e].loc[i, 'bus'] = hb
             pp.create_transformer_from_parameters(net, hb, lb, 1e5,
                                                   net.bus.vn_kv[hb]*(1-vm_errors[idx]),
                                                   net.bus.vn_kv[lb],
@@ -556,8 +557,8 @@ def replace_motor_by_load(net, all_external_buses):
         p = p_mw if not np.isnan(net.res_bus.vm_pu[m.bus]) and m.in_service else 0.0
         q = q_mvar if not np.isnan(net.res_bus.vm_pu[m.bus]) and m.in_service else 0.0
         net.res_load.loc[li] = p, q
-    net.motor.drop(motors, inplace=True)
-    net.res_motor.drop(motors, inplace=True)
+    net.motor = net.motor.drop(motors)
+    net.res_motor = net.res_motor.drop(motors)
 
 
 if __name__ == "__main__":

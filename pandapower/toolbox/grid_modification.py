@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
@@ -14,7 +14,7 @@ from pandapower.auxiliary import pandapowerNet, _preserve_dtypes, ensure_iterabi
 from pandapower.std_types import change_std_type
 from pandapower.create import create_switch, create_line_from_parameters, \
     create_impedance, create_empty_network, create_gen, create_ext_grid, \
-    create_load, create_shunt, create_bus, create_sgen, create_storage
+    create_load, create_shunt, create_bus, create_sgen, create_storage, create_ward
 from pandapower.run import runpp
 from pandapower.toolbox.element_selection import branch_element_bus_dict, element_bus_tuples, pp_elements, \
     get_connected_elements, get_connected_elements_dict, next_bus
@@ -192,8 +192,7 @@ def merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9, **kwargs
         raise FutureWarning(msg1 + msg2 + msg3)
     elif not new_params_passed:
         warnings.warn(msg1 + msg3, category=FutureWarning)
-    return _merge_nets(net1, net2, validate=validate, merge_results=merge_results, tol=tol,
-                           **kwargs)
+    return _merge_nets(net1, net2, validate=validate, merge_results=merge_results, tol=tol, **kwargs)
 
 
 def _merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
@@ -212,13 +211,21 @@ def _merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
         runpp(net2, **runpp_kwargs)
 
     # collect element types to copy from net2 to net (output)
-    elm_types = [elm_type for elm_type, df in net2.items() if not elm_type.startswith("_") and \
-        isinstance(df, pd.DataFrame) and df.shape[0] and elm_type != "dtypes" and \
-            (not elm_type.startswith("res_") or (merge_results and not validate))]
+    elm_types = [elm_type for elm_type, df in net2.items() if (
+            not elm_type.startswith("_")
+            and isinstance(df, pd.DataFrame)
+            and df.shape[0]
+            and (
+                    not elm_type.startswith("res_")
+                    or (merge_results and not validate)
+            )
+    )]
 
     # reindex net2 elements if some indices already exist in net
     reindex_lookup = dict()
     for elm_type in elm_types:
+        if elm_type not in net:
+            continue
         is_dupl = pd.Series(net2[elm_type].index).isin(net[elm_type].index)
         if any(is_dupl):
             start = max(net1[elm_type].index.max(), net2[elm_type].index[~is_dupl].max()) + 1
@@ -235,9 +242,12 @@ def _merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
 
     # copy dataframes from net2 to net (output)
     for elm_type in elm_types:
-        dtypes = net[elm_type].dtypes
-        net[elm_type] = pd.concat([net[elm_type], net2[elm_type]])
-        _preserve_dtypes(net[elm_type], dtypes)
+        if elm_type in net:
+            dtypes = net[elm_type].dtypes
+            net[elm_type] = pd.concat([net[elm_type], net2[elm_type]])
+            _preserve_dtypes(net[elm_type], dtypes)
+        else:
+            net[elm_type] = net2[elm_type].copy()
 
     # copy standard types of net by data of net2
     for type_ in net.std_types.keys():
@@ -452,7 +462,7 @@ def merge_parallel_line(net, idx):
 
 
 def merge_same_bus_generation_plants(net, add_info=True, error=True,
-                                     gen_elms=["ext_grid", "gen", "sgen"]):
+                                     gen_elms=("ext_grid", "gen", "sgen")):
     """
     Merge generation plants connected to the same buses so that a maximum of one generation plants
     per node remains.
@@ -632,7 +642,7 @@ def drop_elements_simple(net, element_type, element_index):
 
     # logging
     if number := len(element_index) > 0:
-        logger.debug("Dropped %i %s%s!" % (number, element_type, plural_s(number)))
+        logger.debug(f"Dropped {number} {element_type}{plural_s(number)}!")
 
 
 def drop_buses(net, buses, drop_elements=True):
@@ -641,8 +651,7 @@ def drop_buses(net, buses, drop_elements=True):
     them as well.
     """
     detach_from_groups(net, "bus", buses)
-    net["bus"] = net["bus"].drop(buses)
-    net["bus_geodata"] = net["bus_geodata"].drop(set(buses) & set(net["bus_geodata"].index))
+    net["bus"].drop(buses, inplace=True)
     res_buses = net.res_bus.index.intersection(buses)
     net["res_bus"] = net["res_bus"].drop(res_buses)
     if drop_elements:
@@ -673,8 +682,7 @@ def drop_trafos(net, trafos, table="trafo"):
     net[table] = net[table].drop(trafos)
     res_trafos = net["res_" + table].index.intersection(trafos)
     net["res_" + table] = net["res_" + table].drop(res_trafos)
-    logger.debug("Dropped %i %s%s with %i switches" % (
-        len(trafos), table, plural_s(len(trafos)), num_switches))
+    logger.debug(f"Dropped {len(trafos)} {table}{plural_s(len(trafos))} with {num_switches} switches")
 
 
 def drop_lines(net, lines):
@@ -692,12 +700,12 @@ def drop_lines(net, lines):
 
     # drop lines and geodata
     detach_from_groups(net, "line", lines)
-    net["line"] = net["line"].drop(lines)
-    net["line_geodata"] = net["line_geodata"].drop(set(lines) & set(net["line_geodata"].index))
+    net["line"].drop(lines, inplace=True)
+    if "line_geodata" in net:
+        net["line_geodata"].drop(set(lines) & set(net["line_geodata"].index), inplace=True)
     res_lines = net.res_line.index.intersection(lines)
-    net["res_line"] = net["res_line"].drop(res_lines)
-    logger.debug("Dropped %i line%s with %i line switches" % (
-        len(lines), plural_s(len(lines)), len(i)))
+    net["res_line"].drop(res_lines, inplace=True)
+    logger.debug(f"Dropped {len(lines)} line{plural_s(len(lines))} with {len(i)} line switches")
 
 
 def drop_elements_at_buses(net, buses, bus_elements=True, branch_elements=True,
@@ -927,6 +935,10 @@ def create_replacement_switch_for_branch(net, element_type, element_index):
     switch_name = 'REPLACEMENT_%s_%d' % (element_type, element_index)
     sid = create_switch(net, name=switch_name, bus=bus_i, element=bus_j, et='b', closed=is_closed,
                         type='CB')
+    # to enable unproblematic validation for the pf converter
+    for col in ("pf_closed", "pf_in_service"):
+        if col in net.res_switch.columns:
+            net.res_switch.loc[sid, col] = is_closed
     logger.debug('created switch %s (%d) as replacement for %s %s' %
                  (switch_name, sid, element_type, element_index))
     return sid
@@ -1104,6 +1116,8 @@ def replace_line_by_impedance(net, index=None, sn_mva=None, only_valid_replace=T
         raise ValueError("index and sn_mva must have the same length.")
 
     parallel = net.line["parallel"].values
+    length_km = net.line["length_km"].values
+    cols = net.line.columns
 
     i = 0
     new_index = []
@@ -1116,14 +1130,19 @@ def replace_line_by_impedance(net, index=None, sn_mva=None, only_valid_replace=T
                          "converted to impedances, which do not model such parameters.")
         vn = net.bus.vn_kv.at[line_.from_bus]
         Zni = vn ** 2 / sn_mva[i]
-        par = parallel[idx]
+        p = parallel[idx]
+        l = length_km[idx]
         new_index.append(create_impedance(
             net, line_.from_bus, line_.to_bus,
-            rft_pu=line_.r_ohm_per_km * line_.length_km / par / Zni,
-            xft_pu=line_.x_ohm_per_km * line_.length_km / par / Zni,
+            rft_pu=line_.r_ohm_per_km * l / p / Zni,
+            xft_pu=line_.x_ohm_per_km * l / p / Zni,
+            gf_pu=line_.g_us_per_km * 1e-6 * Zni * l * p,
+            bf_pu=2 * net.f_hz * np.pi * line_.c_nf_per_km * 1e-9 * Zni * l * p,
             sn_mva=sn_mva[i],
-            rft0_pu=line_.r0_ohm_per_km * line_.length_km / par / Zni if "r0_ohm_per_km" in net.line.columns else None,
-            xft0_pu=line_.x0_ohm_per_km * line_.length_km / par / Zni if "x0_ohm_per_km" in net.line.columns else None,
+            rft0_pu=line_.r0_ohm_per_km * l / p / Zni if "r0_ohm_per_km" in cols else None,
+            xft0_pu=line_.x0_ohm_per_km * l / p / Zni if "x0_ohm_per_km" in cols else None,
+            gf0_pu=line_.g0_us_per_km * 1e-6 * Zni * l * p if "g0_us_per_km" in cols else None,
+            bf0_pu=2 * net.f_hz * np.pi * line_.c0_nf_per_km * 1e-9 * Zni * l * p if "c0_nf_per_km" in cols else None,
             name=line_.name,
             in_service=line_.in_service))
         i += 1
@@ -1194,7 +1213,7 @@ def replace_ext_grid_by_gen(net, ext_grids=None, gen_indices=None, slack=False, 
         idx = create_gen(net, ext_grid.bus, vm_pu=ext_grid.vm_pu, p_mw=p_mw, name=ext_grid.name,
                          in_service=ext_grid.in_service, controllable=True, index=index)
         new_idx.append(idx)
-    net.gen.slack.loc[new_idx] = slack
+    net.gen.loc[new_idx, "slack"] = slack
     net.gen.loc[new_idx, existing_cols_to_keep] = net.ext_grid.loc[
         ext_grids, existing_cols_to_keep].values
 
@@ -1209,8 +1228,8 @@ def replace_ext_grid_by_gen(net, ext_grids=None, gen_indices=None, slack=False, 
             to_change = net[table].index[(net[table].et == "ext_grid") &
                                          (net[table].element.isin(ext_grids))]
             if len(to_change):
-                net[table].et.loc[to_change] = "gen"
-                net[table].element.loc[to_change] = new_idx
+                net[table].loc[to_change, "et"] = "gen"
+                net[table].loc[to_change, "element"] = new_idx
 
     # --- result data
     if net.res_ext_grid.shape[0]:
@@ -1291,8 +1310,8 @@ def replace_gen_by_ext_grid(net, gens=None, ext_grid_indices=None, cols_to_keep=
         if net[table].shape[0]:
             to_change = net[table].index[(net[table].et == "gen") & (net[table].element.isin(gens))]
             if len(to_change):
-                net[table].et.loc[to_change] = "ext_grid"
-                net[table].element.loc[to_change] = new_idx
+                net[table].loc[to_change, "et"] = "ext_grid"
+                net[table].loc[to_change, "element"] = new_idx
 
     # --- result data
     if net.res_gen.shape[0]:
@@ -1375,8 +1394,8 @@ def replace_gen_by_sgen(net, gens=None, sgen_indices=None, cols_to_keep=None,
         if net[table].shape[0]:
             to_change = net[table].index[(net[table].et == "gen") & (net[table].element.isin(gens))]
             if len(to_change):
-                net[table].et.loc[to_change] = "sgen"
-                net[table].element.loc[to_change] = new_idx
+                net[table].loc[to_change, "et"] = "sgen"
+                net[table].loc[to_change, "element"] = new_idx
 
     # --- result data
     if net.res_gen.shape[0]:
@@ -1436,7 +1455,7 @@ def replace_sgen_by_gen(net, sgens=None, gen_indices=None, cols_to_keep=None,
     # add columns which should be kept from sgen but miss in gen to net.gen
     missing_cols_to_keep = existing_cols_to_keep.difference(net.gen.columns)
     for col in missing_cols_to_keep:
-        net.gen[col] = np.nan
+        net.gen[col] = pd.Series(data=None, dtype=net.sgen[col].dtype, name=col)
 
     # --- create gens
     new_idx = []
@@ -1457,6 +1476,7 @@ def replace_sgen_by_gen(net, sgens=None, gen_indices=None, cols_to_keep=None,
         idx = create_gen(net, sgen.bus, vm_pu=vm_pu, p_mw=sgen.p_mw, name=sgen.name,
                          in_service=sgen.in_service, controllable=controllable, index=index)
         new_idx.append(idx)
+    new_idx = np.array(new_idx, dtype=np.int64)
     net.gen.loc[new_idx, existing_cols_to_keep] = net.sgen.loc[
         sgens, existing_cols_to_keep].values
 
@@ -1475,8 +1495,8 @@ def replace_sgen_by_gen(net, sgens=None, gen_indices=None, cols_to_keep=None,
             to_change = net[table].index[(net[table].et == "sgen") &
                                          (net[table].element.isin(sgens))]
             if len(to_change):
-                net[table].et.loc[to_change] = "gen"
-                net[table].element.loc[to_change] = new_idx
+                net[table].loc[to_change, "et"] = "gen"
+                net[table].loc[to_change, "element"] = new_idx
 
     # --- result data
     if net.res_sgen.shape[0]:
@@ -1595,8 +1615,8 @@ def replace_pq_elmtype(net, old_element_type, new_element_type, old_indices=None
             to_change = net[table].index[(net[table].et == old_element_type) &
                                          (net[table].element.isin(old_indices))]
             if len(to_change):
-                net[table].et.loc[to_change] = new_element_type
-                net[table].element.loc[to_change] = new_idx
+                net[table].loc[to_change, "et"] = new_element_type
+                net[table].loc[to_change, "element"] = new_idx
 
     # --- result data
     if net["res_" + old_element_type].shape[0]:
@@ -1725,3 +1745,52 @@ def replace_xward_by_internal_elements(net, xwards=None, set_xward_bus_limits=Fa
 
     # --- drop replaced wards
     drop_elements_simple(net, "xward", xwards)
+
+
+def replace_xward_by_ward(net, index=None, drop=True):
+    """
+    Replace xward elements by ward elements in the given grid model.
+    The series impedance component of xward is ignored and lost after the replacement.
+
+    This function replaces xward elements in a pandapower net with equivalent ward elements (sans series impedance).
+    The original xward elements can be dropped (default) or set out of service.
+
+    Parameters:
+    -----------
+    net : pandapowerNet
+        The pandapower grid containing the xward elements to be replaced.
+
+    index : int, list of int, or None, optional (default: None)
+        The index or list of indices of the xward elements to replace.
+        If None, all xward elements in the grid will be replaced.
+
+    drop : bool, optional (default: True)
+        If True, the original xward elements will be removed from the grid.
+        If False, the xward elements will be set out of service instead of being removed.
+
+    Returns:
+    --------
+    new_index : list of int
+        A list of indices of the newly created ward elements in the network.
+
+    Notes:
+    ------
+    The function ensures that the group membership and associated element type of the replaced
+    elements are updated accordingly.
+    """
+    index = list(ensure_iterability(index)) if index is not None else list(net.impedance.index)
+
+    new_index = []
+    for xi in index:
+        wi = create_ward(net, net.xward.at[xi, "bus"], net.xward.at[xi, "ps_mw"], net.xward.at[xi, "qs_mvar"],
+                         net.xward.at[xi, "pz_mw"], net.xward.at[xi, "qz_mvar"], f"REPLACEMENT_xward_{xi}",
+                         net.xward.at[xi, "in_service"])
+        new_index.append(wi)
+
+    _replace_group_member_element_type(net, index, "xward", new_index, "ward",
+                                       detach_from_gr=False)
+    if drop:
+        drop_elements_simple(net, "xward", index)
+    else:
+        net.xward.loc[index, "in_service"] = False
+    return new_index

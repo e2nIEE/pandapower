@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from pandapower.control.controller.const_control import ConstControl as ConstController
@@ -13,7 +13,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-class TestControl(ConstController):
+class MyTestControl(ConstController):
 
     def __new__(cls):
         obj = super().__new__(cls)

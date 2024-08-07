@@ -1,0 +1,7 @@
+**Parameter**;**Datatype**;**Explanation**
+p_from_mw;float;active power from bus [MW]
+q_from_mvar;float;reactive power from bus [MVAr]
+p_to_mw;float;active power to element [MW]
+q_to_mvar;float;reactive power to element [MVAr]
+i_ka;float;current on switch [kA]
+loading_percent;float;loading of switch in percent of maximum current [%]

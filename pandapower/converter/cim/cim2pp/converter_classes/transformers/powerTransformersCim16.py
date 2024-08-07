@@ -23,15 +23,15 @@ class PowerTransformersCim16:
         time_start = time.time()
         self.logger.info("Start converting PowerTransformers.")
 
-        eq_power_transformers = self._prepare_power_transformers_cim16()
+        power_transformers = self._prepare_power_transformers_cim16()
         # split the power transformers into two and three windings
-        power_trafo_counts = eq_power_transformers.PowerTransformer.value_counts()
+        power_trafo_counts = power_transformers.PowerTransformer.value_counts()
         power_trafo2w = power_trafo_counts[power_trafo_counts == 2].index.tolist()
         power_trafo3w = power_trafo_counts[power_trafo_counts == 3].index.tolist()
 
-        eq_power_transformers.set_index('PowerTransformer', inplace=True)
-        power_trafo2w = eq_power_transformers.loc[power_trafo2w].reset_index()
-        power_trafo3w = eq_power_transformers.loc[power_trafo3w].reset_index()
+        power_transformers = power_transformers.set_index('PowerTransformer')
+        power_trafo2w = power_transformers.loc[power_trafo2w].reset_index()
+        power_trafo3w = power_transformers.loc[power_trafo3w].reset_index()
 
         if power_trafo2w.index.size > 0:
             # process the two winding transformers
@@ -56,7 +56,7 @@ class PowerTransformersCim16:
 
     def _create_trafo_characteristics(self, trafo_type, trafo_df_origin):
         if 'id_characteristic' not in trafo_df_origin.columns:
-            trafo_df_origin['id_characteristic'] = np.NaN
+            trafo_df_origin['id_characteristic'] = np.nan
         if 'characteristic_temp' not in self.cimConverter.net.keys():
             self.cimConverter.net['characteristic_temp'] = pd.DataFrame(
                 columns=['id_characteristic', 'step', 'vk_percent',
@@ -72,9 +72,8 @@ class PowerTransformersCim16:
         ptct_ratio = pd.merge(ptct_ratio, self.cimConverter.cim['eq']['RatioTapChangerTablePoint'][
             ['RatioTapChangerTable', 'step', 'r', 'x']], how='left', on='RatioTapChangerTable')
         ptct = pd.concat([ptct, ptct_ratio], ignore_index=True, sort=False)
-        ptct.rename(columns={'step': 'tabular_step', 'r': 'r_dev', 'x': 'x_dev', 'TransformerEnd': sc['pte_id']},
-                    inplace=True)
-        ptct.drop(columns=['PhaseTapChangerTable'], inplace=True)
+        ptct = ptct.rename(columns={'step': 'tabular_step', 'r': 'r_dev', 'x': 'x_dev', 'TransformerEnd': sc['pte_id']})
+        ptct = ptct.drop(columns=['PhaseTapChangerTable'])
         if trafo_type == 'trafo':
             trafo_df = trafo_df_origin.sort_values(['PowerTransformer', 'endNumber']).reset_index()
             # precessing the transformer data
@@ -89,10 +88,10 @@ class PowerTransformersCim16:
             del copy_list, one_item
             fillna_list = ['neutralStep', 'lowStep', 'highStep', 'step']
             for one_item in fillna_list:
-                trafo_df[one_item].fillna(trafo_df[one_item + '_lv'], inplace=True)
+                trafo_df[one_item] = trafo_df[one_item].fillna(trafo_df[one_item + '_lv'])
             del fillna_list, one_item
             # just keep one transformer
-            trafo_df.drop_duplicates(subset=['PowerTransformer'], keep='first', inplace=True)
+            trafo_df = trafo_df.drop_duplicates(subset=['PowerTransformer'], keep='first')
             # merge the trafos with the tap changers
             trafo_df = pd.merge(trafo_df, ptct, how='left', on=sc['pte_id'])
             trafo_df = pd.merge(trafo_df, ptct.rename(columns={'tabular_step': 'tabular_step_lv', 'r_dev': 'r_dev_lv',
@@ -101,12 +100,12 @@ class PowerTransformersCim16:
                                 how='left', on=sc['pte_id'] + '_lv')
             fillna_list = ['tabular_step']
             for one_item in fillna_list:
-                trafo_df[one_item].fillna(trafo_df[one_item + '_lv'], inplace=True)
+                trafo_df[one_item] = trafo_df[one_item].fillna(trafo_df[one_item + '_lv'])
             del fillna_list, one_item
-            trafo_df.dropna(subset=['r_dev', 'r_dev_lv'], how='all', inplace=True)
+            trafo_df = trafo_df.dropna(subset=['r_dev', 'r_dev_lv'], how='all')
             fillna_list = ['r_dev', 'r_dev_lv', 'x_dev', 'x_dev_lv']
             for one_item in fillna_list:
-                trafo_df[one_item].fillna(0, inplace=True)
+                trafo_df[one_item] = trafo_df[one_item].fillna(0)
             # special fix for the case that the impedance is given at the hv side but the tap changer is attached at
             # the lv side (so r_lv = 0 and r_dev_lv > 0):
             trafo_df.loc[(trafo_df['r_dev_lv'] != 0) & (trafo_df['r_lv'] == 0) & (trafo_df['r_dev'] == 0), 'r_dev'] = \
@@ -148,11 +147,11 @@ class PowerTransformersCim16:
             del copy_list, one_item
             fillna_list = ['neutralStep', 'lowStep', 'highStep', 'step']
             for one_item in fillna_list:
-                trafo_df[one_item].fillna(trafo_df[one_item + '_mv'], inplace=True)
-                trafo_df[one_item].fillna(trafo_df[one_item + '_lv'], inplace=True)
+                trafo_df[one_item] = trafo_df[one_item].fillna(trafo_df[one_item + '_mv'])
+                trafo_df[one_item] = trafo_df[one_item].fillna(trafo_df[one_item + '_lv'])
             del fillna_list, one_item
             # just keep one transformer
-            trafo_df.drop_duplicates(subset=['PowerTransformer'], keep='first', inplace=True)
+            trafo_df = trafo_df.drop_duplicates(subset=['PowerTransformer'], keep='first')
             # merge the trafos with the tap changers
             trafo_df = pd.concat([pd.merge(trafo_df, ptct, how='left', on=sc['pte_id']),
                                   pd.merge(trafo_df,
@@ -174,13 +173,13 @@ class PowerTransformersCim16:
                 ~trafo_df.RatioTapChangerTable.isna())]
             fillna_list = ['tabular_step']
             for one_item in fillna_list:
-                trafo_df[one_item].fillna(trafo_df[one_item + '_mv'], inplace=True)
-                trafo_df[one_item].fillna(trafo_df[one_item + '_lv'], inplace=True)
+                trafo_df[one_item] = trafo_df[one_item].fillna(trafo_df[one_item + '_mv'])
+                trafo_df[one_item] = trafo_df[one_item].fillna(trafo_df[one_item + '_lv'])
             del fillna_list, one_item
-            trafo_df.dropna(subset=['r_dev', 'r_dev_mv', 'r_dev_lv'], how='all', inplace=True)
+            trafo_df = trafo_df.dropna(subset=['r_dev', 'r_dev_mv', 'r_dev_lv'], how='all')
             fillna_list = ['r_dev', 'r_dev_mv', 'r_dev_lv', 'x_dev', 'x_dev_mv', 'x_dev_lv']
             for one_item in fillna_list:
-                trafo_df[one_item].fillna(0, inplace=True)
+                trafo_df[one_item] = trafo_df[one_item].fillna(0)
             # calculate vkr_percent and vk_percent
             trafo_df['r'] = trafo_df['r'] * (1 + trafo_df['r_dev'] / 100)
             trafo_df['r_mv'] = trafo_df['r_mv'] * (1 + trafo_df['r_dev_mv'] / 100)
@@ -261,10 +260,18 @@ class PowerTransformersCim16:
         self.cimConverter.net['characteristic_temp']['step'] = self.cimConverter.net['characteristic_temp']['step'].astype(int)
 
     def _prepare_power_transformers_cim16(self) -> pd.DataFrame:
-        eq_power_transformers = self.cimConverter.cim['eq']['PowerTransformer'][
-            ['rdfId', 'name', 'description', 'isPartOfGeneratorUnit']]
-        eq_power_transformers[sc['o_cl']] = 'PowerTransformer'
-        eq_power_transformer_ends = self.cimConverter.cim['eq']['PowerTransformerEnd'][
+        if 'sc' in self.cimConverter.cim.keys():
+            power_transformers = self.cimConverter.merge_eq_sc_profile('PowerTransformer')
+        else:
+            power_transformers = self.cimConverter.cim['eq']['PowerTransformer']
+        power_transformers = power_transformers[['rdfId', 'name', 'description', 'isPartOfGeneratorUnit']]
+        power_transformers[sc['o_cl']] = 'PowerTransformer'
+
+        if 'sc' in self.cimConverter.cim.keys():
+            power_transformer_ends = self.cimConverter.merge_eq_sc_profile('PowerTransformerEnd')
+        else:
+            power_transformer_ends = self.cimConverter.cim['eq']['PowerTransformerEnd']
+        power_transformer_ends = power_transformer_ends[
             ['rdfId', 'PowerTransformer', 'endNumber', 'Terminal', 'ratedS', 'ratedU', 'r', 'x', 'b', 'g', 'r0', 'x0',
              'phaseAngleClock', 'connectionKind', 'grounded']]
 
@@ -287,7 +294,7 @@ class PowerTransformersCim16:
                                             self.cimConverter.cim['ssh']['PhaseTapChangerAsymmetrical'], how='left',
                                             on='rdfId')
         eqssh_tap_changers_async['stepVoltageIncrement'] = eqssh_tap_changers_async['voltageStepIncrement'][:]
-        eqssh_tap_changers_async.drop(columns=['voltageStepIncrement'], inplace=True)
+        eqssh_tap_changers_async = eqssh_tap_changers_async.drop(columns=['voltageStepIncrement'])
         eqssh_tap_changers_async[sc['tc']] = 'PhaseTapChangerAsymmetrical'
         eqssh_tap_changers_async[sc['tc_id']] = eqssh_tap_changers_async['rdfId'].copy()
         eqssh_tap_changers = pd.concat([eqssh_tap_changers, eqssh_tap_changers_async], ignore_index=True, sort=False)
@@ -295,7 +302,7 @@ class PowerTransformersCim16:
                                                  self.cimConverter.cim['ssh']['PhaseTapChangerSymmetrical'], how='left',
                                                  on='rdfId')
         eqssh_ratio_tap_changers_sync['stepVoltageIncrement'] = eqssh_ratio_tap_changers_sync['voltageStepIncrement']
-        eqssh_ratio_tap_changers_sync.drop(columns=['voltageStepIncrement'], inplace=True)
+        eqssh_ratio_tap_changers_sync = eqssh_ratio_tap_changers_sync.drop(columns=['voltageStepIncrement'])
         eqssh_ratio_tap_changers_sync[sc['tc']] = 'PhaseTapChangerSymmetrical'
         eqssh_ratio_tap_changers_sync[sc['tc_id']] = eqssh_ratio_tap_changers_sync['rdfId'].copy()
         eqssh_tap_changers = \
@@ -305,7 +312,7 @@ class PowerTransformersCim16:
             self.cimConverter.cim['eq']['PhaseTapChangerTabular'][['rdfId', 'TransformerEnd', 'PhaseTapChangerTable',
                                                                    'highStep', 'lowStep', 'neutralStep']],
             self.cimConverter.cim['ssh']['PhaseTapChangerTabular'][['rdfId', 'step']], how='left', on='rdfId')
-        ptct.rename(columns={'step': 'current_step'}, inplace=True)
+        ptct = ptct.rename(columns={'step': 'current_step'})
         ptct = pd.merge(ptct, self.cimConverter.cim['eq']['PhaseTapChangerTablePoint'][
             ['PhaseTapChangerTable', 'step', 'angle', 'ratio']], how='left', on='PhaseTapChangerTable')
         for one_id, one_df in ptct.groupby('TransformerEnd'):
@@ -316,19 +323,19 @@ class PowerTransformersCim16:
             else:
                 self.logger.warning("Ignoring PhaseTapChangerTabular with ID: %s. The current tap position is missing "
                                     "in the PhaseTapChangerTablePoints!" % one_id)
-                ptct.drop(drop_index, inplace=True)
+                ptct = ptct.drop(drop_index)
                 continue
             current_step = one_df['current_step'].iloc[0]
-            one_df.set_index('step', inplace=True)
+            one_df = one_df.set_index('step')
             neutral_step = one_df['neutralStep'].iloc[0]
-            ptct.drop(drop_index, inplace=True)
+            ptct = ptct.drop(drop_index)
             # ptct.loc[keep_index, 'angle'] =
             # one_df.loc[current_step, 'angle'] / max(1, abs(current_step - neutral_step))
             ptct.loc[keep_index, 'angle'] = one_df.loc[current_step, 'angle']  # todo fix if pp supports them
             ptct.loc[keep_index, 'ratio'] = \
                 (one_df.loc[current_step, 'ratio'] - 1) * 100 / max(1, abs(current_step - neutral_step))
-        ptct.drop(columns=['rdfId', 'PhaseTapChangerTable', 'step'], inplace=True)
-        ptct.rename(columns={'current_step': 'step'}, inplace=True)
+        ptct = ptct.drop(columns=['rdfId', 'PhaseTapChangerTable', 'step'])
+        ptct = ptct.rename(columns={'current_step': 'step'})
         # ptct['stepPhaseShiftIncrement'] = ptct['angle'][:]  # todo fix if pp supports them
         ptct['stepVoltageIncrement'] = ptct['ratio'][:]
         eqssh_tap_changers = pd.concat([eqssh_tap_changers, ptct], ignore_index=True, sort=False)
@@ -339,64 +346,69 @@ class PowerTransformersCim16:
         # self.logger.info("dups:")
         # for _, one_dup in eqssh_tap_changers[eqssh_tap_changers.duplicated('TransformerEnd', keep=False)].iterrows():
         #     self.logger.info(one_dup)  # no example for testing found
-        eqssh_tap_changers.drop_duplicates(subset=['TransformerEnd'], inplace=True)
+        eqssh_tap_changers = eqssh_tap_changers.drop_duplicates(subset=['TransformerEnd'])
         # prepare the controllers
         eq_ssh_tap_controllers = self.cimConverter.merge_eq_ssh_profile('TapChangerControl')
         eq_ssh_tap_controllers = \
             eq_ssh_tap_controllers[['rdfId', 'Terminal', 'discrete', 'enabled', 'targetValue', 'targetDeadband']]
-        eq_ssh_tap_controllers.rename(columns={'rdfId': 'TapChangerControl'}, inplace=True)
+        eq_ssh_tap_controllers = eq_ssh_tap_controllers.rename(columns={'rdfId': 'TapChangerControl'})
         # first merge with the VoltageLimits
-        eq_vl = self.cimConverter.cim['eq']['VoltageLimit'][['OperationalLimitSet', 'OperationalLimitType', 'value']]
-        eq_vl = pd.merge(eq_vl, self.cimConverter.cim['eq']['OperationalLimitType'][['rdfId', 'limitType']].rename(
+        if 'VoltageLimit' in self.cimConverter.cim['ssh'].keys():
+            vl = self.cimConverter.merge_eq_ssh_profile('VoltageLimit')[['OperationalLimitSet', 'OperationalLimitType',
+                                                                         'value']]
+        else:
+            vl = self.cimConverter.cim['eq']['VoltageLimit'][['OperationalLimitSet', 'OperationalLimitType', 'value']]
+        opl_kind = 'kind' if 'kind' in self.cimConverter.cim['eq']['OperationalLimitType'].columns else 'limitType'
+        vl = pd.merge(vl, self.cimConverter.cim['eq']['OperationalLimitType'][['rdfId', opl_kind]].rename(
             columns={'rdfId': 'OperationalLimitType'}), how='left', on='OperationalLimitType')
-        eq_vl = pd.merge(eq_vl, self.cimConverter.cim['eq']['OperationalLimitSet'][['rdfId', 'Terminal']].rename(
+        vl = pd.merge(vl, self.cimConverter.cim['eq']['OperationalLimitSet'][['rdfId', 'Terminal']].rename(
             columns={'rdfId': 'OperationalLimitSet'}), how='left', on='OperationalLimitSet')
-        eq_vl = eq_vl[['value', 'limitType', 'Terminal']]
-        eq_vl_low = eq_vl.loc[eq_vl['limitType'] == 'lowVoltage'][['value', 'Terminal']].rename(
+        vl = vl[['value', opl_kind, 'Terminal']]
+        vl_low = vl.loc[vl[opl_kind] == 'lowVoltage'][['value', 'Terminal']].rename(
             columns={'value': 'c_vm_lower_pu'})
-        eq_vl_up = eq_vl.loc[eq_vl['limitType'] == 'highVoltage'][['value', 'Terminal']].rename(
+        vl_up = vl.loc[vl[opl_kind] == 'highVoltage'][['value', 'Terminal']].rename(
             columns={'value': 'c_vm_upper_pu'})
-        eq_vl = pd.merge(eq_vl_low, eq_vl_up, how='left', on='Terminal')
-        eq_ssh_tap_controllers = pd.merge(eq_ssh_tap_controllers, eq_vl, how='left', on='Terminal')
+        vl = pd.merge(vl_low, vl_up, how='left', on='Terminal')
+        eq_ssh_tap_controllers = pd.merge(eq_ssh_tap_controllers, vl, how='left', on='Terminal')
         eq_ssh_tap_controllers['c_Terminal'] = eq_ssh_tap_controllers['Terminal'][:]
-        eq_ssh_tap_controllers.rename(columns={'Terminal': 'rdfId', 'enabled': 'c_in_service',
-                                               'targetValue': 'c_vm_set_pu', 'targetDeadband': 'c_tol'}, inplace=True)
+        eq_ssh_tap_controllers = eq_ssh_tap_controllers.rename(columns={'Terminal': 'rdfId', 'enabled': 'c_in_service',
+                                               'targetValue': 'c_vm_set_pu', 'targetDeadband': 'c_tol'})
         # get the Terminal, ConnectivityNode and bus voltage
         eq_ssh_tap_controllers = \
             pd.merge(eq_ssh_tap_controllers,
                      pd.concat([self.cimConverter.cim['eq']['Terminal'], self.cimConverter.cim['eq_bd']['Terminal']],
                                ignore_index=True, sort=False)[
                          ['rdfId', 'ConnectivityNode']], how='left', on='rdfId')
-        eq_ssh_tap_controllers.drop(columns=['rdfId'], inplace=True)
-        eq_ssh_tap_controllers.rename(columns={'ConnectivityNode': sc['o_id']}, inplace=True)
+        eq_ssh_tap_controllers = eq_ssh_tap_controllers.drop(columns=['rdfId'])
+        eq_ssh_tap_controllers = eq_ssh_tap_controllers.rename(columns={'ConnectivityNode': sc['o_id']})
         eq_ssh_tap_controllers = pd.merge(eq_ssh_tap_controllers,
                                           self.cimConverter.net['bus'].reset_index(level=0)[
                                               ['index', sc['o_id'], 'vn_kv']],
                                           how='left', on=sc['o_id'])
-        eq_ssh_tap_controllers.drop(columns=[sc['o_id']], inplace=True)
-        eq_ssh_tap_controllers.rename(columns={'index': 'c_bus_id'}, inplace=True)
+        eq_ssh_tap_controllers = eq_ssh_tap_controllers.drop(columns=[sc['o_id']])
+        eq_ssh_tap_controllers = eq_ssh_tap_controllers.rename(columns={'index': 'c_bus_id'})
         eq_ssh_tap_controllers['c_vm_set_pu'] = eq_ssh_tap_controllers['c_vm_set_pu'] / eq_ssh_tap_controllers['vn_kv']
         eq_ssh_tap_controllers['c_tol'] = eq_ssh_tap_controllers['c_tol'] / eq_ssh_tap_controllers['vn_kv']
         eq_ssh_tap_controllers['c_vm_lower_pu'] = \
             eq_ssh_tap_controllers['c_vm_lower_pu'] / eq_ssh_tap_controllers['vn_kv']
         eq_ssh_tap_controllers['c_vm_upper_pu'] = \
             eq_ssh_tap_controllers['c_vm_upper_pu'] / eq_ssh_tap_controllers['vn_kv']
-        eq_ssh_tap_controllers.drop(columns=['vn_kv'], inplace=True)
+        eq_ssh_tap_controllers = eq_ssh_tap_controllers.drop(columns=['vn_kv'])
 
         eqssh_tap_changers = pd.merge(eqssh_tap_changers, eq_ssh_tap_controllers, how='left', on='TapChangerControl')
-        eqssh_tap_changers.rename(columns={'TransformerEnd': sc['pte_id']}, inplace=True)
+        eqssh_tap_changers = eqssh_tap_changers.rename(columns={'TransformerEnd': sc['pte_id']})
 
-        eq_power_transformers.rename(columns={'rdfId': 'PowerTransformer'}, inplace=True)
-        eq_power_transformer_ends.rename(columns={'rdfId': sc['pte_id']}, inplace=True)
+        power_transformers = power_transformers.rename(columns={'rdfId': 'PowerTransformer'})
+        power_transformer_ends = power_transformer_ends.rename(columns={'rdfId': sc['pte_id']})
         # add the PowerTransformerEnds
-        eq_power_transformers = pd.merge(eq_power_transformers, eq_power_transformer_ends, how='left',
+        power_transformers = pd.merge(power_transformers, power_transformer_ends, how='left',
                                          on='PowerTransformer')
         # add the Terminal and bus indexes
-        eq_power_transformers = pd.merge(eq_power_transformers, self.cimConverter.bus_merge.drop('rdfId', axis=1),
+        power_transformers = pd.merge(power_transformers, self.cimConverter.bus_merge.drop('rdfId', axis=1),
                                          how='left', left_on='Terminal', right_on='rdfId_Terminal')
         # add the TapChangers
-        eq_power_transformers = pd.merge(eq_power_transformers, eqssh_tap_changers, how='left', on=sc['pte_id'])
-        return eq_power_transformers
+        power_transformers = pd.merge(power_transformers, eqssh_tap_changers, how='left', on=sc['pte_id'])
+        return power_transformers
 
     def _prepare_trafos_cim16(self, power_trafo2w: pd.DataFrame) -> pd.DataFrame:
         power_trafo2w = power_trafo2w.sort_values(['PowerTransformer', 'endNumber']).reset_index()
@@ -419,10 +431,10 @@ class PowerTransformersCim16:
         fillna_list = ['neutralStep', 'lowStep', 'highStep', 'stepVoltageIncrement', 'stepPhaseShiftIncrement', 'step',
                        sc['tc'], sc['tc_id']]
         for one_item in fillna_list:
-            power_trafo2w[one_item].fillna(power_trafo2w[one_item + '_lv'], inplace=True)
+            power_trafo2w[one_item] = power_trafo2w[one_item].fillna(power_trafo2w[one_item + '_lv'])
         del fillna_list, one_item
         # just keep one transformer
-        power_trafo2w.drop_duplicates(subset=['PowerTransformer'], keep='first', inplace=True)
+        power_trafo2w = power_trafo2w.drop_duplicates(subset=['PowerTransformer'], keep='first')
 
         power_trafo2w['pfe_kw'] = (power_trafo2w.g * power_trafo2w.ratedU ** 2 +
                                    power_trafo2w.g_lv * power_trafo2w.ratedU_lv ** 2) * 1000
@@ -473,29 +485,31 @@ class PowerTransformersCim16:
                         power_trafo2w.loc[power_trafo2w['angle'].notna()]))
         power_trafo2w['phaseAngleClock_temp'] = power_trafo2w['phaseAngleClock'].copy()
         power_trafo2w['phaseAngleClock'] = power_trafo2w['angle'] / 30
-        power_trafo2w['phaseAngleClock'].fillna(power_trafo2w['angle_lv'] * -1 / 30, inplace=True)
-        power_trafo2w['phaseAngleClock'].fillna(power_trafo2w['phaseAngleClock_temp'], inplace=True)
-        power_trafo2w['phaseAngleClock_lv'].fillna(0, inplace=True)
+        power_trafo2w['phaseAngleClock'] = power_trafo2w['phaseAngleClock'].fillna(power_trafo2w['angle_lv'] * -1 / 30)
+        power_trafo2w['phaseAngleClock'] = power_trafo2w['phaseAngleClock'].fillna(power_trafo2w['phaseAngleClock_temp'])
+        power_trafo2w['phaseAngleClock_lv'] = power_trafo2w['phaseAngleClock_lv'].fillna(0)
         power_trafo2w['shift_degree'] = power_trafo2w['phaseAngleClock'].astype(float).fillna(
             power_trafo2w['phaseAngleClock_lv'].astype(float)) * 30
         power_trafo2w['parallel'] = 1
         power_trafo2w['tap_phase_shifter'] = False
         power_trafo2w['in_service'] = power_trafo2w.connected & power_trafo2w.connected_lv
-        power_trafo2w['connectionKind'].fillna('', inplace=True)
-        power_trafo2w['connectionKind_lv'].fillna('', inplace=True)
+        power_trafo2w['connectionKind'] = power_trafo2w['connectionKind'].fillna('')
+        power_trafo2w['connectionKind_lv'] = power_trafo2w['connectionKind_lv'].fillna('')
+        power_trafo2w['grounded'] = power_trafo2w['grounded'].fillna(True)
+        power_trafo2w['grounded_lv'] = power_trafo2w['grounded_lv'].fillna(True)
         power_trafo2w.loc[~power_trafo2w['grounded'].astype('bool'), 'connectionKind'] = \
             power_trafo2w.loc[~power_trafo2w['grounded'].astype('bool'), 'connectionKind'].str.replace('n', '')
         power_trafo2w.loc[~power_trafo2w['grounded_lv'].astype('bool'), 'connectionKind_lv'] = \
             power_trafo2w.loc[~power_trafo2w['grounded_lv'].astype('bool'), 'connectionKind_lv'].str.replace('n', '')
         power_trafo2w['vector_group'] = power_trafo2w.connectionKind + power_trafo2w.connectionKind_lv
         power_trafo2w.loc[power_trafo2w['vector_group'] == '', 'vector_group'] = None
-        power_trafo2w.rename(columns={
+        power_trafo2w = power_trafo2w.rename(columns={
             'PowerTransformer': sc['o_id'], 'Terminal': sc['t_hv'], 'Terminal_lv': sc['t_lv'],
             sc['pte_id']: sc['pte_id_hv'], sc['pte_id'] + '_lv': sc['pte_id_lv'], 'index_bus': 'hv_bus',
             'index_bus_lv': 'lv_bus', 'neutralStep': 'tap_neutral', 'lowStep': 'tap_min', 'highStep': 'tap_max',
             'step': 'tap_pos', 'stepVoltageIncrement': 'tap_step_percent', 'stepPhaseShiftIncrement': 'tap_step_degree',
             'isPartOfGeneratorUnit': 'power_station_unit', 'ratedU': 'vn_hv_kv', 'ratedU_lv': 'vn_lv_kv',
-            'ratedS': 'sn_mva', 'xground': 'xn_ohm', 'grounded': 'oltc'}, inplace=True)
+            'ratedS': 'sn_mva', 'xground': 'xn_ohm', 'grounded': 'oltc'})
         return power_trafo2w
 
     def _prepare_trafo3w_cim16(self, power_trafo3w: pd.DataFrame) -> pd.DataFrame:
@@ -524,11 +538,11 @@ class PowerTransformersCim16:
         fillna_list = ['neutralStep', 'lowStep', 'highStep', 'stepVoltageIncrement', 'stepPhaseShiftIncrement', 'step',
                        sc['tc'], sc['tc_id']]
         for one_item in fillna_list:
-            power_trafo3w[one_item].fillna(power_trafo3w[one_item + '_mv'], inplace=True)
-            power_trafo3w[one_item].fillna(power_trafo3w[one_item + '_lv'], inplace=True)
+            power_trafo3w[one_item] = power_trafo3w[one_item].fillna(power_trafo3w[one_item + '_mv'])
+            power_trafo3w[one_item] = power_trafo3w[one_item].fillna(power_trafo3w[one_item + '_lv'])
         del fillna_list, one_item
         # just keep one transformer
-        power_trafo3w.drop_duplicates(subset=['PowerTransformer'], keep='first', inplace=True)
+        power_trafo3w = power_trafo3w.drop_duplicates(subset=['PowerTransformer'], keep='first')
 
         power_trafo3w['min_s_hvmv'] = power_trafo3w[["ratedS", "ratedS_mv"]].min(axis=1)
         power_trafo3w['min_s_mvlv'] = power_trafo3w[["ratedS_mv", "ratedS_lv"]].min(axis=1)
@@ -606,16 +620,20 @@ class PowerTransformersCim16:
                         power_trafo3w.loc[power_trafo3w['angle_mv'].notna()]))
         power_trafo3w['phaseAngleClock_temp'] = power_trafo3w['phaseAngleClock_mv'].copy()
         power_trafo3w['phaseAngleClock_mv'] = power_trafo3w['angle_mv'] * -1 / 30
-        power_trafo3w['phaseAngleClock_mv'].fillna(power_trafo3w['phaseAngleClock_temp'], inplace=True)
-        power_trafo3w['phaseAngleClock_mv'].fillna(0, inplace=True)
-        power_trafo3w['phaseAngleClock_lv'].fillna(0, inplace=True)
+        power_trafo3w['phaseAngleClock_mv'] = power_trafo3w['phaseAngleClock_mv'].fillna(
+            power_trafo3w['phaseAngleClock_temp'])
+        power_trafo3w['phaseAngleClock_mv'] = power_trafo3w['phaseAngleClock_mv'].fillna(0)
+        power_trafo3w['phaseAngleClock_lv'] = power_trafo3w['phaseAngleClock_lv'].fillna(0)
         power_trafo3w['shift_mv_degree'] = power_trafo3w['phaseAngleClock_mv'] * 30
         power_trafo3w['shift_lv_degree'] = power_trafo3w['phaseAngleClock_mv'] * 30
         power_trafo3w['tap_at_star_point'] = False
         power_trafo3w['in_service'] = power_trafo3w.connected & power_trafo3w.connected_mv & power_trafo3w.connected_lv
-        power_trafo3w['connectionKind'].fillna('', inplace=True)
-        power_trafo3w['connectionKind_mv'].fillna('', inplace=True)
-        power_trafo3w['connectionKind_lv'].fillna('', inplace=True)
+        power_trafo3w['connectionKind'] = power_trafo3w['connectionKind'].fillna('')
+        power_trafo3w['connectionKind_mv'] = power_trafo3w['connectionKind_mv'].fillna('')
+        power_trafo3w['connectionKind_lv'] = power_trafo3w['connectionKind_lv'].fillna('')
+        power_trafo3w['grounded'] = power_trafo3w['grounded'].fillna(True)
+        power_trafo3w['grounded_mv'] = power_trafo3w['grounded_mv'].fillna(True)
+        power_trafo3w['grounded_lv'] = power_trafo3w['grounded_lv'].fillna(True)
 
         power_trafo3w.loc[~power_trafo3w['grounded'].astype('bool'), 'connectionKind'] = \
             power_trafo3w.loc[~power_trafo3w['grounded'].astype('bool'), 'connectionKind'].str.replace('n', '')
@@ -626,13 +644,12 @@ class PowerTransformersCim16:
         power_trafo3w['vector_group'] = \
             power_trafo3w.connectionKind + power_trafo3w.connectionKind_mv + power_trafo3w.connectionKind_lv
         power_trafo3w.loc[power_trafo3w['vector_group'] == '', 'vector_group'] = None
-        power_trafo3w.rename(columns={
+        power_trafo3w = power_trafo3w.rename(columns={
             'PowerTransformer': sc['o_id'], 'Terminal': sc['t_hv'], 'Terminal_mv': sc['t_mv'],
             'Terminal_lv': sc['t_lv'], sc['pte_id']: sc['pte_id_hv'], sc['pte_id'] + '_mv': sc['pte_id_mv'],
             sc['pte_id'] + '_lv': sc['pte_id_lv'], 'index_bus': 'hv_bus', 'index_bus_mv': 'mv_bus',
             'index_bus_lv': 'lv_bus', 'neutralStep': 'tap_neutral', 'lowStep': 'tap_min', 'highStep': 'tap_max',
             'step': 'tap_pos', 'stepVoltageIncrement': 'tap_step_percent', 'stepPhaseShiftIncrement': 'tap_step_degree',
             'isPartOfGeneratorUnit': 'power_station_unit', 'ratedU': 'vn_hv_kv', 'ratedU_mv': 'vn_mv_kv',
-            'ratedU_lv': 'vn_lv_kv', 'ratedS': 'sn_hv_mva', 'ratedS_mv': 'sn_mv_mva', 'ratedS_lv': 'sn_lv_mva'},
-            inplace=True)
+            'ratedU_lv': 'vn_lv_kv', 'ratedS': 'sn_hv_mva', 'ratedS_mv': 'sn_mv_mva', 'ratedS_lv': 'sn_lv_mva'})
         return power_trafo3w

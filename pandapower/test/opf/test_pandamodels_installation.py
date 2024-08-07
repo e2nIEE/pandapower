@@ -1,4 +1,4 @@
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import pytest
@@ -9,6 +9,8 @@ except ImportError:
     UnsupportedPythonError = Exception
 
 try:
+    from julia.api import Julia
+    Julia(compiled_modules=False)
     from julia import Main
     from julia import Pkg
     from julia import Base
@@ -99,4 +101,4 @@ def test_pandamodels_dev_mode():
 
 
 if __name__ == '__main__':
-    pytest.main([__file__])
+    pytest.main([__file__, "-xs"])

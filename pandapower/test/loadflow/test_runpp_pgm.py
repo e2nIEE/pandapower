@@ -1,3 +1,4 @@
+import sys
 from unittest.mock import patch, MagicMock
 
 import pytest
@@ -51,7 +52,12 @@ def test_runpp_pgm__internal_pgm_error(mock_logger: MagicMock):
     pp.runpp_pgm(net)
 
     assert net["converged"] is False
-    mock_logger.critical.assert_called_once_with("Internal PowerGridError occurred!")
+
+    if sys.version_info.major == 3 and sys.version_info.minor == 8:
+        mock_logger.critical.assert_called_once_with("Internal PowerGridError occurred!")
+    else:
+        mock_logger.critical.assert_called_once_with("Internal ConflictVoltage occurred!")
+
     mock_logger.debug.assert_called_once()
     mock_logger.info.assert_called_once_with("Use validate_input=True to validate your input data.")
 

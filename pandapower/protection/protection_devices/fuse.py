@@ -96,7 +96,7 @@ class Fuse(ProtectionDevice):
 
     def status_to_net(self, net):
         # update self.tripped status to net
-        net.switch.closed.at[self.switch_index] = not self.tripped
+        net.switch.at[self.switch_index, "closed"] = not self.tripped
 
     def protection_function(self, net, scenario="sc"):
         # compute protection time in net under short-circuit or operating conditions

@@ -8,23 +8,29 @@ import os
 import re
 import tempfile
 import zipfile
+from types import MappingProxyType
 from typing import Dict, List
 import pandas as pd
 import numpy as np
 import xml.etree.ElementTree
 import xml.etree.cElementTree as xmlET
 from .other_classes import ReportContainer, Report, LogLevel, ReportCode
-from .cim_tools import get_cim16_schema
+from .cim_tools import get_cim_schema
 
 
 class CimParser:
 
-    def __init__(self, cim: Dict[str, Dict[str, pd.DataFrame]] = None):
+    def __init__(self, cim: Dict[str, Dict[str, pd.DataFrame]] = None, cgmes_version: str = None):
         """
         This class parses CIM files and loads its content to a dictionary of
         CIM profile (dict) -> CIM element type (str) -> CIM elements (DataFrame)
+
+        :param cim: CIM profile structure used for parsing
+        :param cgmes_version: CIM version to use, '2.4.15' or '3.0', default '2.4.15'
         """
         self.logger = logging.getLogger(self.__class__.__name__)
+        self.cgmes_version = '2.4.15' if cgmes_version is None else cgmes_version
+        self.__cim_blueprint = self._initialize_cim_data_structure(self.cgmes_version)
         self.cim: Dict[str, Dict[str, pd.DataFrame]] = cim if cim is not None else self.get_cim_data_structure()
         self.file_names: Dict[str, str] = dict()
         self.report_container = ReportContainer()
@@ -59,7 +65,7 @@ class CimParser:
             self.set_cim_data_types()
         self.logger.info("Finished parsing CIM files.")
         self.report_container.add_log(Report(level=LogLevel.INFO, code=ReportCode.INFO_PARSING,
-                                      message="CIM parser finished parsing CIM files."))
+                                             message="CIM parser finished parsing CIM files."))
         return self
 
     def set_cim_data_types(self) -> CimParser:
@@ -73,22 +79,22 @@ class CimParser:
              'referencePriority': 999999, 'gch': 0., 'g0ch': 0.})  # todo check gch g0ch sections maximumSections
         to_bool = dict({'True': True, 'true': True, 'TRUE': True, True: True,
                         'False': False, 'false': False, 'FALSE': False, False: False,
-                        'nan': False, 'NaN': False, 'NAN': False, 'Nan': False, np.NaN: False})
+                        'nan': False, 'NaN': False, 'NAN': False, 'Nan': False, np.nan: False})
         float_type = float
         int_type = pd.Int64Dtype()
         bool_type = pd.BooleanDtype()
         data_types_map = dict({'Float': float_type, 'Integer': int_type, 'Boolean': bool_type})
-        cim_16_schema = get_cim16_schema()
+        cim_schema = get_cim_schema(self.cgmes_version)
         for profile in self.cim.keys():
             for cim_element_type, item in self.cim[profile].items():
                 for col in item.columns:
                     # skip elements which are not available in the schema like FullModel
-                    if cim_element_type not in cim_16_schema[profile]:
+                    if cim_element_type not in cim_schema[profile]:
                         self.logger.debug("Skipping CIM element type %s from profile %s." % (cim_element_type, profile))
                         continue
-                    if col in cim_16_schema[profile][cim_element_type]['fields'].keys() and \
-                            'data_type_prim' in cim_16_schema[profile][cim_element_type]['fields'][col].keys():
-                        data_type_col_str = cim_16_schema[profile][cim_element_type]['fields'][col]['data_type_prim']
+                    if col in cim_schema[profile][cim_element_type]['fields'].keys() and \
+                            'data_type_prim' in cim_schema[profile][cim_element_type]['fields'][col].keys():
+                        data_type_col_str = cim_schema[profile][cim_element_type]['fields'][col]['data_type_prim']
                         if data_type_col_str in data_types_map.keys():
                             data_type_col = data_types_map[data_type_col_str]
                         else:
@@ -96,7 +102,8 @@ class CimParser:
                         self.logger.debug("Setting data type of %s from CIM element %s as type %s" %
                                           (col, cim_element_type, data_type_col_str))
                         if col in default_values.keys():  # todo deprecated due to repair function?
-                            self.cim[profile][cim_element_type][col].fillna(value=default_values[col], inplace=True)
+                            self.cim[profile][cim_element_type][col] = self.cim[profile][cim_element_type][col].fillna(
+                                value=default_values[col])
                         if data_type_col == bool_type:
                             self.cim[profile][cim_element_type][col] = \
                                 self.cim[profile][cim_element_type][col].map(to_bool)
@@ -152,7 +159,7 @@ class CimParser:
                 for column in item.columns:
                     if column not in self.cim[profile][cim_element_type].columns:
                         self.logger.info("Adding missing column %s to CIM element %s" % (column, cim_element_type))
-                        self.cim[profile][cim_element_type][column] = np.NaN
+                        self.cim[profile][cim_element_type][column] = np.nan
 
         # now remove columns which are not needed by the converter (to avoid renaming problems when merging DataFrames)
         for profile in cim_data_structure.keys():
@@ -164,14 +171,14 @@ class CimParser:
                                              message="CIM parser finished preparing the CIM data."))
         return self
 
-    def get_cim_data_structure(self) -> Dict[str, Dict[str, pd.DataFrame]]:
+    def _initialize_cim16_data_structure(self) -> Dict[str, Dict[str, pd.DataFrame]]:
         """
-           Get the cim data structure used by the converter.
+           Get the cim data structure used by the converter for cgmes version less than 3.
            :return Dict[str, Dict[str, pd.DataFrame]]: The cim data structure used by the converter.
            """
         self.logger.debug("Returning the CIM data structure.")
-        return dict({
-            'eq': {
+        return MappingProxyType({
+            'eq': MappingProxyType({
                 'ControlArea': pd.DataFrame(columns=['rdfId', 'name', 'type']),
                 'TieFlow': pd.DataFrame(columns=['rdfId', 'Terminal', 'ControlArea', 'positiveFlowIn']),
                 'ConnectivityNode': pd.DataFrame(columns=['rdfId', 'name', 'description', 'ConnectivityNodeContainer']),
@@ -281,21 +288,21 @@ class CimParser:
                 'SeriesCompensator': pd.DataFrame(columns=[
                     'rdfId', 'name', 'description', 'BaseVoltage', 'r', 'x', 'r0', 'x0']),
                 'Analog': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'measurementType', 'unitSymbol', 'unitMultiplier', 'Terminal',
+                    'rdfId', 'name', 'description', 'measurementType', 'unitSymbol', 'unitMultiplier', 'Terminal',
                     'PowerSystemResource', 'positiveFlowIn']),
                 'AnalogValue': pd.DataFrame(columns=[
                     'rdfId', 'name', 'sensorAccuracy', 'MeasurementValueSource', 'Analog', 'value']),
                 'MeasurementValueSource': pd.DataFrame(columns=['rdfId', 'name'])
-            },
-            'eq_bd': {
+            }),
+            'eq_bd': MappingProxyType({
                 'ConnectivityNode': pd.DataFrame(columns=['rdfId', 'name', 'ConnectivityNodeContainer']),
                 'BaseVoltage': pd.DataFrame(columns=['rdfId', 'name', 'nominalVoltage']),
                 'Terminal': pd.DataFrame(
                     columns=['rdfId', 'ConnectivityNode', 'ConductingEquipment', 'sequenceNumber']),
                 'EnergySource': pd.DataFrame(columns=['rdfId', 'name', 'nominalVoltage', 'EnergySchedulingType']),
                 'EnergySchedulingType': pd.DataFrame(columns=['rdfId', 'name'])
-            },
-            'ssh': {
+            }),
+            'ssh': MappingProxyType({
                 'ControlArea': pd.DataFrame(columns=['rdfId', 'netInterchange']),
                 'ExternalNetworkInjection': pd.DataFrame(columns=[
                     'rdfId', 'p', 'q', 'referencePriority', 'controlEnabled']),
@@ -331,14 +338,14 @@ class CimParser:
                 'LinearShuntCompensator': pd.DataFrame(columns=['rdfId', 'controlEnabled', 'sections']),
                 'NonlinearShuntCompensator': pd.DataFrame(columns=['rdfId', 'controlEnabled', 'sections']),
                 'EquivalentInjection': pd.DataFrame(columns=['rdfId', 'regulationTarget', 'regulationStatus', 'p', 'q'])
-            },
-            'sv': {
+            }),
+            'sv': MappingProxyType({
                 'SvVoltage': pd.DataFrame(columns=['rdfId', 'TopologicalNode', 'v', 'angle']),
                 'SvPowerFlow': pd.DataFrame(columns=['rdfId', 'Terminal', 'p', 'q']),
                 'SvShuntCompensatorSections': pd.DataFrame(columns=['rdfId', 'ShuntCompensator', 'sections']),
                 'SvTapStep': pd.DataFrame(columns=['rdfId', 'TapChanger', 'position'])
-            },
-            'tp': {
+            }),
+            'tp': MappingProxyType({
                 'TopologicalNode': pd.DataFrame(columns=[
                     'rdfId', 'name', 'description', 'ConnectivityNodeContainer', 'BaseVoltage']),
                 'DCTopologicalNode': pd.DataFrame(columns=['rdfId', 'name', 'DCEquipmentContainer']),
@@ -346,21 +353,21 @@ class CimParser:
                 'Terminal': pd.DataFrame(columns=['rdfId', 'TopologicalNode']),
                 'DCTerminal': pd.DataFrame(columns=['rdfId', 'DCTopologicalNode']),
                 'ACDCConverterDCTerminal': pd.DataFrame(columns=['rdfId', 'DCTopologicalNode'])
-            },
-            'tp_bd': {
+            }),
+            'tp_bd': MappingProxyType({
                 'TopologicalNode': pd.DataFrame(columns=['rdfId', 'name', 'ConnectivityNodeContainer', 'BaseVoltage']),
                 'ConnectivityNode': pd.DataFrame(columns=['rdfId', 'TopologicalNode'])
-            },
-            'dl': {
+            }),
+            'dl': MappingProxyType({
                 'Diagram': pd.DataFrame(columns=['rdfId', 'name']),
                 'DiagramObject': pd.DataFrame(columns=['rdfId', 'IdentifiedObject', 'Diagram', 'name']),
                 'DiagramObjectPoint': pd.DataFrame(columns=[
-                    'rdfId', 'sequenceNumber', 'xPosition', 'yPosition', 'DiagramObject'])},
-            'gl': {
+                    'rdfId', 'sequenceNumber', 'xPosition', 'yPosition', 'DiagramObject'])}),
+            'gl': MappingProxyType({
                 'CoordinateSystem': pd.DataFrame(columns=['rdfId', 'name', 'crsUrn']),
                 'Location': pd.DataFrame(columns=['rdfId', 'PowerSystemResources', 'CoordinateSystem']),
                 'PositionPoint': pd.DataFrame(columns=['rdfId', 'Location', 'sequenceNumber', 'xPosition', 'yPosition'])
-            }})
+            })})
 
     def _parse_element(self, element, parsed=None):
         if parsed is None:
@@ -397,7 +404,7 @@ class CimParser:
         'tp' for Topology, 'tp_bd' for TopologyBoundary
         """
         element_types = pd.Series([ele.tag for ele in list(root)])
-        element_types.drop_duplicates(inplace=True)
+        element_types = element_types.drop_duplicates()
         full_model = element_types.str.find('FullModel')
         if full_model.max() >= 0:
             full_model = element_types[full_model >= 0].values[0]
@@ -424,22 +431,27 @@ class CimParser:
             profile_list = [profile_list]
         for one_profile in profile_list:
             if '/EquipmentCore/' in one_profile or '/EquipmentOperation/' in one_profile or \
-                    '/EquipmentShortCircuit/' in one_profile:
+                    '/EquipmentShortCircuit/' in one_profile or '/CoreEquipment-EU/' in one_profile:
                 return 'eq'
-            elif '/SteadyStateHypothesis/' in one_profile:
+            elif '/SteadyStateHypothesis/' in one_profile or '/SteadyStateHypothesis-EU/' in one_profile:
                 return 'ssh'
-            elif '/StateVariables/' in one_profile:
+            elif '/StateVariables/' in one_profile or '/StateVariables-EU/' in one_profile:
                 return 'sv'
-            elif '/Topology/' in one_profile:
+            elif '/Topology/' in one_profile or '/Topology-EU/' in one_profile:
                 return 'tp'
-            elif '/DiagramLayout/' in one_profile:
+            elif '/DiagramLayout/' in one_profile or '/DiagramLayout-EU/' in one_profile:
                 return 'dl'
-            elif '/GeographicalLocation/' in one_profile:
+            elif '/GeographicalLocation/' in one_profile or '/GeographicalLocation-EU/' in one_profile:
                 return 'gl'
-            elif '/EquipmentBoundary/' in one_profile or '/EquipmentBoundaryOperation/' in one_profile:
+            elif ('/EquipmentBoundary/' in one_profile or '/EquipmentBoundaryOperation/' in one_profile
+                  or '/EquipmentBoundary-EU/' in one_profile):
                 return 'eq_bd'
             elif '/TopologyBoundary/' in one_profile:
                 return 'tp_bd'
+            elif '/Operation-EU/' in one_profile:
+                return 'op'
+            elif '/ShortCircuit-EU/' in one_profile:
+                return 'sc'
         if ignore_errors:
             self.logger.warning("The CGMES profile could not be parsed from the XML, returning %s" % default_profile)
             self.report_container.add_log(Report(level=LogLevel.ERROR, code=ReportCode.ERROR_PARSING,
@@ -482,11 +494,16 @@ class CimParser:
         else:
             prf = profile_name
         self.file_names[prf] = file
+        self._parse_xml_tree(xml_tree, prf, output)
+
+    def _parse_xml_tree(self, xml_tree: xmlET, profile_name: str, output: Dict | None = None):
+        output = self.cim if output is None else output
         # get all CIM elements to parse
         element_types = pd.Series([ele.tag for ele in list(xml_tree)])
-        element_types.drop_duplicates(inplace=True)
+        element_types = element_types.drop_duplicates()
         prf_content: Dict[str, pd.DataFrame] = dict()
         ns_dict = dict()
+        prf = profile_name
         if prf not in ns_dict.keys():
             ns_dict[prf] = dict()
         for _, element_type in element_types.items():
@@ -501,7 +518,7 @@ class CimParser:
                 if col_new.endswith('-resource'):
                     col_new = col_new[:-9]
                     # remove the first character of each value if col_new is a CGMES class, e.g. Terminal
-                    # other wise remove the namespace from the literals (e.g. col_new is unitMultiplier, then the
+                    # otherwise remove the namespace from the literals (e.g. col_new is unitMultiplier, then the
                     # value is like http://iec.ch/TC57/2013/CIM-schema-cim16#UnitMultiplier.M
                     if col_new[0].isupper():
                         prf_content[element_type_c][col] = prf_content[element_type_c][col].str[1:]
@@ -512,14 +529,14 @@ class CimParser:
                             prf_content[element_type_c][col].values[prf_content[element_type_c][col].str.len().idxmax()]
                         # remove the namespace from the literal
                         prf_content[element_type_c][col] = \
-                            prf_content[element_type_c][col].str[name_space.rfind('.')+1:]
+                            prf_content[element_type_c][col].str[name_space.rfind('.') + 1:]
                 elif col_new.endswith('-about'):
                     col_new = 'rdfId'
                     prf_content[element_type_c][col] = prf_content[element_type_c][col].str[1:]
                 elif col_new.endswith('-ID'):
                     col_new = 'rdfId'
                 ns_dict[prf][element_type_c][col] = col_new
-            prf_content[element_type_c].rename(columns={**ns_dict[prf][element_type_c]}, inplace=True)
+            prf_content[element_type_c] = prf_content[element_type_c].rename(columns={**ns_dict[prf][element_type_c]})
         if prf not in output.keys():
             output[prf] = prf_content
         else:
@@ -550,3 +567,239 @@ class CimParser:
 
     def get_report_container(self) -> ReportContainer:
         return self.report_container
+
+    def _initialize_cim_data_structure(self, cgmes_version: str) -> Dict[str, Dict[str, pd.DataFrame]]:
+        if cgmes_version == '2.4.15':
+            return self._initialize_cim16_data_structure()
+        if cgmes_version == '3.0':
+            return self._initialize_cim100_data_structure()
+        raise NotImplementedError(f"CGMES version {cgmes_version} is not supported.")
+
+    def _initialize_cim100_data_structure(self) -> Dict[str, Dict[str, pd.DataFrame]]:
+        """
+           Get the cim data structure used by the converter for cgmes version 3.
+           :return Dict[str, Dict[str, pd.DataFrame]]: The cim data structure used by the converter.
+           """
+        self.logger.debug("Returning the CIM data structure.")
+        return MappingProxyType({
+            'eq': MappingProxyType({
+                'ControlArea': pd.DataFrame(columns=['rdfId', 'name', 'type']),
+                'TieFlow': pd.DataFrame(columns=['rdfId', 'Terminal', 'ControlArea', 'positiveFlowIn']),
+                'ConnectivityNode': pd.DataFrame(columns=['rdfId', 'name', 'description', 'ConnectivityNodeContainer']),
+                'Bay': pd.DataFrame(columns=['rdfId', 'VoltageLevel']),
+                'BusbarSection': pd.DataFrame(columns=['rdfId', 'name']),
+                'Substation': pd.DataFrame(columns=['rdfId', 'name', 'Region']),
+                'GeographicalRegion': pd.DataFrame(columns=['rdfId', 'name']),
+                'SubGeographicalRegion': pd.DataFrame(columns=['rdfId', 'name', 'Region']),
+                'VoltageLevel': pd.DataFrame(columns=['rdfId', 'name', 'shortName', 'BaseVoltage', 'Substation']),
+                'BaseVoltage': pd.DataFrame(columns=['rdfId', 'name', 'nominalVoltage']),
+                'ExternalNetworkInjection': pd.DataFrame(columns=[
+                    'rdfId', 'name', 'description', 'minP', 'maxP', 'minQ', 'maxQ', 'BaseVoltage', 'EquipmentContainer',
+                    'RegulatingControl', 'governorSCD']),
+                'ACLineSegment': pd.DataFrame(columns=[
+                    'rdfId', 'name', 'description', 'length', 'r', 'x', 'bch', 'gch', 'BaseVoltage']),
+                'Terminal': pd.DataFrame(columns=[
+                    'rdfId', 'name', 'ConnectivityNode', 'ConductingEquipment', 'sequenceNumber']),
+                'OperationalLimitSet': pd.DataFrame(columns=['rdfId', 'name', 'Terminal']),
+                'OperationalLimitType': pd.DataFrame(columns=['rdfId', 'name', 'kind']),
+                'CurrentLimit': pd.DataFrame(columns=[
+                    'rdfId', 'name', 'OperationalLimitSet', 'OperationalLimitType']),
+                'VoltageLimit': pd.DataFrame(columns=[
+                    'rdfId', 'name', 'OperationalLimitSet', 'OperationalLimitType']),
+                'DCNode': pd.DataFrame(columns=['rdfId', 'name', 'DCEquipmentContainer']),
+                'DCEquipmentContainer': pd.DataFrame(columns=['rdfId', 'name']),
+                'DCConverterUnit': pd.DataFrame(columns=['rdfId', 'name', 'Substation', 'operationMode']),
+                'DCLineSegment': pd.DataFrame(columns=['rdfId', 'name', 'description', 'EquipmentContainer']),
+                'CsConverter': pd.DataFrame(columns=['rdfId', 'BaseVoltage', 'ratedUdc']),
+                'VsConverter': pd.DataFrame(columns=['rdfId', 'name', 'BaseVoltage', 'EquipmentContainer', 'ratedUdc']),
+                'DCTerminal': pd.DataFrame(columns=[
+                    'rdfId', 'name', 'DCNode', 'DCConductingEquipment', 'sequenceNumber']),
+                'ACDCConverterDCTerminal': pd.DataFrame(columns=[
+                    'rdfId', 'name', 'DCNode', 'DCConductingEquipment', 'sequenceNumber']),
+                'Breaker': pd.DataFrame(columns=[
+                    'rdfId', 'name', 'description', 'EquipmentContainer', 'normalOpen', 'retained']),
+                'Disconnector': pd.DataFrame(columns=[
+                    'rdfId', 'name', 'description', 'EquipmentContainer', 'normalOpen', 'retained']),
+                'Switch': pd.DataFrame(columns=[
+                    'rdfId', 'name', 'description', 'EquipmentContainer', 'normalOpen', 'retained']),
+                'LoadBreakSwitch': pd.DataFrame(columns=[
+                    'rdfId', 'name', 'description', 'EquipmentContainer', 'normalOpen', 'retained']),
+                'EnergyConsumer': pd.DataFrame(columns=[
+                    'rdfId', 'name', 'description', 'BaseVoltage', 'EquipmentContainer']),
+                'ConformLoad': pd.DataFrame(columns=['rdfId', 'name', 'description']),
+                'NonConformLoad': pd.DataFrame(columns=['rdfId', 'name', 'description']),
+                'StationSupply': pd.DataFrame(columns=['rdfId', 'name', 'description', 'BaseVoltage']),
+                'GeneratingUnit': pd.DataFrame(columns=[
+                    'rdfId', 'name', 'nominalP', 'minOperatingP', 'maxOperatingP', 'EquipmentContainer']),
+                'WindGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP']),
+                'HydroGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP']),
+                'SolarGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP']),
+                'ThermalGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP']),
+                'NuclearGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP']),
+                'RegulatingControl': pd.DataFrame(columns=['rdfId', 'name', 'mode', 'Terminal']),
+                'SynchronousMachine': pd.DataFrame(columns=[
+                    'rdfId', 'name', 'description', 'GeneratingUnit', 'EquipmentContainer', 'ratedU', 'ratedS', 'type',
+                    'ratedPowerFactor', 'minQ', 'maxQ', 'RegulatingControl']),
+                'AsynchronousMachine': pd.DataFrame(columns=[
+                    'rdfId', 'name', 'description', 'GeneratingUnit', 'ratedS', 'ratedU', 'ratedPowerFactor']),
+                'EnergySource': pd.DataFrame(columns=[
+                    'rdfId', 'name', 'description', 'nominalVoltage', 'EnergySchedulingType',
+                    'EquipmentContainer']),
+                'EnergySchedulingType': pd.DataFrame(columns=['rdfId', 'name']),
+                'StaticVarCompensator': pd.DataFrame(columns=['rdfId', 'name', 'description', 'voltageSetPoint']),
+                'PowerTransformer': pd.DataFrame(columns=['rdfId', 'name', 'description', 'EquipmentContainer']),
+                'PowerTransformerEnd': pd.DataFrame(columns=[
+                    'rdfId', 'name', 'PowerTransformer', 'endNumber', 'Terminal', 'ratedS', 'ratedU',
+                    'r', 'x', 'b', 'g', 'BaseVoltage', 'connectionKind']),
+                'TapChangerControl': pd.DataFrame(columns=['rdfId', 'name', 'mode', 'Terminal']),
+                'RatioTapChanger': pd.DataFrame(columns=[
+                    'rdfId', 'name', 'TransformerEnd', 'neutralStep', 'lowStep', 'highStep', 'stepVoltageIncrement',
+                    'neutralU', 'normalStep', 'ltcFlag', 'TapChangerControl', 'RatioTapChangerTable']),
+                'PhaseTapChangerLinear': pd.DataFrame(columns=[
+                    'rdfId', 'TransformerEnd', 'neutralStep', 'lowStep', 'highStep', 'stepPhaseShiftIncrement',
+                    'TapChangerControl']),
+                'PhaseTapChangerAsymmetrical': pd.DataFrame(columns=[
+                    'rdfId', 'TransformerEnd', 'neutralStep', 'lowStep', 'highStep', 'voltageStepIncrement',
+                    'TapChangerControl']),
+                'PhaseTapChangerSymmetrical': pd.DataFrame(columns=[
+                    'rdfId', 'TransformerEnd', 'neutralStep', 'lowStep', 'highStep', 'voltageStepIncrement',
+                    'TapChangerControl']),
+                'PhaseTapChangerTabular': pd.DataFrame(columns=[
+                    'rdfId', 'TransformerEnd', 'PhaseTapChangerTable', 'highStep', 'lowStep', 'neutralStep',
+                    'TapChangerControl']),
+                'PhaseTapChangerTablePoint': pd.DataFrame(columns=[
+                    'rdfId', 'PhaseTapChangerTable', 'step', 'angle', 'ratio', 'r', 'x']),
+                'RatioTapChangerTable': pd.DataFrame(columns=['rdfId', 'TransformerEnd', 'RatioTapChangerTable',
+                                                              'highStep', 'lowStep', 'neutralStep']),
+                'RatioTapChangerTablePoint': pd.DataFrame(columns=['rdfId', 'RatioTapChangerTable', 'step',
+                                                                   'r', 'x', 'ratio']),
+                'LinearShuntCompensator': pd.DataFrame(columns=[
+                    'rdfId', 'name', 'description', 'nomU', 'gPerSection', 'bPerSection', 'maximumSections']),
+                'NonlinearShuntCompensator': pd.DataFrame(columns=[
+                    'rdfId', 'name', 'description', 'nomU', 'maximumSections']),
+                'NonlinearShuntCompensatorPoint': pd.DataFrame(columns=[
+                    'rdfId', 'description', 'NonlinearShuntCompensator', 'sectionNumber', 'b', 'g']),
+                'EquivalentBranch': pd.DataFrame(columns=[
+                    'rdfId', 'name', 'description', 'BaseVoltage', 'r', 'x', 'r21', 'x21']),
+                'EquivalentInjection': pd.DataFrame(columns=['rdfId', 'name', 'description', 'BaseVoltage']),
+                'SeriesCompensator': pd.DataFrame(columns=[
+                    'rdfId', 'name', 'description', 'BaseVoltage', 'r', 'x']),
+                'MeasurementValueSource': pd.DataFrame(columns=['rdfId', 'name']),
+                'PetersenCoil': pd.DataFrame(columns=['rdfId', 'name', 'description'])
+            }),
+            'eq_bd': MappingProxyType({
+                'ConnectivityNode': pd.DataFrame(columns=['rdfId', 'name', 'ConnectivityNodeContainer']),
+                'BaseVoltage': pd.DataFrame(columns=['rdfId', 'name', 'nominalVoltage']),
+                'Terminal': pd.DataFrame(
+                    columns=['rdfId', 'ConnectivityNode', 'ConductingEquipment', 'sequenceNumber']),
+                'EnergySource': pd.DataFrame(columns=['rdfId', 'nominalVoltage']),
+                'EnergySchedulingType': pd.DataFrame(columns=['rdfId', 'name'])
+            }),
+            'op': MappingProxyType({  # TODO: value attributes from AnalogValue and DiscreteValue need clarification
+                'Analog': pd.DataFrame(columns=[
+                    'rdfId', 'name', 'description', 'measurementType', 'unitSymbol', 'unitMultiplier', 'Terminal',
+                    'PowerSystemResource', 'positiveFlowIn']),
+                'AnalogValue': pd.DataFrame(columns=[
+                    'rdfId', 'name', 'sensorAccuracy', 'MeasurementValueSource', 'Analog', 'value']),
+                'Discrete': pd.DataFrame(columns=[
+                    'rdfId', 'name', 'measurementType', 'unitSymbol', 'unitMultiplier', 'PowerSystemResource']),
+                'DiscreteValue': pd.DataFrame(columns=[
+                    'rdfId', 'name', 'sensorAccuracy', 'MeasurementValueSource', 'Discrete', 'value'])
+            }),
+            'sc': MappingProxyType({
+                'PowerTransformer': pd.DataFrame(columns=['rdfId', 'isPartOfGeneratorUnit']),
+                'PowerTransformerEnd': pd.DataFrame(columns=[
+                    'rdfId', 'r0', 'x0', 'phaseAngleClock', 'grounded', 'xground']),
+                'SynchronousMachine': pd.DataFrame(columns=['rdfId', 'r2', 'x2', 'voltageRegulationRange']),
+                'AsynchronousMachine': pd.DataFrame(columns=[
+                    'rdfId', 'rxLockedRotorRatio', 'iaIrRatio', 'efficiency', 'ratedMechanicalPower']),
+                'ACLineSegment': pd.DataFrame(columns=[
+                    'rdfId', 'r0', 'x0', 'b0ch', 'g0ch', 'shortCircuitEndTemperature']),
+                'PetersenCoil': pd.DataFrame(columns=['rdfId', 'nominalU']),
+                'ExternalNetworkInjection': pd.DataFrame(columns=[
+                    'rdfId', 'maxInitialSymShCCurrent', 'minInitialSymShCCurrent', 'maxR1ToX1Ratio', 'minR1ToX1Ratio',
+                    'maxR0ToX0Ratio', 'maxZ0ToZ1Ratio']),
+                'EquivalentBranch': pd.DataFrame(columns=['rdfId', 'zeroR12', 'zeroR21', 'zeroX12', 'zeroX21']),
+                'EquivalentInjection': pd.DataFrame(columns=['rdfId', 'r', 'x']),
+                'SeriesCompensator': pd.DataFrame(columns=['rdfId', 'r0', 'x0']),
+            }),
+            'ssh': MappingProxyType({
+                'ControlArea': pd.DataFrame(columns=['rdfId', 'netInterchange']),
+                'ExternalNetworkInjection': pd.DataFrame(columns=[
+                    'rdfId', 'p', 'q', 'referencePriority', 'controlEnabled', 'inService']),
+                'Terminal': pd.DataFrame(columns=['rdfId', 'connected']),
+                'DCTerminal': pd.DataFrame(columns=['rdfId', 'connected']),
+                'ACDCConverterDCTerminal': pd.DataFrame(columns=['rdfId', 'connected']),
+                'CsConverter': pd.DataFrame(columns=['rdfId', 'p', 'q', 'inService']),
+                'VsConverter': pd.DataFrame(columns=[
+                    'rdfId', 'p', 'q', 'targetUpcc', 'droop', 'droopCompensation', 'qShare', 'targetUdc', 'targetPpcc',
+                    'targetQpcc', 'pPccControl', 'qPccControl', 'inService']),
+                'Breaker': pd.DataFrame(columns=['rdfId', 'open', 'inService']),
+                'Disconnector': pd.DataFrame(columns=['rdfId', 'open', 'inService']),
+                'Switch': pd.DataFrame(columns=['rdfId', 'open', 'inService']),
+                'LoadBreakSwitch': pd.DataFrame(columns=['rdfId', 'open', 'inService']),
+                'EnergyConsumer': pd.DataFrame(columns=['rdfId', 'p', 'q', 'inService']),
+                'ConformLoad': pd.DataFrame(columns=['rdfId', 'p', 'q', 'inService']),
+                'NonConformLoad': pd.DataFrame(columns=['rdfId', 'p', 'q', 'inService']),
+                'StationSupply': pd.DataFrame(columns=['rdfId', 'p', 'q', 'inService']),
+                'RegulatingControl': pd.DataFrame(columns=[
+                    'rdfId', 'discrete', 'enabled', 'targetValue', 'targetValueUnitMultiplier']),
+                'SynchronousMachine': pd.DataFrame(columns=[
+                    'rdfId', 'p', 'q', 'referencePriority', 'operatingMode', 'controlEnabled', 'inService']),
+                'AsynchronousMachine': pd.DataFrame(columns=['rdfId', 'p', 'q', 'inService']),
+                'EnergySource': pd.DataFrame(columns=[
+                    'rdfId', 'activePower', 'reactivePower', 'inService', 'voltageAngle', 'voltageMagnitude']),
+                'StaticVarCompensator': pd.DataFrame(columns=['rdfId', 'q', 'inService']),
+                'TapChangerControl': pd.DataFrame(columns=[
+                    'rdfId', 'discrete', 'enabled', 'targetValue', 'targetValueUnitMultiplier', 'targetDeadband']),
+                'RatioTapChanger': pd.DataFrame(columns=['rdfId', 'step', 'controlEnabled']),
+                'PhaseTapChangerLinear': pd.DataFrame(columns=['rdfId', 'step']),
+                'PhaseTapChangerAsymmetrical': pd.DataFrame(columns=['rdfId', 'step']),
+                'PhaseTapChangerSymmetrical': pd.DataFrame(columns=['rdfId', 'step']),
+                'PhaseTapChangerTabular': pd.DataFrame(columns=['rdfId', 'step']),
+                'LinearShuntCompensator': pd.DataFrame(columns=['rdfId', 'controlEnabled', 'sections', 'inService']),
+                'NonlinearShuntCompensator': pd.DataFrame(columns=['rdfId', 'controlEnabled', 'sections', 'inService']),
+                'EquivalentInjection': pd.DataFrame(columns=[
+                    'rdfId', 'regulationTarget', 'regulationStatus', 'p', 'q', 'inService']),
+                'GeneratingUnit': pd.DataFrame(columns=['rdfId', 'inService']),
+                'NuclearGeneratingUnit': pd.DataFrame(columns=['rdfId', 'inService']),
+                'HydroGeneratingUnit': pd.DataFrame(columns=['rdfId', 'inService']),
+                'ThermalGeneratingUnit': pd.DataFrame(columns=['rdfId', 'inService']),
+                'SolarGeneratingUnit': pd.DataFrame(columns=['rdfId', 'inService']),
+                'WindGeneratingUnit': pd.DataFrame(columns=['rdfId', 'inService']),
+                'CurrentLimit': pd.DataFrame(columns=['rdfId', 'value']),
+                'VoltageLimit': pd.DataFrame(columns=['rdfId', 'value']),
+            }),
+            'sv': MappingProxyType({
+                'SvVoltage': pd.DataFrame(columns=['rdfId', 'TopologicalNode', 'v', 'angle']),
+                'SvPowerFlow': pd.DataFrame(columns=['rdfId', 'Terminal', 'p', 'q']),
+                'SvShuntCompensatorSections': pd.DataFrame(columns=['rdfId', 'ShuntCompensator', 'sections']),
+                'SvTapStep': pd.DataFrame(columns=['rdfId', 'TapChanger', 'position'])
+            }),
+            'tp': MappingProxyType({
+                'TopologicalNode': pd.DataFrame(columns=[
+                    'rdfId', 'name', 'description', 'ConnectivityNodeContainer', 'BaseVoltage']),
+                'DCTopologicalNode': pd.DataFrame(columns=['rdfId', 'name', 'DCEquipmentContainer']),
+                'ConnectivityNode': pd.DataFrame(columns=['rdfId', 'TopologicalNode']),
+                'Terminal': pd.DataFrame(columns=['rdfId', 'TopologicalNode']),
+                'DCTerminal': pd.DataFrame(columns=['rdfId', 'DCTopologicalNode']),
+                'ACDCConverterDCTerminal': pd.DataFrame(columns=['rdfId', 'DCTopologicalNode'])
+            }),
+            'dl': MappingProxyType({
+                'Diagram': pd.DataFrame(columns=['rdfId', 'name']),
+                'DiagramObject': pd.DataFrame(columns=['rdfId', 'IdentifiedObject', 'Diagram', 'name']),
+                'DiagramObjectPoint': pd.DataFrame(columns=[
+                    'rdfId', 'sequenceNumber', 'xPosition', 'yPosition', 'DiagramObject'])}),
+            'gl': MappingProxyType({
+                'CoordinateSystem': pd.DataFrame(columns=['rdfId', 'name', 'crsUrn']),
+                'Location': pd.DataFrame(columns=['rdfId', 'PowerSystemResources', 'CoordinateSystem']),
+                'PositionPoint': pd.DataFrame(columns=['rdfId', 'Location', 'sequenceNumber', 'xPosition', 'yPosition'])
+            })})
+
+    def get_cim_data_structure(self) -> Dict[str, Dict[str, pd.DataFrame]]:
+        cim_data_structure = {}
+        for one_profile, one_profile_dict in self.__cim_blueprint.items():
+            cim_data_structure[one_profile] = {}
+            for one_class, one_class_df in one_profile_dict.items():
+                cim_data_structure[one_profile][one_class] = one_class_df.copy(deep=True)
+        return cim_data_structure

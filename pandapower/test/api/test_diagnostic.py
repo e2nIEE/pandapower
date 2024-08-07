@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -108,12 +108,19 @@ class TestInvalidValues:
         assert diag_results[check_function] == \
         {'bus': [(42, 'vn_kv', '-1', '>0')],
          'ext_grid': [(0, 'vm_pu', True, '>0')],
-         'line': [(7, 'length_km', -1.0, '>0'), (8, 'max_i_ka', 0.0, '>0')],
-         'trafo': [(0, 'sn_mva', 'nan', '>0'), (0, 'vn_hv_kv', -1.5, '>0'),
-                   (0, 'vn_lv_kv', False, '>0'), (0, 'vk_percent', 0.0, '>0')],
-         'trafo3w': [(0, 'sn_mv_mva', 'a', '>0'), (0, 'vn_hv_kv', -1.5, '>0'),
-                     (0, 'vn_mv_kv', -1.5, '>0'), (0, 'vn_lv_kv', False, '>0'),
-                     (0, 'vk_mv_percent', 'nan', '>0'), (0, 'vk_lv_percent', 0.0, '>0')]}
+         'line': [(7, 'length_km', -1.0, '>0'),
+                  (8, 'max_i_ka', 0.0, '>0')],
+         'trafo': [(0, 'sn_mva', 'nan', '>0'),
+                   (0, 'vn_hv_kv', -1.5, '>0'),
+                   (0, 'vn_lv_kv', False, '>0'),
+                   (0, 'vk_percent', 0.0, '>0')],
+         'trafo3w': [(0, 'sn_mv_mva', 'a', '>0'),
+                     (0, 'vn_hv_kv', -1.5, '>0'),
+                     (0, 'vn_mv_kv', -1.5, '>0'),
+                     (0, 'vn_lv_kv', False, '>0'),
+                     (0, 'vk_mv_percent', 'nan', '>0'),
+                     (0, 'vk_lv_percent', 0.0, '>0'),
+                     (0, 'vk_mv_percent', 'nan', '<15')]}
 
         for bool_value in [True, False]:
             diag_report = DiagnosticReports(net, diag_results, diag_errors, diag_params, compact_report=bool_value)
@@ -153,14 +160,21 @@ class TestInvalidValues:
         else:
             diag_results = {}
         assert diag_results[check_function] == \
-        {'line': [(7, 'r_ohm_per_km', -1.0, '>=0'), (8, 'x_ohm_per_km', 'nan', '>=0'),
+        {'line': [(7, 'r_ohm_per_km', -1.0, '>=0'),
+                  (8, 'x_ohm_per_km', 'nan', '>=0'),
                   (8, 'c_nf_per_km', '0', '>=0')],
-         'trafo': [(0, 'vkr_percent', '-1', '>=0'), (0, 'pfe_kw', -1.5, '>=0'),
+         'trafo': [(0, 'vkr_percent', '-1', '>=0'),
+                   (0, 'vkr_percent', '-1', '<15'),
+                   (0, 'pfe_kw', -1.5, '>=0'),
                    (0, 'i0_percent', -0.001, '>=0')],
-         'trafo3w': [(0, 'vkr_hv_percent', True, '>=0'), (0, 'vkr_mv_percent', False, '>=0'),
+         'trafo3w': [(0, 'vkr_hv_percent', True, '>=0'),
+                     (0, 'vkr_mv_percent', False, '>=0'),
+                     (0, 'vkr_hv_percent', True, '<15'),
+                     (0, 'vkr_mv_percent', False, '<15'),
                      (0, 'pfe_kw', '2', '>=0')],
          'gen': [(0, 'scaling', 'nan', '>=0')],
-         'load': [(0, 'scaling', -0.1, '>=0'), (3, 'scaling', '1', '>=0')],
+         'load': [(0, 'scaling', -0.1, '>=0'),
+                  (3, 'scaling', '1', '>=0')],
          'sgen': [(0, 'scaling', False, '>=0')]}
 
         for bool_value in [True, False]:
@@ -385,9 +399,9 @@ def test_multiple_voltage_controlling_elements_per_bus(test_net, diag_params, di
     check_function = 'multiple_voltage_controlling_elements_per_bus'
     diag_params = copy.deepcopy(diag_params)
     report_methods = copy.deepcopy(report_methods)
-    net.gen.bus.at[0] = 0
+    net.gen.at[0, "bus"] = 0
     pp.create_ext_grid(net, 1)
-    net.ext_grid.bus.at[1] = 0
+    net.ext_grid.at[1, "bus"] = 0
 
     check_result = pp.multiple_voltage_controlling_elements_per_bus(net)
     if check_result:
@@ -528,7 +542,7 @@ def test_different_voltage_levels_connected(test_net, diag_params, diag_errors, 
     diag_params = copy.deepcopy(diag_params)
     report_methods = copy.deepcopy(report_methods)
     pp.create_switch(net, 41, 45, et = 'b')
-    net.bus.vn_kv.loc[38] = 30
+    net.bus.loc[38, "vn_kv"] = 30
     check_result = pp.different_voltage_levels_connected(net)
     if check_result:
         diag_results = {check_function: check_result}
@@ -553,17 +567,16 @@ def test_impedance_values_close_to_zero(test_net, diag_params, diag_errors, repo
     # line test
     net = copy.deepcopy(test_net)
     check_function = 'impedance_values_close_to_zero'
-    net.line.length_km.at[0] = 0
-    net.line.r_ohm_per_km.at[1] = 0
-    net.line.x_ohm_per_km.at[1] = 0
-    net.line.r_ohm_per_km.at[2] = 0
-    net.line.x_ohm_per_km.at[3] = 0
-    net.line.length_km.at[4] = 0
-    net.line.r_ohm_per_km.at[4] = 0
-    net.line.x_ohm_per_km.at[4] = 0
-    net.xward.drop(net.xward.index, inplace=True)
-    check_result = pp.impedance_values_close_to_zero(net, diag_params['min_r_ohm'], diag_params['min_x_ohm'],
-                                                     diag_params['min_r_pu'], diag_params['min_x_pu'])
+    net.line.at[0, "length_km"] = 0
+    net.line.at[1, "r_ohm_per_km"] = 0
+    net.line.at[1, "x_ohm_per_km"] = 0
+    net.line.at[2, "r_ohm_per_km"] = 0
+    net.line.at[3, "x_ohm_per_km"] = 0
+    net.line.at[4, "length_km"] = 0
+    net.line.at[4, "r_ohm_per_km"] = 0
+    net.line.at[4, "x_ohm_per_km"] = 0
+    net.xward = net.xward.drop(net.xward.index)
+    check_result = pp.implausible_impedance_values(net, diag_params['min_r_ohm'], diag_params['min_x_ohm'], 100, 100)
     if check_result:
         diag_results = {check_function: check_result}
     else:
@@ -585,13 +598,12 @@ def test_impedance_values_close_to_zero(test_net, diag_params, diag_errors, repo
     net = copy.deepcopy(test_net)
     check_function = 'impedance_values_close_to_zero'
     net.xward.x_ohm = 0
-    check_result = pp.impedance_values_close_to_zero(net, diag_params['min_r_ohm'], diag_params['min_x_ohm'],
-                                                     diag_params['min_r_pu'], diag_params['min_x_pu'])
+    check_result = pp.implausible_impedance_values(net, diag_params['min_r_ohm'], diag_params['min_x_ohm'], 100, 100)
     if check_result:
         diag_results = {check_function: check_result}
     else:
         diag_results = {}
-    assert diag_results[check_function] == [{'xward': [0, 1]}]
+    assert diag_results[check_function] == [{'xward': [0, 1]}, {'loadflow_converges_with_switch_replacement': True}]
     for bool_value in [True, False]:
         diag_report = DiagnosticReports(net, diag_results, diag_errors, diag_params, compact_report=bool_value)
         report_check = None
@@ -604,8 +616,7 @@ def test_impedance_values_close_to_zero(test_net, diag_params, diag_errors, repo
 
     net = copy.deepcopy(test_net)
     net.xward.r_ohm = 1
-    check_result = pp.impedance_values_close_to_zero(net, diag_params['min_r_ohm'], diag_params['min_x_ohm'],
-                                                     diag_params['min_r_pu'], diag_params['min_x_pu'])
+    check_result = pp.implausible_impedance_values(net, diag_params['min_r_ohm'], diag_params['min_x_ohm'], 100, 100)
     if check_result:
         diag_results = {check_function: check_result}
     else:
@@ -624,13 +635,12 @@ def test_impedance_values_close_to_zero(test_net, diag_params, diag_errors, repo
 
     # impedance test
     net = copy.deepcopy(test_net)
-    net.xward.drop(net.xward.index, inplace=True)
+    net.xward = net.xward.drop(net.xward.index)
     net.impedance.rft_pu = 0
     net.impedance.xft_pu = 0
     net.impedance.rtf_pu = 0
     net.impedance.xtf_pu = 0
-    check_result = pp.impedance_values_close_to_zero(net, diag_params['min_r_ohm'], diag_params['min_x_ohm'],
-                                                     diag_params['min_r_pu'], diag_params['min_x_pu'])
+    check_result = pp.implausible_impedance_values(net, diag_params['min_r_ohm'], diag_params['min_x_ohm'], 100, 100)
     if check_result:
         diag_results = {check_function: check_result}
     else:
@@ -649,13 +659,12 @@ def test_impedance_values_close_to_zero(test_net, diag_params, diag_errors, repo
         assert report_check
 
     net = copy.deepcopy(test_net)
-    net.xward.drop(net.xward.index, inplace=True)
-    net.impedance.rft_pu = 1
-    net.impedance.xft_pu = 1
-    net.impedance.rtf_pu = 1
-    net.impedance.xtf_pu = 1
-    check_result = pp.impedance_values_close_to_zero(net, diag_params['min_r_ohm'], diag_params['min_x_ohm'],
-                                                     diag_params['min_r_pu'], diag_params['min_x_pu'])
+    net.xward = net.xward.drop(net.xward.index)
+    net.impedance.rft_pu = 0.1
+    net.impedance.xft_pu = 0.1
+    net.impedance.rtf_pu = 0.1
+    net.impedance.xtf_pu = 0.1
+    check_result = pp.implausible_impedance_values(net, diag_params['min_r_ohm'], diag_params['min_x_ohm'], 100, 100)
     if check_result:
         diag_results = {check_function: check_result}
     else:
@@ -680,8 +689,8 @@ def test_nominal_voltages_dont_match(test_net, diag_params, diag_errors, report_
     report_methods = copy.deepcopy(report_methods)
     trafo_copy = copy.deepcopy(net.trafo)
     trafo3w_copy = copy.deepcopy(net.trafo3w)
-    net.trafo.hv_bus.at[0] = trafo_copy.lv_bus.at[0]
-    net.trafo.lv_bus.at[0] = trafo_copy.hv_bus.at[0]
+    net.trafo.at[0, "hv_bus"] = trafo_copy.lv_bus.at[0]
+    net.trafo.at[0, "lv_bus"] = trafo_copy.hv_bus.at[0]
     check_result = pp.nominal_voltages_dont_match(net, diag_params['nom_voltage_tolerance'])
     if check_result:
         diag_results = {check_function: check_result}
@@ -784,9 +793,9 @@ def test_nominal_voltages_dont_match(test_net, diag_params, diag_errors, report_
 
     net.trafo = copy.deepcopy(trafo_copy)
 
-    net.trafo3w.hv_bus.at[0] = trafo3w_copy.mv_bus.at[0]
-    net.trafo3w.mv_bus.at[0] = trafo3w_copy.lv_bus.at[0]
-    net.trafo3w.lv_bus.at[0] = trafo3w_copy.hv_bus.at[0]
+    net.trafo3w.at[0, "hv_bus"] = trafo3w_copy.mv_bus.at[0]
+    net.trafo3w.at[0, "mv_bus"] = trafo3w_copy.lv_bus.at[0]
+    net.trafo3w.at[0, "lv_bus"] = trafo3w_copy.hv_bus.at[0]
     check_result = pp.nominal_voltages_dont_match(net, diag_params['nom_voltage_tolerance'])
     if check_result:
         diag_results = {check_function: check_result}
@@ -899,9 +908,9 @@ def test_wrong_reference_system(test_net, diag_params, diag_errors, report_metho
     check_function = 'wrong_reference_system'
     diag_params = copy.deepcopy(diag_params)
     report_methods = copy.deepcopy(report_methods)
-    net.load.p_mw.at[0] = -1
-    net.gen.p_mw.at[0] = -1
-    net.sgen.p_mw.at[0] = -1
+    net.load.at[0, "p_mw"] = -1
+    net.gen.at[0, "p_mw"] = -1
+    net.sgen.at[0, "p_mw"] = -1
     check_result = pp.wrong_reference_system(net)
     if check_result:
         diag_results = {check_function: check_result}
@@ -967,7 +976,7 @@ def test_deviation_from_std_type(test_net, diag_params, diag_errors, report_meth
     net.line.r_ohm_per_km.loc[0] += 1
     net.line.x_ohm_per_km.loc[6] -= 1
     net.line.c_nf_per_km.loc[14] *= -1
-    net.line.max_i_ka.loc[21] = '5'
+    net.line.loc[21, "max_i_ka"] = '5'
     pp.change_std_type(net, 0, element='trafo', name='160 MVA 380/110 kV')
     net.trafo.vk_percent.loc[0] *= 2
     check_result = pp.deviation_from_std_type(net)

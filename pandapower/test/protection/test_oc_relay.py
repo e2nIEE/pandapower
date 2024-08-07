@@ -59,10 +59,10 @@ def test_oc_relay_idtoc():
 
 def test_oc_relay_plots():
     net = oc_relay_net()
-    net.switch.type.at[2] = 'CB_IDMT'
-    net.switch.type.at[3] = 'CB_IDMT'
-    net.switch.type.at[4] = 'CB_IDTOC'
-    net.switch.type.at[5] = 'CB_IDTOC'
+    net.switch.at[2, "type"] = 'CB_IDMT'
+    net.switch.at[3, "type"] = 'CB_IDMT'
+    net.switch.at[4, "type"] = 'CB_IDTOC'
+    net.switch.at[5, "type"] = 'CB_IDTOC'
 
     oc_relay_type_list = ['DTOC', 'DTOC', 'IDMT', 'IDMT', 'IDTOC', 'IDTOC']
     time_settings_list = [[0.07, 0.5, 0.3],

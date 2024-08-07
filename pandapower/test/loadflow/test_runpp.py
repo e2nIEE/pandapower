@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -26,6 +26,7 @@ from pandapower.test.loadflow.result_test_network_generator import add_test_xwar
 from pandapower.test.helper_functions import add_grid_connection, create_test_line, assert_net_equal, assert_res_equal
 from pandapower.toolbox import nets_equal
 from pandapower.pypower.makeYbus import makeYbus as makeYbus_pypower
+from pandapower.pypower.idx_brch import BR_R, BR_X, BR_B, BR_G
 
 
 try:
@@ -123,7 +124,7 @@ def test_runpp_init():
     b1, b2, l1 = add_grid_connection(net)
     b3 = pp.create_bus(net, vn_kv=0.4)
     tidx = pp.create_transformer(net, hv_bus=b2, lv_bus=b3, std_type="0.25 MVA 20/0.4 kV")
-    net.trafo.shift_degree.at[tidx] = 70
+    net.trafo.at[tidx, "shift_degree"] = 70
     pp.runpp(net, calculate_voltage_angles="auto")
     va = net.res_bus.va_degree.at[4]
     pp.runpp(net, calculate_voltage_angles=True, init_va_degree="dc")
@@ -142,8 +143,8 @@ def test_runpp_init_auxiliary_buses():
     pp.create_load(net, b4, p_mw=5)
     pp.create_xward(net, b4, ps_mw=1, qs_mvar=1, pz_mw=1, qz_mvar=1, r_ohm=0.1, x_ohm=0.1,
                     vm_pu=1.0)
-    net.trafo3w.shift_lv_degree.at[tidx] = 120
-    net.trafo3w.shift_mv_degree.at[tidx] = 80
+    net.trafo3w.at[tidx, "shift_lv_degree"] = 120
+    net.trafo3w.at[tidx, "shift_mv_degree"] = 80
     pp.runpp(net)
     va = net.res_bus.va_degree.at[b2]
     pp.runpp(net, calculate_voltage_angles=True, init_va_degree="dc")
@@ -191,7 +192,7 @@ def test_bus_bus_switches(bus_bus_net):
            net.res_bus.vm_pu.at[6]
     assert net.res_bus.vm_pu.at[0] == net.res_bus.vm_pu.at[7]
 
-    net.bus.in_service.at[5] = False
+    net.bus.at[5, "in_service"] = False
     pp.runpp(net)
     assert net.res_bus.vm_pu.at[3] == net.res_bus.vm_pu.at[6]
     assert net.res_bus.vm_pu.at[0] == net.res_bus.vm_pu.at[7]
@@ -202,10 +203,10 @@ def test_bus_bus_switches(bus_bus_net):
 def test_bus_bus_switches_merges_two_gens(bus_bus_net):
     "buses should not be fused if two gens are connected"
     net = bus_bus_net
-    net.bus.in_service.at[5] = False
+    net.bus.at[5, "in_service"] = False
     pp.create_gen(net, 6, 10)
     pp.create_gen(net, 4, 10)
-    net.bus.in_service.at[5] = True
+    net.bus.at[5, "in_service"] = True
     pp.runpp(net)
     assert net.converged
 
@@ -347,7 +348,7 @@ def get_isolated(net):
 def test_connectivity_check_island_without_pv_bus():
     # Network with islands without pv bus -> all buses in island should be set out of service
     net = create_cigre_network_mv(with_der=False)
-    iso_buses, iso_p, iso_q = get_isolated(net)
+    iso_buses, iso_p, iso_q, *_ = get_isolated(net)
     assert len(iso_buses) == 0
     assert np.isclose(iso_p, 0)
     assert np.isclose(iso_q, 0)
@@ -357,7 +358,7 @@ def test_connectivity_check_island_without_pv_bus():
     pp.create_line(net, isolated_bus2, isolated_bus1, length_km=1,
                    std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV",
                    name="IsolatedLine")
-    iso_buses, iso_p, iso_q = get_isolated(net)
+    iso_buses, iso_p, iso_q, *_ = get_isolated(net)
     assert len(iso_buses) == 2
     assert np.isclose(iso_p, 0)
     assert np.isclose(iso_q, 0)
@@ -366,7 +367,7 @@ def test_connectivity_check_island_without_pv_bus():
     pp.create_sgen(net, isolated_bus2, p_mw=0.15, q_mvar=0.01)
 
     # with pytest.warns(UserWarning):
-    iso_buses, iso_p, iso_q = get_isolated(net)
+    iso_buses, iso_p, iso_q, *_ = get_isolated(net)
     assert len(iso_buses) == 2
     assert np.isclose(iso_p, 350)
     assert np.isclose(iso_q, 30)
@@ -377,7 +378,7 @@ def test_connectivity_check_island_without_pv_bus():
 def test_connectivity_check_island_with_one_pv_bus():
     # Network with islands with one PV bus -> PV bus should be converted to the reference bus
     net = create_cigre_network_mv(with_der=False)
-    iso_buses, iso_p, iso_q = get_isolated(net)
+    iso_buses, iso_p, iso_q, *_ = get_isolated(net)
     assert len(iso_buses) == 0
     assert np.isclose(iso_p, 0)
     assert np.isclose(iso_q, 0)
@@ -391,7 +392,7 @@ def test_connectivity_check_island_with_one_pv_bus():
     pp.create_line(net, isolated_gen, isolated_bus1, length_km=1,
                    std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV", name="IsolatedLineToGen")
     # with pytest.warns(UserWarning):
-    iso_buses, iso_p, iso_q = get_isolated(net)
+    iso_buses, iso_p, iso_q, *_ = get_isolated(net)
 
     # assert len(iso_buses) == 0
     # assert np.isclose(iso_p, 0)
@@ -413,7 +414,7 @@ def test_connectivity_check_island_with_multiple_pv_buses():
     # Network with islands an multiple PV buses in the island -> Error should be thrown since it
     # would be random to choose just some PV bus as the reference bus
     net = create_cigre_network_mv(with_der=False)
-    iso_buses, iso_p, iso_q = get_isolated(net)
+    iso_buses, iso_p, iso_q, *_ = get_isolated(net)
     assert len(iso_buses) == 0
     assert np.isclose(iso_p, 0)
     assert np.isclose(iso_q, 0)
@@ -435,7 +436,7 @@ def test_connectivity_check_island_with_multiple_pv_buses():
                    std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV",
                    name="IsolatedLine")
     # ToDo with pytest.warns(UserWarning):
-    iso_buses, iso_p, iso_q = get_isolated(net)
+    iso_buses, iso_p, iso_q, *_ = get_isolated(net)
 
 
 def test_isolated_in_service_bus_at_oos_line():
@@ -778,7 +779,7 @@ def test_zip_loads_out_of_service():
     pp.runpp(net, tolerance_mva=1e-8)
     pp.runpp(net1, tolerance_mva=1e-8)
     assert np.allclose(net1.res_load.loc[oos_load].fillna(0), 0)
-    net1.res_load.drop(oos_load, inplace=True)
+    net1.res_load = net1.res_load.drop(oos_load)
     assert nets_equal(net, net1, check_only_results=True)
 
 
@@ -849,7 +850,7 @@ def test_get_internal():
     Ybus = ppc["internal"]["Ybus"]
 
     _, ppci = _pd2ppc(net)
-    baseMVA, bus, gen, branch, svc, tcsc, ssc, ref, pv, pq, _, _, V0, _ = _get_pf_variables_from_ppci(ppci)
+    baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, ref, pv, pq, _, _, V0, _ = _get_pf_variables_from_ppci(ppci)
 
     pvpq = np.r_[pv, pq]
     dist_slack = False
@@ -869,14 +870,14 @@ def test_Ybus_format():
 
     Ybus, Yf, Yt = makeYbus_pypower(ppci["baseMVA"], ppci["bus"], ppci["branch"])
     for Y in (Ybus, Yf, Yt):
-        assert Y.has_canonical_format
         assert Y.has_sorted_indices
+        assert Y.has_canonical_format
 
     if numba_installed:
         Ybus, Yf, Yt = makeYbus_numba(ppci["baseMVA"], ppci["bus"], ppci["branch"])
         for Y in (Ybus, Yf, Yt):
-            assert Y.has_canonical_format
             assert Y.has_sorted_indices
+            assert Y.has_canonical_format
 
 
 def test_storage_pf():
@@ -898,8 +899,8 @@ def test_storage_pf():
     res_gen_beh = runpp_with_consistency_checks(net)
     res_ll_stor = net["res_line"].loading_percent.iloc[0]
 
-    net["storage"].in_service.iloc[0] = False
-    net["sgen"].in_service.iloc[1] = True
+    net["storage"].loc[0, 'in_service'] = False
+    net["sgen"].loc[1, 'in_service'] = True
 
     runpp_with_consistency_checks(net)
     res_ll_sgen = net["res_line"].loading_percent.iloc[0]
@@ -908,15 +909,15 @@ def test_storage_pf():
 
     # test load behaviour
     pp.create_load(net, b1, p_mw=0.01, in_service=False)
-    net["storage"].in_service.iloc[0] = True
-    net["storage"].p_mw.iloc[0] = 0.01
-    net["sgen"].in_service.iloc[1] = False
+    net["storage"].loc[0, 'in_service'] = True
+    net["storage"].loc[0, 'p_mw'] = 0.01
+    net["sgen"].loc[1, 'in_service'] = False
 
     res_load_beh = runpp_with_consistency_checks(net)
     res_ll_stor = net["res_line"].loading_percent.iloc[0]
 
-    net["storage"].in_service.iloc[0] = False
-    net["load"].in_service.iloc[1] = True
+    net["storage"].loc[0, 'in_service'] = False
+    net["load"].loc[1, 'in_service'] = True
 
     runpp_with_consistency_checks(net)
     res_ll_load = net["res_line"].loading_percent.iloc[0]
@@ -1063,14 +1064,14 @@ def two_ext_grids_at_one_bus():
     assert net.converged
 
     # error is raised after eg2 is set in service
-    net.ext_grid.in_service.at[eg2] = True
+    net.ext_grid.at[eg2, "in_service"] = True
     with pytest.raises(UserWarning):
         pp.runpp(net)
 
     #  error is also raised when eg2 is connected to first ext_grid through bus-bus switch
     b3 = pp.create_bus(net, vn_kv=110)
     pp.create_switch(net, b1, b3, et="b")
-    net.ext_grid.bus.at[eg2] = b3
+    net.ext_grid.at[eg2, "bus"] = b3
     with pytest.raises(UserWarning):
         pp.runpp(net)
 
@@ -1079,8 +1080,8 @@ def two_ext_grids_at_one_bus():
     assert net.converged
 
     # same angle but different voltage magnitude also raises an error
-    net.ext_grid.vm_pu.at[eg2] = 1.02
-    net.ext_grid.va_degree.at[eg2] = 0
+    net.ext_grid.at[eg2, "vm_pu"] = 1.02
+    net.ext_grid.at[eg2, "va_degree"] = 0
     with pytest.raises(UserWarning):
         pp.runpp(net)
 
@@ -1132,7 +1133,7 @@ def test_only_ref_buses():
     assert np.all(net.res_ext_grid.p_mw == 0.)
     assert np.all(net.res_ext_grid.q_mvar == 0.)
 
-    net.ext_grid.vm_pu.at[1] = 0.5
+    net.ext_grid.at[1, "vm_pu"] = 0.5
     pp.runpp(net)
     assert np.allclose(net.res_ext_grid.p_mw.values, np.array([0.25, -0.125]), rtol=0, atol=1e-12)
     assert np.allclose(net.res_ext_grid.q_mvar.values, np.array([0.25, -0.125]), rtol=0, atol=1e-12)
@@ -1180,9 +1181,9 @@ def test_init_results():
     t3_switch = pp.create_switch(net, bus=net.trafo3w.hv_bus.at[t3idx],
                                  element=t3idx, et="t3", closed=False)  # trafo3w switch at hv side
     assert_init_results(net)
-    net.switch.bus.at[t3_switch] = net.trafo3w.mv_bus.at[t3idx]  # trafo3w switch at mv side
+    net.switch.at[t3_switch, "bus"] = net.trafo3w.mv_bus.at[t3idx]  # trafo3w switch at mv side
     assert_init_results(net)
-    net.switch.bus.at[t3_switch] = net.trafo3w.lv_bus.at[t3idx]  # trafo3w switch at lv side
+    net.switch.at[t3_switch, "bus"] = net.trafo3w.lv_bus.at[t3idx]  # trafo3w switch at lv side
     assert_init_results(net)
 
 
@@ -1194,7 +1195,6 @@ def assert_init_results(net):
 
 
 def test_wye_delta():
-    from pandapower.pypower.idx_brch import BR_R, BR_X, BR_B
     net = pp.create_empty_network()
     pp.create_bus(net, vn_kv=110)
     pp.create_buses(net, nr_buses=4, vn_kv=20)
@@ -1210,13 +1210,13 @@ def test_wye_delta():
     pp.runpp(net, trafo_model="pi")
     f, t = net._pd2ppc_lookups["branch"]["trafo"]
     assert np.isclose(net.res_trafo.p_hv_mw.at[trafo], -7.560996, rtol=1e-7)
-    assert np.allclose(net._ppc["branch"][f:t, [BR_R, BR_X, BR_B]].flatten(),
-                       np.array([0.0001640 + 0.j, 0.0047972 + 0.j, -0.0105000 - 0.014j]),
+    assert np.allclose(net._ppc["branch"][f:t, [BR_R, BR_X, BR_B, BR_G]].flatten(),
+                       np.array([0.0001640, 0.0047972, -0.0105000, 0.014]),
                        rtol=1e-7)
 
     pp.runpp(net, trafo_model="t")
-    assert np.allclose(net._ppc["branch"][f:t, [BR_R, BR_X, BR_B]].flatten(),
-                       np.array([0.00016392 + 0.j, 0.00479726 + 0.j, -0.01050009 - 0.01399964j]))
+    assert np.allclose(net._ppc["branch"][f:t, [BR_R, BR_X, BR_B, BR_G]].flatten(),
+                       np.array([0.00016392, 0.00479726, -0.01050009, 0.01399964]))
     assert np.isclose(net.res_trafo.p_hv_mw.at[trafo], -7.561001, rtol=1e-7)
 
 
@@ -1333,26 +1333,26 @@ def test_tap_dependent_impedance():
     pp.runpp(net_backup)
     assert_res_equal(net, net_backup)
 
-    net.trafo.tap_pos.at[0] = 2
-    net_backup.trafo.tap_pos.at[0] = 2
-    net_backup.trafo.vk_percent.at[0] = 6.5
-    net_backup.trafo.vkr_percent.at[0] = 1.48
+    net.trafo.at[0, "tap_pos"] = 2
+    net_backup.trafo.at[0, "tap_pos"] = 2
+    net_backup.trafo.at[0, "vk_percent"] = 6.5
+    net_backup.trafo.at[0, "vkr_percent"] = 1.48
 
     pp.runpp(net)
     pp.runpp(net_backup)
     assert_res_equal(net, net_backup)
 
-    net.trafo.tap_pos.at[1] = -2
-    net_backup.trafo.tap_pos.at[1] = -2
-    net_backup.trafo.vk_percent.at[1] = 5.4
+    net.trafo.at[1, "tap_pos"] = -2
+    net_backup.trafo.at[1, "tap_pos"] = -2
+    net_backup.trafo.at[1, "vk_percent"] = 5.4
 
     pp.runpp(net)
     pp.runpp(net_backup)
     assert_res_equal(net, net_backup)
 
-    net.trafo3w.tap_pos.at[0] = 2
-    net_backup.trafo3w.tap_pos.at[0] = 2
-    net_backup.trafo3w.vk_hv_percent.at[0] = 1.05
+    net.trafo3w.at[0, "tap_pos"] = 2
+    net_backup.trafo3w.at[0, "tap_pos"] = 2
+    net_backup.trafo3w.at[0, "vk_hv_percent"] = 1.05
 
     pp.runpp(net)
     pp.runpp(net_backup)
@@ -1364,7 +1364,10 @@ def test_lightsim2grid():
     # test several nets
     for net in result_test_network_generator():
         try:
+            net_ref = copy.deepcopy(net)
+            pp.runpp(net_ref, lightsim2grid=False)
             runpp_with_consistency_checks(net, lightsim2grid=True)
+            assert_res_equal(net, net_ref)
         except AssertionError:
             raise UserWarning("Consistency Error after adding %s" % net.last_added_case)
         except LoadflowNotConverged:
@@ -1372,6 +1375,15 @@ def test_lightsim2grid():
         except NotImplementedError as err:
             assert len(net.ext_grid) > 1
             assert "multiple ext_grids are found" in str(err)
+
+
+@pytest.mark.skipif(not lightsim2grid_available, reason="lightsim2grid is not installed")
+def test_lightsim2grid_case118():
+    net = pp.networks.case118()
+    net_ref = copy.deepcopy(net)
+    pp.runpp(net_ref, lightsim2grid=False)
+    runpp_with_consistency_checks(net, lightsim2grid=True)
+    assert_res_equal(net, net_ref)
 
 
 @pytest.mark.skipif(not lightsim2grid_available, reason="lightsim2grid is not installed")
@@ -1450,17 +1462,4 @@ def test_lightsim2grid_option():
 
 
 if __name__ == "__main__":
-    pytest.main([__file__])
-#    test_minimal_net()
-#    net = pp.create_empty_network()
-#    b = pp.create_bus(net, 110)
-#    pp.create_ext_grid(net, b)
-#    runpp_with_consistency_checks(net)
-#
-#    pp.create_load(net, b, p_mw=0.1)
-#    runpp_with_consistency_checks(net)
-#
-#    b2 = pp.create_bus(net, 110)
-#    pp.create_switch(net, b, b2, 'b')
-#    pp.create_sgen(net, b2, p_mw=0.2)
-#    runpp_with_consistency_checks(net)
+    pytest.main([__file__, "-xs"])

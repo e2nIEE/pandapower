@@ -7,12 +7,27 @@
 import numpy as np
 import pandas as pd
 import warnings
+from packaging.version import Version
 
 import pandapower as pp
 
 try:
-    from lightsim2grid.gridmodel import init as init_ls2g
-    from lightsim2grid.securityAnalysis import ContingencyAnalysisCPP
+    import pandaplan.core.pplog as logging
+except ImportError:
+    import logging
+
+logger = logging.getLogger(__name__)
+
+
+try:
+    import lightsim2grid
+    v = Version(lightsim2grid.__version__)
+    if v < Version("0.9.0"):
+        logger.warning("Only lightsim2grid version 0.9.0 or newer is supported - please update ligtsim2grid")
+        raise ImportError
+
+    from lightsim2grid.gridmodel.from_pandapower import init as init_ls2g
+    from lightsim2grid.contingencyAnalysis import ContingencyAnalysisCPP
     from lightsim2grid_cpp import SolverType
 
     lightsim2grid_installed = True
@@ -25,13 +40,6 @@ try:
     KLU_solver_available = True
 except ImportError:
     KLU_solver_available = False
-
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
-
-logger = logging.getLogger(__name__)
 
 
 def run_contingency(net, nminus1_cases, pf_options=None, pf_options_nminus1=None, write_to_net=True,
@@ -97,7 +105,7 @@ def run_contingency(net, nminus1_cases, pf_options=None, pf_options_nminus1=None
     # for n-1
     for element, val in nminus1_cases.items():
         for i in val["index"]:
-            if ~net[element].at[i, "in_service"]:
+            if not net[element].at[i, "in_service"]:
                 continue
             net[element].at[i, 'in_service'] = False
             try:

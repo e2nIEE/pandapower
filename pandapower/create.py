@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 from operator import itemgetter
+from typing import Tuple, List, Union, Iterable
 
 import pandas as pd
-from numpy import nan, isnan, arange, dtype, isin, any as np_any, zeros, array, bool_, \
+from numpy import nan, isnan, arange, dtype, isin, any as np_any, array, bool_, \
     all as np_all, float64, intersect1d, unique as uni
 from pandas import isnull
 from pandas.api.types import is_object_dtype
@@ -52,7 +53,14 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                 ('vn_kv', 'f8'),
                 ('type', dtype(object)),
                 ('zone', dtype(object)),
-                ('in_service', 'bool'), ],
+                ('in_service', 'bool'),
+                ('geo', dtype(str))],
+        "bus_dc": [('name', dtype(object)),
+                   ('vn_kv', 'f8'),
+                   ('type', dtype(object)),
+                   ('zone', dtype(object)),
+                   ('in_service', 'bool'),
+                   ('geo', dtype(str))],
         "load": [("name", dtype(object)),
                  ("bus", "u4"),
                  ("p_mw", "f8"),
@@ -151,23 +159,36 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                   ("step", "u4"),
                   ("max_step", "u4"),
                   ("in_service", "bool")],
-        "svc":   [("name", dtype(object)),
+        "svc": [("name", dtype(object)),
+                ("bus", "u4"),
+                ("x_l_ohm", "f8"),
+                ("x_cvar_ohm", "f8"),
+                ("set_vm_pu", "f8"),
+                ("thyristor_firing_angle_degree", "f8"),
+                ("controllable", "bool"),
+                ("in_service", "bool"),
+                ("min_angle_degree", "f8"),
+                ("max_angle_degree", "f8")],
+        "ssc": [("name", dtype(object)),
+                ("bus", "u4"),
+                ("r_ohm", "f8"),
+                ("x_ohm", "f8"),
+                ("vm_internal_pu", "f8"),
+                ("va_internal_degree", "f8"),
+                ("set_vm_pu", "f8"),
+                ("controllable", "bool"),
+                ("in_service", "bool")],
+        "vsc":   [("name", dtype(object)),
                   ("bus", "u4"),
-                  ("x_l_ohm", "f8"),
-                  ("x_cvar_ohm", "f8"),
-                  ("set_vm_pu", "f8"),
-                  ("thyristor_firing_angle_degree", "f8"),
-                  ("controllable", "bool"),
-                  ("in_service", "bool"),
-                  ("min_angle_degree", "f8"),
-                  ("max_angle_degree", "f8")],
-        "ssc":   [("name", dtype(object)),
-                  ("bus", "u4"),
+                  ("bus_dc", "u4"),
                   ("r_ohm", "f8"),
                   ("x_ohm", "f8"),
-                  ("vm_internal_pu", "f8"),
-                  ("va_internal_degree", "f8"),
-                  ("set_vm_pu", "f8"),
+                  ("r_dc_ohm", "f8"),
+                  ("pl_dc_mw", "f8"),
+                  ("control_mode_ac", dtype(object)),
+                  ("control_value_ac", "f8"),
+                  ("control_mode_dc", dtype(object)),
+                  ("control_value_dc", "f8"),
                   ("controllable", "bool"),
                   ("in_service", "bool")],
         "ext_grid": [("name", dtype(object)),
@@ -189,7 +210,21 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                  ("df", "f8"),
                  ("parallel", "u4"),
                  ("type", dtype(object)),
-                 ("in_service", 'bool')],
+                 ("in_service", 'bool'),
+                 ("geo", dtype(str))],
+        "line_dc": [("name", dtype(object)),
+                    ("std_type", dtype(object)),
+                    ("from_bus_dc", "u4"),
+                    ("to_bus_dc", "u4"),
+                    ("length_km", "f8"),
+                    ("r_ohm_per_km", "f8"),
+                    ("g_us_per_km", "f8"), # TODO: check if DC lines also have any shunt components
+                    ("max_i_ka", "f8"),
+                    ("df", "f8"),
+                    ("parallel", "u4"),
+                    ("type", dtype(object)),
+                    ("in_service", 'bool'),
+                    ('geo', dtype(str))],
         "trafo": [("name", dtype(object)),
                   ("std_type", dtype(object)),
                   ("hv_bus", "u4"),
@@ -250,6 +285,10 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                       ("xft_pu", "f8"),
                       ("rtf_pu", "f8"),
                       ("xtf_pu", "f8"),
+                      ("gf_pu", "f8"),
+                      ("bf_pu", "f8"),
+                      ("gt_pu", "f8"),
+                      ("bt_pu", "f8"),
                       ("sn_mva", "f8"),
                       ("in_service", 'bool')],
         "tcsc": [("name", dtype(object)),
@@ -330,15 +369,19 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
             ('element', dtype(object)),
             ('reference_column', dtype(object)),
         ],
-        # geodata
-        "line_geodata": [("coords", dtype(object))],
-        "bus_geodata": [("x", "f8"), ("y", "f8"), ("coords", dtype(object))],
+        # geodata (now as line.geo, bus.geo, bus_dc.geo, line_dc.geo)
+        # "bus_geodata": [("x", "f8"), ("y", "f8"), ("coords", dtype(object))],
+        # "bus_dc_geodata": [("x", "f8"), ("y", "f8"), ("coords", dtype(object))],
+        # "line_geodata": [("coords", dtype(object))],
+        # "line_dc_geodata": [("coords", dtype(object))],
 
         # result tables
         "_empty_res_bus": [("vm_pu", "f8"),
                            ("va_degree", "f8"),
                            ("p_mw", "f8"),
                            ("q_mvar", "f8")],
+        "_empty_res_bus_dc": [("vm_pu", "f8"),
+                              ("p_mw", "f8")],
         "_empty_res_ext_grid": [("p_mw", "f8"),
                                 ("q_mvar", "f8")],
         "_empty_res_line": [("p_from_mw", "f8"),
@@ -355,6 +398,15 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                             ("vm_to_pu", "f8"),
                             ("va_to_degree", "f8"),
                             ("loading_percent", "f8")],
+        "_empty_res_line_dc": [("p_from_mw", "f8"),
+                               ("p_to_mw", "f8"),
+                               ("pl_mw", "f8"),
+                               ("i_from_ka", "f8"),
+                               ("i_to_ka", "f8"),
+                               ("i_ka", "f8"),
+                               ("vm_from_pu", "f8"),
+                               ("vm_to_pu", "f8"),
+                               ("loading_percent", "f8")],
         "_empty_res_trafo": [("p_hv_mw", "f8"),
                              ("q_hv_mvar", "f8"),
                              ("p_lv_mw", "f8"),
@@ -381,18 +433,31 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
         "_empty_res_shunt": [("p_mw", "f8"),
                              ("q_mvar", "f8"),
                              ("vm_pu", "f8")],
-        "_empty_res_svc":   [("thyristor_firing_angle_degree", "f8"),
-                             ("x_ohm", "f8"),
+        "_empty_res_svc": [("thyristor_firing_angle_degree", "f8"),
+                           ("x_ohm", "f8"),
+                           ("q_mvar", "f8"),
+                           ("vm_pu", "f8"),
+                           ("va_degree", "f8")],
+        "_empty_res_ssc": [("q_mvar", "f8"),
+                           ("vm_internal_pu", "f8"),
+                           ("va_internal_degree", "f8"),
+                           ("vm_pu", "f8"),
+                           ("va_degree", "f8")],
+        "_empty_res_vsc":   [("p_mw", "f8"),
                              ("q_mvar", "f8"),
-                             ("vm_pu", "f8"),
-                             ("va_degree", "f8")],
-        "_empty_res_ssc":   [("q_mvar", "f8"),
+                             ("p_dc_mw", "f8"),
                              ("vm_internal_pu", "f8"),
                              ("va_internal_degree", "f8"),
                              ("vm_pu", "f8"),
-                             ("va_degree", "f8")],
+                             ("va_degree", "f8"),
+                             ("vm_internal_dc_pu", "f8"),
+                             ("vm_dc_pu", "f8")],
         "_empty_res_switch": [("i_ka", "f8"),
-                              ("loading_percent", "f8")],
+                              ("loading_percent", "f8"),
+                              ("p_from_mw", "f8"),
+                              ("q_from_mvar", "f8"),
+                              ("p_to_mw", "f8"),
+                              ("q_to_mvar", "f8")],
         "_empty_res_impedance": [("p_from_mw", "f8"),
                                  ("q_from_mvar", "f8"),
                                  ("p_to_mw", "f8"),
@@ -556,8 +621,8 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                                   ("prot_type", dtype(object)),
                                   ("trip_melt", "bool"),
                                   ("act_param", dtype(object)),
-                                   ("act_param_val", "f8"),
-                                   ("trip_melt_time_s", "f8")],
+                                  ("act_param_val", "f8"),
+                                  ("trip_melt_time_s", "f8")],
 
         # internal
         "_ppc": None,
@@ -566,9 +631,11 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
         "_ppc2": None,
         "_is_elements": None,
         "_pd2ppc_lookups": {"bus": None,
+                            "bus_dc": None,
                             "ext_grid": None,
                             "gen": None,
-                            "branch": None},
+                            "branch": None,
+                            "branch_dc": None},
         "version": __version__,
         "format_version": __format_version__,
         "converged": False,
@@ -585,7 +652,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
     if add_stdtypes:
         add_basic_std_types(net)
     else:
-        net.std_types = {"line": {}, "trafo": {}, "trafo3w": {}, "fuse": {}}
+        net.std_types = {"line": {}, "line_dc": {}, "trafo": {}, "trafo3w": {}, "fuse": {}}
     for mode in ["pf", "se", "sc", "pf_3ph"]:
         reset_results(net, mode)
     net['user_pf_options'] = dict()
@@ -635,23 +702,94 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b", zone=N
     """
     index = _get_index_with_check(net, "bus", index)
 
-    entries = dict(zip(["name", "vn_kv", "type", "zone", "in_service"],
-                       [name, vn_kv, type, zone, bool(in_service)]))
-
-    _set_entries(net, "bus", index, True, **entries, **kwargs)
-
     if geodata is not None:
-        if len(geodata) != 2:
-            raise UserWarning("geodata must be given as (x, y) tuple")
-        net["bus_geodata"].loc[index, ["x", "y"]] = geodata
+        if isinstance(geodata, tuple):
+            if len(geodata) != 2:
+                raise UserWarning("geodata must be given as (x, y) tuple")
+            geo = f'{{"coordinates":[{geodata[0]},{geodata[1]}], "type":"Point"}}'
+        else:
+            raise UserWarning("geodata must be a valid coordinate tuple")
+    else:
+        geo = None
 
     if coords is not None:
-        net["bus_geodata"].at[index, "coords"] = None
-        net["bus_geodata"].at[index, "coords"] = coords
+        raise UserWarning("busbar plotting is not implemented fully and will likely be removed in the future")
+    entries = dict(zip(["name", "vn_kv", "type", "zone", "in_service", "geo"],
+                       [name, vn_kv, type, zone, bool(in_service), geo]))
+
+    _set_entries(net, "bus", index, True, **entries, **kwargs)
 
     # column needed by OPF. 0. and 2. are the default maximum / minimum voltages
     _set_value_if_not_nan(net, index, min_vm_pu, "min_vm_pu", "bus", default_val=0.)
     _set_value_if_not_nan(net, index, max_vm_pu, "max_vm_pu", "bus", default_val=2.)
+
+    return index
+
+
+def create_bus_dc(net, vn_kv, name=None, index=None, geodata=None, type="b", zone=None,
+               in_service=True, max_vm_pu=nan, min_vm_pu=nan, coords=None, **kwargs):
+    """
+    Adds one dc bus in table net["bus_dc"].
+
+    Busses are the nodes of the network that all other elements connect to.
+
+    INPUT:
+        **net** (pandapowerNet) - The pandapower network in which the element is created
+
+        **vn_kv** (float) - The grid voltage level.
+
+    OPTIONAL:
+        **name** (string, default None) - the name for this dc bus
+
+        **index** (int, default None) - Force a specified ID if it is available. If None, the \
+            index one higher than the highest already existing index is selected.
+
+        **geodata** ((x,y)-tuple, default None) - coordinates used for plotting
+
+        **type** (string, default "b") - Type of the bus. "n" - node,
+        "b" - busbar, "m" - muff
+
+        **zone** (string, None) - grid region
+
+        **in_service** (boolean) - True for in_service or False for out of service
+
+        **max_vm_pu** (float, NAN) - Maximum dc bus voltage in p.u. - necessary for OPF
+
+        **min_vm_pu** (float, NAN) - Minimum dc bus voltage in p.u. - necessary for OPF
+
+        **coords** (list (len=2) of tuples (len=2), default None) - busbar coordinates to plot
+        the dc bus with multiple points. coords is typically a list of tuples (start and endpoint of
+        the busbar) - Example: [(x1, y1), (x2, y2)]
+
+    OUTPUT:
+        **index** (int) - The unique ID of the created element
+
+    EXAMPLE:
+        create_bus_dc(net, name = "bus1")
+    """
+    index = _get_index_with_check(net, "bus_dc", index)
+
+    if geodata is not None:
+        if isinstance(geodata, tuple):
+            if len(geodata) != 2:
+                raise UserWarning("geodata must be given as (x, y) tuple")
+            geo = f'{{"coordinates":[{geodata[0]},{geodata[1]}], "type":"Point"}}'
+        else:
+            raise UserWarning("geodata must be a valid coordinate tuple")
+    else:
+        geo = None
+
+    if coords is not None:
+        raise UserWarning("busbar plotting is not implemented fully and will likely be removed in the future")
+
+    entries = dict(zip(["name", "vn_kv", "type", "zone", "in_service", "geo"],
+                       [name, vn_kv, type, zone, bool(in_service), geo]))
+
+    _set_entries(net, "bus_dc", index, True, **entries, **kwargs)
+
+    # column needed by OPF. 0. and 2. are the default maximum / minimum voltages
+    _set_value_if_not_nan(net, index, min_vm_pu, "min_vm_pu", "bus_dc", default_val=0.)
+    _set_value_if_not_nan(net, index, max_vm_pu, "max_vm_pu", "bus_dc", default_val=2.)
 
     return index
 
@@ -676,10 +814,10 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
 
         **vn_kv** (float) - The grid voltage level.
 
-        **geodata** ((x,y)-tuple or list of tuples with length == nr_buses, default None) -
-        coordinates used for plotting
+        **geodata** ((x,y)-tuple or Iterable of (x, y)-tuples with length == nr_buses,
+            default None) - coordinates used for plotting
 
-        **type** (string, default "b") - Type of the bus. "n" - auxilary node,
+        **type** (string, default "b") - Type of the bus. "n" - auxiliary node,
         "b" - busbar, "m" - muff
 
         **zone** (string, None) - grid region
@@ -691,8 +829,89 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
         **min_vm_pu** (float, NAN) - Minimum bus voltage in p.u. - necessary for OPF
 
         **coords** (list (len=nr_buses) of list (len=2) of tuples (len=2), default None) - busbar
-        coordinates to plot the bus with multiple points. coords is typically a list of tuples
-        (start and endpoint of the busbar) - Example for 3 buses:
+            coordinates to plot the bus with multiple points. coords is typically a list of tuples
+            (start and endpoint of the busbar) - Example for 3 buses:
+            [[(x11, y11), (x12, y12)], [(x21, y21), (x22, y22)], [(x31, y31), (x32, y32)]]
+
+
+    OUTPUT:
+        **index** (int) - The unique indices ID of the created elements
+    """
+    index = _get_multiple_index_with_check(net, "bus", index, nr_buses)
+
+    def _geodata_to_geo_series(data: Union[Iterable[Tuple[float, float]], Tuple[int, int]]) -> List[str]:
+        geo = []
+        for g in data:
+            if isinstance(g, tuple):
+                if len(g) != 2:
+                    raise ValueError("geodata tuples must be of length 2")
+                x, y = g
+                geo.append(f'{{"coordinates": [{x}, {y}], "type": "Point"}}')
+            else:
+                raise ValueError("geodata must be iterable of tuples of (x, y) coordinates")
+        if len(geo) == 1:
+            geo = [geo[0]] * nr_buses
+        if len(geo) != nr_buses:
+            raise ValueError("geodata must be a single point or have the same length as nr_buses")
+        return geo
+
+    if geodata:
+        if isinstance(geodata, tuple) and (isinstance(geodata[0], int) or isinstance(geodata[0], float)):
+            geo = _geodata_to_geo_series([geodata])
+        else:
+            assert hasattr(geodata, "__iter__"), "geodata must be an iterable"
+            geo = _geodata_to_geo_series(geodata)
+    else:
+        geo = [None] * nr_buses
+
+    if coords:
+        raise UserWarning("busbar plotting is not implemented fully and will likely be removed in the future")
+
+    entries = {"vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "name": name, "geo": geo}
+    _add_to_entries_if_not_nan(net, "bus", entries, index, "min_vm_pu", min_vm_pu)
+    _add_to_entries_if_not_nan(net, "bus", entries, index, "max_vm_pu", max_vm_pu)
+    _set_multiple_entries(net, "bus", index, **entries, **kwargs)
+
+    return index
+
+
+def create_buses_dc(net, nr_buses_dc, vn_kv, index=None, name=None, type="b", geodata=None,
+                 zone=None, in_service=True, max_vm_pu=nan, min_vm_pu=nan, coords=None, **kwargs):
+    """
+    Adds several dc buses in table net["bus_dc"] at once.
+
+    Busses are the nodal points of the network that all other elements connect to.
+
+    Input:
+        **net** (pandapowerNet) - The pandapower network in which the element is created
+
+        **nr_buses_dc** (int) - The number of dc buses that is created
+
+    OPTIONAL:
+        **name** (list of string, default None) - the name for this dc bus
+
+        **index** (list of int, default None) - Force specified IDs if available. If None, the indices \
+            higher than the highest already existing index are selected.
+
+        **vn_kv** (float) - The grid voltage level.
+
+        **geodata** ((x,y)-tuple or list of tuples with length == nr_buses_dc, default None) -
+        coordinates used for plotting
+
+        **type** (string, default "b") - Type of the dc bus. "n" - auxilary node,
+        "b" - busbar, "m" - muff
+
+        **zone** (string, None) - grid region
+
+        **in_service** (list of boolean) - True for in_service or False for out of service
+
+        **max_vm_pu** (list of float, NAN) - Maximum bus voltage in p.u. - necessary for OPF
+
+        **min_vm_pu** (list of float, NAN) - Minimum bus voltage in p.u. - necessary for OPF
+
+        **coords** (list (len=nr_buses_dc) of list (len=2) of tuples (len=2), default None) - busbar
+        coordinates to plot the dc bus with multiple points. coords is typically a list of tuples
+        (start and endpoint of the busbar) - Example for 3 dc buses:
         [[(x11, y11), (x12, y12)], [(x21, y21), (x22, y22)], [(x31, y31), (x32, y32)]]
 
 
@@ -700,27 +919,27 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
         **index** (int) - The unique indices ID of the created elements
 
     EXAMPLE:
-        create_bus(net, name = "bus1")
+        create_buses_dc(net, name = ["bus1","bus2"])
     """
-    index = _get_multiple_index_with_check(net, "bus", index, nr_buses)
+    index = _get_multiple_index_with_check(net, "bus_dc", index, nr_buses_dc)
 
     entries = {"vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "name": name}
-    _add_to_entries_if_not_nan(net, "bus", entries, index, "min_vm_pu", min_vm_pu)
-    _add_to_entries_if_not_nan(net, "bus", entries, index, "max_vm_pu", max_vm_pu)
-    _set_multiple_entries(net, "bus", index, **entries, **kwargs)
+    _add_to_entries_if_not_nan(net, "bus_dc", entries, index, "min_vm_pu", min_vm_pu)
+    _add_to_entries_if_not_nan(net, "bus_dc", entries, index, "max_vm_pu", max_vm_pu)
+    _set_multiple_entries(net, "bus_dc", index, **entries, **kwargs)
 
     if geodata is not None:
         # works with a 2-tuple or a matching array
-        net.bus_geodata = pd.concat([
-            net.bus_geodata,
-            pd.DataFrame(zeros((len(index), len(net.bus_geodata.columns)), dtype=np.int64),
-                         index=index, columns=net.bus_geodata.columns)])
-        net.bus_geodata.loc[index, :] = nan
-        net.bus_geodata.loc[index, ["x", "y"]] = geodata
+        net.bus_dc_geodata = pd.concat([
+            net.bus_dc_geodata,
+            pd.DataFrame(zeros((len(index), len(net.bus_dc_geodata.columns)), dtype=np.int64),
+                         index=index, columns=net.bus_dc_geodata.columns)])
+        net.bus_dc_geodata.loc[index, :] = nan
+        net.bus_dc_geodata.loc[index, ["x", "y"]] = geodata
     if coords is not None:
-        net.bus_geodata = pd.concat(
-            [net.bus_geodata, pd.DataFrame(index=index, columns=net.bus_geodata.columns)])
-        net["bus_geodata"].loc[index, "coords"] = coords
+        net.bus_dc_geodata = pd.concat(
+            [net.bus_dc_geodata, pd.DataFrame(index=index, columns=net.bus_dc_geodata.columns)])
+        net["bus_dc_geodata"].loc[index, "coords"] = coords
     return index
 
 
@@ -742,8 +961,8 @@ def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, 
     OPTIONAL:
         **p_mw** (float, default 0) - The active power of the load
 
-        - postive value   -> load
-        - negative value  -> generation
+        - positive value -> load
+        - negative value -> generation
 
         **q_mvar** (float, default 0) - The reactive power of the load
 
@@ -757,8 +976,8 @@ def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, 
 
         **name** (string, default None) - The name for this load
 
-        **scaling** (float, default 1.) - An OPTIONAL scaling factor to be set customly.
-        Multiplys with p_mw and q_mvar.
+        **scaling** (float, default 1.) - An OPTIONAL scaling factor.
+        Multiplies with p_mw and q_mvar.
 
         **type** (string, 'wye') -  type variable to classify the load: wye/delta
 
@@ -927,7 +1146,7 @@ def create_asymmetric_load(net, bus, p_a_mw=0, p_b_mw=0, p_c_mw=0, q_a_mvar=0, q
 
         **q_c_mvar** (float, default 0) - The reactive power for Phase C load
 
-        **sn_kva** (float, default: None) - Nominal power of the load
+        **sn_mva** (float, default: None) - Nominal power of the load
 
         **name** (string, default: None) - The name for this load
 
@@ -1103,7 +1322,7 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
         **controllable** (bool, NaN) - Whether this generator is controllable by the optimal \
             powerflow; defaults to False if "controllable" column exists in DataFrame
 
-        **k** (float, NaN) - Ratio of nominal current to short circuit current
+        **k** (float, NaN) - Ratio of short circuit current to nominal current
 
         **rx** (float, NaN) - R/X ratio for short circuit impedance. Only relevant if type is \
             specified as motor so that sgen is treated as asynchronous motor. Relevant for \
@@ -1155,7 +1374,7 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
     _set_value_if_not_nan(net, index, max_q_mvar, "max_q_mvar", "sgen")
     _set_value_if_not_nan(net, index, controllable, "controllable", "sgen", dtype=bool_,
                           default_val=False)
-    _set_value_if_not_nan(net, index, rx, "rx", "sgen") # rx is always required
+    _set_value_if_not_nan(net, index, rx, "rx", "sgen")  # rx is always required
     if np.isfinite(kappa):
         _set_value_if_not_nan(net, index, kappa, "kappa", "sgen")
     _set_value_if_not_nan(net, index, generator_type, "generator_type", "sgen",
@@ -1279,7 +1498,8 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
                                default_val=False)
     _add_to_entries_if_not_nan(net, "sgen", entries, index, "rx", rx)  # rx is always required
     if np.isfinite(kappa):
-        _add_to_entries_if_not_nan(net, "sgen", entries, index, "kappa", kappa)  # is used for Type C also as a max. current limit
+        _add_to_entries_if_not_nan(net, "sgen", entries, index, "kappa",
+                                   kappa)  # is used for Type C also as a max. current limit
     _add_to_entries_if_not_nan(net, "sgen", entries, index, "generator_type", generator_type,
                                dtype="str", default_val="current_source")
     gen_types = ['current_source', 'async', 'async_doubly_fed']
@@ -1573,8 +1793,8 @@ def create_storages(
     index = _get_multiple_index_with_check(net, "storage", index, len(buses))
 
     entries = {"name": name, "bus": buses, "p_mw": p_mw, "q_mvar": q_mvar, "sn_mva": sn_mva,
-              "scaling": scaling, "soc_percent": soc_percent, "min_e_mwh": min_e_mwh,
-              "max_e_mwh": max_e_mwh, "in_service": in_service, "type": type}
+               "scaling": scaling, "soc_percent": soc_percent, "min_e_mwh": min_e_mwh,
+               "max_e_mwh": max_e_mwh, "in_service": in_service, "type": type}
 
     _add_to_entries_if_not_nan(net, "storage", entries, index, "min_p_mw", min_p_mw)
     _add_to_entries_if_not_nan(net, "storage", entries, index, "max_p_mw", max_p_mw)
@@ -2026,9 +2246,9 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
             higher than the highest already existing index is selected.
 
         **geodata**
-        (array, default None, shape= (,2L)) -
-        The linegeodata of the line. The first row should be the coordinates
-        of bus a and the last should be the coordinates of bus b. The points
+        (Iterable[Tuple[int, int]|Tuple[float, float]], default None) -
+        The geodata of the line. The first element should be the coordinates
+        of from_bus and the last should be the coordinates of to_bus. The points
         in the middle represent the bending points of the line
 
         **in_service** (boolean, True) - True for in_service or False for out of service
@@ -2114,9 +2334,9 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
 
     _set_entries(net, "line", index, **v, **kwargs)
 
-    if geodata is not None:
-        net["line_geodata"].loc[index, "coords"] = None
-        net["line_geodata"].at[index, "coords"] = geodata
+    if geodata and hasattr(geodata, '__iter__'):
+        geo = [[x, y] for x, y in geodata]
+        net.line.at[index, "geo"] = f'{{"coordinates": {geo}, "type": "LineString"}}'
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "line")
     _set_value_if_not_nan(net, index, alpha, "alpha", "line")
@@ -2129,6 +2349,139 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
 
     return index
 
+
+def create_line_dc(net, from_bus_dc, to_bus_dc, length_km, std_type, name=None, index=None, geodata=None,
+                   df=1., parallel=1, in_service=True, max_loading_percent=nan, alpha=nan,
+                   temperature_degree_celsius=nan, **kwargs):
+    """
+    Creates a line element in net["line_dc"]
+    The line_dc parameters are defined through the standard type library.
+
+
+    INPUT:
+        **net** - The net within this line should be created
+
+        **from_bus_dc** (int) - ID of the bus_dc on one side which the line will be connected with
+
+        **to_bus_dc** (int) - ID of the bus_dc on the other side which the line will be connected with
+
+        **length_km** (float) - The line length in km
+
+        **std_type** (string) - Name of a standard linetype :
+
+                                - Pre-defined in standard_linetypes
+
+                                **or**
+
+                                - Customized std_type made using **create_std_type()**
+
+    OPTIONAL:
+        **name** (string, None) - A custom name for this line_dc
+
+        **index** (int, None) - Force a specified ID if it is available. If None, the index one \
+            higher than the highest already existing index is selected.
+
+        **geodata**
+        (array, default None, shape= (,2L)) -
+        The line geodata of the line_dc. The first row should be the coordinates
+        of bus a and the last should be the coordinates of bus b. The points
+        in the middle represent the bending points of the line
+
+        **in_service** (boolean, True) - True for in_service or False for out of service
+
+        **df** (float, 1) - derating factor: maximal current of line_dc in relation to nominal current\
+            of line (from 0 to 1)
+
+        **parallel** (integer, 1) - number of parallel line systems
+
+        **max_loading_percent (float)** - maximum current loading (only needed for OPF)
+
+        **alpha (float)** - temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0)))
+
+        **temperature_degree_celsius (float)** - line temperature for which line resistance is adjusted
+
+        **tdpf (bool)** - whether the line is considered in the TDPF calculation
+
+        **wind_speed_m_per_s (float)** - wind speed at the line in m/s (TDPF)
+
+        **wind_angle_degree (float)** - angle of attack between the wind direction and the line (TDPF)
+
+        **conductor_outer_diameter_m (float)** - outer diameter of the line conductor in m (TDPF)
+
+        **air_temperature_degree_celsius (float)** - ambient temperature in °C (TDPF)
+
+        **reference_temperature_degree_celsius (float)** - reference temperature in °C for which \
+            r_ohm_per_km for the line_dc is specified (TDPF)
+
+        **solar_radiation_w_per_sq_m (float)** - solar radiation on horizontal plane in W/m² (TDPF)
+
+        **solar_absorptivity (float)** - Albedo factor for absorptivity of the lines (TDPF)
+
+        **emissivity (float)** - Albedo factor for emissivity of the lines (TDPF)
+
+        **r_theta_kelvin_per_mw (float)** - thermal resistance of the line (TDPF, only for \
+            simplified method)
+
+        **mc_joule_per_m_k (float)** - specific mass of the conductor multiplied by the specific \
+            thermal capacity of the material (TDPF, only for thermal inertia consideration with \
+                tdpf_delay_s parameter)
+
+    OUTPUT:
+        **index** (int) - The unique ID of the created dc line
+
+    EXAMPLE:
+        create_line_dc(net, "line_dc1", from_bus_dc = 0, to_bus_dc = 1, length_km=0.1,  std_type="Not defined yet")
+
+    """
+
+    # check if bus exist to attach the line to
+    _check_branch_element(net, "Line_dc", index, from_bus_dc, to_bus_dc, node_name='bus_dc')
+
+    index = _get_index_with_check(net, "line_dc", index)
+
+    v = {
+        "name": name, "length_km": length_km, "from_bus_dc": from_bus_dc,
+        "to_bus_dc": to_bus_dc, "in_service": bool(in_service), "std_type": std_type,
+        "df": df, "parallel": parallel
+    }
+
+    lineparam = load_std_type(net, std_type, "line_dc")
+
+    v.update({param: lineparam[param] for param in ["r_ohm_per_km", "max_i_ka"]})
+    if "r0_ohm_per_km" in lineparam:
+        v.update({param: lineparam[param] for param in ["r0_ohm_per_km"]})
+
+    v["g_us_per_km"] = lineparam["g_us_per_km"] if "g_us_per_km" in lineparam else 0.
+
+    if "type" in lineparam:
+        v["type"] = lineparam["type"]
+
+    # if net.line column already has alpha, add it from std_type
+    if "alpha" in net.line.columns and "alpha" in lineparam:
+        v["alpha"] = lineparam["alpha"]
+
+    tdpf_columns = ("wind_speed_m_per_s", "wind_angle_degree", "conductor_outer_diameter_m",
+                    "air_temperature_degree_celsius", "reference_temperature_degree_celsius",
+                    "solar_radiation_w_per_sq_m", "solar_absorptivity", "emissivity",
+                    "r_theta_kelvin_per_mw", "mc_joule_per_m_k")
+    tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
+
+    _set_entries(net, "line_dc", index, **v, **kwargs)
+
+    if geodata is not None:
+        net["line_dc_geodata"].loc[index, "coords"] = None
+        net["line_dc_geodata"].at[index, "coords"] = geodata
+
+    _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "line_dc")
+    _set_value_if_not_nan(net, index, alpha, "alpha", "line_dc")
+    _set_value_if_not_nan(net, index, temperature_degree_celsius,
+                          "temperature_degree_celsius", "line_dc")
+    # add optional columns for TDPF if parameters passed to kwargs:
+    _set_value_if_not_nan(net, index, kwargs.get("tdpf"), "tdpf", "line_dc", bool_)
+    for column, value in tdpf_parameters.items():
+        _set_value_if_not_nan(net, index, value, column, "line_dc", float64)
+
+    return index
 
 def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, index=None,
                  geodata=None, df=1., parallel=1, in_service=True, max_loading_percent=nan,
@@ -2159,9 +2512,9 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
                 index one higher than the highest already existing index is selected.
 
             **geodata**
-            (list of arrays, default None, shape of arrays (,2L)) -
-            The linegeodata of the line. The first row should be the coordinates
-            of bus a and the last should be the coordinates of bus b. The points
+            (Iterable[Iterable[Tuple[x, y]]] or Iterable[Tuple[x, y]], default None) -
+            The geodata of the line. The first element should be the coordinates
+            of from_bus and the last should be the coordinates of to_bus. The points
             in the middle represent the bending points of the line
 
             **in_service** (list of boolean, True) - True for in_service or False for out of service
@@ -2204,10 +2557,10 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
                 consideration with tdpf_delay_s parameter)
 
         OUTPUT:
-            **index** (list of int) - The unique ID of the created line
+            **index** (list of int) - The unique ID of the created lines
 
         EXAMPLE:
-            create_line(net, "line1", from_bus=0, to_bus=1, length_km=0.1, std_type="NAYY 4x50 SE")
+            create_lines(net, ["line1", "line2"], from_buses=[0,1], to_buses=[2,3], length_km=0.1, std_type="NAYY 4x50 SE")
 
     """
     _check_multiple_branch_elements(net, from_buses, to_buses, "Lines")
@@ -2230,13 +2583,13 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
             entries["type"] = lineparam["type"]
     else:
         lineparam = list(map(load_std_type, [net] * len(std_type), std_type,
-            ['line'] * len(std_type)))
+                             ['line'] * len(std_type)))
         entries["r_ohm_per_km"] = list(map(itemgetter("r_ohm_per_km"), lineparam))
         entries["x_ohm_per_km"] = list(map(itemgetter("x_ohm_per_km"), lineparam))
         entries["c_nf_per_km"] = list(map(itemgetter("c_nf_per_km"), lineparam))
         entries["max_i_ka"] = list(map(itemgetter("max_i_ka"), lineparam))
         entries["g_us_per_km"] = [line_param_dict.get("g_us_per_km", 0) for line_param_dict in \
-            lineparam]
+                                  lineparam]
         entries["type"] = [line_param_dict.get("type", None) for line_param_dict in lineparam]
 
     _add_to_entries_if_not_nan(net, "line", entries, index, "max_loading_percent",
@@ -2254,11 +2607,135 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
 
     _set_multiple_entries(net, "line", index, **entries, **kwargs)
 
-    if geodata is not None:
-        _add_multiple_branch_geodata(net, "line", geodata, index)
+    if geodata:
+        _add_multiple_branch_geodata(net, geodata, index)
 
     return index
 
+
+def create_lines_dc(net, from_buses_dc, to_buses_dc, length_km, std_type, name=None, index=None,
+                 geodata=None, df=1., parallel=1, in_service=True, max_loading_percent=nan,
+                 **kwargs):
+    """ Convenience function for creating many dc lines at once. Parameters 'from_buses_dc' and 'to_buses_dc'
+        must be arrays of equal length. Other parameters may be either arrays of the same length or
+        single or values. In any case the dc line parameters are defined through a single standard
+        type, so all lines have the same standard type.
+
+
+        INPUT:
+            **net** - The net within this dc line should be created
+
+            **from_buses_dc** (list of int) - ID of the dc buses on one side which the dc lines will be \
+                connected with
+
+            **to_buses_dc** (list of int) - ID of the dc buses on the other side which the dc lines will be \
+                connected with
+
+            **length_km** (list of float) - The dc line length in km
+
+            **std_type** (list of strings) - The dc line type of the dc lines.
+
+        OPTIONAL:
+            **name** (list of string, None) - A custom name for these dc lines
+
+            **index** (list of int, None) - Force a specified ID if it is available. If None, the\
+                index one higher than the highest already existing index is selected.
+
+            **geodata**
+            (list of arrays, default None, shape of arrays (,2L)) -
+            The linegeodata of the dc line. The first row should be the coordinates
+            of dc bus a and the last should be the coordinates of dc bus b. The points
+            in the middle represent the bending points of the dc line
+
+            **in_service** (list of boolean, True) - True for in_service or False for out of service
+
+            **df** (list of float, 1) - derating factor: maximal current of line in relation to \
+                nominal current of line (from 0 to 1)
+
+            **parallel** (list of integer, 1) - number of parallel line systems
+
+            **max_loading_percent (list of float)** - maximum current loading (only needed for OPF)
+
+            **alpha (float)** - temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0)))
+
+            **temperature_degree_celsius (float)** - line temperature for which line resistance is adjusted
+
+            **tdpf (bool)** - whether the line is considered in the TDPF calculation
+
+            **wind_speed_m_per_s (float)** - wind speed at the line in m/s (TDPF)
+
+            **wind_angle_degree (float)** - angle of attack between the wind direction and the line (TDPF)
+
+            **conductor_outer_diameter_m (float)** - outer diameter of the line conductor in m (TDPF)
+
+            **air_temperature_degree_celsius (float)** - ambient temperature in °C (TDPF)
+
+            **reference_temperature_degree_celsius (float)** - reference temperature in °C for \
+                which r_ohm_per_km for the line is specified (TDPF)
+
+            **solar_radiation_w_per_sq_m (float)** - solar radiation on horizontal plane in W/m² (TDPF)
+
+            **solar_absorptivity (float)** - Albedo factor for absorptivity of the lines (TDPF)
+
+            **emissivity (float)** - Albedo factor for emissivity of the lines (TDPF)
+
+            **r_theta_kelvin_per_mw (float)** - thermal resistance of the line (TDPF, only for \
+                simplified method)
+
+            **mc_joule_per_m_k (float)** - specific mass of the conductor multiplied by the \
+                specific thermal capacity of the material (TDPF, only for thermal inertia \
+                consideration with tdpf_delay_s parameter)
+
+        OUTPUT:
+            **index** (list of int) - The unique ID of the created dc lines
+
+        EXAMPLE:
+            create_lines_dc(net, ["line_dc1","line_dc2"], from_buses_dc=[0,1], to_buses_dc=[2,3], length_km=0.1,
+            std_type="Not specified yet")
+
+    """
+    _check_multiple_branch_elements(net, from_buses_dc, to_buses_dc, "Lines_dc", node_name='bus_dc', plural='(all dc buses)')
+
+    index = _get_multiple_index_with_check(net, "line_dc", index, len(from_buses_dc))
+
+    entries = {"from_bus_dc": from_buses_dc, "to_bus_dc": to_buses_dc, "length_km": length_km,
+               "std_type": std_type, "name": name, "df": df, "parallel": parallel,
+               "in_service": in_service}
+
+    # add std type data
+    if isinstance(std_type, str):
+        lineparam = load_std_type(net, std_type, "line_dc")
+        entries["r_ohm_per_km"] = lineparam["r_ohm_per_km"]
+        entries["max_i_ka"] = lineparam["max_i_ka"]
+        entries["g_us_per_km"] = lineparam["g_us_per_km"] if "g_us_per_km" in lineparam else 0.
+        if "type" in lineparam:
+            entries["type"] = lineparam["type"]
+    else:
+        lineparam = list(map(load_std_type, [net] * len(std_type), std_type,
+            ['line_dc'] * len(std_type)))
+        entries["r_ohm_per_km"] = list(map(itemgetter("r_ohm_per_km"), lineparam))
+        entries["max_i_ka"] = list(map(itemgetter("max_i_ka"), lineparam))
+        entries["g_us_per_km"] = [line_param_dict.get("g_us_per_km", 0) for line_param_dict in lineparam]
+        entries["type"] = [line_param_dict.get("type", None) for line_param_dict in lineparam]
+
+    _add_to_entries_if_not_nan(net, "line_dc", entries, index, "max_loading_percent", max_loading_percent)
+
+    # add optional columns for TDPF if parameters passed to kwargs:
+    _add_to_entries_if_not_nan(net, "line_dc", entries, index, "tdpf", kwargs.get("tdpf"), bool_)
+    tdpf_columns = ("wind_speed_m_per_s", "wind_angle_degree", "conductor_outer_diameter_m",
+                    "air_temperature_degree_celsius", "reference_temperature_degree_celsius",
+                    "solar_radiation_w_per_sq_m", "solar_absorptivity", "emissivity",
+                    "r_theta_kelvin_per_mw", "mc_joule_per_m_k")
+    tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
+    for column, value in tdpf_parameters.items():
+        _add_to_entries_if_not_nan(net, "line_dc", entries, index, column, value, float64)
+
+    _set_multiple_entries(net, "line_dc", index, **entries, **kwargs)
+
+    if geodata is not None:
+        _add_multiple_branch_geodata(net, "line_dc", geodata, index)
+
+    return index
 
 def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, x_ohm_per_km,
                                 c_nf_per_km, max_i_ka, name=None, index=None, type=None,
@@ -2313,8 +2790,8 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
         **parallel** (integer, 1) - number of parallel line systems
 
         **geodata**
-        (array, default None, shape= (,2L)) -
-        The linegeodata of the line. The first row should be the coordinates
+        (array, default None, shape= (,2)) -
+        The geodata of the line. The first row should be the coordinates
         of bus a and the last should be the coordinates of bus b. The points
         in the middle represent the bending points of the line
 
@@ -2386,20 +2863,19 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
         _set_value_if_not_nan(net, index, r0_ohm_per_km, "r0_ohm_per_km", "line")
         _set_value_if_not_nan(net, index, x0_ohm_per_km, "x0_ohm_per_km", "line")
         _set_value_if_not_nan(net, index, c0_nf_per_km, "c0_nf_per_km", "line")
-        _set_value_if_not_nan(net, index, g0_us_per_km, "g0_us_per_km", "line",
-                                     default_val=0.)
+        _set_value_if_not_nan(net, index, g0_us_per_km, "g0_us_per_km", "line", default_val=0.)
     elif not np_all(nan_0_values):
         logger.warning("Zero sequence values are given for only some parameters. Please specify "
                        "them for all parameters, otherwise they are not set!")
 
     if geodata is not None:
-        net["line_geodata"].loc[index, "coords"] = None
-        net["line_geodata"].at[index, "coords"] = geodata
+        net.line.at[index, "geo"] = f'{{"coordinates":{geodata}, "type":"LineString"}}'
+    else:
+        net.line.at[index, "geo"] = None
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "line")
     _set_value_if_not_nan(net, index, alpha, "alpha", "line")
-    _set_value_if_not_nan(net, index, temperature_degree_celsius,
-                          "temperature_degree_celsius", "line")
+    _set_value_if_not_nan(net, index, temperature_degree_celsius, "temperature_degree_celsius", "line")
     _set_value_if_not_nan(net, index, endtemp_degree, "endtemp_degree", "line")
 
     # add optional columns for TDPF if parameters passed to kwargs:
@@ -2410,41 +2886,25 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
     return index
 
 
-def create_lines_from_parameters(net, from_buses, to_buses, length_km, r_ohm_per_km, x_ohm_per_km,
-                                 c_nf_per_km, max_i_ka, name=None, index=None, type=None,
-                                 geodata=None, in_service=True, df=1., parallel=1, g_us_per_km=0.,
-                                 max_loading_percent=nan, alpha=nan,
-                                 temperature_degree_celsius=nan, r0_ohm_per_km=nan,
-                                 x0_ohm_per_km=nan, c0_nf_per_km=nan, g0_us_per_km=nan,
-                                 **kwargs):
+def create_line_dc_from_parameters(net, from_bus_dc, to_bus_dc, length_km, r_ohm_per_km, max_i_ka,
+                                   name=None, index=None, type=None, geodata=None, in_service=True, df=1., parallel=1,
+                                   max_loading_percent=nan, alpha=nan, temperature_degree_celsius=nan, g_us_per_km=0.,
+                                   **kwargs):
     """
-    Convenience function for creating many lines at once. Parameters 'from_buses' and 'to_buses'
-        must be arrays of equal length. Other parameters may be either arrays of the same length or
-        single or values.
+    Creates a dc line element in net["line_dc"] from dc line parameters.
 
     INPUT:
-        **net** - The net within this line should be created
+        **net** - The net within this dc line should be created
 
-        **from_bus** (list of int) - ID of the bus on one side which the line will be connected with
+        **from_bus_dc** (int) - ID of the dc bus on one side which the dc line will be connected with
 
-        **to_bus** (list of int) - ID of the bus on the other side which the line will be connected\
-            with
+        **to_bus_dc** (int) - ID of the dc bus on the other side which the dc line will be connected with
 
-        **length_km** (list of float) - The line length in km
+        **length_km** (float) - The dc line length in km
 
-        **r_ohm_per_km** (list of float) - line resistance in ohm per km
+        **r_ohm_per_km** (float) - dc line resistance in ohm per km
 
-        **x_ohm_per_km** (list of float) - line reactance in ohm per km
-
-        **c_nf_per_km** (list of float) - line capacitance in nano Farad per km
-
-        **r0_ohm_per_km** (list of float) - zero sequence line resistance in ohm per km
-
-        **x0_ohm_per_km** (list of float) - zero sequence line reactance in ohm per km
-
-        **c0_nf_per_km** (list of float) - zero sequence line capacitance in nano Farad per km
-
-        **max_i_ka** (list of float) - maximum thermal current in kilo Ampere
+        **max_i_ka** (float) - maximum thermal current in kilo Ampere
 
     OPTIONAL:
         **name** (string, None) - A custom name for this line
@@ -2454,9 +2914,9 @@ def create_lines_from_parameters(net, from_buses, to_buses, length_km, r_ohm_per
 
         **in_service** (boolean, True) - True for in_service or False for out of service
 
-        **type** (str, None) - type of line ("ol" for overhead line or "cs" for cable system)
+        **type** (str, None) - type of dc line ("ol" for overhead dc line or "cs" for cable system)
 
-        **df** (float, 1) - derating factor: maximal current of line in relation to nominal current\
+        **df** (float, 1) - derating factor: maximal current of dc line in relation to nominal current\
             of line (from 0 to 1)
 
         **g_us_per_km** (float, 0) - dielectric conductance in micro Siemens per km
@@ -2467,8 +2927,8 @@ def create_lines_from_parameters(net, from_buses, to_buses, length_km, r_ohm_per
 
         **geodata**
         (array, default None, shape= (,2L)) -
-        The linegeodata of the line. The first row should be the coordinates
-        of bus a and the last should be the coordinates of bus b. The points
+        The linegeodata of the dc line. The first row should be the coordinates
+        of dc bus a and the last should be the coordinates of dc bus b. The points
         in the middle represent the bending points of the line
 
         **max_loading_percent (float)** - maximum current loading (only needed for OPF)
@@ -2507,9 +2967,147 @@ def create_lines_from_parameters(net, from_buses, to_buses, length_km, r_ohm_per
         **index** (int) - The unique ID of the created line
 
     EXAMPLE:
-        create_line_from_parameters(net, "line1", from_bus = 0, to_bus = 1, lenght_km=0.1,
-        r_ohm_per_km = .01, x_ohm_per_km = 0.05, c_nf_per_km = 10,
-        max_i_ka = 0.4)
+        create_line_dc_from_parameters(net, "line_dc1", from_bus_dc = 0, to_bus_dc = 1, lenght_km=0.1,
+        r_ohm_per_km = .01, max_i_ka = 0.4)
+
+    """
+
+    # check if bus exist to attach the dc line to
+    _check_branch_element(net, "Line_dc", index, from_bus_dc, to_bus_dc, node_name="bus_dc")
+
+    index = _get_index_with_check(net, "line_dc", index)
+
+    v = {
+        "name": name, "length_km": length_km, "from_bus_dc": from_bus_dc,
+        "to_bus_dc": to_bus_dc, "in_service": bool(in_service), "std_type": None,
+        "df": df, "r_ohm_per_km": r_ohm_per_km, "max_i_ka": max_i_ka, "parallel": parallel, "type": type,
+        "g_us_per_km": g_us_per_km
+    }
+
+    tdpf_columns = ("wind_speed_m_per_s", "wind_angle_degree", "conductor_outer_diameter_m",
+                    "air_temperature_degree_celsius", "reference_temperature_degree_celsius",
+                    "solar_radiation_w_per_sq_m", "solar_absorptivity", "emissivity", "r_theta_kelvin_per_mw",
+                    "mc_joule_per_m_k")
+    tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
+
+    _set_entries(net, "line_dc", index, **v, **kwargs)
+
+    if geodata is not None:
+        net["line_dc_geodata"].loc[index, "coords"] = None
+        net["line_dc_geodata"].at[index, "coords"] = geodata
+
+    _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "line_dc")
+    _set_value_if_not_nan(net, index, alpha, "alpha", "line_dc")
+    _set_value_if_not_nan(net, index, temperature_degree_celsius,
+                          "temperature_degree_celsius", "line_dc")
+
+    # add optional columns for TDPF if parameters passed to kwargs:
+    _set_value_if_not_nan(net, index, kwargs.get("tdpf"), "tdpf", "line_dc", bool_)
+    for column, value in tdpf_parameters.items():
+        _set_value_if_not_nan(net, index, value, column, "line_dc", float64)
+
+    return index
+
+
+def create_lines_from_parameters(net, from_buses, to_buses, length_km, r_ohm_per_km, x_ohm_per_km,
+                                 c_nf_per_km, max_i_ka, name=None, index=None, type=None,
+                                 geodata=None, in_service=True, df=1., parallel=1, g_us_per_km=0.,
+                                 max_loading_percent=nan, alpha=nan,
+                                 temperature_degree_celsius=nan, r0_ohm_per_km=nan,
+                                 x0_ohm_per_km=nan, c0_nf_per_km=nan, g0_us_per_km=nan,
+                                 **kwargs):
+    """
+    Convenience function for creating many lines at once. Parameters 'from_buses' and 'to_buses'
+        must be arrays of equal length. Other parameters may be either arrays of the same length or
+        single or values.
+
+    INPUT:
+        **net** - The net within this line should be created
+
+        **from_buses** (list of int) - ID of the buses on one side which the lines will be connected with
+
+        **to_buses** (list of int) - ID of the buses on the other side which the lines will be connected\
+            with
+
+        **length_km** (list of float) - The line length in km
+
+        **r_ohm_per_km** (list of float) - line resistance in ohm per km
+
+        **x_ohm_per_km** (list of float) - line reactance in ohm per km
+
+        **c_nf_per_km** (list of float) - line capacitance in nano Farad per km
+
+        **r0_ohm_per_km** (list of float) - zero sequence line resistance in ohm per km
+
+        **x0_ohm_per_km** (list of float) - zero sequence line reactance in ohm per km
+
+        **c0_nf_per_km** (list of float) - zero sequence line capacitance in nano Farad per km
+
+        **max_i_ka** (list of float) - maximum thermal current in kilo Ampere
+
+    OPTIONAL:
+        **name** (list of string, None) - A custom name for this line
+
+        **index** (list of int, None) - Force a specified ID if it is available. If None, the\
+            index one higher than the highest already existing index is selected.
+
+        **in_service** (list of boolean, True) - True for in_service or False for out of service
+
+        **type** (list of string, None) - type of line ("ol" for overhead line or "cs" for cable system)
+
+        **df** (list of float, 1) - derating factor: maximal current of line in relation to nominal current\
+            of line (from 0 to 1)
+
+        **g_us_per_km** (list of float, 0) - dielectric conductance in micro Siemens per km
+
+        **g0_us_per_km** (list of float, 0) - zero sequence dielectric conductance in micro Siemens per km
+
+        **parallel** (list of integer, 1) - number of parallel line systems
+
+        **geodata**
+        (array, default None, shape= (,2)) -
+        The geodata of the line. The first row should be the coordinates
+        of bus a and the last should be the coordinates of bus b. The points
+        in the middle represent the bending points of the line
+
+        **max_loading_percent (list of float)** - maximum current loading (only needed for OPF)
+
+        **alpha (float)** - temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0)))
+
+        **temperature_degree_celsius (float)** - line temperature for which line resistance is adjusted
+
+        **tdpf (bool)** - whether the line is considered in the TDPF calculation
+
+        **wind_speed_m_per_s (float)** - wind speed at the line in m/s (TDPF)
+
+        **wind_angle_degree (float)** - angle of attack between the wind direction and the line (TDPF)
+
+        **conductor_outer_diameter_m (float)** - outer diameter of the line conductor in m (TDPF)
+
+        **air_temperature_degree_celsius (float)** - ambient temperature in °C (TDPF)
+
+        **reference_temperature_degree_celsius (float)** - reference temperature in °C for which \
+            r_ohm_per_km for the line is specified (TDPF)
+
+        **solar_radiation_w_per_sq_m (float)** - solar radiation on horizontal plane in W/m² (TDPF)
+
+        **solar_absorptivity (float)** - Albedo factor for absorptivity of the lines (TDPF)
+
+        **emissivity (float)** - Albedo factor for emissivity of the lines (TDPF)
+
+        **r_theta_kelvin_per_mw (float)** - thermal resistance of the line (TDPF, only for \
+            simplified method)
+
+        **mc_joule_per_m_k (float)** - specific mass of the conductor multiplied by the specific \
+            thermal capacity of the material (TDPF, only for thermal inertia consideration with \
+            tdpf_delay_s parameter)
+
+    OUTPUT:
+        **index** (list of int) - The unique ID of the created lines
+
+    EXAMPLE:
+        create_lines_from_parameters(net, ["line1","line2"], from_buses = [0,1], to_buses = [2,3], length_km= 0.1,
+        r_ohm_per_km = .01, x_ohm_per_km = 0.05, c_nf_per_km = 10, max_i_ka = 0.4)
 
     """
     _check_multiple_branch_elements(net, from_buses, to_buses, "Lines")
@@ -2544,7 +3142,130 @@ def create_lines_from_parameters(net, from_buses, to_buses, length_km, r_ohm_per
     _set_multiple_entries(net, "line", index, **entries, **kwargs)
 
     if geodata is not None:
-        _add_multiple_branch_geodata(net, "line", geodata, index)
+        _add_multiple_branch_geodata(net, geodata, index)
+    else:
+        for i in index:
+            net.line.at[i, "geo"] = None
+
+    return index
+
+
+def create_lines_dc_from_parameters(net, from_buses_dc, to_buses_dc, length_km, r_ohm_per_km,
+                                    max_i_ka, name=None, index=None, type=None,geodata=None,
+                                    in_service=True, df=1., parallel=1, g_us_per_km=0., max_loading_percent=nan, alpha=nan,
+                                    temperature_degree_celsius=nan, **kwargs):
+    """
+    Convenience function for creating many dc lines at once. Parameters 'from_buses_dc' and 'to_buses_dc'
+        must be arrays of equal length. Other parameters may be either arrays of the same length or
+        single or values.
+
+    INPUT:
+        **net** - The net within this dc lines should be created
+
+        **from_buses_dc** (list of int) - ID of the dc buses on one side which the dc lines will be connected with
+
+        **to_buses_dc** (list of int) - ID of the dc buses on the other side which the dc lines will be connected\
+            with
+
+        **length_km** (list of float) - The dc line length in km
+
+        **r_ohm_per_km** (list of float) - dc line resistance in ohm per km
+
+        **max_i_ka** (list of float) - maximum thermal current in kilo Ampere
+
+    OPTIONAL:
+        **name** (list of string, None) - A custom name for this dc line
+
+        **index** (list of int, None) - Force a specified ID if it is available. If None, the\
+            index one higher than the highest already existing index is selected.
+
+        **in_service** (list of boolean, True) - True for in_service or False for out of service
+
+        **type** (list of str, None) - type of dc line ("ol" for overhead dc line or "cs" for cable system)
+
+        **df** (list of float, 1) - derating factor: maximal current of line in relation to nominal current\
+            of line (from 0 to 1)
+
+        **g_us_per_km** (list of float, 0) - dielectric conductance in micro Siemens per km
+
+        **parallel** (list of integer, 1) - number of parallel line systems
+
+        **geodata**
+        (array, default None, shape= (,2L)) -
+        The linegeodata of the dc lines. The first row should be the coordinates
+        of dc bus a and the last should be the coordinates of dc bus b. The points
+        in the middle represent the bending points of the line
+
+        **max_loading_percent (list of float)** - maximum current loading (only needed for OPF)
+
+        **alpha (float)** - temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0)))
+
+        **temperature_degree_celsius (float)** - line temperature for which line resistance is adjusted
+
+        **tdpf (bool)** - whether the line is considered in the TDPF calculation
+
+        **wind_speed_m_per_s (float)** - wind speed at the line in m/s (TDPF)
+
+        **wind_angle_degree (float)** - angle of attack between the wind direction and the line (TDPF)
+
+        **conductor_outer_diameter_m (float)** - outer diameter of the line conductor in m (TDPF)
+
+        **air_temperature_degree_celsius (float)** - ambient temperature in °C (TDPF)
+
+        **reference_temperature_degree_celsius (float)** - reference temperature in °C for which \
+            r_ohm_per_km for the line is specified (TDPF)
+
+        **solar_radiation_w_per_sq_m (float)** - solar radiation on horizontal plane in W/m² (TDPF)
+
+        **solar_absorptivity (float)** - Albedo factor for absorptivity of the lines (TDPF)
+
+        **emissivity (float)** - Albedo factor for emissivity of the lines (TDPF)
+
+        **r_theta_kelvin_per_mw (float)** - thermal resistance of the line (TDPF, only for \
+            simplified method)
+
+        **mc_joule_per_m_k (float)** - specific mass of the conductor multiplied by the specific \
+            thermal capacity of the material (TDPF, only for thermal inertia consideration with \
+            tdpf_delay_s parameter)
+
+    OUTPUT:
+        **index** (list of int) - The unique ID of the created dc lines
+
+    EXAMPLE:
+        create_lines_dc_from_parameters(net, name= ["line_dc1","line_dc2"], from_buses_dc = [0,1], to_buses_dc = [2,3], lenght_km=0.1,
+        r_ohm_per_km = .01, max_i_ka = 0.4)
+
+    """
+    _check_multiple_branch_elements(net, from_buses_dc, to_buses_dc, "Lines_dc",node_name='bus_dc', plural= '(all dc buses)')
+
+    index = _get_multiple_index_with_check(net, "line", index, len(from_buses_dc))
+
+    entries = {"from_bus_dc": from_buses_dc, "to_bus_dc": to_buses_dc, "length_km": length_km, "type": type,
+               "r_ohm_per_km": r_ohm_per_km, "max_i_ka": max_i_ka, "g_us_per_km": g_us_per_km, "name": name, "df": df,
+               "parallel": parallel, "in_service": in_service}
+
+    _add_to_entries_if_not_nan(net, "line_dc", entries, index, "max_loading_percent",
+                               max_loading_percent)
+    # _add_to_entries_if_not_nan(net, "line_dc", entries, index, "r0_ohm_per_km", r0_ohm_per_km)
+    # _add_to_entries_if_not_nan(net, "line_dc", entries, index, "g0_us_per_km", g0_us_per_km)
+    _add_to_entries_if_not_nan(net, "line_dc", entries, index, "temperature_degree_celsius",
+                               temperature_degree_celsius)
+    _add_to_entries_if_not_nan(net, "line_dc", entries, index, "alpha", alpha)
+
+    # add optional columns for TDPF if parameters passed to kwargs:
+    _add_to_entries_if_not_nan(net, "line_dc", entries, index, "tdpf", kwargs.get("tdpf"), bool_)
+    tdpf_columns = ("wind_speed_m_per_s", "wind_angle_degree", "conductor_outer_diameter_m",
+                    "air_temperature_degree_celsius", "reference_temperature_degree_celsius",
+                    "solar_radiation_w_per_sq_m", "solar_absorptivity", "emissivity",
+                    "r_theta_kelvin_per_mw", "mc_joule_per_m_k")
+    tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
+    for column, value in tdpf_parameters.items():
+        _add_to_entries_if_not_nan(net, "line_dc", entries, index, column, value, float64)
+
+    _set_multiple_entries(net, "line_dc", index, **entries, **kwargs)
+
+    if geodata is not None:
+        _add_multiple_branch_geodata(net, "line_dc", geodata, index)
 
     return index
 
@@ -2673,7 +3394,8 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
         elif tap_pos_var is not nan:
             v[f"tap{s}_pos"] = tap_pos_var
             if isinstance(tap_pos_var, float):
-                net.trafo[f"tap{s}_pos"] = net.trafo[f"tap{s}_pos"].astype(float)
+                net.trafo[f"tap{s}_pos"] = net.trafo.get(f"tap{s}_pos",
+                                                         np.full(len(net.trafo), np.nan)).astype(np.float64)
 
     _set_entries(net, "trafo", index, **v, **kwargs)
 
@@ -2830,6 +3552,10 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
         **tap2_step_degree** (float) - second tap step size for voltage angle in degree*
 
         **tap2_phase_shifter** (bool) - whether the transformer is an ideal phase shifter*
+
+        **leakage_resistance_ratio_hv** (bool) - ratio of transformer short-circuit resistance on HV side (default 0.5)
+
+        **leakage_reactance_ratio_hv** (bool) - ratio of transformer short-circuit reactance on HV side (default 0.5)
 
         ** only considered in loadflow if calculate_voltage_angles = True
 
@@ -3856,7 +4582,7 @@ def create_shunt(net, bus, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, name
 
 
 def create_shunts(net, buses, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, name=None,
-                 in_service=True, index=None, **kwargs):
+                  in_service=True, index=None, **kwargs):
     """
     Creates a number of shunt elements
 
@@ -3931,8 +4657,8 @@ def create_shunt_as_capacitor(net, bus, q_mvar, loss_factor, **kwargs):
 
 
 def create_svc(net, bus, x_l_ohm, x_cvar_ohm, set_vm_pu, thyristor_firing_angle_degree,
-                name=None, controllable=True, in_service=True, index=None,
-                min_angle_degree=90, max_angle_degree=180, **kwargs):
+               name=None, controllable=True, in_service=True, index=None,
+               min_angle_degree=90, max_angle_degree=180, **kwargs):
     """
     Creates an SVC element - a shunt element with adjustable impedance used to control the voltage \
         at the connected bus
@@ -4048,29 +4774,163 @@ def create_ssc(net, bus, r_ohm, x_ohm, set_vm_pu=1., vm_internal_pu=1., va_inter
     return index
 
 
-def create_impedance(net, from_bus, to_bus, rft_pu, xft_pu, sn_mva, rtf_pu=None, xtf_pu=None,
-                     name=None, in_service=True, index=None,
-                     rft0_pu=None, xft0_pu=None, rtf0_pu=None, xtf0_pu=None, **kwargs):
+def create_vsc(net, bus, bus_dc, r_ohm, x_ohm, r_dc_ohm, pl_dc_mw=0., control_mode_ac="vm_pu", control_value_ac=1.,
+               control_mode_dc="p_mw", control_value_dc=0.,
+               name=None, controllable=True, in_service=True, index=None, **kwargs):
     """
-    Creates an per unit impedance element
+    Creates an VSC converter element - a shunt element with adjustable VSC internal voltage used to connect the \
+    AC grid and the DC grid. The element implements several control modes.
+
+    Does not work if connected to "PV" bus (gen bus, ext_grid bus)
 
     INPUT:
         **net** (pandapowerNet) - The pandapower network in which the element is created
 
-        **from_bus** (int) - starting bus of the impedance
+        **bus** (int) - connection bus of the VSC
 
-        **to_bus** (int) - ending bus of the impedance
+        **bus_dc** (int) - connection bus of the VSC
 
-        **r_pu** (float) - real part of the impedance in per unit
+        **r_ohm** (float) - resistance of the coupling transformer component of VSC
 
-        **x_pu** (float) - imaginary part of the impedance in per unit
+        **x_ohm** (float) - reactance of the coupling transformer component of VSC
 
-        **sn_mva** (float) - rated power of the impedance in MVA
+        **r_dc_ohm** (float) - resistance of the internal dc resistance component of VSC
+
+        **pl_dc_mw** (float) - no-load losses of the VSC on the DC side for the shunt R representing the no load losses
+
+        **control_mode_ac** (string) - the control mode of the ac side of the VSC. it could be "vm_pu" or "q_mvar"
+
+        **control_value_ac** (float) - the value of the controlled parameter at the ac bus in "p.u." or "MVAr"
+
+        **control_mode_dc** (string) - the control mode of the dc side of the VSC. it could be "vm_pu" or "p_mw"
+
+        **control_value_dc** (float) - the value of the controlled parameter at the dc bus in "p.u." or "MW"
+
+    OPTIONAL:
+        **name** (list of strs, None) - element name
+
+        **controllable** (bool, True) - whether the element is considered as actively controlling or
+            as a fixed voltage source connected via shunt impedance
+
+        **in_service** (bool, True) - True for in_service or False for out of service
+
+        **index** (int, None) - Force a specified ID if it is available. If None, the
+            index one higher than the highest already existing index is selected.
 
     OUTPUT:
+        **index** (int) - The unique ID of the created ssc
 
-        impedance id
     """
+
+    _check_node_element(net, bus)
+    _check_node_element(net, bus_dc, "bus_dc")
+
+    index = _get_index_with_check(net, "vsc", index)
+
+    entries = dict(zip([
+        "name", "bus", "bus_dc", "r_ohm", "x_ohm", "r_dc_ohm", "pl_dc_mw", "control_mode_ac", "control_value_ac",
+        "control_mode_dc", "control_value_dc", "controllable", "in_service"],
+        [name, bus, bus_dc, r_ohm, x_ohm, r_dc_ohm, pl_dc_mw, control_mode_ac, control_value_ac,
+         control_mode_dc, control_value_dc, controllable, in_service]))
+    _set_entries(net, "vsc", index, **entries, **kwargs)
+
+    return index
+
+
+def create_impedance(net, from_bus, to_bus, rft_pu, xft_pu, sn_mva, rtf_pu=None, xtf_pu=None,
+                     name=None, in_service=True, index=None,
+                     rft0_pu=None, xft0_pu=None, rtf0_pu=None, xtf0_pu=None,
+                     gf_pu=0, bf_pu=0, gt_pu=None, bt_pu=None,
+                     gf0_pu=None, bf0_pu=None, gt0_pu=None, bt0_pu=None, **kwargs):
+    """
+    Creates an impedance element in per unit (pu).
+
+    Parameters
+    ----------
+    net : pandapowerNet
+        The pandapower grid model in which the element is created.
+
+    from_bus : int
+        The starting bus of the impedance element.
+
+    to_bus : int
+        The ending bus of the impedance element.
+
+    rft_pu : float
+        The real part of the impedance from 'from_bus' to 'to_bus' in per unit.
+
+    xft_pu : float
+        The imaginary part of the impedance from 'from_bus' to 'to_bus' in per unit.
+
+    sn_mva : float
+        The rated power of the impedance element in MVA.
+
+    rtf_pu : float, optional
+        The real part of the impedance from 'to_bus' to 'from_bus' in per unit. Defaults to `rft_pu`.
+
+    xtf_pu : float, optional
+        The imaginary part of the impedance from 'to_bus' to 'from_bus' in per unit. Defaults to `xft_pu`.
+
+    name : str, optional
+        The name of the impedance element. Default is None.
+
+    in_service : bool, optional
+        The service status of the impedance element. Default is True.
+
+    index : int, optional
+        The index of the impedance element. Default is None.
+
+    rft0_pu : float, optional
+        The zero-sequence real part of the impedance from 'from_bus' to 'to_bus' in per unit. Default is None.
+
+    xft0_pu : float, optional
+        The zero-sequence imaginary part of the impedance from 'from_bus' to 'to_bus' in per unit. Default is None.
+
+    rtf0_pu : float, optional
+        The zero-sequence real part of the impedance from 'to_bus' to 'from_bus' in per unit. Default is `rft0_pu`.
+
+    xtf0_pu : float, optional
+        The zero-sequence imaginary part of the impedance from 'to_bus' to 'from_bus' in per unit. Default is `xft0_pu`.
+
+    gf_pu : float, optional
+        Conductance at the 'from_bus' in per unit. Default is 0.
+
+    bf_pu : float, optional
+        Susceptance at the 'from_bus' in per unit. Default is 0.
+
+    gt_pu : float, optional
+        Conductance at the 'to_bus' in per unit. Defaults to `gf_pu`.
+
+    bt_pu : float, optional
+        Susceptance at the 'to_bus' in per unit. Defaults to `bf_pu`.
+
+    gf0_pu : float, optional
+        The zero-sequence conductance at the 'from_bus' in per unit. Default is None.
+
+    bf0_pu : float, optional
+        The zero-sequence susceptance at the 'from_bus' in per unit. Default is None.
+
+    gt0_pu : float, optional
+        The zero-sequence conductance at the 'to_bus' in per unit. Defaults to `gf0_pu`.
+
+    bt0_pu : float, optional
+        The zero-sequence susceptance at the 'to_bus' in per unit. Defaults to `bf0_pu`.
+
+    kwargs : dict, optional
+        Additional arguments (for additional columns in net.impedance table).
+
+    Returns
+    -------
+    int
+        The index of the created impedance element.
+
+    Raises
+    ------
+    UserWarning
+        If required impedance parameters are missing.
+    """
+    
+    
     index = _get_index_with_check(net, "impedance", index)
 
     _check_branch_element(net, "Impedance", index, from_bus, to_bus)
@@ -4088,9 +4948,23 @@ def create_impedance(net, from_bus, to_bus, rft_pu, xft_pu, sn_mva, rtf_pu=None,
     if xft0_pu is not None and xtf0_pu is None:
         xtf0_pu = xft0_pu
 
-    columns = ["from_bus", "to_bus", "rft_pu", "xft_pu", "rtf_pu", "xtf_pu", "name", "sn_mva",
-               "in_service"]
-    values = [from_bus, to_bus, rft_pu, xft_pu, rtf_pu, xtf_pu, name, sn_mva, in_service]
+    if gt_pu is None:
+        gt_pu = gf_pu
+    if bt_pu is None:
+        bt_pu = bf_pu
+    if gf0_pu is not None and gt0_pu is None:
+        gt0_pu = gf0_pu
+    if bf0_pu is not None and bt0_pu is None:
+        bt0_pu = bf0_pu
+
+    columns = ["from_bus", "to_bus",
+               "rft_pu", "xft_pu", "rtf_pu", "xtf_pu",
+               "gf_pu", "bf_pu", "gt_pu", "bt_pu",
+               "name", "sn_mva", "in_service"]
+    values = [from_bus, to_bus,
+              rft_pu, xft_pu, rtf_pu, xtf_pu,
+              gf_pu, bf_pu, gt_pu, bt_pu,
+              name, sn_mva, in_service]
     entries = dict(zip(columns, values))
     _set_entries(net, "impedance", index, **entries, **kwargs)
 
@@ -4100,7 +4974,158 @@ def create_impedance(net, from_bus, to_bus, rft_pu, xft_pu, sn_mva, rtf_pu=None,
         _set_value_if_not_nan(net, index, rtf0_pu, "rtf0_pu", "impedance")
         _set_value_if_not_nan(net, index, xtf0_pu, "xtf0_pu", "impedance")
 
+    if gf0_pu is not None:
+        _set_value_if_not_nan(net, index, gf0_pu, "gf0_pu", "impedance")
+        _set_value_if_not_nan(net, index, bf0_pu, "bf0_pu", "impedance")
+        _set_value_if_not_nan(net, index, gt0_pu, "gt0_pu", "impedance")
+        _set_value_if_not_nan(net, index, bt0_pu, "bt0_pu", "impedance")
+
     return index
+
+def create_impedances(net, from_buses, to_buses, rft_pu, xft_pu, sn_mva, rtf_pu=None, xtf_pu=None,
+                     name=None, in_service=True, index=None,
+                     rft0_pu=None, xft0_pu=None, rtf0_pu=None, xtf0_pu=None,
+                     gf_pu=0, bf_pu=0, gt_pu=None, bt_pu=None,
+                     gf0_pu=None, bf0_pu=None, gt0_pu=None, bt0_pu=None, **kwargs):
+    """
+    Creates an impedance element in per unit (pu).
+
+    Parameters
+    ----------
+    net : pandapowerNet
+        The pandapower grid model in which the element is created.
+
+    from_buses : int
+        The starting buses of the impedance element.
+
+    to_buses : int
+        The ending buses of the impedance element.
+
+    rft_pu : float
+        The real part of the impedance from 'from_bus' to 'to_bus' in per unit.
+
+    xft_pu : float
+        The imaginary part of the impedance from 'from_bus' to 'to_bus' in per unit.
+
+    sn_mva : float
+        The rated power of the impedance element in MVA.
+
+    rtf_pu : float, optional
+        The real part of the impedance from 'to_bus' to 'from_bus' in per unit. Defaults to `rft_pu`.
+
+    xtf_pu : float, optional
+        The imaginary part of the impedance from 'to_bus' to 'from_bus' in per unit. Defaults to `xft_pu`.
+
+    name : str, optional
+        The name of the impedance element. Default is None.
+
+    in_service : bool, optional
+        The service status of the impedance element. Default is True.
+
+    index : int, optional
+        The index of the impedance element. Default is None.
+
+    rft0_pu : float, optional
+        The zero-sequence real part of the impedance from 'from_bus' to 'to_bus' in per unit. Default is None.
+
+    xft0_pu : float, optional
+        The zero-sequence imaginary part of the impedance from 'from_bus' to 'to_bus' in per unit. Default is None.
+
+    rtf0_pu : float, optional
+        The zero-sequence real part of the impedance from 'to_bus' to 'from_bus' in per unit. Default is `rft0_pu`.
+
+    xtf0_pu : float, optional
+        The zero-sequence imaginary part of the impedance from 'to_bus' to 'from_bus' in per unit. Default is `xft0_pu`.
+
+    gf_pu : float, optional
+        Conductance at the 'from_bus' in per unit. Default is 0.
+
+    bf_pu : float, optional
+        Susceptance at the 'from_bus' in per unit. Default is 0.
+
+    gt_pu : float, optional
+        Conductance at the 'to_bus' in per unit. Defaults to `gf_pu`.
+
+    bt_pu : float, optional
+        Susceptance at the 'to_bus' in per unit. Defaults to `bf_pu`.
+
+    gf0_pu : float, optional
+        The zero-sequence conductance at the 'from_bus' in per unit. Default is None.
+
+    bf0_pu : float, optional
+        The zero-sequence susceptance at the 'from_bus' in per unit. Default is None.
+
+    gt0_pu : float, optional
+        The zero-sequence conductance at the 'to_bus' in per unit. Defaults to `gf0_pu`.
+
+    bt0_pu : float, optional
+        The zero-sequence susceptance at the 'to_bus' in per unit. Defaults to `bf0_pu`.
+
+    kwargs : dict, optional
+        Additional arguments (for additional columns in net.impedance table).
+
+    Returns
+    -------
+    int
+        The index of the created impedance element.
+
+    Raises
+    ------
+    UserWarning
+        If required impedance parameters are missing.
+    """
+    _check_multiple_branch_elements(net, from_buses, to_buses, "Impedances")
+
+    index = _get_multiple_index_with_check(net, "impedance", index, len(from_buses))
+
+    if rft_pu is None or xft_pu is None or (rft0_pu is None and rtf0_pu is not None) or \
+            (xft0_pu is None and xtf0_pu is not None):
+        raise UserWarning("*ft_pu parameters are missing for impedance element")
+
+    if rtf_pu is None:
+        rtf_pu = rft_pu
+    if xtf_pu is None:
+        xtf_pu = xft_pu
+    if rft0_pu is not None and rtf0_pu is None:
+        rtf0_pu = rft0_pu
+    if xft0_pu is not None and xtf0_pu is None:
+        xtf0_pu = xft0_pu
+
+    if gt_pu is None:
+        gt_pu = gf_pu
+    if bt_pu is None:
+        bt_pu = bf_pu
+    if gf0_pu is not None and gt0_pu is None:
+        gt0_pu = gf0_pu
+    if bf0_pu is not None and bt0_pu is None:
+        bt0_pu = bf0_pu
+
+    columns = ["from_bus", "to_bus",
+               "rft_pu", "xft_pu", "rtf_pu", "xtf_pu",
+               "gf_pu", "bf_pu", "gt_pu", "bt_pu",
+               "name", "sn_mva", "in_service"]
+    values = [from_buses, to_buses,
+              rft_pu, xft_pu, rtf_pu, xtf_pu,
+              gf_pu, bf_pu, gt_pu, bt_pu,
+              name, sn_mva, in_service]
+    entries = dict(zip(columns, values))
+
+    _set_multiple_entries(net, "impedance", index, **entries, **kwargs)
+    
+    if rft0_pu is not None:
+        _set_value_if_not_nan(net, index, rft0_pu, "rft0_pu", "impedance")
+        _set_value_if_not_nan(net, index, xft0_pu, "xft0_pu", "impedance")
+        _set_value_if_not_nan(net, index, rtf0_pu, "rtf0_pu", "impedance")
+        _set_value_if_not_nan(net, index, xtf0_pu, "xtf0_pu", "impedance")
+
+    if gf0_pu is not None:
+        _set_value_if_not_nan(net, index, gf0_pu, "gf0_pu", "impedance")
+        _set_value_if_not_nan(net, index, bf0_pu, "bf0_pu", "impedance")
+        _set_value_if_not_nan(net, index, gt0_pu, "gt0_pu", "impedance")
+        _set_value_if_not_nan(net, index, bt0_pu, "bt0_pu", "impedance")
+
+    return index
+
 
 
 def create_tcsc(net, from_bus, to_bus, x_l_ohm, x_cvar_ohm, set_p_to_mw,
@@ -4109,7 +5134,7 @@ def create_tcsc(net, from_bus, to_bus, x_l_ohm, x_cvar_ohm, set_p_to_mw,
                 min_angle_degree=90, max_angle_degree=180, **kwargs):
     """
     Creates a TCSC element - series impedance compensator to control series reactance.
-    The TCSC device allows controlling the active power flow throgh the path it is connected in.
+    The TCSC device allows controlling the active power flow through the path it is connected in.
 
     Multiple TCSC elements in net are possible.
     Unfortunately, TCSC is not implemented for the case when multiple TCSC elements
@@ -4273,7 +5298,7 @@ def create_wards(net, buses, ps_mw, qs_mvar, pz_mw, qz_mvar, name=None, in_servi
     index = _get_multiple_index_with_check(net, "storage", index, len(buses))
 
     entries = {"name": name, "bus": buses, "ps_mw": ps_mw, "qs_mvar": qs_mvar, "pz_mw": pz_mw,
-              "qz_mvar": qz_mvar, "name": name, "in_service": in_service}
+               "qz_mvar": qz_mvar, "name": name, "in_service": in_service}
 
     _set_multiple_entries(net, "ward", index, **entries, **kwargs)
 
@@ -4782,18 +5807,18 @@ def create_group(net, element_types, elements, name="", reference_columns=None, 
         index for the dataframe net.group, by default None
 
     EXAMPLES:
-        >>> create_group_from_lists(net, ["bus", "gen"], [[10, 12], [1, 2]])
-        >>> create_group_from_lists(net, ["bus", "gen"], [["Berlin", "Paris"], ["Wind_1", "Nuclear1"]], reference_columns="name")
+        >>> create_group(net, ["bus", "gen"], [[10, 12], [1, 2]])
+        >>> create_group(net, ["bus", "gen"], [["Berlin", "Paris"], ["Wind_1", "Nuclear1"]], reference_columns="name")
     """
     element_types, elements, reference_columns = _group_parameter_list(
         element_types, elements, reference_columns)
 
     _check_elements_existence(net, element_types, elements, reference_columns)
 
-    index = np.array([_get_index_with_check(net, "group", index)]*len(element_types), dtype=np.int64)
+    index = np.array([_get_index_with_check(net, "group", index)] * len(element_types), dtype=np.int64)
 
     entries = dict(zip(["name", "element_type", "element", "reference_column"],
-                       [ name ,  element_types,  elements,  reference_columns]))
+                       [name, element_types, elements, reference_columns]))
 
     _set_multiple_entries(net, "group", index, **entries, **kwargs)
 
@@ -4838,7 +5863,7 @@ def _cost_existance_check(net, element, et, power_type=None):
 def _costs_existance_check(net, elements, et, power_type=None):
     if isinstance(et, str) and (power_type is None or isinstance(power_type, str)):
         poly_exist = (net.poly_cost.element.isin(elements)).values & \
-                    (net.poly_cost.et == et).values
+                     (net.poly_cost.et == et).values
         pwl_exist = (net.pwl_cost.element.isin(elements)).values & \
                     (net.pwl_cost.et == et).values
         if isinstance(power_type, str):
@@ -4853,7 +5878,8 @@ def _costs_existance_check(net, elements, et, power_type=None):
         else:
             cols.append("power_type")
             pwl_df = pd.concat([net.pwl_cost[cols], pd.DataFrame(np.c_[
-                elements, et, [power_type]*len(elements)], columns=cols)])
+                                                                     elements, et, [power_type] * len(elements)],
+                                                                 columns=cols)])
         return poly_df.duplicated().sum() + pwl_df.duplicated().sum()
 
 
@@ -4862,8 +5888,8 @@ def _get_multiple_index_with_check(net, table, index, number, name=None):
         bid = get_free_id(net[table])
         return arange(bid, bid + number, 1)
     u, c = uni(index, return_counts=True)
-    if np.any(c>1):
-        raise UserWarning("Passed indexes %s exist multiple times" % (u[c>1]))
+    if np.any(c > 1):
+        raise UserWarning("Passed indexes %s exist multiple times" % (u[c > 1]))
     intersect = intersect1d(index, net[table].index.values)
     if len(intersect) > 0:
         if name is None:
@@ -4888,16 +5914,16 @@ def _check_multiple_node_elements(net, nodes, node_table="bus", name="buses"):
 def _check_branch_element(net, element_name, index, from_node, to_node, node_name="bus",
                           plural="es"):
     missing_nodes = {from_node, to_node} - set(net[node_name].index.values)
-    if missing_nodes:
+    if len(missing_nodes) > 0:
         raise UserWarning("%s %d tries to attach to non-existing %s(%s) %s"
                           % (element_name.capitalize(), index, node_name, plural, missing_nodes))
 
 
 def _check_multiple_branch_elements(net, from_nodes, to_nodes, element_name, node_name="bus",
                                     plural="es"):
-    all_nodes = array(list(from_nodes) + list(to_nodes))
-    if np_any(~isin(all_nodes, net[node_name].index.values)):
-        node_not_exist = set(all_nodes) - set(net[node_name].index)
+    all_nodes = set(from_nodes) | set(to_nodes)
+    node_not_exist = all_nodes - set(net[node_name].index)
+    if len(node_not_exist) > 0:
         raise UserWarning("%s trying to attach to non existing %s%s %s"
                           % (element_name, node_name, plural, node_not_exist))
 
@@ -4946,7 +5972,7 @@ def _set_value_if_not_nan(net, index, value, column, element_type, dtype=float64
         name of column
     element_type : str
         element_type type, e.g. "gen"
-    dtyp : Any, optional
+    dtype : Any, optional
         e.g. float64, "Int64", bool_, ..., by default float64
     default_val : Any, optional
         default value to be set if the column exists and value is nan and if the column does not
@@ -4988,21 +6014,23 @@ def _add_to_entries_if_not_nan(net, element_type, entries, index, column, values
         try_astype(entries, column, dtype)
 
 
-def _add_multiple_branch_geodata(net, table, geodata, index):
-    geo_table = f"{table}_geodata"
-    dtypes = net[geo_table].dtypes
-    df = pd.DataFrame(index=index, columns=net[geo_table].columns)
-    # works with single or multiple lists of coordinates
-    if len(geodata[0]) == 2 and not hasattr(geodata[0][0], "__iter__"):
-        # geodata is a single list of coordinates
-        df["coords"] = [geodata] * len(index)
+
+def _add_multiple_branch_geodata(net, geodata, index, table="line"):
+    dtypes = net[table].dtypes
+    if hasattr(geodata, '__iter__') and all([isinstance(g, tuple) and len(g) == 2 for g in geodata]):
+        # geodata is a single Iterable of coordinate tuples
+        geo = [[x, y] for x, y in geodata]
+        series = [f'{{"coordinates": {geo}, "type": "LineString"}}'] * len(index)
+    elif hasattr(geodata, '__iter__') and all([isinstance(g, Iterable) for g in geodata]):
+        # geodata is Iterable of Iterable of coordinate tuples
+        geo = [[[x, y] for x, y in g] for g in geodata]
+        series = pd.Series([f'{{"coordinates": {g}, "type": "LineString"}}' for g in geo], index=index)
     else:
-        # geodata is multiple lists of coordinates
-        df["coords"] = geodata
+        raise ValueError("geodata must be an Iterable of Iterable of coordinate tuples or an Iterable of coordinate tuples")
 
-    net[geo_table] = pd.concat([net[geo_table],df], sort=False)
+    net[table].loc[:, "geo"] = series
 
-    _preserve_dtypes(net[geo_table], dtypes)
+    _preserve_dtypes(net[table], dtypes)
 
 
 def _set_entries(net, table, index, preserve_dtypes=True, **entries):
@@ -5047,7 +6075,6 @@ def _set_multiple_entries(net, table, index, preserve_dtypes=True, defaults_to_f
 
     # extend the table by the frame we just created
     net[table] = pd.concat([net[table], dd[dd.columns[~dd.isnull().all()]]], sort=False)
-
 
     # and preserve dtypes
     if preserve_dtypes:

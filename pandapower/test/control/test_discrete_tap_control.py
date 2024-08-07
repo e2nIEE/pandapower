@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
@@ -50,7 +50,7 @@ def test_discrete_tap_control_lv():
     # increase voltage from 1.0 pu to 1.03 pu
     net.ext_grid.vm_pu = 1.03
     # switch back tap position
-    net.trafo.tap_pos.at[0] = 0
+    net.trafo.at[0, "tap_pos"] = 0
     pp.runpp(net)
 
     logger.info("case2: high voltage")
@@ -66,7 +66,7 @@ def test_discrete_tap_control_lv():
     # reduce voltage from 1.03 pu to 0.949 pu
     net.ext_grid.vm_pu = 0.949
     # switch back tap position
-    net.trafo.tap_pos.at[0] = 0
+    net.trafo.at[0, "tap_pos"] = 0
     pp.runpp(net)
 
     logger.info("case2: high voltage")
@@ -110,7 +110,7 @@ def test_discrete_tap_control_hv():
     # increase voltage from 1.0 pu to 1.03 pu
     net.ext_grid.vm_pu = 1.03
     # switch back tap position
-    net.trafo.tap_pos.at[0] = 0
+    net.trafo.at[0, "tap_pos"] = 0
     pp.runpp(net)
 
     logger.info("case2: high voltage")
@@ -126,7 +126,7 @@ def test_discrete_tap_control_hv():
     # increase voltage from 1.0 pu to 1.03 pu
     net.ext_grid.vm_pu = 0.949
     # switch back tap position
-    net.trafo.tap_pos.at[0] = 0
+    net.trafo.at[0, "tap_pos"] = 0
     pp.runpp(net)
 
     logger.info("case2: high voltage")
@@ -181,7 +181,7 @@ def test_discrete_tap_control_lv_from_tap_step_percent():
     # increase voltage from 1.0 pu to 1.03 pu
     net.ext_grid.vm_pu = 1.03
     # switch back tap position
-    net.trafo.tap_pos.at[0] = 0
+    net.trafo.at[0, "tap_pos"] = 0
     pp.runpp(net)
 
     logger.info("case2: high voltage")
@@ -197,7 +197,7 @@ def test_discrete_tap_control_lv_from_tap_step_percent():
     # reduce voltage from 1.03 pu to 0.969 pu
     net.ext_grid.vm_pu = 0.969
     # switch back tap position
-    net.trafo.tap_pos.at[0] = 0
+    net.trafo.at[0, "tap_pos"] = 0
     pp.runpp(net)
 
     logger.info("case2: high voltage")
@@ -252,7 +252,7 @@ def test_discrete_tap_control_hv_from_tap_step_percent():
     # increase voltage from 1.0 pu to 1.03 pu
     net.ext_grid.vm_pu = 1.03
     # switch back tap position
-    net.trafo.tap_pos.at[0] = 0
+    net.trafo.at[0, "tap_pos"] = 0
     pp.runpp(net)
 
     logger.info("case2: high voltage")
@@ -268,7 +268,7 @@ def test_discrete_tap_control_hv_from_tap_step_percent():
     # reduce voltage from 1.03 pu to 0.969 pu
     net.ext_grid.vm_pu = 0.969
     # switch back tap position
-    net.trafo.tap_pos.at[0] = 0
+    net.trafo.at[0, "tap_pos"] = 0
     pp.runpp(net)
 
     logger.info("case2: high voltage")
@@ -294,7 +294,7 @@ def test_discrete_tap_control_vectorized_lv():
         pp.create_transformer(net, hv, lv, "63 MVA 110/20 kV")
         pp.create_load(net, lv, 25*(lv-8), 25*(lv-8) * 0.4)
     pp.set_user_pf_options(net, init='dc', calculate_voltage_angles=True)
-    net.trafo.tap_side.iloc[3:] = "lv"
+    net.trafo.loc[3:, 'tap_side'] = "lv"
     # --- run loadflow
     pp.runpp(net)
     assert not all(_vm_in_desired_area(net, 1.01, 1.03, "lv"))  # there should be something
@@ -332,7 +332,7 @@ def test_discrete_tap_control_vectorized_hv():
         pp.create_transformer(net, hv, lv, "63 MVA 110/20 kV")
         pp.create_load(net, hv, 2.5*(hv-8), 2.5*(hv-8) * 0.4)
     pp.set_user_pf_options(net, init='dc', calculate_voltage_angles=True)
-    net.trafo.tap_side.iloc[3:] = "lv"
+    net.trafo.loc[3:, 'tap_side'] = "lv"
     # --- run loadflow
     pp.runpp(net)
     assert not all(_vm_in_desired_area(net, 1.01, 1.03, "hv"))  # there should be something
@@ -391,4 +391,4 @@ def test_continuous_tap_control_side_mv():
 
 
 if __name__ == '__main__':
-    pytest.main(['-xs', __file__])
+    pytest.main([__file__, "-xs"])

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -80,7 +80,7 @@ def test_3bus():
     diff_v = target_v - v_result
     target_delta = np.array([0., 0.8677, 3.1381])
     diff_delta = target_delta - delta_result
-    
+
     if not (np.nanmax(abs(diff_v)) < 1e-4) or\
        not (np.nanmax(abs(diff_delta)) < 1e-4):
         raise AssertionError("Estimation failed!")
@@ -257,7 +257,7 @@ def test_3bus_with_transformer():
         raise AssertionError("Estimation failed!")
 
     # Backwards check. Use state estimation results for power flow and check for equality
-    net.load.drop(net.load.index, inplace=True)
+    net.load = net.load.drop(net.load.index)
     net.ext_grid.vm_pu = net.res_bus_est.vm_pu.iloc[net.ext_grid.bus.iloc[0]]
     pp.create_load(net, 0, net.res_bus_est.p_mw.iloc[0], net.res_bus_est.q_mvar.iloc[0])
     pp.create_load(net, 1, net.res_bus_est.p_mw.iloc[1], net.res_bus_est.q_mvar.iloc[1])
@@ -311,7 +311,7 @@ def test_3bus_with_2_slacks():
 def test_3bus_with_i_line_measurements():
     np.random.seed(1)
     net = load_3bus_network()
-    net.measurement.drop(net.measurement.index, inplace=True)
+    net.measurement = net.measurement.drop(net.measurement.index)
     pp.create_load(net, 1, p_mw=0.495974966, q_mvar=0.297749528)
     pp.create_load(net, 2, p_mw=1.514220983, q_mvar=0.787528929)
     pp.runpp(net)
@@ -344,7 +344,7 @@ def test_3bus_with_i_line_measurements():
 def test_3bus_with_pq_line_from_to_measurements():
     np.random.seed(2017)
     net = load_3bus_network()
-    net.measurement.drop(net.measurement.index, inplace=True)
+    net.measurement = net.measurement.drop(net.measurement.index)
     pp.create_load(net, 1, p_mw=0.495974966, q_mvar=0.297749528)
     pp.create_load(net, 2, p_mw=1.514220983, q_mvar=0.787528929)
     pp.runpp(net)
@@ -377,7 +377,7 @@ def test_3bus_with_pq_line_from_to_measurements():
 def test_3bus_with_side_names():
     np.random.seed(2017)
     net = load_3bus_network()
-    net.measurement.drop(net.measurement.index, inplace=True)
+    net.measurement = net.measurement.drop(net.measurement.index)
     pp.create_load(net, 1, p_mw=0.495974966, q_mvar=0.297749528)
     pp.create_load(net, 2, p_mw=1.514220983, q_mvar=0.787528929)
     pp.runpp(net)
@@ -500,7 +500,7 @@ def test_init_slack_with_multiple_transformers(angles=True):
             "tap_side": "hv", "tap_neutral": 0, "tap_min": -9, "tap_max": 9, "tap_step_degree": 0,
             "tap_step_percent": 1.5, "tap_phase_shifter": False},
             "63 MVA 110/10 kV v1.4.3 and older", element="trafo")
-            
+
     pp.create_transformer(net, 3, 7, std_type="63 MVA 110/10 kV v1.4.3 and older", in_service=False)
     pp.create_transformer(net, 3, 4, std_type="63 MVA 110/10 kV v1.4.3 and older")
     pp.create_transformer(net, 0, 1, std_type="100 MVA 220/110 kV")
@@ -609,7 +609,7 @@ def test_network_with_trafo3w_pq():
     if not (np.nanmax(np.abs(net.res_bus.vm_pu.values - net.res_bus_est.vm_pu.values)) < 0.006) or\
        not (np.nanmax(np.abs(net.res_bus.va_degree.values- net.res_bus_est.va_degree.values)) < 0.006):
         raise AssertionError("Estimation failed")
-    
+
     #Try estimate with results initialization
     if not estimate(net, init="results"):
         raise AssertionError("Estimation failed!")
@@ -667,7 +667,7 @@ def create_net_with_bb_switch():
     bus3 = pp.create_bus(net, name="bus3", vn_kv=10.)
     bus4 = pp.create_bus(net, name="bus4", vn_kv=10.)
     bus5 = pp.create_bus(net, name="bus5", vn_kv=110.)
-    
+
     pp.create_line_from_parameters(net, bus1, bus2, 10, r_ohm_per_km=.59, x_ohm_per_km=.35, c_nf_per_km=10.1,
                                    max_i_ka=1)
     pp.create_transformer(net, bus5, bus1, std_type="40 MVA 110/10 kV")
@@ -705,7 +705,7 @@ def create_net_with_bb_switch():
     pp.create_measurement(net, "p", "trafo", r2(net.res_trafo.p_hv_mw.iloc[0], .001), .01,
                           side="hv", element=0)
     pp.create_measurement(net, "q", "trafo", r2(net.res_trafo.q_hv_mvar.iloc[0], .001), .01,
-                          side="hv", element=0) 
+                          side="hv", element=0)
     return net
 
 
@@ -757,7 +757,7 @@ def test_net_with_zero_injection():
     b2 = pp.create_bus(net, name="Bus 2", vn_kv=220, index=2)
     b3 = pp.create_bus(net, name="Bus 3", vn_kv=220, index=3)
     b4 = pp.create_bus(net, name="Bus 4", vn_kv=220, index=4)
-    
+
     pp.create_ext_grid(net, b1)  # set the slack bus to bus 1
     factor = 48.4 * 2 * np.pi * 50 * 1e-9  # capacity factor
 
@@ -767,7 +767,7 @@ def test_net_with_zero_injection():
                                    x_ohm_per_km=.242*48.4, c_nf_per_km=0.00384/factor, max_i_ka=1)
     l3 = pp.create_line_from_parameters(net, 2, 4, 1, r_ohm_per_km=.002*48.4,
                                         x_ohm_per_km=.0111*48.4, c_nf_per_km=0.00018/factor, max_i_ka=1)
-    
+
     pp.create_measurement(net, "v", "bus", 1.063548, .001, b1)         # V at bus 1
     pp.create_measurement(net, "v", "bus", 1.068342, .001, b3)         # V at bus 3
     pp.create_measurement(net, "v", "bus", 1.069861, .001, b4)         # V at bus 4
@@ -832,15 +832,15 @@ def test_zero_injection_aux_bus():
     pp.create_measurement(net, "q", "line", r2(net.res_line.q_from_mvar.iloc[0], .002), .002, 0, side='from')
 
     pp.create_measurement(net, "p", "trafo", r2(net.res_trafo.p_hv_mw.iloc[0], .001), .01,
-                          side="hv", element=0)  
+                          side="hv", element=0)
     pp.create_measurement(net, "q", "trafo", r2(net.res_trafo.q_hv_mvar.iloc[0], .001), .01,
-                          side="hv", element=0) 
-    
+                          side="hv", element=0)
+
     net_auto = deepcopy(net)
     net_aux = deepcopy(net)
-    
+
     success_none = estimate(net, tolerance=1e-5, zero_injection=None)
-    
+
     # In this case zero_injection in mode "aux_bus" and "auto" should be exact the same
     success_aux = estimate(net_aux, tolerance=1e-5, zero_injection='aux_bus')
     success_auto = estimate(net_auto, tolerance=1e-5, zero_injection='auto')
@@ -878,7 +878,7 @@ def test_net_unobserved_island():
 
     pp.create_measurement(net, "p", "bus", r2(net.res_bus.p_mw.iloc[bus4], .002), .002, element=bus4)
     pp.create_measurement(net, "q", "bus", r2(net.res_bus.q_mvar.iloc[bus4], .002), .002, element=bus4)
-    
+
     # IF pq of bus2 is not available makes bus3 an unobserved island
 #    pp.create_measurement(net, "p", "bus", -r2(net.res_bus.p_mw.iloc[bus2], .001), .001, element=bus2)
 #    pp.create_measurement(net, "q", "bus", -r2(net.res_bus.q_mvar.iloc[bus2], .001), .001, element=bus2)
@@ -889,9 +889,9 @@ def test_net_unobserved_island():
     pp.create_measurement(net, "q", "line", r2(net.res_line.q_from_mvar.iloc[0], .002), .002, 0, side='from')
 
     pp.create_measurement(net, "p", "trafo", r2(net.res_trafo.p_hv_mw.iloc[0], .001), .01,
-                          side="hv", element=0)  
+                          side="hv", element=0)
     pp.create_measurement(net, "q", "trafo", r2(net.res_trafo.q_hv_mvar.iloc[0], .001), .01,
-                          side="hv", element=0) 
+                          side="hv", element=0)
 
     if not estimate(net, tolerance=1e-6, zero_injection=None):
         raise AssertionError("Estimation failed!")
@@ -900,17 +900,17 @@ def test_net_oos_line():
     net = nw.case9()
     net.line.in_service.iat[4] = False
     pp.runpp(net)
-    
+
     for line_ix in net.line.index:
         pp.create_measurement(net, "p", "line", net.res_line.at[line_ix, "p_from_mw"],
                               0.01, element=line_ix, side="from")
         pp.create_measurement(net, "q", "line", net.res_line.at[line_ix, "q_from_mvar"],
                               0.01, element=line_ix, side="from")
-    
+
     for bus_ix in net.bus.index:
         pp.create_measurement(net, "v", "bus", net.res_bus.at[bus_ix, "vm_pu"],
                               0.01, element=bus_ix)
-        
+
     if not estimate(net, tolerance=1e-6, zero_injection=None):
         raise AssertionError("Estimation failed!")
 
