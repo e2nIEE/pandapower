@@ -19,7 +19,7 @@ Input Parameters
 
 .. tabularcolumns:: |p{0.12\linewidth}|p{0.10\linewidth}|p{0.25\linewidth}|p{0.30\linewidth}|
 .. csv-table:: 
-   :file: bus_par_dc.csv
+   :file: bus_dc_par.csv
    :delim: ;
    :widths: 10, 10, 25, 40
 

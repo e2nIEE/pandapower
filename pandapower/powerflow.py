@@ -5,7 +5,7 @@
 
 from numpy import nan_to_num, array, allclose, int64
 
-from pandapower.auxiliary import ppException, _clean_up, _add_auxiliary_elements
+from pandapower.auxiliary import LoadflowNotConverged, AlgorithmUnknown, _clean_up, _add_auxiliary_elements
 from pandapower.build_branch import _calc_trafo_parameter, _calc_trafo3w_parameter
 from pandapower.build_gen import _build_gen_ppc
 from pandapower.pd2ppc import _pd2ppc, _calc_pq_elements_and_add_on_ppc, _ppc2ppci
@@ -27,20 +27,6 @@ except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
-
-
-class AlgorithmUnknown(ppException):
-    """
-    Exception being raised in case optimal powerflow did not converge.
-    """
-    pass
-
-
-class LoadflowNotConverged(ppException):
-    """
-    Exception being raised in case loadflow did not converge.
-    """
-    pass
 
 
 def _powerflow(net, **kwargs):
