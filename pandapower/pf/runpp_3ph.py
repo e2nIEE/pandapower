@@ -266,13 +266,10 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
             matrices for the powerflow, which leads to significant speed
             improvements.
 
-        **switch_rx_ratio** (float, 2)
-
-        (Not tested with 3 Phase load flow)  - rx_ratio of bus-bus-switches.
-        If impedance is zero, buses connected by a closed bus-bus switch
-        are fused to model an ideal bus. Otherwise, they are modelled
-        as branches with resistance defined as z_ohm column in switch
-        table and this parameter
+        **switch_rx_ratio** (float, 2) (Not tested with 3 Phase load flow) - rx_ratio of bus-bus-switches. If the impedance of switches
+        defined in net.switch.z_ohm is zero, buses connected by a closed bus-bus switch are fused to
+        model an ideal bus. Closed bus-bus switches, whose impedance z_ohm is not zero, are modelled
+        as branches with resistance and reactance according to net.switch.z_ohm and switch_rx_ratio.
 
         **delta_q**
 

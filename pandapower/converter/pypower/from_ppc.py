@@ -59,14 +59,14 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
         logger.info('There are false baseKV given in the pypower case file.')
 
     net = create_empty_network(f_hz=f_hz, sn_mva=ppc["baseMVA"])
-    net._from_ppc_lookups = {}
+    net._from_ppc_lookups = dict()
 
     _from_ppc_bus(net, ppc)
     net._from_ppc_lookups["gen"] = _from_ppc_gen(net, ppc)
     net._from_ppc_lookups["branch"] = _from_ppc_branch(net, ppc, f_hz, **kwargs)
     _from_ppc_gencost(net, ppc, net._from_ppc_lookups["gen"], check=kwargs.get("check_costs", True))
 
-    # areas are unconverted
+    # areas are not converted
 
     if validate_conversion:
         logger.setLevel(logging.DEBUG)

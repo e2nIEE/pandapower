@@ -47,6 +47,7 @@ Change Log
 - [CHANGED] grid_equivalent creation: improved consideration of controller
 - [CHANGED] create consistent parameter names (element and element_index) in controllers -> Changes for TrafoController: trafotable & trafotype -> element, tid -> element_index
 - [CHANGED] parameter renaming in net.group: element -> element_index
+- [CHANGED] in to_ppc(), the default of calculate_voltage_angles is True now (as in previously changed in runpp()).
 - [FIXED] fixed some small bugs in the CGMES converter and improved its speed
 - [ADDED] Add VSC element, dc buses, dc lines, and hybrid AC/DC power flow calculation
 
