@@ -34,7 +34,7 @@ long_description = '\n\n'.join((install, changelog))
 
 setup(
     name='pandapower',
-    version='2.14.10',
+    version='2.14.11',
     author='Leon Thurner, Alexander Scheidler',
     author_email='leon.thurner@retoflow.de, alexander.scheidler@iee.fraunhofer.de',
     description='An easy to use open source tool for power system modeling, analysis and optimization with a high degree of automation.',
@@ -56,7 +56,7 @@ setup(
         # "shapely", "pyproj" are dependencies of geopandas and so already available;
         # "base64", "hashlib", "zlib" produce installing problems, so they are not included
         "test": ["pytest", "pytest-xdist"],
-        "performance": ["ortools",  "numba", "lightsim2grid"],
+        "performance": ["ortools",  "numba", "lightsim2grid~=0.8.1"],
         "pgm": ["power-grid-model-io"],
         "fileio": ["xlsxwriter", "openpyxl", "cryptography", "geopandas<1.0", "psycopg2"],
         # "fiona" is a depedency of geopandas and so already available
@@ -64,7 +64,7 @@ setup(
         "all": ["numpydoc", "sphinx", "sphinx_rtd_theme",
                 "plotly>=3.1.1", "matplotlib<3.9", "igraph", "geopandas<1.0", "geojson",
                 "pytest~=8.1", "pytest-xdist",
-                "ortools",  # lightsim2grid,
+                "ortools",  "lightsim2grid~=0.8.1",
                 "xlsxwriter", "openpyxl", "cryptography",
                 "psycopg2",  # for PostgreSQL I/O
                 "matpowercaseframes",
