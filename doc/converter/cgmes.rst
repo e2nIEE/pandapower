@@ -2,9 +2,9 @@
 CIM CGMES to pandapower
 ===================================================
 
-Converts CIM CGMES 2.4.15 networks to pandapower.
+Converts CIM CGMES 2.4.15 or 3.0 networks to pandapower.
 
-Developed and tested on Python 3.8.
+Developed and tested on Python 3.11.
 
 A `tutorial <https://github.com/e2nIEE/pandapower/blob/develop/tutorials/cim2pp.ipynb>`_ as a Jupyter notebook introduces the converter with an example.
 
@@ -12,7 +12,7 @@ Setup
 -----
 In order to use this converter the following import is all that ist needed. ::
 
-    from pandapower.converter import from_cim
+    from pandapower.converter import from_cim as cim2pp
 
 For a speed increase it is advisable to install numba into the used python environment. ::
 
@@ -43,9 +43,9 @@ Folder of xml or zip files ::
     curr_xml_dir = 'example_cim\\test'
     cgmes_files = [curr_xml_dir + os.sep + x for x in os.listdir(curr_xml_dir)]
 
-To start the converter, the following line is used. As a result it returns a pandapower network. ::
+To start the converter, the following line is used. As cgmes_version also '3.0' can be used for cgmes version 3. As a result it returns a pandapower network. ::
 
-    net = from_cim.from_cim(file_list=cgmes_files)
+    net = cim2pp.from_cim(file_list=cgmes_files, cgmes_version='2.4.15')
 
 In the resulting pandapower-network, the following should be noted:
  - Each component-table (bus, line, trafo, etc.) will get an "origin_id" column which points to the original CIM CGMES UUIDs.

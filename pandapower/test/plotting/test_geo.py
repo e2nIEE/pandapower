@@ -248,6 +248,19 @@ def test_dump_to_geojson():
     assert isinstance(result, FeatureCollection)
     assert dumps(result, sort_keys=True) == '{"features": [{"geometry": {"coordinates": [[1.0, 2.0], [3.0, 4.0]], "type": "LineString"}, "id": "line-0", "properties": {"c_nf_per_km": 720.0, "df": 1.0, "from_bus": 1, "g_us_per_km": 0.0, "ices": 0.389985, "in_service": true, "length_km": 1.0, "max_i_ka": 0.328, "name": "line1", "parallel": 1, "pp_index": 0, "pp_type": "line", "r_ohm_per_km": 0.2067, "std_type": null, "to_bus": 7, "type": null, "x_ohm_per_km": 0.1897522}, "type": "Feature"}], "type": "FeatureCollection"}'
 
+    # test exporting props from bus and res_bus
+    _net.res_bus.loc[1, ["vm_pu", "va_degree", "p_mw", "q_mvar"]] = [1.0, 1.0, 1.0, 1.0]
+    result = geo.dump_to_geojson(_net, nodes=[1])
+    assert isinstance(result, FeatureCollection)
+    assert dumps(result, sort_keys=True) == '{"features": [{"geometry": {"coordinates": [1.0, 2.0], "type": "Point"}, "id": "bus-1", "properties": {"in_service": true, "name": "bus2", "p_mw": 1.0, "pp_index": 1, "pp_type": "bus", "q_mvar": 1.0, "type": "b", "va_degree": 1.0, "vm_pu": 1.0, "vn_kv": 0.4, "zone": null}, "type": "Feature"}], "type": "FeatureCollection"}'
+
+    # test exporting props from bus and res_bus
+    _net.res_line.loc[0, _net.res_line.columns] = [7.0]*len(_net.res_line.columns)
+    result = geo.dump_to_geojson(_net, branches=[0])
+    assert isinstance(result, FeatureCollection)
+    assert dumps(result, sort_keys=True) == '{"features": [{"geometry": {"coordinates": [[1.0, 2.0], [3.0, 4.0]], "type": "LineString"}, "id": "line-0", "properties": {"c_nf_per_km": 720.0, "df": 1.0, "from_bus": 1, "g_us_per_km": 0.0, "i_from_ka": 7.0, "i_ka": 7.0, "i_to_ka": 7.0, "ices": 0.389985, "in_service": true, "length_km": 1.0, "loading_percent": 7.0, "max_i_ka": 0.328, "name": "line1", "p_from_mw": 7.0, "p_to_mw": 7.0, "parallel": 1, "pl_mw": 7.0, "pp_index": 0, "pp_type": "line", "q_from_mvar": 7.0, "q_to_mvar": 7.0, "ql_mvar": 7.0, "r_ohm_per_km": 0.2067, "std_type": null, "to_bus": 7, "type": null, "va_from_degree": 7.0, "va_to_degree": 7.0, "vm_from_pu": 7.0, "vm_to_pu": 7.0, "x_ohm_per_km": 0.1897522}, "type": "Feature"}], "type": "FeatureCollection"}'
+
+
 
 def test_convert_geodata_to_geojson():
     pytest.importorskip("geojson")
@@ -271,8 +284,8 @@ def test_convert_geodata_to_geojson():
     geo.convert_geodata_to_geojson(_net)
 
     # Überprüfe die Ergebnisse
-    assert _net.bus.at[0, "geo"] == geojson.dumps(geojson.Point((10.0, 20.0)), sort_keys=True)
-    assert _net.bus.at[1, "geo"] == geojson.dumps(geojson.Point((30.0, 40.0)), sort_keys=True)
+    assert _net.bus.at[0, "geo"] == geojson.dumps(geojson.Point((10, 20)), sort_keys=True)
+    assert _net.bus.at[1, "geo"] == geojson.dumps(geojson.Point((30, 40)), sort_keys=True)
     assert _net.line.at[0, "geo"] == geojson.dumps(geojson.LineString([(10, 20), (30, 40)]), sort_keys=True)
     # TODO: Test could be more exhaustive (e.g. test delete=False, lonlat=True, geo_str=False)
 

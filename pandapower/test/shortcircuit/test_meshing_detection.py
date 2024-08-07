@@ -17,7 +17,7 @@ def meshed_grid():
     net = pp.from_json(os.path.join(pp.pp_dir, "test", "shortcircuit", "sc_test_meshed_grid.json"))
     bid = pp.create_bus(net, vn_kv=10.)
     pp.create_switch(net, net.ext_grid.bus.iloc[0], bid, et="b")
-    net.ext_grid.bus.iloc[0] = bid
+    net.ext_grid.loc[net.ext_grid.index[0], "bus"] = bid
     pp.create_bus(net, vn_kv=0.4, in_service=False)
     return net
 

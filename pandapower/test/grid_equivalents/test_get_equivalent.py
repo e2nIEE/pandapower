@@ -16,12 +16,6 @@ from pandapower.grid_equivalents.ward_generation import \
     create_passive_external_net_for_ward_admittance
 from pandapower.grid_equivalents.auxiliary import _runpp_except_voltage_angles
 
-try:
-    from misc.groups import Group
-    group_imported = True
-except ImportError:
-    group_imported = False
-
 
 def create_test_net():
     net = pp.create_empty_network()
@@ -245,7 +239,7 @@ def test_basic_usecases():
 def test_case9_with_slack_generator_in_external_net():
     net = pp.networks.case9()
     idx = pp.replace_ext_grid_by_gen(net)
-    net.gen.slack.loc[idx] = True
+    net.gen.loc[idx, 'slack'] = True
     pp.runpp(net)
 
     # since the only slack is in the external_buses, we expect get_equivalent() to move the slack

@@ -35,5 +35,6 @@ def test_opf_oberrhein():
     pp.runopp(net, calculate_voltage_angles=False)
     assert net["OPF_converged"]
 
+
 if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

@@ -34,7 +34,7 @@ def test_nets_equal():
     net = copy.deepcopy(original)
 
     # detecting alternated value
-    net["load"]["p_mw"][net["load"].index[0]] += 0.1
+    net["load"].loc[net["load"].index[0], "p_mw"] += 0.1
     assert not pandapower.toolbox.nets_equal(original, net)
     assert not pandapower.toolbox.nets_equal(net, original)
     net = copy.deepcopy(original)
@@ -46,14 +46,14 @@ def test_nets_equal():
     net = copy.deepcopy(original)
 
     # not detecting alternated value if difference is beyond tolerance
-    net["load"]["p_mw"][net["load"].index[0]] += 0.0001
+    net["load"].loc[net["load"].index[0], "p_mw"] += 0.0001
     assert pandapower.toolbox.nets_equal(original, net, atol=0.1)
     assert pandapower.toolbox.nets_equal(net, original, atol=0.1)
 
     # check controllers
     original.trafo.tap_side = original.trafo.tap_side.fillna("hv")
-    net1 = original.deepcopy()
-    net2 = original.deepcopy()
+    net1 = copy.deepcopy(original)
+    net2 = copy.deepcopy(original)
     pp.control.ContinuousTapControl(net1, 0, 1.0)
     pp.control.ContinuousTapControl(net2, 0, 1.0)
     c1 = net1.controller.at[0, "object"]
@@ -68,4 +68,4 @@ def test_nets_equal():
 
 
 if __name__ == '__main__':
-    pytest.main([__file__, "-x"])
+    pytest.main([__file__, "-xs"])
