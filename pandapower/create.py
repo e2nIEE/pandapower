@@ -4505,7 +4505,7 @@ def create_switches(net, buses, elements, et, closed=True, type=None, name=None,
         for joining_bus in joining_busses:
             not_connected_mask &= merged.bus != merged[joining_bus]
         if np_any(not_connected_mask):
-            bus_element_pairs = list(zip(merged.bus[not_connected_mask], not_connected_mask.index))
+            bus_element_pairs = list(zip(merged.bus[not_connected_mask], merged.index[not_connected_mask]))
             raise UserWarning("%s not connected (%s element, bus): %s" % 
                               (table.capitalize(), table, bus_element_pairs))
 
