@@ -24,6 +24,8 @@ try:
 except ImportError:
     UnsupportedPythonError = Exception
 try:
+    from julia.api import Julia
+    Julia(compiled_modules=False)
     from julia import Main
 
     julia_installed = True
@@ -74,9 +76,4 @@ def test_obj_factors(net_3w_trafo_opf):
 
 
 if __name__ == '__main__':
-    if 1:
-        pytest.main(['-x', __file__])
-    else:
-        test_obj_factors()
-
-    pass
+    pytest.main([__file__, "-xs"])

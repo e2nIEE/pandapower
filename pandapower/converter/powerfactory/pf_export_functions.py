@@ -111,7 +111,8 @@ def get_lvp_params(app):
         'Svar': com_ldf.Svar,
         'cosvar': com_ldf.cosvar,
         'ginf': com_ldf.ginf,
-        'i_volt': com_ldf.i_volt
+        'i_volt': com_ldf.i_volt,
+        'hunting_limit': com_ldf.maxTapTrans
     }
 
     return lvp_params

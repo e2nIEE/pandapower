@@ -26,6 +26,7 @@ from pandapower.test.loadflow.result_test_network_generator import add_test_xwar
 from pandapower.test.helper_functions import add_grid_connection, create_test_line, assert_net_equal, assert_res_equal
 from pandapower.toolbox import nets_equal
 from pandapower.pypower.makeYbus import makeYbus as makeYbus_pypower
+from pandapower.pypower.idx_brch import BR_R, BR_X, BR_B, BR_G
 
 
 try:
@@ -1194,7 +1195,6 @@ def assert_init_results(net):
 
 
 def test_wye_delta():
-    from pandapower.pypower.idx_brch import BR_R, BR_X, BR_B
     net = pp.create_empty_network()
     pp.create_bus(net, vn_kv=110)
     pp.create_buses(net, nr_buses=4, vn_kv=20)
@@ -1210,13 +1210,13 @@ def test_wye_delta():
     pp.runpp(net, trafo_model="pi")
     f, t = net._pd2ppc_lookups["branch"]["trafo"]
     assert np.isclose(net.res_trafo.p_hv_mw.at[trafo], -7.560996, rtol=1e-7)
-    assert np.allclose(net._ppc["branch"][f:t, [BR_R, BR_X, BR_B]].flatten(),
-                       np.array([0.0001640 + 0.j, 0.0047972 + 0.j, -0.0105000 - 0.014j]),
+    assert np.allclose(net._ppc["branch"][f:t, [BR_R, BR_X, BR_B, BR_G]].flatten(),
+                       np.array([0.0001640, 0.0047972, -0.0105000, 0.014]),
                        rtol=1e-7)
 
     pp.runpp(net, trafo_model="t")
-    assert np.allclose(net._ppc["branch"][f:t, [BR_R, BR_X, BR_B]].flatten(),
-                       np.array([0.00016392 + 0.j, 0.00479726 + 0.j, -0.01050009 - 0.01399964j]))
+    assert np.allclose(net._ppc["branch"][f:t, [BR_R, BR_X, BR_B, BR_G]].flatten(),
+                       np.array([0.00016392, 0.00479726, -0.01050009, 0.01399964]))
     assert np.isclose(net.res_trafo.p_hv_mw.at[trafo], -7.561001, rtol=1e-7)
 
 
@@ -1364,7 +1364,10 @@ def test_lightsim2grid():
     # test several nets
     for net in result_test_network_generator():
         try:
+            net_ref = copy.deepcopy(net)
+            pp.runpp(net_ref, lightsim2grid=False)
             runpp_with_consistency_checks(net, lightsim2grid=True)
+            assert_res_equal(net, net_ref)
         except AssertionError:
             raise UserWarning("Consistency Error after adding %s" % net.last_added_case)
         except LoadflowNotConverged:
@@ -1372,6 +1375,15 @@ def test_lightsim2grid():
         except NotImplementedError as err:
             assert len(net.ext_grid) > 1
             assert "multiple ext_grids are found" in str(err)
+
+
+@pytest.mark.skipif(not lightsim2grid_available, reason="lightsim2grid is not installed")
+def test_lightsim2grid_case118():
+    net = pp.networks.case118()
+    net_ref = copy.deepcopy(net)
+    pp.runpp(net_ref, lightsim2grid=False)
+    runpp_with_consistency_checks(net, lightsim2grid=True)
+    assert_res_equal(net, net_ref)
 
 
 @pytest.mark.skipif(not lightsim2grid_available, reason="lightsim2grid is not installed")
@@ -1450,17 +1462,4 @@ def test_lightsim2grid_option():
 
 
 if __name__ == "__main__":
-    pytest.main([__file__])
-#    test_minimal_net()
-#    net = pp.create_empty_network()
-#    b = pp.create_bus(net, 110)
-#    pp.create_ext_grid(net, b)
-#    runpp_with_consistency_checks(net)
-#
-#    pp.create_load(net, b, p_mw=0.1)
-#    runpp_with_consistency_checks(net)
-#
-#    b2 = pp.create_bus(net, 110)
-#    pp.create_switch(net, b, b2, 'b')
-#    pp.create_sgen(net, b2, p_mw=0.2)
-#    runpp_with_consistency_checks(net)
+    pytest.main([__file__, "-xs"])
