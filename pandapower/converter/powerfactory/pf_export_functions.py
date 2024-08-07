@@ -30,6 +30,7 @@ def create_network_dict(app, flag_graphics='GPS'):
         'RelFuse',
         'ElmZpu',
         'ElmSind',
+        'ElmScap',
         'StaSwitch',
         'ElmTr2',
         'ElmTr3'
@@ -56,6 +57,7 @@ def create_network_dict(app, flag_graphics='GPS'):
         'ElmShnt': ['W', 'var', 'VA'],
         'ElmZpu': ['W', 'var', 'VA'],
         'ElmSind': ['W', 'var', 'VA', 'V'],
+        'ElmScap': ['W', 'var', 'VA', 'V'],
         'ElmVac': ['W', 'var', 'VA'],
         'ElmTr2': ['W', 'var'],
         'ElmTr3': ['W', 'var'],

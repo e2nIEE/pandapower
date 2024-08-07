@@ -180,11 +180,16 @@ def from_pf(dict_net, pv_as_slack=True, pf_variable_p_loads='plini', pf_variable
         create_zpu(net=net, item=zpu)
     if n > 0: logger.info('imported %d impedances' % n)
 
-    # create series impedance (ElmSind):
+    # create series inductivity as impedance (ElmSind):
     n = 0
     for n, sind in enumerate(dict_net['ElmSind'], 1):
         create_sind(net=net, item=sind)
     if n > 0: logger.info('imported %d SIND' % n)
+    # create series capacity as impedance (ElmScap):
+    n = 0
+    for n, scap in enumerate(dict_net['ElmScap'], 1):
+        create_scap(net=net, item=scap)
+    if n > 0: logger.info('imported %d SCAP' % n)
 
     # create vac (ElmVac):
     n = 0
@@ -2815,6 +2820,28 @@ def create_sind(net, item):
 
     logger.debug('created series reactor %s as per unit impedance at index %d' %
                  (net.impedance.at[sind, 'name'], sind))
+
+def create_scap(net, item):
+    # series capacitor is modelled as per-unit impedance, values in Ohm are calculated into values in
+    # per unit at creation
+    try:
+        (bus1, bus2) = get_connection_nodes(net, item, 2)
+    except IndexError:
+        logger.error("Cannot add Scap '%s': not connected" % item.loc_name)
+        return
+    
+    if (item.gcap==0) or (item.bcap==0):
+        logger.info('not creating series capacitor for %s' % item.loc_name)
+    else:
+        r_ohm = item.gcap/(item.gcap**2 + item.bcap**2)
+        x_ohm = -item.bcap/(item.gcap**2 + item.bcap**2)
+        scap = pp.create_series_reactor_as_impedance(net, from_bus=bus1, to_bus=bus2, r_ohm=r_ohm,
+                                                     x_ohm=x_ohm, sn_mva=item.Sn,
+                                                     name=item.loc_name,
+                                                     in_service=not bool(item.outserv))
+    
+        logger.debug('created series capacitor %s as per unit impedance at index %d' %
+                     (net.impedance.at[scap, 'name'], scap))
 
 
 def _get_vsc_control_modes(item, mono=True):
