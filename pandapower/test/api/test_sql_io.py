@@ -160,4 +160,4 @@ def test_delete():
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-s"])
+    pytest.main([__file__, "-xs"])
