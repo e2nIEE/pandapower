@@ -2990,7 +2990,7 @@ def create_stactrl(net, item):
                                                  output_values_distribution=distribution,
                                                  input_element=res_element_table, input_variable=variable,
                                                  input_element_index=res_element_index,
-                                                 set_point=v_setpoint_pu, bus_idx=bus, tol=1e-3)
+                                                 set_point=v_setpoint_pu, voltage_ctrl=True, bus_idx=bus, tol=1e-3)
             pp.control.DroopControl(net, q_droop_mvar=item.Srated * 100 / item.ddroop, bus_idx=bus,
                                     vm_set_pu=v_setpoint_pu, controller_idx=bsc.index, voltage_ctrl=True)
         else:
@@ -3000,7 +3000,7 @@ def create_stactrl(net, item):
                                            output_element_in_service=gen_element_in_service, input_element="res_bus",
                                            output_values_distribution=distribution, damping_factor=0.9,
                                            input_variable="vm_pu", input_element_index=bus,
-                                           set_point=v_setpoint_pu, tol=1e-6)
+                                           set_point=v_setpoint_pu, voltage_ctrl=True, tol=1e-6)
     elif control_mode == 1:  # Q Control mode
         if item.iQorient != 0:
             if not stactrl_in_service:
@@ -3016,7 +3016,7 @@ def create_stactrl(net, item):
                                                  input_element=res_element_table,
                                                  output_values_distribution=distribution, damping_factor=0.9,
                                                  input_variable=variable, input_element_index=res_element_index,
-                                                 set_point=item.qsetp, tol=1e-6)
+                                                 set_point=item.qsetp, voltage_ctrl=False, tol=1e-6)
         elif item.qu_char == 1:
             controlled_node = item.refbar
             bus = bus_dict[controlled_node]  # controlled node
@@ -3027,7 +3027,7 @@ def create_stactrl(net, item):
                                                  input_element=res_element_table,
                                                  output_values_distribution=distribution, damping_factor=0.9,
                                                  input_variable=variable, input_element_index=res_element_index,
-                                                 set_point=item.qsetp, bus_idx=bus, tol=1e-6)
+                                                 set_point=item.qsetp, voltage_ctrl=False, bus_idx=bus, tol=1e-6)
             pp.control.DroopControl(net, q_droop_mvar=item.Srated * 100 / item.ddroop, bus_idx=bus,
                                     vm_set_pu=item.udeadbup, vm_set_ub=item.udeadbup, vm_set_lb=item.udeadblow,
                                     controller_idx=bsc.index, voltage_ctrl=False)
