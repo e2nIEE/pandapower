@@ -1,7 +1,7 @@
 import pandapower as pp
 import time
 from pandapower.grid_equivalents.auxiliary import drop_internal_branch_elements, \
-    _runpp_except_voltage_angles
+    _runpp_except_voltage_angles, impedance_columns
 import pandas as pd
 import numpy as np
 
@@ -30,10 +30,10 @@ def _calculate_ward_and_impedance_parameters(Ybus_eq, bus_lookups, show_computin
 
     # --- calculate impedance paramter
     params = Ybus_eq[-nb_b_buses_ppc:, -nb_b_buses_ppc:]
-    nl = (nb_b_buses_ppc) * (nb_b_buses_ppc - 1) // 2
+    nl = nb_b_buses_ppc * (nb_b_buses_ppc - 1) // 2
     impedance_parameter = pd.DataFrame(
-        np.arange(nl * 6).reshape((nl, 6)), columns=["from_bus", "to_bus", "rft_pu", "xft_pu",
-                                                     "rtf_pu", "xtf_pu"], dtype=float)
+        data=np.arange(nl * len(impedance_columns)).reshape((nl, len(impedance_columns))), columns=impedance_columns,
+        dtype=np.float64)
     k = 0
     for i in range(nb_b_buses_ppc):
         for j in range(nb_b_buses_ppc):

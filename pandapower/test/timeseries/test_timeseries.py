@@ -380,4 +380,4 @@ def test_user_pf_options_recycle_manual(simple_test_net):
 
 
 if __name__ == '__main__':
-    pytest.main(['-s', __file__])
+    pytest.main([__file__, "-xs"])
