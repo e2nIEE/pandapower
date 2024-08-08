@@ -95,8 +95,9 @@ class DiscreteTapControl(TrafoController):
         super().initialize_control(net)
         if hasattr(self, 'vm_set_pu') and self.vm_set_pu is not None:
             self.vm_delta_pu = self.tap_step_percent / 100. * .5 + self.tol
-        if hasattr(self.tid, "__iter__"):
-            self._hunting_taps = np.full(shape=len(self.tid), fill_value=np.nan, dtype=np.float64)
+        if hasattr(self.element_index, "__iter__"):
+            self._hunting_taps = np.full(shape=len(self.element_index), fill_value=np.nan,
+                                         dtype=np.float64)
         else:
             self._hunting_taps = np.nan
 
