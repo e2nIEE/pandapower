@@ -3,6 +3,7 @@
 # Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+from copy import deepcopy
 import numpy as np
 import pandapower as pp
 from pandapower.control import DiscreteTapControl
@@ -34,7 +35,7 @@ def test_discrete_tap_control_lv():
     # --- run loadflow
     pp.runpp(net)
 
-    DiscreteTapControl(net, tid=0, side='lv', vm_lower_pu=0.95, vm_upper_pu=0.99)
+    DiscreteTapControl(net, 0, side='lv', vm_lower_pu=0.95, vm_upper_pu=0.99)
 
     logger.info("case1: low voltage")
     logger.info("before control: trafo voltage at low voltage bus is %f, tap position is %u"
@@ -95,7 +96,7 @@ def test_discrete_tap_control_hv():
     # --- run loadflow
     pp.runpp(net)
 
-    DiscreteTapControl(net, tid=0, side='lv', vm_lower_pu=0.95, vm_upper_pu=0.99)
+    DiscreteTapControl(net, 0, side='lv', vm_lower_pu=0.95, vm_upper_pu=0.99)
 
     logger.info("case1: low voltage")
     logger.info("before control: trafo voltage at low voltage bus is %f, tap position is %u"
@@ -155,7 +156,7 @@ def test_discrete_tap_control_lv_from_tap_step_percent():
     # --- run loadflow
     pp.runpp(net)
 
-    DiscreteTapControl.from_tap_step_percent(net, tid=0, side='lv', vm_set_pu=0.98)
+    DiscreteTapControl.from_tap_step_percent(net, 0, side='lv', vm_set_pu=0.98)
 
     logger.info("case1: low voltage")
     logger.info("before control: trafo voltage at low voltage bus is %f, tap position is %u"
@@ -226,7 +227,7 @@ def test_discrete_tap_control_hv_from_tap_step_percent():
     # --- run loadflow
     pp.runpp(net)
 
-    DiscreteTapControl.from_tap_step_percent(net, tid=0, side='lv', vm_set_pu=0.98)
+    DiscreteTapControl.from_tap_step_percent(net, 0, side='lv', vm_set_pu=0.98)
 
     logger.info("case1: low voltage")
     logger.info("before control: trafo voltage at low voltage bus is %f, tap position is %u"
@@ -294,18 +295,18 @@ def test_discrete_tap_control_vectorized_lv():
         pp.create_transformer(net, hv, lv, "63 MVA 110/20 kV")
         pp.create_load(net, lv, 25*(lv-8), 25*(lv-8) * 0.4)
     pp.set_user_pf_options(net, init='dc', calculate_voltage_angles=True)
-    net.trafo.loc[3:, 'tap_side'] = "lv"
+    net.trafo.iloc[3:, net.trafo.columns.get_loc("tap_side")] = "lv"
     # --- run loadflow
     pp.runpp(net)
     assert not all(_vm_in_desired_area(net, 1.01, 1.03, "lv"))  # there should be something
         # to do for the controllers
 
-    net_ref = net.deepcopy()
+    net_ref = deepcopy(net)
 
     # create with individual controllers for comparison
     for tid in net.trafo.index.values:
-        # pp.control.ContinuousTapControl(net_ref, tid=tid, side='lv', vm_set_pu=1.02)
-        DiscreteTapControl(net_ref, tid=tid, side='lv', vm_lower_pu=1.01, vm_upper_pu=1.03)
+        # pp.control.ContinuousTapControl(net_ref, tid, side='lv', vm_set_pu=1.02)
+        DiscreteTapControl(net_ref, tid, side='lv', vm_lower_pu=1.01, vm_upper_pu=1.03)
 
     # run control reference
     pp.runpp(net_ref, run_control=True)
@@ -315,7 +316,7 @@ def test_discrete_tap_control_vectorized_lv():
     assert all(_vm_in_desired_area(net_ref, 1.01, 1.03, "lv"))
 
     # now create the vectorized version
-    DiscreteTapControl(net, tid=net.trafo.index.values, side='lv', vm_lower_pu=1.01, vm_upper_pu=1.03)
+    DiscreteTapControl(net, net.trafo.index.values, side='lv', vm_lower_pu=1.01, vm_upper_pu=1.03)
     pp.runpp(net, run_control=True)
 
     assert np.all(net_ref.trafo.tap_pos == net.trafo.tap_pos)
@@ -338,12 +339,12 @@ def test_discrete_tap_control_vectorized_hv():
     assert not all(_vm_in_desired_area(net, 1.01, 1.03, "hv"))  # there should be something
         # to do for the controllers
 
-    net_ref = net.deepcopy()
+    net_ref = deepcopy(net)
 
     # create with individual controllers for comparison
     for tid in net.trafo.index.values:
-        # pp.control.ContinuousTapControl(net_ref, tid=tid, side='hv', vm_set_pu=1.02)
-        DiscreteTapControl(net_ref, tid=tid, side='hv', vm_lower_pu=1.01, vm_upper_pu=1.03)
+        # pp.control.ContinuousTapControl(net_ref, tid, side='hv', vm_set_pu=1.02)
+        DiscreteTapControl(net_ref, tid, side='hv', vm_lower_pu=1.01, vm_upper_pu=1.03)
 
     # run control reference
     pp.runpp(net_ref, run_control=True)
@@ -353,7 +354,7 @@ def test_discrete_tap_control_vectorized_hv():
     assert all(_vm_in_desired_area(net_ref, 1.01, 1.03, "hv"))
 
     # now create the vectorized version
-    DiscreteTapControl(net, tid=net.trafo.index, side='hv', vm_lower_pu=1.01, vm_upper_pu=1.03)
+    DiscreteTapControl(net, net.trafo.index, side='hv', vm_lower_pu=1.01, vm_upper_pu=1.03)
     pp.runpp(net, run_control=True)
 
     assert np.all(net_ref.trafo.tap_pos == net.trafo.tap_pos)
@@ -378,8 +379,8 @@ def test_continuous_tap_control_side_mv():
     assert not any(_vm_in_desired_area(net, 1.01, 1.03, "mv", trafo_table="trafo3w"))  # there should be
         # something to do for the controllers
 
-    net_ref = net.deepcopy()
-    DiscreteTapControl(net, tid=0, vm_lower_pu=1.01, vm_upper_pu=1.03, side='mv', tol=tol, trafotype="3W")
+    net_ref = deepcopy(net)
+    DiscreteTapControl(net, 0, vm_lower_pu=1.01, vm_upper_pu=1.03, side='mv', tol=tol, element="trafo3w")
 
     # --- run control reference
     pp.runpp(net, run_control=True)

@@ -257,13 +257,13 @@ def _replace_external_area_by_xwards(net_external, bus_lookups, xward_parameter_
     eq_power.q_mvar -= \
         pd.concat([net_external.res_ext_grid.q_mvar, net_external.res_gen.q_mvar[slack_gen]])
     for bus in eq_power.bus:
-        net_external.xward.loc[net_external.xward.bus==bus, 'ps_mw'] = \
+        net_external.xward.loc[net_external.xward.bus==bus, "ps_mw"] = \
             eq_power.p_mw[eq_power.bus==bus].values
-        net_external.xward.loc[net_external.xward.bus==bus, 'qs_mvar'] = \
+        net_external.xward.loc[net_external.xward.bus==bus, "qs_mvar"] = \
             eq_power.q_mvar[eq_power.bus==bus].values
 
-    net_external.poly_cost=net_external.poly_cost[0:0]
-    net_external.pwl_cost=net_external.pwl_cost[0:0]
+    net_external.poly_cost = net_external.poly_cost[0:0]
+    net_external.pwl_cost = net_external.pwl_cost[0:0]
     if len(ext_buses_with_xward):
         pp.drop_buses(net_external,
                       net_external.bus.index.tolist()[-(len(ext_buses_with_xward)):])

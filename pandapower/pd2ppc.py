@@ -185,7 +185,7 @@ def _pd2ppc(net, sequence=None):
     if check_connectivity:
         if sequence in [None, 1, 2]:
             # sets islands (multiple isolated nodes) out of service
-            if "opf" in mode:
+            if mode == "opf":
                 net["_isolated_buses"], _, _ = aux._check_connectivity_opf(ppc)
                 net["_isolated_buses_dc"] = np.array([], dtype=np.int64)
             else:

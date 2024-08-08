@@ -5,11 +5,11 @@
 
    <br />
 
-============================    
+============================
 Update to pandapower 2.0
 ============================
 
-Some fundamental changes were made to make pandapower more easy to use and consistent with other tools with the release of pandapower 2.0. 
+Some fundamental changes were made to make pandapower more easy to use and consistent with other tools with the release of pandapower 2.0.
 
 Most of these changes go back to the fact that pandapower was originally developed only for power flow calculations in low and medium voltage networks, but is today also widely
 used in transmission systems. The most significant changes are:
@@ -28,22 +28,22 @@ How to update saved networks
 
 pandapower has a convert_format function that detects if an network that was saved to the hard drive with an older version of pandapower, and automatically corrects
 the data names and values in the element tables. However, the older the network is and the more changes have been made to the data structure, the more difficult
-it will be for the convert_format function to apply all necessary changes. Therefore, it is strongly advised to resave all networks when updating pandapower 
+it will be for the convert_format function to apply all necessary changes. Therefore, it is strongly advised to resave all networks when updating pandapower
 (especially with a major update such as 2.0):
 
 
 .. image:: /pics/convert_format.png
-		:align: center 
+		:align: center
 
-        
-With pandapower 2.0, we also advice to save networks in the .json format. It is much more robust to updates of libraries (for example, a .p file created with pandas < 0.20 can 
+
+With pandapower 2.0, we also advice to save networks in the .json format. It is much more robust to updates of libraries (for example, a .p file created with pandas < 0.20 can
 not be loaded with pandas 0.20 due to a change in the internal data structures. This is not an issue when saving the networks as .json files). So resave your pickle files as .json files such as ::
 
     import pandapower as pp
     net = pp.from_pickle("C:\\my_file.p")
     pp.runpp(net)
     pp.to_json(net, "C:\\my_file_2.0.json")
-    
+
 
 Transformer parameter naming
 ==============================
@@ -55,61 +55,61 @@ Two major changes have been made to transformer parameters:
 
 The meaning or value of these parameters has not changed, so that the code can be updated by searching and replacing as follows:
 
-    - tp\_ -------> tap\_
-    - _st_ ------> _step_
-    - _mid -----> _neutral
-    - vsc ------> vk
+    - tp\_ ➔ tap\_
+    - _st_ ➔ _step_
+    - _mid ➔ _neutral
+    - vsc ➔ vk
 
 Here is a full list of affected parameters:
-    
+
 +--------------------------+---------------------+------------------------+
 | pandapower 1.x           | pandapower 2.x      | elements               |
 +==========================+=====================+========================+
-| tp_side                  | tap_side            | trafo, trafo3w         | 
+| tp_side                  | tap_side            | trafo, trafo3w         |
 +--------------------------+---------------------+------------------------+
-| tp_mid                   | tap_neutral         | trafo, trafo3w         | 
+| tp_mid                   | tap_neutral         | trafo, trafo3w         |
 +--------------------------+---------------------+------------------------+
-| tp_min                   | tap_min             | trafo, trafo3w         | 
+| tp_min                   | tap_min             | trafo, trafo3w         |
 +--------------------------+---------------------+------------------------+
 | tp_max                   | tap_max             | trafo, trafo3w         |
 +--------------------------+---------------------+------------------------+
-| tp_pos                   | tap_pos             | trafo, trafo3w         |  
+| tp_pos                   | tap_pos             | trafo, trafo3w         |
 +--------------------------+---------------------+------------------------+
-| tp_st_percent            | tap_step_percent    | trafo, trafo3w         | 
+| tp_st_percent            | tap_step_percent    | trafo, trafo3w         |
 +--------------------------+---------------------+------------------------+
-| tp_st_degree             | tap_step_degree     | trafo, trafo3w         | 
+| tp_st_degree             | tap_step_degree     | trafo, trafo3w         |
 +--------------------------+---------------------+------------------------+
-| tp_phase_shifter         | tap_phase_shifter   | trafo, trafo3w         | 
+| tp_phase_shifter         | tap_phase_shifter   | trafo, trafo3w         |
 +--------------------------+---------------------+------------------------+
-| vsc_percent              | vk_percent          | trafo                  | 
+| vsc_percent              | vk_percent          | trafo                  |
 +--------------------------+---------------------+------------------------+
-| vscr_percent             | vkr_percent         | trafo                  | 
+| vscr_percent             | vkr_percent         | trafo                  |
 +--------------------------+---------------------+------------------------+
-| vsc_hv_percent           | vk_hv_percent       | trafo3w                | 
+| vsc_hv_percent           | vk_hv_percent       | trafo3w                |
 +--------------------------+---------------------+------------------------+
-| vscr_hv_percent          | vkr_hv_percent      | trafo3w                | 
+| vscr_hv_percent          | vkr_hv_percent      | trafo3w                |
 +--------------------------+---------------------+------------------------+
-| vsc_mv_percent           | vk_mv_percent       | trafo3w                | 
+| vsc_mv_percent           | vk_mv_percent       | trafo3w                |
 +--------------------------+---------------------+------------------------+
-| vscr_mv_percent          | vkr_mv_percent      | trafo3w                | 
+| vscr_mv_percent          | vkr_mv_percent      | trafo3w                |
 +--------------------------+---------------------+------------------------+
-| vsc_lv_percent           | vk_lv_percent       | trafo3w                | 
+| vsc_lv_percent           | vk_lv_percent       | trafo3w                |
 +--------------------------+---------------------+------------------------+
-| vscr_lv_percent          | vkr_lv_percent      | trafo3w                | 
+| vscr_lv_percent          | vkr_lv_percent      | trafo3w                |
 +--------------------------+---------------------+------------------------+
 
 
-    
+
 MVA-based Units
 ==============================
 
 The basic power unit has been changed from kVA to MVA to allow a more comfortable handling of transmission systems. This affects all three types of power units:
 
-    - active power: kw --> mw
-    - reactive power: kvar --> mvar
-    - apparent power: kva --> mva
-    
-All elements have to be defined with MVA-based units, and results are also given in these units. 
+    - active power: kw ➔ mw
+    - reactive power: kvar ➔ mvar
+    - apparent power: kva ➔ mva
+
+All elements have to be defined with MVA-based units, and results are also given in these units.
 Since the units in pandapower are always hard coded in the column names, the access to the dataframes also has to be adapted:
 
 
@@ -139,7 +139,7 @@ a generator based signing system:
     - net.gen
     - net.sgen
     - net.ext_grid
-    
+
 All other elements remain in the load-based signing system.
 So for these three elements, in addition to the unit being changed from kW to MW, the sign for active and reactive power is also reversed:
 
@@ -184,12 +184,12 @@ the cost parameters can be directly specified as parameters instead of passing a
 The definition of piecewise linear costs has also changed. In pandapower 1.x, the cost polyonmial is given as list of cost points: ::
 
     [(p1, c1), (p2, c2), (p3, c3)]
-    
+
 The cost function is then interpolated between those points, and the costs are then defined by the slope of the curve between those points.
 So for a generator with the cost function: ::
 
     [(0, 0), (100, 50), (300, 250)]
-    
+
 the costs are 0.5 €/MW in the range between 0 and 100 MW and 1€/MW in the range between 100 MW and 300 MW.
 
 With this definition of the cost function, the actual costs are not intuitively clear from the defined function.
@@ -202,7 +202,7 @@ The same cost function that was defined as above would therefore be defined in p
     [(0, 100, 0.5), (100, 300, 1.)]
 
 which allows direct definition of the costs and ranges.
-    
+
 Of course the signing changes and the MVA-unit changes also apply, so that in summary the different cost function definitions look like this:
 
 +--------------------+--------------------------------------------------------------------------------------------------------------+

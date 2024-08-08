@@ -6,6 +6,7 @@
 from pandapower.control.controller.characteristic_control import CharacteristicControl
 from pandapower.control.util.characteristic import Characteristic
 
+
 class VmSetTapControl(CharacteristicControl):
     """
     Controller that adjusts the setpoint of a local tap changer voltage control based on a load flow result (e.g. p_lv_mw, i_lv_ka etc.)
@@ -30,7 +31,10 @@ class VmSetTapControl(CharacteristicControl):
         if matching_params is None:
             matching_params = {"cid": controller_index, 'variable': variable}
         c = net.controller.at[controller_index, 'object']
-        super().__init__(net, output_element="controller", output_variable="object.vm_set_pu", output_element_index=controller_index,
-                         input_element="res_" + c.trafotable, input_variable=variable, input_element_index=c.tid,
-                         characteristic_index=characteristic_index, tol=tol, in_service=in_service, order=order, level=level,
-                         drop_same_existing_ctrl=drop_same_existing_ctrl, matching_params=matching_params, **kwargs)
+        super().__init__(
+            net, output_element="controller", output_variable="object.vm_set_pu",
+            output_element_index=controller_index, input_element="res_" + c.element,
+            input_variable=variable, input_element_index=c.element_index,
+            characteristic_index=characteristic_index, tol=tol, in_service=in_service, order=order,
+            level=level, drop_same_existing_ctrl=drop_same_existing_ctrl,
+            matching_params=matching_params, **kwargs)
