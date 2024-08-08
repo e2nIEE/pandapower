@@ -398,6 +398,48 @@ class ppException(Exception):
     pass
 
 
+class AlgorithmUnknown(ppException):
+    """
+    Exception being raised in case optimal powerflow did not converge.
+    """
+    pass
+
+
+class LoadflowNotConverged(ppException):
+    """
+    Exception being raised in case loadflow did not converge.
+    """
+    pass
+
+
+class ControllerNotConverged(ppException):
+    """
+    Exception being raised in case a controller does not converge.
+    """
+    pass
+
+
+class NetCalculationNotConverged(ppException):
+    """
+    Exception being raised in case a controller does not converge.
+    """
+    pass
+
+
+class OPFNotConverged(ppException):
+    """
+    Exception being raised in case optimal powerflow did not converge.
+    """
+    pass
+
+
+class MapboxTokenMissing(ppException):
+    """
+    Exception being raised in case loadflow did not converge.
+    """
+    pass
+
+
 def _sum_by_group(bus, first_val, second_val):
     order = np.argsort(bus)
     bus = bus[order]

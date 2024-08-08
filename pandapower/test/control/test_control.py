@@ -207,4 +207,4 @@ def test_matching_params(net):
 
 
 if __name__ == '__main__':
-    pytest.main(['-s', __file__])
+    pytest.main([__file__, "-xs"])

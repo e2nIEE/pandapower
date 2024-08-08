@@ -1007,4 +1007,4 @@ def test_set_isolated_areas_out_of_service():
 
 
 if __name__ == '__main__':
-    pytest.main([__file__, "-x"])
+    pytest.main([__file__, "-xs"])

@@ -36,7 +36,7 @@ class DiscreteTapControl(TrafoController):
     """
 
     def __init__(self, net, element_index, vm_lower_pu, vm_upper_pu, side="lv", element="trafo",
-                 tol=1e-3, in_service=True, level=0, order=0, drop_same_existing_ctrl=False,
+                 tol=1e-3, in_service=True, hunting_limit=None, level=0, order=0, drop_same_existing_ctrl=False,
                  matching_params=None, **kwargs):
         if matching_params is None:
             matching_params = {"element_index": element_index, 'element': element}
@@ -51,10 +51,12 @@ class DiscreteTapControl(TrafoController):
 
         self.vm_delta_pu = self.tap_step_percent / 100. * .5 + self.tol
         self.vm_set_pu = kwargs.get("vm_set_pu")
+        self.hunting_limit = hunting_limit
+        self._hunting_taps = np.array([], dtype=np.float64)
 
     @classmethod
     def from_tap_step_percent(cls, net, element_index, vm_set_pu, side="lv", element="trafo",
-                              tol=1e-3, in_service=True, order=0,
+                              tol=1e-3, in_service=True, hunting_limit=None, level=0, order=0,
                               drop_same_existing_ctrl=False, matching_params=None, **kwargs):
         """
         Alternative mode of the controller, which uses a set point for voltage and the value of net.trafo.tap_step_percent to calculate
@@ -72,7 +74,7 @@ class DiscreteTapControl(TrafoController):
         """
         self = cls(net, element_index=element_index, vm_lower_pu=None, vm_upper_pu=None, side=side,
                    element=element, tol=tol,
-                   in_service=in_service, order=order,
+                   in_service=in_service, hunting_limit=hunting_limit, level=level, order=order,
                    drop_same_existing_ctrl=drop_same_existing_ctrl,
                    matching_params=matching_params, vm_set_pu=vm_set_pu, **kwargs)
         return self
@@ -93,6 +95,10 @@ class DiscreteTapControl(TrafoController):
         super().initialize_control(net)
         if hasattr(self, 'vm_set_pu') and self.vm_set_pu is not None:
             self.vm_delta_pu = self.tap_step_percent / 100. * .5 + self.tol
+        if hasattr(self.tid, "__iter__"):
+            self._hunting_taps = np.full(shape=len(self.tid), fill_value=np.nan, dtype=np.float64)
+        else:
+            self._hunting_taps = np.nan
 
     def control_step(self, net):
         """
@@ -113,6 +119,10 @@ class DiscreteTapControl(TrafoController):
                      np.where(np.logical_and(vm_pu > self.vm_upper_pu, self.tap_pos > self.tap_min), -1, 0)))
 
         self.tap_pos += increment
+
+        self._hunting_taps = np.vstack([self._hunting_taps, self.tap_pos])
+        if self.hunting_limit is not None and self._hunting_taps.shape[0] > self.hunting_limit:
+            self._hunting_taps = self._hunting_taps[1:, :]
 
         # WRITE TO NET
         write_to_net(net, self.element, self.controlled_element_index, 'tap_pos',
@@ -137,7 +147,6 @@ class DiscreteTapControl(TrafoController):
                                  (vm_pu < self.vm_lower_pu) & (self.tap_pos == self.tap_max) |
                                  (vm_pu > self.vm_upper_pu) & (self.tap_pos == self.tap_min))
 
-        converged = np.logical_or(
-            reached_limit, np.logical_and(self.vm_lower_pu < vm_pu, vm_pu < self.vm_upper_pu))
+        converged = np.logical_or(reached_limit, np.logical_and(self.vm_lower_pu < vm_pu, vm_pu < self.vm_upper_pu))
 
         return np.all(np.logical_or(converged, is_nan))

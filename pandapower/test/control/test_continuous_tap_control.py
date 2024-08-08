@@ -290,5 +290,4 @@ def test_continuous_tap_control_side_hv_reversed_3w():
 
 
 if __name__ == '__main__':
-    pytest.main(['-xs', __file__])
-    # test_continuous_tap_control_lv()
+    pytest.main([__file__, "-xs"])

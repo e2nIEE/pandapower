@@ -564,4 +564,4 @@ def test_dist_slack_with_enforce_q_lims_duplicate_gens():
 
 
 if __name__ == "__main__":
-    pytest.main([__file__])
+    pytest.main([__file__, "-xs"])

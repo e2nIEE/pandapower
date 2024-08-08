@@ -313,4 +313,4 @@ def test_log_characteristic_property():
 
 
 if __name__ == '__main__':
-    pytest.main([__file__, "-x"])
+    pytest.main([__file__, "-xs"])
