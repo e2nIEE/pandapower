@@ -11,7 +11,7 @@ try:
 except ImportError:
     import logging as pplog
 
-from pandapower.auxiliary import ppException, NetCalculationNotConverged
+from pandapower.auxiliary import NetCalculationNotConverged, ControllerNotConverged
 from pandapower.powerflow import LoadflowNotConverged
 from pandapower.optimal_powerflow import OPFNotConverged
 from pandapower.control.util.auxiliary import asarray
