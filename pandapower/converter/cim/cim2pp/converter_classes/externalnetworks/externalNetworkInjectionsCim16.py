@@ -24,7 +24,7 @@ class ExternalNetworkInjectionsCim16:
         eqssh_eni = self._prepare_external_network_injections_cim16()
 
         # choose the slack
-        eni_ref_prio_min = eqssh_eni.loc[eqssh_eni['enabled'], 'slack_weight'].min()
+        eni_ref_prio_min = eqssh_eni.loc[(eqssh_eni['enabled']) & (eqssh_eni['slack_weight'] > 0), 'slack_weight'].min()
         # check if the slack is a SynchronousMachine
         sync_machines = self.cimConverter.merge_eq_ssh_profile('SynchronousMachine')
         sync_machines = self.get_voltage_from_controllers(sync_machines)
@@ -88,8 +88,9 @@ class ExternalNetworkInjectionsCim16:
                        how='left', left_on='ConnectivityNode', right_on='b_id')
 
         # convert pu generators with prio = 0 to pq generators (PowerFactory does it same)
-        eni['referencePriority'].loc[eni['referencePriority'] == 0] = -1
-        eni['controlEnabled'].loc[eni['referencePriority'] == -1] = False
+        eni.loc[eni['referencePriority'] == 0, 'referencePriority'] = -1
+        eni['referencePriority'] = eni['referencePriority'].astype(float)
+        eni.loc[eni['referencePriority'] == -1, 'controlEnabled'] = False
         eni['p'] = -eni['p']
         eni['q'] = -eni['q']
         eni['x0x_max'] = ((eni['maxR1ToX1Ratio'] + 1j) /

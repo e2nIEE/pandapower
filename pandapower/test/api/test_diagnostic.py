@@ -108,12 +108,19 @@ class TestInvalidValues:
         assert diag_results[check_function] == \
         {'bus': [(42, 'vn_kv', '-1', '>0')],
          'ext_grid': [(0, 'vm_pu', True, '>0')],
-         'line': [(7, 'length_km', -1.0, '>0'), (8, 'max_i_ka', 0.0, '>0')],
-         'trafo': [(0, 'sn_mva', 'nan', '>0'), (0, 'vn_hv_kv', -1.5, '>0'),
-                   (0, 'vn_lv_kv', False, '>0'), (0, 'vk_percent', 0.0, '>0')],
-         'trafo3w': [(0, 'sn_mv_mva', 'a', '>0'), (0, 'vn_hv_kv', -1.5, '>0'),
-                     (0, 'vn_mv_kv', -1.5, '>0'), (0, 'vn_lv_kv', False, '>0'),
-                     (0, 'vk_mv_percent', 'nan', '>0'), (0, 'vk_lv_percent', 0.0, '>0')]}
+         'line': [(7, 'length_km', -1.0, '>0'),
+                  (8, 'max_i_ka', 0.0, '>0')],
+         'trafo': [(0, 'sn_mva', 'nan', '>0'),
+                   (0, 'vn_hv_kv', -1.5, '>0'),
+                   (0, 'vn_lv_kv', False, '>0'),
+                   (0, 'vk_percent', 0.0, '>0')],
+         'trafo3w': [(0, 'sn_mv_mva', 'a', '>0'),
+                     (0, 'vn_hv_kv', -1.5, '>0'),
+                     (0, 'vn_mv_kv', -1.5, '>0'),
+                     (0, 'vn_lv_kv', False, '>0'),
+                     (0, 'vk_mv_percent', 'nan', '>0'),
+                     (0, 'vk_lv_percent', 0.0, '>0'),
+                     (0, 'vk_mv_percent', 'nan', '<15')]}
 
         for bool_value in [True, False]:
             diag_report = DiagnosticReports(net, diag_results, diag_errors, diag_params, compact_report=bool_value)
@@ -153,14 +160,21 @@ class TestInvalidValues:
         else:
             diag_results = {}
         assert diag_results[check_function] == \
-        {'line': [(7, 'r_ohm_per_km', -1.0, '>=0'), (8, 'x_ohm_per_km', 'nan', '>=0'),
+        {'line': [(7, 'r_ohm_per_km', -1.0, '>=0'),
+                  (8, 'x_ohm_per_km', 'nan', '>=0'),
                   (8, 'c_nf_per_km', '0', '>=0')],
-         'trafo': [(0, 'vkr_percent', '-1', '>=0'), (0, 'pfe_kw', -1.5, '>=0'),
+         'trafo': [(0, 'vkr_percent', '-1', '>=0'),
+                   (0, 'vkr_percent', '-1', '<15'),
+                   (0, 'pfe_kw', -1.5, '>=0'),
                    (0, 'i0_percent', -0.001, '>=0')],
-         'trafo3w': [(0, 'vkr_hv_percent', True, '>=0'), (0, 'vkr_mv_percent', False, '>=0'),
+         'trafo3w': [(0, 'vkr_hv_percent', True, '>=0'),
+                     (0, 'vkr_mv_percent', False, '>=0'),
+                     (0, 'vkr_hv_percent', True, '<15'),
+                     (0, 'vkr_mv_percent', False, '<15'),
                      (0, 'pfe_kw', '2', '>=0')],
          'gen': [(0, 'scaling', 'nan', '>=0')],
-         'load': [(0, 'scaling', -0.1, '>=0'), (3, 'scaling', '1', '>=0')],
+         'load': [(0, 'scaling', -0.1, '>=0'),
+                  (3, 'scaling', '1', '>=0')],
          'sgen': [(0, 'scaling', False, '>=0')]}
 
         for bool_value in [True, False]:
@@ -562,8 +576,7 @@ def test_impedance_values_close_to_zero(test_net, diag_params, diag_errors, repo
     net.line.at[4, "r_ohm_per_km"] = 0
     net.line.at[4, "x_ohm_per_km"] = 0
     net.xward = net.xward.drop(net.xward.index)
-    check_result = pp.impedance_values_close_to_zero(net, diag_params['min_r_ohm'], diag_params['min_x_ohm'],
-                                                     diag_params['min_r_pu'], diag_params['min_x_pu'])
+    check_result = pp.implausible_impedance_values(net, diag_params['min_r_ohm'], diag_params['min_x_ohm'], 100, 100)
     if check_result:
         diag_results = {check_function: check_result}
     else:
@@ -585,13 +598,12 @@ def test_impedance_values_close_to_zero(test_net, diag_params, diag_errors, repo
     net = copy.deepcopy(test_net)
     check_function = 'impedance_values_close_to_zero'
     net.xward.x_ohm = 0
-    check_result = pp.impedance_values_close_to_zero(net, diag_params['min_r_ohm'], diag_params['min_x_ohm'],
-                                                     diag_params['min_r_pu'], diag_params['min_x_pu'])
+    check_result = pp.implausible_impedance_values(net, diag_params['min_r_ohm'], diag_params['min_x_ohm'], 100, 100)
     if check_result:
         diag_results = {check_function: check_result}
     else:
         diag_results = {}
-    assert diag_results[check_function] == [{'xward': [0, 1]}]
+    assert diag_results[check_function] == [{'xward': [0, 1]}, {'loadflow_converges_with_switch_replacement': True}]
     for bool_value in [True, False]:
         diag_report = DiagnosticReports(net, diag_results, diag_errors, diag_params, compact_report=bool_value)
         report_check = None
@@ -604,8 +616,7 @@ def test_impedance_values_close_to_zero(test_net, diag_params, diag_errors, repo
 
     net = copy.deepcopy(test_net)
     net.xward.r_ohm = 1
-    check_result = pp.impedance_values_close_to_zero(net, diag_params['min_r_ohm'], diag_params['min_x_ohm'],
-                                                     diag_params['min_r_pu'], diag_params['min_x_pu'])
+    check_result = pp.implausible_impedance_values(net, diag_params['min_r_ohm'], diag_params['min_x_ohm'], 100, 100)
     if check_result:
         diag_results = {check_function: check_result}
     else:
@@ -629,8 +640,7 @@ def test_impedance_values_close_to_zero(test_net, diag_params, diag_errors, repo
     net.impedance.xft_pu = 0
     net.impedance.rtf_pu = 0
     net.impedance.xtf_pu = 0
-    check_result = pp.impedance_values_close_to_zero(net, diag_params['min_r_ohm'], diag_params['min_x_ohm'],
-                                                     diag_params['min_r_pu'], diag_params['min_x_pu'])
+    check_result = pp.implausible_impedance_values(net, diag_params['min_r_ohm'], diag_params['min_x_ohm'], 100, 100)
     if check_result:
         diag_results = {check_function: check_result}
     else:
@@ -650,12 +660,11 @@ def test_impedance_values_close_to_zero(test_net, diag_params, diag_errors, repo
 
     net = copy.deepcopy(test_net)
     net.xward = net.xward.drop(net.xward.index)
-    net.impedance.rft_pu = 1
-    net.impedance.xft_pu = 1
-    net.impedance.rtf_pu = 1
-    net.impedance.xtf_pu = 1
-    check_result = pp.impedance_values_close_to_zero(net, diag_params['min_r_ohm'], diag_params['min_x_ohm'],
-                                                     diag_params['min_r_pu'], diag_params['min_x_pu'])
+    net.impedance.rft_pu = 0.1
+    net.impedance.xft_pu = 0.1
+    net.impedance.rtf_pu = 0.1
+    net.impedance.xtf_pu = 0.1
+    check_result = pp.implausible_impedance_values(net, diag_params['min_r_ohm'], diag_params['min_x_ohm'], 100, 100)
     if check_result:
         diag_results = {check_function: check_result}
     else:

@@ -12,7 +12,7 @@ from pandapower.auxiliary import _sum_by_group, _check_if_numba_is_installed,\
     _add_pf_options, _add_ppc_options, _clean_up, sequence_to_phase, \
     phase_to_sequence, X012_to_X0, X012_to_X2, \
     I1_from_V012, S_from_VI_elementwise, V1_from_ppc, V_from_I,\
-    combine_X012, I0_from_V012, I2_from_V012, ppException
+    combine_X012, I0_from_V012, I2_from_V012
 from pandapower.powerflow import LoadflowNotConverged
 from pandapower.build_bus import _add_ext_grid_sc_impedance
 from pandapower.pypower.pfsoln import pfsoln
@@ -30,13 +30,6 @@ try:
 except ImportError:
     import logging
 logger = logging.getLogger(__name__)
-
-
-class Not_implemented(ppException):
-    """
-    Exception being raised in case loadflow did not converge.
-    """
-    pass
 
 
 def _get_pf_variables_from_ppci(ppci):
@@ -369,7 +362,7 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
 #    v_debug = kwargs.get("v_debug", False)
     copy_constraints_to_ppc = False
     if trafo_model == 'pi':
-        raise Not_implemented("Three phase Power Flow doesnot support pi model because of lack of accuracy")
+        raise NotImplementedError("Three phase Power Flow doesnot support pi model because of lack of accuracy")
 #    if calculate_voltage_angles == "auto":
 #        calculate_voltage_angles = False
 #        hv_buses = np.where(net.bus.vn_kv.values > 70)[0]  # Todo: Where does that number come from?
@@ -538,11 +531,12 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
     svc = ppci0["svc"]  # placeholder
     tcsc = ppci0["tcsc"]  # placeholder
     ssc = ppci0["ssc"]  # placeholder
-    bus0, gen0, branch0 = pfsoln(base_mva, bus0, gen0, branch0, svc, tcsc, ssc, y_0_pu, y_0_f, y_0_t,
+    vsc = ppci0["vsc"]  # placeholder
+    bus0, gen0, branch0 = pfsoln(base_mva, bus0, gen0, branch0, svc, tcsc, ssc, vsc, y_0_pu, y_0_f, y_0_t,
                                  v_012_it[0, :].flatten(), sl_bus, ref_gens)
-    bus1, gen1, branch1 = pfsoln(base_mva, bus1, gen1, branch1, svc, tcsc, ssc, y_1_pu, y_1_f, y_1_t,
+    bus1, gen1, branch1 = pfsoln(base_mva, bus1, gen1, branch1, svc, tcsc, ssc, vsc, y_1_pu, y_1_f, y_1_t,
                                  v_012_it[1, :].flatten(), sl_bus, ref_gens)
-    bus2, gen2, branch2 = pfsoln(base_mva, bus2, gen2, branch2, svc, tcsc, ssc, y_1_pu, y_1_f, y_1_t,
+    bus2, gen2, branch2 = pfsoln(base_mva, bus2, gen2, branch2, svc, tcsc, ssc, vsc, y_1_pu, y_1_f, y_1_t,
                                  v_012_it[2, :].flatten(), sl_bus, ref_gens)
     ppci0 = _store_results_from_pf_in_ppci(ppci0, bus0, gen0, branch0)
     ppci1 = _store_results_from_pf_in_ppci(ppci1, bus1, gen1, branch1)

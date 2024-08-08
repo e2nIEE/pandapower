@@ -7,10 +7,15 @@
 import numpy as np
 
 from pandapower.pf.ppci_variables import bustypes
+from pandapower.pypower.bustypes import bustypes_dc
 from pandapower.pypower.idx_bus import PV, REF, VA, VM, BUS_TYPE, NONE, VMAX, VMIN, SL_FAC as SL_FAC_BUS
+from pandapower.pypower.idx_bus_dc import DC_BUS_TYPE, DC_NONE
 from pandapower.pypower.idx_gen import QMIN, QMAX, PMIN, PMAX, GEN_BUS, PG, VG, QG, MBASE, SL_FAC, gen_cols
 from pandapower.pypower.idx_brch import F_BUS, T_BUS
 from pandapower.auxiliary import _subnetworks, _sum_by_group
+from pandapower.pypower.idx_ssc import SSC_BUS, SSC_SET_VM_PU, SSC_CONTROLLABLE
+from pandapower.pypower.idx_vsc import VSC_MODE_AC, VSC_BUS, VSC_VALUE_AC, VSC_CONTROLLABLE, VSC_MODE_AC_V, \
+    VSC_MODE_AC_SL
 
 try:
     import pandaplan.core.pplog as logging
@@ -298,12 +303,50 @@ def add_p_constraints(net, element, is_element, ppc, f, t, delta, inverted=False
 
 
 def _check_voltage_setpoints_at_same_bus(ppc):
+    """
+    Checks if voltage-controlling elements (generators, SSC, VSC) at the same bus have different setpoints.
+
+    Given the grid data structure, this function verifies if any bus has voltage setpoints from different
+    controlling elements that are inconsistent with each other.
+    It raises a UserWarning if such discrepancies are found.
+
+    Parameters:
+    -----------
+    ppc : dict
+        The grid data structure, that contains grid data arrays
+
+    Raises:
+    -------
+    UserWarning:
+        If there are buses with voltage controlling elements that have different voltage setpoints.
+
+    Notes:
+    ------
+    The function specifically checks for voltage setpoints discrepancies between:
+    1. Generators
+    2. Controllable SSCs
+    3. VSCs with voltage control mode on the AC side and controllable state
+    """
     # generator buses:
     gen_bus = ppc['gen'][:, GEN_BUS].astype(np.int64)
     # generator setpoints:
     gen_vm = ppc['gen'][:, VG]
-    if _different_values_at_one_bus(gen_bus, gen_vm):
-        raise UserWarning("Voltage controlling elements, i.e. generators, external grids, or DC lines, at the same bus have different setpoints.")
+    # ssc buses:
+    ssc_relevant = np.flatnonzero(ppc['ssc'][:, SSC_CONTROLLABLE] == 1)
+    ssc_bus = ppc['ssc'][ssc_relevant, SSC_BUS].astype(np.int64)
+    # ssc setpoints:
+    ssc_vm = ppc['ssc'][ssc_relevant, SSC_SET_VM_PU]
+    # vsc buses:
+    vsc_relevant = np.flatnonzero(((ppc['vsc'][:, VSC_MODE_AC] == VSC_MODE_AC_V) |
+                                   (ppc['vsc'][:, VSC_MODE_AC] == VSC_MODE_AC_SL)) &
+                                  (ppc['vsc'][:, VSC_CONTROLLABLE] == 1))
+    vsc_bus = ppc['vsc'][vsc_relevant, VSC_BUS].astype(np.int64)
+    # vsc setpoints:
+    vsc_vm = ppc['vsc'][vsc_relevant, VSC_VALUE_AC]
+    if _different_values_at_one_bus(np.concatenate([gen_bus, ssc_bus, vsc_bus]),
+                                    np.concatenate([gen_vm, ssc_vm, vsc_vm])):
+        raise UserWarning("Voltage controlling elements, i.e. generators, external grids, or DC lines, "
+                          "at the same bus have different setpoints.")
 
 
 def _check_voltage_angles_at_same_bus(net, ppc):
@@ -316,10 +359,20 @@ def _check_voltage_angles_at_same_bus(net, ppc):
 
 
 def _check_for_reference_bus(ppc):
+    # todo implement VSC also as slack
     ref, _, _ = bustypes(ppc["bus"], ppc["gen"])
     # throw an error since no reference bus is defined
     if len(ref) == 0:
         raise UserWarning("No reference bus is available. Either add an ext_grid or a gen with slack=True")
+
+    # todo test this
+    bus_dc_type = ppc["bus_dc"][:, DC_BUS_TYPE]
+    bus_dc_relevant = np.flatnonzero(bus_dc_type != DC_NONE)
+    ref_dc, b2b_dc, _ = bustypes_dc(ppc["bus_dc"])
+    # throw an error since no reference bus is defined
+    if len(bus_dc_relevant) > 0 and len(ref_dc) == 0 and len(b2b_dc) == 0:
+        raise UserWarning("No reference bus for the dc grid is available. Add a DC reference bus by setting the "
+                          "DC control mode of at least one VSC converter to 'vm_pu'")
 
 
 def _different_values_at_one_bus(buses, values):
