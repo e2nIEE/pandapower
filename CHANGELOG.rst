@@ -57,6 +57,7 @@ Change Log
 - [FIXED] deprecation of matplotlib.cm.get_cmap(name) -> matplotlib.colormaps[name]
 - [FIXED] merge_nets failing if net2 has custom DataFrame that is not present in net1
 - [FIXED] fixed some small bugs in the CGMES converter and improved its speed
+- [CHANGED] vectorization of switch bus and element checks in create_switches()
 - [CHANGED] trigger a numpy error in makeYbus, makeBbus, _wye_delta instead of warning
 - [ADDED] transformer tap hunting detection for DiscreteTapControl
 - [CHANGED] diagnostic for implausible impedance values includes xward, trafo, trafo3w
