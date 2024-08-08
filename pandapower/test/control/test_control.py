@@ -5,7 +5,7 @@
 
 import copy
 import pytest
-import pandapower.control as ct
+from pandapower.auxiliary import ControllerNotConverged
 import pandapower.networks as networks
 import pandapower as pp
 from pandapower.control.run_control import get_controller_order
@@ -93,7 +93,7 @@ def test_ctrl_unconverged(net):
 
     DivergentController(net)
 
-    with pytest.raises(ct.ControllerNotConverged):
+    with pytest.raises(ControllerNotConverged):
         run_timeseries(net, time_steps=range(0, 3), output_writer=output_writer, max_iter=3, verbose=False)
 
     # assert no exceptions but appropriate output in outputwriter
@@ -115,7 +115,7 @@ def test_conflicting_controllers(net):
     ContinuousTapControl(net, 0, vm_set_pu=1.02, tol=tol, order=1)
     ContinuousTapControl(net, 0, vm_set_pu=1.05, tol=tol, order=2)
 
-    with pytest.raises(ct.ControllerNotConverged):
+    with pytest.raises(ControllerNotConverged):
         pp.runpp(net, run_control=True)
 
 
