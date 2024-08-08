@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2024-..-..
 -------------------------------
+- [FIXED] cast the column to the correct type before assigning values
 - [ADDED] creating series capacitor added in pf to pp converter
 - [FIXED] using loc to remove the warning
 - [FIXED] replacing deprecated H and A from scipy.sparse.csc_matrix
