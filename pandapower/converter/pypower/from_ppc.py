@@ -333,6 +333,7 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
     branch_lookup.loc[is_line, "element_type"] = "line"
     branch_lookup.loc[is_trafo, "element"] = idx_trafo
     branch_lookup.loc[is_trafo, "element_type"] = "trafo"
+    branch_lookup["element"] = branch_lookup["element"].astype("float64")
     branch_lookup.loc[is_impedance, "element"] = idx_impedance
     branch_lookup.loc[is_impedance, "element_type"] = "impedance"
     return branch_lookup

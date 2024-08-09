@@ -553,6 +553,7 @@ def convert_geodata_to_geojson(
         if not coords:
             continue
         ls = f'{{"coordinates": {coords}, "type": "LineString"}}'
+        ldf["geo"] = ldf["geo"].astype(object)
         ldf.geo.at[l_id] = ls
 
     if delete:

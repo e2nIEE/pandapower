@@ -467,7 +467,8 @@ def test_detect_power_station_units():
 
     detect_power_station_unit(net)
     assert np.all(net.gen.power_station_trafo.values[[0, 1]] == np.array([0, 1]))
-    net.gen.loc[:, 'power_station_trafo'] = None
+    net.gen["power_station_trafo"] = net.gen["power_station_trafo"].astype(object)
+    net.gen.loc[:, "power_station_trafo"] = None
 
     detect_power_station_unit(net, mode="trafo")
     assert np.all(net.gen.power_station_trafo.values[[0, 1]] == np.array([0, 1]))

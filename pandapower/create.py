@@ -5987,8 +5987,8 @@ def _set_value_if_not_nan(net, index, value, column, element_type, dtype=float64
         if not column_exists:
             net[element_type].loc[:, column] = pd.Series(
                 data=default_val, index=net[element_type].index)
-        net[element_type].at[index, column] = value
         try_astype(net[element_type], column, dtype)
+        net[element_type].at[index, column] = value
     elif column_exists:
         if _not_nan(default_val):
             net[element_type].at[index, column] = default_val
