@@ -1214,10 +1214,9 @@ def replace_ext_grid_by_gen(net, ext_grids=None, gen_indices=None, slack=False, 
                          in_service=ext_grid.in_service, controllable=True, index=index)
         new_idx.append(idx)
     net.gen.loc[new_idx, "slack"] = slack
-    net.gen[existing_cols_to_keep] = net.gen[existing_cols_to_keep].astype(object)
-    net.gen.loc[new_idx, existing_cols_to_keep] = net.ext_grid.loc[
-        ext_grids, existing_cols_to_keep].values
-
+    val = net.ext_grid.loc[ext_grids, existing_cols_to_keep].values
+    net.gen[existing_cols_to_keep] = net.gen[existing_cols_to_keep].astype(val.dtype)
+    net.gen.loc[new_idx, existing_cols_to_keep] = val
     _replace_group_member_element_type(net, ext_grids, "ext_grid", new_idx, "gen")
 
     # --- drop replaced ext_grids
