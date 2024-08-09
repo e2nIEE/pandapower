@@ -533,6 +533,10 @@ def vsc_patches(coords, size, **kwargs):
     linewidths = kwargs.get("linewidths", 2.)
     linewidths = get_linewidth_list(linewidths, len(coords), name_entries="vscs")
     squares, lines = list(), list()
+
+    # load and extract the coords from the geojson object
+    coords = list(map(lambda x: list(geojson.utils.coords(geojson.loads(x))), coords))
+
     for i, (p1, p2) in enumerate(coords):
         p1 = np.array(p1)
         p2 = np.array(p2)
