@@ -1229,8 +1229,8 @@ def replace_ext_grid_by_gen(net, ext_grids=None, gen_indices=None, slack=False, 
                                          (net[table].element.isin(ext_grids))]
             if len(to_change):
                 net[table].loc[to_change, "et"] = "gen"
-                net[table]["element"] = net[table]["element"].astype("float64")
-                net[table].loc[to_change, "element"] = new_idx
+                net[table].loc[to_change, "element"] = np.array(
+                    new_idx, net[table]["element"].dtypes)
 
     # --- result data
     if net.res_ext_grid.shape[0]:
@@ -1396,8 +1396,8 @@ def replace_gen_by_sgen(net, gens=None, sgen_indices=None, cols_to_keep=None,
             to_change = net[table].index[(net[table].et == "gen") & (net[table].element.isin(gens))]
             if len(to_change):
                 net[table].loc[to_change, "et"] = "sgen"
-                net[table]["element"] = net[table]["element"].astype("float64")
-                net[table].loc[to_change, "element"] = new_idx
+                net[table].loc[to_change, "element"] = np.array(
+                    new_idx, net[table]["element"].dtypes)
 
     # --- result data
     if net.res_gen.shape[0]:
@@ -1618,8 +1618,9 @@ def replace_pq_elmtype(net, old_element_type, new_element_type, old_indices=None
                                          (net[table].element.isin(old_indices))]
             if len(to_change):
                 net[table].loc[to_change, "et"] = new_element_type
-                net[table]["element"] = net[table]["element"].astype("float64")
-                net[table].loc[to_change, "element"] = new_idx
+                net[table].loc[to_change, "element"] = np.array(
+                    new_idx, net[table]["element"].dtypes)
+
 
     # --- result data
     if net["res_" + old_element_type].shape[0]:
