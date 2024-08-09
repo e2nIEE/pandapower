@@ -1624,7 +1624,15 @@ def create_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
         if load_type is None:
             params["const_z_percent"] = 100
         else:
-            if (load_type.kpu != load_type.kqu or load_type.kpu0 != load_type.kqu0):
+            if (load_type.kpu0!=load_type.kqu0 or \
+                load_type.kpu1!=load_type.kqu1 or \
+                load_type.kpu!=load_type.kqu) or \
+                (load_type.kpu0>0 or \
+                 load_type.kqu0>0 or \
+                 load_type.kpu1>1 or \
+                 load_type.kqu1>1 or \
+                 load_type.kpu>2 or \
+                 load_type.kqu>2):                
                 raise UserWarning(f"Load {item.loc_name} ({load_class}) unsupported voltage dependency configuration")
             else:
                 i_p = 0
