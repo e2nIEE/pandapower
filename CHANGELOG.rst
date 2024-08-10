@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2024-..-..
 -------------------------------
+- [FIXED] replacement for deprecated namespaces scipy.sparse.csc and scipy.sparse.csr
 - [ADDED] creating series capacitor added in pf to pp converter
 - [FIXED] using loc to remove the warning
 - [FIXED] replacing deprecated H and A from scipy.sparse.csc_matrix
