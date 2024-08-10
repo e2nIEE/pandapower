@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2024-..-..
 -------------------------------
+- [FIXED] copy array element to standard python scalar
 - [ADDED] creating series capacitor added in pf to pp converter
 - [FIXED] using loc to remove the warning
 - [FIXED] replacing deprecated H and A from scipy.sparse.csc_matrix
