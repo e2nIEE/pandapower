@@ -12,24 +12,10 @@ except:
     import logging as pplog
 
 from pandapower.optimal_powerflow import OPFNotConverged
-from pandapower import ppException, LoadflowNotConverged
+from pandapower import LoadflowNotConverged, ControllerNotConverged, NetCalculationNotConverged
 from pandapower.control.util.auxiliary import asarray
 
 logger = pplog.getLogger(__name__)
-
-
-class ControllerNotConverged(ppException):
-    """
-    Exception being raised in case a controller does not converge.
-    """
-    pass
-
-
-class NetCalculationNotConverged(ppException):
-    """
-    Exception being raised in case a controller does not converge.
-    """
-    pass
 
 
 def get_controller_order(nets, controller):

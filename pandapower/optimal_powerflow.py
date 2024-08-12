@@ -12,7 +12,7 @@ from pandapower.pypower.add_userfcn import add_userfcn
 from pandapower.pypower.ppoption import ppoption
 from scipy.sparse import csr_matrix as sparse
 
-from pandapower.auxiliary import ppException, _clean_up, _add_auxiliary_elements
+from pandapower.auxiliary import OPFNotConverged, _clean_up, _add_auxiliary_elements
 from pandapower.pypower.idx_bus import VM
 from pandapower.pypower.opf import opf
 from pandapower.pypower.printpf import printpf
@@ -27,13 +27,6 @@ except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
-
-
-class OPFNotConverged(ppException):
-    """
-    Exception being raised in case optimal powerflow did not converge.
-    """
-    pass
 
 
 def _optimal_powerflow(net, verbose, suppress_warnings, **kwargs):

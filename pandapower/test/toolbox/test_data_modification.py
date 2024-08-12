@@ -211,4 +211,4 @@ def test_scaling_by_type():
 
 
 if __name__ == '__main__':
-    pytest.main([__file__, "-x"])
+    pytest.main([__file__, "-xs"])

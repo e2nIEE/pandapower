@@ -35,10 +35,10 @@ def test_opf_cigre():
     net.sgen["min_q_mvar"] = -0.01
     net.sgen["controllable"] = True
     net.load["controllable"] = False
-    net.sgen.in_service[net.sgen.bus == 4] = False
-    net.sgen.in_service[net.sgen.bus == 6] = False
-    net.sgen.in_service[net.sgen.bus == 8] = False
-    net.sgen.in_service[net.sgen.bus == 9] = False
+    net.sgen.loc[net.sgen.bus == 4, 'in_service'] = False
+    net.sgen.loc[net.sgen.bus == 6, 'in_service'] = False
+    net.sgen.loc[net.sgen.bus == 8, 'in_service'] = False
+    net.sgen.loc[net.sgen.bus == 9, 'in_service'] = False
 
     # run OPF
     pp.runopp(net)
