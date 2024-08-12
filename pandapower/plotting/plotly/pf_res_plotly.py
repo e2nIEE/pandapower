@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 def pf_res_plotly(net, cmap="Jet", use_line_geo=None, on_map=False, projection=None,
                   map_style='basic', figsize=1, aspectratio='auto', line_width=2, bus_size=10,
                   climits_volt=(0.9, 1.1), climits_load=(0, 100), cpos_volt=1.0, cpos_load=1.1,
-                  filename="temp-plot.html", auto_open=True):
+                  filename="temp-plot.html", auto_open=True, power_unit="k", current_unit="", voltage_unit=""):
     """
         Plots a pandapower network in plotly
 
@@ -75,12 +75,19 @@ def pf_res_plotly(net, cmap="Jet", use_line_geo=None, on_map=False, projection=N
 
             **auto_open** (bool, True) - automatically open plot in browser
 
+            **power_unit** (str, 'k') - default unit of displayed P, Q, S data ["", "k", "M"]
+
+            **current_unit** (str, '') - default unit of displayed I data ["", "k"]
+
+            **voltage_unit** (str, '') - default unit of displayed V data ["", "k"]
+
         OUTPUT:
             **figure** (graph_objs._figure.Figure) figure object
 
     """
     if 'res_bus' not in net or net.get('res_bus').shape[0] == 0:
-        logger.warning('There are no Power Flow results. A Newton-Raphson power flow will be executed.')
+        logger.warning(
+            'There are no Power Flow results. A Newton-Raphson power flow will be executed.')
         runpp(net)
 
     # create geocoord if none are available
@@ -89,7 +96,8 @@ def pf_res_plotly(net, cmap="Jet", use_line_geo=None, on_map=False, projection=N
                        " This may take some time")
         create_generic_coordinates(net, respect_switches=True)
         if on_map:
-            logger.warning("Map plots not available with artificial coordinates and will be disabled!")
+            logger.warning(
+                "Map plots not available with artificial coordinates and will be disabled!")
             on_map = False
 
     # for geo_type in ["bus_geodata", "line_geodata"]:
@@ -104,7 +112,6 @@ def pf_res_plotly(net, cmap="Jet", use_line_geo=None, on_map=False, projection=N
     #                            "indices. That can cause troubles for draw_traces(): " + str(
     #                            dupl_geo_idx))
 
-
     # check if geodata are real geographycal lat/lon coordinates using geopy
     if on_map and projection is not None:
         geo_data_to_latlong(net, projection=projection)
@@ -113,11 +120,25 @@ def pf_res_plotly(net, cmap="Jet", use_line_geo=None, on_map=False, projection=N
     # initializating bus trace
     # hoverinfo which contains name and pf results
     precision = 3
+
+    if voltage_unit == "":
+        voltage_factor = 1e3
+    else:
+        voltage_factor = 1
+    if power_unit == "":
+        power_factor = 1e6
+    elif power_unit == "k":
+        power_factor = 1e3
+    else:
+        power_factor = 1
+
     hoverinfo = (
-            net.bus.name.astype(str) + '<br />' +
-            'V_m = ' + net.res_bus.vm_pu.round(precision).astype(str) + ' pu' + '<br />' +
-            'V_m = ' + (net.res_bus.vm_pu * net.bus.vn_kv.round(2)).round(precision).astype(str) + ' kV' + '<br />' +
-            'V_a = ' + net.res_bus.va_degree.round(precision).astype(str) + ' deg').tolist()
+        net.bus.name.astype(str) + '<br />' +
+        'V_m = ' + net.res_bus.vm_pu.round(precision).astype(str) + ' pu' + '<br />' +
+        'V_m = ' + (net.res_bus.vm_pu * net.bus.vn_kv.round(2) * voltage_factor).round(precision).astype(str) + ' ' + voltage_unit + 'V' + '<br />' +
+        'V_a = ' + net.res_bus.va_degree.round(precision).astype(str) + ' deg' + '<br />' +
+        'P = ' + (net.res_bus.p_mw * power_factor).round(precision).astype(str) + ' ' + power_unit + 'W' + '<br />' +
+        'Q = ' + (net.res_bus.q_mvar * power_factor).round(precision).astype(str) + ' ' + power_unit + 'Var').tolist()
     hoverinfo = pd.Series(index=net.bus.index, data=hoverinfo)
     bus_trace = create_bus_trace(net, net.bus.index, size=bus_size, infofunc=hoverinfo, cmap=cmap,
                                  cbar_title='Bus Voltage [pu]', cmin=climits_volt[0], cmax=climits_volt[1],
@@ -130,14 +151,24 @@ def pf_res_plotly(net, cmap="Jet", use_line_geo=None, on_map=False, projection=N
     if use_line_geo is None:
         use_line_geo = False if any(net.line.geo.isna()) else True
     elif use_line_geo and any(net.line.geo.isna()):
-        logger.warning("No or insufficient line geodata available --> only bus geodata will be used.")
+        logger.warning(
+            "No or insufficient line geodata available --> only bus geodata will be used.")
         use_line_geo = False
     # hoverinfo which contains name and pf results
+    if current_unit == "":
+        current_factor = 1e3
+    else:
+        current_factor = 1
     hoverinfo = (
-            net.line.name.astype(str) + '<br />' +
-            'I = ' + net.res_line.loading_percent.round(precision).astype(str) + ' %' + '<br />' +
-            'I_from = ' + net.res_line.i_from_ka.round(precision).astype(str) + ' kA' + '<br />' +
-            'I_to = ' + net.res_line.i_to_ka.round(precision).astype(str) + ' kA' + '<br />').tolist()
+        net.line.name.astype(str) + '<br />' +
+        'I = ' + net.res_line.loading_percent.round(precision).astype(str) + ' %' + '<br />' +
+        'I_from = ' + (net.res_line.i_from_ka * current_factor).round(precision).astype(str) + ' ' + current_unit + 'A' + '<br />' +
+        'I_to = ' + (net.res_line.i_to_ka * current_factor).round(precision).astype(str) + ' ' + current_unit + 'A' + '<br />' +
+        'P_from = ' + (net.res_line.p_from_mw * power_factor).round(precision).astype(str) + ' ' + power_unit + 'W' + '<br />' +
+        'P_to = ' + (net.res_line.p_to_mw * power_factor).round(precision).astype(str) + ' ' + power_unit + 'W' + '<br />' +
+        'Q_from = ' + (net.res_line.q_from_mvar * power_factor).round(precision).astype(str) + ' ' + power_unit + 'Var' + '<br />' +
+        'Q_to = ' + (net.res_line.q_to_mvar * power_factor).round(precision).astype(str) + ' ' + power_unit + 'Var').tolist()
+
     hoverinfo = pd.Series(index=net.line.index, data=hoverinfo)
     line_traces = create_line_trace(net, use_line_geo=use_line_geo, respect_switches=True,
                                     width=line_width,
@@ -152,10 +183,14 @@ def pf_res_plotly(net, cmap="Jet", use_line_geo=None, on_map=False, projection=N
     # ----- Trafos ------
     # hoverinfo which contains name and pf results
     hoverinfo = (
-            net.trafo.name.astype(str) + '<br />' +
-            'I = ' + net.res_trafo.loading_percent.round(precision).astype(str) + ' %' + '<br />' +
-            'I_hv = ' + net.res_trafo.i_hv_ka.round(precision).astype(str) + ' kA' + '<br />' +
-            'I_lv = ' + net.res_trafo.i_lv_ka.round(precision).astype(str) + ' kA' + '<br />').tolist()
+        net.trafo.name.astype(str) + '<br />' +
+        'I = ' + net.res_trafo.loading_percent.round(precision).astype(str) + ' %' + '<br />' +
+        'I_hv = ' + (net.res_trafo.i_hv_ka * current_factor).round(precision).astype(str) + ' ' + current_unit + 'A' + '<br />' +
+        'I_lv = ' + (net.res_trafo.i_lv_ka * current_factor).round(precision).astype(str) + ' ' + current_unit + 'A' + '<br />' +
+        'P_hv = ' + (net.res_trafo.p_hv_mw * power_factor).round(precision).astype(str) + ' ' + power_unit + 'W' + '<br />' +
+        'P_lv = ' + (net.res_trafo.p_lv_mw * power_factor).round(precision).astype(str) + ' ' + power_unit + 'W' + '<br />' +
+        'Q_hv = ' + (net.res_trafo.q_hv_mvar * power_factor).round(precision).astype(str) + ' ' + power_unit + 'Var' + '<br />' +
+        'Q_lv = ' + (net.res_trafo.q_lv_mvar * power_factor).round(precision).astype(str) + ' ' + power_unit + 'Var' + '<br />').tolist()
     hoverinfo = pd.Series(index=net.trafo.index, data=hoverinfo)
     trafo_traces = create_trafo_trace(net, width=line_width * 1.5, infofunc=hoverinfo,
                                       cmap=cmap_lines, cmin=0, cmax=100)
