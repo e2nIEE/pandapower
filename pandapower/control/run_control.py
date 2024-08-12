@@ -240,6 +240,9 @@ def _control_step(levelorder, run_count):
         if not ctrl.is_converged(net):
             ctrl.control_step(net)
             converged = False
+            if run_count == 15:
+                print(net.bus.loc[:, "name"])
+                print(net.res_bus.loc[:, "vm_pu"])
     return converged
 
 
