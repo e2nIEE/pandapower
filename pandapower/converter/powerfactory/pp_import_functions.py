@@ -7,6 +7,7 @@ from itertools import combinations
 import numpy as np
 import pandapower as pp
 from pandapower.auxiliary import ADict
+import pandapower.control as control
 from pandas import DataFrame, Series
 
 try:
@@ -140,8 +141,8 @@ def from_pf(dict_net, pv_as_slack=True, pf_variable_p_loads='plini', pf_variable
     # create trafos:
     n = 0
     for n, trafo in enumerate(dict_net['ElmTr2'], 1):
-        create_trafo(net=net, item=trafo, tap_opt=tap_opt, export_controller=export_controller,
-                     is_unbalanced=is_unbalanced)
+        create_trafo(net=net, item=trafo, export_controller=export_controller, tap_opt=tap_opt,
+                     is_unbalanced=is_unbalanced, hunting_limit=dict_net["lvp_params"]["hunting_limit"])
     if n > 0: logger.info('imported %d trafos' % n)
 
     logger.debug('creating 3W-transformers')
@@ -179,11 +180,16 @@ def from_pf(dict_net, pv_as_slack=True, pf_variable_p_loads='plini', pf_variable
         create_zpu(net=net, item=zpu)
     if n > 0: logger.info('imported %d impedances' % n)
 
-    # create series impedance (ElmSind):
+    # create series inductivity as impedance (ElmSind):
     n = 0
     for n, sind in enumerate(dict_net['ElmSind'], 1):
         create_sind(net=net, item=sind)
     if n > 0: logger.info('imported %d SIND' % n)
+    # create series capacity as impedance (ElmScap):
+    n = 0
+    for n, scap in enumerate(dict_net['ElmScap'], 1):
+        create_scap(net=net, item=scap)
+    if n > 0: logger.info('imported %d SCAP' % n)
 
     # create vac (ElmVac):
     n = 0
@@ -1661,7 +1667,9 @@ def create_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
         else:
             if (load_type.kpu != load_type.kqu or load_type.kpu0 != load_type.kqu0 or load_type.aP != load_type.aQ or
                     load_type.bP != load_type.bQ or load_type.cP != load_type.cQ):
-                raise UserWarning(f"Load {item.loc_name} ({load_class}) unsupported voltage dependency configuration")
+                logger.warning(f"Load {item.loc_name} ({load_class}) has unsupported voltage dependency configuration!"
+                               f"Only the P parameters will be used to specify the voltage dependency of this load")
+                # todo implement load voltage dependency in this case using CharacteristicControl
             i = 0
             z = 0
             for cc, ee in zip(("aP", "bP", "cP"), ("kpu0", "kpu1", "kpu")):
@@ -2229,13 +2237,13 @@ def create_trafo_type(net, item):
         "vkr0_percent": item.ur0tr,
         "mag0_percent": item.zx0hl_n,
         "mag0_rx": item.rtox0_n,
-        "si0_hv_partial": item.zx0hl_h
+        "si0_hv_partial": item.zx0hl_h,
+        "tap_side": ['hv', 'lv', 'ext'][item.tap_side],  # 'ext' not implemented
     }
 
     if item.itapch:
         logger.debug('trafo <%s> has tap changer' % name)
         type_data.update({
-            "tap_side": ['hv', 'lv', 'ext'][item.tap_side],  # 'ext' not implemented
             # see if it is an ideal phase shifter or a complex phase shifter
             # checking tap_step_percent because a nonzero value for ideal phase shifter can be stored in the object
             "tap_step_percent": item.dutap if item.tapchtype != 1 else 0,
@@ -2276,7 +2284,7 @@ def create_trafo_type(net, item):
     return name, True
 
 
-def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanced=False):
+def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanced=False, hunting_limit=None):
     name = item.loc_name  # type: str
     logger.debug('>> creating trafo <%s>' % name)
     in_service = not bool(item.outserv)  # type: bool
@@ -2325,7 +2333,8 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
     if std_type is not None:
         tid = pp.create_transformer(net, hv_bus=bus1, lv_bus=bus2, name=name,
                                     std_type=std_type, tap_pos=tap_pos,
-                                    in_service=in_service, parallel=item.ntnum, df=item.ratfac, tap2_pos=tap_pos2)
+                                    in_service=in_service, parallel=item.ntnum, df=item.ratfac, tap2_pos=tap_pos2,
+                                    leakage_resistance_ratio_hv=pf_type.itrdr, leakage_reactance_ratio_hv=pf_type.itrdl)
         logger.debug('created trafo at index <%d>' % tid)
     else:
         logger.info("Create Trafo 3ph")
@@ -2353,9 +2362,8 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
     create_connection_switches(net, item, 2, 't', (bus1, bus2), (tid, tid))
 
     # adding tap changer
-    if export_controller and item.HasAttribute('ntrcn') and item.HasAttribute('i_cont') \
-            and item.ntrcn == 1:
-        import pandapower.control as control
+    if (export_controller and pf_type.itapch and item.HasAttribute('ntrcn') and
+            item.HasAttribute('i_cont') and item.ntrcn == 1):
         if item.t2ldc == 0:
             logger.debug('tap controller of trafo <%s> at hv' % name)
             side = 'hv'
@@ -2380,7 +2388,8 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
             logger.debug('trafo <%s> has discrete tap controller with '
                          'u_low = %.3f, u_up = %.3f, side = %s' % (name, vm_lower_pu, vm_upper_pu, side))
             try:
-                control.DiscreteTapControl(net, tid, side=side, vm_lower_pu=vm_lower_pu, vm_upper_pu=vm_upper_pu)
+                control.DiscreteTapControl(net, tid, side=side, vm_lower_pu=vm_lower_pu, vm_upper_pu=vm_upper_pu,
+                                           hunting_limit=hunting_limit)
             except BaseException as err:
                 logger.error('error while creating discrete tap controller at trafo <%s>' % name)
                 logger.error('Error: %s' % err)
@@ -2736,6 +2745,18 @@ def create_zpu(net, item):
         'xft_pu': item.x_pu,
         'rtf_pu': item.r_pu_ji,
         'xtf_pu': item.x_pu_ji,
+        'rft0_pu': item.r0_pu,
+        'xft0_pu': item.x0_pu,
+        'rtf0_pu': item.r0_pu_ji,
+        'xtf0_pu': item.x0_pu_ji,
+        'gf_pu': item.gi_pu,
+        'bf_pu': item.bi_pu,
+        'gt_pu': item.gj_pu,
+        'bt_pu': item.bj_pu,
+        'gf0_pu': item.gi0_pu,
+        'bf0_pu': item.bi0_pu,
+        'gt0_pu': item.gj0_pu,
+        'bt0_pu': item.bj0_pu,
         'sn_mva': item.Sn,
         'in_service': not bool(item.outserv)
     }
@@ -2744,12 +2765,6 @@ def create_zpu(net, item):
     xid = pp.create_impedance(net, **params)
     add_additional_attributes(item, net, element='impedance', element_id=xid, attr_list=["cpSite.loc_name"],
                               attr_dict={"cimRdfId": "origin_id"})
-
-    # create shunts at the buses connected to the impedance
-    if not np.isclose(item.gi_pu, 0) or not np.isclose(item.bi_pu, 0):
-        _add_shunt_to_impedance_bus(net, item, bus1)
-    if not np.isclose(item.gj_pu, 0) or not np.isclose(item.bj_pu, 0):
-        _add_shunt_to_impedance_bus(net, item, bus2)
 
 
 def create_vac(net, item):
@@ -2837,6 +2852,28 @@ def create_sind(net, item):
 
     logger.debug('created series reactor %s as per unit impedance at index %d' %
                  (net.impedance.at[sind, 'name'], sind))
+
+def create_scap(net, item):
+    # series capacitor is modelled as per-unit impedance, values in Ohm are calculated into values in
+    # per unit at creation
+    try:
+        (bus1, bus2) = get_connection_nodes(net, item, 2)
+    except IndexError:
+        logger.error("Cannot add Scap '%s': not connected" % item.loc_name)
+        return
+    
+    if (item.gcap==0) or (item.bcap==0):
+        logger.info('not creating series capacitor for %s' % item.loc_name)
+    else:
+        r_ohm = item.gcap/(item.gcap**2 + item.bcap**2)
+        x_ohm = -item.bcap/(item.gcap**2 + item.bcap**2)
+        scap = pp.create_series_reactor_as_impedance(net, from_bus=bus1, to_bus=bus2, r_ohm=r_ohm,
+                                                     x_ohm=x_ohm, sn_mva=item.Sn,
+                                                     name=item.loc_name,
+                                                     in_service=not bool(item.outserv))
+    
+        logger.debug('created series capacitor %s as per unit impedance at index %d' %
+                     (net.impedance.at[scap, 'name'], scap))
 
 
 def _get_vsc_control_modes(item, mono=True):

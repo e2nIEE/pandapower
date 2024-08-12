@@ -1012,9 +1012,12 @@ def create_vsc_collection(net, vscs=None, picker=False, size=None, infofunc=None
     vscs = get_index_array(vscs, net.vsc.index)
 
     if bus_geodata is None:
-        bus_geodata = net["bus_geodata"]
+        # bus_geodata = net["bus_geodata"]
+        bus_geodata = net.bus.geo.dropna()
+
     if bus_dc_geodata is None:
-        bus_dc_geodata = net["bus_dc_geodata"]
+        # bus_dc_geodata = net["bus_dc_geodata"]
+        bus_dc_geodata = net.bus_dc.geo.dropna()
 
     in_geodata = (net.vsc.bus.loc[vscs].isin(bus_geodata.index) &
                   net.vsc.bus_dc.loc[vscs].isin(bus_dc_geodata.index))
@@ -1093,10 +1096,12 @@ def create_vsc_connection_collection(net, vscs=None, bus_geodata=None, bus_dc_ge
     vscs = get_index_array(vscs, net.vsc.index)
 
     if bus_geodata is None:
-        bus_geodata = net["bus_geodata"]
+        # bus_geodata = net["bus_geodata"]
+        bus_geodata = net.bus.geo.dropna()
 
     if bus_dc_geodata is None:
         bus_dc_geodata = net["bus_dc_geodata"]
+        bus_dc_geodata = net.bus_dc.geo.dropna()
 
     in_geodata = (net.vsc.bus.loc[vscs].isin(bus_geodata.index) &
                   net.vsc.bus_dc.loc[vscs].isin(bus_dc_geodata.index))

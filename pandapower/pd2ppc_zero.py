@@ -15,8 +15,8 @@ from pandapower import DC_NONE, DC_BUS_TYPE
 from pandapower.build_bus import _build_bus_ppc, _build_svc_ppc, _build_ssc_ppc, _build_vsc_ppc, _build_bus_dc_ppc
 from pandapower.build_gen import _build_gen_ppc
 # from pandapower.pd2ppc import _ppc2ppci, _init_ppc
-from pandapower.pypower.idx_brch import BR_B, BR_R, BR_X, F_BUS, T_BUS, branch_cols, BR_STATUS, SHIFT, TAP, BR_R_ASYM, \
-    BR_X_ASYM
+from pandapower.pypower.idx_brch import BR_G, BR_B, BR_R, BR_X, F_BUS, T_BUS, branch_cols, BR_STATUS, SHIFT, TAP, BR_R_ASYM, \
+    BR_X_ASYM, BR_G_ASYM, BR_B_ASYM
 from pandapower.pypower.idx_bus import BASE_KV, BS, GS, BUS_TYPE, NONE
 from pandapower.pypower.idx_brch_sc import branch_cols_sc
 from pandapower.pypower.idx_bus_sc import C_MAX, C_MIN
@@ -476,11 +476,15 @@ def _add_impedance_sc_impedance_zero(net, ppc):
     f, t = branch_lookup["impedance"]
 
     # impedance zero sequence impedance
-    rij, xij, r_asym, x_asym = _calc_impedance_parameters_from_dataframe(net, zero_sequence=True)
+    rij, xij, r_asym, x_asym, gi, bi, g_asym, b_asym = _calc_impedance_parameters_from_dataframe(net, zero_sequence=True)
     branch[f:t, BR_R] = rij
     branch[f:t, BR_X] = xij
     branch[f:t, BR_R_ASYM] = r_asym
     branch[f:t, BR_X_ASYM] = x_asym
+    branch[f:t, BR_G] = gi
+    branch[f:t, BR_B] = bi
+    branch[f:t, BR_G_ASYM] = g_asym
+    branch[f:t, BR_B_ASYM] = b_asym
     branch[f:t, F_BUS] = bus_lookup[net.impedance["from_bus"].values]
     branch[f:t, T_BUS] = bus_lookup[net.impedance["to_bus"].values]
     branch[f:t, BR_STATUS] = net["impedance"]["in_service"].values.astype(np.int64)
@@ -501,7 +505,7 @@ def _add_trafo3w_sc_impedance_zero(net, ppc):
     branch[f:t, F_BUS] = bus_lookup[hv_bus]
     branch[f:t, T_BUS] = bus_lookup[lv_bus]
 
-    r, x, _, ratio, shift = _calc_branch_values_from_trafo_df(net, ppc, trafo_df, sequence=0)
+    r, x, *_, ratio, shift = _calc_branch_values_from_trafo_df(net, ppc, trafo_df, sequence=0)
 
     # Y0y0d5,  YN0y0d5,  Y0yn0d5,  YN0yn0d5, Y0y0y0, Y0d5d5,
     # YN0d5d5,  Y0d5y0,  Y0y0d11  und  D0d0d0

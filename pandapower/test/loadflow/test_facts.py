@@ -2594,4 +2594,4 @@ def test_results_pf_grid():
 # TODO test for when the VSC, SSC, TCSC, connect to same buses
 
 if __name__ == "__main__":
-    pytest.main([__file__])
+    pytest.main([__file__, "-xs"])

@@ -339,10 +339,15 @@ def _add_missing_columns(net, elements_to_deserialize):
         net.trafo["tap_phase_shifter"] = False
 
     # unsymmetric impedance
-    if _check_elements_to_deserialize('impedance', elements_to_deserialize) and \
-            "r_pu" in net.impedance:
-        net.impedance["rft_pu"] = net.impedance["rtf_pu"] = net.impedance["r_pu"]
-        net.impedance["xft_pu"] = net.impedance["xtf_pu"] = net.impedance["x_pu"]
+    if _check_elements_to_deserialize('impedance', elements_to_deserialize):
+        if "r_pu" in net.impedance:
+            net.impedance["rft_pu"] = net.impedance["rtf_pu"] = net.impedance["r_pu"]
+            net.impedance["xft_pu"] = net.impedance["xtf_pu"] = net.impedance["x_pu"]
+        if "gf_pu" not in net.impedance:
+            net.impedance["gf_pu"] = 0.
+            net.impedance["gt_pu"] = 0.
+            net.impedance["bf_pu"] = 0.
+            net.impedance["bt_pu"] = 0.
 
     # Update the switch table with 'z_ohm'
     if _check_elements_to_deserialize('switch', elements_to_deserialize) and \
@@ -474,6 +479,9 @@ def _update_object_attributes(obj):
     for key, val in to_rename.items():
         if key in obj.__dict__:
             obj.__dict__[val] = obj.__dict__.pop(key)
+
+    if "vm_lower_pu" in obj.__dict__ and "hunting_limit" not in obj.__dict__:
+        obj.__dict__["hunting_limit"] = None
 
 
 def _convert_objects(net, elements_to_deserialize):
