@@ -111,18 +111,18 @@ The following controllers are used for the representation of station controllers
 
 
 Station Controller
-==============
+==================
 
-********************
+**********************
 Binary Search Control
-********************
+**********************
 
 .. autoclass:: pandapower.control.controller.station_control.BinarySearchControl
     :members:
 
-********************
+***************
 Droop Control
-********************
+***************
 
 .. autoclass:: pandapower.control.controller.station_control.DroopControl
     :members:
