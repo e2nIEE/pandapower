@@ -180,13 +180,13 @@ def branch_loss_consistent_with_bus_feed_in_3ph(net, atol=1e-2):
     bus_surplus_q = -net.res_bus_3ph[["q_a_mvar", "q_b_mvar", "q_c_mvar"]].sum().sum()
 
 
-    branch_loss_p = net.res_line_3ph.p_a_l_mw.sum() + net.res_trafo_3ph.p_a_l_mw.sum() + \
-                    net.res_line_3ph.p_b_l_mw.sum() + net.res_trafo_3ph.p_b_l_mw.sum() + \
-                    net.res_line_3ph.p_c_l_mw.sum() + net.res_trafo_3ph.p_c_l_mw.sum()
+    branch_loss_p = net.res_line_3ph.pl_a_mw.sum() + net.res_trafo_3ph.pl_a_mw.sum() + \
+                    net.res_line_3ph.pl_b_mw.sum() + net.res_trafo_3ph.pl_b_mw.sum() + \
+                    net.res_line_3ph.pl_c_mw.sum() + net.res_trafo_3ph.pl_c_mw.sum()
 
-    branch_loss_q = net.res_line_3ph.q_a_l_mvar.sum() + net.res_trafo_3ph.q_a_l_mvar.sum() + \
-                    net.res_line_3ph.q_b_l_mvar.sum() + net.res_trafo_3ph.q_b_l_mvar.sum() + \
-                    net.res_line_3ph.q_c_l_mvar.sum() + net.res_trafo_3ph.q_c_l_mvar.sum()
+    branch_loss_q = net.res_line_3ph.ql_a_mvar.sum() + net.res_trafo_3ph.ql_a_mvar.sum() + \
+                    net.res_line_3ph.ql_b_mvar.sum() + net.res_trafo_3ph.ql_b_mvar.sum() + \
+                    net.res_line_3ph.ql_c_mvar.sum() + net.res_trafo_3ph.ql_c_mvar.sum()
 
     try:
         assert isclose(bus_surplus_p, branch_loss_p, atol=atol)
