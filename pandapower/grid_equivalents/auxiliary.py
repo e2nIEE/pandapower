@@ -348,42 +348,7 @@ def drop_measurements_and_controllers(net, buses, skip_controller=False):
     pp.drop_controllers_at_buses(net, buses)
 
 
-def match_controller_and_new_elements(net, net_org):
-    """
-    This function makes the original controllers and the
-    new created sgen to match
-
-    test at present: controllers in the external area are removed.
-    """
-    if len(net.controller):
-        tobe_removed = []
-        if "origin_all_internal_buses" in net.bus_lookups and \
-                "boundary_buses_inclusive_bswitch" in net.bus_lookups:
-            internal_buses = net.bus_lookups["origin_all_internal_buses"] + \
-                net.bus_lookups["boundary_buses_inclusive_bswitch"]
-        else:
-            internal_buses = []
-        for idx in net.controller.index.tolist():
-            et = net.controller.object[idx].__dict__.get("element")
-            # var = net.controller.object[idx].__dict__.get("variable")
-            elm_idxs = net.controller.object[idx].__dict__.get("element_index")
-            if et is None or elm_idxs is None:
-                continue
-            org_elm_buses = list(net_org[et].bus[elm_idxs].values)
-
-            new_elm_idxs = net[et].index[net[et].bus.isin(org_elm_buses)].tolist()
-            if len(new_elm_idxs) == 0:
-                tobe_removed.append(idx)
-            else:
-                profile_name = [org_elm_buses.index(a) for a in net[et].bus[new_elm_idxs].values]
-
-                net.controller.object[idx].__dict__["element_index"] = new_elm_idxs
-                net.controller.object[idx].__dict__["matching_params"]["element_index"] = new_elm_idxs
-                net.controller.object[idx].__dict__["profile_name"] = profile_name
-        net.controller = net.controller.drop(tobe_removed)
-    # TODO: match the controllers in the external area
-
-def ensure_origin_id(net, no_start=0, elms=None):
+def ensure_origin_id(net, elms=None):
     """
     Ensures completely filled column 'origin_id' in every pp element.
     """
