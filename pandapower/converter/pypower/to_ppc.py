@@ -18,7 +18,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def to_ppc(net, calculate_voltage_angles=False, trafo_model="t", switch_rx_ratio=2,
+def to_ppc(net, calculate_voltage_angles=True, trafo_model="t", switch_rx_ratio=2,
            check_connectivity=True, voltage_depend_loads=False, init="results", mode=None,
            take_slack_vm_limits=True):
     """
@@ -44,16 +44,16 @@ def to_ppc(net, calculate_voltage_angles=False, trafo_model="t", switch_rx_ratio
             recommended for validation with other software that uses the pi-model.
 
 
-        **switch_rx_ratio** (float, 2) - rx_ratio of bus-bus-switches. If impedance is zero,
-        buses connected by a closed bus-bus switch are fused to model an ideal bus.
-        Otherwise, they are modelled as branches with resistance defined as z_ohm column in
-        switch table and this parameter
+        **switch_rx_ratio** (float, 2) - rx_ratio of bus-bus-switches. If the impedance of switches
+        defined in net.switch.z_ohm is zero, buses connected by a closed bus-bus switch are fused to
+        model an ideal bus. Closed bus-bus switches, whose impedance z_ohm is not zero, are modelled
+        as branches with resistance and reactance according to net.switch.z_ohm and switch_rx_ratio.
 
         **check_connectivity** (bool, True) - Perform an extra connectivity test after the
         conversion from pandapower to PYPOWER
 
             If True, an extra connectivity test based on SciPy Compressed Sparse Graph Routines is
-            perfomed. If check finds unsupplied buses, they are set out of service in the ppc
+            perfomed. If the check finds unsupplied buses, they are set out of service in the ppc
 
         **voltage_depend_loads** (bool, False) - consideration of voltage-dependent loads.
         If False, net.load.const_z_percent and net.load.const_i_percent are not considered, i.e.
@@ -69,7 +69,7 @@ def to_ppc(net, calculate_voltage_angles=False, trafo_model="t", switch_rx_ratio
         **mode** (str, None) - mode of power flow calculation type ("pf" - power flow, "opf" -
         optimal power flow or "sc" - short circuit). "mode" influences for instance whether opf
         cost data will be converted or which slack bus voltage limits are respected. If "mode"
-        is None, cost data will be respected via mode="opf" if cost data are existing.
+        is None, cost data will be respected via mode="opf" if cost data exist.
 
         **take_slack_vm_limits** (bool, True) - Per default the voltage magnitude limits are assumed
         as setpoint of the slack unit (usually net.ext_grid.vm_pu). To replace that by values from

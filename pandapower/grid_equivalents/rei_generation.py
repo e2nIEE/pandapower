@@ -325,7 +325,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
             else:
                 names = elm_org.name[elm_org.bus == bus].values
                 names = [str(n) for n in names]
-                net_zpbn[elm].loc[elm_idx, 'name'] = "//".join(names) + "-" + net_zpbn[elm].name[elm_idx]
+                net_zpbn[elm].loc[elm_idx, "name"] = "//".join(names) + "-" + net_zpbn[elm].name[elm_idx]
                 if len(names) > 1:
                     net_zpbn[elm].loc[elm_idx, list(other_cols_number)] = \
                         elm_org[list(other_cols_number)][elm_org.bus == bus].sum(axis=0)
