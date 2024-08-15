@@ -54,9 +54,14 @@ Change Log
 - [FIXED] error during unbalanced powerflow due to out of service external grids
 - [FIXED] PowerFactory converter: fix trafo3w tap dependent impedance
 - [ADDED] PowerFactory converter: support load types (constI, constZ) and the setting whether to consider voltage dependency of loads
+- [CHANGED] considering trafo controller and improve implementation for other (bus element) controller at grid_equivalent creation
 - [CHANGED] vectorization of y_bus reordering in _calculate_equivalent_Ybus() within get_equivalent()
 - [FIXED] deprecation of matplotlib.cm.get_cmap(name) -> matplotlib.colormaps[name]
 - [FIXED] merge_nets failing if net2 has custom DataFrame that is not present in net1
+- [CHANGED] grid_equivalent creation: improved consideration of controller
+- [CHANGED] create consistent parameter names (element and element_index) in controllers -> Changes for TrafoController: trafotable & trafotype -> element, tid -> element_index
+- [CHANGED] parameter renaming in net.group: element -> element_index
+- [CHANGED] in to_ppc(), the default of calculate_voltage_angles is True now (as in previously changed in runpp()).
 - [FIXED] fixed some small bugs in the CGMES converter and improved its speed
 - [CHANGED] trigger a numpy error in makeYbus, makeBbus, _wye_delta instead of warning
 - [ADDED] transformer tap hunting detection for DiscreteTapControl
