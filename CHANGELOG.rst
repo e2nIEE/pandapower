@@ -15,6 +15,8 @@ Change Log
 
 [upcoming release] - 2024-..-..
 -------------------------------
+- [REMOVED] python 3.8 support
+- [CHANGED] geopandas version to >= 1.0
 - [ADDED] station controller functionality with voltage and reactive power control with and without droop and pf import support
 - [ADDED] creating series capacitor added in pf to pp converter
 - [FIXED] using loc to remove the warning
