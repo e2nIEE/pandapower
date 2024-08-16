@@ -1622,17 +1622,20 @@ def create_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
                                       dict_net=dict_net, variables=('p_mw', 'q_mvar')))
         load_type = item.typ_id
         if load_type is None:
-            params["const_z_percent"] = 100
+            params["const_z_p_percent"] = 100
         else:
-            if (load_type.kpu0!=load_type.kqu0 or \
-                load_type.kpu1!=load_type.kqu1 or \
-                load_type.kpu!=load_type.kqu) or \
-                (load_type.kpu0>0 or \
-                 load_type.kqu0>0 or \
-                 load_type.kpu1>1 or \
-                 load_type.kqu1>1 or \
-                 load_type.kpu>2 or \
-                 load_type.kqu>2):                
+            pf_params = [load_type.kpu0,
+                         load_type.kpu1,
+                         load_type.kpu,
+                         load_type.kqu0,
+                         load_type.kqu1,
+                         load_type.kqu]
+            #if #(load_type.kpu0!=load_type.kqu0 or \
+                #load_type.kpu1!=load_type.kqu1 or \
+                #load_type.kpu!=load_type.kqu) or \
+            if (pf_params[:3]!=pf_params[3:]) or \
+                (pf_params[:3]!=[0,1,2]) or \
+                (pf_params[3:]!=[0,1,2]):                
                 raise UserWarning(f"Load {item.loc_name} ({load_class}) unsupported voltage dependency configuration")
             else:
                 i_p = 0
@@ -1654,10 +1657,9 @@ def create_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
                         i_q += 100 * c_q
                     elif e_q == 2:
                         z_q += 100 * c_q
-                # params["const_i_p_percent"] = i_p
-                # params["const_z_p_percent"] = z_p
-                params["const_i_percent"] = i_p
-                params["const_z_percent"] = z_p
+                
+                params["const_i_p_percent"] = i_p
+                params["const_z_p_percent"] = z_p
                 params["const_i_q_percent"] = i_q
                 params["const_z_q_percent"] = z_q
 

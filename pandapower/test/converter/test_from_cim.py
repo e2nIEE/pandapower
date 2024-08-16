@@ -857,8 +857,10 @@ def test_fullgrid_load(fullgrid_v2):
     assert '_4c66b132-0977-1e4c-b9bb-d8ce2e912e35' == fullgrid_v2.bus.iloc[element_0['bus'].item()]['origin_id']
     assert 0.010 == element_0['p_mw'].item()
     assert 0.010 == element_0['q_mvar'].item()
-    assert 0.0 == element_0['const_z_percent'].item()
-    assert 0.0 == element_0['const_i_percent'].item()
+    assert 0.0 == element_0['const_z_p_percent'].item()
+    assert 0.0 == element_0['const_i_p_percent'].item()
+    assert 0.0 == element_0['const_z_q_percent'].item()
+    assert 0.0 == element_0['const_i_q_percent'].item()
     assert math.isnan(element_0['sn_mva'].item())
     assert 1.0 == element_0['scaling'].item()
     assert element_0['in_service'].item()
