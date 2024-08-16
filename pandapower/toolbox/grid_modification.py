@@ -14,7 +14,7 @@ from pandapower.auxiliary import pandapowerNet, _preserve_dtypes, ensure_iterabi
 from pandapower.std_types import change_std_type
 from pandapower.create import create_switch, create_line_from_parameters, \
     create_impedance, create_empty_network, create_gen, create_ext_grid, \
-    create_load, create_shunt, create_bus, create_sgen, create_storage
+    create_load, create_shunt, create_bus, create_sgen, create_storage, create_ward
 from pandapower.run import runpp
 from pandapower.toolbox.element_selection import branch_element_bus_dict, element_bus_tuples, pp_elements, \
     get_connected_elements, get_connected_elements_dict, next_bus
@@ -657,6 +657,7 @@ def drop_buses(net, buses, drop_elements=True):
     if drop_elements:
         drop_elements_at_buses(net, buses)
         drop_measurements_at_elements(net, "bus", idx=buses)
+        drop_controllers_at_buses(net, buses)
 
 
 def drop_trafos(net, trafos, table="trafo"):
@@ -758,7 +759,8 @@ def drop_measurements_at_elements(net, element_type, idx=None, side=None):
     idx = ensure_iterability(idx) if idx is not None else net[element_type].index
     bool1 = net.measurement.element_type == element_type
     bool2 = net.measurement.element.isin(idx)
-    bool3 = net.measurement.side == side if side is not None else np.full(net.measurement.shape[0], 1, dtype=bool)
+    bool3 = net.measurement.side == side if side is not None else np.full(
+        net.measurement.shape[0], 1, dtype=bool)
     to_drop = net.measurement.index[bool1 & bool2 & bool3]
     net.measurement = net.measurement.drop(to_drop)
 
@@ -768,18 +770,47 @@ def drop_controllers_at_elements(net, element_type, idx=None):
     Drop all the controllers for the given elements (idx).
     """
     idx = ensure_iterability(idx) if idx is not None else net[element_type].index
-    to_drop = []
-    for i in net.controller.index:
-        et = net.controller.object[i].__dict__.get("element")
-        elm_idx = ensure_iterability(net.controller.object[i].__dict__.get("element_index", [0.1]))
-        if element_type == et:
-            if set(elm_idx) - set(idx) == set():
-                to_drop.append(i)
-            else:
-                net.controller.object[i].__dict__["element_index"] = list(set(elm_idx) - set(idx))
-                net.controller.object[i].__dict__["matching_params"]["element_index"] = list(
-                    set(elm_idx) - set(idx))
+    to_drop = list()
+    for ctrl_idx in net.controller.index:
+        _drop_controller_at_elements(net, element_type, idx, ctrl_idx, to_drop)
     net.controller = net.controller.drop(to_drop)
+
+
+def _drop_controller_at_elements(net, element_type, idx, ctrl_idx, to_drop):
+    ctrl_dict = net.controller.at[ctrl_idx, "object"].__dict__
+    et = ctrl_dict.get("element")
+    if element_type != et:
+        return
+    elm_idx = ctrl_dict.get("element_index", [0.1])
+    is_single_value = not hasattr(elm_idx, "__iter__")
+    elm_idx = np.array(ensure_iterability(elm_idx))
+    elm_staying = (~pd.Series(elm_idx).isin(idx)).values
+    if not np.any(elm_staying):
+        to_drop.append(ctrl_idx)
+    elif not is_single_value:
+        ctrl_dict["element_index"] = list(elm_idx[elm_staying])
+        ctrl_dict["matching_params"]["element_index"] = list(elm_idx[elm_staying])
+        _update_further_controller_parameters(net, ctrl_idx, elm_staying)
+
+
+def _update_further_controller_parameters(net, ctrl_idx, elm_staying):
+    ctrl_dict = net.controller.at[ctrl_idx, "object"].__dict__
+    further_vars_to_adapt = ["bus", "element_names", "gen_type", "element_in_service",
+                             "p_profile", "q_profile", "profile_name", "sn_mva", "p_mw", "q_mvar",
+                             "p_series_mw", "q_series_mvar", "target_p_mw", "target_q_mvar",
+                             "p_curtailment"]
+    for ctrl_col in further_vars_to_adapt:
+        if ctrl_col not in ctrl_dict.keys():
+            continue
+
+        if ctrl_col == "bus":
+            ctrl_dict[ctrl_col] = net[ctrl_dict["element"]].loc[
+                ctrl_dict["element_index"], "bus"]
+        elif ctrl_col in ["p_profile", "q_profile", "profile_name"]:
+            if ctrl_dict[ctrl_col] is not None:
+                ctrl_dict[ctrl_col] = list(np.array(ctrl_dict[ctrl_col])[elm_staying])
+        else:
+            ctrl_dict[ctrl_col] = ctrl_dict[ctrl_col].loc[ctrl_dict["element_index"]]
 
 
 def drop_controllers_at_buses(net, buses):
@@ -935,6 +966,10 @@ def create_replacement_switch_for_branch(net, element_type, element_index):
     switch_name = 'REPLACEMENT_%s_%d' % (element_type, element_index)
     sid = create_switch(net, name=switch_name, bus=bus_i, element=bus_j, et='b', closed=is_closed,
                         type='CB')
+    # to enable unproblematic validation for the pf converter
+    for col in ("pf_closed", "pf_in_service"):
+        if col in net.res_switch.columns:
+            net.res_switch.loc[sid, col] = is_closed
     logger.debug('created switch %s (%d) as replacement for %s %s' %
                  (switch_name, sid, element_type, element_index))
     return sid
@@ -1077,7 +1112,7 @@ def _replace_group_member_element_type(
     check_unique_group_rows(net)
     gr_et = net.group.loc[net.group.element_type == old_element_type]
     for gr_index in gr_et.index:
-        isin = old_elements.isin(gr_et.at[gr_index, "element"])
+        isin = old_elements.isin(gr_et.at[gr_index, "element_index"])
         if any(isin):
             attach_to_group(net, gr_index, new_element_type, [new_elements.loc[isin].tolist()],
                             reference_columns=gr_et.at[gr_index, "reference_column"])
@@ -1112,6 +1147,8 @@ def replace_line_by_impedance(net, index=None, sn_mva=None, only_valid_replace=T
         raise ValueError("index and sn_mva must have the same length.")
 
     parallel = net.line["parallel"].values
+    length_km = net.line["length_km"].values
+    cols = net.line.columns
 
     i = 0
     new_index = []
@@ -1124,14 +1161,19 @@ def replace_line_by_impedance(net, index=None, sn_mva=None, only_valid_replace=T
                          "converted to impedances, which do not model such parameters.")
         vn = net.bus.vn_kv.at[line_.from_bus]
         Zni = vn ** 2 / sn_mva[i]
-        par = parallel[idx]
+        p = parallel[idx]
+        l = length_km[idx]
         new_index.append(create_impedance(
             net, line_.from_bus, line_.to_bus,
-            rft_pu=line_.r_ohm_per_km * line_.length_km / par / Zni,
-            xft_pu=line_.x_ohm_per_km * line_.length_km / par / Zni,
+            rft_pu=line_.r_ohm_per_km * l / p / Zni,
+            xft_pu=line_.x_ohm_per_km * l / p / Zni,
+            gf_pu=line_.g_us_per_km * 1e-6 * Zni * l * p,
+            bf_pu=2 * net.f_hz * np.pi * line_.c_nf_per_km * 1e-9 * Zni * l * p,
             sn_mva=sn_mva[i],
-            rft0_pu=line_.r0_ohm_per_km * line_.length_km / par / Zni if "r0_ohm_per_km" in net.line.columns else None,
-            xft0_pu=line_.x0_ohm_per_km * line_.length_km / par / Zni if "x0_ohm_per_km" in net.line.columns else None,
+            rft0_pu=line_.r0_ohm_per_km * l / p / Zni if "r0_ohm_per_km" in cols else None,
+            xft0_pu=line_.x0_ohm_per_km * l / p / Zni if "x0_ohm_per_km" in cols else None,
+            gf0_pu=line_.g0_us_per_km * 1e-6 * Zni * l * p if "g0_us_per_km" in cols else None,
+            bf0_pu=2 * net.f_hz * np.pi * line_.c0_nf_per_km * 1e-9 * Zni * l * p if "c0_nf_per_km" in cols else None,
             name=line_.name,
             in_service=line_.in_service))
         i += 1
@@ -1734,3 +1776,52 @@ def replace_xward_by_internal_elements(net, xwards=None, set_xward_bus_limits=Fa
 
     # --- drop replaced wards
     drop_elements_simple(net, "xward", xwards)
+
+
+def replace_xward_by_ward(net, index=None, drop=True):
+    """
+    Replace xward elements by ward elements in the given grid model.
+    The series impedance component of xward is ignored and lost after the replacement.
+
+    This function replaces xward elements in a pandapower net with equivalent ward elements (sans series impedance).
+    The original xward elements can be dropped (default) or set out of service.
+
+    Parameters:
+    -----------
+    net : pandapowerNet
+        The pandapower grid containing the xward elements to be replaced.
+
+    index : int, list of int, or None, optional (default: None)
+        The index or list of indices of the xward elements to replace.
+        If None, all xward elements in the grid will be replaced.
+
+    drop : bool, optional (default: True)
+        If True, the original xward elements will be removed from the grid.
+        If False, the xward elements will be set out of service instead of being removed.
+
+    Returns:
+    --------
+    new_index : list of int
+        A list of indices of the newly created ward elements in the network.
+
+    Notes:
+    ------
+    The function ensures that the group membership and associated element type of the replaced
+    elements are updated accordingly.
+    """
+    index = list(ensure_iterability(index)) if index is not None else list(net.impedance.index)
+
+    new_index = []
+    for xi in index:
+        wi = create_ward(net, net.xward.at[xi, "bus"], net.xward.at[xi, "ps_mw"], net.xward.at[xi, "qs_mvar"],
+                         net.xward.at[xi, "pz_mw"], net.xward.at[xi, "qz_mvar"], f"REPLACEMENT_xward_{xi}",
+                         net.xward.at[xi, "in_service"])
+        new_index.append(wi)
+
+    _replace_group_member_element_type(net, index, "xward", new_index, "ward",
+                                       detach_from_gr=False)
+    if drop:
+        drop_elements_simple(net, "xward", index)
+    else:
+        net.xward.loc[index, "in_service"] = False
+    return new_index
