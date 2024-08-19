@@ -40,10 +40,14 @@ import numbers
 from packaging.version import Version
 
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
-from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD, VM, VA, REF, VMIN, VMAX, PV
+from pandapower.pypower.idx_brch_dc import DC_BR_STATUS, DC_F_BUS, DC_T_BUS
+from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD, VM, VA, REF, PQ, VMIN, VMAX, PV
 from pandapower.pypower.idx_gen import PMIN, PMAX, QMIN, QMAX
 from pandapower.pypower.idx_ssc import SSC_STATUS, SSC_BUS, SSC_INTERNAL_BUS
 from pandapower.pypower.idx_tcsc import TCSC_STATUS, TCSC_F_BUS, TCSC_T_BUS
+from pandapower.pypower.idx_vsc import VSC_STATUS, VSC_BUS, VSC_INTERNAL_BUS, VSC_BUS_DC, VSC_MODE_AC, VSC_MODE_AC_SL, \
+    VSC_INTERNAL_BUS_DC
+from .pypower.idx_bus_dc import DC_VMAX, DC_VMIN, DC_BUS_I, DC_BUS_TYPE, DC_NONE, DC_REF, DC_B2B, DC_P
 
 try:
     from lightsim2grid.newtonpf import newtonpf_new as newtonpf_ls
@@ -299,7 +303,7 @@ class pandapowerNet(ADict):
         if isinstance(args[0], self.__class__):
             net = args[0]
             self.clear()
-            self.update(**net.deepcopy())
+            self.update(**copy.deepcopy(net))
 
         for key in self:
             if isinstance(self[key], list):
@@ -390,6 +394,48 @@ def get_free_id(df):
 class ppException(Exception):
     """
     General pandapower custom parent exception.
+    """
+    pass
+
+
+class AlgorithmUnknown(ppException):
+    """
+    Exception being raised in case optimal powerflow did not converge.
+    """
+    pass
+
+
+class LoadflowNotConverged(ppException):
+    """
+    Exception being raised in case loadflow did not converge.
+    """
+    pass
+
+
+class ControllerNotConverged(ppException):
+    """
+    Exception being raised in case a controller does not converge.
+    """
+    pass
+
+
+class NetCalculationNotConverged(ppException):
+    """
+    Exception being raised in case a controller does not converge.
+    """
+    pass
+
+
+class OPFNotConverged(ppException):
+    """
+    Exception being raised in case optimal powerflow did not converge.
+    """
+    pass
+
+
+class MapboxTokenMissing(ppException):
+    """
+    Exception being raised in case loadflow did not converge.
     """
     pass
 
@@ -623,17 +669,21 @@ def _write_to_object_attribute(net, element, index, variable, values):
         setattr(net[element]["object"].at[index], variable, values)
 
 
-def _set_isolated_nodes_out_of_service(ppc, bus_not_reachable):
+def _set_isolated_nodes_out_of_service(ppc, bus_not_reachable, dc=False):
     isolated_nodes = np.where(bus_not_reachable)[0]
     if len(isolated_nodes) > 0:
         logger.debug("There are isolated buses in the network! (%i nodes in the PPC)"%len(isolated_nodes))
         # set buses in ppc out of service
-        ppc['bus'][isolated_nodes, BUS_TYPE] = NONE
+        if dc:
+            ppc['bus_dc'][isolated_nodes, DC_BUS_TYPE] = DC_NONE
+            pus = qus = 0  # DC loads / sgens not implemented
+        else:
+            ppc['bus'][isolated_nodes, BUS_TYPE] = NONE
 
-        pus = abs(ppc['bus'][isolated_nodes, PD] * 1e3).sum()
-        qus = abs(ppc['bus'][isolated_nodes, QD] * 1e3).sum()
-        if pus > 0 or qus > 0:
-            logger.debug("%.0f kW active and %.0f kVar reactive power are unsupplied" % (pus, qus))
+            pus = abs(ppc['bus'][isolated_nodes, PD] * 1e3).sum()
+            qus = abs(ppc['bus'][isolated_nodes, QD] * 1e3).sum()
+            if pus > 0 or qus > 0:
+                logger.debug("%.0f kW active and %.0f kVar reactive power are unsupplied" % (pus, qus))
     else:
         pus = qus = 0
 
@@ -691,7 +741,7 @@ def _check_connectivity(ppc):
     nobus = ppc['bus'].shape[0]
     bus_from = ppc['branch'][br_status, F_BUS].real.astype(np.int64)
     bus_to = ppc['branch'][br_status, T_BUS].real.astype(np.int64)
-    slacks = ppc['bus'][ppc['bus'][:, BUS_TYPE] == 3, BUS_I]
+    slacks = ppc['bus'][ppc['bus'][:, BUS_TYPE] == REF, BUS_I]
     tcsc_status = ppc["tcsc"][:, TCSC_STATUS].real.astype(bool)
     notcsc = ppc["tcsc"][tcsc_status, :].shape[0]
     bus_from_tcsc = ppc["tcsc"][tcsc_status, TCSC_F_BUS].real.astype(np.int64)
@@ -700,15 +750,18 @@ def _check_connectivity(ppc):
     nossc = ppc["ssc"][ssc_status, :].shape[0]
     bus_from_ssc = ppc["ssc"][ssc_status, SSC_BUS].real.astype(np.int64)
     bus_to_ssc = ppc["ssc"][ssc_status, SSC_INTERNAL_BUS].real.astype(np.int64)
+    vsc_status = ppc["vsc"][:, VSC_STATUS].real.astype(bool)
+    novsc = ppc["vsc"][vsc_status, :].shape[0]
+    bus_from_vsc = ppc["vsc"][vsc_status, VSC_BUS].real.astype(np.int64)
+    bus_to_vsc = ppc["vsc"][vsc_status, VSC_INTERNAL_BUS].real.astype(np.int64)
 
     # we create a "virtual" bus thats connected to all slack nodes and start the connectivity
     # search at this bus
-    bus_from = np.hstack([bus_from, bus_from_tcsc, bus_from_ssc, slacks])
-    bus_to = np.hstack([bus_to, bus_to_tcsc, bus_to_ssc, np.ones(len(slacks)) * nobus])
+    bus_from = np.hstack([bus_from, bus_from_tcsc, bus_from_ssc, bus_from_vsc, slacks])
+    bus_to = np.hstack([bus_to, bus_to_tcsc, bus_to_ssc, bus_to_vsc, np.ones(len(slacks)) * nobus])
+    nolinks = nobranch + notcsc + nossc + novsc + len(slacks)
 
-    adj_matrix = sp.sparse.coo_matrix((np.ones(nobranch + notcsc + nossc + len(slacks)),
-                                       (bus_from, bus_to)),
-                                      shape=(nobus + 1, nobus + 1))
+    adj_matrix = sp.sparse.coo_matrix((np.ones(nolinks), (bus_from, bus_to)), shape=(nobus + 1, nobus + 1))
 
     reachable = sp.sparse.csgraph.breadth_first_order(adj_matrix, nobus, False, False)
     # TODO: the former impl. excluded ppc buses that are already oos, but is this necessary ?
@@ -716,7 +769,36 @@ def _check_connectivity(ppc):
     bus_not_reachable = np.ones(ppc["bus"].shape[0] + 1, dtype=bool)
     bus_not_reachable[reachable] = False
     isolated_nodes, pus, qus, ppc = _set_isolated_nodes_out_of_service(ppc, bus_not_reachable)
-    return isolated_nodes, pus, qus
+
+    # DC system
+    nobus_dc = ppc['bus_dc'].shape[0]
+    if nobus_dc > 0:
+        bus_from_vsc_dc = ppc["vsc"][vsc_status, VSC_INTERNAL_BUS_DC].real.astype(np.int64)
+        bus_to_vsc_dc = ppc["vsc"][vsc_status, VSC_BUS_DC].real.astype(np.int64)
+
+        br_dc_status = ppc['branch_dc'][:, DC_BR_STATUS].astype(bool)
+        nobranch_dc = ppc['branch_dc'][br_dc_status, :].shape[0]
+        slacks_dc = ppc['bus_dc'][(ppc['bus_dc'][:, DC_BUS_TYPE] == DC_REF) |
+                                  (ppc['bus_dc'][:, DC_BUS_TYPE] == DC_B2B), BUS_I]
+
+        bus_from_dc = ppc['branch_dc'][br_dc_status, DC_F_BUS].real.astype(np.int64)
+        bus_to_dc = ppc['branch_dc'][br_dc_status, DC_T_BUS].real.astype(np.int64)
+
+        bus_from_dc = np.hstack([bus_from_dc, bus_from_vsc_dc, slacks_dc])
+        bus_to_dc = np.hstack([bus_to_dc, bus_to_vsc_dc, np.ones(len(slacks_dc)) * nobus_dc])
+        nolinks_dc = nobranch_dc + novsc + len(slacks_dc)
+
+        adj_matrix_dc = sp.sparse.coo_matrix((np.ones(nolinks_dc), (bus_from_dc, bus_to_dc)),
+                                             shape=(nobus_dc + 1, nobus_dc + 1))
+
+        reachable_dc = sp.sparse.csgraph.breadth_first_order(adj_matrix_dc, nobus_dc, False, False)
+        bus_dc_not_reachable = np.ones(ppc["bus_dc"].shape[0] + 1, dtype=bool)
+        bus_dc_not_reachable[reachable_dc] = False
+        isolated_nodes_dc, pus_dc, qus_dc, ppc = _set_isolated_nodes_out_of_service(ppc, bus_dc_not_reachable, dc=True)
+    else:
+        isolated_nodes_dc, pus_dc, qus_dc = np.array([], dtype=np.int64), 0, 0
+
+    return isolated_nodes, pus, qus, isolated_nodes_dc, pus_dc, qus_dc
 
 
 def _subnetworks(ppc):
@@ -776,38 +858,122 @@ except RuntimeError:
     set_isolated_buses_oos = jit(nopython=True, cache=False)(_python_set_isolated_buses_oos)
 
 
-def _select_is_elements_numba(net, isolated_nodes=None, sequence=None):
+def _select_is_elements_numba(net, isolated_nodes=None, isolated_nodes_dc=None, sequence=None):
+    """
+    Selects in-service elements in the grid (both AC and DC) based on the network's state
+    and sets this information in the internal lookups.
+    If provided, isolated buses (AC and DC) are additionally considered as not in service.
+    The function sets elements out of service based on their direct connectivity to
+    in-service buses, and also based on controllability flags in 'load', 'sgen', and 'storage'
+    during optimal power flow (OPF) mode.
+
+    Parameters:
+    -----------
+    net : pandapowerNet
+        The grid data structure containing information about the buses, loads, lines, etc.
+
+    isolated_nodes : list or ndarray, optional (default=None)
+        List or array of isolated nodes (AC) in the network. If provided, the isolated nodes are
+        set as out of service.
+
+    isolated_nodes_dc : list or ndarray, optional (default=None)
+        List or array of isolated nodes (DC) in the network. If provided, the isolated DC nodes are
+        set as out of service.
+
+    sequence : str, optional (default=None)
+        Used when multi-sequence data is present in the network (like in fault studies).
+        If provided, it selects the specific sequence data in the network.
+
+    Returns:
+    --------
+    is_elements : dict
+        A dictionary containing boolean arrays or lists representing the in-service state
+        of various elements (like 'load', 'gen', 'line', etc.) in the network.
+
+    Notes:
+    ------
+    1. The function checks and considers both AC and DC elements in the grid.
+    2. If the grid has VSC elements and auxiliary lookup data, the isolated auxiliary buses
+       for the VSC elements are also set out of service.
+    """
     # is missing sgen_controllable and load_controllable
-    max_bus_idx = np.max(net["bus"].index.values)
-    bus_in_service = np.zeros(max_bus_idx + 1, dtype=bool)
-    bus_in_service[net["bus"].index.values] = net["bus"]["in_service"].values.astype(bool)
+    if len(net.bus) > 0:  # preparing for the possibility of not having any AC buses but just DC
+        max_bus_idx = np.max(net["bus"].index.values)
+        bus_in_service = np.zeros(max_bus_idx + 1, dtype=bool)
+        bus_in_service[net["bus"].index.values] = net["bus"]["in_service"].values.astype(bool)
+    else:
+        bus_in_service = np.array([], dtype=bool)
+    if len(net.bus_dc) > 0:
+        max_bus_dc_idx = np.max(net["bus_dc"].index.values)
+        bus_dc_in_service = np.zeros(max_bus_dc_idx + 1, dtype=bool)
+        bus_dc_in_service[net["bus_dc"].index.values] = net["bus_dc"]["in_service"].values.astype(bool)
+    else:
+        bus_dc_in_service = np.array([], dtype=bool)
+    if isolated_nodes_dc is not None and len(isolated_nodes_dc) > 0:
+        ppc = net["_ppc"]
+        ppc_bus_dc_isolated = np.zeros(ppc["bus_dc"].shape[0], dtype=bool)
+        ppc_bus_dc_isolated[isolated_nodes_dc] = True
+        set_isolated_buses_oos(bus_dc_in_service, ppc_bus_dc_isolated, net["_pd2ppc_lookups"]["bus_dc"])
     if isolated_nodes is not None and len(isolated_nodes) > 0:
         ppc = net["_ppc"] if sequence is None else net["_ppc%s" % sequence]
         ppc_bus_isolated = np.zeros(ppc["bus"].shape[0], dtype=bool)
         ppc_bus_isolated[isolated_nodes] = True
         set_isolated_buses_oos(bus_in_service, ppc_bus_isolated, net["_pd2ppc_lookups"]["bus"])
     #    mode = net["_options"]["mode"]
-    elements = ["load", "motor", "sgen", "asymmetric_load", "asymmetric_sgen", "gen",
-                "ward", "xward", "shunt", "ext_grid", "storage", "svc", "ssc"]  # ,"impedance_load"
+    elements_ac = ["load", "motor", "sgen", "asymmetric_load", "asymmetric_sgen", "gen",
+                   "ward", "xward", "shunt", "ext_grid", "storage", "svc", "ssc", "vsc"]  # ,"impedance_load"
+    elements_dc = ["vsc"]
     is_elements = dict()
-    for element in elements:
-        len_ = len(net[element].index)
-        element_in_service = np.zeros(len_, dtype=bool)
-        if len_ > 0:
-            element_df = net[element]
-            set_elements_oos(element_df["bus"].values, element_df["in_service"].values,
-                             bus_in_service, element_in_service)
-        if net["_options"]["mode"] == "opf" and element in ["load", "sgen", "storage"]:
-            if "controllable" in net[element]:
-                controllable = net[element].controllable.fillna(False).values.astype(bool)
-                controllable_is = controllable & element_in_service
-                if controllable_is.any():
-                    is_elements["%s_controllable" % element] = controllable_is
-                    element_in_service = element_in_service & ~controllable_is
-        is_elements[element] = element_in_service
+    for element_table_list, bus_table, bis in zip((elements_ac, elements_dc),
+                                                  ("bus", "bus_dc"), (bus_in_service, bus_dc_in_service)):
+        for element_table in element_table_list:
+            num_elements = len(net[element_table].index)
+            element_in_service = np.zeros(num_elements, dtype=bool)
+            if num_elements > 0:
+                element_df = net[element_table]
+                set_elements_oos(element_df[bus_table].values, element_df["in_service"].values,
+                                 bis, element_in_service)
+            # load, sgen, storage only in elements_ac so this will only be executed once:
+            if net["_options"]["mode"] == "opf" and element_table in ["load", "sgen", "storage"]:
+                if "controllable" in net[element_table]:
+                    controllable = net[element_table].controllable.fillna(False).values.astype(bool)
+                    controllable_in_service = controllable & element_in_service
+                    if controllable_in_service.any():
+                        is_elements["%s_controllable" % element_table] = controllable_in_service
+                        element_in_service = element_in_service & ~controllable_in_service
+            # if element_table has both bus and bus_dc e.g. "vsc":
+            is_elements[element_table] = is_elements.get(element_table, True) & element_in_service
+
+    if len(net.vsc) > 0 and "aux" in net["_pd2ppc_lookups"]:
+        # reasoning: it can be that there are isolated DC buses. But they are only discovered
+        # after the connectivity check. Afterwards, the connected VSC elements are set out of service
+        # But after this happens, the VSC element auxiliary buses must be set out of service, too
+        # This does not happen because for that we would need to perform another connectivity check
+        # So we do it by hand here:
+        vsc_aux_isolated = net["_pd2ppc_lookups"]["aux"]["vsc"][~is_elements["vsc"]]
+        # vsc_aux_isolated = net["_pd2ppc_lookups"]["aux"]["vsc"][~is_elements["vsc"] |
+        #                    ppc_bus_isolated[net["_pd2ppc_lookups"]["aux"]["vsc"]] |
+        #                    ppc_bus_isolated[net._ppc["vsc"][:, VSC_BUS].astype(np.int64)]]
+        net._ppc["bus"][vsc_aux_isolated, BUS_TYPE] = NONE
+        # if there are no in service VSC that define the DC slack node, we must change the DC slack to type P
+        bus_dc_slack = net._ppc["bus_dc"][:, DC_BUS_TYPE] == DC_REF
+        bus_dc_with_vsc = np.r_[net._ppc["vsc"][is_elements["vsc"], VSC_BUS_DC], net._ppc["vsc"][is_elements["vsc"], VSC_INTERNAL_BUS_DC]]
+        bus_dc_to_change = bus_dc_slack & (~np.isin(net._ppc["bus_dc"][:, DC_BUS_I], bus_dc_with_vsc))
+        net._ppc["bus_dc"][bus_dc_to_change, DC_BUS_TYPE] = DC_P
+
+        # if the AC bus is defined as REF only because it is connected to a vsc, and the vsc is out of service,
+        # it cannot be a REF bus anymore
+        bus_ac_slack = net._ppc["bus"][:, BUS_TYPE] == REF
+        bus_ac_with_vsc = net._ppc["vsc"][is_elements["vsc"], VSC_BUS]
+        bus_ac_to_change = (bus_ac_slack & (~np.isin(net._ppc["bus"][:, BUS_I], bus_ac_with_vsc)) &
+                            (~np.isin(net._ppc["bus"][:, BUS_I], net._ppc["internal"]["ac_slack_buses"])))
+        # changing just to PQ is OK because the setting of type PV happens later in build_gen
+        net._ppc["bus"][bus_ac_to_change, BUS_TYPE] = PQ
 
     is_elements["bus_is_idx"] = net["bus"].index.values[bus_in_service[net["bus"].index.values]]
+    is_elements["bus_dc_is_idx"] = net["bus_dc"].index.values[bus_dc_in_service[net["bus_dc"].index.values]]
     is_elements["line_is_idx"] = net["line"].index[net["line"].in_service.values]
+    is_elements["line_dc_is_idx"] = net["line_dc"].index[net["line_dc"].in_service.values]
     return is_elements
 
 
@@ -975,13 +1141,25 @@ def _clean_up(net, res=True):
 def _set_isolated_buses_out_of_service(net, ppc):
     # set disconnected buses out of service
     # first check if buses are connected to branches
-    disco = np.setxor1d(ppc["bus"][:, 0].astype(np.int64),
-                        ppc["branch"][ppc["branch"][:, 10] == 1, :2].real.astype(np.int64).flatten())
+    # I don't know why this dance with [X, :][:, [Y, Z]] (instead of [X, [Y, Z]]) is necessary:
+    disco = np.setxor1d(ppc["bus"][:, BUS_I].astype(np.int64),
+                        ppc["branch"][ppc["branch"][:, BR_STATUS] == 1, :][:, [F_BUS,T_BUS]].real.astype(np.int64).flatten())
 
     # but also check if they may be the only connection to an ext_grid
-    net._isolated_buses = np.setdiff1d(disco, ppc['bus'][ppc['bus'][:, 1] == REF,
-                                                         :1].real.astype(np.int64))
-    ppc["bus"][net._isolated_buses, 1] = NONE
+    net._isolated_buses = np.setdiff1d(disco, ppc['bus'][ppc['bus'][:, BUS_TYPE] == REF,
+                                                         BUS_I].real.astype(np.int64))
+    ppc["bus"][net._isolated_buses, BUS_TYPE] = NONE
+
+    # check DC buses - not connected to DC lines and not connected to VSC DC side
+    disco_dc = np.setxor1d(ppc["bus_dc"][:, DC_BUS_I].astype(np.int64),
+                           np.union1d(ppc["branch_dc"][ppc["branch_dc"][:, DC_BR_STATUS] == 1, :][:,
+                                      [DC_F_BUS, DC_T_BUS]].real.astype(np.int64).flatten(),
+                                      ppc["vsc"][ppc["vsc"][:, VSC_STATUS] == 1, VSC_BUS_DC].real.astype(np.int64)))
+
+    # but also check if they may be the only connection to an ext_grid
+    net._isolated_buses_dc = np.setdiff1d(disco_dc, ppc['bus_dc'][ppc['bus_dc'][:, DC_BUS_TYPE] == REF,
+                                                         DC_BUS_I].real.astype(np.int64))
+    ppc["bus_dc"][net._isolated_buses_dc, DC_BUS_TYPE] = DC_NONE
 
 
 def _write_lookup_to_net(net, element, element_lookup):
@@ -1061,6 +1239,20 @@ def _check_lightsim2grid_compatibility(net, lightsim2grid, voltage_depend_loads,
             return False
         raise NotImplementedError("option 'lightsim2grid' is True and SSC controllable shunt elements are present, "
                                   "SVC controllable shunt elements not implemented.")
+    if len(net.vsc):
+        if lightsim2grid == "auto":
+            return False
+        raise NotImplementedError("option 'lightsim2grid' is True and VSC controllable shunt elements are present, "
+                                  "VSC controllable shunt elements not implemented.")
+    if len(net.bus_dc):
+        if lightsim2grid == "auto":
+            return False
+        raise NotImplementedError("option 'lightsim2grid' is True and DC buses are present, DC buses not implemented.")
+
+    if len(net.line_dc):
+        if lightsim2grid == "auto":
+            return False
+        raise NotImplementedError("option 'lightsim2grid' is True and DC lines are present, DC lines not implemented.")
 
     return True
 
@@ -1295,7 +1487,8 @@ def _replace_nans_with_default_limits(net, ppc):
     plim = net._options["p_lim_default"]
 
     for matrix, column, default in [("gen", QMAX, qlim), ("gen", QMIN, -qlim), ("gen", PMIN, -plim),
-                                    ("gen", PMAX, plim), ("bus", VMAX, 2.0), ("bus", VMIN, 0.0)]:
+                                    ("gen", PMAX, plim), ("bus", VMAX, 2.0), ("bus", VMIN, 0.0),
+                                    ("bus_dc", DC_VMAX, 2.0), ("bus_dc", DC_VMIN, 0.0)]:
         limits = ppc[matrix][:, [column]]
         np.copyto(limits, default, where=np.isnan(limits))
         ppc[matrix][:, [column]] = limits
@@ -1373,7 +1566,13 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
 
     default_max_iteration = {"nr": 10, "iwamoto_nr": 10, "bfsw": 100, "gs": 10000, "fdxb": 30,
                              "fdbx": 30}
-    with_facts = net.svc.in_service.any() or net.tcsc.in_service.any() or net.ssc.in_service.any()
+    with_facts = net.svc.in_service.any() or net.tcsc.in_service.any() or \
+                 net.ssc.in_service.any() or net.vsc.in_service.any()
+
+    if with_facts and algorithm != "nr":
+        if algorithm != 'nr':
+            raise NotImplementedError('FACTS devices only implemented for Newton Raphson algorithm.')
+
     if max_iteration == "auto":
         # tdpf is an option rather than algorithm; svc need more iterations to converge
         max_iteration = 30 if tdpf or with_facts else default_max_iteration[algorithm]
@@ -1395,8 +1594,11 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
         if init_va_degree is None or (isinstance(init_va_degree, str) and init_va_degree == "auto"):
             init_va_degree = "dc" if calculate_voltage_angles and not with_facts else "flat"
         if init_vm_pu is None or (isinstance(init_vm_pu, str) and init_vm_pu == "auto"):
-            init_vm_pu = (net.ext_grid.vm_pu.values.sum() + net.gen.vm_pu.values.sum()) / \
-                         (len(net.ext_grid.vm_pu.values) + len(net.gen.vm_pu.values))
+            init_vm_pu = (net.ext_grid.query("in_service").vm_pu.values.sum() +
+                          net.gen.query("in_service").vm_pu.values.sum() +
+                          net.vsc.query("in_service & (control_mode_ac == 'slack')").control_value_ac.values.sum()) / \
+                         (len(net.ext_grid.query("in_service")) + len(net.gen.query("in_service")) +
+                          len(net.vsc.query("in_service & (control_mode_ac == 'slack')")))
     elif init == "dc":
         init_vm_pu = "flat"
         init_va_degree = "dc"
@@ -1406,8 +1608,8 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
 
     if distributed_slack:
         false_slack_weight_elms = [elm for elm in {
-            'asymmetric_load', 'asymmetric_sgen', 'load', 'sgen', 'shunt',
-            'storage', 'ward'} if "slack_weight" in net[elm].columns]
+            'asymmetric_load', 'asymmetric_sgen', 'load', 'sgen', 'shunt', 'storage',
+            'ward'} if "slack_weight" in net[elm].columns and net[elm].slack_weight.sum() > 0]
         if len(false_slack_weight_elms):
             logger.warning("Currently distributed_slack is implemented for 'ext_grid', 'gen' "
                            "and 'xward' only, not for '" + "', '".join(

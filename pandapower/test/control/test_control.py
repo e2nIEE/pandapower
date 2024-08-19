@@ -125,20 +125,20 @@ def test_in_service_bool(net):
     # make sure fails with something other than bool
     with pytest.raises(KeyError):
         cnet = copy.deepcopy(net)
-        TrafoController(cnet, 0, side="lv", trafotype="2W", level=1, in_service="True", tol=1e-6)
+        TrafoController(cnet, 0, side="lv", element="trafo", level=1, in_service="True", tol=1e-6)
         pp.runpp(cnet, run_control=True)
     with pytest.raises(KeyError):
         cnet = copy.deepcopy(net)
-        TrafoController(cnet, 0, side="lv", trafotype="2W", level=1, in_service=1.0, tol=1e-6)
+        TrafoController(cnet, 0, side="lv", element="trafo", level=1, in_service=1.0, tol=1e-6)
         pp.runpp(cnet, run_control=True)
     with pytest.raises(TypeError):
         cnet = copy.deepcopy(net)
-        TrafoController(cnet, 0, side="lv", trafotype="2W", level=1, in_service=[1, 2, 3], tol=1e-6)
+        TrafoController(cnet, 0, side="lv", element="trafo", level=1, in_service=[1, 2, 3], tol=1e-6)
         pp.runpp(cnet, run_control=True)
 
 
 def test_multiple_levels(net):
-    TrafoController(net, 0, side="lv", trafotype="2W", level=1, tol=1e-6, in_service=True)
+    TrafoController(net, 0, side="lv", element="trafo", level=1, tol=1e-6, in_service=True)
     Controller(net, gid=2, level=[1, 2])
     Controller(net, gid=2, level=[1, 2])
     level, order = get_controller_order(net, net.controller)
@@ -207,4 +207,4 @@ def test_matching_params(net):
 
 
 if __name__ == '__main__':
-    pytest.main(['-s', __file__])
+    pytest.main([__file__, "-xs"])

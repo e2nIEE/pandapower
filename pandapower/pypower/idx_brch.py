@@ -89,5 +89,9 @@ MU_ANGMAX   = 20   # Kuhn-Tucker multiplier upper angle difference limit
 
 BR_R_ASYM = 21
 BR_X_ASYM = 22
+BR_G      = 23    # g, total line charging conductance (p.u.)
+BR_G_ASYM = 24
+BR_B_ASYM = 25
 
-branch_cols = 23
+
+branch_cols = 26
