@@ -671,10 +671,6 @@ class FromSerializableRegistry():
             else:
                 df.set_index(df.index.values.astype(numpy.int64), inplace=True)
             # coords column is not handled properly when using from_features
-            if 'coords' in df:
-                # df['coords'] = df.coords.apply(json.loads)
-                valid_coords = ~pd.isnull(df.coords)
-                df.loc[valid_coords, 'coords'] = df.loc[valid_coords, "coords"].apply(json.loads)
             df = df.reindex(columns=self.d['columns'])
 
             # df.astype changes geodataframe to dataframe -> _preserve_dtypes fixes it
