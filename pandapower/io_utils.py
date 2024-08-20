@@ -670,7 +670,6 @@ class FromSerializableRegistry():
                 df.drop(columns=["id"], inplace=True)
             else:
                 df.set_index(df.index.values.astype(numpy.int64), inplace=True)
-            # coords column is not handled properly when using from_features
             df = df.reindex(columns=self.d['columns'])
 
             # df.astype changes geodataframe to dataframe -> _preserve_dtypes fixes it
