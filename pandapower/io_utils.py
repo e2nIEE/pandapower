@@ -579,11 +579,10 @@ class FromSerializableRegistry():
             df['geo'] = df['geo'].dropna().apply(json.dumps).apply(geojson.loads)
 
         df_obj = df.select_dtypes(include=['object'])
-        dtyp = df_obj.dtypes
         for col in df_obj:
             df[col] = df[col].apply(self.pp_hook)
-            df[col][pd.isnull(df[col])] = None
-        df[df_obj.columns] = df[df_obj.columns].astype(dtype = dtyp)
+            df[col] = df[col].astype(dtype = 'object')
+            df.loc[pd.isnull(df[col]), col] = None
         return df
 
     @from_serializable.register(class_name='pandapowerNet', module_name='pandapower.auxiliary')#,
@@ -675,10 +674,6 @@ class FromSerializableRegistry():
             else:
                 df.set_index(df.index.values.astype(numpy.int64), inplace=True)
             # coords column is not handled properly when using from_features
-            if 'coords' in df:
-                # df['coords'] = df.coords.apply(json.loads)
-                valid_coords = ~pd.isnull(df.coords)
-                df.loc[valid_coords, 'coords'] = df.loc[valid_coords, "coords"].apply(json.loads)
             df = df.reindex(columns=self.d['columns'])
 
             # df.astype changes geodataframe to dataframe -> _preserve_dtypes fixes it
