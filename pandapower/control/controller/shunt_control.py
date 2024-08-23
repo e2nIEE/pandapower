@@ -143,15 +143,3 @@ class DiscreteShuntController(ShuntController):
                     # logger.debug(f"step max: {net.shunt.at[self.shunt_index, 'name']}")
                     return True
         return False
-
-
-        
-        
-    
-    
-    
-    
-    
-    
-    
-    
