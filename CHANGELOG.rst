@@ -1,8 +1,26 @@
 Change Log
 =============
 
+[2.14.11] - 2024-07-08
+-------------------------------
+- [FIXED] Lightsim2grid version
+
+[2.14.10] - 2024-07-08
+-------------------------------
+- [FIXED] geopandas version
+
+[2.14.9] - 2024-06-25
+-------------------------------
+- [FIXED] scipy version
+
 [upcoming release] - 2024-..-..
 -------------------------------
+- [REMOVED] python 3.8 support
+- [CHANGED] geopandas version to >= 1.0
+- [ADDED] station controller functionality with voltage and reactive power control with and without droop and pf import support
+- [ADDED] creating series capacitor added in pf to pp converter
+- [FIXED] using loc to remove the warning
+- [FIXED] replacing deprecated H and A from scipy.sparse.csc_matrix
 - [ADDED] low voltage grid Schutterwald
 - [FIXED] trafo3w with tap changer at star point corrected
 - [FIXED] namespace changes from numpy 2.0 release
@@ -38,8 +56,25 @@ Change Log
 - [FIXED] error during unbalanced powerflow due to out of service external grids
 - [FIXED] PowerFactory converter: fix trafo3w tap dependent impedance
 - [ADDED] PowerFactory converter: support load types (constI, constZ) and the setting whether to consider voltage dependency of loads
+- [CHANGED] considering trafo controller and improve implementation for other (bus element) controller at grid_equivalent creation
+- [CHANGED] vectorization of y_bus reordering in _calculate_equivalent_Ybus() within get_equivalent()
 - [FIXED] deprecation of matplotlib.cm.get_cmap(name) -> matplotlib.colormaps[name]
 - [FIXED] merge_nets failing if net2 has custom DataFrame that is not present in net1
+- [CHANGED] grid_equivalent creation: improved consideration of controller
+- [CHANGED] create consistent parameter names (element and element_index) in controllers -> Changes for TrafoController: trafotable & trafotype -> element, tid -> element_index
+- [CHANGED] parameter renaming in net.group: element -> element_index
+- [CHANGED] in to_ppc(), the default of calculate_voltage_angles is True now (as in previously changed in runpp()).
+- [FIXED] fixed some small bugs in the CGMES converter and improved its speed
+- [CHANGED] trigger a numpy error in makeYbus, makeBbus, _wye_delta instead of warning
+- [ADDED] transformer tap hunting detection for DiscreteTapControl
+- [CHANGED] diagnostic for implausible impedance values includes xward, trafo, trafo3w
+- [CHANGED] PowerFactory converter has workarounds for implausible impedance values
+- [CHANGED] split BR_B in ppc['branch'] (complex number) into BR_B and BR_G, BR_G is added as a new column, ppc['branch'] dtype changed to float64
+- [ADDED] the possibility to have unequal values for branch G and B for from and to buses by means of new columns in ppc['branch'] BR_B_ASYM and BR_G_ASYM
+- [ADDED] shunt components G and B for impedance elements, also supports unequal G and B parameters for from and to bus
+- [ADDED] support for unequal leakage resistance and reactance for HV and LV sides of a 2W-transformer
+- [ADDED] Add VSC element, dc buses, dc lines, and hybrid AC/DC power flow calculation
+- [CHANGED] accelerate _integrate_power_elements_connected_with_switch_buses() in get_equivalent()
 
 [2.14.7] - 2024-06-14
 -------------------------------
