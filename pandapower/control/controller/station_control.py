@@ -141,11 +141,12 @@ class BinarySearchControl(Controller):
                 self.output_element_in_service.append(net.gen.in_service[output_index])
             elif self.output_element == "sgen":
                 self.output_element_in_service.append(net.sgen.in_service[output_index])
+            elif self.output_element == "shunt":
+                self.output_element_in_service.append(net.shunt.in_service[output_index])
         # check if at least one input and one output element is in_service
-        # TODO: check if this if condition is necessary, it breaks the shunt controller and doesnt influence the station controller tests
-        # if not (any(self.input_element_in_service) and any(self.output_element_in_service)):
-        #     self.converged = True
-        #     return self.converged
+        if not (any(self.input_element_in_service) and any(self.output_element_in_service)):
+            self.converged = True
+            return self.converged
 
         # read input values
         input_values = []
