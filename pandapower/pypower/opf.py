@@ -12,8 +12,6 @@
 
 from time import perf_counter
 
-from numpy import zeros, c_, shape
-
 from pandapower.pypower.opf_args import opf_args2
 from pandapower.pypower.opf_execute import opf_execute
 from pandapower.pypower.opf_setup import opf_setup
