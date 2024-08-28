@@ -179,7 +179,8 @@ def reindex_buses(net, bus_lookup):
     if net.group.shape[0]:
         for row in np.arange(net.group.shape[0], dtype=np.int64)[
                 (net.group.element_type == "bus").values & net.group.reference_column.isnull().values]:
-            net.group.element.iat[row] = list(get_indices(net.group.element.iat[row], bus_lookup))
+            net.group.iat[row, net.group.columns.get_loc("element_index")] = list(
+                get_indices(net.group.element_index.iat[row], bus_lookup))
 
     # --- adapt measurement link
     bus_meas = net.measurement.element_type == "bus"
@@ -307,7 +308,8 @@ def reindex_elements(net, element_type, new_indices=None, old_indices=None, look
         for row in np.arange(net.group.shape[0], dtype=np.int64)[
                 (net.group.element_type == element_type).values & \
                 net.group.reference_column.isnull().values]:
-            net.group.element.iat[row] = list(get_indices(net.group.element.iat[row], lookup))
+            net.group.iat[row, net.group.columns.get_loc("element_index")] = list(
+                get_indices(net.group.element_index.iat[row], lookup))
 
     # --- adapt measurement link
     if element_type in ["line", "trafo", "trafo3w"]:
