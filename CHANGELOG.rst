@@ -74,6 +74,7 @@ Change Log
 - [ADDED] support for unequal leakage resistance and reactance for HV and LV sides of a 2W-transformer
 - [ADDED] Add VSC element, dc buses, dc lines, and hybrid AC/DC power flow calculation
 - [CHANGED] accelerate _integrate_power_elements_connected_with_switch_buses() in get_equivalent()
+- [CHANGED] accelerate distributed slack power flow calculation by using sparse-aware operations in _subnetworks()
 
 [2.14.7] - 2024-06-14
 -------------------------------
