@@ -13,9 +13,6 @@
 from time import perf_counter
 
 from numpy import zeros, c_, shape
-from pandapower.pypower.idx_brch import MU_ANGMAX
-from pandapower.pypower.idx_bus import MU_VMIN
-from pandapower.pypower.idx_gen import MU_QMIN
 
 from pandapower.pypower.opf_args import opf_args2
 from pandapower.pypower.opf_execute import opf_execute
@@ -151,19 +148,6 @@ def opf(ppc, ppopt):
 
     ## process input arguments
     ppc, ppopt = opf_args2(ppc, ppopt)
-
-    ## add zero columns to bus, gen, branch for multipliers, etc if needed
-    nb   = shape(ppc['bus'])[0]    ## number of buses
-    nl   = shape(ppc['branch'])[0] ## number of branches
-    ng   = shape(ppc['gen'])[0]    ## number of dispatchable injections
-    if shape(ppc['bus'])[1] < MU_VMIN + 1:
-        ppc['bus'] = c_[ppc['bus'], zeros((nb, MU_VMIN + 1 - shape(ppc['bus'])[1]))]
-
-    if shape(ppc['gen'])[1] < MU_QMIN + 1:
-        ppc['gen'] = c_[ppc['gen'], zeros((ng, MU_QMIN + 1 - shape(ppc['gen'])[1]))]
-
-    if shape(ppc['branch'])[1] < MU_ANGMAX + 1:
-        ppc['branch'] = c_[ppc['branch'], zeros((nl, MU_ANGMAX + 1 - shape(ppc['branch'])[1]))]
 
     ##-----  convert to internal numbering, remove out-of-service stuff  -----
     # ppc = ext2int(ppc)

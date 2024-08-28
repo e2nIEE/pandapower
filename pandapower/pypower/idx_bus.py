@@ -86,4 +86,4 @@ CID = 13   # coefficient of constant current load at rated voltage in range [0,1
 CZD = 14   # coefficient of constant impedance load at rated voltage in range [0,1]
 SL_FAC = 15
 
-bus_cols = 16
+bus_cols = 17

@@ -7,16 +7,29 @@
 
 from sys import stderr
 
-from numpy import array
+from numpy import array, c_, shape, zeros
 from scipy.sparse import issparse
 
 from pandapower.pypower._compat import PY2
+from pandapower.pypower.idx_brch import branch_cols
+from pandapower.pypower.idx_bus import bus_cols
+from pandapower.pypower.idx_gen import gen_cols
 from pandapower.pypower.ppoption import ppoption
 #from pandapower.pypower.loadcase import loadcase
 
 
 if not PY2:
     basestring = str
+
+
+def _add_zero_columns(bus, gen, branch):
+    """Add zero columns to bus, gen, branch for multipliers, etc. if needed
+    """
+    bus = c_[bus, zeros((shape(bus)[0], bus_cols - shape(bus)[1]))]
+    gen = c_[gen, zeros((shape(gen)[0], gen_cols - shape(gen)[1]))]
+    branch = c_[branch, zeros((shape(branch)[0], branch_cols - shape(branch)[1]))]
+
+    return bus, gen, branch
 
 
 def opf_args(ppc, ppopt):
@@ -150,6 +163,9 @@ def opf_args(ppc, ppopt):
         stderr.write('opf_args.m: Au must be sparse\n')
     if ppopt == None or len(ppopt) == 0:
         ppopt = ppoption()
+
+    # add zero columns to bus, gen, branch for multipliers, etc. if needed
+    bus, gen, branch = _add_zero_columns(bus, gen, branch)
 
     return baseMVA, bus, gen, branch, gencost, Au, lbu, ubu, \
         ppopt, N, fparm, H, Cw, z0, zl, zu, userfcn, areas
