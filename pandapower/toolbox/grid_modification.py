@@ -657,6 +657,7 @@ def drop_buses(net, buses, drop_elements=True):
     if drop_elements:
         drop_elements_at_buses(net, buses)
         drop_measurements_at_elements(net, "bus", idx=buses)
+        drop_controllers_at_buses(net, buses)
 
 
 def drop_trafos(net, trafos, table="trafo"):
@@ -758,7 +759,8 @@ def drop_measurements_at_elements(net, element_type, idx=None, side=None):
     idx = ensure_iterability(idx) if idx is not None else net[element_type].index
     bool1 = net.measurement.element_type == element_type
     bool2 = net.measurement.element.isin(idx)
-    bool3 = net.measurement.side == side if side is not None else np.full(net.measurement.shape[0], 1, dtype=bool)
+    bool3 = net.measurement.side == side if side is not None else np.full(
+        net.measurement.shape[0], 1, dtype=bool)
     to_drop = net.measurement.index[bool1 & bool2 & bool3]
     net.measurement = net.measurement.drop(to_drop)
 
@@ -768,18 +770,47 @@ def drop_controllers_at_elements(net, element_type, idx=None):
     Drop all the controllers for the given elements (idx).
     """
     idx = ensure_iterability(idx) if idx is not None else net[element_type].index
-    to_drop = []
-    for i in net.controller.index:
-        et = net.controller.object[i].__dict__.get("element")
-        elm_idx = ensure_iterability(net.controller.object[i].__dict__.get("element_index", [0.1]))
-        if element_type == et:
-            if set(elm_idx) - set(idx) == set():
-                to_drop.append(i)
-            else:
-                net.controller.object[i].__dict__["element_index"] = list(set(elm_idx) - set(idx))
-                net.controller.object[i].__dict__["matching_params"]["element_index"] = list(
-                    set(elm_idx) - set(idx))
+    to_drop = list()
+    for ctrl_idx in net.controller.index:
+        _drop_controller_at_elements(net, element_type, idx, ctrl_idx, to_drop)
     net.controller = net.controller.drop(to_drop)
+
+
+def _drop_controller_at_elements(net, element_type, idx, ctrl_idx, to_drop):
+    ctrl_dict = net.controller.at[ctrl_idx, "object"].__dict__
+    et = ctrl_dict.get("element")
+    if element_type != et:
+        return
+    elm_idx = ctrl_dict.get("element_index", [0.1])
+    is_single_value = not hasattr(elm_idx, "__iter__")
+    elm_idx = np.array(ensure_iterability(elm_idx))
+    elm_staying = (~pd.Series(elm_idx).isin(idx)).values
+    if not np.any(elm_staying):
+        to_drop.append(ctrl_idx)
+    elif not is_single_value:
+        ctrl_dict["element_index"] = list(elm_idx[elm_staying])
+        ctrl_dict["matching_params"]["element_index"] = list(elm_idx[elm_staying])
+        _update_further_controller_parameters(net, ctrl_idx, elm_staying)
+
+
+def _update_further_controller_parameters(net, ctrl_idx, elm_staying):
+    ctrl_dict = net.controller.at[ctrl_idx, "object"].__dict__
+    further_vars_to_adapt = ["bus", "element_names", "gen_type", "element_in_service",
+                             "p_profile", "q_profile", "profile_name", "sn_mva", "p_mw", "q_mvar",
+                             "p_series_mw", "q_series_mvar", "target_p_mw", "target_q_mvar",
+                             "p_curtailment"]
+    for ctrl_col in further_vars_to_adapt:
+        if ctrl_col not in ctrl_dict.keys():
+            continue
+
+        if ctrl_col == "bus":
+            ctrl_dict[ctrl_col] = net[ctrl_dict["element"]].loc[
+                ctrl_dict["element_index"], "bus"]
+        elif ctrl_col in ["p_profile", "q_profile", "profile_name"]:
+            if ctrl_dict[ctrl_col] is not None:
+                ctrl_dict[ctrl_col] = list(np.array(ctrl_dict[ctrl_col])[elm_staying])
+        else:
+            ctrl_dict[ctrl_col] = ctrl_dict[ctrl_col].loc[ctrl_dict["element_index"]]
 
 
 def drop_controllers_at_buses(net, buses):
@@ -1081,7 +1112,7 @@ def _replace_group_member_element_type(
     check_unique_group_rows(net)
     gr_et = net.group.loc[net.group.element_type == old_element_type]
     for gr_index in gr_et.index:
-        isin = old_elements.isin(gr_et.at[gr_index, "element"])
+        isin = old_elements.isin(gr_et.at[gr_index, "element_index"])
         if any(isin):
             attach_to_group(net, gr_index, new_element_type, [new_elements.loc[isin].tolist()],
                             reference_columns=gr_et.at[gr_index, "reference_column"])

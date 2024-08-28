@@ -601,7 +601,7 @@ def test_replace_ext_grid_gen():
         assert np.allclose(net.gen.index.values, [0, 4])
         assert net.gen.loc[4, "uuid"] == "test"
         assert net.group.element_type.tolist() == ["line", "gen"]
-        assert net.group.element.iat[1] == [4]
+        assert net.group.element_index.iat[1] == [4]
 
         # replace_gen_by_ext_grid
         if i == 0:
@@ -869,8 +869,8 @@ def test_repl_to_line_with_switch():
                     pp.create_switch(net, bus=bus, element=REPL, closed=False, et="l", type="LBS")
 
             # calculate runpp with REPL
-            net.line.loc[testindex, 'in_service'] = False
-            net.line.loc[REPL, 'in_service'] = True
+            net.line.loc[testindex, "in_service"] = False
+            net.line.loc[REPL, "in_service"] = True
             pp.runpp(net)
 
             fbus_repl = net.res_bus.loc[fbus]
@@ -882,9 +882,9 @@ def test_repl_to_line_with_switch():
             # get ne line impedances
             new_idx = pp.repl_to_line(net, testindex, std, in_service=True)
             # activate new idx line
-            net.line.loc[REPL, 'in_service'] = False
-            net.line.loc[testindex, 'in_service'] = True
-            net.line.loc[new_idx, 'in_service'] = True
+            net.line.loc[REPL, "in_service"] = False
+            net.line.loc[testindex, "in_service"] = True
+            net.line.loc[new_idx, "in_service"] = True
             pp.runpp(net)
             # compare lf results
             fbus_ne = net.res_bus.loc[fbus]
@@ -902,9 +902,9 @@ def test_repl_to_line_with_switch():
             assert np.isclose(qloss_repl, qloss_ne)
 
             # and reset to unreinforced state again
-            net.line.loc[testindex, 'in_service'] = True
-            net.line.loc[new_idx, 'in_service'] = False
-            net.line.loc[REPL, 'in_service'] = False
+            net.line.loc[testindex, "in_service"] = True
+            net.line.loc[new_idx, "in_service"] = False
+            net.line.loc[REPL, "in_service"] = False
 
 
 def test_merge_parallel_line():
