@@ -1608,8 +1608,8 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
 
     if distributed_slack:
         false_slack_weight_elms = [elm for elm in {
-            'asymmetric_load', 'asymmetric_sgen', 'load', 'sgen', 'shunt',
-            'storage', 'ward'} if "slack_weight" in net[elm].columns]
+            'asymmetric_load', 'asymmetric_sgen', 'load', 'sgen', 'shunt', 'storage',
+            'ward'} if "slack_weight" in net[elm].columns and net[elm].slack_weight.sum() > 0]
         if len(false_slack_weight_elms):
             logger.warning("Currently distributed_slack is implemented for 'ext_grid', 'gen' "
                            "and 'xward' only, not for '" + "', '".join(

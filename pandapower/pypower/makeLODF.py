@@ -58,7 +58,7 @@ def makeLODF(branch, PTDF):
     # Implies a N-1 contingency (No backup branch)
     den = (ones((nl, 1)) * h.T * -1 + 1.)
 
-    # Silence warning caused by np.NaN
+    # Silence warning caused by np.nan
     with np.errstate(divide='ignore', invalid='ignore'):
         LODF = (H / den)
 
