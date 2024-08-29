@@ -127,3 +127,13 @@ Droop Control
 .. autoclass:: pandapower.control.controller.station_control.DroopControl
     :members:
 
+Shunt Controller
+==================
+
+**********************
+Discrete Shunt Control
+**********************
+
+.. autoclass:: pandapower.control.controller.shunt_control.DiscreteShuntController
+    :members:
+

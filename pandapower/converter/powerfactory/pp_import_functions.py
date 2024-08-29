@@ -2686,30 +2686,49 @@ def create_shunt(net, item):
         'bus': bus,
         'in_service': monopolar_in_service(item),
         'vn_kv': item.ushnm,
-        'q_mvar': item.Qact * multiplier
+        'q_mvar': item.Qact * multiplier,
+        'step': item.ncapa,
+        'max_step': item.ncapx
     }
+    print(item.loc_name)
     if item.shtype == 0:
         # Shunt is a R-L-C element
 
         R = item.rrea
         X = -1e6 / item.bcap + item.xrea
-
-        p_mw = (item.ushnm ** 2 * R) / (R ** 2 + X ** 2) * multiplier
-        params['q_mvar'] = (item.ushnm ** 2 * X) / (R ** 2 + X ** 2) * multiplier
+        if R == 0 and X == 0: #TODO put this into one function
+            p_mw = 0
+            params['q_mvar'] = 0
+        else:
+            p_mw = (item.ushnm ** 2 * R) / (R ** 2 + X ** 2) * multiplier
+            params['q_mvar'] = (item.ushnm ** 2 * X) / (R ** 2 + X ** 2) * multiplier
         sid = pp.create_shunt(net, p_mw=p_mw, **params)
     elif item.shtype == 1:
         # Shunt is an R-L element
 
         R = item.rrea
         X = item.xrea
-
-        p_mw = (item.ushnm ** 2 * R) / (R ** 2 + X ** 2) * multiplier
-        params['q_mvar'] = (item.ushnm ** 2 * X) / (R ** 2 + X ** 2) * multiplier
+        if R == 0 and X == 0: #TODO put this into one function
+            p_mw = 0
+            params['q_mvar'] = 0
+        else:
+            p_mw = (item.ushnm ** 2 * R) / (R ** 2 + X ** 2) * multiplier
+            params['q_mvar'] = (item.ushnm ** 2 * X) / (R ** 2 + X ** 2) * multiplier
         sid = pp.create_shunt(net, p_mw=p_mw, **params)
     elif item.shtype == 2:
         # Shunt is a capacitor bank
-        loss_factor = item.tandc
-        sid = pp.create_shunt_as_capacitor(net, loss_factor=loss_factor, **params)
+        B = item.bcap*1e-6
+        G = item.gparac*1e-6
+
+        R = G/(G**2 + B**2)
+        X = -B/(G**2 + B**2)
+        if R == 0 and X == 0: #TODO put this into one function
+            p_mw = 0
+            params['q_mvar'] = 0
+        else:
+            p_mw = (item.ushnm ** 2 * R) / (R ** 2 + X ** 2) * multiplier
+            params['q_mvar'] = (item.ushnm ** 2 * X) / (R ** 2 + X ** 2) * multiplier
+        sid = pp.create_shunt(net, p_mw=p_mw, **params)
     elif item.shtype == 3:
         # Shunt is a R-L-C, Rp element
 
@@ -2720,9 +2739,12 @@ def create_shunt(net, item):
 
         R = Rp * (Rp * Rs + Rs ** 2 + Xl ** 2) / ((Rp + Rs) ** 2 + Xl ** 2)
         X = 1 / Bc + (Xl * Rp ** 2) / ((Rp + Rs) ** 2 + Xl ** 2)
-
-        p_mw = (item.ushnm ** 2 * R) / (R ** 2 + X ** 2) * multiplier
-        params['q_mvar'] = (item.ushnm ** 2 * X) / (R ** 2 + X ** 2) * multiplier
+        if R == 0 and X == 0: #TODO put this into one function
+            p_mw = 0
+            params['q_mvar'] = 0
+        else:
+            p_mw = (item.ushnm ** 2 * R) / (R ** 2 + X ** 2) * multiplier
+            params['q_mvar'] = (item.ushnm ** 2 * X) / (R ** 2 + X ** 2) * multiplier
         sid = pp.create_shunt(net, p_mw=p_mw, **params)
     elif item.shtype == 4:
         # Shunt is a R-L-C1-C2, Rp element
@@ -2736,9 +2758,12 @@ def create_shunt(net, item):
         Z = Rp * (Rs + 1j * (Xl - 1 / B1)) / (Rp + Rs + 1j * (Xl - 1 / B1)) - 1j / B2
         R = np.real(Z)
         X = np.imag(Z)
-
-        p_mw = (item.ushnm ** 2 * R) / (R ** 2 + X ** 2) * multiplier
-        params['q_mvar'] = (item.ushnm ** 2 * X) / (R ** 2 + X ** 2) * multiplier
+        if R == 0 and X == 0: #TODO put this into one function
+            p_mw = 0
+            params['q_mvar'] = 0
+        else:
+            p_mw = (item.ushnm ** 2 * R) / (R ** 2 + X ** 2) * multiplier
+            params['q_mvar'] = (item.ushnm ** 2 * X) / (R ** 2 + X ** 2) * multiplier
         sid = pp.create_shunt(net, p_mw=p_mw, **params)
 
     add_additional_attributes(item, net, element='shunt', element_id=sid,
