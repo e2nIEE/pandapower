@@ -15,6 +15,7 @@ Change Log
 
 [upcoming release] - 2024-..-..
 -------------------------------
+- [FIXED] replacement for deprecated namespaces scipy.sparse.csc and scipy.sparse.csr
 - [FIXED] copy array element to standard python scalar
 - [REMOVED] python 3.8 support
 - [CHANGED] geopandas version to >= 1.0
