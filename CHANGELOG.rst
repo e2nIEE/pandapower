@@ -15,6 +15,7 @@ Change Log
 
 [upcoming release] - 2024-..-..
 -------------------------------
+- [ADDED] Static Var Compensator with Voltage Control
 - [ADDED] pf2pp: min/max q_mvar and min/max p_mw limits for sgens and gen will be converted
 - [FIXED] cast the column to the correct type before assigning values
 - [FIXED] replacement for deprecated namespaces scipy.sparse.csc and scipy.sparse.csr
