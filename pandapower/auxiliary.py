@@ -820,8 +820,10 @@ def _subnetworks(ppc):
                                       shape=(nobus, nobus))
 
     # Set out of service buses to have no connections (*=0 instead of =0 to avoid sparcity warning).
-    adj_matrix[oos_bus, :] *= 0
-    adj_matrix[:, oos_bus] *= 0
+    mask = np.ones(nobus, dtype=bool)
+    mask[oos_bus] = False
+    adj_matrix = adj_matrix.multiply(mask[:, None])
+    adj_matrix = adj_matrix.multiply(mask[None, :])
 
     traversed_buses = set()
     subnets = []
