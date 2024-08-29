@@ -15,6 +15,7 @@ Change Log
 
 [upcoming release] - 2024-..-..
 -------------------------------
+- [FIXED] copy array element to standard python scalar
 - [REMOVED] python 3.8 support
 - [CHANGED] geopandas version to >= 1.0
 - [ADDED] station controller functionality with voltage and reactive power control with and without droop and pf import support
