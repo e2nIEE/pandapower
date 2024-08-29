@@ -16,6 +16,7 @@ Change Log
 [upcoming release] - 2024-..-..
 -------------------------------
 - [FIXED] replacement for deprecated namespaces scipy.sparse.csc and scipy.sparse.csr
+- [FIXED] copy array element to standard python scalar
 - [REMOVED] python 3.8 support
 - [CHANGED] geopandas version to >= 1.0
 - [ADDED] station controller functionality with voltage and reactive power control with and without droop and pf import support
@@ -76,6 +77,8 @@ Change Log
 - [ADDED] support for unequal leakage resistance and reactance for HV and LV sides of a 2W-transformer
 - [ADDED] Add VSC element, dc buses, dc lines, and hybrid AC/DC power flow calculation
 - [CHANGED] accelerate _integrate_power_elements_connected_with_switch_buses() in get_equivalent()
+- [CHANGED] accelerate distributed slack power flow calculation by using sparse-aware operations in _subnetworks()
+- [ADDED] Discrete shunt controller for local voltage regulation with shunt steps
 
 [2.14.7] - 2024-06-14
 -------------------------------
