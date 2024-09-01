@@ -820,8 +820,10 @@ def _subnetworks(ppc):
                                       shape=(nobus, nobus))
 
     # Set out of service buses to have no connections (*=0 instead of =0 to avoid sparcity warning).
-    adj_matrix[oos_bus, :] *= 0
-    adj_matrix[:, oos_bus] *= 0
+    mask = np.ones(nobus, dtype=bool)
+    mask[oos_bus] = False
+    adj_matrix = adj_matrix.multiply(mask[:, None])
+    adj_matrix = adj_matrix.multiply(mask[None, :])
 
     traversed_buses = set()
     subnets = []
@@ -1393,7 +1395,7 @@ def phase_to_sequence(Xabc):
 
 def I0_from_V012(V012, Y):
     V0 = X012_to_X0(V012)
-    if type(Y) in [sp.sparse.csr.csr_matrix, sp.sparse.csc.csc_matrix]:
+    if type(Y) in [sp.sparse.csr_matrix, sp.sparse.csc_matrix]:
         return np.asarray(np.matmul(Y.todense(), V0))
     else:
         return np.asarray(np.matmul(Y, V0))
@@ -1401,7 +1403,7 @@ def I0_from_V012(V012, Y):
 
 def I1_from_V012(V012, Y):
     V1 = X012_to_X1(V012)[:, np.newaxis]
-    if type(Y) in [sp.sparse.csr.csr_matrix, sp.sparse.csc.csc_matrix]:
+    if type(Y) in [sp.sparse.csr_matrix, sp.sparse.csc_matrix]:
         i1 = np.asarray(np.matmul(Y.todense(), V1))
         return np.transpose(i1)
     else:
@@ -1411,7 +1413,7 @@ def I1_from_V012(V012, Y):
 
 def I2_from_V012(V012, Y):
     V2 = X012_to_X2(V012)
-    if type(Y) in [sp.sparse.csr.csr_matrix, sp.sparse.csc.csc_matrix]:
+    if type(Y) in [sp.sparse.csr_matrix, sp.sparse.csc_matrix]:
         return np.asarray(np.matmul(Y.todense(), V2))
     else:
         return np.asarray(np.matmul(Y, V2))
@@ -1608,8 +1610,8 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
 
     if distributed_slack:
         false_slack_weight_elms = [elm for elm in {
-            'asymmetric_load', 'asymmetric_sgen', 'load', 'sgen', 'shunt',
-            'storage', 'ward'} if "slack_weight" in net[elm].columns]
+            'asymmetric_load', 'asymmetric_sgen', 'load', 'sgen', 'shunt', 'storage',
+            'ward'} if "slack_weight" in net[elm].columns and net[elm].slack_weight.sum() > 0]
         if len(false_slack_weight_elms):
             logger.warning("Currently distributed_slack is implemented for 'ext_grid', 'gen' "
                            "and 'xward' only, not for '" + "', '".join(

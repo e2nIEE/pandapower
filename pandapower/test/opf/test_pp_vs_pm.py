@@ -77,7 +77,7 @@ def test_case5_pm_pd2ppc():
     net["_options"]["mode"] = "opf"
     ppc = _pd2ppc(net)
     # check which one is the ref bus in ppc
-    ref_idx = int(ppc[0]["bus"][:, BUS_I][ppc[0]["bus"][:, BUS_TYPE] == REF])
+    ref_idx = int(ppc[0]["bus"][:, BUS_I][ppc[0]["bus"][:, BUS_TYPE] == REF].item())
     vmax = ppc[0]["bus"][ref_idx, VMAX]
     vmin = ppc[0]["bus"][ref_idx, VMIN]
 
@@ -87,7 +87,7 @@ def test_case5_pm_pd2ppc():
     # run pd2ppc with ext_grd controllable = True
     net.ext_grid["controllable"] = True
     ppc = _pd2ppc(net)
-    ref_idx = int(ppc[0]["bus"][:, BUS_I][ppc[0]["bus"][:, BUS_TYPE] == REF])
+    ref_idx = int(ppc[0]["bus"][:, BUS_I][ppc[0]["bus"][:, BUS_TYPE] == REF].item())
     vmax = ppc[0]["bus"][ref_idx, VMAX]
     vmin = ppc[0]["bus"][ref_idx, VMIN]
 
@@ -102,7 +102,7 @@ def test_case5_pm_pd2ppc():
     assert net.ext_grid["in_service"].values.dtype == bool
 
     ppc = _pd2ppc(net)
-    ref_idx = int(ppc[0]["bus"][:, BUS_I][ppc[0]["bus"][:, BUS_TYPE] == REF])
+    ref_idx = int(ppc[0]["bus"][:, BUS_I][ppc[0]["bus"][:, BUS_TYPE] == REF].item())
 
     vmax1 = ppc[0]["bus"][ref_idx, VMAX]
     vmin1 = ppc[0]["bus"][ref_idx, VMIN]

@@ -2579,8 +2579,8 @@ def test_results_pf_grid():
     path = os.path.join(pp.pp_dir, "test", "test_files", "test_ac_dc.json")
     net = pp.from_json(path)
     res = pp.converter.validate_pf_conversion(net)
-    assert np.max(np.abs(res['diff_vm'])) < 1e-6
-    assert np.max(np.abs(res['diff_va'])) < 1e-3
+    assert np.max(np.abs(res['diff_vm']['diff'])) < 1e-6
+    assert np.max(np.abs(res['diff_va']['diff'])) < 1e-3
     assert np.max(np.abs(res['bus_dc_diff'])) < 5e-6
     assert np.max(np.abs(res['line_diff'])) < 0.02
     assert np.max(np.abs(res['line_dc_diff'])) < 1e-3
