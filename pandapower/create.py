@@ -958,11 +958,12 @@ def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, 
 
         **bus** (int) - The bus id to which the load is connected
 
-    OPTIONAL:
-        **p_mw** (float, default 0) - The active power of the load
+        **p_mw** (float) - The active power of the load
 
         - positive value -> load
         - negative value -> generation
+
+    OPTIONAL:
 
         **q_mvar** (float, default 0) - The reactive power of the load
 
@@ -1044,11 +1045,12 @@ def create_loads(net, buses, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=
 
         **buses** (list of int) - A list of bus ids to which the loads are connected
 
-    OPTIONAL:
         **p_mw** (list of floats) - The active power of the loads
 
         - postive value   -> load
         - negative value  -> generation
+
+    OPTIONAL:
 
         **q_mvar** (list of floats, default 0) - The reactive power of the loads
 
