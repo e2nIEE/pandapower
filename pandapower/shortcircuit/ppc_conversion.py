@@ -73,7 +73,8 @@ def _add_kt(net, ppc):
         f, t = net["_pd2ppc_lookups"]["branch"]["trafo"]
         trafo_df = net["trafo"]
         cmax = ppc["bus"][bus_lookup[get_trafo_values(trafo_df, "lv_bus")], C_MAX]
-        kt = _transformer_correction_factor(trafo_df, trafo_df.vk_percent, trafo_df.vkr_percent, trafo_df.sn_mva, cmax)
+        case = net._options["case"] if net._options.get("mode", "") == "sc" else None
+        kt = _transformer_correction_factor(trafo_df, trafo_df.vk_percent, trafo_df.vkr_percent, trafo_df.sn_mva, cmax, case)
         branch[f:t, K_T] = kt
 
 

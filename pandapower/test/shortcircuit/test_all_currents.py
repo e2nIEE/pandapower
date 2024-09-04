@@ -730,32 +730,59 @@ def test_trafo_3w():
     pass
 
 
-def test_trafo_impedance():
+@pytest.fixture(scope='module')
+def net_trafo_impedance():
     net = pp.create_empty_network(sn_mva=0.16)
     pp.create_bus(net, 20)
     pp.create_buses(net, 2, 0.4)
-    pp.create_ext_grid(net, 0, s_sc_max_mva=346.4102, rx_max=0.1)
+    pp.create_ext_grid(net, 0,
+                       s_sc_max_mva=346.4102, rx_max=0.1,
+                       s_sc_min_mva=346.4102, rx_min=0.1)
     v_lv = 410
     pp.create_transformer_from_parameters(net, 0, 1, 0.4, 20, v_lv / 1e3, 1.15, 4, 0, 0)
-    pp.create_line_from_parameters(net, 1, 2, 0.004, 0.208, 0.068, 0, 1, parallel=2)
+    pp.create_line_from_parameters(net, 1, 2, 0.004, 0.208, 0.068, 0, 1, parallel=2, endtemp_degree=20)
     # pp.create_load(net, 2, 0.1)
 
     pp.runpp(net)
 
-    sc.calc_sc(net, case='max', lv_tol_percent=6., bus=2, branch_results=True, use_pre_fault_voltage=False)
+    return net
 
 
+@pytest.fixture(scope='module')
+def trafo_impedance_base():
     # trafo:
+    v_lv = 410
     z_tlv = 4 / 100 * v_lv ** 2 / (400 * 1e3)
     r_tlv = 4600 * v_lv ** 2 / ((400 * 1e3) ** 2)
     x_tlv = np.sqrt(z_tlv**2 - r_tlv**2)
     z_tlv = r_tlv + 1j*x_tlv
     x_t = x_tlv * 400*1e3 / (v_lv ** 2)
-    k_t = 0.95 * 1.05 / (1+0.6 * x_t)
+    return z_tlv, x_t
+
+
+@pytest.fixture(scope='module')
+def trafo_impedance_case(request, trafo_impedance_base):
+
+    case = request.param
+    z_tlv, x_t = trafo_impedance_base
+
+    if case == "max":
+        k_t = 0.95 * 1.05 / (1 + 0.6 * x_t)
+    else:
+        k_t = 1
+
     z_tk = k_t * z_tlv
 
-    # line:
-    z_l = 0.416 * 1e-3 + 1j * 0.136 * 1e-3  # Ohm
+    return z_tk, case
+
+
+@pytest.mark.parametrize("trafo_impedance_case", ["max", "min"], indirect=["trafo_impedance_case"])
+def test_trafo_impedance(trafo_impedance_case, net_trafo_impedance):
+
+    z_tk, case = trafo_impedance_case
+    net = net_trafo_impedance
+
+    sc.calc_sc(net, case=case, lv_tol_percent=6., bus=2, branch_results=True, use_pre_fault_voltage=False)
 
     # assert np.allclose(net.res_bus_sc.rk_ohm * 1e3, 5.18, rtol=0, atol=1e-6)
     # assert np.allclose(net.res_bus_sc.xk_ohm * 1e3, 16.37, rtol=0, atol=1e-6)
@@ -765,6 +792,9 @@ def test_trafo_impedance():
     ppci = net.ppci
     tap = ppci["branch"][:, TAP].real
     ikss1 = ppci["bus"][:, IKSS1] * np.exp(1j * np.deg2rad(ppci["bus"][:, PHI_IKSS1_DEGREE]))
+
+    # line:
+    z_l = 0.416 * 1e-3 + 1j * 0.136 * 1e-3  # Ohm
 
     v_1 = ikss1[2] * z_l / 0.4 * np.sqrt(3)  # kA * Ohm / V_base -> p.u.
     np.abs(v_1)
