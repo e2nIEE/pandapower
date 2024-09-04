@@ -1173,12 +1173,14 @@ def _trafo_df_from_trafo3w(net, sequence=1):
     nr_trafos = len(net["trafo3w"])
     if sequence==1:
         mode_tmp = "type_c" if mode == "sc" and net._options.get("use_pre_fault_voltage", False) else mode
+        case = net._options.get("case", False) if "case" in net._options else "max"
         _calculate_sc_voltages_of_equivalent_transformers(t3, trafo2, mode_tmp, case, characteristic=net.get(
             'characteristic'))
     elif sequence==0:
         if mode != "sc":
             raise NotImplementedError(
                 "0 seq impedance calculation only implemented for short-circuit calculation!")
+        case = net._options.get("case", False) if "case" in net._options else "max"
         _calculate_sc_voltages_of_equivalent_transformers_zero_sequence(t3, trafo2, case)
     else:
         raise UserWarning("Unsupported sequence for trafo3w convertion")
