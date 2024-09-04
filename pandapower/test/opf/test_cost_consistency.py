@@ -1,6 +1,7 @@
 import pandapower as pp
 import pytest
 from numpy import array, isclose
+import pandas as pd
 
 @pytest.fixture()
 def base_net():
@@ -47,12 +48,13 @@ def test_contingency_sgen(base_net):
     #    p_min_mw       |\
     #                   | \
     #                   |  \
-    net.pwl_cost.points.loc[pwl] = [(0, net.sgen.max_p_mw.at[0], -1)]
+
+    net.pwl_cost.at[pwl, 'points'] = [(0, net.sgen.max_p_mw.at[0], -1)]
     pp.runopp(net)
 
     assert isclose(net.res_cost, -net.res_sgen.p_mw.at[0], atol=1e-4)
 
-    net.pwl_cost.drop(0, inplace=True)
+    net.pwl_cost = net.pwl_cost.drop(0)
 
     # first using a positive slope as in the case above
     pp.create_poly_cost(net, 0, "sgen", cp1_eur_per_mw=1.)
@@ -97,12 +99,12 @@ def test_contingency_load(base_net):
     #    p_min_mw       |\
     #                   | \
     #                   |  \
-    net.pwl_cost.points.iloc[0] = [(0, net.gen.max_p_mw.at[0], -1)]
+    net.pwl_cost.at[0, 'points'] = [(0, net.gen.max_p_mw.at[0], -1)]
     pp.runopp(net)
 
     assert isclose(net.res_cost, -net.res_gen.p_mw.at[0], atol=1e-3)
 
-    net.pwl_cost.drop(0, inplace=True)
+    net.pwl_cost = net.pwl_cost.drop(0)
 
     # first using a positive slope as in the case above
     pp.create_poly_cost(net, 0, "gen", cp1_eur_per_mw=1)
@@ -147,12 +149,12 @@ def test_contingency_gen(base_net):
     #    p_min_mw       |\
     #                   | \
     #                   |  \
-    net.pwl_cost.points.iloc[0] =  [(0, net.gen.max_p_mw.at[0], -1)]
+    net.pwl_cost.at[0, 'points'] =  [(0, net.gen.max_p_mw.at[0], -1)]
     pp.runopp(net)
 
     assert isclose(net.res_cost, -net.res_gen.p_mw.at[0], atol=1e-3)
 
-    net.pwl_cost.drop(0, inplace=True)
+    net.pwl_cost = net.pwl_cost.drop(0)
 
     # first using a positive slope as in the case above
 #    pp.create_pwl_cost(net, 0, "gen", array([1, 0]))
@@ -166,5 +168,6 @@ def test_contingency_gen(base_net):
 
     assert isclose(net.res_cost, -net.res_gen.p_mw.at[0], atol=1e-3)
 
+
 if __name__ == "__main__":
-    pytest.main(['-s', __file__])
+    pytest.main([__file__, "-xs"])

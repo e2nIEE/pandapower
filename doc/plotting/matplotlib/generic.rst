@@ -5,7 +5,7 @@ Generic Coordinates
 If there are no geocoordinates in a network, generic coordinates can be created. There are two possibilities:
 
 1. igraph (http:/igraph.org/python) (recommended) based on
-    - python-igraph
+    - igraph
     - pycairo
 
 2. graphviz (http:/www.graphviz.org) based on 

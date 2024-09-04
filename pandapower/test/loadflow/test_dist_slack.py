@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -436,12 +436,12 @@ def test_multivoltage_example_with_controller():
     net = networks.example_multivoltage()
 
     gen_p_disp = 10
-    net.gen.p_mw.at[0] = gen_p_disp
-    net.gen.slack_weight.at[0] = 1
-    net.ext_grid.slack_weight.at[0] = 1
-    net.trafo.tap_max.at[1] = 5
-    net.trafo.tap_min.at[1] = -5
-    ContinuousTapControl(net, tid=1, vm_set_pu=1.05)
+    net.gen.at[0, "p_mw"] = gen_p_disp
+    net.gen.at[0, "slack_weight"] = 1
+    net.ext_grid.at[0, "slack_weight"] = 1
+    net.trafo.at[1, "tap_max"] = 5
+    net.trafo.at[1, "tap_min"] = -5
+    ContinuousTapControl(net, element_index=1, vm_set_pu=1.05)
 
     gen_disp = sum([net[elm].p_mw.sum() for elm in ["gen", "sgen"]])
     load_disp = sum([net[elm].p_mw.sum() for elm in ["load", "shunt"]]) + \
@@ -564,4 +564,4 @@ def test_dist_slack_with_enforce_q_lims_duplicate_gens():
 
 
 if __name__ == "__main__":
-    pytest.main([__file__])
+    pytest.main([__file__, "-xs"])

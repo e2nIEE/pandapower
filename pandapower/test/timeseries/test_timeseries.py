@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import tempfile
@@ -107,8 +107,39 @@ def test_const_control(simple_test_net):
 
     run_timeseries(net, time_steps, verbose=False)
 
-    assert np.alltrue(profiles['load1'].values * 0.85 == ow.output['load.p_mw'][0].values)
-    assert np.alltrue(profiles['slack_v'].values == ow.output['res_bus.vm_pu'][0].values)
+    assert np.all(profiles['load1'].values * 0.85 == ow.output['load.p_mw'][0].values)
+    assert np.all(profiles['slack_v'].values == ow.output['res_bus.vm_pu'][0].values)
+
+
+def test_switch_states_in_time_series():
+    net = pp.create_empty_network()
+    pp.create_buses(net, 3, 0.4)
+    pp.create_ext_grid(net, 0)
+    pp.create_loads(net, [1, 2], 0.1)
+    pp.create_lines(net, [0, 0], [1, 2], 0.1, "NAYY 4x50 SE")
+    pp.create_switch(net, 0, 0, "l")
+
+    n_timesteps = 5
+    time_steps = range(n_timesteps)
+    profiles = pd.DataFrame()
+    profiles['load1'] = np.linspace(0.05, 0.1, n_timesteps)
+    profiles["switch_pos"] = np.random.randint(2, size=n_timesteps, dtype=bool)
+    ds = DFData(profiles)
+
+    ow = setup_output_writer(net, time_steps)
+    ow.log_variable('res_line', 'pl_mw')
+    ow.log_variable('res_ext_grid', 'p_mw')
+
+    ConstControl(net, 'load', 'p_mw', element_index=0, data_source=ds, profile_name='load1')
+    ConstControl(net, 'switch', 'closed', element_index=0, data_source=ds, profile_name='switch_pos')
+
+    run_timeseries(net, time_steps, verbose=False)
+
+    assert np.allclose(
+        profiles['load1'].values * profiles["switch_pos"].values + 0.1 + \
+            ow.output['res_line.pl_mw'].sum(axis=1).values,
+        ow.output['res_ext_grid.p_mw'][0].values
+        )
 
 
 def test_const_control_write_to_object_attribute(simple_test_net):
@@ -128,8 +159,8 @@ def test_const_control_write_to_object_attribute(simple_test_net):
 
     run_timeseries(net, time_steps, verbose=False)
 
-    assert np.alltrue(profiles['load1'].values * 0.85 == ow.output['load.p_mw'][0].values)
-    assert np.alltrue(profiles['slack_v'].values == ow.output['res_bus.vm_pu'][0].values)
+    assert np.all(profiles['load1'].values * 0.85 == ow.output['load.p_mw'][0].values)
+    assert np.all(profiles['slack_v'].values == ow.output['res_bus.vm_pu'][0].values)
     assert np.allclose(profiles['trafo_v'].values, ow.output['res_bus.vm_pu'][net.trafo.at[0, 'lv_bus']].values, atol=1e-3, rtol=0)
 
 
@@ -349,4 +380,4 @@ def test_user_pf_options_recycle_manual(simple_test_net):
 
 
 if __name__ == '__main__':
-    pytest.main(['-s', __file__])
+    pytest.main([__file__, "-xs"])

@@ -1,0 +1,6 @@
+**Parameter**;**Datatype**;**Explanation**
+q_mvar;float;shunt reactive power consumption of ssc [MVAr]
+vm_internal_pu;float;voltage magnitude at ssc internal bus [pu]
+va_internal_degree;float;voltage angle at ssc internal bus [degree]
+vm_pu;float;voltage magnitude at ssc bus [pu]
+va_degree;float;voltage angle at ssc bus [degree]

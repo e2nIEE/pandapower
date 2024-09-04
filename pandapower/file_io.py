@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -12,7 +12,6 @@ from warnings import warn
 import numpy
 import pandas as pd
 from packaging.version import Version
-from packaging import version
 import sys
 try:
     import xlsxwriter
@@ -25,6 +24,7 @@ try:
 except ImportError:
     openpyxl_INSTALLED = False
 
+from pandapower._version import __version__ as pp_version
 from pandapower.auxiliary import soft_dependency_error, _preserve_dtypes
 from pandapower.auxiliary import pandapowerNet
 from pandapower.std_types import basic_std_types
@@ -101,7 +101,7 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
         writer._save()
 
 
-def to_json(net, filename=None, encryption_key=None, store_index_names=False):
+def to_json(net, filename=None, encryption_key=None, store_index_names=None):
     """
         Saves a pandapower Network in JSON format. The index columns of all pandas DataFrames will
         be saved in ascending order. net elements which name begins with "_" (internal elements)
@@ -116,37 +116,22 @@ def to_json(net, filename=None, encryption_key=None, store_index_names=False):
             **encrytion_key** (string, None) - If given, the pandapower network is stored as an
             encrypted json string
 
-            **store_index_names** (bool, False) - If True, an additional dict "index_names" is
-            stored into the json string which includes the index names of the dataframes within the
-            net.
-            Since pandapower does usually not use net[elm].index.name, the default is False.
-
-
         EXAMPLE:
 
              >>> pp.to_json(net, "example.json")
 
     """
     # --- store index names
-    if store_index_names:
-        # To ensure correct index names (see https://github.com/e2nIEE/pandapower/issues/1410),
-        # these are additionally stored to the json file as a dict.
-        if "index_names" in net.keys():
-            raise ValueError("To store DataFrame index names, 'index_names' "
-                             "is used and thus should not be a key of net.")
-        net["index_names"] = {
-            key: net[key].index.name for key in net.keys() if isinstance(
-                net[key], pd.DataFrame) and isinstance(net[key].index.name, str) and \
-                net[key].index.name != ""
-        }
+    if store_index_names is not None:
+        msg = "The input parameter 'store_index_names' of function 'to_json()' is deprecated."
+        if Version(pp_version) < Version("2.15"):
+            warn(msg)
+        else:
+            raise DeprecationWarning(msg)
 
     json_string = json.dumps(net, cls=io_utils.PPJSONEncoder, indent=2)
     if encryption_key is not None:
         json_string = io_utils.encrypt_string(json_string, encryption_key)
-
-    if store_index_names:
-        # remove the key "index_names" to not change net
-        del net["index_names"]
 
     if filename is None:
         return json_string

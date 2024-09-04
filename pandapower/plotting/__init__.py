@@ -16,7 +16,7 @@ try:
     class GC(GraphicsContextBase):
         def __init__(self):
             super().__init__()
-            self._capstyle = 'round'
+            self.set_capstyle('round')
 
     def custom_new_gc(self):
         return GC()

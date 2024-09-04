@@ -1,6 +1,173 @@
 Change Log
 =============
 
+[2.14.11] - 2024-07-08
+-------------------------------
+- [FIXED] Lightsim2grid version
+
+[2.14.10] - 2024-07-08
+-------------------------------
+- [FIXED] geopandas version
+
+[2.14.9] - 2024-06-25
+-------------------------------
+- [FIXED] scipy version
+
+[upcoming release] - 2024-..-..
+-------------------------------
+- [FIXED] cast the column to the correct type before assigning values
+- [FIXED] replacement for deprecated namespaces scipy.sparse.csc and scipy.sparse.csr
+- [FIXED] copy array element to standard python scalar
+- [REMOVED] python 3.8 support
+- [CHANGED] geopandas version to >= 1.0
+- [ADDED] station controller functionality with voltage and reactive power control with and without droop and pf import support
+- [ADDED] creating series capacitor added in pf to pp converter
+- [FIXED] using loc to remove the warning
+- [FIXED] replacing deprecated H and A from scipy.sparse.csc_matrix
+- [ADDED] low voltage grid Schutterwald
+- [FIXED] trafo3w with tap changer at star point corrected
+- [FIXED] namespace changes from numpy 2.0 release
+- [CHANGED] inf to np.full(...) with value inf for array operations in pypower folder
+- [CHANGED] node existence check for multiple branch elements from mixed array and set operations to set operations only
+- [FIXED] geopandas version
+- [FIXED] scipy version
+- [ADDED] DERController with multiple options to define DER reactive power provision depending on P and V
+- [ADDED] switch results p and q
+- [ADDED] PowerFactory converter: option to export lines with sections as a single line with averaged-out impedance, or export line sections as separate individual lines
+- [ADDED] extend plotly function: add zoomlevel-parameter and hvdc lines
+- [ADDED] added support for reading cgmes v3.0 files
+- [ADDED] added support for converting cgmes v3.0
+- [CHANGED] plotting for voltage profile considers also gens that are slacks and only ext_grids and slack gens that are in service
+- [CHANGED] switched from setup.py to pyproject.toml
+- [CHANGED] updated upload_release.py to not call setup.py anymore (see https://packaging.python.org/en/latest/discussions/setup-py-deprecated/)
+- [CHANGED] updated upload_release.py to install the uploadad package and print the version
+- [CHANGED] updated MANIFEST.in to exclude the ci files from the wheel distribution
+- [CHANGED] cim data structure method in cim converter changed to blueprint approach
+- [CHANGED] cim converter: Avoid huge logging output when ignore_errors = True
+- [CHANGED] cim parser: Refactor parse source file method
+- [FIXED] massive performance drag in large grids due to initializing Ybus for FACTS with np.zeros instead of using sparse matrix initialization
+- [FIXED] further futurewarnings and deprecation warnings
+- [FIXED] minor issues in geojson exporter
+- [CHANGED] use of bus_geodata and line_geodata tables to geo column in bus and line table
+- [CHANGED] update most geodata dependant functions to use geo column
+- [ADDED] geodata to geojson converter
+- [CHANGED] dump_to_geojson now requires the geodata to be present in the geo column of a network (see :code:`convert_geodata_to_geojson`)
+- [CHANGED] updated simple_plot to use geojson data instead of bus_geo and line_geo
+- [CHANGED] minor changes to the example networks (mainly added names to identify them in tests)
+- [CHANGED] dataframes_equal adapted to properly compare geojson data
+- [FIXED] k documentation of sgen
+- [FIXED] error during unbalanced powerflow due to out of service external grids
+- [FIXED] PowerFactory converter: fix trafo3w tap dependent impedance
+- [ADDED] PowerFactory converter: support load types (constI, constZ) and the setting whether to consider voltage dependency of loads
+- [CHANGED] considering trafo controller and improve implementation for other (bus element) controller at grid_equivalent creation
+- [CHANGED] vectorization of y_bus reordering in _calculate_equivalent_Ybus() within get_equivalent()
+- [FIXED] deprecation of matplotlib.cm.get_cmap(name) -> matplotlib.colormaps[name]
+- [FIXED] merge_nets failing if net2 has custom DataFrame that is not present in net1
+- [CHANGED] grid_equivalent creation: improved consideration of controller
+- [CHANGED] create consistent parameter names (element and element_index) in controllers -> Changes for TrafoController: trafotable & trafotype -> element, tid -> element_index
+- [CHANGED] parameter renaming in net.group: element -> element_index
+- [CHANGED] in to_ppc(), the default of calculate_voltage_angles is True now (as in previously changed in runpp()).
+- [FIXED] fixed some small bugs in the CGMES converter and improved its speed
+- [CHANGED] trigger a numpy error in makeYbus, makeBbus, _wye_delta instead of warning
+- [ADDED] transformer tap hunting detection for DiscreteTapControl
+- [CHANGED] diagnostic for implausible impedance values includes xward, trafo, trafo3w
+- [CHANGED] PowerFactory converter has workarounds for implausible impedance values
+- [CHANGED] split BR_B in ppc['branch'] (complex number) into BR_B and BR_G, BR_G is added as a new column, ppc['branch'] dtype changed to float64
+- [ADDED] the possibility to have unequal values for branch G and B for from and to buses by means of new columns in ppc['branch'] BR_B_ASYM and BR_G_ASYM
+- [ADDED] shunt components G and B for impedance elements, also supports unequal G and B parameters for from and to bus
+- [ADDED] support for unequal leakage resistance and reactance for HV and LV sides of a 2W-transformer
+- [ADDED] Add VSC element, dc buses, dc lines, and hybrid AC/DC power flow calculation
+- [CHANGED] accelerate _integrate_power_elements_connected_with_switch_buses() in get_equivalent()
+- [CHANGED] accelerate distributed slack power flow calculation by using sparse-aware operations in _subnetworks()
+- [ADDED] Discrete shunt controller for local voltage regulation with shunt steps
+
+[2.14.7] - 2024-06-14
+-------------------------------
+- [ADDED] added PathPatch TextPatch and Affine2D imports needed for ward and xward patches
+- [ADDED] added ward_patches function to mark wards in a plot
+- [ADDED] added ward_patches function to mark wards in a plot
+- [ADDED] added ward_patches and xward_patches imports used in the wad and xward collections
+- [ADDED] added create_ward_collection function to enable plotting wards
+- [ADDED] added create_xward_collection function to enable plotting xwards
+- [FIXED] git issue #2199: List of colors does not apply to Polygon Patches
+- [CHANGED] Sonar Lint issues for spacing
+
+[2.14.6] - 2024-04-02
+-------------------------------
+- [FIXED] more futurewarnings and deprecation warnings
+
+[2.14.5] - 2024-03-28
+-------------------------------
+- [CHANGED] added possibility to provide custom weights to switches and transformers (before - always zero) when creating a graph
+- [FIXED] many futurewarnings and deprecation warnings
+
+[2.14.4] - 2024-03-28
+-------------------------------
+- [FIXED] internal pgm test returns ANOTHER error when using python 3.8
+- [FIXED] added setuptools to relying tests
+
+[2.14.3] - 2024-03-28
+-------------------------------
+- [FIXED] internal pgm test checked wrong result
+- [FIXED] 2.14.0 - 2.14.3 just minor release fixes to improve workflow
+
+[2.14.0] - 2024-03-26
+-------------------------------
+- [ADDED] function to search std_types from the basic standard type library
+- [ADDED] Documentation for running powerflow using power-grid-model
+- [ADDED] exporting to :code:`GeoJSON` with all properties from :code:`bus`, :code:`res_bus` and :code:`line`, :code:`res_line`
+- [ADDED] function to run powerflow using the power-grid-model library
+- [FIXED] short-circuit calculation: wrong results when :code:`ext_grid` and :code:`gen` elements are connected to the same bus
+- [ADDED] comparison of "dict" attributes in :code:`pandapower.toolbox.comparisons.nets_equal` with :code:`DeepDiff`
+- [FIXED] loading net from xlsx with MultiIndex
+- [FIXED] numba version check
+- [FIXED] deprecation warnings for numba (set nopython=True in jit calls)
+- [FIXED] setting MultiIndex when loading empty DataFrame from JSON, getting next index from DataFrame with MultiIndex
+- [FIXED] some fixes and small updates at cim2pp
+- [CHANGED] add numba in the dependencies for Python 3.11 for GitHub test and release actions; revise numba version checks
+- [ADDED] improved documentation for short-circuit calculation (description of the function and the element results)
+- [FIXED] bug in :code:`pp.select_subnet` when using tap dependent impedance
+- [ADDED] extensive unit tests for cim2pp converter (element parameter and load flow results)
+- [FIXED] bug in :code:`cim2pp.build_pp_net` when setting default values for converted xwards
+- [FIXED] bug in :code:`cim2pp.build_pp_net` when controller for gen is at TopologicalNode instead of ConnectivityNode
+- [CHANGED] adjust default iterations for runpp_3ph
+- [CHANGED] always convert RATE_A to ppc in build_branch (not only when mode == 'opf' as before)
+- [FIXED] in converter from PowerFactory, collect all buses (even not relevant for the calculation) for connectivity issues
+- [FIXED] bug in coords conversion in cim2pp, small fixes
+- [CHANGED] cim2pp: added support for multi diagram usage for DL profiles
+- [CHANGED] cim2pp: made build_pp_net modular by introducing classes
+- [ADDED] cim2pp: added option to opt out of internal powerflow calculation
+- [FIXED] error handling in :code:`plotly/mapbox_plot.py` not raising :code`ImportError` if :code:`geopy`  or :code:`pyproj` are missing
+- [FIXED] powerfactory2pandapower-converter error if a line has two identical coordinates
+- [ADDED] logger messages about the probabilistic load flow calculation (simultaneities) in the powerfactory2pandapower-converter for low voltage loads
+- [ADDED] matplotlib v3.8.0 support (fixed :code:`plotting_colormaps.ipynb`)
+- [FIXED] bug in plotting_toolbox.py (fixed :code:`coords_from_node_geodata` and :code:`set_line_geodata_from_bus_geodata`)
+- [CHANGED] PowerFactory converter - name :code:`for_name` as :code:`equipment` for all elements; also add to line
+- [ADDED] option to use a second tap changer for the trafo element
+- [CHANGED] parameters of function merge_internal_net_and_equivalent_external_net()
+- [FIXED] :code:`convert_format.py`: update the attributes of the characteristic objects to match the new characteristic
+- [FIXED] fixed the wrong id numbers for pypower powerflow algorithms fdxb and fdbx
+- [FIXED] additional arguments from mpc saved to net._options: create "_options" if it does not exist
+- [CHANGED] cim2pp: extracted getting default classes, added generic setting datatypes from CGMES XMI schema
+- [ADDED] function :code:`getOTDF` to obtain Outage Transfer Distribution Factors, that can be used to analyse outages using the DC approximation of the power system
+- [ADDED] function :code:`outage_results_OTDF` to obtain the matrix of results for all outage scenarios, with rows as outage scenarios and columns as branch power flows in that scenario
+- [FIXED] add some safeguards for TDPF to avoid numerical issues in some cases
+- [CHANGED] numba version check during init phase, not during calculation, saving about 3% calculation time for a loadflow
+- [FIXED] avoid attaching elements as duplicates to a group where some of the elements already exist
+- [ADDED] the function :code:`run_contingency` can raise a captured error if parameter :code:`raise_errors` is passed
+- [FIXED] bugfix for tap dependent impedance characteristics so that not all characteristics columns are necessary
+- [ADDED] add kwargs passing of get_equivalent() to runpp_fct()
+- [ADDED] auxiliary functions ets_to_element_types() and element_types_to_ets() as well as toolbox function get_connected_buses_at_switches() and extension to get_connected_switches()
+- [FIXED] in function :code:`toolbox.replace_zero_branches_with_switches`, use absolute for the parameters of impedance elements in case they are negative nonzero values
+- [FIXED] in :code:`reindex_elements`: fixed index error when reindexing line_geodata
+- [FIXED] bug in :code:`cim2pp`: Changed zero prioritized generators with voltage controller to sgens (like PowerFactory does)
+- [ADDED] cim2pp: added description fields for each asset and added BusbarSection information to nodes
+- [CHANGED] cim2pp: reformat documentation for reading in files
+- [CHANGED] allow providing grid_tables as a parameter to the function that downloads net from PostgreSQL
+- [FIXED] avoid FutureWarning of pandas 2.2
+- [FIXED] compatibility with lightsim2grid after new version 0.8.0
+- [ADDED] allow passing custom runpp-function to pp.diagnostic
+
 [2.13.1] - 2023-05-12
 -------------------------------
 - [FIXED] missing test files for CIM converter test in the release files
@@ -84,6 +251,7 @@ Change Log
 - [CHANGED] Compatibility with pandas 1.5, dropped "six" dependency
 - [CHANGED] from_ppc(): revision of indexing and naming of elements
 - [CHANGED] Complete revision of validate_from_ppc()
+- [ADDED] helper functions for contingency calculation
 - [CHANGED] Improve defaults, add docstrings and rename parameters of plot_voltage_profile() and plot_loading()
 - [CHANGED] merge_nets(): revised for groups and new behavior regarding indexing; reindex_elements(): revised for groups, don't overwrite column "index" and feature parameter lookup
 - [FIXED] Bug with user_pf_options: _init_runpp_options in auxiliary.py ignored user_pf_options when performing sanity checks

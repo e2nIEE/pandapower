@@ -24,8 +24,8 @@ def net():
     pp.create_bus(net, vn_kv=v_base, index=5)
     pp.create_ext_grid(net, bus=1, vm_pu=1.0, s_sc_max_mva=5000, rx_max=0.1,
                        r0x0_max=0.1, x0x_max=1.0)
-    pp.create_std_type(net, {"r0_ohm_per_km": 0.0848, "x0_ohm_per_km": 0.4649556, "c0_nf_per_km":
-                             230.6, "max_i_ka": 0.963, "r_ohm_per_km": 0.0212,
+    pp.create_std_type(net, {"r0_ohm_per_km": 0.0848, "x0_ohm_per_km": 0.4649556,
+                             "c0_nf_per_km": 230.6, "g0_us_per_km": 0, "max_i_ka": 0.963, "r_ohm_per_km": 0.0212,
                              "x_ohm_per_km": 0.1162389, "c_nf_per_km":  230},
                        "example_type")
     pp.create_line(net, from_bus=1, to_bus=5, length_km=50.0, std_type="example_type")
@@ -117,6 +117,14 @@ def test_out_serv_load(net):
     check_it(net)
 
 
+def test_2bus_network_one_of_two_ext_grids_oos(net):
+    """ Out of service ext_grids should not affect the unbalanced powerflow"""
+    pp.create_ext_grid(net, bus=1, vm_pu=1.0, s_sc_max_mva=5000, rx_max=0.1,
+                       r0x0_max=0.1, x0x_max=1.0, in_service=False)
+    pp.runpp_3ph(net)
+    assert net['converged']
+
+
 @pytest.mark.parametrize("init", ["auto", "results", "flat", "dc"])
 @pytest.mark.parametrize("recycle", [None, {"bus_pq": True, "Ybus": True}, {"bus_pq": True, "Ybus": False}])
 def test_4bus_network(init, recycle):
@@ -133,7 +141,7 @@ def test_4bus_network(init, recycle):
     pp.create_ext_grid(net, bus=busn, vm_pu=1.0, name="Grid Connection", s_sc_max_mva=5000,
                        rx_max=0.1, r0x0_max=0.1, x0x_max=1.0)
     pp.create_std_type(net, {"r0_ohm_per_km": .154, "x0_ohm_per_km": 0.5277876,
-                             "c0_nf_per_km": 170.4, "max_i_ka": 0.741,
+                             "c0_nf_per_km": 170.4, "g0_us_per_km": 0, "max_i_ka": 0.741,
                              "r_ohm_per_km": .0385, "x_ohm_per_km": 0.1319469,
                              "c_nf_per_km": 170}, "example_type3")
     pp.create_line(net, from_bus=busn, to_bus=busm, length_km=1.0, std_type="example_type3")
@@ -231,7 +239,7 @@ def test_3ph_bus_mapping_order():
     net.ext_grid["r0x0_max"] = 0.1
     pp.create_std_type(net, {"r_ohm_per_km": 0.1013, "x_ohm_per_km": 0.06911504,
                              "c_nf_per_km": 690, "g_us_per_km": 0, "max_i_ka": 0.44,
-                             "c0_nf_per_km": 312.4, "r0_ohm_per_km": 0.4053,
+                             "c0_nf_per_km": 312.4, "g0_us_per_km": 0, "r0_ohm_per_km": 0.4053,
                              "x0_ohm_per_km": 0.2764602}, "N2XRY 3x185sm 0.6/1kV")
 
     pp.create_line(net, b1, b2, 1.0, std_type="N2XRY 3x185sm 0.6/1kV", index=4)
@@ -264,7 +272,7 @@ def test_3ph_two_bus_line_powerfactory():
     net.ext_grid["r0x0_max"] = 0.1
     pp.create_std_type(net, {"r_ohm_per_km": 0.1013, "x_ohm_per_km": 0.06911504,
                              "c_nf_per_km": 690, "g_us_per_km": 0, "max_i_ka": 0.44,
-                             "c0_nf_per_km": 312.4, "r0_ohm_per_km": 0.4053,
+                             "c0_nf_per_km": 312.4, "g0_us_per_km": 0, "r0_ohm_per_km": 0.4053,
                              "x0_ohm_per_km": 0.2764602}, "N2XRY 3x185sm 0.6/1kV")
 
     pp.create_line(net, b1, b2, 0.4, std_type="N2XRY 3x185sm 0.6/1kV")
@@ -473,7 +481,7 @@ def test_3ph_isolated_nodes():
     net.ext_grid["r0x0_max"] = 0.1
     net.ext_grid["x0x_max"] = 1.0
     pp.create_std_type(net, {"r0_ohm_per_km": 0.0848, "x0_ohm_per_km": 0.4649556,
-                             "c0_nf_per_km": 230.6, "max_i_ka": 0.963,
+                             "c0_nf_per_km": 230.6, "g0_us_per_km": 0, "max_i_ka": 0.963,
                              "r_ohm_per_km": 0.0212, "x_ohm_per_km": 0.1162389,
                              "c_nf_per_km": 230}, "example_type")
     # Loads on supplied buses
@@ -524,7 +532,9 @@ def test_3ph_with_impedance():
     nw_dir = os.path.abspath(os.path.join(pp.pp_dir, "test/loadflow"))
     net = pp.from_json(nw_dir + '/runpp_3ph Validation.json')
     net.line.c_nf_per_km = 0.
-    net.line.c0_nf_per_km = 0.
+    net.line.g_nf_per_km = 0.
+    net.line["c0_nf_per_km"] = 0.
+    net.line["g0_us_per_km"] = 0.
     net_imp = net.deepcopy()
     pp.replace_line_by_impedance(net_imp, net.line.index, 100)
     pp.runpp_3ph(net)

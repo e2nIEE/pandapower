@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from time import perf_counter
@@ -12,7 +12,7 @@ from pandapower.auxiliary import _sum_by_group, _check_if_numba_is_installed,\
     _add_pf_options, _add_ppc_options, _clean_up, sequence_to_phase, \
     phase_to_sequence, X012_to_X0, X012_to_X2, \
     I1_from_V012, S_from_VI_elementwise, V1_from_ppc, V_from_I,\
-    combine_X012, I0_from_V012, I2_from_V012, ppException
+    combine_X012, I0_from_V012, I2_from_V012
 from pandapower.powerflow import LoadflowNotConverged
 from pandapower.build_bus import _add_ext_grid_sc_impedance
 from pandapower.pypower.pfsoln import pfsoln
@@ -30,13 +30,6 @@ try:
 except ImportError:
     import logging
 logger = logging.getLogger(__name__)
-
-
-class Not_implemented(ppException):
-    """
-    Exception being raised in case loadflow did not converge.
-    """
-    pass
 
 
 def _get_pf_variables_from_ppci(ppci):
@@ -266,13 +259,10 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
             matrices for the powerflow, which leads to significant speed
             improvements.
 
-        **switch_rx_ratio** (float, 2)
-
-        (Not tested with 3 Phase load flow)  - rx_ratio of bus-bus-switches.
-        If impedance is zero, buses connected by a closed bus-bus switch
-        are fused to model an ideal bus. Otherwise, they are modelled
-        as branches with resistance defined as z_ohm column in switch
-        table and this parameter
+        **switch_rx_ratio** (float, 2) (Not tested with 3 Phase load flow) - rx_ratio of bus-bus-switches. If the impedance of switches
+        defined in net.switch.z_ohm is zero, buses connected by a closed bus-bus switch are fused to
+        model an ideal bus. Closed bus-bus switches, whose impedance z_ohm is not zero, are modelled
+        as branches with resistance and reactance according to net.switch.z_ohm and switch_rx_ratio.
 
         **delta_q**
 
@@ -362,14 +352,14 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
         overrule_options = {key: val for key, val in net.user_pf_options.items()
                             if key not in passed_parameters.keys()}
     if numba:
-        numba = _check_if_numba_is_installed(numba)
+        numba = _check_if_numba_is_installed()
 
     ac = True
     mode = "pf_3ph"  # TODO: Make valid modes (pf, pf_3ph, se, etc.) available in seperate file (similar to idx_bus.py)
 #    v_debug = kwargs.get("v_debug", False)
     copy_constraints_to_ppc = False
     if trafo_model == 'pi':
-        raise Not_implemented("Three phase Power Flow doesnot support pi model because of lack of accuracy")
+        raise NotImplementedError("Three phase Power Flow doesnot support pi model because of lack of accuracy")
 #    if calculate_voltage_angles == "auto":
 #        calculate_voltage_angles = False
 #        hv_buses = np.where(net.bus.vn_kv.values > 70)[0]  # Todo: Where does that number come from?
@@ -384,7 +374,7 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
         init = "auto"
     if init == "auto":
         init = "dc" if calculate_voltage_angles else "flat"
-    default_max_iteration = {"nr": 10, "bfsw": 10, "gs": 10000, "fdxb": 30,
+    default_max_iteration = {"nr": 30, "bfsw": 10, "gs": 10000, "fdxb": 30,
                              "fdbx": 30}
     if max_iteration == "auto":
         max_iteration = default_max_iteration["nr"]
@@ -468,7 +458,7 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
     count = 0
     s_mismatch = np.array([[True], [True]], dtype=bool)
     t0 = perf_counter()
-    while (s_mismatch > outer_tolerance_mva).any() and count < 30*max_iteration:
+    while (s_mismatch > outer_tolerance_mva).any() and count < max_iteration:
         # =====================================================================
         #     Voltages and Current transformation for PQ and Slack bus
         # =====================================================================
@@ -519,7 +509,7 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
         v_abc_it = sequence_to_phase(v_012_it)
         count += 1
     et = perf_counter() - t0
-    success = (count < 30 * max_iteration)
+    success = (count < max_iteration)
     for ppc in [ppci0, ppci1, ppci2]:
         ppc["et"] = et
         ppc["success"] = success
@@ -537,12 +527,14 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
     # Bus, Branch, and Gen  power values
     svc = ppci0["svc"]  # placeholder
     tcsc = ppci0["tcsc"]  # placeholder
-    bus0, gen0, branch0 = pfsoln(base_mva, bus0, gen0, branch0, svc, tcsc, y_0_pu, y_0_f, y_0_t, v_012_it[0, :].flatten(),
-                                 sl_bus, ref_gens)
-    bus1, gen1, branch1 = pfsoln(base_mva, bus1, gen1, branch1, svc, tcsc, y_1_pu, y_1_f, y_1_t, v_012_it[1, :].flatten(),
-                                 sl_bus, ref_gens)
-    bus2, gen2, branch2 = pfsoln(base_mva, bus2, gen2, branch2, svc, tcsc, y_1_pu, y_1_f, y_1_t, v_012_it[2, :].flatten(),
-                                 sl_bus, ref_gens)
+    ssc = ppci0["ssc"]  # placeholder
+    vsc = ppci0["vsc"]  # placeholder
+    bus0, gen0, branch0 = pfsoln(base_mva, bus0, gen0, branch0, svc, tcsc, ssc, vsc, y_0_pu, y_0_f, y_0_t,
+                                 v_012_it[0, :].flatten(), sl_bus, ref_gens)
+    bus1, gen1, branch1 = pfsoln(base_mva, bus1, gen1, branch1, svc, tcsc, ssc, vsc, y_1_pu, y_1_f, y_1_t,
+                                 v_012_it[1, :].flatten(), sl_bus, ref_gens)
+    bus2, gen2, branch2 = pfsoln(base_mva, bus2, gen2, branch2, svc, tcsc, ssc, vsc, y_1_pu, y_1_f, y_1_t,
+                                 v_012_it[2, :].flatten(), sl_bus, ref_gens)
     ppci0 = _store_results_from_pf_in_ppci(ppci0, bus0, gen0, branch0)
     ppci1 = _store_results_from_pf_in_ppci(ppci1, bus1, gen1, branch1)
     ppci2 = _store_results_from_pf_in_ppci(ppci2, bus2, gen2, branch2)

@@ -1,13 +1,17 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import pytest
 import gc
 import copy
+import geojson
 import numpy as np
 import pandas as pd
+
+from pandapower.control import SplineCharacteristic
+from pandapower.control.util.characteristic import LogSplineCharacteristic
 
 try:
     import geopandas as gpd
@@ -85,27 +89,23 @@ def test_get_indices():
 
 def test_net_deepcopy():
     net = pp.networks.example_simple()
-    net.line_geodata.loc[0, 'coords'] = [[0, 1], [1, 2]]
-    net.bus_geodata.loc[0, ['x', 'y']] = 0, 1
+    net.line.at[0, 'geo'] = geojson.LineString([(0., 1.), (1., 2.)])
+    net.bus.at[0, 'geo'] = geojson.Point((0., 1.))
 
-    pp.control.ContinuousTapControl(net, tid=0, vm_set_pu=1)
+    pp.control.ContinuousTapControl(net, element_index=0, vm_set_pu=1)
     ds = pp.timeseries.DFData(pd.DataFrame(data=[[0, 1, 2], [3, 4, 5]]))
-    pp.control.ConstControl(net, element='load', variable='p_mw', element_index=[0], profile_name=[0], data_source=ds)
+    pp.control.ConstControl(net, element='load', variable='p_mw', element_index=[0],
+                            profile_name=[0], data_source=ds)
 
     net1 = copy.deepcopy(net)
 
     assert not net1.controller.object.at[1].data_source is ds
     assert not net1.controller.object.at[1].data_source.df is ds.df
 
-    assert not net1.line_geodata.coords.at[0] is net.line_geodata.coords.at[0]
-
     if GEOPANDAS_INSTALLED:
-        for tab in ('bus_geodata', 'line_geodata'):
-            if tab == 'bus_geodata':
-                geometry = net[tab].apply(lambda x: shapely.geometry.Point(x.x, x.y), axis=1)
-            else:
-                geometry = net[tab].coords.apply(shapely.geometry.LineString)
-            net[tab] = gpd.GeoDataFrame(net[tab], geometry=geometry)
+        for tab in ('bus', 'line'):
+            net[f'{tab}_geodata'] = gpd.GeoDataFrame(net[tab].geo.dropna().apply(
+                lambda x: x["coordinates"]), geometry=net[tab].geo.dropna())
         net1 = net.deepcopy()
         assert isinstance(net1.line_geodata, gpd.GeoDataFrame)
         assert isinstance(net1.bus_geodata, gpd.GeoDataFrame)
@@ -122,7 +122,7 @@ def test_memory_leaks():
     for _ in range(num):
         net_copy = copy.deepcopy(net)
         # In each net copy it has only one controller
-        pp.control.ContinuousTapControl(net_copy, tid=0, vm_set_pu=1)
+        pp.control.ContinuousTapControl(net_copy, element_index=0, vm_set_pu=1)
 
     gc.collect()
 
@@ -280,5 +280,37 @@ def test_create_trafo_characteristics():
                                                 [[8.1, 9.1, 10.1, 11.1, 12.1]])
 
 
+@pytest.mark.parametrize("file_io", (False, True), ids=("Without JSON I/O", "With JSON I/O"))
+def test_characteristic(file_io):
+    net = pp.create_empty_network()
+    c1 = SplineCharacteristic(net, [0,1,2], [0, 1, 4], fill_value=(0, 4))
+    c2 = SplineCharacteristic(net, [0,1,2], [0, 1, 4], interpolator_kind="Pchip", extrapolate=False)
+    c3 = SplineCharacteristic(net, [0,1,2], [0, 1, 4], interpolator_kind="hello")
+    c4 = LogSplineCharacteristic(net, [0,1,2], [0, 1, 4], interpolator_kind="Pchip", extrapolate=False)
+
+    if file_io:
+        net_copy = pp.from_json_string(pp.to_json(net))
+        c1, c2, c3, c4 = net_copy.characteristic.object.values
+
+    assert np.allclose(c1([-1]), [0], rtol=0, atol=1e-6)
+    #assert c1(3) == 4
+    #assert c1(1) == 1
+    #assert c1(2) == 4
+    #assert c1(1.5) == 2.25
+
+
+    # test that unknown kind causes error:
+    with pytest.raises(NotImplementedError):
+        c3([0])
+
+def test_log_characteristic_property():
+    net = pp.create_empty_network()
+    c = LogSplineCharacteristic(net, [10, 1000, 10000], [1000, 0.1, 0.001], interpolator_kind="Pchip", extrapolate=False)
+    c._x_vals
+    c([2])
+
+
+
+
 if __name__ == '__main__':
-    pytest.main([__file__, "-x"])
+    pytest.main([__file__, "-xs"])

@@ -1,0 +1,10 @@
+**Parameter**;**Datatype**;**Value Range**;**Explanation**
+name;string;;name of the SSC
+bus*;integer;;index of bus where the SSC is connected
+r_ohm*;float;:math:`\geq` 0;resistance of the coupling transformer component of SSC
+x_ohm*;float;:math:`\leq` 0;reactance of the coupling transformer component of SSC
+set_vm_pu*;float;;set-point for the bus voltage magnitude at the connection bus
+vm_internal_pu*;float;;The voltage magnitude of the voltage source converter VSC at the SSC component.
+va_internal_degree*;float;;The voltage angle of the voltage source converter VSC at the SSC component.
+controllable*;boolean;True / False;whether the element is considered as actively controlling or as a fixed shunt impedance
+in_service*;boolean;True / False;specifies if the SSC is in service.

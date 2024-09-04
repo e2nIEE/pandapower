@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -227,6 +227,7 @@ def test_find_line_type():
     name = "test_line1"
     typdata = {"c_nf_per_km": c, "r_ohm_per_km": r, "x_ohm_per_km": x, "max_i_ka": i}
     pp.create_std_type(net, data=typdata, name=name, element="line")
+
     fitting_type = pp.find_std_type_by_parameter(net, typdata)
     assert len(fitting_type) == 1
     assert fitting_type[0] == name
@@ -235,7 +236,25 @@ def test_find_line_type():
     assert len(fitting_type) == 1
     assert fitting_type[0] == name
 
-    fitting_type = pp.find_std_type_by_parameter(net, {"r_ohm_per_km":r+0.07}, epsilon=.06)
+def test_find_std_alternative():
+    net = pp.create_empty_network()
+    c = 210
+    r = 0.642
+    x = 0.083
+    i = 0.142
+    vr = "LV"
+    ## {'NAYY 4x50 SE': {'c_nf_per_km': 210, 'r_ohm_per_km': 0.642, 'x_ohm_per_km': 0.083, 'max_i_ka': 0.142, 'voltage_rating': 'LV'}
+    # Assuming we are looking for the cable NAYY 4X50 SE with a maximum ampacity of 0.142 A
+    name ='NAYY 4x50 SE'
+    typdata = {"c_nf_per_km": c, "r_ohm_per_km": r, "x_ohm_per_km": x, "max_i_ka": i, "voltage_rating": vr}
+    fitting_type = pp.find_std_type_alternative(net, {"r_ohm_per_km":r+0.05}, voltage_rating ="LV", epsilon=0.06)
+    assert len(fitting_type) == 1
+    assert fitting_type[0] == name
+
+    fitting_type = pp.find_std_type_alternative(net, {"r_ohm_per_km":r+0.07}, voltage_rating ="LV", epsilon=0.06)
+    assert len(fitting_type) == 0
+
+    fitting_type = pp.find_std_type_alternative(net, {"r_ohm_per_km":r+0.07}, voltage_rating ="MV", epsilon=0.06)
     assert len(fitting_type) == 0
 
 def test_change_type_line():
@@ -309,7 +328,7 @@ def test_parameter_from_std_type_line():
     assert net.line.endtemp_degree.at[lid2] == endtemp2 #type2 has specified endtemp
     assert net.line.endtemp_degree.at[lid3] == endtemp_fill #line3 has no standard type
 
-    net.line.endtemp_degree.at[lid3] = 10
+    net.line.at[lid3, "endtemp_degree"] = 10
     pp.parameter_from_std_type(net, "endtemp_degree", fill=endtemp_fill)
     assert net.line.endtemp_degree.at[lid3] == 10 #check that existing values arent overwritten
 
@@ -322,4 +341,4 @@ def test_add_temperature_coefficient():
 
 
 if __name__ == "__main__":
-    pytest.main([__file__])
+    pytest.main([__file__, "-xs"])

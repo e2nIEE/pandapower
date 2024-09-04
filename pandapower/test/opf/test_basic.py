@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -39,7 +39,7 @@ def simplest_grid():
     pp.create_poly_cost(net, 0, "gen", cp1_eur_per_mw=0.1)
 
     return net
-    
+
 
 @pytest.fixture
 def net_3w_trafo_opf():
@@ -475,8 +475,8 @@ def test_trafo3w_loading():
                              min_q_mvar=-1e6, max_q_mvar=1e6)
     pp.create_poly_cost(net, load_id, "load", cp1_eur_per_mw=-1000)
     # pp.create_xward(net, b4, 1000, 1000, 1000, 1000, 0.1, 0.1, 1.0)
-    net.trafo3w.shift_lv_degree.at[tidx] = 120
-    net.trafo3w.shift_mv_degree.at[tidx] = 80
+    net.trafo3w.at[tidx, "shift_lv_degree"] = 120
+    net.trafo3w.at[tidx, "shift_mv_degree"] = 80
 
     # pp.runopp(net, calculate_voltage_angles = True)  >> Doesn't converge
     for init in ["pf", "flat"]:
@@ -643,10 +643,10 @@ def test_storage_opf():
     pp.create_poly_cost(net, 1, "load", cp1_eur_per_mw=-3)
 
     # test storage generator behaviour
-    net["storage"].in_service.iloc[0] = True
-    net["storage"].p_mw.iloc[0] = -0.025
-    net["sgen"].in_service.iloc[1] = False
-    net["load"].in_service.iloc[1] = False
+    net["storage"].loc[0, 'in_service'] = True
+    net["storage"].loc[0, 'p_mw'] = -0.025
+    net["sgen"].loc[1, 'in_service'] = False
+    net["load"].loc[1, 'in_service'] = False
 
     pp.runopp(net)
     assert net["OPF_converged"]
@@ -655,10 +655,10 @@ def test_storage_opf():
     res_stor_q_mvar = net["res_storage"].q_mvar.iloc[0]
     res_cost_stor = net["res_cost"]
 
-    net["storage"].in_service.iloc[0] = False
-    net["storage"].p_mw.iloc[0] = -0.025
-    net["sgen"].in_service.iloc[1] = True
-    net["load"].in_service.iloc[1] = False
+    net["storage"].loc[0, 'in_service'] = False
+    net["storage"].loc[0, 'p_mw'] = -0.025
+    net["sgen"].loc[1, 'in_service'] = True
+    net["load"].loc[1, 'in_service'] = False
 
     pp.runopp(net)
     assert net["OPF_converged"]
@@ -673,17 +673,17 @@ def test_storage_opf():
     assert np.isclose(res_cost_stor, res_cost_sgen)
 
     # test storage load behaviour
-    net["storage"].in_service.iloc[0] = True
-    net["storage"].p_mw.iloc[0] = 0.025
-    net["storage"].max_p_mw.iloc[0] = 0.025
-    net["storage"].min_p_mw.iloc[0] = 0
-    net["storage"].max_q_mvar.iloc[0] = 0.025
-    net["storage"].min_q_mvar.iloc[0] = -0.025
+    net["storage"].loc[0, 'in_service'] = True
+    net["storage"].loc[0, 'p_mw'] = 0.025
+    net["storage"].loc[0, 'max_p_mw'] = 0.025
+    net["storage"].loc[0, 'min_p_mw'] = 0
+    net["storage"].loc[0, 'max_q_mvar'] = 0.025
+    net["storage"].loc[0, 'min_q_mvar'] = -0.025
     # gencost for storages: positive costs in pandapower per definition
     # --> storage gencosts are similar to sgen gencosts (make_objective.py, l.128ff. and l.185ff.)
-    net["poly_cost"].cp1_eur_per_mw.iloc[2] = net.poly_cost.cp1_eur_per_mw.iloc[4]
-    net["sgen"].in_service.iloc[1] = False
-    net["load"].in_service.iloc[1] = False
+    net["poly_cost"].loc[2, 'cp1_eur_per_mw'] = net.poly_cost.cp1_eur_per_mw.iloc[4]
+    net["sgen"].loc[1, 'in_service'] = False
+    net["load"].loc[1, 'in_service'] = False
 
     pp.runopp(net)
     assert net["OPF_converged"]
@@ -692,10 +692,10 @@ def test_storage_opf():
     res_stor_q_mvar = net["res_storage"].q_mvar.iloc[0]
     res_cost_stor = net["res_cost"]
 
-    net["storage"].in_service.iloc[0] = False
-    net["storage"].p_mw.iloc[0] = 0.025
-    net["sgen"].in_service.iloc[1] = False
-    net["load"].in_service.iloc[1] = True
+    net["storage"].loc[0, 'in_service'] = False
+    net["storage"].loc[0, 'p_mw'] = 0.025
+    net["sgen"].loc[1, 'in_service'] = False
+    net["load"].loc[1, 'in_service'] = True
 
     pp.runopp(net)
     assert net["OPF_converged"]
@@ -745,8 +745,8 @@ def test_in_service_controllables():
     pp.create_poly_cost(net, 1, "sgen", cp1_eur_per_mw=1)
     pp.create_poly_cost(net, 1, "load", cp1_eur_per_mw=-1)
 
-    net["sgen"].in_service.iloc[1] = False
-    net["load"].in_service.iloc[1] = False
+    net["sgen"].loc[1, 'in_service'] = False
+    net["load"].loc[1, 'in_service'] = False
 
     pp.runopp(net)
     assert net["OPF_converged"]
@@ -844,8 +844,8 @@ def test_line_temperature():
 @pytest.fixture
 def four_bus_net():
     net = simple_four_bus_system()
-    net.sgen.drop(index=1, inplace=True)
-    net.load.drop(index=1, inplace=True)
+    net.sgen = net.sgen.drop(index=1)
+    net.load = net.load.drop(index=1)
     return net
 
 
@@ -867,7 +867,7 @@ def test_only_gen_slack_vm_setpoint(four_bus_net):
     # tests a net with only gens of which one of them is a a slack
     # The  vmin / vmax vm_pu setpoint should be correct
     net = four_bus_net
-    net.ext_grid.drop(index=net.ext_grid.index, inplace=True)
+    net.ext_grid = net.ext_grid.drop(index=net.ext_grid.index)
     net.bus.loc[:, "min_vm_pu"] = 0.9
     net.bus.loc[:, "max_vm_pu"] = 1.1
     # create two additional slacks with different voltage setpoints
