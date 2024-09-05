@@ -3697,7 +3697,7 @@ def split_all_lines(net, lvp_dict):
             if p >= 0 or True:
                 # TODO: set const_i_percent to 100 after the pandapower bug is fixed
                 new_load = pp.create_load(net, new_bus, name=load_item.loc_name, p_mw=p, q_mvar=q,
-                                          const_i_percent=0)
+                                          const_i_p_percent=0, const_i_q_percent=0)
                 logger.debug('created load %s' % new_load)
                 net.res_load.at[new_load, 'pf_p'] = p
                 net.res_load.at[new_load, 'pf_q'] = q
