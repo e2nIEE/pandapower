@@ -31,6 +31,6 @@ def test_data_source():
     assert abs(my_data_source.get_time_step_value(time_step=8, profile_name="constload3")
                - -5.37E-3) < epsilon
 
+
 if __name__ == '__main__':
-    pytest.main(['-x', '-s', __file__])
-    # pytest.main(['-x', __file__])
+    pytest.main([__file__, "-xs"])

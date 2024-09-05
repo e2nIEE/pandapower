@@ -39,7 +39,7 @@ except ImportError:
 from pandapower import pandapowerNet
 from pandapower.auxiliary import soft_dependency_error
 from pandapower.plotting.patch_makers import load_patches, node_patches, gen_patches, \
-    sgen_patches, ext_grid_patches, trafo_patches, storage_patches, ward_patches, xward_patches
+    sgen_patches, ext_grid_patches, trafo_patches, storage_patches, ward_patches, xward_patches, vsc_patches
 from pandapower.plotting.plotting_toolbox import _rotate_dim2, coords_from_node_geodata, \
     position_on_busbar, get_index_array
 
@@ -49,6 +49,19 @@ except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
+
+
+def _get_coords_from_geojson(gj_str):
+    pattern = r'"coordinates"\s*:\s*((?:\[(?:\[[^]]+],?\s*)+\])|\[[^]]+\])'
+    matches = re.findall(pattern, gj_str)
+
+    if not matches:
+        return None
+    if len(matches) > 1:
+        raise ValueError("More than one match found in GeoJSON string")
+    for m in matches:
+        return ast.literal_eval(m)
+    return None
 
 
 class CustomTextPath(TextPath):
@@ -367,7 +380,8 @@ def _create_complex_branch_collection(coords, patch_maker, size=1, infos=None, r
 
 def create_bus_collection(net, buses=None, size=5, patch_type="circle", color=None, z=None,
                           cmap=None, norm=None, infofunc=None, picker=False, bus_geodata=None,
-                          cbar_title="Bus Voltage [pu]", clim=None, plot_colormap=True, **kwargs):
+                          bus_table="bus", cbar_title="Bus Voltage [pu]", clim=None,
+                          plot_colormap=True, **kwargs):
     """
     Creates a matplotlib patch collection of pandapower buses.
 
@@ -406,6 +420,8 @@ def create_bus_collection(net, buses=None, size=5, patch_type="circle", color=No
 
         **clim** (tuple of floats, None) - setting the norm limits for image scaling
 
+        **bus_table** (str, "bus") - element table to use for the buses ("bus", "bus_dc")
+
         **plot_colormap** (bool, True) - flag whether the colormap is actually drawn
 
         **kwargs** - key word arguments are passed to the patch function
@@ -413,16 +429,34 @@ def create_bus_collection(net, buses=None, size=5, patch_type="circle", color=No
     OUTPUT:
         **pc** - patch collection
     """
+    if bus_table == "bus":
+        dc = False
+    elif bus_table == "bus_dc":
+        dc = True
+    else:
+        raise NotImplementedError(f"bus table {bus_table} not implemented!")
+
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
-    buses = get_index_array(buses, net.bus.index)
+    buses = get_index_array(buses, net[bus_table].index)
     if len(buses) == 0:
         return None
+    # if bus_geodata is None:
+    #     bus_geodata = net["bus_geodata"] if not dc else net["bus_dc_geodata"]
 
-    if any(net.bus.geo.isna()):
+    if any(net[bus_table].geo.isna()):
         raise AttributeError('net.bus.geo contains NaN values, consider dropping them beforehand.')
 
-    coords = net.bus.geo.apply(geojson.loads).apply(geojson.utils.coords).apply(next).loc[buses].to_list()
+    if bus_geodata is None:
+        bus_geodata = net[bus_table].geo.apply(_get_coords_from_geojson)
+
+    buses_with_geo = buses[np.isin(buses, bus_geodata.index.values)]
+    if len(buses_with_geo) < len(buses):
+        logger.warning(
+            f"The following buses cannot be displayed as there is on geodata available: {set(buses)-set(buses_with_geo)}"
+        )
+
+    coords = bus_geodata.loc[buses_with_geo].values
 
     infos = [infofunc(bus) for bus in buses] if infofunc is not None else []
 
@@ -430,7 +464,7 @@ def create_bus_collection(net, buses=None, size=5, patch_type="circle", color=No
 
     if cmap is not None:
         if z is None:
-            z = net.res_bus.vm_pu.loc[buses]
+            z = net[f"res_{bus_table}"].vm_pu.loc[buses]
         add_cmap_to_collection(pc, cmap, norm, z, cbar_title, plot_colormap, clim)
 
     return pc
@@ -441,7 +475,7 @@ def create_line_collection(net: pandapowerNet, lines=None,
                            use_bus_geodata: bool = False, infofunc: Callable or None = None,
                            cmap: 'Colormap' = None, norm: 'Normalize' = None, picker: bool = False,
                            z=None, cbar_title: str = "Line Loading [%]", clim=None, plot_colormap: bool = True,
-                           **kwargs):
+                           line_table="line", **kwargs):
     """
     Creates a matplotlib line collection of pandapower lines.
 
@@ -476,6 +510,8 @@ def create_line_collection(net: pandapowerNet, lines=None,
 
         **clim** (tuple of floats, None) - setting the norm limits for image scaling
 
+        **line_table** (str, "line") - which element table to use ("line", "line_dc")
+
         **plot_colormap** (bool, True) - flag whether the colormap is actually drawn
 
         **kwargs** - key word arguments are passed to the patch function
@@ -483,33 +519,28 @@ def create_line_collection(net: pandapowerNet, lines=None,
     OUTPUT:
         **lc** - line collection
     """
+    if line_table == "line":
+        dc = False
+        line_geodata_table = "line_geodata"
+    elif line_table == "line_dc":
+        dc = True
+        line_geodata_table = "line_dc_geodata"
+    else:
+        raise NotImplementedError(f"line table {line_table} not implemented!")
+
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
 
-    def _get_coords_from_geojson(gj_str):
-        pattern = r'"coordinates"\s*:\s*((?:\[(?:\[[^]]+],?\s*)+\])|\[[^]]+\])'
-        matches = re.findall(pattern, gj_str)
-
-        if not matches:
-            return None
-        if len(matches) > 1:
-            raise ValueError("More than one match found in GeoJSON string")
-        for m in matches:
-            return ast.literal_eval(m)
-        return None
-
-    if use_bus_geodata is False and line_geodata is None and (
-            "geo" not in net.line.columns or net.line.geo.isnull().all()):
+    if not use_bus_geodata and line_geodata is None and ("geo" not in net[line_table].columns or net[line_table].geo.empty):
         # if bus geodata is available, but no line geodata
         logger.warning("use_bus_geodata is automatically set to True, since net.line.geo is empty.")
         use_bus_geodata = True
 
-    lines = get_index_array(lines, net.line.index)
+    lines = get_index_array(lines, net[line_table].index)
     if len(lines) == 0:
         return None
 
-    line_geodata: Series[str] = line_geodata.loc[lines] if line_geodata is not None else \
-        net.line.geo.loc[lines]
+    line_geodata: Series[str] = line_geodata.loc[lines] if line_geodata is not None else net[line_table].geo.loc[lines]
     lines_without_geo = line_geodata.index[line_geodata.isna()]
 
     if use_bus_geodata or not lines_without_geo.empty:
@@ -538,7 +569,7 @@ def create_line_collection(net: pandapowerNet, lines=None,
 
     if cmap is not None:
         if z is None:
-            z = net.res_line.loading_percent.loc[line_geodata.index]
+            z = net[f"res_{line_table}"].loading_percent.loc[line_geodata.index]
         add_cmap_to_collection(lc, cmap, norm, z, cbar_title, plot_colormap, clim)
 
     return lc
@@ -946,6 +977,153 @@ def create_trafo3w_collection(net, trafo3ws=None, picker=False, infofunc=None, c
         lc.has_colormap = plot_colormap
         lc.cbar_title = cbar_title
     return lc, pc
+
+# todo geojson
+def create_vsc_collection(net, vscs=None, picker=False, size=None, infofunc=None, cmap=None,
+                          norm=None, z=None, clim=None, cbar_title="VSC power",
+                          plot_colormap=True, bus_geodata=None, bus_dc_geodata=None, **kwargs):
+    """
+    Creates a matplotlib line collection of pandapower transformers.
+
+    Input:
+        **net** (pandapowerNet) - The pandapower network
+
+    OPTIONAL:
+        **vscs** (list, None) - The VSC indices for which the collections are created.
+        If None, all VSCs in the grid are considered.
+
+        **picker** (bool, False) - picker argument passed to the patch collection
+
+        **size** (int, None) - size of VSC symbol squares. Should be >0 and
+        < 0.35*bus_distance
+
+         **infofunc** (function, None) - infofunction for the patch element
+
+        **kwargs** - keyword arguments are passed to the patch function
+
+    OUTPUT:
+        **lc** - line collection
+
+        **pc** - patch collection
+    """
+    if not MATPLOTLIB_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
+
+    vscs = get_index_array(vscs, net.vsc.index)
+
+    if bus_geodata is None:
+        # bus_geodata = net["bus_geodata"]
+        bus_geodata = net.bus.geo.dropna()
+
+    if bus_dc_geodata is None:
+        # bus_dc_geodata = net["bus_dc_geodata"]
+        bus_dc_geodata = net.bus_dc.geo.dropna()
+
+    in_geodata = (net.vsc.bus.loc[vscs].isin(bus_geodata.index) &
+                  net.vsc.bus_dc.loc[vscs].isin(bus_dc_geodata.index))
+    vscs = vscs[in_geodata]
+    vsc_table = net.vsc.loc[vscs]
+
+    coords, vscs_with_geo = coords_from_node_geodata(
+        vscs, vsc_table.bus.values, vsc_table.bus_dc.values, bus_geodata, "vsc", node_geodata_to=bus_dc_geodata)
+
+    if len(vscs_with_geo) == 0:
+        return None
+
+    colors = kwargs.pop("color", "k")
+    linewidths = kwargs.pop("linewidths", 2.)
+    linewidths = kwargs.pop("linewidth", linewidths)
+    linewidths = kwargs.pop("lw", linewidths)
+    if cmap is not None:
+        if z is None:
+            z = net.res_vsc.p_mw
+        colors = [cmap(norm(z.at[idx])) for idx in vscs_with_geo]
+
+    infos = [infofunc(i) for i in range(len(vscs_with_geo))] if infofunc is not None else []
+
+    lc, pc = _create_complex_branch_collection(
+        coords, vsc_patches, size, infos, patch_facecolor="none", patch_edgecolor=colors,
+        line_color=colors, picker=picker, linewidths=linewidths, **kwargs)
+
+    if cmap is not None:
+        z_duplicated = np.repeat(z.values, 2)
+        add_cmap_to_collection(lc, cmap, norm, z_duplicated, cbar_title, plot_colormap, clim)
+    return lc, pc
+
+# todo geojson
+def create_vsc_connection_collection(net, vscs=None, bus_geodata=None, bus_dc_geodata=None, infofunc=None,
+                                     cmap=None, clim=None, norm=None, z=None,
+                                     cbar_title="Transformer Loading", picker=False, **kwargs):
+    """
+    Creates a matplotlib line collection of pandapower VSCs.
+
+    Input:
+        **net** (pandapowerNet) - The pandapower network
+
+    OPTIONAL:
+        **vscs** (list, None) - The VSC indices for which the collections are created.
+        If None, all VSCs in the network are considered.
+
+        **bus_geodata** (DataFrame, None) - coordinates of AC buses to use for plotting
+        If None, net["bus_geodata"] is used
+
+        **bus_dc_geodata** (DataFrame, None) - coordinates of DC buses to use for plotting
+        If None, net["bus_dc_geodata"] is used
+
+        **infofunc** (function, None) - infofunction for the patch element
+
+        **cmap** - colormap for the patch colors
+
+        **clim** (tuple of floats, None) - setting the norm limits for image scaling
+
+        **norm** (matplotlib norm object, None) - matplotlib norm object
+
+        **z** (array, None) - array of values for colormap. Used in case of given
+        cmap. If None net.res_vsc.p_mw is used.
+
+        **cbar_title** (str, "VSC active power [MW]") - colormap bar title in case of given cmap
+
+        **picker** (bool, False) - picker argument passed to the line collection
+
+        **kwargs - keyword arguments are passed to the patch function
+
+    OUTPUT:
+        **lc** - line collection
+    """
+    if not MATPLOTLIB_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
+
+    vscs = get_index_array(vscs, net.vsc.index)
+
+    if bus_geodata is None:
+        # bus_geodata = net["bus_geodata"]
+        bus_geodata = net.bus.geo.dropna()
+
+    if bus_dc_geodata is None:
+        bus_dc_geodata = net["bus_dc_geodata"]
+        bus_dc_geodata = net.bus_dc.geo.dropna()
+
+    in_geodata = (net.vsc.bus.loc[vscs].isin(bus_geodata.index) &
+                  net.vsc.bus_dc.loc[vscs].isin(bus_dc_geodata.index))
+    vscs = vscs[in_geodata]
+    vsc_table = net.vsc.loc[vscs]
+
+    ac_geo = list(zip(bus_geodata.loc[vsc_table["bus"], "x"].values,
+                      bus_geodata.loc[vsc_table["bus_dc"], "y"].values))
+    dc_geo = list(zip(bus_dc_geodata.loc[vsc_table["bus_dc"], "x"].values,
+                      bus_dc_geodata.loc[vsc_table["bus_dc"], "y"].values))
+    vg = list(zip(ac_geo, dc_geo))
+
+    info = [infofunc(v) for v in vscs] if infofunc is not None else []
+
+    lc = _create_line2d_collection(vg, vscs, info, picker=picker, **kwargs)
+
+    if cmap is not None:
+        if z is None:
+            z = net.res_vsc.p_mw.loc[vscs]
+        add_cmap_to_collection(lc, cmap, norm, z, cbar_title, True, clim)
+
+    return lc
 
 
 @deprecated("Busbar geodata is no longer supported for plotting geodata.")
