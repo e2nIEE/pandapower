@@ -66,6 +66,7 @@ def from_pf(dict_net, pv_as_slack=True, pf_variable_p_loads='plini', pf_variable
     # ist leider notwendig
     n = 0
     for n, bus in enumerate(dict_net['ElmTerm'], 1):
+        print(n) ####
         create_bus(net=net, item=bus, flag_graphics=flag_graphics, is_unbalanced=is_unbalanced)
     if n > 0: logger.info('imported %d buses' % n)
 
@@ -211,7 +212,7 @@ def from_pf(dict_net, pv_as_slack=True, pf_variable_p_loads='plini', pf_variable
     # create static var compensator (SVC) with control same as voltage controlled synchron machine (ElmSvs):
     n = 0
     for n, svc in enumerate(dict_net['ElmSvs'], 1):
-        create_svc(net=net, item=svc, pv_as_slack=pv_as_slack,
+          create_svc(net=net, item=svc, pv_as_slack=pv_as_slack,
                         pf_variable_p_gen=pf_variable_p_gen, dict_net=dict_net)
     if n > 0: logger.info('imported %d SVC' % n)
     
@@ -222,16 +223,16 @@ def from_pf(dict_net, pv_as_slack=True, pf_variable_p_loads='plini', pf_variable
     if n > 0: logger.info('imported %d VAC' % n)
 
     # create vac (ElmVsc):
-    n = 0
-    for n, vscmono in enumerate(dict_net['ElmVscmono'], 1):
-        create_vscmono(net=net, item=vscmono)
-    if n > 0: logger.info('imported %d VSC (mono)' % n)
+    # n = 0
+    # for n, vscmono in enumerate(dict_net['ElmVscmono'], 1):
+    #     create_vscmono(net=net, item=vscmono)
+    # if n > 0: logger.info('imported %d VSC (mono)' % n)
 
-    # create vac (ElmVsc):
-    n = 0
-    for n, vsc in enumerate(dict_net['ElmVsc'], 1):
-        create_vsc(net=net, item=vsc)
-    if n > 0: logger.info('imported %d VSC' % n)
+    # # create vac (ElmVsc):
+    # n = 0
+    # for n, vsc in enumerate(dict_net['ElmVsc'], 1):
+    #     create_vsc(net=net, item=vsc)
+    # if n > 0: logger.info('imported %d VSC' % n)
 
     # logger.debug('creating switches')
     # # create switches (StaSwitch):
@@ -1981,8 +1982,8 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
     logger.debug('created sgen at index <%d>' % sg)
 
     net[element].at[sg, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    add_additional_attributes(item, net, element, sg, attr_dict={"for_name": "equipment"},
-                              attr_list=["sernum", "chr_name", "cpSite.loc_name"])
+    add_additional_attributes(item, net, element, sg, attr_dict={"for_name": "equipment", "c_pstac.loc_name": "sta_ctrl"},
+                              attr_list=["sernum", "chr_name", "cpSite.loc_name", "c_pstac.loc_name"])
     net[element].at[sg, 'scaling'] = dict_net['global_parameters']['global_generation_scaling'] * item.scale0
     get_pf_sgen_results(net, item, sg, is_unbalanced, element=element)
 
@@ -2095,8 +2096,8 @@ def create_sgen_neg_load(net, item, pf_variable_p_loads, dict_net):
     sg = pp.create_sgen(net, **params)
 
     net.sgen.loc[sg, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    add_additional_attributes(item, net, "sgen", sg, attr_dict={"for_name": "equipment"},
-                              attr_list=["sernum", "chr_name", "cpSite.loc_name"])
+    add_additional_attributes(item, net, "sgen", sg, attr_dict={"for_name": "equipment", "c_pstac.loc_name": "sta_ctrl"},
+                              attr_list=["sernum", "chr_name", "cpSite.loc_name", "c_pstac.loc_name"])
 
     if item.HasResults(0):  # 'm' results...
         logger.debug('<%s> has results' % params.name)
@@ -2214,8 +2215,8 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
         logger.debug('created sgen at index <%s>' % sid)
 
     net[element].loc[sid, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    add_additional_attributes(item, net, element, sid, attr_dict={"for_name": "equipment"},
-                              attr_list=["sernum", "chr_name", "cpSite.loc_name"])
+    add_additional_attributes(item, net, element, sid, attr_dict={"for_name": "equipment", "c_pstac.loc_name": "sta_ctrl"},
+                              attr_list=["sernum", "chr_name", "cpSite.loc_name", "c_pstac.loc_name"])
 
     if item.HasResults(0):  # 'm' results...
         logger.debug('<%s> has results' % name)
@@ -2269,7 +2270,7 @@ def create_sgen_asm(net, item, pf_variable_p_gen, dict_net):
 
     net.sgen.loc[sid, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
     add_additional_attributes(item, net, "sgen", sid, attr_dict={"for_name": "equipment", "cimRdfId": "origin_id"},
-                              attr_list=["sernum", "chr_name", "cpSite.loc_name"])
+                              attr_list=["sernum", "chr_name", "cpSite.loc_name", "c_pstac.loc_name"])
 
     if item.HasResults(0):
         net.res_sgen.at[sid, 'pf_p'] = ga(item, 'm:P:bus1') * multiplier
@@ -2994,7 +2995,7 @@ def create_svc(net, item, pv_as_slack, pf_variable_p_gen, dict_net):
         logger.debug('creating SVC %s as gen' % name)
         vm_pu = item.usetp
         in_service = monopolar_in_service(item)
-        svc = pp.create_gen(net, bus=bus1, p_mw=0, vm_pu=vm_pu,
+        svc = pp.create_gen(net, bus=bus1[0], p_mw=0, vm_pu=vm_pu,
                             name=name, type="SVC", in_service=in_service)
         element = 'gen'
         
@@ -3173,8 +3174,11 @@ def create_stactrl(net, item):
 
     # find gen_element_index using name:
     if np.any(net.sgen.name.duplicated()):
-        raise UserWarning("error while creating station controller: sgen names must be unique")
-
+        duplicated_sgen_names = True
+        #raise UserWarning("error while creating station controller: sgen names must be unique")
+    else:
+        duplicated_sgen_names = False
+        
     gen_types = []
     for s in machines:
         if s.ip_ctrl == 1:
@@ -3210,9 +3214,24 @@ def create_stactrl(net, item):
 
     gen_element = gen_types[0]
     gen_element_index = []
-    for s in machines:
-        gen_element_index.append(net[gen_element].loc[net[gen_element].name == s.loc_name].index.values[0])
-
+    if duplicated_sgen_names==False: 
+        for s in machines:
+            gen_element_index.append(net[gen_element].loc[net[gen_element].name == s.loc_name].index.values[0])
+    else:
+        # check if gen_element has set controller 
+        for s in machines:
+            print(s.loc_name) ###
+            gen_element_index_try = net[gen_element].loc[net[gen_element].name == s.loc_name].index.values
+            if len(gen_element_index_try)==1:
+                gen_element_index.append(gen_element_index_try[0])
+            else:
+                gen_element_index_try_again = net[gen_element].loc[(net[gen_element].name == s.loc_name) &
+                                                                   (net[gen_element].sta_ctrl == s.c_pstac.loc_name)].index.values
+                if len(gen_element_index_try_again)>1:
+                    raise UserWarning("error while creating station controller: sgen and controler names must be unique")
+                else:
+                    gen_element_index.append(gen_element_index_try_again[0])
+                              
     if len(gen_element_index) != len(machines):
         raise UserWarning("station controller: could not properly identify the machines")
 
@@ -3226,9 +3245,12 @@ def create_stactrl(net, item):
         elif m is not None and not isinstance(item.cvqq, list):
             distribution.append(item.cvqq / 100)
         i = i + 1
-
-    if item.imode != 0:
-        raise NotImplementedError(f"{item}: reactive power distribution {item.imode=} not implemented")
+    
+    if sum(distribution)!=1:
+        logger.info(f'{item}: sum of reactive power dstribution is unequal to 1 but will be normalized in binary search control.')
+    
+    if item.imode >2: #!= 0:
+        raise NotImplementedError(f"{item}: reactive power distribution {item.imode} not implemented")
 
     phase = item.i_phase
     if phase != 0:
