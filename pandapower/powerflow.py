@@ -59,7 +59,7 @@ def _powerflow(net, **kwargs):
                            "branch": array([], dtype=int64), "branch_dc": array([], dtype=int64)}
 
     # convert pandapower net to ppc
-    ppc, ppci = _pd2ppc(net)
+    ppc, ppci = _pd2ppc(net, **kwargs)
 
     # store variables
     net["_ppc"] = ppc
