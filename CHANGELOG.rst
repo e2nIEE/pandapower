@@ -15,6 +15,7 @@ Change Log
 
 [upcoming release] - 2024-..-..
 -------------------------------
+- [FIXED] replacing deprecated in1d with isin
 - [FIXED] cast the column to the correct type before assigning values
 - [FIXED] replacement for deprecated namespaces scipy.sparse.csc and scipy.sparse.csr
 - [FIXED] copy array element to standard python scalar
