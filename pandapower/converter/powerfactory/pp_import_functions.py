@@ -66,7 +66,6 @@ def from_pf(dict_net, pv_as_slack=True, pf_variable_p_loads='plini', pf_variable
     # ist leider notwendig
     n = 0
     for n, bus in enumerate(dict_net['ElmTerm'], 1):
-        print(n) ####
         create_bus(net=net, item=bus, flag_graphics=flag_graphics, is_unbalanced=is_unbalanced)
     if n > 0: logger.info('imported %d buses' % n)
 
