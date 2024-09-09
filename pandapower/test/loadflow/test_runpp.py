@@ -706,15 +706,26 @@ def test_zip_loads_gridcal():
 
 def test_zip_loads_consistency(**kwargs):
     net = four_loads_with_branches_out()
-    net.load['const_i_percent'] = 40
-    net.load['const_z_percent'] = 40
+    # net.load['const_i_percent'] = 40
+    # net.load['const_z_percent'] = 40
+    
+    net.load['const_i_p_percent'] = 40
+    net.load['const_i_q_percent'] = 40
+    net.load['const_z_p_percent'] = 40
+    net.load['const_z_q_percent'] = 40
+    
     assert runpp_with_consistency_checks(net, **kwargs)
 
 
 def test_zip_loads_pf_algorithms():
     net = four_loads_with_branches_out()
-    net.load['const_i_percent'] = 40
-    net.load['const_z_percent'] = 40
+    # net.load['const_i_percent'] = 40
+    # net.load['const_z_percent'] = 40
+    
+    net.load['const_i_p_percent'] = 40
+    net.load['const_i_q_percent'] = 40
+    net.load['const_z_p_percent'] = 40
+    net.load['const_z_q_percent'] = 40
 
     alg_to_test = ['bfsw']
     for alg in alg_to_test:
@@ -737,7 +748,9 @@ def test_zip_loads_with_voltage_angles():
     pp.create_ext_grid(net, b1)
     pp.create_line_from_parameters(net, b1, b2, length_km=1, r_ohm_per_km=0.3,
                                    x_ohm_per_km=0.3, c_nf_per_km=10, max_i_ka=1)
-    pp.create_load(net, b2, p_mw=0.002, const_z_percent=0, const_i_percent=100)
+    # pp.create_load(net, b2, p_mw=0.002, const_z_percent=0, const_i_percent=100)
+    pp.create_load(net, b2, p_mw=0.002, const_z_p_percent=0, const_z_q_percent=0, 
+                   const_i_p_percent=100, const_i_q_percent=100)
 
     pp.set_user_pf_options(net, calculate_voltage_angles=True, init='dc')
 
@@ -762,8 +775,10 @@ def test_zip_loads_out_of_service():
 
     # create bus elements
     pp.create_ext_grid(net, bus=bus1, vm_pu=1.02, name="Grid Connection")
+    # pp.create_load(net, bus=bus3, p_mw=0.100, q_mvar=0.05, name="Load",
+    #                const_i_percent=0, const_z_percent=0)
     pp.create_load(net, bus=bus3, p_mw=0.100, q_mvar=0.05, name="Load",
-                   const_i_percent=0, const_z_percent=0)
+                   const_i_p_percent=0, const_i_q_percent=0, const_z_p_percent=0, const_z_q_percent=0)
 
     # create branch elements
     pp.create_transformer(net, hv_bus=bus1, lv_bus=bus2,
@@ -772,9 +787,12 @@ def test_zip_loads_out_of_service():
                    std_type="NAYY 4x50 SE", name="Line")
 
     net1 = net.deepcopy()
+    # oos_load = pp.create_load(
+    #     net1, bus=bus3, p_mw=0.100, q_mvar=0.05, in_service=False,
+    #     const_i_percent=0, const_z_percent=100)
     oos_load = pp.create_load(
         net1, bus=bus3, p_mw=0.100, q_mvar=0.05, in_service=False,
-        const_i_percent=0, const_z_percent=100)
+        const_i_p_percent=0, const_i_q_percent=0, const_z_p_percent=100, const_z_q_percent=100)
 
     pp.runpp(net, tolerance_mva=1e-8)
     pp.runpp(net1, tolerance_mva=1e-8)
@@ -1430,7 +1448,9 @@ def test_lightsim2grid_option():
         pp.runpp(net, algorithm="gs", lightsim2grid=True)
 
     # voltage-dependent loads
-    net.load["const_z_percent"] = 100.
+    # net.load["const_z_percent"] = 100.
+    net.load["const_z_p_percent"] = 100.
+    net.load["const_z_q_percent"] = 100.
     pp.runpp(net, voltage_depend_loads=True)
     assert not net._options["lightsim2grid"]
 
@@ -1439,7 +1459,9 @@ def test_lightsim2grid_option():
 
     with pytest.raises(NotImplementedError, match=r"voltage-dependent loads"):
         pp.runpp(net, lightsim2grid=True)
-    net.load.const_z_percent = 0
+    # net.load.const_z_percent = 0
+    net.load.const_z_p_percent = 0
+    net.load.const_z_q_percent = 0
 
     # multiple slacks
     xg = pp.create_ext_grid(net, 1, 1.)
