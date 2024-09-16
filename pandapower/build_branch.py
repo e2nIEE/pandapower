@@ -10,7 +10,6 @@ from functools import partial
 
 import numpy as np
 import pandas as pd
-from pandapower import DC_BUS_TYPE
 
 from pandapower.auxiliary import get_values
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, BR_G, TAP, SHIFT, BR_STATUS, RATE_A, \
@@ -22,7 +21,7 @@ from pandapower.pypower.idx_brch_tdpf import BR_R_REF_OHM_PER_KM, BR_LENGTH_KM, 
     GAMMA, EPSILON, T_AMBIENT_C, T_REF_C, branch_cols_tdpf
 from pandapower.pypower.idx_brch_sc import branch_cols_sc
 from pandapower.pypower.idx_bus import BASE_KV, VM, VA, BUS_TYPE, BUS_AREA, ZONE, VMAX, VMIN, PQ
-from pandapower.pypower.idx_bus_dc import DC_BUS_AREA, DC_VM, DC_ZONE, DC_VMAX, DC_VMIN, DC_P, DC_BASE_KV
+from pandapower.pypower.idx_bus_dc import DC_BUS_AREA, DC_VM, DC_ZONE, DC_VMAX, DC_VMIN, DC_P, DC_BASE_KV, DC_BUS_TYPE
 from pandapower.pypower.idx_bus_sc import C_MIN, C_MAX
 from pandapower.pypower.idx_tcsc import TCSC_F_BUS, TCSC_T_BUS, TCSC_X_L, TCSC_X_CVAR, TCSC_SET_P, \
     TCSC_THYRISTOR_FIRING_ANGLE, TCSC_STATUS, TCSC_CONTROLLABLE, tcsc_cols, TCSC_MIN_FIRING_ANGLE, TCSC_MAX_FIRING_ANGLE
@@ -65,7 +64,7 @@ def _build_branch_ppc(net, ppc, update_vk_values: bool=True):
     if "line" in lookup:
         _calc_line_parameter(net, ppc)
     if "trafo" in lookup:
-        _calc_trafo_parameter(net, ppc)
+        _calc_trafo_parameter(net, ppc, update_vk_values=update_vk_values)
     if "trafo3w" in lookup:
         _calc_trafo3w_parameter(net, ppc, update_vk_values=update_vk_values)
     if "impedance" in lookup:
@@ -151,7 +150,8 @@ def _calc_trafo3w_parameter(net, ppc, update_vk_values: bool=True):
     in_service = get_trafo_values(trafo_df, "in_service").astype(np.int64)
     branch[f:t, F_BUS] = bus_lookup[hv_bus]
     branch[f:t, T_BUS] = bus_lookup[lv_bus]
-    r, x, g, b, g_asym, b_asym, ratio, shift = _calc_branch_values_from_trafo_df(net, ppc, trafo_df)
+    r, x, g, b, g_asym, b_asym, ratio, shift = _calc_branch_values_from_trafo_df(net, ppc, trafo_df,
+                                                                                 update_vk_values=update_vk_values)
     branch[f:t, BR_R] = r
     branch[f:t, BR_X] = x
     branch[f:t, BR_G] = g
@@ -329,7 +329,7 @@ def _calc_line_dc_parameter(net, ppc, elm="line_dc", ppc_elm="branch_dc"):
     branch_dc[f:t, DC_RATE_A] = max_load / 100. * max_i_ka * df * parallel * vr
 
 
-def _calc_trafo_parameter(net, ppc):
+def _calc_trafo_parameter(net, ppc, update_vk_values: bool=True):
     '''
     Calculates the transformer parameter in per unit.
 
@@ -350,7 +350,7 @@ def _calc_trafo_parameter(net, ppc):
     parallel = trafo["parallel"].values
     branch[f:t, F_BUS] = bus_lookup[trafo["hv_bus"].values]
     branch[f:t, T_BUS] = bus_lookup[trafo["lv_bus"].values]
-    r, x, g, b, g_asym, b_asym, ratio, shift = _calc_branch_values_from_trafo_df(net, ppc)
+    r, x, g, b, g_asym, b_asym, ratio, shift = _calc_branch_values_from_trafo_df(net, ppc, update_vk_values=update_vk_values)
     branch[f:t, BR_R] = r
     branch[f:t, BR_X] = x
     branch[f:t, BR_G] = g
@@ -377,7 +377,7 @@ def get_trafo_values(trafo_df, par):
         return trafo_df[par].values
 
 
-def _calc_branch_values_from_trafo_df(net, ppc, trafo_df=None, sequence=1):
+def _calc_branch_values_from_trafo_df(net, ppc, trafo_df=None, sequence=1, update_vk_values=True):
     """
     Calculates the MAT/PYPOWER-branch-attributes from the pandapower trafo dataframe.
 
@@ -420,16 +420,18 @@ def _calc_branch_values_from_trafo_df(net, ppc, trafo_df=None, sequence=1):
     vn_trafo_hv, vn_trafo_lv, shift = _calc_tap_from_dataframe(net, trafo_df)
     ratio = _calc_nominal_ratio_from_dataframe(ppc, trafo_df, vn_trafo_hv, vn_trafo_lv,
                                                bus_lookup)
-    r, x, g, b, g_asym, b_asym = _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=sequence)
+    r, x, g, b, g_asym, b_asym = _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=sequence,
+                                                            update_vk_values=update_vk_values)
     return r, x, g, b, g_asym, b_asym, ratio, shift
 
 
-def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=1):
+def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=1, update_vk_values=True):
     mode = net["_options"]["mode"]
     trafo_model = net["_options"]["trafo_model"]
 
     r, x = _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva,
-                                    sequence=sequence, characteristic=net.get("characteristic"))
+                                    sequence=sequence, characteristic=net.get("characteristic"),
+                                    update_vk_values=update_vk_values)
 
     if mode == "sc":
         if net._options.get("use_pre_fault_voltage", False):
@@ -676,15 +678,19 @@ def _calc_tap_dependent_value(tap_pos, value, tap_dependent_impedance, character
     return np.where(relevant_idx, custom_func_vec(relevant_idx, tap_pos, vk_characteristic), value)
 
 
-def _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, sn_mva, sequence=1,
-                             characteristic=None):
+def _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, sn_mva, sequence=1, characteristic=None,
+                             update_vk_values=True):
     """
     Calculates (Vectorized) the resitance and reactance according to the
     transformer values
     """
     parallel = get_trafo_values(trafo_df, "parallel")
     if sequence == 1:
-        vk_percent, vkr_percent = _get_vk_values(trafo_df, characteristic)
+        if update_vk_values:
+            vk_percent, vkr_percent = _get_vk_values(trafo_df, characteristic)
+        else:
+            vk_percent = get_trafo_values(trafo_df, "vk_percent")
+            vkr_percent = get_trafo_values(trafo_df, "vkr_percent")
 
     elif sequence == 0:
         vk_percent = get_trafo_values(trafo_df, "vk0_percent")

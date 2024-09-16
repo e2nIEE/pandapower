@@ -7,7 +7,6 @@
 import numpy as np
 import pandas as pd
 from numpy import complex128
-from pandapower import VSC_INTERNAL_BUS
 from pandapower.auxiliary import _sum_by_group, sequence_to_phase, _sum_by_group_nvals
 from pandapower.pypower.idx_bus import VM, VA, PD, QD, LAM_P, LAM_Q, BASE_KV, NONE, BS, BUS_TYPE, BUS_I
 from pandapower.pypower.idx_bus_dc import DC_VM, DC_BUS_TYPE, DC_NONE, DC_PD, DC_BUS_I
