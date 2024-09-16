@@ -19,6 +19,7 @@ Change Log
 - [ADDED] pf2pp: possibility to convert a specific varaint and scenario
 - [ADDED] Static Var Compensator with Voltage Control
 - [ADDED] pf2pp: min/max q_mvar and min/max p_mw limits for sgens and gen will be converted
+- [ADDED] Static Var Compensator with Voltage Control
 - [FIXED] cast the column to the correct type before assigning values
 - [FIXED] replacement for deprecated namespaces scipy.sparse.csc and scipy.sparse.csr
 - [FIXED] copy array element to standard python scalar
