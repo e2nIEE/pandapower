@@ -2911,11 +2911,11 @@ def create_sind(net, item):
     except IndexError:
         logger.error("Cannot add Sind '%s': not connected" % item.loc_name)
         return
-
+    in_service = monopolar_in_service(item)
     sind = pp.create_series_reactor_as_impedance(net, from_bus=bus1, to_bus=bus2, r_ohm=item.rrea,
                                                  x_ohm=item.xrea, sn_mva=item.Sn,
                                                  name=item.loc_name,
-                                                 in_service=not bool(item.outserv))
+                                                 in_service=in_service)
 
     logger.debug('created series reactor %s as per unit impedance at index %d' %
                  (net.impedance.at[sind, 'name'], sind))
@@ -2934,10 +2934,11 @@ def create_scap(net, item):
     else:
         r_ohm = item.gcap/(item.gcap**2 + item.bcap**2)
         x_ohm = -item.bcap/(item.gcap**2 + item.bcap**2)
+        in_service = monopolar_in_service(item)
         scap = pp.create_series_reactor_as_impedance(net, from_bus=bus1, to_bus=bus2, r_ohm=r_ohm,
                                                      x_ohm=x_ohm, sn_mva=item.Sn,
                                                      name=item.loc_name,
-                                                     in_service=not bool(item.outserv))
+                                                     in_service=in_service)
 
         logger.debug('created series capacitor %s as per unit impedance at index %d' %
                      (net.impedance.at[scap, 'name'], scap))
