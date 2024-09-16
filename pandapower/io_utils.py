@@ -68,8 +68,6 @@ from pandapower.create import create_empty_network
 from functools import singledispatch
 
 try:
-    import fiona
-    import fiona.crs
     import geopandas
 
     GEOPANDAS_INSTALLED = True
@@ -657,16 +655,21 @@ class FromSerializableRegistry():
     if GEOPANDAS_INSTALLED:
         @from_serializable.register(class_name='GeoDataFrame', module_name='geopandas.geodataframe')
         def GeoDataFrame(self):
-            df = geopandas.GeoDataFrame.from_features(fiona.Collection(self.obj), crs=self.d['crs'])
+            fs = json.loads(self.obj)
+            # for some reason, the id is not parsed as dataframe id, this is a workaround
+            if isinstance(fs, dict) and fs.get("type") == "FeatureCollection":
+                features_lst = fs["features"]
+            else:
+                raise TypeError("not a FeatureCollection")
+            for i, feat in enumerate(features_lst):
+                fs["features"][i]["properties"]["id"] = feat["id"]
+
+            df = geopandas.GeoDataFrame.from_features(fs, crs=self.d['crs'])
             if "id" in df:
                 df.set_index(df['id'].values.astype(numpy.int64), inplace=True)
+                df.drop(columns=["id"], inplace=True)
             else:
                 df.set_index(df.index.values.astype(numpy.int64), inplace=True)
-            # coords column is not handled properly when using from_features
-            if 'coords' in df:
-                # df['coords'] = df.coords.apply(json.loads)
-                valid_coords = ~pd.isnull(df.coords)
-                df.loc[valid_coords, 'coords'] = df.loc[valid_coords, "coords"].apply(json.loads)
             df = df.reindex(columns=self.d['columns'])
 
             # df.astype changes geodataframe to dataframe -> _preserve_dtypes fixes it

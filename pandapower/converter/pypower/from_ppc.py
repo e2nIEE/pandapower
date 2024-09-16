@@ -11,11 +11,11 @@ from pandapower.pypower.idx_bus import \
 from pandapower.pypower.idx_gen import \
     GEN_BUS, PG, QG, QMAX, QMIN, VG, MBASE, GEN_STATUS, PMAX, PMIN
 from pandapower.pypower.idx_brch import \
-    F_BUS, T_BUS, BR_R, BR_X, BR_B, RATE_A, RATE_B, RATE_C, TAP, SHIFT, BR_STATUS, ANGMIN, ANGMAX
+    F_BUS, T_BUS, BR_R, BR_X, BR_G, BR_B, RATE_A, RATE_B, RATE_C, TAP, SHIFT, BR_STATUS, ANGMIN, ANGMAX
 from pandapower.pypower.idx_cost import MODEL, COST, NCOST
 from pandapower.create import create_empty_network, create_buses, create_ext_grid, create_loads, \
     create_sgens, create_gens, create_lines_from_parameters, create_transformers_from_parameters, \
-    create_shunts, create_ext_grid, create_pwl_costs, create_poly_costs
+    create_shunts, create_ext_grid, create_pwl_costs, create_poly_costs, create_impedances
 from pandapower.run import runpp
 
 try:
@@ -44,6 +44,8 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
                             - tap_side
 
                             - check_costs is passed as "check" to create_pwl_costs() and create_poly_costs()
+                            
+                            - branch_g_name: name of branch_g column if it exists in ppc. if not given, branch G is set to 0
 
     OUTPUT:
         **net** - ppc converted to pandapower net structure
@@ -55,18 +57,18 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
         >>> net = pandapower.converter.from_ppc(ppc, f_hz=60)
     """
     # --- catch common failures
-    if pd.Series(ppc['bus'][:, BASE_KV] <= 0).any():
+    if np.any(ppc['bus'][:, BASE_KV] <= 0):
         logger.info('There are false baseKV given in the pypower case file.')
 
     net = create_empty_network(f_hz=f_hz, sn_mva=ppc["baseMVA"])
-    net._from_ppc_lookups = {}
+    net._from_ppc_lookups = dict()
 
     _from_ppc_bus(net, ppc)
     net._from_ppc_lookups["gen"] = _from_ppc_gen(net, ppc)
     net._from_ppc_lookups["branch"] = _from_ppc_branch(net, ppc, f_hz, **kwargs)
     _from_ppc_gencost(net, ppc, net._from_ppc_lookups["gen"], check=kwargs.get("check_costs", True))
 
-    # areas are unconverted
+    # areas are not converted
 
     if validate_conversion:
         logger.setLevel(logging.DEBUG)
@@ -180,23 +182,41 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
     """ branch data -> create line, trafo """
     n_bra = ppc["branch"].shape[0]
 
+    # todo how to preserve this information (g, r_asym, x_asym, g_asym, b_asym):
+    #  * for branches that are not transformers but non-zero r_asym, x_asym, g_asym, b_asym
+    #       - create as impedance instead of line
+    #  * for branches that are transfromers but have non-zero g_asym, b_asym: --> not done yet
+    #       - write a new function to convert delta to wye
+    #       - obtain the values for rft, rtf, xft, xtf
+    #       - calculate ratios for HV portion of r and x
+    #       - write the ratios in trafo columns leakage_resistance_ratio_hv, leakage_reactance_ratio_hv
+    #  * for branches that are not transformers but connect different voltage levels:
+    #       - import them as impedance instead
+
+    zero_column = np.zeros(n_bra, dtype=np.float64)
+    br_r_asym = ppc.get("branch_r_asym", zero_column)
+    br_x_asym = ppc.get("branch_x_asym", zero_column)
+    br_g = ppc.get("branch_g", zero_column)
+    br_g_asym = ppc.get("branch_g_asym", zero_column)
+    br_b_asym = ppc.get("branch_b_asym", zero_column)
+
     # --- general_parameters
     baseMVA = ppc['baseMVA']  # MVA
     omega = pi * f_hz  # 1/s
     MAX_VAL = 99999.
 
-    from_bus = _get_bus_pos(ppc, ppc['branch'][:, F_BUS].real.astype(np.int64))
-    to_bus = _get_bus_pos(ppc, ppc['branch'][:, T_BUS].real.astype(np.int64))
+    from_bus = _get_bus_pos(ppc, ppc['branch'][:, F_BUS].astype(np.int64))
+    to_bus = _get_bus_pos(ppc, ppc['branch'][:, T_BUS].astype(np.int64))
     from_vn_kv = ppc['bus'][from_bus, BASE_KV]
     to_vn_kv = ppc['bus'][to_bus, BASE_KV]
 
-    is_line, to_vn_is_leq = _branch_to_which(ppc, from_vn_kv=from_vn_kv, to_vn_kv=to_vn_kv)
+    is_line, is_trafo, is_impedance, to_vn_is_leq = _branch_to_which(ppc, from_vn_kv=from_vn_kv, to_vn_kv=to_vn_kv)
 
     bra_name = ppc.get("branch_name", ppc.get("bra_name", np.array([None]*n_bra)))
 
     # --- create line
     Zni = ppc['bus'][to_bus, BASE_KV]**2/baseMVA  # ohm
-    max_i_ka = ppc['branch'][:, 5]/ppc['bus'][to_bus, BASE_KV]/np.sqrt(3)
+    max_i_ka = ppc['branch'][:, RATE_A]/ppc['bus'][to_bus, BASE_KV]/np.sqrt(3)
     i_is_zero = np.isclose(max_i_ka, 0)
     if np.any(i_is_zero):
         max_i_ka[i_is_zero] = MAX_VAL
@@ -205,32 +225,33 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
     idx_line = create_lines_from_parameters(
         net, from_buses=net.bus.index[from_bus[is_line]], to_buses=net.bus.index[to_bus[is_line]],
         length_km=1, name=bra_name[is_line],
-        r_ohm_per_km=(ppc['branch'][is_line, BR_R]*Zni[is_line]).real,
-        x_ohm_per_km=(ppc['branch'][is_line, BR_X]*Zni[is_line]).real,
-        c_nf_per_km=(ppc['branch'][is_line, BR_B]/Zni[is_line]/omega*1e9/2).real,
-        max_i_ka=max_i_ka[is_line].real, type='ol', max_loading_percent=100,
-        in_service=ppc['branch'][is_line, BR_STATUS].real.astype(bool))
+        r_ohm_per_km=(ppc['branch'][is_line, BR_R]*Zni[is_line]),
+        x_ohm_per_km=(ppc['branch'][is_line, BR_X]*Zni[is_line]),
+        c_nf_per_km=(ppc['branch'][is_line, BR_B]/Zni[is_line]/omega*1e9/2),
+        g_us_per_km=(br_g[is_line]/Zni[is_line]*1e6/2),
+        max_i_ka=max_i_ka[is_line], type='ol', max_loading_percent=100,
+        in_service=ppc['branch'][is_line, BR_STATUS].astype(bool))
 
     # --- create transformer
-    if not np.all(is_line):
-        hv_bus = from_bus[~is_line]
-        vn_hv_kv = from_vn_kv[~is_line]
-        lv_bus = to_bus[~is_line]
-        vn_lv_kv = to_vn_kv[~is_line]
+    if np.any(is_trafo):
+        hv_bus = from_bus[is_trafo]
+        vn_hv_kv = from_vn_kv[is_trafo]
+        lv_bus = to_bus[is_trafo]
+        vn_lv_kv = to_vn_kv[is_trafo]
         if not np.all(to_vn_is_leq):
-            hv_bus[~to_vn_is_leq] = to_bus[~is_line][~to_vn_is_leq]
-            vn_hv_kv[~to_vn_is_leq] = to_vn_kv[~is_line][~to_vn_is_leq]
-            lv_bus[~to_vn_is_leq] = from_bus[~is_line][~to_vn_is_leq]
-            vn_lv_kv[~to_vn_is_leq] = from_vn_kv[~is_line][~to_vn_is_leq]
-        same_vn = to_vn_kv[~is_line] == from_vn_kv[~is_line]
+            hv_bus[~to_vn_is_leq] = to_bus[is_trafo][~to_vn_is_leq]
+            vn_hv_kv[~to_vn_is_leq] = to_vn_kv[is_trafo][~to_vn_is_leq]
+            lv_bus[~to_vn_is_leq] = from_bus[is_trafo][~to_vn_is_leq]
+            vn_lv_kv[~to_vn_is_leq] = from_vn_kv[is_trafo][~to_vn_is_leq]
+        same_vn = to_vn_kv[is_trafo] == from_vn_kv[is_trafo]
         if np.any(same_vn):
             logger.warning(
                 f'There are {sum(same_vn)} branches which are considered as trafos - due to ratio '
                 f'unequal 0 or 1 - but connect same voltage levels.')
-        rk = ppc['branch'][~is_line, BR_R].real
-        xk = ppc['branch'][~is_line, BR_X].real
+        rk = ppc['branch'][is_trafo, BR_R]
+        xk = ppc['branch'][is_trafo, BR_X]
         zk = (rk ** 2 + xk ** 2) ** 0.5
-        sn = ppc['branch'][~is_line, RATE_A].real
+        sn = ppc['branch'][is_trafo, RATE_A]
         sn_is_zero = np.isclose(sn, 0)
         if np.any(sn_is_zero):
             sn[sn_is_zero] = MAX_VAL
@@ -238,14 +259,18 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
                             "apparent power")
         tap_side = kwargs.get("tap_side", "hv")
         if isinstance(tap_side, str):
-            tap_side_is_hv = np.array([tap_side == "hv"]*sum(~is_line))
+            tap_side_is_hv = np.array([tap_side == "hv"]*sum(is_trafo))
         else:
             tap_side_is_hv = np.array(tap_side == "hv")
-        ratio_1 = ppc['branch'][~is_line, TAP].real
+        ratio_1 = ppc['branch'][is_trafo, TAP]
         ratio_is_zero = np.isclose(ratio_1, 0)
         ratio_1[~ratio_is_zero & ~tap_side_is_hv] **= -1
         ratio_1[~ratio_is_zero] -= 1
-        i0_percent = -ppc['branch'][~is_line, BR_B].real * 100 * baseMVA / sn
+        br_b = ppc['branch'][is_trafo, BR_B]
+        if np.any(br_b > 0):
+            logger.warning("some BR_B of transformers in ppc['branch'] are positive, but transformers are inductive, therefore their B should be negative")
+        i0_percent = np.sqrt(br_b**2 + br_g[is_trafo]**2) * 100 * baseMVA / sn
+        # i0_percent = -ppc['branch'][is_trafo, BR_B] * 100 * baseMVA / sn
         is_neg_i0_percent = i0_percent < 0
         if np.any(is_neg_i0_percent):
             logger.info(
@@ -253,6 +278,9 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
                 f'branches {np.arange(len(is_neg_i0_percent), dtype=np.int64)[is_neg_i0_percent]} '
                 f'(hv_bus, lv_bus)=({hv_bus[is_neg_i0_percent]}, {hv_bus[is_neg_i0_percent]}) '
                 'is positive.')
+
+        pfe_kw = br_g[is_trafo] * baseMVA * 1e3 
+        # pfe_kw = 0.
         vk_percent = np.sign(xk) * zk * sn * 100 / baseMVA
         vk_percent[~tap_side_is_hv] /= (1+ratio_1[~tap_side_is_hv])**2
         vkr_percent = rk * sn * 100 / baseMVA
@@ -260,22 +288,54 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
 
         idx_trafo = create_transformers_from_parameters(
             net, hv_buses=net.bus.index[hv_bus], lv_buses=net.bus.index[lv_bus], sn_mva=sn,
-            vn_hv_kv=vn_hv_kv, vn_lv_kv=vn_lv_kv, name=bra_name[~is_line],
+            vn_hv_kv=vn_hv_kv, vn_lv_kv=vn_lv_kv, name=bra_name[is_trafo],
             vk_percent=vk_percent, vkr_percent=vkr_percent,
-            max_loading_percent=100, pfe_kw=0, i0_percent=i0_percent,
-            shift_degree=ppc['branch'][~is_line, SHIFT].real,
+            max_loading_percent=100, pfe_kw=pfe_kw, i0_percent=i0_percent,
+            shift_degree=ppc['branch'][is_trafo, SHIFT],
             tap_step_percent=np.abs(ratio_1)*100, tap_pos=np.sign(ratio_1),
             tap_side=tap_side, tap_neutral=0)
     else:
         idx_trafo = []
     # unused data from ppc: rateB, rateC
+    
+    if np.any(is_impedance):
+        fb = net.bus.index[from_bus[is_impedance]]
+        tb = net.bus.index[to_bus[is_impedance]]
+        sn_mva = ppc['branch'][is_impedance, RATE_A]
+        sn_is_zero = np.isclose(sn_mva, 0)
+        if np.any(sn_is_zero):
+            sn[sn_is_zero] = MAX_VAL
+            logger.debug("ppc branch rateA is zero -> Using MAX_VAL instead to calculate " +
+                            "apparent power")
+        # the impedances in ppc[branch] refer to the net.sn_mva and the impedances in net.impedance
+        # refer to net.impedance.sn_mva!
+        rft_pu = ppc['branch'][is_impedance, BR_R] / baseMVA * sn_mva
+        xft_pu = ppc['branch'][is_impedance, BR_X] / baseMVA * sn_mva
+        bf_pu = ppc['branch'][is_impedance, BR_B] * baseMVA / sn_mva / 2
+        gf_pu = br_g[is_impedance] * baseMVA / sn_mva / 2
+        r_asym_pu = br_r_asym[is_impedance] / baseMVA * sn_mva
+        x_asym_pu = br_x_asym[is_impedance] / baseMVA * sn_mva
+        g_asym_pu = br_g_asym[is_impedance] * baseMVA / sn_mva / 2
+        b_asym_pu = br_b_asym[is_impedance] * baseMVA / sn_mva / 2
 
+        # divide by 2 because in ppc[branch] it stands for the total Y of the branch,
+        # and here we specify the "from" and "to" portions of Y separately
+        idx_impedance = create_impedances(net, from_buses=fb, to_buses=tb, rft_pu=rft_pu, 
+                                          xft_pu=xft_pu, rtf_pu=rft_pu+r_asym_pu, xtf_pu=xft_pu+x_asym_pu,
+                                          bf_pu=bf_pu, gf_pu=gf_pu, gt_pu=gf_pu+g_asym_pu,
+                                          bt_pu=bf_pu+b_asym_pu, sn_mva=sn_mva)
+    else:
+        idx_impedance = []
+    
     # branch_lookup: which branches are lines, and which ones are transformers
     branch_lookup = pd.DataFrame({"element": [-1] * n_bra, "element_type": [""] * n_bra})
     branch_lookup.loc[is_line, "element"] = idx_line
     branch_lookup.loc[is_line, "element_type"] = "line"
-    branch_lookup.loc[~is_line, "element"] = idx_trafo
-    branch_lookup.loc[~is_line, "element_type"] = "trafo"
+    branch_lookup.loc[is_trafo, "element"] = idx_trafo
+    branch_lookup.loc[is_trafo, "element_type"] = "trafo"
+    branch_lookup["element"] = branch_lookup["element"].astype("float64")
+    branch_lookup.loc[is_impedance, "element"] = idx_impedance
+    branch_lookup.loc[is_impedance, "element_type"] = "impedance"
     return branch_lookup
 
 
@@ -308,16 +368,19 @@ def _gen_to_which(ppc, bus_pos=None, flattened=True):
 
 def _branch_to_which(ppc, from_vn_kv=None, to_vn_kv=None, flattened=True):
     if from_vn_kv is None:
-        from_bus = _get_bus_pos(ppc, ppc['branch'][:, F_BUS].real.astype(np.int64))
+        from_bus = _get_bus_pos(ppc, ppc['branch'][:, F_BUS].astype(np.int64))
         from_vn_kv = ppc['bus'][from_bus, BASE_KV]
     if to_vn_kv is None:
-        to_bus = _get_bus_pos(ppc, ppc['branch'][:, T_BUS].real.astype(np.int64))
+        to_bus = _get_bus_pos(ppc, ppc['branch'][:, T_BUS].astype(np.int64))
         to_vn_kv = ppc['bus'][to_bus, BASE_KV]
     is_line = (from_vn_kv == to_vn_kv) & \
               ((ppc['branch'][:, TAP] == 0) | (ppc['branch'][:, TAP] == 1)) & \
               (ppc['branch'][:, SHIFT] == 0)
-    to_vn_is_leq = to_vn_kv[~is_line] <= from_vn_kv[~is_line]
-    return is_line, to_vn_is_leq
+    is_trafo = (ppc['branch'][:, TAP] != 0) & (ppc['branch'][:, TAP] != 1) | \
+                (ppc['branch'][:, SHIFT] != 0)
+    is_impedance = ~is_line & ~is_trafo
+    to_vn_is_leq = to_vn_kv[is_trafo] <= from_vn_kv[is_trafo]
+    return is_line, is_trafo, is_impedance, to_vn_is_leq
 
 
 def _calc_pp_pwl_points(ppc_pwl_points):
@@ -525,7 +588,7 @@ def validate_from_ppc(ppc, net, max_diff_values={"bus_vm_pu": 1e-6, "bus_va_degr
     pp_res["branch"] = np.zeros(ppc_res["branch"].shape)
     from_to_buses = -np.ones((ppc_res["branch"].shape[0], 2), dtype=np.int64)
     for et in net._from_ppc_lookups["branch"].element_type.unique():
-        if et == "line":
+        if et == "line" or et == "impedance":
             from_to_cols = ["from_bus", "to_bus"]
             res_cols = ['p_from_mw', 'q_from_mvar', 'p_to_mw', 'q_to_mvar']
         elif et == "trafo":
