@@ -628,6 +628,8 @@ def import_switch(item, idx_cubicle):
 def create_connection_switches(net, item, number_switches, et, buses, elements):
     # False if open, True if closed, None if no switch
     logger.debug('creating connection switches')
+    new_switch_idx = []
+    new_switch_closed = []
     for i in range(number_switches):
         switch_is_closed, switch_usage, switch_name = import_switch(item, i)
         logger.debug('switch closed: %s, switch_usage: %s' % (switch_is_closed, switch_usage))
@@ -635,6 +637,11 @@ def create_connection_switches(net, item, number_switches, et, buses, elements):
             cd = pp.create_switch(net, bus=buses[i], element=elements[i], et=et,
                                   closed=switch_is_closed, type=switch_usage, name=switch_name)
             net.res_switch.loc[cd, ['pf_closed', 'pf_in_service']] = switch_is_closed, True
+            
+            new_switch_idx.append(cd)
+            new_switch_closed.append(switch_is_closed)
+               
+    return new_switch_idx, new_switch_closed
 
 
 def get_coords_from_buses(net, from_bus, to_bus, **kwargs):
@@ -764,8 +771,13 @@ def create_line(net, item, flag_graphics, create_sections, is_unbalanced):
     net[line_table].loc[sid_list, "equipment"] = item.for_name
 
     if ac:
-        create_connection_switches(net, item, 2, 'l', (params['bus1'], params['bus2']),
-                                   (sid_list[0], sid_list[-1]))
+        new_switch_idx, new_switch_closed = create_connection_switches(net, item, 2, 'l', (params['bus1'], params['bus2']),
+                                                                       (sid_list[0], sid_list[-1]))
+        # # correct in_service of lines if connection switch is open
+        # for i in range(new_switch_idx):
+        #     if new_switch_closed[i] == 0:
+        #         line_idx = net.switch.loc[new_switch_idx[i], 'element']
+        #         net.line.loc[line_idx, 'in_service'] = False        
 
     logger.debug('line <%s> created' % params['name'])
 
@@ -2452,7 +2464,14 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
 
     # adding switches
     # False if open, True if closed, None if no switch
-    create_connection_switches(net, item, 2, 't', (bus1, bus2), (tid, tid))
+    #create_connection_switches(net, item, 2, 't', (bus1, bus2), (tid, tid))
+    
+    new_switch_idx, new_switch_closed = create_connection_switches(net, item, 2, 't', (bus1, bus2), (tid, tid))
+    # # correct in_service of trafo if connection switch is open
+    # for i in range(new_switch_idx):
+    #     if new_switch_closed[i] == 0:
+    #         trafo_idx = net.switch.loc[new_switch_idx[i], 'element']
+    #         net.trafo.loc[trafo_idx, 'in_service'] = False   
 
     # adding tap changer
     if (export_controller and pf_type.itapch and item.HasAttribute('ntrcn') and
@@ -2624,7 +2643,7 @@ def create_trafo3w(net, item, tap_opt='nntap'):
 
     # adding switches
     # False if open, True if closed, None if no switch
-    create_connection_switches(net, item, 3, 't3', (bus1, bus2, bus3), (tid, tid, tid))
+    new_switch_idx, new_switch_closed = create_connection_switches(net, item, 3, 't3', (bus1, bus2, bus3), (tid, tid, tid))
 
     logger.debug('successfully created trafo3w from parameters: %d' % tid)
     # testen
@@ -2756,7 +2775,7 @@ def create_shunt(net, item):
         'step': item.ncapa,
         'max_step': item.ncapx
     }
-    print(item.loc_name)
+    #print(item.loc_name)
     if item.shtype == 0:
         # Shunt is a R-L-C element
 
@@ -2964,12 +2983,30 @@ def create_sind(net, item):
     except IndexError:
         logger.error("Cannot add Sind '%s': not connected" % item.loc_name)
         return
-    in_service = monopolar_in_service(item)
+    if item.loc_name=='Series Reactor':
+        x=5
+    #in_service = monopolar_in_service(item)
+    print(item.loc_name)
     sind = pp.create_series_reactor_as_impedance(net, from_bus=bus1, to_bus=bus2, r_ohm=item.rrea,
                                                  x_ohm=item.xrea, sn_mva=item.Sn,
                                                  name=item.loc_name,
-                                                 in_service=in_service)
-
+                                                 in_service= not bool(item.outserv))
+    
+    switch_elements = (sind, sind)
+    new_switch_idx, new_switch_closed = create_connection_switches(net, item, 2, 'b', (bus1, bus2),
+                                                                   switch_elements)
+    # correct in_service of series reactor if connection switch is open
+    if len(new_switch_idx)!= 0:
+        for i in range(len(new_switch_idx)):
+            if new_switch_closed[i] == 0:
+                #impedance_idx = net.switch.loc[net.switch.element==switch_elements[i], 'element']
+                if net.impedance.loc[switch_elements[i], 'in_service']==False:
+                    continue
+                else:
+                    net.impedance.loc[switch_elements[i], 'in_service'] = False   
+    else:
+        pass
+           
     logger.debug('created series reactor %s as per unit impedance at index %d' %
                  (net.impedance.at[sind, 'name'], sind))
 
@@ -3241,7 +3278,6 @@ def create_stactrl(net, item):
     else:
         # check if gen_element has set controller 
         for s in machines:
-            print(s.loc_name) ###
             gen_element_index_try = net[gen_element].loc[net[gen_element].name == s.loc_name].index.values
             if len(gen_element_index_try)==1:
                 gen_element_index.append(gen_element_index_try[0])
