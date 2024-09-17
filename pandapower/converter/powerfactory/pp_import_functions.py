@@ -1966,7 +1966,7 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
 
         # create...
         pstac = item.c_pstac  # "None" if station controller is not available
-        if pstac is not None and export_ctrl:
+        if pstac is not None and pstac.outserv==0 and export_ctrl:
             if pstac.i_droop:
                 av_mode = 'constq'
             else:
@@ -2191,7 +2191,7 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
 
         pstac = item.c_pstac
         # "None" if station controller is not available
-        if pstac is not None and export_ctrl:
+        if pstac is not None and pstac.outserv==0 and export_ctrl:
             if pstac.i_droop:
                 av_mode = 'constq'
             else:
@@ -3261,10 +3261,10 @@ def create_stactrl(net, item):
             for i in range(len(gen_types)):
                 gen_types[i] = "sgen"
         else:
-            if control_mode == 0:
+            if control_mode == 0: # voltage control
                 for i in range(len(gen_types)):
                     gen_types[i] = "sgen"
-            elif control_mode == 1:
+            elif control_mode == 1: # reactive power control
                 for i in range(len(gen_types)):
                     gen_types[i] = "sgen"
             else:
@@ -3306,7 +3306,7 @@ def create_stactrl(net, item):
     if sum(distribution)!=1:
         logger.info(f'{item}: sum of reactive power dstribution is unequal to 1 but will be normalized in binary search control.')
     
-    if item.imode >2: #!= 0:
+    if item.imode>2: #!= 0:
         raise NotImplementedError(f"{item}: reactive power distribution {item.imode} not implemented")
 
     phase = item.i_phase
