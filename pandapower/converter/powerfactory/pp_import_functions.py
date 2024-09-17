@@ -2132,7 +2132,7 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
 
         pstac = item.c_pstac
         # "None" if station controller is not available
-        if pstac is not None and export_ctrl:
+        if pstac is not None and not pstac.outserv and export_ctrl:
             if pstac.i_droop:
                 av_mode = 'constq'
             else:
@@ -3139,7 +3139,7 @@ def create_stactrl(net, item):
             distribution.append(item.cvqq / 100)
         i = i + 1
 
-    if item.imode != 0:
+    if item.imode > 2:
         raise NotImplementedError(f"{item}: reactive power distribution {item.imode=} not implemented")
 
     phase = item.i_phase
