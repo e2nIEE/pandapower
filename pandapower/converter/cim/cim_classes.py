@@ -14,6 +14,7 @@ import pandas as pd
 import numpy as np
 import xml.etree.ElementTree
 import xml.etree.cElementTree as xmlET
+from lxml import etree
 from .other_classes import ReportContainer, Report, LogLevel, ReportCode
 from .cim_tools import get_cim_schema
 
@@ -486,15 +487,14 @@ class CimParser:
             temp_dir.cleanup()
             del temp_dir, temp_dir_path
             return
-        with open(file, mode='r', encoding=encoding, errors='ignore') as f:
-            cim_str = f.read()
-        xml_tree = xmlET.fromstring(cim_str)
+        parser = etree.XMLParser(encoding=encoding, resolve_entities=False)
+        xml_tree = etree.parse(file, parser)
         if profile_name is None:
-            prf = self._get_cgmes_profile_from_xml(xml_tree)
+            prf = self._get_cgmes_profile_from_xml(xml_tree.getroot())
         else:
             prf = profile_name
         self.file_names[prf] = file
-        self._parse_xml_tree(xml_tree, prf, output)
+        self._parse_xml_tree(xml_tree.getroot(), prf, output)
 
     def _parse_xml_tree(self, xml_tree: xmlET, profile_name: str, output: Dict | None = None):
         output = self.cim if output is None else output
@@ -507,6 +507,8 @@ class CimParser:
         if prf not in ns_dict.keys():
             ns_dict[prf] = dict()
         for _, element_type in element_types.items():
+            if not isinstance(element_type, str):
+                continue
             element_type_c = re.sub('{.*}', '', element_type)
             prf_content[element_type_c] = self._get_df(xml_tree.findall(element_type))
             # rename the columns (remove the namespaces)

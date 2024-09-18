@@ -43,6 +43,7 @@ dependencies = [
     "tqdm",
     "deepdiff",
     "geojson",
+    "lxml",
     "typing_extensions~=4.9"]
 keywords = [
     "power system", "network", "analysis", "optimization", "automation", "grid", "electricity", "energy", "engineering", "simulation", "pandapower"
