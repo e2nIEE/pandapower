@@ -42,6 +42,7 @@ logger = logging.getLogger(__name__)
 
 def create_nxgraph(net, respect_switches=True, include_lines=True, include_impedances=True,
                    include_dclines=True, include_trafos=True, include_trafo3ws=True, include_tcsc=True,
+                   include_vsc=True, include_line_dc=True,
                    nogobuses=None, notravbuses=None, multi=True,
                    calc_branch_impedances=False, branch_impedance_unit="ohm",
                    library="networkx", include_out_of_service=False,
@@ -68,6 +69,12 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
             impedances (net.impedance) are converted to edges
 
         **include_tcsc** (boolean or , True) - determines, whether or which TCSC elements (net.tcsc)
+            are converted to edges
+
+        **include_vsc** (boolean or , True) - determines, whether or which VSC elements (net.vsc)
+            are converted to edges
+
+        **include_line_dc** (boolean or , True) - determines, whether or which DC line elements (net.line_dc)
             are converted to edges
 
         **include_dclines** (boolean or index, True) - determines, whether or which dclines get
@@ -166,7 +173,7 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
         if calc_branch_impedances:
             baseR = get_baseR(net, ppc, impedance.from_bus.values) \
                 if branch_impedance_unit == "ohm" else 1
-            r, x, _, _ = _calc_impedance_parameters_from_dataframe(net)
+            r, x, *_ = _calc_impedance_parameters_from_dataframe(net)
             parameter[:, BR_R] = r * baseR
             parameter[:, BR_X] = x * baseR
 
@@ -220,7 +227,7 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
         if calc_branch_impedances:
             baseR = get_baseR(net, ppc, trafo.hv_bus.values) \
                 if branch_impedance_unit == "ohm" else 1
-            r, x, _, _, _ = _calc_branch_values_from_trafo_df(net, ppc, trafo)
+            r, x, *_ = _calc_branch_values_from_trafo_df(net, ppc, trafo)
             parameter[:, BR_R] = r * baseR
             parameter[:, BR_X] = x * baseR
 
@@ -232,7 +239,7 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
         sides = ["hv", "mv", "lv"]
         if calc_branch_impedances:
             trafo_df = _trafo_df_from_trafo3w(net)
-            r_all, x_all, _, _, _ = _calc_branch_values_from_trafo_df(net, ppc, trafo_df)
+            r_all, x_all, *_ = _calc_branch_values_from_trafo_df(net, ppc, trafo_df)
             baseR = get_baseR(net, ppc, trafo3w.hv_bus.values) \
                 if branch_impedance_unit == "ohm" else 1
             r = {side: r for side, r in zip(sides, np.split(r_all, 3))}

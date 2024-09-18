@@ -114,4 +114,4 @@ def test_continuous_i():
     assert abs(net.res_bus.vm_pu.at[c.controlled_bus] - 1.05) < eps
 
 if __name__ == '__main__':
-    pytest.main(['-s', __file__])
+    pytest.main([__file__, "-xs"])

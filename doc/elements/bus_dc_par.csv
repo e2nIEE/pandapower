@@ -1,0 +1,9 @@
+**Parameter**;**Datatype**;**Value Range**;**Explanation**
+name;string;;name of the dc bus
+vn_kv*;float;:math:`>` 0;rated voltage of the dc bus [kV]
+type;string;"| naming conventions:
+| *""n""* - node
+| *""b""* - busbar
+| *""m""* - muff";type variable to classify buses
+zone;string;;can be used to group dc buses, for example network groups / regions
+in_service*;boolean;True / False;specifies if the dc bus is in service

@@ -441,7 +441,7 @@ def test_multivoltage_example_with_controller():
     net.ext_grid.at[0, "slack_weight"] = 1
     net.trafo.at[1, "tap_max"] = 5
     net.trafo.at[1, "tap_min"] = -5
-    ContinuousTapControl(net, tid=1, vm_set_pu=1.05)
+    ContinuousTapControl(net, element_index=1, vm_set_pu=1.05)
 
     gen_disp = sum([net[elm].p_mw.sum() for elm in ["gen", "sgen"]])
     load_disp = sum([net[elm].p_mw.sum() for elm in ["load", "shunt"]]) + \
@@ -564,4 +564,4 @@ def test_dist_slack_with_enforce_q_lims_duplicate_gens():
 
 
 if __name__ == "__main__":
-    pytest.main([__file__])
+    pytest.main([__file__, "-xs"])
