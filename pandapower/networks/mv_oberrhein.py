@@ -73,6 +73,7 @@ def mv_oberrhein(scenario="load", cosphi_load=0.98, cosphi_pv=1.0, include_subst
     net.sgen.q_mvar = np.tan(np.arccos(cosphi_pv)) * net.sgen.p_mw
 
     hv_trafos = net.trafo[net.trafo.sn_mva > 1].index
+    net.trafo["tap_pos"] = net.trafo["tap_pos"].astype("float64")
     if scenario == "load":
         net.load.scaling = 0.6
         net.sgen.scaling = 0.0

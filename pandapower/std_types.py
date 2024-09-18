@@ -81,6 +81,8 @@ def create_std_type(net, data, name, element="line", overwrite=True, check_requi
     if check_required:
         if element == "line":
             required = ["c_nf_per_km", "r_ohm_per_km", "x_ohm_per_km", "max_i_ka"]
+        elif element == "line_dc":
+            required = ["r_ohm_per_km","max_i_ka"]
         elif element == "trafo":
             required = ["sn_mva", "vn_hv_kv", "vn_lv_kv", "vk_percent", "vkr_percent",
                         "pfe_kw", "i0_percent", "shift_degree"]
@@ -109,7 +111,7 @@ def create_std_types(net, data, element="line", overwrite=True, check_required=T
         **net** - The pandapower network
         **data** - dictionary of standard type parameter sets
 
-        **element** - "line", "trafo" or "trafo3w"
+        **element** - "line","line_dc", "trafo" or "trafo3w"
 
     EXAMPLE:
 
@@ -152,7 +154,7 @@ def load_std_type(net, name, element="line"):
 
         **name** - name of the standard type as string
 
-        **element** - "line", "trafo" or "trafo3w"
+        **element** -  "line","line_dc","trafo" or "trafo3w"
 
     OUTPUT:
         **typedata** - dictionary containing type data
@@ -373,6 +375,7 @@ def add_zero_impedance_parameters(net):
     parameter_from_std_type(net, "mag0_percent", element="trafo")
     parameter_from_std_type(net, "mag0_rx", element="trafo")
     parameter_from_std_type(net, "si0_hv_partial", element="trafo")
+    parameter_from_std_type(net, "g0_nf_per_km")
     parameter_from_std_type(net, "c0_nf_per_km")
     parameter_from_std_type(net, "r0_ohm_per_km")
     parameter_from_std_type(net, "x0_ohm_per_km")
@@ -398,6 +401,7 @@ def add_temperature_coefficient(net, fill=None):
 
     """
     parameter_from_std_type(net, "alpha", fill=fill)
+    parameter_from_std_type(net, "alpha", fill=fill,element="line_dc")
 
 
 def basic_line_std_types():
@@ -891,6 +895,72 @@ def basic_line_std_types():
          "voltage_rating": "HV"}
     }
     return linetypes
+
+
+def basic_line_dc_std_types():
+
+    alpha_al = 4.03e-3
+    alpha_cu = 3.93e-3
+
+    linedctypes = {
+        # Cables, all from ABB-HVDC-Light--High-Voltage-Direct-Current--Cable-Catalogue.pdf
+        # at the catalogue there are Land and submarine hvdc cables
+
+        # High Voltage Submarine DC Bipolar Cupper Cables
+
+         "95-CU":
+        {"r_ohm_per_km": 0.193,
+            "max_i_ka": 0.404,
+            "type": "cs",
+            "q_mm2": 95,
+            "alpha": alpha_cu},
+        "400-CU":
+        {"r_ohm_per_km": 0.0470,
+            "max_i_ka": 0.922,
+            "type": "cs",
+            "q_mm2": 400,
+            "alpha": alpha_cu},
+        "1200-CU":
+        {"r_ohm_per_km": 0.0151 ,
+            "max_i_ka": 1.791,
+            "type": "cs",
+            "q_mm2": 1200,
+            "alpha": alpha_cu},
+        "2400-CU":
+        {"r_ohm_per_km": 0.0073,
+            "max_i_ka": 2.678,
+            "type": "cs",
+            "q_mm2": 2400,
+            "alpha": alpha_cu},
+
+        # High Voltage Land DC Bipolar Aluminium Cables
+
+        "95-AL":
+            {"r_ohm_per_km": 0.32,
+             "max_i_ka": 0.310,
+             "type": "cs",
+             "q_mm2": 95,
+             "alpha": alpha_al},
+        "400-AL":
+            {"r_ohm_per_km": 0.0778,
+             "max_i_ka": 0.705,
+             "type": "cs",
+             "q_mm2": 400,
+             "alpha": alpha_al},
+        "1200-AL":
+            {"r_ohm_per_km": 0.0247,
+             "max_i_ka": 1.371,
+             "type": "cs",
+             "q_mm2": 1200,
+             "alpha": alpha_al},
+        "2400-AL":
+            {"r_ohm_per_km": 0.0121,
+             "max_i_ka": 2.066,
+             "type": "cs",
+             "q_mm2": 2400,
+             "alpha": alpha_al},
+    }
+    return linedctypes
 
 
 def basic_trafo_std_types():
@@ -1458,6 +1528,7 @@ def basic_fuse_std_types():
 def basic_std_types():
     return {
         "line"   : basic_line_std_types(),
+        "line_dc"   : basic_line_dc_std_types(),
         "trafo"  : basic_trafo_std_types(),
         "trafo3w": basic_trafo3w_std_types(),
         "fuse"   : basic_fuse_std_types()
@@ -1477,19 +1548,21 @@ def add_basic_std_types(net):
     Returns
     -------
     tuple of dictionaries
-        line, trafo and trafo3w types as dictionaries which have been added to the net.
+        line,line_dc, trafo and trafo3w types as dictionaries which have been added to the net.
     """
 
     if "std_types" not in net:
-        net.std_types = {"line": {}, "trafo": {}, "trafo3w": {}, "fuse": {}}
+        net.std_types = {"line": {}, "line_dc": {}, "trafo": {}, "trafo3w": {}, "fuse": {}}
 
     linetypes = basic_line_std_types()
+    linedctypes = basic_line_dc_std_types()
     trafotypes = basic_trafo_std_types()
     trafo3wtypes = basic_trafo3w_std_types()
     fusetypes = basic_fuse_std_types()
 
     create_std_types(net, data=linetypes, element="line")
+    create_std_types(net, data=linedctypes, element="line_dc")
     create_std_types(net, data=trafotypes, element="trafo")
     create_std_types(net, data=trafo3wtypes, element="trafo3w")
     create_std_types(net, data=fusetypes, element="fuse")
-    return linetypes, trafotypes, trafo3wtypes, fusetypes
+    return linetypes, linedctypes, trafotypes, trafo3wtypes, fusetypes
