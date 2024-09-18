@@ -222,7 +222,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles=True, init="auto",
 
         **tdpf_update_r_theta** (bool, True) - TDPF parameter, whether to update R_Theta in Newton-Raphson or to assume a constant R_Theta (either from net.line.r_theta, if set, or from a calculation based on the thermal model of Ngoko et.al.)
 
-        **update_vk_values** (bool, True) - If True vk_ and vkr_ values of trafo3w are recalculated based on characteristics, otherwise the values from the table are used. Can improve performance for large models.
+        **update_vk_values** (bool, True) - If True vk and vkr values of trafo3w are recalculated based on characteristics, otherwise the values from the table are used. Can improve performance for large models.
     """
 
     # if dict 'user_pf_options' is present in net, these options overrule the net._options
