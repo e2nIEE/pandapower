@@ -12,8 +12,6 @@ from types import MappingProxyType
 from typing import Dict, List
 import pandas as pd
 import numpy as np
-import xml.etree.ElementTree
-import xml.etree.cElementTree as xmlET
 from lxml import etree
 from .other_classes import ReportContainer, Report, LogLevel, ReportCode
 from .cim_tools import get_cim_schema
@@ -390,7 +388,7 @@ class CimParser:
     def _get_df(self, items):
         return pd.DataFrame([self._parse_element(child) for child in iter(items)])
 
-    def _get_cgmes_profile_from_xml(self, root: xml.etree.ElementTree.Element, ignore_errors: bool = False,
+    def _get_cgmes_profile_from_xml(self, root: etree.Element, ignore_errors: bool = False,
                                     default_profile: str = 'unknown') -> str:
         """
         Get the CGMES profile from the XML file.
@@ -496,7 +494,7 @@ class CimParser:
         self.file_names[prf] = file
         self._parse_xml_tree(xml_tree.getroot(), prf, output)
 
-    def _parse_xml_tree(self, xml_tree: xmlET, profile_name: str, output: Dict | None = None):
+    def _parse_xml_tree(self, xml_tree: etree.ElementTree, profile_name: str, output: Dict | None = None):
         output = self.cim if output is None else output
         # get all CIM elements to parse
         element_types = pd.Series([ele.tag for ele in list(xml_tree)])
