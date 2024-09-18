@@ -1920,7 +1920,7 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
 
         # create...
         pstac = item.c_pstac  # "None" if station controller is not available
-        if pstac is not None and export_ctrl:
+        if pstac is not None and not pstac.outserv and export_ctrl:
             if pstac.i_droop:
                 av_mode = 'constq'
             else:
