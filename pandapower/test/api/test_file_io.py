@@ -65,7 +65,7 @@ def net_in(request):
 
 
 def test_pickle(net_in, tmp_path):
-    filename = os.path.abspath(str(tmp_path)) + "testfile.p"
+    filename = os.path.abspath(os.path.join(str(tmp_path), "testfile.p"))
     pp.to_pickle(net_in, filename)
     net_out = pp.from_pickle(filename)
     # pickle sems to changes column types
@@ -73,10 +73,10 @@ def test_pickle(net_in, tmp_path):
 
 
 @pytest.mark.skipif(not xlsxwriter_INSTALLED or not openpyxl_INSTALLED, reason=(
-        "xlsxwriter is mandatory to write excel files and openpyxl to read excels, but is not installed."
+    "xlsxwriter is mandatory to write excel files and openpyxl to read excels, but is not installed."
 ))
 def test_excel(net_in, tmp_path):
-    filename = os.path.abspath(str(tmp_path)) + "testfile.xlsx"
+    filename = os.path.abspath(os.path.join(str(tmp_path), "testfile.xlsx"))
     pp.to_excel(net_in, filename)
     net_out = pp.from_excel(filename)
     assert_net_equal(net_in, net_out)
@@ -92,7 +92,7 @@ def test_excel(net_in, tmp_path):
 @pytest.mark.skipif(not xlsxwriter_INSTALLED,
                     reason="xlsxwriter is mandatory to write excel files, but is not installed.")
 def test_excel_controllers(net_in, tmp_path):
-    filename = os.path.abspath(str(tmp_path)) + "testfile.xlsx"
+    filename = os.path.abspath(os.path.join(str(tmp_path), "testfile.xlsx"))
     pp.control.DiscreteTapControl(net_in, 0, 0.95, 1.05)
     pp.to_excel(net_in, filename)
     net_out = pp.from_excel(filename)
@@ -102,7 +102,7 @@ def test_excel_controllers(net_in, tmp_path):
 
 def test_json_basic(net_in, tmp_path):
     # tests the basic json functionality with the encoder/decoder classes
-    filename = os.path.abspath(str(tmp_path)) + "testfile.json"
+    filename = os.path.abspath(os.path.join(str(tmp_path), "testfile.json"))
     with open(filename, 'w') as fp:
         json.dump(net_in, fp, cls=PPJSONEncoder)
 
@@ -122,7 +122,7 @@ def test_json_controller_none():
 
 
 def test_json(net_in, tmp_path):
-    filename = os.path.join(os.path.abspath(str(tmp_path)), "testfile.json")
+    filename = os.path.abspath(os.path.join(str(tmp_path), "testfile.json"))
 
     if GEOPANDAS_INSTALLED and SHAPELY_INSTALLED:
         net_geo = copy.deepcopy(net_in)
@@ -154,7 +154,7 @@ def test_json(net_in, tmp_path):
 @pytest.mark.skipif(not cryptography_INSTALLED, reason=("cryptography is mandatory to encrypt "
                     "json files, but is not installed."))
 def test_encrypted_json(net_in, tmp_path):
-    filename = os.path.abspath(str(tmp_path)) + "testfile.json"
+    filename = os.path.abspath(os.path.join(str(tmp_path), "testfile.json"))
     pp.to_json(net_in, filename, encryption_key="verysecret")
     with pytest.raises(json.JSONDecodeError):
         pp.from_json(filename)
@@ -165,7 +165,7 @@ def test_encrypted_json(net_in, tmp_path):
 
 
 def test_type_casting_json(net_in, tmp_path):
-    filename = os.path.abspath(str(tmp_path)) + "testfile.json"
+    filename = os.path.abspath(os.path.join(str(tmp_path), "testfile.json"))
     net_in.sn_kva = 1000
     pp.to_json(net_in, filename)
     net = pp.from_json(filename)
@@ -173,7 +173,7 @@ def test_type_casting_json(net_in, tmp_path):
 
 
 def test_from_json_add_basic_std_types(tmp_path):
-    filename = os.path.abspath(str(tmp_path)) + r"\testfile_std_types.json"
+    filename = os.path.abspath(os.path.join(str(tmp_path), "testfile_std_types.json"))
     # load older load network and change std-type
     net = create_test_network2()
     net.std_types["line"]['15-AL1/3-ST1A 0.4']["max_i_ka"] = 111
@@ -188,16 +188,16 @@ def test_from_json_add_basic_std_types(tmp_path):
 
 
 @pytest.mark.xfail(reason="For std_types, some dtypes are not returned correctly by sql. Therefore,"
-                          " a workaround test was created to check everything else.")
+                   " a workaround test was created to check everything else.")
 def test_sqlite(net_in, tmp_path):
-    filename = os.path.abspath(str(tmp_path)) + "testfile.db"
+    filename = os.path.abspath(os.path.join(str(tmp_path), "testfile.db"))
     pp.to_sqlite(net_in, filename)
     net_out = pp.from_sqlite(filename)
     assert_net_equal(net_in, net_out)
 
 
 def test_sqlite_workaround(net_in, tmp_path):
-    filename = os.path.abspath(str(tmp_path)) + "testfile.db"
+    filename = os.path.abspath(os.path.join(str(tmp_path), "testfile.db"))
     pp.to_sqlite(net_in, filename)
     net_out = pp.from_sqlite(filename)
     assert_net_equal(net_in, net_out, exclude_elms=["std_types"])
@@ -210,7 +210,7 @@ def test_convert_format():  # TODO what is this thing testing ?
 
 
 def test_to_json_dtypes(tmp_path):
-    filename = os.path.abspath(str(tmp_path)) + "testfile.json"
+    filename = os.path.abspath(os.path.join(str(tmp_path), "testfile.json"))
     net = create_test_network()
     pp.runpp(net)
     net['res_test'] = pd.DataFrame(columns=['test'], data=[1, 2, 3])
@@ -341,7 +341,7 @@ def test_json_io_same_net(net_in, tmp_path):
     net1 = pp.from_json_string(s)
     assert isinstance(net1.controller.object.at[0], control.ConstControl)
 
-    filename = os.path.abspath(str(tmp_path)) + "testfile.json"
+    filename = os.path.abspath(os.path.join(str(tmp_path), "testfile.json"))
     pp.to_json(net_in, filename)
     net2 = pp.from_json(filename)
     assert isinstance(net2.controller.object.at[0], control.ConstControl)
@@ -376,7 +376,7 @@ def test_deepcopy_controller():
 
 def test_elements_to_deserialize(tmp_path):
     net = networks.mv_oberrhein()
-    filename = os.path.abspath(str(tmp_path)) + "testfile.json"
+    filename = os.path.abspath(os.path.join(str(tmp_path), "testfile.json"))
     pp.to_json(net, filename)
     net_select = pp.from_json(filename, elements_to_deserialize=['bus', 'load'])
     for key, item in net_select.items():
@@ -406,7 +406,7 @@ def test_elements_to_deserialize(tmp_path):
 
 def test_elements_to_deserialize_wo_keep(tmp_path):
     net = networks.mv_oberrhein()
-    filename = os.path.abspath(str(tmp_path)) + "testfile.json"
+    filename = os.path.abspath(os.path.join(str(tmp_path), "testfile.json"))
     pp.to_json(net, filename)
     net_select = pp.from_json(filename, elements_to_deserialize=['bus', 'load'],
                               keep_serialized_elements=False)
@@ -473,7 +473,7 @@ def test_replace_elements_json_string(net_in):
 
     net_load = pp.from_json_string(json_string,
                                    replace_elements={r'pandapower.control.controller.const_control':
-                                                         r'pandapower.test.api.input_files.test_control'})
+                                                     r'pandapower.test.api.input_files.test_control'})
     assert net_orig.controller.at[0, 'object'] == net_load.controller.at[0, 'object']
     assert nets_equal(net_orig, net_load)
     pp.runpp(net_load, run_control=True)
@@ -489,7 +489,7 @@ def test_json_generalized():
         "df1": [('col1', np.dtype(object)),
                 ('col2', 'f8'),],
         "df2": [("col3", 'bool'),
-                 ("col4", "i8")]
+                ("col4", "i8")]
     })
     general_net1 = copy.deepcopy(general_net0)
     general_net1.df1.loc[0] = ["hey", 1.2]
@@ -513,7 +513,7 @@ def test_json_simple_index_type():
     df4 = pd.DataFrame(s4)
     df5, df6, df7, df8 = df1.T, df2.T, df3.T, df4.T
     df9 = pd.DataFrame([[1, 2, 3], [4, 5, 7]], index=[1, "2"], columns=[4, "5", 6])
-    input =  {key: val for key, val in zip("abcdefghijkl", [
+    input = {key: val for key, val in zip("abcdefghijkl", [
         s1, s2, s3, s4, df1, df2, df3, df4, df5, df6, df7, df8, df9])}
     json_str = pp.to_json(input)
     output = pp.from_json_string(json_str, convert=False)
@@ -537,7 +537,6 @@ def test_json_index_names():
 
 
 def test_json_multiindex_and_index_names():
-
     # idx_tuples = tuple(zip(["a", "a", "b", "b"], ["bar", "baz", "foo", "qux"]))
     idx_tuples = tuple(zip([1, 1, 2, 2], ["bar", "baz", "foo", "qux"]))
     col_tuples = tuple(zip(["d", "d", "e"], ["bak", "baq", "fuu"]))
@@ -545,17 +544,17 @@ def test_json_multiindex_and_index_names():
     idx2 = pd.MultiIndex.from_tuples(idx_tuples, names=[5, 6])
     idx3 = pd.MultiIndex.from_tuples(idx_tuples, names=["fifth", "sixth"])
     col1 = pd.MultiIndex.from_tuples(col_tuples)
-    col2 = pd.MultiIndex.from_tuples(col_tuples, names=[7, 8]) # ["7", "8"] is not possible since
+    col2 = pd.MultiIndex.from_tuples(col_tuples, names=[7, 8])  # ["7", "8"] is not possible since
     # orient="columns" loses info whether index/column is an iteger or a string
     col3 = pd.MultiIndex.from_tuples(col_tuples, names=[7, None])
 
     for idx, col in zip([idx1, idx2, idx3], [col1, col2, col3]):
         s_mi = pd.Series(range(4), index=idx)
-        df_mi = pd.DataFrame(np.arange(4*3).reshape((4, 3)), index=idx)
-        df_mc = pd.DataFrame(np.arange(4*3).reshape((4, 3)), columns=col)
-        df_mi_mc = pd.DataFrame(np.arange(4*3).reshape((4, 3)), index=idx, columns=col)
+        df_mi = pd.DataFrame(np.arange(4 * 3).reshape((4, 3)), index=idx)
+        df_mc = pd.DataFrame(np.arange(4 * 3).reshape((4, 3)), columns=col)
+        df_mi_mc = pd.DataFrame(np.arange(4 * 3).reshape((4, 3)), index=idx, columns=col)
 
-        input =  {key: val for key, val in zip("abcd", [s_mi, df_mi, df_mc, df_mi_mc])}
+        input = {key: val for key, val in zip("abcd", [s_mi, df_mi, df_mc, df_mi_mc])}
         json_str = pp.to_json(input)
         output = pp.from_json_string(json_str, convert=False)
         assert_series_equal(input["a"], output["a"], check_dtype=False)
