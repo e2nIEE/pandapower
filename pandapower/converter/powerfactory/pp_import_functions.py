@@ -764,8 +764,14 @@ def create_line(net, item, flag_graphics, create_sections, is_unbalanced):
     net[line_table].loc[sid_list, "equipment"] = item.for_name
 
     if ac:
-        create_connection_switches(net, item, 2, 'l', (params['bus1'], params['bus2']),
-                                   (sid_list[0], sid_list[-1]))
+        new_elements = (sid_list[0], sid_list[-1])
+        new_switch_idx, new_switch_closed = create_connection_switches(net, item, 2, 'l', (params['bus1'], params['bus2']),
+                                                                       new_elements)
+        # correct in_service of lines if station switch is open  
+        # update_in_service_depending_station_switch(net, element_type="line", 
+        #                                            new_elements=new_elements, 
+        #                                            new_switch_idx=new_switch_idx,
+        #                                            new_switch_closed=new_switch_closed)     
 
     logger.debug('line <%s> created' % params['name'])
 
@@ -1713,7 +1719,6 @@ def create_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
             params["const_i_percent"] = i
             params["const_z_percent"] = z
 
-
     ### for now - don't import ElmLodlvp
     elif load_class == 'ElmLodlvp':
         parent = item.fold_id
@@ -2398,8 +2403,15 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
     get_pf_trafo_results(net, item, tid, is_unbalanced)
 
     # adding switches
-    # False if open, True if closed, None if no switch
-    create_connection_switches(net, item, 2, 't', (bus1, bus2), (tid, tid))
+    # False if open, True if closed, None if no switch    
+    new_elements = (tid, tid)
+    new_switch_idx, new_switch_closed = create_connection_switches(net, item, 2, 't', (bus1, bus2), 
+                                                                   new_elements)
+    # correct in_service of trafo if station switch is open 
+    # update_in_service_depending_station_switch(net, element_type="trafo", 
+    #                                            new_elements=new_elements, 
+    #                                            new_switch_idx=new_switch_idx,
+    #                                            new_switch_closed=new_switch_closed)   
 
     # adding tap changer
     if (export_controller and pf_type.itapch and item.HasAttribute('ntrcn') and
@@ -2571,7 +2583,15 @@ def create_trafo3w(net, item, tap_opt='nntap'):
 
     # adding switches
     # False if open, True if closed, None if no switch
-    create_connection_switches(net, item, 3, 't3', (bus1, bus2, bus3), (tid, tid, tid))
+    new_elements = (tid, tid, tid)
+    new_switch_idx, new_switch_closed = create_connection_switches(net, item, 3, 't3',
+                                                                   (bus1, bus2, bus3), new_elements)
+    
+    # correct in_service of trafo3w if station switch is open 
+    # update_in_service_depending_station_switch(net, element_type="trafo3w", 
+    #                                            new_elements=new_elements, 
+    #                                            new_switch_idx=new_switch_idx,
+    #                                            new_switch_closed=new_switch_closed) 
 
     logger.debug('successfully created trafo3w from parameters: %d' % tid)
     # testen
@@ -2805,8 +2825,8 @@ def create_zpu(net, item):
     # net, from_bus, to_bus, r_pu, x_pu, sn_Mva, name=None, in_service=True, index=None
     params = {
         'name': item.loc_name,
-        'from_bus': bus1,
-        'to_bus': bus2,
+        # 'from_bus': bus1,
+        # 'to_bus': bus2,
         'rft_pu': item.r_pu,
         'xft_pu': item.x_pu,
         'rtf_pu': item.r_pu_ji,
@@ -2828,9 +2848,49 @@ def create_zpu(net, item):
     }
 
     logger.debug('params = %s' % params)
+    
+    # create auxilary buses
+    aux_bus1 = pp.create_bus(net, vn_kv=net.bus.vn_kv.at[bus1], name=net.bus.name.at[bus1]+'_aux',
+                             geodata=net.bus.geo.at[bus1], type="b", zone=net.bus.zone.at[bus1],
+                             in_service=True)
+    params['from_bus'] = aux_bus1
+    aux_bus2 = pp.create_bus(net, vn_kv=net.bus.vn_kv.at[bus2], name=net.bus.name.at[bus2]+'_aux',
+                             geodata=net.bus.geo.at[bus2], type="b", zone=net.bus.zone.at[bus2],
+                             in_service=True)
+    params['to_bus'] = aux_bus2
+    
     xid = pp.create_impedance(net, **params)
     add_additional_attributes(item, net, element='impedance', element_id=xid, attr_list=["cpSite.loc_name"],
                               attr_dict={"cimRdfId": "origin_id"})
+    
+    # consider and create station switches
+    new_elements = (aux_bus1, aux_bus2)
+    new_switch_idx, new_switch_closed = create_connection_switches(net, item, 2, 'b', (bus1, bus2),
+                                                                   new_elements)
+    
+    if len(new_switch_idx)==0:
+        net.impedance.loc[xid, 'from_bus'] = bus1
+        net.impedance.loc[xid, 'to_bus'] = bus2
+        # drop auxilary buses, not needed
+        pp.drop_buses(net, buses=[aux_bus1, aux_bus2])
+    elif len(new_switch_idx)==1:
+        sw_bus = net.switch.loc[new_switch_idx[0], 'bus']
+        if sw_bus==bus1:
+            net.impedance.loc[xid, 'to_bus'] = bus2
+            # drop one auxilary bus, where no switch exists, not needed
+            pp.drop_buses(net, buses=[aux_bus2])
+        elif sw_bus==bus2:
+            net.impedance.loc[xid, 'from_bus'] = bus1
+            # drop one auxilary bus, where no switch exists, not needed
+            pp.drop_buses(net, buses=[aux_bus1])
+              
+    # correct in_service of series reactor if station switch is open  
+    # update_in_service_depending_station_switch(net, element_type="impedance", 
+    #                                            new_elements=new_elements, 
+    #                                            new_switch_idx=new_switch_idx,
+    #                                            new_switch_closed=new_switch_closed)
+    
+    logger.debug('created ZPU %s as impedance at index %d' % (net.impedance.at[xid, 'name'], xid))
 
 
 def create_vac(net, item):
@@ -2902,6 +2962,20 @@ def create_vac(net, item):
     logger.debug('added pf_p and pf_q to {} {}: {}'.format(elm, xid, net['res_' + elm].loc[
         xid, ["pf_p", 'pf_q']].values))
 
+def update_in_service_depending_station_switch(net, element_type, new_elements, new_switch_idx, new_switch_closed):
+    ### fcn is not used!
+    if len(new_switch_idx)!= 0:
+        for i in range(len(new_switch_idx)):
+            if new_switch_closed[i] == 0:
+                if net[element_type].loc[new_elements[i], 'in_service']==False:
+                    continue
+                else:
+                    net[element_type].loc[new_elements[i], 'in_service'] = False
+                    logger.debug('element of element_type %s with index %d is set\
+                                 out of service because station switch is open ' %
+                                 (net[element_type].at[new_elements[i], 'name'], new_elements[i]))
+    else:
+        pass
 
 def create_sind(net, item):
     # series reactor is modelled as per-unit impedance, values in Ohm are calculated into values in
@@ -2911,12 +2985,47 @@ def create_sind(net, item):
     except IndexError:
         logger.error("Cannot add Sind '%s': not connected" % item.loc_name)
         return
-    in_service = monopolar_in_service(item)
-    sind = pp.create_series_reactor_as_impedance(net, from_bus=bus1, to_bus=bus2, r_ohm=item.rrea,
-                                                 x_ohm=item.xrea, sn_mva=item.Sn,
+    
+    # create auxilary buses
+    aux_bus1 = pp.create_bus(net, vn_kv=net.bus.vn_kv.at[bus1], name=net.bus.name.at[bus1]+'_aux',
+                             geodata=net.bus.geo.at[bus1], type="b", zone=net.bus.zone.at[bus1],
+                             in_service=True)
+    aux_bus2 = pp.create_bus(net, vn_kv=net.bus.vn_kv.at[bus2], name=net.bus.name.at[bus2]+'_aux',
+                             geodata=net.bus.geo.at[bus2], type="b", zone=net.bus.zone.at[bus2],
+                             in_service=True)
+    
+    sind = pp.create_series_reactor_as_impedance(net, from_bus=aux_bus1, to_bus=aux_bus2, 
+                                                 r_ohm=item.rrea, x_ohm=item.xrea, sn_mva=item.Sn,
                                                  name=item.loc_name,
-                                                 in_service=in_service)
-
+                                                 in_service=not bool(item.outserv))
+    
+    # consider and create station switches
+    new_elements = (aux_bus1, aux_bus2)
+    new_switch_idx, new_switch_closed = create_connection_switches(net, item, 2, 'b', (bus1, bus2),
+                                                                   new_elements)
+    
+    if len(new_switch_idx)==0:
+        net.impedance.loc[sind, 'from_bus'] = bus1
+        net.impedance.loc[sind, 'to_bus'] = bus2
+        # drop auxilary buses, not needed
+        pp.drop_buses(net, buses=[aux_bus1, aux_bus2])
+    elif len(new_switch_idx)==1:
+        sw_bus = net.switch.loc[new_switch_idx[0], 'bus']
+        if sw_bus==bus1:
+            net.impedance.loc[sind, 'to_bus'] = bus2
+            # drop one auxilary bus, where no switch exists, not needed
+            pp.drop_buses(net, buses=[aux_bus2])
+        elif sw_bus==bus2:
+            net.impedance.loc[sind, 'from_bus'] = bus1
+            # drop one auxilary bus, where no switch exists, not needed
+            pp.drop_buses(net, buses=[aux_bus1])
+              
+    # correct in_service of series reactor if station switch is open  
+    # update_in_service_depending_station_switch(net, element_type="impedance", 
+    #                                            new_elements=new_elements, 
+    #                                            new_switch_idx=new_switch_idx,
+    #                                            new_switch_closed=new_switch_closed)
+           
     logger.debug('created series reactor %s as per unit impedance at index %d' %
                  (net.impedance.at[sind, 'name'], sind))
 
@@ -2924,7 +3033,7 @@ def create_scap(net, item):
     # series capacitor is modelled as per-unit impedance, values in Ohm are calculated into values in
     # per unit at creation
     try:
-        (bus1, bus2) = get_connection_nodes(net, item, 2)
+        (bus1, bus2), _ = get_connection_nodes(net, item, 2)
     except IndexError:
         logger.error("Cannot add Scap '%s': not connected" % item.loc_name)
         return
@@ -2934,11 +3043,46 @@ def create_scap(net, item):
     else:
         r_ohm = item.gcap/(item.gcap**2 + item.bcap**2)
         x_ohm = -item.bcap/(item.gcap**2 + item.bcap**2)
-        in_service = monopolar_in_service(item)
-        scap = pp.create_series_reactor_as_impedance(net, from_bus=bus1, to_bus=bus2, r_ohm=r_ohm,
+        
+        # create auxilary buses 
+        aux_bus1 = pp.create_bus(net, vn_kv=net.bus.vn_kv.at[bus1], name=net.bus.name.at[bus1]+'_aux',
+                                 geodata=net.bus.geo.at[bus1], type="b", zone=net.bus.zone.at[bus1],
+                                 in_service=True)
+        aux_bus2 = pp.create_bus(net, vn_kv=net.bus.vn_kv.at[bus2], name=net.bus.name.at[bus2]+'_aux',
+                                 geodata=net.bus.geo.at[bus2], type="b", zone=net.bus.zone.at[bus2],
+                                 in_service=True)
+        
+        scap = pp.create_series_reactor_as_impedance(net, from_bus=aux_bus1, to_bus=aux_bus2, r_ohm=r_ohm,
                                                      x_ohm=x_ohm, sn_mva=item.Sn,
                                                      name=item.loc_name,
-                                                     in_service=in_service)
+                                                     in_service=not bool(item.outserv))
+        
+        # consider and create station switches
+        new_elements = (aux_bus1, aux_bus2)
+        new_switch_idx, new_switch_closed = create_connection_switches(net, item, 2, 'b', (bus1, bus2),
+                                                                       new_elements)
+        
+        if len(new_switch_idx)==0:
+            net.impedance.loc[scap, 'from_bus'] = bus1
+            net.impedance.loc[scap, 'to_bus'] = bus2
+            # drop auxilary buses, not needed
+            pp.drop_buses(net, buses=[aux_bus1, aux_bus2])
+        elif len(new_switch_idx)==1:
+            sw_bus = net.switch.loc[new_switch_idx[0], 'bus']
+            if sw_bus==bus1:
+                net.impedance.loc[scap, 'to_bus'] = bus2
+                # drop one auxilary bus, where no switch exists, not needed
+                pp.drop_buses(net, buses=[aux_bus2])
+            elif sw_bus==bus2:
+                net.impedance.loc[scap, 'from_bus'] = bus1
+                # drop one auxilary bus, where no switch exists, not needed
+                pp.drop_buses(net, buses=[aux_bus1])
+        
+        # correct in_service of series capacitor if station switch is open  
+        # update_in_service_depending_station_switch(net, element_type="impedance", 
+        #                                            new_elements=new_elements, 
+        #                                            new_switch_idx=new_switch_idx,
+        #                                            new_switch_closed=new_switch_closed)
 
         logger.debug('created series capacitor %s as per unit impedance at index %d' %
                      (net.impedance.at[scap, 'name'], scap))
