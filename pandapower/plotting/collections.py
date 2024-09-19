@@ -36,8 +36,7 @@ except ImportError:
     class TextPath:  # so that the test does not fail
         pass
 
-from pandapower import pandapowerNet
-from pandapower.auxiliary import soft_dependency_error
+from pandapower.auxiliary import soft_dependency_error, pandapowerNet
 from pandapower.plotting.patch_makers import load_patches, node_patches, gen_patches, \
     sgen_patches, ext_grid_patches, trafo_patches, storage_patches, ward_patches, xward_patches, vsc_patches
 from pandapower.plotting.plotting_toolbox import _rotate_dim2, coords_from_node_geodata, \
