@@ -65,8 +65,10 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                  ("bus", "u4"),
                  ("p_mw", "f8"),
                  ("q_mvar", "f8"),
-                 ("const_z_percent", "f8"),
-                 ("const_i_percent", "f8"),
+                 ("const_z_p_percent", "f8"),
+                 ("const_i_p_percent", "f8"),
+                 ("const_z_q_percent", "f8"),
+                 ("const_i_q_percent", "f8"),
                  ("sn_mva", "f8"),
                  ("scaling", "f8"),
                  ("in_service", 'bool'),
@@ -943,7 +945,8 @@ def create_buses_dc(net, nr_buses_dc, vn_kv, index=None, name=None, type="b", ge
     return index
 
 
-def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, sn_mva=nan,
+def create_load(net, bus, p_mw, q_mvar=0, const_z_p_percent=0, const_i_p_percent=0, 
+                const_z_q_percent=0, const_i_q_percent=0, sn_mva=nan,
                 name=None, scaling=1., index=None, in_service=True, type='wye', max_p_mw=nan,
                 min_p_mw=nan, max_q_mvar=nan, min_q_mvar=nan, controllable=nan, **kwargs):
     """
@@ -966,10 +969,16 @@ def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, 
 
         **q_mvar** (float, default 0) - The reactive power of the load
 
-        **const_z_percent** (float, default 0) - percentage of p_mw and q_mvar that will be \
+        **const_z_p_percent** (float, default 0) - percentage of p_mw that will be \
             associated to constant impedance load at rated voltage
 
-        **const_i_percent** (float, default 0) - percentage of p_mw and q_mvar that will be \
+        **const_i_p_percent** (float, default 0) - percentage of p_mw that will be \
+            associated to constant current load at rated voltage
+        
+        **const_z_q_percent** (float, default 0) - percentage of q_mvar that will be \
+            associated to constant impedance load at rated voltage
+
+        **const_i_q_percent** (float, default 0) - percentage of q_mvar that will be \
             associated to constant current load at rated voltage
 
         **sn_mva** (float, default None) - Nominal power of the load
@@ -1012,10 +1021,12 @@ def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, 
 
     index = _get_index_with_check(net, "load", index)
 
-    entries = dict(zip(["name", "bus", "p_mw", "const_z_percent", "const_i_percent", "scaling",
+    entries = dict(zip(["name", "bus", "p_mw", "const_z_p_percent", "const_i_p_percent",
+                        "const_z_q_percent", "const_i_q_percent", "scaling",
                         "q_mvar", "sn_mva", "in_service", "type"],
-                       [name, bus, p_mw, const_z_percent, const_i_percent, scaling, q_mvar, sn_mva,
-                        bool(in_service), type]))
+                       [name, bus, p_mw, const_z_p_percent, const_i_p_percent,
+                        const_z_q_percent, const_i_q_percent, scaling, 
+                        q_mvar, sn_mva, bool(in_service), type]))
 
     _set_entries(net, "load", index, True, **entries, **kwargs)
 
@@ -1029,8 +1040,9 @@ def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, 
     return index
 
 
-def create_loads(net, buses, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, sn_mva=nan,
-                 name=None, scaling=1., index=None, in_service=True, type='wye', max_p_mw=nan,
+def create_loads(net, buses, p_mw, q_mvar=0, const_z_p_percent=0, const_i_p_percent=0,
+                 const_z_q_percent=0, const_i_q_percent=0, sn_mva=nan, name=None,
+                 scaling=1., index=None, in_service=True, type='wye', max_p_mw=nan,
                  min_p_mw=nan, max_q_mvar=nan, min_q_mvar=nan, controllable=nan, **kwargs):
     """
     Adds a number of loads in table net["load"].
@@ -1052,10 +1064,16 @@ def create_loads(net, buses, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=
 
         **q_mvar** (list of floats, default 0) - The reactive power of the loads
 
-        **const_z_percent** (list of floats, default 0) - percentage of p_mw and q_mvar that will \
+        **const_z_p_percent** (list of floats, default 0) - percentage of p_mw that will \
             be associated to constant impedance loads at rated voltage
 
-        **const_i_percent** (list of floats, default 0) - percentage of p_mw and q_mvar that will \
+        **const_i_p_percent** (list of floats, default 0) - percentage of p_mw that will \
+            be associated to constant current load at rated voltage
+        
+        **const_z_q_percent** (list of floats, default 0) - percentage of q_mvar that will \
+            be associated to constant impedance loads at rated voltage
+
+        **const_i_q_percent** (list of floats, default 0) - percentage of q_mvar that will \
             be associated to constant current load at rated voltage
 
         **sn_mva** (list of floats, default None) - Nominal power of the loads
@@ -1101,7 +1119,8 @@ def create_loads(net, buses, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=
     index = _get_multiple_index_with_check(net, "load", index, len(buses))
 
     entries = {"bus": buses, "p_mw": p_mw, "q_mvar": q_mvar, "sn_mva": sn_mva,
-               "const_z_percent": const_z_percent, "const_i_percent": const_i_percent,
+               "const_z_p_percent": const_z_p_percent, "const_i_p_percent": const_i_p_percent,
+               "const_z_q_percent": const_z_q_percent, "const_i_q_percent": const_i_q_percent,
                "scaling": scaling, "in_service": in_service, "name": name, "type": type}
 
     _add_to_entries_if_not_nan(net, "load", entries, index, "min_p_mw", min_p_mw)

@@ -48,8 +48,8 @@ def _powerflow(net, **kwargs):
         init_results(net)
 
     if net["_options"]["voltage_depend_loads"] and algorithm not in ['nr', 'bfsw'] and not (
-            allclose(net.load.const_z_percent.values, 0) and
-            allclose(net.load.const_i_percent.values, 0)):
+            allclose(net.load.const_z_p_percent.values, 0) and
+            allclose(net.load.const_i_p_percent.values, 0)):
         logger.error(("pandapower powerflow does not support voltage depend loads for algorithm "
                       "'%s'!") % algorithm)
 

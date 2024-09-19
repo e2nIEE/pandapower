@@ -15,6 +15,8 @@ Change Log
 
 [upcoming release] - 2024-..-..
 -------------------------------
+
+- [ADDED] pf2pp: possibility to convert a specific varaint and scenario
 - [FIXED] cast the column to the correct type before assigning values
 - [FIXED] replacement for deprecated namespaces scipy.sparse.csc and scipy.sparse.csr
 - [FIXED] copy array element to standard python scalar
