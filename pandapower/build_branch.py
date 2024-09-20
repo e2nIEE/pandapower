@@ -12,8 +12,8 @@ import numpy as np
 import pandas as pd
 
 from pandapower.auxiliary import get_values
-from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, BR_G, TAP, SHIFT, BR_STATUS, RATE_A, \
-    BR_R_ASYM, BR_X_ASYM, BR_G_ASYM, BR_B_ASYM, branch_cols
+from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, BR_G, TAP, SHIFT, BR_STATUS, ANGMAX, ANGMIN, \
+    RATE_A, BR_R_ASYM, BR_X_ASYM, BR_G_ASYM, BR_B_ASYM, branch_cols
 from pandapower.pypower.idx_brch_dc import branch_dc_cols, DC_RATE_A, DC_RATE_B, DC_RATE_C, DC_BR_STATUS, DC_F_BUS, \
     DC_T_BUS, DC_BR_R, DC_BR_G
 from pandapower.pypower.idx_brch_tdpf import BR_R_REF_OHM_PER_KM, BR_LENGTH_KM, RATE_I_KA, T_START_C, R_THETA, \
@@ -207,6 +207,8 @@ def _calc_line_parameter(net, ppc, elm="line", ppc_elm="branch"):
     branch[f:t, T_BUS] = to_bus
     branch[f:t, BR_R] = line["r_ohm_per_km"].values * length_km / baseR / parallel
     branch[f:t, BR_X] = line["x_ohm_per_km"].values * length_km / baseR / parallel
+    branch[f:t, ANGMAX] = line["max_theta_deg"].values
+    branch[f:t, ANGMIN] = line["min_theta_deg"].values
 
     if net._options["tdpf"]:
         branch[f:t, TDPF] = line["in_service"].values & line["tdpf"].fillna(False).values.astype(bool)
@@ -360,6 +362,8 @@ def _calc_trafo_parameter(net, ppc, update_vk_values: bool=True):
     branch[f:t, TAP] = ratio
     branch[f:t, SHIFT] = shift
     branch[f:t, BR_STATUS] = trafo["in_service"].values
+    branch[f:t, ANGMAX] = trafo["max_theta_deg"].values
+    branch[f:t, ANGMIN] = trafo["min_theta_deg"].values
     if any(trafo.df.values <= 0):
         raise UserWarning("Rating factor df must be positive. Transformers with false "
                           "rating factors: %s" % trafo.query('df<=0').index.tolist())

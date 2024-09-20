@@ -230,6 +230,8 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
         c_nf_per_km=(ppc['branch'][is_line, BR_B]/Zni[is_line]/omega*1e9/2),
         g_us_per_km=(br_g[is_line]/Zni[is_line]*1e6/2),
         max_i_ka=max_i_ka[is_line], type='ol', max_loading_percent=100,
+        max_theta_deg=ppc['branch'][is_line, ANGMAX],
+        min_theta_deg=ppc['branch'][is_line, ANGMIN],
         in_service=ppc['branch'][is_line, BR_STATUS].astype(bool))
 
     # --- create transformer
@@ -290,6 +292,7 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
             net, hv_buses=net.bus.index[hv_bus], lv_buses=net.bus.index[lv_bus], sn_mva=sn,
             vn_hv_kv=vn_hv_kv, vn_lv_kv=vn_lv_kv, name=bra_name[is_trafo],
             vk_percent=vk_percent, vkr_percent=vkr_percent,
+            max_theta_deg=ppc['branch'][is_trafo, ANGMAX], min_theta_deg=ppc['branch'][is_trafo, ANGMIN],
             max_loading_percent=100, pfe_kw=pfe_kw, i0_percent=i0_percent,
             shift_degree=ppc['branch'][is_trafo, SHIFT],
             tap_step_percent=np.abs(ratio_1)*100, tap_pos=np.sign(ratio_1),
