@@ -318,6 +318,10 @@ def _add_missing_columns(net, elements_to_deserialize):
     for element in update_elements:
         if "df" not in net[element]:
             net[element]["df"] = 1.0
+        if "max_theta_deg" not in net[element]:
+            net[element]["max_theta_deg"] = 360.0
+        if "min_theta_deg" not in net[element]:
+            net[element]["min_theta_deg"] = -360.0
 
     if _check_elements_to_deserialize('bus', elements_to_deserialize) \
             and _check_elements_to_deserialize('bus_geodata', elements_to_deserialize) \
