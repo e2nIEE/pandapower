@@ -73,8 +73,8 @@ def _make_bibc_bcbv(bus, branch, graph):
 
         # if multiple networks get subnetwork branches
         if norefs > 1:
-            branches_sub_mask = (np.in1d(branches_arr[:, 0], buses_ordered_bfs) &
-                                 np.in1d(branches_arr[:, 1], buses_ordered_bfs))
+            branches_sub_mask = (np.isin(branches_arr[:, 0], buses_ordered_bfs) &
+                                 np.isin(branches_arr[:, 1], buses_ordered_bfs))
             branches = np.sort(branches_arr[branches_sub_mask, :], axis=1)
         else:
             branches = np.sort(branches_arr, axis=1)
@@ -252,7 +252,7 @@ def _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, V0, ref, pv, pq, buses_o
     Ysh = _makeYsh_bfsw(bus, branch, baseMVA)
 
     # detect generators on PV buses which have status ON
-    gen_pv = np.in1d(gen[:, GEN_BUS], pv) & (gen[:, GEN_STATUS] > 0)
+    gen_pv = np.isin(gen[:, GEN_BUS], pv) & (gen[:, GEN_STATUS] > 0)
     qg_lim = np.zeros(ngen, dtype=bool)  # initialize generators which violated Q limits
 
     Iinj = np.conj(Sbus / V0) - Ysh * V0   # Initial current injections

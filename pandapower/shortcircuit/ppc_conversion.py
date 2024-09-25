@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 def _get_is_ppci_bus(net, bus):
-    is_bus = bus[np.in1d(bus, net._is_elements_final["bus_is_idx"])]
+    is_bus = bus[np.isin(bus, net._is_elements_final["bus_is_idx"])]
     ppci_bus = np.unique(net._pd2ppc_lookups["bus"][is_bus])
     return ppci_bus
 
