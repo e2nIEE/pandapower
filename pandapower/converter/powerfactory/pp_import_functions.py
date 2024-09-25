@@ -3043,7 +3043,7 @@ def create_scap(net, item):
         logger.error("Cannot add Scap '%s': not connected" % item.loc_name)
         return
 
-    if (item.gcap==0) or (item.bcap==0):
+    if (item.gcap==0) and (item.bcap==0):
         logger.info('not creating series capacitor for %s' % item.loc_name)
     else:
         r_ohm = item.gcap/(item.gcap**2 + item.bcap**2)
