@@ -148,7 +148,7 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
             mask = (net.switch.et.values == "l") & open_sw
             if mask.any():
                 open_lines = net.switch.element.values[mask]
-                open_lines_mask = np.in1d(indices[:, INDEX], open_lines)
+                open_lines_mask = np.isin(indices[:, INDEX], open_lines)
                 in_service &= ~open_lines_mask
 
         parameter[:, WEIGHT] = line.length_km.values
@@ -221,7 +221,7 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
             mask = (net.switch.et.values == "t") & open_sw
             if mask.any():
                 open_trafos = net.switch.element.values[mask]
-                open_trafos_mask = np.in1d(indices[:, INDEX], open_trafos)
+                open_trafos_mask = np.isin(indices[:, INDEX], open_trafos)
                 in_service &= ~open_trafos_mask
 
         if calc_branch_impedances:
@@ -264,7 +264,7 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
 
             if respect_switches and len(open_trafo3w):
                 for BUS in [F_BUS, T_BUS]:
-                    open_switch = np.in1d(indices[:, INDEX] + indices[:, BUS] * 1j,
+                    open_switch = np.isin(indices[:, INDEX] + indices[:, BUS] * 1j,
                                           open_trafo3w)
                     in_service &= ~open_switch
             if calc_branch_impedances:
