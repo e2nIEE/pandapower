@@ -1716,9 +1716,11 @@ def create_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
                          load_type.kqu1,
                          load_type.kqu]
             if (pf_params[:3]!=pf_params[3:]) or \
-                (pf_params[:3]!=[0,1,2]) or \
-                (pf_params[3:]!=[0,1,2]):                
-                raise UserWarning(f"Load {item.loc_name} ({load_class}) unsupported voltage dependency configuration")
+                (pf_params[:2]!=[0,1]) or (pf_params[2] not in (0,2)) or \
+                (pf_params[3:5]!=[0,1]) or (pf_params[5] not in (0,2)): 
+                # (pf_params[:3]!=[0,1,2]) or \
+                # (pf_params[3:]!=[0,1,2]):                
+                raise UserWarning(f"Load {item.loc_name} ({load_class}) unsupported voltage dependency configuration") 
             else:
                 i_p = 0
                 z_p = 0
@@ -3098,7 +3100,7 @@ def create_scap(net, item):
         logger.error("Cannot add Scap '%s': not connected" % item.loc_name)
         return
 
-    if (item.gcap==0) or (item.bcap==0):
+    if (item.gcap==0) and (item.bcap==0):
         logger.info('not creating series capacitor for %s' % item.loc_name)
     else:
         r_ohm = item.gcap/(item.gcap**2 + item.bcap**2)
