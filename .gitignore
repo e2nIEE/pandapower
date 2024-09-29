@@ -25,9 +25,5 @@ pandapower/plotting/plotly/mapbox_token.txt
 pandapower/plotting/plotly/temp-plot.html
 pandapower/test/timeseries/run_timeseries_output/*
 pandapower/timeseries/logs/*
-<<<<<<< HEAD
 */data/*
-/.vscode/
-=======
 .vscode
->>>>>>> 4fe15f9eee8489a4f20ab62a883f47595fa98cbd
