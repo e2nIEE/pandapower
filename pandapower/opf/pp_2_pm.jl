@@ -47,8 +47,8 @@ function get_model(model_type)
 end
 
 function get_solver(optimizer::String, nl::String="ipopt", mip::String="cbc",
-    log_level::Int=0, time_limit::Float64=Inf, nl_time_limit::Float64=Inf, 
-    mip_time_limit::Float64=Inf)
+    log_level::Int=0, time_limit::Float64=inf, nl_time_limit::Float64=inf, 
+    mip_time_limit::Float64=inf)
     
     if optimizer == "gurobi"
             solver = JuMP.with_optimizer(Gurobi.Optimizer, TimeLimit=time_limit)

@@ -8,7 +8,7 @@ problem formulation.
 
 from sys import stderr
 
-from numpy import array, zeros, ones, Inf, dot, arange, r_
+from numpy import array, zeros, ones, inf, dot, arange, r_
 from numpy import flatnonzero as find
 from scipy.sparse import lil_matrix, csr_matrix as sparse
 
@@ -183,7 +183,7 @@ class opf_model(object):
         create a lot of zero columns. If C{varsets} is empty, C{x} is taken
         to be the full vector of all optimization variables. If C{l} or
         C{u} are empty, they are assumed to be appropriately sized vectors
-        of C{-Inf} and C{Inf}, respectively.
+        of C{-inf} and C{inf}, respectively.
 
         For nonlinear constraints, the 3rd argument, C{N}, is the number
         of constraints in the set. Currently, this is used internally
@@ -216,11 +216,11 @@ class opf_model(object):
                 varsets = []
 
             N, M = AorN.shape
-            if len(l) == 0:                   ## default l is -Inf
-                l = -Inf * ones(N)
+            if len(l) == 0:                   ## default l is -inf
+                l = -inf * ones(N)
 
-            if len(u) == 0:                   ## default u is Inf
-                u = Inf * ones(N)
+            if len(u) == 0:                   ## default u is inf
+                u = inf * ones(N)
 
             if len(varsets) == 0:
                 varsets = self.var["order"]
@@ -262,7 +262,7 @@ class opf_model(object):
         and C{vl} and C{vu} are the lower and upper bounds on the variables.
         The defaults for the last three arguments, which are optional,
         are for all values to be initialized to zero (C{v0 = 0}) and unbounded
-        (C{VL = -Inf, VU = Inf}).
+        (C{VL = -inf, VU = inf}).
         """
         ## prevent duplicate named var sets
         if name in self.var["idx"]["N"]:
@@ -272,10 +272,10 @@ class opf_model(object):
             v0 = zeros(N)           ## init to zero by default
 
         if vl is None or len(vl) == 0:
-            vl = -Inf * ones(N)     ## unbounded below by default
+            vl = -inf * ones(N)     ## unbounded below by default
 
         if vu is None or len(vu) == 0:
-            vu = Inf * ones(N)      ## unbounded above by default
+            vu = inf * ones(N)      ## unbounded above by default
 
 
         ## add info about this var set
@@ -465,7 +465,7 @@ class opf_model(object):
 
         if self.lin["N"]:
             A = lil_matrix((self.lin["N"], self.var["N"]))
-            u = Inf * ones(self.lin["N"])
+            u = inf * ones(self.lin["N"])
             l = -u
         else:
             A = None

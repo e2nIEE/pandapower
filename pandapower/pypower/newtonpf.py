@@ -11,7 +11,7 @@
 """Solves the power flow using a full Newton's method.
 """
 
-from numpy import angle, exp, linalg, conj, r_, Inf, arange, zeros, max, zeros_like, column_stack
+from numpy import angle, exp, linalg, conj, r_, inf, arange, zeros, max, zeros_like, column_stack
 from scipy.sparse.linalg import spsolve
 
 from pandapower.pf.iwamoto_multiplier import _iwamoto_step
@@ -140,4 +140,4 @@ def _evaluate_Fx(Ybus, V, Sbus, pv, pq):
 
 def _check_for_convergence(F, tol):
     # calc infinity norm
-    return linalg.norm(F, Inf) < tol
+    return linalg.norm(F, inf) < tol
