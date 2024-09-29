@@ -39,7 +39,7 @@ setup(
     long_description=long_description,
     url='http://www.pandapower.org',
     license='BSD',
-    install_requires=["pandas>=0.17, <1",
+    install_requires=["pandas>=0.17, <3",
                       "networkx",
                       "scipy",
                       "numpy>=0.11",
