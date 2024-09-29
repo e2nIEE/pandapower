@@ -6,7 +6,7 @@
 """Solves the power flow using a fast decoupled method.
 """
 import warnings
-from numpy import array, angle, exp, linalg, conj, r_, Inf, column_stack, real
+from numpy import array, angle, exp, linalg, conj, r_, inf, column_stack, real
 from scipy.sparse.linalg import splu
 
 from pandapower.pypower.makeSbus import makeSbus
@@ -145,5 +145,5 @@ def _evaluate_mis(Ybus, V, Sbus, pvpq, pq):
 def _check_for_convergence(mis_p, mis_q, tol):
     # calc infinity norm
     return (
-        (linalg.norm(mis_p, Inf) < tol) and (linalg.norm(mis_q, Inf) < tol)
+        (linalg.norm(mis_p, inf) < tol) and (linalg.norm(mis_q, inf) < tol)
     ) 
