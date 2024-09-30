@@ -329,9 +329,9 @@ def init_par(tab, calc_branch_impedances):
     indices = np.zeros((n, 3), dtype=np.int_)
     indices[:, INDEX] = tab.index
     if calc_branch_impedances:
-        parameters = np.zeros((n, 4), dtype=np.float)
+        parameters = np.zeros((n, 4), dtype=float)
     else:
-        parameters = np.zeros((n, 1), dtype=np.float)
+        parameters = np.zeros((n, 1), dtype=float)
 
     if "in_service" in tab:
         return indices, parameters, tab.in_service.values.copy()

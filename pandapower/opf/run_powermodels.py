@@ -44,12 +44,12 @@ def _runpm(net, delete_buffer_file=True):  # pragma: no cover
 def _call_powermodels(buffer_file, julia_file):  # pragma: no cover
     # checks if julia works, otherwise raises an error
     try:
-        import julia
-        from julia import Main
+        from julia.api import Julia
+        j = Julia(compiled_modules=False)
     except ImportError:
         raise ImportError("Please install pyjulia to run pandapower with PowerModels.jl")
     try:
-        j = julia.Julia()
+        from julia import Main
     except:
         raise UserWarning(
             "Could not connect to julia, please check that Julia is installed and pyjulia is correctly configured")

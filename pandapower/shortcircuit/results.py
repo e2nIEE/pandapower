@@ -30,7 +30,7 @@ def _extract_single_results(net, ppc):
     net["_options"]["ac"] = True
     net["_options"]["trafo_loading"] = "current"
     bus_lookup_aranged = _get_aranged_lookup(net)
-    bus_pq = np.zeros(shape=(len(net["bus"].index), 2), dtype=np.float)
+    bus_pq = np.zeros(shape=(len(net["bus"].index), 2), dtype=float)
     _get_branch_results(net, ppc, bus_lookup_aranged, bus_pq, suffix="_sc")
 
 
