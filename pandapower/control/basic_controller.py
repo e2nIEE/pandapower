@@ -120,17 +120,10 @@ class Controller(JSONSerializableClass):
         super().add_to_net(element='controller', index=index, overwrite=overwrite)
 
         columns = ['object', 'in_service', 'recycle']
-<<<<<<< HEAD
-        self.net.controller.loc[index,columns] = self, in_service, recycle
-        self.net.controller['order'][index] = order
-        self.net.controller['level'][index]= level
-        
-=======
         self.net.controller.loc[index, columns] = self, in_service, recycle
         self.net.controller['order'][index] = order
         self.net.controller['level'][index] = level
 
->>>>>>> 4fe15f9eee8489a4f20ab62a883f47595fa98cbd
         _preserve_dtypes(self.net.controller, dtypes)
 
     def time_step(self, time):

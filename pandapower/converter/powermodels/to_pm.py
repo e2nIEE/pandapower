@@ -114,13 +114,10 @@ def _pp_element_to_pm(net, pm, element, pd_bus, qd_bus, load_idx,
                       max_bus_id_on_ppci):
     bus_lookup = net._pd2ppc_lookups["bus"]
 
-<<<<<<< HEAD
-=======
     max_bus_id_on_pm = max_bus_id_on_ppci + 1
 
     sn_mva = net.sn_mva
 
->>>>>>> 4fe15f9eee8489a4f20ab62a883f47595fa98cbd
     pm_lookup = np.ones(max(net[element].index) + 1, dtype=int) * -1 if len(net[element].index) \
         else np.array([], dtype=int)
     for idx in net[element].index:
@@ -130,28 +127,6 @@ def _pp_element_to_pm(net, pm, element, pd_bus, qd_bus, load_idx,
         pp_bus = net[element].at[idx, "bus"]
         pm_bus = bus_lookup[pp_bus] + 1
 
-<<<<<<< HEAD
-        scaling = net[element].at[idx, "scaling"]
-        if element == "sgen":
-            pd = -net[element].at[idx, "p_mw"] * scaling
-            qd = -net[element].at[idx, "q_mvar"] * scaling
-        else:
-            pd = net[element].at[idx, "p_mw"] * scaling
-            qd = net[element].at[idx, "q_mvar"] * scaling
-        in_service = net[element].at[idx, "in_service"]
-
-        pm["load"][str(load_idx)] = {"pd": pd.item(), "qd": qd.item(), "load_bus": pm_bus.item(),
-                                     "status": int(in_service), "index": load_idx}
-        if pm_bus not in pd_bus:
-            pd_bus[pm_bus] = pd
-            qd_bus[pm_bus] = qd
-        else:
-            pd_bus[pm_bus] += pd
-            qd_bus[pm_bus] += qd
-
-        pm_lookup[idx] = load_idx
-        load_idx += 1
-=======
         # testing if the bus in which the element is conn is ON
         if pm_bus <= max_bus_id_on_pm:
             scaling = net[element].at[idx, "scaling"]
@@ -174,7 +149,6 @@ def _pp_element_to_pm(net, pm, element, pd_bus, qd_bus, load_idx,
 
             pm_lookup[idx] = load_idx
             load_idx += 1
->>>>>>> 4fe15f9eee8489a4f20ab62a883f47595fa98cbd
     return load_idx, pm_lookup
 
 
@@ -234,11 +208,6 @@ def ppc_to_pm(net, ppci):
     # temp dicts which hold the sum of p, q of loads + sgens
     pd_bus = dict()
     qd_bus = dict()
-<<<<<<< HEAD
-    load_idx, load_lookup = _pp_element_to_pm(net, pm, "load", pd_bus, qd_bus, load_idx)
-    load_idx, sgen_lookup = _pp_element_to_pm(net, pm, "sgen", pd_bus, qd_bus, load_idx)
-    load_idx, storage_lookup = _pp_element_to_pm(net, pm, "storage", pd_bus, qd_bus, load_idx)
-=======
 
     # BUG: Pandapower was inserting in _pp_element_to_pm elements connected to 
     # buses off (beyond max_bus_id_on)
@@ -247,7 +216,6 @@ def ppc_to_pm(net, ppci):
     load_idx, load_lookup = _pp_element_to_pm(net, pm, "load", pd_bus, qd_bus, load_idx, max_bus_id_on_ppci)
     load_idx, sgen_lookup = _pp_element_to_pm(net, pm, "sgen", pd_bus, qd_bus, load_idx, max_bus_id_on_ppci)
     load_idx, storage_lookup = _pp_element_to_pm(net, pm, "storage", pd_bus, qd_bus, load_idx, max_bus_id_on_ppci)
->>>>>>> 4fe15f9eee8489a4f20ab62a883f47595fa98cbd
     pm_lookup = {"load": load_lookup, "sgen": sgen_lookup, "storage": storage_lookup}
     net = create_pm_lookups(net, pm_lookup)
 

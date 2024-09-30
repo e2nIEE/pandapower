@@ -63,19 +63,12 @@ def pm_results_to_ppc_results(net, ppc, ppci, result_pm):
                 ppci["bus"][bus_idx, VM] = bus["vm"]
             if "va" in bus:
                 # replace nans with 0.(in case of SOCWR model for example
-<<<<<<< HEAD
-                ppci["bus"][bus_idx, VA] = 0.0 if bus["va"] == None else math.degrees(bus["va"])
-            if "w" in bus:
-                # SOCWR model has only w instead of vm values
-                ppci["bus"][bus_idx, VM] = bus["w"]
-=======
                 ppci["bus"][bus_idx, VA] = 0.0 if bus["va"] == None else bus["va"]
             if "w" in bus:
                 # SOCWR model has only w instead of vm values
                 ppci["bus"][bus_idx, VM] = bus["w"]
             if "lam_kcl_r" in bus:
                 ppci["bus"][bus_idx, LAM_P] = bus["lam_kcl_r"]
->>>>>>> 4fe15f9eee8489a4f20ab62a883f47595fa98cbd
 
         for i, gen in sol["gen"].items():
             gen_idx = int(i) - 1

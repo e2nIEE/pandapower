@@ -16,11 +16,7 @@ from pandapower.pypower.idx_gen import PG, QG, QMAX, QMIN, GEN_BUS, GEN_STATUS
 from pandapower.pypower.makeSbus import makeSbus
 from pandapower.pypower.makeYbus import makeYbus as makeYbus_pypower
 from pandapower.pypower.newtonpf import newtonpf
-<<<<<<< HEAD
-=======
 from pandapower.pypower.decoupledpf import decoupledpf
-from pandapower.pypower.pfsoln import pfsoln as pfsoln_pypower
->>>>>>> 4fe15f9eee8489a4f20ab62a883f47595fa98cbd
 from pandapower.pypower.pfsoln import _update_v
 from pandapower.pypower.pfsoln import pfsoln as pfsoln_pypower
 
@@ -155,11 +151,6 @@ def _run_ac_pf_without_qlims_enforced(ppci, options):
     Sbus = _get_Sbus(ppci, options["recycle"])
 
 
-<<<<<<< HEAD
-    # run the newton power flow
-    newton = newton_ls if lightsim2grid_available and options["lightsim2grid"] else newtonpf
-    V, success, iterations, J, Vm_it, Va_it = newton(Ybus, Sbus, V0, pv, pq, ppci, options)
-=======
     if options["algorithm"] in ["nr", "iwamoto_nr"]:
         # run the newton power  flow
         V, success, iterations, J, Vm_it, Va_it = newtonpf(Ybus, Sbus, V0, pv, pq, ppci, options)
@@ -172,7 +163,6 @@ def _run_ac_pf_without_qlims_enforced(ppci, options):
         alg = options["algorithm"]
         raise AlgorithmUnknown("Algorithm {} is not implemented in this"
                                " module.".format(alg))
->>>>>>> 4fe15f9eee8489a4f20ab62a883f47595fa98cbd
 
     # keep "internal" variables in  memory / net["_ppc"]["internal"] -> needed for recycle.
     # J or Bp, Bpp can be None, depending on which method is being used
