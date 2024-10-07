@@ -81,7 +81,7 @@ def _init_ppc(net, v_start, delta_start, calculate_voltage_angles):
     if np.any(net.trafo.shift_degree):
         vm_backup = ppci["bus"][:, 7].copy()
         pq_backup = ppci["bus"][:, [2, 3]].copy()
-        ppci["bus"][:, [2, 3]] = 0.
+        # ppci["bus"][:, [2, 3]] = 0.
         ppci = _run_dc_pf(ppci)
         ppci["bus"][:, 7] = vm_backup
         ppci["bus"][:, [2, 3]] = pq_backup
