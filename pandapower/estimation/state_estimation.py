@@ -9,7 +9,8 @@ from scipy.stats import chi2
 
 from pandapower.estimation.algorithm.base import (WLSAlgorithm,
                                                   WLSZeroInjectionConstraintsAlgorithm,
-                                                  IRWLSAlgorithm)
+                                                  IRWLSAlgorithm,
+                                                  AFWLSAlgorithm)
 from pandapower.estimation.algorithm.lp import LPAlgorithm
 from pandapower.estimation.algorithm.optimization import OptAlgorithm
 from pandapower.estimation.ppc_conversion import pp2eppci, _initialize_voltage
@@ -26,7 +27,8 @@ ALGORITHM_MAPPING = {'wls': WLSAlgorithm,
                      'wls_with_zero_constraint': WLSZeroInjectionConstraintsAlgorithm,
                      'opt': OptAlgorithm,
                      'irwls': IRWLSAlgorithm,
-                     'lp': LPAlgorithm}
+                     'lp': LPAlgorithm,
+                     'af-wls': AFWLSAlgorithm}
 ALLOWED_OPT_VAR = {"a", "opt_method", "estimator"}
 
 

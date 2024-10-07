@@ -270,6 +270,32 @@ def _add_measurements_to_ppci(net, ppci, zero_injection, algorithm):
         ppci["branch"] = np.hstack((ppci["branch"], branch_append))
     else:
         ppci["branch"][:, branch_cols: branch_cols + branch_cols_se] = branch_append
+
+    # Add rated power information for AF-WLS estimator
+    if algorithm == 'af-wls':
+        cluster_list_loads = net.load["type"].unique()
+        cluster_list_gen = net.sgen["type"].unique()
+        cluster_list_tot = np.concatenate((cluster_list_loads, cluster_list_gen), axis=0)
+        ppci["clusters"] = cluster_list_tot
+        num_clusters = len(cluster_list_tot)
+        num_buses = ppci["bus"].shape[0]
+        ppci["rated_powers_clusters"] = np.zeros([num_buses, 4*num_clusters])
+        for var in ["load", "sgen"]:
+            for item in net[var].index:
+                if net[var]["in_service"][item]:
+                    bus = net._pd2ppc_lookups["bus"][net[var].bus[item]]
+                    cluster = net[var].type[item]
+                    cluster_idx = np.where(cluster_list_tot == cluster)[0]
+                    P = net[var].p_mw[item]
+                    Q = net[var].q_mvar[item]
+                    if var == 'load':
+                        P *= -1
+                        Q *= -1
+                    ppci["rated_powers_clusters"][bus, cluster_idx] += P
+                    ppci["rated_powers_clusters"][bus, cluster_idx + num_clusters] += Q
+                    ppci["rated_powers_clusters"][bus, cluster_idx + 2*num_clusters] += abs(0.3*P)    # std dev cluster variability hardcoded, think how to change it
+                    ppci["rated_powers_clusters"][bus, cluster_idx + 2*num_clusters] += abs(0.3*Q)    # std dev cluster variability hardcoded, think how to change it
+                    
     return ppci
 
 

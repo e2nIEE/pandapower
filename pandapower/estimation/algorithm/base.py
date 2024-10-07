@@ -262,3 +262,86 @@ class IRWLSAlgorithm(BaseAlgorithm):
         self.check_result(current_error, cur_it)
         # update V/delta
         return eppci
+
+
+class AFWLSAlgorithm(BaseAlgorithm):
+    def __init__(self, tolerance, maximum_iterations, logger=std_logger):
+        super(AFWLSAlgorithm, self).__init__(tolerance, maximum_iterations, logger)
+
+        # Parameters for Bad data detection
+        self.R_inv = None
+        self.Gm = None
+        self.r = None
+        self.H = None
+        self.hx = None
+        self.iterations = None
+        self.obj_func = None
+        logging.basicConfig(level=logging.DEBUG)
+
+    def estimate(self, eppci: ExtendedPPCI, **kwargs):
+        self.initialize(eppci)
+        # matrix calculation object
+        sem = BaseAlgebra(eppci)
+
+        current_error, cur_it = 100., 0
+        # invert covariance matrix
+        eppci.r_cov[eppci.r_cov<(10**(-6))] = 10**(-6)
+        r_inv = csr_matrix(np.diagflat(1 / eppci.r_cov ** 2))
+        E = eppci.E
+        while current_error > self.tolerance and cur_it < self.max_iterations:
+            self.logger.debug("Starting iteration {:d}".format(1 + cur_it))
+            try:
+                # residual r
+                r = csr_matrix(sem.create_rx(E)).T
+
+                # jacobian matrix H
+                H = csr_matrix(sem.create_hx_jacobian(E))
+
+                if cur_it == 0 and eppci.any_i_meas:
+                    idx = eppci.idx_non_imeas
+                    r_inv = r_inv[idx,:][:,idx]
+                    r = r[idx,:]
+                    H = H[idx,:]
+
+                # gain matrix G_m
+                G_m = H.T * (r_inv * H)
+
+                # state vector difference d_E
+                # d_E = G_m^-1 * (H' * R^-1 * r)
+                d_E = spsolve(G_m, H.T * (r_inv * r))
+
+                # Update E with d_E
+                E += d_E.ravel()
+                eppci.update_E(E)
+
+                # log data 
+                current_error = np.max(np.abs(d_E))
+                obj_func = (r.T*r_inv*r)[0,0]
+                self.logger.debug("Current delta_x: {:.7f}".format(current_error))
+                self.logger.debug("Current objective function value: {:.1f}".format(obj_func))
+
+                # Restore full weighting matrix
+                if cur_it == 0 and eppci.any_i_meas:
+                    r_inv = csr_matrix(np.diagflat(1 / eppci.r_cov ** 2))
+
+                # prepare next iteration
+                cur_it += 1
+
+            except np.linalg.linalg.LinAlgError:
+                self.logger.error("A problem appeared while using the linear algebra methods."
+                                  "Check and change the measurement set.")
+                return False
+
+        # check if the estimation is successfull
+        self.check_result(current_error, cur_it)
+        self.iterations = cur_it
+        self.obj_func = obj_func
+        if self.successful:
+            # store variables required for chi^2 and r_N_max test:
+            self.R_inv = r_inv.toarray()
+            self.Gm = G_m.toarray()
+            self.r = r.toarray()
+            self.H = H.toarray()
+            # create h(x) for the current iteration
+            self.hx = sem.create_hx(eppci.E)
+        return eppci
