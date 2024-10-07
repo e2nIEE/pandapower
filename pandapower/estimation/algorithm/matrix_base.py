@@ -9,7 +9,7 @@ from scipy.sparse import vstack, hstack
 from pandapower.pypower.idx_brch import F_BUS, T_BUS
 from pandapower.pypower.dSbus_dV import dSbus_dV
 from pandapower.pypower.dSbr_dV import dSbr_dV
-from pandapower.pypower.dIbr_dV import dIbr_dV
+from pandapower.pypower.dIbr_dV import dIbr_dV_new
 
 from pandapower.estimation.ppc_conversion import ExtendedPPCI
 
@@ -150,16 +150,19 @@ class BaseAlgebra:
 
     def _dimiabr_dV(self, V):
         # for current we only interest in the magnitude at the moment
-        dif_dth, dif_dv, dit_dth, dit_dv, If, It = dIbr_dV(self.eppci['branch'], self.Yf, self.Yt, V)
-        dif_dth, dif_dv, dit_dth, dit_dv = map(lambda m: m.toarray(), (dif_dth, dif_dv, dit_dth, dit_dv))
-        difm_dth = (np.abs(1e-5 * dif_dth + If.reshape((-1, 1))) - np.abs(If.reshape((-1, 1))))/1e-5
-        difm_dv = (np.abs(1e-5 * dif_dv + If.reshape((-1, 1))) - np.abs(If.reshape((-1, 1))))/1e-5
-        ditm_dth = (np.abs(1e-5 * dit_dth + It.reshape((-1, 1))) - np.abs(It.reshape((-1, 1))))/1e-5
-        ditm_dv = (np.abs(1e-5 * dit_dv + It.reshape((-1, 1))) - np.abs(It.reshape((-1, 1))))/1e-5
-        difa_dth = (np.angle(1e-5 * dif_dth + If.reshape((-1, 1))) - np.angle(If.reshape((-1, 1))))/1e-5
-        difa_dv = (np.angle(1e-5 * dif_dv + If.reshape((-1, 1))) - np.angle(If.reshape((-1, 1))))/1e-5
-        dita_dth = (np.angle(1e-5 * dit_dth + It.reshape((-1, 1))) - np.angle(It.reshape((-1, 1))))/1e-5
-        dita_dv = (np.angle(1e-5 * dit_dv + It.reshape((-1, 1))) - np.angle(It.reshape((-1, 1))))/1e-5
+        difm_dth, difm_dv, ditm_dth, ditm_dv = dIbr_dV_new(self.eppci['branch'], self.Yf, self.Yt, V)
+        difm_dth, difm_dv, ditm_dth, ditm_dv = map(lambda m: m.toarray(), (difm_dth, difm_dv, ditm_dth, ditm_dv))
+        difa_dth, difa_dv, dita_dth, dita_dv = 0*difm_dth, 0*difm_dv, 0*ditm_dth, 0*ditm_dv
+        # dif_dth, dif_dv, dit_dth, dit_dv, If, It = dIbr_dV(self.eppci['branch'], self.Yf, self.Yt, V)
+        # dif_dth, dif_dv, dit_dth, dit_dv = map(lambda m: m.toarray(), (dif_dth, dif_dv, dit_dth, dit_dv))
+        # difm_dth = (np.abs(1e-5 * dif_dth + If.reshape((-1, 1))) - np.abs(If.reshape((-1, 1))))/1e-5
+        # difm_dv = (np.abs(1e-5 * dif_dv + If.reshape((-1, 1))) - np.abs(If.reshape((-1, 1))))/1e-5
+        # ditm_dth = (np.abs(1e-5 * dit_dth + It.reshape((-1, 1))) - np.abs(It.reshape((-1, 1))))/1e-5
+        # ditm_dv = (np.abs(1e-5 * dit_dv + It.reshape((-1, 1))) - np.abs(It.reshape((-1, 1))))/1e-5
+        # difa_dth = (np.angle(1e-5 * dif_dth + If.reshape((-1, 1))) - np.angle(If.reshape((-1, 1))))/1e-5
+        # difa_dv = (np.angle(1e-5 * dif_dv + If.reshape((-1, 1))) - np.angle(If.reshape((-1, 1))))/1e-5
+        # dita_dth = (np.angle(1e-5 * dit_dth + It.reshape((-1, 1))) - np.angle(It.reshape((-1, 1))))/1e-5
+        # dita_dv = (np.angle(1e-5 * dit_dv + It.reshape((-1, 1))) - np.angle(It.reshape((-1, 1))))/1e-5
         return difm_dth, difm_dv, ditm_dth, ditm_dv, difa_dth, difa_dv, dita_dth, dita_dv
 
 

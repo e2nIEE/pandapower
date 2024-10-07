@@ -42,27 +42,29 @@ def ds_find(ar, bus):  # pragma: no cover
 
 
 @jit(nopython=True, cache=False)
-def ds_union(ar, bus1, bus2, bus_is_pv):  # pragma: no cover
+def ds_union(ar, bus1, bus2, bus_is_pv, bus_is_active, merged_bus):  # pragma: no cover
     root1 = ds_find(ar, bus1)
     root2 = ds_find(ar, bus2)
     if root1 == root2:
         return
-    if bus_is_pv[root2]:
+    if bus_is_active[root2] and ~bus_is_pv[root1]:      # if root2 is an active bus (load or gen) and root1 is not a PV bus, it will merge root1 into root2
         ar[root1] = root2
+        merged_bus[root1] = True
     else:
         ar[root2] = root1
+        merged_bus[root2] = True
 
 
 @jit(nopython=True, cache=False)
 def ds_create(ar, switch_bus, switch_elm, switch_et_bus, switch_closed, switch_z_ohm,
-              bus_is_pv, bus_in_service):  # pragma: no cover
+              bus_is_pv, bus_is_active, bus_in_service, merged_bus):  # pragma: no cover
     for i in range(len(switch_bus)):
         if not switch_closed[i] or not switch_et_bus[i] or switch_z_ohm[i] > 0:
             continue
         bus1 = switch_bus[i]
         bus2 = switch_elm[i]
         if bus_in_service[bus1] and bus_in_service[bus2]:
-            ds_union(ar, bus1, bus2, bus_is_pv)
+            ds_union(ar, bus1, bus2, bus_is_pv, bus_is_active, merged_bus)
 
 
 @jit(nopython=True, cache=False)
@@ -74,7 +76,7 @@ def fill_bus_lookup(ar, bus_lookup, bus_index):
         bus_lookup[b] = bus_lookup[ar[ds]]
 
 
-def create_bus_lookup_numba(net, bus_index, bus_is_idx, gen_is_mask, eg_is_mask):
+def create_bus_lookup_numba(net, bus_index, bus_is_idx):
     max_bus_idx = np.max(bus_index)
     # extract numpy arrays of switch table data
     switch = net["switch"]
@@ -86,18 +88,39 @@ def create_bus_lookup_numba(net, bus_index, bus_is_idx, gen_is_mask, eg_is_mask)
     # create array for fast checking if a bus is in_service
     bus_in_service = np.zeros(max_bus_idx + 1, dtype=bool)
     bus_in_service[bus_is_idx] = True
+    # create mask arrays to distinguish different grid elements
+    _is_elements = net["_is_elements"]
+    eg_is_mask = _is_elements['ext_grid']
+    gen_is_mask = _is_elements['gen']
+    load_is_mask = _is_elements['load']
+    motor_is_mask = _is_elements['motor']
+    sgen_is_mask = _is_elements['sgen']
+    shunt_is_mask = _is_elements['shunt']
+    ward_is_mask = _is_elements['ward']
+    xward_is_mask = _is_elements['xward']
     # create array for fast checking if a bus is pv bus
     bus_is_pv = np.zeros(max_bus_idx + 1, dtype=bool)
     bus_is_pv[net["ext_grid"]["bus"].values[eg_is_mask]] = True
     bus_is_pv[net["gen"]["bus"].values[gen_is_mask]] = True
+    # create array for checking if a bus is active (i.e., it has some element connected to it)
+    bus_is_active = np.zeros(max_bus_idx + 1, dtype=bool)
+    bus_is_active[net["ext_grid"]["bus"].values[eg_is_mask]] = True
+    bus_is_active[net["gen"]["bus"].values[gen_is_mask]] = True
+    bus_is_active[net["load"]["bus"].values[load_is_mask]] = True
+    bus_is_active[net["motor"]["bus"].values[motor_is_mask]] = True
+    bus_is_active[net["sgen"]["bus"].values[sgen_is_mask]] = True
+    bus_is_active[net["shunt"]["bus"].values[shunt_is_mask]] = True
+    bus_is_active[net["ward"]["bus"].values[ward_is_mask]] = True
+    bus_is_active[net["xward"]["bus"].values[xward_is_mask]] = True
     # create array that represents the disjoint set
     ar = np.arange(max_bus_idx + 1)
+    merged_bus = np.zeros(len(ar), dtype=bool)
     ds_create(ar, switch_bus, switch_elm, switch_et_bus, switch_closed, switch_z_ohm, bus_is_pv,
-              bus_in_service)
+              bus_is_active, bus_in_service, merged_bus)
     # finally create and fill bus lookup
     bus_lookup = -np.ones(max_bus_idx + 1, dtype=np.int64)
     fill_bus_lookup(ar, bus_lookup, bus_index)
-    return bus_lookup
+    return bus_lookup, merged_bus
 
 
 class DisjointSet(dict):
@@ -130,10 +153,10 @@ def create_consecutive_bus_lookup(net, bus_index):
     return bus_lookup
 
 
-def create_bus_lookup_numpy(net, bus_index, bus_is_idx, gen_is_mask, eg_is_mask,
-                            closed_bb_switch_mask):
+def create_bus_lookup_numpy(net, bus_index, closed_bb_switch_mask):
     bus_lookup = create_consecutive_bus_lookup(net, bus_index)
     net._fused_bb_switches = closed_bb_switch_mask & (net["switch"]["z_ohm"].values <= 0)
+    merged_bus = np.zeros(len(bus_lookup), dtype=bool)
     if net._fused_bb_switches.any():
         # Note: this might seem a little odd - first constructing a pp to ppc mapping without
         # fused busses and then update the entries. The alternative (to construct the final
@@ -141,9 +164,24 @@ def create_bus_lookup_numpy(net, bus_index, bus_is_idx, gen_is_mask, eg_is_mask,
         # are not part of any opened bus-bus switches first. It turns out, that the latter takes
         # quite some time in the average usecase, where #busses >> #bus-bus switches.
 
+        # create mask arrays to distinguish different grid elements
+        _is_elements = net["_is_elements"]
+        eg_is_mask = _is_elements['ext_grid']
+        gen_is_mask = _is_elements['gen']
+        load_is_mask = _is_elements['load']
+        motor_is_mask = _is_elements['motor']
+        sgen_is_mask = _is_elements['sgen']
+        shunt_is_mask = _is_elements['shunt']
+        ward_is_mask = _is_elements['ward']
+        xward_is_mask = _is_elements['xward']
         # Find PV / Slack nodes -> their bus must be kept when fused with a PQ node
         pv_list = [net["ext_grid"]["bus"].values[eg_is_mask], net["gen"]["bus"].values[gen_is_mask]]
         pv_ref = np.unique(np.hstack(pv_list))
+        # Find active nodes -> their bus must be possibly kept when fused with a zero injection node
+        active_bus = [net["load"]["bus"].values[load_is_mask], net["motor"]["bus"].values[motor_is_mask], \
+                    net["sgen"]["bus"].values[sgen_is_mask], net["shunt"]["bus"].values[shunt_is_mask], \
+                    net["ward"]["bus"].values[ward_is_mask], net["xward"]["bus"].values[xward_is_mask]]
+        active_ref = np.unique(np.hstack(active_bus))
         # get the pp-indices of the buses which are connected to a switch to be fused
         fbus = net["switch"]["bus"].values[net._fused_bb_switches]
         tbus = net["switch"]["element"].values[net._fused_bb_switches]
@@ -170,30 +208,48 @@ def create_bus_lookup_numpy(net, bus_index, bus_is_idx, gen_is_mask, eg_is_mask,
         if any(i in fbus or i in tbus for i in pv_ref):
             # for every disjoint set
             for dj in disjoint_sets:
-                # check if pv buses are in the disjoint set dj
+                # check if pv and active buses are in the disjoint set dj
                 pv_buses_in_set = set(pv_ref) & dj
                 nr_pv_bus = len(pv_buses_in_set)
-                if nr_pv_bus == 0:
-                    # no pv buses. Use any bus in dj
-                    map_to = bus_lookup[dj.pop()]
-                else:
+                active_buses_in_set = set(active_ref) & dj
+                nr_active_bus = len(active_buses_in_set)
+                if nr_pv_bus > 0:
                     # one pv bus. Get bus from pv_buses_in_set
-                    map_to = bus_lookup[pv_buses_in_set.pop()]
+                    ref_bus = pv_buses_in_set.pop()
+                else: 
+                    if nr_active_bus > 0:
+                        # no pv bus but another active bus. Get bus from active_buses_in_set
+                        ref_bus = active_buses_in_set.pop()
+                    else:
+                        # neither pv buses nor active buses. Use any bus in dj
+                        ref_bus = dj.pop()
+                map_to = bus_lookup[ref_bus]
                 for bus in dj:
                     # update lookup
                     bus_lookup[bus] = map_to
+                    if bus != ref_bus:
+                        merged_bus[bus] = 1
         else:
             # no PV buses in set
             for dj in disjoint_sets:
-                # use any bus in set
-                map_to = bus_lookup[dj.pop()]
+                active_buses_in_set = set(active_ref) & dj
+                nr_active_bus = len(active_buses_in_set)
+                if nr_active_bus > 0:
+                    # no ov bus but another active bus. Get bus from active_buses_in_set
+                    ref_bus = active_buses_in_set.pop()
+                else:
+                    # neither pv buses nor active busese. Use any bus in dj
+                    ref_bus = dj.pop()
+                map_to = bus_lookup[ref_bus]
                 for bus in dj:
                     # update bus lookup
                     bus_lookup[bus] = map_to
-    return bus_lookup
+                    if bus != ref_bus:
+                        merged_bus[bus] = 1
+    return bus_lookup, merged_bus
 
 
-def create_bus_lookup(net, bus_index, bus_is_idx, gen_is_mask, eg_is_mask, numba):
+def create_bus_lookup(net, bus_index, bus_is_idx, numba):
     switches_with_pos_z_ohm = net["switch"]["z_ohm"].values > 0
     if switches_with_pos_z_ohm.any() or not numba:
         # if there are any closed bus-bus switches find them
@@ -208,12 +264,10 @@ def create_bus_lookup(net, bus_index, bus_is_idx, gen_is_mask, eg_is_mask, numba
         net._impedance_bb_switches = np.zeros(switches_with_pos_z_ohm.shape)
 
     if numba:
-        bus_lookup = create_bus_lookup_numba(net, bus_index, bus_is_idx,
-                                             gen_is_mask, eg_is_mask)
+        bus_lookup, merged_bus = create_bus_lookup_numba(net, bus_index, bus_is_idx)
     else:
-        bus_lookup = create_bus_lookup_numpy(net, bus_index, bus_is_idx,
-                                             gen_is_mask, eg_is_mask, closed_bb_switch_mask)
-    return bus_lookup
+        bus_lookup, merged_bus = create_bus_lookup_numpy(net, bus_index, closed_bb_switch_mask)
+    return bus_lookup, merged_bus
 
 
 def get_voltage_init_vector(net, init_v, mode, sequence=None):
@@ -301,11 +355,10 @@ def _build_bus_ppc(net, ppc, sequence=None):
         bus_lookup = create_consecutive_bus_lookup(net, bus_index)
     else:
         _is_elements = net["_is_elements"]
-        eg_is_mask = _is_elements['ext_grid']
-        gen_is_mask = _is_elements['gen']
+        # eg_is_mask = _is_elements['ext_grid']
+        # gen_is_mask = _is_elements['gen']
         bus_is_idx = _is_elements['bus_is_idx']
-        bus_lookup = create_bus_lookup(net, bus_index, bus_is_idx,
-                                       gen_is_mask, eg_is_mask, numba=numba)
+        bus_lookup, merged_bus = create_bus_lookup(net, bus_index, bus_is_idx, numba=numba)
 
     n_bus_ppc = len(bus_index)
     # init ppc with empty values
@@ -374,6 +427,8 @@ def _build_bus_ppc(net, ppc, sequence=None):
 
     net["_pd2ppc_lookups"]["bus"] = bus_lookup
     net["_pd2ppc_lookups"]["aux"] = aux
+    if mode != "nx":
+        net["_pd2ppc_lookups"]["merged_bus"] = merged_bus
 
 
 def _build_bus_dc_ppc(net, ppc):
