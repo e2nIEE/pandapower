@@ -75,6 +75,8 @@ class WLSAlgorithm(BaseAlgorithm):
         self.r = None
         self.H = None
         self.hx = None
+        self.iterations = None
+        self.obj_func = None
 
     def estimate(self, eppci: ExtendedPPCI, **kwargs):
         self.initialize(eppci)
@@ -83,6 +85,7 @@ class WLSAlgorithm(BaseAlgorithm):
 
         current_error, cur_it = 100., 0
         # invert covariance matrix
+        eppci.r_cov[eppci.r_cov<(10**(-6))] = 10**(-6)
         r_inv = csr_matrix(np.diagflat(1 / eppci.r_cov ** 2))
         E = eppci.E
         while current_error > self.tolerance and cur_it < self.max_iterations:
@@ -106,10 +109,15 @@ class WLSAlgorithm(BaseAlgorithm):
                 E += d_E.ravel()
                 eppci.update_E(E)
 
+                # log data 
+                current_error = np.max(np.abs(d_E))
+                obj_func = (r.T*r_inv*r)[0,0]
+                self.logger.debug("Current delta_x: {:.7f}".format(current_error))
+                self.logger.debug("Current objective function value: {:.1f}".format(obj_func))
+
                 # prepare next iteration
                 cur_it += 1
-                current_error = np.max(np.abs(d_E))
-                self.logger.debug("Current error: {:.7f}".format(current_error))
+
             except np.linalg.linalg.LinAlgError:
                 self.logger.error("A problem appeared while using the linear algebra methods."
                                   "Check and change the measurement set.")
@@ -117,6 +125,8 @@ class WLSAlgorithm(BaseAlgorithm):
 
         # check if the estimation is successfull
         self.check_result(current_error, cur_it)
+        self.iterations = cur_it
+        self.obj_func = obj_func
         if self.successful:
             # store variables required for chi^2 and r_N_max test:
             self.R_inv = r_inv.toarray()
