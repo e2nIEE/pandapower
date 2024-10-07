@@ -288,6 +288,7 @@ def _add_zero_injection(net, ppci, bus_append, zero_injection):
         if net._pd2ppc_lookups['aux']:
             aux_bus_lookup = np.concatenate([v for k, v in net._pd2ppc_lookups['aux'].items() if k != 'xward'])
             aux_bus = net._pd2ppc_lookups['bus'][aux_bus_lookup]
+            aux_bus = aux_bus[aux_bus < ppci["bus"].shape[0]]
             bus_append[aux_bus, ZERO_INJ_FLAG] = True
 
         if isinstance(zero_injection, str):
