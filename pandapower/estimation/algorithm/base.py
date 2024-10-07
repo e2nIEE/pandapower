@@ -77,6 +77,7 @@ class WLSAlgorithm(BaseAlgorithm):
         self.hx = None
         self.iterations = None
         self.obj_func = None
+        logging.basicConfig(level=logging.DEBUG)
 
     def estimate(self, eppci: ExtendedPPCI, **kwargs):
         self.initialize(eppci)
@@ -97,6 +98,14 @@ class WLSAlgorithm(BaseAlgorithm):
                 # jacobian matrix H
                 H = csr_matrix(sem.create_hx_jacobian(E))
 
+                # remove current magnitude measurements at the first iteration 
+                # because with flat start they have null derivative
+                if cur_it == 0 and eppci.any_i_meas:
+                    idx = eppci.idx_non_imeas
+                    r_inv = r_inv[idx,:][:,idx]
+                    r = r[idx,:]
+                    H = H[idx,:]
+
                 # gain matrix G_m
                 # G_m = H^t * R^-1 * H
                 G_m = H.T * (r_inv * H)
@@ -114,6 +123,10 @@ class WLSAlgorithm(BaseAlgorithm):
                 obj_func = (r.T*r_inv*r)[0,0]
                 self.logger.debug("Current delta_x: {:.7f}".format(current_error))
                 self.logger.debug("Current objective function value: {:.1f}".format(obj_func))
+
+                # Restore full weighting matrix with current measurements
+                if cur_it == 0 and eppci.any_i_meas:
+                    r_inv = csr_matrix(np.diagflat(1 / eppci.r_cov ** 2))
 
                 # prepare next iteration
                 cur_it += 1

@@ -89,7 +89,7 @@ def _init_ppc(net, v_start, delta_start, calculate_voltage_angles):
     return ppc, ppci
 
 
-def _add_measurements_to_ppci(net, ppci, zero_injection):
+def _add_measurements_to_ppci(net, ppci, zero_injection, algorithm):
     """
 
     Add pandapower measurements to the ppci structure by adding new columns
@@ -345,6 +345,21 @@ def _build_measurement_vectors(ppci, update_meas_only=False):
                         ppci["branch"][i_degree_line_f_not_nan, branch_cols + IA_FROM],
                         ppci["branch"][i_degree_line_t_not_nan, branch_cols + IA_TO]
                         )).real.astype(np.float64)
+    imag_meas = np.concatenate((np.zeros(sum(p_bus_not_nan)),
+                               np.zeros(sum(p_line_f_not_nan)),
+                               np.zeros(sum(p_line_t_not_nan)),
+                               np.zeros(sum(q_bus_not_nan)),
+                               np.zeros(sum(q_line_f_not_nan)),
+                               np.zeros(sum(q_line_t_not_nan)),
+                               np.zeros(sum(v_bus_not_nan)),
+                               np.zeros(sum(v_degree_bus_not_nan)),
+                               np.ones(sum(i_line_f_not_nan)),
+                               np.ones(sum(i_line_t_not_nan)),
+                               np.zeros(sum(i_degree_line_f_not_nan)),
+                               np.zeros(sum(i_degree_line_t_not_nan))
+                               )).astype(bool)
+    idx_non_imeas = np.flatnonzero(~imag_meas)
+    
     if not update_meas_only:
         # conserve the pandapower indices of measurements in the ppci order
         pp_meas_indices = np.concatenate((ppci["bus"][p_bus_not_nan, bus_cols + P_IDX],
@@ -390,16 +405,16 @@ def _build_measurement_vectors(ppci, update_meas_only=False):
         any_degree_meas = np.any(np.r_[v_degree_bus_not_nan,
                                        i_degree_line_f_not_nan,
                                        i_degree_line_t_not_nan])
-        return z, pp_meas_indices, r_cov, meas_mask, any_i_meas, any_degree_meas
+        return z, pp_meas_indices, r_cov, meas_mask, any_i_meas, any_degree_meas, idx_non_imeas
     else:
         return z
 
 
 def pp2eppci(net, v_start=None, delta_start=None,
              calculate_voltage_angles=True, zero_injection="aux_bus",
-             ppc=None, eppci=None):
+             algorithm='wls', ppc=None, eppci=None):
     if isinstance(eppci, ExtendedPPCI):
-        eppci.data = _add_measurements_to_ppci(net, eppci.data, zero_injection)
+        eppci.data = _add_measurements_to_ppci(net, eppci.data, zero_injection, algorithm)
         eppci.update_meas()
         return net, ppc, eppci
     else:
@@ -408,7 +423,7 @@ def pp2eppci(net, v_start=None, delta_start=None,
 
         # add measurements to ppci structure
         # Finished converting pandapower network to ppci
-        ppci = _add_measurements_to_ppci(net, ppci, zero_injection)
+        ppci = _add_measurements_to_ppci(net, ppci, zero_injection, algorithm)
         return net, ppc, ExtendedPPCI(ppci)
 
 
@@ -446,7 +461,7 @@ class ExtendedPPCI(UserDict):
     def _initialize_meas(self):
         # calculate relevant vectors from ppci measurements
         self.z, self.pp_meas_indices, self.r_cov, self.non_nan_meas_mask,\
-            self.any_i_meas, self.any_degree_meas =\
+            self.any_i_meas, self.any_degree_meas, self.idx_non_imeas =\
             _build_measurement_vectors(self, update_meas_only=False)
         self.non_nan_meas_selector = np.flatnonzero(self.non_nan_meas_mask)
 
