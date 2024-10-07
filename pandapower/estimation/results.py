@@ -44,6 +44,12 @@ def _extract_result_ppci_to_pp(net, ppc, ppci):
                                       mapping_table)
     net.res_bus_est.q_mvar = get_values(ppc["bus"][:, 3], net.bus.index.values,
                                         mapping_table)
+    # overwrite power values for buses that were merged because they would not have the same power inj
+    # as the bus they were merged to
+    merged_bus = net["_pd2ppc_lookups"]["merged_bus"]
+    merged_bus_idx = np.where(merged_bus == True)[0]
+    net.res_bus_est.loc[merged_bus_idx, 'p_mw'] = 0
+    net.res_bus_est.loc[merged_bus_idx, "q_mvar"] = 0
     return net
 
 
