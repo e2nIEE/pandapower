@@ -294,7 +294,7 @@ def _add_measurements_to_ppci(net, ppci, zero_injection, algorithm):
                     ppci["rated_powers_clusters"][bus, cluster_idx] += P
                     ppci["rated_powers_clusters"][bus, cluster_idx + num_clusters] += Q
                     ppci["rated_powers_clusters"][bus, cluster_idx + 2*num_clusters] += abs(0.3*P)    # std dev cluster variability hardcoded, think how to change it
-                    ppci["rated_powers_clusters"][bus, cluster_idx + 2*num_clusters] += abs(0.3*Q)    # std dev cluster variability hardcoded, think how to change it
+                    ppci["rated_powers_clusters"][bus, cluster_idx + 3*num_clusters] += abs(0.3*Q)    # std dev cluster variability hardcoded, think how to change it
                     
     return ppci
 
