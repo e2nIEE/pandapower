@@ -279,23 +279,25 @@ def _add_measurements_to_ppci(net, ppci, zero_injection, algorithm):
         ppci["clusters"] = cluster_list_tot
         num_clusters = len(cluster_list_tot)
         num_buses = ppci["bus"].shape[0]
-        ppci["rated_powers_clusters"] = np.zeros([num_buses, 4*num_clusters])
+        ppci["rated_power_clusters"] = np.zeros([num_buses, 4*num_clusters])
         for var in ["load", "sgen"]:
-            for item in net[var].index:
-                if net[var]["in_service"][item]:
-                    bus = net._pd2ppc_lookups["bus"][net[var].bus[item]]
-                    cluster = net[var].type[item]
-                    cluster_idx = np.where(cluster_list_tot == cluster)[0]
-                    P = net[var].p_mw[item]
-                    Q = net[var].q_mvar[item]
-                    if var == 'load':
-                        P *= -1
-                        Q *= -1
-                    ppci["rated_powers_clusters"][bus, cluster_idx] += P
-                    ppci["rated_powers_clusters"][bus, cluster_idx + num_clusters] += Q
-                    ppci["rated_powers_clusters"][bus, cluster_idx + 2*num_clusters] += abs(0.3*P)    # std dev cluster variability hardcoded, think how to change it
-                    ppci["rated_powers_clusters"][bus, cluster_idx + 3*num_clusters] += abs(0.3*Q)    # std dev cluster variability hardcoded, think how to change it
-                    
+            in_service = net[var]["in_service"]
+            active_elements = net[var][in_service]
+            bus = net._pd2ppc_lookups["bus"][active_elements.bus].astype(int)
+            P = active_elements.p_mw.values/ppci["baseMVA"]
+            Q = active_elements.q_mvar.values/ppci["baseMVA"]
+            if var == 'load':
+                P *= -1
+                Q *= -1
+            cluster = active_elements.type.values
+            for k in range(num_clusters):
+                cluster[cluster == cluster_list_tot[k]] = k
+            cluster = cluster.astype(int)
+            ppci["rated_power_clusters"][bus, cluster] = P
+            ppci["rated_power_clusters"][bus, cluster + num_clusters] = Q
+            ppci["rated_power_clusters"][bus, cluster + 2*num_clusters] = abs(0.03*P)    # std dev cluster variability hardcoded, think how to change it
+            ppci["rated_power_clusters"][bus, cluster + 3*num_clusters] = abs(0.03*Q)    # std dev cluster variability hardcoded, think how to change it
+
     return ppci
 
 
@@ -385,6 +387,9 @@ def _build_measurement_vectors(ppci, update_meas_only=False):
                                np.zeros(sum(i_degree_line_t_not_nan))
                                )).astype(bool)
     idx_non_imeas = np.flatnonzero(~imag_meas)
+    if ppci.algorithm == "af-wls":
+        balance_eq_meas = np.zeros(ppci["rated_power_clusters"].shape[0]).astype(np.float64)
+        z = np.concatenate((z, balance_eq_meas[ppci.non_slack_bus_mask], balance_eq_meas[ppci.non_slack_bus_mask]))
     
     if not update_meas_only:
         # conserve the pandapower indices of measurements in the ppci order
@@ -431,6 +436,15 @@ def _build_measurement_vectors(ppci, update_meas_only=False):
         any_degree_meas = np.any(np.r_[v_degree_bus_not_nan,
                                        i_degree_line_f_not_nan,
                                        i_degree_line_t_not_nan])
+        if ppci.algorithm == "af-wls":
+            num_clusters = len(ppci["clusters"])
+            # P_balance_dev_std = np.sqrt(np.sum(np.square(ppci["rated_power_clusters"][:,2*num_clusters:3*num_clusters]),axis=1))
+            # Q_balance_dev_std = np.sqrt(np.sum(np.square(ppci["rated_power_clusters"][:,3*num_clusters:4*num_clusters]),axis=1))
+            P_balance_dev_std = np.full((790,),25)
+            Q_balance_dev_std = np.full((790,),25)
+            r_cov = np.concatenate((r_cov, P_balance_dev_std[ppci.non_slack_bus_mask], Q_balance_dev_std[ppci.non_slack_bus_mask]))
+            meas_mask = np.concatenate((meas_mask, ppci.non_slack_bus_mask, ppci.non_slack_bus_mask))
+
         return z, pp_meas_indices, r_cov, meas_mask, any_i_meas, any_degree_meas, idx_non_imeas
     else:
         return z
@@ -441,7 +455,7 @@ def pp2eppci(net, v_start=None, delta_start=None,
              algorithm='wls', ppc=None, eppci=None):
     if isinstance(eppci, ExtendedPPCI):
         eppci.data = _add_measurements_to_ppci(net, eppci.data, zero_injection, algorithm)
-        eppci.update_meas()
+        eppci.update_meas(algorithm)
         return net, ppc, eppci
     else:
         # initialize ppc
@@ -450,13 +464,14 @@ def pp2eppci(net, v_start=None, delta_start=None,
         # add measurements to ppci structure
         # Finished converting pandapower network to ppci
         ppci = _add_measurements_to_ppci(net, ppci, zero_injection, algorithm)
-        return net, ppc, ExtendedPPCI(ppci)
+        return net, ppc, ExtendedPPCI(ppci, algorithm)
 
 
 class ExtendedPPCI(UserDict):
-    def __init__(self, ppci):
+    def __init__(self, ppci, algorithm):
         """Initialize ppci object with measurements."""
         self.data = ppci
+        self.algorithm = algorithm
 
         # Measurement relevant parameters
         self.z = None
@@ -466,7 +481,6 @@ class ExtendedPPCI(UserDict):
         self.non_nan_meas_selector = None
         self.any_i_meas = False
         self.any_degree_meas = False
-        self._initialize_meas()
 
         # check slack bus
         self.non_slack_buses = np.argwhere(ppci["bus"][:, idx_bus.BUS_TYPE] != 3).ravel()
@@ -476,6 +490,9 @@ class ExtendedPPCI(UserDict):
                                       np.ones(self.non_slack_bus_mask.shape[0], dtype=bool)].ravel()
         self.delta_v_bus_selector = np.flatnonzero(self.delta_v_bus_mask)
 
+        # Iniialize measurements 
+        self._initialize_meas()
+
         # Initialize state variable
         self.v_init = ppci["bus"][:, idx_bus.VM]
         self.delta_init = np.radians(ppci["bus"][:, idx_bus.VA])
@@ -483,6 +500,8 @@ class ExtendedPPCI(UserDict):
         self.v = self.v_init.copy()
         self.delta = self.delta_init.copy()
         self.E = self.E_init.copy()
+        if algorithm == "af-wls":
+            self.E = np.concatenate((self.E, np.full(ppci["clusters"].shape,0.5)))
 
     def _initialize_meas(self):
         # calculate relevant vectors from ppci measurements

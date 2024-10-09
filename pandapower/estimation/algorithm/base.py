@@ -288,6 +288,7 @@ class AFWLSAlgorithm(BaseAlgorithm):
         eppci.r_cov[eppci.r_cov<(10**(-6))] = 10**(-6)
         r_inv = csr_matrix(np.diagflat(1 / eppci.r_cov ** 2))
         E = eppci.E
+        num_clusters = len(self.eppci["clusters"])
         while current_error > self.tolerance and cur_it < self.max_iterations:
             self.logger.debug("Starting iteration {:d}".format(1 + cur_it))
             try:
@@ -307,12 +308,11 @@ class AFWLSAlgorithm(BaseAlgorithm):
                 G_m = H.T * (r_inv * H)
 
                 # state vector difference d_E
-                # d_E = G_m^-1 * (H' * R^-1 * r)
                 d_E = spsolve(G_m, H.T * (r_inv * r))
 
                 # Update E with d_E
                 E += d_E.ravel()
-                eppci.update_E(E)
+                # eppci.update_E(E1)
 
                 # log data 
                 current_error = np.max(np.abs(d_E))
@@ -342,6 +342,9 @@ class AFWLSAlgorithm(BaseAlgorithm):
             self.Gm = G_m.toarray()
             self.r = r.toarray()
             self.H = H.toarray()
-            # create h(x) for the current iteration
-            self.hx = sem.create_hx(eppci.E)
+            # split voltage and allocation factor variables
+            E1 = E[:-num_clusters]
+            E2 = E[-num_clusters:]
+            eppci.update_E(E1)
+            eppci.clusters = E2
         return eppci

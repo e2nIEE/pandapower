@@ -274,6 +274,8 @@ class StateEstimation:
 
         if self.solver.successful:
             self.net = eppci2pp(self.net, self.ppc, self.eppci)
+            if self.algorithm == "af-wls":
+                self.net["res_cluster_est"] = self.eppci.clusters
         else:
             self.logger.warning("Estimation failed! Pandapower network failed to update!")
 
@@ -285,7 +287,7 @@ class StateEstimation:
         if not self.recycle:
             self.ppc, self.eppci = None, None
         
-        if algorithm == "wls":
+        if algorithm == "wls" or algorithm == "af-wls":
             now = datetime.now()
             se_results = {
                 "success": self.solver.successful,
