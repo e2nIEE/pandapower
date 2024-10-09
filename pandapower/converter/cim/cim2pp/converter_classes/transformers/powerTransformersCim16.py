@@ -59,24 +59,25 @@ class PowerTransformersCim16:
             trafo_df_origin['id_characteristic'] = np.nan
         if 'characteristic_temp' not in self.cimConverter.net.keys():
             self.cimConverter.net['characteristic_temp'] = pd.DataFrame(
-                columns=['id_characteristic', 'step', 'vk_percent',
+                columns=['id_characteristic', 'step', 'voltage_ratio', 'angle_deg', 'vk_percent',
                          'vkr_percent', 'vkr_hv_percent', 'vkr_mv_percent',
                          'vkr_lv_percent', 'vk_hv_percent', 'vk_mv_percent',
                          'vk_lv_percent'])
         # get the TablePoints
         ptct = self.cimConverter.cim['eq']['PhaseTapChangerTabular'][['TransformerEnd', 'PhaseTapChangerTable']]
         ptct = pd.merge(ptct, self.cimConverter.cim['eq']['PhaseTapChangerTablePoint'][
-            ['PhaseTapChangerTable', 'step', 'r', 'x']], how='left', on='PhaseTapChangerTable')
-        # append the ratio tab changers
+            ['PhaseTapChangerTable', 'step', 'r', 'x', 'ratio', 'angle']], how='left', on='PhaseTapChangerTable')
+        # append the ratio tap changers
         ptct_ratio = self.cimConverter.cim['eq']['RatioTapChanger'][['TransformerEnd', 'RatioTapChangerTable']]
         ptct_ratio = pd.merge(ptct_ratio, self.cimConverter.cim['eq']['RatioTapChangerTablePoint'][
-            ['RatioTapChangerTable', 'step', 'r', 'x']], how='left', on='RatioTapChangerTable')
+            ['RatioTapChangerTable', 'step', 'r', 'x', 'ratio']], how='left', on='RatioTapChangerTable')
         ptct = pd.concat([ptct, ptct_ratio], ignore_index=True, sort=False)
-        ptct = ptct.rename(columns={'step': 'tabular_step', 'r': 'r_dev', 'x': 'x_dev', 'TransformerEnd': sc['pte_id']})
+        ptct.rename(columns={'step': 'tabular_step', 'r': 'r_dev', 'x': 'x_dev', 'TransformerEnd': sc['pte_id'],
+                             'ratio': 'ratio_dev', 'angle': 'angle_dev'}, inplace=True)
         ptct = ptct.drop(columns=['PhaseTapChangerTable'])
         if trafo_type == 'trafo':
             trafo_df = trafo_df_origin.sort_values(['PowerTransformer', 'endNumber']).reset_index()
-            # precessing the transformer data
+            # processing the transformer data
             # a list of transformer parameters which are used for each transformer winding
             copy_list = ['ratedU', 'r', 'x', sc['pte_id'], 'neutralStep', 'lowStep', 'highStep', 'step']
             for one_item in copy_list:
@@ -95,7 +96,8 @@ class PowerTransformersCim16:
             # merge the trafos with the tap changers
             trafo_df = pd.merge(trafo_df, ptct, how='left', on=sc['pte_id'])
             trafo_df = pd.merge(trafo_df, ptct.rename(columns={'tabular_step': 'tabular_step_lv', 'r_dev': 'r_dev_lv',
-                                                               'x_dev': 'x_dev_lv',
+                                                               'x_dev': 'x_dev_lv', 'ratio_dev': 'ratio_dev_lv',
+                                                               'angle_dev': 'angle_dev_lv',
                                                                sc['pte_id']: sc['pte_id'] + '_lv'}),
                                 how='left', on=sc['pte_id'] + '_lv')
             fillna_list = ['tabular_step']
@@ -118,6 +120,12 @@ class PowerTransformersCim16:
             trafo_df['r_lv'] = trafo_df['r_lv'] * (1 + trafo_df['r_dev_lv'] / 100)
             trafo_df['x'] = trafo_df['x'] + trafo_df['x'] * trafo_df['x_dev'] / 100
             trafo_df['x_lv'] = trafo_df['x_lv'] * (1 + trafo_df['x_dev_lv'] / 100)
+            fillna_list = ['ratio_dev', 'angle_dev']
+            for one_item in fillna_list:
+                trafo_df[one_item] = trafo_df[one_item].fillna(trafo_df[one_item + '_lv'])
+            trafo_df['ratio_dev'] = trafo_df['ratio_dev'].fillna(1.00000)
+            trafo_df['angle_dev'] = trafo_df['angle_dev'].fillna(0)
+            trafo_df.rename(columns={'ratio_dev': 'voltage_ratio', 'angle_dev': 'angle_deg'}, inplace=True)
 
             # calculate vkr_percent and vk_percent
             trafo_df['vkr_percent'] = \
@@ -129,7 +137,8 @@ class PowerTransformersCim16:
                 (abs(trafo_df.r_lv) ** 2 + abs(trafo_df.x_lv) ** 2) ** 0.5 * \
                 (trafo_df.ratedS * 1e3) / (10. * trafo_df.ratedU_lv ** 2)
             trafo_df['tabular_step'] = trafo_df['tabular_step'].astype(int)
-            append_dict = dict({'id_characteristic': [], 'step': [], 'vk_percent': [], 'vkr_percent': []})
+            append_dict = dict({'id_characteristic': [], 'step': [], 'voltage_ratio': [], 'angle_deg': [],
+                                'vk_percent': [], 'vkr_percent': []})
         else:
             trafo_df = trafo_df_origin.copy()
             trafo_df = trafo_df.sort_values(['PowerTransformer', 'endNumber']).reset_index()
@@ -156,19 +165,18 @@ class PowerTransformersCim16:
             trafo_df = pd.concat([pd.merge(trafo_df, ptct, how='left', on=sc['pte_id']),
                                   pd.merge(trafo_df,
                                            ptct.rename(columns={'tabular_step': 'tabular_step_mv', 'r_dev': 'r_dev_mv',
-                                                                'x_dev': 'x_dev_mv',
+                                                                'x_dev': 'x_dev_mv', 'ratio_dev': 'ratio_dev_mv',
+                                                                'angle_dev': 'angle_dev_mv',
                                                                 sc['pte_id']: sc['pte_id'] + '_mv'}),
                                            how='left', on=sc['pte_id'] + '_mv'),
                                   pd.merge(trafo_df,
                                            ptct.rename(columns={'tabular_step': 'tabular_step_lv', 'r_dev': 'r_dev_lv',
-                                                                'x_dev': 'x_dev_lv',
+                                                                'x_dev': 'x_dev_lv', 'ratio_dev': 'ratio_dev_lv',
+                                                                'angle_dev': 'angle_dev_lv',
                                                                 sc['pte_id']: sc['pte_id'] + '_lv'}),
                                            how='left', on=sc['pte_id'] + '_lv')
                                   ], ignore_index=True, sort=False)
-            # remove elements with mor than one tap changer per trafo
-            trafo_df = trafo_df.loc[(~trafo_df.duplicated(subset=['PowerTransformer', 'tabular_step'], keep=False)) | (
-                ~trafo_df.RatioTapChangerTable.isna())]
-            # remove elements with mor than one tap changer per trafo
+            # remove elements with more than one tap changer per trafo
             trafo_df = trafo_df.loc[(~trafo_df.duplicated(subset=['PowerTransformer', 'tabular_step'], keep=False)) | (
                 ~trafo_df.RatioTapChangerTable.isna())]
             fillna_list = ['tabular_step']
@@ -180,6 +188,14 @@ class PowerTransformersCim16:
             fillna_list = ['r_dev', 'r_dev_mv', 'r_dev_lv', 'x_dev', 'x_dev_mv', 'x_dev_lv']
             for one_item in fillna_list:
                 trafo_df[one_item] = trafo_df[one_item].fillna(0)
+            fillna_list = ['ratio_dev', 'angle_dev']
+            for one_item in fillna_list:
+                trafo_df[one_item] = trafo_df[one_item].fillna(trafo_df[one_item + '_mv'])
+                trafo_df[one_item] = trafo_df[one_item].fillna(trafo_df[one_item + '_lv'])
+            trafo_df['ratio_dev'] = trafo_df['ratio_dev'].fillna(1.00000)
+            trafo_df['angle_dev'] = trafo_df['angle_dev'].fillna(0)
+            trafo_df.rename(columns={'ratio_dev': 'voltage_ratio', 'angle_dev': 'angle_deg'}, inplace=True)
+
             # calculate vkr_percent and vk_percent
             trafo_df['r'] = trafo_df['r'] * (1 + trafo_df['r_dev'] / 100)
             trafo_df['r_mv'] = trafo_df['r_mv'] * (1 + trafo_df['r_dev_mv'] / 100)
@@ -218,14 +234,15 @@ class PowerTransformersCim16:
                          trafo_df.ratedU_lv / trafo_df.ratedU) ** 2) ** 2) ** 0.5 * \
                 trafo_df.min_s_lvhv * 100 / trafo_df.ratedU_lv ** 2
             trafo_df['tabular_step'] = trafo_df['tabular_step'].astype(int)
-            append_dict = dict({'id_characteristic': [], 'step': [], 'vkr_hv_percent': [], 'vkr_mv_percent': [],
-                                'vkr_lv_percent': [], 'vk_hv_percent': [], 'vk_mv_percent': [], 'vk_lv_percent': []})
+            append_dict = dict({'id_characteristic': [], 'step': [], 'voltage_ratio': [], 'angle_deg': [],
+                                'vkr_hv_percent': [], 'vkr_mv_percent': [], 'vkr_lv_percent': [], 'vk_hv_percent': [],
+                                'vk_mv_percent': [], 'vk_lv_percent': []})
 
         def append_row(res_dict, id_c, row, cols):
             res_dict['id_characteristic'].append(id_c)
             res_dict['step'].append(row.tabular_step)
-            for variable in ['vkr_percent', 'vk_percent', 'vk_hv_percent', 'vkr_hv_percent', 'vk_mv_percent',
-                             'vkr_mv_percent', 'vk_lv_percent', 'vkr_lv_percent']:
+            for variable in ['voltage_ratio', 'angle_deg', 'vkr_percent', 'vk_percent', 'vk_hv_percent',
+                             'vkr_hv_percent', 'vk_mv_percent', 'vkr_mv_percent', 'vk_lv_percent', 'vkr_lv_percent']:
                 if variable in cols:
                     res_dict[variable].append(getattr(row, variable))
 
@@ -257,7 +274,8 @@ class PowerTransformersCim16:
         self.cimConverter.net['characteristic_temp'] = pd.concat(
             [self.cimConverter.net['characteristic_temp'], pd.DataFrame(append_dict)],
             ignore_index=True, sort=False)
-        self.cimConverter.net['characteristic_temp']['step'] = self.cimConverter.net['characteristic_temp']['step'].astype(int)
+        self.cimConverter.net['characteristic_temp']['step'] = \
+            self.cimConverter.net['characteristic_temp']['step'].astype(int)
 
     def _prepare_power_transformers_cim16(self) -> pd.DataFrame:
         if 'sc' in self.cimConverter.cim.keys():
@@ -329,6 +347,7 @@ class PowerTransformersCim16:
             one_df = one_df.set_index('step')
             neutral_step = one_df['neutralStep'].iloc[0]
             ptct = ptct.drop(drop_index)
+            # todo change to populate tap_step_percent & tap_step_degree based on neutral tap_pos?
             # ptct.loc[keep_index, 'angle'] =
             # one_df.loc[current_step, 'angle'] / max(1, abs(current_step - neutral_step))
             ptct.loc[keep_index, 'angle'] = one_df.loc[current_step, 'angle']  # todo fix if pp supports them
@@ -491,7 +510,7 @@ class PowerTransformersCim16:
         power_trafo2w['shift_degree'] = power_trafo2w['phaseAngleClock'].astype(float).fillna(
             power_trafo2w['phaseAngleClock_lv'].astype(float)) * 30
         power_trafo2w['parallel'] = 1
-        power_trafo2w['tap_phase_shifter'] = False
+        power_trafo2w['tap_phase_shifter'] = False  # todo remove hardcoded False flag to enable angle regulation
         power_trafo2w['in_service'] = power_trafo2w.connected & power_trafo2w.connected_lv
         power_trafo2w['connectionKind'] = power_trafo2w['connectionKind'].fillna('')
         power_trafo2w['connectionKind_lv'] = power_trafo2w['connectionKind_lv'].fillna('')

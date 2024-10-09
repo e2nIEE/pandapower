@@ -28,7 +28,8 @@ class TapController:
             self.logger.info("Creating the tap dependent impedance characteristic objects for 2w-trafos.")
             # create the characteristic objects for transformers
             characteristic_df_temp = \
-                self.cimConverter.net['characteristic_temp'][['id_characteristic', 'step', 'vk_percent', 'vkr_percent']]
+                self.cimConverter.net['characteristic_temp'][
+                    ['id_characteristic', 'step', 'voltage_ratio', 'angle_deg', 'vk_percent', 'vkr_percent']]
             for trafo_id, trafo_row in self.cimConverter.net.trafo.dropna(subset=['id_characteristic']).iterrows():
                 characteristic_df = characteristic_df_temp.loc[
                     characteristic_df_temp['id_characteristic'] == trafo_row['id_characteristic']]
@@ -44,7 +45,7 @@ class TapController:
             # create the characteristic objects for transformers
             characteristic_df_temp = \
                 self.cimConverter.net['characteristic_temp'][
-                    ['id_characteristic', 'step', 'vkr_hv_percent', 'vkr_mv_percent',
+                    ['id_characteristic', 'step', 'voltage_ratio', 'angle_deg', 'vkr_hv_percent', 'vkr_mv_percent',
                      'vkr_lv_percent', 'vk_hv_percent', 'vk_mv_percent', 'vk_lv_percent']]
             for trafo_id, trafo_row in self.cimConverter.net.trafo3w.dropna(subset=['id_characteristic']).iterrows():
                 characteristic_df = characteristic_df_temp.loc[
@@ -56,8 +57,8 @@ class TapController:
 
     def _create_characteristic_object(self, net, trafo_type: str, trafo_id: List, characteristic_df: pd.DataFrame):
         self.logger.info("Adding characteristic object for trafo_type: %s and trafo_id: %s" % (trafo_type, trafo_id))
-        for variable in ['vkr_percent', 'vk_percent', 'vk_hv_percent', 'vkr_hv_percent', 'vk_mv_percent',
-                         'vkr_mv_percent', 'vk_lv_percent', 'vkr_lv_percent']:
+        for variable in ['voltage_ratio', 'angle_deg', 'vkr_percent', 'vk_percent', 'vk_hv_percent', 'vkr_hv_percent',
+                         'vk_mv_percent', 'vkr_mv_percent', 'vk_lv_percent', 'vkr_lv_percent']:
             if variable in characteristic_df.columns:
                 pandapower.control.create_trafo_characteristics(net, trafo_type, trafo_id, variable,
                                                                 [characteristic_df['step'].to_list()],

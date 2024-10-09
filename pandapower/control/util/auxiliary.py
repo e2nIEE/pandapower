@@ -214,9 +214,12 @@ def create_trafo_characteristics(net, trafotable, trafo_index, variable, x_point
     # create characteristics for the specified variable and set their indices in the trafo table
     col = f"{variable}_characteristic"
     # check if the variable is a valid attribute of the trafo table
-    supported_columns = {"trafo": ["vk_percent_characteristic", "vkr_percent_characteristic"],
-                         "trafo3w": [f"vk{r}_{side}_percent_characteristic" for side in ["hv", "mv", "lv"] for r in
-                                     ["", "r"]]}
+    supported_columns = {"trafo": ["voltage_ratio_characteristic", "angle_deg_characteristic",
+                                   "vk_percent_characteristic", "vkr_percent_characteristic"],
+                         "trafo3w": ["voltage_ratio_characteristic", "angle_deg_characteristic",
+                                     "vkr_hv_percent_characteristic", "vkr_mv_percent_characteristic",
+                                     "vkr_lv_percent_characteristic", "vk_hv_percent_characteristic",
+                                     "vk_mv_percent_characteristic", "vk_lv_percent_characteristic"]}
     if col not in supported_columns[trafotable]:
         raise UserWarning("Variable %s is not supported for table %s" % (variable, trafotable))
 
@@ -230,6 +233,7 @@ def create_trafo_characteristics(net, trafotable, trafo_index, variable, x_point
         if (len(x_points) != len(y_points)):
             raise UserWarning("The lengths of the points do not match!")
 
+    # todo change name of the flag to reflect expanded columns
     if 'tap_dependent_impedance' not in net[trafotable]:
         net[trafotable]['tap_dependent_impedance'] = Series(index=net[trafotable].index, dtype=np.bool_, data=False)
 

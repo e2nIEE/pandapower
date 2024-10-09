@@ -526,7 +526,7 @@ def _calc_y_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net_sn_mva):
     b_pu = b_mva / vnl_squared * baseZ * parallel / np.square(vn_trafo_lv / vn_lv_kv)
     return g_pu, b_pu
 
-
+# todo: add characteristics for tap percent and degree changes here
 def _calc_tap_from_dataframe(net, trafo_df):
     """
     Adjust the nominal voltage vnh and vnl to the active tab position "tap_pos".
@@ -604,6 +604,7 @@ def _replace_nan(array, value=0):
     return array
 
 
+# todo create similar or expand/rename function to include voltage_ratio and angle_deg
 def _get_vk_values(trafo_df, characteristic, trafotype="2W"):
     if trafotype == "2W":
         vk_variables = ("vk_percent", "vkr_percent")
@@ -665,6 +666,7 @@ def _get_vk_values(trafo_df, characteristic, trafotype="2W"):
 
 
 def _calc_tap_dependent_value(tap_pos, value, tap_dependent_impedance, characteristic, characteristic_idx):
+# todo expand to include voltage_ratio & angle_deg or probably better to write own function
     # we skip the trafos with NaN characteristics even if tap_dependent_impedance is True (we already checked for missing characteristics)
     relevant_idx = tap_dependent_impedance & ~np.isnan(characteristic_idx)
     vk_characteristic = np.zeros_like(tap_dependent_impedance, dtype="object")
@@ -681,7 +683,7 @@ def _calc_tap_dependent_value(tap_pos, value, tap_dependent_impedance, character
 def _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, sn_mva, sequence=1, characteristic=None,
                              update_vk_values=True):
     """
-    Calculates (Vectorized) the resitance and reactance according to the
+    Calculates (Vectorized) the resistance and reactance according to the
     transformer values
     """
     parallel = get_trafo_values(trafo_df, "parallel")
