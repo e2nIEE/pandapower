@@ -51,7 +51,7 @@ def extend_pp_net_cim(net: pandapowerNet, override: bool = True) -> pandapowerNe
 
     fill_dict['bus'] = dict()
     fill_dict['bus'][np_str_type] = [sc['o_prf'], sc['ct'], sc['cnc_id'], sc['sub_id'], 'description', 'busbar_id',
-                                     'busbar_name']
+                                     'busbar_name', 'Region_name', 'SubGeographicalRegion_name']
 
     fill_dict['ext_grid'] = dict()
     fill_dict['ext_grid'][np_str_type] = [sc['t'], sc['sub'], 'description']
