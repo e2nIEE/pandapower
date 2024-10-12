@@ -5,7 +5,7 @@
 
 import numpy as np
 from scipy.sparse import csr_matrix, vstack, hstack
-from scipy.sparse.linalg import spsolve
+from scipy.sparse.linalg import spsolve, norm, inv
 
 from pandapower.estimation.algorithm.estimator import BaseEstimatorIRWLS, get_estimator
 from pandapower.estimation.algorithm.matrix_base import BaseAlgebra, \
@@ -86,7 +86,7 @@ class WLSAlgorithm(BaseAlgorithm):
 
         current_error, cur_it = 100., 0
         # invert covariance matrix
-        eppci.r_cov[eppci.r_cov<(10**(-6))] = 10**(-6)
+        eppci.r_cov[eppci.r_cov<(10**(-5))] = 10**(-5)
         r_inv = csr_matrix(np.diagflat(1 / eppci.r_cov ** 2))
         E = eppci.E
         while current_error > self.tolerance and cur_it < self.max_iterations:
@@ -109,6 +109,11 @@ class WLSAlgorithm(BaseAlgorithm):
                 # gain matrix G_m
                 # G_m = H^t * R^-1 * H
                 G_m = H.T * (r_inv * H)
+                norm_G = norm(G_m, np.inf)
+                norm_invG = norm(inv(G_m), np.inf)
+                cond = norm_G*norm_invG
+                if cond > 10**18:
+                    self.logger.warning("WARNING: Gain matrix is ill-conditioned: {:.2E}".format(cond))
 
                 # state vector difference d_E
                 # d_E = G_m^-1 * (H' * R^-1 * r)
