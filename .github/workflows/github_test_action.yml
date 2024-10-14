@@ -37,7 +37,7 @@ jobs:
           python -m pip install .["all"]
           if ${{ matrix.python-version == '3.9' }}; then python -m pip install pypower; fi
           if ${{ matrix.python-version != '3.9' }}; then python -m pip install numba; fi
-          if ${{ matrix.python-version == '3.10' }}; then python -m pip install lightsim2grid==0.9.0; fi
+          if ${{ matrix.python-version == '3.10' }}; then python -m pip install lightsim2grid; fi
       - name: List of installed packages
         run: |
           python -m pip list
