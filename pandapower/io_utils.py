@@ -21,7 +21,7 @@ import numpy as np
 import pandas.errors
 from deepdiff.diff import DeepDiff
 from packaging.version import Version
-from pandapower import __version__
+from pandapower._version import __version__
 import networkx
 import numpy
 import geojson
