@@ -88,6 +88,7 @@ Change Log
 - [CHANGED] Trafo Controllers can now be added to elements that are out of service, changed self.nothing_to_do()
 - [ADDED] Discrete shunt controller for local voltage regulation with shunt steps
 - [ADDED] cim2pp converter: Using lxml to parse XML files (better performance)
+- [ADDED] possibility to load JSON files with unknown object models and just store the models as dictionaries in the network
 
 [2.14.7] - 2024-06-14
 -------------------------------
