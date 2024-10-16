@@ -601,5 +601,29 @@ def test_multi_index():
     assert_frame_equal(df, df2)
 
 
+def test_ignore_unknown_objects():
+    net = pp.networks.create_kerber_dorfnetz()
+    ctrl = control.ContinuousTapControl(net, 0, 1.02)
+    json_str = pp.to_json(net)
+    net2 = pp.from_json_string(json_str, ignore_unknown_objects=False)
+
+    # in general, reloaded net should be equal to original net
+    assert isinstance(net2.controller.object.at[0], control.ContinuousTapControl)
+    assert_net_equal(net, net2)
+
+    # slightly change the class name of the controller so that it cannot be identified
+    # by file_io anymore, but can still be loaded as dict if ignore_unknown_objects=True
+    json_str2 = json_str.replace("pandapower.control.controller.trafo.ContinuousTapControl",
+                                 "pandapower.control.controller.trafo.ContinuousTapControl2")
+    with pytest.raises(ModuleNotFoundError):
+        pp.from_json_string(json_str2, ignore_unknown_objects=False)
+    net3 = pp.from_json_string(json_str2, ignore_unknown_objects=True)
+    assert isinstance(net3.controller.object.at[0], dict)
+
+    # make sure that the loaded net equals the original net except for the controller
+    net.controller.object.at[0] = net3.controller.object.at[0]
+    assert_net_equal(net, net3)
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-xs"])
