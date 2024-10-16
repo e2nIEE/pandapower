@@ -390,6 +390,11 @@ def test_continuous_tap_control_side_mv():
     assert all(_vm_in_desired_area(net, 1.01, 1.03, "mv", trafo_table="trafo3w"))
     assert not np.allclose(net.trafo3w.tap_pos.values, 0)
 
+def test_discrete_trafo_control_with_oos_trafo():
+    net = pp.networks.mv_oberrhein()
+    # switch transformer out of service
+    net.trafo.loc[114, 'in_service'] = False
+    DiscreteTapControl(net=net, element_index=114, vm_lower_pu=1.01, vm_upper_pu=1.03)
 
 if __name__ == '__main__':
     pytest.main([__file__, "-xs"])
