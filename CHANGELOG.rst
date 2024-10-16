@@ -1,6 +1,10 @@
 Change Log
 =============
 
+[upcoming release] - 2024-..-..
+-------------------------------
+- [FIXED] Increasing geojson precision as the default precision might cause problems with pandahub
+
 [2.14.11] - 2024-07-08
 -------------------------------
 - [FIXED] Lightsim2grid version
