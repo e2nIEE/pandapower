@@ -207,6 +207,8 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                  ("c_nf_per_km", "f8"),
                  ("g_us_per_km", "f8"),
                  ("max_i_ka", "f8"),
+                 ("max_theta_deg", "f8"),
+                 ("min_theta_deg", "f8"),
                  ("df", "f8"),
                  ("parallel", "u4"),
                  ("type", dtype(object)),
@@ -245,6 +247,8 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                   ("tap_step_degree", "f8"),
                   ("tap_pos", "i4"),
                   ("tap_phase_shifter", 'bool'),
+                  ("max_theta_deg", "f8"),
+                  ("min_theta_deg", "f8"),
                   ("parallel", "u4"),
                   ("df", "f8"),
                   ("in_service", 'bool')],
@@ -2306,7 +2310,8 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
     v = {
         "name": name, "length_km": length_km, "from_bus": from_bus,
         "to_bus": to_bus, "in_service": bool(in_service), "std_type": std_type,
-        "df": df, "parallel": parallel
+        "df": df, "parallel": parallel,
+        "max_theta_deg": 360., "min_theta_deg": -360.,
     }
 
     lineparam = load_std_type(net, std_type, "line")
@@ -2569,7 +2574,8 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
 
     entries = {"from_bus": from_buses, "to_bus": to_buses, "length_km": length_km,
                "std_type": std_type, "name": name, "df": df, "parallel": parallel,
-               "in_service": in_service}
+               "in_service": in_service,
+               "max_theta_deg": 360., "min_theta_deg": -360.}
 
     # add std type data
     if isinstance(std_type, str):
@@ -2739,6 +2745,7 @@ def create_lines_dc(net, from_buses_dc, to_buses_dc, length_km, std_type, name=N
 
 def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, x_ohm_per_km,
                                 c_nf_per_km, max_i_ka, name=None, index=None, type=None,
+                                max_theta_deg=360., min_theta_deg=-360.,
                                 geodata=None, in_service=True, df=1., parallel=1, g_us_per_km=0.,
                                 max_loading_percent=nan, alpha=nan,
                                 temperature_degree_celsius=nan, r0_ohm_per_km=nan,
@@ -2779,6 +2786,10 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
         **in_service** (boolean, True) - True for in_service or False for out of service
 
         **type** (str, None) - type of line ("ol" for overhead line or "cs" for cable system)
+
+        **max_theta_deg** (float, 360) - maximal phase angle difference (only needed for OPF)
+
+        **min_theta_deg** (float, -360) - minimal phase angle difference (only needed for OPF)
 
         **df** (float, 1) - derating factor: maximal current of line in relation to nominal current\
             of line (from 0 to 1)
@@ -2847,7 +2858,8 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
         "to_bus": to_bus, "in_service": bool(in_service), "std_type": None,
         "df": df, "r_ohm_per_km": r_ohm_per_km, "x_ohm_per_km": x_ohm_per_km,
         "c_nf_per_km": c_nf_per_km, "max_i_ka": max_i_ka, "parallel": parallel, "type": type,
-        "g_us_per_km": g_us_per_km
+        "g_us_per_km": g_us_per_km,
+        "max_theta_deg": max_theta_deg, "min_theta_deg": min_theta_deg
     }
 
     tdpf_columns = ("wind_speed_m_per_s", "wind_angle_degree", "conductor_outer_diameter_m",
@@ -3011,6 +3023,7 @@ def create_line_dc_from_parameters(net, from_bus_dc, to_bus_dc, length_km, r_ohm
 
 def create_lines_from_parameters(net, from_buses, to_buses, length_km, r_ohm_per_km, x_ohm_per_km,
                                  c_nf_per_km, max_i_ka, name=None, index=None, type=None,
+                                 max_theta_deg=360., min_theta_deg=-360.,
                                  geodata=None, in_service=True, df=1., parallel=1, g_us_per_km=0.,
                                  max_loading_percent=nan, alpha=nan,
                                  temperature_degree_celsius=nan, r0_ohm_per_km=nan,
@@ -3054,6 +3067,10 @@ def create_lines_from_parameters(net, from_buses, to_buses, length_km, r_ohm_per
         **in_service** (list of boolean, True) - True for in_service or False for out of service
 
         **type** (list of string, None) - type of line ("ol" for overhead line or "cs" for cable system)
+
+        **max_theta_deg** (list of float, 360) - maximal phase angle difference (only needed for OPF)
+
+        **min_theta_deg** (list of float, -360) - minimal phase angle difference (only needed for OPF)
 
         **df** (list of float, 1) - derating factor: maximal current of line in relation to nominal current\
             of line (from 0 to 1)
@@ -3117,7 +3134,8 @@ def create_lines_from_parameters(net, from_buses, to_buses, length_km, r_ohm_per
     entries = {"from_bus": from_buses, "to_bus": to_buses, "length_km": length_km, "type": type,
                "r_ohm_per_km": r_ohm_per_km, "x_ohm_per_km": x_ohm_per_km,
                "c_nf_per_km": c_nf_per_km, "max_i_ka": max_i_ka, "g_us_per_km": g_us_per_km,
-               "name": name, "df": df, "parallel": parallel, "in_service": in_service}
+               "name": name, "df": df, "parallel": parallel, "in_service": in_service,
+               "max_theta_deg": max_theta_deg, "min_theta_deg": min_theta_deg}
 
     _add_to_entries_if_not_nan(net, "line", entries, index, "max_loading_percent",
                                max_loading_percent)
@@ -3359,7 +3377,8 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
 
     v = {
         "name": name, "hv_bus": hv_bus, "lv_bus": lv_bus,
-        "in_service": bool(in_service), "std_type": std_type
+        "in_service": bool(in_service), "std_type": std_type,
+        "max_theta_deg": 360., "min_theta_deg": -360.
     }
     ti = load_std_type(net, std_type, "trafo")
 
@@ -3425,6 +3444,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
                                        tap_min=nan, tap_step_percent=nan, tap_step_degree=nan,
                                        tap_pos=nan, tap_phase_shifter=False, in_service=True,
                                        name=None, vector_group=None, index=None,
+                                       max_theta_deg=360., min_theta_deg=-360.,
                                        max_loading_percent=nan, parallel=1,
                                        df=1., vk0_percent=nan, vkr0_percent=nan,
                                        mag0_percent=nan, mag0_rx=nan,
@@ -3510,6 +3530,10 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
         **index** (int, None) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
 
+        **max_theta_deg** (float, 360) - maximal phase angle difference (only needed for OPF)
+
+        **min_theta_deg** (float, -360) - minimal phase angle difference (only needed for OPF)
+
         **max_loading_percent (float)** - maximum current loading (only needed for OPF)
 
         **df** (float) - derating factor: maximal current of transformer in relation to nominal \
@@ -3588,7 +3612,9 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
         "tap_max": tap_max, "tap_min": tap_min, "shift_degree": shift_degree,
         "tap_side": tap_side, "tap_step_percent": tap_step_percent,
         "tap_step_degree": tap_step_degree,
-        "tap_phase_shifter": tap_phase_shifter, "parallel": parallel, "df": df}
+        "tap_phase_shifter": tap_phase_shifter, "parallel": parallel, "df": df,
+        "max_theta_deg": max_theta_deg, "min_theta_deg": min_theta_deg
+    }
 
     if ("tap_neutral" in v) and (tap_pos is nan):
         v["tap_pos"] = v["tap_neutral"]
@@ -3638,7 +3664,9 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
                                         tap_side=None, tap_neutral=nan, tap_max=nan, tap_min=nan,
                                         tap_step_percent=nan, tap_step_degree=nan, tap_pos=nan,
                                         tap_phase_shifter=False, in_service=True, name=None,
-                                        vector_group=None, index=None, max_loading_percent=nan,
+                                        vector_group=None, index=None,
+                                        max_theta_deg=360., min_theta_deg=-360.,
+                                        max_loading_percent=nan,
                                         parallel=1, df=1., vk0_percent=nan, vkr0_percent=nan,
                                         mag0_percent=nan, mag0_rx=nan, si0_hv_partial=nan,
                                         pt_percent=nan, oltc=nan, tap_dependent_impedance=nan,
@@ -3722,6 +3750,10 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
 
         **index** (int, None) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
+
+        **max_theta_deg** (float, 360) - maximal phase angle difference (only needed for OPF)
+
+        **min_theta_deg** (float, -360) - minimal phase angle difference (only needed for OPF)
 
         **max_loading_percent (float)** - maximum current loading (only needed for OPF)
 
