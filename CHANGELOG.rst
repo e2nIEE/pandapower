@@ -1,6 +1,10 @@
 Change Log
 =============
 
+[upcoming release] - 2024-..-..
+-------------------------------
+- [FIXED] Increasing geojson precision as the default precision might cause problems with pandahub
+
 [2.14.11] - 2024-07-08
 -------------------------------
 - [FIXED] Lightsim2grid version
@@ -86,6 +90,7 @@ Change Log
 - [ADDED] Add VSC element, dc buses, dc lines, and hybrid AC/DC power flow calculation
 - [CHANGED] accelerate _integrate_power_elements_connected_with_switch_buses() in get_equivalent()
 - [CHANGED] accelerate distributed slack power flow calculation by using sparse-aware operations in _subnetworks()
+- [CHANGED] Trafo Controllers can now be added to elements that are out of service, changed self.nothing_to_do()
 - [ADDED] Discrete shunt controller for local voltage regulation with shunt steps
 - [ADDED] cim2pp converter: Using lxml to parse XML files (better performance)
 

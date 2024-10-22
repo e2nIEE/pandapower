@@ -154,6 +154,8 @@ def _convert_trafo_controller_parameter_names(net):
             elif "trafotype" in controller.__dict__.keys():
                 controller.__dict__["element"] = controller.__dict__.pop("trafotype")
 
+            if "controlled_bus" in controller.__dict__.keys():
+                controller.__dict__["trafobus"] = controller.__dict__.pop("controlled_bus")
 
 def _convert_bus_pq_meas_to_load_reference(net, elements_to_deserialize):
     if _check_elements_to_deserialize('measurement', elements_to_deserialize):
