@@ -18,6 +18,7 @@ from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes, e
 from pandapower.results import reset_results
 from pandapower.std_types import add_basic_std_types, load_std_type
 import numpy as np
+from geojson import loads, GeoJSON
 
 try:
     import pandaplan.core.pplog as logging
@@ -25,6 +26,42 @@ except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
+
+
+@pd.api.extensions.register_series_accessor("geojson")
+class GeoAccessor:
+    """
+    pandas Series accessor for the geo column. It facilitates the use of geojson strings.
+    """
+    def __init__(self, pandas_obj):
+        self._validate(pandas_obj)
+        self._obj = pandas_obj
+
+    @staticmethod
+    def _validate(obj):
+        try:
+            if not obj.apply(loads).apply(isinstance, args=(GeoJSON,)).all():
+                raise AttributeError("Can only use .geojson accessor with geojson string values!")
+        except Exception as e:
+            raise AttributeError(f"Can only use .geojson accessor with geojson string values!: {e}")
+
+    @staticmethod
+    def extract_coords(x):
+        if x["type"] == "Point":
+            return tuple(x["coordinates"])
+        return [tuple(y) for y in x["coordinates"]]
+
+    @property
+    def coords(self):
+        return self._obj.apply(loads).apply(self.extract_coords)
+
+    @property
+    def as_geo_object(self):
+        return self._obj.apply(loads)
+
+    @property
+    def type(self):
+        return self._obj.apply(loads).apply(lambda x: str(x["type"]))
 
 
 def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
