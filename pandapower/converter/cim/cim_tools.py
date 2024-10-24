@@ -24,7 +24,7 @@ def get_pp_net_special_columns_dict() -> Dict[str, str]:
                  'o_prf': 'origin_profile', 'ct': 'cim_topnode', 'tc': 'tapchanger_class', 'tc_id': 'tapchanger_id',
                  'pte_id': 'PowerTransformerEnd_id', 'pte_id_hv': 'PowerTransformerEnd_id_hv',
                  'pte_id_mv': 'PowerTransformerEnd_id_mv', 'pte_id_lv': 'PowerTransformerEnd_id_lv',
-                 'cnc_id': 'ConnectivityNodeContainer_id', 'sub_id': 'substation_id', 'src': 'source', 'name': 'name',
+                 'cnc_id': 'ConnectivityNodeContainer_id', 'sub_id': 'Substation_id', 'src': 'source', 'name': 'name',
                  'desc': 'description', 'a_id': 'analog_id'})
 
 
@@ -50,8 +50,9 @@ def extend_pp_net_cim(net: pandapowerNet, override: bool = True) -> pandapowerNe
     fill_dict: Dict[str, Dict[str, List[str]]] = dict()
 
     fill_dict['bus'] = dict()
-    fill_dict['bus'][np_str_type] = [sc['o_prf'], sc['ct'], sc['cnc_id'], sc['sub_id'], 'description', 'busbar_id',
-                                     'busbar_name', 'Region_name', 'SubGeographicalRegion_name']
+    fill_dict['bus'][np_str_type] = [sc['o_prf'], sc['ct'], sc['cnc_id'], sc['sub_id'], 'description', 'Busbar_id',
+                                     'Busbar_name', 'GeographicalRegion_id', 'GeographicalRegion_name',
+                                     'SubGeographicalRegion_id', 'SubGeographicalRegion_name']
 
     fill_dict['ext_grid'] = dict()
     fill_dict['ext_grid'][np_str_type] = [sc['t'], sc['sub'], 'description']

@@ -253,8 +253,9 @@ class ConnectivityNodesCim16:
         regions = pd.merge(self.cimConverter.cim['eq']['Substation'], sgr, left_on="Region", right_on="rdfId",
                            suffixes=["_substation", "_SubGeographicalRegion"])
         regions = pd.merge(self.cimConverter.cim['eq']['GeographicalRegion'], regions, left_on="rdfId", right_on="Region_SubGeographicalRegion")
-        regions = regions.rename(columns={'name': 'Region_name', 'name_SubGeographicalRegion': 'SubGeographicalRegion_name'})
-        regions = regions.drop(columns=['rdfId', 'name_substation', 'Region_substation', 'rdfId_SubGeographicalRegion', 'Region_SubGeographicalRegion'])
+        regions = regions.rename(columns={'name': 'GeographicalRegion_name', 'name_SubGeographicalRegion': 'SubGeographicalRegion_name',
+                                          'rdfId': 'GeographicalRegion_id', 'rdfId_SubGeographicalRegion': 'SubGeographicalRegion_id'})
+        regions = regions.drop(columns=['name_substation', 'Region_substation', 'Region_SubGeographicalRegion'])
         connectivity_nodes = pd.merge(connectivity_nodes, regions, how='left', left_on='Substation', right_on='rdfId_substation')
         connectivity_nodes = connectivity_nodes.drop(columns=["rdfId_substation"])
 
