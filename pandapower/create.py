@@ -6027,10 +6027,10 @@ def _add_multiple_branch_geodata(net, geodata, index, table="line"):
                 round(y, geojson.geometry.DEFAULT_PRECISION)] for x, y in geodata]
         series = [f'{{"coordinates": {geo}, "type": "LineString"}}'] * len(index)
     elif hasattr(geodata, '__iter__') and all([isinstance(g, Iterable) for g in geodata]):
-        # geodata is an iterable containing iterables of coordinate tuples
+        # geodata is an iterable containing iterables of coordinate tuples (why not a MultiLineString?)
         geo = [[[round(x, geojson.geometry.DEFAULT_PRECISION),
                  round(y, geojson.geometry.DEFAULT_PRECISION)] for x, y in g] for g in geodata]
-        series = pd.Series([f'{{"coordinates": {g}, "type": "MultiLineString"}}' for g in geo], index=index)
+        series = pd.Series([f'{{"coordinates": {g}, "type": "LineString"}}' for g in geo], index=index)
     else:
         raise ValueError("geodata must be an iterable containing iterables of coordinate tuples "
                          "or an iterable of coordinate tuples")
