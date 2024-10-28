@@ -78,8 +78,9 @@ class UCTEParser:
         try:
             self.date = datetime.datetime.strptime(date_str, '%Y%m%d_%H%M')
         except Exception as e:
-            self.logger.warning("The given date couldn't be parsed, choosing current utc time as date for the UCTE "
-                                "data!")
+            self.logger.warning(
+                "The given date couldn't be parsed, choosing current utc time as date for the UCTE "
+                "data!")
             self.logger.exception(e)
             self.date = datetime.datetime.utcnow()
 
@@ -133,6 +134,12 @@ class UCTEParser:
                 if field_type == i_t:
                     self.data[ucte_element][field] = self.data[ucte_element][field].astype(float)
                 self.data[ucte_element][field] = self.data[ucte_element][field].astype(field_type)
+
+        # remove ## at the beginning of each key
+        for one_key in list(self.data.keys()):
+            self.data[one_key[2:]] = self.data[one_key]
+            self.data.pop(one_key)
+
         del raw_input_dict
 
     def _split_nodes_from_raw(self):
@@ -290,7 +297,8 @@ class UCTEParser:
         if isinstance(config, dict):
             self.config = config
         else:
-            self.logger.warning("The configuration is not a dictionary! Default configuration is set.")
+            self.logger.warning(
+                "The configuration is not a dictionary! Default configuration is set.")
             self.config = dict()
 
     def get_config(self) -> Dict:

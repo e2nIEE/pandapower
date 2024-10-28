@@ -34,8 +34,8 @@ class UCTE2pandapower:
         for ucte_element, df in self.u_d.items():
             if ucte_element == 'R':
                 continue
-            df.reset_index(level=0, inplace=True)
-            df.rename(columns={'index': 'id'}, inplace=True)
+            df = df.reset_index(level=0)
+            df = df.rename(columns={'index': 'id'})
         # now replace the node1 and node2 columns with the node index at lines, transformers, ...
         merge_nodes = self.u_d['N'][['id', 'node']]
         self.u_d['L'] = pd.merge(
@@ -44,7 +44,7 @@ class UCTE2pandapower:
         self.u_d['L'] = pd.merge(
             self.u_d['L'], merge_nodes.rename(columns={'node': 'node2', 'id': 'to_bus'}),
             how='left', on='node2')
-        self.u_d['L'].drop(columns=['node1', 'node2'], inplace=True)
+        self.u_d['L'] = self.u_d['L'].drop(columns=['node1', 'node2'])
         for one_asset in ['T', 'R', 'TT']:
             self.u_d[one_asset] = pd.merge(
                 self.u_d[one_asset], merge_nodes.rename(columns={'node': 'node1', 'id': 'hv_bus'}),
@@ -52,7 +52,7 @@ class UCTE2pandapower:
             self.u_d[one_asset] = pd.merge(
                 self.u_d[one_asset], merge_nodes.rename(columns={'node': 'node2', 'id': 'lv_bus'}),
                 how='left', on='node2')
-            self.u_d[one_asset].drop(columns=['node1', 'node2'], inplace=True)
+            self.u_d[one_asset] = self.u_d[one_asset].drop(columns=['node1', 'node2'])
         # prepare the nodes
         self._convert_nodes()
         # prepare the loads
@@ -77,6 +77,8 @@ class UCTE2pandapower:
             self.logger.warning("Missing pandapower type %s in the pandapower network!" % pp_type)
             return
         start_index_pp_net = self.net[pp_type].index.size
+
+        # appends self.net[pp_type] by input_df <- TODO inefficient and FutureWarning
         self.net[pp_type] = pd.concat([
                 self.net[pp_type],
                 pd.DataFrame(None, index=[list(range(input_df.index.size))])],
@@ -101,7 +103,7 @@ class UCTE2pandapower:
         nodes['grid_area_id'] = nodes['node'].str[:2]
         # drop all voltages at non pu nodes
         nodes['voltage'].loc[(nodes['node_type'] != 2) & (nodes['node_type'] != 3)] = np.nan
-        nodes.rename(columns={'node': 'name'}, inplace=True)
+        nodes = nodes.rename(columns={'node': 'name'})
         nodes['in_service'] = True
         self._copy_to_pp('bus', nodes)
         self.logger.info("Finished converting the nodes.")
@@ -115,7 +117,7 @@ class UCTE2pandapower:
         loads.rename(columns={'id': 'bus', 'node': 'name', 'p_load': 'p_mw', 'q_load': 'q_mvar'},
                      inplace=True)
         # get a new index
-        loads.reset_index(level=0, inplace=True, drop=True)
+        loads = loads.reset_index(level=0, drop=True)
         loads['scaling'] = 1
         loads['in_service'] = True
         self._copy_to_pp('load', loads)
@@ -137,12 +139,12 @@ class UCTE2pandapower:
         # drop all voltages at non pu nodes
         gens['voltage'].loc[(gens['node_type'] != 2) & (gens['node_type'] != 3)] = np.nan
         gens['vm_pu'] = gens['voltage'] / gens['vn_kv']
-        gens.rename(columns={
+        gens = gens.rename(columns={
             'id': 'bus', 'node': 'name', 'p_gen': 'p_mw', 'q_gen': 'q_mvar',
             'min_p_gen': 'min_p_mw', 'max_p_gen': 'max_p_mw', 'min_q_gen': 'min_q_mvar',
-            'max_q_gen': 'max_q_mvar'}, inplace=True)
+            'max_q_gen': 'max_q_mvar'})
         # get a new index
-        gens.reset_index(level=0, inplace=True, drop=True)
+        gens = gens.reset_index(level=0, drop=True)
         gens['scaling'] = 1
         gens['va_degree'] = 0
         gens['slack_weight'] = 1
@@ -191,7 +193,7 @@ class UCTE2pandapower:
         impedances = pd.merge(impedances, self.u_d['N'][['vn_kv']],
                               how='left', left_on='from_bus', right_index=True)
         # rename the columns to the pandapower schema
-        impedances.rename(columns={'name': 'name'}, inplace=True)
+        impedances = impedances.rename(columns={'name': 'name'})
         impedances['sn_mva'] = impedances['vn_kv'] ** 2 / impedances['z_ohm']
         # relative values
         impedances['rft_pu'] = impedances['r'] / impedances['z_ohm']
@@ -222,9 +224,9 @@ class UCTE2pandapower:
             (((trafos.b * 1e-6 * trafos.voltage1 ** 2) ** 2 +
               (trafos.g * 1e-6 * trafos.voltage1 ** 2) ** 2) ** .5) * 100 / trafos.p
         # fill the phase regulated tap changer with the angle regulated ones
-        trafos.phase_reg_delta_u.fillna(trafos.angle_reg_delta_u, inplace=True)
-        trafos.phase_reg_n.fillna(trafos.angle_reg_n, inplace=True)
-        trafos.phase_reg_n2.fillna(trafos.angle_reg_n2, inplace=True)
+        trafos["phase_reg_delta_u"] = trafos.phase_reg_delta_u.fillna(trafos.angle_reg_delta_u)
+        trafos["phase_reg_n"] = trafos.phase_reg_n.fillna(trafos.angle_reg_n)
+        trafos["phase_reg_n2"] = trafos.phase_reg_n2.fillna(trafos.angle_reg_n2)
         trafos['tap_min'] = -trafos.phase_reg_n
         # set the hv and lv voltage sides to voltage1 and voltage2 (The non-regulated transformer side is currently
         # voltage1, not the hv side!)
@@ -235,15 +237,15 @@ class UCTE2pandapower:
         # copy the 'fid_node_start' and 'fid_node_end'
         trafos['hv_bus2'] = trafos['hv_bus'].copy()
         trafos['lv_bus2'] = trafos['lv_bus'].copy()
-        trafos['hv_bus'].loc[trafos.swap] = trafos['lv_bus2'].loc[trafos.swap]
-        trafos['lv_bus'].loc[trafos.swap] = trafos['hv_bus2'].loc[trafos.swap]
+        trafos.loc[trafos.swap, 'hv_bus'] = trafos['lv_bus2'].loc[trafos.swap]
+        trafos.loc[trafos.swap, 'lv_bus'] = trafos['hv_bus2'].loc[trafos.swap]
         # set the tap side, default is lv Correct it for other windings
         trafos['tap_side'] = 'lv'
-        trafos['tap_side'].loc[trafos.swap] = 'hv'
+        trafos.loc[trafos.swap, 'tap_side'] = 'hv'
         # now set it to nan for not existing tap changers
-        trafos['tap_side'].loc[trafos.phase_reg_n.isnull()] = None
+        trafos.loc[trafos.phase_reg_n.isnull(), 'tap_side'] = None
         trafos['tap_neutral'] = 0
-        trafos['tap_neutral'].loc[trafos.phase_reg_n.isnull()] = np.nan
+        trafos.loc[trafos.phase_reg_n.isnull(), 'tap_neutral'] = np.nan
         trafos['shift_degree'] = 0
         trafos['parallel'] = 1
         trafos['tap_phase_shifter'] = False

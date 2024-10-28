@@ -34,12 +34,9 @@ if __name__ == '__main__':
 
     ucte_parser = pc.ucte_parser.UCTEParser(file)
     ucte_parser.parse_file()
+    ucte_dict = ucte_parser.get_data()
 
     ucte_converter = pc.ucte_converter.UCTE2pandapower()
-    ucte_dict = ucte_parser.get_data()
-    for one_key in list(ucte_dict.keys()):
-        ucte_dict[one_key[2:]] = ucte_dict[one_key]
-        ucte_dict.pop(one_key)
     net = ucte_converter.convert(ucte_dict=ucte_dict)
 
     print()
