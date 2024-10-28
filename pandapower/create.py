@@ -18,6 +18,7 @@ from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes, e
 from pandapower.results import reset_results
 from pandapower.std_types import add_basic_std_types, load_std_type
 import numpy as np
+import geojson
 
 try:
     import pandaplan.core.pplog as logging
@@ -369,11 +370,6 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
             ('element_index', dtype(object)),
             ('reference_column', dtype(object)),
         ],
-        # geodata (now as line.geo, bus.geo, bus_dc.geo, line_dc.geo)
-        # "bus_geodata": [("x", "f8"), ("y", "f8"), ("coords", dtype(object))],
-        # "bus_dc_geodata": [("x", "f8"), ("y", "f8"), ("coords", dtype(object))],
-        # "line_geodata": [("coords", dtype(object))],
-        # "line_dc_geodata": [("coords", dtype(object))],
 
         # result tables
         "_empty_res_bus": [("vm_pu", "f8"),
@@ -642,7 +638,8 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
         "OPF_converged": False,
         "name": name,
         "f_hz": f_hz,
-        "sn_mva": sn_mva
+        "sn_mva": sn_mva,
+        "coordinate_precision": geojson.geometry.DEFAULT_PRECISION
     })
 
     net._empty_res_load_3ph = net._empty_res_load
@@ -706,7 +703,9 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b", zone=N
         if isinstance(geodata, tuple):
             if len(geodata) != 2:
                 raise UserWarning("geodata must be given as (x, y) tuple")
-            geo = f'{{"coordinates":[{geodata[0]},{geodata[1]}], "type":"Point"}}'
+            x = round(geodata[0], geojson.geometry.DEFAULT_PRECISION)
+            y = round(geodata[1], geojson.geometry.DEFAULT_PRECISION)
+            geo = f'{{"coordinates": [{x}, {y}], "type": "Point"}}'
         else:
             raise UserWarning("geodata must be a valid coordinate tuple")
     else:
@@ -773,7 +772,9 @@ def create_bus_dc(net, vn_kv, name=None, index=None, geodata=None, type="b", zon
         if isinstance(geodata, tuple):
             if len(geodata) != 2:
                 raise UserWarning("geodata must be given as (x, y) tuple")
-            geo = f'{{"coordinates":[{geodata[0]},{geodata[1]}], "type":"Point"}}'
+            x = round(geodata[0], geojson.geometry.DEFAULT_PRECISION)
+            y = round(geodata[1], geojson.geometry.DEFAULT_PRECISION)
+            geo = f'{{"coordinates": [{x}, {y}], "type": "Point"}}'
         else:
             raise UserWarning("geodata must be a valid coordinate tuple")
     else:
@@ -846,7 +847,9 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
                 if len(g) != 2:
                     raise ValueError("geodata tuples must be of length 2")
                 x, y = g
-                geo.append(f'{{"coordinates": [{x}, {y}], "type": "Point"}}')
+                xr = round(x, geojson.geometry.DEFAULT_PRECISION)
+                yr = round(y, geojson.geometry.DEFAULT_PRECISION)
+                geo.append(f'{{"coordinates": [{xr}, {yr}], "type": "Point"}}')
             else:
                 raise ValueError("geodata must be iterable of tuples of (x, y) coordinates")
         if len(geo) == 1:
@@ -2335,7 +2338,8 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
     _set_entries(net, "line", index, **v, **kwargs)
 
     if geodata and hasattr(geodata, '__iter__'):
-        geo = [[x, y] for x, y in geodata]
+        geo = [[round(x, geojson.geometry.DEFAULT_PRECISION),
+                round(y, geojson.geometry.DEFAULT_PRECISION)] for x, y in geodata]
         net.line.at[index, "geo"] = f'{{"coordinates": {geo}, "type": "LineString"}}'
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "line")
@@ -2737,6 +2741,7 @@ def create_lines_dc(net, from_buses_dc, to_buses_dc, length_km, std_type, name=N
 
     return index
 
+
 def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, x_ohm_per_km,
                                 c_nf_per_km, max_i_ka, name=None, index=None, type=None,
                                 geodata=None, in_service=True, df=1., parallel=1, g_us_per_km=0.,
@@ -2869,7 +2874,7 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
                        "them for all parameters, otherwise they are not set!")
 
     if geodata is not None:
-        net.line.at[index, "geo"] = f'{{"coordinates":{geodata}, "type":"LineString"}}'
+        net.line.at[index, "geo"] = f'{{"coordinates": {geodata}, "type": "LineString"}}'
     else:
         net.line.at[index, "geo"] = None
 
@@ -6014,19 +6019,21 @@ def _add_to_entries_if_not_nan(net, element_type, entries, index, column, values
         try_astype(entries, column, dtype)
 
 
-
 def _add_multiple_branch_geodata(net, geodata, index, table="line"):
     dtypes = net[table].dtypes
     if hasattr(geodata, '__iter__') and all([isinstance(g, tuple) and len(g) == 2 for g in geodata]):
-        # geodata is a single Iterable of coordinate tuples
-        geo = [[x, y] for x, y in geodata]
+        # geodata is an iterable of coordinate tuples
+        geo = [[round(x, geojson.geometry.DEFAULT_PRECISION),
+                round(y, geojson.geometry.DEFAULT_PRECISION)] for x, y in geodata]
         series = [f'{{"coordinates": {geo}, "type": "LineString"}}'] * len(index)
     elif hasattr(geodata, '__iter__') and all([isinstance(g, Iterable) for g in geodata]):
-        # geodata is Iterable of Iterable of coordinate tuples
-        geo = [[[x, y] for x, y in g] for g in geodata]
-        series = pd.Series([f'{{"coordinates": {g}, "type": "LineString"}}' for g in geo], index=index)
+        # geodata is an iterable containing iterables of coordinate tuples
+        geo = [[[round(x, geojson.geometry.DEFAULT_PRECISION),
+                 round(y, geojson.geometry.DEFAULT_PRECISION)] for x, y in g] for g in geodata]
+        series = pd.Series([f'{{"coordinates": {g}, "type": "MultiLineString"}}' for g in geo], index=index)
     else:
-        raise ValueError("geodata must be an Iterable of Iterable of coordinate tuples or an Iterable of coordinate tuples")
+        raise ValueError("geodata must be an iterable containing iterables of coordinate tuples "
+                         "or an iterable of coordinate tuples")
 
     net[table].loc[:, "geo"] = series
 

@@ -12,6 +12,8 @@ import pytest
 
 import pandapower as pp
 
+from geojson.geometry import DEFAULT_PRECISION
+
 pd.set_option("display.max_rows", 500)
 pd.set_option("display.max_columns", 500)
 pd.set_option("display.width", 1000)
@@ -273,7 +275,9 @@ def test_create_buses():
     # with geodata
     b2 = pp.create_buses(net, 3, 110, geodata=(10, 20))
     # with geodata as array
-    geodata = [(10, 20), (20, 30), (30, 40)]
+    p1 = 30.124678944
+    p2 = 40.124678949
+    geodata = [(10, 20), (20, 30), (p1, p2)]
     b3 = pp.create_buses(net, 3, 110, geodata=geodata)
 
     assert len(net.bus) == 9
@@ -281,8 +285,12 @@ def test_create_buses():
 
     for i in b2:
         assert net.bus.at[i, "geo"] == geojson.dumps(geojson.Point((10, 20)), sort_keys=True)
-    for i, ind in enumerate(b3):
-        assert net.bus.at[ind, "geo"] == geojson.dumps(geojson.Point(geodata[i]), sort_keys=True)
+
+    assert net.bus.at[b3[0], "geo"] == geojson.dumps(geojson.Point(geodata[0]), sort_keys=True)
+    assert net.bus.at[b3[1], "geo"] == geojson.dumps(geojson.Point(geodata[1]), sort_keys=True)
+    assert net.bus.at[b3[2], "geo"] == geojson.dumps(geojson.Point(
+        (round(p1, DEFAULT_PRECISION), round(p2, DEFAULT_PRECISION))), sort_keys=True)
+
 
 def test_create_lines():
     # standard
@@ -320,18 +328,23 @@ def test_create_lines():
     net = pp.create_empty_network()
     b1 = pp.create_bus(net, 10)
     b2 = pp.create_bus(net, 10)
+    p1 = 1.124678944
+    p2 = 2.124678949
     l = pp.create_lines(
         net,
         [b1, b1],
         [b2, b2],
         [1.5, 3],
         std_type="48-AL1/8-ST1A 10.0",
-        geodata=[[(1, 1), (2, 2), (3, 3)], [(1, 1), (1, 2)]],
+        geodata=[[(1, 1), (2, 2), (3, 3)], [(1, 1), (p1, p2)]],
     )
 
     assert len(net.line) == 2
     assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(1, 1), (2, 2), (3, 3)]), sort_keys=True)
-    assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(1, 1), (1, 2)]), sort_keys=True)
+    assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(1, 1),
+                                                                         (round(p1, DEFAULT_PRECISION),
+                                                                          round(p2, DEFAULT_PRECISION))]),
+                                                     sort_keys=True)
 
     # setting params as single value
     net = pp.create_empty_network()
@@ -428,6 +441,8 @@ def test_create_lines_from_parameters():
     net = pp.create_empty_network()
     b1 = pp.create_bus(net, 10)
     b2 = pp.create_bus(net, 10)
+    p1 = 1.124678944
+    p2 = 2.124678949
     l = pp.create_lines_from_parameters(
         net,
         [b1, b1],
@@ -437,12 +452,15 @@ def test_create_lines_from_parameters():
         r_ohm_per_km=[0.2, 0.2],
         c_nf_per_km=[0, 0],
         max_i_ka=[100, 100],
-        geodata=[[(1, 1), (2, 2), (3, 3)], [(1, 1), (1, 2)]],
+        geodata=[[(1, 1), (2, 2), (3, 3)], [(1, 1), (p1, p2)]],
     )
 
     assert len(net.line) == 2
     assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(1, 1), (2, 2), (3, 3)]), sort_keys=True)
-    assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(1, 1), (1, 2)]), sort_keys=True)
+    assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(1, 1),
+                                                                         (round(p1, DEFAULT_PRECISION),
+                                                                          round(p2, DEFAULT_PRECISION))]),
+                                                     sort_keys=True)
 
     # setting params as single value
     net = pp.create_empty_network()

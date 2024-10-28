@@ -396,6 +396,8 @@ def test_elements_to_deserialize(tmp_path):
             assert isinstance(item, bool)
         elif key in ['f_hz', 'sn_mva']:
             assert isinstance(item, float)
+        elif key == 'coordinate_precision':
+            assert isinstance(item, int)
         else:
             assert isinstance(item, str)
     pp.to_json(net_select, filename)
@@ -427,6 +429,8 @@ def test_elements_to_deserialize_wo_keep(tmp_path):
             assert isinstance(item, bool)
         elif key in ['f_hz', 'sn_mva']:
             assert isinstance(item, float)
+        elif key == 'coordinate_precision':
+            assert isinstance(item, int)
         else:
             if isinstance(item, pd.DataFrame):
                 assert len(item) == 0
