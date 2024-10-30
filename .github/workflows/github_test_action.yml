@@ -306,11 +306,9 @@ jobs:
       matrix:
         python-version: [ '3.11' ]
     steps:
-      - name: Set up Homebrew
-        id: set-up-homebrew
-        uses: Homebrew/actions/setup-homebrew@master
-        with:
-          run: "brew link --force glibc"
+      - name: Install GCC
+        id: set-up-gcc
+        run: "sudo apt update && sudo apt install -y build-essential"
       - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
