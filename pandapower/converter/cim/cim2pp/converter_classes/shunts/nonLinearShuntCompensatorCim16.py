@@ -4,6 +4,7 @@ import time
 import pandas as pd
 import numpy as np
 
+from pandapower.control.util import auxiliary
 from pandapower.converter.cim import cim_tools
 from pandapower.converter.cim.cim2pp import build_pp_net
 from pandapower.converter.cim.other_classes import Report, LogLevel, ReportCode
@@ -25,6 +26,7 @@ class NonLinearShuntCompensatorCim16:
             eqssh_shunts = self._prepare_nonlinear_shunt_compensator_cim16()
             self._create_shunt_characteristics(eqssh_shunts)
             self.cimConverter.copy_to_pp('shunt', eqssh_shunts)
+            self._create_shunt_characteristic_object(net=self.cimConverter.net)
         else:
             eqssh_shunts = pd.DataFrame(None)
         self.logger.info("Created %s shunts in %ss." % (eqssh_shunts.index.size, time.time() - time_start))
@@ -64,7 +66,6 @@ class NonLinearShuntCompensatorCim16:
             eqssh_shunts['connected'] = eqssh_shunts['connected'] & eqssh_shunts['inService']
         # added to use the logic of p/q values multiplied by the number of steps
         # this is only correct for the current step values
-        # todo add characteristics for p & q per step per shunt - similar to trafos tap dependent impedance
         eqssh_shunts['p'] = eqssh_shunts['p'] / eqssh_shunts['sections']
         eqssh_shunts['q'] = eqssh_shunts['q'] / eqssh_shunts['sections']
         eqssh_shunts = eqssh_shunts.rename(columns={
@@ -77,7 +78,7 @@ class NonLinearShuntCompensatorCim16:
 
     def _create_shunt_characteristics(self, eqssh_shunts):
         if 'id_characteristic' not in eqssh_shunts.columns:
-            eqssh_shunts['id_characteristic'] = np.NaN
+            eqssh_shunts['id_characteristic'] = np.nan
         if 'shunt_characteristic_temp' not in self.cimConverter.net.keys():
             self.cimConverter.net['shunt_characteristic_temp'] = pd.DataFrame(
                 columns=['id_characteristic', 'step', 'q_mvar', 'p_mw'])
@@ -105,7 +106,22 @@ class NonLinearShuntCompensatorCim16:
 
         # set the id_characteristic at the corresponding shunt
         id_char_dict = char_temp.drop_duplicates('origin_id').set_index('origin_id')['id_characteristic'].to_dict()
-        eqssh_shunts['id_characteristic'] = eqssh_shunts['origin_id'].map(id_char_dict)
+        eqssh_shunts['id_characteristic'] = eqssh_shunts['origin_id'].map(id_char_dict).astype(int)
 
+        # populate shunt_characteristic_temp table
         self.cimConverter.net['shunt_characteristic_temp'] = \
             char_temp[['id_characteristic', 'step', 'q_mvar', 'p_mw']]
+
+    def _create_shunt_characteristic_object(self, net):
+        if self.cimConverter.net['shunt_characteristic_temp'].index.size > 0:
+            self.logger.info("Creating the step dependent power characteristic objects for shunts.")
+            characteristic_df_temp = self.cimConverter.net['shunt_characteristic_temp']
+            for shunt_id, shunt_row in self.cimConverter.net.shunt.dropna(subset=['id_characteristic']).iterrows():
+                shunt_characteristic_df = characteristic_df_temp.loc[
+                    characteristic_df_temp['id_characteristic'] == shunt_row['id_characteristic']]
+                for variable in ['q_mvar', 'p_mw']:
+                    if variable in shunt_characteristic_df.columns:
+                        auxiliary.create_shunt_characteristics(
+                            net, [shunt_id], variable, [shunt_characteristic_df['step'].to_list()],
+                            [shunt_characteristic_df[variable].to_list()]
+                        )

@@ -233,7 +233,6 @@ def create_trafo_characteristics(net, trafotable, trafo_index, variable, x_point
         if (len(x_points) != len(y_points)):
             raise UserWarning("The lengths of the points do not match!")
 
-    # todo change name of the flag to reflect expanded columns
     if 'tap_dependent_impedance' not in net[trafotable]:
         net[trafotable]['tap_dependent_impedance'] = Series(index=net[trafotable].index, dtype=np.bool_, data=False)
 
@@ -252,3 +251,41 @@ def create_trafo_characteristics(net, trafotable, trafo_index, variable, x_point
         # create the characteristic and set its index in the trafotable
         s = SplineCharacteristic(net, x_p, y_p)
         net[trafotable].at[tid, col] = s.index
+
+# todo merge create_trafo_characteristics and create_shunt_characteristics?
+def create_shunt_characteristics(net, shunt_index, variable, x_points, y_points):
+    # create characteristics for the specified variable and set their indices in the shunt table
+    col = f"{variable}_characteristic"
+    # check if the variable is a valid attribute of the shunt table
+    supported_columns = ["q_mvar_characteristic", "p_mw_characteristic"]
+    if col not in supported_columns:
+        raise UserWarning("Variable %s is not supported for table shunt" % variable)
+
+    # check inputs, check if 1 shunt or multiple, verify shape of x_points and y_points and shunt_index
+    if hasattr(shunt_index, '__iter__'):
+        single_mode = False
+        if not (len(shunt_index) == len(x_points) == len(y_points)):
+            raise UserWarning("The lengths of the shunt index and points do not match!")
+    else:
+        single_mode = True
+        if len(x_points) != len(y_points):
+            raise UserWarning("The lengths of the points do not match!")
+
+    if 'step_dependent_power' not in net["shunt"]:
+        net["shunt"]["step_dependent_power"] = Series(index=net["shunt"].index, dtype=np.bool_, data=False)
+
+    if col not in net["shunt"]:
+        net["shunt"][col] = Series(index=net["shunt"].index, dtype="Int64")
+
+    # set the flag for the shunt table
+    net["shunt"].loc[shunt_index, "step_dependent_power"] = True
+
+    if single_mode:
+        zip_params = zip([shunt_index], [x_points], [y_points])
+    else:
+        zip_params = zip(shunt_index, x_points, y_points)
+
+    for tid, x_p, y_p in zip_params:
+        # create the characteristic and set its index in the shunt table
+        s = SplineCharacteristic(net, x_p, y_p, table="shunt_characteristic")
+        net["shunt"].at[tid, col] = s.index
