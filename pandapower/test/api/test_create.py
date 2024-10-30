@@ -29,7 +29,9 @@ def test_geo_accessor():
         std_type="48-AL1/8-ST1A 10.0",
         geodata=[[(1, 1), (2, 2), (3, 3)], [(1, 1), (1, 2)]],
     )
+    pp.create_line(net, b1, b2, 1.5, std_type="48-AL1/8-ST1A 10.0")
 
+    assert len(net.line.geo.geojson.coords) == 2
     assert net.line.geo.geojson.coords.at[l[0]] == [(1, 1), (2, 2), (3, 3)]
     assert net.line.geo.geojson.coords.at[l[1]] == [(1, 1), (1, 2)]
     assert net.bus.geo.geojson.coords.at[b1] == (1, 1)

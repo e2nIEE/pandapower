@@ -40,7 +40,7 @@ class GeoAccessor:
     @staticmethod
     def _validate(obj):
         try:
-            if not obj.apply(loads).apply(isinstance, args=(GeoJSON,)).all():
+            if not obj.dropna().apply(loads).apply(isinstance, args=(GeoJSON,)).all():
                 raise AttributeError("Can only use .geojson accessor with geojson string values!")
         except Exception as e:
             raise AttributeError(f"Can only use .geojson accessor with geojson string values!: {e}")
@@ -53,15 +53,15 @@ class GeoAccessor:
 
     @property
     def coords(self):
-        return self._obj.apply(loads).apply(self.extract_coords)
+        return self._obj.dropna().apply(loads).apply(self.extract_coords)
 
     @property
     def as_geo_object(self):
-        return self._obj.apply(loads)
+        return self._obj.dropna().apply(loads)
 
     @property
     def type(self):
-        return self._obj.apply(loads).apply(lambda x: str(x["type"]))
+        return self._obj.dropna().apply(loads).apply(lambda x: str(x["type"]))
 
 
 def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
