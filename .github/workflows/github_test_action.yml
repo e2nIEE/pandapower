@@ -306,6 +306,9 @@ jobs:
       matrix:
         python-version: [ '3.11' ]
     steps:
+      - name: Set up Homebrew
+        id: set-up-homebrew
+        uses: Homebrew/actions/setup-homebrew@master
       - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
@@ -314,7 +317,7 @@ jobs:
       - name: Check docs for Python ${{ matrix.python-version }}
         uses: e2nIEE/sphinx-action@master
         with:
-          pre-build-command: "apt-get update && apt-get install -y build-essentials;
+          pre-build-command: "brew link --force glibc;
                               python -m pip install --upgrade pip;
                               python -m pip install .[docs];"
           build-command: "sphinx-build -b html . _build -W"
