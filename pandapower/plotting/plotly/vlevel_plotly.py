@@ -35,8 +35,8 @@ def vlevel_plotly(net, respect_switches=True, use_line_geo=None, colors_dict=Non
     OPTIONAL:
         **respect_switches** (bool, True) - Respect switches when artificial geodata is created
 
-        **use_line_geo** (bool, True) - defines if lines patches are based on net.line_geodata
-        of the lines (True) or on net.bus_geodata of the connected buses (False)
+        **use_line_geo** (bool, True) - defines if lines patches are based on net.line.geo
+        of the lines (True) or on net.bus.geo of the connected buses (False)
 
         *colors_dict** (dict, None) - dictionary for customization of colors for each voltage level
         in the form: voltage : color
