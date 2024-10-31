@@ -31,11 +31,11 @@ def test_geo_accessor():
     )
     pp.create_line(net, b1, b2, 1.5, std_type="48-AL1/8-ST1A 10.0")
 
-    assert len(net.line.geo.geojson.coords) == 2
-    assert net.line.geo.geojson.coords.at[l[0]] == [(1, 1), (2, 2), (3, 3)]
-    assert net.line.geo.geojson.coords.at[l[1]] == [(1, 1), (1, 2)]
-    assert net.bus.geo.geojson.coords.at[b1] == (1, 1)
-    assert net.bus.geo.geojson.coords.at[b2] == (2, 2)
+    assert len(net.line.geo.geojson._coords) == 2
+    assert np.array_equal(net.line.geo.geojson._coords.at[l[0]], [[1, 1], [2, 2], [3, 3]])
+    assert np.array_equal(net.line.geo.geojson._coords.at[l[1]], [[1, 1], [1, 2]])
+    assert np.array_equal(net.bus.geo.geojson._coords.at[b1], [1, 1])
+    assert np.array_equal(net.bus.geo.geojson._coords.at[b2], [2, 2])
     assert net.bus.geo.geojson.type.at[b1] == "Point"
     assert net.bus.geo.geojson.type.at[b2] == "Point"
     assert net.line.geo.geojson.type.at[l[0]] == "LineString"
