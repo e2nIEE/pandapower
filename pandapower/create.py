@@ -18,9 +18,6 @@ from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes, e
 from pandapower.results import reset_results
 from pandapower.std_types import add_basic_std_types, load_std_type
 import numpy as np
-from geojson import loads, GeoJSON
-from shapely import from_geojson, Point
-from geopandas import GeoSeries
 
 try:
     import pandaplan.core.pplog as logging
@@ -28,108 +25,6 @@ except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
-
-
-@pd.api.extensions.register_series_accessor("geojson")
-class GeoAccessor:
-    """
-    pandas Series accessor for the geo column. It facilitates the use of geojson strings.
-    """
-    def __init__(self, pandas_obj):
-        self._validate(pandas_obj)
-        self._obj = pandas_obj
-
-    @staticmethod
-    def _validate(obj):
-        try:
-            if not obj.dropna().apply(loads).apply(isinstance, args=(GeoJSON,)).all():
-                raise AttributeError("Can only use .geojson accessor with geojson string values!")
-        except Exception as e:
-            raise AttributeError(f"Can only use .geojson accessor with geojson string values!: {e}")
-
-    @staticmethod
-    def extract_coords(x):
-        if x["type"] == "Point":
-            return np.array(x["coordinates"])
-        return [np.array(y) for y in x["coordinates"]]
-
-    @property
-    def _coords(self):
-        return self._obj.dropna().apply(loads).apply(self.extract_coords)
-
-    @property
-    def as_geo_obj(self):
-        return self._obj.dropna().apply(loads)
-
-    @property
-    def type(self):
-        return self._obj.dropna().apply(loads).apply(lambda x: str(x["type"]))
-
-    @property
-    def as_shapely_obj(self):
-        return self._obj.dropna().apply(from_geojson)
-
-    @property
-    def as_geoseries(self):
-        return GeoSeries(self._obj.dropna().pipe(from_geojson), crs=4326)
-
-    # @staticmethod
-    # def _create_circle_polygon(center_point, radius, num_points=100):
-    #     # Winkel in Grad für die Punkte auf dem Kreis
-    #     angles = np.linspace(0, 360, num_points)
-    #     circle_points = []
-    #
-    #     for angle in angles:
-    #         # Berechne den Punkt am gegebenen Winkel und Radius
-    #         point = geodesic(meters=radius).destination((center_point.y, center_point.x), angle)
-    #         circle_points.append((point.longitude, point.latitude))
-    #
-    #     # Erstelle ein Polygon aus den Kreis-Punkten
-    #     return Polygon(circle_points)
-    #
-    # @staticmethod
-    # def _get_in_circle(geom, circle_polygon):
-    #     return geom.within(circle_polygon) or geom.intersects(circle_polygon)
-    #
-    # def in_radius(self, reference_point, radius_m):
-    #     # 12,7 ms
-    #     circle_polygon = self._create_circle_polygon(Point(reference_point), radius_m)
-    #     return self._obj.dropna().apply(loads).apply(shape).apply(self._get_in_circle, args=(circle_polygon, ))
-
-    # def within_radius(self, reference_point, radius_m):
-    #     # 2,49 ms +- 625us
-    #     circle_polygon = GeoSeries([Point(reference_point)], crs=4326).to_crs(epsg=31467).buffer(radius_m).iloc[0]
-    #     geoms = GeoSeries(self._obj.dropna().pipe(from_geojson), crs=4326,
-    #                       index=self._obj.dropna().index).to_crs(epsg=31467)
-    #     return geoms.within(circle_polygon) | geoms.intersects(circle_polygon)
-
-    def within_radius(self, reference_point, radius_m):
-        # 1,73 ms +- 31 us
-        circle_polygon = GeoSeries([Point(reference_point)],
-                                   crs=4326).to_crs(epsg=31467).buffer(radius_m).to_crs(epsg=4326).iloc[0]
-        geoms = GeoSeries(self._obj.dropna().pipe(from_geojson), crs=4326, index=self._obj.dropna().index)
-        return geoms.within(circle_polygon) | geoms.intersects(circle_polygon)
-
-    def within(self, other, **kwargs):
-        # other is shapely geometry
-        return GeoSeries(self._obj.dropna().pipe(from_geojson), crs=4326, index=self._obj.
-                         dropna().index).within(other=other, **kwargs)
-
-    def intersects(self, other, **kwargs):
-        return GeoSeries(self._obj.dropna().pipe(from_geojson), crs=4326, index=self._obj.
-                         dropna().index).intersects(other=other, **kwargs)
-
-    def contains(self, other, **kwargs):
-        return GeoSeries(self._obj.dropna().pipe(from_geojson), crs=4326, index=self._obj.
-                         dropna().index).contains(other=other, **kwargs)
-
-    def overlaps(self, other, **kwargs):
-        return GeoSeries(self._obj.dropna().pipe(from_geojson), crs=4326, index=self._obj.
-                         dropna().index).overlaps(other=other, **kwargs)
-
-    def buffer(self, distance, **kwargs):
-        return GeoSeries(self._obj.dropna().pipe(from_geojson), crs=4326, index=self._obj.
-                         dropna().index).buffer(distance=distance, **kwargs)
 
 
 def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
