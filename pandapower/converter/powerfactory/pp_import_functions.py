@@ -28,7 +28,7 @@ def ga(element, attr):
 # import network to pandapower:
 def from_pf(dict_net, pv_as_slack=True, pf_variable_p_loads='plini', pf_variable_p_gen='pgini',
             flag_graphics='GPS', tap_opt="nntap", export_controller=True, handle_us="Deactivate",
-            max_iter=None, is_unbalanced=False, create_sections=True):
+            max_iter=None, is_unbalanced=False, create_sections=True): 
     global line_dict
     line_dict = {}
     global trafo_dict
@@ -145,7 +145,8 @@ def from_pf(dict_net, pv_as_slack=True, pf_variable_p_loads='plini', pf_variable
     n = 0
     for n, gen in enumerate(dict_net['ElmSym'], n):
         create_sgen_sym(net=net, item=gen, pv_as_slack=pv_as_slack,
-                        pf_variable_p_gen=pf_variable_p_gen, dict_net=dict_net, export_ctrl=export_controller)
+                        pf_variable_p_gen=pf_variable_p_gen, dict_net=dict_net, 
+                        export_ctrl=export_controller) 
     if n > 0: logger.info('imported %d synchronous machines' % n)
 
     logger.debug('creating transformers')
@@ -1028,10 +1029,12 @@ def create_line_no_sections(net, main_item, item_list, bus1, bus2, coords, is_un
 
 def create_line_normal(net, item, bus1, bus2, name, parallel, is_unbalanced, ac, geodata=None):
     pf_type = item.typ_id
+    # if item.loc_name == "NVD-RT110 Z":
+    #     print('Halt Stop!')
     std_type, type_created = create_line_type(net=net, item=pf_type,
                                               cable_in_air=item.inAir if item.HasAttribute(
                                                   'inAir') else False)
-
+    
     params = {
         'name': name,
         'in_service': not bool(item.outserv),
@@ -1101,6 +1104,16 @@ def create_line_normal(net, item, bus1, bus2, name, parallel, is_unbalanced, ac,
         if chr_name is not None and len(chr_name) > 0:
             net["line" if ac else "line_dc"].loc[lid, 'origin_id'] = chr_name[0]
 
+    # adapt line values if there is a characteristic given
+    # charefs = item.GetContents('*.ChaRef')
+    # for char in charefs:
+    #     #print(char)
+    #     if char.loc_name == 'fline' or char.loc_name == 'fline(1)': 
+    #         net.line.loc[lid, 'max_i_ka'] = item.Inom_a
+    #         net.line.loc[lid, 'df'] = char.typ_id.curval # prüfen, ob das auch übernommen werden muss
+    #     else: 
+    #         raise UserWarning(f'Characteristic for name {char.loc_name} not implemented.')
+       
     get_pf_line_results(net, item, lid, is_unbalanced, ac)
 
     return lid
@@ -2149,7 +2162,12 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
     element = None
     logger.debug('>> creating synchronous machine <%s>' % name)
     av_mode = item.av_mode
-    is_reference_machine = bool(item.ip_ctrl)
+    
+    if item.ip_ctrl or (item.HasAttribute('c:iRefElement') and item.GetAttribute('c:iRefElement')):
+        is_reference_machine = True
+    else:
+        is_reference_machine = False
+        
     is_motor = bool(item.i_mot)
     global_scaling = dict_net['global_parameters']['global_motor_scaling'] if is_motor else \
         dict_net['global_parameters']['global_generation_scaling']
