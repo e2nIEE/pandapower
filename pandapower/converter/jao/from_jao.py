@@ -30,6 +30,7 @@ def from_jao(excel_file_path:str,
              extend_data_for_grid_group_connections: bool,
              drop_grid_groups_islands: bool = False,
              apply_data_correction: bool = True,
+             max_i_ka_fillna:float|int=999,
              **kwargs) -> pandapowerNet:
     """Converts European (Core) EHV grid data provided by JAO, the "Single Allocation Platform (SAP)
     for all European Transmission System Operators (TSOs) that operate in accordance to EU
@@ -56,6 +57,9 @@ def from_jao(excel_file_path:str,
         min_bus_number (default is 6), by default False
     apply_data_correction : bool, optional
         _description_, by default True
+    max_i_ka_fillna : float | int, optional
+        value to fill missing values or data of false type in max_i_ka of lines and transformers.
+        If no value should be set, you can also pass np.nan. By default 999
 
     Returns
     -------
@@ -96,7 +100,7 @@ def from_jao(excel_file_path:str,
 
     # --- manipulate data / data corrections
     if apply_data_correction:
-        html_str = _data_correction(data, html_str)
+        html_str = _data_correction(data, html_str, max_i_ka_fillna)
 
     # --- parse html_str to line_geo_data
     line_geo_data = None
@@ -110,7 +114,7 @@ def from_jao(excel_file_path:str,
     net = create_empty_network(name=os.path.splitext(os.path.basename(excel_file_path))[0],
                                **{key: val for key, val in kwargs.items() if key == "sn_mva"})
     _create_buses_from_line_data(net, data)
-    _create_lines(net, data)
+    _create_lines(net, data, max_i_ka_fillna)
     _create_transformers_and_buses(net, data, **kwargs)
 
     # --- invent connections between grid groups
@@ -131,7 +135,10 @@ def from_jao(excel_file_path:str,
 # --- secondary functions --------------------------------------------------------------------------
 
 
-def _data_correction(data:dict[str, pd.DataFrame], html_str:str|None) -> str|None:
+def _data_correction(
+        data:dict[str, pd.DataFrame],
+        html_str:str|None,
+        max_i_ka_fillna:float|int) -> str|None:
     """Corrects input data in particular with regard to obvious weaknesses in the data provided,
     such as inconsistent spellings and missing necessary information
 
@@ -141,12 +148,21 @@ def _data_correction(data:dict[str, pd.DataFrame], html_str:str|None) -> str|Non
         data provided by the excel file which will be corrected
     html_str : str | None
         data provided by the html file which will be corrected
+    max_i_ka_fillna : float | int
+        value to fill missing values or data of false type in max_i_ka of lines and transformers.
+        If no value should be set, you can also pass np.nan.
 
     Returns
     -------
     str
         corrected html_str
     """
+    # old name -> new name
+    rename_locnames = {"PSTMIKULOWA": "PST MIKULOWA",
+                       "Chelm": "CHELM",
+                       "OLSZTYN-MATK": "OLSZTYN-MATKI",
+                       "STANISLAWOW": "Stanislawow",
+                       "VIERRADEN": "Vierraden"}
 
     # --- Line and Tieline data ---------------------------
     for key in ["Lines", "Tielines"]:
@@ -162,8 +178,9 @@ def _data_correction(data:dict[str, pd.DataFrame], html_str:str|None) -> str|Non
 
         # --- correct comma separation and cast to floats
         data[key][("Maximum Current Imax (A)", "Fixed")] = \
-            data[key][("Maximum Current Imax (A)", "Fixed")].replace("\xa0", 999e3).replace(
-                "-", 999e3).replace(" ", 999e3)
+            data[key][("Maximum Current Imax (A)", "Fixed")].replace(
+                "\xa0", max_i_ka_fillna*1e3).replace(
+                "-", max_i_ka_fillna*1e3).replace(" ", max_i_ka_fillna*1e3)
         col_names = [("Electrical Parameters", col_level1) for col_level1 in [
             "Length_(km)", "Resistance_R(Ω)", "Reactance_X(Ω)", "Susceptance_B(μS)",
             "Length_(km)"]] + [("Maximum Current Imax (A)", "Fixed")]
@@ -173,19 +190,15 @@ def _data_correction(data:dict[str, pd.DataFrame], html_str:str|None) -> str|Non
         for loc_name in [(None, "NE_name"), ("Substation_1", "Full_name"),
                          ("Substation_2", "Full_name")]:
             data[key].loc[:, loc_name] = data[key].loc[:, loc_name].str.strip().str.replace(
-                "STANISLAWOW", "Stanislawow").str.replace("VIERRADEN", "Vierraden")
-    html_str = html_str.replace("STANISLAWOW", "Stanislawow").replace("Chelm", "CHELM")
+                rename_locnames)
+    html_str = html_str.replace(rename_locnames)
 
     # --- Transformer data --------------------------------
     key = "Transformers"
 
     # --- fix Locations
     loc_name = ("Location", "Full Name")
-    data[key].loc[:, loc_name] = data[key].loc[:, loc_name].str.strip().str.replace(
-        "PSTMIKULOWA", "PST MIKULOWA").str.replace(
-        "Chelm", "CHELM").str.replace(
-        "OLSZTYN-MATK", "OLSZTYN-MATKI").str.replace(
-        "STANISLAWOW", "Stanislawow").str.replace("VIERRADEN", "Vierraden")
+    data[key].loc[:, loc_name] = data[key].loc[:, loc_name].str.strip().str.replace(rename_locnames)
 
     # --- fix data in nonnull_taps
     taps = data[key].loc[:, ("Phase Shifting Properties", "Taps used for RAO")].fillna("").astype(
@@ -287,7 +300,10 @@ def _create_buses_from_line_data(net:pandapowerNet, data:dict[str, pd.DataFrame]
     assert np.allclose(new_bus_idx, bus_df.index)
 
 
-def _create_lines(net:pandapowerNet, data:dict[str, pd.DataFrame]) -> None:
+def _create_lines(
+        net:pandapowerNet,
+        data:dict[str, pd.DataFrame],
+        max_i_ka_fillna:float|int) -> None:
     """Creates lines to the pandapower net using information from the lines and tielines sheets
     (excel file).
 
@@ -297,6 +313,9 @@ def _create_lines(net:pandapowerNet, data:dict[str, pd.DataFrame]) -> None:
         net to be filled by buses
     data : dict[str, pd.DataFrame]
         data provided by the excel file which will be corrected
+    max_i_ka_fillna : float | int
+        value to fill missing values or data of false type in max_i_ka of lines and transformers.
+        If no value should be set, you can also pass np.nan.
     """
 
     bus_idx = _get_bus_idx(net)
@@ -322,7 +341,7 @@ def _create_lines(net:pandapowerNet, data:dict[str, pd.DataFrame]) -> None:
             data[key][("Electrical Parameters", "Resistance_R(Ω)")].values / length_km,
             data[key][("Electrical Parameters", "Reactance_X(Ω)")].values / length_km,
             data[key][("Electrical Parameters", "Susceptance_B(μS)")].values / length_km,
-            data[key][("Maximum Current Imax (A)", "Fixed")].fillna(999000).values / 1e3,
+            data[key][("Maximum Current Imax (A)", "Fixed")].fillna(max_i_ka_fillna*1e3).values / 1e3,
             name=data[key].xs("NE_name", level=1, axis=1).values[:, 0],
             EIC_Code=data[key].xs("EIC_Code", level=1, axis=1).values[:, 0],
             TSO=data[key].xs("TSO", level=1, axis=1).values[:, 0],
