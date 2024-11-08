@@ -32,14 +32,29 @@ def from_jao(excel_file_path:str,
              apply_data_correction: bool = True,
              max_i_ka_fillna:float|int=999,
              **kwargs) -> pandapowerNet:
-    """Converts European (Core) EHV grid data provided by JAO, the "Single Allocation Platform (SAP)
-    for all European Transmission System Operators (TSOs) that operate in accordance to EU
-    legislation". At least in November 2024, the data are available at the website
-    https://www.jao.eu/static-grid-model . There, a map is provided to get an fine overview of the
-    geographical extent and the scope of the data. These inlcude information about European (Core)
-    lines, tielines, and transformers. No information is available on load or generation.
+    """Converts European (Core) EHV grid data provided by JAO (Joint Allocation Office), the
+    "Single Allocation Platform (SAP) for all European Transmission System Operators (TSOs) that
+    operate in accordance to EU legislation".
+
+    **Data Sources and Availability:**
+
+    The data are available at the website
+    `JAO Static Grid Model <https://www.jao.eu/static-grid-model>`_ (November 2024).
+    There, a map is provided to get an fine overview of the geographical extent and the scope of
+    the data. These inlcude information about European (Core) lines, tielines, and transformers.
+
+    **Limitations:**
+
+    No information is available on load or generation.
     The data quality with regard to the interconnection of the equipment, the information provided
     and the (incomplete) geodata should be considered with caution.
+
+    **Features of the converter:**
+
+    - **Data Correction:** corrects known data inconsistencies, such as inconsistent spellings and missing necessary information.
+    - **Geographical Data Parsing:** Parses geographical data from the HTML file to add geolocation information to buses and lines.
+    - **Grid Group Connections:** Optionally extends the network by connecting islanded grid groups to avoid disconnected components.
+    - **Data Customization:** Allows for customization through additional parameters to control transformer creation, grid group dropping, and voltage level deviations.
 
     Parameters
     ----------
@@ -64,7 +79,7 @@ def from_jao(excel_file_path:str,
     Returns
     -------
     pandapowerNet
-        _description_
+        net created from the jao data
 
     Additional Parameters
     ---------------------
@@ -88,6 +103,17 @@ def from_jao(excel_file_path:str,
         This parameter allows a range below rel_deviation_threshold_for_trafo_bus_creation in which
         a warning is logged instead of a creating additional buses. By default 0.12
 
+    Examples
+    --------
+    >>> from pathlib import Path
+    >>> import os
+    >>> import pandapower as pp
+    >>> net = pp.converter.from_jao()
+    >>> home = str(Path.home())
+    >>> # assume that the files are located at your desktop:
+    >>> excel_file_path = os.path.join(home, "desktop", "202409_Core Static Grid Mode_6th release")
+    >>> html_file_path = os.path.join(home, "desktop", "2024-09-13_Core_SGM_publication.html")
+    >>> net = from_jao(excel_file_path, html_file_path, True, drop_grid_groups_islands=True)
     """
 
     # --- read data
