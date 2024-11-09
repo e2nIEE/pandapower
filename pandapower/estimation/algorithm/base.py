@@ -119,6 +119,12 @@ class WLSAlgorithm(BaseAlgorithm):
                 # d_E = G_m^-1 * (H' * R^-1 * r)
                 d_E = spsolve(G_m, H.T * (r_inv * r))
 
+                # Scaling of Delta_X to avoid divergence due o ill-conditioning and 
+                # operating conditions far from starting state variables
+                current_error = np.max(np.abs(d_E))
+                if current_error > 0.35:
+                    d_E = d_E*0.35/current_error
+
                 # Update E with d_E
                 E += d_E.ravel()
                 eppci.update_E(E)
