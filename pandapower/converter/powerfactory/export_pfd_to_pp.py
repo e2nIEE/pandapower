@@ -50,24 +50,29 @@ def from_pfd(app, prj_name: str, script_name=None, script_settings=None, path_ds
     
     if script_name is not None:
         script = get_script(user, script_name)
-        pf_load_flow_failed = script.Execute()
-        if pf_load_flow_failed != 0:
-            logger.error('Load flow failed while executing DPL script.') 
-        
+        script_values = script.IntExpr
         for parameter_name, new_value in script_settings.items():
             if parameter_name not in script_settings:
                 raise UserWarning('Script settings are faulty. Some parameters do not exist!')
             pos = script.IntName.index(parameter_name)
-            if script.IntExpr[pos] != new_value:
-                script.IntExpr[pos] = new_value
+            if script_values[pos] != new_value:
+                script_values[pos] = new_value
             else:
-                continue            
+                continue 
+        script.SetAttribute('IntExpr', script_values)
+        pf_script_execution_failed = script.Execute()
+        if pf_script_execution_failed != 0:
+            logger.error('Script execution failed.') 
+        pf_load_flow_failed = run_load_flow(app) 
+        if pf_load_flow_failed != 0:
+            logger.error('Load flow failed after executing DPL script.') 
     else:
         pf_load_flow_failed = run_load_flow(app)
         slack_synchron_machine = None
         
     logger.info('exporting network to pandapower')
     app.SetAttributeModeInternal(1)
+    #net = from_pf(app, dict_net=dict_net, pv_as_slack=pv_as_slack, pf_variable_p_loads=pf_variable_p_loads,
     net = from_pf(dict_net=dict_net, pv_as_slack=pv_as_slack, pf_variable_p_loads=pf_variable_p_loads,
                   pf_variable_p_gen=pf_variable_p_gen, flag_graphics=flag_graphics, tap_opt=tap_opt,
                   export_controller=export_controller, handle_us=handle_us, is_unbalanced=is_unbalanced,

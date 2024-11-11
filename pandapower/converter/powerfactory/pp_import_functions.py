@@ -28,7 +28,10 @@ def ga(element, attr):
 # import network to pandapower:
 def from_pf(dict_net, pv_as_slack=True, pf_variable_p_loads='plini', pf_variable_p_gen='pgini',
             flag_graphics='GPS', tap_opt="nntap", export_controller=True, handle_us="Deactivate",
-            max_iter=None, is_unbalanced=False, create_sections=True): 
+            max_iter=None, is_unbalanced=False, create_sections=True):
+# def from_pf(app, dict_net, pv_as_slack=True, pf_variable_p_loads='plini', pf_variable_p_gen='pgini',
+#             flag_graphics='GPS', tap_opt="nntap", export_controller=True, handle_us="Deactivate",
+#             max_iter=None, is_unbalanced=False, create_sections=True):
     global line_dict
     line_dict = {}
     global trafo_dict
@@ -73,7 +76,10 @@ def from_pf(dict_net, pv_as_slack=True, pf_variable_p_loads='plini', pf_variable
     # create external networks:
     n = 0
     for n, ext_net in enumerate(dict_net['ElmXnet'], 1):
-        create_ext_net(net=net, item=ext_net, pv_as_slack=pv_as_slack, is_unbalanced=is_unbalanced)
+        multiplier = get_power_multiplier(ext_net, pf_variable_p_gen)
+        is_definite_ext_grid=False
+        create_ext_net(net=net, item=ext_net, pv_as_slack=pv_as_slack, is_unbalanced=is_unbalanced, 
+                       multiplier=multiplier, is_definite_ext_grid=is_definite_ext_grid)
     if n > 0: logger.info('imported %d external grids' % n)
 
     logger.debug('creating loads')
@@ -975,7 +981,21 @@ def create_line_no_sections(net, main_item, item_list, bus1, bus2, coords, is_un
     total_len = sum(sec_len)
     weights = [l / total_len for l in sec_len]
 
-    df = [item.fline for item in item_list]
+    #df = [item.fline for item in item_list]
+    # adapt line values if there is a characteristic given
+    df = list()
+    for item in item_list:
+        charefs = item.GetContents('*.ChaRef')
+        if len(charefs):
+            for char in charefs:
+                #print(char)
+                if char.loc_name=='fline' or char.loc_name=='fline(1)': 
+                    df.append(char.typ_id.curval)
+                else: 
+                    raise UserWarning(f'Characteristic for name {char.loc_name} not implemented.')
+        else:
+            df.append(item.fline)        
+    
     parallel = [1 for item in item_list]
     max_i_ka = min([item.Inom * p * d if item.Inom != 0 else 1e-3 for item, p, d in zip(item_list, parallel, df)])
     r_ohm_per_km = sum([item.R1 for item in item_list]) / total_len
@@ -1029,12 +1049,9 @@ def create_line_no_sections(net, main_item, item_list, bus1, bus2, coords, is_un
 
 def create_line_normal(net, item, bus1, bus2, name, parallel, is_unbalanced, ac, geodata=None):
     pf_type = item.typ_id
-    # if item.loc_name == "NVD-RT110 Z":
-    #     print('Halt Stop!')
     std_type, type_created = create_line_type(net=net, item=pf_type,
                                               cable_in_air=item.inAir if item.HasAttribute(
                                                   'inAir') else False)
-    
     params = {
         'name': name,
         'in_service': not bool(item.outserv),
@@ -1105,14 +1122,14 @@ def create_line_normal(net, item, bus1, bus2, name, parallel, is_unbalanced, ac,
             net["line" if ac else "line_dc"].loc[lid, 'origin_id'] = chr_name[0]
 
     # adapt line values if there is a characteristic given
-    # charefs = item.GetContents('*.ChaRef')
-    # for char in charefs:
-    #     #print(char)
-    #     if char.loc_name == 'fline' or char.loc_name == 'fline(1)': 
-    #         net.line.loc[lid, 'max_i_ka'] = item.Inom_a
-    #         net.line.loc[lid, 'df'] = char.typ_id.curval # prüfen, ob das auch übernommen werden muss
-    #     else: 
-    #         raise UserWarning(f'Characteristic for name {char.loc_name} not implemented.')
+    charefs = item.GetContents('*.ChaRef')
+    if len(charefs): 
+        for char in charefs:
+            #print(char)
+            if char.loc_name=='fline' or char.loc_name=='fline(1)': 
+                net.line.loc[lid, 'df'] = char.typ_id.curval 
+            else: 
+                raise UserWarning(f'Characteristic for name {char.loc_name} not implemented.')
        
     get_pf_line_results(net, item, lid, is_unbalanced, ac)
 
@@ -1166,7 +1183,13 @@ def create_line_type(net, item, cable_in_air=False):
 
     line_or_cable = 'cs' if item.cohl_ == 0 else 'ol'
 
-    max_i_ka = item.sline if not cable_in_air else item.InomAir
+    if cable_in_air and item.cohl_==0:
+        # type is cable, but cable is installed in air
+        max_i_ka = item.InomAir
+    else: 
+        # type is cable, cable is installed in the ground OR it is a overhead line
+        max_i_ka = item.sline
+        
     if ac:
         type_data = {
             "r_ohm_per_km": item.rline,
@@ -1210,7 +1233,7 @@ def monopolar_in_service(item):
     return in_service
 
 
-def create_ext_net(net, item, pv_as_slack, is_unbalanced):
+def create_ext_net(net, item, pv_as_slack, is_unbalanced, multiplier, is_definite_ext_grid):
     name = item.loc_name
     logger.debug('>> creating ext_grid <%s>' % name)
 
@@ -1241,7 +1264,15 @@ def create_ext_net(net, item, pv_as_slack, is_unbalanced):
 
     vm_set_pu = item.usetp
     phi = item.phiini
-    node_type = item.bustp if item.HasAttribute('bustp') else np.nan
+    
+    if item.HasAttribute('bustp') and (is_definite_ext_grid==False):
+        node_type = item.bustp
+    elif item.HasAttribute('bustp') and is_definite_ext_grid:
+        node_type = np.nan
+    else:
+        node_type = np.nan
+        
+    #node_type = item.bustp if item.HasAttribute('bustp') else np.nan
 
     # create...
     if node_type == 'PQ':
@@ -1261,6 +1292,8 @@ def create_ext_net(net, item, pv_as_slack, is_unbalanced):
                                  va_degree=phi, s_sc_max_mva=s_max,
                                  s_sc_min_mva=s_min, rx_max=rx_max, rx_min=rx_min,
                                  in_service=in_service)
+        net.ext_grid.loc[xid, 'p_disp_mw'] = -item.pgini * multiplier
+        net.ext_grid.loc[xid, 'q_disp_mvar'] = -item.qgini * multiplier
         try:
             net.ext_grid.loc[xid, "r0x0_max"] = item.r0tx0
             net.ext_grid.loc[xid, "x0x_max"] = item.x0tx1
@@ -1287,7 +1320,7 @@ def create_ext_net(net, item, pv_as_slack, is_unbalanced):
     net[elm].loc[xid, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
     add_additional_attributes(item, net, element=elm, element_id=xid, attr_list=['cpSite.loc_name'])
 
-    return xid
+    return xid, elm
 
 
 def get_pf_ext_grid_results(net, item, xid, is_unbalanced):
@@ -1930,15 +1963,24 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
     logger.debug('>> creating genstat <%s>' % params)
 
     av_mode = item.av_mode
-    is_reference_machine = bool(item.ip_ctrl)
+    
+    if (item.HasAttribute('c:iRefElement') and item.GetAttribute('c:iRefElement')):
+        is_reference_machine = True
+        #item.SetAttribute('bustp', 'SL')
+        is_definite_ext_grid = True
+    else:
+        is_reference_machine = bool(item.ip_ctrl)
+        is_definite_ext_grid = False
 
     ask = ask_unbalanced_sgen_params if is_unbalanced else ask_gen_params
 
     if is_reference_machine or (av_mode == 'constv' and pv_as_slack):
         logger.info('Genstat <%s> to be imported as external grid' % params.name)
         logger.debug('genstat parameters: %s' % params)
-        sg = create_ext_net(net, item=item, pv_as_slack=pv_as_slack, is_unbalanced=is_unbalanced)
-        element = 'ext_grid'
+        multiplier = get_power_multiplier(item, pf_variable_p_gen)
+        sg, element = create_ext_net(net, item=item, pv_as_slack=pv_as_slack, is_unbalanced=is_unbalanced, 
+                                     multiplier=multiplier, is_definite_ext_grid=is_definite_ext_grid)
+        #element = 'ext_grid'
     else:
         try:
             params.bus, _ = get_connection_nodes(net, item, 1)
@@ -2163,10 +2205,17 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
     logger.debug('>> creating synchronous machine <%s>' % name)
     av_mode = item.av_mode
     
-    if item.ip_ctrl or (item.HasAttribute('c:iRefElement') and item.GetAttribute('c:iRefElement')):
+    if item.ip_ctrl: # or (item.HasAttribute('c:iRefElement') and item.GetAttribute('c:iRefElement')):
         is_reference_machine = True
     else:
         is_reference_machine = False
+        
+    is_definite_ext_grid = False
+    if (item.HasAttribute('c:iRefElement') and item.GetAttribute('c:iRefElement')):
+        is_reference_machine = True
+        is_definite_ext_grid = True
+        #item.bustp = "SL"
+        #item.SetAttribute('bustp', 'SL')
         
     is_motor = bool(item.i_mot)
     global_scaling = dict_net['global_parameters']['global_motor_scaling'] if is_motor else \
@@ -2177,11 +2226,12 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
         logger.info('synchronous machine <%s> to be imported as external grid' % name)
         logger.debug('ref. machine: %d, av_mode: %s, pv as slack: %s' %
                      (is_reference_machine, av_mode, pv_as_slack))
-        sid = create_ext_net(net, item=item, pv_as_slack=pv_as_slack, is_unbalanced=False)
-        net.ext_grid.loc[sid, 'p_disp_mw'] = -item.pgini * multiplier
-        net.ext_grid.loc[sid, 'q_disp_mvar'] = -item.qgini * multiplier
+        sid, element = create_ext_net(net, item=item, pv_as_slack=pv_as_slack, is_unbalanced=False, 
+                                      multiplier=multiplier, is_definite_ext_grid=is_definite_ext_grid)
+        # net.ext_grid.loc[sid, 'p_disp_mw'] = -item.pgini * multiplier
+        # net.ext_grid.loc[sid, 'q_disp_mvar'] = -item.qgini * multiplier
         logger.debug('created ext net with sid <%d>', sid)
-        element = 'ext_grid'
+        #element = 'ext_grid'
     else:
         try:
             bus1, _ = get_connection_nodes(net, item, 1)
@@ -3524,7 +3574,8 @@ def create_stactrl(net, item):
 
     top = pp.topology.create_nxgraph(net, respect_switches=True, include_lines=True, include_trafos=True,
                                      include_impedances=True, nogobuses=None, notravbuses=None, multi=True,
-                                     calc_branch_impedances=False, branch_impedance_unit='ohm')
+                                     calc_branch_impedances=False, branch_impedance_unit='ohm') #, 
+                                     #include_out_of_service=True)
     has_path = False
     for n in range(len(input_busses)):
         for m in range(len(output_busses)):
