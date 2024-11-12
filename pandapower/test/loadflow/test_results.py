@@ -6,7 +6,7 @@ import os
 import pandas as pd
 import pytest
 import numpy as np
-from numpy import in1d, isnan, isclose, allclose
+from numpy import isin, isnan, isclose, allclose
 
 import pandapower as pp
 import pandapower.control
@@ -815,7 +815,7 @@ def test_shunt_split(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_
 def test_open(result_test_network):
     net = result_test_network
     buses = net.bus[net.bus.zone == "two_open_switches_on_deactive_line"]
-    lines = net['line'][in1d(net['line'].from_bus, buses.index) | in1d(net['line'].to_bus, buses.index)]
+    lines = net['line'][isin(net['line'].from_bus, buses.index) | isin(net['line'].to_bus, buses.index)]
 
     assert isnan(net['res_line'].at[lines.index[1], "i_ka"])
 
