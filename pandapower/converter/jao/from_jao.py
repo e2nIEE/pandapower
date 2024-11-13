@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-nt
 
 # Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
@@ -7,7 +7,7 @@ from copy import deepcopy
 import os
 import json
 from functools import reduce
-from typing import Optional
+from typing import Optional, Any
 import numpy as np
 import pandas as pd
 from pandas.api.types import is_integer_dtype, is_object_dtype
@@ -31,7 +31,7 @@ def from_jao(excel_file_path:str,
              extend_data_for_grid_group_connections: bool,
              drop_grid_groups_islands: bool = False,
              apply_data_correction: bool = True,
-             max_i_ka_fillna:float|int=999,
+             max_i_ka_fillna:Any[float,int]=999,
              **kwargs) -> pandapowerNet:
     """Converts European (Core) EHV grid data provided by JAO (Joint Allocation Office), the
     "Single Allocation Platform (SAP) for all European Transmission System Operators (TSOs) that
@@ -91,7 +91,7 @@ def from_jao(excel_file_path:str,
         minimal_trafo_invention). If False, all equally named buses that have different voltage
         level and lay in different groups will be connected via additional transformers,
         by default False
-    min_bus_number : int|str, optional
+    min_bus_number : Any[int,str], optional
         Threshold value to decide which small grid groups should be dropped and which large grid
         groups should be kept. If all islanded grid groups should be dropped except of the one
         largest, set "max". If all grid groups that do not contain a slack element should be
@@ -165,7 +165,7 @@ def from_jao(excel_file_path:str,
 def _data_correction(
         data:dict[str, pd.DataFrame],
         html_str:Optional[str],
-        max_i_ka_fillna:float|int) -> Optional[str]:
+        max_i_ka_fillna:Any[float,int]) -> Optional[str]:
     """Corrects input data in particular with regard to obvious weaknesses in the data provided,
     such as inconsistent spellings and missing necessary information
 
@@ -330,7 +330,7 @@ def _create_buses_from_line_data(net:pandapowerNet, data:dict[str, pd.DataFrame]
 def _create_lines(
         net:pandapowerNet,
         data:dict[str, pd.DataFrame],
-        max_i_ka_fillna:float|int) -> None:
+        max_i_ka_fillna:Any[float,int]) -> None:
     """Creates lines to the pandapower net using information from the lines and tielines sheets
     (excel file).
 
@@ -558,7 +558,7 @@ def _invent_connections_between_grid_groups(
                         f"\n'{name1}' and '{name2}'")
 
 
-def drop_islanded_grid_groups(net:pandapowerNet, min_bus_number:int|str, **kwargs) -> None:
+def drop_islanded_grid_groups(net:pandapowerNet, min_bus_number:Any[int,str], **kwargs) -> None:
     """Drops grid groups that are islanded and include a number of buses below min_bus_number.
 
     Parameters
@@ -970,7 +970,7 @@ def _lng_lat_to_df(dict_:dict, line_EIC:str, line_name:str) -> pd.DataFrame:
 
 def _fill_geo_at_one_sided_branches_without_geo_extent(net:pandapowerNet):
 
-    def _check_geo_availablitiy(net:pandapowerNet) -> dict[str, pd.Index|int]:
+    def _check_geo_availablitiy(net:pandapowerNet) -> dict[str, Any[pd.Index,int]]:
         av = dict() # availablitiy of geodata
         av["bus_with_geo"] = net.bus.index[~net.bus.geo.isnull()]
         av["lines_fbw_tbwo"] = net.line.index[net.line.from_bus.isin(av["bus_with_geo"]) &
