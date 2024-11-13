@@ -30,7 +30,7 @@ if __name__ == '__main__':
     # pytest.main([__file__, "-xs"])
 
     folder = os.path.join(pp.pp_dir, 'test', 'converter', "testfiles")
-    file = os.path.join(folder, "pp_test_cases.uct")
+    file = os.path.join(folder, "test_ucte.uct")
 
     ucte_parser = pc.ucte_parser.UCTEParser(file)
     ucte_parser.parse_file()
@@ -39,4 +39,5 @@ if __name__ == '__main__':
     ucte_converter = pc.ucte_converter.UCTE2pandapower()
     net = ucte_converter.convert(ucte_dict=ucte_dict)
 
+    print(net)
     print()
