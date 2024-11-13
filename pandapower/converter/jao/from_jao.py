@@ -185,11 +185,11 @@ def _data_correction(
         corrected html_str
     """
     # old name -> new name
-    rename_locnames = {"PSTMIKULOWA": "PST MIKULOWA",
-                       "Chelm": "CHELM",
-                       "OLSZTYN-MATK": "OLSZTYN-MATKI",
-                       "STANISLAWOW": "Stanislawow",
-                       "VIERRADEN": "Vierraden"}
+    rename_locnames = [("PSTMIKULOWA", "PST MIKULOWA"),
+                       ("Chelm", "CHELM"),
+                       ("OLSZTYN-MATK", "OLSZTYN-MATKI"),
+                       ("STANISLAWOW", "Stanislawow"),
+                       ("VIERRADEN", "Vierraden")]
 
     # --- Line and Tieline data ---------------------------
     for key in ["Lines", "Tielines"]:
@@ -216,8 +216,8 @@ def _data_correction(
         # --- consolidate to one way of name capitalization
         for loc_name in [(None, "NE_name"), ("Substation_1", "Full_name"),
                          ("Substation_2", "Full_name")]:
-            data[key].loc[:, loc_name] = data[key].loc[:, loc_name].str.strip().str.replace(
-                rename_locnames)
+            data[key].loc[:, loc_name] = data[key].loc[:, loc_name].str.strip().apply(
+                _multi_str_repl, repl=rename_locnames)
     html_str = html_str.replace(rename_locnames)
 
     # --- Transformer data --------------------------------
@@ -225,7 +225,8 @@ def _data_correction(
 
     # --- fix Locations
     loc_name = ("Location", "Full Name")
-    data[key].loc[:, loc_name] = data[key].loc[:, loc_name].str.strip().str.replace(rename_locnames)
+    data[key].loc[:, loc_name] = data[key].loc[:, loc_name].str.strip().str.apply(
+        _multi_str_repl, repl=rename_locnames)
 
     # --- fix data in nonnull_taps
     taps = data[key].loc[:, ("Phase Shifting Properties", "Taps used for RAO")].fillna("").astype(
@@ -998,6 +999,11 @@ def _fill_geo_at_one_sided_branches_without_geo_extent(net:pandapowerNet):
         geo_avail = _check_geo_availablitiy(net)
 
     set_line_geodata_from_bus_geodata(net)
+
+
+def _multi_str_repl(st:str, repl:list[tuple]) -> str:
+    for (old, new) in repl:
+        return st.replace(old, new)
 
 
 if __name__ == "__main__":
