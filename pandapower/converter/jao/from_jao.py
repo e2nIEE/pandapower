@@ -7,6 +7,7 @@ from copy import deepcopy
 import os
 import json
 from functools import reduce
+from typing import Optional
 import numpy as np
 import pandas as pd
 from pandas.api.types import is_integer_dtype, is_object_dtype
@@ -26,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 def from_jao(excel_file_path:str,
-             html_file_path: str|None,
+             html_file_path: Optional[str],
              extend_data_for_grid_group_connections: bool,
              drop_grid_groups_islands: bool = False,
              apply_data_correction: bool = True,
@@ -163,8 +164,8 @@ def from_jao(excel_file_path:str,
 
 def _data_correction(
         data:dict[str, pd.DataFrame],
-        html_str:str|None,
-        max_i_ka_fillna:float|int) -> str|None:
+        html_str:Optional[str],
+        max_i_ka_fillna:float|int) -> Optional[str]:
     """Corrects input data in particular with regard to obvious weaknesses in the data provided,
     such as inconsistent spellings and missing necessary information
 
@@ -629,7 +630,7 @@ def _add_bus_geo(net:pandapowerNet, line_geo_data:pd.DataFrame) -> None:
     def _geo_json_str(this_bus_geo:pd.Series) -> str:
         return f'{{"coordinates": [{this_bus_geo.at["lng"]}, {this_bus_geo.at["lat"]}], "type": "Point"}}'
 
-    def _add_bus_geo_inner(bus:int) -> str|None:
+    def _add_bus_geo_inner(bus:int) -> Optional[str]:
         from_bus_line_excerpt = net.line.loc[net.line.from_bus == bus, ["EIC_Code", "name", "Tieline"]]
         to_bus_line_excerpt = net.line.loc[net.line.to_bus == bus, ["EIC_Code", "name", "Tieline"]]
         line_excerpt = pd.concat([from_bus_line_excerpt, to_bus_line_excerpt])
