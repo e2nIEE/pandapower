@@ -218,14 +218,14 @@ def _data_correction(
                          ("Substation_2", "Full_name")]:
             data[key].loc[:, loc_name] = data[key].loc[:, loc_name].str.strip().apply(
                 _multi_str_repl, repl=rename_locnames)
-    html_str = html_str.replace(rename_locnames)
+    html_str = _multi_str_repl(html_str, rename_locnames)
 
     # --- Transformer data --------------------------------
     key = "Transformers"
 
     # --- fix Locations
     loc_name = ("Location", "Full Name")
-    data[key].loc[:, loc_name] = data[key].loc[:, loc_name].str.strip().str.apply(
+    data[key].loc[:, loc_name] = data[key].loc[:, loc_name].str.strip().apply(
         _multi_str_repl, repl=rename_locnames)
 
     # --- fix data in nonnull_taps
