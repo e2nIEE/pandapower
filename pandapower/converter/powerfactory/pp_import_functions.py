@@ -716,6 +716,8 @@ def create_line(net, item, flag_graphics, create_sections, is_unbalanced):
     net.line.loc[sid_list, "line_idx"] = corridor
     net.line.loc[sid_list, "folder_id"] = item.fold_id.loc_name
     net.line.loc[sid_list, "equipment"] = item.for_name
+#   net.line.loc[sid_list, "origin_id"] = item.cimRdfId
+
     create_connection_switches(net, item, 2, 'l', (params['bus1'], params['bus2']),
                                (sid_list[0], sid_list[-1]))
 
@@ -1166,6 +1168,7 @@ def create_ext_net(net, item, pv_as_slack, is_unbalanced):
                                  s_sc_min_mva=s_min, rx_max=rx_max, rx_min=rx_min,
                                  in_service=in_service)
         try:
+#           net.ext_grid.loc[xid, "equipment"] = item.for_name
             net.ext_grid.loc[xid, "r0x0_max"] = item.r0tx0
             net.ext_grid.loc[xid, "x0x_max"] = item.x0tx1
             net.ext_grid.loc[xid, "r0x0_min"] = item.r0tx0min
@@ -1189,7 +1192,7 @@ def create_ext_net(net, item, pv_as_slack, is_unbalanced):
     #     xid, ["pf_p", 'pf_q']].values))
 
     net[elm].loc[xid, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    add_additional_attributes(item, net, element=elm, element_id=xid, attr_list=['cpSite.loc_name'])
+    add_additional_attributes(item, net, element=elm, element_id=xid, attr_dict={"for_name": "equipment", "cimRdfId": "origin_id"}, attr_list=['cpSite.loc_name'])
 
     return xid
 
@@ -1712,7 +1715,7 @@ def create_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
     attr_list = ["sernum", "chr_name", 'cpSite.loc_name']
     if load_class == 'ElmLodlv':
         attr_list.extend(['pnight', 'cNrCust', 'cPrCust', 'UtilFactor', 'cSmax', 'cSav', 'ccosphi'])
-    add_additional_attributes(item, net, load_type, ld, attr_dict={"for_name": "equipment"}, attr_list=attr_list)
+    add_additional_attributes(item, net, load_type, ld, attr_dict={"for_name": "equipment", "cimRdfId": "origin_id"}, attr_list=attr_list)
     get_pf_load_results(net, item, ld, is_unbalanced)
 #    if not is_unbalanced:
 #        if item.HasResults(0):  # 'm' results...
@@ -1875,7 +1878,7 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
     logger.debug('created sgen at index <%d>' % sg)
 
     net[element].at[sg, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    add_additional_attributes(item, net, element, sg, attr_dict={"for_name": "equipment"},
+    add_additional_attributes(item, net, element, sg, attr_dict={"for_name": "equipment", "cimRdfId": "origin_id"},
                               attr_list=["sernum", "chr_name", "cpSite.loc_name"])
     net[element].at[sg, 'scaling'] = dict_net['global_parameters']['global_generation_scaling'] * item.scale0
     get_pf_sgen_results(net, item, sg, is_unbalanced, element=element)
@@ -1988,7 +1991,7 @@ def create_sgen_neg_load(net, item, pf_variable_p_loads, dict_net):
     sg = pp.create_sgen(net, **params)
 
     net.sgen.loc[sg, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    add_additional_attributes(item, net, "sgen", sg, attr_dict={"for_name": "equipment"},
+    add_additional_attributes(item, net, "sgen", sg, attr_dict={"for_name": "equipment", "cimRdfId": "origin_id"},
                               attr_list=["sernum", "chr_name", "cpSite.loc_name"])
 
     if item.HasResults(0):  # 'm' results...
@@ -2068,7 +2071,7 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net):
         logger.debug('created sgen at index <%s>' % sid)
 
     net[element].loc[sid, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    add_additional_attributes(item, net, element, sid, attr_dict={"for_name": "equipment"},
+    add_additional_attributes(item, net, element, sid, attr_dict={"for_name": "equipment", "cimRdfId": "origin_id"},
                               attr_list=["sernum", "chr_name", "cpSite.loc_name"])
 
     if item.HasResults(0):  # 'm' results...
@@ -2532,7 +2535,7 @@ def create_coup(net, item, is_fuse=False):
                           type=switch_usage)
 
     add_additional_attributes(item, net, element='switch', element_id=cd,
-                              attr_list=['cpSite.loc_name'], attr_dict={"cimRdfId": "origin_id"})
+                              attr_list=['cpSite.loc_name'], attr_dict={"for_name": "equipment", "cimRdfId": "origin_id"})
 
     logger.debug('created switch at index <%d>, closed = %s, usage = %s' %
                  (cd, switch_is_closed, switch_usage))
@@ -2581,7 +2584,9 @@ def create_shunt(net, item):
         'bus': bus,
         'in_service': monopolar_in_service(item),
         'vn_kv': item.ushnm,
-        'q_mvar': item.Qact * multiplier
+        'q_mvar': item.Qact * multiplier,
+        'step': item.ncapa,
+        'max_step': item.ncapx
     }
     if item.shtype == 0:
         # Shunt is a R-L-C element
@@ -2604,6 +2609,7 @@ def create_shunt(net, item):
     elif item.shtype == 2:
         # Shunt is a capacitor bank
         loss_factor = item.tandc
+        params['q_mvar'] = item.qcapn * multiplier # LL
         sid = pp.create_shunt_as_capacitor(net, loss_factor=loss_factor, **params)
     elif item.shtype == 3:
         # Shunt is a R-L-C, Rp element
@@ -2637,7 +2643,7 @@ def create_shunt(net, item):
         sid = pp.create_shunt(net, p_mw=p_mw, **params)
 
     add_additional_attributes(item, net, element='shunt', element_id=sid,
-                              attr_list=['cpSite.loc_name'], attr_dict={"cimRdfId": "origin_id"})
+                              attr_list=['cpSite.loc_name'], attr_dict={"cimRdfId": "origin_id", 'for_name': 'equipment'})
 
     if item.HasResults(0):
         net.res_shunt.loc[sid, 'pf_p'] = ga(item, 'm:P:bus1') * multiplier
@@ -2675,7 +2681,7 @@ def create_zpu(net, item):
     logger.debug('params = %s' % params)
     xid = pp.create_impedance(net, **params)
     add_additional_attributes(item, net, element='impedance', element_id=xid, attr_list=["cpSite.loc_name"],
-                              attr_dict={"cimRdfId": "origin_id"})
+                              attr_dict={"cimRdfId": "origin_id", 'for_name': 'equipment'})
 
     # create shunts at the buses connected to the impedance
     if not np.isclose(item.gi_pu, 0) or not np.isclose(item.bi_pu, 0):
@@ -2747,7 +2753,7 @@ def create_vac(net, item):
         net['res_%s' % elm].at[xid, "pf_q"] = np.nan
 
     add_additional_attributes(item, net, element=elm, element_id=xid, attr_list=["cpSite.loc_name"],
-                              attr_dict={"cimRdfId": "origin_id"})
+                              attr_dict={"cimRdfId": "origin_id", 'for_name': 'equipment'})
 
     logger.debug('added pf_p and pf_q to {} {}: {}'.format(elm, xid, net['res_' + elm].loc[
         xid, ["pf_p", 'pf_q']].values))

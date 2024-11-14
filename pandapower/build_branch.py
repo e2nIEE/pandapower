@@ -95,7 +95,7 @@ def _initialize_branch_lookup(net):
             net._pd2ppc_lookups["branch"][element] = (start, end)
             start = end
     if "_impedance_bb_switches" in net and net._impedance_bb_switches.any():
-        end = start + net._impedance_bb_switches.sum()
+        end = start + int(net._impedance_bb_switches.sum())
         net._pd2ppc_lookups["branch"]["switch"] = (start, end)
     return end
 
