@@ -35,14 +35,14 @@ class PowerTransformersCim16:
 
         if power_trafo2w.index.size > 0:
             # process the two winding transformers
-            self._create_trafo_characteristics('trafo', power_trafo2w)
+            self._create_trafo_characteristic_table('trafo', power_trafo2w)
             power_trafo2w = self._prepare_trafos_cim16(power_trafo2w)
             self.cimConverter.copy_to_pp('trafo', power_trafo2w)
             self.cimConverter.power_trafo2w = power_trafo2w
 
         if power_trafo3w.index.size > 0:
             # process the three winding transformers
-            self._create_trafo_characteristics('trafo3w', power_trafo3w)
+            self._create_trafo_characteristic_table('trafo3w', power_trafo3w)
             power_trafo3w = self._prepare_trafo3w_cim16(power_trafo3w)
             self.cimConverter.copy_to_pp('trafo3w', power_trafo3w)
             self.cimConverter.power_trafo3w = power_trafo3w
@@ -54,11 +54,11 @@ class PowerTransformersCim16:
             message="Created %s 2w trafos and %s 3w trafos from PowerTransformers in %ss." %
                     (power_trafo2w.index.size, power_trafo3w.index.size, time.time() - time_start)))
 
-    def _create_trafo_characteristics(self, trafo_type, trafo_df_origin):
-        if 'id_characteristic' not in trafo_df_origin.columns:
-            trafo_df_origin['id_characteristic'] = np.nan
-        if 'characteristic_temp' not in self.cimConverter.net.keys():
-            self.cimConverter.net['characteristic_temp'] = pd.DataFrame(
+    def _create_trafo_characteristic_table(self, trafo_type, trafo_df_origin):
+        if 'id_characteristic_table' not in trafo_df_origin.columns:
+            trafo_df_origin['id_characteristic_table'] = np.nan
+        if 'trafo_characteristic_table' not in self.cimConverter.net.keys():
+            self.cimConverter.net['trafo_characteristic_table'] = pd.DataFrame(
                 columns=['id_characteristic', 'step', 'voltage_ratio', 'angle_deg', 'vk_percent',
                          'vkr_percent', 'vkr_hv_percent', 'vkr_mv_percent',
                          'vkr_lv_percent', 'vk_hv_percent', 'vk_mv_percent',
@@ -246,7 +246,7 @@ class PowerTransformersCim16:
                 if variable in cols:
                     res_dict[variable].append(getattr(row, variable))
 
-        id_characteristic = self.cimConverter.net['characteristic_temp']['id_characteristic'].max() + 1
+        id_characteristic = self.cimConverter.net['trafo_characteristic_table']['id_characteristic'].max() + 1
         if math.isnan(id_characteristic):
             id_characteristic = 0
         for one_id, one_df in trafo_df.groupby(sc['pte_id']):
@@ -256,7 +256,7 @@ class PowerTransformersCim16:
             # set the ID at the corresponding transformer
             trafo_df_origin.loc[trafo_df_origin['PowerTransformer'] == trafo_df_origin.loc[
                 trafo_df_origin[sc['pte_id']] == one_id, 'PowerTransformer'].values[
-                0], 'id_characteristic'] = id_characteristic
+                0], 'id_characteristic_table'] = id_characteristic
             # iterate over the rows and get the desired data
             for one_row in one_df.itertuples():
                 # to add only selected characteristic data instead of all available data, disable the next line and
@@ -271,11 +271,11 @@ class PowerTransformersCim16:
                 # elif one_row.tabular_step == one_row.step and one_row.step != one_row.highStep \
                 #         and one_row.step != one_row.lowStep and one_row.step != one_row.neutralStep:
                 #     append_row(append_dict, id_characteristic, one_row, one_df.columns)
-        self.cimConverter.net['characteristic_temp'] = pd.concat(
-            [self.cimConverter.net['characteristic_temp'], pd.DataFrame(append_dict)],
+        self.cimConverter.net['trafo_characteristic_table'] = pd.concat(
+            [self.cimConverter.net['trafo_characteristic_table'], pd.DataFrame(append_dict)],
             ignore_index=True, sort=False)
-        self.cimConverter.net['characteristic_temp']['step'] = \
-            self.cimConverter.net['characteristic_temp']['step'].astype(int)
+        self.cimConverter.net['trafo_characteristic_table']['step'] = \
+            self.cimConverter.net['trafo_characteristic_table']['step'].astype(int)
 
     def _prepare_power_transformers_cim16(self) -> pd.DataFrame:
         if 'sc' in self.cimConverter.cim.keys():
