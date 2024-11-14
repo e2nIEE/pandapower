@@ -17,18 +17,21 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 from functools import partial
-from pandapower.powerflow import LoadflowNotConverged
+from pandapower.auxiliary import (LoadflowNotConverged, OPFNotConverged, ControllerNotConverged,
+                                  NetCalculationNotConverged)
 from pandapower.run import runpp
-from pandapower.toolbox import get_connected_elements
+from pandapower.toolbox import get_connected_elements, replace_xward_by_ward
 from pandapower.diagnostic_reports import diagnostic_report
 
 # separator between log messages
 log_message_sep = ("\n --------\n")
 
+expected_exceptions = (LoadflowNotConverged, OPFNotConverged, ControllerNotConverged, NetCalculationNotConverged)
+
 
 def diagnostic(net, report_style='detailed', warnings_only=False, return_result_dict=True,
-               overload_scaling_factor=0.001, min_r_ohm=0.001, min_x_ohm=0.001, min_r_pu=1e-05,
-               min_x_pu=1e-05, nom_voltage_tolerance=0.3, numba_tolerance=1e-05, **kwargs):
+               overload_scaling_factor=0.001, min_r_ohm=0.001, min_x_ohm=0.001, max_r_ohm=100,
+               max_x_ohm=100, nom_voltage_tolerance=0.3, numba_tolerance=1e-05, **kwargs):
     """
     Tool for diagnosis of pandapower networks. Identifies possible reasons for non converging loadflows.
 
@@ -86,8 +89,8 @@ def diagnostic(net, report_style='detailed', warnings_only=False, return_result_
         (missing_bus_indices, {}),
         (disconnected_elements, {}),
         (different_voltage_levels_connected, {}),
-        (impedance_values_close_to_zero, {"min_r_ohm": min_r_ohm, "min_x_ohm": min_x_ohm, "min_r_pu": min_r_pu,
-                                          "min_x_pu": min_x_pu, **kwargs}),
+        (implausible_impedance_values, {"min_r_ohm": min_r_ohm, "min_x_ohm": min_x_ohm, "max_r_ohm": max_r_ohm,
+                                          "max_x_ohm": max_x_ohm, **kwargs}),
         (nominal_voltages_dont_match, {"nom_voltage_tolerance": nom_voltage_tolerance}),
         (invalid_values, {}),
         (overload, {"overload_scaling_factor": overload_scaling_factor, **kwargs}),
@@ -113,9 +116,10 @@ def diagnostic(net, report_style='detailed', warnings_only=False, return_result_
     diag_params = {
         "overload_scaling_factor": overload_scaling_factor,
         "min_r_ohm": min_r_ohm,
+        "min_r_dc_ohm": min_r_ohm,
         "min_x_ohm": min_x_ohm,
-        "min_r_pu": min_r_pu,
-        "min_x_pu": min_x_pu,
+        "min_r_pu": max_r_ohm,
+        "min_x_pu": max_x_ohm,
         "nom_voltage_tolerance": nom_voltage_tolerance,
         "numba_tolerance": numba_tolerance
     }
@@ -173,6 +177,16 @@ def check_less_zero(element, element_index, column):
     if check_number(element, element_index, column) is None:
 
         if (element[column] >= 0):
+            return element_index
+
+    else:
+        return element_index
+
+
+def check_less_15(element, element_index, column):
+    if check_number(element, element_index, column) is None:
+
+        if element[column] >= 15:
             return element_index
 
     else:
@@ -262,8 +276,9 @@ def invalid_values(net):
                                  ('max_i_ka', '>0'), ('df', '0<x<=1'), ('in_service', 'boolean')],
                         'trafo': [('hv_bus', 'positive_integer'), ('lv_bus', 'positive_integer'),
                                   ('sn_mva', '>0'), ('vn_hv_kv', '>0'), ('vn_lv_kv', '>0'),
-                                  ('vkr_percent', '>=0'),
-                                  ('vk_percent', '>0'), ('pfe_kw', '>=0'), ('i0_percent', '>=0'),
+                                  ('vkr_percent', '>=0'), ('vk_percent', '>0'),
+                                  ('vkr_percent', '<15'), ('vk_percent', '<15'),
+                                  ('pfe_kw', '>=0'), ('i0_percent', '>=0'),
                                   ('in_service', 'boolean')],
                         'trafo3w': [('hv_bus', 'positive_integer'), ('mv_bus', 'positive_integer'),
                                     ('lv_bus', 'positive_integer'),
@@ -272,6 +287,9 @@ def invalid_values(net):
                                     ('vkr_hv_percent', '>=0'), ('vkr_mv_percent', '>=0'),
                                     ('vkr_lv_percent', '>=0'), ('vk_hv_percent', '>0'),
                                     ('vk_mv_percent', '>0'), ('vk_lv_percent', '>0'),
+                                    ('vkr_hv_percent', '<15'), ('vkr_mv_percent', '<15'),
+                                    ('vkr_lv_percent', '<15'), ('vk_hv_percent', '<15'),
+                                    ('vk_mv_percent', '<15'), ('vk_lv_percent', '<15'),
                                     ('pfe_kw', '>=0'), ('i0_percent', '>=0'),
                                     ('in_service', 'boolean')],
                         'load': [('bus', 'positive_integer'), ('p_mw', 'number'),
@@ -291,6 +309,7 @@ def invalid_values(net):
     type_checks = {'>0': check_greater_zero,
                    '>=0': check_greater_equal_zero,
                    '<0': check_less_zero,
+                   '<15': check_less_15,
                    '<=0': check_less_equal_zero,
                    'boolean': check_boolean,
                    'positive_integer': check_pos_int,
@@ -388,21 +407,21 @@ def overload(net, overload_scaling_factor, **kwargs):
 
     try:
         run(net)
-    except LoadflowNotConverged:
+    except expected_exceptions:
         check_result['load'] = False
         check_result['generation'] = False
         try:
             net.load.scaling = overload_scaling_factor
             run(net)
             check_result['load'] = True
-        except:
+        except expected_exceptions:
             net.load.scaling = load_scaling
             try:
                 net.gen.scaling = overload_scaling_factor
                 net.sgen.scaling = overload_scaling_factor
                 run(net)
                 check_result['generation'] = True
-            except:
+            except expected_exceptions:
                 net.sgen.scaling = sgen_scaling
                 net.gen.scaling = gen_scaling
                 try:
@@ -412,11 +431,13 @@ def overload(net, overload_scaling_factor, **kwargs):
                     run(net)
                     check_result['generation'] = True
                     check_result['load'] = True
-                except:
-                    pass
+                except expected_exceptions:
+                    logger.debug("Overload check did not help")
         net.sgen.scaling = sgen_scaling
         net.gen.scaling = gen_scaling
         net.load.scaling = load_scaling
+    except Exception as e:
+        logger.error(f"Overload check failed: {str(e)}")
     if check_result:
         return check_result
 
@@ -440,15 +461,17 @@ def wrong_switch_configuration(net, **kwargs):
     switch_configuration = copy.deepcopy(net.switch.closed)
     try:
         run(net)
-    except:
+    except expected_exceptions:
         try:
             net.switch.closed = True
             run(net)
             net.switch.closed = switch_configuration
             return True
-        except:
+        except expected_exceptions:
             net.switch.closed = switch_configuration
             return False
+    except Exception as e:
+        logger.error(f"Switch check failed: {str(e)}")
 
 
 def missing_bus_indices(net):
@@ -518,7 +541,7 @@ def different_voltage_levels_connected(net):
         return check_results
 
 
-def impedance_values_close_to_zero(net, min_r_ohm, min_x_ohm, min_r_pu, min_x_pu, **kwargs):
+def implausible_impedance_values(net, min_r_ohm, min_x_ohm, max_r_ohm, max_x_ohm, **kwargs):
     """
     Checks, if there are lines, xwards or impedances with an impedance value close to zero.
 
@@ -539,47 +562,121 @@ def impedance_values_close_to_zero(net, min_r_ohm, min_x_ohm, min_r_pu, min_x_pu
     check_results = []
     implausible_elements = {}
 
-    line = net.line[(((net.line.r_ohm_per_km * net.line.length_km) <= min_r_ohm)
-                    | ((net.line.x_ohm_per_km * net.line.length_km) <= min_x_ohm)) & net.line.in_service].index
+    line = net.line.loc[((net.line.r_ohm_per_km * net.line.length_km >= max_r_ohm) |
+                         (net.line.r_ohm_per_km * net.line.length_km <= min_r_ohm) |
+                         (net.line.x_ohm_per_km * net.line.length_km >= max_x_ohm) |
+                         (net.line.x_ohm_per_km * net.line.length_km <= min_x_ohm)) &
+                        net.line.in_service].index
 
-    xward = net.xward[((net.xward.r_ohm <= min_r_ohm)
-                      | (net.xward.x_ohm <= min_x_ohm)) & net.xward.in_service].index
+    xward = net.xward.loc[((net.xward.r_ohm.abs() >= max_r_ohm) |
+                           (net.xward.r_ohm.abs() <= min_r_ohm) |
+                           (net.xward.x_ohm.abs() >= max_x_ohm) |
+                           (net.xward.x_ohm.abs() <= min_x_ohm)) &
+                          net.xward.in_service].index
 
-    impedance = net.impedance[((net.impedance.rft_pu <= min_r_pu)
-                              | (net.impedance.xft_pu <= min_x_pu)
-                              | (net.impedance.rtf_pu <= min_r_pu)
-                              | (net.impedance.xtf_pu <= min_x_pu)) & net.impedance.in_service].index
+    zb_f_ohm = np.square(net.bus.loc[net.impedance.from_bus.values, "vn_kv"].values) / net.impedance.sn_mva
+    zb_t_ohm = np.square(net.bus.loc[net.impedance.to_bus.values, "vn_kv"].values) / net.impedance.sn_mva
+    impedance = net.impedance.loc[((np.abs(net.impedance.rft_pu) >= max_r_ohm / zb_f_ohm) |
+                                   (np.abs(net.impedance.rft_pu) <= min_r_ohm / zb_f_ohm) |
+                                   (np.abs(net.impedance.xft_pu) >= max_x_ohm / zb_f_ohm) |
+                                   (np.abs(net.impedance.xft_pu) <= min_x_ohm / zb_f_ohm) |
+                                   (np.abs(net.impedance.rtf_pu) >= max_r_ohm / zb_t_ohm) |
+                                   (np.abs(net.impedance.rtf_pu) <= min_r_ohm / zb_t_ohm) |
+                                   (np.abs(net.impedance.xtf_pu) >= max_x_ohm / zb_t_ohm) |
+                                   (np.abs(net.impedance.xtf_pu) <= min_x_ohm / zb_t_ohm)) &
+                                  net.impedance.in_service].index
+
+    trafo = net.trafo.loc[
+        (((net.trafo.vk_percent / 100 * np.square(net.trafo.vn_hv_kv) / net.trafo.sn_mva >= max_x_ohm) |
+          (net.trafo.vk_percent / 100 * np.square(net.trafo.vn_lv_kv) / net.trafo.sn_mva <= min_x_ohm)) &
+         net.trafo.in_service)].index
+
+    trafo3w = net.trafo3w.loc[
+        (((net.trafo3w.vk_hv_percent / 100 * np.square(net.trafo3w.vn_hv_kv) / net.trafo3w.sn_hv_mva >= max_x_ohm) |
+          (net.trafo3w.vk_hv_percent / 100 * np.square(net.trafo3w.vn_mv_kv) / net.trafo3w.sn_hv_mva <= min_x_ohm) |
+          (net.trafo3w.vk_mv_percent / 100 * np.square(net.trafo3w.vn_mv_kv) / net.trafo3w.sn_mv_mva >= max_x_ohm) |
+          (net.trafo3w.vk_mv_percent / 100 * np.square(net.trafo3w.vn_lv_kv) / net.trafo3w.sn_mv_mva <= min_x_ohm) |
+          (net.trafo3w.vk_lv_percent / 100 * np.square(net.trafo3w.vn_hv_kv) / net.trafo3w.sn_lv_mva >= max_x_ohm) |
+          (net.trafo3w.vk_lv_percent / 100 * np.square(net.trafo3w.vn_lv_kv) / net.trafo3w.sn_lv_mva <= min_x_ohm)) &
+         net.trafo3w.in_service)].index
+    vsc = net.vsc.loc[((net.vsc.r_ohm <= min_r_ohm)
+                       | (net.vsc.x_ohm <= min_x_ohm)
+                       | (net.vsc.r_dc_ohm <= min_r_ohm)) & net.vsc.in_service].index
+
+    line_dc = net.line_dc.loc[((net.line_dc.r_ohm_per_km * net.line_dc.length_km) <= min_r_ohm) &
+                              net.line_dc.in_service].index
     if len(line) > 0:
         implausible_elements['line'] = list(line)
     if len(xward) > 0:
         implausible_elements['xward'] = list(xward)
     if len(impedance) > 0:
         implausible_elements['impedance'] = list(impedance)
+    if len(trafo) > 0:
+        implausible_elements['trafo'] = list(trafo)
+    if len(trafo3w) > 0:
+        implausible_elements['trafo3w'] = list(trafo3w)
+    if len(vsc) > 0:
+        implausible_elements['vsc'] = list(vsc)
+    if len(line_dc) > 0:
+        implausible_elements['line_dc'] = list(line_dc)
     check_results.append(implausible_elements)
     # checks if loadflow converges when implausible lines or impedances are replaced by switches
-    if ("line" in implausible_elements) or ("impedance" in implausible_elements):
+    if ("line" in implausible_elements) or ("impedance" in implausible_elements) or ("xward" in implausible_elements):
         switch_copy = copy.deepcopy(net.switch)
         line_copy = copy.deepcopy(net.line)
         impedance_copy = copy.deepcopy(net.impedance)
+        vsc_copy = copy.deepcopy(net.vsc)
+        line_dc_copy = copy.deepcopy(net.line_dc)
+        ward_copy = copy.deepcopy(net.ward)
+        xward_copy = copy.deepcopy(net.xward)
+        trafo_copy = copy.deepcopy(net.trafo)
+        trafo3w_copy = copy.deepcopy(net.trafo3w)
         try:
             run(net)
-        except:
+        except (*expected_exceptions, FloatingPointError):
             try:
                 for key in implausible_elements:
-                    if key == 'xward':
-                        continue
                     implausible_idx = implausible_elements[key]
+                    if key == 'vsc':
+                        net.vsc.x_ohm = np.fmax(net.vsc.x_ohm, 0.5)
+                        net.vsc.r_dc_ohm = np.fmax(net.vsc.r_dc_ohm, 0.5)
+                    if key == 'line_dc':
+                        net.line_dc.length_km = np.fmax(net.line_dc.length_km, 0.5)
+                        net.line_dc.r_dc_ohm = np.fmax(net.line_dc.r_dc_ohm, 0.5)
                     net[key].loc[implausible_idx, "in_service"] = False
-                    for idx in implausible_idx:
-                        pp.create_switch(net, net[key].from_bus.at[idx], net[key].to_bus.at[idx], et="b")
+                    if key == 'xward':
+                        replace_xward_by_ward(net, implausible_idx)
+                    elif key == 'trafo':
+                        for idx in implausible_idx:
+                            pp.create_impedance(net, net.trafo.at[idx, "hv_bus"], net.trafo.at[idx, "lv_bus"],
+                                                0, 0.01, 100)
+                    elif key == 'trafo3w':
+                        for idx in implausible_idx:
+                            pp.create_impedance(net, net.trafo3w.at[idx, "hv_bus"], net.trafo3w.at[idx, "mv_bus"],
+                                                0, 0.01, 100)
+                            pp.create_impedance(net, net.trafo3w.at[idx, "mv_bus"], net.trafo3w.at[idx, "lv_bus"],
+                                                0, 0.01, 100)
+                            pp.create_impedance(net, net.trafo3w.at[idx, "hv_bus"], net.trafo3w.at[idx, "lv_bus"],
+                                                0, 0.01, 100)
+                    else:
+                        for idx in implausible_idx:
+                            pp.create_switch(net, net[key].from_bus.at[idx], net[key].to_bus.at[idx], et="b")
                 run(net)
                 switch_replacement = True
-            except:
+            except expected_exceptions:
                 switch_replacement = False
             check_results.append({"loadflow_converges_with_switch_replacement": switch_replacement})
+        except Exception as e:
+            logger.error(f"Impedance values check failed: {str(e)}")
         net.switch = switch_copy
         net.line = line_copy
         net.impedance = impedance_copy
+        net.vsc = vsc_copy
+        net.line_dc = line_dc_copy
+        net.ward = ward_copy
+        net.xward = xward_copy
+        net.trafo = trafo_copy
+        net.trafo3w = trafo3w_copy
     if implausible_elements:
         return check_results
 

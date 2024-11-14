@@ -475,11 +475,11 @@ def test_generator_as_slack():
     res_bus = net.res_bus.vm_pu.values
 
     pp.create_gen(net, b1, p_mw=0.1, vm_pu=1.02, slack=True)
-    net.ext_grid.in_service.iloc[0] = False
+    net.ext_grid.loc[0, 'in_service'] = False
     pp.runpp(net)
     assert np.allclose(res_bus, net.res_bus.vm_pu.values)
 
-    net.gen.slack.iloc[0] = False
+    net.gen.loc[0, 'slack'] = False
     with pytest.raises(UserWarning):
         pp.runpp(net)
 
@@ -593,5 +593,6 @@ def test_switch_results():
     assert np.isclose(net.res_switch_sc.ikss_ka.at[switch_trafo_hv], abs(net.res_trafo_sc.ikss_hv_ka.at[trafo]))
     assert np.isclose(net.res_switch_sc.ikss_ka.at[switch_trafo_lv], abs(net.res_trafo_sc.ikss_lv_ka.at[trafo]))
 
+
 if __name__ == "__main__":
-    pytest.main(["-xs", __file__])
+    pytest.main([__file__, "-xs"])

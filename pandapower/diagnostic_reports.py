@@ -157,7 +157,7 @@ class DiagnosticReports:
             for key in diag_result:
                 element_counter += len(diag_result[key])
                 for element in diag_result[key]:
-                    if key == "line":
+                    if key in ("line", "line_dc"):
                         min_r_type = "r_ohm"
                         min_x_type = "x_ohm"
                     elif key == "xward":
@@ -166,6 +166,9 @@ class DiagnosticReports:
                     elif key == "impedance":
                         min_r_type = "r_pu"
                         min_x_type = "x_pu"
+                    elif key == "vsc":
+                        min_r_type = "r_dc_ohm"
+                        min_x_type = "x_ohm"
 
                     logger.warning("%s %s: %s <= %s or %s <= %s"
                                    % (key, element, min_r_type, self.diag_params["min_"+min_r_type],

@@ -43,4 +43,4 @@ def test_write_to_object_attribute():
 
 
 if __name__ == '__main__':
-    pytest.main([__file__])
+    pytest.main([__file__, "-xs"])

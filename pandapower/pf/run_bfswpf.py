@@ -9,26 +9,19 @@ from time import perf_counter  # alternatively use import timeit.default_timer a
 
 import numpy as np
 import scipy as sp
-from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, BR_STATUS, SHIFT
+from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, BR_G, TAP, BR_STATUS, SHIFT
 from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, GS, BS
 from pandapower.pypower.idx_gen import GEN_BUS, QG, QMAX, QMIN, GEN_STATUS, VG
 from pandapower.pypower.makeSbus import makeSbus
 from scipy.sparse import csr_matrix, csgraph
 
-from pandapower.auxiliary import ppException
+from pandapower.auxiliary import LoadflowNotConverged
 from pandapower.pypower.bustypes import bustypes
 from pandapower.pypower.newtonpf import _evaluate_Fx, _check_for_convergence
 from pandapower.pypower.pfsoln import pfsoln
 from pandapower.pf.run_newton_raphson_pf import _get_Y_bus
 from pandapower.pf.runpf_pypower import _import_numba_extensions_if_flag_is_true
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci
-
-
-class LoadflowNotConverged(ppException):
-    """
-    Exception being raised in case loadflow did not converge.
-    """
-    pass
 
 
 def _make_bibc_bcbv(bus, branch, graph):
@@ -80,8 +73,8 @@ def _make_bibc_bcbv(bus, branch, graph):
 
         # if multiple networks get subnetwork branches
         if norefs > 1:
-            branches_sub_mask = (np.in1d(branches_arr[:, 0], buses_ordered_bfs) &
-                                 np.in1d(branches_arr[:, 1], buses_ordered_bfs))
+            branches_sub_mask = (np.isin(branches_arr[:, 0], buses_ordered_bfs) &
+                                 np.isin(branches_arr[:, 1], buses_ordered_bfs))
             branches = np.sort(branches_arr[branches_sub_mask, :], axis=1)
         else:
             branches = np.sort(branches_arr, axis=1)
@@ -155,7 +148,7 @@ def _make_bibc_bcbv(bus, branch, graph):
         #       [M  N   ]
         A = DLF_loop[0:nobus - 1, 0:nobus - 1]
         M = DLF_loop[nobus - 1:, 0:nobus - 1]
-        N = DLF_loop[nobus - 1:, nobus - 1:].A
+        N = DLF_loop[nobus - 1:, nobus - 1:].toarray()
         # considering the fact that number of loops is relatively small, N matrix is expected to be small and dense
         # ...in that case dense version is more efficient, i.e. N is transformed to dense and
         # inverted using sp.linalg.inv(N)
@@ -195,7 +188,7 @@ def _makeYsh_bfsw(bus, branch, baseMVA):
     # summation of charging susceptances per each bus
     stat = branch[:, BR_STATUS]  ## ones at in-service branches
     Ys = stat / (branch[:, BR_R] + 1j * branch[:, BR_X])
-    ysh = (- branch[:, BR_B].imag + 1j * (branch[:, BR_B].real)) / 2
+    ysh = (branch[:, BR_G] + 1j * branch[:, BR_B]) / 2
     tap = branch[:, TAP]  # * np.exp(1j * np.pi / 180 * branch[:, SHIFT])
 
     ysh_f = Ys * (1 - tap) / (tap * np.conj(tap)) + ysh / (tap * np.conj(tap))
@@ -259,7 +252,7 @@ def _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, V0, ref, pv, pq, buses_o
     Ysh = _makeYsh_bfsw(bus, branch, baseMVA)
 
     # detect generators on PV buses which have status ON
-    gen_pv = np.in1d(gen[:, GEN_BUS], pv) & (gen[:, GEN_STATUS] > 0)
+    gen_pv = np.isin(gen[:, GEN_BUS], pv) & (gen[:, GEN_STATUS] > 0)
     qg_lim = np.zeros(ngen, dtype=bool)  # initialize generators which violated Q limits
 
     Iinj = np.conj(Sbus / V0) - Ysh * V0   # Initial current injections
@@ -377,7 +370,7 @@ def _run_bfswpf(ppci, options, **kwargs):
     """
     time_start = perf_counter()  # starting pf calculation timing
 
-    baseMVA, bus, gen, branch, svc, tcsc, ssc, ref, pv, pq, *_, gbus, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
+    baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, ref, pv, pq, *_, gbus, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
 
     enforce_q_lims, tolerance_mva, max_iteration, calculate_voltage_angles, numba = _get_options(options)
 
@@ -450,7 +443,7 @@ def _run_bfswpf(ppci, options, **kwargs):
     # #----- output results to ppc ------
     ppci["et"] = perf_counter() - time_start  # pf time end
 
-    bus, gen, branch = pfsoln(baseMVA, bus, gen, branch, svc, tcsc, ssc, Ybus, Yf, Yt, V_final, ref, ref_gens)
+    bus, gen, branch = pfsoln(baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, Ybus, Yf, Yt, V_final, ref, ref_gens)
     # bus, gen, branch = pfsoln_bfsw(baseMVA, bus, gen, branch, V_final, ref, pv, pq, BIBC, ysh_f,ysh_t,Iinj, Sbus)
 
     ppci["success"] = success

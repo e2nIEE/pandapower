@@ -13,18 +13,18 @@ from pandapower.pypower.idx_bus import VM, BUS_I, VA
 from pandapower.powerflow import LoadflowNotConverged
 from pandapower.results import reset_results
 from pandapower.pf.runpf_pypower import _runpf_pypower
+from pandapower.networks import case4gs, case6ww, case30, case39
 
 
 def test_to_ppc_and_mpc():
     # pypower cases to validate
-    functions = ['case4gs', 'case6ww', 'case30', 'case39']
-    for fn in functions:
+    case_functions = [case4gs, case6ww, case30, case39]
+    case_names = ['case4gs', 'case6ww', 'case30', 'case39']
+    for pandapower_function, case_name in zip(case_functions, case_names):
         # get pypower grids with results
-        ppc_net = get_testgrids('pypower_cases', fn+'.json')
+        ppc_net = get_testgrids('pypower_cases', f"{case_name}.json")
 
         # get pandapower grids
-        pandapower_module = __import__('pandapower', fromlist=['networks'])
-        pandapower_function = getattr(pandapower_module.networks, fn)
         net = pandapower_function()
         reset_results(net)
 

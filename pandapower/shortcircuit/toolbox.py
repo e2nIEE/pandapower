@@ -77,10 +77,10 @@ def detect_power_station_unit(net, mode="auto",
             # Check parallel trafo
             if not len(np.intersect1d(connected_bus_at_lv_side, trafo_lv_bus)) == 1:
                 raise UserWarning("Failure in power station units detection! Parallel trafos on generator detected!")
-            if np.in1d(required_gen_bus, gen_bus_at_lv_side).sum() > 1:
+            if np.isin(required_gen_bus, gen_bus_at_lv_side).sum() > 1:
                 logger.info("More than 1 gen detected at the lv side of a power station trafo! Will not be considered as power station unit")
                 continue
-            net.gen.loc[np.in1d(net.gen.bus.values, gen_bus_at_lv_side),
+            net.gen.loc[np.isin(net.gen.bus.values, gen_bus_at_lv_side),
                         "power_station_trafo"] = t_ix
 
 

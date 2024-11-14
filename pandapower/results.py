@@ -8,10 +8,10 @@ import numpy as np
 import pandas as pd
 
 from pandapower.results_branch import _get_branch_results, _get_branch_results_3ph
-from pandapower.results_bus import _get_bus_results, _set_buses_out_of_service, \
+from pandapower.results_bus import _get_bus_results, _get_bus_dc_results, _set_buses_out_of_service, \
     _get_shunt_results, _get_p_q_results, _get_bus_v_results, _get_bus_v_results_3ph, _get_p_q_results_3ph, \
-    _get_bus_results_3ph
-from pandapower.results_gen import _get_gen_results, _get_gen_results_3ph
+    _get_bus_results_3ph, _get_bus_dc_v_results, _get_p_dc_results, _set_dc_buses_out_of_service
+from pandapower.results_gen import _get_gen_results, _get_gen_results_3ph, _get_dc_slack_results
 
 BRANCH_RESULTS_KEYS = ("branch_ikss_f", "branch_ikss_t",
                        "branch_ikss_angle_f", "branch_ikss_angle_t",
@@ -26,14 +26,20 @@ suffix_mode = {"sc": "sc", "se": "est", "pf_3ph": "3ph"}
 
 
 def _extract_results(net, ppc):
-    _set_buses_out_of_service(ppc)
+    _set_buses_out_of_service(ppc)  # for NaN results in net.res_bus for inactive buses
+    _set_dc_buses_out_of_service(ppc)  # for NaN results in net.res_bus_dc for inactive buses
     bus_lookup_aranged = _get_aranged_lookup(net)
+    bus_dc_lookup_aranged = _get_aranged_lookup(net, "bus_dc")
     _get_bus_v_results(net, ppc)
+    _get_bus_dc_v_results(net, ppc)
     bus_pq = _get_p_q_results(net, ppc, bus_lookup_aranged)
     _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq)
     _get_branch_results(net, ppc, bus_lookup_aranged, bus_pq)
     _get_gen_results(net, ppc, bus_lookup_aranged, bus_pq)
     _get_bus_results(net, ppc, bus_pq)
+    bus_p_dc = _get_p_dc_results(net, ppc, bus_dc_lookup_aranged)
+    # _get_dc_slack_results(net, ppc, bus_dc_lookup_aranged, bus_p_dc)
+    _get_bus_dc_results(net, bus_p_dc)
     if net._options["mode"] == "opf":
         _get_costs(net, ppc)
     else:
@@ -72,11 +78,13 @@ def _remove_costs(net):
         del net["res_cost"]
 
 
-def _get_aranged_lookup(net):
+def _get_aranged_lookup(net, bus_table="bus"):
     # generate bus_lookup net -> consecutive ordering
-    maxBus = max(net["bus"].index.values)
+    if len(net[bus_table]) == 0:
+        return np.array([], dtype=np.int64)
+    maxBus = max(net[bus_table].index.values)
     bus_lookup_aranged = -np.ones(maxBus + 1, dtype=np.int64)
-    bus_lookup_aranged[net["bus"].index.values] = np.arange(len(net["bus"].index.values))
+    bus_lookup_aranged[net[bus_table].index.values] = np.arange(len(net[bus_table].index.values))
 
     return bus_lookup_aranged
 
@@ -138,10 +146,10 @@ def init_element(net, element, suffix=None):
 
 def get_relevant_elements(mode="pf"):
     if mode == "pf" or mode == "opf":
-        return ["bus", "line", "trafo", "trafo3w", "impedance", "ext_grid",
+        return ["bus", "bus_dc", "line", "line_dc", "trafo", "trafo3w", "impedance", "ext_grid",
                 "load", "motor", "sgen", "storage", "shunt", "gen", "ward",
                 "xward", "dcline", "asymmetric_load", "asymmetric_sgen",
-                "switch", "tcsc", "svc", "ssc"]
+                "switch", "tcsc", "svc", "ssc", "vsc"]
     elif mode == "sc":
         return ["bus", "line", "trafo", "trafo3w", "ext_grid", "gen", "sgen", "switch"]
     elif mode == "se":
@@ -168,21 +176,23 @@ def reset_results(net, mode="pf"):
 
 
 def _ppci_bus_to_ppc(result, ppc):
-    # result is the ppci (ppc without out of service buses)
-    # busses are sorted (REF, PV, PQ, NONE) -> results are the first 3 types
-    n_buses, bus_cols = np.shape(ppc['bus'])
-    n_rows_result, bus_cols_result = np.shape(result['bus'])
-    # create matrix of proper size
-    updated_bus = np.empty((n_buses, bus_cols_result))
-    # fill in results (first 3 types)
-    updated_bus[:n_rows_result, :] = result['bus']
-    if n_buses > n_rows_result:
-        # keep rows for busses of type NONE
-        updated_bus[n_rows_result:, :bus_cols] = ppc['bus'][n_rows_result:, :]
-    ppc['bus'] = updated_bus
+    # result is the ppci (ppc without out-of-service buses)
+    # buses are sorted (REF, PV, PQ, NONE) -> results are the first 3 types
+    for bus_table in ("bus", "bus_dc"):
+        n_buses, bus_cols = np.shape(ppc[bus_table])
+        n_rows_result, bus_cols_result = np.shape(result[bus_table])
+        # create matrix of proper size
+        updated_bus = np.empty((n_buses, bus_cols_result))
+        # fill in results (first 3 types)
+        updated_bus[:n_rows_result, :] = result[bus_table]
+        if n_buses > n_rows_result:
+            # keep rows for busses of type NONE
+            updated_bus[n_rows_result:, :bus_cols] = ppc[bus_table][n_rows_result:, :]
+        ppc[bus_table] = updated_bus
 
     ppc['svc'][result["internal"]['svc_is'], :] = result['svc'][:, :]
     ppc['ssc'][result["internal"]['ssc_is'], :] = result['ssc'][:, :]
+    ppc['vsc'][result["internal"]['vsc_is'], :] = result['vsc'][:, :]
 
 
 def _ppci_branch_to_ppc(result, ppc):
@@ -191,6 +201,8 @@ def _ppci_branch_to_ppc(result, ppc):
     ppc['branch'][result["internal"]['branch_is'], :branch_cols] = result['branch'][:, :branch_cols]
 
     ppc['tcsc'][result["internal"]['tcsc_is'], :] = result['tcsc'][:, :]
+
+    ppc['branch_dc'][result["internal"]['branch_dc_is'], :] = result['branch_dc'][:, :]
 
 
 def _ppci_gen_to_ppc(result, ppc):

@@ -9,7 +9,7 @@ import os
 import pandapower as pp
 import pandapower.topology as top
 import pandapower.plotting.geo as geo
-from pandapower import pp_dir
+from pandapower.__init__ import pp_dir
 
 
 def lv_schutterwald(separation_by_sub=False, include_heat_pumps=False, **kwargs):

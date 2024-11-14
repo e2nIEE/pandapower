@@ -1,0 +1,10 @@
+**Parameter**;**Datatype**;**Explanation**
+"p_from_mw;float;""active power flow into the dc line at """"from"""" dc bus [MW]"""
+"p_to_mw;float;""active power flow into the dc line at """"to"""" dc bus [MW]"""
+pl_mw;float;active power losses of the dc line [MW]
+i_from_ka;float;Current at from dc bus [kA]
+i_to_ka;float;Current at to dc bus [kA]
+i_ka;float;Maximum of i_from_ka and i_to_ka [kA]
+vm_from_pu;float;voltage magnitude at from dc bus
+vm_to_pu;float;voltage magnitude at to dc bus
+loading_percent;float;line loading [%]

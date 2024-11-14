@@ -11,6 +11,8 @@ try:
 except ImportError:
     UnsupportedPythonError = Exception
 try:
+    from julia.api import Julia
+    Julia(compiled_modules=False)
     from julia import Main
 
     julia_installed = True

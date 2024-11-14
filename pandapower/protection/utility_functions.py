@@ -112,12 +112,12 @@ def create_sc_bus(net_copy, sc_line_id, sc_fraction):
     # check if switches are connected to the line and set the switches to new lines
     for switch_id in net.switch.index:
         if (aux_line.from_bus == net.switch.bus[switch_id]) & (net.switch.element[switch_id] == sc_line_id):
-            net.switch.element[switch_id] = sc_line1
+            net.switch.loc[switch_id, 'element'] = sc_line1
         elif (aux_line.to_bus == net.switch.bus[switch_id]) & (net.switch.element[switch_id] == sc_line_id):
             net.switch.element[switch_id] = sc_line2
 
     # set geodata for new bus
-    net.bus.geo.loc[max_idx_bus + 1] = None
+    net.bus.loc[max_idx_bus + 1, 'geo'] = None
 
     x1, y1 = _get_coords_from_bus_idx(net, aux_line.from_bus)[0]
     x2, y2 = _get_coords_from_bus_idx(net, aux_line.to_bus)[0]

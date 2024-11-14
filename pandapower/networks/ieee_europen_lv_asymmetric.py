@@ -5,7 +5,7 @@
 
 import os
 import pandapower as pp
-from pandapower import pp_dir
+from pandapower.__init__ import pp_dir
 
 
 def ieee_european_lv_asymmetric(scenario="on_peak_566", **kwargs):

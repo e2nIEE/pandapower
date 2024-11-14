@@ -27,6 +27,7 @@ The documentation describes how to use the exporter as a function in "Engine mod
  - RelFuse (Fuses)
  - ElmZpu (pu Impedance)
  - ElmSind (Series Reactor)
+ - Elmscap (Series Capacitor)
 
  
 Setup PowerFactory and Python

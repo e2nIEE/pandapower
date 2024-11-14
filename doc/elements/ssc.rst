@@ -58,11 +58,11 @@ The corresponding terminal-admittance equation is given as:
    :nowrap:
    
     \begin{align*}
-    \underline{Y}_{T} (\underline{U}_{1} - \underline{U}_{VSC}) = \underline{I}_{1}
+    \underline{Y}_{T} (\underline{V}_{1} - \underline{V}_{VSC}) = \underline{I}_{1}
     \end{align*}
 
 Where :math:`\underline{Y}_{T}` = 1/:math:`\underline{Z}_{T}` is the admittance of the lossless-assumed coupling transformer between
-the VSC and the ac system. :math:`\underline{U}_{VSC}` stands for the VSC output Voltage.
+the VSC and the ac system. :math:`\underline{V}_{VSC}` stands for the VSC output Voltage.
 
 
 Result Parameters

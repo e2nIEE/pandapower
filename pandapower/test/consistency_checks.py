@@ -36,10 +36,17 @@ def runpp_pgm_3ph_with_consistency_checks(net):
     consistency_checks_3ph(net)
     return True
 
+
+def consistent_b2b_vsc(net, rtol):
+    pass
+
+
 def consistency_checks(net, rtol=1e-3, test_q=True):
     indices_consistent(net)
     branch_loss_consistent_with_bus_feed_in(net, rtol)
     element_power_consistent_with_bus_power(net, rtol, test_q)
+    # consistent_b2b_vsc(net, rtol)  # todo
+
 
 def indices_consistent(net):
     elements = get_relevant_elements()
@@ -58,6 +65,7 @@ def branch_loss_consistent_with_bus_feed_in(net, atol=1e-2):
     # Active Power
     bus_surplus_p = -net.res_bus.p_mw.sum()
     bus_surplus_q = -net.res_bus.q_mvar.sum()
+    bus_dc_surplus_p = -net.res_bus_dc.p_mw.sum()
 
     branch_loss_p = net.res_line.pl_mw.values.sum() + net.res_trafo.pl_mw.values.sum() + \
                     net.res_trafo3w.pl_mw.values.sum() + net.res_impedance.pl_mw.values.sum() + \
@@ -66,11 +74,16 @@ def branch_loss_consistent_with_bus_feed_in(net, atol=1e-2):
                     net.res_trafo3w.ql_mvar.values.sum() + net.res_impedance.ql_mvar.values.sum() + \
                     net.res_dcline.q_to_mvar.values.sum() + net.res_dcline.q_from_mvar.values.sum() + \
                     net.res_tcsc.ql_mvar.values.sum()
+    branch_dc_loss = net.res_line_dc.pl_mw.values.sum()
 
     try:
         assert isclose(bus_surplus_p, branch_loss_p, atol=atol)
     except AssertionError:
         raise AssertionError("Branch losses are %.4f MW, but power generation at the buses exceeds the feedin by %.4f MW"%(branch_loss_p, bus_surplus_p))
+    try:
+        assert isclose(bus_dc_surplus_p, branch_dc_loss, atol=atol)
+    except AssertionError:
+        raise AssertionError("DC branch losses are %.4f MW, but power generation at the DC buses exceeds the feedin by %.4f MW"%(branch_dc_loss, bus_dc_surplus_p))
     try:
         assert isclose(bus_surplus_q, branch_loss_q, atol=atol)
     except AssertionError:
@@ -83,6 +96,7 @@ def element_power_consistent_with_bus_power(net, rtol=1e-2, test_q=True):
     """
     bus_p = pd.Series(data=0., index=net.bus.index)
     bus_q = pd.Series(data=0., index=net.bus.index)
+    bus_p_dc = pd.Series(data=0., index=net.bus_dc.index)
 
     for idx, tab in net.ext_grid.iterrows():
         if tab.in_service:
@@ -132,7 +146,13 @@ def element_power_consistent_with_bus_power(net, rtol=1e-2, test_q=True):
     for idx, tab in net.ssc.iterrows():
         bus_q.at[tab.bus] += net.res_ssc.q_mvar.at[idx]
 
+    for idx, tab in net.vsc.iterrows():
+        bus_p.at[tab.bus] += net.res_vsc.p_mw.at[idx]
+        bus_q.at[tab.bus] += net.res_vsc.q_mvar.at[idx]
+        bus_p_dc.at[tab.bus_dc] += net.res_vsc.p_dc_mw.at[idx]
+
     assert allclose(net.res_bus.p_mw.values, bus_p.values, equal_nan=True, rtol=rtol)
+    assert allclose(net.res_bus_dc.p_mw.values, bus_p_dc.values, equal_nan=True, rtol=rtol)
     if test_q:
         assert allclose(net.res_bus.q_mvar.values, bus_q.values, equal_nan=True, rtol=rtol)
 

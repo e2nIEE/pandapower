@@ -10,7 +10,7 @@
 
 """Builds the B matrices and phase shift injections for DC power flow.
 """
-from numpy import ones, r_, pi, flatnonzero as find, real, int64
+from numpy import ones, zeros_like, r_, pi, flatnonzero as find, real, int64, float64, divide, errstate
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_X, TAP, SHIFT, BR_STATUS
 from pandapower.pypower.idx_bus import BUS_I
 
@@ -92,11 +92,19 @@ def phase_shift_injection(b, shift, Cft):
     return Pfinj, Pbusinj
 
 
+# we set the numpy error handling for this function to raise error rather than issue a warning because
+# otherwise the resulting nan values will propagate and case an error elsewhere, making the reason less obvious
+@errstate(all="raise")
 def calc_b_from_branch(branch, nl):
-    stat = branch[:, BR_STATUS]  ## ones at in-service branches
-    b = stat / branch[:, BR_X]  ## series susceptance
+    stat = real(branch[:, BR_STATUS])  ## ones at in-service branches
+    br_x = real(branch[:, BR_X])  ## ones at in-service branches
+    b = zeros_like(stat, dtype=float64)
+    # if some br_x values are 0 but the branches are not in service, we do not need to raise an error:
+    # divide(x1=stat, x2=br_x, out=b, where=stat, dtype=float64)  ## series susceptance
+    # however, we also work with ppci at this level, which only has in-service elements so we should just let it fail:
+    divide(stat, br_x, out=b, dtype=float64)  ## series susceptance
     tap = ones(nl)  ## default tap ratio = 1
-    i = find(real(branch[:, TAP]))  ## indices of non-zero tap ratios
-    tap[i] = real(branch[i, TAP])  ## assign non-zero tap ratios
+    i = find(t := real(branch[:, TAP]))  ## indices of non-zero tap ratios
+    tap[i] = t[i]  ## assign non-zero tap ratios
     b = b / tap
     return b

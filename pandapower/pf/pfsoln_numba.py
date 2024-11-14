@@ -19,7 +19,8 @@ from pandapower.pypower.idx_bus import PD, QD
 from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, PG, QG
 from pandapower.pypower.idx_ssc import SSC_Q
 from pandapower.pypower.idx_svc import SVC_Q
-from pandapower.pypower.idx_tcsc import TCSC_QF, TCSC_QT
+from pandapower.pypower.idx_vsc import VSC_P, VSC_Q
+from pandapower.pypower.idx_tcsc import TCSC_QF, TCSC_QT, TCSC_PF, TCSC_PT
 from pandapower.pypower.pfsoln import _update_v, _update_q, _update_p
 from pandapower.auxiliary import version_check
 
@@ -32,7 +33,7 @@ except ImportError:
 EPS = finfo(float).eps
 
 
-def pfsoln(baseMVA, bus, gen, branch, svc, tcsc, ssc, Ybus, Yf, Yt, V, ref, ref_gens, Ibus=None,
+def pfsoln(baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, Ybus, Yf, Yt, V, ref, ref_gens, Ibus=None,
            limited_gens=None):
     """Updates bus, gen, branch data structures to match power flow soln.
 
@@ -66,7 +67,7 @@ def pfsoln(baseMVA, bus, gen, branch, svc, tcsc, ssc, Ybus, Yf, Yt, V, ref, ref_
     return bus, gen, branch
 
 
-def pf_solution_single_slack(baseMVA, bus, gen, branch, svc, tcsc, ssc, Ybus, Yf, Yt, V, ref, ref_gens,
+def pf_solution_single_slack(baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, Ybus, Yf, Yt, V, ref, ref_gens,
                              Ibus=None, limited_gens=None):
     """
     faster version of pfsoln for a grid with a single slack bus
@@ -88,10 +89,11 @@ def pf_solution_single_slack(baseMVA, bus, gen, branch, svc, tcsc, ssc, Ybus, Yf
     q_loss = branch[:, [QF, QT]].sum()
 
     # consider FACTS devices:
-    q_facts = svc[:, SVC_Q].sum() + tcsc[:, [TCSC_QF, TCSC_QT]].sum() + ssc[:, SSC_Q].sum()
+    q_facts = svc[:, SVC_Q].sum() + tcsc[:, [TCSC_QF, TCSC_QT]].sum() + ssc[:, SSC_Q].sum() + vsc[:, VSC_Q].sum()
+    p_facts = tcsc[:, [TCSC_PF, TCSC_PT]].sum() + vsc[:, VSC_P].sum()  # now should all be 0 due to no losses
 
     # slack p = sum of branch losses and p demand at all buses
-    gen[:, PG] = p_loss.real + p_bus  # branch p losses + p demand
+    gen[:, PG] = p_loss.real + p_bus + p_facts  # branch p losses + p demand
     gen[:, QG] = q_loss.real + q_bus + q_facts  # branch q losses + q demand
 
     return bus, gen, branch

@@ -38,7 +38,7 @@ def test_drop_internal_branch_elements():
 
 def test_trafo_phase_shifter():
     net = pp.networks.create_cigre_network_mv(with_der="pv_wind")
-    net.trafo.shift_degree[0] = 150
+    net.trafo.loc[0, 'shift_degree'] = 150
     pp.runpp(net)
     net_eq = pp.grid_equivalents.get_equivalent(net, "rei", [4, 8], [0],
                                                 retain_original_internal_indices=True)
@@ -102,11 +102,11 @@ def test_drop_measurements_and_controllers():
 
 def test_check_network():
     net = pp.networks.case9()
-    net.bus.in_service[5] = False
+    net.bus.loc[5, 'in_service'] = False
     pp.runpp(net)
     _check_network(net)
 
-    net.bus.in_service[5] = True
+    net.bus.loc[5, 'in_service'] = True
     pp.runpp(net)
     pp.create_bus(net, net.bus.vn_kv.values[0])
     pp.create_bus(net, net.bus.vn_kv.values[0])
@@ -119,12 +119,4 @@ def test_check_network():
 
 
 if __name__ == "__main__":
-    if 0:
-        pytest.main(['-x', __file__])
-    else:
-        # test_drop_internal_branch_elements()
-        test_drop_measurements_and_controllers()
-        # test_check_validity()
-        # test_trafo_phase_shifter()
-        # test_check_validity()
-    pass
+    pytest.main([__file__, "-xs"])

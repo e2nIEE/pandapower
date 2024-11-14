@@ -59,7 +59,7 @@ class GeoCoordinatesFromGLCim16:
         line_geo['coords'] = line_geo[['xPosition', 'yPosition']].values.tolist()
         line_geo['coords'] = line_geo[['coords']].values.tolist()
         for _, df_group in line_geo.groupby(by=sc['o_id']):
-            line_geo['coords'][df_group.index.values[0]] = df_group[['xPosition', 'yPosition']].values.tolist()
+            line_geo.at[df_group.index.values[0], 'coords'] = df_group[['xPosition', 'yPosition']].values.tolist()
         line_geo = line_geo.drop_duplicates([sc['o_id']], keep='first')
         line_geo = line_geo.sort_values(by='index')
         line_geo['geo'] = '{"coordinates": ' + line_geo['coords'].astype(str) + ', "type": "LineString"}'
@@ -83,7 +83,7 @@ class GeoCoordinatesFromGLCim16:
                 one_ele_df['coords'] = one_ele_df[['xPosition', 'yPosition']].values.tolist()
                 one_ele_df['coords'] = one_ele_df[['coords']].values.tolist()
                 for _, df_group in one_ele_df.groupby(by=sc['o_id']):
-                    one_ele_df['coords'][df_group.index.values[0]] = df_group[
+                    one_ele_df.at[df_group.index.values[0], 'coords'] = df_group[
                         ['xPosition', 'yPosition']].values.tolist()
                 one_ele_df = one_ele_df.drop_duplicates([sc['o_id']], keep='first')
                 one_ele_df['coords'] = one_ele_df['coords'].astype(str)

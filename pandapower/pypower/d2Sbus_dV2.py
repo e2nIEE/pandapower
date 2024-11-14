@@ -37,7 +37,7 @@ def d2Sbus_dV2(Ybus, V, lam):
     A = sparse((lam * V, (ib, ib)))
     B = Ybus * diagV
     C = A * conj(B)
-    D = Ybus.H * diagV
+    D = Ybus.T.conjugate() * diagV
     E = diagV.conj() * (D * diaglam - sparse((D * lam, (ib, ib))))
     F = C - A * sparse((conj(Ibus), (ib, ib)))
     G = sparse((ones(nb) / abs(V), (ib, ib)))

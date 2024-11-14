@@ -17,7 +17,9 @@ information about the definition and interpretation of the parameters in the fol
 
     elements/empty_network
     elements/bus
+    elements/bus_dc
     elements/line
+    elements/line_dc
     elements/switch
     elements/load
     elements/motor
@@ -38,3 +40,4 @@ information about the definition and interpretation of the parameters in the fol
     elements/svc
     elements/tcsc
     elements/ssc
+    elements/vsc

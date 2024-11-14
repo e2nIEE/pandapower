@@ -643,10 +643,10 @@ def test_storage_opf():
     pp.create_poly_cost(net, 1, "load", cp1_eur_per_mw=-3)
 
     # test storage generator behaviour
-    net["storage"].in_service.iloc[0] = True
-    net["storage"].p_mw.iloc[0] = -0.025
-    net["sgen"].in_service.iloc[1] = False
-    net["load"].in_service.iloc[1] = False
+    net["storage"].loc[0, 'in_service'] = True
+    net["storage"].loc[0, 'p_mw'] = -0.025
+    net["sgen"].loc[1, 'in_service'] = False
+    net["load"].loc[1, 'in_service'] = False
 
     pp.runopp(net)
     assert net["OPF_converged"]
@@ -655,10 +655,10 @@ def test_storage_opf():
     res_stor_q_mvar = net["res_storage"].q_mvar.iloc[0]
     res_cost_stor = net["res_cost"]
 
-    net["storage"].in_service.iloc[0] = False
-    net["storage"].p_mw.iloc[0] = -0.025
-    net["sgen"].in_service.iloc[1] = True
-    net["load"].in_service.iloc[1] = False
+    net["storage"].loc[0, 'in_service'] = False
+    net["storage"].loc[0, 'p_mw'] = -0.025
+    net["sgen"].loc[1, 'in_service'] = True
+    net["load"].loc[1, 'in_service'] = False
 
     pp.runopp(net)
     assert net["OPF_converged"]
@@ -673,17 +673,17 @@ def test_storage_opf():
     assert np.isclose(res_cost_stor, res_cost_sgen)
 
     # test storage load behaviour
-    net["storage"].in_service.iloc[0] = True
-    net["storage"].p_mw.iloc[0] = 0.025
-    net["storage"].max_p_mw.iloc[0] = 0.025
-    net["storage"].min_p_mw.iloc[0] = 0
-    net["storage"].max_q_mvar.iloc[0] = 0.025
-    net["storage"].min_q_mvar.iloc[0] = -0.025
+    net["storage"].loc[0, 'in_service'] = True
+    net["storage"].loc[0, 'p_mw'] = 0.025
+    net["storage"].loc[0, 'max_p_mw'] = 0.025
+    net["storage"].loc[0, 'min_p_mw'] = 0
+    net["storage"].loc[0, 'max_q_mvar'] = 0.025
+    net["storage"].loc[0, 'min_q_mvar'] = -0.025
     # gencost for storages: positive costs in pandapower per definition
     # --> storage gencosts are similar to sgen gencosts (make_objective.py, l.128ff. and l.185ff.)
-    net["poly_cost"].cp1_eur_per_mw.iloc[2] = net.poly_cost.cp1_eur_per_mw.iloc[4]
-    net["sgen"].in_service.iloc[1] = False
-    net["load"].in_service.iloc[1] = False
+    net["poly_cost"].loc[2, 'cp1_eur_per_mw'] = net.poly_cost.cp1_eur_per_mw.iloc[4]
+    net["sgen"].loc[1, 'in_service'] = False
+    net["load"].loc[1, 'in_service'] = False
 
     pp.runopp(net)
     assert net["OPF_converged"]
@@ -692,10 +692,10 @@ def test_storage_opf():
     res_stor_q_mvar = net["res_storage"].q_mvar.iloc[0]
     res_cost_stor = net["res_cost"]
 
-    net["storage"].in_service.iloc[0] = False
-    net["storage"].p_mw.iloc[0] = 0.025
-    net["sgen"].in_service.iloc[1] = False
-    net["load"].in_service.iloc[1] = True
+    net["storage"].loc[0, 'in_service'] = False
+    net["storage"].loc[0, 'p_mw'] = 0.025
+    net["sgen"].loc[1, 'in_service'] = False
+    net["load"].loc[1, 'in_service'] = True
 
     pp.runopp(net)
     assert net["OPF_converged"]
@@ -745,8 +745,8 @@ def test_in_service_controllables():
     pp.create_poly_cost(net, 1, "sgen", cp1_eur_per_mw=1)
     pp.create_poly_cost(net, 1, "load", cp1_eur_per_mw=-1)
 
-    net["sgen"].in_service.iloc[1] = False
-    net["load"].in_service.iloc[1] = False
+    net["sgen"].loc[1, 'in_service'] = False
+    net["load"].loc[1, 'in_service'] = False
 
     pp.runopp(net)
     assert net["OPF_converged"]

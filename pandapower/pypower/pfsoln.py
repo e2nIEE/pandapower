@@ -22,7 +22,7 @@ from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, PG, QG, QMIN, QMAX, 
 EPS = finfo(float).eps
 
 
-def pfsoln(baseMVA, bus0, gen0, branch0, svc, tcsc, ssc, Ybus, Yf, Yt, V, ref, ref_gens, Ibus=None, limited_gens=None):
+def pfsoln(baseMVA, bus0, gen0, branch0, svc, tcsc, ssc, vsc, Ybus, Yf, Yt, V, ref, ref_gens, Ibus=None, limited_gens=None):
     """Updates bus, gen, branch data structures to match power flow soln.
 
     @author: Ray Zimmerman (PSERC Cornell)

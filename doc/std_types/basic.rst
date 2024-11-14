@@ -19,6 +19,18 @@ Lines
 .. note ::
     To add the optional column "alpha" to net.line that is used if power flow is calculated for a different line temperature than 20 °C, use the function pp.add_temperature_coefficient()
 
+DC Lines
+--------
+
+.. tabularcolumns:: |l|l|l|l|l|l|
+.. csv-table::
+   :file: linedctypes.csv
+   :delim: ;
+   :widths: 60, 15, 15, 15, 15, 15
+
+.. note ::
+    To add the optional column "alpha" to net.line_dc that is used if power flow is calculated for a different line temperature than 20 °C, use the function pp.add_temperature_coefficient()
+
 Transformers
 -----------------
 

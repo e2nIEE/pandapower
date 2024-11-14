@@ -36,19 +36,19 @@ class SwitchesCim16:
             pd.concat(
                 [eqssh_switches, self.cimConverter.merge_eq_ssh_profile('Disconnector', add_cim_type_column=True)],
                 ignore_index=True, sort=False)
-        eqssh_switches.type[start_index_cim_net:] = 'DS'
+        eqssh_switches.loc[start_index_cim_net:, 'type'] = 'DS'
         start_index_cim_net = eqssh_switches.index.size
         eqssh_switches = \
             pd.concat(
                 [eqssh_switches, self.cimConverter.merge_eq_ssh_profile('LoadBreakSwitch', add_cim_type_column=True)],
                 ignore_index=True, sort=False)
-        eqssh_switches.type[start_index_cim_net:] = 'LBS'
+        eqssh_switches.loc[start_index_cim_net:, 'type'] = 'LBS'
         start_index_cim_net = eqssh_switches.index.size
         # switches needs to be the last which getting appended because of class inherit problem in jpa
         eqssh_switches = pd.concat(
             [eqssh_switches, self.cimConverter.merge_eq_ssh_profile('Switch', add_cim_type_column=True)],
             ignore_index=True, sort=False)
-        eqssh_switches.type[start_index_cim_net:] = 'LS'
+        eqssh_switches.loc[start_index_cim_net:, 'type'] = 'LS'
         # drop all duplicates to fix class inherit problem in jpa
         eqssh_switches = eqssh_switches.drop_duplicates(subset=['rdfId'], keep='first')
         switch_length_before_merge = eqssh_switches.index.size

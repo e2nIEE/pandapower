@@ -43,5 +43,4 @@ def result_test_network():
     return net
 
 if __name__ == '__main__':
-    net = result_test_network()
-    # pp.rundcpp(net)
+    pytest.main([__file__, "-x"])

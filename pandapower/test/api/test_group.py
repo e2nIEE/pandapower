@@ -52,9 +52,9 @@ def test_group_create():
         # --- test definition of groups
         assert idxs[0] == 0
         assert idxs[1] == 3
-        assert len(net.group.loc[[idxs[0]]].set_index("element_type").at["gen", "element"]) == \
-            len(net.group.loc[[idxs[0]]].set_index("element_type").at["sgen", "element"]) == 2
-        assert len(net.group.loc[[idxs[1]]].set_index("element_type").at["trafo", "element"]) == 3
+        assert len(net.group.loc[[idxs[0]]].set_index("element_type").at["gen", "element_index"]) == \
+            len(net.group.loc[[idxs[0]]].set_index("element_type").at["sgen", "element_index"]) == 2
+        assert len(net.group.loc[[idxs[1]]].set_index("element_type").at["trafo", "element_index"]) == 3
         assert net.group.name.loc[[idxs[1]]].values[0] == 'Group of transformers'
 
         try:
@@ -103,7 +103,7 @@ def test_set_group_reference_column():
 
         pp.set_group_reference_column(net, 3, "origin_id")
         assert net.group.reference_column.at[3] == "origin_id"
-        assert net.group.element.at[3] == net.trafo.origin_id.loc[:2].tolist()
+        assert net.group.element_index.at[3] == net.trafo.origin_id.loc[:2].tolist()
 
         pp.set_group_reference_column(net, 3, rc)
         assert pp.groups_equal(net, 3, idx_new)
@@ -139,14 +139,14 @@ def test_ensure_lists_in_group_element_column():
             netc = deepcopy(net)
 
             # manipulate element entries
-            netc.group["element"] = val
+            netc.group["element_index"] = val
 
             pp.ensure_lists_in_group_element_column(netc, drop_empty_lines=drop)
 
             expected_rows = net.group.shape[0] - no_nan if drop else net.group.shape[0]
             assert expected_rows == netc.group.shape[0]
             for i in range(netc.group.shape[0]):
-                assert isinstance(netc.group.element.iat[i], list)
+                assert isinstance(netc.group.element_index.iat[i], list)
 
 
 
@@ -157,24 +157,24 @@ def test_remove_not_existing_group_members():
         assert set(net.group.loc[0].element_type.tolist()) == {"gen", "sgen"}
 
         # manipulate group table with false data
-        net.group.element.iat[-1] = net.group.element.iat[-1] + [8]  # tafo 8 doesn't exist
+        net.group.element_index.iat[-1] = net.group.element_index.iat[-1] + [8]  # tafo 8 doesn't exist
         net.group = pd.concat([net.group, pd.DataFrame({
             "name": [net.group.name.iat[-1]]*3,
             "element_type": ["impedance", "line", "gen"],
-            "element": [typed_list([8], type_),  # impedances don't exist
+            "element_index": [typed_list([8], type_),  # impedances don't exist
                         [],  # empty list
                         typed_list([998, 999], type_)],  # gen 998, 999 don't exist
             "reference_column": [rc]*3,
         }, index=[idxs[1]]*3)])
 
         # ensure that maipulations are done as expected
-        assert len(net.group.at[idxs[1], "element"]) == 4
+        assert len(net.group.at[idxs[1], "element_index"]) == 4
         assert "gen" in net.group.element_type.loc[[idxs[1]]].values
 
         # run remove_not_existing_group_members()
         pp.remove_not_existing_group_members(net, verbose=False)
 
-        assert len(net.group.at[idxs[1], "element"]) == 3
+        assert len(net.group.at[idxs[1], "element_index"]) == 3
         assert "impedance" not in net.group.element_type.loc[[idxs[1]]].values
         assert "line" not in net.group.element_type.loc[[idxs[1]]].values
         assert "gen" not in net.group.element_type.loc[[idxs[1]]].values
@@ -189,7 +189,7 @@ def test_check_unique_group_rows():
         ["Gr1",  "gen", [1, 2]],
         ["Gr1", "sgen", [3, 4]],
         ["Gr1",  "gen", [2, 5]],
-    ], index=[0, 0, 0], columns=["name", "element_type", "element"])])
+    ], index=[0, 0, 0], columns=["name", "element_type", "element_index"])])
     try:
         pp.check_unique_group_rows(net)
         assert False, "ValueError expected"
@@ -210,7 +210,7 @@ def test_check_unique_group_rows():
         ["Gr1", "sgen", [3, 4]],
         ["Gr2",  "gen", [2, 5]],
         ["Gr3", "line", [0, 1]]
-    ], index=[0, 0, 1, 0], columns=["name", "element_type", "element"])])
+    ], index=[0, 0, 1, 0], columns=["name", "element_type", "element_index"])])
     try:
         pp.check_unique_group_rows(net)
         assert False, "UserWarning expected"
@@ -226,20 +226,20 @@ def test_drop_element():
                                     name='1st Group', index=2)
 
     pp.drop_lines(net, [0])
-    assert net.group.loc[[gr1]].set_index("element_type").at["line", "element"] == [1]
+    assert net.group.loc[[gr1]].set_index("element_type").at["line", "element_index"] == [1]
     pp.drop_lines(net, [1])
     assert "line" not in net.group.element_type.values
 
     pp.drop_trafos(net, [1])
-    assert net.group.loc[[gr1]].set_index("element_type").at["trafo", "element"] == [0]
+    assert net.group.loc[[gr1]].set_index("element_type").at["trafo", "element_index"] == [0]
 
     pp.drop_buses(net, [0], drop_elements=False)
-    assert net.group.loc[[gr1]].set_index("element_type").at["bus", "element"] == [1, 2]
+    assert net.group.loc[[gr1]].set_index("element_type").at["bus", "element_index"] == [1, 2]
 
     pp.drop_buses(net, [1])  # not only bus 0 is dropped but also connected elements
-    assert net.group.loc[[gr1]].set_index("element_type").at["bus", "element"] == [2]
-    assert net.group.loc[[gr1]].set_index("element_type").at["gen", "element"] == [0]
-    assert net.group.loc[[gr1]].set_index("element_type").at["sgen", "element"] == [2]
+    assert net.group.loc[[gr1]].set_index("element_type").at["bus", "element_index"] == [2]
+    assert net.group.loc[[gr1]].set_index("element_type").at["gen", "element_index"] == [0]
+    assert net.group.loc[[gr1]].set_index("element_type").at["sgen", "element_index"] == [2]
 
     pp.drop_elements_simple(net, "sgen", [2])
     assert "sgen" not in net.group.element_type.values
@@ -308,7 +308,7 @@ def test_attach_to_group():
                            [typed_list([3], type_), typed_list([2], type_)], reference_columns=rc)
         assert set(net.group.loc[[idxs[1]]].element_type.tolist()) == {
             "gen", "sgen", "trafo", "line"}
-        assert len(net.group.loc[[idxs[1]]].set_index("element_type").at["trafo", "element"]) == 4
+        assert len(net.group.loc[[idxs[1]]].set_index("element_type").at["trafo", "element_index"]) == 4
 
 
 def test_detach_and_compare():
@@ -428,7 +428,7 @@ def test_elements_connected_to_group():
     pp.create_switches(net, [0]*2, [10, 11], "b", closed=[True, False])
     net.load.at[0, "in_service"] = False
     net.line.at[4, "in_service"] = False
-    net.bus.in_service.loc[[3, 9]] = False
+    net.bus.loc[[3, 9], 'in_service'] = False
 
     # create group
     index = pp.create_group(net, ["bus", "line", "switch"], [[0], [net.line.index[-1]], [6, 7]])

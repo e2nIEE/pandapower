@@ -38,4 +38,4 @@ def test_3point_pwl():
     assert np.isclose(net.res_cost, abs(net.res_sgen.q_mvar.values)*1.5, atol=1e-4)
 
 if __name__ == "__main__":
-    pytest.main(['-s', __file__])
+    pytest.main([__file__, "-xs"])

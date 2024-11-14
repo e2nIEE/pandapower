@@ -77,6 +77,8 @@ The equivalent circuit used for the transformer can be set in the power flow wit
 	:width: 30em
 	:align: center
 
+.. note:: it is possible to specify unequal distributions of leakage resistance and reactance between HV and LV sides
+
     
 Transformer Ratio
 -------------------
