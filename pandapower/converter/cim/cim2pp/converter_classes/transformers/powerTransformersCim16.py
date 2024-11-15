@@ -271,6 +271,15 @@ class PowerTransformersCim16:
                 # elif one_row.tabular_step == one_row.step and one_row.step != one_row.highStep \
                 #         and one_row.step != one_row.lowStep and one_row.step != one_row.neutralStep:
                 #     append_row(append_dict, id_characteristic, one_row, one_df.columns)
+
+        # create tap_characteristic_table flag
+        if 'tap_characteristic_table' not in trafo_df_origin.columns:
+            trafo_df_origin['tap_characteristic_table'] = pd.Series(
+                index=trafo_df_origin.index, dtype=np.bool_, data=False
+            )
+        # set tap_characteristic_table as True for all non-linear shunt compensators
+        trafo_df_origin.loc[trafo_df_origin['id_characteristic_table'].notna(), 'tap_characteristic_table'] = True
+
         self.cimConverter.net['trafo_characteristic_table'] = pd.concat(
             [self.cimConverter.net['trafo_characteristic_table'], pd.DataFrame(append_dict)],
             ignore_index=True, sort=False)

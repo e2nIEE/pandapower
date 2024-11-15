@@ -3,6 +3,7 @@
 # Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import sys
+import time
 
 import numpy as np
 from pandas import Index, Series
@@ -210,6 +211,49 @@ def plot_characteristic(characteristic, start, stop, num=20, xlabel=None, ylabel
         plt.ylabel(ylabel)
 
 
+def create_trafo_characteristic_object(net):
+    if (net['trafo_characteristic_table'].index.size > 0 and
+            net['trafo_characteristic_table']['vk_percent'].notna().any()):
+        time_start = time.time()
+        logger.info("Creating tap dependent characteristic objects for 2w-trafos.")
+        characteristic_df_temp = net['trafo_characteristic_table'][
+            ['id_characteristic', 'step', 'voltage_ratio', 'angle_deg', 'vk_percent', 'vkr_percent']]
+        for trafo_id, trafo_row in net.trafo.dropna(subset=['id_characteristic_table']).iterrows():
+            characteristic_df = characteristic_df_temp.loc[
+                characteristic_df_temp['id_characteristic'] == trafo_row['id_characteristic_table']]
+            logger.info("Adding characteristic object for 2w-trafo with trafo_id: %s" % trafo_id)
+            for variable in ['voltage_ratio', 'angle_deg', 'vkr_percent', 'vk_percent']:
+                if variable in characteristic_df.columns:
+                    create_trafo_characteristics(net, "trafo", [trafo_id], variable,
+                                                [characteristic_df['step'].to_list()],
+                                                [characteristic_df[variable].to_list()])
+        logger.info(f"Finished creating tap dependent characteristic objects for 2w-trafos in "
+                    f"{time.time() - time_start}.")
+    else:
+        logger.info("trafo_characteristic_table has no values for 2w-trafos - no characteristic objects created.")
+    if (net['trafo_characteristic_table'].index.size > 0 and
+            net['trafo_characteristic_table']['vkr_hv_percent'].notna().any()):
+        time_start = time.time()
+        logger.info("Creating tap dependent characteristic objects for 3w-trafos.")
+        characteristic_df_temp = net['trafo_characteristic_table'][
+                ['id_characteristic', 'step', 'voltage_ratio', 'angle_deg', 'vkr_hv_percent', 'vkr_mv_percent',
+                 'vkr_lv_percent', 'vk_hv_percent', 'vk_mv_percent', 'vk_lv_percent']]
+        for trafo_id, trafo_row in net.trafo3w.dropna(subset=['id_characteristic_table']).iterrows():
+            characteristic_df = characteristic_df_temp.loc[
+                characteristic_df_temp['id_characteristic'] == trafo_row['id_characteristic_table']]
+            logger.info("Adding characteristic object for 2w-trafo with trafo_id: %s" % trafo_id)
+            for variable in ['voltage_ratio', 'angle_deg', 'vk_hv_percent', 'vkr_hv_percent', 'vk_mv_percent',
+                             'vkr_mv_percent', 'vk_lv_percent', 'vkr_lv_percent']:
+                if variable in characteristic_df.columns:
+                    create_trafo_characteristics(net, "trafo3w", [trafo_id], variable,
+                                                 [characteristic_df['step'].to_list()],
+                                                 [characteristic_df[variable].to_list()])
+        logger.info(f"Finished creating tap dependent characteristic objects for 3w-trafos in "
+                    f"{time.time() - time_start}.")
+    else:
+        logger.info("trafo_characteristic_table has no values for 3w-trafos - no characteristic objects created.")
+
+
 def create_trafo_characteristics(net, trafotable, trafo_index, variable, x_points, y_points):
     # create characteristics for the specified variable and set their indices in the trafo table
     col = f"{variable}_characteristic"
@@ -233,14 +277,14 @@ def create_trafo_characteristics(net, trafotable, trafo_index, variable, x_point
         if (len(x_points) != len(y_points)):
             raise UserWarning("The lengths of the points do not match!")
 
-    if 'tap_characteristic_table' not in net[trafotable]:
-        net[trafotable]['tap_characteristic_table'] = Series(index=net[trafotable].index, dtype=np.bool_, data=False)
-
     if col not in net[trafotable]:
         net[trafotable][col] = Series(index=net[trafotable].index, dtype="Int64")
 
-    # set the flag for the trafo table
-    net[trafotable].loc[trafo_index, 'tap_characteristic_table'] = True
+    # moved into converter
+    # if 'tap_characteristic_table' not in net[trafotable]:
+    #     net[trafotable]['tap_characteristic_table'] = Series(index=net[trafotable].index, dtype=np.bool_, data=False)
+    # # set the flag for the trafo table
+    # net[trafotable].loc[trafo_index, 'tap_characteristic_table'] = True
 
     if single_mode:
         zip_params = zip([trafo_index], [x_points], [y_points])
@@ -251,6 +295,28 @@ def create_trafo_characteristics(net, trafotable, trafo_index, variable, x_point
         # create the characteristic and set its index in the trafotable
         s = SplineCharacteristic(net, x_p, y_p, table="trafo_characteristic_spline")
         net[trafotable].at[tid, col] = s.index
+
+
+def create_shunt_characteristic_object(net):
+    if net['shunt_characteristic_table'].index.size > 0:
+        time_start = time.time()
+        logger.info("Creating step dependent power characteristic objects for shunts.")
+        characteristic_df_temp = net['shunt_characteristic_table']
+        for shunt_id, shunt_row in net.shunt.dropna(subset=['id_characteristic_table']).iterrows():
+            shunt_characteristic_df = characteristic_df_temp.loc[
+                characteristic_df_temp['id_characteristic'] == shunt_row['id_characteristic_table']]
+            logger.info("Adding characteristic object for shunt with shunt_id: %s" % shunt_id)
+            for variable in ['q_mvar', 'p_mw']:
+                if variable in shunt_characteristic_df.columns:
+                    create_shunt_characteristics(
+                        net, [shunt_id], variable, [shunt_characteristic_df['step'].to_list()],
+                        [shunt_characteristic_df[variable].to_list()]
+                    )
+        logger.info(f"Finished creating step dependent power characteristic objects for shunts in"
+                    f"{time.time() - time_start}.")
+    else:
+        logger.info("shunt_characteristic_table is empty - no characteristic objects created.")
+
 
 # todo merge create_trafo_characteristics and create_shunt_characteristics?
 def create_shunt_characteristics(net, shunt_index, variable, x_points, y_points):
@@ -271,14 +337,14 @@ def create_shunt_characteristics(net, shunt_index, variable, x_points, y_points)
         if len(x_points) != len(y_points):
             raise UserWarning("The lengths of the points do not match!")
 
-    if 'step_characteristic_table' not in net["shunt"]:
-        net["shunt"]["step_characteristic_table"] = Series(index=net["shunt"].index, dtype=np.bool_, data=False)
-
     if col not in net["shunt"]:
         net["shunt"][col] = Series(index=net["shunt"].index, dtype="Int64")
 
+    # moved into converter
+    # if 'step_characteristic_table' not in net["shunt"]:
+    #     net["shunt"]["step_characteristic_table"] = Series(index=net["shunt"].index, dtype=np.bool_, data=False)
     # set the flag for the shunt table
-    net["shunt"].loc[shunt_index, "step_characteristic_table"] = True
+    # net["shunt"].loc[shunt_index, "step_characteristic_table"] = True
 
     if single_mode:
         zip_params = zip([shunt_index], [x_points], [y_points])

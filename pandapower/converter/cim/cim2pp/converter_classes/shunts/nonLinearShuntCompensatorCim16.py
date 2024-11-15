@@ -4,7 +4,7 @@ import time
 import pandas as pd
 import numpy as np
 
-from pandapower.control.util import auxiliary
+# from pandapower.control.util import auxiliary
 from pandapower.converter.cim import cim_tools
 from pandapower.converter.cim.cim2pp import build_pp_net
 from pandapower.converter.cim.other_classes import Report, LogLevel, ReportCode
@@ -26,7 +26,7 @@ class NonLinearShuntCompensatorCim16:
             eqssh_shunts = self._prepare_nonlinear_shunt_compensator_cim16()
             self._create_shunt_characteristic_table(eqssh_shunts)
             self.cimConverter.copy_to_pp('shunt', eqssh_shunts)
-            self._create_shunt_characteristic_object(net=self.cimConverter.net)
+            # self._create_shunt_characteristic_object(net=self.cimConverter.net)  # moved out of converter
         else:
             eqssh_shunts = pd.DataFrame(None)
         self.logger.info("Created %s shunts in %ss." % (eqssh_shunts.index.size, time.time() - time_start))
@@ -108,21 +108,28 @@ class NonLinearShuntCompensatorCim16:
         id_char_dict = char_temp.drop_duplicates('origin_id').set_index('origin_id')['id_characteristic'].to_dict()
         eqssh_shunts['id_characteristic_table'] = eqssh_shunts['origin_id'].map(id_char_dict).astype(int)
 
+        # create step_characteristic_table flag
+        if 'step_characteristic_table' not in eqssh_shunts.columns:
+            eqssh_shunts["step_characteristic_table"] = pd.Series(index=eqssh_shunts.index, dtype=np.bool_, data=False)
+        # set step_characteristic_table as True for all non-linear shunt compensators
+        eqssh_shunts.loc[eqssh_shunts['id_characteristic_table'].notna(), 'step_characteristic_table'] = True
+
         # populate shunt_characteristic_temp table
         self.cimConverter.net['shunt_characteristic_table'] = \
             char_temp[['id_characteristic', 'step', 'q_mvar', 'p_mw']]
 
-    def _create_shunt_characteristic_object(self, net):
-        if self.cimConverter.net['shunt_characteristic_table'].index.size > 0:
-            self.logger.info("Creating the step dependent power characteristic objects for shunts.")
-            characteristic_df_temp = self.cimConverter.net['shunt_characteristic_table']
-            for shunt_id, shunt_row in self.cimConverter.net.shunt.dropna(
-                    subset=['id_characteristic_table']).iterrows():
-                shunt_characteristic_df = characteristic_df_temp.loc[
-                    characteristic_df_temp['id_characteristic'] == shunt_row['id_characteristic_table']]
-                for variable in ['q_mvar', 'p_mw']:
-                    if variable in shunt_characteristic_df.columns:
-                        auxiliary.create_shunt_characteristics(
-                            net, [shunt_id], variable, [shunt_characteristic_df['step'].to_list()],
-                            [shunt_characteristic_df[variable].to_list()]
-                        )
+    # moved out of converter
+    # def _create_shunt_characteristic_object(self, net):
+    #     if self.cimConverter.net['shunt_characteristic_table'].index.size > 0:
+    #         self.logger.info("Creating the step dependent power characteristic objects for shunts.")
+    #         characteristic_df_temp = self.cimConverter.net['shunt_characteristic_table']
+    #         for shunt_id, shunt_row in self.cimConverter.net.shunt.dropna(
+    #                 subset=['id_characteristic_table']).iterrows():
+    #             shunt_characteristic_df = characteristic_df_temp.loc[
+    #                 characteristic_df_temp['id_characteristic'] == shunt_row['id_characteristic_table']]
+    #             for variable in ['q_mvar', 'p_mw']:
+    #                 if variable in shunt_characteristic_df.columns:
+    #                     auxiliary.create_shunt_characteristics(
+    #                         net, [shunt_id], variable, [shunt_characteristic_df['step'].to_list()],
+    #                         [shunt_characteristic_df[variable].to_list()]
+    #                     )

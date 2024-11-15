@@ -24,47 +24,51 @@ class TapController:
         if self.cimConverter.power_trafo2w.index.size > 0:
             # create transformer tap controller
             self._create_tap_controller(self.cimConverter.power_trafo2w, 'trafo')
-            time_start = time.time()
-            self.logger.info("Creating the tap dependent characteristic objects for 2w-trafos.")
-            # create the characteristic objects for transformers
-            characteristic_df_temp = \
-                self.cimConverter.net['trafo_characteristic_table'][
-                    ['id_characteristic', 'step', 'voltage_ratio', 'angle_deg', 'vk_percent', 'vkr_percent']]
-            for trafo_id, trafo_row in self.cimConverter.net.trafo.dropna(
-                    subset=['id_characteristic_table']).iterrows():
-                characteristic_df = characteristic_df_temp.loc[
-                    characteristic_df_temp['id_characteristic'] == trafo_row['id_characteristic_table']]
-                self._create_trafo_characteristic_object(net=self.cimConverter.net, trafo_type='trafo',
-                                                         trafo_id=[trafo_id], characteristic_df=characteristic_df)
-            self.logger.info(f"Finished creating tap dependent characteristic objects for 2w-trafos in "
-                             f"{time.time() - time_start}.")
+            # moved out of converter
+            # time_start = time.time()
+            # self.logger.info("Creating the tap dependent characteristic objects for 2w-trafos.")
+            # # create the characteristic objects for transformers
+            # characteristic_df_temp = \
+            #     self.cimConverter.net['trafo_characteristic_table'][
+            #         ['id_characteristic', 'step', 'voltage_ratio', 'angle_deg', 'vk_percent', 'vkr_percent']]
+            # for trafo_id, trafo_row in self.cimConverter.net.trafo.dropna(
+            #         subset=['id_characteristic_table']).iterrows():
+            #     characteristic_df = characteristic_df_temp.loc[
+            #         characteristic_df_temp['id_characteristic'] == trafo_row['id_characteristic_table']]
+            #     self._create_trafo_characteristic_object(net=self.cimConverter.net, trafo_type='trafo',
+            #                                              trafo_id=[trafo_id], characteristic_df=characteristic_df)
+            # self.logger.info(f"Finished creating tap dependent characteristic objects for 2w-trafos in "
+            #                  f"{time.time() - time_start}.")
         if self.cimConverter.power_trafo3w.index.size > 0:
             # create transformer tap controller
             self._create_tap_controller(self.cimConverter.power_trafo3w, 'trafo3w')
-            time_start = time.time()
-            self.logger.info("Creating the tap dependent characteristic objects for 3w-trafos.")
-            # create the characteristic objects for transformers
-            characteristic_df_temp = \
-                self.cimConverter.net['trafo_characteristic_table'][
-                    ['id_characteristic', 'step', 'voltage_ratio', 'angle_deg', 'vkr_hv_percent', 'vkr_mv_percent',
-                     'vkr_lv_percent', 'vk_hv_percent', 'vk_mv_percent', 'vk_lv_percent']]
-            for trafo_id, trafo_row in self.cimConverter.net.trafo3w.dropna(
-                    subset=['id_characteristic_table']).iterrows():
-                characteristic_df = characteristic_df_temp.loc[
-                    characteristic_df_temp['id_characteristic'] == trafo_row['id_characteristic_table']]
-                self._create_trafo_characteristic_object(net=self.cimConverter.net, trafo_type='trafo3w',
-                                                         trafo_id=[trafo_id], characteristic_df=characteristic_df)
-            self.logger.info(f"Finished creating tap dependent characteristic objects for 3w-trafos in "
-                             f"{time.time() - time_start}.")
+            # moved out of converter
+            # time_start = time.time()
+            # self.logger.info("Creating the tap dependent characteristic objects for 3w-trafos.")
+            # # create the characteristic objects for transformers
+            # characteristic_df_temp = \
+            #     self.cimConverter.net['trafo_characteristic_table'][
+            #         ['id_characteristic', 'step', 'voltage_ratio', 'angle_deg', 'vkr_hv_percent', 'vkr_mv_percent',
+            #          'vkr_lv_percent', 'vk_hv_percent', 'vk_mv_percent', 'vk_lv_percent']]
+            # for trafo_id, trafo_row in self.cimConverter.net.trafo3w.dropna(
+            #         subset=['id_characteristic_table']).iterrows():
+            #     characteristic_df = characteristic_df_temp.loc[
+            #         characteristic_df_temp['id_characteristic'] == trafo_row['id_characteristic_table']]
+            #     self._create_trafo_characteristic_object(net=self.cimConverter.net, trafo_type='trafo3w',
+            #                                              trafo_id=[trafo_id], characteristic_df=characteristic_df)
+            # self.logger.info(f"Finished creating tap dependent characteristic objects for 3w-trafos in "
+            #                  f"{time.time() - time_start}.")
 
-    def _create_trafo_characteristic_object(self, net, trafo_type: str, trafo_id: List, characteristic_df: pd.DataFrame):
-        self.logger.info("Adding characteristic object for trafo_type: %s and trafo_id: %s" % (trafo_type, trafo_id))
-        for variable in ['voltage_ratio', 'angle_deg', 'vkr_percent', 'vk_percent', 'vk_hv_percent', 'vkr_hv_percent',
-                         'vk_mv_percent', 'vkr_mv_percent', 'vk_lv_percent', 'vkr_lv_percent']:
-            if variable in characteristic_df.columns:
-                pandapower.control.create_trafo_characteristics(net, trafo_type, trafo_id, variable,
-                                                                [characteristic_df['step'].to_list()],
-                                                                [characteristic_df[variable].to_list()])
+    # moved out of converter
+    # def _create_trafo_characteristic_object(self, net, trafo_type: str, trafo_id: List,
+    #                                         characteristic_df: pd.DataFrame):
+    #     self.logger.info("Adding characteristic object for trafo_type: %s and trafo_id: %s" % (trafo_type, trafo_id))
+    #     for variable in ['voltage_ratio', 'angle_deg', 'vkr_percent', 'vk_percent', 'vk_hv_percent', 'vkr_hv_percent',
+    #                      'vk_mv_percent', 'vkr_mv_percent', 'vk_lv_percent', 'vkr_lv_percent']:
+    #         if variable in characteristic_df.columns:
+    #             pandapower.control.create_trafo_characteristics(net, trafo_type, trafo_id, variable,
+    #                                                             [characteristic_df['step'].to_list()],
+    #                                                             [characteristic_df[variable].to_list()])
 
     def _create_tap_controller(self, input_df: pd.DataFrame, trafo_type: str):
         if not self.cimConverter.kwargs.get('create_tap_controller', True):
