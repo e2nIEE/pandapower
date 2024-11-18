@@ -61,7 +61,7 @@ except ImportError:
     import logging
 try:
     from geopandas import GeoSeries
-    from shapely import from_geojson, Point
+    from shapely import from_geojson
     geopandas_available = True
 except ImportError:
     geopandas_available = False
