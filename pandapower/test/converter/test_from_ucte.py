@@ -60,7 +60,6 @@ def test_ucte_files():
         same_shape = df_after_conversion.shape == df_str.shape
         if not same_shape:
             logger.error(f"{et=} comparison fails due to different shape.\n{df_str}")
-        all_close = np.allclose(df_after_conversion.values, df_target.values)
         if not all_close:
             logger.error(f"{et=} comparison fails due to different values.\n{df_str}")
         assert all_close
@@ -68,16 +67,20 @@ def test_ucte_files():
 
 
 if __name__ == '__main__':
-    # pytest.main([__file__, "-xs"])
+    if 0:
+        pytest.main([__file__, "-xs"])
+    elif 1:
+        test_ucte_files()
+    else:
 
-    ucte_file = os.path.join(testfiles_folder(), "test_ucte.uct")
+        ucte_file = os.path.join(testfiles_folder(), "test_ucte.uct")
 
-    ucte_parser = pc.ucte_parser.UCTEParser(ucte_file)
-    ucte_parser.parse_file()
-    ucte_dict = ucte_parser.get_data()
+        ucte_parser = pc.ucte_parser.UCTEParser(ucte_file)
+        ucte_parser.parse_file()
+        ucte_dict = ucte_parser.get_data()
 
-    ucte_converter = pc.ucte_converter.UCTE2pandapower()
-    net = ucte_converter.convert(ucte_dict=ucte_dict)
+        ucte_converter = pc.ucte_converter.UCTE2pandapower()
+        net = ucte_converter.convert(ucte_dict=ucte_dict)
 
-    print(net)
-    print()
+        print(net)
+        print()

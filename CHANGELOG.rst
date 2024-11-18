@@ -87,6 +87,7 @@ Change Log
 - [CHANGED] accelerate distributed slack power flow calculation by using sparse-aware operations in _subnetworks()
 - [CHANGED] Trafo Controllers can now be added to elements that are out of service, changed self.nothing_to_do()
 - [ADDED] Discrete shunt controller for local voltage regulation with shunt steps
+- [ADDED] UCTE-DEF (UCTE Data Exchange Format) converter
 - [ADDED] cim2pp converter: Using lxml to parse XML files (better performance)
 
 [2.14.7] - 2024-06-14
