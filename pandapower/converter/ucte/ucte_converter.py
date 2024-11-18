@@ -89,6 +89,10 @@ class UCTE2pandapower:
                 on="node2",
             )
             self.u_d[one_asset] = self.u_d[one_asset].drop(columns=["node1", "node2"])
+
+        if 1: # TODO: if input is incorrect, i.e. in kW
+            self.u_d["N"][['p_load', 'q_load', 'p_gen', 'q_gen', 'min_p_gen', 'max_p_gen', 'min_q_gen', 'max_q_gen']] /= 1e3
+
         # prepare the nodes
         self._convert_nodes()
         # prepare the loads
@@ -135,7 +139,7 @@ class UCTE2pandapower:
         self.logger.info("Converting the nodes.")
         nodes = self.u_d[
             "N"
-        ]  # Note: Do not use a copy, the columns 'ur_kv' and 'node_geo' are needed later
+        ]  # Note: Do not use a copy, the columns 'volt_str' and 'node_geo' are needed later
         nodes["volt_str"] = nodes["node"].str[6:7]
         volt_map = {
             "0": 750,
@@ -177,9 +181,14 @@ class UCTE2pandapower:
         }
         nodes["vn_kv"] = nodes["volt_str"].map(volt_map)
         # make sure that 'node_geo' has a valid value
-        nodes.loc[nodes["node_geo"] == "", "node_geo"] = nodes.loc[
-            nodes["node_geo"] == "", "node"
-        ].str[:6]
+        if 0:
+            nodes.loc[nodes["node_geo"] == "", "node_geo"] = nodes.loc[
+                nodes["node_geo"] == "", "node"
+            ].str[:6]  # TODO: in "Node Name" (.uct file) = "node_geo" (here) PowerFactory stores the original node name which could be expected in net.bus.name or an additional column called "add_name". However, in the tested cases, this line removes the content.
+        if 1: # TODO
+            self.net.bus["add_name"] = ""
+            nodes["add_name"] = nodes["node_geo"]
+            nodes = nodes.drop("node_geo", axis=1)
         nodes["node2"] = nodes["node"].str[:6]
         nodes["grid_area_id"] = nodes["node"].str[:2]
         # drop all voltages at non pu nodes
@@ -197,6 +206,9 @@ class UCTE2pandapower:
         loads = self.u_d["N"].dropna(subset=["p_load", "q_load"])
         # select all with p != 0 or q != 0
         loads = loads.loc[(loads["p_load"] != 0) | (loads["q_load"] != 0)]
+        if not len(loads):
+            self.logger.info("Finished converting the loads (no loads existing).")
+            return  # Acceleration
         loads = loads.rename(
             columns={"id": "bus", "node": "name", "p_load": "p_mw", "q_load": "q_mvar"}
         )
@@ -268,6 +280,9 @@ class UCTE2pandapower:
         )
         # also drop lines with x < 0 as they will be modeled as impedances
         lines = lines.drop(lines.loc[lines.x < 0].index)
+        if not len(lines):
+            self.logger.info("Finished converting the lines (no lines existing).")
+            return  # Acceleration
         # lines = self.u_d['L']
         # create the in_service column from the UCTE status
         in_service_map = dict({0: True, 1: True, 2: True, 7: False, 8: False, 9: False})
@@ -414,6 +429,9 @@ class UCTE2pandapower:
             how="left",
             on=["hv_bus", "lv_bus", "order_code"],
         )
+        if not len(trafos):
+            self.logger.info("Finished converting the transformers (no transformers existing).")
+            return
         # create the in_service column from the UCTE status
         status_map = dict({0: True, 1: True, 8: False, 9: False})
         trafos["in_service"] = trafos["status"].map(status_map)

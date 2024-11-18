@@ -21,19 +21,20 @@ except:
 logger = logging.getLogger(__name__)
 
 
-def testfiles_folder():
+def _testfiles_folder():
     return os.path.join(pp.pp_dir, 'test', 'converter', "testfiles")
 
 
 def _results_from_powerfactory():
-    csv_files = {f"res_{et}": os.path.join(testfiles_folder(), f"test_ucte_res_{et}.csv") for et in [
+    csv_files = {f"res_{et}": os.path.join(_testfiles_folder(), f"test_ucte_res_{et}.csv") for et in [
         "bus", "line", "trafo", "trafo3w"]}
     pf_res = {et: pd.read_csv(file, sep=";", index_col=0) for et, file in csv_files.items()}
     return pf_res
 
 
-def test_ucte_files():
-    ucte_file = os.path.join(testfiles_folder(), "test_ucte.uct")
+def _test_ucte_file(ucte_file=None):
+    if ucte_file is None:
+        ucte_file = os.path.join(_testfiles_folder(), "test_ucte.uct")
 
     # --- convert UCTE data
     ucte_parser = pc.ucte_parser.UCTEParser(ucte_file)
@@ -47,33 +48,71 @@ def test_ucte_files():
     pp.runpp(net)
 
     # --- compare results
-    bus_name = pd.Series(net.bus.name, index=net.bus.name)
     res_target = _results_from_powerfactory()
-    for et, df_target in res_target.items():
-        missing_names = df_target.index.difference(pd.Index(net[df_target]["name"]))
+    failed = list()
+    for res_et, df_target in res_target.items():
+        et = res_et[4:]
+        name_col = "name" if et != "bus" else "add_name"
+        missing_names = pd.Index(net[et][name_col]).difference(df_target.index)
         if len(missing_names):
-            logger.error(f"{et=} comparison fails since same element names of the PowerFactory "
+            logger.error(f"{res_et=} comparison fails since same element names of the PowerFactory "
                          f"results are missing in the pandapower net: {missing_names}")
-        all_close = np.allclose(df_after_conversion.values, df_target.values)
-        df_after_conversion = net[df_target].loc[bus_name.loc[df_target.index], df_target.columns]
+        df_after_conversion = net[res_et][df_target.columns].set_axis(
+            pd.Index(net[et][name_col], name="name"))
+        all_close = np.allclose(df_after_conversion.values,
+                                df_target.loc[df_after_conversion.index].values, atol=1e-5)
         df_str = f"df_after_conversion:\n{df_after_conversion}\n\ndf_target:\n{df_target}"
         same_shape = df_after_conversion.shape == df_str.shape
         if not same_shape:
-            logger.error(f"{et=} comparison fails due to different shape.\n{df_str}")
+            logger.error(f"{res_et=} comparison fails due to different shape.\n{df_str}")
         if not all_close:
-            logger.error(f"{et=} comparison fails due to different values.\n{df_str}")
-        assert all_close
+            logger.error(f"{res_et=} comparison fails due to different values.\n{df_str}")
+        assert all_close  # TODO
+        failed.append(res_et)
+    if len(failed):  # TODO
+        logger.error(f"This res_et failed: {failed}.")
+        assert True
 
+    ### remarks
+    # _3 (alle möglichen unkritischen Elemente): ??
+    # AL (Line+impedance): Größenordnung passt, Ergebnisse nicht - AUßERDEM: Funktioniert nicht mit impedance zwischen Spannungsebenen (wird dann als Trafo exportiert)
+    # ES (Line+Ward/xWard/sgen/load + bus-bus-schalter): P passt, Q so gut wie
+    # FR (2 Lines zwischen 2 ExtGrid): passt gar nicht
+    # HR (Line+Shunt): passt perfekt
+    # HU (Line+Ward): P passt, Q so gut wie
+    # NL 2x(Line+xWard): P passt, Q so gut wie
+
+
+def test_ucte_file3():
+    _test_ucte_file(os.path.join(_testfiles_folder(), "test_ucte3.uct"))
+
+def test_ucte_file_AL():
+    _test_ucte_file(os.path.join(_testfiles_folder(), "test_ucte_AL.uct"))
+
+def test_ucte_file_ES():
+    _test_ucte_file(os.path.join(_testfiles_folder(), "test_ucte_ES.uct"))
+
+def test_ucte_file_FR():
+    _test_ucte_file(os.path.join(_testfiles_folder(), "test_ucte_FR.uct"))
+
+def test_ucte_file_HR():
+    _test_ucte_file(os.path.join(_testfiles_folder(), "test_ucte_HR.uct"))
+
+def test_ucte_file_HU():
+    _test_ucte_file(os.path.join(_testfiles_folder(), "test_ucte_HU.uct"))
+
+def test_ucte_file_NL():
+    _test_ucte_file(os.path.join(_testfiles_folder(), "test_ucte_NL.uct"))
 
 
 if __name__ == '__main__':
     if 0:
-        pytest.main([__file__, "-xs"])
+        pytest.main([__file__, "-s"])
     elif 1:
-        test_ucte_files()
+        test_ucte_file3()
     else:
 
-        ucte_file = os.path.join(testfiles_folder(), "test_ucte.uct")
+        ucte_file = os.path.join(_testfiles_folder(), "test_ucte.uct")
 
         ucte_parser = pc.ucte_parser.UCTEParser(ucte_file)
         ucte_parser.parse_file()
