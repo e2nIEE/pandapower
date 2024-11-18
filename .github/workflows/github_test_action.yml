@@ -314,13 +314,8 @@ jobs:
       - name: Check docs for Python ${{ matrix.python-version }}
         uses: e2nIEE/sphinx-action@master
         with:
-          pre-build-command: "
-            apt update;
-            apt upgrade -y;
-            apt install build-essential -y;
-            apt install gfortran -y;
+          pre-build-command: "apt update && apt upgrade -y && apt install -y build-essential gfortran cmake pkg-config;
             python -m pip install --upgrade pip;
-            python -m pip install .[docs];
-          "
+            python -m pip install .[docs];"
           build-command: "sphinx-build -b html . _build -W"
           docs-folder: "doc/"
