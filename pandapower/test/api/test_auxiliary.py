@@ -343,10 +343,13 @@ def test_geo_accessor_geojson():
 @pytest.mark.skipif(not GEOPANDAS_INSTALLED, reason="geopandas is not installed")
 def test_geo_accessor_geopandas():
     net = pp.networks.mv_oberrhein()
-    reference_point = shapely.geometry.Point((7.8947079593416, 48.40549007606241))
-    radius_m = 100
-    assert net.line.geo.geojson.within_radius(reference_point, radius_m)[:3].all() == True
-    assert net.line.geo.geojson.within_radius(reference_point, radius_m)[3:].any() == False
+    reference_point = (7.781067, 48.389774)
+    radius_m = 2200
+    circle_polygon = gpd.GeoSeries([shapely.geometry.Point(reference_point)],
+                                   crs=4326).to_crs(epsg=31467).buffer(radius_m).to_crs(epsg=4326).iloc[0]
+    assert net.line.geo.geojson.within(circle_polygon).sum() == 11
+    assert all(net.line[net.line.geo.geojson.within(circle_polygon)].index == [14, 17, 46, 47, 55, 116,
+                                                                               117, 118, 120, 121, 134])
 
     line = shapely.geometry.LineString([[7.8947079593416, 48.40549007606241],
                                         [7.896048283667894, 48.41060722903666],
@@ -354,8 +357,6 @@ def test_geo_accessor_geopandas():
 
     assert net.line.geo.geojson.as_shapely_obj.at[0] == line
     assert np.allclose(net.line.geo.geojson.total_bounds, [7.74426069, 48.32845845, 7.93829196, 48.47484423])
-    assert net.line.geo.geojson.intersects(reference_point)[:3].all() == True
-    assert net.line.geo.geojson.intersects(reference_point)[3:].any() == False
 
 
 if __name__ == '__main__':

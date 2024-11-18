@@ -414,15 +414,6 @@ class GeoAccessor:
         """
         return GeoSeries(self._obj.dropna().pipe(from_geojson), crs=4326, index=self._obj.dropna().index)
 
-    def within_radius(self, reference_point, radius_m):
-        """
-        Returns a Series with booleans, if geometry of geojson is in radius of the reference point.
-        """
-        circle_polygon = GeoSeries([Point(reference_point)],
-                                   crs=4326).to_crs(epsg=31467).buffer(radius_m).to_crs(epsg=4326).iloc[0]
-        geoms = self.as_geoseries
-        return geoms.within(circle_polygon) | geoms.intersects(circle_polygon)
-
     def __getattr__(self, item):
         """
         Enables access to all methods or attribute calls from a GeoSeries.
