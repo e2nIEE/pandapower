@@ -11,6 +11,7 @@ from packaging.version import Version
 
 from pandapower._version import __version__, __format_version__
 from pandapower.create import create_empty_network, create_poly_cost
+from pandapower.plotting import geo
 from pandapower.results import reset_results
 from pandapower.control import TrafoController
 
