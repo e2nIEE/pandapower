@@ -87,6 +87,7 @@ Change Log
 - [CHANGED] accelerate distributed slack power flow calculation by using sparse-aware operations in _subnetworks()
 - [CHANGED] Trafo Controllers can now be added to elements that are out of service, changed self.nothing_to_do()
 - [ADDED] Discrete shunt controller for local voltage regulation with shunt steps
+- [ADDED] fix lengths missmatch of output if ignore_zero_length is False in plotting utility function coords_from_node_geodata() and rename ignore_zero_length by ignore_no_geo_diff
 - [ADDED] cim2pp converter: Using lxml to parse XML files (better performance)
 
 [2.14.7] - 2024-06-14
