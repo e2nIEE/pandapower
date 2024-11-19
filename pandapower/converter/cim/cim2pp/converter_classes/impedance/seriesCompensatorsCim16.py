@@ -107,7 +107,7 @@ class SeriesCompensatorsCim16:
         ser_comp['gf_pu'] = 0.
         ser_comp['bf_pu'] = 0.
         ser_comp['gt_pu'] = 0.
-        ser_comp['bf_pu'] = 0.
+        ser_comp['bt_pu'] = 0.
         ser_comp['in_service'] = ser_comp.connected & ser_comp.connected2
         ser_comp = ser_comp.rename(columns={'rdfId_Terminal': sc['t_from'], 'rdfId_Terminal2': sc['t_to'],
                                             'rdfId': sc['o_id'], 'index_bus': 'from_bus', 'index_bus2': 'to_bus'})
