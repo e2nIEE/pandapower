@@ -7,8 +7,7 @@ from collections.abc import Iterable
 import tqdm
 
 import pandapower as pp
-from pandapower import LoadflowNotConverged, OPFNotConverged
-from pandapower.auxiliary import ControllerNotConverged, NetCalculationNotConverged
+from pandapower.auxiliary import ControllerNotConverged
 from pandapower.control import prepare_run_ctrl, run_control
 from pandapower.control.util.diagnostic import control_diagnostic
 from pandapower.timeseries.output_writer import OutputWriter

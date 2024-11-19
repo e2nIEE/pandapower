@@ -21,7 +21,7 @@ import numpy as np
 import pandas.errors
 from deepdiff.diff import DeepDiff
 from packaging.version import Version
-from pandapower import __version__
+from pandapower._version import __version__
 import networkx
 import numpy
 import geojson
@@ -499,7 +499,7 @@ class FromSerializableRegistry():
         is_multiindex = self.d.pop('is_multiindex', False)
         index_name = self.d.pop('index_name', None)
         index_names = self.d.pop('index_names', None)
-        ser = pd.read_json(self.obj, precise_float=True, **self.d)
+        ser = pd.read_json(io.StringIO(self.obj), precise_float=True, **self.d)
 
         # restore index name and Multiindex
         if index_name is not None:

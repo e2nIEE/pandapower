@@ -376,7 +376,7 @@ def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
 
         if et in net and isinstance(net[et], pd.DataFrame):
             if et in ["bus_geodata", "line_geodata"]:
-                logger.info(et + " don't need to bo included to 'add_df_to_reindex'. It is " +
+                logger.info(et + " don't need to be included to 'add_df_to_reindex'. It is " +
                             "already included by et=='" + et.split("_")[0] + "'.")
             else:
                 reindex_elements(net, et, new_index)
