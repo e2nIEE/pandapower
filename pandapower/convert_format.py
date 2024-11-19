@@ -46,6 +46,7 @@ def convert_format(net, elements_to_deserialize=None):
     _add_missing_columns(net, elements_to_deserialize)
     _create_seperate_cost_tables(net, elements_to_deserialize)
     if Version(str(net.format_version)) < Version("3.0.0"):
+        _convert_geo_data(net, elements_to_deserialize)
         _convert_group_element_index(net)
         _convert_trafo_controller_parameter_names(net)
     if Version(str(net.format_version)) < Version("2.4.0"):
