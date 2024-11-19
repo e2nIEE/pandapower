@@ -4,21 +4,6 @@ Change Log
 [upcoming release] - 2024-..-..
 -------------------------------
 - [FIXED] Increasing geojson precision as the default precision might cause problems with pandahub
-
-[2.14.11] - 2024-07-08
--------------------------------
-- [FIXED] Lightsim2grid version
-
-[2.14.10] - 2024-07-08
--------------------------------
-- [FIXED] geopandas version
-
-[2.14.9] - 2024-06-25
--------------------------------
-- [FIXED] scipy version
-
-[upcoming release] - 2024-..-..
--------------------------------
 - [FIXED] replacing deprecated in1d with isin
 - [ADDED] A switch to disable updating the vk and vkr values for trafo3w
 - [FIXED] cast the column to the correct type before assigning values
@@ -90,6 +75,18 @@ Change Log
 - [ADDED] fix lengths missmatch of output if ignore_zero_length is False in plotting utility function coords_from_node_geodata() and rename ignore_zero_length by ignore_no_geo_diff
 - [ADDED] converter for European EHV grid data from JAO, the "Single Allocation Platform (SAP) for all European Transmission System Operators (TSOs) that operate in accordance to EU legislation"
 - [ADDED] cim2pp converter: Using lxml to parse XML files (better performance)
+
+2.14.11] - 2024-07-08
+-------------------------------
+- [FIXED] Lightsim2grid version
+
+[2.14.10] - 2024-07-08
+-------------------------------
+- [FIXED] geopandas version
+
+[2.14.9] - 2024-06-25
+-------------------------------
+- [FIXED] scipy version
 
 [2.14.7] - 2024-06-14
 -------------------------------
