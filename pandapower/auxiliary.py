@@ -33,6 +33,7 @@ from importlib.metadata import version as version_str
 from importlib.metadata import PackageNotFoundError
 from typing_extensions import deprecated
 
+from geojson import loads, GeoJSON
 import numpy as np
 import pandas as pd
 import scipy as sp
@@ -58,8 +59,15 @@ try:
     import pandaplan.core.pplog as logging
 except ImportError:
     import logging
+try:
+    from geopandas import GeoSeries
+    from shapely import from_geojson
+    geopandas_available = True
+except ImportError:
+    geopandas_available = False
 
 logger = logging.getLogger(__name__)
+
 
 def log_to_level(msg, passed_logger, level):
     if level == "error":
@@ -341,6 +349,85 @@ class pandapowerNet(ADict):
         lines = ["This pandapower network includes the following parameter tables:"] + \
             par + res + res_cost
         return "\n".join(lines)
+
+
+@pd.api.extensions.register_series_accessor("geojson")
+class GeoAccessor:
+    """
+    pandas Series accessor for the geo column. It facilitates the use of geojson strings.
+    NaN entrys are dropped using the accessor!
+    """
+    def __init__(self, pandas_obj):
+        self._validate(pandas_obj)
+        self._obj = pandas_obj
+
+    @staticmethod
+    def _validate(obj):
+        try:
+            if not obj.dropna().apply(loads).apply(isinstance, args=(GeoJSON,)).all():
+                raise AttributeError("Can only use .geojson accessor with geojson string values!")
+        except Exception as e:
+            raise AttributeError(f"Can only use .geojson accessor with geojson string values!: {e}")
+        if not geopandas_available:
+            soft_dependency_error("GeoAccessor", "geopandas")
+
+    @staticmethod
+    def _extract_coords(x):
+        if x["type"] == "Point":
+            return np.array(x["coordinates"])
+        return [np.array(y) for y in x["coordinates"]]
+
+    @property
+    def _coords(self):
+        """
+        Extracts the geometry coordinates from the GeoJSON strings.
+        It is not recommended to use the standalone coordinates.
+        Important informations like the crs or latlon/lonlat are lost as a result.
+        """
+        return self._obj.dropna().apply(loads).apply(self._extract_coords)
+
+    @property
+    def as_geo_obj(self):
+        """
+        Loads the GeoJSON objects.
+        """
+        return self._obj.dropna().apply(loads)
+
+    @property
+    def type(self):
+        """
+        Extracts the geometry type of the GeoJSON string.
+        """
+        return self._obj.dropna().apply(loads).apply(lambda x: str(x["type"]))
+
+    @property
+    def as_shapely_obj(self):
+        """
+        Converts the GeoJSON strings to shapely geometrys.
+        """
+        return self._obj.dropna().apply(from_geojson)
+
+    @property
+    def as_geoseries(self):
+        """
+        Converts the PandasSeries to a GeoSeries with shapely geometrys.
+        """
+        return GeoSeries(self._obj.dropna().pipe(from_geojson), crs=4326, index=self._obj.dropna().index)
+
+    def __getattr__(self, item):
+        """
+        Enables access to all methods or attribute calls from a GeoSeries.
+        """
+        geoms = self.as_geoseries
+        if hasattr(geoms, item):
+            geoms_item = getattr(geoms, item)
+            if callable(geoms_item):
+                def wrapper(*args, **kwargs):
+                    return geoms_item(*args, **kwargs)
+                return wrapper
+            else:
+                return geoms_item
+        raise AttributeError(f"'GeoAccessor' object has no attribute '{item}'")
 
 
 def plural_s(number):
