@@ -735,7 +735,7 @@ def pp_hook(d, deserialize_pandas=True, empty_dict_like_object=None,
                 # obj = {"_init": d, "_state": dict()}  # backwards compatibility
                 obj = {key: val for key, val in d.items() if key not in ['_module', '_class']}
             fs = registry_class(obj, d, pp_hook, ignore_unknown_objects)
-            
+
             fs.class_name = d.pop('_class', '')
             fs.module_name = d.pop('_module', '')
             fs.empty_dict_like_object = empty_dict_like_object
