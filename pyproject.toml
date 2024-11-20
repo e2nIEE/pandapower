@@ -63,7 +63,7 @@ docs = ["numpydoc", "matplotlib", "sphinx", "sphinx_rtd_theme", "sphinx-pyprojec
 plotting = ["plotly>=3.1.1", "matplotlib", "igraph", "geopandas>=1.0"]
 test = ["pytest~=8.1", "pytest-xdist", "nbmake"]
 performance = ["ortools", "numba>=0.25", "lightsim2grid==0.9.0"]
-fileio = ["xlsxwriter", "openpyxl", "cryptography", "geopandas", "psycopg2"]
+fileio = ["xlsxwriter", "openpyxl", "cryptography", "geopandas>=1.0", "psycopg2"]
 converter = ["matpowercaseframes"]
 pgm = ["power-grid-model-io"]
 control = ["shapely"]
