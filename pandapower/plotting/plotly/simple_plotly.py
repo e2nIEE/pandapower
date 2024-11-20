@@ -116,7 +116,7 @@ def simple_plotly(net, respect_switches=True, use_line_geo=None, on_map=False,
         **respect_switches** (bool, True) - Respect switches when artificial geodata is created
 
         **use_line_geo** (bool, True) - defines if lines patches are based on
-        net.line_geodata of the lines (True) or on net.bus_geodata of the connected buses (False)
+        net.line.geo of the lines (True) or on net.bus.geo of the connected buses (False)
 
         **on_map** (bool, False) - enables using mapbox plot in plotly.
         If provided geodata are not real geo-coordinates in lon/lat form, on_map will be set to False.

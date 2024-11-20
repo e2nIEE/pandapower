@@ -3,7 +3,10 @@ Change Log
 
 [upcoming release] - 2024-..-..
 -------------------------------
+- [ADDED] pandas series accessor for geo column
 - [FIXED] Increasing geojson precision as the default precision might cause problems with pandahub
+- [ADDED] Add GeographicalRegion and SubGeographicalRegion names and ids to bus df in cim converter
+- [CHANGED] Capitalize first letter of columns busbar_id, busbar_name and substation_id in bus df for cim converter
 
 [2.14.11] - 2024-07-08
 -------------------------------
@@ -19,6 +22,7 @@ Change Log
 
 [upcoming release] - 2024-..-..
 -------------------------------
+- [FIXED] passing literal json to 'read_json' is deprecated
 
 - [ADDED] pf2pp: possibility to convert a specific varaint and scenario
 - [ADDED] Static Var Compensator with Voltage Control
@@ -92,7 +96,9 @@ Change Log
 - [CHANGED] accelerate distributed slack power flow calculation by using sparse-aware operations in _subnetworks()
 - [CHANGED] Trafo Controllers can now be added to elements that are out of service, changed self.nothing_to_do()
 - [ADDED] Discrete shunt controller for local voltage regulation with shunt steps
+- [ADDED] fix lengths missmatch of output if ignore_zero_length is False in plotting utility function coords_from_node_geodata() and rename ignore_zero_length by ignore_no_geo_diff
 - [ADDED] cim2pp converter: Using lxml to parse XML files (better performance)
+- [ADDED] possibility to load JSON files with unknown object models and just store the models as dictionaries in the network
 
 [2.14.7] - 2024-06-14
 -------------------------------
