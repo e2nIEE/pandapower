@@ -22,6 +22,7 @@ Change Log
 
 [upcoming release] - 2024-..-..
 -------------------------------
+- [FIXED] passing literal json to 'read_json' is deprecated
 - [FIXED] replacing deprecated in1d with isin
 - [ADDED] A switch to disable updating the vk and vkr values for trafo3w
 - [FIXED] cast the column to the correct type before assigning values
@@ -92,6 +93,7 @@ Change Log
 - [ADDED] Discrete shunt controller for local voltage regulation with shunt steps
 - [ADDED] fix lengths missmatch of output if ignore_zero_length is False in plotting utility function coords_from_node_geodata() and rename ignore_zero_length by ignore_no_geo_diff
 - [ADDED] cim2pp converter: Using lxml to parse XML files (better performance)
+- [ADDED] possibility to load JSON files with unknown object models and just store the models as dictionaries in the network
 
 [2.14.7] - 2024-06-14
 -------------------------------
