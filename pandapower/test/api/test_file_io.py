@@ -229,7 +229,7 @@ def test_json_encoding_decoding():
     net = networks.mv_oberrhein()
     net.tuple = (1, "4")
     net.mg = topology.create_nxgraph(net)
-    s = set(['1', 4])
+    s = {'1', 4}
     t = tuple(['2', 3])
     f = frozenset(['12', 3])
     a = np.array([1., 2.])
@@ -603,7 +603,7 @@ def test_multi_index():
 
 def test_ignore_unknown_objects():
     net = pp.networks.create_kerber_dorfnetz()
-    ctrl = control.ContinuousTapControl(net, 0, 1.02)
+    control.ContinuousTapControl(net, 0, 1.02)
     json_str = pp.to_json(net)
     net2 = pp.from_json_string(json_str, ignore_unknown_objects=False)
 
@@ -617,12 +617,19 @@ def test_ignore_unknown_objects():
                                  "pandapower.control.controller.trafo.ContinuousTapControl2")
     with pytest.raises(ModuleNotFoundError):
         pp.from_json_string(json_str2, ignore_unknown_objects=False)
+    json_str3 = json_str.replace("\"ContinuousTapControl", "\"ContinuousTapControl2")
+    with pytest.raises(AttributeError):
+        pp.from_json_string(json_str3, ignore_unknown_objects=False)
     net3 = pp.from_json_string(json_str2, ignore_unknown_objects=True)
     assert isinstance(net3.controller.object.at[0], dict)
+    net4 = pp.from_json_string(json_str3, ignore_unknown_objects=True)
+    assert isinstance(net4.controller.object.at[0], dict)
 
     # make sure that the loaded net equals the original net except for the controller
-    net.controller.object.at[0] = net3.controller.object.at[0]
+    net3.controller.object.at[0] = net.controller.object.at[0]
+    net4.controller.object.at[0] = net.controller.object.at[0]
     assert_net_equal(net, net3)
+    assert_net_equal(net, net4)
 
 
 if __name__ == "__main__":
