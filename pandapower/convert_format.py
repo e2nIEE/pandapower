@@ -11,8 +11,10 @@ from packaging.version import Version
 
 from pandapower._version import __version__, __format_version__
 from pandapower.create import create_empty_network, create_poly_cost
+from pandapower.plotting import geo
 from pandapower.results import reset_results
 from pandapower.control import TrafoController
+import pandapower.plotting.geo as geo
 
 try:
     import pandaplan.core.pplog as logging
@@ -20,14 +22,6 @@ except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
-
-
-def _compare_version(
-        net_version,
-        compare_version: Union[str, int],
-        compare: Callable[[Version, Version], bool] = lambda x, y: x < y
-) -> bool:
-    return compare(Version(str(net_version)), Version(str(compare_version)))
 
 
 def convert_format(net, elements_to_deserialize=None):
@@ -46,6 +40,7 @@ def convert_format(net, elements_to_deserialize=None):
     _add_missing_columns(net, elements_to_deserialize)
     _create_seperate_cost_tables(net, elements_to_deserialize)
     if Version(str(net.format_version)) < Version("3.0.0"):
+        _convert_geo_data(net, elements_to_deserialize)
         _convert_group_element_index(net)
         _convert_trafo_controller_parameter_names(net)
     if Version(str(net.format_version)) < Version("2.4.0"):
@@ -56,7 +51,7 @@ def convert_format(net, elements_to_deserialize=None):
         _convert_to_mw(net)
         _update_trafo_parameter_names(net, elements_to_deserialize)
         reset_results(net)
-    if isinstance(net.format_version, float) and net.format_version < 1.6:
+    if Version(str(net.format_version)) < Version("1.6"):
         set_data_type_of_columns_to_default(net)
     _convert_objects(net, elements_to_deserialize)
     _update_characteristics(net, elements_to_deserialize)
@@ -74,7 +69,7 @@ def _convert_geo_data(net, elements_to_deserialize=None):
         or (_check_elements_to_deserialize('line_geodata', elements_to_deserialize)
          and _check_elements_to_deserialize('line', elements_to_deserialize))):
         if hasattr(net, 'bus_geodata') or hasattr(net, 'line_geodata'):
-            if _compare_version(net.format_version, "1.6"):
+            if Version(str(net.format_version)) < Version("1.6"):
                 net.bus_geodata = pd.DataFrame.from_dict(net.bus_geodata)
                 net.line_geodata = pd.DataFrame.from_dict(net.line_geodata)
             geo.convert_geodata_to_geojson(net)
@@ -154,6 +149,8 @@ def _convert_trafo_controller_parameter_names(net):
             elif "trafotype" in controller.__dict__.keys():
                 controller.__dict__["element"] = controller.__dict__.pop("trafotype")
 
+            if "controlled_bus" in controller.__dict__.keys():
+                controller.__dict__["trafobus"] = controller.__dict__.pop("controlled_bus")
 
 def _convert_bus_pq_meas_to_load_reference(net, elements_to_deserialize):
     if _check_elements_to_deserialize('measurement', elements_to_deserialize):
