@@ -96,14 +96,14 @@ def extend_pp_net_cim(net: pandapowerNet, override: bool = True) -> pandapowerNe
     fill_dict['trafo'] = dict()
     fill_dict['trafo'][np_str_type] = [sc['t_hv'], sc['t_lv'], sc['pte_id_hv'], sc['pte_id_lv'], sc['tc'], sc['tc_id'],
                                        'description', 'vector_group', 'id_characteristic_table',
-                                       'tap_dependency_table', 'phase_shifter_type']
+                                       'tap_dependency_table', 'tap_phase_shifter_type']
     fill_dict['trafo'][np_float_type] = ['vk0_percent', 'vkr0_percent', 'xn_ohm']
     fill_dict['trafo'][np_bool_type] = ['power_station_unit', 'oltc']
 
     fill_dict['trafo3w'] = dict()
     fill_dict['trafo3w'][np_str_type] = [sc['t_hv'], sc['t_mv'], sc['t_lv'], sc['pte_id_hv'], sc['pte_id_mv'],
                                          sc['pte_id_lv'], sc['tc'], sc['tc_id'], 'description', 'vector_group',
-                                         'id_characteristic_table', 'tap_dependency_table', 'phase_shifter_type']
+                                         'id_characteristic_table', 'tap_dependency_table', 'tap_phase_shifter_type']
     fill_dict['trafo3w'][np_float_type] = ['vk0_hv_percent', 'vk0_mv_percent', 'vk0_lv_percent', 'vkr0_hv_percent',
                                            'vkr0_mv_percent', 'vkr0_lv_percent']
     fill_dict['trafo3w'][np_bool_type] = ['power_station_unit']

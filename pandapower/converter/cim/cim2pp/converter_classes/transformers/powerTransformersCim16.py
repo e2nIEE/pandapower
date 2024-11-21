@@ -309,12 +309,14 @@ class PowerTransformersCim16:
                                       self.cimConverter.cim['ssh']['RatioTapChanger'][['rdfId', 'step']], how='left',
                                       on='rdfId')
         eqssh_tap_changers[sc['tc']] = 'RatioTapChanger'
+        eqssh_tap_changers['tap_phase_shifter_type'] = 0  # Ratio/Asymmetrical phase shifter
         eqssh_tap_changers[sc['tc_id']] = eqssh_tap_changers['rdfId'].copy()
         eqssh_tap_changers_linear = pd.merge(self.cimConverter.cim['eq']['PhaseTapChangerLinear'],
                                              self.cimConverter.cim['ssh']['PhaseTapChangerLinear'], how='left',
                                              on='rdfId')
         eqssh_tap_changers_linear['stepVoltageIncrement'] = .001
         eqssh_tap_changers_linear[sc['tc']] = 'PhaseTapChangerLinear'
+        eqssh_tap_changers_linear['tap_phase_shifter_type'] = 2  # Ideal phase shifter
         eqssh_tap_changers_linear[sc['tc_id']] = eqssh_tap_changers_linear['rdfId'].copy()
         eqssh_tap_changers = pd.concat([eqssh_tap_changers, eqssh_tap_changers_linear], ignore_index=True, sort=False)
         eqssh_tap_changers_async = pd.merge(self.cimConverter.cim['eq']['PhaseTapChangerAsymmetrical'],
@@ -323,6 +325,7 @@ class PowerTransformersCim16:
         eqssh_tap_changers_async['stepVoltageIncrement'] = eqssh_tap_changers_async['voltageStepIncrement'][:]
         eqssh_tap_changers_async = eqssh_tap_changers_async.drop(columns=['voltageStepIncrement'])
         eqssh_tap_changers_async[sc['tc']] = 'PhaseTapChangerAsymmetrical'
+        eqssh_tap_changers_async['tap_phase_shifter_type'] = 0  # Ratio/Asymmetrical phase shifter
         eqssh_tap_changers_async[sc['tc_id']] = eqssh_tap_changers_async['rdfId'].copy()
         eqssh_tap_changers = pd.concat([eqssh_tap_changers, eqssh_tap_changers_async], ignore_index=True, sort=False)
         eqssh_ratio_tap_changers_sync = pd.merge(self.cimConverter.cim['eq']['PhaseTapChangerSymmetrical'],
@@ -331,6 +334,7 @@ class PowerTransformersCim16:
         eqssh_ratio_tap_changers_sync['stepVoltageIncrement'] = eqssh_ratio_tap_changers_sync['voltageStepIncrement']
         eqssh_ratio_tap_changers_sync = eqssh_ratio_tap_changers_sync.drop(columns=['voltageStepIncrement'])
         eqssh_ratio_tap_changers_sync[sc['tc']] = 'PhaseTapChangerSymmetrical'
+        eqssh_ratio_tap_changers_sync['tap_phase_shifter_type'] = 1  # Symmetrical phase shifter
         eqssh_ratio_tap_changers_sync[sc['tc_id']] = eqssh_ratio_tap_changers_sync['rdfId'].copy()
         eqssh_tap_changers = \
             pd.concat([eqssh_tap_changers, eqssh_ratio_tap_changers_sync], ignore_index=True, sort=False)
@@ -356,16 +360,14 @@ class PowerTransformersCim16:
             one_df = one_df.set_index('step')
             neutral_step = one_df['neutralStep'].iloc[0]
             ptct = ptct.drop(drop_index)
-            # todo change to populate tap_step_percent & tap_step_degree based on neutral tap_pos?
-            # ptct.loc[keep_index, 'angle'] =
-            # one_df.loc[current_step, 'angle'] / max(1, abs(current_step - neutral_step))
-            ptct.loc[keep_index, 'angle'] = one_df.loc[current_step, 'angle']  # todo fix if pp supports them
-            ptct.loc[keep_index, 'ratio'] = \
-                (one_df.loc[current_step, 'ratio'] - 1) * 100 / max(1, abs(current_step - neutral_step))
+            # keep the angle and ratio based on neutral tap position
+            ptct.loc[keep_index, 'angle'] = one_df.loc[neutral_step, 'angle']
+            ptct.loc[keep_index, 'ratio'] = one_df.loc[neutral_step, 'ratio']
         ptct = ptct.drop(columns=['rdfId', 'PhaseTapChangerTable', 'step'])
         ptct = ptct.rename(columns={'current_step': 'step'})
-        # ptct['stepPhaseShiftIncrement'] = ptct['angle'][:]  # todo fix if pp supports them
+        ptct['stepPhaseShiftIncrement'] = ptct['angle'][:]
         ptct['stepVoltageIncrement'] = ptct['ratio'][:]
+        ptct['tap_phase_shifter_type'] = 0  # Ratio/Asymmetrical phase shifter
         eqssh_tap_changers = pd.concat([eqssh_tap_changers, ptct], ignore_index=True, sort=False)
         del eqssh_tap_changers_linear, eqssh_tap_changers_async, eqssh_ratio_tap_changers_sync
 
@@ -436,6 +438,8 @@ class PowerTransformersCim16:
                                          how='left', left_on='Terminal', right_on='rdfId_Terminal')
         # add the TapChangers
         power_transformers = pd.merge(power_transformers, eqssh_tap_changers, how='left', on=sc['pte_id'])
+        power_transformers['tap_phase_shifter_type'] = power_transformers['tap_phase_shifter_type'].apply(
+            lambda x: int(x) if not pd.isna(x) else x).astype('Int64')
         return power_transformers
 
     def _prepare_trafos_cim16(self, power_trafo2w: pd.DataFrame) -> pd.DataFrame:
@@ -501,16 +505,7 @@ class PowerTransformersCim16:
         power_trafo2w['vk0_percent'] = power_trafo2w['x0_sign'] * power_trafo2w['vk0_percent']
         power_trafo2w['std_type'] = None
         power_trafo2w['df'] = 1.
-        # todo remove if pp supports phase shifter
-        if power_trafo2w.loc[power_trafo2w['angle'].notna()].index.size > 0:
-            self.logger.warning("Modifying angle from 2W transformers. This kind of angle regulation is currently not "
-                                "supported by pandapower! Affected transformers: \n%s" %
-                                power_trafo2w.loc[power_trafo2w['angle'].notna()])
-            self.cimConverter.report_container.add_log(Report(
-                level=LogLevel.WARNING, code=ReportCode.WARNING_CONVERTING,
-                message="Modifying angle from 2W transformers. This kind of angle regulation is currently not "
-                        "supported by pandapower! Affected transformers: \n%s" %
-                        power_trafo2w.loc[power_trafo2w['angle'].notna()]))
+        # todo check shift_degree code
         power_trafo2w['phaseAngleClock_temp'] = power_trafo2w['phaseAngleClock'].copy()
         power_trafo2w['phaseAngleClock'] = power_trafo2w['angle'] / 30
         power_trafo2w['phaseAngleClock'] = power_trafo2w['phaseAngleClock'].fillna(power_trafo2w['angle_lv'] * -1 / 30)
@@ -519,7 +514,7 @@ class PowerTransformersCim16:
         power_trafo2w['shift_degree'] = power_trafo2w['phaseAngleClock'].astype(float).fillna(
             power_trafo2w['phaseAngleClock_lv'].astype(float)) * 30
         power_trafo2w['parallel'] = 1
-        power_trafo2w['tap_phase_shifter'] = False  # todo remove hardcoded False flag to enable angle regulation
+        # power_trafo2w['tap_phase_shifter'] = False  # removed
         power_trafo2w['in_service'] = power_trafo2w.connected & power_trafo2w.connected_lv
         power_trafo2w['connectionKind'] = power_trafo2w['connectionKind'].fillna('')
         power_trafo2w['connectionKind_lv'] = power_trafo2w['connectionKind_lv'].fillna('')
@@ -636,16 +631,7 @@ class PowerTransformersCim16:
                      power_trafo3w.ratedU_lv / power_trafo3w.ratedU) ** 2) ** 2) ** 0.5 * \
             power_trafo3w.min_s_lvhv * 100 / power_trafo3w.ratedU_lv ** 2
         power_trafo3w['std_type'] = None
-        # todo remove if pp supports phase shifter
-        if power_trafo3w.loc[power_trafo3w['angle_mv'].notna()].index.size > 0:
-            self.logger.warning("Modifying angle from 3W transformers. This kind of angle regulation is currently not "
-                                "supported by pandapower! Affected transformers: \n%s" %
-                                power_trafo3w.loc[power_trafo3w['angle_mv'].notna()])
-            self.cimConverter.report_container.add_log(Report(
-                level=LogLevel.WARNING, code=ReportCode.WARNING_CONVERTING,
-                message="Modifying angle from 3W transformers. This kind of angle regulation is currently not "
-                        "supported by pandapower! Affected transformers: \n%s" %
-                        power_trafo3w.loc[power_trafo3w['angle_mv'].notna()]))
+        # todo check shift_degree code
         power_trafo3w['phaseAngleClock_temp'] = power_trafo3w['phaseAngleClock_mv'].copy()
         power_trafo3w['phaseAngleClock_mv'] = power_trafo3w['angle_mv'] * -1 / 30
         power_trafo3w['phaseAngleClock_mv'] = power_trafo3w['phaseAngleClock_mv'].fillna(
