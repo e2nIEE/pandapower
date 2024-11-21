@@ -103,6 +103,7 @@ def from_cim(file_list: List[str] = None, encoding: str = 'utf-8', convert_line_
              custom_converter_classes: Dict = None,
              cgmes_version: str = '2.4.15', **kwargs) -> \
         pandapower.auxiliary.pandapowerNet:
+    # Nur zum Testen, kann wieder gelöscht werden
     """
     Convert a CIM net to a pandapower net from XML files.
     Additional parameters for kwargs:
