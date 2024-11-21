@@ -7,6 +7,7 @@ Change Log
 - [FIXED] Increasing geojson precision as the default precision might cause problems with pandahub
 - [ADDED] Add GeographicalRegion and SubGeographicalRegion names and ids to bus df in cim converter
 - [CHANGED] Capitalize first letter of columns busbar_id, busbar_name and substation_id in bus df for cim converter
+- [FIXED] Do not modify pandas options when importing pandapower
 
 [2.14.11] - 2024-07-08
 -------------------------------
