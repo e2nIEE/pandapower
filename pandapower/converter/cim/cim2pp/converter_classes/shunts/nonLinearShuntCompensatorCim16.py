@@ -108,11 +108,11 @@ class NonLinearShuntCompensatorCim16:
         id_char_dict = char_temp.drop_duplicates('origin_id').set_index('origin_id')['id_characteristic'].to_dict()
         eqssh_shunts['id_characteristic_table'] = eqssh_shunts['origin_id'].map(id_char_dict).astype(int)
 
-        # create step_characteristic_table flag
-        if 'step_characteristic_table' not in eqssh_shunts.columns:
-            eqssh_shunts["step_characteristic_table"] = pd.Series(index=eqssh_shunts.index, dtype=np.bool_, data=False)
-        # set step_characteristic_table as True for all non-linear shunt compensators
-        eqssh_shunts.loc[eqssh_shunts['id_characteristic_table'].notna(), 'step_characteristic_table'] = True
+        # create step_dependency_table flag
+        if 'step_dependency_table' not in eqssh_shunts.columns:
+            eqssh_shunts["step_dependency_table"] = pd.Series(index=eqssh_shunts.index, dtype=np.bool_, data=False)
+        # set step_dependency_table as True for all non-linear shunt compensators
+        eqssh_shunts.loc[eqssh_shunts['id_characteristic_table'].notna(), 'step_dependency_table'] = True
 
         # populate shunt_characteristic_temp table
         self.cimConverter.net['shunt_characteristic_table'] = \
