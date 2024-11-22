@@ -18,8 +18,6 @@ from ..other_classes import ReportContainer, Report, LogLevel, ReportCode
 
 logger = logging.getLogger('cim.cim2pp.build_pp_net')
 
-pd.set_option('display.max_columns', 900)
-pd.set_option('display.max_rows', 90000)
 sc = cim_tools.get_pp_net_special_columns_dict()
 
 
