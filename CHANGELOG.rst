@@ -25,6 +25,7 @@ Change Log
 -------------------------------
 - [FIXED] PandaModels OPF with 'bus_dc' key errors
 - [FIXED] julia tests
+- [FIXED] copy array element to standard python scalar
 - [FIXED] passing literal json to 'read_json' is deprecated
 - [FIXED] replacing deprecated in1d with isin
 - [ADDED] A switch to disable updating the vk and vkr values for trafo3w
