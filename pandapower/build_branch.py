@@ -571,8 +571,8 @@ def _calc_tap_from_dataframe(net, trafo_df):
         sin = lambda x: np.sin(np.deg2rad(x))
         arctan = lambda x: np.rad2deg(np.arctan(x))
 
-        if 'tap_characteristic_table' in trafo_df:
-            ideal_phase_shifter = get_trafo_values(trafo_df, f"phase_shifter_type")
+        if 'tap_dependency_table' in trafo_df:
+            phase_shifter_type = get_trafo_values(trafo_df, f"tap{t}_phase_shifter_type")
             print("do something")
             for side, vn, direction in [("hv", vnh, 1), ("lv", vnl, -1)]:
                 # ideal_phase_shifter = 1
