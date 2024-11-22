@@ -43,5 +43,5 @@ class LinearShuntCompensatorCim16:
         eqssh_shunts['q_mvar'] = s.values.imag
         # create step_dependency_table flag
         if 'step_dependency_table' not in eqssh_shunts.columns:
-            eqssh_shunts["step_dependency_table"] = pd.Series(index=eqssh_shunts.index, dtype=np.bool_, data=False)
+            eqssh_shunts["step_dependency_table"] = False
         return eqssh_shunts

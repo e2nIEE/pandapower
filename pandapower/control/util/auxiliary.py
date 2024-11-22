@@ -213,10 +213,9 @@ def plot_characteristic(characteristic, start, stop, num=20, xlabel=None, ylabel
 
 
 def create_trafo_characteristic_object(net):
-    # check if trafo_characteristic_spline table already exists
+    # check if trafo_characteristic_spline table already exists & if so, delete & re-create
     if "trafo_characteristic_spline" in net:
-        raise UserWarning("A trafo_characteristic_spline table already exists - "
-                          "no trafo characteristic objects created.")
+        del net["trafo_characteristic_spline"]
     # 2-winding transformers
     if (net['trafo_characteristic_table'].index.size > 0 and
             net['trafo_characteristic_table']['vk_percent'].notna().any()):
@@ -320,10 +319,9 @@ def create_trafo_characteristics(net, trafotable, trafo_index, variable, x_point
 
 
 def create_shunt_characteristic_object(net):
-    # check if shunt_characteristic_spline table already exists
+    # check if shunt_characteristic_spline table already exists & if so, delete & re-create
     if "shunt_characteristic_spline" in net:
-        raise UserWarning("A shunt_characteristic_spline table already exists - "
-                          "no shunt characteristic objects created.")
+        del net["shunt_characteristic_spline"]
     if net['shunt_characteristic_table'].index.size > 0:
         time_start = time.time()
         logger.info("Creating step dependent power characteristic objects for shunts.")
