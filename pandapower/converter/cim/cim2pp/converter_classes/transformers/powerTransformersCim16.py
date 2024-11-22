@@ -505,11 +505,7 @@ class PowerTransformersCim16:
         power_trafo2w['vk0_percent'] = power_trafo2w['x0_sign'] * power_trafo2w['vk0_percent']
         power_trafo2w['std_type'] = None
         power_trafo2w['df'] = 1.
-        # todo check shift_degree code
-        power_trafo2w['phaseAngleClock_temp'] = power_trafo2w['phaseAngleClock'].copy()
-        power_trafo2w['phaseAngleClock'] = power_trafo2w['angle'] / 30
-        power_trafo2w['phaseAngleClock'] = power_trafo2w['phaseAngleClock'].fillna(power_trafo2w['angle_lv'] * -1 / 30)
-        power_trafo2w['phaseAngleClock'] = power_trafo2w['phaseAngleClock'].fillna(power_trafo2w['phaseAngleClock_temp'])
+        power_trafo2w.loc[power_trafo2w['phaseAngleClock'] == 0, 'phaseAngleClock'] = np.nan
         power_trafo2w['phaseAngleClock_lv'] = power_trafo2w['phaseAngleClock_lv'].fillna(0)
         power_trafo2w['shift_degree'] = power_trafo2w['phaseAngleClock'].astype(float).fillna(
             power_trafo2w['phaseAngleClock_lv'].astype(float)) * 30
@@ -631,15 +627,10 @@ class PowerTransformersCim16:
                      power_trafo3w.ratedU_lv / power_trafo3w.ratedU) ** 2) ** 2) ** 0.5 * \
             power_trafo3w.min_s_lvhv * 100 / power_trafo3w.ratedU_lv ** 2
         power_trafo3w['std_type'] = None
-        # todo check shift_degree code
-        power_trafo3w['phaseAngleClock_temp'] = power_trafo3w['phaseAngleClock_mv'].copy()
-        power_trafo3w['phaseAngleClock_mv'] = power_trafo3w['angle_mv'] * -1 / 30
-        power_trafo3w['phaseAngleClock_mv'] = power_trafo3w['phaseAngleClock_mv'].fillna(
-            power_trafo3w['phaseAngleClock_temp'])
         power_trafo3w['phaseAngleClock_mv'] = power_trafo3w['phaseAngleClock_mv'].fillna(0)
         power_trafo3w['phaseAngleClock_lv'] = power_trafo3w['phaseAngleClock_lv'].fillna(0)
-        power_trafo3w['shift_mv_degree'] = power_trafo3w['phaseAngleClock_mv'] * 30
-        power_trafo3w['shift_lv_degree'] = power_trafo3w['phaseAngleClock_mv'] * 30
+        power_trafo3w['shift_mv_degree'] = power_trafo3w['phaseAngleClock_mv'].astype(float) * 30
+        power_trafo3w['shift_lv_degree'] = power_trafo3w['phaseAngleClock_mv'].astype(float) * 30
         power_trafo3w['tap_at_star_point'] = False
         power_trafo3w['in_service'] = power_trafo3w.connected & power_trafo3w.connected_mv & power_trafo3w.connected_lv
         power_trafo3w['connectionKind'] = power_trafo3w['connectionKind'].fillna('')
