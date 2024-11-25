@@ -3,14 +3,17 @@ import math
 import numbers
 import re
 from itertools import combinations
+from typing import Literal, Optional, Union
 
+import geojson
 import networkx as nx
-
 import numpy as np
+from pandas import DataFrame
+
 import pandapower as pp
+from pandapower.results import reset_results
 from pandapower.auxiliary import ADict
 import pandapower.control as control
-from pandas import DataFrame, Series
 
 try:
     import pandaplan.core.pplog as logging
@@ -23,6 +26,12 @@ logger = logging.getLogger(__name__)
 # make wrapper for GetAttribute
 def ga(element, attr):
     return element.GetAttribute(attr)
+# Define global variables
+line_dict = {}
+trafo_dict = {}
+switch_dict = {}
+bus_dict = {}
+grf_map = {}
 
 
 # import network to pandapower:
@@ -30,10 +39,9 @@ def from_pf(dict_net, pv_as_slack=True, pf_variable_p_loads='plini', pf_variable
             flag_graphics='GPS', tap_opt="nntap", export_controller=True, handle_us="Deactivate",
             max_iter=None, is_unbalanced=False, create_sections=True):
     global line_dict
+    global line_dict, trafo_dict, switch_dict, bus_dict, grf_map
     line_dict = {}
-    global trafo_dict
     trafo_dict = {}
-    global switch_dict
     switch_dict = {}
     logger.debug("__name__: %s" % __name__)
     logger.debug('started from_pf')
@@ -45,10 +53,8 @@ def from_pf(dict_net, pv_as_slack=True, pf_variable_p_loads='plini', pf_variable
     grid_name = dict_net['ElmNet'].loc_name
     base_sn_mva = dict_net['global_parameters']['base_sn_mva']
     net = pp.create_empty_network(grid_name, sn_mva=base_sn_mva)
-    net['bus_geodata'] = DataFrame(columns=['x', 'y'])
-    net['line_geodata'] = DataFrame(columns=['coords'])
 
-    pp.results.reset_results(net, mode="pf_3ph")
+    reset_results(net, mode="pf_3ph")
     if max_iter is not None:
         pp.set_user_pf_options(net, max_iteration=max_iter)
     logger.info('creating grid %s' % grid_name)
@@ -57,9 +63,7 @@ def from_pf(dict_net, pv_as_slack=True, pf_variable_p_loads='plini', pf_variable
 
     logger.debug('creating buses')
     # create buses:
-    global bus_dict
     bus_dict = {}
-    global grf_map
     grf_map = dict_net.get('graphics', {})
     logger.debug('the graphic mapping is: %s' % grf_map)
 
@@ -375,11 +379,12 @@ def create_bus(net, item, flag_graphics, is_unbalanced):
     else:
         x, y = 0, 0
 
-    # only values > 0+-1e-3 are entered into the bus_geodata
-    if x > 1e-3 or y > 1e-3:
-        geodata = (x, y)
-    else:
-        geodata = None
+    # Commented out because geojson is set up to do the precision handling
+    # # only values > 0+-1e-3 are entered into the bus.geo
+    # if x > 1e-3 or y > 1e-3:
+    #     geodata = (x, y)
+    # else:
+    #     geodata = None
 
     usage = ["b", "m", "n"]
     params = {
@@ -387,7 +392,7 @@ def create_bus(net, item, flag_graphics, is_unbalanced):
         'vn_kv': item.uknom,
         'in_service': not bool(item.outserv),
         'type': usage[item.iUsage],
-        'geodata': geodata
+        'geodata': geojson.dumps(geojson.Point((x, y))),
     }
 
     system_type = {0: "ac", 1: "dc", 2: "ac/bi"}[item.systype]
@@ -625,23 +630,17 @@ def create_connection_switches(net, item, number_switches, et, buses, elements):
 
 
 def get_coords_from_buses(net, from_bus, to_bus, **kwargs):
-    coords = []
-    if from_bus in net.bus_geodata.index:
-        x1, y1 = net.bus_geodata.loc[from_bus, ['x', 'y']]
-        has_coords = True
-    else:
-        x1, y1 = np.nan, np.nan
-        has_coords = False
+    coords: list[tuple[float, float]] = []
+    from_geo: Optional[str] = None
+    to_geo: Optional[str] = None
+    if from_bus in net.bus.index:
+        from_geo: str = net.bus.loc[from_bus, ['geo']]
 
-    if to_bus in net.bus_geodata.index:
-        x2, y2 = net.bus_geodata.loc[to_bus, ['x', 'y']]
-        has_coords = True
-    else:
-        x2, y2 = np.nan, np.nan
-        has_coords = False
+    if to_bus in net.bus.index:
+        to_geo: str = net.bus.loc[to_bus, ['geo']]
 
-    if has_coords:
-        coords = [[x1, y1], [x2, y2]]
+    if from_geo and to_geo:
+        coords = [geojson.utils.coords(geojson.loads(from_geo)), geojson.utils.coords(geojson.loads(to_geo))]
         logger.debug('got coords from buses: %s' % coords)
     else:
         logger.debug('no coords for line between buses %d and %d' % (from_bus, to_bus))
@@ -656,7 +655,7 @@ def get_coords_from_item(item):
         c = tuple((x, y) for [y, x] in coords)
     except ValueError:
         try:
-            c = tuple((x, y) for [y, x, z] in coords)
+            c = tuple((x, y, z) for [y, x, z] in coords)
         except ValueError:
             c = []
     return c
@@ -684,7 +683,6 @@ def get_coords_from_grf_object(item):
         if len(coords) == 0:
             coords = [[graphic_object.rCenterX, graphic_object.rCenterY]] * 2
         logger.debug('extracted line coords from graphic object: %s' % coords)
-        # net.line_geodata.loc[lid, 'coords'] = coords
     else:
         coords = []
 
@@ -859,6 +857,11 @@ def get_section_coords(coords, sec_len, start_len, scale_factor):
 
 
 def segment_buses(net, bus1, bus2, num_sections, line_name):  # , sec_len, start_len, coords):
+    """
+    splits bus1, bus2 line so that it creates num_sections amount of lines.
+    Yields start, end for each line segment.
+    e.g. Yields bus1, a, a, bus2 for num_sections = 2.
+    """
     yield bus1
     m = 1
     # if coords:
@@ -877,8 +880,10 @@ def segment_buses(net, bus1, bus2, num_sections, line_name):  # , sec_len, start
         bus_name = "%s (Muff %u)" % (line_name, m)
         vn_kv = net.bus.at[bus1, "vn_kv"]
         zone = net.bus.at[bus1, "zone"]
-        k = pp.create_bus(net, name=bus_name, type='ls', vn_kv=vn_kv, zone=zone)
+        bus = pp.create_bus(net, name=bus_name, type='ls', vn_kv=vn_kv, zone=zone)
 
+        # TODO: implement coords for segmentation buses.
+        #  Handle coords if line has multiple coords.
         # if coords:
         #     split_len += sec_len[m - 1] * scale_factor
         #
@@ -888,9 +893,9 @@ def segment_buses(net, bus1, bus2, num_sections, line_name):  # , sec_len, start
         #         logger.warning('bus %d has 0 coords, bus1: %d, bus2: %d' % k, bus1, bus2)
 
         if "description" in net.bus:
-            net.bus.at[k, "description"] = u""
-        yield k
-        yield k
+            net.bus.at[bus, "description"] = ""
+        yield bus
+        yield bus
         m += 1
     else:
         yield bus2
@@ -928,10 +933,10 @@ def create_line_sections(net, item_list, line, bus1, bus2, coords, parallel, is_
                 scaling_factor = sum(sec_len) / calc_len_coords(coords)
                 sec_coords = get_section_coords(coords, sec_len=item.dline, start_len=item.rellen,
                                                 scale_factor=scaling_factor)
-                net.line_geodata.loc[sid, 'coords'] = sec_coords
+                net.line.loc[sid, 'geo'] = geojson.dumps(geojson.LineString(sec_coords))
                 # p1 = sec_coords[0]
                 # p2 = sec_coords[-1]
-                net.bus_geodata.loc[bus2, ['x', 'y']] = sec_coords[-1]
+                net.bus.loc[bus2, ['geo']] = geojson.dumps(geojson.Point(sec_coords[-1]))
             except ZeroDivisionError:
                 logger.warning("Could not generate geodata for line !!")
 
@@ -1589,9 +1594,9 @@ def split_line_add_bus_old(net, item, parent):
         raise RuntimeError('incorrect length for section %s: %.3f' % (sec, sec_len_b))
 
     # get coords
-    if sid in net.line_geodata.index.values:
+    if net.line.at[sid, 'geo'].notna():
         logger.debug('line has coords')
-        coords = net.line_geodata.at[sid, 'coords']
+        coords = geojson.utils.coords(geojson.loads(net.line.at[sid, 'geo']))
         logger.debug('old geodata of line %d: %s' % (sid, coords))
 
         # get coords for 2 split lines
@@ -1619,12 +1624,17 @@ def split_line_add_bus_old(net, item, parent):
         logger.debug('created new bus in net: %s' % net.bus.loc[bus])
 
         # create new line
-        lid = pp.create_line(net, from_bus=bus, to_bus=net.line.at[sid, 'to_bus'],
-                             length_km=sec_len_b,
-                             std_type=net.line.at[sid, 'std_type'],
-                             name=net.line.at[sid, 'name'], df=net.line.at[sid, 'df'])
+        lid = pp.create_line(
+            net,
+            from_bus=bus,
+            to_bus=net.line.at[sid, 'to_bus'],
+            length_km=sec_len_b,
+            std_type=net.line.at[sid, 'std_type'],
+            name=net.line.at[sid, 'name'],
+            df=net.line.at[sid, 'df'],
+            geodata=coords_b
+        )
         net.line.at[lid, 'section'] = net.line.at[sid, 'section']
-        net.line_geodata.loc[lid, 'coords'] = coords_b
         if not net.line.loc[sid, 'section_idx']:
             net.line.loc[sid, 'section_idx'] = 0
 
@@ -1635,7 +1645,7 @@ def split_line_add_bus_old(net, item, parent):
 
         net.line.at[sid, 'to_bus'] = bus
         net.line.at[sid, 'length_km'] = sec_len_a
-        net.line_geodata.loc[sid, 'coords'] = coords_a
+        net.line.at[sid, 'geo'] = geojson.dumps(geojson.LineString(coords_a))
         logger.debug('changed: %s' % net.line.loc[sid])
     else:
         # no new bus/line are created: take the to_bus
@@ -3324,20 +3334,17 @@ def split_line_at_length(net, line, length_pos):
         if 'max_loading_percent' in net.line.columns:
             net.line.loc[new_line, 'max_loading_percent'] = net.line.at[line, 'max_loading_percent']
 
-        if 'line_geodata' in net.keys() and line in net.line_geodata.index.values:
-            coords = net.line_geodata.at[line, 'coords']
+        if net.line.loc[line, 'geo'].notna():
+            coords = geojson.utils.coords(geojson.loads(net.line.loc[line, 'geo']))
 
             scaling_factor = old_length / calc_len_coords(coords)
             sec_coords_a = get_section_coords(coords, sec_len=length_pos, start_len=0.,
                                               scale_factor=scaling_factor)
 
-            sec_coords_b = get_section_coords(coords, sec_len=new_length, start_len=length_pos,
-                                              scale_factor=scaling_factor)
+            net.line.loc[line, 'geo'] = geojson.dumps(geojson.LineString(sec_coords_a))
+            net.line.loc[new_line, 'geo'] = geojson.dumps(geojson.LineString(sec_coords_b))
 
-            net.line_geodata.loc[line, 'coords'] = sec_coords_a
-            net.line_geodata.loc[new_line, 'coords'] = sec_coords_b
-
-            net.bus_geodata.loc[bus, ['x', 'y']] = sec_coords_b[0]
+            net.bus.loc[bus, ['geo']] = geojson.Point(sec_coords_b[0])
 
     return bus
 
@@ -3438,7 +3445,7 @@ def split_line(net, line_idx, pos_at_line, line_item):
         net.line.at[new_line, 'order'] = net.line.at[line_idx, 'order'] + 1
         net.res_line.at[new_line, 'pf_loading'] = net.res_line.at[line_idx, 'pf_loading']
 
-        if line_idx in net.line_geodata.index.values:
+        if line_idx in net.line.index:
             logger.debug('setting new coords')
             set_new_coords(net, new_bus, line_idx, new_line, line_length, pos_at_line)
 
@@ -3503,7 +3510,7 @@ def break_coords_sections(coords, section_length, scale_factor_length):
 
 # set up new coordinates for line sections that are split by the new bus of the ElmLodlvp
 def set_new_coords(net, bus_id, line_idx, new_line_idx, line_length, pos_at_line):
-    line_coords = net.line_geodata.at[line_idx, 'coords']
+    line_coords = net.line.at[line_idx, 'geo']
     logger.debug('got coords for line %s' % line_idx)
 
     scale_factor_length = get_scale_factor(line_length, line_coords)
@@ -3512,11 +3519,10 @@ def set_new_coords(net, bus_id, line_idx, new_line_idx, line_length, pos_at_line
 
     logger.debug('calculated new coords: %s, %s ' % (section_coords, new_coords))
 
-    net.line_geodata.at[line_idx, 'coords'] = section_coords
-    net.line_geodata.at[new_line_idx, 'coords'] = new_coords
+    net.line.at[line_idx, 'geo'] = geojson.dumps(geojson.LineString(section_coords))
+    net.line.at[new_line_idx, 'geo'] = geojson.dumps(geojson.LineString(new_coords))
 
-    net.bus_geodata.at[bus_id, 'x'] = new_coords[0][0]
-    net.bus_geodata.at[bus_id, 'y'] = new_coords[0][1]
+    net.bus.at[bus_id, 'geo'] = geojson.dumps(geojson.Point(new_coords[0]))
 
 
 # gather info about ElmLodlvp in a dict
