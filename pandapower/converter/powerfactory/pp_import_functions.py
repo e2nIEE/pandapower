@@ -2717,6 +2717,12 @@ def create_shunt(net, item):
         logger.error("Cannot add Shunt '%s': not connected" % item.loc_name)
         return
 
+    def calc_p_mw_and_q_mvar(r: float, x: float) -> tuple[float, float]:
+        if r == 0 and x == 0:
+            return 0, 0
+        divisor: float = (r ** 2 + x ** 2)
+        return (item.ushnm ** 2 * r) / divisor * multiplier, (item.ushnm ** 2 * x) / divisor * multiplier
+
     multiplier = get_power_multiplier(item, 'Qact')
     bus, _ = get_connection_nodes(net, item, 1)
     params = {
@@ -2729,83 +2735,58 @@ def create_shunt(net, item):
         'max_step': item.ncapx
     }
     print(item.loc_name)
+    r_val: float = .0
+    x_val: float = .0
     if item.shtype == 0:
         # Shunt is a R-L-C element
-
-        R = item.rrea
-        X = -1e6 / item.bcap + item.xrea
-        if R == 0 and X == 0: #TODO put this into one function
-            p_mw = 0
-            params['q_mvar'] = 0
-        else:
-            p_mw = (item.ushnm ** 2 * R) / (R ** 2 + X ** 2) * multiplier
-            params['q_mvar'] = (item.ushnm ** 2 * X) / (R ** 2 + X ** 2) * multiplier
-        sid = pp.create_shunt(net, p_mw=p_mw, **params)
+        r_val = item.rrea
+        x_val = -1e6 / item.bcap + item.xrea
     elif item.shtype == 1:
         # Shunt is an R-L element
-
-        R = item.rrea
-        X = item.xrea
-        if R == 0 and X == 0: #TODO put this into one function
-            p_mw = 0
-            params['q_mvar'] = 0
-        else:
-            p_mw = (item.ushnm ** 2 * R) / (R ** 2 + X ** 2) * multiplier
-            params['q_mvar'] = (item.ushnm ** 2 * X) / (R ** 2 + X ** 2) * multiplier
-        sid = pp.create_shunt(net, p_mw=p_mw, **params)
+        r_val = item.rrea
+        x_val = item.xrea
     elif item.shtype == 2:
         # Shunt is a capacitor bank
-        B = item.bcap*1e-6
-        G = item.gparac*1e-6
+        b = item.bcap*1e-6
+        g = item.gparac*1e-6
 
-        R = G/(G**2 + B**2)
-        X = -B/(G**2 + B**2)
-        if R == 0 and X == 0: #TODO put this into one function
-            p_mw = 0
-            params['q_mvar'] = 0
-        else:
-            p_mw = (item.ushnm ** 2 * R) / (R ** 2 + X ** 2) * multiplier
-            params['q_mvar'] = (item.ushnm ** 2 * X) / (R ** 2 + X ** 2) * multiplier
-        sid = pp.create_shunt(net, p_mw=p_mw, **params)
+        r_val = g / (g ** 2 + b ** 2)
+        x_val = -b / (g ** 2 + b ** 2)
     elif item.shtype == 3:
         # Shunt is a R-L-C, Rp element
+        rp = item.rpara
+        rs = item.rrea
+        xl = item.xrea
+        bc = -item.bcap * 1e-6
 
-        Rp = item.rpara
-        Rs = item.rrea
-        Xl = item.xrea
-        Bc = -item.bcap * 1e-6
-
-        R = Rp * (Rp * Rs + Rs ** 2 + Xl ** 2) / ((Rp + Rs) ** 2 + Xl ** 2)
-        X = 1 / Bc + (Xl * Rp ** 2) / ((Rp + Rs) ** 2 + Xl ** 2)
-        if R == 0 and X == 0: #TODO put this into one function
-            p_mw = 0
-            params['q_mvar'] = 0
-        else:
-            p_mw = (item.ushnm ** 2 * R) / (R ** 2 + X ** 2) * multiplier
-            params['q_mvar'] = (item.ushnm ** 2 * X) / (R ** 2 + X ** 2) * multiplier
-        sid = pp.create_shunt(net, p_mw=p_mw, **params)
+        r_val = rp * (rp * rs + rs ** 2 + xl ** 2) / ((rp + rs) ** 2 + xl ** 2)
+        x_val = 1 / bc + (xl * rp ** 2) / ((rp + rs) ** 2 + xl ** 2)
     elif item.shtype == 4:
         # Shunt is a R-L-C1-C2, Rp element
+        rp = item.rpara
+        rs = item.rrea
+        xl = item.xrea
+        b1 = 2 * np.pi * 50 * item.c1 * 1e-6
+        b2 = 2 * np.pi * 50 * item.c2 * 1e-6
 
-        Rp = item.rpara
-        Rs = item.rrea
-        Xl = item.xrea
-        B1 = 2 * np.pi * 50 * item.c1 * 1e-6
-        B2 = 2 * np.pi * 50 * item.c2 * 1e-6
+        z = rp * (rs + 1j * (xl - 1 / b1)) / (rp + rs + 1j * (xl - 1 / b1)) - 1j / b2
+        r_val = np.real(z)
+        x_val = np.imag(z)
 
-        Z = Rp * (Rs + 1j * (Xl - 1 / B1)) / (Rp + Rs + 1j * (Xl - 1 / B1)) - 1j / B2
-        R = np.real(Z)
-        X = np.imag(Z)
-        if R == 0 and X == 0: #TODO put this into one function
-            p_mw = 0
-            params['q_mvar'] = 0
-        else:
-            p_mw = (item.ushnm ** 2 * R) / (R ** 2 + X ** 2) * multiplier
-            params['q_mvar'] = (item.ushnm ** 2 * X) / (R ** 2 + X ** 2) * multiplier
+    if 0 <= item.shtype <= 4:
+        p_mw, params['q_mvar'] = calc_p_mw_and_q_mvar(r_val, x_val)
         sid = pp.create_shunt(net, p_mw=p_mw, **params)
 
-    add_additional_attributes(item, net, element='shunt', element_id=sid,
-                              attr_list=['cpSite.loc_name'], attr_dict={"cimRdfId": "origin_id"})
+        add_additional_attributes(
+            item,
+            net,
+            element='shunt',
+            element_id=sid,
+            attr_list=['cpSite.loc_name'],
+            attr_dict={"cimRdfId": "origin_id"}
+        )
+    else:
+        raise AttributeError(f"Shunt type {item.shtype} not valid: {item}")
 
     if item.HasResults(0):
         net.res_shunt.loc[sid, 'pf_p'] = item.GetAttributes('m:P:bus1') * multiplier
