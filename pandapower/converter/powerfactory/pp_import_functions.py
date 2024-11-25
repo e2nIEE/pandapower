@@ -31,10 +31,19 @@ grf_map = {}
 
 
 # import network to pandapower:
-def from_pf(dict_net, pv_as_slack=True, pf_variable_p_loads='plini', pf_variable_p_gen='pgini',
-            flag_graphics='GPS', tap_opt="nntap", export_controller=True, handle_us="Deactivate",
-            max_iter=None, is_unbalanced=False, create_sections=True):
-    global line_dict
+def from_pf(
+        dict_net,
+        pv_as_slack=True,
+        pf_variable_p_loads='plini',
+        pf_variable_p_gen='pgini',
+        flag_graphics: Literal["GPS", "no geodata"] = 'GPS',
+        tap_opt="nntap",
+        export_controller=True,
+        handle_us: Literal["Deactivate", "Drop", "Nothing"] = "Deactivate",
+        max_iter=None,
+        is_unbalanced=False,
+        create_sections=True
+):
     global line_dict, trafo_dict, switch_dict, bus_dict, grf_map
     line_dict = {}
     trafo_dict = {}
@@ -448,12 +457,12 @@ def get_pf_bus_results(net, item, bid, is_unbalanced, system_type):
     if is_unbalanced:
         bus_type = "res_bus_3ph"
         result_variables = {
-          "pf_vm_a_pu": "m:u:A",
-          "pf_va_a_degree": "m:phiu:A",
-          "pf_vm_b_pu": "m:u:B",
-          "pf_va_b_degree": "m:phiu:B",
-          "pf_vm_c_pu": "m:u:C",
-          "pf_va_c_degree": "m:phiu:C",
+            "pf_vm_a_pu": "m:u:A",
+            "pf_va_a_degree": "m:phiu:A",
+            "pf_vm_b_pu": "m:u:B",
+            "pf_va_b_degree": "m:phiu:B",
+            "pf_vm_c_pu": "m:u:C",
+            "pf_va_c_degree": "m:phiu:C",
         }
     elif system_type == "ac":
         bus_type = "res_bus"
@@ -751,13 +760,21 @@ def create_line(net, item, flag_graphics, create_sections, is_unbalanced):
     logger.debug('line <%s> created' % params['name'])
 
 
-def point_len(p1, p2):
+def point_len(
+        p1: tuple[Union[float, int], Union[float, int]],
+        p2: tuple[Union[float, int], Union[float, int]]) -> float:
+    """
+    Calculate distance between p1 and p2
+    """
     x1, y1 = p1
     x2, y2 = p2
     return ((x1 - x2) ** 2 + (y1 - y2) ** 2) ** 0.5
 
 
-def calc_len_coords(coords):
+def calc_len_coords(coords: list[tuple[Union[float, int], Union[float, int]]]) -> float:
+    """
+    Calculate the sum of point distances in list of coords
+    """
     tot_len = 0
     for i in range(len(coords) - 1):
         tot_len += point_len(coords[i], coords[i + 1])
@@ -873,7 +890,7 @@ def segment_buses(net, bus1, bus2, num_sections, line_name):  # , sec_len, start
     #     split_len = 0
 
     while m < num_sections:
-        bus_name = "%s (Muff %u)" % (line_name, m)
+        bus_name = f"{line_name} (Muff {m})"
         vn_kv = net.bus.at[bus1, "vn_kv"]
         zone = net.bus.at[bus1, "zone"]
         bus = pp.create_bus(net, name=bus_name, type='ls', vn_kv=vn_kv, zone=zone)
@@ -1085,15 +1102,15 @@ def get_pf_line_results(net, item, lid, is_unbalanced, ac):
     if is_unbalanced:
         line_type = "res_line_3ph"
         result_variables = {
-          "pf_i_a_from_ka": "m:I:bus1:A",
-          "pf_i_a_to_ka": "m:I:bus2:A",
-          "pf_i_b_from_ka": "m:I:bus1:B",
-          "pf_i_b_to_ka": "m:I:bus2:B",
-          "pf_i_c_from_ka": "m:I:bus1:C",
-          "pf_i_c_to_ka": "m:I:bus2:C",
-          "pf_i_n_from_ka": "m:I0x3:bus1",
-          "pf_i_n_to_ka": "m:I0x3:bus2",
-          "pf_loading_percent": "c:loading",
+            "pf_i_a_from_ka": "m:I:bus1:A",
+            "pf_i_a_to_ka": "m:I:bus2:A",
+            "pf_i_b_from_ka": "m:I:bus1:B",
+            "pf_i_b_to_ka": "m:I:bus2:B",
+            "pf_i_c_from_ka": "m:I:bus1:C",
+            "pf_i_c_to_ka": "m:I:bus2:C",
+            "pf_i_n_from_ka": "m:I0x3:bus1",
+            "pf_i_n_to_ka": "m:I0x3:bus2",
+            "pf_loading_percent": "c:loading",
         }
     elif ac:
         line_type = "res_line"
@@ -1133,14 +1150,14 @@ def create_line_type(net, item, cable_in_air=False):
         type_data = {
             "r_ohm_per_km": item.rline,
             "x_ohm_per_km": item.xline,
-            "c_nf_per_km": item.cline*item.frnom/50 * 1e3,  # internal unit for C in PF is uF
+            "c_nf_per_km": item.cline * item.frnom / 50 * 1e3,  # internal unit for C in PF is uF
             "q_mm2": item.qurs,
             "max_i_ka": max_i_ka if max_i_ka != 0 else 1e-3,
             "endtemp_degree": item.rtemp,
             "type": line_or_cable,
             "r0_ohm_per_km": item.rline0,
             "x0_ohm_per_km": item.xline0,
-            "c0_nf_per_km": item.cline0*item.frnom/50 * 1e3,  # internal unit for C in PF is uF
+            "c0_nf_per_km": item.cline0 * item.frnom / 50 * 1e3,  # internal unit for C in PF is uF
             "alpha": item.alpha
         }
         pp.create_std_type(net, type_data, name, "line")
@@ -1258,12 +1275,12 @@ def get_pf_ext_grid_results(net, item, xid, is_unbalanced):
     if is_unbalanced:
         ext_grid_type = "res_ext_grid_3ph"
         result_variables = {
-          "pf_p_a": "m:P:bus1:A",
-          "pf_q_a": "m:Q:bus1:A",
-          "pf_p_b": "m:P:bus1:B",
-          "pf_q_b": "m:Q:bus1:B",
-          "pf_p_c": "m:P:bus1:C",
-          "pf_q_c": "m:Q:bus1:C",
+            "pf_p_a": "m:P:bus1:A",
+            "pf_q_a": "m:Q:bus1:A",
+            "pf_p_b": "m:P:bus1:B",
+            "pf_q_b": "m:Q:bus1:B",
+            "pf_p_c": "m:P:bus1:C",
+            "pf_q_c": "m:Q:bus1:C",
         }
     else:
         ext_grid_type = "res_ext_grid"
@@ -1894,7 +1911,7 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
             return
 
         params.update(ask(item, pf_variable_p_gen, 'p_mw', 'q_mvar', 'sn_mva'))
-        logger.debug('genstat parameters: ' % params)
+        logger.debug(f'genstat parameters: {params}')
 
         params.in_service = monopolar_in_service(item)
 
@@ -2371,16 +2388,31 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
         logger.debug('created trafo at index <%d>' % tid)
     else:
         logger.info("Create Trafo 3ph")
-        tid = pp.create_transformer_from_parameters(net, hv_bus=bus1, lv_bus=bus2, name=name,
-                                    tap_pos=tap_pos,
-                                    in_service=in_service, parallel=item.ntnum, df=item.ratfac,
-                                    sn_mva=pf_type.strn, vn_hv_kv=pf_type.utrn_h, vn_lv_kv=pf_type.utrn_l,
-                                    vk_percent=pf_type.uktr, vkr_percent=pf_type.uktrr,
-                                    pfe_kw=pf_type.pfe, i0_percent=pf_type.curmg,
-                                    vector_group=pf_type.vecgrp[:-1], vk0_percent=pf_type.uk0tr,
-                                    vkr0_percent=pf_type.ur0tr, mag0_percent=pf_type.zx0hl_n,
-                                    mag0_rx=pf_type.rtox0_n, si0_hv_partial=pf_type.zx0hl_h,
-                                    shift_degree=pf_type.nt2ag * 30, tap2_pos=tap_pos2)
+        tid = pp.create_transformer_from_parameters(
+            net,
+            hv_bus=bus1,
+            lv_bus=bus2,
+            name=name,
+            tap_pos=tap_pos,
+            in_service=in_service,
+            parallel=item.ntnum,
+            df=item.ratfac,
+            sn_mva=pf_type.strn,
+            vn_hv_kv=pf_type.utrn_h,
+            vn_lv_kv=pf_type.utrn_l,
+            vk_percent=pf_type.uktr,
+            vkr_percent=pf_type.uktrr,
+            pfe_kw=pf_type.pfe,
+            i0_percent=pf_type.curmg,
+            vector_group=pf_type.vecgrp[:-1],
+            vk0_percent=pf_type.uk0tr,
+            vkr0_percent=pf_type.ur0tr,
+            mag0_percent=pf_type.zx0hl_n,
+            mag0_rx=pf_type.rtox0_n,
+            si0_hv_partial=pf_type.zx0hl_h,
+            shift_degree=pf_type.nt2ag * 30,
+            tap2_pos=tap_pos2
+        )
         trafo_dict[item] = tid
 
     # add value for voltage setpoint
@@ -2452,15 +2484,15 @@ def get_pf_trafo_results(net, item, tid, is_unbalanced):
     if is_unbalanced:
         trafo_type = "res_trafo_3ph"
         result_variables = {
-          "pf_i_a_hv_ka": "m:I:bushv:A",
-          "pf_i_a_lv_ka": "m:I:buslv:A",
-          "pf_i_b_hv_ka": "m:I:bushv:B",
-          "pf_i_b_lv_ka": "m:I:buslv:B",
-          "pf_i_c_hv_ka": "m:I:bushv:C",
-          "pf_i_c_lv_ka": "m:I:buslv:C",
-          "pf_i_n_hv_ka": "m:I0x3:bushv",
-          "pf_i_n_lv_ka": "m:I0x3:buslv",
-          "pf_loading_percent": "c:loading",
+            "pf_i_a_hv_ka": "m:I:bushv:A",
+            "pf_i_a_lv_ka": "m:I:buslv:A",
+            "pf_i_b_hv_ka": "m:I:bushv:B",
+            "pf_i_b_lv_ka": "m:I:buslv:B",
+            "pf_i_c_hv_ka": "m:I:bushv:C",
+            "pf_i_c_lv_ka": "m:I:buslv:C",
+            "pf_i_n_hv_ka": "m:I0x3:bushv",
+            "pf_i_n_lv_ka": "m:I0x3:buslv",
+            "pf_loading_percent": "c:loading",
         }
     else:
         trafo_type = "res_trafo"
@@ -2912,6 +2944,7 @@ def create_sind(net, item):
     logger.debug('created series reactor %s as per unit impedance at index %d' %
                  (net.impedance.at[sind, 'name'], sind))
 
+
 def create_scap(net, item):
     # series capacitor is modelled as per-unit impedance, values in Ohm are calculated into values in
     # per unit at creation
@@ -2921,11 +2954,11 @@ def create_scap(net, item):
         logger.error("Cannot add Scap '%s': not connected" % item.loc_name)
         return
 
-    if (item.gcap==0) or (item.bcap==0):
+    if (item.gcap == 0) or (item.bcap == 0):
         logger.info('not creating series capacitor for %s' % item.loc_name)
     else:
-        r_ohm = item.gcap/(item.gcap**2 + item.bcap**2)
-        x_ohm = -item.bcap/(item.gcap**2 + item.bcap**2)
+        r_ohm = item.gcap / (item.gcap ** 2 + item.bcap ** 2)
+        x_ohm = -item.bcap / (item.gcap ** 2 + item.bcap ** 2)
         scap = pp.create_series_reactor_as_impedance(net, from_bus=bus1, to_bus=bus2, r_ohm=r_ohm,
                                                      x_ohm=x_ohm, sn_mva=item.Sn,
                                                      name=item.loc_name,
@@ -2971,7 +3004,6 @@ def _get_vsc_control_modes(item, mono=True):
 
 
 def create_vscmono(net, item):
-
     (bus, bus_dc), _ = get_connection_nodes(net, item, 2)
 
     sn_mva = item.Snom
@@ -3006,7 +3038,9 @@ def create_vscmono(net, item):
     }
 
     if params["r_dc_ohm"] == 0:
-        logger.warning(f"VSCmono element {params['name']} has no DC resistive loss factor - power flow will not converge!")
+        logger.warning(
+            f"VSCmono element {params['name']} has no DC resistive loss factor - power flow will not converge!"
+        )
 
     vid = pp.create_vsc(net, **params)
     logger.debug(f'created VSC {vid} for vscmono {item.loc_name}')
@@ -3076,12 +3110,10 @@ def create_vsc(net, item):
         net.res_vsc.loc[vid_2, ["pf_p_mw", "pf_q_mvar", "pf_p_dc_mw"]] = np.nan
 
 
-
 def create_stactrl(net, item):
     stactrl_in_service = True
     if item.outserv:
         logger.info(f"Station controller {item.loc_name} is out of service")
-        stactrl_in_service = False
         return
 
     machines = [m for m in item.psym if m is not None]
@@ -3237,15 +3269,15 @@ def create_stactrl(net, item):
     if not has_path and not control_mode == 0 and not item.i_droop:
         return
 
-    if control_mode == 0:  #### VOLTAGE CONTROL
+    if control_mode == 0:  # VOLTAGE CONTROL
         # controlled_node = item.rembar
         controlled_node = item.cpCtrlNode
         bus = bus_dict[controlled_node]  # controlled node
 
-        if item.uset_mode == 0:  #### Station controller
+        if item.uset_mode == 0:  # Station controller
             v_setpoint_pu = item.usetp
         else:
-            v_setpoint_pu = controlled_node.vtarget  #### Bus target voltage
+            v_setpoint_pu = controlled_node.vtarget  # Bus target voltage
 
         if item.i_droop:  # Enable Droop
             bsc = pp.control.BinarySearchControl(net, ctrl_in_service=stactrl_in_service,
@@ -3274,28 +3306,49 @@ def create_stactrl(net, item):
         # q_control_mode = item.qu_char  # 0: "Const Q", 1: "Q(V) Characteristic", 2: "Q(P) Characteristic"
         # q_control_terminal = q_control_cubicle.cterm  # terminal of the cubicle
         if item.qu_char == 0:
-            pp.control.BinarySearchControl(net, ctrl_in_service=stactrl_in_service,
-                                                 output_element=gen_element, output_variable="q_mvar",
-                                                 output_element_index=gen_element_index,
-                                                 output_element_in_service=gen_element_in_service,
-                                                 input_element=res_element_table,
-                                                 output_values_distribution=distribution, damping_factor=0.9,
-                                                 input_variable=variable, input_element_index=res_element_index,
-                                                 set_point=item.qsetp, voltage_ctrl=False, tol=1e-6)
+            pp.control.BinarySearchControl(
+                net, ctrl_in_service=stactrl_in_service,
+                output_element=gen_element,
+                output_variable="q_mvar",
+                output_element_index=gen_element_index,
+                output_element_in_service=gen_element_in_service,
+                input_element=res_element_table,
+                output_values_distribution=distribution,
+                damping_factor=0.9,
+                input_variable=variable,
+                input_element_index=res_element_index,
+                set_point=item.qsetp,
+                voltage_ctrl=False, tol=1e-6
+            )
         elif item.qu_char == 1:
             controlled_node = item.refbar
             bus = bus_dict[controlled_node]  # controlled node
-            bsc = pp.control.BinarySearchControl(net, ctrl_in_service=stactrl_in_service,
-                                                 output_element=gen_element, output_variable="q_mvar",
-                                                 output_element_index=gen_element_index,
-                                                 output_element_in_service=gen_element_in_service,
-                                                 input_element=res_element_table,
-                                                 output_values_distribution=distribution, damping_factor=0.9,
-                                                 input_variable=variable, input_element_index=res_element_index,
-                                                 set_point=item.qsetp, voltage_ctrl=False, bus_idx=bus, tol=1e-6)
-            pp.control.DroopControl(net, q_droop_mvar=item.Srated * 100 / item.ddroop, bus_idx=bus,
-                                    vm_set_pu=item.udeadbup, vm_set_ub=item.udeadbup, vm_set_lb=item.udeadblow,
-                                    controller_idx=bsc.index, voltage_ctrl=False)
+            bsc = pp.control.BinarySearchControl(
+                net, ctrl_in_service=stactrl_in_service,
+                output_element=gen_element,
+                output_variable="q_mvar",
+                output_element_index=gen_element_index,
+                output_element_in_service=gen_element_in_service,
+                input_element=res_element_table,
+                output_values_distribution=distribution,
+                damping_factor=0.9,
+                input_variable=variable,
+                input_element_index=res_element_index,
+                set_point=item.qsetp,
+                voltage_ctrl=False,
+                bus_idx=bus,
+                tol=1e-6
+            )
+            pp.control.DroopControl(
+                net,
+                q_droop_mvar=item.Srated * 100 / item.ddroop,
+                bus_idx=bus,
+                vm_set_pu=item.udeadbup,
+                vm_set_ub=item.udeadbup,
+                vm_set_lb=item.udeadblow,
+                controller_idx=bsc.index,
+                voltage_ctrl=False
+            )
         else:
             raise NotImplementedError
     else:
@@ -3322,10 +3375,17 @@ def split_line_at_length(net, line, length_pos):
         std_type = net.line.at[line, 'std_type']
         name = net.line.at[line, 'name']
 
-        new_line = pp.create_line(net, from_bus=bus, to_bus=bus2, length_km=new_length,
-                                  std_type=std_type, name=name, df=net.line.at[line, 'df'],
-                                  parallel=net.line.at[line, 'parallel'],
-                                  in_service=net.line.at[line, 'in_service'])
+        new_line = pp.create_line(
+            net,
+            from_bus=bus,
+            to_bus=bus2,
+            length_km=new_length,
+            std_type=std_type,
+            name=name,
+            df=net.line.at[line, 'df'],
+            parallel=net.line.at[line, 'parallel'],
+            in_service=net.line.at[line, 'in_service']
+        )
 
         if 'max_loading_percent' in net.line.columns:
             net.line.loc[new_line, 'max_loading_percent'] = net.line.at[line, 'max_loading_percent']
@@ -3334,8 +3394,10 @@ def split_line_at_length(net, line, length_pos):
             coords = geojson.utils.coords(geojson.loads(net.line.loc[line, 'geo']))
 
             scaling_factor = old_length / calc_len_coords(coords)
-            sec_coords_a = get_section_coords(coords, sec_len=length_pos, start_len=0.,
-                                              scale_factor=scaling_factor)
+            sec_coords_a = get_section_coords(coords, sec_len=length_pos, start_len=0., scale_factor=scaling_factor)
+            sec_coords_b = get_section_coords(
+                coords, sec_len=new_length, start_len=length_pos, scale_factor=scaling_factor
+            )
 
             net.line.loc[line, 'geo'] = geojson.dumps(geojson.LineString(sec_coords_a))
             net.line.loc[new_line, 'geo'] = geojson.dumps(geojson.LineString(sec_coords_b))
@@ -3349,16 +3411,14 @@ def get_lodlvp_length_pos(line_item, lod_item):
     sections = line_item.GetContents('*.ElmLnesec')
     if len(sections) > 0:
         sections.sort(lambda x: x.index)
-        sections_start = [s.rellen for s in sections]
         sections_end = [s.rellen + s.dline for s in sections]
     else:
-        sections_start = [0]
         sections_end = [line_item.dline]
 
     loads = line_item.GetContents('*.ElmLodlvp')
     if len(loads) > 0:
         loads.sort(lambda x: x.rellen)
-        loads_start = [l.rellen for l in loads]
+        loads_start = [load.rellen for load in loads]
     else:
         loads_start = [0]
 
@@ -3403,7 +3463,8 @@ def split_line(net, line_idx, pos_at_line, line_item):
         return bus_j
     elif (pos_at_line - line_length) > tol:
         raise ValueError(
-            'Position at line is higher than the line length itself! Line length: %.7f, position at line: %.7f (line: \n%s)' % (
+            'Position at line is higher than the line length itself!\
+             Line length: %.7f, position at line: %.7f (line: \n%s)' % (
                 # line_length, pos_at_line, line_item.loc_name))
                 line_length, pos_at_line, net.line.loc[line_dict[line_item]]))
     else:
@@ -3661,7 +3722,7 @@ def split_all_lines(net, lvp_dict):
         # val = [(92, 1, 0.025, 0.1), (91, 2, 0.031, 0.2), (90, 2, 0.032, 0.3)]
         for load_item, pos_at_line, (p, q) in val:
             logger.debug(load_item)
-            ## calculate at once and then read from dict - not good approach! don't do it
+            # calculate at once and then read from dict - not good approach! don't do it
             # section, pos_at_sec = get_pos_at_sec(net, net_dgs, lvp_dict, line, load_idx)
             # section = pas[load_idx]['section']
             # pos_at_sec = pas[load_idx]['pos']
@@ -3683,7 +3744,7 @@ def split_all_lines(net, lvp_dict):
                 net.res_load.at[new_load, 'pf_p'] = p
                 net.res_load.at[new_load, 'pf_q'] = q
             else:
-                # const I not implemented for sgen...
+                # const I is not implemented for sgen
                 new_load = pp.create_sgen(net, new_bus, name=load_item.loc_name, p_mw=p, q_mvar=q)
                 logger.debug('created sgen %s' % new_load)
                 net.res_sgen.at[new_load, 'pf_p'] = p
