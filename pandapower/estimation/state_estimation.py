@@ -333,7 +333,7 @@ class StateEstimation:
         self.logger.debug("Result of Chi^2 test:")
         self.logger.debug("Number of measurements: %d" % m)
         self.logger.debug("Number of state variables: %d" % n)
-        self.logger.debug("Performance index: %.2f" % J)
+        self.logger.debug("Performance index: %.2f" % J.item())
         self.logger.debug("Chi^2 test threshold: %.2f" % test_thresh)
 
         if J <= test_thresh:
@@ -421,7 +421,7 @@ class StateEstimation:
                 else:
                     self.logger.debug(
                         "Largest normalized residual test failed (%.1f > %.1f)."
-                        % (max(rN), rn_max_threshold))
+                        % (max(rN).item(), rn_max_threshold))
 
                     # Identify bad data: Determine index corresponding to max(rN):
                     idx_rN = np.argsort(rN, axis=0)[-1]

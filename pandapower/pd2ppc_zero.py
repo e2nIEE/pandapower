@@ -11,18 +11,19 @@ import numpy as np
 from itertools import product
 
 import pandapower.auxiliary as aux
-from pandapower.build_bus import _build_bus_ppc, _build_svc_ppc, _build_ssc_ppc
+from pandapower.pypower.idx_bus_dc import DC_NONE, DC_BUS_TYPE
+from pandapower.build_bus import _build_bus_ppc, _build_svc_ppc, _build_ssc_ppc, _build_vsc_ppc, _build_bus_dc_ppc
 from pandapower.build_gen import _build_gen_ppc
 # from pandapower.pd2ppc import _ppc2ppci, _init_ppc
-from pandapower.pypower.idx_brch import BR_B, BR_R, BR_X, F_BUS, T_BUS, branch_cols, BR_STATUS, SHIFT, TAP, BR_R_ASYM, \
-    BR_X_ASYM
-from pandapower.pypower.idx_bus import BASE_KV, BS, GS, BUS_TYPE
+from pandapower.pypower.idx_brch import BR_G, BR_B, BR_R, BR_X, F_BUS, T_BUS, branch_cols, BR_STATUS, SHIFT, TAP, BR_R_ASYM, \
+    BR_X_ASYM, BR_G_ASYM, BR_B_ASYM
+from pandapower.pypower.idx_bus import BASE_KV, BS, GS, BUS_TYPE, NONE
 from pandapower.pypower.idx_brch_sc import branch_cols_sc
 from pandapower.pypower.idx_bus_sc import C_MAX, C_MIN
 from pandapower.build_branch import _calc_tap_from_dataframe, _transformer_correction_factor, \
     _calc_nominal_ratio_from_dataframe, \
     get_trafo_values, _trafo_df_from_trafo3w, _calc_branch_values_from_trafo_df, _calc_switch_parameter, \
-    _calc_impedance_parameters_from_dataframe, _build_tcsc_ppc
+    _calc_impedance_parameters_from_dataframe, _build_tcsc_ppc, _build_branch_dc_ppc
 from pandapower.build_branch import _switch_branches, _branches_with_oos_buses, _initialize_branch_lookup, _end_temperature_correction_factor
 from pandapower.pd2ppc import _ppc2ppci, _init_ppc
 
@@ -40,13 +41,16 @@ def _pd2ppc_zero(net, k_st, sequence=0):
     ppc = _init_ppc(net, sequence)
 
     _build_bus_ppc(net, ppc)
+    _build_bus_dc_ppc(net, ppc)
     _build_gen_ppc(net, ppc)
     _build_svc_ppc(net, ppc, "sc")   # needed for shape reasons
     _build_tcsc_ppc(net, ppc, "sc")  # needed for shape reasons
     _build_ssc_ppc(net, ppc, "sc")  # needed for shape reasons
+    _build_vsc_ppc(net, ppc, "sc")  # needed for shape reasons
     _add_gen_sc_impedance_zero(net, ppc)
     _add_ext_grid_sc_impedance_zero(net, ppc)
     _build_branch_ppc_zero(net, ppc, k_st)
+    _build_branch_dc_ppc(net, ppc)  # needed for shape reasons
 
     # adds auxilary buses for open switches at branches
     _switch_branches(net, ppc)
@@ -55,7 +59,9 @@ def _pd2ppc_zero(net, k_st, sequence=0):
     # Also sets lines out of service if they are connected to two out of service buses
     _branches_with_oos_buses(net, ppc)
     if hasattr(net, "_isolated_buses"):
-        ppc["bus"][net._isolated_buses, BUS_TYPE] = 4.
+        ppc["bus"][net._isolated_buses, BUS_TYPE] = NONE
+    if hasattr(net, "_isolated_buses_dc"):
+        ppc["bus_dc"][net._isolated_buses_dc, DC_BUS_TYPE] = DC_NONE
 
     # generates "internal" ppci format (for powerflow calc) from "external" ppc format and updates the bus lookup
     # Note: Also reorders buses and gens in ppc
@@ -392,7 +398,8 @@ def _add_ext_grid_sc_impedance_zero(net, ppc):
     else:
         case = "max"
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    eg = net["ext_grid"][net._is_elements["ext_grid"]]
+    is_egs = net._is_elements["ext_grid"]
+    eg = net["ext_grid"][is_egs]
     if len(eg) == 0:
         return
     eg_buses = eg.bus.values
@@ -420,12 +427,8 @@ def _add_ext_grid_sc_impedance_zero(net, ppc):
     eg["x"] = x_grid
 
     # ext_grid zero sequence impedance
-    if case == "max":
-        x0_grid = net.ext_grid["x0x_%s" % case].values * x_grid
-        r0_grid = net.ext_grid["r0x0_%s" % case].values * x0_grid
-    elif case == "min":
-        x0_grid = net.ext_grid["x0x_%s" % case].values * x_grid
-        r0_grid = net.ext_grid["r0x0_%s" % case].values * x0_grid
+    x0_grid = net.ext_grid[is_egs]["x0x_%s" % case].values * x_grid
+    r0_grid = net.ext_grid[is_egs]["r0x0_%s" % case].values * x0_grid
     y0_grid = 1 / (r0_grid + x0_grid*1j)
 
     buses, gs, bs = aux._sum_by_group(eg_buses_ppc, y0_grid.real, y0_grid.imag)
@@ -473,11 +476,15 @@ def _add_impedance_sc_impedance_zero(net, ppc):
     f, t = branch_lookup["impedance"]
 
     # impedance zero sequence impedance
-    rij, xij, r_asym, x_asym = _calc_impedance_parameters_from_dataframe(net, zero_sequence=True)
+    rij, xij, r_asym, x_asym, gi, bi, g_asym, b_asym = _calc_impedance_parameters_from_dataframe(net, zero_sequence=True)
     branch[f:t, BR_R] = rij
     branch[f:t, BR_X] = xij
     branch[f:t, BR_R_ASYM] = r_asym
     branch[f:t, BR_X_ASYM] = x_asym
+    branch[f:t, BR_G] = gi
+    branch[f:t, BR_B] = bi
+    branch[f:t, BR_G_ASYM] = g_asym
+    branch[f:t, BR_B_ASYM] = b_asym
     branch[f:t, F_BUS] = bus_lookup[net.impedance["from_bus"].values]
     branch[f:t, T_BUS] = bus_lookup[net.impedance["to_bus"].values]
     branch[f:t, BR_STATUS] = net["impedance"]["in_service"].values.astype(np.int64)
@@ -498,7 +505,7 @@ def _add_trafo3w_sc_impedance_zero(net, ppc):
     branch[f:t, F_BUS] = bus_lookup[hv_bus]
     branch[f:t, T_BUS] = bus_lookup[lv_bus]
 
-    r, x, _, ratio, shift = _calc_branch_values_from_trafo_df(net, ppc, trafo_df, sequence=0)
+    r, x, *_, ratio, shift = _calc_branch_values_from_trafo_df(net, ppc, trafo_df, sequence=0)
 
     # Y0y0d5,  YN0y0d5,  Y0yn0d5,  YN0yn0d5, Y0y0y0, Y0d5d5,
     # YN0d5d5,  Y0d5y0,  Y0y0d11  und  D0d0d0

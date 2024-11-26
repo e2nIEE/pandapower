@@ -5,22 +5,13 @@
 
 
 import os
-import numpy as np
 from pandapower.plotting import geo
-from pandapower.auxiliary import ppException
 
 try:
     import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 logger = logging.getLogger(__name__)
-
-
-class MapboxTokenMissing(ppException):
-    """
-    Exception being raised in case loadflow did not converge.
-    """
-    pass
 
 
 def _on_map_test(x, y):
@@ -100,7 +91,7 @@ def geo_data_to_latlong(net, projection):
 
 
 def set_mapbox_token(token):
-    from pandapower import pp_dir
+    from pandapower.__init__ import pp_dir
     path = os.path.join(pp_dir, "plotting", "plotly")
     filename = os.path.join(path, 'mapbox_token.txt')
     with open(filename, "w") as mapbox_file:
@@ -108,7 +99,7 @@ def set_mapbox_token(token):
 
 
 def _get_mapbox_token():
-    from pandapower import pp_dir
+    from pandapower.__init__ import pp_dir
     path = os.path.join(pp_dir, "plotting", "plotly")
     filename = os.path.join(path, 'mapbox_token.txt')
     with open(filename, "r") as mapbox_file:

@@ -210,7 +210,7 @@ class ConnectivityNodesCim16:
         eqssh_terminals = eqssh_terminals.drop_duplicates(subset=['rdfId', 'TopologicalNode'])
         eqssh_terminals_temp = eqssh_terminals[['ConnectivityNode', 'TopologicalNode']]
         eqssh_terminals_temp = eqssh_terminals_temp.dropna(subset=['TopologicalNode'])
-        eqssh_terminals_temp = eqssh_terminals_temp.drop_duplicates()
+        eqssh_terminals_temp = eqssh_terminals_temp.drop_duplicates(subset=['ConnectivityNode'])
         connectivity_nodes_size = connectivity_nodes.index.size
         if node_breaker:
             connectivity_nodes = pd.merge(connectivity_nodes, eqssh_terminals_temp, how='left', left_on='rdfId',
@@ -247,6 +247,18 @@ class ConnectivityNodesCim16:
             columns={'ConnectivityNode': 'rdfId', 'ConductingEquipment': 'busbar_id'}), how='left', on='busbar_id')
         bb = bb.drop_duplicates(subset=['rdfId'], keep='first')
         connectivity_nodes = pd.merge(connectivity_nodes, bb, how='left', on='rdfId')
+
+        if "Substation" in connectivity_nodes.columns:
+            # add (sub) geographical regions
+            sgr = self.cimConverter.cim['eq']['SubGeographicalRegion'][['rdfId', 'name', 'Region']]
+            regions = pd.merge(self.cimConverter.cim['eq']['Substation'], sgr, left_on="Region", right_on="rdfId",
+                               suffixes=["_substation", "_SubGeographicalRegion"])
+            regions = pd.merge(self.cimConverter.cim['eq']['GeographicalRegion'], regions, left_on="rdfId", right_on="Region_SubGeographicalRegion")
+            regions = regions.rename(columns={'name': 'GeographicalRegion_name', 'name_SubGeographicalRegion': 'SubGeographicalRegion_name',
+                                              'rdfId': 'GeographicalRegion_id', 'rdfId_SubGeographicalRegion': 'SubGeographicalRegion_id'})
+            regions = regions.drop(columns=['name_substation', 'Region_substation', 'Region_SubGeographicalRegion'])
+            connectivity_nodes = pd.merge(connectivity_nodes, regions, how='left', left_on='Substation', right_on='rdfId_substation')
+            connectivity_nodes = connectivity_nodes.drop(columns=["rdfId_substation"])
 
         connectivity_nodes = connectivity_nodes.rename(columns={'rdfId': sc['o_id'], 'TopologicalNode': sc['ct'],
                                                                 'nominalVoltage': 'vn_kv', 'name_substation': 'zone'})

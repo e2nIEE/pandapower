@@ -1,4 +1,5 @@
 import logging
+import time
 from typing import List
 
 import pandas as pd
@@ -23,6 +24,8 @@ class TapController:
         if self.cimConverter.power_trafo2w.index.size > 0:
             # create transformer tap controller
             self._create_tap_controller(self.cimConverter.power_trafo2w, 'trafo')
+            time_start = time.time()
+            self.logger.info("Creating the tap dependent impedance characteristic objects for 2w-trafos.")
             # create the characteristic objects for transformers
             characteristic_df_temp = \
                 self.cimConverter.net['characteristic_temp'][['id_characteristic', 'step', 'vk_percent', 'vkr_percent']]
@@ -31,9 +34,13 @@ class TapController:
                     characteristic_df_temp['id_characteristic'] == trafo_row['id_characteristic']]
                 self._create_characteristic_object(net=self.cimConverter.net, trafo_type='trafo', trafo_id=[trafo_id],
                                                    characteristic_df=characteristic_df)
+            self.logger.info(f"Finished creating tap dependent impedance characteristic objects for 2w-trafos in "
+                             f"{time.time() - time_start}.")
         if self.cimConverter.power_trafo3w.index.size > 0:
             # create transformer tap controller
             self._create_tap_controller(self.cimConverter.power_trafo3w, 'trafo3w')
+            time_start = time.time()
+            self.logger.info("Creating the tap dependent impedance characteristic objects for 3w-trafos.")
             # create the characteristic objects for transformers
             characteristic_df_temp = \
                 self.cimConverter.net['characteristic_temp'][
@@ -44,6 +51,8 @@ class TapController:
                     characteristic_df_temp['id_characteristic'] == trafo_row['id_characteristic']]
                 self._create_characteristic_object(net=self.cimConverter.net, trafo_type='trafo3w', trafo_id=[trafo_id],
                                                    characteristic_df=characteristic_df)
+            self.logger.info(f"Finished creating tap dependent impedance characteristic objects for 3w-trafos in "
+                             f"{time.time() - time_start}.")
 
     def _create_characteristic_object(self, net, trafo_type: str, trafo_id: List, characteristic_df: pd.DataFrame):
         self.logger.info("Adding characteristic object for trafo_type: %s and trafo_id: %s" % (trafo_type, trafo_id))
@@ -61,7 +70,6 @@ class TapController:
         for _, row in input_df.loc[input_df['TapChangerControl'].notna()].iterrows():
             trafo_id = self.cimConverter.net[trafo_type].loc[
                 self.cimConverter.net[trafo_type][sc['o_id']] == row[sc['o_id']]].index.values[0]
-            trafotype = '2W' if trafo_type == 'trafo' else '3W'
             # get the controlled bus (side), assume "lv" as default
             side = 'lv'
             if sc['t_hv'] in self.cimConverter.net[trafo_type].columns and \
@@ -72,10 +80,10 @@ class TapController:
                 side = 'mv'
             if row['discrete']:
                 self.logger.info("Creating DiscreteTapControl for transformer %s." % row[sc['o_id']])
-                DiscreteTapControl(self.cimConverter.net, trafotype=trafotype, tid=trafo_id, side=side,
+                DiscreteTapControl(self.cimConverter.net, element=trafo_type, element_index=trafo_id, side=side,
                                    tol=row['c_tol'], in_service=row['c_in_service'],
                                    vm_lower_pu=row['c_vm_lower_pu'], vm_upper_pu=row['c_vm_upper_pu'])
             else:
                 self.logger.info("Creating ContinuousTapControl for transformer %s." % row[sc['o_id']])
-                ContinuousTapControl(self.cimConverter.net, trafotype=trafotype, tid=trafo_id, side=side,
+                ContinuousTapControl(self.cimConverter.net, element=trafo_type, element_index=trafo_id, side=side,
                                      tol=row['c_tol'], in_service=row['c_in_service'], vm_set_pu=row['c_vm_set_pu'])
