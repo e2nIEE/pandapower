@@ -72,8 +72,8 @@ class PowerTransformersCim16:
         ptct_ratio = pd.merge(ptct_ratio, self.cimConverter.cim['eq']['RatioTapChangerTablePoint'][
             ['RatioTapChangerTable', 'step', 'r', 'x', 'ratio']], how='left', on='RatioTapChangerTable')
         ptct = pd.concat([ptct, ptct_ratio], ignore_index=True, sort=False)
-        ptct.rename(columns={'step': 'tabular_step', 'r': 'r_dev', 'x': 'x_dev', 'TransformerEnd': sc['pte_id'],
-                             'ratio': 'ratio_dev', 'angle': 'angle_dev'}, inplace=True)
+        ptct = ptct.rename(columns={'step': 'tabular_step', 'r': 'r_dev', 'x': 'x_dev', 'TransformerEnd': sc['pte_id'],
+                                    'ratio': 'ratio_dev', 'angle': 'angle_dev'})
         ptct = ptct.drop(columns=['PhaseTapChangerTable'])
         if trafo_type == 'trafo':
             trafo_df = trafo_df_origin.sort_values(['PowerTransformer', 'endNumber']).reset_index()
@@ -123,9 +123,9 @@ class PowerTransformersCim16:
             fillna_list = ['ratio_dev', 'angle_dev']
             for one_item in fillna_list:
                 trafo_df[one_item] = trafo_df[one_item].fillna(trafo_df[one_item + '_lv'])
-            trafo_df['ratio_dev'] = trafo_df['ratio_dev'].fillna(1.00000)
+            trafo_df['ratio_dev'] = trafo_df['ratio_dev'].fillna(1.)
             trafo_df['angle_dev'] = trafo_df['angle_dev'].fillna(0)
-            trafo_df.rename(columns={'ratio_dev': 'voltage_ratio', 'angle_dev': 'angle_deg'}, inplace=True)
+            trafo_df = trafo_df.rename(columns={'ratio_dev': 'voltage_ratio', 'angle_dev': 'angle_deg'})
 
             # calculate vkr_percent and vk_percent
             trafo_df['vkr_percent'] = \
@@ -192,9 +192,9 @@ class PowerTransformersCim16:
             for one_item in fillna_list:
                 trafo_df[one_item] = trafo_df[one_item].fillna(trafo_df[one_item + '_mv'])
                 trafo_df[one_item] = trafo_df[one_item].fillna(trafo_df[one_item + '_lv'])
-            trafo_df['ratio_dev'] = trafo_df['ratio_dev'].fillna(1.00000)
+            trafo_df['ratio_dev'] = trafo_df['ratio_dev'].fillna(1.)
             trafo_df['angle_dev'] = trafo_df['angle_dev'].fillna(0)
-            trafo_df.rename(columns={'ratio_dev': 'voltage_ratio', 'angle_dev': 'angle_deg'}, inplace=True)
+            trafo_df = trafo_df.rename(columns={'ratio_dev': 'voltage_ratio', 'angle_dev': 'angle_deg'})
 
             # calculate vkr_percent and vk_percent
             trafo_df['r'] = trafo_df['r'] * (1 + trafo_df['r_dev'] / 100)
@@ -274,9 +274,7 @@ class PowerTransformersCim16:
 
         # create tap_dependency_table flag
         if 'tap_dependency_table' not in trafo_df_origin.columns:
-            trafo_df_origin['tap_dependency_table'] = pd.Series(
-                index=trafo_df_origin.index, dtype=np.bool_, data=False
-            )
+            trafo_df_origin['tap_dependency_table'] = False
         # set tap_dependency_table as True for respective trafos
         trafo_df_origin.loc[trafo_df_origin['id_characteristic_table'].notna(), 'tap_dependency_table'] = True
 
@@ -438,8 +436,7 @@ class PowerTransformersCim16:
                                          how='left', left_on='Terminal', right_on='rdfId_Terminal')
         # add the TapChangers
         power_transformers = pd.merge(power_transformers, eqssh_tap_changers, how='left', on=sc['pte_id'])
-        power_transformers['tap_phase_shifter_type'] = power_transformers['tap_phase_shifter_type'].apply(
-            lambda x: int(x) if not pd.isna(x) else x).astype('Int64')
+        power_transformers['tap_phase_shifter_type'] = power_transformers['tap_phase_shifter_type'].astype('Int64')
         return power_transformers
 
     def _prepare_trafos_cim16(self, power_trafo2w: pd.DataFrame) -> pd.DataFrame:
@@ -505,11 +502,7 @@ class PowerTransformersCim16:
         power_trafo2w['vk0_percent'] = power_trafo2w['x0_sign'] * power_trafo2w['vk0_percent']
         power_trafo2w['std_type'] = None
         power_trafo2w['df'] = 1.
-        # todo check shift_degree code
-        power_trafo2w['phaseAngleClock_temp'] = power_trafo2w['phaseAngleClock'].copy()
-        power_trafo2w['phaseAngleClock'] = power_trafo2w['angle'] / 30
-        power_trafo2w['phaseAngleClock'] = power_trafo2w['phaseAngleClock'].fillna(power_trafo2w['angle_lv'] * -1 / 30)
-        power_trafo2w['phaseAngleClock'] = power_trafo2w['phaseAngleClock'].fillna(power_trafo2w['phaseAngleClock_temp'])
+        power_trafo2w.loc[power_trafo2w['phaseAngleClock'] == 0, 'phaseAngleClock'] = np.nan
         power_trafo2w['phaseAngleClock_lv'] = power_trafo2w['phaseAngleClock_lv'].fillna(0)
         power_trafo2w['shift_degree'] = power_trafo2w['phaseAngleClock'].astype(float).fillna(
             power_trafo2w['phaseAngleClock_lv'].astype(float)) * 30
@@ -631,15 +624,10 @@ class PowerTransformersCim16:
                      power_trafo3w.ratedU_lv / power_trafo3w.ratedU) ** 2) ** 2) ** 0.5 * \
             power_trafo3w.min_s_lvhv * 100 / power_trafo3w.ratedU_lv ** 2
         power_trafo3w['std_type'] = None
-        # todo check shift_degree code
-        power_trafo3w['phaseAngleClock_temp'] = power_trafo3w['phaseAngleClock_mv'].copy()
-        power_trafo3w['phaseAngleClock_mv'] = power_trafo3w['angle_mv'] * -1 / 30
-        power_trafo3w['phaseAngleClock_mv'] = power_trafo3w['phaseAngleClock_mv'].fillna(
-            power_trafo3w['phaseAngleClock_temp'])
         power_trafo3w['phaseAngleClock_mv'] = power_trafo3w['phaseAngleClock_mv'].fillna(0)
         power_trafo3w['phaseAngleClock_lv'] = power_trafo3w['phaseAngleClock_lv'].fillna(0)
-        power_trafo3w['shift_mv_degree'] = power_trafo3w['phaseAngleClock_mv'] * 30
-        power_trafo3w['shift_lv_degree'] = power_trafo3w['phaseAngleClock_mv'] * 30
+        power_trafo3w['shift_mv_degree'] = power_trafo3w['phaseAngleClock_mv'].astype(float) * 30
+        power_trafo3w['shift_lv_degree'] = power_trafo3w['phaseAngleClock_mv'].astype(float) * 30
         power_trafo3w['tap_at_star_point'] = False
         power_trafo3w['in_service'] = power_trafo3w.connected & power_trafo3w.connected_mv & power_trafo3w.connected_lv
         power_trafo3w['connectionKind'] = power_trafo3w['connectionKind'].fillna('')
