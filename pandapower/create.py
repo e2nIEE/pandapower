@@ -902,7 +902,7 @@ def create_buses_dc(net, nr_buses_dc, vn_kv, index=None, name=None, type="b", ge
         **geodata** ((x,y)-tuple or list of tuples with length == nr_buses_dc, default None) -
         coordinates used for plotting
 
-        **type** (string, default "b") - Type of the dc bus. "n" - auxilary node,
+        **type** (string, default "b") - Type of the dc bus. "n" - auxiliary node,
         "b" - busbar, "m" - muff
 
         **zone** (string, None) - grid region
@@ -1051,7 +1051,7 @@ def create_loads(net, buses, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=
     OPTIONAL:
         **p_mw** (list of floats) - The active power of the loads
 
-        - postive value   -> load
+        - positive value   -> load
         - negative value  -> generation
 
         **q_mvar** (list of floats, default 0) - The reactive power of the loads
@@ -1067,7 +1067,7 @@ def create_loads(net, buses, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=
         **name** (list of strings, default None) - The name for this load
 
         **scaling** (list of floats, default 1.) - An OPTIONAL scaling factor to be set customly.
-        Multiplys with p_mw and q_mvar.
+        Multiplies with p_mw and q_mvar.
 
         **type** (string, None) -  type variable to classify the load
 
@@ -1155,7 +1155,7 @@ def create_asymmetric_load(net, bus, p_a_mw=0, p_b_mw=0, p_c_mw=0, q_a_mvar=0, q
         **name** (string, default: None) - The name for this load
 
         **scaling** (float, default: 1.) - An OPTIONAL scaling factor to be set customly
-        Multiplys with p_mw and q_mvar of all phases.
+        Multiplies with p_mw and q_mvar of all phases.
 
         **type** (string,default: wye) -  type variable to classify three ph load: delta/wye
 
@@ -1214,7 +1214,8 @@ def create_asymmetric_load(net, bus, p_a_mw=0, p_b_mw=0, p_c_mw=0, q_a_mvar=0, q
 #         **index** (int) - The unique ID of the created load
 #
 #     Load elements are modeled from a consumer point of view. Active power will therefore always be
-#     positive, reactive power will be positive for under-excited behavior (Q absorption, decreases voltage) and negative for over-excited behavior (Q injection, increases voltage)
+#     positive, reactive power will be positive for under-excited behavior (Q absorption, decreases voltage) and
+#     negative for over-excited behavior (Q injection, increases voltage)
 #     """
 #     if bus not in net["bus"].index.values:
 #         raise UserWarning("Cannot attach to bus %s, bus does not exist" % bus)
@@ -1253,7 +1254,8 @@ def create_load_from_cosphi(net, bus, sn_mva, cos_phi, mode, **kwargs):
 
         **cos_phi** (float) - power factor cos_phi
 
-        **mode** (str) - "underexcited" (Q absorption, decreases voltage) or "overexcited" (Q injection, increases voltage)
+        **mode** (str) - "underexcited" (Q absorption, decreases voltage) or "overexcited"
+                         (Q injection, increases voltage)
 
     OPTIONAL:
         same as in create_load, keyword arguments are passed to the create_load function
@@ -1262,8 +1264,8 @@ def create_load_from_cosphi(net, bus, sn_mva, cos_phi, mode, **kwargs):
         **index** (int) - The unique ID of the created load
 
     Load elements are modeled from a consumer point of view. Active power will therefore always be
-    positive, reactive power will be positive for underexcited behavior (Q absorption, decreases voltage) and negative for
-    overexcited behavior (Q injection, increases voltage).
+    positive, reactive power will be positive for underexcited behavior (Q absorption, decreases voltage) and negative
+    for overexcited behavior (Q injection, increases voltage).
     """
     from pandapower.toolbox import pq_from_cosphi
     p_mw, q_mvar = pq_from_cosphi(sn_mva, cos_phi, qmode=mode, pmode="load")
@@ -1305,7 +1307,7 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
             higher than the highest already existing index is selected.
 
         **scaling** (float, 1.) - An OPTIONAL scaling factor to be set customly.
-        Multiplys with p_mw and q_mvar.
+        Multiplies with p_mw and q_mvar.
 
         **type** (string, None) -  Three phase Connection type of the static generator: wye/delta
 
@@ -1417,7 +1419,7 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
 
         **p_mw** (list of floats) - The active power of the sgens
 
-             - postive value   -> generation
+             - positive value   -> generation
              - negative value  -> load
 
         **q_mvar** (list of floats, default 0) - The reactive power of the sgens
@@ -1427,7 +1429,7 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
         **name** (list of strings, default None) - The name for this sgen
 
         **scaling** (list of floats, default 1.) - An OPTIONAL scaling factor to be set customly.
-        Multiplys with p_mw and q_mvar.
+        Multiplies with p_mw and q_mvar.
 
         **type** (string, None) -  type variable to classify the sgen
 
@@ -1567,7 +1569,7 @@ def create_asymmetric_sgen(net, bus, p_a_mw=0, p_b_mw=0, p_c_mw=0, q_a_mvar=0, q
             higher than the highest already existing index is selected.
 
         **scaling** (float, 1.) - An OPTIONAL scaling factor to be set customly.
-        Multiplys with p_mw and q_mvar of all phases.
+        Multiplies with p_mw and q_mvar of all phases.
 
         **type** (string, 'wye') -  Three phase Connection type of the static generator: wye/delta
 
@@ -1608,15 +1610,16 @@ def create_sgen_from_cosphi(net, bus, sn_mva, cos_phi, mode, **kwargs):
 
         **cos_phi** (float) - power factor cos_phi
 
-        **mode** (str) - "underexcited" (Q absorption, decreases voltage) or "overexcited" (Q injection, increases voltage)
+        **mode** (str) - "underexcited" (Q absorption, decreases voltage) or "overexcited"
+                         (Q injection, increases voltage)
 
     OUTPUT:
         **index** (int) - The unique ID of the created sgen
 
     gen, sgen, and ext_grid are modelled in the generator point of view. Active power
-    will therefore be postive for generation, and reactive power will be negative for
+    will therefore be positive for generation, and reactive power will be negative for
     underexcited behavior (Q absorption, decreases voltage) and
-    positive for for overexcited behavior (Q injection, increases voltage).
+    positive for overexcited behavior (Q injection, increases voltage).
     """
     from pandapower.toolbox import pq_from_cosphi
     p_mw, q_mvar = pq_from_cosphi(sn_mva, cos_phi, qmode=mode, pmode="gen")
@@ -1634,11 +1637,11 @@ def create_storage(net, bus, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_percent=
     of either a sgen or a load is (per definition of the elements) not correct.
     To overcome this issue, a storage element can be created.
 
-    As pandapower is not a time dependend simulation tool and there is no time domain parameter in
+    As pandapower is not a time dependent simulation tool and there is no time domain parameter in
     default power flow calculations, the state of charge (SOC) is not updated during any power flow
     calculation.
     The implementation of energy content related parameters in the storage element allows to create
-    customized, time dependend simulations by running several power flow calculations and updating
+    customized, time dependent simulations by running several power flow calculations and updating
     variables manually.
 
     INPUT:
@@ -1668,7 +1671,7 @@ def create_storage(net, bus, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_percent=
             higher than the highest already existing index is selected.
 
         **scaling** (float, 1.) - An OPTIONAL scaling factor to be set customly.
-        Multiplys with p_mw and q_mvar.
+        Multiplies with p_mw and q_mvar.
 
         **type** (string, None) -  type variable to classify the storage
 
@@ -1730,11 +1733,11 @@ def create_storages(
     of either a sgen or a load is (per definition of the elements) not correct.
     To overcome this issue, a storage element can be created.
 
-    As pandapower is not a time dependend simulation tool and there is no time domain parameter in
+    As pandapower is not a time dependent simulation tool and there is no time domain parameter in
     default power flow calculations, the state of charge (SOC) is not updated during any power flow
     calculation.
     The implementation of energy content related parameters in the storage element allows to create
-    customized, time dependend simulations by running several power flow calculations and updating
+    customized, time dependent simulations by running several power flow calculations and updating
     variables manually.
 
     INPUT:
@@ -1764,7 +1767,7 @@ def create_storages(
             higher than the highest already existing index is selected.
 
         **scaling** (list of float, 1.) - An OPTIONAL scaling factor to be set customly.
-        Multiplys with p_mw and q_mvar.
+        Multiplies with p_mw and q_mvar.
 
         **type** (list of string, None) -  type variable to classify the storage
 
@@ -1849,13 +1852,11 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
 
         **controllable** (bool, NaN) - True: p_mw, q_mvar and vm_pu limits are enforced for this \
                 generator in OPF
-                False: p_mw and vm_pu setpoints are enforced and *limits are ignored*.
+                False: p_mw and vm_pu set points are enforced and *limits are ignored*.
                 defaults to True if "controllable" column exists in DataFrame
 
         **slack_weight** (float, default 0.0) - Contribution factor for distributed slack power
         flow calculation (active power balancing)
-
-        powerflow
 
         **vn_kv** (float, NaN) - Rated voltage of the generator for short-circuit calculation
 
@@ -1968,7 +1969,7 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
 
         **controllable** (bool, NaN) - True: p_mw, q_mvar and vm_pu limits are enforced for this \
                                        generator in OPF
-                                       False: p_mw and vm_pu setpoints are enforced and \
+                                       False: p_mw and vm_pu set points are enforced and \
                                        *limits are ignored*.
                                        defaults to True if "controllable" column exists in DataFrame
         powerflow
@@ -2141,20 +2142,20 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
 
         **va_degree** (float, default 0.) - voltage angle at the slack node in degrees*
 
-        **name** (string, default None) - name of of the external grid
+        **name** (string, default None) - name of the external grid
 
         **in_service** (boolean) - True for in_service or False for out of service
 
-        **s_sc_max_mva** (float, NaN) - maximal short circuit apparent power to calculate internal \
+        **s_sc_max_mva** (float, NaN) - maximum short circuit apparent power to calculate internal \
             impedance of ext_grid for short circuit calculations
 
-        **s_sc_min_mva** (float, NaN) - minimal short circuit apparent power to calculate internal \
+        **s_sc_min_mva** (float, NaN) - minimum short circuit apparent power to calculate internal \
             impedance of ext_grid for short circuit calculations
 
-        **rx_max** (float, NaN) - maximal R/X-ratio to calculate internal impedance of ext_grid \
+        **rx_max** (float, NaN) - maximum R/X-ratio to calculate internal impedance of ext_grid \
             for short circuit calculations
 
-        **rx_min** (float, NaN) - minimal R/X-ratio to calculate internal impedance of ext_grid \
+        **rx_min** (float, NaN) - minimum R/X-ratio to calculate internal impedance of ext_grid \
             for short circuit calculations
 
         **max_p_mw** (float, NaN) - Maximum active power injection. Only respected for OPF
@@ -2165,21 +2166,22 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
 
         **min_q_mvar** (float, NaN) - Minimum reactive power injection. Only respected for OPF
 
-        **r0x0_max** (float, NaN) - maximal R/X-ratio to calculate Zero sequence
+        **r0x0_max** (float, NaN) - maximum R/X-ratio to calculate Zero sequence
         internal impedance of ext_grid
 
-        **x0x_max** (float, NaN) - maximal X0/X-ratio to calculate Zero sequence
+        **x0x_max** (float, NaN) - maximum X0/X-ratio to calculate Zero sequence
         internal impedance of ext_grid
 
-        **slack_weight** (float, default 1.0) - Contribution factor for distributed slack power flow calculation (active power balancing)
+        **slack_weight** (float, default 1.0) - Contribution factor for distributed slack power flow calculation
+                                                (active power balancing)
 
-        ** only considered in loadflow if calculate_voltage_angles = True
+        ** only considered in load flow if calculate_voltage_angles = True
 
         **controllable** (bool, NaN) - True: p_mw, q_mvar and vm_pu limits are enforced for the \
                                              ext_grid in OPF. The voltage limits set in the \
                                              ext_grid bus are enforced.
-                                       False: p_mw and vm_pu setpoints are enforced and *limits are\
-                                              ignored*. The vm_pu setpoint is enforced and limits \
+                                       False: p_mw and vm_pu set points are enforced and *limits are\
+                                              ignored*. The vm_pu set point is enforced and limits \
                                               of the bus table are ignored.
                                        defaults to False if "controllable" column exists in\
                                        DataFrame
@@ -2235,7 +2237,7 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
 
         **length_km** (float) - The line length in km
 
-        **std_type** (string) - Name of a standard linetype :
+        **std_type** (string) - Name of a standard line type:
 
                                 - Pre-defined in standard_linetypes
 
@@ -2257,14 +2259,14 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
 
         **in_service** (boolean, True) - True for in_service or False for out of service
 
-        **df** (float, 1) - derating factor: maximal current of line in relation to nominal current\
+        **df** (float, 1) - derating factor: maximum current of line in relation to nominal current\
             of line (from 0 to 1)
 
         **parallel** (integer, 1) - number of parallel line systems
 
         **max_loading_percent (float)** - maximum current loading (only needed for OPF)
 
-        **alpha (float)** - temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0)))
+        **alpha (float)** - temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0))
 
         **temperature_degree_celsius (float)** - line temperature for which line resistance is adjusted
 
@@ -2371,7 +2373,7 @@ def create_line_dc(net, from_bus_dc, to_bus_dc, length_km, std_type, name=None, 
 
         **length_km** (float) - The line length in km
 
-        **std_type** (string) - Name of a standard linetype :
+        **std_type** (string) - Name of a standard line type :
 
                                 - Pre-defined in standard_linetypes
 
@@ -2393,14 +2395,14 @@ def create_line_dc(net, from_bus_dc, to_bus_dc, length_km, std_type, name=None, 
 
         **in_service** (boolean, True) - True for in_service or False for out of service
 
-        **df** (float, 1) - derating factor: maximal current of line_dc in relation to nominal current\
+        **df** (float, 1) - derating factor: maximum current of line_dc in relation to nominal current\
             of line (from 0 to 1)
 
         **parallel** (integer, 1) - number of parallel line systems
 
         **max_loading_percent (float)** - maximum current loading (only needed for OPF)
 
-        **alpha (float)** - temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0)))
+        **alpha (float)** - temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0))
 
         **temperature_degree_celsius (float)** - line temperature for which line resistance is adjusted
 
@@ -2508,7 +2510,7 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
 
             **length_km** (list of float) - The line length in km
 
-            **std_type** (string) - The linetype of the lines.
+            **std_type** (string) - The line type of the lines.
 
         OPTIONAL:
             **name** (list of string, None) - A custom name for this line
@@ -2524,14 +2526,14 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
 
             **in_service** (list of boolean, True) - True for in_service or False for out of service
 
-            **df** (list of float, 1) - derating factor: maximal current of line in relation to \
+            **df** (list of float, 1) - derating factor: maximum current of line in relation to \
                 nominal current of line (from 0 to 1)
 
             **parallel** (list of integer, 1) - number of parallel line systems
 
             **max_loading_percent (list of float)** - maximum current loading (only needed for OPF)
 
-            **alpha (float)** - temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0)))
+            **alpha (float)** - temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0))
 
             **temperature_degree_celsius (float)** - line temperature for which line resistance is adjusted
 
@@ -2565,7 +2567,8 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
             **index** (list of int) - The unique ID of the created lines
 
         EXAMPLE:
-            create_lines(net, ["line1", "line2"], from_buses=[0,1], to_buses=[2,3], length_km=0.1, std_type="NAYY 4x50 SE")
+            create_lines(net, ["line1", "line2"], from_buses=[0,1], to_buses=[2,3], length_km=0.1,
+                         std_type="NAYY 4x50 SE")
 
     """
     _check_multiple_branch_elements(net, from_buses, to_buses, "Lines")
@@ -2593,8 +2596,7 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
         entries["x_ohm_per_km"] = list(map(itemgetter("x_ohm_per_km"), lineparam))
         entries["c_nf_per_km"] = list(map(itemgetter("c_nf_per_km"), lineparam))
         entries["max_i_ka"] = list(map(itemgetter("max_i_ka"), lineparam))
-        entries["g_us_per_km"] = [line_param_dict.get("g_us_per_km", 0) for line_param_dict in \
-                                  lineparam]
+        entries["g_us_per_km"] = [line_param_dict.get("g_us_per_km", 0) for line_param_dict in lineparam]
         entries["type"] = [line_param_dict.get("type", None) for line_param_dict in lineparam]
 
     _add_to_entries_if_not_nan(net, "line", entries, index, "max_loading_percent",
@@ -2654,14 +2656,14 @@ def create_lines_dc(net, from_buses_dc, to_buses_dc, length_km, std_type, name=N
 
             **in_service** (list of boolean, True) - True for in_service or False for out of service
 
-            **df** (list of float, 1) - derating factor: maximal current of line in relation to \
+            **df** (list of float, 1) - derating factor: maximum current of line in relation to \
                 nominal current of line (from 0 to 1)
 
             **parallel** (list of integer, 1) - number of parallel line systems
 
             **max_loading_percent (list of float)** - maximum current loading (only needed for OPF)
 
-            **alpha (float)** - temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0)))
+            **alpha (float)** - temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0))
 
             **temperature_degree_celsius (float)** - line temperature for which line resistance is adjusted
 
@@ -2787,7 +2789,7 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
 
         **type** (str, None) - type of line ("ol" for overhead line or "cs" for cable system)
 
-        **df** (float, 1) - derating factor: maximal current of line in relation to nominal current\
+        **df** (float, 1) - derating factor: maximum current of line in relation to nominal current\
             of line (from 0 to 1)
 
         **g_us_per_km** (float, 0) - dielectric conductance in micro Siemens per km
@@ -2838,7 +2840,7 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
         **index** (int) - The unique ID of the created line
 
     EXAMPLE:
-        create_line_from_parameters(net, "line1", from_bus = 0, to_bus = 1, lenght_km=0.1,
+        create_line_from_parameters(net, "line1", from_bus = 0, to_bus = 1, length_km=0.1,
         r_ohm_per_km = .01, x_ohm_per_km = 0.05, c_nf_per_km = 10,
         max_i_ka = 0.4)
 
@@ -2923,7 +2925,7 @@ def create_line_dc_from_parameters(net, from_bus_dc, to_bus_dc, length_km, r_ohm
 
         **type** (str, None) - type of dc line ("ol" for overhead dc line or "cs" for cable system)
 
-        **df** (float, 1) - derating factor: maximal current of dc line in relation to nominal current\
+        **df** (float, 1) - derating factor: maximum current of dc line in relation to nominal current\
             of line (from 0 to 1)
 
         **g_us_per_km** (float, 0) - dielectric conductance in micro Siemens per km
@@ -2974,7 +2976,7 @@ def create_line_dc_from_parameters(net, from_bus_dc, to_bus_dc, length_km, r_ohm
         **index** (int) - The unique ID of the created line
 
     EXAMPLE:
-        create_line_dc_from_parameters(net, "line_dc1", from_bus_dc = 0, to_bus_dc = 1, lenght_km=0.1,
+        create_line_dc_from_parameters(net, "line_dc1", from_bus_dc = 0, to_bus_dc = 1, length_km=0.1,
         r_ohm_per_km = .01, max_i_ka = 0.4)
 
     """
@@ -3062,7 +3064,7 @@ def create_lines_from_parameters(net, from_buses, to_buses, length_km, r_ohm_per
 
         **type** (list of string, None) - type of line ("ol" for overhead line or "cs" for cable system)
 
-        **df** (list of float, 1) - derating factor: maximal current of line in relation to nominal current\
+        **df** (list of float, 1) - derating factor: maximum current of line in relation to nominal current\
             of line (from 0 to 1)
 
         **g_us_per_km** (list of float, 0) - dielectric conductance in micro Siemens per km
@@ -3191,7 +3193,7 @@ def create_lines_dc_from_parameters(net, from_buses_dc, to_buses_dc, length_km, 
 
         **type** (list of str, None) - type of dc line ("ol" for overhead dc line or "cs" for cable system)
 
-        **df** (list of float, 1) - derating factor: maximal current of line in relation to nominal current\
+        **df** (list of float, 1) - derating factor: maximum current of line in relation to nominal current\
             of line (from 0 to 1)
 
         **g_us_per_km** (list of float, 0) - dielectric conductance in micro Siemens per km
@@ -3280,8 +3282,8 @@ def create_lines_dc_from_parameters(net, from_buses_dc, to_buses_dc, length_km, 
 
 
 def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in_service=True,
-                       index=None, max_loading_percent=nan, parallel=1, df=1.,
-                       tap_dependency_table=nan, id_characteristic_table = nan,
+                       index=None, max_loading_percent=nan, parallel=1, df=1., tap_phase_shifter_type=nan,
+                       tap_dependency_table=False, id_characteristic_table=nan,
                        pt_percent=nan, oltc=nan, xn_ohm=nan, tap2_pos=nan, **kwargs):
     """
     Creates a two-winding transformer in table net["trafo"].
@@ -3327,15 +3329,22 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
 
         **parallel** (integer) - number of parallel transformers
 
-        **df** (float) - derating factor: maximal current of transformer in relation to nominal \
+        **df** (float) - derating factor: maximum current of transformer in relation to nominal \
             current of transformer (from 0 to 1)
 
-        **tap_dependency_table** (boolean) - True if transformer characteristics (voltage ratio, angle, impedance) \
+        **tap_dependency_table** (boolean, False) - True if transformer parameters (voltage ratio, angle, impedance) \
             must be adjusted dependent on the tap position of the transformer. Requires the additional column \
-            "id_characteristic_table"
+            "id_characteristic_table". The function pandapower.control.trafo_characteristic_table_diagnostic \
+            can be used for sanity checks. \
+            The function pandapower.control.create_trafo_characteristic_object can be used to create \
+            SplineCharacteristic objects in the net.trafo_characteristic_spline table and add the additional column \
+            "id_characteristic_spline" to set up the reference to the spline characteristics.
 
         **id_characteristic_table** (int, nan) - references the index of the characteristic from the lookup table \
             net.trafo_characteristic_table
+        
+        **tap_phase_shifter_type** (int, nan) - specifies the phase shifter type (0: Ratio/Asymmetrical,
+                                                1: Symmetrical, 2: Ideal)*
 
         **xn_ohm** (float) - impedance of the grounding reactor (Z_N) for short circuit calculation
 
@@ -3399,8 +3408,6 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
     _set_entries(net, "trafo", index, **v, **kwargs)
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "trafo")
-    _set_value_if_not_nan(net, index, tap_dependency_table, "tap_dependency_table",
-                          "trafo", dtype=bool_, default_val=False)
     _set_value_if_not_nan(net, index, id_characteristic_table, "id_characteristic_table",
                           "trafo", dtype="Int64")
     _set_value_if_not_nan(net, index, pt_percent, "pt_percent", "trafo")
@@ -3421,7 +3428,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
                                        df=1., vk0_percent=nan, vkr0_percent=nan,
                                        mag0_percent=nan, mag0_rx=nan,
                                        si0_hv_partial=nan,
-                                       pt_percent=nan, oltc=nan, tap_dependency_table=nan,
+                                       pt_percent=nan, oltc=nan, tap_dependency_table=False,
                                        xn_ohm=nan, tap2_side=None, tap2_neutral=nan, tap2_max=nan,
                                        tap2_min=nan, tap2_step_percent=nan, tap2_step_degree=nan,
                                        tap2_pos=nan, tap2_phase_shifter_type=nan, **kwargs):
@@ -3486,9 +3493,9 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
         **tap_neutral** (int, nan) - tap position where the transformer ratio is equal to the \
             ratio of the rated voltages
 
-        **tap_max** (int, nan) - maximal allowed tap position
+        **tap_max** (int, nan) - maximum allowed tap position
 
-        **tap_min** (int, nan):  minimal allowed tap position
+        **tap_min** (int, nan):  minimum allowed tap position
 
         **tap_step_percent** (float) - tap step size for voltage magnitude in percent
 
@@ -3502,12 +3509,16 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
 
         **max_loading_percent (float)** - maximum current loading (only needed for OPF)
 
-        **df** (float) - derating factor: maximal current of transformer in relation to nominal \
+        **df** (float) - derating factor: maximum current of transformer in relation to nominal \
             current of transformer (from 0 to 1)
 
-        **tap_dependency_table** (boolean) - True if transformer characteristics (voltage ratio, angle, impedance) \
+        **tap_dependency_table** (boolean, False) - True if transformer parameters (voltage ratio, angle, impedance) \
             must be adjusted dependent on the tap position of the transformer. Requires the additional column \
-            "id_characteristic_table"
+            "id_characteristic_table". The function pandapower.control.trafo_characteristic_table_diagnostic \
+            can be used for sanity checks. \
+            The function pandapower.control.create_trafo_characteristic_object can be used to create \
+            SplineCharacteristic objects in the net.trafo_characteristic_spline table and add the additional column \
+            "id_characteristic_spline" to set up the reference to the spline characteristics.
 
         **id_characteristic_table** (int, nan) - references the index of the characteristic from the lookup table \
             net.trafo_characteristic_table
@@ -3526,9 +3537,9 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
         **tap2_neutral** (int, nan) - second tap position where the transformer ratio is equal to the \
             ratio of the rated voltages
 
-        **tap2_max** (int, nan) - maximal allowed tap position of the second tap changer
+        **tap2_max** (int, nan) - maximum allowed tap position of the second tap changer
 
-        **tap2_min** (int, nan):  minimal allowed tap position of the second tap changer
+        **tap2_min** (int, nan):  minimum allowed tap position of the second tap changer
 
         **tap2_step_percent** (float) - second tap step size for voltage magnitude in percent
 
@@ -3541,7 +3552,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
 
         **leakage_reactance_ratio_hv** (bool) - ratio of transformer short-circuit reactance on HV side (default 0.5)
 
-        ** only considered in loadflow if calculate_voltage_angles = True
+        ** only considered in load flow if calculate_voltage_angles = True
 
     OUTPUT:
         **index** (int) - The unique ID of the created transformer
@@ -3578,14 +3589,12 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
         v["tap_pos"] = v["tap_neutral"]
     else:
         v["tap_pos"] = tap_pos
-        if type(tap_pos) == float:
+        if type(tap_pos) is float:
             net.trafo.tap_pos = net.trafo.tap_pos.astype(float)
 
     v.update(kwargs)
     _set_entries(net, "trafo", index, **v)
 
-    _set_value_if_not_nan(net, index, tap_dependency_table,
-                          "tap_dependency_table", "trafo", dtype=bool_, default_val=False)
     _set_value_if_not_nan(net, index, id_characteristic_table,
                           "id_characteristic_table", "trafo", dtype="Int64")
 
@@ -3625,7 +3634,7 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
                                         name=None, vector_group=None, index=None, max_loading_percent=nan,
                                         parallel=1, df=1., vk0_percent=nan, vkr0_percent=nan,
                                         mag0_percent=nan, mag0_rx=nan, si0_hv_partial=nan,
-                                        pt_percent=nan, oltc=nan, tap_dependency_table=nan,
+                                        pt_percent=nan, oltc=nan, tap_dependency_table=False,
                                         xn_ohm=nan, tap2_side=None, tap2_neutral=nan, tap2_max=nan,
                                         tap2_min=nan, tap2_step_percent=nan, tap2_step_degree=nan,
                                         tap2_pos=nan, tap2_phase_shifter_type=nan,
@@ -3676,82 +3685,81 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
 
     OPTIONAL:
 
-        **in_service** (boolean) - True for in_service or False for out of service
+        **in_service** (list of boolean) - True for in_service or False for out of service
 
-        **parallel** (integer) - number of parallel transformers
+        **parallel** (list of integer) - number of parallel transformers
 
-        **name** (string) - A custom name for this transformer
+        **name** (list of string) - A custom name for this transformer
 
-        **shift_degree** (float) - Angle shift over the transformer*
+        **shift_degree** (list of float) - Angle shift over the transformer*
 
-        **tap_side** (string) - position of tap changer ("hv", "lv")
+        **tap_side** (list of string) - position of tap changer ("hv", "lv")
 
-        **tap_pos** (int, nan) - current tap position of the transformer. Defaults to the medium \
-            position (tap_neutral)
+        **tap_pos** (list of int, nan) - current tap position of the transformer. Defaults to the neutral \
+            tap position (tap_neutral)
 
-        **tap_neutral** (int, nan) - tap position where the transformer ratio is equal to the ratio\
+        **tap_neutral** (list of int, nan) - tap position where the transformer ratio is equal to the ratio \
             of the rated voltages
 
-        **tap_max** (int, nan) - maximal allowed tap position
+        **tap_max** (list of int, nan) - maximum allowed tap position
 
-        **tap_min** (int, nan):  minimal allowed tap position
+        **tap_min** (list of int, nan):  minimum allowed tap position
 
-        **tap_step_percent** (float) - tap step size for voltage magnitude in percent
+        **tap_step_percent** (list of float) - tap step size for voltage magnitude in percent
 
-        **tap_step_degree** (float) - tap step size for voltage angle in degree*
+        **tap_step_degree** (list of float) - tap step size for voltage angle in degree*
 
-        **tap_phase_shifter_type** (int, nan) - specifies the phase shifter type (0: Ratio/Asymmetrical,
+        **tap_phase_shifter_type** (list of int, nan) - specifies the phase shifter type (0: Ratio/Asymmetrical,
                                                 1: Symmetrical, 2: Ideal)*
 
-        **index** (int, None) - Force a specified ID if it is available. If None, the index one \
+        **index** (list of int, None) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
 
-        **max_loading_percent (float)** - maximum current loading (only needed for OPF)
+        **max_loading_percent (list of float)** - maximum current loading (only needed for OPF)
 
-        **df** (float) - derating factor: maximal current of transformer in relation to nominal \
+        **df** (list of float) - derating factor: maximum current of transformer in relation to nominal \
             current of transformer (from 0 to 1)
 
-        **tap_dependency_table** (boolean) - True if transformer characteristics (voltage ratio, angle, impedance) \
-            must be adjusted dependent on the tap position of the transformer. Requires the additional column \
-            "id_characteristic_table"
+        **tap_dependency_table** (list of boolean, False) - True if transformer parameters (voltage ratio, angle, \
+            impedance) must be adjusted dependent on the tap position of the transformer. Requires the additional \
+            column "id_characteristic_table". The function pandapower.control.trafo_characteristic_table_diagnostic \
+            can be used for sanity checks. \
+            The function pandapower.control.create_trafo_characteristic_object can be used to create \
+            SplineCharacteristic objects in the net.trafo_characteristic_spline table and add the additional column \
+            "id_characteristic_spline" to set up the reference to the spline characteristics.
 
-        **id_characteristic_table** (int, nan) - references the index of the characteristic from the lookup table \
-            net.trafo_characteristic_table
+        **id_characteristic_table** (list of int, nan) - references the index of the characteristic from the lookup \
+            table net.trafo_characteristic_table
 
-        **pt_percent** (float, nan) - (short circuit only)
+        **pt_percent** (list of float, nan) - (short circuit only)
 
-        **oltc** (bool, False) - (short circuit only)
+        **oltc** (list of bool, False) - (short circuit only)
 
-        **xn_ohm** (float) - impedance of the grounding reactor (Z_N) for short circuit calculation
+        **xn_ohm** (list of float) - impedance of the grounding reactor (Z_N) for short circuit calculation
 
-        **tap2_side** (string) - position of the second tap changer ("hv", "lv")
+        **tap2_side** (list of string) - position of the second tap changer ("hv", "lv")
 
-        **tap2_pos** (int, nan) - current tap position of the second tap changer of the transformer. \
+        **tap2_pos** (list of int, nan) - current tap position of the second tap changer of the transformer. \
             Defaults to the medium position (tap2_neutral)
 
-        **tap2_neutral** (int, nan) - second tap position where the transformer ratio is equal to the \
+        **tap2_neutral** (list of int, nan) - second tap position where the transformer ratio is equal to the \
             ratio of the rated voltages
 
-        **tap2_max** (int, nan) - maximal allowed tap position of the second tap changer
+        **tap2_max** (list of int, nan) - maximum allowed tap position of the second tap changer
 
-        **tap2_min** (int, nan):  minimal allowed tap position of the second tap changer
+        **tap2_min** (list of int, nan):  minimum allowed tap position of the second tap changer
 
-        **tap2_step_percent** (float) - second tap step size for voltage magnitude in percent
+        **tap2_step_percent** (list of float) - second tap step size for voltage magnitude in percent
 
-        **tap2_step_degree** (float) - second tap step size for voltage angle in degree*
+        **tap2_step_degree** (list of float) - second tap step size for voltage angle in degree*
 
-        **tap2_phase_shifter_type** (int, nan) - specifies the phase shifter type (0: Ratio/Asymmetrical,
+        **tap2_phase_shifter_type** (list of int, nan) - specifies the phase shifter type (0: Ratio/Asymmetrical,
                                                 1: Symmetrical, 2: Ideal)*
 
-        ** only considered in loadflow if calculate_voltage_angles = True
+        ** only considered in load flow if calculate_voltage_angles = True
 
     OUTPUT:
-        **index** (int) - The unique ID of the created transformer
-
-    EXAMPLE:
-        create_transformer_from_parameters(net, hv_bus=0, lv_bus=1, name="trafo1", sn_mva=40, \
-            vn_hv_kv=110, vn_lv_kv=10, vk_percent=10, vkr_percent=0.3, pfe_kw=30, \
-            i0_percent=0.1, shift_degree=30)
+        **index** (list of int) - The unique IDs of the created transformers
     """
     _check_multiple_branch_elements(net, hv_buses, lv_buses, "Transformers")
 
@@ -3766,13 +3774,11 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
                "tap_neutral": tp_neutral, "tap_max": tap_max, "tap_min": tap_min,
                "shift_degree": shift_degree, "tap_pos": tp_pos, "tap_side": tap_side,
                "tap_step_percent": tap_step_percent, "tap_step_degree": tap_step_degree,
-               "tap_phase_shifter_type": tap_phase_shifter_type, "parallel": parallel, "df": df}
+               "tap_phase_shifter_type": tap_phase_shifter_type, "parallel": parallel, "df": df,
+               "tap_dependency_table": tap_dependency_table}
 
-    _add_to_entries_if_not_nan(net, "trafo", entries, index, "tap_dependency_table",
-                               tap_dependency_table, dtype=bool_, default_val=False)
     _add_to_entries_if_not_nan(net, "trafo", entries, index, "id_characteristic_table",
                                id_characteristic_table, dtype="Int64")
-
     _add_to_entries_if_not_nan(net, "trafo", entries, index, "vk0_percent", vk0_percent)
     _add_to_entries_if_not_nan(net, "trafo", entries, index, "vkr0_percent", vkr0_percent)
     _add_to_entries_if_not_nan(net, "trafo", entries, index, "mag0_percent", mag0_percent)
@@ -3795,15 +3801,14 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
                                tap2_phase_shifter_type, dtype="Int64")
 
     defaults_to_fill = [("tap_dependency_table", False)]
-    _set_multiple_entries(net, "trafo", index, defaults_to_fill=defaults_to_fill, **entries,
-                          **kwargs)
+    _set_multiple_entries(net, "trafo", index, defaults_to_fill=defaults_to_fill, **entries, **kwargs)
 
     return index
 
 
 def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tap_pos=nan,
                          in_service=True, index=None, max_loading_percent=nan,
-                         tap_at_star_point=False, tap_dependency_table=nan, id_characteristic_table=nan, **kwargs):
+                         tap_at_star_point=False, tap_dependency_table=False, id_characteristic_table=nan):
     """
     Creates a three-winding transformer in table net["trafo3w"].
     The trafo parameters are defined through the standard type library.
@@ -3839,9 +3844,13 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tap_p
 
         **tap_at_star_point (bool)** - whether tap changer is modelled at star point or at the bus
 
-        **tap_dependency_table** (boolean) - True if transformer characteristics (voltage ratio, angle, impedance) \
+        **tap_dependency_table** (boolean, False) - True if transformer parameters (voltage ratio, angle, impedance) \
             must be adjusted dependent on the tap position of the transformer. Requires the additional column \
-            "id_characteristic_table"
+            "id_characteristic_table". The function pandapower.control.trafo_characteristic_table_diagnostic \
+            can be used for sanity checks. \
+            The function pandapower.control.create_trafo_characteristic_object can be used to create \
+            SplineCharacteristic objects in the net.trafo_characteristic_spline table and add the additional column \
+            "id_characteristic_spline" to set up the reference to the spline characteristics.
 
         **id_characteristic_table** (int, nan) - references the index of the characteristic from the lookup table \
             net.trafo_characteristic_table
@@ -3895,7 +3904,7 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tap_p
         v["tap_pos"] = v["tap_neutral"]
     else:
         v["tap_pos"] = tap_pos
-        if type(tap_pos) == float:
+        if type(tap_pos) is float:
             net.trafo3w.tap_pos = net.trafo3w.tap_pos.astype(float)
 
     dd = pd.DataFrame(v, index=[index])
@@ -3903,8 +3912,6 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tap_p
         net["trafo3w"].columns, axis=1)
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "trafo3w")
-    _set_value_if_not_nan(net, index, tap_dependency_table,
-                          "tap_dependency_table", "trafo3w", dtype=bool_, default_val=False)
     _set_value_if_not_nan(net, index, id_characteristic_table,
                           "id_characteristic_table", "trafo3w", dtype="Int64")
 
@@ -3923,7 +3930,7 @@ def create_transformer3w_from_parameters(
         max_loading_percent=nan, tap_at_star_point=False,
         vk0_hv_percent=nan, vk0_mv_percent=nan, vk0_lv_percent=nan,
         vkr0_hv_percent=nan, vkr0_mv_percent=nan, vkr0_lv_percent=nan,
-        vector_group=None, tap_dependency_table=nan, id_characteristic_table=nan, **kwargs):
+        vector_group=None, tap_dependency_table=False, id_characteristic_table=nan, **kwargs):
     """
     Adds a three-winding transformer in table net["trafo3w"].
     The model currently only supports one tap-changer per 3W Transformer.
@@ -3997,9 +4004,13 @@ def create_transformer3w_from_parameters(
 
         **max_loading_percent (float)** - maximum current loading (only needed for OPF)
 
-        **tap_dependency_table** (boolean) - True if transformer characteristics (voltage ratio, angle, impedance) \
+        **tap_dependency_table** (boolean, False) - True if transformer parameters (voltage ratio, angle, impedance) \
             must be adjusted dependent on the tap position of the transformer. Requires the additional column \
-            "id_characteristic_table"
+            "id_characteristic_table". The function pandapower.control.trafo_characteristic_table_diagnostic \
+            can be used for sanity checks. \
+            The function pandapower.control.create_trafo_characteristic_object can be used to create \
+            SplineCharacteristic objects in the net.trafo_characteristic_spline table and add the additional column \
+            "id_characteristic_spline" to set up the reference to the spline characteristics.
 
         **id_characteristic_table** (int, nan) - references the index of the characteristic from the lookup table \
             net.trafo_characteristic_table
@@ -4058,8 +4069,6 @@ def create_transformer3w_from_parameters(
     _set_entries(net, "trafo3w", index, **dict(zip(columns, values)), **kwargs)
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "trafo3w")
-    _set_value_if_not_nan(net, index, tap_dependency_table,
-                          "tap_dependency_table", "trafo3w", dtype=bool_, default_val=False)
     _set_value_if_not_nan(net, index, id_characteristic_table,
                           "id_characteristic_table", "trafo3w", dtype="Int64")
 
@@ -4078,20 +4087,20 @@ def create_transformers3w_from_parameters(
         tap_at_star_point=False,
         vk0_hv_percent=nan, vk0_mv_percent=nan, vk0_lv_percent=nan,
         vkr0_hv_percent=nan, vkr0_mv_percent=nan, vkr0_lv_percent=nan,
-        vector_group=None, tap_dependency_table=nan, id_characteristic_table=nan, **kwargs):
+        vector_group=None, tap_dependency_table=False, id_characteristic_table=nan, **kwargs):
     """
     Adds a three-winding transformer in table net["trafo3w"].
 
     Input:
         **net** (pandapowerNet) - The net within this transformer should be created
 
-        **hv_bus** (list) - The bus on the high-voltage side on which the transformer will be \
+        **hv_bus** (list of int) - The bus on the high-voltage side on which the transformer will be \
             connected to
 
-        **mv_bus** (list) - The bus on the middle-voltage side on which the transformer will be \
+        **mv_bus** (list of int) - The bus on the middle-voltage side on which the transformer will be \
             connected to
 
-        **lv_bus** (list) - The bus on the low-voltage side on which the transformer will be \
+        **lv_bus** (list of int) - The bus on the low-voltage side on which the transformer will be \
             connected to
 
         **vn_hv_kv** (float or list) rated voltage on high voltage side
@@ -4134,60 +4143,56 @@ def create_transformers3w_from_parameters(
 
         **tap_step_degree** (float or list) - Tap phase shift angle in degrees
 
-        **tap_side** (string, None) - "hv", "mv", "lv"
+        **tap_side** (list of string, None) - "hv", "mv", "lv"
 
-        **tap_neutral** (int, nan) - default tap position
+        **tap_neutral** (list of int, nan) - default tap position
 
-        **tap_min** (int, nan) - Minimum tap position
+        **tap_min** (list of int, nan) - Minimum tap position
 
-        **tap_max** (int, nan) - Maximum tap position
+        **tap_max** (list of int, nan) - Maximum tap position
 
-        **tap_pos** (int, nan) - current tap position of the transformer. Defaults to the \
+        **tap_pos** (list of int, nan) - current tap position of the transformer. Defaults to the \
             medium position (tap_neutral)
 
-        **tap_at_star_point** (boolean) - Whether tap changer is located at the star point of the \
+        **tap_at_star_point** (list of boolean) - Whether tap changer is located at the star point of the \
             3W-transformer or at the bus
 
-        **name** (string, None) - Name of the 3-winding transformer
+        **name** (list of string, None) - Name of the 3-winding transformer
 
-        **in_service** (boolean, True) - True for in_service or False for out of service
+        **in_service** (list of boolean, True) - True for in_service or False for out of service
 
-        ** only considered in loadflow if calculate_voltage_angles = True
+        ** only considered in load flow if calculate_voltage_angles = True
         **The model currently only supports one tap-changer per 3W Transformer.
 
-        **max_loading_percent (float)** - maximum current loading (only needed for OPF)
+        **max_loading_percent (list of float)** - maximum current loading (only needed for OPF)
 
-        **tap_dependency_table** (boolean) - True if transformer characteristics (voltage ratio, angle, impedance) \
-            must be adjusted dependent on the tap position of the transformer. Requires the additional column \
-            "id_characteristic_table"
+        **tap_dependency_table** (list of boolean, False) - True if transformer parameters (voltage ratio, angle, \
+            impedance) must be adjusted dependent on the tap position of the transformer. Requires the additional \
+            column "id_characteristic_table". The function pandapower.control.trafo_characteristic_table_diagnostic \
+            can be used for sanity checks. \
+            The function pandapower.control.create_trafo_characteristic_object can be used to create \
+            SplineCharacteristic objects in the net.trafo_characteristic_spline table and add the additional column \
+            "id_characteristic_spline" to set up the reference to the spline characteristics.
 
-        **id_characteristic_table** (int, nan) - references the index of the characteristic from the lookup table \
-            net.trafo_characteristic_table
+        **id_characteristic_table** (list of int, nan) - references the index of the characteristic from the \
+            lookup table net.trafo_characteristic_table
 
-        **vk0_hv_percent** (float) - zero sequence short circuit voltage from high to medium voltage
+        **vk0_hv_percent** (list of float) - zero sequence short circuit voltage from high to medium voltage
 
-        **vk0_mv_percent** (float) - zero sequence short circuit voltage from medium to low voltage
+        **vk0_mv_percent** (list of float) - zero sequence short circuit voltage from medium to low voltage
 
-        **vk0_lv_percent** (float) - zero sequence short circuit voltage from high to low voltage
+        **vk0_lv_percent** (list of float) - zero sequence short circuit voltage from high to low voltage
 
-        **vkr0_hv_percent** (float) - zero sequence real part of short circuit voltage from high to medium voltage
+        **vkr0_hv_percent** (list of float) - zero sequence real part of short circuit voltage from high to medium voltage
 
-        **vkr0_mv_percent** (float) - zero sequence real part of short circuit voltage from medium to low voltage
+        **vkr0_mv_percent** (list of float) - zero sequence real part of short circuit voltage from medium to low voltage
 
-        **vkr0_lv_percent** (float) - zero sequence real part of short circuit voltage from high to low voltage
+        **vkr0_lv_percent** (list of float) - zero sequence real part of short circuit voltage from high to low voltage
 
-        **vector_group** (list of String) - Vector group of the transformer3w
+        **vector_group** (list of string) - Vector group of the transformer3w
 
     OUTPUT:
-        **trafo_id** - List of trafo_ids of the created 3W transformers
-
-    Example:
-        create_transformer3w_from_parameters(net, hv_bus=0, mv_bus=1, lv_bus=2, name="trafo1",
-        sn_hv_mva=40, sn_mv_mva=20, sn_lv_mva=20, vn_hv_kv=110, vn_mv_kv=20, vn_lv_kv=10,
-        vk_hv_percent=10,vk_mv_percent=11, vk_lv_percent=12, vkr_hv_percent=0.3,
-        vkr_mv_percent=0.31, vkr_lv_percent=0.32, pfe_kw=30, i0_percent=0.1, shift_mv_degree=30,
-        shift_lv_degree=30)
-
+        **trafo_id** (list of int) - List of trafo_ids of the created 3W transformers
     """
     index = _get_multiple_index_with_check(net, "trafo3w", index, len(hv_buses),
                                            name="Three winding transformers")
@@ -4219,12 +4224,10 @@ def create_transformers3w_from_parameters(
                "vk0_hv_percent": vk0_hv_percent, "vk0_mv_percent": vk0_mv_percent,
                "vk0_lv_percent": vk0_lv_percent, "vkr0_hv_percent": vkr0_hv_percent,
                "vkr0_mv_percent": vkr0_mv_percent, "vkr0_lv_percent": vkr0_lv_percent,
-               "vector_group": vector_group}
+               "vector_group": vector_group, "tap_dependency_table": tap_dependency_table}
 
     _add_to_entries_if_not_nan(net, "trafo3w", entries, index, "max_loading_percent",
                                max_loading_percent)
-    _add_to_entries_if_not_nan(net, "trafo3w", entries, index, "tap_dependency_table",
-                               tap_dependency_table, dtype=bool_, default_val=False)
     _add_to_entries_if_not_nan(net, "trafo3w", entries, index, "id_characteristic_table",
                                id_characteristic_table, dtype="Int64")
     defaults_to_fill = [("tap_dependency_table", False)]
@@ -4411,8 +4414,8 @@ def create_switches(net, buses, elements, et, closed=True, type=None, name=None,
     return index
 
 
-def create_shunt(net, bus, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, name=None,
-                 in_service=True, index=None, **kwargs):
+def create_shunt(net, bus, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, name=None, step_dependency_table=False,
+                 id_characteristic_table=nan, in_service=True, index=None, **kwargs):
     """
     Creates a shunt element
 
@@ -4421,9 +4424,9 @@ def create_shunt(net, bus, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, name
 
         **bus** - bus number of bus to whom the shunt is connected to
 
-        **p_mw** - shunt active power in MW at v= 1.0 p.u.
+        **p_mw** - shunt active power in MW at v = 1.0 p.u. per step
 
-        **q_mvar** - shunt susceptance in MVAr at v= 1.0 p.u.
+        **q_mvar** - shunt reactive power in MVAr at v = 1.0 p.u. per step
 
     OPTIONAL:
         **vn_kv** (float, None) - rated voltage of the shunt. Defaults to rated voltage of
@@ -4431,9 +4434,18 @@ def create_shunt(net, bus, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, name
 
         **step** (int, 1) - step of shunt with which power values are multiplied
 
-        **max_step** (boolean, True) - True for in_service or False for out of service
+        **max_step** (int, 1) - maximum allowed step of shunt
 
         **name** (str, None) - element name
+
+        **step_dependency_table** (boolean, False) - True if shunt parameters (p_mw, q_mvar) must be adjusted \
+            dependent on the step of the shunt. Requires the additional column "id_characteristic_table". \
+            The function pandapower.control.create_shunt_characteristic_object can be used to create \
+            SplineCharacteristic objects in the net.shunt_characteristic_spline table and add the additional column \
+            "id_characteristic_spline" to set up the reference to the spline characteristics.
+
+        **id_characteristic_table** (int, nan) - references the index of the characteristic from the lookup table \
+            net.shunt_characteristic_table
 
         **in_service** (boolean, True) - True for in_service or False for out of service
 
@@ -4453,26 +4465,30 @@ def create_shunt(net, bus, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, name
     if vn_kv is None:
         vn_kv = net.bus.vn_kv.at[bus]
 
-    entries = dict(zip(["bus", "name", "p_mw", "q_mvar", "vn_kv", "step", "max_step", "in_service"],
-                       [bus, name, p_mw, q_mvar, vn_kv, step, max_step, in_service]))
+    entries = dict(zip(["bus", "name", "p_mw", "q_mvar", "vn_kv", "step", "max_step", "in_service",
+                        "step_dependency_table"],
+                       [bus, name, p_mw, q_mvar, vn_kv, step, max_step, in_service, step_dependency_table]))
     _set_entries(net, "shunt", index, **entries, **kwargs)
+
+    _set_value_if_not_nan(net, index, id_characteristic_table, "id_characteristic_table",
+                          "shunt", dtype="Int64")
 
     return index
 
 
-def create_shunts(net, buses, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, name=None,
-                  in_service=True, index=None, **kwargs):
+def create_shunts(net, buses, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, name=None, step_dependency_table=False,
+                  id_characteristic_table=nan, in_service=True, index=None, **kwargs):
     """
     Creates a number of shunt elements
 
     INPUT:
         **net** (pandapowerNet) - The pandapower network in which the element is created
 
-        **buses** - bus numbers of buses to which the shunts should be connected to
+        **buses** (list of ints) - bus numbers of buses to which the shunts should be connected to
 
-        **p_mw** - shunts active power in MW at v= 1.0 p.u.
+        **p_mw** (list of floats, 0) - shunts' active power in MW at v = 1.0 p.u.
 
-        **q_mvar** - shunts susceptance in MVAr at v= 1.0 p.u.
+        **q_mvar** (list of floats) - shunts' reactive power in MVAr at v = 1.0 p.u.
 
     OPTIONAL:
         **vn_kv** (list of floats, None) - rated voltage of the shunts. Defaults to rated voltage of
@@ -4480,9 +4496,18 @@ def create_shunts(net, buses, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, n
 
         **step** (list of ints, 1) - step of shunts with which power values are multiplied
 
-        **max_step** (list of booleans, True) - True for in_service or False for out of service
+        **max_step** (list of ints, 1) - maximum allowed step of shunts
 
         **name** (list of strs, None) - element name
+
+        **step_dependency_table** (list of booleans, False) - True if shunt parameters (p_mw, q_mvar) must be \
+            adjusted dependent on the step of the shunts. Requires the additional column "id_characteristic_table". \
+            The function pandapower.control.create_shunt_characteristic_object can be used to create \
+            SplineCharacteristic objects in the net.shunt_characteristic_spline table and add the additional column \
+            "id_characteristic_spline" to set up the reference to the spline characteristics.
+
+        **id_characteristic_table** (list of ints, nan) - references the index of the characteristic from the lookup \
+            table net.shunt_characteristic_table
 
         **in_service** (list of booleans, True) - True for in_service or False for out of service
 
@@ -4490,10 +4515,10 @@ def create_shunts(net, buses, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, n
             index one higher than the highest already existing index is selected.
 
     OUTPUT:
-        **index** (int) - The unique ID of the created shunt
+        **index** (list of ints) - The unique IDs of the created shunts
 
     EXAMPLE:
-        create_shunt(net, 0, 20)
+        create_shunts(net, [0, 1], [20, 25])
     """
     _check_multiple_node_elements(net, buses)
 
@@ -4502,8 +4527,10 @@ def create_shunts(net, buses, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, n
     if vn_kv is None:
         vn_kv = net.bus.vn_kv.loc[buses]
 
-    entries = dict(zip(["bus", "name", "p_mw", "q_mvar", "vn_kv", "step", "max_step", "in_service"],
-                       [buses, name, p_mw, q_mvar, vn_kv, step, max_step, in_service]))
+    entries = dict(zip(["bus", "name", "p_mw", "q_mvar", "vn_kv", "step", "max_step", "in_service",
+                        "step_dependency_table", "id_characteristic_table"],
+                       [buses, name, p_mw, q_mvar, vn_kv, step, max_step, in_service,
+                        step_dependency_table, id_characteristic_table]))
     _set_multiple_entries(net, "shunt", index, **entries, **kwargs)
 
     return index
@@ -5019,10 +5046,10 @@ def create_tcsc(net, from_bus, to_bus, x_l_ohm, x_cvar_ohm, set_p_to_mw,
     have the same from_bus or the same to_bus.
 
     Note: in the Newton-Raphson power flow calculation, the initial voltage vector is adjusted slightly
-    if the initial voltage at the from bus is the same as at the to_bus to avoid
+    if the initial voltage at the from_bus is the same as at the to_bus to avoid
     some terms in J (for TCSC) becoming zero.
 
-    min_angle_degree, max_angle_degree are placehowlders (ignored in the Newton-Raphson power flow at the moment).
+    min_angle_degree, max_angle_degree are placeholders (ignored in the Newton-Raphson power flow at the moment).
 
     INPUT:
         **net** (pandapowerNet) - The pandapower network in which the element is created
@@ -5176,7 +5203,7 @@ def create_wards(net, buses, ps_mw, qs_mvar, pz_mw, qz_mvar, name=None, in_servi
     index = _get_multiple_index_with_check(net, "storage", index, len(buses))
 
     entries = {"name": name, "bus": buses, "ps_mw": ps_mw, "qs_mvar": qs_mvar, "pz_mw": pz_mw,
-               "qz_mvar": qz_mvar, "name": name, "in_service": in_service}
+               "qz_mvar": qz_mvar, "in_service": in_service}
 
     _set_multiple_entries(net, "ward", index, **entries, **kwargs)
 
@@ -5247,9 +5274,9 @@ def create_dcline(net, from_bus, to_bus, p_mw, loss_percent, loss_mw, vm_from_pu
 
         **loss_mw** - (float) Total transmission loss in MW
 
-        **vm_from_pu** - (float) Voltage setpoint at from bus
+        **vm_from_pu** - (float) Voltage set point at from bus
 
-        **vm_to_pu** - (float) Voltage setpoint at to bus
+        **vm_to_pu** - (float) Voltage set point at to bus
 
     OPTIONAL:
         **index** (int, None) - Force a specified ID if it is available. If None, the index one \
@@ -5313,7 +5340,7 @@ def create_measurement(net, meas_type, element_type, value, std_dev, element, si
 
         **side** (int, string, default: None) - Only used for measured lines or transformers. Side \
             defines at which end of the branch the measurement is gathered. For lines this may be \
-            "from", "to" to denote the side with the from_bus or to_bus. It can also the be index \
+            "from", "to" to denote the side with the from_bus or to_bus. It can also be the index \
             of the from_bus or to_bus. For transformers, it can be "hv", "mv" or "lv" or the \
             corresponding bus index, respectively
 
@@ -5398,7 +5425,7 @@ def create_pwl_cost(net, element, et, points, power_type="p", index=None, check=
         **element** (int) - ID of the element in the respective element table
 
         **et** (string) - element type, one of "gen", "sgen", "ext_grid", "load",
-                                "dcline", "storage"]
+                                "dcline", "storage"
 
         **points** - (list) list of lists with [[p1, p2, c1], [p2, p3, c2], ...] where c(n) \
                             defines the costs between p(n) and p(n+1)
@@ -5450,9 +5477,9 @@ def create_pwl_costs(net, elements, et, points, power_type="p", index=None, chec
         **elements** (iterable of integers) - IDs of the elements in the respective element table
 
         **et** (string or iterable) - element type, one of "gen", "sgen", "ext_grid", "load",
-                                "dcline", "storage"]
+                                "dcline", "storage"
 
-        **points** - (list of list of list) with [[p1, p2, c1], [p2, p3, c2], ...] for each element
+        **points** - (list of lists of lists) with [[p1, p2, c1], [p2, p3, c2], ...] for each element
         where c(n) defines the costs between p(n) and p(n+1)
 
     OPTIONAL:
@@ -5503,7 +5530,7 @@ def create_poly_cost(net, element, et, cp1_eur_per_mw, cp0_eur=0, cq1_eur_per_mv
                      cq0_eur=0, cp2_eur_per_mw2=0, cq2_eur_per_mvar2=0, index=None, check=True,
                      **kwargs):
     """
-    Creates an entry for polynimoal costs for an element. The currently supported elements are:
+    Creates an entry for polynomial costs for an element. The currently supported elements are:
      - Generator ("gen")
      - External Grid ("ext_grid")
      - Static Generator ("sgen")
@@ -5899,7 +5926,7 @@ def _add_multiple_branch_geodata(net, geodata, index, table="line"):
         geo = [[x, y] for x, y in geodata]
         series = [f'{{"coordinates": {geo}, "type": "LineString"}}'] * len(index)
     elif hasattr(geodata, '__iter__') and all([isinstance(g, Iterable) for g in geodata]):
-        # geodata is Iterable of Iterable of coordinate tuples
+        # geodata is Iterable of coordinate tuples
         geo = [[[x, y] for x, y in g] for g in geodata]
         series = pd.Series([f'{{"coordinates": {g}, "type": "LineString"}}' for g in geo], index=index)
     else:
