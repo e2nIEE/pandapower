@@ -201,6 +201,8 @@ def run_load_flow(app, scale_feeder_loads=False, load_scaling=None, gen_scaling=
     if com_ldf.iopt_sim == 1:
         logger.warning(f'Calculation method probabilistic loadflow of lv-loads is activated!'
                        f' The validation will not succeed.')
+    if com_ldf.iopt_igntow == 1:
+        logger.warning(f'Line coupling model will be neglected.')
     if load_scaling is not None:
         logger.debug('scaling loads at %.2f' % load_scaling)
         com_ldf.scLoadFac = load_scaling

@@ -2674,7 +2674,18 @@ def create_trafo3w(net, item, tap_opt='nntap'):
         'tap_at_star_point': pf_type.itapos == 0,
         'in_service': not bool(item.outserv)
     }
-
+    
+    # consider rating factors due to thermal rating
+    if item.ratfac_h > 5 or item.ratfac_m > 5 or item.ratfac_l > 5:
+        logger.warning("Trafo3w rating factors are not plausible." 
+                       "Please note that the load flow could not converge due to these considered settings.")
+    if item.ratfac_h!=1: 
+        params['sn_hv_mva']*=item.ratfac_h
+    if item.ratfac_m!=1: 
+        params['sn_mv_mva']*=item.ratfac_m
+    if item.ratfac_l!=1: 
+        params['sn_lv_mva']*=item.ratfac_l
+        
     if item.nt3nm != 1:
         logger.warning("trafo3w %s has parallel=%d, this is not implemented. "
                        "Calculation results will be incorrect." % (item.loc_name, item.nt3nm))
@@ -2981,12 +2992,12 @@ def create_zpu(net, item):
 
     # create auxilary buses
     aux_bus1 = pp.create_bus(net, vn_kv=net.bus.vn_kv.at[bus1], name=net.bus.name.at[bus1]+'_aux',
-                             geodata=net.bus.geo.at[bus1], type="b", zone=net.bus.zone.at[bus1],
-                             in_service=True)
+                             type="b", zone=net.bus.zone.at[bus1], in_service=True)
+    net.bus.loc[aux_bus1, 'geo'] = net.bus.geo.at[bus1]
     params['from_bus'] = aux_bus1
     aux_bus2 = pp.create_bus(net, vn_kv=net.bus.vn_kv.at[bus2], name=net.bus.name.at[bus2]+'_aux',
-                             geodata=net.bus.geo.at[bus2], type="b", zone=net.bus.zone.at[bus2],
-                             in_service=True)
+                             type="b", zone=net.bus.zone.at[bus2], in_service=True)
+    net.bus.loc[aux_bus2, 'geo'] = net.bus.geo.at[bus2]
     params['to_bus'] = aux_bus2
 
     xid = pp.create_impedance(net, **params)
@@ -3115,14 +3126,14 @@ def create_sind(net, item):
     except IndexError:
         logger.error("Cannot add Sind '%s': not connected" % item.loc_name)
         return
-
+    
     # create auxilary buses
     aux_bus1 = pp.create_bus(net, vn_kv=net.bus.vn_kv.at[bus1], name=net.bus.name.at[bus1]+'_aux',
-                             geodata=net.bus.geo.at[bus1], type="b", zone=net.bus.zone.at[bus1],
-                             in_service=True)
+                             type="b", zone=net.bus.zone.at[bus1], in_service=True)
+    net.bus.loc[aux_bus1, 'geo'] = net.bus.geo.at[bus1]
     aux_bus2 = pp.create_bus(net, vn_kv=net.bus.vn_kv.at[bus2], name=net.bus.name.at[bus2]+'_aux',
-                             geodata=net.bus.geo.at[bus2], type="b", zone=net.bus.zone.at[bus2],
-                             in_service=True)
+                             type="b", zone=net.bus.zone.at[bus2], in_service=True)
+    net.bus.loc[aux_bus2, 'geo'] = net.bus.geo.at[bus2]
 
     sind = pp.create_series_reactor_as_impedance(net, from_bus=aux_bus1, to_bus=aux_bus2,
                                                  r_ohm=item.rrea, x_ohm=item.xrea, sn_mva=item.Sn,
@@ -3176,11 +3187,11 @@ def create_scap(net, item):
 
         # create auxilary buses
         aux_bus1 = pp.create_bus(net, vn_kv=net.bus.vn_kv.at[bus1], name=net.bus.name.at[bus1]+'_aux',
-                                 geodata=net.bus.geo.at[bus1], type="b", zone=net.bus.zone.at[bus1],
-                                 in_service=True)
+                                 type="b", zone=net.bus.zone.at[bus1], in_service=True)
+        net.bus.loc[aux_bus1, 'geo'] = net.bus.geo.at[bus1]
         aux_bus2 = pp.create_bus(net, vn_kv=net.bus.vn_kv.at[bus2], name=net.bus.name.at[bus2]+'_aux',
-                                 geodata=net.bus.geo.at[bus2], type="b", zone=net.bus.zone.at[bus2],
-                                 in_service=True)
+                                 type="b", zone=net.bus.zone.at[bus2], in_service=True)
+        net.bus.loc[aux_bus2, 'geo'] = net.bus.geo.at[bus2]
 
         scap = pp.create_series_reactor_as_impedance(net, from_bus=aux_bus1, to_bus=aux_bus2, r_ohm=r_ohm,
                                                      x_ohm=x_ohm, sn_mva=item.Sn,
