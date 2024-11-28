@@ -562,7 +562,6 @@ def _calc_tap_from_dataframe(net, trafo_df):
         tap_pos = get_trafo_values(trafo_df, f"tap{t}_pos")
         tap_neutral = get_trafo_values(trafo_df, f"tap{t}_neutral")
         tap_diff = tap_pos - tap_neutral
-        tap_phase_shifter = get_trafo_values(trafo_df, f"tap{t}_phase_shifter")
         tap_side = get_trafo_values(trafo_df, f"tap{t}_side")
         tap_step_percent = get_trafo_values(trafo_df, f"tap{t}_step_percent")
         tap_step_degree = get_trafo_values(trafo_df, f"tap{t}_step_degree")
@@ -573,23 +572,46 @@ def _calc_tap_from_dataframe(net, trafo_df):
 
         if 'tap_dependency_table' in trafo_df:
             phase_shifter_type = get_trafo_values(trafo_df, f"tap{t}_phase_shifter_type")
-            print("do something")
-            for side, vn, direction in [("hv", vnh, 1), ("lv", vnl, -1)]:
-                # ideal_phase_shifter = 1
-                if ideal_phase_shifter.any():
-                    degree_is_set = _replace_nan(tap_step_degree[phase_shifters]) != 0
-                    percent_is_set = _replace_nan(tap_step_percent[phase_shifters]) != 0
-                    if (degree_is_set & percent_is_set).any():
-                        raise UserWarning(
-                            "Both tap_step_degree and tap_step_percent set for ideal phase shifter")
-                    trafo_shift[phase_shifters] += np.where(
-                        (degree_is_set),
-                        (direction * tap_diff[phase_shifters] * tap_step_degree[phase_shifters]),
-                        (direction * 2 * np.rad2deg(np.arcsin(tap_diff[phase_shifters] * \
-                                                              tap_step_percent[phase_shifters] / 100 / 2)))
-                    )
+            tap_dependency = get_trafo_values(trafo_df, "tap_dependency_table")
+            id_characteristic_table = get_trafo_values(trafo_df, "id_characteristic_table")
+            phase_shifter_type = phase_shifter_type.fillna(-1)
+            tap_table = np.logical_and(tap_dependency, np.logical_not(phase_shifter_type == -1))
+            tap_no_table = np.logical_and(tap_dependency == False, np.logical_not(phase_shifter_type == -1))
+            if any(tap_table):
+                for side, vn, direction in [("hv", vnh, 1), ("lv", vnl, -1)]:
+                    print("do something")
+                    id = id_characteristic_table[tap_table]
+                    vn[tap_table] = 1
+                    vn[tap_table] = net.trafo_characteristic_table.loc[net.trafo_characteristic_table.id_characteristic.isin(id) & net.trafo_characteristic_table.step.isin(tap_pos[tap_table])] #& net.trafo_characteristic_table.step.isin(tap_pos[tap_table])
+                    trafo_shift[tap_table] = 1
+            if any(tap_no_table):
+                tap_ideal = np.logical_and(phase_shifter_type == 2, tap_no_table)
+                tap_complex = np.logical_and(np.logical_or(phase_shifter_type == 0, phase_shifter_type == 1), tap_no_table)
+                for side, vn, direction in [("hv", vnh, 1), ("lv", vnl, -1)]:
+                    if any(tap_ideal):
+                        degree_is_set = _replace_nan(tap_step_degree[tap_ideal]) != 0
+                        percent_is_set = _replace_nan(tap_step_percent[tap_ideal]) != 0
+                        if (degree_is_set & percent_is_set).any():
+                            raise UserWarning(
+                                "Both tap_step_degree and tap_step_percent set for ideal phase shifter")
+                        trafo_shift[tap_ideal] += np.where(
+                            (degree_is_set),
+                            (direction * tap_diff[phase_shifter_type == 2] * tap_step_degree[phase_shifter_type == 2]),
+                            (direction * 2 * np.rad2deg(np.arcsin(tap_diff[phase_shifter_type == 2] * \
+                                                                  tap_step_percent[phase_shifter_type == 2] / 100 / 2)))
+                        )
+                    elif any(tap_complex):
 
+                        print("do something else:")
+                        tap_steps = tap_step_percent[tap_complex] * tap_diff[tap_complex] / 100
+                        tap_angles = _replace_nan(tap_step_degree[tap_complex])
+                        u1 = vn[tap_complex]
+                        du = u1 * _replace_nan(tap_steps)
+                        vn[tap_complex] = np.sqrt((u1 + du * cos(tap_angles)) ** 2 + (du * sin(tap_angles)) ** 2)
+                        trafo_shift[tap_complex] += (arctan(direction * du * sin(tap_angles) /
+                                                            (u1 + du * cos(tap_angles))))
         else:
+            tap_phase_shifter = get_trafo_values(trafo_df, f"tap{t}_phase_shifter")
             for side, vn, direction in [("hv", vnh, 1), ("lv", vnl, -1)]:
                 phase_shifters = tap_phase_shifter & (tap_side == side)
                 tap_complex = np.isfinite(tap_step_percent) & np.isfinite(tap_pos) & (tap_side == side) & \
