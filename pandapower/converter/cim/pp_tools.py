@@ -33,7 +33,7 @@ def set_pp_col_types(net: Union[pandapower.auxiliary.pandapowerNet, Dict], ignor
     time_start = time.time()
     pp_elements = ['bus', 'dcline', 'ext_grid', 'gen', 'impedance', 'line', 'load', 'motor', 'sgen', 'shunt', 'storage',
                    'switch', 'trafo', 'trafo3w', 'ward', 'xward']
-    to_int = ['bus', 'element', 'to_bus', 'from_bus', 'hv_bus', 'mv_bus', 'lv_bus', 'tap_phase_shifter_type']
+    to_int = ['bus', 'element', 'to_bus', 'from_bus', 'hv_bus', 'mv_bus', 'lv_bus']
     to_bool = ['in_service', 'closed']
     logger.info("Setting the columns data types for buses to int and in_service to bool for the following elements: "
                 "%s" % pp_elements)
