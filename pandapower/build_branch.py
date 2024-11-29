@@ -574,16 +574,22 @@ def _calc_tap_from_dataframe(net, trafo_df):
             phase_shifter_type = get_trafo_values(trafo_df, f"tap{t}_phase_shifter_type")
             tap_dependency = get_trafo_values(trafo_df, "tap_dependency_table")
             id_characteristic_table = get_trafo_values(trafo_df, "id_characteristic_table")
-            phase_shifter_type = phase_shifter_type.fillna(-1)
+            phase_shifter_type = phase_shifter_type.to_numpy() if not isinstance(trafo_df, dict) else phase_shifter_type
+            phase_shifter_type = np.nan_to_num(phase_shifter_type, nan=-1)
             tap_table = np.logical_and(tap_dependency, np.logical_not(phase_shifter_type == -1))
             tap_no_table = np.logical_and(tap_dependency == False, np.logical_not(phase_shifter_type == -1))
             if any(tap_table):
                 for side, vn, direction in [("hv", vnh, 1), ("lv", vnl, -1)]:
-                    print("do something")
-                    id = id_characteristic_table[tap_table]
-                    vn[tap_table] = 1
-                    vn[tap_table] = net.trafo_characteristic_table.loc[net.trafo_characteristic_table.id_characteristic.isin(id) & net.trafo_characteristic_table.step.isin(tap_pos[tap_table])] #& net.trafo_characteristic_table.step.isin(tap_pos[tap_table])
-                    trafo_shift[tap_table] = 1
+                    mask = tap_table & (side == tap_side)
+                    filter = pd.DataFrame({
+                        'id_characteristic': id_characteristic_table,
+                        'step': tap_pos,
+                        'mask': mask
+                    })
+
+                    filtered_df = net.trafo_characteristic_table.merge(filter[filter['mask']], on=['id_characteristic', 'step'])
+                    vn[mask] = vn[mask] * filtered_df['voltage_ratio']
+                    trafo_shift[mask] = filtered_df['angle_deg']
             if any(tap_no_table):
                 tap_ideal = np.logical_and(phase_shifter_type == 2, tap_no_table)
                 tap_complex = np.logical_and(np.logical_or(phase_shifter_type == 0, phase_shifter_type == 1), tap_no_table)
@@ -601,8 +607,6 @@ def _calc_tap_from_dataframe(net, trafo_df):
                                                                   tap_step_percent[phase_shifter_type == 2] / 100 / 2)))
                         )
                     elif any(tap_complex):
-
-                        print("do something else:")
                         tap_steps = tap_step_percent[tap_complex] * tap_diff[tap_complex] / 100
                         tap_angles = _replace_nan(tap_step_degree[tap_complex])
                         u1 = vn[tap_complex]
@@ -613,9 +617,9 @@ def _calc_tap_from_dataframe(net, trafo_df):
         else:
             tap_phase_shifter = get_trafo_values(trafo_df, f"tap{t}_phase_shifter")
             for side, vn, direction in [("hv", vnh, 1), ("lv", vnl, -1)]:
-                phase_shifters = tap_phase_shifter & (tap_side == side)
+                tap_ideal = tap_phase_shifter & (tap_side == side)
                 tap_complex = np.isfinite(tap_step_percent) & np.isfinite(tap_pos) & (tap_side == side) & \
-                    ~phase_shifters
+                    ~tap_ideal
                 if tap_complex.any():
                     tap_steps = tap_step_percent[tap_complex] * tap_diff[tap_complex] / 100
                     tap_angles = _replace_nan(tap_step_degree[tap_complex])
@@ -624,17 +628,17 @@ def _calc_tap_from_dataframe(net, trafo_df):
                     vn[tap_complex] = np.sqrt((u1 + du * cos(tap_angles)) ** 2 + (du * sin(tap_angles)) ** 2)
                     trafo_shift[tap_complex] += (arctan(direction * du * sin(tap_angles) /
                                                         (u1 + du * cos(tap_angles))))
-                if phase_shifters.any():
-                    degree_is_set = _replace_nan(tap_step_degree[phase_shifters]) != 0
-                    percent_is_set = _replace_nan(tap_step_percent[phase_shifters]) != 0
+                if tap_ideal.any():
+                    degree_is_set = _replace_nan(tap_step_degree[tap_ideal]) != 0
+                    percent_is_set = _replace_nan(tap_step_percent[tap_ideal]) != 0
                     if (degree_is_set & percent_is_set).any():
                         raise UserWarning(
                             "Both tap_step_degree and tap_step_percent set for ideal phase shifter")
-                    trafo_shift[phase_shifters] += np.where(
+                    trafo_shift[tap_ideal] += np.where(
                         (degree_is_set),
-                        (direction * tap_diff[phase_shifters] * tap_step_degree[phase_shifters]),
-                        (direction * 2 * np.rad2deg(np.arcsin(tap_diff[phase_shifters] * \
-                                                              tap_step_percent[phase_shifters] / 100 / 2)))
+                        (direction * tap_diff[tap_ideal] * tap_step_degree[tap_ideal]),
+                        (direction * 2 * np.rad2deg(np.arcsin(tap_diff[tap_ideal] * \
+                                                              tap_step_percent[tap_ideal] / 100 / 2)))
                     )
     return vnh, vnl, trafo_shift
 
@@ -1242,9 +1246,12 @@ def _trafo_df_from_trafo3w(net, sequence=1, update_vk_values=True):
     trafo2["vn_lv_kv"] = {side: t3["vn_%s_kv" % side].values for side in sides}
     trafo2["shift_degree"] = {"hv": np.zeros(nr_trafos), "mv": t3.shift_mv_degree.values,
                               "lv": t3.shift_lv_degree.values}
-    trafo2["tap_phase_shifter"] = {side: np.zeros(nr_trafos).astype(bool) for side in sides}
-    trafo2["tap_characteristic_table"] = {side: t3.tap_characteristic_table for side in sides}
-    trafo2["id_characteristic_table"] = {side: t3.id_characteristic_table for side in sides}
+    if 'tap_dependency_table' in t3:
+        trafo2["tap_phase_shifter_type"] = {side: t3.tap_phase_shifter_type for side in sides}
+        trafo2["tap_dependency_table"] = {side: t3.tap_dependency_table for side in sides}
+        trafo2["id_characteristic_table"] = {side: t3.id_characteristic_table for side in sides}
+    else:
+        trafo2["tap_phase_shifter"] = {side: np.zeros(nr_trafos).astype(bool) for side in sides}
     trafo2["parallel"] = {side: np.ones(nr_trafos) for side in sides}
     trafo2["df"] = {side: np.ones(nr_trafos) for side in sides}
     # even though this is not relevant (at least now), the values cannot be empty:
