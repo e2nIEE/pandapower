@@ -4,6 +4,8 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
+import warnings
+from typing_extensions import overload
 import pandas as pd
 
 from pandapower.plotting.generic_geodata import create_generic_coordinates
@@ -98,8 +100,29 @@ def get_hoverinfo(net, element, precision=3, sub_index=None):
     return hoverinfo
 
 
+@overload
+def simple_plotly(net, respect_switches=True, use_line_geo=None, on_map=False,
+                  *, map_style='basic', figsize=1.0, aspectratio='auto',
+                  line_width=1.0, bus_size=10.0, ext_grid_size=20.0,
+                  bus_color="blue", line_color='grey', trafo_color='green',
+                  trafo3w_color='green', ext_grid_color="yellow",
+                  filename='temp-plot.html', auto_open=True, showlegend=True,
+                  additional_traces=None, zoomlevel=11, auto_draw_traces=True, hvdc_color='cyan'): ...
+
+
+@overload
+@deprecated("projection is deprecated and will be removed in future versions. geojson should always be WGS84.")
 def simple_plotly(net, respect_switches=True, use_line_geo=None, on_map=False,
                   projection='epsg:4326', map_style='basic', figsize=1.0, aspectratio='auto',
+                  line_width=1.0, bus_size=10.0, ext_grid_size=20.0,
+                  bus_color="blue", line_color='grey', trafo_color='green',
+                  trafo3w_color='green', ext_grid_color="yellow",
+                  filename='temp-plot.html', auto_open=True, showlegend=True,
+                  additional_traces=None, zoomlevel=11, auto_draw_traces=True, hvdc_color='cyan'): ...
+
+
+def simple_plotly(net, respect_switches=True, use_line_geo=None, on_map=False,
+                  projection=None, map_style='basic', figsize=1.0, aspectratio='auto',
                   line_width=1.0, bus_size=10.0, ext_grid_size=20.0,
                   bus_color="blue", line_color='grey', trafo_color='green',
                   trafo3w_color='green', ext_grid_color="yellow",
@@ -207,6 +230,14 @@ def simple_plotly(net, respect_switches=True, use_line_geo=None, on_map=False,
                                               showlegend=showlegend,
                                               zoomlevel=zoomlevel,
                                               hvdc_color=hvdc_color)
+    if projection is not None:
+        warnings.warn(
+            FutureWarning(
+                "projection is deprecated and will be removed in future versions. geojson should always be WGS84."
+            ),
+            stacklevel=2
+        )
+
     if additional_traces:
         if isinstance(additional_traces, dict):
             additional_traces = [additional_traces]
