@@ -26,18 +26,19 @@ def _on_map_test(x, y):
     except ImportError:
         # if geopy is not available there will be no geo-coordinates check
         # therefore if geo-coordinates are not real and user sets on_map=True, an empty map will be plot!
-        raise ImportError('Geo-coordinates check cannot be peformed because geopy package not available \n\t--> '
-                       'if geo-coordinates are not in lat/lon format an empty plot may appear...')
+        raise ImportError(
+            'Geo-coordinates check cannot be performed because geopy package not available \n\t--> '
+            'if geo-coordinates are not in lat/lon format an empty plot may appear...'
+        )
     try:
-        location = geolocator.reverse("{0}, {1}".format(x, y), language='en-US')
+        location = geolocator.reverse(f"{x}, {y}", language='en-US')
     except GeocoderTimedOut:
         logger.error("Existing net geodata cannot be geo-located: possible reason: geo-data not in lat/long ->"
                      "try geo_data_to_latlong(net, projection) to transform geodata to lat/long!")
-
-    if location.address is None:
-        return False
     else:
-        return True
+        if location.address is None:
+            return False
+    return True
 
 
 def geo_data_to_latlong(net, projection):
