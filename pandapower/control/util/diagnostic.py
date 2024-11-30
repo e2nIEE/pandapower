@@ -73,15 +73,17 @@ def trafo_characteristic_table_diagnostic(net):
     for trafo_table, cols in zip(["trafo", "trafo3w"], [cols2w, cols3w]):
         if len(net[trafo_table]) == 0 or \
                 not all(col in net[trafo_table] for col in ['id_characteristic_table', 'tap_dependency_table']) or \
-                not net[trafo_table]['id_characteristic_table'].notna().any() or \
-                not net[trafo_table]['tap_dependency_table'].any():
-            logger.warning("No %s with tap-dependent characteristics found." % trafo_table)
+                (not net[trafo_table]['id_characteristic_table'].notna().any() and
+                 not net[trafo_table]['tap_dependency_table'].any()):
+            logger.info("No %s with tap-dependent characteristics found." % trafo_table)
             continue
         # check if both tap_dependency_table & id_characteristic_table columns are populated
         mismatch = net[trafo_table][
-            net[trafo_table]['tap_dependency_table'] ^ net[trafo_table]['id_characteristic_table'].notna()].shape[0]
+            (net[trafo_table]['tap_dependency_table'] & net[trafo_table]['id_characteristic_table'].isna()) |
+            (~net[trafo_table]['tap_dependency_table'] & net[trafo_table]['id_characteristic_table'].notna())
+            ].shape[0]
         if mismatch != 0:
-            logger.warning(
+            raise UserWarning(
                 f"{trafo_table}: found {mismatch} transformer(s) with not both "
                 f"tap_dependency_table and id_characteristic_table parameters populated. "
                 f"Power flow calculation will raise an error.")
@@ -92,5 +94,18 @@ def trafo_characteristic_table_diagnostic(net):
                                right_on="id_characteristic", how="inner")
         unpopulated = merged_df.loc[~merged_df[cols].notna().all(axis=1)]
         if not unpopulated.empty:
-            logger.warning(f"There are some transformers in the {trafo_table} table with not all characteristics "
-                           f"populated in the trafo_characteristic_table.")
+            raise UserWarning(f"There are some transformers in the {trafo_table} table with not all characteristics "
+                              f"populated in the trafo_characteristic_table.")
+        # check tap_dependency_table & id_characteristic_table column types
+        if net[trafo_table]['tap_dependency_table'].dtype != 'bool':
+            raise UserWarning(f"The tap_dependency_table column in the {trafo_table} table is not of bool type.")
+        if net[trafo_table]['id_characteristic_table'].dtype != 'Int64':
+            raise UserWarning(f"The id_characteristic_table column in the {trafo_table} table is not of Int64 type.")
+        # check if all id_characteristic_table values are present in id_characteristic column
+        # of trafo_characteristic_table
+        if not net[trafo_table]['id_characteristic_table'].isin(
+                net["trafo_characteristic_table"]['id_characteristic']).all():
+            raise UserWarning(f"Not all id_characteristic_table values in the {trafo_table} table are present"
+                              f"in id_characteristic column of trafo_characteristic_table. "
+                              f"Power flow calculation will raise an error.")
+    return True
