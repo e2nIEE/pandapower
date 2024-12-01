@@ -123,7 +123,7 @@ def from_cim(file_list: List[str] = None, encoding: str = None, convert_line_to_
     if there are errors in the conversion. Default: True.
 
     :param file_list: The path to the CGMES files as a list.
-    :param encoding: The encoding from the files. Optional, default: utf-8
+    :param encoding: The encoding from the files. Optional, default: None
     :param convert_line_to_switch: Set this parameter to True to enable line -> switch conversion. All lines with a
         resistance lower or equal than line_r_limit or a reactance lower or equal than line_x_limit will become a
         switch. Optional, default: False
