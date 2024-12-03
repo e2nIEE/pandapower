@@ -286,8 +286,6 @@ def test_pwl():
 
 @pytest.mark.slow
 @pytest.mark.skipif(not julia_installed, reason="requires julia installation")
-@pytest.mark.xfail
-# todo: this test will not work like this
 def test_without_ext_grid():
     net = pp.create_empty_network()
 
