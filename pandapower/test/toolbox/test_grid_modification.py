@@ -213,6 +213,22 @@ def test_merge_with_characteristics():
     assert merged.trafo.loc[1, "vk_percent_characteristic"] == 1
 
 
+def test_merge_nets_with_custom_elements():
+    from pandapower.networks.simple_pandapower_test_networks import simple_four_bus_system
+
+    df = pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
+    # create two networks
+    net1 = simple_four_bus_system()
+    net2 = simple_four_bus_system()
+
+    net2["test"] = df.copy()
+    res_net1 = pp.merge_nets(net1, net2, validate=False)
+    res_net2 = pp.merge_nets(net2, net1, validate=False)
+    assert df.equals(res_net1["test"])
+    assert df.equals(res_net2["test"])
+    assert pp.nets_equal(res_net1, res_net2)
+
+
 def test_select_subnet():
     # This network has switches of type 'l' and 't'
     net = nw.create_cigre_network_mv()
