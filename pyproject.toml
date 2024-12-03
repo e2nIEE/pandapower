@@ -62,8 +62,8 @@ Changelog = "https://github.com/e2nIEE/pandapower/blob/develop/CHANGELOG.rst"
 docs = ["numpydoc", "matplotlib", "sphinx", "sphinx_rtd_theme", "sphinx-pyproject"]
 plotting = ["plotly>=3.1.1", "matplotlib", "igraph", "geopandas>=1.0"]
 test = ["pytest~=8.1", "pytest-xdist", "nbmake"]
-performance = ["ortools", "numba>=0.25", "lightsim2grid>=0.9.0"]
-fileio = ["xlsxwriter", "openpyxl", "cryptography", "geopandas", "psycopg2"]
+performance = ["ortools", "numba>=0.25", "lightsim2grid==0.9.0"]
+fileio = ["xlsxwriter", "openpyxl", "cryptography", "geopandas>=1.0", "psycopg2"]
 converter = ["matpowercaseframes"]
 pgm = ["power-grid-model-io"]
 control = ["shapely"]
@@ -71,7 +71,7 @@ all = [
     "numpydoc", "sphinx", "sphinx_rtd_theme", "sphinx-pyproject",
     "plotly>=3.1.1", "matplotlib", "igraph", "geopandas>=1.0",
     "pytest~=8.1", "pytest-xdist", "nbmake",
-    "ortools", "numba>=0.25", "lightsim2grid>=0.9.0",
+    "ortools", "numba>=0.25", "lightsim2grid==0.9.0",
     "xlsxwriter", "openpyxl", "cryptography", "psycopg2",
     "matpowercaseframes",
     "power-grid-model-io"
