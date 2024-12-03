@@ -132,7 +132,7 @@ def test_with_lightsim2grid(get_net, get_case):
                                net.res_trafo[f"{s}_loading_percent"].values, atol=1e-6, rtol=0), s
 
 
-# @pytest.mark.xfail(reason="remove this xfail when new version of lightsim2grid available")
+@pytest.mark.xfail(reason="remove this xfail when new version of lightsim2grid available")
 @pytest.mark.skipif(not lightsim2grid_installed, reason="lightsim2grid package is not installed")
 def test_case118():
     net = pp.networks.case118()
@@ -404,10 +404,10 @@ def _randomize_indices(net):
         pp.reindex_elements(net, element, new_index)
 
 
-# def test_reminder_bring_back_case118():
-#     from packaging.version import Version
-#     if lightsim2grid_installed and Version(lightsim2grid.__version__) > Version("0.9.0"):
-#         raise UserWarning("bring back case 118 and remove xfail for test_unequal_trafo_impedances and test_case118")
+def test_reminder_bring_back_case118():
+    from packaging.version import Version
+    if lightsim2grid_installed and Version(lightsim2grid.__version__) > Version("0.9.0"):
+        raise UserWarning("bring back case 118 and remove xfail for test_unequal_trafo_impedances and test_case118")
 
 
 # todo: bring back case 118 when lightsim2grid new version is released
