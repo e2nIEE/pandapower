@@ -281,9 +281,8 @@ def create_trafo_characteristics(net, trafotable, trafo_index, variable, x_point
                                      "vk_mv_percent_characteristic", "vkr_mv_percent_characteristic",
                                      "vk_lv_percent_characteristic", "vkr_lv_percent_characteristic"]}
 
-    # create id_characteristic_spline column - same indices as id_characteristic_table
-    if "id_characteristic_spline" not in net[trafotable]:
-        net[trafotable]["id_characteristic_spline"] = net[trafotable]["id_characteristic_table"].copy()
+    # create or re-populate id_characteristic_spline column - same indices as id_characteristic_table
+    net[trafotable]["id_characteristic_spline"] = net[trafotable]["id_characteristic_table"].copy()
     if "trafo_characteristic_spline_temp" not in net:
         col_list = list(dict.fromkeys(supported_columns["trafo"] + supported_columns["trafo3w"]))
         net["trafo_characteristic_spline_temp"] = pd.DataFrame(columns=col_list, dtype="Int64")

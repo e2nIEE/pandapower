@@ -1331,14 +1331,24 @@ def test_tap_dependent_impedance():
 
     net_backup = net.deepcopy()
 
-    pp.control.create_trafo_characteristics(net, 'trafo', [0], "vk_percent", [[-2, -1, 0, 1, 2]], [[5.5, 5.8, 6, 6.2, 6.5]])
-    pp.control.create_trafo_characteristics(net, 'trafo', [0], "vkr_percent", [[-2, -1, 0, 1, 2]], [[1.4, 1.42, 1.44, 1.46, 1.48]])
-    pp.control.create_trafo_characteristics(net, 'trafo', [1], "vk_percent", [[-2, -1, 0, 1, 2]], [[5.4, 5.7, 6, 6.1, 6.4]])
+    net["trafo_characteristic_table"] = pd.DataFrame(
+        {'id_characteristic': [0, 0, 0, 0, 0], 'step': [-2, -1, 0, 1, 2], 'voltage_ratio': [1, 1, 1, 1, 1],
+         'angle_deg': [0, 0, 0, 0, 0], 'vk_percent': [5.5, 5.8, 6, 6.2, 6.5],
+         'vkr_percent': [1.4, 1.42, 1.44, 1.46, 1.48], 'vk_hv_percent': np.nan, 'vkr_hv_percent': np.nan,
+         'vk_mv_percent': np.nan, 'vkr_mv_percent': np.nan, 'vk_lv_percent': np.nan, 'vkr_lv_percent': np.nan})
+    net.trafo['id_characteristic_table'].at[0] = 0
+    net.trafo['tap_dependency_table'].at[0] = True
+    net.trafo['tap_dependency_table'].at[1] = False
 
-    # test alternative way to set up tap dependence impedance characteristic
-    pp.control.SplineCharacteristic(net, [-2, -1, 0, 1, 2], [0.95, 0.98, 1, 1.02, 1.05])
-    net.trafo3w['tap_dependent_impedance'] = True
-    net.trafo3w['vk_hv_percent_characteristic'] = 3
+    new_rows = pd.DataFrame(
+        {'id_characteristic': [1, 1, 1, 1, 1], 'step': [-2, -1, 0, 1, 2], 'voltage_ratio': [1, 1, 1, 1, 1],
+         'angle_deg': [0, 0, 0, 0, 0], 'vk_hv_percent': [0.95, 0.98, 1, 1.02, 1.05],
+         'vkr_hv_percent': [0.3, 0.3, 0.3, 0.3, 0.3], 'vk_mv_percent': [1, 1, 1, 1, 1],
+         'vkr_mv_percent': [0.3, 0.3, 0.3, 0.3, 0.3], 'vk_lv_percent': [1, 1, 1, 1, 1],
+         'vkr_lv_percent': [0.3, 0.3, 0.3, 0.3, 0.3]})
+    net["trafo_characteristic_table"] = pd.concat([net["trafo_characteristic_table"], new_rows], ignore_index=True)
+    net.trafo3w['id_characteristic_table'].at[0] = 1
+    net.trafo3w['tap_dependency_table'].at[0] = True
 
     pp.runpp(net)
     pp.runpp(net_backup)
@@ -1348,14 +1358,6 @@ def test_tap_dependent_impedance():
     net_backup.trafo.at[0, "tap_pos"] = 2
     net_backup.trafo.at[0, "vk_percent"] = 6.5
     net_backup.trafo.at[0, "vkr_percent"] = 1.48
-
-    pp.runpp(net)
-    pp.runpp(net_backup)
-    assert_res_equal(net, net_backup)
-
-    net.trafo.at[1, "tap_pos"] = -2
-    net_backup.trafo.at[1, "tap_pos"] = -2
-    net_backup.trafo.at[1, "vk_percent"] = 5.4
 
     pp.runpp(net)
     pp.runpp(net_backup)

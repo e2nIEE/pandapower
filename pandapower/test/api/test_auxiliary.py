@@ -208,50 +208,82 @@ def test_memory_leak_dict():
 
 def test_create_trafo_characteristics():
     net = pp.networks.example_multivoltage()
+    net["trafo_characteristic_table"] = pd.DataFrame(
+        {'id_characteristic': [0, 0, 0, 0, 0], 'step': [-2, -1, 0, 1, 2], 'voltage_ratio': [1, 1, 1, 1, 1],
+         'angle_deg': [0, 0, 0, 0, 0], 'vk_percent': [2, 3, 4, 5, 6],
+         'vkr_percent': [1.323, 1.324, 1.325, 1.326, 1.327], 'vk_hv_percent': np.nan, 'vkr_hv_percent': np.nan,
+         'vk_mv_percent': np.nan, 'vkr_mv_percent': np.nan, 'vk_lv_percent': np.nan, 'vkr_lv_percent': np.nan})
+    net.trafo['id_characteristic_table'].at[1] = 0
+    net.trafo['tap_dependency_table'].at[0] = False
+    net.trafo['tap_dependency_table'].at[1] = True
+    # add spline characteristics for one transformer based on trafo_characteristic_table
+    pp.control.create_trafo_characteristic_object(net)
+    assert "trafo_characteristic_spline" in net
+    assert "id_characteristic_spline" in net.trafo.columns
+    assert len(net.trafo_characteristic_spline) == 1
+    assert net.trafo.id_characteristic_spline.dtype == pd.Int64Dtype()
+    assert isinstance(net.trafo.id_characteristic_spline.at[1], np.int64)
+    assert pd.isna(net.trafo.id_characteristic_spline.at[0])
+    assert all(col in net.trafo_characteristic_spline.columns for col in [
+        'voltage_ratio_characteristic', 'angle_deg_characteristic',
+        'vk_percent_characteristic', 'vkr_percent_characteristic'])
+    assert isinstance(net.trafo_characteristic_spline.at[
+                          net.trafo.id_characteristic_spline.at[1], 'vk_percent_characteristic'],
+                      pp.control.SplineCharacteristic)
+    assert net.trafo_characteristic_spline.at[
+                          net.trafo.id_characteristic_spline.at[1], 'vk_percent_characteristic'](-2) == 2
+    assert pd.isna(net.trafo_characteristic_spline.at[
+                          net.trafo.id_characteristic_spline.at[1], 'vkr_hv_percent_characteristic'])
 
-    # test 2 modes, multiple index and single index, for 2w trafo
-    pp.control.create_trafo_characteristics(net, "trafo", [1], 'vk_percent', [[-2,-1,0,1,2]], [[2,3,4,5,6]])
-    assert "characteristic" in net
-    assert "tap_dependent_impedance" in net.trafo.columns
-    assert net.trafo.tap_dependent_impedance.dtype == np.bool_
-    assert net.trafo.tap_dependent_impedance.at[1]
-    assert not net.trafo.tap_dependent_impedance.at[0]
-    assert "vk_percent_characteristic" in net.trafo.columns
-    assert net.trafo.at[1, 'vk_percent_characteristic'] == 0
-    assert pd.isnull(net.trafo.at[0, 'vk_percent_characteristic'])
-    assert net.trafo.vk_percent_characteristic.dtype == pd.Int64Dtype()
-    assert "vkr_percent_characteristic" not in net.trafo.columns
-
-    pp.control.create_trafo_characteristics(net, "trafo", 1, 'vkr_percent', [-2,-1,0,1,2], [1.323,1.324,1.325,1.326,1.327])
-    assert len(net.characteristic) == 2
-    assert "vkr_percent_characteristic" in net.trafo.columns
-    assert net.trafo.at[1, 'vkr_percent_characteristic'] == 1
-    assert pd.isnull(net.trafo.at[0, 'vkr_percent_characteristic'])
-    assert net.trafo.vkr_percent_characteristic.dtype == pd.Int64Dtype()
-
-    assert isinstance(net.characteristic.object.at[0], pp.control.SplineCharacteristic)
-    assert isinstance(net.characteristic.object.at[1], pp.control.SplineCharacteristic)
+    # create spline characteristics again for two transformers based on the updated trafo_characteristic_table
+    new_rows = pd.DataFrame(
+        {'id_characteristic': [1, 1, 1, 1, 1], 'step': [-2, -1, 0, 1, 2], 'voltage_ratio': [1, 1, 1, 1, 1],
+         'angle_deg': [0, 0, 0, 0, 0], 'vk_percent': [2, 3, 4, 5, 6],
+         'vkr_percent': [1.323, 1.324, 1.325, 1.326, 1.327]})
+    net["trafo_characteristic_table"] = pd.concat([net["trafo_characteristic_table"], new_rows], ignore_index=True)
+    net.trafo['id_characteristic_table'].at[0] = 1
+    net.trafo['tap_dependency_table'].at[0] = True
+    pp.control.create_trafo_characteristic_object(net)
+    assert len(net.trafo_characteristic_spline) == 2
+    assert net.trafo.at[0, 'id_characteristic_spline'] == 1
+    assert isinstance(net.trafo_characteristic_spline.at[
+                          net.trafo.id_characteristic_spline.at[0], 'vk_percent_characteristic'],
+                      pp.control.SplineCharacteristic)
+    assert net.trafo_characteristic_spline.at[
+               net.trafo.id_characteristic_spline.at[0], 'vk_percent_characteristic'](2) == 6
+    assert isinstance(net.trafo_characteristic_spline.at[
+                          net.trafo.id_characteristic_spline.at[1], 'vk_percent_characteristic'],
+                      pp.control.SplineCharacteristic)
+    assert net.trafo_characteristic_spline.at[
+               net.trafo.id_characteristic_spline.at[1], 'vk_percent_characteristic'](-1) == 3
+    assert pd.isna(net.trafo_characteristic_spline.at[
+                       net.trafo.id_characteristic_spline.at[0], 'vkr_hv_percent_characteristic'])
+    assert pd.isna(net.trafo_characteristic_spline.at[
+                       net.trafo.id_characteristic_spline.at[1], 'vkr_hv_percent_characteristic'])
 
     # test for 3w trafo
-    pp.control.create_trafo_characteristics(net, "trafo3w", 0, 'vk_hv_percent', [-8, -4, 0, 4, 8], [8.1, 9.1, 10.1, 11.1, 12.1])
-    assert "tap_dependent_impedance" in net.trafo3w.columns
-    assert net.trafo3w.tap_dependent_impedance.dtype == np.bool_
-    assert net.trafo3w.tap_dependent_impedance.at[0]
-    assert "vk_hv_percent_characteristic" in net.trafo3w.columns
-    assert net.trafo3w.at[0, 'vk_hv_percent_characteristic'] == 2
-    assert net.trafo3w.vk_hv_percent_characteristic.dtype == pd.Int64Dtype()
-    assert "vkr_hv_percent_characteristic" not in net.trafo3w.columns
-    assert "vk_mv_percent_characteristic" not in net.trafo3w.columns
-
-    pp.control.create_trafo_characteristics(net, "trafo3w", 0, 'vk_mv_percent', [-8, -4, 0, 4, 8], [8.1, 9.1, 10.1, 11.1, 12.1])
-    assert net.trafo3w.tap_dependent_impedance.dtype == np.bool_
-    assert net.trafo3w.tap_dependent_impedance.at[0]
-    assert "vk_mv_percent_characteristic" in net.trafo3w.columns
-    assert net.trafo3w.at[0, 'vk_mv_percent_characteristic'] == 3
-    assert net.trafo3w.vk_hv_percent_characteristic.dtype == pd.Int64Dtype()
-    assert "vkr_mv_percent_characteristic" not in net.trafo3w.columns
-    assert "vk_lv_percent_characteristic" not in net.trafo3w.columns
-    assert "vkr_lv_percent_characteristic" not in net.trafo3w.columns
+    new_rows = pd.DataFrame(
+        {'id_characteristic': [2, 2, 2, 2, 2], 'step': [-8, -4, 0, 4, 8], 'voltage_ratio': [1, 1, 1, 1, 1],
+         'angle_deg': [0, 0, 0, 0, 0], 'vk_hv_percent': [8.1, 9.1, 10.1, 11.1, 12.1],
+         'vkr_hv_percent': [1.323, 1.324, 1.325, 1.326, 1.327], 'vk_mv_percent': [8.1, 9.1, 10.1, 11.1, 12.1],
+         'vkr_mv_percent': [1.323, 1.324, 1.325, 1.326, 1.327], 'vk_lv_percent': [8.1, 9.1, 10.1, 11.1, 12.1],
+         'vkr_lv_percent': [1.323, 1.324, 1.325, 1.326, 1.327]})
+    net["trafo_characteristic_table"] = pd.concat([net["trafo_characteristic_table"], new_rows], ignore_index=True)
+    net.trafo3w['id_characteristic_table'].at[0] = 2
+    net.trafo3w['tap_dependency_table'].at[0] = True
+    # create spline characteristics again including a 3-winding transformer
+    pp.control.create_trafo_characteristic_object(net)
+    assert len(net.trafo_characteristic_spline) == 3
+    assert "id_characteristic_spline" in net.trafo3w.columns
+    assert isinstance(net.trafo3w.id_characteristic_spline.at[0], np.int64)
+    assert net.trafo_characteristic_spline.loc[net.trafo3w['id_characteristic_table'].at[0]].notna().sum() == 9
+    assert isinstance(net.trafo_characteristic_spline.at[
+                          net.trafo3w.id_characteristic_spline.at[0], 'vkr_hv_percent_characteristic'],
+                      pp.control.SplineCharacteristic)
+    assert net.trafo_characteristic_spline.at[
+               net.trafo3w.id_characteristic_spline.at[0], 'vkr_hv_percent_characteristic'](-4) == 1.324
+    assert pd.isna(net.trafo_characteristic_spline.at[
+                       net.trafo3w.id_characteristic_spline.at[0], 'vk_percent_characteristic'])
 
     # this should be enough testing for adding columns
     # now let's test if it raises errors
@@ -283,33 +315,33 @@ def test_create_trafo_characteristics():
 @pytest.mark.parametrize("file_io", (False, True), ids=("Without JSON I/O", "With JSON I/O"))
 def test_characteristic(file_io):
     net = pp.create_empty_network()
-    c1 = SplineCharacteristic(net, [0,1,2], [0, 1, 4], fill_value=(0, 4))
-    c2 = SplineCharacteristic(net, [0,1,2], [0, 1, 4], interpolator_kind="Pchip", extrapolate=False)
-    c3 = SplineCharacteristic(net, [0,1,2], [0, 1, 4], interpolator_kind="hello")
-    c4 = LogSplineCharacteristic(net, [0,1,2], [0, 1, 4], interpolator_kind="Pchip", extrapolate=False)
+    c1 = SplineCharacteristic(net, [0, 1, 2], [0, 1, 4], fill_value=(0, 4))
+    c2 = SplineCharacteristic(net, [0, 1, 2], [0, 1, 4], interpolator_kind="Pchip", extrapolate=False)
+    c3 = SplineCharacteristic(net, [0, 1, 2], [0, 1, 4], interpolator_kind="hello")
+    c4 = LogSplineCharacteristic(
+        net, [0, 1, 2], [0, 1, 4], interpolator_kind="Pchip", extrapolate=False)
 
     if file_io:
         net_copy = pp.from_json_string(pp.to_json(net))
         c1, c2, c3, c4 = net_copy.characteristic.object.values
 
     assert np.allclose(c1([-1]), [0], rtol=0, atol=1e-6)
-    #assert c1(3) == 4
-    #assert c1(1) == 1
-    #assert c1(2) == 4
-    #assert c1(1.5) == 2.25
-
+    # assert c1(3) == 4
+    # assert c1(1) == 1
+    # assert c1(2) == 4
+    # assert c1(1.5) == 2.25
 
     # test that unknown kind causes error:
     with pytest.raises(NotImplementedError):
         c3([0])
 
+
 def test_log_characteristic_property():
     net = pp.create_empty_network()
-    c = LogSplineCharacteristic(net, [10, 1000, 10000], [1000, 0.1, 0.001], interpolator_kind="Pchip", extrapolate=False)
+    c = LogSplineCharacteristic(net, [10, 1000, 10000], [1000, 0.1, 0.001],
+                                interpolator_kind="Pchip", extrapolate=False)
     c._x_vals
     c([2])
-
-
 
 
 if __name__ == '__main__':

@@ -3283,7 +3283,7 @@ def create_lines_dc_from_parameters(net, from_buses_dc, to_buses_dc, length_km, 
 
 def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in_service=True,
                        index=None, max_loading_percent=nan, parallel=1, df=1., tap_phase_shifter_type=nan,
-                       tap_dependency_table=False, id_characteristic_table=nan,
+                       tap_dependency_table=nan, id_characteristic_table=nan,
                        pt_percent=nan, oltc=nan, xn_ohm=nan, tap2_pos=nan, **kwargs):
     """
     Creates a two-winding transformer in table net["trafo"].
@@ -3409,6 +3409,10 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "trafo")
     _set_value_if_not_nan(net, index, id_characteristic_table, "id_characteristic_table",
+                          "trafo", dtype="Int64")
+    _set_value_if_not_nan(net, index, tap_dependency_table, "tap_dependency_table", "trafo",
+                          dtype=bool_, default_val=False)
+    _set_value_if_not_nan(net, index, tap_phase_shifter_type, "tap_phase_shifter_type",
                           "trafo", dtype="Int64")
     _set_value_if_not_nan(net, index, pt_percent, "pt_percent", "trafo")
     _set_value_if_not_nan(net, index, oltc, "oltc", "trafo", dtype=bool_, default_val=False)

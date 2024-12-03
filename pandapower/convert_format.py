@@ -363,10 +363,10 @@ def _add_missing_columns(net, elements_to_deserialize):
         net.gen["slack"] = False
 
     if _check_elements_to_deserialize('trafo', elements_to_deserialize) and \
-            "tap_phase_shifter" not in net.trafo and "tp_phase_shifter" not in net.trafo:
-        net.trafo["tap_phase_shifter"] = False
+            "tap_phase_shifter_type" not in net.trafo:
+        net.trafo["tap_phase_shifter_type"] = pd.NA
 
-    # unsymmetric impedance
+    # asymmetric impedance
     if _check_elements_to_deserialize('impedance', elements_to_deserialize):
         if "r_pu" in net.impedance:
             net.impedance["rft_pu"] = net.impedance["rtf_pu"] = net.impedance["r_pu"]
