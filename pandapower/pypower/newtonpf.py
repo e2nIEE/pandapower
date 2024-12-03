@@ -439,6 +439,15 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
             J = J + J_m_hvdc
 
         dx = -1 * spsolve(J, F, permc_spec=permc_spec, use_umfpack=use_umfpack)
+
+        # log data 
+        initial_delta = np.max(np.abs(dx))
+        print("Initial current delta_x: {:.7f}".format(initial_delta))
+        # if initial_delta > 0.35:
+        #     dx = dx*0.35/initial_delta
+        # new_delta = np.max(np.abs(dx))
+        # print("Smoothed current delta_x: {:.7f}".format(new_delta))
+
         # update voltage
         if dist_slack:
             slack = slack + dx[j0:j1]
@@ -464,6 +473,9 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         V = Vm * exp(1j * Va)
         Vm = abs(V)  # update Vm and Va again in case
         Va = angle(V)  # we wrapped around with a negative Vm
+
+        print("Max voltage magnitude: {:.7f}".format(max(Vm)))
+        print("Min voltage magnitude: {:.7f}".format(min(Vm)))
 
         if v_debug:
             Vm_it = column_stack((Vm_it, Vm))

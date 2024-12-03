@@ -37,7 +37,8 @@ class BaseAlgorithm:
 
     def check_observability(self, eppci: ExtendedPPCI, z):
         # Check if observability criterion is fulfilled and the state estimation is possible
-        if len(z) < 2 * eppci["bus"].shape[0] - 1:
+        num_slacks = sum(~eppci.non_slack_bus_mask)
+        if len(z) < 2 * eppci["bus"].shape[0] - num_slacks:
             self.logger.error("System is not observable (cancelling)")
             self.logger.error("Measurements available: %d. Measurements required: %d" %
                               (len(z), 2 * eppci["bus"].shape[0] - 1))
@@ -319,6 +320,12 @@ class AFWLSAlgorithm(BaseAlgorithm):
 
                 # state vector difference d_E
                 d_E = spsolve(G_m, H.T * (r_inv * r))
+
+                # # Scaling of Delta_X to avoid divergence due o ill-conditioning and 
+                # # operating conditions far from starting state variables
+                # current_error = np.max(np.abs(d_E))
+                # if current_error > 0.25:
+                #     d_E = d_E*0.25/current_error
 
                 # Update E with d_E
                 E += d_E.ravel()

@@ -290,13 +290,21 @@ def _add_measurements_to_ppci(net, ppci, zero_injection, algorithm):
                 P *= -1
                 Q *= -1
             cluster = active_elements.type.values
+            if (bus >= ppci["bus"].shape[0]).any():
+                std_logger.warning("Loads or sgen defined in pp-grid do not exist in ppci, will be deleted!")
+                P = P[bus < ppci["bus"].shape[0]]
+                Q = Q[bus < ppci["bus"].shape[0]]
+                cluster = cluster[bus < ppci["bus"].shape[0]]
+                bus = bus[bus < ppci["bus"].shape[0]]
             for k in range(num_clusters):
                 cluster[cluster == cluster_list_tot[k]] = k
             cluster = cluster.astype(int)
-            ppci["rated_power_clusters"][bus, cluster] = P
-            ppci["rated_power_clusters"][bus, cluster + num_clusters] = Q
-            ppci["rated_power_clusters"][bus, cluster + 2*num_clusters] = abs(0.03*P)    # std dev cluster variability hardcoded, think how to change it
-            ppci["rated_power_clusters"][bus, cluster + 3*num_clusters] = abs(0.03*Q)    # std dev cluster variability hardcoded, think how to change it
+            for i in range(len(P)):
+                bus_i, cluster_i, P_i, Q_i = bus[i], cluster[i], P[i], Q[i]
+                ppci["rated_power_clusters"][bus_i, cluster_i] += P_i
+                ppci["rated_power_clusters"][bus_i, cluster_i + num_clusters] += Q_i
+                ppci["rated_power_clusters"][bus_i, cluster_i + 2*num_clusters] += abs(0.03*P_i)    # std dev cluster variability hardcoded, think how to change it
+                ppci["rated_power_clusters"][bus_i, cluster_i + 3*num_clusters] += abs(0.03*Q_i)    # std dev cluster variability hardcoded, think how to change it
 
     return ppci
 
@@ -389,7 +397,8 @@ def _build_measurement_vectors(ppci, update_meas_only=False):
     idx_non_imeas = np.flatnonzero(~imag_meas)
     if ppci.algorithm == "af-wls":
         balance_eq_meas = np.zeros(ppci["rated_power_clusters"].shape[0]).astype(np.float64)
-        z = np.concatenate((z, balance_eq_meas[ppci.non_slack_bus_mask], balance_eq_meas[ppci.non_slack_bus_mask]))
+        af_vmeas = 0.4*np.ones(len(ppci["clusters"]))
+        z = np.concatenate((z, balance_eq_meas[ppci.non_slack_bus_mask], balance_eq_meas[ppci.non_slack_bus_mask], af_vmeas))
     
     if not update_meas_only:
         # conserve the pandapower indices of measurements in the ppci order
@@ -438,12 +447,11 @@ def _build_measurement_vectors(ppci, update_meas_only=False):
                                        i_degree_line_t_not_nan])
         if ppci.algorithm == "af-wls":
             num_clusters = len(ppci["clusters"])
-            # P_balance_dev_std = np.sqrt(np.sum(np.square(ppci["rated_power_clusters"][:,2*num_clusters:3*num_clusters]),axis=1))
-            # Q_balance_dev_std = np.sqrt(np.sum(np.square(ppci["rated_power_clusters"][:,3*num_clusters:4*num_clusters]),axis=1))
-            P_balance_dev_std = np.full((790,),25)
-            Q_balance_dev_std = np.full((790,),25)
-            r_cov = np.concatenate((r_cov, P_balance_dev_std[ppci.non_slack_bus_mask], Q_balance_dev_std[ppci.non_slack_bus_mask]))
-            meas_mask = np.concatenate((meas_mask, ppci.non_slack_bus_mask, ppci.non_slack_bus_mask))
+            P_balance_dev_std = np.sqrt(np.sum(np.square(ppci["rated_power_clusters"][:,2*num_clusters:3*num_clusters]),axis=1))
+            Q_balance_dev_std = np.sqrt(np.sum(np.square(ppci["rated_power_clusters"][:,3*num_clusters:4*num_clusters]),axis=1))
+            af_vmeas_dev_std = 0.15*np.ones(len(ppci["clusters"]))
+            r_cov = np.concatenate((r_cov, P_balance_dev_std[ppci.non_slack_bus_mask], Q_balance_dev_std[ppci.non_slack_bus_mask], af_vmeas_dev_std))
+            meas_mask = np.concatenate((meas_mask, ppci.non_slack_bus_mask, ppci.non_slack_bus_mask, np.ones(len(ppci["clusters"]))))
 
         return z, pp_meas_indices, r_cov, meas_mask, any_i_meas, any_degree_meas, idx_non_imeas
     else:
