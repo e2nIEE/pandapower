@@ -136,15 +136,19 @@ def run_contingency(net, nminus1_cases, pf_options=None, pf_options_nminus1=None
 
 def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=pp.runpp, **kwargs):
     """
-    Execute contingency analysis using the lightsim2grid library. This works much faster than using pandapower.
-    Limitation: the results for branch flows are valid only for the "from_bus" of lines and "hv_bus" of transformers.
-    This can lead to a small difference to the results using pandapower.
-    The results are written in pandapower results tables.
-    Make sure that the N-1 cases do not lead to isolated grid, otherwise results with pandapower and this function will
-    be different. Reason: pandapower selects a different gen as slack if the grid becomes isolated, but
-    lightsim2grid would simply return nan as results for such a contingency situation.
-    WARNING: continuous bus indices, 0-start, are required!
-    This function can be passed through to pandapower.timeseries.run_timeseries as the run_control_fct argument.
+    Execute contingency analysis using the lightsim2grid library. This works much faster than using
+    pandapower.
+    This function can be passed through to pandapower.timeseries.run_timeseries as the
+    run_control_fct argument.
+
+    **Limitation:** the results for branch flows are valid only for the "from_bus" of lines and
+    "hv_bus" of transformers. This can lead to a small difference to the results using pandapower.
+    The results are written in pandapower results tables. Make sure that the N-1 cases do not lead
+    to isolated grid, otherwise results with pandapower and this function will
+    be different. Reason: pandapower selects a different gen as slack if the grid becomes isolated,
+    but lightsim2grid would simply return nan as results for such a contingency situation.
+
+    **WARNING:** continuous bus indices, 0-start, are required!
 
     The results will written for the
     following additional variables: table res_bus with columns "max_vm_pu", "min_vm_pu",
@@ -159,6 +163,7 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=pp.
 
     INPUT
     ----------
+
     **net** - pandapowerNet
     **nminus1_cases** - dict
         describes all N-1 cases, e.g. {"line": {"index": [1, 2, 3]}, "trafo": {"index": [0]}}

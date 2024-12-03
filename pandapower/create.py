@@ -14,7 +14,8 @@ from pandas import isnull
 from pandas.api.types import is_object_dtype
 
 from pandapower._version import __version__, __format_version__
-from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes, ensure_iterability
+from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes, ensure_iterability, \
+    empty_defaults_per_dtype
 from pandapower.results import reset_results
 from pandapower.std_types import add_basic_std_types, load_std_type
 import numpy as np
@@ -4929,8 +4930,8 @@ def create_impedance(net, from_bus, to_bus, rft_pu, xft_pu, sn_mva, rtf_pu=None,
     UserWarning
         If required impedance parameters are missing.
     """
-    
-    
+
+
     index = _get_index_with_check(net, "impedance", index)
 
     _check_branch_element(net, "Impedance", index, from_bus, to_bus)
@@ -5111,7 +5112,7 @@ def create_impedances(net, from_buses, to_buses, rft_pu, xft_pu, sn_mva, rtf_pu=
     entries = dict(zip(columns, values))
 
     _set_multiple_entries(net, "impedance", index, **entries, **kwargs)
-    
+
     if rft0_pu is not None:
         _set_value_if_not_nan(net, index, rft0_pu, "rft0_pu", "impedance")
         _set_value_if_not_nan(net, index, xft0_pu, "xft0_pu", "impedance")
@@ -6074,7 +6075,14 @@ def _set_multiple_entries(net, table, index, preserve_dtypes=True, defaults_to_f
                 net[table][col] = val
 
     # extend the table by the frame we just created
-    net[table] = pd.concat([net[table], dd[dd.columns[~dd.isnull().all()]]], sort=False)
+    if len(net[table]):
+        net[table] = pd.concat([net[table], dd[dd.columns[~dd.isnull().all()]]], sort=False)
+    else:
+        dd_columns = dd.columns[~dd.isnull().all()]
+        complete_columns = list(net[table].columns)+list(dd_columns.difference(net[table].columns))
+        empty_dict = {key: empty_defaults_per_dtype(dtype) for key, dtype in net[table][net[
+                      table].columns.difference(dd_columns)].dtypes.to_dict().items()}
+        net[table] = dd[dd_columns].assign(**empty_dict)[complete_columns]
 
     # and preserve dtypes
     if preserve_dtypes:
