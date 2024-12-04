@@ -82,10 +82,17 @@ def run_contingency(net, nminus1_cases, pf_options=None, pf_options_nminus1=None
     # set up the dict for results and relevant variables
     # ".get" in case the options have been set in pp.set_user_pf_options:
     raise_errors = kwargs.get("raise_errors", False)
-    if "recycle" in kwargs: kwargs["recycle"] = False  # so that we can be sure it doesn't happen
-    if pf_options is None: pf_options = net.user_pf_options.get("pf_options", net.user_pf_options)
-    if pf_options_nminus1 is None: pf_options_nminus1 = net.user_pf_options.get("pf_options_nminus1",
-                                                                                net.user_pf_options)
+    if "recycle" in kwargs:
+        kwargs["recycle"] = False  # so that we can be sure it doesn't happen
+    if pf_options is None:
+        pf_options = net.user_pf_options.get("pf_options", net.user_pf_options)
+    if pf_options_nminus1 is None:
+        pf_options_nminus1 = net.user_pf_options.get("pf_options_nminus1", net.user_pf_options)
+    if kwargs is not None:
+        # avoid duplicate passing keys to contingency_evaluation_function()
+        pf_options = {key: val for key, val in pf_options.items() if key not in kwargs.keys()}
+        pf_options_nminus1 = {key: val for key, val in pf_options_nminus1.items() if key not in
+                              kwargs.keys()}
 
     contingency_results = {element: {"index": net[element].index.values}
                            for element in ("bus", "line", "trafo", "trafo3w") if len(net[element]) > 0}
@@ -173,7 +180,8 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=pp.
     n_bus = len(net.bus)
     last_bus = net.bus.index[-1]
     if net.bus.index[0] != 0 or last_bus != n_bus - 1 or sum(net.bus.index) != last_bus * n_bus / 2:
-        raise UserWarning("bus index must be continuous and start with 0 (use pandapower.create_continuous_bus_index)")
+        raise UserWarning("bus index must be continuous and start with 0 "
+                          "(use pandapower.create_continuous_bus_index)")
     contingency_evaluation_function(net, **kwargs)
 
     trafo_flag = False

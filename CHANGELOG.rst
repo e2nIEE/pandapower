@@ -9,6 +9,7 @@ Change Log
 - [CHANGED] Capitalize first letter of columns busbar_id, busbar_name and substation_id in bus df for cim converter
 - [FIXED] Do not modify pandas options when importing pandapower
 - [ADDED] improved lightsim2grid documentation including compatibitliy issues
+- [FIXED] avoid duplicated keys in kwargs and pf_options in run_contingency()
 - [FIXED] cim2pp: set default xml encoding to None to avoid error after changing to lxml
 
 [2.14.11] - 2024-07-08
