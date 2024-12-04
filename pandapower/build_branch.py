@@ -797,7 +797,6 @@ def _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, sn_mva, sequenc
             tap_dependency_table = np.array(
                 [False if isinstance(x, float) and np.isnan(x) else x for x in tap_dependency_table])
             if any(tap_dependency_table):
-                print("do something")
                 vk_percent, vkr_percent = _get_vk_values_from_table(trafo_df, trafo_characteristic_table)
             else:
                 vk_percent = get_trafo_values(trafo_df, "vk_percent")
