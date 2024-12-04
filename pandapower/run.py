@@ -174,12 +174,12 @@ def runpp(net, algorithm='nr', calculate_voltage_angles=True, init="auto",
 
         **KWARGS**:
 
-        **lightsim2grid** ((bool,str), "auto") - whether to use the package lightsim2grid for power flow backend
+        **lightsim2grid** ((bool,str), "auto") - whether to use the package lightsim2grid for power
+        flow backend. For more details on compatibility, check out pandapower's documentation.
 
-        **numba** (bool, True) - Activation of numba JIT compiler in the newton solver
-
-            If set to True, the numba JIT compiler is used to generate matrices for the powerflow,
-            which leads to significant speed improvements.
+        **numba** (bool, True) - Activation of numba JIT compiler in the newton solver.
+        If set to True, the numba JIT compiler is used to generate matrices for the powerflow,
+        which leads to significant speed improvements.
 
         **switch_rx_ratio** (float, 2) - rx_ratio of bus-bus-switches. If the impedance of switches
         defined in net.switch.z_ohm is zero, buses connected by a closed bus-bus switch are fused to

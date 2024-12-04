@@ -344,5 +344,53 @@ def test_log_characteristic_property():
     c([2])
 
 
+def test_geo_accessor_geojson():
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, 10, geodata=(1, 1))
+    b2 = pp.create_bus(net, 10, geodata=(2, 2))
+    l = pp.create_lines(
+        net,
+        [b1, b1],
+        [b2, b2],
+        [1.5, 3],
+        std_type="48-AL1/8-ST1A 10.0",
+        geodata=[[(1, 1), (2, 2), (3, 3)], [(1, 1), (1, 2)]],
+    )
+    pp.create_line(net, b1, b2, 1.5, std_type="48-AL1/8-ST1A 10.0")
+
+    assert len(net.line.geo.geojson._coords) == 2
+    assert np.array_equal(net.line.geo.geojson._coords.at[l[0]], [[1, 1], [2, 2], [3, 3]])
+    assert np.array_equal(net.line.geo.geojson._coords.at[l[1]], [[1, 1], [1, 2]])
+    assert np.array_equal(net.bus.geo.geojson._coords.at[b1], [1, 1])
+    assert np.array_equal(net.bus.geo.geojson._coords.at[b2], [2, 2])
+    assert net.bus.geo.geojson.type.at[b1] == "Point"
+    assert net.bus.geo.geojson.type.at[b2] == "Point"
+    assert net.line.geo.geojson.type.at[l[0]] == "LineString"
+    assert net.line.geo.geojson.type.at[l[1]] == "LineString"
+    assert set(net.line.geo.geojson.as_geo_obj.at[l[0]].keys()) == {"coordinates", "type"}
+    assert set(net.line.geo.geojson.as_geo_obj.at[l[1]].keys()) == {"coordinates", "type"}
+    assert set(net.bus.geo.geojson.as_geo_obj.at[b1].keys()) == {"coordinates", "type"}
+    assert set(net.bus.geo.geojson.as_geo_obj.at[b2].keys()) == {"coordinates", "type"}
+
+
+@pytest.mark.skipif(not GEOPANDAS_INSTALLED, reason="geopandas is not installed")
+def test_geo_accessor_geopandas():
+    net = pp.networks.mv_oberrhein()
+    reference_point = (7.781067, 48.389774)
+    radius_m = 2200
+    circle_polygon = gpd.GeoSeries([shapely.geometry.Point(reference_point)],
+                                   crs=4326).to_crs(epsg=31467).buffer(radius_m).to_crs(epsg=4326).iloc[0]
+    assert net.line.geo.geojson.within(circle_polygon).sum() == 11
+    assert all(net.line[net.line.geo.geojson.within(circle_polygon)].index == [14, 17, 46, 47, 55, 116,
+                                                                               117, 118, 120, 121, 134])
+
+    line = shapely.geometry.LineString([[7.8947079593416, 48.40549007606241],
+                                        [7.896048283667894, 48.41060722903666],
+                                        [7.896173712216692, 48.41100311474432]])
+
+    assert net.line.geo.geojson.as_shapely_obj.at[0] == line
+    assert np.allclose(net.line.geo.geojson.total_bounds, [7.74426069, 48.32845845, 7.93829196, 48.47484423])
+
+
 if __name__ == '__main__':
     pytest.main([__file__, "-xs"])

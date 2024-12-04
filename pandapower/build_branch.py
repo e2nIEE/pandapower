@@ -1442,7 +1442,8 @@ def _calculate_3w_tap_changers(t3, t2, sides):
         if any_at_star_point & np.any(mask_star_point := (tap_mask & at_star_point)): 
             t = tap_arrays["tap_step_percent"][side][mask_star_point] * np.exp(1j * np.deg2rad(tap_arrays["tap_step_degree"][side][mask_star_point]))
             tap_pos = tap_arrays["tap_pos"][side][mask_star_point]
-            t_corrected = 100 * t / (100 + (t * tap_pos))
+            tap_neutral = tap_arrays["tap_neutral"][side][mask_star_point]
+            t_corrected = 100 * t / (100 + (t * (tap_pos-tap_neutral)))
             tap_arrays["tap_step_percent"][side][mask_star_point] = np.abs(t_corrected)
             tap_arrays["tap_side"][side][mask_star_point] = "lv" if side == "hv" else "hv"
             tap_arrays["tap_step_degree"][side][mask_star_point] = np.rad2deg(np.angle(t_corrected))
