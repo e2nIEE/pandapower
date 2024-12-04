@@ -640,8 +640,15 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
     if len(s) > 0:
         vl = _is_elements["shunt"]
         v_ratio = (ppc["bus"][bus_lookup[s["bus"].values], BASE_KV] / s["vn_kv"].values) ** 2 * base_multiplier
-        q = np.hstack([q, s["q_mvar"].values * s["step"].values * v_ratio * vl])
-        p = np.hstack([p, s["p_mw"].values * s["step"].values * v_ratio * vl])
+
+        s_tmp = s.merge(net.shunt_characteristic_table, how="left", left_on="id_characteristic_table",
+                        right_on="id_characteristic", suffixes=("", "_table"))
+        s = s_tmp.loc[(s_tmp["step"] == s_tmp["step_table"]) | ~s_tmp["step_dependency_table"]]
+
+        q = np.hstack([q, s["q_mvar"].values * s["step"].values * v_ratio * vl * ~s["step_dependency_table"]])
+        p = np.hstack([p, s["p_mw"].values * s["step"].values * v_ratio * vl * ~s["step_dependency_table"]])
+        q = q + s["q_mvar_table"].fillna(0).to_numpy() * v_ratio * vl
+        p = p + s["p_mw_table"].fillna(0).to_numpy() * v_ratio * vl
         b = np.hstack([b, s["bus"].values])
 
     w = net["ward"]
