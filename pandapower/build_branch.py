@@ -699,10 +699,10 @@ def _get_vk_values_from_table(trafo_df, trafo_characteristic_table, trafotype="2
 
             filtered_df = trafo_characteristic_table.merge(filter[filter['mask']], on=['id_characteristic', 'step'])
             if np.sum(mask) == 3 * len(filtered_df):
-                cut_index = len(mask) // 3
-                mask = mask[:cut_index]
-            vk_value[mask] = filtered_df[vk_var]
-            vals += (vk_value,)
+                vals += (vk_value,)
+            else:
+                vk_value[mask] = filtered_df[vk_var]
+                vals += (vk_value,)
         else:
             vals += (vk_value,)
 
@@ -796,7 +796,7 @@ def _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, sn_mva, sequenc
             tap_dependency_table = get_trafo_values(trafo_df, "tap_dependency_table")
             tap_dependency_table = np.array(
                 [False if isinstance(x, float) and np.isnan(x) else x for x in tap_dependency_table])
-            if any(tap_dependency_table):
+            if any(tap_dependency_table) and not isinstance(trafo_df, dict):
                 vk_percent, vkr_percent = _get_vk_values_from_table(trafo_df, trafo_characteristic_table)
             else:
                 vk_percent = get_trafo_values(trafo_df, "vk_percent")
@@ -1291,7 +1291,6 @@ def _trafo_df_from_trafo3w(net, sequence=1, update_vk_values=True):
     nr_trafos = len(net["trafo3w"])
     if sequence==1:
         if 'tap_dependency_table' in t3:
-            print("do something")
             mode_tmp = "type_c" if mode == "sc" and net._options.get("use_pre_fault_voltage", False) else mode
             _calculate_sc_voltages_of_equivalent_transformers(t3, trafo2, mode_tmp, trafo_characteristic_table=net.trafo_characteristic_table)
         else:
