@@ -261,7 +261,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
                                      sn_mva=Sn, index=max_sgen_idx+len(net_zpbn.sgen)+1)
         elif elm == "gen":
             vm_pu = v[key+"_vm_total"][v.ext_bus == int(re.findall(r"\d+", busstr)[0])].values.real
-            elm_idx = pp.create_gen(net_zpbn, i, float(P), float(vm_pu), name=key+"_rei_"+busstr,
+            elm_idx = pp.create_gen(net_zpbn, i, float(P), float(vm_pu.item()), name=key+"_rei_"+busstr,
                                     sn_mva=Sn, index=max_gen_idx+len(net_zpbn.gen)+1)
 
     # ---- match other columns
@@ -325,7 +325,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
             else:
                 names = elm_org.name[elm_org.bus == bus].values
                 names = [str(n) for n in names]
-                net_zpbn[elm].loc[elm_idx, 'name'] = "//".join(names) + "-" + net_zpbn[elm].name[elm_idx]
+                net_zpbn[elm].loc[elm_idx, "name"] = "//".join(names) + "-" + net_zpbn[elm].name[elm_idx]
                 if len(names) > 1:
                     net_zpbn[elm].loc[elm_idx, list(other_cols_number)] = \
                         elm_org[list(other_cols_number)][elm_org.bus == bus].sum(axis=0)

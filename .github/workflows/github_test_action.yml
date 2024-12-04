@@ -18,7 +18,7 @@ jobs:
     timeout-minutes: 60
     strategy:
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        python-version: ['3.9', '3.10', '3.11', '3.12']
         # Reminder: when removing the support of an old python version here, then don't forget to
         # remove it also in pyproject.toml 'requires-python'
         group: [ 1, 2 ]
@@ -37,7 +37,7 @@ jobs:
           python -m pip install .["all"]
           if ${{ matrix.python-version == '3.9' }}; then python -m pip install pypower; fi
           if ${{ matrix.python-version != '3.9' }}; then python -m pip install numba; fi
-          if ${{ matrix.python-version == '3.8' || matrix.python-version == '3.10' }}; then python -m pip install lightsim2grid; fi
+          if ${{ matrix.python-version == '3.10' }}; then python -m pip install lightsim2grid; fi
       - name: List of installed packages
         run: |
           python -m pip list
@@ -158,7 +158,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        python-version: ['3.9', '3.10', '3.11', '3.12']
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
@@ -314,7 +314,8 @@ jobs:
       - name: Check docs for Python ${{ matrix.python-version }}
         uses: e2nIEE/sphinx-action@master
         with:
-          pre-build-command: "python -m pip install --upgrade pip;
-                              python -m pip install .[docs];"
+          pre-build-command: "apt update && apt upgrade -y && apt install -y build-essential gfortran cmake pkg-config libopenblas-dev;
+            python -m pip install --upgrade pip;
+            python -m pip install .[docs];"
           build-command: "sphinx-build -b html . _build -W"
           docs-folder: "doc/"

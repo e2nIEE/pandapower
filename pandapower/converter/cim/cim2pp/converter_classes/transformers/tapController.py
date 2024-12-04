@@ -70,7 +70,6 @@ class TapController:
         for _, row in input_df.loc[input_df['TapChangerControl'].notna()].iterrows():
             trafo_id = self.cimConverter.net[trafo_type].loc[
                 self.cimConverter.net[trafo_type][sc['o_id']] == row[sc['o_id']]].index.values[0]
-            trafotype = '2W' if trafo_type == 'trafo' else '3W'
             # get the controlled bus (side), assume "lv" as default
             side = 'lv'
             if sc['t_hv'] in self.cimConverter.net[trafo_type].columns and \
@@ -81,10 +80,10 @@ class TapController:
                 side = 'mv'
             if row['discrete']:
                 self.logger.info("Creating DiscreteTapControl for transformer %s." % row[sc['o_id']])
-                DiscreteTapControl(self.cimConverter.net, trafotype=trafotype, tid=trafo_id, side=side,
+                DiscreteTapControl(self.cimConverter.net, element=trafo_type, element_index=trafo_id, side=side,
                                    tol=row['c_tol'], in_service=row['c_in_service'],
                                    vm_lower_pu=row['c_vm_lower_pu'], vm_upper_pu=row['c_vm_upper_pu'])
             else:
                 self.logger.info("Creating ContinuousTapControl for transformer %s." % row[sc['o_id']])
-                ContinuousTapControl(self.cimConverter.net, trafotype=trafotype, tid=trafo_id, side=side,
+                ContinuousTapControl(self.cimConverter.net, element=trafo_type, element_index=trafo_id, side=side,
                                      tol=row['c_tol'], in_service=row['c_in_service'], vm_set_pu=row['c_vm_set_pu'])

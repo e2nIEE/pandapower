@@ -578,6 +578,17 @@ def test_bsfw_algorithm_with_branch_loops():
     assert np.allclose(va_nr, va_alg)
 
 
+def test_disabling_vk_update():
+    net = example_simple()
+    pp.runpp(net, calculate_voltage_angles="auto")
+    net.trafo.loc[:, "vk_percent"] = 100.
+    net.trafo.loc[:, "vkr_percent"] = 100.
+
+    pp.runpp(net, calculate_voltage_angles="auto", update_vk_values=False)
+
+    assert net.res_trafo.loc[0, 'loading_percent'] > 70.
+
+
 @pytest.mark.slow
 def test_pypower_algorithms_iter():
     alg_to_test = ['fdbx', 'fdxb', 'gs']

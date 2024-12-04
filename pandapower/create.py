@@ -366,7 +366,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
         'group': [
             ('name', dtype(object)),
             ('element_type', dtype(object)),
-            ('element', dtype(object)),
+            ('element_index', dtype(object)),
             ('reference_column', dtype(object)),
         ],
         # geodata (now as line.geo, bus.geo, bus_dc.geo, line_dc.geo)
@@ -5774,7 +5774,7 @@ def _check_elements_existence(net, element_types, elements, reference_columns):
             raise UserWarning(f"Cannot create group with {et} members {diff}.")
 
 
-def create_group(net, element_types, elements, name="", reference_columns=None, index=None,
+def create_group(net, element_types, element_indices, name="", reference_columns=None, index=None,
                  **kwargs):
     """Add a new group to net['group'] dataframe.
 
@@ -5794,7 +5794,7 @@ def create_group(net, element_types, elements, name="", reference_columns=None, 
         pandapower net
     element_types : str or list of strings
         defines, together with 'elements', which net elements belong to the group
-    elements : list of list of indices
+    element_indices : list of list of indices
         defines, together with 'element_types', which net elements belong to the group
     name : str, optional
         name of the group, by default ""
@@ -5810,15 +5810,15 @@ def create_group(net, element_types, elements, name="", reference_columns=None, 
         >>> create_group(net, ["bus", "gen"], [[10, 12], [1, 2]])
         >>> create_group(net, ["bus", "gen"], [["Berlin", "Paris"], ["Wind_1", "Nuclear1"]], reference_columns="name")
     """
-    element_types, elements, reference_columns = _group_parameter_list(
-        element_types, elements, reference_columns)
+    element_types, element_indices, reference_columns = _group_parameter_list(
+        element_types, element_indices, reference_columns)
 
-    _check_elements_existence(net, element_types, elements, reference_columns)
+    _check_elements_existence(net, element_types, element_indices, reference_columns)
 
     index = np.array([_get_index_with_check(net, "group", index)] * len(element_types), dtype=np.int64)
 
-    entries = dict(zip(["name", "element_type", "element", "reference_column"],
-                       [name, element_types, elements, reference_columns]))
+    entries = dict(zip(["name", "element_type", "element_index", "reference_column"],
+                       [name, element_types, element_indices, reference_columns]))
 
     _set_multiple_entries(net, "group", index, **entries, **kwargs)
 
@@ -5987,8 +5987,8 @@ def _set_value_if_not_nan(net, index, value, column, element_type, dtype=float64
         if not column_exists:
             net[element_type].loc[:, column] = pd.Series(
                 data=default_val, index=net[element_type].index)
-        net[element_type].at[index, column] = value
         try_astype(net[element_type], column, dtype)
+        net[element_type].at[index, column] = value
     elif column_exists:
         if _not_nan(default_val):
             net[element_type].at[index, column] = default_val
@@ -6086,3 +6086,4 @@ if __name__ == "__main__":
     create_buses(net, 2, 10)
     create_gens(net, [0, 1], p_mw=7)
     create_pwl_cost(net, 0, "gen", [[0, 20, 1], [20, 30, 2]])
+    create_group(net, ["bus", "gen"], [[0], [0]])

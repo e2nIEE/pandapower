@@ -1,6 +1,16 @@
 Change Log
 =============
 
+[upcoming release] - 2024-..-..
+-------------------------------
+- [ADDED] pandas series accessor for geo column
+- [FIXED] Increasing geojson precision as the default precision might cause problems with pandahub
+- [ADDED] Add GeographicalRegion and SubGeographicalRegion names and ids to bus df in cim converter
+- [CHANGED] Capitalize first letter of columns busbar_id, busbar_name and substation_id in bus df for cim converter
+- [FIXED] Do not modify pandas options when importing pandapower
+- [ADDED] improved lightsim2grid documentation including compatibitliy issues
+- [FIXED] cim2pp: set default xml encoding to None to avoid error after changing to lxml
+
 [2.14.11] - 2024-07-08
 -------------------------------
 - [FIXED] Lightsim2grid version
@@ -15,6 +25,17 @@ Change Log
 
 [upcoming release] - 2024-..-..
 -------------------------------
+
+- [FIXED] copy array element to standard python scalar
+- [FIXED] passing literal json to 'read_json' is deprecated
+- [FIXED] replacing deprecated in1d with isin
+- [ADDED] A switch to disable updating the vk and vkr values for trafo3w
+- [FIXED] cast the column to the correct type before assigning values
+- [FIXED] replacement for deprecated namespaces scipy.sparse.csc and scipy.sparse.csr
+- [FIXED] copy array element to standard python scalar
+- [REMOVED] python 3.8 support
+- [CHANGED] geopandas version to >= 1.0
+- [ADDED] station controller functionality with voltage and reactive power control with and without droop and pf import support
 - [ADDED] creating series capacitor added in pf to pp converter
 - [FIXED] using loc to remove the warning
 - [FIXED] replacing deprecated H and A from scipy.sparse.csc_matrix
@@ -53,9 +74,14 @@ Change Log
 - [FIXED] error during unbalanced powerflow due to out of service external grids
 - [FIXED] PowerFactory converter: fix trafo3w tap dependent impedance
 - [ADDED] PowerFactory converter: support load types (constI, constZ) and the setting whether to consider voltage dependency of loads
+- [CHANGED] considering trafo controller and improve implementation for other (bus element) controller at grid_equivalent creation
 - [CHANGED] vectorization of y_bus reordering in _calculate_equivalent_Ybus() within get_equivalent()
 - [FIXED] deprecation of matplotlib.cm.get_cmap(name) -> matplotlib.colormaps[name]
 - [FIXED] merge_nets failing if net2 has custom DataFrame that is not present in net1
+- [CHANGED] grid_equivalent creation: improved consideration of controller
+- [CHANGED] create consistent parameter names (element and element_index) in controllers -> Changes for TrafoController: trafotable & trafotype -> element, tid -> element_index
+- [CHANGED] parameter renaming in net.group: element -> element_index
+- [CHANGED] in to_ppc(), the default of calculate_voltage_angles is True now (as in previously changed in runpp()).
 - [FIXED] fixed some small bugs in the CGMES converter and improved its speed
 - [CHANGED] trigger a numpy error in makeYbus, makeBbus, _wye_delta instead of warning
 - [ADDED] transformer tap hunting detection for DiscreteTapControl
@@ -68,6 +94,12 @@ Change Log
 - [ADDED] Add VSC element, dc buses, dc lines, and hybrid AC/DC power flow calculation
 - [CHANGED] accelerate _integrate_power_elements_connected_with_switch_buses() in get_equivalent()
 - [FIXED] index error during unbalanced powerflow if multiple external grids are present
+- [CHANGED] accelerate distributed slack power flow calculation by using sparse-aware operations in _subnetworks()
+- [CHANGED] Trafo Controllers can now be added to elements that are out of service, changed self.nothing_to_do()
+- [ADDED] Discrete shunt controller for local voltage regulation with shunt steps
+- [ADDED] fix lengths missmatch of output if ignore_zero_length is False in plotting utility function coords_from_node_geodata() and rename ignore_zero_length by ignore_no_geo_diff
+- [ADDED] cim2pp converter: Using lxml to parse XML files (better performance)
+- [ADDED] possibility to load JSON files with unknown object models and just store the models as dictionaries in the network
 
 [2.14.7] - 2024-06-14
 -------------------------------
