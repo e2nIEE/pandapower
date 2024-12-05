@@ -4608,7 +4608,7 @@ def create_shunt(net, bus, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, name
         **q_mvar** (float) - shunt reactive power in MVAr at v = 1.0 p.u. per step
 
     OPTIONAL:
-        **vn_kv** (float, None) - rated voltage of the shunt. Defaults to rated voltage of connected bus, since this \ 
+        **vn_kv** (float, None) - rated voltage of the shunt. Defaults to rated voltage of connected bus, since this \
             value is mandatory for powerflow calculations. If it is set to NaN it will be replaced by the bus vn_kv \
             during power flow
 
