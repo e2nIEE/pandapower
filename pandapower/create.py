@@ -142,6 +142,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                 ("max_q_mvar", "f8"),
                 ("scaling", "f8"),
                 ("slack", "bool"),
+                ('id_characteristic_table', 'u4'),
                 ("in_service", 'bool'),
                 ("slack_weight", 'f8'),
                 ("type", dtype(object))],

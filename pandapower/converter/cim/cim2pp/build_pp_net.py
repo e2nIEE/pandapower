@@ -112,7 +112,7 @@ class CimConverter:
         # --------- convert switches ---------
         self.classes_dict['switchesCim16'](cimConverter=self).convert_switches_cim16()
         # --------- convert loads ---------
-        self.classes_dict['energyConcumersCim16'](cimConverter=self).convert_energy_consumers_cim16()
+        self.classes_dict['energyConcumersCim16'](cimConverter=self).convert_energy_consumers_cim16()  #todo  correction of spelling mistake
         self.classes_dict['conformLoadsCim16'](cimConverter=self).convert_conform_loads_cim16()
         self.classes_dict['nonConformLoadsCim16'](cimConverter=self).convert_non_conform_loads_cim16()
         self.classes_dict['stationSuppliesCim16'](cimConverter=self).convert_station_supplies_cim16()

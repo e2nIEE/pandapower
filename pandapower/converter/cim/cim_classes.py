@@ -236,7 +236,7 @@ class CimParser:
                 'NuclearGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP', 'governorSCD']),
                 'RegulatingControl': pd.DataFrame(columns=['rdfId', 'name', 'mode', 'Terminal']),
                 'SynchronousMachine': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'description', 'GeneratingUnit', 'EquipmentContainer', 'ratedU', 'ratedS', 'type',
+                    'rdfId', 'name', 'description', 'GeneratingUnit', 'EquipmentContainer', 'ratedU', 'ratedS', 'type', 'InitialReactiveCapabilityCurve',
                     'r2', 'x2', 'ratedPowerFactor', 'voltageRegulationRange', 'minQ', 'maxQ', 'RegulatingControl']),
                 'AsynchronousMachine': pd.DataFrame(columns=[
                     'rdfId', 'name', 'description', 'GeneratingUnit', 'ratedS', 'ratedU', 'ratedPowerFactor',
