@@ -3811,7 +3811,7 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
 
 
 def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tap_pos=nan,
-                         in_service=True, index=None, max_loading_percent=nan,
+                         in_service=True, index=None, max_loading_percent=nan, tap_phase_shifter_type=nan,
                          tap_at_star_point=False, tap_dependency_table=False, id_characteristic_table=nan):
     """
     Creates a three-winding transformer in table net["trafo3w"].
@@ -3835,6 +3835,9 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tap_p
 
         **tap_pos** (int, nan) - current tap position of the transformer. Defaults to the medium \
             position (tap_neutral)
+
+        **tap_phase_shifter_type** (int, nan) - specifies the phase shifter type (0: Ratio/Asymmetrical,
+                                                1: Symmetrical, 2: Ideal)
 
         **tap_at_star_point** (boolean) - Whether tap changer is located at the star point of the \
             3W-transformer or at the bus
@@ -3918,6 +3921,8 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tap_p
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "trafo3w")
     _set_value_if_not_nan(net, index, id_characteristic_table,
                           "id_characteristic_table", "trafo3w", dtype="Int64")
+    _set_value_if_not_nan(net, index, tap_phase_shifter_type,
+                          "tap_phase_shifter_type", "trafo3w", dtype="Int64")
 
     return index
 
@@ -3998,6 +4003,9 @@ def create_transformer3w_from_parameters(
 
         **tap_pos** (int, nan) - current tap position of the transformer. Defaults to the \
             medium position (tap_neutral)
+
+        **tap_phase_shifter_type** (int, nan) - specifies the phase shifter type (0: Ratio/Asymmetrical,
+                                                1: Symmetrical, 2: Ideal)
 
         **tap_at_star_point** (boolean) - Whether tap changer is located at the star point of the \
             3W-transformer or at the bus
@@ -4090,7 +4098,7 @@ def create_transformers3w_from_parameters(
         tap_step_percent=nan, tap_step_degree=nan, tap_pos=nan,
         tap_neutral=nan, tap_max=nan, tap_min=nan, name=None,
         in_service=True, index=None, max_loading_percent=nan,
-        tap_at_star_point=False,
+        tap_at_star_point=False, tap_phase_shifter_type=nan,
         vk0_hv_percent=nan, vk0_mv_percent=nan, vk0_lv_percent=nan,
         vkr0_hv_percent=nan, vkr0_mv_percent=nan, vkr0_lv_percent=nan,
         vector_group=None, tap_dependency_table=False, id_characteristic_table=nan, **kwargs):
@@ -4159,6 +4167,9 @@ def create_transformers3w_from_parameters(
 
         **tap_pos** (list of int, nan) - current tap position of the transformer. Defaults to the \
             medium position (tap_neutral)
+
+        **tap_phase_shifter_type** (list of int, nan) - specifies the phase shifter type (0: Ratio/Asymmetrical,
+                                                        1: Symmetrical, 2: Ideal)
 
         **tap_at_star_point** (list of boolean) - Whether tap changer is located at the star point of the \
             3W-transformer or at the bus
@@ -4236,6 +4247,8 @@ def create_transformers3w_from_parameters(
                                max_loading_percent)
     _add_to_entries_if_not_nan(net, "trafo3w", entries, index, "id_characteristic_table",
                                id_characteristic_table, dtype="Int64")
+    _add_to_entries_if_not_nan(net, "trafo3w", entries, index, "tap_phase_shifter_type",
+                               tap_phase_shifter_type, dtype="Int64")
     defaults_to_fill = [("tap_dependency_table", False)]
 
     _set_multiple_entries(net, "trafo3w", index, defaults_to_fill=defaults_to_fill, **entries,
