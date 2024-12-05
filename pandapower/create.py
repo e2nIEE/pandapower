@@ -79,6 +79,9 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                  ("q_mvar", "f8"),
                  ("sn_mva", "f8"),
                  ("scaling", "f8"),
+                 ('id_q_capability_curve_table', 'u4'),
+                 ('curve_dependency_table', 'bool'),
+                 ('curve_style', dtype(object)),
                  ("in_service", 'bool'),
                  ("type", dtype(object)),
                  ("current_source", "bool")],
@@ -142,6 +145,9 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                 ("max_q_mvar", "f8"),
                 ("scaling", "f8"),
                 ("slack", "bool"),
+                ('id_q_capability_curve_table', 'u4'),
+                ('curve_dependency_table', 'bool'),
+                ('curve_style', dtype(object)),
                 ("in_service", 'bool'),
                 ("slack_weight", 'f8'),
                 ("type", dtype(object))],
@@ -4542,7 +4548,7 @@ def create_shunt(net, bus, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, name
         **q_mvar** (float) - shunt reactive power in MVAr at v = 1.0 p.u. per step
 
     OPTIONAL:
-        **vn_kv** (float, None) - rated voltage of the shunt. Defaults to rated voltage of connected bus, since this \ 
+        **vn_kv** (float, None) - rated voltage of the shunt. Defaults to rated voltage of connected bus, since this \
             value is mandatory for powerflow calculations. If it is set to NaN it will be replaced by the bus vn_kv \
             during power flow
 
