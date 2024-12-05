@@ -7,6 +7,7 @@ Change Log
 - [FIXED] Increasing geojson precision as the default precision might cause problems with pandahub
 - [ADDED] Add GeographicalRegion and SubGeographicalRegion names and ids to bus df in cim converter
 - [CHANGED] Capitalize first letter of columns busbar_id, busbar_name and substation_id in bus df for cim converter
+- [CHANGED] required standard type parameters are made available by function :code:`required_std_type_parameters()`
 - [FIXED] Do not modify pandas options when importing pandapower
 - [ADDED] improved lightsim2grid documentation including compatibitliy issues
 - [FIXED] cim2pp: set default xml encoding to None to avoid error after changing to lxml
