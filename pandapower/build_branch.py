@@ -574,20 +574,20 @@ def _calc_tap_from_dataframe(net, trafo_df):
         sin = lambda x: np.sin(np.deg2rad(x))
         arctan = lambda x: np.rad2deg(np.arctan(x))
 
-        if 'tap_phase_shifter_type' in trafo_df:
+        if f'tap{t}_phase_shifter_type' in trafo_df:
             # tap_phase_shift_type is only in dataframe starting from pp Version 3.0, older version use different logic
             phase_shifter_type = get_trafo_values(trafo_df, f"tap{t}_phase_shifter_type")
-            if 'tap_dependency_table' in trafo_df:
+            if f'tap{t}_dependency_table' in trafo_df:
                 tap_dependency = get_trafo_values(trafo_df, "tap_dependency_table")
                 tap_dependency = np.array([False if isinstance(x, float) and np.isnan(x) else x for x in tap_dependency])
             else:
-                tap_table = [False]
-                tap_dependency = [False]
+                tap_table = np.array([False])
+                tap_dependency = np.array([False])
             if not isinstance(trafo_df, dict) and not isinstance(phase_shifter_type, np.ndarray):
                 phase_shifter_type = phase_shifter_type.to_numpy() if not isinstance(trafo_df, dict) else phase_shifter_type
             phase_shifter_type = np.nan_to_num(phase_shifter_type, nan=-1)
             tap_table = np.logical_and(tap_dependency, np.logical_not(phase_shifter_type == -1))
-            tap_no_table = np.logical_and(tap_dependency == False, np.logical_not(phase_shifter_type == -1))
+            tap_no_table = np.logical_and(~(tap_dependency), np.logical_not(phase_shifter_type == -1))
             if any(tap_table):
                 id_characteristic_table = get_trafo_values(trafo_df, "id_characteristic_table")
                 for side, vn, direction in [("hv", vnh, 1), ("lv", vnl, -1)]:
