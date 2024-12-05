@@ -890,7 +890,7 @@ def test_trafo_unequal_r_x_hv_lv():
     pp.create_transformer_from_parameters(net, 0, 1, 150, 120, 19,
                                           1, 3, 20, 0.12, tap_side="hv",
                                           tap_neutral=0, tap_max=2, tap_min=-2, tap_step_percent=5, tap_step_degree=30,
-                                          tap_pos=-2, leakage_resistance_ratio_hv=0.6, leakage_reactance_ratio_hv=0.2)
+                                          tap_pos=-2, tap_phase_shifter_type=0, leakage_resistance_ratio_hv=0.6, leakage_reactance_ratio_hv=0.2)
     pp.create_load(net, 1, 100, 20)
 
     runpp_with_consistency_checks(net)

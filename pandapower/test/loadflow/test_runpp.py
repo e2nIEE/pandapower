@@ -1326,13 +1326,13 @@ def test_tap_dependent_impedance():
                                             vn_hv_kv=20., vn_mv_kv=0.9, vn_lv_kv=0.45, sn_hv_mva=0.6, sn_mv_mva=0.5,
                                             sn_lv_mva=0.4, vk_hv_percent=1., vk_mv_percent=1., vk_lv_percent=1.,
                                             vkr_hv_percent=0.3, vkr_mv_percent=0.3, vkr_lv_percent=0.3,
-                                            pfe_kw=0.2, i0_percent=0.3, tap_neutral=0.,
-                                            tap_pos=0, tap_step_percent=1., tap_min=-2, tap_max=2)
+                                            pfe_kw=0.2, i0_percent=0.3, tap_neutral=0., tap_side='hv',
+                                            tap_pos=0, tap_step_percent=0., tap_min=-2, tap_max=2)
 
     net_backup = net.deepcopy()
 
     net["trafo_characteristic_table"] = pd.DataFrame(
-        {'id_characteristic': [0, 0, 0, 0, 0], 'step': [-2, -1, 0, 1, 2], 'voltage_ratio': [1, 1, 1, 1, 1],
+        {'id_characteristic': [0, 0, 0, 0, 0], 'step': [-2, -1, 0, 1, 2], 'voltage_ratio': [0.95, 0.975, 1, 1.025, 1.05],
          'angle_deg': [0, 0, 0, 0, 0], 'vk_percent': [5.5, 5.8, 6, 6.2, 6.5],
          'vkr_percent': [1.4, 1.42, 1.44, 1.46, 1.48], 'vk_hv_percent': np.nan, 'vkr_hv_percent': np.nan,
          'vk_mv_percent': np.nan, 'vkr_mv_percent': np.nan, 'vk_lv_percent': np.nan, 'vkr_lv_percent': np.nan})
