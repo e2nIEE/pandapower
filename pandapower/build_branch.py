@@ -428,10 +428,14 @@ def _calc_branch_values_from_trafo_df(net, ppc, trafo_df=None, sequence=1, updat
 def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=1, update_vk_values=True):
     mode = net["_options"]["mode"]
     trafo_model = net["_options"]["trafo_model"]
-
-    r, x = _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva,
+    if 'tap_dependency_table' in trafo_df:
+        r, x = _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva,
                                     sequence=sequence, characteristic=net.get("characteristic"),
-                                    update_vk_values=update_vk_values)
+                                    update_vk_values=update_vk_values, net=net)
+    else:
+        r, x = _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva,
+                                        sequence=sequence, characteristic=net.get("characteristic"),
+                                        update_vk_values=update_vk_values)
 
     if mode == "sc":
         if net._options.get("use_pre_fault_voltage", False):
@@ -529,7 +533,7 @@ def _calc_y_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net_sn_mva):
 # todo: add characteristics for tap percent and degree changes here
 def _calc_tap_from_dataframe(net, trafo_df):
     """
-    Adjust the nominal voltage vnh and vnl to the active tab position "tap_pos".
+    Adjust the nominal voltage vnh, vnl and phase shift to the active tab position "tap_pos".
     If "side" is 1 (high-voltage side) the high voltage vnh is adjusted.
     If "side" is 2 (low-voltage side) the low voltage vnl is adjusted
 
@@ -562,7 +566,6 @@ def _calc_tap_from_dataframe(net, trafo_df):
         tap_pos = get_trafo_values(trafo_df, f"tap{t}_pos")
         tap_neutral = get_trafo_values(trafo_df, f"tap{t}_neutral")
         tap_diff = tap_pos - tap_neutral
-        tap_phase_shifter = get_trafo_values(trafo_df, f"tap{t}_phase_shifter")
         tap_side = get_trafo_values(trafo_df, f"tap{t}_side")
         tap_step_percent = get_trafo_values(trafo_df, f"tap{t}_step_percent")
         tap_step_degree = get_trafo_values(trafo_df, f"tap{t}_step_degree")
@@ -571,30 +574,85 @@ def _calc_tap_from_dataframe(net, trafo_df):
         sin = lambda x: np.sin(np.deg2rad(x))
         arctan = lambda x: np.rad2deg(np.arctan(x))
 
-        for side, vn, direction in [("hv", vnh, 1), ("lv", vnl, -1)]:
-            phase_shifters = tap_phase_shifter & (tap_side == side)
-            tap_complex = np.isfinite(tap_step_percent) & np.isfinite(tap_pos) & (tap_side == side) & \
-                ~phase_shifters
-            if tap_complex.any():
-                tap_steps = tap_step_percent[tap_complex] * tap_diff[tap_complex] / 100
-                tap_angles = _replace_nan(tap_step_degree[tap_complex])
-                u1 = vn[tap_complex]
-                du = u1 * _replace_nan(tap_steps)
-                vn[tap_complex] = np.sqrt((u1 + du * cos(tap_angles)) ** 2 + (du * sin(tap_angles)) ** 2)
-                trafo_shift[tap_complex] += (arctan(direction * du * sin(tap_angles) /
-                                                    (u1 + du * cos(tap_angles))))
-            if phase_shifters.any():
-                degree_is_set = _replace_nan(tap_step_degree[phase_shifters]) != 0
-                percent_is_set = _replace_nan(tap_step_percent[phase_shifters]) != 0
-                if (degree_is_set & percent_is_set).any():
-                    raise UserWarning(
-                        "Both tap_step_degree and tap_step_percent set for ideal phase shifter")
-                trafo_shift[phase_shifters] += np.where(
-                    (degree_is_set),
-                    (direction * tap_diff[phase_shifters] * tap_step_degree[phase_shifters]),
-                    (direction * 2 * np.rad2deg(np.arcsin(tap_diff[phase_shifters] * \
-                                                          tap_step_percent[phase_shifters] / 100 / 2)))
-                )
+        if 'tap_phase_shifter_type' in trafo_df:
+            # tap_phase_shift_type is only in dataframe starting from pp Version 3.0, older version use different logic
+            phase_shifter_type = get_trafo_values(trafo_df, f"tap{t}_phase_shifter_type")
+            if 'tap_dependency_table' in trafo_df:
+                tap_dependency = get_trafo_values(trafo_df, "tap_dependency_table")
+                tap_dependency = np.array([False if isinstance(x, float) and np.isnan(x) else x for x in tap_dependency])
+            else:
+                tap_table = [False]
+                tap_dependency = [False]
+            if not isinstance(trafo_df, dict) and not isinstance(phase_shifter_type, np.ndarray):
+                phase_shifter_type = phase_shifter_type.to_numpy() if not isinstance(trafo_df, dict) else phase_shifter_type
+            phase_shifter_type = np.nan_to_num(phase_shifter_type, nan=-1)
+            tap_table = np.logical_and(tap_dependency, np.logical_not(phase_shifter_type == -1))
+            tap_no_table = np.logical_and(tap_dependency == False, np.logical_not(phase_shifter_type == -1))
+            if any(tap_table):
+                id_characteristic_table = get_trafo_values(trafo_df, "id_characteristic_table")
+                for side, vn, direction in [("hv", vnh, 1), ("lv", vnl, -1)]:
+                    mask = tap_table & (side == tap_side)
+                    filter = pd.DataFrame({
+                        'id_characteristic': id_characteristic_table,
+                        'step': tap_pos,
+                        'mask': mask
+                    })
+
+                    filtered_df = net.trafo_characteristic_table.merge(filter[filter['mask']], on=['id_characteristic', 'step'])
+                    vn[mask] = vn[mask] * filtered_df['voltage_ratio']
+                    trafo_shift[mask] += filtered_df['angle_deg']
+            if any(tap_no_table):
+                tap_ideal = np.logical_and(phase_shifter_type == 2, tap_no_table)
+                tap_complex = np.logical_and(np.logical_or(phase_shifter_type == 0, phase_shifter_type == 1), tap_no_table)
+                for side, vn, direction in [("hv", vnh, 1), ("lv", vnl, -1)]:
+                    mask_ideal = ((tap_ideal) & (tap_side == side))
+                    mask_complex = ((tap_complex) & (tap_side == side))
+                    if any(mask_ideal):
+                        degree_is_set = _replace_nan(tap_step_degree[mask_ideal]) != 0
+                        percent_is_set = _replace_nan(tap_step_percent[mask_ideal]) != 0
+                        if (degree_is_set & percent_is_set).any():
+                            raise UserWarning(
+                                "Both tap_step_degree and tap_step_percent set for ideal phase shifter")
+                        trafo_shift[mask_ideal] += np.where(
+                            (degree_is_set),
+                            (direction * tap_diff[phase_shifter_type == 2] * tap_step_degree[phase_shifter_type == 2]),
+                            (direction * 2 * np.rad2deg(np.arcsin(tap_diff[phase_shifter_type == 2] * \
+                                                                  tap_step_percent[phase_shifter_type == 2] / 100 / 2)))
+                        )
+                    elif any(mask_complex):
+                        tap_steps = tap_step_percent[mask_complex] * tap_diff[mask_complex] / 100
+                        tap_angles = _replace_nan(tap_step_degree[mask_complex])
+                        u1 = vn[mask_complex]
+                        du = u1 * _replace_nan(tap_steps)
+                        vn[mask_complex] = np.sqrt((u1 + du * cos(tap_angles)) ** 2 + (du * sin(tap_angles)) ** 2)
+                        trafo_shift[mask_complex] += (arctan(direction * du * sin(tap_angles) /
+                                                            (u1 + du * cos(tap_angles))))
+        else:
+            tap_phase_shifter = get_trafo_values(trafo_df, f"tap{t}_phase_shifter")
+            for side, vn, direction in [("hv", vnh, 1), ("lv", vnl, -1)]:
+                tap_ideal = tap_phase_shifter & (tap_side == side)
+                tap_complex = np.isfinite(tap_step_percent) & np.isfinite(tap_pos) & (tap_side == side) & \
+                    ~tap_ideal
+                if tap_complex.any():
+                    tap_steps = tap_step_percent[tap_complex] * tap_diff[tap_complex] / 100
+                    tap_angles = _replace_nan(tap_step_degree[tap_complex])
+                    u1 = vn[tap_complex]
+                    du = u1 * _replace_nan(tap_steps)
+                    vn[tap_complex] = np.sqrt((u1 + du * cos(tap_angles)) ** 2 + (du * sin(tap_angles)) ** 2)
+                    trafo_shift[tap_complex] += (arctan(direction * du * sin(tap_angles) /
+                                                        (u1 + du * cos(tap_angles))))
+                if tap_ideal.any():
+                    degree_is_set = _replace_nan(tap_step_degree[tap_ideal]) != 0
+                    percent_is_set = _replace_nan(tap_step_percent[tap_ideal]) != 0
+                    if (degree_is_set & percent_is_set).any():
+                        raise UserWarning(
+                            "Both tap_step_degree and tap_step_percent set for ideal phase shifter")
+                    trafo_shift[tap_ideal] += np.where(
+                        (degree_is_set),
+                        (direction * tap_diff[tap_ideal] * tap_step_degree[tap_ideal]),
+                        (direction * 2 * np.rad2deg(np.arcsin(tap_diff[tap_ideal] * \
+                                                              tap_step_percent[tap_ideal] / 100 / 2)))
+                    )
     return vnh, vnl, trafo_shift
 
 
@@ -604,7 +662,47 @@ def _replace_nan(array, value=0):
     return array
 
 
-# todo create similar or expand/rename function to include voltage_ratio and angle_deg
+def _get_vk_values_from_table(trafo_df, trafo_characteristic_table, trafotype="2W"):
+    if trafotype == "2W":
+        vk_variables = ("vk_percent", "vkr_percent")
+    elif trafotype == "3W":
+        vk_variables = ("vk_hv_percent", "vkr_hv_percent", "vk_mv_percent", "vkr_mv_percent",
+        "vk_lv_percent", "vkr_lv_percent")
+    else:
+        raise UserWarning("Unknown trafotype")
+
+    tap_dependency_table = get_trafo_values(trafo_df, "tap_dependency_table")
+    tap_dependency_table = np.array(
+        [False if isinstance(x, float) and np.isnan(x) else x for x in tap_dependency_table])
+    if np.any(np.isnan(tap_dependency_table)):
+        raise UserWarning("tap_dependent_impedance has NaN values, but must be of type "
+                          "bool and set to True or False")
+    tap_pos = get_trafo_values(trafo_df, "tap_pos")
+
+    vals = ()
+
+    for c, vk_var in enumerate(vk_variables):
+        vk_value = get_trafo_values(trafo_df, vk_var)
+        if any(tap_dependency_table):
+            id_characteristic_table = get_trafo_values(trafo_df, "id_characteristic_table")
+
+            mask = tap_dependency_table
+            filter = pd.DataFrame({
+                'id_characteristic': id_characteristic_table,
+                'step': tap_pos,
+                'mask': mask
+            })
+
+            filtered_df = trafo_characteristic_table.merge(filter[filter['mask']], on=['id_characteristic', 'step'])
+            vk_value[mask] = filtered_df[vk_var]
+
+            vals += (vk_value,)
+        else:
+            vals += (vk_value,)
+
+    return vals
+
+
 def _get_vk_values(trafo_df, characteristic, trafotype="2W"):
     if trafotype == "2W":
         vk_variables = ("vk_percent", "vkr_percent")
@@ -681,18 +779,28 @@ def _calc_tap_dependent_value(tap_pos, value, tap_dependent_impedance, character
 
 
 def _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, sn_mva, sequence=1, characteristic=None,
-                             update_vk_values=True):
+                             update_vk_values=True, net=None):
     """
     Calculates (Vectorized) the resistance and reactance according to the
     transformer values
     """
     parallel = get_trafo_values(trafo_df, "parallel")
     if sequence == 1:
-        if update_vk_values:
-            vk_percent, vkr_percent = _get_vk_values(trafo_df, characteristic)
+        if "tap_dependency_table" in trafo_df:
+            tap_dependency_table = get_trafo_values(trafo_df, "tap_dependency_table")
+            tap_dependency_table = np.array(
+                [False if isinstance(x, float) and np.isnan(x) else x for x in tap_dependency_table])
+            if any(tap_dependency_table) and not isinstance(trafo_df, dict):
+                vk_percent, vkr_percent = _get_vk_values_from_table(trafo_df, net.trafo_characteristic_table)
+            else:
+                vk_percent = get_trafo_values(trafo_df, "vk_percent")
+                vkr_percent = get_trafo_values(trafo_df, "vkr_percent")
         else:
-            vk_percent = get_trafo_values(trafo_df, "vk_percent")
-            vkr_percent = get_trafo_values(trafo_df, "vkr_percent")
+            if update_vk_values:
+                vk_percent, vkr_percent = _get_vk_values(trafo_df, characteristic)
+            else:
+                vk_percent = get_trafo_values(trafo_df, "vk_percent")
+                vkr_percent = get_trafo_values(trafo_df, "vkr_percent")
 
     elif sequence == 0:
         vk_percent = get_trafo_values(trafo_df, "vk0_percent")
@@ -1176,9 +1284,13 @@ def _trafo_df_from_trafo3w(net, sequence=1, update_vk_values=True):
                                                                               net._options["trafo3w_losses"].lower())
     nr_trafos = len(net["trafo3w"])
     if sequence==1:
-        mode_tmp = "type_c" if mode == "sc" and net._options.get("use_pre_fault_voltage", False) else mode
-        _calculate_sc_voltages_of_equivalent_transformers(t3, trafo2, mode_tmp, characteristic=net.get(
-            'characteristic'), update_vk_values=update_vk_values)
+        if 'tap_dependency_table' in t3:
+            mode_tmp = "type_c" if mode == "sc" and net._options.get("use_pre_fault_voltage", False) else mode
+            _calculate_sc_voltages_of_equivalent_transformers(t3, trafo2, mode_tmp, net=net)
+        else:
+            mode_tmp = "type_c" if mode == "sc" and net._options.get("use_pre_fault_voltage", False) else mode
+            _calculate_sc_voltages_of_equivalent_transformers(t3, trafo2, mode_tmp, characteristic=net.get(
+                'characteristic'), update_vk_values=update_vk_values)
     elif sequence==0:
         if mode != "sc":
             raise NotImplementedError(
@@ -1201,7 +1313,12 @@ def _trafo_df_from_trafo3w(net, sequence=1, update_vk_values=True):
     trafo2["vn_lv_kv"] = {side: t3["vn_%s_kv" % side].values for side in sides}
     trafo2["shift_degree"] = {"hv": np.zeros(nr_trafos), "mv": t3.shift_mv_degree.values,
                               "lv": t3.shift_lv_degree.values}
-    trafo2["tap_phase_shifter"] = {side: np.zeros(nr_trafos).astype(bool) for side in sides}
+    if 'tap_dependency_table' in t3:
+        trafo2["tap_phase_shifter_type"] = {side: t3.tap_phase_shifter_type for side in sides}
+        trafo2["tap_dependency_table"] = {side: t3.tap_dependency_table for side in sides}
+        trafo2["id_characteristic_table"] = {side: t3.id_characteristic_table for side in sides}
+    else:
+        trafo2["tap_phase_shifter"] = {side: np.zeros(nr_trafos).astype(bool) for side in sides}
     trafo2["parallel"] = {side: np.ones(nr_trafos) for side in sides}
     trafo2["df"] = {side: np.ones(nr_trafos) for side in sides}
     # even though this is not relevant (at least now), the values cannot be empty:
@@ -1212,12 +1329,23 @@ def _trafo_df_from_trafo3w(net, sequence=1, update_vk_values=True):
     return {var: np.concatenate([trafo2[var][side] for side in sides]) for var in trafo2.keys()}
 
 
-def _calculate_sc_voltages_of_equivalent_transformers(t3, t2, mode, characteristic, update_vk_values=True):
-    if update_vk_values:
-        vk_hv, vkr_hv, vk_mv, vkr_mv, vk_lv, vkr_lv = _get_vk_values(t3, characteristic, "3W")
+def _calculate_sc_voltages_of_equivalent_transformers(t3, t2, mode, characteristic=None, update_vk_values=True, net=None):
+    if "tap_dependency_table" in t3:
+        tap_dependency_table = get_trafo_values(t3, "tap_dependency_table")
+        tap_dependency_table = np.array(
+            [False if isinstance(x, float) and np.isnan(x) else x for x in tap_dependency_table])
+        if any(tap_dependency_table):
+            vk_hv, vkr_hv, vk_mv, vkr_mv, vk_lv, vkr_lv = _get_vk_values_from_table(t3, net.trafo_characteristic_table, "3W")
+        else:
+            vk_hv, vkr_hv, vk_mv, vkr_mv, vk_lv, vkr_lv = (
+            t3['vk_hv_percent'], t3['vkr_hv_percent'], t3['vk_mv_percent'],
+            t3['vkr_mv_percent'], t3['vk_lv_percent'], t3['vkr_lv_percent'])
     else:
-        vk_hv, vkr_hv, vk_mv, vkr_mv, vk_lv, vkr_lv = (t3['vk_hv_percent'], t3['vkr_hv_percent'], t3['vk_mv_percent'],
-                                                       t3['vkr_mv_percent'], t3['vk_lv_percent'], t3['vkr_lv_percent'])
+        if update_vk_values:
+            vk_hv, vkr_hv, vk_mv, vkr_mv, vk_lv, vkr_lv = _get_vk_values(t3, characteristic, "3W")
+        else:
+            vk_hv, vkr_hv, vk_mv, vkr_mv, vk_lv, vkr_lv = (t3['vk_hv_percent'], t3['vkr_hv_percent'], t3['vk_mv_percent'],
+                                                           t3['vkr_mv_percent'], t3['vk_lv_percent'], t3['vkr_lv_percent'])
 
     vk_3w = np.stack([vk_hv, vk_mv, vk_lv])
     vkr_3w = np.stack([vkr_hv, vkr_mv, vkr_lv])

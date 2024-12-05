@@ -3929,7 +3929,7 @@ def create_transformer3w_from_parameters(
         vkr_mv_percent, vkr_lv_percent, pfe_kw, i0_percent,
         shift_mv_degree=0., shift_lv_degree=0., tap_side=None,
         tap_step_percent=nan, tap_step_degree=nan, tap_pos=nan,
-        tap_neutral=nan, tap_max=nan,
+        tap_neutral=nan, tap_max=nan, tap_phase_shifter_type=nan,
         tap_min=nan, name=None, in_service=True, index=None,
         max_loading_percent=nan, tap_at_star_point=False,
         vk0_hv_percent=nan, vk0_mv_percent=nan, vk0_lv_percent=nan,
@@ -4075,6 +4075,8 @@ def create_transformer3w_from_parameters(
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "trafo3w")
     _set_value_if_not_nan(net, index, id_characteristic_table,
                           "id_characteristic_table", "trafo3w", dtype="Int64")
+    _set_value_if_not_nan(net, index, tap_phase_shifter_type,
+                          "tap_phase_shifter_type", "trafo3w", dtype="Int64")
 
     return index
 
