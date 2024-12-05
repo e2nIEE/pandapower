@@ -22,6 +22,9 @@ class SynchronousMachinesCim16:
         self.logger.info("Start converting SynchronousMachines.")
         eqssh_synchronous_machines = self._prepare_synchronous_machines_cim16()
 
+        #add synchronousmaschine characteristics table and id_characteristics_table
+        eqssh_synchronous_machines = self._create_gen_characteristics_table(eqssh_synchronous_machines);
+
         # convert the SynchronousMachines with voltage control to gens
         eqssh_sm_gens = eqssh_synchronous_machines.loc[(eqssh_synchronous_machines['mode'] == 'voltage') &
                                                        (eqssh_synchronous_machines['enabled'])]
@@ -145,3 +148,39 @@ class SynchronousMachinesCim16:
             'minOperatingP': 'min_p_mw', 'maxOperatingP': 'max_p_mw', 'minQ': 'min_q_mvar', 'maxQ': 'max_q_mvar',
             'ratedPowerFactor': 'cos_phi', 'referencePriority': 'slack_weight'})
         return synchronous_machines
+
+    def _create_gen_characteristics_table(self, syn_gen_df_origin) -> pd.DataFrame:
+        if 'id_characteristic_table' not in syn_gen_df_origin.columns:
+            syn_gen_df_origin['id_characteristic_table'] = pd.Series(pd.NA, dtype="Int64")
+        if 'gen_capability_curve_table' not in self.cimConverter.net.keys():
+            self.cimConverter.net['gen_capability_curve_table'] = pd.DataFrame(
+                columns=['id_characteristic', 'p', 'q_min', 'q_max', ])
+
+        # get the curve data
+        curve_data = self.cimConverter.cim['eq']['ReactiveCapabilityCurve'][['rdfId']].rename(
+            columns={'rdfId': 'Curve'})
+        curve_points = pd.merge(curve_data, self.cimConverter.cim['eq']['CurveData'][
+            ['rdfId', 'Curve', 'xvalue', 'y1value', 'y2value']], how='left', on='Curve')
+
+        curve_points['id_characteristic_table'] = pd.factorize(curve_points['Curve'])[0]
+        curve_points['id_characteristic_table'] = curve_points['id_characteristic_table'].astype('Int64')
+        curve_points = curve_points.drop(columns=['rdfId']).rename(columns={'Curve': 'rdfId', 'xvalue': 'p_mw',
+                                                                            'y1value': 'q_min_mvar',
+                                                                            'y2value': 'q_max_mvar'})
+
+        # Move 'id_characteristic_table' to the first column and save to net
+        curve_points = curve_points[
+            ['id_characteristic_table'] + [col for col in curve_points.columns if col != 'id_characteristic_table']]
+        self.cimConverter.net['gen_capability_curve_table'] = curve_points
+        self.cimConverter.net['gen_capability_curve_table'] = (self.cimConverter.net['gen_capability_curve_table'].
+        drop(columns=['rdfId']).rename(
+            columns={'id_characteristic_table': 'id_characteristic'}))
+
+        # Drop unnecessary columns and duplicate rdfId
+        curve_points = (
+            curve_points.drop(columns=['p_mw', 'q_min_mvar', 'q_max_mvar']).drop_duplicates(subset=['rdfId']).
+            rename(columns={'rdfId': 'InitialReactiveCapabilityCurve'}))
+
+        syn_gen_df_origin = syn_gen_df_origin.drop(columns=['id_characteristic_table'])
+        syn_gen_df_origin = pd.merge(syn_gen_df_origin, curve_points, how='left', on='InitialReactiveCapabilityCurve')
+        return syn_gen_df_origin
