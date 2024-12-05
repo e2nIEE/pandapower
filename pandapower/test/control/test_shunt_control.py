@@ -33,6 +33,8 @@ def test_discrete_shunt_control(tol=1e-6):
     pp.runpp(net, run_control=True)
     assert (abs(net.res_bus.loc[1, "vm_pu"] - 1.077258) < tol)
     assert net.shunt.loc[0, "step"] == 2
+    # net.shunt.step_dependency_table.loc[0] = True
+    # net.shunt.id_characteristic.loc[0] = 0
 
 if __name__ == '__main__':
     pytest.main(['-s', __file__])
