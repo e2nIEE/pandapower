@@ -624,7 +624,7 @@ def _calc_tap_from_dataframe(net, trafo_df):
                         trafo_shift[mask_ideal] += np.where(
                             degree_is_set,
                             (direction * tap_diff[mask_ideal] * tap_step_degree[mask_ideal]),
-                            (direction * 2 * np.rad2deg(np.arcsin(tap_diff[mask_ideal] * \
+                            (direction * 2 * np.rad2deg(np.arcsin(tap_diff[mask_ideal] *
                                                                   tap_step_percent[mask_ideal] / 100 / 2)))
                         )
                     elif any(mask_complex):
