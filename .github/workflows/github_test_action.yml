@@ -301,21 +301,13 @@ jobs:
           python -m pytest -W error --nbmake -n=auto --nbmake-timeout=900 "./tutorials"
 
   docs_check:
+    name: Sphinx docs check
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: [ '3.9' ]
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+      - name: Check sphinx build
+        uses: ammaraskar/sphinx-action@7.4.7
         with:
-          python-version: ${{ matrix.python-version }}
-      - name: Check docs for Python ${{ matrix.python-version }}
-        uses: e2nIEE/sphinx-action@master
-        with:
-          pre-build-command: "apt update && apt upgrade -y && apt install -y build-essential gfortran cmake pkg-config libopenblas-dev;
-            python -m pip install --upgrade pip;
-            python -m pip install .[docs];"
+          pre-build-command: "python -m pip install uv && uv pip install .[docs] --system --link-mode=copy"
           build-command: "sphinx-build -b html . _build -W"
           docs-folder: "doc/"
