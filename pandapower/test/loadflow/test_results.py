@@ -30,7 +30,7 @@ def add_trafo_connection(net, hv_bus, trafotype="2W"):
             vn_hv_kv=20., vn_mv_kv=0.9, vn_lv_kv=0.45, sn_hv_mva=0.6, sn_mv_mva=0.5,
             sn_lv_mva=0.4, vk_hv_percent=1., vk_mv_percent=1., vk_lv_percent=1.,
             vkr_hv_percent=0.3, vkr_mv_percent=0.3, vkr_lv_percent=0.3,
-            pfe_kw=0.2, i0_percent=0.3, tap_neutral=0.,
+            pfe_kw=0.2, i0_percent=0.3, tap_neutral=0., tap_phase_shifter_type=0,
             tap_pos=2, tap_step_percent=1., tap_min=-2, tap_max=2)
     else:
         pp.create_transformer(net, hv_bus=hv_bus, lv_bus=cb, std_type="0.25 MVA 20/0.4 kV", tap_pos=2)

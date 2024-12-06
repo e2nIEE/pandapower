@@ -476,8 +476,8 @@ def test_switch_sgens():
 
 def test_characteristic():
     net = pp.networks.example_multivoltage()
-    pp.control.create_trafo_characteristics(net, "trafo", [1], 'vk_percent',
-                                            [[-2,-1,0,1,2]], [[2,3,4,5,6]])
+    pp.control._create_trafo_characteristics(net, "trafo", [1], 'vk_percent',
+                                             [[-2,-1,0,1,2]], [[2,3,4,5,6]])
     pp.runpp(net)
     net_eq = pp.grid_equivalents.get_equivalent(net, "rei", [41], [0])
     assert len(net_eq.characteristic) == 1

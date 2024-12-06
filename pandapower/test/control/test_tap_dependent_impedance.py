@@ -18,7 +18,10 @@ def test_tap_dependent_impedance_control():
     b1 = pp.create_bus(net, 110)
     b2 = pp.create_bus(net, 20)
     pp.create_ext_grid(net, b1)
-    pp.create_transformer_from_parameters(net, b1, b2, 40, 110, 21, 0.5, 12.3, 25, 0.11, 0, 'hv', 10, 20, 0, 1.8, 180, 10)
+    pp.create_transformer_from_parameters(net, b1, b2, 40, 110, 21, 0.5,
+                                          12.3, 25, 0.11, 0, 'hv',
+                                          10, 20, 0, 1.8, 180,
+                                          10, tap_phase_shifter_type=0)
 
     characteristic_vk = Characteristic.from_points(net, ((0, 13.5), (10, 12.3), (20, 11.1)))
     characteristic_vkr = Characteristic.from_points(net, ((0, 0.52), (10, 0.5), (20, 0.53)))
@@ -46,7 +49,10 @@ def test_tap_dependent_impedance_restore():
     b2 = pp.create_bus(net, 20)
     pp.create_ext_grid(net, b1)
     pp.create_load(net, b2, 20)
-    pp.create_transformer_from_parameters(net, b1, b2, 40, 110, 21, 0.5, 12.3, 25, 0.11, 0, 'hv', 10, 20, 0, 1.8, 180, 10)
+    pp.create_transformer_from_parameters(net, b1, b2, 40, 110, 21, 0.5,
+                                          12.3, 25, 0.11, 0, 'hv',
+                                          10, 20, 0, 1.8, 180,
+                                          10, tap_phase_shifter_type=0)
 
     characteristic_vk = Characteristic.from_points(net, ((0, 13.5), (10, 12.3), (20, 11.1)))
     characteristic_vkr = Characteristic.from_points(net, ((0, 0.52), (10, 0.5), (20, 0.53)))

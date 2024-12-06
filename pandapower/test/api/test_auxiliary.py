@@ -290,26 +290,26 @@ def test_create_trafo_characteristics():
 
     # invalid variable
     with pytest.raises(UserWarning):
-        pp.control.create_trafo_characteristics(net, "trafo3w", 0, 'vk_percent',
-                                                [-8, -4, 0, 4, 8], [8.1, 9.1, 10.1, 11.1, 12.1])
+        pp.control._create_trafo_characteristics(net, "trafo3w", 0, 'vk_percent',
+                                                 [-8, -4, 0, 4, 8], [8.1, 9.1, 10.1, 11.1, 12.1])
 
     # invalid shapes
     with pytest.raises(UserWarning):
-        pp.control.create_trafo_characteristics(net, "trafo3w", 0, 'vk_hv_percent',
-                                                [-8, -4, 0, 4, 8], [8.1, 9.1, 10.1, 11.1])
+        pp.control._create_trafo_characteristics(net, "trafo3w", 0, 'vk_hv_percent',
+                                                 [-8, -4, 0, 4, 8], [8.1, 9.1, 10.1, 11.1])
 
     with pytest.raises(UserWarning):
-        pp.control.create_trafo_characteristics(net, "trafo3w", [0], 'vk_hv_percent',
-                                                [-8, -4, 0, 4, 8], [8.1, 9.1, 10.1, 11.1, 12.1])
+        pp.control._create_trafo_characteristics(net, "trafo3w", [0], 'vk_hv_percent',
+                                                 [-8, -4, 0, 4, 8], [8.1, 9.1, 10.1, 11.1, 12.1])
 
     with pytest.raises(UserWarning):
-        pp.control.create_trafo_characteristics(net, "trafo3w", [0, 1], 'vk_hv_percent',
-                                                [[-8, -4, 0, 4, 8]], [[8.1, 9.1, 10.1, 11.1, 12.1]])
+        pp.control._create_trafo_characteristics(net, "trafo3w", [0, 1], 'vk_hv_percent',
+                                                 [[-8, -4, 0, 4, 8]], [[8.1, 9.1, 10.1, 11.1, 12.1]])
 
     with pytest.raises(UserWarning):
-        pp.control.create_trafo_characteristics(net, "trafo3w", [0, 1], 'vk_hv_percent',
-                                                [[-8, -4, 0, 4, 8], [-8, -4, 0, 4, 8]],
-                                                [[8.1, 9.1, 10.1, 11.1, 12.1]])
+        pp.control._create_trafo_characteristics(net, "trafo3w", [0, 1], 'vk_hv_percent',
+                                                 [[-8, -4, 0, 4, 8], [-8, -4, 0, 4, 8]],
+                                                 [[8.1, 9.1, 10.1, 11.1, 12.1]])
 
 
 @pytest.mark.parametrize("file_io", (False, True), ids=("Without JSON I/O", "With JSON I/O"))

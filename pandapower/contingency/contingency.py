@@ -177,9 +177,10 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=pp.
     contingency_evaluation_function(net, **kwargs)
 
     trafo_flag = False
-    if np.any(net.trafo.tap_phase_shifter):
-        trafo_flag = True
-        tap_phase_shifter, tap_pos, shift_degree = _convert_trafo_phase_shifter(net)
+    if "tap_phase_shifter" in net.trafo.columns:
+        if np.any(net.trafo.tap_phase_shifter):
+            trafo_flag = True
+            tap_phase_shifter, tap_pos, shift_degree = _convert_trafo_phase_shifter(net)
 
     # setting "slack" back-and-forth is due to the difference in interpretation of generators as "distributed slack"
     if net._options.get("distributed_slack", False):

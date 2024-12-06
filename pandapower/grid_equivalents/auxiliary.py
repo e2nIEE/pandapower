@@ -498,7 +498,7 @@ def adaptation_phase_shifter(net, v_boundary, p_boundary):
                                                   pfe_kw=.0, i0_percent=.0,
                                                   # shift_degree=-phase_errors[idx],
                                                   tap_step_degree=-phase_errors[idx],
-                                                  # tap_phase_shifter=True,
+                                                  # tap_phase_shifter_type=2,
                                                   name="phase_shifter_adapter_"+str(lb))
         # pp.create_load(net, lb, -p_errors[idx], -q_errors[idx],
         #                name="phase_shifter_adapter_"+str(lb))

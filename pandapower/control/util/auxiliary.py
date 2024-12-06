@@ -232,8 +232,8 @@ def create_trafo_characteristic_object(net):
             y_points = {col: [characteristic_df[col].tolist()] for col in variables_filtered}
             logger.info("Adding characteristic objects for 2w-trafo with trafo_id %s and variables "
                         "%s" % (trafo_id, variables_filtered))
-            create_trafo_characteristics(net, "trafo", [trafo_id], variables_filtered,
-                                         x_points, y_points)
+            _create_trafo_characteristics(net, "trafo", [trafo_id], variables_filtered,
+                                          x_points, y_points)
         logger.info(f"Finished creating tap dependent characteristic objects for 2w-trafos in "
                     f"{time.time() - time_start}.")
     else:
@@ -256,7 +256,7 @@ def create_trafo_characteristic_object(net):
             y_points = {col: [characteristic_df[col].tolist()] for col in variables_filtered}
             logger.info("Adding characteristic objects for 3w-trafo with trafo_id %s and variables "
                         "%s" % (trafo_id, variables_filtered))
-            create_trafo_characteristics(net, "trafo3w", [trafo_id], variables_filtered,
+            _create_trafo_characteristics(net, "trafo3w", [trafo_id], variables_filtered,
                                          x_points, y_points)
         logger.info(f"Finished creating tap dependent characteristic objects for 3w-trafos in "
                     f"{time.time() - time_start}.")
@@ -273,7 +273,7 @@ def create_trafo_characteristic_object(net):
     del net["trafo_characteristic_spline_temp"]
 
 
-def create_trafo_characteristics(net, trafotable, trafo_index, variable, x_points, y_points):
+def _create_trafo_characteristics(net, trafotable, trafo_index, variable, x_points, y_points):
     supported_columns = {"trafo": ["voltage_ratio_characteristic", "angle_deg_characteristic",
                                    "vk_percent_characteristic", "vkr_percent_characteristic"],
                          "trafo3w": ["voltage_ratio_characteristic", "angle_deg_characteristic",
@@ -334,8 +334,8 @@ def create_shunt_characteristic_object(net):
             y_points = {col: [characteristic_df[col].tolist()] for col in variables_filtered}
             logger.info("Adding characteristic objects for shunt with shunt_id %s and variables "
                         "%s" % (shunt_id, variables_filtered))
-            create_shunt_characteristics(net, [shunt_id], variables_filtered,
-                                         x_points, y_points)
+            _create_shunt_characteristics(net, [shunt_id], variables_filtered,
+                                          x_points, y_points)
         logger.info(f"Finished creating step dependent power characteristic objects for shunts in"
                     f"{time.time() - time_start}.")
     else:
@@ -351,7 +351,7 @@ def create_shunt_characteristic_object(net):
     del net["shunt_characteristic_spline_temp"]
 
 
-def create_shunt_characteristics(net, shunt_index, variable, x_points, y_points):
+def _create_shunt_characteristics(net, shunt_index, variable, x_points, y_points):
     supported_columns = ["q_mvar_characteristic", "p_mw_characteristic"]
 
     # create id_characteristic_spline column - same indices as id_characteristic_table

@@ -246,7 +246,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                   ("tap_step_percent", "f8"),
                   ("tap_step_degree", "f8"),
                   ("tap_pos", "i4"),
-                  ("tap_phase_shifter_type", 'i4'),
+                  ("tap_phase_shifter_type", "i4"),
                   ('id_characteristic_table', 'u4'),
                   ('tap_dependency_table', 'bool'),
                   ("parallel", "u4"),

@@ -327,7 +327,7 @@ def vde_232():
                                           si0_hv_partial=0.9,
                                           pt_percent=12, oltc=True,
                                           power_station_unit=True,
-                                          xn_ohm=22)
+                                          xn_ohm=22, tap_phase_shifter_type=0)
 
     pp.create_gen(net, 1, 150, 1, 150, vn_kv=21, xdss_pu=0.14, rdss_ohm=0.002, cos_phi=0.85, power_station_trafo=0, pg_percent=5)
 
