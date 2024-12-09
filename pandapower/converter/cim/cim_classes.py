@@ -637,7 +637,7 @@ class CimParser:
                 'RegulatingControl': pd.DataFrame(columns=['rdfId', 'name', 'mode', 'Terminal']),
                 'SynchronousMachine': pd.DataFrame(columns=[
                     'rdfId', 'name', 'description', 'GeneratingUnit', 'EquipmentContainer', 'ratedU', 'ratedS', 'type',
-                    'ratedPowerFactor', 'minQ', 'maxQ', 'RegulatingControl']),
+                    'InitialReactiveCapabilityCurve','ratedPowerFactor', 'minQ', 'maxQ', 'RegulatingControl']),
                 'AsynchronousMachine': pd.DataFrame(columns=[
                     'rdfId', 'name', 'description', 'GeneratingUnit', 'ratedS', 'ratedU', 'ratedPowerFactor']),
                 'EnergySource': pd.DataFrame(columns=[
