@@ -21,6 +21,7 @@ from pandapower.pf.create_jacobian import _create_J_without_numba
 from pandapower.pf.run_newton_raphson_pf import _get_pf_variables_from_ppci
 from pandapower.powerflow import LoadflowNotConverged
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
+from pandapower.test.control.test_shunt_control import simple_test_net_shunt_control
 from pandapower.test.loadflow.result_test_network_generator import add_test_xward, add_test_trafo3w, \
     add_test_line, add_test_oos_bus_with_is_element, result_test_network_generator, add_test_trafo
 from pandapower.test.helper_functions import add_grid_connection, create_test_line, assert_net_equal, assert_res_equal
@@ -1371,6 +1372,19 @@ def test_tap_dependent_impedance():
     pp.runpp(net)
     pp.runpp(net_backup)
     assert_res_equal(net, net_backup)
+
+
+def test_shunt_step_dependency_warning():
+    net = simple_test_net_shunt_control()
+    net["shunt_characteristic_table"] = pd.DataFrame(
+        {'id_characteristic': [0, 0, 0, 0, 0], 'step': [1, 2, 3, 4, 5], 'q_mvar': [-25, -50, -75, -100, -125],
+         'p_mw': [0, 0, 0, 0, 0]})
+    pp.create_shunt(net, bus=0, q_mvar=-10, p_mw=20, step=1, max_step=5)
+    net.shunt.step_dependency_table.at[0] = True
+    net.shunt.step.at[0] = 1
+
+    with pytest.raises(UserWarning):
+        pp.runpp(net)
 
 
 @pytest.mark.skipif(not lightsim2grid_available, reason="lightsim2grid is not installed")

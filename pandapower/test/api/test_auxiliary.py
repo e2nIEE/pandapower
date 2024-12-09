@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 
 from pandapower.control import SplineCharacteristic
+from pandapower.control.util.auxiliary import create_shunt_characteristic_object
 from pandapower.control.util.characteristic import LogSplineCharacteristic
 
 try:
@@ -310,6 +311,40 @@ def test_create_trafo_characteristics():
         pp.control._create_trafo_characteristics(net, "trafo3w", [0, 1], 'vk_hv_percent',
                                                  [[-8, -4, 0, 4, 8], [-8, -4, 0, 4, 8]],
                                                  [[8.1, 9.1, 10.1, 11.1, 12.1]])
+
+def test_creation_of_shunt_characteristics():
+    net = pp.create_empty_network()
+    b = pp.create_buses(net, 2, 110)
+    pp.create_shunt(net, bus=b[1], q_mvar=-50, p_mw=0, step=1, max_step=5)
+    net["shunt_characteristic_table"] = pd.DataFrame(
+        {'id_characteristic': [0, 0, 0, 0, 0], 'step': [1, 2, 3, 4, 5], 'q_mvar': [-25, -55, -75, -120, -125],
+         'p_mw': [1, 1.5, 3, 4.5, 5]})
+    net.shunt.step_dependency_table.at[0] = True
+    net.shunt.id_characteristic_table.at[0] = 0
+
+    create_shunt_characteristic_object(net)
+
+    assert np.isclose(net.shunt_characteristic_spline.loc[0, "q_mvar_characteristic"](1), -25.)
+    assert np.isclose(net.shunt_characteristic_spline.loc[0, "q_mvar_characteristic"](3), -75.)
+    assert np.isclose(net.shunt_characteristic_spline.loc[0, "q_mvar_characteristic"](5), -125.)
+    assert np.isclose(net.shunt_characteristic_spline.loc[0, "p_mw_characteristic"](1), 1)
+    assert np.isclose(net.shunt_characteristic_spline.loc[0, "p_mw_characteristic"](3), 3)
+    assert np.isclose(net.shunt_characteristic_spline.loc[0, "p_mw_characteristic"](5), 5)
+
+    # test re-creation of shunt characteristic object (and deletion of old one)
+    net["shunt_characteristic_table"] = pd.DataFrame(
+        {'id_characteristic': [1, 1, 1, 1, 1], 'step': [1, 2, 3, 4, 5], 'q_mvar': [25, 55, 75, 120, 125],
+         'p_mw': [6, 6.5, 7, 8.5, 10]})
+    net.shunt.id_characteristic_table.at[0] = 1
+
+    create_shunt_characteristic_object(net)
+
+    assert np.isclose(net.shunt_characteristic_spline.loc[0, "q_mvar_characteristic"](1), 25.)
+    assert np.isclose(net.shunt_characteristic_spline.loc[0, "q_mvar_characteristic"](3), 75.)
+    assert np.isclose(net.shunt_characteristic_spline.loc[0, "q_mvar_characteristic"](5), 125.)
+    assert np.isclose(net.shunt_characteristic_spline.loc[0, "p_mw_characteristic"](1), 6)
+    assert np.isclose(net.shunt_characteristic_spline.loc[0, "p_mw_characteristic"](3), 7)
+    assert np.isclose(net.shunt_characteristic_spline.loc[0, "p_mw_characteristic"](5), 10)
 
 
 @pytest.mark.parametrize("file_io", (False, True), ids=("Without JSON I/O", "With JSON I/O"))

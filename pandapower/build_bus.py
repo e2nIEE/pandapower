@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+import warnings
 # Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -642,6 +642,13 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
         v_ratio = (ppc["bus"][bus_lookup[s["bus"].values], BASE_KV] / s["vn_kv"].values) ** 2 * base_multiplier
 
         if "step_dependency_table" in s:
+            if np.any(vl & (s.step_dependency_table == True) & (s.id_characteristic_table.isna())):
+                raise UserWarning("Shunts with step_dependency_table True and id_characteristic_table NA detected.\n"
+                                  "Please set an id_characteristic_table or set step_dependency_table to False.")
+            elif (np.any(vl & s.step_dependency_table == False
+                  & ~s.id_characteristic_table.isna())):
+                warnings.warn("Shunts with step_dependency_table False but id_characteristic_table detected.",
+                              category=UserWarning)
             s.step_dependency_table.fillna(False)
             if s.step_dependency_table.any():
                 s_tmp = s.merge(net.shunt_characteristic_table, how="left", left_on="id_characteristic_table",
