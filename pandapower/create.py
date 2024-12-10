@@ -3383,18 +3383,15 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
         "i0_percent": ti["i0_percent"],
         "parallel": parallel,
         "df": df,
-        "shift_degree": ti["shift_degree"] if "shift_degree" in ti else 0,
-        "tap_phase_shifter_type": ti["tap_phase_shifter_type"] if "tap_phase_shifter_type" in ti else nan
+        "shift_degree": ti["shift_degree"] if "shift_degree" in ti else 0
     }
-    if "tap2_phase_shifter_type" in ti:
-        updates["tap2_phase_shifter_type"] = ti["tap2_phase_shifter_type"]
     for zero_param in ['vk0_percent', 'vkr0_percent', 'mag0_percent', 'mag0_rx', 'si0_hv_partial']:
         if zero_param in ti:
             updates[zero_param] = ti[zero_param]
     v.update(updates)
     for s, tap_pos_var in (("", tap_pos), ("2", tap2_pos)):  # to enable a second tap changer if available
         for tp in (f"tap{s}_neutral", f"tap{s}_max", f"tap{s}_min", f"tap{s}_side",
-                   f"tap{s}_step_percent", f"tap{s}_step_degree"):
+                   f"tap{s}_step_percent", f"tap{s}_step_degree", f"tap{s}_phase_shifter_type"):
             if tp in ti:
                 v[tp] = ti[tp]
         if (f"tap{s}_neutral" in v) and (tap_pos_var is nan):
@@ -3812,7 +3809,7 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
 
 def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tap_pos=nan,
                          in_service=True, index=None, max_loading_percent=nan, tap_phase_shifter_type=nan,
-                         tap_at_star_point=False, tap_dependency_table=False, id_characteristic_table=nan):
+                         tap_at_star_point=False, tap_dependency_table=nan, id_characteristic_table=nan):
     """
     Creates a three-winding transformer in table net["trafo3w"].
     The trafo parameters are defined through the standard type library.
@@ -3903,7 +3900,8 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tap_p
         "tap_at_star_point": tap_at_star_point
     })
     for tp in (
-            "tap_neutral", "tap_max", "tap_min", "tap_side", "tap_step_percent", "tap_step_degree"):
+            "tap_neutral", "tap_max", "tap_min", "tap_side", "tap_step_percent", "tap_step_degree",
+            "tap_phase_shifter_type"):
         if tp in ti:
             v.update({tp: ti[tp]})
 
@@ -3921,6 +3919,8 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tap_p
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "trafo3w")
     _set_value_if_not_nan(net, index, id_characteristic_table,
                           "id_characteristic_table", "trafo3w", dtype="Int64")
+    _set_value_if_not_nan(net, index, tap_dependency_table,
+                          "tap_dependency_table", "trafo3w", dtype=bool_, default_val=False)
     _set_value_if_not_nan(net, index, tap_phase_shifter_type,
                           "tap_phase_shifter_type", "trafo3w", dtype="Int64")
 

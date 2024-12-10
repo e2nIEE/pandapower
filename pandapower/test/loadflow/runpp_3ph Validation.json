@@ -1294,7 +1294,8 @@
           "tap_neutral": 0,
           "tap_min": -10,
           "tap_max": 10,
-          "tap_step_percent": 1.2
+          "tap_step_percent": 1.2,
+          "tap_phase_shifter_type": 0
         },
         "63/25/38 MVA 110/10/10 kV": {
           "sn_hv_mva": 63,
@@ -1318,7 +1319,8 @@
           "tap_neutral": 0,
           "tap_min": -10,
           "tap_max": 10,
-          "tap_step_percent": 1.2
+          "tap_step_percent": 1.2,
+          "tap_phase_shifter_type": 0
         }
       }
     },
