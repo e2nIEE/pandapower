@@ -43,6 +43,7 @@ def convert_format(net, elements_to_deserialize=None):
         _convert_geo_data(net, elements_to_deserialize)
         _convert_group_element_index(net)
         _convert_trafo_controller_parameter_names(net)
+        _convert_trafo_pst_logic(net)
     if Version(str(net.format_version)) < Version("2.4.0"):
         _convert_bus_pq_meas_to_load_reference(net, elements_to_deserialize)
     if Version(str(net.format_version)) < Version("2.0.0"):
@@ -548,3 +549,21 @@ def _update_characteristics(net, elements_to_deserialize):
             continue
         c.interpolator_kind = "interp1d"
         c.kwargs = {"kind": c.__dict__.pop("kind"), "bounds_error": False, "fill_value": c.__dict__.pop("fill_value")}
+
+
+def _convert_trafo_pst_logic(net):
+    for trafotable in ["trafo", "trafo3w"]:
+        if trafotable in net and isinstance(net[trafotable], pd.DataFrame):
+            if net[trafotable].index.size > 0:
+                if "tap_phase_shifter" in net[trafotable]:
+                    net[trafotable] = net[trafotable].drop(columns="tap_phase_shifter")
+                # ratio/asymmetrical phase shifters
+                net[trafotable].loc[
+                    ((net[trafotable]["tap_step_degree"].isna()) | (net[trafotable]["tap_step_degree"] != 90)) &
+                    (net[trafotable]["tap_step_percent"].notna()), "tap_phase_shifter_type"] = 0
+                # symmetrical phase shifters
+                net[trafotable].loc[(net[trafotable]["tap_step_degree"] == 90) &
+                                    (net[trafotable]["tap_step_percent"].notna()), "tap_phase_shifter_type"] = 1
+                # ideal phase shifters
+                net[trafotable].loc[(net[trafotable]["tap_step_degree"].notna()) &
+                                    (net[trafotable]["tap_step_percent"].isna()), "tap_phase_shifter_type"] = 2
