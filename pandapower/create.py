@@ -4485,8 +4485,9 @@ def create_shunt(net, bus, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, name
         vn_kv = net.bus.vn_kv.at[bus]
 
     entries = dict(zip(["bus", "name", "p_mw", "q_mvar", "vn_kv", "step", "max_step", "in_service",
-                        "step_dependency_table"],
-                       [bus, name, p_mw, q_mvar, vn_kv, step, max_step, in_service, step_dependency_table]))
+                        "step_dependency_table", "id_characteristic_table"],
+                       [bus, name, p_mw, q_mvar, vn_kv, step, max_step, in_service, step_dependency_table,
+                        id_characteristic_table]))
     _set_entries(net, "shunt", index, **entries, **kwargs)
 
     _set_value_if_not_nan(net, index, id_characteristic_table, "id_characteristic_table",
