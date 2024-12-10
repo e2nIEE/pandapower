@@ -162,13 +162,15 @@ def _calc_trafo3w_parameter(net, ppc, update_vk_values: bool = True):
     branch[f:t, SHIFT] = shift
     branch[f:t, BR_STATUS] = in_service
     # always set RATE_A for completeness
+    # RATE_A is conisdered by the (PowerModels) OPF. If zero -> unlimited
     if "max_loading_percent" in trafo_df:
         max_load = get_trafo_values(trafo_df, "max_loading_percent")
         sn_mva = get_trafo_values(trafo_df, "sn_mva")
         branch[f:t, RATE_A] = max_load / 100. * sn_mva
     else:
-        sn_mva = get_trafo_values(trafo_df, "sn_mva")
-        branch[f:t, RATE_A] = sn_mva
+        # PowerModels considers "0" as "no limit"
+        # todo: inf and convert only when using PowerModels to 0., pypower opf converts the zero to inf
+        branch[f:t, RATE_A] = 0. if net["_options"]["mode"] == "opf" else 100.
 
 
 def _calc_line_parameter(net, ppc, elm="line", ppc_elm="branch"):
@@ -244,13 +246,16 @@ def _calc_line_parameter(net, ppc, elm="line", ppc_elm="branch"):
     branch[f:t, BR_STATUS] = line["in_service"].values
     # always set RATE_A for completeness:
     # RATE_A is considered by the (PowerModels) OPF. If zero -> unlimited
-    # TODO: check why OPF test fails if 100 instead of 0
-    max_load = line.max_loading_percent.values if "max_loading_percent" in line else 0.
-    vr = net.bus.loc[line["from_bus"].values, "vn_kv"].values * np.sqrt(3.)
-    max_i_ka = line.max_i_ka.values
-    df = line.df.values
-    # This calculates the maximum apparent power at 1.0 p.u.
-    branch[f:t, RATE_A] = max_load / 100. * max_i_ka * df * parallel * vr
+    if "max_loading_percent" in line:
+        max_load = line.max_loading_percent.values
+        vr = net.bus.loc[line["from_bus"].values, "vn_kv"].values * np.sqrt(3.)
+        max_i_ka = line.max_i_ka.values
+        df = line.df.values
+        branch[f:t, RATE_A] = max_load / 100. * max_i_ka * df * parallel * vr
+    else:
+        # PowerModels considers "0" as "no limit"
+        # todo: inf and convert only when using PowerModels to 0., pypower opf converts the zero to inf
+        branch[f:t, RATE_A] = 0. if mode == "opf" else 100.
 
 
 def _calc_line_dc_parameter(net, ppc, elm="line_dc", ppc_elm="branch_dc"):
@@ -327,6 +332,18 @@ def _calc_line_dc_parameter(net, ppc, elm="line_dc", ppc_elm="branch_dc"):
     df = line_dc.df.values
     # This calculates the maximum apparent power at 1.0 p.u.
     branch_dc[f:t, DC_RATE_A] = max_load / 100. * max_i_ka * df * parallel * vr
+    # RATE_A is conisdered by the (PowerModels) OPF. If zero -> unlimited
+    if "max_loading_percent" in line_dc:
+        max_load = line_dc.max_loading_percent.values
+        vr = net.bus_dc.loc[line_dc["from_bus_dc"].values, "vn_kv"].values * np.sqrt(3.)
+        max_i_ka = line_dc.max_i_ka.values
+        df = line_dc.df.values
+        # This calculates the maximum apparent power at 1.0 p.u.
+        branch_dc[f:t, DC_RATE_A] = max_load / 100. * max_i_ka * df * parallel * vr
+    else:
+        # PowerModels considers "0" as "no limit"
+        # todo: inf and convert only when using PowerModels to 0., pypower opf converts the zero to inf
+        branch_dc[f:t, DC_RATE_A] = 0. if mode == "opf" else 100.
 
 
 def _calc_trafo_parameter(net, ppc, update_vk_values: bool = True):
@@ -365,10 +382,16 @@ def _calc_trafo_parameter(net, ppc, update_vk_values: bool = True):
         raise UserWarning("Rating factor df must be positive. Transformers with false "
                           "rating factors: %s" % trafo.query('df<=0').index.tolist())
     # always set RATE_A for completeness
-    max_load = trafo.max_loading_percent.values if "max_loading_percent" in trafo else 100
-    sn_mva = trafo.sn_mva.values
-    df = trafo.df.values
-    branch[f:t, RATE_A] = max_load / 100. * sn_mva * df * parallel
+    # RATE_A is conisdered by the (PowerModels) OPF. If zero -> unlimited
+    if "max_loading_percent" in trafo:
+        max_load = trafo.max_loading_percent.values
+        sn_mva = trafo.sn_mva.values
+        df = trafo.df.values
+        branch[f:t, RATE_A] = max_load / 100. * sn_mva * df * parallel
+    else:
+        # PowerModels considers "0" as "no limit"
+        # todo: inf and convert only when using PowerModels to 0., pypower opf converts the zero to inf
+        branch[f:t, RATE_A] = 0. if net["_options"]["mode"] == "opf" else 100.
 
 
 def get_trafo_values(trafo_df, par):
