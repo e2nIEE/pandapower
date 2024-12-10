@@ -607,7 +607,7 @@ def _calc_tap_from_dataframe(net, trafo_df):
             if f'tap{t}_dependency_table' in trafo_df:
                 tap_dependency = get_trafo_values(trafo_df, "tap_dependency_table")
                 tap_dependency = np.array(
-                    [False if isinstance(x, float) and np.isnan(x) else x for x in tap_dependency])
+                    [False if (isinstance(x, float) and np.isnan(x)) or (x is None) else x for x in tap_dependency])
             else:
                 tap_table = np.array([False])
                 tap_dependency = np.array([False])
