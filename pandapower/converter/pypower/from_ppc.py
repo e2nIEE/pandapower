@@ -238,11 +238,11 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
         vn_hv_kv = from_vn_kv[is_trafo]
         lv_bus = to_bus[is_trafo]
         vn_lv_kv = to_vn_kv[is_trafo]
-        if not np.all(to_vn_is_leq):
-            hv_bus[~to_vn_is_leq] = to_bus[is_trafo][~to_vn_is_leq]
-            vn_hv_kv[~to_vn_is_leq] = to_vn_kv[is_trafo][~to_vn_is_leq]
-            lv_bus[~to_vn_is_leq] = from_bus[is_trafo][~to_vn_is_leq]
-            vn_lv_kv[~to_vn_is_leq] = from_vn_kv[is_trafo][~to_vn_is_leq]
+        #if not np.all(to_vn_is_leq):
+        #    hv_bus[~to_vn_is_leq] = to_bus[is_trafo][~to_vn_is_leq]
+        #    vn_hv_kv[~to_vn_is_leq] = to_vn_kv[is_trafo][~to_vn_is_leq]
+        #    lv_bus[~to_vn_is_leq] = from_bus[is_trafo][~to_vn_is_leq]
+        #    vn_lv_kv[~to_vn_is_leq] = from_vn_kv[is_trafo][~to_vn_is_leq]
         same_vn = to_vn_kv[is_trafo] == from_vn_kv[is_trafo]
         if np.any(same_vn):
             logger.warning(
