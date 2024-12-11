@@ -12,7 +12,6 @@ from pandapower.control import Characteristic, SplineCharacteristic, TapDependen
     trafo_characteristic_table_diagnostic
 
 
-# todo add tests for voltage_ratio and angle_dev
 def test_tap_dependent_impedance_control():
     net = pp.create_empty_network()
     b1 = pp.create_bus(net, 110)
