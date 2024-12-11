@@ -422,13 +422,14 @@ def merge_internal_net_and_equivalent_external_net(
 def drop_repeated_characteristic(net):
     idxs = []
     repeated_idxs = []
-    for m in net.characteristic.index:
-        idx = net.characteristic.object[m].__dict__["index"]
-        if idx in idxs:
-            repeated_idxs.append(m)
-        else:
-            idxs.append(idx)
-    net.characteristic = net.characteristic.drop(repeated_idxs)
+    if "characteristic" in net:
+        for m in net.characteristic.index:
+            idx = net.characteristic.object[m].__dict__["index"]
+            if idx in idxs:
+                repeated_idxs.append(m)
+            else:
+                idxs.append(idx)
+        net.characteristic = net.characteristic.drop(repeated_idxs)
 
 
 def _determine_bus_groups(net, boundary_buses, internal_buses,
