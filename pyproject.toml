@@ -59,7 +59,7 @@ Download = "https://pypi.org/project/pandapower/#files"
 Changelog = "https://github.com/e2nIEE/pandapower/blob/develop/CHANGELOG.rst"
 
 [project.optional-dependencies]
-docs = ["numpydoc", "matplotlib", "sphinx", "sphinx_rtd_theme", "sphinx-pyproject"]
+docs = ["numpydoc>=1.5.0", "matplotlib", "sphinx>=5.3.0", "sphinx_rtd_theme>=1.1.1", "sphinx-pyproject"]
 plotting = ["plotly>=3.1.1", "matplotlib", "igraph", "geopandas>=1.0"]
 test = ["pytest~=8.1", "pytest-xdist", "nbmake"]
 performance = ["ortools", "numba>=0.25", "lightsim2grid==0.9.0"]
@@ -68,7 +68,7 @@ converter = ["matpowercaseframes"]
 pgm = ["power-grid-model-io"]
 control = ["shapely"]
 all = [
-    "numpydoc", "sphinx", "sphinx_rtd_theme", "sphinx-pyproject",
+    "numpydoc>=1.5.0", "sphinx>=5.3.0", "sphinx_rtd_theme>=1.1.1", "sphinx-pyproject",
     "plotly>=3.1.1", "matplotlib", "igraph", "geopandas>=1.0",
     "pytest~=8.1", "pytest-xdist", "nbmake",
     "ortools", "numba>=0.25", "lightsim2grid>=0.9",
