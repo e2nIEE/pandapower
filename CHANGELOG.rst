@@ -9,6 +9,7 @@ Change Log
 - [CHANGED] Capitalize first letter of columns busbar_id, busbar_name and substation_id in bus df for cim converter
 - [CHANGED] required standard type parameters are made available by function :code:`required_std_type_parameters()`
 - [FIXED] Do not modify pandas options when importing pandapower
+- [FIXED] fixed copy-paste error in contingency results "max_limit_nminus1" and "min_limit_nminus1"
 - [ADDED] improved lightsim2grid documentation including compatibitliy issues
 - [FIXED] cim2pp: set default xml encoding to None to avoid error after changing to lxml
 
@@ -26,7 +27,8 @@ Change Log
 
 [upcoming release] - 2024-..-..
 -------------------------------
-
+- [FIXED] PandaModels OPF with 'bus_dc' key errors
+- [FIXED] julia tests
 - [FIXED] copy array element to standard python scalar
 - [FIXED] passing literal json to 'read_json' is deprecated
 - [FIXED] replacing deprecated in1d with isin
