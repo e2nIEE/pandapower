@@ -1104,7 +1104,7 @@ def test_fullgrid_bus(fullgrid_v2):
     assert 'tp' == element_0['origin_profile'].item()
     assert '_4c66b132-0977-1e4c-b9bb-d8ce2e912e35' == element_0['cim_topnode'].item()
     assert math.isnan(element_0['ConnectivityNodeContainer_id'].item())
-    assert math.isnan(element_0['substation_id'].item())
+    assert math.isnan(element_0['Substation_id'].item())
     assert 'BBRUS151; BGENT_51' == element_0['description'].item()
 
     element_1 = fullgrid_v2.bus[fullgrid_v2.bus['origin_id'] == '_1098b1c9-dc85-40ce-b65c-39ae02a3afaa']
