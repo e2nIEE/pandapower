@@ -288,6 +288,11 @@ def test_continuous_tap_control_side_hv_reversed_3w():
     assert np.allclose(net.res_trafo3w.vm_hv_pu.values, 1.02, atol=tol)
     assert not np.allclose(net.trafo3w.tap_pos.values, 0)
 
+def test_continuous_trafo_control_with_oos_trafo():
+    net = pp.networks.mv_oberrhein()
+    # switch transformer out of service
+    net.trafo.loc[114, 'in_service'] = False
+    ContinuousTapControl(net=net, element_index=114, vm_set_pu=1.0, tol=0.001)
 
 if __name__ == '__main__':
     pytest.main([__file__, "-xs"])

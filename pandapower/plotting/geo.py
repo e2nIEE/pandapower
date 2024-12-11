@@ -18,7 +18,7 @@ import pandas as pd
 from numpy import array
 
 import pandapower
-from pandapower.auxiliary import soft_dependency_error
+from pandapower.auxiliary import soft_dependency_error, pandapowerNet
 
 # get logger (same as in simple_plot)
 try:
@@ -231,7 +231,7 @@ def convert_epsg_bus_geodata(net, epsg_in=4326, epsg_out=31467):
     return net
 
 
-def convert_crs(net: pandapower.pandapowerNet or 'pandapipes.pandapipesNet', epsg_in=4326, epsg_out=31467):
+def convert_crs(net: pandapowerNet or 'pandapipes.pandapipesNet', epsg_in=4326, epsg_out=31467):
     """
     This function works for pandapowerNet and pandapipesNet. Documentation will refer to names from pandapower.
     Converts bus and line geodata in net from epsg_in to epsg_out
@@ -285,7 +285,7 @@ def convert_crs(net: pandapower.pandapowerNet or 'pandapipes.pandapipesNet', eps
 
 
 def dump_to_geojson(
-        net: pandapower.pandapowerNet or 'pandapipes.pandapipesNet',
+        net: pandapowerNet or 'pandapipes.pandapipesNet',
         nodes: Union[bool, List[int]] = False,
         branches: Union[bool, List[int]] = False,
         switches: Union[bool,  List[int]] = False,
@@ -501,7 +501,7 @@ def dump_to_geojson(
 
 
 def convert_geodata_to_geojson(
-        net: pandapower.pandapowerNet or 'pandapipes.pandapipesNet',
+        net: pandapowerNet or 'pandapipes.pandapipesNet',
         delete: bool = True,
         lonlat: bool = False) -> None:
     """
@@ -553,6 +553,7 @@ def convert_geodata_to_geojson(
         if not coords:
             continue
         ls = f'{{"coordinates": {coords}, "type": "LineString"}}'
+        ldf["geo"] = ldf["geo"].astype(object)
         ldf.geo.at[l_id] = ls
 
     if delete:
@@ -565,7 +566,7 @@ def convert_geodata_to_geojson(
 
 
 def convert_gis_to_geojson(
-        net: pandapower.pandapowerNet or 'pandapipes.pandapipesNet',
+        net: pandapowerNet or 'pandapipes.pandapipesNet',
         delete: bool = True) -> None:
     """
     Transforms the bus and line geodataframes of a net into a geojson object.

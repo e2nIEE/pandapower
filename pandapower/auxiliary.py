@@ -33,6 +33,7 @@ from importlib.metadata import version as version_str
 from importlib.metadata import PackageNotFoundError
 from typing_extensions import deprecated
 
+from geojson import loads, GeoJSON
 import numpy as np
 import pandas as pd
 import scipy as sp
@@ -58,8 +59,15 @@ try:
     import pandaplan.core.pplog as logging
 except ImportError:
     import logging
+try:
+    from geopandas import GeoSeries
+    from shapely import from_geojson
+    geopandas_available = True
+except ImportError:
+    geopandas_available = False
 
 logger = logging.getLogger(__name__)
+
 
 def log_to_level(msg, passed_logger, level):
     if level == "error":
@@ -341,6 +349,85 @@ class pandapowerNet(ADict):
         lines = ["This pandapower network includes the following parameter tables:"] + \
             par + res + res_cost
         return "\n".join(lines)
+
+
+@pd.api.extensions.register_series_accessor("geojson")
+class GeoAccessor:
+    """
+    pandas Series accessor for the geo column. It facilitates the use of geojson strings.
+    NaN entrys are dropped using the accessor!
+    """
+    def __init__(self, pandas_obj):
+        self._validate(pandas_obj)
+        self._obj = pandas_obj
+
+    @staticmethod
+    def _validate(obj):
+        try:
+            if not obj.dropna().apply(loads).apply(isinstance, args=(GeoJSON,)).all():
+                raise AttributeError("Can only use .geojson accessor with geojson string values!")
+        except Exception as e:
+            raise AttributeError(f"Can only use .geojson accessor with geojson string values!: {e}")
+        if not geopandas_available:
+            soft_dependency_error("GeoAccessor", "geopandas")
+
+    @staticmethod
+    def _extract_coords(x):
+        if x["type"] == "Point":
+            return np.array(x["coordinates"])
+        return [np.array(y) for y in x["coordinates"]]
+
+    @property
+    def _coords(self):
+        """
+        Extracts the geometry coordinates from the GeoJSON strings.
+        It is not recommended to use the standalone coordinates.
+        Important informations like the crs or latlon/lonlat are lost as a result.
+        """
+        return self._obj.dropna().apply(loads).apply(self._extract_coords)
+
+    @property
+    def as_geo_obj(self):
+        """
+        Loads the GeoJSON objects.
+        """
+        return self._obj.dropna().apply(loads)
+
+    @property
+    def type(self):
+        """
+        Extracts the geometry type of the GeoJSON string.
+        """
+        return self._obj.dropna().apply(loads).apply(lambda x: str(x["type"]))
+
+    @property
+    def as_shapely_obj(self):
+        """
+        Converts the GeoJSON strings to shapely geometrys.
+        """
+        return self._obj.dropna().apply(from_geojson)
+
+    @property
+    def as_geoseries(self):
+        """
+        Converts the PandasSeries to a GeoSeries with shapely geometrys.
+        """
+        return GeoSeries(self._obj.dropna().pipe(from_geojson), crs=4326, index=self._obj.dropna().index)
+
+    def __getattr__(self, item):
+        """
+        Enables access to all methods or attribute calls from a GeoSeries.
+        """
+        geoms = self.as_geoseries
+        if hasattr(geoms, item):
+            geoms_item = getattr(geoms, item)
+            if callable(geoms_item):
+                def wrapper(*args, **kwargs):
+                    return geoms_item(*args, **kwargs)
+                return wrapper
+            else:
+                return geoms_item
+        raise AttributeError(f"'GeoAccessor' object has no attribute '{item}'")
 
 
 def plural_s(number):
@@ -820,8 +907,10 @@ def _subnetworks(ppc):
                                       shape=(nobus, nobus))
 
     # Set out of service buses to have no connections (*=0 instead of =0 to avoid sparcity warning).
-    adj_matrix[oos_bus, :] *= 0
-    adj_matrix[:, oos_bus] *= 0
+    mask = np.ones(nobus, dtype=bool)
+    mask[oos_bus] = False
+    adj_matrix = adj_matrix.multiply(mask[:, None])
+    adj_matrix = adj_matrix.multiply(mask[None, :])
 
     traversed_buses = set()
     subnets = []
@@ -1184,9 +1273,11 @@ def _check_if_numba_is_installed(level="warning"):
 
 def _check_lightsim2grid_compatibility(net, lightsim2grid, voltage_depend_loads, algorithm, distributed_slack, tdpf):
     """
-    Implement some checks to decide whether the package lightsim2grid can be used. The package implements a backend for
-     power flow calculation in C++ and provides a speed-up. If lightsim2grid is "auto" (default), we don't bombard the
-     user with messages. Otherwise, if lightsim2grid is True bus cannot be used, we inform the user abot it.
+    Implement some checks to decide whether the package lightsim2grid can be used. These checks are
+    documentated in :code:`doc\powerflow\ac.rst` The package implements a backend for power flow
+    calculation in C++ and provides a speed-up. If lightsim2grid
+    is "auto" (default), we don't bombard the user with messages. Otherwise, if lightsim2grid is
+    True bus cannot be used, we inform the user abot it.
     """
     if not lightsim2grid:
         return False  # early return :)
@@ -1393,7 +1484,7 @@ def phase_to_sequence(Xabc):
 
 def I0_from_V012(V012, Y):
     V0 = X012_to_X0(V012)
-    if type(Y) in [sp.sparse.csr.csr_matrix, sp.sparse.csc.csc_matrix]:
+    if type(Y) in [sp.sparse.csr_matrix, sp.sparse.csc_matrix]:
         return np.asarray(np.matmul(Y.todense(), V0))
     else:
         return np.asarray(np.matmul(Y, V0))
@@ -1401,7 +1492,7 @@ def I0_from_V012(V012, Y):
 
 def I1_from_V012(V012, Y):
     V1 = X012_to_X1(V012)[:, np.newaxis]
-    if type(Y) in [sp.sparse.csr.csr_matrix, sp.sparse.csc.csc_matrix]:
+    if type(Y) in [sp.sparse.csr_matrix, sp.sparse.csc_matrix]:
         i1 = np.asarray(np.matmul(Y.todense(), V1))
         return np.transpose(i1)
     else:
@@ -1411,7 +1502,7 @@ def I1_from_V012(V012, Y):
 
 def I2_from_V012(V012, Y):
     V2 = X012_to_X2(V012)
-    if type(Y) in [sp.sparse.csr.csr_matrix, sp.sparse.csc.csc_matrix]:
+    if type(Y) in [sp.sparse.csr_matrix, sp.sparse.csc_matrix]:
         return np.asarray(np.matmul(Y.todense(), V2))
     else:
         return np.asarray(np.matmul(Y, V2))
