@@ -12,21 +12,6 @@ Change Log
 - [FIXED] fixed copy-paste error in contingency results "max_limit_nminus1" and "min_limit_nminus1"
 - [ADDED] improved lightsim2grid documentation including compatibitliy issues
 - [FIXED] cim2pp: set default xml encoding to None to avoid error after changing to lxml
-
-[2.14.11] - 2024-07-08
--------------------------------
-- [FIXED] Lightsim2grid version
-
-[2.14.10] - 2024-07-08
--------------------------------
-- [FIXED] geopandas version
-
-[2.14.9] - 2024-06-25
--------------------------------
-- [FIXED] scipy version
-
-[upcoming release] - 2024-..-..
--------------------------------
 - [FIXED] PandaModels OPF with 'bus_dc' key errors
 - [FIXED] julia tests
 - [FIXED] copy array element to standard python scalar
@@ -102,6 +87,18 @@ Change Log
 - [ADDED] fix lengths missmatch of output if ignore_zero_length is False in plotting utility function coords_from_node_geodata() and rename ignore_zero_length by ignore_no_geo_diff
 - [ADDED] converter for European EHV grid data from JAO, the "Single Allocation Platform (SAP) for all European Transmission System Operators (TSOs) that operate in accordance to EU legislation"
 - [ADDED] cim2pp converter: Using lxml to parse XML files (better performance)
+
+[2.14.11] - 2024-07-08
+-------------------------------
+- [FIXED] Lightsim2grid version
+
+[2.14.10] - 2024-07-08
+-------------------------------
+- [FIXED] geopandas version
+
+[2.14.9] - 2024-06-25
+-------------------------------
+- [FIXED] scipy version
 
 [2.14.7] - 2024-06-14
 -------------------------------
