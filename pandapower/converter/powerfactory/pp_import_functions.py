@@ -41,7 +41,7 @@ def from_pf(dict_net, pv_as_slack=True, pf_variable_p_loads='plini', pf_variable
     logger.debug("__name__: %s" % __name__)
     logger.debug('started from_pf')
     logger.info(logger.__dict__)
-
+    # TODO: add proper errors and warnings: suggestion: everything that causes mismatch -> error, others: warnings
     flag_graphics = flag_graphics if flag_graphics in ['GPS', 'no geodata'] else 'graphic objects'
 
     logger.debug('collecting grid')
@@ -373,7 +373,7 @@ def add_additional_attributes(item, net, element, element_id, attr_list=None, at
                     net[element].loc[element_id, attr_dict[attr]] = chr_name
                 elif isinstance(chr_name, list):
                     if len(chr_name) > 1:
-                        raise NotImplementedError(f"attribute {attr} is a list with more than 1 items - not supported.")
+                        logger.warning(f"element type {element}: {item.loc_name} - attribute {attr} is a list with more than 1 items - taking only the first element of the list.")
                     elif len(chr_name) == 0:
                         continue
                     net[element].loc[element_id, attr_dict[attr]] = chr_name[0]
@@ -1126,8 +1126,9 @@ def create_line_normal(net, item, bus1, bus2, name, parallel, is_unbalanced, ac,
     if len(charefs): 
         for char in charefs:
             #print(char)
-            if char.loc_name=='fline' or char.loc_name=='fline(1)': 
-                net.line.loc[lid, 'df'] = char.typ_id.curval 
+            if char.loc_name.startswith('fline'):
+                net.line.loc[lid, 'df'] = char.typ_id.curval # TODO: if typ_id == None, then just consider the df that is always there
+
             else: 
                 raise UserWarning(f'Characteristic for name {char.loc_name} not implemented.')
        
@@ -2677,8 +2678,8 @@ def create_trafo3w(net, item, tap_opt='nntap'):
     
     # consider rating factors due to thermal rating
     if item.ratfac_h > 5 or item.ratfac_m > 5 or item.ratfac_l > 5:
-        logger.warning("Trafo3w rating factors are not plausible." 
-                       "Please note that the load flow could not converge due to these considered settings.")
+        logger.warning(f"Trafo3w {item.loc_name}: rating factors are not plausible." 
+                       "Please note that the load flow may not converge due to these considered settings.")
     if item.ratfac_h!=1: 
         params['sn_hv_mva']*=item.ratfac_h
     if item.ratfac_m!=1: 
