@@ -5,6 +5,7 @@ Change Log
 -------------------------------
 - [ADDED] pandas series accessor for geo column
 - [FIXED] Increasing geojson precision as the default precision might cause problems with pandahub
+- [ADDED] converter for European EHV grid data from JAO, the "Single Allocation Platform (SAP) for all European Transmission System Operators (TSOs) that operate in accordance to EU legislation"
 - [ADDED] Add GeographicalRegion and SubGeographicalRegion names and ids to bus df in cim converter
 - [CHANGED] Capitalize first letter of columns busbar_id, busbar_name and substation_id in bus df for cim converter
 - [FIXED] Do not modify pandas options when importing pandapower
@@ -12,21 +13,6 @@ Change Log
 - [ADDED] improved lightsim2grid documentation including compatibitliy issues
 - [FIXED] avoid duplicated keys in kwargs and pf_options in run_contingency()
 - [FIXED] cim2pp: set default xml encoding to None to avoid error after changing to lxml
-
-[2.14.11] - 2024-07-08
--------------------------------
-- [FIXED] Lightsim2grid version
-
-[2.14.10] - 2024-07-08
--------------------------------
-- [FIXED] geopandas version
-
-[2.14.9] - 2024-06-25
--------------------------------
-- [FIXED] scipy version
-
-[upcoming release] - 2024-..-..
--------------------------------
 - [FIXED] PandaModels OPF with 'bus_dc' key errors
 - [FIXED] julia tests
 - [FIXED] copy array element to standard python scalar
@@ -100,8 +86,20 @@ Change Log
 - [CHANGED] Trafo Controllers can now be added to elements that are out of service, changed self.nothing_to_do()
 - [ADDED] Discrete shunt controller for local voltage regulation with shunt steps
 - [ADDED] fix lengths missmatch of output if ignore_zero_length is False in plotting utility function coords_from_node_geodata() and rename ignore_zero_length by ignore_no_geo_diff
+- [ADDED] converter for European EHV grid data from JAO, the "Single Allocation Platform (SAP) for all European Transmission System Operators (TSOs) that operate in accordance to EU legislation"
 - [ADDED] cim2pp converter: Using lxml to parse XML files (better performance)
-- [ADDED] possibility to load JSON files with unknown object models and just store the models as dictionaries in the network
+
+[2.14.11] - 2024-07-08
+-------------------------------
+- [FIXED] Lightsim2grid version
+
+[2.14.10] - 2024-07-08
+-------------------------------
+- [FIXED] geopandas version
+
+[2.14.9] - 2024-06-25
+-------------------------------
+- [FIXED] scipy version
 
 [2.14.7] - 2024-06-14
 -------------------------------
