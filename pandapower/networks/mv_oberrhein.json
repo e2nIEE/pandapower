@@ -623,7 +623,7 @@
       "is_multiindex": false,
       "is_multicolumn": false
     },
-    "version": "3.0.0",
+    "version": "3.1.0",
     "format_version": "3.1.0",
     "converged": true,
     "OPF_converged": false,

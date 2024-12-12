@@ -335,7 +335,7 @@ def test_volt_dep_load_at_inactive_bus():
 
     # create bus elements
     pp.create_ext_grid(net, bus=bus1, vm_pu=1.02, name="Grid Connection")
-    pp.create_load(net, bus=4, p_mw=0.1, q_mvar=0.05, name="Load3", const_i_percent=100)
+    pp.create_load(net, bus=4, p_mw=0.1, q_mvar=0.05, name="Load3", const_i_p_percent=100)
     pp.create_load(net, bus=5, p_mw=0.1, q_mvar=0.05, name="Load4")
 
     # create branch elements
