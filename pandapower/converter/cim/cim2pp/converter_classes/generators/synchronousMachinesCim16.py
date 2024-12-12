@@ -2,6 +2,7 @@ import logging
 import time
 
 import pandas as pd
+from numpy import where
 
 from pandapower.converter.cim import cim_tools
 from pandapower.converter.cim.cim2pp import build_pp_net
@@ -185,4 +186,14 @@ class SynchronousMachinesCim16:
 
         syn_gen_df_origin = syn_gen_df_origin.drop(columns=['id_q_capability_curve_table'])
         syn_gen_df_origin = pd.merge(syn_gen_df_origin, curve_points, how='left', on=['InitialReactiveCapabilityCurve'])
+
+        # create curve_dependency_table flag
+        if 'curve_dependency_table' not in syn_gen_df_origin.columns:
+            syn_gen_df_origin['curve_dependency_table'] = False
+        # set curve_dependency_table as True for respective gen and sgen
+        syn_gen_df_origin['curve_dependency_table'] = (
+                syn_gen_df_origin['id_q_capability_curve_table'].notna() &
+                (syn_gen_df_origin['id_q_capability_curve_table'] >= 0) &
+                syn_gen_df_origin['curve_style'].str.len().gt(0)
+        )
         return syn_gen_df_origin
