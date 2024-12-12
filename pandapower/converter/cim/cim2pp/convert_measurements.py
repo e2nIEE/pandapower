@@ -7,13 +7,13 @@ import time
 from typing import Dict
 import pandas as pd
 import numpy as np
-import pandapower.auxiliary
+from pandapower.auxiliary import pandapowerNet
 from .. import cim_tools
 
 
 class CreateMeasurements:
 
-    def __init__(self, net: pandapower.auxiliary.pandapowerNet, cim: Dict):
+    def __init__(self, net: pandapowerNet, cim: Dict):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.net = net
         self.cim = cim

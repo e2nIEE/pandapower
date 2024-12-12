@@ -9,16 +9,12 @@ import pandas as pd
 import warnings
 from packaging.version import Version
 
-import pandapower as pp
-
 try:
     import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
-
-
 try:
     import lightsim2grid
     v = Version(lightsim2grid.__version__)
@@ -41,9 +37,11 @@ try:
 except ImportError:
     KLU_solver_available = False
 
+from pandapower.run import runpp
+
 
 def run_contingency(net, nminus1_cases, pf_options=None, pf_options_nminus1=None, write_to_net=True,
-                    contingency_evaluation_function=pp.runpp, **kwargs):
+                    contingency_evaluation_function=runpp, **kwargs):
     """
     Obtain either loading (N-0) or max. loading (N-0 and all N-1 cases), and min/max bus voltage magnitude.
     The variable "temperature_degree_celsius" can be used in addition to "loading_percent" to obtain max. temperature.
@@ -134,7 +132,7 @@ def run_contingency(net, nminus1_cases, pf_options=None, pf_options_nminus1=None
     return contingency_results
 
 
-def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=pp.runpp, **kwargs):
+def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=runpp, **kwargs):
     """
     Execute contingency analysis using the lightsim2grid library. This works much faster than using pandapower.
     Limitation: the results for branch flows are valid only for the "from_bus" of lines and "hv_bus" of transformers.

@@ -11,8 +11,12 @@ pytestmark = pytest.mark.filterwarnings("ignore")
 import numpy as np
 import pytest
 
-import pandapower as pp
-import pandapower.networks as nw
+from pandapower import diagnostic, invalid_values, no_ext_grid, create_ext_grid, \
+    multiple_voltage_controlling_elements_per_bus, parallel_switches, create_switch, overload, \
+    wrong_switch_configuration, different_voltage_levels_connected, implausible_impedance_values, \
+    nominal_voltages_dont_match, wrong_reference_system, drop_trafos, disconnected_elements, change_std_type, \
+    deviation_from_std_type, numba_comparison, missing_bus_indices
+from pandapower.networks import example_multivoltage, example_simple
 from pandapower.diagnostic_reports import DiagnosticReports
 
 try:
@@ -38,7 +42,7 @@ def diag_params():
 
 @pytest.fixture(scope='module')
 def test_net():
-    net = nw.example_multivoltage()
+    net = example_multivoltage()
     return net
 
 @pytest.fixture(scope='module')
@@ -62,8 +66,8 @@ def report_methods():
 
 
 def test_no_issues(diag_params, diag_errors, report_methods):
-    net = nw.example_simple()
-    diag_results = pp.diagnostic(net, report_style=None)
+    net = example_simple()
+    diag_results = diagnostic(net, report_style=None)
     assert diag_results == {}
     for bool_value in [True, False]:
         for check_function in report_methods.keys():
@@ -99,7 +103,7 @@ class TestInvalidValues:
         net.trafo3w.loc[0, 'vn_lv_kv'] = False
         net.ext_grid.loc[0, 'vm_pu'] = True
 
-        check_result = pp.invalid_values(net)
+        check_result = invalid_values(net)
         if check_result:
             diag_results = {check_function: check_result}
         else:
@@ -154,7 +158,7 @@ class TestInvalidValues:
         net.gen.loc[0, 'scaling'] = None
         net.sgen.loc[0, 'scaling'] = False
 
-        check_result = pp.invalid_values(net)
+        check_result = invalid_values(net)
         if check_result:
             diag_results = {check_function: check_result}
         else:
@@ -216,7 +220,7 @@ class TestInvalidValues:
         net.switch.loc[4, 'closed'] = None
         net.switch.loc[5, 'closed'] = '10'
 
-        check_result = pp.invalid_values(net)
+        check_result = invalid_values(net)
         if check_result:
             diag_results = {check_function: check_result}
         else:
@@ -389,7 +393,7 @@ class TestInvalidValues:
 def test_no_ext_grid(test_net, diag_params, diag_errors, report_methods):
     net = copy.deepcopy(test_net)
     net.ext_grid = net.ext_grid.drop(0)
-    check_result = pp.no_ext_grid(net)
+    check_result = no_ext_grid(net)
     # I removed some unused code from here, it seemed redundant
     assert check_result
 
@@ -400,10 +404,10 @@ def test_multiple_voltage_controlling_elements_per_bus(test_net, diag_params, di
     diag_params = copy.deepcopy(diag_params)
     report_methods = copy.deepcopy(report_methods)
     net.gen.at[0, "bus"] = 0
-    pp.create_ext_grid(net, 1)
+    create_ext_grid(net, 1)
     net.ext_grid.at[1, "bus"] = 0
 
-    check_result = pp.multiple_voltage_controlling_elements_per_bus(net)
+    check_result = multiple_voltage_controlling_elements_per_bus(net)
     if check_result:
         diag_results = {check_function: check_result}
     else:
@@ -430,7 +434,7 @@ def test_overload(test_net, diag_params, diag_errors, report_methods):
     report_methods = copy.deepcopy(report_methods)
     net.load.p_mw.at[4] *= 1000
 
-    check_result = pp.overload(net, diag_params['overload_scaling_factor'])
+    check_result = overload(net, diag_params['overload_scaling_factor'])
     if check_result:
         diag_results = {check_function: check_result}
     else:
@@ -450,7 +454,7 @@ def test_overload(test_net, diag_params, diag_errors, report_methods):
 
     net = copy.deepcopy(test_net)
     net.gen.p_mw *= 1000
-    check_result = pp.overload(net, diag_params['overload_scaling_factor'])
+    check_result = overload(net, diag_params['overload_scaling_factor'])
     if check_result:
         diag_results = {check_function: check_result}
     else:
@@ -471,7 +475,7 @@ def test_overload(test_net, diag_params, diag_errors, report_methods):
     net = copy.deepcopy(test_net)
     net.load.p_mw *= 1000
     net.gen.p_mw *= 1000
-    check_result = pp.overload(net, diag_params['overload_scaling_factor'])
+    check_result = overload(net, diag_params['overload_scaling_factor'])
     if check_result:
         diag_results = {check_function: check_result}
     else:
@@ -496,7 +500,7 @@ def test_overload(test_net, diag_params, diag_errors, report_methods):
 def test_switch_configuration(test_net, diag_params, diag_errors, report_methods):
     net = copy.deepcopy(test_net)
     check_function = 'wrong_switch_configuration'
-    check_result = pp.wrong_switch_configuration(net)
+    check_result = wrong_switch_configuration(net)
     diag_results = {check_function: check_result}
     assert diag_results[check_function] == None
     for bool_value in [True, False]:
@@ -522,7 +526,7 @@ def test_switch_configuration(test_net, diag_params, diag_errors, report_methods
     net = copy.deepcopy(test_net)
     net.switch.closed = 1
     net.load.p_mw.at[4] *= 1000
-    check_result = pp.wrong_switch_configuration(net)
+    check_result = wrong_switch_configuration(net)
     diag_results = {check_function: check_result}
     assert not diag_results[check_function]
     for bool_value in [True, False]:
@@ -541,9 +545,9 @@ def test_different_voltage_levels_connected(test_net, diag_params, diag_errors, 
     check_function = 'different_voltage_levels_connected'
     diag_params = copy.deepcopy(diag_params)
     report_methods = copy.deepcopy(report_methods)
-    pp.create_switch(net, 41, 45, et = 'b')
+    create_switch(net, 41, 45, et = 'b')
     net.bus.loc[38, "vn_kv"] = 30
-    check_result = pp.different_voltage_levels_connected(net)
+    check_result = different_voltage_levels_connected(net)
     if check_result:
         diag_results = {check_function: check_result}
     else:
@@ -576,7 +580,7 @@ def test_impedance_values_close_to_zero(test_net, diag_params, diag_errors, repo
     net.line.at[4, "r_ohm_per_km"] = 0
     net.line.at[4, "x_ohm_per_km"] = 0
     net.xward = net.xward.drop(net.xward.index)
-    check_result = pp.implausible_impedance_values(net, diag_params['min_r_ohm'], diag_params['min_x_ohm'], 100, 100)
+    check_result = implausible_impedance_values(net, diag_params['min_r_ohm'], diag_params['min_x_ohm'], 100, 100)
     if check_result:
         diag_results = {check_function: check_result}
     else:
@@ -598,7 +602,7 @@ def test_impedance_values_close_to_zero(test_net, diag_params, diag_errors, repo
     net = copy.deepcopy(test_net)
     check_function = 'impedance_values_close_to_zero'
     net.xward.x_ohm = 0
-    check_result = pp.implausible_impedance_values(net, diag_params['min_r_ohm'], diag_params['min_x_ohm'], 100, 100)
+    check_result = implausible_impedance_values(net, diag_params['min_r_ohm'], diag_params['min_x_ohm'], 100, 100)
     if check_result:
         diag_results = {check_function: check_result}
     else:
@@ -616,7 +620,7 @@ def test_impedance_values_close_to_zero(test_net, diag_params, diag_errors, repo
 
     net = copy.deepcopy(test_net)
     net.xward.r_ohm = 1
-    check_result = pp.implausible_impedance_values(net, diag_params['min_r_ohm'], diag_params['min_x_ohm'], 100, 100)
+    check_result = implausible_impedance_values(net, diag_params['min_r_ohm'], diag_params['min_x_ohm'], 100, 100)
     if check_result:
         diag_results = {check_function: check_result}
     else:
@@ -640,7 +644,7 @@ def test_impedance_values_close_to_zero(test_net, diag_params, diag_errors, repo
     net.impedance.xft_pu = 0
     net.impedance.rtf_pu = 0
     net.impedance.xtf_pu = 0
-    check_result = pp.implausible_impedance_values(net, diag_params['min_r_ohm'], diag_params['min_x_ohm'], 100, 100)
+    check_result = implausible_impedance_values(net, diag_params['min_r_ohm'], diag_params['min_x_ohm'], 100, 100)
     if check_result:
         diag_results = {check_function: check_result}
     else:
@@ -664,7 +668,7 @@ def test_impedance_values_close_to_zero(test_net, diag_params, diag_errors, repo
     net.impedance.xft_pu = 0.1
     net.impedance.rtf_pu = 0.1
     net.impedance.xtf_pu = 0.1
-    check_result = pp.implausible_impedance_values(net, diag_params['min_r_ohm'], diag_params['min_x_ohm'], 100, 100)
+    check_result = implausible_impedance_values(net, diag_params['min_r_ohm'], diag_params['min_x_ohm'], 100, 100)
     if check_result:
         diag_results = {check_function: check_result}
     else:
@@ -691,7 +695,7 @@ def test_nominal_voltages_dont_match(test_net, diag_params, diag_errors, report_
     trafo3w_copy = copy.deepcopy(net.trafo3w)
     net.trafo.at[0, "hv_bus"] = trafo_copy.lv_bus.at[0]
     net.trafo.at[0, "lv_bus"] = trafo_copy.hv_bus.at[0]
-    check_result = pp.nominal_voltages_dont_match(net, diag_params['nom_voltage_tolerance'])
+    check_result = nominal_voltages_dont_match(net, diag_params['nom_voltage_tolerance'])
     if check_result:
         diag_results = {check_function: check_result}
     else:
@@ -712,7 +716,7 @@ def test_nominal_voltages_dont_match(test_net, diag_params, diag_errors, report_
     net.trafo = copy.deepcopy(trafo_copy)
     net.trafo.vn_hv_kv.at[0] *= 1.31
     net.trafo.vn_lv_kv.at[0] *= 1.31
-    check_result = pp.nominal_voltages_dont_match(net, diag_params['nom_voltage_tolerance'])
+    check_result = nominal_voltages_dont_match(net, diag_params['nom_voltage_tolerance'])
     if check_result:
         diag_results = {check_function: check_result}
     else:
@@ -733,7 +737,7 @@ def test_nominal_voltages_dont_match(test_net, diag_params, diag_errors, report_
     net.trafo = copy.deepcopy(trafo_copy)
     net.trafo.vn_hv_kv.at[0] *= 0.69
     net.trafo.vn_lv_kv.at[0] *= 0.69
-    check_result = pp.nominal_voltages_dont_match(net, diag_params['nom_voltage_tolerance'])
+    check_result = nominal_voltages_dont_match(net, diag_params['nom_voltage_tolerance'])
     if check_result:
         diag_results = {check_function: check_result}
     else:
@@ -754,7 +758,7 @@ def test_nominal_voltages_dont_match(test_net, diag_params, diag_errors, report_
     net.trafo = copy.deepcopy(trafo_copy)
     net.trafo.vn_hv_kv.at[0] *= 1.29
     net.trafo.vn_lv_kv.at[0] *= 1.29
-    check_result = pp.nominal_voltages_dont_match(net, diag_params['nom_voltage_tolerance'])
+    check_result = nominal_voltages_dont_match(net, diag_params['nom_voltage_tolerance'])
     if check_result:
         diag_results = {check_function: check_result}
     else:
@@ -774,7 +778,7 @@ def test_nominal_voltages_dont_match(test_net, diag_params, diag_errors, report_
     net.trafo = copy.deepcopy(trafo_copy)
     net.trafo.vn_hv_kv.at[0] *= 0.71
     net.trafo.vn_lv_kv.at[0] *= 0.71
-    check_result = pp.nominal_voltages_dont_match(net, diag_params['nom_voltage_tolerance'])
+    check_result = nominal_voltages_dont_match(net, diag_params['nom_voltage_tolerance'])
     if check_result:
         diag_results = {check_function: check_result}
     else:
@@ -796,7 +800,7 @@ def test_nominal_voltages_dont_match(test_net, diag_params, diag_errors, report_
     net.trafo3w.at[0, "hv_bus"] = trafo3w_copy.mv_bus.at[0]
     net.trafo3w.at[0, "mv_bus"] = trafo3w_copy.lv_bus.at[0]
     net.trafo3w.at[0, "lv_bus"] = trafo3w_copy.hv_bus.at[0]
-    check_result = pp.nominal_voltages_dont_match(net, diag_params['nom_voltage_tolerance'])
+    check_result = nominal_voltages_dont_match(net, diag_params['nom_voltage_tolerance'])
     if check_result:
         diag_results = {check_function: check_result}
     else:
@@ -818,7 +822,7 @@ def test_nominal_voltages_dont_match(test_net, diag_params, diag_errors, report_
     net.trafo3w.vn_hv_kv.at[0] *= 1.31
     net.trafo3w.vn_mv_kv.at[0] *= 1.31
     net.trafo3w.vn_lv_kv.at[0] *= 1.31
-    check_result = pp.nominal_voltages_dont_match(net, diag_params['nom_voltage_tolerance'])
+    check_result = nominal_voltages_dont_match(net, diag_params['nom_voltage_tolerance'])
     if check_result:
         diag_results = {check_function: check_result}
     else:
@@ -840,7 +844,7 @@ def test_nominal_voltages_dont_match(test_net, diag_params, diag_errors, report_
     net.trafo3w.vn_hv_kv.at[0] *= 0.69
     net.trafo3w.vn_mv_kv.at[0] *= 0.69
     net.trafo3w.vn_lv_kv.at[0] *= 0.69
-    check_result = pp.nominal_voltages_dont_match(net, diag_params['nom_voltage_tolerance'])
+    check_result = nominal_voltages_dont_match(net, diag_params['nom_voltage_tolerance'])
     if check_result:
         diag_results = {check_function: check_result}
     else:
@@ -862,7 +866,7 @@ def test_nominal_voltages_dont_match(test_net, diag_params, diag_errors, report_
     net.trafo3w.vn_hv_kv.at[0] *= 1.29
     net.trafo3w.vn_mv_kv.at[0] *= 1.29
     net.trafo3w.vn_lv_kv.at[0] *= 1.29
-    check_result = pp.nominal_voltages_dont_match(net, diag_params['nom_voltage_tolerance'])
+    check_result = nominal_voltages_dont_match(net, diag_params['nom_voltage_tolerance'])
     if check_result:
         diag_results = {check_function: check_result}
     else:
@@ -883,7 +887,7 @@ def test_nominal_voltages_dont_match(test_net, diag_params, diag_errors, report_
     net.trafo3w.vn_hv_kv.at[0] *= 0.71
     net.trafo3w.vn_mv_kv.at[0] *= 0.71
     net.trafo3w.vn_lv_kv.at[0] *= 0.71
-    check_result = pp.nominal_voltages_dont_match(net, diag_params['nom_voltage_tolerance'])
+    check_result = nominal_voltages_dont_match(net, diag_params['nom_voltage_tolerance'])
     if check_result:
         diag_results = {check_function: check_result}
     else:
@@ -911,7 +915,7 @@ def test_wrong_reference_system(test_net, diag_params, diag_errors, report_metho
     net.load.at[0, "p_mw"] = -1
     net.gen.at[0, "p_mw"] = -1
     net.sgen.at[0, "p_mw"] = -1
-    check_result = pp.wrong_reference_system(net)
+    check_result = wrong_reference_system(net)
     if check_result:
         diag_results = {check_function: check_result}
     else:
@@ -935,8 +939,8 @@ def test_disconnected_elements(test_net, diag_params, diag_errors, report_method
     diag_params = copy.deepcopy(diag_params)
     report_methods = copy.deepcopy(report_methods)
     net.switch.loc[[37, 38], "closed"] = False
-    pp.drop_trafos(net, [1])
-    check_result = pp.disconnected_elements(net)
+    drop_trafos(net, [1])
+    check_result = disconnected_elements(net)
     if check_result:
         diag_results = {check_function: check_result}
     else:
@@ -977,9 +981,9 @@ def test_deviation_from_std_type(test_net, diag_params, diag_errors, report_meth
     net.line.x_ohm_per_km.loc[6] -= 1
     net.line.c_nf_per_km.loc[14] *= -1
     net.line.loc[21, "max_i_ka"] = '5'
-    pp.change_std_type(net, 0, element='trafo', name='160 MVA 380/110 kV')
+    change_std_type(net, 0, element='trafo', name='160 MVA 380/110 kV')
     net.trafo.vk_percent.loc[0] *= 2
-    check_result = pp.deviation_from_std_type(net)
+    check_result = deviation_from_std_type(net)
     if check_result:
         diag_results = {check_function: check_result}
     else:
@@ -1013,7 +1017,7 @@ def test_numba_comparison(test_net, diag_params, diag_errors, report_methods):
     net = copy.deepcopy(test_net)
     check_function = 'numba_comparison'
     diag_params['numba_tolerance'] = 1e-13
-    check_result = pp.numba_comparison(net, numba_tolerance=diag_params['numba_tolerance'])
+    check_result = numba_comparison(net, numba_tolerance=diag_params['numba_tolerance'])
     if check_result:
         diag_results = {check_function: check_result}
     else:
@@ -1040,13 +1044,13 @@ def test_parallel_switches(test_net, diag_params, diag_errors, report_methods):
     check_function = 'parallel_switches'
     diag_params = copy.deepcopy(diag_params)
     report_methods = copy.deepcopy(report_methods)
-    pp.create_switch(net, 1, 2, et='b')
-    pp.create_switch(net, 13, 0, et='t', closed=False)
-    pp.create_switch(net, 13, 0, et='t')
-    pp.create_switch(net, 47, 16, et='l')
-    pp.create_switch(net, 13, 0, et='b')
+    create_switch(net, 1, 2, et='b')
+    create_switch(net, 13, 0, et='t', closed=False)
+    create_switch(net, 13, 0, et='t')
+    create_switch(net, 47, 16, et='l')
+    create_switch(net, 13, 0, et='b')
 
-    check_result = pp.parallel_switches(net)
+    check_result = parallel_switches(net)
     if check_result:
         diag_results = {check_function: check_result}
     else:
@@ -1075,7 +1079,7 @@ def test_missing_bus_indices(test_net, diag_params, diag_errors, report_methods)
     net.switch.bus.iat[0] = 10003
     net.switch.element.iat[0] = 10004
     net.ext_grid.bus.iloc[0] = 10005
-    check_result = pp.missing_bus_indices(net)
+    check_result = missing_bus_indices(net)
     if check_result:
         diag_results = {check_function: check_result}
     else:
@@ -1103,7 +1107,7 @@ def test_missing_bus_indices(test_net, diag_params, diag_errors, report_methods)
 def test_runpp_errors(test_net, diag_params, diag_errors, report_methods):
     net = copy.deepcopy(test_net)
     net.load.p_mw *= 100
-    diag = pp.diagnostic(net, report_style=None)
+    diag = diagnostic(net, report_style=None)
 
 if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

@@ -6,11 +6,11 @@
 
 import os
 
-import pandapower as pp
-import pandapower.toolbox
-from pandapower.file_io import from_json
 from pandapower.__init__ import pp_dir
-import pandapower.plotting.geo as geo
+from pandapower.file_io import from_json
+from pandapower.create import create_gen, create_ext_grid, create_sgen
+from pandapower.plotting.geo import convert_geodata_to_geojson
+from pandapower.toolbox.element_selection import pp_elements
 
 
 def _get_cases_path(filename=None):
@@ -42,7 +42,7 @@ def _change_ref_bus(net, ref_bus_idx, ext_grid_p=0):
     for i in ext_grid_idx:
         ext_grid_data = net.ext_grid.loc[i]
         net.ext_grid = net.ext_grid.drop(i)
-        pp.create_gen(net, ext_grid_data.bus, ext_grid_p[j],
+        create_gen(net, ext_grid_data.bus, ext_grid_p[j],
                       vm_pu=ext_grid_data.vm_pu, controllable=True,
                       min_q_mvar=ext_grid_data.min_q_mvar, max_q_mvar=ext_grid_data.max_q_mvar,
                       min_p_mw=ext_grid_data.min_p_mw, max_p_mw=ext_grid_data.max_p_mw)
@@ -52,18 +52,18 @@ def _change_ref_bus(net, ref_bus_idx, ext_grid_p=0):
         gen_data = net.gen.loc[i]
         net.gen = net.gen.drop(i)
         if gen_data.bus not in net.ext_grid.bus.values:
-            pp.create_ext_grid(net, gen_data.bus, vm_pu=gen_data.vm_pu, va_degree=0.,
+            create_ext_grid(net, gen_data.bus, vm_pu=gen_data.vm_pu, va_degree=0.,
                                min_q_mvar=gen_data.min_q_mvar, max_q_mvar=gen_data.max_q_mvar,
                                min_p_mw=gen_data.min_p_mw, max_p_mw=gen_data.max_p_mw)
         else:
-            pp.create_sgen(net, gen_data.bus, p_mw=gen_data.p_mw,
+            create_sgen(net, gen_data.bus, p_mw=gen_data.p_mw,
                            min_q_mvar=gen_data.min_q_mvar, max_q_mvar=gen_data.max_q_mvar,
                            min_p_mw=gen_data.min_p_mw, max_p_mw=gen_data.max_p_mw)
 
 
 def sorted_from_json(path, **kwargs):
     net = from_json(path, **kwargs)
-    for elm in pandapower.toolbox.pp_elements():
+    for elm in pp_elements():
         net[elm].sort_index(inplace=True)
     return net
 
@@ -71,7 +71,7 @@ def sorted_from_json(path, **kwargs):
 def case4gs(**kwargs):
     """
     This is the 4 bus example from J. J. Grainger and W. D. Stevenson, Power system analysis. \
-    McGraw-Hill, 1994. pp. 337-338. Its data origin is \
+    McGraw-Hill, 1994.  337-338. Its data origin is \
     `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
 
     OUTPUT:
@@ -106,7 +106,7 @@ def case5(**kwargs):
 def case6ww(**kwargs):
     """
     Calls the json file case6ww.json which data origin is \
-    `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_. It represents the 6 bus example from pp. \
+    `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_. It represents the 6 bus example from  \
     104, 112, 119, 123-124, 549 from A. J. Wood and B. F. Wollenberg, Power generation, operation, \
     and control. John Wiley & Sons, 2012..
 
@@ -139,7 +139,7 @@ def case9(**kwargs):
     """
     case9 = sorted_from_json(_get_cases_path("case9.json", **kwargs))
     # TODO: add converted net to the json and remove this conversion step.
-    geo.convert_geodata_to_geojson(case9)
+    convert_geodata_to_geojson(case9)
     return case9
 
 
@@ -226,7 +226,7 @@ def case30(**kwargs):
     """
     case30 = sorted_from_json(_get_cases_path("case30.json", **kwargs))
     # TODO: add converted net to the json and remove this conversion step.
-    geo.convert_geodata_to_geojson(case30)
+    convert_geodata_to_geojson(case30)
     return case30
 
 
@@ -290,7 +290,7 @@ def case39(**kwargs):
     """
     case39 = sorted_from_json(_get_cases_path("case39.json", **kwargs))
     # TODO: add converted net to the json and remove this conversion step.
-    geo.convert_geodata_to_geojson(case39)
+    convert_geodata_to_geojson(case39)
     return case39
 
 
@@ -344,7 +344,7 @@ def case89pegase(**kwargs):
     PEGASE <https://arxiv.org/abs/1603.01533>`_, 2016 and S. Fliscounakis, P. Panciatici, \
     F. Capitanescu, and L. Wehenkel, Contingency ranking with respect to overloads in very large \
     power systems taking into account uncertainty, preventive, and corrective actions, \
-    IEEE Transactions on Power Systems, vol. 28, no. 4, pp. 4909-4917, Nov 2013..
+    IEEE Transactions on Power Systems, vol. 28, no. 4,  4909-4917, Nov 2013..
 
     OUTPUT:
          **net** - Returns the required ieee network case89pegase
@@ -377,7 +377,7 @@ def case118(**kwargs):
     """
     case118 = sorted_from_json(_get_cases_path("case118.json", **kwargs))
     # TODO: add converted net to the json and remove this conversion step.
-    geo.convert_geodata_to_geojson(case118)
+    convert_geodata_to_geojson(case118)
     return case118
 
 
@@ -447,7 +447,7 @@ def case1354pegase(**kwargs):
     <https://arxiv.org/abs/1603.01533>`_, 2016 and S. Fliscounakis, P. Panciatici, F. Capitanescu, \
     and L. Wehenkel, Contingency ranking with respect to overloads in very large power systems \
     taking into account uncertainty, preventive, and corrective actions, IEEE Transactions on \
-    Power Systems, vol. 28, no. 4, pp. 4909-4917, Nov 2013..
+    Power Systems, vol. 28, no. 4,  4909-4917, Nov 2013..
 
     OUTPUT:
          **net** - Returns the required ieee network case1354pegase
@@ -536,7 +536,7 @@ def case2869pegase(**kwargs):
     <https://arxiv.org/abs/1603.01533>`_, 2016 and S. Fliscounakis, P. Panciatici, F. Capitanescu, \
     and L. Wehenkel, Contingency ranking with respect to overloads in very large power systems \
     taking into account uncertainty, preventive, and corrective actions, IEEE Transactions on \
-    Power Systems, vol. 28, no. 4, pp. 4909-4917, Nov 2013..
+    Power Systems, vol. 28, no. 4,  4909-4917, Nov 2013..
 
     OUTPUT:
          **net** - Returns the required ieee network case2869pegase
@@ -677,7 +677,7 @@ def case9241pegase(**kwargs):
     <https://arxiv.org/abs/1603.01533>`_, 2016 and S. Fliscounakis, P. Panciatici, F. Capitanescu, \
     and L. Wehenkel, Contingency ranking with respect to overloads in very large power systems \
     taking into account uncertainty, preventive, and corrective actions, IEEE Transactions on \
-    Power Systems, vol. 28, no. 4, pp. 4909-4917, Nov 2013..
+    Power Systems, vol. 28, no. 4,  4909-4917, Nov 2013..
 
     OUTPUT:
          **net** - Returns the required ieee network case9241pegase

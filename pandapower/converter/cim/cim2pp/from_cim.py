@@ -5,7 +5,8 @@
 import logging
 import time
 from typing import Union, List, Type, Dict
-import pandapower.auxiliary
+
+from pandapower.auxiliary import pandapowerNet
 from . import build_pp_net
 from .. import cim_classes
 from .. import interfaces
@@ -21,7 +22,7 @@ def from_cim_dict(cim_parser: cim_classes.CimParser, log_debug=False, convert_li
                   repair_pp: Union[str, interfaces.PandapowerRepair] = None,
                   repair_pp_class: Type[interfaces.PandapowerRepair] = None,
                   custom_converter_classes: Dict = None,
-                  **kwargs) -> pandapower.auxiliary.pandapowerNet:
+                  **kwargs) -> pandapowerNet:
     """
     Create a pandapower net from a CIM data structure.
 

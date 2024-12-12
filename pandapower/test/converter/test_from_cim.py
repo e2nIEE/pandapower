@@ -3,10 +3,10 @@ import pytest
 import math
 import pandas as pd
 
-import pandapower as pp
 from pandapower.test import test_path
 
-from pandapower.converter import from_cim as cim2pp
+from pandapower.converter.cim.cim2pp.from_cim import from_cim
+from pandapower.run import runpp
 
 
 @pytest.fixture(scope="session")
@@ -16,7 +16,7 @@ def fullgrid_v2():
     cgmes_files = [os.path.join(folder_path, 'CGMES_v2.4.15_FullGridTestConfiguration_BB_BE_v1.zip'),
                    os.path.join(folder_path, 'CGMES_v2.4.15_FullGridTestConfiguration_BD_v1.zip')]
 
-    return cim2pp.from_cim(file_list=cgmes_files)
+    return from_cim(file_list=cgmes_files)
 
 @pytest.fixture(scope="session")
 def fullgrid_v3():
@@ -24,7 +24,7 @@ def fullgrid_v3():
 
     cgmes_files = [os.path.join(folder_path, 'CGMES_v3.0_FullGrid-Merged_v3.0.2.zip')]
 
-    return cim2pp.from_cim(file_list=cgmes_files)
+    return from_cim(file_list=cgmes_files)
 
 
 @pytest.fixture(scope="session")
@@ -34,7 +34,7 @@ def smallgrid_GL():
     cgmes_files = [os.path.join(folder_path, 'CGMES_v2.4.15_SmallGridTestConfiguration_Boundary_v3.0.0.zip'),
                    os.path.join(folder_path, 'CGMES_v2.4.15_SmallGridTestConfiguration_BaseCase_Complete_v3.0.0.zip')]
 
-    return cim2pp.from_cim(file_list=cgmes_files, use_GL_or_DL_profile='GL')
+    return from_cim(file_list=cgmes_files, use_GL_or_DL_profile='GL')
 
 
 @pytest.fixture(scope="session")
@@ -44,7 +44,7 @@ def smallgrid_DL():
     cgmes_files = [os.path.join(folder_path, 'CGMES_v2.4.15_SmallGridTestConfiguration_Boundary_v3.0.0.zip'),
                    os.path.join(folder_path, 'CGMES_v2.4.15_SmallGridTestConfiguration_BaseCase_Complete_v3.0.0.zip')]
 
-    return cim2pp.from_cim(file_list=cgmes_files, use_GL_or_DL_profile='DL')
+    return from_cim(file_list=cgmes_files, use_GL_or_DL_profile='DL')
 
 
 @pytest.fixture(scope="session")
@@ -53,7 +53,7 @@ def realgrid():
 
     cgmes_files = [os.path.join(folder_path, 'CGMES_v2.4.15_RealGridTestConfiguration_v2.zip')]
 
-    return cim2pp.from_cim(file_list=cgmes_files)
+    return from_cim(file_list=cgmes_files)
 
 
 @pytest.fixture(scope="session")
@@ -62,7 +62,7 @@ def SimBench_1_HVMVmixed_1_105_0_sw_modified():
 
     cgmes_files = [os.path.join(folder_path, 'SimBench_1-HVMV-mixed-1.105-0-sw_modified.zip')]
 
-    return cim2pp.from_cim(file_list=cgmes_files, run_powerflow=True)
+    return from_cim(file_list=cgmes_files, run_powerflow=True)
 
 
 @pytest.fixture(scope="session")
@@ -71,7 +71,7 @@ def Simbench_1_EHV_mixed__2_no_sw():
 
     cgmes_files = [os.path.join(folder_path, 'Simbench_1-EHV-mixed--2-no_sw.zip')]
 
-    return cim2pp.from_cim(file_list=cgmes_files, create_measurements='SV', run_powerflow=True)
+    return from_cim(file_list=cgmes_files, create_measurements='SV', run_powerflow=True)
 
 
 @pytest.fixture(scope="session")
@@ -80,8 +80,8 @@ def example_multivoltage():
 
     cgmes_files = [os.path.join(folder_path, 'example_multivoltage.zip')]
 
-    net = cim2pp.from_cim(file_list=cgmes_files)
-    pp.runpp(net, calculate_voltage_angles="auto")
+    net = from_cim(file_list=cgmes_files)
+    runpp(net, calculate_voltage_angles="auto")
     return net
 
 
@@ -91,7 +91,7 @@ def SimBench_1_HVMVmixed_1_105_0_sw_modified_no_load_flow():
 
     cgmes_files = [os.path.join(folder_path, 'SimBench_1-HVMV-mixed-1.105-0-sw_modified.zip')]
 
-    return cim2pp.from_cim(file_list=cgmes_files)
+    return from_cim(file_list=cgmes_files)
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_no_load_flow_res_bus(

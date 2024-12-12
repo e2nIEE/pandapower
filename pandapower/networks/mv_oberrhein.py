@@ -8,10 +8,12 @@ import os
 
 import numpy as np
 
-import pandapower as pp
-import pandapower.topology as top
 from pandapower.__init__ import pp_dir
-
+from pandapower.run import runpp
+from pandapower.file_io import from_json
+from pandapower.topology.create_graph import create_nxgraph
+from pandapower.topology.graph_searches import connected_components
+from pandapower.toolbox.grid_modification import select_subnet
 
 def mv_oberrhein(scenario="load", cosphi_load=0.98, cosphi_pv=1.0, include_substations=False,
                  separation_by_sub=False, **kwargs):
@@ -61,11 +63,11 @@ def mv_oberrhein(scenario="load", cosphi_load=0.98, cosphi_pv=1.0, include_subst
         ``net0, net1 = pandapower.networks.mv_oberrhein(separation_by_sub=True)``
     """
     if include_substations:
-        net = pp.from_json(os.path.join(pp_dir, "networks", "mv_oberrhein_substations.json"), **kwargs)
+        net = from_json(os.path.join(pp_dir, "networks", "mv_oberrhein_substations.json"), **kwargs)
         # geo.convert_epsg_bus_geodata(net, epsg_out=4326, epsg_in=31467)
         # geo.convert_geodata_to_geojson(net, lonlat=False)
     else:
-        net = pp.from_json(os.path.join(pp_dir, "networks", "mv_oberrhein.json"), **kwargs)
+        net = from_json(os.path.join(pp_dir, "networks", "mv_oberrhein.json"), **kwargs)
         # geo.convert_epsg_bus_geodata(net, epsg_out=4326, epsg_in=31467)
         # geo.convert_geodata_to_geojson(net, lonlat=False)
     net.load.q_mvar = np.tan(np.arccos(cosphi_load)) * net.load.p_mw
@@ -86,16 +88,16 @@ def mv_oberrhein(scenario="load", cosphi_load=0.98, cosphi_pv=1.0, include_subst
 
     if separation_by_sub:
         # creating multigraph
-        mg = top.create_nxgraph(net)
+        mg = create_nxgraph(net)
         # clustering connected buses
-        zones = [list(area) for area in top.connected_components(mg)]
-        net1 = pp.select_subnet(net, buses=zones[0], include_switch_buses=False,
+        zones = [list(area) for area in connected_components(mg)]
+        net1 = select_subnet(net, buses=zones[0], include_switch_buses=False,
                                 include_results=True, keep_everything_else=True)
-        net0 = pp.select_subnet(net, buses=zones[1], include_switch_buses=False,
+        net0 = select_subnet(net, buses=zones[1], include_switch_buses=False,
                                 include_results=True, keep_everything_else=True)
 
-        pp.runpp(net0)
-        pp.runpp(net1)
+        runpp(net0)
+        runpp(net1)
         net0.name = 'MV Oberrhein 0'
         net1.name = 'MV Oberrhein 1'
         # TODO: this should be added to the initial data not converted here.
@@ -103,7 +105,7 @@ def mv_oberrhein(scenario="load", cosphi_load=0.98, cosphi_pv=1.0, include_subst
         # geo.convert_geodata_to_geojson(net1)
         return net0, net1
 
-    pp.runpp(net)
+    runpp(net)
     net.name = 'MV Oberrhein'
     # geo.convert_geodata_to_geojson(net)
     return net

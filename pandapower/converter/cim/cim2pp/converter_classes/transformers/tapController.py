@@ -4,7 +4,7 @@ from typing import List
 
 import pandas as pd
 
-import pandapower.auxiliary
+from pandapower.control.util.auxiliary import create_trafo_characteristics
 from pandapower.control.controller.trafo.ContinuousTapControl import ContinuousTapControl
 from pandapower.control.controller.trafo.DiscreteTapControl import DiscreteTapControl
 from pandapower.converter.cim import cim_tools
@@ -59,7 +59,7 @@ class TapController:
         for variable in ['vkr_percent', 'vk_percent', 'vk_hv_percent', 'vkr_hv_percent', 'vk_mv_percent',
                          'vkr_mv_percent', 'vk_lv_percent', 'vkr_lv_percent']:
             if variable in characteristic_df.columns:
-                pandapower.control.create_trafo_characteristics(net, trafo_type, trafo_id, variable,
+                create_trafo_characteristics(net, trafo_type, trafo_id, variable,
                                                                 [characteristic_df['step'].to_list()],
                                                                 [characteristic_df[variable].to_list()])
 

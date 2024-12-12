@@ -3,22 +3,18 @@
 # Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-
-import os
-
 import numpy as np
 import pytest
 
-import pandapower as pp
-import pandapower.networks as nw
-from pandapower.estimation import StateEstimation, estimate
+from pandapower.run import runpp
+from pandapower.networks.power_system_test_cases import case30
+from pandapower.estimation import StateEstimation
 from pandapower.estimation.util import add_virtual_meas_from_loadflow
-from copy import deepcopy
 
 
 def test_recycle_case30():
-    net = nw.case30()
-    pp.runpp(net)
+    net = case30()
+    runpp(net)
     add_virtual_meas_from_loadflow(net)
     se = StateEstimation(net, recycle=True)
     se.estimate()
@@ -27,7 +23,7 @@ def test_recycle_case30():
 
     # Run SE again
     net.load.p_mw -= 10
-    pp.runpp(net)
+    runpp(net)
     add_virtual_meas_from_loadflow(net)
     assert se.estimate()
     assert np.allclose(net.res_bus.vm_pu, net.res_bus_est.vm_pu, atol=1e-2)

@@ -3,10 +3,13 @@
 # Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-import pandapower as pp
 import pandas as pd
 from numpy import nan, append
 from geojson import Point, dumps
+
+from pandapower.create import create_empty_network, create_bus, create_ext_grid, create_transformer, create_buses, \
+    create_line, create_load, create_sgen
+from pandapower.std_types import create_std_type
 
 
 def create_synthetic_voltage_control_lv_network(network_class="rural_1"):
@@ -69,35 +72,35 @@ def create_synthetic_voltage_control_lv_network(network_class="rural_1"):
                              'suburb_1': 'NAYY 4x35'}
 
     # create network
-    net = pp.create_empty_network(name='synthetic_voltage_control_lv_network: ' + network_class)
+    net = create_empty_network(name='synthetic_voltage_control_lv_network: ' + network_class)
 
     # create std_types
     # cable data (r, x, i_max) from www.faberkabel.de
     if network_class in ["rural_2", "village_2", "suburb_1"]:
-        pp.create_std_type(net, {
+        create_std_type(net, {
                 "c_nf_per_km": 202, "r_ohm_per_km": 0.869, "x_ohm_per_km": 0.085,
                 "max_i_ka": 0.123, "type": "cs", "q_mm2": 35}, name="NAYY 4x35", element="line")
         if network_class != "suburb_1":
-            pp.create_std_type(net, {
+            create_std_type(net, {
                     "c_nf_per_km": 17.8, "r_ohm_per_km": 0.439, "x_ohm_per_km": 0.295,
                     "max_i_ka": 0.28, "type": "ol", "q_mm2": 70}, name="NF 4x70", element="line")
             if network_class == "village_2":
-                pp.create_std_type(net, {
+                create_std_type(net, {
                         "c_nf_per_km": 230, "r_ohm_per_km": 0.443, "x_ohm_per_km": 0.0823,
                         "max_i_ka": 0.179, "type": "cs", "q_mm2": 70}, name="NAYY 4x70",
                         element="line")
                 data = net.std_types['line']['48-AL1/8-ST1A 0.4']
                 data['q_mm2'] = 50
-                pp.create_std_type(net, data, name="NF 4x50", element="line")
+                create_std_type(net, data, name="NF 4x50", element="line")
                 data = net.std_types['line']['94-AL1/15-ST1A 0.4']
                 data['q_mm2'] = 95
-                pp.create_std_type(net, data, name="NF 4x95", element="line")
-                pp.create_std_type(net, {
+                create_std_type(net, data, name="NF 4x95", element="line")
+                create_std_type(net, {
                         "c_nf_per_km": 16.2, "r_ohm_per_km": 0.274, "x_ohm_per_km": 0.31,
                         "max_i_ka": 0.4, "type": "ol", "q_mm2": 120}, name="NF 4x120",
                                    element="line")
         if network_class != "rural_2":
-            pp.create_std_type(net, {
+            create_std_type(net, {
                     "c_nf_per_km": 240, "r_ohm_per_km": 0.32, "x_ohm_per_km": 0.082,
                     "max_i_ka": 0.215, "type": "cs", "q_mm2": 95}, name="NAYY 4x95", element="line")
     # trafos
@@ -108,23 +111,23 @@ def create_synthetic_voltage_control_lv_network(network_class="rural_1"):
         data['i0_percent'] = 0.31
         data['vkr_percent'] = data['vkr_percent'] * 4 / data['vk_percent']
         data['vk_percent'] = 4
-        pp.create_std_type(net, data, name=trafo_type[network_class], element="trafo")
+        create_std_type(net, data, name=trafo_type[network_class], element="trafo")
     elif network_class in ["rural_2", "village_1"]:
         data = net.std_types['trafo']['0.25 MVA 20/0.4 kV']
         data['vkr_percent'] = data['vkr_percent'] * 4 / data['vk_percent']
         data['vk_percent'] = 4
-        pp.create_std_type(net, data, name=trafo_type[network_class], element="trafo")
+        create_std_type(net, data, name=trafo_type[network_class], element="trafo")
     elif network_class in ["suburb_1", "village_2"]:
         data = net.std_types['trafo']['0.4 MVA 20/0.4 kV']
         data['vkr_percent'] = data['vkr_percent'] * 4 / data['vk_percent']
         data['vk_percent'] = 4
-        pp.create_std_type(net, data, name=trafo_type[network_class], element="trafo")
+        create_std_type(net, data, name=trafo_type[network_class], element="trafo")
 
     # create mv connection
-    mv_bus = pp.create_bus(net, 20, name='mv bus')
-    bb = pp.create_bus(net, 0.4, name='busbar')
-    pp.create_ext_grid(net, mv_bus)
-    pp.create_transformer(net, mv_bus, bb, std_type=trafo_type[network_class])
+    mv_bus = create_bus(net, 20, name='mv bus')
+    bb = create_bus(net, 0.4, name='busbar')
+    create_ext_grid(net, mv_bus)
+    create_transformer(net, mv_bus, bb, std_type=trafo_type[network_class])
 
     # create lv network
     idx_feeder = range(len(n_feeder[network_class]))
@@ -132,9 +135,9 @@ def create_synthetic_voltage_control_lv_network(network_class="rural_1"):
     house_buses = {}
     for i in idx_feeder:
         # buses
-        lv_buses[i] = pp.create_buses(net, n_feeder[network_class][i], 0.4, zone='Feeder'+str(i+1),
+        lv_buses[i] = create_buses(net, n_feeder[network_class][i], 0.4, zone='Feeder'+str(i+1),
                                       type='m')
-        house_buses[i] = pp.create_buses(net, n_feeder[network_class][i], 0.4,
+        house_buses[i] = create_buses(net, n_feeder[network_class][i], 0.4,
                                          zone='Feeder'+str(i+1), type='n')
         # lines
         lines = pd.DataFrame()
@@ -153,11 +156,11 @@ def create_synthetic_voltage_control_lv_network(network_class="rural_1"):
              [house_connection_length[network_class]]*n_feeder[network_class][i]
 
         for _, lines in lines.iterrows():
-            pp.create_line(net, lines.from_bus, lines.to_bus, length_km=lines.length,
+            create_line(net, lines.from_bus, lines.to_bus, length_km=lines.length,
                            std_type=lines.std_type)
         # load
         for i in house_buses[i]:
-            pp.create_load(net, i, p_mw=5.1e-3)
+            create_load(net, i, p_mw=5.1e-3)
 
     # direct loads and DEA
     if network_class == "rural_1":
@@ -181,9 +184,9 @@ def create_synthetic_voltage_control_lv_network(network_class="rural_1"):
         DER = [(1, 1, 9.36), (1, 2, 79.12), (7, 7, 30), (8, 7, 18.47), (8, 15, 9.54),
                (10, 10, 14.4)]
     for i in special_load:
-        pp.create_load(net, lv_buses[i[0]-1][i[1]-1], p_mw=7.9e-3)
+        create_load(net, lv_buses[i[0]-1][i[1]-1], p_mw=7.9e-3)
     for i in DER:
-        pp.create_sgen(net, house_buses[i[0]-1][i[1]-1], p_mw=i[2]*1e-3)
+        create_sgen(net, house_buses[i[0]-1][i[1]-1], p_mw=i[2]*1e-3)
 
     # set bus geo data
     bus_geo = {

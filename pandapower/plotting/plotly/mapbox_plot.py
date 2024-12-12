@@ -5,7 +5,7 @@
 
 
 import os
-from pandapower.plotting import geo
+from pandapower.plotting.geo import convert_crs
 
 try:
     import pandaplan.core.pplog as logging
@@ -53,7 +53,7 @@ def geo_data_to_latlong(net, projection):
                 - "epsg:2032" - NAD27(CGQ77) / UTM zone 18N
                 - "epsg:2190" - Azores Oriental 1940 / UTM zone 26N
     """
-    geo.convert_crs(net, epsg_in=projection.split(':')[1], epsg_out=4326)
+    convert_crs(net, epsg_in=projection.split(':')[1], epsg_out=4326)
 
     # try:
     #     from pyproj import Proj, transform

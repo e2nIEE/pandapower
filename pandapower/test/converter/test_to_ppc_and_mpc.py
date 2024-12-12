@@ -6,8 +6,8 @@
 
 import numpy as np
 import pytest
-import pandapower as pp
 import pandapower.converter as cv
+from pandapower.run import runpp
 from pandapower.test.converter.test_from_ppc import get_testgrids
 from pandapower.pypower.idx_bus import VM, BUS_I, VA
 from pandapower.powerflow import LoadflowNotConverged
@@ -29,7 +29,7 @@ def test_to_ppc_and_mpc():
         reset_results(net)
 
         # This should be reviewed
-        pp.runpp(net)
+        runpp(net)
 
         # convert pandapower grids to ppc
         ppc = cv.to_ppc(net)

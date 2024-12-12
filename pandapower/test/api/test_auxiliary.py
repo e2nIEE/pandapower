@@ -10,8 +10,6 @@ import geojson
 import numpy as np
 import pandas as pd
 
-from pandapower.control import SplineCharacteristic
-from pandapower.control.util.characteristic import LogSplineCharacteristic
 
 try:
     import geopandas as gpd
@@ -20,12 +18,13 @@ try:
 except ImportError:
     GEOPANDAS_INSTALLED = False
 
-from pandapower.auxiliary import get_indices
-
-import pandapower as pp
-import pandapower.networks
-import pandapower.control
-import pandapower.timeseries
+from pandapower import get_gc_objects_dict, create_empty_network, from_json_string, to_json, create_bus, create_lines, \
+    create_line
+from pandapower.auxiliary import get_indices, pandapowerNet
+from pandapower.networks import example_simple, example_multivoltage, mv_oberrhein
+from pandapower.timeseries import DFData
+from pandapower.control import SplineCharacteristic, ContinuousTapControl, ConstControl, create_trafo_characteristics
+from pandapower.control.util.characteristic import LogSplineCharacteristic
 
 
 class MemoryLeakDemo:
@@ -88,13 +87,13 @@ def test_get_indices():
 
 
 def test_net_deepcopy():
-    net = pp.networks.example_simple()
+    net = example_simple()
     net.line.at[0, 'geo'] = geojson.LineString([(0., 1.), (1., 2.)])
     net.bus.at[0, 'geo'] = geojson.Point((0., 1.))
 
-    pp.control.ContinuousTapControl(net, element_index=0, vm_set_pu=1)
-    ds = pp.timeseries.DFData(pd.DataFrame(data=[[0, 1, 2], [3, 4, 5]]))
-    pp.control.ConstControl(net, element='load', variable='p_mw', element_index=[0],
+    ContinuousTapControl(net, element_index=0, vm_set_pu=1)
+    ds = DFData(pd.DataFrame(data=[[0, 1, 2], [3, 4, 5]]))
+    ConstControl(net, element='load', variable='p_mw', element_index=[0],
                             profile_name=[0], data_source=ds)
 
     net1 = copy.deepcopy(net)
@@ -114,29 +113,29 @@ def test_net_deepcopy():
 
 
 def test_memory_leaks():
-    net = pp.networks.example_simple()
+    net = example_simple()
 
     # first, test to check that there are no memory leaks
-    types_dict1 = pp.get_gc_objects_dict()
+    types_dict1 = get_gc_objects_dict()
     num = 3
     for _ in range(num):
         net_copy = copy.deepcopy(net)
         # In each net copy it has only one controller
-        pp.control.ContinuousTapControl(net_copy, element_index=0, vm_set_pu=1)
+        ContinuousTapControl(net_copy, element_index=0, vm_set_pu=1)
 
     gc.collect()
 
-    types_dict2 = pp.get_gc_objects_dict()
+    types_dict2 = get_gc_objects_dict()
 
-    assert types_dict2[pandapower.auxiliary.pandapowerNet] - types_dict1[pandapower.auxiliary.pandapowerNet] == 1
-    assert types_dict2[pandapower.control.ContinuousTapControl] - types_dict1.get(
-        pandapower.control.ContinuousTapControl, 0) == 1
+    assert types_dict2[pandapowerNet] - types_dict1[pandapowerNet] == 1
+    assert types_dict2[ContinuousTapControl] - types_dict1.get(
+        ContinuousTapControl, 0) == 1
 
 
 def test_memory_leaks_demo():
-    net = pp.networks.example_simple()
+    net = example_simple()
     # first, test to check that there are no memory leaks
-    types_dict1 = pp.get_gc_objects_dict()
+    types_dict1 = get_gc_objects_dict()
     # now, demonstrate how a memory leak occurs
     # emulates the earlier behavior before the fix with weakref
     num = 3
@@ -146,71 +145,71 @@ def test_memory_leaks_demo():
 
     # demonstrate how the garbage collector doesn't remove the objects even if called explicitly
     gc.collect()
-    types_dict2 = pp.get_gc_objects_dict()
-    assert types_dict2[pandapower.auxiliary.pandapowerNet] - types_dict1[pandapower.auxiliary.pandapowerNet] == num
+    types_dict2 = get_gc_objects_dict()
+    assert types_dict2[pandapowerNet] - types_dict1[pandapowerNet] == num
     assert types_dict2[MemoryLeakDemo] - types_dict1.get(MemoryLeakDemo, 0) == num
 
 
 def test_memory_leaks_no_copy():
-    types_dict0 = pp.get_gc_objects_dict()
+    types_dict0 = get_gc_objects_dict()
     num = 3
     for _ in range(num):
-        net = pp.create_empty_network()
+        net = create_empty_network()
         # In each net copy it has only one controller
-        pp.control.ConstControl(net, 'sgen', 'p_mw', 0)
+        ConstControl(net, 'sgen', 'p_mw', 0)
 
     gc.collect()
-    types_dict1 = pp.get_gc_objects_dict()
-    assert types_dict1[pandapower.control.ConstControl] - types_dict0.get(pandapower.control.ConstControl, 0) == 1
-    assert types_dict1[pandapower.auxiliary.pandapowerNet] - types_dict0.get(pandapower.auxiliary.pandapowerNet, 0) <= 1
+    types_dict1 = get_gc_objects_dict()
+    assert types_dict1[ConstControl] - types_dict0.get(ConstControl, 0) == 1
+    assert types_dict1[pandapowerNet] - types_dict0.get(pandapowerNet, 0) <= 1
 
 
 def test_memory_leak_no_copy_demo():
-    types_dict1 = pp.get_gc_objects_dict()
+    types_dict1 = get_gc_objects_dict()
     # now, demonstrate how a memory leak occurs
     # emulates the earlier behavior before the fix with weakref
     num = 3
     for _ in range(num):
-        net = pp.networks.example_simple()
+        net = example_simple()
         MemoryLeakDemo(net)
 
     # demonstrate how the garbage collector doesn't remove the objects even if called explicitly
     gc.collect()
-    types_dict2 = pp.get_gc_objects_dict()
-    assert types_dict2[pandapower.auxiliary.pandapowerNet] - \
-           types_dict1.get(pandapower.auxiliary.pandapowerNet, 0) >= num-1
+    types_dict2 = get_gc_objects_dict()
+    assert types_dict2[pandapowerNet] - \
+           types_dict1.get(pandapowerNet, 0) >= num-1
     assert types_dict2[MemoryLeakDemo] - types_dict1.get(MemoryLeakDemo, 0) == num
 
 
 def test_memory_leak_df():
-    types_dict1 = pp.get_gc_objects_dict()
+    types_dict1 = get_gc_objects_dict()
     num = 3
     for _ in range(num):
         df = pd.DataFrame()
         MemoryLeakDemoDF(df)
 
     gc.collect()
-    types_dict2 = pp.get_gc_objects_dict()
+    types_dict2 = get_gc_objects_dict()
     assert types_dict2[MemoryLeakDemoDF] - types_dict1.get(MemoryLeakDemoDF, 0) == num
 
 
 def test_memory_leak_dict():
-    types_dict1 = pp.get_gc_objects_dict()
+    types_dict1 = get_gc_objects_dict()
     num = 3
     for _ in range(num):
         d = dict()
         MemoryLeakDemoDict(d)
 
     gc.collect()
-    types_dict2 = pp.get_gc_objects_dict()
+    types_dict2 = get_gc_objects_dict()
     assert types_dict2[MemoryLeakDemoDict] - types_dict1.get(MemoryLeakDemoDict, 0) <= 1
 
 
 def test_create_trafo_characteristics():
-    net = pp.networks.example_multivoltage()
+    net = example_multivoltage()
 
     # test 2 modes, multiple index and single index, for 2w trafo
-    pp.control.create_trafo_characteristics(net, "trafo", [1], 'vk_percent', [[-2,-1,0,1,2]], [[2,3,4,5,6]])
+    create_trafo_characteristics(net, "trafo", [1], 'vk_percent', [[-2,-1,0,1,2]], [[2,3,4,5,6]])
     assert "characteristic" in net
     assert "tap_dependent_impedance" in net.trafo.columns
     assert net.trafo.tap_dependent_impedance.dtype == np.bool_
@@ -222,18 +221,18 @@ def test_create_trafo_characteristics():
     assert net.trafo.vk_percent_characteristic.dtype == pd.Int64Dtype()
     assert "vkr_percent_characteristic" not in net.trafo.columns
 
-    pp.control.create_trafo_characteristics(net, "trafo", 1, 'vkr_percent', [-2,-1,0,1,2], [1.323,1.324,1.325,1.326,1.327])
+    create_trafo_characteristics(net, "trafo", 1, 'vkr_percent', [-2,-1,0,1,2], [1.323,1.324,1.325,1.326,1.327])
     assert len(net.characteristic) == 2
     assert "vkr_percent_characteristic" in net.trafo.columns
     assert net.trafo.at[1, 'vkr_percent_characteristic'] == 1
     assert pd.isnull(net.trafo.at[0, 'vkr_percent_characteristic'])
     assert net.trafo.vkr_percent_characteristic.dtype == pd.Int64Dtype()
 
-    assert isinstance(net.characteristic.object.at[0], pp.control.SplineCharacteristic)
-    assert isinstance(net.characteristic.object.at[1], pp.control.SplineCharacteristic)
+    assert isinstance(net.characteristic.object.at[0], SplineCharacteristic)
+    assert isinstance(net.characteristic.object.at[1], SplineCharacteristic)
 
     # test for 3w trafo
-    pp.control.create_trafo_characteristics(net, "trafo3w", 0, 'vk_hv_percent', [-8, -4, 0, 4, 8], [8.1, 9.1, 10.1, 11.1, 12.1])
+    create_trafo_characteristics(net, "trafo3w", 0, 'vk_hv_percent', [-8, -4, 0, 4, 8], [8.1, 9.1, 10.1, 11.1, 12.1])
     assert "tap_dependent_impedance" in net.trafo3w.columns
     assert net.trafo3w.tap_dependent_impedance.dtype == np.bool_
     assert net.trafo3w.tap_dependent_impedance.at[0]
@@ -243,7 +242,7 @@ def test_create_trafo_characteristics():
     assert "vkr_hv_percent_characteristic" not in net.trafo3w.columns
     assert "vk_mv_percent_characteristic" not in net.trafo3w.columns
 
-    pp.control.create_trafo_characteristics(net, "trafo3w", 0, 'vk_mv_percent', [-8, -4, 0, 4, 8], [8.1, 9.1, 10.1, 11.1, 12.1])
+    create_trafo_characteristics(net, "trafo3w", 0, 'vk_mv_percent', [-8, -4, 0, 4, 8], [8.1, 9.1, 10.1, 11.1, 12.1])
     assert net.trafo3w.tap_dependent_impedance.dtype == np.bool_
     assert net.trafo3w.tap_dependent_impedance.at[0]
     assert "vk_mv_percent_characteristic" in net.trafo3w.columns
@@ -258,38 +257,38 @@ def test_create_trafo_characteristics():
 
     # invalid variable
     with pytest.raises(UserWarning):
-        pp.control.create_trafo_characteristics(net, "trafo3w", 0, 'vk_percent',
+        create_trafo_characteristics(net, "trafo3w", 0, 'vk_percent',
                                                 [-8, -4, 0, 4, 8], [8.1, 9.1, 10.1, 11.1, 12.1])
 
     # invalid shapes
     with pytest.raises(UserWarning):
-        pp.control.create_trafo_characteristics(net, "trafo3w", 0, 'vk_hv_percent',
+        create_trafo_characteristics(net, "trafo3w", 0, 'vk_hv_percent',
                                                 [-8, -4, 0, 4, 8], [8.1, 9.1, 10.1, 11.1])
 
     with pytest.raises(UserWarning):
-        pp.control.create_trafo_characteristics(net, "trafo3w", [0], 'vk_hv_percent',
+        create_trafo_characteristics(net, "trafo3w", [0], 'vk_hv_percent',
                                                 [-8, -4, 0, 4, 8], [8.1, 9.1, 10.1, 11.1, 12.1])
 
     with pytest.raises(UserWarning):
-        pp.control.create_trafo_characteristics(net, "trafo3w", [0, 1], 'vk_hv_percent',
+        create_trafo_characteristics(net, "trafo3w", [0, 1], 'vk_hv_percent',
                                                 [[-8, -4, 0, 4, 8]], [[8.1, 9.1, 10.1, 11.1, 12.1]])
 
     with pytest.raises(UserWarning):
-        pp.control.create_trafo_characteristics(net, "trafo3w", [0, 1], 'vk_hv_percent',
+        create_trafo_characteristics(net, "trafo3w", [0, 1], 'vk_hv_percent',
                                                 [[-8, -4, 0, 4, 8], [-8, -4, 0, 4, 8]],
                                                 [[8.1, 9.1, 10.1, 11.1, 12.1]])
 
 
 @pytest.mark.parametrize("file_io", (False, True), ids=("Without JSON I/O", "With JSON I/O"))
 def test_characteristic(file_io):
-    net = pp.create_empty_network()
+    net = create_empty_network()
     c1 = SplineCharacteristic(net, [0,1,2], [0, 1, 4], fill_value=(0, 4))
     c2 = SplineCharacteristic(net, [0,1,2], [0, 1, 4], interpolator_kind="Pchip", extrapolate=False)
     c3 = SplineCharacteristic(net, [0,1,2], [0, 1, 4], interpolator_kind="hello")
     c4 = LogSplineCharacteristic(net, [0,1,2], [0, 1, 4], interpolator_kind="Pchip", extrapolate=False)
 
     if file_io:
-        net_copy = pp.from_json_string(pp.to_json(net))
+        net_copy = from_json_string(to_json(net))
         c1, c2, c3, c4 = net_copy.characteristic.object.values
 
     assert np.allclose(c1([-1]), [0], rtol=0, atol=1e-6)
@@ -305,17 +304,17 @@ def test_characteristic(file_io):
 
 
 def test_log_characteristic_property():
-    net = pp.create_empty_network()
+    net = create_empty_network()
     c = LogSplineCharacteristic(net, [10, 1000, 10000], [1000, 0.1, 0.001], interpolator_kind="Pchip", extrapolate=False)
     c._x_vals
     c([2])
 
 
 def test_geo_accessor_geojson():
-    net = pp.create_empty_network()
-    b1 = pp.create_bus(net, 10, geodata=(1, 1))
-    b2 = pp.create_bus(net, 10, geodata=(2, 2))
-    l = pp.create_lines(
+    net = create_empty_network()
+    b1 = create_bus(net, 10, geodata=(1, 1))
+    b2 = create_bus(net, 10, geodata=(2, 2))
+    l = create_lines(
         net,
         [b1, b1],
         [b2, b2],
@@ -323,7 +322,7 @@ def test_geo_accessor_geojson():
         std_type="48-AL1/8-ST1A 10.0",
         geodata=[[(1, 1), (2, 2), (3, 3)], [(1, 1), (1, 2)]],
     )
-    pp.create_line(net, b1, b2, 1.5, std_type="48-AL1/8-ST1A 10.0")
+    create_line(net, b1, b2, 1.5, std_type="48-AL1/8-ST1A 10.0")
 
     assert len(net.line.geo.geojson._coords) == 2
     assert np.array_equal(net.line.geo.geojson._coords.at[l[0]], [[1, 1], [2, 2], [3, 3]])
@@ -342,7 +341,7 @@ def test_geo_accessor_geojson():
 
 @pytest.mark.skipif(not GEOPANDAS_INSTALLED, reason="geopandas is not installed")
 def test_geo_accessor_geopandas():
-    net = pp.networks.mv_oberrhein()
+    net = mv_oberrhein()
     reference_point = (7.781067, 48.389774)
     radius_m = 2200
     circle_polygon = gpd.GeoSeries([shapely.geometry.Point(reference_point)],

@@ -4,13 +4,18 @@ from copy import deepcopy
 import numpy as np
 import pandas as pd
 
-import pandapower.toolbox
+from pandapower.create import create_ext_grid, create_bus, create_impedance, create_transformer_from_parameters, \
+    create_load
+from pandapower.toolbox.grid_modification import drop_lines, drop_trafos, drop_measurements_at_elements, \
+    drop_controllers_at_buses
+from pandapower.toolbox.element_selection import pp_elements, get_connected_elements_dict
+from pandapower.file_io import to_json
+from pandapower.diagnostic import diagnostic
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci
 from pandapower.pf.run_newton_raphson_pf import _get_numba_functions, _get_Y_bus
-from pandapower.run import _passed_runpp_parameters
-from pandapower.auxiliary import _init_runpp_options, _add_dcline_gens
-import pandapower as pp
+from pandapower.run import _passed_runpp_parameters, runpp
+from pandapower.auxiliary import _init_runpp_options, _add_dcline_gens, LoadflowNotConverged
 import uuid
 
 try:
@@ -26,14 +31,14 @@ impedance_columns = ["from_bus", "to_bus", "rft_pu", "xft_pu", "rtf_pu", "xtf_pu
 
 def _runpp_except_voltage_angles(net, **kwargs):
     if "calculate_voltage_angles" not in kwargs or not kwargs["calculate_voltage_angles"]:
-        pp.runpp(net, **kwargs)
+        runpp(net, **kwargs)
     else:
         try:
-            pp.runpp(net, **kwargs)
-        except pp.LoadflowNotConverged:
+            runpp(net, **kwargs)
+        except LoadflowNotConverged:
             kwargs1 = deepcopy(kwargs)
             kwargs1["calculate_voltage_angles"] = False
-            pp.runpp(net, **kwargs1)
+            runpp(net, **kwargs1)
             logger.warning("In grid equivalent generation, the power flow did converge only without"
                            " calculate_voltage_angles.")
     return net
@@ -67,10 +72,10 @@ def add_ext_grids_to_boundaries(net, boundary_buses, adapt_va_degree=False,
     vas.loc[btaegwr] = net.res_bus.va_degree.loc[btaegwr]
 
     for ext_bus, vm, va in zip(buses_to_add_ext_grids, vms, vas):
-        add_eg += [pp.create_ext_grid(net, ext_bus,
+        add_eg += [create_ext_grid(net, ext_bus,
                                       vm, va, name="assist_ext_grid")]
-        new_bus = pp.create_bus(net, net.bus.vn_kv[ext_bus], name="assist_bus")
-        pp.create_impedance(net, ext_bus, new_bus, 1e6, 1e6, net.sn_mva,
+        new_bus = create_bus(net, net.bus.vn_kv[ext_bus], name="assist_bus")
+        create_impedance(net, ext_bus, new_bus, 1e6, 1e6, net.sn_mva,
                             name="assist_impedance")
 
     # works fine if there is only one slack in net:
@@ -80,7 +85,7 @@ def add_ext_grids_to_boundaries(net, boundary_buses, adapt_va_degree=False,
         try:
             runpp_fct(net, calculate_voltage_angles=calc_volt_angles,
                       max_iteration=100, **kwargs)
-        except pp.LoadflowNotConverged as e:
+        except LoadflowNotConverged as e:
             if allow_net_change_for_convergence:
 
                 # --- various fix trials
@@ -95,7 +100,7 @@ def add_ext_grids_to_boundaries(net, boundary_buses, adapt_va_degree=False,
                         logger.warning("The sign of these impedances were changed to enable a power"
                                     f" flow: {imp_neg[:no]}")
                         break
-                    except pp.LoadflowNotConverged as e:
+                    except LoadflowNotConverged as e:
                         pass
 
                 if not net.converged:
@@ -114,20 +119,20 @@ def add_ext_grids_to_boundaries(net, boundary_buses, adapt_va_degree=False,
                                     max_iteration=100, **kwargs)
                             logger.warning("Reactances of these impedances has been increased to "
                                         f"enable a power flow: {is2small}")
-                        except pp.LoadflowNotConverged as e:
-                            diag = pp.diagnostic(net)
+                        except LoadflowNotConverged as e:
+                            diag = diagnostic(net)
                             print(net)
                             print(diag.keys())
-                            pp.to_json(net, os.path.join(desktop, "diverged_net.json"))
-                            raise pp.LoadflowNotConverged(e)
+                            to_json(net, os.path.join(desktop, "diverged_net.json"))
+                            raise LoadflowNotConverged(e)
                     else:
-                        diag = pp.diagnostic(net)
+                        diag = diagnostic(net)
                         print(net)
                         print(diag.keys())
-                        pp.to_json(net, os.path.join(desktop, "diverged_net.json"))
-                        raise pp.LoadflowNotConverged(e)
+                        to_json(net, os.path.join(desktop, "diverged_net.json"))
+                        raise LoadflowNotConverged(e)
             else:
-                raise pp.LoadflowNotConverged(e)
+                raise LoadflowNotConverged(e)
 
 
         va = net.res_bus.va_degree.loc[slack_buses]
@@ -143,7 +148,7 @@ def drop_internal_branch_elements(net, internal_buses, branch_elements=None):
     This function drops all branch elements which have 'internal_buses' connected at all sides of
     the branch element (e.g. for lines at 'from_bus' and 'to_bus').
     """
-    bebd = pandapower.toolbox.branch_element_bus_dict()
+    bebd = branch_element_bus_dict()
     if branch_elements is not None:
         bebd = {elm: bus_types for elm,
                 bus_types in bebd.items() if elm in branch_elements}
@@ -155,9 +160,9 @@ def drop_internal_branch_elements(net, internal_buses, branch_elements=None):
                 should_be_dropped &= net[elm][bus_type].isin(internal_buses)
             idx_to_drop = net[elm].index[should_be_dropped]
             if elm == "line":
-                pp.drop_lines(net, idx_to_drop)
+                drop_lines(net, idx_to_drop)
             elif "trafo" in elm:
-                pp.drop_trafos(net, idx_to_drop, table=elm)
+                drop_trafos(net, idx_to_drop, table=elm)
             else:
                 net[elm] = net[elm].drop(idx_to_drop)
 
@@ -331,21 +336,21 @@ def drop_measurements_and_controllers(net, buses, skip_controller=False):
     Also, the related controller parameters will be removed. """
     # --- dropping measurements
     if len(net.measurement):
-        pp.drop_measurements_at_elements(net, "bus", idx=buses)
+        drop_measurements_at_elements(net, "bus", idx=buses)
         lines = net.line.index[(net.line.from_bus.isin(buses)) &
                                (net.line.from_bus.isin(buses))]
-        pp.drop_measurements_at_elements(net, "line", idx=lines)
+        drop_measurements_at_elements(net, "line", idx=lines)
         trafos = net.trafo3w.index[(net.trafo3w.hv_bus.isin(buses)) &
                                     (net.trafo3w.mv_bus.isin(buses)) &
                                     (net.trafo3w.lv_bus.isin(buses))]
-        pp.drop_measurements_at_elements(net, "trafo", idx=trafos)
+        drop_measurements_at_elements(net, "trafo", idx=trafos)
         trafo3ws = net.trafo3w.index[(net.trafo3w.hv_bus.isin(buses)) &
                                     (net.trafo3w.mv_bus.isin(buses)) &
                                     (net.trafo3w.lv_bus.isin(buses))]
-        pp.drop_measurements_at_elements(net, "trafo3w", idx=trafo3ws)
+        drop_measurements_at_elements(net, "trafo3w", idx=trafo3ws)
 
     # --- dropping controller
-    pp.drop_controllers_at_buses(net, buses)
+    drop_controllers_at_buses(net, buses)
 
 
 def ensure_origin_id(net, elms=None):
@@ -353,7 +358,7 @@ def ensure_origin_id(net, elms=None):
     Ensures completely filled column 'origin_id' in every pp element.
     """
     if elms is None:
-        elms = pandapower.toolbox.pp_elements()
+        elms = pp_elements()
 
     for elm in elms:
         if "origin_id" not in net[elm].columns:
@@ -462,9 +467,9 @@ def adaptation_phase_shifter(net, v_boundary, p_boundary):
     # print(q_errors)
     for idx, lb in enumerate(target_buses):
         if abs(vm_errors[idx]) > 1e-6 and abs(vm_errors[idx]) > 1e-6:
-            hb = pp.create_bus(net, net.bus.vn_kv[lb]*(1-vm_errors[idx]),
+            hb = create_bus(net, net.bus.vn_kv[lb]*(1-vm_errors[idx]),
                                name="phase_shifter_adapter_"+str(lb))
-            elm_dict = pp.get_connected_elements_dict(net, lb)
+            elm_dict = get_connected_elements_dict(net, lb)
             for e, e_list in elm_dict.items():
                 for i in e_list:
                     name = str(net[e].name[i])
@@ -491,7 +496,7 @@ def adaptation_phase_shifter(net, v_boundary, p_boundary):
                             pass
                         else:
                             net[e].loc[i, 'bus'] = hb
-            pp.create_transformer_from_parameters(net, hb, lb, 1e5,
+            create_transformer_from_parameters(net, hb, lb, 1e5,
                                                   net.bus.vn_kv[hb]*(1-vm_errors[idx]),
                                                   net.bus.vn_kv[lb],
                                                   vkr_percent=0, vk_percent=100,
@@ -517,7 +522,7 @@ def replace_motor_by_load(net, all_external_buses):
         p_mw = p_mech * m.loading_percent / 100 * m.scaling
         s = p_mw / m.cos_phi
         q_mvar = np.sqrt(s**2 - p_mw**2)
-        li = pp.create_load(net, m.bus, p_mw, q_mvar, sn_mva=s, scalling=m.scaling,
+        li = create_load(net, m.bus, p_mw, q_mvar, sn_mva=s, scalling=m.scaling,
                             in_service=m.in_service, name="equivalent_"+str(m["name"])+"_"+str(mi))
         p = p_mw if not np.isnan(net.res_bus.vm_pu[m.bus]) and m.in_service else 0.0
         q = q_mvar if not np.isnan(net.res_bus.vm_pu[m.bus]) and m.in_service else 0.0
