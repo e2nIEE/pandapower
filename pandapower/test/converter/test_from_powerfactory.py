@@ -96,7 +96,7 @@ def test_trafo_tap2_results():
     all_diffs = validate_pf_conversion(net, tolerance_mva=1e-9)
     tol = 2e-7
     for key, diff in all_diffs.items():
-        if type(diff)==pd.Series:
+        if type(diff) == pd.Series:
             delta = diff.abs().max()
         else:
             delta = diff['diff'].abs().max()

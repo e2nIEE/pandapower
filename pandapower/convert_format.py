@@ -555,15 +555,21 @@ def _convert_trafo_pst_logic(net):
     for trafotable in ["trafo", "trafo3w"]:
         if trafotable in net and isinstance(net[trafotable], pd.DataFrame):
             if net[trafotable].index.size > 0:
-                if "tap_phase_shifter" in net[trafotable]:
-                    net[trafotable] = net[trafotable].drop(columns="tap_phase_shifter")
-                # ratio/asymmetrical phase shifters
-                net[trafotable].loc[
-                    ((net[trafotable]["tap_step_degree"].isna()) | (net[trafotable]["tap_step_degree"] != 90)) &
-                    (net[trafotable]["tap_step_percent"].notna()), "tap_phase_shifter_type"] = 0
-                # symmetrical phase shifters
-                net[trafotable].loc[(net[trafotable]["tap_step_degree"] == 90) &
-                                    (net[trafotable]["tap_step_percent"].notna()), "tap_phase_shifter_type"] = 1
-                # ideal phase shifters
-                net[trafotable].loc[(net[trafotable]["tap_step_degree"].notna()) &
-                                    (net[trafotable]["tap_step_percent"].isna()), "tap_phase_shifter_type"] = 2
+                for t in ("", "2"):
+                    # drop old tap_phase_shifter flag
+                    if f"tap{t}_phase_shifter" in net[trafotable]:
+                        net[trafotable] = net[trafotable].drop(columns=f"tap{t}_phase_shifter")
+                    if (f"tap{t}_step_degree" in net[trafotable]) or (f"tap{t}_step_percent" in net[trafotable]):
+                        # ratio/asymmetrical phase shifters
+                        net[trafotable].loc[
+                            ((net[trafotable][f"tap{t}_step_degree"].isna()) |
+                             (net[trafotable][f"tap{t}_step_degree"] != 90)) &
+                            (net[trafotable][f"tap{t}_step_percent"].notna()), f"tap{t}_phase_shifter_type"] = 0
+                        # symmetrical phase shifters
+                        net[trafotable].loc[
+                            (net[trafotable][f"tap{t}_step_degree"] == 90) &
+                            (net[trafotable][f"tap{t}_step_percent"].notna()), f"tap{t}_phase_shifter_type"] = 1
+                        # ideal phase shifters
+                        net[trafotable].loc[
+                            (net[trafotable][f"tap{t}_step_degree"].notna()) &
+                            (net[trafotable][f"tap{t}_step_percent"].isna()), f"tap{t}_phase_shifter_type"] = 2

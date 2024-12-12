@@ -334,7 +334,7 @@
     "trafo3w": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"name\",\"std_type\",\"hv_bus\",\"mv_bus\",\"lv_bus\",\"sn_hv_mva\",\"sn_mv_mva\",\"sn_lv_mva\",\"vn_hv_kv\",\"vn_mv_kv\",\"vn_lv_kv\",\"vk_hv_percent\",\"vk_mv_percent\",\"vk_lv_percent\",\"vkr_hv_percent\",\"vkr_mv_percent\",\"vkr_lv_percent\",\"pfe_kw\",\"i0_percent\",\"shift_mv_degree\",\"shift_lv_degree\",\"tap_side\",\"tap_neutral\",\"tap_min\",\"tap_max\",\"tap_step_percent\",\"tap_step_degree\",\"tap_pos\",\"tap_at_star_point\",\"in_service\"],\"index\":[],\"data\":[]}",
+      "_object": "{\"columns\":[\"name\",\"std_type\",\"hv_bus\",\"mv_bus\",\"lv_bus\",\"sn_hv_mva\",\"sn_mv_mva\",\"sn_lv_mva\",\"vn_hv_kv\",\"vn_mv_kv\",\"vn_lv_kv\",\"vk_hv_percent\",\"vk_mv_percent\",\"vk_lv_percent\",\"vkr_hv_percent\",\"vkr_mv_percent\",\"vkr_lv_percent\",\"pfe_kw\",\"i0_percent\",\"shift_mv_degree\",\"shift_lv_degree\",\"tap_side\",\"tap_neutral\",\"tap_min\",\"tap_max\",\"tap_step_percent\",\"tap_step_degree\",\"tap_phase_shifter_type\",\"tap_pos\",\"tap_at_star_point\",\"in_service\"],\"index\":[],\"data\":[]}",
       "orient": "split",
       "dtype": {
         "name": "object",
@@ -364,6 +364,7 @@
         "tap_max": "int32",
         "tap_step_percent": "float64",
         "tap_step_degree": "float64",
+        "tap_phase_shifter_type": "uint32",
         "tap_pos": "int32",
         "tap_at_star_point": "bool",
         "in_service": "bool"
@@ -809,6 +810,7 @@
           "tap_min": -2,
           "vkr_percent": 1.425,
           "tap_step_percent": 2.5,
+          "tap_phase_shifter_type": 0,
           "tap_side": "hv",
           "vk_percent": 6.0,
           "tap_max": 2
@@ -825,6 +827,7 @@
           "tap_min": -2,
           "vkr_percent": 1.44,
           "tap_step_percent": 2.5,
+          "tap_phase_shifter_type": 0,
           "tap_side": "hv",
           "vk_percent": 6.0,
           "tap_max": 2
@@ -841,6 +844,7 @@
           "tap_min": -2,
           "vkr_percent": 1.2,
           "tap_step_percent": 2.5,
+          "tap_phase_shifter_type": 0,
           "tap_side": "hv",
           "vk_percent": 4.0,
           "tap_max": 2
@@ -857,6 +861,7 @@
           "tap_min": -9,
           "vkr_percent": 0.25,
           "tap_step_percent": 1.5,
+          "tap_phase_shifter_type": 0,
           "tap_side": "hv",
           "vk_percent": 12.2,
           "tap_max": 9
@@ -873,6 +878,7 @@
           "tap_min": -9,
           "vkr_percent": 0.31,
           "tap_step_percent": 1.5,
+          "tap_phase_shifter_type": 0,
           "tap_side": "hv",
           "vk_percent": 10.04,
           "tap_max": 9
@@ -889,6 +895,7 @@
           "tap_min": -2,
           "vkr_percent": 1.206,
           "tap_step_percent": 2.5,
+          "tap_phase_shifter_type": 0,
           "tap_side": "hv",
           "vk_percent": 6.0,
           "tap_max": 2
@@ -905,6 +912,7 @@
           "tap_min": -2,
           "vkr_percent": 1.325,
           "tap_step_percent": 2.5,
+          "tap_phase_shifter_type": 0,
           "tap_side": "hv",
           "vk_percent": 4.0,
           "tap_max": 2
@@ -921,6 +929,7 @@
           "tap_min": -2,
           "vkr_percent": 1.0794,
           "tap_step_percent": 2.5,
+          "tap_phase_shifter_type": 0,
           "tap_side": "hv",
           "vk_percent": 4.0,
           "tap_max": 2
@@ -937,6 +946,7 @@
           "tap_min": -9,
           "vkr_percent": 0.322,
           "tap_step_percent": 1.5,
+          "tap_phase_shifter_type": 0,
           "tap_side": "hv",
           "vk_percent": 11.2,
           "tap_max": 9
@@ -953,6 +963,7 @@
           "tap_min": -9,
           "vkr_percent": 0.26,
           "tap_step_percent": 1.5,
+          "tap_phase_shifter_type": 0,
           "tap_side": "hv",
           "vk_percent": 12.0,
           "tap_max": 9
@@ -969,6 +980,7 @@
           "tap_min": -9,
           "vkr_percent": 0.276,
           "tap_step_percent": 1.5,
+          "tap_phase_shifter_type": 0,
           "tap_side": "hv",
           "vk_percent": 10.04,
           "tap_max": 9
@@ -985,6 +997,7 @@
           "tap_min": -9,
           "vkr_percent": 0.302,
           "tap_step_percent": 1.5,
+          "tap_phase_shifter_type": 0,
           "tap_side": "hv",
           "vk_percent": 11.2,
           "tap_max": 9
@@ -1001,6 +1014,7 @@
           "tap_min": -9,
           "vkr_percent": 0.282,
           "tap_step_percent": 1.5,
+          "tap_phase_shifter_type": 0,
           "tap_side": "hv",
           "vk_percent": 11.2,
           "tap_max": 9
@@ -1017,6 +1031,7 @@
           "tap_min": -9,
           "vkr_percent": 0.295,
           "tap_step_percent": 1.5,
+          "tap_phase_shifter_type": 0,
           "tap_side": "hv",
           "vk_percent": 10.04,
           "tap_max": 9
@@ -1044,6 +1059,7 @@
           "tap_max": 10,
           "vkr_mv_percent": 0.32,
           "tap_step_percent": 1.2,
+          "tap_phase_shifter_type": 0,
           "tap_side": "hv",
           "vk_hv_percent": 10.4
         },
@@ -1068,6 +1084,7 @@
           "tap_max": 10,
           "vkr_mv_percent": 0.32,
           "tap_step_percent": 1.2,
+          "tap_phase_shifter_type": 0,
           "tap_side": "hv",
           "vk_hv_percent": 10.4
         }

@@ -177,10 +177,10 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=pp.
     contingency_evaluation_function(net, **kwargs)
 
     trafo_flag = False
-    if "tap_phase_shifter" in net.trafo.columns:
-        if np.any(net.trafo.tap_phase_shifter):
+    if "tap_phase_shifter_type" in net.trafo.columns:
+        if np.any(net.trafo.tap_phase_shifter_type == 2):
             trafo_flag = True
-            tap_phase_shifter, tap_pos, shift_degree = _convert_trafo_phase_shifter(net)
+            tap_phase_shifter_type, tap_pos, shift_degree = _convert_trafo_phase_shifter(net)
 
     # setting "slack" back-and-forth is due to the difference in interpretation of generators as "distributed slack"
     if net._options.get("distributed_slack", False):
@@ -198,7 +198,7 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=pp.
         solver_type = SolverType.KLUSingleSlack if KLU_solver_available else SolverType.SparseLUSingleSlack
 
     if trafo_flag:
-        net.trafo.tap_phase_shifter = tap_phase_shifter
+        net.trafo.tap_phase_shifter_type = tap_phase_shifter_type
         net.trafo.tap_pos = tap_pos
         net.trafo.shift_degree = shift_degree
 
@@ -294,7 +294,7 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=pp.
 
 
 def _convert_trafo_phase_shifter(net):
-    tap_phase_shifter = net.trafo.tap_phase_shifter.values.copy()
+    tap_phase_shifter_type = net.trafo.tap_phase_shifter_type.values.copy()
     # vn_hv_kv = net.trafo.vn_hv_kv.values.copy()
     shift_degree = net.trafo.shift_degree.values.copy()
 
@@ -303,11 +303,12 @@ def _convert_trafo_phase_shifter(net):
     tap_diff = tap_pos - tap_neutral
     tap_step_degree = net.trafo.tap_step_degree.values.copy()
 
-    net.trafo.loc[tap_phase_shifter, 'shift_degree'] += tap_diff[tap_phase_shifter] * tap_step_degree[tap_phase_shifter]
+    net.trafo.loc[tap_phase_shifter_type == 2, 'shift_degree'] += (tap_diff[tap_phase_shifter_type == 2] *
+                                                                   tap_step_degree[tap_phase_shifter_type == 2])
     net.trafo["tap_pos"] = 0
-    net.trafo["tap_phase_shifter"] = False
+    net.trafo["tap_phase_shifter_type"] = pd.NA
 
-    return tap_phase_shifter, tap_pos, shift_degree
+    return tap_phase_shifter_type, tap_pos, shift_degree
 
 
 def _update_contingency_results(net, contingency_results, result_variables, nminus1, cause_element=None,

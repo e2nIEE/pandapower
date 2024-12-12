@@ -3583,8 +3583,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
         "pfe_kw": pfe_kw, "i0_percent": i0_percent, "tap_neutral": tap_neutral,
         "tap_max": tap_max, "tap_min": tap_min, "shift_degree": shift_degree,
         "tap_side": tap_side, "tap_step_percent": tap_step_percent,
-        "tap_step_degree": tap_step_degree, "tap_phase_shifter_type": tap_phase_shifter_type,
-        "parallel": parallel, "df": df}
+        "tap_step_degree": tap_step_degree, "parallel": parallel, "df": df}
 
     if ("tap_neutral" in v) and (tap_pos is nan):
         v["tap_pos"] = v["tap_neutral"]
@@ -3598,6 +3597,10 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
 
     _set_value_if_not_nan(net, index, id_characteristic_table,
                           "id_characteristic_table", "trafo", dtype="Int64")
+    _set_value_if_not_nan(net, index, tap_phase_shifter_type,
+                          "tap_phase_shifter_type", "trafo", dtype="Int64")
+    _set_value_if_not_nan(net, index, tap_dependency_table,
+                          "tap_dependency_table", "trafo", dtype=bool_, default_val=False)
 
     _set_value_if_not_nan(net, index, tap2_side, "tap2_side", "trafo", dtype=str)
     _set_value_if_not_nan(net, index, tap2_neutral, "tap2_neutral", "trafo", dtype=np.float64)
@@ -4085,6 +4088,8 @@ def create_transformer3w_from_parameters(
                           "id_characteristic_table", "trafo3w", dtype="Int64")
     _set_value_if_not_nan(net, index, tap_phase_shifter_type,
                           "tap_phase_shifter_type", "trafo3w", dtype="Int64")
+    _set_value_if_not_nan(net, index, tap_dependency_table,
+                          "tap_dependency_table", "trafo3w", dtype=bool_, default_val=False)
 
     return index
 

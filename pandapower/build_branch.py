@@ -612,9 +612,8 @@ def _calc_tap_from_dataframe(net, trafo_df):
                 tap_table = np.array([False])
                 tap_dependency = np.array([False])
             if not isinstance(trafo_df, dict) and not isinstance(phase_shifter_type, np.ndarray):
-                phase_shifter_type = phase_shifter_type.to_numpy() \
-                    if not isinstance(trafo_df, dict) else phase_shifter_type
-            phase_shifter_type = np.nan_to_num(phase_shifter_type, nan=-1)
+                phase_shifter_type = phase_shifter_type.to_numpy()
+            phase_shifter_type = pd.Series(phase_shifter_type).fillna(-1).to_numpy()
             tap_table = np.logical_and(tap_dependency, np.logical_not(phase_shifter_type == -1))
             tap_no_table = np.logical_and(~tap_dependency, np.logical_not(phase_shifter_type == -1))
             if any(tap_table):
@@ -1347,12 +1346,15 @@ def _trafo_df_from_trafo3w(net, sequence=1, update_vk_values=True):
     trafo2["vn_lv_kv"] = {side: t3["vn_%s_kv" % side].values for side in sides}
     trafo2["shift_degree"] = {"hv": np.zeros(nr_trafos), "mv": t3.shift_mv_degree.values,
                               "lv": t3.shift_lv_degree.values}
-    if 'tap_dependency_table' in t3:
-        trafo2["tap_phase_shifter_type"] = {side: t3.tap_phase_shifter_type for side in sides}
-        trafo2["tap_dependency_table"] = {side: t3.tap_dependency_table for side in sides}
-        trafo2["id_characteristic_table"] = {side: t3.id_characteristic_table for side in sides}
-    else:
-        trafo2["tap_phase_shifter"] = {side: np.zeros(nr_trafos).astype(bool) for side in sides}
+    # if 'tap_dependency_table' in t3:
+    #     trafo2["tap_phase_shifter_type"] = {side: t3.tap_phase_shifter_type for side in sides}
+    #     trafo2["tap_dependency_table"] = {side: t3.tap_dependency_table for side in sides}
+    #     trafo2["id_characteristic_table"] = {side: t3.id_characteristic_table for side in sides}
+    # else:
+    #     trafo2["tap_phase_shifter"] = {side: np.zeros(nr_trafos).astype(bool) for side in sides}
+    for param in ["tap_phase_shifter_type", "tap_dependency_table", "id_characteristic_table", "tap_phase_shifter"]:
+        if param in t3:
+            trafo2[param] = {side: t3[param] for side in sides}
     trafo2["parallel"] = {side: np.ones(nr_trafos) for side in sides}
     trafo2["df"] = {side: np.ones(nr_trafos) for side in sides}
     # even though this is not relevant (at least now), the values cannot be empty:

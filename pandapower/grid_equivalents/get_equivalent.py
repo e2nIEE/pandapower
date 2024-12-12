@@ -420,16 +420,14 @@ def merge_internal_net_and_equivalent_external_net(
 
 
 def drop_repeated_characteristic(net):
-    idxs = []
-    repeated_idxs = []
-    if "characteristic" in net:
-        for m in net.characteristic.index:
-            idx = net.characteristic.object[m].__dict__["index"]
-            if idx in idxs:
-                repeated_idxs.append(m)
-            else:
-                idxs.append(idx)
-        net.characteristic = net.characteristic.drop(repeated_idxs)
+    for characteristic in ["trafo_characteristic_table", "shunt_characteristic_table",
+                           "trafo_characteristic_spline", "shunt_characteristic_spline"]:
+        if characteristic in net:
+            # get the list of indices of duplicate rows
+            repeated_idxs = net[characteristic][
+                net[characteristic].fillna("NA_PLACEHOLDER").duplicated()].index.tolist()
+            # drop repeated rows
+            net[characteristic] = net[characteristic].drop(repeated_idxs)
 
 
 def _determine_bus_groups(net, boundary_buses, internal_buses,
