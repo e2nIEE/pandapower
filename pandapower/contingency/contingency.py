@@ -364,11 +364,11 @@ def get_element_limits(net):
                 "max_limit": net.bus.loc[bus_index, "max_vm_pu"].values,
                 "min_limit": net.bus.loc[bus_index, "min_vm_pu"].values,
                 "max_limit_nminus1":
-                    net.line.loc[bus_index, "max_vm_nminus1_pu"].values
+                    net.bus.loc[bus_index, "max_vm_nminus1_pu"].values
                     if "max_vm_nminus1_pu" in net.bus.columns
                     else net.bus.loc[bus_index, "max_vm_pu"].values,
                 "min_limit_nminus1":
-                    net.line.loc[bus_index, "min_vm_nminus1_pu"].values
+                    net.bus.loc[bus_index, "min_vm_nminus1_pu"].values
                     if "min_vm_nminus1_pu" in net.bus.columns
                     else net.bus.loc[bus_index, "min_vm_pu"].values}})
 
