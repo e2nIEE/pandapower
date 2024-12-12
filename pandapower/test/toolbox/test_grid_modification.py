@@ -103,8 +103,6 @@ def test_merge_and_split_nets():
     net1 = nw.mv_oberrhein()
     pp.create_poly_cost(net1, 2, "sgen", 8)
     pp.create_poly_cost(net1, 0, "sgen", 9)
-    # TODO there are some geodata values in oberrhein without corresponding lines
-    net1.line_geodata.drop(set(net1.line_geodata.index) - set(net1.line.index), inplace=True)
     n1 = len(net1.bus)
     pp.runpp(net1)
     net2 = nw.create_cigre_network_mv(with_der="pv_wind")
@@ -114,28 +112,28 @@ def test_merge_and_split_nets():
 
     net1_before = copy.deepcopy(net1)
     net2_before = copy.deepcopy(net2)
-    net = pp.merge_nets(net1, net2, net2_reindex_log_level="debug")
-    pp.runpp(net)
+    _net = pp.merge_nets(net1, net2, net2_reindex_log_level="debug")
+    pp.runpp(_net)
 
     # check that merge_nets() doesn't change inputs (but result tables)
     pp.test.assert_net_equal(net1, net1_before, check_without_results=True)
     pp.test.assert_net_equal(net2, net2_before, check_without_results=True)
 
     # check that results of merge_nets() fit
-    assert np.allclose(net.res_bus.vm_pu.iloc[:n1].values, net1.res_bus.vm_pu.values)
-    assert np.allclose(net.res_bus.vm_pu.iloc[n1:].values, net2.res_bus.vm_pu.values)
+    assert np.allclose(_net.res_bus.vm_pu.iloc[:n1].values, net1.res_bus.vm_pu.values)
+    assert np.allclose(_net.res_bus.vm_pu.iloc[n1:].values, net2.res_bus.vm_pu.values)
 
     # check content of merge_nets() output
     assert np.array_equal(
         pd.concat([net1.sgen.name.loc[net1.poly_cost.element],
                    net2.sgen.name.loc[net2.poly_cost.element]]).values,
-        net.sgen.name.loc[net.poly_cost.element].values)
+        _net.sgen.name.loc[_net.poly_cost.element].values)
 
     # check that results stay the same after net split
-    net3 = pp.select_subnet(net, net.bus.index[:n1], include_results=True)
+    net3 = pp.select_subnet(_net, _net.bus.index[:n1], include_results=True)
     assert pandapower.toolbox.dataframes_equal(net3.res_bus[["vm_pu"]], net1.res_bus[["vm_pu"]])
 
-    net4 = pp.select_subnet(net, net.bus.index[n1:], include_results=True)
+    net4 = pp.select_subnet(_net, _net.bus.index[n1:], include_results=True)
     assert np.allclose(net4.res_bus.vm_pu.values, net2.res_bus.vm_pu.values)
 
 
@@ -191,6 +189,44 @@ def test_merge_with_groups():
         net1.load.shape[0])
     assert list(pp.group_element_index(net, 4, "line")) == list(np.array([1, 3], dtype=np.int64) + \
         net1.line.shape[0])
+
+def test_merge_with_characteristics():
+    from pandapower.networks.simple_pandapower_test_networks import simple_four_bus_system
+    from pandapower.control.util.characteristic import Characteristic
+
+    # create two networks
+    net1 = simple_four_bus_system()
+    net2 = simple_four_bus_system()
+
+    # create two characteristic
+    Characteristic(net1, x_values=[0.85, 1.15], y_values=[5, 15])
+    Characteristic(net2, x_values=[0.95, 1.05], y_values=[10, 20])
+
+    # assign the characteristic ids to the trafos
+    net1.trafo.loc[:, "vk_percent_characteristic"] = 0
+    net2.trafo.loc[:, "vk_percent_characteristic"] = 0
+
+    # merge networks
+    merged, lookup = pp.merge_nets(net1, net2, validate=False, return_net2_reindex_lookup=True)
+
+    # The second transformer should have the second characteristic
+    assert merged.trafo.loc[1, "vk_percent_characteristic"] == 1
+
+
+def test_merge_nets_with_custom_elements():
+    from pandapower.networks.simple_pandapower_test_networks import simple_four_bus_system
+
+    df = pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
+    # create two networks
+    net1 = simple_four_bus_system()
+    net2 = simple_four_bus_system()
+
+    net2["test"] = df.copy()
+    res_net1 = pp.merge_nets(net1, net2, validate=False)
+    res_net2 = pp.merge_nets(net2, net1, validate=False)
+    assert df.equals(res_net1["test"])
+    assert df.equals(res_net2["test"])
+    assert pp.nets_equal(res_net1, res_net2)
 
 
 def test_select_subnet():
@@ -581,7 +617,7 @@ def test_replace_ext_grid_gen():
         assert np.allclose(net.gen.index.values, [0, 4])
         assert net.gen.loc[4, "uuid"] == "test"
         assert net.group.element_type.tolist() == ["line", "gen"]
-        assert net.group.element.iat[1] == [4]
+        assert net.group.element_index.iat[1] == [4]
 
         # replace_gen_by_ext_grid
         if i == 0:
@@ -849,8 +885,8 @@ def test_repl_to_line_with_switch():
                     pp.create_switch(net, bus=bus, element=REPL, closed=False, et="l", type="LBS")
 
             # calculate runpp with REPL
-            net.line.in_service[testindex] = False
-            net.line.in_service[REPL] = True
+            net.line.loc[testindex, "in_service"] = False
+            net.line.loc[REPL, "in_service"] = True
             pp.runpp(net)
 
             fbus_repl = net.res_bus.loc[fbus]
@@ -862,9 +898,9 @@ def test_repl_to_line_with_switch():
             # get ne line impedances
             new_idx = pp.repl_to_line(net, testindex, std, in_service=True)
             # activate new idx line
-            net.line.in_service[REPL] = False
-            net.line.in_service[testindex] = True
-            net.line.in_service[new_idx] = True
+            net.line.loc[REPL, "in_service"] = False
+            net.line.loc[testindex, "in_service"] = True
+            net.line.loc[new_idx, "in_service"] = True
             pp.runpp(net)
             # compare lf results
             fbus_ne = net.res_bus.loc[fbus]
@@ -882,9 +918,9 @@ def test_repl_to_line_with_switch():
             assert np.isclose(qloss_repl, qloss_ne)
 
             # and reset to unreinforced state again
-            net.line.in_service[testindex] = True
-            net.line.in_service[new_idx] = False
-            net.line.in_service[REPL] = False
+            net.line.loc[testindex, "in_service"] = True
+            net.line.loc[new_idx, "in_service"] = False
+            net.line.loc[REPL, "in_service"] = False
 
 
 def test_merge_parallel_line():
@@ -987,4 +1023,4 @@ def test_set_isolated_areas_out_of_service():
 
 
 if __name__ == '__main__':
-    pytest.main([__file__, "-x"])
+    pytest.main([__file__, "-xs"])

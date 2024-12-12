@@ -6,6 +6,7 @@
 import pytest
 import gc
 import copy
+import geojson
 import numpy as np
 import pandas as pd
 
@@ -88,27 +89,23 @@ def test_get_indices():
 
 def test_net_deepcopy():
     net = pp.networks.example_simple()
-    net.line_geodata.loc[0, 'coords'] = [[0, 1], [1, 2]]
-    net.bus_geodata.loc[0, ['x', 'y']] = 0, 1
+    net.line.at[0, 'geo'] = geojson.LineString([(0., 1.), (1., 2.)])
+    net.bus.at[0, 'geo'] = geojson.Point((0., 1.))
 
-    pp.control.ContinuousTapControl(net, tid=0, vm_set_pu=1)
+    pp.control.ContinuousTapControl(net, element_index=0, vm_set_pu=1)
     ds = pp.timeseries.DFData(pd.DataFrame(data=[[0, 1, 2], [3, 4, 5]]))
-    pp.control.ConstControl(net, element='load', variable='p_mw', element_index=[0], profile_name=[0], data_source=ds)
+    pp.control.ConstControl(net, element='load', variable='p_mw', element_index=[0],
+                            profile_name=[0], data_source=ds)
 
     net1 = copy.deepcopy(net)
 
     assert not net1.controller.object.at[1].data_source is ds
     assert not net1.controller.object.at[1].data_source.df is ds.df
 
-    assert not net1.line_geodata.coords.at[0] is net.line_geodata.coords.at[0]
-
     if GEOPANDAS_INSTALLED:
-        for tab in ('bus_geodata', 'line_geodata'):
-            if tab == 'bus_geodata':
-                geometry = net[tab].apply(lambda x: shapely.geometry.Point(x.x, x.y), axis=1)
-            else:
-                geometry = net[tab].coords.apply(shapely.geometry.LineString)
-            net[tab] = gpd.GeoDataFrame(net[tab], geometry=geometry)
+        for tab in ('bus', 'line'):
+            net[f'{tab}_geodata'] = gpd.GeoDataFrame(net[tab].geo.dropna().apply(
+                lambda x: x["coordinates"]), geometry=net[tab].geo.dropna())
         net1 = net.deepcopy()
         assert isinstance(net1.line_geodata, gpd.GeoDataFrame)
         assert isinstance(net1.bus_geodata, gpd.GeoDataFrame)
@@ -125,7 +122,7 @@ def test_memory_leaks():
     for _ in range(num):
         net_copy = copy.deepcopy(net)
         # In each net copy it has only one controller
-        pp.control.ContinuousTapControl(net_copy, tid=0, vm_set_pu=1)
+        pp.control.ContinuousTapControl(net_copy, element_index=0, vm_set_pu=1)
 
     gc.collect()
 
@@ -306,6 +303,7 @@ def test_characteristic(file_io):
     with pytest.raises(NotImplementedError):
         c3([0])
 
+
 def test_log_characteristic_property():
     net = pp.create_empty_network()
     c = LogSplineCharacteristic(net, [10, 1000, 10000], [1000, 0.1, 0.001], interpolator_kind="Pchip", extrapolate=False)
@@ -313,7 +311,53 @@ def test_log_characteristic_property():
     c([2])
 
 
+def test_geo_accessor_geojson():
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, 10, geodata=(1, 1))
+    b2 = pp.create_bus(net, 10, geodata=(2, 2))
+    l = pp.create_lines(
+        net,
+        [b1, b1],
+        [b2, b2],
+        [1.5, 3],
+        std_type="48-AL1/8-ST1A 10.0",
+        geodata=[[(1, 1), (2, 2), (3, 3)], [(1, 1), (1, 2)]],
+    )
+    pp.create_line(net, b1, b2, 1.5, std_type="48-AL1/8-ST1A 10.0")
+
+    assert len(net.line.geo.geojson._coords) == 2
+    assert np.array_equal(net.line.geo.geojson._coords.at[l[0]], [[1, 1], [2, 2], [3, 3]])
+    assert np.array_equal(net.line.geo.geojson._coords.at[l[1]], [[1, 1], [1, 2]])
+    assert np.array_equal(net.bus.geo.geojson._coords.at[b1], [1, 1])
+    assert np.array_equal(net.bus.geo.geojson._coords.at[b2], [2, 2])
+    assert net.bus.geo.geojson.type.at[b1] == "Point"
+    assert net.bus.geo.geojson.type.at[b2] == "Point"
+    assert net.line.geo.geojson.type.at[l[0]] == "LineString"
+    assert net.line.geo.geojson.type.at[l[1]] == "LineString"
+    assert set(net.line.geo.geojson.as_geo_obj.at[l[0]].keys()) == {"coordinates", "type"}
+    assert set(net.line.geo.geojson.as_geo_obj.at[l[1]].keys()) == {"coordinates", "type"}
+    assert set(net.bus.geo.geojson.as_geo_obj.at[b1].keys()) == {"coordinates", "type"}
+    assert set(net.bus.geo.geojson.as_geo_obj.at[b2].keys()) == {"coordinates", "type"}
+
+
+@pytest.mark.skipif(not GEOPANDAS_INSTALLED, reason="geopandas is not installed")
+def test_geo_accessor_geopandas():
+    net = pp.networks.mv_oberrhein()
+    reference_point = (7.781067, 48.389774)
+    radius_m = 2200
+    circle_polygon = gpd.GeoSeries([shapely.geometry.Point(reference_point)],
+                                   crs=4326).to_crs(epsg=31467).buffer(radius_m).to_crs(epsg=4326).iloc[0]
+    assert net.line.geo.geojson.within(circle_polygon).sum() == 11
+    assert all(net.line[net.line.geo.geojson.within(circle_polygon)].index == [14, 17, 46, 47, 55, 116,
+                                                                               117, 118, 120, 121, 134])
+
+    line = shapely.geometry.LineString([[7.8947079593416, 48.40549007606241],
+                                        [7.896048283667894, 48.41060722903666],
+                                        [7.896173712216692, 48.41100311474432]])
+
+    assert net.line.geo.geojson.as_shapely_obj.at[0] == line
+    assert np.allclose(net.line.geo.geojson.total_bounds, [7.74426069, 48.32845845, 7.93829196, 48.47484423])
 
 
 if __name__ == '__main__':
-    pytest.main([__file__, "-x"])
+    pytest.main([__file__, "-xs"])

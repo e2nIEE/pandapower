@@ -5,11 +5,16 @@
 
 import numpy as np
 import pandas as pd
+from typing import Union, Callable, Any
+
 from packaging.version import Version
 
 from pandapower._version import __version__, __format_version__
 from pandapower.create import create_empty_network, create_poly_cost
+from pandapower.plotting import geo
 from pandapower.results import reset_results
+from pandapower.control import TrafoController
+import pandapower.plotting.geo as geo
 
 try:
     import pandaplan.core.pplog as logging
@@ -34,15 +39,19 @@ def convert_format(net, elements_to_deserialize=None):
     _rename_columns(net, elements_to_deserialize)
     _add_missing_columns(net, elements_to_deserialize)
     _create_seperate_cost_tables(net, elements_to_deserialize)
+    if Version(str(net.format_version)) < Version("3.0.0"):
+        _convert_geo_data(net, elements_to_deserialize)
+        _convert_group_element_index(net)
+        _convert_trafo_controller_parameter_names(net)
     if Version(str(net.format_version)) < Version("2.4.0"):
         _convert_bus_pq_meas_to_load_reference(net, elements_to_deserialize)
-    if isinstance(net.format_version, float) and net.format_version < 2:
+    if Version(str(net.format_version)) < Version("2.0.0"):
         _convert_to_generation_system(net, elements_to_deserialize)
         _convert_costs(net)
         _convert_to_mw(net)
         _update_trafo_parameter_names(net, elements_to_deserialize)
         reset_results(net)
-    if isinstance(net.format_version, float) and net.format_version < 1.6:
+    if Version(str(net.format_version)) < Version("1.6"):
         set_data_type_of_columns_to_default(net)
     _convert_objects(net, elements_to_deserialize)
     _update_characteristics(net, elements_to_deserialize)
@@ -52,6 +61,18 @@ def convert_format(net, elements_to_deserialize=None):
     net.version = __version__
     _restore_index_names(net)
     return net
+
+
+def _convert_geo_data(net, elements_to_deserialize=None):
+    if ((_check_elements_to_deserialize('bus_geodata', elements_to_deserialize)
+         and _check_elements_to_deserialize('bus', elements_to_deserialize))
+        or (_check_elements_to_deserialize('line_geodata', elements_to_deserialize)
+         and _check_elements_to_deserialize('line', elements_to_deserialize))):
+        if hasattr(net, 'bus_geodata') or hasattr(net, 'line_geodata'):
+            if Version(str(net.format_version)) < Version("1.6"):
+                net.bus_geodata = pd.DataFrame.from_dict(net.bus_geodata)
+                net.line_geodata = pd.DataFrame.from_dict(net.line_geodata)
+            geo.convert_geodata_to_geojson(net)
 
 
 def _restore_index_names(net):
@@ -70,7 +91,7 @@ def _restore_index_names(net):
 
 def correct_dtypes(net, error):
     """
-    Corrects all dtypes of pp element tables if possile. If not and error is True, an Error is
+    Corrects all dtypes of pp element tables if possible. If not and error is True, an Error is
     raised.
     """
     empty_net = create_empty_network()
@@ -101,6 +122,35 @@ def correct_dtypes(net, error):
         else:
             logger.info(msg)
 
+
+def _convert_group_element_index(net):
+    if isinstance(net.group, pd.DataFrame) and "element" in net.group.columns:
+        if "element_index" in net.group.columns:
+            logger.warning("element cannot be renamed by element_index because columns exist already.")
+        net.group = net.group.rename(columns={"element": "element_index"})
+
+
+def _convert_trafo_controller_parameter_names(net):
+    if not isinstance(net.controller, pd.DataFrame):
+        return
+    for ctrl_idx in net.controller.index:
+        controller = net.controller.at[ctrl_idx, "object"]
+        if issubclass(type(controller), TrafoController):
+
+            if "tid" in controller.__dict__.keys():
+                controller.__dict__["element_index"] = controller.__dict__.pop("tid")
+            elif "transformer_index" in controller.__dict__.keys():
+                controller.__dict__["element_index"] = controller.__dict__.pop("transformer_index")
+
+            if "trafotable" in controller.__dict__.keys():
+                controller.__dict__["element"] = controller.__dict__.pop("trafotable")
+                if "trafotype" in controller.__dict__.keys():
+                    del controller.__dict__["trafotype"]
+            elif "trafotype" in controller.__dict__.keys():
+                controller.__dict__["element"] = controller.__dict__.pop("trafotype")
+
+            if "controlled_bus" in controller.__dict__.keys():
+                controller.__dict__["trafobus"] = controller.__dict__.pop("controlled_bus")
 
 def _convert_bus_pq_meas_to_load_reference(net, elements_to_deserialize):
     if _check_elements_to_deserialize('measurement', elements_to_deserialize):
@@ -266,9 +316,10 @@ def _add_missing_columns(net, elements_to_deserialize):
         if "df" not in net[element]:
             net[element]["df"] = 1.0
 
-    if _check_elements_to_deserialize('bus_geodata', elements_to_deserialize) \
-            and "coords" not in net.bus_geodata:
-        net.bus_geodata["coords"] = None
+    if _check_elements_to_deserialize('bus', elements_to_deserialize) \
+            and _check_elements_to_deserialize('bus_geodata', elements_to_deserialize) \
+            and "geo" not in net.bus:
+        net.bus["geo"] = np.nan
     if _check_elements_to_deserialize('trafo3w', elements_to_deserialize) and \
             "tap_at_star_point" not in net.trafo3w:
         net.trafo3w["tap_at_star_point"] = False
@@ -298,9 +349,11 @@ def _add_missing_columns(net, elements_to_deserialize):
         net.sgen["current_source"] = net.sgen["type"].apply(
             func=lambda x: False if x == "motor" else True)
 
-    if _check_elements_to_deserialize('line', elements_to_deserialize) and \
-            "g_us_per_km" not in net.line:
-        net.line["g_us_per_km"] = 0.
+    if _check_elements_to_deserialize('line', elements_to_deserialize):
+        if "g_us_per_km" not in net.line:
+            net.line["g_us_per_km"] = 0.
+        if _check_elements_to_deserialize('line_geodata', elements_to_deserialize) and "geo" not in net.line:
+            net.line["geo"] = np.nan
 
     if _check_elements_to_deserialize('gen', elements_to_deserialize) and \
             "slack" not in net.gen:
@@ -311,10 +364,15 @@ def _add_missing_columns(net, elements_to_deserialize):
         net.trafo["tap_phase_shifter"] = False
 
     # unsymmetric impedance
-    if _check_elements_to_deserialize('impedance', elements_to_deserialize) and \
-            "r_pu" in net.impedance:
-        net.impedance["rft_pu"] = net.impedance["rtf_pu"] = net.impedance["r_pu"]
-        net.impedance["xft_pu"] = net.impedance["xtf_pu"] = net.impedance["x_pu"]
+    if _check_elements_to_deserialize('impedance', elements_to_deserialize):
+        if "r_pu" in net.impedance:
+            net.impedance["rft_pu"] = net.impedance["rtf_pu"] = net.impedance["r_pu"]
+            net.impedance["xft_pu"] = net.impedance["xtf_pu"] = net.impedance["x_pu"]
+        if "gf_pu" not in net.impedance:
+            net.impedance["gf_pu"] = 0.
+            net.impedance["gt_pu"] = 0.
+            net.impedance["bf_pu"] = 0.
+            net.impedance["bt_pu"] = 0.
 
     # Update the switch table with 'z_ohm'
     if _check_elements_to_deserialize('switch', elements_to_deserialize) and \
@@ -419,7 +477,7 @@ def _convert_to_mw(net):
         if isinstance(net[element], pd.DataFrame):
             for old, new in replace:
                 diff = {column: column.replace(old, new) for column in net[element].columns if
-                    old in column and column != "pfe_kw"}
+                        old in column and column != "pfe_kw"}
                 net[element] = net[element].rename(columns=diff)
                 if len(net[element]) == 0:
                     continue
@@ -447,6 +505,9 @@ def _update_object_attributes(obj):
         if key in obj.__dict__:
             obj.__dict__[val] = obj.__dict__.pop(key)
 
+    if "vm_lower_pu" in obj.__dict__ and "hunting_limit" not in obj.__dict__:
+        obj.__dict__["hunting_limit"] = None
+
 
 def _convert_objects(net, elements_to_deserialize):
     """
@@ -468,8 +529,10 @@ def _check_elements_to_deserialize(element, elements_to_deserialize):
 
 
 def _add_missing_std_type_tables(net):
-    if "fuse" not in net.std_types:
-        net.std_types["fuse"] = {}
+    type_names = ("fuse", "line_dc")
+    for tn in type_names:
+        if tn not in net.std_types:
+            net.std_types[tn] = {}
 
 
 def _update_characteristics(net, elements_to_deserialize):

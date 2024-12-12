@@ -4,6 +4,8 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from copy import deepcopy
+
+import geojson
 import numpy as np
 import pandas as pd
 import pytest
@@ -271,22 +273,16 @@ def test_create_buses():
     # with geodata
     b2 = pp.create_buses(net, 3, 110, geodata=(10, 20))
     # with geodata as array
-    geodata = np.array([[10, 20], [20, 30], [30, 40]])
+    geodata = [(10, 20), (20, 30), (30, 40)]
     b3 = pp.create_buses(net, 3, 110, geodata=geodata)
 
     assert len(net.bus) == 9
-    assert len(net.bus_geodata) == 6
     assert net.bus.test_kwargs.at[b1[0]] == "dummy_string"
 
     for i in b2:
-        assert net.bus_geodata.at[i, "x"] == 10
-        assert net.bus_geodata.at[i, "y"] == 20
-    assert (net.bus_geodata.loc[b3, ["x", "y"]].values == geodata).all()
-
-    # no way of creating buses with not matching shape
-    with pytest.raises(ValueError):
-        pp.create_buses(net, 2, 110, geodata=geodata)
-
+        assert net.bus.at[i, "geo"] == geojson.dumps(geojson.Point((10, 20)), sort_keys=True)
+    for i, ind in enumerate(b3):
+        assert net.bus.at[ind, "geo"] == geojson.dumps(geojson.Point(geodata[i]), sort_keys=True)
 
 def test_create_lines():
     # standard
@@ -302,7 +298,6 @@ def test_create_lines():
         test_kwargs="dummy_string",
     )
     assert len(net.line) == 2
-    assert len(net.line_geodata) == 0
     assert sum(net.line.std_type == "48-AL1/8-ST1A 10.0") == 2
     assert len(set(net.line.r_ohm_per_km)) == 1
     assert all(net.line.test_kwargs == "dummy_string")
@@ -318,7 +313,6 @@ def test_create_lines():
         std_type=["48-AL1/8-ST1A 10.0", "NA2XS2Y 1x240 RM/25 6/10 kV"],
     )
     assert len(net.line) == 2
-    assert len(net.line_geodata) == 0
     assert sum(net.line.std_type == "48-AL1/8-ST1A 10.0") == 1
     assert sum(net.line.std_type == "NA2XS2Y 1x240 RM/25 6/10 kV") == 1
 
@@ -336,9 +330,8 @@ def test_create_lines():
     )
 
     assert len(net.line) == 2
-    assert len(net.line_geodata) == 2
-    assert net.line_geodata.at[l[0], "coords"] == [(1, 1), (2, 2), (3, 3)]
-    assert net.line_geodata.at[l[1], "coords"] == [(1, 1), (1, 2)]
+    assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(1, 1), (2, 2), (3, 3)]), sort_keys=True)
+    assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(1, 1), (1, 2)]), sort_keys=True)
 
     # setting params as single value
     net = pp.create_empty_network()
@@ -359,14 +352,13 @@ def test_create_lines():
     )
 
     assert len(net.line) == 2
-    assert len(net.line_geodata) == 2
     assert net.line.length_km.at[l[0]] == 5
     assert net.line.length_km.at[l[1]] == 5
     assert net.line.in_service.dtype == bool
     assert not net.line.at[l[0], "in_service"]  # is actually <class 'numpy.bool_'>
     assert not net.line.at[l[1], "in_service"]  # is actually <class 'numpy.bool_'>
-    assert net.line_geodata.at[l[0], "coords"] == [(10, 10), (20, 20)]
-    assert net.line_geodata.at[l[1], "coords"] == [(10, 10), (20, 20)]
+    assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(10, 10), (20, 20)]), sort_keys=True)
+    assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(10, 10), (20, 20)]), sort_keys=True)
     assert net.line.at[l[0], "name"] == "test"
     assert net.line.at[l[1], "name"] == "test"
     assert net.line.at[l[0], "max_loading_percent"] == 90
@@ -393,14 +385,13 @@ def test_create_lines():
     )
 
     assert len(net.line) == 2
-    assert len(net.line_geodata) == 2
     assert net.line.at[l[0], "length_km"] == 1
     assert net.line.at[l[1], "length_km"] == 5
     assert net.line.in_service.dtype == bool
     assert net.line.at[l[0], "in_service"]  # is actually <class 'numpy.bool_'>
     assert not net.line.at[l[1], "in_service"]  # is actually <class 'numpy.bool_'>
-    assert net.line_geodata.at[l[0], "coords"] == [(10, 10), (20, 20)]
-    assert net.line_geodata.at[l[1], "coords"] == [(100, 10), (200, 20)]
+    assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(10, 10), (20, 20)]), sort_keys=True)
+    assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(100, 10), (200, 20)]), sort_keys=True)
     assert net.line.at[l[0], "name"] == "test1"
     assert net.line.at[l[1], "name"] == "test2"
     assert net.line.at[l[0], "max_loading_percent"] == 80
@@ -426,7 +417,6 @@ def test_create_lines_from_parameters():
         test_kwargs=["dummy_string", "dummy_string"],
     )
     assert len(net.line) == 2
-    assert len(net.line_geodata) == 0
     assert len(net.line.x_ohm_per_km) == 2
     assert len(net.line.r_ohm_per_km) == 2
     assert len(net.line.c_nf_per_km) == 2
@@ -451,9 +441,8 @@ def test_create_lines_from_parameters():
     )
 
     assert len(net.line) == 2
-    assert len(net.line_geodata) == 2
-    assert net.line_geodata.at[l[0], "coords"] == [(1, 1), (2, 2), (3, 3)]
-    assert net.line_geodata.at[l[1], "coords"] == [(1, 1), (1, 2)]
+    assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(1, 1), (2, 2), (3, 3)]), sort_keys=True)
+    assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(1, 1), (1, 2)]), sort_keys=True)
 
     # setting params as single value
     net = pp.create_empty_network()
@@ -483,7 +472,6 @@ def test_create_lines_from_parameters():
     )
 
     assert len(net.line) == 2
-    assert len(net.line_geodata) == 2
     assert all(net.line["length_km"].values == 5)
     assert all(net.line["x_ohm_per_km"].values == 1)
     assert all(net.line["r_ohm_per_km"].values == 0.2)
@@ -493,8 +481,8 @@ def test_create_lines_from_parameters():
     assert net.line.in_service.dtype == bool
     assert not net.line.at[l[0], "in_service"]  # is actually <class 'numpy.bool_'>
     assert not net.line.at[l[1], "in_service"]  # is actually <class 'numpy.bool_'>
-    assert net.line_geodata.at[l[0], "coords"] == [(10, 10), (20, 20)]
-    assert net.line_geodata.at[l[1], "coords"] == [(10, 10), (20, 20)]
+    assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(10, 10), (20, 20)]), sort_keys=True)
+    assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(10, 10), (20, 20)]), sort_keys=True)
     assert all(net.line["name"].values == "test")
     assert all(net.line["max_loading_percent"].values == 90)
     assert all(net.line["parallel"].values == 1)
@@ -528,7 +516,6 @@ def test_create_lines_from_parameters():
     )
 
     assert len(net.line) == 2
-    assert len(net.line_geodata) == 2
     assert net.line.at[l[0], "length_km"] == 1
     assert net.line.at[l[1], "length_km"] == 5
     assert net.line.at[l[0], "r_ohm_per_km"] == 1
@@ -546,8 +533,8 @@ def test_create_lines_from_parameters():
     assert net.line.in_service.dtype == bool
     assert net.line.at[l[0], "in_service"]  # is actually <class 'numpy.bool_'>
     assert not net.line.at[l[1], "in_service"]  # is actually <class 'numpy.bool_'>
-    assert net.line_geodata.at[l[0], "coords"] == [(10, 10), (20, 20)]
-    assert net.line_geodata.at[l[1], "coords"] == [(100, 10), (200, 20)]
+    assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(10, 10), (20, 20)]), sort_keys=True)
+    assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(100, 10), (200, 20)]), sort_keys=True)
     assert net.line.at[l[0], "name"] == "test1"
     assert net.line.at[l[1], "name"] == "test2"
     assert net.line.at[l[0], "max_loading_percent"] == 80

@@ -31,6 +31,8 @@ class StationSuppliesCim16:
     def _prepare_station_supplies_cim16(self) -> pd.DataFrame:
         eqssh_station_supplies = self.cimConverter.merge_eq_ssh_profile('StationSupply', add_cim_type_column=True)
         eqssh_station_supplies = pd.merge(eqssh_station_supplies, self.cimConverter.bus_merge, how='left', on='rdfId')
+        if 'inService' in eqssh_station_supplies.columns:
+            eqssh_station_supplies['connected'] = eqssh_station_supplies['connected'] & eqssh_station_supplies['inService']
         eqssh_station_supplies = eqssh_station_supplies.rename(columns={'rdfId': sc['o_id'], 'rdfId_Terminal': sc['t'], 'index_bus': 'bus',
                                                'connected': 'in_service', 'p': 'p_mw', 'q': 'q_mvar'})
         eqssh_station_supplies['const_i_percent'] = 0.

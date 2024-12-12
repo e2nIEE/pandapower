@@ -5,7 +5,7 @@
 """Construct constraints for branch angle difference limits.
 """
 
-from numpy import array, ones, zeros, r_, Inf, pi, arange
+from numpy import array, ones, zeros, r_, inf, pi, arange, full
 from numpy import flatnonzero as find
 from scipy.sparse import csr_matrix as sparse
 
@@ -47,7 +47,7 @@ def makeAang(baseMVA, branch, nb, ppopt):
             jj = r_[branch[iang, F_BUS], branch[iang, T_BUS]]
             Aang = sparse((r_[ones(nang), -ones(nang)],
                            (ii, jj)), (nang, nb))
-            uang = Inf * ones(nang)
+            uang = full(nang, inf)
             lang = -uang
             lang[iangl] = branch[iang[iangl], ANGMIN] * pi / 180
             uang[iangh] = branch[iang[iangh], ANGMAX] * pi / 180

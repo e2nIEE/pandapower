@@ -172,13 +172,15 @@ def reindex_buses(net, bus_lookup):
     # --- adapt link in bus elements
     for element, value in element_bus_tuples():
         net[element][value] = get_indices(net[element][value], bus_lookup)
-    net["bus_geodata"].set_index(get_indices(net["bus_geodata"].index, bus_lookup), inplace=True)
+    if "bus_geodata" in net:
+        net["bus_geodata"].set_index(get_indices(net["bus_geodata"].index, bus_lookup), inplace=True)
 
     # --- adapt group link
     if net.group.shape[0]:
         for row in np.arange(net.group.shape[0], dtype=np.int64)[
                 (net.group.element_type == "bus").values & net.group.reference_column.isnull().values]:
-            net.group.element.iat[row] = list(get_indices(net.group.element.iat[row], bus_lookup))
+            net.group.iat[row, net.group.columns.get_loc("element_index")] = list(
+                get_indices(net.group.element_index.iat[row], bus_lookup))
 
     # --- adapt measurement link
     bus_meas = net.measurement.element_type == "bus"
@@ -282,6 +284,17 @@ def reindex_elements(net, element_type, new_indices=None, old_indices=None, look
         reindex_buses(net, lookup)
         return
 
+    if element_type == "characteristic":
+        for old_id, new_id in lookup.items():
+            for ele in ['vk_percent_characteristic', 'vkr_percent_characteristic']:
+                if ele in net.trafo:
+                    net.trafo.loc[net.trafo[ele] == old_id, ele] = new_id
+
+            for ele in ['vk_hv_percent_characteristic', 'vkr_hv_percent_characteristic', 'vk_mv_percent_characteristic',
+                        'vkr_mv_percent_characteristic', 'vk_lv_percent_characteristic', 'vkr_lv_percent_characteristic']:
+                if ele in net.trafo3w:
+                    net.trafo3w.loc[net.trafo3w[ele] == old_id, ele] = new_id
+
     # --- reindex
     new_index = pd.Series(net[element_type].index, index=net[element_type].index)
     if element_type != "group":
@@ -295,7 +308,8 @@ def reindex_elements(net, element_type, new_indices=None, old_indices=None, look
         for row in np.arange(net.group.shape[0], dtype=np.int64)[
                 (net.group.element_type == element_type).values & \
                 net.group.reference_column.isnull().values]:
-            net.group.element.iat[row] = list(get_indices(net.group.element.iat[row], lookup))
+            net.group.iat[row, net.group.columns.get_loc("element_index")] = list(
+                get_indices(net.group.element_index.iat[row], lookup))
 
     # --- adapt measurement link
     if element_type in ["line", "trafo", "trafo3w"]:
@@ -362,7 +376,7 @@ def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
 
         if et in net and isinstance(net[et], pd.DataFrame):
             if et in ["bus_geodata", "line_geodata"]:
-                logger.info(et + " don't need to bo included to 'add_df_to_reindex'. It is " +
+                logger.info(et + " don't need to be included to 'add_df_to_reindex'. It is " +
                             "already included by et=='" + et.split("_")[0] + "'.")
             else:
                 reindex_elements(net, et, new_index)

@@ -16,12 +16,6 @@ from pandapower.grid_equivalents.ward_generation import \
     create_passive_external_net_for_ward_admittance
 from pandapower.grid_equivalents.auxiliary import _runpp_except_voltage_angles
 
-try:
-    from misc.groups import Group
-    group_imported = True
-except ImportError:
-    group_imported = False
-
 
 def create_test_net():
     net = pp.create_empty_network()
@@ -245,8 +239,7 @@ def test_basic_usecases():
 def test_case9_with_slack_generator_in_external_net():
     net = pp.networks.case9()
     idx = pp.replace_ext_grid_by_gen(net)
-    net.gen.loc[idx, "slack"] = True
-    net.bus_geodata = net.bus_geodata.drop(net.bus_geodata.index)
+    net.gen.loc[idx, 'slack'] = True
     pp.runpp(net)
 
     # since the only slack is in the external_buses, we expect get_equivalent() to move the slack
@@ -374,9 +367,11 @@ def test_equivalent_groups():
     assert len(set(net_eq1.group.index)) == 1
     gr1_idx = net_eq1.group.index[0]
     for elm, no in [("bus", 3), ("load", 1), ("sgen", 2)]:
-        assert len(pp.group_row(net_eq1, gr1_idx, elm).at["element"]) == no
-    assert len(pp.group_row(net_eq1, gr1_idx, "impedance").at["element"]) == net_eq1.impedance.shape[0] - 1
-    assert len(pp.group_row(net_eq1, gr1_idx, "shunt").at["element"]) == net_eq1.shunt.shape[0] - 1
+        assert len(pp.group_row(net_eq1, gr1_idx, elm).at["element_index"]) == no
+    assert len(pp.group_row(net_eq1, gr1_idx, "impedance").at["element_index"]) == \
+        net_eq1.impedance.shape[0] - 1
+    assert len(pp.group_row(net_eq1, gr1_idx, "shunt").at["element_index"]) == \
+        net_eq1.shunt.shape[0] - 1
     pp.set_group_reference_column(net_eq1, gr1_idx, "origin_id")
 
     bb2 = {37}
@@ -388,7 +383,8 @@ def test_equivalent_groups():
         print("sgen_separate is " + str(sgen_separate))
         # test fails with lightsim2grid, for unknown reason
         net_eq2 = pp.grid_equivalents.get_equivalent(
-            net_eq1, "rei", bb2, int2, sgen_separate=sgen_separate, reference_column="origin_id", lightsim2grid=False)
+            net_eq1, "rei", bb2, int2, sgen_separate=sgen_separate, reference_column="origin_id",
+            lightsim2grid=False)
         gr2_idx = net_eq2.group.index[-1]
         assert len(set(net_eq2.group.index)) == 2
         assert len(set(pp.count_group_elements(net_eq2, gr2_idx).index) ^ {
@@ -398,9 +394,10 @@ def test_equivalent_groups():
         no_b = no_sg + no_l # number of expected buses
         # print(pp.count_group_elements(net_eq2, gr2_idx))
         for elm, no in [("bus", no_b), ("load", no_l), ("sgen", no_sg)]:
-            assert len(pp.group_row(net_eq2, gr2_idx, elm).at["element"]) == no
-        assert len(pp.group_row(net_eq2, gr2_idx, "impedance").at["element"]) > 0.5 * (no_b-1)**2  # the
-        # number of impedances is lower than no_b**2 since imp < 1e-8 were dropped
+            assert len(pp.group_row(net_eq2, gr2_idx, elm).at["element_index"]) == no
+        assert len(pp.group_row(net_eq2, gr2_idx, "impedance").at["element_index"]) > \
+            0.5 * (no_b-1)**2  # the number of impedances is lower than no_b**2 since imp < 1e-8
+            # were dropped
 
     # test 2nd xward
     net_eq2 = pp.grid_equivalents.get_equivalent(
@@ -409,7 +406,7 @@ def test_equivalent_groups():
     assert len(set(net_eq2.group.index)) == 2
     assert len(set(pp.count_group_elements(net_eq2, gr2_idx).index) ^ {"xward"}) == 0
     for elm, no in [("xward", 1)]:
-            assert len(pp.group_row(net_eq2, gr2_idx, elm).at["element"]) == no
+            assert len(pp.group_row(net_eq2, gr2_idx, elm).at["element_index"]) == no
 
 
 def test_shifter_degree():
@@ -550,7 +547,8 @@ def test_motor():
     net = pp.networks.case9()
     pp.replace_gen_by_sgen(net)
     pp.create_motor(net, 5, 12, 0.9, scaling=0.8, loading_percent=89, efficiency_percent=90)
-    pp.create_motor(net, 7, 18, 0.9, scaling=0.9, loading_percent=88, efficiency_percent=95, in_service=False)
+    pp.create_motor(net, 7, 18, 0.9, scaling=0.9, loading_percent=88, efficiency_percent=95,
+                    in_service=False)
     pp.create_motor(net, 6, 10, 0.6, scaling=0.4, loading_percent=98, efficiency_percent=88)
     pp.create_motor(net, 3, 3, 0.6, scaling=0.4, loading_percent=89, efficiency_percent=99)
     pp.create_motor(net, 4, 6, 0.96, scaling=0.4, loading_percent=78, efficiency_percent=90)

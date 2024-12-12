@@ -46,7 +46,7 @@ def _run_dc_pf(ppci, recycle=False):
             ppci['internal']['Pbusinj'] = Pbusinj
             ppci['internal']['Pfinj'] = Pfinj
     else:
-        baseMVA, bus, gen, branch, svc, tcsc, ssc, ref, pv, pq, *_, ref_gens = _get_pf_variables_from_ppci(ppci)
+        baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, ref, pv, pq, *_, ref_gens = _get_pf_variables_from_ppci(ppci)
 
         ppci["internal"]['baseMVA'] = baseMVA
         ppci["internal"]['bus'] = bus

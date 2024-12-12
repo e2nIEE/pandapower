@@ -221,4 +221,3 @@ def test_recycle_dc_trafo_ideal(recycle_net):
 
 if __name__ == "__main__":
     pytest.main([__file__, "-xs"])
-    # test_recycle_gen(recycle_net())

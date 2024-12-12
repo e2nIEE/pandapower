@@ -1,14 +1,19 @@
+.. raw:: html
 
-.. image:: https://www.pandapower.org/images/pp.svg
-   :target: https://www.pandapower.org
-   :alt: logo
+    <a href="https://www.pandapower.org">
+       <picture>
+         <source media="(prefers-color-scheme: dark)" srcset="https://www.pandapower.org/images/pp_light.svg">
+         <source media="(prefers-color-scheme: light)" srcset="https://www.pandapower.org/images/pp.svg">
+         <img alt="logo" src="//www.pandapower.org/images/pp.svg">
+       </picture>
+    </a>
 
 |
 
 .. image:: https://badge.fury.io/py/pandapower.svg
    :target: https://pypi.python.org/pypi/pandapower
    :alt: PyPI
-   
+
 .. image:: https://img.shields.io/pypi/pyversions/pandapower.svg
    :target: https://pypi.python.org/pypi/pandapower
    :alt: versions
@@ -20,11 +25,11 @@
 .. image:: https://codecov.io/github/e2nIEE/pandapower/coverage.svg?branch=master
    :target: https://app.codecov.io/github/e2nIEE/pandapower?branch=master
    :alt: codecov
-    
+
 .. image:: https://api.codacy.com/project/badge/Grade/e2ce960935fd4f96b4be4dff9a0c76e3
    :target: https://app.codacy.com/gh/e2nIEE/pandapower?branch=master
    :alt: codacy
-    
+
 .. image:: https://img.shields.io/badge/License-BSD%203--Clause-blue.svg
    :target: https://github.com/e2nIEE/pandapower/blob/master/LICENSE
    :alt: BSD
@@ -36,16 +41,15 @@
 .. image:: https://mybinder.org/badge_logo.svg
    :target: https://mybinder.org/v2/gh/e2nIEE/pandapower/master?filepath=tutorials
    :alt: binder
- 
 
 
 
-  
+
+
 pandapower is an easy to use network calculation program aimed to automate the analysis and optimization of power
 systems. It uses the data analysis library `pandas <http://pandas.pydata.org>`_ and is compatible with the commonly
 used MATPOWER / PYPOWER case format. pandapower allows using different solvers including an improved Newton-Raphson
-power flow implementation, all `PYPOWER <https://pypi.python.org/pypi/PYPOWER>`_ solvers, the Newton-Raphson power
-flow solvers in the C++ library `lightsim2grid <https://github.com/BDonnot/lightsim2grid/>`_, and the
+power flow implementation, all `PYPOWER <https://pypi.python.org/pypi/PYPOWER>`_ solvers, the C++ library solvers for fast steady-state distribution power system analysis of `PowerGridModel <https://github.com/PowerGridModel/power-grid-model>`_, the Newton-Raphson power flow solvers in the C++ library `lightsim2grid <https://github.com/BDonnot/lightsim2grid/>`_, and the
 `PowerModels.jl <https://github.com/lanl-ansi/PowerModels.jl/>`_ library.
 
 More information about pandapower can be found on `www.pandapower.org <https://www.pandapower.org/>`_:
@@ -92,9 +96,15 @@ Operation at the Fraunhofer Institute for Energy Economics and Energy System Tec
 
 |
 
-.. image:: http://www.pandapower.org/images/contact/Logo_Fraunhofer_IEE.png
-    :target: https://www.iee.fraunhofer.de/en.html
-    :width: 500
+.. raw:: html
+
+    <a href="https://www.iee.fraunhofer.de/en.html">
+       <picture>
+         <source media="(prefers-color-scheme: dark)" srcset="https://www.pandapower.org/images/contact/Logo_Fraunhofer_IEE_negativ.png">
+         <source media="(prefers-color-scheme: light)" srcset="https://www.pandapower.org/images/contact/Logo_Fraunhofer_IEE.png">
+         <img alt="logo" src="https://www.pandapower.org/images/contact/Logo_Fraunhofer_IEE.png" width=500 >
+       </picture>
+    </a>
 
 |
 

@@ -20,7 +20,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def vlevel_plotly(net, respect_switches=True, use_line_geodata=None, colors_dict=None, on_map=False,
+def vlevel_plotly(net, respect_switches=True, use_line_geo=None, colors_dict=None, on_map=False,
                   projection=None, map_style='basic', figsize=1, aspectratio='auto', line_width=2,
                   bus_size=10, filename="temp-plot.html", auto_open=True):
     """
@@ -35,8 +35,8 @@ def vlevel_plotly(net, respect_switches=True, use_line_geodata=None, colors_dict
     OPTIONAL:
         **respect_switches** (bool, True) - Respect switches when artificial geodata is created
 
-        **use_line_geodata** (bool, True) - defines if lines patches are based on net.line_geodata
-        of the lines (True) or on net.bus_geodata of the connected buses (False)
+        **use_line_geo** (bool, True) - defines if lines patches are based on net.line.geo
+        of the lines (True) or on net.bus.geo of the connected buses (False)
 
         *colors_dict** (dict, None) - dictionary for customization of colors for each voltage level
         in the form: voltage : color
@@ -95,13 +95,13 @@ def vlevel_plotly(net, respect_switches=True, use_line_geodata=None, colors_dict
 
     return _draw_colored_bus_groups_plotly(
         net, bus_groups, respect_switches=respect_switches,
-        use_line_geodata=use_line_geodata, on_map=on_map, projection=projection,
+        use_line_geo=use_line_geo, on_map=on_map, projection=projection,
         map_style=map_style, figsize=figsize, aspectratio=aspectratio, line_width=line_width,
         bus_size=bus_size, filename=filename, auto_open=auto_open)
 
 
 def _draw_colored_bus_groups_plotly(
-    net, bus_groups, respect_switches=True, use_line_geodata=None,
+    net, bus_groups, respect_switches=True, use_line_geo=None,
     on_map=False, projection=None, map_style='basic', figsize=1, aspectratio='auto', line_width=2,
     bus_size=10, filename="temp-plot.html", auto_open=True):
     """
@@ -110,11 +110,7 @@ def _draw_colored_bus_groups_plotly(
     **bus_groups** - list of tuples consisting of set of bus indices, color, legendgroup
     """
     # create geocoord if none are available
-    if 'line_geodata' not in net:
-        net.line_geodata = pd.DataFrame(columns=['coords'])
-    if 'bus_geodata' not in net:
-        net.bus_geodata = pd.DataFrame(columns=["x", "y"])
-    if len(net.line_geodata) == 0 and len(net.bus_geodata) == 0:
+    if any(net.line.geo.isna()) and any(net.bus.geo.isna()):
         logger.warning("No or insufficient geodata available --> Creating artificial coordinates." +
                        " This may take some time")
         create_generic_coordinates(net, respect_switches=respect_switches)
@@ -128,12 +124,12 @@ def _draw_colored_bus_groups_plotly(
         geo_data_to_latlong(net, projection=projection)
 
     # if bus geodata is available, but no line geodata
-    if use_line_geodata is None:
-        use_line_geodata = False if len(net.line_geodata) == 0 else True
-    elif use_line_geodata and len(net.line_geodata) == 0:
+    if use_line_geo is None:
+        use_line_geo = False if any(net.line.geo.isna()) else True
+    elif use_line_geo and any(net.line.geo.isna()):
         logger.warning(
             "No or insufficient line geodata available --> only bus geodata will be used.")
-        use_line_geodata = False
+        use_line_geo = False
 
     # creating traces for buses and lines for each voltage level
     bus_traces = []
@@ -152,7 +148,7 @@ def _draw_colored_bus_groups_plotly(
                               net.line.to_bus.isin(buses_vl)].index.tolist()
         traced_lines |= set(vlev_lines)
         line_trace_vlev = create_line_trace(
-            net, lines=vlev_lines, use_line_geodata=use_line_geodata,
+            net, lines=vlev_lines, use_line_geo=use_line_geo,
             respect_switches=respect_switches, legendgroup=legend_group, color=vlev_color,
             width=line_width, trace_name=f'lines {legend_group}')
         if line_trace_vlev is not None:
@@ -161,7 +157,7 @@ def _draw_colored_bus_groups_plotly(
     # creating traces for other lines
     line_trace_other = create_line_trace(
         net, lines=net.line.index.difference(traced_lines).tolist(),
-        use_line_geodata=use_line_geodata, respect_switches=respect_switches,
+        use_line_geo=use_line_geo, respect_switches=respect_switches,
         color="grey", width=line_width)
     if line_trace_vlev is not None:
         line_traces += line_trace_other

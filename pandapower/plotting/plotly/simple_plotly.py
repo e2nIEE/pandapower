@@ -22,15 +22,27 @@ logger = logging.getLogger(__name__)
 def get_hoverinfo(net, element, precision=3, sub_index=None):
     hover_index = net[element].index
     if element == "bus":
+        # load_str, sgen_str, vsc_str = [], [], []
         load_str, sgen_str = [], []
         for ln in [net.load.loc[net.load.bus == b, "p_mw"].sum() for b in net.bus.index]:
             load_str.append("Load: {:.3f} MW<br />".format(ln) if ln != 0. else "")
         for s in [net.sgen.loc[net.sgen.bus == b, "p_mw"].sum() for b in net.bus.index]:
             sgen_str.append("Static generation: {:.3f} MW<br />".format(s) if s != 0. else "")
+        # we do not really need vsc result for every bus:
+        #for vn in [net.res_vsc.loc[net.vsc.bus == b, "p_mw"].fillna(0).sum() for b in net.bus.index]:
+        #    vsc_str.append("VSC: {:.3f} MW<br />".format(vn) if vn != 0. else "")
         hoverinfo = (
                 "Index: " + net.bus.index.astype(str) + '<br />' +
                 "Name: " + net.bus['name'].astype(str) + '<br />' +
                 'V_n: ' + net.bus['vn_kv'].round(precision).astype(str) + ' kV' + '<br />' + load_str + sgen_str).tolist()
+    elif element == "bus_dc":
+        vsc_str = []
+        for vn in [net.res_vsc.loc[net.vsc.bus_dc == b, "p_dc_mw"].fillna().sum() for b in net.bus_dc.index]:
+            vsc_str.append("VSC: {:.3f} MW<br />".format(vn) if vn != 0. else "")
+        hoverinfo = (
+                "Index: " + net.bus_dc.index.astype(str) + '<br />' +
+                "Name: " + net.bus_dc['name'].astype(str) + '<br />' +
+                'V_n: ' + net.bus_dc['vn_kv'].round(precision).astype(str) + ' kV' + '<br />' + vsc_str).tolist()
     elif element == "line":
         hoverinfo = (
                 "Index: " + net.line.index.astype(str) + '<br />' +
@@ -41,6 +53,14 @@ def get_hoverinfo(net, element, precision=3, sub_index=None):
                 + 'X: ' + (net.line['length_km'] * net.line['x_ohm_per_km'] / net.line['parallel']).round(precision).astype(str)
                 + ' Ohm'
                 + net.line['parallel'].apply(lambda x: f'<br />Parallel: {x}' if x > 1 else  '<br />')).tolist()
+    elif element == "line_dc":
+        hoverinfo = (
+                "Index: " + net.line_dc.index.astype(str) + '<br />' +
+                "Name: " + net.line_dc['name'].astype(str) + '<br />' +
+                'Length: ' + net.line_dc['length_km'].round(precision).astype(str) + ' km' + '<br />' +
+                'R: ' + (net.line_dc['length_km'] * net.line['r_ohm_per_km'] / net.line['parallel']).round(precision).astype(str)
+                + ' Ohm' + '<br />'
+                + net.line_dc['parallel'].apply(lambda x: f'<br />Parallel: {x}' if x > 1 else  '<br />')).tolist()
     elif element == "trafo":
         hoverinfo = (
                 "Index: " + net.trafo.index.astype(str) + '<br />' +
@@ -63,6 +83,13 @@ def get_hoverinfo(net, element, precision=3, sub_index=None):
                 'V_m: ' + net.ext_grid['vm_pu'].round(precision).astype(str) + ' p.u.' + '<br />' +
                 'V_a: ' + net.ext_grid['va_degree'].round(precision).astype(str) + ' °' + '<br />').tolist()
         hover_index = net.ext_grid.bus.tolist()
+    elif element == "vsc":
+        hoverinfo = (
+                "Index: " + net.vsc.index.astype(str) + '<br />' +
+                "Name: " + net.vsc['name'].astype(str) + '<br />' +
+                'P: ' + net.res_vsc['p_mw'].fillna(0).round(precision).astype(str) + ' MW' + '<br />' +
+                'Q: ' + net.res_vsc['q_mvar'].fillna(0).round(precision).astype(str) + ' MVAr' + '<br />').tolist()
+        hover_index = net.vsc.bus.tolist()
     else:
         return None
     hoverinfo = pd.Series(index=hover_index, data=hoverinfo, dtype=object)
@@ -71,8 +98,8 @@ def get_hoverinfo(net, element, precision=3, sub_index=None):
     return hoverinfo
 
 
-def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=False,
-                  projection=None, map_style='basic', figsize=1.0, aspectratio='auto',
+def simple_plotly(net, respect_switches=True, use_line_geo=None, on_map=False,
+                  projection='epsg:4326', map_style='basic', figsize=1.0, aspectratio='auto',
                   line_width=1.0, bus_size=10.0, ext_grid_size=20.0,
                   bus_color="blue", line_color='grey', trafo_color='green',
                   trafo3w_color='green', ext_grid_color="yellow",
@@ -88,8 +115,8 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
     OPTIONAL:
         **respect_switches** (bool, True) - Respect switches when artificial geodata is created
 
-        **use_line_geodata** (bool, True) - defines if lines patches are based on
-        net.line_geodata of the lines (True) or on net.bus_geodata of the connected buses (False)
+        **use_line_geo** (bool, True) - defines if lines patches are based on
+        net.line.geo of the lines (True) or on net.bus.geo of the connected buses (False)
 
         **on_map** (bool, False) - enables using mapbox plot in plotly.
         If provided geodata are not real geo-coordinates in lon/lat form, on_map will be set to False.
@@ -153,7 +180,7 @@ def simple_plotly(net, respect_switches=True, use_line_geodata=None, on_map=Fals
     separator_element = "switch"
     traces, settings = _simple_plotly_generic(net=net,
                                               respect_separators=respect_switches,
-                                              use_branch_geodata=use_line_geodata,
+                                              use_branch_geodata=use_line_geo,
                                               on_map=on_map,
                                               projection=projection,
                                               map_style=map_style,
@@ -208,15 +235,8 @@ def _simple_plotly_generic(net, respect_separators, use_branch_geodata, on_map, 
     settings = dict(on_map=on_map, projection=projection, map_style=map_style, figsize=figsize,
                     aspectratio=aspectratio, filename=filename, auto_open=auto_open,
                     showlegend=showlegend, zoomlevel=zoomlevel)
-    # create geocoord if none are available
-    branch_geodata = branch_element + "_geodata"
-    node_geodata = node_element + "_geodata"
 
-    if branch_geodata not in net:
-        net[branch_geodata] = pd.DataFrame(columns=['coords'])
-    if node_geodata not in net:
-        net[node_geodata] = pd.DataFrame(columns=["x", "y"])
-    if len(net[node_geodata]) == 0:
+    if len(net[node_element]["geo"].dropna()) == 0:
         logger.warning("No or insufficient geodata available --> Creating artificial coordinates." +
                        " This may take some time...")
         create_generic_coordinates(net, respect_switches=respect_separators)
@@ -224,19 +244,19 @@ def _simple_plotly_generic(net, respect_separators, use_branch_geodata, on_map, 
             logger.warning(
                 "Map plots not available with artificial coordinates and will be disabled!")
             on_map = False
-    # check if geodata are real geographycal lat/lon coordinates using geopy
+    # check if geodata are real geographical lat/lon coordinates using geopy
     if on_map and projection is not None:
         geo_data_to_latlong(net, projection=projection)
     # ----- Nodes (Buses) ------
-    # initializating node trace
+    # initializing node trace
     hoverinfo = hoverinfo_func(net, element=node_element)
     node_trace = node_trace_func(net, net[node_element].index, size=node_size, color=node_color,
                                     infofunc=hoverinfo)
     # ----- branches (Lines) ------
     # if node geodata is available, but no branch geodata
     if use_branch_geodata is None:
-        use_branch_geodata = False if len(net[branch_geodata]) == 0 else True
-    elif use_branch_geodata and len(net[branch_geodata]) == 0:
+        use_branch_geodata = False if len(net[branch_element]["geo"]) == 0 else True
+    elif use_branch_geodata and len(net[branch_element]["geo"]) == 0:
         logger.warning(
             "No or insufficient line geodata available --> only bus geodata will be used.")
         use_branch_geodata = False
@@ -254,14 +274,14 @@ def _simple_plotly_generic(net, respect_separators, use_branch_geodata, on_map, 
         hoverinfo = hoverinfo_func(net, element=trans_element)
         trans_trace = create_trafo_trace(net, color=trafo_color, width=branch_width * 5,
                                          infofunc=hoverinfo,
-                                         use_line_geodata=use_branch_geodata)
+                                         use_line_geo=use_branch_geodata)
     # ----- 3W Trafos ------
     if 'trafo3w' in net and len(net.trafo3w):
         hoverinfo = hoverinfo_func(net, element=trans3w_element)
         trans_trace3w = create_trafo_trace(net, color=trafo3w_color, trafotype='3W',
                                            width=branch_width * 5,
                                           trace_name='3W transformers', infofunc=hoverinfo,
-                                          use_line_geodata=use_branch_geodata)
+                                          use_line_geo=use_branch_geodata)
     # ----- Ext grid ------
     # get external grid from _create_node_trace
     if 'ext_grid' in net and len(net.ext_grid):

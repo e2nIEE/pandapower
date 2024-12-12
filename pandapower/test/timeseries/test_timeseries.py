@@ -107,8 +107,8 @@ def test_const_control(simple_test_net):
 
     run_timeseries(net, time_steps, verbose=False)
 
-    assert np.alltrue(profiles['load1'].values * 0.85 == ow.output['load.p_mw'][0].values)
-    assert np.alltrue(profiles['slack_v'].values == ow.output['res_bus.vm_pu'][0].values)
+    assert np.all(profiles['load1'].values * 0.85 == ow.output['load.p_mw'][0].values)
+    assert np.all(profiles['slack_v'].values == ow.output['res_bus.vm_pu'][0].values)
 
 
 def test_switch_states_in_time_series():
@@ -159,8 +159,8 @@ def test_const_control_write_to_object_attribute(simple_test_net):
 
     run_timeseries(net, time_steps, verbose=False)
 
-    assert np.alltrue(profiles['load1'].values * 0.85 == ow.output['load.p_mw'][0].values)
-    assert np.alltrue(profiles['slack_v'].values == ow.output['res_bus.vm_pu'][0].values)
+    assert np.all(profiles['load1'].values * 0.85 == ow.output['load.p_mw'][0].values)
+    assert np.all(profiles['slack_v'].values == ow.output['res_bus.vm_pu'][0].values)
     assert np.allclose(profiles['trafo_v'].values, ow.output['res_bus.vm_pu'][net.trafo.at[0, 'lv_bus']].values, atol=1e-3, rtol=0)
 
 
@@ -380,4 +380,4 @@ def test_user_pf_options_recycle_manual(simple_test_net):
 
 
 if __name__ == '__main__':
-    pytest.main(['-s', __file__])
+    pytest.main([__file__, "-xs"])

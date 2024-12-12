@@ -34,7 +34,7 @@ def add_network(net, vector_group):
 
     pp.create_std_type(net, {"r_ohm_per_km": 0.122, "x_ohm_per_km": 0.112, "c_nf_per_km": 304,
                          "max_i_ka": 0.421, "endtemp_degree": 70.0, "r0_ohm_per_km": 0.244,
-                         "x0_ohm_per_km": 0.336, "c0_nf_per_km": 2000}, "unsymmetric_line_type")
+                         "x0_ohm_per_km": 0.336, "c0_nf_per_km": 2000,  "g0_us_per_km": 0}, "unsymmetric_line_type")
     l1 = pp.create_line(net, b2, b3, length_km=10, std_type="unsymmetric_line_type",
                    index=pp.get_free_id(net.line)+1)
     l2 = pp.create_line(net, b3, b4, length_km=15, std_type="unsymmetric_line_type")
@@ -194,9 +194,9 @@ def test_1ph_with_switches(inverse_y):
 
 def single_3w_trafo_grid(vector_group, sn_mva=123):
     net = pp.create_empty_network(sn_mva=sn_mva)
-    b1 = pp.create_bus(net, vn_kv=380.)
-    b2 = pp.create_bus(net, vn_kv=110.)
-    b3 = pp.create_bus(net, vn_kv=30.)
+    b1 = pp.create_bus(net, vn_kv=380., geodata=(1,1))
+    b2 = pp.create_bus(net, vn_kv=110., geodata=(0,1))
+    b3 = pp.create_bus(net, vn_kv=30., geodata=(1,0))
     pp.create_ext_grid(net, b1, s_sc_max_mva=1000, s_sc_min_mva=800,
                        rx_max=0.1, x0x_max=1, r0x0_max=0.1,
                        rx_min=0.1, x0x_min=1, r0x0_min=0.1)
@@ -312,8 +312,8 @@ def iec_60909_4_t1():
 def vde_232():
     net = pp.create_empty_network(sn_mva=12)
     # hv buses
-    pp.create_bus(net, 110)
-    pp.create_bus(net, 21)
+    pp.create_bus(net, 110, geodata=(0,0))
+    pp.create_bus(net, 21, geodata=(1,0))
 
     pp.create_ext_grid(net, 0, s_sc_max_mva=13.61213 * 110 * np.sqrt(3), rx_max=0.20328,
                        x0x_max=3.47927, r0x0_max=3.03361*0.20328/3.47927)
@@ -531,7 +531,7 @@ def test_sc_1ph_impedance():
                        rx_max=0.1, x0x_max=1, r0x0_max=0.1,
                        rx_min=0.1, x0x_min=1, r0x0_min=0.1)
     pp.create_impedance(net, 0, 1, rft_pu=0.2, xft_pu=0.4, sn_mva=50, rtf_pu=0.25, xtf_pu=0.5,
-                        rft0_pu=0.1, xft0_pu=0.2, rtf0_pu=0.05, xtf0_pu=0.1)
+                        rft0_pu=0.1, xft0_pu=0.2, rtf0_pu=0.05, xtf0_pu=0.1, gf0_pu=0, bf0_pu=0)
 
     sc.calc_sc(net, fault="1ph")
 

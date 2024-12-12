@@ -5,22 +5,13 @@
 
 
 import os
-import numpy as np
-
-from pandapower.auxiliary import ppException
+from pandapower.plotting import geo
 
 try:
     import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 logger = logging.getLogger(__name__)
-
-
-class MapboxTokenMissing(ppException):
-    """
-    Exception being raised in case loadflow did not converge.
-    """
-    pass
 
 
 def _on_map_test(x, y):
@@ -62,43 +53,45 @@ def geo_data_to_latlong(net, projection):
                 - "epsg:2032" - NAD27(CGQ77) / UTM zone 18N
                 - "epsg:2190" - Azores Oriental 1940 / UTM zone 26N
     """
-    try:
-        from pyproj import Proj, transform
-    except ImportError:
-        raise ImportError('Geo-coordinates check cannot be peformed because pyproj package not available \n\t--> '
-                       'if geo-coordinates are not in lat/lon format an empty plot may appear...')
+    geo.convert_crs(net, epsg_in=projection.split(':')[1], epsg_out=4326)
 
-    if projection == 'epsg:4326':
-        return
-
-    wgs84 = Proj(init='epsg:4326')  # lat/long
-
-    try:
-        projection = Proj(init=projection)
-    except:
-        logger.warning("Transformation of geodata to lat/long failed! because of:]\n"
-                       "Unknown projection provided "
-                         "(format 'epsg:<number>' required as available at http://spatialreference.org/ref/epsg/ )")
-        return
-
-    # transform all geodata to long/lat using set or found projection
-    try:
-        lon, lat = transform(projection, wgs84, net.bus_geodata.loc[:, 'x'].values, net.bus_geodata.loc[:, 'y'].values)
-        net.bus_geodata.loc[:, 'x'], net.bus_geodata.loc[:, 'y'] =  lon, lat
-
-        if net.line_geodata.shape[0] > 0:
-            for idx in net.line_geodata.index:
-                line_coo = np.array(net.line_geodata.loc[idx, 'coords'])
-                lon, lat = transform(projection, wgs84, line_coo[:, 0], line_coo[:, 1])
-                net.line_geodata.loc[idx, 'coords'] = np.array([lon, lat]).T.tolist()
-        return
-    except:
-        logger.warning('Transformation of geodata to lat/long failed!')
-        return
+    # try:
+    #     from pyproj import Proj, transform
+    # except ImportError:
+    #     raise ImportError('Geo-coordinates check cannot be peformed because pyproj package not available \n\t--> '
+    #                    'if geo-coordinates are not in lat/lon format an empty plot may appear...')
+    #
+    # if projection == 'epsg:4326':
+    #     return
+    #
+    # wgs84 = Proj(init='epsg:4326')  # lat/long
+    #
+    # try:
+    #     projection = Proj(init=projection)
+    # except:
+    #     logger.warning("Transformation of geodata to lat/long failed! because of:]\n"
+    #                    "Unknown projection provided "
+    #                      "(format 'epsg:<number>' required as available at http://spatialreference.org/ref/epsg/ )")
+    #     return
+    #
+    # # transform all geodata to long/lat using set or found projection
+    # try:
+    #     lon, lat = transform(projection, wgs84, net.bus_geodata.loc[:, 'x'].values, net.bus_geodata.loc[:, 'y'].values)
+    #     net.bus_geodata.loc[:, 'x'], net.bus_geodata.loc[:, 'y'] =  lon, lat
+    #
+    #     if net.line_geodata.shape[0] > 0:
+    #         for idx in net.line_geodata.index:
+    #             line_coo = np.array(net.line_geodata.loc[idx, 'coords'])
+    #             lon, lat = transform(projection, wgs84, line_coo[:, 0], line_coo[:, 1])
+    #             net.line_geodata.loc[idx, 'coords'] = np.array([lon, lat]).T.tolist()
+    #     return
+    # except:
+    #     logger.warning('Transformation of geodata to lat/long failed!')
+    #     return
 
 
 def set_mapbox_token(token):
-    from pandapower import pp_dir
+    from pandapower.__init__ import pp_dir
     path = os.path.join(pp_dir, "plotting", "plotly")
     filename = os.path.join(path, 'mapbox_token.txt')
     with open(filename, "w") as mapbox_file:
@@ -106,7 +99,7 @@ def set_mapbox_token(token):
 
 
 def _get_mapbox_token():
-    from pandapower import pp_dir
+    from pandapower.__init__ import pp_dir
     path = os.path.join(pp_dir, "plotting", "plotly")
     filename = os.path.join(path, 'mapbox_token.txt')
     with open(filename, "r") as mapbox_file:

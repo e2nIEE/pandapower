@@ -6,24 +6,30 @@
 import numpy as np
 import pandapower.auxiliary as aux
 from pandapower.build_branch import _switch_branches, _branches_with_oos_buses, \
-    _build_branch_ppc, _build_tcsc_ppc
+    _build_branch_ppc, _build_tcsc_ppc, _build_branch_dc_ppc
 from pandapower.build_bus import _build_bus_ppc, _calc_pq_elements_and_add_on_ppc, \
     _calc_shunts_and_add_on_ppc, _add_ext_grid_sc_impedance, _add_motor_impedances_ppc, \
-    _build_svc_ppc, _add_load_sc_impedances_ppc, _build_ssc_ppc
+    _build_svc_ppc, _add_load_sc_impedances_ppc, _build_ssc_ppc, _build_vsc_ppc, _build_bus_dc_ppc
 from pandapower.build_gen import _build_gen_ppc, _check_voltage_setpoints_at_same_bus, \
     _check_voltage_angles_at_same_bus, _check_for_reference_bus
 from pandapower.opf.make_objective import _make_objective
 from pandapower.pypower.idx_area import PRICE_REF_BUS
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
-from pandapower.pypower.idx_bus import NONE, BUS_I, BUS_TYPE
+from pandapower.pypower.idx_brch_dc import DC_F_BUS, DC_T_BUS, DC_BR_STATUS
+from pandapower.pypower.idx_bus import NONE, BUS_I, BUS_TYPE, REF
+from pandapower.pypower.idx_bus_dc import DC_BUS_I, DC_BUS_TYPE, DC_NONE, DC_B2B
 from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS
 from pandapower.pypower.idx_ssc import SSC_STATUS, SSC_BUS, SSC_INTERNAL_BUS
 from pandapower.pypower.idx_tcsc import TCSC_STATUS, TCSC_F_BUS, TCSC_T_BUS
 from pandapower.pypower.idx_svc import SVC_STATUS, SVC_BUS
+from pandapower.pypower.idx_vsc import VSC_BUS, VSC_INTERNAL_BUS, VSC_BUS_DC, VSC_STATUS, VSC_MODE_AC, VSC_MODE_AC_V, \
+    VSC_MODE_AC_Q, VSC_MODE_AC_SL, VSC_INTERNAL_BUS_DC
 from pandapower.pypower.run_userfcn import run_userfcn
+from itertools import combinations
 
 
 def _pd2ppc_recycle(net, sequence, recycle):
+    # todo for FACTS and DC elements: SVC, TCSC, SSC, VSC
     key = "_ppc" if sequence is None else "_ppc%d" % sequence
     if not recycle or not net.get(key, None):
         return _pd2ppc(net, sequence=sequence)
@@ -57,7 +63,37 @@ def _pd2ppc_recycle(net, sequence, recycle):
     return ppc, ppci
 
 
-def _pd2ppc(net, sequence=None):
+def _check_line_dc_at_b2b_buses(ppci):
+    b2b_buses = ppci["bus_dc"][ppci["bus_dc"][:, DC_BUS_TYPE] == DC_B2B, DC_BUS_I].astype(np.int64)
+    intersect_from = np.intersect1d(ppci["branch_dc"][:, DC_F_BUS].astype(np.int64), b2b_buses)
+    intersect_to = np.intersect1d(ppci["branch_dc"][:, DC_T_BUS].astype(np.int64), b2b_buses)
+    if len(intersect_from) != 0 or len(intersect_to) != 0:
+        raise NotImplementedError("Found DC lines connected to Back-To-Back VSC converter configuration - "
+                                  "not implemented. DC lines can only connect to the DC buses that are not "
+                                  "part of a Back-To-Back configuration.")
+
+
+def _check_vsc_different_ac_control_modes_at_same_bus(ppci):
+    ac_vm_pu_buses = ppci["vsc"][ppci["vsc"][:, VSC_MODE_AC] == VSC_MODE_AC_V, VSC_BUS]
+    ac_q_mvar_buses = ppci["vsc"][ppci["vsc"][:, VSC_MODE_AC] == VSC_MODE_AC_Q, VSC_BUS]
+    ac_slack_buses = ppci["vsc"][ppci["vsc"][:, VSC_MODE_AC] == VSC_MODE_AC_SL, VSC_BUS]
+    ac_bus_intersection = np.hstack([np.intersect1d(a, b) for a, b in combinations([ac_vm_pu_buses, ac_q_mvar_buses, ac_slack_buses], r=2)])
+    if len(ac_bus_intersection) != 0:
+        raise NotImplementedError("Found multiple VSC converters that share the same AC bus and have "
+                                  "different AC control modes - not implemented. VSC converters can only "
+                                  "have the same AC control mode if they share the same AC bus.")
+
+
+def _check_slack_at_vsc_bus(ppci):
+    vsc_buses = ppci["vsc"][:, VSC_BUS]
+    ac_slack_buses = ppci["gen"][ppci["internal"]["ref_gens"], GEN_BUS]
+    ac_bus_intersection = np.intersect1d(vsc_buses, ac_slack_buses)
+    if len(ac_bus_intersection) != 0:
+        raise NotImplementedError("Found VSC elements connected to AC slack buses - "
+                                  "this configuration is not implemented.")
+
+
+def _pd2ppc(net, sequence=None, **kwargs):
     """
     Converter Flow:
         1. Create an empty pypower datatructure
@@ -109,6 +145,7 @@ def _pd2ppc(net, sequence=None):
 
     # generate ppc['bus'] and the bus lookup
     _build_bus_ppc(net, ppc, sequence=sequence)
+    _build_bus_dc_ppc(net, ppc)
     if sequence == 0:
         from pandapower.pd2ppc_zero import _add_ext_grid_sc_impedance_zero, _build_branch_ppc_zero
         # Adds external grid impedance for 3ph and sc calculations in ppc0
@@ -116,12 +153,16 @@ def _pd2ppc(net, sequence=None):
         # Calculates ppc0 branch impedances from branch elements
         _build_branch_ppc_zero(net, ppc)
     else:
+        # get config if trafo3w vk and vkr values should be recalculated
+        update_vk_values = kwargs.get("update_vk_values", True)
         # Calculates ppc1/ppc2 branch impedances from branch elements
-        _build_branch_ppc(net, ppc)
+        _build_branch_ppc(net, ppc, update_vk_values)
+    _build_branch_dc_ppc(net, ppc)
 
     _build_tcsc_ppc(net, ppc, mode)
     _build_svc_ppc(net, ppc, mode)
     _build_ssc_ppc(net, ppc, mode)
+    _build_vsc_ppc(net, ppc, mode)
 
     # Adds P and Q for loads / sgens in ppc['bus'] (PQ nodes)
     if mode == "sc":
@@ -146,12 +187,13 @@ def _pd2ppc(net, sequence=None):
     if check_connectivity:
         if sequence in [None, 1, 2]:
             # sets islands (multiple isolated nodes) out of service
-            if "opf" in mode:
+            if mode == "opf":
                 net["_isolated_buses"], _, _ = aux._check_connectivity_opf(ppc)
+                net["_isolated_buses_dc"] = np.array([], dtype=np.int64)
             else:
-                net["_isolated_buses"], _, _ = aux._check_connectivity(ppc)
-            net["_is_elements_final"] = aux._select_is_elements_numba(net,
-                                                                      net._isolated_buses, sequence)
+                net["_isolated_buses"], _, _, net["_isolated_buses_dc"], _, _ = aux._check_connectivity(ppc)
+            net["_is_elements_final"] = aux._select_is_elements_numba(net, net._isolated_buses,
+                                                                      net._isolated_buses_dc, sequence)
         else:
             ppc["bus"][net._isolated_buses, BUS_TYPE] = NONE
         net["_is_elements"] = net["_is_elements_final"]
@@ -159,10 +201,11 @@ def _pd2ppc(net, sequence=None):
         # sets buses out of service, which aren't connected to branches / REF buses
         aux._set_isolated_buses_out_of_service(net, ppc)
 
-    _build_gen_ppc(net, ppc)
-
+    # we need to check this after checking connectivity (isolated vsc as DC slack cause change of DC_REF to DC_P)
     if "pf" in mode:
         _check_for_reference_bus(ppc)
+
+    _build_gen_ppc(net, ppc)
 
     aux._replace_nans_with_default_limits(net, ppc)
 
@@ -170,6 +213,10 @@ def _pd2ppc(net, sequence=None):
     # from "external" ppc format and updates the bus lookup
     # Note: Also reorders buses and gens in ppc
     ppci = _ppc2ppci(ppc, net)
+
+    _check_line_dc_at_b2b_buses(ppci)
+    _check_vsc_different_ac_control_modes_at_same_bus(ppci)
+    # _check_slack_at_vsc_bus(ppci)
 
     if mode == "pf":
         # check if any generators connected to the same bus have different voltage setpoints
@@ -189,16 +236,20 @@ def _init_ppc(net, mode="pf", sequence=None):
     ppc = {"baseMVA": net.sn_mva,
            "version": 2,
            "bus": np.array([], dtype=float),
+           "bus_dc": np.array([], dtype=np.float64),
            "branch": np.array([], dtype=np.complex128),
+           "branch_dc": np.array([], dtype=np.float64),
            "tcsc": np.array([], dtype=np.complex128),
            "svc": np.array([], dtype=np.complex128),
            "ssc": np.array([], dtype=np.complex128),
+           "vsc": np.array([], dtype=np.float64),
            "gen": np.array([], dtype=float),
            "internal": {
                "Ybus": np.array([], dtype=np.complex128),
                "Yf": np.array([], dtype=np.complex128),
                "Yt": np.array([], dtype=np.complex128),
                "branch_is": np.array([], dtype=bool),
+               "branch_dc_is": np.array([], dtype=bool),
                "gen_is": np.array([], dtype=bool),
                "DLF": np.array([], dtype=np.complex128),
                "buses_ord_bfs_nets": np.array([], dtype=float)
@@ -240,27 +291,46 @@ def _ppc2ppci(ppc, net, ppci=None):
     # BUS Sorting and lookups
     # get bus_lookup
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
+    bus_dc_lookup = net["_pd2ppc_lookups"]["bus_dc"]
     # get OOS busses and place them at the end of the bus array
     # (there are no OOS busses in the ppci)
-    oos_busses = ppc['bus'][:, BUS_TYPE] == NONE
-    ppci['bus'] = ppc['bus'][~oos_busses]
+    oos_buses = ppc['bus'][:, BUS_TYPE] == NONE
+    oos_buses_dc = ppc['bus_dc'][:, BUS_TYPE] == DC_NONE
+    ppci['bus'] = ppc['bus'][~oos_buses]
+    ppci['bus_dc'] = ppc['bus_dc'][~oos_buses_dc]
     # in ppc the OOS busses are included and at the end of the array
-    ppc['bus'] = np.vstack([ppc['bus'][~oos_busses], ppc['bus'][oos_busses]])
+    ppc['bus'] = np.vstack([ppc['bus'][~oos_buses], ppc['bus'][oos_buses]])
+    ppc['bus_dc'] = np.vstack([ppc['bus_dc'][~oos_buses_dc], ppc['bus_dc'][oos_buses_dc]])
 
     # generate bus_lookup_ppc_ppci (ppc -> ppci lookup)
     ppc_former_order = (ppc['bus'][:, BUS_I]).astype(np.int64)
     aranged_buses = np.arange(len(ppc["bus"]))
 
+    # generate bus_dc_lookup_ppc_ppci (ppc -> ppci lookup)
+    ppc_former_order_dc = (ppc['bus_dc'][:, DC_BUS_I]).astype(np.int64)
+    aranged_buses_dc = np.arange(len(ppc["bus_dc"]))
+
     # lookup ppc former order -> consecutive order
     e2i = np.zeros(len(ppc["bus"]), dtype=np.int64)
     e2i[ppc_former_order] = aranged_buses
+
+    # dc lookup ppc former order -> consecutive order
+    e2i_dc = np.zeros(len(ppc["bus_dc"]), dtype=np.int64)
+    e2i_dc[ppc_former_order_dc] = aranged_buses_dc
 
     # save consecutive indices in ppc and ppci
     ppc['bus'][:, BUS_I] = aranged_buses
     ppci['bus'][:, BUS_I] = ppc['bus'][:len(ppci['bus']), BUS_I]
 
+    # save consecutive indices in ppc and ppci
+    ppc['bus_dc'][:, DC_BUS_I] = aranged_buses_dc
+    ppci['bus_dc'][:, DC_BUS_I] = ppc['bus_dc'][:len(ppci['bus_dc']), DC_BUS_I]
+
     # update lookups (pandapower -> ppci internal)
     _update_lookup_entries(net, bus_lookup, e2i, "bus")
+
+    # update lookups (pandapower -> ppci internal)
+    _update_lookup_entries(net, bus_dc_lookup, e2i_dc, "bus_dc")
 
     if 'areas' in ppc:
         if len(ppc["areas"]) == 0:  # if areas field is empty
@@ -268,14 +338,21 @@ def _ppc2ppci(ppc, net, ppci=None):
 
     # bus types
     bt = ppc["bus"][:, BUS_TYPE]
+    bt_dc = ppc["bus_dc"][:, DC_BUS_TYPE]
 
     # update branch, gen and areas bus numbering
     ppc['gen'][:, GEN_BUS] = e2i[np.real(ppc["gen"][:, GEN_BUS]).astype(np.int64)].copy()
     ppc['svc'][:, SVC_BUS] = e2i[np.real(ppc["svc"][:, SVC_BUS]).astype(np.int64)].copy()
     ppc['ssc'][:, SSC_BUS] = e2i[np.real(ppc["ssc"][:, SSC_BUS]).astype(np.int64)].copy()
     ppc['ssc'][:, SSC_INTERNAL_BUS] = e2i[np.real(ppc["ssc"][:, SSC_INTERNAL_BUS]).astype(np.int64)].copy()
+    ppc['vsc'][:, VSC_BUS] = e2i[np.real(ppc["vsc"][:, VSC_BUS]).astype(np.int64)].copy()
+    ppc['vsc'][:, VSC_INTERNAL_BUS] = e2i[np.real(ppc["vsc"][:, VSC_INTERNAL_BUS]).astype(np.int64)].copy()
+    ppc['vsc'][:, VSC_BUS_DC] = e2i_dc[np.real(ppc["vsc"][:, VSC_BUS_DC]).astype(np.int64)].copy()
+    ppc['vsc'][:, VSC_INTERNAL_BUS_DC] = e2i_dc[np.real(ppc["vsc"][:, VSC_INTERNAL_BUS_DC]).astype(np.int64)].copy()
     ppc["branch"][:, F_BUS] = e2i[np.real(ppc["branch"][:, F_BUS]).astype(np.int64)].copy()
     ppc["branch"][:, T_BUS] = e2i[np.real(ppc["branch"][:, T_BUS]).astype(np.int64)].copy()
+    ppc["branch_dc"][:, DC_F_BUS] = e2i_dc[np.real(ppc["branch_dc"][:, DC_F_BUS]).astype(np.int64)].copy()
+    ppc["branch_dc"][:, DC_T_BUS] = e2i_dc[np.real(ppc["branch_dc"][:, DC_T_BUS]).astype(np.int64)].copy()
     ppc["tcsc"][:, TCSC_F_BUS] = e2i[np.real(ppc["tcsc"][:, TCSC_F_BUS]).astype(np.int64)].copy()
     ppc["tcsc"][:, TCSC_T_BUS] = e2i[np.real(ppc["tcsc"][:, TCSC_T_BUS]).astype(np.int64)].copy()
 
@@ -298,6 +375,9 @@ def _ppc2ppci(ppc, net, ppci=None):
     n2i = ppc["bus"][:, BUS_I].astype(np.int64)
     bs = (bt != NONE)  # bus status
 
+    n2i_dc = ppc["bus_dc"][:, DC_BUS_I].astype(np.int64)
+    bs_dc = (bt_dc != DC_NONE)  # bus status
+
     gs = ((ppc["gen"][:, GEN_STATUS] > 0) &  # gen status
           bs[n2i[np.real(ppc["gen"][:, GEN_BUS]).astype(np.int64)]])
     ppci["internal"]["gen_is"] = gs
@@ -311,10 +391,22 @@ def _ppc2ppci(ppc, net, ppci=None):
           bs[n2i[np.real(ppc["ssc"][:, SSC_INTERNAL_BUS]).astype(np.int64)]])
     ppci["internal"]["ssc_is"] = sscs
 
+    vscs = ((ppc["vsc"][:, VSC_STATUS] > 0) &  # vsc status
+          bs[n2i[np.real(ppc["vsc"][:, VSC_BUS]).astype(np.int64)]] &
+          bs[n2i[np.real(ppc["vsc"][:, VSC_INTERNAL_BUS]).astype(np.int64)]] &
+          bs_dc[n2i_dc[np.real(ppc["vsc"][:, VSC_BUS_DC]).astype(np.int64)]] &
+          bs_dc[n2i_dc[np.real(ppc["vsc"][:, VSC_INTERNAL_BUS_DC]).astype(np.int64)]])
+    ppci["internal"]["vsc_is"] = vscs
+
     brs = (np.real(ppc["branch"][:, BR_STATUS]).astype(np.int64) &  # branch status
            bs[n2i[np.real(ppc["branch"][:, F_BUS]).astype(np.int64)]] &
            bs[n2i[np.real(ppc["branch"][:, T_BUS]).astype(np.int64)]]).astype(bool)
     ppci["internal"]["branch_is"] = brs
+
+    brs_dc = (np.real(ppc["branch_dc"][:, DC_BR_STATUS]).astype(np.int64) &  # branch status
+           bs_dc[n2i_dc[np.real(ppc["branch_dc"][:, DC_F_BUS]).astype(np.int64)]] &
+           bs_dc[n2i_dc[np.real(ppc["branch_dc"][:, DC_T_BUS]).astype(np.int64)]]).astype(bool)
+    ppci["internal"]["branch_dc_is"] = brs_dc
 
     trs = (np.real(ppc["tcsc"][:, TCSC_STATUS]).astype(np.int64) &  # branch status
            bs[n2i[np.real(ppc["tcsc"][:, TCSC_F_BUS]).astype(np.int64)]] &
@@ -328,11 +420,13 @@ def _ppc2ppci(ppc, net, ppci=None):
 
     # select in service elements from ppc and put them in ppci
     ppci["branch"] = ppc["branch"][brs]
+    ppci["branch_dc"] = ppc["branch_dc"][brs_dc]
     ppci["tcsc"] = ppc["tcsc"][trs]
 
     ppci["gen"] = ppc["gen"][gs]
     ppci["svc"] = ppc["svc"][svcs]
     ppci["ssc"] = ppc["ssc"][sscs]
+    ppci["vsc"] = ppc["vsc"][vscs]
 
     if 'dcline' in ppc:
         ppci['dcline'] = ppc['dcline']
