@@ -177,12 +177,12 @@ def runpp(net, algorithm='nr', calculate_voltage_angles=True, init="auto",
 
         **KWARGS**:
 
-        **lightsim2grid** ((bool,str), "auto") - whether to use the package lightsim2grid for power flow backend
+        **lightsim2grid** ((bool,str), "auto") - whether to use the package lightsim2grid for power
+        flow backend. For more details on compatibility, check out pandapower's documentation.
 
-        **numba** (bool, True) - Activation of numba JIT compiler in the newton solver
-
-            If set to True, the numba JIT compiler is used to generate matrices for the powerflow,
-            which leads to significant speed improvements.
+        **numba** (bool, True) - Activation of numba JIT compiler in the newton solver.
+        If set to True, the numba JIT compiler is used to generate matrices for the powerflow,
+        which leads to significant speed improvements.
 
         **switch_rx_ratio** (float, 2) - rx_ratio of bus-bus-switches. If the impedance of switches
         defined in net.switch.z_ohm is zero, buses connected by a closed bus-bus switch are fused to
@@ -225,6 +225,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles=True, init="auto",
 
         **tdpf_update_r_theta** (bool, True) - TDPF parameter, whether to update R_Theta in Newton-Raphson or to assume a constant R_Theta (either from net.line.r_theta, if set, or from a calculation based on the thermal model of Ngoko et.al.)
 
+        **update_vk_values** (bool, True) - If True vk and vkr values of trafo3w are recalculated based on characteristics, otherwise the values from the table are used. Can improve performance for large models.
     """
 
     # if dict 'user_pf_options' is present in net, these options overrule the net._options

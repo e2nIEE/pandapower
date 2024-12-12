@@ -12,7 +12,7 @@ from packaging.version import Version
 
 from pandapower.auxiliary import ets_to_element_types
 
-from pandapower import __version__
+from pandapower._version import __version__
 
 try:
     import pandaplan.core.pplog as logging

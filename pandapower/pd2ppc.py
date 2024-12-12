@@ -93,7 +93,7 @@ def _check_slack_at_vsc_bus(ppci):
                                   "this configuration is not implemented.")
 
 
-def _pd2ppc(net, sequence=None):
+def _pd2ppc(net, sequence=None, **kwargs):
     """
     Converter Flow:
         1. Create an empty pypower datatructure
@@ -153,8 +153,10 @@ def _pd2ppc(net, sequence=None):
         # Calculates ppc0 branch impedances from branch elements
         _build_branch_ppc_zero(net, ppc)
     else:
+        # get config if trafo3w vk and vkr values should be recalculated
+        update_vk_values = kwargs.get("update_vk_values", True)
         # Calculates ppc1/ppc2 branch impedances from branch elements
-        _build_branch_ppc(net, ppc)
+        _build_branch_ppc(net, ppc, update_vk_values)
     _build_branch_dc_ppc(net, ppc)
 
     _build_tcsc_ppc(net, ppc, mode)

@@ -6,7 +6,7 @@ import os
 import pandas as pd
 import pytest
 import numpy as np
-from numpy import in1d, isnan, isclose, allclose
+from numpy import isin, isnan, isclose, allclose
 
 import pandapower as pp
 import pandapower.control
@@ -644,7 +644,7 @@ def test_trafo3w(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=2e-2, l_tol=
 
 @pytest.mark.parametrize("tap_pos", (-1, 2))
 @pytest.mark.parametrize("tap_side", ('hv', 'mv', 'lv'))
-@pytest.mark.parametrize("tap_step_degree", (15, 30))
+@pytest.mark.parametrize("tap_step_degree", (0, 15, 30))
 def test_trafo3w_tap(tap_pos, tap_side, tap_step_degree):
     results = pd.read_csv(os.path.join(pp.pp_dir, "test", "test_files", "test_results_files", "trafo_3w_tap_results.csv"), sep=";", decimal=",")
 
@@ -669,6 +669,41 @@ def test_trafo3w_tap(tap_pos, tap_side, tap_step_degree):
                 "tap_side==@tap_side & tap_pos==@tap_pos & tap_step_degree==@tap_step_degree &"
                 "index==@index & element=='bus' & variable==@variable").value,
                 rtol=0, atol=tol), f"failed for bus {index=}, {variable}, value {net.res_bus.at[index, variable]}"
+
+@pytest.mark.parametrize("tap_pos", (2, 5))
+@pytest.mark.parametrize("tap_side", ('hv', 'mv', 'lv'))
+@pytest.mark.parametrize("tap_step_degree", (0, 15, 30))
+def test_trafo3w_tap_neutral_not_zero(tap_pos, tap_side, tap_step_degree):
+    results = pd.read_csv(os.path.join(pp.pp_dir, "test", "test_files", "test_results_files", "trafo_3w_tap_results_neutral_not_zero.csv"), sep=";", decimal=",")
+
+    if results.query("tap_side == @tap_side & tap_pos == @tap_pos & tap_step_degree == @tap_step_degree").empty:
+        pytest.skip(f"Skipping combination: tap_side={tap_side}, tap_pos={tap_pos}, tap_step_degree={tap_step_degree}")
+
+    net = pp.from_json(os.path.join(pp.pp_dir, "test", "test_files","test_trafo3w_tap.json"))  #
+
+    net.trafo3w.loc[[0, 1], 'tap_min'] += 3
+    net.trafo3w.loc[[0, 1], 'tap_max'] += 3
+    net.trafo3w.loc[[0, 1], 'tap_neutral'] += 3
+
+    net.trafo3w.loc[0, 'tap_at_star_point']= False
+    net.trafo3w.loc[1, 'tap_at_star_point']= True
+
+    net.trafo3w.loc[0, "tap_side"] = tap_side
+    net.trafo3w.loc[1, "tap_side"] = tap_side
+    net.trafo3w.loc[0, "tap_pos"] = tap_pos
+    net.trafo3w.loc[1, "tap_pos"] = tap_pos
+    net.trafo3w.loc[0, "tap_step_degree"] = tap_step_degree
+    net.trafo3w.loc[1, "tap_step_degree"] = tap_step_degree
+    pp.runpp(net)
+
+    for index in range(8):
+        for variable, tol in zip(("vm_pu", "va_degree"), (1e-6, 1e-3)):
+            assert np.isclose(net.res_bus.at[index, variable], results.query(
+                "tap_side==@tap_side & tap_pos==@tap_pos & tap_step_degree==@tap_step_degree &"
+                "index==@index & element=='bus' & variable==@variable").value,
+                rtol=0, atol=tol), f"failed for bus {index=}, {variable}, value {net.res_bus.at[index, variable]}"
+
+
 
 def test_impedance(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
     net = result_test_network
@@ -815,7 +850,7 @@ def test_shunt_split(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_
 def test_open(result_test_network):
     net = result_test_network
     buses = net.bus[net.bus.zone == "two_open_switches_on_deactive_line"]
-    lines = net['line'][in1d(net['line'].from_bus, buses.index) | in1d(net['line'].to_bus, buses.index)]
+    lines = net['line'][isin(net['line'].from_bus, buses.index) | isin(net['line'].to_bus, buses.index)]
 
     assert isnan(net['res_line'].at[lines.index[1], "i_ka"])
 
