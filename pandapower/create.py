@@ -5484,21 +5484,21 @@ def create_measurement(net, meas_type, element_type, value, std_dev, element, si
         raise UserWarning(
             "Voltage measurements can only be placed at buses, not at {}".format(element_type))
 
-    if check_existing:
-        if side is None:
-            existing = net.measurement[(net.measurement.measurement_type == meas_type) &
-                                       (net.measurement.element_type == element_type) &
-                                       (net.measurement.element == element) &
-                                       (pd.isnull(net.measurement.side))].index
-        else:
-            existing = net.measurement[(net.measurement.measurement_type == meas_type) &
-                                       (net.measurement.element_type == element_type) &
-                                       (net.measurement.element == element) &
-                                       (net.measurement.side == side)].index
-        if len(existing) == 1:
-            index = existing[0]
-        elif len(existing) > 1:
-            raise UserWarning("More than one measurement of this type exists")
+    # if check_existing:
+    #     if side is None:
+    #         existing = net.measurement[(net.measurement.measurement_type == meas_type) &
+    #                                    (net.measurement.element_type == element_type) &
+    #                                    (net.measurement.element == element) &
+    #                                    (pd.isnull(net.measurement.side))].index
+    #     else:
+    #         existing = net.measurement[(net.measurement.measurement_type == meas_type) &
+    #                                    (net.measurement.element_type == element_type) &
+    #                                    (net.measurement.element == element) &
+    #                                    (net.measurement.side == side)].index
+    #     if len(existing) == 1:
+    #         index = existing[0]
+    #     elif len(existing) > 1:
+    #         raise UserWarning("More than one measurement of this type exists")
 
     columns = ["name", "measurement_type", "element_type", "element", "value", "std_dev", "side"]
     values = [name, meas_type.lower(), element_type, element, value, std_dev, side]

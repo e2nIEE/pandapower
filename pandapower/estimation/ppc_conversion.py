@@ -180,15 +180,15 @@ def _add_measurements_to_ppci(net, ppci, zero_injection, algorithm):
             if meas_type in ("p", "q"):
                 # Convert injection reference to consumption reference (P, Q)
                 this_meas.value *= -1
-                unique_bus_positions = np.unique(bus_positions)
-                if len(unique_bus_positions) < len(bus_positions):
-                    std_logger.debug("P,Q Measurement duplication will be automatically merged!")
-                    for bus in unique_bus_positions:
-                        this_meas_on_bus = this_meas.iloc[np.argwhere(bus_positions == bus).ravel(), :]
-                        bus_append[bus, BUS_MEAS_PPCI_IX[meas_type]["VALUE"]] = this_meas_on_bus.value.sum()
-                        bus_append[bus, BUS_MEAS_PPCI_IX[meas_type]["STD"]] = this_meas_on_bus.std_dev.max()
-                        bus_append[bus, BUS_MEAS_PPCI_IX[meas_type]["IDX"]] = this_meas_on_bus.index[0]
-                    continue
+            unique_bus_positions = np.unique(bus_positions)
+            if len(unique_bus_positions) < len(bus_positions):
+                std_logger.debug("P,Q Measurement duplication will be automatically merged!")
+                for bus in unique_bus_positions:
+                    this_meas_on_bus = this_meas.iloc[np.argwhere(bus_positions == bus).ravel(), :]
+                    bus_append[bus, BUS_MEAS_PPCI_IX[meas_type]["VALUE"]] = this_meas_on_bus.value.sum()
+                    bus_append[bus, BUS_MEAS_PPCI_IX[meas_type]["STD"]] = this_meas_on_bus.std_dev.max()
+                    bus_append[bus, BUS_MEAS_PPCI_IX[meas_type]["IDX"]] = this_meas_on_bus.index[0]
+                continue
 
             bus_append[bus_positions, BUS_MEAS_PPCI_IX[meas_type]["VALUE"]] = this_meas.value.values
             bus_append[bus_positions, BUS_MEAS_PPCI_IX[meas_type]["STD"]] = this_meas.std_dev.values
@@ -294,7 +294,7 @@ def _add_zero_injection(net, ppci, bus_append, zero_injection):
         if isinstance(zero_injection, str):
             if zero_injection == 'auto':
                 # identify bus without elements and pq measurements as zero injection
-                zero_inj_bus_mask = (ppci["bus"][:, 1] == 1) & (ppci["bus"][:, 2:6] == 0).all(axis=1) & \
+                zero_inj_bus_mask = (ppci["bus"][:, 1] == 1) & (ppci["bus"][:, 2:4] == 0).all(axis=1) & \
                                     np.isnan(bus_append[:, P:(Q_STD + 1)]).all(axis=1)
                 bus_append[zero_inj_bus_mask, ZERO_INJ_FLAG] = True
             elif zero_injection != "aux_bus":
