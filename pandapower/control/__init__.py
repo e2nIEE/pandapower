@@ -21,4 +21,3 @@ from pandapower.control.run_control import *
 from pandapower.control.util.characteristic import Characteristic, SplineCharacteristic
 from pandapower.control.util.auxiliary import (get_controller_index, plot_characteristic, _create_trafo_characteristics,
                                                create_trafo_characteristic_object)
-from pandapower.control.util.diagnostic import trafo_characteristic_table_diagnostic
