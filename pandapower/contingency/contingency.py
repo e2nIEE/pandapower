@@ -176,11 +176,12 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=pp.
         raise UserWarning("bus index must be continuous and start with 0 (use pandapower.create_continuous_bus_index)")
     contingency_evaluation_function(net, **kwargs)
 
-    trafo_flag = False
     if "tap_phase_shifter_type" in net.trafo.columns:
         if np.any(net.trafo.tap_phase_shifter_type == 2):
-            trafo_flag = True
             tap_phase_shifter_type, tap_pos, shift_degree = _convert_trafo_phase_shifter(net)
+            net.trafo.tap_phase_shifter_type = tap_phase_shifter_type
+            net.trafo.tap_pos = tap_pos
+            net.trafo.shift_degree = shift_degree
 
     # setting "slack" back-and-forth is due to the difference in interpretation of generators as "distributed slack"
     if net._options.get("distributed_slack", False):
@@ -196,11 +197,6 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=pp.
     else:
         lightsim_grid_model = init_ls2g(net)
         solver_type = SolverType.KLUSingleSlack if KLU_solver_available else SolverType.SparseLUSingleSlack
-
-    if trafo_flag:
-        net.trafo.tap_phase_shifter_type = tap_phase_shifter_type
-        net.trafo.tap_pos = tap_pos
-        net.trafo.shift_degree = shift_degree
 
     n_lines = len(net.line)
     n_lines_cases = len(nminus1_cases.get("line", {}).get("index", []))

@@ -620,13 +620,13 @@ def _calc_tap_from_dataframe(net, trafo_df):
                 id_characteristic_table = get_trafo_values(trafo_df, "id_characteristic_table")
                 for side, vn, direction in [("hv", vnh, 1), ("lv", vnl, -1)]:
                     mask = tap_table & (side == tap_side)
-                    filter = pd.DataFrame({
+                    filter_df = pd.DataFrame({
                         'id_characteristic': id_characteristic_table,
                         'step': tap_pos,
                         'mask': mask
                     })
 
-                    filtered_df = net.trafo_characteristic_table.merge(filter[filter['mask']],
+                    filtered_df = net.trafo_characteristic_table.merge(filter_df[filter_df['mask']],
                                                                        on=['id_characteristic', 'step'])
                     vn[mask] = vn[mask] * filtered_df['voltage_ratio']
                     trafo_shift[mask] += filtered_df['angle_deg']
@@ -649,7 +649,7 @@ def _calc_tap_from_dataframe(net, trafo_df):
                             (direction * 2 * np.rad2deg(np.arcsin(tap_diff[mask_ideal] *
                                                                   tap_step_percent[mask_ideal] / 100 / 2)))
                         )
-                    elif any(mask_complex):
+                    if any(mask_complex):
                         tap_steps = tap_step_percent[mask_complex] * tap_diff[mask_complex] / 100
                         tap_angles = _replace_nan(tap_step_degree[mask_complex])
                         u1 = vn[mask_complex]
@@ -711,19 +711,19 @@ def _get_vk_values_from_table(trafo_df, trafo_characteristic_table, trafotype="2
 
     vals = ()
 
-    for c, vk_var in enumerate(vk_variables):
+    for _, vk_var in enumerate(vk_variables):
         vk_value = get_trafo_values(trafo_df, vk_var)
         if any(tap_dependency_table):
             id_characteristic_table = get_trafo_values(trafo_df, "id_characteristic_table")
 
             mask = tap_dependency_table
-            filter = pd.DataFrame({
+            filter_df = pd.DataFrame({
                 'id_characteristic': id_characteristic_table,
                 'step': tap_pos,
                 'mask': mask
             })
 
-            filtered_df = trafo_characteristic_table.merge(filter[filter['mask']], on=['id_characteristic', 'step'])
+            filtered_df = trafo_characteristic_table.merge(filter_df[filter_df['mask']], on=['id_characteristic', 'step'])
             vk_value[mask] = filtered_df[vk_var]
 
             vals += (vk_value,)
@@ -783,7 +783,7 @@ def _get_vk_values(trafo_df, characteristic, trafotype="2W"):
 
     vals = ()
 
-    for c, vk_var in enumerate(vk_variables):
+    for _, vk_var in enumerate(vk_variables):
         vk_value = get_trafo_values(trafo_df, vk_var)
         if use_tap_dependent_impedance and vk_var in char_columns:
             vals += (_calc_tap_dependent_value(
@@ -1346,12 +1346,6 @@ def _trafo_df_from_trafo3w(net, sequence=1, update_vk_values=True):
     trafo2["vn_lv_kv"] = {side: t3["vn_%s_kv" % side].values for side in sides}
     trafo2["shift_degree"] = {"hv": np.zeros(nr_trafos), "mv": t3.shift_mv_degree.values,
                               "lv": t3.shift_lv_degree.values}
-    # if 'tap_dependency_table' in t3:
-    #     trafo2["tap_phase_shifter_type"] = {side: t3.tap_phase_shifter_type for side in sides}
-    #     trafo2["tap_dependency_table"] = {side: t3.tap_dependency_table for side in sides}
-    #     trafo2["id_characteristic_table"] = {side: t3.id_characteristic_table for side in sides}
-    # else:
-    #     trafo2["tap_phase_shifter"] = {side: np.zeros(nr_trafos).astype(bool) for side in sides}
     for param in ["tap_phase_shifter_type", "tap_dependency_table", "id_characteristic_table", "tap_phase_shifter"]:
         if param in t3:
             trafo2[param] = {side: t3[param] for side in sides}

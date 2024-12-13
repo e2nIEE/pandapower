@@ -8,6 +8,7 @@ import pytest
 
 from pandapower.converter.powerfactory.validate import validate_pf_conversion
 from pandapower.converter.powerfactory.export_pfd_to_pp import import_project, from_pfd
+from pandapower.convert_format import _convert_trafo_pst_logic
 
 try:
     import pandaplan.core.pplog as logging

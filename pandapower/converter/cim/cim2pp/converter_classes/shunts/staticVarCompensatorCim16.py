@@ -2,7 +2,6 @@ import logging
 import time
 
 import pandas as pd
-import numpy as np
 
 from pandapower.converter.cim import cim_tools
 from pandapower.converter.cim.cim2pp import build_pp_net
