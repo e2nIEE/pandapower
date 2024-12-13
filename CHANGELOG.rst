@@ -10,6 +10,7 @@ Change Log
 - [CHANGED] Capitalize first letter of columns busbar_id, busbar_name and substation_id in bus df for cim converter
 - [FIXED] Do not modify pandas options when importing pandapower
 - [FIXED] fixed copy-paste error in contingency results "max_limit_nminus1" and "min_limit_nminus1"
+- [FIXED] default elements in toolbox function add_zones_to_elements()
 - [ADDED] improved lightsim2grid documentation including compatibitliy issues
 - [FIXED] cim2pp: set default xml encoding to None to avoid error after changing to lxml
 - [FIXED] PandaModels OPF with 'bus_dc' key errors
