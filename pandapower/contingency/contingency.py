@@ -176,10 +176,10 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=pp.
         raise UserWarning("bus index must be continuous and start with 0 (use pandapower.create_continuous_bus_index)")
     contingency_evaluation_function(net, **kwargs)
 
-    if "tap_phase_shifter_type" in net.trafo.columns:
-        if np.any(net.trafo.tap_phase_shifter_type == 2):
-            tap_phase_shifter_type, tap_pos, shift_degree = _convert_trafo_phase_shifter(net)
-            net.trafo.tap_phase_shifter_type = tap_phase_shifter_type
+    if "tap_changer_type" in net.trafo.columns:
+        if np.any(net.trafo.tap_changer_type == "Ideal"):
+            tap_changer_type, tap_pos, shift_degree = _convert_trafo_phase_shifter(net)
+            net.trafo.tap_changer_type = tap_changer_type
             net.trafo.tap_pos = tap_pos
             net.trafo.shift_degree = shift_degree
 
@@ -290,7 +290,7 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=pp.
 
 
 def _convert_trafo_phase_shifter(net):
-    tap_phase_shifter_type = net.trafo.tap_phase_shifter_type.values.copy()
+    tap_changer_type = net.trafo.tap_changer_type.values.copy()
     # vn_hv_kv = net.trafo.vn_hv_kv.values.copy()
     shift_degree = net.trafo.shift_degree.values.copy()
 
@@ -299,12 +299,12 @@ def _convert_trafo_phase_shifter(net):
     tap_diff = tap_pos - tap_neutral
     tap_step_degree = net.trafo.tap_step_degree.values.copy()
 
-    net.trafo.loc[tap_phase_shifter_type == 2, 'shift_degree'] += (tap_diff[tap_phase_shifter_type == 2] *
-                                                                   tap_step_degree[tap_phase_shifter_type == 2])
+    net.trafo.loc[tap_changer_type == "Ideal", 'shift_degree'] += (tap_diff[tap_changer_type == "Ideal"] *
+                                                                   tap_step_degree[tap_changer_type == "Ideal"])
     net.trafo["tap_pos"] = 0
-    net.trafo["tap_phase_shifter_type"] = pd.NA
+    net.trafo["tap_changer_type"] = pd.NA
 
-    return tap_phase_shifter_type, tap_pos, shift_degree
+    return tap_changer_type, tap_pos, shift_degree
 
 
 def _update_contingency_results(net, contingency_results, result_variables, nminus1, cause_element=None,

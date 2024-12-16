@@ -203,7 +203,7 @@ def example_multivoltage():
                                           pfe_kw=0.95, i0_percent=0.2375, tap_side="hv",
                                           tap_neutral=0, tap_min=-2, tap_max=2,
                                           tap_step_percent=2.5, tap_pos=0,
-                                          shift_degree=150, name='MV-LV-Trafo', tap_phase_shifter_type=0)
+                                          shift_degree=150, name='MV-LV-Trafo', tap_changer_type="Ratio")
 
     # Trafo3w
     hv_bus = pp.get_element_index(net, "bus", "Bus HV2")
@@ -218,7 +218,7 @@ def example_multivoltage():
                                             pfe_kw=0, i0_percent=0, shift_mv_degree=30,
                                             shift_lv_degree=30, tap_side="hv", tap_neutral=0,
                                             tap_min=-8, tap_max=8, tap_step_percent=1.25,
-                                            tap_pos=0, name='HV-MV-MV-Trafo', tap_phase_shifter_type=0)
+                                            tap_pos=0, name='HV-MV-MV-Trafo', tap_changer_type="Ratio")
 
     # --- Static generators
 

@@ -198,7 +198,7 @@ def test_recycle_dc_trafo_ideal(recycle_net):
                                           12, 10, 0.1, 0,
                                           tap_side='hv', tap_neutral=0, tap_max=10, tap_min=-10,
                                           tap_step_percent=0, tap_step_degree=30, tap_pos=0,
-                                          tap_phase_shifter_type=2)
+                                          tap_changer_type = "Ideal")
     net2 = net.deepcopy()
     pl = 1.2
     ql = 0.

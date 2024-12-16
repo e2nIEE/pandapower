@@ -411,7 +411,7 @@ def make_nw(net, bushv, tap_ps, case, vector_group):
                                           tap_min=-2, tap_max=2,
                                           tap_step_degree=0,
                                           tap_step_percent=2.5,
-                                          tap_phase_shifter_type=0,
+                                          tap_changer_type="Ratio",
                                           vk0_percent=6, vkr0_percent=0.78125,
                                           mag0_percent=100, mag0_rx=0.,
                                           si0_hv_partial=0.9, vector_group=vector_group,

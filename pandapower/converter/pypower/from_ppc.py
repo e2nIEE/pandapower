@@ -287,7 +287,7 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
         vkr_percent[~tap_side_is_hv] /= (1+ratio_1[~tap_side_is_hv])**2
 
         tap_step_percent = np.abs(ratio_1)*100
-        tap_phase_shifter_type = np.where(tap_step_percent > 0, 0, pd.NA)
+        tap_changer_type = np.where(tap_step_percent > 0, 0, pd.NA)
 
         idx_trafo = create_transformers_from_parameters(
             net, hv_buses=net.bus.index[hv_bus], lv_buses=net.bus.index[lv_bus], sn_mva=sn,
@@ -296,7 +296,7 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
             max_loading_percent=100, pfe_kw=pfe_kw, i0_percent=i0_percent,
             shift_degree=ppc['branch'][is_trafo, SHIFT],
             tap_step_percent=tap_step_percent, tap_pos=np.sign(ratio_1),
-            tap_side=tap_side, tap_neutral=0, tap_phase_shifter_type=tap_phase_shifter_type)
+            tap_side=tap_side, tap_neutral=0, tap_changer_type=tap_changer_type)
     else:
         idx_trafo = []
     # unused data from ppc: rateB, rateC

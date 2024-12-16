@@ -1329,7 +1329,7 @@ def test_tap_dependent_impedance():
                                             vkr_hv_percent=0.3, vkr_mv_percent=0.3, vkr_lv_percent=0.3,
                                             pfe_kw=0.2, i0_percent=0.3, tap_neutral=0., tap_side='hv',
                                             tap_pos=0, tap_step_percent=0., tap_min=-2, tap_max=2,
-                                            tap_phase_shifter_type=0)
+                                            tap_changer_type="Ratio")
 
     net_backup = net.deepcopy()
 

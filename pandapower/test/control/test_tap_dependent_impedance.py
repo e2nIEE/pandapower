@@ -20,7 +20,7 @@ def test_tap_dependent_impedance_control():
     pp.create_transformer_from_parameters(net, b1, b2, 40, 110, 21, 0.5,
                                           12.3, 25, 0.11, 0, 'hv',
                                           10, 20, 0, 1.8, 180,
-                                          10, tap_phase_shifter_type=0)
+                                          10, tap_changer_type="Ratio")
 
     characteristic_vk = Characteristic.from_points(net, ((0, 13.5), (10, 12.3), (20, 11.1)))
     characteristic_vkr = Characteristic.from_points(net, ((0, 0.52), (10, 0.5), (20, 0.53)))
@@ -51,7 +51,7 @@ def test_tap_dependent_impedance_restore():
     pp.create_transformer_from_parameters(net, b1, b2, 40, 110, 21, 0.5,
                                           12.3, 25, 0.11, 0, 'hv',
                                           10, 20, 0, 1.8, 180,
-                                          10, tap_phase_shifter_type=0)
+                                          10, tap_changer_type="Ratio")
 
     characteristic_vk = Characteristic.from_points(net, ((0, 13.5), (10, 12.3), (20, 11.1)))
     characteristic_vkr = Characteristic.from_points(net, ((0, 0.52), (10, 0.5), (20, 0.53)))

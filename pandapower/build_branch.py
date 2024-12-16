@@ -601,9 +601,9 @@ def _calc_tap_from_dataframe(net, trafo_df):
         sin = lambda x: np.sin(np.deg2rad(x))
         arctan = lambda x: np.rad2deg(np.arctan(x))
 
-        if f'tap{t}_phase_shifter_type' in trafo_df:
+        if f'tap{t}_changer_type' in trafo_df:
             # tap_phase_shift_type is only in dataframe starting from pp Version 3.0, older version use different logic
-            phase_shifter_type = get_trafo_values(trafo_df, f"tap{t}_phase_shifter_type")
+            phase_shifter_type = get_trafo_values(trafo_df, f"tap{t}_changer_type")
             if f'tap{t}_dependency_table' in trafo_df:
                 tap_dependency = get_trafo_values(trafo_df, "tap_dependency_table")
                 tap_dependency = np.array(
@@ -1346,7 +1346,7 @@ def _trafo_df_from_trafo3w(net, sequence=1, update_vk_values=True):
     trafo2["vn_lv_kv"] = {side: t3["vn_%s_kv" % side].values for side in sides}
     trafo2["shift_degree"] = {"hv": np.zeros(nr_trafos), "mv": t3.shift_mv_degree.values,
                               "lv": t3.shift_lv_degree.values}
-    for param in ["tap_phase_shifter_type", "tap_dependency_table", "id_characteristic_table", "tap_phase_shifter"]:
+    for param in ["tap_changer_type", "tap_dependency_table", "id_characteristic_table", "tap_phase_shifter"]:
         if param in t3:
             trafo2[param] = {side: t3[param] for side in sides}
     trafo2["parallel"] = {side: np.ones(nr_trafos) for side in sides}

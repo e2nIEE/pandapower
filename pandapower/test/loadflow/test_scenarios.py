@@ -23,7 +23,7 @@ def test_2gen_1ext_grid():
     net.shunt.q_mvar *= -1
     pp.create_gen(net, 2, p_mw=0.100)
     net.trafo.shift_degree = 150
-    net.trafo.tap_phase_shifter_type = 0
+    net.trafo.tap_changer_type = "Ratio"
     pp.runpp(net, init='dc', calculate_voltage_angles=True)
 
     assert np.allclose(net.res_gen.p_mw.values, [0.100, 0.100])
@@ -48,7 +48,7 @@ def test_0gen_2ext_grid():
     pp.create_ext_grid(net, 1)
     net.gen = net.gen.drop(0)
     net.trafo.shift_degree = 150
-    net.trafo.tap_phase_shifter_type = 0
+    net.trafo.tap_changer_type = "Ratio"
     net.ext_grid.at[1, "in_service"] = False
     pp.create_ext_grid(net, 3)
 
@@ -75,7 +75,7 @@ def test_0gen_2ext_grid_decoupled():
     net.ext_grid.at[2, "in_service"] = False
     auxbus = pp.create_bus(net, name="bus1", vn_kv=10.)
     net.trafo.shift_degree = 150
-    net.trafo.tap_phase_shifter_type = 0
+    net.trafo.tap_changer_type = "Ratio"
     pp.create_std_type(net, {"type": "cs", "r_ohm_per_km": 0.876,  "q_mm2": 35.0,
                              "endtmp_deg": 160.0, "c_nf_per_km": 260.0,
                              "max_i_ka": 0.123, "x_ohm_per_km": 0.1159876},
@@ -259,7 +259,7 @@ def test_transformer_phase_shift_complex():
                                               pfe_kw=0, i0_percent=0.1, shift_degree=30,
                                               tap_side=side, tap_neutral=0, tap_max=2, tap_min=-2,
                                               tap_step_percent=2, tap_step_degree=10, tap_pos=0,
-                                              tap_phase_shifter_type=0)
+                                              tap_changer_type="Ratio")
         pp.runpp(net, init="dc", calculate_voltage_angles=True)
         assert np.isclose(net.res_bus.vm_pu.at[b2], test_ref[0], rtol=1e-4)
         assert np.isclose(net.res_bus.va_degree.at[b2], test_ref[1], rtol=1e-4)
@@ -305,7 +305,7 @@ def test_transformer3w_phase_shift():
                                                 shift_lv_degree=60, tap_side=side,
                                                 tap_step_percent=2, tap_step_degree=10, tap_pos=0,
                                                 tap_neutral=0, tap_min=-2,
-                                                tap_max=2, tap_phase_shifter_type=0)
+                                                tap_max=2, tap_changer_type="Ratio")
         pp.runpp(net, init="dc", calculate_voltage_angles=True)
         assert np.isclose(net.res_bus.vm_pu.at[b2], test_ref[0][0], rtol=1e-4)
         assert np.isclose(net.res_bus.va_degree.at[b2], test_ref[0][1], rtol=1e-4)
@@ -424,7 +424,7 @@ def network_with_trafo3ws():
             vkr_lv_percent=.01, pfe_kw=.5, i0_percent=0.1,
             name="test", index=pp.get_free_id(net.trafo3w) + 1,
             tap_side="hv", tap_pos=2, tap_step_percent=1.25,
-            tap_min=-5, tap_neutral=0, tap_max=5, tap_phase_shifter_type=0)
+            tap_min=-5, tap_neutral=0, tap_max=5, tap_changer_type="Ratio")
     return net, t3, hv, mv, lv
 
 
