@@ -8,8 +8,8 @@ import numpy as np
 import logging
 
 import pandapower as pp
-from pandapower.control import Characteristic, SplineCharacteristic, TapDependentImpedance, \
-    trafo_characteristic_table_diagnostic
+from pandapower.control import Characteristic, SplineCharacteristic, TapDependentImpedance
+from pandapower.control.util.diagnostic import trafo_characteristic_table_diagnostic
 
 
 def test_tap_dependent_impedance_control():
