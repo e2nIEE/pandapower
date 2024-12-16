@@ -26,7 +26,7 @@ Create Function
     the medium level, it is given relative to the minimum of the rated apparent
     power in high and medium level: min(sn_hv_mva, sn_mv_mva). This is consistent
     with most commercial network calculation software (e.g. PowerFactory).
-    Some tools (like PSS Sincal) however define all short ciruit voltages relative
+    Some tools (like PSS Sincal) however define all short circuit voltages relative
     to the overall rated apparent power of the transformer:
     max(sn_hv_mva, sn_mv_mva, sn_lv_mva). You might have to convert the
     values depending on how the short-circuit voltages are defined.
@@ -81,7 +81,7 @@ values to branch based values
     v'_{k, lh} &= vk\_lv\_percent \cdot \frac{sn\_hv\_mva}{min(sn\_hv\_mva, sn\_lv\_mva)}
     \end{align*}   
     
-These transformer now represent a :math:`\Delta` connection of the equivalent transformers. A :math:`\Delta-Y` conversion is therefore applied to recieve the parameters in :math:`Y`-connection:
+These transformer now represent a :math:`\Delta` connection of the equivalent transformers. A :math:`\Delta-Y` conversion is therefore applied to receive the parameters in :math:`Y`-connection:
 
 .. math::
    :nowrap:
