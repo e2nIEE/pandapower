@@ -27,6 +27,7 @@ import pandapower as pp
 import pandapower.networks
 import pandapower.control
 import pandapower.timeseries
+from math import isclose
 
 
 class MemoryLeakDemo:
@@ -231,8 +232,8 @@ def test_create_trafo_characteristics():
     assert isinstance(net.trafo_characteristic_spline.at[
                           net.trafo.id_characteristic_spline.at[1], 'vk_percent_characteristic'],
                       pp.control.SplineCharacteristic)
-    assert net.trafo_characteristic_spline.at[
-                          net.trafo.id_characteristic_spline.at[1], 'vk_percent_characteristic'](-2) == 2
+    assert isclose(net.trafo_characteristic_spline.at[
+            net.trafo.id_characteristic_spline.at[1], 'vk_percent_characteristic'](-2).item(), 2, rel_tol=1e-9)
     assert pd.isna(net.trafo_characteristic_spline.at[
                           net.trafo.id_characteristic_spline.at[1], 'vkr_hv_percent_characteristic'])
 
@@ -250,13 +251,13 @@ def test_create_trafo_characteristics():
     assert isinstance(net.trafo_characteristic_spline.at[
                           net.trafo.id_characteristic_spline.at[0], 'vk_percent_characteristic'],
                       pp.control.SplineCharacteristic)
-    assert net.trafo_characteristic_spline.at[
-               net.trafo.id_characteristic_spline.at[0], 'vk_percent_characteristic'](2) == 6
+    assert isclose(net.trafo_characteristic_spline.at[
+               net.trafo.id_characteristic_spline.at[0], 'vk_percent_characteristic'](2).item(), 6, rel_tol=1e-9)
     assert isinstance(net.trafo_characteristic_spline.at[
                           net.trafo.id_characteristic_spline.at[1], 'vk_percent_characteristic'],
                       pp.control.SplineCharacteristic)
-    assert net.trafo_characteristic_spline.at[
-               net.trafo.id_characteristic_spline.at[1], 'vk_percent_characteristic'](-1) == 3
+    assert isclose(net.trafo_characteristic_spline.at[
+               net.trafo.id_characteristic_spline.at[1], 'vk_percent_characteristic'](-1).item(), 3, rel_tol=1e-9)
     assert pd.isna(net.trafo_characteristic_spline.at[
                        net.trafo.id_characteristic_spline.at[0], 'vkr_hv_percent_characteristic'])
     assert pd.isna(net.trafo_characteristic_spline.at[
@@ -265,10 +266,10 @@ def test_create_trafo_characteristics():
     # test for 3w trafo
     new_rows = pd.DataFrame(
         {'id_characteristic': [2, 2, 2, 2, 2], 'step': [-8, -4, 0, 4, 8], 'voltage_ratio': [1, 1, 1, 1, 1],
-         'angle_deg': [0, 0, 0, 0, 0], 'vk_hv_percent': [8.1, 9.1, 10.1, 11.1, 12.1],
-         'vkr_hv_percent': [1.323, 1.324, 1.325, 1.326, 1.327], 'vk_mv_percent': [8.1, 9.1, 10.1, 11.1, 12.1],
-         'vkr_mv_percent': [1.323, 1.324, 1.325, 1.326, 1.327], 'vk_lv_percent': [8.1, 9.1, 10.1, 11.1, 12.1],
-         'vkr_lv_percent': [1.323, 1.324, 1.325, 1.326, 1.327]})
+         'angle_deg': [0, 0, 0, 0, 0], 'vk_hv_percent': [8.1, 9.5, 10, 11.1, 12.9],
+         'vkr_hv_percent': [1.323, 1.325, 1.329, 1.331, 1.339], 'vk_mv_percent': [8.1, 9.5, 10, 11.1, 12.9],
+         'vkr_mv_percent': [1.323, 1.325, 1.329, 1.331, 1.339], 'vk_lv_percent': [8.1, 9.5, 10, 11.1, 12.9],
+         'vkr_lv_percent': [1.323, 1.325, 1.329, 1.331, 1.339]})
     net["trafo_characteristic_table"] = pd.concat([net["trafo_characteristic_table"], new_rows], ignore_index=True)
     net.trafo3w['id_characteristic_table'].at[0] = 2
     net.trafo3w['tap_dependency_table'].at[0] = True
@@ -281,8 +282,17 @@ def test_create_trafo_characteristics():
     assert isinstance(net.trafo_characteristic_spline.at[
                           net.trafo3w.id_characteristic_spline.at[0], 'vkr_hv_percent_characteristic'],
                       pp.control.SplineCharacteristic)
-    assert net.trafo_characteristic_spline.at[
-               net.trafo3w.id_characteristic_spline.at[0], 'vkr_hv_percent_characteristic'](-4) == 1.324
+    assert isclose(net.trafo_characteristic_spline.at[
+               net.trafo3w.id_characteristic_spline.at[0], 'vk_hv_percent_characteristic'](0).item(), 10, rel_tol=1e-9)
+    assert isclose(net.trafo_characteristic_spline.at[
+               net.trafo3w.id_characteristic_spline.at[0], 'vk_lv_percent_characteristic'](4).item(), 11.1,
+                   rel_tol=1e-9)
+    assert isclose(net.trafo_characteristic_spline.at[
+               net.trafo3w.id_characteristic_spline.at[0], 'vkr_hv_percent_characteristic'](-4).item(), 1.325,
+                   rel_tol=1e-9)
+    assert isclose(net.trafo_characteristic_spline.at[
+               net.trafo3w.id_characteristic_spline.at[0], 'vkr_lv_percent_characteristic'](8).item(), 1.339,
+                   rel_tol=1e-9)
     assert pd.isna(net.trafo_characteristic_spline.at[
                        net.trafo3w.id_characteristic_spline.at[0], 'vk_percent_characteristic'])
 
