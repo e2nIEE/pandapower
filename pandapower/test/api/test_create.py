@@ -230,7 +230,7 @@ def test_nonexistent_bus():
 
 
 def test_tap_changer_type_default():
-    expected_default = "None"
+    expected_default = pd.NA
     net = pp.create_empty_network()
     pp.create_bus(net, 110)
     pp.create_bus(net, 20)

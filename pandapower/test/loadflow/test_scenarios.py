@@ -220,7 +220,7 @@ def test_transformer_phase_shift():
             net, b1, b2, 40000, 110, 20, 0.1, 5, 0, 0.1,
             30, side,
             # 0, 2, -2, 1.25, 10, 0)
-            0, 2, -2, 0, 10, 0, 2)
+            0, 2, -2, 0, 10, 0, "Ideal")
         pp.create_transformer_from_parameters(
             net, b2, b3, 630, 20, 0.4, 0.1, 5, 0, 0.1, 20)
     pp.runpp(net, init="dc", calculate_voltage_angles=True)

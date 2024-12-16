@@ -3282,7 +3282,7 @@ def create_lines_dc_from_parameters(net, from_buses_dc, to_buses_dc, length_km, 
 
 
 def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in_service=True,
-                       index=None, max_loading_percent=nan, parallel=1, df=1., tap_changer_type="None",
+                       index=None, max_loading_percent=nan, parallel=1, df=1., tap_changer_type=pd.NA,
                        tap_dependency_table=nan, id_characteristic_table=nan,
                        pt_percent=nan, oltc=nan, xn_ohm=nan, tap2_pos=nan, **kwargs):
     """
@@ -3410,7 +3410,7 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
     _set_value_if_not_nan(net, index, tap_dependency_table, "tap_dependency_table", "trafo",
                           dtype=bool_, default_val=False)
     _set_value_if_not_nan(net, index, tap_changer_type, "tap_changer_type",
-                          "trafo", dtype=str)
+                          "trafo", dtype=object)
     _set_value_if_not_nan(net, index, pt_percent, "pt_percent", "trafo")
     _set_value_if_not_nan(net, index, oltc, "oltc", "trafo", dtype=bool_, default_val=False)
     _set_value_if_not_nan(net, index, xn_ohm, "xn_ohm", "trafo")
@@ -3423,7 +3423,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
                                        shift_degree=0,
                                        tap_side=None, tap_neutral=nan, tap_max=nan,
                                        tap_min=nan, tap_step_percent=nan, tap_step_degree=nan,
-                                       tap_pos=nan, tap_changer_type="None", id_characteristic_table=nan,
+                                       tap_pos=nan, tap_changer_type=pd.NA, id_characteristic_table=nan,
                                        in_service=True, name=None, vector_group=None, index=None,
                                        max_loading_percent=nan, parallel=1,
                                        df=1., vk0_percent=nan, vkr0_percent=nan,
@@ -3432,7 +3432,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
                                        pt_percent=nan, oltc=nan, tap_dependency_table=False,
                                        xn_ohm=nan, tap2_side=None, tap2_neutral=nan, tap2_max=nan,
                                        tap2_min=nan, tap2_step_percent=nan, tap2_step_degree=nan,
-                                       tap2_pos=nan, tap2_changer_type="None", **kwargs):
+                                       tap2_pos=nan, tap2_changer_type=pd.NA, **kwargs):
     """
     Creates a two-winding transformer in table net["trafo"].
     The trafo parameters are defined through the standard type library.
@@ -3502,8 +3502,8 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
 
         **tap_step_degree** (float) - tap step size for voltage angle in degree*
 
-        **tap_changer_type** (str, nan) - specifies the phase shifter type (0: Ratio/Asymmetrical,
-                                                1: Symmetrical, 2: Ideal)*
+        **tap_changer_type** (str, nan) - specifies the phase shifter type ("Ratio": Ratio/Asymmetrical,
+                                                "Symmetrical": Symmetrical, "Ideal": Ideal)*
 
         **index** (int, None) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
@@ -3546,7 +3546,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
 
         **tap2_step_degree** (float) - second tap step size for voltage angle in degree*
 
-        **tap2_changer_type** (int, nan) - specifies the phase shifter type (0: Ratio/Asymmetrical,
+        **tap2_changer_type** (str, nan) - specifies the phase shifter type (0: Ratio/Asymmetrical,
                                                 1: Symmetrical, 2: Ideal)*
 
         **leakage_resistance_ratio_hv** (bool) - ratio of transformer short-circuit resistance on HV side (default 0.5)
@@ -3598,7 +3598,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
     _set_value_if_not_nan(net, index, id_characteristic_table,
                           "id_characteristic_table", "trafo", dtype="Int64")
     _set_value_if_not_nan(net, index, tap_changer_type,
-                          "tap_changer_type", "trafo", dtype=str)
+                          "tap_changer_type", "trafo", dtype=object)
     _set_value_if_not_nan(net, index, tap_dependency_table,
                           "tap_dependency_table", "trafo", dtype=bool_, default_val=False)
 
@@ -5872,7 +5872,7 @@ def _not_nan(value, all_=True):
             return not any(isnan(value))
     else:
         try:
-            return not (value is None or isnan(value))
+            return not (value is None or value is pd.NA or isnan(value))
         except TypeError:
             return True
 

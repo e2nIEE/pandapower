@@ -726,7 +726,7 @@ def test_fullgrid_trafo(fullgrid_v2):
     assert 1.250 == element_0['tap_step_percent'].item()
     assert math.isnan(element_0['tap_step_degree'].item())
     assert -2.0 == element_0['tap_pos'].item()
-    assert 0 == element_0['tap_changer_type'].item()
+    assert "Ratio" == element_0['tap_changer_type'].item()
     assert 1.0 == element_0['parallel'].item()
     assert 1.0 == element_0['df'].item()
     assert element_0['in_service'].item()

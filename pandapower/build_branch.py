@@ -603,7 +603,7 @@ def _calc_tap_from_dataframe(net, trafo_df):
 
         if f'tap{t}_changer_type' in trafo_df:
             # tap_phase_shift_type is only in dataframe starting from pp Version 3.0, older version use different logic
-            phase_shifter_type = get_trafo_values(trafo_df, f"tap{t}_changer_type")
+            tap_changer_type = get_trafo_values(trafo_df, f"tap{t}_changer_type")
             if f'tap{t}_dependency_table' in trafo_df:
                 tap_dependency = get_trafo_values(trafo_df, "tap_dependency_table")
                 tap_dependency = np.array(
@@ -611,11 +611,9 @@ def _calc_tap_from_dataframe(net, trafo_df):
             else:
                 tap_table = np.array([False])
                 tap_dependency = np.array([False])
-            if not isinstance(trafo_df, dict) and not isinstance(phase_shifter_type, np.ndarray):
-                phase_shifter_type = phase_shifter_type.to_numpy()
-            phase_shifter_type = pd.Series(phase_shifter_type).fillna(-1).to_numpy()
-            tap_table = np.logical_and(tap_dependency, np.logical_not(phase_shifter_type == -1))
-            tap_no_table = np.logical_and(~tap_dependency, np.logical_not(phase_shifter_type == -1))
+            tap_changer_type = pd.Series(tap_changer_type)
+            tap_table = np.logical_and(tap_dependency, np.logical_not(tap_changer_type == "None"))
+            tap_no_table = np.logical_and(~tap_dependency, np.logical_not(tap_changer_type == "None"))
             if any(tap_table):
                 id_characteristic_table = get_trafo_values(trafo_df, "id_characteristic_table")
                 for side, vn, direction in [("hv", vnh, 1), ("lv", vnl, -1)]:
@@ -631,8 +629,8 @@ def _calc_tap_from_dataframe(net, trafo_df):
                     vn[mask] = vn[mask] * filtered_df['voltage_ratio']
                     trafo_shift[mask] += filtered_df['angle_deg']
             if any(tap_no_table):
-                tap_ideal = np.logical_and(phase_shifter_type == 2, tap_no_table)
-                tap_complex = np.logical_and(np.logical_or(phase_shifter_type == 0, phase_shifter_type == 1),
+                tap_ideal = np.logical_and(tap_changer_type == "Ideal", tap_no_table)
+                tap_complex = np.logical_and(np.logical_or(tap_changer_type == "Ratio", tap_changer_type == "Symmetrical"),
                                              tap_no_table)
                 for side, vn, direction in [("hv", vnh, 1), ("lv", vnl, -1)]:
                     mask_ideal = (tap_ideal & (tap_side == side))
