@@ -1907,15 +1907,6 @@
       }
     },
     "pf_converged": true,
-    "characteristic": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[\"object\"],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "dtype": {
-        "object": "object"
-      }
-    },
     "res_asymmetric_load": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
