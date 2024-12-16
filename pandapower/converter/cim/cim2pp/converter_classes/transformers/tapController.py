@@ -1,10 +1,6 @@
 import logging
-import time
-from typing import List
-
 import pandas as pd
 
-import pandapower.auxiliary
 from pandapower.control.controller.trafo.ContinuousTapControl import ContinuousTapControl
 from pandapower.control.controller.trafo.DiscreteTapControl import DiscreteTapControl
 from pandapower.converter.cim import cim_tools

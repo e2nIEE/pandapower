@@ -498,7 +498,6 @@ def adaptation_phase_shifter(net, v_boundary, p_boundary):
                                                   pfe_kw=.0, i0_percent=.0,
                                                   # shift_degree=-phase_errors[idx],
                                                   tap_step_degree=-phase_errors[idx],
-                                                  # tap_phase_shifter_type=2,
                                                   name="phase_shifter_adapter_"+str(lb))
         # pp.create_load(net, lb, -p_errors[idx], -q_errors[idx],
         #                name="phase_shifter_adapter_"+str(lb))
@@ -509,7 +508,7 @@ def adaptation_phase_shifter(net, v_boundary, p_boundary):
 def replace_motor_by_load(net, all_external_buses):
     """
     replace the 'external' motors by loads. The name is modified.
-    e.g., "equivalent_MotorName_3" ("equivalent"+"orignial name"+"original index")
+    e.g., "equivalent_MotorName_3" ("equivalent"+"original name"+"original index")
     """
     motors = net.motor.index[net.motor.bus.isin(all_external_buses)]
     for mi, m in net.motor.loc[motors].iterrows():

@@ -6,14 +6,12 @@ import os
 import pandas as pd
 import pytest
 import numpy as np
-from numpy import isin, isnan, isclose, allclose
+from numpy import isin, isnan, isclose
 
 import pandapower as pp
-import pandapower.control
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
 from pandapower.test.loadflow.result_test_network_generator import add_test_enforce_qlims, \
     add_test_gen
-from pandapower.test.helper_functions import assert_res_equal
 from pandapower.test.conftest import result_test_network
 
 # simple example grid for tap dependent impedance tests:

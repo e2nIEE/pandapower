@@ -26,7 +26,6 @@ class NonLinearShuntCompensatorCim16:
             eqssh_shunts = self._prepare_nonlinear_shunt_compensator_cim16()
             self._create_shunt_characteristic_table(eqssh_shunts)
             self.cimConverter.copy_to_pp('shunt', eqssh_shunts)
-            # self._create_shunt_characteristic_object(net=self.cimConverter.net)  # moved out of converter
         else:
             eqssh_shunts = pd.DataFrame(None)
         self.logger.info("Created %s shunts in %ss." % (eqssh_shunts.index.size, time.time() - time_start))
@@ -71,9 +70,6 @@ class NonLinearShuntCompensatorCim16:
         eqssh_shunts = eqssh_shunts.rename(columns={
             'rdfId': sc['o_id'], 'rdfId_Terminal': sc['t'], 'connected': 'in_service', 'index_bus': 'bus',
             'nomU': 'vn_kv', 'p': 'p_mw', 'q': 'q_mvar', 'sections': 'step', 'maximumSections': 'max_step'})
-        # commented out - this way information on current and max step is not lost
-        # eqssh_shunts['step'] = 1
-        # eqssh_shunts['max_step'] = 1
         return eqssh_shunts
 
     def _create_shunt_characteristic_table(self, eqssh_shunts):
