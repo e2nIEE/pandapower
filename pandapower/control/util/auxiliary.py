@@ -10,7 +10,7 @@ import pandas as pd
 from pandas import Index
 
 from pandapower.auxiliary import soft_dependency_error, ensure_iterability
-from pandapower.control.util.characteristic import SplineCharacteristic
+from pandapower.control.util.characteristic import SplineCharacteristic, Characteristic
 
 try:
     import matplotlib.pyplot as plt
@@ -383,3 +383,33 @@ def _create_shunt_characteristics(net, shunt_index, variable, x_points, y_points
             idx = net["shunt"].at[tid, "id_characteristic_spline"]
             # save the index of the new spline characteristic object in the temp table
             net["shunt_characteristic_spline_temp"].at[idx, col] = s.index
+
+
+def create_q_capability_curve_characteristics_object(net):
+    # check if element_characteristic_spline table already exists & if so, delete & re-create
+    if "q_characteristic_spline" in net:
+        del net["q_characteristic_spline"]
+
+    # Create element characteristics spline created if it is not in net
+    if "q_characteristic_spline" not in net.keys():
+        net["q_characteristic_spline"] = pd.DataFrame(columns=["id_q_capability_curve", "q_min_index", "q_max_index"],
+                                                      dtype="Int64")
+
+    # create characteristics of the give curve
+    if net['q_capability_curve_table'].index.size > 0:
+        time_start = time.time()
+        characteristic_df_temp = net['q_capability_curve_table']
+        mydata_grouped = characteristic_df_temp.groupby('id_q_capability_curve')
+        net["q_characteristic_spline"]["id_q_capability_curve"] = mydata_grouped.size().index
+        for element_id in mydata_grouped.size().index:
+            group_data = mydata_grouped.get_group(element_id)
+            p_mw_list = np.hstack(group_data['p_mw'])
+            net["q_characteristic_spline"].loc[element_id, "q_min_index"] = Characteristic(net, p_mw_list, np.hstack(
+                group_data['q_min_mvar'])).index
+            net["q_characteristic_spline"].loc[element_id, "q_max_index"] = Characteristic(net, p_mw_list, np.hstack(
+                group_data['q_max_mvar'])).index
+            logger.info("Adding characteristic objects for id_q_capability_curve %d" % element_id)
+        logger.info(
+            f"Finished creating p dependent q characteristic objects for capability curve in"f"{time.time() - time_start}.")
+    else:
+        logger.info("q_capability_curve_table is empty - no characteristic objects created.")
