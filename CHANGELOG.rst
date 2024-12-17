@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2024-..-..
 -------------------------------
+- [FIXED] cim2pp add missing description to dcline
 - [ADDED] pandas series accessor for geo column
 - [FIXED] Increasing geojson precision as the default precision might cause problems with pandahub
 - [ADDED] converter for European EHV grid data from JAO, the "Single Allocation Platform (SAP) for all European Transmission System Operators (TSOs) that operate in accordance to EU legislation"
