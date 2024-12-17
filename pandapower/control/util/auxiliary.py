@@ -412,7 +412,7 @@ def create_q_capability_curve_characteristics_object(net):
     # create characteristics
     if "q_capability_curve_table" in net.keys() and net['q_capability_curve_table'].index.size > 0:
         time_start = time.time()
-        
+
         _set_curve_dependency_table_flag(net, "gen")
         _set_curve_dependency_table_flag(net, "sgen")
 
