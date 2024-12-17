@@ -43,7 +43,7 @@ def convert_format(net, elements_to_deserialize=None):
         _convert_geo_data(net, elements_to_deserialize)
         _convert_group_element_index(net)
         _convert_trafo_controller_parameter_names(net)
-        _convert_trafo_pst_logic(net)
+        convert_trafo_pst_logic(net)
     if Version(str(net.format_version)) < Version("2.4.0"):
         _convert_bus_pq_meas_to_load_reference(net, elements_to_deserialize)
     if Version(str(net.format_version)) < Version("2.0.0"):
@@ -68,7 +68,7 @@ def _convert_geo_data(net, elements_to_deserialize=None):
     if ((_check_elements_to_deserialize('bus_geodata', elements_to_deserialize)
          and _check_elements_to_deserialize('bus', elements_to_deserialize))
         or (_check_elements_to_deserialize('line_geodata', elements_to_deserialize)
-         and _check_elements_to_deserialize('line', elements_to_deserialize))):
+            and _check_elements_to_deserialize('line', elements_to_deserialize))):
         if hasattr(net, 'bus_geodata') or hasattr(net, 'line_geodata'):
             if Version(str(net.format_version)) < Version("1.6"):
                 net.bus_geodata = pd.DataFrame.from_dict(net.bus_geodata)
@@ -154,6 +154,7 @@ def _convert_trafo_controller_parameter_names(net):
 
             if "controlled_bus" in controller.__dict__.keys():
                 controller.__dict__["trafobus"] = controller.__dict__.pop("controlled_bus")
+
 
 def _convert_bus_pq_meas_to_load_reference(net, elements_to_deserialize):
     if _check_elements_to_deserialize('measurement', elements_to_deserialize):
@@ -551,7 +552,10 @@ def _update_characteristics(net, elements_to_deserialize):
         c.kwargs = {"kind": c.__dict__.pop("kind"), "bounds_error": False, "fill_value": c.__dict__.pop("fill_value")}
 
 
-def _convert_trafo_pst_logic(net):
+def convert_trafo_pst_logic(net):
+    """
+    Converts trafo and trafo3w phase shifter logic to version 3.0 or later
+    """
     for trafotable in ["trafo", "trafo3w"]:
         if trafotable in net and isinstance(net[trafotable], pd.DataFrame):
             if net[trafotable].index.size > 0:
