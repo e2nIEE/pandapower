@@ -163,7 +163,6 @@ def _run_ac_pf_without_qlims_enforced(ppci, options):
 
 
     # run the newton power flow
-    options["lightsim2grid"] = False
     if options["lightsim2grid"]:
         V, success, iterations, J, Vm_it, Va_it = newton_ls(Ybus.tocsc(), Sbus, V0, ref, pv, pq, ppci, options)
         T = None
