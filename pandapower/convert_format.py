@@ -364,7 +364,7 @@ def _add_missing_columns(net, elements_to_deserialize):
 
     if _check_elements_to_deserialize('trafo', elements_to_deserialize) and \
             "tap_changer_type" not in net.trafo:
-        net.trafo["tap_changer_type"] = pd.NA
+        net.trafo["tap_changer_type"] = None
 
     # asymmetric impedance
     if _check_elements_to_deserialize('impedance', elements_to_deserialize):

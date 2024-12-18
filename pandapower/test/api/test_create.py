@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+import math
 # Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -230,7 +230,7 @@ def test_nonexistent_bus():
 
 
 def test_tap_changer_type_default():
-    expected_default = pd.NA
+    expected_default = math.nan # comment: wanted to implement "None" as default, but some test rely on that some function converts NaN to ratio tap changer.
     net = pp.create_empty_network()
     pp.create_bus(net, 110)
     pp.create_bus(net, 20)
@@ -241,7 +241,8 @@ def test_tap_changer_type_default():
     pp.create_transformer_from_parameters(net, 0, 1, 25e3, 110, 20, 0.4,
                                           12, 20, 0.07)
     pp.create_transformer(net, 0, 1, "without_tap_shifter_info")
-    assert (net.trafo.tap_changer_type == expected_default).all()
+    #assert (net.trafo.tap_changer_type == expected_default).all() # comparison with NaN is always false. revert back to this
+    assert (net.trafo.tap_changer_type.isna()).all()
 
 
 def test_create_line_conductance():

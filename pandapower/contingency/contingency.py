@@ -302,7 +302,7 @@ def _convert_trafo_phase_shifter(net):
     net.trafo.loc[tap_changer_type == "Ideal", 'shift_degree'] += (tap_diff[tap_changer_type == "Ideal"] *
                                                                    tap_step_degree[tap_changer_type == "Ideal"])
     net.trafo["tap_pos"] = 0
-    net.trafo["tap_changer_type"] = pd.NA
+    net.trafo["tap_changer_type"] = None
 
     return tap_changer_type, tap_pos, shift_degree
 

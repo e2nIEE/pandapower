@@ -287,7 +287,7 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
         vkr_percent[~tap_side_is_hv] /= (1+ratio_1[~tap_side_is_hv])**2
 
         tap_step_percent = np.abs(ratio_1)*100
-        tap_changer_type = np.where(tap_step_percent > 0, 0, pd.NA)
+        tap_changer_type = np.where(tap_step_percent > 0, "Ratio", None)
 
         idx_trafo = create_transformers_from_parameters(
             net, hv_buses=net.bus.index[hv_bus], lv_buses=net.bus.index[lv_bus], sn_mva=sn,
