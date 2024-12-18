@@ -376,12 +376,9 @@ def test_iec_60909_4_2ph():
     # No ib for 2ph sc calculation
     skss = [7722.50, 1748.07, 1082.01, 892.52, 1825.42, 187.81, 127.95, 203.67, 524.44, 402.86]
 
-
-pandapower
-L
-assert np.allclose(net.res_bus_sc.ikss_ka.values[:10], np.array(ikss), atol=1e-3)
-assert np.allclose(net.res_bus_sc.ip_ka.values[:10], np.array(ip), atol=1e-3)
-assert np.allclose(net.res_bus_sc.skss_mw.values[:10], np.array(skss), atol=1e-1)
+    assert np.allclose(net.res_bus_sc.ikss_ka.values[:10], np.array(ikss), atol=1e-3)
+    assert np.allclose(net.res_bus_sc.ip_ka.values[:10], np.array(ip), atol=1e-3)
+    assert np.allclose(net.res_bus_sc.skss_mw.values[:10], np.array(skss), atol=1e-1)
 
 
 @pytest.mark.skip("1ph gen-close sc calculation still under develop")
