@@ -9,7 +9,8 @@ from scipy.stats import chi2
 
 from pandapower.estimation.algorithm.base import (WLSAlgorithm,
                                                   WLSZeroInjectionConstraintsAlgorithm,
-                                                  IRWLSAlgorithm)
+                                                  IRWLSAlgorithm,
+                                                  AFWLSAlgorithm)
 from pandapower.estimation.algorithm.lp import LPAlgorithm
 from pandapower.estimation.algorithm.optimization import OptAlgorithm
 from pandapower.estimation.ppc_conversion import pp2eppci, _initialize_voltage
@@ -26,7 +27,8 @@ ALGORITHM_MAPPING = {'wls': WLSAlgorithm,
                      'wls_with_zero_constraint': WLSZeroInjectionConstraintsAlgorithm,
                      'opt': OptAlgorithm,
                      'irwls': IRWLSAlgorithm,
-                     'lp': LPAlgorithm}
+                     'lp': LPAlgorithm,
+                     'af-wls': AFWLSAlgorithm}
 ALLOWED_OPT_VAR = {"a", "opt_method", "estimator"}
 
 
@@ -272,6 +274,8 @@ class StateEstimation:
 
         if self.solver.successful:
             self.net = eppci2pp(self.net, self.ppc, self.eppci)
+            if self.algorithm == "af-wls":
+                self.net["res_cluster_est"] = self.eppci.clusters
         else:
             self.logger.warning("Estimation failed! Pandapower network failed to update!")
 
@@ -283,7 +287,7 @@ class StateEstimation:
         if not self.recycle:
             self.ppc, self.eppci = None, None
         
-        if algorithm == "wls":
+        if algorithm == "wls" or algorithm == "af-wls":
             now = datetime.now()
             se_results = {
                 "success": self.solver.successful,
