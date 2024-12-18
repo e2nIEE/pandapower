@@ -355,11 +355,13 @@ class PowerTransformersCim16:
                 ptct = ptct.drop(drop_index)
                 continue
             one_df = one_df.set_index('step')
+            current_step = one_df['current_step'].iloc[0]
             neutral_step = one_df['neutralStep'].iloc[0]
             ptct = ptct.drop(drop_index)
-            # keep the angle and ratio based on neutral tap position
-            ptct.loc[keep_index, 'angle'] = one_df.loc[neutral_step, 'angle']
-            ptct.loc[keep_index, 'ratio'] = one_df.loc[neutral_step, 'ratio']
+            # calculate the angle and ratio per tap based on the current tap position
+            ptct.loc[keep_index, 'angle'] = one_df.loc[current_step, 'angle'] / max(1, abs(current_step - neutral_step))
+            ptct.loc[keep_index, 'ratio'] = \
+                (one_df.loc[current_step, 'ratio'] - 1) * 100 / max(1, abs(current_step - neutral_step))
         ptct = ptct.drop(columns=['rdfId', 'PhaseTapChangerTable', 'step'])
         ptct = ptct.rename(columns={'current_step': 'step'})
         ptct['stepPhaseShiftIncrement'] = ptct['angle'][:]
