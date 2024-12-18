@@ -149,9 +149,6 @@ class UCTEParser:
                 "i": float,
             }
         )
-        # dtypes['##R'] = dict({'phase_reg_delta_u': float, 'phase_reg_n': i_t, 'phase_reg_n2': i_t, 'phase_reg_u': float,
-        #                      'angle_reg_delta_u': float, 'angle_reg_theta': float, 'angle_reg_n': i_t,
-        #                      'angle_reg_n2': i_t, 'angle_reg_p': float}) todo remove
         dtypes["##R"] = dict(
             {
                 "phase_reg_delta_u": float,
@@ -202,10 +199,10 @@ class UCTEParser:
             self.logger.warning("No nodes in 'self.data' available! Didn't split them.")
             return
         df = self.data[element_type]
-        if 0 not in df.columns:
-            df[0] = ""
+        # if 0 not in df.columns:
+        #     df[0] = ""
         df["node"] = df[0].str[0:8].str.strip()
-        df["node_geo"] = df[0].str[9:21].str.strip()
+        df["node_name"] = df[0].str[9:21].str.strip()
         df["status"] = df[0].str[22:23].str.strip()
         df["node_type"] = df[0].str[24:25].str.strip()
         df["voltage"] = df[0].str[26:32].str.strip()

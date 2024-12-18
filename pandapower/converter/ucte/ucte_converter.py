@@ -22,6 +22,7 @@ class UCTE2pandapower:
         self.logger = logging.getLogger(self.__class__.__name__)
         self.u_d = dict()
         self.net = self._create_empty_network()
+        self.net.bus["node_name"] = ""
 
     @staticmethod
     def _create_empty_network():
@@ -90,21 +91,24 @@ class UCTE2pandapower:
             )
             self.u_d[one_asset] = self.u_d[one_asset].drop(columns=["node1", "node2"])
 
-        # prepare the nodes
+        # prepare the element tables
         self._convert_nodes()
-        # prepare the loads
         self._convert_loads()
-        # prepare the generators
         self._convert_gens()
-        # prepare the lines
         self._convert_lines()
-        # prepare the impedances
         self._convert_impedances()
-        # prepare the switches
         self._convert_switches()
-        # prepare the transformers
         self._convert_trafos()
+
+        # copy data to the element tables of self.net
         self.net = self.set_pp_col_types(self.net)
+
+        # currently, net.bus.name contains the UCTE node name ("Node"), while
+        # net.bus.node_name contains the original node name "Node Name". This is changed now:
+        cols_in_order = list(pd.Series(self.net.bus.columns).replace("node_name", "ucte_name"))
+        self.net.bus = self.net.bus.rename(columns={"name": "ucte_name", "node_name": "name"})[
+            cols_in_order]
+
         self.logger.info(
             "Finished converting the input data to pandapower in %ss."
             % (time.time() - time_start)
@@ -136,7 +140,7 @@ class UCTE2pandapower:
         self.logger.info("Converting the nodes.")
         nodes = self.u_d[
             "N"
-        ]  # Note: Do not use a copy, the columns 'volt_str' and 'node_geo' are needed later
+        ]  # Note: Do not use a copy, the columns 'volt_str' and 'node_name' are needed later
         nodes["volt_str"] = nodes["node"].str[6:7]
         volt_map = {
             "0": 750,
@@ -177,15 +181,6 @@ class UCTE2pandapower:
             "Z": 1,
         }
         nodes["vn_kv"] = nodes["volt_str"].map(volt_map)
-        # make sure that 'node_geo' has a valid value
-        if 0:
-            nodes.loc[nodes["node_geo"] == "", "node_geo"] = nodes.loc[
-                nodes["node_geo"] == "", "node"
-            ].str[:6]  # TODO: in "Node Name" (.uct file) = "node_geo" (here) PowerFactory stores the original node name which could be expected in net.bus.name or an additional column called "add_name". However, in the tested cases, this line removes the content.
-        if 1: # TODO
-            self.net.bus["add_name"] = ""
-            nodes["add_name"] = nodes["node_geo"]
-            nodes = nodes.drop("node_geo", axis=1)
         nodes["node2"] = nodes["node"].str[:6]
         nodes["grid_area_id"] = nodes["node"].str[:2]
         # drop all voltages at non pu nodes
@@ -325,8 +320,6 @@ class UCTE2pandapower:
         # create the in_service column from the UCTE status
         in_service_map = dict({0: True, 1: True, 2: True, 7: False, 8: False, 9: False})
         impedances["in_service"] = impedances["status"].map(in_service_map)
-        # rename the columns to the pandapower schema
-        impedances = impedances.rename(columns={"name": "name"})
         # Convert ohm/km to per unit (pu)
         impedances["sn_mva"] = 10000  # same as PowerFactory
         impedances["z_ohm"] = impedances["vn_kv"] ** 2 / impedances["sn_mva"]

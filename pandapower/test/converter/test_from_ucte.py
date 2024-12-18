@@ -101,7 +101,7 @@ def test_from_ucte(test_case):
     # --- for loop per result table
     for res_et, df_target in res_target.items():
         et = res_et[4:]
-        name_col = "name" if et != "bus" else "add_name"
+        name_col = "name" # if et != "bus" else "add_name"
         missing_names = pd.Index(net[et][name_col]).difference(df_target.index)
         if len(missing_names):
             logger.error(f"{res_et=} comparison fails since same element names of the PowerFactory "
