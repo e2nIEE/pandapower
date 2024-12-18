@@ -5,11 +5,12 @@
 
 import pytest
 
-from pandapower.run import runpp
+from pandapower.control.controller.trafo.ContinuousTapControl import ContinuousTapControl
+from pandapower.control.controller.trafo.VmSetTapControl import VmSetTapControl
 from pandapower.control.util.characteristic import Characteristic
-from pandapower.control.controller.trafo import ContinuousTapControl, VmSetTapControl
 from pandapower.create import create_empty_network, create_bus, create_ext_grid, create_load, create_sgen, \
     create_transformer
+from pandapower.run import runpp
 
 
 def test_continuous_p():
@@ -115,6 +116,7 @@ def test_continuous_i():
 
     # we expect the tap to converge at upper voltage limit and not to go beyond
     assert abs(net.res_bus.vm_pu.at[c.trafobus] - 1.05) < eps
+
 
 if __name__ == '__main__':
     pytest.main([__file__, "-xs"])

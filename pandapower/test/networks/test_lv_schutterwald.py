@@ -6,8 +6,8 @@
 
 import pytest
 
-import pandapower as pp
-import pandapower.networks as pn
+from pandapower.networks import lv_schutterwald
+from pandapower.run import runpp
 
 
 def test_lv_schutterwald():
@@ -16,8 +16,8 @@ def test_lv_schutterwald():
 
     for j in include_heat_pumps:
         for k in separation_by_sub:
-            net = pn.lv_schutterwald(include_heat_pumps=j)
-            pp.runpp(net)
+            net = lv_schutterwald(include_heat_pumps=j)
+            runpp(net)
 
             if j is False:
                 assert len(net.load.bus) == 1506
@@ -29,7 +29,7 @@ def test_lv_schutterwald():
             assert net.converged
 
             if k is True:
-                subnets = pn.lv_schutterwald(include_heat_pumps=j, separation_by_sub=k)
+                subnets = lv_schutterwald(include_heat_pumps=j, separation_by_sub=k)
                 assert all(len(subnets[0].keys()) == len(subnet.keys()) for subnet in subnets[1:])
                 assert len(net.bus) == sum(len(subnet.bus) for subnet in subnets)
                 assert all(subnet.converged for subnet in subnets)

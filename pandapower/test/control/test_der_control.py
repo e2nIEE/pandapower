@@ -3,19 +3,22 @@
 # Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-import pytest
 from copy import deepcopy
+
 import numpy as np
 import pandas as pd
-from pandapower.control.controller.DERController import DERController as DERModels
-from control import DERController, ConstControl
+import pytest
+
+from pandapower.control.controller import DERController as DERModels
+from pandapower.control.controller.DERController import DERController
+from pandapower.control.controller.const_control import ConstControl
 from pandapower.create import create_empty_network, create_buses, create_ext_grid, create_sgen, create_line, \
     create_bus
 from pandapower.run import runpp
-from pandapower.toolbox.power_factor import cosphi_from_pq, cosphi_pos_neg_from_pq
+from pandapower.timeseries.data_sources.frame_data import DFData
 from pandapower.timeseries.output_writer import OutputWriter
 from pandapower.timeseries.run_time_series import run_timeseries
-from pandapower.timeseries.data_sources.frame_data import DFData
+from pandapower.toolbox.power_factor import cosphi_from_pq, cosphi_pos_neg_from_pq
 
 try:
     from pandaplan.core import pplog as logging
@@ -54,7 +57,7 @@ def test_qofv():
         "cosphi_points": (0.9, 0.9, 1, -0.9)})
     qofv_q = DERModels.QModelQVCurve({
         "vm_points_pu": (0, 0.96, 1., 1.04),
-        "q_points_pu": (0.4843221*p/sn, 0.4843221*p/sn, 0., -0.4843221*p/sn)})
+        "q_points_pu": (0.4843221 * p / sn, 0.4843221 * p / sn, 0., -0.4843221 * p / sn)})
 
     # the following, applied pqv_area has no influence in this test (vm near 1, p > 0.2 -> no
     # limitation). The functionality is not tested here. It is only tested that using it produces
@@ -64,9 +67,8 @@ def test_qofv():
 
     runpp(net)
     # check that vm difference to ext_grid is low
-    assert  0.995 <= net.res_bus.vm_pu.at[1] <= 1.005
+    assert 0.995 <= net.res_bus.vm_pu.at[1] <= 1.005
     assert np.isclose(net.res_sgen.q_mvar.at[0], 0)
-
 
     # --- run control -> nearly no q injection since vm is nearly 1.0
     # pf without controller
@@ -77,7 +79,6 @@ def test_qofv():
     net.controller.in_service = [False, True]
     runpp(net, run_control=True)
     assert 0.995 <= cosphi_from_pq(-net.res_sgen.p_mw.at[0], -net.res_sgen.q_mvar.at[0])[0]
-
 
     # --- run control -> q injection is positive with cosphi=0.9 since vm is nearly 1.05
     net.ext_grid.vm_pu = 1.05
@@ -93,7 +94,7 @@ def test_qofv():
     assert net.res_bus.vm_pu.at[1] < vmb4
     assert net.res_sgen.q_mvar.at[0] < 0
     cosphi_expected = 0.9
-    q_expected = ((net.res_sgen.p_mw.at[0]/cosphi_expected)**2 - net.res_sgen.p_mw.at[0]**2)**0.5
+    q_expected = ((net.res_sgen.p_mw.at[0] / cosphi_expected) ** 2 - net.res_sgen.p_mw.at[0] ** 2) ** 0.5
     assert np.isclose(net.res_sgen.q_mvar.at[0], -q_expected, atol=1e-5)
 
     # pf with 2nd controller (should have same result)
@@ -101,7 +102,6 @@ def test_qofv():
     runpp(net, run_control=True)
     assert net.res_bus.vm_pu.at[1] < vmb4
     assert np.isclose(net.res_sgen.q_mvar.at[0], -q_expected, atol=1e-5)
-
 
     # --- run control -> q injection is negative with cosphi=0.9 since vm is nearly 0.93
     net.ext_grid.vm_pu = 0.93
@@ -117,7 +117,7 @@ def test_qofv():
     assert net.res_bus.vm_pu.at[1] > vmb4
     assert net.res_sgen.q_mvar.at[0] > 0
     cosphi_expected = 0.9
-    q_expected = ((net.res_sgen.p_mw.at[0]/cosphi_expected)**2 - net.res_sgen.p_mw.at[0]**2)**0.5
+    q_expected = ((net.res_sgen.p_mw.at[0] / cosphi_expected) ** 2 - net.res_sgen.p_mw.at[0] ** 2) ** 0.5
     assert np.isclose(net.res_sgen.q_mvar.at[0], q_expected, atol=1e-5)
 
     # pf with 2nd controller (should have same result)
@@ -125,7 +125,6 @@ def test_qofv():
     runpp(net, run_control=True)
     assert net.res_bus.vm_pu.at[1] > vmb4
     assert np.isclose(net.res_sgen.q_mvar.at[0], q_expected, atol=1e-5)
-
 
     # --- run control -> q injection is negative with cosphi is nearly 0.95 since vm is nearly 0.98
     net.ext_grid.vm_pu = 0.98
@@ -148,7 +147,7 @@ def test_qofv():
     net.controller.in_service = [False, True]
     runpp(net, run_control=True)
     assert net.res_bus.vm_pu.at[1] > vmb4
-    assert 0.2*p < net.res_sgen.q_mvar.at[0] < 0.243*p
+    assert 0.2 * p < net.res_sgen.q_mvar.at[0] < 0.243 * p
 
 
 def test_cosphi_of_p_timeseries():
@@ -156,7 +155,7 @@ def test_cosphi_of_p_timeseries():
 
     net = simple_test_net()
     sn = net.sgen.sn_mva.at[0]
-    ts_data = pd.DataFrame({"P_0": list(range(-50, -1360, -100))+[-1400, -1425, -1450, -1475]})
+    ts_data = pd.DataFrame({"P_0": list(range(-50, -1360, -100)) + [-1400, -1425, -1450, -1475]})
     ds = DFData(ts_data)
 
     # Create, add output and set outputwriter
@@ -231,7 +230,7 @@ def test_cosphi_of_p_timeseries():
                 res["res_sgen.p_mw"], res["res_sgen.q_mvar"])
             cosphi_pos_neg[np.isnan(cosphi_pos_neg[0])] = 1
             cosphi_pos = toolbox.cosphi_to_pos(cosphi_pos_neg)
-            x = res["res_sgen.p_mw"].values.flatten()/net.sgen.sn_mva.at[0]
+            x = res["res_sgen.p_mw"].values.flatten() / net.sgen.sn_mva.at[0]
             plt.plot(x, cosphi_pos, label=key, c=colors[i_key], marker="+")
         yticks = ax.get_yticks()
         yticks_signed = deepcopy(yticks)
@@ -251,10 +250,10 @@ def test_cosphi_of_p_timeseries():
     assert (res_oe["res_bus.vm_pu"][1] + 1e-8 >= res_no_q["res_bus.vm_pu"][1]).all()
     assert (res_ue["res_sgen.q_mvar"][0] <= 1e-5).all()
     assert np.allclose(res_ue["res_sgen.q_mvar"][0],
-                      -res_oe["res_sgen.q_mvar"][0], atol=1e-5)
+                       -res_oe["res_sgen.q_mvar"][0], atol=1e-5)
 
     # diff between ue and ue2
-    should_be_same = ((ts_data["P_0"]*-2e-3/sn <= 0.2) | (ts_data["P_0"]*-2e-3/sn >= 0.3)).values
+    should_be_same = ((ts_data["P_0"] * -2e-3 / sn <= 0.2) | (ts_data["P_0"] * -2e-3 / sn >= 0.3)).values
     assert np.allclose(res_ue["res_sgen.q_mvar"].values[should_be_same, 0],
                        res_ue2["res_sgen.q_mvar"].values[should_be_same, 0], atol=1e-5)
     assert np.allclose(res_ue["res_sgen.q_mvar"].values[~should_be_same, 0], 0, atol=1e-5)
@@ -280,23 +279,23 @@ def test_QModels_with_2Dim_timeseries():
     net3 = simple_test_net2()
 
     ConstControl(net0, element="sgen", variable="p_mw", element_index=[0, 1],
-                           data_source=ds, profile_name=["P_DER1", "P_DER2"])
+                 data_source=ds, profile_name=["P_DER1", "P_DER2"])
     net0.sgen["q_mvar"] = 0.1 * net0.sgen["sn_mva"]
     DERController(
         net1, [0, 1], data_source=ds, p_profile=["P_DER1", "P_DER2"],
         q_model=DERModels.QModelConstQ(0.1),
         pqv_area=DERModels.PQArea4105(1),
-        )
+    )
     DERController(
         net2, [0, 1], data_source=ds, profile_from_name=True,
         q_model=DERModels.QModelCosphiP(0.98),
         pqv_area=DERModels.PQArea4105(2),
-        )
+    )
     DERController(
         net3, [0, 1], data_source=ds, profile_from_name=True,
         q_model=DERModels.QModelCosphiPQ(0.98),
         pqv_area=DERModels.PQVArea4130V3(380.),
-        )
+    )
 
     ows = define_outputwriters([net0, net1, net2, net3])
     ow0, ow1, ow2, ow3 = ows
@@ -318,7 +317,7 @@ def test_QModels_with_2Dim_timeseries():
     # q of ow2 is as expected
     p = ow2.output["res_sgen.p_mw"].values.reshape((-1,))
     q = ow2.output["res_sgen.q_mvar"].values.reshape((-1,))
-    assert np.allclose(np.sin(np.arccos(0.98))*p, q, atol=1e-5)
+    assert np.allclose(np.sin(np.arccos(0.98)) * p, q, atol=1e-5)
     # cosphi of ow3 is correct
     p = ow3.output["res_sgen.p_mw"].values.reshape((-1,))
     q = ow3.output["res_sgen.q_mvar"].values.reshape((-1,))

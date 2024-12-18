@@ -2,11 +2,6 @@ import time
 from copy import deepcopy
 
 from pandapower.create import create_group_from_dict
-from pandapower.run import runpp
-from pandapower.groups import isin_group, set_group_reference_column
-from pandapower.toolbox.data_modification import reindex_buses
-from pandapower.toolbox.grid_modification import replace_ward_by_internal_elements, replace_xward_by_internal_elements, \
-    drop_buses, drop_elements_at_buses, merge_nets, fuse_buses
 from pandapower.grid_equivalents.auxiliary import drop_assist_elms_by_creating_ext_net, \
     drop_internal_branch_elements, add_ext_grids_to_boundaries, \
     _ensure_unique_boundary_bus_names, match_cost_functions_and_eq_net, \
@@ -20,7 +15,13 @@ from pandapower.grid_equivalents.ward_generation import \
     _calculate_xward_and_impedance_parameters, \
     create_passive_external_net_for_ward_admittance, \
     _replace_external_area_by_wards, _replace_external_area_by_xwards
-from topology import connected_component, create_nxgraph, connected_components
+from pandapower.groups import isin_group, set_group_reference_column
+from pandapower.run import runpp
+from pandapower.toolbox.data_modification import reindex_buses
+from pandapower.toolbox.grid_modification import replace_ward_by_internal_elements, replace_xward_by_internal_elements, \
+    drop_buses, drop_elements_at_buses, merge_nets, fuse_buses
+from pandapower.topology.create_graph import create_nxgraph
+from pandapower.topology.graph_searches import connected_component, connected_components
 
 try:
     import pandaplan.core.pplog as logging
@@ -182,9 +183,9 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
     if eq_type == "rei":
         # --- create zero power balance network
         net_zpbn, net_internal, _ = _create_net_zpbn(
-                net, boundary_buses, all_internal_buses,
-                all_external_buses, calc_volt_angles=calculate_voltage_angles,
-                runpp_fct=runpp_fct, **kwargs)
+            net, boundary_buses, all_internal_buses,
+            all_external_buses, calc_volt_angles=calculate_voltage_angles,
+            runpp_fct=runpp_fct, **kwargs)
 
         # --- determine bus-lookups for the following calculation
         bus_lookups = _create_bus_lookups(
@@ -224,7 +225,7 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
             all_external_buses, boundary_buses_inclusive_bswitch)
 
         # --- cacluate equivalent Ybus accourding to gaussian elimination
-        Ybus_eq = _calculate_equivalent_Ybus(net_external,  bus_lookups,
+        Ybus_eq = _calculate_equivalent_Ybus(net_external, bus_lookups,
                                              eq_type, show_computing_time,
                                              check_validity=False)
 
@@ -285,7 +286,7 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
     match_cost_functions_and_eq_net(net_eq, boundary_buses, eq_type)
 
     time_end = time.perf_counter()
-    logger.info("%s equivalent finished in %.2f seconds." % (eq_type, time_end-time_start))
+    logger.info("%s equivalent finished in %.2f seconds." % (eq_type, time_end - time_start))
 
     if kwargs.get("add_group", True):
         # declare a group for the new equivalent
@@ -414,13 +415,13 @@ def merge_internal_net_and_equivalent_external_net(
     if sum(is_total_bus):
         max_non_total_bus_idx = merged_net.bus[~is_total_bus].index.values.max()
         lookup = dict(zip(merged_net.bus.index[is_total_bus], range(
-            max_non_total_bus_idx+1, max_non_total_bus_idx + sum(is_total_bus)+1)))
+            max_non_total_bus_idx + 1, max_non_total_bus_idx + sum(is_total_bus) + 1)))
         reindex_buses(merged_net, lookup)
 
     t_end = time.perf_counter()
     if show_computing_time:
         logger.info("'merge_int_and_eq_net' finished in %s seconds." %
-                    round((t_end-t_start), 2))
+                    round((t_end - t_start), 2))
 
     return merged_net
 
@@ -482,7 +483,7 @@ def _determine_bus_groups(net, boundary_buses, internal_buses, show_computing_ti
 
     if internal_buses & boundary_buses:
         logger.info("Some internal buses are also contained in the boundary buses, " +
-                       "this could cause small inaccuracy.")
+                    "this could cause small inaccuracy.")
 
     # --- determine buses connected to boundary buses via bus-bus-switch
     boundary_buses_inclusive_bswitch = set()
@@ -491,7 +492,7 @@ def _determine_bus_groups(net, boundary_buses, internal_buses, show_computing_ti
     for bbus in boundary_buses:
         boundary_buses_inclusive_bswitch |= set(connected_component(mg_sw, bbus))
     if len(boundary_buses_inclusive_bswitch) > len(boundary_buses):
-        logger.info("There are some buses connected to the boundary buses via "+
+        logger.info("There are some buses connected to the boundary buses via " +
                     "bus-bus-switches. They could be the nodes on the same bus bar " +
                     "of the boundary buses. It is suggested to consider all these " +
                     "buses (the connected buses and the given boundary buses) " +
@@ -516,15 +517,15 @@ def _determine_bus_groups(net, boundary_buses, internal_buses, show_computing_ti
 
     # --- determine all external buses
     all_external_buses = set(net.bus.index) - unsupplied_buses - \
-        all_internal_buses - boundary_buses_inclusive_bswitch
+                         all_internal_buses - boundary_buses_inclusive_bswitch
 
     # --- move all slack buses from external net to boundary if no slack is
     #     in boundary or internal
-    slack_buses = set(net.ext_grid.bus[net.ext_grid.in_service]) |\
-        set(net.gen.bus[net.gen.in_service & net.gen.slack])
+    slack_buses = set(net.ext_grid.bus[net.ext_grid.in_service]) | \
+                  set(net.gen.bus[net.gen.in_service & net.gen.slack])
     if len(all_internal_buses) and not len((
-            all_internal_buses | boundary_buses_inclusive_bswitch) &
-            slack_buses):
+                                                   all_internal_buses | boundary_buses_inclusive_bswitch) &
+                                           slack_buses):
         if not len(slack_buses):
             raise ValueError("There is no active slack in the net.")
         for bbus in slack_buses & all_external_buses:
@@ -539,7 +540,7 @@ def _determine_bus_groups(net, boundary_buses, internal_buses, show_computing_ti
     t_end = time.perf_counter()
     if show_computing_time:
         logger.info("\"determine_bus_groups\" finished in %s seconds." %
-                    round((t_end-t_start), 2))
+                    round((t_end - t_start), 2))
 
     return sorted(all_internal_buses), sorted(all_external_buses), \
         sorted(boundary_buses_inclusive_bswitch), sorted(boundary_buses)
@@ -552,11 +553,11 @@ def _check_bus_groups(all_internal_buses, all_external_buses, internal_buses, bo
     missing_internals = internal_buses - all_internal_buses
     if len(missing_internals) and not (missing_internals & boundary_buses):
         raise ValueError("These internal buses miss in 'all_internal_buses': " + str(sorted(
-                missing_internals)))
+            missing_internals)))
     in_and_extern_buses = all_internal_buses & all_external_buses
     if len(in_and_extern_buses):
         raise ValueError("These buses are in 'all_internal_buses' and 'all_external_buses': " + str(
-                sorted(in_and_extern_buses)))
+            sorted(in_and_extern_buses)))
 
 
 def _get_buses_after_merge(net_eq, net_internal, bus_lookups, return_internal):
@@ -572,7 +573,7 @@ def _get_buses_after_merge(net_eq, net_internal, bus_lookups, return_internal):
     else:
         ib_buses_after_merge = bus_lookups["bus_lookup_pd"]["b_area_buses"]
         be_buses_after_merge = bus_lookups["bus_lookup_pd"]["b_area_buses"] + \
-            bus_lookups["bus_lookup_pd"]["e_area_buses"]
+                               bus_lookups["bus_lookup_pd"]["e_area_buses"]
     return ib_buses_after_merge, be_buses_after_merge
 
 
@@ -581,6 +582,7 @@ if __name__ == "__main__":
     # pp.logger.setLevel(logging.ERROR)
     # logger.setLevel(logging.DEBUG)
     from pandapower.networks import case9
+
     net = case9()
     net.ext_grid.vm_pu = 1.04
     net.gen.vm_pu[0] = 1.025
@@ -609,7 +611,3 @@ if __name__ == "__main__":
     # net_eq.sn_mva = 10
     # pp.runpp(net_eq, calculate_voltage_angles=True)
     # print(net_eq.res_bus.loc[[0,3]])
-
-
-
-

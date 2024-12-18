@@ -8,9 +8,9 @@ from typing import Union, List, Type, Dict
 
 from pandapower.auxiliary import pandapowerNet
 from . import build_pp_net
+from . import converter_classes as std_converter_classes
 from .. import cim_classes
 from .. import interfaces
-from . import converter_classes as std_converter_classes
 
 logger = logging.getLogger('cim.cim2pp.from_cim')
 
@@ -63,7 +63,7 @@ def from_cim_dict(cim_parser: cim_classes.CimParser, log_debug=False, convert_li
 
 
 def get_converter_classes():
-    converter_classes: Dict[str,classmethod] = {
+    converter_classes: Dict[str, classmethod] = {
         'ConnectivityNodesCim16': std_converter_classes.connectivitynodes.connectivityNodesCim16.ConnectivityNodesCim16,
         'externalNetworkInjectionsCim16':
             std_converter_classes.externalnetworks.externalNetworkInjectionsCim16.ExternalNetworkInjectionsCim16,
@@ -102,8 +102,7 @@ def from_cim(file_list: List[str] = None, encoding: str = None, convert_line_to_
              repair_pp: Union[str, interfaces.PandapowerRepair] = None,
              repair_pp_class: Type[interfaces.PandapowerRepair] = None,
              custom_converter_classes: Dict = None,
-             cgmes_version: str = '2.4.15', **kwargs) -> \
-        pandapower.auxiliary.pandapowerNet:
+             cgmes_version: str = '2.4.15', **kwargs) -> pandapowerNet:
     # Nur zum Testen, kann wieder gelöscht werden
     """
     Convert a CIM net to a pandapower net from XML files.

@@ -7,8 +7,8 @@
 import os
 
 from pandapower.__init__ import pp_dir
-from pandapower.run import runpp
 from pandapower.file_io import from_json
+from pandapower.run import runpp
 from pandapower.toolbox.grid_modification import drop_elements, select_subnet
 from pandapower.topology.create_graph import create_nxgraph
 from pandapower.topology.graph_searches import connected_components
@@ -38,13 +38,12 @@ def lv_schutterwald(separation_by_sub=False, include_heat_pumps=False, **kwargs)
 
     EXAMPLE:
 
-        ``import pandapower.networks``
-
-        ``net = pandapower.networks.lv_schutterwald()``
+        >>> from pandapower.networks import lv_schutterwald
+        >>> net = lv_schutterwald()
 
         or with separation
 
-        ``net_list = pandapower.networks.lv_schutterwald(separation_by_sub=True)``
+        >>> net_list = lv_schutterwald(separation_by_sub=True)
     """
 
     net = from_json(os.path.join(pp_dir, "networks", "lv_schutterwald.json"), **kwargs)
@@ -69,7 +68,7 @@ def lv_schutterwald(separation_by_sub=False, include_heat_pumps=False, **kwargs)
         zones = [list(area) for area in connected_components(mg)]
         for i, zone in enumerate(zones):
             net1 = select_subnet(net, buses=zone, include_switch_buses=False,
-                                    include_results=True, keep_everything_else=True)
+                                 include_results=True, keep_everything_else=True)
             runpp(net1)
             net1.name = f'LV Schutterwald {i}'
             subnets.append(net1)

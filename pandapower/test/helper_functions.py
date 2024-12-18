@@ -7,8 +7,11 @@
 import os
 from copy import deepcopy
 
-from pandapower import create_bus, create_empty_network, create_ext_grid, create_transformer_from_parameters, \
-    create_line_from_parameters, create_load, create_gen, create_sgen, from_pickle, get_free_id
+from pandapower import pp_dir
+from pandapower.auxiliary import get_free_id
+from pandapower.create import create_bus, create_empty_network, create_ext_grid, create_transformer_from_parameters, \
+    create_line_from_parameters, create_load, create_gen, create_sgen
+from pandapower.file_io import from_pickle
 from pandapower.toolbox import nets_equal
 
 
@@ -71,7 +74,7 @@ def create_test_network():
 def create_test_network2():
     """Creates a simple pandapower test network
     """
-    net = from_pickle(os.path.join(pp.pp_dir, "test", "loadflow", "testgrid.p"))
+    net = from_pickle(os.path.join(pp_dir, "test", "loadflow", "testgrid.p"))
     #    net = pp.file_io.from_pickle("testgrid.p")
 
     return net
@@ -91,5 +94,5 @@ def add_grid_connection(net, vn_kv=20., zone=None):
 def create_test_line(net, b1, b2, in_service=True):
     return create_line_from_parameters(
         net, b1, b2, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12, c_nf_per_km=300, max_i_ka=.2, df=.8,
-        in_service=in_service, index=pp.get_free_id(net.line) + 1
+        in_service=in_service, index=get_free_id(net.line) + 1
     )

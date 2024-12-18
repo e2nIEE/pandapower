@@ -379,7 +379,7 @@ def plot_tripped_grid(net, trip_decisions, sc_location, bus_size=0.055, plot_ann
             ]
 
             # TODO:
-            # place annotations on middle of the line
+            #  place annotations on middle of the line
             line_geo_x = (bus_coords[0][0] + bus_coords[1][0]) / 2
             line_geo_y = ((bus_coords[0][1] + bus_coords[1][1]) / 2) + 0.05
 

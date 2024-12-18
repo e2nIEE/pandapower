@@ -9,11 +9,12 @@ import os
 import numpy as np
 
 from pandapower.__init__ import pp_dir
-from pandapower.run import runpp
 from pandapower.file_io import from_json
+from pandapower.run import runpp
+from pandapower.toolbox.grid_modification import select_subnet
 from pandapower.topology.create_graph import create_nxgraph
 from pandapower.topology.graph_searches import connected_components
-from pandapower.toolbox.grid_modification import select_subnet
+
 
 def mv_oberrhein(scenario="load", cosphi_load=0.98, cosphi_pv=1.0, include_substations=False,
                  separation_by_sub=False, **kwargs):
@@ -54,14 +55,13 @@ def mv_oberrhein(scenario="load", cosphi_load=0.98, cosphi_pv=1.0, include_subst
 
     EXAMPLE:
 
-        ``import pandapower.networks``
-
-        ``net = pandapower.networks.mv_oberrhein("generation")``
+        >>> from pandapower.networks.mv_oberrhein import mv_oberrhein
+        >>> net = mv_oberrhein("generation")
 
         or with separation
 
-        ``net0, net1 = pandapower.networks.mv_oberrhein(separation_by_sub=True)``
-    """
+        >>> net0, net1 = pandapower.networks.mv_oberrhein(separation_by_sub=True)
+        """
     if include_substations:
         net = from_json(os.path.join(pp_dir, "networks", "mv_oberrhein_substations.json"), **kwargs)
         # geo.convert_epsg_bus_geodata(net, epsg_out=4326, epsg_in=31467)
@@ -92,9 +92,9 @@ def mv_oberrhein(scenario="load", cosphi_load=0.98, cosphi_pv=1.0, include_subst
         # clustering connected buses
         zones = [list(area) for area in connected_components(mg)]
         net1 = select_subnet(net, buses=zones[0], include_switch_buses=False,
-                                include_results=True, keep_everything_else=True)
+                             include_results=True, keep_everything_else=True)
         net0 = select_subnet(net, buses=zones[1], include_switch_buses=False,
-                                include_results=True, keep_everything_else=True)
+                             include_results=True, keep_everything_else=True)
 
         runpp(net0)
         runpp(net1)

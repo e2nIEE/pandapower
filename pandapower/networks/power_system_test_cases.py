@@ -7,8 +7,8 @@
 import os
 
 from pandapower.__init__ import pp_dir
-from pandapower.file_io import from_json
 from pandapower.create import create_gen, create_ext_grid, create_sgen
+from pandapower.file_io import from_json
 from pandapower.plotting.geo import convert_geodata_to_geojson
 from pandapower.toolbox.element_selection import pp_elements
 
@@ -43,9 +43,9 @@ def _change_ref_bus(net, ref_bus_idx, ext_grid_p=0):
         ext_grid_data = net.ext_grid.loc[i]
         net.ext_grid = net.ext_grid.drop(i)
         create_gen(net, ext_grid_data.bus, ext_grid_p[j],
-                      vm_pu=ext_grid_data.vm_pu, controllable=True,
-                      min_q_mvar=ext_grid_data.min_q_mvar, max_q_mvar=ext_grid_data.max_q_mvar,
-                      min_p_mw=ext_grid_data.min_p_mw, max_p_mw=ext_grid_data.max_p_mw)
+                   vm_pu=ext_grid_data.vm_pu, controllable=True,
+                   min_q_mvar=ext_grid_data.min_q_mvar, max_q_mvar=ext_grid_data.max_q_mvar,
+                   min_p_mw=ext_grid_data.min_p_mw, max_p_mw=ext_grid_data.max_p_mw)
         j += 1
     # old gen at ref_bus -> ext_grid (and sgen)
     for i in gen_idx:
@@ -53,12 +53,12 @@ def _change_ref_bus(net, ref_bus_idx, ext_grid_p=0):
         net.gen = net.gen.drop(i)
         if gen_data.bus not in net.ext_grid.bus.values:
             create_ext_grid(net, gen_data.bus, vm_pu=gen_data.vm_pu, va_degree=0.,
-                               min_q_mvar=gen_data.min_q_mvar, max_q_mvar=gen_data.max_q_mvar,
-                               min_p_mw=gen_data.min_p_mw, max_p_mw=gen_data.max_p_mw)
+                            min_q_mvar=gen_data.min_q_mvar, max_q_mvar=gen_data.max_q_mvar,
+                            min_p_mw=gen_data.min_p_mw, max_p_mw=gen_data.max_p_mw)
         else:
             create_sgen(net, gen_data.bus, p_mw=gen_data.p_mw,
-                           min_q_mvar=gen_data.min_q_mvar, max_q_mvar=gen_data.max_q_mvar,
-                           min_p_mw=gen_data.min_p_mw, max_p_mw=gen_data.max_p_mw)
+                        min_q_mvar=gen_data.min_q_mvar, max_q_mvar=gen_data.max_q_mvar,
+                        min_p_mw=gen_data.min_p_mw, max_p_mw=gen_data.max_p_mw)
 
 
 def sorted_from_json(path, **kwargs):
@@ -78,9 +78,8 @@ def case4gs(**kwargs):
          **net** - Returns the required ieee network case4gs
 
     EXAMPLE:
-         import pandapower.networks as pn
-
-         net = pn.case4gs()
+         >>> from pandapower.networks.power_system_test_cases import case4gs
+         >>> net = case4gs()
     """
     case4gs = sorted_from_json(_get_cases_path("case4gs.json"), **kwargs)
     return case4gs
@@ -95,9 +94,8 @@ def case5(**kwargs):
          **net** - Returns the required ieee network case5
 
     EXAMPLE:
-         import pandapower.networks as pn
-
-         net = pn.case5()
+         >>> from pandapower.networks.power_system_test_cases import case5
+         >>> net = case5()
     """
     case5 = sorted_from_json(_get_cases_path("case5.json", **kwargs))
     return case5
@@ -114,9 +112,8 @@ def case6ww(**kwargs):
          **net** - Returns the required ieee network case6ww
 
     EXAMPLE:
-         import pandapower.networks as pn
-
-         net = pn.case6ww()
+         >>> from pandapower.networks.power_system_test_cases import case6ww
+         >>> net = case6ww()
     """
     case6ww = sorted_from_json(_get_cases_path("case6ww.json", **kwargs))
     return case6ww
@@ -133,9 +130,8 @@ def case9(**kwargs):
          **net** - Returns the required ieee network case9
 
     EXAMPLE:
-         import pandapower.networks as pn
-
-         net = pn.case9()
+         >>> from pandapower.networks.power_system_test_cases import case9
+         >>> net = case9()
     """
     case9 = sorted_from_json(_get_cases_path("case9.json", **kwargs))
     # TODO: add converted net to the json and remove this conversion step.
@@ -161,9 +157,8 @@ def case11_iwamoto(**kwargs):
          **net** - Returns the required network case11_iwamoto
 
     EXAMPLE:
-         import pandapower.networks as pn
-
-         net = pn.case11_iwamoto()
+         >>> from pandapower.networks.power_system_test_cases import case11_iwamoto
+         >>> net = case11_iwamoto()
     """
     case11 = sorted_from_json(_get_cases_path("case11_iwamoto.json", **kwargs))
     return case11
@@ -182,9 +177,8 @@ def case14(**kwargs):
          **net** - Returns the required ieee network case14
 
     EXAMPLE:
-         import pandapower.networks as pn
-
-         net = pn.case14()
+         >>> from pandapower.networks.power_system_test_cases import case14
+         >>> net = case14()
     """
     case14 = sorted_from_json(_get_cases_path("case14.json", **kwargs))
     return case14
@@ -202,9 +196,8 @@ def case24_ieee_rts(**kwargs):
          **net** - Returns the required ieee network case24
 
     EXAMPLE:
-         import pandapower.networks as pn
-
-         net = pn.case24_ieee_rts()
+        >>> from pandapower.networks.power_system_test_cases import case24_ieee_rts
+        >>> net = case24_ieee_rts()
     """
     case24 = sorted_from_json(_get_cases_path("case24_ieee_rts.json", **kwargs))
     return case24
@@ -220,9 +213,8 @@ def case30(**kwargs):
          **net** - Returns the required ieee network case30
 
     EXAMPLE:
-         import pandapower.networks as pn
-
-         net = pn.case30()
+         >>> from pandapower.networks.power_system_test_cases import case30
+         >>> net = case30()
     """
     case30 = sorted_from_json(_get_cases_path("case30.json", **kwargs))
     # TODO: add converted net to the json and remove this conversion step.
@@ -241,9 +233,8 @@ def case_ieee30(**kwargs):
          **net** - Returns the required ieee network case30
 
     EXAMPLE:
-         import pandapower.networks as pn
-
-         net = pn.case_ieee30()
+         >>> from pandapower.networks.power_system_test_cases import case_ieee30
+         >>> net = case_ieee30()
     """
     case_ieee30 = sorted_from_json(_get_cases_path("case_ieee30.json", **kwargs))
     return case_ieee30
@@ -261,9 +252,8 @@ def case33bw(**kwargs):
          **net** - Returns the required ieee network case33bw
 
     EXAMPLE:
-         import pandapower.networks as pn
-
-         net = pn.case33bw()
+        >>> from pandapower.networks.power_system_test_cases import case33bw
+        >>> net = case33bw()
     """
     case33bw = sorted_from_json(_get_cases_path("case33bw.json", **kwargs))
     return case33bw
@@ -284,9 +274,8 @@ def case39(**kwargs):
          **net** - Returns the required ieee network case39
 
     EXAMPLE:
-         import pandapower.networks as pn
-
-         net = pn.case39()
+         >>> from pandapower.networks.power_system_test_cases import case39
+         >>> net = case39()
     """
     case39 = sorted_from_json(_get_cases_path("case39.json", **kwargs))
     # TODO: add converted net to the json and remove this conversion step.
@@ -315,9 +304,8 @@ def case57(vn_kv_area1=115, vn_kv_area2=500, vn_kv_area3=138, vn_kv_area4=345, v
          **net** - Returns the required ieee network case57
 
     EXAMPLE:
-         import pandapower.networks as pn
-
-         net = pn.case57()
+        >>> from pandapower.networks.power_system_test_cases import case57
+        >>> net = pn.case57()
     """
     case57 = sorted_from_json(_get_cases_path("case57.json", **kwargs))
     Idx_area1 = case57.bus[case57.bus.vn_kv == 110].index
@@ -350,9 +338,8 @@ def case89pegase(**kwargs):
          **net** - Returns the required ieee network case89pegase
 
     EXAMPLE:
-         import pandapower.networks as pn
-
-         net = pn.case89pegase()
+         >>> from pandapower.networks.power_system_test_cases import case89pegase
+         >>> net = case89pegase()
     """
     case89pegase = sorted_from_json(_get_cases_path("case89pegase.json", **kwargs))
     return case89pegase
@@ -371,9 +358,8 @@ def case118(**kwargs):
          **net** - Returns the required ieee network case118
 
     EXAMPLE:
-         import pandapower.networks as pn
-
-         net = pn.case118()
+         >>> from pandapower.networks.power_system_test_cases import case118
+         >>> net = case118()
     """
     case118 = sorted_from_json(_get_cases_path("case118.json", **kwargs))
     # TODO: add converted net to the json and remove this conversion step.
@@ -391,9 +377,8 @@ def case145(**kwargs):
          **net** - Returns the required ieee network case145
 
     EXAMPLE:
-         import pandapower.networks as pn
-
-         net = pn.case145()
+         >>> from pandapower.networks.power_system_test_cases import case145
+         >>> net = case145()
     """
     case145 = sorted_from_json(_get_cases_path("case145.json", **kwargs))
     return case145
@@ -410,9 +395,8 @@ def case_illinois200(**kwargs):
          **net** - Returns the required ieee network case30
 
     EXAMPLE:
-         import pandapower.networks as pn
-
-         net = pn.case_illinois200()
+         >>> from pandapower.networks.power_system_test_cases import case_illinois200
+         >>> net = case_illinois200()
     """
     case_illinois200 = sorted_from_json(_get_cases_path("case_illinois200.json", **kwargs))
     return case_illinois200
@@ -430,9 +414,8 @@ def case300(**kwargs):
          **net** - Returns the required ieee network case300
 
     EXAMPLE:
-         import pandapower.networks as pn
-
-         net = pn.case300()
+         >>> from pandapower.networks.power_system_test_cases import case300
+         >>> net = case300()
     """
     case300 = sorted_from_json(_get_cases_path("case300.json", **kwargs))
     return case300
@@ -453,9 +436,8 @@ def case1354pegase(**kwargs):
          **net** - Returns the required ieee network case1354pegase
 
     EXAMPLE:
-         import pandapower.networks as pn
-
-         net = pn.case1354pegase()
+         >>> from pandapower.networks.power_system_test_cases import case1354pegase
+         >>> net = case1354pegase()
     """
     case1354pegase = sorted_from_json(_get_cases_path("case1354pegase.json", **kwargs))
     return case1354pegase
@@ -483,12 +465,11 @@ def case1888rte(ref_bus_idx=1246, **kwargs):
          **net** - Returns the required ieee network case1888rte
 
     EXAMPLE:
-         import pandapower.networks as pn
-
-         net = pn.case1888rte()
+         >>> from pandapower.networks.power_system_test_cases import case1888rte
+         >>> net = case1888rte()
     """
     case1888rte = sorted_from_json(_get_cases_path("case1888rte.json", **kwargs))
-    case1888rte.ext_grid.loc[0, ['min_p_mw',  'max_p_mw',  'min_q_mvar', 'max_q_mvar']] *= 2
+    case1888rte.ext_grid.loc[0, ['min_p_mw', 'max_p_mw', 'min_q_mvar', 'max_q_mvar']] *= 2
 
     if ref_bus_idx != 1246:  # change reference bus
         _change_ref_bus(case1888rte, ref_bus_idx, ext_grid_p=[-89.5])
@@ -517,9 +498,8 @@ def case2848rte(ref_bus_idx=271, **kwargs):
          **net** - Returns the required ieee network case2848rte
 
     EXAMPLE:
-         import pandapower.networks as pn
-
-         net = pn.case2848rte()
+         >>> from pandapower.networks.power_system_test_cases import case2848rte
+         >>> net = case2848rte()
     """
     case2848rte = sorted_from_json(_get_cases_path("case2848rte.json", **kwargs))
     if ref_bus_idx != 271:  # change reference bus
@@ -542,9 +522,8 @@ def case2869pegase(**kwargs):
          **net** - Returns the required ieee network case2869pegase
 
     EXAMPLE:
-         import pandapower.networks as pn
-
-         net = pn.case2869pegase()
+         >>> from pandapower.networks.power_system_test_cases import case2869pegase
+         >>> net = case2869pegase()
     """
     case2869pegase = sorted_from_json(_get_cases_path("case2869pegase.json", **kwargs))
     return case2869pegase
@@ -560,9 +539,8 @@ def case3120sp(**kwargs):
          **net** - Returns the required ieee network case3120sp
 
     EXAMPLE:
-         import pandapower.networks as pn
-
-         net = pn.case3120sp()
+         >>> from pandapower.networks.power_system_test_cases import case3120sp
+         >>> net = case3120sp()
     """
     case3120sp = sorted_from_json(_get_cases_path("case3120sp.json", **kwargs))
     return case3120sp
@@ -590,12 +568,11 @@ def case6470rte(ref_bus_idx=5988, **kwargs):
          **net** - Returns the required ieee network case6470rte
 
     EXAMPLE:
-         import pandapower.networks as pn
-
-         net = pn.case6470rte()
+         >>> from pandapower.networks.power_system_test_cases import case6470rte
+         >>> net = case6470rte()
     """
     case6470rte = sorted_from_json(_get_cases_path("case6470rte.json", **kwargs))
-    case6470rte.ext_grid.loc[0, ['min_p_mw',  'max_p_mw',  'min_q_mvar', 'max_q_mvar']] *= 2
+    case6470rte.ext_grid.loc[0, ['min_p_mw', 'max_p_mw', 'min_q_mvar', 'max_q_mvar']] *= 2
     if ref_bus_idx != 5988:  # change reference bus
         _change_ref_bus(case6470rte, ref_bus_idx, ext_grid_p=[-169.41])
     return case6470rte
@@ -624,9 +601,8 @@ def case6495rte(ref_bus_idx=None, **kwargs):
          **net** - Returns the required ieee network case6495rte
 
     EXAMPLE:
-         import pandapower.networks as pn
-
-         net = pn.case6495rte()
+         >>> from pandapower.networks.power_system_test_cases import case6495rte
+         >>> net = case6495rte()
     """
     ref_bus_idx = ref_bus_idx or [6077, 6161, 6305, 6306, 6307, 6308]
     case6495rte = sorted_from_json(_get_cases_path("case6495rte.json", **kwargs))
@@ -658,9 +634,8 @@ def case6515rte(ref_bus_idx=6171, **kwargs):
          **net** - Returns the required ieee network case6515rte
 
     EXAMPLE:
-         import pandapower.networks as pn
-
-         net = pn.case6515rte()
+         >>> from pandapower.networks.power_system_test_cases import case6515rte
+         >>> net = case6515rte()
     """
     case6515rte = sorted_from_json(_get_cases_path("case6515rte.json", **kwargs))
     if ref_bus_idx != 6171:  # change reference bus
@@ -683,9 +658,9 @@ def case9241pegase(**kwargs):
          **net** - Returns the required ieee network case9241pegase
 
     EXAMPLE:
-         import pandapower.networks as pn
 
-         net = pn.case9241pegase()
+         >>> from pandapower.networks.power_system_test_cases import case9241pegase
+         >>> net = case9241pegase()
     """
     case9241pegase = sorted_from_json(_get_cases_path("case9241pegase.json", **kwargs))
     return case9241pegase
@@ -703,9 +678,8 @@ def GBreducednetwork(**kwargs):
          **net** - Returns the required ieee network GBreducednetwork
 
     EXAMPLE:
-         import pandapower.networks as pn
-
-         net = pn.GBreducednetwork()
+         >>> from pandapower.networks.power_system_test_cases import GBreducednetwork
+         >>> net = GBreducednetwork()
     """
     GBreducednetwork = sorted_from_json(_get_cases_path("GBreducednetwork.json", **kwargs))
     return GBreducednetwork
@@ -725,9 +699,8 @@ def GBnetwork(**kwargs):
          **net** - Returns the required ieee network GBreducednetwork
 
     EXAMPLE:
-         import pandapower.networks as pn
-
-         net = pn.GBnetwork()
+         >>> from pandapower.networks.power_system_test_cases import GBnetwork
+         >>> net = GBnetwork()
     """
     GBnetwork = sorted_from_json(_get_cases_path("GBnetwork.json", **kwargs))
     return GBnetwork
@@ -746,9 +719,8 @@ def iceland(**kwargs):
          **net** - Returns the required ieee network iceland
 
     EXAMPLE:
-         import pandapower.networks as pn
-
-         net = pn.iceland()
+         >>> from pandapower.networks.power_system_test_cases import iceland
+         >>> net = iceland()
     """
     iceland = sorted_from_json(_get_cases_path("iceland.json", **kwargs))
     return iceland

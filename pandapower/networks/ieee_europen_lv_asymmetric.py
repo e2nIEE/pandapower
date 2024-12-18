@@ -4,6 +4,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import os
+
 from pandapower.__init__ import pp_dir
 from pandapower.file_io import from_json
 
@@ -34,9 +35,8 @@ def ieee_european_lv_asymmetric(scenario="on_peak_566", **kwargs):
          **net** - pandapower network
 
     EXAMPLE:
-
-    import pandapower.networks
-    net = pandapower.networks.ieee_european_lv_asymmetric("off_start")
+        >>> from pandapower.networks import ieee_european_lv_asymmetric
+        >>> net = ieee_european_lv_asymmetric("off_start")
     """
     if scenario == "off_peak_1":
         net = from_json(os.path.join(pp_dir, "networks", "IEEE_European_LV_Off_Peak_1.json"),

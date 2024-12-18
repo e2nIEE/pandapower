@@ -1,29 +1,28 @@
-import pytest
-import numpy as np
 import os
-import pandas as pd
 from random import sample
 
-from control import create_trafo_characteristics
+import numpy as np
+import pandas as pd
+import pytest
+
+from pandapower import pp_dir
+from pandapower.control import ConstControl
+from pandapower.control.util.auxiliary import create_trafo_characteristics
 from pandapower.create import create_empty_network, create_buses, create_ext_grid, create_poly_cost, create_line, \
     create_load, create_sgen, create_pwl_cost, create_bus, create_switch, create_motor
+from pandapower.grid_equivalents.auxiliary import replace_motor_by_load, _runpp_except_voltage_angles
+from pandapower.grid_equivalents.get_equivalent import get_equivalent, merge_internal_net_and_equivalent_external_net
+from pandapower.grid_equivalents.ward_generation import create_passive_external_net_for_ward_admittance
+from pandapower.groups import group_element_lists, create_group, compare_group_elements, group_row, \
+    set_group_reference_column, count_group_elements, group_element_index
+from pandapower.networks.create_examples import example_multivoltage
+from pandapower.networks.power_system_test_cases import case9, case30
+from pandapower.run import runpp
+from pandapower.timeseries import DFData
+from pandapower.toolbox.comparison import nets_equal, dataframes_equal
+from pandapower.toolbox.data_modification import reindex_buses
 from pandapower.toolbox.element_selection import pp_elements
 from pandapower.toolbox.grid_modification import select_subnet, replace_gen_by_sgen, replace_ext_grid_by_gen
-from pandapower.toolbox.data_modification import reindex_buses
-from pandapower.toolbox.comparison import nets_equal, dataframes_equal
-from pandapower.control import ConstControl
-from pandapower.run import runpp
-from pandapower.groups import group_element_lists, create_group, compare_group_elements, group_row, \
-    set_group_reference_column, count_group_elements
-from pandapower import pp_dir
-from pandapower.networks.power_system_test_cases import case9, case30
-from pandapower.networks.create_examples import example_multivoltage
-from pandapower.timeseries import DFData
-from pandapower.grid_equivalents.get_equivalent import get_equivalent, merge_internal_net_and_equivalent_external_net
-from pandapower.grid_equivalents.auxiliary import replace_motor_by_load
-from pandapower.grid_equivalents.ward_generation import \
-    create_passive_external_net_for_ward_admittance
-from pandapower.grid_equivalents.auxiliary import _runpp_except_voltage_angles
 
 
 def create_test_net():
@@ -430,9 +429,9 @@ def test_shifter_degree():
 
     for eq_type in ["rei"]:
         for b in boundary_buses:
-            net_rei = grid_equivalents.get_equivalent(net, eq_type, [b], [i],
-                                                      calculate_voltage_angles=True,
-                                                      sgen_separate=False)
+            net_rei = get_equivalent(net, eq_type, [b], [i],
+                                     calculate_voltage_angles=True,
+                                     sgen_separate=False)
             all_i_buses = net_rei.bus_lookups["origin_all_internal_buses"]
             vm_error = max(abs(net_rei.res_bus.vm_pu[all_i_buses].values -
                                net.res_bus.vm_pu[all_i_buses].values))

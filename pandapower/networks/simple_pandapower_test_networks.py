@@ -16,9 +16,8 @@ def panda_four_load_branch():
          **net** - Returns the required four load system
 
     EXAMPLE:
-         import pandapower.networks as pn
-
-         net_four_load = pn.panda_four_load_branch()
+        >>> from pandapower.networks.simple_pandapower_test_networks import panda_four_load_branch
+        >>> net_four_load = panda_four_load_branch()
     """
     net = create_empty_network()
 
@@ -33,14 +32,14 @@ def panda_four_load_branch():
 
     create_transformer(net, busnr1, busnr2, std_type="0.25 MVA 10/0.4 kV")
 
-    create_line(net,  busnr2, busnr3, name="line1", length_km=0.05,
-                   std_type="NAYY 4x120 SE")
+    create_line(net, busnr2, busnr3, name="line1", length_km=0.05,
+                std_type="NAYY 4x120 SE")
     create_line(net, busnr3, busnr4, name="line2", length_km=0.05,
-                   std_type="NAYY 4x120 SE")
+                std_type="NAYY 4x120 SE")
     create_line(net, busnr4, busnr5, name="line3", length_km=0.05,
-                   std_type="NAYY 4x120 SE")
+                std_type="NAYY 4x120 SE")
     create_line(net, busnr5, busnr6, name="line4", length_km=0.05,
-                   std_type="NAYY 4x120 SE")
+                std_type="NAYY 4x120 SE")
 
     create_load(net, busnr3, 0.030, 0.010)
     create_load(net, busnr4, 0.030, 0.010)
@@ -59,9 +58,8 @@ def four_loads_with_branches_out():
          **net** - Returns the required four load system with branches
 
     EXAMPLE:
-         import pandapower.networks as pn
-
-         net_four_load_with_branches = pn.four_loads_with_branches_out()
+        >>> from pandapower.networks.simple_pandapower_test_networks import four_loads_with_branches_out
+        >>> net_four_load_with_branches = four_loads_with_branches_out()
     """
     net = create_empty_network()
 
@@ -71,28 +69,28 @@ def four_loads_with_branches_out():
     create_transformer(net, busnr1, busnr2, std_type="0.25 MVA 10/0.4 kV")
     busnr3 = create_bus(net, name="bus3", vn_kv=.4, geodata=(0, -2))
     create_line(net, busnr2, busnr3, name="line1", length_km=0.05,
-                   std_type="NAYY 4x120 SE")
+                std_type="NAYY 4x120 SE")
     busnr4 = create_bus(net, name="bus4", vn_kv=.4, geodata=(0, -3))
     create_line(net, busnr3, busnr4, name="line2", length_km=0.05,
-                   std_type="NAYY 4x120 SE")
+                std_type="NAYY 4x120 SE")
     busnr5 = create_bus(net, name="bus5", vn_kv=.4, geodata=(0, -4))
     create_line(net, busnr4, busnr5, name="line3", length_km=0.05,
-                   std_type="NAYY 4x120 SE")
+                std_type="NAYY 4x120 SE")
     busnr6 = create_bus(net, name="bus6", vn_kv=.4, geodata=(0, -5))
     create_line(net, busnr5, busnr6, name="line4", length_km=0.05,
-                   std_type="NAYY 4x120 SE")
+                std_type="NAYY 4x120 SE")
     busnr7 = create_bus(net, name="bus7", vn_kv=.4, geodata=(1, -3))
     create_line(net, busnr3, busnr7, name="line5", length_km=0.05,
-                   std_type="NAYY 4x120 SE")
+                std_type="NAYY 4x120 SE")
     busnr8 = create_bus(net, name="bus8", vn_kv=.4, geodata=(1, -4))
     create_line(net, busnr4, busnr8, name="line6", length_km=0.05,
-                   std_type="NAYY 4x120 SE")
+                std_type="NAYY 4x120 SE")
     busnr9 = create_bus(net, name="bus9", vn_kv=.4, geodata=(1, -5))
     create_line(net, busnr5, busnr9, name="line7", length_km=0.05,
-                   std_type="NAYY 4x120 SE")
+                std_type="NAYY 4x120 SE")
     busnr10 = create_bus(net, name="bus10", vn_kv=.4, geodata=(1, -6))
     create_line(net, busnr6, busnr10, name="line8", length_km=0.05,
-                   std_type="NAYY 4x120 SE")
+                std_type="NAYY 4x120 SE")
 
     create_load(net, busnr7, p_mw=0.030, q_mvar=0.010)
     create_load(net, busnr8, p_mw=0.030, q_mvar=0.010)
@@ -111,9 +109,8 @@ def simple_four_bus_system():
          **net** - Returns the required four bus system
 
     EXAMPLE:
-         import pandapower.networks as pn
-
-         net_simple_four_bus = pn.simple_four_bus_system()
+        >>> from pandapower.networks.simple_pandapower_test_networks import simple_four_bus_system
+        >>> net_simple_four_bus = simple_four_bus_system()
     """
     net = create_empty_network()
     busnr1 = create_bus(net, name="bus1ref", vn_kv=10, geodata=(0, 0))
@@ -141,9 +138,8 @@ def simple_mv_open_ring_net():
          **net** - Returns the required simple medium voltage open ring network
 
     EXAMPLE:
-         import pandapower.networks as pn
-
-         net_simple_open_ring = pn.simple_mv_open_ring_net()
+         >>> from pandapower.networks.simple_pandapower_test_networks import simple_mv_open_ring_net
+         >>> net_simple_open_ring = simple_mv_open_ring_net()
     """
 
     net = create_empty_network()
@@ -159,17 +155,17 @@ def simple_mv_open_ring_net():
     create_ext_grid(net, 0, vm_pu=1)
 
     create_line(net, name="line 0", from_bus=1, to_bus=2, length_km=1,
-                   std_type="NA2XS2Y 1x185 RM/25 12/20 kV")
+                std_type="NA2XS2Y 1x185 RM/25 12/20 kV")
     create_line(net, name="line 1", from_bus=2, to_bus=3, length_km=1,
-                   std_type="NA2XS2Y 1x185 RM/25 12/20 kV")
+                std_type="NA2XS2Y 1x185 RM/25 12/20 kV")
     create_line(net, name="line 2", from_bus=3, to_bus=4, length_km=1,
-                   std_type="NA2XS2Y 1x185 RM/25 12/20 kV")
+                std_type="NA2XS2Y 1x185 RM/25 12/20 kV")
     create_line(net, name="line 3", from_bus=4, to_bus=5, length_km=1,
-                   std_type="NA2XS2Y 1x185 RM/25 12/20 kV")
+                std_type="NA2XS2Y 1x185 RM/25 12/20 kV")
     create_line(net, name="line 4", from_bus=5, to_bus=6, length_km=1,
-                   std_type="NA2XS2Y 1x185 RM/25 12/20 kV")
+                std_type="NA2XS2Y 1x185 RM/25 12/20 kV")
     create_line(net, name="line 5", from_bus=6, to_bus=1, length_km=1,
-                   std_type="NA2XS2Y 1x185 RM/25 12/20 kV")
+                std_type="NA2XS2Y 1x185 RM/25 12/20 kV")
 
     create_transformer(net, hv_bus=0, lv_bus=1, std_type="25 MVA 110/20 kV")
 

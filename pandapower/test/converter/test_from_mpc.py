@@ -8,14 +8,15 @@ import os
 
 import pytest
 
-import pandapower.networks as pn
 from pandapower import pp_dir
+from pandapower.converter import from_mpc
+from pandapower.networks import case24_ieee_rts
 from pandapower.run import runpp, set_user_pf_options
 from pandapower.toolbox import nets_equal
-from pandapower.converter import from_mpc
 
 try:
     import matpowercaseframes
+
     matpowercaseframes_imported = True
 except ImportError:
     matpowercaseframes_imported = False
@@ -29,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 
 def test_from_mpc_mat():
-    case24 = pn.case24_ieee_rts()
+    case24 = case24_ieee_rts()
     set_user_pf_options(case24)
     this_folder = os.path.join(pp_dir, "test", "converter")
     mat_case = os.path.join(this_folder, 'case24_ieee_rts.mat')

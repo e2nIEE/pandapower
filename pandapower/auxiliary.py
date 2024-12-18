@@ -27,31 +27,31 @@
 # (https://github.com/bcj/AttrDict/blob/master/LICENSE.txt)
 
 import copy
-from collections.abc import MutableMapping
+import numbers
 import warnings
-from importlib.metadata import version as version_str
+from collections.abc import MutableMapping
 from importlib.metadata import PackageNotFoundError
-from typing_extensions import deprecated
+from importlib.metadata import version as version_str
 
-from geojson import loads, GeoJSON
 import numpy as np
 import pandas as pd
 import scipy as sp
-import numbers
+from geojson import loads, GeoJSON
 from packaging.version import Version
+from typing_extensions import deprecated
 
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
 from pandapower.pypower.idx_brch_dc import DC_BR_STATUS, DC_F_BUS, DC_T_BUS
 from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD, VM, VA, REF, PQ, VMIN, VMAX, PV
+from pandapower.pypower.idx_bus_dc import DC_VMAX, DC_VMIN, DC_BUS_I, DC_BUS_TYPE, DC_NONE, DC_REF, DC_B2B, DC_P
 from pandapower.pypower.idx_gen import PMIN, PMAX, QMIN, QMAX
 from pandapower.pypower.idx_ssc import SSC_STATUS, SSC_BUS, SSC_INTERNAL_BUS
 from pandapower.pypower.idx_tcsc import TCSC_STATUS, TCSC_F_BUS, TCSC_T_BUS
-from pandapower.pypower.idx_vsc import VSC_STATUS, VSC_BUS, VSC_INTERNAL_BUS, VSC_BUS_DC, VSC_MODE_AC, VSC_MODE_AC_SL, \
-    VSC_INTERNAL_BUS_DC
-from .pypower.idx_bus_dc import DC_VMAX, DC_VMIN, DC_BUS_I, DC_BUS_TYPE, DC_NONE, DC_REF, DC_B2B, DC_P
+from pandapower.pypower.idx_vsc import VSC_STATUS, VSC_BUS, VSC_INTERNAL_BUS, VSC_BUS_DC, VSC_INTERNAL_BUS_DC
 
 try:
     from lightsim2grid.newtonpf import newtonpf_new as newtonpf_ls
+
     lightsim2grid_available = True
 except ImportError:
     lightsim2grid_available = False
@@ -62,6 +62,7 @@ except ImportError:
 try:
     from geopandas import GeoSeries
     from shapely import from_geojson
+
     geopandas_available = True
 except ImportError:
     geopandas_available = False
@@ -85,10 +86,9 @@ def log_to_level(msg, passed_logger, level):
 
 
 def version_check(package_name, level="UserWarning", ignore_not_installed=False):
-
     minimum_version = {'plotly': "3.1.1",
                        'numba': "0.25",
-                      }
+                       }
     if ignore_not_installed and package_name not in minimum_version.keys():
         return
 
@@ -108,6 +108,7 @@ def version_check(package_name, level="UserWarning", ignore_not_installed=False)
 
 try:
     from numba import jit
+
     try:
         version_check("numba")
         NUMBA_INSTALLED = True
@@ -117,6 +118,7 @@ try:
         NUMBA_INSTALLED = False
 except ImportError:
     from .pf.no_numba import jit
+
     NUMBA_INSTALLED = False
 
 
@@ -316,7 +318,7 @@ class pandapowerNet(ADict):
         for key in self:
             if isinstance(self[key], list):
                 self[key] = pd.DataFrame(np.zeros(0, dtype=self[key]), index=pd.Index([],
-                                         dtype=np.int64))
+                                                                                      dtype=np.int64))
 
     @deprecated("Use copy.deepcopy(net) instead of net.deepcopy()")
     def deepcopy(self):
@@ -347,7 +349,7 @@ class pandapowerNet(ADict):
         if len(res):
             res = [" and the following results tables:"] + res
         lines = ["This pandapower network includes the following parameter tables:"] + \
-            par + res + res_cost
+                par + res + res_cost
         return "\n".join(lines)
 
 
@@ -357,6 +359,7 @@ class GeoAccessor:
     pandas Series accessor for the geo column. It facilitates the use of geojson strings.
     NaN entrys are dropped using the accessor!
     """
+
     def __init__(self, pandas_obj):
         self._validate(pandas_obj)
         self._obj = pandas_obj
@@ -424,6 +427,7 @@ class GeoAccessor:
             if callable(geoms_item):
                 def wrapper(*args, **kwargs):
                     return geoms_item(*args, **kwargs)
+
                 return wrapper
             else:
                 return geoms_item
@@ -432,7 +436,6 @@ class GeoAccessor:
 
 def plural_s(number):
     return "" if number == 1 else "s"
-
 
 
 def ets_to_element_types(ets=None):
@@ -759,7 +762,7 @@ def _write_to_object_attribute(net, element, index, variable, values):
 def _set_isolated_nodes_out_of_service(ppc, bus_not_reachable, dc=False):
     isolated_nodes = np.where(bus_not_reachable)[0]
     if len(isolated_nodes) > 0:
-        logger.debug("There are isolated buses in the network! (%i nodes in the PPC)"%len(isolated_nodes))
+        logger.debug("There are isolated buses in the network! (%i nodes in the PPC)" % len(isolated_nodes))
         # set buses in ppc out of service
         if dc:
             ppc['bus_dc'][isolated_nodes, DC_BUS_TYPE] = DC_NONE
@@ -1046,7 +1049,8 @@ def _select_is_elements_numba(net, isolated_nodes=None, isolated_nodes_dc=None, 
         net._ppc["bus"][vsc_aux_isolated, BUS_TYPE] = NONE
         # if there are no in service VSC that define the DC slack node, we must change the DC slack to type P
         bus_dc_slack = net._ppc["bus_dc"][:, DC_BUS_TYPE] == DC_REF
-        bus_dc_with_vsc = np.r_[net._ppc["vsc"][is_elements["vsc"], VSC_BUS_DC], net._ppc["vsc"][is_elements["vsc"], VSC_INTERNAL_BUS_DC]]
+        bus_dc_with_vsc = np.r_[
+            net._ppc["vsc"][is_elements["vsc"], VSC_BUS_DC], net._ppc["vsc"][is_elements["vsc"], VSC_INTERNAL_BUS_DC]]
         bus_dc_to_change = bus_dc_slack & (~np.isin(net._ppc["bus_dc"][:, DC_BUS_I], bus_dc_with_vsc))
         net._ppc["bus_dc"][bus_dc_to_change, DC_BUS_TYPE] = DC_P
 
@@ -1232,11 +1236,12 @@ def _set_isolated_buses_out_of_service(net, ppc):
     # first check if buses are connected to branches
     # I don't know why this dance with [X, :][:, [Y, Z]] (instead of [X, [Y, Z]]) is necessary:
     disco = np.setxor1d(ppc["bus"][:, BUS_I].astype(np.int64),
-                        ppc["branch"][ppc["branch"][:, BR_STATUS] == 1, :][:, [F_BUS,T_BUS]].real.astype(np.int64).flatten())
+                        ppc["branch"][ppc["branch"][:, BR_STATUS] == 1, :][:, [F_BUS, T_BUS]].real.astype(
+                            np.int64).flatten())
 
     # but also check if they may be the only connection to an ext_grid
     net._isolated_buses = np.setdiff1d(disco, ppc['bus'][ppc['bus'][:, BUS_TYPE] == REF,
-                                                         BUS_I].real.astype(np.int64))
+    BUS_I].real.astype(np.int64))
     ppc["bus"][net._isolated_buses, BUS_TYPE] = NONE
 
     # check DC buses - not connected to DC lines and not connected to VSC DC side
@@ -1247,7 +1252,7 @@ def _set_isolated_buses_out_of_service(net, ppc):
 
     # but also check if they may be the only connection to an ext_grid
     net._isolated_buses_dc = np.setdiff1d(disco_dc, ppc['bus_dc'][ppc['bus_dc'][:, DC_BUS_TYPE] == REF,
-                                                         DC_BUS_I].real.astype(np.int64))
+    DC_BUS_I].real.astype(np.int64))
     ppc["bus_dc"][net._isolated_buses_dc, DC_BUS_TYPE] = DC_NONE
 
 
@@ -1268,7 +1273,6 @@ def _check_if_numba_is_installed(level="warning"):
         log_to_level(msg, logger, level)
         return False
     return NUMBA_INSTALLED
-
 
 
 def _check_lightsim2grid_compatibility(net, lightsim2grid, voltage_depend_loads, algorithm, distributed_slack, tdpf):
@@ -1826,7 +1830,6 @@ def _init_rundcopp_options(net, check_connectivity, switch_rx_ratio, delta, traf
 
 def _init_runse_options(net, v_start, delta_start, calculate_voltage_angles,
                         **kwargs):
-
     check_connectivity = kwargs.get("check_connectivity", True)
     trafo_model = kwargs.get("trafo_model", "t")
     trafo3w_losses = kwargs.get("trafo3w_losses", "hv")
