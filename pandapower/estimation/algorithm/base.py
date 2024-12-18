@@ -130,10 +130,9 @@ class WLSAlgorithm(BaseAlgorithm):
                 eppci.update_E(E)
 
                 # log data 
-                current_error = np.max(np.abs(d_E))
-                obj_func = (r.T*r_inv*r)[0,0]
-                self.logger.debug("Current delta_x: {:.7f}".format(current_error))
-                self.logger.debug("Current objective function value: {:.1f}".format(obj_func))
+                # obj_func = (r.T*r_inv*r)[0,0]
+                # self.logger.debug("Current delta_x: {:.7f}".format(current_error))
+                # self.logger.debug("Current objective function value: {:.1f}".format(obj_func))
 
                 # Restore full weighting matrix with current measurements
                 if cur_it == 0 and eppci.any_i_meas:
@@ -150,7 +149,7 @@ class WLSAlgorithm(BaseAlgorithm):
         # check if the estimation is successfull
         self.check_result(current_error, cur_it)
         self.iterations = cur_it
-        self.obj_func = obj_func
+        # self.obj_func = obj_func
         if self.successful:
             # store variables required for chi^2 and r_N_max test:
             self.R_inv = r_inv.toarray()
