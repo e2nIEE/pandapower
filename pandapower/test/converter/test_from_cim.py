@@ -983,6 +983,7 @@ def test_fullgrid_dcline(fullgrid_v2):
     assert 2 == len(fullgrid_v2.dcline.index)
     element_0 = fullgrid_v2.dcline[fullgrid_v2.dcline['origin_id'] == '_70a3750c-6e8e-47bc-b1bf-5a568d9733f7']
     assert 'LDC-1230816355' == element_0['name'].item()
+    assert 'LDC-1230816355' == element_0['description'].item()
     assert '_27d57afa-6c9d-4b06-93ea-8c88d14af8b1' == fullgrid_v2.bus.iloc[element_0['from_bus'].item()]['origin_id']
     assert '_d3d9c515-2ddb-436a-bf17-2f8be2394de3' == fullgrid_v2.bus.iloc[int(element_0['to_bus'].item())]['origin_id']
     assert 0.0 == element_0['p_mw'].item()
