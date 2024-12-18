@@ -447,7 +447,7 @@ class PowerTransformersCim16:
         copy_list = ['index_bus', 'Terminal', 'ratedU', 'r', 'x', 'b', 'g', 'r0', 'x0', 'neutralStep', 'lowStep',
                      'highStep', 'stepVoltageIncrement', 'stepPhaseShiftIncrement', 'step', 'connected',
                      'phaseAngleClock', 'connectionKind', sc['pte_id'], sc['tc'], sc['tc_id'], 'grounded', 'angle',
-                     'tap_phase_shifter_type']
+                     'tap_changer_type']
         for one_item in copy_list:
             # copy the columns which are required for each winding
             power_trafo2w[one_item + '_lv'] = power_trafo2w[one_item].copy()
@@ -460,7 +460,7 @@ class PowerTransformersCim16:
         power_trafo2w.loc[power_trafo2w['step_lv'].notna(), 'tap_side'] = 'lv'
         power_trafo2w.loc[power_trafo2w['step'].notna(), 'tap_side'] = 'hv'
         fillna_list = ['neutralStep', 'lowStep', 'highStep', 'stepVoltageIncrement', 'stepPhaseShiftIncrement', 'step',
-                       sc['tc'], sc['tc_id'], 'tap_phase_shifter_type']
+                       sc['tc'], sc['tc_id'], 'tap_changer_type']
         for one_item in fillna_list:
             power_trafo2w[one_item] = power_trafo2w[one_item].fillna(power_trafo2w[one_item + '_lv'])
         del fillna_list, one_item
@@ -536,7 +536,7 @@ class PowerTransformersCim16:
         copy_list = ['index_bus', 'Terminal', 'ratedS', 'ratedU', 'r', 'x', 'b', 'g', 'r0', 'x0', 'neutralStep',
                      'lowStep', 'highStep', 'stepVoltageIncrement', 'stepPhaseShiftIncrement', 'step', 'connected',
                      'angle', 'phaseAngleClock', 'connectionKind', 'grounded', sc['pte_id'], sc['tc'], sc['tc_id'],
-                     'tap_phase_shifter_type']
+                     'tap_changer_type']
         for one_item in copy_list:
             # copy the columns which are required for each winding
             power_trafo3w[one_item + '_mv'] = power_trafo3w[one_item].copy()
@@ -554,7 +554,7 @@ class PowerTransformersCim16:
         power_trafo3w.loc[power_trafo3w['step_mv'].notna(), 'tap_side'] = 'mv'
         power_trafo3w.loc[power_trafo3w['step'].notna(), 'tap_side'] = 'hv'
         fillna_list = ['neutralStep', 'lowStep', 'highStep', 'stepVoltageIncrement', 'stepPhaseShiftIncrement', 'step',
-                       sc['tc'], sc['tc_id'], 'tap_phase_shifter_type']
+                       sc['tc'], sc['tc_id'], 'tap_changer_type']
         for one_item in fillna_list:
             power_trafo3w[one_item] = power_trafo3w[one_item].fillna(power_trafo3w[one_item + '_mv'])
             power_trafo3w[one_item] = power_trafo3w[one_item].fillna(power_trafo3w[one_item + '_lv'])
