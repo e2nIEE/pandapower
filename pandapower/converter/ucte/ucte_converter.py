@@ -90,9 +90,6 @@ class UCTE2pandapower:
             )
             self.u_d[one_asset] = self.u_d[one_asset].drop(columns=["node1", "node2"])
 
-        if 1: # TODO: if input is incorrect, i.e. in kW
-            self.u_d["N"][['p_load', 'q_load', 'p_gen', 'q_gen', 'min_p_gen', 'max_p_gen', 'min_q_gen', 'max_q_gen']] /= 1e3
-
         # prepare the nodes
         self._convert_nodes()
         # prepare the loads

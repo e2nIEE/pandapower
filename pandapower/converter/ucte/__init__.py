@@ -1,2 +1,6 @@
-from pandapower.converter.ucte.ucte_converter import UCTE2pandapower
-from pandapower.converter.ucte.ucte_parser import UCTEParser
+# -*- coding: utf-8 -*-
+
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
+from .from_ucte import from_ucte

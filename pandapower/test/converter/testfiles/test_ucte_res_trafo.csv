@@ -1,5 +1,6 @@
 name;p_hv_mw;q_hv_mvar
 trafo1_DE;0.059997;0.07493
-trafo1_RS;0.298932;-0.186754
+trafo1_RS;200.485413;68.527137
 trafo2_RS;0;0
 trafo3_RS;0;0
+trafo3w_FR;-2.13403;-0.06015863

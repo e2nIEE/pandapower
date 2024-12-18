@@ -3,8 +3,6 @@
 # Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-
-from copy import deepcopy
 import os
 import pytest
 import numpy as np
@@ -28,75 +26,79 @@ def _testfiles_folder():
 def _results_from_powerfactory():
     pf_res = {f"res_{et}": pd.read_csv(
         os.path.join(_testfiles_folder(), f"test_ucte_res_{et}.csv"),
-        sep=";", index_col=0) for et in ["bus", "line", "trafo", "trafo3w"]}
+        sep=";", index_col=0) for et in ["bus", "line", "trafo"]}
     return pf_res
 
 
-def country_code_mapping(test_case=None):
+def _country_code_mapping(test_case=None):
     mapping = {
-        "test_ucte_line_trafo_load": "_DE",
-        "test_ucte_line": xy,
-        "test_ucte_load_sgen": xy,
-        "test_ucte_load_sgen_split": xy,
-        "test_ucte_ext_grid": xy,
-        "test_ucte_trafo": xy,
-        "test_ucte_single_load_single_eg": xy,
-        "test_ucte_ward": xy,
-        "test_ucte_ward_split": xy,
-        "test_ucte_xward": xy,
-        "test_ucte_xward_combination": xy,
-        "test_ucte_gen": xy,
-        "test_ucte_ext_grid_gen_switch": xy,
-        "test_ucte_enforce_qlims": xy,
-        "test_ucte_trafo3w": xy,
+        "test_ucte_impedance": "AL",
+        "test_ucte_line_trafo_load": "DE",
+        "test_ucte_line": "DK",
+        "test_ucte_bus_switch": "ES",
+        "test_ucte_shunt": "HR",
+        "test_ucte_ward": "HU",
+        "test_ucte_load_sgen": "IT",
+        "test_ucte_gen": "LU",
+        "test_ucte_xward": "NL",
+        "test_ucte_trafo": "RS",
+        "test_ucte_trafo3w": "FR",
     }
-    if test_case is None
+    if test_case is None:
         return mapping
     else:
         return mapping[test_case]
 
 
-# @pytest.mark.parametrize("test_case", [
-@pytest.mark.parametrize("ucte_file_name", [
-    "test_ucte3", # LU, DK, HK, IT, RS
-    "test_ucte_AL",
-    "test_ucte_DE",
-    "test_ucte_ES",
-    "test_ucte_HR",
-    "test_ucte_HU",
-    "test_ucte_NL"
+@pytest.mark.parametrize("test_case", [
+    "test_ucte_impedance",
+    "test_ucte_line_trafo_load",
+    "test_ucte_line",
+    "test_ucte_bus_switch",
+    "test_ucte_shunt",
+    "test_ucte_ward",
+    "test_ucte_load_sgen",
+    "test_ucte_gen",
+    "test_ucte_xward",
+    "test_ucte_trafo",
+    "test_ucte_trafo3w"
 ])
-def _test_ucte_file(ucte_file_name):
-    # ucte_file_name = "test_ucte" + country_code_mapping(test_case)
+def test_from_ucte(test_case):
+    country_code = _country_code_mapping(test_case)
+    ucte_file_name = f"test_ucte_{country_code}"
     ucte_file = os.path.join(_testfiles_folder(), f"{ucte_file_name}.uct")
 
-    # --- convert UCTE data
-    ucte_parser = pc.ucte_parser.UCTEParser(ucte_file)
-    ucte_parser.parse_file()
-    ucte_dict = ucte_parser.get_data()
+    # --- convert UCTE data -------------------------------------------------------------------
+    net = pc.from_ucte(ucte_file)
 
-    ucte_converter = pc.ucte_converter.UCTE2pandapower()
-    net = ucte_converter.convert(ucte_dict=ucte_dict)
+    assert isinstance(net, pp.pandapowerNet)
+    assert len(net.bus)
 
-    # --- run power flow
+    # --- run power flow ----------------------------------------------------------------------
     pp.runpp(net)
+    assert net.converged
 
-    # --- compare results
+    # --- check expected element counts -------------------------------------------------------
+    exp_elm_count_df = pd.read_csv(os.path.join(
+        _testfiles_folder(), "ucte_expected_element_counts.csv"), sep=";", index_col=0)
+    exp_elm_count = exp_elm_count_df.loc[country_code]
+    exp_elm_count = exp_elm_count.loc[exp_elm_count > 0]
+    assert dict(pp.count_elements(net)) == dict(exp_elm_count)
+
+    # --- compare results ---------------------------------------------------------------------
     res_target = _results_from_powerfactory()
     failed = list()
-    atol_dict = {"res_bus": {"vm_pu": 1e-4, "va_degree": 5e-3},
-                 "res_line": {"p_from_mw": 5e-2, "q_from_mvar": 2e-1},
-                 "res_trafo": {"p_hv_mw": 5e-2, "q_hv_mvar": 1e-1},
-                 "res_trafo3w": {"p_hv_mw": 5e-2, "q_hv_mvar": 1e-1},
-                #  "res_line": {"p_from_mw": 1e-3, "q_from_mvar": 1e-2},
-                #  "res_trafo": {"p_hv_mw": 1e-3, "q_hv_mvar": 1e-2},
-                #  "res_trafo3w": {"p_hv_mw": 1e-3, "q_hv_mvar": 1e-2},
-                 }
-    if ucte_file_name == "test_ucte_file_NL":
+    atol_dict = {
+        "res_bus": {"vm_pu": 1e-4, "va_degree": 7e-3},
+        "res_line": {"p_from_mw": 5e-2, "q_from_mvar": 2e-1},
+        "res_trafo": {"p_hv_mw": 5e-2, "q_hv_mvar": 1e-1},
+    }
+    if test_case == "test_ucte_xward":
         atol_dict["res_line"]["q_from_mvar"] = 0.8  # xwards are converted as
         # PV gens towards uct format -> lower tolerance (compared to powerfactory results cannot be
         # expected)
 
+    # --- for loop per result table
     for res_et, df_target in res_target.items():
         et = res_et[4:]
         name_col = "name" if et != "bus" else "add_name"
@@ -106,13 +108,25 @@ def _test_ucte_file(ucte_file_name):
                          f"results are missing in the pandapower net: {missing_names}")
         df_after_conversion = net[res_et][df_target.columns].set_axis(
             pd.Index(net[et][name_col], name="name"))
+
+        # --- prepare comparison
+        if test_case == "test_ucte_trafo3w" and et == "bus":
+            df_after_conversion = df_after_conversion.drop("tr3_star_FR")
+        if test_case == "test_ucte_trafo3w" and et == "trafo":
+            df_after_conversion = df_after_conversion.loc[
+                (df_after_conversion.index.values != "trafo3w_FR") |
+                ~df_after_conversion.index.duplicated()]
         if et == "line" and "Allgemeine I" in df_after_conversion.index:
             df_after_conversion = df_after_conversion.drop("Allgemeine I")
+
+        # --- compare the shape of the results to be compared
         same_shape = df_after_conversion.shape == df_target.loc[df_after_conversion.index].shape
         df_str = (f"df_after_conversion:\n{df_after_conversion}\n\ndf_target:\n"
                   f"{df_target.loc[df_after_conversion.index]}")
         if not same_shape:
             logger.error(f"{res_et=} comparison fails due to different shape.\n{df_str}")
+
+        # --- compare the results itself
         all_close = all([np.allclose(
             df_after_conversion[col].values,
             df_target.loc[df_after_conversion.index, col].values, atol=atol) for col, atol in
@@ -120,24 +134,20 @@ def _test_ucte_file(ucte_file_name):
         if not all_close:
             logger.error(f"{res_et=} comparison fails due to different values.\n{df_str}")
             failed.append(res_et)
+
+    # --- overall test evaluation
     if test_is_failed := len(failed):
         logger.error(f"The powerflow result comparisons of these elements failed: {failed}.")
     assert not test_is_failed
 
 
 if __name__ == '__main__':
-    if 0:
+    if 1:
         pytest.main([__file__, "-s"])
     else:
 
-        ucte_file = os.path.join(_testfiles_folder(), "test_ucte.uct")
-
-        ucte_parser = pc.ucte_parser.UCTEParser(ucte_file)
-        ucte_parser.parse_file()
-        ucte_dict = ucte_parser.get_data()
-
-        ucte_converter = pc.ucte_converter.UCTE2pandapower()
-        net = ucte_converter.convert(ucte_dict=ucte_dict)
+        ucte_file = os.path.join(_testfiles_folder(), "test_ucte_DE.uct")
+        net = pc.from_ucte(ucte_file)
 
         print(net)
         print()

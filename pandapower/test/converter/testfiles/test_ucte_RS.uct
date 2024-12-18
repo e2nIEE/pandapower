@@ -8,11 +8,10 @@ _________1_________2_________3_________4_________5_________6_________7_________8
 Node    |Node Name   |S|T|Volt  |PLoad  |QLoad  |PGen   |QGen   |Pmin   |Pmax   |Qmin   |Qmax   |Sta  |Pprim  |Sks__  |X/R    |T|
 
 ##N
-##ZHR
-HBUS1_1_ Bus1_1_HR    0 3 383.80       0       0 -0.1106 7.31543 9.99900 -9.9990 1.82725 -1.8273
-HBUS1_1K Bus1_HK      0 3 383.80       0       0 -0.2211 8.42041 9.99900 -9.9990 1.82725 -1.8273
-HBUS2_1_ Bus2_1_HR    0 0        0.11050 -1.1050       0       0
-HBUS2_1K Bus2_HK      0 0        0.22100 -2.2100       0       0
+##ZRS
+JBUS1_1S Bus1_RS      0 3 383.80       0       0 -200.70 -63.268 9.99900 -9.9990 1.82725 -1.8273
+JBUS2_1S Bus2_RS      0 0              0       0       0       0
+JBUS3_5S Bus3_RS      0 0        200.000 50.0000       0       0
 ##C
 
 ----- LINE BLOCK -----
@@ -21,8 +20,7 @@ _________1_________2_________3_________4_________5_________6_________7
 Node 1  |Node 2  |O|S|R(Ohm)|X(Ohm)|B(uS)   |I(A)  |Element Name|
 
 ##L
-HBUS1_1_ HBUS2_1_ 1 0 0.7198 3.0866 42.16017    768 line2_HR
-HBUS1_1K HBUS2_1K 1 0 0.7198 3.0866 42.16017    768 line1_HR
+JBUS1_1S JBUS2_1S 1 0 0.7198 3.0866 42.16017    768 line1_RS
 ##C
 
 ----- 2 WINDING TRANSFORMER BLOCK -----
@@ -31,6 +29,9 @@ _________1_________2_________3_________4_________5_________6_________7_________8
 Node 1  |Node 2  |O|S|U1   |U2   |Sn   |R(Ohm)|X(Ohm)|B(uS)   |G(uS) |I(A)  |Element Name|
 
 ##T
+JBUS3_5S JBUS2_1S 1 0 110.0 380.0 320.0 0.0945 4.6122 -12.3868 9.9174   1680 trafo1_RS
+JBUS3_5S JBUS2_1S 2 8 110.0 380.0 160.0 0.1891 9.2243 -6.19339 4.9587    840 trafo2_RS
+JBUS3_5S JBUS2_1S 3 8 110.0 380.0 160.0 0.1891 9.2243 -6.19339 4.9587    840 trafo3_RS
 ##C
 
 ----- 2 WINDINGS TRANSFORMERS REGULATION BLOCK -----
@@ -39,6 +40,9 @@ _________1_________2_________3_________4_________5_________6_________7
 Node 1  |Node 2  |O|du   |mx|Tap|U    |du   |phitr|mx|Tap|P    |Type|
 
 ##R
+JBUS3_5S JBUS2_1S 1 1.500  9   3
+JBUS3_5S JBUS2_1S 2 1.500  9   3
+JBUS3_5S JBUS2_1S 3 1.500  9   0
 ##C
 
 ----- 2 WINDINGS TRANSFORMERS DEPENDING ON THE TAP POSITION BLOCK -----

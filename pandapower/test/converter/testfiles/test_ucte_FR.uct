@@ -8,11 +8,12 @@ _________1_________2_________3_________4_________5_________6_________7_________8
 Node    |Node Name   |S|T|Volt  |PLoad  |QLoad  |PGen   |QGen   |Pmin   |Pmax   |Qmin   |Qmax   |Sta  |Pprim  |Sks__  |X/R    |T|
 
 ##N
-##ZHR
-HBUS1_1_ Bus1_1_HR    0 3 383.80       0       0 -0.1106 7.31543 9.99900 -9.9990 1.82725 -1.8273
-HBUS1_1K Bus1_HK      0 3 383.80       0       0 -0.2211 8.42041 9.99900 -9.9990 1.82725 -1.8273
-HBUS2_1_ Bus2_1_HR    0 0        0.11050 -1.1050       0       0
-HBUS2_1K Bus2_HK      0 0        0.22100 -2.2100       0       0
+##ZFR
+FHV_FR1  HV_FR        0 0              0       0       0       0
+FLV_FR5  LV_FR        0 0        0.10000       0       0       0
+FMV_FR2  MV_FR        0 0        2.00000       0       0       0
+FSLACK1F Slack_FR     0 3 383.80       0       0 -2.1341 6.15018 9.99900 -9.9990 0.00183 -0.0018
+FHV_FR1S tr3_star_FR  0 0              0       0       0       0
 ##C
 
 ----- LINE BLOCK -----
@@ -21,8 +22,7 @@ _________1_________2_________3_________4_________5_________6_________7
 Node 1  |Node 2  |O|S|R(Ohm)|X(Ohm)|B(uS)   |I(A)  |Element Name|
 
 ##L
-HBUS1_1_ HBUS2_1_ 1 0 0.7198 3.0866 42.16017    768 line2_HR
-HBUS1_1K HBUS2_1K 1 0 0.7198 3.0866 42.16017    768 line1_HR
+FHV_FR1  FSLACK1F 1 0 0.7198 3.0866 42.16017    768 line1_FR
 ##C
 
 ----- 2 WINDING TRANSFORMER BLOCK -----
@@ -31,6 +31,9 @@ _________1_________2_________3_________4_________5_________6_________7_________8
 Node 1  |Node 2  |O|S|U1   |U2   |Sn   |R(Ohm)|X(Ohm)|B(uS)   |G(uS) |I(A)  |Element Name|
 
 ##T
+FHV_FR1S FHV_FR1  1 0 380.0 380.0 63.00 0.4788 197.60 -0.30336 0.2424     96 trafo3w_FR
+FHV_FR1S FMV_FR2  1 0 380.0 220.0 25.00 1.2540 403.10        0      0     38 trafo3w_FR
+FHV_FR1S FLV_FR5  1 1 380.0 110.0 38.00 -0.099 197.60        0      0     58 trafo3w_FR
 ##C
 
 ----- 2 WINDINGS TRANSFORMERS REGULATION BLOCK -----
@@ -39,6 +42,9 @@ _________1_________2_________3_________4_________5_________6_________7
 Node 1  |Node 2  |O|du   |mx|Tap|U    |du   |phitr|mx|Tap|P    |Type|
 
 ##R
+FHV_FR1S FHV_FR1  1 1.250 10   2
+FHV_FR1S FMV_FR2  1
+FHV_FR1S FLV_FR5  1
 ##C
 
 ----- 2 WINDINGS TRANSFORMERS DEPENDING ON THE TAP POSITION BLOCK -----

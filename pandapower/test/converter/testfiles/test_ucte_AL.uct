@@ -9,9 +9,9 @@ Node    |Node Name   |S|T|Volt  |PLoad  |QLoad  |PGen   |QGen   |Pmin   |Pmax   
 
 ##N
 ##ZAL
-ABUS1_1L Bus1_AL      0 3 383.80       0       0 -1123.4 5148.70 9999.00 -9999.0 1827.25 -1827.3 
-ABUS2_1_ Bus2_1_AL    0 0        1000.00 500.000       0       0 
-ABUS2_1L Bus2_AL      0 0              0       0       0       0 
+ABUS1_1L Bus1_AL      0 3 383.80       0       0 -1.1234 5.14870 9.99900 -9.9990 1.82725 -1.8273
+ABUS2_1_ Bus2_1_AL    0 0        1.00000 0.50000       0       0
+ABUS2_1L Bus2_AL      0 0              0       0       0       0
 ##C
 
 ----- LINE BLOCK -----
@@ -20,7 +20,7 @@ _________1_________2_________3_________4_________5_________6_________7
 Node 1  |Node 2  |O|S|R(Ohm)|X(Ohm)|B(uS)   |I(A)  |Element Name|
 
 ##L
-ABUS2_1L ABUS1_1L 1 0 0.7198 3.0866 42.16017    768 line1_AL    
+ABUS2_1L ABUS1_1L 1 0 0.7198 3.0866 42.16017    768 line1_AL
 ABUS2_1L ABUS2_1_ 1 0 1444.0 722.00        0      3 Allgemeine I
 ##C
 
