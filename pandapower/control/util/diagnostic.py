@@ -80,14 +80,22 @@ def trafo_characteristic_table_diagnostic(net):
             logger.info("No %s with tap-dependent characteristics found." % trafo_table)
             continue
         # check if both tap_dependency_table & id_characteristic_table columns are populated
-        mismatch = net[trafo_table][
+        mismatch_a = net[trafo_table][
             (net[trafo_table]['tap_dependency_table'] & net[trafo_table]['id_characteristic_table'].isna()) |
             (~net[trafo_table]['tap_dependency_table'] & net[trafo_table]['id_characteristic_table'].notna())
             ].shape[0]
-        if mismatch != 0:
-            warnings.warn(f"{trafo_table}: found {mismatch} transformer(s) with not both "
+        if mismatch_a != 0:
+            warnings.warn(f"{trafo_table}: found {mismatch_a} transformer(s) with not both "
                           f"tap_dependency_table and id_characteristic_table parameters populated. "
                           f"Power flow calculation will raise an error.", category=UserWarning)
+        # check if both tap_dependency_table & tap_phase_shifter_type columns are populated
+        mismatch_b = net[trafo_table][
+            (net[trafo_table]['tap_dependency_table'] & net[trafo_table]['tap_phase_shifter_type'].isna())
+            ].shape[0]
+        if mismatch_b != 0:
+            warnings.warn(f"{trafo_table}: found {mismatch_b} transformer(s) with tap_dependency_table set to "
+                          f"True and tap_phase_shifter_type parameter not populated. The characteristics from "
+                          f"trafo_characteristic_table will not be considered.", category=UserWarning)
         # check if all relevant columns are populated in the trafo_characteristic_table
         temp = net[trafo_table].dropna(subset=["id_characteristic_table"])[
             ["tap_dependency_table", "id_characteristic_table"]]
@@ -106,11 +114,10 @@ def trafo_characteristic_table_diagnostic(net):
                           category=UserWarning)
         # check if all id_characteristic_table values are present in id_characteristic column
         # of trafo_characteristic_table
-        if not net[trafo_table]['id_characteristic_table'].isin(
+        if not net[trafo_table]['id_characteristic_table'].dropna().isin(
                 net["trafo_characteristic_table"]['id_characteristic']).all():
-            warnings.warn(f"Not all id_characteristic_table values in the {trafo_table} table are present"
-                          f"in id_characteristic column of trafo_characteristic_table. "
-                          f"Power flow calculation will raise an error.", category=UserWarning)
+            warnings.warn(f"Not all id_characteristic_table values in the {trafo_table} table are present "
+                          f"in id_characteristic column of trafo_characteristic_table.", category=UserWarning)
 
 
 def shunt_characteristic_table_diagnostic(net):
@@ -152,8 +159,7 @@ def shunt_characteristic_table_diagnostic(net):
                       category=UserWarning)
     # check if all id_characteristic_table values are present in id_characteristic column
     # of shunt_characteristic_table
-    if not net["shunt"]['id_characteristic_table'].isin(
+    if not net["shunt"]['id_characteristic_table'].dropna().isin(
             net["shunt_characteristic_table"]['id_characteristic']).all():
-        warnings.warn("Not all id_characteristic_table values in the shunt table are present"
-                      "in id_characteristic column of shunt_characteristic_table. "
-                      "Power flow calculation will raise an error.", category=UserWarning)
+        warnings.warn("Not all id_characteristic_table values in the shunt table are present "
+                      "in id_characteristic column of shunt_characteristic_table.", category=UserWarning)
