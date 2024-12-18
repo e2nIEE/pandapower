@@ -645,8 +645,7 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
             if np.any(vl & (s.step_dependency_table == True) & (pd.isna(s.id_characteristic_table))):
                 raise UserWarning("Shunts with step_dependency_table True and id_characteristic_table NA detected.\n"
                                   "Please set an id_characteristic_table or set step_dependency_table to False.")
-            elif (np.any(vl & s.step_dependency_table == False
-                  & ~pd.isna(s.id_characteristic_table))):
+            elif np.any(vl & (s.step_dependency_table == False) & (~pd.isna(s.id_characteristic_table))):
                 warnings.warn("Shunts with step_dependency_table False but id_characteristic_table detected.",
                               category=UserWarning)
             s.step_dependency_table.fillna(False)
