@@ -81,7 +81,7 @@ def _init_ppc(net, v_start, delta_start, calculate_voltage_angles):
     if np.any(net.trafo.shift_degree):
         vm_backup = ppci["bus"][:, 7].copy()
         pq_backup = ppci["bus"][:, [2, 3]].copy()
-        ppci["bus"][:, [2, 3]] = 0.
+        # ppci["bus"][:, [2, 3]] = 0.
         ppci = _run_dc_pf(ppci)
         ppci["bus"][:, 7] = vm_backup
         ppci["bus"][:, [2, 3]] = pq_backup
@@ -180,15 +180,29 @@ def _add_measurements_to_ppci(net, ppci, zero_injection, algorithm):
             if meas_type in ("p", "q"):
                 # Convert injection reference to consumption reference (P, Q)
                 this_meas.value *= -1
-                unique_bus_positions = np.unique(bus_positions)
-                if len(unique_bus_positions) < len(bus_positions):
-                    std_logger.debug("P,Q Measurement duplication will be automatically merged!")
-                    for bus in unique_bus_positions:
-                        this_meas_on_bus = this_meas.iloc[np.argwhere(bus_positions == bus).ravel(), :]
-                        bus_append[bus, BUS_MEAS_PPCI_IX[meas_type]["VALUE"]] = this_meas_on_bus.value.sum()
-                        bus_append[bus, BUS_MEAS_PPCI_IX[meas_type]["STD"]] = this_meas_on_bus.std_dev.max()
+            unique_bus_positions = np.unique(bus_positions)
+            if len(unique_bus_positions) < len(bus_positions):
+                std_logger.debug("P,Q Measurement duplication will be automatically merged!")
+                for bus in unique_bus_positions:
+                    this_meas_on_bus = this_meas.iloc[np.argwhere(bus_positions == bus).ravel(), :]
+                    element_positions = this_meas_on_bus["element"].values.astype(np.int64)
+                    unique_element_positions = np.unique(element_positions)
+                    if meas_type in ("v", "va"):
+                        merged_value, merged_std_dev = merge_measurements(this_meas_on_bus.value, this_meas_on_bus.std_dev)
+                        bus_append[bus, BUS_MEAS_PPCI_IX[meas_type]["VALUE"]] = merged_value
+                        bus_append[bus, BUS_MEAS_PPCI_IX[meas_type]["STD"]] = merged_std_dev
                         bus_append[bus, BUS_MEAS_PPCI_IX[meas_type]["IDX"]] = this_meas_on_bus.index[0]
-                    continue
+                        continue
+                    for element in unique_element_positions:
+                        this_meas_on_element = this_meas_on_bus.iloc[np.argwhere(element_positions == element).ravel(), :]
+                        merged_value, merged_std_dev = merge_measurements(this_meas_on_element.value, this_meas_on_element.std_dev)
+                        this_meas_on_bus.loc[this_meas_on_element.index[0], ["value", "std_dev"]] = [merged_value, merged_std_dev]
+                        this_meas_on_bus.loc[this_meas_on_element.index[1:], ["value", "std_dev"]] = [0, 0]
+                    sum_value, sum_std_dev = sum_measurements(this_meas_on_bus.value, this_meas_on_bus.std_dev)
+                    bus_append[bus, BUS_MEAS_PPCI_IX[meas_type]["VALUE"]] = sum_value
+                    bus_append[bus, BUS_MEAS_PPCI_IX[meas_type]["STD"]] = sum_std_dev
+                    bus_append[bus, BUS_MEAS_PPCI_IX[meas_type]["IDX"]] = this_meas_on_bus.index[0]
+                continue
 
             bus_append[bus_positions, BUS_MEAS_PPCI_IX[meas_type]["VALUE"]] = this_meas.value.values
             bus_append[bus_positions, BUS_MEAS_PPCI_IX[meas_type]["STD"]] = this_meas.std_dev.values
@@ -197,12 +211,12 @@ def _add_measurements_to_ppci(net, ppci, zero_injection, algorithm):
     # add zero injection measurement and labels defined in parameter zero_injection
     bus_append = _add_zero_injection(net, ppci, bus_append, zero_injection)
     # add virtual measurements for artificial buses, which were created because
-    # of an open line switch. p/q are 0. and std dev is 1. (small value)
+    # of an open line switch. p/q are 0. and std dev is 1e-6. (small value)
     new_in_line_buses = np.setdiff1d(np.arange(ppci["bus"].shape[0]), map_bus[map_bus >= 0])
     bus_append[new_in_line_buses, 2] = 0.
-    bus_append[new_in_line_buses, 3] = 1.
+    bus_append[new_in_line_buses, 3] = 1e-6
     bus_append[new_in_line_buses, 4] = 0.
-    bus_append[new_in_line_buses, 5] = 1.
+    bus_append[new_in_line_buses, 5] = 1e-6
 
     # add 15 columns to mpc[branch] for Im_from, Im_from std dev, Im_to, Im_to std dev,
     # P_from, P_from std dev, P_to, P_to std dev, Q_from, Q_from std dev,  Q_to, Q_to std dev,
@@ -224,15 +238,19 @@ def _add_measurements_to_ppci(net, ppci, zero_injection, algorithm):
                                                 net[br_type][BR_SIDE[br_type][br_side]+"_bus"]
                                                 [this_meas.element]).values]
                     ix_side = br_map[meas_this_side.element.values].values
-                    branch_append[ix_side,
-                                  BR_MEAS_PPCI_IX[(meas_type, br_side)]["VALUE"]] =\
-                        meas_this_side.value.values
-                    branch_append[ix_side,
-                                  BR_MEAS_PPCI_IX[(meas_type, br_side)]["STD"]] =\
-                        meas_this_side.std_dev.values
-                    branch_append[ix_side,
-                                  BR_MEAS_PPCI_IX[(meas_type, br_side)]["IDX"]] =\
-                        meas_this_side.index.values
+                    unique_ix_side = np.unique(ix_side)
+                    if len(unique_ix_side) < len(ix_side):
+                        for branch in unique_ix_side:
+                            this_meas_on_branch = meas_this_side.iloc[np.argwhere(ix_side == branch).ravel(), :]
+                            merged_value, merged_std_dev = merge_measurements(this_meas_on_branch.value, this_meas_on_branch.std_dev)
+                            branch_append[branch, BR_MEAS_PPCI_IX[(meas_type, br_side)]["VALUE"]] = merged_value
+                            branch_append[branch, BR_MEAS_PPCI_IX[(meas_type, br_side)]["STD"]] = merged_std_dev
+                            branch_append[branch, BR_MEAS_PPCI_IX[(meas_type, br_side)]["IDX"]] = this_meas_on_branch.index[0]
+                        continue
+
+                    branch_append[ix_side, BR_MEAS_PPCI_IX[(meas_type, br_side)]["VALUE"]] = meas_this_side.value.values
+                    branch_append[ix_side, BR_MEAS_PPCI_IX[(meas_type, br_side)]["STD"]] = meas_this_side.std_dev.values
+                    branch_append[ix_side, BR_MEAS_PPCI_IX[(meas_type, br_side)]["IDX"]] = meas_this_side.index.values
 
     # Add measurements for trafo3w
     if map_trafo3w is not None:
@@ -250,6 +268,31 @@ def _add_measurements_to_ppci(net, ppci, zero_injection, algorithm):
                 ix_hv = [map_trafo3w[t]['hv'] for t in meas_hv.element.values]
                 ix_mv = [map_trafo3w[t]['mv'] for t in meas_mv.element.values]
                 ix_lv = [map_trafo3w[t]['lv'] for t in meas_lv.element.values]
+                unique_ix_hv = np.unique(ix_hv)
+                unique_ix_mv = np.unique(ix_mv)
+                unique_ix_lv = np.unique(ix_lv)
+                if len(unique_ix_hv) < len(ix_hv):
+                    for branch in unique_ix_hv:
+                        this_meas_on_branch = meas_hv.iloc[np.argwhere(ix_hv == branch).ravel(), :]
+                        merged_value, merged_std_dev = merge_measurements(this_meas_on_branch.value, this_meas_on_branch.std_dev)
+                        branch_append[branch, BR_MEAS_PPCI_IX[(meas_type, "f")]["VALUE"]] = merged_value
+                        branch_append[branch, BR_MEAS_PPCI_IX[(meas_type, "f")]["STD"]] = merged_std_dev
+                        branch_append[branch, BR_MEAS_PPCI_IX[(meas_type, "f")]["IDX"]] = this_meas_on_branch.index[0]
+                if len(unique_ix_mv) < len(ix_mv):
+                    for branch in unique_ix_mv:
+                        this_meas_on_branch = meas_mv.iloc[np.argwhere(ix_mv == branch).ravel(), :]
+                        merged_value, merged_std_dev = merge_measurements(this_meas_on_branch.value, this_meas_on_branch.std_dev)
+                        branch_append[branch, BR_MEAS_PPCI_IX[(meas_type, "t")]["VALUE"]] = merged_value
+                        branch_append[branch, BR_MEAS_PPCI_IX[(meas_type, "t")]["STD"]] = merged_std_dev
+                        branch_append[branch, BR_MEAS_PPCI_IX[(meas_type, "t")]["IDX"]] = this_meas_on_branch.index[0]
+                if len(unique_ix_lv) < len(ix_lv):
+                    for branch in unique_ix_lv:
+                        this_meas_on_branch = meas_lv.iloc[np.argwhere(ix_lv == branch).ravel(), :]
+                        merged_value, merged_std_dev = merge_measurements(this_meas_on_branch.value, this_meas_on_branch.std_dev)
+                        branch_append[branch, BR_MEAS_PPCI_IX[(meas_type, "t")]["VALUE"]] = merged_value
+                        branch_append[branch, BR_MEAS_PPCI_IX[(meas_type, "t")]["STD"]] = merged_std_dev
+                        branch_append[branch, BR_MEAS_PPCI_IX[(meas_type, "t")]["IDX"]] = this_meas_on_branch.index[0]
+                    continue
                 branch_append[ix_hv, BR_MEAS_PPCI_IX[(meas_type, "f")]["VALUE"]] = meas_hv.value.values
                 branch_append[ix_hv, BR_MEAS_PPCI_IX[(meas_type, "f")]["STD"]] = meas_hv.std_dev.values
                 branch_append[ix_hv, BR_MEAS_PPCI_IX[(meas_type, "f")]["IDX"]] = meas_hv.index.values
@@ -272,6 +315,20 @@ def _add_measurements_to_ppci(net, ppci, zero_injection, algorithm):
         ppci["branch"][:, branch_cols: branch_cols + branch_cols_se] = branch_append
     return ppci
 
+def merge_measurements(value, std_dev):
+    weight = np.divide(1, np.square(std_dev))
+    merged_variance = np.divide(1, weight.sum())
+    merged_std_dev = np.sqrt(merged_variance)
+    weighted_value = np.multiply(value, weight)
+    merged_value = np.multiply(weighted_value.sum(), merged_variance)
+    return merged_value, merged_std_dev
+    
+def sum_measurements(value, std_dev):
+    sum_values = value.values.sum()
+    variance = np.square(std_dev.values)
+    sum_variance = variance.sum()
+    sum_std_dev = np.sqrt(sum_variance)
+    return sum_values, sum_std_dev
 
 def _add_zero_injection(net, ppci, bus_append, zero_injection):
     """
@@ -294,7 +351,7 @@ def _add_zero_injection(net, ppci, bus_append, zero_injection):
         if isinstance(zero_injection, str):
             if zero_injection == 'auto':
                 # identify bus without elements and pq measurements as zero injection
-                zero_inj_bus_mask = (ppci["bus"][:, 1] == 1) & (ppci["bus"][:, 2:6] == 0).all(axis=1) & \
+                zero_inj_bus_mask = (ppci["bus"][:, 1] == 1) & (ppci["bus"][:, 2:4] == 0).all(axis=1) & \
                                     np.isnan(bus_append[:, P:(Q_STD + 1)]).all(axis=1)
                 bus_append[zero_inj_bus_mask, ZERO_INJ_FLAG] = True
             elif zero_injection != "aux_bus":

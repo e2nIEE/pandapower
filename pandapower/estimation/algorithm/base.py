@@ -5,7 +5,7 @@
 
 import numpy as np
 from scipy.sparse import csr_matrix, vstack, hstack
-from scipy.sparse.linalg import spsolve
+from scipy.sparse.linalg import spsolve, norm, inv
 
 from pandapower.estimation.algorithm.estimator import BaseEstimatorIRWLS, get_estimator
 from pandapower.estimation.algorithm.matrix_base import BaseAlgebra, \
@@ -86,7 +86,7 @@ class WLSAlgorithm(BaseAlgorithm):
 
         current_error, cur_it = 100., 0
         # invert covariance matrix
-        eppci.r_cov[eppci.r_cov<(10**(-6))] = 10**(-6)
+        eppci.r_cov[eppci.r_cov<(10**(-5))] = 10**(-5)
         r_inv = csr_matrix(np.diagflat(1 / eppci.r_cov ** 2))
         E = eppci.E
         while current_error > self.tolerance and cur_it < self.max_iterations:
@@ -109,20 +109,30 @@ class WLSAlgorithm(BaseAlgorithm):
                 # gain matrix G_m
                 # G_m = H^t * R^-1 * H
                 G_m = H.T * (r_inv * H)
+                norm_G = norm(G_m, np.inf)
+                norm_invG = norm(inv(G_m), np.inf)
+                cond = norm_G*norm_invG
+                if cond > 10**18:
+                    self.logger.warning("WARNING: Gain matrix is ill-conditioned: {:.2E}".format(cond))
 
                 # state vector difference d_E
                 # d_E = G_m^-1 * (H' * R^-1 * r)
                 d_E = spsolve(G_m, H.T * (r_inv * r))
+
+                # Scaling of Delta_X to avoid divergence due o ill-conditioning and 
+                # operating conditions far from starting state variables
+                current_error = np.max(np.abs(d_E))
+                if current_error > 0.35:
+                    d_E = d_E*0.35/current_error
 
                 # Update E with d_E
                 E += d_E.ravel()
                 eppci.update_E(E)
 
                 # log data 
-                current_error = np.max(np.abs(d_E))
-                obj_func = (r.T*r_inv*r)[0,0]
-                self.logger.debug("Current delta_x: {:.7f}".format(current_error))
-                self.logger.debug("Current objective function value: {:.1f}".format(obj_func))
+                # obj_func = (r.T*r_inv*r)[0,0]
+                # self.logger.debug("Current delta_x: {:.7f}".format(current_error))
+                # self.logger.debug("Current objective function value: {:.1f}".format(obj_func))
 
                 # Restore full weighting matrix with current measurements
                 if cur_it == 0 and eppci.any_i_meas:
@@ -139,7 +149,7 @@ class WLSAlgorithm(BaseAlgorithm):
         # check if the estimation is successfull
         self.check_result(current_error, cur_it)
         self.iterations = cur_it
-        self.obj_func = obj_func
+        # self.obj_func = obj_func
         if self.successful:
             # store variables required for chi^2 and r_N_max test:
             self.R_inv = r_inv.toarray()
