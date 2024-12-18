@@ -3542,9 +3542,9 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
 
         **tap2_min** (int, nan):  minimum allowed tap position of the second tap changer
 
-        **tap2_step_percent** (float) - second tap step size for voltage magnitude in percent
+        **tap2_step_percent** (float, nan) - second tap step size for voltage magnitude in percent
 
-        **tap2_step_degree** (float) - second tap step size for voltage angle in degree*
+        **tap2_step_degree** (float, nan) - second tap step size for voltage angle in degree*
 
         **tap2_changer_type** (str, nan) - specifies the phase shifter type (0: Ratio/Asymmetrical,
                                                 1: Symmetrical, 2: Ideal)*
@@ -4464,6 +4464,7 @@ def create_shunt(net, bus, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, name
 
         **step_dependency_table** (boolean, False) - True if shunt parameters (p_mw, q_mvar) must be adjusted \
             dependent on the step of the shunt. Requires the additional column "id_characteristic_table". \
+            The function pandapower.control.shunt_characteristic_table_diagnostic can be used for sanity checks. \
             The function pandapower.control.create_shunt_characteristic_object can be used to create \
             SplineCharacteristic objects in the net.shunt_characteristic_spline table and add the additional column \
             "id_characteristic_spline" to set up the reference to the spline characteristics.
@@ -4527,6 +4528,7 @@ def create_shunts(net, buses, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, n
 
         **step_dependency_table** (list of booleans, False) - True if shunt parameters (p_mw, q_mvar) must be \
             adjusted dependent on the step of the shunts. Requires the additional column "id_characteristic_table". \
+            The function pandapower.control.shunt_characteristic_table_diagnostic can be used for sanity checks. \
             The function pandapower.control.create_shunt_characteristic_object can be used to create \
             SplineCharacteristic objects in the net.shunt_characteristic_spline table and add the additional column \
             "id_characteristic_spline" to set up the reference to the spline characteristics.
