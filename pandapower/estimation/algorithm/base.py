@@ -91,7 +91,7 @@ class WLSAlgorithm(BaseAlgorithm):
         r_inv = csr_matrix(np.diagflat(1 / eppci.r_cov ** 2))
         E = eppci.E
         while current_error > self.tolerance and cur_it < self.max_iterations:
-            self.logger.debug("Starting iteration {:d}".format(1 + cur_it))
+            # self.logger.debug("Starting iteration {:d}".format(1 + cur_it))
             try:
                 # residual r
                 r = csr_matrix(sem.create_rx(E)).T
@@ -301,7 +301,7 @@ class AFWLSAlgorithm(BaseAlgorithm):
         E = eppci.E
         num_clusters = len(self.eppci["clusters"])
         while current_error > self.tolerance and cur_it < self.max_iterations:
-            self.logger.debug("Starting iteration {:d}".format(1 + cur_it))
+            # self.logger.debug("Starting iteration {:d}".format(1 + cur_it))
             try:
                 # residual r
                 r = csr_matrix(sem.create_rx(E)).T
@@ -326,21 +326,14 @@ class AFWLSAlgorithm(BaseAlgorithm):
                 # state vector difference d_E
                 d_E = spsolve(G_m, H.T * (r_inv * r))
 
-                # # Scaling of Delta_X to avoid divergence due o ill-conditioning and 
-                # # operating conditions far from starting state variables
-                # current_error = np.max(np.abs(d_E))
-                # if current_error > 0.25:
-                #     d_E = d_E*0.25/current_error
-
                 # Update E with d_E
                 E += d_E.ravel()
-                # eppci.update_E(E1)
 
                 # log data 
                 current_error = np.max(np.abs(d_E))
-                obj_func = (r.T*r_inv*r)[0,0]
-                self.logger.debug("Current delta_x: {:.7f}".format(current_error))
-                self.logger.debug("Current objective function value: {:.1f}".format(obj_func))
+                # obj_func = (r.T*r_inv*r)[0,0]
+                # self.logger.debug("Current delta_x: {:.7f}".format(current_error))
+                # self.logger.debug("Current objective function value: {:.1f}".format(obj_func))
 
                 # Restore full weighting matrix
                 if cur_it == 0 and eppci.any_i_meas:
@@ -357,7 +350,7 @@ class AFWLSAlgorithm(BaseAlgorithm):
         # check if the estimation is successfull
         self.check_result(current_error, cur_it)
         self.iterations = cur_it
-        self.obj_func = obj_func
+        # self.obj_func = obj_func
         if self.successful:
             # store variables required for chi^2 and r_N_max test:
             self.R_inv = r_inv.toarray()
