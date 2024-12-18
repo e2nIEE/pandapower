@@ -83,6 +83,7 @@ Change Log
 - [CHANGED] accelerate distributed slack power flow calculation by using sparse-aware operations in _subnetworks()
 - [ADDED] Discrete shunt controller for local voltage regulation with shunt steps
 - [ADDED] cim2pp converter: Using lxml to parse XML files (better performance)
+- [FIXED] OC relay name attribute error
 
 [2.14.7] - 2024-06-14
 -------------------------------
