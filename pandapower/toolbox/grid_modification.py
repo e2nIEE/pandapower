@@ -1845,7 +1845,7 @@ def _adapt_result_tables_in_replace_functions(
     et_old, et_new = "res_" + element_type_old, "res_" + element_type_new
     idx_old, idx_new = pd.Index(element_index_old), pd.Index(element_index_new)
     if net[et_old].shape[0]:
-        in_res = pd.Series(et_old).isin(net[et_old].index).values
+        in_res = pd.Series(idx_old).isin(net[et_old].index).values
         to_add = net[et_old].loc[idx_old[in_res]]
         to_add.index = idx_new[in_res]
         net[et_new] = pd.concat([net[et_new], to_add], sort=True)
