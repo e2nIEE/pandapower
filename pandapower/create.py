@@ -9,6 +9,7 @@ from typing import Tuple, List, Union, Iterable
 import warnings
 
 import pandas as pd
+from numba import int64
 from numpy import nan, zeros, isnan, arange, dtype, isin, any as np_any, array, bool_, \
     all as np_all, float64, intersect1d, unique as uni
 from pandas import isnull
@@ -1829,9 +1830,9 @@ def create_storages(
 
 def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_q_mvar=nan,
                min_q_mvar=nan, min_p_mw=nan, max_p_mw=nan, min_vm_pu=nan, max_vm_pu=nan,
-               scaling=1., type=None, slack=False, controllable=nan, vn_kv=nan,
-               xdss_pu=nan, rdss_ohm=nan, cos_phi=nan, pg_percent=nan, power_station_trafo=nan,
-               in_service=True, slack_weight=0.0, **kwargs):
+               scaling=1., type=None, slack=False, id_q_capability_curve_table=nan, curve_dependency_table=False,
+               curve_style=nan, controllable=nan, vn_kv=nan, xdss_pu=nan, rdss_ohm=nan, cos_phi=nan, pg_percent=nan,
+               power_station_trafo=nan, in_service=True, slack_weight=0.0, **kwargs):
     """
     Adds a generator to the network.
 
@@ -1859,6 +1860,16 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
         **scaling** (float, 1.0) - scaling factor which for the active power of the generator
 
         **type** (string, None) - type variable to classify generators
+
+        **curve_dependency_table** (bool, NaN) - True if both the id_q_capability_curve_table and the curve style\
+         are present in the generator.
+
+        **id_q_capability_curve_table** (int, None) - references the index of the characteristic from the lookup table \
+            net.q_capability_curve_table
+
+        **curve_style** (string, None) - The curve style of the generator represents the relationship \
+        between active power (P) and reactive power (Q). It indicates whether the reactive power remains \
+        constant as the active power changes or varies dynamically in response to it.
 
         **controllable** (bool, NaN) - True: p_mw, q_mvar and vm_pu limits are enforced for this \
                 generator in OPF
@@ -1921,6 +1932,16 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
     # OPF limits
     _set_value_if_not_nan(net, index, controllable, "controllable", "gen",
                           dtype=bool_, default_val=True)
+    # id for q capability curve table
+    _set_value_if_not_nan(net, index, id_q_capability_curve_table, "id_q_capability_curve_table", "gen", dtype="Int64")
+    # behaviour of reactive power capability curve
+    _set_value_if_not_nan(net, index, curve_style, "curve_style", "gen", dtype="string")
+    # if both id_q_capability_curve_table and curve_style is given then it is possible to create characteristics of the generator
+    if id_q_capability_curve_table is not None and curve_style is not None:
+        _set_value_if_not_nan(net, index,True, "curve_dependency_table", "gen", dtype=bool_)
+    else:
+        _set_value_if_not_nan(net, index,False, "curve_dependency_table", "gen", dtype=bool_)
+
     # P limits for OPF if controllable == True
     _set_value_if_not_nan(net, index, min_p_mw, "min_p_mw", "gen")
     _set_value_if_not_nan(net, index, max_p_mw, "max_p_mw", "gen")
@@ -1945,9 +1966,9 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
 
 def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_q_mvar=nan,
                 min_q_mvar=nan, min_p_mw=nan, max_p_mw=nan, min_vm_pu=nan, max_vm_pu=nan,
-                scaling=1., type=None, slack=False, controllable=nan, vn_kv=nan,
-                xdss_pu=nan, rdss_ohm=nan, cos_phi=nan, pg_percent=nan, power_station_trafo=nan,
-                in_service=True, slack_weight=0.0, **kwargs):
+                scaling=1., type=None, slack=False, id_q_capability_curve_table=nan, curve_dependency_table=False,
+                curve_style=nan, controllable=nan, vn_kv=nan, xdss_pu=nan, rdss_ohm=nan, cos_phi=nan, pg_percent=nan,
+                power_station_trafo=nan, in_service=True, slack_weight=0.0, **kwargs):
     """
     Adds generators to the specified buses network.
 
@@ -1976,6 +1997,16 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
             generator
 
         **type** (list of string, None) - type variable to classify generators
+
+        **curve_dependency_table** (bool, NaN) - True if both the id_q_capability_curve_table and the curve style\
+         are present in the generator.
+
+        **id_q_capability_curve_table** (int, None) - references the index of the characteristic from the lookup table \
+            net.q_capability_curve_table
+
+        **curve_style** (string, None) - The curve style of the generator represents the relationship \
+        between active power (P) and reactive power (Q). It indicates whether the reactive power remains \
+        constant as the active power changes or varies dynamically in response to it.
 
         **controllable** (bool, NaN) - True: p_mw, q_mvar and vm_pu limits are enforced for this \
                                        generator in OPF
@@ -2053,6 +2084,17 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
     _add_to_entries_if_not_nan(net, "gen", entries, index, "xdss_pu", xdss_pu)
     _add_to_entries_if_not_nan(net, "gen", entries, index, "rdss_ohm", rdss_ohm)
     _add_to_entries_if_not_nan(net, "gen", entries, index, "pg_percent", pg_percent)
+    _add_to_entries_if_not_nan(net, "gen", entries, index, "id_q_capability_curve_table",
+                               id_q_capability_curve_table, dtype="Int64")
+
+    _add_to_entries_if_not_nan(net, "gen", entries, index, "curve_style",curve_style, dtype="object")
+
+    curve_dependency_table = [ id_val is not None and style_val is not None
+                              for id_val, style_val in zip(id_q_capability_curve_table, curve_style)]
+
+    _add_to_entries_if_not_nan(net, "gen", entries, index, "curve_dependency_table",
+                               curve_dependency_table, dtype=bool_)
+
     _add_to_entries_if_not_nan(net, "gen", entries, index, "power_station_trafo",
                                power_station_trafo, dtype="Int64")
     _add_to_entries_if_not_nan(net, "gen", entries, index, "controllable", controllable, dtype=bool_,

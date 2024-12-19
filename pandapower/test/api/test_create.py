@@ -1674,6 +1674,9 @@ def test_create_gens():
         p_mw=[0, 0, 1],
         vm_pu=1.0,
         controllable=[True, False, False],
+        #id_q_capability_curve_table=[0,1,2],
+       # curve_dependency_table=False,
+       # curve_style="straightLineYValues",
         max_p_mw=0.2,
         min_p_mw=[0, 0.1, 0],
         max_q_mvar=0.2,
@@ -1707,6 +1710,9 @@ def test_create_gens():
     assert all(net.gen.rdss_pu.values == 0.1)
     assert all(net.gen.cos_phi.values == 1.0)
     assert all(net.gen.test_kwargs == "dummy_string")
+#    assert all(net.gen.id_q_capability_curve_table == [0,1,2])
+ #   assert all(net.gen.curve_style == "straightLineYValues")
+ #   assert all(net.gen.curve_dependency_table == [True, True, True])
 
 
 def test_create_gens_raise_errorexcept():
@@ -1774,6 +1780,26 @@ def test_create_gens_raise_errorexcept():
             index=g,
         )
 
+    # with pytest.raises(UserWarning, match=r"id of Q capability is exist but relevnt curve style is not."):
+    #     pp.create_gens(
+    #         net,
+    #         buses=[b1, b2, b3],
+    #         p_mw=[0, 0, 1],
+    #         vm_pu=1.0,
+    #         controllable=[True, False, False],
+    #         id_q_capability_curve_table=[0, 1, 2],
+    #         curve_dependency_table=False,
+    #         curve_style="",
+    #         max_p_mw=0.2,
+    #         min_p_mw=[0, 0.1, 0],
+    #         max_q_mvar=0.2,
+    #         min_q_mvar=[0, 0.1, 0],
+    #         min_vm_pu=0.85,
+    #         max_vm_pu=1.15,
+    #         vn_kv=0.4,
+    #         xdss_pu=0.1,
+    #         rdss_pu=0.1,
+    #         cos_phi=1.0)
 
 if __name__ == "__main__":
     pytest.main([__file__, "-xs"])
