@@ -142,7 +142,7 @@ def shunt_characteristic_table_diagnostic(net):
             not all(col in net["shunt"] for col in ['id_characteristic_table', 'step_dependency_table']) or \
             (not net["shunt"]['id_characteristic_table'].notna().any() and
              not net["shunt"]['step_dependency_table'].any()):
-        logger.info("No %s with step-dependent characteristics found." % "shunt")
+        logger.info("No shunt with step-dependent characteristics found.")
         return False
     # check if both step_dependency_table & id_characteristic_table columns are populated
     mismatch = net["shunt"][
