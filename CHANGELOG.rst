@@ -88,6 +88,7 @@ Change Log
 - [CHANGED] Trafo Controllers can now be added to elements that are out of service, changed self.nothing_to_do()
 - [ADDED] Discrete shunt controller for local voltage regulation with shunt steps
 - [ADDED] fix lengths missmatch of output if ignore_zero_length is False in plotting utility function coords_from_node_geodata() and rename ignore_zero_length by ignore_no_geo_diff
+- [FIXED] from_powerfactory() converter: error that crept in `obj.GetAttributes(a)` instead of `obj.GetAttribute(a)`
 - [ADDED] converter for European EHV grid data from JAO, the "Single Allocation Platform (SAP) for all European Transmission System Operators (TSOs) that operate in accordance to EU legislation"
 - [ADDED] UCTE-DEF (UCTE Data Exchange Format) converter
 - [ADDED] cim2pp converter: Using lxml to parse XML files (better performance)
