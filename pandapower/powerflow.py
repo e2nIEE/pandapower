@@ -150,10 +150,10 @@ def _run_pf_algorithm(ppci, options, **kwargs):
             result = _run_bfswpf(ppci, options, **kwargs)[0]
         elif algorithm in ['nr', 'iwamoto_nr']:
             result = _run_newton_raphson_pf(ppci, options)
-        elif algorithm in ['fdbx', 'fdxb']:  # fdbx/xb new algos
+        elif algorithm in ['fdbx', 'fdxb', 'gs']:  # fdbx/xb new algos
             # this implematation will much like be the newton_raphson
-            result = _run_fast_decoupled_pf(ppci, options)
-        elif algorithm == 'gs':  # last algorithm imported from pypower
+            # result = _run_fast_decoupled_pf(ppci, options)
+            # elif algorithm == 'gs':  # last algorithm imported from pypower
             result = _runpf_pypower(ppci, options, **kwargs)[0]
         else:
             raise AlgorithmUnknown("Algorithm {0} is unknown!".format(algorithm))
