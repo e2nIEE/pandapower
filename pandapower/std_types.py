@@ -67,7 +67,7 @@ def create_std_type(net, data, name, element="line", overwrite=True, check_requi
             "tap_max": 2,
             "tap_step_degree": 0,
             "tap_step_percent": 2.5,
-            "tap_phase_shifter_type": 0,
+            "tap_changer_type": "Ratio",
             "vk0_percent": 6,
             "vkr0_percent": 0.78125,
             "mag0_percent": 100,
@@ -984,7 +984,7 @@ def basic_trafo_std_types():
             "tap_max": 9,
             "tap_step_degree": 0,
             "tap_step_percent": 1.5,
-            "tap_phase_shifter_type": 0,
+            "tap_changer_type": "Ratio",
             "trafo_characteristic_table": False},
         "100 MVA 220/110 kV":
         {"i0_percent": 0.06,
@@ -1002,7 +1002,7 @@ def basic_trafo_std_types():
             "tap_max": 9,
             "tap_step_degree": 0,
             "tap_step_percent": 1.5,
-            "tap_phase_shifter_type": 0,
+            "tap_changer_type": "Ratio",
             "trafo_characteristic_table": False},
 
         # compare to IFT Ingenieurbüro data and Schlabbach book
@@ -1022,7 +1022,7 @@ def basic_trafo_std_types():
             "tap_max": 9,
             "tap_step_degree": 0,
             "tap_step_percent": 1.5,
-            "tap_phase_shifter_type": 0,
+            "tap_changer_type": "Ratio",
             "trafo_characteristic_table": False},
         "40 MVA 110/20 kV":
         {"i0_percent": 0.05,
@@ -1040,7 +1040,7 @@ def basic_trafo_std_types():
             "tap_max": 9,
             "tap_step_degree": 0,
             "tap_step_percent": 1.5,
-            "tap_phase_shifter_type": 0,
+            "tap_changer_type": "Ratio",
             "trafo_characteristic_table": False},
         "25 MVA 110/20 kV":
         {"i0_percent": 0.07,
@@ -1058,7 +1058,7 @@ def basic_trafo_std_types():
             "tap_max": 9,
             "tap_step_degree": 0,
             "tap_step_percent": 1.5,
-            "tap_phase_shifter_type": 0,
+            "tap_changer_type": "Ratio",
             "trafo_characteristic_table": False},
         "63 MVA 110/10 kV":
         {"sn_mva": 63,
@@ -1076,7 +1076,7 @@ def basic_trafo_std_types():
             "tap_max": 9,
             "tap_step_degree": 0,
             "tap_step_percent": 1.5,
-            "tap_phase_shifter_type": 0,
+            "tap_changer_type": "Ratio",
             "trafo_characteristic_table": False},
         "40 MVA 110/10 kV":
         {"sn_mva": 40,
@@ -1094,7 +1094,7 @@ def basic_trafo_std_types():
             "tap_max": 9,
             "tap_step_degree": 0,
             "tap_step_percent": 1.5,
-            "tap_phase_shifter_type": 0,
+            "tap_changer_type": "Ratio",
             "trafo_characteristic_table": False},
         "25 MVA 110/10 kV":
         {"sn_mva": 25,
@@ -1112,7 +1112,7 @@ def basic_trafo_std_types():
             "tap_max": 9,
             "tap_step_degree": 0,
             "tap_step_percent": 1.5,
-            "tap_phase_shifter_type": 0,
+            "tap_changer_type": "Ratio",
             "trafo_characteristic_table": False},
         # Trafo 20/0.4
         # 0.25 MVA 20/0.4 kV 0.45 Trafo Union
@@ -1132,7 +1132,7 @@ def basic_trafo_std_types():
             "tap_max": 2,
             "tap_step_degree": 0,
             "tap_step_percent": 2.5,
-            "tap_phase_shifter_type": 0,
+            "tap_changer_type": "Ratio",
             "trafo_characteristic_table": False},
         # 0.4 MVA 20/0.4 kV Trafo Union
         "0.4 MVA 20/0.4 kV":
@@ -1149,7 +1149,7 @@ def basic_trafo_std_types():
             "tap_max": 2,
             "tap_step_degree": 0,
             "tap_step_percent": 2.5,
-            "tap_phase_shifter_type": 0,
+            "tap_changer_type": "Ratio",
             "trafo_characteristic_table": False},
         # 0.63 MVA 20/0.4 kV Trafo Union
         "0.63 MVA 20/0.4 kV":
@@ -1168,7 +1168,7 @@ def basic_trafo_std_types():
             "tap_max": 2,
             "tap_step_degree": 0,
             "tap_step_percent": 2.5,
-            "tap_phase_shifter_type": 0,
+            "tap_changer_type": "Ratio",
             "trafo_characteristic_table": False},
         # Trafo 10/0.4:
         # 0.25 MVA 10/0.4 kV 0.4 Trafo Union wnr
@@ -1188,7 +1188,7 @@ def basic_trafo_std_types():
             "tap_max": 2,
             "tap_step_degree": 0,
             "tap_step_percent": 2.5,
-            "tap_phase_shifter_type": 0,
+            "tap_changer_type": "Ratio",
             "trafo_characteristic_table": False},
         # 0.4 MVA 10/0.4 kV Trafo Union wnr
         "0.4 MVA 10/0.4 kV":
@@ -1207,7 +1207,7 @@ def basic_trafo_std_types():
             "tap_max": 2,
             "tap_step_degree": 0,
             "tap_step_percent": 2.5,
-            "tap_phase_shifter_type": 0,
+            "tap_changer_type": "Ratio",
             "trafo_characteristic_table": False},
         # 0.63 MVA 10/0.4 kV Trafo Union wnr
         "0.63 MVA 10/0.4 kV":
@@ -1226,7 +1226,7 @@ def basic_trafo_std_types():
             "tap_max": 2,
             "tap_step_degree": 0,
             "tap_step_percent": 2.5,
-            "tap_phase_shifter_type": 0,
+            "tap_changer_type": "Ratio",
             "trafo_characteristic_table": False},
     }
     return trafotypes
@@ -1258,7 +1258,7 @@ def basic_trafo3w_std_types():
             "tap_min": -10,
             "tap_max": 10,
             "tap_step_percent": 1.2,
-            "tap_phase_shifter_type": 0,
+            "tap_changer_type": "Ratio",
             "trafo_characteristic_table": False},
         "63/25/38 MVA 110/10/10 kV":
         {"sn_hv_mva": 63,
@@ -1283,7 +1283,7 @@ def basic_trafo3w_std_types():
             "tap_min": -10,
             "tap_max": 10,
             "tap_step_percent": 1.2,
-            "tap_phase_shifter_type": 0,
+            "tap_changer_type": "Ratio",
             "trafo_characteristic_table": False}
     }
     return trafo3wtypes

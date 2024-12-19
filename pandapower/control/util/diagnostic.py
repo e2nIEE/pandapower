@@ -12,6 +12,8 @@ try:
 except:
     import logging as pplog
 
+import warnings
+
 logger = pplog.getLogger(__name__)
 
 
@@ -78,15 +80,22 @@ def trafo_characteristic_table_diagnostic(net):
             logger.info("No %s with tap-dependent characteristics found." % trafo_table)
             continue
         # check if both tap_dependency_table & id_characteristic_table columns are populated
-        mismatch = net[trafo_table][
+        mismatch_a = net[trafo_table][
             (net[trafo_table]['tap_dependency_table'] & net[trafo_table]['id_characteristic_table'].isna()) |
             (~net[trafo_table]['tap_dependency_table'] & net[trafo_table]['id_characteristic_table'].notna())
             ].shape[0]
-        if mismatch != 0:
-            raise UserWarning(
-                f"{trafo_table}: found {mismatch} transformer(s) with not both "
-                f"tap_dependency_table and id_characteristic_table parameters populated. "
-                f"Power flow calculation will raise an error.")
+        if mismatch_a != 0:
+            warnings.warn(f"{trafo_table}: found {mismatch_a} transformer(s) with not both "
+                          f"tap_dependency_table and id_characteristic_table parameters populated. "
+                          f"Power flow calculation will raise an error.", category=UserWarning)
+        # check if both tap_dependency_table & tap_phase_shifter_type columns are populated
+        mismatch_b = net[trafo_table][
+            (net[trafo_table]['tap_dependency_table'] & net[trafo_table]['tap_changer_type'].isna())
+            ].shape[0]
+        if mismatch_b != 0:
+            warnings.warn(f"{trafo_table}: found {mismatch_b} transformer(s) with tap_dependency_table set to "
+                          f"True and tap_changer_type parameter not populated. The characteristics from "
+                          f"trafo_characteristic_table will not be considered.", category=UserWarning)
         # check if all relevant columns are populated in the trafo_characteristic_table
         temp = net[trafo_table].dropna(subset=["id_characteristic_table"])[
             ["tap_dependency_table", "id_characteristic_table"]]
@@ -94,18 +103,63 @@ def trafo_characteristic_table_diagnostic(net):
                                right_on="id_characteristic", how="inner")
         unpopulated = merged_df.loc[~merged_df[cols].notna().all(axis=1)]
         if not unpopulated.empty:
-            raise UserWarning(f"There are some transformers in the {trafo_table} table with not all characteristics "
-                              f"populated in the trafo_characteristic_table.")
+            warnings.warn(f"There are some transformers in the {trafo_table} table with not all "
+                          f"characteristics populated in the trafo_characteristic_table.", category=UserWarning)
         # check tap_dependency_table & id_characteristic_table column types
         if net[trafo_table]['tap_dependency_table'].dtype != 'bool':
-            raise UserWarning(f"The tap_dependency_table column in the {trafo_table} table is not of bool type.")
+            warnings.warn(f"The tap_dependency_table column in the {trafo_table} table is not of bool type.",
+                          category=UserWarning)
         if net[trafo_table]['id_characteristic_table'].dtype != 'Int64':
-            raise UserWarning(f"The id_characteristic_table column in the {trafo_table} table is not of Int64 type.")
+            warnings.warn(f"The id_characteristic_table column in the {trafo_table} table is not of Int64 type.",
+                          category=UserWarning)
         # check if all id_characteristic_table values are present in id_characteristic column
         # of trafo_characteristic_table
-        if not net[trafo_table]['id_characteristic_table'].isin(
+        if not net[trafo_table]['id_characteristic_table'].dropna().isin(
                 net["trafo_characteristic_table"]['id_characteristic']).all():
-            raise UserWarning(f"Not all id_characteristic_table values in the {trafo_table} table are present"
-                              f"in id_characteristic column of trafo_characteristic_table. "
-                              f"Power flow calculation will raise an error.")
-    return True
+            warnings.warn(f"Not all id_characteristic_table values in the {trafo_table} table are present "
+                          f"in id_characteristic column of trafo_characteristic_table.", category=UserWarning)
+
+
+def shunt_characteristic_table_diagnostic(net):
+    logger.info("Checking shunt characteristic table")
+    if "shunt_characteristic_table" not in net:
+        logger.info("No shunt characteristic table found")
+        return False
+    cols = ["id_characteristic", "step", "q_mvar", "p_mw"]
+    if len(net["shunt"]) == 0 or \
+            not all(col in net["shunt"] for col in ['id_characteristic_table', 'step_dependency_table']) or \
+            (not net["shunt"]['id_characteristic_table'].notna().any() and
+             not net["shunt"]['step_dependency_table'].any()):
+        logger.info("No %s with step-dependent characteristics found." % "shunt")
+        return False
+    # check if both step_dependency_table & id_characteristic_table columns are populated
+    mismatch = net["shunt"][
+        (net["shunt"]['step_dependency_table'] & net["shunt"]['id_characteristic_table'].isna()) |
+        (~net["shunt"]['step_dependency_table'] & net["shunt"]['id_characteristic_table'].notna())
+        ].shape[0]
+    if mismatch != 0:
+        warnings.warn(f"Found {mismatch} shunt(s) with not both "
+                      f"step_dependency_table and id_characteristic_table parameters populated. "
+                      f"Power flow calculation will raise an error.", category=UserWarning)
+    # check if all relevant columns are populated in the shunt_characteristic_table
+    temp = net["shunt"].dropna(subset=["id_characteristic_table"])[
+        ["step_dependency_table", "id_characteristic_table"]]
+    merged_df = temp.merge(net["shunt_characteristic_table"], left_on="id_characteristic_table",
+                           right_on="id_characteristic", how="inner")
+    unpopulated = merged_df.loc[~merged_df[cols].notna().all(axis=1)]
+    if not unpopulated.empty:
+        warnings.warn("There are some shunts with not all characteristics "
+                      "populated in the shunt_characteristic_table.", category=UserWarning)
+    # check step_dependency_table & id_characteristic_table column types
+    if net["shunt"]['step_dependency_table'].dtype != 'bool':
+        warnings.warn("The step_dependency_table column in the shunt table is not of bool type.",
+                      category=UserWarning)
+    if net["shunt"]['id_characteristic_table'].dtype != 'Int64':
+        warnings.warn("The id_characteristic_table column in the shunt table is not of Int64 type.",
+                      category=UserWarning)
+    # check if all id_characteristic_table values are present in id_characteristic column
+    # of shunt_characteristic_table
+    if not net["shunt"]['id_characteristic_table'].dropna().isin(
+            net["shunt_characteristic_table"]['id_characteristic']).all():
+        warnings.warn("Not all id_characteristic_table values in the shunt table are present "
+                      "in id_characteristic column of shunt_characteristic_table.", category=UserWarning)

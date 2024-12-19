@@ -141,8 +141,44 @@ is located at the star point of the three winding transformer or at the terminal
 .. seealso::
     `MVA METHOD FOR 3-WINDING TRANSFORMER <https:/pangonilo.com/index.php?sdmon=files/MVA_Method_3-Winding_Transformer.pdf>`_
 
+Trafo characteristic table
+----------------------------
 
-    
+A transformer characteristic table (trafo_characteristic_table) can be used to adjust the 3-winding transformer parameters
+(voltage ratio, angle, impedance) according to the selected tap position. This lookup table is created automatically
+from version 3.0 onwards through the CIM CGMES to pandapower converter (if this information is available in the EQ
+profile), or the user may define this table manually. The id_characteristic_table variable in net.trafo3w references
+the id_characteristic column in net.trafo_characteristic_table per 3-winding transformer.
+
+If the tap_dependency_table variable in net.trafo3w is set to True, this indicates that there is a corresponding
+characteristic available in net.trafo_characteristic_table, which overwrites the default 3-winding transformer parameters
+tap_step_percent, tap_step_degree, vkr_hv_percent, vkr_mv_percent, vkr_lv_percent, vk_hv_percent, vk_mv_percent and
+vk_lv_percent.
+
+The below table provides an example trafo_characteristic_table, populated for two 3-winding transformers.
+
+.. tabularcolumns:: |p{0.10\linewidth}|p{0.55\linewidth}|p{0.15\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}
+.. csv-table::
+   :file: trafo3w_char_table.csv
+   :delim: ,
+   :widths: 10, 55, 15, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55
+
+.. note::
+    tap_dependency_table has to be set to True, and id_characteristic_table and tap_phase_shifter_type variables need to be populated in order to consider the corresponding trafo_characteristic_table values.
+
+The function pandapower.control.trafo_characteristic_table_diagnostic can be used for sanity checks.
+The function pandapower.control.create_trafo_characteristic_object can be used to automatically create
+SplineCharacteristic objects and populate the net.trafo_characteristic_spline table according to the
+net.trafo_characteristic_table table. An additional column id_characteristic_spline is also created in net.trafo3w
+to set up the reference to the spline characteristics.
+
+The below table provides an example trafo_characteristic_spline table, populated for two 3-winding transformers.
+
+.. tabularcolumns:: |p{0.10\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}
+.. csv-table::
+   :file: trafo3w_char_spline.csv
+   :delim: ,
+   :widths: 10, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55
 
 Result Parameters
 ==========================

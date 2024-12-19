@@ -231,12 +231,48 @@ If both values are given for an ideal phase shift transformer, the power flow wi
 
 .. seealso::
 
-    `ENTSO-E - Phase Shift Transformers Modelling, Version 1.0.0, May 2015 <https://docstore.entsoe.eu/Documents/CIM_documents/Grid_Model_CIM/ENTSOE_CGMES_v2.4_28May2014_PSTmodelling.pdf>`_
+    `ENTSO-E - Phase Shift Transformers Modelling, Version 1.0.0, May 2014 <https://eepublicdownloads.entsoe.eu/clean-documents/CIM_documents/Grid_Model_CIM/ENTSOE_CGMES_v2.4_28May2014_PSTmodelling.pdf>`_
     
     `J. Verboomen, D. Van Hertem, P. H. Schavemaker, W. L. Kling and R. Belmans, "Phase shifting transformers: principles and applications," 2005 International Conference on Future Power Systems, Amsterdam, 2005 <https://ieeexplore.ieee.org/document/1600575/>`_
 
+Trafo characteristic table
+----------------------------
 
+A transformer characteristic table (trafo_characteristic_table) can be used to adjust the transformer parameters
+(voltage ratio, angle, impedance) according to the selected tap position. This lookup table is created automatically
+from version 3.0 onwards through the CIM CGMES to pandapower converter (if this information is available in the EQ
+profile), or the user may define this table manually. The id_characteristic_table variable in net.trafo references
+the id_characteristic column in net.trafo_characteristic_table per transformer.
 
+If the tap_dependency_table variable in net.trafo is set to True, this indicates that there is a corresponding
+characteristic available in net.trafo_characteristic_table, which overwrites the default trafo parameters
+tap_step_percent, tap_step_degree, vk_percent and vkr_percent.
+
+The below table provides an example trafo_characteristic_table, populated for two 2-winding transformers.
+
+.. tabularcolumns:: |p{0.10\linewidth}|p{0.55\linewidth}|p{0.15\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}
+.. csv-table::
+   :file: trafo_char_table.csv
+   :delim: ,
+   :widths: 10, 55, 15, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55
+
+.. note::
+    - tap_dependency_table has to be set to True, and id_characteristic_table and tap_phase_shifter_type variables need to be populated in order to consider the corresponding trafo_characteristic_table values.
+    - Only one tap_dependency_table is supported per 2-winding transformer (there is no tap2_dependency_table variable)
+
+The function pandapower.control.trafo_characteristic_table_diagnostic can be used for sanity checks.
+The function pandapower.control.create_trafo_characteristic_object can be used to automatically create
+SplineCharacteristic objects and populate the net.trafo_characteristic_spline table according to the
+net.trafo_characteristic_table table. An additional column id_characteristic_spline is also created in net.trafo
+to set up the reference to the spline characteristics.
+
+The below table provides an example trafo_characteristic_spline table, populated for two 2-winding transformers.
+
+.. tabularcolumns:: |p{0.10\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}
+.. csv-table::
+   :file: trafo_char_spline.csv
+   :delim: ,
+   :widths: 10, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55
 
 Result Parameters
 ==========================

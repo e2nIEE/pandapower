@@ -68,7 +68,45 @@ Converting to the per unit system results in:
    \end{align*}
 
 with the reference values for the per unit system as defined in :ref:`Unit Systems and Conventions<conventions>`.
-   
+
+Shunt characteristic table
+============================
+
+A shunt characteristic table (shunt_characteristic_table) can be used to adjust the shunt parameters
+(q_mvar, p_mw) according to the selected step position. This lookup table is created automatically
+from version 3.0 onwards through the CIM CGMES to pandapower converter (if this information is available in the EQ
+profile), or the user may define this table manually. The id_characteristic_table variable in net.shunt references
+the id_characteristic column in net.shunt_characteristic_table per shunt.
+
+If the shunt_dependency_table variable in net.shunt is set to True, this indicates that there is a corresponding
+characteristic available in net.shunt_characteristic_table, which overwrites the default shunt parameters
+q_mvar and p_mw.
+
+The below table provides an example shunt_characteristic_table, populated for two shunt elements.
+
+.. tabularcolumns:: |p{0.10\linewidth}|p{0.55\linewidth}|p{0.15\linewidth}|p{0.20\linewidth}|p{0.20\linewidth}
+.. csv-table::
+   :file: shunt_char_table.csv
+   :delim: ,
+   :widths: 10, 55, 15, 20, 20
+
+.. note::
+    shunt_dependency_table has to be set to True and the id_characteristic_table variable needs to be populated in order to consider the corresponding shunt_characteristic_table values.
+
+The function pandapower.control.shunt_characteristic_table_diagnostic can be used for sanity checks.
+The function pandapower.control.create_shunt_characteristic_object can be used to automatically create
+SplineCharacteristic objects and populate the net.shunt_characteristic_spline table according to the
+net.shunt_characteristic_table table. An additional column id_characteristic_spline is also created in net.shunt
+to set up the reference to the spline characteristics.
+
+The below table provides an example shunt_characteristic_spline table, populated for two shunt elements.
+
+.. tabularcolumns:: |p{0.10\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}
+.. csv-table::
+   :file: shunt_char_spline.csv
+   :delim: ,
+   :widths: 10, 55, 55, 55
+
 Result Parameters
 ==========================
 *net.res_shunt*

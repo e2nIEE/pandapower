@@ -175,12 +175,12 @@ def add_test_trafo(net):
     pp.create_transformer_from_parameters(net, b2, b3, vk_percent=5., vkr_percent=2.,
                                           i0_percent=.4, pfe_kw=2., sn_mva=0.4, vn_hv_kv=22,
                                           vn_lv_kv=0.42, tap_max=10, tap_neutral=5, tap_min=0,
-                                          tap_step_percent=1.25, tap_pos=3, tap_phase_shifter_type=0, shift_degree=150,
+                                          tap_step_percent=1.25, tap_pos=3, tap_changer_type="Ratio", shift_degree=150,
                                           tap_side="hv", parallel=2)
     t2 = pp.create_transformer_from_parameters(net, b2, b3, vk_percent=5., vkr_percent=2.,
                                                i0_percent=.4, pfe_kw=2, sn_mva=0.4, vn_hv_kv=22,
                                                vn_lv_kv=0.42, tap_max=10, tap_neutral=5, tap_min=0,
-                                               tap_step_percent=1.25, tap_pos=3, tap_phase_shifter_type=0, tap_side="hv",
+                                               tap_step_percent=1.25, tap_pos=3, tap_changer_type="Ratio", tap_side="hv",
                                                shift_degree=150, index=pp.get_free_id(net.trafo) + 1)
     pp.create_switch(net, b3, t2, et="t", closed=False)
     pp.create_transformer_from_parameters(net, b2, b3, vk_percent=5., vkr_percent=2.,
@@ -325,7 +325,7 @@ def add_test_trafo3w(net):
                                             vkr_mv_percent=.02, vk_lv_percent=.25,
                                             vkr_lv_percent=.01, pfe_kw=0.5, i0_percent=0.1,
                                             name="test", index=pp.get_free_id(net.trafo3w) + 1,
-                                            tap_side="hv", tap_pos=2, tap_phase_shifter_type=0, tap_step_percent=1.25,
+                                            tap_side="hv", tap_pos=2, tap_changer_type="Ratio", tap_step_percent=1.25,
                                             tap_min=-5, tap_neutral=0, tap_max=5)
     # adding out of service 3w trafo should not change results
     pp.create_transformer3w_from_parameters(net, hv_bus=b2, mv_bus=b3, lv_bus=b4, vn_hv_kv=20,

@@ -783,7 +783,7 @@ def test_zip_loads_out_of_service():
     pp.create_line(net, from_bus=bus2, to_bus=bus3, length_km=0.1,
                    std_type="NAYY 4x50 SE", name="Line")
 
-    net1 = net.deepcopy()
+    net1 = copy.deepcopy(net)
     oos_load = pp.create_load(
         net1, bus=bus3, p_mw=0.100, q_mvar=0.05, in_service=False,
         const_i_percent=0, const_z_percent=100)
@@ -1329,9 +1329,9 @@ def test_tap_dependent_impedance():
                                             vkr_hv_percent=0.3, vkr_mv_percent=0.3, vkr_lv_percent=0.3,
                                             pfe_kw=0.2, i0_percent=0.3, tap_neutral=0., tap_side='hv',
                                             tap_pos=0, tap_step_percent=0., tap_min=-2, tap_max=2,
-                                            tap_phase_shifter_type=0)
+                                            tap_changer_type="Ratio")
 
-    net_backup = net.deepcopy()
+    net_backup = copy.deepcopy(net)
 
     net["trafo_characteristic_table"] = pd.DataFrame(
         {'id_characteristic': [0, 0, 0, 0, 0], 'step': [-2, -1, 0, 1, 2], 'voltage_ratio': [0.95, 0.975, 1, 1.025, 1.05],

@@ -96,8 +96,8 @@ def correct_dtypes(net, error):
     raised.
     """
     empty_net = create_empty_network()
-    empty_net.trafo['tap_phase_shifter_type'] = empty_net.trafo['tap_phase_shifter_type'].astype("Int64")
-    empty_net.trafo3w['tap_phase_shifter_type'] = empty_net.trafo3w['tap_phase_shifter_type'].astype("Int64")
+    empty_net.trafo['tap_changer_type'] = empty_net.trafo['tap_changer_type']
+    empty_net.trafo3w['tap_changer_type'] = empty_net.trafo3w['tap_changer_type']
     not_corrected = list()
     failed = dict()
     for key, table in empty_net.items():
@@ -364,8 +364,8 @@ def _add_missing_columns(net, elements_to_deserialize):
         net.gen["slack"] = False
 
     if _check_elements_to_deserialize('trafo', elements_to_deserialize) and \
-            "tap_phase_shifter_type" not in net.trafo:
-        net.trafo["tap_phase_shifter_type"] = pd.NA
+            "tap_changer_type" not in net.trafo:
+        net.trafo["tap_changer_type"] = None
 
     # asymmetric impedance
     if _check_elements_to_deserialize('impedance', elements_to_deserialize):
@@ -569,20 +569,20 @@ def convert_trafo_pst_logic(net):
                                    (net[trafotable][f"tap{t}_step_degree"] == 0)) &
                                    ((net[trafotable][f"tap{t}_step_percent"].isna()) |
                                     (net[trafotable][f"tap{t}_step_percent"] == 0)))
-                        net[trafotable].loc[mask_na, f"tap{t}_phase_shifter_type"] = pd.NA
+                        net[trafotable].loc[mask_na, f"tap{t}_changer_type"] = "None"
                         # ratio/asymmetrical phase shifters
                         mask_ratio_asym = ((net[trafotable][f"tap{t}_step_degree"] != 90) &
                                            ((net[trafotable][f"tap{t}_step_percent"].notna()) &
                                             (net[trafotable][f"tap{t}_step_percent"] != 0)))
-                        net[trafotable].loc[mask_ratio_asym, f"tap{t}_phase_shifter_type"] = 0
+                        net[trafotable].loc[mask_ratio_asym, f"tap{t}_changer_type"] = "Ratio"
                         # symmetrical phase shifters
                         mask_sym = ((net[trafotable][f"tap{t}_step_degree"] == 90) &
                                     ((net[trafotable][f"tap{t}_step_percent"].notna()) &
                                     (net[trafotable][f"tap{t}_step_percent"] != 0)))
-                        net[trafotable].loc[mask_sym, f"tap{t}_phase_shifter_type"] = 1
+                        net[trafotable].loc[mask_sym, f"tap{t}_changer_type"] = "Symmetrical"
                         # ideal phase shifters
                         mask_ideal = (((net[trafotable][f"tap{t}_step_degree"].notna()) &
                                       (net[trafotable][f"tap{t}_step_degree"] != 0)) &
                                       ((net[trafotable][f"tap{t}_step_percent"].isna()) |
                                        (net[trafotable][f"tap{t}_step_percent"] == 0)))
-                        net[trafotable].loc[mask_ideal, f"tap{t}_phase_shifter_type"] = 2
+                        net[trafotable].loc[mask_ideal, f"tap{t}_changer_type"] = "Ideal"

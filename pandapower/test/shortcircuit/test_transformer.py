@@ -23,7 +23,7 @@ def net_transformer():
                                           vkr_percent=0.5, pfe_kw=14, shift_degree=0.0,
                                           tap_side="hv", tap_neutral=0, tap_min=-2, tap_max=2, tap_pos=2,
                                           tap_step_percent=2.5, parallel=2, sn_mva=0.4, i0_percent=0.5,
-                                          tap_phase_shifter_type=0)
+                                          tap_changer_type="Ratio")
     # adding a shunt shouldn't change the result:
     pp.create_shunt(net, b2, q_mvar=0.050, p_mw=0.0500)
     return net

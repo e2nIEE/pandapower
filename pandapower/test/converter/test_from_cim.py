@@ -726,7 +726,7 @@ def test_fullgrid_trafo(fullgrid_v2):
     assert 1.250 == element_0['tap_step_percent'].item()
     assert math.isnan(element_0['tap_step_degree'].item())
     assert -2.0 == element_0['tap_pos'].item()
-    assert 0 == element_0['tap_phase_shifter_type'].item()
+    assert "Ratio" == element_0['tap_changer_type'].item()
     assert 1.0 == element_0['parallel'].item()
     assert 1.0 == element_0['df'].item()
     assert element_0['in_service'].item()
@@ -766,7 +766,7 @@ def test_fullgrid_trafo(fullgrid_v2):
     assert math.isnan(element_1['tap_step_percent'].item())
     assert math.isnan(element_1['tap_step_degree'].item())
     assert math.isnan(element_1['tap_pos'].item())
-    assert pd.isna(element_1['tap_phase_shifter_type'].item())
+    assert pd.isna(element_1['tap_changer_type'].item())
     assert 1.0 == element_1['parallel'].item()
     assert 1.0 == element_1['df'].item()
     assert element_1['in_service'].item()
@@ -789,7 +789,7 @@ def test_fullgrid_trafo(fullgrid_v2):
     element_2 = fullgrid_v2.trafo[fullgrid_v2.trafo['origin_id'] == '_ff3a91ec-2286-a64c-a046-d62bc0163ffe']
     assert 1.990 == element_2['tap_step_degree'].item()
     assert 'PhaseTapChangerLinear' == element_2['tapchanger_class'].item()
-    assert 2 == element_2['tap_phase_shifter_type'].item()
+    assert "Ideal" == element_2['tap_changer_type'].item()
     assert pd.isna(element_2['id_characteristic_table'].item())
     assert not element_2['tap_dependency_table'].item()
 
@@ -1026,6 +1026,7 @@ def test_fullgrid_dcline(fullgrid_v2):
     assert 2 == len(fullgrid_v2.dcline.index)
     element_0 = fullgrid_v2.dcline[fullgrid_v2.dcline['origin_id'] == '_70a3750c-6e8e-47bc-b1bf-5a568d9733f7']
     assert 'LDC-1230816355' == element_0['name'].item()
+    assert 'LDC-1230816355' == element_0['description'].item()
     assert '_27d57afa-6c9d-4b06-93ea-8c88d14af8b1' == fullgrid_v2.bus.iloc[element_0['from_bus'].item()]['origin_id']
     assert '_d3d9c515-2ddb-436a-bf17-2f8be2394de3' == fullgrid_v2.bus.iloc[int(element_0['to_bus'].item())]['origin_id']
     assert 0.0 == element_0['p_mw'].item()
