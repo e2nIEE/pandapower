@@ -6,9 +6,16 @@ name: upload
 # Controls when the action will run.
 on:
   # Allows you to run this workflow manually from the Actions tab
-  push:
-    branches:
-      - master
+  workflow_dispatch:
+    inputs:
+      upload_server:
+        description: 'upload server'
+        required: true
+        default: 'testpypi'
+        type: choice
+        options:
+          - 'testpypi'
+          - 'pypi'
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -31,10 +38,23 @@ jobs:
           # Upgrade pip
           python3 -m pip install --upgrade pip
           # Install twine
-          python3 -m pip install setuptools wheel twine
+          python3 -m pip install build setuptools wheel twine
+
+      # Upload to TestPyPI
+      - name: Build and Upload to TestPyPI
+        if: ${{ inputs.upload_server == 'testpypi' }}
+        run: |
+          python3 -m build
+          python3 -m twine check dist/* --strict
+          python3 -m twine upload dist/*
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.TESTPYPI }}
+          TWINE_REPOSITORY: testpypi
 
       # Upload to PyPI
       - name: Build and Upload to PyPI
+        if: ${{ inputs.upload_server == 'pypi' }}
         run: |
           python3 -m build
           python3 -m twine check dist/* --strict 
@@ -59,7 +79,7 @@ jobs:
           ref_name: develop
 
 
-      # Run an install for testing
+      # Run an installation for testing
       - name: Install pandapower from PyPI
         run: |
           python3 -m pip install pandapower

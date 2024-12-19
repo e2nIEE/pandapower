@@ -330,12 +330,9 @@ def _simple_plotly_generic(net, respect_separators, use_branch_geodata, branch_w
 
 
 if __name__ == '__main__':
-    from pandapower import networks as nw
     from pandapower.networks import mv_oberrhein
     from pandapower.plotting.plotly.traces import create_weighted_marker_trace
-    # simple_plotly(net)
-    # net = nw.example_multivoltage()
-    # fig = simple_plotly(net, trafo3w_color='k')
+
     net = mv_oberrhein()
     net.load.scaling, net.sgen.scaling = 1, 1
     # different markers and sizemodes as examples
@@ -346,5 +343,9 @@ if __name__ == '__main__':
                                                 patch_type="circle-open", sizemode="diameter",
                                                 marker_scaling=100, scale_marker_size=[0.2, 0.4])
 
-    fig = simple_plotly(net, bus_size=1, aspectratio="original", additional_traces=[markers_sgen,
-                                                                                    markers_load])
+    fig = simple_plotly(
+        net,
+        bus_size=1,
+        aspectratio="original",
+        additional_traces=[markers_sgen, markers_load]
+    )

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pandapower"
-version = "3.0.0" # File format version '__format_version__' is tracked in _version.py
+version = "3.0.0.dev0" # File format version '__format_version__' is tracked in _version.py
 authors = [
     { name = "Leon Thurner", email = "leon.thurner@retoflow.de" },
     { name = "Alexander Scheidler", email = "alexander.scheidler@iee.fraunhofer.de" }
@@ -62,7 +62,7 @@ Changelog = "https://github.com/e2nIEE/pandapower/blob/develop/CHANGELOG.rst"
 docs = ["numpydoc>=1.5.0", "matplotlib", "sphinx>=5.3.0", "sphinx_rtd_theme>=1.1.1", "sphinx-pyproject"]
 plotting = ["plotly>=3.1.1", "matplotlib", "igraph", "geopandas>=1.0"]
 test = ["pytest~=8.1", "pytest-xdist", "nbmake"]
-performance = ["ortools", "numba>=0.25", "lightsim2grid==0.9.0"]
+performance = ["ortools", "numba==0.60.0", "lightsim2grid==0.9.0"]
 fileio = ["xlsxwriter", "openpyxl", "cryptography", "geopandas>=1.0", "psycopg2"]
 converter = ["matpowercaseframes"]
 pgm = ["power-grid-model-io"]
@@ -71,7 +71,7 @@ all = [
     "numpydoc>=1.5.0", "sphinx>=5.3.0", "sphinx_rtd_theme>=1.1.1", "sphinx-pyproject",
     "plotly>=3.1.1", "matplotlib", "igraph", "geopandas>=1.0",
     "pytest~=8.1", "pytest-xdist", "nbmake",
-    "ortools", "numba>=0.25", "lightsim2grid==0.9.0",
+    "ortools", "numba==0.60.0", "lightsim2grid==0.9.0",
     "xlsxwriter", "openpyxl", "cryptography", "psycopg2",
     "matpowercaseframes",
     "power-grid-model-io"
