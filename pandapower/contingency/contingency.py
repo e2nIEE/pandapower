@@ -218,17 +218,26 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=pp.
         del net.trafo["tap_phase_shifter"]
 
     if tps_flag:
-        net.trafo.tap_phase_shifter = tps  # codacy-disable
-        net.trafo.tap_pos = tps_tap_pos  # codacy-disable
-        net.trafo.shift_degree = tps_shift_degree  # codacy-disable
+        # codacy-disable-next-line
+        net.trafo.tap_phase_shifter = tps
+        # codacy-disable-next-line
+        net.trafo.tap_pos = tps_tap_pos
+        # codacy-disable-next-line
+        net.trafo.shift_degree = tps_shift_degree
     if tct2w_flag:
-        net.trafo.tap_changer_type = tct2w  # codacy-disable
-        net.trafo.tap_pos = tct2w_tap_pos  # codacy-disable
-        net.trafo.shift_degree = tct2w_shift_degree  # codacy-disable
+        # codacy-disable-next-line
+        net.trafo.tap_changer_type = tct2w
+        # codacy-disable-next-line
+        net.trafo.tap_pos = tct2w_tap_pos
+        # codacy-disable-next-line
+        net.trafo.shift_degree = tct2w_shift_degree
     if tct3w_flag:
-        net.trafo3w.tap_changer_type = tct3w  # codacy-disable
-        net.trafo3w.tap_pos = tct3w_tap_pos  # codacy-disable
-        net.trafo3w.shift_degree = tct3w_shift_degree  # codacy-disable
+        # codacy-disable-next-line
+        net.trafo3w.tap_changer_type = tct3w
+        # codacy-disable-next-line
+        net.trafo3w.tap_pos = tct3w_tap_pos
+        # codacy-disable-next-line
+        net.trafo3w.shift_degree = tct3w_shift_degree
 
     n_lines = len(net.line)
     n_lines_cases = len(nminus1_cases.get("line", {}).get("index", []))
