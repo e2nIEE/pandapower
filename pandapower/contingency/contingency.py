@@ -195,6 +195,9 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=pp.
             tct3w, tct3w_tap_pos, tct3w_shift_degree = _convert_trafo_phase_shifter(
                     net, "trafo3w", "tap_changer_type")
 
+    # TODO: remove next line when lightsim2grid supports checking of column 'tap_changer_type'
+    net.trafo["tap_phase_shifter"] = (net.trafo["tap_changer_type"] == "Ideal")
+
     # setting "slack" back-and-forth is due to the difference in interpretation of generators as "distributed slack"
     if net._options.get("distributed_slack", False):
         slack_backup = net.gen.slack.copy()
@@ -209,6 +212,9 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=pp.
     else:
         lightsim_grid_model = init_ls2g(net)
         solver_type = SolverType.KLUSingleSlack if KLU_solver_available else SolverType.SparseLUSingleSlack
+
+    # TODO: remove next line when lightsim2grid supports checking of column 'tap_changer_type'
+    del net.trafo["tap_phase_shifter"]
 
     if tps_flag:
         net.trafo.tap_phase_shifter = tps
