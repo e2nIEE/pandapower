@@ -520,7 +520,7 @@ def pp2eppci(net, v_start=None, delta_start=None,
              algorithm='wls', ppc=None, eppci=None):
     if isinstance(eppci, ExtendedPPCI):
         eppci.data = _add_measurements_to_ppci(net, eppci.data, zero_injection, algorithm)
-        eppci.update_meas(algorithm)
+        eppci.update_meas()
         return net, ppc, eppci
     else:
         # initialize ppc
