@@ -3,12 +3,14 @@
 # Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+from datetime import datetime
 import numpy as np
 from scipy.stats import chi2
 
 from pandapower.estimation.algorithm.base import (WLSAlgorithm,
                                                   WLSZeroInjectionConstraintsAlgorithm,
-                                                  IRWLSAlgorithm)
+                                                  IRWLSAlgorithm,
+                                                  AFWLSAlgorithm)
 from pandapower.estimation.algorithm.lp import LPAlgorithm
 from pandapower.estimation.algorithm.optimization import OptAlgorithm
 from pandapower.estimation.ppc_conversion import pp2eppci, _initialize_voltage
@@ -25,7 +27,8 @@ ALGORITHM_MAPPING = {'wls': WLSAlgorithm,
                      'wls_with_zero_constraint': WLSZeroInjectionConstraintsAlgorithm,
                      'opt': OptAlgorithm,
                      'irwls': IRWLSAlgorithm,
-                     'lp': LPAlgorithm}
+                     'lp': LPAlgorithm,
+                     'af-wls': AFWLSAlgorithm}
 ALLOWED_OPT_VAR = {"a", "opt_method", "estimator"}
 
 
@@ -87,7 +90,8 @@ def estimate(net, algorithm='wls',
     return se.estimate(v_start=v_start, delta_start=delta_start,
                        calculate_voltage_angles=calculate_voltage_angles,
                        zero_injection=zero_injection,
-                       fuse_buses_with_bb_switch=fuse_buses_with_bb_switch, **opt_vars)
+                       fuse_buses_with_bb_switch=fuse_buses_with_bb_switch, 
+                       algorithm=algorithm, **opt_vars)
 
 
 def remove_bad_data(net, init='flat', tolerance=1e-6, maximum_iterations=10,
@@ -176,13 +180,14 @@ class StateEstimation:
         self.ppc = None
         self.eppci = None
         self.recycle = recycle
+        self.algorithm = algorithm
 
         # variables for chi^2 / rn_max tests
         self.delta = None
         self.bad_data_present = None
 
     def estimate(self, v_start='flat', delta_start='flat', calculate_voltage_angles=True,
-                 zero_injection=None, fuse_buses_with_bb_switch='all', **opt_vars):
+                 zero_injection=None, fuse_buses_with_bb_switch='all', algorithm='wls', **opt_vars):
         """
         The function estimate is the main function of the module. It takes up to three input
         arguments: v_start, delta_start and calculate_voltage_angles. The first two are the initial
@@ -261,13 +266,16 @@ class StateEstimation:
 
         self.net, self.ppc, self.eppci = pp2eppci(self.net, v_start=v_start, delta_start=delta_start,
                                                   calculate_voltage_angles=calculate_voltage_angles,
-                                                  zero_injection=zero_injection, ppc=self.ppc, eppci=self.eppci)
+                                                  zero_injection=zero_injection, algorithm=algorithm, 
+                                                  ppc=self.ppc, eppci=self.eppci)
 
         # Estimate voltage magnitude and angle with the given estimator
         self.eppci = self.solver.estimate(self.eppci, **opt_vars)
 
         if self.solver.successful:
             self.net = eppci2pp(self.net, self.ppc, self.eppci)
+            if self.algorithm == "af-wls":
+                self.net["res_cluster_est"] = self.eppci.clusters
         else:
             self.logger.warning("Estimation failed! Pandapower network failed to update!")
 
@@ -278,7 +286,18 @@ class StateEstimation:
         # if recycle is not wished, reset ppc, ppci
         if not self.recycle:
             self.ppc, self.eppci = None, None
-        return self.solver.successful
+        
+        if algorithm == "wls" or algorithm == "af-wls":
+            now = datetime.now()
+            se_results = {
+                "success": self.solver.successful,
+                "num_iterations": self.solver.iterations,
+                "objective_function_value": self.solver.obj_func,
+                "time": now.strftime("%Y-%m-%d %H:%M:%S")}
+        else:
+            se_results = self.solver.successful
+
+        return se_results
 
     def perform_chi2_test(self, v_in_out=None, delta_in_out=None,
                           calculate_voltage_angles=True, chi2_prob_false=0.05):

@@ -397,8 +397,7 @@ def create_bus(net, item, flag_graphics, is_unbalanced):
         'vn_kv': item.uknom,
         'in_service': not bool(item.outserv),
         'type': usage[item.iUsage],
-        'geodata': (x, y),
-        # 'geodata': geojson.dumps(geojson.Point((x, y))),
+        'geodata': geojson.dumps(geojson.Point((x, y))),
     }
 
     system_type = {0: "ac", 1: "dc", 2: "ac/bi"}[item.systype]
