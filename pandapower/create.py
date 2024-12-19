@@ -2609,6 +2609,8 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
         _add_to_entries_if_not_nan(net, "line", entries, index, column, value, float64)
 
     _set_multiple_entries(net, "line", index, **entries, **kwargs)
+    net.line.loc[net.line.geo == "", "geo"] = None # overwrite
+    # empty_defaults_per_dtype() applied in _set_multiple_entries()
 
     if geodata:
         _add_multiple_branch_geodata(net, geodata, index)
