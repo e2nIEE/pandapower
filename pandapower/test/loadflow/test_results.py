@@ -28,7 +28,7 @@ def add_trafo_connection(net, hv_bus, trafotype="2W"):
             vn_hv_kv=20., vn_mv_kv=0.9, vn_lv_kv=0.45, sn_hv_mva=0.6, sn_mv_mva=0.5,
             sn_lv_mva=0.4, vk_hv_percent=1., vk_mv_percent=1., vk_lv_percent=1.,
             vkr_hv_percent=0.3, vkr_mv_percent=0.3, vkr_lv_percent=0.3,
-            pfe_kw=0.2, i0_percent=0.3, tap_neutral=0., tap_phase_shifter_type=0,
+            pfe_kw=0.2, i0_percent=0.3, tap_neutral=0., tap_changer_type="Ratio",
             tap_pos=2, tap_step_percent=1., tap_min=-2, tap_max=2)
     else:
         pp.create_transformer(net, hv_bus=hv_bus, lv_bus=cb, std_type="0.25 MVA 20/0.4 kV", tap_pos=2)
@@ -247,10 +247,10 @@ def test_trafo_2_taps(v_tol=1e-6, i_tol=1e-6, s_tol=1e-2, l_tol=1e-3, va_tol=1e-
     pp.create_transformer_from_parameters(net, 0, 1, 100, 110, 20, 0.5, 12, 14, 0.5,
                                           tap_side="hv", tap_neutral=0, tap_max=10,
                                           tap_min=-10, tap_step_percent=2, tap_step_degree=0,
-                                          tap_pos=0, tap_phase_shifter_type=0,
+                                          tap_pos=0, tap_changer_type="Ratio",
                                           tap2_side="hv", tap2_neutral=0, tap2_max=10,
                                           tap2_min=-10, tap2_step_percent=2, tap2_step_degree=0,
-                                          tap2_pos=0, tap2_phase_shifter_type=0)
+                                          tap2_pos=0, tap2_changer_type="Ratio")
 
     pp.create_load(net, 1, 10)
 
@@ -888,7 +888,7 @@ def test_trafo_unequal_r_x_hv_lv():
     pp.create_transformer_from_parameters(net, 0, 1, 150, 120, 19,
                                           1, 3, 20, 0.12, tap_side="hv",
                                           tap_neutral=0, tap_max=2, tap_min=-2, tap_step_percent=5, tap_step_degree=30,
-                                          tap_pos=-2, tap_phase_shifter_type=0, leakage_resistance_ratio_hv=0.6, leakage_reactance_ratio_hv=0.2)
+                                          tap_pos=-2, tap_changer_type="Ratio", leakage_resistance_ratio_hv=0.6, leakage_reactance_ratio_hv=0.2)
     pp.create_load(net, 1, 100, 20)
 
     runpp_with_consistency_checks(net)

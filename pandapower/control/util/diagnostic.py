@@ -90,11 +90,11 @@ def trafo_characteristic_table_diagnostic(net):
                           f"Power flow calculation will raise an error.", category=UserWarning)
         # check if both tap_dependency_table & tap_phase_shifter_type columns are populated
         mismatch_b = net[trafo_table][
-            (net[trafo_table]['tap_dependency_table'] & net[trafo_table]['tap_phase_shifter_type'].isna())
+            (net[trafo_table]['tap_dependency_table'] & net[trafo_table]['tap_changer_type'].isna())
             ].shape[0]
         if mismatch_b != 0:
             warnings.warn(f"{trafo_table}: found {mismatch_b} transformer(s) with tap_dependency_table set to "
-                          f"True and tap_phase_shifter_type parameter not populated. The characteristics from "
+                          f"True and tap_changer_type parameter not populated. The characteristics from "
                           f"trafo_characteristic_table will not be considered.", category=UserWarning)
         # check if all relevant columns are populated in the trafo_characteristic_table
         temp = net[trafo_table].dropna(subset=["id_characteristic_table"])[
