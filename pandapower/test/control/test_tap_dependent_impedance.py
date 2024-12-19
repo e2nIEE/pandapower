@@ -140,7 +140,7 @@ def test_trafo_characteristic_table_diagnostic():
     # populate id_characteristic_table parameter
     net.trafo['id_characteristic_table'].at[0] = 0
     net.trafo['tap_dependency_table'].at[0] = False
-    with pytest.raises(UserWarning):
+    with pytest.warns(UserWarning):
         trafo_characteristic_table_diagnostic(net)
     # populate tap_dependency_table parameter
     net.trafo['tap_dependency_table'].at[0] = True
@@ -152,16 +152,16 @@ def test_trafo_characteristic_table_diagnostic():
          'angle_deg': [0, 0, 0, 0, 0], 'vk_percent': [5, 5.2, 6, 6.8, 7],
          'vkr_percent': np.nan, 'vk_hv_percent': np.nan, 'vkr_hv_percent': np.nan,
          'vk_mv_percent': np.nan, 'vkr_mv_percent': np.nan, 'vk_lv_percent': np.nan, 'vkr_lv_percent': np.nan})
-    with pytest.raises(UserWarning):
+    with pytest.warns(UserWarning):
         trafo_characteristic_table_diagnostic(net)
 
     # let's make some invalid configurations
     net.trafo.at[0, "tap_dependency_table"] = 0
-    with pytest.raises(UserWarning):
+    with pytest.warns(UserWarning):
         trafo_characteristic_table_diagnostic(net)
     net.trafo.at[0, "tap_dependency_table"] = True
     net.trafo.at[0, "id_characteristic_table"] = int(2)
-    with pytest.raises(UserWarning):
+    with pytest.warns(UserWarning):
         trafo_characteristic_table_diagnostic(net)
 
 
