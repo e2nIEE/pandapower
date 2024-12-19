@@ -3343,8 +3343,8 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
         **id_characteristic_table** (int, nan) - references the index of the characteristic from the lookup table \
             net.trafo_characteristic_table
         
-        **tap_changer_type** (String, nan) - specifies the phase shifter type ("Ratio": Ratio/Asymmetrical,
-                                                "Symmetrical": Symmetrical, "Ideal": Ideal, "None": no tap changer)*
+        **tap_changer_type** (string, None) - specifies the phase shifter type ("Ratio", "Symmetrical", "Ideal",
+                                              None: no tap changer)*
 
         **xn_ohm** (float) - impedance of the grounding reactor (Z_N) for short circuit calculation
 
@@ -3410,7 +3410,7 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
     _set_value_if_not_nan(net, index, tap_dependency_table, "tap_dependency_table", "trafo",
                           dtype=bool_, default_val=False)
     _set_value_if_not_nan(net, index, tap_changer_type, "tap_changer_type",
-                          "trafo", dtype=object, default_val = None)
+                          "trafo", dtype=object, default_val=None)
     _set_value_if_not_nan(net, index, pt_percent, "pt_percent", "trafo")
     _set_value_if_not_nan(net, index, oltc, "oltc", "trafo", dtype=bool_, default_val=False)
     _set_value_if_not_nan(net, index, xn_ohm, "xn_ohm", "trafo")
@@ -3502,8 +3502,8 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
 
         **tap_step_degree** (float) - tap step size for voltage angle in degree*
 
-        **tap_changer_type** (str, nan) - specifies the phase shifter type ("Ratio": Ratio/Asymmetrical,
-                                                "Symmetrical": Symmetrical, "Ideal": Ideal)*
+        **tap_changer_type** (str, None) - specifies the phase shifter type ("Ratio", "Symmetrical", "Ideal",
+                                           None: no tap changer)*
 
         **index** (int, None) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
@@ -3546,8 +3546,8 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
 
         **tap2_step_degree** (float, nan) - second tap step size for voltage angle in degree*
 
-        **tap2_changer_type** (str, nan) - specifies the phase shifter type (0: Ratio/Asymmetrical,
-                                                1: Symmetrical, 2: Ideal)*
+        **tap2_changer_type** (str, None) - specifies the tap changer type ("Ratio", "Symmetrical", "Ideal",
+                                            None: no tap changer)*
 
         **leakage_resistance_ratio_hv** (bool) - ratio of transformer short-circuit resistance on HV side (default 0.5)
 
@@ -3713,8 +3713,8 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
 
         **tap_step_degree** (list of float) - tap step size for voltage angle in degree*
 
-        **tap_changer_type** (list of str, nan) - specifies the tap changer type (0: Ratio/Asymmetrical,
-                                                1: Symmetrical, 2: Ideal)*
+        **tap_changer_type** (list of str, None) - specifies the tap changer type ("Ratio", "Symmetrical", "Ideal",
+                                                   None: no tap changer)*
 
         **index** (list of int, None) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
@@ -3757,8 +3757,8 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
 
         **tap2_step_degree** (list of float) - second tap step size for voltage angle in degree*
 
-        **tap2_changer_type** (list of int, nan) - specifies the phase shifter type (0: Ratio/Asymmetrical,
-                                                1: Symmetrical, 2: Ideal)*
+        **tap2_changer_type** (list of int, None) - specifies the tap changer type ("Ratio", "Symmetrical", "Ideal",
+                                                    None: no tap changer)*
 
         ** only considered in load flow if calculate_voltage_angles = True
 
@@ -3836,8 +3836,8 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tap_p
         **tap_pos** (int, nan) - current tap position of the transformer. Defaults to the medium \
             position (tap_neutral)
 
-        **tap_changer_type** (str, nan) - specifies the tap changer (0: Ratio/Asymmetrical,
-                                                1: Symmetrical, 2: Ideal)*
+        **tap_changer_type** (str, None) - specifies the tap changer type ("Ratio", "Symmetrical", "Ideal",
+                                           None: no tap changer)*
 
         **tap_at_star_point** (boolean) - Whether tap changer is located at the star point of the \
             3W-transformer or at the bus
@@ -4007,8 +4007,8 @@ def create_transformer3w_from_parameters(
         **tap_pos** (int, nan) - current tap position of the transformer. Defaults to the \
             medium position (tap_neutral)
 
-        **tap_changer_type** (str, nan) -specifies the tap changer (0: Ratio/Asymmetrical,
-                                                1: Symmetrical, 2: Ideal)
+        **tap_changer_type** (str, None) - specifies the tap changer type ("Ratio", "Symmetrical", "Ideal",
+                                           None: no tap changer)
 
         **tap_at_star_point** (boolean) - Whether tap changer is located at the star point of the \
             3W-transformer or at the bus
@@ -4173,8 +4173,8 @@ def create_transformers3w_from_parameters(
         **tap_pos** (list of int, nan) - current tap position of the transformer. Defaults to the \
             medium position (tap_neutral)
 
-        **tap_changer_type** (list of str, nan) - specifies the tap changer (0: Ratio/Asymmetrical,
-                                                1: Symmetrical, 2: Ideal)
+        **tap_changer_type** (list of str, None) - specifies the tap changer type ("Ratio", "Symmetrical", "Ideal",
+                                                   None: no tap changer)
 
         **tap_at_star_point** (list of boolean) - Whether tap changer is located at the star point of the \
             3W-transformer or at the bus
