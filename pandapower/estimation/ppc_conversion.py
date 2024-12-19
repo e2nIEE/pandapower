@@ -9,7 +9,7 @@ from collections import UserDict
 import numpy as np
 import pandas as pd
 
-from pandapower.pypower.idx_bus import BUS_TYPE, VM, VA
+from pandapower.pypower.idx_bus import BUS_TYPE as pypower_BUS_TYPE, VM as pypower_VM, VA as pypower_VA
 from pandapower.auxiliary import _init_runse_options
 from pandapower.estimation.util import estimate_voltage_vector
 from pandapower.pd2ppc import _pd2ppc
@@ -427,16 +427,16 @@ class ExtendedPPCI(UserDict):
         self._initialize_meas()
 
         # check slack bus
-        self.non_slack_buses = np.argwhere(ppci["bus"][:, BUS_TYPE] != 3).ravel()
-        self.non_slack_bus_mask = (ppci['bus'][:, BUS_TYPE] != 3).ravel()
+        self.non_slack_buses = np.argwhere(ppci["bus"][:, pypower_BUS_TYPE] != 3).ravel()
+        self.non_slack_bus_mask = (ppci['bus'][:, pypower_BUS_TYPE] != 3).ravel()
         self.num_non_slack_bus = np.sum(self.non_slack_bus_mask)
         self.delta_v_bus_mask = np.r_[self.non_slack_bus_mask,
                                       np.ones(self.non_slack_bus_mask.shape[0], dtype=bool)].ravel()
         self.delta_v_bus_selector = np.flatnonzero(self.delta_v_bus_mask)
 
         # Initialize state variable
-        self.v_init = ppci["bus"][:, VM]
-        self.delta_init = np.radians(ppci["bus"][:, VA])
+        self.v_init = ppci["bus"][:, pypower_VM]
+        self.delta_init = np.radians(ppci["bus"][:, pypower_VA])
         self.E_init = np.r_[self.delta_init[self.non_slack_bus_mask], self.v_init]
         self.v = self.v_init.copy()
         self.delta = self.delta_init.copy()
