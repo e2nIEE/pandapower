@@ -5414,7 +5414,7 @@ def create_dcline(net, from_bus, to_bus, p_mw, loss_percent, loss_mw, vm_from_pu
 
 
 def create_measurement(net, meas_type, element_type, value, std_dev, element, side=None,
-                       check_existing=True, index=None, name=None, **kwargs):
+                       check_existing=False, index=None, name=None, **kwargs):
     """
     Creates a measurement, which is used by the estimation module. Possible types of measurements
     are: v, p, q, i, va, ia
