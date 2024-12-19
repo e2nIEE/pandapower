@@ -148,8 +148,8 @@ def shunt_characteristic_table_diagnostic(net):
                            right_on="id_characteristic", how="inner")
     unpopulated = merged_df.loc[~merged_df[cols].notna().all(axis=1)]
     if not unpopulated.empty:
-        warnings.warn(f"There are some shunts with not all "
-                      "characteristics populated in the shunt_characteristic_table.", category=UserWarning)
+        warnings.warn("There are some shunts with not all characteristics "
+                      "populated in the shunt_characteristic_table.", category=UserWarning)
     # check step_dependency_table & id_characteristic_table column types
     if net["shunt"]['step_dependency_table'].dtype != 'bool':
         warnings.warn("The step_dependency_table column in the shunt table is not of bool type.",

@@ -28,7 +28,7 @@ tap_step_degree;float;:math:`\geq` 0;tap step size for voltage angle
 tap_pos;integer;;current position of tap changer
 tap_phase_shifter_type;integer;0, 1, 2;specifies the phase shifter type (0: Ratio/Asymmetrical, 1: Symmetrical, 2: Ideal)
 tap_dependency_table;boolean;True / False;whether the transformer parameters (voltage ratio, angle, impedance) are adjusted dependent on the tap position of the transformer
-id_characteristic_table;integer;references the id_characteristic index from the trafo_characteristic_table
+id_characteristic_table;integer;:math:`\geq` 0;references the id_characteristic index from the trafo_characteristic_table
 parallel;integer;:math:`>` 0;number of parallel transformers
 max_loading_percent**;float;:math:`>` 0;Maximum loading of the transformer with respect to sn_mva and its corresponding current at 1.0 p.u.
 df;float;1 :math:`\geq` df :math:`>` 0;derating factor: maximum current of transformer in relation to nominal current of transformer (from 0 to 1)

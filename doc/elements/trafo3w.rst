@@ -155,7 +155,7 @@ characteristic available in net.trafo_characteristic_table, which overwrites the
 tap_step_percent, tap_step_degree, vkr_hv_percent, vkr_mv_percent, vkr_lv_percent, vk_hv_percent, vk_mv_percent and
 vk_lv_percent.
 
-The below table provides an example trafo_characteristic_table table, populated for two 3-winding transformers.
+The below table provides an example trafo_characteristic_table, populated for two 3-winding transformers.
 
 .. tabularcolumns:: |p{0.10\linewidth}|p{0.55\linewidth}|p{0.15\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}
 .. csv-table::
@@ -164,7 +164,7 @@ The below table provides an example trafo_characteristic_table table, populated 
    :widths: 10, 55, 15, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55
 
 .. note::
-    tap_dependency_table has to be set to True, and id_characteristic_table and tap_phase_shifter_type variables need to be populated in order to consider the corresponding trafo_characteristic table values.
+    tap_dependency_table has to be set to True, and id_characteristic_table and tap_phase_shifter_type variables need to be populated in order to consider the corresponding trafo_characteristic_table values.
 
 The function pandapower.control.trafo_characteristic_table_diagnostic can be used for sanity checks.
 The function pandapower.control.create_trafo_characteristic_object can be used to automatically create
