@@ -872,6 +872,8 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
     _add_to_entries_if_not_nan(net, "bus", entries, index, "min_vm_pu", min_vm_pu)
     _add_to_entries_if_not_nan(net, "bus", entries, index, "max_vm_pu", max_vm_pu)
     _set_multiple_entries(net, "bus", index, **entries, **kwargs)
+    net.bus.loc[net.bus.geo == "", "geo"] = None # overwrite
+    # empty_defaults_per_dtype() applied in _set_multiple_entries()
 
     return index
 
@@ -5821,7 +5823,9 @@ def create_group(net, element_types, element_indices, name="", reference_columns
     entries = dict(zip(["name", "element_type", "element_index", "reference_column"],
                        [name, element_types, element_indices, reference_columns]))
 
-    _set_multiple_entries(net, "group", index, **entries, **kwargs)
+    _set_multiple_entries(net, "group", index, **entries)
+    net.group.loc[net.group.reference_column == "", "reference_column"] = None # overwrite
+    # empty_defaults_per_dtype() applied in _set_multiple_entries()
 
     return index[0]
 
