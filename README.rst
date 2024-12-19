@@ -1,12 +1,7 @@
-.. raw:: html
 
-    <a href="https://www.pandapower.org">
-       <picture>
-         <source media="(prefers-color-scheme: dark)" srcset="https://www.pandapower.org/images/pp_light.svg">
-         <source media="(prefers-color-scheme: light)" srcset="https://www.pandapower.org/images/pp.svg">
-         <img alt="logo" src="//www.pandapower.org/images/pp.svg">
-       </picture>
-    </a>
+.. image:: https://www.pandapower.org/images/pp.svg
+   :target: https://www.pandapower.org
+   :alt: logo
 
 |
 
@@ -96,15 +91,9 @@ Operation at the Fraunhofer Institute for Energy Economics and Energy System Tec
 
 |
 
-.. raw:: html
-
-    <a href="https://www.iee.fraunhofer.de/en.html">
-       <picture>
-         <source media="(prefers-color-scheme: dark)" srcset="https://www.pandapower.org/images/contact/Logo_Fraunhofer_IEE_negativ.png">
-         <source media="(prefers-color-scheme: light)" srcset="https://www.pandapower.org/images/contact/Logo_Fraunhofer_IEE.png">
-         <img alt="logo" src="https://www.pandapower.org/images/contact/Logo_Fraunhofer_IEE.png" width=500 >
-       </picture>
-    </a>
+.. image:: https://www.pandapower.org/images/contact/Logo_Fraunhofer_IEE.png
+    :target: https://www.iee.fraunhofer.de/en.html
+    :width: 500
 
 |
 
