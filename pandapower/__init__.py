@@ -15,6 +15,6 @@ from pandapower.toolbox import *
 from pandapower.powerflow import *
 from pandapower.opf import *
 from pandapower.optimal_powerflow import OPFNotConverged
-from pandapower.pf.runpp_3ph import runpp_3ph
+# from pandapower.pf.runpp_3ph import runpp_3ph
 import pandas as pd
 pd.options.mode.chained_assignment = None  # default='warn'
