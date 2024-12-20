@@ -166,9 +166,9 @@ Where the reference voltage :math:`V_{N}` is the nominal voltage at the low volt
 Tap Changer
 ---------------
 
-**Longitudinal regulator**
+**Longitudinal regulator (Ratio Tap Changer)**
 
-A longitudinal regulator can be modeled by setting tap_phase_shifter to False and defining the tap changer voltage step with tap_step_percent.
+A longitudinal regulator can be modeled by setting tap_changer_type to "Ratio" and defining the tap changer voltage step with tap_step_percent.
 
 The reference voltage is then multiplied with the tap factor:
 
@@ -190,15 +190,22 @@ On which side the reference voltage is adapted depends on the :math:`tap\_side` 
 .. note::
     The variables tap_min and tap_max are not considered in the power flow. The user is responsible to ensure that tap_min < tap_pos < tap_max!
 
-**Cross regulator**
+**Cross regulator (Ratio Tap Changer / Symmetrical Tap Changer)**
 
 In addition to tap_step_percent a value for tap_step_degree can be defined to model an angle shift for each tap, resulting in a cross
-regulator that affects the magnitude as well as the angle of the transformer ratio.
+regulator that affects the magnitude as well as the angle of the transformer ratio. Use tap_changer_type "Ratio",
+or if the angle shift is :math:'\pm 90' degrees, you can use tap_changer_type "Symmetrical" (and tap_step_percent cen be left empty).
 
+.. math::
+   :nowrap:
+
+   \begin{align*}
+    n_{tap} = 1 + (tap\_pos - tap\_neutral) \cdot \frac{tap\_st\_percent}{100} \exp(\mathrm j \phi)
+    \end{align*}
 
 **Ideal phase shifter**
 
-If tap_phase_shifter is set to True, the tap changer is modeled as an ideal phase shifter, meaning that a constant
+If tap_changer_type is set to "Ideal", the tap changer is modeled as an ideal phase shifter, meaning that a constant
 angle shift is added with each tap step:
 
 .. math::
@@ -209,7 +216,7 @@ angle shift is added with each tap step:
    \theta &= shift\_degree 
    \end{align*}
    
-The angle shift can be directly defined in tap_step_degree, in which case:
+The angle shift can be directly defined in tap_step_degree (the same parameter as for "Ratio" tap changer is used!), in which case:
 
 .. math::
    :nowrap:
