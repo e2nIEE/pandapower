@@ -138,6 +138,7 @@ def shunt_characteristic_table_diagnostic(net):
         logger.info("No shunt characteristic table found")
         return False
     cols = ["id_characteristic", "step", "q_mvar", "p_mw"]
+    warnings_count = 0
     if len(net["shunt"]) == 0 or \
             not all(col in net["shunt"] for col in ['id_characteristic_table', 'step_dependency_table']) or \
             (not net["shunt"]['id_characteristic_table'].notna().any() and
@@ -153,6 +154,7 @@ def shunt_characteristic_table_diagnostic(net):
         warnings.warn(f"Found {mismatch} shunt(s) with not both "
                       f"step_dependency_table and id_characteristic_table parameters populated. "
                       f"Power flow calculation will raise an error.", category=UserWarning)
+        warnings_count += 1
     # check if all relevant columns are populated in the shunt_characteristic_table
     temp = net["shunt"].dropna(subset=["id_characteristic_table"])[
         ["step_dependency_table", "id_characteristic_table"]]
@@ -162,16 +164,25 @@ def shunt_characteristic_table_diagnostic(net):
     if not unpopulated.empty:
         warnings.warn("There are some shunts with not all characteristics "
                       "populated in the shunt_characteristic_table.", category=UserWarning)
+        warnings_count += 1
     # check step_dependency_table & id_characteristic_table column types
     if net["shunt"]['step_dependency_table'].dtype != 'bool':
         warnings.warn("The step_dependency_table column in the shunt table is not of bool type.",
                       category=UserWarning)
+        warnings_count += 1
     if net["shunt"]['id_characteristic_table'].dtype != 'Int64':
         warnings.warn("The id_characteristic_table column in the shunt table is not of Int64 type.",
                       category=UserWarning)
+        warnings_count += 1
     # check if all id_characteristic_table values are present in id_characteristic column
     # of shunt_characteristic_table
     if not net["shunt"]['id_characteristic_table'].dropna().isin(
             net["shunt_characteristic_table"]['id_characteristic']).all():
         warnings.warn("Not all id_characteristic_table values in the shunt table are present "
                       "in id_characteristic column of shunt_characteristic_table.", category=UserWarning)
+        warnings_count += 1
+    logger.info(f"{warnings_count} warnings were issued")
+    if warnings_count > 0:
+        return False
+    else:
+        return True
