@@ -301,7 +301,7 @@
     "trafo": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"name\",\"std_type\",\"hv_bus\",\"lv_bus\",\"sn_mva\",\"vn_hv_kv\",\"vn_lv_kv\",\"vk_percent\",\"vkr_percent\",\"pfe_kw\",\"i0_percent\",\"shift_degree\",\"tap_side\",\"tap_neutral\",\"tap_min\",\"tap_max\",\"tap_step_percent\",\"tap_step_degree\",\"tap_pos\",\"tap_changer_type\",\"parallel\",\"df\",\"in_service\"],\"index\":[0,1,10,11,12,2,3,4,5,6,7,8,9],\"data\":[[null,null,0,2,132.0,275.0,132.0,19.8215482745,0.924,0.0,-3.9393939394,2.0,null,null,null,null,null,null,null,false,1,1.0,true],[null,null,0,2,132.0,275.0,132.0,19.8215482745,0.924,0.0,-3.9393939394,2.0,null,null,null,null,null,null,null,false,1,1.0,true],[null,null,3,2,648.0,275.0,132.0,26.639027009300001,1.944,0.0,-0.0679012346,0.0,null,null,null,null,null,null,null,false,1,1.0,true],[null,null,3,2,648.0,275.0,132.0,26.639027009300001,1.944,0.0,-0.6790123457,0.0,null,null,null,null,null,null,null,false,1,1.0,true],[null,null,1,2,652.0,275.0,132.0,53.889295279899997,19.586079999999999,0.0,-0.1901840491,0.0,null,null,null,null,null,null,null,false,1,1.0,true],[null,null,6,3,1090.0,400.0,275.0,14.893648478799999,2.2999,0.0,-1.0770642202,0.0,null,null,null,null,null,null,null,false,1,1.0,true],[null,null,5,3,1500.0,400.0,275.0,34.555064751800003,1.95,0.0,-0.9973333333,0.0,null,null,null,null,null,null,null,false,1,1.0,true],[null,null,5,3,1120.0,400.0,275.0,25.801115014699999,1.456,0.0,-1.5696428571,0.0,null,null,null,null,null,null,null,false,1,1.0,true],[null,null,4,3,1000.0,400.0,275.0,24.020824298899999,1.0,0.0,-1.25,0.0,null,null,null,null,null,null,null,false,1,1.0,true],[null,null,4,3,1000.0,400.0,275.0,24.020824298899999,1.0,0.0,-1.25,0.0,null,null,null,null,null,null,null,false,1,1.0,true],[null,null,6,3,1090.0,400.0,275.0,14.8919691781,2.289,0.0,-1.4110091743,0.0,null,null,null,null,null,null,null,false,1,1.0,true],[null,null,11,17,2400.0,400.0,400.0,21.672890347199999,1.776,0.0,-1.2129166667,2.0,null,null,null,null,null,null,null,false,1,1.0,true],[null,null,11,12,3100.0,400.0,400.0,33.550250371600001,2.976,0.0,-1.2419354839,2.0,null,null,null,null,null,null,null,false,1,1.0,true]]}",
+      "_object": "{\"columns\":[\"name\",\"std_type\",\"hv_bus\",\"lv_bus\",\"sn_mva\",\"vn_hv_kv\",\"vn_lv_kv\",\"vk_percent\",\"vkr_percent\",\"pfe_kw\",\"i0_percent\",\"shift_degree\",\"tap_side\",\"tap_neutral\",\"tap_min\",\"tap_max\",\"tap_step_percent\",\"tap_step_degree\",\"tap_pos\",\"tap_phase_shifter\",\"parallel\",\"df\",\"in_service\"],\"index\":[0,1,10,11,12,2,3,4,5,6,7,8,9],\"data\":[[null,null,0,2,132.0,275.0,132.0,19.8215482745,0.924,0.0,-3.9393939394,2.0,null,null,null,null,null,null,null,false,1,1.0,true],[null,null,0,2,132.0,275.0,132.0,19.8215482745,0.924,0.0,-3.9393939394,2.0,null,null,null,null,null,null,null,false,1,1.0,true],[null,null,3,2,648.0,275.0,132.0,26.639027009300001,1.944,0.0,-0.0679012346,0.0,null,null,null,null,null,null,null,false,1,1.0,true],[null,null,3,2,648.0,275.0,132.0,26.639027009300001,1.944,0.0,-0.6790123457,0.0,null,null,null,null,null,null,null,false,1,1.0,true],[null,null,1,2,652.0,275.0,132.0,53.889295279899997,19.586079999999999,0.0,-0.1901840491,0.0,null,null,null,null,null,null,null,false,1,1.0,true],[null,null,6,3,1090.0,400.0,275.0,14.893648478799999,2.2999,0.0,-1.0770642202,0.0,null,null,null,null,null,null,null,false,1,1.0,true],[null,null,5,3,1500.0,400.0,275.0,34.555064751800003,1.95,0.0,-0.9973333333,0.0,null,null,null,null,null,null,null,false,1,1.0,true],[null,null,5,3,1120.0,400.0,275.0,25.801115014699999,1.456,0.0,-1.5696428571,0.0,null,null,null,null,null,null,null,false,1,1.0,true],[null,null,4,3,1000.0,400.0,275.0,24.020824298899999,1.0,0.0,-1.25,0.0,null,null,null,null,null,null,null,false,1,1.0,true],[null,null,4,3,1000.0,400.0,275.0,24.020824298899999,1.0,0.0,-1.25,0.0,null,null,null,null,null,null,null,false,1,1.0,true],[null,null,6,3,1090.0,400.0,275.0,14.8919691781,2.289,0.0,-1.4110091743,0.0,null,null,null,null,null,null,null,false,1,1.0,true],[null,null,11,17,2400.0,400.0,400.0,21.672890347199999,1.776,0.0,-1.2129166667,2.0,null,null,null,null,null,null,null,false,1,1.0,true],[null,null,11,12,3100.0,400.0,400.0,33.550250371600001,2.976,0.0,-1.2419354839,2.0,null,null,null,null,null,null,null,false,1,1.0,true]]}",
       "orient": "split",
       "dtype": {
         "name": "object",
@@ -323,7 +323,7 @@
         "tap_step_percent": "float64",
         "tap_step_degree": "float64",
         "tap_pos": "float64",
-        "tap_changer_type": "object",
+        "tap_phase_shifter": "bool",
         "parallel": "uint32",
         "df": "float64",
         "in_service": "bool"
@@ -334,7 +334,7 @@
     "trafo3w": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"name\",\"std_type\",\"hv_bus\",\"mv_bus\",\"lv_bus\",\"sn_hv_mva\",\"sn_mv_mva\",\"sn_lv_mva\",\"vn_hv_kv\",\"vn_mv_kv\",\"vn_lv_kv\",\"vk_hv_percent\",\"vk_mv_percent\",\"vk_lv_percent\",\"vkr_hv_percent\",\"vkr_mv_percent\",\"vkr_lv_percent\",\"pfe_kw\",\"i0_percent\",\"shift_mv_degree\",\"shift_lv_degree\",\"tap_side\",\"tap_neutral\",\"tap_min\",\"tap_max\",\"tap_step_percent\",\"tap_step_degree\",\"tap_changer_type\",\"tap_pos\",\"tap_at_star_point\",\"in_service\"],\"index\":[],\"data\":[]}",
+      "_object": "{\"columns\":[\"name\",\"std_type\",\"hv_bus\",\"mv_bus\",\"lv_bus\",\"sn_hv_mva\",\"sn_mv_mva\",\"sn_lv_mva\",\"vn_hv_kv\",\"vn_mv_kv\",\"vn_lv_kv\",\"vk_hv_percent\",\"vk_mv_percent\",\"vk_lv_percent\",\"vkr_hv_percent\",\"vkr_mv_percent\",\"vkr_lv_percent\",\"pfe_kw\",\"i0_percent\",\"shift_mv_degree\",\"shift_lv_degree\",\"tap_side\",\"tap_neutral\",\"tap_min\",\"tap_max\",\"tap_step_percent\",\"tap_step_degree\",\"tap_pos\",\"tap_at_star_point\",\"in_service\"],\"index\":[],\"data\":[]}",
       "orient": "split",
       "dtype": {
         "name": "object",
@@ -364,7 +364,6 @@
         "tap_max": "int32",
         "tap_step_percent": "float64",
         "tap_step_degree": "float64",
-        "tap_changer_type": "object",
         "tap_pos": "int32",
         "tap_at_star_point": "bool",
         "in_service": "bool"
@@ -518,6 +517,17 @@
         "cq0_eur": "float64",
         "cq1_eur_per_mvar": "float64",
         "cq2_eur_per_mvar2": "float64"
+      },
+      "is_multiindex": false,
+      "is_multicolumn": false
+    },
+    "characteristic": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[\"object\"],\"index\":[],\"data\":[]}",
+      "orient": "split",
+      "dtype": {
+        "object": "object"
       },
       "is_multiindex": false,
       "is_multicolumn": false
@@ -799,7 +809,6 @@
           "tap_min": -2,
           "vkr_percent": 1.425,
           "tap_step_percent": 2.5,
-          "tap_changer_type": "Ratio",
           "tap_side": "hv",
           "vk_percent": 6.0,
           "tap_max": 2
@@ -816,7 +825,6 @@
           "tap_min": -2,
           "vkr_percent": 1.44,
           "tap_step_percent": 2.5,
-          "tap_changer_type": "Ratio",
           "tap_side": "hv",
           "vk_percent": 6.0,
           "tap_max": 2
@@ -833,7 +841,6 @@
           "tap_min": -2,
           "vkr_percent": 1.2,
           "tap_step_percent": 2.5,
-          "tap_changer_type": "Ratio",
           "tap_side": "hv",
           "vk_percent": 4.0,
           "tap_max": 2
@@ -850,7 +857,6 @@
           "tap_min": -9,
           "vkr_percent": 0.25,
           "tap_step_percent": 1.5,
-          "tap_changer_type": "Ratio",
           "tap_side": "hv",
           "vk_percent": 12.2,
           "tap_max": 9
@@ -867,7 +873,6 @@
           "tap_min": -9,
           "vkr_percent": 0.31,
           "tap_step_percent": 1.5,
-          "tap_changer_type": "Ratio",
           "tap_side": "hv",
           "vk_percent": 10.04,
           "tap_max": 9
@@ -884,7 +889,6 @@
           "tap_min": -2,
           "vkr_percent": 1.206,
           "tap_step_percent": 2.5,
-          "tap_changer_type": "Ratio",
           "tap_side": "hv",
           "vk_percent": 6.0,
           "tap_max": 2
@@ -901,7 +905,6 @@
           "tap_min": -2,
           "vkr_percent": 1.325,
           "tap_step_percent": 2.5,
-          "tap_changer_type": "Ratio",
           "tap_side": "hv",
           "vk_percent": 4.0,
           "tap_max": 2
@@ -918,7 +921,6 @@
           "tap_min": -2,
           "vkr_percent": 1.0794,
           "tap_step_percent": 2.5,
-          "tap_changer_type": "Ratio",
           "tap_side": "hv",
           "vk_percent": 4.0,
           "tap_max": 2
@@ -935,7 +937,6 @@
           "tap_min": -9,
           "vkr_percent": 0.322,
           "tap_step_percent": 1.5,
-          "tap_changer_type": "Ratio",
           "tap_side": "hv",
           "vk_percent": 11.2,
           "tap_max": 9
@@ -952,7 +953,6 @@
           "tap_min": -9,
           "vkr_percent": 0.26,
           "tap_step_percent": 1.5,
-          "tap_changer_type": "Ratio",
           "tap_side": "hv",
           "vk_percent": 12.0,
           "tap_max": 9
@@ -969,7 +969,6 @@
           "tap_min": -9,
           "vkr_percent": 0.276,
           "tap_step_percent": 1.5,
-          "tap_changer_type": "Ratio",
           "tap_side": "hv",
           "vk_percent": 10.04,
           "tap_max": 9
@@ -986,7 +985,6 @@
           "tap_min": -9,
           "vkr_percent": 0.302,
           "tap_step_percent": 1.5,
-          "tap_changer_type": "Ratio",
           "tap_side": "hv",
           "vk_percent": 11.2,
           "tap_max": 9
@@ -1003,7 +1001,6 @@
           "tap_min": -9,
           "vkr_percent": 0.282,
           "tap_step_percent": 1.5,
-          "tap_changer_type": "Ratio",
           "tap_side": "hv",
           "vk_percent": 11.2,
           "tap_max": 9
@@ -1020,7 +1017,6 @@
           "tap_min": -9,
           "vkr_percent": 0.295,
           "tap_step_percent": 1.5,
-          "tap_changer_type": "Ratio",
           "tap_side": "hv",
           "vk_percent": 10.04,
           "tap_max": 9
@@ -1048,7 +1044,6 @@
           "tap_max": 10,
           "vkr_mv_percent": 0.32,
           "tap_step_percent": 1.2,
-          "tap_changer_type": "Ratio",
           "tap_side": "hv",
           "vk_hv_percent": 10.4
         },
@@ -1073,7 +1068,6 @@
           "tap_max": 10,
           "vkr_mv_percent": 0.32,
           "tap_step_percent": 1.2,
-          "tap_changer_type": "Ratio",
           "tap_side": "hv",
           "vk_hv_percent": 10.4
         }
