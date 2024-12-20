@@ -331,6 +331,10 @@ def reindex_elements(net, element_type, new_indices=None, old_indices=None, look
             net[cost_df].loc[element_in_cost_df, "element"] = get_indices(net[cost_df].element[
                 element_in_cost_df], lookup)
 
+    # --- adapt tap_characteristic
+    if element_type ==  "trafo":
+        if "trafo_characteristic_table" in net and  "id_characteristic" in net["trafo_characteristic_table"]:
+            net["trafo_characteristic_table"]["id_characteristic"] = net["trafo_characteristic_table"]["id_characteristic"].map(lookup)
 
 def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
     """
