@@ -453,9 +453,14 @@ def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=
     mode = net["_options"]["mode"]
     trafo_model = net["_options"]["trafo_model"]
     if 'tap_dependency_table' in trafo_df:
-        r, x = _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva,
+        if 'trafo_characteristic_table' in net:
+            r, x = _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva,
                                         sequence=sequence, characteristic=net.get("characteristic"),
-                                        update_vk_values=update_vk_values, net=net)
+                                        update_vk_values=update_vk_values, trafo_characteristic_table=net.trafo_characteristic_table)
+        else:
+            r, x = _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva,
+                                            sequence=sequence, characteristic=net.get("characteristic"),
+                                            update_vk_values=update_vk_values)
     else:
         r, x = _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva,
                                         sequence=sequence, characteristic=net.get("characteristic"),
@@ -605,17 +610,21 @@ def _calc_tap_from_dataframe(net, trafo_df):
             # tap_phase_shift_type is only in dataframe starting from pp Version 3.0, older version use different logic
             tap_changer_type = get_trafo_values(trafo_df, f"tap{t}_changer_type")
             if f'tap{t}_dependency_table' in trafo_df:
-                tap_dependency = get_trafo_values(trafo_df, "tap_dependency_table")
-                tap_dependency = np.array(
-                    [False if isinstance(x, float) and np.isnan(x) else x for x in tap_dependency])
+                tap_dependency_table = get_trafo_values(trafo_df, "tap_dependency_table")
+                tap_dependency_table = np.array(
+                    [False if isinstance(x, float) and np.isnan(x) else x for x in tap_dependency_table])
             else:
                 tap_table = np.array([False])
-                tap_dependency = np.array([False])
+                tap_dependency_table = np.array([False])
             #tap_changer_type = pd.Series(tap_changer_type)
-            tap_table = np.logical_and(tap_dependency, np.logical_not(tap_changer_type == "None"))
-            tap_no_table = np.logical_and(~tap_dependency, np.logical_not(tap_changer_type == "None"))
+            tap_table = np.logical_and(tap_dependency_table, np.logical_not(tap_changer_type == "None"))
+            tap_no_table = np.logical_and(~tap_dependency_table, np.logical_not(tap_changer_type == "None"))
             if any(tap_table):
                 id_characteristic_table = get_trafo_values(trafo_df, "id_characteristic_table")
+                if np.any(tap_dependency_table & pd.isna(id_characteristic_table)):
+                    raise UserWarning(
+                        "Trafo with tap_dependency_table True and id_characteristic_table NA detected.\n"
+                        "Please set an id_characteristic_table or set tap_dependency_table to False.")
                 for side, vn, direction in [("hv", vnh, 1), ("lv", vnl, -1)]:
                     mask = tap_table & (side == tap_side)
                     filter_df = pd.DataFrame({
@@ -713,7 +722,10 @@ def _get_vk_values_from_table(trafo_df, trafo_characteristic_table, trafotype="2
         vk_value = get_trafo_values(trafo_df, vk_var)
         if any(tap_dependency_table):
             id_characteristic_table = get_trafo_values(trafo_df, "id_characteristic_table")
-
+            if np.any(tap_dependency_table & pd.isna(id_characteristic_table)):
+                raise UserWarning(
+                    "Trafo with tap_dependency_table True and id_characteristic_table NA detected.\n"
+                    "Please set an id_characteristic_table or set tap_dependency_table to False.")
             mask = tap_dependency_table
             filter_df = pd.DataFrame({
                 'id_characteristic': id_characteristic_table,
@@ -809,7 +821,7 @@ def _calc_tap_dependent_value(tap_pos, value, tap_dependent_impedance, character
 
 
 def _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, sn_mva, sequence=1, characteristic=None,
-                             update_vk_values=True, net=None):
+                             update_vk_values=True, trafo_characteristic_table=None):
     """
     Calculates (Vectorized) the resistance and reactance according to the
     transformer values
@@ -817,11 +829,13 @@ def _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, sn_mva, sequenc
     parallel = get_trafo_values(trafo_df, "parallel")
     if sequence == 1:
         if "tap_dependency_table" in trafo_df:
-            tap_dependency_table = get_trafo_values(trafo_df, "tap_dependency_table")
-            tap_dependency_table = np.array(
-                [False if isinstance(x, float) and np.isnan(x) else x for x in tap_dependency_table])
-            if any(tap_dependency_table) and not isinstance(trafo_df, dict):
-                vk_percent, vkr_percent = _get_vk_values_from_table(trafo_df, net.trafo_characteristic_table)
+            tap_dependency = get_trafo_values(trafo_df, "tap_dependency_table")
+            tap_dependency = np.array(
+                [False if isinstance(x, float) and np.isnan(x) else x for x in tap_dependency])
+            if any(tap_dependency) and not isinstance(trafo_df, dict):
+                if np.any(tap_dependency) and trafo_characteristic_table is None:
+                    raise UserWarning("Trafo with tap_dependency_table True, but no trafo_characteristic_table found.")
+                vk_percent, vkr_percent = _get_vk_values_from_table(trafo_df, trafo_characteristic_table)
                 # update for 3W already in _calc_sc_voltages_of_equivalent_transformers
             else:
                 vk_percent = get_trafo_values(trafo_df, "vk_percent")
