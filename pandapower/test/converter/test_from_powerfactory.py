@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 try:
     import powerfactory as pf
+
     PF_INSTALLED = True
 except ImportError:
     PF_INSTALLED = False
@@ -65,7 +66,12 @@ def test_pf_export():
     tol = get_tol()
 
     for key, diff in all_diffs.items():
-        delta = diff.abs().max()
+        if isinstance(diff, pd.DataFrame):
+            delta = diff["diff"].abs().max()
+        elif isinstance(diff, pd.Series):
+            delta = diff.abs().max()
+        else:
+            raise (UserWarning, "Diff variable has wrong type!")
         assert delta < tol[key], "%s has too high difference: %f > %f" % (key, delta, tol[key])
 
 
@@ -87,8 +93,14 @@ def test_pf_export_trafo3w():
     # doesn't pass yet due to trafo3w implementation
     # trafo3w implementation is not very accurate
     for key, diff in all_diffs.items():
-        delta = diff.abs().max()
+        if isinstance(diff, pd.DataFrame):
+            delta = diff["diff"].abs().max()
+        elif isinstance(diff, pd.Series):
+            delta = diff.abs().max()
+        else:
+            raise (UserWarning, "Diff variable has wrong type!")
         assert delta < tol[key], "%s has too high difference: %f > %f" % (key, delta, tol[key])
+
 
 def test_trafo_tap2_results():
     path = os.path.join(pp.pp_dir, 'test', 'converter', 'testfiles', 'trafo_tap_model.json')
@@ -101,6 +113,26 @@ def test_trafo_tap2_results():
         else:
             delta = diff['diff'].abs().max()
         assert delta < tol, "%s has too high difference: %f > %f" % (key, delta, tol)
+
+@pytest.mark.skipif(not PF_INSTALLED, reason='powerfactory must be installed')
+def test_pf_export_tap_changer():
+    app = pf.GetApplication()
+    # import the tap changer test grid to powerfactory
+    path = os.path.join(pp.pp_dir, 'test', 'converter', 'testfiles', 'test_tap_changer.pfd')
+    prj = import_project(path, app, 'TEST_PF_CONVERTER', import_folder='TEST_IMPORT', clear_import_folder=True)
+    prj_name = prj.GetFullName()
+
+    net = from_pfd(app, prj_name=prj_name)
+
+    all_diffs = validate_pf_conversion(net, tolerance_mva=1e-9)
+    tol = get_tol()
+
+    for key, diff in all_diffs.items():
+        if type(diff) == pd.Series:
+            delta = diff.abs().max()
+        else:
+            delta = diff['diff'].abs().max()
+        assert delta < tol[key], "%s has too high difference: %f > %f" % (key, delta, tol[key])
 
 if __name__ == '__main__':
     pytest.main([__file__, "-xs"])
