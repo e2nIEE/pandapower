@@ -558,11 +558,12 @@ def convert_trafo_pst_logic(net):
     """
     for trafotable in ["trafo", "trafo3w"]:
         if trafotable in net and isinstance(net[trafotable], pd.DataFrame):
+            for t in ("", "2"):
+                # drop old tap_phase_shifter flag
+                if f"tap{t}_phase_shifter" in net[trafotable]:
+                    net[trafotable] = net[trafotable].drop(columns=f"tap{t}_phase_shifter")
             if net[trafotable].index.size > 0:
                 for t in ("", "2"):
-                    # drop old tap_phase_shifter flag
-                    if f"tap{t}_phase_shifter" in net[trafotable]:
-                        net[trafotable] = net[trafotable].drop(columns=f"tap{t}_phase_shifter")
                     if (f"tap{t}_step_degree" in net[trafotable]) or (f"tap{t}_step_percent" in net[trafotable]):
                         # no phase shifters - check if both tap_step_percent & tap_step_degree are 0 or nan
                         mask_na = (((net[trafotable][f"tap{t}_step_degree"].isna()) |
