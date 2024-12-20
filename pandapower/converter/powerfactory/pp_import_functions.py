@@ -2429,7 +2429,8 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
             else:
                 raise ValueError("Measurement location for tap table not given.")
 
-            new_tap_table["vkr_percent"] = new_tap_table["vkr_percent"] / item.GetAttribute("Snom_a")  # pf_type.strn
+            new_tap_table["vkr_percent"] = new_tap_table["vkr_percent"] / item.GetAttribute("Snom_a") / 1000 * 100
+            # * 1000 / 100 for conversion from MVA to kVA and from decimal to %
 
             if len(new_tap_table) == len(steps):
                 new_tap_table['step'] = steps[:len(new_tap_table)]
@@ -2510,7 +2511,8 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
             else:
                 raise ValueError("Measurement location for tap table not given.")
 
-            new_tap_table["vkr_percent"] = new_tap_table["vkr_percent"] / item.GetAttribute("Snom_a")  # pf_type.strn
+            new_tap_table["vkr_percent"] = new_tap_table["vkr_percent"] / item.GetAttribute("Snom_a") / 1000 * 100
+            # * 1000 / 100 for conversion from MVA to kVA and from decimal to %
 
             if len(new_tap_table) == len(steps):
                 new_tap_table['step'] = steps[:len(new_tap_table)]
@@ -2780,7 +2782,7 @@ def create_trafo3w(net, item, tap_opt='nntap'):
         new_tap_table["vkr_mv_percent"] = new_tap_table["vkr_mv_percent"] / (
                     np.min([float(snom_m_a), float(snom_l_a)]) * 1000) * 100
         new_tap_table["vkr_lv_percent"] = new_tap_table["vkr_lv_percent"] / (
-                    np.min([float(snom_h_a), float(snom_m_a)]) * 1000) * 100
+                    np.min([float(snom_h_a), float(snom_l_a)]) * 1000) * 100
 
         steps = list(range(tap_min, tap_max + 1))
 
