@@ -569,7 +569,7 @@ def convert_trafo_pst_logic(net):
                                    (net[trafotable][f"tap{t}_step_degree"] == 0)) &
                                    ((net[trafotable][f"tap{t}_step_percent"].isna()) |
                                     (net[trafotable][f"tap{t}_step_percent"] == 0)))
-                        net[trafotable].loc[mask_na, f"tap{t}_changer_type"] = "None"
+                        net[trafotable].loc[mask_na, f"tap{t}_changer_type"] = None
                         # ratio/asymmetrical phase shifters
                         mask_ratio_asym = ((net[trafotable][f"tap{t}_step_degree"] != 90) &
                                            ((net[trafotable][f"tap{t}_step_percent"].notna()) &

@@ -3,6 +3,15 @@ Change Log
 
 [upcoming release] - 2024-..-..
 -------------------------------
+- [ADDED] Implementation of Allocation Factor WLS (AF-WLS) for non observable distribution grids
+- [FIXED] Deletion of multiple measurements at the same bus or branch
+- [FIXED] Creation of zero injection measurements in WLS estimator
+- [FIXED] Divergence of WLS estimator with flat start for highly loaded grids
+- [ADDED] Computation of matrix conditioning and warning in case of ill-conditioning
+- [FIXED] Issue with initialization of WLS estimator
+- [FIXED] Handling of current magnitude measurements in WLS estimator
+- [ADDED] Created estimation results for shunt elements
+- [FIXED] Fixed issue with power injection results in WLS estimator
 - [FIXED] cim2pp add missing description to dcline
 - [ADDED] pandas series accessor for geo column
 - [FIXED] Increasing geojson precision as the default precision might cause problems with pandahub
@@ -88,6 +97,7 @@ Change Log
 - [ADDED] fix lengths missmatch of output if ignore_zero_length is False in plotting utility function coords_from_node_geodata() and rename ignore_zero_length by ignore_no_geo_diff
 - [ADDED] converter for European EHV grid data from JAO, the "Single Allocation Platform (SAP) for all European Transmission System Operators (TSOs) that operate in accordance to EU legislation"
 - [ADDED] cim2pp converter: Using lxml to parse XML files (better performance)
+- [FIXED] OC relay name attribute error
 
 [2.14.11] - 2024-07-08
 -------------------------------

@@ -9,7 +9,8 @@ import logging
 
 import pandapower as pp
 from pandapower.control import Characteristic, SplineCharacteristic, TapDependentImpedance
-from pandapower.control.util.diagnostic import trafo_characteristic_table_diagnostic
+from pandapower.control.util.diagnostic import (trafo_characteristic_table_diagnostic,
+                                                shunt_characteristic_table_diagnostic)
 
 
 def test_tap_dependent_impedance_control():
@@ -140,7 +141,7 @@ def test_trafo_characteristic_table_diagnostic():
     # populate id_characteristic_table parameter
     net.trafo['id_characteristic_table'].at[0] = 0
     net.trafo['tap_dependency_table'].at[0] = False
-    with pytest.raises(UserWarning):
+    with pytest.warns(UserWarning):
         trafo_characteristic_table_diagnostic(net)
     # populate tap_dependency_table parameter
     net.trafo['tap_dependency_table'].at[0] = True
@@ -152,17 +153,63 @@ def test_trafo_characteristic_table_diagnostic():
          'angle_deg': [0, 0, 0, 0, 0], 'vk_percent': [5, 5.2, 6, 6.8, 7],
          'vkr_percent': np.nan, 'vk_hv_percent': np.nan, 'vkr_hv_percent': np.nan,
          'vk_mv_percent': np.nan, 'vkr_mv_percent': np.nan, 'vk_lv_percent': np.nan, 'vkr_lv_percent': np.nan})
-    with pytest.raises(UserWarning):
+    with pytest.warns(UserWarning):
         trafo_characteristic_table_diagnostic(net)
 
     # let's make some invalid configurations
     net.trafo.at[0, "tap_dependency_table"] = 0
-    with pytest.raises(UserWarning):
+    with pytest.warns(UserWarning):
         trafo_characteristic_table_diagnostic(net)
     net.trafo.at[0, "tap_dependency_table"] = True
     net.trafo.at[0, "id_characteristic_table"] = int(2)
-    with pytest.raises(UserWarning):
+    with pytest.warns(UserWarning):
         trafo_characteristic_table_diagnostic(net)
+
+
+def test_shunt_characteristic_table_diagnostic():
+    net = pp.create_empty_network()
+    vn_kv = 20
+    b1 = pp.create_bus(net, vn_kv=vn_kv)
+    pp.create_shunt(net, bus=b1, q_mvar=-50, p_mw=0, step=1, max_step=5)
+    pp.create_ext_grid(net, b1, vm_pu=1.01)
+    b2 = pp.create_bus(net, vn_kv=vn_kv)
+    pp.create_line_from_parameters(net, b1, b2, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12,
+                                   c_nf_per_km=300, max_i_ka=.2, df=.8)
+    cb = pp.create_bus(net, vn_kv=0.4)
+    pp.create_load(net, cb, 0.2, 0.05)
+    pp.create_transformer(net, hv_bus=b2, lv_bus=cb, std_type="0.25 MVA 20/0.4 kV", tap_pos=2)
+
+    # initially no shunt_characteristic_table is available
+    assert shunt_characteristic_table_diagnostic(net) is False
+
+    # add shunt_characteristic_table
+    net["shunt_characteristic_table"] = pd.DataFrame(
+        {'id_characteristic': [0, 0, 0, 0, 0], 'step': [1, 2, 3, 4, 5], 'q_mvar': [-25, -55, -75, -120, -125],
+         'p_mw': [1, 1.5, 3, 4.5, 5]})
+    # populate id_characteristic_table parameter
+    net.shunt['id_characteristic_table'].at[0] = 0
+    net.shunt['step_dependency_table'].at[0] = False
+    with pytest.warns(UserWarning):
+        shunt_characteristic_table_diagnostic(net)
+    # populate step_dependency_table parameter
+    net.shunt['step_dependency_table'].at[0] = True
+    assert shunt_characteristic_table_diagnostic(net) is True
+
+    # add shunt_characteristic_table with missing parameter values
+    net["shunt_characteristic_table"] = pd.DataFrame(
+        {'id_characteristic': [0, 0, 0, 0, 0], 'step': [1, 2, 3, 4, 5], 'q_mvar': [-25, -55, -75, -120, -125],
+         'p_mw': np.nan})
+    with pytest.warns(UserWarning):
+        shunt_characteristic_table_diagnostic(net)
+
+    # let's make some invalid configurations
+    net.shunt.at[0, "step_dependency_table"] = 0
+    with pytest.warns(UserWarning):
+        shunt_characteristic_table_diagnostic(net)
+    net.shunt.at[0, "step_dependency_table"] = True
+    net.shunt.at[0, "id_characteristic_table"] = int(2)
+    with pytest.warns(UserWarning):
+        shunt_characteristic_table_diagnostic(net)
 
 
 if __name__ == '__main__':

@@ -28,7 +28,7 @@ tap_step_percent;float;:math:`>` 0;tap step size [%]
 tap_step_degree;float;;tap step size for voltage angle
 tap_at_star_point;boolean;True / False;whether the tap changer is modelled at terminal or at star point
 tap_pos;integer;;current position of tap changer
-tap_phase_shifter_type;integer;0, 1, 2;specifies the phase shifter type (0: Ratio/Asymmetrical, 1: Symmetrical, 2: Ideal)
+tap_changer_type;string;"""Ratio"", ""Symmetrical"", ""Ideal""";specifies the tap changer type
 tap_dependency_table;boolean;True / False;whether the transformer parameters (voltage ratio, angle, impedance) are adjusted dependent on the tap position of the transformer
 id_characteristic_table;integer;:math:`\geq` 0;references the id_characteristic index from the trafo_characteristic_table
 in_service*;boolean;True / False;specifies if the transformer is in service.

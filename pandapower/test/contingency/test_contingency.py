@@ -225,7 +225,7 @@ def test_lightsim2grid_phase_shifters():
 
     pp.create_lines(net, [0, 0], [1, 1], 40, "243-AL1/39-ST1A 110.0", max_loading_percent=100)
     pp.create_transformer_from_parameters(net, 1, 2, 150, 110, 110, 0.5, 10, 15, 0.1, 150,
-                                          'hv', 0, 10, -10, 0, 1, 5, 2, max_loading_percent=100)
+                                          'hv', 0, 10, -10, 0, 1, 5, "Ideal", max_loading_percent=100)
     pp.create_lines(net, [2, 2], [3, 3], 25, "243-AL1/39-ST1A 110.0", max_loading_percent=100)
 
     pp.create_load(net, 3, 110)
@@ -251,7 +251,13 @@ def test_lightsim2grid_phase_shifters():
 
     pp.runpp(net)
     bus_res = net.res_bus.copy()
-    _convert_trafo_phase_shifter(net)
+    if "tap_phase_shifter" in net.trafo.columns:
+        _convert_trafo_phase_shifter(net, "trafo", "tap_phase_shifter")
+    if ("tap_changer_type" in net.trafo.columns) or ("tap_changer_type" in net.trafo3w.columns):
+        if np.any(net.trafo.tap_changer_type == "Ideal"):
+            _convert_trafo_phase_shifter(net, "trafo", "tap_changer_type")
+        if np.any(net.trafo3w.tap_changer_type == "Ideal"):
+            _convert_trafo_phase_shifter(net, "trafo3w", "tap_changer_type")
     pp.runpp(net)
     assert_frame_equal(bus_res, net.res_bus)
 
