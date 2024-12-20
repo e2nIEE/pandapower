@@ -655,7 +655,7 @@ def _calc_tap_from_dataframe(net, trafo_df):
                         vn[mask_complex] = np.sqrt((u1 + du * cos(tap_angles)) ** 2 + (du * sin(tap_angles)) ** 2)
                         trafo_shift[mask_complex] += (arctan(direction * du * sin(tap_angles) /
                                                       (u1 + du * cos(tap_angles))))
-        else:
+        elif f'tap{t}_phase_shifter' in trafo_df:
             tap_phase_shifter = get_trafo_values(trafo_df, f"tap{t}_phase_shifter")
             for side, vn, direction in [("hv", vnh, 1), ("lv", vnl, -1)]:
                 tap_ideal = tap_phase_shifter & (tap_side == side)

@@ -318,7 +318,7 @@
     "trafo": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"name\",\"std_type\",\"hv_bus\",\"lv_bus\",\"sn_mva\",\"vn_hv_kv\",\"vn_lv_kv\",\"vk_percent\",\"vkr_percent\",\"pfe_kw\",\"i0_percent\",\"shift_degree\",\"tap_side\",\"tap_neutral\",\"tap_min\",\"tap_max\",\"tap_step_percent\",\"tap_step_degree\",\"tap_pos\",\"tap_changer_type\",\"parallel\",\"df\",\"in_service\",\"tap_set_vm_pu\",\"description\",\"equipment\",\"vector_group\",\"vk0_percent\",\"vkr0_percent\",\"mag0_percent\",\"mag0_rx\",\"si0_hv_partial\"],\"index\":[0],\"data\":[[\"Trafo\",\"08 MVA 10\\/04 kV Dyn1 ASEA\",0,1,0.800000011920929,11.0,0.416000008583069,4.019950389862061,0.400000005960464,0.0,0.0,30.0,\"hv\",0,-2,2,2.5,0.0,0,false,1,1.0,true,1.0,\"\",\"\",\"Dyn\",4.019950389862061,0.400000005960464,1,0,0.899999976158142]]}",
+      "_object": "{\"columns\":[\"name\",\"std_type\",\"hv_bus\",\"lv_bus\",\"sn_mva\",\"vn_hv_kv\",\"vn_lv_kv\",\"vk_percent\",\"vkr_percent\",\"pfe_kw\",\"i0_percent\",\"shift_degree\",\"tap_side\",\"tap_neutral\",\"tap_min\",\"tap_max\",\"tap_step_percent\",\"tap_step_degree\",\"tap_pos\",\"tap_phase_shifter\",\"parallel\",\"df\",\"in_service\",\"tap_set_vm_pu\",\"description\",\"equipment\",\"vector_group\",\"vk0_percent\",\"vkr0_percent\",\"mag0_percent\",\"mag0_rx\",\"si0_hv_partial\"],\"index\":[0],\"data\":[[\"Trafo\",\"08 MVA 10\\/04 kV Dyn1 ASEA\",0,1,0.800000011920929,11.0,0.416000008583069,4.019950389862061,0.400000005960464,0.0,0.0,30.0,\"hv\",0,-2,2,2.5,0.0,0,false,1,1.0,true,1.0,\"\",\"\",\"Dyn\",4.019950389862061,0.400000005960464,1,0,0.899999976158142]]}",
       "orient": "split",
       "dtype": {
         "name": "object",
@@ -340,7 +340,7 @@
         "tap_step_percent": "float64",
         "tap_step_degree": "float64",
         "tap_pos": "int32",
-        "tap_changer_type": "object",
+        "tap_phase_shifter": "bool",
         "parallel": "uint32",
         "df": "float64",
         "in_service": "bool",
@@ -1192,7 +1192,7 @@
           "tap_max": 9,
           "tap_step_degree": 0,
           "tap_step_percent": 1.5,
-          "tap_changer_type": "Ratio"
+          "tap_phase_shifter": false
         },
         "0.63 MVA 20/0.4 kV": {
           "sn_mva": 0.63,
@@ -1210,7 +1210,7 @@
           "tap_max": 2,
           "tap_step_degree": 0,
           "tap_step_percent": 2.5,
-          "tap_changer_type": "Ratio"
+          "tap_phase_shifter": false
         },
         "0.4 MVA 20/0.4 kV": {
           "sn_mva": 0.4,
@@ -1228,7 +1228,7 @@
           "tap_max": 2,
           "tap_step_degree": 0,
           "tap_step_percent": 2.5,
-          "tap_changer_type": "Ratio"
+          "tap_phase_shifter": false
         },
         "0.4 MVA 10/0.4 kV": {
           "sn_mva": 0.4,
@@ -1246,7 +1246,7 @@
           "tap_max": 2,
           "tap_step_degree": 0,
           "tap_step_percent": 2.5,
-          "tap_changer_type": "Ratio"
+          "tap_phase_shifter": false
         },
         "08 MVA 10/04 kV Dyn1 ASEA": {
           "sn_mva": 0.800000011920929,
@@ -1266,7 +1266,7 @@
           "tap_side": "hv",
           "tap_step_percent": 2.5,
           "tap_step_degree": 0.0,
-          "tap_changer_type": "Ratio",
+          "tap_phase_shifter": false,
           "tap_max": 2,
           "tap_min": -2,
           "tap_neutral": 0
@@ -1287,7 +1287,7 @@
           "tap_max": 2,
           "tap_step_degree": 0,
           "tap_step_percent": 2.5,
-          "tap_changer_type": "Ratio"
+          "tap_phase_shifter": false
         },
         "0.25 MVA 20/0.4 kV": {
           "sn_mva": 0.25,
@@ -1305,7 +1305,7 @@
           "tap_max": 2,
           "tap_step_degree": 0,
           "tap_step_percent": 2.5,
-          "tap_changer_type": "Ratio"
+          "tap_phase_shifter": false
         },
         "63 MVA 110/10 kV": {
           "sn_mva": 63,
@@ -1323,7 +1323,7 @@
           "tap_max": 9,
           "tap_step_degree": 0,
           "tap_step_percent": 1.5,
-          "tap_changer_type": "Ratio"
+          "tap_phase_shifter": false
         },
         "0.25 MVA 10/0.4 kV": {
           "sn_mva": 0.25,
@@ -1341,7 +1341,7 @@
           "tap_max": 2,
           "tap_step_degree": 0,
           "tap_step_percent": 2.5,
-          "tap_changer_type": "Ratio"
+          "tap_phase_shifter": false
         },
         "40 MVA 110/20 kV": {
           "i0_percent": 0.05,
@@ -1359,7 +1359,7 @@
           "tap_max": 9,
           "tap_step_degree": 0,
           "tap_step_percent": 1.5,
-          "tap_changer_type": "Ratio"
+          "tap_phase_shifter": false
         },
         "25 MVA 110/20 kV": {
           "i0_percent": 0.07,
@@ -1377,7 +1377,7 @@
           "tap_max": 9,
           "tap_step_degree": 0,
           "tap_step_percent": 1.5,
-          "tap_changer_type": "Ratio"
+          "tap_phase_shifter": false
         },
         "160 MVA 380/110 kV": {
           "i0_percent": 0.06,
@@ -1395,7 +1395,7 @@
           "tap_max": 9,
           "tap_step_degree": 0,
           "tap_step_percent": 1.5,
-          "tap_changer_type": "Ratio"
+          "tap_phase_shifter": false
         },
         "25 MVA 110/10 kV": {
           "sn_mva": 25,
@@ -1413,7 +1413,7 @@
           "tap_max": 9,
           "tap_step_degree": 0,
           "tap_step_percent": 1.5,
-          "tap_changer_type": "Ratio"
+          "tap_phase_shifter": false
         },
         "63 MVA 110/20 kV": {
           "i0_percent": 0.04,
@@ -1431,7 +1431,7 @@
           "tap_max": 9,
           "tap_step_degree": 0,
           "tap_step_percent": 1.5,
-          "tap_changer_type": "Ratio"
+          "tap_phase_shifter": false
         },
         "40 MVA 110/10 kV": {
           "sn_mva": 40,
@@ -1449,7 +1449,7 @@
           "tap_max": 9,
           "tap_step_degree": 0,
           "tap_step_percent": 1.5,
-          "tap_changer_type": "Ratio"
+          "tap_phase_shifter": false
         }
       },
       "trafo3w": {
