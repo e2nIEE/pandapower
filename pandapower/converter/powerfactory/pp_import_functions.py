@@ -2293,8 +2293,8 @@ def create_trafo_type(net, item):
         "tap_side": ['hv', 'lv', 'ext'][item.tap_side],  # 'ext' not implemented
     }
 
-    type_data.update({"tap_changer_type": None})
-    type_data.update({"tap2_changer_type": None})
+    type_data.update({"tap_changer_type": "None"})
+    type_data.update({"tap2_changer_type": "None"})
 
     if item.itapch:
         logger.debug('trafo <%s> has tap changer' % name)
@@ -2429,7 +2429,8 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
             else:
                 raise ValueError("Measurement location for tap table not given.")
 
-            new_tap_table["vkr_percent"] = new_tap_table["vkr_percent"] / item.GetAttribute("Snom_a")  # pf_type.strn
+            new_tap_table["vkr_percent"] = new_tap_table["vkr_percent"] / item.GetAttribute("Snom_a") / 1000 * 100
+            # * 1000 / 100 for conversion from MVA to kVA and from decimal to %
 
             if len(new_tap_table) == len(steps):
                 new_tap_table['step'] = steps[:len(new_tap_table)]
@@ -2451,7 +2452,7 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
             elif pf_type.tapchtype == 2:
                 tap_changer_type = "Ideal"
             else:
-                tap_changer_type = None
+                tap_changer_type = "None"
 
             tap_dependency_table = True
             id_characteristic_table = new_id_characteristic_table
@@ -2510,7 +2511,8 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
             else:
                 raise ValueError("Measurement location for tap table not given.")
 
-            new_tap_table["vkr_percent"] = new_tap_table["vkr_percent"] / item.GetAttribute("Snom_a")  # pf_type.strn
+            new_tap_table["vkr_percent"] = new_tap_table["vkr_percent"] / item.GetAttribute("Snom_a") / 1000 * 100
+            # * 1000 / 100 for conversion from MVA to kVA and from decimal to %
 
             if len(new_tap_table) == len(steps):
                 new_tap_table['step'] = steps[:len(new_tap_table)]
@@ -2532,7 +2534,7 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
             elif pf_type.tapchtype == 2:
                 tap_changer_type = "Ideal"
             else:
-                tap_changer_type = None
+                tap_changer_type = "None"
 
             tap_dependency_table = True
             id_characteristic_table = new_id_characteristic_table
@@ -2780,7 +2782,7 @@ def create_trafo3w(net, item, tap_opt='nntap'):
         new_tap_table["vkr_mv_percent"] = new_tap_table["vkr_mv_percent"] / (
                     np.min([float(snom_m_a), float(snom_l_a)]) * 1000) * 100
         new_tap_table["vkr_lv_percent"] = new_tap_table["vkr_lv_percent"] / (
-                    np.min([float(snom_h_a), float(snom_m_a)]) * 1000) * 100
+                    np.min([float(snom_h_a), float(snom_l_a)]) * 1000) * 100
 
         steps = list(range(tap_min, tap_max + 1))
 
@@ -2831,7 +2833,7 @@ def create_trafo3w(net, item, tap_opt='nntap'):
             tap_step_degree = item.GetAttribute('t:ph3tr_' + ts)
 
             if (tap_step_degree is None or tap_step_degree == 0) and (tap_step_percent is None or tap_step_percent == 0):
-                tap_changer_type = None
+                tap_changer_type = "None"
             # ratio/asymmetrical phase shifters
             elif (tap_step_degree != 90 and tap_step_percent is not None and tap_step_percent != 0):
                 tap_changer_type = "Ratio"

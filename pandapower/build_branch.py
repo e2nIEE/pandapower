@@ -611,7 +611,7 @@ def _calc_tap_from_dataframe(net, trafo_df):
             else:
                 tap_table = np.array([False])
                 tap_dependency = np.array([False])
-            tap_changer_type = pd.Series(tap_changer_type)
+            #tap_changer_type = pd.Series(tap_changer_type)
             tap_table = np.logical_and(tap_dependency, np.logical_not(tap_changer_type == "None"))
             tap_no_table = np.logical_and(~tap_dependency, np.logical_not(tap_changer_type == "None"))
             if any(tap_table):
@@ -822,6 +822,7 @@ def _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, sn_mva, sequenc
                 [False if isinstance(x, float) and np.isnan(x) else x for x in tap_dependency_table])
             if any(tap_dependency_table) and not isinstance(trafo_df, dict):
                 vk_percent, vkr_percent = _get_vk_values_from_table(trafo_df, net.trafo_characteristic_table)
+                # update for 3W already in _calc_sc_voltages_of_equivalent_transformers
             else:
                 vk_percent = get_trafo_values(trafo_df, "vk_percent")
                 vkr_percent = get_trafo_values(trafo_df, "vkr_percent")

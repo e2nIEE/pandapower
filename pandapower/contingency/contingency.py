@@ -188,17 +188,19 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=pp.
     tct2w, tct2w_tap_pos, tct2w_shift_degree = None, None, None
     tct3w_flag = False
     tct3w, tct3w_tap_pos, tct3w_shift_degree = None, None, None
-    if ("tap_changer_type" in net.trafo.columns) or ("tap_changer_type" in net.trafo3w.columns):
+    if "tap_changer_type" in net.trafo.columns:
         if np.any(net.trafo.tap_changer_type == "Ideal"):
             tct2w_flag = True
             tct2w, tct2w_tap_pos, tct2w_shift_degree = _convert_trafo_phase_shifter(
                 net, "trafo", "tap_changer_type")
-        if ("tap_changer_type" in net.trafo3w.columns) and np.any(net.trafo3w.tap_changer_type == "Ideal"):
+    if "tap_changer_type" in net.trafo3w.columns:
+        if np.any(net.trafo3w.tap_changer_type == "Ideal"):
             tct3w_flag = True
             tct3w, tct3w_tap_pos, tct3w_shift_degree = _convert_trafo_phase_shifter(
                     net, "trafo3w", "tap_changer_type")
 
-        # TODO: remove next line when lightsim2grid supports checking of column 'tap_changer_type'
+    # TODO: remove next 2 lines when lightsim2grid supports checking of column 'tap_changer_type'
+    if ("tap_changer_type" in net.trafo.columns) or ("tap_changer_type" in net.trafo3w.columns):
         net.trafo["tap_phase_shifter"] = False
 
     # setting "slack" back-and-forth is due to the difference in interpretation of generators as "distributed slack"
