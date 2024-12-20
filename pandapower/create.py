@@ -14,7 +14,8 @@ from pandas import isnull
 from pandas.api.types import is_object_dtype
 
 from pandapower._version import __version__, __format_version__
-from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes, ensure_iterability
+from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes, ensure_iterability, \
+    empty_defaults_per_dtype
 from pandapower.results import reset_results
 from pandapower.std_types import add_basic_std_types, load_std_type
 import numpy as np
@@ -871,6 +872,8 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
     _add_to_entries_if_not_nan(net, "bus", entries, index, "min_vm_pu", min_vm_pu)
     _add_to_entries_if_not_nan(net, "bus", entries, index, "max_vm_pu", max_vm_pu)
     _set_multiple_entries(net, "bus", index, **entries, **kwargs)
+    net.bus.loc[net.bus.geo == "", "geo"] = None # overwrite
+    # empty_defaults_per_dtype() applied in _set_multiple_entries()
 
     return index
 
@@ -2606,6 +2609,8 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
         _add_to_entries_if_not_nan(net, "line", entries, index, column, value, float64)
 
     _set_multiple_entries(net, "line", index, **entries, **kwargs)
+    net.line.loc[net.line.geo == "", "geo"] = None # overwrite
+    # empty_defaults_per_dtype() applied in _set_multiple_entries()
 
     if geodata:
         _add_multiple_branch_geodata(net, geodata, index)
@@ -4929,8 +4934,8 @@ def create_impedance(net, from_bus, to_bus, rft_pu, xft_pu, sn_mva, rtf_pu=None,
     UserWarning
         If required impedance parameters are missing.
     """
-    
-    
+
+
     index = _get_index_with_check(net, "impedance", index)
 
     _check_branch_element(net, "Impedance", index, from_bus, to_bus)
@@ -5111,7 +5116,7 @@ def create_impedances(net, from_buses, to_buses, rft_pu, xft_pu, sn_mva, rtf_pu=
     entries = dict(zip(columns, values))
 
     _set_multiple_entries(net, "impedance", index, **entries, **kwargs)
-    
+
     if rft0_pu is not None:
         _set_value_if_not_nan(net, index, rft0_pu, "rft0_pu", "impedance")
         _set_value_if_not_nan(net, index, xft0_pu, "xft0_pu", "impedance")
@@ -5413,7 +5418,7 @@ def create_dcline(net, from_bus, to_bus, p_mw, loss_percent, loss_mw, vm_from_pu
 
 
 def create_measurement(net, meas_type, element_type, value, std_dev, element, side=None,
-                       check_existing=True, index=None, name=None, **kwargs):
+                       check_existing=False, index=None, name=None, **kwargs):
     """
     Creates a measurement, which is used by the estimation module. Possible types of measurements
     are: v, p, q, i, va, ia
@@ -5820,7 +5825,9 @@ def create_group(net, element_types, element_indices, name="", reference_columns
     entries = dict(zip(["name", "element_type", "element_index", "reference_column"],
                        [name, element_types, element_indices, reference_columns]))
 
-    _set_multiple_entries(net, "group", index, **entries, **kwargs)
+    _set_multiple_entries(net, "group", index, **entries)
+    net.group.loc[net.group.reference_column == "", "reference_column"] = None # overwrite
+    # empty_defaults_per_dtype() applied in _set_multiple_entries()
 
     return index[0]
 
@@ -6074,7 +6081,14 @@ def _set_multiple_entries(net, table, index, preserve_dtypes=True, defaults_to_f
                 net[table][col] = val
 
     # extend the table by the frame we just created
-    net[table] = pd.concat([net[table], dd[dd.columns[~dd.isnull().all()]]], sort=False)
+    if len(net[table]):
+        net[table] = pd.concat([net[table], dd[dd.columns[~dd.isnull().all()]]], sort=False)
+    else:
+        dd_columns = dd.columns[~dd.isnull().all()]
+        complete_columns = list(net[table].columns)+list(dd_columns.difference(net[table].columns))
+        empty_dict = {key: empty_defaults_per_dtype(dtype) for key, dtype in net[table][net[
+                      table].columns.difference(dd_columns)].dtypes.to_dict().items()}
+        net[table] = dd[dd_columns].assign(**empty_dict)[complete_columns]
 
     # and preserve dtypes
     if preserve_dtypes:
