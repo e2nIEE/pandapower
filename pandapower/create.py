@@ -14,7 +14,8 @@ from pandas import isnull
 from pandas.api.types import is_object_dtype
 
 from pandapower._version import __version__, __format_version__
-from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes, ensure_iterability
+from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes, ensure_iterability, \
+    empty_defaults_per_dtype
 from pandapower.results import reset_results
 from pandapower.std_types import add_basic_std_types, load_std_type
 import numpy as np
@@ -668,7 +669,7 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b", zone=N
     """
     Adds one bus in table net["bus"].
 
-    Busses are the nodes of the network that all other elements connect to.
+    Buses are the nodes of the network that all other elements connect to.
 
     INPUT:
         **net** (pandapowerNet) - The pandapower network in which the element is created
@@ -735,7 +736,7 @@ def create_bus_dc(net, vn_kv, name=None, index=None, geodata=None, type="b", zon
     """
     Adds one dc bus in table net["bus_dc"].
 
-    Busses are the nodes of the network that all other elements connect to.
+    Buses are the nodes of the network that all other elements connect to.
 
     INPUT:
         **net** (pandapowerNet) - The pandapower network in which the element is created
@@ -803,7 +804,7 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
     """
     Adds several buses in table net["bus"] at once.
 
-    Busses are the nodal points of the network that all other elements connect to.
+    Buses are the nodal points of the network that all other elements connect to.
 
     Input:
         **net** (pandapowerNet) - The pandapower network in which the element is created
@@ -875,6 +876,8 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
     _add_to_entries_if_not_nan(net, "bus", entries, index, "min_vm_pu", min_vm_pu)
     _add_to_entries_if_not_nan(net, "bus", entries, index, "max_vm_pu", max_vm_pu)
     _set_multiple_entries(net, "bus", index, **entries, **kwargs)
+    net.bus.loc[net.bus.geo == "", "geo"] = None # overwrite
+    # empty_defaults_per_dtype() applied in _set_multiple_entries()
 
     return index
 
@@ -884,7 +887,7 @@ def create_buses_dc(net, nr_buses_dc, vn_kv, index=None, name=None, type="b", ge
     """
     Adds several dc buses in table net["bus_dc"] at once.
 
-    Busses are the nodal points of the network that all other elements connect to.
+    Buses are the nodal points of the network that all other elements connect to.
 
     Input:
         **net** (pandapowerNet) - The pandapower network in which the element is created
@@ -2613,6 +2616,8 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
         _add_to_entries_if_not_nan(net, "line", entries, index, column, value, float64)
 
     _set_multiple_entries(net, "line", index, **entries, **kwargs)
+    net.line.loc[net.line.geo == "", "geo"] = None # overwrite
+    # empty_defaults_per_dtype() applied in _set_multiple_entries()
 
     if geodata:
         _add_multiple_branch_geodata(net, geodata, index)
@@ -3342,7 +3347,7 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
 
         **id_characteristic_table** (int, nan) - references the index of the characteristic from the lookup table \
             net.trafo_characteristic_table
-        
+
         **tap_changer_type** (string, None) - specifies the phase shifter type ("Ratio", "Symmetrical", "Ideal",
                                               None: no tap changer)*
 
@@ -5752,7 +5757,9 @@ def create_group(net, element_types, element_indices, name="", reference_columns
     entries = dict(zip(["name", "element_type", "element_index", "reference_column"],
                        [name, element_types, element_indices, reference_columns]))
 
-    _set_multiple_entries(net, "group", index, **entries, **kwargs)
+    _set_multiple_entries(net, "group", index, **entries)
+    net.group.loc[net.group.reference_column == "", "reference_column"] = None # overwrite
+    # empty_defaults_per_dtype() applied in _set_multiple_entries()
 
     return index[0]
 
@@ -6006,7 +6013,14 @@ def _set_multiple_entries(net, table, index, preserve_dtypes=True, defaults_to_f
                 net[table][col] = val
 
     # extend the table by the frame we just created
-    net[table] = pd.concat([net[table], dd[dd.columns[~dd.isnull().all()]]], sort=False)
+    if len(net[table]):
+        net[table] = pd.concat([net[table], dd[dd.columns[~dd.isnull().all()]]], sort=False)
+    else:
+        dd_columns = dd.columns[~dd.isnull().all()]
+        complete_columns = list(net[table].columns)+list(dd_columns.difference(net[table].columns))
+        empty_dict = {key: empty_defaults_per_dtype(dtype) for key, dtype in net[table][net[
+                      table].columns.difference(dd_columns)].dtypes.to_dict().items()}
+        net[table] = dd[dd_columns].assign(**empty_dict)[complete_columns]
 
     # and preserve dtypes
     if preserve_dtypes:
