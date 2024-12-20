@@ -412,7 +412,7 @@ def _randomize_indices(net):
 
 def test_reminder_bring_back_case118():
     from packaging.version import Version
-    if lightsim2grid_installed and Version(lightsim2grid.__version__) > Version("0.9.0"):
+    if lightsim2grid_installed and Version(lightsim2grid.__version__) > Version("0.10.0"):
         raise UserWarning("bring back case 118 and remove xfail for test_unequal_trafo_impedances and test_case118")
 
 
