@@ -228,7 +228,9 @@ def to_dict_with_coord_transform(net, point_geo_columns, line_geo_columns):
 
 def get_raw_data_from_pickle(filename):
     def read(f):
-        if sys.version_info >= (3, 0):
+        if sys.version_info >= (3, 12):
+            return pd.read_pickle(f)
+        elif sys.version_info >= (3, 0):
             return pickle.load(f, encoding='latin1')
         else:
             return pickle.load(f)
@@ -255,7 +257,7 @@ def transform_net_with_df_and_geo(net, point_geo_columns, line_geo_columns):
             if "columns" in df_dict:
                 # make sure the index is Int64Index
                 try:
-                    df_index = pd.Int64Index(df_dict['index'])
+                    df_index = pd.Index(df_dict['index'], dtype='int64')
                 except TypeError:
                     df_index = df_dict['index']
                 if GEOPANDAS_INSTALLED and "geometry" in df_dict["columns"] \

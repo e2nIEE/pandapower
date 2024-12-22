@@ -105,10 +105,16 @@ def _import_numba_extensions_if_flag_is_true(numba):
                 logger.warning('Warning: Numba version too old -> Upgrade to a version > 0.25. Numba is disabled\n')
                 numba = False
 
-        except ImportError:
-            # raise UserWarning('numba cannot be imported. Call runpp() with numba=False!')
-            logger.warning('Warning: Numba cannot be imported. Numba is disabled. Call runpp() with Numba=False!\n')
-            numba = False
+        except:
+            try:
+                # get numba Version (in order to use it it must be > 0.25)
+                from numba._version import get_versions
+                numba_version = get_versions()
+                logger.warning('Numba version: ', numba_version)
+            except ImportError:
+                # raise UserWarning('numba cannot be imported. Call runpp() with numba=False!')
+                logger.warning('Warning: Numba cannot be imported. Numba is disabled. Call runpp() with Numba=False!\n')
+                numba = False
 
     if numba:
         from pandapower.pf.makeYbus_numba import makeYbus

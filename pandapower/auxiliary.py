@@ -43,8 +43,11 @@ from pandapower.pypower.idx_gen import PMIN, PMAX, QMIN, QMAX
 try:
     from numba import jit
     from numba._version import version_version as numba_version
-except ImportError:
-    from .pf.no_numba import jit
+except:
+    try:
+        from numba._version import get_versions
+    except ImportError:
+        from .pf.no_numba import jit
 
 try:
     from lightsim2grid.newtonpf import newtonpf as newtonpf_ls
@@ -673,8 +676,12 @@ def _check_if_numba_is_installed(numba):
                            numba_warning_str)
             numba = False
     except:
-        logger.warning(numba_warning_str)
-        numba = False
+        try:
+            # get numba Version (in order to use it it must be > 0.25)
+            numba_version = get_versions()
+        except:
+            logger.warning(numba_warning_str)
+            numba = False
 
     return numba
 
