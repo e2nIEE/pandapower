@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pandapower"
-version = "3.0.0" # File format version '__format_version__' is tracked in _version.py
+version = "3.0.0.dev1" # File format version '__format_version__' is tracked in _version.py
 authors = [
     { name = "Leon Thurner", email = "leon.thurner@retoflow.de" },
     { name = "Alexander Scheidler", email = "alexander.scheidler@iee.fraunhofer.de" }
@@ -15,7 +15,7 @@ maintainers = [
 description = "An easy to use open source tool for power system modeling, analysis and optimization with a high degree of automation."
 readme = "README.rst"
 license = { file = "LICENSE" }
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
@@ -28,7 +28,6 @@ classifiers = [
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
     # Add the specific Python versions supported here, e.g.:
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -43,6 +42,7 @@ dependencies = [
     "tqdm",
     "deepdiff",
     "geojson",
+    "lxml",
     "typing_extensions~=4.9",
 ]
 keywords = [
@@ -59,24 +59,24 @@ Download = "https://pypi.org/project/pandapower/#files"
 Changelog = "https://github.com/e2nIEE/pandapower/blob/develop/CHANGELOG.rst"
 
 [project.optional-dependencies]
-docs = ["numpydoc", "matplotlib", "sphinx", "sphinx_rtd_theme", "sphinx-pyproject"]
-plotting = ["plotly>=3.1.1", "matplotlib", "igraph", "geopandas<1.0"]
+docs = ["numpydoc>=1.5.0", "matplotlib", "sphinx>=5.3.0", "sphinx_rtd_theme>=1.1.1", "sphinx-pyproject"]
+plotting = ["plotly>=3.1.1", "matplotlib", "igraph", "geopandas>=1.0"]
 test = ["pytest~=8.1", "pytest-xdist", "nbmake"]
-performance = ["ortools", "numba>=0.25", "lightsim2grid~=0.8.1"]
-fileio = ["xlsxwriter", "openpyxl", "cryptography", "geopandas", "psycopg2"]
+performance = ["ortools", "numba==0.60.0", "lightsim2grid==0.9.0"]
+fileio = ["xlsxwriter", "openpyxl", "cryptography", "geopandas>=1.0", "psycopg2"]
 converter = ["matpowercaseframes"]
 pgm = ["power-grid-model-io"]
 control = ["shapely"]
 all = [
-    "numpydoc", "sphinx", "sphinx_rtd_theme", "sphinx-pyproject",
-    "plotly>=3.1.1", "matplotlib", "igraph", "geopandas<1.0",
+    "numpydoc>=1.5.0", "sphinx>=5.3.0", "sphinx_rtd_theme>=1.1.1", "sphinx-pyproject",
+    "plotly>=3.1.1", "matplotlib", "igraph", "geopandas>=1.0",
     "pytest~=8.1", "pytest-xdist", "nbmake",
-    "ortools", "numba>=0.25", "lightsim2grid~=0.8.1",
+    "ortools", "numba==0.60.0", "lightsim2grid==0.9.0",
     "xlsxwriter", "openpyxl", "cryptography", "psycopg2",
     "matpowercaseframes",
     "power-grid-model-io"
 ]
-# "shapely", "pyproj", "fiona" are dependencies of geopandas and should be already available
+# "shapely", "pyproj", "Pyogrio" are dependencies of geopandas and should be already available ("Fiona" got dropped)
 # "hashlib", "zlib", "base64" produce install problems, so they are not included
 
 [tool.setuptools.packages]

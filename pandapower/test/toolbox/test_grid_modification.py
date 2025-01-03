@@ -213,6 +213,22 @@ def test_merge_with_characteristics():
     assert merged.trafo.loc[1, "vk_percent_characteristic"] == 1
 
 
+def test_merge_nets_with_custom_elements():
+    from pandapower.networks.simple_pandapower_test_networks import simple_four_bus_system
+
+    df = pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
+    # create two networks
+    net1 = simple_four_bus_system()
+    net2 = simple_four_bus_system()
+
+    net2["test"] = df.copy()
+    res_net1 = pp.merge_nets(net1, net2, validate=False)
+    res_net2 = pp.merge_nets(net2, net1, validate=False)
+    assert df.equals(res_net1["test"])
+    assert df.equals(res_net2["test"])
+    assert pp.nets_equal(res_net1, res_net2)
+
+
 def test_select_subnet():
     # This network has switches of type 'l' and 't'
     net = nw.create_cigre_network_mv()
@@ -601,7 +617,7 @@ def test_replace_ext_grid_gen():
         assert np.allclose(net.gen.index.values, [0, 4])
         assert net.gen.loc[4, "uuid"] == "test"
         assert net.group.element_type.tolist() == ["line", "gen"]
-        assert net.group.element.iat[1] == [4]
+        assert net.group.element_index.iat[1] == [4]
 
         # replace_gen_by_ext_grid
         if i == 0:
@@ -869,8 +885,8 @@ def test_repl_to_line_with_switch():
                     pp.create_switch(net, bus=bus, element=REPL, closed=False, et="l", type="LBS")
 
             # calculate runpp with REPL
-            net.line.loc[testindex, 'in_service'] = False
-            net.line.loc[REPL, 'in_service'] = True
+            net.line.loc[testindex, "in_service"] = False
+            net.line.loc[REPL, "in_service"] = True
             pp.runpp(net)
 
             fbus_repl = net.res_bus.loc[fbus]
@@ -882,9 +898,9 @@ def test_repl_to_line_with_switch():
             # get ne line impedances
             new_idx = pp.repl_to_line(net, testindex, std, in_service=True)
             # activate new idx line
-            net.line.loc[REPL, 'in_service'] = False
-            net.line.loc[testindex, 'in_service'] = True
-            net.line.loc[new_idx, 'in_service'] = True
+            net.line.loc[REPL, "in_service"] = False
+            net.line.loc[testindex, "in_service"] = True
+            net.line.loc[new_idx, "in_service"] = True
             pp.runpp(net)
             # compare lf results
             fbus_ne = net.res_bus.loc[fbus]
@@ -902,9 +918,9 @@ def test_repl_to_line_with_switch():
             assert np.isclose(qloss_repl, qloss_ne)
 
             # and reset to unreinforced state again
-            net.line.loc[testindex, 'in_service'] = True
-            net.line.loc[new_idx, 'in_service'] = False
-            net.line.loc[REPL, 'in_service'] = False
+            net.line.loc[testindex, "in_service"] = True
+            net.line.loc[new_idx, "in_service"] = False
+            net.line.loc[REPL, "in_service"] = False
 
 
 def test_merge_parallel_line():
@@ -1007,4 +1023,4 @@ def test_set_isolated_areas_out_of_service():
 
 
 if __name__ == '__main__':
-    pytest.main([__file__, "-x"])
+    pytest.main([__file__, "-xs"])

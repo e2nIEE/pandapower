@@ -1,7 +1,7 @@
 import pandapower as pp
 import time
 from pandapower.grid_equivalents.auxiliary import drop_internal_branch_elements, \
-    _runpp_except_voltage_angles
+    _runpp_except_voltage_angles, impedance_columns
 import pandas as pd
 import numpy as np
 
@@ -30,10 +30,10 @@ def _calculate_ward_and_impedance_parameters(Ybus_eq, bus_lookups, show_computin
 
     # --- calculate impedance paramter
     params = Ybus_eq[-nb_b_buses_ppc:, -nb_b_buses_ppc:]
-    nl = (nb_b_buses_ppc) * (nb_b_buses_ppc - 1) // 2
+    nl = nb_b_buses_ppc * (nb_b_buses_ppc - 1) // 2
     impedance_parameter = pd.DataFrame(
-        np.arange(nl * 6).reshape((nl, 6)), columns=["from_bus", "to_bus", "rft_pu", "xft_pu",
-                                                     "rtf_pu", "xtf_pu"], dtype=float)
+        data=np.arange(nl * len(impedance_columns)).reshape((nl, len(impedance_columns))), columns=impedance_columns,
+        dtype=np.float64)
     k = 0
     for i in range(nb_b_buses_ppc):
         for j in range(nb_b_buses_ppc):
@@ -257,13 +257,13 @@ def _replace_external_area_by_xwards(net_external, bus_lookups, xward_parameter_
     eq_power.q_mvar -= \
         pd.concat([net_external.res_ext_grid.q_mvar, net_external.res_gen.q_mvar[slack_gen]])
     for bus in eq_power.bus:
-        net_external.xward.loc[net_external.xward.bus==bus, 'ps_mw'] = \
+        net_external.xward.loc[net_external.xward.bus==bus, "ps_mw"] = \
             eq_power.p_mw[eq_power.bus==bus].values
-        net_external.xward.loc[net_external.xward.bus==bus, 'qs_mvar'] = \
+        net_external.xward.loc[net_external.xward.bus==bus, "qs_mvar"] = \
             eq_power.q_mvar[eq_power.bus==bus].values
 
-    net_external.poly_cost=net_external.poly_cost[0:0]
-    net_external.pwl_cost=net_external.pwl_cost[0:0]
+    net_external.poly_cost = net_external.poly_cost[0:0]
+    net_external.pwl_cost = net_external.pwl_cost[0:0]
     if len(ext_buses_with_xward):
         pp.drop_buses(net_external,
                       net_external.bus.index.tolist()[-(len(ext_buses_with_xward)):])

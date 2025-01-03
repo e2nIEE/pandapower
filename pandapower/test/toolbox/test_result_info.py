@@ -139,4 +139,4 @@ def test_res_power_columns():
 
 
 if __name__ == '__main__':
-    pytest.main([__file__, "-x"])
+    pytest.main([__file__, "-xs"])

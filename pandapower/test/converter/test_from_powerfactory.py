@@ -90,16 +90,17 @@ def test_pf_export_trafo3w():
         delta = diff.abs().max()
         assert delta < tol[key], "%s has too high difference: %f > %f" % (key, delta, tol[key])
 
-
 def test_trafo_tap2_results():
     path = os.path.join(pp.pp_dir, 'test', 'converter', 'testfiles', 'trafo_tap_model.json')
     net = pp.from_json(path)
     all_diffs = validate_pf_conversion(net, tolerance_mva=1e-9)
     tol = 2e-7
     for key, diff in all_diffs.items():
-        delta = diff.abs().max()
+        if type(diff)==pd.Series:
+            delta = diff.abs().max()
+        else:
+            delta = diff['diff'].abs().max()
         assert delta < tol, "%s has too high difference: %f > %f" % (key, delta, tol)
 
-
 if __name__ == '__main__':
-    pytest.main(['-xs', __file__])
+    pytest.main([__file__, "-xs"])

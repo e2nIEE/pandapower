@@ -5,7 +5,7 @@
 
 from numpy import nan_to_num, array, allclose, int64
 
-from pandapower.auxiliary import ppException, _clean_up, _add_auxiliary_elements
+from pandapower.auxiliary import LoadflowNotConverged, AlgorithmUnknown, _clean_up, _add_auxiliary_elements
 from pandapower.build_branch import _calc_trafo_parameter, _calc_trafo3w_parameter
 from pandapower.build_gen import _build_gen_ppc
 from pandapower.pd2ppc import _pd2ppc, _calc_pq_elements_and_add_on_ppc, _ppc2ppci
@@ -27,20 +27,6 @@ except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
-
-
-class AlgorithmUnknown(ppException):
-    """
-    Exception being raised in case optimal powerflow did not converge.
-    """
-    pass
-
-
-class LoadflowNotConverged(ppException):
-    """
-    Exception being raised in case loadflow did not converge.
-    """
-    pass
 
 
 def _powerflow(net, **kwargs):
@@ -73,7 +59,7 @@ def _powerflow(net, **kwargs):
                            "branch": array([], dtype=int64), "branch_dc": array([], dtype=int64)}
 
     # convert pandapower net to ppc
-    ppc, ppci = _pd2ppc(net)
+    ppc, ppci = _pd2ppc(net, **kwargs)
 
     # store variables
     net["_ppc"] = ppc
@@ -95,6 +81,7 @@ def _recycled_powerflow(net, **kwargs):
     algorithm = options["algorithm"]
     ac = options["ac"]
     recycle = options["recycle"]
+    update_vk_values = kwargs.get("update_vk_values", True)
     ppci = {"bus": net["_ppc"]["internal"]["bus"],
             "gen": net["_ppc"]["internal"]["gen"],
             "branch": net["_ppc"]["internal"]["branch"],
@@ -118,9 +105,9 @@ def _recycled_powerflow(net, **kwargs):
         # update trafo in branch and Ybus
         lookup = net._pd2ppc_lookups["branch"]
         if "trafo" in lookup:
-            _calc_trafo_parameter(net, ppc)
+            _calc_trafo_parameter(net, ppc, update_vk_values=update_vk_values)
         if "trafo3w" in lookup:
-            _calc_trafo3w_parameter(net, ppc)
+            _calc_trafo3w_parameter(net, ppc, update_vk_values=update_vk_values)
 
     if "gen" in recycle and recycle["gen"]:
         # updates the ppc["gen"] part

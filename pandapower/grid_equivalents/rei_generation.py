@@ -4,7 +4,7 @@ from pandapower.grid_equivalents.auxiliary import calc_zpbn_parameters, \
     drop_internal_branch_elements, \
     build_ppc_and_Ybus, drop_measurements_and_controllers, \
     drop_and_edit_cost_functions, _runpp_except_voltage_angles, \
-        replace_motor_by_load
+    replace_motor_by_load, impedance_columns
 from pandapower.grid_equivalents.toolbox import get_connected_switch_buses_groups
 from copy import deepcopy
 import pandas as pd
@@ -190,7 +190,8 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
                 new_imps_g = pd.DataFrame({
                     "from_bus": Z.ext_bus.loc[idxs].astype(np.int64).values, "to_bus": new_g_buses,
                     "rft_pu": rft_pu_g, "xft_pu": xft_pu_g,
-                    "rtf_pu": rft_pu_g, "xtf_pu": xft_pu_g},
+                    "rtf_pu": rft_pu_g, "xtf_pu": xft_pu_g,
+                    "gf_pu": 0, "bf_pu": 0, "gt_pu": 0, "bt_pu": 0},
                     index=range(max_idx+1, max_idx+1+len(new_g_buses)))
                 new_imps_g["name"] = "eq_impedance_ext_to_ground"
                 new_imps_g["sn_mva"] = sn_mva
@@ -201,7 +202,8 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
                 new_imps_t = pd.DataFrame({
                     "from_bus": new_g_buses, "to_bus": new_t_buses,
                     "rft_pu": rft_pu_t, "xft_pu": xft_pu_t,
-                    "rtf_pu": rft_pu_t, "xtf_pu": xft_pu_t},
+                    "rtf_pu": rft_pu_t, "xtf_pu": xft_pu_t,
+                    "gf_pu": 0, "bf_pu": 0, "gt_pu": 0, "bt_pu": 0},
                     index=range(new_imps_g.index.max()+1,
                                 new_imps_g.index.max()+1+len(new_g_buses)))
                 new_imps_t["name"] = "eq_impedance_ground_to_total"
@@ -259,7 +261,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
                                      sn_mva=Sn, index=max_sgen_idx+len(net_zpbn.sgen)+1)
         elif elm == "gen":
             vm_pu = v[key+"_vm_total"][v.ext_bus == int(re.findall(r"\d+", busstr)[0])].values.real
-            elm_idx = pp.create_gen(net_zpbn, i, float(P), float(vm_pu), name=key+"_rei_"+busstr,
+            elm_idx = pp.create_gen(net_zpbn, i, float(P), float(vm_pu.item()), name=key+"_rei_"+busstr,
                                     sn_mva=Sn, index=max_gen_idx+len(net_zpbn.gen)+1)
 
     # ---- match other columns
@@ -323,7 +325,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
             else:
                 names = elm_org.name[elm_org.bus == bus].values
                 names = [str(n) for n in names]
-                net_zpbn[elm].loc[elm_idx, 'name'] = "//".join(names) + "-" + net_zpbn[elm].name[elm_idx]
+                net_zpbn[elm].loc[elm_idx, "name"] = "//".join(names) + "-" + net_zpbn[elm].name[elm_idx]
                 if len(names) > 1:
                     net_zpbn[elm].loc[elm_idx, list(other_cols_number)] = \
                         elm_org[list(other_cols_number)][elm_org.bus == bus].sum(axis=0)
@@ -579,8 +581,7 @@ def _calclate_equivalent_element_params(net_zpbn, Ybus_eq, bus_lookups,
     rows = (np.arange(params.shape[0]).reshape(-1, 1) * np.ones(params.shape)).astype(np.int64)[non_zero]
     cols = (np.arange(params.shape[1]) * np.ones(params.shape)).astype(np.int64)[non_zero]
 
-    impedance_params = pd.DataFrame(columns=["from_bus", "to_bus", "rft_pu",
-                                             "xft_pu", "rtf_pu", "xtf_pu"], index=range(len(rows)))
+    impedance_params = pd.DataFrame(columns=impedance_columns, index=range(len(rows)), data=0)
     impedance_params["from_bus"] = np.array(bt_buses_pd)[rows]
     impedance_params["to_bus"] = np.array(bt_buses_pd)[cols]
     impedance_params["rft_pu"] = (-1 / params[rows, cols]).real
@@ -614,7 +615,7 @@ def _replace_ext_area_by_impedances_and_shunts(
     try:
         runpp_fct(net_eq, calculate_voltage_angles=calc_volt_angles,
                                      tolerance_mva=1e-6, max_iteration=100, **kwargs)
-    except:
+    except pp.LoadflowNotConverged:
         logger.error("The power flow did not converge.")
 
     # --- drop all branch elements except switches between boundary buses
@@ -631,8 +632,7 @@ def _replace_ext_area_by_impedances_and_shunts(
         impedance_params.xtf_pu.abs() > imp_threshold) | (
         impedance_params.from_bus.isin(set(net_eq.gen.bus)|set(net_eq.ext_grid.bus)) &
         impedance_params.to_bus.isin(set(net_eq.gen.bus)|set(net_eq.ext_grid.bus)))
-    new_imps = impedance_params[["from_bus", "to_bus", "rft_pu", "xft_pu", "rtf_pu",
-                                 "xtf_pu"]].loc[not_very_low_imp]
+    new_imps = impedance_params.loc[not_very_low_imp, impedance_columns]
     max_idx = net_eq.impedance.index.max() if net_eq.impedance.shape[0] else 0
     new_imps.index = range(max_idx+1, max_idx+1+sum(not_very_low_imp))
     new_imps["name"] = "eq_impedance"
@@ -685,17 +685,22 @@ def _replace_ext_area_by_impedances_and_shunts(
 
 
 def _integrate_power_elements_connected_with_switch_buses(net, net_external, all_external_buses):
-    all_buses, bus_dict = get_connected_switch_buses_groups(net_external,
-                                                            all_external_buses)
+    _, bus_dict = get_connected_switch_buses_groups(net_external, all_external_buses)
+    active_sgen = net.sgen[(net.sgen.in_service) & ~((net["sgen"].p_mw==0) & (net["sgen"].q_mvar==0))]
+    active_load = net.load[(net.load.in_service) & ~((net["load"].p_mw==0) & (net["load"].q_mvar==0))]
+    active_gen = net.gen[net.gen.in_service]
+
     for elm in ["sgen", "load", "gen"]:
         for bd in bus_dict:
-            if elm != "gen":
-                connected_elms = net[elm].index[(net[elm].bus.isin(bd)) &
-                                                (net[elm].in_service==True) &
-                                                ~((net[elm].p_mw==0) & (net[elm].q_mvar==0))]
+            if elm == "sgen":
+                connected_elms = active_sgen.index[active_sgen.bus.isin(bd)]
+            elif elm == "load":
+                connected_elms = active_load.index[active_load.bus.isin(bd)]
+            elif elm == "gen":
+                connected_elms = active_gen.index[active_gen.bus.isin(bd)]
             else:
-                connected_elms = net[elm].index[(net[elm].bus.isin(bd)) &
-                                                (net[elm].in_service==True)]
+                raise ValueError(f"{elm=} not supported in "
+                                 "_integrate_power_elements_connected_with_switch_buses()")
             if len(connected_elms) <= 1:
                 continue
             else:  # There ars some "external" elements connected with bus-bus switches.
