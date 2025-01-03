@@ -18,7 +18,7 @@ import pandas as pd
 from pandapower.auxiliary import _add_ppc_options, _add_opf_options, _add_auxiliary_elements
 from pandapower.build_branch import _calc_line_parameter
 from pandapower.pd2ppc import _pd2ppc
-from pandapower.pypower.idx_brch import ANGMIN, ANGMAX, BR_R, BR_X, BR_B, RATE_A, RATE_B, RATE_C, \
+from pandapower.pypower.idx_brch import ANGMIN, ANGMAX, BR_R, BR_X, BR_B, BR_G, RATE_A, RATE_B, RATE_C, \
     TAP, SHIFT, branch_cols, F_BUS, T_BUS, BR_STATUS
 from pandapower.pypower.idx_bus import ZONE, VA, BASE_KV, BS, GS, BUS_I, BUS_TYPE, VMAX, VMIN, \
      VM, PD, QD
@@ -41,9 +41,9 @@ class NumpyEncoder(json.JSONEncoder):
                             np.int16, np.int32, np.int64, np.uint8,
                             np.uint16, np.uint32, np.uint64)):
             return int(obj)
-        elif isinstance(obj, (np.float_, np.float16, np.float32, np.float64)):
+        elif isinstance(obj, (np.float64, np.float16, np.float32, np.float64)):
             return float(obj)
-        elif isinstance(obj, (np.complex_, np.complex64, np.complex128)):
+        elif isinstance(obj, (np.complex128, np.complex64, np.complex128)):
             return {'real': obj.real, 'imag': obj.imag}
         elif isinstance(obj, (np.ndarray,)):
             return obj.tolist()
@@ -151,6 +151,7 @@ def convert_to_pm_structure(net, opf_flow_lim="S", from_time_step=None, to_time_
     ppci = build_ne_branch(net, ppci)
     net["_ppc_opf"] = ppci
     pm = ppc_to_pm(net, ppci)
+    # todo: somewhere here should RATE_A be converted to 0., because only PowerModels uses 0 as no limits (pypower opf converts the zero to inf)
     pm = add_pm_options(pm, net)
     pm = add_params_to_pm(net, pm)
     if from_time_step is not None and to_time_step is not None:
@@ -318,10 +319,10 @@ def ppc_to_pm(net, ppci):
         branch["transformer"] = bool(idx > n_lines)
         branch["br_r"] = row[BR_R].real / baseMVA
         branch["br_x"] = row[BR_X].real / baseMVA
-        branch["g_fr"] = - row[BR_B].imag / 2.0 / baseMVA
-        branch["g_to"] = - row[BR_B].imag / 2.0 / baseMVA
-        branch["b_fr"] = row[BR_B].real / 2.0 * baseMVA
-        branch["b_to"] = row[BR_B].real / 2.0 * baseMVA
+        branch["g_fr"] = row[BR_G] / 2.0 / baseMVA
+        branch["g_to"] = row[BR_G] / 2.0 / baseMVA
+        branch["b_fr"] = row[BR_B] / 2.0 * baseMVA
+        branch["b_to"] = row[BR_B] / 2.0 * baseMVA
 
         if net._options["opf_flow_lim"] == "S":  # or branch["transformer"]:
             branch["rate_a"] = row[RATE_A].real if row[RATE_A] > 0 else row[RATE_B].real

@@ -327,10 +327,10 @@ def test_iec_60909_4_3ph_small_with_gen():
 def test_iec_60909_4_3ph_small_with_gen_xward():
     net = iec_60909_4_small(with_xward=True)
     sc.calc_sc(net, fault="3ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
-    
+
     ikss_pf = [40.6422, 31.6394, 16.7409, 33.2808]
     assert np.allclose(net.res_bus_sc.ikss_ka.values[:4], np.array(ikss_pf), atol=1e-3)
-    
+
 
 def test_iec_60909_4_3ph_small_gen_only():
     net = iec_60909_4_small_gen_only()
@@ -364,7 +364,7 @@ def test_iec_60909_4_3ph_2gen_no_ps_detection():
     net.gen.at[0, "in_service"] = False
     net.gen = net.gen.query("in_service")
     sc.calc_sc(net, fault="3ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
-    
+
     ikss_pf = [1.8460, 1.6715, 6.8953, 39.5042]
     assert np.allclose(net.res_bus_sc.ikss_ka[:4].values, np.array(ikss_pf), atol=1e-3)
 
@@ -463,11 +463,12 @@ def test_iec_60909_4_1ph():
 
 def test_detect_power_station_units():
     net = iec_60909_4()
-    net.gen.power_station_trafo[:] = None
+    net.gen.loc[:, 'power_station_trafo'] = None
 
     detect_power_station_unit(net)
     assert np.all(net.gen.power_station_trafo.values[[0, 1]] == np.array([0, 1]))
-    net.gen.power_station_trafo[:] = None
+    net.gen["power_station_trafo"] = net.gen["power_station_trafo"].astype(object)
+    net.gen.loc[:, "power_station_trafo"] = None
 
     detect_power_station_unit(net, mode="trafo")
     assert np.all(net.gen.power_station_trafo.values[[0, 1]] == np.array([0, 1]))
@@ -483,7 +484,7 @@ def test_vde_232():
     net = vde_232()
     sc.calc_sc(net, fault="3ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
 
-    
+
 
 if __name__ == '__main__':
     pytest.main([__file__, "-xs"])

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -34,8 +34,8 @@ def test_rundcpp_init_auxiliary_buses():
     pp.create_load(net, b3, p_mw=5)
     pp.create_load(net, b4, p_mw=5)
     pp.create_xward(net, b4, 1, 1, 1, 1, 0.1, 0.1, 1.0)
-    net.trafo3w.shift_lv_degree.at[tidx] = 120
-    net.trafo3w.shift_mv_degree.at[tidx] = 80
+    net.trafo3w.at[tidx, "shift_lv_degree"] = 120
+    net.trafo3w.at[tidx, "shift_mv_degree"] = 80
     pp.rundcpp(net)
     va = net.res_bus.va_degree.at[b2]
     pp.rundcpp(net)

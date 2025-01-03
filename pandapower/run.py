@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -17,6 +17,15 @@ try:
     import pandaplan.core.pplog as logging
 except ImportError:
     import logging
+
+try:
+    from power_grid_model import PowerGridModel, CalculationType, CalculationMethod
+    from power_grid_model.errors import PowerGridError
+    from power_grid_model.validation import validate_input_data
+    from power_grid_model_io.converters import PandaPowerConverter
+    PGM_IMPORTED = True
+except ImportError:
+    PGM_IMPORTED = False
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +68,7 @@ def set_user_pf_options(net, overwrite=False, **kwargs):
         net.user_pf_options.update(additional_kwargs)
 
 
-def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
+def runpp(net, algorithm='nr', calculate_voltage_angles=True, init="auto",
           max_iteration="auto", tolerance_mva=1e-8, trafo_model="t",
           trafo_loading="current", enforce_q_lims=False, check_connectivity=True,
           voltage_depend_loads=True, consider_line_temperature=False,
@@ -82,7 +91,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
                 - "fdbx" fast-decoupled (pypower implementation)
                 - "fdxb" fast-decoupled (pypower implementation)
 
-        **calculate_voltage_angles** (str or bool, "auto") - consider voltage angles in loadflow calculation
+        **calculate_voltage_angles** (str or bool, True) - consider voltage angles in loadflow calculation
 
             If True, voltage angles of ext_grids and transformer shifts are considered in the
             loadflow calculation. Considering the voltage angles is only necessary in meshed
@@ -165,14 +174,17 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
 
         **KWARGS**:
 
-        **lightsim2grid** ((bool,str), "auto") - whether to use the package lightsim2grid for power flow backend
+        **lightsim2grid** ((bool,str), "auto") - whether to use the package lightsim2grid for power
+        flow backend. For more details on compatibility, check out pandapower's documentation.
 
-        **numba** (bool, True) - Activation of numba JIT compiler in the newton solver
+        **numba** (bool, True) - Activation of numba JIT compiler in the newton solver.
+        If set to True, the numba JIT compiler is used to generate matrices for the powerflow,
+        which leads to significant speed improvements.
 
-            If set to True, the numba JIT compiler is used to generate matrices for the powerflow,
-            which leads to significant speed improvements.
-
-        **switch_rx_ratio** (float, 2) - rx_ratio of bus-bus-switches. If impedance is zero, buses connected by a closed bus-bus switch are fused to model an ideal bus. Otherwise, they are modelled as branches with resistance defined as z_ohm column in switch table and this parameter
+        **switch_rx_ratio** (float, 2) - rx_ratio of bus-bus-switches. If the impedance of switches
+        defined in net.switch.z_ohm is zero, buses connected by a closed bus-bus switch are fused to
+        model an ideal bus. Closed bus-bus switches, whose impedance z_ohm is not zero, are modelled
+        as branches with resistance and reactance according to net.switch.z_ohm and switch_rx_ratio.
 
         **delta_q** - Reactive power tolerance for option "enforce_q_lims" in kvar - helps convergence in some cases.
 
@@ -210,6 +222,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
 
         **tdpf_update_r_theta** (bool, True) - TDPF parameter, whether to update R_Theta in Newton-Raphson or to assume a constant R_Theta (either from net.line.r_theta, if set, or from a calculation based on the thermal model of Ngoko et.al.)
 
+        **update_vk_values** (bool, True) - If True vk and vkr values of trafo3w are recalculated based on characteristics, otherwise the values from the table are used. Can improve performance for large models.
     """
 
     # if dict 'user_pf_options' is present in net, these options overrule the net._options
@@ -241,38 +254,133 @@ def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
         _powerflow(net, **kwargs)
 
 
-def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_connectivity=True,
-            switch_rx_ratio=2, trafo3w_losses="hv", **kwargs):
+def runpp_pgm(net, algorithm="nr", max_iterations=20, error_tolerance_vm_pu=1e-8, symmetric=True, validate_input=False):
     """
-        Runs PANDAPOWER DC Flow
+        Runs powerflow using power-grid-model library
 
         INPUT:
             **net** - The pandapower format network
 
         OPTIONAL:
-            **trafo_model** (str, "t")  - transformer equivalent circuit model
-            pandapower provides two equivalent circuit models for the transformer:
+            **symmetric** (bool, True) -
 
-            - "t" - transformer is modeled as equivalent with the T-model. This is consistent with PowerFactory and is also more accurate than the PI-model. We recommend using this transformer model.
-            - "pi" - transformer is modeled as equivalent PI-model. This is consistent with Sincal, but the method is questionable since the transformer is physically T-shaped. We therefore recommend the use of the T-model.
+            - True: three-phase symmetric calculation, even for asymmetric loads/generations
+            - False: three-phase asymmetric calculation
 
-            **trafo_loading** (str, "current") - mode of calculation for transformer loading
+            **algorithm** (str, "nr") - Algorithms available in power-grid-model.
+            Check power-grid-model documentation for detailed information on the algorithms.
 
-            Transformer loading can be calculated relative to the rated current or the rated power. In both cases the overall transformer loading is defined as the maximum loading on the two sides of the transformer.
+            - "nr" - Newton Raphson algorithm
+            - "bfsw" - Iterative current algorithm. Similar to backward-forward sweep algorithm
+            - "lc" - Linear current approximation algorithm
+            - "lin" - Linear approximation algorithm
 
-            - "current"- transformer loading is given as ratio of current flow and rated current of the transformer. This is the recommended setting, since thermal as well as magnetic effects in the transformer depend on the current.
-            - "power" - transformer loading is given as ratio of apparent power flow to the rated apparent power of the transformer.
+            **error_tolerance_u_pu** (float, 1e-8) - error tolerance for voltage in p.u.
 
-            **check_connectivity** (bool, False) - Perform an extra connectivity test after the conversion from pandapower to PYPOWER
+            **max_iterations** (int, 20) - Maximum number of iterations for algorithms.
+            No effect on linear approximation algorithms.
 
-            If true, an extra connectivity test based on SciPy Compressed Sparse Graph Routines is perfomed.
-            If check finds unsupplied buses, they are put out of service in the PYPOWER matrix
+            **validate_input** (bool, False) - Validate input data to be used for power-flow in power-grid-model.
+            It is recommended to use pandapower.diagnostic tool prior.
+    """
+    if not PGM_IMPORTED:
+        raise ImportError(
+            "Power Grid Model import failed. Try using `pip install pandapower[pgm]` to install the required packages."
+        )
 
-            **switch_rx_ratio** (float, 2) - rx_ratio of bus-bus-switches. If impedance is zero, buses connected by a closed bus-bus switch are fused to model an ideal bus. Otherwise, they are modelled as branches with resistance defined as z_ohm column in switch table and this parameter
+    # 1. Determine the Power Grid Model calculation type corresponding to the algorithm:
+    algorithm_map = {
+        "nr": CalculationMethod.newton_raphson,
+        "lin": CalculationMethod.linear,
+        "bfsw": CalculationMethod.iterative_current,
+        "lc": CalculationMethod.linear_current
+    }
+    if algorithm not in algorithm_map:
+        raise KeyError(f"Invalid algorithm '{algorithm}'")
+    calculation_method = algorithm_map[algorithm]
 
-            **trafo3w_losses** (str, "hv") - defines where open loop losses of three-winding transformers are considered. Valid options are "hv", "mv", "lv" for HV/MV/LV side or "star" for the star point.
+    # 2. Convert the pandapower data to the power grid model format. Ignoring the 'extra info', which is a
+    #    dictionary representation of the internal state of the PandaPowerConverter.
+    pgm_converter = PandaPowerConverter()
+    pgm_input_data, _extra_info = pgm_converter.load_input_data(net, make_extra_info=False)
 
-            **kwargs** - options to use for PYPOWER.runpf
+    # 3. If required, validate the input data
+    if validate_input:
+        validation_errors = validate_input_data(
+            pgm_input_data, calculation_type=CalculationType.power_flow, symmetric=symmetric
+        )
+
+        # If there were validation errors, convert the errors to a human readable test and log each error for
+        # each element in the input data.
+        if validation_errors:
+            for i, error in enumerate(validation_errors, start=1):
+                pp_obj = (pgm_converter.lookup_id(pgm_id) for pgm_id in error.ids)
+                pp_obj = (f"{obj['table']}-{obj['index']}" for obj in pp_obj)
+                pp_obj = ", ".join(pp_obj)
+                logger.error(f"{i}. Power Grid Model validation error: Check {pp_obj}")
+                logger.debug(f"{i}. Native Power Grid Model error: {error}")
+
+    # 4. Create a PowerGridModel and calculate the powerflow
+    try:
+        pgm = PowerGridModel(input_data=pgm_input_data)
+        output_data = pgm.calculate_power_flow(
+            symmetric=symmetric,
+            error_tolerance=error_tolerance_vm_pu,
+            max_iterations=max_iterations,
+            calculation_method=calculation_method
+        )
+        net["converged"] = True
+
+    # Stop execution if a power PowerGridError was raised and log the error
+    except PowerGridError as ex:
+        logger.critical(f"Internal {type(ex).__name__} occurred!")
+        logger.debug(str(ex))
+        if not validate_input:
+            logger.info("Use validate_input=True to validate your input data.")
+        net["converged"] = False
+        return
+
+    # 5. Convert the Power Grid Model output data back to the pandapower format and update the pandapower net
+    converted_output_data = pgm_converter.convert(data=output_data)
+    for table in converted_output_data.keys():
+        net[table] = converted_output_data[table]
+
+
+def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_connectivity=True,
+            switch_rx_ratio=2, trafo3w_losses="hv", **kwargs):
+    """
+    Runs PANDAPOWER DC Flow
+
+    INPUT:
+        **net** - The pandapower format network
+
+    OPTIONAL:
+        **trafo_model** (str, "t")  - transformer equivalent circuit model
+        pandapower provides two equivalent circuit models for the transformer:
+
+        - "t" - transformer is modeled as equivalent with the T-model. This is consistent with PowerFactory and is also more accurate than the PI-model. We recommend using this transformer model.
+        - "pi" - transformer is modeled as equivalent PI-model. This is consistent with Sincal, but the method is questionable since the transformer is physically T-shaped. We therefore recommend the use of the T-model.
+
+        **trafo_loading** (str, "current") - mode of calculation for transformer loading
+
+        Transformer loading can be calculated relative to the rated current or the rated power. In both cases the overall transformer loading is defined as the maximum loading on the two sides of the transformer.
+
+        - "current"- transformer loading is given as ratio of current flow and rated current of the transformer. This is the recommended setting, since thermal as well as magnetic effects in the transformer depend on the current.
+        - "power" - transformer loading is given as ratio of apparent power flow to the rated apparent power of the transformer.
+
+        **check_connectivity** (bool, False) - Perform an extra connectivity test after the conversion from pandapower to PYPOWER
+
+        If true, an extra connectivity test based on SciPy Compressed Sparse Graph Routines is perfomed.
+        If check finds unsupplied buses, they are put out of service in the PYPOWER matrix
+
+        **switch_rx_ratio** (float, 2) - rx_ratio of bus-bus-switches. If the impedance of switches
+        defined in net.switch.z_ohm is zero, buses connected by a closed bus-bus switch are fused to
+        model an ideal bus. Closed bus-bus switches, whose impedance z_ohm is not zero, are modelled
+        as branches with resistance and reactance according to net.switch.z_ohm and switch_rx_ratio.
+
+        **trafo3w_losses** (str, "hv") - defines where open loop losses of three-winding transformers are considered. Valid options are "hv", "mv", "lv" for HV/MV/LV side or "star" for the star point.
+
+        **kwargs** - options to use for PYPOWER.runpf
     """
     _init_rundcpp_options(net, trafo_model=trafo_model, trafo_loading=trafo_loading,
                           recycle=recycle, check_connectivity=check_connectivity,

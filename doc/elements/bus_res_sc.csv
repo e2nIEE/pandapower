@@ -1,0 +1,9 @@
+**Parameter**;**Datatype**;**Explanation**
+ikss_ka;float;initial short-circuit current value [kA]
+skss_mw;float;initial short-circuit power [MW]
+ip_ka;float;peak value of the short-circuit current [kA]
+ith_ka;float;equivalent thermal short-circuit current [kA]
+rk_ohm;float;resistive part of equiv. (positive/negative sequence) SC impedance [Ohm]
+xk_ohm;float;reactive part of equiv. (positive/negative sequence) SC impedance [Ohm]
+rk0_ohm;float;resistive part of equiv. (zero sequence) SC impedance [Ohm]
+xk0_ohm;float;reactive part of equiv. (zero sequence) SC impedance [Ohm]

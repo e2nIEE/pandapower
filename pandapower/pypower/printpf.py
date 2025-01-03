@@ -17,7 +17,7 @@ from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, PD, QD, GS, BS, BUS_AREA
     VM, VA, VMAX, VMIN, LAM_P, LAM_Q, MU_VMAX, MU_VMIN, REF
 from pandapower.pypower.idx_gen import GEN_BUS, PG, QG, QMAX, QMIN, GEN_STATUS, \
     PMAX, PMIN, MU_PMAX, MU_PMIN, MU_QMAX, MU_QMIN
-from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, RATE_A, \
+from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, BR_G, RATE_A, \
     TAP, SHIFT, BR_STATUS, PF, QF, PT, QT, MU_SF, MU_ST
 
 from pandapower.pypower.isload import isload
@@ -138,7 +138,7 @@ def printpf(baseMVA, bus=None, gen=None, branch=None, f=None, success=None,
     if isDC:
         bus[:, r_[QD, BS]]          = zeros((nb, 2))
         gen[:, r_[QG, QMAX, QMIN]]  = zeros((ng, 3))
-        branch[:, r_[BR_R, BR_B]]   = zeros((nl, 2))
+        branch[:, r_[BR_R, BR_B, BR_G]]   = zeros((nl, 2))
 
     ## parameters
     ties = find(bus[e2i[branch[:, F_BUS].real.astype(int64)], BUS_AREA] !=
@@ -166,8 +166,8 @@ def printpf(baseMVA, bus=None, gen=None, branch=None, f=None, success=None,
                              V[e2i[ branch[:, T_BUS].real.astype(int64) ]])**2 / \
                     (branch[:, BR_R] - 1j * branch[:, BR_X])
 
-    fchg = abs(V[e2i[ branch[:, F_BUS].real.astype(int64) ]] / tap)**2 * branch[:, BR_B].real * baseMVA / 2
-    tchg = abs(V[e2i[ branch[:, T_BUS].real.astype(int64) ]]      )**2 * branch[:, BR_B].real * baseMVA / 2
+    fchg = abs(V[e2i[ branch[:, F_BUS].real.astype(int64) ]] / tap)**2 * branch[:, BR_G] * baseMVA / 2
+    tchg = abs(V[e2i[ branch[:, T_BUS].real.astype(int64) ]]      )**2 * branch[:, BR_G]* baseMVA / 2
     loss[out] = zeros(nout)
     fchg[out] = zeros(nout)
     tchg[out] = zeros(nout)
@@ -659,7 +659,7 @@ def printpf(baseMVA, bus=None, gen=None, branch=None, f=None, success=None,
             fd.write('\n================================================================================')
             fd.write('\n|     Branch Flow Constraints                                                  |')
             fd.write('\n================================================================================')
-            fd.write('\nBrnch   From     "From" End        Limit       "To" End        To')
+            fd.write('\nBranch   From     "From" End        Limit       "To" End        To')
             fd.write(strg)
             fd.write('\n-----  -----  -------  --------  --------  --------  -------  -----')
             for i in range(nl):

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -12,7 +12,6 @@ from warnings import warn
 import numpy
 import pandas as pd
 from packaging.version import Version
-from packaging import version
 import sys
 try:
     import xlsxwriter
@@ -25,6 +24,7 @@ try:
 except ImportError:
     openpyxl_INSTALLED = False
 
+from pandapower._version import __version__ as pp_version
 from pandapower.auxiliary import soft_dependency_error, _preserve_dtypes
 from pandapower.auxiliary import pandapowerNet
 from pandapower.std_types import basic_std_types
@@ -101,7 +101,7 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
         writer._save()
 
 
-def to_json(net, filename=None, encryption_key=None, store_index_names=False):
+def to_json(net, filename=None, encryption_key=None, store_index_names=None):
     """
         Saves a pandapower Network in JSON format. The index columns of all pandas DataFrames will
         be saved in ascending order. net elements which name begins with "_" (internal elements)
@@ -116,37 +116,22 @@ def to_json(net, filename=None, encryption_key=None, store_index_names=False):
             **encrytion_key** (string, None) - If given, the pandapower network is stored as an
             encrypted json string
 
-            **store_index_names** (bool, False) - If True, an additional dict "index_names" is
-            stored into the json string which includes the index names of the dataframes within the
-            net.
-            Since pandapower does usually not use net[elm].index.name, the default is False.
-
-
         EXAMPLE:
 
              >>> pp.to_json(net, "example.json")
 
     """
     # --- store index names
-    if store_index_names:
-        # To ensure correct index names (see https://github.com/e2nIEE/pandapower/issues/1410),
-        # these are additionally stored to the json file as a dict.
-        if "index_names" in net.keys():
-            raise ValueError("To store DataFrame index names, 'index_names' "
-                             "is used and thus should not be a key of net.")
-        net["index_names"] = {
-            key: net[key].index.name for key in net.keys() if isinstance(
-                net[key], pd.DataFrame) and isinstance(net[key].index.name, str) and \
-                net[key].index.name != ""
-        }
+    if store_index_names is not None:
+        msg = "The input parameter 'store_index_names' of function 'to_json()' is deprecated."
+        if Version(pp_version) < Version("2.15"):
+            warn(msg)
+        else:
+            raise DeprecationWarning(msg)
 
     json_string = json.dumps(net, cls=io_utils.PPJSONEncoder, indent=2)
     if encryption_key is not None:
         json_string = io_utils.encrypt_string(json_string, encryption_key)
-
-    if store_index_names:
-        # remove the key "index_names" to not change net
-        del net["index_names"]
 
     if filename is None:
         return json_string
@@ -253,7 +238,7 @@ def _from_excel_old(xls):
 
 def from_json(filename, convert=True, encryption_key=None, elements_to_deserialize=None,
               keep_serialized_elements=True, add_basic_std_types=False, replace_elements=None,
-              empty_dict_like_object=None):
+              empty_dict_like_object=None, ignore_unknown_objects=False):
     """
     Load a pandapower network from a JSON file.
     The index of the returned network is not necessarily in the same order as the original network.
@@ -285,6 +270,9 @@ def from_json(filename, convert=True, encryption_key=None, elements_to_deseriali
         the data of the json string. Give another dict-like object to start filling that alternative
         object with the json data.
 
+        **ignore_unknown_objects** (bool, False) - If set to True, ignore any objects that cannot be
+         deserialized instead of raising an error
+
     OUTPUT:
         **net** (dict) - The pandapower format network
 
@@ -309,12 +297,13 @@ def from_json(filename, convert=True, encryption_key=None, elements_to_deseriali
         keep_serialized_elements=keep_serialized_elements,
         add_basic_std_types=add_basic_std_types,
         replace_elements=replace_elements,
-        empty_dict_like_object=empty_dict_like_object)
+        empty_dict_like_object=empty_dict_like_object,
+        ignore_unknown_objects=ignore_unknown_objects)
 
 
 def from_json_string(json_string, convert=False, encryption_key=None, elements_to_deserialize=None,
                      keep_serialized_elements=True, add_basic_std_types=False,
-                     replace_elements=None, empty_dict_like_object=None):
+                     replace_elements=None, empty_dict_like_object=None, ignore_unknown_objects=False):
     """
     Load a pandapower network from a JSON string.
     The index of the returned network is not necessarily in the same order as the original network.
@@ -345,6 +334,9 @@ def from_json_string(json_string, convert=False, encryption_key=None, elements_t
         the data of the json string. Give another dict-like object to start filling that alternative
         object with the json data.
 
+        **ignore_unknown_objects** (bool, False) - If set to True, ignore any objects that cannot be
+         deserialized instead of raising an error
+
     OUTPUT:
         **net** (dict) - The pandapower format network
 
@@ -362,10 +354,12 @@ def from_json_string(json_string, convert=False, encryption_key=None, elements_t
 
     if elements_to_deserialize is None:
         net = json.loads(json_string, cls=io_utils.PPJSONDecoder,
-                         empty_dict_like_object=empty_dict_like_object)
+                         empty_dict_like_object=empty_dict_like_object,
+                         ignore_unknown_objects=ignore_unknown_objects)
     else:
         net = json.loads(json_string, cls=io_utils.PPJSONDecoder, deserialize_pandas=False,
-                         empty_dict_like_object=empty_dict_like_object)
+                         empty_dict_like_object=empty_dict_like_object,
+                         ignore_unknown_objects=ignore_unknown_objects)
         net_dummy = create_empty_network()
         if ('version' not in net.keys()) | (Version(net.version) < Version('2.1.0')):
             raise UserWarning('table selection is only possible for nets above version 2.0.1. '

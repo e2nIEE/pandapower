@@ -106,3 +106,13 @@ The state estimation results are put into *net.res_bus_est* with the same defini
 .. note::
 
    Bus power values are given in the consumer system. Therefore a bus with positive p_mw value consumes power while a bus with negative active power supplies power.
+
+*net.res_bus_sc*
+
+The short-circuit (SC) results are put into *net.res_bus_sc* with following definitions:
+
+.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.40\linewidth}|
+.. csv-table:: 
+   :file: bus_res_sc.csv
+   :delim: ;
+   :widths: 10, 10, 40

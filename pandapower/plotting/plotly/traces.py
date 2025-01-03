@@ -8,13 +8,12 @@ import math
 
 import numpy as np
 import pandas as pd
-from packaging import version
+import geojson
 from collections.abc import Iterable
 
-from pandapower.auxiliary import soft_dependency_error
+from pandapower.auxiliary import soft_dependency_error, version_check, MapboxTokenMissing
 from pandapower.plotting.plotly.get_colors import get_plotly_color, get_plotly_cmap
-from pandapower.plotting.plotly.mapbox_plot import _on_map_test, _get_mapbox_token, \
-    MapboxTokenMissing
+from pandapower.plotting.plotly.mapbox_plot import _on_map_test, _get_mapbox_token
 
 try:
     import pandaplan.core.pplog as logging
@@ -23,27 +22,17 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 try:
-    from plotly import __version__ as plotly_version
     from plotly.graph_objs.scatter.marker import ColorBar
     from plotly.graph_objs import Figure, Layout
     from plotly.graph_objs.layout import XAxis, YAxis
     from plotly.graph_objs.scatter import Line, Marker
     from plotly.graph_objs.scattermapbox import Line as scmLine
     from plotly.graph_objs.scattermapbox import Marker as scmMarker
+
+    version_check('plotly')
     PLOTLY_INSTALLED = True
 except ImportError:
     PLOTLY_INSTALLED = False
-
-
-def version_check():
-    if "plotly_version" not in locals() and "plotly_version" not in globals():
-        raise UserWarning("You are trying to use plotly, which is not installed.\r\n"
-                          "Please upgrade your python-plotly installation, "
-                          "e.g., via pip install --upgrade plotly")
-    if version.parse(plotly_version) < version.parse("3.1.1"):
-        raise UserWarning(f"Your plotly version {plotly_version} is no longer supported.\r\n"
-                          "Please upgrade your python-plotly installation, "
-                          "e.g., via pip install --upgrade plotly")
 
 
 def _in_ipynb():
@@ -82,7 +71,7 @@ def get_line_neutral(coord):
 
 
 def create_edge_center_trace(line_trace, size=1, patch_type="circle", color="white", infofunc=None,
-                             trace_name='edge_center', use_line_geodata=False, showlegend=False,
+                             trace_name='edge_center', use_line_geo=False, showlegend=False,
                              legendgroup=None, hoverlabel=None):
     """
     Creates a plotly trace of pandapower buses.
@@ -117,7 +106,7 @@ def create_edge_center_trace(line_trace, size=1, patch_type="circle", color="whi
     if hoverlabel is not None:
         center_trace.update({'hoverlabel': hoverlabel})
 
-    if not use_line_geodata:
+    if not use_line_geo:
         center_trace['x'], center_trace['y'] = (line_trace[0]["x"][1::4], line_trace[0]["y"][1::4])
     else:
         x, y = [], []
@@ -260,16 +249,13 @@ def _create_node_trace(net, nodes=None, size=5, patch_type='circle', color='blue
 
     """
     if not PLOTLY_INSTALLED:
-        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "plotly")
+        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "plotly")
     color = get_plotly_color(color)
     node_trace = dict(type='scatter', text=[], mode='markers', hoverinfo='text', name=trace_name,
-                     marker=dict(color=color, size=size, symbol=patch_type))
+                      marker=dict(color=color, size=size, symbol=patch_type))
     nodes = net[node_element].index.tolist() if nodes is None else list(nodes)
-    node_geodata = node_element + "_geodata"
-    node_plot_index = [b for b in nodes if b in list(set(nodes) & set(net[node_geodata].index))]
-    node_trace['x'], node_trace['y'] = \
-        (net[node_geodata].loc[node_plot_index, 'x'].tolist(),
-         net[node_geodata].loc[node_plot_index, 'y'].tolist())
+    node_plot_index = [b for b in nodes if b in list(set(nodes) & set(net[node_element]["geo"].index))]
+    node_trace['x'], node_trace['y'] = zip(*net[node_element].loc[node_plot_index, 'geo'].dropna().apply(geojson.loads).apply(geojson.utils.coords).apply(next).to_list())
     if not isinstance(infofunc, pd.Series) and isinstance(infofunc, Iterable) and \
             len(infofunc) == len(nodes):
         infofunc = pd.Series(index=nodes, data=infofunc)
@@ -287,7 +273,7 @@ def _create_node_trace(net, nodes=None, size=5, patch_type='circle', color='blue
         if cmap_vals is not None:
             cmap_vals = cmap_vals
         else:
-            if net["res_"+branch_element].shape[0] == 0:
+            if net["res_" + branch_element].shape[0] == 0:
                 if branch_element == "line":
                     logger.error(
                         "There are no power flow results for buses voltage magnitudes which are"
@@ -296,24 +282,24 @@ def _create_node_trace(net, nodes=None, size=5, patch_type='circle', color='blue
                         "specific values...")
                 else:
                     logger.error(
-                     "There are no simulation results which are default for %s colormap coloring..."
-                     "set cmap_vals input argument if you want colormap according to some "
-                     "specific values..." %node_element)
-            cmap_vals = net["res_"+node_element].loc[node_plot_index, colormap_column].values
+                        "There are no simulation results which are default for %s colormap coloring..."
+                        "set cmap_vals input argument if you want colormap according to some "
+                        "specific values..." % node_element)
+            cmap_vals = net["res_" + node_element].loc[node_plot_index, colormap_column].values
 
-        cmap_vals = net["res_"+node_element].loc[
+        cmap_vals = net["res_" + node_element].loc[
             node_plot_index, colormap_column] if cmap_vals is None else cmap_vals
 
         cmin = cmap_vals.min() if cmin is None else cmin
         cmax = cmap_vals.max() if cmax is None else cmax
 
         node_trace['marker'] = Marker(size=size,
-                                     color=cmap_vals, cmin=cmin, cmax=cmax,
-                                     colorscale=cmap,
-                                     colorbar=ColorBar(thickness=10,
-                                                       x=cpos),
-                                     symbol=patch_type
-                                     )
+                                      color=cmap_vals, cmin=cmin, cmax=cmax,
+                                      colorscale=cmap,
+                                      colorbar=ColorBar(thickness=10,
+                                                        x=cpos),
+                                      symbol=patch_type
+                                      )
 
         if cbar_title:
             node_trace['marker']['colorbar']['title'] = cbar_title
@@ -328,40 +314,40 @@ def _get_branch_geodata_plotly(net, branches, use_branch_geodata, branch_element
     ys = []
     if use_branch_geodata:
         for line_ind, _ in branches.iterrows():
-            line_coords = net[branch_element+'_geodata'].at[line_ind, 'coords']
-            linex, liney = list(zip(*line_coords))
-            xs += linex
+            line_coords = list(geojson.utils.coords(geojson.loads(net[branch_element].at[line_ind, 'geo'])))
+            line_x, line_y = list(zip(*line_coords))
+            xs += line_x
             xs += [None]
-            ys += liney
+            ys += line_y
             ys += [None]
     else:
         # getting x and y values from bus_geodata for from and to side of each line
         n = node_element
-        n_geodata = n + "_geodata"
-        from_n = 'from_'+n
-        to_n = 'to_'+n
-        from_node = net[n_geodata].loc[branches[from_n], 'x'].tolist()
-        to_node = net[n_geodata].loc[branches[to_n], 'x'].tolist()
+        from_n = 'from_' + n
+        to_n = 'to_' + n
+        from_node_xy = net[n].loc[branches[from_n], 'geo'].apply(geojson.loads).apply(geojson.utils.coords).apply(next).tolist()
+        to_node_xy = net[n].loc[branches[to_n], 'geo'].apply(geojson.loads).apply(geojson.utils.coords).apply(next).tolist()
+        from_node_x, from_node_y = zip(*from_node_xy)
+        to_node_x, to_node_y = zip(*to_node_xy)
         # center point added because of the hovertool
-        center = (np.array(from_node) + np.array(to_node)) / 2
-        none_list = [None] * len(from_node)
-        xs = np.array([from_node, center, to_node, none_list]).T.flatten().tolist()
+        center = (np.array(from_node_x) + np.array(to_node_x)) / 2
+        none_list = [None] * len(from_node_x)
+        xs = np.array([from_node_x, center, to_node_x, none_list]).T.flatten().tolist()
 
-        from_node = net[n_geodata].loc[branches[from_n], 'y'].tolist()
-        to_node = net[n_geodata].loc[branches[to_n], 'y'].tolist()
         # center point added because of the hovertool
-        center = (np.array(from_node) + np.array(to_node)) / 2
-        none_list = [None] * len(from_node)
-        ys = np.array([from_node, center, to_node, none_list]).T.flatten().tolist()
+        center = (np.array(from_node_y) + np.array(to_node_y)) / 2
+        none_list = [None] * len(from_node_y)
+        ys = np.array([from_node_y, center, to_node_y, none_list]).T.flatten().tolist()
 
     # [:-1] is because the trace will not appear on maps if None is at the end
     return xs[:-1], ys[:-1]
 
 
-def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=False, width=1.0,
+def create_line_trace(net, lines=None, use_line_geo=True, respect_switches=False, width=1.0,
                       color='grey', infofunc=None, trace_name='lines', legendgroup='lines',
                       cmap=None, cbar_title=None, show_colorbar=True, cmap_vals=None, cmin=None,
-                      cmax=None, cpos=1.1, cmap_vals_category='loading_percent', hoverlabel=None):
+                      cmax=None, cpos=1.1, cmap_vals_category='loading_percent', hoverlabel=None,
+                      dash="solid"):
     """
     Creates a plotly trace of pandapower lines. It is a power net specific wrapper function for the
     more generic _create_line_trace function.
@@ -411,8 +397,80 @@ def create_line_trace(net, lines=None, use_line_geodata=True, respect_switches=F
 
     return _create_branch_trace(net=net,
                                 branches=lines,
-                                use_branch_geodata=use_line_geodata,
+                                use_branch_geodata=use_line_geo,
                                 respect_separators=respect_switches,
+                                width=width,
+                                color=color,
+                                infofunc=infofunc,
+                                trace_name=trace_name,
+                                legendgroup=legendgroup,
+                                cmap=cmap,
+                                cbar_title=cbar_title,
+                                show_colorbar=show_colorbar,
+                                cmap_vals=cmap_vals,
+                                cmin=cmin,
+                                cmax=cmax,
+                                cpos=cpos,
+                                branch_element=branch_element,
+                                separator_element=separator_element,
+                                node_element=node_element,
+                                cmap_vals_category=cmap_vals_category,
+                                hoverlabel=hoverlabel,
+                                dash=dash)
+
+def create_dcline_trace(net, dclines=None, width=1.0,
+                        color='grey', infofunc=None, trace_name='hvdc lines', legendgroup='dclines',
+                        cmap=None, cbar_title=None, show_colorbar=True, cmap_vals=None, cmin=None,
+                        cmax=None, cpos=1.1, cmap_vals_category='loading_percent', hoverlabel=None):
+    """
+    Creates a plotly trace of pandapower dclines. It is a power net specific wrapper function for the
+    more generic _create_line_trace function.
+
+    INPUT:
+        **net** (pandapowerNet) - The pandapower network
+
+    OPTIONAL:
+        **dclines** (list, None) - The lines for which the collections are created.
+        If None, all lines in the network are considered.
+
+        **width** (int, 1) - line width
+
+        **infofunc** (pd.Series, None) - hoverinfo for dcline elements. Indices should correspond to
+        the pandapower element indices
+
+        **trace_name** (String, "lines") - name of the trace which will appear in the legend
+
+        **color** (String, "grey") - color of dclines in the trace
+
+        **legendgroup** (String, None) - defines groups of layers that will be displayed in a legend
+        e.g. groups according to voltage level (as used in `vlevel_plotly`)
+
+        **cmap** (String, None) - name of a colormap which exists within plotly if set to True default `Jet`
+        colormap is used, alternative colormaps : Greys, YlGnBu, Greens, YlOrRd,
+        Bluered, RdBu, Reds, Blues, Picnic, Rainbow, Portland, Jet, Hot, Blackbody, Earth, Electric, Viridis
+        To revert the color map, append "_r" to the name.
+
+        **cmap_vals** (list, None) - values used for coloring using colormap
+
+        **show_colorbar** (bool, False) - flag for showing or not corresponding colorbar
+
+        **cbar_title** (String, None) - title for the colorbar
+
+        **cmin** (float, None) - colorbar range minimum
+
+        **cmax** (float, None) - colorbar range maximum
+
+        **cpos** (float, 1.1) - position of the colorbar
+
+        """
+
+    branch_element = "dcline"
+    node_element = "bus"
+    separator_element = "switch"
+
+    return _create_branch_trace(net=net,
+                                branches=dclines,
+                                use_branch_geodata=False,
                                 width=width,
                                 color=color,
                                 infofunc=infofunc,
@@ -437,7 +495,7 @@ def _create_branch_trace(net, branches=None, use_branch_geodata=True, respect_se
                          legendgroup=None, cmap=None, cbar_title=None, show_colorbar=True,
                          cmap_vals=None, cmin=None, cmax=None, cpos=1.1, branch_element='line',
                          separator_element='switch', node_element='bus',
-                         cmap_vals_category='loading_percent', hoverlabel=None):
+                         cmap_vals_category='loading_percent', hoverlabel=None, dash="solid"):
     """
     Creates a plotly trace of branch elements. The rather generic, non-power net specific names
     were introduced to make it usable in other packages, e.g. for pipe networks.
@@ -493,7 +551,7 @@ def _create_branch_trace(net, branches=None, use_branch_geodata=True, respect_se
 
        """
     if not PLOTLY_INSTALLED:
-        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "plotly")
+        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "plotly")
 
     color = get_plotly_color(color)
 
@@ -507,37 +565,35 @@ def _create_branch_trace(net, branches=None, use_branch_geodata=True, respect_se
                 len(infofunc) == len(branches):
             infofunc = pd.Series(index=branches, data=infofunc)
         if len(infofunc) != len(branches) and len(infofunc) != len(net[branch_element]):
-            raise UserWarning("Different amount of hover info than {}s to "
-                              "plot".format(branch_element))
+            raise UserWarning(f"Different amount of hover info than {branch_element}s to plot")
         assert isinstance(infofunc, pd.Series), \
-            "infofunc should be a pandas series with the net.{}.index to the infofunc " \
-            "contents".format(branch_element)
+            f"infofunc should be a pandas series with the net.{branch_element}.index " \
+            f"to the infofunc contents"
     no_go_branches = set()
     if respect_separators:
         if separator_element == "switch":
             no_go_branches = set(branches) & \
                              set(net[separator_element].element[(net[separator_element].et == "l") &
-                                                             (net[separator_element].closed == 0)])
+                                                                (net[separator_element].closed == 0)])
         elif separator_element == "valve":
             no_go_branches = set(branches) & \
                              set(net[separator_element][(~net[separator_element].in_service) |
                                                         (net[separator_element].opened)])
         else:
-            raise NotImplementedError("respect separtors is only implements for switches, "
-                                      "not for {}s.".format(separator_element))
+            raise NotImplementedError(f"respect separators is only implements for switches, "
+                                      "not for {separator_element}s.")
     branches_to_plot = net[branch_element].loc[list(set(net[branch_element].index) &
                                                     (set(branches) - no_go_branches))]
     no_go_branches_to_plot = None
-    branch_geodata = branch_element + "_geodata"
-    node_geodata = node_element + "_geodata"
-    use_branch_geodata = use_branch_geodata if net[branch_geodata].shape[0] > 0 else False
+    use_branch_geodata = use_branch_geodata if net[branch_element]["geo"].dropna().shape[0] > 0 else False
     if use_branch_geodata:
         branches_to_plot = branches_to_plot.loc[np.intersect1d(branches_to_plot.index,
-                                                               net[branch_geodata].index)]
+                                                               net[branch_element].index)]
     else:
-        branches_with_geodata = branches_to_plot['from_'+node_element].isin(
-                                                    net[node_geodata].index) & \
-                                branches_to_plot['to_'+node_element].isin(net[node_geodata].index)
+        branches_with_geodata = branches_to_plot['from_' + node_element].isin(
+            net[node_element].dropna(subset=["geo"]).index) & \
+                                branches_to_plot['to_' + node_element].isin(
+                                    net[node_element].dropna(subset=["geo"]).index)
         branches_to_plot = branches_to_plot.loc[branches_with_geodata]
     cmap_branches = None
     if cmap is not None:
@@ -551,14 +607,14 @@ def _create_branch_trace(net, branches=None, use_branch_geodata=True, respect_se
             if not isinstance(cmap_vals, np.ndarray):
                 cmap_vals = np.asarray(cmap_vals)
         else:
-            if net['res_'+branch_element].shape[0] == 0:
+            if net['res_' + branch_element].shape[0] == 0:
                 logger.error(
                     "There are no simulation results for branches which are default for {}"
                     "colormap coloring..."
                     "set cmap_vals input argument if you want colormap according to some specific "
                     "values...".format(branch_element))
-            cmap_vals = net['res_'+branch_element].loc[branches_to_plot.index,
-                                                       cmap_vals_category].values
+            cmap_vals = net['res_' + branch_element].loc[branches_to_plot.index,
+            cmap_vals_category].values
 
         cmap_branches = get_plotly_cmap(cmap_vals, cmap_name=cmap, cmin=cmin, cmax=cmax)
         if len(cmap_branches) == len(net[branch_element]):
@@ -580,7 +636,7 @@ def _create_branch_trace(net, branches=None, use_branch_geodata=True, respect_se
                     branch_element, idx, branch['name']))
 
         line_trace = dict(type='scatter', text=[], hoverinfo='text', mode='lines', name=trace_name,
-                          line=Line(width=width, color=color), showlegend=False,
+                          line=Line(width=width, color=color, dash=dash), showlegend=False,
                           legendgroup=legendgroup)
 
         line_trace['x'], line_trace['y'] = _get_branch_geodata_plotly(net,
@@ -606,16 +662,15 @@ def _create_branch_trace(net, branches=None, use_branch_geodata=True, respect_se
             cbar_cmap_name = 'Jet' if cmap == 'jet' else cmap
             # workaround to get colorbar for branches (an unvisible node is added)
             # get x and y of first line.from_bus:
-            x = [net[node_geodata].x[net[branch_element]["from_"+node_element][net[branch_element].index[0]]]]
-            y = [net[node_geodata].y[net[branch_element]["from_"+node_element][net[branch_element].index[0]]]]
+            x, y = geojson.utils.coords(net[node_element].loc(net[branch_element][f"from_{node_element}"][net[branch_element].index[0]], "geo"))
             branches_cbar = dict(type='scatter', x=x, y=y, mode='markers',
-                              marker=Marker(size=0, cmin=cmin, cmax=cmax,
-                                            color='rgb(255,255,255)',
-                                            opacity=0,
-                                            colorscale=cbar_cmap_name,
-                                            colorbar=ColorBar(thickness=10,
-                                                              x=cpos),
-                                            ))
+                                 marker=Marker(size=0, cmin=cmin, cmax=cmax,
+                                               color='rgb(255,255,255)',
+                                               opacity=0,
+                                               colorscale=cbar_cmap_name,
+                                               colorbar=ColorBar(thickness=10,
+                                                                 x=cpos),
+                                               ))
             if cbar_title:
                 branches_cbar['marker']['colorbar']['title'] = cbar_title
 
@@ -658,13 +713,13 @@ def _create_branch_trace(net, branches=None, use_branch_geodata=True, respect_se
             infofunc = pd.Series(index=net[branch_element].index, data=infofunc)
         assert isinstance(infofunc, pd.Series), \
             "infofunc should be a pandas series with the net.{}.index to the infofunc contents" \
-            .format(branch_element)
+                .format(branch_element)
         sorted_idx = branches_to_plot.index.tolist()
         if no_go_branches_to_plot is not None:
             sorted_idx += no_go_branches_to_plot.index.tolist()
         infofunc = infofunc.loc[sorted_idx]
     center_trace = create_edge_center_trace(branch_traces, color=color, infofunc=infofunc,
-                                            use_line_geodata=use_branch_geodata,
+                                            use_line_geo=use_branch_geodata,
                                             showlegend=False, legendgroup=legendgroup,
                                             hoverlabel=hoverlabel)
     branch_traces.append(center_trace)
@@ -674,8 +729,7 @@ def _create_branch_trace(net, branches=None, use_branch_geodata=True, respect_se
 
 def create_trafo_trace(net, trafos=None, color='green', trafotype='2W', width=5, infofunc=None, cmap=None,
                        trace_name='2W transformers', cmin=None, cmax=None, cmap_vals=None, matching_params=None,
-                       use_line_geodata=None):
-
+                       use_line_geo=None):
     """
     Creates a plotly trace of pandapower trafos.
 
@@ -712,21 +766,21 @@ def create_trafo_trace(net, trafos=None, color='green', trafotype='2W', width=5,
 
     """
     if not PLOTLY_INSTALLED:
-        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "plotly")
+        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "plotly")
 
     color = get_plotly_color(color)
 
     if trafotype == '2W':
-        trafotable='trafo'
+        trafotable = 'trafo'
 
-        trafo_buses_with_geodata = net.trafo.hv_bus.isin(net.bus_geodata.index) & \
-                               net.trafo.lv_bus.isin(net.bus_geodata.index)
+        trafo_buses_with_geodata = net.trafo.hv_bus.isin(net.bus.geo.dropna().index) & \
+                                   net.trafo.lv_bus.isin(net.bus.geo.dropna().index)
         connections = [['hv_bus', 'lv_bus']]
-    elif trafotype=='3W':
+    elif trafotype == '3W':
         trafotable = 'trafo3w'
-        trafo_buses_with_geodata = net.trafo3w.hv_bus.isin(net.bus_geodata.index) & \
-                               net.trafo3w.mv_bus.isin(net.bus_geodata.index) & \
-                               net.trafo3w.lv_bus.isin(net.bus_geodata.index)
+        trafo_buses_with_geodata = net.trafo3w.hv_bus.isin(net.bus.dropna(subset=["geo"]).index) & \
+                                   net.trafo3w.mv_bus.isin(net.bus.dropna(subset=["geo"]).index) & \
+                                   net.trafo3w.lv_bus.isin(net.bus.dropna(subset=["geo"]).index)
         connections = [['hv_bus', 'lv_bus'], ['hv_bus', 'mv_bus'], ['mv_bus', 'lv_bus']]
 
     else:
@@ -757,10 +811,10 @@ def create_trafo_trace(net, trafos=None, color='green', trafotype='2W', width=5,
         if cmap_vals is not None:
             cmap_vals = cmap_vals
         else:
-            if net['res_'+trafotable].shape[0] == 0:
+            if net['res_' + trafotable].shape[0] == 0:
                 logger.error("There are no power flow results for lines which are default for line colormap coloring..."
                              "set cmap_vals input argument if you want colormap according to some specific values...")
-            cmap_vals = net['res_'+trafotable].loc[trafos_to_plot.index, 'loading_percent'].values
+            cmap_vals = net['res_' + trafotable].loc[trafos_to_plot.index, 'loading_percent'].values
 
         cmap_colors = get_plotly_cmap(cmap_vals, cmap_name=cmap, cmin=cmin, cmax=cmax)
 
@@ -772,21 +826,21 @@ def create_trafo_trace(net, trafos=None, color='green', trafotype='2W', width=5,
         for from_bus1, to_bus1 in connections:
 
             trafo_trace = dict(type='scatter', text=[], line=Line(width=width, color=color),
-                                 hoverinfo='text', mode='lines', name=trace_name,
+                               hoverinfo='text', mode='lines', name=trace_name,
                                legendgroup=trace_name, showlegend=False)
 
             trafo_trace['text'] = trafo['name'] if infofunc is None else infofunc.loc[idx]
 
-            for k in ('x', 'y'):
-                from_bus = net.bus_geodata.loc[trafo[from_bus1], k]
-                to_bus = net.bus_geodata.loc[trafo[to_bus1], k]
-                trafo_trace[k] = [from_bus, (from_bus + to_bus) / 2, to_bus]
+            from_bus = next(geojson.utils.coords(geojson.loads(net.bus.loc[trafo[from_bus1], "geo"])))
+            to_bus = next(geojson.utils.coords(geojson.loads(net.bus.loc[trafo[to_bus1], "geo"])))
+            trafo_trace["x"] = [from_bus[0], (from_bus[0] + to_bus[0]) / 2, to_bus[0]]
+            trafo_trace["y"] = [from_bus[1], (from_bus[1] + to_bus[1]) / 2, to_bus[1]]
 
             trafo_traces.append(trafo_trace)
     trafo_traces[0]["showlegend"] = True
 
     center_trace = create_edge_center_trace(trafo_traces, color=color, infofunc=infofunc,
-                                            use_line_geodata=use_line_geodata,
+                                            use_line_geo=use_line_geo,
                                             showlegend=False, legendgroup=trace_name)
     trafo_traces.append(center_trace)
     return trafo_traces
@@ -869,7 +923,7 @@ def create_weighted_marker_trace(net, elm_type="load", elm_ids=None, column_to_p
     elms_df["values_scaled"] = elms_df[column_to_plot] * in_service * scaling
 
     # get sum per bus, if not a bus table already:
-    if elm_type not in [node_element, "res_"+node_element]:
+    if elm_type not in [node_element, "res_" + node_element]:
         values_by_bus = elms_df.groupby("bus").sum().values_scaled
     else:
         values_by_bus = elms_df.values_scaled
@@ -881,9 +935,8 @@ def create_weighted_marker_trace(net, elm_type="load", elm_ids=None, column_to_p
                        + str(values_by_bus.loc[values_by_bus < 0]))
 
     # add geodata:
-    node_geodata = node_element + "_geodata"
-    x_list = net[node_geodata].loc[values_by_bus.index, 'x'].tolist()
-    y_list = net[node_geodata].loc[values_by_bus.index, 'y'].tolist()
+    xy_list = net[node_element].loc[values_by_bus.index, 'geo'].dropna().apply(geojson.loads).apply(geojson.utils.coords).apply(next)
+    x_list, y_list = zip(*xy_list)
 
     # set up hover info:
     unit = column_to_plot.split("_")[-1]
@@ -901,8 +954,8 @@ def create_weighted_marker_trace(net, elm_type="load", elm_ids=None, column_to_p
                         mode='markers',
                         hoverinfo='text',
                         name=trace_name,
-                        x=x_list,
-                        y=y_list)
+                        x=list(x_list),
+                        y=list(y_list))
     marker_trace["marker"] = dict(color=color,
                                   size=values_by_bus.abs() * marker_scaling,
                                   symbol=patch_type,
@@ -945,8 +998,9 @@ def create_scale_trace(net, weighted_trace, down_shift=0):
     unit = scale_info["scale_legend_unit"]  # p_mw...q_mvar ..
 
     # scale trace
-    x_max, y_max = net.bus_geodata.x.max(), net.bus_geodata.y.max()
-    x_min, y_min = net.bus_geodata.x.min(), net.bus_geodata.y.min()
+    bus_x, bus_y = zip(*net.bus.geo.dropna().apply(geojson.loads).apply(geojson.utils.coords).apply(next))
+    x_max, y_max = max(bus_x), max(bus_y)
+    x_min, y_min = min(bus_x), min(bus_y)
     x_pos = x_max + (x_max - x_min) * 0.2
     x_pos2 = x_max + ((x_max - x_min) * 0.2 * 2)
 
@@ -970,7 +1024,7 @@ def create_scale_trace(net, weighted_trace, down_shift=0):
                                        color=scale_info.get("scale_marker_color"),
                                        symbol=marker["symbol"],
                                        sizemode=marker["sizemode"]),
-                           text=[f"{scale_size / scale_info['marker_scaling']} {unit}", ""],
+                           text=[f"{scale_size / scale_info['marker_scaling']:.0f} {unit}", ""],
                            textposition="top center",
                            showlegend=False,
                            textfont=dict(family="Helvetica",
@@ -1019,13 +1073,13 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
 
     """
     if not PLOTLY_INSTALLED:
-        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "plotly")
+        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "plotly")
     if on_map:
         try:
             on_map = _on_map_test(traces[0]['x'][0], traces[0]['y'][0])
-        except:
+        except ImportError:
             logger.warning("Test if geo-data are in lat/long cannot be performed using geopy -> "
-                           "eventual plot errors are possible.")
+                           "plot errors are possible.")
 
         if on_map is False:
             logger.warning("Existing geodata are not real lat/lon geographical coordinates. -> "
@@ -1045,8 +1099,9 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
                 # scattermapboxplot lines do not support dash for some reason, make it a red line instead
                 if "dash" in trace["line"]._props:
                     _prps = dict(trace["line"]._props)
-                    _prps.pop("dash", None)
-                    _prps["color"] = "red"
+                    _prps.pop("dash")
+                    if trace["line"]._props["dash"] != "solid":
+                        _prps["color"] = "red"
                     trace["line"] = scmLine(_prps)
                 else:
                     trace["line"] = scmLine(dict(trace["line"]._props))
@@ -1070,8 +1125,8 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
                      yaxis=YAxis(showgrid=False, zeroline=False, showticklabels=False),
                      # legend=dict(x=0, y=1.0)
                      legend={'itemsizing': 'constant'},
-                     ),
-                )
+                 ),
+                 )
     a = kwargs.get('annotation')
     if a:
         fig.add_annotation(a)
@@ -1093,7 +1148,7 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
                                                    lon=pd.Series(traces[0]['lon']).dropna().mean()),
                                        style=map_style,
                                        pitch=0,
-                                       zoom=kwargs.pop('zoomlevel', 11))
+                                       zoom=kwargs.pop('zoomlevel', 3))
 
     # default aspectratio: if on_map use auto, else use 'original'
     aspectratio = 'original' if not on_map and aspectratio == 'auto' else aspectratio
@@ -1104,23 +1159,33 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
             xs = []
             ys = []
             for trace in traces:
-                xs += trace.get('x') or trace['lon']
-                ys += trace.get('y') or trace['lat']
-            x_dropna = pd.Series(xs).dropna()
-            y_dropna = pd.Series(ys).dropna()
-            xrange = x_dropna.max() - x_dropna.min()
-            yrange = y_dropna.max() - y_dropna.min()
-            ratio = xrange / yrange
-            if ratio < 1:
-                aspectratio = (ratio, 1.)
+                xs += trace.get('x') or trace.get('lon') or []
+                ys += trace.get('y') or trace.get('lat') or []
+            xs_arr = np.array(xs)
+            ys_arr = np.array(ys)
+            xrange = np.nanmax(xs_arr) - np.nanmin(xs_arr)
+            yrange = np.nanmax(ys_arr) - np.nanmin(ys_arr)
+
+            # the ratio only makes sense, if xrange and yrange != 0
+            if xrange == 0 and yrange == 0:
+                aspectratio = (1, 1)
+            elif xrange == 0:
+                aspectratio = (0.35, 1)
+            elif yrange == 0:
+                aspectratio = (1, 0.35)
+
             else:
-                aspectratio = (1., 1 / ratio)
+                ratio = xrange / yrange
+                if ratio < 1:
+                    aspectratio = (ratio, 1.)
+                else:
+                    aspectratio = (1., 1 / ratio)
 
         aspectratio = np.array(aspectratio) / max(aspectratio)
         fig['layout']['width'], fig['layout']['height'] = ([ar * figsize * 700 for ar in aspectratio])
 
     # check if called from ipynb or not in order to consider appropriate plot function
-    if _in_ipynb():
+    if _in_ipynb() and auto_open:
         from plotly.offline import init_notebook_mode, iplot as plot
         init_notebook_mode()
         plot(fig, filename=filename)

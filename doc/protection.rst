@@ -41,6 +41,7 @@ As of now pandapower is capable of simulating fault scenario using:
     :maxdepth: 2
     
     protection/oc_relay
+    protection/fuse
 
 .. seealso::
 	- *Netzschutztechnik-Anlagentechnik für elektrische Verteilungsnetze* by Walter Schossig, Thomas Schossig, 2018.

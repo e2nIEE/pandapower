@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import os
 
@@ -113,7 +113,7 @@ def simple_test_grid(load_scaling=1., sgen_scaling=1., with_gen=False, distribut
     v_base = 132
     z_base = v_base ** 2 / s_base
 
-    pp.create_buses(net, 5, v_base, geodata=((0, 1), (-1, 0.5), (0, 0), (1, 0.5), (0, 0.5)))
+    pp.create_buses(net, 5, v_base, geodata=[(0, 1), (-1, 0.5), (0, 0), (1, 0.5), (0, 0.5)])
 
     pp.create_line(net, 0, 1, 0.84e-2 * z_base / r, std_type, name="1-2")
     pp.create_line(net, 0, 3, 0.84e-2 * z_base / r, std_type, name="1-4")
@@ -195,7 +195,7 @@ def test_tdpf_frank():
     line_loading = line_mva / line_max_mva
 
     ref2 = pd.read_csv(os.path.join(pp.pp_dir, "test", "test_files", "tdpf", "case30_branch_details.csv"))
-    ref2.sort_values(by="R_THETA", ascending=False, inplace=True)
+    ref2 = ref2.sort_values(by="R_THETA", ascending=False)
 
     # compare p_loss
     assert np.allclose(ref2.PLoss_TDPF * net.sn_mva, net.res_line.loc[sorted_index, "pl_mw"], rtol=0, atol=1e-6)
@@ -226,7 +226,7 @@ def test_temperature_r():
             net2.line["temperature_degree_celsius"] = net.res_line.temperature_degree_celsius
             pp.runpp(net2, consider_line_temperature=True)
 
-            net.res_line.drop(["temperature_degree_celsius", "r_theta_kelvin_per_mw"], axis=1, inplace=True)
+            net.res_line = net.res_line.drop(["temperature_degree_celsius", "r_theta_kelvin_per_mw"], axis=1)
             assert_res_equal(net, net2)
 
             # now test transient results -> after 5 min
@@ -235,7 +235,7 @@ def test_temperature_r():
             net2.line["temperature_degree_celsius"] = net.res_line.temperature_degree_celsius
             pp.runpp(net2, consider_line_temperature=True)
 
-            net.res_line.drop(["temperature_degree_celsius", "r_theta_kelvin_per_mw"], axis=1, inplace=True)
+            net.res_line = net.res_line.drop(["temperature_degree_celsius", "r_theta_kelvin_per_mw"], axis=1)
             assert_res_equal(net, net2)
 
 
@@ -324,7 +324,7 @@ def test_default_parameters():
     # with TDPF algorithm but no relevant tdpf lines the results must match with normal runpp:
     net.line["conductor_outer_diameter_m"] = np.nan
     pp.runpp(net, tdpf=True)
-    net.res_line.drop(["r_ohm_per_km", "temperature_degree_celsius", "r_theta_kelvin_per_mw"], axis=1, inplace=True)
+    net.res_line = net.res_line.drop(["r_ohm_per_km", "temperature_degree_celsius", "r_theta_kelvin_per_mw"], axis=1)
     assert_res_equal(net, net_backup)
 
     with pytest.raises(UserWarning, match="required columns .*'mc_joule_per_m_k'.* are missing"):
@@ -337,7 +337,7 @@ def test_default_parameters():
         pp.runpp(net, tdpf=True, tdpf_update_r_theta=False)
     net.line["r_theta_kelvin_per_mw"] = np.nan
     pp.runpp(net, tdpf=True, tdpf_update_r_theta=False)
-    net.res_line.drop(["r_ohm_per_km", "temperature_degree_celsius", "r_theta_kelvin_per_mw"], axis=1, inplace=True)
+    net.res_line = net.res_line.drop(["r_ohm_per_km", "temperature_degree_celsius", "r_theta_kelvin_per_mw"], axis=1)
     assert_res_equal(net, net_backup)
 
     # now define some tdpf lines with simplified method
@@ -550,4 +550,4 @@ def test_EN_standard(en_net):
 
 
 if __name__ == '__main__':
-    pytest.main(['-xs', __file__])
+    pytest.main([__file__, "-xs"])
