@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2024-..-..
 -------------------------------
+- [ADDED] Static Var Compensator with Voltage Control
 - [ADDED] Implementation of Allocation Factor WLS (AF-WLS) for non observable distribution grids
 - [FIXED] Deletion of multiple measurements at the same bus or branch
 - [FIXED] Creation of zero injection measurements in WLS estimator
