@@ -66,12 +66,14 @@ jobs:
 
       # Waste some time
       - name: Sleep for 150s to make release available
+        if: ${{ inputs.upload_server == 'pypi' }}
         uses: juliangruber/sleep-action@v1
         with:
           time: 150s
 
       # Notify fraunhofer ci about the new version
       - uses: eic/trigger-gitlab-ci@v3
+        if: ${{ inputs.upload_server == 'pypi' }}
         with:
           url: https://gitlab.cc-asp.fraunhofer.de
           project_id: 27329
@@ -81,6 +83,7 @@ jobs:
 
       # Run an installation for testing
       - name: Install pandapower from PyPI
+        if: ${{ inputs.upload_server == 'pypi' }}
         run: |
-          python3 -m pip install pandapower
+          python3 -m pip install --pre pandapower
           python3 -c "import pandapower; print(pandapower.__version__)"
