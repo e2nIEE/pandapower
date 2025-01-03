@@ -174,14 +174,17 @@ def runpp(net, algorithm='nr', calculate_voltage_angles=True, init="auto",
 
         **KWARGS**:
 
-        **lightsim2grid** ((bool,str), "auto") - whether to use the package lightsim2grid for power flow backend
+        **lightsim2grid** ((bool,str), "auto") - whether to use the package lightsim2grid for power
+        flow backend. For more details on compatibility, check out pandapower's documentation.
 
-        **numba** (bool, True) - Activation of numba JIT compiler in the newton solver
+        **numba** (bool, True) - Activation of numba JIT compiler in the newton solver.
+        If set to True, the numba JIT compiler is used to generate matrices for the powerflow,
+        which leads to significant speed improvements.
 
-            If set to True, the numba JIT compiler is used to generate matrices for the powerflow,
-            which leads to significant speed improvements.
-
-        **switch_rx_ratio** (float, 2) - rx_ratio of bus-bus-switches. If impedance is zero, buses connected by a closed bus-bus switch are fused to model an ideal bus. Otherwise, they are modelled as branches with resistance defined as z_ohm column in switch table and this parameter
+        **switch_rx_ratio** (float, 2) - rx_ratio of bus-bus-switches. If the impedance of switches
+        defined in net.switch.z_ohm is zero, buses connected by a closed bus-bus switch are fused to
+        model an ideal bus. Closed bus-bus switches, whose impedance z_ohm is not zero, are modelled
+        as branches with resistance and reactance according to net.switch.z_ohm and switch_rx_ratio.
 
         **delta_q** - Reactive power tolerance for option "enforce_q_lims" in kvar - helps convergence in some cases.
 
@@ -219,6 +222,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles=True, init="auto",
 
         **tdpf_update_r_theta** (bool, True) - TDPF parameter, whether to update R_Theta in Newton-Raphson or to assume a constant R_Theta (either from net.line.r_theta, if set, or from a calculation based on the thermal model of Ngoko et.al.)
 
+        **update_vk_values** (bool, True) - If True vk and vkr values of trafo3w are recalculated based on characteristics, otherwise the values from the table are used. Can improve performance for large models.
     """
 
     # if dict 'user_pf_options' is present in net, these options overrule the net._options
@@ -345,35 +349,38 @@ def runpp_pgm(net, algorithm="nr", max_iterations=20, error_tolerance_vm_pu=1e-8
 def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_connectivity=True,
             switch_rx_ratio=2, trafo3w_losses="hv", **kwargs):
     """
-        Runs PANDAPOWER DC Flow
+    Runs PANDAPOWER DC Flow
 
-        INPUT:
-            **net** - The pandapower format network
+    INPUT:
+        **net** - The pandapower format network
 
-        OPTIONAL:
-            **trafo_model** (str, "t")  - transformer equivalent circuit model
-            pandapower provides two equivalent circuit models for the transformer:
+    OPTIONAL:
+        **trafo_model** (str, "t")  - transformer equivalent circuit model
+        pandapower provides two equivalent circuit models for the transformer:
 
-            - "t" - transformer is modeled as equivalent with the T-model. This is consistent with PowerFactory and is also more accurate than the PI-model. We recommend using this transformer model.
-            - "pi" - transformer is modeled as equivalent PI-model. This is consistent with Sincal, but the method is questionable since the transformer is physically T-shaped. We therefore recommend the use of the T-model.
+        - "t" - transformer is modeled as equivalent with the T-model. This is consistent with PowerFactory and is also more accurate than the PI-model. We recommend using this transformer model.
+        - "pi" - transformer is modeled as equivalent PI-model. This is consistent with Sincal, but the method is questionable since the transformer is physically T-shaped. We therefore recommend the use of the T-model.
 
-            **trafo_loading** (str, "current") - mode of calculation for transformer loading
+        **trafo_loading** (str, "current") - mode of calculation for transformer loading
 
-            Transformer loading can be calculated relative to the rated current or the rated power. In both cases the overall transformer loading is defined as the maximum loading on the two sides of the transformer.
+        Transformer loading can be calculated relative to the rated current or the rated power. In both cases the overall transformer loading is defined as the maximum loading on the two sides of the transformer.
 
-            - "current"- transformer loading is given as ratio of current flow and rated current of the transformer. This is the recommended setting, since thermal as well as magnetic effects in the transformer depend on the current.
-            - "power" - transformer loading is given as ratio of apparent power flow to the rated apparent power of the transformer.
+        - "current"- transformer loading is given as ratio of current flow and rated current of the transformer. This is the recommended setting, since thermal as well as magnetic effects in the transformer depend on the current.
+        - "power" - transformer loading is given as ratio of apparent power flow to the rated apparent power of the transformer.
 
-            **check_connectivity** (bool, False) - Perform an extra connectivity test after the conversion from pandapower to PYPOWER
+        **check_connectivity** (bool, False) - Perform an extra connectivity test after the conversion from pandapower to PYPOWER
 
-            If true, an extra connectivity test based on SciPy Compressed Sparse Graph Routines is perfomed.
-            If check finds unsupplied buses, they are put out of service in the PYPOWER matrix
+        If true, an extra connectivity test based on SciPy Compressed Sparse Graph Routines is perfomed.
+        If check finds unsupplied buses, they are put out of service in the PYPOWER matrix
 
-            **switch_rx_ratio** (float, 2) - rx_ratio of bus-bus-switches. If impedance is zero, buses connected by a closed bus-bus switch are fused to model an ideal bus. Otherwise, they are modelled as branches with resistance defined as z_ohm column in switch table and this parameter
+        **switch_rx_ratio** (float, 2) - rx_ratio of bus-bus-switches. If the impedance of switches
+        defined in net.switch.z_ohm is zero, buses connected by a closed bus-bus switch are fused to
+        model an ideal bus. Closed bus-bus switches, whose impedance z_ohm is not zero, are modelled
+        as branches with resistance and reactance according to net.switch.z_ohm and switch_rx_ratio.
 
-            **trafo3w_losses** (str, "hv") - defines where open loop losses of three-winding transformers are considered. Valid options are "hv", "mv", "lv" for HV/MV/LV side or "star" for the star point.
+        **trafo3w_losses** (str, "hv") - defines where open loop losses of three-winding transformers are considered. Valid options are "hv", "mv", "lv" for HV/MV/LV side or "star" for the star point.
 
-            **kwargs** - options to use for PYPOWER.runpf
+        **kwargs** - options to use for PYPOWER.runpf
     """
     _init_rundcpp_options(net, trafo_model=trafo_model, trafo_loading=trafo_loading,
                           recycle=recycle, check_connectivity=check_connectivity,

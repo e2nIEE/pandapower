@@ -11,8 +11,10 @@ from packaging.version import Version
 
 from pandapower._version import __version__, __format_version__
 from pandapower.create import create_empty_network, create_poly_cost
-import pandapower.plotting.geo as geo
+from pandapower.plotting import geo
 from pandapower.results import reset_results
+from pandapower.control import TrafoController
+import pandapower.plotting.geo as geo
 
 try:
     import pandaplan.core.pplog as logging
@@ -20,14 +22,6 @@ except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
-
-
-def _compare_version(
-        net_version,
-        compare_version: Union[str, int],
-        compare: Callable[[Version, Version], bool] = lambda x, y: x < y
-) -> bool:
-    return compare(Version(str(net_version)), Version(str(compare_version)))
 
 
 def convert_format(net, elements_to_deserialize=None):
@@ -45,17 +39,19 @@ def convert_format(net, elements_to_deserialize=None):
     _rename_columns(net, elements_to_deserialize)
     _add_missing_columns(net, elements_to_deserialize)
     _create_seperate_cost_tables(net, elements_to_deserialize)
-    if _compare_version(net.format_version, "3"):
+    if Version(str(net.format_version)) < Version("3.0.0"):
         _convert_geo_data(net, elements_to_deserialize)
+        _convert_group_element_index(net)
+        _convert_trafo_controller_parameter_names(net)
     if Version(str(net.format_version)) < Version("2.4.0"):
         _convert_bus_pq_meas_to_load_reference(net, elements_to_deserialize)
-    if isinstance(net.format_version, float) and net.format_version < 2:  # Why only run if net.format_version is float?
+    if Version(str(net.format_version)) < Version("2.0.0"):
         _convert_to_generation_system(net, elements_to_deserialize)
         _convert_costs(net)
         _convert_to_mw(net)
         _update_trafo_parameter_names(net, elements_to_deserialize)
         reset_results(net)
-    if isinstance(net.format_version, float) and net.format_version < 1.6:
+    if Version(str(net.format_version)) < Version("1.6"):
         set_data_type_of_columns_to_default(net)
     _convert_objects(net, elements_to_deserialize)
     _update_characteristics(net, elements_to_deserialize)
@@ -73,7 +69,7 @@ def _convert_geo_data(net, elements_to_deserialize=None):
         or (_check_elements_to_deserialize('line_geodata', elements_to_deserialize)
          and _check_elements_to_deserialize('line', elements_to_deserialize))):
         if hasattr(net, 'bus_geodata') or hasattr(net, 'line_geodata'):
-            if _compare_version(net.format_version, "1.6"):
+            if Version(str(net.format_version)) < Version("1.6"):
                 net.bus_geodata = pd.DataFrame.from_dict(net.bus_geodata)
                 net.line_geodata = pd.DataFrame.from_dict(net.line_geodata)
             geo.convert_geodata_to_geojson(net)
@@ -126,6 +122,35 @@ def correct_dtypes(net, error):
         else:
             logger.info(msg)
 
+
+def _convert_group_element_index(net):
+    if isinstance(net.group, pd.DataFrame) and "element" in net.group.columns:
+        if "element_index" in net.group.columns:
+            logger.warning("element cannot be renamed by element_index because columns exist already.")
+        net.group = net.group.rename(columns={"element": "element_index"})
+
+
+def _convert_trafo_controller_parameter_names(net):
+    if not isinstance(net.controller, pd.DataFrame):
+        return
+    for ctrl_idx in net.controller.index:
+        controller = net.controller.at[ctrl_idx, "object"]
+        if issubclass(type(controller), TrafoController):
+
+            if "tid" in controller.__dict__.keys():
+                controller.__dict__["element_index"] = controller.__dict__.pop("tid")
+            elif "transformer_index" in controller.__dict__.keys():
+                controller.__dict__["element_index"] = controller.__dict__.pop("transformer_index")
+
+            if "trafotable" in controller.__dict__.keys():
+                controller.__dict__["element"] = controller.__dict__.pop("trafotable")
+                if "trafotype" in controller.__dict__.keys():
+                    del controller.__dict__["trafotype"]
+            elif "trafotype" in controller.__dict__.keys():
+                controller.__dict__["element"] = controller.__dict__.pop("trafotype")
+
+            if "controlled_bus" in controller.__dict__.keys():
+                controller.__dict__["trafobus"] = controller.__dict__.pop("controlled_bus")
 
 def _convert_bus_pq_meas_to_load_reference(net, elements_to_deserialize):
     if _check_elements_to_deserialize('measurement', elements_to_deserialize):

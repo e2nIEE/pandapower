@@ -11,7 +11,7 @@ import numpy as np
 from itertools import product
 
 import pandapower.auxiliary as aux
-from pandapower import DC_NONE, DC_BUS_TYPE
+from pandapower.pypower.idx_bus_dc import DC_NONE, DC_BUS_TYPE
 from pandapower.build_bus import _build_bus_ppc, _build_svc_ppc, _build_ssc_ppc, _build_vsc_ppc, _build_bus_dc_ppc
 from pandapower.build_gen import _build_gen_ppc
 # from pandapower.pd2ppc import _ppc2ppci, _init_ppc
