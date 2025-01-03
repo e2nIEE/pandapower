@@ -36,6 +36,8 @@ from typing_extensions import deprecated
 from geojson import loads, GeoJSON
 import numpy as np
 import pandas as pd
+from pandas.api.types import is_numeric_dtype, is_string_dtype, is_object_dtype
+# from pandas.api.types import is_integer_dtype, is_float_dtype
 import scipy as sp
 import numbers
 from packaging.version import Version
@@ -451,10 +453,21 @@ def element_types_to_ets(element_types=None):
     ser2 = pd.Series(ser1.index, index=list(ser1))
     if element_types is None:
         return ser2
-    elif isinstance(ets, str):
+    elif isinstance(element_types, str):
         return ser2.at[element_types]
     else:
         return list(ser2.loc[element_types])
+
+
+def empty_defaults_per_dtype(dtype):
+    if is_numeric_dtype(dtype):
+        return np.nan
+    elif is_string_dtype(dtype):
+        return ""
+    elif is_object_dtype(dtype):
+        return None
+    else:
+        raise NotImplementedError(f"{dtype=} is not implemented in _empty_defaults()")
 
 
 def _preserve_dtypes(df, dtypes):
@@ -1835,7 +1848,7 @@ def _init_runse_options(net, v_start, delta_start, calculate_voltage_angles,
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
-                     mode="pf", switch_rx_ratio=switch_rx_ratio, init_vm_pu=v_start,
+                     mode="se", switch_rx_ratio=switch_rx_ratio, init_vm_pu=v_start,
                      init_va_degree=delta_start, enforce_q_lims=False, recycle=None,
                      voltage_depend_loads=False, trafo3w_losses=trafo3w_losses)
     _add_pf_options(net, tolerance_mva="1e-8", trafo_loading="power",
