@@ -1,6 +1,4 @@
 import inspect
-import collections
-import functools
 
 import numpy as np
 from numpy import complex128, zeros
@@ -12,20 +10,17 @@ from pandapower.control.controller.const_control import ConstControl
 from pandapower.control.controller.trafo_control import TrafoController
 from pandapower.auxiliary import _clean_up
 from pandapower.build_branch import _calc_trafo_parameter, _calc_trafo3w_parameter
-from pandapower.build_bus import _calc_pq_elements_and_add_on_ppc, \
-    _calc_shunts_and_add_on_ppc
-from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS, RATE_A
+from pandapower.build_bus import _calc_pq_elements_and_add_on_ppc
 from pandapower.pypower.idx_bus import PD, QD
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.pypower.idx_bus_dc import DC_PD
-from pandapower.pypower.makeSbus import _get_Sbus, _get_Cg, makeSbus
+from pandapower.pypower.makeSbus import makeSbus
 from pandapower.pf.pfsoln_numba import pfsoln as pfsoln_full, pf_solution_single_slack
 from pandapower.powerflow import LoadflowNotConverged, _add_auxiliary_elements
 from pandapower.results import _copy_results_ppci_to_ppc, _extract_results, _get_aranged_lookup
 from pandapower.results_branch import _get_branch_flows, _get_line_results, _get_trafo3w_results, _get_trafo_results
-from pandapower.results_bus import write_pq_results_to_element, _get_bus_v_results, _get_bus_results, _get_bus_dc_results
+from pandapower.results_bus import _get_bus_results, _get_bus_dc_results
 from pandapower.results_gen import _get_gen_results
-from pandapower.timeseries.output_writer import OutputWriter
 
 try:
     import pandaplan.core.pplog as logging

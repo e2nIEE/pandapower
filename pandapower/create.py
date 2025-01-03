@@ -14,7 +14,8 @@ from pandas import isnull
 from pandas.api.types import is_object_dtype
 
 from pandapower._version import __version__, __format_version__
-from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes, ensure_iterability
+from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes, ensure_iterability, \
+    empty_defaults_per_dtype
 from pandapower.results import reset_results
 from pandapower.std_types import add_basic_std_types, load_std_type
 import numpy as np
@@ -698,7 +699,7 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b", zone=N
         **index** (int) - The unique ID of the created element
 
     EXAMPLE:
-        create_bus(net, name = "bus1")
+        create_bus(net, 20., name = "bus1")
     """
     index = _get_index_with_check(net, "bus", index)
 
@@ -765,7 +766,7 @@ def create_bus_dc(net, vn_kv, name=None, index=None, geodata=None, type="b", zon
         **index** (int) - The unique ID of the created element
 
     EXAMPLE:
-        create_bus_dc(net, name = "bus1")
+        create_bus_dc(net, 20., name = "bus1")
     """
     index = _get_index_with_check(net, "bus_dc", index)
 
@@ -871,6 +872,8 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
     _add_to_entries_if_not_nan(net, "bus", entries, index, "min_vm_pu", min_vm_pu)
     _add_to_entries_if_not_nan(net, "bus", entries, index, "max_vm_pu", max_vm_pu)
     _set_multiple_entries(net, "bus", index, **entries, **kwargs)
+    net.bus.loc[net.bus.geo == "", "geo"] = None # overwrite
+    # empty_defaults_per_dtype() applied in _set_multiple_entries()
 
     return index
 
@@ -887,19 +890,19 @@ def create_buses_dc(net, nr_buses_dc, vn_kv, index=None, name=None, type="b", ge
 
         **nr_buses_dc** (int) - The number of dc buses that is created
 
-    OPTIONAL:
-        **name** (list of string, default None) - the name for this dc bus
-
-        **index** (list of int, default None) - Force specified IDs if available. If None, the indices \
-            higher than the highest already existing index are selected.
-
         **vn_kv** (float) - The grid voltage level.
 
-        **geodata** ((x,y)-tuple or list of tuples with length == nr_buses_dc, default None) -
-        coordinates used for plotting
+    OPTIONAL:
+        **index** (list of int, default None) - Force specified IDs if available. If None, the indices \
+            higher than the highest already existing index are selected.
+    
+        **name** (list of string, default None) - the name for this dc bus
 
         **type** (string, default "b") - Type of the dc bus. "n" - auxilary node,
         "b" - busbar, "m" - muff
+
+        **geodata** ((x,y)-tuple or list of tuples with length == nr_buses_dc, default None) -
+        coordinates used for plotting
 
         **zone** (string, None) - grid region
 
@@ -919,7 +922,7 @@ def create_buses_dc(net, nr_buses_dc, vn_kv, index=None, name=None, type="b", ge
         **index** (int) - The unique indices ID of the created elements
 
     EXAMPLE:
-        create_buses_dc(net, name = ["bus1","bus2"])
+        create_buses_dc(net, 2, [20., 20.], name = ["bus1","bus2"])
     """
     index = _get_multiple_index_with_check(net, "bus_dc", index, nr_buses_dc)
 
@@ -958,12 +961,12 @@ def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, 
 
         **bus** (int) - The bus id to which the load is connected
 
-    OPTIONAL:
-        **p_mw** (float, default 0) - The active power of the load
+        **p_mw** (float) - The active power of the load
 
         - positive value -> load
         - negative value -> generation
 
+    OPTIONAL:
         **q_mvar** (float, default 0) - The reactive power of the load
 
         **const_z_percent** (float, default 0) - percentage of p_mw and q_mvar that will be \
@@ -1044,12 +1047,12 @@ def create_loads(net, buses, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=
 
         **buses** (list of int) - A list of bus ids to which the loads are connected
 
-    OPTIONAL:
         **p_mw** (list of floats) - The active power of the loads
 
         - postive value   -> load
         - negative value  -> generation
 
+    OPTIONAL:
         **q_mvar** (list of floats, default 0) - The reactive power of the loads
 
         **const_z_percent** (list of floats, default 0) - percentage of p_mw and q_mvar that will \
@@ -1355,7 +1358,7 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
         **index** (int) - The unique ID of the created sgen
 
     EXAMPLE:
-        create_sgen(net, 1, p_mw = -120)
+        create_sgen(net, 1, p_mw = 120)
 
     """
     _check_node_element(net, bus)
@@ -2016,7 +2019,7 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
         **index** (int) - The unique ID of the created generator
 
     EXAMPLE:
-        create_gen(net, 1, p_mw = 120, vm_pu = 1.02)
+        create_gens(net, [1, 2], p_mw = [120, 100], vm_pu = [1.02, 0.99])
 
     """
     _check_multiple_node_elements(net, buses)
@@ -2294,7 +2297,7 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
         **index** (int) - The unique ID of the created line
 
     EXAMPLE:
-        create_line(net, "line1", from_bus = 0, to_bus = 1, length_km=0.1,  std_type="NAYY 4x50 SE")
+        create_line(net, from_bus = 0, to_bus = 1, length_km=0.1,  std_type="NAYY 4x50 SE", name = "line1")
 
     """
 
@@ -2430,7 +2433,7 @@ def create_line_dc(net, from_bus_dc, to_bus_dc, length_km, std_type, name=None, 
         **index** (int) - The unique ID of the created dc line
 
     EXAMPLE:
-        create_line_dc(net, "line_dc1", from_bus_dc = 0, to_bus_dc = 1, length_km=0.1,  std_type="Not defined yet")
+        create_line_dc(net, from_bus_dc = 0, to_bus_dc = 1, length_km=0.1,  std_type="NAYY 4x50 SE", name = "line_dc1")
 
     """
 
@@ -2560,7 +2563,7 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
             **index** (list of int) - The unique ID of the created lines
 
         EXAMPLE:
-            create_lines(net, ["line1", "line2"], from_buses=[0,1], to_buses=[2,3], length_km=0.1, std_type="NAYY 4x50 SE")
+            create_lines(net, from_buses=[0,1], to_buses=[2,3], length_km=0.1, std_type="NAYY 4x50 SE", name = ["line1", "line2"])
 
     """
     _check_multiple_branch_elements(net, from_buses, to_buses, "Lines")
@@ -2606,6 +2609,8 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
         _add_to_entries_if_not_nan(net, "line", entries, index, column, value, float64)
 
     _set_multiple_entries(net, "line", index, **entries, **kwargs)
+    net.line.loc[net.line.geo == "", "geo"] = None # overwrite
+    # empty_defaults_per_dtype() applied in _set_multiple_entries()
 
     if geodata:
         _add_multiple_branch_geodata(net, geodata, index)
@@ -2690,8 +2695,8 @@ def create_lines_dc(net, from_buses_dc, to_buses_dc, length_km, std_type, name=N
             **index** (list of int) - The unique ID of the created dc lines
 
         EXAMPLE:
-            create_lines_dc(net, ["line_dc1","line_dc2"], from_buses_dc=[0,1], to_buses_dc=[2,3], length_km=0.1,
-            std_type="Not specified yet")
+            create_lines_dc(net, from_buses_dc=[0,1], to_buses_dc=[2,3], length_km=0.1,
+            std_type="Not specified yet", name = ["line_dc1","line_dc2"])
 
     """
     _check_multiple_branch_elements(net, from_buses_dc, to_buses_dc, "Lines_dc", node_name='bus_dc', plural='(all dc buses)')
@@ -2831,9 +2836,9 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
         **index** (int) - The unique ID of the created line
 
     EXAMPLE:
-        create_line_from_parameters(net, "line1", from_bus = 0, to_bus = 1, lenght_km=0.1,
+        create_line_from_parameters(net, from_bus = 0, to_bus = 1, lenght_km=0.1,
         r_ohm_per_km = .01, x_ohm_per_km = 0.05, c_nf_per_km = 10,
-        max_i_ka = 0.4)
+        max_i_ka = 0.4, name = "line1")
 
     """
 
@@ -2967,8 +2972,8 @@ def create_line_dc_from_parameters(net, from_bus_dc, to_bus_dc, length_km, r_ohm
         **index** (int) - The unique ID of the created line
 
     EXAMPLE:
-        create_line_dc_from_parameters(net, "line_dc1", from_bus_dc = 0, to_bus_dc = 1, lenght_km=0.1,
-        r_ohm_per_km = .01, max_i_ka = 0.4)
+        create_line_dc_from_parameters(net, from_bus_dc = 0, to_bus_dc = 1, lenght_km=0.1,
+        r_ohm_per_km = .01, max_i_ka = 0.4, name = "line_dc1")
 
     """
 
@@ -3106,8 +3111,8 @@ def create_lines_from_parameters(net, from_buses, to_buses, length_km, r_ohm_per
         **index** (list of int) - The unique ID of the created lines
 
     EXAMPLE:
-        create_lines_from_parameters(net, ["line1","line2"], from_buses = [0,1], to_buses = [2,3], length_km= 0.1,
-        r_ohm_per_km = .01, x_ohm_per_km = 0.05, c_nf_per_km = 10, max_i_ka = 0.4)
+        create_lines_from_parameters(net, from_buses = [0,1], to_buses = [2,3], length_km= 0.1,
+        r_ohm_per_km = .01, x_ohm_per_km = 0.05, c_nf_per_km = 10, max_i_ka = 0.4, name = ["line1","line2"])
 
     """
     _check_multiple_branch_elements(net, from_buses, to_buses, "Lines")
@@ -3229,11 +3234,11 @@ def create_lines_dc_from_parameters(net, from_buses_dc, to_buses_dc, length_km, 
             tdpf_delay_s parameter)
 
     OUTPUT:
-        **index** (list of int) - The unique ID of the created dc lines
+        **index** (list of int) - The list of IDs of the created dc lines
 
     EXAMPLE:
-        create_lines_dc_from_parameters(net, name= ["line_dc1","line_dc2"], from_buses_dc = [0,1], to_buses_dc = [2,3], lenght_km=0.1,
-        r_ohm_per_km = .01, max_i_ka = 0.4)
+        create_lines_dc_from_parameters(net, from_buses_dc = [0,1], to_buses_dc = [2,3], lenght_km=0.1,
+        r_ohm_per_km = .01, max_i_ka = 0.4, name= ["line_dc1","line_dc2"])
 
     """
     _check_multiple_branch_elements(net, from_buses_dc, to_buses_dc, "Lines_dc",node_name='bus_dc', plural= '(all dc buses)')
@@ -3345,8 +3350,8 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
         **index** (int) - The unique ID of the created transformer
 
     EXAMPLE:
-        create_transformer(net, hv_bus = 0, lv_bus = 1, name = "trafo1", std_type = \
-            "0.4 MVA 10/0.4 kV")
+        create_transformer(net, hv_bus = 0, lv_bus = 1, std_type =  "0.4 MVA 10/0.4 kV",\
+            name = "trafo1")
     """
 
     # Check if bus exist to attach the trafo to
@@ -3769,10 +3774,10 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
         ** only considered in loadflow if calculate_voltage_angles = True
 
     OUTPUT:
-        **index** (int) - The unique ID of the created transformer
+        **index** (int) - The list of IDs of the created transformers
 
     EXAMPLE:
-        create_transformer_from_parameters(net, hv_bus=0, lv_bus=1, name="trafo1", sn_mva=40, \
+        create_transformers_from_parameters(net, hv_bus=[0, 1], lv_bus=[2, 3], name="trafo1", sn_mva=40, \
             vn_hv_kv=110, vn_lv_kv=10, vk_percent=10, vkr_percent=0.3, pfe_kw=30, \
             i0_percent=0.1, shift_degree=30)
     """
@@ -4293,7 +4298,7 @@ def create_transformers3w_from_parameters(
         **trafo_id** - List of trafo_ids of the created 3W transformers
 
     Example:
-        create_transformer3w_from_parameters(net, hv_bus=0, mv_bus=1, lv_bus=2, name="trafo1",
+        create_transformers3w_from_parameters(net, hv_bus=[0, 3], mv_bus=[1, 4], lv_bus=[2, 5], name="trafo1",
         sn_hv_mva=40, sn_mv_mva=20, sn_lv_mva=20, vn_hv_kv=110, vn_mv_kv=20, vn_lv_kv=10,
         vk_hv_percent=10,vk_mv_percent=11, vk_lv_percent=12, vkr_hv_percent=0.3,
         vkr_mv_percent=0.31, vkr_lv_percent=0.32, pfe_kw=30, i0_percent=0.1, shift_mv_degree=30,
@@ -4401,9 +4406,9 @@ def create_switch(net, bus, element, et, closed=True, type=None, name=None, inde
         **sid** - The unique switch_id of the created switch
 
     EXAMPLE:
-        create_switch(net, bus =  0, element = 1, et = 'b', type ="LS", z_ohm = 0.1)
+        create_switch(net, bus=0, element=1, et='b', type="LS", z_ohm=0.1)
 
-        create_switch(net, bus = 0, element = 1, et = 'l')
+        create_switch(net, bus=0, element=1, et='l')
 
     """
     _check_node_element(net, bus)
@@ -4485,12 +4490,12 @@ def create_switches(net, buses, elements, et, closed=True, type=None, name=None,
             normal operating conditions without tripping
 
     OUTPUT:
-        **sid** - The unique switch_id of the created switch
+        **sid** - List of switch_id of the created switches
 
     EXAMPLE:
-        create_switch(net, bus =  0, element = 1, et = 'b', type ="LS", z_ohm = 0.1)
+        create_switches(net, buses=[0, 1], element=1, et='b', type="LS", z_ohm=0.1)
 
-        create_switch(net, bus = 0, element = 1, et = 'l')
+        create_switches(net, buses=[0, 1], element=1, et='l')
 
     """
     index = _get_multiple_index_with_check(net, "switch", index, len(buses), name="Switches")
@@ -4611,10 +4616,10 @@ def create_shunts(net, buses, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, n
             index one higher than the highest already existing index is selected.
 
     OUTPUT:
-        **index** (int) - The unique ID of the created shunt
+        **index** (int) - The list of IDs of the created shunts
 
     EXAMPLE:
-        create_shunt(net, 0, 20)
+        create_shunts(net, [0, 2], [20, 30])
     """
     _check_multiple_node_elements(net, buses)
 
@@ -4929,8 +4934,8 @@ def create_impedance(net, from_bus, to_bus, rft_pu, xft_pu, sn_mva, rtf_pu=None,
     UserWarning
         If required impedance parameters are missing.
     """
-    
-    
+
+
     index = _get_index_with_check(net, "impedance", index)
 
     _check_branch_element(net, "Impedance", index, from_bus, to_bus)
@@ -5111,7 +5116,7 @@ def create_impedances(net, from_buses, to_buses, rft_pu, xft_pu, sn_mva, rtf_pu=
     entries = dict(zip(columns, values))
 
     _set_multiple_entries(net, "impedance", index, **entries, **kwargs)
-    
+
     if rft0_pu is not None:
         _set_value_if_not_nan(net, index, rft0_pu, "rft0_pu", "impedance")
         _set_value_if_not_nan(net, index, xft0_pu, "xft0_pu", "impedance")
@@ -5413,7 +5418,7 @@ def create_dcline(net, from_bus, to_bus, p_mw, loss_percent, loss_mw, vm_from_pu
 
 
 def create_measurement(net, meas_type, element_type, value, std_dev, element, side=None,
-                       check_existing=True, index=None, name=None, **kwargs):
+                       check_existing=False, index=None, name=None, **kwargs):
     """
     Creates a measurement, which is used by the estimation module. Possible types of measurements
     are: v, p, q, i, va, ia
@@ -5597,7 +5602,8 @@ def create_pwl_costs(net, elements, et, points, power_type="p", index=None, chec
 
         To create a gen with costs of 1€/MW between 0 and 20 MW and 2€/MW between 20 and 30:
 
-        create_pwl_cost(net, 0, "gen", [[0, 20, 1], [20, 30, 2]])
+        create_pwl_costs(net, [0, 1], ["gen", "sgen"], [[[0, 20, 1], [20, 30, 2]], \
+            [[0, 20, 1], [20, 30, 2]]])
     """
     if not hasattr(elements, "__iter__") and not isinstance(elements, str):
         raise ValueError(f"An iterable is expected for elements, not {elements}.")
@@ -5820,7 +5826,9 @@ def create_group(net, element_types, element_indices, name="", reference_columns
     entries = dict(zip(["name", "element_type", "element_index", "reference_column"],
                        [name, element_types, element_indices, reference_columns]))
 
-    _set_multiple_entries(net, "group", index, **entries, **kwargs)
+    _set_multiple_entries(net, "group", index, **entries)
+    net.group.loc[net.group.reference_column == "", "reference_column"] = None # overwrite
+    # empty_defaults_per_dtype() applied in _set_multiple_entries()
 
     return index[0]
 
@@ -6074,7 +6082,14 @@ def _set_multiple_entries(net, table, index, preserve_dtypes=True, defaults_to_f
                 net[table][col] = val
 
     # extend the table by the frame we just created
-    net[table] = pd.concat([net[table], dd[dd.columns[~dd.isnull().all()]]], sort=False)
+    if len(net[table]):
+        net[table] = pd.concat([net[table], dd[dd.columns[~dd.isnull().all()]]], sort=False)
+    else:
+        dd_columns = dd.columns[~dd.isnull().all()]
+        complete_columns = list(net[table].columns)+list(dd_columns.difference(net[table].columns))
+        empty_dict = {key: empty_defaults_per_dtype(dtype) for key, dtype in net[table][net[
+                      table].columns.difference(dd_columns)].dtypes.to_dict().items()}
+        net[table] = dd[dd_columns].assign(**empty_dict)[complete_columns]
 
     # and preserve dtypes
     if preserve_dtypes:
