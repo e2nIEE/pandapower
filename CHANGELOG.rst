@@ -1,20 +1,40 @@
 Change Log
 =============
 
-[2.14.11] - 2024-07-08
--------------------------------
-- [FIXED] Lightsim2grid version
-
-[2.14.10] - 2024-07-08
--------------------------------
-- [FIXED] geopandas version
-
-[2.14.9] - 2024-06-25
--------------------------------
-- [FIXED] scipy version
-
 [upcoming release] - 2024-..-..
 -------------------------------
+- [ADDED] Implementation of Allocation Factor WLS (AF-WLS) for non observable distribution grids
+- [FIXED] Deletion of multiple measurements at the same bus or branch
+- [FIXED] Creation of zero injection measurements in WLS estimator
+- [FIXED] Divergence of WLS estimator with flat start for highly loaded grids
+- [ADDED] Computation of matrix conditioning and warning in case of ill-conditioning
+- [FIXED] Issue with initialization of WLS estimator
+- [FIXED] Handling of current magnitude measurements in WLS estimator
+- [ADDED] Created estimation results for shunt elements
+- [FIXED] Fixed issue with power injection results in WLS estimator
+- [FIXED] cim2pp add missing description to dcline
+- [ADDED] pandas series accessor for geo column
+- [FIXED] Increasing geojson precision as the default precision might cause problems with pandahub
+- [ADDED] converter for European EHV grid data from JAO, the "Single Allocation Platform (SAP) for all European Transmission System Operators (TSOs) that operate in accordance to EU legislation"
+- [ADDED] Add GeographicalRegion and SubGeographicalRegion names and ids to bus df in cim converter
+- [CHANGED] Capitalize first letter of columns busbar_id, busbar_name and substation_id in bus df for cim converter
+- [CHANGED] toolbox replace functions (e.g. gen replacement by sgens): improved result table implementation and added profiles consideration
+- [FIXED] Do not modify pandas options when importing pandapower
+- [FIXED] fixed copy-paste error in contingency results "max_limit_nminus1" and "min_limit_nminus1"
+- [ADDED] improved lightsim2grid documentation including compatibitliy issues
+- [FIXED] cim2pp: set default xml encoding to None to avoid error after changing to lxml
+- [FIXED] PandaModels OPF with 'bus_dc' key errors
+- [FIXED] julia tests
+- [FIXED] copy array element to standard python scalar
+- [FIXED] passing literal json to 'read_json' is deprecated
+- [FIXED] replacing deprecated in1d with isin
+- [ADDED] A switch to disable updating the vk and vkr values for trafo3w
+- [FIXED] cast the column to the correct type before assigning values
+- [FIXED] replacement for deprecated namespaces scipy.sparse.csc and scipy.sparse.csr
+- [FIXED] copy array element to standard python scalar
+- [REMOVED] python 3.8 support
+- [CHANGED] geopandas version to >= 1.0
+- [ADDED] station controller functionality with voltage and reactive power control with and without droop and pf import support
 - [ADDED] creating series capacitor added in pf to pp converter
 - [FIXED] using loc to remove the warning
 - [FIXED] replacing deprecated H and A from scipy.sparse.csc_matrix
@@ -73,6 +93,26 @@ Change Log
 - [ADDED] support for unequal leakage resistance and reactance for HV and LV sides of a 2W-transformer
 - [ADDED] Add VSC element, dc buses, dc lines, and hybrid AC/DC power flow calculation
 - [CHANGED] accelerate _integrate_power_elements_connected_with_switch_buses() in get_equivalent()
+- [FIXED] index error during unbalanced powerflow if multiple external grids are present
+- [CHANGED] accelerate distributed slack power flow calculation by using sparse-aware operations in _subnetworks()
+- [CHANGED] Trafo Controllers can now be added to elements that are out of service, changed self.nothing_to_do()
+- [ADDED] Discrete shunt controller for local voltage regulation with shunt steps
+- [ADDED] fix lengths missmatch of output if ignore_zero_length is False in plotting utility function coords_from_node_geodata() and rename ignore_zero_length by ignore_no_geo_diff
+- [ADDED] converter for European EHV grid data from JAO, the "Single Allocation Platform (SAP) for all European Transmission System Operators (TSOs) that operate in accordance to EU legislation"
+- [ADDED] cim2pp converter: Using lxml to parse XML files (better performance)
+- [FIXED] OC relay name attribute error
+
+[2.14.11] - 2024-07-08
+-------------------------------
+- [FIXED] Lightsim2grid version
+
+[2.14.10] - 2024-07-08
+-------------------------------
+- [FIXED] geopandas version
+
+[2.14.9] - 2024-06-25
+-------------------------------
+- [FIXED] scipy version
 
 [2.14.7] - 2024-06-14
 -------------------------------

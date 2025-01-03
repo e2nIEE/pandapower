@@ -36,8 +36,7 @@ except ImportError:
     class TextPath:  # so that the test does not fail
         pass
 
-from pandapower import pandapowerNet
-from pandapower.auxiliary import soft_dependency_error
+from pandapower.auxiliary import soft_dependency_error, pandapowerNet
 from pandapower.plotting.patch_makers import load_patches, node_patches, gen_patches, \
     sgen_patches, ext_grid_patches, trafo_patches, storage_patches, ward_patches, xward_patches, vsc_patches
 from pandapower.plotting.plotting_toolbox import _rotate_dim2, coords_from_node_geodata, \
@@ -552,7 +551,7 @@ def create_line_collection(net: pandapowerNet, lines=None,
             node_geodata=net.bus.geo,
             table_name="line",
             node_name="bus",
-            ignore_zero_length=True)
+            ignore_no_geo_diff=True)
 
         line_geodata = line_geodata.combine_first(pd.Series(geos, index=line_index_successful))
 

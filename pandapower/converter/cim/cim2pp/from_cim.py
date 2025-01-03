@@ -94,7 +94,7 @@ def get_converter_classes():
     return converter_classes
 
 
-def from_cim(file_list: List[str] = None, encoding: str = 'utf-8', convert_line_to_switch: bool = False,
+def from_cim(file_list: List[str] = None, encoding: str = None, convert_line_to_switch: bool = False,
              line_r_limit: float = 0.1, line_x_limit: float = 0.1,
              repair_cim: Union[str, interfaces.CIMRepair] = None,
              repair_cim_class: Type[interfaces.CIMRepair] = None,
@@ -103,6 +103,7 @@ def from_cim(file_list: List[str] = None, encoding: str = 'utf-8', convert_line_
              custom_converter_classes: Dict = None,
              cgmes_version: str = '2.4.15', **kwargs) -> \
         pandapower.auxiliary.pandapowerNet:
+    # Nur zum Testen, kann wieder gelöscht werden
     """
     Convert a CIM net to a pandapower net from XML files.
     Additional parameters for kwargs:
@@ -122,7 +123,7 @@ def from_cim(file_list: List[str] = None, encoding: str = 'utf-8', convert_line_
     if there are errors in the conversion. Default: True.
 
     :param file_list: The path to the CGMES files as a list.
-    :param encoding: The encoding from the files. Optional, default: utf-8
+    :param encoding: The encoding from the files. Optional, default: None
     :param convert_line_to_switch: Set this parameter to True to enable line -> switch conversion. All lines with a
         resistance lower or equal than line_r_limit or a reactance lower or equal than line_x_limit will become a
         switch. Optional, default: False
