@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2024-..-..
 -------------------------------
+- [ADDED] Static Var Compensator with Voltage Control
 - [ADDED] Implementation of Allocation Factor WLS (AF-WLS) for non observable distribution grids
 - [FIXED] Deletion of multiple measurements at the same bus or branch
 - [FIXED] Creation of zero injection measurements in WLS estimator
@@ -19,6 +20,7 @@ Change Log
 - [ADDED] Add GeographicalRegion and SubGeographicalRegion names and ids to bus df in cim converter
 - [CHANGED] Capitalize first letter of columns busbar_id, busbar_name and substation_id in bus df for cim converter
 - [CHANGED] required standard type parameters are made available by function :code:`required_std_type_parameters()`
+- [CHANGED] toolbox replace functions (e.g. gen replacement by sgens): improved result table implementation and added profiles consideration
 - [FIXED] Do not modify pandas options when importing pandapower
 - [FIXED] fixed copy-paste error in contingency results "max_limit_nminus1" and "min_limit_nminus1"
 - [ADDED] improved lightsim2grid documentation including compatibitliy issues
@@ -92,6 +94,7 @@ Change Log
 - [ADDED] support for unequal leakage resistance and reactance for HV and LV sides of a 2W-transformer
 - [ADDED] Add VSC element, dc buses, dc lines, and hybrid AC/DC power flow calculation
 - [CHANGED] accelerate _integrate_power_elements_connected_with_switch_buses() in get_equivalent()
+- [FIXED] index error during unbalanced powerflow if multiple external grids are present
 - [CHANGED] accelerate distributed slack power flow calculation by using sparse-aware operations in _subnetworks()
 - [CHANGED] Trafo Controllers can now be added to elements that are out of service, changed self.nothing_to_do()
 - [ADDED] Discrete shunt controller for local voltage regulation with shunt steps

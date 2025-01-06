@@ -36,6 +36,8 @@ from typing_extensions import deprecated
 from geojson import loads, GeoJSON
 import numpy as np
 import pandas as pd
+from pandas.api.types import is_numeric_dtype, is_string_dtype, is_object_dtype
+# from pandas.api.types import is_integer_dtype, is_float_dtype
 import scipy as sp
 import numbers
 from packaging.version import Version
@@ -451,10 +453,21 @@ def element_types_to_ets(element_types=None):
     ser2 = pd.Series(ser1.index, index=list(ser1))
     if element_types is None:
         return ser2
-    elif isinstance(ets, str):
+    elif isinstance(element_types, str):
         return ser2.at[element_types]
     else:
         return list(ser2.loc[element_types])
+
+
+def empty_defaults_per_dtype(dtype):
+    if is_numeric_dtype(dtype):
+        return np.nan
+    elif is_string_dtype(dtype):
+        return ""
+    elif is_object_dtype(dtype):
+        return None
+    else:
+        raise NotImplementedError(f"{dtype=} is not implemented in _empty_defaults()")
 
 
 def _preserve_dtypes(df, dtypes):

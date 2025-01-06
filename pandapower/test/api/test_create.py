@@ -1487,6 +1487,8 @@ def test_create_storages():
         net.storage.test_kwargs.values
         == ["dummy_string_1", "dummy_string_2", "dummy_string_3"]
     )
+    for col in ["name", "type"]:
+        net.storage.loc[net.storage[col].isnull(), col] = ""
     assert pp.nets_equal(net, net_bulk)
 
 
