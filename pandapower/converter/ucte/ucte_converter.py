@@ -634,7 +634,7 @@ class UCTE2pandapower:
             )
             self.logger.exception(e)
 
-    def _fill_empty_names(self, input_df: pd.DataFrame, input_column: str | int = 0):
+    def _fill_empty_names(self, input_df: pd.DataFrame, input_column: Union[str, int] = 0):
         """Fills empty names with node1_node2_order-code"""
 
         def get_name_from_ucte_string(ucte_string: str) -> str:
@@ -646,7 +646,7 @@ class UCTE2pandapower:
         input_df.loc[input_df["name"] == "", "name"] = new_names
 
     def _fill_amica_names(
-        self, input_df: pd.DataFrame, suffix: str, input_column: str | int = 0
+        self, input_df: pd.DataFrame, suffix: str, input_column: Union[str, int] = 0
     ) -> None:
         def get_name_from_ucte_string(ucte_string: str) -> str:
             node1 = ucte_string[:7].replace(" ", "_")
