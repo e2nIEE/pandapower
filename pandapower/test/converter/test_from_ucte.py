@@ -64,6 +64,22 @@ def _country_code_mapping(test_case=None):
     "test_ucte_trafo3w"
 ])
 def test_from_ucte(test_case):
+    """Tets the UCTE converter by
+
+    1. checking the number of elements per element type in the grid
+    2. comparing the power flow results with expected results
+
+    The expected power flow results and the UCTE data files are derived from the
+    pandapower/test/converter/testfiles/test_ucte.pfd file and power factory version 2024 service
+    pack 1. The test case are derived from the test cases to
+    check the power flow results without any convter, cf
+    pandapower/test/test_files/test_results.pfd and pandapower/test/loadflow/test_runpp.py.
+
+    Parameters
+    ----------
+    test_case : str
+        description on which kind of test case is tested for th UCTE conversion
+    """
     country_code = _country_code_mapping(test_case)
     ucte_file_name = f"test_ucte_{country_code}"
     ucte_file = os.path.join(_testfiles_folder(), f"{ucte_file_name}.uct")
