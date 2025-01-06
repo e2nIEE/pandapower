@@ -4500,34 +4500,28 @@ def create_switches(net, buses, elements, et, closed=True, type=None, name=None,
     """
     index = _get_multiple_index_with_check(net, "switch", index, len(buses), name="Switches")
     _check_multiple_node_elements(net, buses)
+    _check_multiple_node_elements(net, elements, name="elements")
 
-    for element, elm_type, bus in zip(elements, et, buses):
-        if elm_type == "l":
-            elm_tab = 'line'
-            if element not in net[elm_tab].index:
-                raise UserWarning("Line %s does not exist" % element)
-            if (not net[elm_tab]["from_bus"].loc[element] == bus and
-                    not net[elm_tab]["to_bus"].loc[element] == bus):
-                raise UserWarning("Line %s not connected to bus %s" % (element, bus))
-        elif elm_type == "t":
-            elm_tab = 'trafo'
-            if element not in net[elm_tab].index:
-                raise UserWarning("Trafo %s does not exist" % element)
-            if (not net[elm_tab]["hv_bus"].loc[element] == bus and
-                    not net[elm_tab]["lv_bus"].loc[element] == bus):
-                raise UserWarning("Trafo %s not connected to bus %s" % (element, bus))
-        elif elm_type == "t3":
-            elm_tab = 'trafo3w'
-            if element not in net[elm_tab].index:
-                raise UserWarning("Trafo3w %s does not exist" % element)
-            if (not net[elm_tab]["hv_bus"].loc[element] == bus and
-                    not net[elm_tab]["mv_bus"].loc[element] == bus and
-                    not net[elm_tab]["lv_bus"].loc[element] == bus):
-                raise UserWarning("Trafo3w %s not connected to bus %s" % (element, bus))
-        elif elm_type == "b":
-            _check_node_element(net, element)
-        else:
-            raise UserWarning("Unknown element type")
+    buses_s = pd.Series(buses, name="bus")
+    elements_s = pd.Series(elements, name="element")
+    et_s = pd.Series([et] * len(buses) if isinstance(et, str) else et, name="et")
+    # Ensure switches are connected correctly.
+    for typ, table, joining_busses in [("l", "line", ["from_bus", "to_bus"]), 
+                                       ("t", "trafo", ["hv_bus", "lv_bus"]), 
+                                       ("t3", "trafo3w", ["hv_bus", "mv_bus", "lv_bus"])]:
+        bus_not_connected_mask = ~elements_s[et_s == typ].isin(net[table].index)
+        if np_any(bus_not_connected_mask):
+            raise UserWarning("%s buses do not exist: %s" %
+                              (table.capitalize(), elements_s[et_s == typ][bus_not_connected_mask].to_list()))
+        merged = pd.merge(buses_s[et_s == typ].set_axis(elements_s[et_s == typ]), 
+                          net[table][joining_busses], left_index=True, right_index=True)
+        not_connected_mask = True
+        for joining_bus in joining_busses:
+            not_connected_mask &= merged.bus != merged[joining_bus]
+        if np_any(not_connected_mask):
+            bus_element_pairs = list(zip(merged.bus[not_connected_mask], merged.index[not_connected_mask]))
+            raise UserWarning("%s not connected (%s element, bus): %s" % 
+                              (table.capitalize(), table, bus_element_pairs))
 
     entries = {"bus": buses, "element": elements, "et": et, "closed": closed, "type": type,
                "name": name, "z_ohm": z_ohm, "in_ka": in_ka}
