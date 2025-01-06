@@ -171,10 +171,12 @@ class OutputWriter(JSONSerializableClass):
     def _init_output(self):
         self.output = dict()
         # init parameters
-        self.output["Parameters"] = pd.DataFrame(False, index=self.time_steps,
-                                                 columns=["time_step", "controller_unstable",
-                                                          "powerflow_failed"])
-        self.output["Parameters"].loc[:, "time_step"] = self.time_steps
+        self.output["Parameters"] = pd.DataFrame(data={
+            "time_step": self.time_steps,
+            "controller_unstable": np.full(len(self.time_steps), fill_value=False, dtype=bool),
+            "powerflow_failed": np.full(len(self.time_steps), fill_value=False, dtype=bool)
+        }, index=self.time_steps)
+
 
     def _init_np_results(self):
         # inits numpy array (contains results)

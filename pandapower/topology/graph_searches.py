@@ -384,7 +384,7 @@ def determine_stubs(net, roots=None, mg=None, respect_switches=False):
     #    n1_buses = mg.nodes()
     _, n1_buses = get_2connected_buses(mg, roots)
     net.bus["on_stub"] = True
-    net.bus.loc[n1_buses, "on_stub"] = False
+    net.bus.loc[list(n1_buses), "on_stub"] = False
     net.line["is_stub"] = ~((net.line.from_bus.isin(n1_buses)) & (net.line.to_bus.isin(n1_buses)))
     stubs = set(net.bus.index) - set(n1_buses)
     return stubs

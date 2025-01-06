@@ -11,6 +11,7 @@ from pandapower.auxiliary import _sum_by_group, sequence_to_phase, _sum_by_group
 from pandapower.pypower.idx_bus import VM, VA, PD, QD, LAM_P, LAM_Q, BASE_KV,NONE
 
 from pandapower.pypower.idx_gen import PG, QG
+from pandapower.build_bus import _get_motor_pq
 
 
 def _set_buses_out_of_service(ppc):
@@ -181,6 +182,12 @@ def write_pq_results_to_element(net, ppc, element, suffix=None):
         gen_sign = 1 if element == "sgen" else -1
         is_controllable = True
 
+    if element == "motor":
+        p_mw, q_mvar = _get_motor_pq(net)
+        net[res_]["p_mw"].values[:] = p_mw
+        net[res_]["q_mvar"].values[:] = q_mvar
+        return net
+
     # Wards and xwards have different names in their element table, but not in res table. Also no scaling -> Fix...
     p_mw = "ps_mw" if element in ["ward", "xward"] else "p_mw"
     q_mvar = "qs_mvar" if element in ["ward", "xward"] else "q_mvar"
@@ -289,9 +296,15 @@ def _get_p_q_results(net, ppc, bus_lookup_aranged):
         # voltage dependend loads need special treatment here
 
         p, q, b = write_voltage_dependend_load_results(net, p, q, b)
-        elements = ["sgen", "storage", "ward", "xward"]
+        elements = ["sgen", "motor", "storage", "ward", "xward"]
     else:
-        elements = ["load", "sgen", "storage", "ward", "xward"]
+        elements = ["load", "motor", "sgen", "storage", "ward", "xward"]
+
+
+    # apagar futuramente
+    elements.remove("motor")
+
+
 
     for element in elements:
         if len(net[element]):

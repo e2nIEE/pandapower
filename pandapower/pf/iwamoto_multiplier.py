@@ -1,5 +1,15 @@
+from packaging import version
+import numpy
 from numpy import roots, conj, r_
-from numpy.core.umath import exp
+try:
+    from numpy._core.umath import exp
+except:
+    from numpy.core.umath import exp
+
+if version.parse(numpy.__version__) >= version.parse("2.0.0"):
+    from numpy._core.umath import exp
+else:
+    from numpy.core.umath import exp
 
 
 def _iwamoto_step(Ybus, J, F, dx, pq, npv, npq, dVa, dVm, Vm, Va, pv, j1, j2, j3, j4, j5, j6):

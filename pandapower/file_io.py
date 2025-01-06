@@ -70,7 +70,7 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
                                        include_empty_tables=include_empty_tables)
     for item, table in dict_net.items():
         table.to_excel(writer, sheet_name=item)
-    writer.save()
+    writer.close()
 
 
 def to_json(net, filename=None, encryption_key=None):

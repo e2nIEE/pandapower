@@ -51,6 +51,11 @@ BR_MEAS_PPCI_IX = {("p", "f"): {"VALUE": P_FROM, "IDX": P_FROM_IDX, "STD": P_FRO
                    ("q", "t"): {"VALUE": Q_TO, "IDX": Q_TO_IDX, "STD": Q_TO_STD},
                    ("i", "t"): {"VALUE": IM_TO, "IDX": IM_TO_IDX, "STD": IM_TO_STD},
                    ("ia", "t"): {"VALUE": IA_TO, "IDX": IA_TO_IDX, "STD": IA_TO_STD}}
+BUS_MEAS_PPCI_IX = {"v": {"VALUE": VM, "IDX": VM_IDX, "STD": VM_STD},
+                    "va": {"VALUE": VA, "IDX": VA_IDX, "STD": VA_STD},
+                    "p": {"VALUE": P, "IDX": P_IDX, "STD": P_STD},
+                    "q": {"VALUE": Q, "IDX": Q_IDX, "STD": Q_STD}}
+
 
 
 def _initialize_voltage(net, init, calculate_voltage_angles):
@@ -168,52 +173,27 @@ def _add_measurements_to_ppci(net, ppci, zero_injection):
     # pandapower measurement indices V, P, Q
     bus_append = np.full((ppci["bus"].shape[0], bus_cols_se), np.nan, dtype=ppci["bus"].dtype)
 
-    v_measurements = meas_bus[(meas_bus.measurement_type == "v")]
-    if len(v_measurements):
-        bus_positions = map_bus[v_measurements.element.values.astype(int)]
-        bus_append[bus_positions, VM] = v_measurements.value.values
-        bus_append[bus_positions, VM_STD] = v_measurements.std_dev.values
-        bus_append[bus_positions, VM_IDX] = v_measurements.index.values
+    # Add measurements for bus
+    for meas_type in ("v", "va", "p", "q"):
+        this_meas = meas_bus[(meas_bus.measurement_type == meas_type)]
+        if len(this_meas):
+            bus_positions = map_bus[this_meas.element.values.astype(int)]
+            if meas_type in ("p", "q"):
+                # Convert injection reference to consumption reference (P, Q)
+                this_meas.value *= -1
+                unique_bus_positions = np.unique(bus_positions)
+                if len(unique_bus_positions) < len(bus_positions):
+                    std_logger.debug("P,Q Measurement duplication will be automatically merged!")
+                    for bus in unique_bus_positions:
+                        this_meas_on_bus = this_meas.iloc[np.argwhere(bus_positions == bus).ravel(), :]
+                        bus_append[bus, BUS_MEAS_PPCI_IX[meas_type]["VALUE"]] = this_meas_on_bus.value.sum()
+                        bus_append[bus, BUS_MEAS_PPCI_IX[meas_type]["STD"]] = this_meas_on_bus.std_dev.max()
+                        bus_append[bus, BUS_MEAS_PPCI_IX[meas_type]["IDX"]] = this_meas_on_bus.index[0]
+                    continue
 
-    va_measurements = meas_bus[(meas_bus.measurement_type == "va")]
-    if len(va_measurements):
-        bus_positions = map_bus[va_measurements.element.values.astype(int)]
-        bus_append[bus_positions, VA] = va_measurements.value.values
-        bus_append[bus_positions, VA_STD] = va_measurements.std_dev.values
-        bus_append[bus_positions, VA_IDX] = va_measurements.index.values
-
-    p_measurements = meas_bus[(meas_bus.measurement_type == "p")]
-    if len(p_measurements):
-        bus_positions = map_bus[p_measurements.element.values.astype(int)]
-        unique_bus_positions = np.unique(bus_positions)
-        if len(unique_bus_positions) < len(bus_positions):
-            std_logger.debug("P Measurement duplication will be automatically merged!")
-            for bus in unique_bus_positions:
-                p_meas_on_bus = p_measurements.iloc[np.argwhere(bus_positions == bus).ravel(), :]
-                bus_append[bus, P] = p_meas_on_bus.value.sum()
-                bus_append[bus, P_STD] = p_meas_on_bus.std_dev.max()
-                bus_append[bus, P_IDX] = p_meas_on_bus.index[0]
-        else:
-            bus_append[bus_positions, P] = p_measurements.value.values
-            bus_append[bus_positions, P_STD] = p_measurements.std_dev.values
-            bus_append[bus_positions, P_IDX] = p_measurements.index.values
-
-    q_measurements = meas_bus[(meas_bus.measurement_type == "q")]
-    if len(q_measurements):
-        bus_positions = map_bus[q_measurements.element.values.astype(int)]
-        unique_bus_positions = np.unique(bus_positions)
-        if len(unique_bus_positions) < len(bus_positions):
-            std_logger.debug("Q Measurement duplication will be automatically merged!")
-            for bus in unique_bus_positions:
-                q_meas_on_bus = q_measurements.iloc[np.argwhere(bus_positions == bus).ravel(), :]
-                bus_append[bus, Q] = q_meas_on_bus.value.sum()
-                bus_append[bus, Q_STD] = q_meas_on_bus.std_dev.max()
-                bus_append[bus, Q_IDX] = q_meas_on_bus.index[0]
-        else:
-            bus_positions = map_bus[q_measurements.element.values.astype(int)]
-            bus_append[bus_positions, Q] = q_measurements.value.values
-            bus_append[bus_positions, Q_STD] = q_measurements.std_dev.values
-            bus_append[bus_positions, Q_IDX] = q_measurements.index.values
+            bus_append[bus_positions, BUS_MEAS_PPCI_IX[meas_type]["VALUE"]] = this_meas.value.values
+            bus_append[bus_positions, BUS_MEAS_PPCI_IX[meas_type]["STD"]] = this_meas.std_dev.values
+            bus_append[bus_positions, BUS_MEAS_PPCI_IX[meas_type]["IDX"]] = this_meas.index.values
 
     # add zero injection measurement and labels defined in parameter zero_injection
     bus_append = _add_zero_injection(net, ppci, bus_append, zero_injection)
@@ -280,7 +260,6 @@ def _add_measurements_to_ppci(net, ppci, zero_injection):
                 branch_append[ix_lv, BR_MEAS_PPCI_IX[(meas_type, "t")]["VALUE"]] = meas_lv.value.values
                 branch_append[ix_lv, BR_MEAS_PPCI_IX[(meas_type, "t")]["STD"]] = meas_lv.std_dev.values
                 branch_append[ix_lv, BR_MEAS_PPCI_IX[(meas_type, "t")]["IDX"]] = meas_lv.index.values
-
 
     # Check append or update
     if ppci["bus"].shape[1] == bus_cols:
@@ -380,7 +359,7 @@ def _build_measurement_vectors(ppci, update_meas_only=False):
                                           ppci["branch"][i_line_t_not_nan, branch_cols + IM_TO_IDX],
                                           ppci["branch"][i_degree_line_f_not_nan, branch_cols + IA_FROM_IDX],
                                           ppci["branch"][i_degree_line_t_not_nan, branch_cols + IA_TO_IDX]
-                                          )).real.astype(int)
+                                          )).real.astype(np.int64)
         # Covariance matrix R
         r_cov = np.concatenate((ppci["bus"][p_bus_not_nan, bus_cols + P_STD],
                                 ppci["branch"][p_line_f_not_nan, branch_cols + P_FROM_STD],

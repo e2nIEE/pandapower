@@ -122,12 +122,12 @@ def init_element(net, element, suffix=None):
 def get_relevant_elements(mode="pf"):
     if mode == "pf" or mode == "opf":
         return ["bus", "line", "trafo", "trafo3w", "impedance", "ext_grid",
-                "load", "sgen", "storage", "shunt", "gen", "ward", "xward",
-                "dcline"]
+                "load", "motor", "sgen", "storage", "shunt", "gen", "ward",
+                "xward", "dcline"]
     elif mode == "sc":
         return ["bus", "line", "trafo", "trafo3w", "ext_grid", "gen", "sgen"]
     elif mode == "se":
-        return ["bus", "line", "trafo", "trafo3w"]        
+        return ["bus", "line", "trafo", "trafo3w"]
     elif mode == "pf_3ph":
         return ["bus", "line", "trafo", "ext_grid", "shunt",
                 "load", "sgen", "storage", "asymmetric_load", "asymmetric_sgen"]
@@ -135,6 +135,11 @@ def get_relevant_elements(mode="pf"):
 
 def init_results(net, mode="pf"):
     elements = get_relevant_elements(mode)
+
+    ##################
+    #   tirar!!!!!
+    elements.remove("motor")
+    ###################
     suffix = suffix_mode.get(mode, None)
     for element in elements:
         init_element(net, element, suffix)
@@ -174,7 +179,6 @@ def _ppci_gen_to_ppc(result, ppc):
 
 
 def _ppci_other_to_ppc(result, ppc, mode):
-    ppc['internal'] = result['internal']
 
     if mode != "sc" and mode != "se":
         ppc['success'] = result['success']
@@ -186,6 +190,20 @@ def _ppci_other_to_ppc(result, ppc, mode):
 
     if "iterations" in result:
         ppc["iterations"] = result["iterations"]
+
+
+def _ppci_internal_to_ppc(result, ppc):
+    for key, value in result["internal"].items():
+        # if branch current matrices have been stored they need to include out of service elements
+        if key in ["branch_ikss_f", "branch_ikss_t", "branch_ip_f", "branch_ip_t", "branch_ith_f", "branch_ith_t"]:
+            n_buses = np.shape(ppc['bus'])[0]
+            n_branches = np.shape(ppc['branch'])[0]
+            n_rows_result = np.shape(result['bus'])[0]
+            update_matrix = np.empty((n_branches, n_buses)) * np.nan
+            update_matrix[result["internal"]['branch_is'], :n_rows_result] = result["internal"][key]
+            ppc['internal'][key] = np.copy(update_matrix)
+        else:
+            ppc["internal"][key] = value
 
 
 def _copy_results_ppci_to_ppc(result, ppc, mode):
@@ -214,6 +232,7 @@ def _copy_results_ppci_to_ppc(result, ppc, mode):
     _ppci_bus_to_ppc(result, ppc)
     _ppci_branch_to_ppc(result, ppc)
     _ppci_gen_to_ppc(result, ppc)
+    _ppci_internal_to_ppc(result, ppc)
     _ppci_other_to_ppc(result, ppc, mode)
 
     result = ppc

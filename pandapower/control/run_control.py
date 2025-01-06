@@ -2,6 +2,7 @@
 
 # Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+import pandas as pd
 import pandapower as pp
 
 try:
@@ -36,6 +37,7 @@ def get_controller_order(net):
         return [0], [[]]
 
     # let level be float so that a new level can be added in between of existing ones
+    pd.set_option('future.no_silent_downcasting', True)
     level = net.controller.level.fillna(0).apply(asarray)
     # list of sorted unique levels
     level_list = sorted(set(v for l in level for v in l))

@@ -151,7 +151,6 @@ def add_virtual_meas_from_loadflow(net, v_std_dev=0.01, p_std_dev=0.03, q_std_de
         for meas_type in bus_meas_types.keys():
             meas_value = float(bus_res[bus_meas_types[meas_type]])
             if meas_type in ('p', 'q'):
-                meas_value *= -1
                 pp.create_measurement(net, meas_type=meas_type, element_type='bus', element=bus_ix,
                                       value=meas_value, std_dev=1)
             else:
@@ -200,7 +199,6 @@ def add_virtual_pmu_meas_from_loadflow(net, v_std_dev=0.001, i_std_dev=0.1,
         for meas_type in bus_meas_types.keys():
             meas_value = float(bus_res[bus_meas_types[meas_type]])
             if meas_type in ('p', 'q'):
-                meas_value *= -1
                 pp.create_measurement(net, meas_type=meas_type, element_type='bus', element=bus_ix,
                                       value=meas_value, std_dev=1)
             else:

@@ -20,6 +20,7 @@ from pandapower.create import create_switch, create_line_from_parameters, \
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 from pandapower.run import runpp
 from pandapower.std_types import change_std_type
+from pandapower.groups import detach_from_groups
 
 try:
     import pplog as logging
@@ -1199,12 +1200,14 @@ def drop_lines(net, lines):
     """
     # drop connected switches
     i = net["switch"][(net["switch"]["element"].isin(lines)) & (net["switch"]["et"] == "l")].index
+    # detach_from_groups(net, "line", lines)
     net["switch"].drop(i, inplace=True)
 
     # drop measurements
     drop_measurements_at_elements(net, "line", idx=lines)
 
     # drop lines and geodata
+    # detach_from_groups(net, "line", lines)
     net["line"].drop(lines, inplace=True)
     net["line_geodata"].drop(set(lines) & set(net["line_geodata"].index), inplace=True)
     res_lines = net.res_line.index.intersection(lines)
@@ -1269,7 +1272,7 @@ def set_element_status(net, buses, in_service):
     """
     Sets buses and all elements connected to them in or out of service.
     """
-    net.bus.loc[buses, "in_service"] = in_service
+    net.bus.loc[list(buses), "in_service"] = in_service
 
     for element in net.keys():
         if element not in ['bus'] and isinstance(net[element], pd.DataFrame) \
@@ -1289,19 +1292,28 @@ def set_isolated_areas_out_of_service(net, respect_switches=True):
     closed_switches = set()
     unsupplied = unsupplied_buses(net, respect_switches=respect_switches)
     logger.info("set %d of %d unsupplied buses out of service" % (
-        len(net.bus.loc[unsupplied].query('~in_service')), len(unsupplied)))
-    set_element_status(net, unsupplied, False)
+        len(net.bus.loc[list(unsupplied)].query('~in_service')), len(unsupplied)))
+    set_element_status(net, list(unsupplied), False)
 
     # TODO: remove this loop after unsupplied_buses are fixed
     for tr3w in net.trafo3w.index.values:
         tr3w_buses = net.trafo3w.loc[tr3w, ['hv_bus', 'mv_bus', 'lv_bus']].values
         if not all(net.bus.loc[tr3w_buses, 'in_service'].values):
-            net.trafo3w.loc[tr3w, 'in_service'] = False
+            net.trafo3w.at[tr3w, 'in_service'] = False
+        # open_tr3w_switches = net.switch.loc[(net.switch.et == 't3') & ~net.switch.closed & (
+        #     net.switch.element == tr3w)]
+        # if len(open_tr3w_switches) == 3:
+        #     net.trafo3w.at[tr3w, 'in_service'] = False
 
     for element in ["line", "trafo"]:
         oos_elements = net.line[~net.line.in_service].index
         oos_switches = net.switch[(net.switch.et == element[0]) &
                                   (net.switch.element.isin(oos_elements))].index
+
+    # for element, et in zip(["line", "trafo"], ["l", "t"]):
+    #     oos_elements = net[element].query("not in_service").index
+    #     oos_switches = net.switch[(net.switch.et == et) & net.switch.element.isin(
+    #         oos_elements)].index
 
         closed_switches.update([i for i in oos_switches.values if not net.switch.at[i, 'closed']])
         net.switch.loc[oos_switches, "closed"] = True
@@ -1429,7 +1441,7 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
         if net_parameter in net.keys():
             p2[net_parameter] = net[net_parameter]
 
-    p2.bus = net.bus.loc[buses]
+    p2.bus = net.bus.loc[list(buses)]
     for elm in pp_elements(bus=False, bus_elements=True, branch_elements=False,
                            other_elements=False, res_elements=False):
         p2[elm] = net[elm][net[elm].bus.isin(buses)]
@@ -1459,7 +1471,7 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
             net[table].shape[0]):
                 continue
             elif table == "res_bus":
-                p2[table] = net[table].loc[buses]
+                p2[table] = net[table].loc[list(buses)]
             elif table.startswith("res_") and table != "res_cost":
                 p2[table] = net[table].loc[p2[table.split("res_")[1]].index]
     if "bus_geodata" in net:
@@ -1630,7 +1642,7 @@ def replace_zero_branches_with_switches(net, elements=('line', 'impedance'), zer
             net[elm].loc[b, 'in_service'] = False
             affected_elements.add(b)
 
-        replaced[elm] = net[elm].loc[affected_elements]
+        replaced[elm] = net[elm].loc[list(affected_elements)]
 
         if drop_affected:
             if elm == 'line':
@@ -2414,8 +2426,12 @@ def get_connected_buses(net, buses, consider=("l", "s", "t", "t3", "i"), respect
                                        (net.trafo.lv_bus.isin(buses)) & ~net.trafo.index.isin(
                                            opened_trafos) &
                                        (in_service_constr)])
-        cb |= set(net.trafo.loc[connected_lvb_trafos].hv_bus.values)
-        cb |= set(net.trafo.loc[connected_hvb_trafos].lv_bus.values)
+        #cb |= set(net.trafo.loc[connected_lvb_trafos].hv_bus.values)
+        #cb |= set(net.trafo.loc[connected_hvb_trafos].lv_bus.values)
+
+        cb |= set(net.trafo.loc[net.trafo.index.isin(connected_lvb_trafos)].hv_bus.values)
+        cb |= set(net.trafo.loc[net.trafo.index.isin(connected_hvb_trafos)].lv_bus.values)
+
 
     # Gives the lv mv and hv buses of a 3 winding transformer
     if "t3" in consider:
@@ -2423,6 +2439,39 @@ def get_connected_buses(net, buses, consider=("l", "s", "t", "t3", "i"), respect
         cb |= set(net.trafo3w.loc[ct3].hv_bus.values)
         cb |= set(net.trafo3w.loc[ct3].mv_bus.values)
         cb |= set(net.trafo3w.loc[ct3].lv_bus.values)
+        '''
+        in_service_constr3w = net.trafo3w.in_service if respect_in_service else True
+        if respect_switches:
+            opened_buses_hv = set(net.switch.loc[
+                ~net.switch.closed & (net.switch.et == "t3") &
+                net.switch.bus.isin(net.trafo3w.hv_bus)].bus.unique())
+            opened_buses_mv = set(net.switch.loc[
+                ~net.switch.closed & (net.switch.et == "t3") &
+                net.switch.bus.isin(net.trafo3w.mv_bus)].bus.unique())
+            opened_buses_lv = set(net.switch.loc[
+                ~net.switch.closed & (net.switch.et == "t3") &
+                net.switch.bus.isin(net.trafo3w.lv_bus)].bus.unique())
+        else:
+            opened_buses_hv = opened_buses_mv = opened_buses_lv = set()
+
+
+        hvb_trafos3w = net.trafo3w.index[
+            net.trafo3w.hv_bus.isin(buses) & ~net.trafo3w.hv_bus.isin(opened_buses_hv) &
+            in_service_constr3w]
+        mvb_trafos3w = net.trafo3w.index[
+            net.trafo3w.mv_bus.isin(buses) & ~net.trafo3w.mv_bus.isin(opened_buses_mv) &
+            in_service_constr3w]
+        lvb_trafos3w = net.trafo3w.index[
+            net.trafo3w.lv_bus.isin(buses) & ~net.trafo3w.lv_bus.isin(opened_buses_lv) &
+            in_service_constr3w]
+
+        cb |= (set(net.trafo3w.loc[hvb_trafos3w].mv_bus) | set(
+            net.trafo3w.loc[hvb_trafos3w].lv_bus) - opened_buses_mv - opened_buses_lv)
+        cb |= (set(net.trafo3w.loc[mvb_trafos3w].hv_bus) | set(
+            net.trafo3w.loc[mvb_trafos3w].lv_bus) - opened_buses_hv - opened_buses_lv)
+        cb |= (set(net.trafo3w.loc[lvb_trafos3w].hv_bus) | set(
+            net.trafo3w.loc[lvb_trafos3w].mv_bus) - opened_buses_hv - opened_buses_mv)
+        '''
 
     if "i" in consider:
         in_service_constr = net.impedance.in_service if respect_in_service else True

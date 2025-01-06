@@ -107,8 +107,8 @@ def test_const_control(simple_test_net):
 
     run_timeseries(net, time_steps, output_writer=ow, verbose=False)
 
-    assert np.alltrue(profiles['load1'].values * 0.85 == ow.output['load.p_mw'][0].values)
-    assert np.alltrue(profiles['slack_v'].values == ow.output['res_bus.vm_pu'][0].values)
+    assert np.all(profiles['load1'].values * 0.85 == ow.output['load.p_mw'][0].values)
+    assert np.all(profiles['slack_v'].values == ow.output['res_bus.vm_pu'][0].values)
 
 
 def test_false_alarm_trafos(simple_test_net):

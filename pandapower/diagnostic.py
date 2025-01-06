@@ -721,7 +721,7 @@ def disconnected_elements(net):
 
         if not section & set(net.ext_grid.bus[net.ext_grid.in_service]).union(
                 net.gen.bus[net.gen.slack & net.gen.in_service]) and any(
-                net.bus.in_service.loc[section]):
+                net.bus.in_service.loc[list(section)]):
             section_buses = list(net.bus[net.bus.index.isin(section)
                                          & (net.bus.in_service == True)].index)
             section_switches = list(net.switch[net.switch.bus.isin(section_buses)].index)

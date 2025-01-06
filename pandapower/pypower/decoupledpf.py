@@ -5,7 +5,8 @@
 
 """Solves the power flow using a fast decoupled method.
 """
-import warnings
+
+
 from numpy import array, angle, exp, linalg, conj, r_, inf, column_stack, real
 from scipy.sparse.linalg import splu
 
@@ -74,7 +75,7 @@ def decoupledpf(Ybus, Sbus, V0, pv, pq, ppci, options):
     pvpq = r_[pv, pq]
 
     # evaluate initial mismatch
-    P, Q = _evaluate_mis(Ybus, V, Sbus, pvpq, pq)
+    P, Q = _evaluate_mis(Ybus, V, Sbus, pvpq, pq, Vm)
 
     # check tolerance
     converged = _check_for_convergence(P, Q, tol)
@@ -102,7 +103,7 @@ def decoupledpf(Ybus, Sbus, V0, pv, pq, ppci, options):
         V = Vm * exp(1j * Va)
 
         # evalute mismatch
-        P, Q = _evaluate_mis(Ybus, V, Sbus, pvpq, pq)
+        P, Q = _evaluate_mis(Ybus, V, Sbus, pvpq, pq, Vm)
 
         # check tolerance
         if _check_for_convergence(P, Q, tol):
@@ -124,7 +125,7 @@ def decoupledpf(Ybus, Sbus, V0, pv, pq, ppci, options):
             Sbus = makeSbus(baseMVA, bus, gen, vm=Vm)
 
         # evalute mismatch
-        P, Q = _evaluate_mis(Ybus, V, Sbus, pvpq, pq)
+        P, Q = _evaluate_mis(Ybus, V, Sbus, pvpq, pq, Vm)
 
         # check tolerance
         if _check_for_convergence(P, Q, tol):
@@ -135,9 +136,11 @@ def decoupledpf(Ybus, Sbus, V0, pv, pq, ppci, options):
     return V, converged, i, Bp, Bpp, Vm_it, Va_it
 
 
-def _evaluate_mis(Ybus, V, Sbus, pvpq, pq):
+def _evaluate_mis(Ybus, V, Sbus, pvpq, pq, Vm):
     # evalute mis_p(x) and mis_q(x)
-    mis = V * conj(Ybus * V) - Sbus
+
+    mis = (V * conj(Ybus * V) - Sbus) / Vm
+    # mis = V * conj(Ybus * V) - Sbus
     mis_p, mis_q = mis[pvpq].real, mis[pq].imag
     return mis_p, mis_q
 

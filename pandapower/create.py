@@ -5,14 +5,21 @@
 
 
 import pandas as pd
-from numpy import nan, isnan, arange, dtype, isin, float64, all as np_all, any as np_any, \
-    zeros
+from numpy import nan, isnan, arange, dtype, isin, any as np_any, \
+    zeros, int64
 from packaging import version
 
 from pandapower import __version__
 from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes
 from pandapower.results import reset_results
 from pandapower.std_types import add_basic_std_types, load_std_type
+
+try:
+    import pplog as logging
+except ImportError:
+    import logging
+
+logger = logging.getLogger(__name__)
 
 
 def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
@@ -61,6 +68,20 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                  ("in_service", 'bool'),
                  ("type", dtype(object)),
                  ("current_source", "bool")],
+        "motor": [("name", dtype(object)),
+                 ("bus", "i8"),
+                 ("pn_mech_mw", "f8"),
+                 ("loading_percent", "f8"),
+                 ("cos_phi", "f8"),
+                 ("cos_phi_n", "f8"),
+                 ("efficiency_percent", "f8"),
+                 ("efficiency_n_percent", "f8"),
+                 ("lrc_pu", "f8"),
+                 ("vn_kv", "f8"),
+                 ("scaling", "f8"),
+                 ("in_service", 'bool'),
+                 ("rx", 'f8')
+                 ],
         "asymmetric_load": [("name", dtype(object)),
                             ("bus", "u4"),
                             ("p_a_mw", "f8"),
@@ -317,6 +338,8 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                              ("loading_percent", "f8")],
         "_empty_res_load": [("p_mw", "f8"),
                             ("q_mvar", "f8")],
+        "_empty_res_motor": [("p_mw", "f8"),
+                            ("q_mvar", "f8")],
         "_empty_res_sgen": [("p_mw", "f8"),
                             ("q_mvar", "f8")],
         "_empty_res_shunt": [("p_mw", "f8"),
@@ -490,7 +513,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
 
     for s in net:
         if isinstance(net[s], list):
-            net[s] = pd.DataFrame(zeros(0, dtype=net[s]), index=pd.Int64Index([]))
+            net[s] = pd.DataFrame(zeros(0, dtype=net[s]), index=pd.Index([], dtype=int64))
     if add_stdtypes:
         add_basic_std_types(net)
     else:
@@ -634,9 +657,9 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
 
     if geodata is not None:
         # works with a 2-tuple or a matching array
-        net.bus_geodata = net.bus_geodata.append(pd.DataFrame(
+        net.bus_geodata = pd.concat([net.bus_geodata, pd.DataFrame(
             zeros((len(index), len(net.bus_geodata.columns)), dtype=int), index=index,
-            columns=net.bus_geodata.columns))
+            columns=net.bus_geodata.columns)])
         net.bus_geodata.loc[index, :] = nan
         net.bus_geodata.loc[index, ["x", "y"]] = geodata
     if coords is not None:
@@ -652,7 +675,7 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
         dd['max_vm_pu'] = dd['max_vm_pu'].astype(float)
 
     dd = dd.assign(**kwargs)
-    net["bus"] = net["bus"].append(dd)
+    net["bus"] = pd.concat([net["bus"], dd])
     return index
 
 
@@ -1016,7 +1039,7 @@ def create_loads(net, buses, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=
 
     # and preserve dtypes
     dd = dd.assign(**kwargs)
-    net["load"] = net["load"].append(dd)
+    net["load"] = pd.concat([net["load"], dd])
 
     _preserve_dtypes(net.load, dtypes)
     return index
@@ -1310,7 +1333,7 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
         dd["rx"] = dd["rx"].astype(float)
 
     dd = dd.assign(**kwargs)
-    net["sgen"] = net["sgen"].append(dd)
+    net["sgen"] = pd.concat([net["sgen"], dd])
 
     # and preserve dtypes
     _preserve_dtypes(net.sgen, dtypes)
@@ -1809,9 +1832,84 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
 
     # and preserve dtypes
     dd = dd.assign(**kwargs)
-    net["gen"] = net["gen"].append(dd)
+    net["gen"] = pd.concat([net["gen"], dd])
 
     _preserve_dtypes(net.gen, dtypes)
+
+    return index
+
+
+def create_motor(net, bus, pn_mech_mw, cos_phi, efficiency_percent=100.,
+                 loading_percent=100., name=None, lrc_pu=nan, scaling=1.0,
+				 vn_kv=nan, rx=nan, index=None, in_service=True,
+				 cos_phi_n=nan,
+                 efficiency_n_percent=nan):
+    """
+    Adds a motor to the network.
+
+
+    INPUT:
+        **net** - The net within this motor should be created
+
+        **bus** (int) - The bus id to which the motor is connected
+
+        **pn_mech_mw** (float) - Mechanical rated power of the motor
+
+        **cos_phi** (float, nan) - cosine phi at current operating point
+
+    OPTIONAL:
+
+		**name** (string, None) - The name for this motor
+
+        **efficiency_percent** (float, 100) - Efficiency in percent at current operating point
+
+        **loading_percent** (float, 100) - The mechanical loading in percentage of the rated mechanical power
+
+        **scaling** (float, 1.0) - scaling factor which for the active power of the motor
+
+		**cos_phi_n** (float, nan) - cosine phi at rated power of the motor for short-circuit calculation
+
+        **efficiency_n_percent** (float, 100) - Efficiency in percent at rated power for short-circuit calculation
+
+        **lrc_pu** (float, nan) - locked rotor current in relation to the rated motor current
+
+        **rx** (float, nan) - R/X ratio of the motor for short-circuit calculation.
+
+        **vn_kv** (float, NaN) - Rated voltage of the motor for short-circuit calculation
+
+        **in_service** (bool, True) - True for in_service or False for out of service
+
+        **index** (int, None) - Force a specified ID if it is available. If None, the index one \
+            higher than the highest already existing index is selected.
+
+    OUTPUT:
+        **index** (int) - The unique ID of the created motor
+
+    EXAMPLE:
+        create_motor(net, 1, pn_mech_mw = 0.120, cos_ph=0.9, vn_kv=0.6, efficiency_percent=90, loading_percent=40, lrc_pu=6.0)
+
+    """
+    if bus not in net["bus"].index.values:
+        raise UserWarning("Cannot attach to bus %s, bus does not exist" % bus)
+
+    if index is None:
+        index = get_free_id(net["motor"])
+
+    if index in net["motor"].index:
+        raise UserWarning("A motor with the id %s already exists" % index)
+
+    # store dtypes
+    dtypes = net.motor.dtypes
+
+    columns = ["name", "bus", "pn_mech_mw", "cos_phi", "cos_phi_n", "vn_kv", "rx",
+               "efficiency_n_percent", "efficiency_percent", "loading_percent",
+               "lrc_pu", "scaling", "in_service"]
+    variables = [name, bus, pn_mech_mw, cos_phi, cos_phi_n, vn_kv, rx, efficiency_n_percent,
+                 efficiency_percent, loading_percent, lrc_pu, scaling, bool(in_service)]
+    net.motor.loc[index, columns] = variables
+
+    # and preserve dtypes
+    _preserve_dtypes(net.motor, dtypes)
 
     return index
 
@@ -2078,7 +2176,8 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
                                 max_loading_percent=nan, alpha=None,
                                 temperature_degree_celsius=None,
                                 r0_ohm_per_km=nan, x0_ohm_per_km=nan,
-                                c0_nf_per_km=nan, g0_us_per_km=0, **kwargs):
+                                c0_nf_per_km=nan, g0_us_per_km=0,
+                                endtemp_degree=None, **kwargs):
     """
     Creates a line element in net["line"] from line parameters.
 
@@ -2201,6 +2300,11 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
         if "temperature_degree_celsius" not in net.line.columns:
             net.line.loc[:, "temperature_degree_celsius"] = pd.Series()
         net.line.loc[index, "temperature_degree_celsius"] = temperature_degree_celsius
+
+    if endtemp_degree is not None:
+        if "endtemp_degree" not in net.line.columns:
+            net.line.loc[:, "endtemp_degree"] = pd.Series()
+        net.line.loc[index, "endtemp_degree"] = endtemp_degree
 
     return index
 
@@ -2347,10 +2451,10 @@ def create_lines_from_parameters(net, from_buses, to_buses, length_km, r_ohm_per
 
     # extend the lines by the frame we just created
     if version.parse(pd.__version__) >= version.parse("0.23"):
-        net["line"] = net["line"].append(dd, sort=False)
+        net["line"] = pd.concat([net["line"], dd], sort=False)
     else:
         # prior to pandas 0.23 there was no explicit parameter (instead it was standard behavior)
-        net["line"] = net["line"].append(dd)
+        net["line"] = pd.concat([net["line"], dd])
 
     _preserve_dtypes(net.line, dtypes)
 
@@ -2366,7 +2470,7 @@ def create_lines_from_parameters(net, from_buses, to_buses, length_km, r_ohm_per
             df["coords"] = geodata
 
         if version.parse(pd.__version__) >= version.parse("0.23"):
-            net.line_geodata = net.line_geodata.append(df, sort=False)
+            net.line_geodata = pd.concat([net.line_geodata, df], sort=False)
         else:
             # prior to pandas 0.23 there was no explicit parameter (instead it was standard behavior)
             net.line_geodata = net.line_geodata.append(df)
@@ -2461,10 +2565,10 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
 
     # extend the lines by the frame we just created
     if version.parse(pd.__version__) >= version.parse("0.23"):
-        net["line"] = net["line"].append(dd, sort=False)
+        net["line"] = pd.concat([net["line"], dd], sort=False)
     else:
         # prior to pandas 0.23 there was no explicit parameter (instead it was standard behavior)
-        net["line"] = net["line"].append(dd)
+        net["line"] = pd.concat([net["line"], dd])
 
     if hasattr(max_loading_percent, "__iter__"):
         if "max_loading_percent" not in net.line.columns:
@@ -2490,10 +2594,10 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
             df["coords"] = geodata
 
         if version.parse(pd.__version__) >= version.parse("0.23"):
-            net.line_geodata = net.line_geodata.append(df, sort=False)
+            net.line_geodata = pd.concat([net.line_geodata, df], sort=False)
         else:
             # prior to pandas 0.23 there was no explicit parameter (instead it was standard behavior)
-            net.line_geodata = net.line_geodata.append(df)
+            net.line_geodata = pd.concat([net.line_geodata, df])
 
         _preserve_dtypes(net.line_geodata, dtypes)
 
@@ -2612,7 +2716,9 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
         net.trafo.loc[index, "max_loading_percent"] = float(max_loading_percent)
 
     # tap_phase_shifter default False
-    net.trafo.tap_phase_shifter.fillna(False, inplace=True)
+    pd.set_option('future.no_silent_downcasting', True)
+    # net.trafo.tap_phase_shifter.fillna(False, inplace=True)
+    net.trafo.tap_phase_shifter = net.trafo.tap_phase_shifter.fillna(False)
 
     # and preserve dtypes
     _preserve_dtypes(net.trafo, dtypes)
@@ -2957,7 +3063,7 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
     for label, value in kwargs.items():
         new_trafos[label] = value
 
-    net["trafo"] = net["trafo"].append(new_trafos)
+    net["trafo"] = pd.concat([net["trafo"], new_trafos])
     # and preserve dtypes
     _preserve_dtypes(net.trafo, dtypes)
 
@@ -3062,7 +3168,7 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tap_p
     elif version.parse(pd.__version__) < version.parse("0.23"):
         net["trafo3w"] = net["trafo3w"].append(dd).reindex(net["trafo3w"].columns, axis=1)
     else:
-        net["trafo3w"] = net["trafo3w"].append(dd, sort=True).reindex(net["trafo3w"].columns, axis=1)
+        net["trafo3w"] = pd.concat([net["trafo3w"], dd], sort=True).reindex(net["trafo3w"].columns, axis=1)
 
     if not isnan(max_loading_percent):
         if "max_loading_percent" not in net.trafo3w.columns:
@@ -3355,7 +3461,7 @@ def create_transformers3w_from_parameters(net, hv_buses, mv_buses, lv_buses, vn_
     # store dtypes
     dtypes = net.trafo3w.dtypes
 
-    net["trafo3w"] = net["trafo3w"].append(new_trafos)
+    net["trafo3w"] = pd.concat([net["trafo3w"], new_trafos])
 
     # and preserve dtypes
     _preserve_dtypes(net.trafo3w, dtypes)
@@ -3558,7 +3664,7 @@ def create_switches(net, buses, elements, et, closed=True, type=None, name=None,
     # store dtypes
     dtypes = net.switch.dtypes
 
-    net['switch'] = net['switch'].append(switches_df)
+    net['switch'] = pd.concat([net['switch'], switches_df])
 
     # and preserve dtypes
     _preserve_dtypes(net.switch, dtypes)
@@ -3915,7 +4021,7 @@ def create_measurement(net, meas_type, element_type, value, std_dev, element, si
         "trafo", and "trafo3w" are possible
 
         **value** (float) - Measurement value. Units are "MW" for P, "MVar" for Q, "p.u." for V,
-        "kA" for I. Generation is a positive bus power injection, consumption negative
+        "kA" for I. Generation is a positive bus power consumption, injection negative
 
         **std_dev** (float) - Standard deviation in the same unit as the measurement
 
@@ -3940,11 +4046,13 @@ def create_measurement(net, meas_type, element_type, value, std_dev, element, si
 
     EXAMPLES:
         2 MW load measurement with 0.05 MW standard deviation on bus 0:
-        create_measurement(net, "p", "bus", 0, -2., 0.05.)
+        create_measurement(net, "p", "bus", 0, 2., 0.05.)
 
         4.5 MVar line measurement with 0.1 MVar standard deviation on the "to_bus" side of line 2
         create_measurement(net, "q", "line", 2, 4.5, 0.1, "to")
     """
+    if meas_type in ("p", "q") and element_type == "bus":
+        logger.warning("Attention! Signing system of P,Q measurement of buses now changed to load reference (match pandapower res_bus pq)!")   
 
     if meas_type not in ("v", "p", "q", "i", "va", "ia"):
         raise UserWarning("Invalid measurement type ({})".format(meas_type))

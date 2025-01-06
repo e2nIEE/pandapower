@@ -1,0 +1,3 @@
+**Parameter**;**Datatype**;**Explanation**
+p_mw;float;resulting active power demand [MW]
+q_mvar;float;resulting reactive power demand [MVar]

@@ -328,7 +328,7 @@ def _add_ext_grid_sc_impedance_zero(net, ppc):
     z_grid = c / s_sc
     if mode == 'pf_3ph':
         z_grid = c / (s_sc/3)                       
-    x_grid = z_grid / np.sqrt(rx ** 2 + 1)
+    x_grid = z_grid / np.sqrt(rx.astype(float) ** 2 + 1)
     r_grid = rx * x_grid
     eg["r"] = r_grid
     eg["x"] = x_grid
@@ -340,9 +340,9 @@ def _add_ext_grid_sc_impedance_zero(net, ppc):
     elif case == "min":
         x0_grid = net.ext_grid["x0x_%s" % case] * x_grid
         r0_grid = net.ext_grid["r0x0_%s" % case] * x0_grid
-    y0_grid = 1 / (r0_grid + x0_grid*1j)
+    y0_grid = np.complex128(1 / (r0_grid + x0_grid*1j))
 
-    buses, gs, bs = aux._sum_by_group(eg_buses_ppc, y0_grid.values.real, y0_grid.values.imag)
+    buses, gs, bs = aux._sum_by_group(eg_buses_ppc, y0_grid.real, y0_grid.imag)
     ppc["bus"][buses, GS] = gs
     ppc["bus"][buses, BS] = bs
 

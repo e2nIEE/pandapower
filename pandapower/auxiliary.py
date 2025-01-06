@@ -30,7 +30,11 @@ import copy
 from collections.abc import MutableMapping
 
 import numpy as np
-import numpy.core.numeric as ncn
+from packaging import version
+if version.parse(np.__version__) >= version.parse("2.0.0"):
+    import numpy._core.numeric as ncn
+else:
+    import numpy.core.numeric as ncn
 import pandas as pd
 import scipy as sp
 import six
@@ -268,7 +272,8 @@ def get_free_id(df):
     """
     Returns next free ID in a dataframe
     """
-    return np.int64(0) if len(df) == 0 else df.index.values.max() + 1
+    # return np.int64(0) if len(df) == 0 else df.index.values.max() + 1
+    return pd.Index([0], dtype=np.int64) if len(df) == 0 else df.index.values.max() + 1
 
 
 class ppException(Exception):
@@ -345,6 +350,32 @@ def _get_values(source, selection, lookup):
     for i, k in enumerate(selection):
         v[i] = source[lookup[np.int_(k)]]
     return v
+
+
+def ensure_iterability(var, len_=None):
+    """
+    Ensures iterability of a variable (and also the length if given).
+
+    Examples
+    --------
+    >>> ensure_iterability([1, 2])
+    [1, 2]
+    >>> ensure_iterability(1)
+    [1]
+    >>> ensure_iterability("Hi")
+    ["Hi"]
+    >>> ensure_iterability([1, 2], len_=2)
+    [1, 2]
+    >>> ensure_iterability([1, 2], len_=3)
+    ValueError("Length of variable differs from 3.")
+    """
+    if hasattr(var, "__iter__") and not isinstance(var, str):
+        if isinstance(len_, int) and len(var) != len_:
+            raise ValueError("Length of variable differs from %i." % len_)
+    else:
+        len_ = len_ or 1
+        var = [var] * len_
+    return var
 
 
 def _set_isolated_nodes_out_of_service(ppc, bus_not_reachable):
@@ -468,10 +499,15 @@ def _select_is_elements_numba(net, isolated_nodes=None, sequence=None):
         ppc_bus_isolated[isolated_nodes] = True
         set_isolated_buses_oos(bus_in_service, ppc_bus_isolated, net["_pd2ppc_lookups"]["bus"])
     #    mode = net["_options"]["mode"]
-    elements = ["load", "sgen",  # "asymmetric_load", "asymmetric_sgen", 
-                "gen", \
-                "ward", "xward", "shunt", "ext_grid", "storage"]  # ,"impedance_load"
+    elements = ["load", "motor", "sgen", "asymmetric_load", "asymmetric_sgen", "gen" \
+        , "ward", "xward", "shunt", "ext_grid", "storage"]  # ,"impedance_load"
     is_elements = dict()
+
+    #   tirar!!!!!###
+    elements.remove("motor")
+    elements.remove("asymmetric_load")
+    elements.remove("asymmetric_sgen")
+    #####
     for element in elements:
         len_ = len(net[element].index)
         element_in_service = np.zeros(len_, dtype=bool)
@@ -581,7 +617,7 @@ def _add_opf_options(net, trafo_loading, ac, v_debug=False, **kwargs):
 
 
 def _add_sc_options(net, fault, case, lv_tol_percent, tk_s, topology, r_fault_ohm,
-                    x_fault_ohm, kappa, ip, ith, branch_results, kappa_method):
+                    x_fault_ohm, kappa, ip, ith, branch_results, kappa_method, return_all_currents):
     """
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
@@ -597,7 +633,8 @@ def _add_sc_options(net, fault, case, lv_tol_percent, tk_s, topology, r_fault_oh
         "ip": ip,
         "ith": ith,
         "branch_results": branch_results,
-        "kappa_method": kappa_method
+        "kappa_method": kappa_method,
+        "return_all_currents": return_all_currents
     }
     _add_options(net, options)
 
@@ -787,7 +824,7 @@ def phase_to_sequence(Xabc):
 
 def I0_from_V012(V012, Y):
     V0 = X012_to_X0(V012)
-    if type(Y) in [sp.sparse.csr.csr_matrix, sp.sparse.csc.csc_matrix]:
+    if type(Y) in [sp.sparse.csr_matrix, sp.sparse.csc_matrix]:
         return np.asarray(np.matmul(Y.todense(), V0))
     else:
         return np.asarray(np.matmul(Y, V0))
@@ -795,7 +832,7 @@ def I0_from_V012(V012, Y):
 
 def I1_from_V012(V012, Y):
     V1 = X012_to_X1(V012)[:, np.newaxis]
-    if type(Y) in [sp.sparse.csr.csr_matrix, sp.sparse.csc.csc_matrix]:
+    if type(Y) in [sp.sparse.csr_matrix, sp.sparse.csc_matrix]:
         i1 = np.asarray(np.matmul(Y.todense(), V1))
         return np.transpose(i1)
     else:
@@ -805,7 +842,7 @@ def I1_from_V012(V012, Y):
 
 def I2_from_V012(V012, Y):
     V2 = X012_to_X2(V012)
-    if type(Y) in [sp.sparse.csr.csr_matrix, sp.sparse.csc.csc_matrix]:
+    if type(Y) in [sp.sparse.csr_matrix, sp.sparse.csc_matrix]:
         return np.asarray(np.matmul(Y.todense(), V2))
     else:
         return np.asarray(np.matmul(Y, V2))
@@ -824,7 +861,7 @@ def V_from_I(Y, I):
 
 
 def I_from_V(Y, V):
-    if type(Y) in [sp.sparse.csr.csr_matrix, sp.sparse.csc.csc_matrix]:
+    if type(Y) in [sp.sparse.csr_matrix, sp.sparse.csc_matrix]:
         return np.asarray(np.matmul(Y.todense(), V))
     else:
         return np.asarray(np.matmul(Y, V))
@@ -887,8 +924,9 @@ def _add_dcline_gens(net):
         pto = (pfrom * (1 - dctab.loss_percent / 100) - dctab.loss_mw)
         pmax = dctab.max_p_mw
         create_gen(net, bus=dctab.to_bus, p_mw=pto, vm_pu=dctab.vm_to_pu,
-                   min_p_mw=pto, max_p_mw=pto, max_q_mvar=dctab.max_q_to_mvar,
-                   min_q_mvar=dctab.min_q_to_mvar, in_service=dctab.in_service)
+                   min_p_mw=pto, max_p_mw=pto,
+                   max_q_mvar=dctab.max_q_to_mvar, min_q_mvar=dctab.min_q_to_mvar,
+                   in_service=dctab.in_service)
         create_gen(net, bus=dctab.from_bus, p_mw=-pfrom, vm_pu=dctab.vm_from_pu,
                    min_p_mw=-pfrom, max_p_mw=-pfrom,
                    max_q_mvar=dctab.max_q_from_mvar, 

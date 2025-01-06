@@ -14,6 +14,7 @@ import weakref
 from functools import partial
 from inspect import isclass, signature, _findclass
 from warnings import warn
+from io import StringIO
 
 import networkx
 import numpy
@@ -124,7 +125,7 @@ def to_dict_of_dfs(net, include_results=False, fallback_to_pickle=True, include_
         else:
             dodfs[item] = value
         # save dtypes
-        for column, dtype in value.dtypes.iteritems():
+        for column, dtype in value.dtypes.items():
             dtypes.append((item, column, str(dtype)))
     dodfs["dtypes"] = pd.DataFrame(dtypes, columns=["element", "column", "dtype"])
     dodfs["parameters"] = pd.DataFrame(dodfs["parameters"], index=[0])
@@ -404,7 +405,7 @@ class FromSerializableRegistry():
 
     @from_serializable.register(class_name='DataFrame', module_name='pandas.core.frame')
     def DataFrame(self):
-        df = pd.read_json(self.obj, precise_float=True, convert_axes=False, **self.d)
+        df = pd.read_json(StringIO(self.obj), precise_float=True, convert_axes=False, **self.d)
         try:
             df.set_index(df.index.astype(numpy.int64), inplace=True)
         except (ValueError, TypeError, AttributeError):
@@ -826,7 +827,7 @@ def controller_to_serializable(obj):
 def mkdirs_if_not_existent(dir_to_create):
     already_exist = os.path.isdir(dir_to_create)
     os.makedirs(dir_to_create, exist_ok=True)
-    return ~already_exist
+    return not already_exist
 
 
 if SHAPELY_INSTALLED:

@@ -623,8 +623,8 @@ def _branches_with_oos_buses(net, ppc):
         t_bus = line_buses[:, 1]
 
         # determine on which side of the line the oos bus is located
-        mask_from = np.in1d(f_bus, bus_oos)
-        mask_to = np.in1d(t_bus, bus_oos)
+        mask_from = np.isin(f_bus, bus_oos)
+        mask_to = np.isin(t_bus, bus_oos)
 
         mask_and = mask_to & mask_from
         if np.any(mask_and):
@@ -643,7 +643,7 @@ def _branches_with_oos_buses(net, ppc):
             ls_info = np.zeros((n_oos_buses_at_lines, 3), dtype=int)
             ls_info[:, 0] = mask_to[mask_or] & ~mask_from[mask_or]
             ls_info[:, 1] = oos_buses_at_lines
-            ls_info[:, 2] = np.nonzero(np.in1d(net['line'].index, line_is_idx[mask_or]))[0]
+            ls_info[:, 2] = np.nonzero(np.isin(net['line'].index, line_is_idx[mask_or]))[0]
 
             # ls_info = list(map(mapfunc,
             #               line_switches["bus"].values,

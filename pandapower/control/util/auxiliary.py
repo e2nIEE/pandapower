@@ -8,10 +8,8 @@ from functools import reduce
 from pandapower.auxiliary import ADict
 
 import numpy as np
-import pandas
-
 import pandas as pd
-from pandas import Int64Index
+from pandas import Index
 
 try:
     import pplog
@@ -109,12 +107,12 @@ def get_controller_index(net, ctrl_type=None, parameters=None, idx=[]):
         attributes_keys = list(set(parameters.keys()) - set(df_keys))
         attributes_dict = {k: parameters[k] for k in attributes_keys}
         # query of parameters in net.controller dataframe
-        idx = Int64Index(idx)
+        idx = Index(idx, dtype=np.int64)
         for df_key in df_keys:
-            idx &= net.controller.index[net.controller[df_key] == parameters[df_key]]
+            idx = idx.intersection(net.controller.index[net.controller[df_key] == parameters[df_key]])
         # query of parameters in controller object attributes
-        idx = [i for i in idx if _controller_attributes_query(
-            net.controller.object.loc[i], attributes_dict)]
+        matches = net.controller.object.apply(lambda ctrl: _controller_attributes_query(ctrl, attributes_dict))
+        idx = list(net.controller.index.values[net.controller.index.isin(idx) & matches])
     return idx
 
 

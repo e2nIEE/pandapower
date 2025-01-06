@@ -45,6 +45,7 @@ def three_bus_example():
     pp.create_sgen(net, b2, sn_mva=2, p_mw=0, k=1.2)
     return net
 
+
 @pytest.fixture
 def big_sgen_three_bus_example():
     net = pp.create_empty_network()
@@ -59,6 +60,7 @@ def big_sgen_three_bus_example():
 
     pp.create_sgen(net, b2, sn_mva=200., p_mw=0, k=1.2)
     return net
+
 
 def test_max_branch_results_1(three_bus_example):
     net = three_bus_example
@@ -77,6 +79,7 @@ def test_max_branch_results_2(big_sgen_three_bus_example):
     assert np.allclose(net.res_line_sc.ip_ka.values, np.array([1.78144709, 2.65532524]))
     assert np.allclose(net.res_line_sc.ith_ka.values, np.array([1.26511638, 1.7298553]))
 
+
 def test_min_branch_results_small_sgen(three_bus_example):
     net = three_bus_example
     sc.calc_sc(net, case="min", ip=True, ith=True, branch_results=True)
@@ -85,6 +88,7 @@ def test_min_branch_results_small_sgen(three_bus_example):
     assert np.allclose(net.res_line_sc.ip_ka.values, np.array([0.01781447, 0.74576565]))
     assert np.allclose(net.res_line_sc.ith_ka.values, np.array([0.01265116, 0.40605375]))
 
+
 def test_min_branch_results_big_sgen(big_sgen_three_bus_example):
     net = big_sgen_three_bus_example
     sc.calc_sc(net, case="min", ip=True, ith=True, branch_results=True)
@@ -92,6 +96,7 @@ def test_min_branch_results_big_sgen(big_sgen_three_bus_example):
     assert np.allclose(net.res_line_sc.ikss_ka.values, np.array([0.36974055, 1.62941387]))
     assert np.allclose(net.res_line_sc.ip_ka.values, np.array([0.69687302,   2.47832011]))
     assert np.allclose(net.res_line_sc.ith_ka.values, np.array([0.37133258,  1.63642978]))
+
 
 def test_wind_park(wind_park_example):
     net = wind_park_example

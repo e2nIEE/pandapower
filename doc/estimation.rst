@@ -116,8 +116,8 @@ There are multiple measurements available, which have to be defined for the stat
     pp.create_measurement(net, "v", "bus", 1.006, .004, bus1)  # V at bus 1
 	pp.create_measurement(net, "v", "bus", 0.968, .004, bus2)  # V at bus 2
 
-	pp.create_measurement(net, "p", "bus", -501, 10, bus2)     # P at bus 2
-	pp.create_measurement(net, "q", "bus", -286, 10, bus2)     # Q at bus 2
+	pp.create_measurement(net, "p", "bus", 501, 10, bus2)     # P at bus 2
+	pp.create_measurement(net, "q", "bus", 286, 10, bus2)     # Q at bus 2
 
 	pp.create_measurement(net, "p", "line", 888, 8, element=line1, side="from")   # P_line (bus 1 -> bus 2) at bus 1
 	pp.create_measurement(net, "p", "line", 1173, 8, element=line2, side="from")  # P_line (bus 1 -> bus 3) at bus 1
