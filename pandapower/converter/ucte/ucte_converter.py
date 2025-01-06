@@ -498,7 +498,7 @@ class UCTE2pandapower:
         trafos.loc[ars, "tap_min"] = -trafos.loc[ar, "angle_reg_n"]
         trafos.loc[ars, "tap_max"] = trafos.loc[ar, "angle_reg_n"]
         trafos.loc[ars, "tap_pos"] = trafos.loc[ar, "angle_reg_n2"]
-        trafos.loc[ars, "tap_step_percent"] = np.NaN
+        trafos.loc[ars, "tap_step_percent"] = np.nan
         # trafos.loc[ars, 'phase_reg_n'] = trafos.loc[ar, 'angle_reg_n']
         trafos.loc[ars, "tap_phase_shifter"] = True
         trafos.loc[
@@ -511,7 +511,7 @@ class UCTE2pandapower:
         trafos.loc[ara, "tap2_max"] = trafos.loc[ar, "angle_reg_n"]
         trafos.loc[ara, "tap2_pos"] = trafos.loc[ar, "angle_reg_n2"]
         trafos.loc[ara, "tap2_neutral"] = 0
-        trafos.loc[ara, "tap2_step_percent"] = np.NaN
+        trafos.loc[ara, "tap2_step_percent"] = np.nan
         trafos.loc[ara, "tap2_phase_shifter"] = True
         trafos.loc[
             ara, "tap2_step_degree"
@@ -538,7 +538,7 @@ class UCTE2pandapower:
         trafos.loc[par, "tap2_max"] = trafos.loc[par, "angle_reg_n"]
         trafos.loc[par, "tap2_neutral"] = 0
         trafos.loc[par, "tap2_pos"] = trafos.loc[par, "angle_reg_n2"]
-        trafos.loc[par, "tap2_step_percent"] = np.NaN
+        trafos.loc[par, "tap2_step_percent"] = np.nan
         trafos.loc[par, "tap2_phase_shifter"] = True
 
         pars = trafos.loc[has_phase_values & has_angle_values & symm].index
