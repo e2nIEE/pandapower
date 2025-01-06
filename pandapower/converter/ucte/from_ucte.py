@@ -40,13 +40,17 @@ def from_ucte(ucte_file: str):
     Parameters
     ----------
     ucte_file : str
-        _description_
+        path to the ucte file which includes all the data of the grid (EHV or HV or both)
 
     Returns
     -------
     pandapowerNet
         net
     """
+
+    # Note:
+    # the converter functionality from_ucte() and internal functions are structured similar to
+    # the cim converter
 
     time_start_parsing = time.time()
 
