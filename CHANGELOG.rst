@@ -85,6 +85,7 @@ Change Log
 - [CHANGED] parameter renaming in net.group: element -> element_index
 - [CHANGED] in to_ppc(), the default of calculate_voltage_angles is True now (as in previously changed in runpp()).
 - [FIXED] fixed some small bugs in the CGMES converter and improved its speed
+- [CHANGED] vectorization of switch bus and element checks in create_switches()
 - [CHANGED] trigger a numpy error in makeYbus, makeBbus, _wye_delta instead of warning
 - [ADDED] transformer tap hunting detection for DiscreteTapControl
 - [CHANGED] diagnostic for implausible impedance values includes xward, trafo, trafo3w
