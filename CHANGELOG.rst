@@ -24,6 +24,7 @@ Change Log
 - [FIXED] Do not modify pandas options when importing pandapower
 - [FIXED] fixed copy-paste error in contingency results "max_limit_nminus1" and "min_limit_nminus1"
 - [ADDED] improved lightsim2grid documentation including compatibitliy issues
+- [FIXED] avoid duplicated keys in kwargs and pf_options in run_contingency()
 - [FIXED] cim2pp: set default xml encoding to None to avoid error after changing to lxml
 - [FIXED] PandaModels OPF with 'bus_dc' key errors
 - [FIXED] julia tests
