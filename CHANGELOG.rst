@@ -19,6 +19,7 @@ Change Log
 - [ADDED] converter for European EHV grid data from JAO, the "Single Allocation Platform (SAP) for all European Transmission System Operators (TSOs) that operate in accordance to EU legislation"
 - [ADDED] Add GeographicalRegion and SubGeographicalRegion names and ids to bus df in cim converter
 - [CHANGED] Capitalize first letter of columns busbar_id, busbar_name and substation_id in bus df for cim converter
+- [CHANGED] required standard type parameters are made available by function :code:`required_std_type_parameters()`
 - [CHANGED] toolbox replace functions (e.g. gen replacement by sgens): improved result table implementation and added profiles consideration
 - [FIXED] Do not modify pandas options when importing pandapower
 - [FIXED] fixed copy-paste error in contingency results "max_limit_nminus1" and "min_limit_nminus1"
