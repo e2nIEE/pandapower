@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2024-..-..
 -------------------------------
+- [ADDED] Static Var Compensator with Voltage Control
 - [ADDED] Implementation of Allocation Factor WLS (AF-WLS) for non observable distribution grids
 - [FIXED] Deletion of multiple measurements at the same bus or branch
 - [FIXED] Creation of zero injection measurements in WLS estimator
@@ -18,10 +19,12 @@ Change Log
 - [ADDED] converter for European EHV grid data from JAO, the "Single Allocation Platform (SAP) for all European Transmission System Operators (TSOs) that operate in accordance to EU legislation"
 - [ADDED] Add GeographicalRegion and SubGeographicalRegion names and ids to bus df in cim converter
 - [CHANGED] Capitalize first letter of columns busbar_id, busbar_name and substation_id in bus df for cim converter
+- [CHANGED] required standard type parameters are made available by function :code:`required_std_type_parameters()`
 - [CHANGED] toolbox replace functions (e.g. gen replacement by sgens): improved result table implementation and added profiles consideration
 - [FIXED] Do not modify pandas options when importing pandapower
 - [FIXED] fixed copy-paste error in contingency results "max_limit_nminus1" and "min_limit_nminus1"
 - [ADDED] improved lightsim2grid documentation including compatibitliy issues
+- [FIXED] avoid duplicated keys in kwargs and pf_options in run_contingency()
 - [FIXED] cim2pp: set default xml encoding to None to avoid error after changing to lxml
 - [FIXED] PandaModels OPF with 'bus_dc' key errors
 - [FIXED] julia tests
