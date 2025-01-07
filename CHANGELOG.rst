@@ -19,10 +19,12 @@ Change Log
 - [ADDED] converter for European EHV grid data from JAO, the "Single Allocation Platform (SAP) for all European Transmission System Operators (TSOs) that operate in accordance to EU legislation"
 - [ADDED] Add GeographicalRegion and SubGeographicalRegion names and ids to bus df in cim converter
 - [CHANGED] Capitalize first letter of columns busbar_id, busbar_name and substation_id in bus df for cim converter
+- [CHANGED] required standard type parameters are made available by function :code:`required_std_type_parameters()`
 - [CHANGED] toolbox replace functions (e.g. gen replacement by sgens): improved result table implementation and added profiles consideration
 - [FIXED] Do not modify pandas options when importing pandapower
 - [FIXED] fixed copy-paste error in contingency results "max_limit_nminus1" and "min_limit_nminus1"
 - [ADDED] improved lightsim2grid documentation including compatibitliy issues
+- [FIXED] avoid duplicated keys in kwargs and pf_options in run_contingency()
 - [FIXED] cim2pp: set default xml encoding to None to avoid error after changing to lxml
 - [FIXED] PandaModels OPF with 'bus_dc' key errors
 - [FIXED] julia tests
@@ -83,6 +85,7 @@ Change Log
 - [CHANGED] parameter renaming in net.group: element -> element_index
 - [CHANGED] in to_ppc(), the default of calculate_voltage_angles is True now (as in previously changed in runpp()).
 - [FIXED] fixed some small bugs in the CGMES converter and improved its speed
+- [CHANGED] vectorization of switch bus and element checks in create_switches()
 - [CHANGED] trigger a numpy error in makeYbus, makeBbus, _wye_delta instead of warning
 - [ADDED] transformer tap hunting detection for DiscreteTapControl
 - [CHANGED] diagnostic for implausible impedance values includes xward, trafo, trafo3w
