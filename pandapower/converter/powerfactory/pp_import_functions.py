@@ -2585,7 +2585,8 @@ def create_trafo3w(net, item, tap_opt='nntap'):
         'shift_mv_degree': -(pf_type.nt3ag_h - pf_type.nt3ag_m) * 30,
         'shift_lv_degree': -(pf_type.nt3ag_h - pf_type.nt3ag_l) * 30,
         'tap_at_star_point': pf_type.itapos == 0,
-        'in_service': not bool(item.outserv)
+        'in_service': not bool(item.outserv),
+        'parallel': pf_type.nt3nm,
     }
 
     if item.nt3nm != 1:
