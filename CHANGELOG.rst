@@ -1,8 +1,9 @@
 Change Log
 =============
 
-[upcoming release] - 2024-..-..
+[upcoming release] - 2025-..-..
 -------------------------------
+- [REMOVED] Excluding tests and test_files from built packages
 - [ADDED] Static Var Compensator with Voltage Control
 - [ADDED] Implementation of Allocation Factor WLS (AF-WLS) for non observable distribution grids
 - [FIXED] Deletion of multiple measurements at the same bus or branch
