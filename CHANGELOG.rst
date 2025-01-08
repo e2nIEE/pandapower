@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [FIXED] Allow to consider all oos components in nx graph creation
 - [REMOVED] Excluding tests and test_files from built packages
 - [ADDED] Static Var Compensator with Voltage Control
 - [ADDED] Implementation of Allocation Factor WLS (AF-WLS) for non observable distribution grids
