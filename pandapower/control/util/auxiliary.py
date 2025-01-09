@@ -443,13 +443,13 @@ def create_q_capability_curve_characteristics_object(net):
             q_max_indices.append(q_max_index)
             logger.info("Adding characteristic objects for id_q_capability_curve %d" % element_id)
 
-        spline_df = pd.DataFrame({
+        characteristic_df = pd.DataFrame({
             "id_q_capability_curve": element_ids,
             "q_min_characteristic": q_min_indices,
             "q_max_characteristic": q_max_indices,
         }).set_index("id_q_capability_curve")
 
-        net["q_capability_curve_characteristic"] = net["q_capability_curve_characteristic"].combine_first(spline_df)
+        net["q_capability_curve_characteristic"] = net["q_capability_curve_characteristic"].combine_first(characteristic_df)
 
         # Extract the temporary table containing the objects
         temp_table = net["q_capability_curve_characteristic_temp"]
