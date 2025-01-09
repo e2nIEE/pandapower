@@ -25,7 +25,7 @@ def get_pp_net_special_columns_dict() -> Dict[str, str]:
                  'pte_id': 'PowerTransformerEnd_id', 'pte_id_hv': 'PowerTransformerEnd_id_hv',
                  'pte_id_mv': 'PowerTransformerEnd_id_mv', 'pte_id_lv': 'PowerTransformerEnd_id_lv',
                  'cnc_id': 'ConnectivityNodeContainer_id', 'sub_id': 'Substation_id', 'src': 'source', 'name': 'name',
-                 'desc': 'description', 'a_id': 'analog_id'})
+                 'desc': 'description', 'a_id': 'analog_id', 'bus': 'terminal'})
 
 
 def extend_pp_net_cim(net: pandapowerNet, override: bool = True) -> pandapowerNet:
