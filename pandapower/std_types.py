@@ -15,6 +15,26 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
+def required_std_type_parameters(element="line"):
+    if element == "line":
+        required = ["c_nf_per_km", "r_ohm_per_km", "x_ohm_per_km", "max_i_ka"]
+    elif element == "line_dc":
+        required = ["r_ohm_per_km","max_i_ka"]
+    elif element == "trafo":
+        required = ["sn_mva", "vn_hv_kv", "vn_lv_kv", "vk_percent", "vkr_percent",
+                    "pfe_kw", "i0_percent", "shift_degree"]
+    elif element == "trafo3w":
+        required = ["sn_hv_mva", "sn_mv_mva", "sn_lv_mva", "vn_hv_kv", "vn_mv_kv", "vn_lv_kv",
+                    "vk_hv_percent", "vk_mv_percent", "vk_lv_percent", "vkr_hv_percent",
+                    "vkr_mv_percent", "vkr_lv_percent", "pfe_kw", "i0_percent", "shift_mv_degree",
+                    "shift_lv_degree"]
+    elif element == "fuse":
+        required = ["fuse_type", "i_rated_a"]
+    else:
+        raise ValueError("Unknown element type %s" % element)
+    return required
+
+
 def create_std_type(net, data, name, element="line", overwrite=True, check_required=True):
     """
     Creates type data in the type database. The parameters that are used for
@@ -79,25 +99,9 @@ def create_std_type(net, data, name, element="line", overwrite=True, check_requi
         raise UserWarning("type data has to be given as a dictionary of parameters")
 
     if check_required:
-        if element == "line":
-            required = ["c_nf_per_km", "r_ohm_per_km", "x_ohm_per_km", "max_i_ka"]
-        elif element == "line_dc":
-            required = ["r_ohm_per_km","max_i_ka"]
-        elif element == "trafo":
-            required = ["sn_mva", "vn_hv_kv", "vn_lv_kv", "vk_percent", "vkr_percent",
-                        "pfe_kw", "i0_percent", "shift_degree"]
-        elif element == "trafo3w":
-            required = ["sn_hv_mva", "sn_mv_mva", "sn_lv_mva", "vn_hv_kv", "vn_mv_kv", "vn_lv_kv",
-                        "vk_hv_percent", "vk_mv_percent", "vk_lv_percent", "vkr_hv_percent",
-                        "vkr_mv_percent", "vkr_lv_percent", "pfe_kw", "i0_percent", "shift_mv_degree",
-                        "shift_lv_degree"]
-        elif element == "fuse":
-            required = ["fuse_type", "i_rated_a"]
-        else:
-            raise ValueError("Unknown element type %s" % element)
-        for par in required:
-            if par not in data:
-                raise UserWarning("%s is required as %s type parameter" % (par, element))
+        missing = [par for par in required_std_type_parameters(element) if par not in data]
+        if len(missing):
+            raise UserWarning("%s are required as %s type parameters." % (missing, element))
     library = net.std_types[element]
     if overwrite or not (name in library):
         library.update({name: data})
@@ -353,6 +357,7 @@ def find_std_type_alternative(net, data, element = "line", voltage_rating = "", 
             fitting_types.append(name)
     return fitting_types
 
+
 def add_zero_impedance_parameters(net):
     """
     Adds all parameters required for zero sequence impedance calculations.
@@ -394,7 +399,7 @@ def add_zero_impedance_parameters(net):
 
 def add_temperature_coefficient(net, fill=None):
     """
-    Adds alpha paarameter for calculations of line temperature
+    Adds alpha parameter for calculations of line temperature
     Args:
         fill: fill value for when the parameter in std_type is missing, e.g. 4.03e-3 for aluminum
                 or  3.93e-3 for copper
