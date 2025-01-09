@@ -384,26 +384,43 @@ def _create_shunt_characteristics(net, shunt_index, variable, x_points, y_points
             # save the index of the new spline characteristic object in the temp table
             net["shunt_characteristic_spline_temp"].at[idx, col] = s.index
 
+def _set_curve_dependency_table_flag(net, element=None):
+    # Quick checks for element table and required columns
+    if (len(net[element]) == 0 or
+            not {"id_q_capability_curve_table", "curve_dependency_table", "curve_style"}.issubset(net[element].columns)
+            or (not net[element]['id_q_capability_curve_table'].notna().any() and
+                not net[element]['curve_dependency_table'].any()) and not net[element]['curve_style'].any()):
+        logger.info(f"No {element} with Q capability curve table found.")
+    else:
+        net[element]['curve_dependency_table'] = (
+                net[element]['id_q_capability_curve_table'].notna() &
+                ( net[element]['id_q_capability_curve_table'] >= 0) &
+                net[element]['curve_style'].str.len().gt(0)
+        ).astype(bool)
 
 def create_q_capability_curve_characteristics_object(net):
     # check if element_characteristic_spline table already exists & if so, delete & re-create
-    if "q_characteristic_spline" in net:
-        del net["q_characteristic_spline"]
+    if "q_capability_curve_characteristic" in net:
+        del net["q_capability_curve_characteristic"]
 
-    # Create element characteristics spline created if it is not in net
-    if "q_characteristic_spline" not in net.keys():
-        net["q_characteristic_spline"] = net["q_characteristic_spline"] = pd.DataFrame({
-            "id_q_capability_curve": pd.Series(dtype="Int64"),
-            "q_min_characteristic": pd.Series(dtype="object"),
-            "q_max_characteristic": pd.Series(dtype="object"),
-        })
     # create characteristics of the give curve
-    if net['q_capability_curve_table'].index.size > 0:
+    if "q_capability_curve_table" in net.keys() and net['q_capability_curve_table'].index.size > 0 :
         time_start = time.time()
-        net["q_characteristic_spline_temp"] = pd.DataFrame()
+        
+        _set_curve_dependency_table_flag(net,"gen")
+        _set_curve_dependency_table_flag(net, "sgen")
+
+        # Create element characteristics spline created if it is not in net
+        if "q_capability_curve_characteristic" not in net.keys():
+            net["q_capability_curve_characteristic"] = net["q_capability_curve_characteristic"] = pd.DataFrame({
+                "id_q_capability_curve": pd.Series(dtype="Int64"),
+                "q_min_characteristic": pd.Series(dtype="object"),
+                "q_max_characteristic": pd.Series(dtype="object"),
+            })
+        net["q_capability_curve_characteristic_temp"] = pd.DataFrame()
         characteristic_df_temp = net['q_capability_curve_table']
         mydata_grouped = characteristic_df_temp.groupby('id_q_capability_curve')
-        net["q_characteristic_spline"]["id_q_capability_curve"] = mydata_grouped.size().index
+        net["q_capability_curve_characteristic"]["id_q_capability_curve"] = mydata_grouped.size().index
 
         # Prepare lists
         element_ids = []
@@ -412,13 +429,13 @@ def create_q_capability_curve_characteristics_object(net):
 
         # Iterate directly over grouped data
         for element_id, group_data in mydata_grouped:
-            p_mw_list = np.hstack(group_data['p_mw'])
+            p_mw_values = np.hstack(group_data['p_mw'])
             q_min_values = np.hstack(group_data['q_min_mvar'])
             q_max_values = np.hstack(group_data['q_max_mvar'])
 
             # Compute Characteristic indices
-            q_min_index = Characteristic(net, p_mw_list, q_min_values, table="q_characteristic_spline_temp").index
-            q_max_index = Characteristic(net, p_mw_list, q_max_values, table="q_characteristic_spline_temp").index
+            q_min_index = Characteristic(net, p_mw_values, q_min_values, table="q_capability_curve_characteristic_temp").index
+            q_max_index = Characteristic(net, p_mw_values, q_max_values, table="q_capability_curve_characteristic_temp").index
 
             # Collect results
             element_ids.append(element_id)
@@ -432,20 +449,20 @@ def create_q_capability_curve_characteristics_object(net):
             "q_max_characteristic": q_max_indices,
         }).set_index("id_q_capability_curve")
 
-        net["q_characteristic_spline"] = net["q_characteristic_spline"].combine_first(spline_df)
+        net["q_capability_curve_characteristic"] = net["q_capability_curve_characteristic"].combine_first(spline_df)
 
         # Extract the temporary table containing the objects
-        temp_table = net["q_characteristic_spline_temp"]
+        temp_table = net["q_capability_curve_characteristic_temp"]
 
         # Map the indices in `q_min_index` and `q_max_index` to the corresponding objects in the temporary table
         if not temp_table.empty:
             object_map = temp_table["object"]  # Cache the mapping for efficiency
-            net["q_characteristic_spline"]["q_min_characteristic"] = net["q_characteristic_spline"]["q_min_characteristic"].map(
+            net["q_capability_curve_characteristic"]["q_min_characteristic"] = net["q_capability_curve_characteristic"]["q_min_characteristic"].map(
                 object_map)
-            net["q_characteristic_spline"]["q_max_characteristic"] = net["q_characteristic_spline"]["q_max_characteristic"].map(
+            net["q_capability_curve_characteristic"]["q_max_characteristic"] = net["q_capability_curve_characteristic"]["q_max_characteristic"].map(
                 object_map)
         logger.info(
             f"Finished creating p dependent q characteristic objects for capability curve in"f"{time.time() - time_start}.")
-        del net["q_characteristic_spline_temp"]
+        del net["q_capability_curve_characteristic_temp"]
     else:
         logger.info("q_capability_curve_table is empty - no characteristic objects created.")

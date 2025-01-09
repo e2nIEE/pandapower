@@ -28,10 +28,11 @@ from pandapower.control import (
     SplineCharacteristic,
     ContinuousTapControl,
     ConstControl,
-    create_trafo_characteristic_object
+    create_trafo_characteristic_object,
 )
 from pandapower.control.util.characteristic import LogSplineCharacteristic
-from pandapower.control.util.auxiliary import create_shunt_characteristic_object, _create_trafo_characteristics
+from pandapower.control.util.auxiliary import (create_shunt_characteristic_object, _create_trafo_characteristics,
+                                               create_q_capability_curve_characteristics_object)
 
 
 class MemoryLeakDemo:
@@ -361,6 +362,50 @@ def test_creation_of_shunt_characteristics():
     assert np.isclose(net.shunt_characteristic_spline.loc[0, "p_mw_characteristic"](3), 7)
     assert np.isclose(net.shunt_characteristic_spline.loc[0, "p_mw_characteristic"](5), 10)
 
+def test_creation_of_q_capability_curve_characteristics():
+    net = example_multivoltage()
+    net["q_capability_curve_table"] = pd.DataFrame(
+        {'id_q_capability_curve': [0, 0, 0, 0, 0], 'p_mw': [0.0, 50.0, 100.0, 125.0, 125.0],
+         'q_min_mvar':[-100.0, -75.0, -50.0, -25.0, -10], 'q_max_mvar':[150.0, 125.0, 75, 50.0, 10.0]})
+    net.gen.id_q_capability_curve_table.at[0] = 0
+    net.gen['curve_style'] = "straightLineYValues"
+
+    # Add q_capability_curve_characteristic for one gen based on q_capability_curve_table
+    create_q_capability_curve_characteristics_object(net)
+    assert "q_capability_curve_characteristic" in net
+    assert len(net.q_capability_curve_characteristic) == 1
+    assert net.gen.id_q_capability_curve_table.dtype == pd.Int64Dtype()
+    assert isinstance(net.gen.id_q_capability_curve_table.at[0], np.int64)
+    assert pd.notna(net.gen.id_q_capability_curve_table.at[0])
+    assert all(col in net.q_capability_curve_characteristic.columns for col in ["q_max_characteristic", "q_min_characteristic"])
+    assert isinstance(
+        net.q_capability_curve_characteristic.loc[net.gen.id_q_capability_curve_table.at[0], 'q_max_characteristic'], pp.control.Characteristic)
+    assert isclose(net.q_capability_curve_characteristic.at[
+            net.gen.id_q_capability_curve_table.at[0], 'q_max_characteristic'](-2).item(), 150, rel_tol=1e-9)
+    assert pd.notna(net.q_capability_curve_characteristic.at[
+                          net.gen.id_q_capability_curve_table.at[0], 'q_min_characteristic'])
+
+    # Create q_capability_curve_characteristic again for the same gen based on the updated q_capability_curve_table
+    new_rows = pd.DataFrame(
+            {'id_q_capability_curve': [1, 1, 1, 1, 1], 'p_mw': [0.0, 30.0, 50.0, 70.0, 130],
+             'q_min_mvar': [-29.0, -27, -26.0, -25.0, -20.0], 'q_max_mvar': [141.0, 141.0, 137.0, 134.0, 128.0]})
+    net["q_capability_curve_table"] = pd.concat([net["q_capability_curve_table"], new_rows], ignore_index=True)
+    net.gen.id_q_capability_curve_table.at[0] = 1
+    create_q_capability_curve_characteristics_object(net)
+    assert len(net.q_capability_curve_characteristic) == 2
+    assert net.gen.at[0, "id_q_capability_curve_table"] == 1
+    assert isinstance(
+        net.q_capability_curve_characteristic.loc[net.gen.id_q_capability_curve_table.at[0], 'q_max_characteristic'], pp.control.Characteristic)
+
+    assert isinstance(
+        net.q_capability_curve_characteristic.loc[net.gen.id_q_capability_curve_table.at[0], 'q_min_characteristic'], pp.control.Characteristic)
+
+    assert isclose(net.q_capability_curve_characteristic.at[
+            net.gen.id_q_capability_curve_table.at[0], 'q_max_characteristic'](130).item(), 128.0, rel_tol=1e-9)
+    assert isclose(net.q_capability_curve_characteristic.at[
+            net.gen.id_q_capability_curve_table.at[0], 'q_max_characteristic'](0).item(), 141.0, rel_tol=1e-9)
+    assert pd.notna(net.q_capability_curve_characteristic.loc[net.gen.id_q_capability_curve_table.at[0], 'q_max_characteristic'])
+    assert pd.notna(net.q_capability_curve_characteristic.loc[net.gen.id_q_capability_curve_table.at[0], 'q_min_characteristic'])
 
 @pytest.mark.parametrize("file_io", (False, True), ids=("Without JSON I/O", "With JSON I/O"))
 def test_characteristic(file_io):
