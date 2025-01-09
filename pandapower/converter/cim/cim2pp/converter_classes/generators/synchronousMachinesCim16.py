@@ -153,47 +153,44 @@ class SynchronousMachinesCim16:
         return synchronous_machines
 
     def _create_gen_characteristics_table(self, syn_gen_df_origin) -> pd.DataFrame:
-        if 'id_q_capability_curve_table' not in syn_gen_df_origin.columns:
-            syn_gen_df_origin['id_q_capability_curve_table'] = pd.Series(pd.NA, dtype="Int64")
-        if 'q_capability_curve_table' not in self.cimConverter.net.keys():
-            self.cimConverter.net['q_capability_curve_table'] = pd.DataFrame(
-                columns=['id_capability_curve', 'p_mw', 'q_min_mvar', 'q_max_mvar'])
+        if {'ReactiveCapabilityCurve', 'CurveData'}.issubset(self.cimConverter.cim['eq'].keys()):
+            if 'id_q_capability_curve_table' not in syn_gen_df_origin.columns:
+                syn_gen_df_origin['id_q_capability_curve_table'] = pd.Series(pd.NA, dtype="Int64")
+            if 'q_capability_curve_table' not in self.cimConverter.net.keys():
+                self.cimConverter.net['q_capability_curve_table'] = pd.DataFrame(
+                    columns=['id_capability_curve', 'p_mw', 'q_min_mvar', 'q_max_mvar'])
 
-        # get the curve data
-        curve_data = self.cimConverter.cim['eq']['ReactiveCapabilityCurve'][['rdfId','curveStyle']].rename(
-            columns={'rdfId': 'Curve', 'curveStyle': 'curve_style'})
-        curve_points = pd.merge(curve_data, self.cimConverter.cim['eq']['CurveData'][
-            ['rdfId', 'Curve', 'xvalue', 'y1value', 'y2value']], how='left', on='Curve')
+            # get the curve data
+            curve_data = self.cimConverter.cim['eq']['ReactiveCapabilityCurve'][['rdfId', 'curveStyle']].rename(
+                columns={'rdfId': 'Curve', 'curveStyle': 'curve_style'})
+            curve_points = pd.merge(curve_data, self.cimConverter.cim['eq']['CurveData'][
+                ['rdfId', 'Curve', 'xvalue', 'y1value', 'y2value']], how='left', on='Curve')
 
-        curve_points['id_q_capability_curve_table'] = pd.factorize(curve_points['Curve'])[0]
-        curve_points['id_q_capability_curve_table'] = curve_points['id_q_capability_curve_table'].astype('Int64')
-        curve_points = curve_points.drop(columns=['rdfId']).rename(columns={'Curve': 'rdfId', 'xvalue': 'p_mw',
-                                                                            'y1value': 'q_min_mvar',
-                                                                            'y2value': 'q_max_mvar'})
+            curve_points['id_q_capability_curve_table'] = pd.factorize(curve_points['Curve'])[0]
+            curve_points['id_q_capability_curve_table'] = curve_points['id_q_capability_curve_table'].astype('Int64')
+            curve_points = curve_points.drop(columns=['rdfId']).rename(columns={'Curve': 'rdfId', 'xvalue': 'p_mw',
+                                                                                'y1value': 'q_min_mvar',
+                                                                                'y2value': 'q_max_mvar'})
 
-        # Move 'id_q_capability_curve_table' to the first column and save to net
-        curve_points = curve_points[
-            ['id_q_capability_curve_table'] + [col for col in curve_points.columns if col != 'id_q_capability_curve_table']]
-        self.cimConverter.net['q_capability_curve_table'] = curve_points
-        self.cimConverter.net['q_capability_curve_table'] = (self.cimConverter.net['q_capability_curve_table'].
-        drop(columns=['rdfId','curve_style']).rename(
-            columns={'id_q_capability_curve_table': 'id_q_capability_curve'}))
+            # Move 'id_q_capability_curve_table' to the first column and save to net
+            curve_points = curve_points[
+                ['id_q_capability_curve_table'] + [col for col in curve_points.columns if
+                                                   col != 'id_q_capability_curve_table']]
+            self.cimConverter.net['q_capability_curve_table'] = curve_points
+            self.cimConverter.net['q_capability_curve_table'] = (self.cimConverter.net['q_capability_curve_table'].
+            drop(columns=['rdfId', 'curve_style']).rename(
+                columns={'id_q_capability_curve_table': 'id_q_capability_curve'}))
 
-        # Drop unnecessary columns and duplicate rdfId
-        curve_points = (
-            curve_points.drop(columns=['p_mw', 'q_min_mvar', 'q_max_mvar']).drop_duplicates(subset=['rdfId']).
-            rename(columns={'rdfId': 'InitialReactiveCapabilityCurve'}))
+            # Drop unnecessary columns and duplicate rdfId
+            curve_points = (
+                curve_points.drop(columns=['p_mw', 'q_min_mvar', 'q_max_mvar']).drop_duplicates(subset=['rdfId']).
+                rename(columns={'rdfId': 'InitialReactiveCapabilityCurve'}))
 
-        syn_gen_df_origin = syn_gen_df_origin.drop(columns=['id_q_capability_curve_table'])
-        syn_gen_df_origin = pd.merge(syn_gen_df_origin, curve_points, how='left', on=['InitialReactiveCapabilityCurve'])
+            syn_gen_df_origin = syn_gen_df_origin.drop(columns=['id_q_capability_curve_table'])
+            syn_gen_df_origin = pd.merge(syn_gen_df_origin, curve_points, how='left',
+                                         on=['InitialReactiveCapabilityCurve'])
 
-        # create curve_dependency_table flag
-        if 'curve_dependency_table' not in syn_gen_df_origin.columns:
-            syn_gen_df_origin['curve_dependency_table'] = False
-        # set curve_dependency_table as True for respective gen and sgen
-        syn_gen_df_origin['curve_dependency_table'] = (
-                syn_gen_df_origin['id_q_capability_curve_table'].notna() &
-                (syn_gen_df_origin['id_q_capability_curve_table'] >= 0) &
-                syn_gen_df_origin['curve_style'].str.len().gt(0)
-        )
+            # create curve_dependency_table flag
+            if 'curve_dependency_table' not in syn_gen_df_origin.columns:
+                syn_gen_df_origin['curve_dependency_table'] = False
         return syn_gen_df_origin
