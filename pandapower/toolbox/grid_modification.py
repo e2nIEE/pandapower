@@ -734,6 +734,8 @@ def drop_elements_at_buses(net, buses, bus_elements=True, branch_elements=True,
                 n_el = net[element_type].shape[0]
                 detach_from_groups(net, element_type, eid)
                 net[element_type] = net[element_type].drop(eid)
+                # drop associated measurements
+                drop_measurements_at_elements(net, element_type, idx=eid)
                 # res_element_type
                 res_element_type = "res_" + element_type
                 if res_element_type in net.keys() and isinstance(net[res_element_type], pd.DataFrame):
