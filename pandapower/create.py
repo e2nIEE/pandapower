@@ -6,6 +6,7 @@
 
 from operator import itemgetter
 from typing import Tuple, List, Union, Iterable
+import warnings
 
 import pandas as pd
 from numpy import nan, zeros, isnan, arange, dtype, isin, any as np_any, array, bool_, \
@@ -3363,6 +3364,8 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
         create_transformer(net, hv_bus=0, lv_bus=1, std_type="0.4 MVA 10/0.4 kV", name="trafo1")
     """
 
+    from pandapower.convert_format import convert_trafo_pst_logic
+
     # Check if bus exist to attach the trafo to
     _check_branch_element(net, "Trafo", index, hv_bus, lv_bus)
 
@@ -3406,7 +3409,22 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
                 net.trafo[f"tap{s}_pos"] = net.trafo.get(f"tap{s}_pos",
                                                          np.full(len(net.trafo), np.nan)).astype(np.float64)
 
+    for key in ['tap_dependent_impedance', 'vk_percent_characteristic', 'vkr_percent_characteristic']:
+        if key in kwargs:
+            del kwargs[key]
+            warnings.warn(DeprecationWarning(f"The {key} parameter is not supported in pandapower version 3.0 or later."
+                                             " This transformer will be created without tap_dependent_impedance "
+                                             "characteristics. To set up tap-dependent characteristics for this "
+                                             "transformer, provide the net.trafo_characteristic_table and populate the "
+                                             "tap_dependency_table and id_characteristic_table parameters."))
+
     _set_entries(net, "trafo", index, **v, **kwargs)
+
+    if any(key in kwargs for key in ['tap_phase_shifter', 'tap2_phase_shifter']):
+        convert_trafo_pst_logic(net)
+        warnings.warn(DeprecationWarning("The tap_phase_shifter/tap2_phase_shifter parameter is not supported in "
+                                         "pandapower version 3.0 or later. The transformer parameters have been "
+                                         "updated to the new format."))
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "trafo")
     _set_value_if_not_nan(net, index, id_characteristic_table, "id_characteristic_table",
@@ -3568,6 +3586,8 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
             i0_percent=0.1, shift_degree=30)
     """
 
+    from pandapower.convert_format import convert_trafo_pst_logic
+
     # Check if bus exist to attach the trafo to
     _check_branch_element(net, "Trafo", index, hv_bus, lv_bus)
 
@@ -3596,6 +3616,15 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
         if type(tap_pos) is float:
             net.trafo.tap_pos = net.trafo.tap_pos.astype(float)
 
+    for key in ['tap_dependent_impedance', 'vk_percent_characteristic', 'vkr_percent_characteristic']:
+        if key in kwargs:
+            del kwargs[key]
+            warnings.warn(DeprecationWarning(f"The {key} parameter is not supported in pandapower version 3.0 or later."
+                                             " This transformer will be created without tap_dependent_impedance "
+                                             "characteristics. To set up tap-dependent characteristics for this "
+                                             "transformer, provide the net.trafo_characteristic_table and populate the "
+                                             "tap_dependency_table and id_characteristic_table parameters."))
+
     v.update(kwargs)
     _set_entries(net, "trafo", index, **v)
 
@@ -3617,6 +3646,12 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
                           "tap2_pos", "trafo", dtype=np.float64)
     _set_value_if_not_nan(net, index, tap2_changer_type, "tap2_changer_type",
                           "trafo", dtype=object)
+
+    if any(key in kwargs for key in ['tap_phase_shifter', 'tap2_phase_shifter']):
+        convert_trafo_pst_logic(net)
+        warnings.warn(DeprecationWarning("The tap_phase_shifter/tap2_phase_shifter parameter is not supported in "
+                                         "pandapower version 3.0 or later. The transformer parameters have been "
+                                         "updated to the new format."))
 
     if not (isnan(vk0_percent) and isnan(vkr0_percent) and isnan(mag0_percent)
             and isnan(mag0_rx) and isnan(si0_hv_partial) and vector_group is None):
@@ -3761,7 +3796,7 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
 
         **tap2_step_degree** (list of float) - second tap step size for voltage angle in degree*
 
-        **tap2_changer_type** (list of int, None) - specifies the tap changer type ("Ratio", "Symmetrical", "Ideal",
+        **tap2_changer_type** (list of string, None) - specifies the tap changer type ("Ratio", "Symmetrical", "Ideal",
                                                     None: no tap changer)*
 
         ** only considered in load flow if calculate_voltage_angles = True
@@ -3774,6 +3809,9 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
             vn_hv_kv=110, vn_lv_kv=10, vk_percent=10, vkr_percent=0.3, pfe_kw=30, \
             i0_percent=0.1, shift_degree=30)
     """
+
+    from pandapower.convert_format import convert_trafo_pst_logic
+
     _check_multiple_branch_elements(net, hv_buses, lv_buses, "Transformers")
 
     index = _get_multiple_index_with_check(net, "trafo", index, len(hv_buses))
@@ -3814,14 +3852,31 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
                                tap2_changer_type, dtype=object)
 
     defaults_to_fill = [("tap_dependency_table", False)]
+
+    for key in ['tap_dependent_impedance', 'vk_percent_characteristic', 'vkr_percent_characteristic']:
+        if key in kwargs:
+            del kwargs[key]
+            warnings.warn(DeprecationWarning(f"The {key} parameter is not supported in pandapower version 3.0 or later."
+                                             " This transformer will be created without tap_dependent_impedance "
+                                             "characteristics. To set up tap-dependent characteristics for this "
+                                             "transformer, provide the net.trafo_characteristic_table and populate the "
+                                             "tap_dependency_table and id_characteristic_table parameters."))
+
     _set_multiple_entries(net, "trafo", index, defaults_to_fill=defaults_to_fill, **entries, **kwargs)
+
+    if any(key in kwargs for key in ['tap_phase_shifter', 'tap2_phase_shifter']):
+        convert_trafo_pst_logic(net)
+        warnings.warn(DeprecationWarning("The tap_phase_shifter/tap2_phase_shifter parameter is not supported in "
+                                         "pandapower version 3.0 or later. The transformer parameters have been "
+                                         "updated to the new format."))
 
     return index
 
 
 def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tap_pos=nan,
                          in_service=True, index=None, max_loading_percent=nan, tap_changer_type=None,
-                         tap_at_star_point=False, tap_dependency_table=nan, id_characteristic_table=nan):
+                         tap_at_star_point=False, tap_dependency_table=nan, id_characteristic_table=nan,
+                         **kwargs):
     """
     Creates a three-winding transformer in table net["trafo3w"].
     The trafo parameters are defined through the standard type library.
@@ -3934,6 +3989,17 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tap_p
                           "tap_dependency_table", "trafo3w", dtype=bool_, default_val=False)
     _set_value_if_not_nan(net, index, tap_changer_type,
                           "tap_changer_type", "trafo3w", dtype=str, default_val=None)
+
+    for key in ['tap_dependent_impedance', 'vk_hv_percent_characteristic', 'vkr_hv_percent_characteristic',
+                'vk_mv_percent_characteristic', 'vkr_mv_percent_characteristic', 'vk_lv_percent_characteristic',
+                'vkr_lv_percent_characteristic']:
+        if key in kwargs:
+            del kwargs[key]
+            warnings.warn(DeprecationWarning(f"The {key} parameter is not supported in pandapower version 3.0 or later."
+                                             " This 3w-transformer will be created without tap_dependent_impedance "
+                                             "characteristics. To set up tap-dependent characteristics for this "
+                                             "3w-transformer, provide the net.trafo_characteristic_table and populate "
+                                             "the tap_dependency_table and id_characteristic_table parameters."))
 
     return index
 
@@ -4088,6 +4154,17 @@ def create_transformer3w_from_parameters(
               bool(in_service), name, None, tap_at_star_point,
               vk0_hv_percent, vk0_mv_percent, vk0_lv_percent,
               vkr0_hv_percent, vkr0_mv_percent, vkr0_lv_percent, vector_group]
+
+    for key in ['tap_dependent_impedance', 'vk_hv_percent_characteristic', 'vkr_hv_percent_characteristic',
+                'vk_mv_percent_characteristic', 'vkr_mv_percent_characteristic', 'vk_lv_percent_characteristic',
+                'vkr_lv_percent_characteristic']:
+        if key in kwargs:
+            del kwargs[key]
+            warnings.warn(DeprecationWarning(f"The {key} parameter is not supported in pandapower version 3.0 or later."
+                                             " This 3w-transformer will be created without tap_dependent_impedance "
+                                             "characteristics. To set up tap-dependent characteristics for this "
+                                             "3w-transformer, provide the net.trafo_characteristic_table and populate "
+                                             "the tap_dependency_table and id_characteristic_table parameters."))
 
     _set_entries(net, "trafo3w", index, **dict(zip(columns, values)), **kwargs)
 
@@ -4271,6 +4348,17 @@ def create_transformers3w_from_parameters(
     _add_to_entries_if_not_nan(net, "trafo3w", entries, index, "tap_changer_type",
                                tap_changer_type, dtype=str, default_val=None)
     defaults_to_fill = [("tap_dependency_table", False)]
+
+    for key in ['tap_dependent_impedance', 'vk_hv_percent_characteristic', 'vkr_hv_percent_characteristic',
+                'vk_mv_percent_characteristic', 'vkr_mv_percent_characteristic', 'vk_lv_percent_characteristic',
+                'vkr_lv_percent_characteristic']:
+        if key in kwargs:
+            del kwargs[key]
+            warnings.warn(DeprecationWarning(f"The {key} parameter is not supported in pandapower version 3.0 or later."
+                                             " This 3w-transformer will be created without tap_dependent_impedance "
+                                             "characteristics. To set up tap-dependent characteristics for this "
+                                             "3w-transformer, provide the net.trafo_characteristic_table and populate "
+                                             "the tap_dependency_table and id_characteristic_table parameters."))
 
     _set_multiple_entries(net, "trafo3w", index, defaults_to_fill=defaults_to_fill, **entries,
                           **kwargs)
