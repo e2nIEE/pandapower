@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+# This code was written by Matsiushonak Siarhei and Zografos Dimitrios.
+# Contributions made on 2025.
+
 import pandapower as pp
 from pandapower.estimation.ppc_conversion import ExtendedPPCI, pp2eppci
 from pandapower.observability_analysis.algorithm.analyzer import ObservabilityAnalyzer

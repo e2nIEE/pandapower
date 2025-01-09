@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+# This code was written by Matsiushonak Siarhei and Zografos Dimitrios.
+# Contributions made on 2025.
+
 import logging
 from copy import deepcopy
 
