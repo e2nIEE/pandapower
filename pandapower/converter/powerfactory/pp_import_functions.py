@@ -2812,7 +2812,11 @@ def create_trafo3w(net, item, tap_opt='nntap'):
 
     if item.HasAttribute('t:du3tp_h'):
         steps = [pf_type.du3tp_h, pf_type.du3tp_m, pf_type.du3tp_l]
-        side = np.nonzero(steps)[0]
+        if(use_tap_table):
+            side = np.array([table_side])
+        else:
+            side = np.nonzero(steps)[0]
+
         if len(side) > 1:
             logger.warning("pandapower currently doesn't support 3w transformer with"
                            "multiple tap changers")
@@ -3374,6 +3378,8 @@ def create_stactrl(net, item):
     gen_types = []
     for s in machines:
         if s.ip_ctrl == 1:
+            gt = "other"
+        elif not hasattr(s, 'av_mode'):
             gt = "other"
         elif s.av_mode == "constq":
             gt = "sgen"
