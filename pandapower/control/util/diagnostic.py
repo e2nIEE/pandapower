@@ -198,3 +198,79 @@ def shunt_characteristic_table_diagnostic(net):
         warnings_count += 1
     logger.info(f"{warnings_count} warnings were issued")
     return warnings_count == 0
+
+
+def q_capability_curve_table_diagnostic(net, element=None):
+    if element not in ["gen", "sgen"]:
+        warnings.warn(f"The given element type is not valid for diagnostics. Please give gen or sgen as a input "
+                      f"value", category=UserWarning)
+        return False
+
+    logger.info(f"Checking {element} Q capability curve characteristic table")
+    if "q_capability_curve_table" not in net:
+        logger.info("No Q capability curve table found")
+        return False
+    cols = ["id_q_capability_curve", "p_mw", "q_min_mvar", "q_max_mvar", "curve_style"]
+    warnings_count = 0
+
+    # Quick checks for element table and required columns
+    if (len(net[element]) == 0 or
+            not {"id_q_capability_curve_table", "curve_dependency_table", "curve_style"}.issubset(net[element].columns)
+            or (not net[element]['id_q_capability_curve_table'].notna().any() and
+                not net[element]['curve_dependency_table'].any()) and not net[element]['curve_style'].any()):
+        logger.info(f"No {element} with Q capability curve table found.")
+        return False
+
+    # Check if both curve_dependency_table & id_q_capability_curve_table columns are populated
+    mismatch = net[element][
+        (net[element]['curve_dependency_table'] & (
+                    (net[element]['id_q_capability_curve_table'].isna()) | (net[element]['curve_style'].isna()))) |
+        (~net[element]['curve_dependency_table'] & (
+                    (net[element]['id_q_capability_curve_table'].notna()) | (net[element]['curve_style'].notna())))
+        ].shape[0]
+    if mismatch != 0:
+        warnings.warn(f"Found {mismatch} {element}(s) with mismatched between curve_style "
+                      f"curve_dependency_table and id_q_capability_curve_table parameters populated. "
+                      f"Power flow calculation will raise an error.", category=UserWarning)
+        warnings_count += 1
+
+    # Validate relevant columns in q_capability_curve_table
+    temp = net[element].dropna(subset=["id_q_capability_curve_table"])[
+        ["curve_dependency_table", "id_q_capability_curve_table", "curve_style"]]
+    merged_df = temp.merge(net["q_capability_curve_table"], left_on="id_q_capability_curve_table",
+                           right_on="id_q_capability_curve", how="inner")
+
+    if not merged_df[cols].notna().all(axis=1).all():
+        warnings.warn(f"There are some {element}(s) with not all characteristics "
+                      "populated in the q_capability_curve_table.", category=UserWarning)
+        warnings_count += 1
+
+    # Check curve_dependency_table & id_characteristic_table column types
+    if net[element]['curve_dependency_table'].dtype != 'bool':
+        warnings.warn(f"The curve_dependency_table column in the {element} table is not of bool type.",
+                      category=UserWarning)
+        warnings_count += 1
+
+    if net[element]['id_q_capability_curve_table'].dtype != 'Int64':
+        warnings.warn(f"The id_characteristic_table column in the {element} table is not of Int64 type.",
+                      category=UserWarning)
+        warnings_count += 1
+
+    # check the curve style is known or not
+    curve_df = net[element]['curve_style']
+    curve_df = curve_df[~curve_df.isin(["straightLineYValues", "constantYValue"])].dropna()
+    if curve_df.count() > 0:
+        warnings.warn(f"There are {curve_df.count()} unknown curve style in curve_style column of the {element} table"
+                      f" is not of Int64 type.", category=UserWarning)
+        warnings_count += 1
+
+    # check if all id_q_capability_curve_table values are present in id_q_capability_curve column
+    # of q_capability_curve_table
+    if not net[element]['id_q_capability_curve_table'].dropna().isin(
+            net["q_capability_curve_table"]['id_q_capability_curve']).any():
+        warnings.warn(f"Not all id_q_capability_curve_table values of {element} are present in the "
+                      f"q_capability_curve_table.", category=UserWarning)
+        warnings_count += 1
+
+    logger.info(f"{warnings_count} warnings were issued")
+    return warnings_count == 0
