@@ -3,3 +3,4 @@ from pandapower.converter.pypower import *
 from pandapower.converter.pandamodels import *
 from pandapower.converter.cim import *
 from pandapower.converter.powerfactory import *
+from pandapower.converter.jao import *

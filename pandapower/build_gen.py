@@ -39,9 +39,6 @@ def _build_gen_ppc(net, ppc):
     mode = net["_options"]["mode"]
     distributed_slack = net["_options"]["distributed_slack"]
 
-    if mode == "estimate":
-        return
-
     _is_elements = net["_is_elements"]
     gen_order = dict()
     f = 0
@@ -211,6 +208,7 @@ def _build_pp_gen(net, ppc, f, t):
     delta = net["_options"]["delta"]
     gen_is = net._is_elements["gen"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
+    mode = net["_options"]["mode"]
 
     gen_buses = bus_lookup[net["gen"]["bus"].values[gen_is]]
     gen_is_vm = net["gen"]["vm_pu"].values[gen_is]
@@ -222,11 +220,12 @@ def _build_pp_gen(net, ppc, f, t):
 
     # set bus values for generator buses
     ppc["bus"][gen_buses[ppc["bus"][gen_buses, BUS_TYPE] != REF], BUS_TYPE] = PV
-    ppc["bus"][gen_buses, VM] = gen_is_vm
+    if mode != "se":
+        ppc["bus"][gen_buses, VM] = gen_is_vm
 
     add_q_constraints(net, "gen", gen_is, ppc, f, t, delta)
     add_p_constraints(net, "gen", gen_is, ppc, f, t, delta)
-    if net._options["mode"] == "opf":
+    if mode == "opf":
         # this considers the vm limits for gens
         ppc = _check_gen_vm_limits(net, ppc, gen_buses, gen_is)
         if "controllable" in net.gen.columns:
