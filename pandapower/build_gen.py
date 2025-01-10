@@ -436,7 +436,7 @@ def _normalise_slack_weights(ppc, gen_mask, xward_mask, xward_pq_buses):
 
     for subnet in subnets:
         subnet_gen_mask = np.isin(gen_buses, subnet)
-        sum_slack_weights = np.sum(slack_weights_gen)
+        sum_slack_weights = np.sum(slack_weights_gen[subnet_gen_mask])
         if np.isclose(sum_slack_weights, 0):
             # ppc['gen'][subnet_gen_mask, SL_FAC] = 0
             raise ValueError("Distributed slack contribution factors in "
@@ -447,7 +447,8 @@ def _normalise_slack_weights(ppc, gen_mask, xward_mask, xward_pq_buses):
         else:
             # ppc['gen'][subnet_gen_mask, SL_FAC] /= sum_slack_weights
             slack_weights_gen /= sum_slack_weights
-            buses, slack_weights_bus, _ = _sum_by_group(gen_buses, slack_weights_gen, slack_weights_gen)
+            buses, slack_weights_bus, _ = _sum_by_group(gen_buses[subnet_gen_mask], slack_weights_gen[subnet_gen_mask], 
+                                                        slack_weights_gen[subnet_gen_mask])
             ppc['bus'][buses, SL_FAC_BUS] = slack_weights_bus
 
     # raise NotImplementedError if there are several separate zones for distributed slack:
