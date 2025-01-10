@@ -7,6 +7,7 @@
 import copy
 import math
 from functools import partial
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -27,7 +28,7 @@ from pandapower.pypower.idx_tcsc import TCSC_F_BUS, TCSC_T_BUS, TCSC_X_L, TCSC_X
     TCSC_THYRISTOR_FIRING_ANGLE, TCSC_STATUS, TCSC_CONTROLLABLE, tcsc_cols, TCSC_MIN_FIRING_ANGLE, TCSC_MAX_FIRING_ANGLE
 
 
-def _build_branch_ppc(net, ppc, update_vk_values: bool = True):
+def _build_branch_ppc(net, ppc):
     """
     Takes the empty ppc network and fills it with the branch values. The branch
     datatype will be np.complex 128 afterwards.
@@ -64,9 +65,9 @@ def _build_branch_ppc(net, ppc, update_vk_values: bool = True):
     if "line" in lookup:
         _calc_line_parameter(net, ppc)
     if "trafo" in lookup:
-        _calc_trafo_parameter(net, ppc, update_vk_values=update_vk_values)
+        _calc_trafo_parameter(net, ppc)
     if "trafo3w" in lookup:
-        _calc_trafo3w_parameter(net, ppc, update_vk_values=update_vk_values)
+        _calc_trafo3w_parameter(net, ppc)
     if "impedance" in lookup:
         _calc_impedance_parameter(net, ppc)
     if "xward" in lookup:
@@ -140,18 +141,17 @@ def _initialize_branch_lookup(net, dc=False):
     return end
 
 
-def _calc_trafo3w_parameter(net, ppc, update_vk_values: bool = True):
+def _calc_trafo3w_parameter(net, ppc):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     branch = ppc["branch"]
     f, t = net["_pd2ppc_lookups"]["branch"]["trafo3w"]
-    trafo_df = _trafo_df_from_trafo3w(net, update_vk_values=update_vk_values)
+    trafo_df = _trafo_df_from_trafo3w(net)
     hv_bus = get_trafo_values(trafo_df, "hv_bus").astype(np.int64)
     lv_bus = get_trafo_values(trafo_df, "lv_bus").astype(np.int64)
     in_service = get_trafo_values(trafo_df, "in_service").astype(np.int64)
     branch[f:t, F_BUS] = bus_lookup[hv_bus]
     branch[f:t, T_BUS] = bus_lookup[lv_bus]
-    r, x, g, b, g_asym, b_asym, ratio, shift = _calc_branch_values_from_trafo_df(net, ppc, trafo_df,
-                                                                                 update_vk_values=update_vk_values)
+    r, x, g, b, g_asym, b_asym, ratio, shift = _calc_branch_values_from_trafo_df(net, ppc, trafo_df)
     branch[f:t, BR_R] = r
     branch[f:t, BR_X] = x
     branch[f:t, BR_G] = g
@@ -346,7 +346,7 @@ def _calc_line_dc_parameter(net, ppc, elm="line_dc", ppc_elm="branch_dc"):
         branch_dc[f:t, DC_RATE_A] = 0. if mode == "opf" else 100.
 
 
-def _calc_trafo_parameter(net, ppc, update_vk_values: bool = True):
+def _calc_trafo_parameter(net, ppc):
     """
     Calculates the transformer parameter in per unit.
 
@@ -368,7 +368,7 @@ def _calc_trafo_parameter(net, ppc, update_vk_values: bool = True):
     branch[f:t, F_BUS] = bus_lookup[trafo["hv_bus"].values]
     branch[f:t, T_BUS] = bus_lookup[trafo["lv_bus"].values]
     r, x, g, b, g_asym, b_asym, ratio, shift = _calc_branch_values_from_trafo_df(
-        net, ppc, update_vk_values=update_vk_values)
+        net, ppc)
     branch[f:t, BR_R] = r
     branch[f:t, BR_X] = x
     branch[f:t, BR_G] = g
@@ -401,7 +401,7 @@ def get_trafo_values(trafo_df, par):
         return trafo_df[par].values
 
 
-def _calc_branch_values_from_trafo_df(net, ppc, trafo_df=None, sequence=1, update_vk_values=True):
+def _calc_branch_values_from_trafo_df(net, ppc, trafo_df=None, sequence=1):
     """
     Calculates the MAT/PYPOWER-branch-attributes from the pandapower trafo dataframe.
 
@@ -444,27 +444,28 @@ def _calc_branch_values_from_trafo_df(net, ppc, trafo_df=None, sequence=1, updat
     vn_trafo_hv, vn_trafo_lv, shift = _calc_tap_from_dataframe(net, trafo_df)
     ratio = _calc_nominal_ratio_from_dataframe(ppc, trafo_df, vn_trafo_hv, vn_trafo_lv,
                                                bus_lookup)
-    r, x, g, b, g_asym, b_asym = _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=sequence,
-                                                            update_vk_values=update_vk_values)
+    r, x, g, b, g_asym, b_asym = _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=sequence)
     return r, x, g, b, g_asym, b_asym, ratio, shift
 
 
-def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=1, update_vk_values=True):
+def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=1):
     mode = net["_options"]["mode"]
     trafo_model = net["_options"]["trafo_model"]
     if 'tap_dependency_table' in trafo_df:
         if 'trafo_characteristic_table' in net:
             r, x = _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva,
-                                        sequence=sequence, characteristic=net.get("characteristic"),
-                                        update_vk_values=update_vk_values, trafo_characteristic_table=net.trafo_characteristic_table)
+                                        sequence=sequence, trafo_characteristic_table=net.trafo_characteristic_table)
         else:
             r, x = _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva,
-                                            sequence=sequence, characteristic=net.get("characteristic"),
-                                            update_vk_values=update_vk_values)
+                                            sequence=sequence)
     else:
+        warnings.warn(DeprecationWarning("tap_dependency_table is missing in net, which is most probably due to "
+                                         "unsupported net data. tap_dependency_table was introduced with "
+                                         "pandapower 3.0 and replaced spline characteristics. Spline "
+                                         "characteristics will still work, but they are depreciated and will be "
+                                         "removed in future releases."))
         r, x = _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva,
-                                        sequence=sequence, characteristic=net.get("characteristic"),
-                                        update_vk_values=update_vk_values)
+                                        sequence=sequence, characteristic=net.get("characteristic"))
 
     if mode == "sc":
         if net._options.get("use_pre_fault_voltage", False):
@@ -665,6 +666,10 @@ def _calc_tap_from_dataframe(net, trafo_df):
                         trafo_shift[mask_complex] += (arctan(direction * du * sin(tap_angles) /
                                                       (u1 + du * cos(tap_angles))))
         elif f'tap{t}_phase_shifter' in trafo_df:
+            warnings.warn(DeprecationWarning("tap{t}_phase_shifter was removed with pandapower 3.0 and replaced by "
+                                             "tap{t}_changer_type. Using old net data will still work, but usage of "
+                                             "tap{t}_phase_shifter is depreciated and will be removed in future "
+                                             "releases."))
             tap_phase_shifter = get_trafo_values(trafo_df, f"tap{t}_phase_shifter")
             for side, vn, direction in [("hv", vnh, 1), ("lv", vnl, -1)]:
                 tap_ideal = tap_phase_shifter & (tap_side == side)
@@ -821,7 +826,7 @@ def _calc_tap_dependent_value(tap_pos, value, tap_dependent_impedance, character
 
 
 def _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, sn_mva, sequence=1, characteristic=None,
-                             update_vk_values=True, trafo_characteristic_table=None):
+                             trafo_characteristic_table=None):
     """
     Calculates (Vectorized) the resistance and reactance according to the
     transformer values
@@ -841,11 +846,13 @@ def _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, sn_mva, sequenc
                 vk_percent = get_trafo_values(trafo_df, "vk_percent")
                 vkr_percent = get_trafo_values(trafo_df, "vkr_percent")
         else:
-            if update_vk_values:
-                vk_percent, vkr_percent = _get_vk_values(trafo_df, characteristic)
-            else:
-                vk_percent = get_trafo_values(trafo_df, "vk_percent")
-                vkr_percent = get_trafo_values(trafo_df, "vkr_percent")
+            warnings.warn(DeprecationWarning("tap_dependency_table is missing in net, which is most probably due to "
+                                             "unsupported net data. tap_dependency_table was introduced with "
+                                             "pandapower 3.0 and replaced spline characteristics. Spline "
+                                             "characteristics will still work, but they are depreciated and will be "
+                                             "removed in future releases."))
+
+            vk_percent, vkr_percent = _get_vk_values(trafo_df, characteristic)
 
     elif sequence == 0:
         vk_percent = get_trafo_values(trafo_df, "vk0_percent")
@@ -1319,7 +1326,7 @@ def get_is_lines(net):
     _is_elements["line"] = net["line"][net["line"]["in_service"].values.astype(bool)]
 
 
-def _trafo_df_from_trafo3w(net, sequence=1, update_vk_values=True):
+def _trafo_df_from_trafo3w(net, sequence=1):
     trafo2 = dict()
     sides = ["hv", "mv", "lv"]
     mode = net._options["mode"]
@@ -1336,7 +1343,7 @@ def _trafo_df_from_trafo3w(net, sequence=1, update_vk_values=True):
         else:
             mode_tmp = "type_c" if mode == "sc" and net._options.get("use_pre_fault_voltage", False) else mode
             _calculate_sc_voltages_of_equivalent_transformers(t3, trafo2, mode_tmp, characteristic=net.get(
-                'characteristic'), update_vk_values=update_vk_values)
+                'characteristic'))
     elif sequence == 0:
         if mode != "sc":
             raise NotImplementedError(
@@ -1375,7 +1382,7 @@ def _trafo_df_from_trafo3w(net, sequence=1, update_vk_values=True):
 
 
 def _calculate_sc_voltages_of_equivalent_transformers(
-        t3, t2, mode, characteristic=None, update_vk_values=True, net=None):
+        t3, t2, mode, characteristic=None, net=None):
     if "tap_dependency_table" in t3:
         tap_dependency_table = get_trafo_values(t3, "tap_dependency_table")
         tap_dependency_table = np.array(
@@ -1388,12 +1395,13 @@ def _calculate_sc_voltages_of_equivalent_transformers(
                 t3['vk_hv_percent'], t3['vkr_hv_percent'], t3['vk_mv_percent'],
                 t3['vkr_mv_percent'], t3['vk_lv_percent'], t3['vkr_lv_percent'])
     else:
-        if update_vk_values:
-            vk_hv, vkr_hv, vk_mv, vkr_mv, vk_lv, vkr_lv = _get_vk_values(t3, characteristic, "3W")
-        else:
-            vk_hv, vkr_hv, vk_mv, vkr_mv, vk_lv, vkr_lv = (
-                t3['vk_hv_percent'], t3['vkr_hv_percent'], t3['vk_mv_percent'],
-                t3['vkr_mv_percent'], t3['vk_lv_percent'], t3['vkr_lv_percent'])
+        warnings.warn(DeprecationWarning("tap_dependency_table is missing in net, which is most probably due to "
+                                         "old net data. tap_dependency_table was introduced with "
+                                         "pandapower 3.0 and replaced spline characteristics. Spline "
+                                         "characteristics will still work, but they are depreciated and will be "
+                                         "removed in future releases."))
+        vk_hv, vkr_hv, vk_mv, vkr_mv, vk_lv, vkr_lv = _get_vk_values(t3, characteristic, "3W")
+
 
     vk_3w = np.stack([vk_hv, vk_mv, vk_lv])
     vkr_3w = np.stack([vkr_hv, vkr_mv, vkr_lv])
