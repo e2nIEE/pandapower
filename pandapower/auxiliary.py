@@ -272,8 +272,7 @@ def get_free_id(df):
     """
     Returns next free ID in a dataframe
     """
-    # return np.int64(0) if len(df) == 0 else df.index.values.max() + 1
-    return pd.Index([0], dtype=np.int64) if len(df) == 0 else df.index.values.max() + 1
+    return np.int64(0) if len(df) == 0 else df.index.values.max() + 1
 
 
 class ppException(Exception):
@@ -503,11 +502,6 @@ def _select_is_elements_numba(net, isolated_nodes=None, sequence=None):
         , "ward", "xward", "shunt", "ext_grid", "storage"]  # ,"impedance_load"
     is_elements = dict()
 
-    #   tirar!!!!!###
-    elements.remove("motor")
-    elements.remove("asymmetric_load")
-    elements.remove("asymmetric_sgen")
-    #####
     for element in elements:
         len_ = len(net[element].index)
         element_in_service = np.zeros(len_, dtype=bool)

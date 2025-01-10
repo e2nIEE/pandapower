@@ -374,12 +374,6 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc, sequence= None):
     mode = net["_options"]["mode"]
     pq_elements = ["load", "motor", "sgen", "storage", "ward", "xward"] 
 
-
-    #  tirar
-    pq_elements.remove("motor")
-
-
-
     for element in pq_elements:
         tab = net[element]
         if len(tab):
@@ -419,10 +413,6 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc, sequence= None):
                 p = np.hstack([p, tab["p_mw"].values * active * scaling * sign])
                 q = np.hstack([q, tab["q_mvar"].values * active * scaling * sign])
             b = np.hstack([b, tab["bus"].values])
-
-    '''
-    # tirar
-
     l_3ph = net["asymmetric_load"]
     if len(l_3ph) > 0 and mode == "pf":
             # TODO: Voltage dependent loads
@@ -436,8 +426,6 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc, sequence= None):
         q = np.hstack([q, np.sum(sgen_3ph[["q_a_mvar", "q_b_mvar", "q_c_mvar"]].values, axis=1) * vl])
         p = np.hstack([p, np.sum(sgen_3ph[["p_a_mw", "p_b_mw", "p_c_mw"]].values, axis=1) * vl])
         b = np.hstack([b, sgen_3ph["bus"].values])
-    '''
-    
     # sum up p & q of bus elements
     if b.size:
         bus_lookup = net["_pd2ppc_lookups"]["bus"]

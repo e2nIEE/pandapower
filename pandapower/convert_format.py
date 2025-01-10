@@ -18,8 +18,9 @@ def convert_format(net):
     """
     from pandapower.toolbox import set_data_type_of_columns_to_default
     if isinstance(net.version, str) and version.parse(net.version) >= version.parse(__version__):
+        print("\n Net version: ", net.version)
         return net
-    _add_nominal_power(net)
+    _add_nominal_power(net) # dava problema
     _add_missing_tables(net)
     _rename_columns(net)
     _add_missing_columns(net)
@@ -78,10 +79,11 @@ def _convert_costs(net):
 
 
 def _add_nominal_power(net):
-    if "sn_kva" not in net:
-        net.sn_kva = 1e3
-    if "sn_kva" in net.keys():
+    if "sn_kva" in net:
         net.sn_mva = net.pop("sn_kva") * 1e-3
+    # Reset sn_mva only if sn_mva not available
+    if "sn_mva" not in net:
+        net.sn_mva = 1.0
 
 
 def _add_missing_tables(net):

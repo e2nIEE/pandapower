@@ -33,7 +33,7 @@ long_description = '\n\n'.join((install, changelog))
 
 setup(
     name='pandapower',
-    version='2.2.1',
+    version='2.4.0',
     author='Leon Thurner, Alexander Scheidler',
     author_email='leon.thurner@iee.fraunhofer.de, alexander.scheidler@iee.fraunhofer.de',
     description='An easy to use open source tool for power system modeling, analysis and optimization with a high degree of automation.',
@@ -41,14 +41,23 @@ setup(
 	long_description_content_type='text/x-rst',
     url='http://www.pandapower.org',
     license='BSD',
-    install_requires=["pandas>=0.17, <2",
-                      "networkx",
-                      "scipy",
-                      "numpy>=0.11, <2",
-                      "packaging",
-					  "xlsxwriter",
+    install_requires=["pandas>=0.17, <2",  # 2.2.3
+                      "networkx",  # 3.4.2
+                      "scipy",  # 1.14.1
+                      "numpy>=0.11, <2",  # 2.0.0
+                      "packaging",  # 24.2
+                      "urllib3",  # 2.2.3
+                      "certifi",  # 2024.12.14
+                      "requests",  # 2.32.3
+                      "joblib",  # 1.4.2
+					  "xlsxwriter",  # 3.2.0
 					  "xlrd",
-					  "cryptography"],
+					  "cryptography",
+                      "numba",  # 0.60.0
+                      "julia"  # 0.6.2
+                      "lightsim2grid",  # 0.10.0
+                      "legacy-cgi"
+                      ],  
     extras_require={
 		"docs": ["numpydoc", "sphinx", "sphinx_rtd_theme"],
 		"plotting": ["plotly", "matplotlib", "python-igraph"],

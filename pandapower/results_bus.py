@@ -300,12 +300,6 @@ def _get_p_q_results(net, ppc, bus_lookup_aranged):
     else:
         elements = ["load", "motor", "sgen", "storage", "ward", "xward"]
 
-
-    # apagar futuramente
-    elements.remove("motor")
-
-
-
     for element in elements:
         if len(net[element]):
             write_pq_results_to_element(net, ppc, element)

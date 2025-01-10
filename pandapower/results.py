@@ -136,10 +136,6 @@ def get_relevant_elements(mode="pf"):
 def init_results(net, mode="pf"):
     elements = get_relevant_elements(mode)
 
-    ##################
-    #   tirar!!!!!
-    elements.remove("motor")
-    ###################
     suffix = suffix_mode.get(mode, None)
     for element in elements:
         init_element(net, element, suffix)
