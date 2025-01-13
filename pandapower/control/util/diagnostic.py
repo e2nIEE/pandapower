@@ -202,8 +202,8 @@ def shunt_characteristic_table_diagnostic(net):
 
 def q_capability_curve_table_diagnostic(net, element=None):
     if element not in ["gen", "sgen"]:
-        warnings.warn(f"The given element type is not valid for diagnostics. Please give gen or sgen as a input "
-                      f"value", category=UserWarning)
+        warnings.warn(f"The given element type is not valid for diagnostics. Please give gen or sgen "
+                      f"as a argument of the function", category=UserWarning)
         return False
 
     logger.info(f"Checking {element} Q capability curve characteristic table")
