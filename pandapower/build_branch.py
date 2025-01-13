@@ -636,8 +636,17 @@ def _calc_tap_from_dataframe(net, trafo_df):
 
                     filtered_df = net.trafo_characteristic_table.merge(filter_df[filter_df['mask']],
                                                                        on=['id_characteristic', 'step'])
-                    vn[mask] = vn[mask] * filtered_df['voltage_ratio']
-                    trafo_shift[mask] += filtered_df['angle_deg']
+
+                    cleaned_id_characteristic = id_characteristic_table[(~pd.isna(id_characteristic_table)) & mask]
+
+                    voltage_mapping = dict(zip(filtered_df['id_characteristic'], filtered_df['voltage_ratio']))
+                    shift_mapping = dict(zip(filtered_df['id_characteristic'], filtered_df['angle_deg']))
+
+                    ratio = [voltage_mapping.get(id_val, 1) for id_val in cleaned_id_characteristic]
+                    shift = [shift_mapping.get(id_val, 1) for id_val in cleaned_id_characteristic]
+
+                    vn[mask] = vn[mask] * ratio
+                    trafo_shift[mask] += shift
             if any(tap_no_table):
                 tap_ideal = np.logical_and(tap_changer_type == "Ideal", tap_no_table)
                 tap_complex = np.logical_and(np.logical_or(tap_changer_type == "Ratio", tap_changer_type == "Symmetrical"),
@@ -739,7 +748,12 @@ def _get_vk_values_from_table(trafo_df, trafo_characteristic_table, trafotype="2
             })
 
             filtered_df = trafo_characteristic_table.merge(filter_df[filter_df['mask']], on=['id_characteristic', 'step'])
-            vk_value[mask] = filtered_df[vk_var]
+            cleaned_id_characteristic = id_characteristic_table[(~pd.isna(id_characteristic_table)) & mask]
+
+            vk_mapping = dict(zip(filtered_df['id_characteristic'], filtered_df[vk_var]))
+            vk_new = [vk_mapping.get(id_val, 1) for id_val in cleaned_id_characteristic]
+
+            vk_value[mask] = vk_new
 
             vals += (vk_value,)
         else:
