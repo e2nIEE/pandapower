@@ -3176,12 +3176,12 @@ def create_zpu(net, item):
     
     # create auxilary buses
     aux_bus1 = pp.create_bus(net, vn_kv=net.bus.vn_kv.at[bus1], name=net.bus.name.at[bus1]+'_aux',
-                             geodata=net.bus.geo.at[bus1], type="b", zone=net.bus.zone.at[bus1],
-                             in_service=True)
+                             type="b", zone=net.bus.zone.at[bus1], in_service=True)
+    net.bus.loc[aux_bus1, 'geo'] = net.bus.geo.at[bus1]
     params['from_bus'] = aux_bus1
     aux_bus2 = pp.create_bus(net, vn_kv=net.bus.vn_kv.at[bus2], name=net.bus.name.at[bus2]+'_aux',
-                             geodata=net.bus.geo.at[bus2], type="b", zone=net.bus.zone.at[bus2],
-                             in_service=True)
+                             type="b", zone=net.bus.zone.at[bus2], in_service=True)
+    net.bus.loc[aux_bus2, 'geo'] = net.bus.geo.at[bus2]
     params['to_bus'] = aux_bus2
     
     xid = pp.create_impedance(net, **params)
@@ -3311,13 +3311,13 @@ def create_sind(net, item):
         logger.error("Cannot add Sind '%s': not connected" % item.loc_name)
         return
     
-    # create auxilary buses
+    # create auxilary buses 
     aux_bus1 = pp.create_bus(net, vn_kv=net.bus.vn_kv.at[bus1], name=net.bus.name.at[bus1]+'_aux',
-                             geodata=net.bus.geo.at[bus1], type="b", zone=net.bus.zone.at[bus1],
-                             in_service=True)
+                             type="b", zone=net.bus.zone.at[bus1], in_service=True)
+    net.bus.loc[aux_bus1, 'geo'] = net.bus.geo.at[bus1]
     aux_bus2 = pp.create_bus(net, vn_kv=net.bus.vn_kv.at[bus2], name=net.bus.name.at[bus2]+'_aux',
-                             geodata=net.bus.geo.at[bus2], type="b", zone=net.bus.zone.at[bus2],
-                             in_service=True)
+                             type="b", zone=net.bus.zone.at[bus2], in_service=True)
+    net.bus.loc[aux_bus2, 'geo'] = net.bus.geo.at[bus2]
     
     sind = pp.create_series_reactor_as_impedance(net, from_bus=aux_bus1, to_bus=aux_bus2, 
                                                  r_ohm=item.rrea, x_ohm=item.xrea, sn_mva=item.Sn,
@@ -3372,11 +3372,11 @@ def create_scap(net, item):
         
         # create auxilary buses 
         aux_bus1 = pp.create_bus(net, vn_kv=net.bus.vn_kv.at[bus1], name=net.bus.name.at[bus1]+'_aux',
-                                 geodata=net.bus.geo.at[bus1], type="b", zone=net.bus.zone.at[bus1],
-                                 in_service=True)
+                                 type="b", zone=net.bus.zone.at[bus1], in_service=True)
+        net.bus.loc[aux_bus1, 'geo'] = net.bus.geo.at[bus1]
         aux_bus2 = pp.create_bus(net, vn_kv=net.bus.vn_kv.at[bus2], name=net.bus.name.at[bus2]+'_aux',
-                                 geodata=net.bus.geo.at[bus2], type="b", zone=net.bus.zone.at[bus2],
-                                 in_service=True)
+                                 type="b", zone=net.bus.zone.at[bus2], in_service=True)
+        net.bus.loc[aux_bus2, 'geo'] = net.bus.geo.at[bus2]
         
         scap = pp.create_series_reactor_as_impedance(net, from_bus=aux_bus1, to_bus=aux_bus2, r_ohm=r_ohm,
                                                      x_ohm=x_ohm, sn_mva=item.Sn,
