@@ -1360,6 +1360,57 @@ def test_tap_dependent_impedance():
     pp.runpp(net_backup)
     assert_res_equal(net, net_backup)
 
+def test_tap_table_order():
+    net = pp.create_empty_network()
+    b1, b2, l1 = add_grid_connection(net)
+    b3 = pp.create_bus(net, vn_kv=0.4)
+    b4 = pp.create_bus(net, vn_kv=0.4)
+    pp.create_transformer(net, hv_bus=b2, lv_bus=b3, std_type="0.25 MVA 20/0.4 kV")
+    pp.create_transformer(net, hv_bus=b2, lv_bus=b4, std_type="0.25 MVA 20/0.4 kV")
+
+    b5 = pp.create_bus(net, vn_kv=0.9)
+    b6 = pp.create_bus(net, vn_kv=0.4)
+    pp.create_transformer3w_from_parameters(net, hv_bus=b2, mv_bus=b5, lv_bus=b6,
+                                            vn_hv_kv=20., vn_mv_kv=0.9, vn_lv_kv=0.45, sn_hv_mva=0.6, sn_mv_mva=0.5,
+                                            sn_lv_mva=0.4, vk_hv_percent=1., vk_mv_percent=1., vk_lv_percent=1.,
+                                            vkr_hv_percent=0.3, vkr_mv_percent=0.3, vkr_lv_percent=0.3,
+                                            pfe_kw=0.2, i0_percent=0.3, tap_neutral=0., tap_side='hv',
+                                            tap_pos=0, tap_step_percent=0., tap_min=-2, tap_max=2,
+                                            tap_changer_type="Ratio")
+
+    net["trafo_characteristic_table"] = pd.DataFrame(
+        {'id_characteristic': [0, 0, 0, 0, 0], 'step': [-2, -1, 0, 1, 2], 'voltage_ratio': [1, 1, 1, 1, 1],
+         'angle_deg': [0, 0, 0, 0, 0], 'vk_percent': np.nan, 'vkr_percent': np.nan,
+         'vk_hv_percent': [0.95, 0.98, 1, 1.02, 1.05], 'vkr_hv_percent': [0.3, 0.3, 0.3, 0.3, 0.3],
+         'vk_mv_percent': [1, 1, 1, 1, 1], 'vkr_mv_percent': [0.3, 0.3, 0.3, 0.3, 0.3],
+         'vk_lv_percent': [1, 1, 1, 1, 1], 'vkr_lv_percent': [0.3, 0.3, 0.3, 0.3, 0.3]})
+    net.trafo3w['id_characteristic_table'].at[0] = 0
+    net.trafo3w['tap_dependency_table'].at[0] = True
+
+    new_rows = pd.DataFrame(
+        {'id_characteristic': [1, 1, 1, 1, 1, 2, 2, 2, 2, 2], 'step': [-2, -1, 0, 1, 2, -2, -1, 0, 1, 2],
+         'voltage_ratio': [0.95, 0.975, 1, 1.025, 1.05, 0.98, 0.99, 1, 1.01, 1.02],
+         'angle_deg': [0, 0, 0, 0, 0, -2, -1, 0, 1, 2], 'vk_percent': [5.5, 5.8, 6, 6.2, 6.5, 5.5, 5.8, 6, 6.2, 6.5],
+         'vkr_percent': [1.4, 1.42, 1.44, 1.46, 1.48, 1.4, 1.42, 1.44, 1.46, 1.48], 'vk_hv_percent': np.nan, 'vkr_hv_percent': np.nan,
+         'vk_mv_percent': np.nan, 'vkr_mv_percent': np.nan, 'vk_lv_percent': np.nan, 'vkr_lv_percent': np.nan})
+    net["trafo_characteristic_table"] = pd.concat([net["trafo_characteristic_table"], new_rows], ignore_index=True)
+    net.trafo['id_characteristic_table'].at[0] = 2
+    net.trafo['id_characteristic_table'].at[1] = 1
+    net.trafo['tap_dependency_table'].at[0] = True
+    net.trafo['tap_dependency_table'].at[1] = True
+    net.trafo['tap_pos'].at[0] = -2
+    net.trafo['tap_pos'].at[1] = 2
+
+    pp.runpp(net)
+
+    tol = 0.001
+
+    assert net.converged == True
+    assert np.isclose(net.res_bus.loc[4, 'va_degree'], -1 * (150 - 2 + 0.03717), 0, tol, False)
+    assert np.isclose(net.res_bus.loc[5, 'va_degree'], -1 * (150 - 0 + 0.03810), 0, tol, False)
+    assert np.isclose(net.res_bus.loc[4, 'vm_pu'], 1.03144595, tol, False)
+    assert np.isclose(net.res_bus.loc[5, 'vm_pu'], 0.96268165, tol, False)
+    print ('Check')
 
 def test_shunt_step_dependency_warning():
     net = simple_test_net_shunt_control()
