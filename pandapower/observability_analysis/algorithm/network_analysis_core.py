@@ -7,7 +7,6 @@ import logging
 from copy import deepcopy
 
 import numpy as np
-from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import spsolve
 
 from pandapower.estimation.idx_brch import Q_FROM, Q_TO, Q_FROM_STD, Q_TO_STD, IA_FROM, IA_FROM_STD, IA_TO, IA_TO_STD, \
@@ -17,6 +16,7 @@ from pandapower.estimation.ppc_conversion import ExtendedPPCI
 from pandapower.pypower.idx_brch import BR_R, BR_X, BR_B, BR_G, SHIFT, TAP
 from pandapower.pypower.idx_brch import branch_cols
 from pandapower.pypower.idx_bus import bus_cols, GS, BS
+from scipy.sparse import csr_matrix, vstack
 
 logger = logging.getLogger(__name__)
 
@@ -140,27 +140,16 @@ class NetworkAnalysisCore:
         # Create the measurement vector z
         z = np.zeros(jacobian_with_pseudo_meas.shape[0])
         z[-len(zero_pivots):] = np.arange(len(zero_pivots))
+        # jacobian_with_pseudo_meas = csr_matrix(jacobian_with_pseudo_meas)
 
         # Calculate the product of Jacobian transpose and z
-        h_w_z = np.dot(jacobian_with_pseudo_meas.T, z)  # W is identity, so it's skipped
+        h_w_z = jacobian_with_pseudo_meas.T @ z  # W is identity, so it's skipped
 
         # Compute the gain matrix
-        gain_matrix_with_pseudo_meas = np.dot(
-            jacobian_with_pseudo_meas.T, jacobian_with_pseudo_meas
-        )
-
-        # Log the condition number of the gain matrix
-        cond = np.linalg.cond(gain_matrix_with_pseudo_meas)
-        logger.info(f"Condition number of the gain matrix: {cond}")
-
-        # Convert gain matrix to sparse format for efficient solving
-        sparse_gain_matrix = csr_matrix(gain_matrix_with_pseudo_meas)
+        gain_matrix_with_pseudo_meas = jacobian_with_pseudo_meas.T @ jacobian_with_pseudo_meas
 
         # Solve the equation using sparse solver
-        solution = spsolve(sparse_gain_matrix, h_w_z)
-
-        # Validate the solution
-        self._validate_solution(gain_matrix_with_pseudo_meas, solution, h_w_z)
+        solution = spsolve(gain_matrix_with_pseudo_meas, h_w_z)
 
         return solution
 
@@ -200,11 +189,12 @@ class NetworkAnalysisCore:
         """
 
         # Create new rows with pseudo measurements
-        new_jacobian_rows = np.zeros((len(zero_pivots), jacobian.shape[1]))
-        new_jacobian_rows[np.arange(len(zero_pivots)), zero_pivots] = 1
-
+        new_jacobian_rows = csr_matrix(
+            (np.ones(len(zero_pivots)), (np.arange(len(zero_pivots)), zero_pivots)),
+            shape=(len(zero_pivots), jacobian.shape[1])
+        )
         # Stack the new rows with the original matrix
-        jacobian_with_pseudo_meas = np.vstack((jacobian, new_jacobian_rows))
+        jacobian_with_pseudo_meas = vstack([jacobian, new_jacobian_rows])
         logger.info(f"Introduced {len(zero_pivots)} pseudo measurements")
 
         return jacobian_with_pseudo_meas

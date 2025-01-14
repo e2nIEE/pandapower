@@ -8,6 +8,7 @@ import logging
 import networkx as nx
 import numpy as np
 from scipy.linalg import lu
+from scipy.sparse import csr_matrix
 
 from pandapower.estimation.algorithm.matrix_base import BaseAlgebra
 from pandapower.estimation.idx_brch import P_FROM, P_TO
@@ -24,30 +25,16 @@ class ObservabilityAnalyzer(NetworkAnalysisCore):
 
     def _delete_branch(self, lines: np.ndarray):
         """
-        Deletes specified branches from the network and updates related data structures.
+        Deletes specified branches from the network.
 
         Parameters:
             lines (np.ndarray): Array of branch indices to be deleted.
         """
 
         ppci = self.eppci.data
-        N = ppci["branch"].shape[0]
 
         # Delete the specified branches from the branch matrix
-        ppci["branch"] = np.delete(ppci["branch"], lines, axis=0)
-
-        # Update non-NaN measurement selector
-        p_bus_not_nan = ~np.isnan(ppci["bus"][:, bus_cols + P])
-        p_line_f_not_nan = ~np.isnan(ppci["branch"][:, branch_cols + P_FROM])
-        p_line_t_not_nan = ~np.isnan(ppci["branch"][:, branch_cols + P_TO])
-        meas_mask = np.hstack([p_bus_not_nan, p_line_f_not_nan, p_line_t_not_nan])
-        self.eppci.non_nan_meas_selector = np.flatnonzero(meas_mask)
-
-        # Update internal Ybus matrices if they exist
-        if "Ybus" in ppci["internal"] and ppci["internal"]["Ybus"].size:
-            rows_to_keep = sorted(set(range(N)) - set(lines))  # Ensure the order is maintained
-            ppci["internal"]["Yf"] = ppci["internal"]["Yf"][rows_to_keep, :]
-            ppci["internal"]["Yt"] = ppci["internal"]["Yt"][rows_to_keep, :]
+        ppci["branch"][lines, -1] = -1
 
     def _delete_p_measurement(self, bus_positions: np.ndarray):
         """
@@ -91,7 +78,9 @@ class ObservabilityAnalyzer(NetworkAnalysisCore):
         # Create a boolean mask for branches with power flow below the threshold
         branch_mask_without_power_flow = [True if abs(i) > tolerance else False for i in branch_power_flow]
         branches_idx_without_power_flow = np.flatnonzero(branch_mask_without_power_flow)
-
+        branches_idx_without_power_flow = branches_idx_without_power_flow[
+            self.eppci.data['branch'][branches_idx_without_power_flow, -1] != -1
+            ]
         # Extract branch data for branches without significant power flow
         branch_without_power_flow = self.eppci.data['branch'][branches_idx_without_power_flow]
         logger.info(f"Number of branches without power flow {len(branch_without_power_flow)}. Branches: {branches_idx_without_power_flow}")
@@ -100,6 +89,35 @@ class ObservabilityAnalyzer(NetworkAnalysisCore):
         buses_with_p_to_delete = np.unique(np.concatenate((branch_without_power_flow[:, 0], branch_without_power_flow[:, 1])))
 
         return branches_idx_without_power_flow, buses_with_p_to_delete
+
+    def _create_jacobian(self, sem: BaseAlgebra) -> np.ndarray:
+        """
+        Creates the Jacobian matrix.
+
+        This method initializes measurement and voltage selectors for the given algebra object
+        (`sem`) and computes the Jacobian matrix based on the current system state.
+
+        Args:
+            sem (BaseAlgebra): An instance of the algebra class responsible for handling the
+                Jacobian matrix computation and selector management.
+
+        Returns:
+            np.ndarray: The computed Jacobian matrix.
+        """
+
+        # Total number of measurements (buses + branches)
+        num_buses = len(self.eppci.data['bus'])
+        num_branches = len(self.eppci.data['branch'])
+        all_meas_number = num_buses + 2 * num_branches
+
+        # Initialize selectors in the algebra object
+        sem.non_nan_meas_selector = np.arange(all_meas_number)  # Indices for all measurements
+        sem.delta_v_bus_selector = np.arange(num_buses)  # Indices for voltage measurements at buses
+
+        # Compute the Jacobian matrix using the algebra object
+        jacobian = sem.create_hx_jacobian(self.eppci.E)
+
+        return jacobian
 
     def _drop_power_injections(self, buses_with_p_to_delete: np.ndarray):
         self._delete_p_measurement(buses_with_p_to_delete.astype(np.int64))
@@ -131,6 +149,9 @@ class ObservabilityAnalyzer(NetworkAnalysisCore):
         all_branches_idx = np.arange(self.eppci.data['branch'].shape[0])
         self.eppci.data['branch'] = np.hstack((self.eppci.data['branch'], all_branches_idx.reshape(-1, 1)))
 
+        sem = BaseAlgebra(self.eppci)
+        original_jacobian = csr_matrix(self._create_jacobian(sem))
+
         current_iteration = 1
         while current_iteration <= max_iter:
             logger.info(f"Iteration: {current_iteration}")
@@ -141,16 +162,16 @@ class ObservabilityAnalyzer(NetworkAnalysisCore):
             self._delete_branch(elements_to_drop)
 
             # Step 3: Construct Jacobian matrix and gain matrix
-            sem = BaseAlgebra(self.eppci)
-            jacobian = sem.create_hx_jacobian(self.eppci.E)
-            gain_matrix = np.dot(jacobian.T, jacobian)
+            jacobian = original_jacobian[self.eppci.non_nan_meas_selector, :]
+            gain_matrix = jacobian.T @ jacobian
 
             # Step 4: LU decomposition and zero pivot validation
-            P, L, U = lu(gain_matrix)
+            P, L, U = lu(gain_matrix.toarray())
             zero_pivots = np.where(np.abs(np.diag(U)) < tolerance)[0]
             stop_iterations = self._validate_zero_pivots(zero_pivots, N)
             if stop_iterations is True:
                 break
+
             jacobian_with_pseudo_meas = self._add_pseudo_meas_to_jacobian(jacobian, zero_pivots)
 
             # Step 5: Solve for DC estimator equation
@@ -161,6 +182,7 @@ class ObservabilityAnalyzer(NetworkAnalysisCore):
 
             # Step 7: Identify and delete branches without power flow
             branch_idx_without_power_flow, buses_with_p_to_delete = self._get_branches_idx_without_power_flow(tolerance, branch_power_flow)
+
             if not branch_idx_without_power_flow.any():
                 logger.info("No branches without power flow. Stop iterations. ")
                 break
@@ -174,6 +196,8 @@ class ObservabilityAnalyzer(NetworkAnalysisCore):
 
         if current_iteration == max_iter:
             raise Exception("Maximum number of iterations reached. Algorithm did not converge.")
+
+        self.eppci.data['branch'] = self.eppci.data['branch'][self.eppci.data['branch'][:, -1] != -1]
 
         graph = create_graph_from_eppci(self.eppci)
         return graph
