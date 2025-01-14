@@ -608,7 +608,7 @@ def _calc_tap_from_dataframe(net, trafo_df):
         arctan = lambda x: np.rad2deg(np.arctan(x))
 
         if f'tap{t}_changer_type' in trafo_df:
-            # tap_phase_shift_type is only in dataframe starting from pp Version 3.0, older version use different logic
+            # tap_changer_type is only in dataframe starting from pp Version 3.0, older version use different logic
             tap_changer_type = get_trafo_values(trafo_df, f"tap{t}_changer_type")
             if f'tap{t}_dependency_table' in trafo_df:
                 tap_dependency_table = get_trafo_values(trafo_df, "tap_dependency_table")

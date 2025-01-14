@@ -3,6 +3,25 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [FIXED] Increasing geojson precision as the default precision might cause problems with pandahub
+
+[2.14.11] - 2024-07-08
+-------------------------------
+- [FIXED] Lightsim2grid version
+
+[2.14.10] - 2024-07-08
+-------------------------------
+- [FIXED] geopandas version
+
+[2.14.9] - 2024-06-25
+-------------------------------
+- [FIXED] scipy version
+
+[upcoming release] - 2024-..-..
+-------------------------------
+
+- [ADDED] Static Var Compensator with Voltage Control
+- [ADDED] pf2pp: min/max q_mvar and min/max p_mw limits for sgens and gen will be converted
 - [FIXED] Allow to consider all oos components in nx graph creation
 - [REMOVED] Excluding tests and test_files from built packages
 - [ADDED] Static Var Compensator with Voltage Control
