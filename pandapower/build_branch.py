@@ -626,7 +626,7 @@ def _calc_tap_from_dataframe(net, trafo_df):
                     raise UserWarning(
                         "Trafo with tap_dependency_table True and id_characteristic_table NA detected.\n"
                         "Please set an id_characteristic_table or set tap_dependency_table to False.")
-                for side, vn, direction in [("hv", vnh, 1), ("lv", vnl, -1)]:
+                for side, vn in [("hv", vnh), ("lv", vnl)]:
                     mask = tap_table & (side == tap_side)
                     filter_df = pd.DataFrame({
                         'id_characteristic': id_characteristic_table,
