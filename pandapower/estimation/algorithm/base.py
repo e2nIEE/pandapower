@@ -41,9 +41,9 @@ class BaseAlgorithm:
         if len(z) < 2 * eppci["bus"].shape[0] - num_slacks:
             self.logger.error("System is not observable (cancelling)")
             self.logger.error("Measurements available: %d. Measurements required: %d" %
-                              (len(z), 2 * eppci["bus"].shape[0] - 1))
+                              (len(z), 2 * eppci["bus"].shape[0] - num_slacks))
             raise UserWarning("Measurements available: %d. Measurements required: %d" %
-                              (len(z), 2 * eppci["bus"].shape[0] - 1))
+                              (len(z), 2 * eppci["bus"].shape[0] - num_slacks))
 
     def check_result(self, current_error, cur_it):
         # print output for results
