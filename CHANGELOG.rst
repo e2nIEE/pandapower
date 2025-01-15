@@ -105,6 +105,7 @@ Change Log
 - [ADDED] converter for European EHV grid data from JAO, the "Single Allocation Platform (SAP) for all European Transmission System Operators (TSOs) that operate in accordance to EU legislation"
 - [ADDED] cim2pp converter: Using lxml to parse XML files (better performance)
 - [FIXED] OC relay name attribute error
+- [FIXED] cim2pp: fixed missing nominal voltages at SeriesCompensator
 
 [2.14.11] - 2024-07-08
 -------------------------------
