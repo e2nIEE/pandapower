@@ -384,7 +384,11 @@ def _create_shunt_characteristics(net, shunt_index, variable, x_points, y_points
             # save the index of the new spline characteristic object in the temp table
             net["shunt_characteristic_spline_temp"].at[idx, col] = s.index
 
-def _set_curve_dependency_table_flag(net, element=None):
+def _set_curve_dependency_table_flag(net, element):
+    if element not in ["gen", "sgen"]:
+        UserWarning(f"The given {element} type is not valid for setting curve dependency table flag. "
+                      f"Please give gen or sgen as a argument of the function")
+        return
     # Quick checks for element table and required columns
     if (len(net[element]) == 0 or
             not {"id_q_capability_curve_table", "curve_dependency_table", "curve_style"}.issubset(net[element].columns)
@@ -398,7 +402,7 @@ def _set_curve_dependency_table_flag(net, element=None):
                 net[element]['curve_style'].str.len().gt(0)
         ).astype(bool)
 
-def calcualte_qmin_qmax_from_q_capability_curve_charachteristics(net, element=None):
+def calculate_qmin_qmax_from_q_capability_curve_characteristics(net, element):
     if element not in ["gen", "sgen"]:
         UserWarning(f"The given element type is not valid for q_min and Q_max of the {element}. "
                       f"Please give gen or sgen as a argument of the function")
@@ -427,7 +431,7 @@ def create_q_capability_curve_characteristics_object(net):
     if "q_capability_curve_characteristic" in net:
         del net["q_capability_curve_characteristic"]
 
-    # create characteristics of the give curve
+    # create characteristics
     if "q_capability_curve_table" in net.keys() and net['q_capability_curve_table'].index.size > 0 :
         time_start = time.time()
         

@@ -200,7 +200,7 @@ def shunt_characteristic_table_diagnostic(net):
     return warnings_count == 0
 
 
-def q_capability_curve_table_diagnostic(net, element=None):
+def q_capability_curve_table_diagnostic(net, element):
     if element not in ["gen", "sgen"]:
         warnings.warn(f"The given element type is not valid for diagnostics. Please give gen or sgen "
                       f"as a argument of the function", category=UserWarning)
@@ -260,8 +260,8 @@ def q_capability_curve_table_diagnostic(net, element=None):
     curve_df = net[element]['curve_style']
     curve_df = curve_df[~curve_df.isin(["straightLineYValues", "constantYValue"])].dropna()
     if curve_df.count() > 0:
-        warnings.warn(f"There are {curve_df.count()} unknown curve style in curve_style column of the {element} table"
-                      f" is not of Int64 type.", category=UserWarning)
+        warnings.warn(f"There are {curve_df.count()} unknown curve style in curve_style column of the "
+                      f"{element} table", category=UserWarning)
         warnings_count += 1
 
     # check if all id_q_capability_curve_table values are present in id_q_capability_curve column
