@@ -677,7 +677,7 @@ def _calc_tap_from_dataframe(net, trafo_df):
         elif f'tap{t}_phase_shifter' in trafo_df:
             warnings.warn(DeprecationWarning("tap{t}_phase_shifter was removed with pandapower 3.0 and replaced by "
                                              "tap{t}_changer_type. Using old net data will still work, but usage of "
-                                             "tap{t}_phase_shifter is depreciated and will be removed in future "
+                                             "tap{t}_phase_shifter is deprecated and will be removed in future "
                                              "releases."))
             tap_phase_shifter = get_trafo_values(trafo_df, f"tap{t}_phase_shifter")
             for side, vn, direction in [("hv", vnh, 1), ("lv", vnl, -1)]:
