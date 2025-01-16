@@ -3,6 +3,9 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+
+- [ADDED] Static Var Compensator with Voltage Control
+- [ADDED] pf2pp: min/max q_mvar and min/max p_mw limits for sgens and gen will be converted
 - [FIXED] Allow to consider all oos components in nx graph creation
 - [REMOVED] Excluding tests and test_files from built packages
 - [ADDED] Static Var Compensator with Voltage Control
@@ -112,6 +115,7 @@ Change Log
 - [ADDED] UCTE-DEF (UCTE Data Exchange Format) converter
 - [ADDED] cim2pp converter: Using lxml to parse XML files (better performance)
 - [FIXED] OC relay name attribute error
+- [FIXED] cim2pp: fixed missing nominal voltages at SeriesCompensator
 
 [2.14.11] - 2024-07-08
 -------------------------------
