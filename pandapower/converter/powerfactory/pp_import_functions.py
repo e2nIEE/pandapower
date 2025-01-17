@@ -2480,6 +2480,7 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
                 if tap_side == 0:
                     new_tap_table["voltage_ratio"] = pf_type.utrn_l / new_tap_table["voltage_ratio"]
                 else:
+                    new_tap_table["angle_deg"] = -new_tap_table["angle_deg"]
                     new_tap_table["voltage_ratio"] = pf_type.utrn_h / new_tap_table["voltage_ratio"]
             else:
                 raise ValueError("Measurement location for tap table not given.")
@@ -2812,9 +2813,10 @@ def create_trafo3w(net, item, tap_opt='nntap'):
             if meas_side == 0:
                 new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn3_h
             elif meas_side == 1:
-                new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn3_m
+                new_tap_table["voltage_ratio"] = pf_type.utrn3_m / new_tap_table["voltage_ratio"]
             elif meas_side == 2:
-                new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn3_l
+                new_tap_table["angle_deg"] = -new_tap_table["angle_deg"]
+                new_tap_table["voltage_ratio"] = pf_type.utrn3_l / new_tap_table["voltage_ratio"]
         elif table_side == 1:
             tap_min = pf_type.n3tmn_m
             tap_max = pf_type.n3tmx_m
@@ -2824,15 +2826,18 @@ def create_trafo3w(net, item, tap_opt='nntap'):
             elif meas_side == 1:
                 new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn3_m
             elif meas_side == 2:
-                new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn3_l
+                new_tap_table["angle_deg"] = -new_tap_table["angle_deg"]
+                new_tap_table["voltage_ratio"] = pf_type.utrn3_l / new_tap_table["voltage_ratio"]
         elif table_side == 2:
             tap_min = pf_type.n3tmn_l
             tap_max = pf_type.n3tmx_l
             #new_tap_table["angle_deg"] = -new_tap_table["angle_deg"]
             if meas_side == 0:
-                new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn3_h
+                new_tap_table["angle_deg"] = -new_tap_table["angle_deg"]
+                new_tap_table["voltage_ratio"] = pf_type.utrn3_h / new_tap_table["voltage_ratio"]
             elif meas_side == 1:
-                new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn3_m
+                new_tap_table["angle_deg"] = -new_tap_table["angle_deg"]
+                new_tap_table["voltage_ratio"] = pf_type.utrn3_m / new_tap_table["voltage_ratio"]
             elif meas_side == 2:
                 new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn3_l
 
