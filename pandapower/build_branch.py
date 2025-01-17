@@ -626,7 +626,7 @@ def _calc_tap_from_dataframe(net, trafo_df):
                     raise UserWarning(
                         "Trafo with tap_dependency_table True and id_characteristic_table NA detected.\n"
                         "Please set an id_characteristic_table or set tap_dependency_table to False.")
-                for side, vn in [("hv", vnh), ("lv", vnl)]:
+                for side, vn, direction in [("hv", vnh, 1), ("lv", vnl, -1)]:
                     mask = tap_table & (side == tap_side)
                     filter_df = pd.DataFrame({
                         'id_characteristic': id_characteristic_table,
@@ -642,8 +642,13 @@ def _calc_tap_from_dataframe(net, trafo_df):
                     voltage_mapping = dict(zip(filtered_df['id_characteristic'], filtered_df['voltage_ratio']))
                     shift_mapping = dict(zip(filtered_df['id_characteristic'], filtered_df['angle_deg']))
 
-                    ratio = [voltage_mapping.get(id_val, 1) for id_val in cleaned_id_characteristic]
-                    shift = [shift_mapping.get(id_val, 1) for id_val in cleaned_id_characteristic]
+                    if direction == 1:
+                        ratio = [1/voltage_mapping.get(id_val, 1) for id_val in cleaned_id_characteristic]
+                        shift = [shift_mapping.get(id_val, 1) for id_val in cleaned_id_characteristic]
+                    else:
+                        ratio = [(voltage_mapping.get(id_val, 1)) for id_val in cleaned_id_characteristic]
+                        shift = [-shift_mapping.get(id_val, 1) for id_val in cleaned_id_characteristic]
+
 
                     vn[mask] = vn[mask] * ratio
                     trafo_shift[mask] += shift
