@@ -1989,6 +1989,13 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
             logger.debug('av_mode: %s - creating as gen' % av_mode)
             params.vm_pu = item.usetp
             del params['q_mvar']
+            
+            # add reactive and active power limits
+            params.min_q_mvar = item.cQ_min
+            params.max_q_mvar = item.cQ_max
+            params.min_p_mw = item.Pmin_uc
+            params.max_p_mw = item.Pmax_uc
+            
             sg = pp.create_gen(net, **params)
             element = 'gen'
         else:
@@ -1996,6 +2003,12 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
                 sg = pp.create_asymmetric_sgen(net, **params)
                 element = "asymmetric_sgen"
             else:
+                # add reactive and active power limits
+                params.min_q_mvar = item.cQ_min
+                params.max_q_mvar = item.cQ_max
+                params.min_p_mw = item.Pmin_uc
+                params.max_p_mw = item.Pmax_uc
+                
                 sg = pp.create_sgen(net, **params)
                 element = 'sgen'
     logger.debug('created sgen at index <%d>' % sg)
@@ -2200,13 +2213,32 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
         if av_mode == 'constv':
             logger.debug('creating sym %s as gen' % name)
             vm_pu = item.usetp
-            sid = pp.create_gen(net, bus=bus1, p_mw=p_mw, vm_pu=vm_pu,
-                                name=name, type=cat, in_service=in_service, scaling=global_scaling)
+            if item.iqtype == 1:
+                type = item.typ_id                
+                sid = pp.create_gen(net, bus=bus1, p_mw=p_mw, vm_pu=vm_pu,
+                                    min_q_mvar=type.Q_min, max_q_mvar=type.Q_max, 
+                                    min_p_mw=item.Pmin_uc, max_p_mw=item.Pmax_uc,
+                                    name=name, type=cat, in_service=in_service, scaling=global_scaling)
+            else:
+                sid = pp.create_gen(net, bus=bus1, p_mw=p_mw, vm_pu=vm_pu,
+                                    min_q_mvar=item.cQ_min, max_q_mvar=item.cQ_max, 
+                                    min_p_mw=item.Pmin_uc, max_p_mw=item.Pmax_uc,
+                                    name=name, type=cat, in_service=in_service, scaling=global_scaling)   
             element = 'gen'
         elif av_mode == 'constq':
             q_mvar = ngnum * item.qgini * multiplier
-            sid = pp.create_sgen(net, bus=bus1, p_mw=p_mw, q_mvar=q_mvar,
-                                 name=name, type=cat, in_service=in_service, scaling=global_scaling)
+            if item.iqtype == 1:
+                type = item.typ_id                
+                sid = pp.create_sgen(net, bus=bus1, p_mw=p_mw, q_mvar=q_mvar,
+                                    min_q_mvar=type.Q_min, max_q_mvar=type.Q_max, 
+                                    min_p_mw=item.Pmin_uc, max_p_mw=item.Pmax_uc,
+                                    name=name, type=cat, in_service=in_service, scaling=global_scaling)
+            else:
+                sid = pp.create_sgen(net, bus=bus1, p_mw=p_mw, q_mvar=q_mvar,
+                                    min_q_mvar=item.cQ_min, max_q_mvar=item.cQ_max, 
+                                    min_p_mw=item.Pmin_uc, max_p_mw=item.Pmax_uc,
+                                    name=name, type=cat, in_service=in_service, scaling=global_scaling)  
+            
             element = 'sgen'
 
         if sid is None or element is None:
@@ -2875,12 +2907,12 @@ def create_zpu(net, item):
     
     # create auxilary buses
     aux_bus1 = pp.create_bus(net, vn_kv=net.bus.vn_kv.at[bus1], name=net.bus.name.at[bus1]+'_aux',
-                             geodata=net.bus.geo.at[bus1], type="b", zone=net.bus.zone.at[bus1],
-                             in_service=True)
+                             type="b", zone=net.bus.zone.at[bus1], in_service=True)
+    net.bus.loc[aux_bus1, 'geo'] = net.bus.geo.at[bus1]
     params['from_bus'] = aux_bus1
     aux_bus2 = pp.create_bus(net, vn_kv=net.bus.vn_kv.at[bus2], name=net.bus.name.at[bus2]+'_aux',
-                             geodata=net.bus.geo.at[bus2], type="b", zone=net.bus.zone.at[bus2],
-                             in_service=True)
+                             type="b", zone=net.bus.zone.at[bus2], in_service=True)
+    net.bus.loc[aux_bus2, 'geo'] = net.bus.geo.at[bus2]
     params['to_bus'] = aux_bus2
     
     xid = pp.create_impedance(net, **params)
@@ -3010,13 +3042,13 @@ def create_sind(net, item):
         logger.error("Cannot add Sind '%s': not connected" % item.loc_name)
         return
     
-    # create auxilary buses
+    # create auxilary buses 
     aux_bus1 = pp.create_bus(net, vn_kv=net.bus.vn_kv.at[bus1], name=net.bus.name.at[bus1]+'_aux',
-                             geodata=net.bus.geo.at[bus1], type="b", zone=net.bus.zone.at[bus1],
-                             in_service=True)
+                             type="b", zone=net.bus.zone.at[bus1], in_service=True)
+    net.bus.loc[aux_bus1, 'geo'] = net.bus.geo.at[bus1]
     aux_bus2 = pp.create_bus(net, vn_kv=net.bus.vn_kv.at[bus2], name=net.bus.name.at[bus2]+'_aux',
-                             geodata=net.bus.geo.at[bus2], type="b", zone=net.bus.zone.at[bus2],
-                             in_service=True)
+                             type="b", zone=net.bus.zone.at[bus2], in_service=True)
+    net.bus.loc[aux_bus2, 'geo'] = net.bus.geo.at[bus2]
     
     sind = pp.create_series_reactor_as_impedance(net, from_bus=aux_bus1, to_bus=aux_bus2, 
                                                  r_ohm=item.rrea, x_ohm=item.xrea, sn_mva=item.Sn,
@@ -3071,11 +3103,11 @@ def create_scap(net, item):
         
         # create auxilary buses 
         aux_bus1 = pp.create_bus(net, vn_kv=net.bus.vn_kv.at[bus1], name=net.bus.name.at[bus1]+'_aux',
-                                 geodata=net.bus.geo.at[bus1], type="b", zone=net.bus.zone.at[bus1],
-                                 in_service=True)
+                                 type="b", zone=net.bus.zone.at[bus1], in_service=True)
+        net.bus.loc[aux_bus1, 'geo'] = net.bus.geo.at[bus1]
         aux_bus2 = pp.create_bus(net, vn_kv=net.bus.vn_kv.at[bus2], name=net.bus.name.at[bus2]+'_aux',
-                                 geodata=net.bus.geo.at[bus2], type="b", zone=net.bus.zone.at[bus2],
-                                 in_service=True)
+                                 type="b", zone=net.bus.zone.at[bus2], in_service=True)
+        net.bus.loc[aux_bus2, 'geo'] = net.bus.geo.at[bus2]
         
         scap = pp.create_series_reactor_as_impedance(net, from_bus=aux_bus1, to_bus=aux_bus2, r_ohm=r_ohm,
                                                      x_ohm=x_ohm, sn_mva=item.Sn,
