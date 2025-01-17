@@ -462,7 +462,7 @@ def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=
         warnings.warn(DeprecationWarning("tap_dependency_table is missing in net, which is most probably due to "
                                          "unsupported net data. tap_dependency_table was introduced with "
                                          "pandapower 3.0 and replaced spline characteristics. Spline "
-                                         "characteristics will still work, but they are depreciated and will be "
+                                         "characteristics will still work, but they are deprecated and will be "
                                          "removed in future releases."))
         r, x = _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva,
                                         sequence=sequence, characteristic=net.get("characteristic"))
@@ -677,7 +677,7 @@ def _calc_tap_from_dataframe(net, trafo_df):
         elif f'tap{t}_phase_shifter' in trafo_df:
             warnings.warn(DeprecationWarning("tap{t}_phase_shifter was removed with pandapower 3.0 and replaced by "
                                              "tap{t}_changer_type. Using old net data will still work, but usage of "
-                                             "tap{t}_phase_shifter is depreciated and will be removed in future "
+                                             "tap{t}_phase_shifter is deprecated and will be removed in future "
                                              "releases."))
             tap_phase_shifter = get_trafo_values(trafo_df, f"tap{t}_phase_shifter")
             for side, vn, direction in [("hv", vnh, 1), ("lv", vnl, -1)]:
@@ -863,7 +863,7 @@ def _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, sn_mva, sequenc
             warnings.warn(DeprecationWarning("tap_dependency_table is missing in net, which is most probably due to "
                                              "unsupported net data. tap_dependency_table was introduced with "
                                              "pandapower 3.0 and replaced spline characteristics. Spline "
-                                             "characteristics will still work, but they are depreciated and will be "
+                                             "characteristics will still work, but they are deprecated and will be "
                                              "removed in future releases."))
 
             vk_percent, vkr_percent = _get_vk_values(trafo_df, characteristic)
@@ -1412,7 +1412,7 @@ def _calculate_sc_voltages_of_equivalent_transformers(
         warnings.warn(DeprecationWarning("tap_dependency_table is missing in net, which is most probably due to "
                                          "old net data. tap_dependency_table was introduced with "
                                          "pandapower 3.0 and replaced spline characteristics. Spline "
-                                         "characteristics will still work, but they are depreciated and will be "
+                                         "characteristics will still work, but they are deprecated and will be "
                                          "removed in future releases."))
         vk_hv, vkr_hv, vk_mv, vkr_mv, vk_lv, vkr_lv = _get_vk_values(t3, characteristic, "3W")
 
