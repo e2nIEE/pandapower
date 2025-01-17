@@ -154,8 +154,8 @@ class PowerTransformersCim16:
                 trafo_df[one_item + '_lv'] = trafo_df[one_item + '_lv'].iloc[2:].reset_index()[
                     one_item + '_lv']
             del copy_list, one_item
-            trafo_df.loc[trafo_df.tap_changer_type.isna(), 'PowerTransformerEnd_id'] = float('NaN')
-            fillna_list = ['neutralStep', 'lowStep', 'highStep', 'step', 'PowerTransformerEnd_id']
+            #trafo_df.loc[trafo_df.tap_changer_type.isna(), 'PowerTransformerEnd_id'] = float('NaN')
+            fillna_list = ['neutralStep', 'lowStep', 'highStep', 'step']
             for one_item in fillna_list:
                 trafo_df[one_item] = trafo_df[one_item].fillna(trafo_df[one_item + '_mv'])
                 trafo_df[one_item] = trafo_df[one_item].fillna(trafo_df[one_item + '_lv'])
@@ -178,8 +178,10 @@ class PowerTransformersCim16:
                                            how='left', on=sc['pte_id'] + '_lv')
                                   ], ignore_index=True, sort=False)
             # remove elements with more than one tap changer per trafo
-            trafo_df = trafo_df.loc[(~trafo_df.duplicated(subset=['PowerTransformer', 'tabular_step'], keep=False)) | (
-                ~trafo_df.RatioTapChangerTable.isna())]
+            # Todo: for multiple tap changers the deletion of tap entries must be changed.
+            #trafo_df = trafo_df.loc[(~trafo_df.duplicated(subset=['PowerTransformer', 'tabular_step'], keep=False)) | (
+            #    ~trafo_df.RatioTapChangerTable.isna())]
+            trafo_df = trafo_df.loc[~trafo_df.RatioTapChangerTable.isna()]
             fillna_list = ['tabular_step']
             for one_item in fillna_list:
                 trafo_df[one_item] = trafo_df[one_item].fillna(trafo_df[one_item + '_mv'])
