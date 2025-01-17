@@ -154,7 +154,8 @@ class PowerTransformersCim16:
                 trafo_df[one_item + '_lv'] = trafo_df[one_item + '_lv'].iloc[2:].reset_index()[
                     one_item + '_lv']
             del copy_list, one_item
-            fillna_list = ['neutralStep', 'lowStep', 'highStep', 'step']
+            trafo_df.loc[trafo_df.tap_changer_type.isna(), 'PowerTransformerEnd_id'] = float('NaN')
+            fillna_list = ['neutralStep', 'lowStep', 'highStep', 'step', 'PowerTransformerEnd_id']
             for one_item in fillna_list:
                 trafo_df[one_item] = trafo_df[one_item].fillna(trafo_df[one_item + '_mv'])
                 trafo_df[one_item] = trafo_df[one_item].fillna(trafo_df[one_item + '_lv'])

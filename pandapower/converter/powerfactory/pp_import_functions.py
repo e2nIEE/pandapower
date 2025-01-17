@@ -2810,11 +2810,11 @@ def create_trafo3w(net, item, tap_opt='nntap'):
             tap_min = pf_type.n3tmn_h
             tap_max = pf_type.n3tmx_h
             if meas_side == 0:
-                new_tap_table["voltage_ratio"] = pf_type.utrn3_h / new_tap_table["voltage_ratio"]
+                new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn3_h
             elif meas_side == 1:
-                new_tap_table["voltage_ratio"] = pf_type.utrn3_m / new_tap_table["voltage_ratio"]
+                new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn3_m
             elif meas_side == 2:
-                new_tap_table["voltage_ratio"] = pf_type.utrn3_l / new_tap_table["voltage_ratio"]
+                new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn3_l
         elif table_side == 1:
             tap_min = pf_type.n3tmn_m
             tap_max = pf_type.n3tmx_m
@@ -2847,12 +2847,6 @@ def create_trafo3w(net, item, tap_opt='nntap'):
                     np.min([float(snom_h_a), float(snom_l_a)]) * 1000) * 100
 
         steps = list(range(tap_min, tap_max + 1))
-
-        #new_tap_table["vkr_hv_percent"] = new_tap_table["vkr_hv_percent"] / item.GetAttribute(
-        #    "Snom_h_a")  # pf_type.strn3h
-        #  # pf_type.strn3m
-        #new_tap_table["vkr_lv_percent"] = new_tap_table["vkr_lv_percent"] / item.GetAttribute(
-        #    "Snom_l_a")  # pf_type.strn3l
 
         if len(new_tap_table) == len(steps):
             new_tap_table['step'] = steps[:len(new_tap_table)]
@@ -3073,7 +3067,6 @@ def create_shunt(net, item):
         'step': item.ncapa,
         'max_step': item.ncapx
     }
-    print(item.loc_name)
     r_val: float = .0
     x_val: float = .0
     if item.shtype == 0:
