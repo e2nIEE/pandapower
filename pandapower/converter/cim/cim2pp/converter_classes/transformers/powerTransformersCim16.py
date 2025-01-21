@@ -440,7 +440,6 @@ class PowerTransformersCim16:
                                          how='left', left_on='Terminal', right_on='rdfId_Terminal')
         # add the TapChangers
         power_transformers = pd.merge(power_transformers, eqssh_tap_changers, how='left', on=sc['pte_id'])
-        power_transformers['tap_changer_type'] = power_transformers['tap_changer_type']
         return power_transformers
 
     def _prepare_trafos_cim16(self, power_trafo2w: pd.DataFrame) -> pd.DataFrame:
