@@ -92,7 +92,7 @@ The magnitude of the transformer ratio is given as:
    n &= \frac{V_{ref, HV, transformer}}{V_{ref, LV, transformer}} \cdot \frac{V_{ref, LV bus}}{V_{ref, HV bus}}
    \end{align*}
 
-The reference voltages of the high- and low voltage buses are taken from the net.bus table. The reference voltage of the transformer  is taken directly from the transformer table:
+The reference voltages of the high and low voltage buses are taken from the net.bus table. The reference voltage of the transformer is taken directly from the transformer table:
 
 .. math::
    :nowrap:
@@ -192,9 +192,9 @@ On which side the reference voltage is adapted depends on the :math:`tap\_side` 
 
 **Cross regulator (Ratio Tap Changer / Symmetrical Tap Changer)**
 
-In addition to tap_step_percent a value for tap_step_degree can be defined to model an angle shift for each tap, resulting in a cross
+In addition to tap_step_percent, a value for tap_step_degree can be defined to model an angle shift for each tap, resulting in a cross
 regulator that affects the magnitude as well as the angle of the transformer ratio. Use tap_changer_type "Ratio",
-or if the angle shift is :math:'\pm 90' degrees, you can use tap_changer_type "Symmetrical" (and tap_step_percent cen be left empty).
+or if the angle shift is :math:'\pm 90' degrees, you can use tap_changer_type "Symmetrical" (and tap_step_percent can be left empty).
 
 .. math::
    :nowrap:
