@@ -3,6 +3,7 @@
 # Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 from __future__ import annotations
+
 import logging
 import os
 import re
@@ -10,11 +11,13 @@ import tempfile
 import zipfile
 from types import MappingProxyType
 from typing import Dict, List
-import pandas as pd
+
 import numpy as np
+import pandas as pd
 from lxml import etree
-from .other_classes import ReportContainer, Report, LogLevel, ReportCode
+
 from .cim_tools import get_cim_schema
+from .other_classes import LogLevel, Report, ReportCode, ReportContainer
 
 
 class CimParser:
@@ -451,6 +454,12 @@ class CimParser:
                 return 'op'
             elif '/ShortCircuit-EU/' in one_profile:
                 return 'sc'
+            elif '/Customers/' in one_profile:
+                return 'cu'
+            elif '/AssetCatalogue/' in one_profile:
+                return 'ac'
+            elif '/Asset/' in one_profile:
+                return 'as'
         if ignore_errors:
             self.logger.warning("The CGMES profile could not be parsed from the XML, returning %s" % default_profile)
             self.report_container.add_log(Report(level=LogLevel.ERROR, code=ReportCode.ERROR_PARSING,
