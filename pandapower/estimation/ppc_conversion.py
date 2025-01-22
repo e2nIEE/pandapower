@@ -451,11 +451,14 @@ def _build_measurement_vectors(ppci, update_meas_only=False):
                                np.zeros(sum(i_degree_line_f_not_nan)),
                                np.zeros(sum(i_degree_line_t_not_nan))
                                )).astype(bool)
-    idx_non_imeas = np.flatnonzero(~imag_meas)
     if ppci.algorithm == "af-wls":
         balance_eq_meas = np.zeros(ppci["rated_power_clusters"].shape[0]).astype(np.float64)
         af_vmeas = 0.4*np.ones(len(ppci["clusters"]))
         z = np.concatenate((z, balance_eq_meas[ppci.non_slack_bus_mask], balance_eq_meas[ppci.non_slack_bus_mask], af_vmeas))
+        imag_meas = np.concatenate((imag_meas,
+                                    np.zeros(2*balance_eq_meas[ppci.non_slack_bus_mask].shape[0]),
+                                    np.zeros(af_vmeas.shape[0]))).astype(bool)
+    idx_non_imeas = np.flatnonzero(~imag_meas)
     
     if not update_meas_only:
         # conserve the pandapower indices of measurements in the ppci order
