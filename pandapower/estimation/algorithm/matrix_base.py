@@ -97,7 +97,6 @@ class BaseAlgebra:
         return hx[self.non_nan_meas_selector]
 
     def create_hx_jacobian(self, E):
-        st_main = time.perf_counter()
         # Using sparse matrix in creation sub-jacobian matrix
         if self.eppci.algorithm == "af-wls":
             num_clusters = len(self.eppci["clusters"])
@@ -178,7 +177,6 @@ class BaseAlgebra:
         else:
             jac = jac[self.non_nan_meas_selector, :][:, self.delta_v_bus_selector]
 
-        print(f" st 9 {time.perf_counter() - st_main}")
         return jac
 
     def _dSbus_dv(self, V):
