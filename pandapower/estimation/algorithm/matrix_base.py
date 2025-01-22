@@ -150,28 +150,28 @@ class BaseAlgebra:
                     ia_jac))
 
         if self.eppci.algorithm == "af-wls":
-            p_eq_bal_jac_E1 = hstack((dSbus_dth.real, dSbus_dv.real)).toarray()
-            q_eq_bal_jac_E1 = hstack((dSbus_dth.imag, dSbus_dv.imag)).toarray()
-            af_vmeas_E1 = np.zeros((num_clusters,jac.shape[1]))
+            p_eq_bal_jac_E1 = hstack((dSbus_dth.real, dSbus_dv.real))
+            q_eq_bal_jac_E1 = hstack((dSbus_dth.imag, dSbus_dv.imag))
+            af_vmeas_E1 = csr_matrix((num_clusters,jac.shape[1])) 
 
-            jac_E2 = np.zeros((jac.shape[0],num_clusters))
+            jac_E2 = csr_matrix((jac.shape[0],num_clusters))
             p_eq_bal_jac_E2 = - self.eppci["rated_power_clusters"][:,:num_clusters]
             q_eq_bal_jac_E2 = - self.eppci["rated_power_clusters"][:,num_clusters:2*num_clusters]
-            af_vmeas_E2 = np.identity(num_clusters)
+            af_vmeas_E2 = eye(num_clusters, num_clusters, format='csr')
 
-            jac = np.r_[jac,
+            jac = vstack((jac,
                         p_eq_bal_jac_E1,
                         q_eq_bal_jac_E1,
-                        af_vmeas_E1]
+                        af_vmeas_E1))
 
-            jac_E2 = np.r_[jac_E2,
+            jac_E2 = vstack((jac_E2,
                         p_eq_bal_jac_E2,
                         q_eq_bal_jac_E2,
-                        af_vmeas_E2]
+                        af_vmeas_E2))
 
             jac = jac[self.non_nan_meas_selector, :][:, self.delta_v_bus_selector]
             jac_E2 = jac_E2[self.non_nan_meas_selector, :][:]
-            jac = np.c_[jac, jac_E2]
+            jac = hstack((jac, jac_E2))
 
         else:
             jac = jac[self.non_nan_meas_selector, :][:, self.delta_v_bus_selector]
