@@ -1480,15 +1480,15 @@ def test_lightsim2grid_option():
 
 
 def test_at_isolated_bus():
-    net = pp.create_empty_network()
-    pp.create_buses(net, 4, 110)
-    pp.create_ext_grid(net, 0)
+    net = create_empty_network()
+    create_buses(net, 4, 110)
+    create_ext_grid(net, 0)
 
-    pp.create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
+    create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
 
-    pp.create_gen(net, 3, 0, vm_pu=0, in_service=False)
+    create_gen(net, 3, 0, vm_pu=0, in_service=False)
 
-    pp.runpp(net)
+    runpp(net)
     assert net._options["init_vm_pu"] == 1.
 
 
