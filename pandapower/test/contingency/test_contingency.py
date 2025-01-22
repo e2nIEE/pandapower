@@ -11,7 +11,7 @@ from pandas.testing import assert_frame_equal
 
 import pytest
 
-from control import ConstControl
+from pandapower.control import ConstControl
 from pandapower.run import set_user_pf_options, runpp
 from pandapower.toolbox.grid_modification import replace_ext_grid_by_gen
 from pandapower.toolbox.data_modification import reindex_elements, create_continuous_bus_index
