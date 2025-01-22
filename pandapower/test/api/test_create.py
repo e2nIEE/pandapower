@@ -1299,11 +1299,11 @@ def test_create_switches_raise_errorexcept():
         create_switches(
             net, buses=[6, b2, b3], elements=[l1, t1, b4], et=["l", "t", "b"], z_ohm=0.0
         )
-    with pytest.raises(UserWarning, match="Line 1 does not exist"):
+    with pytest.raises(UserWarning, match=r"Line buses do not exist: \[1\]"):
         create_switches(
             net, buses=[b1, b2, b3], elements=[1, t1, b4], et=["l", "t", "b"], z_ohm=0.0
         )
-    with pytest.raises(UserWarning, match="Line %s not connected to bus %s" % (l1, b3)):
+    with pytest.raises(UserWarning, match=rf"Line not connected \(line element, bus\): \[\({b3}, {l1}\)\]"):
         create_switches(
             net,
             buses=[b3, b2, b3],
@@ -1311,12 +1311,12 @@ def test_create_switches_raise_errorexcept():
             et=["l", "t", "b"],
             z_ohm=0.0,
         )
-    with pytest.raises(UserWarning, match="Trafo 1 does not exist"):
+    with pytest.raises(UserWarning, match=r"Trafo buses do not exist: \[1\]"):
         create_switches(
             net, buses=[b1, b2, b3], elements=[l1, 1, b4], et=["l", "t", "b"], z_ohm=0.0
         )
     with pytest.raises(
-            UserWarning, match="Trafo %s not connected to bus %s" % (t1, b1)
+            UserWarning, match=r"Trafo not connected \(trafo element, bus\): \[\(%s, %s\)\]" % (b1, t1)
     ):
         create_switches(
             net,
@@ -1326,12 +1326,12 @@ def test_create_switches_raise_errorexcept():
             z_ohm=0.0,
         )
     with pytest.raises(
-            UserWarning, match=r"Cannot attach to bus 6, bus does not exist"
+            UserWarning, match=r"Cannot attach to elements \{6\}, they do not exist"
     ):
         create_switches(
             net, buses=[b1, b2, b3], elements=[l1, t1, 6], et=["l", "t", "b"], z_ohm=0.0
         )
-    with pytest.raises(UserWarning, match="Trafo3w 1 does not exist"):
+    with pytest.raises(UserWarning, match=r"Trafo3w buses do not exist: \[1\]"):
         create_switches(
             net,
             buses=[b1, b2, b3],
@@ -1340,13 +1340,33 @@ def test_create_switches_raise_errorexcept():
             z_ohm=0.0,
         )
     with pytest.raises(
-            UserWarning, match="Trafo3w %s not connected to bus %s" % (t3w1, b3)
+            UserWarning, match=r"Trafo3w not connected \(trafo3w element, bus\): \[\(%s, %s\)\]" % (b3, t3w1)
     ):
         create_switches(
             net,
             buses=[b1, b2, b3],
             elements=[l1, t1, t3w1],
             et=["l", "t", "t3"],
+            z_ohm=0.0,
+        )
+    with pytest.raises(
+        UserWarning, match=r"Cannot attach to elements \{12398\}, they do not exist"
+    ):
+        create_switches(
+            net,
+            buses=[b1, b2],
+            elements=[b3, 12398],
+            et=["b", "b"],
+            z_ohm=0.0,
+        )
+    with pytest.raises(
+        UserWarning, match=r"Cannot attach to buses \{13098\}, they do not exist"
+    ):
+        create_switches(
+            net,
+            buses=[b1, 13098],
+            elements=[b2, b3],
+            et=["b", "b"],
             z_ohm=0.0,
         )
 
@@ -1494,6 +1514,8 @@ def test_create_storages():
         net.storage.test_kwargs.values
         == ["dummy_string_1", "dummy_string_2", "dummy_string_3"]
     )
+    for col in ["name", "type"]:
+        net.storage.loc[net.storage[col].isnull(), col] = ""
     assert nets_equal(net, net_bulk)
 
 

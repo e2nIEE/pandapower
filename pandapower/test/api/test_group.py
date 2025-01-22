@@ -328,7 +328,7 @@ def test_detach_and_compare():
         detach_from_group(net, 3, "trafo", 1)
         assert group_element_lists(net, 3)[0] == ["trafo"]
         assert group_element_lists(net, 3)[1] == [typed_list([0, 2], type_)]
-        assert group_element_lists(net, 3)[2] == [np.nan if type_ is int else "name"]
+        assert group_element_lists(net, 3)[2] == [None if type_ is int else "name"]
 
 
 def test_res_power():

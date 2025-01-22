@@ -23,7 +23,7 @@ from pandapower.results import reset_results
 from pandapower.run import set_user_pf_options
 from pandapower.std_types import add_zero_impedance_parameters, std_type_exists, create_std_type, available_std_types, \
     load_std_type
-from pandapower.toolbox.grid_modification import set_isolated_areas_out_of_service, drop_inactive_elements
+from pandapower.toolbox.grid_modification import set_isolated_areas_out_of_service, drop_inactive_elements, drop_buses
 from pandapower.topology import create_nxgraph
 
 try:
@@ -199,28 +199,41 @@ def from_pf(
         create_coup(net=net, item=fuse, is_fuse=True)
     if n > 0: logger.info('imported %d fuses' % n)
 
+    logger.debug('creating shunts')
     # create shunts (ElmShnt):
     n = 0
     for n, shunt in enumerate(dict_net['ElmShnt'], 1):
         create_shunt(net=net, item=shunt)
     if n > 0: logger.info('imported %d shunts' % n)
 
+    logger.debug('creating impedances')
     # create zpu (ElmZpu):
     n = 0
     for n, zpu in enumerate(dict_net['ElmZpu'], 1):
         create_zpu(net=net, item=zpu)
     if n > 0: logger.info('imported %d impedances' % n)
 
+    logger.debug('creating series inductivity as impedance')
     # create series inductivity as impedance (ElmSind):
     n = 0
     for n, sind in enumerate(dict_net['ElmSind'], 1):
         create_sind(net=net, item=sind)
     if n > 0: logger.info('imported %d SIND' % n)
+
+    logger.debug('creating series capacity as impedance')
     # create series capacity as impedance (ElmScap):
     n = 0
     for n, scap in enumerate(dict_net['ElmScap'], 1):
         create_scap(net=net, item=scap)
     if n > 0: logger.info('imported %d SCAP' % n)
+
+    logger.debug('creating static var compensator')
+    # create static var compensator (SVC) with control same as voltage controlled synchron machine (ElmSvs):
+    n = 0
+    for n, svc in enumerate(dict_net['ElmSvs'], 1):
+        create_svc(net=net, item=svc, pv_as_slack=pv_as_slack,
+                   pf_variable_p_gen=pf_variable_p_gen, dict_net=dict_net)
+    if n > 0: logger.info('imported %d SVC' % n)
 
     # create vac (ElmVac):
     n = 0
@@ -636,6 +649,8 @@ def import_switch(item, idx_cubicle):
 def create_connection_switches(net, item, number_switches, et, buses, elements):
     # False if open, True if closed, None if no switch
     logger.debug('creating connection switches')
+    new_switch_idx = []
+    new_switch_closed = []
     for i in range(number_switches):
         switch_is_closed, switch_usage, switch_name = import_switch(item, i)
         logger.debug('switch closed: %s, switch_usage: %s' % (switch_is_closed, switch_usage))
@@ -643,6 +658,9 @@ def create_connection_switches(net, item, number_switches, et, buses, elements):
             cd = create_switch(net, bus=buses[i], element=elements[i], et=et,
                                closed=switch_is_closed, type=switch_usage, name=switch_name)
             net.res_switch.loc[cd, ['pf_closed', 'pf_in_service']] = switch_is_closed, True
+            new_switch_idx.append(cd)
+            new_switch_closed.append(switch_is_closed)
+    return new_switch_idx, new_switch_closed
 
 
 def get_coords_from_buses(net, from_bus, to_bus, **kwargs):
@@ -765,8 +783,15 @@ def create_line(net, item, flag_graphics, create_sections, is_unbalanced):
     net[line_table].loc[sid_list, "equipment"] = item.for_name
 
     if ac:
-        create_connection_switches(net, item, 2, 'l', (params['bus1'], params['bus2']),
-                                   (sid_list[0], sid_list[-1]))
+        new_elements = (sid_list[0], sid_list[-1])
+        new_switch_idx, new_switch_closed = create_connection_switches(net, item, 2, 'l',
+                                                                       (params['bus1'], params['bus2']),
+                                                                       new_elements)
+        # correct in_service of lines if station switch is open
+        # update_in_service_depending_station_switch(net, element_type="line",
+        #                                            new_elements=new_elements,
+        #                                            new_switch_idx=new_switch_idx,
+        #                                            new_switch_closed=new_switch_closed)
 
     logger.debug('line <%s> created' % params['name'])
 
@@ -1734,7 +1759,6 @@ def create_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
             params["const_i_percent"] = i
             params["const_z_percent"] = z
 
-
     ### for now - don't import ElmLodlvp
     elif load_class == 'ElmLodlvp':
         parent = item.fold_id
@@ -1977,6 +2001,13 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
             logger.debug('av_mode: %s - creating as gen' % av_mode)
             params.vm_pu = item.usetp
             del params['q_mvar']
+
+            # add reactive and active power limits
+            params.min_q_mvar = item.cQ_min
+            params.max_q_mvar = item.cQ_max
+            params.min_p_mw = item.Pmin_uc
+            params.max_p_mw = item.Pmax_uc
+
             sg = create_gen(net, **params)
             element = 'gen'
         else:
@@ -1984,6 +2015,12 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
                 sg = create_asymmetric_sgen(net, **params)
                 element = "asymmetric_sgen"
             else:
+                # add reactive and active power limits
+                params.min_q_mvar = item.cQ_min
+                params.max_q_mvar = item.cQ_max
+                params.min_p_mw = item.Pmin_uc
+                params.max_p_mw = item.Pmax_uc
+
                 sg = create_sgen(net, **params)
                 element = 'sgen'
     logger.debug('created sgen at index <%d>' % sg)
@@ -2188,13 +2225,32 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
         if av_mode == 'constv':
             logger.debug('creating sym %s as gen' % name)
             vm_pu = item.usetp
-            sid = create_gen(net, bus=bus1, p_mw=p_mw, vm_pu=vm_pu,
-                             name=name, type=cat, in_service=in_service, scaling=global_scaling)
+            if item.iqtype == 1:
+                type = item.typ_id
+                sid = create_gen(net, bus=bus1, p_mw=p_mw, vm_pu=vm_pu,
+                                 min_q_mvar=type.Q_min, max_q_mvar=type.Q_max,
+                                 min_p_mw=item.Pmin_uc, max_p_mw=item.Pmax_uc,
+                                 name=name, type=cat, in_service=in_service, scaling=global_scaling)
+            else:
+                sid = create_gen(net, bus=bus1, p_mw=p_mw, vm_pu=vm_pu,
+                                 min_q_mvar=item.cQ_min, max_q_mvar=item.cQ_max,
+                                 min_p_mw=item.Pmin_uc, max_p_mw=item.Pmax_uc,
+                                 name=name, type=cat, in_service=in_service, scaling=global_scaling)
             element = 'gen'
         elif av_mode == 'constq':
             q_mvar = ngnum * item.qgini * multiplier
-            sid = create_sgen(net, bus=bus1, p_mw=p_mw, q_mvar=q_mvar,
-                              name=name, type=cat, in_service=in_service, scaling=global_scaling)
+            if item.iqtype == 1:
+                type = item.typ_id
+                sid = create_sgen(net, bus=bus1, p_mw=p_mw, q_mvar=q_mvar,
+                                  min_q_mvar=type.Q_min, max_q_mvar=type.Q_max,
+                                  min_p_mw=item.Pmin_uc, max_p_mw=item.Pmax_uc,
+                                  name=name, type=cat, in_service=in_service, scaling=global_scaling)
+            else:
+                sid = create_sgen(net, bus=bus1, p_mw=p_mw, q_mvar=q_mvar,
+                                  min_q_mvar=item.cQ_min, max_q_mvar=item.cQ_max,
+                                  min_p_mw=item.Pmin_uc, max_p_mw=item.Pmax_uc,
+                                  name=name, type=cat, in_service=in_service, scaling=global_scaling)
+
             element = 'sgen'
 
         if sid is None or element is None:
@@ -2435,7 +2491,14 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
 
     # adding switches
     # False if open, True if closed, None if no switch
-    create_connection_switches(net, item, 2, 't', (bus1, bus2), (tid, tid))
+    new_elements = (tid, tid)
+    new_switch_idx, new_switch_closed = create_connection_switches(net, item, 2, 't', (bus1, bus2),
+                                                                   new_elements)
+    # correct in_service of trafo if station switch is open
+    # update_in_service_depending_station_switch(net, element_type="trafo",
+    #                                            new_elements=new_elements,
+    #                                            new_switch_idx=new_switch_idx,
+    #                                            new_switch_closed=new_switch_closed)
 
     # adding tap changer
     if (export_controller and pf_type.itapch and item.HasAttribute('ntrcn') and
@@ -2606,7 +2669,15 @@ def create_trafo3w(net, item, tap_opt='nntap'):
 
     # adding switches
     # False if open, True if closed, None if no switch
-    create_connection_switches(net, item, 3, 't3', (bus1, bus2, bus3), (tid, tid, tid))
+    new_elements = (tid, tid, tid)
+    new_switch_idx, new_switch_closed = create_connection_switches(net, item, 3, 't3',
+                                                                   (bus1, bus2, bus3), new_elements)
+
+    # correct in_service of trafo3w if station switch is open
+    # update_in_service_depending_station_switch(net, element_type="trafo3w",
+    #                                            new_elements=new_elements,
+    #                                            new_switch_idx=new_switch_idx,
+    #                                            new_switch_closed=new_switch_closed)
 
     logger.debug('successfully created trafo3w from parameters: %d' % tid)
     # testen
@@ -2821,8 +2892,8 @@ def create_zpu(net, item):
     # net, from_bus, to_bus, r_pu, x_pu, sn_Mva, name=None, in_service=True, index=None
     params = {
         'name': item.loc_name,
-        'from_bus': bus1,
-        'to_bus': bus2,
+        # 'from_bus': bus1,
+        # 'to_bus': bus2,
         'rft_pu': item.r_pu,
         'xft_pu': item.x_pu,
         'rtf_pu': item.r_pu_ji,
@@ -2844,9 +2915,49 @@ def create_zpu(net, item):
     }
 
     logger.debug('params = %s' % params)
+
+    # create auxilary buses
+    aux_bus1 = create_bus(net, vn_kv=net.bus.vn_kv.at[bus1], name=net.bus.name.at[bus1] + '_aux',
+                          type="b", zone=net.bus.zone.at[bus1], in_service=True)
+    net.bus.loc[aux_bus1, 'geo'] = net.bus.geo.at[bus1]
+    params['from_bus'] = aux_bus1
+    aux_bus2 = create_bus(net, vn_kv=net.bus.vn_kv.at[bus2], name=net.bus.name.at[bus2] + '_aux',
+                          type="b", zone=net.bus.zone.at[bus2], in_service=True)
+    net.bus.loc[aux_bus2, 'geo'] = net.bus.geo.at[bus2]
+    params['to_bus'] = aux_bus2
+
     xid = create_impedance(net, **params)
     add_additional_attributes(item, net, element='impedance', element_id=xid, attr_list=["cpSite.loc_name"],
                               attr_dict={"cimRdfId": "origin_id"})
+
+    # consider and create station switches
+    new_elements = (aux_bus1, aux_bus2)
+    new_switch_idx, new_switch_closed = create_connection_switches(net, item, 2, 'b', (bus1, bus2),
+                                                                   new_elements)
+
+    if len(new_switch_idx) == 0:
+        net.impedance.loc[xid, 'from_bus'] = bus1
+        net.impedance.loc[xid, 'to_bus'] = bus2
+        # drop auxilary buses, not needed
+        drop_buses(net, buses=[aux_bus1, aux_bus2])
+    elif len(new_switch_idx) == 1:
+        sw_bus = net.switch.loc[new_switch_idx[0], 'bus']
+        if sw_bus == bus1:
+            net.impedance.loc[xid, 'to_bus'] = bus2
+            # drop one auxilary bus, where no switch exists, not needed
+            drop_buses(net, buses=[aux_bus2])
+        elif sw_bus == bus2:
+            net.impedance.loc[xid, 'from_bus'] = bus1
+            # drop one auxilary bus, where no switch exists, not needed
+            drop_buses(net, buses=[aux_bus1])
+
+    # correct in_service of series reactor if station switch is open
+    # update_in_service_depending_station_switch(net, element_type="impedance",
+    #                                            new_elements=new_elements,
+    #                                            new_switch_idx=new_switch_idx,
+    #                                            new_switch_closed=new_switch_closed)
+
+    logger.debug('created ZPU %s as impedance at index %d' % (net.impedance.at[xid, 'name'], xid))
 
 
 def create_vac(net, item):
@@ -2860,6 +2971,7 @@ def create_vac(net, item):
         logger.error("Cannot add VAC '%s': not connected" % item.loc_name)
         return
 
+    in_service = monopolar_in_service(item)
     params = {
         'name': item.loc_name,
         'bus': bus,
@@ -2867,7 +2979,7 @@ def create_vac(net, item):
         'qs_mvar': item.Qload - item.Qgen,
         'pz_mw': item.Pzload,
         'qz_mvar': item.Qzload,
-        'in_service': not bool(item.outserv)
+        'in_service': in_service
     }
 
     if item.itype == 3:
@@ -2918,6 +3030,22 @@ def create_vac(net, item):
         xid, ["pf_p", 'pf_q']].values))
 
 
+def update_in_service_depending_station_switch(net, element_type, new_elements, new_switch_idx, new_switch_closed):
+    ### fcn is not used!
+    if len(new_switch_idx) != 0:
+        for i in range(len(new_switch_idx)):
+            if new_switch_closed[i] == 0:
+                if net[element_type].loc[new_elements[i], 'in_service'] == False:
+                    continue
+                else:
+                    net[element_type].loc[new_elements[i], 'in_service'] = False
+                    logger.debug('element of element_type %s with index %d is set\
+                                 out of service because station switch is open ' %
+                                 (net[element_type].at[new_elements[i], 'name'], new_elements[i]))
+    else:
+        pass
+
+
 def create_sind(net, item):
     # series reactor is modelled as per-unit impedance, values in Ohm are calculated into values in
     # per unit at creation
@@ -2927,10 +3055,45 @@ def create_sind(net, item):
         logger.error("Cannot add Sind '%s': not connected" % item.loc_name)
         return
 
-    sind = create_series_reactor_as_impedance(net, from_bus=bus1, to_bus=bus2, r_ohm=item.rrea,
-                                              x_ohm=item.xrea, sn_mva=item.Sn,
+    # create auxilary buses
+    aux_bus1 = create_bus(net, vn_kv=net.bus.vn_kv.at[bus1], name=net.bus.name.at[bus1] + '_aux',
+                          type="b", zone=net.bus.zone.at[bus1], in_service=True)
+    net.bus.loc[aux_bus1, 'geo'] = net.bus.geo.at[bus1]
+    aux_bus2 = create_bus(net, vn_kv=net.bus.vn_kv.at[bus2], name=net.bus.name.at[bus2] + '_aux',
+                          type="b", zone=net.bus.zone.at[bus2], in_service=True)
+    net.bus.loc[aux_bus2, 'geo'] = net.bus.geo.at[bus2]
+
+    sind = create_series_reactor_as_impedance(net, from_bus=aux_bus1, to_bus=aux_bus2,
+                                              r_ohm=item.rrea, x_ohm=item.xrea, sn_mva=item.Sn,
                                               name=item.loc_name,
                                               in_service=not bool(item.outserv))
+
+    # consider and create station switches
+    new_elements = (aux_bus1, aux_bus2)
+    new_switch_idx, new_switch_closed = create_connection_switches(net, item, 2, 'b', (bus1, bus2),
+                                                                   new_elements)
+
+    if len(new_switch_idx) == 0:
+        net.impedance.loc[sind, 'from_bus'] = bus1
+        net.impedance.loc[sind, 'to_bus'] = bus2
+        # drop auxilary buses, not needed
+        drop_buses(net, buses=[aux_bus1, aux_bus2])
+    elif len(new_switch_idx) == 1:
+        sw_bus = net.switch.loc[new_switch_idx[0], 'bus']
+        if sw_bus == bus1:
+            net.impedance.loc[sind, 'to_bus'] = bus2
+            # drop one auxilary bus, where no switch exists, not needed
+            drop_buses(net, buses=[aux_bus2])
+        elif sw_bus == bus2:
+            net.impedance.loc[sind, 'from_bus'] = bus1
+            # drop one auxilary bus, where no switch exists, not needed
+            drop_buses(net, buses=[aux_bus1])
+
+    # correct in_service of series reactor if station switch is open
+    # update_in_service_depending_station_switch(net, element_type="impedance",
+    #                                            new_elements=new_elements,
+    #                                            new_switch_idx=new_switch_idx,
+    #                                            new_switch_closed=new_switch_closed)
 
     logger.debug('created series reactor %s as per unit impedance at index %d' %
                  (net.impedance.at[sind, 'name'], sind))
@@ -2940,23 +3103,102 @@ def create_scap(net, item):
     # series capacitor is modelled as per-unit impedance, values in Ohm are calculated into values in
     # per unit at creation
     try:
-        (bus1, bus2) = get_connection_nodes(net, item, 2)
+        (bus1, bus2), _ = get_connection_nodes(net, item, 2)
     except IndexError:
         logger.error("Cannot add Scap '%s': not connected" % item.loc_name)
         return
 
-    if (item.gcap == 0) or (item.bcap == 0):
+    if (item.gcap == 0) and (item.bcap == 0):
         logger.info('not creating series capacitor for %s' % item.loc_name)
     else:
         r_ohm = item.gcap / (item.gcap ** 2 + item.bcap ** 2)
         x_ohm = -item.bcap / (item.gcap ** 2 + item.bcap ** 2)
-        scap = create_series_reactor_as_impedance(net, from_bus=bus1, to_bus=bus2, r_ohm=r_ohm,
+
+        # create auxilary buses
+        aux_bus1 = create_bus(net, vn_kv=net.bus.vn_kv.at[bus1], name=net.bus.name.at[bus1] + '_aux',
+                              type="b", zone=net.bus.zone.at[bus1], in_service=True)
+        net.bus.loc[aux_bus1, 'geo'] = net.bus.geo.at[bus1]
+        aux_bus2 = create_bus(net, vn_kv=net.bus.vn_kv.at[bus2], name=net.bus.name.at[bus2] + '_aux',
+                              type="b", zone=net.bus.zone.at[bus2], in_service=True)
+        net.bus.loc[aux_bus2, 'geo'] = net.bus.geo.at[bus2]
+
+        scap = create_series_reactor_as_impedance(net, from_bus=aux_bus1, to_bus=aux_bus2, r_ohm=r_ohm,
                                                   x_ohm=x_ohm, sn_mva=item.Sn,
                                                   name=item.loc_name,
                                                   in_service=not bool(item.outserv))
 
+        # consider and create station switches
+        new_elements = (aux_bus1, aux_bus2)
+        new_switch_idx, new_switch_closed = create_connection_switches(net, item, 2, 'b', (bus1, bus2),
+                                                                       new_elements)
+
+        if len(new_switch_idx) == 0:
+            net.impedance.loc[scap, 'from_bus'] = bus1
+            net.impedance.loc[scap, 'to_bus'] = bus2
+            # drop auxilary buses, not needed
+            drop_buses(net, buses=[aux_bus1, aux_bus2])
+        elif len(new_switch_idx) == 1:
+            sw_bus = net.switch.loc[new_switch_idx[0], 'bus']
+            if sw_bus == bus1:
+                net.impedance.loc[scap, 'to_bus'] = bus2
+                # drop one auxilary bus, where no switch exists, not needed
+                drop_buses(net, buses=[aux_bus2])
+            elif sw_bus == bus2:
+                net.impedance.loc[scap, 'from_bus'] = bus1
+                # drop one auxilary bus, where no switch exists, not needed
+                drop_buses(net, buses=[aux_bus1])
+
+        # correct in_service of series capacitor if station switch is open
+        # update_in_service_depending_station_switch(net, element_type="impedance",
+        #                                            new_elements=new_elements,
+        #                                            new_switch_idx=new_switch_idx,
+        #                                            new_switch_closed=new_switch_closed)
+
         logger.debug('created series capacitor %s as per unit impedance at index %d' %
                      (net.impedance.at[scap, 'name'], scap))
+
+
+def create_svc(net, item, pv_as_slack, pf_variable_p_gen, dict_net):
+    # SVC is voltage controlled and therefore modelled the same way as a voltage controlled synchron machine (gen)
+    # TODO: at least implement a uncontrolled svc as synchron machine with const. Q
+    # TODO: transfer item entries for usage of pp.create_svc, x_l_ohm, x_cvar_ohm,
+    #       thyristor_firing_angle must be computed
+    name = item.loc_name
+    sid = None
+    element = None
+    logger.debug('>> creating synchronous machine <%s>' % name)
+
+    try:
+        bus1 = get_connection_nodes(net, item, 1)
+    except IndexError:
+        logger.error("Cannot add SVC '%s': not connected" % name)
+        return
+
+    if item.i_ctrl == 1:  # 0: no control, 1: voltage control, 2: reactive power control
+        logger.debug('creating SVC %s as gen' % name)
+        vm_pu = item.usetp
+        in_service = monopolar_in_service(item)
+        svc = create_gen(net, bus=bus1, p_mw=0, vm_pu=vm_pu,
+                         name=name, type="SVC", in_service=in_service)
+        element = 'gen'
+
+        if svc is None or element is None:
+            logger.error('Error! SVC not created')
+        logger.debug('created svc at index <%s>' % svc)
+
+        net[element].loc[svc, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
+        add_additional_attributes(item, net, element, svc, attr_dict={"for_name": "equipment"},
+                                  attr_list=["sernum", "chr_name", "cpSite.loc_name"])
+
+        if item.HasResults(0):  # 'm' results...
+            logger.debug('<%s> has results' % name)
+            net['res_' + element].at[svc, "pf_p"] = item.GetAttribute('m:P:bus1')  #* multiplier
+            net['res_' + element].at[svc, "pf_q"] = item.GetAttribute('m:Q:bus1')  #* multiplier
+        else:
+            net['res_' + element].at[svc, "pf_p"] = np.nan
+            net['res_' + element].at[svc, "pf_q"] = np.nan
+    else:
+        logger.info('not creating SVC for %s' % item.loc_name)
 
 
 def _get_vsc_control_modes(item, mono=True):
