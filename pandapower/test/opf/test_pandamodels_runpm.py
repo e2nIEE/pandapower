@@ -75,8 +75,8 @@ def create_cigre_grid_with_time_series(json_path, net=None, add_ts_constaints=Fa
     sgen_ts = pd.DataFrame(index=time_series.index.tolist(), columns=net.sgen.index.tolist())
     for t in range(n_timesteps):
         load_ts.loc[t] = load_p * time_series.at[t, "residential"]
-        sgen_ts.loc[:8, t] = sgen_p * time_series.at[t, "pv"]
-        sgen_ts.loc[8, t] = wind_p * time_series.at[t, "wind"]
+        sgen_ts.loc[t, :7] = sgen_p * time_series.at[t, "pv"]
+        sgen_ts.loc[t, 8] = wind_p * time_series.at[t, "wind"]
 
     # create time series controller for load and sgen
     ConstControl(net, element="load", variable="p_mw",
@@ -679,7 +679,7 @@ def test_runpm_qflex_and_multi_qflex():
     net.trafo["pm_param/setpoint_q"] = None # add extra column
     net.trafo.loc[0, "pm_param/setpoint_q"] = -5
     net.trafo["pm_param/side"] = None
-    net.trafo[0, "pm_param/side"] = "lv"
+    net.trafo.loc[0, "pm_param/side"] = "lv"
 
     # run opf
     pp.runpm_qflex(net)
