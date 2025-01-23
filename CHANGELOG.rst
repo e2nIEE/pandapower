@@ -19,7 +19,7 @@ Change Log
 
 [upcoming release] - 2024-..-..
 -------------------------------
-
+- [FIXED] replacing deprecated A from scipy
 - [ADDED] Static Var Compensator with Voltage Control
 - [ADDED] pf2pp: min/max q_mvar and min/max p_mw limits for sgens and gen will be converted
 - [FIXED] Allow to consider all oos components in nx graph creation
