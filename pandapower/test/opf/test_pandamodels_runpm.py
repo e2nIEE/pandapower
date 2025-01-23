@@ -75,8 +75,8 @@ def create_cigre_grid_with_time_series(json_path, net=None, add_ts_constaints=Fa
     sgen_ts = pd.DataFrame(index=time_series.index.tolist(), columns=net.sgen.index.tolist())
     for t in range(n_timesteps):
         load_ts.loc[t] = load_p * time_series.at[t, "residential"]
-        sgen_ts.loc[t][:8] = sgen_p * time_series.at[t, "pv"]
-        sgen_ts.loc[t][8] = wind_p * time_series.at[t, "wind"]
+        sgen_ts.loc[:8, t] = sgen_p * time_series.at[t, "pv"]
+        sgen_ts.loc[8, t] = wind_p * time_series.at[t, "wind"]
 
     # create time series controller for load and sgen
     ConstControl(net, element="load", variable="p_mw",
@@ -565,7 +565,7 @@ def test_runpm_vstab():
         pp.create_poly_cost(net, idx, "ext_grid", 1.0)
 
     net.bus["pm_param/setpoint_v"] = None
-    net.bus["pm_param/setpoint_v"].loc[net.sgen.bus] = 0.99
+    net.bus.loc[net.sgen.bus, "pm_param/setpoint_v"] = 0.99
 
     pp.runpm_vstab(net)
 
@@ -629,7 +629,7 @@ def test_runpm_multi_vstab():
     net.line["max_loading_percent"] = 100.0
 
     net.bus["pm_param/setpoint_v"] = None # add extra column
-    net.bus["pm_param/setpoint_v"].loc[net.sgen.bus] = 0.96
+    net.bus.loc[net.sgen.bus, "pm_param/setpoint_v"] = 0.96
 
     # load time series data for 96 time steps
     json_path = os.path.join(pp_dir, "test", "opf", "cigre_timeseries_15min.json")
@@ -677,9 +677,9 @@ def test_runpm_qflex_and_multi_qflex():
     net.line["max_loading_percent"] = 100.0
 
     net.trafo["pm_param/setpoint_q"] = None # add extra column
-    net.trafo["pm_param/setpoint_q"].loc[0] = -5
+    net.trafo.loc[0, "pm_param/setpoint_q"] = -5
     net.trafo["pm_param/side"] = None
-    net.trafo["pm_param/side"][0] = "lv"
+    net.trafo[0, "pm_param/side"] = "lv"
 
     # run opf
     pp.runpm_qflex(net)
