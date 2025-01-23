@@ -71,7 +71,7 @@ def add_time_series_data_to_net(net, controller, tp):
             variable = content["object"].__dict__["matching_params"]["variable"]
             elm_idxs = content["object"].__dict__["matching_params"]["element_index"]
             df = content["object"].data_source.df
-            net[element][variable][elm_idxs] = df.loc[int(tp)]
+            net[element].loc[elm_idxs, variable] = df.loc[int(tp)]
 
 
 def pm_results_to_ppc_results(net, ppc, ppci, result_pm):

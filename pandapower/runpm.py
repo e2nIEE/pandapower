@@ -382,7 +382,7 @@ def runpm_loading(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
     for elm in ["line", "trafo"]:
         if "pm_param/target_branch" in net[elm].columns:
             net[elm]["pm_param/side"] = None
-            net[elm]["pm_param/side"][net[elm]["pm_param/target_branch"]==True] = "from"
+            net[elm].loc[net[elm]["pm_param/target_branch"]==True, "pm_param/side"] = "from"
 
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
