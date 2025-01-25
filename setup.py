@@ -50,11 +50,11 @@ setup(
                       "certifi",  # 2024.12.14
                       "requests",  # 2.32.3
                       "joblib",  # 1.4.2
-					  "xlsxwriter",  # 3.2.0
-					  "xlrd",
-					  "cryptography",
+		      "xlsxwriter",  # 3.2.0
+		      "xlrd",
+		      "cryptography",
                       "numba",  # 0.60.0
-                      "julia"  # 0.6.2
+                      "julia",  # 0.6.2
                       "lightsim2grid",  # 0.10.0
                       "legacy-cgi"
                       ],  
