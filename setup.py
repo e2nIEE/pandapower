@@ -55,8 +55,8 @@ setup(
 		      "cryptography",
                       "numba",  # 0.60.0
                       "julia",  # 0.6.2
-                      "lightsim2grid",  # 0.10.0
-                      "legacy-cgi"
+                      "lightsim2grid"  # 0.10.0
+		      # "legacy-cgi"
                       ],  
     extras_require={
 		"docs": ["numpydoc", "sphinx", "sphinx_rtd_theme"],
