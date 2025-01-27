@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 def _build_gen_ppc(net, ppc):
     '''
     Takes the empty ppc network and fills it with the gen values. The gen
-    datatype will be floated afterwards.
+    datatype will be float afterwards.
 
     **INPUT**:
         **net** -The pandapower format network
