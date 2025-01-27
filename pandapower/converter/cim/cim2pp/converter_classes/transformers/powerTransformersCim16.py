@@ -370,7 +370,7 @@ class PowerTransformersCim16:
         ptct = ptct.rename(columns={'current_step': 'step'})
         ptct['stepPhaseShiftIncrement'] = ptct['angle'][:]
         ptct['stepVoltageIncrement'] = ptct['ratio'][:]
-        ptct['tap_changer_type'] = "Ratio"  # Ratio/Asymmetrical phase shifter
+        ptct['tap_changer_type'] = "Tabular"  # PhaseTapChangerTabular
         eqssh_tap_changers = pd.concat([eqssh_tap_changers, ptct], ignore_index=True, sort=False)
         del eqssh_tap_changers_linear, eqssh_tap_changers_async, eqssh_ratio_tap_changers_sync
 
