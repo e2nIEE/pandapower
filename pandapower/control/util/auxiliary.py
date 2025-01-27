@@ -402,30 +402,6 @@ def _set_curve_dependency_table_flag(net, element):
                 net[element]['curve_style'].str.len().gt(0)
         ).astype(bool)
 
-def calculate_qmin_qmax_from_q_capability_curve_characteristics(net, element):
-    if element not in ["gen", "sgen"]:
-        UserWarning(f"The given element type is not valid for q_min and Q_max of the {element}. "
-                      f"Please give gen or sgen as a argument of the function")
-        return
-
-    # Filter rows with non-null 'curve_dependency_table'
-    element_data = net[element].loc[net[element]['curve_dependency_table'].fillna(False)]
-
-    # Extract the relevant data
-    q_table_ids = element_data['id_q_capability_curve_table']
-    p_mw_values = element_data['p_mw']
-
-    # Retrieve the q_max and q_min characteristic functions as vectorized callables
-    q_max_funcs = net.q_capability_curve_characteristic.loc[q_table_ids, 'q_max_characteristic']
-    q_min_funcs = net.q_capability_curve_characteristic.loc[q_table_ids, 'q_min_characteristic']
-
-    # Vectorized function application using NumPy
-    calc_q_max = np.vectorize(lambda func, p: func(p))(q_max_funcs, p_mw_values)
-    calc_q_min = np.vectorize(lambda func, p: func(p))(q_min_funcs, p_mw_values)
-
-    # Assign the calculated values directly to the original DataFrame
-    net[element].loc[element_data.index, ['max_q_mvar', 'min_q_mvar']] = np.column_stack((calc_q_max, calc_q_min))
-
 def create_q_capability_curve_characteristics_object(net):
     # check if element_characteristic_spline table already exists & if so, delete & re-create
     if "q_capability_curve_characteristic" in net:

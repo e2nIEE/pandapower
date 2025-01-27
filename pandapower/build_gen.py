@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 def _build_gen_ppc(net, ppc):
     '''
     Takes the empty ppc network and fills it with the gen values. The gen
-    datatype will be float afterwards.
+    datatype will be floated afterwards.
 
     **INPUT**:
         **net** -The pandapower format network
@@ -38,6 +38,11 @@ def _build_gen_ppc(net, ppc):
 
     mode = net["_options"]["mode"]
     distributed_slack = net["_options"]["distributed_slack"]
+
+    #Add qmin and qmax limit from q capability_curve_characteristics_table
+    if "q_capability_curve_characteristic" in net.keys():
+        _calculate_qmin_qmax_from_q_capability_curve_characteristics(net,"gen")
+        _calculate_qmin_qmax_from_q_capability_curve_characteristics(net, "sgen")
 
     _is_elements = net["_is_elements"]
     gen_order = dict()
@@ -188,7 +193,7 @@ def _enforce_controllable_vm_pu_p_mw(net, ppc, gen_is, f, t):
     controllable = net["gen"]["controllable"].values[gen_is]
     not_controllable = ~controllable.astype(bool)
 
-    # if there are some non controllable gens -> set vm_pu and p_mw fixed
+    # if there are some non-controllable gens -> set vm_pu and p_mw fixed
     if np.any(not_controllable):
         bus = net["gen"]["bus"].values[not_controllable]
         vm_pu = net["gen"]["vm_pu"].values[not_controllable]
@@ -414,7 +419,7 @@ def _get_xward_pq_buses(net, ppc):
 
 
 def _normalise_slack_weights(ppc, gen_mask, xward_mask, xward_pq_buses):
-    """Unitise the slack contribution factors in each island to sum to 1."""
+    """Unitise the slack contribution factors on each island to sum to 1."""
     subnets = _subnetworks(ppc)
     gen_buses = ppc['gen'][gen_mask, GEN_BUS].astype(np.int64)
 
@@ -455,3 +460,35 @@ def _normalise_slack_weights(ppc, gen_mask, xward_mask, xward_pq_buses):
     if not np.isclose(sum(ppc['bus'][:, SL_FAC_BUS]), 1):
         raise NotImplementedError("Distributed slack calculation is not implemented for several separate zones at once, "
                                   "please calculate the zones separately.")
+
+def _calculate_qmin_qmax_from_q_capability_curve_characteristics(net, element):
+    if element not in ["gen", "sgen"]:
+        raise UserWarning(f"The given element type is not valid for q_min and Q_max of the {element}. "
+                          f"Please give gen or sgen as a argument of the function")
+        return
+
+    if len(net[element]) == 0:
+        logger.warning(f"No of {element} is zero.")
+        return
+
+    # Filter rows with True 'curve_dependency_table'
+    element_data = net[element].loc[net[element]['curve_dependency_table'].fillna(False)]
+
+    if len(element_data) > 0:
+        # Extract the relevant data
+        q_table_ids = element_data['id_q_capability_curve_table']
+        p_mw_values = element_data['p_mw']
+
+        # Retrieve the q_max and q_min characteristic functions as vectorized callables
+        q_max_funcs = net.q_capability_curve_characteristic.loc[q_table_ids, 'q_max_characteristic']
+        q_min_funcs = net.q_capability_curve_characteristic.loc[q_table_ids, 'q_min_characteristic']
+
+        # Vectorized function application using NumPy
+        calc_q_max = np.vectorize(lambda func, p: func(p))(q_max_funcs, p_mw_values)
+        calc_q_min = np.vectorize(lambda func, p: func(p))(q_min_funcs, p_mw_values)
+
+        # Assign the calculated values directly to the original DataFrame
+        net[element].loc[element_data.index, ['max_q_mvar', 'min_q_mvar']] = np.column_stack((calc_q_max, calc_q_min))
+    else:
+        raise UserWarning(f"One of {element} id characteristic or curve "
+                          f"style of {element} are incorrect or not available.")
