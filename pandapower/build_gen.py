@@ -5,6 +5,7 @@
 
 
 import numpy as np
+import pandas as pd
 
 from pandapower.pf.ppci_variables import bustypes
 from pandapower.pypower.bustypes import bustypes_dc
@@ -28,7 +29,7 @@ logger = logging.getLogger(__name__)
 def _build_gen_ppc(net, ppc):
     '''
     Takes the empty ppc network and fills it with the gen values. The gen
-    datatype will be float afterwards.
+    datatype will be floated afterwards.
 
     **INPUT**:
         **net** -The pandapower format network
@@ -188,7 +189,7 @@ def _enforce_controllable_vm_pu_p_mw(net, ppc, gen_is, f, t):
     controllable = net["gen"]["controllable"].values[gen_is]
     not_controllable = ~controllable.astype(bool)
 
-    # if there are some non controllable gens -> set vm_pu and p_mw fixed
+    # if there are some non-controllable gens -> set vm_pu and p_mw fixed
     if np.any(not_controllable):
         bus = net["gen"]["bus"].values[not_controllable]
         vm_pu = net["gen"]["vm_pu"].values[not_controllable]
@@ -285,6 +286,10 @@ def add_q_constraints(net, element, is_element, ppc, f, t, delta, inverted=False
             ppc["gen"][f:t, QMIN] = -tab["max_q_mvar"].values[is_element] - delta
         else:
             ppc["gen"][f:t, QMAX] = tab["max_q_mvar"].values[is_element] + delta
+
+    # Add qmin and qmax limit from q capability_curve_characteristics_table
+    if "q_capability_curve_characteristic" in net.keys() and net._options["enforce_q_lims"]:
+        _calculate_qmin_qmax_from_q_capability_curve_characteristics(net, element, is_element, ppc, f, t, inverted)
 
 
 def add_p_constraints(net, element, is_element, ppc, f, t, delta, inverted=False):
@@ -400,7 +405,8 @@ def _gen_xward_mask(net, ppc):
 
 
 def _get_xward_pq_buses(net, ppc):
-    # find the PQ and PV buses of the xwards; in build_branch.py the F_BUS is set to the PQ bus and T_BUS is set to the auxiliary PV bus
+    # find the PQ and PV buses of the xwards; in build_branch.py the F_BUS is set to the PQ bus and T_BUS is set to
+    # the auxiliary PV bus
     ft = net["_pd2ppc_lookups"].get('branch', dict()).get("xward", [])
     if len(ft) > 0:
         f, t = ft
@@ -414,14 +420,14 @@ def _get_xward_pq_buses(net, ppc):
 
 
 def _normalise_slack_weights(ppc, gen_mask, xward_mask, xward_pq_buses):
-    """Unitise the slack contribution factors in each island to sum to 1."""
+    """Unitise the slack contribution factors on each island to sum to 1."""
     subnets = _subnetworks(ppc)
     gen_buses = ppc['gen'][gen_mask, GEN_BUS].astype(np.int64)
 
     # it is possible that xward and gen are at the same bus (but not reasonable)
     if len(np.intersect1d(gen_buses, xward_pq_buses)):
-        raise NotImplementedError("Found some of the xward PQ buses with slack weight > 0 that coincide with PV or SL buses."
-                                  "This configuration is not supported.")
+        raise NotImplementedError("Found some of the xward PQ buses with slack weight > 0 that coincide with PV or "
+                                  "SL buses. This configuration is not supported.")
 
     gen_buses = np.r_[gen_buses, xward_pq_buses]
     slack_weights_gen = np.r_[ppc['gen'][gen_mask, SL_FAC], ppc['gen'][xward_mask, SL_FAC]].astype(np.float64)
@@ -453,5 +459,43 @@ def _normalise_slack_weights(ppc, gen_mask, xward_mask, xward_pq_buses):
 
     # raise NotImplementedError if there are several separate zones for distributed slack:
     if not np.isclose(sum(ppc['bus'][:, SL_FAC_BUS]), 1):
-        raise NotImplementedError("Distributed slack calculation is not implemented for several separate zones at once, "
+        raise NotImplementedError("Distributed slack calculation is not implemented for several separate zones at once,"
                                   "please calculate the zones separately.")
+
+
+def _calculate_qmin_qmax_from_q_capability_curve_characteristics(net, element, is_element, ppc, f, t, inverted):
+    if element not in ["gen", "sgen"]:
+        raise UserWarning(f"The given element type is not valid for q_min and q_max of the {element}. "
+                          f"Please give gen or sgen as an argument of the function")
+
+    if len(net[element]) == 0:
+        logger.warning(f"No of {element} elements is zero.")
+        return
+
+    # Filter rows with True 'curve_dependency_table'
+    element_data = net[element].loc[net[element]['curve_dependency_table'].fillna(False)]
+
+    if len(element_data) > 0:
+        # Extract the relevant data
+        q_table_ids = element_data['id_q_capability_curve_characteristic']
+        p_mw_values = element_data['p_mw']
+
+        # Retrieve the q_max and q_min characteristic functions as vectorized callables
+        q_max_funcs = net.q_capability_curve_characteristic.loc[q_table_ids, 'q_max_characteristic']
+        q_min_funcs = net.q_capability_curve_characteristic.loc[q_table_ids, 'q_min_characteristic']
+
+        # Vectorized function application using NumPy
+        calc_q_max = np.vectorize(lambda func, p: func(p))(q_max_funcs, p_mw_values)
+        calc_q_min = np.vectorize(lambda func, p: func(p))(q_min_funcs, p_mw_values)
+
+        if np.any(pd.isna(calc_q_min)) or np.any(pd.isna(calc_q_max)):
+            logger.warning(f"the curve_dependency_table of {element} is True, but the relevant "
+                           f"characteristic value is None. So default Q limit value has been used in the load flow.")
+
+        curve_q = net[element][["min_q_mvar", "max_q_mvar"]]
+        curve_q.loc[element_data.index] = np.column_stack((calc_q_min, calc_q_max))
+
+        ppc[element][f:t, [QMIN, QMAX]] = (1 - 2 * inverted) * curve_q.values[is_element]
+    else:
+        logger.warning(f"One of {element}(s) id characteristic(s) or curve style(s) of {element}(s) is(are) incorrect "
+                       f"or not available even if the q_capability_curve_table is available.")
