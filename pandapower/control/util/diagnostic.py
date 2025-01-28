@@ -126,10 +126,7 @@ def trafo_characteristic_table_diagnostic(net):
                           f"in id_characteristic column of trafo_characteristic_table.", category=UserWarning)
             warnings_count += 1
     logger.info(f"{warnings_count} warnings were issued")
-    if warnings_count > 0:
-        return False
-    else:
-        return True
+    return warnings_count == 0
 
 
 def shunt_characteristic_table_diagnostic(net):
@@ -182,7 +179,4 @@ def shunt_characteristic_table_diagnostic(net):
                       "in id_characteristic column of shunt_characteristic_table.", category=UserWarning)
         warnings_count += 1
     logger.info(f"{warnings_count} warnings were issued")
-    if warnings_count > 0:
-        return False
-    else:
-        return True
+    return warnings_count == 0
