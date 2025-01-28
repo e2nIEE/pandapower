@@ -74,7 +74,6 @@ class PowerTransformersCim16:
         ptct = pd.concat([ptct, ptct_ratio], ignore_index=True, sort=False)
         ptct = ptct.rename(columns={'step': 'tabular_step', 'r': 'r_dev', 'x': 'x_dev', 'TransformerEnd': sc['pte_id'],
                                     'ratio': 'ratio_dev', 'angle': 'angle_dev'})
-        # ptct = ptct.drop(columns=['PhaseTapChangerTable'])
         if trafo_type == 'trafo':
             trafo_df = trafo_df_origin.sort_values(['PowerTransformer', 'endNumber']).reset_index()
             # processing the transformer data
