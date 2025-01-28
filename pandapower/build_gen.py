@@ -40,7 +40,7 @@ def _build_gen_ppc(net, ppc):
     distributed_slack = net["_options"]["distributed_slack"]
 
     #Add qmin and qmax limit from q capability_curve_characteristics_table
-    if "q_capability_curve_characteristic" in net.keys():
+    if "q_capability_curve_characteristic" in net.keys() and net.options["enforce_q_lims"]:
         _calculate_qmin_qmax_from_q_capability_curve_characteristics(net,"gen")
         _calculate_qmin_qmax_from_q_capability_curve_characteristics(net, "sgen")
 
