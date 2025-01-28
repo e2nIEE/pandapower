@@ -385,21 +385,21 @@ def _create_shunt_characteristics(net, shunt_index, variable, x_points, y_points
             net["shunt_characteristic_spline_temp"].at[idx, col] = s.index
 
 
-def _set_curve_dependency_table_flag(net, element):
+def _set_reactive_capability_curve_flag(net, element):
     if element not in ["gen", "sgen"]:
         UserWarning(f"The given {element} type is not valid for setting curve dependency table flag. "
-                      f"Please give gen or sgen as an argument of the function")
+                    f"Please give gen or sgen as an argument of the function")
         return
     # Quick checks for element table and required columns
     if (len(net[element]) == 0 or
-            not {"id_q_capability_curve_table", "curve_dependency_table", "curve_style"}.issubset(net[element].columns)
-            or (not net[element]['id_q_capability_curve_table'].notna().any() and
-                not net[element]['curve_dependency_table'].any()) and not net[element]['curve_style'].any()):
+            not {"id_q_capability_curve_characteristic", "reactive_capability_curve", "curve_style"}.issubset(net[element].columns)
+            or (not net[element]['id_q_capability_curve_characteristic'].notna().any() and
+                not net[element]['reactive_capability_curve'].any()) and not net[element]['curve_style'].any()):
         logger.info(f"No {element} with Q capability curve table found.")
     else:
-        net[element]['curve_dependency_table'] = (
-                net[element]['id_q_capability_curve_table'].notna() &
-                (net[element]['id_q_capability_curve_table'] >= 0) &
+        net[element]['reactive_capability_curve'] = (
+                net[element]['id_q_capability_curve_characteristic'].notna() &
+                (net[element]['id_q_capability_curve_characteristic'] >= 0) &
                 net[element]['curve_style'].isin(["straightLineYValues", "constantYValue"])
         ).astype(bool)
 
@@ -413,16 +413,16 @@ def create_q_capability_curve_characteristics_object(net):
     if "q_capability_curve_table" in net.keys() and net['q_capability_curve_table'].index.size > 0:
         time_start = time.time()
 
-        _set_curve_dependency_table_flag(net, "gen")
-        _set_curve_dependency_table_flag(net, "sgen")
+        _set_reactive_capability_curve_flag(net, "gen")
+        _set_reactive_capability_curve_flag(net, "sgen")
 
-        # Create element characteristics spline created if it is not in net
-        if "q_capability_curve_characteristic" not in net.keys():
-            net["q_capability_curve_characteristic"] = net["q_capability_curve_characteristic"] = pd.DataFrame({
-                "id_q_capability_curve": pd.Series(dtype="Int64"),
-                "q_min_characteristic": pd.Series(dtype="object"),
-                "q_max_characteristic": pd.Series(dtype="object"),
-            })
+        # Create Q capability curve characteristics dataframe
+        net["q_capability_curve_characteristic"] = pd.DataFrame({
+            "id_q_capability_curve": pd.Series(dtype="Int64"),
+            "q_min_characteristic": pd.Series(dtype="object"),
+            "q_max_characteristic": pd.Series(dtype="object"),
+        })
+
         net["q_capability_curve_characteristic_temp"] = pd.DataFrame()
         characteristic_df_temp = net['q_capability_curve_table']
         mydata_grouped = characteristic_df_temp.groupby('id_q_capability_curve')

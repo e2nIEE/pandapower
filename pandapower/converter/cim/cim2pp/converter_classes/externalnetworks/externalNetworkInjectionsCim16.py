@@ -42,12 +42,12 @@ class ExternalNetworkInjectionsCim16:
         eni_gens = eqssh_eni.loc[(eqssh_eni['slack_weight'] != ref_prio_min) & (eqssh_eni['controllable'])]
         eni_sgens = eqssh_eni.loc[~eqssh_eni['controllable']]
 
-        # create curve_dependency_table flag
-        if 'curve_dependency_table' not in eni_gens.columns:
-            eni_gens['curve_dependency_table'] = False
-        # create curve_dependency_table flag
-        if 'curve_dependency_table' not in eni_sgens.columns:
-            eni_sgens['curve_dependency_table'] = False
+        # create reactive_capability_curve flag
+        if 'reactive_capability_curve' not in eni_gens.columns:
+            eni_gens['reactive_capability_curve'] = False
+        # create reactive_capability_curve flag
+        if 'reactive_capability_curve' not in eni_sgens.columns:
+            eni_sgens['reactive_capability_curve'] = False
 
         self.cimConverter.copy_to_pp('ext_grid', eni_slacks)
         self.cimConverter.copy_to_pp('gen', eni_gens)
