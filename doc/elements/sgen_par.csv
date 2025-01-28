@@ -17,3 +17,6 @@ controllable**;bool;;States if sgen is controllable or not, sgen will not be use
 k***;float;:math:`\geq` 0;Ratio of short circuit current to nominal current
 rx***;float;:math:`\geq` 0;R/X ratio for short circuit impedance. Only relevant if type is specified as motor so that sgen is treated as asynchronous motor
 in_service*;boolean;True / False;specifies if the generator is in service.
+id_q_capability_curve_table;integer;;References the index of the characteristic from the q_capability_curve_table
+curve_style;string;;The curve style of the static generator"
+curve_dependency_table;boolean;True / False;True if Static Generator has dependency on q characteristic
