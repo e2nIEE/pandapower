@@ -3350,7 +3350,7 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
             net.trafo_characteristic_table
 
         **tap_changer_type** (string, None) - specifies the phase shifter type ("Ratio", "Symmetrical", "Ideal",
-                                              None: no tap changer)*
+                                              "Tabular", None: no tap changer)*
 
         **xn_ohm** (float) - impedance of the grounding reactor (Z_N) for short circuit calculation
 
@@ -3525,7 +3525,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
 
         **tap_step_degree** (float) - tap step size for voltage angle in degree*
 
-        **tap_changer_type** (str, None) - specifies the phase shifter type ("Ratio", "Symmetrical", "Ideal",
+        **tap_changer_type** (str, None) - specifies the phase shifter type ("Ratio", "Symmetrical", "Ideal", "Tabular",
                                            None: no tap changer)*
 
         **index** (int, None) - Force a specified ID if it is available. If None, the index one \
@@ -3755,7 +3755,7 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
         **tap_step_degree** (list of float) - tap step size for voltage angle in degree*
 
         **tap_changer_type** (list of str, None) - specifies the tap changer type ("Ratio", "Symmetrical", "Ideal",
-                                                   None: no tap changer)*
+                                                   "Tabular", None: no tap changer)*
 
         **index** (list of int, None) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
@@ -3799,7 +3799,7 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
         **tap2_step_degree** (list of float) - second tap step size for voltage angle in degree*
 
         **tap2_changer_type** (list of string, None) - specifies the tap changer type ("Ratio", "Symmetrical", "Ideal",
-                                                    None: no tap changer)*
+                                                       None: no tap changer)*
 
         ** only considered in load flow if calculate_voltage_angles = True
 
@@ -3903,7 +3903,7 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tap_p
         **tap_pos** (int, nan) - current tap position of the transformer. Defaults to the medium \
             position (tap_neutral)
 
-        **tap_changer_type** (str, None) - specifies the tap changer type ("Ratio", "Symmetrical", "Ideal",
+        **tap_changer_type** (str, None) - specifies the tap changer type ("Ratio", "Symmetrical", "Ideal", "Tabular",
                                            None: no tap changer)*
 
         **tap_at_star_point** (boolean) - Whether tap changer is located at the star point of the \
@@ -4085,7 +4085,7 @@ def create_transformer3w_from_parameters(
         **tap_pos** (int, nan) - current tap position of the transformer. Defaults to the \
             medium position (tap_neutral)
 
-        **tap_changer_type** (str, None) - specifies the tap changer type ("Ratio", "Symmetrical", "Ideal",
+        **tap_changer_type** (str, None) - specifies the tap changer type ("Ratio", "Symmetrical", "Ideal", "Tabular",
                                            None: no tap changer)
 
         **tap_at_star_point** (boolean) - Whether tap changer is located at the star point of the \
@@ -4264,7 +4264,7 @@ def create_transformers3w_from_parameters(
             medium position (tap_neutral)
 
         **tap_changer_type** (list of str, None) - specifies the tap changer type ("Ratio", "Symmetrical", "Ideal",
-                                                   None: no tap changer)
+                                                   "Tabular", None: no tap changer)
 
         **tap_at_star_point** (list of boolean) - Whether tap changer is located at the star point of the \
             3W-transformer or at the bus
