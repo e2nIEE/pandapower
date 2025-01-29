@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -110,13 +110,12 @@ def _get_element_mask_from_nodes(net, element, node_elements, nodes=None):
         for node_element in node_elements:
             mask &= np.isin(net[element][node_element].values, nodes)
     return mask
-
+    
 def _get_switch_mask(net, element, switch_element, open_switches):
     element_switches = net.switch.et.values == switch_element               
     open_elements = net.switch.element.values[open_switches & element_switches]
     open_element_mask = np.isin(net[element].index, open_elements)
     return open_element_mask
-
 
 def coords_from_igraph(graph, roots, meshed=False, calculate_meshed=False):
     """
@@ -193,7 +192,6 @@ def create_generic_coordinates(net, mg=None, library="igraph",
     """
 
     _prepare_geodata_table(net, geodata_table, overwrite)
-
     if library == "igraph":
         if not IGRAPH_INSTALLED:
             raise UserWarning("The library igraph is selected for plotting, but not installed "
@@ -212,7 +210,6 @@ def create_generic_coordinates(net, mg=None, library="igraph",
         coords = coords_from_nxgraph(nxg)
     else:
         raise ValueError("Unknown library %s - chose 'igraph' or 'networkx'" % library)
-
     if len(coords):
         net[geodata_table].x = coords[1]
         net[geodata_table].y = coords[0]
@@ -225,10 +222,10 @@ def _prepare_geodata_table(net, geodata_table, overwrite):
             net[geodata_table].drop(net[geodata_table].index, inplace=True)
         else:
             raise UserWarning("Table %s is not empty - use overwrite=True to overwrite existing geodata"%geodata_table)
-
+            
     if geodata_table not in net or net[geodata_table] is None:
         net[geodata_table] = pd.DataFrame(columns=["x", "y"])
-
+    
 def fuse_geodata(net):
     mg = top.create_nxgraph(net, include_lines=False, include_impedances=False,
                             respect_switches=False)

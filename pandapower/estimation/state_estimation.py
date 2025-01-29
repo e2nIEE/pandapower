@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
@@ -40,7 +40,7 @@ def estimate(net, algorithm='wls',
         **net** - The net within this line should be created
 
         **init** - (string) Initial voltage for the estimation. 'flat' sets 1.0 p.u. / 0° for all
-        buses, 'results' uses the values from *res_bus_est* if available and 'slack' considers the
+        buses, 'results' uses the values from *res_bus* if available and 'slack' considers the
         slack bus voltage (and optionally, angle) as the initial values. Default is 'flat'
     OPTIONAL:
         **tolerance** - (float) - When the maximum state change between iterations is less than
@@ -50,19 +50,19 @@ def estimate(net, algorithm='wls',
 
         **calculate_voltage_angles** - (boolean) - Take into account absolute voltage angles and phase
         shifts in transformers, if init is 'slack'. Default is True
-        
+
         **zero_injection** - (str, iterable, None) - Defines which buses are zero injection bus or the method
-        to identify zero injection bus, with 'wls_estimator' virtual measurements will be added, with 
+        to identify zero injection bus, with 'wls_estimator' virtual measurements will be added, with
         'wls_estimator with zero constraints' the buses will be handled as constraints
             "auto": all bus without p,q measurement, without p, q value (load, sgen...) and aux buses will be
-                identified as zero injection bus  
+                identified as zero injection bus
             "aux_bus": only aux bus will be identified as zero injection bus
             None: no bus will be identified as zero injection bus
             iterable: the iterable should contain index of the zero injection bus and also aux bus will be identified
                 as zero-injection bus
 
-        **fuse_buses_with_bb_switch** - (str, iterable, None) - Defines how buses with closed bb switches should 
-        be handled, if fuse buses will only fused to one for calculation, if not fuse, an auxiliary bus and 
+        **fuse_buses_with_bb_switch** - (str, iterable, None) - Defines how buses with closed bb switches should
+        be handled, if fuse buses will only fused to one for calculation, if not fuse, an auxiliary bus and
         auxiliary line will be automatically added to the network to make the buses with different p,q injection
         measurements identifieble
             "all": all buses with bb-switches will be fused, the same as the default behaviour in load flow

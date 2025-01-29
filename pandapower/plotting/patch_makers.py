@@ -210,8 +210,7 @@ def gen_patches(node_coords, size, angles, **kwargs):
         polys.append(
             Arc(p2 + np.array([size / 6.2, size / 2.6]), size / 2, size, theta1=245, theta2=300,
                 ec=edgecolors[i]))
-        print("Arc:", polys[-1])
-        lines.append((node_geo, p2 + np.array([0, size])))
+        lines.append((node_geo, p2 + _rotate_dim2(np.array([0, size]), -all_angles[i])))
     return lines, polys, {"offset", "patch_edgecolor", "patch_facecolor"}
 
 

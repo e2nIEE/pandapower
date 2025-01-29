@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
@@ -314,8 +314,9 @@ def _create_complex_branch_collection(coords, patch_maker, size=1, infos=None, r
         infos_pc = list(np.repeat(infos, repeat_infos[0]))
         infos_lc = list(np.repeat(infos, repeat_infos[1]))
 
-    lines, patches, popped_keywords = patch_maker(coords, size, patch_facecolor=patch_facecolor,
-                                                  patch_edgecolor=patch_edgecolor, linewidths=linewidths, **kwargs)
+    lines, patches, popped_keywords = patch_maker(
+        coords, size, patch_facecolor=patch_facecolor, patch_edgecolor=patch_edgecolor,
+        linewidths=linewidths, **kwargs)
     for kw in set(popped_keywords) & set(kwargs.keys()):
         kwargs.pop(kw)
     patch_coll = PatchCollection(patches, match_original=True, picker=picker, **kwargs)
@@ -908,7 +909,7 @@ def create_gen_collection(net, gens=None, size=1., infofunc=None, orientation=np
     """
     gens = get_index_array(gens, net.gen.index)
     infos = [infofunc(i) for i in range(len(gens))] if infofunc is not None else []
-    node_coords = net.bus_geodata.loc[:, ["x", "y"]].values[net.gen.loc[gens, "bus"].values]
+    node_coords = net.bus_geodata.loc[net.gen.loc[gens, "bus"].values, ["x", "y"]].values
     gen_pc, gen_lc = _create_node_element_collection(
         node_coords, gen_patches, size=size, infos=infos, orientation=orientation,
         picker=picker, **kwargs)
@@ -942,7 +943,7 @@ def create_sgen_collection(net, sgens=None, size=1., infofunc=None, orientation=
 
         **sgen_lc** - line collection
     """
-    gens = get_index_array(sgens, net.sgen.index)
+    sgens = get_index_array(sgens, net.sgen.index)
     infos = [infofunc(i) for i in range(len(sgens))] if infofunc is not None else []
     node_coords = net.bus_geodata.loc[net.sgen.loc[sgens, "bus"].values, ["x", "y"]].values
     sgen_pc, sgen_lc = _create_node_element_collection(
@@ -950,8 +951,9 @@ def create_sgen_collection(net, sgens=None, size=1., infofunc=None, orientation=
         picker=picker, **kwargs)
     return sgen_pc, sgen_lc
 
-def create_storage_collection(net, storages=None, size=1., infofunc=None, orientation=np.pi, picker=False,
-                           **kwargs):
+
+def create_storage_collection(net, storages=None, size=1., infofunc=None, orientation=np.pi,
+                              picker=False, **kwargs):
     """
     Creates a matplotlib patch collection of pandapower storage element.
 
@@ -959,7 +961,8 @@ def create_storage_collection(net, storages=None, size=1., infofunc=None, orient
         **net** (pandapowerNet) - The pandapower network
 
     OPTIONAL:
-        **storages** (list of ints, None) - the net.storage.index values to include in the collection
+        **storages** (list of ints, None) - the net.storage.index values to include in the
+        collection
 
         **size** (float, 1) - patch size
 
@@ -983,6 +986,7 @@ def create_storage_collection(net, storages=None, size=1., infofunc=None, orient
         node_coords, storage_patches, size=size, infos=infos, orientation=orientation,
         picker=picker, **kwargs)
     return storage_pc, storage_lc
+
 
 def create_ext_grid_collection(net, size=1., infofunc=None, orientation=0, picker=False,
                                ext_grids=None, ext_grid_buses=None, **kwargs):

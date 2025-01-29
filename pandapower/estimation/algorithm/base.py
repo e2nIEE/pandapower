@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
@@ -60,7 +60,7 @@ class BaseAlgorithm:
         self.pp_meas_indices = eppci.pp_meas_indices
         self.check_observability(eppci, eppci.z)
 
-    def estimate(self, ppci: ExtendedPPCI, **kwargs):
+    def estimate(self, eppci: ExtendedPPCI, **kwargs):
         # Must be implemented individually!!
         pass
 
@@ -76,7 +76,7 @@ class WLSAlgorithm(BaseAlgorithm):
         self.H = None
         self.hx = None
 
-    def estimate(self, eppci, **kwargs):
+    def estimate(self, eppci: ExtendedPPCI, **kwargs):
         self.initialize(eppci)
         # matrix calculation object
         sem = BaseAlgebra(eppci)
@@ -129,11 +129,13 @@ class WLSAlgorithm(BaseAlgorithm):
 
 
 class WLSZeroInjectionConstraintsAlgorithm(BaseAlgorithm):
-    def estimate(self, eppci, **kwargs):
+    def estimate(self, eppci: ExtendedPPCI, **kwargs):
         # state vector built from delta, |V| and zero injections
         # Find pq bus with zero p,q and shunt admittance
+        if not np.any(eppci["bus"][:, bus_cols + ZERO_INJ_FLAG]):
+            raise UserWarning("Network has no bus with zero injections! Please use WLS instead!")
         zero_injection_bus = np.argwhere(eppci["bus"][:, bus_cols + ZERO_INJ_FLAG] == True).ravel()
-        eppci["bus"][zero_injection_bus, [bus_cols + P, bus_cols + P_STD, bus_cols + Q, bus_cols + Q_STD]] = np.nan
+        eppci["bus"][np.ix_(zero_injection_bus, [bus_cols + P, bus_cols + P_STD, bus_cols + Q, bus_cols + Q_STD])] = np.NaN
         # Withn pq buses with zero injection identify those who have also no p or q measurement
         p_zero_injections = zero_injection_bus
         q_zero_injections = zero_injection_bus
@@ -197,7 +199,7 @@ class WLSZeroInjectionConstraintsAlgorithm(BaseAlgorithm):
 
 
 class IRWLSAlgorithm(BaseAlgorithm):
-    def estimate(self, eppci, estimator="wls", **kwargs):
+    def estimate(self, eppci: ExtendedPPCI, estimator="wls", **kwargs):
         self.initialize(eppci)
 
         # matrix calculation object

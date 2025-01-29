@@ -4,7 +4,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -51,7 +51,7 @@ def _runpf_pypower(ppci, options, **kwargs):
     init_va_degree, ac, numba, recycle, ppopt = _get_options(options, **kwargs)
 
     if ac:  # AC formulation
-        if isinstance(init_va_degree, str) and init_va_degree == "dc":
+        if init_va_degree == "dc":
             ppci = _run_dc_pf(ppci)
             success = True
 
@@ -107,7 +107,7 @@ def _import_numba_extensions_if_flag_is_true(numba):
 
         except:
             try:
-                # get numba Version (in order to use it it must be > 0.25)
+                # get numba Version (in order to use it, it must be > 0.25)
                 from numba._version import get_versions
                 numba_version = get_versions()
                 logger.warning('Numba version: ', numba_version)
@@ -125,13 +125,12 @@ def _import_numba_extensions_if_flag_is_true(numba):
 
 
 def _get_Y_bus(ppci, recycle, makeYbus, baseMVA, bus, branch):
-    if recycle is not None and not recycle["trafo"] and ppci["internal"]["Ybus"].size:
+    if recycle and not recycle["trafo"] and ppci["internal"]["Ybus"].size:
         Ybus, Yf, Yt = ppci["internal"]['Ybus'], ppci["internal"]['Yf'], ppci["internal"]['Yt']
     else:
         ## build admittance matrices
         Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
         ppci["internal"]['Ybus'], ppci["internal"]['Yf'], ppci["internal"]['Yt'] = Ybus, Yf, Yt
-
     return ppci, Ybus, Yf, Yt
 
 

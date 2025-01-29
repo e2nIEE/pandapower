@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 def vlevel_plotly(net, respect_switches=True, use_line_geodata=None, colors_dict=None, on_map=False,
                   projection=None, map_style='basic', figsize=1, aspectratio='auto', line_width=2,
-                  bus_size=10):
+                  bus_size=10, auto_open=True):
     """
     Plots a pandapower network in plotly
     using lines/buses colors according to the voltage level they belong to.
@@ -65,6 +65,8 @@ def vlevel_plotly(net, respect_switches=True, use_line_geodata=None, colors_dict
         **line_width** (float, 1.0) - width of lines
 
         **bus_size** (float, 10.0) -  size of buses to plot.
+
+        **auto_open** (bool, True) - automatically open plot in browser
 
     OUTPUT:
         **figure** (graph_objs._figure.Figure) figure object
@@ -140,7 +142,8 @@ def vlevel_plotly(net, respect_switches=True, use_line_geodata=None, colors_dict
     trafo_traces = create_trafo_trace(net, color='gray', width=line_width * 2)
 
     return draw_traces(line_traces + trafo_traces + bus_traces, showlegend=True,
-                       aspectratio=aspectratio, on_map=on_map, map_style=map_style, figsize=figsize)
+                       aspectratio=aspectratio, on_map=on_map, map_style=map_style, figsize=figsize,
+                       auto_open=auto_open)
 
 
 if __name__ == '__main__':

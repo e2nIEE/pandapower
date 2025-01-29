@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 def pf_res_plotly(net, cmap="Jet", use_line_geodata=None, on_map=False, projection=None,
                   map_style='basic', figsize=1, aspectratio='auto', line_width=2, bus_size=10,
                   climits_volt=(0.9, 1.1), climits_load=(0, 100), cpos_volt=1.0, cpos_load=1.1,
-                  filename="temp-plot.html"):
+                  filename="temp-plot.html", auto_open=True):
     """
     Plots a pandapower network in plotly
     using colormap for coloring lines according to line loading and buses according to voltage in p.u.
@@ -72,6 +72,8 @@ def pf_res_plotly(net, cmap="Jet", use_line_geodata=None, on_map=False, projecti
         **cpos_load** (float, 1.1) - position of the loading percent colorbar
 
         **filename** (str, "temp-plot.html") - filename / path to plot to. Should end on *.html
+
+        **auto_open** (bool, True) - automatically open plot in browser
 
     OUTPUT:
         **figure** (graph_objs._figure.Figure) figure object
@@ -171,4 +173,4 @@ def pf_res_plotly(net, cmap="Jet", use_line_geodata=None, on_map=False, projecti
 
     return draw_traces(line_traces + trafo_traces + ext_grid_trace + bus_trace,
                        showlegend=False, aspectratio=aspectratio, on_map=on_map,
-                       map_style=map_style, figsize=figsize, filename=filename)
+                       map_style=map_style, figsize=figsize, filename=filename, auto_open=auto_open)

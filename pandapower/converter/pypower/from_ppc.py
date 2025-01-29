@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -162,13 +162,11 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
         if current_bus_type == 3:
             if i == first_same_bus_in_service_gen_idx:
                 gen_lookup.element.loc[i] = pp.create_ext_grid(
-                # gen_lookup.loc[i, "element"] = pp.create_ext_grid(
                     net, bus=current_bus_idx, vm_pu=ppc['gen'][last_same_bus_in_service_gen_idx, 5],
                     va_degree=ppc['bus'][current_bus_idx, 8], in_service=bool(ppc['gen'][i, 7] > 0),
                     max_p_mw=ppc['gen'][i, PMAX], min_p_mw=ppc['gen'][i, PMIN],
                     max_q_mvar=ppc['gen'][i, QMAX], min_q_mvar=ppc['gen'][i, QMIN])
                 gen_lookup.element_type.loc[i] = 'ext_grid'
-                # gen_lookup.loc[i, "element"] = 'ext_grid'
                 if ppc['gen'][i, 4] > ppc['gen'][i, 3]:
                     logger.info('min_q_mvar of gen %d must be less than max_q_mvar but is not.' % i)
                 if -ppc['gen'][i, 9] < -ppc['gen'][i, 8]:
@@ -179,14 +177,12 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
         elif current_bus_type == 2:
             if i == first_same_bus_in_service_gen_idx:
                 gen_lookup.element.loc[i] = pp.create_gen(
-                    # gen_lookup.loc[i, "element"] = pp.create_gen(
                     net, bus=current_bus_idx, vm_pu=ppc['gen'][last_same_bus_in_service_gen_idx, 5],
                     p_mw=ppc['gen'][i, 1],
                     in_service=bool(ppc['gen'][i, 7] > 0), controllable=True,
                     max_p_mw=ppc['gen'][i, PMAX], min_p_mw=ppc['gen'][i, PMIN],
                     max_q_mvar=ppc['gen'][i, QMAX], min_q_mvar=ppc['gen'][i, QMIN])
                 gen_lookup.element_type.loc[i] = 'gen'
-                # gen_lookup.loc[i, "element_type"] = 'gen'
                 if ppc['gen'][i, 1] < 0:
                     logger.info('p_mw of gen %d must be less than zero but is not.' % i)
                 if ppc['gen'][i, 4] > ppc['gen'][i, 3]:
@@ -198,14 +194,12 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
         # create sgen
         if current_bus_type == 1:
             gen_lookup.element.loc[i] = pp.create_sgen(
-                # gen_lookup.loc[i, "element"] = pp.create_sgen(
                 net, bus=current_bus_idx, p_mw=ppc['gen'][i, 1],
                 q_mvar=ppc['gen'][i, 2], type="", in_service=bool(ppc['gen'][i, 7] > 0),
                 max_p_mw=ppc['gen'][i, PMAX], min_p_mw=ppc['gen'][i, PMIN],
                 max_q_mvar=ppc['gen'][i, QMAX], min_q_mvar=ppc['gen'][i, QMIN],
                 controllable=True)
             gen_lookup.element_type.loc[i] = 'sgen'
-            # gen_lookup.loc[i, "element_type"] = 'sgen'
             if ppc['gen'][i, 1] < 0:
                 logger.info('p_mw of sgen %d must be less than zero but is not.' % i)
             if ppc['gen'][i, 4] > ppc['gen'][i, 3]:
@@ -566,8 +560,6 @@ def validate_from_ppc(ppc_net, net, pf_type="runpp", max_diff_values={
                         (already_used_branches.lv_bus == to_bus)].values)].reshape(1, 4), 0)
                 already_used_branches.number.loc[(already_used_branches.hv_bus == from_bus) &
                                                  (already_used_branches.lv_bus == to_bus)] += 1
-                #already_used_branches.loc[(already_used_branches.hv_bus == from_bus) &
-                #                                 (already_used_branches.lv_bus == to_bus), 'number'] += 1
             else:  # switch hv-lv-connection of pypower connection buses
                 pp_res["branch"] = append(pp_res["branch"], array(net.res_trafo[
                     (net.trafo.hv_bus == to_bus) &
@@ -579,9 +571,6 @@ def validate_from_ppc(ppc_net, net, pf_type="runpp", max_diff_values={
                 already_used_branches.number.loc[
                     (already_used_branches.hv_bus == to_bus) &
                     (already_used_branches.lv_bus == from_bus)] += 1
-                #already_used_branches.loc[
-                #    (already_used_branches.hv_bus == to_bus) &
-                #    (already_used_branches.lv_bus == from_bus), 'number'] += 1
     pp_res["branch"] = pp_res["branch"][1:, :]  # delete initial zero row
 
     # --- do the powerflow result comparison

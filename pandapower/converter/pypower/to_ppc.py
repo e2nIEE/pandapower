@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -45,7 +45,7 @@ def to_ppc(net, calculate_voltage_angles=False, trafo_model="t", switch_rx_ratio
         **switch_rx_ratio** (float, 2) - rx_ratio of bus-bus-switches. If impedance is zero, \
         buses connected by a closed bus-bus switch are fused to model an ideal bus. \
         Otherwise, they are modelled as branches with resistance defined as z_ohm column in \
-        switch table and this parameter 
+        switch table and this parameter
 
         **check_connectivity** (bool, True) - Perform an extra connectivity test after the
         conversion from pandapower to PYPOWER

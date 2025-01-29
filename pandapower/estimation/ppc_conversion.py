@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -55,7 +55,6 @@ BUS_MEAS_PPCI_IX = {"v": {"VALUE": VM, "IDX": VM_IDX, "STD": VM_STD},
                     "va": {"VALUE": VA, "IDX": VA_IDX, "STD": VA_STD},
                     "p": {"VALUE": P, "IDX": P_IDX, "STD": P_STD},
                     "q": {"VALUE": Q, "IDX": Q_IDX, "STD": Q_STD}}
-
 
 
 def _initialize_voltage(net, init, calculate_voltage_angles):
@@ -414,7 +413,7 @@ def pp2eppci(net, v_start=None, delta_start=None,
 
 class ExtendedPPCI(UserDict):
     def __init__(self, ppci):
-        # Initialize ppci with measurements
+        """Initialize ppci object with measurements."""
         self.data = ppci
 
         # Measurement relevant parameters

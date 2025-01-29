@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 from itertools import combinations
 
@@ -42,7 +42,7 @@ logger = logging.getLogger(__name__)
 def create_nxgraph(net, respect_switches=True, include_lines=True, include_impedances=True,
                    include_dclines=True, include_trafos=True, include_trafo3ws=True,
                    nogobuses=None, notravbuses=None, multi=True,
-                   calc_branch_impedances=False, branch_impedance_unit="ohm", 
+                   calc_branch_impedances=False, branch_impedance_unit="ohm",
                    library="networkx", include_out_of_service=False):
     """
      Converts a pandapower network into a NetworkX graph, which is a is a simplified representation
