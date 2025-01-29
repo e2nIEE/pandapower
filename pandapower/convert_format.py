@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
@@ -18,13 +18,14 @@ def convert_format(net):
     """
     from pandapower.toolbox import set_data_type_of_columns_to_default
     if isinstance(net.version, str) and version.parse(net.version) >= version.parse(__version__):
-        print("\n Net version: ", net.version)
         return net
     _add_nominal_power(net) # dava problema
     _add_missing_tables(net)
     _rename_columns(net)
     _add_missing_columns(net)
     _create_seperate_cost_tables(net)
+    if version.parse(str(net.version)) < version.parse("2.4.0"):
+        _convert_bus_pq_meas_to_load_reference(net)
     if isinstance(net.version, float) and net.version < 2:
         _convert_to_generation_system(net)
         _convert_costs(net)
@@ -36,6 +37,12 @@ def convert_format(net):
     _convert_objects(net)
     net.version = __version__
     return net
+
+
+def _convert_bus_pq_meas_to_load_reference(net):
+    bus_pq_meas_mask = net.measurement.measurement_type.isin(["p", "q"])&\
+        (net.measurement.element_type=="bus")
+    net.measurement.loc[bus_pq_meas_mask, "value"] *= -1
 
 
 def _convert_to_generation_system(net):
@@ -81,6 +88,7 @@ def _convert_costs(net):
 def _add_nominal_power(net):
     if "sn_kva" in net:
         net.sn_mva = net.pop("sn_kva") * 1e-3
+
     # Reset sn_mva only if sn_mva not available
     if "sn_mva" not in net:
         net.sn_mva = 1.0
@@ -215,6 +223,13 @@ def _add_missing_columns(net):
     if "name" not in net.measurement:
         net.measurement.insert(0, "name", None)
 
+    if "initial_run" not in net.controller:
+        net.controller.insert(4, 'initial_run', False)
+        for _, ctrl in net.controller.iterrows():
+            if hasattr(ctrl['object'], 'initial_run'):
+                net.controller.at[ctrl.name, 'initial_run'] = ctrl['object'].initial_run
+            else:
+                net.controller.at[ctrl.name, 'initial_run'] = ctrl['object'].initial_powerflow
 
 def _update_trafo_type_parameter_names(net):
     for element in ('trafo', 'trafo3w'):
@@ -305,5 +320,3 @@ def _convert_objects(net):
     if "controller" in net.keys():
         for obj in net["controller"].object.values:
             _update_object_attributes(obj)
-            if not hasattr(obj, 'net'):
-                obj.__init__(net, overwrite=True, **obj.__dict__)

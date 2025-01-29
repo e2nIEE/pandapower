@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -178,7 +178,7 @@ def _get_line_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t)
         Pabcl_mw = np.zeros_like(Pabcf_mw)
         Qabcl_mvar = np.zeros_like(Qabct_mvar)
     
-    #geting complex values of the sequence current    
+    #getting complex values of the sequence current line   
     Iabc_f_ka_complex = sequence_to_phase(I012_from_ka)
     Iabc_t_ka_complex = sequence_to_phase(I012_to_ka)
     
@@ -188,9 +188,9 @@ def _get_line_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t)
     
     In_f_ka_complex = Iabc_f_ka_complex.sum(axis=0)
     In_f_ka = np.abs(In_f_ka_complex)
-    In_f_ia_n_degree = np.angle(In_f_ka_complex).flatten()*180/np.pi
+#    In_f_ia_n_degree = np.angle(In_f_ka_complex).flatten()*180/np.pi
     In_t_ka_complex = Iabc_t_ka_complex.sum(axis=0)
-    In_t_ia_n_degree = np.angle(In_t_ka_complex).flatten()*180/np.pi
+#    In_t_ia_n_degree = np.angle(In_t_ka_complex).flatten()*180/np.pi
     In_t_ka = np.abs(In_t_ka_complex)
     In_ka = np.maximum.reduce([In_t_ka, In_f_ka])
 
@@ -510,16 +510,16 @@ def _get_impedance_results(net, ppc, i_ft, suffix=None):
     i_to_ka = i_ft[f:t][:, 1]
 
     # write to impedance
-    res_impediance_df = net["res_impedance"] if suffix is None else net["res_impedance%s"%suffix]
+    res_impedance_df = net["res_impedance"] if suffix is None else net["res_impedance%s"%suffix]
 
-    res_impediance_df["p_from_mw"].values[:] = p_from_mw
-    res_impediance_df["q_from_mvar"].values[:] = q_from_mvar
-    res_impediance_df["p_to_mw"].values[:] = p_to_mw
-    res_impediance_df["q_to_mvar"].values[:] = q_to_mvar
-    res_impediance_df["pl_mw"].values[:] = pl_mw
-    res_impediance_df["ql_mvar"].values[:] = ql_mvar
-    res_impediance_df["i_from_ka"].values[:] = i_from_ka
-    res_impediance_df["i_to_ka"].values[:] = i_to_ka
+    res_impedance_df["p_from_mw"].values[:] = p_from_mw
+    res_impedance_df["q_from_mvar"].values[:] = q_from_mvar
+    res_impedance_df["p_to_mw"].values[:] = p_to_mw
+    res_impedance_df["q_to_mvar"].values[:] = q_to_mvar
+    res_impedance_df["pl_mw"].values[:] = pl_mw
+    res_impedance_df["ql_mvar"].values[:] = ql_mvar
+    res_impedance_df["i_from_ka"].values[:] = i_from_ka
+    res_impedance_df["i_to_ka"].values[:] = i_to_ka
 
 
 

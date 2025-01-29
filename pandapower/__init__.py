@@ -7,7 +7,7 @@ from pandapower.auxiliary import *
 from pandapower.convert_format import *
 from pandapower.create import *
 from pandapower.diagnostic import *
-from pandapower.groups import *
+# from pandapower.groups import *
 from pandapower.file_io import *
 from pandapower.run import *
 from pandapower.runpm import *

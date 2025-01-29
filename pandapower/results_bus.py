@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -11,7 +11,7 @@ from pandapower.auxiliary import _sum_by_group, sequence_to_phase, _sum_by_group
 from pandapower.pypower.idx_bus import VM, VA, PD, QD, LAM_P, LAM_Q, BASE_KV,NONE
 
 from pandapower.pypower.idx_gen import PG, QG
-from pandapower.build_bus import _get_motor_pq
+from pandapower.build_bus import _get_motor_pq, _get_symmetric_pq_of_unsymetric_element
 
 
 def _set_buses_out_of_service(ppc):
@@ -163,7 +163,6 @@ def write_pq_results_to_element(net, ppc, element, suffix=None):
     :param element: element name (str)
     :return:
     """
-
     # info from net
     _is_elements = net["_is_elements"]
     ac = net["_options"]["ac"]
@@ -187,6 +186,11 @@ def write_pq_results_to_element(net, ppc, element, suffix=None):
         net[res_]["p_mw"].values[:] = p_mw
         net[res_]["q_mvar"].values[:] = q_mvar
         return net
+    elif element.startswith("asymmetric"):
+        p_mw, q_mvar = _get_symmetric_pq_of_unsymetric_element(net, element)
+        net[res_]["p_mw"].values[:] = p_mw
+        net[res_]["q_mvar"].values[:] = q_mvar
+        return net
 
     # Wards and xwards have different names in their element table, but not in res table. Also no scaling -> Fix...
     p_mw = "ps_mw" if element in ["ward", "xward"] else "p_mw"
@@ -195,13 +199,13 @@ def write_pq_results_to_element(net, ppc, element, suffix=None):
 
     element_in_service = _is_elements[element]
 
-    # P result in kw to element
+    # P result in mw to element
     net[res_]["p_mw"].values[:] = el_data[p_mw].values * scaling * element_in_service
     if is_controllable:
         net[res_]["p_mw"].loc[controlled_elements] = ppc["gen"][gen_idx, PG] * gen_sign
 
     if ac:
-        # Q result in kvar to element
+        # Q result in mvar to element
         net[res_]["q_mvar"].values[:] = el_data[q_mvar].values * scaling * element_in_service
         if is_controllable:
             net[res_]["q_mvar"].loc[controlled_elements] = ppc["gen"][gen_idx, QG] * gen_sign
@@ -292,19 +296,20 @@ def _get_p_q_results(net, ppc, bus_lookup_aranged):
     b, p, q = np.array([]), np.array([]), np.array([])
 
     ac = net["_options"]["ac"]
+    elements = ["load", "motor", "sgen", "storage", "ward", "xward",
+                "asymmetric_load", "asymmetric_sgen"]
+
     if net["_options"]["voltage_depend_loads"] and ac:
         # voltage dependend loads need special treatment here
 
         p, q, b = write_voltage_dependend_load_results(net, p, q, b)
-        elements = ["sgen", "motor", "storage", "ward", "xward"]
-    else:
-        elements = ["load", "motor", "sgen", "storage", "ward", "xward"]
+        elements.remove("load")
 
     for element in elements:
         if len(net[element]):
             write_pq_results_to_element(net, ppc, element)
             p_el, q_el, bus_el = get_p_q_b(net, element)
-            if element == "sgen":
+            if element.endswith("sgen"):
                 p = np.hstack([p, -p_el])
                 q = np.hstack([q, -q_el])
             else:
