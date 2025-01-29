@@ -657,13 +657,14 @@ def get_coords_from_buses(net, from_bus, to_bus, **kwargs):
     from_geo: Optional[str] = None
     to_geo: Optional[str] = None
     if from_bus in net.bus.index:
-        from_geo: str = net.bus.loc[from_bus, ['geo']]
+        from_geo: str = net.bus.loc[from_bus, 'geo']
 
     if to_bus in net.bus.index:
-        to_geo: str = net.bus.loc[to_bus, ['geo']]
+        to_geo: str = net.bus.loc[to_bus, 'geo']
 
     if from_geo and to_geo:
         coords = [geojson.utils.coords(geojson.loads(from_geo)), geojson.utils.coords(geojson.loads(to_geo))]
+        coords = [tuple((x, y)) for item in coords for x, y in item]
         logger.debug('got coords from buses: %s' % coords)
     else:
         logger.debug('no coords for line between buses %d and %d' % (from_bus, to_bus))
@@ -1971,17 +1972,19 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
                 av_mode = 'constq'
             else:
                 if pstac.i_ctrl == 0:
-                    av_mode = 'constq'
+                    av_mode = 'constq'#why? shouldnt it be constv? Only sgen element?
                 elif pstac.i_ctrl == 1:
                     av_mode = 'constq'
                 elif pstac.i_ctrl == 2:
-                    av_mode = 'cosphi'
-                    logger.error('Error! av_mode cosphi not implemented')
-                    return
+                    av_mode='constq' #other devices
+                    #av_mode = 'cosphi'
+                    #logger.error('Error! av_mode cosphi not implemented')
+                    #return #implemented
                 elif pstac.i_ctrl == 3:
-                    av_mode = 'tanphi'
-                    logger.error('Error! av_mode tanphi not implemented')
-                    return
+                    av_mode='constq' #implementing other devices?
+                    #av_mode = 'tanphi'
+                    #logger.error('Error! av_mode tanphi not implemented')
+                    #return #implemented
                 else:
                     logger.error('Error! av_mode undefined')
                     return
@@ -2197,17 +2200,19 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
             else:
                 i_ctrl = pstac.i_ctrl
                 if i_ctrl == 0:
-                    av_mode = 'constq'
+                    av_mode = 'constq'#why not constv? Ahh, only sgen implemented
                 elif i_ctrl == 1:
                     av_mode = 'constq'
                 elif i_ctrl == 2:
-                    av_mode = 'cosphi'
-                    logger.error('Error! avmode cosphi not implemented')
-                    return
+                    av_mode='constq'
+                    #av_mode = 'cosphi'#what element could be created?
+                    #logger.error('Error! avmode cosphi not implemented')
+                    #return
                 elif i_ctrl == 3:
-                    av_mode = 'tanphi'
-                    logger.error('Error! avmode tanphi not implemented')
-                    return
+                    av_mode= 'constq'
+                    #av_mode = 'tanphi' #what element could be created?
+                    #logger.error('Error! avmode tanphi not implemented')
+                    #return
 
         logger.debug('av_mode: %s' % av_mode)
         if av_mode == 'constv':
@@ -2805,7 +2810,6 @@ def create_shunt(net, item):
         'step': item.ncapa,
         'max_step': item.ncapx
     }
-    print(item.loc_name)
     r_val: float = .0
     x_val: float = .0
     if item.shtype == 0:
@@ -2818,8 +2822,8 @@ def create_shunt(net, item):
         x_val = item.xrea
     elif item.shtype == 2:
         # Shunt is a capacitor bank
-        b = item.bcap*1e-6
-        g = item.gparac*1e-6
+        b = item.bcap * 1e-6
+        g = item.gparac * 1e-6
 
         r_val = g / (g ** 2 + b ** 2)
         x_val = -b / (g ** 2 + b ** 2)
@@ -3349,6 +3353,8 @@ def create_stactrl(net, item):
     for s in machines:
         if s.ip_ctrl == 1:
             gt = "other"
+        #elif not hasattr(s, 'av_mode'):
+            #gt = "other"
         elif s.av_mode == "constq":
             gt = "sgen"
         elif s.av_mode == "constv":
@@ -3373,6 +3379,12 @@ def create_stactrl(net, item):
                 for i in range(len(gen_types)):
                     gen_types[i] = "sgen"
             elif control_mode == 1:
+                for i in range(len(gen_types)):
+                    gen_types[i] = "sgen"
+            elif control_mode == 2: #PF
+                for i in range(len(gen_types)):
+                    gen_types[i] = "sgen"
+            elif control_mode == 3: #tan(phi)
                 for i in range(len(gen_types)):
                     gen_types[i] = "sgen"
             else:
@@ -3411,8 +3423,9 @@ def create_stactrl(net, item):
     variable = None
     res_element_table = None
     res_element_index = None
-    if control_mode == 1 or item.i_droop:
-        q_control_cubicle = item.p_cub if control_mode == 1 else item.pQmeas  # Feld
+    if control_mode != 0 or item.i_droop:
+        #q_control_cubicle = item.p_cub if control_mode == 1 else item.pQmeas  # Feld
+        q_control_cubicle = item.p_cub #if control_mode == 1 else item.pQmeas  # Feld
         if q_control_cubicle is None:
             logger.info(f"Input Element of Controller {item.loc_name} is missing, skipping")
             return
@@ -3507,9 +3520,9 @@ def create_stactrl(net, item):
                                                  output_values_distribution=distribution,
                                                  input_element=res_element_table, input_variable=variable,
                                                  input_element_index=res_element_index,
-                                                 set_point=v_setpoint_pu, voltage_ctrl=True, bus_idx=bus, tol=1e-3)
+                                                 set_point=v_setpoint_pu, modus='V_ctrl', bus_idx=bus, tol=1e-3)
             pp.control.DroopControl(net, q_droop_mvar=item.Srated * 100 / item.ddroop, bus_idx=bus,
-                                    vm_set_pu=v_setpoint_pu, controller_idx=bsc.index, voltage_ctrl=True)
+                                    vm_set_pu=v_setpoint_pu, controller_idx=bsc.index, modus='V_ctrl')
         else:
             pp.control.BinarySearchControl(net, ctrl_in_service=stactrl_in_service,
                                            output_element=gen_element, output_variable="q_mvar",
@@ -3517,7 +3530,7 @@ def create_stactrl(net, item):
                                            output_element_in_service=gen_element_in_service, input_element="res_bus",
                                            output_values_distribution=distribution, damping_factor=0.9,
                                            input_variable="vm_pu", input_element_index=bus,
-                                           set_point=v_setpoint_pu, voltage_ctrl=True, tol=1e-6)
+                                           set_point=v_setpoint_pu, modus='V_ctrl', tol=1e-6)
     elif control_mode == 1:  # Q Control mode
         if item.iQorient != 0:
             if not stactrl_in_service:
@@ -3538,7 +3551,7 @@ def create_stactrl(net, item):
                 input_variable=variable,
                 input_element_index=res_element_index,
                 set_point=item.qsetp,
-                voltage_ctrl=False, tol=1e-6
+                modus='Q_ctrl', tol=1e-6
             )
         elif item.qu_char == 1:
             controlled_node = item.refbar
@@ -3555,7 +3568,7 @@ def create_stactrl(net, item):
                 input_variable=variable,
                 input_element_index=res_element_index,
                 set_point=item.qsetp,
-                voltage_ctrl=False,
+                modus='Q_ctrl',
                 bus_idx=bus,
                 tol=1e-6
             )
@@ -3567,10 +3580,80 @@ def create_stactrl(net, item):
                 vm_set_ub=item.udeadbup,
                 vm_set_lb=item.udeadblow,
                 controller_idx=bsc.index,
-                voltage_ctrl=False
+                modus='Q_ctrl'
             )
         else:
             raise NotImplementedError
+    elif control_mode==2:#PF_Control
+        if item.iQorient != 0:
+            if not stactrl_in_service:
+                return
+            raise NotImplementedError(f"{item}: Q orientation '-' not supported")
+        if item.qu_char == 0:
+            pp.control.BinarySearchControl(
+                net, ctrl_in_service=stactrl_in_service,
+                output_element=gen_element,
+                output_variable="q_mvar",
+                output_element_index=gen_element_index,
+                output_element_in_service=gen_element_in_service,
+                input_element=res_element_table,
+                output_values_distribution=distribution,
+                damping_factor=0.9,
+                input_variable=variable,
+                input_element_index=res_element_index,
+                set_point=item.qsetp,
+                modus='PF_ctrl', tol=1e-6
+            )
+        elif item.qu_char == 1:
+            controlled_node = item.refbar
+            bus = bus_dict[controlled_node]  # controlled node
+            bsc = pp.control.BinarySearchControl(
+                net, ctrl_in_service=stactrl_in_service,
+                output_element=gen_element,
+                output_variable="q_mvar",
+                output_element_index=gen_element_index,
+                output_element_in_service=gen_element_in_service,
+                input_element=res_element_table,
+                output_values_distribution=distribution,
+                damping_factor=0.9,
+                input_variable=variable,
+                input_element_index=res_element_index,
+                set_point=item.qsetp,
+                modus='PF_ctrl',
+                bus_idx=bus,
+                tol=1e-6
+            )
+            pp.control.DroopControl(
+                net,
+                q_droop_mvar=item.Srated * 100 / item.ddroop,
+                bus_idx=bus,
+                vm_set_pu=item.udeadbup,
+                vm_set_ub=item.udeadbup,
+                vm_set_lb=item.udeadblow,
+                controller_idx=bsc.index,
+                modus="PF_ctrl"
+            )
+        else:
+            raise NotImplementedError
+    elif control_mode== 3:#tan(phi)_control
+        if item.iQorient != 0:
+            if not stactrl_in_service:
+                return
+            raise NotImplementedError(f"{item}: Q orientation '-' not supported")
+        pp.control.BinarySearchControl(
+            net, ctrl_in_service=stactrl_in_service,
+            output_element=gen_element,
+            output_variable="q_mvar",
+            output_element_index=gen_element_index,
+            output_element_in_service=gen_element_in_service,
+            input_element=res_element_table,
+            output_values_distribution=distribution,
+            damping_factor=0.9,
+            input_variable=variable,
+            input_element_index=res_element_index,
+            set_point=item.qsetp,
+            modus='tan(phi)_ctrl', tol=1e-6
+        )
     else:
         raise NotImplementedError(f"{item}: control mode {item.i_ctrl=} not implemented")
 

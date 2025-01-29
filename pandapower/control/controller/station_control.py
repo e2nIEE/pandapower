@@ -1,9 +1,18 @@
 import numbers
+from winreg import error
+
 import numpy as np
+from numpy.f2py.auxfuncs import throw_error
+from win32pdh import counter_status_error
 
 from pandapower.control.basic_controller import Controller
 from pandapower.auxiliary import _detect_read_write_flag, read_from_net, write_to_net
+try:
+    import pandaplan.core.pplog as logging
+except ImportError:
+    import logging
 
+logger = logging.getLogger(__name__)
 
 class BinarySearchControl(Controller):
     """
@@ -34,7 +43,7 @@ class BinarySearchControl(Controller):
             **output_values_distribution** - Distribution of reactive power provision.
 
             **input_element** - Measurement location, can be a transformers, switches, lines or busses (only with
-            voltage_ctrl), indicated by string value "res_trafo", "res_switch", "res_line" or "res_bus". In case of
+            V_ctrl), indicated by string value "res_trafo", "res_switch", "res_line" or "res_bus". In case of
             "res_switch", an additional small impedance is introduced in the switch.
 
             **input_variable** - Variable which is used to take the measurement from. Indicated by string value.
@@ -42,11 +51,13 @@ class BinarySearchControl(Controller):
             **input_element_index** - Element of input element in net.
 
             **set_point** - Set point of the controller, can be a reactive power provision or a voltage set point. In
-            case of voltage set point, voltage control must be set to true, bus_idx must be set to measurement bus and
+            case of voltage set point, modus must be V_ctrl, bus_idx must be set to measurement bus and
             input_element must be "res_bus". Can be overwritten by a droop controller chained with the binary search
             control.
 
-            **voltage_ctrl** - Whether the controller is used for voltage control or not.
+            **voltage_ctrl** - Whether the controller is used for voltage control or not. -> Overwritten, now called
+            modus and takes string: Q_ctrl, V_ctrl, PF_ctrl or tan(phi)_ctrl. Specify reactance in P_ctrl with
+            PF_ctrl_ind or PF_ctrl_cap.
 
             **bus_idx=None** - Bus index which is used for voltage control.
 
@@ -54,11 +65,12 @@ class BinarySearchControl(Controller):
        """
     def __init__(self, net, ctrl_in_service, output_element, output_variable, output_element_index,
                  output_element_in_service, output_values_distribution, input_element, input_variable,
-                 input_element_index, set_point, voltage_ctrl, bus_idx=None, tol=0.001, in_service=True, order=0, level=0,
+                 input_element_index, set_point, modus= None, bus_idx=None, tol=0.001, in_service=True, order=0, level=0,
                  drop_same_existing_ctrl=False, matching_params=None, **kwargs):
         super().__init__(net, in_service=in_service, order=order, level=level,
                          drop_same_existing_ctrl=drop_same_existing_ctrl,
                          matching_params=matching_params, **kwargs)
+        self.counter_deprecation_message=False
         self.in_service = ctrl_in_service
         self.input_element = input_element
         self.input_element_index = []
@@ -74,7 +86,6 @@ class BinarySearchControl(Controller):
         self.output_values_distribution = np.array(output_values_distribution, dtype=np.float64) / np.sum(
             output_values_distribution)
         self.set_point = set_point
-        self.voltage_ctrl = voltage_ctrl
         self.bus_idx = bus_idx
         self.tol = tol
         self.applied = False
@@ -88,8 +99,33 @@ class BinarySearchControl(Controller):
                                                                         output_variable)
         self.read_flag = []
         self.input_variable = []
+        self.input_variable_p = []
         self.input_element_in_service = []
         counter = 0
+
+        if modus == True: #Only functions written out!?!
+            self.modus = "V_ctrl"
+        elif modus == False: #Only functions written out!?!
+            self.modus = "Q_ctrl"
+            logger.error("Ambivalent type, using Q_ctrl from available types 'Q_ctrl', 'V_ctrl', 'PF_ctrl' or 'tan(phi)_ctrl'\n")
+        elif modus == "PF_ctrl_cap":
+            self.modus = "PF_ctrl"
+            self.reactance= "cap"
+        elif modus == "PF_ctrl_ind":
+            self.modus = "PF_ctrl"
+            self.reactance = "ind"
+        elif modus == "PF_ctrl":
+            self.modus = modus
+            self.reactance = "cap"
+            logger.error("No reactance specified, using capacitive PF controller.\nSpecify reactance by adding _kap or _ind to the control mode\n"
+                         "Specify reactance in PF_ctrl with PF_ctrl_ind or PF_ctrl_cap\n")
+        else:
+            self.modus = modus
+        if self.modus == 'PF_ctrl' or self.modus == 'tan(phi)_ctrl':
+            if abs(self.set_point) >1:
+                logger.error('Set point out of range ([-1,1]\n')
+                return
+
         for input_index in self.input_element_index:
             if self.input_element == "res_line":
                 self.input_element_in_service.append(net.line.in_service[input_index])
@@ -109,9 +145,50 @@ class BinarySearchControl(Controller):
                 read_flag_temp, input_variable_temp = _detect_read_write_flag(net, self.input_element,
                                                                               input_index,
                                                                               input_variable)
+            if self.modus == "PF_ctrl" or self.modus=='tan(phi)_ctrl':
+                if isinstance(input_variable, list):
+                    if input_variable[counter]=="q_from_mw":
+                        input_variable_p= "p_from_mw"
+                    elif input_variable[counter]=="q_to_mw":
+                        input_variable_p= 'p_to_mw'
+                    elif input_variable[counter]=='q_hv_mw':
+                        input_variable_p = 'p_hv_mw'
+                    elif input_variable[counter]=='q_lv_mw':
+                        input_variable_p='p_lv_mw'
+                    else:
+                        logger.error('incorrect input variable: ', input_variable[counter],'\n')
+                        return
+                    read_flag_temp, input_variable_temp_p = _detect_read_write_flag(net, self.input_element,
+                                                                                  input_index,
+                                                                                  input_variable_p)
+                else:
+                    input_variable_p = input_variable.replace('q', 'p').replace('var','w') #replace string or if statements?
+
+                    read_flag_temp, input_variable_temp_p = _detect_read_write_flag(net, self.input_element,
+                                                                                  input_index,
+                                                                                  input_variable_p)
+                self.read_flag.append(read_flag_temp)
+                self.input_variable_p.append(input_variable_temp_p)
             self.read_flag.append(read_flag_temp)
             self.input_variable.append(input_variable_temp)
             counter += 1
+
+    def __getattr__(self, name):
+        if name == "modus":
+            try:
+                if not self.counter_deprecation_message:
+                    logger.error("The 'voltage_ctrl' attribute is deprecated and will be removed in future versions.\n"
+                            "Please use 'modus' ('Q_ctrl', 'V_ctrl', 'PF_ctrl' or 'tan(phi)_ctrl') instead.\n")
+                else:
+                    self.counter_deprecation_message = True
+                return self.voltage_ctrl
+
+            except AttributeError:
+                self.counter_deprecation_message = True
+                logger.error("The 'voltage_ctrl' attribute is deprecated and will be removed in future versions.\n"
+                      "Please use 'modus' ('Q_ctrl', 'V_ctrl', 'PF_ctrl' or 'tan(phi)_ctrl') instead.\n")
+                return self.voltage_ctrl
+        raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
 
     def initialize_control(self, net):
         self.output_values = read_from_net(net, self.output_element, self.output_element_index, self.output_variable,
@@ -149,21 +226,46 @@ class BinarySearchControl(Controller):
             return self.converged
 
         # read input values
-        input_values = []
+        input_values = [] #reactive q
+        p_input_values = [] #active p
         counter = 0
         for input_index in self.input_element_index:
             input_values.append(read_from_net(net, self.input_element, input_index,
                                               self.input_variable[counter], self.read_flag[counter]))
+            if self.modus == "PF_ctrl" or self.modus == 'tan(phi)_ctrl':
+                p_input_values.append(read_from_net(net,self.input_element, input_index,
+                                                self.input_variable_p[counter], self.read_flag[counter]))
+
             counter += 1
         # read previous set values
         # compare old and new set values
-        if not self.voltage_ctrl or self.bus_idx is None:
+        #Q_ctrl, V_ctrl, PF_ctrl or tan(phi)_ctrl
+        if self.modus == "Q_ctrl": # or self.bus_idx is None:
             self.diff_old = self.diff
             self.diff = self.set_point - sum(input_values)
             self.converged = np.all(np.abs(self.diff) < self.tol)
-        else:
+
+        elif self.modus == "PF_ctrl":
             self.diff_old = self.diff
-            self.diff = self.set_point - net.res_bus.vm_pu.at[self.bus_idx]
+            if self.reactance == "cap":
+                self.diff = -self.set_point - np.cos(np.arctan(sum(input_values)/sum(p_input_values))) ###phi = arctan(p/Q)
+                #self.diff = -self.set_point - sum(p_input_values)/np.sqrt(sum(p_input_values)**2+sum(input_values)**2) #alternative with same output
+            else:
+                self.diff = self.set_point - np.cos(np.arctan(sum(input_values) / sum(p_input_values)))  ###ind -> positive phi
+                #self.diff = self.set_point - sum(p_input_values) / np.sqrt(sum(p_input_values) ** 2 + sum(input_values) ** 2)
+            self.converged=np.all(np.abs(self.diff)<self.tol)
+
+        elif self.modus == "tan(phi)_ctrl":
+            self.diff_old = self.diff
+            self.diff = self.set_point - np.arctan(sum(p_input_values)/sum(input_values))  ###modifizieren
+            self.converged = np.all(np.abs(self.diff) < self.tol)
+        else:
+            if self.modus != "V_ctrl":
+                logger.error("No Controller Modus specified, using V_ctrl.\n"
+                      "Please specify 'modus' ('Q_ctrl', 'V_ctrl', 'PF_ctrl' or 'tan(phi)_ctrl')\n")
+                #self.modus = 'V_ctrl'
+            self.diff_old = self.diff
+            self.diff = self.set_point - net.res_bus.vm_pu.at[self.bus_idx] #error when old import? no bus_idx
             self.converged = np.all(np.abs(self.diff) < self.tol)
 
         if self.overwrite_covergence:
@@ -218,7 +320,9 @@ class DroopControl(Controller):
 
                 **controller_idx** - Index of linked Binary< search control (if present).
 
-                **voltage_ctrl** - Whether the controller is used for voltage control or not.
+                **voltage_ctrl** - Whether the controller is used for voltage control or not. -> Overwritten, now called
+                modus and takes string: Q_ctrl, V_ctrl, PF_ctrl or tan(phi)_ctrl. Specify reactance in PF_ctrl with
+                PF_ctrl_ind or PF_ctrl_cap.
 
                 **bus_idx=None** - Bus index which is used for voltage control.
 
@@ -228,7 +332,7 @@ class DroopControl(Controller):
 
                 **vm_set_ub=None** - Upper band border of dead band
            """
-    def __init__(self, net, q_droop_mvar, bus_idx, vm_set_pu, controller_idx, voltage_ctrl, tol=1e-6, in_service=True,
+    def __init__(self, net, q_droop_mvar, bus_idx, vm_set_pu, controller_idx, modus, tol=1e-6, in_service=True,
                  order=-1, level=0, drop_same_existing_ctrl=False, matching_params=None, vm_set_lb=None, vm_set_ub=None,
                  **kwargs):
         super().__init__(net, in_service=in_service, order=order, level=level,
@@ -244,7 +348,6 @@ class DroopControl(Controller):
         self.lb_voltage = vm_set_lb
         self.ub_voltage = vm_set_ub
         self.controller_idx = controller_idx
-        self.voltage_ctrl = voltage_ctrl
         self.tol = tol
         self.applied = False
         self.read_flag, self.input_variable = _detect_read_write_flag(net, "res_bus", bus_idx, "vm_pu")
@@ -253,9 +356,47 @@ class DroopControl(Controller):
         self.q_set_old_mvar = None
         self.diff = None
         self.converged = False
+        self.counter_deprecation_message = False
+
+        if modus == True:  # Only functions written out!?!
+            self.modus = "V_ctrl"
+        elif modus == False:  # Only functions written out!?!
+            self.modus = "Q_ctrl"
+            logger.error(
+                "Ambivalent type, using Q_ctrl from available types 'Q_ctrl', 'V_ctrl', 'PF_ctrl' or 'tan(phi)_ctrl'\n")
+        elif modus == "PF_ctrl_cap":
+            self.modus = "PF_ctrl"
+            self.reactance = "cap"
+        elif modus == "PF_ctrl_ind":
+            self.modus = "PF_ctrl"
+            self.reactance = "ind"
+        elif modus == "PF_ctrl":
+            self.modus = modus
+            self.reactance = "cap"
+            logger.error(
+                "No reactance specified, using capacitive PF controller.\nSpecify reactance by adding _kap or _ind to the control mode\n"
+                "Specify reactance in PF_ctrl with PF_ctrl_ind or PF_ctrl_cap\n")
+
+
+    def __getattr__(self, name):
+        if name == "modus":
+            try:
+                if not self.counter_deprecation_message:
+                    logger.error("The 'voltage_ctrl' attribute is deprecated and will be removed in future versions.\n"
+                            "Please use 'modus' ('Q_ctrl', 'V_ctrl', 'PF_ctrl' or 'tan(phi)_ctrl') instead.\n")
+                else:
+                    self.counter_deprecation_message = True
+                return self.voltage_ctrl
+
+            except AttributeError:
+                self.counter_deprecation_message = True
+                logger.error("The 'voltage_ctrl' attribute is deprecated and will be removed in future versions.\n"
+                      "Please use 'modus' ('Q_ctrl', 'V_ctrl', 'PF_ctrl' or 'tan(phi)_ctrl') instead.\n")
+                return self.voltage_ctrl
+        raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
 
     def is_converged(self, net):
-        if self.voltage_ctrl:
+        if self.modus == 'V_ctrl':
             self.diff = (net.controller.at[self.controller_idx, "object"].set_point -
                          read_from_net(net, "res_bus", self.bus_idx, "vm_pu", self.read_flag))
         else:
@@ -287,7 +428,7 @@ class DroopControl(Controller):
     def _droopcontrol_step(self, net):
         self.vm_pu_old = self.vm_pu
         self.vm_pu = read_from_net(net, "res_bus", self.bus_idx, "vm_pu", self.read_flag)
-        if not self.voltage_ctrl:
+        if self.modus=='Q_ctrl':
             if self.q_set_mvar_bsc is None:
                 self.q_set_mvar_bsc = net.controller.at[self.controller_idx, "object"].set_point
             if self.lb_voltage is not None and self.ub_voltage is not None:
@@ -299,9 +440,17 @@ class DroopControl(Controller):
                         self.q_set_mvar, self.q_set_mvar_bsc + (self.lb_voltage - self.vm_pu) * self.q_droop_mvar)
                 else:
                     self.q_set_old_mvar, self.q_set_mvar = (self.q_set_mvar, self.q_set_mvar_bsc)
+            elif self.modus == 'PF_ctrl':
+                pass #Implementieren
+            elif self.modus == 'tan(phi)_ctrl':
+                pass #Implementieren
             else:
+                if self.modus != "V_ctrl":
+                    logger.error("No Droop Controller Modus specified, using V_ctrl.\n"
+                                 "Please specify 'modus' ('Q_ctrl', 'V_ctrl', 'PF_ctrl' or 'tan(phi)_ctrl')\n")
                 self.q_set_old_mvar, self.q_set_mvar = (
                     self.q_set_mvar, self.q_set_mvar - (self.vm_set_pu - self.vm_pu) * self.q_droop_mvar)
+
 
             if self.q_set_old_mvar is not None:
                 self.diff = self.q_set_mvar - self.q_set_old_mvar
