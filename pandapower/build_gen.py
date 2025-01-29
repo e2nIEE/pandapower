@@ -5,6 +5,7 @@
 
 
 import numpy as np
+import pandas as pd
 
 from pandapower.pf.ppci_variables import bustypes
 from pandapower.pypower.bustypes import bustypes_dc
@@ -40,7 +41,7 @@ def _build_gen_ppc(net, ppc):
     distributed_slack = net["_options"]["distributed_slack"]
 
     #Add qmin and qmax limit from q capability_curve_characteristics_table
-    if "q_capability_curve_characteristic" in net.keys() and net.options["enforce_q_lims"]:
+    if "q_capability_curve_characteristic" in net.keys() and net._options["enforce_q_lims"]:
         _calculate_qmin_qmax_from_q_capability_curve_characteristics(net,"gen")
         _calculate_qmin_qmax_from_q_capability_curve_characteristics(net, "sgen")
 
@@ -487,8 +488,12 @@ def _calculate_qmin_qmax_from_q_capability_curve_characteristics(net, element):
         calc_q_max = np.vectorize(lambda func, p: func(p))(q_max_funcs, p_mw_values)
         calc_q_min = np.vectorize(lambda func, p: func(p))(q_min_funcs, p_mw_values)
 
+        if np.any(pd.isna(calc_q_min)) or np.any(pd.isna(calc_q_max)):
+            raise UserWarning(f"the curve_dependency_table of {element}(s) is(are) True, but the relevant "
+                              f"characteristic(s) value(s) is(are) None.")
+
         # Assign the calculated values directly to the original DataFrame
         net[element].loc[element_data.index, ['max_q_mvar', 'min_q_mvar']] = np.column_stack((calc_q_max, calc_q_min))
     else:
-        raise UserWarning(f"One of {element} id characteristic or curve "
-                          f"style of {element} are incorrect or not available.")
+        raise UserWarning(f"One of {element}(s) id characteristic(s) or curve "
+                          f"style(s) of {element}(s) is(are) incorrect or not available even if the q_capability_curve_table is available.")
