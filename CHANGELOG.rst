@@ -43,7 +43,7 @@ Change Log
 - [FIXED] cim2pp converter - correctly populate step, max_step and q_mvar / p_mw values per step for shunt elements
 - [ADDED] cim2pp converter - added tap changer type classification for trafo and trafo3w elements
 - [FIXED] cim2pp converter - correctly populate tap_step_degree and shift_degree variables for trafo and trafo3w elements
-- [ADDED] tap_changer_type variable for net.trafo and net.trafo3w tables (supporting "Ratio", "Symmetrical" and "Ideal" tap changer types)
+- [ADDED] tap_changer_type variable for net.trafo and net.trafo3w tables (supporting "Ratio", "Symmetrical", "Ideal" and "Tabular" tap changer types)
 - [REMOVED] tap_phase_shifter bool variable from net.trafo table
 - [ADDED] Implementation of Allocation Factor WLS (AF-WLS) for non observable distribution grids
 - [FIXED] Deletion of multiple measurements at the same bus or branch
