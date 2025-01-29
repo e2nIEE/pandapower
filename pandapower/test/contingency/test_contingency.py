@@ -165,7 +165,7 @@ def test_unequal_trafo_hv_lv_impedances():
     pp.create_transformer_from_parameters(net, 1, 2, 150, 110, 110, 0.5,
                                           10, 15, 0.1, 150,
                                           'hv', 0, 10, -10, 0,
-                                          1, 5, max_loading_percent=100, tap_changer_type = "Ideal",
+                                          1, 5, max_loading_percent=100, tap_changer_type="Ideal",
                                           leakage_resistance_ratio_hv=0.2, leakage_reactance_ratio_hv=0.4)
     pp.create_lines(net, [2, 2], [3, 3], 25, "243-AL1/39-ST1A 110.0",
                     max_loading_percent=100)
