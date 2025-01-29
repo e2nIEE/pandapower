@@ -82,8 +82,8 @@ def trafo_characteristic_table_diagnostic(net):
             continue
         # check if both tap_dependency_table & id_characteristic_table columns are populated
         mismatch_a = net[trafo_table][
-            (net[trafo_table]['tap_dependency_table'] & net[trafo_table]['id_characteristic_table'].isna()) |
-            (~net[trafo_table]['tap_dependency_table'] & net[trafo_table]['id_characteristic_table'].notna())
+            ((net[trafo_table]['tap_dependency_table']) & (net[trafo_table]['id_characteristic_table'].isna())) |
+            ((~net[trafo_table]['tap_dependency_table']) & (net[trafo_table]['id_characteristic_table'].notna()))
             ].shape[0]
         if mismatch_a != 0:
             warnings.warn(f"{trafo_table}: found {mismatch_a} transformer(s) with not both "
@@ -92,11 +92,20 @@ def trafo_characteristic_table_diagnostic(net):
             warnings_count += 1
         # check if both tap_dependency_table & tap_changer_type columns are populated
         mismatch_b = net[trafo_table][
-            (net[trafo_table]['tap_dependency_table'] & net[trafo_table]['tap_changer_type'].isna())
+            (net[trafo_table]['tap_dependency_table']) & (net[trafo_table]['tap_changer_type'].isna())
             ].shape[0]
         if mismatch_b != 0:
             warnings.warn(f"{trafo_table}: found {mismatch_b} transformer(s) with tap_dependency_table set to "
                           f"True and tap_changer_type parameter not populated. The characteristics from "
+                          f"trafo_characteristic_table will not be considered.", category=UserWarning)
+            warnings_count += 1
+        # check if tap_changer_type is "Tabular" but tap_dependency_table is False
+        mismatch_c = net[trafo_table][
+            (~net[trafo_table]['tap_dependency_table']) & (net[trafo_table]['tap_changer_type'] == 'Tabular')
+            ].shape[0]
+        if mismatch_c != 0:
+            warnings.warn(f"{trafo_table}: found {mismatch_c} transformer(s) with tap_changer_type parameter "
+                          f"set to 'Tabular' but tap_dependency_table flag set to False. The characteristics from "
                           f"trafo_characteristic_table will not be considered.", category=UserWarning)
             warnings_count += 1
         # check if all relevant columns are populated in the trafo_characteristic_table
