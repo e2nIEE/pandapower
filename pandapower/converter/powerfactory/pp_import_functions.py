@@ -2952,6 +2952,8 @@ def create_trafo3w(net, item, tap_opt='nntap'):
 
     # TODO Implement the tap changer controller for 3-winding transformer
 
+    # TODO Implement extracting trafo_characteristic_table if pf_type.itapzdep is true
+    #  and no trafo_characteristic_table available
     # if pf_type.itapzdep:
     #    x_points = (net.trafo3w.at[tid, "tap_min"], net.trafo3w.at[tid, "tap_neutral"], net.trafo3w.at[tid, "tap_max"])
     #    for side in ("hv", "mv", "lv"):
