@@ -1410,7 +1410,6 @@ def test_tap_table_order():
     assert np.isclose(net.res_bus.loc[5, 'va_degree'], -1 * (150 - 0 + 0.03810), 0, tol, False)
     assert np.isclose(net.res_bus.loc[4, 'vm_pu'], 1.03144595, tol, False)
     assert np.isclose(net.res_bus.loc[5, 'vm_pu'], 0.96268165, tol, False)
-    print ('Check')
 
 def test_shunt_step_dependency_warning():
     net = simple_test_net_shunt_control()
