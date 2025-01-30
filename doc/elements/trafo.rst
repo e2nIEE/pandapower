@@ -192,9 +192,11 @@ On which side the reference voltage is adapted depends on the :math:`tap\_side` 
 
 **Cross regulator (Ratio Tap Changer / Symmetrical Tap Changer)**
 
-In addition to tap_step_percent, a value for tap_step_degree can be defined to model an angle shift for each tap, resulting in a cross
-regulator that affects the magnitude as well as the angle of the transformer ratio. Use tap_changer_type "Ratio",
-or if the angle shift is :math:'\pm 90' degrees, you can use tap_changer_type "Symmetrical" (and tap_step_percent can be left empty).
+In addition to tap_step_percent, the tap_step_degree parameter can be populated to model the fixed angle
+between the vectors of the input voltage and additional voltage per tap step :math:`\delta U` (**not tap-dependent**).
+This results in a cross regulator that affects the magnitude as well as the angle of the output voltage.
+Use tap_changer_type "Ratio", or if the angle shift is :math:`\theta = 90` degrees, set tap_step_degree to 90 and use
+tap_changer_type "Symmetrical".
 
 .. math::
    :nowrap:
@@ -235,6 +237,13 @@ or it can be given as a constant voltage step in tap_step_percent, in which case
    \end{align*}
 
 If both values are given for an ideal phase shift transformer, the power flow will raise an error.
+
+**Tabular phase shifter**
+
+If tap_changer_type is set to "Tabular", the transformer ratio and phase angle shift per tap step is defined in the
+trafo_characteristic_table (see below). One application of the "Tabular" tap changer type is to represent the
+PhaseTapChangerTabular class defined in the CIM CGMES dataset. In this case, tap_dependency_table flag must be set
+to True.
 
 .. seealso::
 
