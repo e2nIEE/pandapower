@@ -162,7 +162,7 @@ def _calc_trafo3w_parameter(net, ppc):
     branch[f:t, SHIFT] = shift
     branch[f:t, BR_STATUS] = in_service
     # always set RATE_A for completeness
-    # RATE_A is conisdered by the (PowerModels) OPF. If zero -> unlimited
+    # RATE_A is considered by the (PowerModels) OPF. If zero -> unlimited
     if "max_loading_percent" in trafo_df:
         max_load = get_trafo_values(trafo_df, "max_loading_percent")
         sn_mva = get_trafo_values(trafo_df, "sn_mva")
@@ -332,7 +332,7 @@ def _calc_line_dc_parameter(net, ppc, elm="line_dc", ppc_elm="branch_dc"):
     df = line_dc.df.values
     # This calculates the maximum apparent power at 1.0 p.u.
     branch_dc[f:t, DC_RATE_A] = max_load / 100. * max_i_ka * df * parallel * vr
-    # RATE_A is conisdered by the (PowerModels) OPF. If zero -> unlimited
+    # RATE_A is considered by the (PowerModels) OPF. If zero -> unlimited
     if "max_loading_percent" in line_dc:
         max_load = line_dc.max_loading_percent.values
         vr = net.bus_dc.loc[line_dc["from_bus_dc"].values, "vn_kv"].values * np.sqrt(3.)
@@ -382,7 +382,7 @@ def _calc_trafo_parameter(net, ppc):
         raise UserWarning("Rating factor df must be positive. Transformers with false "
                           "rating factors: %s" % trafo.query('df<=0').index.tolist())
     # always set RATE_A for completeness
-    # RATE_A is conisdered by the (PowerModels) OPF. If zero -> unlimited
+    # RATE_A is considered by the (PowerModels) OPF. If zero -> unlimited
     if "max_loading_percent" in trafo:
         max_load = trafo.max_loading_percent.values
         sn_mva = trafo.sn_mva.values
@@ -453,8 +453,9 @@ def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=
     trafo_model = net["_options"]["trafo_model"]
     if 'tap_dependency_table' in trafo_df:
         if 'trafo_characteristic_table' in net:
-            r, x = _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva,
-                                        sequence=sequence, trafo_characteristic_table=net.trafo_characteristic_table)
+            r, x = _calc_r_x_from_dataframe(
+                mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva, sequence=sequence,
+                trafo_characteristic_table=net.trafo_characteristic_table)
         else:
             r, x = _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva,
                                             sequence=sequence)
@@ -568,7 +569,7 @@ def _calc_tap_from_dataframe(net, trafo_df):
     """
     Adjust the nominal voltage vnh, vnl and phase shift to the active tab position "tap_pos".
     If "side" is 1 (high-voltage side) the high voltage vnh is adjusted.
-    If "side" is 2 (low-voltage side) the low voltage vnl is adjusted
+    If "side" is 2 (low-voltage side) the low voltage vnl is adjusted.
 
     INPUT:
         **net** - The pandapower format network
@@ -617,7 +618,7 @@ def _calc_tap_from_dataframe(net, trafo_df):
             else:
                 tap_table = np.array([False])
                 tap_dependency_table = np.array([False])
-            #tap_changer_type = pd.Series(tap_changer_type)
+            # tap_changer_type = pd.Series(tap_changer_type)
             tap_table = np.logical_and(tap_dependency_table, np.logical_not(tap_changer_type == "None"))
             tap_no_table = np.logical_and(~tap_dependency_table, np.logical_not(tap_changer_type == "None"))
             if any(tap_table):
@@ -751,7 +752,8 @@ def _get_vk_values_from_table(trafo_df, trafo_characteristic_table, trafotype="2
                 'mask': mask
             })
 
-            filtered_df = trafo_characteristic_table.merge(filter_df[filter_df['mask']], on=['id_characteristic', 'step'])
+            filtered_df = trafo_characteristic_table.merge(filter_df[filter_df['mask']],
+                                                           on=['id_characteristic', 'step'])
             cleaned_id_characteristic = id_characteristic_table[(~pd.isna(id_characteristic_table)) & mask]
 
             vk_mapping = dict(zip(filtered_df['id_characteristic'], filtered_df[vk_var]))
@@ -1238,7 +1240,7 @@ def _calc_switch_parameter(net, ppc):
     branch[f:t, T_BUS] = tb
 
     z_switch = switch['z_ohm'].values
-    # x_switch will have the same value of r_switch to avoid zero dividence
+    # x_switch will have the same value of r_switch to avoid zero division
     branch[f:t, BR_R] = z_switch / baseR * rz_ratio
     branch[f:t, BR_X] = z_switch / baseR * xz_ratio
 
@@ -1254,7 +1256,7 @@ def _end_temperature_correction_factor(net, short_circuit=False, dc=False):
     The temperature coefficient "alpha" is a constant value of 0.004 in the short circuit
     calculation standard IEC 60909-0:2016.
 
-    In case of a load flow calculation, the relelvant parameter is "temperature_degree_celsius",
+    In case of a load flow calculation, the relevant parameter is "temperature_degree_celsius",
     which is specified by the user and allows calculating load flow for a given operating
     temperature.
 
@@ -1419,7 +1421,6 @@ def _calculate_sc_voltages_of_equivalent_transformers(
                                          "characteristics will still work, but they are deprecated and will be "
                                          "removed in future releases."))
         vk_hv, vkr_hv, vk_mv, vkr_mv, vk_lv, vkr_lv = _get_vk_values(t3, characteristic, "3W")
-
 
     vk_3w = np.stack([vk_hv, vk_mv, vk_lv])
     vkr_3w = np.stack([vkr_hv, vkr_mv, vkr_lv])
