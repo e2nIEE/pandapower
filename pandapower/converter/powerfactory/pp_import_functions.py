@@ -2477,15 +2477,15 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
                 else:
                     new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn_l
             elif meas_side == 1:
+                new_tap_table["angle_deg"] = -new_tap_table["angle_deg"]
                 if tap_side == 0:
                     new_tap_table["voltage_ratio"] = pf_type.utrn_l / new_tap_table["voltage_ratio"]
                 else:
-                    new_tap_table["angle_deg"] = -new_tap_table["angle_deg"]
                     new_tap_table["voltage_ratio"] = pf_type.utrn_h / new_tap_table["voltage_ratio"]
             else:
                 raise ValueError("Measurement location for tap table not given.")
 
-            new_tap_table["vkr_percent"] = new_tap_table["vkr_percent"] / item.GetAttribute("Snom_a") / 1000 * 100
+            new_tap_table["vkr_percent"] = new_tap_table["vkr_percent"] / pf_type.strn / 1000 * 100
             # * 1000 / 100 for conversion from MVA to kVA and from decimal to %
 
             if len(new_tap_table) == len(steps):
@@ -2516,8 +2516,6 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
             id_characteristic_table = None
             tap_dependency_table = False
             tap_changer_type = None
-
-        # tap_changer_type = tap_changer_type
 
         tid = pp.create_transformer(net, hv_bus=bus1, lv_bus=bus2, name=name,
                                     std_type=std_type, tap_pos=tap_pos,
@@ -2567,7 +2565,7 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
             else:
                 raise ValueError("Measurement location for tap table not given.")
 
-            new_tap_table["vkr_percent"] = new_tap_table["vkr_percent"] / item.GetAttribute("Snom_a") / 1000 * 100
+            new_tap_table["vkr_percent"] = new_tap_table["vkr_percent"] / pf_type.strn / 1000 * 100
             # * 1000 / 100 for conversion from MVA to kVA and from decimal to %
 
             if len(new_tap_table) == len(steps):
@@ -2813,43 +2811,37 @@ def create_trafo3w(net, item, tap_opt='nntap'):
             if meas_side == 0:
                 new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn3_h
             elif meas_side == 1:
-                new_tap_table["voltage_ratio"] = pf_type.utrn3_m / new_tap_table["voltage_ratio"]
+                new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn3_m
             elif meas_side == 2:
-                new_tap_table["angle_deg"] = -new_tap_table["angle_deg"]
-                new_tap_table["voltage_ratio"] = pf_type.utrn3_l / new_tap_table["voltage_ratio"]
+                new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn3_l
         elif table_side == 1:
             tap_min = pf_type.n3tmn_m
             tap_max = pf_type.n3tmx_m
-            #new_tap_table["angle_deg"] = -new_tap_table["angle_deg"]
             if meas_side == 0:
                 new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn3_h
             elif meas_side == 1:
                 new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn3_m
             elif meas_side == 2:
-                new_tap_table["angle_deg"] = -new_tap_table["angle_deg"]
-                new_tap_table["voltage_ratio"] = pf_type.utrn3_l / new_tap_table["voltage_ratio"]
+                new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn3_l
         elif table_side == 2:
             tap_min = pf_type.n3tmn_l
             tap_max = pf_type.n3tmx_l
-            #new_tap_table["angle_deg"] = -new_tap_table["angle_deg"]
             if meas_side == 0:
-                new_tap_table["angle_deg"] = -new_tap_table["angle_deg"]
-                new_tap_table["voltage_ratio"] = pf_type.utrn3_h / new_tap_table["voltage_ratio"]
+                new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn3_h
             elif meas_side == 1:
-                new_tap_table["angle_deg"] = -new_tap_table["angle_deg"]
-                new_tap_table["voltage_ratio"] = pf_type.utrn3_m / new_tap_table["voltage_ratio"]
+                new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn3_m
             elif meas_side == 2:
                 new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn3_l
 
-        snom_h_a = item.GetAttribute("Snom_h_a")
-        snom_m_a = item.GetAttribute("Snom_m_a")
-        snom_l_a = item.GetAttribute("Snom_l_a")
+        strn3_h = pf_type.strn3_h
+        strn3_m = pf_type.strn3_m
+        strn3_l = pf_type.strn3_l
         new_tap_table["vkr_hv_percent"] = new_tap_table["vkr_hv_percent"] / (
-                np.min([float(snom_h_a), float(snom_m_a)]) * 1000) * 100
+                np.min([float(strn3_h), float(strn3_m)]) * 1000) * 100
         new_tap_table["vkr_mv_percent"] = new_tap_table["vkr_mv_percent"] / (
-                    np.min([float(snom_m_a), float(snom_l_a)]) * 1000) * 100
+                    np.min([float(strn3_m), float(strn3_l)]) * 1000) * 100
         new_tap_table["vkr_lv_percent"] = new_tap_table["vkr_lv_percent"] / (
-                    np.min([float(snom_h_a), float(snom_l_a)]) * 1000) * 100
+                    np.min([float(strn3_h), float(strn3_l)]) * 1000) * 100
 
         steps = list(range(tap_min, tap_max + 1))
 
@@ -3609,7 +3601,10 @@ def create_stactrl(net, item):
 
     # find gen_element_index using name:
     if np.any(net.sgen.name.duplicated()):
-        raise UserWarning("error while creating station controller: sgen names must be unique")
+        duplicated_sgen_names = True
+        # raise UserWarning("error while creating station controller: sgen names must be unique")
+    else:
+        duplicated_sgen_names = False
 
     gen_types = []
     for s in machines:
@@ -3648,8 +3643,24 @@ def create_stactrl(net, item):
 
     gen_element = gen_types[0]
     gen_element_index = []
-    for s in machines:
-        gen_element_index.append(net[gen_element].loc[net[gen_element].name == s.loc_name].index.values[0])
+
+    if duplicated_sgen_names == False:
+        for s in machines:
+            gen_element_index.append(net[gen_element].loc[net[gen_element].name == s.loc_name].index.values[0])
+    else:
+        # check if gen_element has set controller
+        for s in machines:
+            gen_element_index_try = net[gen_element].loc[net[gen_element].name == s.loc_name].index.values
+            if len(gen_element_index_try) == 1:
+                gen_element_index.append(gen_element_index_try[0])
+            else:
+                gen_element_index_try_again = net[gen_element].loc[(net[gen_element].name == s.loc_name) & (
+                            net[gen_element].sta_ctrl == s.c_pstac.loc_name)].index.values
+                if len(gen_element_index_try_again) > 1:
+                    raise UserWarning(
+                        "error while creating station controller: sgen and controler names must be unique")
+                else:
+                    gen_element_index.append(gen_element_index_try_again[0])
 
     if len(gen_element_index) != len(machines):
         raise UserWarning("station controller: could not properly identify the machines")

@@ -643,10 +643,10 @@ def _calc_tap_from_dataframe(net, trafo_df):
                     shift_mapping = dict(zip(filtered_df['id_characteristic'], filtered_df['angle_deg']))
 
                     if direction == 1:
-                        ratio = [1/voltage_mapping.get(id_val, 1) for id_val in cleaned_id_characteristic]
+                        ratio = [voltage_mapping.get(id_val, 1) for id_val in cleaned_id_characteristic]
                         shift = [shift_mapping.get(id_val, 1) for id_val in cleaned_id_characteristic]
                     else:
-                        ratio = [(voltage_mapping.get(id_val, 1)) for id_val in cleaned_id_characteristic]
+                        ratio = [voltage_mapping.get(id_val, 1) for id_val in cleaned_id_characteristic]
                         shift = [-shift_mapping.get(id_val, 1) for id_val in cleaned_id_characteristic]
 
                     vn[mask] = vn[mask] * ratio
