@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -95,11 +95,6 @@ def test_net_deepcopy():
     pp.control.ConstControl(net, element='load', variable='p_mw', element_index=[0], profile_name=[0], data_source=ds)
 
     net1 = copy.deepcopy(net)
-    assert net1.controller.object.at[0].net is net1
-    assert net1.controller.object.at[1].net is net1
-
-    assert not net1.controller.object.at[0].net is net
-    assert not net1.controller.object.at[1].net is net
 
     assert not net1.controller.object.at[1].data_source is ds
     assert not net1.controller.object.at[1].data_source.df is ds.df

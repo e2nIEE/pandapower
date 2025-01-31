@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import pandapower as pp
@@ -34,17 +34,17 @@ def test_continuous_tap_control_lv():
 
     logger.info("case1: low voltage")
     logger.info("before control: trafo voltage at low voltage bus is %f, tap position is %u"
-                % (net.res_trafo.vm_lv_pu.at[tid], net.trafo.tap_pos.values.item()))
+                % (net.res_trafo.vm_lv_pu.at[tid], net.trafo.tap_pos.values))
 
     # run control
     pp.runpp(net, run_control=True)
     pp.runpp(net)
     logger.info(
         "after ContinuousTapControl: trafo voltage at low voltage bus is %f, tap position is %f"
-        % (net.res_trafo.vm_lv_pu.values.item(), net.trafo.tap_pos.values.item()))
+        % (net.res_trafo.vm_lv_pu.values, net.trafo.tap_pos.values))
 
     assert np.isclose(net.res_trafo.vm_lv_pu.at[tid], 0.99, atol=1e-3)
-    assert np.isclose(net.trafo.tap_pos.values.item(), -.528643)
+    assert np.isclose(net.trafo.tap_pos.values, -.528643)
     # increase voltage from 1.0 pu to 1.03 pu
     net.ext_grid.vm_pu = 1.03
     # switch back tap position
@@ -53,16 +53,16 @@ def test_continuous_tap_control_lv():
 
     logger.info("case2: high voltage")
     logger.info("before control: trafo voltage at low voltage bus is %f, tap position is %u"
-                % (net.res_trafo.vm_lv_pu.at[tid], net.trafo.tap_pos.values.item()))
+                % (net.res_trafo.vm_lv_pu.at[tid], net.trafo.tap_pos.values))
 
     # run control
     pp.runpp(net, run_control=True)
     pp.runpp(net)
     logger.info(
         "after ContinuousTapControl: trafo voltage at low voltage bus is %f, tap position is %f"
-        % (net.res_trafo.vm_lv_pu.at[tid], net.trafo.tap_pos.values.item()))
+        % (net.res_trafo.vm_lv_pu.at[tid], net.trafo.tap_pos.values))
 
-    assert np.isclose(net.trafo.tap_pos.values.item(), -2)
+    assert np.isclose(net.trafo.tap_pos.values, -2)
     # increase voltage from 1.0 pu to 1.03 pu
     net.ext_grid.vm_pu = 0.98
     # switch back tap position
@@ -71,16 +71,16 @@ def test_continuous_tap_control_lv():
 
     logger.info("case2: high voltage")
     logger.info("before control: trafo voltage at low voltage bus is %f, tap position is %u"
-                % (net.res_trafo.vm_lv_pu.at[tid], net.trafo.tap_pos.values.item()))
+                % (net.res_trafo.vm_lv_pu.at[tid], net.trafo.tap_pos.values))
 
     # run control
     pp.runpp(net, run_control=True)
     pp.runpp(net)
     logger.info(
         "after ContinuousTapControl: trafo voltage at low voltage bus is %f, tap position is %f"
-        % (net.res_trafo.vm_lv_pu.at[tid], net.trafo.tap_pos.values.item()))
+        % (net.res_trafo.vm_lv_pu.at[tid], net.trafo.tap_pos.values))
     assert np.isclose(net.res_trafo.vm_lv_pu.at[tid], 0.99, atol=1e-3)
-    assert np.isclose(net.trafo.tap_pos.values.item(), 1.077656)
+    assert np.isclose(net.trafo.tap_pos.values, 1.077656)
 
 
 def test_continuous_tap_control_hv():
@@ -101,17 +101,17 @@ def test_continuous_tap_control_hv():
 
     logger.info("case1: low voltage")
     logger.info("before control: trafo voltage at low voltage bus is %f, tap position is %u"
-                % (net.res_trafo.vm_lv_pu.at[tid], net.trafo.tap_pos.values.item()))
+                % (net.res_trafo.vm_lv_pu.at[tid], net.trafo.tap_pos.values))
 
     # run control
     pp.runpp(net, run_control=True)
     pp.runpp(net)
     logger.info(
         "after ContinuousTapControl: trafo voltage at low voltage bus is %f, tap position is %f"
-        % (net.res_trafo.vm_lv_pu.at[tid], net.trafo.tap_pos.values.item()))
+        % (net.res_trafo.vm_lv_pu.at[tid], net.trafo.tap_pos.values))
 
     assert np.isclose(net.res_trafo.vm_lv_pu.at[tid], 0.99, atol=1e-3)
-    assert np.isclose(net.trafo.tap_pos.values.item(), 0.528643)
+    assert np.isclose(net.trafo.tap_pos.values, 0.528643)
 
     # increase voltage from 1.0 pu to 1.03 pu
     net.ext_grid.vm_pu = 1.03
@@ -121,15 +121,15 @@ def test_continuous_tap_control_hv():
 
     logger.info("case2: high voltage")
     logger.info("before control: trafo voltage at low voltage bus is %f, tap position is %u"
-                % (net.res_trafo.vm_lv_pu.at[tid], net.trafo.tap_pos.values.item()))
+                % (net.res_trafo.vm_lv_pu.at[tid], net.trafo.tap_pos.values))
 
     # run control
     pp.runpp(net, run_control=True)
     pp.runpp(net)
     logger.info(
         "after ContinuousTapControl: trafo voltage at low voltage bus is %f, tap position is %f"
-        % (net.res_trafo.vm_lv_pu.at[tid], net.trafo.tap_pos.values.item()))
-    assert np.isclose(net.trafo.tap_pos.values.item(), 2)
+        % (net.res_trafo.vm_lv_pu.at[tid], net.trafo.tap_pos.values))
+    assert np.isclose(net.trafo.tap_pos.values, 2)
 
     # increase voltage from 1.0 pu to 1.03 pu
     net.ext_grid.vm_pu = 0.98
@@ -139,16 +139,16 @@ def test_continuous_tap_control_hv():
 
     logger.info("case2: high voltage")
     logger.info("before control: trafo voltage at low voltage bus is %f, tap position is %u"
-                % (net.res_trafo.vm_lv_pu.at[tid], net.trafo.tap_pos.values.item()))
+                % (net.res_trafo.vm_lv_pu.at[tid], net.trafo.tap_pos.values))
 
     # run control
     pp.runpp(net, run_control=True)
     pp.runpp(net)
     logger.info(
         "after ContinuousTapControl: trafo voltage at low voltage bus is %f, tap position is %f"
-        % (net.res_trafo.vm_lv_pu.at[tid], net.trafo.tap_pos.values.item()))
+        % (net.res_trafo.vm_lv_pu.at[tid], net.trafo.tap_pos.values))
     assert np.isclose(net.res_trafo.vm_lv_pu.at[tid], 0.99, atol=1e-3)
-    assert np.isclose(net.trafo.tap_pos.values.item(), -1.07765621)
+    assert np.isclose(net.trafo.tap_pos.values, -1.07765621)
 
 
 if __name__ == '__main__':

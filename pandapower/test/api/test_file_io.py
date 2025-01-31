@@ -1,25 +1,28 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-
-
 import copy
 import json
 import os
+import sys
 
 import numpy as np
-import pandas as pd
-import pytest
-
 import pandapower as pp
 import pandapower.control as control
 import pandapower.networks as networks
 import pandapower.topology as topology
+import pandas as pd
+import pytest
 from pandapower import pp_dir
 from pandapower.io_utils import PPJSONEncoder, PPJSONDecoder
 from pandapower.test.toolbox import assert_net_equal, create_test_network
 from pandapower.timeseries import DFData
+
+try:
+    import geopandas as gpd
+except ImportError:
+    pass
 
 
 @pytest.fixture(params=[1])
@@ -82,7 +85,6 @@ def test_json(net_in, tmp_path):
         net_geo = copy.deepcopy(net_in)
         # make GeodataFrame
         from shapely.geometry import Point, LineString
-        from fiona.crs import from_epsg
         import geopandas as gpd
 
         for tab in ('bus_geodata', 'line_geodata'):
@@ -90,7 +92,7 @@ def test_json(net_in, tmp_path):
                 geometry = net_geo[tab].apply(lambda x: Point(x.x, x.y), axis=1)
             else:
                 geometry = net_geo[tab].coords.apply(LineString)
-            net_geo[tab] = gpd.GeoDataFrame(net_geo[tab], geometry=geometry, crs=from_epsg(4326))
+            net_geo[tab] = gpd.GeoDataFrame(net_geo[tab], geometry=geometry, crs=f"epsg:4326")
 
         pp.to_json(net_geo, filename)
         net_out = pp.from_json(filename)
@@ -207,7 +209,7 @@ def assert_graphs_equal(mg1, mg2):
 
 @pytest.mark.xfail
 def test_json_tuple_in_pandas():
-    s = pd.Series()
+    s = pd.Series(dtype=object)
     s["test"] = [(1, 2), (3, 4)]
     json_string = json.dumps(s, cls=PPJSONEncoder)
     s1 = json.loads(json_string, cls=PPJSONDecoder)
@@ -230,8 +232,8 @@ def test_new_pp_object_io():
     obj1 = net1.controller.object.at[0]
     obj2 = net1.controller.object.at[1]
 
-    assert obj1.net is net1
-    assert obj2.net is net1
+    assert isinstance(obj1, control.ConstControl)
+    assert isinstance(obj2, control.ContinuousTapControl)
     assert obj1.run is pp.runpp
     assert isinstance(obj1.data_source, DFData)
     assert isinstance(obj1.data_source.df, pd.DataFrame)
@@ -273,23 +275,49 @@ def test_json_io_same_net(net_in, tmp_path):
 
     s = pp.to_json(net_in)
     net1 = pp.from_json_string(s)
-    assert net1.controller.object.at[0].net is net1
+    assert isinstance(net1.controller.object.at[0], control.ConstControl)
 
     filename = os.path.abspath(str(tmp_path)) + "testfile.json"
     pp.to_json(net_in, filename)
     net2 = pp.from_json(filename)
-    assert net2.controller.object.at[0].net is net2
+    assert isinstance(net2.controller.object.at[0], control.ConstControl)
+
+
+def test_json_different_nets():
+    net = networks.mv_oberrhein()
+    net2 = networks.simple_four_bus_system()
+    control.ContinuousTapControl(net, 114, 1.02)
+    net.tuple = (1, "4")
+    net.mg = topology.create_nxgraph(net)
+    json_string = json.dumps([net, net2], cls=PPJSONEncoder)
+    [net_out, net2_out] = json.loads(json_string, cls=PPJSONDecoder)
+    assert_net_equal(net_out, net)
+    assert_net_equal(net2_out, net2)
+    pp.runpp(net_out, run_control=True)
+    pp.runpp(net, run_control=True)
+    assert_net_equal(net, net_out)
 
 
 def test_deepcopy_controller():
     net = pp.networks.mv_oberrhein()
     control.ContinuousTapControl(net, 114, 1.01)
-    assert net == net.controller.object.iloc[0].net
     net2 = copy.deepcopy(net)
-    assert net2 == net2.controller.object.iloc[0].net
-    net3 = copy.copy(net)
-    assert net3 == net3.controller.object.iloc[0].net
+    ct1 = net.controller.object.iloc[0]
+    ct2 = net2.controller.object.iloc[0]
+    assert ct1 != ct2
+    assert ct1.equals(ct2)
+    ct2.vm_set_pu = 1.02
+    assert not ct1.equals(ct2)
 
+
+@pytest.mark.skipif('geopandas' not in sys.modules, reason="requires the GeoPandas library")
+def test_empty_geo_dataframe():
+    net = pp.create_empty_network()
+    net.bus_geodata['geometry'] = None
+    net.bus_geodata = gpd.GeoDataFrame(net.bus_geodata)
+    s = pp.to_json(net)
+    net1 = pp.from_json_string(s)
+    assert assert_net_equal(net, net1)
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-x"])
+    pytest.main([__file__, "-s"])

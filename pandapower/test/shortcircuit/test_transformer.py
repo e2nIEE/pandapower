@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -99,5 +99,4 @@ def test_min_10_trafo_2ph(net_transformer):
 #    assert (abs(net.res_bus_sc.ith_ka.at[2] - 11.182525915) <1e-5)
 
 if __name__ == '__main__':
-    net = net_transformer()
     pytest.main(["test_transformer.py"])

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
@@ -15,11 +15,14 @@ import pytest
 import pandapower as pp
 import pandapower.networks as nw
 from pandapower.converter.powermodels.from_pm import read_pm_results_to_net
+from pandapower.converter.powermodels.to_pm import init_ne_line
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.test.consistency_checks import consistency_checks
 from pandapower.test.toolbox import add_grid_connection, create_test_line
 from pandapower.converter import convert_pp_to_pm
 from pandapower.test.opf.test_basic import simple_opf_test_net
+import pandapower.control
+import pandapower.timeseries
 
 try:
     from julia.core import UnsupportedPythonError
@@ -316,31 +319,6 @@ def test_voltage_angles():
         assert np.allclose(net.res_trafo3w.loading_percent, loading3w, atol=1e-2, rtol=1e-2, equal_nan=True)
 
 
-def init_ne_line(net, new_line_index, construction_costs=None):
-    """
-    init function for new line dataframe, which specifies the possible new lines being built by power models opt
-
-    Parameters
-    ----------
-    net - pp net
-    new_line_index (list) - indices of new lines. These are copied to the new dataframe net["ne_line"] from net["line"]
-    construction_costs (list, 0.) - costs of newly constructed lines
-
-    Returns
-    -------
-
-    """
-    # init dataframe
-    net["ne_line"] = net["line"].loc[new_line_index, :]
-    # add costs, if None -> init with zeros
-    construction_costs = np.zeros(
-        len(new_line_index)) if construction_costs is None else construction_costs
-    net["ne_line"].loc[new_line_index, "construction_cost"] = construction_costs
-    # set in service, but only in ne line dataframe
-    net["ne_line"].loc[new_line_index, "in_service"] = True
-    # init res_ne_line to save built status afterwards
-    net["res_ne_line"] = pd.DataFrame(data=0, index=new_line_index, columns=["built"], dtype=int)
-
 
 def tnep_grid():
     net = pp.create_empty_network()
@@ -526,7 +504,9 @@ def test_pm_dc_powerflow_tap():
 def test_pp_to_pm_conversion(net_3w_trafo_opf):
     # tests if the conversion to power models works
     net = net_3w_trafo_opf
-    pm = convert_pp_to_pm(net)
+    pm_S = convert_pp_to_pm(net)
+    pm_I = convert_pp_to_pm(net, opf_flow_lim="I")
+
 
 
 def test_pm_to_pp_conversion(simple_opf_test_net):
@@ -554,5 +534,20 @@ def test_pm_to_pp_conversion(simple_opf_test_net):
     assert np.allclose(net.res_bus.va_degree, va_degree, atol=1e-2, rtol=1e-2)
 
 
+@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
+def test_timeseries_powermodels():
+    profiles = pd.DataFrame()
+    n_timesteps = 3
+    profiles['load1'] = np.random.random(n_timesteps) * 2e1
+    ds = pp.timeseries.DFData(profiles)
+
+    net = nw.simple_four_bus_system()
+    time_steps = range(3)
+    pp.control.ConstControl(net, 'load', 'p_mw', element_index=0, data_source=ds, profile_name='load1', scale_factor=0.85)
+    net.load['controllable'] = False
+    pp.timeseries.run_timeseries(net, time_steps, continue_on_divergence=True, verbose=False, recycle=False, run=pp.runpm_dc_opf)
+
+
 if __name__ == '__main__':
-    pytest.main([__file__])
+    test_pwl()
+    # pytest.main([__file__])

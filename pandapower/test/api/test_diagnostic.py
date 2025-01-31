@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -931,7 +931,7 @@ def test_disconnected_elements(test_net, diag_params, diag_errors, report_method
     check_function = 'disconnected_elements'
     diag_params = copy.deepcopy(diag_params)
     report_methods = copy.deepcopy(report_methods)
-    net.switch.loc[[37, 38], "closed"] = False
+    net.switch.closed.loc[37,38] = False
     pp.drop_trafos(net, [1])
     check_result = pp.disconnected_elements(net)
     if check_result:

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -76,8 +76,8 @@ def test_determine_stubs(feeder_network):
     sec_bus = pp.create_bus(net, vn_kv=20.)
     sec_line = pp.create_line(net, 3, sec_bus, length_km=3, std_type="NA2XS2Y 1x185 RM/25 12/20 kV")
     top.determine_stubs(net)
-    assert not np.any(net.bus.on_stub.loc[list(set(net.bus.index) - {sec_bus})].values)
-    assert not np.any(net.line.is_stub.loc[list(set(net.line.index) - {sec_line})].values)
+    assert not np.any(net.bus.on_stub.loc[set(net.bus.index) - {sec_bus}].values)
+    assert not np.any(net.line.is_stub.loc[set(net.line.index) - {sec_line}].values)
     assert net.bus.on_stub.at[sec_bus]
     assert net.line.is_stub.at[sec_line]
 

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -276,11 +276,11 @@ def test_3bus_with_2_slacks():
     pp.create_bus(net, name="bus7", vn_kv=1., index=7)
     pp.create_ext_grid(net, 5)
     pp.create_line_from_parameters(net, 5, 6, 1, r_ohm_per_km=.01, x_ohm_per_km=.03, c_nf_per_km=0.,
-                                   max_i_ka=1)
+                                    max_i_ka=1)
     pp.create_line_from_parameters(net, 5, 7, 1, r_ohm_per_km=.02, x_ohm_per_km=.05, c_nf_per_km=0.,
-                                   max_i_ka=1)
+                                    max_i_ka=1)
     pp.create_line_from_parameters(net, 6, 7, 1, r_ohm_per_km=.03, x_ohm_per_km=.08, c_nf_per_km=0.,
-                                   max_i_ka=1)
+                                    max_i_ka=1)
 
     pp.create_measurement(net, "v", "bus", 1.006, .004, element=5)  # V at bus 5
     pp.create_measurement(net, "v", "bus", .968, .004, element=6)   # V at bus 6
@@ -848,7 +848,7 @@ def test_zero_injection_aux_bus():
     assert np.allclose(net_auto.res_bus_est.vm_pu.values,net_aux.res_bus_est.vm_pu.values, 1e-4, equal_nan=True)
 
     # in case zero injection was set to none, the results should be different
-    assert not np.allclose(net.res_bus_est.vm_pu.values, net_aux.res_bus_est.vm_pu.values, 1e-2, equal_nan=True)
+    assert ~np.allclose(net.res_bus_est.vm_pu.values,net_aux.res_bus_est.vm_pu.values, 1e-2, equal_nan=True)
 
 
 @pytest.mark.xfail

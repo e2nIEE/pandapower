@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -58,6 +58,13 @@ def _change_ref_bus(net, ref_bus_idx, ext_grid_p=0):
                            min_p_mw=gen_data.min_p_mw, max_p_mw=gen_data.max_p_mw)
 
 
+def sorted_from_json(path):
+    net = pp.from_json(path)
+    for elm in pp.pp_elements():
+        net[elm].sort_index(inplace=True)
+    return net
+
+
 def case4gs():
     """
     This is the 4 bus example from J. J. Grainger and W. D. Stevenson, Power system analysis. \
@@ -72,7 +79,7 @@ def case4gs():
 
          net = pn.case4gs()
     """
-    case4gs = pp.from_json(_get_cases_path("case4gs.json"))
+    case4gs = sorted_from_json(_get_cases_path("case4gs.json"))
     return case4gs
 
 
@@ -82,14 +89,14 @@ def case5():
     Studies" Its data origin is `MATPOWER <http://www.pserc.cornell.edu/matpower/>`_.
 
     OUTPUT:
-         **net** - Returns the required ieee network case4gs
+         **net** - Returns the required ieee network case5
 
     EXAMPLE:
          import pandapower.networks as pn
 
          net = pn.case5()
     """
-    case5 = pp.from_json(_get_cases_path("case5.json"))
+    case5 = sorted_from_json(_get_cases_path("case5.json"))
     return case5
 
 
@@ -108,7 +115,7 @@ def case6ww():
 
          net = pn.case6ww()
     """
-    case6ww = pp.from_json(_get_cases_path("case6ww.json"))
+    case6ww = sorted_from_json(_get_cases_path("case6ww.json"))
     return case6ww
 
 
@@ -127,7 +134,7 @@ def case9():
 
          net = pn.case9()
     """
-    case9 = pp.from_json(_get_cases_path("case9.json"))
+    case9 = sorted_from_json(_get_cases_path("case9.json"))
     return case9
 
 
@@ -153,7 +160,7 @@ def case11_iwamoto():
 
          net = pn.case11_iwamoto()
     """
-    case11 = pp.from_json(_get_cases_path("case11_iwamoto.json"))
+    case11 = sorted_from_json(_get_cases_path("case11_iwamoto.json"))
     return case11
 
 
@@ -174,7 +181,7 @@ def case14():
 
          net = pn.case14()
     """
-    case14 = pp.from_json(_get_cases_path("case14.json"))
+    case14 = sorted_from_json(_get_cases_path("case14.json"))
     return case14
 
 
@@ -194,7 +201,7 @@ def case24_ieee_rts():
 
          net = pn.case24_ieee_rts()
     """
-    case24 = pp.from_json(_get_cases_path("case24_ieee_rts.json"))
+    case24 = sorted_from_json(_get_cases_path("case24_ieee_rts.json"))
     return case24
 
 
@@ -212,7 +219,7 @@ def case30():
 
          net = pn.case30()
     """
-    case30 = pp.from_json(_get_cases_path("case30.json"))
+    case30 = sorted_from_json(_get_cases_path("case30.json"))
     return case30
 
 
@@ -231,7 +238,7 @@ def case_ieee30():
 
          net = pn.case_ieee30()
     """
-    case_ieee30 = pp.from_json(_get_cases_path("case_ieee30.json"))
+    case_ieee30 = sorted_from_json(_get_cases_path("case_ieee30.json"))
     return case_ieee30
 
 
@@ -251,7 +258,7 @@ def case33bw():
 
          net = pn.case33bw()
     """
-    case33bw = pp.from_json(_get_cases_path("case33bw.json"))
+    case33bw = sorted_from_json(_get_cases_path("case33bw.json"))
     return case33bw
 
 
@@ -274,7 +281,7 @@ def case39():
 
          net = pn.case39()
     """
-    case39 = pp.from_json(_get_cases_path("case39.json"))
+    case39 = sorted_from_json(_get_cases_path("case39.json"))
     return case39
 
 
@@ -303,7 +310,7 @@ def case57(vn_kv_area1=115, vn_kv_area2=500, vn_kv_area3=138, vn_kv_area4=345, v
 
          net = pn.case57()
     """
-    case57 = pp.from_json(_get_cases_path("case57.json"))
+    case57 = sorted_from_json(_get_cases_path("case57.json"))
     Idx_area1 = case57.bus[case57.bus.vn_kv == 110].index
     Idx_area2 = case57.bus[case57.bus.vn_kv == 120].index
     Idx_area3 = case57.bus[case57.bus.vn_kv == 125].index
@@ -338,7 +345,7 @@ def case89pegase():
 
          net = pn.case89pegase()
     """
-    case89pegase = pp.from_json(_get_cases_path("case89pegase.json"))
+    case89pegase = sorted_from_json(_get_cases_path("case89pegase.json"))
     return case89pegase
 
 
@@ -359,7 +366,7 @@ def case118():
 
          net = pn.case118()
     """
-    case118 = pp.from_json(_get_cases_path("case118.json"))
+    case118 = sorted_from_json(_get_cases_path("case118.json"))
     return case118
 
 
@@ -377,7 +384,7 @@ def case145():
 
          net = pn.case145()
     """
-    case145 = pp.from_json(_get_cases_path("case145.json"))
+    case145 = sorted_from_json(_get_cases_path("case145.json"))
     return case145
 
 
@@ -396,7 +403,7 @@ def case_illinois200():
 
          net = pn.case_illinois200()
     """
-    case_illinois200 = pp.from_json(_get_cases_path("case_illinois200.json"))
+    case_illinois200 = sorted_from_json(_get_cases_path("case_illinois200.json"))
     return case_illinois200
 
 
@@ -416,7 +423,7 @@ def case300():
 
          net = pn.case300()
     """
-    case300 = pp.from_json(_get_cases_path("case300.json"))
+    case300 = sorted_from_json(_get_cases_path("case300.json"))
     return case300
 
 
@@ -439,7 +446,7 @@ def case1354pegase():
 
          net = pn.case1354pegase()
     """
-    case1354pegase = pp.from_json(_get_cases_path("case1354pegase.json"))
+    case1354pegase = sorted_from_json(_get_cases_path("case1354pegase.json"))
     return case1354pegase
 
 
@@ -469,7 +476,7 @@ def case1888rte(ref_bus_idx=1246):
 
          net = pn.case1888rte()
     """
-    case1888rte = pp.from_json(_get_cases_path("case1888rte.json"))
+    case1888rte = sorted_from_json(_get_cases_path("case1888rte.json"))
     case1888rte.ext_grid.loc[0, ['min_p_mw',  'max_p_mw',  'min_q_mvar', 'max_q_mvar']] *= 2
 
     if ref_bus_idx != 1246:  # change reference bus
@@ -503,7 +510,7 @@ def case2848rte(ref_bus_idx=271):
 
          net = pn.case2848rte()
     """
-    case2848rte = pp.from_json(_get_cases_path("case2848rte.json"))
+    case2848rte = sorted_from_json(_get_cases_path("case2848rte.json"))
     if ref_bus_idx != 271:  # change reference bus
         _change_ref_bus(case2848rte, ref_bus_idx, ext_grid_p=[44.01])
     return case2848rte
@@ -528,7 +535,7 @@ def case2869pegase():
 
          net = pn.case2869pegase()
     """
-    case2869pegase = pp.from_json(_get_cases_path("case2869pegase.json"))
+    case2869pegase = sorted_from_json(_get_cases_path("case2869pegase.json"))
     return case2869pegase
 
 
@@ -546,7 +553,7 @@ def case3120sp():
 
          net = pn.case3120sp()
     """
-    case3120sp = pp.from_json(_get_cases_path("case3120sp.json"))
+    case3120sp = sorted_from_json(_get_cases_path("case3120sp.json"))
     return case3120sp
 
 
@@ -576,7 +583,7 @@ def case6470rte(ref_bus_idx=5988):
 
          net = pn.case6470rte()
     """
-    case6470rte = pp.from_json(_get_cases_path("case6470rte.json"))
+    case6470rte = sorted_from_json(_get_cases_path("case6470rte.json"))
     case6470rte.ext_grid.loc[0, ['min_p_mw',  'max_p_mw',  'min_q_mvar', 'max_q_mvar']] *= 2
     if ref_bus_idx != 5988:  # change reference bus
         _change_ref_bus(case6470rte, ref_bus_idx, ext_grid_p=[-169.41])
@@ -611,7 +618,7 @@ def case6495rte(ref_bus_idx=None):
          net = pn.case6495rte()
     """
     ref_bus_idx = ref_bus_idx or [6077, 6161, 6305, 6306, 6307, 6308]
-    case6495rte = pp.from_json(_get_cases_path("case6495rte.json"))
+    case6495rte = sorted_from_json(_get_cases_path("case6495rte.json"))
     if ref_bus_idx != [6077, 6161, 6305, 6306, 6307, 6308]:  # change reference bus
         _change_ref_bus(case6495rte, ref_bus_idx, ext_grid_p=[1382.35, 2894.13, 1498.32,
                                                               1498.32, 1493.11, 1493.12])
@@ -644,7 +651,7 @@ def case6515rte(ref_bus_idx=6171):
 
          net = pn.case6515rte()
     """
-    case6515rte = pp.from_json(_get_cases_path("case6515rte.json"))
+    case6515rte = sorted_from_json(_get_cases_path("case6515rte.json"))
     if ref_bus_idx != 6171:  # change reference bus
         _change_ref_bus(case6515rte, ref_bus_idx, ext_grid_p=2850.78)
     return case6515rte
@@ -669,7 +676,7 @@ def case9241pegase():
 
          net = pn.case9241pegase()
     """
-    case9241pegase = pp.from_json(_get_cases_path("case9241pegase.json"))
+    case9241pegase = sorted_from_json(_get_cases_path("case9241pegase.json"))
     return case9241pegase
 
 
@@ -689,7 +696,7 @@ def GBreducednetwork():
 
          net = pn.GBreducednetwork()
     """
-    GBreducednetwork = pp.from_json(_get_cases_path("GBreducednetwork.json"))
+    GBreducednetwork = sorted_from_json(_get_cases_path("GBreducednetwork.json"))
     return GBreducednetwork
 
 
@@ -711,7 +718,7 @@ def GBnetwork():
 
          net = pn.GBnetwork()
     """
-    GBnetwork = pp.from_json(_get_cases_path("GBnetwork.json"))
+    GBnetwork = sorted_from_json(_get_cases_path("GBnetwork.json"))
     return GBnetwork
 
 
@@ -732,5 +739,5 @@ def iceland():
 
          net = pn.iceland()
     """
-    iceland = pp.from_json(_get_cases_path("iceland.json"))
+    iceland = sorted_from_json(_get_cases_path("iceland.json"))
     return iceland

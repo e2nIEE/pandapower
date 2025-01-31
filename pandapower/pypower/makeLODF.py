@@ -4,11 +4,11 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-# Copyright (c) 2016-2020 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-"""Builds the line outage distribution factor matrix.
-"""
+# Builds the line outage distribution factor matrix.
+
 
 from numpy import ones, diag, r_, arange
 import numpy as np
