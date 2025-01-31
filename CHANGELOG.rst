@@ -1,3 +1,68 @@
+Change Log
+
+[2.7.0]- 2021-07-15
+----------------------
+- [ADDED] Optimized the calculation of single/selected buses in 1ph/2ph/3ph short-circuit calculation
+- [ADDED] Power station units with gen and trafo designated with "ps_trafo_ix" for short-circuit calculation
+- [ADDED] Multiple example networks and network variations from IEC 60909-4
+- [ADDED] OR-Tools implementation of linprog solver
+- [ADDED] Efficient PTDF calculation on large grid
+- [ADDED] toolbox function replace_pq_elmtype()
+- [ADDED] Alternative constructor for DiscreteTapControl to use net.trafo.tap_step_percent to determine vm_lower_pu and vm_upper_pu based on vm_set_pu
+- [ADDED] Characteristic object that represents a piecewise-linear characteristic
+- [ADDED] CharacteristicControl that implements adjusting values in net based on some other input values in the grid
+- [ADDED] USetTapControl that adjusts the setpoint for a transformer tap changer, based on a specified result variable (e.g. i_lv_ka)
+- [CHANGED] Short-circuit gen calculation parameter "rkss_pu" to "rkss_ohm" according to IEC 60909 example
+- [CHANGED] ConstControl can now also change attributes of other controllers, if the parameter "variable" is defined in the format "object.attribute" (e.g. "object.vm_set_pu")
+- [CHANGED] ConstControl is initialized with level=-1 and order=-1 by default to make sure that it runs before other controllers
+- [CHANGED] ConstControl now writes values from the datasource to net at time_step instead of control_step, which ensures that the values for the time step are set before running the initial power flow
+- [CHANGED] replaced naming for "inductive" or "ind" by "underexcited" and "capacitive" or "cap" for "overexcited"
+
+[2.6.0]- 2021-03-09
+----------------------
+- [ADDED] Factorization mode instead of inversion of Ybus in short-circuit calculation.
+- [ADDED] Optimized the calculation of single/selected buses in 1ph/2ph/3ph short-circuit calculation.
+- [ADDED] New options for run_control to 'continue on divergence' and 'check each level' PR #1104.
+- [ADDED] Check for necessary and valid parameters to calculate 3ph powerflow.
+- [ADDED] Toolbox method get_connecting_branches to determine branches which connect two sets of buses.
+- [CHANGED] Deleting set_q_from_cosphi from ConstControl and deprecation warning. Use a separate ConstControl for setting Q timeseries instead.
+- [CHANGED] Removed official Python 3.5 support due to end of its life #994.
+- [FIXED] matching_params was missing in basic controller.
+- [FIXED] Order of latitude and longitude in plotly mapbox plot.
+- [FIXED] Dependencies of powerflow result plotting.
+- [FIXED] init_ne_line to work with switches and parallel lines. Needed for PowerModels TNEP.
+
+[2.5.0]- 2021-01-08
+----------------------
+- [ADDED] github actions for tests added.
+- [ADDED] tests for PowerModels.jl interface (julia tests).
+- [ADDED] documentation on how to install Gurobi as a PowerModels.jl solver.
+- [ADDED] the voltage set point of external grids can now be optimized by the OPF by setting net.ext_grid.controllable to True.
+- [ADDED] the Powermodels AC OPF can now be used with line loading constraints formulated with respect to the maximum current net.line.max_i_ka by using  pp.runpm_ac_opf(net, opf_flow_lim="I").
+- [ADDED] for easier debugging of the Powermodels interface, you can now save your .json file and specify the file name by using pp.runpm(net, delete_buffer_file=False, pm_file_path="filename.json".
+- [CHANGED] The create-module now contains some functions for standardized checks and procedures in all create functions.
+- [CHANGED] all controllers and output writers do not have net as attribute any more.
+- [CHANGED] due to multi net implementations in pandapipes, time series functions have been adapted drastically in order to minimize duplicated code.
+- [CHANGED] internal data structure tutorial contains now an example of a spy plot to visualize the admittance matrix Ybus.
+- [CHANGED] introduce abstract node/branch formulation for the plotly functions.
+- [FIXED] issue # 905 fixed (If powerflow not necessary, e.g. two ext_grids/pv-nodes with only two buses) powerflow is bypassed and the solution is trivial.
+- [FIXES] issue # 954 fixed (Update bus IDs for net.asymmetric_load and net.asymmetric_sgen when merging nets in toolbox.py).
+- [FIXED] issue # 780 fixed (passing the shape to pypower solves the problem)
+- [FIXED] excel engine pd.ExcelFile not working in new pandas version. Adaptation in file_io with new module openpyxl. openpyxl needs to be installed. Requirements are adapted accordngly.
+- [FIXED] in io_utils functions with no clear class name can be de-serialized as well.
+- [FIXED] fixed generic coordinates creation when respect_switches is set.
+- [FIXED] recycle values None and False are considered equally --> recycle usage is skipped.
+- [FIXED] control_diagnostic distinguishes between two winding and three winding transformers.
+- [FIXED] toolbox functions, e.g. get_connected_elements, consider switches for three winding transformers.
+- [FIXED] json load for broken geom columns in bus_geodata.
+
+[2.4.0]- 2020-09-01
+----------------------
+- [CHANGED] signing system in state estimation: bus p,q measurement in consumption reference (load is positive) #893
+- [ADDED] new element "net.motor" to model asynchronous machines #244
+- [ADDED] possibility to calculate all branch currents in short-circuit calculations #862
+- [ADDED] more flexibility in the create_generic_geodata function
+
 [2.3.1]- 2020-08-19
 ----------------------
 - [ADDED] Missing dependencies xlswriter, xlrd, cryptography
@@ -18,10 +83,10 @@
 - [FIXED] pandas 1.0 and 1.1 support
 - [CHANGED] revision of toolbox function drop_out_of_service_elements()
 - [ADDED] toolbox function drop_measurements_at_elements()
-- [ADDED] Encyption for JSON I/O
+- [ADDED] Encryption for JSON I/O
 - [FIXED] Bug in converting measurements of out-of-service branch in state estimation #859
 - [FIXED] Bug in using initialization option "results" in state estimation #859
-- [CHANGED] In state estimation power flow results will not be renamed anymore 
+- [CHANGED] In state estimation power flow results will not be renamed anymore
 - [ADDED] New feature for defining the number of logging columns for an eval_function of an outputwriter log variable. Example: See log_variable docstring
 
 [2.2.2]- 2020-03-17
