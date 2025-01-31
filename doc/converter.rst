@@ -16,5 +16,6 @@ These tools are:
     converter/matpower
     converter/powerfactory
     converter/cgmes
+    converter/ucte
     converter/jao
 

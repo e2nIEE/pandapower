@@ -319,7 +319,6 @@ def test_ward_split(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_t
     assert abs(net.res_bus.vm_pu.at[b2] - u)
     assert abs(net.res_ward.p_mw.loc[[w1, w2]].sum() - (-pw))
     assert abs(net.res_ward.q_mvar.loc[[w1, w2]].sum() - (-qw))
-    #
 
 
 def test_xward(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
