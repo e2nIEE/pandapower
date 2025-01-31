@@ -207,6 +207,29 @@ def delete_std_type(net, name, element="line"):
         raise UserWarning("Unknown standard %s type %s" % (element, name))
 
 
+def rename_std_type(net, old_name, new_name, element="line"):
+    """Renames an existing standard type in the standard type library and the element table.
+
+    Parameters
+    ----------
+    net : pp.pandapowerNet
+        pandapower net
+    old_name : str
+        old name to be replaced
+    new_name : str
+        new name of the standard type
+    element : str, optional
+        type of element, by default "line"
+    """
+    library = net.std_types[element]
+    if old_name not in library:
+        raise UserWarning(f"Unknown {element} standard type '{old_name}'.")
+    if new_name in library:
+        raise UserWarning(f"{element} standard type '{new_name}' already exists.")
+    library[new_name] = library.pop(old_name)
+    net[element].loc[net[element].std_type == old_name, "std_type"] = new_name
+
+
 def available_std_types(net, element="line"):
     """
     Returns all standard types available for this network as a table.
@@ -229,7 +252,7 @@ def available_std_types(net, element="line"):
             return std_types.convert_objects()
 
 
-def parameter_from_std_type(net, parameter, element="line",fill=None):
+def parameter_from_std_type(net, parameter, element="line", fill=None):
     """
     Loads standard types data for a parameter, which can be used to add an additional parameter,
     that is not included in the original pandapower datastructure but is available in the standard
@@ -319,6 +342,7 @@ def find_std_type_by_parameter(net, data, element="line", epsilon=0.):
             fitting_types.append(name)
     return fitting_types
 
+
 def find_std_type_alternative(net, data, element = "line", voltage_rating = "", epsilon = 0.):
     """
         Searches for a std_type that fits all values given in the standard types library with the margin of
@@ -356,6 +380,7 @@ def find_std_type_alternative(net, data, element = "line", voltage_rating = "", 
         else:
             fitting_types.append(name)
     return fitting_types
+
 
 def add_zero_impedance_parameters(net):
     """

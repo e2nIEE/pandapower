@@ -3,22 +3,6 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
-- [FIXED] Increasing geojson precision as the default precision might cause problems with pandahub
-
-[2.14.11] - 2024-07-08
--------------------------------
-- [FIXED] Lightsim2grid version
-
-[2.14.10] - 2024-07-08
--------------------------------
-- [FIXED] geopandas version
-
-[2.14.9] - 2024-06-25
--------------------------------
-- [FIXED] scipy version
-
-[upcoming release] - 2024-..-..
--------------------------------
 
 - [ADDED] Static Var Compensator with Voltage Control
 - [ADDED] pf2pp: min/max q_mvar and min/max p_mw limits for sgens and gen will be converted
@@ -40,11 +24,13 @@ Change Log
 - [ADDED] pf2pp: min/max q_mvar and min/max p_mw limits for sgens and gen will be converted
 - [ADDED] converter for European EHV grid data from JAO, the "Single Allocation Platform (SAP) for all European Transmission System Operators (TSOs) that operate in accordance to EU legislation"
 - [ADDED] Add GeographicalRegion and SubGeographicalRegion names and ids to bus df in cim converter
+- [ADDED] API function rename_std_type()
 - [CHANGED] Capitalize first letter of columns busbar_id, busbar_name and substation_id in bus df for cim converter
 - [CHANGED] required standard type parameters are made available by function :code:`required_std_type_parameters()`
 - [CHANGED] toolbox replace functions (e.g. gen replacement by sgens): improved result table implementation and added profiles consideration
 - [FIXED] Do not modify pandas options when importing pandapower
 - [FIXED] fixed copy-paste error in contingency results "max_limit_nminus1" and "min_limit_nminus1"
+- [FIXED] default elements in toolbox function add_zones_to_elements()
 - [ADDED] improved lightsim2grid documentation including compatibitliy issues
 - [FIXED] avoid duplicated keys in kwargs and pf_options in run_contingency()
 - [FIXED] cim2pp: set default xml encoding to None to avoid error after changing to lxml
@@ -87,6 +73,7 @@ Change Log
 - [FIXED] massive performance drag in large grids due to initializing Ybus for FACTS with np.zeros instead of using sparse matrix initialization
 - [FIXED] further futurewarnings and deprecation warnings
 - [FIXED] minor issues in geojson exporter
+- [CHANGED] e2n logo is updated due to its official renaming
 - [CHANGED] use of bus_geodata and line_geodata tables to geo column in bus and line table
 - [CHANGED] update most geodata dependant functions to use geo column
 - [ADDED] geodata to geojson converter
@@ -123,7 +110,9 @@ Change Log
 - [CHANGED] Trafo Controllers can now be added to elements that are out of service, changed self.nothing_to_do()
 - [ADDED] Discrete shunt controller for local voltage regulation with shunt steps
 - [ADDED] fix lengths missmatch of output if ignore_zero_length is False in plotting utility function coords_from_node_geodata() and rename ignore_zero_length by ignore_no_geo_diff
+- [FIXED] from_powerfactory() converter: error that crept in `obj.GetAttributes(a)` instead of `obj.GetAttribute(a)`
 - [ADDED] converter for European EHV grid data from JAO, the "Single Allocation Platform (SAP) for all European Transmission System Operators (TSOs) that operate in accordance to EU legislation"
+- [ADDED] UCTE-DEF (UCTE Data Exchange Format) converter
 - [ADDED] cim2pp converter: Using lxml to parse XML files (better performance)
 - [FIXED] OC relay name attribute error
 - [FIXED] cim2pp: fixed missing nominal voltages at SeriesCompensator
