@@ -24,7 +24,7 @@ classifiers = [
     'Programming Language :: Python',
     'Programming Language :: Python :: 3']
 
-with open('.github/workflows/github_test_action.yml', 'rb') as f:
+with open('.travis.yml', 'rb') as f:
     lines = f.read().decode('utf-8')
     versions = set(re.findall('3.[0-9]', lines))
     for version in versions:
@@ -56,7 +56,7 @@ setup(
 		              "cryptography",
                       "numba",  # 0.60.0
                       "julia",  # 0.6.2
-                      "lightsim2grid"  # 0.10.0
+                      "lightsim2grid",  # 0.10.0
 		              # "legacy-cgi",
                       "openpyxl",
                       "cryptography"],
