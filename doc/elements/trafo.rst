@@ -193,9 +193,9 @@ On which side the reference voltage is adapted depends on the :math:`tap\_side` 
 **Cross regulator (Ratio Tap Changer / Symmetrical Tap Changer)**
 
 In addition to tap_step_percent, the tap_step_degree parameter can be populated to model the fixed angle
-between the vectors of the input voltage and additional voltage per tap step dU (**not tap-dependent**).
+between the vectors of the input voltage and additional voltage per tap step :math:`\delta U` (**not tap-dependent**).
 This results in a cross regulator that affects the magnitude as well as the angle of the output voltage.
-Use tap_changer_type "Ratio", or if the fixed angle theta is 90 degrees, set tap_step_degree to 90 and use
+Use tap_changer_type "Ratio", or if the angle shift is :math:`\theta = 90` degrees, set tap_step_degree to 90 and use
 tap_changer_type "Symmetrical".
 
 .. math::
