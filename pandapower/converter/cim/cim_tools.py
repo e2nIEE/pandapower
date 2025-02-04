@@ -108,7 +108,8 @@ def extend_pp_net_cim(net: pandapowerNet, override: bool = True) -> pandapowerNe
     fill_dict['trafo3w'][np_bool_type] = ['power_station_unit']
 
     fill_dict['measurement'] = dict()
-    fill_dict['measurement'][np_str_type] = ['source', 'origin_class', 'origin_id', 'analog_id', 'description']
+    fill_dict['measurement'][np_str_type] = ['source', 'origin_class', 'origin_id', 'analog_id', 'terminal_id',
+                                             'description']
 
     for pp_type, one_fd in fill_dict.items():
         for np_type, fields in fill_dict_all.items():

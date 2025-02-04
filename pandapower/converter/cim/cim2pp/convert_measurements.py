@@ -81,7 +81,7 @@ class CreateMeasurements:
         # remove the PhaseVoltage measurements
         psr = psr.loc[psr.measurementType != 'PhaseVoltage']
         psr['measurement_type'] = psr.unitSymbol.map({'W': 'p', 'VAr': 'q', 'A': 'i', 'V': 'v'})
-        # change the sign if need
+        # change the sign if needed
         psr['value'].loc[~psr['positiveFlowIn']] = psr.loc[~psr['positiveFlowIn']]['value'] * (-1)
         # move the voltage measurements to the buses
         psr = pd.merge(psr, self.net.bus[['vn_kv']], how='inner', left_on='bus', right_index=True)
@@ -93,26 +93,27 @@ class CreateMeasurements:
         psr_v['side'] = None
         psr.loc[psr['measurement_type'] == 'v', psr_v.columns] = psr_v
 
-        #convert amps to ka and assign std_dev values for 'i' measurements
+        # convert amps to ka and assign std_dev values for 'i' measurements
         psr_i = psr.loc[psr['measurement_type'] == 'i'] 
         psr_i['value'] = psr_i['value'] / 1e3
         psr_i['std_dev'] = psr_i['sensorAccuracy'] / 1e3
         psr.loc[psr['measurement_type'] == 'i', psr_i.columns] = psr_i
 
-        #assign std_dev values for 'p' measurements
+        # assign std_dev values for 'p' measurements
         psr_p = psr.loc[psr['measurement_type'] == 'p'] 
         psr_p['std_dev'] = psr_p['sensorAccuracy'] 
         psr.loc[psr['measurement_type'] == 'p', psr_p.columns] = psr_p
 
-        #assign std_dev values for 'q' measurements
+        # assign std_dev values for 'q' measurements
         psr_q = psr.loc[psr['measurement_type'] == 'q'] 
         psr_q['std_dev'] = psr_q['sensorAccuracy'] 
         psr.loc[psr['measurement_type'] == 'q', psr_q.columns] = psr_q
 
         psr = psr.drop(columns=[sc['o_id']])
         psr = psr.rename(columns={'rdfId_AnalogValue': sc['o_id'], 'name_analog': sc['name'],
-                                  'rdfId_Analog': sc['a_id']})
+                                  'rdfId_Analog': sc['a_id'], 'Terminal': 'terminal_id'})
         psr[sc['o_cl']] = 'AnalogValue'
+        psr.reset_index(drop=True, inplace=True)
 
         self._copy_to_measurement(psr)
 

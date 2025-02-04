@@ -4,6 +4,8 @@ Change Log
 [upcoming release] - 2025-..-..
 -------------------------------
 
+- [ADDED] cim2pp converter - extract 'Terminal' and 'description' Analog fields in net.measurement
+- [FIXED] cim2pp converter - removed nan rows in net.measurement
 - [ADDED] Static Var Compensator with Voltage Control
 - [ADDED] pf2pp: min/max q_mvar and min/max p_mw limits for sgens and gen will be converted
 - [FIXED] Allow to consider all oos components in nx graph creation
