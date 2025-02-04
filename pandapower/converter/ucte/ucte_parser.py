@@ -85,10 +85,7 @@ class UCTEParser:
             self.date = datetime.datetime.strptime(date_str, "%Y%m%d_%H%M")
         except Exception as e:
             self.logger.info(
-                "The given date couldn't be parsed, choosing current utc time as date for the UCTE "
-                "data!"
-            )
-            self.logger.exception(e)
+                f"The given {date_str=} couldn't be parsed as '%Y%m%d_%H%M'.")
             self.date = datetime.datetime.utcnow()
 
     def _create_df_from_raw(self, raw_input_dict):
