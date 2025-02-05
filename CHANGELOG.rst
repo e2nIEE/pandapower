@@ -96,7 +96,7 @@ Change Log
 - [FIXED] massive performance drag in large grids due to initializing Ybus for FACTS with np.zeros instead of using sparse matrix initialization
 - [FIXED] further futurewarnings and deprecation warnings
 - [FIXED] minor issues in geojson exporter
-- [CHANGED] e2n logo is updated due to its official renaming
+- [CHANGED] e2n logo and naming is updated due to its official renaming
 - [CHANGED] use of bus_geodata and line_geodata tables to geo column in bus and line table
 - [CHANGED] update most geodata dependant functions to use geo column
 - [ADDED] geodata to geojson converter
