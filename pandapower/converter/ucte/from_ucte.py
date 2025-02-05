@@ -36,7 +36,6 @@ def from_ucte_dict(ucte_parser: UCTEParser):
 def from_ucte(ucte_file: str):
     """Converts net data stored as an UCTE file to a pandapower net.
 
-
     Parameters
     ----------
     ucte_file : str
@@ -46,6 +45,13 @@ def from_ucte(ucte_file: str):
     -------
     pandapowerNet
         net
+
+    Example
+    -------
+    >>> import os
+    >>> import pandapower as pp
+    >>> ucte_file = os.path.join(pp.pp_dir, "test", "converter", "testfiles", "test_ucte_DK.uct")
+    >>> net = pp.converter.from_ucte(ucte_file)
     """
 
     # Note:
@@ -68,3 +74,12 @@ def from_ucte(ucte_file: str):
     logger.info("Total Time (from_ucte()): %s" % (time_end_converting - time_start_parsing))
 
     return pp_net
+
+
+if __name__ == "__main__":
+    import os
+    import pandapower as pp
+
+    ### loading the line test as example
+    ucte_file = os.path.join(pp.pp_dir, "test", "converter", "testfiles", "test_ucte_DK.uct")
+    net = pp.converter.from_ucte(ucte_file)
