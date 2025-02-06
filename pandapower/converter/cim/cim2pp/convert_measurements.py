@@ -113,7 +113,7 @@ class CreateMeasurements:
         psr = psr.rename(columns={'rdfId_AnalogValue': sc['o_id'], 'name_analog': sc['name'],
                                   'rdfId_Analog': sc['a_id'], 'Terminal': 'terminal_id'})
         psr[sc['o_cl']] = 'AnalogValue'
-        psr.reset_index(drop=True, inplace=True)
+        psr = psr.reset_index(drop=True)
 
         self._copy_to_measurement(psr)
 
