@@ -717,11 +717,6 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
                 q = np.hstack([q, s["q_mvar"].values * s["step"].values * v_ratio * vl])
                 p = np.hstack([p, s["p_mw"].values * s["step"].values * v_ratio * vl])
         else:
-            warnings.warn(DeprecationWarning("step_dependency_table for shunts is missing in net, which is most "
-                                             "probably due to old net data. step_dependency_table was introduced with "
-                                             "pandapower 3.0. Old net data will still work, but it should be updated "
-                                             "by using step_dependency_table as support of old net data will be "
-                                             "removed in future releases."))
             q = np.hstack([q, s["q_mvar"].values * s["step"].values * v_ratio * vl])
             p = np.hstack([p, s["p_mw"].values * s["step"].values * v_ratio * vl])
         b = np.hstack([b, s["bus"].values])
