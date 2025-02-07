@@ -273,8 +273,9 @@ The below table provides an example trafo_characteristic_table, populated for tw
    :widths: 10, 55, 15, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55
 
 .. note::
+    - net.trafo_characteristic_table is applicable to both 2-winding and 3-winding transformers; the corresponding impedance parameters are populated accordingly.
     - tap_dependency_table has to be set to True, and id_characteristic_table and tap_changer_type variables need to be populated in order to consider the corresponding trafo_characteristic_table values.
-    - Only one tap_dependency_table is supported per 2-winding transformer (there is no tap2_dependency_table variable)
+    - Only one tap_dependency_table is supported per 2-winding transformer (there is no tap2_dependency_table variable).
 
 The function pandapower.control.trafo_characteristic_table_diagnostic can be used for sanity checks.
 The function pandapower.control.create_trafo_characteristic_object can be used to automatically create
