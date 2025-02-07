@@ -56,8 +56,7 @@ class BinarySearchControl(Controller):
             control.
 
             **voltage_ctrl** - Whether the controller is used for voltage control or not. -> Overwritten, now called
-            modus and takes string: Q_ctrl, V_ctrl, PF_ctrl or tan(phi)_ctrl. Specify reactance in P_ctrl with
-            PF_ctrl_ind or PF_ctrl_cap.
+            modus and takes string: Q_ctrl, V_ctrl, PF_ctrl or tan(phi)_ctrl.
 
             **bus_idx=None** - Bus index which is used for voltage control.
 
@@ -108,23 +107,21 @@ class BinarySearchControl(Controller):
         elif modus == False: #Only functions written out!?!
             self.modus = "Q_ctrl"
             logger.error("Ambivalent type, using Q_ctrl from available types 'Q_ctrl', 'V_ctrl', 'PF_ctrl' or 'tan(phi)_ctrl'\n")
-        elif modus == "PF_ctrl_cap":
+        elif modus == "PF_ctrl_cap": # -1 for capacitive, 1 for inductive systems
             self.modus = "PF_ctrl"
-            self.reactance= "cap"
+            self.reactance= -1
         elif modus == "PF_ctrl_ind":
             self.modus = "PF_ctrl"
-            self.reactance = "ind"
+            self.reactance = 1 #todo bei droop einfach inductiv? oder Kapazitiv?
         elif modus == "PF_ctrl":
             self.modus = modus
-            self.reactance = "cap"
-            logger.error("No reactance specified, using capacitive PF controller.\nSpecify reactance by adding _kap or _ind to the control mode\n"
-                         "Specify reactance in PF_ctrl with PF_ctrl_ind or PF_ctrl_cap\n")
+            self.reactance = -1
+
         else:
             self.modus = modus
-        if self.modus == 'PF_ctrl' or self.modus == 'tan(phi)_ctrl':
+        if self.modus == 'PF_ctrl':
             if abs(self.set_point) >1:
-                logger.error('Set point out of range ([-1,1]\n')
-                return
+                raise UserWarning('Set point out of range ([-1,1]')
 
         for input_index in self.input_element_index:
             if self.input_element == "res_line":
@@ -147,13 +144,13 @@ class BinarySearchControl(Controller):
                                                                               input_variable)
             if self.modus == "PF_ctrl" or self.modus=='tan(phi)_ctrl':
                 if isinstance(input_variable, list):
-                    if input_variable[counter]=="q_from_mw":
+                    if input_variable[counter]=="q_from_mvar":
                         input_variable_p= "p_from_mw"
-                    elif input_variable[counter]=="q_to_mw":
+                    elif input_variable[counter]=="q_to_mvar":
                         input_variable_p= 'p_to_mw'
-                    elif input_variable[counter]=='q_hv_mw':
+                    elif input_variable[counter]=='q_hv_mvar':
                         input_variable_p = 'p_hv_mw'
-                    elif input_variable[counter]=='q_lv_mw':
+                    elif input_variable[counter]=='q_lv_mvar':
                         input_variable_p='p_lv_mw'
                     else:
                         logger.error('incorrect input variable: ', input_variable[counter],'\n')
@@ -240,24 +237,21 @@ class BinarySearchControl(Controller):
         # read previous set values
         # compare old and new set values
         #Q_ctrl, V_ctrl, PF_ctrl or tan(phi)_ctrl
-        if self.modus == "Q_ctrl": # or self.bus_idx is None:
+        if self.modus == "Q_ctrl" or (self.modus=='V_ctrl' and self.bus_idx is None):
             self.diff_old = self.diff
             self.diff = self.set_point - sum(input_values)
             self.converged = np.all(np.abs(self.diff) < self.tol)
 
-        elif self.modus == "PF_ctrl":
+        elif self.modus == "PF_ctrl":#capacitive => reactance = -1, inductive => reactance = 1
             self.diff_old = self.diff
-            if self.reactance == "cap":
-                self.diff = -self.set_point - np.cos(np.arctan(sum(input_values)/sum(p_input_values))) ###phi = arctan(p/Q)
-                #self.diff = -self.set_point - sum(p_input_values)/np.sqrt(sum(p_input_values)**2+sum(input_values)**2) #alternative with same output
-            else:
-                self.diff = self.set_point - np.cos(np.arctan(sum(input_values) / sum(p_input_values)))  ###ind -> positive phi
-                #self.diff = self.set_point - sum(p_input_values) / np.sqrt(sum(p_input_values) ** 2 + sum(input_values) ** 2)
-            self.converged=np.all(np.abs(self.diff)<self.tol)
+            q_set = self.reactance * sum(p_input_values) * (np.tan(np.arccos(self.set_point)))
+            self.diff = q_set - sum(input_values)
+            self.converged = np.all(np.abs(self.diff)<self.tol)
 
         elif self.modus == "tan(phi)_ctrl":
             self.diff_old = self.diff
-            self.diff = self.set_point - np.arctan(sum(p_input_values)/sum(input_values))  ###modifizieren
+            q_set = sum(p_input_values) * self.set_point
+            self.diff = q_set - sum(input_values)
             self.converged = np.all(np.abs(self.diff) < self.tol)
         else:
             if self.modus != "V_ctrl":
@@ -316,21 +310,23 @@ class DroopControl(Controller):
 
                 **bus_idx** - Bus index in case of voltage control.
 
-                **vm_set_pu** - Voltage set point in case of voltage control.
+                **vm_set_pu** - Voltage set point in case of voltage control; List with the static values of Phi
+                [Phi_overexcited, Phi_underexcited] in case of PF_ctrl.
 
                 **controller_idx** - Index of linked Binary< search control (if present).
 
                 **voltage_ctrl** - Whether the controller is used for voltage control or not. -> Overwritten, now called
-                modus and takes string: Q_ctrl, V_ctrl, PF_ctrl or tan(phi)_ctrl. Specify reactance in PF_ctrl with
-                PF_ctrl_ind or PF_ctrl_cap.
+                modus and takes string: Q_ctrl, V_ctrl, PF_ctrl or tan(phi)_ctrl.
 
                 **bus_idx=None** - Bus index which is used for voltage control.
 
                 **tol=1e-6** - Tolerance criteria of controller convergence.
 
-                **vm_set_lb=None** - Lower band border of dead band
+                **vm_set_lb=None** - Lower band border of dead band; The Power where Phi is static and underexcited
+                (inductive) in case of PF_ctrl
 
-                **vm_set_ub=None** - Upper band border of dead band
+                **vm_set_ub=None** - Upper band border of dead band; The Power where Phi is static and overexcited
+                (capacitiv) in case of PF_ctrl
            """
     def __init__(self, net, q_droop_mvar, bus_idx, vm_set_pu, controller_idx, modus, tol=1e-6, in_service=True,
                  order=-1, level=0, drop_same_existing_ctrl=False, matching_params=None, vm_set_lb=None, vm_set_ub=None,
@@ -357,26 +353,34 @@ class DroopControl(Controller):
         self.diff = None
         self.converged = False
         self.counter_deprecation_message = False
+        #self.output_values_old = None
 
-        if modus == True:  # Only functions written out!?!
+        if modus == True: #Only functions written out!?!
             self.modus = "V_ctrl"
-        elif modus == False:  # Only functions written out!?!
+        elif modus == False: #Only functions written out!?!
             self.modus = "Q_ctrl"
-            logger.error(
-                "Ambivalent type, using Q_ctrl from available types 'Q_ctrl', 'V_ctrl', 'PF_ctrl' or 'tan(phi)_ctrl'\n")
-        elif modus == "PF_ctrl_cap":
+            logger.error("Ambivalent type, using Q_ctrl from available types 'Q_ctrl', 'V_ctrl', 'PF_ctrl' or 'tan(phi)_ctrl'\n")
+        elif modus == "PF_ctrl_cap": # -1 for capacitive, 1 for inductive systems
             self.modus = "PF_ctrl"
-            self.reactance = "cap"
         elif modus == "PF_ctrl_ind":
             self.modus = "PF_ctrl"
-            self.reactance = "ind"
         elif modus == "PF_ctrl":
             self.modus = modus
-            self.reactance = "cap"
-            logger.error(
-                "No reactance specified, using capacitive PF controller.\nSpecify reactance by adding _kap or _ind to the control mode\n"
-                "Specify reactance in PF_ctrl with PF_ctrl_ind or PF_ctrl_cap\n")
+        else:
+            self.modus = modus
 
+        if self.modus == 'PF_ctrl':
+            if not isinstance(self.vm_set_pu, list) and len(self.vm_set_pu) != 2:
+                raise UserWarning('Input error, vm_set_pu must be list with [Phi_overexcited and Phi_underexcited]')
+            if self.lb_voltage is None or self.ub_voltage is None:
+                raise UserWarning('Input error, vm_set_lb and vm_set_ub must be a number')
+            if self.lb_voltage < 0 or self.ub_voltage < 0:
+                raise UserWarning('P_Maximum (vm_set_ub) and P_Minimun (vm_set_lb) must be >= 0\n')
+            if self.vm_set_pu[0] < 0 or self.vm_set_pu[0]>1 or self.vm_set_pu[0] < 0 or self.vm_set_pu[0]>1:
+                raise UserWarning('Power Factor (vm_set_pu[0] = PF_Maximum, vm_set_pu[1] = PF_Minimum) must be between 0 and 1')
+            if self.lb_voltage == self.ub_voltage:
+                raise UserWarning('P_Maximum and P_Minimum may not be the same value')
+            self.minus_lb_voltage, self.minus_ub_voltage = self.lb_voltage, self.ub_voltage
 
     def __getattr__(self, name):
         if name == "modus":
@@ -399,7 +403,34 @@ class DroopControl(Controller):
         if self.modus == 'V_ctrl':
             self.diff = (net.controller.at[self.controller_idx, "object"].set_point -
                          read_from_net(net, "res_bus", self.bus_idx, "vm_pu", self.read_flag))
+        elif self.modus == 'PF_ctrl': #todo correct? also other modus and documentation
+            counter = 0
+            input_values = []
+            p_input_values = [] #todo reactance?
+            for input_index in net.controller.at[self.controller_idx, "object"].input_element_index:
+                input_values.append(
+                    read_from_net(net, net.controller.at[self.controller_idx, "object"].input_element, input_index,
+                                  net.controller.at[self.controller_idx, "object"].input_variable[counter],
+                                  net.controller.at[self.controller_idx, "object"].read_flag[counter]))
+
+                #p_input_variable = net.controller.at[self.controller_idx, "object"].input_variable[counter].replace('q', 'p').replace('var', 'w')
+                p_input_values.append(
+                    read_from_net(net, net.controller.at[self.controller_idx, "object"].input_element, input_index,
+                                  net.controller.at[self.controller_idx, "object"].input_variable_p[counter],
+                                  net.controller.at[self.controller_idx, "object"].read_flag[counter]))
+                counter +=1
+
+
+
+            q_set = net.controller.at[self.controller_idx, "object"].reactance * sum(p_input_values) * (np.tan(np.arccos(net.controller.at[self.controller_idx, "object"].set_point)))
+            self.diff = q_set - sum(input_values)
+            #net.controller.at[self.controller_idx, "object"].set_point
+
+        elif self.modus == 'tan(phi)_ctrl':
+            raise UserWarning('No droop option for tan(phi) controller') #correct?
         else:
+            if self.modus != 'Q_ctrl':
+                logger.error('No specified modus in droop controller, using Q_ctrl')
             counter = 0
             input_values = []
             for input_index in net.controller.at[self.controller_idx, "object"].input_element_index:
@@ -426,8 +457,11 @@ class DroopControl(Controller):
         self._droopcontrol_step(net)
 
     def _droopcontrol_step(self, net):
-        self.vm_pu_old = self.vm_pu
-        self.vm_pu = read_from_net(net, "res_bus", self.bus_idx, "vm_pu", self.read_flag)
+
+        if self.modus != 'PF_ctrl':
+            self.vm_pu = read_from_net(net, "res_bus", self.bus_idx, "vm_pu", self.read_flag)
+            self.vm_pu_old = self.vm_pu
+
         if self.modus=='Q_ctrl':
             if self.q_set_mvar_bsc is None:
                 self.q_set_mvar_bsc = net.controller.at[self.controller_idx, "object"].set_point
@@ -440,22 +474,125 @@ class DroopControl(Controller):
                         self.q_set_mvar, self.q_set_mvar_bsc + (self.lb_voltage - self.vm_pu) * self.q_droop_mvar)
                 else:
                     self.q_set_old_mvar, self.q_set_mvar = (self.q_set_mvar, self.q_set_mvar_bsc)
-            elif self.modus == 'PF_ctrl':
-                pass #Implementieren
-            elif self.modus == 'tan(phi)_ctrl':
-                pass #Implementieren
-            else:
-                if self.modus != "V_ctrl":
-                    logger.error("No Droop Controller Modus specified, using V_ctrl.\n"
-                                 "Please specify 'modus' ('Q_ctrl', 'V_ctrl', 'PF_ctrl' or 'tan(phi)_ctrl')\n")
-                self.q_set_old_mvar, self.q_set_mvar = (
-                    self.q_set_mvar, self.q_set_mvar - (self.vm_set_pu - self.vm_pu) * self.q_droop_mvar)
+        elif self.modus == 'PF_ctrl':
+            counter = 0
+            input_values = []
+            p_input_values = []
+            for input_index in net.controller.at[self.controller_idx, "object"].input_element_index:
+                input_values.append(
+                    read_from_net(net, net.controller.at[self.controller_idx, "object"].input_element, input_index,
+                                  net.controller.at[self.controller_idx, "object"].input_variable[counter],
+                                  net.controller.at[self.controller_idx, "object"].read_flag[counter]))
+
+                # p_input_variable = net.controller.at[self.controller_idx, "object"].input_variable[counter].replace('q', 'p').replace('var', 'w')
+                p_input_values.append(
+                    read_from_net(net, net.controller.at[self.controller_idx, "object"].input_element, input_index,
+                                  net.controller.at[self.controller_idx, "object"].input_variable_p[counter],
+                                  net.controller.at[self.controller_idx, "object"].read_flag[counter]))
+                counter += 1
+            if self.vm_set_pu[0] > self.vm_set_pu[1] or (self.vm_set_pu[0] < self.vm_set_pu[1] and self.lb_voltage > self.ub_voltage): #phi overexcited > phi underexcited
+                if sum(p_input_values)/len(p_input_values) >= 0:
+                    if sum(p_input_values)/len(p_input_values) >= self.lb_voltage:# overexcited (1)
+                        print('over 1, >0',sum(p_input_values) / len(p_input_values))
+                        self.q_set_old_mvar, self.q_set_mvar = self.q_set_mvar, self.vm_set_pu[1]
+                        net.controller.at[self.controller_idx, "object"].reactance = -1
+                    elif sum(p_input_values)/len(p_input_values) <= self.ub_voltage:#underexcited (-1)
+                        print('under 1, >0',sum(p_input_values) / len(p_input_values))
+                        self.q_set_old_mvar, self.q_set_mvar = self.q_set_mvar, self.vm_set_pu[0]  # over = [0], under = [1]
+                        net.controller.at[self.controller_idx, "object"].reactance = 1
+                    else:#droop
+                        print('Droop 1, >0', sum(p_input_values)/len(p_input_values))
+                        m = (self.vm_set_pu[0]-self.vm_set_pu[1])/(self.lb_voltage-self.ub_voltage)
+                        b = self.vm_set_pu[0] - m * self.ub_voltage
+                        half_point= (self.ub_voltage+self.lb_voltage)/2
+                        print(f'should be 1: {m*half_point+b}')
+                        droop_set_point = m * sum(p_input_values) + b#wrong?
+                        if sum(p_input_values)/len(p_input_values) >= half_point: #over
+                            net.controller.at[self.controller_idx, "object"].reactance = 1
+                        else: #under
+                            net.controller.at[self.controller_idx, "object"].reactance = -1
+                        self.q_set_old_mvar, self.q_set_mvar = self.q_set_mvar, droop_set_point
+                else: #p<0
+                    if sum(p_input_values)/len(p_input_values) >= self.minus_ub_voltage:# underexcited (-1)
+                        print('under 1, <0',sum(p_input_values) / len(p_input_values))
+                        self.q_set_old_mvar, self.q_set_mvar = self.q_set_mvar, self.vm_set_pu[0]
+                        net.controller.at[self.controller_idx, "object"].reactance = 1
+                    elif sum(p_input_values)/len(p_input_values) <= self.minus_lb_voltage:#overrexcited (1)
+                        print('over 1, <0',sum(p_input_values) / len(p_input_values))
+                        self.q_set_old_mvar, self.q_set_mvar = self.q_set_mvar, self.vm_set_pu[1]  # over = [0], under = [1]
+                        net.controller.at[self.controller_idx, "object"].reactance = -1
+                    else:#droop
+                        print('Droop 1, <0', sum(p_input_values)/len(p_input_values))# with the inversion of the sign should be done
+                        m = (self.vm_set_pu[0]-self.vm_set_pu[1])/(self.minus_lb_voltage-self.minus_ub_voltage)
+                        b = self.vm_set_pu[0] - m * self.minus_ub_voltage
+                        half_point= (self.Minus_ub_voltage+self.minus_lb_voltage)/2
+                        print(f'should be -1: {m*half_point+b}')
+                        droop_set_point = m * sum(p_input_values) + b#wrong?
+                        if sum(p_input_values)/len(p_input_values) <= half_point: #over
+                            net.controller.at[self.controller_idx, "object"].reactance = 1
+                        else: #under
+                            net.controller.at[self.controller_idx, "object"].reactance = -1
+                        self.q_set_old_mvar, self.q_set_mvar = self.q_set_mvar, droop_set_point
+
+            else: #self.vm_set_pu[0] < self.vm_set_pu[1] phi overexcited < phi underexcited
+                if sum(p_input_values)/len(p_input_values) >= 0:
+                    if sum(p_input_values)/len(p_input_values) >= self.ub_voltage:# underexcited (-1)
+                        print('>0, under 2', sum(p_input_values) / len(p_input_values))
+                        self.q_set_old_mvar, self.q_set_mvar = self.q_set_mvar, self.vm_set_pu[0]
+                        net.controller.at[self.controller_idx, "object"].reactance = 1
+                    elif sum(p_input_values)/len(p_input_values) <= self.lb_voltage:#overexcited (1)
+                        print('>0, over 2',sum(p_input_values) / len(p_input_values))
+                        self.q_set_old_mvar, self.q_set_mvar = self.q_set_mvar, self.vm_set_pu[1]  # over = [0], under = [1]
+                        net.controller.at[self.controller_idx, "object"].reactance = -1
+                    else:#droop
+                        print('>0, Droop 2', print(sum(p_input_values)/len(p_input_values)))
+                        m = (self.vm_set_pu[1]-self.vm_set_pu[0])/(self.ub_voltage-self.lb_voltage)
+                        b = self.vm_set_pu[0] - m * self.ub_voltage
+                        half_point= (self.ub_voltage+self.lb_voltage)/2
+                        print(f'should be 1: {m*half_point+b}')
+                        droop_set_point = m * sum(p_input_values) + b#wrong?
+                        if sum(p_input_values)/len(p_input_values) <= half_point: #over
+                            net.controller.at[self.controller_idx, "object"].reactance = 1
+                        else: #under
+                            net.controller.at[self.controller_idx, "object"].reactance = -1
+                        self.q_set_old_mvar, self.q_set_mvar = self.q_set_mvar, droop_set_point
+                else:# p < 0:
+                    if sum(p_input_values) / len(p_input_values) <= self.minus_ub_voltage:  # underexcited (-1)
+                        print('<0, under 2', sum(p_input_values) / len(p_input_values))
+                        self.q_set_old_mvar, self.q_set_mvar = self.q_set_mvar, self.vm_set_pu[0]
+                        net.controller.at[self.controller_idx, "object"].reactance = 1
+                    elif sum(p_input_values) / len(p_input_values) >= self.minus_lb_voltage:  # overexcited (1)
+                        print('<0, over 2', sum(p_input_values) / len(p_input_values))
+                        self.q_set_old_mvar, self.q_set_mvar = self.q_set_mvar, self.vm_set_pu[1]  # over = [0], under = [1]
+                        net.controller.at[self.controller_idx, "object"].reactance =  -1
+                    else:  # droop
+                        print('<0, Droop 2', print(sum(p_input_values)/len(p_input_values)))
+                        m = (self.vm_set_pu[1] - self.vm_set_pu[0]) / (self.minus_ub_voltage - self.minus_lb_voltage)
+                        b = self.vm_set_pu[0] - m * self.minus_ub_voltage
+                        half_point = (self.minus_ub_voltage + self.minus_lb_voltage) / 2
+                        print(f'should be 1: {m * half_point + b}')
+                        droop_set_point = m * sum(p_input_values) + b  # wrong?
+                        if sum(p_input_values) / len(p_input_values) >= half_point:  # over
+                            net.controller.at[self.controller_idx, "object"].reactance = 1
+                        else:  # under
+                            net.controller.at[self.controller_idx, "object"].reactance = -1
+                        self.q_set_old_mvar, self.q_set_mvar = self.q_set_mvar, droop_set_point
 
 
-            if self.q_set_old_mvar is not None:
-                self.diff = self.q_set_mvar - self.q_set_old_mvar
-            if self.q_set_mvar is not None:
-                net.controller.at[self.controller_idx, "object"].set_point = self.q_set_mvar
+        elif self.modus == 'tan(phi)_ctrl':
+            pass #Implementieren
+        else:
+            if self.modus != "V_ctrl":
+                logger.error("No Droop Controller Modus specified, using V_ctrl.\n"
+                             "Please specify 'modus' ('Q_ctrl', 'V_ctrl', 'PF_ctrl' or 'tan(phi)_ctrl')\n")
+            self.q_set_old_mvar, self.q_set_mvar = (
+                self.q_set_mvar, self.q_set_mvar - (self.vm_set_pu - self.vm_pu) * self.q_droop_mvar)
+
+
+        if self.q_set_old_mvar is not None:
+            self.diff = self.q_set_mvar - self.q_set_old_mvar
+        if self.q_set_mvar is not None:
+            net.controller.at[self.controller_idx, "object"].set_point = self.q_set_mvar
 
         else:
             input_element = net.controller.at[self.controller_idx, "object"].input_element

@@ -3347,7 +3347,10 @@ def create_stactrl(net, item):
 
     # find gen_element_index using name:
     if np.any(net.sgen.name.duplicated()):
-        raise UserWarning("error while creating station controller: sgen names must be unique")
+        duplicated_sgen_names = True
+        # raise UserWarning("error while creating station controller: sgen names must be unique")
+    else:
+        duplicated_sgen_names = False
 
     gen_types = []
     for s in machines:
@@ -3392,8 +3395,24 @@ def create_stactrl(net, item):
 
     gen_element = gen_types[0]
     gen_element_index = []
-    for s in machines:
-        gen_element_index.append(net[gen_element].loc[net[gen_element].name == s.loc_name].index.values[0])
+    if duplicated_sgen_names == False:
+        for s in machines:
+            gen_element_index.append(net[gen_element].loc[net[gen_element].name == s.loc_name].index.values[0])
+    else:
+        # check if gen_element has set controller
+        for s in machines:
+            gen_element_index_try = net[gen_element].loc[net[gen_element].name == s.loc_name].index.values
+            if len(gen_element_index_try) == 1:
+                gen_element_index.append(gen_element_index_try[0])
+            else:
+                gen_element_index_try_again = net[gen_element].loc[(net[gen_element].name == s.loc_name) &
+                                                                   (net[
+                                                                        gen_element].sta_ctrl == s.c_pstac.loc_name)].index.values
+                if len(gen_element_index_try_again) > 1:
+                    raise UserWarning(
+                        "error while creating station controller: sgen and controller names must be unique")
+                else:
+                    gen_element_index.append(gen_element_index_try_again[0])
 
     if len(gen_element_index) != len(machines):
         raise UserWarning("station controller: could not properly identify the machines")
@@ -3423,9 +3442,9 @@ def create_stactrl(net, item):
     variable = None
     res_element_table = None
     res_element_index = None
-    if control_mode != 0 or item.i_droop:
-        #q_control_cubicle = item.p_cub if control_mode == 1 else item.pQmeas  # Feld
-        q_control_cubicle = item.p_cub #if control_mode == 1 else item.pQmeas  # Feld
+    if item.i_droop: #droop control
+        #q_control_cubicle = item.p_cub if control_mode == 1 else item.pQmeas #Feld #pqmeas if V_ctrl and droop
+        q_control_cubicle = item.p_cub if control_mode != 0 else item.pQmeas  #item.p_cub if other mode and droop?
         if q_control_cubicle is None:
             logger.info(f"Input Element of Controller {item.loc_name} is missing, skipping")
             return
@@ -3471,7 +3490,55 @@ def create_stactrl(net, item):
             logger.error(
                 f"{item}: only line, trafo element and switch flows can be controlled, {element_class[0]=}")
             return
-    elif control_mode == 0:
+    #todo passt das so @dominik
+    elif control_mode != 0:
+        q_control_cubicle = item.p_cub
+        if q_control_cubicle is None:
+            logger.info(f"Input Element of Controller {item.loc_name} is missing, skipping")
+            return
+
+        q_control_element = []
+        q_control_side = []
+        element_class = []
+        res_element_index = []
+        variable = []
+        if q_control_cubicle.GetClassName() == "StaCubic":
+            q_control_element.append(q_control_cubicle.obj_id)
+            q_control_side.append(q_control_cubicle.obj_bus)  # 0=from, 1=to
+            element_class.append(q_control_element[0].GetClassName())
+        elif q_control_cubicle.GetClassName() == "ElmBoundary":
+            for cubicles in q_control_cubicle.cubicles:
+                q_control_element.append(cubicles.obj_id)
+                q_control_side.append(cubicles.obj_bus)  # 0=from, 1=to
+                element_class.append(q_control_element[0].GetClassName())
+        else:
+            print("Not implemented class for q_control_cubicle!")
+        if element_class[0] == "ElmLne":
+            res_element_table = "res_line"
+            for i in range(len(q_control_element)):
+                line_sections = line_dict[q_control_element[i]]
+                if q_control_side[i] == 0:
+                    res_element_index.append(line_sections[0])
+                    variable.append("q_from_mvar")
+                else:
+                    res_element_index.append(line_sections[-1])
+                    variable.append("q_to_mvar")
+        elif element_class[0] == "ElmTr2":
+            res_element_table = "res_trafo"
+            for element in q_control_element:
+                res_element_index.append(trafo_dict[element])
+                variable = "q_hv_mvar" if q_control_side == 0 else "q_lv_mvar"
+        elif element_class[0] == "ElmCoup":
+            res_element_table = "res_switch"
+            for element in q_control_element:
+                res_element_index.append(switch_dict[element])
+                net.switch.at[res_element_index[-1], "z_ohm"] = 1e-3
+                variable = "q_from_mvar" if q_control_side == 0 else "q_to_mvar"
+        #elif control_mode == 0:
+        else:
+            res_element_table = "res_bus"
+    #elif control_mode == 0:
+    else:
         res_element_table = "res_bus"
 
     input_busses = []
@@ -3499,7 +3566,11 @@ def create_stactrl(net, item):
     for n in range(len(input_busses)):
         for m in range(len(output_busses)):
             has_path = has_path or nx.has_path(top, input_busses[n], output_busses[m])
-    if not has_path and not control_mode == 0 and not item.i_droop:
+    if not has_path and control_mode != 0 and not item.i_droop:
+        if control_mode ==1: modus = "Q"
+        elif control_mode == 2: modus = 'Power Factor'
+        else: modus = 'tangens'
+        logger.error(f'no path found, skipping {modus} controller')
         return
 
     if control_mode == 0:  # VOLTAGE CONTROL
@@ -3589,7 +3660,13 @@ def create_stactrl(net, item):
             if not stactrl_in_service:
                 return
             raise NotImplementedError(f"{item}: Q orientation '-' not supported")
-        if item.qu_char == 0:
+        if item.cosphi_char == 0:
+            if item.pf_recap == 0: #0 -> inductive, 1 -> capacitive
+                modus = 'PF_ctrl_ind'
+            else:
+                if item.pf_recap != 1:
+                    logger.error('Powerfactor without specified reactance\nassuming capacitive system\n')
+                modus = 'PF_ctrl_cap'
             pp.control.BinarySearchControl(
                 net, ctrl_in_service=stactrl_in_service,
                 output_element=gen_element,
@@ -3601,12 +3678,12 @@ def create_stactrl(net, item):
                 damping_factor=0.9,
                 input_variable=variable,
                 input_element_index=res_element_index,
-                set_point=item.qsetp,
-                modus='PF_ctrl', tol=1e-6
+                set_point=item.pfsetp,
+                modus=modus, tol=1e-6
             )
-        elif item.qu_char == 1:
-            controlled_node = item.refbar
-            bus = bus_dict[controlled_node]  # controlled node
+        elif item.cosphi_char == 1:
+            #controlled_node = item.refbar
+            #bus = bus_dict[controlled_node]  # controlled node
             bsc = pp.control.BinarySearchControl(
                 net, ctrl_in_service=stactrl_in_service,
                 output_element=gen_element,
@@ -3618,21 +3695,24 @@ def create_stactrl(net, item):
                 damping_factor=0.9,
                 input_variable=variable,
                 input_element_index=res_element_index,
-                set_point=item.qsetp,
-                modus='PF_ctrl',
-                bus_idx=bus,
+                set_point=item.pfsetp,
+                modus='PF_ctrl_ind',
+                bus_idx=None,
                 tol=1e-6
             )
             pp.control.DroopControl(
                 net,
-                q_droop_mvar=item.Srated * 100 / item.ddroop,
-                bus_idx=bus,
-                vm_set_pu=item.udeadbup,
-                vm_set_ub=item.udeadbup,
-                vm_set_lb=item.udeadblow,
+                q_droop_mvar=None, #item.Srated * 100 / item.ddroop,
+                #bus_idx=bus,
+                vm_set_pu=[item.pf_over, item.pf_under],
+                vm_set_ub=item.p_under,
+                vm_set_lb=item.p_over,
                 controller_idx=bsc.index,
-                modus="PF_ctrl"
+                modus='PF_ctrl',
+                bus_idx=None
             )
+        elif item.cosphi_char == 2:
+            raise NotImplementedError
         else:
             raise NotImplementedError
     elif control_mode== 3:#tan(phi)_control
@@ -3651,7 +3731,7 @@ def create_stactrl(net, item):
             damping_factor=0.9,
             input_variable=variable,
             input_element_index=res_element_index,
-            set_point=item.qsetp,
+            set_point=item.tansetp,
             modus='tan(phi)_ctrl', tol=1e-6
         )
     else:
