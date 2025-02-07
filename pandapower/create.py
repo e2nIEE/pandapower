@@ -877,7 +877,7 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
     _add_to_entries_if_not_nan(net, "bus", entries, index, "min_vm_pu", min_vm_pu)
     _add_to_entries_if_not_nan(net, "bus", entries, index, "max_vm_pu", max_vm_pu)
     _set_multiple_entries(net, "bus", index, **entries, **kwargs)
-    net.bus.loc[net.bus.geo == "", "geo"] = None # overwrite
+    net.bus.loc[net.bus.geo == "", "geo"] = None  # overwrite
     # empty_defaults_per_dtype() applied in _set_multiple_entries()
 
     return index
@@ -2179,7 +2179,7 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
         **slack_weight** (float, default 1.0) - Contribution factor for distributed slack power flow calculation
                                                 (active power balancing)
 
-        ** only considered in load flow if calculate_voltage_angles = True
+        \* considered in load flow if calculate_voltage_angles = True
 
         **controllable** (bool, NaN) - True: p_mw, q_mvar and vm_pu limits are enforced for the \
                                              ext_grid in OPF. The voltage limits set in the \
@@ -2617,7 +2617,7 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
         _add_to_entries_if_not_nan(net, "line", entries, index, column, value, float64)
 
     _set_multiple_entries(net, "line", index, **entries, **kwargs)
-    net.line.loc[net.line.geo == "", "geo"] = None # overwrite
+    net.line.loc[net.line.geo == "", "geo"] = None  # overwrite
     # empty_defaults_per_dtype() applied in _set_multiple_entries()
 
     if geodata:
@@ -3292,51 +3292,48 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
                        tap_dependency_table=nan, id_characteristic_table=nan,
                        pt_percent=nan, oltc=nan, xn_ohm=nan, tap2_pos=nan, **kwargs):
     """
-    Creates a two-winding transformer in table net["trafo"].
+    Creates a two-winding transformer in table net.trafo.
     The trafo parameters are defined through the standard type library.
 
     INPUT:
-        **net** - The net within this transformer should be created
+        **net** (pandapowerNet) - the net within this transformer should be created
 
-        **hv_bus** (int) - The bus on the high-voltage side on which the transformer will be \
-            connected to
+        **hv_bus** (int) - the bus on the high-voltage side on which the transformer will be connected to
 
-        **lv_bus** (int) - The bus on the low-voltage side on which the transformer will be \
-            connected to
+        **lv_bus** (int) - τhe bus on the low-voltage side on which the transformer will be connected to
 
-        **std_type** -  The used standard type from the standard type library
+        **std_type** (str) - τhe used standard type from the standard type library
 
-    **Zero sequence parameters** (Added through std_type For Three phase load flow) :
+    **Zero sequence parameters** (added through std_type for three-phase load flow):
 
-        **vk0_percent** - zero sequence relative short-circuit voltage
+        **vk0_percent** (float) - zero sequence relative short-circuit voltage
 
-        **vkr0_percent** - real part of zero sequence relative short-circuit voltage
+        **vkr0_percent** (float) - real part of zero sequence relative short-circuit voltage
 
-        **mag0_percent** - ratio between magnetizing and short circuit impedance (zero sequence)
+        **mag0_percent** (float) - ratio between magnetizing and short circuit impedance (zero sequence)
 
-                            z_mag0 / z0
+                                   z_mag0 / z0
 
-        **mag0_rx**  - zero sequence magnetizing r/x  ratio
+        **mag0_rx** (float) - zero sequence magnetizing r/x ratio
 
-        **si0_hv_partial** - zero sequence short circuit impedance  distribution in hv side
+        **si0_hv_partial** (float) - zero sequence short circuit impedance distribution in hv side
 
     OPTIONAL:
-        **name** (string, None) - A custom name for this transformer
+        **name** (str, None) - a custom name for this transformer
 
-        **tap_pos** (int, nan) - current tap position of the transformer. Defaults to the medium \
-            position (tap_neutral)
+        **tap_pos** (int, nan) - current tap position of the transformer. Defaults to the medium position (tap_neutral)
 
         **in_service** (boolean, True) - True for in_service or False for out of service
 
-        **index** (int, None) - Force a specified ID if it is available. If None, the index one \
-            higher than the highest already existing index is selected.
+        **index** (int, None) - force a specified ID if it is available. If None, the index one higher than the \
+                                highest already existing index is selected
 
-        **max_loading_percent (float)** - maximum current loading (only needed for OPF)
+        **max_loading_percent** (float) - maximum current loading (only needed for OPF)
 
-        **parallel** (integer) - number of parallel transformers
+        **parallel** (int) - number of parallel transformers
 
-        **df** (float) - derating factor: maximum current of transformer in relation to nominal \
-            current of transformer (from 0 to 1)
+        **df** (float) - derating factor: maximum current of transformer in relation to nominal current of transformer \
+                         (from 0 to 1)
 
         **tap_dependency_table** (boolean, False) - True if transformer parameters (voltage ratio, angle, impedance) \
             must be adjusted dependent on the tap position of the transformer. Requires the additional column \
@@ -3347,18 +3344,18 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
             "id_characteristic_spline" to set up the reference to the spline characteristics.
 
         **id_characteristic_table** (int, nan) - references the index of the characteristic from the lookup table \
-            net.trafo_characteristic_table
+                                                 net.trafo_characteristic_table
 
-        **tap_changer_type** (string, None) - specifies the phase shifter type ("Ratio", "Symmetrical", "Ideal",
-                                              "Tabular", None: no tap changer)*
+        **tap_changer_type** (str, None) - specifies the phase shifter type ("Ratio", "Symmetrical", "Ideal", \
+                                           "Tabular", None: no tap changer)
 
         **xn_ohm** (float) - impedance of the grounding reactor (Z_N) for short circuit calculation
 
         **tap2_pos** (int, float, nan) - current tap position of the second tap changer of the transformer. \
-            Defaults to the medium position (tap2_neutral)
+                                         Defaults to the medium position (tap2_neutral)
 
     OUTPUT:
-        **index** (int) - The unique ID of the created transformer
+        **index** (int) - the unique ID of the created transformer
 
     EXAMPLE:
         create_transformer(net, hv_bus=0, lv_bus=1, std_type="0.4 MVA 10/0.4 kV", name="trafo1")
@@ -3457,17 +3454,14 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
                                        tap2_min=nan, tap2_step_percent=nan, tap2_step_degree=nan,
                                        tap2_pos=nan, tap2_changer_type=None, **kwargs):
     """
-    Creates a two-winding transformer in table net["trafo"].
-    The trafo parameters are defined through the standard type library.
+    Creates a two-winding transformer in table net.trafo with the specified parameters.
 
     INPUT:
-        **net** - The net within this transformer should be created
+        **net** (pandapowerNet) - the net within this transformer should be created
 
-        **hv_bus** (int) - The bus on the high-voltage side on which the transformer will be \
-            connected to
+        **hv_bus** (int) - the bus on the high-voltage side on which the transformer will be connected to
 
-        **lv_bus** (int) - The bus on the low-voltage side on which the transformer will be \
-            connected to
+        **lv_bus** (int) - the bus on the low-voltage side on which the transformer will be connected to
 
         **sn_mva** (float) - rated apparent power
 
@@ -3483,58 +3477,55 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
 
         **i0_percent** (float) - open loop losses in percent of rated current
 
-        **vector_group** (String) - Vector group of the transformer
+        **vector_group** (str) - vector group of the transformer
 
-            HV side is Uppercase letters
-            and LV side is lower case
+                                    HV side is Uppercase letters and LV side is lower case
 
         **vk0_percent** (float) - zero sequence relative short-circuit voltage
 
-        **vkr0_percent** - real part of zero sequence relative short-circuit voltage
+        **vkr0_percent** (float) - real part of zero sequence relative short-circuit voltage
 
-        **mag0_percent** - zero sequence magnetizing impedance/ vk0
+        **mag0_percent** (float) - zero sequence magnetizing impedance/ vk0
 
-        **mag0_rx**  - zero sequence magnetizing R/X ratio
+        **mag0_rx** (float) - zero sequence magnetizing R/X ratio
 
-        **si0_hv_partial** - Distribution of zero sequence leakage impedances for HV side
-
+        **si0_hv_partial** (float) - Distribution of zero sequence leakage impedances for HV side
 
     OPTIONAL:
 
         **in_service** (boolean) - True for in_service or False for out of service
 
-        **parallel** (integer) - number of parallel transformers
+        **parallel** (int) - number of parallel transformers
 
-        **name** (string) - A custom name for this transformer
+        **name** (str) - A custom name for this transformer
 
-        **shift_degree** (float) - Angle shift over the transformer*
+        **shift_degree** (float) - angle shift over the transformer*
 
-        **tap_side** (string) - position of tap changer ("hv", "lv")
+        **tap_side** (str) - position of tap changer ("hv", "lv")
 
-        **tap_pos** (int, nan) - current tap position of the transformer. Defaults to the medium \
-            position (tap_neutral)
+        **tap_pos** (int, nan) - current tap position of the transformer. Defaults to the medium position (tap_neutral)
 
-        **tap_neutral** (int, nan) - tap position where the transformer ratio is equal to the \
-            ratio of the rated voltages
+        **tap_neutral** (int, nan) - tap position where the transformer ratio is equal to the ratio of the \
+                                     rated voltages
 
         **tap_max** (int, nan) - maximum allowed tap position
 
-        **tap_min** (int, nan):  minimum allowed tap position
+        **tap_min** (int, nan) - minimum allowed tap position
 
         **tap_step_percent** (float) - tap step size for voltage magnitude in percent
 
         **tap_step_degree** (float) - tap step size for voltage angle in degree*
 
-        **tap_changer_type** (str, None) - specifies the phase shifter type ("Ratio", "Symmetrical", "Ideal", "Tabular",
-                                           None: no tap changer)*
+        **tap_changer_type** (str, None) - specifies the phase shifter type ("Ratio", "Symmetrical", "Ideal", \
+                                           "Tabular", None: no tap changer)*
 
-        **index** (int, None) - Force a specified ID if it is available. If None, the index one \
-            higher than the highest already existing index is selected.
+        **index** (int, None) - force a specified ID if it is available. If None, the index one higher than the \
+                                highest already existing index is selected.
 
-        **max_loading_percent (float)** - maximum current loading (only needed for OPF)
+        **max_loading_percent** (float) - maximum current loading (only needed for OPF)
 
         **df** (float) - derating factor: maximum current of transformer in relation to nominal \
-            current of transformer (from 0 to 1)
+                                          current of transformer (from 0 to 1)
 
         **tap_dependency_table** (boolean, False) - True if transformer parameters (voltage ratio, angle, impedance) \
             must be adjusted dependent on the tap position of the transformer. Requires the additional column \
@@ -3545,46 +3536,46 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
             "id_characteristic_spline" to set up the reference to the spline characteristics.
 
         **id_characteristic_table** (int, nan) - references the index of the characteristic from the lookup table \
-            net.trafo_characteristic_table
+                                                 net.trafo_characteristic_table
 
         **pt_percent** (float, nan) - (short circuit only)
 
-        **oltc** (bool, False) - (short circuit only)
+        **oltc** (boolean, False) - (short circuit only)
 
         **xn_ohm** (float) - impedance of the grounding reactor (Z_N) for short circuit calculation
 
-        **tap2_side** (string) - position of the second tap changer ("hv", "lv")
+        **tap2_side** (str) - position of the second tap changer ("hv", "lv")
 
         **tap2_pos** (int, nan) - current tap position of the second tap changer of the transformer. \
-            Defaults to the medium position (tap2_neutral)
+                                  Defaults to the medium position (tap2_neutral)
 
         **tap2_neutral** (int, nan) - second tap position where the transformer ratio is equal to the \
-            ratio of the rated voltages
+                                      ratio of the rated voltages
 
         **tap2_max** (int, nan) - maximum allowed tap position of the second tap changer
 
-        **tap2_min** (int, nan):  minimum allowed tap position of the second tap changer
+        **tap2_min** (int, nan) - minimum allowed tap position of the second tap changer
 
         **tap2_step_percent** (float, nan) - second tap step size for voltage magnitude in percent
 
         **tap2_step_degree** (float, nan) - second tap step size for voltage angle in degree*
 
-        **tap2_changer_type** (str, None) - specifies the tap changer type ("Ratio", "Symmetrical", "Ideal",
+        **tap2_changer_type** (str, None) - specifies the tap changer type ("Ratio", "Symmetrical", "Ideal", \
                                             None: no tap changer)*
 
         **leakage_resistance_ratio_hv** (bool) - ratio of transformer short-circuit resistance on HV side (default 0.5)
 
         **leakage_reactance_ratio_hv** (bool) - ratio of transformer short-circuit reactance on HV side (default 0.5)
 
-        ** only considered in load flow if calculate_voltage_angles = True
+        \* only considered in load flow if calculate_voltage_angles = True
 
     OUTPUT:
-        **index** (int) - The unique ID of the created transformer
+        **index** (int) - the unique ID of the created transformer
 
     EXAMPLE:
-        create_transformer_from_parameters(net, hv_bus=0, lv_bus=1, name="trafo1", sn_mva=40, \
-            vn_hv_kv=110, vn_lv_kv=10, vk_percent=10, vkr_percent=0.3, pfe_kw=30, \
-            i0_percent=0.1, shift_degree=30)
+        create_transformer_from_parameters(net, hv_bus=0, lv_bus=1, name="trafo1", sn_mva=40, vn_hv_kv=110, \
+                                           vn_lv_kv=10, vk_percent=10, vkr_percent=0.3, pfe_kw=30, i0_percent=0.1, \
+                                           shift_degree=30)
     """
 
     from pandapower.convert_format import convert_trafo_pst_logic
@@ -3685,17 +3676,14 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
                                         tap2_pos=nan, tap2_changer_type=None,
                                         **kwargs):
     """
-    Creates several two-winding transformers in table net["trafo"].
-    The trafo parameters are defined through the standard type library.
+    Creates several two-winding transformers in table net.trafo with the specified parameters.
 
     INPUT:
-        **net** - The net within this transformer should be created
+        **net** (pandapowerNet) - the net within this transformer should be created
 
-        **hv_bus** (list of int) - The bus on the high-voltage side on which the transformer will \
-            be connected to
+        **hv_bus** (list of int) - the bus on the high-voltage side on which the transformer will be connected to
 
-        **lv_bus** (list of int) - The bus on the low-voltage side on which the transformer will \
-            be connected to
+        **lv_bus** (list of int) - the bus on the low-voltage side on which the transformer will be connected to
 
         **sn_mva** (list of float) - rated apparent power
 
@@ -3711,59 +3699,56 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
 
         **i0_percent** (list of float) - open loop losses in percent of rated current
 
-        **vector_group** (list of String) - Vector group of the transformer
+        **vector_group** (list of str) - Vector group of the transformer
 
-            HV side is Uppercase letters
-            and LV side is lower case
+            HV side is Uppercase letters and LV side is lower case
 
         **vk0_percent** (list of float) - zero sequence relative short-circuit voltage
 
-        **vkr0_percent** - (list of float) real part of zero sequence relative short-circuit voltage
+        **vkr0_percent** (list of float) - real part of zero sequence relative short-circuit voltage
 
-        **mag0_percent** - (list of float)  zero sequence magnetizing impedance/ vk0
+        **mag0_percent** (list of float) - zero sequence magnetizing impedance/ vk0
 
-        **mag0_rx**  - (list of float)  zero sequence magnetizing R/X ratio
+        **mag0_rx** (list of float) - zero sequence magnetizing R/X ratio
 
-        **si0_hv_partial** - (list of float)  Distribution of zero sequence leakage impedances for \
-            HV side
-
+        **si0_hv_partial** (list of float) - distribution of zero sequence leakage impedances for HV side
 
     OPTIONAL:
 
         **in_service** (list of boolean) - True for in_service or False for out of service
 
-        **parallel** (list of integer) - number of parallel transformers
+        **parallel** (list of int) - number of parallel transformers
 
-        **name** (list of string) - A custom name for this transformer
+        **name** (list of str) - a custom name for this transformer
 
-        **shift_degree** (list of float) - Angle shift over the transformer*
+        **shift_degree** (list of float) - angle shift over the transformer*
 
-        **tap_side** (list of string) - position of tap changer ("hv", "lv")
+        **tap_side** (list of str) - position of tap changer ("hv", "lv")
 
         **tap_pos** (list of int, nan) - current tap position of the transformer. Defaults to the neutral \
-            tap position (tap_neutral)
+                                         tap position (tap_neutral)
 
         **tap_neutral** (list of int, nan) - tap position where the transformer ratio is equal to the ratio \
-            of the rated voltages
+                                             of the rated voltages
 
         **tap_max** (list of int, nan) - maximum allowed tap position
 
-        **tap_min** (list of int, nan):  minimum allowed tap position
+        **tap_min** (list of int, nan) - minimum allowed tap position
 
         **tap_step_percent** (list of float) - tap step size for voltage magnitude in percent
 
         **tap_step_degree** (list of float) - tap step size for voltage angle in degree*
 
-        **tap_changer_type** (list of str, None) - specifies the tap changer type ("Ratio", "Symmetrical", "Ideal",
+        **tap_changer_type** (list of str, None) - specifies the tap changer type ("Ratio", "Symmetrical", "Ideal", \
                                                    "Tabular", None: no tap changer)*
 
-        **index** (list of int, None) - Force a specified ID if it is available. If None, the index one \
-            higher than the highest already existing index is selected.
+        **index** (list of int, None) - force a specified ID if it is available. If None, the index one \
+                                        higher than the highest already existing index is selected.
 
         **max_loading_percent (list of float)** - maximum current loading (only needed for OPF)
 
         **df** (list of float) - derating factor: maximum current of transformer in relation to nominal \
-            current of transformer (from 0 to 1)
+                                                  current of transformer (from 0 to 1)
 
         **tap_dependency_table** (list of boolean, False) - True if transformer parameters (voltage ratio, angle, \
             impedance) must be adjusted dependent on the tap position of the transformer. Requires the additional \
@@ -3782,34 +3767,34 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
 
         **xn_ohm** (list of float) - impedance of the grounding reactor (Z_N) for short circuit calculation
 
-        **tap2_side** (list of string) - position of the second tap changer ("hv", "lv")
+        **tap2_side** (list of str) - position of the second tap changer ("hv", "lv")
 
         **tap2_pos** (list of int, nan) - current tap position of the second tap changer of the transformer. \
-            Defaults to the medium position (tap2_neutral)
+                                          Defaults to the medium position (tap2_neutral)
 
         **tap2_neutral** (list of int, nan) - second tap position where the transformer ratio is equal to the \
-            ratio of the rated voltages
+                                              ratio of the rated voltages
 
         **tap2_max** (list of int, nan) - maximum allowed tap position of the second tap changer
 
-        **tap2_min** (list of int, nan):  minimum allowed tap position of the second tap changer
+        **tap2_min** (list of int, nan) - minimum allowed tap position of the second tap changer
 
         **tap2_step_percent** (list of float) - second tap step size for voltage magnitude in percent
 
         **tap2_step_degree** (list of float) - second tap step size for voltage angle in degree*
 
-        **tap2_changer_type** (list of string, None) - specifies the tap changer type ("Ratio", "Symmetrical", "Ideal",
-                                                       None: no tap changer)*
+        **tap2_changer_type** (list of str, None) - specifies the tap changer type ("Ratio", "Symmetrical", "Ideal", \
+                                                    None: no tap changer)*
 
-        ** only considered in load flow if calculate_voltage_angles = True
+        \* only considered in load flow if calculate_voltage_angles = True
 
     OUTPUT:
         **index** (list of int) - The list of IDs of the created transformers
 
     EXAMPLE:
         create_transformers_from_parameters(net, hv_bus=[0, 1], lv_bus=[2, 3], name="trafo1", sn_mva=40, \
-            vn_hv_kv=110, vn_lv_kv=10, vk_percent=10, vkr_percent=0.3, pfe_kw=30, \
-            i0_percent=0.1, shift_degree=30)
+                                            vn_hv_kv=110, vn_lv_kv=10, vk_percent=10, vkr_percent=0.3, pfe_kw=30, \
+                                            i0_percent=0.1, shift_degree=30)
     """
 
     from pandapower.convert_format import convert_trafo_pst_logic
@@ -3881,42 +3866,39 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tap_p
                          tap_at_star_point=False, tap_dependency_table=nan, id_characteristic_table=nan,
                          **kwargs):
     """
-    Creates a three-winding transformer in table net["trafo3w"].
+    Creates a three-winding transformer in table net.trafo3w.
     The trafo parameters are defined through the standard type library.
 
     INPUT:
-        **net** - The net within this transformer should be created
+        **net** (pandapowerNet) - the net within this transformer should be created
 
-        **hv_bus** (int) - The bus on the high-voltage side on which the transformer will be \
-            connected to
+        **hv_bus** (int) - The bus on the high-voltage side on which the transformer will be connected to
 
         **mv_bus** (int) - The medium voltage bus on which the transformer will be connected to
 
-        **lv_bus** (int) - The bus on the low-voltage side on which the transformer will be \
-            connected to
+        **lv_bus** (int) - The bus on the low-voltage side on which the transformer will be connected to
 
-        **std_type** -  The used standard type from the standard type library
+        **std_type** (str) - the used standard type from the standard type library
 
     OPTIONAL:
-        **name** (string) - A custom name for this transformer
+        **name** (str) - a custom name for this transformer
 
-        **tap_pos** (int, nan) - current tap position of the transformer. Defaults to the medium \
-            position (tap_neutral)
+        **tap_pos** (int, nan) - current tap position of the transformer. Defaults to the medium position (tap_neutral)
 
-        **tap_changer_type** (str, None) - specifies the tap changer type ("Ratio", "Symmetrical", "Ideal", "Tabular",
+        **tap_changer_type** (str, None) - specifies the tap changer type ("Ratio", "Symmetrical", "Ideal", "Tabular", \
                                            None: no tap changer)*
 
-        **tap_at_star_point** (boolean) - Whether tap changer is located at the star point of the \
-            3W-transformer or at the bus
+        **tap_at_star_point** (boolean) - whether tap changer is located at the star point of the 3w-transformer \
+                                          or at the bus
 
         **in_service** (boolean) - True for in_service or False for out of service
 
-        **index** (int, None) - Force a specified ID if it is available. If None, the index one \
-            higher than the highest already existing index is selected.
+        **index** (int, None) - force a specified ID if it is available. If None, the index one \
+                                higher than the highest already existing index is selected.
 
-        **max_loading_percent (float)** - maximum current loading (only needed for OPF)
+        **max_loading_percent** (float) - maximum current loading (only needed for OPF)
 
-        **tap_at_star_point (bool)** - whether tap changer is modelled at star point or at the bus
+        **tap_at_star_point** (bool) - whether tap changer is modelled at star point or at the bus
 
         **tap_dependency_table** (boolean, False) - True if transformer parameters (voltage ratio, angle, impedance) \
             must be adjusted dependent on the tap position of the transformer. Requires the additional column \
@@ -3927,10 +3909,10 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tap_p
             "id_characteristic_spline" to set up the reference to the spline characteristics.
 
         **id_characteristic_table** (int, nan) - references the index of the characteristic from the lookup table \
-            net.trafo_characteristic_table
+                                                 net.trafo_characteristic_table
 
     OUTPUT:
-        **index** (int) - The unique ID of the created transformer
+        **index** (int) - the unique ID of the created transformer
 
     EXAMPLE:
         create_transformer3w(net, hv_bus=0, mv_bus=1, lv_bus=2, name="trafo1", std_type="63/25/38 MVA 110/20/10 kV")
@@ -4022,26 +4004,23 @@ def create_transformer3w_from_parameters(
         vkr0_hv_percent=nan, vkr0_mv_percent=nan, vkr0_lv_percent=nan,
         vector_group=None, tap_dependency_table=False, id_characteristic_table=nan, **kwargs):
     """
-    Adds a three-winding transformer in table net["trafo3w"].
-    The model currently only supports one tap-changer per 3W Transformer.
+    Adds a three-winding transformer in table net.trafo3w with the specified parameters.
+    The model currently only supports one tap changer per 3w-transformer.
 
     Input:
-        **net** (pandapowerNet) - The net within this transformer should be created
+        **net** (pandapowerNet) - the net within this transformer should be created
 
-        **hv_bus** (int) - The bus on the high-voltage side on which the transformer will be \
-            connected to
+        **hv_bus** (int) - the bus on the high-voltage side on which the transformer will be connected to
 
-        **mv_bus** (int) - The bus on the middle-voltage side on which the transformer will be \
-            connected to
+        **mv_bus** (int) - The bus on the middle-voltage side on which the transformer will be connected to
 
-        **lv_bus** (int) - The bus on the low-voltage side on which the transformer will be \
-            connected to
+        **lv_bus** (int) - The bus on the low-voltage side on which the transformer will be connected to
 
-        **vn_hv_kv** (float) rated voltage on high voltage side
+        **vn_hv_kv** (float) - rated voltage on high voltage side
 
-        **vn_mv_kv** (float) rated voltage on medium voltage side
+        **vn_mv_kv** (float) - rated voltage on medium voltage side
 
-        **vn_lv_kv** (float) rated voltage on low voltage side
+        **vn_lv_kv** (float) - rated voltage on low voltage side
 
         **sn_hv_mva** (float) - rated apparent power on high voltage side
 
@@ -4070,11 +4049,11 @@ def create_transformer3w_from_parameters(
 
         **shift_lv_degree** (float, 0) - angle shift to low voltage side*
 
-        **tap_step_percent** (float) - Tap step in percent
+        **tap_step_percent** (float) - tap step in percent
 
-        **tap_step_degree** (float) - Tap phase shift angle in degrees
+        **tap_step_degree** (float) - tap phase shift angle in degrees
 
-        **tap_side** (string, None) - "hv", "mv", "lv"
+        **tap_side** (str, None) - "hv", "mv", "lv"
 
         **tap_neutral** (int, nan) - default tap position
 
@@ -4082,20 +4061,19 @@ def create_transformer3w_from_parameters(
 
         **tap_max** (int, nan) - Maximum tap position
 
-        **tap_pos** (int, nan) - current tap position of the transformer. Defaults to the \
-            medium position (tap_neutral)
+        **tap_pos** (int, nan) - current tap position of the transformer. Defaults to the medium position (tap_neutral)
 
-        **tap_changer_type** (str, None) - specifies the tap changer type ("Ratio", "Symmetrical", "Ideal", "Tabular",
+        **tap_changer_type** (str, None) - specifies the tap changer type ("Ratio", "Symmetrical", "Ideal", "Tabular", \
                                            None: no tap changer)
 
-        **tap_at_star_point** (boolean) - Whether tap changer is located at the star point of the \
-            3W-transformer or at the bus
+        **tap_at_star_point** (boolean) - Whether tap changer is located at the star point of the 3w-transformer \
+                                          or at the bus
 
-        **name** (string, None) - Name of the 3-winding transformer
+        **name** (str, None) - name of the 3-winding transformer
 
         **in_service** (boolean, True) - True for in_service or False for out of service
 
-        **max_loading_percent (float)** - maximum current loading (only needed for OPF)
+        **max_loading_percent** (float) - maximum current loading (only needed for OPF)
 
         **tap_dependency_table** (boolean, False) - True if transformer parameters (voltage ratio, angle, impedance) \
             must be adjusted dependent on the tap position of the transformer. Requires the additional column \
@@ -4106,7 +4084,7 @@ def create_transformer3w_from_parameters(
             "id_characteristic_spline" to set up the reference to the spline characteristics.
 
         **id_characteristic_table** (int, nan) - references the index of the characteristic from the lookup table \
-            net.trafo_characteristic_table
+                                                 net.trafo_characteristic_table
 
         **vk0_hv_percent** (float) - zero sequence short circuit voltage from high to medium voltage
 
@@ -4120,18 +4098,17 @@ def create_transformer3w_from_parameters(
 
         **vkr0_lv_percent** (float) - zero sequence real part of short circuit voltage from high to low voltage
 
-        **vector_group** (list of String) - Vector group of the transformer3w
+        **vector_group** (str) - vector group of the 3w-transformer
 
     OUTPUT:
-        **trafo_id** - The unique trafo_id of the created 3W transformer
+        **trafo_id** - the unique trafo_id of the created 3w-transformer
 
     Example:
-        create_transformer3w_from_parameters(net, hv_bus=0, mv_bus=1, lv_bus=2, name="trafo1",
-        sn_hv_mva=40, sn_mv_mva=20, sn_lv_mva=20, vn_hv_kv=110, vn_mv_kv=20, vn_lv_kv=10,
-        vk_hv_percent=10,vk_mv_percent=11, vk_lv_percent=12, vkr_hv_percent=0.3,
-        vkr_mv_percent=0.31, vkr_lv_percent=0.32, pfe_kw=30, i0_percent=0.1, shift_mv_degree=30,
-        shift_lv_degree=30)
-
+        create_transformer3w_from_parameters(net, hv_bus=0, mv_bus=1, lv_bus=2, name="trafo1", sn_hv_mva=40, \
+                                             sn_mv_mva=20, sn_lv_mva=20, vn_hv_kv=110, vn_mv_kv=20, vn_lv_kv=10, \
+                                             vk_hv_percent=10,vk_mv_percent=11, vk_lv_percent=12, vkr_hv_percent=0.3, \
+                                             vkr_mv_percent=0.31, vkr_lv_percent=0.32, pfe_kw=30, i0_percent=0.1, \
+                                             shift_mv_degree=30, shift_lv_degree=30)
     """
 
     # Check if bus exist to attach the trafo to
@@ -4198,85 +4175,78 @@ def create_transformers3w_from_parameters(
         vkr0_hv_percent=nan, vkr0_mv_percent=nan, vkr0_lv_percent=nan,
         vector_group=None, tap_dependency_table=False, id_characteristic_table=nan, **kwargs):
     """
-    Adds a three-winding transformer in table net["trafo3w"].
+    Adds multiple three-winding transformers in table net.trafo3w with the specified parameters.
+    The model currently only supports one tap changer per 3w-transformer.
 
     Input:
-        **net** (pandapowerNet) - The net within this transformer should be created
+        **net** (pandapowerNet) - the net within this transformer should be created
 
-        **hv_bus** (list of int) - The bus on the high-voltage side on which the transformer will be \
-            connected to
+        **hv_bus** (list of int) - The bus on the high-voltage side on which the transformer will be connected to
 
-        **mv_bus** (list of int) - The bus on the middle-voltage side on which the transformer will be \
-            connected to
+        **mv_bus** (list of int) - The bus on the middle-voltage side on which the transformer will be connected to
 
-        **lv_bus** (list of int) - The bus on the low-voltage side on which the transformer will be \
-            connected to
+        **lv_bus** (list of int) - The bus on the low-voltage side on which the transformer will be connected to
 
-        **vn_hv_kv** (float or list) rated voltage on high voltage side
+        **vn_hv_kv** (list of float) - rated voltage on high voltage side
 
-        **vn_mv_kv** (float or list) rated voltage on medium voltage side
+        **vn_mv_kv** (list of float) - rated voltage on medium voltage side
 
-        **vn_lv_kv** (float or list) rated voltage on low voltage side
+        **vn_lv_kv** (list of float) - rated voltage on low voltage side
 
-        **sn_hv_mva** (float or list) - rated apparent power on high voltage side
+        **sn_hv_mva** (list of float) - rated apparent power on high voltage side
 
-        **sn_mv_mva** (float or list) - rated apparent power on medium voltage side
+        **sn_mv_mva** (list of float) - rated apparent power on medium voltage side
 
-        **sn_lv_mva** (float or list) - rated apparent power on low voltage side
+        **sn_lv_mva** (list of float) - rated apparent power on low voltage side
 
-        **vk_hv_percent** (float or list) - short circuit voltage from high to medium voltage
+        **vk_hv_percent** (list of float) - short circuit voltage from high to medium voltage
 
-        **vk_mv_percent** (float or list) - short circuit voltage from medium to low voltage
+        **vk_mv_percent** (list of float) - short circuit voltage from medium to low voltage
 
-        **vk_lv_percent** (float or list) - short circuit voltage from high to low voltage
+        **vk_lv_percent** (list of float) - short circuit voltage from high to low voltage
 
-        **vkr_hv_percent** (float or list) - real part of short circuit voltage from high to medium\
-            voltage
+        **vkr_hv_percent** (list of float) - real part of short circuit voltage from high to medium voltage
 
-        **vkr_mv_percent** (float or list) - real part of short circuit voltage from medium to low\
-            voltage
+        **vkr_mv_percent** (list of float) - real part of short circuit voltage from medium to low voltage
 
-        **vkr_lv_percent** (float or list) - real part of short circuit voltage from high to low\
-            voltage
+        **vkr_lv_percent** (list of float) - real part of short circuit voltage from high to low voltage
 
-        **pfe_kw** (float or list) - iron losses in kW
+        **pfe_kw** (list of float) - iron losses in kW
 
-        **i0_percent** (float or list) - open loop losses
+        **i0_percent** (list of float) - open loop losses
 
     OPTIONAL:
-        **shift_mv_degree** (float or list, 0) - angle shift to medium voltage side*
 
-        **shift_lv_degree** (float or list, 0) - angle shift to low voltage side*
+        **shift_mv_degree** (list of float, 0) - angle shift to medium voltage side*
 
-        **tap_step_percent** (float or list) - Tap step in percent
+        **shift_lv_degree** (list of float, 0) - angle shift to low voltage side*
 
-        **tap_step_degree** (float or list) - Tap phase shift angle in degrees
+        **tap_step_percent** (list of float) - tap step in percent
+
+        **tap_step_degree** (list of float) - tap phase shift angle in degrees*
 
         **tap_side** (list of string, None) - "hv", "mv", "lv"
 
         **tap_neutral** (list of int, nan) - default tap position
 
-        **tap_min** (list of int, nan) - Minimum tap position
+        **tap_min** (list of int, nan) - minimum tap position
 
-        **tap_max** (list of int, nan) - Maximum tap position
+        **tap_max** (list of int, nan) - maximum tap position
 
-        **tap_pos** (list of int, nan) - current tap position of the transformer. Defaults to the \
-            medium position (tap_neutral)
+        **tap_pos** (list of int, nan) - current tap position of the transformer. Defaults to the medium position \
+                                         (tap_neutral)
 
-        **tap_changer_type** (list of str, None) - specifies the tap changer type ("Ratio", "Symmetrical", "Ideal",
-                                                   "Tabular", None: no tap changer)
+        **tap_changer_type** (list of str, None) - specifies the tap changer type ("Ratio", "Symmetrical", "Ideal", \
+                                                   "Tabular", None: no tap changer)*
 
-        **tap_at_star_point** (list of boolean) - Whether tap changer is located at the star point of the \
-            3W-transformer or at the bus
+        **tap_at_star_point** (list of boolean) - whether tap changer is located at the star point of the \
+                                                  3w-transformer or at the bus
 
-        **name** (list of string, None) - Name of the 3-winding transformer
+        **name** (list of str, None) - name of the 3-winding transformer
 
         **in_service** (list of boolean, True) - True for in_service or False for out of service
 
-        ** only considered in load flow if calculate_voltage_angles = True
-        **The model currently only supports one tap-changer per 3W Transformer.
-
-        **max_loading_percent (list of float)** - maximum current loading (only needed for OPF)
+        **max_loading_percent** (list of float) - maximum current loading (only needed for OPF)
 
         **tap_dependency_table** (list of boolean, False) - True if transformer parameters (voltage ratio, angle, \
             impedance) must be adjusted dependent on the tap position of the transformer. Requires the additional \
@@ -4287,7 +4257,7 @@ def create_transformers3w_from_parameters(
             "id_characteristic_spline" to set up the reference to the spline characteristics.
 
         **id_characteristic_table** (list of int, nan) - references the index of the characteristic from the \
-            lookup table net.trafo_characteristic_table
+                                                         lookup table net.trafo_characteristic_table
 
         **vk0_hv_percent** (list of float) - zero sequence short circuit voltage from high to medium voltage
 
@@ -4295,25 +4265,29 @@ def create_transformers3w_from_parameters(
 
         **vk0_lv_percent** (list of float) - zero sequence short circuit voltage from high to low voltage
 
-        **vkr0_hv_percent** (list of float) - zero sequence real part of short circuit voltage from high to medium voltage
+        **vkr0_hv_percent** (list of float) - zero sequence real part of short circuit voltage from high to \
+                                              medium voltage
 
-        **vkr0_mv_percent** (list of float) - zero sequence real part of short circuit voltage from medium to low voltage
+        **vkr0_mv_percent** (list of float) - zero sequence real part of short circuit voltage from medium to \
+                                              low voltage
 
         **vkr0_lv_percent** (list of float) - zero sequence real part of short circuit voltage from high to low voltage
 
-        **vector_group** (list of string) - Vector group of the transformer3w
+        **vector_group** (list of str) - vector group of the 3w-transformers
+
+        \* only considered in load flow if calculate_voltage_angles = True
 
     OUTPUT:
-        **trafo_id** (list of int) - List of trafo_ids of the created 3W transformers
+        **trafo_id** (list of int) - list of trafo_ids of the created 3w-transformers
 
     Example:
-        create_transformers3w_from_parameters(net, hv_bus=[0, 3], mv_bus=[1, 4], lv_bus=[2, 5], name="trafo1",
-        sn_hv_mva=40, sn_mv_mva=20, sn_lv_mva=20, vn_hv_kv=110, vn_mv_kv=20, vn_lv_kv=10,
-        vk_hv_percent=10,vk_mv_percent=11, vk_lv_percent=12, vkr_hv_percent=0.3,
-        vkr_mv_percent=0.31, vkr_lv_percent=0.32, pfe_kw=30, i0_percent=0.1, shift_mv_degree=30,
-        shift_lv_degree=30)
-
+        create_transformers3w_from_parameters(net, hv_bus=[0, 3], mv_bus=[1, 4], lv_bus=[2, 5], name="trafo1", \
+                                              sn_hv_mva=40, sn_mv_mva=20, sn_lv_mva=20, vn_hv_kv=110, vn_mv_kv=20, \
+                                              vn_lv_kv=10, vk_hv_percent=10,vk_mv_percent=11, vk_lv_percent=12, \
+                                              vkr_hv_percent=0.3, vkr_mv_percent=0.31, vkr_lv_percent=0.32, pfe_kw=30, \
+                                              i0_percent=0.1, shift_mv_degree=30, shift_lv_degree=30)
     """
+
     index = _get_multiple_index_with_check(net, "trafo3w", index, len(hv_buses),
                                            name="Three winding transformers")
 
@@ -4545,20 +4519,19 @@ def create_switches(net, buses, elements, et, closed=True, type=None, name=None,
 def create_shunt(net, bus, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, name=None, step_dependency_table=False,
                  id_characteristic_table=nan, in_service=True, index=None, **kwargs):
     """
-    Creates a shunt element
+    Creates a shunt element.
 
     INPUT:
-        **net** (pandapowerNet) - The pandapower network in which the element is created
+        **net** (pandapowerNet) - the pandapower network in which the element is created
 
-        **bus** - bus number of bus to whom the shunt is connected to
+        **bus** (int) - index of the bus the shunt is connected to
 
-        **p_mw** - shunt active power in MW at v = 1.0 p.u. per step
+        **p_mw** (float) - shunt active power in MW at v = 1.0 p.u. per step
 
-        **q_mvar** - shunt reactive power in MVAr at v = 1.0 p.u. per step
+        **q_mvar** (float) - shunt reactive power in MVAr at v = 1.0 p.u. per step
 
     OPTIONAL:
-        **vn_kv** (float, None) - rated voltage of the shunt. Defaults to rated voltage of
-            connected bus
+        **vn_kv** (float, None) - rated voltage of the shunt. Defaults to rated voltage of connected bus
 
         **step** (int, 1) - step of shunt with which power values are multiplied
 
@@ -4574,15 +4547,15 @@ def create_shunt(net, bus, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, name
             "id_characteristic_spline" to set up the reference to the spline characteristics.
 
         **id_characteristic_table** (int, nan) - references the index of the characteristic from the lookup table \
-            net.shunt_characteristic_table
+                                                 net.shunt_characteristic_table
 
         **in_service** (boolean, True) - True for in_service or False for out of service
 
-        **index** (int, None) - Force a specified ID if it is available. If None, the index one
-            higher than the highest already existing index is selected.
+        **index** (int, None) - force a specified ID if it is available. If None, the index one higher than the \
+                                highest already existing index is selected.
 
     OUTPUT:
-        **index** (int) - The unique ID of the created shunt
+        **index** (int) - the unique ID of the created shunt
 
     EXAMPLE:
         create_shunt(net, 0, 20)
@@ -4609,7 +4582,7 @@ def create_shunt(net, bus, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, name
 def create_shunts(net, buses, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, name=None, step_dependency_table=False,
                   id_characteristic_table=nan, in_service=True, index=None, **kwargs):
     """
-    Creates a number of shunt elements
+    Creates a number of shunt elements.
 
     INPUT:
         **net** (pandapowerNet) - The pandapower network in which the element is created
@@ -4638,15 +4611,15 @@ def create_shunts(net, buses, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, n
             "id_characteristic_spline" to set up the reference to the spline characteristics.
 
         **id_characteristic_table** (list of ints, nan) - references the index of the characteristic from the lookup \
-            table net.shunt_characteristic_table
+                                                          table net.shunt_characteristic_table
 
         **in_service** (list of booleans, True) - True for in_service or False for out of service
 
-        **index** (list of ints, None) - Force a specified ID if it is available. If None, the
-            index one higher than the highest already existing index is selected.
+        **index** (list of ints, None) - force a specified ID if it is available. If None, the \
+                                         index one higher than the highest already existing index is selected.
 
     OUTPUT:
-        **index** (list of ints) - The list of IDs of the created shunts
+        **index** (list of ints) - the list of IDs of the created shunts
 
     EXAMPLE:
         create_shunts(net, [0, 2], [20, 30])
@@ -4675,7 +4648,7 @@ def create_shunt_as_capacitor(net, bus, q_mvar, loss_factor, **kwargs):
 
         **net** (pandapowerNet) - The pandapower network in which the element is created
 
-        **bus** - bus number of bus to whom the shunt is connected to
+        **bus** (int) - index of the bus the shunt is connected to
 
         **q_mvar** (float) - reactive power of the capacitor bank at rated voltage
 
@@ -4684,9 +4657,8 @@ def create_shunt_as_capacitor(net, bus, q_mvar, loss_factor, **kwargs):
     OPTIONAL:
         same as in create_shunt, keyword arguments are passed to the create_shunt function
 
-
     OUTPUT:
-        **index** (int) - The unique ID of the created shunt
+        **index** (int) - the unique ID of the created shunt
     """
     q_mvar = -abs(q_mvar)  # q is always negative for capacitor
     p_mw = abs(q_mvar * loss_factor)  # p is always positive for active power losses
@@ -5451,60 +5423,60 @@ def create_dcline(net, from_bus, to_bus, p_mw, loss_percent, loss_mw, vm_from_pu
 def create_measurement(net, meas_type, element_type, value, std_dev, element, side=None,
                        check_existing=False, index=None, name=None, **kwargs):
     """
-    Creates a measurement, which is used by the estimation module. Possible types of measurements
+    Creates a measurement, which is used by the estimation module. Possible types of measurements \
     are: v, p, q, i, va, ia
 
     INPUT:
-        **meas_type** (string) - Type of measurement. "v", "p", "q", "i", "va", "ia" are possible
+        **meas_type** (str) - Type of measurement. "v", "p", "q", "i", "va" and "ia" are possible
 
-        **element_type** (string) - Clarifies which element is measured. "bus", "line",
-        "trafo", and "trafo3w" are possible
+        **element_type** (str) - Clarifies which element is measured. "bus", "line", "trafo", "trafo3w", "load", \
+                                 "gen", "sgen", "shunt", "ward", "xward" and "ext_grid" are possible
 
-        **value** (float) - Measurement value. Units are "MW" for P, "MVar" for Q, "p.u." for V,
-        "kA" for I. Bus power measurement is in load reference system, which is consistent to
-        the rest of pandapower.
+        **value** (float) - Measurement value. Units are "MW" for P, "MVAr" for Q, "p.u." for V, \
+                            "kA" for I. Bus power measurement is in load reference system, which is consistent to \
+                            the rest of pandapower.
 
         **std_dev** (float) - Standard deviation in the same unit as the measurement
 
-        **element** (int) - Index of the measured element (either bus index, line index,\
-            trafo index, trafo3w index)
+        **element** (int) - Index of the measured element
 
-        **side** (int, string, default: None) - Only used for measured lines or transformers. Side \
-            defines at which end of the branch the measurement is gathered. For lines this may be \
-            "from", "to" to denote the side with the from_bus or to_bus. It can also be the index \
-            of the from_bus or to_bus. For transformers, it can be "hv", "mv" or "lv" or the \
-            corresponding bus index, respectively
+        **side** (int or str, default: None) - Only used for measured lines or transformers. Side defines at which \
+                                               end of the branch the measurement is gathered. For lines this may be \
+                                               "from", "to" to denote the side with the from_bus or to_bus. It can \
+                                               also be the index of the from_bus or to_bus. For transformers, it can \
+                                               be "hv", "mv" or "lv" or the corresponding bus index, respectively.
 
     OPTIONAL:
-        **check_existing** (bool, default: None) - Check for and replace existing measurements for\
-            this bus, type and element_type. Set it to false for performance improvements which can\
-            cause unsafe behavior
+        **check_existing** (bool, default: None) - Check for and replace existing measurements for this bus, type and \
+                                                   element_type. Set it to False for performance improvements which \
+                                                   can cause unsafe behavior.
 
-        **index** (int, default: None) - Index of the measurement in the measurement table. Should\
-            not exist already.
+        **index** (int, default: None) - Index of the measurement in the measurement table. Should \
+                                         not exist already.
 
         **name** (str, default: None) - Name of measurement
 
     OUTPUT:
-        (int) Index of measurement
+        **index** (int) - Index of the created measurement
 
     EXAMPLES:
         2 MW load measurement with 0.05 MW standard deviation on bus 0:
         create_measurement(net, "p", "bus", 0, 2., 0.05.)
 
-        4.5 MVar line measurement with 0.1 MVar standard deviation on the "to_bus" side of line 2
+        4.5 MVar line measurement with 0.1 MVAr standard deviation on the "to_bus" side of line 2:
         create_measurement(net, "q", "line", 2, 4.5, 0.1, "to")
     """
     if meas_type not in ("v", "p", "q", "i", "va", "ia"):
         raise UserWarning("Invalid measurement type ({})".format(meas_type))
 
-    if side is None and element_type in ("line", "trafo"):
+    if side is None and element_type in ("line", "trafo", "trafo3w"):
         raise UserWarning("The element type '{element_type}' requires a value in 'side'")
 
     if meas_type in ("v", "va"):
         element_type = "bus"
 
-    if element_type not in ("bus", "line", "trafo", "trafo3w"):
+    if element_type not in ("bus", "line", "trafo", "trafo3w", "load", "gen", "sgen", "shunt", "ward", "xward",
+                            "ext_grid"):
         raise UserWarning("Invalid element type ({})".format(element_type))
 
     if element is not None and element not in net[element_type].index.values:
@@ -5516,9 +5488,9 @@ def create_measurement(net, meas_type, element_type, value, std_dev, element, si
     if meas_type in ("i", "ia") and element_type == "bus":
         raise UserWarning("Line current measurements cannot be placed at buses")
 
-    if meas_type in ("v", "va") and element_type in ("line", "trafo", "trafo3w"):
-        raise UserWarning(
-            "Voltage measurements can only be placed at buses, not at {}".format(element_type))
+    if meas_type in ("v", "va") and element_type in ("line", "trafo", "trafo3w", "load", "gen", "sgen", "shunt",
+                                                     "ward", "xward", "ext_grid"):
+        raise UserWarning("Voltage measurements can only be placed at buses, not at {}".format(element_type))
 
     if check_existing:
         if side is None:
@@ -5858,7 +5830,7 @@ def create_group(net, element_types, element_indices, name="", reference_columns
                        [name, element_types, element_indices, reference_columns]))
 
     _set_multiple_entries(net, "group", index, **entries)
-    net.group.loc[net.group.reference_column == "", "reference_column"] = None # overwrite
+    net.group.loc[net.group.reference_column == "", "reference_column"] = None  # overwrite
     # empty_defaults_per_dtype() applied in _set_multiple_entries()
 
     return index[0]
@@ -6117,9 +6089,9 @@ def _set_multiple_entries(net, table, index, preserve_dtypes=True, defaults_to_f
         net[table] = pd.concat([net[table], dd[dd.columns[~dd.isnull().all()]]], sort=False)
     else:
         dd_columns = dd.columns[~dd.isnull().all()]
-        complete_columns = list(net[table].columns)+list(dd_columns.difference(net[table].columns))
+        complete_columns = list(net[table].columns) + list(dd_columns.difference(net[table].columns))
         empty_dict = {key: empty_defaults_per_dtype(dtype) for key, dtype in net[table][net[
-                      table].columns.difference(dd_columns)].dtypes.to_dict().items()}
+            table].columns.difference(dd_columns)].dtypes.to_dict().items()}
         net[table] = dd[dd_columns].assign(**empty_dict)[complete_columns]
 
     # and preserve dtypes

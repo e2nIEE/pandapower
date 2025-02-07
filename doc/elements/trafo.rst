@@ -22,7 +22,6 @@ Transformers can be either created from the standard type library (create_transf
 
 .. autofunction:: pandapower.create_transformer_from_parameters
 
-
 Input Parameters
 =====================
 
@@ -51,9 +50,6 @@ Input Parameters
     | P\_cu is the power loss in the copper in kW
     | S\_trafo is the rated apparent power of the transformer in kW
 
-
-
-
 Electric Model
 =================
 
@@ -79,7 +75,6 @@ The equivalent circuit used for the transformer can be set in the power flow wit
 
 .. note:: it is possible to specify unequal distributions of leakage resistance and reactance between HV and LV sides
 
-    
 Transformer Ratio
 -------------------
 
@@ -101,7 +96,6 @@ The reference voltages of the high and low voltage buses are taken from the net.
     V_{ref, HV, transformer} &= vn\_hv\_kv \\
     V_{ref, LV, transformer} &= vn\_lv\_kv
    \end{align*}
-   
 
 If the power flow is run with voltage_angles=True, the complex ratio is given as:
 
@@ -300,7 +294,6 @@ Result Parameters
    :file: trafo_res.csv
    :delim: ;
    :widths: 15, 10, 55
-
 
 .. math::
    :nowrap:

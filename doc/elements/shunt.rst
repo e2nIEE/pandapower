@@ -88,7 +88,7 @@ The below table provides an example shunt_characteristic_table, populated for tw
 .. csv-table::
    :file: shunt_char_table.csv
    :delim: ,
-   :widths: 10, 55, 15, 20, 20
+   :widths: 10, 20, 15, 20, 20
 
 .. note::
     shunt_dependency_table has to be set to True and the id_characteristic_table variable needs to be populated in order to consider the corresponding shunt_characteristic_table values.
@@ -105,7 +105,7 @@ The below table provides an example shunt_characteristic_spline table, populated
 .. csv-table::
    :file: shunt_char_spline.csv
    :delim: ,
-   :widths: 10, 55, 55, 55
+   :widths: 10, 20, 30, 30
 
 Result Parameters
 ==========================

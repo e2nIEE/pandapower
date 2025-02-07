@@ -43,5 +43,5 @@ tap2_step_percent****;float;:math:`>` 0;tap step size for voltage magnitude [%]
 tap2_step_degree****;float;:math:`\geq` 0;tap step size for voltage angle
 tap2_pos****;integer;;current position of tap changer
 tap2_changer_type****;string;"""Ratio"", ""Symmetrical"", ""Ideal""";specifies the tap changer type
-leakage_resistance_ratio_hv*;float;:math:0`\leq` 1;ratio of transformer short-circuit resistance on HV side (default 0.5)
-leakage_reactance_ratio_hv*;float;:math:0`\leq` 1;ratio of transformer short-circuit reactance on HV side (default 0.5)
+leakage_resistance_ratio_hv*;float;0 :math:`\leq` 1;ratio of transformer short-circuit resistance on HV side (default 0.5)
+leakage_reactance_ratio_hv*;float;0 :math:`\leq` 1;ratio of transformer short-circuit reactance on HV side (default 0.5)
