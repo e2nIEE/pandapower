@@ -50,7 +50,9 @@ def dataframes_equal(df1, df2, ignore_index_order=True, **kwargs):
     if "geo" in df1.columns and "geo" in df2.columns:
         not_eq_warn = "DataFrames do not match in column 'geo'."
         notnull1 = df1.geo.index[~df1.geo.isnull()]
+        notnull1 = df1.geo.loc[notnull1].index[df1.geo.loc[notnull1].apply(len).astype(bool)]
         notnull2 = df2.geo.index[~df2.geo.isnull()]
+        notnull2 = df2.geo.loc[notnull2].index[df2.geo.loc[notnull2].apply(len).astype(bool)]
 
         if len(notnull1) + len(notnull2) == 0:
             return True

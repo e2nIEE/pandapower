@@ -272,7 +272,7 @@ class OCRelay(ProtectionDevice):
         plt.grid(True, which="both", ls="-")
 
     def __str__(self):
-        s = 'Protection Device: %s \nType: %s \nName: %s' % (self.__class__.__name__, self.oc_relay_type, self.name)
+        s = 'Protection Device: %s \nType: %s \nIndex: %s' % (self.__class__.__name__, self.oc_relay_type, self.switch_index)
         self.characteristic_index = 1
         return s
 def time_grading(net,time_settings):

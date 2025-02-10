@@ -659,7 +659,7 @@ def printpf(baseMVA, bus=None, gen=None, branch=None, f=None, success=None,
             fd.write('\n================================================================================')
             fd.write('\n|     Branch Flow Constraints                                                  |')
             fd.write('\n================================================================================')
-            fd.write('\nBrnch   From     "From" End        Limit       "To" End        To')
+            fd.write('\nBranch   From     "From" End        Limit       "To" End        To')
             fd.write(strg)
             fd.write('\n-----  -----  -------  --------  --------  --------  -------  -----')
             for i in range(nl):

@@ -141,7 +141,7 @@ def add_zones_to_elements(net, replace=True, elements=None, **kwargs):
     """
     Adds zones to elements, inferring them from the zones of buses they are connected to.
     """
-    elements = ["line", "trafo", "ext_grid", "switch"] if elements is None else elements
+    elements = pp_elements(bus=False) if elements is None else elements
     add_column_from_node_to_elements(net, "zone", replace=replace, elements=elements, **kwargs)
 
 

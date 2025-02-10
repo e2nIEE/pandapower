@@ -9,7 +9,7 @@ from scipy.sparse import vstack, hstack
 from pandapower.pypower.idx_brch import F_BUS, T_BUS
 from pandapower.pypower.dSbus_dV import dSbus_dV
 from pandapower.pypower.dSbr_dV import dSbr_dV
-from pandapower.pypower.dIbr_dV import dIbr_dV
+from pandapower.pypower.dIbr_dV import dIbr_dV_new
 
 from pandapower.estimation.ppc_conversion import ExtendedPPCI
 
@@ -52,7 +52,13 @@ class BaseAlgebra:
 
     def create_hx(self, E):
         f_bus, t_bus = self.fb, self.tb
-        V = self.eppci.E2V(E)
+        if self.eppci.algorithm == "af-wls":
+            num_clusters = len(self.eppci["clusters"])
+            E1 = E[:-num_clusters]
+            E2 = E[-num_clusters:]
+        else:
+            E1 = E
+        V = self.eppci.E2V(E1)
         Sfe = V[f_bus] * np.conj(self.Yf * V)
         Ste = V[t_bus] * np.conj(self.Yt * V)
         Sbuse = V * np.conj(self.Ybus * V)
@@ -64,25 +70,40 @@ class BaseAlgebra:
                    np.imag(Ste),
                    np.abs(V)]
 
-        if self.any_i_meas or self.any_degree_meas:
-            va = np.angle(V)
-            Ife = self.Yf * V
-            ifem = np.abs(Ife)
-            ifea = np.angle(Ife)
-            Ite = self.Yt * V
-            item = np.abs(Ite)
-            itea = np.angle(Ite)
+        # if self.any_i_meas or self.any_degree_meas:
+        va = np.angle(V)
+        Ife = self.Yf * V
+        ifem = np.abs(Ife)
+        ifea = np.angle(Ife)
+        Ite = self.Yt * V
+        item = np.abs(Ite)
+        itea = np.angle(Ite)
+        hx = np.r_[hx,
+                    va,
+                    ifem,
+                    item,
+                    ifea,
+                    itea]
+
+        if self.eppci.algorithm == "af-wls":
+            Pbuse2 = np.sum(np.multiply(E2,self.eppci["rated_power_clusters"][:,:num_clusters]),axis=1)
+            Qbuse2 = np.sum(np.multiply(E2,self.eppci["rated_power_clusters"][:,num_clusters:2*num_clusters]),axis=1)
             hx = np.r_[hx,
-                       va,
-                       ifem,
-                       item,
-                       ifea,
-                       itea]
+                       np.real(Sbuse)-Pbuse2,
+                       np.imag(Sbuse)-Qbuse2,
+                       E2]
+        
         return hx[self.non_nan_meas_selector]
 
     def create_hx_jacobian(self, E):
         # Using sparse matrix in creation sub-jacobian matrix
-        V = self.eppci.E2V(E)
+        if self.eppci.algorithm == "af-wls":
+            num_clusters = len(self.eppci["clusters"])
+            E1 = E[:-num_clusters]
+        else:
+            E1 = E
+
+        V = self.eppci.E2V(E1)
 
         dSbus_dth, dSbus_dv = self._dSbus_dv(V)
         dSf_dth, dSf_dv, dSt_dth, dSt_dv = self._dSbr_dv(V)
@@ -106,29 +127,56 @@ class BaseAlgebra:
         jac = np.r_[s_jac,
                     vm_jac]
 
-        if self.any_i_meas or self.any_degree_meas:
-            dva_dth, dva_dv = self._dvabus_dV(V)
-            va_jac = np.c_[dva_dth, dva_dv]
-            difm_dth, difm_dv, ditm_dth, ditm_dv,\
-                difa_dth, difa_dv, dita_dth, dita_dv = self._dimiabr_dV(V)
-            im_jac_th = np.r_[difm_dth,
-                              ditm_dth]
-            im_jac_v = np.r_[difm_dv,
-                             ditm_dv]
-            ia_jac_th = np.r_[difa_dth,
-                              dita_dth]
-            ia_jac_v = np.r_[difa_dv,
-                             dita_dv]
+        # if self.any_i_meas or self.any_degree_meas:
+        dva_dth, dva_dv = self._dvabus_dV(V)
+        va_jac = np.c_[dva_dth, dva_dv]
+        difm_dth, difm_dv, ditm_dth, ditm_dv,\
+            difa_dth, difa_dv, dita_dth, dita_dv = self._dimiabr_dV(V)
+        im_jac_th = np.r_[difm_dth,
+                            ditm_dth]
+        im_jac_v = np.r_[difm_dv,
+                            ditm_dv]
+        ia_jac_th = np.r_[difa_dth,
+                            dita_dth]
+        ia_jac_v = np.r_[difa_dv,
+                            dita_dv]
 
-            im_jac = np.c_[im_jac_th, im_jac_v]
-            ia_jac = np.c_[ia_jac_th, ia_jac_v]
+        im_jac = np.c_[im_jac_th, im_jac_v]
+        ia_jac = np.c_[ia_jac_th, ia_jac_v]
+
+        jac = np.r_[jac,
+                    va_jac,
+                    im_jac,
+                    ia_jac]
+
+        if self.eppci.algorithm == "af-wls":
+            p_eq_bal_jac_E1 = hstack((dSbus_dth.real, dSbus_dv.real)).toarray()
+            q_eq_bal_jac_E1 = hstack((dSbus_dth.imag, dSbus_dv.imag)).toarray()
+            af_vmeas_E1 = np.zeros((num_clusters,jac.shape[1]))
+
+            jac_E2 = np.zeros((jac.shape[0],num_clusters))
+            p_eq_bal_jac_E2 = - self.eppci["rated_power_clusters"][:,:num_clusters]
+            q_eq_bal_jac_E2 = - self.eppci["rated_power_clusters"][:,num_clusters:2*num_clusters]
+            af_vmeas_E2 = np.identity(num_clusters)
 
             jac = np.r_[jac,
-                        va_jac,
-                        im_jac,
-                        ia_jac]
+                        p_eq_bal_jac_E1,
+                        q_eq_bal_jac_E1,
+                        af_vmeas_E1]
 
-        return jac[self.non_nan_meas_selector, :][:, self.delta_v_bus_selector]
+            jac_E2 = np.r_[jac_E2,
+                        p_eq_bal_jac_E2,
+                        q_eq_bal_jac_E2,
+                        af_vmeas_E2]
+
+            jac = jac[self.non_nan_meas_selector, :][:, self.delta_v_bus_selector]
+            jac_E2 = jac_E2[self.non_nan_meas_selector, :][:]
+            jac = np.c_[jac, jac_E2]
+
+        else:
+            jac = jac[self.non_nan_meas_selector, :][:, self.delta_v_bus_selector]
+
+        return jac
 
     def _dSbus_dv(self, V):
         dSbus_dv, dSbus_dth = dSbus_dV(self.Ybus, V)
@@ -150,16 +198,19 @@ class BaseAlgebra:
 
     def _dimiabr_dV(self, V):
         # for current we only interest in the magnitude at the moment
-        dif_dth, dif_dv, dit_dth, dit_dv, If, It = dIbr_dV(self.eppci['branch'], self.Yf, self.Yt, V)
-        dif_dth, dif_dv, dit_dth, dit_dv = map(lambda m: m.toarray(), (dif_dth, dif_dv, dit_dth, dit_dv))
-        difm_dth = (np.abs(1e-5 * dif_dth + If.reshape((-1, 1))) - np.abs(If.reshape((-1, 1))))/1e-5
-        difm_dv = (np.abs(1e-5 * dif_dv + If.reshape((-1, 1))) - np.abs(If.reshape((-1, 1))))/1e-5
-        ditm_dth = (np.abs(1e-5 * dit_dth + It.reshape((-1, 1))) - np.abs(It.reshape((-1, 1))))/1e-5
-        ditm_dv = (np.abs(1e-5 * dit_dv + It.reshape((-1, 1))) - np.abs(It.reshape((-1, 1))))/1e-5
-        difa_dth = (np.angle(1e-5 * dif_dth + If.reshape((-1, 1))) - np.angle(If.reshape((-1, 1))))/1e-5
-        difa_dv = (np.angle(1e-5 * dif_dv + If.reshape((-1, 1))) - np.angle(If.reshape((-1, 1))))/1e-5
-        dita_dth = (np.angle(1e-5 * dit_dth + It.reshape((-1, 1))) - np.angle(It.reshape((-1, 1))))/1e-5
-        dita_dv = (np.angle(1e-5 * dit_dv + It.reshape((-1, 1))) - np.angle(It.reshape((-1, 1))))/1e-5
+        difm_dth, difm_dv, ditm_dth, ditm_dv = dIbr_dV_new(self.eppci['branch'], self.Yf, self.Yt, V)
+        difm_dth, difm_dv, ditm_dth, ditm_dv = map(lambda m: m.toarray(), (difm_dth, difm_dv, ditm_dth, ditm_dv))
+        difa_dth, difa_dv, dita_dth, dita_dv = 0*difm_dth, 0*difm_dv, 0*ditm_dth, 0*ditm_dv
+        # dif_dth, dif_dv, dit_dth, dit_dv, If, It = dIbr_dV(self.eppci['branch'], self.Yf, self.Yt, V)
+        # dif_dth, dif_dv, dit_dth, dit_dv = map(lambda m: m.toarray(), (dif_dth, dif_dv, dit_dth, dit_dv))
+        # difm_dth = (np.abs(1e-5 * dif_dth + If.reshape((-1, 1))) - np.abs(If.reshape((-1, 1))))/1e-5
+        # difm_dv = (np.abs(1e-5 * dif_dv + If.reshape((-1, 1))) - np.abs(If.reshape((-1, 1))))/1e-5
+        # ditm_dth = (np.abs(1e-5 * dit_dth + It.reshape((-1, 1))) - np.abs(It.reshape((-1, 1))))/1e-5
+        # ditm_dv = (np.abs(1e-5 * dit_dv + It.reshape((-1, 1))) - np.abs(It.reshape((-1, 1))))/1e-5
+        # difa_dth = (np.angle(1e-5 * dif_dth + If.reshape((-1, 1))) - np.angle(If.reshape((-1, 1))))/1e-5
+        # difa_dv = (np.angle(1e-5 * dif_dv + If.reshape((-1, 1))) - np.angle(If.reshape((-1, 1))))/1e-5
+        # dita_dth = (np.angle(1e-5 * dit_dth + It.reshape((-1, 1))) - np.angle(It.reshape((-1, 1))))/1e-5
+        # dita_dv = (np.angle(1e-5 * dit_dv + It.reshape((-1, 1))) - np.angle(It.reshape((-1, 1))))/1e-5
         return difm_dth, difm_dv, ditm_dth, ditm_dv, difa_dth, difa_dv, dita_dth, dita_dv
 
 

@@ -202,7 +202,7 @@ def _pd2ppc(net, sequence=None, **kwargs):
         aux._set_isolated_buses_out_of_service(net, ppc)
 
     # we need to check this after checking connectivity (isolated vsc as DC slack cause change of DC_REF to DC_P)
-    if "pf" in mode:
+    if "pf" in mode or "se" in mode:
         _check_for_reference_bus(ppc)
 
     _build_gen_ppc(net, ppc)

@@ -34,14 +34,14 @@ class CimParser:
         self.file_names: Dict[str, str] = dict()
         self.report_container = ReportContainer()
 
-    def parse_files(self, file_list: List[str] or str = None, encoding: str = 'utf-8', prepare_cim_net: bool = False,
+    def parse_files(self, file_list: List[str] or str = None, encoding: str = None, prepare_cim_net: bool = False,
                     set_data_types: bool = False) -> CimParser:
         """
         Parse CIM XML files from a storage.
 
         :param file_list: The path to the CGMES files as a list. Note: The files need a FullModel to parse the
         CGMES profile. Optional, default: None.
-        :param encoding: The encoding from the files. Optional, default: utf-8
+        :param encoding: The encoding from the files. Optional, default: None
         :param prepare_cim_net: Set this parameter to True to prepare the parsed cim data according to the
         CimConverter. Optional, default: False
         :param set_data_types: Set this parameter to True to set the cim data types at the parsed data. Optional,

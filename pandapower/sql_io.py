@@ -87,7 +87,8 @@ def download_sql_table(cursor, table_name, **id_columns):
     colnames = [desc[0] for desc in cursor.description]
     table = cursor.fetchall()
     df = pd.DataFrame(table, columns=colnames)
-    df = df.fillna(np.nan)
+    with pd.option_context('future.no_silent_downcasting', True):
+        df = df.fillna(np.nan).infer_objects()
     index_name = f"{table_name.split('.')[-1]}_id"
     if index_name in df.columns:
         df = df.set_index(index_name)

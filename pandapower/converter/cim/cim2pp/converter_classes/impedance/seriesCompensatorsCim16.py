@@ -35,7 +35,9 @@ class SeriesCompensatorsCim16:
             ser_comp = self.cimConverter.cim['eq']['SeriesCompensator']
 
         ser_comp = pd.merge(ser_comp,
-                            self.cimConverter.cim['eq']['BaseVoltage'][['rdfId','nominalVoltage']].rename(
+                            pd.concat([self.cimConverter.cim['eq']['BaseVoltage'],
+                                       self.cimConverter.cim['eq_bd']['BaseVoltage']],
+                                      ignore_index=True)[['rdfId','nominalVoltage']].rename(
                                 columns={'rdfId': 'BaseVoltage'}),
                             how='left', on='BaseVoltage')
         # fill the r21 and x21 values for impedance creation

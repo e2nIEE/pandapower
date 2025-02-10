@@ -551,7 +551,7 @@ def create_line_collection(net: pandapowerNet, lines=None,
             node_geodata=net.bus.geo,
             table_name="line",
             node_name="bus",
-            ignore_zero_length=True)
+            ignore_no_geo_diff=True)
 
         line_geodata = line_geodata.combine_first(pd.Series(geos, index=line_index_successful))
 

@@ -4,6 +4,8 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
+import warnings
+from typing_extensions import overload
 import pandas as pd
 
 from pandapower.plotting.generic_geodata import create_generic_coordinates
@@ -98,8 +100,29 @@ def get_hoverinfo(net, element, precision=3, sub_index=None):
     return hoverinfo
 
 
+@overload
+def simple_plotly(net, respect_switches=True, use_line_geo=None, on_map=False,
+                  *, map_style='basic', figsize=1.0, aspectratio='auto',
+                  line_width=1.0, bus_size=10.0, ext_grid_size=20.0,
+                  bus_color="blue", line_color='grey', trafo_color='green',
+                  trafo3w_color='green', ext_grid_color="yellow",
+                  filename='temp-plot.html', auto_open=True, showlegend=True,
+                  additional_traces=None, zoomlevel=11, auto_draw_traces=True, hvdc_color='cyan'): ...
+
+
+@overload
+@deprecated("projection is deprecated and will be removed in future versions. geojson should always be WGS84.")
 def simple_plotly(net, respect_switches=True, use_line_geo=None, on_map=False,
                   projection='epsg:4326', map_style='basic', figsize=1.0, aspectratio='auto',
+                  line_width=1.0, bus_size=10.0, ext_grid_size=20.0,
+                  bus_color="blue", line_color='grey', trafo_color='green',
+                  trafo3w_color='green', ext_grid_color="yellow",
+                  filename='temp-plot.html', auto_open=True, showlegend=True,
+                  additional_traces=None, zoomlevel=11, auto_draw_traces=True, hvdc_color='cyan'): ...
+
+
+def simple_plotly(net, respect_switches=True, use_line_geo=None, on_map=False,
+                  projection=None, map_style='basic', figsize=1.0, aspectratio='auto',
                   line_width=1.0, bus_size=10.0, ext_grid_size=20.0,
                   bus_color="blue", line_color='grey', trafo_color='green',
                   trafo3w_color='green', ext_grid_color="yellow",
@@ -173,40 +196,47 @@ def simple_plotly(net, respect_switches=True, use_line_geo=None, on_map=False,
     OUTPUT:
         **figure** (graph_objs._figure.Figure) figure object
     """
-    node_element = "bus"
-    branch_element = "line"
-    trans_element = "trafo"
-    trans3w_element = "trafo3w"
-    separator_element = "switch"
-    traces, settings = _simple_plotly_generic(net=net,
-                                              respect_separators=respect_switches,
-                                              use_branch_geodata=use_line_geo,
-                                              on_map=on_map,
-                                              projection=projection,
-                                              map_style=map_style,
-                                              figsize=figsize,
-                                              aspectratio=aspectratio,
-                                              branch_width=line_width,
-                                              node_size=bus_size,
-                                              ext_grid_size=ext_grid_size,
-                                              node_color=bus_color,
-                                              branch_color=line_color,
-                                              trafo_color=trafo_color,
-                                              trafo3w_color=trafo3w_color,
-                                              ext_grid_color=ext_grid_color,
-                                              node_element=node_element,
-                                              branch_element=branch_element,
-                                              trans_element=trans_element,
-                                              trans3w_element=trans3w_element,
-                                              separator_element=separator_element,
-                                              branch_trace_func=create_line_trace,
-                                              node_trace_func=create_bus_trace,
-                                              hoverinfo_func=get_hoverinfo,
-                                              filename=filename,
-                                              auto_open=auto_open,
-                                              showlegend=showlegend,
-                                              zoomlevel=zoomlevel,
-                                              hvdc_color=hvdc_color)
+    if projection is not None:
+        warnings.warn(
+            FutureWarning(
+                "projection is deprecated and will be removed in future versions. geojson should always be WGS84."
+            ),
+            stacklevel=2
+        )
+
+    settings = dict(
+        on_map=on_map,
+        map_style=map_style,
+        figsize=figsize,
+        aspectratio=aspectratio,
+        filename=filename,
+        auto_open=auto_open,
+        showlegend=showlegend,
+        zoomlevel=zoomlevel
+    )
+
+    traces, _ = _simple_plotly_generic(
+        net=net,
+        respect_separators=respect_switches,
+        use_branch_geodata=use_line_geo,
+        branch_width=line_width,
+        node_size=bus_size,
+        ext_grid_size=ext_grid_size,
+        node_color=bus_color,
+        branch_color=line_color,
+        trafo_color=trafo_color,
+        trafo3w_color=trafo3w_color,
+        ext_grid_color=ext_grid_color,
+        node_element="bus",
+        branch_element="line",
+        trans_element="trafo",
+        trans3w_element="trafo3w",
+        branch_trace_func=create_line_trace,
+        node_trace_func=create_bus_trace,
+        hoverinfo_func=get_hoverinfo,
+        hvdc_color=hvdc_color,
+        settings=settings
+    )
     if additional_traces:
         if isinstance(additional_traces, dict):
             additional_traces = [additional_traces]
@@ -225,33 +255,55 @@ def simple_plotly(net, respect_switches=True, use_line_geo=None, on_map=False,
     else:
         return traces, settings
 
-def _simple_plotly_generic(net, respect_separators, use_branch_geodata, on_map, projection, map_style,
-                           figsize, aspectratio, branch_width, node_size, ext_grid_size, node_color,
-                           branch_color, trafo_color, trafo3w_color, ext_grid_color,
+
+def _simple_plotly_generic(net, respect_separators, use_branch_geodata, branch_width, node_size, ext_grid_size,
+                           node_color, branch_color, trafo_color, trafo3w_color, ext_grid_color,
                            node_element, branch_element, trans_element, trans3w_element,
-                           separator_element, branch_trace_func, node_trace_func,
-                           hoverinfo_func, filename='temp-plot.html', auto_open=True,
-                           showlegend=True, zoomlevel=11, hvdc_color="cyan"):
-    settings = dict(on_map=on_map, projection=projection, map_style=map_style, figsize=figsize,
-                    aspectratio=aspectratio, filename=filename, auto_open=auto_open,
-                    showlegend=showlegend, zoomlevel=zoomlevel)
+                           branch_trace_func, node_trace_func, hoverinfo_func,
+                           hvdc_color="cyan", settings=None, **kwargs):
+
+    if 'projection' in kwargs:
+        warnings.warn(
+            FutureWarning(
+                "projection is deprecated and will not be used. geojson should always be WGS84."
+            ),
+            stacklevel=2
+        )
+        kwargs.pop('projection')
+
+    settings_defaults = {  # if no settings are provided, these are used
+        'on_map': kwargs.get('on_map', True),
+        'map_style': kwargs.get('map_style', 'basic'),
+        'figsize': kwargs.get('figsize', 1.),
+        'aspectratio': kwargs.get('aspectratio', 'auto'),
+        'filename': kwargs.get('filename', 'temp-plot.html'),
+        'auto_open': kwargs.get('auto_open', 'auto'),
+        'showlegend': kwargs.get('showlegend', True),
+        'zoomlevel': kwargs.get('zoomlevel', 11)
+    }
+
+    settings = settings_defaults | settings if settings else {}  # add missing settings to settings dict
 
     if len(net[node_element]["geo"].dropna()) == 0:
-        logger.warning("No or insufficient geodata available --> Creating artificial coordinates." +
-                       " This may take some time...")
+        logger.warning(
+            "No or insufficient geodata available --> Creating artificial coordinates. This may take some time..."
+        )
         create_generic_coordinates(net, respect_switches=respect_separators)
-        if on_map:
+        if settings['on_map']:
             logger.warning(
                 "Map plots not available with artificial coordinates and will be disabled!")
-            on_map = False
-    # check if geodata are real geographical lat/lon coordinates using geopy
-    if on_map and projection is not None:
-        geo_data_to_latlong(net, projection=projection)
+            settings['on_map'] = False
+
     # ----- Nodes (Buses) ------
     # initializing node trace
     hoverinfo = hoverinfo_func(net, element=node_element)
-    node_trace = node_trace_func(net, net[node_element].index, size=node_size, color=node_color,
-                                    infofunc=hoverinfo)
+    node_trace = node_trace_func(
+        net,
+        net[node_element].index,
+        size=node_size,
+        color=node_color,
+        infofunc=hoverinfo
+    )
     # ----- branches (Lines) ------
     # if node geodata is available, but no branch geodata
     if use_branch_geodata is None:
@@ -261,10 +313,15 @@ def _simple_plotly_generic(net, respect_separators, use_branch_geodata, on_map, 
             "No or insufficient line geodata available --> only bus geodata will be used.")
         use_branch_geodata = False
     hoverinfo = hoverinfo_func(net, element=branch_element)
-    branch_traces = branch_trace_func(net, net[branch_element].index, use_branch_geodata,
-                                      respect_separators,
-                                      color=branch_color, width=branch_width,
-                                      infofunc=hoverinfo)
+    branch_traces = branch_trace_func(
+        net,
+        net[branch_element].index,
+        use_branch_geodata,
+        respect_separators,
+        color=branch_color,
+        width=branch_width,
+        infofunc=hoverinfo
+    )
     trans_trace = []
     trans_trace3w = []
     ext_grid_trace = []
@@ -272,40 +329,50 @@ def _simple_plotly_generic(net, respect_separators, use_branch_geodata, on_map, 
     # ----- Trafos ------
     if 'trafo' in net and len(net.trafo):
         hoverinfo = hoverinfo_func(net, element=trans_element)
-        trans_trace = create_trafo_trace(net, color=trafo_color, width=branch_width * 5,
-                                         infofunc=hoverinfo,
-                                         use_line_geo=use_branch_geodata)
+        trans_trace = create_trafo_trace(
+            net,
+            color=trafo_color,
+            width=branch_width * 5,
+            infofunc=hoverinfo,
+            use_line_geo=use_branch_geodata
+        )
     # ----- 3W Trafos ------
     if 'trafo3w' in net and len(net.trafo3w):
         hoverinfo = hoverinfo_func(net, element=trans3w_element)
-        trans_trace3w = create_trafo_trace(net, color=trafo3w_color, trafotype='3W',
-                                           width=branch_width * 5,
-                                          trace_name='3W transformers', infofunc=hoverinfo,
-                                          use_line_geo=use_branch_geodata)
+        trans_trace3w = create_trafo_trace(
+            net, color=trafo3w_color, trafotype='3W',
+            width=branch_width * 5,
+            trace_name='3W transformers',
+            infofunc=hoverinfo,
+            use_line_geo=use_branch_geodata
+        )
     # ----- Ext grid ------
     # get external grid from _create_node_trace
     if 'ext_grid' in net and len(net.ext_grid):
-        marker_type = 'circle' if on_map else 'square'  # workaround because doesn't appear on mapbox if square
+        marker_type = 'circle' if settings['on_map'] else 'square'  # workaround because doesn't appear on mapbox if square
         hoverinfo = hoverinfo_func(net, element="ext_grid")
-        ext_grid_trace = _create_node_trace(net, nodes=net.ext_grid[node_element], size=ext_grid_size,
-                                            patch_type=marker_type, color=ext_grid_color,
-                                            infofunc=hoverinfo, trace_name='external grid',
-                                            node_element=node_element, branch_element=branch_element)
+        ext_grid_trace = _create_node_trace(
+            net,
+            nodes=net.ext_grid[node_element],
+            size=ext_grid_size,
+            patch_type=marker_type,
+            color=ext_grid_color,
+            infofunc=hoverinfo,
+            trace_name='external grid',
+            node_element=node_element,
+            branch_element=branch_element
+        )
     # ----- HVDC lines ------
     if 'dcline' in net and len(net.dcline):
         dc_line_trace = create_dcline_trace(net, color=hvdc_color)
 
-    return branch_traces + trans_trace + trans_trace3w + ext_grid_trace + node_trace + dc_line_trace,\
-           settings
+    return branch_traces + trans_trace + trans_trace3w + ext_grid_trace + node_trace + dc_line_trace, settings
 
 
 if __name__ == '__main__':
-    from pandapower import networks as nw
     from pandapower.networks import mv_oberrhein
     from pandapower.plotting.plotly.traces import create_weighted_marker_trace
-    # simple_plotly(net)
-    # net = nw.example_multivoltage()
-    # fig = simple_plotly(net, trafo3w_color='k')
+
     net = mv_oberrhein()
     net.load.scaling, net.sgen.scaling = 1, 1
     # different markers and sizemodes as examples
@@ -316,5 +383,9 @@ if __name__ == '__main__':
                                                 patch_type="circle-open", sizemode="diameter",
                                                 marker_scaling=100, scale_marker_size=[0.2, 0.4])
 
-    fig = simple_plotly(net, bus_size=1, aspectratio="original", additional_traces=[markers_sgen,
-                                                                                    markers_load])
+    fig = simple_plotly(
+        net,
+        bus_size=1,
+        aspectratio="original",
+        additional_traces=[markers_sgen, markers_load]
+    )

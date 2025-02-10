@@ -463,7 +463,7 @@ def add_test_shunt_split(net):
 
 def add_test_two_open_switches_on_deactive_line(net):
     b1, b2, l1 = add_grid_connection(net, zone="two_open_switches_on_deactive_line")
-    b3 = pp.create_bus(net, vn_kv=20.)
+    b3 = pp.create_bus(net, vn_kv=20., zone="two_open_switches_on_deactive_line")
     l2 = create_test_line(net, b2, b3, in_service=False)
     create_test_line(net, b3, b1)
     pp.create_switch(net, b2, l2, et="l", closed=False)

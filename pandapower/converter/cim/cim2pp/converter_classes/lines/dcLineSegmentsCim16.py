@@ -40,7 +40,7 @@ class DcLineSegmentsCim16:
         # now join with the terminals
         dc_line_segments = pd.merge(self.cimConverter.cim['eq']['DCLineSegment'], self.cimConverter.bus_merge,
                                     how='left', on='rdfId')
-        dc_line_segments = dc_line_segments[['rdfId', 'name', 'ConnectivityNode', 'sequenceNumber']]
+        dc_line_segments = dc_line_segments[['rdfId', 'name', 'description', 'ConnectivityNode', 'sequenceNumber']]
         dc_line_segments[sc['o_cl']] = 'DCLineSegment'
         # now dc_line_segments looks like:
         #   rdfId   name    rdfId_Terminal  connected   ...
