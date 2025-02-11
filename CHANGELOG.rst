@@ -4,6 +4,7 @@ Change Log
 [upcoming release] - 2025-..-..
 -------------------------------
 
+- [ADDED] cim2pp converter - extract measurements for load, sgen, gen, shunt, ext_grid, ward and xward elements
 - [ADDED] cim2pp converter - extract 'Terminal' and 'description' Analog fields in net.measurement
 - [FIXED] cim2pp converter - removed nan rows in net.measurement
 - [ADDED] Static Var Compensator with Voltage Control
