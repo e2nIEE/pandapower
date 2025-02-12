@@ -65,7 +65,7 @@ def set_pp_col_types(net: Union[pandapower.auxiliary.pandapowerNet, Dict], ignor
 
 def add_slack_and_lines_to_boundary_nodes(net: pandapower.auxiliary.pandapowerNet, voltage_levels: List[int] = None):
     """
-    Add lines with low impedance and a slack to the boundary nodes with highest voltage.
+    Add lines with low impedance and a slack to the boundary nodes with the highest voltage.
     :param net: The pandapower network
     :param voltage_levels: The voltage levels to add lines and slacks. For each given voltage level, lines and one
     slack will be connected to the corresponding boundary nodes. Optional, default: Highest voltage level from
@@ -104,9 +104,6 @@ def get_not_existing_column(df: pd.DataFrame) -> str:
     """
     i = 0
     col = 'temp_col_'
-    while True:
-        if col + str(i) in df.columns:
-            i += 1
-        else:
-            break
+    while col + str(i) in df.columns:
+        i += 1
     return col + str(i)
