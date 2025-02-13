@@ -52,6 +52,7 @@ Change Log
 - [ADDED] low voltage grid Schutterwald
 - [FIXED] trafo3w with tap changer at star point corrected
 - [FIXED] namespace changes from numpy 2.0 release
+- [FIXED] ensure that pp.plotting.set_line_geodata_from_bus_geodata() can also handle cases where all geodata are available already
 - [CHANGED] inf to np.full(...) with value inf for array operations in pypower folder
 - [CHANGED] node existence check for multiple branch elements from mixed array and set operations to set operations only
 - [FIXED] geopandas version

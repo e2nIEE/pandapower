@@ -192,12 +192,16 @@ def coords_from_node_geodata(element_indices, from_nodes, to_nodes, node_geodata
         )
 
     node_geodata = node_geodata.apply(_get_coords_from_geojson)
-    coords, no_geo_diff = zip(*[
-        (f'{{"coordinates": [[{x_from}, {y_from}], [{x_to}, {y_to}]], "type": "LineString"}}',
-         x_from == x_to and y_from == y_to) for [x_from, y_from], [x_to, y_to] in zip(
-            node_geodata.loc[fb_with_geo[not_nan]], node_geodata.loc[tb_with_geo[not_nan]])])
-            #   if not ignore_no_geo_diff or (ignore_no_geo_diff and not ())]
-    coords, no_geo_diff = np.array(coords), np.array(no_geo_diff)
+    if np.sum(not_nan):
+        coords, no_geo_diff = zip(*[
+            (f'{{"coordinates": [[{x_from}, {y_from}], [{x_to}, {y_to}]], "type": "LineString"}}',
+            x_from == x_to and y_from == y_to) for [x_from, y_from], [x_to, y_to] in zip(
+                node_geodata.loc[fb_with_geo[not_nan]], node_geodata.loc[tb_with_geo[not_nan]])])
+                #   if not ignore_no_geo_diff or (ignore_no_geo_diff and not ())]
+        coords, no_geo_diff = np.array(coords), np.array(no_geo_diff)
+    else:
+        coords, no_geo_diff = np.array([], dtype=object), np.array([], dtype=bool)
+
     if ignore_no_geo_diff:
         return coords, np.array(element_indices)[in_geo & not_nan]
     else:
