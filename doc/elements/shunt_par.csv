@@ -1,8 +1,11 @@
 **Parameter**;**Datatype**;**Value Range**;**Explanation**
 name;string;;name of the shunt
 bus*;integer;;index of bus where the impedance starts
-p_mw*;float;:math:`\geq` 0;shunt active power in MW at v= 1.0 p.u.
-q_mvar*;float;;shunt reactive power in kvar at v= 1.0 p.u.
+p_mw*;float;:math:`\geq` 0;shunt active power in MW at v= 1.0 p.u. per step
+q_mvar*;float;;shunt reactive power in MVAr at v= 1.0 p.u. per step
 vn_kv*;float;:math:`>` 0;rated voltage of the shunt element
-step*;integer;:math:`\geq` 1;step position of the shunt
-in_service*;boolean;True / False;specifies if the shunt is in service.
+step*;integer;:math:`\geq` 1;step position of the shunt with which power values are multiplied
+max_step*;integer;:math:`\geq` 1;maximum allowed step of shunt
+in_service*;boolean;True / False;specifies if the shunt is in service
+step_dependency_table;boolean;True / False;whether the shunt parameters (q_mvar, p_mw) are adjusted dependent on the step of the shunt
+id_characteristic_table;integer;:math:`\geq` 0;references the id_characteristic index from the shunt_characteristic_table

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+import warnings
 # Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -695,8 +695,30 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
     if len(s) > 0:
         vl = _is_elements["shunt"]
         v_ratio = (ppc["bus"][bus_lookup[s["bus"].values], BASE_KV] / s["vn_kv"].values) ** 2 * base_multiplier
-        q = np.hstack([q, s["q_mvar"].values * s["step"].values * v_ratio * vl])
-        p = np.hstack([p, s["p_mw"].values * s["step"].values * v_ratio * vl])
+
+        if "step_dependency_table" in s:
+            if np.any(vl & (s.step_dependency_table == True) & (pd.isna(s.id_characteristic_table))):
+                raise UserWarning("Shunts with step_dependency_table True and id_characteristic_table NA detected.\n"
+                                  "Please set an id_characteristic_table or set step_dependency_table to False.")
+            elif np.any(vl & (s.step_dependency_table == False) & (~pd.isna(s.id_characteristic_table))):
+                warnings.warn("Shunts with step_dependency_table False but id_characteristic_table detected.",
+                              category=UserWarning)
+            s.step_dependency_table.fillna(False)
+            if s.step_dependency_table.any():
+                s_tmp = s.merge(net.shunt_characteristic_table, how="left", left_on="id_characteristic_table",
+                                right_on="id_characteristic", suffixes=("", "_table"))
+                s = s_tmp.loc[(s_tmp["step"] == s_tmp["step_table"]) | ~s_tmp["step_dependency_table"]]
+
+                q = np.hstack([q, s["q_mvar"].values * s["step"].values * v_ratio * vl * ~s["step_dependency_table"]])
+                p = np.hstack([p, s["p_mw"].values * s["step"].values * v_ratio * vl * ~s["step_dependency_table"]])
+                q = q + s["q_mvar_table"].fillna(0).to_numpy() * v_ratio * vl
+                p = p + s["p_mw_table"].fillna(0).to_numpy() * v_ratio * vl
+            else:
+                q = np.hstack([q, s["q_mvar"].values * s["step"].values * v_ratio * vl])
+                p = np.hstack([p, s["p_mw"].values * s["step"].values * v_ratio * vl])
+        else:
+            q = np.hstack([q, s["q_mvar"].values * s["step"].values * v_ratio * vl])
+            p = np.hstack([p, s["p_mw"].values * s["step"].values * v_ratio * vl])
         b = np.hstack([b, s["bus"].values])
 
     w = net["ward"]
