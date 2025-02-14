@@ -4,11 +4,34 @@ Change Log
 [upcoming release] - 2025-..-..
 -------------------------------
 
+- [ADDED] cim2pp converter - extract measurements for load, sgen, gen, shunt, ext_grid, ward and xward elements
+- [ADDED] cim2pp converter - extract 'Terminal' and 'description' Analog fields in net.measurement
+- [FIXED] cim2pp converter - removed nan rows in net.measurement
 - [ADDED] Static Var Compensator with Voltage Control
 - [ADDED] pf2pp: min/max q_mvar and min/max p_mw limits for sgens and gen will be converted
 - [FIXED] Allow to consider all oos components in nx graph creation
 - [REMOVED] Excluding tests and test_files from built packages
 - [ADDED] Static Var Compensator with Voltage Control
+- [CHANGED] updated PowerFactory to pandapower converter to export measurement reports and reflect changes in trafo/trafo3w tap changer logic
+- [ADDED] shunt_characteristic_spline table
+- [CHANGED] renamed characteristic table to trafo_characteristic_spline table and changed its structure so that there is one row with all spline characteristic objects per trafo/trafo3w
+- [ADDED] step_dependency_table flag for shunt elements
+- [CHANGED] renamed tap_dependent_impedance flag to tap_dependency_table for trafo and trafo3w elements
+- [ADDED] id_characteristic_spline optional variable for shunt elements
+- [REMOVED] vk_hv_percent_characteristic, vk_mv_percent_characteristic, vk_lv_percent_characteristic, vkr_hv_percent_characteristic, vkr_mv_percent_characteristic and vkr_lv_percent_characteristic variables from trafo3w table
+- [REMOVED] vk_percent_characteristic and vkr_percent_characteristic variables from trafo table
+- [ADDED] id_characteristic_spline optional variable for trafo and trafo3w elements
+- [ADDED] id_characteristic_table variable for shunt elements
+- [CHANGED] renamed id_characteristic variable to id_characteristic_table for trafo and trafo3w elements
+- [ADDED] shunt_characteristic_table lookup table for step dependent values for shunt elements
+- [CHANGED] renamed characteristic_temp lookup table to trafo_characteristic_table for trafo and trafo3w elements
+- [CHANGED] cim2pp converter - removed default creation of trafo spline characteristics
+- [ADDED] cim2pp converter - export NonlinearShuntCompensatorPoint values for shunt elements
+- [FIXED] cim2pp converter - correctly populate step, max_step and q_mvar / p_mw values per step for shunt elements
+- [ADDED] cim2pp converter - added tap changer type classification for trafo and trafo3w elements
+- [FIXED] cim2pp converter - correctly populate tap_step_degree and shift_degree variables for trafo and trafo3w elements
+- [ADDED] tap_changer_type variable for net.trafo and net.trafo3w tables (supporting "Ratio", "Symmetrical", "Ideal" and "Tabular" tap changer types)
+- [REMOVED] tap_phase_shifter bool variable from net.trafo table
 - [ADDED] Implementation of Allocation Factor WLS (AF-WLS) for non observable distribution grids
 - [FIXED] Deletion of multiple measurements at the same bus or branch
 - [FIXED] Creation of zero injection measurements in WLS estimator
@@ -33,6 +56,7 @@ Change Log
 - [FIXED] default elements in toolbox function add_zones_to_elements()
 - [ADDED] improved lightsim2grid documentation including compatibitliy issues
 - [FIXED] avoid duplicated keys in kwargs and pf_options in run_contingency()
+- [ADDED] improved lightsim2grid documentation including compatibility issues
 - [FIXED] cim2pp: set default xml encoding to None to avoid error after changing to lxml
 - [FIXED] PandaModels OPF with 'bus_dc' key errors
 - [FIXED] julia tests
@@ -66,7 +90,7 @@ Change Log
 - [CHANGED] plotting for voltage profile considers also gens that are slacks and only ext_grids and slack gens that are in service
 - [CHANGED] switched from setup.py to pyproject.toml
 - [CHANGED] updated upload_release.py to not call setup.py anymore (see https://packaging.python.org/en/latest/discussions/setup-py-deprecated/)
-- [CHANGED] updated upload_release.py to install the uploadad package and print the version
+- [CHANGED] updated upload_release.py to install the uploaded package and print the version
 - [CHANGED] updated MANIFEST.in to exclude the ci files from the wheel distribution
 - [CHANGED] cim data structure method in cim converter changed to blueprint approach
 - [CHANGED] cim converter: Avoid huge logging output when ignore_errors = True

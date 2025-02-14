@@ -44,7 +44,7 @@ def add_network(net, vector_group):
             "sn_mva": 25, "vn_lv_kv": 20.0, "vn_hv_kv": 110.0, "vk_percent": 11.2,
             "shift_degree": 150, "vector_group": vector_group, "tap_side": "hv",
             "tap_neutral": 0, "tap_min": -9, "tap_max": 9, "tap_step_degree": 0,
-            "tap_step_percent": 1.5, "tap_phase_shifter": False, "vk0_percent": 5,
+            "tap_step_percent": 1.5, "tap_changer_type": "Ratio", "vk0_percent": 5,
             "vkr0_percent": 0.4, "mag0_percent": 10, "mag0_rx": 0.4,
             "si0_hv_partial": 0.9}
     pp.create_std_type(net, transformer_type, vector_group, "trafo")
@@ -327,7 +327,7 @@ def vde_232():
                                           si0_hv_partial=0.9,
                                           pt_percent=12, oltc=True,
                                           power_station_unit=True,
-                                          xn_ohm=22)
+                                          xn_ohm=22, tap_changer_type="Ratio")
 
     pp.create_gen(net, 1, 150, 1, 150, vn_kv=21, xdss_pu=0.14, rdss_ohm=0.002, cos_phi=0.85, power_station_trafo=0, pg_percent=5)
 

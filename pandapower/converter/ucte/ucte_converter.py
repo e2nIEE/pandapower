@@ -36,7 +36,7 @@ class UCTE2pandapower:
                 "tap2_step_percent": float,
                 "tap2_step_degree": float,
                 "tap2_side": str,
-                "tap2_phase_shifter": bool,
+                "tap2_changer_type": str,
                 "amica_name": str,
             },
             "line": {"amica_name": str},
@@ -477,7 +477,7 @@ class UCTE2pandapower:
         trafos.loc[pr, "tap_max"] = trafos["phase_reg_n"]
         trafos.loc[pr, "tap_pos"] = trafos["phase_reg_n2"]
         trafos.loc[pr, "tap_step_percent"] = trafos.loc[pr, "phase_reg_delta_u"].abs()
-        trafos.loc[pr, "tap_phase_shifter"] = False
+        trafos.loc[pr, "tap_changer_type"] = "Ratio"
 
         # set values for only angle regulated transformers symmetrical and asymmetrical
         has_missing_phase_values = (
@@ -500,7 +500,7 @@ class UCTE2pandapower:
         trafos.loc[ars, "tap_pos"] = trafos.loc[ar, "angle_reg_n2"]
         trafos.loc[ars, "tap_step_percent"] = np.nan
         # trafos.loc[ars, 'phase_reg_n'] = trafos.loc[ar, 'angle_reg_n']
-        trafos.loc[ars, "tap_phase_shifter"] = True
+        trafos.loc[ars, "tap_changer_type"] = "Ideal"
         trafos.loc[
             ars, "tap_step_degree"
         ] = self._calculate_tap_step_degree_symmetrical(trafos.loc[ars])
@@ -512,7 +512,7 @@ class UCTE2pandapower:
         trafos.loc[ara, "tap2_pos"] = trafos.loc[ar, "angle_reg_n2"]
         trafos.loc[ara, "tap2_neutral"] = 0
         trafos.loc[ara, "tap2_step_percent"] = np.nan
-        trafos.loc[ara, "tap2_phase_shifter"] = True
+        trafos.loc[ara, "tap2_changer_type"] = "Ideal"
         trafos.loc[
             ara, "tap2_step_degree"
         ] = self._calculate_tap_step_degree_asymmetrical(trafos.loc[ara])
@@ -520,7 +520,7 @@ class UCTE2pandapower:
         trafos.loc[ara, "tap_min"] = -trafos.loc[ara, "angle_reg_n"]
         trafos.loc[ara, "tap_max"] = trafos.loc[ara, "angle_reg_n"]
         trafos.loc[ara, "tap_pos"] = trafos.loc[ara, "angle_reg_n2"]
-        trafos.loc[ara, "tap_phase_shifter"] = False
+        trafos.loc[ara, "tap_changer_type"] = "Ratio"
         trafos.loc[
             ara, "tap_step_percent"
         ] = self._calculate_tap_step_percent_asymmetrical(trafos.loc[ara])
@@ -532,14 +532,14 @@ class UCTE2pandapower:
         trafos.loc[par, "tap_min"] = -trafos.loc[par, "phase_reg_n"]
         trafos.loc[par, "tap_max"] = trafos.loc[par, "phase_reg_n"]
         trafos.loc[par, "tap_pos"] = trafos.loc[par, "phase_reg_n2"]
-        trafos.loc[par, "tap_phase_shifter"] = False
+        trafos.loc[par, "tap_changer_type"] = "Ratio"
 
         trafos.loc[par, "tap2_min"] = -trafos.loc[par, "angle_reg_n"]
         trafos.loc[par, "tap2_max"] = trafos.loc[par, "angle_reg_n"]
         trafos.loc[par, "tap2_neutral"] = 0
         trafos.loc[par, "tap2_pos"] = trafos.loc[par, "angle_reg_n2"]
         trafos.loc[par, "tap2_step_percent"] = np.nan
-        trafos.loc[par, "tap2_phase_shifter"] = True
+        trafos.loc[par, "tap2_changer_type"] = "Ideal"
 
         pars = trafos.loc[has_phase_values & has_angle_values & symm].index
         trafos.loc[
@@ -583,8 +583,8 @@ class UCTE2pandapower:
         trafos["parallel"] = 1
         self._fill_empty_names(trafos, "0_x")
         self._fill_amica_names(trafos, ":trf", "0_x")
-        trafos["tap_phase_shifter"] = trafos["tap_phase_shifter"].fillna(False).astype(bool)
-        trafos["tap2_phase_shifter"] = trafos["tap2_phase_shifter"].fillna(False).astype(bool)
+        trafos["tap_changer_type"] = trafos["tap_changer_type"].fillna("Ratio").astype(str)
+        trafos["tap2_changer_type"] = trafos["tap2_changer_type"].fillna("Ratio").astype(str)
         # rename the columns to the pandapower schema
         trafos = trafos.rename(columns={"s": "sn_mva"})
         # drop transformers that will be transformed to impedances
@@ -690,7 +690,7 @@ class UCTE2pandapower:
             "xward",
         ]
         to_int = ["bus", "element", "to_bus", "from_bus", "hv_bus", "mv_bus", "lv_bus"]
-        to_bool = ["in_service", "closed", "tap_phase_shifter"]
+        to_bool = ["in_service", "closed"]
         self.logger.info(
             "Setting the columns data types for buses to int and in_service to bool for the following elements: "
             "%s" % pp_elements
