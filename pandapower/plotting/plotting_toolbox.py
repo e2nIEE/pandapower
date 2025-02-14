@@ -172,6 +172,9 @@ def coords_from_node_geodata(element_indices, from_nodes, to_nodes, node_geodata
         - elements_with_geo (set) - the indices of branch elements for which coordinates wer found \
             in the node geodata table
     """
+    if len(element_indices) == 0:
+        return np.array([], dtype=object), np.array([], dtype=bool)
+
     # reduction of from_nodes, to_nodes, node_geodata to intersection
     in_geo = np.isin(from_nodes, node_geodata.index.values) \
         & np.isin(to_nodes, node_geodata.index.values)
