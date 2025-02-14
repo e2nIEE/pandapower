@@ -173,7 +173,7 @@ def coords_from_node_geodata(element_indices, from_nodes, to_nodes, node_geodata
             in the node geodata table
     """
     if len(element_indices) == 0:
-        return np.array([], dtype=object), np.array([], dtype=bool)
+        return np.array([], dtype=object), np.array([], dtype=int)
 
     # reduction of from_nodes, to_nodes, node_geodata to intersection
     in_geo = np.isin(from_nodes, node_geodata.index.values) \
