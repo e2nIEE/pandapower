@@ -28,7 +28,7 @@ def test_simple_plotly_coordinates():
     markers_sgen = create_weighted_marker_trace(net, elm_type="sgen", color="green",
                                                 patch_type="circle-open", sizemode="diameter",
                                                 marker_scaling=100, scale_marker_size=0.5)
-    fig = simple_plotly(net, filename=join(gettempdir(), "temp-plot.html"), auto_open=False)
+    fig = simple_plotly(net, filename=join(gettempdir(), "temp-plot.html"), auto_open=False,
                         additional_traces=[markers_sgen, markers_load])
     assert len(fig.data) == (len(net.line) + 1) + (len(net.trafo) + 1) + 6
                             # +1 for the infofunc traces,
