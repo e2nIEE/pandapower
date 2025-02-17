@@ -1202,5 +1202,4 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
     elif filename is not None:
         from plotly.offline import plot as plot
         plot(fig, filename=filename, auto_open=auto_open)
-    else:
-        return fig
+    return fig
