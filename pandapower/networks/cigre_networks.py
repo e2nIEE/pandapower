@@ -4,6 +4,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import io
+import geojson
 from pandas import read_json
 from numpy import nan
 import pandapower as pp
@@ -127,14 +128,12 @@ def create_cigre_network_hv(length_km_6a_6b=0.1):
     pp.create_shunt(net_cigre_hv, bus6a, p_mw=0.0, q_mvar=-180, name='Shunt 6a')
 
     # Bus geo data
-    net_cigre_hv.bus_geodata = read_json(io.StringIO(
-        """{"x":{"0":4,"1":8,"2":20,"3":16,"4":12,"5":8,"6":12,"7":4,"8":20,"9":0,"10":8,"11":24,
-        "12":16},"y":{"0":8.0,"1":8.0,"2":8.0,"3":8.0,"4":8.0,"5":6.0,"6":4.5,"7":1.0,"8":1.0,
-        "9":8.0,"10":12.0,"11":8.0,"12":4.5},
-        "coords":{"0":NaN,"1":NaN,"2":NaN,"3":NaN,"4":NaN,"5":NaN,"6":NaN,"7":NaN,"8":NaN,
-        "9":NaN,"10":NaN,"11":NaN,"12":NaN}}"""))
+    bus_geodata = list(map(lambda xy: f'{{"type":"Point", "coordinates":[{xy[0]}, {xy[1]}]}}', zip(
+        [4, 8, 20, 16, 12, 8, 12, 4, 20, 0, 8, 24, 16],
+        [8.0, 8.0, 8.0, 8.0, 8.0, 6.0, 4.5, 1.0, 1.0, 8.0, 12.0, 8.0, 4.5])))
     # Match bus.index
-    net_cigre_hv.bus_geodata = net_cigre_hv.bus_geodata.loc[net_cigre_hv.bus.index]
+    net_cigre_hv.bus["geo"] = bus_geodata
+
     return net_cigre_hv
 
 
@@ -170,9 +169,11 @@ def create_cigre_network_mv(with_der=False):
     pp.create_std_type(net_cigre_mv, line_data, name='OHL_CIGRE_MV', element='line')
 
     # Busses
-    bus0 = pp.create_bus(net_cigre_mv, name='Bus 0', vn_kv=110, type='b', zone='CIGRE_MV')
+    bus_geodata = list(zip([7., 4., 4., 4., 2.5, 1., 1., 8., 8., 6., 4., 4., 10., 10., 10.],
+                           [16., 15., 13., 11., 9., 7., 3., 3., 5., 5., 5., 7., 15., 11., 5.]))
+    bus0 = pp.create_bus(net_cigre_mv, name='Bus 0', vn_kv=110, type='b', zone='CIGRE_MV', geodata=bus_geodata[0])
     buses = pp.create_buses(net_cigre_mv, 14, name=['Bus %i' % i for i in range(1, 15)], vn_kv=20,
-                            type='b', zone='CIGRE_MV')
+                            type='b', zone='CIGRE_MV', geodata=bus_geodata[1:])
 
     # Lines
     pp.create_line(net_cigre_mv, buses[0], buses[1], length_km=2.82,
@@ -284,16 +285,6 @@ def create_cigre_network_mv(with_der=False):
             pp.create_sgen(net_cigre_mv, bus=buses[9], p_mw=0.014, sn_mva=.014,
                            name='Residential fuel cell 2', type='Residential fuel cell')
 
-    # Bus geo data
-    net_cigre_mv.bus_geodata = read_json(io.StringIO(
-        """{"x":{"0":7.0,"1":4.0,"2":4.0,"3":4.0,"4":2.5,"5":1.0,"6":1.0,"7":8.0,"8":8.0,"9":6.0,
-        "10":4.0,"11":4.0,"12":10.0,"13":10.0,"14":10.0},
-        "y":{"0":16,"1":15,"2":13,"3":11,"4":9,
-        "5":7,"6":3,"7":3,"8":5,"9":5,"10":5,"11":7,"12":15,"13":11,"14":5},
-        "coords":{"0":NaN,"1":NaN,"2":NaN,"3":NaN,"4":NaN,"5":NaN,"6":NaN,"7":NaN,"8":NaN,
-        "9":NaN,"10":NaN,"11":NaN,"12":NaN,"13":NaN,"14":NaN}}"""))
-    # Match bus.index
-    net_cigre_mv.bus_geodata = net_cigre_mv.bus_geodata.loc[net_cigre_mv.bus.index]
     return net_cigre_mv
 
 
@@ -513,26 +504,21 @@ def create_cigre_network_lv():
     pp.create_switch(net_cigre_lv, bus0, busC0, et='b', closed=True, type='CB', name='S3')
 
     # Bus geo data
-    net_cigre_lv.bus_geodata = read_json(io.StringIO(
-        """{"x":{"0":0.2,"1":0.2,"2":-1.4583333333,"3":-1.4583333333,"4":-1.4583333333,
-        "5":-1.9583333333,"6":-2.7083333333,"7":-2.7083333333,"8":-3.2083333333,"9":-3.2083333333,
-        "10":-3.2083333333,"11":-3.7083333333,"12":-0.9583333333,"13":-1.2083333333,
-        "14":-1.2083333333,"15":-1.2083333333,"16":-1.2083333333,"17":-2.2083333333,
-        "18":-2.7083333333,"19":-3.7083333333,"20":0.2,"21":0.2,"22":0.2,"23":0.2,"24":1.9166666667,
-        "25":1.9166666667,"26":1.9166666667,"27":0.5416666667,"28":0.5416666667,"29":-0.2083333333,
-        "30":-0.2083333333,"31":-0.2083333333,"32":-0.7083333333,"33":3.2916666667,
-        "34":2.7916666667,"35":2.2916666667,"36":3.2916666667,"37":3.7916666667,"38":1.2916666667,
-        "39":0.7916666667,"40":1.7916666667,"41":0.7916666667,"42":0.2916666667,"43":-0.7083333333},
-        "y":{"0":1.0,"1":1.0,"2":2.0,"3":3.0,"4":4.0,"5":5.0,"6":6.0,"7":7.0,"8":8.0,"9":9.0,
-        "10":10.0,"11":11.0,"12":5.0,"13":6.0,"14":7.0,"15":8.0,"16":9.0,"17":8.0,"18":11.0,
-        "19":12.0,"20":1.0,"21":2.0,"22":3.0,"23":1.0,"24":2.0,"25":3.0,"26":4.0,"27":5.0,"28":6.0,
-        "29":7.0,"30":8.0,"31":9.0,"32":10.0,"33":5.0,"34":6.0,"35":7.0,"36":7.0,"37":6.0,"38":7.0,
-        "39":8.0,"40":8.0,"41":9.0,"42":10.0,"43":11.0},
-        "coords":{"0":NaN,"1":NaN,"2":NaN,"3":NaN,"4":NaN,"5":NaN,"6":NaN,"7":NaN,"8":NaN,
-        "9":NaN,"10":NaN,"11":NaN,"12":NaN,"13":NaN,"14":NaN,"15":NaN,"16":NaN,"17":NaN,
-        "18":NaN,"19":NaN,"20":NaN,"21":NaN,"22":NaN,"23":NaN,"24":NaN,"25":NaN,"26":NaN,
-        "27":NaN,"28":NaN,"29":NaN,"30":NaN,"31":NaN,"32":NaN,"33":NaN,"34":NaN,"35":NaN,
-        "36":NaN,"37":NaN,"38":NaN,"39":NaN,"40":NaN,"41":NaN,"42":NaN,"43":NaN}}"""))
+    bus_geodata = list(map(lambda xy: f'{{"type":"Point", "coordinates":[{xy[0]}, {xy[1]}]}}', zip(
+        [0.2, 0.2, -1.4583333333, -1.4583333333, -1.4583333333, -1.9583333333, -2.7083333333, -2.7083333333,
+         -3.2083333333, -3.2083333333, -3.2083333333, -3.7083333333, -0.9583333333, -1.2083333333, -1.2083333333,
+         -1.2083333333, -1.2083333333, -2.2083333333, -2.7083333333, -3.7083333333, 0.2, 0.2, 0.2, 0.2, 1.9166666667,
+         1.9166666667, 1.9166666667, 0.5416666667, 0.5416666667, -0.2083333333, -0.2083333333, -0.2083333333,
+         -0.7083333333, 3.2916666667, 2.7916666667, 2.2916666667, 3.2916666667, 3.7916666667, 1.2916666667,
+         0.7916666667, 1.7916666667, 0.7916666667, 0.2916666667, -0.7083333333],
+        [1.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 5.0, 6.0, 7.0, 8.0, 9.0, 8.0, 11.0,
+         12.0, 1.0, 2.0, 3.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 5.0, 6.0, 7.0, 7.0, 6.0,
+         7.0, 8.0, 8.0, 9.0, 10.0, 11.0])))
     # Match bus.index
-    net_cigre_lv.bus_geodata = net_cigre_lv.bus_geodata.loc[net_cigre_lv.bus.index]
+    net_cigre_lv.bus["geo"] = bus_geodata
     return net_cigre_lv
+
+if __name__ == "__main__":
+    net = create_cigre_network_lv()
+    net = create_cigre_network_mv()
+    net = create_cigre_network_hv()

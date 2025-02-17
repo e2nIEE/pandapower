@@ -4,8 +4,8 @@ import time
 from copy import deepcopy
 from pandapower.grid_equivalents.auxiliary import drop_assist_elms_by_creating_ext_net, \
     drop_internal_branch_elements, add_ext_grids_to_boundaries, \
-    _ensure_unique_boundary_bus_names, match_controller_and_new_elements, \
-    match_cost_functions_and_eq_net, _check_network, _runpp_except_voltage_angles
+    _ensure_unique_boundary_bus_names, match_cost_functions_and_eq_net, \
+    _check_network, _runpp_except_voltage_angles
 from pandapower.grid_equivalents.rei_generation import _create_net_zpbn, \
     _get_internal_and_external_nets, _calculate_equivalent_Ybus, \
     _create_bus_lookups, _calclate_equivalent_element_params, \
@@ -275,8 +275,6 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
         drop_assist_elms_by_creating_ext_net(net_eq)
         logger.debug("Only the equivalent net is returned.")
 
-    # match the controller and the new elements
-    match_controller_and_new_elements(net_eq, net)
     # delete bus in poly_cost
     match_cost_functions_and_eq_net(net_eq, boundary_buses, eq_type)
 
@@ -422,15 +420,14 @@ def merge_internal_net_and_equivalent_external_net(
 
 
 def drop_repeated_characteristic(net):
-    idxs = []
-    repeated_idxs = []
-    for m in net.characteristic.index:
-        idx = net.characteristic.object[m].__dict__["index"]
-        if idx in idxs:
-            repeated_idxs.append(m)
-        else:
-            idxs.append(idx)
-    net.characteristic = net.characteristic.drop(repeated_idxs)
+    for characteristic in ["trafo_characteristic_table", "shunt_characteristic_table",
+                           "trafo_characteristic_spline", "shunt_characteristic_spline"]:
+        if characteristic in net:
+            # get the list of indices of duplicate rows
+            repeated_idxs = net[characteristic][
+                net[characteristic].fillna("NA_PLACEHOLDER").duplicated()].index.tolist()
+            # drop repeated rows
+            net[characteristic] = net[characteristic].drop(repeated_idxs)
 
 
 def _determine_bus_groups(net, boundary_buses, internal_buses,

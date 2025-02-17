@@ -206,8 +206,4 @@ def calc_max_error(net_org, net_eq, return_internal, va_degree=True):
 
 
 if __name__ == "__main__":
-    if 0:
-        pytest.main(['-x', __file__])
-    else:
-        test_networks()
-    pass
+    pytest.main([__file__, "-xs"])

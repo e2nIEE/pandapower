@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
-
+import math
 # Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from copy import deepcopy
+
+import geojson
 import numpy as np
 import pandas as pd
 import pytest
@@ -227,18 +229,20 @@ def test_nonexistent_bus():
             func()
 
 
-def test_tap_phase_shifter_default():
-    expected_default = False
+def test_tap_changer_type_default():
+    expected_default = math.nan # comment: wanted to implement "None" as default, but some test rely on that some function converts NaN to ratio tap changer.
     net = pp.create_empty_network()
     pp.create_bus(net, 110)
     pp.create_bus(net, 20)
     data = pp.load_std_type(net, "25 MVA 110/20 kV", "trafo")
-    if "tap_phase_shifter" in data:
-        del data["tap_phase_shifter"]
+    if "tap_changer_type" in data:
+        del data["tap_changer_type"]
     pp.create_std_type(net, data, "without_tap_shifter_info", "trafo")
-    pp.create_transformer_from_parameters(net, 0, 1, 25e3, 110, 20, 0.4, 12, 20, 0.07)
+    pp.create_transformer_from_parameters(net, 0, 1, 25e3, 110, 20, 0.4,
+                                          12, 20, 0.07)
     pp.create_transformer(net, 0, 1, "without_tap_shifter_info")
-    assert (net.trafo.tap_phase_shifter == expected_default).all()
+    #assert (net.trafo.tap_changer_type == expected_default).all() # comparison with NaN is always false. revert back to this
+    assert (net.trafo.tap_changer_type.isna()).all()
 
 
 def test_create_line_conductance():
@@ -271,22 +275,16 @@ def test_create_buses():
     # with geodata
     b2 = pp.create_buses(net, 3, 110, geodata=(10, 20))
     # with geodata as array
-    geodata = np.array([[10, 20], [20, 30], [30, 40]])
+    geodata = [(10, 20), (20, 30), (30, 40)]
     b3 = pp.create_buses(net, 3, 110, geodata=geodata)
 
     assert len(net.bus) == 9
-    assert len(net.bus_geodata) == 6
     assert net.bus.test_kwargs.at[b1[0]] == "dummy_string"
 
     for i in b2:
-        assert net.bus_geodata.at[i, "x"] == 10
-        assert net.bus_geodata.at[i, "y"] == 20
-    assert (net.bus_geodata.loc[b3, ["x", "y"]].values == geodata).all()
-
-    # no way of creating buses with not matching shape
-    with pytest.raises(ValueError):
-        pp.create_buses(net, 2, 110, geodata=geodata)
-
+        assert net.bus.at[i, "geo"] == geojson.dumps(geojson.Point((10, 20)), sort_keys=True)
+    for i, ind in enumerate(b3):
+        assert net.bus.at[ind, "geo"] == geojson.dumps(geojson.Point(geodata[i]), sort_keys=True)
 
 def test_create_lines():
     # standard
@@ -302,7 +300,6 @@ def test_create_lines():
         test_kwargs="dummy_string",
     )
     assert len(net.line) == 2
-    assert len(net.line_geodata) == 0
     assert sum(net.line.std_type == "48-AL1/8-ST1A 10.0") == 2
     assert len(set(net.line.r_ohm_per_km)) == 1
     assert all(net.line.test_kwargs == "dummy_string")
@@ -318,7 +315,6 @@ def test_create_lines():
         std_type=["48-AL1/8-ST1A 10.0", "NA2XS2Y 1x240 RM/25 6/10 kV"],
     )
     assert len(net.line) == 2
-    assert len(net.line_geodata) == 0
     assert sum(net.line.std_type == "48-AL1/8-ST1A 10.0") == 1
     assert sum(net.line.std_type == "NA2XS2Y 1x240 RM/25 6/10 kV") == 1
 
@@ -336,9 +332,8 @@ def test_create_lines():
     )
 
     assert len(net.line) == 2
-    assert len(net.line_geodata) == 2
-    assert net.line_geodata.at[l[0], "coords"] == [(1, 1), (2, 2), (3, 3)]
-    assert net.line_geodata.at[l[1], "coords"] == [(1, 1), (1, 2)]
+    assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(1, 1), (2, 2), (3, 3)]), sort_keys=True)
+    assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(1, 1), (1, 2)]), sort_keys=True)
 
     # setting params as single value
     net = pp.create_empty_network()
@@ -359,14 +354,13 @@ def test_create_lines():
     )
 
     assert len(net.line) == 2
-    assert len(net.line_geodata) == 2
     assert net.line.length_km.at[l[0]] == 5
     assert net.line.length_km.at[l[1]] == 5
     assert net.line.in_service.dtype == bool
     assert not net.line.at[l[0], "in_service"]  # is actually <class 'numpy.bool_'>
     assert not net.line.at[l[1], "in_service"]  # is actually <class 'numpy.bool_'>
-    assert net.line_geodata.at[l[0], "coords"] == [(10, 10), (20, 20)]
-    assert net.line_geodata.at[l[1], "coords"] == [(10, 10), (20, 20)]
+    assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(10, 10), (20, 20)]), sort_keys=True)
+    assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(10, 10), (20, 20)]), sort_keys=True)
     assert net.line.at[l[0], "name"] == "test"
     assert net.line.at[l[1], "name"] == "test"
     assert net.line.at[l[0], "max_loading_percent"] == 90
@@ -393,14 +387,13 @@ def test_create_lines():
     )
 
     assert len(net.line) == 2
-    assert len(net.line_geodata) == 2
     assert net.line.at[l[0], "length_km"] == 1
     assert net.line.at[l[1], "length_km"] == 5
     assert net.line.in_service.dtype == bool
     assert net.line.at[l[0], "in_service"]  # is actually <class 'numpy.bool_'>
     assert not net.line.at[l[1], "in_service"]  # is actually <class 'numpy.bool_'>
-    assert net.line_geodata.at[l[0], "coords"] == [(10, 10), (20, 20)]
-    assert net.line_geodata.at[l[1], "coords"] == [(100, 10), (200, 20)]
+    assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(10, 10), (20, 20)]), sort_keys=True)
+    assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(100, 10), (200, 20)]), sort_keys=True)
     assert net.line.at[l[0], "name"] == "test1"
     assert net.line.at[l[1], "name"] == "test2"
     assert net.line.at[l[0], "max_loading_percent"] == 80
@@ -426,7 +419,6 @@ def test_create_lines_from_parameters():
         test_kwargs=["dummy_string", "dummy_string"],
     )
     assert len(net.line) == 2
-    assert len(net.line_geodata) == 0
     assert len(net.line.x_ohm_per_km) == 2
     assert len(net.line.r_ohm_per_km) == 2
     assert len(net.line.c_nf_per_km) == 2
@@ -451,9 +443,8 @@ def test_create_lines_from_parameters():
     )
 
     assert len(net.line) == 2
-    assert len(net.line_geodata) == 2
-    assert net.line_geodata.at[l[0], "coords"] == [(1, 1), (2, 2), (3, 3)]
-    assert net.line_geodata.at[l[1], "coords"] == [(1, 1), (1, 2)]
+    assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(1, 1), (2, 2), (3, 3)]), sort_keys=True)
+    assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(1, 1), (1, 2)]), sort_keys=True)
 
     # setting params as single value
     net = pp.create_empty_network()
@@ -483,7 +474,6 @@ def test_create_lines_from_parameters():
     )
 
     assert len(net.line) == 2
-    assert len(net.line_geodata) == 2
     assert all(net.line["length_km"].values == 5)
     assert all(net.line["x_ohm_per_km"].values == 1)
     assert all(net.line["r_ohm_per_km"].values == 0.2)
@@ -493,8 +483,8 @@ def test_create_lines_from_parameters():
     assert net.line.in_service.dtype == bool
     assert not net.line.at[l[0], "in_service"]  # is actually <class 'numpy.bool_'>
     assert not net.line.at[l[1], "in_service"]  # is actually <class 'numpy.bool_'>
-    assert net.line_geodata.at[l[0], "coords"] == [(10, 10), (20, 20)]
-    assert net.line_geodata.at[l[1], "coords"] == [(10, 10), (20, 20)]
+    assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(10, 10), (20, 20)]), sort_keys=True)
+    assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(10, 10), (20, 20)]), sort_keys=True)
     assert all(net.line["name"].values == "test")
     assert all(net.line["max_loading_percent"].values == 90)
     assert all(net.line["parallel"].values == 1)
@@ -528,7 +518,6 @@ def test_create_lines_from_parameters():
     )
 
     assert len(net.line) == 2
-    assert len(net.line_geodata) == 2
     assert net.line.at[l[0], "length_km"] == 1
     assert net.line.at[l[1], "length_km"] == 5
     assert net.line.at[l[0], "r_ohm_per_km"] == 1
@@ -546,8 +535,8 @@ def test_create_lines_from_parameters():
     assert net.line.in_service.dtype == bool
     assert net.line.at[l[0], "in_service"]  # is actually <class 'numpy.bool_'>
     assert not net.line.at[l[1], "in_service"]  # is actually <class 'numpy.bool_'>
-    assert net.line_geodata.at[l[0], "coords"] == [(10, 10), (20, 20)]
-    assert net.line_geodata.at[l[1], "coords"] == [(100, 10), (200, 20)]
+    assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(10, 10), (20, 20)]), sort_keys=True)
+    assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(100, 10), (200, 20)]), sort_keys=True)
     assert net.line.at[l[0], "name"] == "test1"
     assert net.line.at[l[1], "name"] == "test2"
     assert net.line.at[l[0], "max_loading_percent"] == 80
@@ -898,7 +887,7 @@ def test_trafo_2_tap_changers():
                  "tap2_min": -10,
                  "tap2_step_percent": 1,
                  "tap2_step_degree": 0,
-                 "tap2_phase_shifter": False}
+                 "tap2_changer_type": "Ratio"}
 
     for c in tap2_data.keys():
         assert c not in net.trafo.columns
@@ -926,7 +915,7 @@ def test_trafo_2_tap_changers_parameters():
                  "tap2_min": -10,
                  "tap2_step_percent": 1,
                  "tap2_step_degree": 0,
-                 "tap2_phase_shifter": False}
+                 "tap2_changer_type": "Ratio"}
 
     pp.create_transformer_from_parameters(net, b1, b2, **std_type)
 
@@ -952,7 +941,7 @@ def test_trafos_2_tap_changers_parameters():
                  "tap2_min": -10,
                  "tap2_step_percent": 1,
                  "tap2_step_degree": 0,
-                 "tap2_phase_shifter": False}
+                 "tap2_changer_type": "Ratio"}
 
     std_type_p = {k: np.array([v, v]) if not isinstance(v, str) else v for k, v in std_type.items()}
 
@@ -1305,11 +1294,11 @@ def test_create_switches_raise_errorexcept():
         pp.create_switches(
             net, buses=[6, b2, b3], elements=[l1, t1, b4], et=["l", "t", "b"], z_ohm=0.0
         )
-    with pytest.raises(UserWarning, match="Line 1 does not exist"):
+    with pytest.raises(UserWarning, match=r"Line buses do not exist: \[1\]"):
         pp.create_switches(
             net, buses=[b1, b2, b3], elements=[1, t1, b4], et=["l", "t", "b"], z_ohm=0.0
         )
-    with pytest.raises(UserWarning, match="Line %s not connected to bus %s" % (l1, b3)):
+    with pytest.raises(UserWarning, match=r"Line not connected \(line element, bus\): \[\(%s, %s\)\]" % (b3, l1)):
         pp.create_switches(
             net,
             buses=[b3, b2, b3],
@@ -1317,12 +1306,12 @@ def test_create_switches_raise_errorexcept():
             et=["l", "t", "b"],
             z_ohm=0.0,
         )
-    with pytest.raises(UserWarning, match="Trafo 1 does not exist"):
+    with pytest.raises(UserWarning, match=r"Trafo buses do not exist: \[1\]"):
         pp.create_switches(
             net, buses=[b1, b2, b3], elements=[l1, 1, b4], et=["l", "t", "b"], z_ohm=0.0
         )
     with pytest.raises(
-            UserWarning, match="Trafo %s not connected to bus %s" % (t1, b1)
+            UserWarning, match=r"Trafo not connected \(trafo element, bus\): \[\(%s, %s\)\]" % (b1, t1)
     ):
         pp.create_switches(
             net,
@@ -1332,12 +1321,12 @@ def test_create_switches_raise_errorexcept():
             z_ohm=0.0,
         )
     with pytest.raises(
-            UserWarning, match=r"Cannot attach to bus 6, bus does not exist"
+            UserWarning, match=r"Cannot attach to elements \{6\}, they do not exist"
     ):
         pp.create_switches(
             net, buses=[b1, b2, b3], elements=[l1, t1, 6], et=["l", "t", "b"], z_ohm=0.0
         )
-    with pytest.raises(UserWarning, match="Trafo3w 1 does not exist"):
+    with pytest.raises(UserWarning, match=r"Trafo3w buses do not exist: \[1\]"):
         pp.create_switches(
             net,
             buses=[b1, b2, b3],
@@ -1346,13 +1335,33 @@ def test_create_switches_raise_errorexcept():
             z_ohm=0.0,
         )
     with pytest.raises(
-            UserWarning, match="Trafo3w %s not connected to bus %s" % (t3w1, b3)
+            UserWarning, match=r"Trafo3w not connected \(trafo3w element, bus\): \[\(%s, %s\)\]" % (b3, t3w1)
     ):
         pp.create_switches(
             net,
             buses=[b1, b2, b3],
             elements=[l1, t1, t3w1],
             et=["l", "t", "t3"],
+            z_ohm=0.0,
+        )
+    with pytest.raises(
+        UserWarning, match=r"Cannot attach to elements \{12398\}, they do not exist"
+    ):
+        pp.create_switches(
+            net,
+            buses=[b1, b2],
+            elements=[b3, 12398],
+            et=["b", "b"],
+            z_ohm=0.0,
+        )
+    with pytest.raises(
+        UserWarning, match=r"Cannot attach to buses \{13098\}, they do not exist"
+    ):
+        pp.create_switches(
+            net,
+            buses=[b1, 13098],
+            elements=[b2, b3],
+            et=["b", "b"],
             z_ohm=0.0,
         )
 
@@ -1500,6 +1509,8 @@ def test_create_storages():
         net.storage.test_kwargs.values
         == ["dummy_string_1", "dummy_string_2", "dummy_string_3"]
     )
+    for col in ["name", "type"]:
+        net.storage.loc[net.storage[col].isnull(), col] = ""
     assert pp.nets_equal(net, net_bulk)
 
 

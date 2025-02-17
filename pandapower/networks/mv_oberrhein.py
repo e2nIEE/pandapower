@@ -10,7 +10,7 @@ import numpy as np
 
 import pandapower as pp
 import pandapower.topology as top
-from pandapower import pp_dir
+from pandapower.__init__ import pp_dir
 
 
 def mv_oberrhein(scenario="load", cosphi_load=0.98, cosphi_pv=1.0, include_substations=False,
@@ -61,14 +61,18 @@ def mv_oberrhein(scenario="load", cosphi_load=0.98, cosphi_pv=1.0, include_subst
         ``net0, net1 = pandapower.networks.mv_oberrhein(separation_by_sub=True)``
     """
     if include_substations:
-        net = pp.from_json(os.path.join(pp_dir, "networks", "mv_oberrhein_substations.json"),
-                           **kwargs)
+        net = pp.from_json(os.path.join(pp_dir, "networks", "mv_oberrhein_substations.json"), **kwargs)
+        # geo.convert_epsg_bus_geodata(net, epsg_out=4326, epsg_in=31467)
+        # geo.convert_geodata_to_geojson(net, lonlat=False)
     else:
         net = pp.from_json(os.path.join(pp_dir, "networks", "mv_oberrhein.json"), **kwargs)
+        # geo.convert_epsg_bus_geodata(net, epsg_out=4326, epsg_in=31467)
+        # geo.convert_geodata_to_geojson(net, lonlat=False)
     net.load.q_mvar = np.tan(np.arccos(cosphi_load)) * net.load.p_mw
     net.sgen.q_mvar = np.tan(np.arccos(cosphi_pv)) * net.sgen.p_mw
 
     hv_trafos = net.trafo[net.trafo.sn_mva > 1].index
+    net.trafo["tap_pos"] = net.trafo["tap_pos"].astype("float64")
     if scenario == "load":
         net.load.scaling = 0.6
         net.sgen.scaling = 0.0
@@ -92,7 +96,14 @@ def mv_oberrhein(scenario="load", cosphi_load=0.98, cosphi_pv=1.0, include_subst
 
         pp.runpp(net0)
         pp.runpp(net1)
+        net0.name = 'MV Oberrhein 0'
+        net1.name = 'MV Oberrhein 1'
+        # TODO: this should be added to the initial data not converted here.
+        # geo.convert_geodata_to_geojson(net0)
+        # geo.convert_geodata_to_geojson(net1)
         return net0, net1
 
     pp.runpp(net)
+    net.name = 'MV Oberrhein'
+    # geo.convert_geodata_to_geojson(net)
     return net

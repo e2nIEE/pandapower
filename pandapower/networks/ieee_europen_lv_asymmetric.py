@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Aug 28 12:15:13 2019
 
-@author: uk067483
-"""
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import os
 import pandapower as pp
-from pandapower import pp_dir
+from pandapower.__init__ import pp_dir
 
 
 def ieee_european_lv_asymmetric(scenario="on_peak_566", **kwargs):

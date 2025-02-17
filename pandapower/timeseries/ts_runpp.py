@@ -1,6 +1,4 @@
 import inspect
-import collections
-import functools
 
 import numpy as np
 from numpy import complex128, zeros
@@ -12,19 +10,17 @@ from pandapower.control.controller.const_control import ConstControl
 from pandapower.control.controller.trafo_control import TrafoController
 from pandapower.auxiliary import _clean_up
 from pandapower.build_branch import _calc_trafo_parameter, _calc_trafo3w_parameter
-from pandapower.build_bus import _calc_pq_elements_and_add_on_ppc, \
-    _calc_shunts_and_add_on_ppc
-from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS, RATE_A
+from pandapower.build_bus import _calc_pq_elements_and_add_on_ppc
 from pandapower.pypower.idx_bus import PD, QD
 from pandapower.pd2ppc import _pd2ppc
-from pandapower.pypower.makeSbus import _get_Sbus, _get_Cg, makeSbus
+from pandapower.pypower.idx_bus_dc import DC_PD
+from pandapower.pypower.makeSbus import makeSbus
 from pandapower.pf.pfsoln_numba import pfsoln as pfsoln_full, pf_solution_single_slack
 from pandapower.powerflow import LoadflowNotConverged, _add_auxiliary_elements
 from pandapower.results import _copy_results_ppci_to_ppc, _extract_results, _get_aranged_lookup
 from pandapower.results_branch import _get_branch_flows, _get_line_results, _get_trafo3w_results, _get_trafo_results
-from pandapower.results_bus import write_pq_results_to_element, _get_bus_v_results, _get_bus_results
+from pandapower.results_bus import _get_bus_results, _get_bus_dc_results
 from pandapower.results_gen import _get_gen_results
-from pandapower.timeseries.output_writer import OutputWriter
 
 try:
     import pandaplan.core.pplog as logging
@@ -61,13 +57,14 @@ class TimeSeriesRunpp:
         svc = self.ppci["svc"]
         tcsc = self.ppci["tcsc"]
         ssc = self.ppci["ssc"]
+        vsc = self.ppci["vsc"]
         # compute complex bus power injections [generation - load]
         # self.Cg = _get_Cg(gen_on, bus)
         # Sbus = _get_Sbus(self.baseMVA, bus, gen, self.Cg)
         Sbus = makeSbus(self.baseMVA, bus, gen)
 
         # run the newton power  flow
-        V, success, _, _, _, _, _ = nr_pf.newtonpf(self.Ybus, Sbus, self.V, self.pv, self.pq, self.ppci, options, )
+        V, success, _, _, _, _, _ = nr_pf.newtonpf(self.Ybus, Sbus, self.V, self.pv, self.pq, self.ppci, options)
 
         if not success:
             logger.warning("Loadflow not converged")
@@ -80,7 +77,7 @@ class TimeSeriesRunpp:
         else:
             pfsoln = pfsoln_full
 
-        bus, gen, branch = pfsoln(self.baseMVA, bus, gen, branch, svc, tcsc, ssc, self.Ybus, self.Yf, self.Yt, V, self.ref,
+        bus, gen, branch = pfsoln(self.baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, self.Ybus, self.Yf, self.Yt, V, self.ref,
                                   self.ref_gens, Ibus=self.Ibus)
 
         self.ppci["bus"] = bus
@@ -116,10 +113,14 @@ class TimeSeriesRunpp:
         bus_pq = np.zeros(shape=(len(net["bus"].index), 2), dtype=float)
         bus_pq[net_bus_idx, 0] = ppc["bus"][ppc_bus_idx, PD] * 1e3
         bus_pq[net_bus_idx, 1] = ppc["bus"][ppc_bus_idx, QD] * 1e3
+        bus_p_dc = np.zeros(shape=(len(net["bus_dc"].index), 1), dtype=np.float64)
+        bus_dc_lookup_aranged = _get_aranged_lookup(net, "bus_dc")
+        bus_p_dc[bus_dc_lookup_aranged, 0] = ppc["bus_dc"][:, DC_PD]  # todo test this
 
         bus_lookup_aranged = _get_aranged_lookup(net)
         _get_gen_results(net, ppc, bus_lookup_aranged, bus_pq)
         _get_bus_results(net, ppc, bus_pq)
+        _get_bus_dc_results(net, bus_p_dc)
 
         net["res_bus"].index = net["bus"].index
 
@@ -236,7 +237,7 @@ class TimeSeriesRunpp:
 
         # update Ybus based on this
         options = net._options
-        baseMVA, bus, gen, branch, svc, tcsc, ssc, ref, pv, pq, _, _, V, _ = nr_pf._get_pf_variables_from_ppci(ppci)
+        baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, ref, pv, pq, _, _, V, _ = nr_pf._get_pf_variables_from_ppci(ppci)
         self.ppci, self.Ybus, self.Yf, self.Yt = nr_pf._get_Y_bus(ppci, options, nr_pf.makeYbus_numba, baseMVA, bus,
                                                                   branch)
 

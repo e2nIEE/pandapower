@@ -8,8 +8,10 @@ import numpy as np
 import pandas as pd
 from pandapower.auxiliary import _sum_by_group, I_from_SV_elementwise, sequence_to_phase, S_from_VI_elementwise
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, PF, QF, PT, QT, BR_R
+from pandapower.pypower.idx_brch_dc import DC_IF, DC_IT, DC_F_BUS, DC_T_BUS, DC_PF, DC_PT, DC_BR_R, DC_TDPF
 from pandapower.pypower.idx_brch_tdpf import TDPF
 from pandapower.pypower.idx_bus import BASE_KV, VM, VA
+from pandapower.pypower.idx_bus_dc import DC_BASE_KV, DC_VM
 from pandapower.pypower.idx_tcsc import TCSC_THYRISTOR_FIRING_ANGLE, TCSC_X_PU, TCSC_PF, TCSC_PT, TCSC_QF, TCSC_QT, \
     TCSC_IF, TCSC_IT
 
@@ -37,6 +39,7 @@ def _get_branch_results(net, ppc, bus_lookup_aranged, pq_buses, suffix=None):
     i_ft, s_ft = _get_branch_flows(ppc)
 
     _get_line_results(net, ppc, i_ft, suffix=suffix)
+    _get_line_dc_results(net, ppc)
     _get_trafo_results(net, ppc, s_ft, i_ft, suffix=suffix)
     _get_trafo3w_results(net, ppc, s_ft, i_ft, suffix=suffix)
     _get_impedance_results(net, ppc, i_ft, suffix=suffix)
@@ -157,6 +160,61 @@ def _get_line_results(net, ppc, i_ft, suffix=None):
             res_line_df.loc[tdpf_lines, "r_theta_kelvin_per_mw"] = ppc["internal"]["r_theta_kelvin_per_mw"]
             no_tdpf_t = line_df.loc[~tdpf_lines].get("temperature_degree_celsius", default=20.)
             res_line_df.loc[tdpf_lines, "temperature_degree_celsius"] = ppc["internal"]["T"]
+            res_line_df.loc[~tdpf_lines, "temperature_degree_celsius"] = no_tdpf_t
+
+
+def _get_line_dc_results(net, ppc):
+    # create res_line_vals which are written to the pandas dataframe
+    if "line_dc" not in net._pd2ppc_lookups["branch_dc"]:
+        return
+    ac = net["_options"]["ac"]
+    if not ac:
+        return
+
+    f, t = net._pd2ppc_lookups["branch_dc"]["line_dc"]
+    from_bus = ppc["branch_dc"][f:t, DC_F_BUS].real.astype(np.int64)
+    to_bus = ppc["branch_dc"][f:t, DC_T_BUS].real.astype(np.int64)
+    base_v_kv = ppc["bus_dc"][from_bus, DC_BASE_KV]
+    base_i_ka = ppc["baseMVA"] / base_v_kv
+
+    p_from_mw = ppc["branch_dc"][f:t, DC_PF].real
+    i_from_ka = ppc["branch_dc"][f:t, DC_IF].real * base_i_ka
+
+    p_to_mw = ppc["branch_dc"][f:t, DC_PT].real
+    i_to_ka = ppc["branch_dc"][f:t, DC_IT].real * base_i_ka
+
+    i_ka = np.maximum(i_from_ka, i_to_ka)
+
+    line_df = net["line_dc"]
+    i_max = line_df["max_i_ka"].values * line_df["df"].values * line_df["parallel"].values
+
+    # write to line
+    res_line_df = net["res_line_dc"]
+
+    res_line_df["p_from_mw"].values[:] = p_from_mw
+    res_line_df["p_to_mw"].values[:] = p_to_mw
+    res_line_df["pl_mw"].values[:] = p_from_mw + p_to_mw
+    res_line_df["i_from_ka"].values[:] = i_from_ka
+    res_line_df["i_to_ka"].values[:] = i_to_ka
+    res_line_df["i_ka"].values[:] = i_ka
+    res_line_df["vm_from_pu"].values[:] = ppc["bus_dc"][from_bus, DC_VM]
+    res_line_df["vm_to_pu"].values[:] = ppc["bus_dc"][to_bus, DC_VM]
+    loading = np.full_like(i_ka, fill_value=np.inf, dtype=np.float64)
+    np.divide(i_ka, i_max, where=i_max != 0, out=loading, dtype=np.float64)
+    res_line_df["loading_percent"].values[:] = loading * 100
+
+    # if consider_line_temperature, add resulting r_ohm_per_km to net.res_line
+    if net["_options"]["consider_line_temperature"] or net["_options"].get("tdpf", False):
+        baseR = np.square(base_v_kv) / net.sn_mva
+        length_km = line_df.length_km.values
+        parallel = line_df.parallel.values
+        res_line_df["r_ohm_per_km"] = ppc["branch_dc"][f:t, DC_BR_R].real / length_km * baseR * parallel
+
+        if net["_options"].get("tdpf", False):
+            tdpf_lines = ppc["internal"]['branch_dc_is'][f:t] & np.nan_to_num(ppc['branch_dc'][f:t, DC_TDPF]).real.astype(bool)
+            # res_line_df.loc[tdpf_lines, "r_theta_kelvin_per_mw"] = ppc["internal"]["r_theta_kelvin_per_mw"]  # todo for dc
+            no_tdpf_t = line_df.loc[~tdpf_lines].get("temperature_degree_celsius", default=20.)
+            # res_line_df.loc[tdpf_lines, "temperature_degree_celsius"] = ppc["internal"]["T"]  # todo for DC
             res_line_df.loc[~tdpf_lines, "temperature_degree_celsius"] = no_tdpf_t
 
 
@@ -357,7 +415,7 @@ def _get_trafo_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t
                     Iabc_sum += abs(I_branch_abc[:, x])
 
             # Loads
-            load_index = np.where(net.asymmetric_load['bus'] == lv_bus)[0]
+            load_index = net.asymmetric_load.index[net.asymmetric_load['bus'] == lv_bus]
             if len(load_index > 0):
                 S_load_abc = abs(np.array([
                     np.array(net.res_asymmetric_load_3ph['p_a_mw'][load_index]

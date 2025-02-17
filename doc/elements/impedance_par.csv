@@ -2,9 +2,21 @@
 name;string;;name of the impedance
 from_bus*;integer;;index of bus where the impedance starts
 to_bus*;integer;;index of bus where the impedance ends
-rft_pu*;float;:math:`>` 0;resistance of the impedance from 'from' to 'to' bus [p.u]
-xft_pu*;float;:math:`>` 0;reactance of the impedance from 'from' to 'to' bus [p.u]
-rtf_pu*;float;:math:`>` 0;resistance of the impedance from 'to' to 'from' bus [p.u]
-xtf_pu*;float;:math:`>` 0;reactance of the impedance from 'to' to 'from' bus [p.u]
+rft_pu*;float;:math:`>` 0;resistance of the impedance from 'from' to 'to' bus [p.u.]
+xft_pu*;float;:math:`>` 0;reactance of the impedance from 'from' to 'to' bus [p.u.]
+rtf_pu*;float;:math:`>` 0;resistance of the impedance from 'to' to 'from' bus [p.u.]
+xtf_pu*;float;:math:`>` 0;reactance of the impedance from 'to' to 'from' bus [p.u.]
+rft0_pu*;float;:math:`>` 0;zero-sequence resistance of the impedance from 'from' to 'to' bus [p.u.]
+xft0_pu*;float;:math:`>` 0;zero-sequence reactance of the impedance from 'from' to 'to' bus [p.u.]
+rtf0_pu*;float;:math:`>` 0;zero-sequence resistance of the impedance from 'to' to 'from' bus [p.u.]
+xtf0_pu*;float;:math:`>` 0;zero-sequence reactance of the impedance from 'to' to 'from' bus [p.u.]
+gf_pu*;float;:math:`>` 1;conductance at the 'from_bus' [p.u.]
+bf_pu*;float;:math:`>` 2;susceptance at the 'from_bus' [p.u.]
+gt_pu*;float;:math:`>` 3;conductance at the 'from_bus' [p.u.]
+bt_pu*;float;:math:`>` 4;susceptance at the 'from_bus' [p.u.]
+gf0_pu*;float;:math:`>` 1;zero-sequence conductance at the 'from_bus' [p.u.]
+bf0_pu*;float;:math:`>` 2;zero-sequence susceptance at the 'from_bus' [p.u.]
+gt0_pu*;float;:math:`>` 3;zero-sequence conductance at the 'from_bus' [p.u.]
+bt0_pu*;float;:math:`>` 4;zero-sequence susceptance at the 'from_bus' [p.u.]
 sn_mva*;float;:math:`>` 0;reference apparent power for the impedance per unit values [MVA]
 in_service*;boolean;True / False;specifies if the impedance is in service.

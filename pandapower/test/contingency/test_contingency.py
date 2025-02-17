@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import copy
 
 # Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
@@ -131,6 +132,60 @@ def test_with_lightsim2grid(get_net, get_case):
                                net.res_trafo[f"{s}_loading_percent"].values, atol=1e-6, rtol=0), s
 
 
+@pytest.mark.xfail(reason="remove this xfail when new version of lightsim2grid available")
+@pytest.mark.skipif(not lightsim2grid_installed, reason="lightsim2grid package is not installed")
+def test_case118():
+    net = pp.networks.case118()
+    net2 = copy.deepcopy(net)
+    nminus1_cases = {"line": {"index": net.line.index.values},
+                     "trafo": {"index": net.trafo.index.values}}
+
+    res = pp.contingency.run_contingency(net2, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading)
+
+    pp.contingency.run_contingency_ls2g(net, nminus1_cases)
+
+    for s in ("min", "max"):
+        assert np.allclose(res["bus"][f"{s}_vm_pu"], net.res_bus[f"{s}_vm_pu"].values, atol=1e-9, rtol=0), s
+        assert np.allclose(np.nan_to_num(res["line"][f"{s}_loading_percent"]),
+                           net.res_line[f"{s}_loading_percent"].values, atol=1e-6, rtol=0), s
+        if len(net.trafo) > 0:
+            assert np.allclose(np.nan_to_num(res["trafo"][f"{s}_loading_percent"]),
+                               net.res_trafo[f"{s}_loading_percent"].values, atol=1e-6, rtol=0), s
+
+
+@pytest.mark.xfail(reason="remove this xfail when new version of lightsim2grid available")
+@pytest.mark.skipif(not lightsim2grid_installed, reason="lightsim2grid package is not installed")
+def test_unequal_trafo_hv_lv_impedances():
+    net = pp.create_empty_network()
+    pp.create_buses(net, 4, 110)
+    pp.create_ext_grid(net, 0)
+
+    pp.create_lines(net, [0, 0], [1, 1], 40, "243-AL1/39-ST1A 110.0",
+                    max_loading_percent=100)
+    pp.create_transformer_from_parameters(net, 1, 2, 150, 110, 110, 0.5,
+                                          10, 15, 0.1, 150,
+                                          'hv', 0, 10, -10, 0,
+                                          1, 5, max_loading_percent=100, tap_changer_type="Ideal",
+                                          leakage_resistance_ratio_hv=0.2, leakage_reactance_ratio_hv=0.4)
+    pp.create_lines(net, [2, 2], [3, 3], 25, "243-AL1/39-ST1A 110.0",
+                    max_loading_percent=100)
+
+    pp.create_load(net, 3, 110)
+
+    nminus1_cases = {"line": {"index": net.line.index.values}}
+    res = pp.contingency.run_contingency(net, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading)
+
+    pp.contingency.run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading)
+
+    for s in ("min", "max"):
+        assert np.allclose(res["bus"][f"{s}_vm_pu"], net.res_bus[f"{s}_vm_pu"].values, atol=1e-9, rtol=0), s
+        assert np.allclose(np.nan_to_num(res["line"][f"{s}_loading_percent"]),
+                           net.res_line[f"{s}_loading_percent"].values, atol=1e-6, rtol=0), s
+        if len(net.trafo) > 0:
+            assert np.allclose(np.nan_to_num(res["trafo"][f"{s}_loading_percent"]),
+                               net.res_trafo[f"{s}_loading_percent"].values, atol=1e-6, rtol=0), s
+
+
 @pytest.mark.skipif(not lightsim2grid_installed, reason="lightsim2grid package is not installed")
 def test_lightsim2grid_distributed_slack():
     net = pp.networks.case9()
@@ -170,7 +225,7 @@ def test_lightsim2grid_phase_shifters():
 
     pp.create_lines(net, [0, 0], [1, 1], 40, "243-AL1/39-ST1A 110.0", max_loading_percent=100)
     pp.create_transformer_from_parameters(net, 1, 2, 150, 110, 110, 0.5, 10, 15, 0.1, 150,
-                                          'hv', 0, 10, -10, 0, 1, 5, True, max_loading_percent=100)
+                                          'hv', 0, 10, -10, 0, 1, 5, "Ideal", max_loading_percent=100)
     pp.create_lines(net, [2, 2], [3, 3], 25, "243-AL1/39-ST1A 110.0", max_loading_percent=100)
 
     pp.create_load(net, 3, 110)
@@ -183,7 +238,7 @@ def test_lightsim2grid_phase_shifters():
 
     assert net.trafo.shift_degree.values[0] == 150
     assert net.trafo.tap_pos.values[0] == 5
-    assert net.trafo.tap_phase_shifter.values[0]
+    assert net.trafo.tap_changer_type.values[0] == "Ideal"
 
     assert np.array_equal(res["line"]["causes_overloading"], net.res_line.causes_overloading.values)
     if len(net.trafo) > 0:
@@ -196,7 +251,13 @@ def test_lightsim2grid_phase_shifters():
 
     pp.runpp(net)
     bus_res = net.res_bus.copy()
-    _convert_trafo_phase_shifter(net)
+    if "tap_phase_shifter" in net.trafo.columns:
+        _convert_trafo_phase_shifter(net, "trafo", "tap_phase_shifter")
+    if ("tap_changer_type" in net.trafo.columns) or ("tap_changer_type" in net.trafo3w.columns):
+        if np.any(net.trafo.tap_changer_type == "Ideal"):
+            _convert_trafo_phase_shifter(net, "trafo", "tap_changer_type")
+        if np.any(net.trafo3w.tap_changer_type == "Ideal"):
+            _convert_trafo_phase_shifter(net, "trafo3w", "tap_changer_type")
     pp.runpp(net)
     assert_frame_equal(bus_res, net.res_bus)
 
@@ -349,7 +410,10 @@ def _randomize_indices(net):
         pp.reindex_elements(net, element, new_index)
 
 
-@pytest.fixture(params=["case9", "case14", "case118"])
+# todo: bring back case118 and remove xfail from test_unequal_trafo_hv_lv_impedances and test_case118 pytests
+#  when lightsim2grid new version is released - see https://github.com/Grid2op/lightsim2grid/issues/88
+# @pytest.fixture(params=["case9", "case14", "case118"])
+@pytest.fixture(params=["case9", "case14"])
 def get_net(request):
     # pandapower and lightsim2grid behave differently when the grid becomes isolated from the ext_grid:
     # pandapower selects next gen and uses it as ext_grid, and lightsim2grid does not and therefore has nan for results

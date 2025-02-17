@@ -49,7 +49,7 @@ def test_contingency_sgen(base_net):
     #                   | \
     #                   |  \
 
-    net.pwl_cost.points.loc[pwl] = [(0, net.sgen.max_p_mw.at[0], -1)]
+    net.pwl_cost.at[pwl, 'points'] = [(0, net.sgen.max_p_mw.at[0], -1)]
     pp.runopp(net)
 
     assert isclose(net.res_cost, -net.res_sgen.p_mw.at[0], atol=1e-4)
@@ -99,7 +99,7 @@ def test_contingency_load(base_net):
     #    p_min_mw       |\
     #                   | \
     #                   |  \
-    net.pwl_cost.points.iloc[0] = [(0, net.gen.max_p_mw.at[0], -1)]
+    net.pwl_cost.at[0, 'points'] = [(0, net.gen.max_p_mw.at[0], -1)]
     pp.runopp(net)
 
     assert isclose(net.res_cost, -net.res_gen.p_mw.at[0], atol=1e-3)
@@ -149,7 +149,7 @@ def test_contingency_gen(base_net):
     #    p_min_mw       |\
     #                   | \
     #                   |  \
-    net.pwl_cost.points.iloc[0] =  [(0, net.gen.max_p_mw.at[0], -1)]
+    net.pwl_cost.at[0, 'points'] =  [(0, net.gen.max_p_mw.at[0], -1)]
     pp.runopp(net)
 
     assert isclose(net.res_cost, -net.res_gen.p_mw.at[0], atol=1e-3)
@@ -168,5 +168,6 @@ def test_contingency_gen(base_net):
 
     assert isclose(net.res_cost, -net.res_gen.p_mw.at[0], atol=1e-3)
 
+
 if __name__ == "__main__":
-    pytest.main(['-s', __file__])
+    pytest.main([__file__, "-xs"])
