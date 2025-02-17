@@ -515,17 +515,6 @@
       "is_multiindex": false,
       "is_multicolumn": false
     },
-    "characteristic": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[\"object\"],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "dtype": {
-        "object": "object"
-      },
-      "is_multiindex": false,
-      "is_multicolumn": false
-    },
     "controller": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",

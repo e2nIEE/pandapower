@@ -25,6 +25,10 @@ def test_set_line_geodata_from_bus_geodata():
     assert not net.line.geo.isnull().any()
     pp.plotting.simple_plot(net, show_plot=False) # test that plotting works with case9 file
 
+    # --- ensure that set_line_geodata_from_bus_geodata() can also handle cases where all geodata
+    # are available already
+    pp.plotting.set_line_geodata_from_bus_geodata(net)
+
     # --- create line geo data from complete net.bus.geo to incomplete net.line.geo
     net.line.at[2, "geo"] = None
     net.line.at[4, "geo"] = None

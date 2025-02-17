@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+import pandas as pd
 # Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -8,8 +8,9 @@ import numpy as np
 import logging
 
 import pandapower as pp
-from pandapower.control import Characteristic, SplineCharacteristic, TapDependentImpedance, \
-    trafo_characteristics_diagnostic
+from pandapower.control import Characteristic, SplineCharacteristic, TapDependentImpedance
+from pandapower.control.util.diagnostic import (trafo_characteristic_table_diagnostic,
+                                                shunt_characteristic_table_diagnostic)
 
 
 def test_tap_dependent_impedance_control():
@@ -17,7 +18,10 @@ def test_tap_dependent_impedance_control():
     b1 = pp.create_bus(net, 110)
     b2 = pp.create_bus(net, 20)
     pp.create_ext_grid(net, b1)
-    pp.create_transformer_from_parameters(net, b1, b2, 40, 110, 21, 0.5, 12.3, 25, 0.11, 0, 'hv', 10, 20, 0, 1.8, 180, 10)
+    pp.create_transformer_from_parameters(net, b1, b2, 40, 110, 21, 0.5,
+                                          12.3, 25, 0.11, 0, 'hv',
+                                          10, 20, 0, 1.8, 180,
+                                          10, tap_changer_type="Ratio")
 
     characteristic_vk = Characteristic.from_points(net, ((0, 13.5), (10, 12.3), (20, 11.1)))
     characteristic_vkr = Characteristic.from_points(net, ((0, 0.52), (10, 0.5), (20, 0.53)))
@@ -45,7 +49,10 @@ def test_tap_dependent_impedance_restore():
     b2 = pp.create_bus(net, 20)
     pp.create_ext_grid(net, b1)
     pp.create_load(net, b2, 20)
-    pp.create_transformer_from_parameters(net, b1, b2, 40, 110, 21, 0.5, 12.3, 25, 0.11, 0, 'hv', 10, 20, 0, 1.8, 180, 10)
+    pp.create_transformer_from_parameters(net, b1, b2, 40, 110, 21, 0.5,
+                                          12.3, 25, 0.11, 0, 'hv',
+                                          10, 20, 0, 1.8, 180,
+                                          10, tap_changer_type="Ratio")
 
     characteristic_vk = Characteristic.from_points(net, ((0, 13.5), (10, 12.3), (20, 11.1)))
     characteristic_vkr = Characteristic.from_points(net, ((0, 0.52), (10, 0.5), (20, 0.53)))
@@ -63,7 +70,7 @@ def test_tap_dependent_impedance_restore():
     # check if the impedance has been restored
     assert net.trafo.vk_percent.at[0] == 12.3
     assert net.trafo.vkr_percent.at[0] == 0.5
-    # check if the losses are different than at the neutral position -> the tap-dependent impedance has been conbsidered
+    # check if the losses are different from the neutral position -> the tap-dependent impedance has been considered
     assert abs(net.res_trafo.pl_mw.at[0] - pl_mw_neutral) > 0.015
 
     net.trafo.tap_pos = 20
@@ -71,7 +78,7 @@ def test_tap_dependent_impedance_restore():
     # check if the impedance has been restored
     assert net.trafo.vk_percent.at[0] == 12.3
     assert net.trafo.vkr_percent.at[0] == 0.5
-    # check if the losses are different than at the neutral position -> the tap-dependent impedance has been conbsidered
+    # check if the losses are different from the neutral position -> the tap-dependent impedance has been considered
     assert abs(net.res_trafo.pl_mw.at[0] - pl_mw_neutral) > 0.002
 
 
@@ -110,78 +117,99 @@ def test_characteristic():
     assert c4(2) == 4
 
 
-def test_characteristic_diagnostic():
+def test_trafo_characteristic_table_diagnostic():
     net = pp.create_empty_network()
     vn_kv = 20
     b1 = pp.create_bus(net, vn_kv=vn_kv)
     pp.create_ext_grid(net, b1, vm_pu=1.01)
     b2 = pp.create_bus(net, vn_kv=vn_kv)
-    l1 = pp.create_line_from_parameters(net, b1, b2, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12,
-                                        c_nf_per_km=300, max_i_ka=.2, df=.8)
+    pp.create_line_from_parameters(net, b1, b2, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12,
+                                   c_nf_per_km=300, max_i_ka=.2, df=.8)
     cb = pp.create_bus(net, vn_kv=0.4)
     pp.create_load(net, cb, 0.2, 0.05)
     pp.create_transformer(net, hv_bus=b2, lv_bus=cb, std_type="0.25 MVA 20/0.4 kV", tap_pos=2)
 
-    pp.control.create_trafo_characteristics(net, 'trafo', 0, 'vk_percent',
-                                            [-2, -1, 0, 1, 2], [5, 5.2, 6, 6.8, 7])  # single mode
-    pp.control.create_trafo_characteristics(net, 'trafo', [0], 'vkr_percent',
-                                            [[-2, -1, 0, 1, 2]], [[1.3, 1.4, 1.44, 1.5, 1.6]])  # multiple indices
+    # initially no trafo_characteristic_table is available
+    assert trafo_characteristic_table_diagnostic(net) is False
+
+    # add trafo_characteristic_table
+    net["trafo_characteristic_table"] = pd.DataFrame(
+        {'id_characteristic': [0, 0, 0, 0, 0], 'step': [-2, -1, 0, 1, 2], 'voltage_ratio': [1, 1, 1, 1, 1],
+         'angle_deg': [0, 0, 0, 0, 0], 'vk_percent': [5, 5.2, 6, 6.8, 7],
+         'vkr_percent': [1.3, 1.4, 1.44, 1.5, 1.6], 'vk_hv_percent': np.nan, 'vkr_hv_percent': np.nan,
+         'vk_mv_percent': np.nan, 'vkr_mv_percent': np.nan, 'vk_lv_percent': np.nan, 'vkr_lv_percent': np.nan})
+    # populate id_characteristic_table parameter
+    net.trafo['id_characteristic_table'].at[0] = 0
+    net.trafo['tap_dependency_table'].at[0] = False
+    with pytest.warns(UserWarning):
+        trafo_characteristic_table_diagnostic(net)
+    # populate tap_dependency_table parameter
+    net.trafo['tap_dependency_table'].at[0] = True
+    assert trafo_characteristic_table_diagnostic(net) is True
+
+    # add trafo_characteristic_table with missing parameter values
+    net["trafo_characteristic_table"] = pd.DataFrame(
+        {'id_characteristic': [0, 0, 0, 0, 0], 'step': [-2, -1, 0, 1, 2], 'voltage_ratio': [1, 1, 1, 1, 1],
+         'angle_deg': [0, 0, 0, 0, 0], 'vk_percent': [5, 5.2, 6, 6.8, 7],
+         'vkr_percent': np.nan, 'vk_hv_percent': np.nan, 'vkr_hv_percent': np.nan,
+         'vk_mv_percent': np.nan, 'vkr_mv_percent': np.nan, 'vk_lv_percent': np.nan, 'vkr_lv_percent': np.nan})
+    with pytest.warns(UserWarning):
+        trafo_characteristic_table_diagnostic(net)
 
     # let's make some invalid configurations
-    net.trafo.at[0, "vk_percent"] += 1e-6
-    # missing any characteristic
-    pp.create_transformer(net, hv_bus=net.trafo.at[0, 'hv_bus'],
-                          lv_bus=net.trafo.at[0, 'lv_bus'], std_type="0.25 MVA 20/0.4 kV", tap_pos=2,
-                          tap_dependent_impedance=True)
-    b2 = net.trafo.at[0, "hv_bus"]
+    net.trafo.at[0, "tap_dependency_table"] = 0
+    with pytest.warns(UserWarning):
+        trafo_characteristic_table_diagnostic(net)
+    net.trafo.at[0, "tap_dependency_table"] = True
+    net.trafo.at[0, "id_characteristic_table"] = int(2)
+    with pytest.warns(UserWarning):
+        trafo_characteristic_table_diagnostic(net)
+
+
+def test_shunt_characteristic_table_diagnostic():
+    net = pp.create_empty_network()
+    vn_kv = 20
+    b1 = pp.create_bus(net, vn_kv=vn_kv)
+    pp.create_shunt(net, bus=b1, q_mvar=-50, p_mw=0, step=1, max_step=5)
+    pp.create_ext_grid(net, b1, vm_pu=1.01)
+    b2 = pp.create_bus(net, vn_kv=vn_kv)
+    pp.create_line_from_parameters(net, b1, b2, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12,
+                                   c_nf_per_km=300, max_i_ka=.2, df=.8)
     cb = pp.create_bus(net, vn_kv=0.4)
     pp.create_load(net, cb, 0.2, 0.05)
     pp.create_transformer(net, hv_bus=b2, lv_bus=cb, std_type="0.25 MVA 20/0.4 kV", tap_pos=2)
-    # missing columns for characteristics
 
-    cbm = pp.create_bus(net, vn_kv=0.9)
-    pp.create_load(net, cbm, 0.1, 0.03)
-    pp.create_transformer3w_from_parameters(net, hv_bus=b2, mv_bus=cbm, lv_bus=cb,
-                                            vn_hv_kv=20., vn_mv_kv=0.9, vn_lv_kv=0.45, sn_hv_mva=0.6,
-                                            sn_mv_mva=0.5, sn_lv_mva=0.4, vk_hv_percent=1.,
-                                            vk_mv_percent=1., vk_lv_percent=1., vkr_hv_percent=0.3,
-                                            vkr_mv_percent=0.3, vkr_lv_percent=0.3, pfe_kw=0.2,
-                                            i0_percent=0.3, tap_neutral=0., tap_pos=2,
-                                            tap_step_percent=1., tap_min=-2, tap_max=2)
+    # initially no shunt_characteristic_table is available
+    assert shunt_characteristic_table_diagnostic(net) is False
 
-    net.trafo3w['tap_dependent_impedance'] = True
+    # add shunt_characteristic_table
+    net["shunt_characteristic_table"] = pd.DataFrame(
+        {'id_characteristic': [0, 0, 0, 0, 0], 'step': [1, 2, 3, 4, 5], 'q_mvar': [-25, -55, -75, -120, -125],
+         'p_mw': [1, 1.5, 3, 4.5, 5]})
+    # populate id_characteristic_table parameter
+    net.shunt['id_characteristic_table'].at[0] = 0
+    net.shunt['step_dependency_table'].at[0] = False
+    with pytest.warns(UserWarning):
+        shunt_characteristic_table_diagnostic(net)
+    # populate step_dependency_table parameter
+    net.shunt['step_dependency_table'].at[0] = True
+    assert shunt_characteristic_table_diagnostic(net) is True
 
-    import io
-    s = io.StringIO()
-    h = logging.StreamHandler(stream=s)
-    logger = pp.control.util.diagnostic.logger
-    logger.addHandler(h)
+    # add shunt_characteristic_table with missing parameter values
+    net["shunt_characteristic_table"] = pd.DataFrame(
+        {'id_characteristic': [0, 0, 0, 0, 0], 'step': [1, 2, 3, 4, 5], 'q_mvar': [-25, -55, -75, -120, -125],
+         'p_mw': np.nan})
+    with pytest.warns(UserWarning):
+        shunt_characteristic_table_diagnostic(net)
 
-    old_level = logger.level
-    logger.setLevel("INFO")
-    trafo_characteristics_diagnostic(net)
-    logger.setLevel(old_level)
-
-    msg = s.getvalue()
-
-    assert "trafo: found 2 transformer(s) with tap-dependent impedance" in msg
-    assert "Power flow calculation will raise an error" in msg
-    assert "vk_percent_characteristic is missing for some transformers" in msg
-    assert "vk_percent_characteristic is missing for some transformers" in msg
-    assert "vkr_percent_characteristic is missing for some transformers" in msg
-    assert "The characteristic value of 6.0 at the neutral tap position 0 does not match the value 6.000001" in msg
-    assert "trafo3w: found 1 transformer(s) with tap-dependent impedance" in msg
-    assert "No columns defined for transformer tap characteristics in trafo3w" in msg
-    assert "vk_hv_percent_characteristic is missing" in msg
-    assert "vkr_hv_percent_characteristic is missing" in msg
-    assert "vk_mv_percent_characteristic is missing" in msg
-    assert "vkr_mv_percent_characteristic is missing" in msg
-    assert "vk_lv_percent_characteristic is missing" in msg
-    assert "vkr_lv_percent_characteristic is missing" in msg
-
-    pp.control.util.diagnostic.logger.removeHandler(h)
-    del h
-    del s
+    # let's make some invalid configurations
+    net.shunt.at[0, "step_dependency_table"] = 0
+    with pytest.warns(UserWarning):
+        shunt_characteristic_table_diagnostic(net)
+    net.shunt.at[0, "step_dependency_table"] = True
+    net.shunt.at[0, "id_characteristic_table"] = int(2)
+    with pytest.warns(UserWarning):
+        shunt_characteristic_table_diagnostic(net)
 
 
 if __name__ == '__main__':

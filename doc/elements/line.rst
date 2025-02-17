@@ -95,7 +95,7 @@ The power system frequency :math:`f` is defined when creating an empty network, 
 
 .. note::
 
-	For three phase load flow, three decoupled sequence networks ( zero , positive and negtive) are considered.
+	For three phase load flow, three decoupled sequence networks ( zero , positive and negative) are considered.
 	
 	**Positive and Negative sequence impedances** are given by r_ohm_per_km, x_ohm_per_km, and c_nf_per_km
 	

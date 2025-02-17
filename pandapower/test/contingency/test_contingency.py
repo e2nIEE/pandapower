@@ -165,7 +165,7 @@ def test_unequal_trafo_hv_lv_impedances():
     pp.create_transformer_from_parameters(net, 1, 2, 150, 110, 110, 0.5,
                                           10, 15, 0.1, 150,
                                           'hv', 0, 10, -10, 0,
-                                          1, 5, max_loading_percent=100,
+                                          1, 5, max_loading_percent=100, tap_changer_type="Ideal",
                                           leakage_resistance_ratio_hv=0.2, leakage_reactance_ratio_hv=0.4)
     pp.create_lines(net, [2, 2], [3, 3], 25, "243-AL1/39-ST1A 110.0",
                     max_loading_percent=100)
@@ -225,7 +225,7 @@ def test_lightsim2grid_phase_shifters():
 
     pp.create_lines(net, [0, 0], [1, 1], 40, "243-AL1/39-ST1A 110.0", max_loading_percent=100)
     pp.create_transformer_from_parameters(net, 1, 2, 150, 110, 110, 0.5, 10, 15, 0.1, 150,
-                                          'hv', 0, 10, -10, 0, 1, 5, True, max_loading_percent=100)
+                                          'hv', 0, 10, -10, 0, 1, 5, "Ideal", max_loading_percent=100)
     pp.create_lines(net, [2, 2], [3, 3], 25, "243-AL1/39-ST1A 110.0", max_loading_percent=100)
 
     pp.create_load(net, 3, 110)
@@ -238,7 +238,7 @@ def test_lightsim2grid_phase_shifters():
 
     assert net.trafo.shift_degree.values[0] == 150
     assert net.trafo.tap_pos.values[0] == 5
-    assert net.trafo.tap_phase_shifter.values[0]
+    assert net.trafo.tap_changer_type.values[0] == "Ideal"
 
     assert np.array_equal(res["line"]["causes_overloading"], net.res_line.causes_overloading.values)
     if len(net.trafo) > 0:
@@ -251,7 +251,13 @@ def test_lightsim2grid_phase_shifters():
 
     pp.runpp(net)
     bus_res = net.res_bus.copy()
-    _convert_trafo_phase_shifter(net)
+    if "tap_phase_shifter" in net.trafo.columns:
+        _convert_trafo_phase_shifter(net, "trafo", "tap_phase_shifter")
+    if ("tap_changer_type" in net.trafo.columns) or ("tap_changer_type" in net.trafo3w.columns):
+        if np.any(net.trafo.tap_changer_type == "Ideal"):
+            _convert_trafo_phase_shifter(net, "trafo", "tap_changer_type")
+        if np.any(net.trafo3w.tap_changer_type == "Ideal"):
+            _convert_trafo_phase_shifter(net, "trafo3w", "tap_changer_type")
     pp.runpp(net)
     assert_frame_equal(bus_res, net.res_bus)
 
@@ -404,14 +410,8 @@ def _randomize_indices(net):
         pp.reindex_elements(net, element, new_index)
 
 
-def test_reminder_bring_back_case118():
-    from packaging.version import Version
-    if lightsim2grid_installed and Version(lightsim2grid.__version__) > Version("0.9.0"):
-        raise UserWarning("bring back case 118 and remove xfail for test_unequal_trafo_impedances and test_case118")
-
-
-# todo: bring back case 118 when lightsim2grid new version is released
-#  (created a test that fails if lightsim2grid new version is available so that this is not missed (above)
+# todo: bring back case118 and remove xfail from test_unequal_trafo_hv_lv_impedances and test_case118 pytests
+#  when lightsim2grid new version is released - see https://github.com/Grid2op/lightsim2grid/issues/88
 # @pytest.fixture(params=["case9", "case14", "case118"])
 @pytest.fixture(params=["case9", "case14"])
 def get_net(request):

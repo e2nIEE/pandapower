@@ -11,7 +11,7 @@ class BinarySearchControl(Controller):
         reactive power control or voltage control. in case of voltage control, the input parameter voltage_ctrl must be
         set to true. Input and output elements and indexes can be lists. Input elements can be transformers, switches,
         lines or busses (only in case of voltage control). in case of voltage control, a bus_index must be present,
-        where the voltage will be controlled.Output elements are sgens, where active and reactive power can be set. The
+        where the voltage will be controlled. Output elements are sgens, where active and reactive power can be set. The
         output value distribution describes the distribution of reactive power provision between multiple
         output_elements and must sum up to 1.
 

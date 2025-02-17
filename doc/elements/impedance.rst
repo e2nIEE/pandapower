@@ -48,7 +48,7 @@ The per unit values are therefore transformed into the network per unit system:
 
 where :math:`S_{N}` is the reference power of the per unit system (see :ref:`Unit Systems and Conventions<conventions>`). 
 
-The asymetric impedance results in an asymetric nodal point admittance matrix:
+The asymmetric impedance results in an asymmetric nodal point admittance matrix:
 
 .. math::
    :nowrap:

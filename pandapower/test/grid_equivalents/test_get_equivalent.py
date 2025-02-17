@@ -476,11 +476,20 @@ def test_switch_sgens():
 
 def test_characteristic():
     net = pp.networks.example_multivoltage()
-    pp.control.create_trafo_characteristics(net, "trafo", [1], 'vk_percent',
-                                            [[-2,-1,0,1,2]], [[2,3,4,5,6]])
+    # create trafo_characteristic_table
+    net["trafo_characteristic_table"] = pd.DataFrame(
+        {'id_characteristic': [0, 0, 0, 0, 0], 'step': [-2, -1, 0, 1, 2], 'voltage_ratio': [1, 1, 1, 1, 1],
+         'angle_deg': [0, 0, 0, 0, 0], 'vk_percent': [2, 3, 4, 5, 6],
+         'vkr_percent': [1.323, 1.324, 1.325, 1.326, 1.327], 'vk_hv_percent': np.nan, 'vkr_hv_percent': np.nan,
+         'vk_mv_percent': np.nan, 'vkr_mv_percent': np.nan, 'vk_lv_percent': np.nan, 'vkr_lv_percent': np.nan})
+    net.trafo['id_characteristic_table'].at[1] = 0
+    net.trafo['tap_dependency_table'].at[1] = True
+    # add spline characteristics for one transformer based on trafo_characteristic_table
+    pp.control.create_trafo_characteristic_object(net)
     pp.runpp(net)
     net_eq = pp.grid_equivalents.get_equivalent(net, "rei", [41], [0])
-    assert len(net_eq.characteristic) == 1
+    assert len(net_eq.trafo_characteristic_spline) == 1
+    assert len(net_eq.trafo_characteristic_table) == 5
 
 
 def test_controller():

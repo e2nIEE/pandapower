@@ -19,5 +19,5 @@ from pandapower.control.controller.shunt_control import DiscreteShuntController
 # --- Other ---
 from pandapower.control.run_control import *
 from pandapower.control.util.characteristic import Characteristic, SplineCharacteristic
-from pandapower.control.util.auxiliary import get_controller_index, plot_characteristic, create_trafo_characteristics
-from pandapower.control.util.diagnostic import control_diagnostic, trafo_characteristics_diagnostic
+from pandapower.control.util.auxiliary import (plot_characteristic, _create_trafo_characteristics,
+                                               create_trafo_characteristic_object)

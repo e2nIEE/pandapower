@@ -167,7 +167,6 @@ def test_recycle_dc_trafo_shift(recycle_net):
     pp.create_transformer(net, 3, b4, std_type="0.4 MVA 10/0.4 kV")
     net["trafo"].at[0, "tap_pos"] = 0
     net["trafo"].at[0, "tap_step_percent"] = 1
-    #net["trafo"].at[0, "tap_phase_shifter"] = True
     net["trafo"].at[0, "tap_step_degree"] = 30
     net2 = net.deepcopy()
     pl = 1.2
@@ -195,9 +194,11 @@ def test_recycle_dc_trafo_ideal(recycle_net):
     pp.set_user_pf_options(net, calculate_voltage_angles=True)
     v = net.bus.vn_kv.at[3]
     b4 = pp.create_bus(net, vn_kv=v)
-    pp.create_transformer_from_parameters(net, 3, b4, 10, v, v, 0.5, 12, 10, 0.1, 0,
+    pp.create_transformer_from_parameters(net, 3, b4, 10, v, v, 0.5,
+                                          12, 10, 0.1, 0,
                                           tap_side='hv', tap_neutral=0, tap_max=10, tap_min=-10,
-                                          tap_step_percent=0, tap_step_degree=30, tap_pos=0, tap_phase_shifter=True)
+                                          tap_step_percent=0, tap_step_degree=30, tap_pos=0,
+                                          tap_changer_type = "Ideal")
     net2 = net.deepcopy()
     pl = 1.2
     ql = 0.

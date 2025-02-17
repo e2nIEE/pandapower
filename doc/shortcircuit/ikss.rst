@@ -82,7 +82,7 @@ For the calculation of a short-circuit at bus :math:`j`, this yields the followi
 
 where :math:`\underline{I}''_{kIj}` is the voltage source contribution of the short-circuit current at bus :math:`j`.
 The voltages at all non-fault buses and the current at the fault bus are unknown. To solve for :math:`\underline{I}''_{kIj}` , 
-we multipliy with the inverted nodal point admittance matrix (impedance matrix):
+we multiply with the inverted nodal point admittance matrix (impedance matrix):
     
 .. math::
    

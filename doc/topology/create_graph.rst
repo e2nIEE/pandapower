@@ -2,7 +2,7 @@
 Create networkx graph
 ======================
 
-The basis of all topology functions is the conversion of a padapower network into a NetworkX MultiGraph. A MultiGraph is a simplified representation of a network's topology, reduced to nodes and edges.
+The basis of all topology functions is the conversion of a pandapower network into a NetworkX MultiGraph. A MultiGraph is a simplified representation of a network's topology, reduced to nodes and edges.
 Busses are being represented by nodes (Note: only buses with in_service = 1 appear in the graph), edges represent physical connections between buses (typically lines or trafos). 
 Multiple parallel edges between nodes are possible.
 
@@ -13,7 +13,7 @@ This is a very simple example of a pandapower network being converted to a Multi
 	:alt: alternate Text
 	:align: center
 	
-Nodes have the same indicees as the buses they originate from. Edges are defined by the nodes they connect.
+Nodes have the same indices as the buses they originate from. Edges are defined by the nodes they connect.
 Additionally nodes and edges can hold key/value attribute pairs.
 
 The following attributes get transferred into the MultiGraph:

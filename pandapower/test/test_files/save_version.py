@@ -9,6 +9,6 @@ import os
 
 net = pp.networks.example_multivoltage()
 pp.control.DiscreteTapControl(net, 1, 1.02, 1.03)
-pp.control.create_trafo_characteristics(net, "trafo", 1, "vk_percent", [-2, 0, 2], [3.5, 4, 4.5])
+pp.control._create_trafo_characteristics(net, "trafo", 1, "vk_percent", [-2, 0, 2], [3.5, 4, 4.5])
 pp.runpp(net, run_control=True)
 pp.to_json(net, os.path.join("old_versions", "example_%s.json" % pp.__version__))

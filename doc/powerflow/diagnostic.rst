@@ -52,7 +52,7 @@ Both reports show the same result, but on the left hand picture with detailed in
 Result Dictionary
 ------------------
 
-Additionally all check results are returned in a dict to allow simple access to the indeces of all element where
+Additionally all check results are returned in a dict to allow simple access to the indices of all element where
 errors were found.
 
 .. image:: /pics/diagnostic/diag_results_dict.png
