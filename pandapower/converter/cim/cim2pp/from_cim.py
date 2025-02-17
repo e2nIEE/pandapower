@@ -63,7 +63,7 @@ def from_cim_dict(cim_parser: cim_classes.CimParser, log_debug=False, convert_li
 
 
 def get_converter_classes():
-    converter_classes: Dict[str,classmethod] = {
+    converter_classes: Dict[str, classmethod] = {
         'ConnectivityNodesCim16': std_converter_classes.connectivitynodes.connectivityNodesCim16.ConnectivityNodesCim16,
         'externalNetworkInjectionsCim16':
             std_converter_classes.externalnetworks.externalNetworkInjectionsCim16.ExternalNetworkInjectionsCim16,
@@ -104,7 +104,6 @@ def from_cim(file_list: List[str] = None, encoding: str = None, convert_line_to_
              custom_converter_classes: Dict = None,
              cgmes_version: str = '2.4.15', **kwargs) -> \
         pandapower.auxiliary.pandapowerNet:
-    # Nur zum Testen, kann wieder gelöscht werden
     """
     Converts a CIM net to a pandapower net from XML files.
     Additional parameters for kwargs:

@@ -42,4 +42,7 @@ class StaticVarCompensatorCim16:
                                            'voltageSetPoint': 'vn_kv', 'index_bus': 'bus', 'connected': 'in_service'})
         eq_stat_coms['step'] = 1
         eq_stat_coms['max_step'] = 1
+        # create step_dependency_table flag
+        if 'step_dependency_table' not in eq_stat_coms.columns:
+            eq_stat_coms["step_dependency_table"] = False
         return eq_stat_coms
