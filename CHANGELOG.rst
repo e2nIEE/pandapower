@@ -141,6 +141,7 @@ Change Log
 - [ADDED] cim2pp converter: Using lxml to parse XML files (better performance)
 - [FIXED] OC relay name attribute error
 - [FIXED] cim2pp: fixed missing nominal voltages at SeriesCompensator
+- [FIXED] cim2pp: set voltages at StaticVarCompensators with sVCControlMode==reactivePower to NaN
 
 [2.14.11] - 2024-07-08
 -------------------------------
