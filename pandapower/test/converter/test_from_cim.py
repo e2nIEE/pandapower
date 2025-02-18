@@ -1,4 +1,6 @@
 import os
+
+import numpy as np
 import pytest
 import math
 import pandas as pd
@@ -7,6 +9,8 @@ import pandapower as pp
 from pandapower.test import test_path
 
 from pandapower.converter import from_cim as cim2pp
+
+from pandapower.control.util.auxiliary import create_trafo_characteristic_object, create_shunt_characteristic_object
 
 
 @pytest.fixture(scope="session")
@@ -17,6 +21,21 @@ def fullgrid_v2():
                    os.path.join(folder_path, 'CGMES_v2.4.15_FullGridTestConfiguration_BD_v1.zip')]
 
     return cim2pp.from_cim(file_list=cgmes_files)
+
+
+@pytest.fixture(scope="session")
+def fullgrid_v2_spline():
+    folder_path = os.path.join(test_path, "test_files", "example_cim")
+
+    cgmes_files = [os.path.join(folder_path, 'CGMES_v2.4.15_FullGridTestConfiguration_BB_BE_v1.zip'),
+                   os.path.join(folder_path, 'CGMES_v2.4.15_FullGridTestConfiguration_BD_v1.zip')]
+
+    net = cim2pp.from_cim(file_list=cgmes_files)
+    create_trafo_characteristic_object(net)
+    create_shunt_characteristic_object(net)
+
+    return net
+
 
 @pytest.fixture(scope="session")
 def fullgrid_v3():
@@ -659,7 +678,7 @@ def test_fullgrid_trafo3w(fullgrid_v2):
     assert 'RatioTapChanger' == element_0['tapchanger_class'].item()
     assert '_fe25f43a-7341-446e-a71a-8ab7119ba806' == element_0['tapchanger_id'].item()
     assert 'YYY' == element_0['vector_group'].item()
-    assert isinstance(element_0['id_characteristic'].item(), float)
+    assert isinstance(element_0['id_characteristic_table'].item(), np.int64)
     assert math.isnan(element_0['vk0_hv_percent'].item())
     assert math.isnan(element_0['vk0_mv_percent'].item())
     assert math.isnan(element_0['vk0_lv_percent'].item())
@@ -667,13 +686,22 @@ def test_fullgrid_trafo3w(fullgrid_v2):
     assert math.isnan(element_0['vkr0_mv_percent'].item())
     assert math.isnan(element_0['vkr0_lv_percent'].item())
     assert not element_0['power_station_unit'].item()
-    assert element_0['tap_dependent_impedance'].item()
-    assert 14 == element_0['vk_hv_percent_characteristic'].item()
-    assert 16 == element_0['vk_mv_percent_characteristic'].item()
-    assert 18 == element_0['vk_lv_percent_characteristic'].item()
-    assert 15 == element_0['vkr_hv_percent_characteristic'].item()
-    assert 17 == element_0['vkr_mv_percent_characteristic'].item()
-    assert 19 == element_0['vkr_lv_percent_characteristic'].item()
+    assert element_0['tap_dependency_table'].item()
+
+
+def test_fullgrid_trafo3w_spline(fullgrid_v2_spline):
+    assert "trafo_characteristic_spline" in fullgrid_v2_spline
+    element_0 = fullgrid_v2_spline.trafo3w[
+        fullgrid_v2_spline.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']
+    cols = ["voltage_ratio_characteristic", "angle_deg_characteristic",
+            "vk_hv_percent_characteristic", "vkr_hv_percent_characteristic", "vk_mv_percent_characteristic",
+            "vkr_mv_percent_characteristic", "vk_lv_percent_characteristic", "vkr_lv_percent_characteristic"]
+    spline_row = fullgrid_v2_spline["trafo_characteristic_spline"][
+        fullgrid_v2_spline["trafo_characteristic_spline"]["id_characteristic"] == element_0[
+            'id_characteristic_spline'].item()]
+    assert 7 == element_0['id_characteristic_spline'].item()
+    assert not spline_row.empty
+    assert spline_row[cols].notna().all(axis=1).item()
 
 
 def test_fullgrid_trafo(fullgrid_v2):
@@ -698,7 +726,7 @@ def test_fullgrid_trafo(fullgrid_v2):
     assert 1.250 == element_0['tap_step_percent'].item()
     assert math.isnan(element_0['tap_step_degree'].item())
     assert -2.0 == element_0['tap_pos'].item()
-    assert not element_0['tap_phase_shifter'].item()
+    assert "Ratio" == element_0['tap_changer_type'].item()
     assert 1.0 == element_0['parallel'].item()
     assert 1.0 == element_0['df'].item()
     assert element_0['in_service'].item()
@@ -710,15 +738,13 @@ def test_fullgrid_trafo(fullgrid_v2):
     assert 'RatioTapChanger' == element_0['tapchanger_class'].item()
     assert '_f6b6428b-d201-4170-89f3-4f630c662b7c' == element_0['tapchanger_id'].item()
     assert 'YY' == element_0['vector_group'].item()
-    assert isinstance(element_0['id_characteristic'].item(), float)
+    assert isinstance(element_0['id_characteristic_table'].item(), np.int64)
     assert math.isnan(element_0['vk0_percent'].item())
     assert math.isnan(element_0['vkr0_percent'].item())
     assert math.isnan(element_0['xn_ohm'].item())
     assert not element_0['power_station_unit'].item()
     assert not element_0['oltc'].item()
-    assert element_0['tap_dependent_impedance'].item()
-    assert 0 == element_0['vkr_percent_characteristic'].item()
-    assert 1 == element_0['vk_percent_characteristic'].item()
+    assert element_0['tap_dependency_table'].item()
 
     element_1 = fullgrid_v2.trafo[fullgrid_v2.trafo['origin_id'] == '_99f55ee9-2c75-3340-9539-b835ec8c5994']
     assert 'BE-TR2_6' == element_1['name'].item()
@@ -740,7 +766,7 @@ def test_fullgrid_trafo(fullgrid_v2):
     assert math.isnan(element_1['tap_step_percent'].item())
     assert math.isnan(element_1['tap_step_degree'].item())
     assert math.isnan(element_1['tap_pos'].item())
-    assert not element_1['tap_phase_shifter'].item()
+    assert pd.isna(element_1['tap_changer_type'].item())
     assert 1.0 == element_1['parallel'].item()
     assert 1.0 == element_1['df'].item()
     assert element_1['in_service'].item()
@@ -752,23 +778,38 @@ def test_fullgrid_trafo(fullgrid_v2):
     assert math.isnan(element_1['tapchanger_class'].item())
     assert math.isnan(element_1['tapchanger_id'].item())
     assert 'YY' == element_1['vector_group'].item()
-    assert isinstance(element_1['id_characteristic'].item(), float)
+    assert isinstance(element_1['id_characteristic_table'].item(), np.int64)
     assert math.isnan(element_1['vk0_percent'].item())
     assert math.isnan(element_1['vkr0_percent'].item())
     assert math.isnan(element_1['xn_ohm'].item())
     assert not element_1['power_station_unit'].item()
     assert not element_1['oltc'].item()
-    assert element_1['tap_dependent_impedance'].item()
-    assert 8 == element_1['vkr_percent_characteristic'].item()
-    assert 9 == element_1['vk_percent_characteristic'].item()
+    assert element_1['tap_dependency_table'].item()
 
     element_2 = fullgrid_v2.trafo[fullgrid_v2.trafo['origin_id'] == '_ff3a91ec-2286-a64c-a046-d62bc0163ffe']
     assert 1.990 == element_2['tap_step_degree'].item()
     assert 'PhaseTapChangerLinear' == element_2['tapchanger_class'].item()
-    assert math.isnan(element_2['id_characteristic'].item())
-    assert not element_2['tap_dependent_impedance'].item()
-    assert pd.isna(element_2['vkr_percent_characteristic'].item())
-    assert pd.isna(element_2['vk_percent_characteristic'].item())
+    assert "Ideal" == element_2['tap_changer_type'].item()
+    assert pd.isna(element_2['id_characteristic_table'].item())
+    assert not element_2['tap_dependency_table'].item()
+
+
+def test_fullgrid_trafo_spline(fullgrid_v2_spline):
+    assert "trafo_characteristic_spline" in fullgrid_v2_spline
+    element_0 = fullgrid_v2_spline.trafo[
+        fullgrid_v2_spline.trafo['origin_id'] == '_99f55ee9-2c75-3340-9539-b835ec8c5994']
+    cols = ["voltage_ratio_characteristic", "angle_deg_characteristic",
+            "vk_percent_characteristic", "vkr_percent_characteristic"]
+    spline_row = fullgrid_v2_spline["trafo_characteristic_spline"][
+        fullgrid_v2_spline["trafo_characteristic_spline"]["id_characteristic"] == element_0[
+            'id_characteristic_spline'].item()]
+    assert 0 == element_0['id_characteristic_spline'].item()
+    assert not spline_row.empty
+    assert spline_row[cols].notna().all(axis=1).item()
+
+    element_1 = fullgrid_v2_spline.trafo[
+        fullgrid_v2_spline.trafo['origin_id'] == '_ff3a91ec-2286-a64c-a046-d62bc0163ffe']
+    assert pd.isna(element_1['id_characteristic_spline'].item())
 
 
 def test_fullgrid_tcsc(fullgrid_v2):
@@ -812,10 +853,12 @@ def test_fullgrid_shunt(fullgrid_v2):
     assert element_0['in_service'].item()
     assert 'LinearShuntCompensator' == element_0['origin_class'].item()
     assert '_d5e2e58e-ccf6-47d9-b3bb-3088eb7a9b6c' == element_0['terminal'].item()
+    assert not element_0['step_dependency_table'].item()
+    assert pd.isna(element_0['id_characteristic_table'].item())
 
 
 def test_fullgrid_sgen(fullgrid_v2):
-    assert 1 == len(fullgrid_v2.sgen.index)
+    assert 0 == len(fullgrid_v2.sgen.index)
 
 
 def test_fullgrid_pwl_cost(fullgrid_v2):
@@ -925,7 +968,7 @@ def test_fullgrid_impedance(fullgrid_v2):
 
 
 def test_fullgrid_gen(fullgrid_v2):
-    assert len(fullgrid_v2.gen.index) in [7, 9, 10, 11]
+    assert len(fullgrid_v2.gen.index) == 8
     element_0 = fullgrid_v2.gen[fullgrid_v2.gen['origin_id'] == '_55d4aae2-0d4b-4248-bc90-1193f3499fa0']
     assert 'BE-G5' == element_0['name'].item()
     assert '_f96d552a-618d-4d0c-a39a-2dea3c411dee' == fullgrid_v2.bus.iloc[element_0['bus'].item()]['origin_id']
@@ -983,6 +1026,7 @@ def test_fullgrid_dcline(fullgrid_v2):
     assert 2 == len(fullgrid_v2.dcline.index)
     element_0 = fullgrid_v2.dcline[fullgrid_v2.dcline['origin_id'] == '_70a3750c-6e8e-47bc-b1bf-5a568d9733f7']
     assert 'LDC-1230816355' == element_0['name'].item()
+    assert 'LDC-1230816355' == element_0['description'].item()
     assert '_27d57afa-6c9d-4b06-93ea-8c88d14af8b1' == fullgrid_v2.bus.iloc[element_0['from_bus'].item()]['origin_id']
     assert '_d3d9c515-2ddb-436a-bf17-2f8be2394de3' == fullgrid_v2.bus.iloc[int(element_0['to_bus'].item())]['origin_id']
     assert 0.0 == element_0['p_mw'].item()
@@ -1071,19 +1115,8 @@ def test_fullgrid_controller(fullgrid_v2):
             assert math.isnan(obj.object.vm_upper_pu)
 
 
-def test_fullgrid_characteristic_temp(fullgrid_v2):
-    assert 8 == len(fullgrid_v2.characteristic_temp.index)
-
-
-def test_fullgrid_characteristic(fullgrid_v2):
-    assert 20 == len(fullgrid_v2.characteristic.index)
-    for _, obj in fullgrid_v2.characteristic.iterrows():
-        if obj.object.index == \
-                fullgrid_v2.trafo[fullgrid_v2.trafo['origin_id'] ==
-                               '_99f55ee9-2c75-3340-9539-b835ec8c5994']['vkr_percent_characteristic'].item():
-            assert [1] == obj.object.x_vals
-            assert [1.3405981856094185] == obj.object.y_vals
-            break
+def test_fullgrid_trafo_characteristic_table(fullgrid_v2):
+    assert 8 == len(fullgrid_v2.trafo_characteristic_table.index)
 
 
 def test_fullgrid_bus_geodata(fullgrid_v2):
