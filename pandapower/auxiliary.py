@@ -1288,7 +1288,7 @@ def _check_lightsim2grid_compatibility(net, lightsim2grid, voltage_depend_loads,
     """
     Implement some checks to decide whether the package lightsim2grid can be used.
 
-    These checks are documentated in :code:`doc\powerflow\ac.rst` The package implements a backend for power flow
+    These checks are documentated in :code:`doc\\powerflow\\ac.rst` The package implements a backend for power flow
     calculation in C++ and provides a speed-up. If lightsim2grid
     is "auto" (default), we don't bombard the user with messages. Otherwise, if lightsim2grid is
     True but cannot be used, we inform the user about it.
