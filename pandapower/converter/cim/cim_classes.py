@@ -244,7 +244,7 @@ class CimParser:
                     'rdfId', 'name', 'description', 'nominalVoltage', 'EnergySchedulingType', 'BaseVoltage',
                     'EquipmentContainer', 'voltageAngle', 'voltageMagnitude']),
                 'EnergySchedulingType': pd.DataFrame(columns=['rdfId', 'name']),
-                'StaticVarCompensator': pd.DataFrame(columns=['rdfId', 'name', 'description', 'voltageSetPoint']),
+                'StaticVarCompensator': pd.DataFrame(columns=['rdfId', 'name', 'description', 'voltageSetPoint','sVCControlMode']),
                 'PowerTransformer': pd.DataFrame(columns=[
                     'rdfId', 'name', 'description', 'EquipmentContainer', 'isPartOfGeneratorUnit']),
                 'PowerTransformerEnd': pd.DataFrame(columns=[
@@ -646,7 +646,7 @@ class CimParser:
                     'rdfId', 'name', 'description', 'nominalVoltage', 'EnergySchedulingType',
                     'EquipmentContainer']),
                 'EnergySchedulingType': pd.DataFrame(columns=['rdfId', 'name']),
-                'StaticVarCompensator': pd.DataFrame(columns=['rdfId', 'name', 'description', 'voltageSetPoint']),
+                'StaticVarCompensator': pd.DataFrame(columns=['rdfId', 'name', 'description', 'voltageSetPoint','sVCControlMode']),
                 'PowerTransformer': pd.DataFrame(columns=['rdfId', 'name', 'description', 'EquipmentContainer']),
                 'PowerTransformerEnd': pd.DataFrame(columns=[
                     'rdfId', 'name', 'PowerTransformer', 'endNumber', 'Terminal', 'ratedS', 'ratedU',

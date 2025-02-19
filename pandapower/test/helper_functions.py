@@ -47,7 +47,7 @@ def create_test_network():
                                           tap_pos=0, tap_side="hv", tap_min=-2,
                                           tap_step_percent=2.5, i0_percent=0.68751,
                                           sn_mva=0.016, pfe_kw=0.11, name=None,
-                                          in_service=True, index=None)
+                                          in_service=True, index=None, tap_changer_type="Ratio")
     # 0.016 MVA 10/0.4 kV ET 16/23  SGB
 
     pp.create_line_from_parameters(net, b2, b3, 1, name="line1", r_ohm_per_km=0.2067,
