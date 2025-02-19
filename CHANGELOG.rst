@@ -24,6 +24,7 @@ Change Log
 - [ADDED] id_characteristic_table variable for shunt elements
 - [CHANGED] renamed id_characteristic variable to id_characteristic_table for trafo and trafo3w elements
 - [ADDED] shunt_characteristic_table lookup table for step dependent values for shunt elements
+- [ADDED] tests for stored networks to avoid forgetting about updating the stored networks
 - [CHANGED] renamed characteristic_temp lookup table to trafo_characteristic_table for trafo and trafo3w elements
 - [CHANGED] cim2pp converter - removed default creation of trafo spline characteristics
 - [ADDED] cim2pp converter - export NonlinearShuntCompensatorPoint values for shunt elements
