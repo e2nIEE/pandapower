@@ -55,10 +55,11 @@ def _test_missing_element_parameters_in_stored_networks(net, net_name=None):
     """
     This test is expected to pass in most cases. However, if the networks stored as (json) files
     were already updated after the last release, the format_version was updated, too. If further
-    updates are made but not intigrated to the (json) files, the loaded networks will not have the
-    updates, even if these updates should be catched by the update_format() function. This is
-    because update_format() won't do corrections to loaded data of the most recent format_version.
-    To fix failing tests, the networks must be stored again including the most recent updates.
+    updates are made but not integrated to the (json) files, the loaded networks will not have the
+    latest updates, even if these updates would usually be catched by the convert_format() function.
+    This is because convert_format() won't do corrections to loaded data of the latest
+    format_version. To fix failing tests, the networks must be stored again including the most
+    recent updates.
     """
     if net_name is None:
         net_name = net.name
