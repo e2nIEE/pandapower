@@ -694,6 +694,8 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
     s = net["shunt"]
     if len(s) > 0:
         vl = _is_elements["shunt"]
+        # fill missing vn_kn values in shunt table with rated voltage of connected bus
+        s.loc[s.loc[np.isnan(s.vn_kv)].index, "vn_kv"] = net.bus.loc[s.loc[np.isnan(s.vn_kv)].index, "vn_kv"]
         v_ratio = (ppc["bus"][bus_lookup[s["bus"].values], BASE_KV] / s["vn_kv"].values) ** 2 * base_multiplier
 
         if "step_dependency_table" in s:
