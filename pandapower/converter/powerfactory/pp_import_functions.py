@@ -3647,7 +3647,7 @@ def create_stactrl(net, item):
                 net,
                 q_droop_mvar=item.Srated * 100 / item.ddroop,
                 bus_idx=bus,
-                vm_set_pu=item.udeadbup,
+                #vm_set_pu=item.udeadbup,
                 vm_set_ub=item.udeadbup,
                 vm_set_lb=item.udeadblow,
                 controller_idx=bsc.index,
@@ -3681,7 +3681,7 @@ def create_stactrl(net, item):
                 set_point=item.pfsetp,
                 modus=modus, tol=1e-6
             )
-        elif item.cosphi_char == 1:
+        elif item.cosphi_char == 1: #cosphi(P)
             #controlled_node = item.refbar
             #bus = bus_dict[controlled_node]  # controlled node
             bsc = pp.control.BinarySearchControl(
@@ -3703,16 +3703,45 @@ def create_stactrl(net, item):
             pp.control.DroopControl(
                 net,
                 q_droop_mvar=None, #item.Srated * 100 / item.ddroop,
-                #bus_idx=bus,
-                vm_set_pu=[item.pf_over, item.pf_under],
-                vm_set_ub=item.p_under,
-                vm_set_lb=item.p_over,
+                PF_overexcited=item.pf_over,
+                PF_underexcited=item.pf_under,
+                vm_set_ub=item.p_over,
+                vm_set_lb=item.p_under,
                 controller_idx=bsc.index,
-                modus='PF_ctrl',
-                bus_idx=None
+                modus='PF_ctrl_P',
+                #bus_idx=None
             )
-        elif item.cosphi_char == 2:
-            raise NotImplementedError
+        elif item.cosphi_char == 2: #cosphi(U)
+            controlled_node = item.refbar
+            bus = bus_dict[controlled_node]  # controlled node
+            bsc = pp.control.BinarySearchControl(
+                net, ctrl_in_service=stactrl_in_service,
+                output_element=gen_element,
+                output_variable="q_mvar",
+                output_element_index=gen_element_index,
+                output_element_in_service=gen_element_in_service,
+                input_element=res_element_table,
+                output_values_distribution=distribution,
+                damping_factor=0.9,
+                input_variable=variable,
+                input_element_index=res_element_index,
+                set_point=item.pfsetp,
+                modus='PF_ctrl_ind',
+                bus_idx=None,
+                tol=1e-6
+            )
+            pp.control.DroopControl(
+                net,
+                q_droop_mvar=None,  # item.Srated * 100 / item.ddroop,
+                bus_idx=bus,
+                PF_overexcited = item.pf_over,
+                PF_underexcited=item.pf_under,
+                vm_set_ub=item.u_over,
+                vm_set_lb=item.u_under,
+                controller_idx=bsc.index,
+                modus='PF_ctrl_U',
+                #bus_idx=None
+            )
         else:
             raise NotImplementedError
     elif control_mode== 3:#tan(phi)_control
