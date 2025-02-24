@@ -45,5 +45,15 @@ def test_simple_plotly_3w():
     # +1 is for infofunc traces, +2 = 1 bus trace + 1 ext_grid trace
 
 
+@pytest.mark.slow
+@pytest.mark.skipif(not PLOTLY_INSTALLED, reason="plotly functions require the plotly package")
+def test_simple_plotly_no_html():
+    net = nw.example_multivoltage()
+    # fig without generating a HTML
+    fig = simple_plotly(net, filename=None, auto_open=False)
+    assert len(fig.data) == (len(net.line) + 1) + (len(net.trafo) + 1) + (len(net.trafo3w)*3 + 1) + 2
+    # +1 is for infofunc traces, +2 = 1 bus trace + 1 ext_grid trace
+
+
 if __name__ == '__main__':
     pytest.main([__file__, "-xs"])

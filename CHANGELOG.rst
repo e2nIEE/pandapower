@@ -85,7 +85,9 @@ Change Log
 - [ADDED] DERController with multiple options to define DER reactive power provision depending on P and V
 - [ADDED] switch results p and q
 - [ADDED] PowerFactory converter: option to export lines with sections as a single line with averaged-out impedance, or export line sections as separate individual lines
-- [ADDED] extend plotly function: add zoomlevel-parameter and hvdc lines
+- [ADDED] extend plotly function: add zoomlevel-parameter, dash-lines and hvdc lines
+- [ADDED] extend plotly draw traces: add trace kwargs, e.g. visibility="legendonly" to not show the trace by default
+- [ADDED] extend plotly draw traces: if filename=None, no HTML will be created and just a ploty.Figure object is returned
 - [ADDED] added support for reading cgmes v3.0 files
 - [ADDED] added support for converting cgmes v3.0
 - [CHANGED] plotting for voltage profile considers also gens that are slacks and only ext_grids and slack gens that are in service
