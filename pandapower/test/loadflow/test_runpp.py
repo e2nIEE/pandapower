@@ -1538,6 +1538,16 @@ def test_at_isolated_bus():
     pp.runpp(net)
     assert net._options["init_vm_pu"] == 1.
 
+def test_shunt_with_missing_vn_kv():
+    net = pp.create_empty_network()
+    pp.create_buses(net, 2, 110)
+    pp.create_ext_grid(net, 0)
+    pp.create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
+
+    pp.create_shunt(net, 1, 10)
+    net.shunt.vn_kv=np.nan
+
+    pp.runpp(net)
 
 if __name__ == "__main__":
     pytest.main([__file__, "-xs"])
