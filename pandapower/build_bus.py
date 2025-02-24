@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import warnings
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -216,7 +216,7 @@ def create_bus_lookup_numpy(net, bus_index, closed_bb_switch_mask):
                 if nr_pv_bus > 0:
                     # one pv bus. Get bus from pv_buses_in_set
                     ref_bus = pv_buses_in_set.pop()
-                else: 
+                else:
                     if nr_active_bus > 0:
                         # no pv bus but another active bus. Get bus from active_buses_in_set
                         ref_bus = active_buses_in_set.pop()
