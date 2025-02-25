@@ -400,7 +400,7 @@ def _set_curve_dependency_table_flag(net, element):
         net[element]['curve_dependency_table'] = (
                 net[element]['id_q_capability_curve_table'].notna() &
                 (net[element]['id_q_capability_curve_table'] >= 0) &
-                net[element]['curve_style'].str.len().gt(0)
+                net[element]['curve_style'].isin(["straightLineYValues", "constantYValue"])
         ).astype(bool)
 
 
