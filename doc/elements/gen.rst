@@ -65,16 +65,16 @@ Result Parameters
    :widths: 10, 10, 50
 
 Table of Generator Reactive Power Capability Curve Characteristics
-----------------------------
+============================
 
 The Table of Generator Reactive Power Capability Curve Characteristics (denoted as q_capability_curve_table) serves
 as a reference for determining the reactive power limits of a generator, specifically Qmin and Qmax, as a function
-of the active power output of the respective generator. This table is either auto-generated from version 3.1 onwards
-via the CIM CGMES to pandapower converter, provided this information is available in the Equipment (EQ) profile,
-or it can be manually defined by the user.
+of the active power output of the respective generator. This table is either auto-generated via the CIM CGMES to
+pandapower converter, provided this information is available in the Equipment (EQ) profile, or it can be manually
+defined by the user.
 
-The variable id_q_capability_curve_table in net.gen establishes a link to the id_q_capability_curve
-column in net.q_capability_curve_table, associating each generator with its respective capability curve.
+The variable id_q_capability_curve_characteristic in net.gen establishes a link to the id_q_capability_curve
+column in net.q_capability_curve_table and net.q_capability_curve_characteristic, associating each generator with its respective capability curve.
 
 If the variable curve_dependency_table in net.gen is set to True, it indicates that a corresponding characteristic
 is defined in net.q_capability_curve_table. This overrides the default reactive power limits of the generator.
@@ -88,7 +88,7 @@ Below is an example of a q_capability_curve_table, populated for two sample gene
    :widths: 10, 10, 55, 55, 55
 
 .. note::
-    - curve_dependency_table has to be set to True, and id_q_capability_curve_table and curve_style variables need to
+    - curve_dependency_table has to be set to True, and id_q_capability_curve_characteristic and curve_style variables need to
       be populated in order to consider the corresponding q_capability_curve_table values.
     - Each generator supports only a single curve_dependency_table
     - In this version, only two types of generator reactive power capability characteristics are supported:
@@ -100,7 +100,7 @@ pandapower.control.util.auxiliary.create_q_capability_curve_characteristics_obje
 generate Characteristic objects and populate the net.q_capability_curve_characteristic table based on the data
 in the net.q_capability_curve_table.
 
-Furthermore, an additional column, id_q_capability_curve_table, is created in net.gen to establish the reference
+Furthermore, an additional column, id_q_capability_curve_characteristic, is created in net.gen to establish the reference
 between the generator and its associated characteristics.
 
 The table below illustrates an example of a q_capability_curve_characteristic table populated for generators.

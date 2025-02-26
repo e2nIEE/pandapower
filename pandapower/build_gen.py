@@ -40,9 +40,9 @@ def _build_gen_ppc(net, ppc):
     mode = net["_options"]["mode"]
     distributed_slack = net["_options"]["distributed_slack"]
 
-    #Add qmin and qmax limit from q capability_curve_characteristics_table
+    # Add qmin and qmax limit from q capability_curve_characteristics_table
     if "q_capability_curve_characteristic" in net.keys() and net._options["enforce_q_lims"]:
-        _calculate_qmin_qmax_from_q_capability_curve_characteristics(net,"gen")
+        _calculate_qmin_qmax_from_q_capability_curve_characteristics(net, "gen")
         _calculate_qmin_qmax_from_q_capability_curve_characteristics(net, "sgen")
 
     _is_elements = net["_is_elements"]
@@ -406,7 +406,8 @@ def _gen_xward_mask(net, ppc):
 
 
 def _get_xward_pq_buses(net, ppc):
-    # find the PQ and PV buses of the xwards; in build_branch.py the F_BUS is set to the PQ bus and T_BUS is set to the auxiliary PV bus
+    # find the PQ and PV buses of the xwards; in build_branch.py the F_BUS is set to the PQ bus and T_BUS is set to
+    # the auxiliary PV bus
     ft = net["_pd2ppc_lookups"].get('branch', dict()).get("xward", [])
     if len(ft) > 0:
         f, t = ft
@@ -426,8 +427,8 @@ def _normalise_slack_weights(ppc, gen_mask, xward_mask, xward_pq_buses):
 
     # it is possible that xward and gen are at the same bus (but not reasonable)
     if len(np.intersect1d(gen_buses, xward_pq_buses)):
-        raise NotImplementedError("Found some of the xward PQ buses with slack weight > 0 that coincide with PV or SL buses."
-                                  "This configuration is not supported.")
+        raise NotImplementedError("Found some of the xward PQ buses with slack weight > 0 that coincide with PV or "
+                                  "SL buses. This configuration is not supported.")
 
     gen_buses = np.r_[gen_buses, xward_pq_buses]
     slack_weights_gen = np.r_[ppc['gen'][gen_mask, SL_FAC], ppc['gen'][xward_mask, SL_FAC]].astype(np.float64)
@@ -459,17 +460,17 @@ def _normalise_slack_weights(ppc, gen_mask, xward_mask, xward_pq_buses):
 
     # raise NotImplementedError if there are several separate zones for distributed slack:
     if not np.isclose(sum(ppc['bus'][:, SL_FAC_BUS]), 1):
-        raise NotImplementedError("Distributed slack calculation is not implemented for several separate zones at once, "
+        raise NotImplementedError("Distributed slack calculation is not implemented for several separate zones at once,"
                                   "please calculate the zones separately.")
+
 
 def _calculate_qmin_qmax_from_q_capability_curve_characteristics(net, element):
     if element not in ["gen", "sgen"]:
-        raise UserWarning(f"The given element type is not valid for q_min and Q_max of the {element}. "
-                          f"Please give gen or sgen as a argument of the function")
-        return
+        raise UserWarning(f"The given element type is not valid for q_min and q_max of the {element}. "
+                          f"Please give gen or sgen as an argument of the function")
 
     if len(net[element]) == 0:
-        logger.warning(f"No of {element} is zero.")
+        logger.warning(f"No of {element} elements is zero.")
         return
 
     # Filter rows with True 'curve_dependency_table'
@@ -477,7 +478,7 @@ def _calculate_qmin_qmax_from_q_capability_curve_characteristics(net, element):
 
     if len(element_data) > 0:
         # Extract the relevant data
-        q_table_ids = element_data['id_q_capability_curve_table']
+        q_table_ids = element_data['id_q_capability_curve_characteristic']
         p_mw_values = element_data['p_mw']
 
         # Retrieve the q_max and q_min characteristic functions as vectorized callables
@@ -495,5 +496,5 @@ def _calculate_qmin_qmax_from_q_capability_curve_characteristics(net, element):
         # Assign the calculated values directly to the original DataFrame
         net[element].loc[element_data.index, ['max_q_mvar', 'min_q_mvar']] = np.column_stack((calc_q_max, calc_q_min))
     else:
-        raise UserWarning(f"One of {element}(s) id characteristic(s) or curve "
-                          f"style(s) of {element}(s) is(are) incorrect or not available even if the q_capability_curve_table is available.")
+        raise UserWarning(f"One of {element}(s) id characteristic(s) or curve style(s) of {element}(s) is(are) "
+                          f"incorrect or not available even if the q_capability_curve_table is available.")

@@ -80,7 +80,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                  ("q_mvar", "f8"),
                  ("sn_mva", "f8"),
                  ("scaling", "f8"),
-                 ('id_q_capability_curve_table', 'u4'),
+                 ('id_q_capability_curve_characteristic', 'u4'),
                  ('curve_dependency_table', 'bool'),
                  ('curve_style', dtype(object)),
                  ("in_service", 'bool'),
@@ -146,7 +146,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                 ("max_q_mvar", "f8"),
                 ("scaling", "f8"),
                 ("slack", "bool"),
-                ('id_q_capability_curve_table', 'u4'),
+                ('id_q_capability_curve_characteristic', 'u4'),
                 ('curve_dependency_table', 'bool'),
                 ('curve_style', dtype(object)),
                 ("in_service", 'bool'),
@@ -1285,7 +1285,7 @@ def create_load_from_cosphi(net, bus, sn_mva, cos_phi, mode, **kwargs):
 
 def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
                 scaling=1., type='wye', in_service=True, max_p_mw=nan, min_p_mw=nan,
-                max_q_mvar=nan, min_q_mvar=nan, controllable=nan, k=nan, rx=nan, id_q_capability_curve_table=None,
+                max_q_mvar=nan, min_q_mvar=nan, controllable=nan, k=nan, rx=nan, id_q_capability_curve_characteristic=None,
                 curve_dependency_table=False, curve_style=None, current_source=True, generator_type=None,
                 max_ik_ka=nan, kappa=nan, lrc_pu=nan, **kwargs):
     """
@@ -1345,10 +1345,10 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
             specified as motor so that sgen is treated as asynchronous motor. Relevant for \
             short-circuit calculation for all generator types
 
-        **curve_dependency_table** (bool, NaN) - True if both the id_q_capability_curve_table and the curve style\
+        **curve_dependency_table** (bool, NaN) - True if both the id_q_capability_curve_characteristic and the curve style\
          are present in the generator.
 
-        **id_q_capability_curve_table** (int, None) - references the index of the characteristic from the lookup table \
+        **id_q_capability_curve_characteristic** (int, None) - references the index of the characteristic from the lookup table \
         net.q_capability_curve_table
 
         **curve_style** (string, None) - The curve style of the generator represents the relationship \
@@ -1402,7 +1402,7 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
     _set_value_if_not_nan(net, index, controllable, "controllable", "sgen", dtype=bool_,
                           default_val=False)
 
-    _set_value_if_not_nan(net, index, id_q_capability_curve_table, "id_q_capability_curve_table", "sgen",
+    _set_value_if_not_nan(net, index, id_q_capability_curve_characteristic, "id_q_capability_curve_characteristic", "sgen",
                           dtype= "Int64")
 
     _set_value_if_not_nan(net, index, curve_dependency_table, "curve_dependency_table", "sgen",
@@ -1430,7 +1430,7 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
 
 def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
                  scaling=1., type='wye', in_service=True, max_p_mw=nan, min_p_mw=nan,
-                 max_q_mvar=nan, min_q_mvar=nan, controllable=nan, k=nan, rx=nan, id_q_capability_curve_table=nan,
+                 max_q_mvar=nan, min_q_mvar=nan, controllable=nan, k=nan, rx=nan, id_q_capability_curve_characteristic=nan,
                  curve_dependency_table=False, curve_style=None, current_source=True, generator_type="current_source",
                  max_ik_ka=nan, kappa=nan, lrc_pu=nan, **kwargs):
     """
@@ -1491,10 +1491,10 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
             specified as motor so that sgen is treated as asynchronous motor. Relevant for \
             short-circuit calculation for all generator types
 
-        **curve_dependency_table** (bool, NaN) - True if both the id_q_capability_curve_table and the curve style\
+        **curve_dependency_table** (bool, NaN) - True if both the id_q_capability_curve_characteristic and the curve style\
             are present in the generator.
 
-        **id_q_capability_curve_table** (int, None) - references the index of the characteristic from the lookup table \
+        **id_q_capability_curve_characteristic** (int, None) - references the index of the characteristic from the lookup table \
             net.q_capability_curve_table
 
         **curve_style** (string, None) - The curve style of the generator represents the relationship \
@@ -1553,8 +1553,8 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
     gen_type_match = pd.concat([entries["generator_type"] == match for match in gen_types], axis=1,
                                keys=gen_types)
 
-    _add_to_entries_if_not_nan(net, "gen", entries, index, "id_q_capability_curve_table",
-                               id_q_capability_curve_table, dtype="Int64")
+    _add_to_entries_if_not_nan(net, "gen", entries, index, "id_q_capability_curve_characteristic",
+                               id_q_capability_curve_characteristic, dtype="Int64")
 
     if gen_type_match["current_source"].any():
         _add_to_entries_if_not_nan(net, "sgen", entries, index, "k", k)
@@ -1864,7 +1864,7 @@ def create_storages(
 
 def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_q_mvar=nan,
                min_q_mvar=nan, min_p_mw=nan, max_p_mw=nan, min_vm_pu=nan, max_vm_pu=nan,
-               scaling=1., type=None, slack=False, id_q_capability_curve_table=None, curve_dependency_table=False,
+               scaling=1., type=None, slack=False, id_q_capability_curve_characteristic=None, curve_dependency_table=False,
                curve_style=None, controllable=nan, vn_kv=nan, xdss_pu=nan, rdss_ohm=nan, cos_phi=nan, pg_percent=nan,
                power_station_trafo=nan, in_service=True, slack_weight=0.0, **kwargs):
     """
@@ -1895,10 +1895,10 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
 
         **type** (string, None) - type variable to classify generators
 
-        **curve_dependency_table** (bool, NaN) - True if both the id_q_capability_curve_table and the curve style\
+        **curve_dependency_table** (bool, NaN) - True if both the id_q_capability_curve_characteristic and the curve style\
          are present in the generator.
 
-        **id_q_capability_curve_table** (int, None) - references the index of the characteristic from the lookup table \
+        **id_q_capability_curve_characteristic** (int, None) - references the index of the characteristic from the lookup table \
             net.q_capability_curve_table
 
         **curve_style** (string, None) - The curve style of the generator represents the relationship \
@@ -1968,7 +1968,7 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
                           dtype=bool_, default_val=True)
 
     # id for q capability curve table
-    _set_value_if_not_nan(net, index, id_q_capability_curve_table, "id_q_capability_curve_table", "gen", dtype="Int64")
+    _set_value_if_not_nan(net, index, id_q_capability_curve_characteristic, "id_q_capability_curve_characteristic", "gen", dtype="Int64")
 
     # behaviour of reactive power capability curve
     _set_value_if_not_nan(net, index, curve_style, "curve_style", "gen", dtype="string")
@@ -1999,7 +1999,7 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
 
 def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_q_mvar=nan,
                 min_q_mvar=nan, min_p_mw=nan, max_p_mw=nan, min_vm_pu=nan, max_vm_pu=nan,
-                scaling=1., type=None, slack=False, id_q_capability_curve_table=nan, curve_dependency_table=False,
+                scaling=1., type=None, slack=False, id_q_capability_curve_characteristic=nan, curve_dependency_table=False,
                 curve_style=None, controllable=nan, vn_kv=nan, xdss_pu=nan, rdss_ohm=nan, cos_phi=nan, pg_percent=nan,
                 power_station_trafo=nan, in_service=True, slack_weight=0.0, **kwargs):
     """
@@ -2031,10 +2031,10 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
 
         **type** (list of string, None) - type variable to classify generators
 
-        **curve_dependency_table** (bool, NaN) - True if both the id_q_capability_curve_table and the curve style\
+        **curve_dependency_table** (bool, NaN) - True if both the id_q_capability_curve_characteristic and the curve style\
          are present in the generator.
 
-        **id_q_capability_curve_table** (int, None) - references the index of the characteristic from the lookup table \
+        **id_q_capability_curve_characteristic** (int, None) - references the index of the characteristic from the lookup table \
             net.q_capability_curve_table
 
         **curve_style** (string, None) - The curve style of the generator represents the relationship \
@@ -2117,8 +2117,8 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
     _add_to_entries_if_not_nan(net, "gen", entries, index, "xdss_pu", xdss_pu)
     _add_to_entries_if_not_nan(net, "gen", entries, index, "rdss_ohm", rdss_ohm)
     _add_to_entries_if_not_nan(net, "gen", entries, index, "pg_percent", pg_percent)
-    _add_to_entries_if_not_nan(net, "gen", entries, index, "id_q_capability_curve_table",
-                               id_q_capability_curve_table, dtype="Int64")
+    _add_to_entries_if_not_nan(net, "gen", entries, index, "id_q_capability_curve_characteristic",
+                               id_q_capability_curve_characteristic, dtype="Int64")
 
     _add_to_entries_if_not_nan(net, "gen", entries, index, "curve_dependency_table",
                                curve_dependency_table, dtype=bool_)

@@ -1600,7 +1600,7 @@ def test_q_capability_curve():
          'q_min_mvar':[-0.0100,    -134.0099, -265.01001, -323.01001, -323.01001,  -323.01001, -323.01001, -323.01001, 0, -265.01001, -134.00999, -0.01000 ],
          'q_max_mvar':[0.01000,    134.00999,  228.00999,  257.01001,  261.01001,  261.01001,   261.01001,  257.01001, 30,  40,  134.0099,   0.01]})
 
-    net.gen.id_q_capability_curve_table.at[0] = 0
+    net.gen.id_q_capability_curve_characteristic.at[0] = 0
     net.gen['curve_style'] = "straightLineYValues"
 
     # Add q_capability_curve_characteristic for one gen based on q_capability_curve_table
