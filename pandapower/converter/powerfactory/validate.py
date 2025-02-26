@@ -476,7 +476,7 @@ def _validate_pf_conversion_balanced(net, in_both, all_diffs):
         bus_dc_diff = net.res_bus_dc.loc[bus_dc_idx].pf_vm_pu - net.res_bus_dc.loc[
             bus_dc_idx].vm_pu
         if bus_dc_diff.isna().all():
-            print("Warning: bus_dc_diff contains only NaN values. Continuing without evaluating dc busses.")
+            logger.info("bus_dc_diff contains only NaN values. Continuing without evaluating dc busses.")
         else:
             bus_dc_id = abs(bus_dc_diff).abs().idxmax().astype('int64')
             logger.info("Maximum bus_dc vm_pu difference between pandapower and powerfactory: %.6f "
