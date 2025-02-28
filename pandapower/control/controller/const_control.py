@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-import numpy as np
-from pandas import Index
 from pandapower.control.basic_controller import Controller
+from pandapower.toolbox import _detect_read_write_flag, write_to_net
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 
@@ -55,8 +54,8 @@ class ConstControl(Controller):
         dropped
 
     .. note:: If multiple elements are represented with one controller, the data source must have
-    integer columns. At the moment, only the DFData format is tested for the multiple const
-    control.
+        integer columns. At the moment, only the DFData format is tested for the multiple const
+        control.
     """
 
     def __init__(self, net, element, variable, element_index, profile_name=None, data_source=None,
@@ -78,32 +77,15 @@ class ConstControl(Controller):
         self.element_index = element_index
         # element type
         self.element = element
-        self.variable = variable
         self.values = None
         self.profile_name = profile_name
         self.scale_factor = scale_factor
         self.applied = False
-        self.object_attribute = None
-        # write functions faster, depending on type of self.element_index
-        if self.variable.startswith('object'):
-            # write to object attribute
-            self.write = "object"
-            self.object_attribute = self.variable.split(".")[1]
-        elif isinstance(self.element_index, int):
-            # use .at if element_index is integer for speedup
-            self.write = "single_index"
-        # commenting this out for now, see issue 609
-        # elif self.net[self.element].index.equals(Index(self.element_index)):
-        #     # use : indexer if all elements are in index
-        #     self.write = "all_index"
-        else:
-            # use common .loc
-            self.write = "loc"
+        self.write_flag, self.variable = _detect_read_write_flag(net, element, element_index, variable)
         self.set_recycle(net)
 
     def set_recycle(self, net):
-        allowed_elements = ["load", "sgen", "storage", "gen", "ext_grid", "trafo", "trafo3w",
-                            "line"]
+        allowed_elements = ["load", "sgen", "storage", "gen", "ext_grid", "trafo", "trafo3w", "line"]
         if net.controller.at[self.index, 'recycle'] is False or self.element not in allowed_elements:
             # if recycle is set to False by the user when creating the controller it is deactivated
             # or when const control controls an element which is not able to be recycled
@@ -123,24 +105,6 @@ class ConstControl(Controller):
         # or False if the element + variable combination is not supported
         net.controller.at[self.index, 'recycle'] = recycle if any(list(recycle.values())) else False
 
-    def write_to_net(self, net):
-        """
-        Writes to self.element at index self.element_index in the column self.variable the data
-        from self.values
-        """
-        # write functions faster, depending on type of self.element_index
-        if self.write == "single_index":
-            self._write_to_single_index(net)
-        elif self.write == "all_index":
-            self._write_to_all_index(net)
-        elif self.write == "loc":
-            self._write_with_loc(net)
-        elif self.write == "object":
-            self._write_to_object_attribute(net)
-        else:
-            raise NotImplementedError("ConstControl: self.write must be one of "
-                                      "['single_index', 'all_index', 'loc', 'object']")
-
     def time_step(self, net, time):
         """
         Get the values of the element from data source
@@ -156,7 +120,7 @@ class ConstControl(Controller):
                                                                profile_name=self.profile_name,
                                                                scale_factor=self.scale_factor)
         if self.values is not None:
-            self.write_to_net(net)
+            write_to_net(net, self.element, self.element_index, self.variable, self.values, self.write_flag)
 
     def is_converged(self, net):
         """
@@ -170,22 +134,5 @@ class ConstControl(Controller):
         """
         self.applied = True
 
-    def _write_to_single_index(self, net):
-        net[self.element].at[self.element_index, self.variable] = self.values
-
-    def _write_to_all_index(self, net):
-        net[self.element].loc[:, self.variable] = self.values
-
-    def _write_with_loc(self, net):
-        net[self.element].loc[self.element_index, self.variable] = self.values
-
-    def _write_to_object_attribute(self, net):
-        if hasattr(self.element_index, '__iter__') and len(self.element_index) > 1:
-            for idx, val in zip(self.element_index, self.values):
-                setattr(net[self.element]["object"].at[idx], self.object_attribute, val)
-        else:
-            setattr(net[self.element]["object"].at[self.element_index], self.object_attribute, self.values)
-
     def __str__(self):
         return super().__str__() + " [%s.%s]" % (self.element, self.variable)
-

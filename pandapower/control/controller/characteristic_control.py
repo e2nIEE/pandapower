@@ -1,16 +1,17 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
 from pandapower.control.basic_controller import Controller
+from pandapower.toolbox import _detect_read_write_flag, read_from_net, write_to_net
 
 
 class CharacteristicControl(Controller):
     """
     Controller that adjusts a certain parameter of an element in pandapower net based on a specified input parameter in pandapower net,
-    according to a provided characteristic.
+    according to a provided characteristic. The characteristic is specified by the index in the net.characteristic table.
     Example: change the tap position of the transformers (net.trafo.tap_pos) based on transformer loading (net.res_trafo.loading_percent)
     according to a specified linear relationship. To this end, the input element is "res_trafo", the input variable is "loading_percent",
     the output element is "trafo" and the output variable is "tap_pos". The relationship between the values of the input and output
@@ -35,9 +36,8 @@ class CharacteristicControl(Controller):
 
         **input_element_index** (int or list or numpy array) - index of elements in the input element table
 
-        **characteristic** (object of class Characteristic, or a scipy interpolator object) - characteristic curve that describes the
-                                                                                                relationship between the input and
-                                                                                                output values
+        **characteristic_index** (int) - index of the characteristic curve that describes the relationship between the input and
+                                         output values
 
         **tol** (float) - tolerance for convergence
 
@@ -47,49 +47,28 @@ class CharacteristicControl(Controller):
 
         **drop_same_existing_ctrl** (bool, False) - Indicates if already existing controllers of the same type and with the same matching parameters (e.g. at same element) should be dropped
     """
-    def __init__(self, net, output_element, output_variable, output_element_index, input_element, input_variable, input_element_index,
-                 characteristic, tol=1e-3, in_service=True, order=0, level=0, drop_same_existing_ctrl=False, matching_params=None,
-                 **kwargs):
+    def __init__(self, net, output_element, output_variable, output_element_index, input_element,
+                 input_variable, input_element_index, characteristic_index, tol=1e-3, in_service=True,
+                 order=0, level=0, drop_same_existing_ctrl=False, matching_params=None, **kwargs):
         if matching_params is None:
-            matching_params = {"element": output_element, "input_variable": input_variable, "output_variable": output_variable,
+            matching_params = {"element": output_element, "input_variable": input_variable,
+                               "output_variable": output_variable,
                                "element_index": input_element_index}
-        super().__init__(net, in_service=in_service, order=order, level=level, drop_same_existing_ctrl=drop_same_existing_ctrl,
+        super().__init__(net, in_service=in_service, order=order, level=level,
+                         drop_same_existing_ctrl=drop_same_existing_ctrl,
                          matching_params=matching_params, **kwargs)
         self.input_element = input_element
-        self.input_variable = input_variable
         self.input_element_index = input_element_index
         self.output_element = output_element
-        self.output_variable = output_variable
         self.output_element_index = output_element_index
-        self.characteristic = characteristic
+        self.characteristic_index = characteristic_index
         self.tol = tol
         self.applied = False
         self.values = None
-        self.input_object_attribute = None
-        self.output_object_attribute = None
-        # write functions faster, depending on type of self.output_element_index
-        if self.output_variable.startswith('object'):
-            # write to object attribute
-            self.write = "object"
-            self.output_object_attribute = self.output_variable.split(".")[1]
-        elif isinstance(self.output_element_index, int):
-            # use .at if element_index is integer for speedup
-            self.write = "single_index"
-        else:
-            # use common .loc
-            self.write = "loc"
-
-        # read functions faster, depending on type of self.input_element_index
-        if self.input_variable.startswith('object'):
-            # write to object attribute
-            self.read = "object"
-            self.input_object_attribute = self.input_variable.split(".")[1]
-        elif isinstance(self.input_element_index, int):
-            # use .at if element_index is integer for speedup
-            self.read = "single_index"
-        else:
-            # use common .loc
-            self.read = "loc"
+        self.write_flag, self.output_variable = _detect_read_write_flag(net, output_element, output_element_index,
+                                                                        output_variable)
+        self.read_flag, self.input_variable = _detect_read_write_flag(net, input_element, input_element_index,
+                                                                      input_variable)
 
     def initialize_control(self, net):
         """
@@ -103,15 +82,18 @@ class CharacteristicControl(Controller):
         Actual implementation of the convergence criteria: If controller is applied, it can stop
         """
         # read input values
-        input_values = self.read_from_net(net)
+        input_values = read_from_net(net, self.input_element, self.input_element_index, self.input_variable,
+                                     self.read_flag)
         # calculate set values
-        self.values = self.characteristic(input_values)
+        self.values = net.characteristic.object.at[self.characteristic_index](input_values)
         # read previous set values
-        output_values = self.read_from_net(net, output=True)
+        output_values = read_from_net(net, self.output_element, self.output_element_index, self.output_variable,
+                                      self.write_flag)
         # compare old and new set values
         diff = self.values - output_values
         # write new set values
-        self.write_to_net(net)
+        write_to_net(net, self.output_element, self.output_element_index, self.output_variable, self.values,
+                     self.write_flag)
         return self.applied and np.all(np.abs(diff) < self.tol)
 
     def control_step(self, net):
@@ -119,87 +101,6 @@ class CharacteristicControl(Controller):
         Set applied to true to make sure it runs at least once
         """
         self.applied = True
-
-    def read_from_net(self, net, output=False):
-        """
-        Writes to self.element at index self.element_index in the column self.variable the data
-        from self.values
-        """
-        # write functions faster, depending on type of self.element_index
-        if output:
-            element = self.output_element
-            variable = self.output_variable
-            object_attribute = self.output_object_attribute
-            index = self.output_element_index
-            flag = self.write
-        else:
-            element = self.input_element
-            variable = self.input_variable
-            object_attribute = self.input_object_attribute
-            index = self.input_element_index
-            flag = self.read
-
-        if flag == "single_index":
-            return self._read_from_single_index(net, element, variable, index)
-        elif flag == "loc":
-            return self._read_with_loc(net, element, variable, index)
-        elif flag == "object":
-            return self._read_from_object_attribute(net, element, object_attribute, index)
-        else:
-            raise NotImplementedError("CharacteristicControl: self.read must be one of "
-                                      "['single_index', 'all_index', 'loc']")
-
-    def write_to_net(self, net):
-        """
-        Writes to self.element at index self.element_index in the column self.variable the data
-        from self.values
-        """
-        # write functions faster, depending on type of self.element_index
-        if self.write == "single_index":
-            self._write_to_single_index(net)
-        elif self.write == "all_index":
-            self._write_to_all_index(net)
-        elif self.write == "loc":
-            self._write_with_loc(net)
-        elif self.write == "object":
-            self._write_to_object_attribute(net)
-        else:
-            raise NotImplementedError("CharacteristicControl: self.write must be one of "
-                                      "['single_index', 'all_index', 'loc']")
-
-    def _write_to_single_index(self, net):
-        net[self.output_element].at[self.output_element_index, self.output_variable] = self.values
-
-    def _write_to_all_index(self, net):
-        net[self.output_element].loc[:, self.output_variable] = self.values
-
-    def _write_with_loc(self, net):
-        net[self.output_element].loc[self.output_element_index, self.output_variable] = self.values
-
-    def _write_to_object_attribute(self, net):
-        if hasattr(self.output_element_index, '__iter__') and len(self.output_element_index) > 1:
-            for idx, val in zip(self.output_element_index, self.values):
-                setattr(net[self.output_element]["object"].at[idx], self.output_object_attribute, val)
-        else:
-            setattr(net[self.output_element]["object"].at[self.output_element_index], self.output_object_attribute, self.values)
-
-    def _read_from_single_index(self, net, element, variable, index):
-        return net[element].at[index, variable]
-
-    def _read_from_all_index(self, net, element, variable):
-        return net[element].loc[:, variable]
-
-    def _read_with_loc(self, net, element, variable, index):
-        return net[element].loc[index, variable]
-
-    def _read_from_object_attribute(self, net, element, object_attribute, index):
-        if hasattr(index, '__iter__') and len(index) > 1:
-            values = np.array(shape=index.shape)
-            for i, idx in enumerate(index):
-                values[i] = setattr(net[element]["object"].at[idx], object_attribute)
-        else:
-            values = getattr(net[element]["object"].at[index], object_attribute)
-        return values
 
     def __str__(self):
         return super().__str__() + " [%s.%s.%s.%s]" % (self.input_element, self.input_variable, self.output_element, self.output_variable)

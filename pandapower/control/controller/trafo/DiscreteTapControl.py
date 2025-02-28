@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-
+import numpy as np
 from pandapower.control.controller.trafo_control import TrafoController
+from pandapower.toolbox import read_from_net, write_to_net
 
 class DiscreteTapControl(TrafoController):
     """
@@ -32,20 +33,18 @@ class DiscreteTapControl(TrafoController):
     """
 
     def __init__(self, net, tid, vm_lower_pu, vm_upper_pu, side="lv", trafotype="2W",
-                 tol=1e-3, in_service=True, order=0, drop_same_existing_ctrl=False,
+                 tol=1e-3, in_service=True, level=0, order=0, drop_same_existing_ctrl=False,
                  matching_params=None, **kwargs):
         if matching_params is None:
             matching_params = {"tid": tid, 'trafotype': trafotype}
-        super(DiscreteTapControl, self).__init__(
-            net, tid, side, tol=tol, in_service=in_service, order=order, trafotype=trafotype,
-            drop_same_existing_ctrl=drop_same_existing_ctrl, matching_params=matching_params,
-            **kwargs)
+        super().__init__(net, tid, side, tol=tol, in_service=in_service, level=level, order=order, trafotype=trafotype,
+                         drop_same_existing_ctrl=drop_same_existing_ctrl, matching_params=matching_params,
+                         **kwargs)
 
         self.vm_lower_pu = vm_lower_pu
         self.vm_upper_pu = vm_upper_pu
 
-        self.tap_pos = net[self.trafotable].at[tid, "tap_pos"]
-        self.vm_delta_pu = net[self.trafotable].at[tid, "tap_step_percent"] / 100. * .5 + self.tol
+        self.vm_delta_pu = self.tap_step_percent / 100. * .5 + self.tol
         self.vm_set_pu = kwargs.get("vm_set_pu")
 
     @classmethod
@@ -83,50 +82,48 @@ class DiscreteTapControl(TrafoController):
         self.vm_upper_pu = value + self.vm_delta_pu
 
     def initialize_control(self, net):
+        super().initialize_control(net)
         if hasattr(self, 'vm_set_pu') and self.vm_set_pu is not None:
-            self.vm_delta_pu = net[self.trafotable].at[self.tid, "tap_step_percent"] / 100. * .5 + self.tol
+            self.vm_delta_pu = self.tap_step_percent / 100. * .5 + self.tol
 
     def control_step(self, net):
         """
         Implements one step of the Discrete controller, always stepping only one tap position up or down
         """
-        vm_pu = net.res_bus.at[self.controlled_bus, "vm_pu"]
-        self.tap_pos = net[self.trafotable].at[self.tid, "tap_pos"]
+        if self.nothing_to_do(net):
+            return
 
-        if self.tap_side_coeff * self.tap_sign == 1:
-            if vm_pu < self.vm_lower_pu and self.tap_pos > self.tap_min:
-                self.tap_pos -= 1
-            elif vm_pu > self.vm_upper_pu and self.tap_pos < self.tap_max:
-                self.tap_pos += 1
-        elif self.tap_side_coeff * self.tap_sign == -1:
-            if vm_pu < self.vm_lower_pu and self.tap_pos < self.tap_max:
-                self.tap_pos += 1
-            elif vm_pu > self.vm_upper_pu and self.tap_pos > self.tap_min:
-                self.tap_pos -= 1
+        vm_pu = read_from_net(net, "res_bus", self.controlled_bus, "vm_pu", self._read_write_flag)
+        self.tap_pos = read_from_net(net, self.trafotable, self.controlled_tid, "tap_pos", self._read_write_flag)
+
+        increment = np.where(self.tap_side_coeff * self.tap_sign == 1,
+                             np.where(np.logical_and(vm_pu < self.vm_lower_pu, self.tap_pos > self.tap_min), -1,
+                                      np.where(np.logical_and(vm_pu > self.vm_upper_pu, self.tap_pos < self.tap_max), 1, 0)),
+                             np.where(np.logical_and(vm_pu < self.vm_lower_pu, self.tap_pos < self.tap_max), 1,
+                                      np.where(np.logical_and(vm_pu > self.vm_upper_pu, self.tap_pos > self.tap_min), -1, 0)))
+
+        self.tap_pos += increment
 
         # WRITE TO NET
-        net[self.trafotable].at[self.tid, "tap_pos"] = self.tap_pos
+        write_to_net(net, self.trafotable, self.controlled_tid, 'tap_pos', self.tap_pos, self._read_write_flag)
 
     def is_converged(self, net):
         """
         Checks if the voltage is within the desired voltage band, then returns True
         """
-        if not self.tid in net[self.trafotable].index or \
-           not net[self.trafotable].at[self.tid, 'in_service']:
+        if self.nothing_to_do(net):
             return True
-        vm_pu = net.res_bus.at[self.controlled_bus, "vm_pu"]
-        self.tap_pos = net[self.trafotable].at[self.tid, "tap_pos"]
 
-        # render this controller converged if he cant reach the desired point
-        if self.tap_side_coeff * self.tap_sign == 1:
-            if vm_pu < self.vm_lower_pu and self.tap_pos == self.tap_min:
-                return True
-            elif vm_pu > self.vm_upper_pu and self.tap_pos == self.tap_max:
-                return True
-        elif self.tap_side_coeff * self.tap_sign == -1:
-            if vm_pu < self.vm_lower_pu and self.tap_pos == self.tap_max:
-                return True
-            elif vm_pu > self.vm_upper_pu and self.tap_pos == self.tap_min:
-                return True
-        return self.vm_lower_pu < vm_pu < self.vm_upper_pu
+        vm_pu = read_from_net(net, "res_bus", self.controlled_bus, "vm_pu", self._read_write_flag)
+        self.tap_pos = read_from_net(net, self.trafotable, self.controlled_tid, "tap_pos", self._read_write_flag)
+
+        reached_limit = np.where(self.tap_side_coeff * self.tap_sign == 1,
+                                 (vm_pu < self.vm_lower_pu) & (self.tap_pos == self.tap_min) |
+                                 (vm_pu > self.vm_upper_pu) & (self.tap_pos == self.tap_max),
+                                 (vm_pu < self.vm_lower_pu) & (self.tap_pos == self.tap_max) |
+                                 (vm_pu > self.vm_upper_pu) & (self.tap_pos == self.tap_min))
+
+        converged = np.logical_or(reached_limit, np.logical_and(self.vm_lower_pu < vm_pu, vm_pu < self.vm_upper_pu))
+
+        return np.all(converged)
 

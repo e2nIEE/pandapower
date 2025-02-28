@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
 from pandapower.control.controller.trafo_control import TrafoController
+from pandapower.toolbox import read_from_net, write_to_net
 
 
 class ContinuousTapControl(TrafoController):
@@ -43,64 +44,70 @@ class ContinuousTapControl(TrafoController):
                          drop_same_existing_ctrl=drop_same_existing_ctrl,
                          matching_params=matching_params, **kwargs)
 
-        t = net[self.trafotable]
-        b = net.bus
-        if trafotype == "2W":
-            self.t_nom = t.at[tid, "vn_lv_kv"] / t.at[tid, "vn_hv_kv"] * \
-                         b.at[net[self.trafotable].at[tid, "hv_bus"], "vn_kv"] / \
-                         b.at[net[self.trafotable].at[tid, "lv_bus"], "vn_kv"]
-        elif side == "lv":
-            self.t_nom = t.at[tid, "vn_lv_kv"] / t.at[tid, "vn_hv_kv"] * \
-                         b.at[net[self.trafotable].at[tid, "hv_bus"], "vn_kv"] / \
-                         b.at[net[self.trafotable].at[tid, "lv_bus"], "vn_kv"]
-        elif side == "mv":
-            self.t_nom = t.at[tid, "vn_mv_kv"] / t.at[tid, "vn_hv_kv"] * \
-                         b.at[net[self.trafotable].at[tid, "hv_bus"], "vn_kv"] / \
-                         b.at[net[self.trafotable].at[tid, "mv_bus"], "vn_kv"]
-
+        self._set_t_nom(net)
         self.check_tap_bounds = check_tap_bounds
         self.vm_set_pu = vm_set_pu
-        self.trafotype = trafotype
-        if trafotype == "2W":
-            net.trafo["tap_pos"] = net.trafo.tap_pos.astype(float)
-        elif trafotype == "3W":
-            net.trafo3w["tap_pos"] = net.trafo3w.tap_pos.astype(float)
-        self.tol = tol
+
+    def _set_t_nom(self, net):
+        vn_hv_kv = read_from_net(net, self.trafotable, self.controlled_tid, 'vn_hv_kv', self._read_write_flag)
+        hv_bus = read_from_net(net, self.trafotable, self.controlled_tid, 'hv_bus', self._read_write_flag)
+        vn_hv_bus_kv = read_from_net(net, "bus", hv_bus, 'vn_kv', self._read_write_flag)
+
+        if self.trafotype == "3W" and self.side == "mv":
+            vn_mv_kv = read_from_net(net, self.trafotable, self.controlled_tid, 'vn_mv_kv', self._read_write_flag)
+            mv_bus = read_from_net(net, self.trafotable, self.controlled_tid, 'mv_bus', self._read_write_flag)
+            vn_mv_bus_kv = read_from_net(net, "bus", mv_bus, 'vn_kv', self._read_write_flag)
+            self.t_nom = vn_mv_kv / vn_hv_kv * vn_hv_bus_kv / vn_mv_bus_kv
+        else:
+            vn_lv_kv = read_from_net(net, self.trafotable, self.controlled_tid, 'vn_lv_kv', self._read_write_flag)
+            lv_bus = read_from_net(net, self.trafotable, self.controlled_tid, 'lv_bus', self._read_write_flag)
+            vn_lv_bus_kv = read_from_net(net, "bus", lv_bus, 'vn_kv', self._read_write_flag)
+            self.t_nom = vn_lv_kv / vn_hv_kv * vn_hv_bus_kv / vn_lv_bus_kv
+
+    def initialize_control(self, net):
+        super().initialize_control(net)
+        if not self.nothing_to_do(net):
+            self._set_t_nom(net)  # in case some of the trafo elements change their in_service in between runs
 
     def control_step(self, net):
         """
         Implements one step of the ContinuousTapControl
         """
-        delta_vm_pu = net.res_bus.at[self.controlled_bus, "vm_pu"] - self.vm_set_pu
+        if self.nothing_to_do(net):
+            return
+
+        delta_vm_pu = read_from_net(net, "res_bus", self.controlled_bus, 'vm_pu', self._read_write_flag) - self.vm_set_pu
         tc = delta_vm_pu / self.tap_step_percent * 100 / self.t_nom
-        self.tap_pos += tc * self.tap_side_coeff * self.tap_sign
+        self.tap_pos = self.tap_pos + tc * self.tap_side_coeff * self.tap_sign
         if self.check_tap_bounds:
             self.tap_pos = np.clip(self.tap_pos, self.tap_min, self.tap_max)
 
         # WRITE TO NET
-        net[self.trafotable].at[self.tid, "tap_pos"] = self.tap_pos
+        # necessary in case the dtype of the column is int
+        if net[self.trafotable].tap_pos.dtype != "float":
+            net[self.trafotable].tap_pos = net[self.trafotable].tap_pos.astype(float)
+        write_to_net(net, self.trafotable, self.controlled_tid, "tap_pos", self.tap_pos, self._read_write_flag)
 
     def is_converged(self, net):
         """
         The ContinuousTapControl is converged, when the difference of the voltage between control steps is smaller
         than the Tolerance (tol).
         """
-
-        if not net[self.trafotable].at[self.tid, 'in_service']:
+        if self.nothing_to_do(net):
             return True
-        vm_pu = net.res_bus.at[self.controlled_bus, "vm_pu"]
-        self.tap_pos = net[self.trafotable].at[self.tid, 'tap_pos']
+
+        vm_pu = read_from_net(net, "res_bus", self.controlled_bus, "vm_pu", self._read_write_flag)
+        self.tap_pos = read_from_net(net, self.trafotable, self.controlled_tid, "tap_pos", self._read_write_flag)
         difference = 1 - self.vm_set_pu / vm_pu
 
         if self.check_tap_bounds:
-            if self.tap_side_coeff * self.tap_sign == 1:
-                if vm_pu < self.vm_set_pu and self.tap_pos == self.tap_min:
-                    return True
-                elif vm_pu > self.vm_set_pu and self.tap_pos == self.tap_max:
-                    return True
-            elif self.tap_side_coeff * self.tap_sign == -1:
-                if vm_pu > self.vm_set_pu and self.tap_pos == self.tap_min:
-                    return True
-                elif vm_pu < self.vm_set_pu and self.tap_pos == self.tap_max:
-                    return True
-        return abs(difference) < self.tol
+            reached_limit = np.where(self.tap_side_coeff * self.tap_sign == 1,
+                                     (vm_pu < self.vm_set_pu) & (self.tap_pos == self.tap_min) |
+                                     (vm_pu > self.vm_set_pu) & (self.tap_pos == self.tap_max),
+                                     (vm_pu < self.vm_set_pu) & (self.tap_pos == self.tap_max) |
+                                     (vm_pu > self.vm_set_pu) & (self.tap_pos == self.tap_min))
+            converged = np.logical_or(reached_limit, np.abs(difference) < self.tol)
+        else:
+            converged = np.abs(difference) < self.tol
+
+        return np.all(converged)
