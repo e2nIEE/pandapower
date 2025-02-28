@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -27,6 +27,8 @@ def _extract_results(net, ppc):
     _get_bus_results(net, ppc, bus_pq)
     if net._options["mode"] == "opf":
         _get_costs(net, ppc)
+    #else:
+    #    _remove_costs(net)
 
 
 def _extract_results_3ph(net, ppc0, ppc1, ppc2):
@@ -48,12 +50,17 @@ def _extract_results_se(net, ppc):
     _set_buses_out_of_service(ppc)
     bus_lookup_aranged = _get_aranged_lookup(net)
     _get_bus_v_results(net, ppc, suffix="_est")
-    bus_pq = np.zeros(shape=(len(net["bus"].index), 2), dtype=np.float)
+    bus_pq = np.zeros(shape=(len(net["bus"].index), 2), dtype=float)
     _get_branch_results(net, ppc, bus_lookup_aranged, bus_pq, suffix="_est")
 
 
 def _get_costs(net, ppc):
     net.res_cost = ppc['obj']
+
+
+def _remove_costs(net):
+    if "res_cost" in net.keys():
+        del net["res_cost"]
 
 
 def _get_aranged_lookup(net):
@@ -101,7 +108,7 @@ def empty_res_element(net, element, suffix=None):
     if res_empty_element in net:
         net[res_element] = net[res_empty_element].copy()
     else:
-        net[res_element] = pd.DataFrame()
+        net[res_element] = pd.DataFrame(index=pd.Index([], dtype=int))
 
 
 def init_element(net, element, suffix=None):
@@ -123,11 +130,12 @@ def get_relevant_elements(mode="pf"):
     if mode == "pf" or mode == "opf":
         return ["bus", "line", "trafo", "trafo3w", "impedance", "ext_grid",
                 "load", "motor", "sgen", "storage", "shunt", "gen", "ward",
-                "xward", "dcline", "asymmetric_load", "asymmetric_sgen"]
+                "xward", "dcline", "asymmetric_load", "asymmetric_sgen",
+                "switch"]
     elif mode == "sc":
-        return ["bus", "line", "trafo", "trafo3w", "ext_grid", "gen", "sgen"]
+        return ["bus", "line", "trafo", "trafo3w", "ext_grid", "gen", "sgen", "switch"]
     elif mode == "se":
-        return ["bus", "line", "trafo", "trafo3w", "impedance"]
+        return ["bus", "line", "trafo", "trafo3w", "impedance", "switch"]
     elif mode == "pf_3ph":
         return ["bus", "line", "trafo", "ext_grid", "shunt",
                 "load", "sgen", "storage", "asymmetric_load", "asymmetric_sgen"]
@@ -145,6 +153,8 @@ def reset_results(net, mode="pf"):
     suffix = suffix_mode.get(mode, None)
     for element in elements:
         empty_res_element(net, element, suffix)
+    if "res_cost" in net.keys():
+        del net["res_cost"]
 
 
 def _ppci_bus_to_ppc(result, ppc):

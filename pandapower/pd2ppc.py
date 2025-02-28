@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
@@ -119,6 +119,8 @@ def _pd2ppc(net, sequence=None):
         _add_ext_grid_sc_impedance(net, ppc)
         # Generator impedance are seperately added in sc module
         _add_motor_impedances_ppc(net, ppc)
+
+        # TODO Roman: Implementation wind generation units IEC 60909-2016
     else:
         _calc_pq_elements_and_add_on_ppc(net, ppc, sequence=sequence)
         # adds P and Q for shunts, wards and xwards (to PQ nodes)
@@ -174,20 +176,20 @@ def _pd2ppc(net, sequence=None):
 
 def _init_ppc(net, mode="pf", sequence=None):
     # init empty ppc
-    ppc = {"baseMVA": net.sn_mva
-        , "version": 2
-        , "bus": np.array([], dtype=float)
-        , "branch": np.array([], dtype=np.complex128)
-        , "gen": np.array([], dtype=float)
-        , "internal": {
-            "Ybus": np.array([], dtype=np.complex128)
-            , "Yf": np.array([], dtype=np.complex128)
-            , "Yt": np.array([], dtype=np.complex128)
-            , "branch_is": np.array([], dtype=bool)
-            , "gen_is": np.array([], dtype=bool)
-            , "DLF": np.array([], dtype=np.complex128)
-            , "buses_ord_bfs_nets": np.array([], dtype=float)
-        }
+    ppc = {"baseMVA": net.sn_mva,
+           "version": 2,
+           "bus": np.array([], dtype=float),
+           "branch": np.array([], dtype=np.complex128),
+           "gen": np.array([], dtype=float),
+           "internal": {
+               "Ybus": np.array([], dtype=np.complex128),
+               "Yf": np.array([], dtype=np.complex128),
+               "Yt": np.array([], dtype=np.complex128),
+               "branch_is": np.array([], dtype=bool),
+               "gen_is": np.array([], dtype=bool),
+               "DLF": np.array([], dtype=np.complex128),
+               "buses_ord_bfs_nets": np.array([], dtype=float)
+               }
            }
     if mode == "opf":
         # additional fields in ppc
@@ -308,7 +310,7 @@ def _ppc2ppci(ppc, net, ppci=None):
     else:
         ref_gens = np.array([])
     if np.any(net.gen.slack.values[net._is_elements["gen"]]):
-        slack_gens = np.array(net.gen.index)[net._is_elements["gen"] \
+        slack_gens = np.array(net.gen.index)[net._is_elements["gen"]
                                              & net.gen["slack"].values]
         ref_gens = np.append(ref_gens, net._pd2ppc_lookups["gen"][slack_gens])
     ppci["internal"]["ref_gens"] = ref_gens.astype(int)

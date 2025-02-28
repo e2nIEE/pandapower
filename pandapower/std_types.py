@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -8,7 +8,7 @@ import pandas as pd
 import warnings
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 
@@ -19,9 +19,12 @@ def create_std_type(net, data, name, element="line", overwrite=True, check_requi
     """
     Creates type data in the type database. The parameters that are used for
     the loadflow have to be at least contained in data. These parameters are:
+
         - c_nf_per_km, r_ohm_per_km, x_ohm_per_km and max_i_ka (for lines)
         - sn_mva, vn_hv_kv, vn_lv_kv, vk_percent, vkr_percent, pfe_kw, i0_percent, shift_degree* (for transformers)
-        - sn_hv_mva, sn_mv_mva, sn_lv_mva, vn_hv_kv, vn_mv_kv, vn_lv_kv, vk_hv_percent, vk_mv_percent, vk_lv_percent, vkr_hv_percent, vkr_mv_percent, vkr_lv_percent, pfe_kw, i0_percent, shift_mv_degree*, shift_lv_degree* (for 3-winding-transformers)
+        - sn_hv_mva, sn_mv_mva, sn_lv_mva, vn_hv_kv, vn_mv_kv, vn_lv_kv, vk_hv_percent, vk_mv_percent, vk_lv_percent,
+            vkr_hv_percent, vkr_mv_percent, vkr_lv_percent, pfe_kw, i0_percent, shift_mv_degree*, shift_lv_degree* (for 3-winding-transformers)
+
     additional parameters can be added and later loaded into pandapower with the function
     "parameter_from_std_type".
 
@@ -65,8 +68,8 @@ def create_std_type(net, data, name, element="line", overwrite=True, check_requi
             "tap_step_degree": 0,
             "tap_step_percent": 2.5,
             "tap_phase_shifter": False,
-            "vk0_percent": 6, 
-            "vkr0_percent": 0.78125, 
+            "vk0_percent": 6,
+            "vkr0_percent": 0.78125,
             "mag0_percent": 100,
             "mag0_rx": 0.,
             "si0_hv_partial": 0.9,}, name='Unsymmetric_trafo_type', element="trafo")
@@ -312,13 +315,14 @@ def find_std_type_by_parameter(net, data, element="line", epsilon=0.):
 
 def add_zero_impedance_parameters(net):
     """
-    Adds all parameters required for zero sequence impedance calculations
+    Adds all parameters required for zero sequence impedance calculations.
+
     INPUT:
         **net** - pandapower network
-        
+
         zero sequence parameters of lines and transformers in pandapower networks
-        are entered using std_type. 
-        
+        are entered using std_type.
+
         This function adds them to the pandas dataframe
 
 
@@ -336,6 +340,16 @@ def add_zero_impedance_parameters(net):
     parameter_from_std_type(net, "x0_ohm_per_km")
     parameter_from_std_type(net, "endtemp_degree")
 
+    # add zero seq. parameters for ext_grid and apply standard values
+    if 's_sc_max_mva' not in net.ext_grid.columns:
+        net.ext_grid['s_sc_max_mva'] = 1000
+    if 'rx_max' not in net.ext_grid.columns:
+        net.ext_grid['rx_max'] = 0.1
+    if 'x0x_max' not in net.ext_grid.columns:
+        net.ext_grid['x0x_max'] = 1
+    if 'r0x0_max' not in net.ext_grid.columns:
+        net.ext_grid['r0x0_max'] = 0.1
+
 
 def add_temperature_coefficient(net, fill=None):
     """
@@ -348,9 +362,7 @@ def add_temperature_coefficient(net, fill=None):
     parameter_from_std_type(net, "alpha", fill=fill)
 
 
-def add_basic_std_types(net):
-    if "std_types" not in net:
-        net.std_types = {"line": {}, "trafo": {}, "trafo3w": {}}
+def basic_line_std_types():
 
     alpha_al = 4.03e-3
     alpha_cu = 3.93e-3
@@ -758,39 +770,41 @@ def add_basic_std_types(net):
         # quad bundle conductor. The c values are estimated.
         "490-AL1/64-ST1A 220.0":
         {"c_nf_per_km": 10,
-             "r_ohm_per_km": 0.059,
-             "x_ohm_per_km": 0.285,
-             "max_i_ka": 0.96,
-             "type": "ol",
-             "q_mm2": 490,
-             "alpha": alpha_al},
+         "r_ohm_per_km": 0.059,
+         "x_ohm_per_km": 0.285,
+         "max_i_ka": 0.96,
+         "type": "ol",
+         "q_mm2": 490,
+         "alpha": alpha_al},
         "679-AL1/86-ST1A 220.0":
         {"c_nf_per_km": 11.7,
-             "r_ohm_per_km": 0.042,
-             "x_ohm_per_km": 0.275,
-             "max_i_ka": 1.150,
-             "type": "ol",
-             "q_mm2": 679,
-             "alpha": alpha_al},
+         "r_ohm_per_km": 0.042,
+         "x_ohm_per_km": 0.275,
+         "max_i_ka": 1.150,
+         "type": "ol",
+         "q_mm2": 679,
+         "alpha": alpha_al},
         "490-AL1/64-ST1A 380.0":
         {"c_nf_per_km": 11,
-             "r_ohm_per_km": 0.059,
-             "x_ohm_per_km": 0.253,
-             "max_i_ka": 0.96,
-             "type": "ol",
-             "q_mm2": 490,
-             "alpha": alpha_al},
+         "r_ohm_per_km": 0.059,
+         "x_ohm_per_km": 0.253,
+         "max_i_ka": 0.96,
+         "type": "ol",
+         "q_mm2": 490,
+         "alpha": alpha_al},
         "679-AL1/86-ST1A 380.0":
         {"c_nf_per_km": 14.6,
-             "r_ohm_per_km": 0.042,
-             "x_ohm_per_km": 0.25,
-             "max_i_ka": 1.150,
-             "type": "ol",
-             "q_mm2": 679,
-             "alpha": alpha_al}
+         "r_ohm_per_km": 0.042,
+         "x_ohm_per_km": 0.25,
+         "max_i_ka": 1.150,
+         "type": "ol",
+         "q_mm2": 679,
+         "alpha": alpha_al}
     }
-    create_std_types(net, data=linetypes, element="line")
+    return linetypes
 
+
+def basic_trafo_std_types():
     trafotypes = {
         # derived from Oswald - Transformatoren - Vorlesungsskript Elektrische Energieversorgung I
         # another recommendable references for distribution transformers is Werth:
@@ -1042,8 +1056,10 @@ def add_basic_std_types(net):
             "tap_step_percent": 2.5,
             "tap_phase_shifter": False},
     }
-    create_std_types(net, data=trafotypes, element="trafo")
+    return trafotypes
 
+
+def basic_trafo3w_std_types():
     trafo3wtypes = {
         # generic trafo3w
         "63/25/38 MVA 110/20/10 kV":
@@ -1093,5 +1109,41 @@ def add_basic_std_types(net):
             "tap_max": 10,
             "tap_step_percent": 1.2}
     }
+    return trafo3wtypes
+
+
+def basic_std_types():
+    return {
+        "line"   : basic_line_std_types(),
+        "trafo"  : basic_trafo_std_types(),
+        "trafo3w": basic_trafo3w_std_types()
+    }
+
+
+def add_basic_std_types(net):
+    """Adds basic standard types of the pandapower library to the net provided. These standard types
+    are the same types that are available with output of `pandapower.create_empty_network()` and
+    `pandapower.create_empty_network(add_stdtypes=True)` respectively.
+
+    Parameters
+    ----------
+    net : pandapowerNet
+        pandapower net which should receive the basic standard types
+
+    Returns
+    -------
+    tuple of dictionaries
+        line, trafo and trafo3w types as dictionaries which have been added to the net.
+    """
+
+    if "std_types" not in net:
+        net.std_types = {"line": {}, "trafo": {}, "trafo3w": {}}
+
+    linetypes = basic_line_std_types()
+    trafotypes = basic_trafo_std_types()
+    trafo3wtypes = basic_trafo3w_std_types()
+
+    create_std_types(net, data=linetypes, element="line")
+    create_std_types(net, data=trafotypes, element="trafo")
     create_std_types(net, data=trafo3wtypes, element="trafo3w")
     return linetypes, trafotypes, trafo3wtypes
