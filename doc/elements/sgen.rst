@@ -63,7 +63,9 @@ Below is an example of a q_capability_curve_table populated for sample static ge
       be populated in order to consider the corresponding q_capability_curve_table values.
     - Each static generator supports only a single curve_dependency_table
     - In this version, only two types of static generator reactive power capability characteristics are supported:
-      "constantYValue" and "straightLineYValues".
+      1. constantYValue: The reactive power values are assumed constant until the next curve point and prior to the first curve point.
+      2. straightLineYValues: The reactive power values are assumed to be a straight line between values.  Also known as linear interpolation.
+    - Linear interpolation is employed to determine qmin and qmax based on the given active power dispatch for the above two curve types.
 
 The function pandapower.control.util.q_capability_curve_table_diagnostic is available to perform sanity checks
 on the static generator reactive power capability curve table. Additionally, the function
