@@ -4,7 +4,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -12,7 +12,7 @@
 """Runs a power flow.
 """
 
-from time import time
+from time import perf_counter
 from packaging import version
 from numpy import flatnonzero as find, r_, zeros, argmax, real, setdiff1d
 
@@ -30,7 +30,7 @@ from pandapower.pypower.fdpf import fdpf
 from pandapower.pypower.gausspf import gausspf
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 
@@ -46,7 +46,7 @@ def _runpf_pypower(ppci, options, **kwargs):
     """
 
     ##-----  run the power flow  -----
-    t0 = time()
+    t0 = perf_counter()
     # ToDo: Options should be extracted in every subfunction not here...
     init_va_degree, ac, numba, recycle, ppopt = _get_options(options, **kwargs)
 
@@ -60,7 +60,7 @@ def _runpf_pypower(ppci, options, **kwargs):
         ppci = _run_dc_pf(ppci)
         success = True
 
-    et = time() - t0
+    et = perf_counter() - t0
     ppci = _store_results_from_pf_in_ppci(ppci, bus, gen, branch, success, it, et)
     return ppci, success
 

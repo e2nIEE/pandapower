@@ -4,15 +4,15 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 """Updates bus, gen, branch data structures to match power flow soln.
 """
 
-from numpy import conj, zeros, complex128, abs, float64, sqrt, real
-from numpy import finfo, c_, flatnonzero as find
+from numpy import conj, zeros, complex128, abs, float64, sqrt, real, isin, arange
+from numpy import finfo, c_, flatnonzero as find, setdiff1d, r_
 
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, PF, PT, QF, QT
 from pandapower.pypower.idx_bus import PD, QD
@@ -27,7 +27,7 @@ except ImportError:
 EPS = finfo(float).eps
 
 
-def pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, ref_gens, Ibus=None):
+def pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, ref_gens, Ibus=None, limited_gens=None):    
     """Updates bus, gen, branch data structures to match power flow soln.
 
     @author: Ray Zimmerman (PSERC Cornell)
@@ -37,14 +37,22 @@ def pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, ref_gens, Ibus=None)
     on = find(gen[:, GEN_STATUS] > 0)  # which generators are on?
     gbus = gen[on, GEN_BUS].astype(int)  # what buses are they at?
 
+    # xward: add ref buses that are not at the generators
+    xbus = setdiff1d(ref, gbus)
+
     # compute total injected bus powers
     Ibus = zeros(len(V)) if Ibus is None else Ibus
-    Sbus = V[gbus] * conj(Ybus[gbus, :] * V - Ibus[gbus])
+    Sbus = V * conj(Ybus * V - Ibus)
 
     _update_v(bus, V)
     # update gen results
-    _update_q(baseMVA, bus, gen, gbus, Sbus, on)
-    _update_p(baseMVA, bus, gen, ref, gbus, on, Sbus, ref_gens)
+    _update_q(baseMVA, bus, gen, gbus, Sbus[gbus], on)
+
+    if limited_gens is not None and len(limited_gens) > 0:
+        on = find((gen[:, GEN_STATUS] > 0) | isin(arange(len(gen)), limited_gens))
+        gbus = gen[on, GEN_BUS].astype(int)
+
+    _update_p(baseMVA, bus, gen, ref, gbus, Sbus, ref_gens)
 
     # ----- update/compute branch power flows -----
     branch = _update_branch_flows(Yf, Yt, V, baseMVA, branch)
@@ -52,7 +60,7 @@ def pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, ref_gens, Ibus=None)
     return bus, gen, branch
 
 
-def pf_solution_single_slack(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, ref_gens, Ibus=None):
+def pf_solution_single_slack(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, ref_gens, Ibus=None, limited_gens=None):
     """
     faster version of pfsoln for a grid with a single slack bus
 

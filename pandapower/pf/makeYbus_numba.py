@@ -4,7 +4,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -165,5 +165,8 @@ def makeYbus(baseMVA, bus, branch):
     Yt = coo_matrix((Yt_x, (i, col_Y)), (nl, nb)).tocsr()
     Yx, Yj, Yp, nnz = gen_Ybus(Yf_x, Yt_x, Ysh, col_Y, f, t, np.argsort(f), np.argsort(t), nb, nl,
                                np.arange(nl, dtype=np.int64))
-    Ybus = csr_matrix((np.resize(Yx, nnz), np.resize(Yj, nnz), Yp))
+    Ybus = csr_matrix((np.resize(Yx, nnz), np.resize(Yj, nnz), Yp), (nb, nb))
+    for Y in (Ybus, Yf, Yt):
+        Y.sort_indices()
+        Y.eliminate_zeros()
     return Ybus, Yf, Yt
