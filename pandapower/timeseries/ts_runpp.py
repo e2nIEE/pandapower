@@ -27,7 +27,7 @@ from pandapower.results_gen import _get_gen_results
 from pandapower.timeseries.output_writer import OutputWriter
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 
@@ -64,7 +64,7 @@ class TimeSeriesRunpp:
         Sbus = makeSbus(self.baseMVA, bus, gen)
 
         # run the newton power  flow
-        V, success, _, _, _, _ = nr_pf.newtonpf(self.Ybus, Sbus, self.V, self.pv, self.pq, self.ppci, options)
+        V, success, _, _, _, _, _ = nr_pf.newtonpf(self.Ybus, Sbus, self.V, self.pv, self.pq, self.ppci, options, )
 
         if not success:
             logger.warning("Loadflow not converged")

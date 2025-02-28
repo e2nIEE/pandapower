@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import copy
 import functools
 import os
-from time import time
+from time import perf_counter
 from types import FunctionType
 
 import numpy as np
@@ -20,7 +20,7 @@ from pandapower.timeseries.read_batch_results import v_to_i_s, get_batch_line_re
     get_batch_trafo_results, get_batch_bus_results
 
 try:
-    import pplog
+    import pandaplan.core.pplog as pplog
 except ImportError:
     import logging as pplog
 logger = pplog.getLogger(__name__)
@@ -57,7 +57,7 @@ class OutputWriter(JSONSerializableClass):
         **output_path** (string, None) - Path to a folder where the output is written to.
 
         **output_file_type** (string, ".p") - output filetype to use.
-        Allowed file extensions: [*.xls, *.xlsx, *.csv, *.p, *.json]
+        Allowed file extensions: [.xls, .xlsx, .csv, .p, .json]
         Note: XLS has a maximum number of 256 rows.
 
         **csv_separator** (string, ";") - The separator used when writing to a csv file
@@ -108,7 +108,7 @@ class OutputWriter(JSONSerializableClass):
         # output list contains functools.partial with tables, variables, index...
         self.output_list = []
         # real time is tracked to save results to disk regularly
-        self.cur_realtime = time()
+        self.cur_realtime = perf_counter()
         # total time steps to calculate
         self.time_steps = time_steps
         # add output_writer to net
@@ -248,7 +248,7 @@ class OutputWriter(JSONSerializableClass):
     def dump(self, net, recycle_options=None):
         append = False if self.time_step == self.time_steps[-1] else True
         self.dump_to_file(net, append=append, recycle_options=recycle_options)
-        self.cur_realtime = time()  # reset real time counter for next period
+        self.cur_realtime = perf_counter()  # reset real time counter for next period
 
     def save_results(self, net, time_step, pf_converged, ctrl_converged, recycle_options=None):
         # Saves the results of the current time step to a matrix,
@@ -268,7 +268,7 @@ class OutputWriter(JSONSerializableClass):
 
         # if write time is exceeded or it is the last time step, data is written
         if self.write_time is not None:
-            if time() - self.cur_realtime > self.write_time:
+            if perf_counter() - self.cur_realtime > self.write_time:
                 self.dump(net)
         if self.time_step == self.time_steps[-1]:
             self.dump(net, recycle_options)
@@ -404,7 +404,7 @@ class OutputWriter(JSONSerializableClass):
 
         if np.any(pd.isnull(index)):
             # check how many elements there are in net
-            index = net[table.split("res_")[-1]].index
+            index = net[table.split("res_")[-1].replace("_3ph", "")].index
         if not hasattr(index, '__iter__'):
             index = [index]
         if isinstance(index, (np.ndarray, pd.Index, pd.Series)):
