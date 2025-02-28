@@ -292,6 +292,7 @@ def test_create_buses():
     for i, ind in enumerate(b3):
         assert net.bus.at[ind, "geo"] == geojson.dumps(geojson.Point(geodata[i]), sort_keys=True)
 
+
 def test_create_lines():
     # standard
     net = create_empty_network()
@@ -1351,7 +1352,7 @@ def test_create_switches_raise_errorexcept():
             z_ohm=0.0,
         )
     with pytest.raises(
-        UserWarning, match=r"Cannot attach to elements \{12398\}, they do not exist"
+            UserWarning, match=r"Cannot attach to elements \{12398\}, they do not exist"
     ):
         create_switches(
             net,
@@ -1361,7 +1362,7 @@ def test_create_switches_raise_errorexcept():
             z_ohm=0.0,
         )
     with pytest.raises(
-        UserWarning, match=r"Cannot attach to buses \{13098\}, they do not exist"
+            UserWarning, match=r"Cannot attach to buses \{13098\}, they do not exist"
     ):
         create_switches(
             net,
@@ -1605,7 +1606,7 @@ def test_create_sgens():
     assert all(net.sgen.rx.values == 0.4)
     assert all(net.sgen.current_source)
     assert all(net.sgen.test_kwargs == "dummy_string")
-    assert all(net.sgen.id_q_capability_curve_characteristic.values == [0,1,2])
+    assert all(net.sgen.id_q_capability_curve_characteristic.values == [0, 1, 2])
     assert all(net.sgen.curve_style == "straightLineYValues")
     assert all(net.sgen.curve_dependency_table == [False, False, False])
 
@@ -1682,7 +1683,7 @@ def test_create_gens():
         controllable=[True, False, False],
         id_q_capability_curve_characteristic=[0, 1, 2],
         curve_dependency_table=False,
-        curve_style= ["straightLineYValues", "straightLineYValues", "straightLineYValues"],
+        curve_style=["straightLineYValues", "straightLineYValues", "straightLineYValues"],
         max_p_mw=0.2,
         min_p_mw=[0, 0.1, 0],
         max_q_mvar=0.2,
@@ -1716,9 +1717,10 @@ def test_create_gens():
     assert all(net.gen.rdss_pu.values == 0.1)
     assert all(net.gen.cos_phi.values == 1.0)
     assert all(net.gen.test_kwargs == "dummy_string")
-    assert all(net.gen.id_q_capability_curve_characteristic.values == [0,1,2])
+    assert all(net.gen.id_q_capability_curve_characteristic.values == [0, 1, 2])
     assert all(net.gen.curve_style == "straightLineYValues")
     assert all(net.gen.curve_dependency_table == [False, False, False])
+
 
 def test_create_gens_raise_errorexcept():
     net = create_empty_network()
@@ -1784,6 +1786,7 @@ def test_create_gens_raise_errorexcept():
             cos_phi=1.0,
             index=g,
         )
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

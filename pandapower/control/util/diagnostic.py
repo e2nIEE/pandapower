@@ -214,20 +214,18 @@ def q_capability_curve_table_diagnostic(net, element):
     warnings_count = 0
 
     # Quick checks for element table and required columns
-    if (len(net[element]) == 0 or
-            not {"id_q_capability_curve_characteristic", "curve_dependency_table", "curve_style"}.issubset(net[element].columns)
-            or (not net[element]['id_q_capability_curve_characteristic'].notna().any() and
-                not net[element]['curve_dependency_table'].any()) and not net[element]['curve_style'].any()):
+    if (len(net[element]) == 0 or not {"id_q_capability_curve_characteristic", "curve_dependency_table", "curve_style"}.
+            issubset(net[element].columns) or (not net[element]['id_q_capability_curve_characteristic'].notna().any()
+            and not net[element]['curve_dependency_table'].any()) and not net[element]['curve_style'].any()):
         logger.info(f"No {element} with Q capability curve table found.")
         return False
 
     # Check if both curve_dependency_table & id_q_capability_curve_characteristic columns are populated
-    mismatch = net[element][
-        (net[element]['curve_dependency_table'] & (
-                    (net[element]['id_q_capability_curve_characteristic'].isna()) | (net[element]['curve_style'].isna()))) |
-        (~net[element]['curve_dependency_table'] & (
-                    (net[element]['id_q_capability_curve_characteristic'].notna()) | (net[element]['curve_style'].notna())))
-        ].shape[0]
+    mismatch = net[element][(net[element]['curve_dependency_table'] & (
+                (net[element]['id_q_capability_curve_characteristic'].isna()) | (
+            net[element]['curve_style'].isna()))) | (~net[element]['curve_dependency_table'] & (
+                (net[element]['id_q_capability_curve_characteristic'].notna()) | (
+            net[element]['curve_style'].notna())))].shape[0]
     if mismatch != 0:
         warnings.warn(f"Found {mismatch} {element}(s) with mismatched between curve_style, "
                       f"curve_dependency_table and id_q_capability_curve_characteristic parameters populated. "
@@ -271,6 +269,7 @@ def q_capability_curve_table_diagnostic(net, element):
         warnings.warn(f"Not all id_q_capability_curve_characteristic values of {element} are present in the "
                       f"q_capability_curve_table.", category=UserWarning)
         warnings_count += 1
+    # Todo: add check for q_capability_curve_characteristics
 
     logger.info(f"{warnings_count} warnings were issued")
     return warnings_count == 0
