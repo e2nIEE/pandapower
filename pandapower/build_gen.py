@@ -490,11 +490,11 @@ def _calculate_qmin_qmax_from_q_capability_curve_characteristics(net, element):
         calc_q_min = np.vectorize(lambda func, p: func(p))(q_min_funcs, p_mw_values)
 
         if np.any(pd.isna(calc_q_min)) or np.any(pd.isna(calc_q_max)):
-            raise UserWarning(f"the curve_dependency_table of {element}(s) is(are) True, but the relevant "
-                              f"characteristic(s) value(s) is(are) None.")
+            logger.warning(f"the curve_dependency_table of {element} is True, but the relevant "
+                           f"characteristic value is None. So default Q limit value has been used in the load flow.")
 
-        # Assign the calculated values directly to the original DataFrame
+        # Assign the calculated values directly to replace the NaN values in the original DataFrame
         net[element].loc[element_data.index, ['max_q_mvar', 'min_q_mvar']] = np.column_stack((calc_q_max, calc_q_min))
     else:
-        raise UserWarning(f"One of {element}(s) id characteristic(s) or curve style(s) of {element}(s) is(are) "
-                          f"incorrect or not available even if the q_capability_curve_table is available.")
+        logger.warning(f"One of {element}(s) id characteristic(s) or curve style(s) of {element}(s) is(are) incorrect "
+                       f"or not available even if the q_capability_curve_table is available.")
