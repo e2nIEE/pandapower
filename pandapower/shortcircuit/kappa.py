@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -12,7 +12,7 @@ from scipy.sparse.linalg import factorized
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X
 from pandapower.pypower.idx_bus import BUS_I, GS, BS, BASE_KV
 
-from pandapower.shortcircuit.idx_bus import KAPPA, R_EQUIV, X_EQUIV, GS_P, BS_P, K_G
+from pandapower.pypower.idx_bus_sc import KAPPA, R_EQUIV, X_EQUIV, GS_P, BS_P, K_G
 from pandapower.shortcircuit.impedance import _calc_ybus, _calc_zbus, _calc_rx
 
 
@@ -29,7 +29,9 @@ def _add_kappa_to_ppc(net, ppc):
         kappa = _kappa_method_b(net, ppc)
     else:
         raise ValueError("Unknown kappa method %s - specify B or C"%kappa_method)
-    ppc["bus"][:, KAPPA] = kappa
+    # ppc["bus"][:, KAPPA] = kappa
+    # if kappa is already defined in a previous step (e.g. for sgen DFIG kappa is provided by the manufacturer)
+    ppc["bus"][:, KAPPA] = np.where(np.isnan(ppc["bus"][:, KAPPA]), kappa, ppc["bus"][:, KAPPA])
 
 
 def _kappa(rx):

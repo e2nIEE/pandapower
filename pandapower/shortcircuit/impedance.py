@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -10,7 +10,7 @@ import numpy as np
 from scipy.sparse.linalg import inv as inv_sparse
 from scipy.linalg import inv
 
-from pandapower.shortcircuit.idx_bus import R_EQUIV, X_EQUIV
+from pandapower.pypower.idx_bus_sc import R_EQUIV, X_EQUIV
 from pandapower.pypower.idx_bus import BASE_KV
 from pandapower.auxiliary import _clean_up
 
@@ -68,17 +68,17 @@ def _calc_zbus_diag(net, ppci, bus_idx=None):
     n_ppci_bus = ppci["bus"].shape[0]
 
     if bus_idx is None:
-        diagZ = np.zeros(n_ppci_bus, dtype=np.complex)
+        diagZ = np.zeros(n_ppci_bus, dtype=np.complex128)
         for i in range(n_ppci_bus):
-            b = np.zeros(n_ppci_bus, dtype=np.complex)
+            b = np.zeros(n_ppci_bus, dtype=np.complex128)
             b[i] = 1 + 0j
             diagZ[i] = ybus_fact(b)[i]
         ppci["internal"]["diagZ"] = diagZ
         return diagZ
     else:
-        diagZ = np.zeros(bus_idx.shape[0], dtype=np.complex)
+        diagZ = np.zeros(bus_idx.shape[0], dtype=np.complex128)
         for ix, b in enumerate(bus_idx):
-            rhs = np.zeros(n_ppci_bus, dtype=np.complex)
+            rhs = np.zeros(n_ppci_bus, dtype=np.complex128)
             rhs[b] = 1 + 0j
             diagZ[ix] = ybus_fact(rhs)[b]
         return diagZ
