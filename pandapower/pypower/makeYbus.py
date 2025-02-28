@@ -4,7 +4,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -71,6 +71,8 @@ def makeYbus(baseMVA, bus, branch):
     ## build Ybus
     Ybus = Cf.T * Yf + Ct.T * Yt + \
            csr_matrix((Ysh, (range(nb), range(nb))), (nb, nb))
+    Ybus.sort_indices()
+    Ybus.eliminate_zeros()
 
     return Ybus, Yf, Yt
 

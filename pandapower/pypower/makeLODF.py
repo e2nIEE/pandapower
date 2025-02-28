@@ -4,7 +4,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 # Builds the line outage distribution factor matrix.
@@ -54,7 +54,7 @@ def makeLODF(branch, PTDF):
     # Implies a N-1 contingency (No backup branch)
     den = (ones((nl, 1)) * h.T * -1 + 1.)
 
-    # Silence warning caused by np.NaN
+    # Silence warning caused by np.nan
     with np.errstate(divide='ignore', invalid='ignore'):
         LODF = (H / den)
 

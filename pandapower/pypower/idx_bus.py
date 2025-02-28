@@ -4,7 +4,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -84,5 +84,6 @@ MU_VMIN = 16   # Kuhn-Tucker multiplier on lower voltage limit (u/p.u.)
 # Additional pandapower extensions to ppc
 CID = 13   # coefficient of constant current load at rated voltage in range [0,1]
 CZD = 14   # coefficient of constant impedance load at rated voltage in range [0,1]
+SL_FAC = 15
 
-bus_cols = 15
+bus_cols = 16

@@ -4,7 +4,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 # Builds the DC PTDF matrix for a given choice of slack.
@@ -22,24 +22,25 @@ from .makeBdc import makeBdc
 
 
 def makePTDF(baseMVA, bus, branch, slack=None,
-             result_side=0, using_sparse_solver=False):
+             result_side=0, using_sparse_solver=False, branch_id=None, reduced=False):
     """Builds the DC PTDF matrix for a given choice of slack.
-
     Returns the DC PTDF matrix for a given choice of slack. The matrix is
     C{nbr x nb}, where C{nbr} is the number of branches and C{nb} is the
     number of buses. The C{slack} can be a scalar (single slack bus) or an
     C{nb x 1} column vector of weights specifying the proportion of the
     slack taken up at each bus. If the C{slack} is not specified the
     reference bus is used by default.
-
     For convenience, C{slack} can also be an C{nb x nb} matrix, where each
     column specifies how the slack should be handled for injections
     at that bus.
-
+    To restrict the PTDF computation to a subset of branches, supply a list of ppci branch indices in C{branch_id}.
+    If C{reduced==True}, the output is reduced to the branches given in C{branch_id}, otherwise the complement rows are set to NaN.
     @see: L{makeLODF}
-
     @author: Ray Zimmerman (PSERC Cornell)
     """
+    if reduced and branch_id is None:
+        raise ValueError("'reduced=True' is only valid if branch_id is not None")
+
     ## use reference bus for slack by default
     if slack is None:
         slack = find(bus[:, BUS_TYPE] == REF)
@@ -60,7 +61,10 @@ def makePTDF(baseMVA, bus, branch, slack=None,
     if any(bus[:, BUS_I] != arange(nb)):
         stderr.write('makePTDF: buses must be numbered consecutively')
 
-    H = zeros((nbr, nb))
+    if reduced:
+        H = zeros((len(branch_id), nb))
+    else:
+        H = zeros((nbr, nb))
     # compute PTDF for single slack_bus
     if using_sparse_solver:
         Bbus, Bf, _, _ = makeBdc(bus, branch, return_csr=False)
@@ -68,8 +72,13 @@ def makePTDF(baseMVA, bus, branch, slack=None,
         Bbus = Bbus.real
         if result_side == 1:
             Bf *= -1
-
-        if Bf.shape[0] < 2000:
+        if branch_id is not None:
+            Bf = Bf.real.toarray()
+            if reduced:
+                H[:, noslack] = spsolve(Bbus[ix_(noslack, noref)].T, Bf[ix_(branch_id, noref)].T).T
+            else:
+                H[ix_(branch_id, noslack)] = spsolve(Bbus[ix_(noslack, noref)].T, Bf[ix_(branch_id, noref)].T).T
+        elif Bf.shape[0] < 2000:
             Bf = Bf.real.toarray()
             H[:, noslack] = spsolve(Bbus[ix_(noslack, noref)].T, Bf[:, noref].T).T
         else:
@@ -82,7 +91,13 @@ def makePTDF(baseMVA, bus, branch, slack=None,
         Bbus, Bf = np.real(Bbus.toarray()), np.real(Bf.toarray())
         if result_side == 1:
             Bf *= -1
-        H[:, noslack] = solve(Bbus[ix_(noslack, noref)].T, Bf[:, noref].T).T
+        if branch_id is not None:
+            if reduced:
+                H[:, noslack] = solve(Bbus[ix_(noslack, noref)].T, Bf[ix_(branch_id, noref)].T).T
+            else:
+                H[ix_(branch_id, noslack)] = solve(Bbus[ix_(noslack, noref)].T, Bf[ix_(branch_id, noref)].T).T
+        else:
+            H[:, noslack] = solve(Bbus[ix_(noslack, noref)].T, Bf[:, noref].T).T
 
     ## distribute slack, if requested
     if not isscalar(slack):
