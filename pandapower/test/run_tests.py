@@ -1,19 +1,23 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 import argparse
 import os
+import shutil
+import tempfile
 from multiprocessing import cpu_count
 
 import pytest
 
+from pandapower.test import test_path, tutorials_path
+
 import pandapower as pp
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 test_dir = os.path.abspath(os.path.join(pp.pp_dir, "test"))
@@ -128,7 +132,48 @@ def start_tests(**settings):
         run_all_tests(parallel=parallel, n_cpu=n_cpu)
 
 
+def run_tutorials(parallel=False, n_cpu=None):
+    """
+    Function to execute all tutorials / jupyter notebooks.
+
+    Copies the whole "tutorials" folder to a temporary folder which is removed after all
+    notebooks have been executed. Errors in the notebooks show up as Failures.
+    For futher options on nbmake, visit
+    https://semaphoreci.com/blog/test-jupyter-notebooks-with-pytest-and-nbmake
+
+    :param parallel : If true and pytest-xdist is nistalled, jupyter notebooks are running in parallel
+    :type parallel : bool, default False
+    :param n_cpu : number of CPUs to run the files on in parallel. Only relevant for parallel runs.
+    :type n_cpu : int, default None
+    :return : No Output.
+
+    """
+    try:
+        import nbmake
+    except ImportError:
+        raise ModuleNotFoundError('Testing of jupyter notebooks requires the pytest extension '
+                                  '"nbmake". Please make sure that nbmake is installed correctly.')
+
+    # run notebooks in tempdir to safely remove output files
+    with tempfile.TemporaryDirectory() as tmpdir:
+        shutil.copytree(tutorials_path, os.path.join(tmpdir, 'tmp'))
+        test_dir = tmpdir
+
+        if parallel:
+            if n_cpu is None:
+                n_cpu = 'auto'
+            err = pytest.main(["--nbmake", f"-n={n_cpu}", test_dir])
+            if err == 4:
+                raise ModuleNotFoundError("Parallel testing not possible. Please make sure "
+                                          "that pytest-xdist is installed correctly.")
+            elif err > 2:
+                logger.error("Testing not successfully finished.")
+        else:
+            pytest.main(["--nbmake", test_dir])
+
+
 if __name__ == "__main__":
     # get some command line options
     settings = get_command_line_args()
     start_tests(**settings)
+    run_tutorials()

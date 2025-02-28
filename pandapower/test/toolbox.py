@@ -1,140 +1,38 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 import os
-from math import isnan
+from copy import deepcopy
 
 import numpy as np
-import pandas.testing as pdt
-import pytest
 import pandapower as pp
 
 
-def assert_mpc_equal(mpc1, mpc2):
-    for name in ['bus', 'gen', 'branch', 'baseMVA']:
-        try:
-            assert np.allclose(mpc1[name], mpc2[name])
-        except AssertionError:
-            print(
-                "Conversion from pandapower net to Matpower case failed creating %s table" % name)
-            raise
-    try:
-        assert np.array_equal(mpc1['version'], mpc2['version'])
-    except AssertionError:
-        print("Pypower version changed from {} to {}".format(
-            mpc2['version'], mpc1['version']))
-
-
-def assert_net_equal(a_net, b_net, **kwargs):
-    """Returns True if the given pandapower networks are equal.
+def assert_net_equal(net1, net2, **kwargs):
+    """
     Raises AssertionError if grids are not equal.
     """
-    status = True
-    namelist = ['bus', 'bus_geodata', 'load', 'sgen', 'ext_grid', 'line', 'shunt', 'line_geodata',
-                'trafo', 'switch', 'trafo3w', 'gen', 'ext_grid', 'asymmetric_load', 'asymmetric_sgen',
-                'res_line', 'res_bus', 'res_sgen', 'res_gen', 'res_shunt', 'res_load', 'res_ext_grid',
-                'res_trafo']
-    for name in namelist:
-        if name in a_net or name in b_net:
-            if not (a_net[name] is None and b_net[name] is None):
-                try:
-                    df1 = a_net[name].sort_index().sort_index(axis=1)  # workaround for bug in
-                    df2 = b_net[name].sort_index().sort_index(axis=1)  # pandas, dont use
-                    pdt.assert_frame_equal(df1, df2, check_dtype=True, **kwargs)  # check_like here
-                except AssertionError:
-                    pytest.fail("Tables are not equal: %s" % name)
-                    status = False
-
-    return status
+    assert pp.nets_equal(net1, net2, **kwargs)
 
 
-def assert_res_equal(a, b, **kwargs):
-    """Returns True if the result tables of the given pandapower networks are equal.
+def assert_res_equal(net1, net2, **kwargs):
+    """
     Raises AssertionError if results are not equal.
     """
-    namelist = ['res_line', 'res_bus', 'res_gen', 'res_sgen',
-                'res_load', 'res_ext_grid', 'res_trafo', 'res_trafo3w']
-
-    for name in namelist:
-        if name in a or name in b:
-            if not (a[name] is None and b[name] is None):
-                try:
-                    pdt.assert_frame_equal(a[name], b[name], **kwargs)
-                except AssertionError:
-                    pytest.fail("Result tables are not equal: %s" % name)
-                    raise
-
-
-def assert_res_out_of_service(net, idx, name):
-    """Returns True if the result tables of the given pandapower network contain NaNs resp. 0
-    Raises AssertionError if datatype is not according to specifications.
-
-    Specifications are:
-
-        res_bus["vm_pu"]  		     nan
-        res_bus.va_degree  	         nan
-        res_bus["p_mw"]       	     0
-        res_bus["q_mvar"]        	  0
-
-        res_line.p_from_mw  		  0
-        res_line.q_from_mvar		  0
-        res_line.p_to_mw		     0
-        res_line.q_to_mvar		     0
-        res_line.i_ka			     0
-        res_line["loading_percent"] 0
-
-        res_trafo			        all 0
-
-        res_load			        all 0
-
-        res_ext_grid		        all nan
-
-        res_gen["p_mw"]		         0
-        res_gen-q_mvar 		         0
-        res_gen_va_degree	         nan
-
-        res_sgen 		           all  0
-
-      Future: Elements out of service will not appear in result table!
-
-"""
-
-    status = True
-    try:
-        if name == 'bus':
-            assert isnan(net["res_bus"]["vm_pu"].at[idx])
-            assert isnan(net["res_bus"].va_degree.at[idx])
-            assert net["res_bus"]["p_mw"].at[idx] == 0
-            assert net["res_bus"]["q_mvar"].at[idx] == 0
-        elif name == 'gen':
-            if net.gen.in_service.any():
-                assert net["res_gen"]["p_mw"].at[idx] == 0
-                assert net["res_gen"]["q_mvar"].at[idx] == 0
-                assert isnan(net["res_gen"].va_degree.at[idx])
-            else:
-                assert net.res_gen is None
-        elif name in ('load', 'trafo', 'sgen', 'line'):
-            assert (net['res_' + name].loc[idx] == 0).all()
-        elif name == 'ext_grid':
-            assert idx not in net.res_ext_grid.index
-        else:
-            print("Element res_{} does not exist!".format(name, name))
-            status = False
-
-    except AssertionError:
-        pytest.fail(
-            "res_{} table is not according to specifications if {} is out of service".format(name, name))
-        status = False
-        raise
-
-    return status
+    if "check_only_results" in kwargs:
+        if not kwargs["check_only_results"]:
+            raise ValueError("'check_only_results' cannot be False in assert_res_equal().")
+        kwargs = deepcopy(kwargs)
+        del kwargs["check_only_results"]
+    assert pp.nets_equal(net1, net2, check_only_results=True, **kwargs)
 
 
 def create_test_network():
-    """Creates a simple pandapower test network
+    """
+    Creates a simple pandapower test network
     """
     net = pp.create_empty_network()
     b1 = pp.create_bus(net, name="bus1", vn_kv=10.)

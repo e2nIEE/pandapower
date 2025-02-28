@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -13,19 +13,25 @@ import pandapower.networks as pn
 from pandapower.converter import from_mpc
 
 try:
-    import pplog as logging
+    import matpowercaseframes
+    matpowercaseframes_imported = True
+except ImportError:
+    matpowercaseframes_imported = False
+
+try:
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
 
 
-def test_from_mpc():
+def test_from_mpc_mat():
     case24 = pn.case24_ieee_rts()
     pp.set_user_pf_options(case24)
     this_folder = os.path.join(pp.pp_dir, "test", "converter")
-    mat_case_path = os.path.join(this_folder, 'case24_ieee_rts.mat')
-    case24_from_mpc = from_mpc(mat_case_path, f_hz=60, casename_mpc_file='mpc')
+    mat_case = os.path.join(this_folder, 'case24_ieee_rts.mat')
+    case24_from_mpc = from_mpc(mat_case, f_hz=60, casename_mpc_file='mpc', tap_side="hv")
 
     pp.runpp(case24)
     pp.runpp(case24_from_mpc)
@@ -34,5 +40,26 @@ def test_from_mpc():
     assert pp.nets_equal(case24, case24_from_mpc, check_only_results=True)
 
 
+@pytest.mark.skipif(not matpowercaseframes_imported,
+                    reason="matpowercaseframes is needed to convert .m files.")
+def test_from_mpc_m():
+    this_folder = os.path.join(pp.pp_dir, "test", "converter")
+    mat_case = os.path.join(this_folder, 'case24_ieee_rts.mat')
+    m_case = os.path.join(this_folder, 'case24_ieee_rts.m')
+    case24_mat = from_mpc(mat_case, f_hz=60, casename_mpc_file='mpc', tap_side="hv")
+    case24_m = from_mpc(m_case, f_hz=60, tap_side="hv")
+
+    pp.runpp(case24_mat)
+    pp.runpp(case24_m)
+
+    assert case24_m.converged
+    assert pp.nets_equal(case24_mat, case24_m)
+
+
 if __name__ == '__main__':
-    pytest.main(["test_from_mpc.py"])
+    if 0:
+        pytest.main(["test_from_mpc.py"])
+    else:
+        test_from_mpc_mat()
+        test_from_mpc_m()
+        pass

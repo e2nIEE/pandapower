@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -301,9 +301,9 @@ def test_ow_index():
     assert np.all(ow.output["res_line.loading_percent"].index == p_data.index)
 
 
-
 def test_equal_eval_name_warning_and_costs():
     net = nw.case5()
+    net.poly_cost = net.poly_cost.iloc[0:0]
     pp.create_pwl_cost(net, 0, "sgen", [[0, 20, 1], [20, 30, 2]])
     pp.create_pwl_cost(net, 0, "gen", [[0, 20, 1], [20, 30, 2]])
     pp.create_pwl_cost(net, 1, "gen", [[0, 20, 1], [20, 30, 2]])

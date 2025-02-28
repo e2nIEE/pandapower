@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from itertools import combinations
@@ -253,6 +253,7 @@ def test_branch_impedance_unit():
         mg = create_nxgraph(net, branch_impedance_unit="p.u.")
     assert str(exception_info.value) == "branch impedance unit can be either 'ohm' or 'pu'"
 
+
 @pytest.mark.xfail(reason="This test fails, since graph_tool bus indices must be a range(0, n_buses). "
                           "If a bus is removed, graph-tool is not working.")
 def test_nogo_graph_tool():
@@ -265,4 +266,4 @@ def test_nogo_graph_tool():
 
 
 if __name__ == '__main__':
-    pytest.main(__file__)
+    pytest.main([__file__])

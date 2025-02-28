@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -12,6 +12,8 @@ from pandapower.test.consistency_checks import runpp_with_consistency_checks
 from pandapower.test.loadflow.result_test_network_generator import add_test_bus_bus_switch, \
                                                                    add_test_trafo
 from pandapower.test.toolbox import create_test_network2, add_grid_connection
+import pandapower.networks as nw
+import pandapower.shortcircuit as sc
 
 #TODO: 2 gen 2 ext_grid missing
 
@@ -534,6 +536,62 @@ def test_motor():
     pp.runpp(net)
     assert net.res_bus.equals(res_bus_motor)
 
+
+def test_switch_results():
+    net = nw.simple_mv_open_ring_net()
+    net.ext_grid["s_sc_max_mva"] = 1000
+    net.ext_grid['rx_max'] = 0.1
+    
+    switch_trafo_hv = pp.create_switch(net, bus=0, element=0, et="t") 
+    switch_trafo_lv = pp.create_switch(net, bus=1, element=0, et="t")
+
+    closed_line_switch = 1
+    open_line_switch = 6
+
+    new_bus = pp.create_bus(net, vn_kv=20.0)
+    pp.create_load(net, new_bus, p_mw=1.5)
+    closed_bb_switch = pp.create_switch(net, bus=new_bus, element=6, et="b")
+
+    new_bus = pp.create_bus(net, vn_kv=20.0)
+    in_ka = 0.1
+    pp.create_load(net, new_bus, p_mw=1.5)
+    closed_bb_switch_impedance = pp.create_switch(net, bus=new_bus, element=4, et="b", z_ohm=0.1, in_ka=in_ka)
+    
+    new_bus = pp.create_bus(net, vn_kv=20.0)
+    pp.create_load(net, new_bus, p_mw=1.5)
+    open_bb_switch = pp.create_switch(net, bus=new_bus, element=6, et="b", closed=False)
+
+    
+    pp.runpp(net)
+    
+    assert np.isclose(net.res_switch.i_ka.at[open_line_switch], 0)
+    assert np.isclose(net.res_switch.i_ka.at[open_bb_switch], 0)
+    
+    assert np.isnan(net.res_switch.i_ka.at[closed_bb_switch])
+    assert np.isclose(net.res_switch.i_ka.at[closed_bb_switch_impedance], 0.04378035814760788)
+    loading = net.res_switch.i_ka.at[closed_bb_switch_impedance] / in_ka * 100
+    assert np.isclose(net.res_switch.loading_percent.at[closed_bb_switch_impedance], loading)
+
+    line = net.switch.element.at[closed_line_switch]
+    assert np.isclose(net.res_switch.i_ka.at[closed_line_switch], net.res_line.i_ka.at[line])
+    
+    trafo = net.switch.element.at[switch_trafo_hv]
+    assert np.isclose(net.res_switch.i_ka.at[switch_trafo_hv], abs(net.res_trafo.i_hv_ka.at[trafo]))
+    assert np.isclose(net.res_switch.i_ka.at[switch_trafo_lv], abs(net.res_trafo.i_lv_ka.at[trafo]))
+
+
+    sc.calc_sc(net, branch_results=True)
+
+    assert np.isclose(net.res_switch_sc.ikss_ka.at[open_line_switch], 0)
+    assert np.isclose(net.res_switch_sc.ikss_ka.at[open_bb_switch], 0)
+    
+    assert np.isnan(net.res_switch_sc.ikss_ka.at[closed_bb_switch])
+    assert np.isclose(net.res_switch_sc.ikss_ka.at[closed_bb_switch_impedance], 4.555211220391998)
+
+    assert np.isclose(net.res_switch_sc.ikss_ka.at[closed_line_switch], net.res_line_sc.ikss_ka.at[line])
+    
+    assert np.isclose(net.res_switch_sc.ikss_ka.at[switch_trafo_hv], abs(net.res_trafo_sc.ikss_hv_ka.at[trafo]))
+    assert np.isclose(net.res_switch_sc.ikss_ka.at[switch_trafo_lv], abs(net.res_trafo_sc.ikss_lv_ka.at[trafo]))
 
 if __name__ == "__main__":
     pytest.main(["-xs", __file__])

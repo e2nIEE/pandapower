@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -374,16 +374,10 @@ class TestInvalidValues:
 
 def test_no_ext_grid(test_net, diag_params, diag_errors, report_methods):
     net = copy.deepcopy(test_net)
-    check_function = 'no_ext_grid'
-    diag_params = copy.deepcopy(diag_params)
-    report_methods = copy.deepcopy(report_methods)
     net.ext_grid = net.ext_grid.drop(0)
     check_result = pp.no_ext_grid(net)
-    if check_result:
-        diag_results = {check_function: check_result}
-    else:
-        diag_results = {}
-    assert diag_results[check_function] == True
+    # I removed some unused code from here, it seemed redundant
+    assert check_result
 
 
 def test_multiple_voltage_controlling_elements_per_bus(test_net, diag_params, diag_errors, report_methods):
@@ -516,7 +510,7 @@ def test_switch_configuration(test_net, diag_params, diag_errors, report_methods
     net.load.p_mw.at[4] *= 1000
     check_result = pp.wrong_switch_configuration(net)
     diag_results = {check_function: check_result}
-    assert diag_results[check_function] == False
+    assert not diag_results[check_function]
     for bool_value in [True, False]:
         diag_report = DiagnosticReports(net, diag_results, diag_errors, diag_params, compact_report=bool_value)
         report_check = None
@@ -931,7 +925,7 @@ def test_disconnected_elements(test_net, diag_params, diag_errors, report_method
     check_function = 'disconnected_elements'
     diag_params = copy.deepcopy(diag_params)
     report_methods = copy.deepcopy(report_methods)
-    net.switch.closed.loc[37,38] = False
+    net.switch.loc[[37, 38], "closed"] = False
     pp.drop_trafos(net, [1])
     check_result = pp.disconnected_elements(net)
     if check_result:
@@ -1004,7 +998,8 @@ def test_deviation_from_std_type(test_net, diag_params, diag_errors, report_meth
             report_check = False
         assert report_check
 
-@pytest.mark.skipif(numba_installed==False, reason="requires numba")
+
+@pytest.mark.skipif(not numba_installed, reason="requires numba")
 def test_numba_comparison(test_net, diag_params, diag_errors, report_methods):
     net = copy.deepcopy(test_net)
     check_function = 'numba_comparison'
@@ -1013,7 +1008,7 @@ def test_numba_comparison(test_net, diag_params, diag_errors, report_methods):
     if check_result:
         diag_results = {check_function: check_result}
     else:
-        diag_results = {}
+        diag_results = {check_function: {}}
     for element_type in diag_results[check_function]:
         check_results = diag_results[check_function]
         for result_type in check_results[element_type]:
@@ -1065,17 +1060,19 @@ def test_missing_bus_indices(test_net, diag_params, diag_errors, report_methods)
     check_function = 'missing_bus_indices'
     diag_params = copy.deepcopy(diag_params)
     report_methods = copy.deepcopy(report_methods)
-    net.line.from_bus.iloc[0] = 10000
-    net.trafo.lv_bus.iloc[0] = 10001
-    net.trafo3w.mv_bus.iloc[0] = 10002
-    net.switch.bus.iloc[0] = 10003
-    net.switch.element.iloc[0] = 10004
+    net.line.from_bus.iat[0] = 10000
+    net.trafo.lv_bus.iat[0] = 10001
+    net.trafo3w.mv_bus.iat[0] = 10002
+    net.switch.bus.iat[0] = 10003
+    net.switch.element.iat[0] = 10004
     net.ext_grid.bus.iloc[0] = 10005
     check_result = pp.missing_bus_indices(net)
     if check_result:
         diag_results = {check_function: check_result}
     else:
         diag_results = {}
+
+
     assert diag_results[check_function] == {'ext_grid': [(0, 'bus', 10005)],
                                             'line': [(0, 'from_bus', 10000)],
                                             'switch': [(0, 'bus', 10003), (0, 'element', 10004)],
@@ -1085,6 +1082,7 @@ def test_missing_bus_indices(test_net, diag_params, diag_errors, report_methods)
     for bool_value in [True, False]:
         diag_report = DiagnosticReports(net, diag_results, diag_errors, diag_params, compact_report=bool_value)
         report_check = None
+
         try:
             eval(report_methods[check_function])
             report_check = True

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -85,7 +85,7 @@ def test_test_sn_mva():
         pp.rundcpp(net1)
         pp.rundcpp(net2)
         try:
-            assert_net_equal(net1, net2)
+            assert_net_equal(net1, net2, exclude_elms=["sn_mva"])
         except:
             raise UserWarning("Result difference due to sn_mva after adding %s" % net1.last_added_case)
 

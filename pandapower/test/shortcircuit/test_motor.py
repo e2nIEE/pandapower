@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -12,7 +12,7 @@ import pandapower.shortcircuit as sc
 
 @pytest.fixture
 def motor_net():
-    net = pp.create_empty_network(sn_mva=10)
+    net = pp.create_empty_network(sn_mva=14)
     b1 = pp.create_bus(net, vn_kv=0.4)
     b2 = pp.create_bus(net, vn_kv=0.4)
     b3 = pp.create_bus(net, vn_kv=0.4)

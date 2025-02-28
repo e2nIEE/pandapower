@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
@@ -13,10 +13,9 @@ from pandapower.estimation.util import add_virtual_meas_from_loadflow
 
 from pandapower.estimation.algorithm.optimization import OptAlgorithm
 from pandapower.estimation.algorithm.base import WLSAlgorithm
-from pandapower.estimation.algorithm.lp import LPAlgorithm, ortools_available
+from pandapower.estimation.algorithm.lp import LPAlgorithm
 from pandapower.estimation.ppc_conversion import pp2eppci
 from pandapower.estimation.results import eppci2pp
-from copy import deepcopy
 
 
 def test_case9_compare_classical_wls_opt_wls():
@@ -30,16 +29,16 @@ def test_case9_compare_classical_wls_opt_wls():
     estimation_opt = OptAlgorithm(1e-6, 1000)
 
     eppci = estimation_wls.estimate(eppci)
-    eppci = estimation_opt.estimate(eppci, estimator="wls")
+    eppci = estimation_opt.estimate(eppci, estimator="wls", verbose=False)
     if not estimation_opt.successful:
         raise AssertionError("Estimation failed due to algorithm failing!")
     net = eppci2pp(net, ppc, eppci)
 
-    net_wls = deepcopy(net)
+    net_wls = net.deepcopy()
     estimate(net_wls)
 
-    if not np.allclose(net_wls.res_bus_est.vm_pu, net.res_bus_est.vm_pu, atol=1e-2) or\
-       not np.allclose(net_wls.res_bus_est.va_degree, net.res_bus_est.va_degree, atol=1e-2):
+    if not np.allclose(net_wls.res_bus_est.vm_pu, net.res_bus_est.vm_pu, atol=1e-2) or \
+            not np.allclose(net_wls.res_bus_est.va_degree, net.res_bus_est.va_degree, atol=1e-2):
         raise AssertionError("Estimation failed!")
 
 
@@ -61,8 +60,8 @@ def test_lp_scipy_lav():
 
     net = eppci2pp(net, ppc, eppci)
 
-    if not np.allclose(net.res_bus.vm_pu, net.res_bus_est.vm_pu, atol=1e-2) or\
-       not np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, atol=5e-2):
+    if not np.allclose(net.res_bus.vm_pu, net.res_bus_est.vm_pu, atol=1e-2) or \
+            not np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, atol=5e-2):
         raise AssertionError("Estimation failed!")
 
 
@@ -76,15 +75,15 @@ def test_lp_ortools_lav():
     pp.runpp(net)
     add_virtual_meas_from_loadflow(net, with_random_error=False)
 
-    net, ppc, eppci       = pp2eppci(net)
+    net, ppc, eppci = pp2eppci(net)
     estimation_ortools_lp = LPAlgorithm(1e-3, 5)
 
     estimation_ortools = estimation_ortools_lp.estimate(eppci, with_ortools=True)
 
     net = eppci2pp(net, ppc, eppci)
 
-    if not np.allclose(net.res_bus.vm_pu, net.res_bus_est.vm_pu, atol=1e-2) or\
-       not np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, atol=5e-2):
+    if not np.allclose(net.res_bus.vm_pu, net.res_bus_est.vm_pu, atol=1e-2) or \
+            not np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, atol=5e-2):
         raise AssertionError("Estimation failed!")
 
 def test_lp_lav():
@@ -98,8 +97,8 @@ def test_lp_lav():
 
     estimate(net, algorithm="lp")
 
-    if not np.allclose(net.res_bus.vm_pu, net.res_bus_est.vm_pu, atol=1e-2) or\
-       not np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, atol=5e-2):
+    if not np.allclose(net.res_bus.vm_pu, net.res_bus_est.vm_pu, atol=1e-2) or \
+            not np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, atol=5e-2):
         raise AssertionError("Estimation failed!")
 
 def test_opt_lav():
@@ -112,17 +111,18 @@ def test_opt_lav():
     estimation_opt = OptAlgorithm(1e-6, 1000)
 
     eppci = estimation_wls.estimate(eppci)
-    eppci = estimation_opt.estimate(eppci, estimator="lav")
+    eppci = estimation_opt.estimate(eppci, estimator="lav", verbose=False)
 
     net = eppci2pp(net, ppc, eppci)
 
-    if not np.allclose(net.res_bus.vm_pu, net.res_bus_est.vm_pu, atol=1e-2) or\
-       not np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, atol=5e-2):
+    if not np.allclose(net.res_bus.vm_pu, net.res_bus_est.vm_pu, atol=1e-2) or \
+            not np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, atol=5e-2):
         raise AssertionError("Estimation failed!")
 
 
 def test_ql_qc():
     net = nw.case9()
+    net.sn_mva = 1.
     pp.runpp(net)
     add_virtual_meas_from_loadflow(net, p_std_dev=0.01, q_std_dev=0.01)
     pf_vm_pu, pf_va_degree = net.res_bus.vm_pu, net.res_bus.va_degree
@@ -134,17 +134,17 @@ def test_ql_qc():
 
     eppci = estimation_wls.estimate(eppci)
 
-    eppci = estimation_opt.estimate(eppci, estimator="ql", a=3)
+    eppci = estimation_opt.estimate(eppci, estimator="ql", a=3, verbose=False)
     if not estimation_opt.successful:
-        eppci = estimation_opt.estimate(eppci, estimator="ql", a=3, opt_method="Newton-CG")
+        eppci = estimation_opt.estimate(eppci, estimator="ql", a=3, opt_method="Newton-CG", verbose=False)
 
     if not estimation_opt.successful:
         raise AssertionError("Estimation failed due to algorithm failing!")
 
     net = eppci2pp(net, ppc, eppci)
 
-    if not np.allclose(pf_vm_pu, net.res_bus_est.vm_pu, atol=1e-2) or\
-       not np.allclose(pf_va_degree, net.res_bus_est.va_degree, atol=5e-2):
+    if not np.allclose(pf_vm_pu, net.res_bus_est.vm_pu, atol=1e-2) or \
+            not np.allclose(pf_va_degree, net.res_bus_est.va_degree, atol=5e-2):
         raise AssertionError("Estimation failed!")
 
     # give it a warm start
@@ -153,13 +153,13 @@ def test_ql_qc():
     estimation_opt = OptAlgorithm(1e-6, 3000)
 
     eppci = estimation_wls.estimate(eppci)
-    eppci = estimation_opt.estimate(eppci, estimator="qc", a=3)
+    eppci = estimation_opt.estimate(eppci, estimator="qc", a=3, verbose=False)
     if not estimation_opt.successful:
-        eppci = estimation_opt.estimate(eppci, estimator="qc", a=3, opt_method="Newton-CG")
+        eppci = estimation_opt.estimate(eppci, estimator="qc", a=3, opt_method="Newton-CG", verbose=False)
     net = eppci2pp(net, ppc, eppci)
 
-    if not np.allclose(pf_vm_pu, net.res_bus_est.vm_pu, atol=1e-2) or\
-       not np.allclose(pf_va_degree, net.res_bus_est.va_degree, atol=5e-2):
+    if not np.allclose(pf_vm_pu, net.res_bus_est.vm_pu, atol=1e-2) or \
+            not np.allclose(pf_va_degree, net.res_bus_est.va_degree, atol=5e-2):
         raise AssertionError("Estimation failed!")
 
 

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -9,6 +9,7 @@ import pandapower as pp
 import numpy as np
 import os
 import pytest
+from packaging import version as vs
 
 folder = os.path.join(pp_dir, "test", "test_files", "old_versions")
 found_versions = [file.split("_")[1].split(".json")[0] for _, _, files
@@ -23,6 +24,8 @@ def test_convert_format(version):
         raise ValueError("File for version %s does not exist" % version)
     try:
         net = pp.from_json(filename, convert=False)
+        if ('version' in net) and (vs.parse(str(net.version)) > vs.parse('2.0.1')):
+            _ = pp.from_json(filename, elements_to_deserialize = ['bus', 'load'])
     except:
         raise UserWarning("Can not load network saved in pandapower version %s" % version)
     vm_pu_old = net.res_bus.vm_pu.copy()

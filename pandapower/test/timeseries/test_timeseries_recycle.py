@@ -40,6 +40,8 @@ def test_batch_output_reader(simple_test_net):
     run_timeseries(net, time_steps, recycle=recycle, only_v_results=only_v, verbose=False)
 
     vm, va = ow.output["ppc_bus.vm"], ow.output["ppc_bus.va"]
+    # ppc was removed (set to None) in cleanup() after the timeseries was over. now we have to remake the net._ppc by running the power flow again
+    pp.runpp(net, only_v_results=only_v, recycle=recycle)
     s, s_abs, i_abs = v_to_i_s(net, vm, va)
 
     del net, ow, c

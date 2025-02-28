@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -513,7 +513,7 @@ def test_init_slack_with_multiple_transformers(angles=True):
     pp.create_load(net, bus=6, p_mw=0.7, q_mvar=0.3)
     pp.create_ext_grid(net, bus=0, vm_pu=1.04, va_degree=10., name="Slack 220 kV")
     pp.runpp(net, calculate_voltage_angles=angles)
-    for bus, row in net.res_bus[net.bus.in_service == True].iterrows():
+    for bus, row in net.res_bus[net.bus.in_service].iterrows():
         pp.create_measurement(net, "v", "bus", row.vm_pu * r(0.01), 0.01, bus)
         if row.p_mw != 0.:
             continue

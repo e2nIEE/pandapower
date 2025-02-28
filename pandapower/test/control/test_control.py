@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
@@ -16,7 +16,7 @@ from pandapower.timeseries.output_writer import OutputWriter
 from pandapower.timeseries.run_time_series import run_timeseries
 
 try:
-    import pplog
+    import pandaplan.core.pplog as pplog
 except:
     import logging as pplog
 
@@ -94,11 +94,11 @@ def test_ctrl_unconverged(net):
     DivergentController(net)
 
     with pytest.raises(ct.ControllerNotConverged):
-        run_timeseries(net, time_steps=range(0, 3), output_writer=output_writer, max_iter=3)
+        run_timeseries(net, time_steps=range(0, 3), output_writer=output_writer, max_iter=3, verbose=False)
 
     # assert no exceptions but appropriate output in outputwriter
     run_timeseries(net, time_steps=range(0, 3), output_writer=output_writer, max_iter=3,
-                   continue_on_divergence=True)
+                   continue_on_divergence=True, verbose=False)
 
     for i, out in enumerate(output_writer.output["Parameters"].controller_unstable):
         if i % 2 == 0:
@@ -188,7 +188,6 @@ def test_level_in_service(net):
 
 
 def test_matching_params(net):
-
     c0 = DummyController(net)
     c1 = DummyController(net, order=1, drop_same_existing_ctrl=True)
     assert not len(net.controller.index.difference([0, 1]))
@@ -197,9 +196,14 @@ def test_matching_params(net):
     c3 = DummyController(net, matching_params={"level": 0, "order": 0, "in_service": True},
                          drop_same_existing_ctrl=True)
     assert not len(net.controller.index.difference([1, 3]))
+    assert net.controller.object.at[3] is not c2
+    assert net.controller.object.at[3] is c3
+    assert c2 not in net.controller.object.values
     c4 = DummyController(net, in_service=False, drop_same_existing_ctrl=True,
                          matching_params={"level": 0, "order": 0, "in_service": False})
     assert not len(net.controller.index.difference([1, 3, 4]))
+    assert net.controller.object.at[3] is c3
+    assert net.controller.object.at[4] is c4
 
 
 if __name__ == '__main__':

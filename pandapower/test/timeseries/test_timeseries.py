@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import tempfile
@@ -105,7 +105,7 @@ def test_const_control(simple_test_net):
 
     ConstControl(net, 'ext_grid', 'vm_pu', element_index=0, data_source=ds, profile_name='slack_v')
 
-    run_timeseries(net, time_steps, output_writer=ow, verbose=False)
+    run_timeseries(net, time_steps, verbose=False)
 
     assert np.alltrue(profiles['load1'].values * 0.85 == ow.output['load.p_mw'][0].values)
     assert np.alltrue(profiles['slack_v'].values == ow.output['res_bus.vm_pu'][0].values)
@@ -117,7 +117,7 @@ def test_const_control_write_to_object_attribute(simple_test_net):
     time_steps = range(0, 10)
     ow = setup_output_writer(net, time_steps)
 
-    ContinuousTapControl(net, 0, 1., level=1, check_tap_bounds=False)
+    ContinuousTapControl(net, 0, 1., tol=1e-4, level=1, check_tap_bounds=False)
 
     ConstControl(net, 'load', 'p_mw', element_index=0, data_source=ds, profile_name='load1',
                  scale_factor=0.85)
@@ -126,7 +126,7 @@ def test_const_control_write_to_object_attribute(simple_test_net):
 
     ConstControl(net, 'controller', 'object.vm_set_pu', element_index=0, data_source=ds, profile_name='trafo_v')
 
-    run_timeseries(net, time_steps, output_writer=ow, verbose=False)
+    run_timeseries(net, time_steps, verbose=False)
 
     assert np.alltrue(profiles['load1'].values * 0.85 == ow.output['load.p_mw'][0].values)
     assert np.alltrue(profiles['slack_v'].values == ow.output['res_bus.vm_pu'][0].values)
@@ -179,7 +179,7 @@ def test_timeseries_results(simple_test_net):
 
     ow.log_variable('res_line', 'loading_percent')
     ow.log_variable('res_line', 'i_ka')
-    run_timeseries(net, time_steps, output_writer=ow, verbose=False)
+    run_timeseries(net, time_steps, verbose=False)
     assert np.allclose(ow.output['res_load.p_mw'].sum().values * 2,
                        profiles[["load1", "load2_mv_p", "load3_hv_p"]].sum().values)
 
@@ -189,7 +189,7 @@ def test_timeseries_results(simple_test_net):
     net.controller.in_service = False  # set the first controller out of service
     ConstControl(net, 'load', 'p_mw', element_index=0, data_source=ds, profile_name='load1')
 
-    run_timeseries(net, time_steps, output_writer=ow, verbose=False)
+    run_timeseries(net, time_steps, verbose=False)
     assert np.allclose(ow.output['res_load.p_mw'][0].sum(), profiles["load1"].sum())
 
 
@@ -213,7 +213,7 @@ def test_timeseries_var_func(simple_test_net):
     ow.log_variable('res_bus', 'vm_pu', eval_function=np.min)
     ow.log_variable('res_bus', 'q_mvar', eval_function=np.sum)
 
-    run_timeseries(net, time_steps, output_writer=ow, verbose=False)
+    run_timeseries(net, time_steps, verbose=False)
     # asserts if last value of output_writers output is the minimum value
     assert net["res_load"]["p_mw"].max() == ow.output["res_load.p_mw"].iloc[-1].values
     assert net["res_bus"]["vm_pu"].min() == ow.output["res_bus.vm_pu"].iloc[-1, -1]
@@ -228,7 +228,7 @@ def test_timeseries_var_func(simple_test_net):
                     eval_name="hv_bus_min")
     ow.log_variable('res_bus', 'vm_pu', index=mv_busses_index, eval_function=np.min,
                     eval_name="mv_bus_min")
-    run_timeseries(net, time_steps, output_writer=ow, verbose=False)
+    run_timeseries(net, time_steps, verbose=False)
     assert net["res_bus"].loc[hv_busses_index, "vm_pu"].min() == ow.output["res_bus.vm_pu"].loc[
         time_steps[-1], "hv_bus_min"]
     assert net["res_bus"].loc[mv_busses_index, "vm_pu"].min() == ow.output["res_bus.vm_pu"].loc[
@@ -272,8 +272,80 @@ def test_output_dump_after_time(simple_test_net):
 
     ow.log_variable('res_line', 'loading_percent')
     ow.log_variable('res_line', 'i_ka')
-    run_timeseries(net, time_steps, output_writer=ow, verbose=False)
+    run_timeseries(net, time_steps, verbose=False)
     # ToDo: read partially dumped results and compare with all stored results
+
+
+def test_pf_options(simple_test_net):
+    net = simple_test_net
+    profiles, ds = create_data_source()
+    time_steps = range(0, 3)
+    ow = setup_output_writer(net, time_steps)
+
+    ConstControl(net, 'load', 'p_mw', element_index=0, data_source=ds, profile_name='load1',
+                 scale_factor=0.85)
+
+    ConstControl(net, 'ext_grid', 'vm_pu', element_index=0, data_source=ds, profile_name='slack_v')
+
+    run_timeseries(net, time_steps, verbose=False, distributed_slack=True)
+    assert net._options["distributed_slack"]
+
+
+def test_user_pf_options(simple_test_net):
+    net = simple_test_net
+    profiles, ds = create_data_source()
+    time_steps = range(0, 3)
+    ow = setup_output_writer(net, time_steps)
+
+    ConstControl(net, 'load', 'p_mw', element_index=0, data_source=ds, profile_name='load1',
+                 scale_factor=0.85)
+
+    ConstControl(net, 'ext_grid', 'vm_pu', element_index=0, data_source=ds, profile_name='slack_v')
+
+    pp.set_user_pf_options(net, distributed_slack=True)
+    run_timeseries(net, time_steps, verbose=False)
+    assert net._options["distributed_slack"]
+
+    pp.runpp(net, distributed_slack=False)
+
+    run_timeseries(net, time_steps, verbose=False)
+    assert net._options["distributed_slack"]
+
+
+def test_user_pf_options_init_run(simple_test_net):
+    net = simple_test_net
+    profiles, ds = create_data_source()
+    time_steps = range(0, 3)
+    ow = setup_output_writer(net, time_steps)
+
+    ConstControl(net, 'load', 'p_mw', element_index=0, data_source=ds, profile_name='load1',
+                 scale_factor=0.85)
+
+    ConstControl(net, 'ext_grid', 'vm_pu', element_index=0, data_source=ds, profile_name='slack_v')
+
+    pp.runpp(net)
+
+    pp.set_user_pf_options(net, distributed_slack=True)
+    run_timeseries(net, time_steps, verbose=False)
+    assert net._options["distributed_slack"]
+
+
+def test_user_pf_options_recycle_manual(simple_test_net):
+    net = simple_test_net
+    profiles, ds = create_data_source()
+    time_steps = range(0, 3)
+    ow = setup_output_writer(net, time_steps)
+
+    ConstControl(net, 'load', 'p_mw', element_index=0, data_source=ds, profile_name='load1',
+                 scale_factor=0.85)
+
+    ConstControl(net, 'ext_grid', 'vm_pu', element_index=0, data_source=ds, profile_name='slack_v')
+
+    pp.runpp(net)
+
+    pp.set_user_pf_options(net, distributed_slack=True, recycle=True)
+    run_timeseries(net, time_steps, verbose=False)
+    assert net._options["distributed_slack"]
 
 
 if __name__ == '__main__':

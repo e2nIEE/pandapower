@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+import numpy as np
 import pandapower as pp
 from pandapower.control import DiscreteTapControl
 import pytest
@@ -273,6 +274,69 @@ def test_discrete_tap_control_hv_from_tap_step_percent():
         "after DiscreteTapControl: trafo voltage at low voltage bus is %f, tap position is %f"
         % (net.res_bus.vm_pu[net.trafo.lv_bus].values, net.trafo.tap_pos.values))
     assert net.trafo.tap_pos.at[0] == -1
+
+
+def test_discrete_tap_control_vectorized_lv():
+    # --- load system and run power flow
+    net = pp.create_empty_network()
+    pp.create_buses(net, 6, 110)
+    pp.create_buses(net, 5, 20)
+    pp.create_ext_grid(net, 0)
+    pp.create_lines(net, np.zeros(5), np.arange(1, 6), 10, "243-AL1/39-ST1A 110.0")
+    for hv, lv in zip(np.arange(1, 6), np.arange(6,11)):
+        pp.create_transformer(net, hv, lv, "63 MVA 110/20 kV")
+        pp.create_load(net, lv, 25*(lv-8), 25*(lv-8) * 0.4)
+    pp.set_user_pf_options(net, init='dc', calculate_voltage_angles=True)
+    # --- run loadflow
+    pp.runpp(net)
+
+    net_ref = net.deepcopy()
+
+    # create with individual controllers for comparison
+    for tid in net.trafo.index.values:
+        # pp.control.ContinuousTapControl(net_ref, tid=tid, side='lv', vm_set_pu=1.02)
+        DiscreteTapControl(net_ref, tid=tid, side='lv', vm_lower_pu=1.01, vm_upper_pu=1.03)
+
+    # run control reference
+    pp.runpp(net_ref, run_control=True)
+
+    # now create the vectorized version
+    DiscreteTapControl(net, tid=net.trafo.index.values, side='lv', vm_lower_pu=1.01, vm_upper_pu=1.03)
+    pp.runpp(net, run_control=True)
+
+    assert np.all(net_ref.trafo.tap_pos == net.trafo.tap_pos)
+
+
+def test_discrete_tap_control_vectorized_hv():
+    # --- load system and run power flow
+    net = pp.create_empty_network()
+    pp.create_buses(net, 6, 110)
+    pp.create_buses(net, 5, 20)
+    pp.create_ext_grid(net, 0)
+    pp.create_lines(net, np.zeros(5), np.arange(1, 6), 10, "243-AL1/39-ST1A 110.0")
+    for hv, lv in zip(np.arange(1, 6), np.arange(6,11)):
+        pp.create_transformer(net, hv, lv, "63 MVA 110/20 kV")
+        pp.create_load(net, lv, 25*(lv-8), 25*(lv-8) * 0.4)
+    pp.set_user_pf_options(net, init='dc', calculate_voltage_angles=True)
+    # --- run loadflow
+    pp.runpp(net)
+
+    net_ref = net.deepcopy()
+
+    # create with individual controllers for comparison
+    for tid in net.trafo.index.values:
+        # pp.control.ContinuousTapControl(net_ref, tid=tid, side='hv', vm_set_pu=1.02)
+        DiscreteTapControl(net_ref, tid=tid, side='hv', vm_lower_pu=1.01, vm_upper_pu=1.03)
+
+    # run control reference
+    pp.runpp(net_ref, run_control=True)
+
+    # now create the vectorized version
+    DiscreteTapControl(net, tid=net.trafo.index.values, side='hv', vm_lower_pu=1.01, vm_upper_pu=1.03)
+    pp.runpp(net, run_control=True)
+
+    assert np.all(net_ref.trafo.tap_pos == net.trafo.tap_pos)
+
 
 
 if __name__ == '__main__':

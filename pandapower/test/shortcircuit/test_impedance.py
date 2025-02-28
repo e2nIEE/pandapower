@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -14,7 +14,7 @@ import pandapower.shortcircuit as sc
 
 @pytest.fixture
 def impedance_net():
-    net = pp.create_empty_network()
+    net = pp.create_empty_network(sn_mva=78)
     b1 = pp.create_bus(net, 220)
     b2 = pp.create_bus(net, 30)
     pp.create_ext_grid(net, b1, s_sc_max_mva=100., s_sc_min_mva=40., rx_min=0.1, rx_max=0.1)

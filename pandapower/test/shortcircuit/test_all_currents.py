@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -12,7 +12,7 @@ import pandapower.shortcircuit as sc
 
 
 def three_bus_example():
-    net = pp.create_empty_network()
+    net = pp.create_empty_network(sn_mva=56)
     b1 = pp.create_bus(net, 110)
     b2 = pp.create_bus(net, 110)
     b3 = pp.create_bus(net, 110)
@@ -37,7 +37,7 @@ def three_bus_example():
 
 
 def three_bus_permuted_index():
-    net = pp.create_empty_network()
+    net = pp.create_empty_network(sn_mva=67)
     b1 = pp.create_bus(net, 110, index=4)
     b2 = pp.create_bus(net, 110, index=3)
     b3 = pp.create_bus(net, 110, index=0)
@@ -258,6 +258,36 @@ def test_against_single_sc_results_trafo():
         single_result_hv = net.res_trafo_sc.ikss_hv_ka.values
         multi_result_hv = multi_results.ikss_hv_ka.loc[trafo_bus_indices].values
         assert np.allclose(single_result_hv, multi_result_hv)
+
+
+def test_ward():
+    net = pp.create_empty_network(sn_mva=9)
+    pp.create_buses(net, 2, 110)
+    pp.create_ext_grid(net, 0, s_sc_max_mva=100, rx_max=0.1)
+    pp.create_line_from_parameters(net, 0, 1, 1, 0.5, 0.5, 0, 1000)
+    pp.create_ward(net, 1, 10, 5, 200, 100)
+    sc.calc_sc(net)
+    ikss_ka = [1.209707, 1.209818]
+    rk_ohm = [57.719840, 57.678686]
+    xk_ohm = [-1.834709, -2.740132]
+    assert np.allclose(net.res_bus_sc.ikss_ka, ikss_ka, atol=1e-6, rtol=0)
+    assert np.allclose(net.res_bus_sc.rk_ohm, rk_ohm, atol=1e-6, rtol=0)
+    assert np.allclose(net.res_bus_sc.xk_ohm, xk_ohm, atol=1e-6, rtol=0)
+
+
+def test_xward():
+    net = pp.create_empty_network(sn_mva=4)
+    pp.create_buses(net, 2, 110)
+    pp.create_ext_grid(net, 0, s_sc_max_mva=100, rx_max=0.1)
+    pp.create_line_from_parameters(net, 0, 1, 1, 0.5, 0.5, 0, 1000)
+    pp.create_xward(net, 1, 10, 5, 200, 100, 3, 1, vm_pu=1.02)
+    sc.calc_sc(net)
+    ikss_ka = [1.209707, 1.209818]
+    rk_ohm = [57.719840, 57.678686]
+    xk_ohm = [-1.834709, -2.740132]
+    assert np.allclose(net.res_bus_sc.ikss_ka, ikss_ka, atol=1e-6, rtol=0)
+    assert np.allclose(net.res_bus_sc.rk_ohm, rk_ohm, atol=1e-6, rtol=0)
+    assert np.allclose(net.res_bus_sc.xk_ohm, xk_ohm, atol=1e-6, rtol=0)
 
 
 if __name__ == '__main__':

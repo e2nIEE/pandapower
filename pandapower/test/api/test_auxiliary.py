@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-
 
 import pytest
 import gc
@@ -13,7 +12,6 @@ import pandas as pd
 try:
     import geopandas as gpd
     import shapely.geometry
-
     GEOPANDAS_INSTALLED = True
 except ImportError:
     GEOPANDAS_INSTALLED = False
@@ -206,6 +204,80 @@ def test_memory_leak_dict():
     gc.collect()
     types_dict2 = pp.toolbox.get_gc_objects_dict()
     assert types_dict2[MemoryLeakDemoDict] - types_dict1.get(MemoryLeakDemoDict, 0) <= 1
+
+
+def test_create_trafo_characteristics():
+    net = pp.networks.example_multivoltage()
+
+    # test 2 modes, multiple index and single index, for 2w trafo
+    pp.control.create_trafo_characteristics(net, "trafo", [1], 'vk_percent', [[-2,-1,0,1,2]], [[2,3,4,5,6]])
+    assert "characteristic" in net
+    assert "tap_dependent_impedance" in net.trafo.columns
+    assert net.trafo.tap_dependent_impedance.dtype == np.bool_
+    assert net.trafo.tap_dependent_impedance.at[1]
+    assert not net.trafo.tap_dependent_impedance.at[0]
+    assert "vk_percent_characteristic" in net.trafo.columns
+    assert net.trafo.at[1, 'vk_percent_characteristic'] == 0
+    assert pd.isnull(net.trafo.at[0, 'vk_percent_characteristic'])
+    assert net.trafo.vk_percent_characteristic.dtype == pd.Int64Dtype()
+    assert "vkr_percent_characteristic" not in net.trafo.columns
+
+    pp.control.create_trafo_characteristics(net, "trafo", 1, 'vkr_percent', [-2,-1,0,1,2], [1.323,1.324,1.325,1.326,1.327])
+    assert len(net.characteristic) == 2
+    assert "vkr_percent_characteristic" in net.trafo.columns
+    assert net.trafo.at[1, 'vkr_percent_characteristic'] == 1
+    assert pd.isnull(net.trafo.at[0, 'vkr_percent_characteristic'])
+    assert net.trafo.vkr_percent_characteristic.dtype == pd.Int64Dtype()
+
+    assert isinstance(net.characteristic.object.at[0], pp.control.SplineCharacteristic)
+    assert isinstance(net.characteristic.object.at[1], pp.control.SplineCharacteristic)
+
+    # test for 3w trafo
+    pp.control.create_trafo_characteristics(net, "trafo3w", 0, 'vk_hv_percent', [-8, -4, 0, 4, 8], [8.1, 9.1, 10.1, 11.1, 12.1])
+    assert "tap_dependent_impedance" in net.trafo3w.columns
+    assert net.trafo3w.tap_dependent_impedance.dtype == np.bool_
+    assert net.trafo3w.tap_dependent_impedance.at[0]
+    assert "vk_hv_percent_characteristic" in net.trafo3w.columns
+    assert net.trafo3w.at[0, 'vk_hv_percent_characteristic'] == 2
+    assert net.trafo3w.vk_hv_percent_characteristic.dtype == pd.Int64Dtype()
+    assert "vkr_hv_percent_characteristic" not in net.trafo3w.columns
+    assert "vk_mv_percent_characteristic" not in net.trafo3w.columns
+
+    pp.control.create_trafo_characteristics(net, "trafo3w", 0, 'vk_mv_percent', [-8, -4, 0, 4, 8], [8.1, 9.1, 10.1, 11.1, 12.1])
+    assert net.trafo3w.tap_dependent_impedance.dtype == np.bool_
+    assert net.trafo3w.tap_dependent_impedance.at[0]
+    assert "vk_mv_percent_characteristic" in net.trafo3w.columns
+    assert net.trafo3w.at[0, 'vk_mv_percent_characteristic'] == 3
+    assert net.trafo3w.vk_hv_percent_characteristic.dtype == pd.Int64Dtype()
+    assert "vkr_mv_percent_characteristic" not in net.trafo3w.columns
+    assert "vk_lv_percent_characteristic" not in net.trafo3w.columns
+    assert "vkr_lv_percent_characteristic" not in net.trafo3w.columns
+
+    # this should be enough testing for adding columns
+    # now let's test if it raises errors
+
+    # invalid variable
+    with pytest.raises(UserWarning):
+        pp.control.create_trafo_characteristics(net, "trafo3w", 0, 'vk_percent',
+                                                [-8, -4, 0, 4, 8], [8.1, 9.1, 10.1, 11.1, 12.1])
+
+    # invalid shapes
+    with pytest.raises(UserWarning):
+        pp.control.create_trafo_characteristics(net, "trafo3w", 0, 'vk_hv_percent',
+                                                [-8, -4, 0, 4, 8], [8.1, 9.1, 10.1, 11.1])
+
+    with pytest.raises(UserWarning):
+        pp.control.create_trafo_characteristics(net, "trafo3w", [0], 'vk_hv_percent',
+                                                [-8, -4, 0, 4, 8], [8.1, 9.1, 10.1, 11.1, 12.1])
+
+    with pytest.raises(UserWarning):
+        pp.control.create_trafo_characteristics(net, "trafo3w", [0, 1], 'vk_hv_percent',
+                                                [[-8, -4, 0, 4, 8]], [[8.1, 9.1, 10.1, 11.1, 12.1]])
+
+    with pytest.raises(UserWarning):
+        pp.control.create_trafo_characteristics(net, "trafo3w", [0, 1], 'vk_hv_percent',
+                                                [[-8, -4, 0, 4, 8], [-8, -4, 0, 4, 8]],
+                                                [[8.1, 9.1, 10.1, 11.1, 12.1]])
 
 
 if __name__ == '__main__':
