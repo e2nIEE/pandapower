@@ -7,15 +7,15 @@ aimed at automation of analysis and optimization in power systems.
 
 .. image:: /pics/pp.svg
 		:width: 250em
-		:align: left 
+		:align: left
 
 .. |br| raw:: html
 
     <br />
 
-|br|    
-|br|    
-|br| 
+|br|
+|br|
+|br|
 
 More information about pandapower can be found on `www.pandapower.org <https://www.pandapower.org>`_.
 
@@ -26,18 +26,18 @@ Operation at the Fraunhofer Institute for Energy Economics and Energy System Tec
 
 .. image:: /pics/iee.png
 		:width: 18em
-		:align: left 
-        
+		:align: left
+
 .. image:: /pics/e2n.png
 		:width: 22em
-		:align: right 
-        
+		:align: right
 
-    
-|br|    
-|br|    
-|br|    
-|br|    
+
+
+|br|
+|br|
+|br|
+|br|
 
 .. toctree::
     :maxdepth: 2
@@ -51,10 +51,11 @@ Operation at the Fraunhofer Institute for Energy Economics and Energy System Tec
     estimation
     control
     timeseries
+    gridequivalent
     topology
     networks
     plotting
     file_io
     converter
+    group
     toolbox
-	

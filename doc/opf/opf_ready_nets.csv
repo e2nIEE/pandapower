@@ -1,0 +1,19 @@
+**test case**;**no adaptions needed**;**vm limits**;**gen limits**;**branch limits**
+case4gs;;;x;
+case6ww;x;;;
+case9;x;;;
+case14;x;;;
+case24_ieee_rts;;;x;
+case30;x;x;;
+case39;;;x;
+case57;;x;;
+case118;x;;;
+case300;;x;;
+case5;x;;;
+case_ieee30;;x;;
+case33bw;x;;;
+case89pegase;;;;x
+case145;;x;;x
+case_illinois200;;x;;
+case1354pegase;;;;x
+case1888rte;;x;;x

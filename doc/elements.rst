@@ -8,11 +8,11 @@ Datastructure and Elements
 A pandapower network consists of an element table for each electric element in the network. Each element table consists of a column for each
 parameter and a row for each element.
 
-pandapower provides electric models for 13 electric elements, for each of which you can find detailed 
+pandapower provides electric models for 13 electric elements, for each of which you can find detailed
 information about the definition and interpretation of the parameters in the following documentation:
 
 
-.. toctree:: 
+.. toctree::
     :maxdepth: 1
 
     elements/empty_network
@@ -21,17 +21,18 @@ information about the definition and interpretation of the parameters in the fol
     elements/switch
     elements/load
     elements/motor
-    elements/asymmetric_load	
+    elements/asymmetric_load
     elements/sgen
     elements/asymmetric_sgen
-    elements/ext_grid	
+    elements/ext_grid
     elements/trafo
-    elements/trafo3w	
+    elements/trafo3w
     elements/gen
     elements/shunt
     elements/impedance
-    elements/ward	
+    elements/ward
     elements/xward
     elements/dcline
     elements/measurement
     elements/storage
+    elements/group

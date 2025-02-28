@@ -16,3 +16,4 @@ type;string;"| naming conventions:
 | *""LBS""* - load break switch
 | *""DS""* - disconnecting switch";type of switch
 closed*;boolean;True / False;signals the switching state of the switch
+in_ka*;float;>0;maximum current that the switch can carry under          normal operating conditions without tripping

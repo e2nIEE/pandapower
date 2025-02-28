@@ -50,5 +50,4 @@ Medium voltage open ring
 	:alt: alternate Text
 	:align: center
 
----------------------------------------
 

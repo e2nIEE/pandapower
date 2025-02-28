@@ -6,7 +6,7 @@ to_bus*;integer;;Index of bus where the line ends
 length_km*;float;:math:`>` 0;length of the line [km]
 r_ohm_per_km*;float;:math:`\geq` 0   ;resistance of the line [Ohm per km]
 x_ohm_per_km*;float;:math:`\geq` 0   ;inductance of the line [Ohm per km]
-c_nf_per_km*;float;:math:`\geq` 0   ;capacitance of the line [nano Farad per km]
+c_nf_per_km*;float;:math:`\geq` 0   ;capacitance of the line (line-to-earth) [nano Farad per km]
 r0_ohm_per_km****;float;:math:`\geq` 0   ;zero sequence resistance of the line [Ohm per km]
 x0_ohm_per_km****;float;:math:`\geq` 0   ;zero sequence inductance of the line [Ohm per km]
 c0_nf_per_km****;float;:math:`\geq` 0   ;zero sequence capacitance of the line [nano Farad per km]

@@ -18,7 +18,7 @@ The diagnostic function includes the following checks:
 - invalid values (e.g. negative element indices)
 - check, if at least one external grid exists
 - check, if there are buses with more than one gen and/or ext_grid
-- overload: tries to run a power flow calculation with loads scaled down to 10%
+- overload: tries to run a power flow calculation with loads scaled down to 0.1 %
 - switch_configuration: tries to run a power flow calculation with all switches closed
 - inconsistent voltages: checks, if there are lines or switches that connect different voltage levels
 - lines with impedance zero

@@ -26,7 +26,7 @@ for each time step in the corresponding row. Here is a schematic example for a g
    :file: datasource_example.csv
    :delim: ;
 
-This structure is saved to a *.csv file and can be read by pandas and passed to the DataSource constructor like so:
+This structure is saved to a ``*.csv`` file and can be read by pandas and passed to the DataSource constructor like so:
 
 ::
 
