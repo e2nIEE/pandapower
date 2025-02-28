@@ -134,26 +134,27 @@
     "gen": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"bus\",\"in_service\",\"name\",\"p_mw\",\"qmax_mvar\",\"qmin_mvar\",\"scaling\",\"sn_mva\",\"type\",\"vm_pu\",\"slack\"],\"index\":[],\"data\":[]}",
+      "_object": "{\"columns\":[\"name\",\"bus\",\"p_mw\",\"vm_pu\",\"sn_mva\",\"min_q_mvar\",\"max_q_mvar\",\"scaling\",\"slack\",\"in_service\",\"slack_weight\",\"type\"],\"index\":[],\"data\":[]}",
       "orient": "split",
       "dtype": {
-        "bus": "uint32",
-        "in_service": "bool",
         "name": "object",
+        "bus": "uint32",
         "p_mw": "float64",
-        "qmax_mvar": "float64",
-        "qmin_mvar": "float64",
-        "scaling": "float64",
-        "sn_mva": "float64",
-        "type": "object",
         "vm_pu": "float64",
-        "slack": "bool"
+        "sn_mva": "float64",
+        "min_q_mvar": "float64",
+        "max_q_mvar": "float64",
+        "scaling": "float64",
+        "slack": "bool",
+        "in_service": "bool",
+        "slack_weight": "float64",
+        "type": "object"
       }
     },
     "switch": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"bus\",\"element\",\"et\",\"type\",\"closed\",\"name\",\"z_ohm\"],\"index\":[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159,160,161,162,163,164,165,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191,192,193,194,195,196,197,198,199,200,201,202,203,204,205,206,207,208,209,210,211,212,213,214,215,216,217,218,219,220,221,222,223,224,225,226,227,228,229,230,231,232,233,234,235,236,237,238,239,240,241,242,243,244,245,246,247,248,249,250,251,252,253,254,255,256,257,258,259,260,261,262,263,264,265,266,267,268,269,270,271,272,273,274,275,276,277,278,279,280,281,282,283,284,285,286,287,288,289,290,291,292,293,294,295,296,297,298,299,300,301,302,303,304,305,306,307,308,309,310,311,312,313,314,315,316,317,318,319,320,321],\"data\":[[109,0,\"l\",\"LBS\",true,\"Switch 0\",0.0],[40,1,\"l\",\"LBS\",true,\"Switch 1\",0.0],[221,2,\"l\",\"LBS\",true,\"Switch 2\",0.0],[221,3,\"l\",\"LBS\",true,\"Switch 3\",0.0],[239,3,\"l\",\"LBS\",true,\"Switch 4\",0.0],[239,4,\"l\",\"LBS\",true,\"Switch 5\",0.0],[236,4,\"l\",\"LBS\",true,\"Switch 6\",0.0],[169,5,\"l\",\"LBS\",true,\"Switch 7\",0.0],[54,5,\"l\",\"LBS\",true,\"Switch 8\",0.0],[169,6,\"l\",\"LBS\",true,\"Switch 9\",0.0],[275,6,\"l\",\"LBS\",true,\"Switch 10\",0.0],[169,7,\"l\",\"LBS\",true,\"Switch 11\",0.0],[287,7,\"l\",\"LBS\",true,\"Switch 12\",0.0],[167,8,\"l\",\"LBS\",true,\"Switch 13\",0.0],[129,8,\"l\",\"LBS\",false,\"Switch 14\",0.0],[197,10,\"l\",\"LBS\",true,\"Switch 15\",0.0],[167,10,\"l\",\"LBS\",true,\"Switch 16\",0.0],[199,11,\"l\",\"LBS\",true,\"Switch 17\",0.0],[167,11,\"l\",\"LBS\",true,\"Switch 18\",0.0],[168,12,\"l\",\"LBS\",true,\"Switch 19\",0.0],[273,12,\"l\",\"LBS\",true,\"Switch 20\",0.0],[168,14,\"l\",\"LBS\",true,\"Switch 21\",0.0],[246,14,\"l\",\"LBS\",true,\"Switch 22\",0.0],[172,15,\"l\",\"LBS\",true,\"Switch 23\",0.0],[144,16,\"l\",\"LBS\",true,\"Switch 24\",0.0],[172,16,\"l\",\"LBS\",true,\"Switch 25\",0.0],[253,17,\"l\",\"LBS\",true,\"Switch 26\",0.0],[8,18,\"l\",\"LBS\",true,\"Switch 27\",0.0],[170,20,\"l\",\"LBS\",true,\"Switch 28\",0.0],[136,20,\"l\",\"LBS\",true,\"Switch 29\",0.0],[170,21,\"l\",\"LBS\",true,\"Switch 30\",0.0],[216,22,\"l\",\"LBS\",true,\"Switch 31\",0.0],[195,22,\"l\",\"LBS\",true,\"Switch 32\",0.0],[195,23,\"l\",\"LBS\",true,\"Switch 33\",0.0],[132,23,\"l\",\"LBS\",false,\"Switch 34\",0.0],[195,24,\"l\",\"LBS\",true,\"Switch 35\",0.0],[213,25,\"l\",\"LBS\",true,\"Switch 36\",0.0],[194,25,\"l\",\"LBS\",true,\"Switch 37\",0.0],[207,26,\"l\",\"LBS\",true,\"Switch 38\",0.0],[194,26,\"l\",\"LBS\",true,\"Switch 39\",0.0],[269,27,\"l\",\"LBS\",true,\"Switch 40\",0.0],[196,27,\"l\",\"LBS\",true,\"Switch 41\",0.0],[196,28,\"l\",\"LBS\",true,\"Switch 42\",0.0],[189,29,\"l\",\"LBS\",true,\"Switch 43\",0.0],[82,29,\"l\",\"LBS\",true,\"Switch 44\",0.0],[51,30,\"l\",\"LBS\",true,\"Switch 45\",0.0],[189,30,\"l\",\"LBS\",true,\"Switch 46\",0.0],[31,31,\"l\",\"LBS\",true,\"Switch 47\",0.0],[190,31,\"l\",\"LBS\",false,\"Switch 48\",0.0],[65,32,\"l\",\"LBS\",true,\"Switch 49\",0.0],[190,32,\"l\",\"LBS\",true,\"Switch 50\",0.0],[192,34,\"l\",\"LBS\",true,\"Switch 51\",0.0],[44,34,\"l\",\"LBS\",true,\"Switch 52\",0.0],[57,35,\"l\",\"LBS\",true,\"Switch 53\",0.0],[192,35,\"l\",\"LBS\",true,\"Switch 54\",0.0],[289,36,\"l\",\"LBS\",true,\"Switch 55\",0.0],[72,36,\"l\",\"LBS\",true,\"Switch 56\",0.0],[289,37,\"l\",\"LBS\",true,\"Switch 57\",0.0],[75,37,\"l\",\"LBS\",true,\"Switch 58\",0.0],[290,38,\"l\",\"LBS\",true,\"Switch 59\",0.0],[290,39,\"l\",\"LBS\",true,\"Switch 60\",0.0],[242,39,\"l\",\"LBS\",true,\"Switch 61\",0.0],[290,40,\"l\",\"LBS\",true,\"Switch 62\",0.0],[240,40,\"l\",\"LBS\",true,\"Switch 63\",0.0],[269,41,\"l\",\"LBS\",true,\"Switch 64\",0.0],[108,41,\"l\",\"LBS\",true,\"Switch 65\",0.0],[153,42,\"l\",\"LBS\",true,\"Switch 66\",0.0],[316,42,\"l\",\"LBS\",true,\"Switch 67\",0.0],[316,43,\"l\",\"LBS\",true,\"Switch 68\",0.0],[159,43,\"l\",\"LBS\",true,\"Switch 69\",0.0],[316,44,\"l\",\"LBS\",true,\"Switch 70\",0.0],[157,44,\"l\",\"LBS\",true,\"Switch 71\",0.0],[33,45,\"l\",\"LBS\",true,\"Switch 72\",0.0],[245,46,\"l\",\"LBS\",true,\"Switch 73\",0.0],[298,46,\"l\",\"LBS\",true,\"Switch 74\",0.0],[298,47,\"l\",\"LBS\",true,\"Switch 75\",0.0],[248,47,\"l\",\"LBS\",true,\"Switch 76\",0.0],[237,48,\"l\",\"LBS\",true,\"Switch 77\",0.0],[40,49,\"l\",\"LBS\",true,\"Switch 78\",0.0],[133,50,\"l\",\"LBS\",true,\"Switch 79\",0.0],[248,50,\"l\",\"LBS\",true,\"Switch 80\",0.0],[237,51,\"l\",\"LBS\",true,\"Switch 81\",0.0],[136,51,\"l\",\"LBS\",true,\"Switch 82\",0.0],[29,52,\"l\",\"LBS\",true,\"Switch 83\",0.0],[29,53,\"l\",\"LBS\",true,\"Switch 84\",0.0],[72,54,\"l\",\"LBS\",true,\"Switch 85\",0.0],[253,55,\"l\",\"LBS\",true,\"Switch 86\",0.0],[304,55,\"l\",\"LBS\",true,\"Switch 87\",0.0],[33,56,\"l\",\"LBS\",true,\"Switch 88\",0.0],[110,57,\"l\",\"LBS\",true,\"Switch 89\",0.0],[31,57,\"l\",\"LBS\",true,\"Switch 90\",0.0],[34,58,\"l\",\"LBS\",true,\"Switch 91\",0.0],[76,58,\"l\",\"LBS\",true,\"Switch 92\",0.0],[45,59,\"l\",\"LBS\",true,\"Switch 93\",0.0],[34,59,\"l\",\"LBS\",true,\"Switch 94\",0.0],[32,60,\"l\",\"LBS\",true,\"Switch 95\",0.0],[34,60,\"l\",\"LBS\",true,\"Switch 96\",0.0],[46,61,\"l\",\"LBS\",true,\"Switch 97\",0.0],[32,61,\"l\",\"LBS\",true,\"Switch 98\",0.0],[319,62,\"l\",\"CB\",true,\"Switch 99\",0.0],[50,63,\"l\",\"LBS\",true,\"Switch 100\",0.0],[48,63,\"l\",\"LBS\",true,\"Switch 101\",0.0],[42,64,\"l\",\"LBS\",true,\"Switch 102\",0.0],[50,64,\"l\",\"LBS\",true,\"Switch 103\",0.0],[84,65,\"l\",\"LBS\",true,\"Switch 104\",0.0],[50,65,\"l\",\"LBS\",true,\"Switch 105\",0.0],[54,66,\"l\",\"LBS\",true,\"Switch 106\",0.0],[147,66,\"l\",\"LBS\",false,\"Switch 107\",0.0],[54,67,\"l\",\"LBS\",true,\"Switch 108\",0.0],[144,67,\"l\",\"LBS\",true,\"Switch 109\",0.0],[224,68,\"l\",\"LBS\",true,\"Switch 110\",0.0],[38,68,\"l\",\"LBS\",true,\"Switch 111\",0.0],[38,69,\"l\",\"LBS\",true,\"Switch 112\",0.0],[161,69,\"l\",\"LBS\",true,\"Switch 113\",0.0],[134,70,\"l\",\"LBS\",true,\"Switch 114\",0.0],[235,71,\"l\",\"LBS\",true,\"Switch 115\",0.0],[83,72,\"l\",\"LBS\",true,\"Switch 116\",0.0],[132,73,\"l\",\"LBS\",true,\"Switch 117\",0.0],[137,73,\"l\",\"LBS\",true,\"Switch 118\",0.0],[137,74,\"l\",\"LBS\",true,\"Switch 119\",0.0],[95,74,\"l\",\"LBS\",true,\"Switch 120\",0.0],[132,75,\"l\",\"LBS\",true,\"Switch 121\",0.0],[134,75,\"l\",\"LBS\",true,\"Switch 122\",0.0],[129,76,\"l\",\"LBS\",true,\"Switch 123\",0.0],[188,76,\"l\",\"LBS\",true,\"Switch 124\",0.0],[85,77,\"l\",\"LBS\",true,\"Switch 125\",0.0],[129,77,\"l\",\"LBS\",true,\"Switch 126\",0.0],[98,78,\"l\",\"LBS\",true,\"Switch 127\",0.0],[100,78,\"l\",\"LBS\",true,\"Switch 128\",0.0],[100,79,\"l\",\"LBS\",true,\"Switch 129\",0.0],[102,79,\"l\",\"LBS\",true,\"Switch 130\",0.0],[94,80,\"l\",\"LBS\",true,\"Switch 131\",0.0],[102,80,\"l\",\"LBS\",true,\"Switch 132\",0.0],[100,81,\"l\",\"LBS\",true,\"Switch 133\",0.0],[107,81,\"l\",\"LBS\",true,\"Switch 134\",0.0],[94,82,\"l\",\"LBS\",true,\"Switch 135\",0.0],[95,82,\"l\",\"LBS\",true,\"Switch 136\",0.0],[210,85,\"l\",\"LBS\",true,\"Switch 137\",0.0],[215,85,\"l\",\"LBS\",true,\"Switch 138\",0.0],[216,86,\"l\",\"LBS\",true,\"Switch 139\",0.0],[215,86,\"l\",\"LBS\",true,\"Switch 140\",0.0],[219,87,\"l\",\"LBS\",true,\"Switch 141\",0.0],[236,87,\"l\",\"LBS\",true,\"Switch 142\",0.0],[236,88,\"l\",\"LBS\",true,\"Switch 143\",0.0],[223,88,\"l\",\"LBS\",false,\"Switch 144\",0.0],[109,90,\"l\",\"LBS\",true,\"Switch 145\",0.0],[201,90,\"l\",\"LBS\",true,\"Switch 146\",0.0],[173,91,\"l\",\"LBS\",true,\"Switch 147\",0.0],[107,91,\"l\",\"LBS\",true,\"Switch 148\",0.0],[205,92,\"l\",\"LBS\",true,\"Switch 149\",0.0],[207,92,\"l\",\"LBS\",true,\"Switch 150\",0.0],[216,93,\"l\",\"LBS\",true,\"Switch 151\",0.0],[205,93,\"l\",\"LBS\",true,\"Switch 152\",0.0],[201,94,\"l\",\"LBS\",true,\"Switch 153\",0.0],[213,94,\"l\",\"LBS\",true,\"Switch 154\",0.0],[173,95,\"l\",\"LBS\",true,\"Switch 155\",0.0],[174,95,\"l\",\"LBS\",true,\"Switch 156\",0.0],[174,96,\"l\",\"LBS\",true,\"Switch 157\",0.0],[162,96,\"l\",\"LBS\",true,\"Switch 158\",0.0],[161,97,\"l\",\"LBS\",true,\"Switch 159\",0.0],[162,97,\"l\",\"LBS\",true,\"Switch 160\",0.0],[157,98,\"l\",\"LBS\",true,\"Switch 161\",0.0],[155,98,\"l\",\"LBS\",true,\"Switch 162\",0.0],[153,99,\"l\",\"LBS\",true,\"Switch 163\",0.0],[200,99,\"l\",\"LBS\",true,\"Switch 164\",0.0],[229,100,\"l\",\"LBS\",true,\"Switch 165\",0.0],[224,100,\"l\",\"LBS\",true,\"Switch 166\",0.0],[223,101,\"l\",\"LBS\",true,\"Switch 167\",0.0],[227,101,\"l\",\"LBS\",true,\"Switch 168\",0.0],[227,102,\"l\",\"LBS\",true,\"Switch 169\",0.0],[231,102,\"l\",\"LBS\",true,\"Switch 170\",0.0],[231,103,\"l\",\"LBS\",true,\"Switch 171\",0.0],[229,103,\"l\",\"LBS\",true,\"Switch 172\",0.0],[285,104,\"l\",\"LBS\",true,\"Switch 173\",0.0],[288,104,\"l\",\"LBS\",true,\"Switch 174\",0.0],[288,105,\"l\",\"LBS\",true,\"Switch 175\",0.0],[286,105,\"l\",\"LBS\",true,\"Switch 176\",0.0],[176,106,\"l\",\"LBS\",true,\"Switch 177\",0.0],[285,106,\"l\",\"LBS\",true,\"Switch 178\",0.0],[178,107,\"l\",\"LBS\",true,\"Switch 179\",0.0],[176,107,\"l\",\"LBS\",true,\"Switch 180\",0.0],[178,108,\"l\",\"LBS\",true,\"Switch 181\",0.0],[197,108,\"l\",\"LBS\",true,\"Switch 182\",0.0],[287,109,\"l\",\"LBS\",true,\"Switch 183\",0.0],[286,109,\"l\",\"LBS\",true,\"Switch 184\",0.0],[200,110,\"l\",\"LBS\",true,\"Switch 185\",0.0],[184,110,\"l\",\"LBS\",true,\"Switch 186\",0.0],[198,111,\"l\",\"LBS\",true,\"Switch 187\",0.0],[199,111,\"l\",\"LBS\",true,\"Switch 188\",0.0],[199,112,\"l\",\"LBS\",true,\"Switch 189\",0.0],[181,112,\"l\",\"LBS\",true,\"Switch 190\",0.0],[198,113,\"l\",\"LBS\",true,\"Switch 191\",0.0],[184,113,\"l\",\"LBS\",true,\"Switch 192\",0.0],[181,114,\"l\",\"LBS\",true,\"Switch 193\",0.0],[186,114,\"l\",\"LBS\",true,\"Switch 194\",0.0],[314,116,\"l\",\"LBS\",true,\"Switch 195\",0.0],[301,116,\"l\",\"LBS\",true,\"Switch 196\",0.0],[301,117,\"l\",\"LBS\",true,\"Switch 197\",0.0],[303,117,\"l\",\"LBS\",true,\"Switch 198\",0.0],[303,118,\"l\",\"LBS\",true,\"Switch 199\",0.0],[304,118,\"l\",\"LBS\",true,\"Switch 200\",0.0],[273,119,\"l\",\"LBS\",true,\"Switch 201\",0.0],[315,119,\"l\",\"LBS\",true,\"Switch 202\",0.0],[314,120,\"l\",\"LBS\",true,\"Switch 203\",0.0],[246,120,\"l\",\"LBS\",true,\"Switch 204\",0.0],[271,121,\"l\",\"LBS\",true,\"Switch 205\",0.0],[305,121,\"l\",\"LBS\",true,\"Switch 206\",0.0],[312,122,\"l\",\"LBS\",true,\"Switch 207\",0.0],[273,122,\"l\",\"LBS\",true,\"Switch 208\",0.0],[271,123,\"l\",\"LBS\",true,\"Switch 209\",0.0],[281,123,\"l\",\"LBS\",true,\"Switch 210\",0.0],[281,124,\"l\",\"LBS\",true,\"Switch 211\",0.0],[312,124,\"l\",\"LBS\",true,\"Switch 212\",0.0],[271,125,\"l\",\"LBS\",true,\"Switch 213\",0.0],[85,125,\"l\",\"LBS\",true,\"Switch 214\",0.0],[312,126,\"l\",\"LBS\",true,\"Switch 215\",0.0],[313,126,\"l\",\"LBS\",true,\"Switch 216\",0.0],[6,127,\"l\",\"LBS\",true,\"Switch 217\",0.0],[5,128,\"l\",\"LBS\",true,\"Switch 218\",0.0],[244,129,\"l\",\"LBS\",true,\"Switch 219\",0.0],[1,129,\"l\",\"LBS\",true,\"Switch 220\",0.0],[0,130,\"l\",\"LBS\",true,\"Switch 221\",0.0],[4,130,\"l\",\"LBS\",true,\"Switch 222\",0.0],[241,131,\"l\",\"LBS\",true,\"Switch 223\",0.0],[4,131,\"l\",\"LBS\",true,\"Switch 224\",0.0],[8,132,\"l\",\"LBS\",true,\"Switch 225\",0.0],[0,132,\"l\",\"LBS\",true,\"Switch 226\",0.0],[2,133,\"l\",\"LBS\",true,\"Switch 227\",0.0],[245,134,\"l\",\"LBS\",true,\"Switch 228\",0.0],[3,134,\"l\",\"LBS\",true,\"Switch 229\",0.0],[240,135,\"l\",\"LBS\",true,\"Switch 230\",0.0],[241,135,\"l\",\"LBS\",true,\"Switch 231\",0.0],[242,136,\"l\",\"LBS\",true,\"Switch 232\",0.0],[245,137,\"l\",\"LBS\",true,\"Switch 233\",0.0],[244,137,\"l\",\"LBS\",true,\"Switch 234\",0.0],[244,138,\"l\",\"LBS\",true,\"Switch 235\",0.0],[138,139,\"l\",\"LBS\",true,\"Switch 236\",0.0],[111,140,\"l\",\"LBS\",true,\"Switch 237\",0.0],[110,141,\"l\",\"LBS\",true,\"Switch 238\",0.0],[108,141,\"l\",\"LBS\",true,\"Switch 239\",0.0],[140,142,\"l\",\"LBS\",true,\"Switch 240\",0.0],[133,143,\"l\",\"LBS\",true,\"Switch 241\",0.0],[141,144,\"l\",\"LBS\",true,\"Switch 242\",0.0],[138,144,\"l\",\"LBS\",true,\"Switch 243\",0.0],[149,145,\"l\",\"LBS\",true,\"Switch 244\",0.0],[141,145,\"l\",\"LBS\",true,\"Switch 245\",0.0],[147,146,\"l\",\"LBS\",true,\"Switch 246\",0.0],[149,146,\"l\",\"LBS\",true,\"Switch 247\",0.0],[65,147,\"l\",\"LBS\",true,\"Switch 248\",0.0],[65,148,\"l\",\"LBS\",true,\"Switch 249\",0.0],[36,148,\"l\",\"LBS\",true,\"Switch 250\",0.0],[79,149,\"l\",\"LBS\",true,\"Switch 251\",0.0],[79,150,\"l\",\"LBS\",true,\"Switch 252\",0.0],[82,150,\"l\",\"LBS\",true,\"Switch 253\",0.0],[75,151,\"l\",\"LBS\",true,\"Switch 254\",0.0],[101,152,\"l\",\"LBS\",true,\"Switch 255\",0.0],[110,153,\"l\",\"LBS\",true,\"Switch 256\",0.0],[103,153,\"l\",\"LBS\",true,\"Switch 257\",0.0],[103,154,\"l\",\"LBS\",true,\"Switch 258\",0.0],[106,156,\"l\",\"LBS\",true,\"Switch 259\",0.0],[71,157,\"l\",\"LBS\",true,\"Switch 260\",0.0],[71,158,\"l\",\"LBS\",true,\"Switch 261\",0.0],[73,158,\"l\",\"LBS\",true,\"Switch 262\",0.0],[73,161,\"l\",\"LBS\",true,\"Switch 263\",0.0],[80,162,\"l\",\"LBS\",true,\"Switch 264\",0.0],[39,162,\"l\",\"CB\",true,\"Switch 265\",0.0],[57,163,\"l\",\"LBS\",true,\"Switch 266\",0.0],[53,163,\"l\",\"LBS\",true,\"Switch 267\",0.0],[46,164,\"l\",\"LBS\",true,\"Switch 268\",0.0],[53,164,\"l\",\"LBS\",true,\"Switch 269\",0.0],[39,165,\"l\",\"CB\",true,\"Switch 270\",0.0],[42,167,\"l\",\"LBS\",true,\"Switch 271\",0.0],[51,167,\"l\",\"LBS\",true,\"Switch 272\",0.0],[44,168,\"l\",\"LBS\",true,\"Switch 273\",0.0],[56,168,\"l\",\"LBS\",true,\"Switch 274\",0.0],[56,169,\"l\",\"LBS\",true,\"Switch 275\",0.0],[84,169,\"l\",\"LBS\",true,\"Switch 276\",0.0],[52,170,\"l\",\"LBS\",true,\"Switch 277\",0.0],[150,170,\"l\",\"LBS\",true,\"Switch 278\",0.0],[146,171,\"l\",\"LBS\",true,\"Switch 279\",0.0],[150,171,\"l\",\"LBS\",true,\"Switch 280\",0.0],[117,172,\"l\",\"LBS\",true,\"Switch 281\",0.0],[148,172,\"l\",\"LBS\",true,\"Switch 282\",0.0],[148,173,\"l\",\"LBS\",true,\"Switch 283\",0.0],[120,173,\"l\",\"LBS\",true,\"Switch 284\",0.0],[118,174,\"l\",\"LBS\",true,\"Switch 285\",0.0],[148,174,\"l\",\"LBS\",true,\"Switch 286\",0.0],[80,175,\"l\",\"LBS\",true,\"Switch 287\",0.0],[117,175,\"l\",\"LBS\",true,\"Switch 288\",0.0],[146,177,\"l\",\"LBS\",true,\"Switch 289\",0.0],[143,177,\"l\",\"LBS\",true,\"Switch 290\",0.0],[145,178,\"l\",\"LBS\",true,\"Switch 291\",0.0],[146,178,\"l\",\"LBS\",true,\"Switch 292\",0.0],[55,179,\"l\",\"LBS\",true,\"Switch 293\",0.0],[145,179,\"l\",\"LBS\",true,\"Switch 294\",0.0],[83,180,\"l\",\"LBS\",true,\"Switch 295\",0.0],[41,180,\"l\",\"LBS\",true,\"Switch 296\",0.0],[81,181,\"l\",\"LBS\",true,\"Switch 297\",0.0],[77,181,\"l\",\"LBS\",true,\"Switch 298\",0.0],[77,182,\"l\",\"LBS\",true,\"Switch 299\",0.0],[35,182,\"l\",\"LBS\",true,\"Switch 300\",0.0],[35,183,\"l\",\"LBS\",true,\"Switch 301\",0.0],[80,184,\"l\",\"LBS\",true,\"Switch 302\",0.0],[119,184,\"l\",\"LBS\",true,\"Switch 303\",0.0],[81,185,\"l\",\"LBS\",true,\"Switch 304\",0.0],[37,185,\"l\",\"LBS\",true,\"Switch 305\",0.0],[81,186,\"l\",\"LBS\",true,\"Switch 306\",0.0],[43,186,\"l\",\"LBS\",true,\"Switch 307\",0.0],[37,187,\"l\",\"LBS\",true,\"Switch 308\",0.0],[41,187,\"l\",\"LBS\",true,\"Switch 309\",0.0],[35,188,\"l\",\"LBS\",true,\"Switch 310\",0.0],[45,188,\"l\",\"LBS\",false,\"Switch 311\",0.0],[45,189,\"l\",\"LBS\",true,\"Switch 312\",0.0],[47,189,\"l\",\"LBS\",true,\"Switch 313\",0.0],[47,190,\"l\",\"LBS\",true,\"Switch 314\",0.0],[49,190,\"l\",\"LBS\",true,\"Switch 315\",0.0],[49,191,\"l\",\"LBS\",true,\"Switch 316\",0.0],[52,191,\"l\",\"LBS\",true,\"Switch 317\",0.0],[55,192,\"l\",\"LBS\",true,\"Switch 318\",0.0],[120,192,\"l\",\"LBS\",true,\"Switch 319\",0.0],[6,193,\"l\",\"LBS\",true,\"Switch 320\",0.0],[319,193,\"l\",\"CB\",true,\"Switch 321\",0.0]]}",
+      "_object": "{\"columns\":[\"bus\",\"element\",\"et\",\"type\",\"closed\",\"name\",\"z_ohm\",\"in_ka\"],\"index\":[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159,160,161,162,163,164,165,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191,192,193,194,195,196,197,198,199,200,201,202,203,204,205,206,207,208,209,210,211,212,213,214,215,216,217,218,219,220,221,222,223,224,225,226,227,228,229,230,231,232,233,234,235,236,237,238,239,240,241,242,243,244,245,246,247,248,249,250,251,252,253,254,255,256,257,258,259,260,261,262,263,264,265,266,267,268,269,270,271,272,273,274,275,276,277,278,279,280,281,282,283,284,285,286,287,288,289,290,291,292,293,294,295,296,297,298,299,300,301,302,303,304,305,306,307,308,309,310,311,312,313,314,315,316,317,318,319,320,321],\"data\":[[109,0,\"l\",\"LBS\",true,\"Switch 0\",0.0,null],[40,1,\"l\",\"LBS\",true,\"Switch 1\",0.0,null],[221,2,\"l\",\"LBS\",true,\"Switch 2\",0.0,null],[221,3,\"l\",\"LBS\",true,\"Switch 3\",0.0,null],[239,3,\"l\",\"LBS\",true,\"Switch 4\",0.0,null],[239,4,\"l\",\"LBS\",true,\"Switch 5\",0.0,null],[236,4,\"l\",\"LBS\",true,\"Switch 6\",0.0,null],[169,5,\"l\",\"LBS\",true,\"Switch 7\",0.0,null],[54,5,\"l\",\"LBS\",true,\"Switch 8\",0.0,null],[169,6,\"l\",\"LBS\",true,\"Switch 9\",0.0,null],[275,6,\"l\",\"LBS\",true,\"Switch 10\",0.0,null],[169,7,\"l\",\"LBS\",true,\"Switch 11\",0.0,null],[287,7,\"l\",\"LBS\",true,\"Switch 12\",0.0,null],[167,8,\"l\",\"LBS\",true,\"Switch 13\",0.0,null],[129,8,\"l\",\"LBS\",false,\"Switch 14\",0.0,null],[197,10,\"l\",\"LBS\",true,\"Switch 15\",0.0,null],[167,10,\"l\",\"LBS\",true,\"Switch 16\",0.0,null],[199,11,\"l\",\"LBS\",true,\"Switch 17\",0.0,null],[167,11,\"l\",\"LBS\",true,\"Switch 18\",0.0,null],[168,12,\"l\",\"LBS\",true,\"Switch 19\",0.0,null],[273,12,\"l\",\"LBS\",true,\"Switch 20\",0.0,null],[168,14,\"l\",\"LBS\",true,\"Switch 21\",0.0,null],[246,14,\"l\",\"LBS\",true,\"Switch 22\",0.0,null],[172,15,\"l\",\"LBS\",true,\"Switch 23\",0.0,null],[144,16,\"l\",\"LBS\",true,\"Switch 24\",0.0,null],[172,16,\"l\",\"LBS\",true,\"Switch 25\",0.0,null],[253,17,\"l\",\"LBS\",true,\"Switch 26\",0.0,null],[8,18,\"l\",\"LBS\",true,\"Switch 27\",0.0,null],[170,20,\"l\",\"LBS\",true,\"Switch 28\",0.0,null],[136,20,\"l\",\"LBS\",true,\"Switch 29\",0.0,null],[170,21,\"l\",\"LBS\",true,\"Switch 30\",0.0,null],[216,22,\"l\",\"LBS\",true,\"Switch 31\",0.0,null],[195,22,\"l\",\"LBS\",true,\"Switch 32\",0.0,null],[195,23,\"l\",\"LBS\",true,\"Switch 33\",0.0,null],[132,23,\"l\",\"LBS\",false,\"Switch 34\",0.0,null],[195,24,\"l\",\"LBS\",true,\"Switch 35\",0.0,null],[213,25,\"l\",\"LBS\",true,\"Switch 36\",0.0,null],[194,25,\"l\",\"LBS\",true,\"Switch 37\",0.0,null],[207,26,\"l\",\"LBS\",true,\"Switch 38\",0.0,null],[194,26,\"l\",\"LBS\",true,\"Switch 39\",0.0,null],[269,27,\"l\",\"LBS\",true,\"Switch 40\",0.0,null],[196,27,\"l\",\"LBS\",true,\"Switch 41\",0.0,null],[196,28,\"l\",\"LBS\",true,\"Switch 42\",0.0,null],[189,29,\"l\",\"LBS\",true,\"Switch 43\",0.0,null],[82,29,\"l\",\"LBS\",true,\"Switch 44\",0.0,null],[51,30,\"l\",\"LBS\",true,\"Switch 45\",0.0,null],[189,30,\"l\",\"LBS\",true,\"Switch 46\",0.0,null],[31,31,\"l\",\"LBS\",true,\"Switch 47\",0.0,null],[190,31,\"l\",\"LBS\",false,\"Switch 48\",0.0,null],[65,32,\"l\",\"LBS\",true,\"Switch 49\",0.0,null],[190,32,\"l\",\"LBS\",true,\"Switch 50\",0.0,null],[192,34,\"l\",\"LBS\",true,\"Switch 51\",0.0,null],[44,34,\"l\",\"LBS\",true,\"Switch 52\",0.0,null],[57,35,\"l\",\"LBS\",true,\"Switch 53\",0.0,null],[192,35,\"l\",\"LBS\",true,\"Switch 54\",0.0,null],[289,36,\"l\",\"LBS\",true,\"Switch 55\",0.0,null],[72,36,\"l\",\"LBS\",true,\"Switch 56\",0.0,null],[289,37,\"l\",\"LBS\",true,\"Switch 57\",0.0,null],[75,37,\"l\",\"LBS\",true,\"Switch 58\",0.0,null],[290,38,\"l\",\"LBS\",true,\"Switch 59\",0.0,null],[290,39,\"l\",\"LBS\",true,\"Switch 60\",0.0,null],[242,39,\"l\",\"LBS\",true,\"Switch 61\",0.0,null],[290,40,\"l\",\"LBS\",true,\"Switch 62\",0.0,null],[240,40,\"l\",\"LBS\",true,\"Switch 63\",0.0,null],[269,41,\"l\",\"LBS\",true,\"Switch 64\",0.0,null],[108,41,\"l\",\"LBS\",true,\"Switch 65\",0.0,null],[153,42,\"l\",\"LBS\",true,\"Switch 66\",0.0,null],[316,42,\"l\",\"LBS\",true,\"Switch 67\",0.0,null],[316,43,\"l\",\"LBS\",true,\"Switch 68\",0.0,null],[159,43,\"l\",\"LBS\",true,\"Switch 69\",0.0,null],[316,44,\"l\",\"LBS\",true,\"Switch 70\",0.0,null],[157,44,\"l\",\"LBS\",true,\"Switch 71\",0.0,null],[33,45,\"l\",\"LBS\",true,\"Switch 72\",0.0,null],[245,46,\"l\",\"LBS\",true,\"Switch 73\",0.0,null],[298,46,\"l\",\"LBS\",true,\"Switch 74\",0.0,null],[298,47,\"l\",\"LBS\",true,\"Switch 75\",0.0,null],[248,47,\"l\",\"LBS\",true,\"Switch 76\",0.0,null],[237,48,\"l\",\"LBS\",true,\"Switch 77\",0.0,null],[40,49,\"l\",\"LBS\",true,\"Switch 78\",0.0,null],[133,50,\"l\",\"LBS\",true,\"Switch 79\",0.0,null],[248,50,\"l\",\"LBS\",true,\"Switch 80\",0.0,null],[237,51,\"l\",\"LBS\",true,\"Switch 81\",0.0,null],[136,51,\"l\",\"LBS\",true,\"Switch 82\",0.0,null],[29,52,\"l\",\"LBS\",true,\"Switch 83\",0.0,null],[29,53,\"l\",\"LBS\",true,\"Switch 84\",0.0,null],[72,54,\"l\",\"LBS\",true,\"Switch 85\",0.0,null],[253,55,\"l\",\"LBS\",true,\"Switch 86\",0.0,null],[304,55,\"l\",\"LBS\",true,\"Switch 87\",0.0,null],[33,56,\"l\",\"LBS\",true,\"Switch 88\",0.0,null],[110,57,\"l\",\"LBS\",true,\"Switch 89\",0.0,null],[31,57,\"l\",\"LBS\",true,\"Switch 90\",0.0,null],[34,58,\"l\",\"LBS\",true,\"Switch 91\",0.0,null],[76,58,\"l\",\"LBS\",true,\"Switch 92\",0.0,null],[45,59,\"l\",\"LBS\",true,\"Switch 93\",0.0,null],[34,59,\"l\",\"LBS\",true,\"Switch 94\",0.0,null],[32,60,\"l\",\"LBS\",true,\"Switch 95\",0.0,null],[34,60,\"l\",\"LBS\",true,\"Switch 96\",0.0,null],[46,61,\"l\",\"LBS\",true,\"Switch 97\",0.0,null],[32,61,\"l\",\"LBS\",true,\"Switch 98\",0.0,null],[319,62,\"l\",\"CB\",true,\"Switch 99\",0.0,null],[50,63,\"l\",\"LBS\",true,\"Switch 100\",0.0,null],[48,63,\"l\",\"LBS\",true,\"Switch 101\",0.0,null],[42,64,\"l\",\"LBS\",true,\"Switch 102\",0.0,null],[50,64,\"l\",\"LBS\",true,\"Switch 103\",0.0,null],[84,65,\"l\",\"LBS\",true,\"Switch 104\",0.0,null],[50,65,\"l\",\"LBS\",true,\"Switch 105\",0.0,null],[54,66,\"l\",\"LBS\",true,\"Switch 106\",0.0,null],[147,66,\"l\",\"LBS\",false,\"Switch 107\",0.0,null],[54,67,\"l\",\"LBS\",true,\"Switch 108\",0.0,null],[144,67,\"l\",\"LBS\",true,\"Switch 109\",0.0,null],[224,68,\"l\",\"LBS\",true,\"Switch 110\",0.0,null],[38,68,\"l\",\"LBS\",true,\"Switch 111\",0.0,null],[38,69,\"l\",\"LBS\",true,\"Switch 112\",0.0,null],[161,69,\"l\",\"LBS\",true,\"Switch 113\",0.0,null],[134,70,\"l\",\"LBS\",true,\"Switch 114\",0.0,null],[235,71,\"l\",\"LBS\",true,\"Switch 115\",0.0,null],[83,72,\"l\",\"LBS\",true,\"Switch 116\",0.0,null],[132,73,\"l\",\"LBS\",true,\"Switch 117\",0.0,null],[137,73,\"l\",\"LBS\",true,\"Switch 118\",0.0,null],[137,74,\"l\",\"LBS\",true,\"Switch 119\",0.0,null],[95,74,\"l\",\"LBS\",true,\"Switch 120\",0.0,null],[132,75,\"l\",\"LBS\",true,\"Switch 121\",0.0,null],[134,75,\"l\",\"LBS\",true,\"Switch 122\",0.0,null],[129,76,\"l\",\"LBS\",true,\"Switch 123\",0.0,null],[188,76,\"l\",\"LBS\",true,\"Switch 124\",0.0,null],[85,77,\"l\",\"LBS\",true,\"Switch 125\",0.0,null],[129,77,\"l\",\"LBS\",true,\"Switch 126\",0.0,null],[98,78,\"l\",\"LBS\",true,\"Switch 127\",0.0,null],[100,78,\"l\",\"LBS\",true,\"Switch 128\",0.0,null],[100,79,\"l\",\"LBS\",true,\"Switch 129\",0.0,null],[102,79,\"l\",\"LBS\",true,\"Switch 130\",0.0,null],[94,80,\"l\",\"LBS\",true,\"Switch 131\",0.0,null],[102,80,\"l\",\"LBS\",true,\"Switch 132\",0.0,null],[100,81,\"l\",\"LBS\",true,\"Switch 133\",0.0,null],[107,81,\"l\",\"LBS\",true,\"Switch 134\",0.0,null],[94,82,\"l\",\"LBS\",true,\"Switch 135\",0.0,null],[95,82,\"l\",\"LBS\",true,\"Switch 136\",0.0,null],[210,85,\"l\",\"LBS\",true,\"Switch 137\",0.0,null],[215,85,\"l\",\"LBS\",true,\"Switch 138\",0.0,null],[216,86,\"l\",\"LBS\",true,\"Switch 139\",0.0,null],[215,86,\"l\",\"LBS\",true,\"Switch 140\",0.0,null],[219,87,\"l\",\"LBS\",true,\"Switch 141\",0.0,null],[236,87,\"l\",\"LBS\",true,\"Switch 142\",0.0,null],[236,88,\"l\",\"LBS\",true,\"Switch 143\",0.0,null],[223,88,\"l\",\"LBS\",false,\"Switch 144\",0.0,null],[109,90,\"l\",\"LBS\",true,\"Switch 145\",0.0,null],[201,90,\"l\",\"LBS\",true,\"Switch 146\",0.0,null],[173,91,\"l\",\"LBS\",true,\"Switch 147\",0.0,null],[107,91,\"l\",\"LBS\",true,\"Switch 148\",0.0,null],[205,92,\"l\",\"LBS\",true,\"Switch 149\",0.0,null],[207,92,\"l\",\"LBS\",true,\"Switch 150\",0.0,null],[216,93,\"l\",\"LBS\",true,\"Switch 151\",0.0,null],[205,93,\"l\",\"LBS\",true,\"Switch 152\",0.0,null],[201,94,\"l\",\"LBS\",true,\"Switch 153\",0.0,null],[213,94,\"l\",\"LBS\",true,\"Switch 154\",0.0,null],[173,95,\"l\",\"LBS\",true,\"Switch 155\",0.0,null],[174,95,\"l\",\"LBS\",true,\"Switch 156\",0.0,null],[174,96,\"l\",\"LBS\",true,\"Switch 157\",0.0,null],[162,96,\"l\",\"LBS\",true,\"Switch 158\",0.0,null],[161,97,\"l\",\"LBS\",true,\"Switch 159\",0.0,null],[162,97,\"l\",\"LBS\",true,\"Switch 160\",0.0,null],[157,98,\"l\",\"LBS\",true,\"Switch 161\",0.0,null],[155,98,\"l\",\"LBS\",true,\"Switch 162\",0.0,null],[153,99,\"l\",\"LBS\",true,\"Switch 163\",0.0,null],[200,99,\"l\",\"LBS\",true,\"Switch 164\",0.0,null],[229,100,\"l\",\"LBS\",true,\"Switch 165\",0.0,null],[224,100,\"l\",\"LBS\",true,\"Switch 166\",0.0,null],[223,101,\"l\",\"LBS\",true,\"Switch 167\",0.0,null],[227,101,\"l\",\"LBS\",true,\"Switch 168\",0.0,null],[227,102,\"l\",\"LBS\",true,\"Switch 169\",0.0,null],[231,102,\"l\",\"LBS\",true,\"Switch 170\",0.0,null],[231,103,\"l\",\"LBS\",true,\"Switch 171\",0.0,null],[229,103,\"l\",\"LBS\",true,\"Switch 172\",0.0,null],[285,104,\"l\",\"LBS\",true,\"Switch 173\",0.0,null],[288,104,\"l\",\"LBS\",true,\"Switch 174\",0.0,null],[288,105,\"l\",\"LBS\",true,\"Switch 175\",0.0,null],[286,105,\"l\",\"LBS\",true,\"Switch 176\",0.0,null],[176,106,\"l\",\"LBS\",true,\"Switch 177\",0.0,null],[285,106,\"l\",\"LBS\",true,\"Switch 178\",0.0,null],[178,107,\"l\",\"LBS\",true,\"Switch 179\",0.0,null],[176,107,\"l\",\"LBS\",true,\"Switch 180\",0.0,null],[178,108,\"l\",\"LBS\",true,\"Switch 181\",0.0,null],[197,108,\"l\",\"LBS\",true,\"Switch 182\",0.0,null],[287,109,\"l\",\"LBS\",true,\"Switch 183\",0.0,null],[286,109,\"l\",\"LBS\",true,\"Switch 184\",0.0,null],[200,110,\"l\",\"LBS\",true,\"Switch 185\",0.0,null],[184,110,\"l\",\"LBS\",true,\"Switch 186\",0.0,null],[198,111,\"l\",\"LBS\",true,\"Switch 187\",0.0,null],[199,111,\"l\",\"LBS\",true,\"Switch 188\",0.0,null],[199,112,\"l\",\"LBS\",true,\"Switch 189\",0.0,null],[181,112,\"l\",\"LBS\",true,\"Switch 190\",0.0,null],[198,113,\"l\",\"LBS\",true,\"Switch 191\",0.0,null],[184,113,\"l\",\"LBS\",true,\"Switch 192\",0.0,null],[181,114,\"l\",\"LBS\",true,\"Switch 193\",0.0,null],[186,114,\"l\",\"LBS\",true,\"Switch 194\",0.0,null],[314,116,\"l\",\"LBS\",true,\"Switch 195\",0.0,null],[301,116,\"l\",\"LBS\",true,\"Switch 196\",0.0,null],[301,117,\"l\",\"LBS\",true,\"Switch 197\",0.0,null],[303,117,\"l\",\"LBS\",true,\"Switch 198\",0.0,null],[303,118,\"l\",\"LBS\",true,\"Switch 199\",0.0,null],[304,118,\"l\",\"LBS\",true,\"Switch 200\",0.0,null],[273,119,\"l\",\"LBS\",true,\"Switch 201\",0.0,null],[315,119,\"l\",\"LBS\",true,\"Switch 202\",0.0,null],[314,120,\"l\",\"LBS\",true,\"Switch 203\",0.0,null],[246,120,\"l\",\"LBS\",true,\"Switch 204\",0.0,null],[271,121,\"l\",\"LBS\",true,\"Switch 205\",0.0,null],[305,121,\"l\",\"LBS\",true,\"Switch 206\",0.0,null],[312,122,\"l\",\"LBS\",true,\"Switch 207\",0.0,null],[273,122,\"l\",\"LBS\",true,\"Switch 208\",0.0,null],[271,123,\"l\",\"LBS\",true,\"Switch 209\",0.0,null],[281,123,\"l\",\"LBS\",true,\"Switch 210\",0.0,null],[281,124,\"l\",\"LBS\",true,\"Switch 211\",0.0,null],[312,124,\"l\",\"LBS\",true,\"Switch 212\",0.0,null],[271,125,\"l\",\"LBS\",true,\"Switch 213\",0.0,null],[85,125,\"l\",\"LBS\",true,\"Switch 214\",0.0,null],[312,126,\"l\",\"LBS\",true,\"Switch 215\",0.0,null],[313,126,\"l\",\"LBS\",true,\"Switch 216\",0.0,null],[6,127,\"l\",\"LBS\",true,\"Switch 217\",0.0,null],[5,128,\"l\",\"LBS\",true,\"Switch 218\",0.0,null],[244,129,\"l\",\"LBS\",true,\"Switch 219\",0.0,null],[1,129,\"l\",\"LBS\",true,\"Switch 220\",0.0,null],[0,130,\"l\",\"LBS\",true,\"Switch 221\",0.0,null],[4,130,\"l\",\"LBS\",true,\"Switch 222\",0.0,null],[241,131,\"l\",\"LBS\",true,\"Switch 223\",0.0,null],[4,131,\"l\",\"LBS\",true,\"Switch 224\",0.0,null],[8,132,\"l\",\"LBS\",true,\"Switch 225\",0.0,null],[0,132,\"l\",\"LBS\",true,\"Switch 226\",0.0,null],[2,133,\"l\",\"LBS\",true,\"Switch 227\",0.0,null],[245,134,\"l\",\"LBS\",true,\"Switch 228\",0.0,null],[3,134,\"l\",\"LBS\",true,\"Switch 229\",0.0,null],[240,135,\"l\",\"LBS\",true,\"Switch 230\",0.0,null],[241,135,\"l\",\"LBS\",true,\"Switch 231\",0.0,null],[242,136,\"l\",\"LBS\",true,\"Switch 232\",0.0,null],[245,137,\"l\",\"LBS\",true,\"Switch 233\",0.0,null],[244,137,\"l\",\"LBS\",true,\"Switch 234\",0.0,null],[244,138,\"l\",\"LBS\",true,\"Switch 235\",0.0,null],[138,139,\"l\",\"LBS\",true,\"Switch 236\",0.0,null],[111,140,\"l\",\"LBS\",true,\"Switch 237\",0.0,null],[110,141,\"l\",\"LBS\",true,\"Switch 238\",0.0,null],[108,141,\"l\",\"LBS\",true,\"Switch 239\",0.0,null],[140,142,\"l\",\"LBS\",true,\"Switch 240\",0.0,null],[133,143,\"l\",\"LBS\",true,\"Switch 241\",0.0,null],[141,144,\"l\",\"LBS\",true,\"Switch 242\",0.0,null],[138,144,\"l\",\"LBS\",true,\"Switch 243\",0.0,null],[149,145,\"l\",\"LBS\",true,\"Switch 244\",0.0,null],[141,145,\"l\",\"LBS\",true,\"Switch 245\",0.0,null],[147,146,\"l\",\"LBS\",true,\"Switch 246\",0.0,null],[149,146,\"l\",\"LBS\",true,\"Switch 247\",0.0,null],[65,147,\"l\",\"LBS\",true,\"Switch 248\",0.0,null],[65,148,\"l\",\"LBS\",true,\"Switch 249\",0.0,null],[36,148,\"l\",\"LBS\",true,\"Switch 250\",0.0,null],[79,149,\"l\",\"LBS\",true,\"Switch 251\",0.0,null],[79,150,\"l\",\"LBS\",true,\"Switch 252\",0.0,null],[82,150,\"l\",\"LBS\",true,\"Switch 253\",0.0,null],[75,151,\"l\",\"LBS\",true,\"Switch 254\",0.0,null],[101,152,\"l\",\"LBS\",true,\"Switch 255\",0.0,null],[110,153,\"l\",\"LBS\",true,\"Switch 256\",0.0,null],[103,153,\"l\",\"LBS\",true,\"Switch 257\",0.0,null],[103,154,\"l\",\"LBS\",true,\"Switch 258\",0.0,null],[106,156,\"l\",\"LBS\",true,\"Switch 259\",0.0,null],[71,157,\"l\",\"LBS\",true,\"Switch 260\",0.0,null],[71,158,\"l\",\"LBS\",true,\"Switch 261\",0.0,null],[73,158,\"l\",\"LBS\",true,\"Switch 262\",0.0,null],[73,161,\"l\",\"LBS\",true,\"Switch 263\",0.0,null],[80,162,\"l\",\"LBS\",true,\"Switch 264\",0.0,null],[39,162,\"l\",\"CB\",true,\"Switch 265\",0.0,null],[57,163,\"l\",\"LBS\",true,\"Switch 266\",0.0,null],[53,163,\"l\",\"LBS\",true,\"Switch 267\",0.0,null],[46,164,\"l\",\"LBS\",true,\"Switch 268\",0.0,null],[53,164,\"l\",\"LBS\",true,\"Switch 269\",0.0,null],[39,165,\"l\",\"CB\",true,\"Switch 270\",0.0,null],[42,167,\"l\",\"LBS\",true,\"Switch 271\",0.0,null],[51,167,\"l\",\"LBS\",true,\"Switch 272\",0.0,null],[44,168,\"l\",\"LBS\",true,\"Switch 273\",0.0,null],[56,168,\"l\",\"LBS\",true,\"Switch 274\",0.0,null],[56,169,\"l\",\"LBS\",true,\"Switch 275\",0.0,null],[84,169,\"l\",\"LBS\",true,\"Switch 276\",0.0,null],[52,170,\"l\",\"LBS\",true,\"Switch 277\",0.0,null],[150,170,\"l\",\"LBS\",true,\"Switch 278\",0.0,null],[146,171,\"l\",\"LBS\",true,\"Switch 279\",0.0,null],[150,171,\"l\",\"LBS\",true,\"Switch 280\",0.0,null],[117,172,\"l\",\"LBS\",true,\"Switch 281\",0.0,null],[148,172,\"l\",\"LBS\",true,\"Switch 282\",0.0,null],[148,173,\"l\",\"LBS\",true,\"Switch 283\",0.0,null],[120,173,\"l\",\"LBS\",true,\"Switch 284\",0.0,null],[118,174,\"l\",\"LBS\",true,\"Switch 285\",0.0,null],[148,174,\"l\",\"LBS\",true,\"Switch 286\",0.0,null],[80,175,\"l\",\"LBS\",true,\"Switch 287\",0.0,null],[117,175,\"l\",\"LBS\",true,\"Switch 288\",0.0,null],[146,177,\"l\",\"LBS\",true,\"Switch 289\",0.0,null],[143,177,\"l\",\"LBS\",true,\"Switch 290\",0.0,null],[145,178,\"l\",\"LBS\",true,\"Switch 291\",0.0,null],[146,178,\"l\",\"LBS\",true,\"Switch 292\",0.0,null],[55,179,\"l\",\"LBS\",true,\"Switch 293\",0.0,null],[145,179,\"l\",\"LBS\",true,\"Switch 294\",0.0,null],[83,180,\"l\",\"LBS\",true,\"Switch 295\",0.0,null],[41,180,\"l\",\"LBS\",true,\"Switch 296\",0.0,null],[81,181,\"l\",\"LBS\",true,\"Switch 297\",0.0,null],[77,181,\"l\",\"LBS\",true,\"Switch 298\",0.0,null],[77,182,\"l\",\"LBS\",true,\"Switch 299\",0.0,null],[35,182,\"l\",\"LBS\",true,\"Switch 300\",0.0,null],[35,183,\"l\",\"LBS\",true,\"Switch 301\",0.0,null],[80,184,\"l\",\"LBS\",true,\"Switch 302\",0.0,null],[119,184,\"l\",\"LBS\",true,\"Switch 303\",0.0,null],[81,185,\"l\",\"LBS\",true,\"Switch 304\",0.0,null],[37,185,\"l\",\"LBS\",true,\"Switch 305\",0.0,null],[81,186,\"l\",\"LBS\",true,\"Switch 306\",0.0,null],[43,186,\"l\",\"LBS\",true,\"Switch 307\",0.0,null],[37,187,\"l\",\"LBS\",true,\"Switch 308\",0.0,null],[41,187,\"l\",\"LBS\",true,\"Switch 309\",0.0,null],[35,188,\"l\",\"LBS\",true,\"Switch 310\",0.0,null],[45,188,\"l\",\"LBS\",false,\"Switch 311\",0.0,null],[45,189,\"l\",\"LBS\",true,\"Switch 312\",0.0,null],[47,189,\"l\",\"LBS\",true,\"Switch 313\",0.0,null],[47,190,\"l\",\"LBS\",true,\"Switch 314\",0.0,null],[49,190,\"l\",\"LBS\",true,\"Switch 315\",0.0,null],[49,191,\"l\",\"LBS\",true,\"Switch 316\",0.0,null],[52,191,\"l\",\"LBS\",true,\"Switch 317\",0.0,null],[55,192,\"l\",\"LBS\",true,\"Switch 318\",0.0,null],[120,192,\"l\",\"LBS\",true,\"Switch 319\",0.0,null],[6,193,\"l\",\"LBS\",true,\"Switch 320\",0.0,null],[319,193,\"l\",\"CB\",true,\"Switch 321\",0.0,null]]}",
       "orient": "split",
       "dtype": {
         "bus": "int64",
@@ -162,41 +163,43 @@
         "type": "object",
         "closed": "bool",
         "name": "object",
-        "z_ohm": "float64"
+        "z_ohm": "float64",
+        "in_ka": "float64"
       }
     },
     "shunt": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"bus\",\"in_service\",\"max_step\",\"name\",\"p_mw\",\"q_mvar\",\"scaling\",\"step\",\"vn_kv\"],\"index\":[],\"data\":[]}",
+      "_object": "{\"columns\":[\"bus\",\"name\",\"q_mvar\",\"p_mw\",\"vn_kv\",\"step\",\"max_step\",\"in_service\",\"scaling\"],\"index\":[],\"data\":[]}",
       "orient": "split",
       "dtype": {
         "bus": "uint32",
-        "in_service": "bool",
-        "max_step": "uint32",
         "name": "object",
-        "p_mw": "float64",
         "q_mvar": "float64",
-        "scaling": "float64",
+        "p_mw": "float64",
+        "vn_kv": "float64",
         "step": "uint32",
-        "vn_kv": "float64"
+        "max_step": "uint32",
+        "in_service": "bool",
+        "scaling": "float64"
       }
     },
     "ext_grid": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"bus\",\"in_service\",\"name\",\"rx_max\",\"rx_min\",\"s_sc_max_mva\",\"s_sc_min_mva\",\"va_degree\",\"vm_pu\"],\"index\":[0,1],\"data\":[[58,true,\"External Grid 0\",null,null,null,null,0.0,1.0],[318,true,\"External Grid 1\",null,null,null,null,0.0,1.0]]}",
+      "_object": "{\"columns\":[\"name\",\"bus\",\"vm_pu\",\"va_degree\",\"slack_weight\",\"in_service\",\"rx_max\",\"rx_min\",\"s_sc_max_mva\",\"s_sc_min_mva\"],\"index\":[0,1],\"data\":[[\"External Grid 0\",58,1.0,0.0,1.0,true,null,null,null,null],[\"External Grid 1\",318,1.0,0.0,1.0,true,null,null,null,null]]}",
       "orient": "split",
       "dtype": {
-        "bus": "uint32",
-        "in_service": "bool",
         "name": "object",
+        "bus": "uint32",
+        "vm_pu": "float64",
+        "va_degree": "float64",
+        "slack_weight": "float64",
+        "in_service": "bool",
         "rx_max": "float64",
         "rx_min": "float64",
         "s_sc_max_mva": "float64",
-        "s_sc_min_mva": "float64",
-        "va_degree": "float64",
-        "vm_pu": "float64"
+        "s_sc_min_mva": "float64"
       }
     },
     "line": {
@@ -293,43 +296,43 @@
     "impedance": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"from_bus\",\"in_service\",\"name\",\"r_pu\",\"rft_pu\",\"rtf_pu\",\"sn_mva\",\"to_bus\",\"x_pu\",\"xft_pu\",\"xtf_pu\"],\"index\":[],\"data\":[]}",
+      "_object": "{\"columns\":[\"name\",\"from_bus\",\"to_bus\",\"rft_pu\",\"xft_pu\",\"rtf_pu\",\"xtf_pu\",\"sn_mva\",\"in_service\",\"r_pu\",\"x_pu\"],\"index\":[],\"data\":[]}",
       "orient": "split",
       "dtype": {
-        "from_bus": "uint32",
-        "in_service": "bool",
         "name": "object",
-        "r_pu": "float64",
-        "rft_pu": "float64",
-        "rtf_pu": "float64",
-        "sn_mva": "float64",
+        "from_bus": "uint32",
         "to_bus": "uint32",
-        "x_pu": "float64",
+        "rft_pu": "float64",
         "xft_pu": "float64",
-        "xtf_pu": "float64"
+        "rtf_pu": "float64",
+        "xtf_pu": "float64",
+        "sn_mva": "float64",
+        "in_service": "bool",
+        "r_pu": "float64",
+        "x_pu": "float64"
       }
     },
     "dcline": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"cost_per_mw\",\"from_bus\",\"in_service\",\"loss_mw\",\"loss_percent\",\"max_p_mw\",\"max_q_from_mvar\",\"max_q_to_mvar\",\"min_q_from_mvar\",\"min_q_to_mvar\",\"name\",\"p_mw\",\"to_bus\",\"vm_from_pu\",\"vm_to_pu\"],\"index\":[],\"data\":[]}",
+      "_object": "{\"columns\":[\"name\",\"from_bus\",\"to_bus\",\"p_mw\",\"loss_percent\",\"loss_mw\",\"vm_from_pu\",\"vm_to_pu\",\"max_p_mw\",\"min_q_from_mvar\",\"min_q_to_mvar\",\"max_q_from_mvar\",\"max_q_to_mvar\",\"in_service\",\"cost_per_mw\"],\"index\":[],\"data\":[]}",
       "orient": "split",
       "dtype": {
-        "cost_per_mw": "float64",
+        "name": "object",
         "from_bus": "uint32",
-        "in_service": "bool",
-        "loss_mw": "float64",
+        "to_bus": "uint32",
+        "p_mw": "float64",
         "loss_percent": "float64",
+        "loss_mw": "float64",
+        "vm_from_pu": "float64",
+        "vm_to_pu": "float64",
         "max_p_mw": "float64",
-        "max_q_from_mvar": "float64",
-        "max_q_to_mvar": "float64",
         "min_q_from_mvar": "float64",
         "min_q_to_mvar": "float64",
-        "name": "object",
-        "p_mw": "float64",
-        "to_bus": "uint32",
-        "vm_from_pu": "float64",
-        "vm_to_pu": "float64"
+        "max_q_from_mvar": "float64",
+        "max_q_to_mvar": "float64",
+        "in_service": "bool",
+        "cost_per_mw": "float64"
       }
     },
     "ward": {
@@ -350,7 +353,7 @@
     "xward": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"name\",\"bus\",\"ps_mw\",\"qs_mvar\",\"qz_mvar\",\"pz_mw\",\"r_ohm\",\"x_ohm\",\"vm_pu\",\"in_service\"],\"index\":[],\"data\":[]}",
+      "_object": "{\"columns\":[\"name\",\"bus\",\"ps_mw\",\"qs_mvar\",\"qz_mvar\",\"pz_mw\",\"r_ohm\",\"x_ohm\",\"vm_pu\",\"slack_weight\",\"in_service\"],\"index\":[],\"data\":[]}",
       "orient": "split",
       "dtype": {
         "name": "object",
@@ -362,6 +365,7 @@
         "r_ohm": "float64",
         "x_ohm": "float64",
         "vm_pu": "float64",
+        "slack_weight": "float64",
         "in_service": "bool"
       }
     },
@@ -387,7 +391,7 @@
       "orient": "split",
       "dtype": {
         "power_type": "object",
-        "element": "object",
+        "element": "uint32",
         "et": "object",
         "points": "object"
       }
@@ -398,7 +402,7 @@
       "_object": "{\"columns\":[\"element\",\"et\",\"cp0_eur\",\"cp1_eur_per_mw\",\"cp2_eur_per_mw2\",\"cq0_eur\",\"cq1_eur_per_mvar\",\"cq2_eur_per_mvar2\"],\"index\":[],\"data\":[]}",
       "orient": "split",
       "dtype": {
-        "element": "object",
+        "element": "uint32",
         "et": "object",
         "cp0_eur": "float64",
         "cp1_eur_per_mw": "float64",
@@ -406,6 +410,15 @@
         "cq0_eur": "float64",
         "cq1_eur_per_mvar": "float64",
         "cq2_eur_per_mvar2": "float64"
+      }
+    },
+    "characteristic": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[\"object\"],\"index\":[],\"data\":[]}",
+      "orient": "split",
+      "dtype": {
+        "object": "object"
       }
     },
     "controller": {
@@ -442,8 +455,9 @@
         "coords": "object"
       }
     },
-    "version": "2.6.0",
+    "version": "2.10.1",
     "converged": true,
+    "OPF_converged": false,
     "name": "",
     "f_hz": 50.0,
     "sn_mva": 1.0,
@@ -1184,6 +1198,16 @@
         "q_mvar": "float64"
       }
     },
+    "res_switch": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[\"i_ka\",\"loading_percent\"],\"index\":[],\"data\":[]}",
+      "orient": "split",
+      "dtype": {
+        "i_ka": "float64",
+        "loading_percent": "float64"
+      }
+    },
     "res_bus_est": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
@@ -1283,6 +1307,16 @@
         "i_to_ka": "float64"
       }
     },
+    "res_switch_est": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[\"i_ka\",\"loading_percent\"],\"index\":[],\"data\":[]}",
+      "orient": "split",
+      "dtype": {
+        "i_ka": "float64",
+        "loading_percent": "float64"
+      }
+    },
     "res_bus_sc": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
@@ -1320,6 +1354,12 @@
       "orient": "split"
     },
     "res_sgen_sc": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[],\"index\":[],\"data\":[]}",
+      "orient": "split"
+    },
+    "res_switch_sc": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
       "_object": "{\"columns\":[],\"index\":[],\"data\":[]}",
@@ -1499,7 +1539,6 @@
         "q_c_mvar": "float64"
       }
     },
-    "user_pf_options": {},
-    "OPF_converged": false
+    "user_pf_options": {}
   }
 }

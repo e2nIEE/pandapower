@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -14,7 +14,7 @@ from pandapower import pp_dir
 
 
 def mv_oberrhein(scenario="load", cosphi_load=0.98, cosphi_pv=1.0, include_substations=False,
-                 separation_by_sub=False):
+                 separation_by_sub=False, **kwargs):
     """
     Loads the Oberrhein network, a generic 20 kV network serviced by two 25 MVA HV/MV transformer
     stations. The network supplies 141 MV/LV substations and 6 MV loads through four MV feeders.
@@ -61,9 +61,10 @@ def mv_oberrhein(scenario="load", cosphi_load=0.98, cosphi_pv=1.0, include_subst
         ``net0, net1 = pandapower.networks.mv_oberrhein(separation_by_sub=True)``
     """
     if include_substations:
-        net = pp.from_json(os.path.join(pp_dir, "networks", "mv_oberrhein_substations.json"))
+        net = pp.from_json(os.path.join(pp_dir, "networks", "mv_oberrhein_substations.json"),
+                           **kwargs)
     else:
-        net = pp.from_json(os.path.join(pp_dir, "networks", "mv_oberrhein.json"))
+        net = pp.from_json(os.path.join(pp_dir, "networks", "mv_oberrhein.json"), **kwargs)
     net.load.q_mvar = np.tan(np.arccos(cosphi_load)) * net.load.p_mw
     net.sgen.q_mvar = np.tan(np.arccos(cosphi_pv)) * net.sgen.p_mw
 
