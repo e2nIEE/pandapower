@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -59,7 +59,7 @@ def connected_components(mg, notravbuses=set()):
 
      OPTIONAL:
      **notravbuses** (set) - Indices of notravbuses: lines connected to these buses are
-                                       not being considered in the graph
+     not being considered in the graph
 
      OUTPUT:
         **cc** (generator) - Returns a generator that yields all clusters of buses connected
@@ -98,15 +98,17 @@ def calc_distance_to_bus(net, bus, respect_switches=True, nogobuses=None,
 
 
      OPTIONAL:
-        **respect_switches** (boolean, True) - True: open line switches are being considered
-                                                     (no edge between nodes)
-                                               False: open line switches are being ignored
+        **respect_switches** (boolean, True)
 
-        **nogobuses** (integer/list, None) - nogobuses are not being considered
+            True: open line switches are being considered (no edge between nodes).
 
-        **notravbuses** (integer/list, None) - lines connected to these buses are not being
-                                              considered
-        **weight** (string, None) – Edge data key corresponding to the edge weight
+            False: open line switches are being ignored.
+
+        **nogobuses** (integer/list, None) - nogobuses are not being considered.
+
+        **notravbuses** (integer/list, None) - lines connected to these buses are not being considered.
+
+        **weight** (string, None) – Edge data key corresponding to the edge weight.
 
      OUTPUT:
         **dist** - Returns a pandas series with containing all distances to the source bus
@@ -384,7 +386,7 @@ def determine_stubs(net, roots=None, mg=None, respect_switches=False):
     #    n1_buses = mg.nodes()
     _, n1_buses = get_2connected_buses(mg, roots)
     net.bus["on_stub"] = True
-    net.bus.loc[list(n1_buses), "on_stub"] = False
+    net.bus.loc[n1_buses, "on_stub"] = False
     net.line["is_stub"] = ~((net.line.from_bus.isin(n1_buses)) & (net.line.to_bus.isin(n1_buses)))
     stubs = set(net.bus.index) - set(n1_buses)
     return stubs

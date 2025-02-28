@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 from itertools import combinations
 
@@ -16,7 +16,7 @@ from pandapower.pd2ppc import _init_ppc
 from pandapower.pypower.idx_bus import BASE_KV
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 
@@ -92,7 +92,7 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
             calc_branch_impedances=True. If it is set to "ohm", the parameters 'r_ohm',
             'x_ohm' and 'z_ohm' are added to each branch. If it is set to "pu", the
             parameters are 'r_pu', 'x_pu' and 'z_pu'.
-            
+
         **include_out_of_service** (bool, False) - defines if out of service buses are included in the nx graph
 
      OUTPUT:
@@ -109,6 +109,8 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
     if multi:
         if graph_tool_available and library == "graph_tool":
             mg = GraphToolInterface(net.bus.index)
+        elif not graph_tool_available and library == "graph_tool":
+            raise UserWarning("graph_tool selected as the library for topological analysis but it is not installed")
         else:
             mg = nx.MultiGraph()
     else:
@@ -130,7 +132,7 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
             mask = (net.switch.et.values == "l") & open_sw
             if mask.any():
                 open_lines = net.switch.element.values[mask]
-                open_lines_mask = np.isin(indices[:, INDEX], open_lines)
+                open_lines_mask = np.in1d(indices[:, INDEX], open_lines)
                 in_service &= ~open_lines_mask
 
         parameter[:, WEIGHT] = line.length_km.values
@@ -185,7 +187,7 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
             mask = (net.switch.et.values == "t") & open_sw
             if mask.any():
                 open_trafos = net.switch.element.values[mask]
-                open_trafos_mask = np.isin(indices[:, INDEX], open_trafos)
+                open_trafos_mask = np.in1d(indices[:, INDEX], open_trafos)
                 in_service &= ~open_trafos_mask
 
         if calc_branch_impedances:
@@ -224,7 +226,7 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
             indices[:, T_BUS] = trafo3w["%s_bus" % t].values
             if respect_switches and len(open_trafo3w):
                 for BUS in [F_BUS, T_BUS]:
-                    open_switch = np.isin(indices[:, INDEX] + indices[:, BUS] * 1j,
+                    open_switch = np.in1d(indices[:, INDEX] + indices[:, BUS] * 1j,
                                           open_trafo3w)
                     in_service &= ~open_switch
             if calc_branch_impedances:
@@ -272,7 +274,8 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
     # remove out of service buses
     if not include_out_of_service:
         for b in net.bus.index[~net.bus.in_service.values]:
-            mg.remove_node(b)
+            if b in mg:
+                mg.remove_node(b)
 
     return mg
 
@@ -330,7 +333,7 @@ def get_baseR(net, ppc, buses):
 
 def init_par(tab, calc_branch_impedances=False):
     n = tab.shape[0]
-    indices = np.zeros((n, 3), dtype=np.int_)
+    indices = np.zeros((n, 3), dtype=int)
     indices[:, INDEX] = tab.index
     if calc_branch_impedances:
         parameters = np.zeros((n, 4), dtype=float)
