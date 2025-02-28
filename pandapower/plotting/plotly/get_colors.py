@@ -1,25 +1,30 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 import sys
-
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-import matplotlib.cm as cm
-import matplotlib.colors as mplc
-
 import numpy as np
+try:
+    import matplotlib.pyplot as plt
+    import matplotlib.cm as cm
+    import matplotlib.colors as mplc
+    MATPLOTLIB_INSTALLED = True
+except ImportError:
+    MATPLOTLIB_INSTALLED = False
 
 try:
     import seaborn
 except ImportError:
     pass
 
+from pandapower.auxiliary import soft_dependency_error
+
 
 def get_plotly_color(color_string):
+    if not MATPLOTLIB_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
     try:
         converted = _to_plotly_color(mplc.to_rgba(color_string))
         return converted
@@ -28,6 +33,8 @@ def get_plotly_color(color_string):
 
 
 def get_plotly_color_palette(n):
+    if not MATPLOTLIB_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
     if 'seaborn' in sys.modules:
         return _to_plotly_palette(seaborn.color_palette("hls", n))
     else:
@@ -40,6 +47,8 @@ def _to_plotly_palette(scl, transparence=None):
     converts a rgb color palette in format (0-1,0-1,0-1) to a plotly color palette
     'rgb(0-255,0-255,0-255)'
     """
+    if not MATPLOTLIB_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
     _out = []
     for color in scl:
         plotly_col = [255 * _c for _c in mplc.to_rgba(color)]
@@ -57,6 +66,8 @@ def _to_plotly_color(scl, transparence=None):
     """
     converts a rgb color in format (0-1,0-1,0-1) to a plotly color 'rgb(0-255,0-255,0-255)'
     """
+    if not MATPLOTLIB_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
     plotly_col = [255 * _c for _c in mplc.to_rgba(scl)] if len(scl) == 3 else [255 * _c for _c in
                                                                                mplc.to_rgb(scl)]
     if transparence is not None:
@@ -68,6 +79,8 @@ def _to_plotly_color(scl, transparence=None):
 
 
 def get_plotly_cmap(values, cmap_name='jet', cmin=None, cmax=None):
+    if not MATPLOTLIB_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
     cmap = cm.get_cmap(cmap_name)
     if cmin is None:
         cmin = values.min()

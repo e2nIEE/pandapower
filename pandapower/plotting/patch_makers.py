@@ -1,10 +1,20 @@
-from matplotlib.patches import RegularPolygon, Arc, Circle, Rectangle, Ellipse
+# -*- coding: utf-8 -*-
+
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+import sys
 import numpy as np
+try:
+    from matplotlib.patches import RegularPolygon, Arc, Circle, Rectangle, Ellipse
+    MATPLOTLIB_INSTALLED = True
+except ImportError:
+    MATPLOTLIB_INSTALLED = False
+from pandapower.auxiliary import soft_dependency_error
 from pandapower.plotting.plotting_toolbox import _rotate_dim2, get_color_list, get_angle_list, \
     get_linewidth_list
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 
@@ -73,6 +83,8 @@ def ellipse_patches(node_coords, width, height, angle=0, color=None, **kwargs):
     :type kwargs: dict
     :return: patches - list of ellipse patches for the nodes
     """
+    if not MATPLOTLIB_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
     patches = list()
     angles = get_angle_list(angle, len(node_coords))
     if color is not None:
@@ -101,6 +113,8 @@ def rectangle_patches(node_coords, width, height, color=None, **kwargs):
     :type kwargs: dict
     :return: patches - list of rectangle patches for the nodes
     """
+    if not MATPLOTLIB_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
     patches = list()
     if color is not None:
         colors = get_color_list(color, len(node_coords))
@@ -130,6 +144,8 @@ def polygon_patches(node_coords, radius, num_edges, color=None, **kwargs):
     :type kwargs: dict
     :return: patches - list of rectangle patches for the nodes
     """
+    if not MATPLOTLIB_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
     patches = list()
     if color is not None:
         colors = get_color_list(color, len(node_coords))
@@ -160,6 +176,8 @@ def load_patches(node_coords, size, angles, **kwargs):
         - polys (list of RegularPolygon) - list containing the load patches\
         - keywords (set) - set of keywords removed from kwargs
     """
+    if not MATPLOTLIB_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
     offset = kwargs.get("offset", 1.2 * size)
     all_angles = get_angle_list(angles, len(node_coords))
     edgecolor = kwargs.get("patch_edgecolor", "w")
@@ -194,6 +212,8 @@ def gen_patches(node_coords, size, angles, **kwargs):
         - polys (list of RegularPolygon) - list containing the generator patches\
         - keywords (set) - set of keywords removed from kwargs
     """
+    if not MATPLOTLIB_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
     polys, lines = list(), list()
     offset = kwargs.get("offset", 2. * size)
     all_angles = get_angle_list(angles, len(node_coords))
@@ -232,6 +252,8 @@ def sgen_patches(node_coords, size, angles, **kwargs):
         - polys (list of RegularPolygon) - list containing the static generator patches\
         - keywords (set) - set of keywords removed from kwargs
     """
+    if not MATPLOTLIB_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
     polys, lines = list(), list()
     offset = kwargs.get("offset", 2 * size)
     r_triangle = kwargs.get("r_triangles", size * 0.4)
@@ -318,6 +340,8 @@ def ext_grid_patches(node_coords, size, angles, **kwargs):
         - polys (list of RegularPolygon) - list containing the external grid patches\
         - keywords (set) - set of keywords removed from kwargs (empty
     """
+    if not MATPLOTLIB_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
     offset = kwargs.get("offset", 2 * size)
     all_angles = get_angle_list(angles, len(node_coords))
     edgecolor = kwargs.get("patch_edgecolor", "w")
@@ -351,6 +375,8 @@ def trafo_patches(coords, size, **kwargs):
         - lines (list) - list of coordinates for lines connecting nodes and transformer patches\
         - circles (list of Circle) - list containing the transformer patches (rings)
     """
+    if not MATPLOTLIB_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
     edgecolor = kwargs.get("patch_edgecolor", "w")
     facecolor = kwargs.get("patch_facecolor", (1, 0, 0, 0))
     edgecolors = get_color_list(edgecolor, len(coords))

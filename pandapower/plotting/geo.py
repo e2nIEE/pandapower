@@ -1,9 +1,30 @@
+# -*- coding: utf-8 -*-
+
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
+import sys
+from numpy import array, setdiff1d
+
+from pandapower.auxiliary import soft_dependency_error
+
 try:
     from shapely.geometry import Point, LineString
-    from geopandas import GeoDataFrame, GeoSeries
-    from pyproj import Proj, transform
+    shapely_INSTALLED = True
 except ImportError:
-    pass
+    shapely_INSTALLED = False
+
+try:
+    from geopandas import GeoDataFrame, GeoSeries
+    geopandas_INSTALLED = True
+except ImportError:
+    geopandas_INSTALLED = False
+
+try:
+    from pyproj import Proj, transform
+    pyproj_INSTALLED = True
+except ImportError:
+    pyproj_INSTALLED = False
 
 
 def _node_geometries_from_geodata(node_geo, epsg=31467):
@@ -17,11 +38,19 @@ def _node_geometries_from_geodata(node_geo, epsg=31467):
     :type epsg: int, default 31467 (= Gauss-Krüger Zone 3)
     :return: node_geodata - a geodataframe containing the node_geo and Points in the geometry column
     """
+    missing_packages = array(["shapely", "geopandas"])[~array([
+        shapely_INSTALLED, geopandas_INSTALLED])]
+    if len(missing_packages):
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", missing_packages)
     geoms = [Point(x, y) for x, y in node_geo[["x", "y"]].values]
     return GeoDataFrame(node_geo, crs=f"epsg:{epsg}", geometry=geoms, index=node_geo.index)
 
 
 def _branch_geometries_from_geodata(branch_geo, epsg=31467):
+    missing_packages = array(["shapely", "geopandas"])[~array([
+        shapely_INSTALLED, geopandas_INSTALLED])]
+    if len(missing_packages):
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", missing_packages)
     geoms = GeoSeries([LineString(x) for x in branch_geo.coords.values], index=branch_geo.index,
                       crs=f"epsg:{epsg}")
     return GeoDataFrame(branch_geo, crs=f"epsg:{epsg}", geometry=geoms, index=branch_geo.index)
@@ -48,7 +77,7 @@ def _transform_branch_geometry_to_coords(branch_geo):
     :type branch_geo: geopandas.GeoDataFrame
     :return: branch_geo - The given geodataframe with coords
     """
-    branch_geo["coords"] = branch_geo["coords"].geometry.apply(lambda x: list(x.coords))
+    branch_geo["coords"] = branch_geo.geometry.apply(lambda x: list(x.coords))
     return branch_geo
 
 
@@ -66,6 +95,8 @@ def _convert_xy_epsg(x, y, epsg_in=4326, epsg_out=31467):
     :type epsg_out: int, default 31467 (= Gauss-Krüger Zone 3)
     :return: transformed_coords - x and y values in new coordinate system
     """
+    if not pyproj_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "pyproj")
     in_proj = Proj(init='epsg:%i' % epsg_in)
     out_proj = Proj(init='epsg:%i' % epsg_out)
     return transform(in_proj, out_proj, x, y)

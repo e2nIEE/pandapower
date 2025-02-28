@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2021 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -13,7 +13,7 @@ from pandapower.plotting.plotly.traces import create_bus_trace, create_line_trac
 from pandapower.run import runpp
 
 try:
-    import pplog as logging
+    import pandaplan.core.pplog as logging
 except ImportError:
     import logging
 logger = logging.getLogger(__name__)
@@ -24,29 +24,29 @@ def pf_res_plotly(net, cmap="Jet", use_line_geodata=None, on_map=False, projecti
                   climits_volt=(0.9, 1.1), climits_load=(0, 100), cpos_volt=1.0, cpos_load=1.1,
                   filename="temp-plot.html", auto_open=True):
     """
-    Plots a pandapower network in plotly
-    using colormap for coloring lines according to line loading and buses according to voltage in p.u.
-    If no geodata is available, artificial geodata is generated. For advanced plotting see the tutorial
+        Plots a pandapower network in plotly
 
-    INPUT:
-        **net** - The pandapower format network. If none is provided, mv_oberrhein() will be
-        plotted as an example
+        using colormap for coloring lines according to line loading and buses according to voltage in p.u.
+        If no geodata is available, artificial geodata is generated. For advanced plotting see the tutorial
 
-    OPTIONAL:
-        **respect_switches** (bool, False) - Respect switches when artificial geodata is created
+        INPUT:
+            **net** - The pandapower format network. 
 
-        *cmap** (str, True) - name of the colormap
+        OPTIONAL:
+            **respect_switches** (bool, False) - Respect switches when artificial geodata is created
 
-        *colors_dict** (dict, None) - by default 6 basic colors from default collor palette is used.
-        Otherwise, user can define a dictionary in the form: voltage_kv : color
+            **cmap** (str, True) - name of the colormap
 
-        **on_map** (bool, False) - enables using mapbox plot in plotly
-        If provided geodata are not real geo-coordinates in lon/lat form, on_map will be set to False.
+            **colors_dict** (dict, None) - by default 6 basic colors from default collor palette is used.
+            Otherwise, user can define a dictionary in the form: voltage_kv : color
 
-        **projection** (String, None) - defines a projection from which network geo-data will be transformed to
-        lat-long. For each projection a string can be found at http://spatialreference.org/ref/epsg/
+            **on_map** (bool, False) - enables using mapbox plot in plotly. If provided geodata are not
+            real geo-coordinates in lon/lat form, on_map will be set to False.
 
-        **map_style** (str, 'basic') - enables using mapbox plot in plotly
+            **projection** (String, None) - defines a projection from which network geo-data will be transformed to
+            lat-long. For each projection a string can be found at http://spatialreference.org/ref/epsg/
+
+            **map_style** (str, 'basic') - enables using mapbox plot in plotly
 
             - 'streets'
             - 'bright'
@@ -54,31 +54,32 @@ def pf_res_plotly(net, cmap="Jet", use_line_geodata=None, on_map=False, projecti
             - 'dark'
             - 'satellite'
 
-        **figsize** (float, 1) - aspectratio is multiplied by it in order to get final image size
+            **figsize** (float, 1) - aspectratio is multiplied by it in order to get final image size
 
-        **aspectratio** (tuple, 'auto') - when 'auto' it preserves original aspect ratio of the network geodata
-        any custom aspectration can be given as a tuple, e.g. (1.2, 1)
+            **aspectratio** (tuple, 'auto') - when 'auto' it preserves original aspect ratio of the network geodata
+            any custom aspectration can be given as a tuple, e.g. (1.2, 1)
 
-        **line_width** (float, 1.0) - width of lines
+            **line_width** (float, 1.0) - width of lines
 
-        **bus_size** (float, 10.0) -  size of buses to plot.
+            **bus_size** (float, 10.0) -  size of buses to plot.
 
-        **climits_volt** (tuple, (0.9, 1.0)) - limits of the colorbar for voltage
+            **climits_volt** (tuple, (0.9, 1.0)) - limits of the colorbar for voltage
 
-        **climits_load** (tuple, (0, 100)) - limits of the colorbar for line_loading
+            **climits_load** (tuple, (0, 100)) - limits of the colorbar for line_loading
 
-        **cpos_volt** (float, 1.0) - position of the bus voltage colorbar
+            **cpos_volt** (float, 1.0) - position of the bus voltage colorbar
 
-        **cpos_load** (float, 1.1) - position of the loading percent colorbar
+            **cpos_load** (float, 1.1) - position of the loading percent colorbar
 
-        **filename** (str, "temp-plot.html") - filename / path to plot to. Should end on *.html
+            **filename** (str, "temp-plot.html") - filename / path to plot to. Should end on `*.html`
 
-        **auto_open** (bool, True) - automatically open plot in browser
+            **auto_open** (bool, True) - automatically open plot in browser
 
-    OUTPUT:
-        **figure** (graph_objs._figure.Figure) figure object
+        OUTPUT:
+            **figure** (graph_objs._figure.Figure) figure object
 
     """
+
     version_check()
     if 'res_bus' not in net or net.get('res_bus').shape[0] == 0:
         logger.warning('There are no Power Flow results. A Newton-Raphson power flow will be executed.')
