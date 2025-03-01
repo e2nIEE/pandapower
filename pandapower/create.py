@@ -4,13 +4,15 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
+from __future__ import annotations
 from operator import itemgetter
-from typing import Tuple, List, Union, Iterable
+from typing import Tuple, List, Union, Iterable, Literal
 import warnings
 
 import pandas as pd
 from numpy import nan, zeros, isnan, arange, dtype, isin, any as np_any, array, bool_, \
     all as np_all, float64, intersect1d, unique as uni
+import numpy.typing as npt
 from pandas import isnull
 from pandas.api.types import is_object_dtype
 
@@ -19,6 +21,7 @@ from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes, e
     empty_defaults_per_dtype
 from pandapower.results import reset_results
 from pandapower.std_types import add_basic_std_types, load_std_type
+from pandapower.typing import Int, Float
 import numpy as np
 
 try:
@@ -29,7 +32,8 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
+def create_empty_network(name: str = "", f_hz: Float = 50., sn_mva: Float = 1,
+                         add_stdtypes: bool = True) -> pandapowerNet:
     """
     This function initializes the pandapower datastructure.
 
@@ -665,8 +669,10 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
     return net
 
 
-def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b", zone=None,
-               in_service=True, max_vm_pu=nan, min_vm_pu=nan, coords=None, **kwargs):
+def create_bus(net: pandapowerNet, vn_kv: Float, name: str | None = None, index: Int | None = None,
+               geodata: tuple[Float, Float] | None = None, type: Literal["n", "b", "m"] = "b",
+               zone: str | None = None, in_service: bool = True, max_vm_pu: Float = nan,
+               min_vm_pu: Float = nan, coords: list[tuple[Float, Float]] | None = None, **kwargs) -> Int:
     """
     Adds one bus in table net["bus"].
 
@@ -732,8 +738,10 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b", zone=N
     return index
 
 
-def create_bus_dc(net, vn_kv, name=None, index=None, geodata=None, type="b", zone=None,
-                  in_service=True, max_vm_pu=nan, min_vm_pu=nan, coords=None, **kwargs):
+def create_bus_dc(net: pandapowerNet, vn_kv: Float, name: str | None = None, index: Int | None = None,
+                  geodata: tuple[Float, Float] | None = None, type: Literal["n", "b", "m"] = "b",
+                  zone: str | None = None, in_service: bool = True, max_vm_pu: Float = nan, min_vm_pu: Float = nan,
+                  coords: list[tuple[Float, Float]] | None = None, **kwargs) -> Int:
     """
     Adds one dc bus in table net["bus_dc"].
 
@@ -800,8 +808,11 @@ def create_bus_dc(net, vn_kv, name=None, index=None, geodata=None, type="b", zon
     return index
 
 
-def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=None,
-                 zone=None, in_service=True, max_vm_pu=nan, min_vm_pu=nan, coords=None, **kwargs):
+def create_buses(net: pandapowerNet, nr_buses: Int, vn_kv: Float, index: Int | None = None,
+                 name: str | None = None, type: Literal["n", "b", "m"] = "b",
+                 geodata: Iterable[tuple[Float, Float]] | None = None, zone: str | None = None,
+                 in_service: bool = True, max_vm_pu: Float = nan, min_vm_pu: Float = nan,
+                 coords: list[list[tuple[Float, Float]]] | None = None, **kwargs) -> npt.NDArray[Int]:
     """
     Adds several buses in table net["bus"] at once.
 
@@ -812,13 +823,13 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
 
         **nr_buses** (int) - The number of buses that is created
 
+        **vn_kv** (float) - The grid voltage level.
+
     OPTIONAL:
         **name** (string, default None) - the name for this bus
 
         **index** (int, default None) - Force specified IDs if available. If None, the indices \
             higher than the highest already existing index are selected.
-
-        **vn_kv** (float) - The grid voltage level.
 
         **geodata** ((x,y)-tuple or Iterable of (x, y)-tuples with length == nr_buses,
             default None) - coordinates used for plotting
@@ -841,11 +852,11 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
 
 
     OUTPUT:
-        **index** (int) - The unique indices ID of the created elements
+        **index** (numpy.ndarray (int)) - The unique indices IDs of the created elements
     """
     index = _get_multiple_index_with_check(net, "bus", index, nr_buses)
 
-    def _geodata_to_geo_series(data: Union[Iterable[Tuple[float, float]], Tuple[int, int]]) -> List[str]:
+    def _geodata_to_geo_series(data: Union[Iterable[Tuple[Float, Float]], Tuple[int, int]]) -> List[str]:
         geo = []
         for g in data:
             if isinstance(g, tuple):
@@ -868,7 +879,7 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
             assert hasattr(geodata, "__iter__"), "geodata must be an iterable"
             geo = _geodata_to_geo_series(geodata)
     else:
-        geo = [None] * nr_buses
+        geo = [None] * nr_buses  # type: ignore[list-item,assignment]
 
     if coords:
         raise UserWarning("busbar plotting is not implemented fully and will likely be removed in the future")
@@ -5846,7 +5857,8 @@ def create_group_from_dict(net, elements_dict, name="", reference_column=None, i
                         name=name, reference_columns=reference_column, index=index, **kwargs)
 
 
-def _get_index_with_check(net, table, index, name=None):
+def _get_index_with_check(net: pandapowerNet, table: str, index: Int | None,
+                          name: str | None = None) -> Int:
     if name is None:
         name = table
     if index is None:

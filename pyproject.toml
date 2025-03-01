@@ -67,6 +67,7 @@ fileio = ["xlsxwriter", "openpyxl", "cryptography", "geopandas>=1.0", "psycopg2"
 converter = ["matpowercaseframes"]
 pgm = ["power-grid-model-io"]
 control = ["shapely"]
+typing = ["mypy", "pandas-stubs", "types-shapely", "types-psycopg2", "types-openpyxl", "types-networkx", "types-tqdm"]
 all = [
     "numpydoc>=1.5.0", "sphinx>=5.3.0", "sphinx_rtd_theme>=1.1.1", "sphinx-pyproject",
     "plotly>=3.1.1", "matplotlib", "igraph", "geopandas>=1.0",
@@ -74,7 +75,8 @@ all = [
     "ortools", "numba==0.60.0", "lightsim2grid==0.10.1",
     "xlsxwriter", "openpyxl", "cryptography", "psycopg2",
     "matpowercaseframes",
-    "power-grid-model-io"
+    "power-grid-model-io",
+    "mypy", "pandas-stubs", "types-shapely", "types-psycopg2", "types-openpyxl", "types-networkx", "types-tqdm"
 ]
 # "shapely", "pyproj", "Pyogrio" are dependencies of geopandas and should be already available ("Fiona" got dropped)
 # "hashlib", "zlib", "base64" produce install problems, so they are not included

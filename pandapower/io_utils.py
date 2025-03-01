@@ -15,7 +15,7 @@ import types
 import weakref
 from ast import literal_eval
 from functools import partial
-from inspect import isclass, _findclass
+from inspect import isclass, _findclass  # type: ignore[attr-defined]
 from warnings import warn
 import numpy as np
 import pandas.errors
@@ -35,12 +35,12 @@ try:
     import psycopg2.extras
     PSYCOPG2_INSTALLED = True
 except ImportError:
-    psycopg2 = None
+    psycopg2 = None  # type: ignore[assignment]
     PSYCOPG2_INSTALLED = False
 try:
     from pandas.testing import assert_series_equal, assert_frame_equal
 except ImportError:
-    from pandas.util.testing import assert_series_equal, assert_frame_equal
+    from pandas.util.testing import assert_series_equal, assert_frame_equal  # type: ignore[no-redef,import-not-found]
 try:
     from cryptography.fernet import Fernet
     cryptography_INSTALLED = True
