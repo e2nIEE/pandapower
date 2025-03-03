@@ -1347,11 +1347,11 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
             specified as motor so that sgen is treated as asynchronous motor. Relevant for \
             short-circuit calculation for all generator types
 
-        **curve_dependency_table** (bool, NaN) - True if both the id_q_capability_curve_characteristic and the curve
+        **curve_dependency_table** (bool, False) - True if both the id_q_capability_curve_characteristic and the curve
         style are present in the generator.
 
         **id_q_capability_curve_characteristic** (int, None) - references the index of the characteristic from the
-        lookup table net.q_capability_curve_table e.g. 0, 1, 2, 3
+        lookup table net.q_capability_curve_characteristic e.g. 0, 1, 2, 3
 
         **curve_style** (string, None) - The curve style of the generator represents the relationship \
         between active power (P) and reactive power (Q). It indicates whether the reactive power remains \
@@ -1494,13 +1494,13 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
             specified as motor so that sgen is treated as asynchronous motor. Relevant for \
             short-circuit calculation for all generator types
 
-        **curve_dependency_table** (list of bool, NaN) - True if both the id_q_capability_curve_characteristic and
+        **curve_dependency_table** (list of bools, False) - True if both the id_q_capability_curve_characteristic and
         the curve style are present in the generator.
 
-        **id_q_capability_curve_characteristic** (list of int, None) - references the index of the characteristic from
-        the lookup table net.q_capability_curve_table e.g. 0, 1, 2, 3
+        **id_q_capability_curve_characteristic** (list of ints, None) - references the index of the characteristic from
+        the lookup table net.q_capability_curve_characteristic e.g. 0, 1, 2, 3
 
-        **curve_style** (list of string, None) - The curve style of the generator represents the relationship \
+        **curve_style** (list of strings, None) - The curve style of the generator represents the relationship \
            between active power (P) and reactive power (Q). It indicates whether the reactive power remains \
            constant as the active power changes or varies dynamically in response to it.
            e.g. "straightLineYValues" and "constantYValue"
@@ -1898,11 +1898,11 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
 
         **type** (string, None) - type variable to classify generators
 
-        **curve_dependency_table** (bool, NaN) - True if both the id_q_capability_curve_characteristic and the curve
+        **curve_dependency_table** (bool, False) - True if both the id_q_capability_curve_characteristic and the curve
             style are present in the generator.
 
         **id_q_capability_curve_characteristic** (int, None) - references the index of the characteristic from
-            the lookup table net.q_capability_curve_table e.g. 0, 1, 2, 3
+            the lookup table net.q_capability_curve_characteristic e.g. 0, 1, 2, 3
 
         **curve_style** (string, None) - The curve style of the generator represents the relationship \
         between active power (P) and reactive power (Q). It indicates whether the reactive power remains \
@@ -2036,13 +2036,13 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
 
         **type** (list of string, None) - type variable to classify generators
 
-        **curve_dependency_table** (list of bool, NaN) - True if both the id_q_capability_curve_characteristic and
+        **curve_dependency_table** (list of bools, False) - True if both the id_q_capability_curve_characteristic and
         the curve style are present in the generator.
 
-        **id_q_capability_curve_characteristic** (list of int, None) - references the index of the characteristic from
-            the lookup table net.q_capability_curve_table e.g. 0, 1, 2, 3
+        **id_q_capability_curve_characteristic** (list of ints, None) - references the index of the characteristic from
+            the lookup table net.q_capability_curve_characteristic e.g. 0, 1, 2, 3
 
-        **curve_style** (list of string, None) - The curve style of the generator represents the relationship \
+        **curve_style** (list of strings, None) - The curve style of the generator represents the relationship \
         between active power (P) and reactive power (Q). It indicates whether the reactive power remains \
         constant as the active power changes or varies dynamically in response to it.
         e.g. "straightLineYValues" and "constantYValue"

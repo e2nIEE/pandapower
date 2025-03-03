@@ -33,37 +33,6 @@ Input Parameters
    
 \*necessary for executing a power flow calculation |br| \*\*optimal power flow parameter |br| \*\*\*short-circuit calculation parameter
 
-   
-Electric Model
-=================
-
-Generators are modelled as PV-nodes in the power flow:
-
-.. image:: gen.png
-	:width: 12em
-	:alt: alternate Text
-	:align: center
-
-Voltage magnitude and active power are defined by the input parameters in the generator table:
-
-.. math::
-   :nowrap:
-   
-   \begin{align*}
-    P_{gen} &= p\_mw * scaling \\
-    v_{bus} &= vm\_pu
-   \end{align*}
-    
-Result Parameters
-==========================
-*net.res_gen*
-
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.50\linewidth}|
-.. csv-table:: 
-   :file: gen_res.csv
-   :delim: ;
-   :widths: 10, 10, 50
-
 Table of Generator Reactive Power Capability Curve Characteristics
 ============================
 
@@ -96,7 +65,7 @@ Below is an example of a q_capability_curve_table, populated for two sample gene
       2. straightLineYValues: The reactive power values are assumed to be a straight line between values.  Also known as linear interpolation.
     - Linear interpolation is employed to determine qmin and qmax based on the given active power dispatch for the above two curve types.
 
-The function pandapower.control.util.q_capability_curve_table_diagnostic is available to perform sanity checks
+The function pandapower.control.util. q_capability_curve_characteristics_diagnostic is available to perform sanity checks
 on the generator reactive power capability curve table. Additionally, the function
 pandapower.control.util.auxiliary.create_q_capability_curve_characteristics_object can be utilized to automatically
 generate Characteristic objects and populate the net.q_capability_curve_characteristic table based on the data
@@ -111,6 +80,36 @@ The table below illustrates an example of a q_capability_curve_characteristic ta
 .. csv-table::
    :file: gen_q_char_table_object.csv
    :delim: ,
+
+Electric Model
+=================
+
+Generators are modelled as PV-nodes in the power flow:
+
+.. image:: gen.png
+	:width: 12em
+	:alt: alternate Text
+	:align: center
+
+Voltage magnitude and active power are defined by the input parameters in the generator table:
+
+.. math::
+   :nowrap:
+   
+   \begin{align*}
+    P_{gen} &= p\_mw * scaling \\
+    v_{bus} &= vm\_pu
+   \end{align*}
+    
+Result Parameters
+==========================
+*net.res_gen*
+
+.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.50\linewidth}|
+.. csv-table:: 
+   :file: gen_res.csv
+   :delim: ;
+   :widths: 10, 10, 50
 
 The power flow returns reactive generator power and generator voltage angle:
 

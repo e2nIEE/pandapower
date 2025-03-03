@@ -67,7 +67,7 @@ Below is an example of a q_capability_curve_table populated for sample static ge
       2. straightLineYValues: The reactive power values are assumed to be a straight line between values.  Also known as linear interpolation.
     - Linear interpolation is employed to determine qmin and qmax based on the given active power dispatch for the above two curve types.
 
-The function pandapower.control.util.q_capability_curve_table_diagnostic is available to perform sanity checks
+The function pandapower.control.util. q_capability_curve_characteristics_diagnostic is available to perform sanity checks
 on the static generator reactive power capability curve table. Additionally, the function
 pandapower.control.util.auxiliary.create_q_capability_curve_characteristics_object can be utilized to automatically
 static generate Characteristic objects and populate the net.q_capability_curve_characteristic table based on the data

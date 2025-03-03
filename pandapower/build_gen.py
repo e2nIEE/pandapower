@@ -496,5 +496,5 @@ def _calculate_qmin_qmax_from_q_capability_curve_characteristics(net, element):
         # Assign the calculated values directly to replace the NaN values in the original DataFrame
         net[element].loc[element_data.index, ['max_q_mvar', 'min_q_mvar']] = np.column_stack((calc_q_max, calc_q_min))
     else:
-        logger.warning(f"One of {element}(s) id characteristic(s) or curve style(s) of {element}(s) is(are) incorrect "
+        logger.warning(f"One of {element}(s) id characteristic or curve style of {element} is incorrect "
                        f"or not available even if the q_capability_curve_table is available.")
