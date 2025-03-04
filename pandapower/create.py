@@ -1658,8 +1658,8 @@ def create_sgen_from_cosphi(net, bus, sn_mva, cos_phi, mode, **kwargs):
 
         **cos_phi** (float) - power factor cos_phi
 
-        **mode** (str) - "underexcited" (Q absorption, decreases voltage) or "overexcited"
-                         (Q injection, increases voltage)
+        **mode** (str) - "underexcited" (Q absorption, decreases voltage) or "overexcited" \
+            (Q injection, increases voltage)
 
     OUTPUT:
         **index** (int) - The unique ID of the created sgen
