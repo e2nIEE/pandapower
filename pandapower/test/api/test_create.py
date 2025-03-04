@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+import math
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from copy import deepcopy
@@ -229,18 +229,20 @@ def test_nonexistent_bus():
             func()
 
 
-def test_tap_phase_shifter_default():
-    expected_default = False
+def test_tap_changer_type_default():
+    expected_default = math.nan # comment: wanted to implement "None" as default, but some test rely on that some function converts NaN to ratio tap changer.
     net = pp.create_empty_network()
     pp.create_bus(net, 110)
     pp.create_bus(net, 20)
     data = pp.load_std_type(net, "25 MVA 110/20 kV", "trafo")
-    if "tap_phase_shifter" in data:
-        del data["tap_phase_shifter"]
+    if "tap_changer_type" in data:
+        del data["tap_changer_type"]
     pp.create_std_type(net, data, "without_tap_shifter_info", "trafo")
-    pp.create_transformer_from_parameters(net, 0, 1, 25e3, 110, 20, 0.4, 12, 20, 0.07)
+    pp.create_transformer_from_parameters(net, 0, 1, 25e3, 110, 20, 0.4,
+                                          12, 20, 0.07)
     pp.create_transformer(net, 0, 1, "without_tap_shifter_info")
-    assert (net.trafo.tap_phase_shifter == expected_default).all()
+    #assert (net.trafo.tap_changer_type == expected_default).all() # comparison with NaN is always false. revert back to this
+    assert (net.trafo.tap_changer_type.isna()).all()
 
 
 def test_create_line_conductance():
@@ -885,7 +887,7 @@ def test_trafo_2_tap_changers():
                  "tap2_min": -10,
                  "tap2_step_percent": 1,
                  "tap2_step_degree": 0,
-                 "tap2_phase_shifter": False}
+                 "tap2_changer_type": "Ratio"}
 
     for c in tap2_data.keys():
         assert c not in net.trafo.columns
@@ -913,7 +915,7 @@ def test_trafo_2_tap_changers_parameters():
                  "tap2_min": -10,
                  "tap2_step_percent": 1,
                  "tap2_step_degree": 0,
-                 "tap2_phase_shifter": False}
+                 "tap2_changer_type": "Ratio"}
 
     pp.create_transformer_from_parameters(net, b1, b2, **std_type)
 
@@ -939,7 +941,7 @@ def test_trafos_2_tap_changers_parameters():
                  "tap2_min": -10,
                  "tap2_step_percent": 1,
                  "tap2_step_degree": 0,
-                 "tap2_phase_shifter": False}
+                 "tap2_changer_type": "Ratio"}
 
     std_type_p = {k: np.array([v, v]) if not isinstance(v, str) else v for k, v in std_type.items()}
 

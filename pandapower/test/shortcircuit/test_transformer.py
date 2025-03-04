@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -22,7 +22,8 @@ def net_transformer():
     pp.create_transformer_from_parameters(net, b1b, b2, vn_hv_kv=11., vn_lv_kv=0.42, vk_percent=6.,
                                           vkr_percent=0.5, pfe_kw=14, shift_degree=0.0,
                                           tap_side="hv", tap_neutral=0, tap_min=-2, tap_max=2, tap_pos=2,
-                                          tap_step_percent=2.5, parallel=2, sn_mva=0.4, i0_percent=0.5)
+                                          tap_step_percent=2.5, parallel=2, sn_mva=0.4, i0_percent=0.5,
+                                          tap_changer_type="Ratio")
     # adding a shunt shouldn't change the result:
     pp.create_shunt(net, b2, q_mvar=0.050, p_mw=0.0500)
     return net

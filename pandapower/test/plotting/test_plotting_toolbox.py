@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from copy import deepcopy
@@ -24,6 +24,10 @@ def test_set_line_geodata_from_bus_geodata():
     pp.plotting.set_line_geodata_from_bus_geodata(net)
     assert not net.line.geo.isnull().any()
     pp.plotting.simple_plot(net, show_plot=False) # test that plotting works with case9 file
+
+    # --- ensure that set_line_geodata_from_bus_geodata() can also handle cases where all geodata
+    # are available already
+    pp.plotting.set_line_geodata_from_bus_geodata(net)
 
     # --- create line geo data from complete net.bus.geo to incomplete net.line.geo
     net.line.at[2, "geo"] = None
