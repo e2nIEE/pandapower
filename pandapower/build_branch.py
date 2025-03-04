@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -1506,7 +1506,7 @@ def _calculate_3w_tap_changers(t3, t2, sides):
         tap_arrays["tap_side"][side][tap_mask] = "hv" if side == "hv" else "lv"
 
         # t3 trafos with tap changer at star points
-        if any_at_star_point & np.any(mask_star_point := (tap_mask & at_star_point)): 
+        if any_at_star_point & np.any(mask_star_point := (tap_mask & at_star_point)):
             t = (tap_arrays["tap_step_percent"][side][mask_star_point] *
                  np.exp(1j * np.deg2rad(tap_arrays["tap_step_degree"][side][mask_star_point])))
             tap_pos = tap_arrays["tap_pos"][side][mask_star_point]
