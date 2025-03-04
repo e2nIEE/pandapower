@@ -40,11 +40,6 @@ def _build_gen_ppc(net, ppc):
     mode = net["_options"]["mode"]
     distributed_slack = net["_options"]["distributed_slack"]
 
-    # Add qmin and qmax limit from q capability_curve_characteristics_table
-    if "q_capability_curve_characteristic" in net.keys() and net._options["enforce_q_lims"]:
-        _calculate_qmin_qmax_from_q_capability_curve_characteristics(net, "gen")
-        _calculate_qmin_qmax_from_q_capability_curve_characteristics(net, "sgen")
-
     _is_elements = net["_is_elements"]
     gen_order = dict()
     f = 0
@@ -292,6 +287,10 @@ def add_q_constraints(net, element, is_element, ppc, f, t, delta, inverted=False
         else:
             ppc["gen"][f:t, QMAX] = tab["max_q_mvar"].values[is_element] + delta
 
+    # Add qmin and qmax limit from q capability_curve_characteristics_table
+    if "q_capability_curve_characteristic" in net.keys() and net._options["enforce_q_lims"]:
+        _calculate_qmin_qmax_from_q_capability_curve_characteristics(net, element, is_element, ppc, f, t, inverted)
+
 
 def add_p_constraints(net, element, is_element, ppc, f, t, delta, inverted=False):
     tab = net[element]
@@ -464,7 +463,7 @@ def _normalise_slack_weights(ppc, gen_mask, xward_mask, xward_pq_buses):
                                   "please calculate the zones separately.")
 
 
-def _calculate_qmin_qmax_from_q_capability_curve_characteristics(net, element):
+def _calculate_qmin_qmax_from_q_capability_curve_characteristics(net, element, is_element, ppc, f, t, inverted):
     if element not in ["gen", "sgen"]:
         raise UserWarning(f"The given element type is not valid for q_min and q_max of the {element}. "
                           f"Please give gen or sgen as an argument of the function")
@@ -493,8 +492,10 @@ def _calculate_qmin_qmax_from_q_capability_curve_characteristics(net, element):
             logger.warning(f"the reactive_capability_curve of {element} is True, but the relevant "
                            f"characteristic value is None. So default Q limit value has been used in the load flow.")
 
-        # Assign the calculated values directly to replace the NaN values in the original DataFrame
-        net[element].loc[element_data.index, ['max_q_mvar', 'min_q_mvar']] = np.column_stack((calc_q_max, calc_q_min))
+        curve_q = net[element][["min_q_mvar", "max_q_mvar"]]
+        curve_q.loc[element_data.index] = np.column_stack((calc_q_min, calc_q_max))
+
+        ppc[element][f:t, [QMIN, QMAX]] = (1 - 2 * inverted) * curve_q.values[is_element]
     else:
         logger.warning(f"One of {element}(s) id characteristic or curve style of {element} is incorrect "
                        f"or not available even if the q_capability_curve_table is available.")
