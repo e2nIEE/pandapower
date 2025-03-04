@@ -45,8 +45,9 @@ defined by the user.
 The variable id_q_capability_curve_characteristic in net.gen establishes a link to the id_q_capability_curve
 column in net.q_capability_curve_table and net.q_capability_curve_characteristic, associating each generator with its respective capability curve.
 
-If the variable reactive_capability_curve in net.gen is set to True, it indicates that a corresponding characteristic
-is defined in net.q_capability_curve_table. This overrides the default reactive power limits of the generator.
+If the variable reactive_capability_curve in net.gen is set to True, it indicates that a corresponding Qmin and Qmax values and its characteristic
+are defined in net.q_capability_curve_table and net.q_capability_curve_characteristic respectively. This overrides
+the default reactive power limits of the generator.
 
 Below is an example of a q_capability_curve_table, populated for two sample generators.
 
@@ -64,6 +65,11 @@ Below is an example of a q_capability_curve_table, populated for two sample gene
       1. constantYValue: The reactive power values are assumed constant until the next curve point and prior to the first curve point.
       2. straightLineYValues: The reactive power values are assumed to be a straight line between values.  Also known as linear interpolation.
     - Linear interpolation is employed to determine qmin and qmax based on the given active power dispatch for the above two curve types.
+    - If the enforce_q_lims option is used with runpp and Q capability data is available, then the create_q_capability_curve_characteristics_object
+      function is invoked to generate the Q capability characteristics and during the load flow they are used. If it is not the case
+      then the default values or the given Q limits are used in the load flow.
+    - When importing data from CGMES, q_capability_curve_characteristic will be added during the conversion of CGMES to PP.
+For other scenarios, this function should be included in the script to properly account for the Q capability curve data.
 
 The function pandapower.control.util. q_capability_curve_characteristics_diagnostic is available to perform sanity checks
 on the generator reactive power capability curve table. Additionally, the function
