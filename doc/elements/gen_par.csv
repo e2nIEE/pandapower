@@ -23,4 +23,4 @@ in_service*;boolean;True / False;specifies if the generator is in service
 power_station_trafo*;integer;;index of the power station trafo (short-circuit relevant).
 id_q_capability_curve_characteristic;integer;;References the index of the characteristic from the q_capability_curve_table
 curve_style;string;Either "straightLineYValues" or "constantYValue";The style of the generator reactive power capability curve
-curve_dependency_table;boolean;True / False;True if Generator has dependency on q characteristic
+reactive_capability_curve;boolean;True / False;True if Generator has dependency on q characteristic

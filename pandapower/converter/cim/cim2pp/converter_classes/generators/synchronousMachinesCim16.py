@@ -190,7 +190,7 @@ class SynchronousMachinesCim16:
             syn_gen_df_origin = pd.merge(syn_gen_df_origin, curve_points, how='left',
                                          on=['InitialReactiveCapabilityCurve'])
 
-            # create curve_dependency_table flag
-            if 'curve_dependency_table' not in syn_gen_df_origin.columns:
-                syn_gen_df_origin['curve_dependency_table'] = False
+            # create reactive_capability_curve flag
+            if 'reactive_capability_curve' not in syn_gen_df_origin.columns:
+                syn_gen_df_origin['reactive_capability_curve'] = False
         return syn_gen_df_origin

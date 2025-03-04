@@ -45,7 +45,7 @@ defined by the user.
 The variable id_q_capability_curve_characteristic in net.gen establishes a link to the id_q_capability_curve
 column in net.q_capability_curve_table and net.q_capability_curve_characteristic, associating each generator with its respective capability curve.
 
-If the variable curve_dependency_table in net.gen is set to True, it indicates that a corresponding characteristic
+If the variable reactive_capability_curve in net.gen is set to True, it indicates that a corresponding characteristic
 is defined in net.q_capability_curve_table. This overrides the default reactive power limits of the generator.
 
 Below is an example of a q_capability_curve_table, populated for two sample generators.
@@ -57,9 +57,9 @@ Below is an example of a q_capability_curve_table, populated for two sample gene
    :widths: 10, 10, 55, 55, 55
 
 .. note::
-    - curve_dependency_table has to be set to True, and id_q_capability_curve_characteristic and curve_style variables need to
+    - reactive_capability_curve has to be set to True, and id_q_capability_curve_characteristic and curve_style variables need to
       be populated in order to consider the corresponding q_capability_curve_table values.
-    - Each generator supports only a single curve_dependency_table
+    - Each generator supports only a single reactive_capability_curve
     - In this version, only two types of generator reactive power capability characteristics are supported:
       1. constantYValue: The reactive power values are assumed constant until the next curve point and prior to the first curve point.
       2. straightLineYValues: The reactive power values are assumed to be a straight line between values.  Also known as linear interpolation.

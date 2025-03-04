@@ -19,4 +19,4 @@ rx***;float;:math:`\geq` 0;R/X ratio for short circuit impedance. Only relevant 
 in_service*;boolean;True / False;specifies if the generator is in service.
 id_q_capability_curve_characteristic;integer;;References the index of the characteristic from the q_capability_curve_table
 curve_style;string;Either "straightLineYValues" or "constantYValue";The style of the static generator reactive power capability curve
-curve_dependency_table;boolean;True / False;True if Static Generator has dependency on q characteristic
+reactive_capability_curve;boolean;True / False;True if Static Generator has dependency on q characteristic

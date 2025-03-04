@@ -1573,7 +1573,7 @@ def test_create_sgens():
         q_mvar=0.0,
         controllable=[True, False, False],
         id_q_capability_curve_characteristic=[0, 1, 2],
-        curve_dependency_table=False,
+        reactive_capability_curve=False,
         curve_style=["straightLineYValues", "straightLineYValues", "straightLineYValues"],
         max_p_mw=0.2,
         min_p_mw=[0, 0.1, 0],
@@ -1608,7 +1608,7 @@ def test_create_sgens():
     assert all(net.sgen.test_kwargs == "dummy_string")
     assert all(net.sgen.id_q_capability_curve_characteristic.values == [0, 1, 2])
     assert all(net.sgen.curve_style == "straightLineYValues")
-    assert all(net.sgen.curve_dependency_table == [False, False, False])
+    assert all(net.sgen.reactive_capability_curve == [False, False, False])
 
 
 def test_create_sgens_raise_errorexcept():
@@ -1682,7 +1682,7 @@ def test_create_gens():
         vm_pu=1.0,
         controllable=[True, False, False],
         id_q_capability_curve_characteristic=[0, 1, 2],
-        curve_dependency_table=False,
+        reactive_capability_curve=False,
         curve_style=["straightLineYValues", "straightLineYValues", "straightLineYValues"],
         max_p_mw=0.2,
         min_p_mw=[0, 0.1, 0],
@@ -1719,7 +1719,7 @@ def test_create_gens():
     assert all(net.gen.test_kwargs == "dummy_string")
     assert all(net.gen.id_q_capability_curve_characteristic.values == [0, 1, 2])
     assert all(net.gen.curve_style == "straightLineYValues")
-    assert all(net.gen.curve_dependency_table == [False, False, False])
+    assert all(net.gen.reactive_capability_curve == [False, False, False])
 
 
 def test_create_gens_raise_errorexcept():

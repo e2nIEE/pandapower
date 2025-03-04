@@ -473,8 +473,8 @@ def _calculate_qmin_qmax_from_q_capability_curve_characteristics(net, element):
         logger.warning(f"No of {element} elements is zero.")
         return
 
-    # Filter rows with True 'curve_dependency_table'
-    element_data = net[element].loc[net[element]['curve_dependency_table'].fillna(False)]
+    # Filter rows with True 'reactive_capability_curve'
+    element_data = net[element].loc[net[element]['reactive_capability_curve'].fillna(False)]
 
     if len(element_data) > 0:
         # Extract the relevant data
@@ -490,7 +490,7 @@ def _calculate_qmin_qmax_from_q_capability_curve_characteristics(net, element):
         calc_q_min = np.vectorize(lambda func, p: func(p))(q_min_funcs, p_mw_values)
 
         if np.any(pd.isna(calc_q_min)) or np.any(pd.isna(calc_q_max)):
-            logger.warning(f"the curve_dependency_table of {element} is True, but the relevant "
+            logger.warning(f"the reactive_capability_curve of {element} is True, but the relevant "
                            f"characteristic value is None. So default Q limit value has been used in the load flow.")
 
         # Assign the calculated values directly to replace the NaN values in the original DataFrame

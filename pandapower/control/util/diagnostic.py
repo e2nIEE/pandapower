@@ -214,27 +214,27 @@ def q_capability_curve_characteristics_diagnostic(net, element):
     warnings_count = 0
 
     # Quick checks for element table and required columns
-    if (len(net[element]) == 0 or not {"id_q_capability_curve_characteristic", "curve_dependency_table", "curve_style"}.
+    if (len(net[element]) == 0 or not {"id_q_capability_curve_characteristic", "reactive_capability_curve", "curve_style"}.
             issubset(net[element].columns) or (not net[element]['id_q_capability_curve_characteristic'].notna().any()
-            and not net[element]['curve_dependency_table'].any()) and not net[element]['curve_style'].any()):
+            and not net[element]['reactive_capability_curve'].any()) and not net[element]['curve_style'].any()):
         logger.info(f"No {element} with Q capability curve table found.")
         return False
 
-    # Check if both curve_dependency_table & id_q_capability_curve_characteristic columns are populated
-    mismatch = net[element][(net[element]['curve_dependency_table'] & (
+    # Check if both reactive_capability_curve & id_q_capability_curve_characteristic columns are populated
+    mismatch = net[element][(net[element]['reactive_capability_curve'] & (
                 (net[element]['id_q_capability_curve_characteristic'].isna()) | (
-            net[element]['curve_style'].isna()))) | (~net[element]['curve_dependency_table'] & (
+            net[element]['curve_style'].isna()))) | (~net[element]['reactive_capability_curve'] & (
                 (net[element]['id_q_capability_curve_characteristic'].notna()) | (
             net[element]['curve_style'].notna())))].shape[0]
     if mismatch != 0:
         warnings.warn(f"Found {mismatch} {element}(s) with mismatched between curve_style, "
-                      f"curve_dependency_table and id_q_capability_curve_characteristic parameters populated. "
+                      f"reactive_capability_curve and id_q_capability_curve_characteristic parameters populated. "
                       f"Power flow calculation will raise an error.", category=UserWarning)
         warnings_count += 1
 
     # Validate relevant columns in q_capability_curve_table
     temp = net[element].dropna(subset=["id_q_capability_curve_characteristic"])[
-        ["curve_dependency_table", "id_q_capability_curve_characteristic", "curve_style"]]
+        ["reactive_capability_curve", "id_q_capability_curve_characteristic", "curve_style"]]
     merged_df = temp.merge(net["q_capability_curve_table"], left_on="id_q_capability_curve_characteristic",
                            right_on="id_q_capability_curve", how="inner")
 
@@ -243,9 +243,9 @@ def q_capability_curve_characteristics_diagnostic(net, element):
                       "populated in the q_capability_curve_table.", category=UserWarning)
         warnings_count += 1
 
-    # Check curve_dependency_table & id_characteristic_table column types
-    if net[element]['curve_dependency_table'].dtype != 'bool':
-        warnings.warn(f"The curve_dependency_table column in the {element} table is not of bool type.",
+    # Check reactive_capability_curve & id_characteristic_table column types
+    if net[element]['reactive_capability_curve'].dtype != 'bool':
+        warnings.warn(f"The reactive_capability_curve column in the {element} table is not of bool type.",
                       category=UserWarning)
         warnings_count += 1
 
