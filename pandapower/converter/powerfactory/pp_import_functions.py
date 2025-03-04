@@ -2776,7 +2776,7 @@ def create_trafo3w(net, item, tap_opt='nntap'):
         'shift_lv_degree': -(pf_type.nt3ag_h - pf_type.nt3ag_l) * 30,
         'tap_at_star_point': pf_type.itapos == 0,
         'in_service': not bool(item.outserv),
-        'parallel': pf_type.nt3nm,
+        'parallel': item.nt3nm,
     }
 
     if item.nt3nm != 1:
@@ -3308,9 +3308,9 @@ def create_sind(net, item):
     aux_bus1 = pp.create_bus(net, vn_kv=net.bus.vn_kv.at[bus1], name=net.bus.name.at[bus1]+'_aux',
                              type="b", zone=net.bus.zone.at[bus1], in_service=True)
     net.bus.loc[aux_bus1, 'geo'] = net.bus.geo.at[bus1]
-    aux_bus2 = pp.create_bus(net, vn_kv=net.bus.vn_kv.at[bus2], name=net.bus.name.at[bus2]+'_aux',
-                             geodata=net.bus.geo.at[bus2], type="b", zone=net.bus.zone.at[bus2],
-                             in_service=True)
+    aux_bus2 = pp.create_bus(net, vn_kv=net.bus.vn_kv.at[bus2], name=net.bus.name.at[bus2] + '_aux',
+                             type="b", zone=net.bus.zone.at[bus2], in_service=True)
+    net.bus.loc[aux_bus2, 'geo'] = net.bus.geo.at[bus2]
 
     sind = pp.create_series_reactor_as_impedance(net, from_bus=aux_bus1, to_bus=aux_bus2,
                                                  r_ohm=item.rrea, x_ohm=item.xrea, sn_mva=item.Sn,
