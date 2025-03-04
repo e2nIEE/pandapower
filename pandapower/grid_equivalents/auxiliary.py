@@ -515,7 +515,7 @@ def adaptation_phase_shifter(net, v_boundary, p_boundary):
 def replace_motor_by_load(net, all_external_buses):
     """
     replace the 'external' motors by loads. The name is modified.
-    e.g., "equivalent_MotorName_3" ("equivalent"+"orignial name"+"original index")
+    e.g., "equivalent_MotorName_3" ("equivalent"+"original name"+"original index")
     """
     motors = net.motor.index[net.motor.bus.isin(all_external_buses)]
     for mi, m in net.motor.loc[motors].iterrows():

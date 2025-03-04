@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -217,7 +217,7 @@ def test_3bus_with_transformer():
     create_std_type(net, {"sn_mva": 25, "vn_hv_kv": 110, "vn_lv_kv": 10, "vk_percent": 10.04,
                           "vkr_percent": 0.276, "pfe_kw": 28.51, "i0_percent": 0.073, "shift_degree": 150,
                           "tap_side": "hv", "tap_neutral": 0, "tap_min": -9, "tap_max": 9, "tap_step_degree": 0,
-                          "tap_step_percent": 1.5, "tap_phase_shifter": False},
+                          "tap_step_percent": 1.5, "tap_changer_type": "Ratio"},
                     "25 MVA 110/10 kV v1.4.3 and older", element="trafo")
     create_transformer(net, 3, 0, std_type="25 MVA 110/10 kV v1.4.3 and older")
 
@@ -503,7 +503,7 @@ def test_init_slack_with_multiple_transformers(angles=True):
     create_std_type(net, {"sn_mva": 63, "vn_hv_kv": 110, "vn_lv_kv": 10, "vk_percent": 10.04,
                           "vkr_percent": 0.31, "pfe_kw": 31.51, "i0_percent": 0.078, "shift_degree": 150,
                           "tap_side": "hv", "tap_neutral": 0, "tap_min": -9, "tap_max": 9, "tap_step_degree": 0,
-                          "tap_step_percent": 1.5, "tap_phase_shifter": False},
+                          "tap_step_percent": 1.5, "tap_changer_type": "Ratio"},
                     "63 MVA 110/10 kV v1.4.3 and older", element="trafo")
 
     create_transformer(net, 3, 7, std_type="63 MVA 110/10 kV v1.4.3 and older", in_service=False)

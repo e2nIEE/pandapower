@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -257,7 +257,7 @@ def test_opf_gen_voltage():
                                        vn_hv_kv=10.0, vkr_percent=2.8125,
                                        tap_pos=0, tap_side="hv", tap_min=-2,
                                        tap_step_percent=2.5, i0_percent=0.68751,
-                                       sn_mva=0.016, pfe_kw=0.11, name=None,
+                                       sn_mva=0.016, pfe_kw=0.11, name=None, tap_changer_type="Ratio",
                                        in_service=True, index=None, max_loading_percent=200)
     create_gen(net, 3, p_mw=0.01, controllable=True, min_p_mw=0, max_p_mw=0.025, max_q_mvar=0.5,
                min_q_mvar=-0.5)
@@ -303,7 +303,7 @@ def test_opf_sgen_voltage():
                                        vn_hv_kv=10.0, vkr_percent=2.8125,
                                        tap_pos=0, tap_side="hv", tap_min=-2,
                                        tap_step_percent=2.5, i0_percent=0.68751,
-                                       sn_mva=0.016, pfe_kw=0.11, name=None,
+                                       sn_mva=0.016, pfe_kw=0.11, name=None, tap_changer_type="Ratio",
                                        in_service=True, index=None, max_loading_percent=1000000)
     create_sgen(net, 3, p_mw=0.01, controllable=True, min_p_mw=-0.005, max_p_mw=0.015,
                 max_q_mvar=0.025, min_q_mvar=-0.025)
@@ -350,7 +350,7 @@ def test_opf_gen_loading():
                                        vn_hv_kv=10.0, vkr_percent=2.8125,
                                        tap_pos=0, tap_side="hv", tap_min=-2,
                                        tap_step_percent=2.5, i0_percent=0.68751,
-                                       sn_mva=0.016, pfe_kw=0.11, name=None,
+                                       sn_mva=0.016, pfe_kw=0.11, name=None, tap_changer_type="Ratio",
                                        in_service=True, index=None, max_loading_percent=145)
     create_gen(net, 3, p_mw=0.01, controllable=True, min_p_mw=0.005, max_p_mw=0.015,
                max_q_mvar=0.05, min_q_mvar=-0.05)
@@ -403,7 +403,7 @@ def test_opf_sgen_loading():
                                        vkr_percent=2.8125, tap_pos=0, tap_side="hv", tap_min=-2,
                                        tap_step_percent=2.5, i0_percent=0.68751, sn_mva=0.016,
                                        pfe_kw=0.11, name=None, in_service=True, index=None,
-                                       max_loading_percent=max_trafo_loading)
+                                       max_loading_percent=max_trafo_loading, tap_changer_type="Ratio")
     create_sgen(net, 3, p_mw=0.01, controllable=True, min_p_mw=0.005, max_p_mw=.015,
                 max_q_mvar=0.025, min_q_mvar=-0.025)
     create_poly_cost(net, 0, "sgen", cp1_eur_per_mw=-10)
@@ -573,7 +573,7 @@ def test_opf_varying_max_line_loading():
                                        vkr_percent=2.8125, tap_pos=0, tap_side="hv", tap_min=-2,
                                        tap_step_percent=2.5, i0_percent=0.68751, sn_mva=0.016,
                                        pfe_kw=0.11, name=None, in_service=True, index=None,
-                                       max_loading_percent=max_trafo_loading)
+                                       max_loading_percent=max_trafo_loading, tap_changer_type="Ratio")
 
     create_sgen(net, 3, p_mw=0.1, controllable=True, min_p_mw=0.005, max_p_mw=0.15,
                 max_q_mvar=0.025, min_q_mvar=-0.025)

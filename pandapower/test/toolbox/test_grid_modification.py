@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import pytest
@@ -209,19 +209,26 @@ def test_merge_with_characteristics():
     net1 = simple_four_bus_system()
     net2 = simple_four_bus_system()
 
-    # create two characteristic
-    Characteristic(net1, x_values=[0.85, 1.15], y_values=[5, 15])
-    Characteristic(net2, x_values=[0.95, 1.05], y_values=[10, 20])
-
-    # assign the characteristic ids to the trafos
-    net1.trafo.loc[:, "vk_percent_characteristic"] = 0
-    net2.trafo.loc[:, "vk_percent_characteristic"] = 0
+    net1["trafo_characteristic_table"] = pd.DataFrame(
+        {'id_characteristic': [0, 0, 0, 0, 0], 'step': [-2, -1, 0, 1, 2], 'voltage_ratio': [1, 1, 1, 1, 1],
+         'angle_deg': [0, 0, 0, 0, 0], 'vk_percent': [2, 3, 4, 5, 6],
+         'vkr_percent': [1.323, 1.324, 1.325, 1.326, 1.327], 'vk_hv_percent': np.nan, 'vkr_hv_percent': np.nan,
+         'vk_mv_percent': np.nan, 'vkr_mv_percent': np.nan, 'vk_lv_percent': np.nan, 'vkr_lv_percent': np.nan})
+    net2["trafo_characteristic_table"] = pd.DataFrame(
+        {'id_characteristic': [0, 0, 0, 0, 0], 'step': [-2, -1, 0, 1, 2], 'voltage_ratio': [1, 1, 1, 1, 1],
+         'angle_deg': [0, 0, 0, 0, 0], 'vk_percent': [2.1, 3.1, 4.1, 5.1, 6.1],
+         'vkr_percent': [1.3, 1.4, 1.5, 1.6, 1.7], 'vk_hv_percent': np.nan, 'vkr_hv_percent': np.nan,
+         'vk_mv_percent': np.nan, 'vkr_mv_percent': np.nan, 'vk_lv_percent': np.nan, 'vkr_lv_percent': np.nan})
 
     # merge networks
     merged, lookup = merge_nets(net1, net2, validate=False, return_net2_reindex_lookup=True)
 
     # The second transformer should have the second characteristic
-    assert merged.trafo.loc[1, "vk_percent_characteristic"] == 1
+    result = merged.trafo_characteristic_table[
+        (merged.trafo_characteristic_table["id_characteristic"] == 1) &
+        (merged.trafo_characteristic_table["step"] == 2)
+        ]
+    assert result["vkr_percent"].values[0] == 1.7
 
 
 def test_merge_nets_with_custom_elements():

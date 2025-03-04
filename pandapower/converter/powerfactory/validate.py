@@ -476,11 +476,13 @@ def _validate_pf_conversion_balanced(net, in_both, all_diffs):
         bus_dc_idx = net.bus_dc.query('in_service').index
         bus_dc_diff = net.res_bus_dc.loc[bus_dc_idx].pf_vm_pu - net.res_bus_dc.loc[
             bus_dc_idx].vm_pu
-        bus_dc_id = abs(bus_dc_diff).abs().idxmax().astype('int64')
-        logger.info("Maximum bus_dc vm_pu difference between pandapower and powerfactory: %.6f "
-                    "p.u. at bus_dc %d (%s)" % (
-                        max(abs(bus_dc_diff)), bus_dc_id, net.bus_dc.at[bus_dc_id, 'name']))
-        all_diffs["bus_dc_diff"] = bus_dc_diff
+        if bus_dc_diff.isna().all():
+            logger.info("bus_dc_diff contains only NaN values. Continuing without evaluating dc busses.")
+        else:
+            bus_dc_id = abs(bus_dc_diff).abs().idxmax().astype('int64')
+            logger.info("Maximum bus_dc vm_pu difference between pandapower and powerfactory: %.6f "
+                        "p.u. at bus_dc %d (%s)" % (max(abs(bus_dc_diff)), bus_dc_id, net.bus_dc.at[bus_dc_id, 'name']))
+            all_diffs["bus_dc_diff"] = bus_dc_diff
 
     if len(net.line[net.line.in_service]) > 0:
         section_loadings = pd.concat([net.line[["name", "line_idx"]], net.res_line[

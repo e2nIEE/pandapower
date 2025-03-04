@@ -11,7 +11,7 @@ import numpy as np
 from pandas import DataFrame
 
 from pandapower.auxiliary import ADict, get_free_id
-from pandapower.control import ContinuousTapControl, DiscreteTapControl, create_trafo_characteristics, \
+from pandapower.control import ContinuousTapControl, DiscreteTapControl, _create_trafo_characteristics, \
     BinarySearchControl, \
     DroopControl
 from pandapower.create import create_empty_network, create_bus_dc, create_switch, create_line_from_parameters, \
@@ -40,8 +40,10 @@ switch_dict = {}
 bus_dict = {}
 grf_map = {}
 
-
 # import network to pandapower:
+import pandas as pd
+
+
 def from_pf(
         dict_net,
         pv_as_slack=True,
@@ -668,13 +670,14 @@ def get_coords_from_buses(net, from_bus, to_bus, **kwargs):
     from_geo: Optional[str] = None
     to_geo: Optional[str] = None
     if from_bus in net.bus.index:
-        from_geo: str = net.bus.loc[from_bus, ['geo']]
+        from_geo: str = net.bus.loc[from_bus, 'geo']
 
     if to_bus in net.bus.index:
-        to_geo: str = net.bus.loc[to_bus, ['geo']]
+        to_geo: str = net.bus.loc[to_bus, 'geo']
 
     if from_geo and to_geo:
         coords = [geojson.utils.coords(geojson.loads(from_geo)), geojson.utils.coords(geojson.loads(to_geo))]
+        coords = [tuple((x, y)) for item in coords for x, y in item]
         logger.debug('got coords from buses: %s' % coords)
     else:
         logger.debug('no coords for line between buses %d and %d' % (from_bus, to_bus))
@@ -2357,14 +2360,25 @@ def create_trafo_type(net, item):
         "tap_side": ['hv', 'lv', 'ext'][item.tap_side],  # 'ext' not implemented
     }
 
+    type_data.update({"tap_changer_type": "None"})
+    type_data.update({"tap2_changer_type": "None"})
+
     if item.itapch:
         logger.debug('trafo <%s> has tap changer' % name)
+
+        if item.tapchtype == 0:
+            tap_changer_type = "Ratio"
+        elif item.tapchtype == 1:
+            tap_changer_type = "Symmetrical"
+        elif item.tapchtype == 2:
+            tap_changer_type = "Ideal"
+
         type_data.update({
             # see if it is an ideal phase shifter or a complex phase shifter
             # checking tap_step_percent because a nonzero value for ideal phase shifter can be stored in the object
             "tap_step_percent": item.dutap if item.tapchtype != 1 else 0,
             "tap_step_degree": item.dphitap if item.tapchtype == 1 else item.phitr,
-            "tap_phase_shifter": True if item.tapchtype == 1 else False,
+            "tap_changer_type": tap_changer_type,
             "tap_max": item.ntpmx,
             "tap_min": item.ntpmn,
             "tap_neutral": item.nntap0
@@ -2383,7 +2397,7 @@ def create_trafo_type(net, item):
             # checking tap_step_percent because a nonzero value for ideal phase shifter can be stored in the object
             "tap2_step_percent": item.dutap2 if item.tapchtype2 != 1 else 0,
             "tap2_step_degree": item.dphitap2 if item.tapchtype2 == 1 else item.phitr2,
-            "tap2_phase_shifter": True if item.tapchtype2 == 1 else False,
+            "tap2_changer_type":  item.tapchtype2,
             "tap2_max": item.ntpmx2,
             "tap2_min": item.ntpmn2,
             "tap2_neutral": item.nntap02
@@ -2447,20 +2461,164 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
             tap_pos2 = item.GetAttribute("c:nntap2")
 
     if std_type is not None:
+        use_tap_table = item.GetAttribute("iTaps")
+        if use_tap_table == 1:
+            if "trafo_characteristic_table" not in net:
+                net["trafo_characteristic_table"] = pd.DataFrame(
+                    columns=['id_characteristic', 'step', 'voltage_ratio', 'angle_deg', 'vk_percent', 'vkr_percent',
+                             'vk_hv_percent', 'vkr_hv_percent', 'vk_mv_percent', 'vkr_mv_percent', 'vk_lv_percent',
+                             'vkr_lv_percent'])
+
+            last_index = net["trafo_characteristic_table"]['id_characteristic'].max() if not net[
+                "trafo_characteristic_table"].empty else -1
+            new_id_characteristic_table = last_index + 1
+            tap_min = pf_type.ntpmn
+            tap_max = pf_type.ntpmx
+            tap_side = pf_type.tap_side
+            meas_side = item.GetAttribute("iMeasLoc")  # 0: meas-side == tap_side
+
+            steps = list(range(tap_min, tap_max + 1))
+
+            new_tap_table = pd.DataFrame(item.GetAttribute("mTaps"),
+                                         columns=['voltage_ratio', 'angle_deg', 'vk_percent', 'vkr_percent',
+                                                  'ignore'])
+            new_tap_table = new_tap_table.drop(columns='ignore')
+            if meas_side == 0:
+                if tap_side == 0:
+                    new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn_h
+                else:
+                    new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn_l
+            elif meas_side == 1:
+                new_tap_table["angle_deg"] = -new_tap_table["angle_deg"]
+                if tap_side == 0:
+                    new_tap_table["voltage_ratio"] = pf_type.utrn_l / new_tap_table["voltage_ratio"]
+                else:
+                    new_tap_table["voltage_ratio"] = pf_type.utrn_h / new_tap_table["voltage_ratio"]
+            else:
+                raise ValueError("Measurement location for tap table not given.")
+
+            new_tap_table["vkr_percent"] = new_tap_table["vkr_percent"] / pf_type.strn / 1000 * 100
+            # * 1000 / 100 for conversion from MVA to kVA and from decimal to %
+
+            if len(new_tap_table) == len(steps):
+                new_tap_table['step'] = steps[:len(new_tap_table)]
+            else:
+                raise ValueError("The number of steps differs from the number of rows in new_tap_table.")
+            new_tap_table['id_characteristic'] = new_id_characteristic_table
+
+            missing_columns = set(net["trafo_characteristic_table"].columns) - set(new_tap_table.columns)
+            for col in missing_columns:
+                new_tap_table[col] = np.nan
+
+            net["trafo_characteristic_table"] = pd.concat([net["trafo_characteristic_table"], new_tap_table],
+                                                          ignore_index=True)
+
+            if pf_type.tapchtype == 0:
+                tap_changer_type = "Ratio"
+            elif pf_type.tapchtype == 1:
+                tap_changer_type = "Symmetrical"
+            elif pf_type.tapchtype == 2:
+                tap_changer_type = "Ideal"
+            else:
+                tap_changer_type = "None"
+
+            tap_dependency_table = True
+            id_characteristic_table = new_id_characteristic_table
+        else:
+            id_characteristic_table = None
+            tap_dependency_table = False
+            tap_changer_type = None
+
         tid = create_transformer(net, hv_bus=bus1, lv_bus=bus2, name=name,
-                                 std_type=std_type, tap_pos=tap_pos,
-                                 in_service=in_service, parallel=item.ntnum, df=item.ratfac, tap2_pos=tap_pos2,
-                                 leakage_resistance_ratio_hv=pf_type.itrdr, leakage_reactance_ratio_hv=pf_type.itrdl)
+                                    std_type=std_type, tap_pos=tap_pos,
+                                    tap_dependency_table=tap_dependency_table,
+                                    tap_changer_type=tap_changer_type,
+                                    id_characteristic_table=id_characteristic_table,
+                                    in_service=in_service, parallel=item.ntnum, df=item.ratfac, tap2_pos=tap_pos2,
+                                    leakage_resistance_ratio_hv=pf_type.itrdr, leakage_reactance_ratio_hv=pf_type.itrdl)
         trafo_dict[item] = tid
         logger.debug('created trafo at index <%d>' % tid)
     else:
         logger.info("Create Trafo 3ph")
+        use_tap_table = item.GetAttribute("iTaps")
+        if use_tap_table == 1:
+            if "trafo_characteristic_table" not in net:
+                net["trafo_characteristic_table"] = pd.DataFrame(
+                    columns=['id_characteristic', 'step', 'voltage_ratio', 'angle_deg', 'vk_percent', 'vkr_percent',
+                             'vk_hv_percent', 'vkr_hv_percent', 'vk_mv_percent', 'vkr_mv_percent', 'vk_lv_percent',
+                             'vkr_lv_percent'])
+
+            last_index = net["trafo_characteristic_table"]['id_characteristic'].max() if not net[
+                "trafo_characteristic_table"].empty else -1
+            new_id_characteristic_table = last_index + 1
+            tap_min = pf_type.ntpmn
+            tap_max = pf_type.ntpmx
+            tap_side = item.GetAttribute("tap_side")
+            meas_side = item.GetAttribute("iMeasLoc")
+
+            steps = list(range(tap_min, tap_max + 1))
+
+            new_tap_table = pd.DataFrame(item.GetAttribute("mTaps"),
+                                         columns=['voltage_ratio', 'angle_deg', 'vk_percent', 'vkr_percent',
+                                                  'ignore'])
+            new_tap_table = new_tap_table.drop(columns='ignore')
+
+            if meas_side == 0:
+                if tap_side == 0:
+                    new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn_h
+                else:
+                    new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn_l
+            elif meas_side == 1:
+                new_tap_table["angle_deg"] = -new_tap_table["angle_deg"]
+                if tap_side == 0:
+                    new_tap_table["voltage_ratio"] = pf_type.utrn_l / new_tap_table["voltage_ratio"]
+                else:
+                    new_tap_table["voltage_ratio"] = pf_type.utrn_h / new_tap_table["voltage_ratio"]
+            else:
+                raise ValueError("Measurement location for tap table not given.")
+
+            new_tap_table["vkr_percent"] = new_tap_table["vkr_percent"] / pf_type.strn / 1000 * 100
+            # * 1000 / 100 for conversion from MVA to kVA and from decimal to %
+
+            if len(new_tap_table) == len(steps):
+                new_tap_table['step'] = steps[:len(new_tap_table)]
+            else:
+                raise ValueError("The number of steps differs from the number of rows in new_tap_table.")
+            new_tap_table['id_characteristic'] = new_id_characteristic_table
+
+            missing_columns = set(net["trafo_characteristic_table"].columns) - set(new_tap_table.columns)
+            for col in missing_columns:
+                new_tap_table[col] = np.nan
+
+            net["trafo_characteristic_table"] = pd.concat([net["trafo_characteristic_table"], new_tap_table],
+                                                          ignore_index=True)
+
+            if pf_type.tapchtype == 0:
+                tap_changer_type = "Ratio"
+            elif pf_type.tapchtype == 1:
+                tap_changer_type = "Symmetrical"
+            elif pf_type.tapchtype == 2:
+                tap_changer_type = "Ideal"
+            else:
+                tap_changer_type = "None"
+
+            tap_dependency_table = True
+            id_characteristic_table = new_id_characteristic_table
+        else:
+            id_characteristic_table = None
+            tap_dependency_table = False
+            tap_changer_type = None
+
         tid = create_transformer_from_parameters(
             net,
             hv_bus=bus1,
             lv_bus=bus2,
             name=name,
             tap_pos=tap_pos,
+            tap_side=tap_side,
+            tap_changer_type=tap_changer_type,
+            id_characteristic_table=id_characteristic_table,
+            tap_dependency_table=tap_dependency_table,
             in_service=in_service,
             parallel=item.ntnum,
             df=item.ratfac,
@@ -2538,17 +2696,17 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
 
     add_additional_attributes(item, net, element='trafo', element_id=tid,
                               attr_dict={'e:cpSite.loc_name': 'site', 'for_name': 'equipment', "cimRdfId": "origin_id"})
-    if pf_type.itapzdep:
-        x_points = (net.trafo.at[tid, "tap_min"], net.trafo.at[tid, "tap_neutral"], net.trafo.at[tid, "tap_max"])
-        vk_min, vk_neutral, vk_max = pf_type.uktmn, net.trafo.at[tid, "vk_percent"], pf_type.uktmx
-        vkr_min, vkr_neutral, vkr_max = pf_type.ukrtmn, net.trafo.at[tid, "vkr_percent"], pf_type.ukrtmx
-        # todo
-        # vk0_min, vk0_max = pf_type.uk0tmn, pf_type.uk0tmx
-        # vkr0_min, vkr0_max = pf_type.uk0rtmn, pf_type.uk0rtmx
-        create_trafo_characteristics(net, trafotable="trafo", trafo_index=tid, variable="vk_percent",
-                                     x_points=x_points, y_points=(vk_min, vk_neutral, vk_max))
-        create_trafo_characteristics(net, trafotable="trafo", trafo_index=tid, variable="vkr_percent",
-                                     x_points=x_points, y_points=(vkr_min, vkr_neutral, vkr_max))
+    # if pf_type.itapzdep:
+    #     x_points = (net.trafo.at[tid, "tap_min"], net.trafo.at[tid, "tap_neutral"], net.trafo.at[tid, "tap_max"])
+    #     vk_min, vk_neutral, vk_max = pf_type.uktmn, net.trafo.at[tid, "vk_percent"], pf_type.uktmx
+    #     vkr_min, vkr_neutral, vkr_max = pf_type.ukrtmn, net.trafo.at[tid, "vkr_percent"], pf_type.ukrtmx
+    #     # todo
+    #     # vk0_min, vk0_max = pf_type.uk0tmn, pf_type.uk0tmx
+    #     # vkr0_min, vkr0_max = pf_type.uk0rtmn, pf_type.uk0rtmx
+    #     create_trafo_characteristics(net, trafotable="trafo", trafo_index=tid, variable="vk_percent",
+    #                                  x_points=x_points, y_points=(vk_min, vk_neutral, vk_max))
+    #     create_trafo_characteristics(net, trafotable="trafo", trafo_index=tid, variable="vkr_percent",
+    #                                  x_points=x_points, y_points=(vkr_min, vkr_neutral, vkr_max))
 
 
 def get_pf_trafo_results(net, item, tid, is_unbalanced):
@@ -2628,16 +2786,102 @@ def create_trafo3w(net, item, tap_opt='nntap'):
         'shift_mv_degree': -(pf_type.nt3ag_h - pf_type.nt3ag_m) * 30,
         'shift_lv_degree': -(pf_type.nt3ag_h - pf_type.nt3ag_l) * 30,
         'tap_at_star_point': pf_type.itapos == 0,
-        'in_service': not bool(item.outserv)
+        'in_service': not bool(item.outserv),
+        'parallel': item.nt3nm,
     }
 
     if item.nt3nm != 1:
         logger.warning("trafo3w %s has parallel=%d, this is not implemented. "
                        "Calculation results will be incorrect." % (item.loc_name, item.nt3nm))
 
+
+    use_tap_table = item.GetAttribute("iTaps")
+    if use_tap_table == 1:
+        if "trafo_characteristic_table" not in net:
+            net["trafo_characteristic_table"] = pd.DataFrame(
+                columns=['id_characteristic', 'step', 'voltage_ratio', 'angle_deg', 'vk_percent', 'vkr_percent',
+                         'vk_hv_percent', 'vkr_hv_percent', 'vk_mv_percent', 'vkr_mv_percent', 'vk_lv_percent',
+                         'vkr_lv_percent'])
+
+        last_index = net["trafo_characteristic_table"]['id_characteristic'].max() if not net[
+            "trafo_characteristic_table"].empty else -1
+        new_id_characteristic_table = last_index + 1
+
+        new_tap_table = pd.DataFrame(item.GetAttribute("mTaps"),
+                                     columns=['voltage_ratio', 'angle_deg', 'vk_hv_percent', 'vk_mv_percent',
+                                              'vk_lv_percent', 'vkr_hv_percent', 'vkr_mv_percent', 'vkr_lv_percent'])
+
+        if pf_type.itapzdep:
+            table_side = pf_type.itapzside
+        else:
+            table_side = item.GetAttribute("iMeasTap")
+        meas_side = item.GetAttribute("iMeasLoc")
+
+        if table_side == 0:
+            tap_min = pf_type.n3tmn_h
+            tap_max = pf_type.n3tmx_h
+            if meas_side == 0:
+                new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn3_h
+            elif meas_side == 1:
+                new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn3_m
+            elif meas_side == 2:
+                new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn3_l
+        elif table_side == 1:
+            tap_min = pf_type.n3tmn_m
+            tap_max = pf_type.n3tmx_m
+            if meas_side == 0:
+                new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn3_h
+            elif meas_side == 1:
+                new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn3_m
+            elif meas_side == 2:
+                new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn3_l
+        elif table_side == 2:
+            tap_min = pf_type.n3tmn_l
+            tap_max = pf_type.n3tmx_l
+            if meas_side == 0:
+                new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn3_h
+            elif meas_side == 1:
+                new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn3_m
+            elif meas_side == 2:
+                new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn3_l
+
+        strn3_h = pf_type.strn3_h
+        strn3_m = pf_type.strn3_m
+        strn3_l = pf_type.strn3_l
+        new_tap_table["vkr_hv_percent"] = new_tap_table["vkr_hv_percent"] / (
+                np.min([float(strn3_h), float(strn3_m)]) * 1000) * 100
+        new_tap_table["vkr_mv_percent"] = new_tap_table["vkr_mv_percent"] / (
+                    np.min([float(strn3_m), float(strn3_l)]) * 1000) * 100
+        new_tap_table["vkr_lv_percent"] = new_tap_table["vkr_lv_percent"] / (
+                    np.min([float(strn3_h), float(strn3_l)]) * 1000) * 100
+
+        steps = list(range(tap_min, tap_max + 1))
+
+        if len(new_tap_table) == len(steps):
+            new_tap_table['step'] = steps[:len(new_tap_table)]
+        else:
+            raise ValueError("The number of steps differs from the number of rows in new_tap_table.")
+        new_tap_table['id_characteristic'] = new_id_characteristic_table
+
+        missing_columns = set(net["trafo_characteristic_table"].columns) - set(new_tap_table.columns)
+        for col in missing_columns:
+            new_tap_table[col] = np.nan
+
+        net["trafo_characteristic_table"] = pd.concat([net["trafo_characteristic_table"], new_tap_table],
+                                                      ignore_index=True)
+
+        params['tap_dependency_table'] = True
+        params['id_characteristic_table'] = new_id_characteristic_table
+    else:
+        params['tap_dependency_table'] = False
+
     if item.HasAttribute('t:du3tp_h'):
         steps = [pf_type.du3tp_h, pf_type.du3tp_m, pf_type.du3tp_l]
-        side = np.nonzero(steps)[0]
+        if(use_tap_table):
+            side = np.array([table_side])
+        else:
+            side = np.nonzero(steps)[0]
+
         if len(side) > 1:
             logger.warning("pandapower currently doesn't support 3w transformer with"
                            "multiple tap changers")
@@ -2653,8 +2897,25 @@ def create_trafo3w(net, item, tap_opt='nntap'):
                 logger.debug("got tap %f from c:n3tap" % tap_pos)
             else:
                 raise ValueError('could not read current tap position: tap_opt = %s' % tap_opt)
+
+            tap_step_percent = item.GetAttribute('t:du3tp_' + ts)
+            tap_step_degree = item.GetAttribute('t:ph3tr_' + ts)
+
+            if (tap_step_degree is None or tap_step_degree == 0) and (tap_step_percent is None or tap_step_percent == 0):
+                tap_changer_type = "None"
+            # ratio/asymmetrical phase shifters
+            elif (tap_step_degree != 90 and tap_step_percent is not None and tap_step_percent != 0):
+                tap_changer_type = "Ratio"
+            # symmetrical phase shifters
+            elif (tap_step_degree == 90 and tap_step_percent is not None and tap_step_percent != 0):
+                tap_changer_type = "Symmetrical"
+            # ideal phase shifters
+            elif (tap_step_degree is not None and tap_step_degree != 0 and (tap_step_percent is None or tap_step_percent == 0)):
+                tap_changer_type = "Ideal"
+
             params.update({
                 'tap_side': ts + 'v',  # hv, mv, lv
+                'tap_changer_type': tap_changer_type,
                 'tap_step_percent': item.GetAttribute('t:du3tp_' + ts),
                 'tap_step_degree': item.GetAttribute('t:ph3tr_' + ts),
                 'tap_min': item.GetAttribute('t:n3tmn_' + ts),
@@ -2703,22 +2964,24 @@ def create_trafo3w(net, item, tap_opt='nntap'):
 
     # TODO Implement the tap changer controller for 3-winding transformer
 
-    if pf_type.itapzdep:
-        x_points = (net.trafo3w.at[tid, "tap_min"], net.trafo3w.at[tid, "tap_neutral"], net.trafo3w.at[tid, "tap_max"])
-        for side in ("hv", "mv", "lv"):
-            vk_min = pf_type.GetAttribute(f"uktr3mn_{side[0]}")
-            vk_neutral = net.trafo3w.at[tid, f"vk_{side}_percent"]
-            vk_max = pf_type.GetAttribute(f"uktr3mx_{side[0]}")
-            vkr_min = pf_type.GetAttribute(f"uktrr3mn_{side[0]}")
-            vkr_neutral = net.trafo3w.at[tid, f"vkr_{side}_percent"]
-            vkr_max = pf_type.GetAttribute(f"uktrr3mx_{side[0]}")
-            # todo zero-sequence parameters (must be implemented in build_branch first)
-            create_trafo_characteristics(net, trafotable="trafo3w", trafo_index=tid,
-                                         variable=f"vk_{side}_percent", x_points=x_points,
-                                         y_points=(vk_min, vk_neutral, vk_max))
-            create_trafo_characteristics(net, trafotable="trafo3w", trafo_index=tid,
-                                         variable=f"vkr_{side}_percent", x_points=x_points,
-                                         y_points=(vkr_min, vkr_neutral, vkr_max))
+    # TODO Implement extracting trafo_characteristic_table if pf_type.itapzdep is true
+    #  and no trafo_characteristic_table available
+    # if pf_type.itapzdep:
+    #    x_points = (net.trafo3w.at[tid, "tap_min"], net.trafo3w.at[tid, "tap_neutral"], net.trafo3w.at[tid, "tap_max"])
+    #    for side in ("hv", "mv", "lv"):
+    #        vk_min = pf_type.GetAttribute(f"uktr3mn_{side[0]}")
+    #        vk_neutral = net.trafo3w.at[tid, f"vk_{side}_percent"]
+    #        vk_max = pf_type.GetAttribute(f"uktr3mx_{side[0]}")
+    #        vkr_min = pf_type.GetAttribute(f"uktrr3mn_{side[0]}")
+    #        vkr_neutral = net.trafo3w.at[tid, f"vkr_{side}_percent"]
+    #        vkr_max = pf_type.GetAttribute(f"uktrr3mx_{side[0]}")
+    #        # todo zero-sequence parameters (must be implemented in build_branch first)
+    #       create_trafo_characteristics(net, trafotable="trafo3w", trafo_index=tid,
+    #                                                variable=f"vk_{side}_percent", x_points=x_points,
+    #                                                y_points=(vk_min, vk_neutral, vk_max))
+    #       create_trafo_characteristics(net, trafotable="trafo3w", trafo_index=tid,
+    #                                                variable=f"vkr_{side}_percent", x_points=x_points,
+    #                                                y_points=(vkr_min, vkr_neutral, vkr_max))
 
 
 def propagate_bus_coords(net, bus1, bus2):
@@ -2815,7 +3078,6 @@ def create_shunt(net, item):
         'step': item.ncapa,
         'max_step': item.ncapx
     }
-    print(item.loc_name)
     r_val: float = .0
     x_val: float = .0
     if item.shtype == 0:
@@ -3356,11 +3618,16 @@ def create_stactrl(net, item):
 
     # find gen_element_index using name:
     if np.any(net.sgen.name.duplicated()):
-        raise UserWarning("error while creating station controller: sgen names must be unique")
+        duplicated_sgen_names = True
+        # raise UserWarning("error while creating station controller: sgen names must be unique")
+    else:
+        duplicated_sgen_names = False
 
     gen_types = []
     for s in machines:
         if s.ip_ctrl == 1:
+            gt = "other"
+        elif not hasattr(s, 'av_mode'):
             gt = "other"
         elif s.av_mode == "constq":
             gt = "sgen"
@@ -3393,8 +3660,24 @@ def create_stactrl(net, item):
 
     gen_element = gen_types[0]
     gen_element_index = []
-    for s in machines:
-        gen_element_index.append(net[gen_element].loc[net[gen_element].name == s.loc_name].index.values[0])
+
+    if duplicated_sgen_names == False:
+        for s in machines:
+            gen_element_index.append(net[gen_element].loc[net[gen_element].name == s.loc_name].index.values[0])
+    else:
+        # check if gen_element has set controller
+        for s in machines:
+            gen_element_index_try = net[gen_element].loc[net[gen_element].name == s.loc_name].index.values
+            if len(gen_element_index_try) == 1:
+                gen_element_index.append(gen_element_index_try[0])
+            else:
+                gen_element_index_try_again = net[gen_element].loc[(net[gen_element].name == s.loc_name) & (
+                            net[gen_element].sta_ctrl == s.c_pstac.loc_name)].index.values
+                if len(gen_element_index_try_again) > 1:
+                    raise UserWarning(
+                        "error while creating station controller: sgen and controler names must be unique")
+                else:
+                    gen_element_index.append(gen_element_index_try_again[0])
 
     if len(gen_element_index) != len(machines):
         raise UserWarning("station controller: could not properly identify the machines")

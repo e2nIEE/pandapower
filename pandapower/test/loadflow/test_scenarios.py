@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -22,11 +22,14 @@ from pandapower.test.loadflow.result_test_network_generator import add_test_bus_
 
 
 # TODO: 2 gen 2 ext_grid missing
+
+
 def test_2gen_1ext_grid():
     net = create_test_network2()
     net.shunt.q_mvar *= -1
     create_gen(net, 2, p_mw=0.100)
     net.trafo.shift_degree = 150
+    net.trafo.tap_changer_type = "Ratio"
     runpp(net, init='dc', calculate_voltage_angles=True)
 
     assert np.allclose(net.res_gen.p_mw.values, [0.100, 0.100])
@@ -51,6 +54,7 @@ def test_0gen_2ext_grid():
     create_ext_grid(net, 1)
     net.gen = net.gen.drop(0)
     net.trafo.shift_degree = 150
+    net.trafo.tap_changer_type = "Ratio"
     net.ext_grid.at[1, "in_service"] = False
     create_ext_grid(net, 3)
 
@@ -77,6 +81,7 @@ def test_0gen_2ext_grid_decoupled():
     net.ext_grid.at[2, "in_service"] = False
     auxbus = create_bus(net, name="bus1", vn_kv=10.)
     net.trafo.shift_degree = 150
+    net.trafo.tap_changer_type = "Ratio"
     create_std_type(net, {"type": "cs", "r_ohm_per_km": 0.876, "q_mm2": 35.0,
                           "endtmp_deg": 160.0, "c_nf_per_km": 260.0,
                           "max_i_ka": 0.123, "x_ohm_per_km": 0.1159876},
@@ -220,9 +225,9 @@ def test_transformer_phase_shift():
         create_transformer_from_parameters(
             net, b1, b2, 40000, 110, 20, 0.1, 5, 0, 0.1, 30, side,
             # 0, 2, -2, 1.25, 10, 0)
-            0, 2, -2, 0, 10, 0, True)
+            0, 2, -2, 0, 10, 0, "Ideal")
         create_transformer_from_parameters(
-            net, b2, b3, 630, 20, 0.4, 0.1, 5, 0, 0.1, 20, tap_phase_shifter=True)
+            net, b2, b3, 630, 20, 0.4, 0.1, 5, 0, 0.1, 20)
     runpp(net, init="dc", calculate_voltage_angles=True)
     b2a_angle = net.res_bus.va_degree.at[1]
     b3a_angle = net.res_bus.va_degree.at[2]
@@ -258,7 +263,8 @@ def test_transformer_phase_shift_complex():
                                            vn_lv_kv=20, vkr_percent=0.1, vk_percent=5,
                                            pfe_kw=0, i0_percent=0.1, shift_degree=30,
                                            tap_side=side, tap_neutral=0, tap_max=2, tap_min=-2,
-                                           tap_step_percent=2, tap_step_degree=10, tap_pos=0)
+                                           tap_step_percent=2, tap_step_degree=10, tap_pos=0,
+                                           tap_changer_type="Ratio")
         runpp(net, init="dc", calculate_voltage_angles=True)
         assert np.isclose(net.res_bus.vm_pu.at[b2], test_ref[0], rtol=1e-4)
         assert np.isclose(net.res_bus.va_degree.at[b2], test_ref[1], rtol=1e-4)
@@ -304,7 +310,7 @@ def test_transformer3w_phase_shift():
                                              shift_lv_degree=60, tap_side=side,
                                              tap_step_percent=2, tap_step_degree=10, tap_pos=0,
                                              tap_neutral=0, tap_min=-2,
-                                             tap_max=2)
+                                             tap_max=2, tap_changer_type="Ratio")
         runpp(net, init="dc", calculate_voltage_angles=True)
         assert np.isclose(net.res_bus.vm_pu.at[b2], test_ref[0][0], rtol=1e-4)
         assert np.isclose(net.res_bus.va_degree.at[b2], test_ref[0][1], rtol=1e-4)
@@ -423,8 +429,8 @@ def network_with_trafo3ws():
             vkr_lv_percent=.01, pfe_kw=.5, i0_percent=0.1,
             name="test", index=get_free_id(net.trafo3w) + 1,
             tap_side="hv", tap_pos=2, tap_step_percent=1.25,
-            tap_min=-5, tap_neutral=0, tap_max=5)
-    return (net, t3, hv, mv, lv)
+            tap_min=-5, tap_neutral=0, tap_max=5, tap_changer_type="Ratio")
+    return net, t3, hv, mv, lv
 
 
 def test_trafo3w_switches(network_with_trafo3ws):

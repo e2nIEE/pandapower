@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+
 import os
 
 import numpy as np
@@ -10,9 +11,6 @@ import pytest
 from numpy import isin, isnan, isclose
 
 from pandapower import pp_dir
-from pandapower.control.controller.trafo.TapDependentImpedance import TapDependentImpedance
-from pandapower.control.util.auxiliary import create_trafo_characteristics
-from pandapower.control.util.characteristic import Characteristic, SplineCharacteristic
 from pandapower.create import create_bus, create_load, create_transformer3w_from_parameters, create_transformer, \
     create_empty_network, create_ext_grid, create_line_from_parameters, create_transformer_from_parameters, \
     create_impedance
@@ -20,10 +18,8 @@ from pandapower.file_io import from_json
 from pandapower.run import runpp
 from pandapower.test.conftest import result_test_network
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
-from pandapower.test.helper_functions import assert_res_equal
 from pandapower.test.loadflow.result_test_network_generator import add_test_enforce_qlims, \
     add_test_gen
-
 
 # simple example grid for tap dependent impedance tests:
 
@@ -39,7 +35,7 @@ def add_trafo_connection(net, hv_bus, trafotype="2W"):
             vn_hv_kv=20., vn_mv_kv=0.9, vn_lv_kv=0.45, sn_hv_mva=0.6, sn_mv_mva=0.5,
             sn_lv_mva=0.4, vk_hv_percent=1., vk_mv_percent=1., vk_lv_percent=1.,
             vkr_hv_percent=0.3, vkr_mv_percent=0.3, vkr_lv_percent=0.3,
-            pfe_kw=0.2, i0_percent=0.3, tap_neutral=0.,
+            pfe_kw=0.2, i0_percent=0.3, tap_neutral=0., tap_changer_type="Ratio",
             tap_pos=2, tap_step_percent=1., tap_min=-2, tap_max=2)
     else:
         create_transformer(net, hv_bus=hv_bus, lv_bus=cb, std_type="0.25 MVA 20/0.4 kV", tap_pos=2)
@@ -257,176 +253,15 @@ def test_trafo_2_taps(v_tol=1e-6, i_tol=1e-6, s_tol=1e-2, l_tol=1e-3, va_tol=1e-
     create_transformer_from_parameters(net, 0, 1, 100, 110, 20, 0.5, 12, 14, 0.5,
                                        tap_side="hv", tap_neutral=0, tap_max=10,
                                        tap_min=-10, tap_step_percent=2, tap_step_degree=0,
-                                       tap_pos=0, tap_phase_shifter=False,
+                                       tap_pos=0, tap_changer_type="Ratio",
                                        tap2_side="hv", tap2_neutral=0, tap2_max=10,
                                        tap2_min=-10, tap2_step_percent=2, tap2_step_degree=0,
-                                       tap2_pos=0, tap2_phase_shifter=False)
+                                       tap2_pos=0, tap2_changer_type="Ratio")
 
     create_load(net, 1, 10)
 
     runpp(net)
     net.res_bus
-
-
-def test_tap_dependent_impedance(result_test_network):
-    net = result_test_network
-
-    # first, basic example with piecewise linear characteristic
-    characteristic_vk = Characteristic.from_points(net,
-                                                   ((net.trafo.at[0, 'tap_min'], 0.9 * net.trafo.at[0, 'vk_percent']),
-                                                    (net.trafo.at[0, 'tap_neutral'], net.trafo.at[0, 'vk_percent']),
-                                                    (net.trafo.at[0, 'tap_max'], 1.1 * net.trafo.at[0, 'vk_percent'])))
-    characteristic_vkr = Characteristic.from_points(net,
-                                                    ((net.trafo.at[0, 'tap_min'], 0.9 * net.trafo.at[0, 'vkr_percent']),
-                                                     (net.trafo.at[0, 'tap_neutral'], net.trafo.at[0, 'vkr_percent']),
-                                                     (
-                                                     net.trafo.at[0, 'tap_max'], 1.1 * net.trafo.at[0, 'vkr_percent'])))
-    idx_vk = characteristic_vk.index
-    idx_vkr = characteristic_vkr.index
-
-    # we use for reference
-    net0 = net.deepcopy()
-
-    net.trafo["tap_dependent_impedance"] = pd.Series(index=net.trafo.index, dtype=bool, data=False)
-    net.trafo.loc[0, 'tap_dependent_impedance'] = True
-    net.trafo.loc[0, ['vk_percent_characteristic', 'vkr_percent_characteristic']] = idx_vk, idx_vkr
-
-    # first, make sure there is no change for neutral
-    net.trafo.at[0, "tap_pos"] = net.trafo.tap_neutral.at[0]
-    net0.trafo.at[0, "tap_pos"] = net.trafo.tap_neutral.at[0]
-    runpp(net)
-    runpp(net0)
-    assert_res_equal(net, net0)
-
-    # now check the min and max positions
-    for pos, factor in (("tap_min", 0.9), ("tap_max", 1.1)):
-        assert isclose(characteristic_vk(net.trafo[pos].at[0]), net.trafo.vk_percent.at[0] * factor, rtol=0, atol=1e-12)
-        assert isclose(characteristic_vkr(net.trafo[pos].at[0]), net.trafo.vkr_percent.at[0] * factor, rtol=0,
-                       atol=1e-12)
-        net0.trafo.at[0, "vk_percent"] = net.trafo.vk_percent.at[0] * factor
-        net0.trafo.at[0, "vkr_percent"] = net.trafo.vkr_percent.at[0] * factor
-        net0.trafo.at[0, "tap_pos"] = net.trafo[pos].at[0]
-        runpp(net0)
-        net.trafo.at[0, "tap_pos"] = net.trafo[pos].at[0]
-        runpp(net)
-        assert_res_equal(net, net0)
-
-
-def test_tap_dependent_impedance_controller_comparison():
-    net1 = create_net()
-    net2 = create_net()
-
-    create_trafo_characteristics(net1, 'trafo', [0], 'vk_percent', [[-2, -1, 0, 1, 2]], [[5, 5.2, 6, 6.8, 7]])
-    create_trafo_characteristics(net1, 'trafo', [0], 'vkr_percent', [[-2, -1, 0, 1, 2]], [[1.3, 1.4, 1.44, 1.5, 1.6]])
-
-    SplineCharacteristic(net2, [-2, -1, 0, 1, 2], [5, 5.2, 6, 6.8, 7])
-    SplineCharacteristic(net2, [-2, -1, 0, 1, 2], [1.3, 1.4, 1.44, 1.5, 1.6])
-    TapDependentImpedance(net2, [0], 0, output_variable="vk_percent")
-    TapDependentImpedance(net2, [0], 1, output_variable="vkr_percent")
-
-    runpp(net1)
-    runpp(net2, run_control=True)
-
-    assert_res_equal(net1, net2)
-
-
-def test_tap_dependent_impedance_controller_comparison_3w():
-    net1 = create_net()
-    net2 = create_net()
-    for i in range(2):
-        add_trafo_connection(net1, net1.trafo.at[0, 'hv_bus'], "3W")
-        add_trafo_connection(net2, net2.trafo.at[0, 'hv_bus'], "3W")
-
-    create_trafo_characteristics(net1, 'trafo3w', [0], 'vk_hv_percent', [[-2, -1, 0, 1, 2]],
-                                 [[0.85, 0.9, 1, 1.1, 1.15]])
-    create_trafo_characteristics(net1, 'trafo3w', [0], 'vkr_hv_percent', [[-2, -1, 0, 1, 2]],
-                                 [[0.27, 0.28, 0.3, 0.32, 0.33]])
-    create_trafo_characteristics(net1, 'trafo3w', [0], 'vk_mv_percent', [[-2, -1, 0, 1, 2]],
-                                 [[0.85, 0.9, 1, 1.1, 1.15]])
-    create_trafo_characteristics(net1, 'trafo3w', [0], 'vkr_mv_percent', [[-2, -1, 0, 1, 2]],
-                                 [[0.27, 0.28, 0.3, 0.32, 0.33]])
-    create_trafo_characteristics(net1, 'trafo3w', [0], 'vk_lv_percent', [[-2, -1, 0, 1, 2]],
-                                 [[0.85, 0.9, 1, 1.1, 1.15]])
-    create_trafo_characteristics(net1, 'trafo3w', [0], 'vkr_lv_percent', [[-2, -1, 0, 1, 2]],
-                                 [[0.27, 0.28, 0.3, 0.32, 0.33]])
-
-    SplineCharacteristic(net2, [-2, -1, 0, 1, 2], [0.85, 0.9, 1, 1.1, 1.15])
-    SplineCharacteristic(net2, [-2, -1, 0, 1, 2], [0.27, 0.28, 0.3, 0.32, 0.33])
-
-    TapDependentImpedance(net2, [0], 0, element="trafo3w", output_variable="vk_hv_percent")
-    TapDependentImpedance(net2, [0], 1, element="trafo3w", output_variable="vkr_hv_percent")
-    TapDependentImpedance(net2, [0], 0, element="trafo3w", output_variable="vk_mv_percent")
-    TapDependentImpedance(net2, [0], 1, element="trafo3w", output_variable="vkr_mv_percent")
-    TapDependentImpedance(net2, [0], 0, element="trafo3w", output_variable="vk_lv_percent")
-    TapDependentImpedance(net2, [0], 1, element="trafo3w", output_variable="vkr_lv_percent")
-
-    runpp(net1)
-    runpp(net2, run_control=True)
-
-    assert_res_equal(net1, net2)
-
-
-def test_undefined_tap_dependent_impedance_characteristics():
-    # if some characteristic per 1 trafo are undefined, but at least 1 is defined -> OK
-    # if all characteristic per 1 trafo are undefined -> raise error
-    net = create_net()
-    create_trafo_characteristics(net, 'trafo', [0], 'vk_percent', [[-2, -1, 0, 1, 2]], [[5, 5.2, 6, 6.8, 7]])
-    create_trafo_characteristics(net, 'trafo', [0], 'vkr_percent', [[-2, -1, 0, 1, 2]], [[1.3, 1.4, 1.44, 1.5, 1.6]])
-    create_trafo_characteristics(net, 'trafo', [1], 'vk_percent', [[-2, -1, 0, 1, 2]], [[5, 5.2, 6, 6.8, 7]])
-
-    # does not raise error
-    runpp(net)
-
-    # this will raise error
-    net.trafo.at[1, "vk_percent_characteristic"] = None
-    with pytest.raises(UserWarning):
-        runpp(net)
-
-
-def test_undefined_tap_dependent_impedance_characteristics_trafo3w():
-    # if some characteristic per 1 trafo are undefined, but at least 1 is defined -> OK
-    # if all characteristic per 1 trafo are undefined -> raise error
-    net = create_net()
-    add_trafo_connection(net, 1, "3W")
-    add_trafo_connection(net, 1, "3W")
-    net2 = create_net()
-    add_trafo_connection(net2, 1, "3W")
-    add_trafo_connection(net2, 1, "3W")
-
-    create_trafo_characteristics(
-        net, 'trafo3w', [0, 1], 'vk_mv_percent', [[-2, -1, 0, 1, 2], [-2, -1, 0, 1, 2]],
-        [[0.7, 0.9, 1, 1.1, 1.3], [0.7, 0.9, 1, 1.1, 1.3]])
-    create_trafo_characteristics(
-        net, 'trafo3w', [0, 1], 'vkr_mv_percent', [[-2, -1, 0, 1, 2], [-2, -1, 0, 1, 2]],
-        [[0.3, 0.45, 0.5, 0.55, 0.7], [0.3, 0.45, 0.5, 0.55, 0.7]])
-
-    Characteristic(net2, [-2, -1, 0, 1, 2], [0.7, 0.9, 1, 1.1, 1.3])
-    Characteristic(net2, [-2, -1, 0, 1, 2], [0.3, 0.45, 0.5, 0.55, 0.7])
-
-    TapDependentImpedance(net2, [0], 0, element="trafo3w", output_variable="vk_mv_percent")
-    TapDependentImpedance(net2, [0], 1, element="trafo3w", output_variable="vkr_mv_percent")
-    TapDependentImpedance(net2, [1], 0, element="trafo3w", output_variable="vk_mv_percent")
-    TapDependentImpedance(net2, [1], 1, element="trafo3w", output_variable="vkr_mv_percent")
-
-    runpp(net)
-    runpp(net2, run_control=True)
-    assert_res_equal(net, net2)
-
-    net.trafo3w.at[0, "vk_mv_percent_characteristic"] = None
-    runpp(net)
-    net2.controller.at[0, "in_service"] = False
-    runpp(net2, run_control=True)
-    assert_res_equal(net, net2)
-
-    net.trafo3w.at[0, "vkr_mv_percent_characteristic"] = None
-    net2.controller.at[1, "in_service"] = False
-    with pytest.raises(UserWarning):
-        runpp(net)
-
-    net.trafo3w.at[0, "tap_dependent_impedance"] = False
-    runpp(net)
-    runpp(net2, run_control=True)
-    assert_res_equal(net, net2)
 
 
 def test_ext_grid(result_test_network, v_tol=1e-6, va_tol=1e-2, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
@@ -489,7 +324,6 @@ def test_ward_split(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_t
     assert abs(net.res_bus.vm_pu.at[b2] - u)
     assert abs(net.res_ward.p_mw.loc[[w1, w2]].sum() - (-pw))
     assert abs(net.res_ward.q_mvar.loc[[w1, w2]].sum() - (-qw))
-    #
 
 
 def test_xward(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
@@ -904,7 +738,8 @@ def test_trafo_unequal_r_x_hv_lv():
     create_transformer_from_parameters(net, 0, 1, 150, 120, 19,
                                        1, 3, 20, 0.12, tap_side="hv",
                                        tap_neutral=0, tap_max=2, tap_min=-2, tap_step_percent=5, tap_step_degree=30,
-                                       tap_pos=-2, leakage_resistance_ratio_hv=0.6, leakage_reactance_ratio_hv=0.2)
+                                       tap_pos=-2, tap_changer_type="Ratio", leakage_resistance_ratio_hv=0.6,
+                                       leakage_reactance_ratio_hv=0.2)
     create_load(net, 1, 100, 20)
 
     runpp_with_consistency_checks(net)

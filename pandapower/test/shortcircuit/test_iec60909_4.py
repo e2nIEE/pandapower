@@ -63,8 +63,8 @@ def iec_60909_4():
                                          vk_lv_percent=10., vkr_lv_percent=.16, vk0_hv_percent=44.1,
                                          vkr0_hv_percent=0.26, vk0_mv_percent=6.299627, vkr0_mv_percent=0.03714286,
                                          vk0_lv_percent=6.299627, vkr0_lv_percent=0.03714286, vector_group="YNyd",
-                                         tap_max=10, tap_min=-10, tap_pos=0, tap_neutral=0, tap_side="hv",
-                                         tap_step_percent=0.1)
+                                         tap_changer_type="Ratio", tap_max=10, tap_min=-10, tap_pos=0, tap_neutral=0,
+                                         tap_side="hv", tap_step_percent=0.1)
     # vk0 = sqrt(vkr0^2 + vki0^2) = sqrt(vkr^2 + (2.1 * vki)^2) = sqrt(vkr^2 + (2.1)^2 * (vk^2 - vkr^2))
     create_transformer3w_from_parameters(net, hv_bus=b1, mv_bus=b2, lv_bus=b8, vn_hv_kv=400, vn_mv_kv=120, vn_lv_kv=30,
                                          sn_hv_mva=350, sn_mv_mva=350, sn_lv_mva=50, pfe_kw=0, i0_percent=0,
@@ -72,23 +72,24 @@ def iec_60909_4():
                                          vk_lv_percent=10., vkr_lv_percent=.16, vk0_hv_percent=44.1,
                                          vkr0_hv_percent=0.26, vk0_mv_percent=6.299627, vkr0_mv_percent=0.03714286,
                                          vk0_lv_percent=6.299627, vkr0_lv_percent=0.03714286, vector_group="Yynd",
-                                         tap_max=10, tap_min=-10, tap_pos=0, tap_neutral=0, tap_side="hv",
-                                         tap_step_percent=0.1)
+                                         tap_changer_type="Ratio", tap_max=10, tap_min=-10, tap_pos=0, tap_neutral=0,
+                                         tap_side="hv", tap_step_percent=0.1)
 
     create_transformer3w_from_parameters(net, hv_bus=b5, mv_bus=b6, lv_bus=T_T5, vn_hv_kv=115., vn_mv_kv=10.5,
                                          vn_lv_kv=10.5, sn_hv_mva=31.5, sn_mv_mva=31.5, sn_lv_mva=31.5, pfe_kw=0,
                                          i0_percent=0, vk_hv_percent=12, vkr_hv_percent=.5, vk_mv_percent=12,
                                          vkr_mv_percent=.5, vk_lv_percent=12, vkr_lv_percent=.5, vk0_hv_percent=12,
                                          vkr0_hv_percent=0.5, vk0_mv_percent=12, vkr0_mv_percent=0.5, vk0_lv_percent=12,
-                                         vkr0_lv_percent=0.5, vector_group="Yyd", tap_max=10, tap_min=-10, tap_pos=0,
-                                         tap_neutral=0, tap_side="hv", tap_step_percent=0.1)
+                                         vkr0_lv_percent=0.5, vector_group="Yyd",  tap_changer_type="Ratio", tap_max=10,
+                                         tap_min=-10, tap_pos=0, tap_neutral=0, tap_side="hv", tap_step_percent=0.1)
     create_transformer3w_from_parameters(net, hv_bus=b5, mv_bus=b6, lv_bus=T_T6, vn_hv_kv=115., vn_mv_kv=10.5,
                                          vn_lv_kv=10.5, sn_hv_mva=31.5, sn_mv_mva=31.5, sn_lv_mva=31.5, pfe_kw=0,
                                          i0_percent=0, vk_hv_percent=12, vkr_hv_percent=.5, vk_mv_percent=12,
                                          vkr_mv_percent=.5, vk_lv_percent=12, vkr_lv_percent=.5, vk0_hv_percent=12,
                                          vkr0_hv_percent=0.5, vk0_mv_percent=12, vkr0_mv_percent=0.5, vk0_lv_percent=12,
-                                         vkr0_lv_percent=0.5, vector_group="Yynd", tap_max=10, tap_min=-10, tap_pos=0,
-                                         tap_neutral=0, tap_side="hv", tap_step_percent=0.1)  # reactor is 100 Ohm
+                                         vkr0_lv_percent=0.5, vector_group="Yynd", tap_changer_type="Ratio", tap_max=10,
+                                         tap_min=-10, tap_pos=0, tap_neutral=0, tap_side="hv", tap_step_percent=0.1)
+                                         # reactor is 100 Ohm
 
     create_motor(net, b7, pn_mech_mw=5.0, cos_phi=0.88, cos_phi_n=0.88, efficiency_n_percent=97.5, vn_kv=10, rx=0.1,
                  lrc_pu=5)
@@ -230,7 +231,8 @@ def vde_232():
 
     create_ext_grid(net, 0, s_sc_max_mva=13.61213 * 110 * np.sqrt(3), rx_max=0.20328, x0x_max=3.47927, r0x0_max=3.03361)
     create_transformer_from_parameters(net, 0, 1, 150, 115, 21, 0.5, 16, pfe_kw=0, i0_percent=0, tap_step_percent=1,
-                                       tap_max=12, tap_min=-12, tap_neutral=0, tap_side='hv', vector_group="YNd",
+                                       tap_changer_type="Ratio", tap_max=12, tap_min=-12, tap_neutral=0, tap_side='hv',
+                                       vector_group="YNd",
                                        vk0_percent=np.sqrt(np.square(0.95 * 15.99219) + np.square(0.5)),
                                        vkr0_percent=0.5, mag0_percent=100, mag0_rx=0, si0_hv_partial=0.9, pt_percent=12,
                                        oltc=True)

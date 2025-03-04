@@ -1,15 +1,33 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 import pytest
 
 from pandapower.networks import simple_mv_open_ring_net
-from pandapower import create_empty_network, create_std_type, load_std_type, create_std_types, \
-    find_std_type_by_parameter, find_std_type_alternative, create_bus, create_line, change_std_type, \
-    create_line_from_parameters, parameter_from_std_type, add_temperature_coefficient, copy_std_types, std_type_exists
+from pandapower import create_empty_network, add_temperature_coefficient
+from pandapower.create import (
+    create_bus,
+    create_buses,
+    create_transformer3w,
+    create_line,
+    create_line_from_parameters
+)
+from pandapower.std_types import (
+    create_std_type,
+    create_std_types,
+    load_std_type,
+    change_std_type,
+    find_std_type_alternative,
+    find_std_type_by_parameter,
+    delete_std_type,
+    rename_std_type,
+    copy_std_types,
+    std_type_exists,
+    parameter_from_std_type
+)
 
 
 def test_create_and_load_std_type_line():
@@ -43,6 +61,7 @@ def test_create_and_load_std_type_line():
     loaded_type = load_std_type(net, name)
     assert loaded_type == typdata
 
+
 def test_create_std_types_line():
     net = create_empty_network()
     c = 40
@@ -56,6 +75,7 @@ def test_create_std_types_line():
     create_std_types(net, data=typdatas, element="line")
     assert net.std_types["line"]["typ1"] == typdata
     assert net.std_types["line"]["typ1"] == typdata
+
 
 def test_create_std_types_from_net_line():
     net1 = create_empty_network()
@@ -71,6 +91,7 @@ def test_create_std_types_from_net_line():
     create_std_type(net1, typdata, "test_copy")
     copy_std_types(net2, net1, element="line")
     assert std_type_exists(net2, "test_copy")
+
 
 def test_create_and_load_std_type_trafo():
     net = create_empty_network()
@@ -122,6 +143,7 @@ def test_create_and_load_std_type_trafo():
 
     loaded_type = load_std_type(net, name, element="trafo")
     assert loaded_type == typdata
+
 
 def test_create_and_load_std_type_trafo3w():
     net = create_empty_network()
@@ -180,6 +202,7 @@ def test_create_and_load_std_type_trafo3w():
     loaded_type = load_std_type(net, name, element="trafo3w")
     assert loaded_type == typdata
 
+
 def test_create_std_types_trafo():
     net = create_empty_network()
     sn_mva = 40
@@ -198,6 +221,7 @@ def test_create_std_types_trafo():
     create_std_types(net, data=typdatas, element="trafo")
     assert net.std_types["trafo"]["typ1"] == typdata
     assert net.std_types["trafo"]["typ2"] == typdata
+
 
 def test_create_std_types_trafo3w():
     net = create_empty_network()
@@ -220,6 +244,7 @@ def test_create_std_types_trafo3w():
     assert net.std_types["trafo3w"]["typ1"] == typdata
     assert net.std_types["trafo3w"]["typ2"] == typdata
 
+
 def test_find_line_type():
     net = create_empty_network()
     c = 40000
@@ -237,6 +262,7 @@ def test_find_line_type():
     fitting_type = find_std_type_by_parameter(net, {"r_ohm_per_km":r+0.05}, epsilon=.06)
     assert len(fitting_type) == 1
     assert fitting_type[0] == name
+
 
 def test_find_std_alternative():
     net = create_empty_network()
@@ -258,6 +284,7 @@ def test_find_std_alternative():
 
     fitting_type = find_std_type_alternative(net, {"r_ohm_per_km":r+0.07}, voltage_rating ="MV", epsilon=0.06)
     assert len(fitting_type) == 0
+
 
 def test_change_type_line():
     net = create_empty_network()
@@ -340,6 +367,53 @@ def test_add_temperature_coefficient():
     add_temperature_coefficient(net)
     assert "alpha" in net.line.columns
     assert all(net.line.alpha == 4.03e-3)
+
+
+def test_delete_std_type():
+    net = create_empty_network()
+    trafo3w_types = set(net.std_types["trafo3w"].keys())
+    existing_trafo3w_std_type = sorted(trafo3w_types)[0]
+    delete_std_type(net, existing_trafo3w_std_type, "trafo3w")
+    assert trafo3w_types == set(net.std_types["trafo3w"].keys()) | {existing_trafo3w_std_type}
+
+
+def test_rename_std_type():
+    net = create_empty_network()
+    existing_line_std_type = sorted(net.std_types["line"].keys())[0]
+    existing_line_std_type2 = sorted(net.std_types["line"].keys())[1]
+    existing_trafo3w_std_type = sorted(net.std_types["trafo3w"].keys())[0]
+    tr3w_std_type_params = load_std_type(net, existing_trafo3w_std_type, "trafo3w")
+
+    vn_kvs = [tr3w_std_type_params["vn_hv_kv"], tr3w_std_type_params["vn_hv_kv"],
+              tr3w_std_type_params["vn_mv_kv"], tr3w_std_type_params["vn_lv_kv"]]
+    create_buses(net, 4, vn_kvs)
+    create_line(net, 0, 1, 1.2, existing_line_std_type)
+    create_line(net, 0, 1, 1.2, existing_line_std_type2)
+    create_transformer3w(net, 0, 2, 3, existing_trafo3w_std_type)
+
+    rename_std_type(net, existing_line_std_type, "new_line_std_type")
+    rename_std_type(net, existing_trafo3w_std_type, "new_trafo3w_std_type", "trafo3w")
+
+    assert existing_line_std_type not in net.std_types["line"].keys()
+    assert "new_line_std_type" in net.std_types["line"].keys()
+    assert (net.line.std_type == existing_line_std_type).sum() == 0
+    assert (net.line.std_type == "new_line_std_type").sum() == 1
+
+    assert existing_line_std_type not in net.std_types["trafo3w"].keys()
+    assert "new_trafo3w_std_type" in net.std_types["trafo3w"].keys()
+    assert (net.trafo3w.std_type == existing_line_std_type).sum() == 0
+    assert (net.trafo3w.std_type == "new_trafo3w_std_type").sum() == 1
+
+    try:
+        rename_std_type(net, "abcdefghijklmnop", "new_line_std_type2")
+        assert False, "an error is expected"
+    except UserWarning:
+        pass
+    try:
+        rename_std_type(net, existing_line_std_type2, "new_line_std_type")
+        assert False, "an error is expected"
+    except UserWarning:
+        pass
 
 
 if __name__ == "__main__":

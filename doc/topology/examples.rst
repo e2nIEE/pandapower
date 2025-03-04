@@ -2,7 +2,7 @@
 Examples
 ==========
 
-The combination of a suitable MultiGraph and the availabe topology functions enables you to perform a wide range of topological
+The combination of a suitable MultiGraph and the available topology functions enables you to perform a wide range of topological
 searches and analyses.
 
 Here are a few examples of what you can do:
@@ -59,7 +59,7 @@ Here are a few examples of what you can do:
 Using NetworkX algorithms: shortest path
 -----------------------------------------
 
-For many basic network analyses the algorithms that come with the NetworkX package will work just fine and you won't need one of the spezialised topology functions.
+For many basic network analyses the algorithms that come with the NetworkX package will work just fine and you won't need one of the specialised topology functions.
 Finding the shortest path between two buses is a good example for that.
 
 .. code:: python

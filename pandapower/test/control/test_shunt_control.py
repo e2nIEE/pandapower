@@ -1,9 +1,11 @@
+import pandas as pd
 import pytest
 from pandapower.control.controller.shunt_control import DiscreteShuntController
 from pandapower.control.controller.station_control import BinarySearchControl
 from pandapower.create import create_empty_network, create_buses, create_ext_grid, create_line_from_parameters, \
     create_shunt
 from pandapower.run import runpp
+
 
 def simple_test_net_shunt_control():
     net = create_empty_network()
@@ -35,6 +37,25 @@ def test_discrete_shunt_control(tol=1e-6):
     runpp(net, run_control=True)
     assert (abs(net.res_bus.loc[1, "vm_pu"] - 1.077258) < tol)
     assert net.shunt.loc[0, "step"] == 2
+
+def test_discrete_shunt_control_with_step_dependency_table(tol=1e-6):
+    net = simple_test_net_shunt_control()
+    net["shunt_characteristic_table"] = pd.DataFrame(
+        {'id_characteristic': [0, 0, 0, 0, 0], 'step': [1, 2, 3, 4, 5], 'q_mvar': [-25, -50, -75, -100, -125],
+         'p_mw': [0, 0, 0, 0, 0]})
+    net.shunt.step_dependency_table.at[0] = True
+    net.shunt.id_characteristic_table.at[0] = 0
+    net.shunt.step.at[0] = 2
+
+    DiscreteShuntController(net, shunt_index=0, bus_index=1, vm_set_pu=1.08, tol=1e-2)
+    runpp(net, run_control=False)
+
+    assert (abs(net.res_bus.loc[1, "vm_pu"] - 1.041789) < tol)
+
+    runpp(net, run_control=True)
+    assert (abs(net.res_bus.loc[1, "vm_pu"] - 1.077258) < tol)
+    assert net.shunt.loc[0, "step"] == 4
+
 
 if __name__ == '__main__':
     pytest.main(['-s', __file__])

@@ -682,6 +682,8 @@ def _replace_ext_area_by_impedances_and_shunts(
     new_shunts["step"] = 1
     new_shunts["max_step"] = 1
     new_shunts["in_service"] = True
+    if "step_dependency_table" in net_eq.shunt:
+        new_shunts["step_dependency_table"] = False
     net_eq["shunt"] = pd.concat([net_eq["shunt"], new_shunts])
     if n_disconnected_new_eq_shunts := sum(~isin_sh):
         msg = f"{n_disconnected_new_eq_shunts=}, missing buses: {new_shunts.bus.loc[~isin_sh]}"

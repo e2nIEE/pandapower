@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 
+from pandapower.convert_format import convert_format
 from pandapower.create import create_bus, create_line_from_parameters, create_transformer3w_from_parameters, \
     create_impedance, create_switch, create_transformer_from_parameters
 from pandapower.grid_equivalents.toolbox import set_bus_zone_by_boundary_branches, \
@@ -70,6 +71,7 @@ def boundary_testnet(which):
         expected_bb["b"]["internal"] = expected_bb["a"]["external"] - {18}
         expected_bb["b"]["external"] = expected_bb["a"]["internal"] | {18}
 
+    net = convert_format(net)
     runpp(net)
     return net, expected_bb, expected_bbr
 

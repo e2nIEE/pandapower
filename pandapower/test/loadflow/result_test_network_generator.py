@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from pandapower.auxiliary import get_free_id
@@ -177,12 +177,12 @@ def add_test_trafo(net):
     create_transformer_from_parameters(net, b2, b3, vk_percent=5., vkr_percent=2.,
                                        i0_percent=.4, pfe_kw=2., sn_mva=0.4, vn_hv_kv=22,
                                        vn_lv_kv=0.42, tap_max=10, tap_neutral=5, tap_min=0,
-                                       tap_step_percent=1.25, tap_pos=3, shift_degree=150,
+                                       tap_step_percent=1.25, tap_pos=3, tap_changer_type="Ratio", shift_degree=150,
                                        tap_side="hv", parallel=2)
     t2 = create_transformer_from_parameters(net, b2, b3, vk_percent=5., vkr_percent=2.,
                                             i0_percent=.4, pfe_kw=2, sn_mva=0.4, vn_hv_kv=22,
                                             vn_lv_kv=0.42, tap_max=10, tap_neutral=5, tap_min=0,
-                                            tap_step_percent=1.25, tap_pos=3, tap_side="hv",
+                                            tap_step_percent=1.25, tap_pos=3, tap_changer_type="Ratio", tap_side="hv",
                                             shift_degree=150, index=get_free_id(net.trafo) + 1)
     create_switch(net, b3, t2, et="t", closed=False)
     create_transformer_from_parameters(net, b2, b3, vk_percent=5., vkr_percent=2.,
@@ -327,7 +327,7 @@ def add_test_trafo3w(net):
                                          vkr_mv_percent=.02, vk_lv_percent=.25,
                                          vkr_lv_percent=.01, pfe_kw=0.5, i0_percent=0.1,
                                          name="test", index=get_free_id(net.trafo3w) + 1,
-                                         tap_side="hv", tap_pos=2, tap_step_percent=1.25,
+                                         tap_side="hv", tap_pos=2, tap_changer_type="Ratio", tap_step_percent=1.25,
                                          tap_min=-5, tap_neutral=0, tap_max=5)
     # adding out of service 3w trafo should not change results
     create_transformer3w_from_parameters(net, hv_bus=b2, mv_bus=b3, lv_bus=b4, vn_hv_kv=20,
@@ -465,7 +465,7 @@ def add_test_shunt_split(net):
 
 def add_test_two_open_switches_on_deactive_line(net):
     b1, b2, l1 = add_grid_connection(net, zone="two_open_switches_on_deactive_line")
-    b3 = create_bus(net, vn_kv=20.)
+    b3 = create_bus(net, vn_kv=20., zone="two_open_switches_on_deactive_line")
     l2 = create_test_line(net, b2, b3, in_service=False)
     create_test_line(net, b3, b1)
     create_switch(net, b2, l2, et="l", closed=False)

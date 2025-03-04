@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import os
@@ -49,7 +49,7 @@ def add_network(net, vector_group):
     transformer_type = {"i0_percent": 0.071, "pfe_kw": 29, "vkr_percent": 0.282, "sn_mva": 25, "vn_lv_kv": 20.0,
                         "vn_hv_kv": 110.0, "vk_percent": 11.2, "shift_degree": 150, "vector_group": vector_group,
                         "tap_side": "hv", "tap_neutral": 0, "tap_min": -9, "tap_max": 9, "tap_step_degree": 0,
-                        "tap_step_percent": 1.5, "tap_phase_shifter": False, "vk0_percent": 5, "vkr0_percent": 0.4,
+                        "tap_step_percent": 1.5, "tap_phase_shifter": "Ratio", "vk0_percent": 5, "vkr0_percent": 0.4,
                         "mag0_percent": 10, "mag0_rx": 0.4, "si0_hv_partial": 0.9}
     create_std_type(net, transformer_type, vector_group, "trafo")
     t1 = create_transformer(net, b1, b2, std_type=vector_group, parallel=2, index=get_free_id(net.trafo) + 1)
@@ -290,7 +290,7 @@ def vde_232():
                                        tap_max=12, tap_min=-12, tap_neutral=0, tap_side='hv', vector_group="YNd",
                                        vk0_percent=np.sqrt(np.square(0.95 * 15.99219) + np.square(0.5)),
                                        vkr0_percent=0.5, mag0_percent=100, mag0_rx=0, si0_hv_partial=0.9, pt_percent=12,
-                                       oltc=True, power_station_unit=True, xn_ohm=22)
+                                       oltc=True, power_station_unit=True, xn_ohm=22, tap_changer_type="Ratio")
 
     create_gen(net, 1, 150, 1, 150, vn_kv=21, xdss_pu=0.14, rdss_ohm=0.002, cos_phi=0.85, power_station_trafo=0,
                pg_percent=5)

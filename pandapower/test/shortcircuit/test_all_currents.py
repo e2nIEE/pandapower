@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -80,7 +80,7 @@ def net_transformer_simple():
     create_ext_grid(net, b1, s_sc_max_mva=100., s_sc_min_mva=40., rx_min=0.1, rx_max=0.1)
     create_transformer_from_parameters(net, b1, b2, vn_hv_kv=10., vn_lv_kv=0.4, vk_percent=6., vkr_percent=0.5,
                                        pfe_kw=14, shift_degree=0.0, tap_side="hv", tap_neutral=0, tap_min=-2, tap_max=2,
-                                       tap_pos=0, tap_step_percent=2.5, parallel=1, sn_mva=0.4, i0_percent=0.5)
+                                       tap_pos=0, tap_step_percent=2.5, parallel=1, sn_mva=0.4, i0_percent=0.5, tap_changer_type="Ratio")
     return net
 
 
@@ -117,7 +117,7 @@ def net_transformer_simple_3():
     create_transformer_from_parameters(net, 4, 5, sn_mva=0.4, vn_hv_kv=10., vn_lv_kv=0.4, vk_percent=6.,
                                        vkr_percent=0.5, pfe_kw=14, i0_percent=0.5, shift_degree=0.0, tap_side="hv",
                                        tap_neutral=0, tap_min=-2, tap_max=2, tap_pos=0, tap_step_percent=2.5,
-                                       parallel=1)
+                                       parallel=1, tap_changer_type="Ratio")
     create_lines_from_parameters(net, [0, 3, 5], [1, 4, 6], 1, 0.099, 0.156, 400, 0.457)
     return net
 
@@ -131,7 +131,7 @@ def net_transformer_simple_4():
     create_transformer_from_parameters(net, 7, 8, sn_mva=0.4, vn_hv_kv=10., vn_lv_kv=0.4, vk_percent=6.,
                                        vkr_percent=0.5, pfe_kw=14, i0_percent=0.5, shift_degree=0.0, tap_side="hv",
                                        tap_neutral=0, tap_min=-2, tap_max=2, tap_pos=0, tap_step_percent=2.5,
-                                       parallel=1)
+                                       parallel=1, tap_changer_type="Ratio")
     create_switch(net, 6, 4, "l", closed=True)
     create_sgen(net, 3, 0, 0, 20, k=1.2, kappa=1)
     create_load(net, 6, 0.1)
@@ -147,7 +147,7 @@ def net_transformer():
     create_ext_grid(net, b1a, s_sc_max_mva=100., s_sc_min_mva=40., rx_min=0.1, rx_max=0.1)
     create_switch(net, b1a, b1b, et="b")
     create_transformer_from_parameters(net, b1b, b2, vn_hv_kv=11., vn_lv_kv=0.42, vk_percent=6., vkr_percent=0.5,
-                                       pfe_kw=14, shift_degree=0.0, tap_side="hv", tap_neutral=0, tap_min=-2, tap_max=2,
+                                       pfe_kw=14, shift_degree=0.0, tap_changer_type="Ratio", tap_side="hv", tap_neutral=0, tap_min=-2, tap_max=2,
                                        tap_pos=2, tap_step_percent=2.5, parallel=2, sn_mva=0.4, i0_percent=0.5)
     create_shunt(net, b2, q_mvar=0.050, p_mw=0.0500)  # adding a shunt shouldn't change the result
     return net
