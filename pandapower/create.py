@@ -1319,7 +1319,7 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
         **index** (int, None) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
 
-        **scaling** (float, 1.) - An OPTIONAL scaling factor to be set customly.
+        **scaling** (float, 1.) - An optional scaling factor to be set customly.
         Multiplies with p_mw and q_mvar.
 
         **type** (string, None) -  Three phase Connection type of the static generator: wye/delta
@@ -1347,18 +1347,18 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
             specified as motor so that sgen is treated as asynchronous motor. Relevant for \
             short-circuit calculation for all generator types
 
-        **reactive_capability_curve** (bool, False) - True if both the id_q_capability_curve_characteristic and the curve
-        style are present in the generator.
+        **reactive_capability_curve** (bool, False) - True if both the id_q_capability_curve_characteristic and the
+            curve style are present in the generator
 
         **id_q_capability_curve_characteristic** (int, None) - references the index of the characteristic from the
-        lookup table net.q_capability_curve_characteristic e.g. 0, 1, 2, 3
+            net.q_capability_curve_characteristic table (id_q_capability_curve column)
 
         **curve_style** (string, None) - The curve style of the generator represents the relationship \
-        between active power (P) and reactive power (Q). It indicates whether the reactive power remains \
-        constant as the active power changes or varies dynamically in response to it.
-        e.g. "straightLineYValues" and "constantYValue"
+            between active power (P) and reactive power (Q). It indicates whether the reactive power remains \
+            constant as the active power changes or varies dynamically in response to it, \
+            e.g. "straightLineYValues" and "constantYValue"
 
-        **generator_type** (str, "None") - can be one of "current_source" \
+        **generator_type** (str, None) - can be one of "current_source" \
             (full size converter), "async" (asynchronous generator), or "async_doubly_fed"\
             (doubly fed asynchronous generator, DFIG). Represents the type of the static \
             generator in the context of the short-circuit calculations of wind power station units. \
@@ -1367,13 +1367,13 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
         **lrc_pu** (float, nan) - locked rotor current in relation to the rated generator \
             current. Relevant if the generator_type is "async".
 
-        **max_ik_ka (float, nan)** - the highest instantaneous short-circuit value in case \
+        **max_ik_ka** (float, nan) - the highest instantaneous short-circuit value in case \
             of a three-phase short-circuit (provided by the manufacturer). Relevant if the \
             generator_type is "async_doubly_fed".
 
         **kappa (float, nan)** - the factor for the calculation of the peak short-circuit \
             current, referred to the high-voltage side (provided by the manufacturer). \
-            Relevant if the generator_type is "async_doubly_fed".
+            Relevant if the generator_type is "async_doubly_fed". \
             If the superposition method is used (use_pre_fault_voltage=True), this parameter \
             is used to pass through the max. current limit of the machine in p.u.
 
@@ -1894,28 +1894,27 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
         **index** (int, None) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
 
-        **scaling** (float, 1.0) - scaling factor which for the active power of the generator
+        **scaling** (float, 1.0) - scaling factor applying to the active power of the generator
 
         **type** (string, None) - type variable to classify generators
 
-        **reactive_capability_curve** (bool, False) - True if both the id_q_capability_curve_characteristic and the curve
-            style are present in the generator.
+        **reactive_capability_curve** (bool, False) - True if both the id_q_capability_curve_characteristic and the
+            curve style are present in the generator
 
         **id_q_capability_curve_characteristic** (int, None) - references the index of the characteristic from
-            the lookup table net.q_capability_curve_characteristic e.g. 0, 1, 2, 3
+            the net.q_capability_curve_characteristic table (id_q_capability_curve column)
 
         **curve_style** (string, None) - The curve style of the generator represents the relationship \
-        between active power (P) and reactive power (Q). It indicates whether the reactive power remains \
-        constant as the active power changes or varies dynamically in response to it.
-        e.g. "straightLineYValues" and "constantYValue"
+            between active power (P) and reactive power (Q). It indicates whether the reactive power remains \
+            constant as the active power changes or varies dynamically in response to it, \
+            e.g. "straightLineYValues" and "constantYValue".
 
         **controllable** (bool, NaN) - True: p_mw, q_mvar and vm_pu limits are enforced for this \
-                generator in OPF
-                False: p_mw and vm_pu set points are enforced and *limits are ignored*.
-                defaults to True if "controllable" column exists in DataFrame
+                generator in OPF; False: p_mw and vm_pu set points are enforced and *limits are ignored*. \
+                Defaults to True if "controllable" column exists in DataFrame.
 
-        **slack_weight** (float, default 0.0) - Contribution factor for distributed slack power
-        flow calculation (active power balancing)
+        **slack_weight** (float, default 0.0) - Contribution factor for distributed slack power \
+            flow calculation (active power balancing)
 
         **vn_kv** (float, NaN) - Rated voltage of the generator for short-circuit calculation
 
@@ -1941,13 +1940,11 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
 
         **min_q_mvar** (float, default NaN) - Minimum reactive power injection - necessary for OPF
 
-        **min_vm_pu** (float, default NaN) - Minimum voltage magnitude. If not set the bus voltage \
-                                             limit is taken.
-                                           - necessary for OPF.
+        **min_vm_pu** (float, default NaN) - Minimum voltage magnitude. If not set, the bus voltage \
+                                             limit is taken - necessary for OPF.
 
-        **max_vm_pu** (float, default NaN) - Maximum voltage magnitude. If not set the bus voltage\
-                                              limit is taken.
-                                            - necessary for OPF
+        **max_vm_pu** (float, default NaN) - Maximum voltage magnitude. If not set, the bus voltage \
+                                             limit is taken - necessary for OPF
 
     OUTPUT:
         **index** (int) - The unique ID of the created generator
