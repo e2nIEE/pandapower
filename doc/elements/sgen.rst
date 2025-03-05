@@ -51,7 +51,7 @@ function, provided q_capability_curve_table is previously defined in the network
 
 If the variable reactive_capability_curve in net.sgen is set to True, it indicates that pairs of P vs Qmin/Qmax values
 and the corresponding characteristic are defined in net.q_capability_curve_table and net.q_capability_curve_characteristic
-respectively. This overrides the default reactive power limits of the generator (min_q_mvar/max_q_mvar) when a power flow
+respectively. This overrides the default reactive power limits of the static generator when a power flow
 is executed and the enforce_q_lims option is enabled.
 The variable id_q_capability_curve_characteristic in net.sgen establishes a direct reference to the
 id_q_capability_curve column in both net.q_capability_curve_table and net.q_capability_curve_characteristic, thereby
