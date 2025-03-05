@@ -1548,6 +1548,7 @@ def test_at_isolated_bus():
     runpp(net)
     assert net._options["init_vm_pu"] == 1.
 
+
 def test_shunt_with_missing_vn_kv():
     net = create_empty_network()
     create_buses(net, 2, 110)
@@ -1583,22 +1584,25 @@ def test_net_for_q_capability_curve():
                  cos_phi=0.8, pg_percent=0.0, vn_kv=19.0, vm_pu=1.0) #,min_q_mvar=-255, max_q_mvar=255,  min_p_mw=-331.01001, max_p_mw=331.01001)
     return net
 
+
 def test_q_capability_curve():
     net = test_net_for_q_capability_curve()
     runpp(net)
 
     net.gen.loc[0,"max_q_mvar"] = 50.0
-    net.gen.loc[0, "min_q_mvar"] =  -3
+    net.gen.loc[0, "min_q_mvar"] = -3
     runpp(net, enforce_q_lims=True)
     assert net.res_gen.q_mvar.loc[0] == -3
     assert net.res_gen.p_mw.loc[0] == 100
 
-    #create q characteristics table
+    # create q characteristics table
     net["q_capability_curve_table"] = pd.DataFrame(
         {'id_q_capability_curve': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-         'p_mw':      [-331.01001, -298.0,    -198.0,     -66.2000,   -0.1,        0,           0.1,        66.200, 100,     198.00,     298.00,     331.01001],
-         'q_min_mvar':[-0.0100,    -134.0099, -265.01001, -323.01001, -323.01001,  -323.01001, -323.01001, -323.01001, 0, -265.01001, -134.00999, -0.01000 ],
-         'q_max_mvar':[0.01000,    134.00999,  228.00999,  257.01001,  261.01001,  261.01001,   261.01001,  257.01001, 30,  40,  134.0099,   0.01]})
+         'p_mw': [-331.01001, -298.0, -198.0, -66.2000, -0.1, 0, 0.1, 66.200, 100, 198.00, 298.00, 331.01001],
+         'q_min_mvar': [-0.0100, -134.0099, -265.01001, -323.01001, -323.01001, -323.01001, -323.01001, -323.01001,
+                        0, -265.01001, -134.00999, -0.01000],
+         'q_max_mvar': [0.01000, 134.00999,  228.00999, 257.01001, 261.01001, 261.01001, 261.01001, 257.01001, 30, 40,
+                        134.0099, 0.01]})
 
     net.gen.id_q_capability_curve_characteristic.at[0] = 0
     net.gen['curve_style'] = "straightLineYValues"

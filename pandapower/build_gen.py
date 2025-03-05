@@ -287,7 +287,7 @@ def add_q_constraints(net, element, is_element, ppc, f, t, delta, inverted=False
         else:
             ppc["gen"][f:t, QMAX] = tab["max_q_mvar"].values[is_element] + delta
 
-    # Add qmin and qmax limit from q capability_curve_characteristics_table
+    # Add qmin and qmax limit from q_capability_curve_characteristic
     if "q_capability_curve_characteristic" in net.keys() and net._options["enforce_q_lims"]:
         _calculate_qmin_qmax_from_q_capability_curve_characteristics(net, element, is_element, ppc, f, t, inverted)
 
