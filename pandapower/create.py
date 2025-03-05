@@ -1370,7 +1370,7 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
             of a three-phase short-circuit (provided by the manufacturer). Relevant if the \
             generator_type is "async_doubly_fed".
 
-        **kappa (float, nan)** - the factor for the calculation of the peak short-circuit \
+        **kappa** (float, nan) - the factor for the calculation of the peak short-circuit \
             current, referred to the high-voltage side (provided by the manufacturer). \
             Relevant if the generator_type is "async_doubly_fed". \
             If the superposition method is used (use_pre_fault_voltage=True), this parameter \
@@ -1493,30 +1493,30 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
             specified as motor so that sgen is treated as asynchronous motor. Relevant for \
             short-circuit calculation for all generator types
 
-        **reactive_capability_curve** (list of bools, False) - True if both the id_q_capability_curve_characteristic and
-        the curve style are present in the generator.
+        **reactive_capability_curve** (list of bools, False) - True if both the id_q_capability_curve_characteristic \
+        and the curve style are present in the generator.
 
-        **id_q_capability_curve_characteristic** (list of ints, None) - references the index of the characteristic from
-        the lookup table net.q_capability_curve_characteristic e.g. 0, 1, 2, 3
+        **id_q_capability_curve_characteristic** (list of ints, None) - references the index of the characteristic \
+        from the lookup table net.q_capability_curve_characteristic e.g. 0, 1, 2, 3
 
         **curve_style** (list of strings, None) - The curve style of the generator represents the relationship \
            between active power (P) and reactive power (Q). It indicates whether the reactive power remains \
            constant as the active power changes or varies dynamically in response to it.
            e.g. "straightLineYValues" and "constantYValue"
 
-        **generator_type** (str, "current_source") - can be one of "current_source" \
+        **generator_type** (list of strings, "current_source") - can be one of "current_source" \
             (full size converter), "async" (asynchronous generator), or "async_doubly_fed"\
             (doubly fed asynchronous generator, DFIG). Represents the type of the static \
             generator in the context of the short-circuit calculations of wind power station units
 
-        **lrc_pu** (float, nan) - locked rotor current in relation to the rated generator \
+        **lrc_pu** (list of float, nan) - locked rotor current in relation to the rated generator \
             current. Relevant if the generator_type is "async".
 
-        **max_ik_ka (float, nan)** - the highest instantaneous short-circuit value in case \
+        **max_ik_ka** (list of float, nan) - the highest instantaneous short-circuit value in case \
             of a three-phase short-circuit (provided by the manufacturer). Relevant if the \
             generator_type is "async_doubly_fed".
 
-        **kappa (float, nan)** - the factor for the calculation of the peak short-circuit \
+        **kappa** (list of float, nan) - the factor for the calculation of the peak short-circuit \
             current, referred to the high-voltage side (provided by the manufacturer). \
             Relevant if the generator_type is "async_doubly_fed".
 
@@ -2043,7 +2043,7 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
         constant as the active power changes or varies dynamically in response to it.
         e.g. "straightLineYValues" and "constantYValue"
 
-        **controllable** (bool, NaN) - True: p_mw, q_mvar and vm_pu limits are enforced for this \
+        **controllable** (list of bool, NaN) - True: p_mw, q_mvar and vm_pu limits are enforced for this \
                                        generator in OPF
                                        False: p_mw and vm_pu set points are enforced and \
                                        *limits are ignored*.
@@ -2062,15 +2062,15 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
         **cos_phi** (list of float, NaN) - Rated cosine phi of the generator for short-circuit \
             calculation
 
-        **pg_percent** (float, NaN) - Rated pg (voltage control range) of the generator for \
+        **pg_percent** (list of float, NaN) - Rated pg (voltage control range) of the generator for \
             short-circuit calculation
 
-        **power_station_trafo** (int, NaN) - Index of the power station transformer for \
+        **power_station_trafo** (list of int, NaN) - Index of the power station transformer for \
             short-circuit calculation
 
-        **in_service** (bool, True) - True for in_service or False for out of service
+        **in_service** (list of bool, True) - True for in_service or False for out of service
 
-        **slack_weight** (float, default 0.0) - Contribution factor for distributed slack power \
+        **slack_weight** (list of float, default 0.0) - Contribution factor for distributed slack power \
             flow calculation (active power balancing)
 
         **max_p_mw** (list of float, default NaN) - Maximum active power injection - necessary for\

@@ -200,7 +200,7 @@ def shunt_characteristic_table_diagnostic(net):
     return warnings_count == 0
 
 
-def q_capability_curve_characteristics_diagnostic(net, element):
+def q_capability_curve_table_diagnostic(net, element):
     if element not in ["gen", "sgen"]:
         warnings.warn(f"The given element type is not valid for diagnostics. Please give gen or sgen "
                       f"as a argument of the function", category=UserWarning)
@@ -269,7 +269,6 @@ def q_capability_curve_characteristics_diagnostic(net, element):
         warnings.warn(f"Not all id_q_capability_curve_characteristic values of {element} are present in the "
                       f"q_capability_curve_table.", category=UserWarning)
         warnings_count += 1
-    # Todo: add check for q_capability_curve_characteristics
 
     logger.info(f"{warnings_count} warnings were issued")
     return warnings_count == 0

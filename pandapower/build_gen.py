@@ -287,9 +287,10 @@ def add_q_constraints(net, element, is_element, ppc, f, t, delta, inverted=False
         else:
             ppc["gen"][f:t, QMAX] = tab["max_q_mvar"].values[is_element] + delta
 
-    # Add qmin and qmax limit from q capability_curve_characteristics_table
+    # Add qmin and qmax limit from q_capability_curve_characteristic
     if "q_capability_curve_characteristic" in net.keys() and net._options["enforce_q_lims"]:
-        _calculate_qmin_qmax_from_q_capability_curve_characteristics(net, element, is_element, ppc, f, t, inverted)
+        _calculate_qmin_qmax_from_q_capability_curve_characteristics(net, element, is_element, ppc, f, t, delta,
+                                                                     inverted)
 
 
 def add_p_constraints(net, element, is_element, ppc, f, t, delta, inverted=False):
@@ -463,7 +464,7 @@ def _normalise_slack_weights(ppc, gen_mask, xward_mask, xward_pq_buses):
                                   "please calculate the zones separately.")
 
 
-def _calculate_qmin_qmax_from_q_capability_curve_characteristics(net, element, is_element, ppc, f, t, inverted):
+def _calculate_qmin_qmax_from_q_capability_curve_characteristics(net, element, is_element, ppc, f, t, delta, inverted):
     if element not in ["gen", "sgen"]:
         raise UserWarning(f"The given element type is not valid for q_min and q_max of the {element}. "
                           f"Please give gen or sgen as an argument of the function")
@@ -494,8 +495,9 @@ def _calculate_qmin_qmax_from_q_capability_curve_characteristics(net, element, i
 
         curve_q = net[element][["min_q_mvar", "max_q_mvar"]]
         curve_q.loc[element_data.index] = np.column_stack((calc_q_min, calc_q_max))
+        sign = (1 - 2 * inverted)
+        ppc[element][f:t, [QMIN, QMAX]] = sign * curve_q.values[is_element] - (sign * delta)
 
-        ppc[element][f:t, [QMIN, QMAX]] = (1 - 2 * inverted) * curve_q.values[is_element]
     else:
         logger.warning(f"One of {element}(s) id characteristic or curve style of {element} is incorrect "
                        f"or not available even if the q_capability_curve_table is available.")
