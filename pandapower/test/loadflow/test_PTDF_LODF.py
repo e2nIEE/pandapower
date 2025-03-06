@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -28,11 +28,11 @@ def test_PTDF():
                  result_side=1, using_sparse_solver=False)
     ptdf_sparse = makePTDF(ppci["baseMVA"], ppci["bus"], ppci["branch"],
                            using_sparse_solver=True)
-    ptdf_reduced = makePTDF(ppci["baseMVA"], ppci["bus"], ppci["branch"], 
-                            using_sparse_solver=False, 
+    ptdf_reduced = makePTDF(ppci["baseMVA"], ppci["bus"], ppci["branch"],
+                            using_sparse_solver=False,
                             branch_id=list(range(15)), reduced=True)
-    ptdf_reduced_sparse = makePTDF(ppci["baseMVA"], ppci["bus"], ppci["branch"], 
-                                   using_sparse_solver=True, 
+    ptdf_reduced_sparse = makePTDF(ppci["baseMVA"], ppci["bus"], ppci["branch"],
+                                   using_sparse_solver=True,
                                    branch_id=list(range(15)), reduced=True)
 
     if not np.allclose(ptdf, ptdf_sparse):

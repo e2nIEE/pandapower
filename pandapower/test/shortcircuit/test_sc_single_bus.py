@@ -1,6 +1,6 @@
  # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -41,7 +41,7 @@ def three_bus_big_sgen_example():
      pp.create_sgen(net, b2, sn_mva=200., p_mw=0, k=1.2)
      return net
 
-def test_radial_network():   
+def test_radial_network():
     net = radial_grid()
     sc_bus = 3
     sc.calc_sc(net)
@@ -53,7 +53,7 @@ def test_radial_network():
     assert np.isclose(net.res_trafo_sc.ikss_lv_ka.at[0], ik)
     trafo_ratio = net.trafo.vn_lv_kv.values / net.trafo.vn_hv_kv.values
     assert np.isclose(net.res_trafo_sc.ikss_hv_ka.at[0], ik*trafo_ratio)
-    
+
     for inv_y in (False, True):
         sc_bus = 2
         sc.calc_sc(net, inverse_y=inv_y, branch_results=True)
@@ -73,7 +73,7 @@ def test_meshed_network(meshed_grid):
     sc.calc_sc(net)
     sc_bus = 5
     ik = net.res_bus_sc.ikss_ka.at[sc_bus]
-    
+
     for inv_y in (False, True):
         sc.calc_sc(net, bus=sc_bus, inverse_y=inv_y, branch_results=True)
 
@@ -83,15 +83,15 @@ def test_meshed_network(meshed_grid):
 
 def test_big_gen_network_calc_sc():
     net = three_bus_big_sgen_example()
-       
+
     for inv_y in (False, True):
         sc_bus = 0
         sc.calc_sc(net, bus=sc_bus,
                    branch_results=True, inverse_y=inv_y)
-    
+
         assert np.isclose(net.res_line_sc.ikss_ka.at[0], 1.25967331, atol=1e-3)
         assert np.isclose(net.res_line_sc.ikss_ka.at[1], 0., atol=1e-3)
-    
+
         sc_bus = 2
         sc.calc_sc(net, bus=sc_bus,
                    branch_results=True, inverse_y=inv_y)

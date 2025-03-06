@@ -29,8 +29,10 @@ switch_dict = {}
 bus_dict = {}
 grf_map = {}
 
-
 # import network to pandapower:
+import pandas as pd
+
+
 def from_pf(
         dict_net,
         pv_as_slack=True,
@@ -187,35 +189,35 @@ def from_pf(
     for n, fuse in enumerate(dict_net['RelFuse'], 1):
         create_coup(net=net, item=fuse, is_fuse=True)
     if n > 0: logger.info('imported %d fuses' % n)
-    
+
     logger.debug('creating shunts')
     # create shunts (ElmShnt):
     n = 0
     for n, shunt in enumerate(dict_net['ElmShnt'], 1):
         create_shunt(net=net, item=shunt)
     if n > 0: logger.info('imported %d shunts' % n)
-    
+
     logger.debug('creating impedances')
     # create zpu (ElmZpu):
     n = 0
     for n, zpu in enumerate(dict_net['ElmZpu'], 1):
         create_zpu(net=net, item=zpu)
     if n > 0: logger.info('imported %d impedances' % n)
-    
+
     logger.debug('creating series inductivity as impedance')
     # create series inductivity as impedance (ElmSind):
     n = 0
     for n, sind in enumerate(dict_net['ElmSind'], 1):
         create_sind(net=net, item=sind)
     if n > 0: logger.info('imported %d SIND' % n)
-    
+
     logger.debug('creating series capacity as impedance')
     # create series capacity as impedance (ElmScap):
     n = 0
     for n, scap in enumerate(dict_net['ElmScap'], 1):
         create_scap(net=net, item=scap)
     if n > 0: logger.info('imported %d SCAP' % n)
-    
+
     logger.debug('creating static var compensator')
     # create static var compensator (SVC) with control same as voltage controlled synchron machine (ElmSvs):
     n = 0
@@ -223,7 +225,7 @@ def from_pf(
         create_svc(net=net, item=svc, pv_as_slack=pv_as_slack,
                         pf_variable_p_gen=pf_variable_p_gen, dict_net=dict_net)
     if n > 0: logger.info('imported %d SVC' % n)
-    
+
     # create vac (ElmVac):
     n = 0
     for n, vac in enumerate(dict_net['ElmVac'], 1):
@@ -648,7 +650,7 @@ def create_connection_switches(net, item, number_switches, et, buses, elements):
                                   closed=switch_is_closed, type=switch_usage, name=switch_name)
             net.res_switch.loc[cd, ['pf_closed', 'pf_in_service']] = switch_is_closed, True
             new_switch_idx.append(cd)
-            new_switch_closed.append(switch_is_closed)                
+            new_switch_closed.append(switch_is_closed)
     return new_switch_idx, new_switch_closed
 
 
@@ -657,13 +659,14 @@ def get_coords_from_buses(net, from_bus, to_bus, **kwargs):
     from_geo: Optional[str] = None
     to_geo: Optional[str] = None
     if from_bus in net.bus.index:
-        from_geo: str = net.bus.loc[from_bus, ['geo']]
+        from_geo: str = net.bus.loc[from_bus, 'geo']
 
     if to_bus in net.bus.index:
-        to_geo: str = net.bus.loc[to_bus, ['geo']]
+        to_geo: str = net.bus.loc[to_bus, 'geo']
 
     if from_geo and to_geo:
         coords = [geojson.utils.coords(geojson.loads(from_geo)), geojson.utils.coords(geojson.loads(to_geo))]
+        coords = [tuple((x, y)) for item in coords for x, y in item]
         logger.debug('got coords from buses: %s' % coords)
     else:
         logger.debug('no coords for line between buses %d and %d' % (from_bus, to_bus))
@@ -775,11 +778,11 @@ def create_line(net, item, flag_graphics, create_sections, is_unbalanced):
         new_elements = (sid_list[0], sid_list[-1])
         new_switch_idx, new_switch_closed = create_connection_switches(net, item, 2, 'l', (params['bus1'], params['bus2']),
                                                                        new_elements)
-        # correct in_service of lines if station switch is open  
-        # update_in_service_depending_station_switch(net, element_type="line", 
-        #                                            new_elements=new_elements, 
+        # correct in_service of lines if station switch is open
+        # update_in_service_depending_station_switch(net, element_type="line",
+        #                                            new_elements=new_elements,
         #                                            new_switch_idx=new_switch_idx,
-        #                                            new_switch_closed=new_switch_closed)     
+        #                                            new_switch_closed=new_switch_closed)
 
     logger.debug('line <%s> created' % params['name'])
 
@@ -1989,6 +1992,13 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
             logger.debug('av_mode: %s - creating as gen' % av_mode)
             params.vm_pu = item.usetp
             del params['q_mvar']
+
+            # add reactive and active power limits
+            params.min_q_mvar = item.cQ_min
+            params.max_q_mvar = item.cQ_max
+            params.min_p_mw = item.Pmin_uc
+            params.max_p_mw = item.Pmax_uc
+
             sg = pp.create_gen(net, **params)
             element = 'gen'
         else:
@@ -1996,6 +2006,12 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
                 sg = pp.create_asymmetric_sgen(net, **params)
                 element = "asymmetric_sgen"
             else:
+                # add reactive and active power limits
+                params.min_q_mvar = item.cQ_min
+                params.max_q_mvar = item.cQ_max
+                params.min_p_mw = item.Pmin_uc
+                params.max_p_mw = item.Pmax_uc
+
                 sg = pp.create_sgen(net, **params)
                 element = 'sgen'
     logger.debug('created sgen at index <%d>' % sg)
@@ -2200,13 +2216,32 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
         if av_mode == 'constv':
             logger.debug('creating sym %s as gen' % name)
             vm_pu = item.usetp
-            sid = pp.create_gen(net, bus=bus1, p_mw=p_mw, vm_pu=vm_pu,
-                                name=name, type=cat, in_service=in_service, scaling=global_scaling)
+            if item.iqtype == 1:
+                type = item.typ_id
+                sid = pp.create_gen(net, bus=bus1, p_mw=p_mw, vm_pu=vm_pu,
+                                    min_q_mvar=type.Q_min, max_q_mvar=type.Q_max,
+                                    min_p_mw=item.Pmin_uc, max_p_mw=item.Pmax_uc,
+                                    name=name, type=cat, in_service=in_service, scaling=global_scaling)
+            else:
+                sid = pp.create_gen(net, bus=bus1, p_mw=p_mw, vm_pu=vm_pu,
+                                    min_q_mvar=item.cQ_min, max_q_mvar=item.cQ_max,
+                                    min_p_mw=item.Pmin_uc, max_p_mw=item.Pmax_uc,
+                                    name=name, type=cat, in_service=in_service, scaling=global_scaling)
             element = 'gen'
         elif av_mode == 'constq':
             q_mvar = ngnum * item.qgini * multiplier
-            sid = pp.create_sgen(net, bus=bus1, p_mw=p_mw, q_mvar=q_mvar,
-                                 name=name, type=cat, in_service=in_service, scaling=global_scaling)
+            if item.iqtype == 1:
+                type = item.typ_id
+                sid = pp.create_sgen(net, bus=bus1, p_mw=p_mw, q_mvar=q_mvar,
+                                    min_q_mvar=type.Q_min, max_q_mvar=type.Q_max,
+                                    min_p_mw=item.Pmin_uc, max_p_mw=item.Pmax_uc,
+                                    name=name, type=cat, in_service=in_service, scaling=global_scaling)
+            else:
+                sid = pp.create_sgen(net, bus=bus1, p_mw=p_mw, q_mvar=q_mvar,
+                                    min_q_mvar=item.cQ_min, max_q_mvar=item.cQ_max,
+                                    min_p_mw=item.Pmin_uc, max_p_mw=item.Pmax_uc,
+                                    name=name, type=cat, in_service=in_service, scaling=global_scaling)
+
             element = 'sgen'
 
         if sid is None or element is None:
@@ -2313,14 +2348,25 @@ def create_trafo_type(net, item):
         "tap_side": ['hv', 'lv', 'ext'][item.tap_side],  # 'ext' not implemented
     }
 
+    type_data.update({"tap_changer_type": "None"})
+    type_data.update({"tap2_changer_type": "None"})
+
     if item.itapch:
         logger.debug('trafo <%s> has tap changer' % name)
+
+        if item.tapchtype == 0:
+            tap_changer_type = "Ratio"
+        elif item.tapchtype == 1:
+            tap_changer_type = "Symmetrical"
+        elif item.tapchtype == 2:
+            tap_changer_type = "Ideal"
+
         type_data.update({
             # see if it is an ideal phase shifter or a complex phase shifter
             # checking tap_step_percent because a nonzero value for ideal phase shifter can be stored in the object
             "tap_step_percent": item.dutap if item.tapchtype != 1 else 0,
             "tap_step_degree": item.dphitap if item.tapchtype == 1 else item.phitr,
-            "tap_phase_shifter": True if item.tapchtype == 1 else False,
+            "tap_changer_type": tap_changer_type,
             "tap_max": item.ntpmx,
             "tap_min": item.ntpmn,
             "tap_neutral": item.nntap0
@@ -2339,7 +2385,7 @@ def create_trafo_type(net, item):
             # checking tap_step_percent because a nonzero value for ideal phase shifter can be stored in the object
             "tap2_step_percent": item.dutap2 if item.tapchtype2 != 1 else 0,
             "tap2_step_degree": item.dphitap2 if item.tapchtype2 == 1 else item.phitr2,
-            "tap2_phase_shifter": True if item.tapchtype2 == 1 else False,
+            "tap2_changer_type":  item.tapchtype2,
             "tap2_max": item.ntpmx2,
             "tap2_min": item.ntpmn2,
             "tap2_neutral": item.nntap02
@@ -2403,20 +2449,164 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
             tap_pos2 = item.GetAttribute("c:nntap2")
 
     if std_type is not None:
+        use_tap_table = item.GetAttribute("iTaps")
+        if use_tap_table == 1:
+            if "trafo_characteristic_table" not in net:
+                net["trafo_characteristic_table"] = pd.DataFrame(
+                    columns=['id_characteristic', 'step', 'voltage_ratio', 'angle_deg', 'vk_percent', 'vkr_percent',
+                             'vk_hv_percent', 'vkr_hv_percent', 'vk_mv_percent', 'vkr_mv_percent', 'vk_lv_percent',
+                             'vkr_lv_percent'])
+
+            last_index = net["trafo_characteristic_table"]['id_characteristic'].max() if not net[
+                "trafo_characteristic_table"].empty else -1
+            new_id_characteristic_table = last_index + 1
+            tap_min = pf_type.ntpmn
+            tap_max = pf_type.ntpmx
+            tap_side = pf_type.tap_side
+            meas_side = item.GetAttribute("iMeasLoc")  # 0: meas-side == tap_side
+
+            steps = list(range(tap_min, tap_max + 1))
+
+            new_tap_table = pd.DataFrame(item.GetAttribute("mTaps"),
+                                         columns=['voltage_ratio', 'angle_deg', 'vk_percent', 'vkr_percent',
+                                                  'ignore'])
+            new_tap_table = new_tap_table.drop(columns='ignore')
+            if meas_side == 0:
+                if tap_side == 0:
+                    new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn_h
+                else:
+                    new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn_l
+            elif meas_side == 1:
+                new_tap_table["angle_deg"] = -new_tap_table["angle_deg"]
+                if tap_side == 0:
+                    new_tap_table["voltage_ratio"] = pf_type.utrn_l / new_tap_table["voltage_ratio"]
+                else:
+                    new_tap_table["voltage_ratio"] = pf_type.utrn_h / new_tap_table["voltage_ratio"]
+            else:
+                raise ValueError("Measurement location for tap table not given.")
+
+            new_tap_table["vkr_percent"] = new_tap_table["vkr_percent"] / pf_type.strn / 1000 * 100
+            # * 1000 / 100 for conversion from MVA to kVA and from decimal to %
+
+            if len(new_tap_table) == len(steps):
+                new_tap_table['step'] = steps[:len(new_tap_table)]
+            else:
+                raise ValueError("The number of steps differs from the number of rows in new_tap_table.")
+            new_tap_table['id_characteristic'] = new_id_characteristic_table
+
+            missing_columns = set(net["trafo_characteristic_table"].columns) - set(new_tap_table.columns)
+            for col in missing_columns:
+                new_tap_table[col] = np.nan
+
+            net["trafo_characteristic_table"] = pd.concat([net["trafo_characteristic_table"], new_tap_table],
+                                                          ignore_index=True)
+
+            if pf_type.tapchtype == 0:
+                tap_changer_type = "Ratio"
+            elif pf_type.tapchtype == 1:
+                tap_changer_type = "Symmetrical"
+            elif pf_type.tapchtype == 2:
+                tap_changer_type = "Ideal"
+            else:
+                tap_changer_type = "None"
+
+            tap_dependency_table = True
+            id_characteristic_table = new_id_characteristic_table
+        else:
+            id_characteristic_table = None
+            tap_dependency_table = False
+            tap_changer_type = None
+
         tid = pp.create_transformer(net, hv_bus=bus1, lv_bus=bus2, name=name,
                                     std_type=std_type, tap_pos=tap_pos,
+                                    tap_dependency_table=tap_dependency_table,
+                                    tap_changer_type=tap_changer_type,
+                                    id_characteristic_table=id_characteristic_table,
                                     in_service=in_service, parallel=item.ntnum, df=item.ratfac, tap2_pos=tap_pos2,
                                     leakage_resistance_ratio_hv=pf_type.itrdr, leakage_reactance_ratio_hv=pf_type.itrdl)
         trafo_dict[item] = tid
         logger.debug('created trafo at index <%d>' % tid)
     else:
         logger.info("Create Trafo 3ph")
+        use_tap_table = item.GetAttribute("iTaps")
+        if use_tap_table == 1:
+            if "trafo_characteristic_table" not in net:
+                net["trafo_characteristic_table"] = pd.DataFrame(
+                    columns=['id_characteristic', 'step', 'voltage_ratio', 'angle_deg', 'vk_percent', 'vkr_percent',
+                             'vk_hv_percent', 'vkr_hv_percent', 'vk_mv_percent', 'vkr_mv_percent', 'vk_lv_percent',
+                             'vkr_lv_percent'])
+
+            last_index = net["trafo_characteristic_table"]['id_characteristic'].max() if not net[
+                "trafo_characteristic_table"].empty else -1
+            new_id_characteristic_table = last_index + 1
+            tap_min = pf_type.ntpmn
+            tap_max = pf_type.ntpmx
+            tap_side = item.GetAttribute("tap_side")
+            meas_side = item.GetAttribute("iMeasLoc")
+
+            steps = list(range(tap_min, tap_max + 1))
+
+            new_tap_table = pd.DataFrame(item.GetAttribute("mTaps"),
+                                         columns=['voltage_ratio', 'angle_deg', 'vk_percent', 'vkr_percent',
+                                                  'ignore'])
+            new_tap_table = new_tap_table.drop(columns='ignore')
+
+            if meas_side == 0:
+                if tap_side == 0:
+                    new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn_h
+                else:
+                    new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn_l
+            elif meas_side == 1:
+                new_tap_table["angle_deg"] = -new_tap_table["angle_deg"]
+                if tap_side == 0:
+                    new_tap_table["voltage_ratio"] = pf_type.utrn_l / new_tap_table["voltage_ratio"]
+                else:
+                    new_tap_table["voltage_ratio"] = pf_type.utrn_h / new_tap_table["voltage_ratio"]
+            else:
+                raise ValueError("Measurement location for tap table not given.")
+
+            new_tap_table["vkr_percent"] = new_tap_table["vkr_percent"] / pf_type.strn / 1000 * 100
+            # * 1000 / 100 for conversion from MVA to kVA and from decimal to %
+
+            if len(new_tap_table) == len(steps):
+                new_tap_table['step'] = steps[:len(new_tap_table)]
+            else:
+                raise ValueError("The number of steps differs from the number of rows in new_tap_table.")
+            new_tap_table['id_characteristic'] = new_id_characteristic_table
+
+            missing_columns = set(net["trafo_characteristic_table"].columns) - set(new_tap_table.columns)
+            for col in missing_columns:
+                new_tap_table[col] = np.nan
+
+            net["trafo_characteristic_table"] = pd.concat([net["trafo_characteristic_table"], new_tap_table],
+                                                          ignore_index=True)
+
+            if pf_type.tapchtype == 0:
+                tap_changer_type = "Ratio"
+            elif pf_type.tapchtype == 1:
+                tap_changer_type = "Symmetrical"
+            elif pf_type.tapchtype == 2:
+                tap_changer_type = "Ideal"
+            else:
+                tap_changer_type = "None"
+
+            tap_dependency_table = True
+            id_characteristic_table = new_id_characteristic_table
+        else:
+            id_characteristic_table = None
+            tap_dependency_table = False
+            tap_changer_type = None
+
         tid = pp.create_transformer_from_parameters(
             net,
             hv_bus=bus1,
             lv_bus=bus2,
             name=name,
             tap_pos=tap_pos,
+            tap_side=tap_side,
+            tap_changer_type=tap_changer_type,
+            id_characteristic_table=id_characteristic_table,
+            tap_dependency_table=tap_dependency_table,
             in_service=in_service,
             parallel=item.ntnum,
             df=item.ratfac,
@@ -2446,15 +2636,15 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
     get_pf_trafo_results(net, item, tid, is_unbalanced)
 
     # adding switches
-    # False if open, True if closed, None if no switch    
+    # False if open, True if closed, None if no switch
     new_elements = (tid, tid)
-    new_switch_idx, new_switch_closed = create_connection_switches(net, item, 2, 't', (bus1, bus2), 
+    new_switch_idx, new_switch_closed = create_connection_switches(net, item, 2, 't', (bus1, bus2),
                                                                    new_elements)
-    # correct in_service of trafo if station switch is open 
-    # update_in_service_depending_station_switch(net, element_type="trafo", 
-    #                                            new_elements=new_elements, 
+    # correct in_service of trafo if station switch is open
+    # update_in_service_depending_station_switch(net, element_type="trafo",
+    #                                            new_elements=new_elements,
     #                                            new_switch_idx=new_switch_idx,
-    #                                            new_switch_closed=new_switch_closed)   
+    #                                            new_switch_closed=new_switch_closed)
 
     # adding tap changer
     if (export_controller and pf_type.itapch and item.HasAttribute('ntrcn') and
@@ -2495,17 +2685,17 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
 
     add_additional_attributes(item, net, element='trafo', element_id=tid,
                               attr_dict={'e:cpSite.loc_name': 'site', 'for_name': 'equipment', "cimRdfId": "origin_id"})
-    if pf_type.itapzdep:
-        x_points = (net.trafo.at[tid, "tap_min"], net.trafo.at[tid, "tap_neutral"], net.trafo.at[tid, "tap_max"])
-        vk_min, vk_neutral, vk_max = pf_type.uktmn, net.trafo.at[tid, "vk_percent"], pf_type.uktmx
-        vkr_min, vkr_neutral, vkr_max = pf_type.ukrtmn, net.trafo.at[tid, "vkr_percent"], pf_type.ukrtmx
-        # todo
-        # vk0_min, vk0_max = pf_type.uk0tmn, pf_type.uk0tmx
-        # vkr0_min, vkr0_max = pf_type.uk0rtmn, pf_type.uk0rtmx
-        pp.control.create_trafo_characteristics(net, trafotable="trafo", trafo_index=tid, variable="vk_percent",
-                                                x_points=x_points, y_points=(vk_min, vk_neutral, vk_max))
-        pp.control.create_trafo_characteristics(net, trafotable="trafo", trafo_index=tid, variable="vkr_percent",
-                                                x_points=x_points, y_points=(vkr_min, vkr_neutral, vkr_max))
+    # if pf_type.itapzdep:
+    #    x_points = (net.trafo.at[tid, "tap_min"], net.trafo.at[tid, "tap_neutral"], net.trafo.at[tid, "tap_max"])
+    #    vk_min, vk_neutral, vk_max = pf_type.uktmn, net.trafo.at[tid, "vk_percent"], pf_type.uktmx
+    #    vkr_min, vkr_neutral, vkr_max = pf_type.ukrtmn, net.trafo.at[tid, "vkr_percent"], pf_type.ukrtmx
+    #    # todo
+    #    # vk0_min, vk0_max = pf_type.uk0tmn, pf_type.uk0tmx
+    #    # vkr0_min, vkr0_max = pf_type.uk0rtmn, pf_type.uk0rtmx
+    #    pp.control.create_trafo_characteristics(net, trafotable="trafo", trafo_index=tid, variable="vk_percent",
+    #                                            x_points=x_points, y_points=(vk_min, vk_neutral, vk_max))
+    #    pp.control.create_trafo_characteristics(net, trafotable="trafo", trafo_index=tid, variable="vkr_percent",
+    #                                            x_points=x_points, y_points=(vkr_min, vkr_neutral, vkr_max))
 
 
 def get_pf_trafo_results(net, item, tid, is_unbalanced):
@@ -2585,16 +2775,102 @@ def create_trafo3w(net, item, tap_opt='nntap'):
         'shift_mv_degree': -(pf_type.nt3ag_h - pf_type.nt3ag_m) * 30,
         'shift_lv_degree': -(pf_type.nt3ag_h - pf_type.nt3ag_l) * 30,
         'tap_at_star_point': pf_type.itapos == 0,
-        'in_service': not bool(item.outserv)
+        'in_service': not bool(item.outserv),
+        'parallel': item.nt3nm,
     }
 
     if item.nt3nm != 1:
         logger.warning("trafo3w %s has parallel=%d, this is not implemented. "
                        "Calculation results will be incorrect." % (item.loc_name, item.nt3nm))
 
+
+    use_tap_table = item.GetAttribute("iTaps")
+    if use_tap_table == 1:
+        if "trafo_characteristic_table" not in net:
+            net["trafo_characteristic_table"] = pd.DataFrame(
+                columns=['id_characteristic', 'step', 'voltage_ratio', 'angle_deg', 'vk_percent', 'vkr_percent',
+                         'vk_hv_percent', 'vkr_hv_percent', 'vk_mv_percent', 'vkr_mv_percent', 'vk_lv_percent',
+                         'vkr_lv_percent'])
+
+        last_index = net["trafo_characteristic_table"]['id_characteristic'].max() if not net[
+            "trafo_characteristic_table"].empty else -1
+        new_id_characteristic_table = last_index + 1
+
+        new_tap_table = pd.DataFrame(item.GetAttribute("mTaps"),
+                                     columns=['voltage_ratio', 'angle_deg', 'vk_hv_percent', 'vk_mv_percent',
+                                              'vk_lv_percent', 'vkr_hv_percent', 'vkr_mv_percent', 'vkr_lv_percent'])
+
+        if pf_type.itapzdep:
+            table_side = pf_type.itapzside
+        else:
+            table_side = item.GetAttribute("iMeasTap")
+        meas_side = item.GetAttribute("iMeasLoc")
+
+        if table_side == 0:
+            tap_min = pf_type.n3tmn_h
+            tap_max = pf_type.n3tmx_h
+            if meas_side == 0:
+                new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn3_h
+            elif meas_side == 1:
+                new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn3_m
+            elif meas_side == 2:
+                new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn3_l
+        elif table_side == 1:
+            tap_min = pf_type.n3tmn_m
+            tap_max = pf_type.n3tmx_m
+            if meas_side == 0:
+                new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn3_h
+            elif meas_side == 1:
+                new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn3_m
+            elif meas_side == 2:
+                new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn3_l
+        elif table_side == 2:
+            tap_min = pf_type.n3tmn_l
+            tap_max = pf_type.n3tmx_l
+            if meas_side == 0:
+                new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn3_h
+            elif meas_side == 1:
+                new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn3_m
+            elif meas_side == 2:
+                new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn3_l
+
+        strn3_h = pf_type.strn3_h
+        strn3_m = pf_type.strn3_m
+        strn3_l = pf_type.strn3_l
+        new_tap_table["vkr_hv_percent"] = new_tap_table["vkr_hv_percent"] / (
+                np.min([float(strn3_h), float(strn3_m)]) * 1000) * 100
+        new_tap_table["vkr_mv_percent"] = new_tap_table["vkr_mv_percent"] / (
+                    np.min([float(strn3_m), float(strn3_l)]) * 1000) * 100
+        new_tap_table["vkr_lv_percent"] = new_tap_table["vkr_lv_percent"] / (
+                    np.min([float(strn3_h), float(strn3_l)]) * 1000) * 100
+
+        steps = list(range(tap_min, tap_max + 1))
+
+        if len(new_tap_table) == len(steps):
+            new_tap_table['step'] = steps[:len(new_tap_table)]
+        else:
+            raise ValueError("The number of steps differs from the number of rows in new_tap_table.")
+        new_tap_table['id_characteristic'] = new_id_characteristic_table
+
+        missing_columns = set(net["trafo_characteristic_table"].columns) - set(new_tap_table.columns)
+        for col in missing_columns:
+            new_tap_table[col] = np.nan
+
+        net["trafo_characteristic_table"] = pd.concat([net["trafo_characteristic_table"], new_tap_table],
+                                                      ignore_index=True)
+
+        params['tap_dependency_table'] = True
+        params['id_characteristic_table'] = new_id_characteristic_table
+    else:
+        params['tap_dependency_table'] = False
+
     if item.HasAttribute('t:du3tp_h'):
         steps = [pf_type.du3tp_h, pf_type.du3tp_m, pf_type.du3tp_l]
-        side = np.nonzero(steps)[0]
+        if(use_tap_table):
+            side = np.array([table_side])
+        else:
+            side = np.nonzero(steps)[0]
+
         if len(side) > 1:
             logger.warning("pandapower currently doesn't support 3w transformer with"
                            "multiple tap changers")
@@ -2610,8 +2886,25 @@ def create_trafo3w(net, item, tap_opt='nntap'):
                 logger.debug("got tap %f from c:n3tap" % tap_pos)
             else:
                 raise ValueError('could not read current tap position: tap_opt = %s' % tap_opt)
+
+            tap_step_percent = item.GetAttribute('t:du3tp_' + ts)
+            tap_step_degree = item.GetAttribute('t:ph3tr_' + ts)
+
+            if (tap_step_degree is None or tap_step_degree == 0) and (tap_step_percent is None or tap_step_percent == 0):
+                tap_changer_type = "None"
+            # ratio/asymmetrical phase shifters
+            elif (tap_step_degree != 90 and tap_step_percent is not None and tap_step_percent != 0):
+                tap_changer_type = "Ratio"
+            # symmetrical phase shifters
+            elif (tap_step_degree == 90 and tap_step_percent is not None and tap_step_percent != 0):
+                tap_changer_type = "Symmetrical"
+            # ideal phase shifters
+            elif (tap_step_degree is not None and tap_step_degree != 0 and (tap_step_percent is None or tap_step_percent == 0)):
+                tap_changer_type = "Ideal"
+
             params.update({
                 'tap_side': ts + 'v',  # hv, mv, lv
+                'tap_changer_type': tap_changer_type,
                 'tap_step_percent': item.GetAttribute('t:du3tp_' + ts),
                 'tap_step_degree': item.GetAttribute('t:ph3tr_' + ts),
                 'tap_min': item.GetAttribute('t:n3tmn_' + ts),
@@ -2629,12 +2922,12 @@ def create_trafo3w(net, item, tap_opt='nntap'):
     new_elements = (tid, tid, tid)
     new_switch_idx, new_switch_closed = create_connection_switches(net, item, 3, 't3',
                                                                    (bus1, bus2, bus3), new_elements)
-    
-    # correct in_service of trafo3w if station switch is open 
-    # update_in_service_depending_station_switch(net, element_type="trafo3w", 
-    #                                            new_elements=new_elements, 
+
+    # correct in_service of trafo3w if station switch is open
+    # update_in_service_depending_station_switch(net, element_type="trafo3w",
+    #                                            new_elements=new_elements,
     #                                            new_switch_idx=new_switch_idx,
-    #                                            new_switch_closed=new_switch_closed) 
+    #                                            new_switch_closed=new_switch_closed)
 
     logger.debug('successfully created trafo3w from parameters: %d' % tid)
     # testen
@@ -2660,22 +2953,24 @@ def create_trafo3w(net, item, tap_opt='nntap'):
 
     # TODO Implement the tap changer controller for 3-winding transformer
 
-    if pf_type.itapzdep:
-        x_points = (net.trafo3w.at[tid, "tap_min"], net.trafo3w.at[tid, "tap_neutral"], net.trafo3w.at[tid, "tap_max"])
-        for side in ("hv", "mv", "lv"):
-            vk_min = pf_type.GetAttribute(f"uktr3mn_{side[0]}")
-            vk_neutral = net.trafo3w.at[tid, f"vk_{side}_percent"]
-            vk_max = pf_type.GetAttribute(f"uktr3mx_{side[0]}")
-            vkr_min = pf_type.GetAttribute(f"uktrr3mn_{side[0]}")
-            vkr_neutral = net.trafo3w.at[tid, f"vkr_{side}_percent"]
-            vkr_max = pf_type.GetAttribute(f"uktrr3mx_{side[0]}")
-            # todo zero-sequence parameters (must be implemented in build_branch first)
-            pp.control.create_trafo_characteristics(net, trafotable="trafo3w", trafo_index=tid,
-                                                    variable=f"vk_{side}_percent", x_points=x_points,
-                                                    y_points=(vk_min, vk_neutral, vk_max))
-            pp.control.create_trafo_characteristics(net, trafotable="trafo3w", trafo_index=tid,
-                                                    variable=f"vkr_{side}_percent", x_points=x_points,
-                                                    y_points=(vkr_min, vkr_neutral, vkr_max))
+    # TODO Implement extracting trafo_characteristic_table if pf_type.itapzdep is true
+    #  and no trafo_characteristic_table available
+    # if pf_type.itapzdep:
+    #    x_points = (net.trafo3w.at[tid, "tap_min"], net.trafo3w.at[tid, "tap_neutral"], net.trafo3w.at[tid, "tap_max"])
+    #    for side in ("hv", "mv", "lv"):
+    #        vk_min = pf_type.GetAttribute(f"uktr3mn_{side[0]}")
+    #        vk_neutral = net.trafo3w.at[tid, f"vk_{side}_percent"]
+    #        vk_max = pf_type.GetAttribute(f"uktr3mx_{side[0]}")
+    #        vkr_min = pf_type.GetAttribute(f"uktrr3mn_{side[0]}")
+    #        vkr_neutral = net.trafo3w.at[tid, f"vkr_{side}_percent"]
+    #        vkr_max = pf_type.GetAttribute(f"uktrr3mx_{side[0]}")
+    #        # todo zero-sequence parameters (must be implemented in build_branch first)
+    #        pp.control.create_trafo_characteristics(net, trafotable="trafo3w", trafo_index=tid,
+    #                                                variable=f"vk_{side}_percent", x_points=x_points,
+    #                                                y_points=(vk_min, vk_neutral, vk_max))
+    #        pp.control.create_trafo_characteristics(net, trafotable="trafo3w", trafo_index=tid,
+    #                                                variable=f"vkr_{side}_percent", x_points=x_points,
+    #                                                y_points=(vkr_min, vkr_neutral, vkr_max))
 
 
 def propagate_bus_coords(net, bus1, bus2):
@@ -2772,7 +3067,6 @@ def create_shunt(net, item):
         'step': item.ncapa,
         'max_step': item.ncapx
     }
-    print(item.loc_name)
     r_val: float = .0
     x_val: float = .0
     if item.shtype == 0:
@@ -2785,8 +3079,8 @@ def create_shunt(net, item):
         x_val = item.xrea
     elif item.shtype == 2:
         # Shunt is a capacitor bank
-        b = item.bcap*1e-6
-        g = item.gparac*1e-6
+        b = item.bcap * 1e-6
+        g = item.gparac * 1e-6
 
         r_val = g / (g ** 2 + b ** 2)
         x_val = -b / (g ** 2 + b ** 2)
@@ -2872,26 +3166,26 @@ def create_zpu(net, item):
     }
 
     logger.debug('params = %s' % params)
-    
+
     # create auxilary buses
     aux_bus1 = pp.create_bus(net, vn_kv=net.bus.vn_kv.at[bus1], name=net.bus.name.at[bus1]+'_aux',
-                             geodata=net.bus.geo.at[bus1], type="b", zone=net.bus.zone.at[bus1],
-                             in_service=True)
+                             type="b", zone=net.bus.zone.at[bus1], in_service=True)
+    net.bus.loc[aux_bus1, 'geo'] = net.bus.geo.at[bus1]
     params['from_bus'] = aux_bus1
     aux_bus2 = pp.create_bus(net, vn_kv=net.bus.vn_kv.at[bus2], name=net.bus.name.at[bus2]+'_aux',
-                             geodata=net.bus.geo.at[bus2], type="b", zone=net.bus.zone.at[bus2],
-                             in_service=True)
+                             type="b", zone=net.bus.zone.at[bus2], in_service=True)
+    net.bus.loc[aux_bus2, 'geo'] = net.bus.geo.at[bus2]
     params['to_bus'] = aux_bus2
-    
+
     xid = pp.create_impedance(net, **params)
     add_additional_attributes(item, net, element='impedance', element_id=xid, attr_list=["cpSite.loc_name"],
                               attr_dict={"cimRdfId": "origin_id"})
-    
+
     # consider and create station switches
     new_elements = (aux_bus1, aux_bus2)
     new_switch_idx, new_switch_closed = create_connection_switches(net, item, 2, 'b', (bus1, bus2),
                                                                    new_elements)
-    
+
     if len(new_switch_idx)==0:
         net.impedance.loc[xid, 'from_bus'] = bus1
         net.impedance.loc[xid, 'to_bus'] = bus2
@@ -2907,13 +3201,13 @@ def create_zpu(net, item):
             net.impedance.loc[xid, 'from_bus'] = bus1
             # drop one auxilary bus, where no switch exists, not needed
             pp.drop_buses(net, buses=[aux_bus1])
-              
-    # correct in_service of series reactor if station switch is open  
-    # update_in_service_depending_station_switch(net, element_type="impedance", 
-    #                                            new_elements=new_elements, 
+
+    # correct in_service of series reactor if station switch is open
+    # update_in_service_depending_station_switch(net, element_type="impedance",
+    #                                            new_elements=new_elements,
     #                                            new_switch_idx=new_switch_idx,
     #                                            new_switch_closed=new_switch_closed)
-    
+
     logger.debug('created ZPU %s as impedance at index %d' % (net.impedance.at[xid, 'name'], xid))
 
 
@@ -2927,7 +3221,7 @@ def create_vac(net, item):
     except IndexError:
         logger.error("Cannot add VAC '%s': not connected" % item.loc_name)
         return
-    
+
     in_service = monopolar_in_service(item)
     params = {
         'name': item.loc_name,
@@ -3009,25 +3303,25 @@ def create_sind(net, item):
     except IndexError:
         logger.error("Cannot add Sind '%s': not connected" % item.loc_name)
         return
-    
+
     # create auxilary buses
     aux_bus1 = pp.create_bus(net, vn_kv=net.bus.vn_kv.at[bus1], name=net.bus.name.at[bus1]+'_aux',
-                             geodata=net.bus.geo.at[bus1], type="b", zone=net.bus.zone.at[bus1],
-                             in_service=True)
-    aux_bus2 = pp.create_bus(net, vn_kv=net.bus.vn_kv.at[bus2], name=net.bus.name.at[bus2]+'_aux',
-                             geodata=net.bus.geo.at[bus2], type="b", zone=net.bus.zone.at[bus2],
-                             in_service=True)
-    
-    sind = pp.create_series_reactor_as_impedance(net, from_bus=aux_bus1, to_bus=aux_bus2, 
+                             type="b", zone=net.bus.zone.at[bus1], in_service=True)
+    net.bus.loc[aux_bus1, 'geo'] = net.bus.geo.at[bus1]
+    aux_bus2 = pp.create_bus(net, vn_kv=net.bus.vn_kv.at[bus2], name=net.bus.name.at[bus2] + '_aux',
+                             type="b", zone=net.bus.zone.at[bus2], in_service=True)
+    net.bus.loc[aux_bus2, 'geo'] = net.bus.geo.at[bus2]
+
+    sind = pp.create_series_reactor_as_impedance(net, from_bus=aux_bus1, to_bus=aux_bus2,
                                                  r_ohm=item.rrea, x_ohm=item.xrea, sn_mva=item.Sn,
                                                  name=item.loc_name,
                                                  in_service=not bool(item.outserv))
-    
+
     # consider and create station switches
     new_elements = (aux_bus1, aux_bus2)
     new_switch_idx, new_switch_closed = create_connection_switches(net, item, 2, 'b', (bus1, bus2),
                                                                    new_elements)
-    
+
     if len(new_switch_idx)==0:
         net.impedance.loc[sind, 'from_bus'] = bus1
         net.impedance.loc[sind, 'to_bus'] = bus2
@@ -3043,13 +3337,13 @@ def create_sind(net, item):
             net.impedance.loc[sind, 'from_bus'] = bus1
             # drop one auxilary bus, where no switch exists, not needed
             pp.drop_buses(net, buses=[aux_bus1])
-              
-    # correct in_service of series reactor if station switch is open  
-    # update_in_service_depending_station_switch(net, element_type="impedance", 
-    #                                            new_elements=new_elements, 
+
+    # correct in_service of series reactor if station switch is open
+    # update_in_service_depending_station_switch(net, element_type="impedance",
+    #                                            new_elements=new_elements,
     #                                            new_switch_idx=new_switch_idx,
     #                                            new_switch_closed=new_switch_closed)
-           
+
     logger.debug('created series reactor %s as per unit impedance at index %d' %
                  (net.impedance.at[sind, 'name'], sind))
 
@@ -3068,25 +3362,25 @@ def create_scap(net, item):
     else:
         r_ohm = item.gcap/(item.gcap**2 + item.bcap**2)
         x_ohm = -item.bcap/(item.gcap**2 + item.bcap**2)
-        
-        # create auxilary buses 
+
+        # create auxilary buses
         aux_bus1 = pp.create_bus(net, vn_kv=net.bus.vn_kv.at[bus1], name=net.bus.name.at[bus1]+'_aux',
-                                 geodata=net.bus.geo.at[bus1], type="b", zone=net.bus.zone.at[bus1],
-                                 in_service=True)
+                                 type="b", zone=net.bus.zone.at[bus1], in_service=True)
+        net.bus.loc[aux_bus1, 'geo'] = net.bus.geo.at[bus1]
         aux_bus2 = pp.create_bus(net, vn_kv=net.bus.vn_kv.at[bus2], name=net.bus.name.at[bus2]+'_aux',
-                                 geodata=net.bus.geo.at[bus2], type="b", zone=net.bus.zone.at[bus2],
-                                 in_service=True)
-        
+                                 type="b", zone=net.bus.zone.at[bus2], in_service=True)
+        net.bus.loc[aux_bus2, 'geo'] = net.bus.geo.at[bus2]
+
         scap = pp.create_series_reactor_as_impedance(net, from_bus=aux_bus1, to_bus=aux_bus2, r_ohm=r_ohm,
                                                      x_ohm=x_ohm, sn_mva=item.Sn,
                                                      name=item.loc_name,
                                                      in_service=not bool(item.outserv))
-        
+
         # consider and create station switches
         new_elements = (aux_bus1, aux_bus2)
         new_switch_idx, new_switch_closed = create_connection_switches(net, item, 2, 'b', (bus1, bus2),
                                                                        new_elements)
-        
+
         if len(new_switch_idx)==0:
             net.impedance.loc[scap, 'from_bus'] = bus1
             net.impedance.loc[scap, 'to_bus'] = bus2
@@ -3102,32 +3396,32 @@ def create_scap(net, item):
                 net.impedance.loc[scap, 'from_bus'] = bus1
                 # drop one auxilary bus, where no switch exists, not needed
                 pp.drop_buses(net, buses=[aux_bus1])
-        
-        # correct in_service of series capacitor if station switch is open  
-        # update_in_service_depending_station_switch(net, element_type="impedance", 
-        #                                            new_elements=new_elements, 
+
+        # correct in_service of series capacitor if station switch is open
+        # update_in_service_depending_station_switch(net, element_type="impedance",
+        #                                            new_elements=new_elements,
         #                                            new_switch_idx=new_switch_idx,
         #                                            new_switch_closed=new_switch_closed)
 
         logger.debug('created series capacitor %s as per unit impedance at index %d' %
                      (net.impedance.at[scap, 'name'], scap))
-        
+
 def create_svc(net, item, pv_as_slack, pf_variable_p_gen, dict_net):
     # SVC is voltage controlled and therefore modelled the same way as a voltage controlled synchron machine (gen)
     # TODO: at least implement a uncontrolled svc as synchron machine with const. Q
-    # TODO: transfer item entries for usage of pp.create_svc, x_l_ohm, x_cvar_ohm, 
+    # TODO: transfer item entries for usage of pp.create_svc, x_l_ohm, x_cvar_ohm,
     #       thyristor_firing_angle must be computed
     name = item.loc_name
     sid = None
     element = None
     logger.debug('>> creating synchronous machine <%s>' % name)
-   
+
     try:
         bus1 = get_connection_nodes(net, item, 1)
     except IndexError:
         logger.error("Cannot add SVC '%s': not connected" % name)
         return
-    
+
     if item.i_ctrl==1: # 0: no control, 1: voltage control, 2: reactive power control
         logger.debug('creating SVC %s as gen' % name)
         vm_pu = item.usetp
@@ -3135,15 +3429,15 @@ def create_svc(net, item, pv_as_slack, pf_variable_p_gen, dict_net):
         svc = pp.create_gen(net, bus=bus1, p_mw=0, vm_pu=vm_pu,
                             name=name, type="SVC", in_service=in_service)
         element = 'gen'
-        
+
         if svc is None or element is None:
             logger.error('Error! SVC not created')
         logger.debug('created svc at index <%s>' % svc)
-        
+
         net[element].loc[svc, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
         add_additional_attributes(item, net, element, svc, attr_dict={"for_name": "equipment"},
                                   attr_list=["sernum", "chr_name", "cpSite.loc_name"])
-        
+
         if item.HasResults(0):  # 'm' results...
             logger.debug('<%s> has results' % name)
             net['res_' + element].at[svc, "pf_p"] = ga(item, 'm:P:bus1') #* multiplier
@@ -3151,7 +3445,7 @@ def create_svc(net, item, pv_as_slack, pf_variable_p_gen, dict_net):
         else:
             net['res_' + element].at[svc, "pf_p"] = np.nan
             net['res_' + element].at[svc, "pf_q"] = np.nan
-    else:    
+    else:
         logger.info('not creating SVC for %s' % item.loc_name)
 
 
@@ -3310,11 +3604,16 @@ def create_stactrl(net, item):
 
     # find gen_element_index using name:
     if np.any(net.sgen.name.duplicated()):
-        raise UserWarning("error while creating station controller: sgen names must be unique")
+        duplicated_sgen_names = True
+        # raise UserWarning("error while creating station controller: sgen names must be unique")
+    else:
+        duplicated_sgen_names = False
 
     gen_types = []
     for s in machines:
         if s.ip_ctrl == 1:
+            gt = "other"
+        elif not hasattr(s, 'av_mode'):
             gt = "other"
         elif s.av_mode == "constq":
             gt = "sgen"
@@ -3347,8 +3646,24 @@ def create_stactrl(net, item):
 
     gen_element = gen_types[0]
     gen_element_index = []
-    for s in machines:
-        gen_element_index.append(net[gen_element].loc[net[gen_element].name == s.loc_name].index.values[0])
+
+    if duplicated_sgen_names == False:
+        for s in machines:
+            gen_element_index.append(net[gen_element].loc[net[gen_element].name == s.loc_name].index.values[0])
+    else:
+        # check if gen_element has set controller
+        for s in machines:
+            gen_element_index_try = net[gen_element].loc[net[gen_element].name == s.loc_name].index.values
+            if len(gen_element_index_try) == 1:
+                gen_element_index.append(gen_element_index_try[0])
+            else:
+                gen_element_index_try_again = net[gen_element].loc[(net[gen_element].name == s.loc_name) & (
+                            net[gen_element].sta_ctrl == s.c_pstac.loc_name)].index.values
+                if len(gen_element_index_try_again) > 1:
+                    raise UserWarning(
+                        "error while creating station controller: sgen and controler names must be unique")
+                else:
+                    gen_element_index.append(gen_element_index_try_again[0])
 
     if len(gen_element_index) != len(machines):
         raise UserWarning("station controller: could not properly identify the machines")
