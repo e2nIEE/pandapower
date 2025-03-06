@@ -64,9 +64,9 @@ def test__node_geometries_from_geodata(get_network_and_result):
     # can't be adapted
     assert result.shape == expected.shape
     assert isinstance(result, type(expected))
-    assert (result.geom_equals_exact(expected.geometry, tolerance=1 * 10 ** (-6)) |
-            (result.geometry.is_empty & expected.geometry.is_empty) |
-            (result.geometry.isna() & expected.geometry.isna())).all()
+    assert result.geom_equals_exact(expected.geometry, tolerance=1 * 10 ** (-6)).all()
+    assert not (result.geometry.is_empty & expected.geometry.is_empty).all()
+    assert not (result.geometry.isna() & expected.geometry.isna()).all()
     left2 = result.select_dtypes(exclude="geometry")
     right2 = expected.select_dtypes(exclude="geometry")
     assert_index_equal(result.columns, expected.columns, exact="equiv", obj="GeoDataFrame.columns")
