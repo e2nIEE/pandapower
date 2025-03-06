@@ -30,7 +30,8 @@ jobs:
         uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
+      - &install-all-extra
+        name: Install dependencies
         run: |
           uv sync --all-extras          
           if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi
@@ -309,7 +310,6 @@ jobs:
         python-version: ['3.9']
         # Reminder: when removing the support of an old python version here, then don't forget to
         # remove it also in pyproject.toml 'requires-python'
-        group: [ 1, 2 ]
     steps:
       - uses: actions/checkout@v4
       #- uses: julia-actions/setup-julia@v1.5
@@ -318,14 +318,7 @@ jobs:
         uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
-        run: |
-          uv sync --all-extras          
-          if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi
-          uv pip install pytest-split
-          if ${{ matrix.python-version == '3.9' }}; then uv pip install pypower; fi
-          if ${{ matrix.python-version != '3.9' }}; then uv pip install numba; fi
-          if ${{ matrix.python-version == '3.10' }}; then uv pip install lightsim2grid; fi
+      - *install-all-extra
       - name: List of installed packages
         run: |
           uv pip list
