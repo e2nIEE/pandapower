@@ -23,6 +23,7 @@ class NonLinearShuntCompensatorCim16:
         self.logger.info("Start converting NonlinearShuntCompensator.")
         if self.cimConverter.cim['eq']['NonlinearShuntCompensator'].index.size > 0:
             eqssh_shunts = self._prepare_nonlinear_shunt_compensator_cim16()
+            self._create_shunt_characteristic_table(eqssh_shunts)
             self.cimConverter.copy_to_pp('shunt', eqssh_shunts)
         else:
             eqssh_shunts = pd.DataFrame(None)
@@ -59,9 +60,55 @@ class NonLinearShuntCompensatorCim16:
                 eqssh_shunts.loc[eqssh_shunts['sections'] >= eqssh_shunts['sectionNumber'], 'q'] = \
                     eqssh_shunts['q'] + eqssh_shunts['q_temp']
             eqssh_shunts = eqssh_shunts[eqssh_shunts_cols]
+        if 'inService' in eqssh_shunts.columns:
+            eqssh_shunts['connected'] = eqssh_shunts['connected'] & eqssh_shunts['inService']
+        # added to use the logic of p/q values multiplied by the number of steps
+        # this is only correct for the current step values
+        eqssh_shunts['p'] = eqssh_shunts['p'] / eqssh_shunts['sections']
+        eqssh_shunts['q'] = eqssh_shunts['q'] / eqssh_shunts['sections']
         eqssh_shunts = eqssh_shunts.rename(columns={
             'rdfId': sc['o_id'], 'rdfId_Terminal': sc['t'], 'connected': 'in_service', 'index_bus': 'bus',
-            'nomU': 'vn_kv', 'p': 'p_mw', 'q': 'q_mvar'})
-        eqssh_shunts['step'] = 1
-        eqssh_shunts['max_step'] = 1
+            'nomU': 'vn_kv', 'p': 'p_mw', 'q': 'q_mvar', 'sections': 'step', 'maximumSections': 'max_step'})
         return eqssh_shunts
+
+    def _create_shunt_characteristic_table(self, eqssh_shunts):
+        if 'id_characteristic_table' not in eqssh_shunts.columns:
+            eqssh_shunts['id_characteristic_table'] = np.nan
+        if 'shunt_characteristic_table' not in self.cimConverter.net.keys():
+            self.cimConverter.net['shunt_characteristic_table'] = pd.DataFrame(
+                columns=['id_characteristic', 'step', 'q_mvar', 'p_mw'])
+        char_temp = eqssh_shunts.drop(columns=['p_mw', 'q_mvar', 'step'])
+        char_temp['p'] = float('NaN')
+        char_temp['q'] = float('NaN')
+        # get the NonlinearShuntCompensatorPoints
+        nscp = self.cimConverter.cim['eq']['NonlinearShuntCompensatorPoint'][
+            ['NonlinearShuntCompensator', 'sectionNumber', 'b', 'g']].rename(
+            columns={'NonlinearShuntCompensator': sc['o_id']})
+        char_temp = pd.merge(char_temp, nscp, how='left', on=sc['o_id'])
+        # calculate p & q from b & g for all sections
+        y = char_temp['g'] + char_temp['b'] * 1j
+        s = char_temp['vn_kv'] ** 2 * np.conj(y)
+        char_temp['p_temp'] = s.values.real
+        char_temp['q_temp'] = s.values.imag
+        # calculate cumulative sums for all sections
+        char_temp = char_temp.sort_values(by=[sc['o_id'], 'sectionNumber'])
+        char_temp['p'] = char_temp.groupby(sc['o_id'])['p_temp'].cumsum()
+        char_temp['q'] = char_temp.groupby(sc['o_id'])['q_temp'].cumsum()
+        char_temp = char_temp.rename(columns={'p': 'p_mw', 'q': 'q_mvar', 'sectionNumber': 'step'})
+        char_temp['step'] = char_temp['step'].astype(int)
+        # assign id_characteristic
+        char_temp['id_characteristic'] = pd.factorize(char_temp[sc['o_id']])[0]
+
+        # set the id_characteristic at the corresponding shunt
+        id_char_dict = char_temp.drop_duplicates(sc['o_id']).set_index(sc['o_id'])['id_characteristic'].to_dict()
+        eqssh_shunts['id_characteristic_table'] = eqssh_shunts[sc['o_id']].map(id_char_dict).astype('Int64')
+
+        # create step_dependency_table flag
+        if 'step_dependency_table' not in eqssh_shunts.columns:
+            eqssh_shunts["step_dependency_table"] = False
+        # set step_dependency_table as True for all non-linear shunt compensators
+        eqssh_shunts.loc[eqssh_shunts['id_characteristic_table'].notna(), 'step_dependency_table'] = True
+
+        # populate shunt_characteristic_temp table
+        self.cimConverter.net['shunt_characteristic_table'] = \
+            char_temp[['id_characteristic', 'step', 'q_mvar', 'p_mw']]

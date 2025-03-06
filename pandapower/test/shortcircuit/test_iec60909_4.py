@@ -76,7 +76,7 @@ def iec_60909_4():
                                             vk0_hv_percent=44.1, vkr0_hv_percent=0.26,
                                             vk0_mv_percent=6.299627, vkr0_mv_percent=0.03714286,
                                             vk0_lv_percent=6.299627, vkr0_lv_percent=0.03714286,
-                                            vector_group="YNyd",
+                                            vector_group="YNyd", tap_changer_type="Ratio",
                                             tap_max=10, tap_min=-10, tap_pos=0, tap_neutral=0,
                                             tap_side="hv", tap_step_percent=0.1)  # vk0 = sqrt(vkr0^2 + vki0^2) = sqrt(vkr^2 + (2.1 * vki)^2) = sqrt(vkr^2 + (2.1)^2 * (vk^2 - vkr^2))
     pp.create_transformer3w_from_parameters(net,
@@ -90,7 +90,7 @@ def iec_60909_4():
                                             vk0_hv_percent=44.1, vkr0_hv_percent=0.26,
                                             vk0_mv_percent=6.299627, vkr0_mv_percent=0.03714286,
                                             vk0_lv_percent=6.299627, vkr0_lv_percent=0.03714286,
-                                            vector_group="Yynd",
+                                            vector_group="Yynd", tap_changer_type="Ratio",
                                             tap_max=10, tap_min=-10, tap_pos=0, tap_neutral=0,
                                             tap_side="hv", tap_step_percent=0.1)
 
@@ -105,7 +105,7 @@ def iec_60909_4():
                                             vk0_hv_percent=12, vkr0_hv_percent=0.5,
                                             vk0_mv_percent=12, vkr0_mv_percent=0.5,
                                             vk0_lv_percent=12, vkr0_lv_percent=0.5,
-                                            vector_group="Yyd",
+                                            vector_group="Yyd", tap_changer_type="Ratio",
                                             tap_max=10, tap_min=-10, tap_pos=0, tap_neutral=0,
                                             tap_side="hv", tap_step_percent=0.1)
     pp.create_transformer3w_from_parameters(net,
@@ -119,7 +119,7 @@ def iec_60909_4():
                                             vk0_hv_percent=12, vkr0_hv_percent=0.5,
                                             vk0_mv_percent=12, vkr0_mv_percent=0.5,
                                             vk0_lv_percent=12, vkr0_lv_percent=0.5,
-                                            vector_group="Yynd",
+                                            vector_group="Yynd", tap_changer_type="Ratio",
                                             tap_max=10, tap_min=-10, tap_pos=0, tap_neutral=0,
                                             tap_side="hv", tap_step_percent=0.1)  # reactor is 100 Ohm
 
@@ -287,7 +287,7 @@ def vde_232():
     pp.create_ext_grid(net, 0, s_sc_max_mva=13.61213 * 110 * np.sqrt(3), rx_max=0.20328,
                        x0x_max=3.47927, r0x0_max=3.03361)
     pp.create_transformer_from_parameters(net, 0, 1, 150, 115, 21, 0.5, 16,
-                                          pfe_kw=0, i0_percent=0, tap_step_percent=1,
+                                          pfe_kw=0, i0_percent=0, tap_step_percent=1, tap_changer_type="Ratio",
                                           tap_max=12, tap_min=-12, tap_neutral=0, tap_side='hv',
                                           vector_group="YNd",
                                           vk0_percent=np.sqrt(np.square(0.95*15.99219) + np.square(0.5)),
@@ -327,10 +327,10 @@ def test_iec_60909_4_3ph_small_with_gen():
 def test_iec_60909_4_3ph_small_with_gen_xward():
     net = iec_60909_4_small(with_xward=True)
     sc.calc_sc(net, fault="3ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
-    
+
     ikss_pf = [40.6422, 31.6394, 16.7409, 33.2808]
     assert np.allclose(net.res_bus_sc.ikss_ka.values[:4], np.array(ikss_pf), atol=1e-3)
-    
+
 
 def test_iec_60909_4_3ph_small_gen_only():
     net = iec_60909_4_small_gen_only()
@@ -364,7 +364,7 @@ def test_iec_60909_4_3ph_2gen_no_ps_detection():
     net.gen.at[0, "in_service"] = False
     net.gen = net.gen.query("in_service")
     sc.calc_sc(net, fault="3ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
-    
+
     ikss_pf = [1.8460, 1.6715, 6.8953, 39.5042]
     assert np.allclose(net.res_bus_sc.ikss_ka[:4].values, np.array(ikss_pf), atol=1e-3)
 
@@ -463,11 +463,12 @@ def test_iec_60909_4_1ph():
 
 def test_detect_power_station_units():
     net = iec_60909_4()
-    net.gen.power_station_trafo[:] = None
+    net.gen.loc[:, 'power_station_trafo'] = None
 
     detect_power_station_unit(net)
     assert np.all(net.gen.power_station_trafo.values[[0, 1]] == np.array([0, 1]))
-    net.gen.power_station_trafo[:] = None
+    net.gen["power_station_trafo"] = net.gen["power_station_trafo"].astype(object)
+    net.gen.loc[:, "power_station_trafo"] = None
 
     detect_power_station_unit(net, mode="trafo")
     assert np.all(net.gen.power_station_trafo.values[[0, 1]] == np.array([0, 1]))
@@ -483,7 +484,7 @@ def test_vde_232():
     net = vde_232()
     sc.calc_sc(net, fault="3ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
 
-    
+
 
 if __name__ == '__main__':
     pytest.main([__file__, "-xs"])

@@ -2,7 +2,7 @@ from cmath import rect
 
 from numpy import real, vectorize, deg2rad, maximum, sqrt, empty, zeros, nan, int64
 
-from pandapower import F_BUS, T_BUS
+from pandapower.pypower.idx_brch import F_BUS, T_BUS
 from pandapower.pf.pfsoln_numba import calc_branch_flows_batch
 from pandapower.pypower.idx_bus import BASE_KV
 from pandapower.results_branch import _get_trafo3w_lookups

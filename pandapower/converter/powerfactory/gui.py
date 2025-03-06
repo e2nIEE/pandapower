@@ -1,6 +1,7 @@
 import os
 import tkinter as tk
 from pandapower.auxiliary import ADict
+from pandapower.converter.powerfactory.main_pf import exit_gracefully
 
 try:
     import pandaplan.core.pplog as logging
@@ -8,6 +9,7 @@ except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
+
 
 def cancel(app, input_panel):
     logger.debug('received a cancel request from the user')
@@ -57,7 +59,7 @@ def make_gui(app, project_name, browse_dst, calc):
                                                             'for pandapower export: ')
     label_path_dst.grid(row=0, column=0, columnspan=3, sticky='w', padx=2, pady=4)
 
-    entry_path_dst = tk.Entry(input_panel, width=50)
+    entry_path_dst = tk.Entry(input_panel, width=70)
     entry_path_dst.delete(0, tk.END)
     entry_path_dst.grid(row=0, column=4, columnspan=3, padx=2, pady=2)
     # entry_path_dst.insert(0, r'C:\pp_projects\test') ##for testing
@@ -72,7 +74,7 @@ def make_gui(app, project_name, browse_dst, calc):
     label_fname = tk.Label(input_panel, anchor='w', text='Provide file name for the network: ')
     label_fname.grid(row=1, column=0, columnspan=3, sticky='w', padx=2, pady=2)
 
-    entry_fname = tk.Entry(input_panel, width=50)
+    entry_fname = tk.Entry(input_panel, width=70)
     entry_fname.delete(0, tk.END)
     entry_fname.grid(row=1, column=4, columnspan=3, padx=2, pady=0)
     entry_fname.insert(0, project_name)
@@ -134,7 +136,7 @@ def make_gui(app, project_name, browse_dst, calc):
 
     # row 5 col 0-1
     var_us = tk.StringVar(input_panel)
-    var_us.set(US_OPTIONS[0])
+    var_us.set(US_OPTIONS[2])
     tk.Label(input_panel, anchor='w', text='Unsupplied Elements:').grid(row=5, column=0,
                                                                              sticky=tk.W,
                                                                              pady=0)
@@ -203,7 +205,7 @@ def make_gui(app, project_name, browse_dst, calc):
     params.is_to_verify = CV_VERIFY.get
 
     RUN_DIAGNOSTIC = tk.IntVar()
-    RUN_DIAGNOSTIC.set(1)
+    RUN_DIAGNOSTIC.set(0)
     tk.Checkbutton(input_panel, text="Diagnostic report", variable=RUN_DIAGNOSTIC).grid(row=5,
                                                                                         column=4,
                                                                                         sticky=tk.W)
@@ -215,20 +217,44 @@ def make_gui(app, project_name, browse_dst, calc):
                                                                                          sticky=tk.W)
     params.is_debug = LOGGER_DEBUG.get
 
+    CREATE_SECTIONS = tk.IntVar()
+    CREATE_SECTIONS.set(0)
+    tk.Checkbutton(input_panel, text="Create line sections as separate lines", variable=CREATE_SECTIONS).grid(row=7,
+                                                                                         column=4,
+                                                                                         sticky=tk.W)
+    params.create_sections_entry = CREATE_SECTIONS.get
+
     REPLACE_ZERO_BRANCHES = tk.IntVar()
-    REPLACE_ZERO_BRANCHES.set(1)
+    REPLACE_ZERO_BRANCHES.set(0)
     tk.Checkbutton(input_panel, text="Replace low-impedance branches with switches",
-                   variable=REPLACE_ZERO_BRANCHES).grid(row=7, column=4, sticky=tk.W)
+                   variable=REPLACE_ZERO_BRANCHES).grid(row=8, column=4, sticky=tk.W)
     params.replace_zero_branches = REPLACE_ZERO_BRANCHES.get
 
-    tk.Label(input_panel, anchor='w', text='Min. line R and X (Ohm):').grid(row=8, column=4, sticky=tk.W, pady=0)
+    tk.Label(input_panel, anchor='w', text='Cut-off Z:').grid(row=8, column=5, sticky=tk.E, pady=0)
+    tk.Label(input_panel, anchor='w', text='Ohm').grid(row=8, column=7, sticky=tk.W, pady=0)
 
-    min_ohm = tk.Entry(input_panel, width=8)
+    min_ohm = tk.Entry(input_panel, width=14)
     min_ohm.delete(0, tk.END)
-    min_ohm.grid(row=8, column=5, padx=2, pady=2, sticky=tk.W)
+    min_ohm.grid(row=8, column=6, padx=2, pady=2, sticky=tk.W)
     min_ohm.insert(0, "0.01")
     # entry_fname.insert(0, 'test') ##for testing
     params.min_ohm_entry = min_ohm
+
+    REPLACE_INF_BRANCHES = tk.IntVar()
+    REPLACE_INF_BRANCHES.set(0)
+    tk.Checkbutton(input_panel, text="Deactivate high-impedance branches",
+                   variable=REPLACE_INF_BRANCHES).grid(row=9, column=4, sticky=tk.W)
+    params.replace_inf_branches = REPLACE_INF_BRANCHES.get
+
+    tk.Label(input_panel, anchor='w', text='Cut-off Z:').grid(row=9, column=5, sticky=tk.E, pady=0)
+    tk.Label(input_panel, anchor='w', text='Ohm').grid(row=9, column=7, sticky=tk.W, pady=0)
+
+    max_ohm = tk.Entry(input_panel, width=14)
+    max_ohm.delete(0, tk.END)
+    max_ohm.grid(row=9, column=6, padx=2, pady=2, sticky=tk.W)
+    max_ohm.insert(0, "1000")
+    # entry_fname.insert(0, 'test') ##for testing
+    params.max_ohm_entry = max_ohm
     
     # row 2 col 4
     stop_button = tk.Button(input_panel, text='Cancel', width=8,

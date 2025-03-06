@@ -91,7 +91,7 @@ def exit_gracefully(app, input_panel, msg, is_err):
 
 def run_export(app, pv_as_slack, pf_variable_p_loads, pf_variable_p_gen, scale_feeder_loads=False,
                flag_graphics='GPS', handle_us="Deactivate", save_as="JSON", tap_opt="nntap",
-               export_controller=True, max_iter=None):
+               export_controller=True, max_iter=None, create_sections=True):
     # gather objects from the project
     logger.info('gathering network elements')
     dict_net = pef.create_network_dict(app, flag_graphics)
@@ -104,11 +104,10 @@ def run_export(app, pv_as_slack, pf_variable_p_loads, pf_variable_p_gen, scale_f
     logger.info('starting import to pandapower')
     app.SetAttributeModeInternal(1)
 
-    net = from_pf(dict_net, pv_as_slack=pv_as_slack,
-                  pf_variable_p_loads=pf_variable_p_loads,
-                  pf_variable_p_gen=pf_variable_p_gen, flag_graphics=flag_graphics,
-                  tap_opt=tap_opt, export_controller=export_controller,
-                  handle_us=handle_us, max_iter=max_iter)
+    net = from_pf(dict_net, pv_as_slack=pv_as_slack, pf_variable_p_loads=pf_variable_p_loads,
+                  pf_variable_p_gen=pf_variable_p_gen, flag_graphics=flag_graphics, tap_opt=tap_opt,
+                  export_controller=export_controller, handle_us=handle_us, max_iter=max_iter,
+                  create_sections=create_sections)
     # save a flag, whether the PowerFactory load flow failed
     app.SetAttributeModeInternal(0)
     net["pf_converged"] = not pf_load_flow_failed
@@ -132,9 +131,10 @@ def run_verify(net, load_flow_params=None):
 
 
 def calc(app, input_panel, entry_path_dst, entry_fname, pv_as_slack, export_controller,
-         replace_zero_branches, min_ohm_entry, is_to_verify, is_to_diagnostic, is_debug,
+         replace_zero_branches, min_ohm_entry, replace_inf_branches, max_ohm_entry,
+         is_to_verify, is_to_diagnostic, is_debug,
          pf_variable_p_loads, pf_variable_p_gen, flag_graphics, handle_us,
-         save_as, tap_opt, max_iter_entry):
+         save_as, tap_opt, max_iter_entry, create_sections_entry):
     # check if logger is to be in debug mode
     if is_debug():
         pflog.set_PF_level(root_logger, app_handler, 'DEBUG')
@@ -165,20 +165,91 @@ def calc(app, input_panel, entry_path_dst, entry_fname, pv_as_slack, export_cont
         logger.info("max_iter: %s" % max_iter)
         net = run_export(app, pv_as_slack(), pf_variable_p_loads(), pf_variable_p_gen(), scale_feeder_loads=False,
                          flag_graphics=flag_graphics(), handle_us=handle_us(), save_as=save_as(), tap_opt=tap_opt(),
-                         export_controller=export_controller(), max_iter=max_iter)
+                         export_controller=export_controller(), max_iter=max_iter, create_sections=create_sections_entry())
         if replace_zero_branches():
-            #pp.replace_zero_branches_with_switches(net, min_length_km=1e-2,
-            #                                       min_r_ohm_per_km=1.5e-3, min_x_ohm_per_km=1.5e-3,
-            #                                       min_c_nf_per_km=1.5e-3,
-            #                                       min_rft_pu=1.5e-5, min_xft_pu=1.5e-5, min_rtf_pu=1.5e-5,
-            #                                       min_xtf_pu=1.5e-5)  # , min_r_ohm=1.5e-3, min_x_ohm=1.5e-3)
             min_ohm = float(min_ohm_entry.get())
-            to_replace = ((net.line.r_ohm_per_km * net.line.length_km <= min_ohm) |
-                          (net.line.x_ohm_per_km * net.line.length_km <= min_ohm))
+            # to_replace = (np.abs(net.line.r_ohm_per_km * net.line.length_km +
+            #                      1j * net.line.x_ohm_per_km * net.line.length_km) <= min_ohm) & net.line.in_service
+            to_replace = (np.abs(net.line.x_ohm_per_km * net.line.length_km) <= min_ohm) & net.line.in_service
 
             for i in net.line.loc[to_replace].index.values:
-                pp.toolbox.create_replacement_switch_for_branch(net, "line", i)
+                pp.create_replacement_switch_for_branch(net, "line", i)
                 net.line.at[i, "in_service"] = False
+            if np.any(to_replace):
+                logger.info(f"replaced {sum(to_replace)} lines with switches")
+
+            # xward = net.xward[(np.abs(net.xward.r_ohm + 1j * net.xward.x_ohm) <= min_ohm) &
+            #                   net.xward.in_service].index.values
+            xward = net.xward[(np.abs(net.xward.x_ohm) <= min_ohm) & net.xward.in_service].index.values
+            if len(xward) > 0:
+                pp.replace_xward_by_ward(net, index=xward, drop=False)
+                logger.info(f"replaced {len(xward)} xwards with wards")
+
+            zb_f_ohm = np.square(net.bus.loc[net.impedance.from_bus.values, "vn_kv"].values) / net.impedance.sn_mva
+            zb_t_ohm = np.square(net.bus.loc[net.impedance.to_bus.values, "vn_kv"].values) / net.impedance.sn_mva
+            # impedance = ((np.abs(net.impedance.rft_pu + 1j * net.impedance.xft_pu) <= min_ohm / zb_f_ohm) |
+            #              (np.abs(net.impedance.rtf_pu + 1j * net.impedance.xtf_pu) <= min_ohm / zb_t_ohm) &
+            #              net.impedance.in_service)
+            impedance = ((np.abs(net.impedance.xft_pu) <= min_ohm / zb_f_ohm) |
+                         (np.abs(net.impedance.xtf_pu) <= min_ohm / zb_t_ohm)) & net.impedance.in_service
+            for i in net.impedance.loc[impedance].index.values:
+                pp.create_replacement_switch_for_branch(net, "impedance", i)
+                net.impedance.at[i, "in_service"] = False
+            if any(impedance):
+                logger.info(f"replaced {sum(impedance)} impedance elements with switches")
+
+            trafos = ((net.trafo.vk_percent/100 * np.square(net.trafo.vn_lv_kv) / net.trafo.sn_mva <= min_ohm) &
+                      net.trafo.in_service)
+            min_vk_percent = 4.
+            net.trafo.loc[trafos, "vk_percent"] = min_vk_percent
+            if any(trafos):
+                logger.info(f"adjusted {sum(trafos)} 2W transformers by setting vk_percent to {min_vk_percent}")
+
+            trafo3w = ((net.trafo3w.vk_hv_percent / 100 * np.square(net.trafo3w.vn_mv_kv) / net.trafo3w.sn_hv_mva <= min_ohm) |
+                       (net.trafo3w.vk_mv_percent / 100 * np.square(net.trafo3w.vn_lv_kv) / net.trafo3w.sn_mv_mva <= min_ohm) |
+                       (net.trafo3w.vk_lv_percent / 100 * np.square(net.trafo3w.vn_lv_kv) / net.trafo3w.sn_lv_mva <= min_ohm)) & net.trafo3w.in_service
+            net.trafo3w.loc[trafo3w, ["vk_hv_percent", "vk_mv_percent", "vk_lv_percent"]] = min_vk_percent
+            if any(trafo3w):
+                logger.info(f"adjusted {sum(trafo3w)} 3W transformers by setting vk_percent to {min_vk_percent}")
+
+        if replace_inf_branches():
+            max_ohm = float(max_ohm_entry.get())
+            to_replace = (np.abs(net.line.r_ohm_per_km * net.line.length_km +
+                                 1j * net.line.x_ohm_per_km * net.line.length_km) >= max_ohm) & net.line.in_service
+
+            if np.any(to_replace):
+                net.line.loc[to_replace, "in_service"] = False
+                logger.info(f"deactivated {sum(to_replace)} lines")
+
+            xward = (np.abs(net.xward.r_ohm + 1j * net.xward.x_ohm) >= max_ohm) & net.xward.in_service
+            if np.any(xward):
+                net.xward.loc[xward, "in_service"] = False
+                logger.info(f"deactivated {sum(xward)} xwards")
+
+            zb_f_ohm = np.square(net.bus.loc[net.impedance.from_bus.values, "vn_kv"].values) / net.impedance.sn_mva
+            zb_t_ohm = np.square(net.bus.loc[net.impedance.to_bus.values, "vn_kv"].values) / net.impedance.sn_mva
+            impedance = ((np.abs(net.impedance.rft_pu + 1j * net.impedance.xft_pu) >= max_ohm / zb_f_ohm) |
+                         (np.abs(net.impedance.rtf_pu + 1j * net.impedance.xtf_pu) >= max_ohm / zb_t_ohm)) & net.impedance.in_service
+            if np.any(impedance):
+                net.impedance.loc[impedance, "in_service"] = False
+                logger.info(f"deactivated {sum(impedance)} impedance elements")
+
+            max_vk_percent = 15
+            trafos = (net.trafo.vk_percent/100 * np.square(net.trafo.vn_hv_kv) / net.trafo.sn_mva >= max_ohm) & net.trafo.in_service
+            if np.any(trafos):
+                # net.trafo.loc[trafos, "in_service"] = False
+                net.trafo.loc[trafos, "vk_percent"] = max_vk_percent
+                logger.info(f"adjusted {sum(trafos)} 2W transformers with vk_percent of {max_vk_percent}")
+
+            trafo3w = ((net.trafo3w.vk_hv_percent / 100 * np.square(net.trafo3w.vn_hv_kv) / net.trafo3w.sn_hv_mva >= max_ohm) |
+                       (net.trafo3w.vk_mv_percent / 100 * np.square(net.trafo3w.vn_mv_kv) / net.trafo3w.sn_mv_mva >= max_ohm) |
+                       (net.trafo3w.vk_lv_percent / 100 * np.square(net.trafo3w.vn_hv_kv) / net.trafo3w.sn_lv_mva >= max_ohm)) & net.trafo3w.in_service
+            if np.any(trafo3w):
+                # net.trafo3w.loc[trafo3w, "in_service"] = False
+                net.trafo3w.loc[trafo3w, "vk_hv_percent"] = np.fmin(max_vk_percent, net.trafo3w.loc[trafo3w, "vk_hv_percent"])
+                net.trafo3w.loc[trafo3w, "vk_mv_percent"] = np.fmin(max_vk_percent, net.trafo3w.loc[trafo3w, "vk_mv_percent"])
+                net.trafo3w.loc[trafo3w, "vk_lv_percent"] = np.fmin(max_vk_percent, net.trafo3w.loc[trafo3w, "vk_lv_percent"])
+                logger.info(f"adjusted {sum(trafo3w)} 3W transformers with {max_vk_percent}")
 
         logger.info('saving file to: <%s>' % filepath)
         save_net(net, filepath, save_as())
@@ -196,7 +267,7 @@ def calc(app, input_panel, entry_path_dst, entry_fname, pv_as_slack, export_cont
             # logger.info('exported validated net')
         if is_to_diagnostic():
             try:
-                diagnostic(net, warnings_only=True)
+                diagnostic(net, report_style="compact", warnings_only=True, min_x_ohm=0.01)
             except Exception as err:
                 logger.error('Error in diagnostic for net: %s', err, exc_info=True)
     root_logger.removeHandler(app_handler)

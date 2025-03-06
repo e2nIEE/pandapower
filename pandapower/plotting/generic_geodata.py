@@ -6,6 +6,7 @@
 import sys
 import copy
 
+import geojson
 import networkx as nx
 import pandas as pd
 import numpy as np
@@ -27,7 +28,8 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def build_igraph_from_pp(net, respect_switches=False, buses=None, trafo_length_km=0.01, switch_length_km=0.001):
+def build_igraph_from_pp(net, respect_switches=False, buses=None, trafo_length_km=0.01, switch_length_km=0.001,
+                         dcline_length_km=1.0):
     """
     This function uses the igraph library to create an igraph graph for a given pandapower network.
     Lines, transformers and switches are respected.
@@ -53,6 +55,7 @@ def build_igraph_from_pp(net, respect_switches=False, buses=None, trafo_length_k
     pp_bus_mapping = dict(list(zip(bus_index, list(range(nr_buses)))))
     if respect_switches:
         open_switches = ~net.switch.closed.values.astype(bool)
+
     # add lines
     mask = _get_element_mask_from_nodes(net, "line", ["from_bus", "to_bus"], buses)
     if respect_switches:
@@ -61,6 +64,15 @@ def build_igraph_from_pp(net, respect_switches=False, buses=None, trafo_length_k
         g.add_edge(pp_bus_mapping[line.from_bus],
                    pp_bus_mapping[line.to_bus],
                    weight=line.length_km)
+
+    # add dclines
+    mask = _get_element_mask_from_nodes(net, "dcline", ["from_bus", "to_bus"], buses)
+    if respect_switches:
+        mask &= _get_switch_mask(net, "dcline", "l", open_switches)
+    for dcline in net.dcline[mask].itertuples():
+        g.add_edge(pp_bus_mapping[dcline.from_bus],
+                   pp_bus_mapping[dcline.to_bus],
+                   weight=dcline_length_km)
 
     # add trafos
     mask = _get_element_mask_from_nodes(net, "trafo", ["hv_bus", "lv_bus"], buses)
@@ -164,7 +176,7 @@ def coords_from_nxgraph(mg=None, layout_engine='neato'):
 
 def create_generic_coordinates(net, mg=None, library="igraph",
                                respect_switches=False,
-                               geodata_table="bus_geodata",
+                               geodata_table="bus",
                                buses=None,
                                overwrite=False,
                                layout_engine='neato',
@@ -215,27 +227,35 @@ def create_generic_coordinates(net, mg=None, library="igraph",
     else:
         raise ValueError("Unknown library %s - chose 'igraph' or 'networkx'" % library)
     if len(coords):
-        net[geodata_table].x = coords[1]
-        net[geodata_table].y = coords[0]
-        net[geodata_table].index = net.bus.index if buses is None else buses
+        net[geodata_table]["geo"] = pd.Series(
+            map(lambda x: geojson.dumps(geojson.Point((x[1], x[0])), sort_keys=True), zip(*coords)),
+            index=net[geodata_table].index if buses is None else buses,
+        )
     return net
 
-def _prepare_geodata_table(net, geodata_table, overwrite):
-    if geodata_table in net and net[geodata_table].shape[0]:
-        if overwrite:
-            net[geodata_table] = net[geodata_table].drop(net[geodata_table].index)
-        else:
-            raise UserWarning("Table %s is not empty - use overwrite=True to overwrite existing geodata"%geodata_table)
 
-    if geodata_table not in net or net[geodata_table] is None:
-        net[geodata_table] = pd.DataFrame(columns=["x", "y"])
+def _prepare_geodata_table(net, geodata_table, overwrite):
+    if geodata_table in net and "geo" in net[geodata_table] and net[geodata_table]["geo"].dropna().shape[0]:
+        if overwrite:
+            net[geodata_table] = net[geodata_table].drop("geo", axis=1)
+            net[geodata_table] = net[geodata_table].dropna(how='all')
+        else:
+            raise UserWarning(f"Table {geodata_table} is not empty - use overwrite=True to overwrite existing geodata")
+
+    if geodata_table not in net:
+        net[geodata_table] = pd.DataFrame(columns=["geo"])
 
 def fuse_geodata(net):
-    mg = top.create_nxgraph(net, include_lines=False, include_impedances=False,
-                            respect_switches=False)
-    geocoords = set(net.bus_geodata.index)
+    mg = top.create_nxgraph(net, include_lines=False, include_impedances=False, respect_switches=False)
+    geocoords = set(net.bus.dropna(subset=['geo']).index)
     for area in top.connected_components(mg):
         if len(area & geocoords) > 1:
-            geo = net.bus_geodata.loc[list(area & geocoords)].values[0]
+            geo = net.bus.loc[list(area & geocoords), 'geo'].apply(geojson.loads)
             for bus in area:
-                net.bus_geodata.loc[bus] = geo
+                if len(geo) > 1:
+                    coordinates = [point['coordinates'] for point in geo]
+                    mean_lat = np.mean([coord[1] for coord in coordinates])
+                    mean_lon = np.mean([coord[0] for coord in coordinates])
+                else:
+                    mean_lon, mean_lat = geo.coordinates
+                net.bus.geo.loc[bus] = geojson.dumps(geojson.Point((mean_lon, mean_lat)))

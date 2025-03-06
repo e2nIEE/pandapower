@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import pandas as pd
 import pytest
@@ -230,5 +230,4 @@ def test_count_elements():
 
 
 if __name__ == '__main__':
-    # pytest.main([__file__, "-x"])
-    test_get_connected_buses_at_switches()
+    pytest.main([__file__, "-xs"])

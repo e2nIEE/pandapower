@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
 import json
 import os
 
+import geojson
 import numpy as np
 import pandas as pd
 from pandas.testing import assert_frame_equal, assert_series_equal
@@ -54,8 +55,8 @@ except ImportError:
 def net_in(request):
     if request.param == 1:
         net = create_test_network()
-        net.line_geodata.loc[0, "coords"] = [(1.1, 2.2), (3.3, 4.4)]
-        net.line_geodata.loc[11, "coords"] = [(5.5, 5.5), (6.6, 6.6), (7.7, 7.7)]
+        net.line.at[0, "geo"] = geojson.dumps(geojson.LineString([(1.1, 2.2), (3.3, 4.4)]))
+        net.line.at[1, "geo"] = geojson.dumps(geojson.LineString([(5.5, 5.5), (6.6, 6.6), (7.7, 7.7)]))
         return net
 
 
@@ -71,9 +72,9 @@ def test_pickle(net_in, tmp_path):
     assert_net_equal(net_in, net_out)
 
 
-@pytest.mark.skipif(not xlsxwriter_INSTALLED or not openpyxl_INSTALLED, reason=("xlsxwriter is "
-                    "mandatory to write excel files and openpyxl to read excels, but is not "
-                    "installed."))
+@pytest.mark.skipif(not xlsxwriter_INSTALLED or not openpyxl_INSTALLED, reason=(
+        "xlsxwriter is mandatory to write excel files and openpyxl to read excels, but is not installed."
+))
 def test_excel(net_in, tmp_path):
     filename = os.path.abspath(str(tmp_path)) + "testfile.xlsx"
     pp.to_excel(net_in, filename)
@@ -126,15 +127,13 @@ def test_json(net_in, tmp_path):
     if GEOPANDAS_INSTALLED and SHAPELY_INSTALLED:
         net_geo = copy.deepcopy(net_in)
         # make GeodataFrame
-        from shapely.geometry import Point, LineString
+        from shapely.geometry import shape, Point, LineString
         import geopandas as gpd
 
-        for tab in ('bus_geodata', 'line_geodata'):
-            if tab == 'bus_geodata':
-                geometry = list(map(Point, net_geo[tab][["x", "y"]].values))
-            else:
-                geometry = net_geo[tab].coords.apply(LineString)
-            net_geo[tab] = gpd.GeoDataFrame(net_geo[tab], geometry=geometry, crs=f"epsg:4326")
+        bus_geometry = net_geo.bus["geo"].dropna().apply(geojson.loads).apply(shape)
+        net_geo["bus_geodata"] = gpd.GeoDataFrame(geometry=bus_geometry, crs=f"epsg:4326")
+        line_geometry = net_geo.line["geo"].dropna().apply(geojson.loads).apply(shape)
+        net_geo["line_geodata"] = gpd.GeoDataFrame(geometry=line_geometry, crs=f"epsg:4326")
 
         pp.to_json(net_geo, filename)
         net_out = pp.from_json(filename)
@@ -230,7 +229,7 @@ def test_json_encoding_decoding():
     net = networks.mv_oberrhein()
     net.tuple = (1, "4")
     net.mg = topology.create_nxgraph(net)
-    s = set(['1', 4])
+    s = {'1', 4}
     t = tuple(['2', 3])
     f = frozenset(['12', 3])
     a = np.array([1., 2.])
@@ -441,8 +440,8 @@ def test_elements_to_deserialize_wo_keep(tmp_path):
 @pytest.mark.skipif(not GEOPANDAS_INSTALLED, reason="requires the GeoPandas library")
 def test_empty_geo_dataframe():
     net = pp.create_empty_network()
-    net.bus_geodata['geometry'] = None
-    net.bus_geodata = gpd.GeoDataFrame(net.bus_geodata)
+    net['bus_geodata'] = pd.DataFrame(columns=['geometry'])
+    net['bus_geodata'] = gpd.GeoDataFrame(net['bus_geodata'])
     s = pp.to_json(net)
     net1 = pp.from_json_string(s)
     assert_net_equal(net, net1)
@@ -468,7 +467,7 @@ def test_replace_elements_json_string(net_in):
     net_load = pp.from_json_string(json_string,
                                    replace_elements={r'pandapower.control.controller.const_control':
                                                      r'pandapower.test.api.input_files.test_control',
-                                                     r'ConstControl': r'TestControl'})
+                                                     r'ConstControl': r'MyTestControl'})
     assert net_orig.controller.at[0, 'object'] != net_load.controller.at[0, 'object']
     assert not nets_equal(net_orig, net_load)
 
@@ -602,5 +601,36 @@ def test_multi_index():
     assert_frame_equal(df, df2)
 
 
+def test_ignore_unknown_objects():
+    net = pp.networks.create_kerber_dorfnetz()
+    control.ContinuousTapControl(net, 0, 1.02)
+    json_str = pp.to_json(net)
+    net2 = pp.from_json_string(json_str, ignore_unknown_objects=False)
+
+    # in general, reloaded net should be equal to original net
+    assert isinstance(net2.controller.object.at[0], control.ContinuousTapControl)
+    assert_net_equal(net, net2)
+
+    # slightly change the class name of the controller so that it cannot be identified
+    # by file_io anymore, but can still be loaded as dict if ignore_unknown_objects=True
+    json_str2 = json_str.replace("pandapower.control.controller.trafo.ContinuousTapControl",
+                                 "pandapower.control.controller.trafo.ContinuousTapControl2")
+    with pytest.raises(ModuleNotFoundError):
+        pp.from_json_string(json_str2, ignore_unknown_objects=False)
+    json_str3 = json_str.replace("\"ContinuousTapControl", "\"ContinuousTapControl2")
+    with pytest.raises(AttributeError):
+        pp.from_json_string(json_str3, ignore_unknown_objects=False)
+    net3 = pp.from_json_string(json_str2, ignore_unknown_objects=True)
+    assert isinstance(net3.controller.object.at[0], dict)
+    net4 = pp.from_json_string(json_str3, ignore_unknown_objects=True)
+    assert isinstance(net4.controller.object.at[0], dict)
+
+    # make sure that the loaded net equals the original net except for the controller
+    net3.controller.object.at[0] = net.controller.object.at[0]
+    net4.controller.object.at[0] = net.controller.object.at[0]
+    assert_net_equal(net, net3)
+    assert_net_equal(net, net4)
+
+
 if __name__ == "__main__":
-    pytest.main([__file__, "-s"])
+    pytest.main([__file__, "-xs"])

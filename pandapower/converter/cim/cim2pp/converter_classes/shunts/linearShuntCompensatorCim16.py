@@ -32,6 +32,8 @@ class LinearShuntCompensatorCim16:
     def _prepare_linear_shunt_compensator_cim16(self) -> pd.DataFrame:
         eqssh_shunts = self.cimConverter.merge_eq_ssh_profile('LinearShuntCompensator', add_cim_type_column=True)
         eqssh_shunts = pd.merge(eqssh_shunts, self.cimConverter.bus_merge, how='left', on='rdfId')
+        if 'inService' in eqssh_shunts.columns:
+            eqssh_shunts['connected'] = eqssh_shunts['connected'] & eqssh_shunts['inService']
         eqssh_shunts = eqssh_shunts.rename(columns={
             'rdfId': sc['o_id'], 'rdfId_Terminal': sc['t'], 'connected': 'in_service', 'index_bus': 'bus',
             'nomU': 'vn_kv', 'sections': 'step', 'maximumSections': 'max_step'})
@@ -39,4 +41,7 @@ class LinearShuntCompensatorCim16:
         s = eqssh_shunts['vn_kv'] ** 2 * np.conj(y)
         eqssh_shunts['p_mw'] = s.values.real
         eqssh_shunts['q_mvar'] = s.values.imag
+        # create step_dependency_table flag
+        if 'step_dependency_table' not in eqssh_shunts.columns:
+            eqssh_shunts["step_dependency_table"] = False
         return eqssh_shunts

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -21,11 +21,13 @@ from pandapower.pf.create_jacobian import _create_J_without_numba
 from pandapower.pf.run_newton_raphson_pf import _get_pf_variables_from_ppci
 from pandapower.powerflow import LoadflowNotConverged
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
+from pandapower.test.control.test_shunt_control import simple_test_net_shunt_control
 from pandapower.test.loadflow.result_test_network_generator import add_test_xward, add_test_trafo3w, \
     add_test_line, add_test_oos_bus_with_is_element, result_test_network_generator, add_test_trafo
 from pandapower.test.helper_functions import add_grid_connection, create_test_line, assert_net_equal, assert_res_equal
 from pandapower.toolbox import nets_equal
 from pandapower.pypower.makeYbus import makeYbus as makeYbus_pypower
+from pandapower.pypower.idx_brch import BR_R, BR_X, BR_B, BR_G
 
 
 try:
@@ -347,7 +349,7 @@ def get_isolated(net):
 def test_connectivity_check_island_without_pv_bus():
     # Network with islands without pv bus -> all buses in island should be set out of service
     net = create_cigre_network_mv(with_der=False)
-    iso_buses, iso_p, iso_q = get_isolated(net)
+    iso_buses, iso_p, iso_q, *_ = get_isolated(net)
     assert len(iso_buses) == 0
     assert np.isclose(iso_p, 0)
     assert np.isclose(iso_q, 0)
@@ -357,7 +359,7 @@ def test_connectivity_check_island_without_pv_bus():
     pp.create_line(net, isolated_bus2, isolated_bus1, length_km=1,
                    std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV",
                    name="IsolatedLine")
-    iso_buses, iso_p, iso_q = get_isolated(net)
+    iso_buses, iso_p, iso_q, *_ = get_isolated(net)
     assert len(iso_buses) == 2
     assert np.isclose(iso_p, 0)
     assert np.isclose(iso_q, 0)
@@ -366,7 +368,7 @@ def test_connectivity_check_island_without_pv_bus():
     pp.create_sgen(net, isolated_bus2, p_mw=0.15, q_mvar=0.01)
 
     # with pytest.warns(UserWarning):
-    iso_buses, iso_p, iso_q = get_isolated(net)
+    iso_buses, iso_p, iso_q, *_ = get_isolated(net)
     assert len(iso_buses) == 2
     assert np.isclose(iso_p, 350)
     assert np.isclose(iso_q, 30)
@@ -377,7 +379,7 @@ def test_connectivity_check_island_without_pv_bus():
 def test_connectivity_check_island_with_one_pv_bus():
     # Network with islands with one PV bus -> PV bus should be converted to the reference bus
     net = create_cigre_network_mv(with_der=False)
-    iso_buses, iso_p, iso_q = get_isolated(net)
+    iso_buses, iso_p, iso_q, *_ = get_isolated(net)
     assert len(iso_buses) == 0
     assert np.isclose(iso_p, 0)
     assert np.isclose(iso_q, 0)
@@ -391,7 +393,7 @@ def test_connectivity_check_island_with_one_pv_bus():
     pp.create_line(net, isolated_gen, isolated_bus1, length_km=1,
                    std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV", name="IsolatedLineToGen")
     # with pytest.warns(UserWarning):
-    iso_buses, iso_p, iso_q = get_isolated(net)
+    iso_buses, iso_p, iso_q, *_ = get_isolated(net)
 
     # assert len(iso_buses) == 0
     # assert np.isclose(iso_p, 0)
@@ -413,7 +415,7 @@ def test_connectivity_check_island_with_multiple_pv_buses():
     # Network with islands an multiple PV buses in the island -> Error should be thrown since it
     # would be random to choose just some PV bus as the reference bus
     net = create_cigre_network_mv(with_der=False)
-    iso_buses, iso_p, iso_q = get_isolated(net)
+    iso_buses, iso_p, iso_q, *_ = get_isolated(net)
     assert len(iso_buses) == 0
     assert np.isclose(iso_p, 0)
     assert np.isclose(iso_q, 0)
@@ -435,7 +437,7 @@ def test_connectivity_check_island_with_multiple_pv_buses():
                    std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV",
                    name="IsolatedLine")
     # ToDo with pytest.warns(UserWarning):
-    iso_buses, iso_p, iso_q = get_isolated(net)
+    iso_buses, iso_p, iso_q, *_ = get_isolated(net)
 
 
 def test_isolated_in_service_bus_at_oos_line():
@@ -575,8 +577,6 @@ def test_bsfw_algorithm_with_branch_loops():
     va_alg = net.res_bus.va_degree
     assert np.allclose(vm_nr, vm_alg)
     assert np.allclose(va_nr, va_alg)
-
-
 @pytest.mark.slow
 def test_pypower_algorithms_iter():
     alg_to_test = ['fdbx', 'fdxb', 'gs']
@@ -770,7 +770,7 @@ def test_zip_loads_out_of_service():
     pp.create_line(net, from_bus=bus2, to_bus=bus3, length_km=0.1,
                    std_type="NAYY 4x50 SE", name="Line")
 
-    net1 = net.deepcopy()
+    net1 = copy.deepcopy(net)
     oos_load = pp.create_load(
         net1, bus=bus3, p_mw=0.100, q_mvar=0.05, in_service=False,
         const_i_percent=0, const_z_percent=100)
@@ -849,7 +849,7 @@ def test_get_internal():
     Ybus = ppc["internal"]["Ybus"]
 
     _, ppci = _pd2ppc(net)
-    baseMVA, bus, gen, branch, svc, tcsc, ssc, ref, pv, pq, _, _, V0, _ = _get_pf_variables_from_ppci(ppci)
+    baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, ref, pv, pq, _, _, V0, _ = _get_pf_variables_from_ppci(ppci)
 
     pvpq = np.r_[pv, pq]
     dist_slack = False
@@ -869,14 +869,14 @@ def test_Ybus_format():
 
     Ybus, Yf, Yt = makeYbus_pypower(ppci["baseMVA"], ppci["bus"], ppci["branch"])
     for Y in (Ybus, Yf, Yt):
-        assert Y.has_canonical_format
         assert Y.has_sorted_indices
+        assert Y.has_canonical_format
 
     if numba_installed:
         Ybus, Yf, Yt = makeYbus_numba(ppci["baseMVA"], ppci["bus"], ppci["branch"])
         for Y in (Ybus, Yf, Yt):
-            assert Y.has_canonical_format
             assert Y.has_sorted_indices
+            assert Y.has_canonical_format
 
 
 def test_storage_pf():
@@ -898,8 +898,8 @@ def test_storage_pf():
     res_gen_beh = runpp_with_consistency_checks(net)
     res_ll_stor = net["res_line"].loading_percent.iloc[0]
 
-    net["storage"].in_service.iloc[0] = False
-    net["sgen"].in_service.iloc[1] = True
+    net["storage"].loc[0, 'in_service'] = False
+    net["sgen"].loc[1, 'in_service'] = True
 
     runpp_with_consistency_checks(net)
     res_ll_sgen = net["res_line"].loading_percent.iloc[0]
@@ -908,15 +908,15 @@ def test_storage_pf():
 
     # test load behaviour
     pp.create_load(net, b1, p_mw=0.01, in_service=False)
-    net["storage"].in_service.iloc[0] = True
-    net["storage"].p_mw.iloc[0] = 0.01
-    net["sgen"].in_service.iloc[1] = False
+    net["storage"].loc[0, 'in_service'] = True
+    net["storage"].loc[0, 'p_mw'] = 0.01
+    net["sgen"].loc[1, 'in_service'] = False
 
     res_load_beh = runpp_with_consistency_checks(net)
     res_ll_stor = net["res_line"].loading_percent.iloc[0]
 
-    net["storage"].in_service.iloc[0] = False
-    net["load"].in_service.iloc[1] = True
+    net["storage"].loc[0, 'in_service'] = False
+    net["load"].loc[1, 'in_service'] = True
 
     runpp_with_consistency_checks(net)
     res_ll_load = net["res_line"].loading_percent.iloc[0]
@@ -1194,7 +1194,6 @@ def assert_init_results(net):
 
 
 def test_wye_delta():
-    from pandapower.pypower.idx_brch import BR_R, BR_X, BR_B
     net = pp.create_empty_network()
     pp.create_bus(net, vn_kv=110)
     pp.create_buses(net, nr_buses=4, vn_kv=20)
@@ -1210,13 +1209,13 @@ def test_wye_delta():
     pp.runpp(net, trafo_model="pi")
     f, t = net._pd2ppc_lookups["branch"]["trafo"]
     assert np.isclose(net.res_trafo.p_hv_mw.at[trafo], -7.560996, rtol=1e-7)
-    assert np.allclose(net._ppc["branch"][f:t, [BR_R, BR_X, BR_B]].flatten(),
-                       np.array([0.0001640 + 0.j, 0.0047972 + 0.j, -0.0105000 - 0.014j]),
+    assert np.allclose(net._ppc["branch"][f:t, [BR_R, BR_X, BR_B, BR_G]].flatten(),
+                       np.array([0.0001640, 0.0047972, -0.0105000, 0.014]),
                        rtol=1e-7)
 
     pp.runpp(net, trafo_model="t")
-    assert np.allclose(net._ppc["branch"][f:t, [BR_R, BR_X, BR_B]].flatten(),
-                       np.array([0.00016392 + 0.j, 0.00479726 + 0.j, -0.01050009 - 0.01399964j]))
+    assert np.allclose(net._ppc["branch"][f:t, [BR_R, BR_X, BR_B, BR_G]].flatten(),
+                       np.array([0.00016392, 0.00479726, -0.01050009, 0.01399964]))
     assert np.isclose(net.res_trafo.p_hv_mw.at[trafo], -7.561001, rtol=1e-7)
 
 
@@ -1315,19 +1314,30 @@ def test_tap_dependent_impedance():
                                             vn_hv_kv=20., vn_mv_kv=0.9, vn_lv_kv=0.45, sn_hv_mva=0.6, sn_mv_mva=0.5,
                                             sn_lv_mva=0.4, vk_hv_percent=1., vk_mv_percent=1., vk_lv_percent=1.,
                                             vkr_hv_percent=0.3, vkr_mv_percent=0.3, vkr_lv_percent=0.3,
-                                            pfe_kw=0.2, i0_percent=0.3, tap_neutral=0.,
-                                            tap_pos=0, tap_step_percent=1., tap_min=-2, tap_max=2)
+                                            pfe_kw=0.2, i0_percent=0.3, tap_neutral=0., tap_side='hv',
+                                            tap_pos=0, tap_step_percent=0., tap_min=-2, tap_max=2,
+                                            tap_changer_type="Ratio")
 
-    net_backup = net.deepcopy()
+    net_backup = copy.deepcopy(net)
 
-    pp.control.create_trafo_characteristics(net, 'trafo', [0], "vk_percent", [[-2, -1, 0, 1, 2]], [[5.5, 5.8, 6, 6.2, 6.5]])
-    pp.control.create_trafo_characteristics(net, 'trafo', [0], "vkr_percent", [[-2, -1, 0, 1, 2]], [[1.4, 1.42, 1.44, 1.46, 1.48]])
-    pp.control.create_trafo_characteristics(net, 'trafo', [1], "vk_percent", [[-2, -1, 0, 1, 2]], [[5.4, 5.7, 6, 6.1, 6.4]])
+    net["trafo_characteristic_table"] = pd.DataFrame(
+        {'id_characteristic': [0, 0, 0, 0, 0], 'step': [-2, -1, 0, 1, 2], 'voltage_ratio': [0.95, 0.975, 1, 1.025, 1.05],
+         'angle_deg': [0, 0, 0, 0, 0], 'vk_percent': [5.5, 5.8, 6, 6.2, 6.5],
+         'vkr_percent': [1.4, 1.42, 1.44, 1.46, 1.48], 'vk_hv_percent': np.nan, 'vkr_hv_percent': np.nan,
+         'vk_mv_percent': np.nan, 'vkr_mv_percent': np.nan, 'vk_lv_percent': np.nan, 'vkr_lv_percent': np.nan})
+    net.trafo['id_characteristic_table'].at[0] = 0
+    net.trafo['tap_dependency_table'].at[0] = True
+    net.trafo['tap_dependency_table'].at[1] = False
 
-    # test alternative way to set up tap dependence impedance characteristic
-    pp.control.SplineCharacteristic(net, [-2, -1, 0, 1, 2], [0.95, 0.98, 1, 1.02, 1.05])
-    net.trafo3w['tap_dependent_impedance'] = True
-    net.trafo3w['vk_hv_percent_characteristic'] = 3
+    new_rows = pd.DataFrame(
+        {'id_characteristic': [1, 1, 1, 1, 1], 'step': [-2, -1, 0, 1, 2], 'voltage_ratio': [1, 1, 1, 1, 1],
+         'angle_deg': [0, 0, 0, 0, 0], 'vk_hv_percent': [0.95, 0.98, 1, 1.02, 1.05],
+         'vkr_hv_percent': [0.3, 0.3, 0.3, 0.3, 0.3], 'vk_mv_percent': [1, 1, 1, 1, 1],
+         'vkr_mv_percent': [0.3, 0.3, 0.3, 0.3, 0.3], 'vk_lv_percent': [1, 1, 1, 1, 1],
+         'vkr_lv_percent': [0.3, 0.3, 0.3, 0.3, 0.3]})
+    net["trafo_characteristic_table"] = pd.concat([net["trafo_characteristic_table"], new_rows], ignore_index=True)
+    net.trafo3w['id_characteristic_table'].at[0] = 1
+    net.trafo3w['tap_dependency_table'].at[0] = True
 
     pp.runpp(net)
     pp.runpp(net_backup)
@@ -1342,14 +1352,6 @@ def test_tap_dependent_impedance():
     pp.runpp(net_backup)
     assert_res_equal(net, net_backup)
 
-    net.trafo.at[1, "tap_pos"] = -2
-    net_backup.trafo.at[1, "tap_pos"] = -2
-    net_backup.trafo.at[1, "vk_percent"] = 5.4
-
-    pp.runpp(net)
-    pp.runpp(net_backup)
-    assert_res_equal(net, net_backup)
-
     net.trafo3w.at[0, "tap_pos"] = 2
     net_backup.trafo3w.at[0, "tap_pos"] = 2
     net_backup.trafo3w.at[0, "vk_hv_percent"] = 1.05
@@ -1358,13 +1360,79 @@ def test_tap_dependent_impedance():
     pp.runpp(net_backup)
     assert_res_equal(net, net_backup)
 
+def test_tap_table_order():
+    net = pp.create_empty_network()
+    b1, b2, l1 = add_grid_connection(net)
+    b3 = pp.create_bus(net, vn_kv=0.4)
+    b4 = pp.create_bus(net, vn_kv=0.4)
+    pp.create_transformer(net, hv_bus=b2, lv_bus=b3, std_type="0.25 MVA 20/0.4 kV")
+    pp.create_transformer(net, hv_bus=b2, lv_bus=b4, std_type="0.25 MVA 20/0.4 kV")
+
+    b5 = pp.create_bus(net, vn_kv=0.9)
+    b6 = pp.create_bus(net, vn_kv=0.4)
+    pp.create_transformer3w_from_parameters(net, hv_bus=b2, mv_bus=b5, lv_bus=b6,
+                                            vn_hv_kv=20., vn_mv_kv=0.9, vn_lv_kv=0.45, sn_hv_mva=0.6, sn_mv_mva=0.5,
+                                            sn_lv_mva=0.4, vk_hv_percent=1., vk_mv_percent=1., vk_lv_percent=1.,
+                                            vkr_hv_percent=0.3, vkr_mv_percent=0.3, vkr_lv_percent=0.3,
+                                            pfe_kw=0.2, i0_percent=0.3, tap_neutral=0., tap_side='hv',
+                                            tap_pos=0, tap_step_percent=0., tap_min=-2, tap_max=2,
+                                            tap_changer_type="Ratio")
+
+    net["trafo_characteristic_table"] = pd.DataFrame(
+        {'id_characteristic': [0, 0, 0, 0, 0], 'step': [-2, -1, 0, 1, 2], 'voltage_ratio': [1, 1, 1, 1, 1],
+         'angle_deg': [0, 0, 0, 0, 0], 'vk_percent': np.nan, 'vkr_percent': np.nan,
+         'vk_hv_percent': [0.95, 0.98, 1, 1.02, 1.05], 'vkr_hv_percent': [0.3, 0.3, 0.3, 0.3, 0.3],
+         'vk_mv_percent': [1, 1, 1, 1, 1], 'vkr_mv_percent': [0.3, 0.3, 0.3, 0.3, 0.3],
+         'vk_lv_percent': [1, 1, 1, 1, 1], 'vkr_lv_percent': [0.3, 0.3, 0.3, 0.3, 0.3]})
+    net.trafo3w['id_characteristic_table'].at[0] = 0
+    net.trafo3w['tap_dependency_table'].at[0] = True
+
+    new_rows = pd.DataFrame(
+        {'id_characteristic': [1, 1, 1, 1, 1, 2, 2, 2, 2, 2], 'step': [-2, -1, 0, 1, 2, -2, -1, 0, 1, 2],
+         'voltage_ratio': [0.95, 0.975, 1, 1.025, 1.05, 0.98, 0.99, 1, 1.01, 1.02],
+         'angle_deg': [0, 0, 0, 0, 0, -2, -1, 0, 1, 2], 'vk_percent': [5.5, 5.8, 6, 6.2, 6.5, 5.5, 5.8, 6, 6.2, 6.5],
+         'vkr_percent': [1.4, 1.42, 1.44, 1.46, 1.48, 1.4, 1.42, 1.44, 1.46, 1.48], 'vk_hv_percent': np.nan, 'vkr_hv_percent': np.nan,
+         'vk_mv_percent': np.nan, 'vkr_mv_percent': np.nan, 'vk_lv_percent': np.nan, 'vkr_lv_percent': np.nan})
+    net["trafo_characteristic_table"] = pd.concat([net["trafo_characteristic_table"], new_rows], ignore_index=True)
+    net.trafo['id_characteristic_table'].at[0] = 2
+    net.trafo['id_characteristic_table'].at[1] = 1
+    net.trafo['tap_dependency_table'].at[0] = True
+    net.trafo['tap_dependency_table'].at[1] = True
+    net.trafo['tap_pos'].at[0] = -2
+    net.trafo['tap_pos'].at[1] = 2
+
+    pp.runpp(net)
+
+    tol = 0.001
+
+    assert net.converged == True
+    assert np.isclose(net.res_bus.loc[4, 'va_degree'], -1 * (150 - 2 + 0.03717), 0, tol, False)
+    assert np.isclose(net.res_bus.loc[5, 'va_degree'], -1 * (150 - 0 + 0.03810), 0, tol, False)
+    assert np.isclose(net.res_bus.loc[4, 'vm_pu'], 1.03144595, tol, False)
+    assert np.isclose(net.res_bus.loc[5, 'vm_pu'], 0.96268165, tol, False)
+
+def test_shunt_step_dependency_warning():
+    net = simple_test_net_shunt_control()
+    net["shunt_characteristic_table"] = pd.DataFrame(
+        {'id_characteristic': [0, 0, 0, 0, 0], 'step': [1, 2, 3, 4, 5], 'q_mvar': [-25, -50, -75, -100, -125],
+         'p_mw': [0, 0, 0, 0, 0]})
+    pp.create_shunt(net, bus=0, q_mvar=-10, p_mw=20, step=1, max_step=5)
+    net.shunt.step_dependency_table.at[0] = True
+    net.shunt.step.at[0] = 1
+
+    with pytest.raises(UserWarning):
+        pp.runpp(net)
+
 
 @pytest.mark.skipif(not lightsim2grid_available, reason="lightsim2grid is not installed")
 def test_lightsim2grid():
     # test several nets
     for net in result_test_network_generator():
         try:
+            net_ref = copy.deepcopy(net)
+            pp.runpp(net_ref, lightsim2grid=False)
             runpp_with_consistency_checks(net, lightsim2grid=True)
+            assert_res_equal(net, net_ref)
         except AssertionError:
             raise UserWarning("Consistency Error after adding %s" % net.last_added_case)
         except LoadflowNotConverged:
@@ -1372,6 +1440,15 @@ def test_lightsim2grid():
         except NotImplementedError as err:
             assert len(net.ext_grid) > 1
             assert "multiple ext_grids are found" in str(err)
+
+
+@pytest.mark.skipif(not lightsim2grid_available, reason="lightsim2grid is not installed")
+def test_lightsim2grid_case118():
+    net = pp.networks.case118()
+    net_ref = copy.deepcopy(net)
+    pp.runpp(net_ref, lightsim2grid=False)
+    runpp_with_consistency_checks(net, lightsim2grid=True)
+    assert_res_equal(net, net_ref)
 
 
 @pytest.mark.skipif(not lightsim2grid_available, reason="lightsim2grid is not installed")
@@ -1449,18 +1526,28 @@ def test_lightsim2grid_option():
     assert net._options["lightsim2grid"]
 
 
+def test_at_isolated_bus():
+    net = pp.create_empty_network()
+    pp.create_buses(net, 4, 110)
+    pp.create_ext_grid(net, 0)
+
+    pp.create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
+
+    pp.create_gen(net, 3, 0, vm_pu=0, in_service=False)
+
+    pp.runpp(net)
+    assert net._options["init_vm_pu"] == 1.
+
+def test_shunt_with_missing_vn_kv():
+    net = pp.create_empty_network()
+    pp.create_buses(net, 2, 110)
+    pp.create_ext_grid(net, 0)
+    pp.create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
+
+    pp.create_shunt(net, 1, 10)
+    net.shunt.vn_kv=np.nan
+
+    pp.runpp(net)
+
 if __name__ == "__main__":
-    pytest.main([__file__])
-#    test_minimal_net()
-#    net = pp.create_empty_network()
-#    b = pp.create_bus(net, 110)
-#    pp.create_ext_grid(net, b)
-#    runpp_with_consistency_checks(net)
-#
-#    pp.create_load(net, b, p_mw=0.1)
-#    runpp_with_consistency_checks(net)
-#
-#    b2 = pp.create_bus(net, 110)
-#    pp.create_switch(net, b, b2, 'b')
-#    pp.create_sgen(net, b2, p_mw=0.2)
-#    runpp_with_consistency_checks(net)
+    pytest.main([__file__, "-xs"])

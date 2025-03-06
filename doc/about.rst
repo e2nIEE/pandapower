@@ -34,7 +34,7 @@ Getting Started:
 
 If you are interested in the newest pandapower developments, subscribe to our `mailing list <https://www.pandapower.org/contact/#list>`_!
 
-pandapower is a joint development of the research group Energy Management and Power System Operation, University of Kassel and the Department for Distribution System
+pandapower is a joint development of the research group of the Department for Sustainable Electrical Energy Systems (e2n), University of Kassel and the Department for Distribution System
 Operation at the Fraunhofer Institute for Energy Economics and Energy System Technology (IEE), Kassel.
 
 .. image:: /pics/iee.png
@@ -56,7 +56,8 @@ Operation at the Fraunhofer Institute for Energy Economics and Energy System Tec
     :maxdepth: 1
 
     about/units
-    about/update
+    about/update30
+    about/update20
     about/authors
     about/changelog
     about/license

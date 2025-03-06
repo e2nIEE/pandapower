@@ -1,0 +1,16 @@
+**Parameter**;**Datatype**;**Value Range**;**Explanation**
+name;string;;name of the dc line
+std_type;string;;standard type which can be used to easily define dc line parameters with the pandapower standard type library
+from_bus_dc*;integer;;Index of dc bus where the dc line starts
+to_bus_dc*;integer;;Index of dc bus where the dc line ends
+length_km*;float;:math:`>` 0;length of the line [km]
+r_ohm_per_km*;float;:math:`\geq` 0   ;resistance of the line [Ohm per km]
+g_us_per_km*;float;:math:`\geq` 0   ;dielectric conductance of the dc line [micro Siemens per km]
+max_i_ka*;float;:math:`>` 0   ;maximal thermal current [kilo Ampere]
+parallel*;integer;:math:`\geq` 1;number of parallel dc line systems
+df*;float;0...1 ;derating factor (scaling) for max_i_ka
+"type;string;""| Naming conventions:"
+"| *""""ol""""* - overhead dc line "
+"| *""""cs""""* - underground cable system"";type of dc line"
+max_loading_percent;float;:math:`>` 0   ;Maximum loading of the dc line
+in_service*;boolean;True / False;specifies if the dc line is in service.

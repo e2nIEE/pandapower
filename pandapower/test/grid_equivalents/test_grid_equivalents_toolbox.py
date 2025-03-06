@@ -65,6 +65,7 @@ def boundary_testnet(which):
         expected_bb["b"]["internal"] = expected_bb["a"]["external"] - {18}
         expected_bb["b"]["external"] = expected_bb["a"]["internal"] | {18}
 
+    net = pp.convert_format(net)
     pp.runpp(net)
     return net, expected_bb, expected_bbr
 
@@ -156,11 +157,4 @@ def test_append_set_to_dict():
 
 
 if __name__ == "__main__":
-    if 0:
-        pytest.main([__file__, '-x'])
-    else:
-        # test_set_bus_zone_by_boundary_branches_and_get_boundaries_by_bus_zone_with_boundary_branches1()
-        # test_set_bus_zone_by_boundary_branches_and_get_boundaries_by_bus_zone_with_boundary_branches2()
-        test_set_bus_zone_by_boundary_branches_and_get_boundaries_by_bus_zone_with_boundary_branches3()
-        # test_append_set_to_dict()
-        pass
+    pytest.main([__file__, "-xs"])

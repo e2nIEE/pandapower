@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import os
 
@@ -113,7 +113,7 @@ def simple_test_grid(load_scaling=1., sgen_scaling=1., with_gen=False, distribut
     v_base = 132
     z_base = v_base ** 2 / s_base
 
-    pp.create_buses(net, 5, v_base, geodata=((0, 1), (-1, 0.5), (0, 0), (1, 0.5), (0, 0.5)))
+    pp.create_buses(net, 5, v_base, geodata=[(0, 1), (-1, 0.5), (0, 0), (1, 0.5), (0, 0.5)])
 
     pp.create_line(net, 0, 1, 0.84e-2 * z_base / r, std_type, name="1-2")
     pp.create_line(net, 0, 3, 0.84e-2 * z_base / r, std_type, name="1-4")
@@ -550,4 +550,4 @@ def test_EN_standard(en_net):
 
 
 if __name__ == '__main__':
-    pytest.main(['-xs', __file__])
+    pytest.main([__file__, "-xs"])

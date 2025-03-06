@@ -1,0 +1,127 @@
+[build-system]
+requires = ["build", "wheel", "setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pandapower"
+version = "3.0.0" # File format version '__format_version__' is tracked in _version.py
+authors = [
+    { name = "Leon Thurner", email = "leon.thurner@retoflow.de" },
+    { name = "Alexander Scheidler", email = "alexander.scheidler@iee.fraunhofer.de" }
+]
+maintainers = [
+    { name = "pandapower Developers", email = "info@pandapower.org" }
+]
+description = "An easy to use open source tool for power system modeling, analysis and optimization with a high degree of automation."
+readme = "README.rst"
+license = { file = "LICENSE" }
+requires-python = ">=3.9"
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Education",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: BSD License",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    # Add the specific Python versions supported here, e.g.:
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12"
+]
+dependencies = [
+    "pandas>=1.0",
+    "networkx>=2.5",
+    "scipy<1.14",
+    "numpy",
+    "packaging",
+    "tqdm",
+    "deepdiff",
+    "geojson",
+    "lxml",
+    "typing_extensions~=4.9",
+]
+keywords = [
+    "power system", "network", "analysis", "optimization", "automation", "grid", "electricity", "energy", "engineering", "simulation", "pandapower"
+]
+
+[project.urls]
+Homepage = "https://www.pandapower.org"
+Documentation = "https://pandapower.readthedocs.io"
+Source = "https://www.github.com/e2nIEE/pandapower"
+Repository = "https://www.github.com/e2nIEE/pandapower.git"
+Issues = "https://www.github.com/e2nIEE/pandapower/issues"
+Download = "https://pypi.org/project/pandapower/#files"
+Changelog = "https://github.com/e2nIEE/pandapower/blob/develop/CHANGELOG.rst"
+
+[project.optional-dependencies]
+docs = ["numpydoc>=1.5.0", "matplotlib", "sphinx>=5.3.0", "sphinx_rtd_theme>=1.1.1", "sphinx-pyproject"]
+plotting = ["plotly>=3.1.1", "matplotlib", "igraph", "geopandas>=1.0"]
+test = ["pytest~=8.1", "pytest-xdist", "nbmake"]
+performance = ["ortools", "numba==0.60.0", "lightsim2grid==0.10.1"]
+fileio = ["xlsxwriter", "openpyxl", "cryptography", "geopandas>=1.0", "psycopg2"]
+converter = ["matpowercaseframes"]
+pgm = ["power-grid-model-io"]
+control = ["shapely"]
+all = [
+    "numpydoc>=1.5.0", "sphinx>=5.3.0", "sphinx_rtd_theme>=1.1.1", "sphinx-pyproject",
+    "plotly>=3.1.1", "matplotlib", "igraph", "geopandas>=1.0",
+    "pytest~=8.1", "pytest-xdist", "nbmake",
+    "ortools", "numba==0.60.0", "lightsim2grid==0.10.1",
+    "xlsxwriter", "openpyxl", "cryptography", "psycopg2",
+    "matpowercaseframes",
+    "power-grid-model-io"
+]
+# "shapely", "pyproj", "Pyogrio" are dependencies of geopandas and should be already available ("Fiona" got dropped)
+# "hashlib", "zlib", "base64" produce install problems, so they are not included
+
+
+[tool.setuptools]
+license-files = [
+    'LICEN[CS]E*',
+    'COPYING*',
+    'NOTICE*',
+    'AUTHORS*',
+    'CHANGELOG*',
+    'CITATION*',
+]
+
+[tool.setuptools.packages.find]
+include = [
+    "pandapower*",
+]
+exclude = [
+    "pandapower.test*",
+]
+
+[tool.setuptools.package-data]
+"*" = [
+    "*.p",
+    "*.m",
+    "*.mat",
+    "*.json",
+    "*.jl",
+    "*.csv"
+]
+
+[tool.pytest.ini_options]
+addopts = ["--strict-markers"]
+markers = [
+  "slow: marks tests as slow (deselect with '-m \"not slow\"'), e.g. in run_fast_tests"
+]
+
+[tool.coverage.run]
+omit = [
+    "pandapower/test/*"
+]
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "def __str__",
+    "if __name__ == .__main__.:"
+]

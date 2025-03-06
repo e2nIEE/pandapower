@@ -4,7 +4,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 # Builds the line outage distribution factor matrix.
@@ -58,7 +58,7 @@ def makeLODF(branch, PTDF):
     # Implies a N-1 contingency (No backup branch)
     den = (ones((nl, 1)) * h.T * -1 + 1.)
 
-    # Silence warning caused by np.NaN
+    # Silence warning caused by np.nan
     with np.errstate(divide='ignore', invalid='ignore'):
         LODF = (H / den)
 
@@ -144,8 +144,8 @@ def outage_results_OTDF(OTDF, Pbus, outage_branches):
         injections to branch flows under specific outage scenarios. Its shape
         should be (num_outage_scenarios * num_branches, num_buses).
     Pbus : numpy.ndarray
-        A vector representing the net power injections at each bus. Positive values 
-        for generation, negative for consumption. Its length should be equal to 
+        A vector representing the net power injections at each bus. Positive values
+        for generation, negative for consumption. Its length should be equal to
         the total number of buses.
     outage_branches : numpy.ndarray
         An array of indices representing the branches that are outaged in each
