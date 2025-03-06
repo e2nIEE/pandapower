@@ -309,7 +309,6 @@ jobs:
         python-version: ['3.9']
         # Reminder: when removing the support of an old python version here, then don't forget to
         # remove it also in pyproject.toml 'requires-python'
-        group: [ 1, 2 ]
     steps:
       - uses: actions/checkout@v4
       #- uses: julia-actions/setup-julia@v1.5
