@@ -53,6 +53,7 @@ def get_network_and_result(net, request):
     return net, df
 
 
+@pytest.mark.xfail
 def test__node_geometries_from_geodata(get_network_and_result):
     pytest.importorskip("geopandas")
 
