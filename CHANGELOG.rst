@@ -16,6 +16,7 @@ Change Log
 - [ADDED] add three columns: id_q_capability_curve_table, curve_dependency_table, curve_style in gen and sgen
 - [ADDED] create q capability curve characteristics and diagnostics function
 - [ADDED] cim2pp converter- import reactive power capability curve data synchronousMachinesCim16.py
+- [FIXED] a problem with create_nxgraph
 
 [3.0.0] - 2025-03-06
 -------------------------------
