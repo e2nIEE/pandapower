@@ -26,13 +26,15 @@ tap_max;integer;;maximum tap position
 tap_step_percent;float;:math:`>` 0;tap step size for voltage magnitude [%]
 tap_step_degree;float;:math:`\geq` 0;tap step size for voltage angle
 tap_pos;integer;;current position of tap changer
-tap_phase_shifter;bool;;defines whether the transformer is an ideal phase shifter
-parallel;int;:math:`>` 0;number of parallel transformers
+tap_changer_type;string;"""Ratio"", ""Symmetrical"", ""Ideal"", ""Tabular""";specifies the tap changer type
+tap_dependency_table;boolean;True / False;whether the transformer parameters (voltage ratio, angle, impedance) are adjusted dependent on the tap position of the transformer
+id_characteristic_table;integer;:math:`\geq` 0;references the id_characteristic index from the trafo_characteristic_table
+parallel;integer;:math:`>` 0;number of parallel transformers
 max_loading_percent**;float;:math:`>` 0;Maximum loading of the transformer with respect to sn_mva and its corresponding current at 1.0 p.u.
-df;float;1 :math:`\geq` df :math:`>` 0;derating factor: maximal current of transformer in relation to nominal current of transformer (from 0 to 1)
+df;float;1 :math:`\geq` df :math:`>` 0;derating factor: maximum current of transformer in relation to nominal current of transformer (from 0 to 1)
 in_service*;boolean;True / False;specifies if the transformer is in service
 oltc*;boolean;True / False; specifies if the transformer has an OLTC (short-circuit relevant)
-power_station_unit*;boolean;True / False; specifies if the transformer is part of a power_station_unit (short-circuit relevant).
+power_station_unit*;boolean;True / False; specifies if the transformer is part of a power_station_unit (short-circuit relevant)
 tap2_side****;string;"""hv"", ""lv""";defines if tap changer is at the high- or low voltage side
 tap2_neutral****;integer;;rated tap position
 tap2_min****;integer;;minimum tap position
@@ -40,4 +42,6 @@ tap2_max****;integer;;maximum tap position
 tap2_step_percent****;float;:math:`>` 0;tap step size for voltage magnitude [%]
 tap2_step_degree****;float;:math:`\geq` 0;tap step size for voltage angle
 tap2_pos****;integer;;current position of tap changer
-tap2_phase_shifter****;bool;;defines whether the transformer is an ideal phase shifter
+tap2_changer_type****;string;"""Ratio"", ""Symmetrical"", ""Ideal""";specifies the tap changer type
+leakage_resistance_ratio_hv*;float;0 :math:`\leq` 1;ratio of transformer short-circuit resistance on HV side (default 0.5)
+leakage_reactance_ratio_hv*;float;0 :math:`\leq` 1;ratio of transformer short-circuit reactance on HV side (default 0.5)

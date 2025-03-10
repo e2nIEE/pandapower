@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import tempfile
@@ -38,7 +38,7 @@ def simple_test_net():
     pp.create_transformer3w_from_parameters(net, b1, b3, b4, 110, 20, 6, 1e2, 1e2, 1e1, 3, 2, 2, 1,
                                             1, 1, 100, 1, 60, 30, 'hv', tap_step_percent=1.5,
                                             tap_step_degree=0, tap_pos=0, tap_neutral=0, tap_max=10,
-                                            tap_min=-10, name='tr2')
+                                            tap_min=-10, name='tr2', tap_changer_type="Ratio")
 
     pp.create_load(net, b2, 1.5e1, 1, name='trafo1')
     pp.create_load(net, b3, 3e1, 1.5, name='trafo2_mv')
@@ -380,4 +380,4 @@ def test_user_pf_options_recycle_manual(simple_test_net):
 
 
 if __name__ == '__main__':
-    pytest.main(['-s', __file__])
+    pytest.main([__file__, "-xs"])

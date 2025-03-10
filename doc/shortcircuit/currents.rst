@@ -7,7 +7,7 @@ The short-circuit currents are calculated according to the **IEC 60909** interna
 1. equivalent voltage source method (i.e. by introducing the Thevenin's voltage source) at the fault location and 
 2. superposition method that considers the pre-fault voltage vector.
 
-For both methods, the possiboility to use LU factorization is implemented (option inverse_y=False). This improves the performance of the short-circuit calculation and reduces the required RAM, especially for large grid models, if the number of fault buses is low.
+For both methods, the possibility to use LU factorization is implemented (option inverse_y=False). This improves the performance of the short-circuit calculation and reduces the required RAM, especially for large grid models, if the number of fault buses is low.
 
 For a detailed explanation of the theory behind short-circuit calculations according to IEC 60909
 please refer to the mentioned normative document or secondary literature:
@@ -38,7 +38,7 @@ The power system units can be considered by setting the parameters "power_statio
 
 Note that the short-circuit currents are calculated in the complex domain, which allows obtaining the branch-related values for current magnitude and phase angle. In the case of transformers with rated voltage values unequal to the bus rated voltage values, only the current results are available because the voltage results are not valid in this case. For such configurations, only the superposition method can be used to obtain voltage, active and reactive power results (see below).
 
-**Ad 2)** The superposition method (per IEC 60909) considers the pre-fault voltage vector. This method is activated by passing the argument "use_pre_fault_voltage" as True to the "calc_sc" function call. The superposition method is only inplemented for three-phase symmetric fault (fault="3ph").
+**Ad 2)** The superposition method (per IEC 60909) considers the pre-fault voltage vector. This method is activated by passing the argument "use_pre_fault_voltage" as True to the "calc_sc" function call. The superposition method is only implemented for three-phase symmetric fault (fault="3ph").
 
 Note that the user needs to explicitly carry out the power flow calculation (i.e. by invoking the "runpp" function call) on the network, before proceeding to the short-circuit calculation with the superposition method. We rely on the user to execute this step explicitly so that the user is fully aware that a power flow calculation is executed, and also has control over all the relevant options for the power flow calculation. Results provide branch currents magnitude and angle, along with active and reactive power flows, and bus voltages magnitude and angle values.
 

@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from numpy import nan_to_num, array, allclose, int64
 
-from pandapower.auxiliary import ppException, _clean_up, _add_auxiliary_elements
+from pandapower.auxiliary import LoadflowNotConverged, AlgorithmUnknown, _clean_up, _add_auxiliary_elements
 from pandapower.build_branch import _calc_trafo_parameter, _calc_trafo3w_parameter
 from pandapower.build_gen import _build_gen_ppc
 from pandapower.pd2ppc import _pd2ppc, _calc_pq_elements_and_add_on_ppc, _ppc2ppci
@@ -29,20 +29,6 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-class AlgorithmUnknown(ppException):
-    """
-    Exception being raised in case optimal powerflow did not converge.
-    """
-    pass
-
-
-class LoadflowNotConverged(ppException):
-    """
-    Exception being raised in case loadflow did not converge.
-    """
-    pass
-
-
 def _powerflow(net, **kwargs):
     """
     Gets called by runpp or rundcpp with different arguments.
@@ -54,7 +40,7 @@ def _powerflow(net, **kwargs):
 
     net["converged"] = False
     net["OPF_converged"] = False
-    _add_auxiliary_elements(net)
+    _add_auxiliary_elements(net)  # create gen elements for start and end buses of dcline
 
     if not ac or net["_options"]["init_results"]:
         verify_results(net)
@@ -68,11 +54,12 @@ def _powerflow(net, **kwargs):
                       "'%s'!") % algorithm)
 
     # clear lookups
-    net._pd2ppc_lookups = {"bus": array([], dtype=int64), "ext_grid": array([], dtype=int64),
-                           "gen": array([], dtype=int64), "branch": array([], dtype=int64)}
+    net._pd2ppc_lookups = {"bus": array([], dtype=int64), "bus_dc": array([], dtype=int64),
+                           "ext_grid": array([], dtype=int64), "gen": array([], dtype=int64),
+                           "branch": array([], dtype=int64), "branch_dc": array([], dtype=int64)}
 
     # convert pandapower net to ppc
-    ppc, ppci = _pd2ppc(net)
+    ppc, ppci = _pd2ppc(net, **kwargs)
 
     # store variables
     net["_ppc"] = ppc
@@ -117,7 +104,7 @@ def _recycled_powerflow(net, **kwargs):
         # update trafo in branch and Ybus
         lookup = net._pd2ppc_lookups["branch"]
         if "trafo" in lookup:
-            _calc_trafo_parameter(net, ppc)
+            _calc_trafo_parameter(net, ppc,)
         if "trafo3w" in lookup:
             _calc_trafo3w_parameter(net, ppc)
 
@@ -157,7 +144,7 @@ def _run_pf_algorithm(ppci, options, **kwargs):
         _, pv, pq = bustypes(ppci["bus"], ppci["gen"])
         # ----- run the powerflow -----
         if pq.shape[0] == 0 and pv.shape[0] == 0 and not options['distributed_slack'] \
-                and len(ppci["svc"]) == 0 and len(ppci["tcsc"]) == 0 and len(ppci["ssc"]) == 0:
+                and len(ppci["svc"]) == 0 and len(ppci["tcsc"]) == 0 and len(ppci["ssc"]) == 0 and len(ppci["vsc"]) == 0:
             # ommission not correct if distributed slack is used or facts devices are present
             result = _bypass_pf_and_set_results(ppci, options)
         elif algorithm == 'bfsw':  # forward/backward sweep power flow algorithm
@@ -199,9 +186,9 @@ def _ppci_to_net(result, net):
 
 def _bypass_pf_and_set_results(ppci, options):
     Ybus, Yf, Yt = makeYbus_pypower(ppci["baseMVA"], ppci["bus"], ppci["branch"])
-    baseMVA, bus, gen, branch, svc, tcsc, ssc, ref, _, pq, *_, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
+    baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, ref, _, pq, *_, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
     V = ppci["bus"][:, VM]
-    bus, gen, branch = pfsoln_pypower(baseMVA, bus, gen, branch, svc, tcsc, ssc, Ybus, Yf, Yt, V, ref, ref_gens)
+    bus, gen, branch = pfsoln_pypower(baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, Ybus, Yf, Yt, V, ref, ref_gens)
     ppci["bus"], ppci["gen"], ppci["branch"] = bus, gen, branch
     ppci["success"] = True
     ppci["iterations"] = 1

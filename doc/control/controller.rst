@@ -106,3 +106,33 @@ SplineCharacteristic
 
 .. autoclass:: pandapower.control.util.characteristic.SplineCharacteristic
     :members:
+
+
+Station Controller
+==================
+The following controllers are used for the representation of station controllers as used in PowerFactory
+
+**********************
+Binary Search Control
+**********************
+
+.. autoclass:: pandapower.control.controller.station_control.BinarySearchControl
+    :members:
+
+***************
+Droop Control
+***************
+
+.. autoclass:: pandapower.control.controller.station_control.DroopControl
+    :members:
+
+Shunt Controller
+==================
+
+**********************
+Discrete Shunt Control
+**********************
+
+.. autoclass:: pandapower.control.controller.shunt_control.DiscreteShuntController
+    :members:
+

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import pandapower as pp
@@ -8,28 +8,15 @@ import numpy as np
 
 try:
     import pandaplan.core.pplog as pplog
-except:
+except ImportError:
     import logging as pplog
 
+from pandapower.auxiliary import NetCalculationNotConverged, ControllerNotConverged
+from pandapower.powerflow import LoadflowNotConverged
 from pandapower.optimal_powerflow import OPFNotConverged
-from pandapower import ppException, LoadflowNotConverged
 from pandapower.control.util.auxiliary import asarray
 
 logger = pplog.getLogger(__name__)
-
-
-class ControllerNotConverged(ppException):
-    """
-    Exception being raised in case a controller does not converge.
-    """
-    pass
-
-
-class NetCalculationNotConverged(ppException):
-    """
-    Exception being raised in case a controller does not converge.
-    """
-    pass
 
 
 def get_controller_order(nets, controller):

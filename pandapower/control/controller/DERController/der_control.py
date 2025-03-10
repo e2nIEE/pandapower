@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
@@ -160,6 +160,22 @@ class DERController(PQController):
 #        self.write_to_net(net)
 
     def is_converged(self, net):
+
+        self._determine_target_powers(net)
+
+        return np.allclose(self.target_q_mvar, self.q_mvar, atol=self.max_q_error) and\
+            np.allclose(self.target_p_mw, self.p_mw, atol=self.max_p_error)
+
+    def control_step(self, net):
+
+        if "target_p_mw" not in vars(self) or "target_q_mvar" not in vars(self):
+            self._determine_target_powers(net)
+
+        self.p_mw, self.q_mvar = self.target_p_mw, self.target_q_mvar
+
+        self.write_to_net(net)
+
+    def _determine_target_powers(self, net):
         vm_pu = net.res_bus.loc[self.bus, "vm_pu"].set_axis(self.element_index)
         p_series_mw = getattr(self, "p_series_mw", getattr(self, "p_mw", self.sn_mva))
         q_series_mvar = getattr(self, "q_series_mw", self.q_mvar)
@@ -184,14 +200,6 @@ class DERController(PQController):
         # --- Apply target p and q considering the damping factor coefficient ----------------------
         self.target_p_mw = self.p_mw + (target_p_mw - self.p_mw) / self.damping_coef
         self.target_q_mvar = self.q_mvar + (target_q_mvar - self.q_mvar) / self.damping_coef
-
-        return np.allclose(self.target_q_mvar, self.q_mvar, atol=self.max_q_error) and\
-            np.allclose(self.target_p_mw, self.p_mw, atol=self.max_p_error)
-
-    def control_step(self, net):
-        self.p_mw, self.q_mvar = self.target_p_mw, self.target_q_mvar
-
-        self.write_to_net(net)
 
     def _step_p(self, p_series_mw=None):
         return p_series_mw / self.sn_mva

@@ -107,6 +107,10 @@ class EquivalentBranchesCim16:
         eqb['xft0_pu'] = eqb['zeroX12'] / eqb['z_base']
         eqb['rtf0_pu'] = eqb['zeroR21'] / eqb['z_base']
         eqb['xtf0_pu'] = eqb['zeroX21'] / eqb['z_base']
+        eqb['gf_pu'] = 0.
+        eqb['bf_pu'] = 0.
+        eqb['gt_pu'] = 0.
+        eqb['bt_pu'] = 0.
         eqb['in_service'] = eqb.connected & eqb.connected2
         eqb = eqb.rename(columns={'rdfId_Terminal': sc['t_from'], 'rdfId_Terminal2': sc['t_to'], 'rdfId': sc['o_id'],
                                   'index_bus': 'from_bus', 'index_bus2': 'to_bus'})

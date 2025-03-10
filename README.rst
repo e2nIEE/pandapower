@@ -82,7 +82,7 @@ pandapower's sibling project *pandapipes* (`website <https://www.pandapipes.org>
 
 |
 
-pandapower is a joint development of the research group Energy Management and Power System Operation, University of Kassel and the Department for Distribution System
+pandapower is a joint development of the research group of the Department for Sustainable Electrical Energy Systems (e2n), University of Kassel and the Department for Distribution System
 Operation at the Fraunhofer Institute for Energy Economics and Energy System Technology (IEE), Kassel.
 
 .. image:: http://www.pandapower.org/images/contact/Logo_e2n.png
@@ -91,7 +91,7 @@ Operation at the Fraunhofer Institute for Energy Economics and Energy System Tec
 
 |
 
-.. image:: http://www.pandapower.org/images/contact/Logo_Fraunhofer_IEE.png
+.. image:: https://www.pandapower.org/images/contact/Logo_Fraunhofer_IEE.png
     :target: https://www.iee.fraunhofer.de/en.html
     :width: 500
 

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -253,7 +253,7 @@ def test_opf_gen_voltage():
                                           vn_hv_kv=10.0, vkr_percent=2.8125,
                                           tap_pos=0, tap_side="hv", tap_min=-2,
                                           tap_step_percent=2.5, i0_percent=0.68751,
-                                          sn_mva=0.016, pfe_kw=0.11, name=None,
+                                          sn_mva=0.016, pfe_kw=0.11, name=None, tap_changer_type="Ratio",
                                           in_service=True, index=None, max_loading_percent=200)
     pp.create_gen(net, 3, p_mw=0.01, controllable=True, min_p_mw=0, max_p_mw=0.025, max_q_mvar=0.5,
                   min_q_mvar=-0.5)
@@ -299,7 +299,7 @@ def test_opf_sgen_voltage():
                                           vn_hv_kv=10.0, vkr_percent=2.8125,
                                           tap_pos=0, tap_side="hv", tap_min=-2,
                                           tap_step_percent=2.5, i0_percent=0.68751,
-                                          sn_mva=0.016, pfe_kw=0.11, name=None,
+                                          sn_mva=0.016, pfe_kw=0.11, name=None, tap_changer_type="Ratio",
                                           in_service=True, index=None, max_loading_percent=1000000)
     pp.create_sgen(net, 3, p_mw=0.01, controllable=True, min_p_mw=-0.005, max_p_mw=0.015,
                    max_q_mvar=0.025, min_q_mvar=-0.025)
@@ -346,7 +346,7 @@ def test_opf_gen_loading():
                                           vn_hv_kv=10.0, vkr_percent=2.8125,
                                           tap_pos=0, tap_side="hv", tap_min=-2,
                                           tap_step_percent=2.5, i0_percent=0.68751,
-                                          sn_mva=0.016, pfe_kw=0.11, name=None,
+                                          sn_mva=0.016, pfe_kw=0.11, name=None, tap_changer_type="Ratio",
                                           in_service=True, index=None, max_loading_percent=145)
     pp.create_gen(net, 3, p_mw=0.01, controllable=True, min_p_mw=0.005, max_p_mw=0.015,
                   max_q_mvar=0.05, min_q_mvar=-0.05)
@@ -399,7 +399,7 @@ def test_opf_sgen_loading():
                                           vkr_percent=2.8125, tap_pos=0, tap_side="hv", tap_min=-2,
                                           tap_step_percent=2.5, i0_percent=0.68751, sn_mva=0.016,
                                           pfe_kw=0.11, name=None, in_service=True, index=None,
-                                          max_loading_percent=max_trafo_loading)
+                                          max_loading_percent=max_trafo_loading, tap_changer_type="Ratio")
     pp.create_sgen(net, 3, p_mw=0.01, controllable=True, min_p_mw=0.005, max_p_mw=.015,
                    max_q_mvar=0.025, min_q_mvar=-0.025)
     pp.create_poly_cost(net, 0, "sgen", cp1_eur_per_mw=-10)
@@ -569,7 +569,7 @@ def test_opf_varying_max_line_loading():
                                           vkr_percent=2.8125, tap_pos=0, tap_side="hv", tap_min=-2,
                                           tap_step_percent=2.5, i0_percent=0.68751, sn_mva=0.016,
                                           pfe_kw=0.11, name=None, in_service=True, index=None,
-                                          max_loading_percent=max_trafo_loading)
+                                          max_loading_percent=max_trafo_loading, tap_changer_type="Ratio")
 
     pp.create_sgen(net, 3, p_mw=0.1, controllable=True, min_p_mw=0.005, max_p_mw=0.15,
                    max_q_mvar=0.025, min_q_mvar=-0.025)
@@ -643,10 +643,10 @@ def test_storage_opf():
     pp.create_poly_cost(net, 1, "load", cp1_eur_per_mw=-3)
 
     # test storage generator behaviour
-    net["storage"].in_service.iloc[0] = True
-    net["storage"].p_mw.iloc[0] = -0.025
-    net["sgen"].in_service.iloc[1] = False
-    net["load"].in_service.iloc[1] = False
+    net["storage"].loc[0, 'in_service'] = True
+    net["storage"].loc[0, 'p_mw'] = -0.025
+    net["sgen"].loc[1, 'in_service'] = False
+    net["load"].loc[1, 'in_service'] = False
 
     pp.runopp(net)
     assert net["OPF_converged"]
@@ -655,10 +655,10 @@ def test_storage_opf():
     res_stor_q_mvar = net["res_storage"].q_mvar.iloc[0]
     res_cost_stor = net["res_cost"]
 
-    net["storage"].in_service.iloc[0] = False
-    net["storage"].p_mw.iloc[0] = -0.025
-    net["sgen"].in_service.iloc[1] = True
-    net["load"].in_service.iloc[1] = False
+    net["storage"].loc[0, 'in_service'] = False
+    net["storage"].loc[0, 'p_mw'] = -0.025
+    net["sgen"].loc[1, 'in_service'] = True
+    net["load"].loc[1, 'in_service'] = False
 
     pp.runopp(net)
     assert net["OPF_converged"]
@@ -673,17 +673,17 @@ def test_storage_opf():
     assert np.isclose(res_cost_stor, res_cost_sgen)
 
     # test storage load behaviour
-    net["storage"].in_service.iloc[0] = True
-    net["storage"].p_mw.iloc[0] = 0.025
-    net["storage"].max_p_mw.iloc[0] = 0.025
-    net["storage"].min_p_mw.iloc[0] = 0
-    net["storage"].max_q_mvar.iloc[0] = 0.025
-    net["storage"].min_q_mvar.iloc[0] = -0.025
+    net["storage"].loc[0, 'in_service'] = True
+    net["storage"].loc[0, 'p_mw'] = 0.025
+    net["storage"].loc[0, 'max_p_mw'] = 0.025
+    net["storage"].loc[0, 'min_p_mw'] = 0
+    net["storage"].loc[0, 'max_q_mvar'] = 0.025
+    net["storage"].loc[0, 'min_q_mvar'] = -0.025
     # gencost for storages: positive costs in pandapower per definition
     # --> storage gencosts are similar to sgen gencosts (make_objective.py, l.128ff. and l.185ff.)
-    net["poly_cost"].cp1_eur_per_mw.iloc[2] = net.poly_cost.cp1_eur_per_mw.iloc[4]
-    net["sgen"].in_service.iloc[1] = False
-    net["load"].in_service.iloc[1] = False
+    net["poly_cost"].loc[2, 'cp1_eur_per_mw'] = net.poly_cost.cp1_eur_per_mw.iloc[4]
+    net["sgen"].loc[1, 'in_service'] = False
+    net["load"].loc[1, 'in_service'] = False
 
     pp.runopp(net)
     assert net["OPF_converged"]
@@ -692,10 +692,10 @@ def test_storage_opf():
     res_stor_q_mvar = net["res_storage"].q_mvar.iloc[0]
     res_cost_stor = net["res_cost"]
 
-    net["storage"].in_service.iloc[0] = False
-    net["storage"].p_mw.iloc[0] = 0.025
-    net["sgen"].in_service.iloc[1] = False
-    net["load"].in_service.iloc[1] = True
+    net["storage"].loc[0, 'in_service'] = False
+    net["storage"].loc[0, 'p_mw'] = 0.025
+    net["sgen"].loc[1, 'in_service'] = False
+    net["load"].loc[1, 'in_service'] = True
 
     pp.runopp(net)
     assert net["OPF_converged"]
@@ -745,8 +745,8 @@ def test_in_service_controllables():
     pp.create_poly_cost(net, 1, "sgen", cp1_eur_per_mw=1)
     pp.create_poly_cost(net, 1, "load", cp1_eur_per_mw=-1)
 
-    net["sgen"].in_service.iloc[1] = False
-    net["load"].in_service.iloc[1] = False
+    net["sgen"].loc[1, 'in_service'] = False
+    net["load"].loc[1, 'in_service'] = False
 
     pp.runopp(net)
     assert net["OPF_converged"]

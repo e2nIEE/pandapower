@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from builtins import zip
@@ -74,11 +74,11 @@ class Characteristic(JSONSerializableClass):
         >>> c.satisfies(x=2.5, measured=3.1, epsilon=0.1)
         False
     """
-    def __init__(self, net, x_values, y_values, **kwargs):
+    def __init__(self, net, x_values, y_values, table="characteristic", **kwargs):
         super().__init__()
         self.x_vals = x_values
         self.y_vals = y_values
-        self.index = super().add_to_net(net, "characteristic")
+        self.index = super().add_to_net(net, table)
 
     # @property
     # def x_vals(self):
@@ -162,8 +162,8 @@ class SplineCharacteristic(Characteristic):
     """
     json_excludes = ["self", "__class__", "_interpolator"]
 
-    def __init__(self, net, x_values, y_values, interpolator_kind="interp1d", **kwargs):
-        super().__init__(net, x_values=x_values, y_values=y_values)
+    def __init__(self, net, x_values, y_values, interpolator_kind="interp1d", table="characteristic", **kwargs):
+        super().__init__(net, x_values=x_values, y_values=y_values, table=table)
         self.kwargs = kwargs
         self.interpolator_kind = interpolator_kind
 
@@ -172,7 +172,7 @@ class SplineCharacteristic(Characteristic):
         """
         We need to store the interpolator in a property because we need to serialize
         the characteristic. Instead of storing the serialized interpolator, we store the
-        x_values and y_values (the attribute _interpolator is ecluded from serialization by
+        x_values and y_values (the attribute _interpolator is excluded from serialization by
         adding it to json_excludes). For it to work, we need to recreate the interpolator on
         demand. As soon as the characteristic is called, if the interpolator is there,
         we can use it. If not, we recreate it.

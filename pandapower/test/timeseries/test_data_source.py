@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import os
@@ -31,6 +31,6 @@ def test_data_source():
     assert abs(my_data_source.get_time_step_value(time_step=8, profile_name="constload3")
                - -5.37E-3) < epsilon
 
+
 if __name__ == '__main__':
-    pytest.main(['-x', '-s', __file__])
-    # pytest.main(['-x', __file__])
+    pytest.main([__file__, "-xs"])

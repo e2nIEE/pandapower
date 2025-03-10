@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import pytest
@@ -320,10 +320,4 @@ def test_QModels_with_2Dim_timeseries():
 
 
 if __name__ == '__main__':
-    if 0:
-        pytest.main(['-xs', __file__])
-    elif 1:
-        test_qofv()
-        test_cosphi_of_p_timeseries()
-        test_QModels_with_2Dim_timeseries()
-    pass
+    pytest.main(['-xs', __file__])

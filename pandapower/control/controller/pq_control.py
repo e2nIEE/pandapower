@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from pandapower.control.controller.const_control import ConstControl
@@ -136,13 +136,13 @@ class PQController(ConstControl):
         """
 
         if self.data_source is not None:
-            if self.p_profile or self.p_profile == 0:
+            if self.p_profile is not None:
                 self.p_mw = self.pq_simultaneity_factor * \
                             self.data_source.get_time_step_value(time_step=time,
                                                                  profile_name=self.p_profile,
                                                                  scale_factor=self.profile_scale)
 
-            if self.q_profile or self.q_profile == 0:
+            if self.q_profile is not None:
                 self.q_mvar = self.pq_simultaneity_factor * \
                               self.data_source.get_time_step_value(time_step=time,
                                                                    profile_name=self.q_profile,

@@ -48,7 +48,7 @@ The per unit values are therefore transformed into the network per unit system:
 
 where :math:`S_{N}` is the reference power of the per unit system (see :ref:`Unit Systems and Conventions<conventions>`). 
 
-The asymetric impedance results in an asymetric nodal point admittance matrix:
+The asymmetric impedance results in an asymmetric nodal point admittance matrix:
 
 .. math::
    :nowrap:
@@ -58,6 +58,12 @@ The asymetric impedance results in an asymetric nodal point admittance matrix:
     \vdots &  \underline{y}_{tf} & \ddots & \vdots \\
     \underline{Y}_{n0} & \dots & \dots & \underline{y}_{nn}\\
     \end{bmatrix}
+
+
+Optionally, the impedance element can also have conductance and susceptance at the "from" and "to" buses. In this case,
+the electric model becomes similar to the line model. It is possible to have different values of susceptance and
+conductance for the "from" and "to" bus, as is in the case of the resistance and reactance. This provides for
+flexibility in modeling an impedance branch element, which will be especially useful when modeling grid equivalents.
 
 
 Result Parameters

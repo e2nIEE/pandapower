@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -15,7 +15,7 @@ from pandapower.test.helper_functions import create_test_network2, add_grid_conn
 import pandapower.networks as nw
 import pandapower.shortcircuit as sc
 
-#TODO: 2 gen 2 ext_grid missing
+# TODO: 2 gen 2 ext_grid missing
 
 
 def test_2gen_1ext_grid():
@@ -23,6 +23,7 @@ def test_2gen_1ext_grid():
     net.shunt.q_mvar *= -1
     pp.create_gen(net, 2, p_mw=0.100)
     net.trafo.shift_degree = 150
+    net.trafo.tap_changer_type = "Ratio"
     pp.runpp(net, init='dc', calculate_voltage_angles=True)
 
     assert np.allclose(net.res_gen.p_mw.values, [0.100, 0.100])
@@ -47,6 +48,7 @@ def test_0gen_2ext_grid():
     pp.create_ext_grid(net, 1)
     net.gen = net.gen.drop(0)
     net.trafo.shift_degree = 150
+    net.trafo.tap_changer_type = "Ratio"
     net.ext_grid.at[1, "in_service"] = False
     pp.create_ext_grid(net, 3)
 
@@ -73,6 +75,7 @@ def test_0gen_2ext_grid_decoupled():
     net.ext_grid.at[2, "in_service"] = False
     auxbus = pp.create_bus(net, name="bus1", vn_kv=10.)
     net.trafo.shift_degree = 150
+    net.trafo.tap_changer_type = "Ratio"
     pp.create_std_type(net, {"type": "cs", "r_ohm_per_km": 0.876,  "q_mm2": 35.0,
                              "endtmp_deg": 160.0, "c_nf_per_km": 260.0,
                              "max_i_ka": 0.123, "x_ohm_per_km": 0.1159876},
@@ -214,11 +217,12 @@ def test_transformer_phase_shift():
         b3 = pp.create_bus(net, vn_kv=0.4)
         pp.create_ext_grid(net, b1)
         pp.create_transformer_from_parameters(
-            net, b1, b2, 40000, 110, 20, 0.1, 5, 0, 0.1, 30, side,
+            net, b1, b2, 40000, 110, 20, 0.1, 5, 0, 0.1,
+            30, side,
             # 0, 2, -2, 1.25, 10, 0)
-            0, 2, -2, 0, 10, 0, True)
+            0, 2, -2, 0, 10, 0, "Ideal")
         pp.create_transformer_from_parameters(
-            net, b2, b3, 630, 20, 0.4, 0.1, 5, 0, 0.1, 20, tap_phase_shifter=True)
+            net, b2, b3, 630, 20, 0.4, 0.1, 5, 0, 0.1, 20)
     pp.runpp(net, init="dc", calculate_voltage_angles=True)
     b2a_angle = net.res_bus.va_degree.at[1]
     b3a_angle = net.res_bus.va_degree.at[2]
@@ -254,7 +258,8 @@ def test_transformer_phase_shift_complex():
                                               vn_lv_kv=20, vkr_percent=0.1, vk_percent=5,
                                               pfe_kw=0, i0_percent=0.1, shift_degree=30,
                                               tap_side=side, tap_neutral=0, tap_max=2, tap_min=-2,
-                                              tap_step_percent=2, tap_step_degree=10, tap_pos=0)
+                                              tap_step_percent=2, tap_step_degree=10, tap_pos=0,
+                                              tap_changer_type="Ratio")
         pp.runpp(net, init="dc", calculate_voltage_angles=True)
         assert np.isclose(net.res_bus.vm_pu.at[b2], test_ref[0], rtol=1e-4)
         assert np.isclose(net.res_bus.va_degree.at[b2], test_ref[1], rtol=1e-4)
@@ -300,7 +305,7 @@ def test_transformer3w_phase_shift():
                                                 shift_lv_degree=60, tap_side=side,
                                                 tap_step_percent=2, tap_step_degree=10, tap_pos=0,
                                                 tap_neutral=0, tap_min=-2,
-                                                tap_max=2)
+                                                tap_max=2, tap_changer_type="Ratio")
         pp.runpp(net, init="dc", calculate_voltage_angles=True)
         assert np.isclose(net.res_bus.vm_pu.at[b2], test_ref[0][0], rtol=1e-4)
         assert np.isclose(net.res_bus.va_degree.at[b2], test_ref[0][1], rtol=1e-4)
@@ -394,7 +399,7 @@ def test_oos_buses_at_trafo3w():
     tidx = pp.create_transformer3w(
         net, b3, b4, b5, std_type='63/25/38 MVA 110/20/10 kV', in_service=True)
 
-    pp.runpp(net, trafo3w_losses = 'star', trafo_model= 'pi', init='flat')
+    pp.runpp(net, trafo3w_losses='star', trafo_model='pi', init='flat')
 
     assert net.res_line.loading_percent.at[l1] > 0
     assert np.isnan(net.res_trafo3w.i_hv_ka.at[tidx])
@@ -419,8 +424,8 @@ def network_with_trafo3ws():
             vkr_lv_percent=.01, pfe_kw=.5, i0_percent=0.1,
             name="test", index=pp.get_free_id(net.trafo3w) + 1,
             tap_side="hv", tap_pos=2, tap_step_percent=1.25,
-            tap_min=-5, tap_neutral=0, tap_max=5)
-    return (net, t3, hv, mv, lv)
+            tap_min=-5, tap_neutral=0, tap_max=5, tap_changer_type="Ratio")
+    return net, t3, hv, mv, lv
 
 
 def test_trafo3w_switches(network_with_trafo3ws):
@@ -475,11 +480,11 @@ def test_generator_as_slack():
     res_bus = net.res_bus.vm_pu.values
 
     pp.create_gen(net, b1, p_mw=0.1, vm_pu=1.02, slack=True)
-    net.ext_grid.in_service.iloc[0] = False
+    net.ext_grid.loc[0, 'in_service'] = False
     pp.runpp(net)
     assert np.allclose(res_bus, net.res_bus.vm_pu.values)
 
-    net.gen.slack.iloc[0] = False
+    net.gen.loc[0, 'slack'] = False
     with pytest.raises(UserWarning):
         pp.runpp(net)
 
@@ -561,7 +566,6 @@ def test_switch_results():
     pp.create_load(net, new_bus, p_mw=1.5)
     open_bb_switch = pp.create_switch(net, bus=new_bus, element=6, et="b", closed=False)
 
-
     pp.runpp(net)
 
     assert np.isclose(net.res_switch.i_ka.at[open_line_switch], 0)
@@ -579,7 +583,6 @@ def test_switch_results():
     assert np.isclose(net.res_switch.i_ka.at[switch_trafo_hv], abs(net.res_trafo.i_hv_ka.at[trafo]))
     assert np.isclose(net.res_switch.i_ka.at[switch_trafo_lv], abs(net.res_trafo.i_lv_ka.at[trafo]))
 
-
     sc.calc_sc(net, branch_results=True)
 
     assert np.isclose(net.res_switch_sc.ikss_ka.at[open_line_switch], 0)
@@ -593,5 +596,6 @@ def test_switch_results():
     assert np.isclose(net.res_switch_sc.ikss_ka.at[switch_trafo_hv], abs(net.res_trafo_sc.ikss_hv_ka.at[trafo]))
     assert np.isclose(net.res_switch_sc.ikss_ka.at[switch_trafo_lv], abs(net.res_trafo_sc.ikss_lv_ka.at[trafo]))
 
+
 if __name__ == "__main__":
-    pytest.main(["-xs", __file__])
+    pytest.main([__file__, "-xs"])

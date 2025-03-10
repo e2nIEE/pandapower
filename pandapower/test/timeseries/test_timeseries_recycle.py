@@ -298,7 +298,7 @@ def test_const_pq_gen_trafo_tap_dc(simple_test_net, run_function=pp.rundcpp):
 def test_const_pq_gen_trafo_tap_ideal(simple_test_net, run_function):
     # allows to use recycle = {"bus_pq", "gen", "trafo"}
     net = simple_test_net
-    net.trafo.loc[0, ["tap_step_percent", "tap_step_degree", "tap_phase_shifter"]] = 0, 5, True
+    net.trafo.loc[0, ["tap_step_percent", "tap_step_degree", "tap_changer_type"]] = 0, 5, "Ideal"
     profiles, _ = create_data_source(n_timesteps)
     profiles['ext_grid'] = np.ones(n_timesteps) + np.arange(0, n_timesteps) * 1e-2
     ds = DFData(profiles)
@@ -326,7 +326,7 @@ def test_const_pq_gen_trafo_tap_ideal(simple_test_net, run_function):
 def test_const_pq_gen_trafo_tap_shifter(simple_test_net, run_function):
     # allows to use recycle = {"bus_pq", "gen", "trafo"}
     net = simple_test_net
-    net.trafo.loc[0, ["tap_step_percent", "tap_step_degree", "tap_phase_shifter"]] = 1, 10, False
+    net.trafo.loc[0, ["tap_step_percent", "tap_step_degree", "tap_changer_type"]] = 1, 10, "Ratio"
     profiles, _ = create_data_source(n_timesteps)
     profiles['ext_grid'] = np.ones(n_timesteps) + np.arange(0, n_timesteps) * 1e-2
     ds = DFData(profiles)
@@ -375,4 +375,4 @@ def test_const_pq_out_of_service(simple_test_net, run_function):
 
 
 if __name__ == "__main__":
-    pytest.main(['-s', __file__])
+    pytest.main([__file__, "-xs"])
