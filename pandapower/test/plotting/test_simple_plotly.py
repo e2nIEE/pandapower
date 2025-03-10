@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from tempfile import gettempdir
@@ -41,6 +41,16 @@ def test_simple_plotly_3w():
     # net with 3W-transformer
     net = nw.example_multivoltage()
     fig = simple_plotly(net, filename=join(gettempdir(), "temp-plot.html"), auto_open=False)
+    assert len(fig.data) == (len(net.line) + 1) + (len(net.trafo) + 1) + (len(net.trafo3w)*3 + 1) + 2
+    # +1 is for infofunc traces, +2 = 1 bus trace + 1 ext_grid trace
+
+
+@pytest.mark.slow
+@pytest.mark.skipif(not PLOTLY_INSTALLED, reason="plotly functions require the plotly package")
+def test_simple_plotly_no_html():
+    net = nw.example_multivoltage()
+    # fig without generating a HTML
+    fig = simple_plotly(net, filename=None, auto_open=False)
     assert len(fig.data) == (len(net.line) + 1) + (len(net.trafo) + 1) + (len(net.trafo3w)*3 + 1) + 2
     # +1 is for infofunc traces, +2 = 1 bus trace + 1 ext_grid trace
 

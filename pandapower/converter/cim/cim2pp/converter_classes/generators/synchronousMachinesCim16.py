@@ -39,7 +39,7 @@ class SynchronousMachinesCim16:
 
     def _prepare_synchronous_machines_cim16(self) -> pd.DataFrame:
         eq_generating_units = self.cimConverter.cim['eq']['GeneratingUnit'][
-            ['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP']]
+            ['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP', 'governorSCD']]
         # a column for the type of the static generator in pandapower
         eq_generating_units['type'] = 'GeneratingUnit'
         eq_generating_units = pd.concat([eq_generating_units, self.cimConverter.cim['eq']['WindGeneratingUnit']],
@@ -122,6 +122,8 @@ class SynchronousMachinesCim16:
         synchronous_machines['current_source'] = True
         synchronous_machines['sn_mva'] = \
             synchronous_machines['ratedS'].fillna(synchronous_machines['nominalP'])
+        # Convert governorSCD unit from percent to MW/Hz
+        synchronous_machines['governorSCD'] = synchronous_machines['governorSCD'] * synchronous_machines['nominalP'] / 50 / 100
         # SC data
         synchronous_machines['vn_kv'] = synchronous_machines['ratedU'][:]
         synchronous_machines['rdss_ohm'] = \

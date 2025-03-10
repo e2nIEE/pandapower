@@ -282,7 +282,8 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
             else:
                 # add edges for any bus-bus switches
                 in_service = (switch.et.values == "b")
-            indices, parameter = init_par(switch, calc_branch_impedances)
+            ret = init_par(switch, calc_branch_impedances)
+            indices, parameter = ret[0], ret[1]
             indices[:, F_BUS] = switch.bus.values
             indices[:, T_BUS] = switch.element.values
             if switch_length_km is not None:

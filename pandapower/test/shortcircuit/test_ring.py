@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -32,7 +32,7 @@ def test_branch_results_open_ring():
     sc.calc_sc(net, branch_results=True, inverse_y=False)
     assert np.allclose(net.res_trafo_sc.ikss_lv_ka.values, [0.47705988])
     assert np.allclose(net.res_line_sc.ikss_ka.values, [0.45294928, 0.0, 0.47125418])
-    
+
 def test_branch_results_open_ring_with_impedance():
     net = ring_network()
     sc.calc_sc(net, branch_results=True, inverse_y=False)
