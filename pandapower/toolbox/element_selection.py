@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import gc
@@ -12,7 +12,7 @@ from packaging.version import Version
 
 from pandapower.auxiliary import ets_to_element_types
 
-from pandapower import __version__
+from pandapower._version import __version__
 
 try:
     import pandaplan.core.pplog as logging

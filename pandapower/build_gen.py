@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -38,9 +38,6 @@ def _build_gen_ppc(net, ppc):
 
     mode = net["_options"]["mode"]
     distributed_slack = net["_options"]["distributed_slack"]
-
-    if mode == "estimate":
-        return
 
     _is_elements = net["_is_elements"]
     gen_order = dict()
@@ -211,6 +208,7 @@ def _build_pp_gen(net, ppc, f, t):
     delta = net["_options"]["delta"]
     gen_is = net._is_elements["gen"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
+    mode = net["_options"]["mode"]
 
     gen_buses = bus_lookup[net["gen"]["bus"].values[gen_is]]
     gen_is_vm = net["gen"]["vm_pu"].values[gen_is]
@@ -222,11 +220,12 @@ def _build_pp_gen(net, ppc, f, t):
 
     # set bus values for generator buses
     ppc["bus"][gen_buses[ppc["bus"][gen_buses, BUS_TYPE] != REF], BUS_TYPE] = PV
-    ppc["bus"][gen_buses, VM] = gen_is_vm
+    if mode != "se":
+        ppc["bus"][gen_buses, VM] = gen_is_vm
 
     add_q_constraints(net, "gen", gen_is, ppc, f, t, delta)
     add_p_constraints(net, "gen", gen_is, ppc, f, t, delta)
-    if net._options["mode"] == "opf":
+    if mode == "opf":
         # this considers the vm limits for gens
         ppc = _check_gen_vm_limits(net, ppc, gen_buses, gen_is)
         if "controllable" in net.gen.columns:
@@ -448,7 +447,8 @@ def _normalise_slack_weights(ppc, gen_mask, xward_mask, xward_pq_buses):
         else:
             # ppc['gen'][subnet_gen_mask, SL_FAC] /= sum_slack_weights
             slack_weights_gen /= sum_slack_weights
-            buses, slack_weights_bus, _ = _sum_by_group(gen_buses[subnet_gen_mask], slack_weights_gen[subnet_gen_mask], slack_weights_gen[subnet_gen_mask])
+            buses, slack_weights_bus, _ = _sum_by_group(gen_buses[subnet_gen_mask], slack_weights_gen[subnet_gen_mask],
+                                                        slack_weights_gen[subnet_gen_mask])
             ppc['bus'][buses, SL_FAC_BUS] = slack_weights_bus
 
     # raise NotImplementedError if there are several separate zones for distributed slack:

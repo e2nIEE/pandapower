@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -8,7 +8,6 @@ import copy
 import pandas as pd
 import numpy as np
 import pandapower as pp
-from pandapower import replace_xward_by_ward
 
 try:
     import pandaplan.core.pplog as logging
@@ -21,7 +20,7 @@ from functools import partial
 from pandapower.auxiliary import (LoadflowNotConverged, OPFNotConverged, ControllerNotConverged,
                                   NetCalculationNotConverged)
 from pandapower.run import runpp
-from pandapower.toolbox import get_connected_elements
+from pandapower.toolbox import get_connected_elements, replace_xward_by_ward
 from pandapower.diagnostic_reports import diagnostic_report
 
 # separator between log messages

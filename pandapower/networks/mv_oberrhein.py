@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -10,8 +10,7 @@ import numpy as np
 
 import pandapower as pp
 import pandapower.topology as top
-import pandapower.plotting.geo as geo
-from pandapower import pp_dir
+from pandapower.__init__ import pp_dir
 
 
 def mv_oberrhein(scenario="load", cosphi_load=0.98, cosphi_pv=1.0, include_substations=False,

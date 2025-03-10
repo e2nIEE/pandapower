@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import pytest
@@ -331,7 +331,7 @@ def test_detach_and_compare():
         pp.detach_from_group(net, 3, "trafo", 1)
         assert pp.group_element_lists(net, 3)[0] == ["trafo"]
         assert pp.group_element_lists(net, 3)[1] == [typed_list([0, 2], type_)]
-        assert pp.group_element_lists(net, 3)[2] == [np.nan if type_ is int else "name"]
+        assert pp.group_element_lists(net, 3)[2] == [None if type_ is int else "name"]
 
 
 def test_res_power():

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -238,7 +238,7 @@ def _from_excel_old(xls):
 
 def from_json(filename, convert=True, encryption_key=None, elements_to_deserialize=None,
               keep_serialized_elements=True, add_basic_std_types=False, replace_elements=None,
-              empty_dict_like_object=None):
+              empty_dict_like_object=None, ignore_unknown_objects=False):
     """
     Load a pandapower network from a JSON file.
     The index of the returned network is not necessarily in the same order as the original network.
@@ -270,6 +270,9 @@ def from_json(filename, convert=True, encryption_key=None, elements_to_deseriali
         the data of the json string. Give another dict-like object to start filling that alternative
         object with the json data.
 
+        **ignore_unknown_objects** (bool, False) - If set to True, ignore any objects that cannot be
+         deserialized instead of raising an error
+
     OUTPUT:
         **net** (dict) - The pandapower format network
 
@@ -294,12 +297,13 @@ def from_json(filename, convert=True, encryption_key=None, elements_to_deseriali
         keep_serialized_elements=keep_serialized_elements,
         add_basic_std_types=add_basic_std_types,
         replace_elements=replace_elements,
-        empty_dict_like_object=empty_dict_like_object)
+        empty_dict_like_object=empty_dict_like_object,
+        ignore_unknown_objects=ignore_unknown_objects)
 
 
 def from_json_string(json_string, convert=False, encryption_key=None, elements_to_deserialize=None,
                      keep_serialized_elements=True, add_basic_std_types=False,
-                     replace_elements=None, empty_dict_like_object=None):
+                     replace_elements=None, empty_dict_like_object=None, ignore_unknown_objects=False):
     """
     Load a pandapower network from a JSON string.
     The index of the returned network is not necessarily in the same order as the original network.
@@ -330,6 +334,9 @@ def from_json_string(json_string, convert=False, encryption_key=None, elements_t
         the data of the json string. Give another dict-like object to start filling that alternative
         object with the json data.
 
+        **ignore_unknown_objects** (bool, False) - If set to True, ignore any objects that cannot be
+         deserialized instead of raising an error
+
     OUTPUT:
         **net** (dict) - The pandapower format network
 
@@ -347,10 +354,12 @@ def from_json_string(json_string, convert=False, encryption_key=None, elements_t
 
     if elements_to_deserialize is None:
         net = json.loads(json_string, cls=io_utils.PPJSONDecoder,
-                         empty_dict_like_object=empty_dict_like_object)
+                         empty_dict_like_object=empty_dict_like_object,
+                         ignore_unknown_objects=ignore_unknown_objects)
     else:
         net = json.loads(json_string, cls=io_utils.PPJSONDecoder, deserialize_pandas=False,
-                         empty_dict_like_object=empty_dict_like_object)
+                         empty_dict_like_object=empty_dict_like_object,
+                         ignore_unknown_objects=ignore_unknown_objects)
         net_dummy = create_empty_network()
         if ('version' not in net.keys()) | (Version(net.version) < Version('2.1.0')):
             raise UserWarning('table selection is only possible for nets above version 2.0.1. '

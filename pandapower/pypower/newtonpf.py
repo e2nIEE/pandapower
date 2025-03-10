@@ -4,7 +4,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -14,19 +14,18 @@ import numpy as np
 from numpy import float64, array, angle, sqrt, square, exp, linalg, conj, r_, inf, arange, zeros, \
     max, zeros_like, column_stack, flatnonzero, nan_to_num
 from pandapower.pypower.bustypes import bustypes_dc
-from pandapower.pypower.idx_brch_dc import DC_BR_R, DC_PF, DC_IF, DC_PT, DC_IT, DC_BR_STATUS
+from pandapower.pypower.idx_brch_dc import DC_BR_R, DC_PF, DC_IF, DC_PT, DC_IT, DC_BR_STATUS, DC_F_BUS, DC_T_BUS
 from scipy.sparse import csr_matrix, eye, vstack
 from scipy.sparse.linalg import spsolve
 
 from pandapower.auxiliary import _sum_by_group
-from pandapower import VSC_STATUS, VSC_BUS, VSC_INTERNAL_BUS, DC_F_BUS, DC_T_BUS
 from pandapower.pf.iwamoto_multiplier import _iwamoto_step
 from pandapower.pf.makeYbus_facts import makeYbus_svc, makeYft_tcsc, calc_y_svc_pu, \
     makeYbus_ssc_vsc, make_Ybus_facts, make_Yft_facts
-from pandapower.pypower.idx_bus_dc import DC_PD, DC_VM, DC_BUS_TYPE, DC_NONE, DC_BUS_I, DC_REF, DC_P, DC_B2B, DC_BASE_KV
+from pandapower.pypower.idx_bus_dc import DC_PD, DC_VM, DC_BUS_TYPE, DC_NONE, DC_BUS_I, DC_REF, DC_P
 from pandapower.pypower.idx_vsc import VSC_CONTROLLABLE, VSC_MODE_AC, VSC_VALUE_AC, VSC_MODE_DC, VSC_VALUE_DC, VSC_R, \
     VSC_X, VSC_Q, VSC_P, VSC_BUS_DC, VSC_P_DC, VSC_MODE_AC_SL, VSC_MODE_AC_V, VSC_MODE_AC_Q, VSC_MODE_DC_P, \
-    VSC_MODE_DC_V, VSC_INTERNAL_BUS_DC, VSC_R_DC, VSC_PL_DC
+    VSC_MODE_DC_V, VSC_INTERNAL_BUS_DC, VSC_R_DC, VSC_PL_DC, VSC_STATUS, VSC_BUS, VSC_INTERNAL_BUS
 from pandapower.pypower.makeSbus import makeSbus
 from pandapower.pf.create_jacobian import create_jacobian_matrix, get_fastest_jacobian_function
 from pandapower.pypower.idx_gen import PG

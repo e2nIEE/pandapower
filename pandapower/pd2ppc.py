@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
@@ -93,7 +93,7 @@ def _check_slack_at_vsc_bus(ppci):
                                   "this configuration is not implemented.")
 
 
-def _pd2ppc(net, sequence=None):
+def _pd2ppc(net, sequence=None, **kwargs):
     """
     Converter Flow:
         1. Create an empty pypower datatructure
@@ -200,7 +200,7 @@ def _pd2ppc(net, sequence=None):
         aux._set_isolated_buses_out_of_service(net, ppc)
 
     # we need to check this after checking connectivity (isolated vsc as DC slack cause change of DC_REF to DC_P)
-    if "pf" in mode:
+    if "pf" in mode or "se" in mode:
         _check_for_reference_bus(ppc)
 
     _build_gen_ppc(net, ppc)

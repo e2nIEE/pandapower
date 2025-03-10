@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -170,7 +170,7 @@ def _get_ext_grid_results_3ph(net, ppc0, ppc1, ppc2):
     eg_bus_idx_ppc = np.real(ppc1["gen"][eg_idx_ppc, GEN_BUS]).astype(np.int64)
     # read results from ppc for these buses
     V012 = np.array(np.zeros((3, n_res_eg)),dtype = np.complex128)
-    V012[:, eg_is_idx] = np.array([ppc["bus"][eg_bus_idx_ppc, VM] * ppc["bus"][eg_bus_idx_ppc, BASE_KV]
+    V012[:, eg_idx_ppc] = np.array([ppc["bus"][eg_bus_idx_ppc, VM] * ppc["bus"][eg_bus_idx_ppc, BASE_KV]
                                       * np.exp(1j * np.deg2rad(ppc["bus"][eg_bus_idx_ppc, VA]))
                                       for ppc in [ppc0, ppc1, ppc2]])
 
