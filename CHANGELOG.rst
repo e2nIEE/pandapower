@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [ADDED] cim2pp converter - export parameter "governorSCD" in additional column in gen table
 - [FIXED] a problem with create_nxgraph
 - [ADDED] parameter slack_as_gen for `from_ucte()` converter (changed the default behavior)
 
