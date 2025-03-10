@@ -12,6 +12,7 @@ Change Log
 - [FIXED] a problem with create_nxgraph
 - [ADDED] parameter slack_as_gen for `from_ucte()` converter (changed the default behavior)
 - [FIXED] cim2pp: the `ignore_errors` parameter was not respected in the `CimParser`
+- [ADDED] cim2pp converter - extract 'controlenabled' flag from CGMES SSH profile and populate 'controllable' flag for gen and sgen elements
 - [ADDED] add function to determine qmin and qmax from based on current active power in build_gen and update the dataframe with the determined values
 - [ADDED] add three columns: id_q_capability_curve_table, curve_dependency_table, curve_style in gen and sgen
 - [ADDED] create q capability curve characteristics and diagnostics function
