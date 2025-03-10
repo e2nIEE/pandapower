@@ -3,8 +3,9 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
-- [ADDED] add function to determine qmin and qmax from based on current active power in build_gen and update the dataframe with the determined values
-- [ADDED] add three columns: id_q_capability_curve_table, curve_dependency_table, curve_style in gen and sgen
+- [ADDED] cim2pp converter - extract 'controlenabled' flag from CGMES SSH profile and populate 'controllable' flag for gen and sgen elements
+- [ADDED] add function to determine qmin and qmax based on current active power in build_gen and update the dataframe with the determined values
+- [ADDED] add three columns: id_q_capability_curve_table, reactive_capability_curve, curve_style in gen and sgen
 - [ADDED] create q capability curve characteristics and diagnostics function
 - [ADDED] cim2pp converter- import reactive power capability curve data synchronousMachinesCim16.py
 - [ADDED] cim2pp converter - export parameter "governorSCD" in additional column in gen table
