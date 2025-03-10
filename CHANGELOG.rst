@@ -4,6 +4,7 @@ Change Log
 [upcoming release] - 2025-..-..
 -------------------------------
 - [FIXED] a problem with create_nxgraph
+- [ADDED] parameter slack_as_gen for `from_ucte()` converter (changed the default behavior)
 
 [3.0.0] - 2025-03-06
 -------------------------------
