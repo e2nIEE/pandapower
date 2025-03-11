@@ -466,8 +466,9 @@ def _normalise_slack_weights(ppc, gen_mask, xward_mask, xward_pq_buses):
 
 def _calculate_qmin_qmax_from_q_capability_curve_characteristics(net, element, is_element, ppc, f, t, delta, inverted):
     if element not in ["gen", "sgen"]:
-        raise UserWarning(f"The given element type is not valid for q_min and q_max of the {element}. "
-                          f"Please give gen or sgen as an argument of the function")
+        logger.warning(f"The given element type is not valid for q_min and q_max reactive power capability calculation "
+                       f"of the {element}. Please give gen or sgen as an argument of the function")
+        return
 
     if len(net[element]) == 0:
         logger.warning(f"No of {element} elements is zero.")
@@ -496,8 +497,7 @@ def _calculate_qmin_qmax_from_q_capability_curve_characteristics(net, element, i
         curve_q = net[element][["min_q_mvar", "max_q_mvar"]]
         curve_q.loc[element_data.index] = np.column_stack((calc_q_min, calc_q_max))
         sign = (1 - 2 * inverted)
-        ppc[element][f:t, [QMIN, QMAX]] = sign * curve_q.values[is_element] - (sign * delta)
-
+        ppc["gen"][f:t, [QMIN, QMAX]] = sign * curve_q.values[is_element] - (sign * delta)
     else:
         logger.warning(f"One of {element}(s) id characteristic or curve style of {element} is incorrect "
                        f"or not available even if the q_capability_curve_table is available.")
