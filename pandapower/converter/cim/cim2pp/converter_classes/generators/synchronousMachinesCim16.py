@@ -93,6 +93,7 @@ class SynchronousMachinesCim16:
         synchronous_machines = pd.merge(
             synchronous_machines, eqssh_reg_control.rename(columns={'rdfId': 'RegulatingControl'}),
             how='left', on='RegulatingControl')
+        synchronous_machines["controllable"] = synchronous_machines['controlEnabled'] & synchronous_machines['enabled']
         synchronous_machines = pd.merge(synchronous_machines, self.cimConverter.bus_merge, how='left', on='rdfId')
         synchronous_machines = synchronous_machines.drop_duplicates(['rdfId'], keep='first')
         synchronous_machines['vm_pu'] = synchronous_machines.targetValue / synchronous_machines.vn_kv

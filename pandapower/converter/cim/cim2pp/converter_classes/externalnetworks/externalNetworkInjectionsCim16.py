@@ -48,6 +48,9 @@ class ExternalNetworkInjectionsCim16:
         # create reactive_capability_curve flag
         if 'reactive_capability_curve' not in eni_sgens.columns:
             eni_sgens['reactive_capability_curve'] = False
+        # create reactive_capability_curve flag
+        if 'reactive_capability_curve' not in eni_slacks.columns:
+            eni_slacks['reactive_capability_curve'] = False
 
         self.cimConverter.copy_to_pp('ext_grid', eni_slacks)
         self.cimConverter.copy_to_pp('gen', eni_gens)
