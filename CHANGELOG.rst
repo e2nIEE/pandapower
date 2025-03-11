@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [FIXED] a problem with create_nxgraph
 
 [3.0.0] - 2025-03-06
 -------------------------------

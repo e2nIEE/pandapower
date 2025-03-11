@@ -40,6 +40,7 @@ class UCTE2pandapower:
                 "amica_name": str,
             },
             "line": {"amica_name": str},
+            "bus": {"ucte_country": str},
         }
         for pp_element in new_columns.keys():
             for col, dtype in new_columns[pp_element].items():

@@ -37,7 +37,7 @@ classifiers = [
 dependencies = [
     "pandas>=1.0",
     "networkx>=2.5",
-    "scipy<1.14",
+    "scipy",
     "numpy",
     "packaging",
     "tqdm",
