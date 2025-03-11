@@ -3,6 +3,8 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [ADDED] cim2pp converter - export parameter "governorSCD" in additional column in gen table
+- [FIXED] a problem with create_nxgraph
 
 [3.0.0] - 2025-03-06
 -------------------------------
