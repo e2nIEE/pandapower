@@ -1094,7 +1094,7 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
         if on_map is False:
             logger.warning("Existing geodata are not real lat/lon geographical coordinates. -> "
                            "plot on maps is not possible.\n"
-                           "Use geo_data_to_latlong(net, projection) to transform geodata from specific projection.")
+                           "Use convert_crs(net, epsg_in=projection) to transform geodata from specific projection.")
 
     if on_map:
         # change traces for mapbox

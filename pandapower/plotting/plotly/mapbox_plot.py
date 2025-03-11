@@ -32,8 +32,8 @@ def _on_map_test(x, y):
     try:
         location = geolocator.reverse(f"{x}, {y}", language='en-US')
     except GeocoderTimedOut:
-        logger.error("Existing net geodata cannot be geo-located: possible reason: geo-data not in lat/long ->"
-                     "try geo_data_to_latlong(net, projection) to transform geodata to lat/long!")
+        logger.error("Existing net geodata cannot be geo-located: possible reason: geo-data not in wgs84 ->"
+                     "try convert_crs(net, epsg_in=projection) to transform geodata to wgs84!")
     else:
         if location.address is None:
             return False
