@@ -139,7 +139,7 @@ def from_cim(file_list: List[str] = None, encoding: str = None, convert_line_to_
     """
     time_start_parsing = time.time()
 
-    cim_parser = cim_classes.CimParser(cgmes_version=cgmes_version)
+    cim_parser = cim_classes.CimParser(cgmes_version=cgmes_version, **kwargs)
     cim_parser.parse_files(file_list=file_list, encoding=encoding, prepare_cim_net=True, set_data_types=True)
 
     time_start_converting = time.time()
