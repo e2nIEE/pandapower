@@ -261,7 +261,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
                                      sn_mva=Sn, index=max_sgen_idx+len(net_zpbn.sgen)+1)
         elif elm == "gen":
             vm_pu = v[key+"_vm_total"][v.ext_bus == int(re.findall(r"\d+", busstr)[0])].values.real
-            elm_idx = pp.create_gen(net_zpbn, i, float(P), float(vm_pu), name=key+"_rei_"+busstr,
+            elm_idx = pp.create_gen(net_zpbn, i, float(P), float(vm_pu.item()), name=key+"_rei_"+busstr,
                                     sn_mva=Sn, index=max_gen_idx+len(net_zpbn.gen)+1)
 
     # ---- match other columns
@@ -675,6 +675,8 @@ def _replace_ext_area_by_impedances_and_shunts(
     new_shunts["step"] = 1
     new_shunts["max_step"] = 1
     new_shunts["in_service"] = True
+    if "step_dependency_table" in net_eq.shunt:
+        new_shunts["step_dependency_table"] = False
     net_eq["shunt"] = pd.concat([net_eq["shunt"], new_shunts])
     if n_disconnected_new_eq_shunts := sum(~isin_sh):
         msg = f"{n_disconnected_new_eq_shunts=}, missing buses: {new_shunts.bus.loc[~isin_sh]}"

@@ -65,6 +65,7 @@ def boundary_testnet(which):
         expected_bb["b"]["internal"] = expected_bb["a"]["external"] - {18}
         expected_bb["b"]["external"] = expected_bb["a"]["internal"] | {18}
 
+    net = pp.convert_format(net)
     pp.runpp(net)
     return net, expected_bb, expected_bbr
 

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
@@ -229,7 +229,7 @@ def test_json_encoding_decoding():
     net = networks.mv_oberrhein()
     net.tuple = (1, "4")
     net.mg = topology.create_nxgraph(net)
-    s = set(['1', 4])
+    s = {'1', 4}
     t = tuple(['2', 3])
     f = frozenset(['12', 3])
     a = np.array([1., 2.])
@@ -599,6 +599,37 @@ def test_multi_index():
     df = df.set_index(["a", "b"])
     df2 = pp.from_json_string(pp.to_json(df))
     assert_frame_equal(df, df2)
+
+
+def test_ignore_unknown_objects():
+    net = pp.networks.create_kerber_dorfnetz()
+    control.ContinuousTapControl(net, 0, 1.02)
+    json_str = pp.to_json(net)
+    net2 = pp.from_json_string(json_str, ignore_unknown_objects=False)
+
+    # in general, reloaded net should be equal to original net
+    assert isinstance(net2.controller.object.at[0], control.ContinuousTapControl)
+    assert_net_equal(net, net2)
+
+    # slightly change the class name of the controller so that it cannot be identified
+    # by file_io anymore, but can still be loaded as dict if ignore_unknown_objects=True
+    json_str2 = json_str.replace("pandapower.control.controller.trafo.ContinuousTapControl",
+                                 "pandapower.control.controller.trafo.ContinuousTapControl2")
+    with pytest.raises(ModuleNotFoundError):
+        pp.from_json_string(json_str2, ignore_unknown_objects=False)
+    json_str3 = json_str.replace("\"ContinuousTapControl", "\"ContinuousTapControl2")
+    with pytest.raises(AttributeError):
+        pp.from_json_string(json_str3, ignore_unknown_objects=False)
+    net3 = pp.from_json_string(json_str2, ignore_unknown_objects=True)
+    assert isinstance(net3.controller.object.at[0], dict)
+    net4 = pp.from_json_string(json_str3, ignore_unknown_objects=True)
+    assert isinstance(net4.controller.object.at[0], dict)
+
+    # make sure that the loaded net equals the original net except for the controller
+    net3.controller.object.at[0] = net.controller.object.at[0]
+    net4.controller.object.at[0] = net.controller.object.at[0]
+    assert_net_equal(net, net3)
+    assert_net_equal(net, net4)
 
 
 if __name__ == "__main__":

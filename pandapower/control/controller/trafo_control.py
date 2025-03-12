@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
@@ -46,13 +46,15 @@ class TrafoController(Controller):
 
         self._set_side(side)
         self._set_read_write_flag(net)
-        self._set_valid_controlled_index_and_bus(net)
+        # self._set_valid_controlled_index_and_bus(net)
         self._set_tap_parameters(net)
         self._set_tap_side_coeff(net)
 
         self.tol = tol
 
         self.set_recycle(net)
+
+        self.trafobus = read_from_net(net, self.element, self.element_index, self.side + '_bus', self._read_write_flag)
 
     def _set_read_write_flag(self, net):
         # if someone changes indices of the controller from single index to array and vice versa
@@ -67,25 +69,36 @@ class TrafoController(Controller):
         # update trafo tap parameters
         # we assume side does not change after the controller is created
         self._set_read_write_flag(net)
-        self._set_valid_controlled_index_and_bus(net)
+        # self._set_valid_controlled_index_and_bus(net)
         if self.nothing_to_do(net):
             return
         self._set_tap_parameters(net)
         self._set_tap_side_coeff(net)
 
     def nothing_to_do(self, net):
-        # if the controller shouldn't do anything, return True
-        if self.controlled_element_index is None or (
-                self._read_write_flag != 'single_index' and len(self.controlled_element_index) == 0):
-            return True
-        return False
+        element_in_service = read_from_net(net, self.element, self.element_index, 'in_service', self._read_write_flag)
+        ext_grid_bus = np.isin(self.trafobus, net.ext_grid.loc[net.ext_grid.in_service, 'bus'].values)
+        element_index_in_net = np.isin(self.element_index, net[self.element].index.values)
+        self.controlled = np.logical_and(np.logical_and(element_in_service, element_index_in_net), np.logical_not(ext_grid_bus))
+        if isinstance(self.element_index, np.int64) or isinstance(self.element_index, int):
+            # if the controller shouldn't do anything, return True
+            if not element_in_service or ext_grid_bus or not element_index_in_net or (
+                    self._read_write_flag != 'single_index' and len(self.element_index) == 0):
+                return True
+            return False
+        else:
+            # if the controller shouldn't do anything, return True
+            if np.all(~element_in_service[self.controlled]) or np.all(ext_grid_bus[self.controlled]) or np.all(~element_index_in_net[self.controlled]) or (
+                    self._read_write_flag != 'single_index' and len(self.element_index) == 0):
+                return True
+            return False
 
     def _set_tap_side_coeff(self, net):
-        tap_side = read_from_net(net, self.element, self.controlled_element_index, 'tap_side', self._read_write_flag)
+        tap_side = read_from_net(net, self.element, self.element_index, 'tap_side', self._read_write_flag)
         if (len(np.setdiff1d(tap_side, ['hv', 'lv'])) > 0 and self.element == "trafo") or \
             (len(np.setdiff1d(tap_side, ['hv', 'lv', 'mv'])) > 0 and self.element == "trafo3w"):
             raise ValueError("Trafo tap side (in net.%s) has to be either hv or lv, "
-                             "but received: %s for trafo %s" % (self.element, tap_side, self.controlled_element_index))
+                             "but received: %s for trafo %s" % (self.element, tap_side, self.element_index))
 
         if self._read_write_flag == "single_index":
             self.tap_side_coeff = 1 if tap_side == 'hv' else -1
@@ -113,29 +126,25 @@ class TrafoController(Controller):
         self.side = side
 
     def _set_valid_controlled_index_and_bus(self, net):
-        self.trafobus = read_from_net(net, self.element, self.element_index, self.side + '_bus', self._read_write_flag)
         element_in_service = read_from_net(net, self.element, self.element_index, 'in_service', self._read_write_flag)
         ext_grid_bus = np.isin(self.trafobus, net.ext_grid.loc[net.ext_grid.in_service, 'bus'].values)
         element_index_in_net = np.isin(self.element_index, net[self.element].index.values)
-        controlled = np.logical_and(np.logical_and(element_in_service, element_index_in_net), np.logical_not(ext_grid_bus))
-        if self._read_write_flag == 'single_index':
-            self.controlled_element_index = self.element_index if controlled else None
-            self.controlled_bus = self.trafobus if controlled else None
-        else:
-            self.controlled_element_index = self.element_index[controlled]
-            self.controlled_bus = self.trafobus[controlled]
+        self.controlled = np.logical_and(np.logical_and(element_in_service, element_index_in_net), np.logical_not(ext_grid_bus))
+        if self._read_write_flag != 'single_index':
+            self.element_index = self.element_index[self.controlled]
+            self.trafobus = self.trafobus[self.controlled]
 
-        if np.all(~controlled):
+        if np.all(~self.controlled):
             logger.warning("All controlled buses are not valid: controller has no effect")
 
     def _set_tap_parameters(self, net):
-        self.tap_min = read_from_net(net, self.element, self.controlled_element_index, "tap_min", self._read_write_flag)
-        self.tap_max = read_from_net(net, self.element, self.controlled_element_index, "tap_max", self._read_write_flag)
-        self.tap_neutral = read_from_net(net, self.element, self.controlled_element_index, "tap_neutral", self._read_write_flag)
-        self.tap_step_percent = read_from_net(net, self.element, self.controlled_element_index, "tap_step_percent", self._read_write_flag)
-        self.tap_step_degree = read_from_net(net, self.element, self.controlled_element_index, "tap_step_degree", self._read_write_flag)
+        self.tap_min = read_from_net(net, self.element, self.element_index, "tap_min", self._read_write_flag)
+        self.tap_max = read_from_net(net, self.element, self.element_index, "tap_max", self._read_write_flag)
+        self.tap_neutral = read_from_net(net, self.element, self.element_index, "tap_neutral", self._read_write_flag)
+        self.tap_step_percent = read_from_net(net, self.element, self.element_index, "tap_step_percent", self._read_write_flag)
+        self.tap_step_degree = read_from_net(net, self.element, self.element_index, "tap_step_degree", self._read_write_flag)
 
-        self.tap_pos = read_from_net(net, self.element, self.controlled_element_index, "tap_pos", self._read_write_flag)
+        self.tap_pos = read_from_net(net, self.element, self.element_index, "tap_pos", self._read_write_flag)
         if self._read_write_flag == "single_index":
             self.tap_sign = 1 if np.isnan(self.tap_step_degree) else np.sign(np.cos(np.deg2rad(self.tap_step_degree)))
             if (self.tap_sign == 0) | (np.isnan(self.tap_sign)):
@@ -163,7 +172,7 @@ class TrafoController(Controller):
         net.controller.at[self.index, 'recycle'] = recycle
 
     # def timestep(self, net):
-    #     self.tap_pos = net[self.element].at[self.controlled_element_index, "tap_pos"]
+    #     self.tap_pos = net[self.element].at[self.element_index, "tap_pos"]
 
     def __repr__(self):
         s = '%s of %s %s' % (self.__class__.__name__, self.element, self.element_index)

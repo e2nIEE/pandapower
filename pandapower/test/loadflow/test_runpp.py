@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -21,6 +21,7 @@ from pandapower.pf.create_jacobian import _create_J_without_numba
 from pandapower.pf.run_newton_raphson_pf import _get_pf_variables_from_ppci
 from pandapower.powerflow import LoadflowNotConverged
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
+from pandapower.test.control.test_shunt_control import simple_test_net_shunt_control
 from pandapower.test.loadflow.result_test_network_generator import add_test_xward, add_test_trafo3w, \
     add_test_line, add_test_oos_bus_with_is_element, result_test_network_generator, add_test_trafo
 from pandapower.test.helper_functions import add_grid_connection, create_test_line, assert_net_equal, assert_res_equal
@@ -576,19 +577,6 @@ def test_bsfw_algorithm_with_branch_loops():
     va_alg = net.res_bus.va_degree
     assert np.allclose(vm_nr, vm_alg)
     assert np.allclose(va_nr, va_alg)
-
-
-def test_disabling_vk_update():
-    net = example_simple()
-    pp.runpp(net, calculate_voltage_angles="auto")
-    net.trafo.loc[:, "vk_percent"] = 100.
-    net.trafo.loc[:, "vkr_percent"] = 100.
-
-    pp.runpp(net, calculate_voltage_angles="auto", update_vk_values=False)
-
-    assert net.res_trafo.loc[0, 'loading_percent'] > 70.
-
-
 @pytest.mark.slow
 def test_pypower_algorithms_iter():
     alg_to_test = ['fdbx', 'fdxb', 'gs']
@@ -782,7 +770,7 @@ def test_zip_loads_out_of_service():
     pp.create_line(net, from_bus=bus2, to_bus=bus3, length_km=0.1,
                    std_type="NAYY 4x50 SE", name="Line")
 
-    net1 = net.deepcopy()
+    net1 = copy.deepcopy(net)
     oos_load = pp.create_load(
         net1, bus=bus3, p_mw=0.100, q_mvar=0.05, in_service=False,
         const_i_percent=0, const_z_percent=100)
@@ -1326,19 +1314,30 @@ def test_tap_dependent_impedance():
                                             vn_hv_kv=20., vn_mv_kv=0.9, vn_lv_kv=0.45, sn_hv_mva=0.6, sn_mv_mva=0.5,
                                             sn_lv_mva=0.4, vk_hv_percent=1., vk_mv_percent=1., vk_lv_percent=1.,
                                             vkr_hv_percent=0.3, vkr_mv_percent=0.3, vkr_lv_percent=0.3,
-                                            pfe_kw=0.2, i0_percent=0.3, tap_neutral=0.,
-                                            tap_pos=0, tap_step_percent=1., tap_min=-2, tap_max=2)
+                                            pfe_kw=0.2, i0_percent=0.3, tap_neutral=0., tap_side='hv',
+                                            tap_pos=0, tap_step_percent=0., tap_min=-2, tap_max=2,
+                                            tap_changer_type="Ratio")
 
-    net_backup = net.deepcopy()
+    net_backup = copy.deepcopy(net)
 
-    pp.control.create_trafo_characteristics(net, 'trafo', [0], "vk_percent", [[-2, -1, 0, 1, 2]], [[5.5, 5.8, 6, 6.2, 6.5]])
-    pp.control.create_trafo_characteristics(net, 'trafo', [0], "vkr_percent", [[-2, -1, 0, 1, 2]], [[1.4, 1.42, 1.44, 1.46, 1.48]])
-    pp.control.create_trafo_characteristics(net, 'trafo', [1], "vk_percent", [[-2, -1, 0, 1, 2]], [[5.4, 5.7, 6, 6.1, 6.4]])
+    net["trafo_characteristic_table"] = pd.DataFrame(
+        {'id_characteristic': [0, 0, 0, 0, 0], 'step': [-2, -1, 0, 1, 2], 'voltage_ratio': [0.95, 0.975, 1, 1.025, 1.05],
+         'angle_deg': [0, 0, 0, 0, 0], 'vk_percent': [5.5, 5.8, 6, 6.2, 6.5],
+         'vkr_percent': [1.4, 1.42, 1.44, 1.46, 1.48], 'vk_hv_percent': np.nan, 'vkr_hv_percent': np.nan,
+         'vk_mv_percent': np.nan, 'vkr_mv_percent': np.nan, 'vk_lv_percent': np.nan, 'vkr_lv_percent': np.nan})
+    net.trafo['id_characteristic_table'].at[0] = 0
+    net.trafo['tap_dependency_table'].at[0] = True
+    net.trafo['tap_dependency_table'].at[1] = False
 
-    # test alternative way to set up tap dependence impedance characteristic
-    pp.control.SplineCharacteristic(net, [-2, -1, 0, 1, 2], [0.95, 0.98, 1, 1.02, 1.05])
-    net.trafo3w['tap_dependent_impedance'] = True
-    net.trafo3w['vk_hv_percent_characteristic'] = 3
+    new_rows = pd.DataFrame(
+        {'id_characteristic': [1, 1, 1, 1, 1], 'step': [-2, -1, 0, 1, 2], 'voltage_ratio': [1, 1, 1, 1, 1],
+         'angle_deg': [0, 0, 0, 0, 0], 'vk_hv_percent': [0.95, 0.98, 1, 1.02, 1.05],
+         'vkr_hv_percent': [0.3, 0.3, 0.3, 0.3, 0.3], 'vk_mv_percent': [1, 1, 1, 1, 1],
+         'vkr_mv_percent': [0.3, 0.3, 0.3, 0.3, 0.3], 'vk_lv_percent': [1, 1, 1, 1, 1],
+         'vkr_lv_percent': [0.3, 0.3, 0.3, 0.3, 0.3]})
+    net["trafo_characteristic_table"] = pd.concat([net["trafo_characteristic_table"], new_rows], ignore_index=True)
+    net.trafo3w['id_characteristic_table'].at[0] = 1
+    net.trafo3w['tap_dependency_table'].at[0] = True
 
     pp.runpp(net)
     pp.runpp(net_backup)
@@ -1353,14 +1352,6 @@ def test_tap_dependent_impedance():
     pp.runpp(net_backup)
     assert_res_equal(net, net_backup)
 
-    net.trafo.at[1, "tap_pos"] = -2
-    net_backup.trafo.at[1, "tap_pos"] = -2
-    net_backup.trafo.at[1, "vk_percent"] = 5.4
-
-    pp.runpp(net)
-    pp.runpp(net_backup)
-    assert_res_equal(net, net_backup)
-
     net.trafo3w.at[0, "tap_pos"] = 2
     net_backup.trafo3w.at[0, "tap_pos"] = 2
     net_backup.trafo3w.at[0, "vk_hv_percent"] = 1.05
@@ -1368,6 +1359,69 @@ def test_tap_dependent_impedance():
     pp.runpp(net)
     pp.runpp(net_backup)
     assert_res_equal(net, net_backup)
+
+def test_tap_table_order():
+    net = pp.create_empty_network()
+    b1, b2, l1 = add_grid_connection(net)
+    b3 = pp.create_bus(net, vn_kv=0.4)
+    b4 = pp.create_bus(net, vn_kv=0.4)
+    pp.create_transformer(net, hv_bus=b2, lv_bus=b3, std_type="0.25 MVA 20/0.4 kV")
+    pp.create_transformer(net, hv_bus=b2, lv_bus=b4, std_type="0.25 MVA 20/0.4 kV")
+
+    b5 = pp.create_bus(net, vn_kv=0.9)
+    b6 = pp.create_bus(net, vn_kv=0.4)
+    pp.create_transformer3w_from_parameters(net, hv_bus=b2, mv_bus=b5, lv_bus=b6,
+                                            vn_hv_kv=20., vn_mv_kv=0.9, vn_lv_kv=0.45, sn_hv_mva=0.6, sn_mv_mva=0.5,
+                                            sn_lv_mva=0.4, vk_hv_percent=1., vk_mv_percent=1., vk_lv_percent=1.,
+                                            vkr_hv_percent=0.3, vkr_mv_percent=0.3, vkr_lv_percent=0.3,
+                                            pfe_kw=0.2, i0_percent=0.3, tap_neutral=0., tap_side='hv',
+                                            tap_pos=0, tap_step_percent=0., tap_min=-2, tap_max=2,
+                                            tap_changer_type="Ratio")
+
+    net["trafo_characteristic_table"] = pd.DataFrame(
+        {'id_characteristic': [0, 0, 0, 0, 0], 'step': [-2, -1, 0, 1, 2], 'voltage_ratio': [1, 1, 1, 1, 1],
+         'angle_deg': [0, 0, 0, 0, 0], 'vk_percent': np.nan, 'vkr_percent': np.nan,
+         'vk_hv_percent': [0.95, 0.98, 1, 1.02, 1.05], 'vkr_hv_percent': [0.3, 0.3, 0.3, 0.3, 0.3],
+         'vk_mv_percent': [1, 1, 1, 1, 1], 'vkr_mv_percent': [0.3, 0.3, 0.3, 0.3, 0.3],
+         'vk_lv_percent': [1, 1, 1, 1, 1], 'vkr_lv_percent': [0.3, 0.3, 0.3, 0.3, 0.3]})
+    net.trafo3w['id_characteristic_table'].at[0] = 0
+    net.trafo3w['tap_dependency_table'].at[0] = True
+
+    new_rows = pd.DataFrame(
+        {'id_characteristic': [1, 1, 1, 1, 1, 2, 2, 2, 2, 2], 'step': [-2, -1, 0, 1, 2, -2, -1, 0, 1, 2],
+         'voltage_ratio': [0.95, 0.975, 1, 1.025, 1.05, 0.98, 0.99, 1, 1.01, 1.02],
+         'angle_deg': [0, 0, 0, 0, 0, -2, -1, 0, 1, 2], 'vk_percent': [5.5, 5.8, 6, 6.2, 6.5, 5.5, 5.8, 6, 6.2, 6.5],
+         'vkr_percent': [1.4, 1.42, 1.44, 1.46, 1.48, 1.4, 1.42, 1.44, 1.46, 1.48], 'vk_hv_percent': np.nan, 'vkr_hv_percent': np.nan,
+         'vk_mv_percent': np.nan, 'vkr_mv_percent': np.nan, 'vk_lv_percent': np.nan, 'vkr_lv_percent': np.nan})
+    net["trafo_characteristic_table"] = pd.concat([net["trafo_characteristic_table"], new_rows], ignore_index=True)
+    net.trafo['id_characteristic_table'].at[0] = 2
+    net.trafo['id_characteristic_table'].at[1] = 1
+    net.trafo['tap_dependency_table'].at[0] = True
+    net.trafo['tap_dependency_table'].at[1] = True
+    net.trafo['tap_pos'].at[0] = -2
+    net.trafo['tap_pos'].at[1] = 2
+
+    pp.runpp(net)
+
+    tol = 0.001
+
+    assert net.converged == True
+    assert np.isclose(net.res_bus.loc[4, 'va_degree'], -1 * (150 - 2 + 0.03717), 0, tol, False)
+    assert np.isclose(net.res_bus.loc[5, 'va_degree'], -1 * (150 - 0 + 0.03810), 0, tol, False)
+    assert np.isclose(net.res_bus.loc[4, 'vm_pu'], 1.03144595, tol, False)
+    assert np.isclose(net.res_bus.loc[5, 'vm_pu'], 0.96268165, tol, False)
+
+def test_shunt_step_dependency_warning():
+    net = simple_test_net_shunt_control()
+    net["shunt_characteristic_table"] = pd.DataFrame(
+        {'id_characteristic': [0, 0, 0, 0, 0], 'step': [1, 2, 3, 4, 5], 'q_mvar': [-25, -50, -75, -100, -125],
+         'p_mw': [0, 0, 0, 0, 0]})
+    pp.create_shunt(net, bus=0, q_mvar=-10, p_mw=20, step=1, max_step=5)
+    net.shunt.step_dependency_table.at[0] = True
+    net.shunt.step.at[0] = 1
+
+    with pytest.raises(UserWarning):
+        pp.runpp(net)
 
 
 @pytest.mark.skipif(not lightsim2grid_available, reason="lightsim2grid is not installed")
@@ -1471,6 +1525,29 @@ def test_lightsim2grid_option():
     pp.runpp(net, distributed_slack=True)
     assert net._options["lightsim2grid"]
 
+
+def test_at_isolated_bus():
+    net = pp.create_empty_network()
+    pp.create_buses(net, 4, 110)
+    pp.create_ext_grid(net, 0)
+
+    pp.create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
+
+    pp.create_gen(net, 3, 0, vm_pu=0, in_service=False)
+
+    pp.runpp(net)
+    assert net._options["init_vm_pu"] == 1.
+
+def test_shunt_with_missing_vn_kv():
+    net = pp.create_empty_network()
+    pp.create_buses(net, 2, 110)
+    pp.create_ext_grid(net, 0)
+    pp.create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
+
+    pp.create_shunt(net, 1, 10)
+    net.shunt.vn_kv=np.nan
+
+    pp.runpp(net)
 
 if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

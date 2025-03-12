@@ -34,14 +34,14 @@ class CimParser:
         self.file_names: Dict[str, str] = dict()
         self.report_container = ReportContainer()
 
-    def parse_files(self, file_list: List[str] or str = None, encoding: str = 'utf-8', prepare_cim_net: bool = False,
+    def parse_files(self, file_list: List[str] or str = None, encoding: str = None, prepare_cim_net: bool = False,
                     set_data_types: bool = False) -> CimParser:
         """
         Parse CIM XML files from a storage.
 
         :param file_list: The path to the CGMES files as a list. Note: The files need a FullModel to parse the
         CGMES profile. Optional, default: None.
-        :param encoding: The encoding from the files. Optional, default: utf-8
+        :param encoding: The encoding from the files. Optional, default: None
         :param prepare_cim_net: Set this parameter to True to prepare the parsed cim data according to the
         CimConverter. Optional, default: False
         :param set_data_types: Set this parameter to True to set the cim data types at the parsed data. Optional,
@@ -227,12 +227,12 @@ class CimParser:
                 'NonConformLoad': pd.DataFrame(columns=['rdfId', 'name', 'description']),
                 'StationSupply': pd.DataFrame(columns=['rdfId', 'name', 'description', 'BaseVoltage']),
                 'GeneratingUnit': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'nominalP', 'initialP', 'minOperatingP', 'maxOperatingP', 'EquipmentContainer']),
-                'WindGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP']),
-                'HydroGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP']),
-                'SolarGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP']),
-                'ThermalGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP']),
-                'NuclearGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP']),
+                    'rdfId', 'name', 'nominalP', 'initialP', 'minOperatingP', 'maxOperatingP', 'EquipmentContainer', 'governorSCD']),
+                'WindGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP', 'governorSCD']),
+                'HydroGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP', 'governorSCD']),
+                'SolarGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP', 'governorSCD']),
+                'ThermalGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP', 'governorSCD']),
+                'NuclearGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP', 'governorSCD']),
                 'RegulatingControl': pd.DataFrame(columns=['rdfId', 'name', 'mode', 'Terminal']),
                 'SynchronousMachine': pd.DataFrame(columns=[
                     'rdfId', 'name', 'description', 'GeneratingUnit', 'EquipmentContainer', 'ratedU', 'ratedS', 'type',
@@ -244,7 +244,7 @@ class CimParser:
                     'rdfId', 'name', 'description', 'nominalVoltage', 'EnergySchedulingType', 'BaseVoltage',
                     'EquipmentContainer', 'voltageAngle', 'voltageMagnitude']),
                 'EnergySchedulingType': pd.DataFrame(columns=['rdfId', 'name']),
-                'StaticVarCompensator': pd.DataFrame(columns=['rdfId', 'name', 'description', 'voltageSetPoint']),
+                'StaticVarCompensator': pd.DataFrame(columns=['rdfId', 'name', 'description', 'voltageSetPoint','sVCControlMode']),
                 'PowerTransformer': pd.DataFrame(columns=[
                     'rdfId', 'name', 'description', 'EquipmentContainer', 'isPartOfGeneratorUnit']),
                 'PowerTransformerEnd': pd.DataFrame(columns=[
@@ -630,12 +630,12 @@ class CimParser:
                 'NonConformLoad': pd.DataFrame(columns=['rdfId', 'name', 'description']),
                 'StationSupply': pd.DataFrame(columns=['rdfId', 'name', 'description', 'BaseVoltage']),
                 'GeneratingUnit': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'nominalP', 'minOperatingP', 'maxOperatingP', 'EquipmentContainer']),
-                'WindGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP']),
-                'HydroGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP']),
-                'SolarGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP']),
-                'ThermalGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP']),
-                'NuclearGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP']),
+                    'rdfId', 'name', 'nominalP', 'minOperatingP', 'maxOperatingP', 'EquipmentContainer', 'governorSCD']),
+                'WindGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP', 'governorSCD']),
+                'HydroGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP', 'governorSCD']),
+                'SolarGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP', 'governorSCD']),
+                'ThermalGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP', 'governorSCD']),
+                'NuclearGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP', 'governorSCD']),
                 'RegulatingControl': pd.DataFrame(columns=['rdfId', 'name', 'mode', 'Terminal']),
                 'SynchronousMachine': pd.DataFrame(columns=[
                     'rdfId', 'name', 'description', 'GeneratingUnit', 'EquipmentContainer', 'ratedU', 'ratedS', 'type',
@@ -646,7 +646,7 @@ class CimParser:
                     'rdfId', 'name', 'description', 'nominalVoltage', 'EnergySchedulingType',
                     'EquipmentContainer']),
                 'EnergySchedulingType': pd.DataFrame(columns=['rdfId', 'name']),
-                'StaticVarCompensator': pd.DataFrame(columns=['rdfId', 'name', 'description', 'voltageSetPoint']),
+                'StaticVarCompensator': pd.DataFrame(columns=['rdfId', 'name', 'description', 'voltageSetPoint','sVCControlMode']),
                 'PowerTransformer': pd.DataFrame(columns=['rdfId', 'name', 'description', 'EquipmentContainer']),
                 'PowerTransformerEnd': pd.DataFrame(columns=[
                     'rdfId', 'name', 'PowerTransformer', 'endNumber', 'Terminal', 'ratedS', 'ratedU',

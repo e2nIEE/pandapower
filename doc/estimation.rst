@@ -87,7 +87,7 @@ Handling of bad data
 
 The state estimation class allows additionally the removal of bad data, especially single or non-interacting false measurements.
 For detecting bad data the Chi-squared distribution is used to identify the presence of them.
-Afterwards follows the largest normalized residual test that identifys the actual measurements which will be removed at the end.
+Afterwards follows the largest normalized residual test that identifies the actual measurements which will be removed at the end.
 Both methods are combined in the *perform_rn_max_test* function that is part of the state estimation class.
 To access it, the following wrapper function *remove_bad_data* has been created.
 
@@ -145,7 +145,7 @@ If we like to check our data for fault measurements, and exclude them in in our 
     success_rn_max = remove_bad_data(net, init="flat")
     V_rn_max, delta_rn_max = net.res_bus_est.vm_pu, net.res_bus_est.va_degree
 
-In the case that we only like to know if there is a likelihood of fault measurements (probabilty of fault can be adjusted), the Chi-squared test should be performed separatly.
+In the case that we only like to know if there is a likelihood of fault measurements (probability of fault can be adjusted), the Chi-squared test should be performed separately.
 If the test detects the possibility of fault data, the value of the added class member variable *bad_data_present* would be *true* as well as the boolean variable *success_chi2* that is used here:
 
 ::

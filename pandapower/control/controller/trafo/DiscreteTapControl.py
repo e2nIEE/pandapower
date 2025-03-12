@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
@@ -108,9 +108,9 @@ class DiscreteTapControl(TrafoController):
         if self.nothing_to_do(net):
             return
 
-        vm_pu = read_from_net(net, "res_bus", self.controlled_bus, "vm_pu", self._read_write_flag)
+        vm_pu = read_from_net(net, "res_bus", self.trafobus, "vm_pu", self._read_write_flag)
         self.tap_pos = read_from_net(
-            net, self.element, self.controlled_element_index, "tap_pos", self._read_write_flag)
+            net, self.element, self.element_index, "tap_pos", self._read_write_flag)
 
         increment = np.where(
             self.tap_side_coeff * self.tap_sign == 1,
@@ -126,7 +126,7 @@ class DiscreteTapControl(TrafoController):
             self._hunting_taps = self._hunting_taps[1:, :]
 
         # WRITE TO NET
-        write_to_net(net, self.element, self.controlled_element_index, 'tap_pos',
+        write_to_net(net, self.element, self.element_index, 'tap_pos',
                      self.tap_pos, self._read_write_flag)
 
     def is_converged(self, net):
@@ -136,11 +136,11 @@ class DiscreteTapControl(TrafoController):
         if self.nothing_to_do(net):
             return True
 
-        vm_pu = read_from_net(net, "res_bus", self.controlled_bus, "vm_pu", self._read_write_flag)
+        vm_pu = read_from_net(net, "res_bus", self.trafobus, "vm_pu", self._read_write_flag)
         # this is possible in case the trafo is set out of service by the connectivity check
         is_nan = np.isnan(vm_pu)
         self.tap_pos = read_from_net(
-            net, self.element, self.controlled_element_index, "tap_pos", self._read_write_flag)
+            net, self.element, self.element_index, "tap_pos", self._read_write_flag)
 
         reached_limit = np.where(self.tap_side_coeff * self.tap_sign == 1,
                                  (vm_pu < self.vm_lower_pu) & (self.tap_pos == self.tap_min) |
