@@ -858,7 +858,7 @@ def test_fullgrid_shunt(fullgrid_v2):
 
 
 def test_fullgrid_sgen(fullgrid_v2):
-    assert 1 == len(fullgrid_v2.sgen.index)
+    assert 0 == len(fullgrid_v2.sgen.index)
 
 
 def test_fullgrid_pwl_cost(fullgrid_v2):
@@ -968,7 +968,7 @@ def test_fullgrid_impedance(fullgrid_v2):
 
 
 def test_fullgrid_gen(fullgrid_v2):
-    assert len(fullgrid_v2.gen.index) in [7, 9, 10, 11]
+    assert len(fullgrid_v2.gen.index) == 8
     element_0 = fullgrid_v2.gen[fullgrid_v2.gen['origin_id'] == '_55d4aae2-0d4b-4248-bc90-1193f3499fa0']
     assert 'BE-G5' == element_0['name'].item()
     assert '_f96d552a-618d-4d0c-a39a-2dea3c411dee' == fullgrid_v2.bus.iloc[element_0['bus'].item()]['origin_id']
