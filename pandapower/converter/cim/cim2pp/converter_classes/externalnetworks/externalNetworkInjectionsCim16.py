@@ -86,11 +86,8 @@ class ExternalNetworkInjectionsCim16:
         eni = pd.merge(eni,
                        self.cimConverter.net.bus[[sc['o_id'], 'zone']].rename({sc['o_id']: 'b_id'}, axis=1),
                        how='left', left_on='ConnectivityNode', right_on='b_id')
-
-        # convert pu generators with prio = 0 to pq generators (PowerFactory does it same)
-        eni.loc[eni['referencePriority'] == 0, 'referencePriority'] = -1
+        
         eni['referencePriority'] = eni['referencePriority'].astype(float)
-        eni.loc[eni['referencePriority'] == -1, 'controlEnabled'] = False
         eni['p'] = -eni['p']
         eni['q'] = -eni['q']
         eni['x0x_max'] = ((eni['maxR1ToX1Ratio'] + 1j) /
