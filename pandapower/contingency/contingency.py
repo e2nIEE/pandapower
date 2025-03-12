@@ -82,10 +82,17 @@ def run_contingency(net, nminus1_cases, pf_options=None, pf_options_nminus1=None
     # set up the dict for results and relevant variables
     # ".get" in case the options have been set in pp.set_user_pf_options:
     raise_errors = kwargs.get("raise_errors", False)
-    if "recycle" in kwargs: kwargs["recycle"] = False  # so that we can be sure it doesn't happen
-    if pf_options is None: pf_options = net.user_pf_options.get("pf_options", net.user_pf_options)
-    if pf_options_nminus1 is None: pf_options_nminus1 = net.user_pf_options.get("pf_options_nminus1",
-                                                                                net.user_pf_options)
+    if "recycle" in kwargs:
+        kwargs["recycle"] = False  # so that we can be sure it doesn't happen
+    if pf_options is None:
+        pf_options = net.user_pf_options.get("pf_options", net.user_pf_options)
+    if pf_options_nminus1 is None:
+        pf_options_nminus1 = net.user_pf_options.get("pf_options_nminus1", net.user_pf_options)
+    if kwargs is not None:
+        # avoid duplicate passing keys to contingency_evaluation_function()
+        pf_options = {key: val for key, val in pf_options.items() if key not in kwargs.keys()}
+        pf_options_nminus1 = {key: val for key, val in pf_options_nminus1.items() if key not in
+                              kwargs.keys()}
 
     contingency_results = {element: {"index": net[element].index.values}
                            for element in ("bus", "line", "trafo", "trafo3w") if len(net[element]) > 0}
@@ -178,13 +185,32 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=pp.
     n_bus = len(net.bus)
     last_bus = net.bus.index[-1]
     if net.bus.index[0] != 0 or last_bus != n_bus - 1 or sum(net.bus.index) != last_bus * n_bus / 2:
-        raise UserWarning("bus index must be continuous and start with 0 (use pandapower.create_continuous_bus_index)")
+        raise UserWarning("bus index must be continuous and start with 0 "
+                          "(use pandapower.create_continuous_bus_index)")
     contingency_evaluation_function(net, **kwargs)
 
-    trafo_flag = False
-    if np.any(net.trafo.tap_phase_shifter):
-        trafo_flag = True
-        tap_phase_shifter, tap_pos, shift_degree = _convert_trafo_phase_shifter(net)
+    tps_flag = False
+    tps, tps_tap_pos, tps_shift_degree = None, None, None
+    if "tap_phase_shifter" in net.trafo.columns:
+        if np.any(net.trafo.tap_phase_shifter):
+            tps_flag = True
+            tps, tps_tap_pos, tps_shift_degree = _convert_trafo_phase_shifter(
+                net, "trafo", "tap_phase_shifter")
+
+    tct2w_flag = False
+    tct2w, tct2w_tap_pos, tct2w_shift_degree = None, None, None
+    tct3w_flag = False
+    tct3w, tct3w_tap_pos, tct3w_shift_degree = None, None, None
+    if "tap_changer_type" in net.trafo.columns:
+        if np.any(net.trafo.tap_changer_type == "Ideal"):
+            tct2w_flag = True
+            tct2w, tct2w_tap_pos, tct2w_shift_degree = _convert_trafo_phase_shifter(
+                net, "trafo", "tap_changer_type")
+    if "tap_changer_type" in net.trafo3w.columns:
+        if np.any(net.trafo3w.tap_changer_type == "Ideal"):
+            tct3w_flag = True
+            tct3w, tct3w_tap_pos, tct3w_shift_degree = _convert_trafo_phase_shifter(
+                    net, "trafo3w", "tap_changer_type")
 
     # setting "slack" back-and-forth is due to the difference in interpretation of generators as "distributed slack"
     if net._options.get("distributed_slack", False):
@@ -201,10 +227,18 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=pp.
         lightsim_grid_model = init_ls2g(net)
         solver_type = SolverType.KLUSingleSlack if KLU_solver_available else SolverType.SparseLUSingleSlack
 
-    if trafo_flag:
-        net.trafo.tap_phase_shifter = tap_phase_shifter
-        net.trafo.tap_pos = tap_pos
-        net.trafo.shift_degree = shift_degree
+    if tps_flag:
+        net.trafo.tap_phase_shifter = tps
+        net.trafo.tap_pos = tps_tap_pos
+        net.trafo.shift_degree = tps_shift_degree
+    if tct2w_flag:
+        net.trafo.tap_changer_type = tct2w
+        net.trafo.tap_pos = tct2w_tap_pos
+        net.trafo.shift_degree = tct2w_shift_degree
+    if tct3w_flag:
+        net.trafo3w.tap_changer_type = tct3w
+        net.trafo3w.tap_pos = tct3w_tap_pos
+        net.trafo3w.shift_degree = tct3w_shift_degree
 
     n_lines = len(net.line)
     n_lines_cases = len(nminus1_cases.get("line", {}).get("index", []))
@@ -297,21 +331,32 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=pp.
                 np.sort(map_index[element])], "congestion_caused_mva"] = congestion_caused
 
 
-def _convert_trafo_phase_shifter(net):
-    tap_phase_shifter = net.trafo.tap_phase_shifter.values.copy()
-    # vn_hv_kv = net.trafo.vn_hv_kv.values.copy()
-    shift_degree = net.trafo.shift_degree.values.copy()
+def _convert_trafo_phase_shifter(net, trafotable="trafo", tap_param="tap_changer_type"):
+    """
+    Moves tap_step_degree values for ideal phase shifters to the shift_degree values.
+    Works both for old implementation (tap_phase_shifter) and for new implementation (tap_changer_type).
+    """
+    tap_changer = net[trafotable][tap_param].values.copy()
+    shift_degree = net[trafotable].shift_degree.values.copy()
 
-    tap_pos = net.trafo.tap_pos.values
-    tap_neutral = net.trafo.tap_neutral.values
+    tap_pos = net[trafotable].tap_pos.values
+    tap_neutral = net[trafotable].tap_neutral.values
     tap_diff = tap_pos - tap_neutral
-    tap_step_degree = net.trafo.tap_step_degree.values.copy()
+    tap_step_degree = net[trafotable].tap_step_degree.values.copy()
 
-    net.trafo.loc[tap_phase_shifter, 'shift_degree'] += tap_diff[tap_phase_shifter] * tap_step_degree[tap_phase_shifter]
-    net.trafo["tap_pos"] = 0
-    net.trafo["tap_phase_shifter"] = False
+    if tap_param == "tap_changer_type":
+        net.trafo.loc[tap_changer == "Ideal", 'shift_degree'] += (tap_diff[tap_changer == "Ideal"] *
+                                                                  tap_step_degree[tap_changer == "Ideal"])
+        net[trafotable][tap_param] = None
+    elif tap_param == "tap_phase_shifter":
+        net.trafo.loc[tap_changer, 'shift_degree'] += tap_diff[tap_changer] * tap_step_degree[tap_changer]
+        net[trafotable][tap_param] = False
+    else:
+        raise ValueError("tap_param argument not recognized")
 
-    return tap_phase_shifter, tap_pos, shift_degree
+    net[trafotable]["tap_pos"] = 0
+
+    return tap_changer, tap_pos, shift_degree
 
 
 def _update_contingency_results(net, contingency_results, result_variables, nminus1, cause_element=None,

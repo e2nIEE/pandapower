@@ -635,8 +635,13 @@ def _create_branch_trace(net, branches=None, use_branch_geodata=True, respect_se
                 logger.warning("No color and info for {} {:d} (name: {}) available".format(
                     branch_element, idx, branch['name']))
 
-        line_trace = dict(type='scatter', text=[], hoverinfo='text', mode='lines', name=trace_name,
-                          line=Line(width=width, color=color, dash=dash), showlegend=False,
+        line_trace = dict(type='scatter',
+                          text=[],
+                          hoverinfo='text',
+                          mode='lines',
+                          name=trace_name,
+                          line=Line(width=width, color=color, dash=dash),
+                          showlegend=False,
                           legendgroup=legendgroup)
 
         line_trace['x'], line_trace['y'] = _get_branch_geodata_plotly(net,
@@ -851,7 +856,7 @@ def create_weighted_marker_trace(net, elm_type="load", elm_ids=None, column_to_p
                                  marker_scaling=1., trace_name="", infofunc=None,
                                  node_element="bus", show_scale_legend=True,
                                  scale_marker_size=None, scale_marker_color=None,
-                                 scale_legend_unit=None):
+                                 scale_legend_unit=None, trace_kwargs=None):
     """Create a single-color plotly trace markers/patches (e.g., bubbles) of value-dependent size.
 
     Can be used with pandapipes.plotting.plotly.simple_plotly (pass as "additional_trace").
@@ -907,6 +912,9 @@ def create_weighted_marker_trace(net, elm_type="load", elm_ids=None, column_to_p
         **scale_legend_unit** (str, default None): specifies the unit shown in the scale legend
         marker's string. It does not trigger any unit conversions! If None, the last part of
         `column_to_plot` will be used (all upper case).
+
+        **trace_kwargs** (dict, default None): additional/updated entries for the marker trace
+        that is created in this function, e.g. {"visible": "legendonly"}
 
     OUTPUT:
         **marker_trace** (dict): dict for the plotly trace
@@ -973,7 +981,8 @@ def create_weighted_marker_trace(net, elm_type="load", elm_ids=None, column_to_p
                                 show_scale_legend=show_scale_legend,
                                 scale_marker_size=scale_marker_size,
                                 scale_marker_color=scale_marker_color or color)
-
+    if trace_kwargs is not None:
+        marker_trace.update(trace_kwargs)
     return marker_trace
 
 
@@ -1064,7 +1073,8 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
         **aspectratio** (tuple, 'auto') - when 'auto' it preserves original aspect ratio of the
         network geodata any custom aspectration can be given as a tuple, e.g. (1.2, 1)
 
-        **filename** (str, "temp-plot.html") - plots to a html file called filename
+        **filename** (str, "temp-plot.html") - plots to a html file called filename. If None,
+        no file will be created, just a plotly.Figure object will be returned
 
         **auto_open** (bool, 'True') - automatically open plot in browser
 
@@ -1111,7 +1121,7 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
     # setting Figure object
     fig = Figure(data=traces,  # edge_trace
                  layout=Layout(
-                     titlefont=dict(size=16),
+                     title_font=dict(size=16),
                      showlegend=showlegend,
                      autosize=(aspectratio == 'auto'),
                      hovermode='closest',
@@ -1189,8 +1199,7 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
         from plotly.offline import init_notebook_mode, iplot as plot
         init_notebook_mode()
         plot(fig, filename=filename)
-    else:
+    elif filename is not None:
         from plotly.offline import plot as plot
         plot(fig, filename=filename, auto_open=auto_open)
-
     return fig

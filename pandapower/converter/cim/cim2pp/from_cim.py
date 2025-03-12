@@ -2,6 +2,7 @@
 
 # Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+
 import logging
 import time
 from typing import Union, List, Type, Dict
@@ -23,7 +24,7 @@ def from_cim_dict(cim_parser: cim_classes.CimParser, log_debug=False, convert_li
                   custom_converter_classes: Dict = None,
                   **kwargs) -> pandapower.auxiliary.pandapowerNet:
     """
-    Create a pandapower net from a CIM data structure.
+    Creates a pandapower net from a CIM data structure.
 
     :param cim_parser: The CimParser with parsed cim data.
     :param log_debug: Set this parameter to True to enable logging at debug level. Optional, default: False
@@ -62,7 +63,7 @@ def from_cim_dict(cim_parser: cim_classes.CimParser, log_debug=False, convert_li
 
 
 def get_converter_classes():
-    converter_classes: Dict[str,classmethod] = {
+    converter_classes: Dict[str, classmethod] = {
         'ConnectivityNodesCim16': std_converter_classes.connectivitynodes.connectivityNodesCim16.ConnectivityNodesCim16,
         'externalNetworkInjectionsCim16':
             std_converter_classes.externalnetworks.externalNetworkInjectionsCim16.ExternalNetworkInjectionsCim16,
@@ -103,9 +104,8 @@ def from_cim(file_list: List[str] = None, encoding: str = None, convert_line_to_
              custom_converter_classes: Dict = None,
              cgmes_version: str = '2.4.15', **kwargs) -> \
         pandapower.auxiliary.pandapowerNet:
-    # Nur zum Testen, kann wieder gelöscht werden
     """
-    Convert a CIM net to a pandapower net from XML files.
+    Converts a CIM net to a pandapower net from XML files.
     Additional parameters for kwargs:
     - create_measurements (str): Set this parameter to 'SV' to create measurements for the pandapower net from the SV
     profile. Set it to 'Analog' to create measurements from Analogs. If the parameter is not set or is set to None, no

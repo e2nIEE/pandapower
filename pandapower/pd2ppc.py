@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
@@ -153,10 +153,8 @@ def _pd2ppc(net, sequence=None, **kwargs):
         # Calculates ppc0 branch impedances from branch elements
         _build_branch_ppc_zero(net, ppc)
     else:
-        # get config if trafo3w vk and vkr values should be recalculated
-        update_vk_values = kwargs.get("update_vk_values", True)
         # Calculates ppc1/ppc2 branch impedances from branch elements
-        _build_branch_ppc(net, ppc, update_vk_values)
+        _build_branch_ppc(net, ppc)
     _build_branch_dc_ppc(net, ppc)
 
     _build_tcsc_ppc(net, ppc, mode)
