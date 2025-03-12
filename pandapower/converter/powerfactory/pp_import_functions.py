@@ -3418,18 +3418,43 @@ def create_stactrl(net, item):
         raise UserWarning("station controller: could not properly identify the machines")
 
     gen_element_in_service = [net[gen_element].loc[net[gen_element].name == s.loc_name].in_service for s in machines]
+    distribution_val = []
+    if item.imode < 3:
+        """if item.imode == 0:
+            distribution = 'rel_P'
+        elif item.imode ==1:
+            distribution = 'rel_rated_P'
+        elif item.imode == 2:
+            distribution = 'set_Q'"""
+        distribution = 'imported' #simpler than handing over the values separately, also station controller handles cases differently
+        i = 0
+        for m in item.psym:
+            if m is not None and isinstance(item.cvqq, list):
+                distribution_val.append(item.cvqq[i] / 100)
+            elif m is not None and not isinstance(item.cvqq, list):
+                distribution_val.append(item.cvqq / 100)
+            i = i + 1
+    elif item.imode == 3:
+        distribution = 'max_Q'
+        i = 0
+        for m in item.psym:
+            if m is not None and isinstance(m.scaleQmax, list) and isinstance(m.scaleQmin, list):
+                    distribution_val.append(m.scaleQmin[i], m.scaleQmax[i])
+            elif m is not None and not isinstance(m.scaleQmax, list) and not isinstance(m.scaleQmin, list):
+                    distribution_val.append([m.scaleQmin, m.scaleQmax])
+            i =+ 1
 
-    i = 0
-    distribution = []
-    for m in item.psym:
-        if m is not None and isinstance(item.cvqq, list):
-            distribution.append(item.cvqq[i] / 100)
-        elif m is not None and not isinstance(item.cvqq, list):
-            distribution.append(item.cvqq / 100)
-        i = i + 1
-
-    if item.imode > 2:
-        raise NotImplementedError(f"{item}: reactive power distribution {item.imode=} not implemented")
+    elif item.imode == 4:
+        distribution = 'rel_V_pu'
+        i = 0
+        for m in item.psym:
+            if m is not None and isinstance(item.cvgen, list) and isinstance(item.cvgenmin, list) and isinstance(item.cvgenmax, list):
+                distribution_val.append([item.cvgen[i], item.cvgenmin[i], item.cvgenmax[i]])
+            elif m is not None and not isinstance(item.cvgen, list) and not isinstance(item.cvgenmin, list) and not isinstance(item.cvgenmax, list):
+                distribution_val = [item.cvgen, item.cvgenmin, item.cvgenmax]
+            i += 1
+    else:
+        raise NotImplementedError(f'Reactive Power Distribution must be between 0 and 4, not {item.imode}')
 
     phase = item.i_phase
     if phase != 0:
@@ -3490,7 +3515,6 @@ def create_stactrl(net, item):
             logger.error(
                 f"{item}: only line, trafo element and switch flows can be controlled, {element_class[0]=}")
             return
-    #todo passt das so @dominik
     elif control_mode != 0:
         q_control_cubicle = item.p_cub
         if q_control_cubicle is None:
@@ -3589,6 +3613,7 @@ def create_stactrl(net, item):
                                                  output_element_index=gen_element_index,
                                                  output_element_in_service=gen_element_in_service,
                                                  output_values_distribution=distribution,
+                                                 output_distribution_values=distribution_val,
                                                  input_element=res_element_table, input_variable=variable,
                                                  input_element_index=res_element_index,
                                                  set_point=v_setpoint_pu, modus='V_ctrl', bus_idx=bus, tol=1e-3)
@@ -3599,7 +3624,8 @@ def create_stactrl(net, item):
                                            output_element=gen_element, output_variable="q_mvar",
                                            output_element_index=gen_element_index,
                                            output_element_in_service=gen_element_in_service, input_element="res_bus",
-                                           output_values_distribution=distribution, damping_factor=0.9,
+                                           output_values_distribution=distribution,
+                                           output_distribution_values=distribution_val, damping_factor=0.9,
                                            input_variable="vm_pu", input_element_index=bus,
                                            set_point=v_setpoint_pu, modus='V_ctrl', tol=1e-6)
     elif control_mode == 1:  # Q Control mode
@@ -3618,6 +3644,7 @@ def create_stactrl(net, item):
                 output_element_in_service=gen_element_in_service,
                 input_element=res_element_table,
                 output_values_distribution=distribution,
+                output_distribution_values=distribution_val,
                 damping_factor=0.9,
                 input_variable=variable,
                 input_element_index=res_element_index,
@@ -3635,6 +3662,7 @@ def create_stactrl(net, item):
                 output_element_in_service=gen_element_in_service,
                 input_element=res_element_table,
                 output_values_distribution=distribution,
+                output_distribution_values=distribution_val,
                 damping_factor=0.9,
                 input_variable=variable,
                 input_element_index=res_element_index,
@@ -3675,6 +3703,7 @@ def create_stactrl(net, item):
                 output_element_in_service=gen_element_in_service,
                 input_element=res_element_table,
                 output_values_distribution=distribution,
+                output_distribution_values=distribution_val,
                 damping_factor=0.9,
                 input_variable=variable,
                 input_element_index=res_element_index,
@@ -3692,6 +3721,7 @@ def create_stactrl(net, item):
                 output_element_in_service=gen_element_in_service,
                 input_element=res_element_table,
                 output_values_distribution=distribution,
+                output_distribution_values=distribution_val,
                 damping_factor=0.9,
                 input_variable=variable,
                 input_element_index=res_element_index,
@@ -3722,6 +3752,7 @@ def create_stactrl(net, item):
                 output_element_in_service=gen_element_in_service,
                 input_element=res_element_table,
                 output_values_distribution=distribution,
+                output_distribution_values=distribution_val,
                 damping_factor=0.9,
                 input_variable=variable,
                 input_element_index=res_element_index,
@@ -3757,6 +3788,7 @@ def create_stactrl(net, item):
             output_element_in_service=gen_element_in_service,
             input_element=res_element_table,
             output_values_distribution=distribution,
+            output_distribution_values=distribution_val,
             damping_factor=0.9,
             input_variable=variable,
             input_element_index=res_element_index,

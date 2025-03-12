@@ -2,7 +2,10 @@ import numbers
 from winreg import error
 
 import numpy as np
+import warnings
+from scipy.optimize import minimize
 from numpy.f2py.auxfuncs import throw_error
+from numpy.matlib import empty
 from win32pdh import counter_status_error
 import matplotlib.pyplot as plt #todo weg damit
 
@@ -41,8 +44,6 @@ class BinarySearchControl(Controller):
 
             **output_element_in_service** - Whether output elements are in service or not.
 
-            **output_values_distribution** - Distribution of reactive power provision.
-
             **input_element** - Measurement location, can be a transformers, switches, lines or busses (only with
             V_ctrl), indicated by string value "res_trafo", "res_switch", "res_line" or "res_bus". In case of
             "res_switch", an additional small impedance is introduced in the switch.
@@ -56,6 +57,16 @@ class BinarySearchControl(Controller):
             input_element must be "res_bus". Can be overwritten by a droop controller chained with the binary search
             control.
 
+            **output_values_distribution** - Takes string to select one of the different available reactive power distribution
+            methods: 'rel_P' -Q is relative to used Power, 'rel_rated_P' -Q is relative to the rated Power, 'set_Q' -set
+            individual reactive power for each output element, 'max_Q' -maximized reactive Power reserve of the output
+            elements, 'rel_V_pu' -Q is relative to the voltage limits of the output element.
+
+            **output_distribution_values** -The Values of the q_distribution, only applicable if q_distribution = 'set_Q'
+            or rel_V_pu. For 'set_Q': Must be list containing the Q Value of each controlled element in percent in the same
+            order as the controlled elements. For rel_V_pu must be a list containing a list [Target Voltage, minimal allowed
+            Voltage, maximal allowed Voltage]. The lists must be in the same order as the output elements.
+
             **modus** - Enables the selection of the available control modi by taking one of the strings: Q_ctrl, V_ctrl,
             PF_ctrl or tan(phi)_ctrl. Formerly called Voltage_ctrl
 
@@ -64,8 +75,9 @@ class BinarySearchControl(Controller):
             **tol=0.001** - Tolerance criteria of controller convergence.
        """
     def __init__(self, net, ctrl_in_service, output_element, output_variable, output_element_index,
-                 output_element_in_service, output_values_distribution, input_element, input_variable,
-                 input_element_index, set_point, modus= None, bus_idx=None, tol=0.001, in_service=True, order=0, level=0,
+                 output_element_in_service, input_element, input_variable,
+                 input_element_index, set_point, output_values_distribution, output_distribution_values = None,
+                 modus= None, bus_idx=None, tol=0.001, in_service=True, order=0, level=0,
                  drop_same_existing_ctrl=False, matching_params=None, **kwargs):
         super().__init__(net, in_service=in_service, order=order, level=level,
                          drop_same_existing_ctrl=drop_same_existing_ctrl,
@@ -82,9 +94,8 @@ class BinarySearchControl(Controller):
         self.output_element = output_element
         self.output_element_index = output_element_index
         self.output_element_in_service = output_element_in_service
-        # normalize the values distribution:
-        self.output_values_distribution = np.array(output_values_distribution, dtype=np.float64) / np.sum(
-            output_values_distribution)
+        self.output_values_distribution = output_values_distribution
+        self.output_distribution_values = output_distribution_values
         self.set_point = set_point
         self.bus_idx = bus_idx
         self.tol = tol
@@ -101,19 +112,42 @@ class BinarySearchControl(Controller):
         self.input_variable = []
         self.input_variable_p = []
         self.input_element_in_service = []
-        counter = 0
+        self.max_q_mvar = []
+        self.min_q_mvar = []
+        self.out_dist_val = output_distribution_values
+
+        if self.output_values_distribution == 'rel_V_pu':
+            self.bus_idx_dist = []
+            self.v_setp_pu = np.array([])
+            self.v_min_pu = np.array([])
+            self.v_max_pu = np.array([])
+            if isinstance(self.output_element_in_service, list) and isinstance(self.output_distribution_values[0], list):
+                for i in range(len(self.output_element_in_service)):
+                    if any(self.output_element_in_service[i]):
+                        self.v_setp_pu = np.append(self.v_setp_pu, self.output_distribution_values[i][0])
+                        self.v_min_pu = np.append(self.v_min_pu, self.output_distribution_values[i][1])
+                        self.v_max_pu = np.append(self.v_max_pu, self.output_distribution_values[i][2])
+            elif (len(self.output_element_in_service) == 1 and isinstance(self.output_distribution_values[0], numbers.Number)
+                  and isinstance(self.output_distribution_values[1], numbers.Number)) and isinstance(self.output_distribution_values[2], numbers.Number):
+                    self.v_setp_pu = np.append(self.v_setp_pu, self.output_distribution_values[0])
+                    self.v_min_pu = np.append(self.v_min_pu, self.output_distribution_values[1])
+                    self.v_max_pu = np.append(self.v_max_pu, self.output_distribution_values[2])
+            else:
+                raise TypeError(
+                    f'Wrong Voltage setpoints and or Voltage limits for Q-distribution in Controller {self.index}')
 
         if modus == True: #Only functions written out!?!
             self.modus = "V_ctrl"
         elif modus == False: #Only functions written out!?!
             self.modus = "Q_ctrl"
-            logger.error("Ambivalent type, using Q_ctrl from available types 'Q_ctrl', 'V_ctrl', 'PF_ctrl' or 'tan(phi)_ctrl'\n")
+            logger.error(f"Ambivalent Controller modus for Controller {self.index}, using Q_ctrl from available"
+                         f" types 'Q_ctrl', 'V_ctrl', 'PF_ctrl' or 'tan(phi)_ctrl'\n")
         elif modus == "PF_ctrl_cap": # -1 for capacitive, 1 for inductive systems
             self.modus = "PF_ctrl"
             self.reactance= -1
         elif modus == "PF_ctrl_ind":
             self.modus = "PF_ctrl"
-            self.reactance = 1 #todo bei droop einfach inductiv? oder Kapazitiv?
+            self.reactance = 1
         elif modus == "PF_ctrl":
             self.modus = modus
             self.reactance = -1
@@ -122,8 +156,9 @@ class BinarySearchControl(Controller):
             self.modus = modus
         if self.modus == 'PF_ctrl':
             if abs(self.set_point) >1:
-                raise UserWarning('Set point out of range ([-1,1]')
+                raise UserWarning(f'Power Factor Controller {self.index}: Set point out of range ([-1,1]')
 
+        counter = 0
         for input_index in self.input_element_index:
             if self.input_element == "res_line":
                 self.input_element_in_service.append(net.line.in_service[input_index])
@@ -154,7 +189,7 @@ class BinarySearchControl(Controller):
                     elif input_variable[counter]=='q_lv_mvar':
                         input_variable_p='p_lv_mw'
                     else:
-                        logger.error('incorrect input variable: ', input_variable[counter],'\n')
+                        logger.error(f'incorrect input variable in Controller {self.index}: ', input_variable[counter],'\n')
                         return
                     read_flag_temp, input_variable_temp_p = _detect_read_write_flag(net, self.input_element,
                                                                                   input_index,
@@ -171,11 +206,44 @@ class BinarySearchControl(Controller):
             self.input_variable.append(input_variable_temp)
             counter += 1
 
+        counter = 0
+        for output_index in self.output_element_index:
+            try:
+                self.min_q_mvar.append(
+                    read_from_net(net, self.output_element, output_index, 'min_q_mvar', self.read_flag[counter]))
+            except:
+                logger.warning(
+                    f'Output element {self.output_element} at index {output_index} is missing required attribute min_q_mvar for Controller {self.index}. '
+                    f'using -20 as lower limit\n')
+                self.min_q_mvar.append(-20)
+            try:
+                self.max_q_mvar.append(
+                    read_from_net(net, self.output_element, output_index, 'max_q_mvar', self.read_flag[counter]))
+            except:
+                logger.warning(
+                    f'Output element {self.output_element} at index {output_index} is missing required attribute max_q_mvar for Controller {self.index}. '
+                    f'using 20 as upper limit\n')
+                self.max_q_mvar.append(20)
+
+            if self.max_q_mvar[counter] < self.min_q_mvar[counter]: #max and min switch places
+                temp = self.min_q_mvar[counter]
+                self.min_q_mvar[counter] = self.max_q_mvar[counter]
+                self.max_q_mvar[counter] = temp
+            counter += 1
+        try:
+            if sum(self.output_element_in_service) == 1:
+                logger.warning(f'Reactive Power Distribution for one output element cannot be modified. The active {self.output_element}'
+                    f'{self.output_element_in_service} at index {self.output_element_index} will provide 100% of the reactive power.\n')
+        except ValueError:
+            if len(sum(self.output_element_in_service)) == 1:
+                logger.warning(f'Reactive Power Distribution for one output element cannot be modified. The active {self.output_element}'
+                    f'{self.output_element_in_service} at index {self.output_element_index} will provide 100% of the reactive power.\n')
+
     def __getattr__(self, name):
         if name == "modus":
             try:
                 if not self.counter_deprecation_message:
-                    logger.error("The 'voltage_ctrl' attribute is deprecated and will be removed in future versions.\n"
+                    logger.error(f"The 'voltage_ctrl' attribute in Controller {self.index} is deprecated and will be removed in future versions.\n"
                             "Please use 'modus' ('Q_ctrl', 'V_ctrl', 'PF_ctrl' or 'tan(phi)_ctrl') instead.\n")
                 else:
                     self.counter_deprecation_message = True
@@ -183,7 +251,7 @@ class BinarySearchControl(Controller):
 
             except AttributeError:
                 self.counter_deprecation_message = True
-                logger.error("The 'voltage_ctrl' attribute is deprecated and will be removed in future versions.\n"
+                logger.error(f"The 'voltage_ctrl' attribute in Controller {self.index} is deprecated and will be removed in future versions.\n"
                       "Please use 'modus' ('Q_ctrl', 'V_ctrl', 'PF_ctrl' or 'tan(phi)_ctrl') instead.\n")
                 return self.voltage_ctrl
         raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
@@ -245,23 +313,64 @@ class BinarySearchControl(Controller):
 
         elif self.modus == "PF_ctrl":#capacitive => reactance = -1, inductive => reactance = 1
             self.diff_old = self.diff
-            q_set = self.reactance * sum(p_input_values) * (np.tan(np.arccos(self.set_point)))
-            self.diff = q_set - sum(input_values)
+            q_set = self.reactance * sum(p_input_values)/len(p_input_values) * (np.tan(np.arccos(self.set_point)))
+            self.diff = q_set - sum(input_values)/len(input_values)
             self.converged = np.all(np.abs(self.diff)<self.tol)
 
         elif self.modus == "tan(phi)_ctrl":
             self.diff_old = self.diff
-            q_set = sum(p_input_values) * self.set_point
-            self.diff = q_set - sum(input_values)
+            q_set = sum(p_input_values)/len(p_input_values) * self.set_point
+            self.diff = q_set - sum(input_values)/len(input_values)
             self.converged = np.all(np.abs(self.diff) < self.tol)
         else:
             if self.modus != "V_ctrl":
-                logger.error("No Controller Modus specified, using V_ctrl.\n"
+                logger.error(f"No Controller Modus specified for Controller {self.index}, using V_ctrl.\n"
                       "Please specify 'modus' ('Q_ctrl', 'V_ctrl', 'PF_ctrl' or 'tan(phi)_ctrl')\n")
                 #self.modus = 'V_ctrl'
             self.diff_old = self.diff
             self.diff = self.set_point - net.res_bus.vm_pu.at[self.bus_idx] #error when old import? no bus_idx
             self.converged = np.all(np.abs(self.diff) < self.tol)
+        if self.converged:
+            if self.output_values_distribution == 'rel_V_pu':
+                vm_pu = read_from_net(net, "res_bus", self.bus_idx_dist, "vm_pu", 'auto')
+                for i in range(len(vm_pu)):
+                    if vm_pu[i] > self.v_max_pu[i]:
+                        logger.warning(f'Controller {self.index}: Generator {self.output_element} {self.output_element_index[i]}'
+                                       f' exceeded maximum Voltage at bus {self.bus_idx_dist[i]}: {vm_pu[i]} > {self.v_max_pu[i]}\n')
+                    elif vm_pu[i] < self.v_min_pu[i]:
+                        logger.warning(f'Controller {self.index}: Generator {self.output_element} {self.output_element_index[i]}'
+                            f' exceeded maximum Voltage at bus {self.bus_idx_dist[i]}: {vm_pu[i]} < {self.v_min_pu[i]}\n')
+            if isinstance(self.min_q_mvar, list) and isinstance(self.max_q_mvar, list):
+                for k in range(len(self.min_q_mvar)):
+                    if isinstance(self.output_values, np.ndarray):
+                        if any(val < self.min_q_mvar[k] or val > self.max_q_mvar[k] for val in self.output_values):
+                            if isinstance(self.output_values, np.ndarray):
+                                for i in range(len(self.output_values)):
+                                    if self.output_values[i] < self.min_q_mvar[i] or self.output_values[i] > self.max_q_mvar[i]:
+                                        output_index = self.output_element_index[i]
+                                        string_limits_exceeded = f'< {self.min_q_mvar[i]}' if self.output_values[i] < self.min_q_mvar[i] else f'> {self.max_q_mvar[i]}'
+                                        logger.warning(
+                                            f'Controller {self.index} converged but the Reactive Power Output for Element'
+                                            f' {self.output_element}: {output_index} exceeds limits: {self.output_values[i]} {string_limits_exceeded}\n')
+                            else:
+                                logger.warning(f'Mismatch of length of generators limits and output values in Controller {self.index}.'
+                                               f'Possible exceedance of output element {self.output_element} {self.output_element_index} limits\n')
+                    else:
+                        if self.output_values < self.min_q_mvar[k] or self.output_values > self.max_q_mvar[k]:
+                            if isinstance(self.output_values, np.ndarray):
+                                for i in range(len(self.output_values)):
+                                    if self.output_values < self.min_q_mvar[i] or self.output_values > self.max_q_mvar[i]:
+                                        output_index = self.output_element_index[i]
+                                        string_limits_exceeded = f'< {self.min_q_mvar[i]}' if self.output_values < self.min_q_mvar[i] else f'> {self.max_q_mvar[i]}'
+                                        logger.warning(
+                                            f'Controller {self.index} converged but the Reactive Power Output for Element'
+                                            f' {self.output_element}: {output_index} exceeds limits: {self.output_values[i]} {string_limits_exceeded}\n')
+                            else:
+                                logger.warning(f'Mismatch of length of generators limits and output values in Controller {self.index}.'
+                                               f'Possible exceedance of output element {self.output_element} {self.output_element_index} limits\n')
+            else:
+                logger.warning(f'Mismatching number of minimum and maximum limits of the output elements in Controller {self.index}.'
+                                           f'Possible exceedance of output element {self.output_element} {self.output_element_index} limits\n')
 
         if self.overwrite_covergence:
             self.overwrite_covergence = False
@@ -275,14 +384,189 @@ class BinarySearchControl(Controller):
     def _binarysearchcontrol_step(self, net):
         if not self.in_service:
             return
+        ### Distribution ###
+        distribution = []
+        if self.output_values_distribution == 'imported':
+            distribution = self.output_distribution_values
+        elif self.output_values_distribution == 'rel_P':
+            if self.output_distribution_values is not None:
+                logger.warning(f'The inserted Values for output distribution values {self.output_distribution_values} '
+                               f'will have no effect on the reactive power distribution\n')
+                self.output_distribution_values = None
+            dispatched_active_power = []
+            for i in range(sum(self.output_element_in_service)):
+                if isinstance(self.output_element_in_service, list):
+                    dispatched_active_power.append(read_from_net(net, self.output_element, self.output_element_index[i],'p_mw', 'auto'))
+                else:
+                    dispatched_active_power.append(read_from_net(net, self.output_element, self.output_element_index,'p_mw', 'auto'))
+            for i in range(len(dispatched_active_power)):
+                distribution.append(dispatched_active_power[i]/sum(dispatched_active_power))
+
+        elif self.output_values_distribution == 'rel_rated_P':
+            if self.output_distribution_values is not None:
+                logger.warning(f'The inserted Values for output distribution values {self.output_distribution_values} '
+                                f'will have no effect on the reactive power distribution\n')
+                self.output_distribution_values = None
+            if self.output_element == 'sgen' or self.output_element == 'gen':
+                logger.warning(f'The standard type attribute containing the rated apparent power for {self.output_element} is not yet implemented')
+            s_rated_mva = []
+            if isinstance(self.output_element_in_service, list):
+                for i in range(len(self.output_element_in_service)):
+                    if any(self.output_element_in_service[i]):
+                        try:
+                            s_rated_mva.append(net.sgen.std_type[self.output_element_index[i]]['mva']) #which value contains s rated power?
+                        except:
+                            logger.warning(f'{self.output_element[i]} {self.output_element_index[i]} has no defined standard type '
+                                           f'or specified rated apparent power, assuming 50 MVA\n')
+                            s_rated_mva.append(50)
+            else:
+                try:
+                    s_rated_mva.append(net.sgen.std_type[self.output_element_index]['mva']) #which value contains s rated power
+                except:
+                    logger.warning(
+                        f'{self.output_element} {self.output_element_index} has no defined standard type '
+                        f'or specified rated apparent power, assuming 50 MVA\n')
+                    s_rated_mva.append(50)
+            for i in range(len(s_rated_mva)):
+                distribution.append(s_rated_mva[i]/sum(s_rated_mva))
+            #raise NotImplementedError("reactive Power Distribution 'rel_rated_P' is not implemented, because its missing"
+                                      #"the rated apparent power of the output element type")
+
+        elif self.output_values_distribution == 'set_Q':
+            if self.output_distribution_values is None:
+                logger.warning(f'Reactive Power Distribution method "set_Q" needs values given to output_distribution_values '
+                     f'in Controller {self.index}. Distributing the reactive power equally between all available output elements.\n')
+                equal = 1 / sum(self.output_element_in_service)
+                self.output_distribution_values = [equal for _ in range(sum(self.output_element_in_service))]
+            if isinstance(self.output_distribution_values, list) and isinstance(self.output_element_in_service, list):
+                if len(self.output_distribution_values) != len(self.output_element_in_service) and len(self.output_distribution_values) != sum(self.output_element_in_service):
+                    logger.warning(
+                        f'Mismatched lengths of output elements {self.output_element} and output_distribution_values'
+                        f'{len(self.output_element_in_service)} != {len(self.output_distribution_values)} and between active elements: '
+                        f'{sum(self.output_element_in_service)} != {len(self.output_distribution_values)} in Controller {self.index}. '
+                        f'Continuing with first element in provided list or 100% in case of empty list')
+                    if len(self.output_distribution_values is None) < sum(self.output_element_in_service):
+                        equal = 1 / (sum(self.output_element_in_service)-len(self.output_distribution_values))
+                        distribution = self.output_distribution_values + [equal] * (sum(self.output_element_in_service)-len(self.output_distribution_values))
+                    else:
+                        try:
+                            self.output_distribution_values = self.output_distribution_values[0]
+                        except IndexError:
+                            self.output_distribution_values = 1
+            elif isinstance(self.output_distribution_values, numbers.Number):
+                if sum(self.output_element_in_service) != 1:
+                    raise UserWarning(
+                        f'Mismatched lengths of output elements {self.output_element} and output_distribution_values'
+                        f'{sum(self.output_element_in_service)} != 1 in Controller {self.index}')
+            else:
+                raise UserWarning(
+                    f'Mismatched lengths of output elements {self.output_element} and output_distribution_values'
+                    f'{self.output_element_in_service} != {self.output_distribution_values} in Controller {self.index}')
+
+            if isinstance(self.output_distribution_values, list):
+                for i in range(len(self.output_distribution_values)):
+                    distribution.append(self.output_distribution_values[i] / 100)
+            else:
+                distribution.append(self.output_distribution_values / 100)
+
+        elif self.output_values_distribution == 'max_Q':  # Maximise Reactive Reserve
+            if self.output_distribution_values is not None:
+                logger.warning(f'The inserted Values for output distribution values {self.output_distribution_values} '
+                               f'will have no effect on the reactive power distribution\n')
+                self.output_distribution_values = None
+            if self.output_values_old is not None and isinstance(self.output_values, np.ndarray):
+                q_init_val = None#todo qgini must be respected, is implemented in import? or in std_type?
+                if q_init_val is not None:
+                    output_values = np.array(self.output_values)
+                    output_values =  output_values - q_init_val
+                else:
+                    output_values = np.array(self.output_values)
+                lower_limits = np.array(self.min_q_mvar)
+                upper_limits = np.array(self.max_q_mvar)
+                sum_output_values = np.sum(output_values)
+
+                bounds = [(0.1 * U, U) if val >= 0 else (L, 0.1 * L) for val, L, U in zip(output_values, lower_limits, upper_limits)]
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    result = minimize(lambda v: -1 * np.sum(np.minimum(v - lower_limits, upper_limits - v)),
+                            output_values,
+                            bounds = bounds,
+                            method='trust-constr',
+                            constraints = [{'type': 'eq', 'fun': lambda v: np.sum(v) - sum_output_values},
+                                         {'type': 'ineq', 'fun': lambda v: v - lower_limits},
+                                         {'type': 'ineq', 'fun': lambda v: upper_limits - v}],
+                            options={'maxiter': 1000, 'disp': False})
+                distribution = result.x
+            else:
+                equal = 1/sum(self.output_element_in_service)
+                distribution = [equal for _ in range(sum(self.output_element_in_service))]
+
+        elif self.output_values_distribution == 'rel_V_pu':  # Voltage Setpoint Adaptation
+            if self.output_element == 'sgen':
+                if sum(self.output_element_in_service) > 1 and any(net.sgen.bus[i+1] == net.sgen.bus[i] for i in range(len(net.sgen.bus)-1)):
+                    raise UserWarning(f'More than one output element is influencing the Voltage to be controlled')#two outputs elements controlling the same voltage
+            elif self.output_element == 'gen':
+                if sum(self.output_element_in_service) > 1 and any(net.gen.bus[i+1] == net.gen.bus[i] for i in range(len(net.gen.bus)-1)):
+                    raise UserWarning(f'More than one output element is influencing the Voltage to be controlled')#two outputs elements controlling the same voltage
+                else:
+                    raise UserWarning(f"Output Element type 'Gen' is not supported")
+            else:
+                raise NotImplementedError(f'Output element {self.output_element} is not implemented')
+            #todo implement check for more sgens at controlled busbar who arent controlled
+            if len(self.bus_idx_dist)==0:
+                if self.output_element == 'sgen':
+                    for i in self.output_element_index:
+                        if self.output_element_in_service[i]:
+                            self.bus_idx_dist.append(net.sgen.bus[i])
+            if self.output_values_old is not None:
+                vm_pu = np.array(read_from_net(net, "res_bus", self.bus_idx_dist, "vm_pu", 'auto')) #init
+                sum_vm_pu = np.sum(vm_pu) #total
+                bounds = [(L, U) for L, U in zip(self.v_min_pu, self.v_max_pu)]
+                result = minimize(
+                    lambda v: np.sum((v - self.v_setp_pu) ** 2),  #minimize deviation from setpoint
+                    vm_pu,  # Initial guess
+                    method='SLSQP',  # Optimization method trust-constr, SLSQP
+                    bounds=bounds,  # Soft limits as bounds
+                    constraints=[
+                        {'type': 'eq', 'fun': lambda v: np.sum(v) - sum_vm_pu},  # Load constraint
+                        {'type': 'ineq', 'fun': lambda v: v - self.v_min_pu},  # Lower soft limits
+                        {'type': 'ineq', 'fun': lambda v: self.v_max_pu - v}  # Upper soft limits
+                    ],
+                    options={'maxiter': 1000, 'ftol': 1e-9}  # , 'ftol': 1e-9 for SLSQP
+                )
+                distribution = result.x
+                distribution = distribution-1
+                distribution = np.where(distribution >= 0, (distribution + 1), 14.34*distribution)
+            else:
+                equal = 1/sum(self.output_element_in_service)
+                distribution = [equal for _ in range(sum(self.output_element_in_service))]
+
+
+        else:
+            if ((isinstance(self.output_values_distribution, list) and all(isinstance(x, numbers.Number) for x in self.output_values_distribution))
+                    or isinstance(self.output_values_distribution, numbers.Number)):
+                logger.warning(f'Controller {self.index}: Output_values_distribution must be string from available methods'
+                               f' (rel_P, rel_rated_P, set_Q, max_Q, rel_V_pu). Using provided values with method set_Q\n')
+                self.output_distribution_values = self.output_values_distribution
+                self.output_values_distribution = 'set_Q'
+                if isinstance(self.output_distribution_values, list):
+                    for i in range(len(self.output_distribution_values)):
+                        distribution.append(self.output_distribution_values[i] / 100)
+                else:
+                    distribution.append(self.output_distribution_values/100)
+            else:
+                raise NotImplementedError(f"Controller {self.index}: Reactive power distribution method {self.output_values_distribution} not implemented"
+                                          f"available methods are (rel_P, rel_rated_P, set_Q, max_Q, rel_V_pu).")
+        distribution = np.array(distribution, dtype=np.float64) / np.sum(distribution)
+        print(distribution)
+        #calculate output values
         if self.output_values_old is None:
             self.output_values_old, self.output_values = self.output_values, self.output_values + 1e-3
         else:
             step_diff = self.diff - self.diff_old
             x = self.output_values - self.diff * (self.output_values - self.output_values_old) / np.where(
                 step_diff == 0, 1e-6, step_diff)
-            x = x * self.output_values_distribution if isinstance(x, numbers.Number) else sum(
-                x) * self.output_values_distribution
+            x = x * distribution if isinstance(x, numbers.Number) else sum(x) * distribution
             self.output_values_old, self.output_values = self.output_values, x
 
         # write new set values
@@ -367,10 +651,11 @@ class DroopControl(Controller):
             self.modus = "V_ctrl"
         elif modus == False: #Only functions when written out!?!
             self.modus = "Q_ctrl"
-            logger.error("Ambivalent type, using Q_ctrl from available types 'Q_ctrl', 'V_ctrl' or 'PF_ctrl'\n")
+            logger.error(f"Ambivalent Control Modus in Controller {self.index}, using Q_ctrl from available types 'Q_ctrl', 'V_ctrl' or 'PF_ctrl'\n")
         elif modus == "PF_ctrl_cap" or modus == "PF_ctrl_ind" or modus == 'PF_ctrl' or modus == 'PF_ctrl_P':
             if modus != 'PF_ctrl_P':
-                logger.warning("Power Factor Droop Control: Modus is ambivalent, using 'PF_ctrl_P' from available modi: 'PF_ctrl_P' and 'PF_ctrl_U'\n")
+                logger.warning(f"Power Factor Droop Control in Controller {self.index}: Modus is ambivalent, using"
+                               f" 'PF_ctrl_P' from available modi: 'PF_ctrl_P' and 'PF_ctrl_U'\n")
             self.modus = 'PF_ctrl'
             self.p_cosphi = True
         elif modus == 'PF_ctrl_U':
@@ -379,37 +664,37 @@ class DroopControl(Controller):
         else:
             if modus == 'Q_ctrl' or modus == "V_ctrl":
                 if vm_set_pu is None and modus == 'V_ctrl':
-                    raise UserWarning(f'vm_set_pu must be a number, not {type(vm_set_pu)}')
+                    raise UserWarning(f'vm_set_pu must be a number, not {type(vm_set_pu)} in Controller {self.index}')
                 self.modus = modus
             else:
-                raise UserWarning('Droop Control Modus not decipherable')
+                raise UserWarning(f'Droop Control Modus not decipherable in Controller {self.index}')
 
 
         if self.modus == 'PF_ctrl':
             if self.lb_voltage is None or self.ub_voltage is None:
-                raise UserWarning('Input error, vm_set_lb and vm_set_ub must be a number')
+                raise UserWarning(f'Input error, vm_set_lb and vm_set_ub must be a number in Controller {self.index}')
             if self.lb_voltage < 0 or self.ub_voltage < 0:
                 if self.p_cosphi:
-                    raise UserWarning('P_Maximum (vm_set_ub) and P_Minimun (vm_set_lb) must be >= 0 W\n')
+                    raise UserWarning(f'P_Maximum (vm_set_ub) and P_Minimun (vm_set_lb) must be >= 0 W in Controller {self.index}')
                 elif not self.p_cosphi:
-                    raise UserWarning('U_Maximum (vm_set_ub) and U_Minimun (vm_set_lb) must be >= 0 pu\n')
+                    raise UserWarning(f'U_Maximum (vm_set_ub) and U_Minimun (vm_set_lb) must be >= 0 pu in Controller {self.index}')
                 else:
-                    raise UserWarning(f'Something wrong with the entered values {self.lb_voltage, self.ub_voltage}')
+                    raise UserWarning(f'Something wrong with the entered values {self.lb_voltage, self.ub_voltage} in Controller {self.index}')
             if  1 < self.pf_over < 0 or 1 < self.pf_under < 0:
-                raise UserWarning('Power Factor limtits PF_overexcited and PF_underexcited must be between 0 and 1')
+                raise UserWarning(f'Power Factor limtits PF_overexcited and PF_underexcited must be between 0 and 1 in Controller {self.index}')
             if self.lb_voltage == self.ub_voltage:
                 if self.p_cosphi:
-                    raise UserWarning('P_Maximum and P_Minimum may not be the same value')
+                    raise UserWarning(f'P_Maximum and P_Minimum may not be the same value in Controller {self.index}')
                 elif not self.p_cosphi:
-                    raise UserWarning('U_Maximum and U_Minimum may not be the same value')
+                    raise UserWarning(f'U_Maximum and U_Minimum may not be the same value in Controller {self.index}')
                 else:
-                    raise UserWarning(f'Something wrong with the entered values {self.lb_voltage, self.ub_voltage}')
+                    raise UserWarning(f'Something wrong with the entered values {self.lb_voltage, self.ub_voltage} in Controller {self.index}')
 
     def __getattr__(self, name):
         if name == "modus":
             try:
                 if not self.counter_deprecation_message:
-                    logger.error("The 'voltage_ctrl' attribute is deprecated and will be removed in future versions.\n"
+                    logger.error(f"The 'voltage_ctrl' attribute is deprecated in Controller {self.index} and will be removed in future versions.\n"
                             "Please use 'modus' ('Q_ctrl', 'V_ctrl', 'PF_ctrl' or 'tan(phi)_ctrl') instead.\n")
                 else:
                     self.counter_deprecation_message = True
@@ -417,10 +702,10 @@ class DroopControl(Controller):
 
             except AttributeError:
                 self.counter_deprecation_message = True
-                logger.error("The 'voltage_ctrl' attribute is deprecated and will be removed in future versions.\n"
+                logger.error(f"The 'voltage_ctrl' attribute is deprecated in Controller {self.index} and will be removed in future versions.\n"
                       "Please use 'modus' ('Q_ctrl', 'V_ctrl', 'PF_ctrl' or 'tan(phi)_ctrl') instead.\n")
                 return self.voltage_ctrl
-        raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
+        raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}' in Controller {self.index}")
 
     def is_converged(self, net):
         if self.modus == 'V_ctrl':
@@ -446,13 +731,13 @@ class DroopControl(Controller):
 
                 q_set = net.controller.at[self.controller_idx, "object"].reactance * sum(p_input_values) * (
                     np.tan(np.arccos(net.controller.at[self.controller_idx, "object"].set_point)))
-                self.diff = q_set - sum(input_values)
+                self.diff = q_set - sum(input_values)/len(input_values)
 
         elif self.modus == 'tan(phi)_ctrl':
-            raise UserWarning('No droop option for tan(phi) controller')
+            raise UserWarning(f'No droop option for tan(phi) controller {self.index}')
         else:
             if self.modus != 'Q_ctrl':
-                logger.error('No specified modus in droop controller, using Q_ctrl')
+                logger.error(f'No specified modus in droop controller {self.index}, using Q_ctrl\n')
             counter = 0
             input_values = []
             for input_index in net.controller.at[self.controller_idx, "object"].input_element_index:
@@ -523,7 +808,7 @@ class DroopControl(Controller):
 
 
             else:
-                raise UserWarning('wrong modus, should not happen')
+                raise UserWarning(f'wrong modus, should not happen in Controller {self.index}')
             if self.lb_voltage > self.ub_voltage: #phi overexcited > phi underexcited
                 if self.lb_voltage <= sum(p_input_values)/len(p_input_values) or sum(p_input_values)/len(p_input_values) <= -self.lb_voltage:#underexcited limit(-1)
                     pf_cosphi = self.pf_under
@@ -552,7 +837,7 @@ class DroopControl(Controller):
                     plt.plot(x_val2, fun2)
                     plt.scatter(sum(p_input_values)/len(p_input_values), droop_set_point, marker='o', color='red')
                     plt.title(pf_cosphi)
-                    plt.show()"""
+                    plt.show()"""#todo weg damit
 
             elif self.lb_voltage < self.ub_voltage: #phi overexcited < phi underexcited
                 if -self.ub_voltage >= sum(p_input_values)/len(p_input_values) or sum(p_input_values)/len(p_input_values) >= self.ub_voltage:#overexcited limit (1)
@@ -585,7 +870,7 @@ class DroopControl(Controller):
                     plt.title(pf_cosphi)
                     plt.show()"""#todo remove including the import
             else:
-                raise UserWarning(f'error with limits {self.lb_voltage, self.ub_voltage}')
+                raise UserWarning(f'error with limits {self.lb_voltage, self.ub_voltage} in Controller {self.index}')
 
             self.q_set_old_mvar, self.q_set_mvar = self.q_set_mvar, pf_cosphi
 
@@ -594,7 +879,7 @@ class DroopControl(Controller):
             pass  # tanphi_ctrl doesnt have droop control
         else:
             if self.modus != "V_ctrl":
-                logger.error("No Droop Controller Modus specified, using V_ctrl.\n"
+                logger.error(f"No Droop Controller Modus specified for Controller {self.index}, using V_ctrl.\n"
                              "Please specify 'modus' ('Q_ctrl', 'V_ctrl', 'PF_ctrl' or 'tan(phi)_ctrl')\n")
             if self.q_set_mvar is not None:
                 self.q_set_old_mvar, self.q_set_mvar = (
