@@ -203,6 +203,7 @@ def test_cost_piecewise_linear_load_uneven_slopes():
 
 
     pp.create_pwl_cost(net, 0, "ext_grid", [(0, 0.075, 1), (0.075, 150, 2)])
+    net.ext_grid.controllable = False
 
     pp.runopp(net)
     assert net["OPF_converged"]

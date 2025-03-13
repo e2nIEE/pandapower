@@ -478,6 +478,9 @@ def test_trafo3w_loading():
     net.trafo3w.at[tidx, "shift_lv_degree"] = 120
     net.trafo3w.at[tidx, "shift_mv_degree"] = 80
 
+    #net.ext_grid = net.ext_grid.drop(columns=['controllable'])
+    net.ext_grid.controllable = False
+
     # pp.runopp(net, calculate_voltage_angles = True)  >> Doesn't converge
     for init in ["pf", "flat"]:
         pp.runopp(net, calculate_voltage_angles=False, init=init)
@@ -791,6 +794,7 @@ def test_opf_no_controllables_vs_pf():
 
     # test elements static
     pp.create_ext_grid(net, b2)
+    net.ext_grid.controllable = False
     pp.create_load(net, b1, p_mw=.0075, controllable=False)
     pp.create_sgen(net, b1, p_mw=0.025, controllable=False, min_p_mw=0.01, max_p_mw=0.025,
                    max_q_mvar=0.025, min_q_mvar=-0.025)
@@ -856,6 +860,7 @@ def test_three_slacks_vm_setpoint(four_bus_net):
     # create two additional slacks with different voltage setpoints
     pp.create_ext_grid(net, 1, vm_pu=1.01, max_p_mw=1., min_p_mw=-1., min_q_mvar=-1, max_q_mvar=1.)
     pp.create_ext_grid(net, 3, vm_pu=1.02, max_p_mw=1., min_p_mw=-1., min_q_mvar=-1, max_q_mvar=1.)
+    net.ext_grid.controllable = False
     pp.runpp(net)
     # assert if voltage limits are correct in result in pf an opf
     assert np.allclose(net.res_bus.loc[[0, 1, 3], "vm_pu"], [1., 1.01, 1.02])

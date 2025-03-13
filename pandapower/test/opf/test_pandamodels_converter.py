@@ -46,7 +46,7 @@ def test_pm_to_pp_conversion(simple_opf_test_net):
 
     net = simple_opf_test_net
     pp.create_poly_cost(net, 0, "gen", cp1_eur_per_mw=100)
-
+    net.ext_grid.controllable = False
     # get pandapower opf results
     pp.runopp(net, delta=1e-13)
     va_degree = copy.deepcopy(net.res_bus.va_degree)

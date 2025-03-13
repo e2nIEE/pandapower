@@ -40,6 +40,7 @@ def test_minimize_active_power_curtailment():
 
     # create generators
     pp.create_ext_grid(net, bus1)
+    net.ext_grid.controllable = False
     pp.create_gen(net, bus3, p_mw=80., max_p_mw=80., min_p_mw=0., vm_pu=1.01, controllable=True)
     pp.create_gen(net, bus4, p_mw=0.1, max_p_mw=100., min_p_mw=0., vm_pu=1.01, controllable=True)
 

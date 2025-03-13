@@ -73,6 +73,7 @@ def test_case5_pm_pd2ppc():
     net = case5_pm_matfile_I()
     # run pd2ppc with ext_grid controllable = False
     pp.runpp(net)
+    net.ext_grid = net.ext_grid.drop(columns=['controllable'])
     assert "controllable" not in net.ext_grid
     net["_options"]["mode"] = "opf"
     ppc = _pd2ppc(net)
@@ -114,11 +115,11 @@ def test_case5_pm_pd2ppc():
 def test_opf_ext_grid_controllable():
     # load net
     net = case5_pm_matfile_I()
+    net.ext_grid["controllable"] = False
     net_old = copy.deepcopy(net)
     net_new = copy.deepcopy(net)
     # run pd2ppc with ext_grid controllable = False
     pp.runopp(net_old, delta=1e-12)
-    net_new.ext_grid["controllable"] = True
     pp.runopp(net_new, delta=1e-12)
     eg_bus = net.ext_grid.bus.at[0]
     assert np.isclose(net_old.res_bus.vm_pu[eg_bus], 1.06414000007302)
@@ -145,11 +146,11 @@ def test_opf_ext_grid_controllable_pm():
     net = case5_pm_matfile_I()
 
     net_old = copy.deepcopy(net)
+    net_old.ext_grid["controllable"] = False
     pp.runpp(net_old)
     pp.runpm_ac_opf(net_old, calculate_voltage_angles=True, correct_pm_network_data=False, opf_flow_lim="I")
 
     net_new = copy.deepcopy(net)
-    net_new.ext_grid["controllable"] = True
     pp.runpp(net_new)
     pp.runpm_ac_opf(net_new, calculate_voltage_angles=True, correct_pm_network_data=False,
                     opf_flow_lim="I")

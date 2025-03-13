@@ -81,6 +81,7 @@ def add_grid_connection(net, vn_kv=20., zone=None):
     """
     b1 = pp.create_bus(net, vn_kv=vn_kv, zone=zone)
     pp.create_ext_grid(net, b1, vm_pu=1.01)
+    net.ext_grid["controllable"] = False
     b2 = pp.get_free_id(net.bus) + 2  # shake up the indices so that non-consecutive indices are tested
     b2 = pp.create_bus(net, vn_kv=vn_kv, zone=zone, index=b2)
     l1 = create_test_line(net, b1, b2)

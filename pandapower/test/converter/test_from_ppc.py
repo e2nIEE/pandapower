@@ -135,6 +135,8 @@ def test_to_and_from_ppc():
 
         # compare optimal powerflow results
         if i == 1:
+            net.ext_grid["controllable"] = False
+            net2.ext_grid["controllable"] = False
             pp.runopp(net, delta=1e-16)
             pp.runopp(net2, delta=1e-16)
             assert pandapower.toolbox.nets_equal(net, net2, check_only_results=True, atol=1e-10)

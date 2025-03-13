@@ -9,7 +9,6 @@ from typing import Tuple, List, Union, Iterable
 import warnings
 
 import pandas as pd
-from numba import int64
 from numpy import nan, zeros, isnan, arange, dtype, isin, any as np_any, array, bool_, \
     all as np_all, float64, intersect1d, unique as uni
 from pandas import isnull
