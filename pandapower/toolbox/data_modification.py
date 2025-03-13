@@ -3,11 +3,12 @@
 # Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from collections import defaultdict
 import uuid
+from collections import defaultdict
 
 import numpy as np
 import pandas as pd
+
 from pandapower.auxiliary import get_indices
 from pandapower.create import create_empty_network
 from pandapower.toolbox.comparison import compare_arrays
@@ -101,15 +102,16 @@ def add_column_from_element_to_elements(net, column, replace, elements=None,
         'continue_on_missing_column' acts.
 
     EXAMPLE:
-        import pandapower as pp
-        import pandapower.networks as pn
-        net = pn.create_cigre_network_mv()
-        pp.create_measurement(net, "i", "trafo", 5, 3, 0, side="hv")
-        pp.create_measurement(net, "i", "line", 5, 3, 0, side="to")
-        pp.create_measurement(net, "p", "bus", 5, 3, 2)
-        print(net.measurement.name.values, net.switch.name.values)
-        pp.add_column_from_element_to_elements(net, "name", True)
-        print(net.measurement.name.values, net.switch.name.values)
+        >>> from pandapower.create import create_measurement
+        >>> from pandapower import add_column_from_element_to_elements
+        >>> from pandapower.networks.cigre_networks import create_cigre_network_mv
+        >>> net = create_cigre_network_mv()
+        >>> create_measurement(net, "i", "trafo", 5, 3, 0, side="hv")
+        >>> create_measurement(net, "i", "line", 5, 3, 0, side="to")
+        >>> create_measurement(net, "p", "bus", 5, 3, 2)
+        >>> print(net.measurement.name.values, net.switch.name.values)
+        >>> add_column_from_element_to_elements(net, "name", True)
+        >>> print(net.measurement.name.values, net.switch.name.values)
     """
     elements = elements if elements is not None else pp_elements()
     elements_with_el_and_et_column = [el for el in elements if "element" in net[el].columns and (
@@ -178,7 +180,7 @@ def reindex_buses(net, bus_lookup):
     # --- adapt group link
     if net.group.shape[0]:
         for row in np.arange(net.group.shape[0], dtype=np.int64)[
-                (net.group.element_type == "bus").values & net.group.reference_column.isnull().values]:
+            (net.group.element_type == "bus").values & net.group.reference_column.isnull().values]:
             net.group.iat[row, net.group.columns.get_loc("element_index")] = list(
                 get_indices(net.group.element_index.iat[row], bus_lookup))
 
@@ -295,8 +297,8 @@ def reindex_elements(net, element_type, new_indices=None, old_indices=None, look
     # --- adapt group link
     if net.group.shape[0]:
         for row in np.arange(net.group.shape[0], dtype=np.int64)[
-                (net.group.element_type == element_type).values & \
-                net.group.reference_column.isnull().values]:
+            (net.group.element_type == element_type).values & \
+            net.group.reference_column.isnull().values]:
             net.group.iat[row, net.group.columns.get_loc("element_index")] = list(
                 get_indices(net.group.element_index.iat[row], lookup))
 
@@ -329,7 +331,7 @@ def reindex_elements(net, element_type, new_indices=None, old_indices=None, look
         element_in_cost_df = (net[cost_df].et == element_type) & net[cost_df].element.isin(old_indices)
         if sum(element_in_cost_df):
             net[cost_df].loc[element_in_cost_df, "element"] = get_indices(net[cost_df].element[
-                element_in_cost_df], lookup)
+                                                                              element_in_cost_df], lookup)
 
     # --- adapt tap_characteristic
     if element_type ==  "trafo":

@@ -1,13 +1,13 @@
 import numpy as np
 import pandas as pd
 
-import pandapower as pp
-
 import os
 import pytest
 
 from pandapower.converter.powerfactory.validate import validate_pf_conversion
 from pandapower.converter.powerfactory.export_pfd_to_pp import import_project, from_pfd
+from pandapower import pp_dir
+from pandapower.file_io import from_json
 
 try:
     import pandaplan.core.pplog as logging
@@ -55,7 +55,7 @@ def test_pf_export():
     app = pf.GetApplication()
 
     # first, import the test grid to powerfactory
-    path = os.path.join(pp.pp_dir, 'test', 'converter', 'testfiles', 'test_export.pfd')
+    path = os.path.join(pp_dir, 'test', 'converter', 'testfiles', 'test_export.pfd')
     prj = import_project(path, app, 'TEST_PF_CONVERTER', import_folder='TEST_IMPORT', clear_import_folder=True)
     prj_name = prj.GetFullName()
 
@@ -81,7 +81,7 @@ def test_pf_export_trafo3w():
     app = pf.GetApplication()
     # import the 3W-Trafo test grid to powerfactory
     # todo: at the moment the 3W-Trafo model is not accurate enough, here testing with lower tol
-    path = os.path.join(pp.pp_dir, 'test', 'converter', 'testfiles', 'test_trafo3w.pfd')
+    path = os.path.join(pp_dir, 'test', 'converter', 'testfiles', 'test_trafo3w.pfd')
     prj = import_project(path, app, 'TEST_PF_CONVERTER', import_folder='TEST_IMPORT', clear_import_folder=True)
     prj_name = prj.GetFullName()
 
@@ -103,8 +103,8 @@ def test_pf_export_trafo3w():
 
 
 def test_trafo_tap2_results():
-    path = os.path.join(pp.pp_dir, 'test', 'converter', 'testfiles', 'trafo_tap_model.json')
-    net = pp.from_json(path)
+    path = os.path.join(pp_dir, 'test', 'converter', 'testfiles', 'trafo_tap_model.json')
+    net = from_json(path)
     all_diffs = validate_pf_conversion(net, tolerance_mva=1e-9)
     tol = 2e-7
     for key, diff in all_diffs.items():
