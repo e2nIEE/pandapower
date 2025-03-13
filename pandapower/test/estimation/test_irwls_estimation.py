@@ -9,8 +9,8 @@ import os
 import numpy as np
 import pytest
 
-from pandapower.run import runpp
-from pandapower.networks.power_system_test_cases import case14
+import pandapower as pp
+import pandapower.networks as nw
 from pandapower.estimation import estimate
 from pandapower.estimation.util import add_virtual_meas_from_loadflow
 from pandapower.estimation.ppc_conversion import pp2eppci
@@ -21,8 +21,8 @@ from pandapower.estimation.algorithm.estimator import SHGMEstimatorIRWLS
 
 def test_irwls_comp_wls():
     # it should be the same since wls will not update weight matrix
-    net = case14()
-    runpp(net)
+    net = nw.case14()
+    pp.runpp(net)
     add_virtual_meas_from_loadflow(net)
 
     success = estimate(net, init='flat', algorithm="irwls", estimator='wls')
@@ -36,8 +36,8 @@ def test_irwls_comp_wls():
 
 def test_shgm_ps():
     # we need an random eppci object to initialize estimator
-    net = case14()
-    runpp(net)
+    net = nw.case14()
+    pp.runpp(net)
     add_virtual_meas_from_loadflow(net)
     _,_,eppci = pp2eppci(net)
 
@@ -57,8 +57,8 @@ def test_shgm_ps():
 
 
 def test_irwls_shgm():
-    net = case14()
-    runpp(net)
+    net = nw.case14()
+    pp.runpp(net)
     add_virtual_meas_from_loadflow(net, p_std_dev=0.01, q_std_dev=0.01)
     success = estimate(net, algorithm="irwls", estimator="shgm",
                        a=3, maximum_iterations=50)

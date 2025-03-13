@@ -111,8 +111,9 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
         **mg** - Returns the required NetworkX graph
 
      EXAMPLE:
-         >>> from pandapower.topology.create_graph import create_nxgraph
-         >>> mg = create_nxgraph(net, respect_switches = False)
+         import pandapower.topology as top
+
+         mg = top.create_nx_graph(net, respect_switches = False)
          # converts the pandapower network "net" to a MultiGraph. Open switches will be ignored.
 
     Parameters
@@ -187,8 +188,7 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
 
         if calc_branch_impedances:
             baseR = get_baseR(net, ppc, tcsc.from_bus.values)
-            x = 1 / calc_y_svc_pu(net.tcsc.thyristor_firing_angle_degree, net.tcsc.x_l_ohm / baseR,
-                                  net.tcsc.x_cvar_ohm / baseR)
+            x = 1 / calc_y_svc_pu(net.tcsc.thyristor_firing_angle_degree, net.tcsc.x_l_ohm / baseR, net.tcsc.x_cvar_ohm / baseR)
             parameter[:, BR_R] = 0
             parameter[:, BR_X] = x * (baseR if branch_impedance_unit == "ohm" else 1)
 

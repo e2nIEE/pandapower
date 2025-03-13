@@ -3,22 +3,31 @@
 # Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-import numpy as np
 
-from pandapower.create import create_empty_network, create_bus, create_line, create_ext_grid, create_sgen, create_gen
-from pandapower.shortcircuit.calc_sc import calc_sc
+import os
+
+import pytest
+
+import numpy as np
+import pandapower as pp
+import pandapower.shortcircuit as sc
+
+import pandas as pd
 from pandapower.test.shortcircuit.test_iec60909_4 import iec_60909_4
+
+#pd.set_option("display.width", 1000)
+#pd.set_option("display.max_columns", 1000)
 
 
 def simple_grid():
-    net = create_empty_network(sn_mva=4)
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 110)
-    b3 = create_bus(net, 110)
+    net = pp.create_empty_network(sn_mva=4)
+    b1 = pp.create_bus(net, 110)
+    b2 = pp.create_bus(net, 110)
+    b3 = pp.create_bus(net, 110)
 
-    create_ext_grid(net, b1, s_sc_max_mva=100., s_sc_min_mva=80., rx_min=0.4, rx_max=0.4)
-    create_line(net, b1, b2, std_type="305-AL1/39-ST1A 110.0", length_km=20.)
-    create_line(net, b2, b3, std_type="N2XS(FL)2Y 1x185 RM/35 64/110 kV", length_km=15.)
+    pp.create_ext_grid(net, b1, s_sc_max_mva=100., s_sc_min_mva=80., rx_min=0.4, rx_max=0.4)
+    pp.create_line(net, b1, b2, std_type="305-AL1/39-ST1A 110.0", length_km=20.)
+    pp.create_line(net, b2, b3, std_type="N2XS(FL)2Y 1x185 RM/35 64/110 kV", length_km=15.)
     net.line["endtemp_degree"] = 80
 
     return net
@@ -26,9 +35,9 @@ def simple_grid():
 
 def test_voltage_sgen():
     net = simple_grid()
-    create_sgen(net, 1, sn_mva=200., p_mw=0, k=1.3)
+    pp.create_sgen(net, 1, sn_mva=200., p_mw=0, k=1.3)
     # net.sn_mva = 110 * np.sqrt(3)
-    calc_sc(net, case="max", ip=True, branch_results=True, bus=2)
+    sc.calc_sc(net, case="max", ip=True, branch_results=True, bus=2)
 
     assert np.isclose(net.res_bus_sc.at[2, "ikss_ka"], 1.825315, atol=1e-6, rtol=0)
     assert np.isclose(net.res_bus_sc.at[2, "skss_mw"], 347.769263, atol=1e-5, rtol=0)
@@ -42,7 +51,7 @@ def test_voltage_sgen():
     assert np.allclose(net.res_line_sc.loc[:, "vm_to_pu"], [0.079654, 0], atol=1e-6, rtol=0)
     assert np.allclose(net.res_line_sc.loc[:, "va_to_degree"], [-10.818133, 0], atol=1e-6, rtol=0)
 
-    calc_sc(net, case="max", ip=True, branch_results=True, bus=1)
+    sc.calc_sc(net, case="max", ip=True, branch_results=True, bus=1)
 
     assert np.isclose(net.res_bus_sc.at[1, "ikss_ka"], 1.860576, atol=1e-6, rtol=0)
     assert np.isclose(net.res_bus_sc.at[1, "skss_mw"], 354.487419, atol=1e-5, rtol=0)
@@ -60,9 +69,9 @@ def test_voltage_sgen():
 def test_voltage_gen():
     net = simple_grid()
     z_base_ohm = np.square(110) / 100
-    create_gen(net, 1, p_mw=0, sn_mva=100, vn_kv=110,
-               xdss_pu=0.14, rdss_ohm=0.00001653 * z_base_ohm, cos_phi=0.85, pg_percent=0)
-    calc_sc(net, case="max", ip=True, branch_results=True, bus=2)
+    pp.create_gen(net, 1, p_mw=0, sn_mva=100, vn_kv=110,
+                  xdss_pu=0.14, rdss_ohm=0.00001653 * z_base_ohm, cos_phi=0.85, pg_percent=0)
+    sc.calc_sc(net, case="max", ip=True, branch_results=True, bus=2)
 
     assert np.isclose(net.res_bus_sc.at[2, "ikss_ka"], 3.87955, atol=1e-6, rtol=0)
     assert np.isclose(net.res_bus_sc.at[2, "skss_mw"], 739.153586, atol=1e-5, rtol=0)
@@ -76,7 +85,7 @@ def test_voltage_gen():
     assert np.allclose(net.res_line_sc.loc[:, "vm_to_pu"], [0.169299, 0], atol=1e-6, rtol=0)
     assert np.allclose(net.res_line_sc.loc[:, "va_to_degree"], [-25.662429, 0], atol=1e-6, rtol=0)
 
-    calc_sc(net, case="max", ip=True, branch_results=True, bus=1)
+    sc.calc_sc(net, case="max", ip=True, branch_results=True, bus=1)
 
     assert np.isclose(net.res_bus_sc.at[1, "ikss_ka"], 4.491006, atol=1e-6, rtol=0)
     assert np.isclose(net.res_bus_sc.at[1, "skss_mw"], 855.651656, atol=1e-5, rtol=0)
@@ -93,7 +102,7 @@ def test_voltage_gen():
 
 def test_voltage_simple():
     net = simple_grid()
-    calc_sc(net, case="max", ip=True, ith=True, branch_results=True, bus=2)
+    sc.calc_sc(net, case="max", ip=True, ith=True, branch_results=True, bus=2)
 
     assert np.isclose(net.res_bus_sc.at[2, "ikss_ka"], 0.486532, atol=1e-6, rtol=0)
     assert np.isclose(net.res_bus_sc.at[2, "skss_mw"], 92.696717, atol=1e-5, rtol=0)
@@ -107,7 +116,7 @@ def test_voltage_simple():
     assert np.allclose(net.res_line_sc.loc[:, "vm_to_pu"], [0.021232, 0], atol=1e-6, rtol=0)
     assert np.allclose(net.res_line_sc.loc[:, "va_to_degree"], [-10.818133, 0], atol=1e-6, rtol=0)
 
-    calc_sc(net, case="max", ip=True, ith=True, branch_results=True, bus=1)
+    sc.calc_sc(net, case="max", ip=True, ith=True, branch_results=True, bus=1)
 
     assert np.isclose(net.res_bus_sc.at[1, "ikss_ka"], 0.49593, atol=1e-6, rtol=0)
     assert np.isclose(net.res_bus_sc.at[1, "skss_mw"], 94.487419, atol=1e-5, rtol=0)
@@ -123,12 +132,12 @@ def test_voltage_simple():
 
 
 def test_voltage_very_simple():
-    net = create_empty_network(sn_mva=12)
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 110)
-    create_ext_grid(net, b1, s_sc_max_mva=100., s_sc_min_mva=80., rx_min=0.4, rx_max=0.4)
-    create_line(net, b1, b2, std_type="305-AL1/39-ST1A 110.0", length_km=20.)
-    calc_sc(net, case="max", ip=True, ith=True, branch_results=True, bus=1)
+    net = pp.create_empty_network(sn_mva=12)
+    b1 = pp.create_bus(net, 110)
+    b2 = pp.create_bus(net, 110)
+    pp.create_ext_grid(net, b1, s_sc_max_mva=100., s_sc_min_mva=80., rx_min=0.4, rx_max=0.4)
+    pp.create_line(net, b1, b2, std_type="305-AL1/39-ST1A 110.0", length_km=20.)
+    sc.calc_sc(net, case="max", ip=True, ith=True, branch_results=True, bus=1)
 
     assert np.isclose(net.res_bus_sc.at[1, "ikss_ka"], 0.49593, atol=1e-6, rtol=0)
     assert np.isclose(net.res_bus_sc.at[1, "skss_mw"], 94.487419, atol=1e-5, rtol=0)
@@ -145,4 +154,5 @@ def test_voltage_very_simple():
 
 def test_iec_60909_4():
     net = iec_60909_4()
-    calc_sc(net, case="max", ip=True, ith=True, branch_results=True, bus=2)
+    sc.calc_sc(net, case="max", ip=True, ith=True, branch_results=True, bus=2)
+

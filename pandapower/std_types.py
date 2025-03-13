@@ -270,12 +270,11 @@ def parameter_from_std_type(net, parameter, element="line", fill=None):
             type does not have a value for the parameter
 
     EXAMPLE:
+        import pandapower as pp
+        import pandapower.networks as pn
 
-        >>> from pandapower import parameter_from_std_type
-        >>> from pandapower.networks import simple_mv_open_ring_net
-        >>>
-        >>> net = simple_mv_open_ring_net()
-        >>> parameter_from_std_type(net, "q_mm2")
+        net = pn.simple_mv_open_ring_net()
+        pp.parameter_from_std_type(net, "q_mm2")
     """
     if parameter not in net[element]:
         net[element][parameter] = fill

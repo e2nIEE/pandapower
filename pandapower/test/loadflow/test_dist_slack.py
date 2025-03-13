@@ -6,18 +6,12 @@
 
 import numpy as np
 import pytest
-
+import pandapower as pp
+from pandapower import networks
 from pandapower.control import ContinuousTapControl
-from pandapower.create import create_empty_network, create_buses, create_gen, create_load, create_ext_grid, \
-    create_line_from_parameters, create_xward, create_bus, create_shunt
-from pandapower.networks.create_examples import example_multivoltage
-from pandapower.networks.power_system_test_cases import case9, case2848rte
+from pandapower.pypower.idx_bus import PD, GS, VM
 from pandapower.pypower.idx_brch import PF
-from pandapower.pypower.idx_bus import PD, VM
-from pandapower.run import runpp, set_user_pf_options
 from pandapower.test.helper_functions import assert_res_equal
-from pandapower.toolbox.element_selection import get_connected_elements_dict
-
 try:
     import numba
 
@@ -34,20 +28,20 @@ logger = logging.getLogger(__name__)
 
 
 def small_example_grid():
-    net = create_empty_network()
-    create_buses(net, 3, 20)
+    net = pp.create_empty_network()
+    pp.create_buses(net, 3, 20)
 
-    create_gen(net, 0, p_mw=100, vm_pu=1, slack=True, slack_weight=1)
-    # create_ext_grid(net, 0)
+    pp.create_gen(net, 0, p_mw=100, vm_pu=1, slack=True, slack_weight=1)
+    # pp.create_ext_grid(net, 0)
 
-    create_load(net, 1, p_mw=100, q_mvar=100)
+    pp.create_load(net, 1, p_mw=100, q_mvar=100)
 
-    create_line_from_parameters(net, 0, 1, length_km=3, r_ohm_per_km=0.01, x_ohm_per_km=0.1, c_nf_per_km=0,
-                                max_i_ka=1)
-    create_line_from_parameters(net, 1, 2, length_km=2, r_ohm_per_km=0.01, x_ohm_per_km=0.1, c_nf_per_km=0,
-                                max_i_ka=1)
-    create_line_from_parameters(net, 2, 0, length_km=1, r_ohm_per_km=0.01, x_ohm_per_km=0.1, c_nf_per_km=0,
-                                max_i_ka=1)
+    pp.create_line_from_parameters(net, 0, 1, length_km=3, r_ohm_per_km=0.01, x_ohm_per_km=0.1, c_nf_per_km=0,
+                                   max_i_ka=1)
+    pp.create_line_from_parameters(net, 1, 2, length_km=2, r_ohm_per_km=0.01, x_ohm_per_km=0.1, c_nf_per_km=0,
+                                   max_i_ka=1)
+    pp.create_line_from_parameters(net, 2, 0, length_km=1, r_ohm_per_km=0.01, x_ohm_per_km=0.1, c_nf_per_km=0,
+                                   max_i_ka=1)
     return net
 
 
@@ -68,9 +62,9 @@ def _get_xward_result(net):
         p_bus = ppc['bus'][net._pd2ppc_lookups["bus"][b], PD]
         p_shunt = ppc['bus'][net._pd2ppc_lookups["bus"][b], VM] ** 2 * net["xward"].at[x_id, "pz_mw"]
         internal_results = np.append(internal_results, p_shunt)
-        connected = get_connected_elements_dict(net, [b], respect_in_service=True, connected_buses=False,
-                                                connected_branch_elements=False,
-                                                connected_other_elements=False)
+        connected = pp.get_connected_elements_dict(net, [b], respect_in_service=True, connected_buses=False,
+                                                   connected_branch_elements=False,
+                                                   connected_other_elements=False)
         for e, idx in connected.items():
             # first, count the total slack weights per bus, and obtain the variable part of the active power
             total_weight = 0
@@ -109,8 +103,8 @@ def _get_injection_consumption(net):
 
 def _get_slack_weights(net):
     slack_weights = np.r_[net.gen.query("in_service").slack_weight,
-    net.ext_grid.query("in_service").slack_weight,
-    net.xward.query("in_service").slack_weight]
+                          net.ext_grid.query("in_service").slack_weight,
+                          net.xward.query("in_service").slack_weight]
     return slack_weights / sum(slack_weights)
 
 
@@ -120,11 +114,11 @@ def _get_inputs_results(net):
     xward_pq_res, _ = _get_xward_result(net)
     # xward is in the consumption reference system, but here the results are all assumed in the generation reference system
     inputs = np.r_[net.gen.query("in_service").p_mw,
-    np.zeros(len(net.ext_grid.query("in_service"))),
-    -net.xward.query("in_service").ps_mw]
+                   np.zeros(len(net.ext_grid.query("in_service"))),
+                   -net.xward.query("in_service").ps_mw]
     results = np.r_[net.res_gen[net.gen.in_service].p_mw,
-    net.res_ext_grid[net.ext_grid.in_service].p_mw,
-    -xward_pq_res]
+                    net.res_ext_grid[net.ext_grid.in_service].p_mw,
+                    -xward_pq_res]
     return inputs, results
 
 
@@ -149,20 +143,20 @@ def check_xward_results(net, tol=1e-9):
 def run_and_assert_numba(net, **kwargs):
     if numba_installed:
         net_temp = net.deepcopy()
-        runpp(net_temp, distributed_slack=True, numba=False, **kwargs)
-        runpp(net, distributed_slack=True, **kwargs)
+        pp.runpp(net_temp, distributed_slack=True, numba=False, **kwargs)
+        pp.runpp(net, distributed_slack=True, **kwargs)
         assert_res_equal(net, net_temp)
     else:
-        runpp(net, distributed_slack=True, numba=False, **kwargs)
+        pp.runpp(net, distributed_slack=True, numba=False, **kwargs)
 
 
 def test_get_xward_result():
     # here we test the helper function that calculates the internal and PQ load results separately
     # it separates the results of other node ellments at the same bus, but only works for 1 xward at a bus
     net = small_example_grid()
-    create_xward(net, 2, 100, 0, 0, 0, 0.02, 0.2, 1)
-    create_load(net, 2, 50, 0, 0, 0, 0.02, 0.2, 1)
-    runpp(net)
+    pp.create_xward(net, 2, 100, 0, 0, 0, 0.02, 0.2, 1)
+    pp.create_load(net, 2, 50, 0, 0, 0, 0.02, 0.2, 1)
+    pp.runpp(net)
     check_xward_results(net)
 
 
@@ -170,7 +164,7 @@ def test_numba():
     net = small_example_grid()
     # if no slack_weight is given for ext_grid, 1 is assumed, because normally
     # ext_grids are responsible to take the slack power
-    create_gen(net, 2, 200, 1., slack_weight=2)
+    pp.create_gen(net, 2, 200, 1., slack_weight=2)
 
     run_and_assert_numba(net)
     assert_results_correct(net)
@@ -184,9 +178,9 @@ def test_small_example():
 
     net2 = net.deepcopy()
 
-    runpp(net, distributed_slack=True, numba=False)
+    pp.runpp(net, distributed_slack=True, numba=False)
 
-    runpp(net2, distributed_slack=False)
+    pp.runpp(net2, distributed_slack=False)
 
     assert_res_equal(net, net2)
     assert_results_correct(net)
@@ -195,7 +189,7 @@ def test_small_example():
 def test_two_gens():
     # a three-bus example with 3 lines in a ring, 2 gens and 1 load
     net = small_example_grid()
-    create_gen(net, 2, 200, 1., slack_weight=2)
+    pp.create_gen(net, 2, 200, 1., slack_weight=2)
 
     run_and_assert_numba(net)
     assert_results_correct(net)
@@ -212,8 +206,8 @@ def test_two_gens():
 
 def test_three_gens():
     net = small_example_grid()
-    create_gen(net, 1, 200, 1., slack_weight=2)
-    create_gen(net, 2, 200, 1., slack_weight=2)
+    pp.create_gen(net, 1, 200, 1., slack_weight=2)
+    pp.create_gen(net, 2, 200, 1., slack_weight=2)
 
     run_and_assert_numba(net)
     assert_results_correct(net)
@@ -223,7 +217,7 @@ def test_gen_xward():
     # here testing for numba only
     net = small_example_grid()
     # note: xward is in the consumption reference system, so positive ps_mw stands for consumption
-    create_xward(net, 2, 200, 0, 0, 0, 0.02, 0.2, 1, slack_weight=2)
+    pp.create_xward(net, 2, 200, 0, 0, 0, 0.02, 0.2, 1, slack_weight=2)
     run_and_assert_numba(net)
     # xward behavior is a bit different due to the shunt component and the impedance component of the xward
     # so we check the results by hand for the case when shunt values are != 0
@@ -235,8 +229,8 @@ def test_xward_pz_mw():
     # here testing for numba only
     # for now, not implemented and should raise an error
     net = small_example_grid()
-    # create_xward(net, 2, 0, 0, 0, 0, 0.02, 0.2, 1, slack_weight=2)
-    create_xward(net, 2, 200, 20, 10, 1, 0.02, 0.2, 1, slack_weight=2)
+    # pp.create_xward(net, 2, 0, 0, 0, 0, 0.02, 0.2, 1, slack_weight=2)
+    pp.create_xward(net, 2, 200, 20, 10, 1, 0.02, 0.2, 1, slack_weight=2)
     run_and_assert_numba(net)
     # xward behavior is a bit different due to the shunt component of the xward
     # so we check the results by hand for the case when shunt values are != 0
@@ -246,8 +240,8 @@ def test_xward_pz_mw():
 
 def test_xward_manually():
     net_1 = small_example_grid()
-    # create_xward(net, 2, 0, 0, 0, 0, 0.02, 0.2, 1, slack_weight=2)
-    create_xward(net_1, 2, 200, 20, 10, 1, 0.02, 0.2, 1, slack_weight=2)
+    # pp.create_xward(net, 2, 0, 0, 0, 0, 0.02, 0.2, 1, slack_weight=2)
+    pp.create_xward(net_1, 2, 200, 20, 10, 1, 0.02, 0.2, 1, slack_weight=2)
     run_and_assert_numba(net_1)
     slack_power = (net_1.res_gen.p_mw.at[0] - net_1.gen.p_mw.at[0]) * 3  # factor 3 since gen has
     # slack_weight==1 and xward has slack_weight==2
@@ -255,15 +249,15 @@ def test_xward_manually():
     # xward behavior is a bit different due to the shunt component of the xward
     # so we check the results by hand for the case when shunt values are != 0
     net = small_example_grid()
-    create_bus(net, 20)
-    create_load(net, 2, 200, 20)
-    create_shunt(net, 2, 1, 10)
-    create_gen(net, 3, 0, 1, slack_weight=2)
-    create_line_from_parameters(net, 2, 3, 1, 0.02, 0.2, 0, 1)
+    pp.create_bus(net, 20)
+    pp.create_load(net, 2, 200, 20)
+    pp.create_shunt(net, 2, 1, 10)
+    pp.create_gen(net, 3, 0, 1, slack_weight=2)
+    pp.create_line_from_parameters(net, 2, 3, 1, 0.02, 0.2, 0, 1)
 
     net.load.at[1, 'p_mw'] = net_1._ppc['bus'][net_1.xward.bus.at[0], PD]
     assert np.isclose(200 - net.load.at[1, 'p_mw'], slack_power * 2 / 3, rtol=0, atol=1e-6)
-    runpp(net)
+    pp.runpp(net)
 
     assert np.isclose(net_1.res_gen.at[0, 'p_mw'], net.res_gen.at[0, 'p_mw'], rtol=0, atol=1e-6)
     assert np.isclose(net_1.res_gen.at[0, 'q_mvar'], net.res_gen.at[0, 'q_mvar'], rtol=0, atol=1e-6)
@@ -276,8 +270,8 @@ def test_xward_manually():
 def test_ext_grid():
     net = small_example_grid()
     net.gen.in_service = False
-    create_ext_grid(net, 0, slack_weight=1)
-    create_ext_grid(net, 2, slack_weight=2)
+    pp.create_ext_grid(net, 0, slack_weight=1)
+    pp.create_ext_grid(net, 2, slack_weight=2)
 
     run_and_assert_numba(net)
     assert_results_correct(net)
@@ -285,7 +279,7 @@ def test_ext_grid():
 
 def test_gen_ext_grid():
     net = small_example_grid()
-    create_ext_grid(net, 2, slack_weight=2)
+    pp.create_ext_grid(net, 2, slack_weight=2)
 
     run_and_assert_numba(net)
     assert_results_correct(net)
@@ -294,10 +288,10 @@ def test_gen_ext_grid():
 def test_pvgen_ext_grid():
     # now test the behavior if gen is not slack
     net = small_example_grid()
-    create_ext_grid(net, 2, slack_weight=2)
+    pp.create_ext_grid(net, 2, slack_weight=2)
     net.gen.slack = False
 
-    runpp(net, distributed_slack=True, numba=numba_installed)
+    pp.runpp(net, distributed_slack=True, numba=numba_installed)
 
     run_and_assert_numba(net)
     assert_results_correct(net)
@@ -305,7 +299,7 @@ def test_pvgen_ext_grid():
 
 def test_same_bus():
     net = small_example_grid()
-    create_ext_grid(net, 0, slack_weight=2)
+    pp.create_ext_grid(net, 0, slack_weight=2)
 
     run_and_assert_numba(net)
     assert_results_correct(net)
@@ -313,7 +307,7 @@ def test_same_bus():
 
 def test_gen_oos():
     net = small_example_grid()
-    create_gen(net, 2, 200, 1., slack_weight=2, in_service=False)
+    pp.create_gen(net, 2, 200, 1., slack_weight=2, in_service=False)
 
     run_and_assert_numba(net)
     assert_results_correct(net)
@@ -321,7 +315,7 @@ def test_gen_oos():
 
 def test_ext_grid_oos():
     net = small_example_grid()
-    create_ext_grid(net, 0, slack_weight=2, in_service=False)
+    pp.create_ext_grid(net, 0, slack_weight=2, in_service=False)
 
     run_and_assert_numba(net)
     assert_results_correct(net)
@@ -329,57 +323,57 @@ def test_ext_grid_oos():
 
 def test_xward_oos():
     net = small_example_grid()
-    create_xward(net, 2, 200, 20, 10, 1, 0.02, 0.2, 1, slack_weight=2, in_service=False)
+    pp.create_xward(net, 2, 200, 20, 10, 1, 0.02, 0.2, 1, slack_weight=2, in_service=False)
 
     run_and_assert_numba(net)
     assert_results_correct(net)
 
 
 def test_only_xward():
-    net = create_empty_network()
-    create_bus(net, 110)
-    create_ext_grid(net, 0, vm_pu=1.05, slack_weight=2)
-    create_xward(net, 0, 200, 20, 10, 1, 0.02, 0.2, 1, slack_weight=2)
+    net = pp.create_empty_network()
+    pp.create_bus(net, 110)
+    pp.create_ext_grid(net, 0, vm_pu=1.05, slack_weight=2)
+    pp.create_xward(net, 0, 200, 20, 10, 1, 0.02, 0.2, 1, slack_weight=2)
     with pytest.raises(NotImplementedError):
-        runpp(net, distributed_slack=True)
+        pp.runpp(net, distributed_slack=True)
 
 
 def test_xward_gen_same_bus():
     net = small_example_grid()
-    create_gen(net, 2, 200, 1., slack_weight=2)
-    create_xward(net, 2, 200, 20, 10, 1, 0.02, 0.2, 1, slack_weight=4)
+    pp.create_gen(net, 2, 200, 1., slack_weight=2)
+    pp.create_xward(net, 2, 200, 20, 10, 1, 0.02, 0.2, 1, slack_weight=4)
     with pytest.raises(NotImplementedError):
-        runpp(net, distributed_slack=True)
+        pp.runpp(net, distributed_slack=True)
 
 
 def test_separate_zones():
     net = small_example_grid()
-    b1, b2 = create_buses(net, 2, 110)
-    create_line_from_parameters(net, b1, b2, length_km=1, r_ohm_per_km=0.01, x_ohm_per_km=0.1, c_nf_per_km=0,
-                                max_i_ka=1)
-    create_ext_grid(net, b1)
-    create_load(net, b2, 100)
+    b1, b2 = pp.create_buses(net, 2, 110)
+    pp.create_line_from_parameters(net, b1, b2, length_km=1, r_ohm_per_km=0.01, x_ohm_per_km=0.1, c_nf_per_km=0,
+                                   max_i_ka=1)
+    pp.create_ext_grid(net, b1)
+    pp.create_load(net, b2, 100)
 
     # distributed slack not implemented for separate zones
     with pytest.raises(NotImplementedError):
-        runpp(net, distributed_slack=True, numba=False)
+        pp.runpp(net, distributed_slack=True, numba=False)
 
 
 def case9_simplified():
-    net = create_empty_network()
-    create_buses(net, 9, vn_kv=345.)
+    net = pp.create_empty_network()
+    pp.create_buses(net, 9, vn_kv=345.)
     lines = [[0, 3], [3, 4], [4, 5], [2, 5], [5, 6], [6, 7], [7, 1], [7, 8], [8, 3]]
 
     for i, (fb, tb) in enumerate(lines):
-        create_line_from_parameters(net, fb, tb, 1, 20, 100, 0, 1)
+        pp.create_line_from_parameters(net, fb, tb, 1, 20, 100, 0, 1)
 
-    create_gen(net, 0, 0, slack=True, slack_weight=1)
-    create_gen(net, 1, 163, slack_weight=1)
-    create_gen(net, 2, 85, slack_weight=1)
+    pp.create_gen(net, 0, 0, slack=True, slack_weight=1)
+    pp.create_gen(net, 1, 163, slack_weight=1)
+    pp.create_gen(net, 2, 85, slack_weight=1)
 
-    create_load(net, 4, 90, 30)
-    create_load(net, 6, 100, 35)
-    create_load(net, 8, 125, 50)
+    pp.create_load(net, 4, 90, 30)
+    pp.create_load(net, 6, 100, 35)
+    pp.create_load(net, 8, 125, 50)
     return net
 
 
@@ -388,7 +382,7 @@ def test_case9():
     basic test with ext_grid + gen, scaling != 1, slack_weight sum = 1
     """
     tol_mw = 1e-6
-    net = case9()
+    net = networks.case9()
     # net = case9_simplified()
 
     # set slack_weight (distributed slack participation factor)
@@ -428,18 +422,18 @@ def test_case9():
 
 def test_case2848rte():
     # check how it works with a large grid
-    net = case2848rte()
+    net = networks.case2848rte()
     net.ext_grid['slack_weight'] = 0
     sl_gen = net.gen.loc[net.gen.p_mw > 1000].index
     net.gen.loc[sl_gen, 'slack_weight'] = net.gen.loc[sl_gen, 'p_mw']
-    runpp(net, distributed_slack=True, numba=numba_installed)
+    pp.runpp(net, distributed_slack=True, numba=numba_installed)
     assert_results_correct(net)
 
 
 def test_multivoltage_example_with_controller():
     do_output = False
 
-    net = example_multivoltage()
+    net = networks.example_multivoltage()
 
     gen_p_disp = 10
     net.gen.at[0, "p_mw"] = gen_p_disp
@@ -464,7 +458,7 @@ def test_multivoltage_example_with_controller():
     net2.gen.p_mw = net.res_gen.p_mw
     net2.xward.ps_mw = net._ppc['bus'][net._pd2ppc_lookups['bus'][net.xward.bus], PD] - net.load.loc[
         net.load.bus.isin([34, 32]), 'p_mw'].values
-    runpp(net2)
+    pp.runpp(net2)
 
     assert_res_equal(net, net2)
     check_xward_results(net)
@@ -512,34 +506,34 @@ def test_dist_slack_user_pf_options():
 
     net2 = net.deepcopy()
 
-    runpp(net, distributed_slack=True)
+    pp.runpp(net, distributed_slack=True)
 
-    set_user_pf_options(net2, distributed_slack=True)
-    runpp(net2)
+    pp.set_user_pf_options(net2, distributed_slack=True)
+    pp.runpp(net2)
 
     assert_res_equal(net, net2)
     assert_results_correct(net)
     assert_results_correct(net2)
 
     with pytest.raises(NotImplementedError):
-        runpp(net, distributed_slack=True, algorithm="bfsw")
+        pp.runpp(net, distributed_slack=True, algorithm="bfsw")
 
     with pytest.raises(NotImplementedError):
-        runpp(net2, algorithm="bfsw")
+        pp.runpp(net2, algorithm="bfsw")
 
-    set_user_pf_options(net2, algorithm="bfsw")
+    pp.set_user_pf_options(net2, algorithm="bfsw")
     with pytest.raises(NotImplementedError):
-        runpp(net2)
+        pp.runpp(net2)
 
 
 def test_dist_slack_with_enforce_q_lims():
-    net = case9()
+    net = pp.networks.case9()
     net.ext_grid['slack_weight'] = 1 / 3
     net.gen['slack_weight'] = 1 / 3
 
     net.gen.at[0, 'max_q_mvar'] = 10
     net.gen.at[1, 'max_q_mvar'] = 0.5
-    runpp(net, distributed_slack=True, enforce_q_lims=True, numba=False)
+    pp.runpp(net, distributed_slack=True, enforce_q_lims=True, numba=False)
     assert net._options["distributed_slack"] and net._options["enforce_q_lims"]
     assert np.allclose(net.res_gen.q_mvar, net.gen.max_q_mvar, rtol=0, atol=1e-6)
 
@@ -547,19 +541,19 @@ def test_dist_slack_with_enforce_q_lims():
 
 
 def test_dist_slack_with_enforce_q_lims_duplicate_gens():
-    net = case9()
-    create_gen(net, net.ext_grid.bus.at[0], 1, slack=False, max_q_mvar=0.07)
-    create_gen(net, net.ext_grid.bus.at[0], 1, slack=False, max_q_mvar=0.01)
-    create_gen(net, net.ext_grid.bus.at[0], 2, slack=False, max_q_mvar=0.2)
-    create_gen(net, net.ext_grid.bus.at[0], 2, slack=False, max_q_mvar=0.1)
-    create_gen(net, net.ext_grid.bus.at[0], 0, slack=False, max_q_mvar=0.05)
-    create_gen(net, net.ext_grid.bus.at[0], 0, slack=False, max_q_mvar=0.25)
+    net = pp.networks.case9()
+    pp.create_gen(net, net.ext_grid.bus.at[0], 1, slack=False, max_q_mvar=0.07)
+    pp.create_gen(net, net.ext_grid.bus.at[0], 1, slack=False, max_q_mvar=0.01)
+    pp.create_gen(net, net.ext_grid.bus.at[0], 2, slack=False, max_q_mvar=0.2)
+    pp.create_gen(net, net.ext_grid.bus.at[0], 2, slack=False, max_q_mvar=0.1)
+    pp.create_gen(net, net.ext_grid.bus.at[0], 0, slack=False, max_q_mvar=0.05)
+    pp.create_gen(net, net.ext_grid.bus.at[0], 0, slack=False, max_q_mvar=0.25)
     net.gen['slack_weight'] = 1 / 8
     net.ext_grid['slack_weight'] = 1 / 8
 
     net.gen.at[0, 'max_q_mvar'] = 10
     net.gen.at[1, 'max_q_mvar'] = 0.5
-    runpp(net, distributed_slack=True, enforce_q_lims=True)
+    pp.runpp(net, distributed_slack=True, enforce_q_lims=True)
     assert net._options["distributed_slack"] and net._options["enforce_q_lims"]
     assert np.allclose(net.res_gen.q_mvar, net.gen.max_q_mvar, rtol=0, atol=1e-6)
 

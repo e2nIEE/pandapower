@@ -3,22 +3,13 @@
 # Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+import pytest
+import os
 from copy import deepcopy
-
 import numpy as np
 import pandas as pd
-import pytest
-
-from pandapower.control.controller import DERController as DERModels
-from pandapower.control.controller.DERController import DERController
-from pandapower.control.controller.const_control import ConstControl
-from pandapower.create import create_empty_network, create_buses, create_ext_grid, create_sgen, create_line, \
-    create_bus
-from pandapower.run import runpp
-from pandapower.timeseries.data_sources.frame_data import DFData
-from pandapower.timeseries.output_writer import OutputWriter
-from pandapower.timeseries.run_time_series import run_timeseries
-from pandapower.toolbox.power_factor import cosphi_from_pq, cosphi_pos_neg_from_pq
+import pandapower as pp
+import pandapower.control.controller.DERController as DERModels
 
 try:
     from pandaplan.core import pplog as logging
@@ -29,19 +20,19 @@ logger = logging.getLogger(__name__)
 
 
 def simple_test_net():
-    net = create_empty_network()
-    create_buses(net, 2, vn_kv=20)
-    create_ext_grid(net, 0)
-    create_sgen(net, 1, p_mw=2., sn_mva=3, name="DER1")
-    create_line(net, 0, 1, length_km=0.1, std_type="NAYY 4x50 SE")
+    net = pp.create_empty_network()
+    pp.create_buses(net, 2, vn_kv=20)
+    pp.create_ext_grid(net, 0)
+    pp.create_sgen(net, 1, p_mw=2., sn_mva=3, name="DER1")
+    pp.create_line(net, 0, 1, length_km=0.1, std_type="NAYY 4x50 SE")
     return net
 
 
 def simple_test_net2():
     net = simple_test_net()
-    bus = create_bus(net, vn_kv=20)
-    create_line(net, 0, bus, 0.1, std_type="NAYY 4x50 SE")
-    create_sgen(net, bus, 2., sn_mva=3., name="DER2")
+    bus = pp.create_bus(net, vn_kv=20)
+    pp.create_line(net, 0, bus, 0.1, std_type="NAYY 4x50 SE")
+    pp.create_sgen(net, bus, 2., sn_mva=3., name="DER2")
     return net
 
 
@@ -57,97 +48,101 @@ def test_qofv():
         "cosphi_points": (0.9, 0.9, 1, -0.9)})
     qofv_q = DERModels.QModelQVCurve({
         "vm_points_pu": (0, 0.96, 1., 1.04),
-        "q_points_pu": (0.4843221 * p / sn, 0.4843221 * p / sn, 0., -0.4843221 * p / sn)})
+        "q_points_pu": (0.4843221*p/sn, 0.4843221*p/sn, 0., -0.4843221*p/sn)})
 
     # the following, applied pqv_area has no influence in this test (vm near 1, p > 0.2 -> no
     # limitation). The functionality is not tested here. It is only tested that using it produces
     # no errors
-    DERController(net, 0, q_model=qofv_cosphi, pqv_area=DERModels.PQVArea4120V2())
-    DERController(net, 0, q_model=qofv_q, pqv_area=DERModels.PQVArea4120V2())
+    pp.control.DERController(net, 0, q_model=qofv_cosphi, pqv_area=DERModels.PQVArea4120V2())
+    pp.control.DERController(net, 0, q_model=qofv_q, pqv_area=DERModels.PQVArea4120V2())
 
-    runpp(net)
+    pp.runpp(net)
     # check that vm difference to ext_grid is low
-    assert 0.995 <= net.res_bus.vm_pu.at[1] <= 1.005
+    assert  0.995 <= net.res_bus.vm_pu.at[1] <= 1.005
     assert np.isclose(net.res_sgen.q_mvar.at[0], 0)
+
 
     # --- run control -> nearly no q injection since vm is nearly 1.0
     # pf without controller
     net.controller.in_service = [True, False]
-    runpp(net, run_control=True)
-    assert 0.991 <= cosphi_from_pq(-net.res_sgen.p_mw.at[0], -net.res_sgen.q_mvar.at[0])[0]
+    pp.runpp(net, run_control=True)
+    assert 0.991 <= pp.cosphi_from_pq(-net.res_sgen.p_mw.at[0], -net.res_sgen.q_mvar.at[0])[0]
     # pf with 2nd controller (should have same result)
     net.controller.in_service = [False, True]
-    runpp(net, run_control=True)
-    assert 0.995 <= cosphi_from_pq(-net.res_sgen.p_mw.at[0], -net.res_sgen.q_mvar.at[0])[0]
+    pp.runpp(net, run_control=True)
+    assert 0.995 <= pp.cosphi_from_pq(-net.res_sgen.p_mw.at[0], -net.res_sgen.q_mvar.at[0])[0]
+
 
     # --- run control -> q injection is positive with cosphi=0.9 since vm is nearly 1.05
     net.ext_grid.vm_pu = 1.05
     net.sgen.q_mvar = 0.
 
     # pf without controller
-    runpp(net)
+    pp.runpp(net)
     vmb4 = net.res_bus.vm_pu.at[1]
 
     # pf with 1st controller
     net.controller.in_service = [True, False]
-    runpp(net, run_control=True)
+    pp.runpp(net, run_control=True)
     assert net.res_bus.vm_pu.at[1] < vmb4
     assert net.res_sgen.q_mvar.at[0] < 0
     cosphi_expected = 0.9
-    q_expected = ((net.res_sgen.p_mw.at[0] / cosphi_expected) ** 2 - net.res_sgen.p_mw.at[0] ** 2) ** 0.5
+    q_expected = ((net.res_sgen.p_mw.at[0]/cosphi_expected)**2 - net.res_sgen.p_mw.at[0]**2)**0.5
     assert np.isclose(net.res_sgen.q_mvar.at[0], -q_expected, atol=1e-5)
 
     # pf with 2nd controller (should have same result)
     net.controller.in_service = [False, True]
-    runpp(net, run_control=True)
+    pp.runpp(net, run_control=True)
     assert net.res_bus.vm_pu.at[1] < vmb4
     assert np.isclose(net.res_sgen.q_mvar.at[0], -q_expected, atol=1e-5)
+
 
     # --- run control -> q injection is negative with cosphi=0.9 since vm is nearly 0.93
     net.ext_grid.vm_pu = 0.93
     net.sgen.q_mvar = 0.
 
     # pf without controller
-    runpp(net)
+    pp.runpp(net)
     vmb4 = net.res_bus.vm_pu.at[1]
 
     # pf with 1st controller
     net.controller.in_service = [True, False]
-    runpp(net, run_control=True)
+    pp.runpp(net, run_control=True)
     assert net.res_bus.vm_pu.at[1] > vmb4
     assert net.res_sgen.q_mvar.at[0] > 0
     cosphi_expected = 0.9
-    q_expected = ((net.res_sgen.p_mw.at[0] / cosphi_expected) ** 2 - net.res_sgen.p_mw.at[0] ** 2) ** 0.5
+    q_expected = ((net.res_sgen.p_mw.at[0]/cosphi_expected)**2 - net.res_sgen.p_mw.at[0]**2)**0.5
     assert np.isclose(net.res_sgen.q_mvar.at[0], q_expected, atol=1e-5)
 
     # pf with 2nd controller (should have same result)
     net.controller.in_service = [False, True]
-    runpp(net, run_control=True)
+    pp.runpp(net, run_control=True)
     assert net.res_bus.vm_pu.at[1] > vmb4
     assert np.isclose(net.res_sgen.q_mvar.at[0], q_expected, atol=1e-5)
+
 
     # --- run control -> q injection is negative with cosphi is nearly 0.95 since vm is nearly 0.98
     net.ext_grid.vm_pu = 0.98
     net.sgen.q_mvar = 0.
 
     # pf without controller
-    runpp(net)
+    pp.runpp(net)
     vmb4 = net.res_bus.vm_pu.at[1]
 
     # pf with 1st controller
     net.controller.in_service = [True, False]
-    runpp(net, run_control=True)
+    pp.runpp(net, run_control=True)
     assert net.res_bus.vm_pu.at[1] > vmb4
     assert net.res_sgen.q_mvar.at[0] > 0
-    assert 0.95 < cosphi_from_pq(-net.res_sgen.p_mw.at[0], -net.res_sgen.q_mvar.at[0])[0] < 0.96
+    assert 0.95 < pp.cosphi_from_pq(-net.res_sgen.p_mw.at[0], -net.res_sgen.q_mvar.at[0])[0] < 0.96
 
     # pf with 2nd controller (should have different result because slope is not given by cosphi
     # points but by q points)
     net.sgen.q_mvar = 0.
     net.controller.in_service = [False, True]
-    runpp(net, run_control=True)
+    pp.runpp(net, run_control=True)
     assert net.res_bus.vm_pu.at[1] > vmb4
-    assert 0.2 * p < net.res_sgen.q_mvar.at[0] < 0.243 * p
+    assert 0.2*p < net.res_sgen.q_mvar.at[0] < 0.243*p
 
 
 def test_cosphi_of_p_timeseries():
@@ -155,36 +150,36 @@ def test_cosphi_of_p_timeseries():
 
     net = simple_test_net()
     sn = net.sgen.sn_mva.at[0]
-    ts_data = pd.DataFrame({"P_0": list(range(-50, -1360, -100)) + [-1400, -1425, -1450, -1475]})
-    ds = DFData(ts_data)
+    ts_data = pd.DataFrame({"P_0": list(range(-50, -1360, -100))+[-1400, -1425, -1450, -1475]})
+    ds = pp.timeseries.DFData(ts_data)
 
     # Create, add output and set outputwriter
-    ow = OutputWriter(net)
+    ow = pp.timeseries.OutputWriter(net)
     ow.log_variable("res_sgen", "p_mw")
     ow.log_variable("res_sgen", "q_mvar")
 
-    DER_no_q = DERController(
+    DER_no_q = pp.control.DERController(
         net, 0, data_source=ds, p_profile="P_0", profile_scale=-2e-3,
         q_model=DERModels.QModelCosphiPCurve({
             'p_points_pu': (0, 0.5, 1),
             'cosphi_points': (1, 1, 1)}))
 
-    DER_no_q2 = DERController(
+    DER_no_q2 = pp.control.DERController(
         net, 0, data_source=ds, p_profile="P_0", profile_scale=-2e-3)
 
-    DER_ue = DERController(
+    DER_ue = pp.control.DERController(
         net, 0, data_source=ds, p_profile="P_0", profile_scale=-2e-3,
         q_model=DERModels.QModelCosphiPCurve({
             'p_points_pu': (0, 0.5, 1),
             'cosphi_points': (1, 1, -0.95)}))
 
-    DER_ue2 = DERController(
+    DER_ue2 = pp.control.DERController(
         net, 0, data_source=ds, p_profile="P_0", profile_scale=-2e-3,
         q_model=DERModels.QModelCosphiPCurve({
             'p_points_pu': (0, 0.2, 0.25, 0.3, 0.5, 1),
             'cosphi_points': (1, 1, 0.975, 1, 1, -0.95)}))
 
-    DER_oe = DERController(
+    DER_oe = pp.control.DERController(
         net, 0, data_source=ds, p_profile="P_0", profile_scale=-2e-3,
         q_model=DERModels.QModelCosphiPCurve({
             'p_points_pu': (0, 0.5, 1),
@@ -193,23 +188,23 @@ def test_cosphi_of_p_timeseries():
     # Run timeseries
     net.controller["in_service"] = False
     net.controller.in_service.at[DER_ue.index] = True
-    run_timeseries(net, time_steps=range(len(ts_data)))
+    pp.timeseries.run_timeseries(net, time_steps=range(len(ts_data)))
     res_ue = deepcopy(ow.output)
     net.controller["in_service"] = False
     net.controller.in_service.at[DER_ue2.index] = True
-    run_timeseries(net, time_steps=range(len(ts_data)))
+    pp.timeseries.run_timeseries(net, time_steps=range(len(ts_data)))
     res_ue2 = deepcopy(ow.output)
     net.controller["in_service"] = False
     net.controller.in_service.at[DER_oe.index] = True
-    run_timeseries(net, time_steps=range(len(ts_data)))
+    pp.timeseries.run_timeseries(net, time_steps=range(len(ts_data)))
     res_oe = deepcopy(ow.output)
     net.controller["in_service"] = False
     net.controller.in_service.at[DER_no_q.index] = True
-    run_timeseries(net, time_steps=range(len(ts_data)))
+    pp.timeseries.run_timeseries(net, time_steps=range(len(ts_data)))
     res_no_q = deepcopy(ow.output)
     net.controller["in_service"] = False
     net.controller.in_service.at[DER_no_q2.index] = True
-    run_timeseries(net, time_steps=range(len(ts_data)))
+    pp.timeseries.run_timeseries(net, time_steps=range(len(ts_data)))
     res_no_q2 = deepcopy(ow.output)
 
     if False:  # plot cosphi course
@@ -226,11 +221,11 @@ def test_cosphi_of_p_timeseries():
         fig = plt.figure(figsize=(9, 5))
         ax = fig.gca()
         for i_key, (key, res) in enumerate(res_to_plot.items()):
-            cosphi_pos_neg = toolbox.cosphi_pos_neg_from_pq(
+            cosphi_pos_neg = pp.toolbox.cosphi_pos_neg_from_pq(
                 res["res_sgen.p_mw"], res["res_sgen.q_mvar"])
             cosphi_pos_neg[np.isnan(cosphi_pos_neg[0])] = 1
-            cosphi_pos = toolbox.cosphi_to_pos(cosphi_pos_neg)
-            x = res["res_sgen.p_mw"].values.flatten() / net.sgen.sn_mva.at[0]
+            cosphi_pos = pp.toolbox.cosphi_to_pos(cosphi_pos_neg)
+            x = res["res_sgen.p_mw"].values.flatten()/net.sgen.sn_mva.at[0]
             plt.plot(x, cosphi_pos, label=key, c=colors[i_key], marker="+")
         yticks = ax.get_yticks()
         yticks_signed = deepcopy(yticks)
@@ -250,10 +245,10 @@ def test_cosphi_of_p_timeseries():
     assert (res_oe["res_bus.vm_pu"][1] + 1e-8 >= res_no_q["res_bus.vm_pu"][1]).all()
     assert (res_ue["res_sgen.q_mvar"][0] <= 1e-5).all()
     assert np.allclose(res_ue["res_sgen.q_mvar"][0],
-                       -res_oe["res_sgen.q_mvar"][0], atol=1e-5)
+                      -res_oe["res_sgen.q_mvar"][0], atol=1e-5)
 
     # diff between ue and ue2
-    should_be_same = ((ts_data["P_0"] * -2e-3 / sn <= 0.2) | (ts_data["P_0"] * -2e-3 / sn >= 0.3)).values
+    should_be_same = ((ts_data["P_0"]*-2e-3/sn <= 0.2) | (ts_data["P_0"]*-2e-3/sn >= 0.3)).values
     assert np.allclose(res_ue["res_sgen.q_mvar"].values[should_be_same, 0],
                        res_ue2["res_sgen.q_mvar"].values[should_be_same, 0], atol=1e-5)
     assert np.allclose(res_ue["res_sgen.q_mvar"].values[~should_be_same, 0], 0, atol=1e-5)
@@ -264,46 +259,46 @@ def test_QModels_with_2Dim_timeseries():
     def define_outputwriters(nets):
         ows = list()
         for net in nets:
-            ow = OutputWriter(net)
+            ow = pp.timeseries.OutputWriter(net)
             ow.log_variable("res_sgen", "p_mw")
             ow.log_variable("res_sgen", "q_mvar")
             ows.append(ow)
         return tuple(ows)
 
     ts_data = pd.DataFrame({"P_DER1": [2., 2.5], "P_DER2": [1.75, 2.25]})
-    ds = DFData(ts_data)
+    ds = pp.timeseries.DFData(ts_data)
 
     net0 = simple_test_net2()
     net1 = simple_test_net2()
     net2 = simple_test_net2()
     net3 = simple_test_net2()
 
-    ConstControl(net0, element="sgen", variable="p_mw", element_index=[0, 1],
-                 data_source=ds, profile_name=["P_DER1", "P_DER2"])
+    pp.control.ConstControl(net0, element="sgen", variable="p_mw", element_index=[0, 1],
+                           data_source=ds, profile_name=["P_DER1", "P_DER2"])
     net0.sgen["q_mvar"] = 0.1 * net0.sgen["sn_mva"]
-    DERController(
+    pp.control.DERController(
         net1, [0, 1], data_source=ds, p_profile=["P_DER1", "P_DER2"],
         q_model=DERModels.QModelConstQ(0.1),
         pqv_area=DERModels.PQArea4105(1),
-    )
-    DERController(
+        )
+    pp.control.DERController(
         net2, [0, 1], data_source=ds, profile_from_name=True,
         q_model=DERModels.QModelCosphiP(0.98),
         pqv_area=DERModels.PQArea4105(2),
-    )
-    DERController(
+        )
+    pp.control.DERController(
         net3, [0, 1], data_source=ds, profile_from_name=True,
         q_model=DERModels.QModelCosphiPQ(0.98),
         pqv_area=DERModels.PQVArea4130V3(380.),
-    )
+        )
 
     ows = define_outputwriters([net0, net1, net2, net3])
     ow0, ow1, ow2, ow3 = ows
 
-    run_timeseries(net0, time_steps=[0, 1])
-    run_timeseries(net1, time_steps=[0, 1])
-    run_timeseries(net2, time_steps=[0, 1])
-    run_timeseries(net3, time_steps=[0, 1])
+    pp.timeseries.run_timeseries(net0, time_steps=[0, 1])
+    pp.timeseries.run_timeseries(net1, time_steps=[0, 1])
+    pp.timeseries.run_timeseries(net2, time_steps=[0, 1])
+    pp.timeseries.run_timeseries(net3, time_steps=[0, 1])
 
     # --- check results
     # ow0 and ow1 are equal
@@ -317,11 +312,11 @@ def test_QModels_with_2Dim_timeseries():
     # q of ow2 is as expected
     p = ow2.output["res_sgen.p_mw"].values.reshape((-1,))
     q = ow2.output["res_sgen.q_mvar"].values.reshape((-1,))
-    assert np.allclose(np.sin(np.arccos(0.98)) * p, q, atol=1e-5)
+    assert np.allclose(np.sin(np.arccos(0.98))*p, q, atol=1e-5)
     # cosphi of ow3 is correct
     p = ow3.output["res_sgen.p_mw"].values.reshape((-1,))
     q = ow3.output["res_sgen.q_mvar"].values.reshape((-1,))
-    assert np.allclose(cosphi_pos_neg_from_pq(p, q), 0.98, atol=1e-6)
+    assert np.allclose(pp.toolbox.cosphi_pos_neg_from_pq(p, q), 0.98, atol=1e-6)
 
 
 if __name__ == '__main__':

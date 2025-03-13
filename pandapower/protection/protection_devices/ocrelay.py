@@ -1,10 +1,11 @@
 import copy
 import numpy as np
 import pandas as pd
-
 from pandapower.protection.basic_protection_device import ProtectionDevice
+import pandapower.shortcircuit as sc
+#from pandapower.protection.oc_relay_model import time_grading
 from pandapower.protection.utility_functions import create_sc_bus,bus_path_multiple_ext_bus,get_line_path,parallel_lines
-from pandapower.shortcircuit.calc_sc import calc_sc
+
 try:
     import matplotlib.pyplot as plt
 
@@ -129,7 +130,7 @@ class OCRelay(ProtectionDevice):
         else:
             raise ValueError("OC Relay must be connected to line or transformer element")
 
-        calc_sc(net_sc, bus=bus_idx, branch_results=True)
+        sc.calc_sc(net_sc, bus=bus_idx, branch_results=True)
 
         if self.oc_relay_type == 'DTOC':
             if self.pickup_current_manual is None:

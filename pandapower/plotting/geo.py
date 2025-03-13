@@ -17,6 +17,7 @@ import math
 import pandas as pd
 from numpy import array
 
+import pandapower
 from pandapower.auxiliary import soft_dependency_error, pandapowerNet
 
 # get logger (same as in simple_plot)

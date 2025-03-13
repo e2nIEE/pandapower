@@ -5,22 +5,20 @@
 
 import copy
 import pytest
-
-try:
-    import pandaplan.core.pplog as pplog
-except:
-    import logging as pplog
-
-from pandapower import runpp
-from pandapower.create import create_sgen
-from pandapower.networks import create_kerber_vorstadtnetz_kabel_1
-from pandapower.control import ControllerNotConverged
+import pandapower.control as ct
+import pandapower.networks as networks
+import pandapower as pp
 from pandapower.control.run_control import get_controller_order
 from pandapower.control.basic_controller import Controller
 from pandapower.control.controller.trafo_control import TrafoController
 from pandapower.control.controller.trafo.ContinuousTapControl import ContinuousTapControl
 from pandapower.timeseries.output_writer import OutputWriter
 from pandapower.timeseries.run_time_series import run_timeseries
+
+try:
+    import pandaplan.core.pplog as pplog
+except:
+    import logging as pplog
 
 logger = pplog.getLogger(__name__)
 ctrl_logger = pplog.getLogger("hp.control.control_handler")
@@ -49,10 +47,10 @@ class DummyController(Controller):
 
 @pytest.fixture
 def net():
-    net = create_kerber_vorstadtnetz_kabel_1()
+    net = networks.create_kerber_vorstadtnetz_kabel_1()
 
     for i, load in net.load.iterrows():
-        create_sgen(net, load.bus, p_mw=1 * 1e-3, sn_mva=2 * 1e-3)
+        pp.create_sgen(net, load.bus, p_mw=1 * 1e-3, sn_mva=2 * 1e-3)
 
     return net
 
@@ -95,7 +93,7 @@ def test_ctrl_unconverged(net):
 
     DivergentController(net)
 
-    with pytest.raises(ControllerNotConverged):
+    with pytest.raises(ct.ControllerNotConverged):
         run_timeseries(net, time_steps=range(0, 3), output_writer=output_writer, max_iter=3, verbose=False)
 
     # assert no exceptions but appropriate output in outputwriter
@@ -117,8 +115,8 @@ def test_conflicting_controllers(net):
     ContinuousTapControl(net, 0, vm_set_pu=1.02, tol=tol, order=1)
     ContinuousTapControl(net, 0, vm_set_pu=1.05, tol=tol, order=2)
 
-    with pytest.raises(ControllerNotConverged):
-        runpp(net, run_control=True)
+    with pytest.raises(ct.ControllerNotConverged):
+        pp.runpp(net, run_control=True)
 
 
 @pytest.mark.xfail(
@@ -128,15 +126,15 @@ def test_in_service_bool(net):
     with pytest.raises(KeyError):
         cnet = copy.deepcopy(net)
         TrafoController(cnet, 0, side="lv", element="trafo", level=1, in_service="True", tol=1e-6)
-        runpp(cnet, run_control=True)
+        pp.runpp(cnet, run_control=True)
     with pytest.raises(KeyError):
         cnet = copy.deepcopy(net)
         TrafoController(cnet, 0, side="lv", element="trafo", level=1, in_service=1.0, tol=1e-6)
-        runpp(cnet, run_control=True)
+        pp.runpp(cnet, run_control=True)
     with pytest.raises(TypeError):
         cnet = copy.deepcopy(net)
         TrafoController(cnet, 0, side="lv", element="trafo", level=1, in_service=[1, 2, 3], tol=1e-6)
-        runpp(cnet, run_control=True)
+        pp.runpp(cnet, run_control=True)
 
 
 def test_multiple_levels(net):
@@ -153,7 +151,7 @@ def test_multiple_levels(net):
     assert order[1][1][0].index == 2
 
     assert level == [1, 2]
-    runpp(net, run_control=True)
+    pp.runpp(net, run_control=True)
 
 
 def test_level(net):
@@ -161,7 +159,7 @@ def test_level(net):
     c2 = DummyController(net, level=1)
     c3 = DummyController(net, level=2)
 
-    runpp(net, run_control=True)
+    pp.runpp(net, run_control=True)
 
     assert c1.is_converged(net)
     assert c2.is_converged(net)
@@ -175,7 +173,7 @@ def test_level_in_service(net):
     c4 = DummyController(net, level=1, order=-2, in_service=False)
     net.controller.at[0, 'in_service'] = False
 
-    runpp(net, run_control=True)
+    pp.runpp(net, run_control=True)
     assert not c1.applied
     assert c2.applied
     assert c3.applied

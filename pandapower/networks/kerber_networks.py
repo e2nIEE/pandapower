@@ -6,9 +6,7 @@
 
 import random as rd
 
-from pandapower.create import create_empty_network, create_bus, create_ext_grid, create_line, create_load, \
-    create_transformer
-from pandapower.std_types import create_std_type
+import pandapower as pp
 
 
 # --- support functions
@@ -21,7 +19,7 @@ def _create_empty_network_with_transformer(trafotype, V_OS=10., V_US=0.4):
     The voltage levels can be set manually and the transformer parameter can \
     be set with "ti"
     """
-    pd_net = create_empty_network()
+    pd_net = pp.create_empty_network()
     NFA2X4x70 = {"c_nf_per_km": 0, "r_ohm_per_km": 0.443, "x_ohm_per_km": 0.069, "max_i_ka": 0.270,
                  "type": "ol", "q_mm2": 70}
     NAYY4x50 = {"c_nf_per_km": 670, "r_ohm_per_km": 0.6417, "x_ohm_per_km": 0.084823,
@@ -32,24 +30,24 @@ def _create_empty_network_with_transformer(trafotype, V_OS=10., V_US=0.4):
                  "max_i_ka": 0.313, "type": "cs", "q_mm2": 185}
     NYY4x35 = {"c_nf_per_km": 0, "r_ohm_per_km": 0.5240284, "x_ohm_per_km": 0.08513716,
                "max_i_ka": 0.156, "type": "cs", "q_mm2": 35}
-    create_std_type(net=pd_net, data=NFA2X4x70, name="NFA2X 4x70", element="line")
-    create_std_type(net=pd_net, data=NAYY4x50, name="NAYY 4x50", element="line")
-    create_std_type(net=pd_net, data=NAYY4x150, name="NAYY 4x150", element="line")
-    create_std_type(net=pd_net, data=NAYY4x185, name="NAYY 4x185", element="line")
-    create_std_type(net=pd_net, data=NYY4x35, name="NYY 4x35", element="line")
+    pp.create_std_type(net=pd_net, data=NFA2X4x70, name="NFA2X 4x70", element="line")
+    pp.create_std_type(net=pd_net, data=NAYY4x50, name="NAYY 4x50", element="line")
+    pp.create_std_type(net=pd_net, data=NAYY4x150, name="NAYY 4x150", element="line")
+    pp.create_std_type(net=pd_net, data=NAYY4x185, name="NAYY 4x185", element="line")
+    pp.create_std_type(net=pd_net, data=NYY4x35, name="NYY 4x35", element="line")
     T100kVA = {"sn_mva": 0.100, "vn_hv_kv": 10, "vn_lv_kv": 0.4, "vk_percent": 4,
                "vkr_percent": 1.2, "pfe_kw": 0.45, "i0_percent": 0.25, "shift_degree": 150,
                "vector_group": "Dyn5"}
     T160kVA = {"sn_mva": 0.160, "vn_hv_kv": 10, "vn_lv_kv": 0.4, "vk_percent": 4,
                "vkr_percent": 1.2, "pfe_kw": 0.38, "i0_percent": 0.26, "shift_degree": 150,
                "vector_group": "Dyn5"}
-    create_std_type(net=pd_net, data=T100kVA, name="0.1 MVA 10/0.4 kV", element="trafo")
-    create_std_type(net=pd_net, data=T160kVA, name="0.16 MVA 10/0.4 kV", element="trafo")
+    pp.create_std_type(net=pd_net, data=T100kVA, name="0.1 MVA 10/0.4 kV", element="trafo")
+    pp.create_std_type(net=pd_net, data=T160kVA, name="0.16 MVA 10/0.4 kV", element="trafo")
 
-    busnr1 = create_bus(pd_net, name="Trafostation_OS", vn_kv=V_OS)
-    create_ext_grid(pd_net, bus=busnr1)
-    main_busbar_nr = create_bus(pd_net, name="main_busbar", vn_kv=V_US, type="b")
-    create_transformer(pd_net, hv_bus=busnr1, lv_bus=main_busbar_nr, std_type=trafotype,
+    busnr1 = pp.create_bus(pd_net, name="Trafostation_OS", vn_kv=V_OS)
+    pp.create_ext_grid(pd_net, bus=busnr1)
+    main_busbar_nr = pp.create_bus(pd_net, name="main_busbar", vn_kv=V_US, type="b")
+    pp.create_transformer(pd_net, hv_bus=busnr1, lv_bus=main_busbar_nr, std_type=trafotype,
                           name="trafo 1")
     return pd_net, main_busbar_nr
 
@@ -75,13 +73,13 @@ def _add_lines_and_loads(pd_net, n_lines, startbusnr, length_per_line,
     for i in list(range(n_lines)):
         buscounter = startpoint_bus + i
         linecounter = startpoint_line + i
-        created_bus_nr = create_bus(pd_net, name="bus_%d_%d" % (branchnr, buscounter), vn_kv=.4)
+        created_bus_nr = pp.create_bus(pd_net, name="bus_%d_%d" % (branchnr, buscounter), vn_kv=.4)
 
-        create_line(pd_net, bus_before, created_bus_nr, length_km=length_per_line,
+        pp.create_line(pd_net, bus_before, created_bus_nr, length_km=length_per_line,
                        name="line_%d_%d" % (branchnr, linecounter), std_type=std_type)
 
         if p_load_mw or q_load_mvar:
-            create_load(pd_net, created_bus_nr, p_mw=p_load_mw, q_mvar=q_load_mvar)
+            pp.create_load(pd_net, created_bus_nr, p_mw=p_load_mw, q_mvar=q_load_mvar)
 
         bus_before = created_bus_nr  # rueckgefuehrter Wert in der Schleife
 
@@ -130,22 +128,22 @@ def _add_lines_with_branched_loads(net, n_lines, startbus, length_per_line,
     for i in range(n_lines):
         buscounter = startpoint_bus + i
         linecounter = startpoint_line + i
-        created_bus_nr = create_bus(net, name="%s_%d_%d" % (bustype, branchnr, buscounter),
+        created_bus_nr = pp.create_bus(net, name="%s_%d_%d" % (bustype, branchnr, buscounter),
                                        type="b" if bustype == "KV" else "n", vn_kv=.4)
-        create_line(net, bus_before, created_bus_nr,
+        pp.create_line(net, bus_before, created_bus_nr,
                        length_km=length_per_line,
                        name="line_%d_%d" % (branchnr, linecounter),
                        std_type=std_type)
 
-        loadbusnr = create_bus(net, name="loadbus_%d_%d" % (branchnr, buscounter), vn_kv=.4)
+        loadbusnr = pp.create_bus(net, name="loadbus_%d_%d" % (branchnr, buscounter), vn_kv=.4)
 
-        create_line(net, created_bus_nr, loadbusnr,
+        pp.create_line(net, created_bus_nr, loadbusnr,
                        length_km=length_branchout_line,
                        name="branchout_line_%d_%d" % (branchnr, linecounter),
                        std_type=std_type_branchout_line)
 
         if p_load_mw or q_load_mvar:
-            create_load(net, loadbusnr,
+            pp.create_load(net, loadbusnr,
                            p_mw=p_load_mw, q_mvar=q_load_mvar)
 
         bus_before = created_bus_nr  # rueckgefuehrter Wert in der Schleife

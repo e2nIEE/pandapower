@@ -6,16 +6,17 @@
 import copy
 import json
 import os
-
 import numpy as np
 import pytest
-
-import pandapower.test as test
-from pandapower.converter import convert_pp_to_pm
+import pandapower.control
+import pandapower.timeseries
+import pandapower as pp
 from pandapower.converter.pandamodels.from_pm import read_pm_results_to_net
-from pandapower.create import create_poly_cost
+from pandapower.converter.pandamodels.to_pm import init_ne_line
 from pandapower.pd2ppc import _pd2ppc
-from pandapower.run import runopp
+from pandapower.test.consistency_checks import consistency_checks
+from pandapower.test.helper_functions import add_grid_connection, create_test_line
+from pandapower.converter import convert_pp_to_pm
 from pandapower.test.opf.test_basic import simple_opf_test_net, net_3w_trafo_opf
 
 try:
@@ -24,7 +25,6 @@ except ImportError:
     UnsupportedPythonError = Exception
 try:
     from julia.api import Julia
-
     Julia(compiled_modules=False)
     from julia import Main
 
@@ -45,15 +45,15 @@ def test_pm_to_pp_conversion(simple_opf_test_net):
     # Results are read from a result file containing the simple_opf_test_net
 
     net = simple_opf_test_net
-    create_poly_cost(net, 0, "gen", cp1_eur_per_mw=100)
+    pp.create_poly_cost(net, 0, "gen", cp1_eur_per_mw=100)
 
     # get pandapower opf results
-    runopp(net, delta=1e-13)
+    pp.runopp(net, delta=1e-13)
     va_degree = copy.deepcopy(net.res_bus.va_degree)
     vm_pu = copy.deepcopy(net.res_bus.vm_pu)
 
     # get previously calculated power models results
-    pm_res_file = os.path.join(os.path.abspath(os.path.dirname(test.__file__)),
+    pm_res_file = os.path.join(os.path.abspath(os.path.dirname(pp.test.__file__)),
                                "test_files", "pm_example_res.json")
 
     with open(pm_res_file, "r") as fp:

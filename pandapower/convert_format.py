@@ -12,7 +12,7 @@ from pandapower._version import __version__, __format_version__
 from pandapower.create import create_empty_network, create_poly_cost
 from pandapower.results import reset_results
 from pandapower.control import TrafoController
-from pandapower.plotting.geo import convert_geodata_to_geojson
+import pandapower.plotting.geo as geo
 
 try:
     import pandaplan.core.pplog as logging
@@ -71,7 +71,7 @@ def _convert_geo_data(net, elements_to_deserialize=None):
             if Version(str(net.format_version)) < Version("1.6"):
                 net.bus_geodata = pd.DataFrame.from_dict(net.bus_geodata)
                 net.line_geodata = pd.DataFrame.from_dict(net.line_geodata)
-            convert_geodata_to_geojson(net)
+            geo.convert_geodata_to_geojson(net)
 
 
 def _restore_index_names(net):

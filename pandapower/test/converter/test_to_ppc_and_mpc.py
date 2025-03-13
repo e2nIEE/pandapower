@@ -6,15 +6,14 @@
 
 import numpy as np
 import pytest
-
-from pandapower.converter import to_ppc, to_mpc
-from pandapower.networks import case4gs, case6ww, case30, case39
-from pandapower.pf.runpf_pypower import _runpf_pypower
-from pandapower.powerflow import LoadflowNotConverged
-from pandapower.pypower.idx_bus import VM, BUS_I, VA
-from pandapower.results import reset_results
-from pandapower.run import runpp
+import pandapower as pp
+import pandapower.converter as cv
 from pandapower.test.converter.test_from_ppc import get_testgrids
+from pandapower.pypower.idx_bus import VM, BUS_I, VA
+from pandapower.powerflow import LoadflowNotConverged
+from pandapower.results import reset_results
+from pandapower.pf.runpf_pypower import _runpf_pypower
+from pandapower.networks import case4gs, case6ww, case30, case39
 
 
 def test_to_ppc_and_mpc():
@@ -30,12 +29,12 @@ def test_to_ppc_and_mpc():
         reset_results(net)
 
         # This should be reviewed
-        runpp(net)
+        pp.runpp(net)
 
         # convert pandapower grids to ppc
-        ppc = to_ppc(net)
+        ppc = cv.to_ppc(net)
         # convert pandapower grids to mpc (no result validation)
-        mpc = to_mpc(net)
+        mpc = cv.to_mpc(net)
 
         # validate voltage results of pandapower-to-ppc-converted grids vs. original pypower results
         net["_options"]['ac'] = True

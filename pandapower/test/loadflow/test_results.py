@@ -2,35 +2,29 @@
 
 # Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-
 import os
-
-import numpy as np
 import pandas as pd
 import pytest
+import numpy as np
 from numpy import isin, isnan, isclose
 
-from pandapower import pp_dir
-from pandapower.create import create_bus, create_load, create_transformer3w_from_parameters, create_transformer, \
-    create_empty_network, create_ext_grid, create_line_from_parameters, create_transformer_from_parameters, \
-    create_impedance
-from pandapower.file_io import from_json
-from pandapower.run import runpp
-from pandapower.test.conftest import result_test_network
+import pandapower as pp
+from pandapower.test import assert_res_equal
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
 from pandapower.test.loadflow.result_test_network_generator import add_test_enforce_qlims, \
     add_test_gen
+from pandapower.test.conftest import result_test_network
 
 # simple example grid for tap dependent impedance tests:
 
 def add_trafo_connection(net, hv_bus, trafotype="2W"):
-    cb = create_bus(net, vn_kv=0.4)
-    create_load(net, cb, 0.2, 0.05)
+    cb = pp.create_bus(net, vn_kv=0.4)
+    pp.create_load(net, cb, 0.2, 0.05)
 
     if trafotype == "3W":
-        cbm = create_bus(net, vn_kv=0.9)
-        create_load(net, cbm, 0.1, 0.03)
-        create_transformer3w_from_parameters(
+        cbm = pp.create_bus(net, vn_kv=0.9)
+        pp.create_load(net, cbm, 0.1, 0.03)
+        pp.create_transformer3w_from_parameters(
             net, hv_bus=hv_bus, mv_bus=cbm, lv_bus=cb,
             vn_hv_kv=20., vn_mv_kv=0.9, vn_lv_kv=0.45, sn_hv_mva=0.6, sn_mv_mva=0.5,
             sn_lv_mva=0.4, vk_hv_percent=1., vk_mv_percent=1., vk_lv_percent=1.,
@@ -38,17 +32,17 @@ def add_trafo_connection(net, hv_bus, trafotype="2W"):
             pfe_kw=0.2, i0_percent=0.3, tap_neutral=0., tap_changer_type="Ratio",
             tap_pos=2, tap_step_percent=1., tap_min=-2, tap_max=2)
     else:
-        create_transformer(net, hv_bus=hv_bus, lv_bus=cb, std_type="0.25 MVA 20/0.4 kV", tap_pos=2)
+        pp.create_transformer(net, hv_bus=hv_bus, lv_bus=cb, std_type="0.25 MVA 20/0.4 kV", tap_pos=2)
 
 
 def create_net():
-    net = create_empty_network()
+    net = pp.create_empty_network()
     vn_kv = 20
-    b1 = create_bus(net, vn_kv=vn_kv)
-    create_ext_grid(net, b1, vm_pu=1.01)
-    b2 = create_bus(net, vn_kv=vn_kv)
-    l1 = create_line_from_parameters(net, b1, b2, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12,
-                                     c_nf_per_km=300, max_i_ka=.2, df=.8)
+    b1 = pp.create_bus(net, vn_kv=vn_kv)
+    pp.create_ext_grid(net, b1, vm_pu=1.01)
+    b2 = pp.create_bus(net, vn_kv=vn_kv)
+    l1 = pp.create_line_from_parameters(net, b1, b2, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12,
+                                        c_nf_per_km=300, max_i_ka=.2, df=.8)
     for i in range(2):
         add_trafo_connection(net, b2)
 
@@ -84,6 +78,7 @@ def test_line(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-
     q_to2 = 0.0000
 
     v = 1.007389386
+
 
     # line 1
     assert abs(net.res_line.loading_percent.at[l1] - load1) < l_tol
@@ -246,21 +241,21 @@ def test_trafo(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=1e-2, l_tol=1e
 def test_trafo_2_taps(v_tol=1e-6, i_tol=1e-6, s_tol=1e-2, l_tol=1e-3, va_tol=1e-2):
     # from pandapower.test.loadflow.test_results import *
 
-    net = create_empty_network()
-    create_bus(net, 110)
-    create_bus(net, 20)
-    create_ext_grid(net, 0)
-    create_transformer_from_parameters(net, 0, 1, 100, 110, 20, 0.5, 12, 14, 0.5,
-                                       tap_side="hv", tap_neutral=0, tap_max=10,
-                                       tap_min=-10, tap_step_percent=2, tap_step_degree=0,
-                                       tap_pos=0, tap_changer_type="Ratio",
-                                       tap2_side="hv", tap2_neutral=0, tap2_max=10,
-                                       tap2_min=-10, tap2_step_percent=2, tap2_step_degree=0,
-                                       tap2_pos=0, tap2_changer_type="Ratio")
+    net = pp.create_empty_network()
+    pp.create_bus(net, 110)
+    pp.create_bus(net, 20)
+    pp.create_ext_grid(net, 0)
+    pp.create_transformer_from_parameters(net, 0, 1, 100, 110, 20, 0.5, 12, 14, 0.5,
+                                          tap_side="hv", tap_neutral=0, tap_max=10,
+                                          tap_min=-10, tap_step_percent=2, tap_step_degree=0,
+                                          tap_pos=0, tap_changer_type="Ratio",
+                                          tap2_side="hv", tap2_neutral=0, tap2_max=10,
+                                          tap2_min=-10, tap2_step_percent=2, tap2_step_degree=0,
+                                          tap2_pos=0, tap2_changer_type="Ratio")
 
-    create_load(net, 1, 10)
+    pp.create_load(net, 1, 10)
 
-    runpp(net)
+    pp.runpp(net)
     net.res_bus
 
 
@@ -436,6 +431,7 @@ def test_trafo3w(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=2e-2, l_tol=
     pmv = -0.200
     plv = -0.100
 
+
     assert abs((net.res_bus.vm_pu.at[b2] - uhv)) < v_tol
     assert abs((net.res_bus.vm_pu.at[b3] - umv)) < v_tol
     assert abs((net.res_bus.vm_pu.at[b4] - ulv)) < v_tol
@@ -454,9 +450,9 @@ def test_trafo3w(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=2e-2, l_tol=
     assert abs((net.res_trafo3w.i_mv_ka.at[t3] - imv)) < i_tol
     assert abs((net.res_trafo3w.i_lv_ka.at[t3] - ilv)) < i_tol
 
-    runpp_with_consistency_checks(net, trafo_model="pi", trafo3w_losses='star')
+    runpp_with_consistency_checks(net, trafo_model="pi",trafo3w_losses='star')
 
-    # Test results Integral:
+    #Test results Integral:
     uhv = 1.01011711678
     umv = 0.95550024145
     ulv = 0.94062989256
@@ -492,20 +488,18 @@ def test_trafo3w(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=2e-2, l_tol=
     assert abs((net.res_trafo3w.i_mv_ka.at[t3] - imv)) < i_tol
     assert abs((net.res_trafo3w.i_lv_ka.at[t3] - ilv)) < i_tol
 
-
 @pytest.mark.parametrize("tap_pos", (-1, 2))
 @pytest.mark.parametrize("tap_side", ('hv', 'mv', 'lv'))
 @pytest.mark.parametrize("tap_step_degree", (0, 15, 30))
 def test_trafo3w_tap(tap_pos, tap_side, tap_step_degree):
-    results = pd.read_csv(os.path.join(pp_dir, "test", "test_files", "test_results_files", "trafo_3w_tap_results.csv"),
-                          sep=";", decimal=",")
+    results = pd.read_csv(os.path.join(pp.pp_dir, "test", "test_files", "test_results_files", "trafo_3w_tap_results.csv"), sep=";", decimal=",")
 
     if results.query("tap_side == @tap_side & tap_pos == @tap_pos & tap_step_degree == @tap_step_degree").empty:
         pytest.skip(f"Skipping combination: tap_side={tap_side}, tap_pos={tap_pos}, tap_step_degree={tap_step_degree}")
 
-    net = from_json(os.path.join(pp_dir, "test", "test_files", "test_trafo3w_tap.json"))  #
-    net.trafo3w.loc[0, 'tap_at_star_point'] = False
-    net.trafo3w.loc[1, 'tap_at_star_point'] = True
+    net = pp.from_json(os.path.join(pp.pp_dir, "test", "test_files","test_trafo3w_tap.json"))  #
+    net.trafo3w.loc[0, 'tap_at_star_point']= False
+    net.trafo3w.loc[1, 'tap_at_star_point']= True
 
     net.trafo3w.loc[0, "tap_side"] = tap_side
     net.trafo3w.loc[1, "tap_side"] = tap_side
@@ -513,36 +507,32 @@ def test_trafo3w_tap(tap_pos, tap_side, tap_step_degree):
     net.trafo3w.loc[1, "tap_pos"] = tap_pos
     net.trafo3w.loc[0, "tap_step_degree"] = tap_step_degree
     net.trafo3w.loc[1, "tap_step_degree"] = tap_step_degree
-    runpp(net)
+    pp.runpp(net)
 
     for index in range(8):
         for variable, tol in zip(("vm_pu", "va_degree"), (1e-6, 1e-3)):
             assert np.isclose(net.res_bus.at[index, variable], results.query(
                 "tap_side==@tap_side & tap_pos==@tap_pos & tap_step_degree==@tap_step_degree &"
                 "index==@index & element=='bus' & variable==@variable").value,
-                              rtol=0,
-                              atol=tol), f"failed for bus {index=}, {variable}, value {net.res_bus.at[index, variable]}"
-
+                rtol=0, atol=tol), f"failed for bus {index=}, {variable}, value {net.res_bus.at[index, variable]}"
 
 @pytest.mark.parametrize("tap_pos", (2, 5))
 @pytest.mark.parametrize("tap_side", ('hv', 'mv', 'lv'))
 @pytest.mark.parametrize("tap_step_degree", (0, 15, 30))
 def test_trafo3w_tap_neutral_not_zero(tap_pos, tap_side, tap_step_degree):
-    results = pd.read_csv(
-        os.path.join(pp_dir, "test", "test_files", "test_results_files", "trafo_3w_tap_results_neutral_not_zero.csv"),
-        sep=";", decimal=",")
+    results = pd.read_csv(os.path.join(pp.pp_dir, "test", "test_files", "test_results_files", "trafo_3w_tap_results_neutral_not_zero.csv"), sep=";", decimal=",")
 
     if results.query("tap_side == @tap_side & tap_pos == @tap_pos & tap_step_degree == @tap_step_degree").empty:
         pytest.skip(f"Skipping combination: tap_side={tap_side}, tap_pos={tap_pos}, tap_step_degree={tap_step_degree}")
 
-    net = from_json(os.path.join(pp_dir, "test", "test_files", "test_trafo3w_tap.json"))  #
+    net = pp.from_json(os.path.join(pp.pp_dir, "test", "test_files","test_trafo3w_tap.json"))  #
 
     net.trafo3w.loc[[0, 1], 'tap_min'] += 3
     net.trafo3w.loc[[0, 1], 'tap_max'] += 3
     net.trafo3w.loc[[0, 1], 'tap_neutral'] += 3
 
-    net.trafo3w.loc[0, 'tap_at_star_point'] = False
-    net.trafo3w.loc[1, 'tap_at_star_point'] = True
+    net.trafo3w.loc[0, 'tap_at_star_point']= False
+    net.trafo3w.loc[1, 'tap_at_star_point']= True
 
     net.trafo3w.loc[0, "tap_side"] = tap_side
     net.trafo3w.loc[1, "tap_side"] = tap_side
@@ -550,15 +540,15 @@ def test_trafo3w_tap_neutral_not_zero(tap_pos, tap_side, tap_step_degree):
     net.trafo3w.loc[1, "tap_pos"] = tap_pos
     net.trafo3w.loc[0, "tap_step_degree"] = tap_step_degree
     net.trafo3w.loc[1, "tap_step_degree"] = tap_step_degree
-    runpp(net)
+    pp.runpp(net)
 
     for index in range(8):
         for variable, tol in zip(("vm_pu", "va_degree"), (1e-6, 1e-3)):
             assert np.isclose(net.res_bus.at[index, variable], results.query(
                 "tap_side==@tap_side & tap_pos==@tap_pos & tap_step_degree==@tap_step_degree &"
                 "index==@index & element=='bus' & variable==@variable").value,
-                              rtol=0,
-                              atol=tol), f"failed for bus {index=}, {variable}, value {net.res_bus.at[index, variable]}"
+                rtol=0, atol=tol), f"failed for bus {index=}, {variable}, value {net.res_bus.at[index, variable]}"
+
 
 
 def test_impedance(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
@@ -616,8 +606,8 @@ def test_bus_bus_switch(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3,
     assert isnan(net.res_switch.p_from_mw).all()
 
     # now test with some switches that have non-zero impedance:
-    net.switch.loc[[2, 3], "z_ohm"] = 1e-3
-    runpp(net)
+    net.switch.loc[[2,3], "z_ohm"] = 1e-3
+    pp.runpp(net)
 
     p_from_ref = net.res_ext_grid.p_mw[12]
     p_to_ref = - net.res_line.p_from_mw[28]
@@ -631,7 +621,7 @@ def test_bus_bus_switch(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3,
 
     # also test with open switch that have non-zero impedance:
     net.switch.loc[[2], "closed"] = False
-    runpp(net)
+    pp.runpp(net)
 
     assert isnan(net.res_switch.p_from_mw[2])
 
@@ -639,9 +629,9 @@ def test_bus_bus_switch(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3,
 def test_enforce_q_lims(v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
     """ Test for enforce_q_lims loadflow option
     """
-    net = create_empty_network()
+    net = pp.create_empty_network()
     net = add_test_gen(net)
-    runpp(net)
+    pp.runpp(net)
     buses = net.bus[net.bus.zone == "test_gen"]
     gens = [x for x in net.gen.index if net.gen.bus[x] in buses.index]
     #    b1=buses.index[0]
@@ -658,7 +648,7 @@ def test_enforce_q_lims(v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
     # test_enforce_qlims
     net = add_test_enforce_qlims(net)
 
-    runpp(net, enforce_q_lims=True)
+    pp.runpp(net, enforce_q_lims=True)
     buses = net.bus[net.bus.zone == "test_enforce_qlims"]
     gens = [x for x in net.gen.index if net.gen.bus[x] in buses.index]
     b2 = buses.index[1]
@@ -712,13 +702,13 @@ def test_open(result_test_network):
 
 
 def test_impedance_g_b():
-    net = create_empty_network(sn_mva=100)
-    create_bus(net, 110)
-    create_bus(net, 20)
-    create_ext_grid(net, 0)
-    create_impedance(net, 0, 1, rft_pu=0.002, xft_pu=0.004, rtf_pu=0.005, xtf_pu=0.008,
-                     gf_pu=0.001, bf_pu=0.003, gt_pu=0.006, bt_pu=0.007, sn_mva=10)
-    create_load(net, 1, 20, 4)
+    net = pp.create_empty_network(sn_mva=100)
+    pp.create_bus(net, 110)
+    pp.create_bus(net, 20)
+    pp.create_ext_grid(net, 0)
+    pp.create_impedance(net, 0, 1, rft_pu=0.002, xft_pu=0.004, rtf_pu=0.005, xtf_pu=0.008,
+                        gf_pu=0.001, bf_pu=0.003, gt_pu=0.006, bt_pu=0.007, sn_mva=10)
+    pp.create_load(net, 1, 20, 4)
 
     runpp_with_consistency_checks(net, tolerance_mva=1e-12)
 
@@ -731,16 +721,15 @@ def test_impedance_g_b():
 
 
 def test_trafo_unequal_r_x_hv_lv():
-    net = create_empty_network(sn_mva=10)
-    create_bus(net, 110)
-    create_bus(net, 20)
-    create_ext_grid(net, 0)
-    create_transformer_from_parameters(net, 0, 1, 150, 120, 19,
-                                       1, 3, 20, 0.12, tap_side="hv",
-                                       tap_neutral=0, tap_max=2, tap_min=-2, tap_step_percent=5, tap_step_degree=30,
-                                       tap_pos=-2, tap_changer_type="Ratio", leakage_resistance_ratio_hv=0.6,
-                                       leakage_reactance_ratio_hv=0.2)
-    create_load(net, 1, 100, 20)
+    net = pp.create_empty_network(sn_mva=10)
+    pp.create_bus(net, 110)
+    pp.create_bus(net, 20)
+    pp.create_ext_grid(net, 0)
+    pp.create_transformer_from_parameters(net, 0, 1, 150, 120, 19,
+                                          1, 3, 20, 0.12, tap_side="hv",
+                                          tap_neutral=0, tap_max=2, tap_min=-2, tap_step_percent=5, tap_step_degree=30,
+                                          tap_pos=-2, tap_changer_type="Ratio", leakage_resistance_ratio_hv=0.6, leakage_reactance_ratio_hv=0.2)
+    pp.create_load(net, 1, 100, 20)
 
     runpp_with_consistency_checks(net)
     assert np.allclose(net.res_bus.vm_pu, [1.000000, 0.941818], rtol=0, atol=1e-6)

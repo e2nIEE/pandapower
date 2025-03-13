@@ -3,25 +3,24 @@
 # Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-import sys
-
 import numpy as np
 import pytest
-
+import sys
+import pandapower as pp
+import pandapower.networks as nw
 from pandapower.estimation import estimate
+from pandapower.estimation.util import add_virtual_meas_from_loadflow
+
+from pandapower.estimation.algorithm.optimization import OptAlgorithm
 from pandapower.estimation.algorithm.base import WLSAlgorithm
 from pandapower.estimation.algorithm.lp import LPAlgorithm
-from pandapower.estimation.algorithm.optimization import OptAlgorithm
 from pandapower.estimation.ppc_conversion import pp2eppci
 from pandapower.estimation.results import eppci2pp
-from pandapower.estimation.util import add_virtual_meas_from_loadflow
-from pandapower.networks.power_system_test_cases import case9
-from pandapower.run import runpp
 
 
 def test_case9_compare_classical_wls_opt_wls():
-    net = case9()
-    runpp(net)
+    net = nw.case9()
+    pp.runpp(net)
     add_virtual_meas_from_loadflow(net)
 
     # give it a warm start
@@ -46,17 +45,17 @@ def test_case9_compare_classical_wls_opt_wls():
 
 
 def test_lp_scipy_lav():
-    """
+    '''
     If OR-Tools is installed, run this test.
-    """
+    '''
     # Set the solver
     LPAlgorithm.ortools_available = False
 
-    net = case9()
-    runpp(net)
+    net = nw.case9()
+    pp.runpp(net)
     add_virtual_meas_from_loadflow(net, with_random_error=False)
 
-    net, ppc, eppci = pp2eppci(net)
+    net, ppc, eppci       = pp2eppci(net)
     estimation_ortools_lp = LPAlgorithm(1e-3, 5)
 
     estimation_ortools = estimation_ortools_lp.estimate(eppci, with_ortools=False)
@@ -69,13 +68,13 @@ def test_lp_scipy_lav():
 
 
 def test_lp_ortools_lav():
-    """
+    '''
     If OR-Tools is installed, run this test.
-    """
+    '''
     # Set the solver
     LPAlgorithm.ortools_available = True
-    net = case9()
-    runpp(net)
+    net = nw.case9()
+    pp.runpp(net)
     add_virtual_meas_from_loadflow(net, with_random_error=False)
 
     net, ppc, eppci = pp2eppci(net)
@@ -89,14 +88,13 @@ def test_lp_ortools_lav():
             not np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, atol=5e-2):
         raise AssertionError("Estimation failed!")
 
-
 def test_lp_lav():
-    """
+    '''
     This will test the default LP solver installed.
     If OR-Tools is installed, it will use it. Otherwise scipy is used.
-    """
-    net = case9()
-    runpp(net)
+    '''
+    net = nw.case9()
+    pp.runpp(net)
     add_virtual_meas_from_loadflow(net, p_std_dev=0.01, q_std_dev=0.01)
 
     estimate(net, algorithm="lp")
@@ -105,10 +103,9 @@ def test_lp_lav():
             not np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, atol=5e-2):
         raise AssertionError("Estimation failed!")
 
-
 def test_opt_lav():
-    net = case9()
-    runpp(net)
+    net = nw.case9()
+    pp.runpp(net)
     add_virtual_meas_from_loadflow(net, with_random_error=False)
 
     net, ppc, eppci = pp2eppci(net)
@@ -124,14 +121,13 @@ def test_opt_lav():
             not np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, atol=5e-2):
         raise AssertionError("Estimation failed!")
 
-
 @pytest.mark.skipif((sys.version_info[0] == 3) & (sys.version_info[1] <= 7),
-                    reason="This test can fail under Python 3.7 depending"
-                           "on the processing power of the hardware used.")
+                   reason="This test can fail under Python 3.7 depending"
+                   "on the processing power of the hardware used.")
 def test_ql_qc():
-    net = case9()
+    net = nw.case9()
     net.sn_mva = 1.
-    runpp(net)
+    pp.runpp(net)
     add_virtual_meas_from_loadflow(net, p_std_dev=0.01, q_std_dev=0.01)
     pf_vm_pu, pf_va_degree = net.res_bus.vm_pu, net.res_bus.va_degree
 

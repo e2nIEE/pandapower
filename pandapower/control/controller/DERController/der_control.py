@@ -6,9 +6,9 @@
 import numpy as np
 
 from pandapower.auxiliary import ensure_iterability
-from pandapower.control.controller.DERController.PQVAreas import BaseArea, PQVArea4110, QVArea4110
-from pandapower.control.controller.DERController.QModels import QModel
 from pandapower.control.controller.pq_control import PQController
+from pandapower.control.controller.DERController.QModels import QModel
+from pandapower.control.controller.DERController.PQVAreas import BaseArea, PQVArea4110, QVArea4110
 
 try:
     import pandaplan.core.pplog as logging
@@ -98,18 +98,16 @@ class DERController(PQController):
 
     Example
     -------
-    >>> from pandapower.networks.cigre_networks import create_cigre_network_mv
-    >>> from pandapower.control.controller.DERController import DERController, QModelCosphiP, PQVArea4120V2
-    >>> from pandapower.run import runpp
+    >>> import pandapower as pp
+    >>> import pandapower.control.controller.DERController as DERModels
     >>> net = create_cigre_network_mv(with_der=True)
-    >>> controlled_sgens = DERController(
+    >>> controlled_sgens = pp.control.DERController(
     ...     net, net.sgen.index,
-    ...     q_model=QModelCosphiP(cosphi=-0.95),
-    ...     pqv_area=PQVArea4120V2()
-    ... )
-    >>> runpp(net, run_control=True)
+    ...     q_model=DERModels.QModelCosphiP(cosphi=-0.95),
+    ...     pqv_area=DERModels.PQVArea4120V2()
+    ...     )
+    ... pp.runpp(net, run_control=True)
     """
-
     def __init__(self, net, element_index, element="sgen",
                  q_model=None, pqv_area=None,
                  saturate_sn_mva=np.nan, q_prio=True, damping_coef=2,
@@ -159,13 +157,13 @@ class DERController(PQController):
         self.p_series_mw = self.p_mw
         self.q_series_mvar = self.q_mvar
 
-    #        self.write_to_net(net)
+#        self.write_to_net(net)
 
     def is_converged(self, net):
 
         self._determine_target_powers(net)
 
-        return np.allclose(self.target_q_mvar, self.q_mvar, atol=self.max_q_error) and \
+        return np.allclose(self.target_q_mvar, self.q_mvar, atol=self.max_q_error) and\
             np.allclose(self.target_p_mw, self.p_mw, atol=self.max_p_error)
 
     def control_step(self, net):
@@ -209,7 +207,7 @@ class DERController(PQController):
     def _step_q(self, p_series_mw=None, q_series_mvar=None, vm_pu=None):
         """Q priority: Q setpoint > Q model > Q series"""
         if self.q_model is not None:
-            q_pu = self.q_model.step(vm_pu=vm_pu, p_pu=p_series_mw / self.sn_mva)
+            q_pu = self.q_model.step(vm_pu=vm_pu, p_pu=p_series_mw/self.sn_mva)
         else:
             if q_series_mvar is None:
                 raise Exception("No Q_model and no q_profile available.")
@@ -234,27 +232,28 @@ class DERController(PQController):
 
     def _saturate_sn_mva_step(self, p_pu, q_pu, vm_pu):
         # Saturation on SnMVA according to priority mode
-        sat_s_pu = self.saturate_sn_mva / self.sn_mva  # sat_s is relative to sn_mva
-        to_saturate = p_pu ** 2 + q_pu ** 2 > sat_s_pu ** 2
+        sat_s_pu = self.saturate_sn_mva / self.sn_mva # sat_s is relative to sn_mva
+        to_saturate = p_pu**2 + q_pu**2 > sat_s_pu**2
         if any(to_saturate):
             if self.q_prio:
                 if (
-                        isinstance(self.pqv_area, PQVArea4110) or isinstance(self.pqv_area, QVArea4110)
-                ) and any(
+                    isinstance(self.pqv_area, PQVArea4110) or isinstance(self.pqv_area, QVArea4110)
+                   ) and any(
                     (0.95 < vm[to_saturate]) & (vm[to_saturate] < 1.05) &
                     (-0.328684 < q_pu[to_saturate]) & any(q_pu[to_saturate] < 0.328684)
-                ):
+                   ):
                     logger.warning(f"Such kind of saturation is performed that is not in line with"
                                    " VDE AR N 4110: p reduction within 0.95 < vm < 1.05 and "
                                    "0.95 < cosphi.")
                 q_pu[to_saturate] = np.clip(q_pu[to_saturate], -sat_s_pu[to_saturate],
                                             sat_s_pu[to_saturate])
-                p_pu[to_saturate] = np.sqrt(sat_s_pu[to_saturate] ** 2 - q_pu[to_saturate] ** 2)
+                p_pu[to_saturate] = np.sqrt(sat_s_pu[to_saturate]**2 - q_pu[to_saturate]**2)
             else:
                 p_pu[to_saturate] = np.clip(p_pu[to_saturate], 0., sat_s_pu[to_saturate])
-                q_pu[to_saturate] = np.sqrt(sat_s_pu[to_saturate] ** 2 - p_pu[to_saturate] ** 2) * \
-                                    np.sign(q_pu[to_saturate])
+                q_pu[to_saturate] = np.sqrt(sat_s_pu[to_saturate]**2 - p_pu[to_saturate]**2) * \
+                    np.sign(q_pu[to_saturate])
         return p_pu, q_pu
+
 
     def __str__(self):
         el_id_str = f"len(element_index)={len(self.element_index)}" if len(self.element_index) > 6 \

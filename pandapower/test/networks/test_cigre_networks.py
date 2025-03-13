@@ -7,13 +7,13 @@
 import pandas as pd
 import pytest
 
-from pandapower.networks.cigre_networks import create_cigre_network_hv, create_cigre_network_mv, create_cigre_network_lv
-from pandapower.run import runpp
+import pandapower as pp
+import pandapower.networks as pn
 
 
 def test_cigre_hv():
-    net = create_cigre_network_hv()  # length_km_6a_6b=0.1
-    runpp(net)
+    net = pn.create_cigre_network_hv()  # length_km_6a_6b=0.1
+    pp.runpp(net)
 
     all_vn_kv = pd.Series([22, 220, 380])
     assert net.bus.vn_kv.isin(all_vn_kv).all()
@@ -29,13 +29,13 @@ def test_cigre_hv():
     assert len(net.ext_grid) == 1
     assert net.converged
 
-    net = create_cigre_network_hv(length_km_6a_6b=80)
+    net = pn.create_cigre_network_hv(length_km_6a_6b=80)
     assert net.line.length_km[8] == 80
 
 
 def test_cigre_mv():
-    net = create_cigre_network_mv()  # with_der=False
-    runpp(net)
+    net = pn.create_cigre_network_mv()  # with_der=False
+    pp.runpp(net)
 
     all_vn_kv = pd.Series([110, 20])
     assert net.bus.vn_kv.isin(all_vn_kv).all()
@@ -50,8 +50,8 @@ def test_cigre_mv():
     assert len(net.switch) == 8
     assert net.converged
 
-    net = create_cigre_network_mv(with_der="pv_wind")
-    runpp(net)
+    net = pn.create_cigre_network_mv(with_der="pv_wind")
+    pp.runpp(net)
 
     all_vn_kv = pd.Series([110, 20])
     assert net.bus.vn_kv.isin(all_vn_kv).all()
@@ -66,8 +66,8 @@ def test_cigre_mv():
     assert len(net.switch) == 8
     assert net.converged
 
-    net = create_cigre_network_mv(with_der="all")
-    runpp(net)
+    net = pn.create_cigre_network_mv(with_der="all")
+    pp.runpp(net)
 
     all_vn_kv = pd.Series([110, 20])
     assert net.bus.vn_kv.isin(all_vn_kv).all()
@@ -85,8 +85,8 @@ def test_cigre_mv():
 
 
 def test_cigre_lv():
-    net = create_cigre_network_lv()
-    runpp(net)
+    net = pn.create_cigre_network_lv()
+    pp.runpp(net)
 
     all_vn_kv = pd.Series([20, 0.4])
     assert net.bus.vn_kv.isin(all_vn_kv).all()
@@ -100,7 +100,6 @@ def test_cigre_lv():
     assert len(net.ext_grid) == 1
     assert len(net.switch) == 3
     assert net.converged
-
 
 if __name__ == '__main__':
     pytest.main([__file__, "-xs"])

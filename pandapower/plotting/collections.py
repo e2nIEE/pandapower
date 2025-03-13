@@ -3,14 +3,14 @@
 # Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+import re
 import ast
+import sys
 import copy
 import inspect
-import re
-import sys
+import geojson
 from typing import Callable, TYPE_CHECKING
 
-import geojson
 import pandas as pd
 
 if TYPE_CHECKING:
@@ -28,7 +28,6 @@ try:
     from matplotlib.patches import Circle, Rectangle, PathPatch
     from matplotlib.textpath import TextPath
     from matplotlib.transforms import Affine2D
-
     MATPLOTLIB_INSTALLED = True
 except ImportError:
     MATPLOTLIB_INSTALLED = False
@@ -118,7 +117,7 @@ def create_annotation_collection(texts, coords, size, prop=None, **kwargs):
         **kwargs** - Any other keyword-arguments will be passed to the PatchCollection.
     """
     if not MATPLOTLIB_INSTALLED:
-        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
     tp = []
     # we convert TextPaths to PathPatches to create a PatchCollection
     if hasattr(size, "__iter__"):
@@ -153,7 +152,7 @@ def add_cmap_to_collection(collection, cmap, norm, z, cbar_title, plot_colormap=
     :return: collection - the given collection with added colormap (no copy!)
     """
     if not MATPLOTLIB_INSTALLED:
-        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
     collection.set_cmap(cmap)
     collection.set_norm(norm)
     collection.set_array(np.ma.masked_invalid(z))
@@ -193,7 +192,7 @@ def _create_node_collection(nodes, coords, size=5, patch_type="circle", color=No
     :return: pc - patch collection for the nodes
     """
     if not MATPLOTLIB_INSTALLED:
-        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
     if len(coords) == 0:
         return None
 
@@ -238,7 +237,7 @@ def _create_line2d_collection(coords, indices, infos=None, picker=False, **kwarg
     :return: lc - line collection for the given coordinates
     """
     if not MATPLOTLIB_INSTALLED:
-        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
     # This would be done anyway by matplotlib - doing it explicitly makes it clear and
     # prevents unexpected behavior when observing colors being "none"
     lc = LineCollection(coords, picker=picker, **kwargs)
@@ -288,7 +287,7 @@ def _create_node_element_collection(node_coords, patch_maker, size=1., infos=Non
 
     """
     if not MATPLOTLIB_INSTALLED:
-        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
     angles = orientation if hasattr(orientation, '__iter__') else [orientation] * len(node_coords)
     assert len(node_coords) == len(angles), \
         "The length of coordinates does not match the length of the orientation angles!"
@@ -357,7 +356,7 @@ def _create_complex_branch_collection(coords, patch_maker, size=1, infos=None, r
         - line_coll - line collection connecting the patches with the nodes
     """
     if not MATPLOTLIB_INSTALLED:
-        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
     if infos is None:
         infos_pc = []
         infos_lc = []
@@ -437,7 +436,7 @@ def create_bus_collection(net, buses=None, size=5, patch_type="circle", color=No
         raise NotImplementedError(f"bus table {bus_table} not implemented!")
 
     if not MATPLOTLIB_INSTALLED:
-        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
     buses = get_index_array(buses, net[bus_table].index)
     if len(buses) == 0:
         return None
@@ -453,7 +452,7 @@ def create_bus_collection(net, buses=None, size=5, patch_type="circle", color=No
     buses_with_geo = buses[np.isin(buses, bus_geodata.index.values)]
     if len(buses_with_geo) < len(buses):
         logger.warning(
-            f"The following buses cannot be displayed as there is on geodata available: {set(buses) - set(buses_with_geo)}"
+            f"The following buses cannot be displayed as there is on geodata available: {set(buses)-set(buses_with_geo)}"
         )
 
     coords = bus_geodata.loc[buses_with_geo].values
@@ -529,10 +528,9 @@ def create_line_collection(net: pandapowerNet, lines=None,
         raise NotImplementedError(f"line table {line_table} not implemented!")
 
     if not MATPLOTLIB_INSTALLED:
-        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
 
-    if not use_bus_geodata and line_geodata is None and (
-            "geo" not in net[line_table].columns or net[line_table].geo.empty):
+    if not use_bus_geodata and line_geodata is None and ("geo" not in net[line_table].columns or net[line_table].geo.empty):
         # if bus geodata is available, but no line geodata
         logger.warning("use_bus_geodata is automatically set to True, since net.line.geo is empty.")
         use_bus_geodata = True
@@ -615,7 +613,7 @@ def create_dcline_collection(net, dclines=None, line_geodata=None, infofunc=None
         **lc** - line collection
     """
     if not MATPLOTLIB_INSTALLED:
-        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
 
     use_bus_geodata = True
 
@@ -671,7 +669,7 @@ def create_impedance_collection(net, impedances=None, bus_geodata=None, infofunc
         **lc** - line collection
     """
     if not MATPLOTLIB_INSTALLED:
-        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
 
     impedances = get_index_array(impedances, net.impedance.index)
     if len(impedances) == 0:
@@ -730,7 +728,7 @@ def create_trafo_connection_collection(net, trafos=None, bus_geodata=None, infof
         **lc** - line collection
     """
     if not MATPLOTLIB_INSTALLED:
-        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
 
     trafos = get_index_array(trafos, net.trafo.index)
 
@@ -742,10 +740,8 @@ def create_trafo_connection_collection(net, trafos=None, bus_geodata=None, infof
     trafos = trafos[in_geodata]
     trafo_table = net.trafo.loc[trafos]
 
-    hv_geo = bus_geodata.loc[trafo_table["hv_bus"]].apply(geojson.loads).apply(geojson.utils.coords).apply(
-        next).to_list()  # using next works because bus only has one coordinate pair
-    lv_geo = bus_geodata.loc[trafo_table["lv_bus"]].apply(geojson.loads).apply(geojson.utils.coords).apply(
-        next).to_list()
+    hv_geo = bus_geodata.loc[trafo_table["hv_bus"]].apply(geojson.loads).apply(geojson.utils.coords).apply(next).to_list()  # using next works because bus only has one coordinate pair
+    lv_geo = bus_geodata.loc[trafo_table["lv_bus"]].apply(geojson.loads).apply(geojson.utils.coords).apply(next).to_list()
     tg = list(zip(hv_geo, lv_geo))
 
     info = [infofunc(tr) for tr in trafos] if infofunc is not None else []
@@ -784,7 +780,7 @@ def create_trafo3w_connection_collection(net, trafos=None, bus_geodata=None, inf
         **lc** - line collection
     """
     if not MATPLOTLIB_INSTALLED:
-        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
     trafos = get_index_array(trafos, net.trafo3w.index)
 
     if bus_geodata is None:
@@ -842,7 +838,7 @@ def create_trafo_collection(net, trafos=None, picker=False, size=None, infofunc=
         **pc** - patch collection
     """
     if not MATPLOTLIB_INSTALLED:
-        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
 
     trafos = get_index_array(trafos, net.trafo.index)
 
@@ -907,7 +903,7 @@ def create_trafo3w_collection(net, trafo3ws=None, picker=False, infofunc=None, c
         **pc** - patch collection
     """
     if not MATPLOTLIB_INSTALLED:
-        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
 
     trafo3ws = get_index_array(trafo3ws, net.trafo3w.index)
 
@@ -981,7 +977,6 @@ def create_trafo3w_collection(net, trafo3ws=None, picker=False, infofunc=None, c
         lc.cbar_title = cbar_title
     return lc, pc
 
-
 # todo geojson
 def create_vsc_collection(net, vscs=None, picker=False, size=None, infofunc=None, cmap=None,
                           norm=None, z=None, clim=None, cbar_title="VSC power",
@@ -1011,7 +1006,7 @@ def create_vsc_collection(net, vscs=None, picker=False, size=None, infofunc=None
         **pc** - patch collection
     """
     if not MATPLOTLIB_INSTALLED:
-        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
 
     vscs = get_index_array(vscs, net.vsc.index)
 
@@ -1054,7 +1049,6 @@ def create_vsc_collection(net, vscs=None, picker=False, size=None, infofunc=None
         add_cmap_to_collection(lc, cmap, norm, z_duplicated, cbar_title, plot_colormap, clim)
     return lc, pc
 
-
 # todo geojson
 def create_vsc_connection_collection(net, vscs=None, bus_geodata=None, bus_dc_geodata=None, infofunc=None,
                                      cmap=None, clim=None, norm=None, z=None,
@@ -1096,7 +1090,7 @@ def create_vsc_connection_collection(net, vscs=None, bus_geodata=None, bus_dc_ge
         **lc** - line collection
     """
     if not MATPLOTLIB_INSTALLED:
-        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
 
     vscs = get_index_array(vscs, net.vsc.index)
 
@@ -1215,8 +1209,7 @@ def create_load_collection(net, loads=None, size=1., infofunc=None, orientation=
     """
     loads = get_index_array(loads, net.load.index)
     infos = [infofunc(i) for i in range(len(loads))] if infofunc is not None else []
-    node_coords = net.bus.loc[net.load.loc[loads, "bus"].values, "geo"].apply(geojson.loads).apply(
-        geojson.utils.coords).apply(next).to_list()
+    node_coords = net.bus.loc[net.load.loc[loads, "bus"].values, "geo"].apply(geojson.loads).apply(geojson.utils.coords).apply(next).to_list()
 
     color = kwargs.pop("color", "k")
 
@@ -1255,8 +1248,7 @@ def create_gen_collection(net, gens=None, size=1., infofunc=None, orientation=np
     """
     gens = get_index_array(gens, net.gen.index)
     infos = [infofunc(i) for i in range(len(gens))] if infofunc is not None else []
-    node_coords = net.bus.loc[net.gen.loc[gens, "bus"].values, "geo"].apply(geojson.loads).apply(
-        geojson.utils.coords).apply(next).to_list()
+    node_coords = net.bus.loc[net.gen.loc[gens, "bus"].values, "geo"].apply(geojson.loads).apply(geojson.utils.coords).apply(next).to_list()
 
     color = kwargs.pop("color", "k")
 
@@ -1295,8 +1287,7 @@ def create_sgen_collection(net, sgens=None, size=1., infofunc=None, orientation=
     """
     sgens = get_index_array(sgens, net.sgen.index)
     infos = [infofunc(i) for i in range(len(sgens))] if infofunc is not None else []
-    node_coords = net.bus.loc[net.sgen.loc[sgens, "bus"].values, "geo"].apply(geojson.loads).apply(
-        geojson.utils.coords).apply(next).to_list()
+    node_coords = net.bus.loc[net.sgen.loc[sgens, "bus"].values, "geo"].apply(geojson.loads).apply(geojson.utils.coords).apply(next).to_list()
 
     color = kwargs.pop("color", "k")
 
@@ -1335,8 +1326,7 @@ def create_storage_collection(net, storages=None, size=1., infofunc=None, orient
         **storage_lc** - line collection
     """
     infos = [infofunc(i) for i in range(len(storages))] if infofunc is not None else []
-    node_coords = net.bus.loc[net.storage.loc[storages, "bus"].values, "geo"].apply(geojson.loads).apply(
-        geojson.utils.coords).apply(next).to_list()
+    node_coords = net.bus.loc[net.storage.loc[storages, "bus"].values, "geo"].apply(geojson.loads).apply(geojson.utils.coords).apply(next).to_list()
 
     color = kwargs.pop("color", "k")
 
@@ -1384,8 +1374,7 @@ def create_ext_grid_collection(net, ext_grids=None, size=1., infofunc=None, orie
     infos = [infofunc(ext_grid_idx) for ext_grid_idx in ext_grids] if infofunc is not None else []
 
     # This code does not support bus bars. It would require the format here to be a bit different.
-    node_coords = net.bus.geo.loc[ext_grid_buses].apply(geojson.loads).apply(geojson.utils.coords).apply(
-        next).values.tolist()
+    node_coords = net.bus.geo.loc[ext_grid_buses].apply(geojson.loads).apply(geojson.utils.coords).apply(next).values.tolist()
 
     color = kwargs.pop("color", "k")
 
@@ -1422,10 +1411,10 @@ def create_line_switch_collection(net, switches=None, size=1, distance_to_bus=3,
         **switches** - patch collection
     """
     if not MATPLOTLIB_INSTALLED:
-        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
 
     if switches is None:
-        switches = net.switch.index[net.switch.et == "l"]  # only line switches
+        switches = net.switch.index[net.switch.et == "l"] # only line switches
 
     color = kwargs.pop("color", "k")
 
@@ -1524,7 +1513,7 @@ def create_bus_bus_switch_collection(net, size=1., helper_line_style=':', helper
         **switches**, **helper_lines** - tuple of patch collections
     """
     if not MATPLOTLIB_INSTALLED:
-        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
     if switches is None:
         switches = net.switch.index.to_list()
     lbs_switches = net.switch.index[(net.switch.et == "b") & (net.switch.index.isin(switches))]
@@ -1534,7 +1523,7 @@ def create_bus_bus_switch_collection(net, size=1., helper_line_style=':', helper
     for switch in lbs_switches:
         switch_bus = net.switch.bus.loc[switch]
         target_bus = net.switch.element.loc[switch]
-        if switch_bus not in net.bus.index or target_bus not in net.bus.index \
+        if switch_bus not in net.bus.index or target_bus not in net.bus.index\
                 or pd.isnull(net.bus.loc[switch_bus, "geo"]) or pd.isnull(net.bus.loc[target_bus, "geo"]):
             logger.warning("Bus coordinates for switch %s not found, skipped switch!" % switch)
             continue
@@ -1601,14 +1590,13 @@ def create_ward_collection(net, wards=None, ward_buses=None, size=5., bus_geodat
         assert len(wards) == len(ward_buses), \
             "Length mismatch between chosen xwards and xward_buses."
     infos = [infofunc(i) for i in range(len(wards))] if infofunc is not None else []
-    node_coords = net.bus.geo.loc[ward_buses].apply(geojson.loads).apply(geojson.utils.coords).apply(
-        next).values.tolist()
+    node_coords = net.bus.geo.loc[ward_buses].apply(geojson.loads).apply(geojson.utils.coords).apply(next).values.tolist()
 
     color = kwargs.pop("color", "k")
 
     ward_pc, ward_lc = _create_node_element_collection(
         node_coords, ward_patches, size=size, infos=infos, orientation=orientation,
-        picker=picker, line_color=color, **kwargs)  # patch_facecolor=color, patch_edgecolor=color
+        picker=picker, line_color=color, **kwargs) # patch_facecolor=color, patch_edgecolor=color
     return ward_pc, ward_lc
 
 
@@ -1650,8 +1638,7 @@ def create_xward_collection(net, xwards=None, xward_buses=None, size=5., bus_geo
         assert len(xwards) == len(xward_buses), \
             "Length mismatch between chosen xwards and xward_buses."
     infos = [infofunc(i) for i in range(len(xwards))] if infofunc is not None else []
-    node_coords = net.bus.geo.loc[xward_buses].apply(geojson.loads).apply(geojson.utils.coords).apply(
-        next).values.tolist()
+    node_coords = net.bus.geo.loc[xward_buses].apply(geojson.loads).apply(geojson.utils.coords).apply(next).values.tolist()
 
     color = kwargs.pop("color", "w")
 
@@ -1686,7 +1673,7 @@ def draw_collections(collections, figsize=(10, 8), ax=None, plot_colorbars=True,
         **ax** - matplotlib axes
     """
     if not MATPLOTLIB_INSTALLED:
-        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
     if ax is None:
         plt.figure(facecolor="white", figsize=figsize)
         plt.subplots_adjust(left=0.01, right=0.99, top=0.99, bottom=0.05,
@@ -1743,22 +1730,21 @@ def add_collections_to_axes(ax, collections, plot_colorbars=True, copy_collectio
 
 if __name__ == "__main__":
     # if 0:
-    #     from pandapower.create import create_empty_network, create_bus, create_gen, create_load, create_ext_grid, /
-    #         create_transformer
+    #     import pandapower as pp
     #
     #     ntw = pp.create_empty_network()
-    #     b1 = create_bus(ntw, 10, geodata=(5, 10))
-    #     b2 = create_bus(ntw, 0.4, geodata=(5, 15))
-    #     b3 = create_bus(ntw, 0.4, geodata=(0, 22))
-    #     b4 = create_bus(ntw, 0.4, geodata=(8, 20))
-    #     create_gen(ntw, b1, p_mw=0.1)
-    #     create_load(ntw, b3, p_mw=0.1)
-    #     create_ext_grid(ntw, b4)
+    #     b1 = pp.create_bus(ntw, 10, geodata=(5, 10))
+    #     b2 = pp.create_bus(ntw, 0.4, geodata=(5, 15))
+    #     b3 = pp.create_bus(ntw, 0.4, geodata=(0, 22))
+    #     b4 = pp.create_bus(ntw, 0.4, geodata=(8, 20))
+    #     pp.create_gen(ntw, b1, p_mw=0.1)
+    #     pp.create_load(ntw, b3, p_mw=0.1)
+    #     pp.create_ext_grid(ntw, b4)
     #
-    #     create_line(ntw, b2, b3, 2.0, std_type="NAYY 4x50 SE")
-    #     create_line(ntw, b2, b4, 2.0, std_type="NAYY 4x50 SE")
-    #     create_transformer(ntw, b1, b2, std_type="0.63 MVA 10/0.4 kV")
-    #     create_transformer(ntw, b3, b4, std_type="0.63 MVA 10/0.4 kV")
+    #     pp.create_line(ntw, b2, b3, 2.0, std_type="NAYY 4x50 SE")
+    #     pp.create_line(ntw, b2, b4, 2.0, std_type="NAYY 4x50 SE")
+    #     pp.create_transformer(ntw, b1, b2, std_type="0.63 MVA 10/0.4 kV")
+    #     pp.create_transformer(ntw, b3, b4, std_type="0.63 MVA 10/0.4 kV")
     #
     #     bus_col = create_bus_collection(ntw, size=0.2, color="k")
     #     line_col = create_line_collection(ntw, use_line_geodata=False, color="k", linewidth=3.)

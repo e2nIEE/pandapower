@@ -6,14 +6,13 @@
 
 import pandas as pd
 from numpy import allclose, isclose
-
-from pandapower import runpp, rundcpp, runpp_pgm
 from pandapower.pf.runpp_3ph import runpp_3ph
 from pandapower.results import get_relevant_elements
+import pandapower as pp
 
 
 def runpp_with_consistency_checks(net, **kwargs):
-    runpp(net, **kwargs)
+    pp.runpp(net, **kwargs)
     consistency_checks(net)
     return True
 
@@ -23,17 +22,17 @@ def runpp_3ph_with_consistency_checks(net, **kwargs):
     return True
 
 def rundcpp_with_consistency_checks(net, **kwargs):
-    rundcpp(net, **kwargs)
+    pp.rundcpp(net, **kwargs)
     consistency_checks(net, test_q=False)
     return True
 
 def runpp_pgm_with_consistency_checks(net):
-    runpp_pgm(net, error_tolerance_vm_pu=1e-11, symmetric=True)
+    pp.runpp_pgm(net, error_tolerance_vm_pu=1e-11, symmetric=True)
     consistency_checks(net)
     return True
 
 def runpp_pgm_3ph_with_consistency_checks(net):
-    runpp_pgm(net, error_tolerance_vm_pu=1e-11, symmetric=False)
+    pp.runpp_pgm(net, error_tolerance_vm_pu=1e-11, symmetric=False)
     consistency_checks_3ph(net)
     return True
 

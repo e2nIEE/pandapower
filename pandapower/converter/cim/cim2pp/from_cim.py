@@ -6,12 +6,11 @@
 import logging
 import time
 from typing import Union, List, Type, Dict
-
-from pandapower.auxiliary import pandapowerNet
+import pandapower.auxiliary
 from . import build_pp_net
-from . import converter_classes as std_converter_classes
 from .. import cim_classes
 from .. import interfaces
+from . import converter_classes as std_converter_classes
 
 logger = logging.getLogger('cim.cim2pp.from_cim')
 
@@ -23,7 +22,7 @@ def from_cim_dict(cim_parser: cim_classes.CimParser, log_debug=False, convert_li
                   repair_pp: Union[str, interfaces.PandapowerRepair] = None,
                   repair_pp_class: Type[interfaces.PandapowerRepair] = None,
                   custom_converter_classes: Dict = None,
-                  **kwargs) -> pandapowerNet:
+                  **kwargs) -> pandapower.auxiliary.pandapowerNet:
     """
     Creates a pandapower net from a CIM data structure.
 
@@ -103,7 +102,8 @@ def from_cim(file_list: List[str] = None, encoding: str = None, convert_line_to_
              repair_pp: Union[str, interfaces.PandapowerRepair] = None,
              repair_pp_class: Type[interfaces.PandapowerRepair] = None,
              custom_converter_classes: Dict = None,
-             cgmes_version: str = '2.4.15', **kwargs) -> pandapowerNet:
+             cgmes_version: str = '2.4.15', **kwargs) -> \
+        pandapower.auxiliary.pandapowerNet:
     """
     Converts a CIM net to a pandapower net from XML files.
     Additional parameters for kwargs:

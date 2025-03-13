@@ -7,8 +7,7 @@ import numpy as np
 import pandas as pd
 from pandas import DataFrame, notnull, isnull
 
-from pandapower.run import runpp
-from pandapower.create import create_measurement
+import pandapower as pp
 from pandapower.topology import create_nxgraph, connected_component
 
 
@@ -61,9 +60,9 @@ def _get_bus_ppc_mapping(net, bus_to_be_fused):
         set(net.ext_grid.bus)).union(set(net.ward.bus)).union(
         set(net.xward.bus))
     # Run dc pp to get the ppc we need
-    #rundcpp(net)
+    #pp.rundcpp(net)
 
-    runpp(net, calculate_voltage_angles=True)
+    pp.runpp(net, calculate_voltage_angles=True)
 
     bus_ppci = pd.DataFrame(data=net._pd2ppc_lookups['bus'], columns=["bus_ppci"])
     bus_ppci['bus_with_elements'] = bus_ppci.index.isin(bus_with_elements)
@@ -153,10 +152,10 @@ def add_virtual_meas_from_loadflow(net, v_std_dev=0.01, p_std_dev=0.03, q_std_de
         for meas_type in bus_meas_types.keys():
             meas_value = float(bus_res[bus_meas_types[meas_type]])
             if meas_type in ('p', 'q'):
-                create_measurement(net, meas_type=meas_type, element_type='bus', element=bus_ix,
+                pp.create_measurement(net, meas_type=meas_type, element_type='bus', element=bus_ix,
                                       value=meas_value, std_dev=1)
             else:
-                create_measurement(net, meas_type=meas_type, element_type='bus', element=bus_ix,
+                pp.create_measurement(net, meas_type=meas_type, element_type='bus', element=bus_ix,
                                       value=meas_value, std_dev=v_std_dev)
     remove_shunt_injection_from_meas(net,"shunt")
     remove_shunt_injection_from_meas(net,"ward")
@@ -166,7 +165,7 @@ def add_virtual_meas_from_loadflow(net, v_std_dev=0.01, p_std_dev=0.03, q_std_de
             for br_ix, br_res in net['res_' + br_type].iterrows():
                 for side in branch_meas_type[br_type]['side']:
                     for meas_type in branch_meas_type[br_type]['meas_type']:
-                        create_measurement(net, meas_type=meas_type[0], element_type=br_type,
+                        pp.create_measurement(net, meas_type=meas_type[0], element_type=br_type,
                                               element=br_ix, side=side,
                                               value=br_res[meas_type[0] + '_' + side + meas_type[1:]], std_dev=1)
 
@@ -218,10 +217,10 @@ def add_virtual_pmu_meas_from_loadflow(net, v_std_dev=0.001, i_std_dev=0.1,
         for meas_type in bus_meas_types.keys():
             meas_value = float(bus_res[bus_meas_types[meas_type]])
             if meas_type in ('p', 'q'):
-                create_measurement(net, meas_type=meas_type, element_type='bus', element=bus_ix,
+                pp.create_measurement(net, meas_type=meas_type, element_type='bus', element=bus_ix,
                                       value=meas_value, std_dev=1)
             else:
-                create_measurement(net, meas_type=meas_type, element_type='bus', element=bus_ix,
+                pp.create_measurement(net, meas_type=meas_type, element_type='bus', element=bus_ix,
                                       value=meas_value, std_dev=v_std_dev)
 
     for br_type in branch_meas_type.keys():
@@ -229,7 +228,7 @@ def add_virtual_pmu_meas_from_loadflow(net, v_std_dev=0.001, i_std_dev=0.1,
             for br_ix, br_res in net['res_' + br_type].iterrows():
                 for side in branch_meas_type[br_type]['side']:
                     for meas_type in branch_meas_type[br_type]['meas_type']:
-                        create_measurement(net, meas_type=meas_type.split("_")[0], element_type=br_type,
+                        pp.create_measurement(net, meas_type=meas_type.split("_")[0], element_type=br_type,
                                               element=br_ix, side=side,
                                               value=br_res[meas_type.split("_")[0] + '_' +
                                                            side + '_' + meas_type.split("_")[1]], std_dev=1)

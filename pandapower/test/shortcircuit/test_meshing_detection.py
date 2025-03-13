@@ -3,30 +3,27 @@
 # Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-import os
 
+import os
 import numpy as np
 import pytest
 
-from pandapower import pp_dir
-from pandapower.create import create_bus, create_switch
-from pandapower.file_io import from_json
-from pandapower.shortcircuit.calc_sc import calc_sc
+import pandapower as pp
+import pandapower.shortcircuit as sc
 
 
 @pytest.fixture
 def meshed_grid():
-    net = from_json(os.path.join(pp_dir, "test", "shortcircuit", "sc_test_meshed_grid.json"))
-    bid = create_bus(net, vn_kv=10.)
-    create_switch(net, net.ext_grid.bus.iloc[0], bid, et="b")
+    net = pp.from_json(os.path.join(pp.pp_dir, "test", "shortcircuit", "sc_test_meshed_grid.json"))
+    bid = pp.create_bus(net, vn_kv=10.)
+    pp.create_switch(net, net.ext_grid.bus.iloc[0], bid, et="b")
     net.ext_grid.loc[net.ext_grid.index[0], "bus"] = bid
-    create_bus(net, vn_kv=0.4, in_service=False)
+    pp.create_bus(net, vn_kv=0.4, in_service=False)
     return net
-
 
 def test_max_10_meshed_grid(meshed_grid):
     net = meshed_grid
-    calc_sc(net, case='max', ip=True, ith=True, lv_tol_percent=10., kappa_method="B")
+    sc.calc_sc(net, case='max', ip=True, ith=True, lv_tol_percent= 10., kappa_method="B")
     assert np.allclose(net.res_bus_sc.ikss_ka.values[:10],
                        [5.773503, 14.82619, 4.606440, 4.068637, 13.61509,
                         2.812111, 1.212288, 1.525655, 1.781087, 1.568337], atol=1e-5)
@@ -42,7 +39,7 @@ def test_max_10_meshed_grid(meshed_grid):
 
 def test_max_6_meshed_grid(meshed_grid):
     net = meshed_grid
-    calc_sc(net, case='max', ip=True, ith=True, lv_tol_percent=6., kappa_method="B")
+    sc.calc_sc(net, case='max', ip=True, ith=True, lv_tol_percent = 6., kappa_method="B")
     assert np.allclose(net.res_bus_sc.ikss_ka.values[:10],
                        [5.773503, 14.75419, 4.437882, 4.068637, 13.53425,
                         2.701411, 1.159945, 1.460757, 1.705172, 1.501673], atol=1e-5)
@@ -58,7 +55,7 @@ def test_max_6_meshed_grid(meshed_grid):
 
 def test_min_10_meshed_grid(meshed_grid):
     net = meshed_grid
-    calc_sc(net, case='min', ip=True, ith=True, lv_tol_percent=10., kappa_method="B")
+    sc.calc_sc(net, case='min', ip=True, ith=True, lv_tol_percent= 10., kappa_method="B")
     assert np.allclose(net.res_bus_sc.ikss_ka.values[:10],
                        [2.309401, 11.3267, 2.879343, 1.884323, 10.40083,
                         1.693922, 0.7107017, 0.9000445, 1.055881, 0.928488], atol=1e-5)
@@ -74,7 +71,7 @@ def test_min_10_meshed_grid(meshed_grid):
 
 def test_min_6_meshed_grid(meshed_grid):
     net = meshed_grid
-    calc_sc(net, case='min', ip=True, ith=True, lv_tol_percent=6., kappa_method="B")
+    sc.calc_sc(net, case='min', ip=True, ith=True, lv_tol_percent = 6., kappa_method="B")
     assert np.allclose(net.res_bus_sc.ikss_ka.values[:10],
                        [2.309401, 11.75072, 2.895465, 1.884323, 10.77961,
                         1.700202, 0.7116519, 0.9016006, 1.0576, 0.9301236], atol=1e-5)
@@ -86,7 +83,6 @@ def test_min_6_meshed_grid(meshed_grid):
     assert np.allclose(net.res_bus_sc.ith_ka.values[:10],
                        [2.348476, 11.87518, 2.899291, 1.889675, 10.8322,
                         1.705064, 0.7136779, 0.9041679, 1.058954, 0.9327717], atol=1e-5)
-
 
 if __name__ == '__main__':
     pytest.main([__file__, "-xs"])

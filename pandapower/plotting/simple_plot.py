@@ -221,11 +221,9 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
 
 
 if __name__ == "__main__":
-    from pandapower.networks.power_system_test_cases import case145
-    # from pandapower.networks.cigre_networks import create_cigre_network_mv
-    # from pandapower.networks.mv_oberrhein import mv_oberrhein
+    import pandapower.networks as nw
 
-    net = case145()
+    net = nw.case145()
     #    net = nw.create_cigre_network_mv()
     #    net = nw.mv_oberrhein()
     simple_plot(net, bus_size=0.4)

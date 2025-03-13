@@ -3,18 +3,14 @@
 # Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-import copy
-
+from pandapower.pypower.idx_bus import BUS_I, VMAX, VMIN, BUS_TYPE, REF
 import numpy as np
 import pytest
+import copy
 from numpy import array
-
 from pandapower.converter.pypower import from_ppc
-from pandapower.create import create_ext_grid
+import pandapower as pp
 from pandapower.pd2ppc import _pd2ppc
-from pandapower.pypower.idx_bus import BUS_I, VMAX, VMIN, BUS_TYPE, REF
-from pandapower.run import runpp, runopp
-from pandapower.runpm import runpm_ac_opf
 
 try:
     from julia.core import UnsupportedPythonError
@@ -22,7 +18,6 @@ except ImportError:
     UnsupportedPythonError = Exception
 try:
     from julia.api import Julia
-
     Julia(compiled_modules=False)
     from julia import Main
 
@@ -39,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 
 # test data from :https://github.com/lanl-ansi/PowerModels.jl/blob/master/test/data/matpower/case5_clm.m
-def case5_pm_matfile_i():
+def case5_pm_matfile_I():
     mpc = {"branch": array([
         [1, 2, 0.00281, 0.0281, 0.00712, 400.0, 0.0, 0.0, 0.0, 0.0, 1, -30.0, 30.0],
         [1, 4, 0.00304, 0.0304, 0.00658, 426, 0.0, 0.0, 0.0, 0.0, 1, -30.0, 30.0],
@@ -75,9 +70,9 @@ def case5_pm_matfile_i():
 
 def test_case5_pm_pd2ppc():
     # load net
-    net = case5_pm_matfile_i()
+    net = case5_pm_matfile_I()
     # run pd2ppc with ext_grid controllable = False
-    runpp(net)
+    pp.runpp(net)
     assert "controllable" not in net.ext_grid
     net["_options"]["mode"] = "opf"
     ppc = _pd2ppc(net)
@@ -101,7 +96,7 @@ def test_case5_pm_pd2ppc():
 
     assert net.ext_grid["in_service"].values.dtype == bool
     assert net.ext_grid["bus"].values.dtype == "uint32"
-    create_ext_grid(net, bus=4, vm_pu=net.res_bus.vm_pu.loc[4], controllable=False)
+    pp.create_ext_grid(net, bus=4, vm_pu=net.res_bus.vm_pu.loc[4], controllable=False)
 
     assert net.ext_grid["bus"].values.dtype == "uint32"
     assert net.ext_grid["in_service"].values.dtype == bool
@@ -118,13 +113,13 @@ def test_case5_pm_pd2ppc():
 
 def test_opf_ext_grid_controllable():
     # load net
-    net = case5_pm_matfile_i()
+    net = case5_pm_matfile_I()
     net_old = copy.deepcopy(net)
     net_new = copy.deepcopy(net)
     # run pd2ppc with ext_grid controllable = False
-    runopp(net_old, delta=1e-12)
+    pp.runopp(net_old, delta=1e-12)
     net_new.ext_grid["controllable"] = True
-    runopp(net_new, delta=1e-12)
+    pp.runopp(net_new, delta=1e-12)
     eg_bus = net.ext_grid.bus.at[0]
     assert np.isclose(net_old.res_bus.vm_pu[eg_bus], 1.06414000007302)
     assert np.isclose(net_new.res_bus.vm_pu[eg_bus], net_new.res_bus.vm_pu[eg_bus])
@@ -135,11 +130,11 @@ def test_opf_ext_grid_controllable():
 @pytest.mark.xfail
 def test_opf_create_ext_grid_controllable():
     # load net
-    net = case5_pm_matfile_i()
+    net = case5_pm_matfile_I()
     # run pd2ppc with ext_grid controllable = False
-    create_ext_grid(net, bus=1, controllable=True)
-    # create_ext_grid(net, bus=4, controllable=True, min_p_mw=0, max_p_mw=200, min_q_mvar=-150, max_q_mvar=150)
-    runopp(net)
+    pp.create_ext_grid(net, bus=1, controllable=True)
+    # pp.create_ext_grid(net, bus=4, controllable=True, min_p_mw=0, max_p_mw=200, min_q_mvar=-150, max_q_mvar=150)
+    pp.runopp(net)
     assert np.isclose(net.res_bus.vm_pu[net.ext_grid.bus[0]], 1.0641399999827315)
 
 
@@ -147,17 +142,17 @@ def test_opf_create_ext_grid_controllable():
 @pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 def test_opf_ext_grid_controllable_pm():
     # load net
-    net = case5_pm_matfile_i()
+    net = case5_pm_matfile_I()
 
     net_old = copy.deepcopy(net)
-    runpp(net_old)
-    runpm_ac_opf(net_old, calculate_voltage_angles=True, correct_pm_network_data=False, opf_flow_lim="I")
+    pp.runpp(net_old)
+    pp.runpm_ac_opf(net_old, calculate_voltage_angles=True, correct_pm_network_data=False, opf_flow_lim="I")
 
     net_new = copy.deepcopy(net)
     net_new.ext_grid["controllable"] = True
-    runpp(net_new)
-    runpm_ac_opf(net_new, calculate_voltage_angles=True, correct_pm_network_data=False,
-                 opf_flow_lim="I")
+    pp.runpp(net_new)
+    pp.runpm_ac_opf(net_new, calculate_voltage_angles=True, correct_pm_network_data=False,
+                    opf_flow_lim="I")
 
     eg_bus = net.ext_grid.bus.at[0]
     assert np.isclose(net_old.res_bus.vm_pu[eg_bus], 1.06414000007302)
@@ -167,3 +162,4 @@ def test_opf_ext_grid_controllable_pm():
 
 if __name__ == "__main__":
     pytest.main([__file__, "-xs"])
+

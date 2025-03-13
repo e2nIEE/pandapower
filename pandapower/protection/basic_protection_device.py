@@ -65,7 +65,7 @@ class ProtectionDevice(JSONSerializableClass):
 
 
 if __name__ == "__main__":
-    from pandapower.create import create_empty_network
+    import pandapower as pp
 
-    net = create_empty_network()
+    net = pp.create_empty_network()
     ProtectionDevice(net)

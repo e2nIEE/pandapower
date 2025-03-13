@@ -1,12 +1,6 @@
-from copy import deepcopy
-
+import pandapower as pp
 from numpy import append, ceil
-
-from pandapower.create import create_load, create_buses, create_line, create_empty_network, create_bus, \
-    create_ext_grid, create_transformer
-from pandapower.std_types import change_std_type, create_std_type
-from pandapower.toolbox.element_selection import get_connected_elements
-from pandapower.toolbox.power_factor import pq_from_cosphi
+from copy import deepcopy
 
 
 def _change_to_ohl(net, idx_busbar, new_lines, n_cable):
@@ -14,18 +8,18 @@ def _change_to_ohl(net, idx_busbar, new_lines, n_cable):
     This function changes line types from cable to ohl beginning at the end of the feeders in a \
     way, that the tapped line has the most portions of overhead-lines.
     """
-    con_lines = get_connected_elements(net, "line", idx_busbar) & new_lines
+    con_lines = pp.get_connected_elements(net, "line", idx_busbar) & new_lines
     cable_lines = con_lines
     last_con_lines = list(con_lines)
 
     while len(cable_lines) < n_cable:
-        con_lines = sorted(get_connected_elements(
-            net, "line", net.line.to_bus.loc[last_con_lines]) & new_lines - cable_lines)
+        con_lines = sorted(pp.get_connected_elements(
+                net, "line", net.line.to_bus.loc[last_con_lines]) & new_lines - cable_lines)
         last_con_lines = deepcopy(con_lines)
         while len(con_lines) > 0:
             cable_lines.add(con_lines.pop(0))
     for idx_line in list(new_lines - cable_lines):
-        change_std_type(net, idx_line, 'NFA2X 4x70', element="line")
+        pp.change_std_type(net, idx_line, 'NFA2X 4x70', element="line")
 
 
 def _create_loads_with_coincidence(net, buses):
@@ -42,13 +36,13 @@ def _create_loads_with_coincidence(net, buses):
 
     # calculations
     n_buses = len(buses)
-    c = c_inf + (1 - c_inf) * n_buses ** (-1 / 2)
+    c = c_inf + (1 - c_inf) * n_buses**(-1/2)
     p_mw = c * P_max1
-    p_mw, q_mvar = pq_from_cosphi(p_mw, powerfactor, qmode='underexcited', pmode="load")
+    p_mw, q_mvar = pp.pq_from_cosphi(p_mw, powerfactor, qmode='underexcited', pmode="load")
 
     # create loads
     for i in buses:
-        create_load(net, i, p_mw=p_mw, q_mvar=q_mvar, sn_mva=P_max1)
+        pp.create_load(net, i, p_mw=p_mw, q_mvar=q_mvar, sn_mva=P_max1)
 
 
 def _create_feeder(net, net_data, branching, idx_busbar, linetype, lv_vn_kv):
@@ -59,65 +53,65 @@ def _create_feeder(net, net_data, branching, idx_busbar, linetype, lv_vn_kv):
     """
     n_DP = net_data[1]
     d_DP = net_data[0]
-    buses = create_buses(net, int(n_DP), lv_vn_kv, zone='Feeder B' + str(branching),
-                         type='m')
+    buses = pp.create_buses(net, int(n_DP), lv_vn_kv, zone='Feeder B' + str(branching),
+                            type='m')
     from_bus = append(idx_busbar, buses[:-1])
     # branch consideration
     if branching == 1:
         n_LS = int(ceil(n_DP / 3))
-        idx_B1 = 2 * n_LS
-        if n_LS * 3 - n_DP == 2:
+        idx_B1 = 2*n_LS
+        if n_LS*3 - n_DP == 2:
             idx_B1 -= 1
-        from_bus[idx_B1] = buses[n_LS - 1]
+        from_bus[idx_B1] = buses[n_LS-1]
     elif branching == 2:
         n_LS = int(ceil(n_DP / 6))
-        idx_B1 = 3 * n_LS
-        idx_B2 = 4 * n_LS
-        if n_LS * 6 - n_DP >= 1:
+        idx_B1 = 3*n_LS
+        idx_B2 = 4*n_LS
+        if n_LS*6 - n_DP >= 1:
             idx_B2 -= 1
-        if n_LS * 6 - n_DP >= 4:
+        if n_LS*6 - n_DP >= 4:
             idx_B1 -= 1
             idx_B2 -= 1
-        if n_LS * 6 - n_DP == 5:
+        if n_LS*6 - n_DP == 5:
             idx_B2 -= 1
-        from_bus[idx_B1] = buses[2 * n_LS - 1]
-        from_bus[idx_B2] = buses[n_LS - 1]
+        from_bus[idx_B1] = buses[2*n_LS-1]
+        from_bus[idx_B2] = buses[n_LS-1]
     elif branching == 3:
         n_LS = int(ceil(n_DP / 10))
-        idx_B1 = 4 * n_LS
-        idx_B2 = 5 * n_LS
-        idx_B3 = 7 * n_LS
-        if n_LS * 10 - n_DP >= 1:
+        idx_B1 = 4*n_LS
+        idx_B2 = 5*n_LS
+        idx_B3 = 7*n_LS
+        if n_LS*10 - n_DP >= 1:
             idx_B2 -= 1
             idx_B3 -= 1
-        if n_LS * 10 - n_DP >= 2:
+        if n_LS*10 - n_DP >= 2:
             idx_B3 -= 1
-        if n_LS * 10 - n_DP >= 3:
+        if n_LS*10 - n_DP >= 3:
             idx_B3 -= 1
-        if n_LS * 10 - n_DP >= 7:
+        if n_LS*10 - n_DP >= 7:
             idx_B1 -= 1
             idx_B2 -= 1
             idx_B3 -= 1
-        if n_LS * 10 - n_DP >= 8:
+        if n_LS*10 - n_DP >= 8:
             idx_B2 -= 1
             idx_B3 -= 1
-        if n_LS * 10 - n_DP == 9:
+        if n_LS*10 - n_DP == 9:
             idx_B3 -= 1
-        from_bus[idx_B1] = buses[3 * n_LS - 1]
-        from_bus[idx_B2] = buses[2 * n_LS - 1]
-        from_bus[idx_B3] = buses[n_LS - 1]
+        from_bus[idx_B1] = buses[3*n_LS-1]
+        from_bus[idx_B2] = buses[2*n_LS-1]
+        from_bus[idx_B3] = buses[n_LS-1]
     elif branching != 0:
         raise ValueError("branching must be in (0, 1, 2, 3), but is %s" % str(branching))
 
     # create lines
     new_lines = set()
     for i, f_bus in enumerate(from_bus):
-        new_lines.add(create_line(net, f_bus, buses[i], length_km=d_DP * 1e-3,
-                                  std_type='NAYY 4x150 SE'))
+        new_lines.add(pp.create_line(net, f_bus, buses[i], length_km=d_DP*1e-3,
+                                     std_type='NAYY 4x150 SE'))
 
     # line type consideration
     if linetype == 'C&OHL':
-        _change_to_ohl(net, idx_busbar, new_lines, round(len(new_lines) * 0.4))
+        _change_to_ohl(net, idx_busbar, new_lines, round(len(new_lines)*0.4))
 
     # create loads
     _create_loads_with_coincidence(net, buses)
@@ -157,9 +151,12 @@ def create_dickert_lv_feeders(net, busbar_index, feeders_range='short', linetype
         **case** (str, 'good') - case of supply mission, which can be ('good', 'average', 'worse')
 
     EXAMPLE:
-        >>> from pandapower.networks.dickert_lv_networks import create_dickert_lv_feeders, create_dickert_lv_networks
-        >>> net = create_dickert_lv_network()
-        >>> create_dickert_lv_feeders(net, busbar_index=1, customer='multiple')
+
+        import pandapower.networks as pn
+
+        net = pn.create_dickert_lv_network()
+
+        pn.create_dickert_lv_feeders(net, busbar_index=1, customer='multiple')
     """
     # --- paper data - TABLE III and IV
     parameters = {'short': {'cable': {'single': {'good': [60, 1, False, False, False],
@@ -190,9 +187,9 @@ def create_dickert_lv_feeders(net, busbar_index, feeders_range='short', linetype
 
     # add missing line types
     if 'NFA2X 4x70' not in net.std_types['line'].keys():
-        create_std_type(net, {"c_nf_per_km": 12.8, "r_ohm_per_km": 0.443, "x_ohm_per_km": 0.07,
-                              "max_i_ka": 0.205, "type": "ol"}, name='NFA2X 4x70',
-                        element="line")
+        pp.create_std_type(net, {"c_nf_per_km": 12.8, "r_ohm_per_km": 0.443, "x_ohm_per_km": 0.07,
+                                 "max_i_ka": 0.205, "type": "ol"}, name='NFA2X 4x70',
+                           element="line")
     # determine low voltage vn_kv
     lv_vn_kv = net.bus.vn_kv.at[busbar_index]
 
@@ -255,31 +252,32 @@ def create_dickert_lv_network(feeders_range='short', linetype='cable', customer=
         **net** (pandapowerNet) - Returns the required dickert lv network
 
     EXAMPLE:
-        >>> from pandapower.networks.dickert_lv_networks import create_dickert_lv_network
-        >>> net = create_dickert_lv_network()
+
+        import pandapower.networks as pn
+
+        net = pn.create_dickert_lv_network()
     """
     # --- create network
-    net = create_empty_network(name='dickert_lv_network with' + feeders_range +
-                                    '-range feeders, ' + linetype + 'and ' + customer +
-                                    'customers in ' + case + 'case')
+    net = pp.create_empty_network(name='dickert_lv_network with' + feeders_range +
+                                  '-range feeders, ' + linetype + 'and ' + customer +
+                                  'customers in ' + case + 'case')
     # assumptions
     mv_vn_kv = 20
     lv_vn_kv = 0.4
 
     # create mv connection
-    mv_bus = create_bus(net, mv_vn_kv, name='mv bus')
-    busbar_index = create_bus(net, lv_vn_kv, name='busbar')
-    create_ext_grid(net, mv_bus)
+    mv_bus = pp.create_bus(net, mv_vn_kv, name='mv bus')
+    busbar_index = pp.create_bus(net, lv_vn_kv, name='busbar')
+    pp.create_ext_grid(net, mv_bus)
     if trafo_type_name not in net.std_types['trafo'].keys():
-        create_std_type(net, trafo_type_data, name=trafo_type_name, element="trafo")
-    create_transformer(net, mv_bus, busbar_index, std_type=trafo_type_name)
+        pp.create_std_type(net, trafo_type_data, name=trafo_type_name, element="trafo")
+    pp.create_transformer(net, mv_bus, busbar_index, std_type=trafo_type_name)
 
     # create feeders
     create_dickert_lv_feeders(net=net, busbar_index=busbar_index, feeders_range=feeders_range,
                               linetype=linetype, customer=customer, case=case)
 
     return net
-
 
 if __name__ == "__main__":
     if 0:
@@ -294,7 +292,6 @@ if __name__ == "__main__":
                                         trafo_type_name=trafo_type_name,
                                         trafo_type_data=trafo_type_data)
         from pandapower.plotting import simple_plot
-
         simple_plot(net)
     else:
         pass

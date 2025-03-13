@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 
 from pandapower.control import SplineCharacteristic, Characteristic
-from pandapower.control.util.auxiliary import (create_shunt_characteristic_object,
+from pandapower.control.util.auxiliary import (create_shunt_characteristic_object, _create_trafo_characteristics,
                                                create_q_capability_curve_characteristics_object)
 from pandapower.control.util.characteristic import LogSplineCharacteristic
 from math import isclose
@@ -33,11 +33,9 @@ from pandapower.control import (
     SplineCharacteristic,
     ContinuousTapControl,
     ConstControl,
-    create_trafo_characteristic_object,
+    create_trafo_characteristic_object
 )
 from pandapower.control.util.characteristic import LogSplineCharacteristic
-from pandapower.control.util.auxiliary import (create_shunt_characteristic_object, _create_trafo_characteristics,
-                                               create_q_capability_curve_characteristics_object)
 
 
 class MemoryLeakDemo:
