@@ -6,6 +6,7 @@ Change Log
 - [ADDED] cim2pp converter - export parameter "governorSCD" in additional column in gen table
 - [FIXED] a problem with create_nxgraph
 - [ADDED] parameter slack_as_gen for `from_ucte()` converter (changed the default behavior)
+- [FIXED] cim2pp: the `ignore_errors` parameter was not respected in the `CimParser`
 
 [3.0.0] - 2025-03-06
 -------------------------------
