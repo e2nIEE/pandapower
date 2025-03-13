@@ -413,6 +413,7 @@ def create_q_capability_curve_characteristics_object(net):
     if "q_capability_curve_table" in net.keys() and net['q_capability_curve_table'].index.size > 0:
         time_start = time.time()
 
+        # Set flag reactive_capability_curve
         _set_reactive_capability_curve_flag(net, "gen")
         _set_reactive_capability_curve_flag(net, "sgen")
 
