@@ -36,7 +36,7 @@ Input Parameters
 \*necessary for executing a power flow calculation |br| \*\*optimal power flow parameter |br| \*\*\*short-circuit calculation parameter
 
 Static Generator Reactive Power Capability Curve Characteristics
-==========================
+=================================================================
 
 The static generator reactive power capability curve characteristics provide a reference framework for determining the
 reactive power limits (Qmin and Qmax) of static generators based on their active power output.
