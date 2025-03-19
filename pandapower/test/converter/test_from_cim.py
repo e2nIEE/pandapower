@@ -1130,7 +1130,7 @@ def test_fullgrid_bus(fullgrid_v2):
     element_0 = fullgrid_v2.bus[fullgrid_v2.bus['origin_id'] == '_4c66b132-0977-1e4c-b9bb-d8ce2e912e35']
     assert 'BE-Busbar_7' == element_0['name'].item()
     assert 110.00000 == element_0['vn_kv'].item()
-    assert 'b' == element_0['type'].item()
+    assert 'n' == element_0['type'].item()
     assert '' == element_0['zone'].item()
     assert element_0['in_service'].item()
     assert 'TopologicalNode' == element_0['origin_class'].item()
