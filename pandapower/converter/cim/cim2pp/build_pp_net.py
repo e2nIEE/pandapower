@@ -8,8 +8,10 @@ from typing import Dict, List
 
 import pandas as pd
 
-import pandapower as pp
-import pandapower.auxiliary
+from pandapower.toolbox.grid_modification import fuse_buses
+from pandapower.run import runpp
+from pandapower.create import create_empty_network
+from pandapower.auxiliary import pandapowerNet
 from .convert_measurements import CreateMeasurements
 from .. import cim_classes
 from .. import cim_tools
@@ -28,7 +30,7 @@ class CimConverter:
         self.cim_parser: cim_classes.CimParser = cim_parser
         self.kwargs = kwargs
         self.cim: Dict[str, Dict[str, pd.DataFrame]] = self.cim_parser.get_cim_dict()
-        self.net: pandapower.auxiliary.pandapowerNet = pp.create_empty_network()
+        self.net: pandapowerNet = create_empty_network()
         self.bus_merge: pd.DataFrame = pd.DataFrame()
         self.power_trafo2w: pd.DataFrame = pd.DataFrame()
         self.power_trafo3w: pd.DataFrame = pd.DataFrame()
@@ -66,9 +68,9 @@ class CimConverter:
                                       ignore_index=True, sort=False)
 
     # noinspection PyShadowingNames
-    def convert_to_pp(self, convert_line_to_switch: bool = False, line_r_limit: float = 0.1,
-                      line_x_limit: float = 0.1, **kwargs) \
-            -> pandapower.auxiliary.pandapowerNet:
+    def convert_to_pp(
+            self, convert_line_to_switch: bool = False, line_r_limit: float = 0.1, line_x_limit: float = 0.1, **kwargs
+    ) -> pandapowerNet:
         """
         Build the pandapower net.
 
@@ -167,7 +169,7 @@ class CimConverter:
             level=LogLevel.INFO, code=ReportCode.INFO, message="Running a power flow."))
         if kwargs.get('run_powerflow', False):
             try:
-                pp.runpp(self.net)
+                runpp(self.net)
             except Exception as e:
                 self.logger.error("Failed running a powerflow.")
                 self.logger.exception(e)
@@ -216,7 +218,7 @@ class CimConverter:
         if bus_drop.index.size > 0:
             for b1, b2 in bus_drop[['b1', 'b2']].itertuples(index=False):
                 self.logger.info("Fusing buses: b1: %s, b2: %s" % (b1, b2))
-                pp.fuse_buses(self.net, b1, b2, drop=True, fuse_bus_measurements=True)
+                fuse_buses(self.net, b1, b2, drop=True, fuse_bus_measurements=True)
         # finally a fix for EquivalentInjections: If an EquivalentInjection is attached to boundary node, check if the
         # network behind this boundary node is attached. In this case, disable the EquivalentInjection.
         ward_t = self.net.ward.copy()
