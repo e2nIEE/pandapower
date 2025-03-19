@@ -242,9 +242,9 @@ class ConnectivityNodesCim16:
             connectivity_nodes = connectivity_nodes.drop_duplicates(subset=['rdfId'], keep='first')
         # add the busbars
         bb = self.cimConverter.cim['eq']['BusbarSection'][['rdfId', 'name']]
-        bb = bb.rename(columns={'rdfId': 'busbar_id', 'name': 'busbar_name'})
+        bb = bb.rename(columns={'rdfId': 'Busbar_id', 'name': 'Busbar_name'})
         bb = pd.merge(bb, self.cimConverter.cim['eq']['Terminal'][['ConnectivityNode', 'ConductingEquipment']].rename(
-            columns={'ConnectivityNode': 'rdfId', 'ConductingEquipment': 'busbar_id'}), how='left', on='busbar_id')
+            columns={'ConnectivityNode': 'rdfId', 'ConductingEquipment': 'Busbar_id'}), how='left', on='Busbar_id')
         bb = bb.drop_duplicates(subset=['rdfId'], keep='first')
         connectivity_nodes = pd.merge(connectivity_nodes, bb, how='left', on='rdfId')
 
@@ -265,5 +265,7 @@ class ConnectivityNodesCim16:
         connectivity_nodes = connectivity_nodes.rename(columns={'rdfId': sc['o_id'], 'TopologicalNode': sc['ct'],
                                                                 'nominalVoltage': 'vn_kv', 'name_substation': 'zone'})
         connectivity_nodes['in_service'] = True
-        connectivity_nodes['type'] = 'b'
+        # set if a bus is a busbar or a node
+        connectivity_nodes.loc[connectivity_nodes['Busbar_id'].notna(), 'type'] = 'b'
+        connectivity_nodes['type'] = connectivity_nodes['type'].fillna('n')
         return connectivity_nodes, eqssh_terminals
