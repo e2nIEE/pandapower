@@ -1970,24 +1970,24 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
         # create...
         pstac = item.c_pstac  # "None" if station controller is not available
         if pstac is not None and not pstac.outserv and export_ctrl:
-            if pstac.i_droop:
+            #if pstac.i_droop:
+            #    av_mode = 'constq'
+            #else:
+            if pstac.i_ctrl == 0:
+                av_mode = 'constv'
+            elif pstac.i_ctrl == 1:
                 av_mode = 'constq'
+            elif pstac.i_ctrl == 2:
+                av_mode = 'cosphi'
+                logger.error('Error! av_mode cosphi not implemented')
+                return
+            elif pstac.i_ctrl == 3:
+                av_mode = 'tanphi'
+                logger.error('Error! av_mode tanphi not implemented')
+                return
             else:
-                if pstac.i_ctrl == 0:
-                    av_mode = 'constq'
-                elif pstac.i_ctrl == 1:
-                    av_mode = 'constq'
-                elif pstac.i_ctrl == 2:
-                    av_mode = 'cosphi'
-                    logger.error('Error! av_mode cosphi not implemented')
-                    return
-                elif pstac.i_ctrl == 3:
-                    av_mode = 'tanphi'
-                    logger.error('Error! av_mode tanphi not implemented')
-                    return
-                else:
-                    logger.error('Error! av_mode undefined')
-                    return
+                logger.error('Error! av_mode undefined')
+                return
         if av_mode == 'constv':
             logger.debug('av_mode: %s - creating as gen' % av_mode)
             params.vm_pu = item.usetp
@@ -2195,22 +2195,22 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
         pstac = item.c_pstac
         # "None" if station controller is not available
         if pstac is not None and not pstac.outserv and export_ctrl:
-            if pstac.i_droop:
+            #if pstac.i_droop and i_ctrl == 0:
+            #    av_mode = 'constq'
+            #else:
+            i_ctrl = pstac.i_ctrl
+            if i_ctrl == 0:
+                av_mode = 'constv'
+            elif i_ctrl == 1:
                 av_mode = 'constq'
-            else:
-                i_ctrl = pstac.i_ctrl
-                if i_ctrl == 0:
-                    av_mode = 'constq'
-                elif i_ctrl == 1:
-                    av_mode = 'constq'
-                elif i_ctrl == 2:
-                    av_mode = 'cosphi'
-                    logger.error('Error! avmode cosphi not implemented')
-                    return
-                elif i_ctrl == 3:
-                    av_mode = 'tanphi'
-                    logger.error('Error! avmode tanphi not implemented')
-                    return
+            elif i_ctrl == 2:
+                av_mode = 'cosphi'
+                logger.error('Error! avmode cosphi not implemented')
+                return
+            elif i_ctrl == 3:
+                av_mode = 'tanphi'
+                logger.error('Error! avmode tanphi not implemented')
+                return
 
         logger.debug('av_mode: %s' % av_mode)
         if av_mode == 'constv':
@@ -3050,6 +3050,34 @@ def create_shunt(net, item):
         logger.error("Cannot add Shunt '%s': not connected" % item.loc_name)
         return
 
+    use_tap_table = item.GetAttribute("iTaps")
+    if use_tap_table == 1:
+        if "shunt_characteristic_table" not in net:
+            net["shunt_characteristic_table"] = pd.DataFrame(
+                columns=['id_characteristic', 'step', 'q_mvar', 'p_mw'])
+
+        last_index = net["shunt_characteristic_table"]['id_characteristic'].max() if not net[
+            "shunt_characteristic_table"].empty else -1
+
+        id_characteristic_table = last_index + 1
+
+        new_tap_table = pd.DataFrame(item.GetAttribute("mTaps"), columns=['q_mvar', 'p_mw'])
+
+        steps = list(range(0, item.GetAttribute("ncapx") + 1))
+        if len(new_tap_table) == len(steps):
+            new_tap_table['step'] = steps[:len(new_tap_table)]
+        else:
+            raise ValueError("The number of steps differs from the number of rows in new_tap_table.")
+
+        # pf table for p_mw contains quality factor only, p_mw must be calculated by dividing q_mvar by quality factor
+        new_tap_table["p_mw"] = np.where(new_tap_table["p_mw"] == 0, 0, new_tap_table["q_mvar"] / new_tap_table["p_mw"])
+        new_tap_table['id_characteristic'] = id_characteristic_table
+
+        net["shunt_characteristic_table"] = pd.concat([net["shunt_characteristic_table"], new_tap_table],
+                                                      ignore_index=True)
+    else:
+        use_tap_table = 0
+        id_characteristic_table = None
     def calc_p_mw_and_q_mvar(r: float, x: float) -> tuple[float, float]:
         if r == 0 and x == 0:
             return 0, 0
@@ -3065,7 +3093,9 @@ def create_shunt(net, item):
         'vn_kv': item.ushnm,
         'q_mvar': item.Qact * multiplier,
         'step': item.ncapa,
-        'max_step': item.ncapx
+        'max_step': item.ncapx,
+        'step_dependency_table': use_tap_table == 1,
+        'id_characteristic_table': id_characteristic_table
     }
     r_val: float = .0
     x_val: float = .0
@@ -3631,18 +3661,18 @@ def create_stactrl(net, item):
 
     # Overwrite gen_type if local control differs from station controller type
     if control_mode is not None:
-        if item.i_droop:
+        #if item.i_droop:
+        #    for i in range(len(gen_types)):
+        #        gen_types[i] = "sgen"
+        #else:
+        if control_mode == 0:
+            for i in range(len(gen_types)):
+                gen_types[i] = "gen"
+        elif control_mode == 1:
             for i in range(len(gen_types)):
                 gen_types[i] = "sgen"
         else:
-            if control_mode == 0:
-                for i in range(len(gen_types)):
-                    gen_types[i] = "sgen"
-            elif control_mode == 1:
-                for i in range(len(gen_types)):
-                    gen_types[i] = "sgen"
-            else:
-                print("station control type not supported!")
+            print("station control type not supported!")
 
     gen_element = gen_types[0]
     gen_element_index = []
@@ -3783,7 +3813,7 @@ def create_stactrl(net, item):
 
         if item.i_droop:  # Enable Droop
             bsc = pp.control.BinarySearchControl(net, ctrl_in_service=stactrl_in_service,
-                                                 output_element=gen_element, output_variable="q_mvar",
+                                                 output_element=gen_element, output_variable="vm_pu",
                                                  output_element_index=gen_element_index,
                                                  output_element_in_service=gen_element_in_service,
                                                  output_values_distribution=distribution,
@@ -3794,7 +3824,7 @@ def create_stactrl(net, item):
                                     vm_set_pu=v_setpoint_pu, controller_idx=bsc.index, voltage_ctrl=True)
         else:
             pp.control.BinarySearchControl(net, ctrl_in_service=stactrl_in_service,
-                                           output_element=gen_element, output_variable="q_mvar",
+                                           output_element=gen_element, output_variable="vm_pu",
                                            output_element_index=gen_element_index,
                                            output_element_in_service=gen_element_in_service, input_element="res_bus",
                                            output_values_distribution=distribution, damping_factor=0.9,
