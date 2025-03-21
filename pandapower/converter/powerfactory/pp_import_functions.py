@@ -14,7 +14,8 @@ from pandapower.auxiliary import ADict, get_free_id
 from pandapower.control import ContinuousTapControl, DiscreteTapControl, _create_trafo_characteristics, \
     BinarySearchControl, \
     DroopControl
-from pandapower.create import create_empty_network, create_bus_dc, create_switch, create_line_from_parameters, \
+from pandapower.create import create_empty_network, create_bus, create_bus_dc, create_load, create_switch, \
+    create_shunt, create_line, create_line_from_parameters, \
     create_line_dc, create_sgen, create_gen, create_ext_grid, create_asymmetric_sgen, create_line_dc_from_parameters, \
     create_asymmetric_load, create_transformer, create_transformer_from_parameters, \
     create_transformer3w_from_parameters, create_impedance, create_xward, create_ward, \
@@ -88,7 +89,7 @@ def from_pf(
     # ist leider notwendig
     n = 0
     for n, bus in enumerate(dict_net['ElmTerm'], 1):
-        create_bus(net=net, item=bus, flag_graphics=flag_graphics, is_unbalanced=is_unbalanced)
+        create_pf_bus(net=net, item=bus, flag_graphics=flag_graphics, is_unbalanced=is_unbalanced)
     if n > 0: logger.info('imported %d buses' % n)
 
     logger.debug('creating external grids')
@@ -103,7 +104,7 @@ def from_pf(
     n = 0
     for n, load in enumerate(dict_net['ElmLod'], 1):
         try:
-            create_load(net=net, item=load, pf_variable_p_loads=pf_variable_p_loads,
+            create_pf_load(net=net, item=load, pf_variable_p_loads=pf_variable_p_loads,
                         dict_net=dict_net, is_unbalanced=is_unbalanced)
         except RuntimeError as err:
             logger.debug('load failed at import and was not imported: %s' % err)
@@ -114,7 +115,7 @@ def from_pf(
     n = 0
     for n, load in enumerate(dict_net['ElmLodlv'], 1):
         try:
-            create_load(net=net, item=load, pf_variable_p_loads=pf_variable_p_loads,
+            create_pf_load(net=net, item=load, pf_variable_p_loads=pf_variable_p_loads,
                         dict_net=dict_net, is_unbalanced=is_unbalanced)
         except RuntimeError as err:
             logger.warning('load failed at import and was not imported: %s' % err)
@@ -125,7 +126,7 @@ def from_pf(
     n = 0
     for n, load in enumerate(dict_net['ElmLodmv'], 1):
         try:
-            create_load(net=net, item=load, pf_variable_p_loads=pf_variable_p_loads,
+            create_pf_load(net=net, item=load, pf_variable_p_loads=pf_variable_p_loads,
                         dict_net=dict_net, is_unbalanced=is_unbalanced)
         except RuntimeError as err:
             logger.error('load failed at import and was not imported: %s' % err)
@@ -205,7 +206,7 @@ def from_pf(
     # create shunts (ElmShnt):
     n = 0
     for n, shunt in enumerate(dict_net['ElmShnt'], 1):
-        create_shunt(net=net, item=shunt)
+        create_pf_shunt(net=net, item=shunt)
     if n > 0: logger.info('imported %d shunts' % n)
 
     logger.debug('creating impedances')
@@ -274,7 +275,7 @@ def from_pf(
     # create lines:
     n = 0
     for n, line in enumerate(dict_net['ElmLne'], 0):
-        create_line(net=net, item=line, flag_graphics=flag_graphics, create_sections=create_sections,
+        create_pf_line(net=net, item=line, flag_graphics=flag_graphics, create_sections=create_sections,
                     is_unbalanced=is_unbalanced)
     logger.info('imported %d lines' % (len(net.line.line_idx.unique())) if len(net.line) else 0)
     net.line['section_idx'] = 0
@@ -314,7 +315,7 @@ def from_pf(
     # n = 0
     # for n, load in enumerate(dict_net['ElmLodlvp'], 1):
     #     try:
-    #         create_load(net=net, item=load, pf_variable_p_loads=pf_variable_p_loads)
+    #         create_pf_load(net=net, item=load, pf_variable_p_loads=pf_variable_p_loads)
     #     except NotImplementedError:
     #         logger.debug('load %s not imported because it is not contained in ElmLod' % load)
     # if n > 0: logger.info('imported %d lv partial loads' % n)
@@ -325,7 +326,7 @@ def from_pf(
     #         partial_loads = line.GetContents('*.ElmLodlvp')
     #         partial_loads.sort(key=lambda x: x.lneposkm)
     #         for load in partial_loads:
-    #             create_load(net=net, item=load, pf_variable_p_loads=pf_variable_p_loads)
+    #             create_pf_load(net=net, item=load, pf_variable_p_loads=pf_variable_p_loads)
     #             n += 1
     #     logger.info('imported %d lv partial loads' % n)
 
@@ -394,7 +395,7 @@ def add_additional_attributes(item, net, element, element_id, attr_list=None, at
                     net[element].loc[element_id, attr_dict[attr]] = chr_name[0]
 
 
-def create_bus(net, item, flag_graphics, is_unbalanced):
+def create_pf_bus(net, item, flag_graphics, is_unbalanced):
     # add geo data
     if flag_graphics == 'GPS':
         x = item.GetAttribute('e:GPSlon')
@@ -726,7 +727,7 @@ def get_coords_from_grf_object(item):
     return coords
 
 
-def create_line(net, item, flag_graphics, create_sections, is_unbalanced):
+def create_pf_line(net, item, flag_graphics, create_sections, is_unbalanced):
     params = {'parallel': item.nlnum, 'name': item.loc_name}
     logger.debug('>> creating line <%s>' % params['name'])
     logger.debug('line <%s> has <%d> parallel lines' % (params['name'], params['parallel']))
@@ -1303,7 +1304,7 @@ def create_ext_net(net, item, pv_as_slack, is_unbalanced):
     #     xid, ["pf_p", 'pf_q']].values))
 
     net[elm].loc[xid, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    add_additional_attributes(item, net, element=elm, element_id=xid, attr_list=['cpSite.loc_name'])
+    add_additional_attributes(item, net, element=elm, element_id=xid, attr_dict={"for_name": "equipment", "cimRdfId": "origin_id"}, attr_list=['cpSite.loc_name'])
 
     return xid
 
@@ -1340,7 +1341,7 @@ def get_pf_ext_grid_results(net, item, xid, is_unbalanced):
 #     logger.debug('%s' % part_lods)
 #     for elm in part_lods:
 #         pass
-#         # create_load(net, elm, use_nominal_power)
+#         # create_pf_load(net, elm, use_nominal_power)
 
 def map_power_var(pf_var, map_var):
     """
@@ -1705,7 +1706,7 @@ def split_line_add_bus_old(net, item, parent):
     return bus
 
 
-def create_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
+def create_pf_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
     # params collects the input parameters for the create function
     params = ADict()
     bus_is_known = False
@@ -1834,7 +1835,7 @@ def create_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
     attr_list = ["sernum", "chr_name", 'cpSite.loc_name']
     if load_class == 'ElmLodlv':
         attr_list.extend(['pnight', 'cNrCust', 'cPrCust', 'UtilFactor', 'cSmax', 'cSav', 'ccosphi'])
-    add_additional_attributes(item, net, load_type, ld, attr_dict={"for_name": "equipment"}, attr_list=attr_list)
+    add_additional_attributes(item, net, load_type, ld, attr_dict={"for_name": "equipment", "cimRdfId": "origin_id"}, attr_list=attr_list)
     get_pf_load_results(net, item, ld, is_unbalanced)
     #    if not is_unbalanced:
     #        if item.HasResults(0):  # 'm' results...
@@ -2029,7 +2030,7 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
     logger.debug('created sgen at index <%d>' % sg)
 
     net[element].at[sg, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    add_additional_attributes(item, net, element, sg, attr_dict={"for_name": "equipment"},
+    add_additional_attributes(item, net, element, sg, attr_dict={"for_name": "equipment", "cimRdfId": "origin_id"},
                               attr_list=["sernum", "chr_name", "cpSite.loc_name"])
     net[element].at[sg, 'scaling'] = dict_net['global_parameters']['global_generation_scaling'] * item.scale0
     get_pf_sgen_results(net, item, sg, is_unbalanced, element=element)
@@ -2143,7 +2144,7 @@ def create_sgen_neg_load(net, item, pf_variable_p_loads, dict_net):
     sg = create_sgen(net, **params)
 
     net.sgen.loc[sg, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    add_additional_attributes(item, net, "sgen", sg, attr_dict={"for_name": "equipment"},
+    add_additional_attributes(item, net, "sgen", sg, attr_dict={"for_name": "equipment", "cimRdfId": "origin_id"},
                               attr_list=["sernum", "chr_name", "cpSite.loc_name"])
 
     if item.HasResults(0):  # 'm' results...
@@ -2262,7 +2263,7 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
         logger.debug('created sgen at index <%s>' % sid)
 
     net[element].loc[sid, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    add_additional_attributes(item, net, element, sid, attr_dict={"for_name": "equipment"},
+    add_additional_attributes(item, net, element, sid, attr_dict={"for_name": "equipment", "cimRdfId": "origin_id"},
                               attr_list=["sernum", "chr_name", "cpSite.loc_name"])
 
     if item.HasResults(0):  # 'm' results...
@@ -3018,7 +3019,7 @@ def create_coup(net, item, is_fuse=False):
     switch_dict[item] = cd
 
     add_additional_attributes(item, net, element='switch', element_id=cd,
-                              attr_list=['cpSite.loc_name'], attr_dict={"cimRdfId": "origin_id"})
+                              attr_list=['cpSite.loc_name'], attr_dict={"for_name": "equipment", "cimRdfId": "origin_id"})
 
     logger.debug('created switch at index <%d>, closed = %s, usage = %s' %
                  (cd, switch_is_closed, switch_usage))
@@ -3054,7 +3055,7 @@ def create_coup(net, item, is_fuse=False):
 # switch_is_closed, switch_usage))
 
 
-def create_shunt(net, item):
+def create_pf_shunt(net, item):
     try:
         bus = get_connection_nodes(net, item, 1)
     except IndexError:
@@ -3126,7 +3127,7 @@ def create_shunt(net, item):
             element='shunt',
             element_id=sid,
             attr_list=['cpSite.loc_name'],
-            attr_dict={"cimRdfId": "origin_id"}
+            attr_dict={"cimRdfId": "origin_id", 'for_name': 'equipment'}
         )
     else:
         raise AttributeError(f"Shunt type {item.shtype} not valid: {item}")
@@ -3190,7 +3191,7 @@ def create_zpu(net, item):
 
     xid = create_impedance(net, **params)
     add_additional_attributes(item, net, element='impedance', element_id=xid, attr_list=["cpSite.loc_name"],
-                              attr_dict={"cimRdfId": "origin_id"})
+                              attr_dict={"cimRdfId": "origin_id", 'for_name': 'equipment'})
 
     # consider and create station switches
     new_elements = (aux_bus1, aux_bus2)
@@ -3286,7 +3287,7 @@ def create_vac(net, item):
         net['res_%s' % elm].at[xid, "pf_q"] = np.nan
 
     add_additional_attributes(item, net, element=elm, element_id=xid, attr_list=["cpSite.loc_name"],
-                              attr_dict={"cimRdfId": "origin_id"})
+                              attr_dict={"cimRdfId": "origin_id", 'for_name': 'equipment'})
 
     logger.debug('added pf_p and pf_q to {} {}: {}'.format(elm, xid, net['res_' + elm].loc[
         xid, ["pf_p", 'pf_q']].values))
@@ -3449,7 +3450,7 @@ def create_svc(net, item, pv_as_slack, pf_variable_p_gen, dict_net):
         logger.debug('created svc at index <%s>' % svc)
 
         net[element].loc[svc, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-        add_additional_attributes(item, net, element, svc, attr_dict={"for_name": "equipment"},
+        add_additional_attributes(item, net, element, svc, attr_dict={"cimRdfId": "origin_id", 'for_name': 'equipment'},
                                   attr_list=["sernum", "chr_name", "cpSite.loc_name"])
 
         if item.HasResults(0):  # 'm' results...
