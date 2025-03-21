@@ -4,7 +4,6 @@ import numpy as np
 from pandapower.control.basic_controller import Controller
 from pandapower.auxiliary import _detect_read_write_flag, read_from_net, write_to_net
 
-
 class BinarySearchControl(Controller):
     """
         The Binary search control is a controller which is used to reach a given set point. It can be used for
@@ -168,19 +167,17 @@ class BinarySearchControl(Controller):
         # compare old and new set values
         if not self.voltage_ctrl or self.bus_idx is None:
             self.diff_old = self.diff
-            if not all(self.output_adjustable):
-                self.diff = self.set_point - sum(input_values) 
-                self.converged = np.all(np.abs(self.diff) < self.tol)   
-            elif not any(self.output_adjustable):
-                # alle gens sind an Grenze 
-                # warning 
-                print('jooooo alle sind an Grenze!!! Abbruch !!!')
+            #print(self.output_adjustable)
+            
+            if not any(self.output_adjustable):
+                print('All stations controlled by %s reached reactive power limits.' %self.name)
+                #print('jooooo alle sind an Grenze!!! Abbruch !!!')
                 self.converged = True
                 return self.converged
             else:
-                # alle gens können geregelt werden + shunts (old calculation)
-                self.diff = self.set_point - sum(input_values) # eventuell hier ein +?
-                self.converged = np.all(np.abs(self.diff) < self.tol)
+                self.diff = self.set_point - sum(input_values) 
+                #print(self.diff)
+                self.converged = np.all(np.abs(self.diff) < self.tol) 
             
         else:
             self.diff_old = self.diff
@@ -197,7 +194,7 @@ class BinarySearchControl(Controller):
             return self.converged
 
     def control_step(self, net):
-        print('step', self.name)
+        #print('step', self.name)
         # if self.name == "SC_ConstQ_case2": # "SC_ConstQ_case6": #"SC_ConstQ_case2":
         #     print('joooo')
            
@@ -213,23 +210,23 @@ class BinarySearchControl(Controller):
             x = self.output_values - self.diff * (self.output_values - self.output_values_old) / np.where(
                 step_diff == 0, 1e-6, step_diff)
             
-            if isinstance(x, numbers.Number):
-                # das geht so nicht!!!!!
-                x = x * self.output_values_distribution 
-            else:
-                if not all(self.output_adjustable):
-                    positions_adjustable = [i for i, val in enumerate(self.output_adjustable) if val] ## gives which is/are adjustable 
-                    positions_not_adjustable = [i for i, val in enumerate(self.output_adjustable) if not val] # can be one or multiple ## gives which is/are not adjustable anymore
-                    
-                    sum_adjustable = sum(x) - sum(self.output_values[positions_not_adjustable]) # anlagen, die noch adjustable sind, rest der Leistung muss noch erreicht werden
-                    x[positions_adjustable] = sum_adjustable * self.output_values_distribution[positions_adjustable]
-                    x[positions_not_adjustable] = self.output_values[positions_not_adjustable] # reset value to q_limit
+            # if isinstance(x, numbers.Number):
+            #     # das geht so nicht!!!!!
+            #     x = x * self.output_values_distribution 
+            # else:
+            if not all(self.output_adjustable) and net._options['enforce_q_lims']:
+                positions_adjustable = [i for i, val in enumerate(self.output_adjustable) if val] ## gives which is/are adjustable 
+                positions_not_adjustable = [i for i, val in enumerate(self.output_adjustable) if not val] # can be one or multiple ## gives which is/are not adjustable anymore
                 
-                else:
-                    x = sum(x) * self.output_values_distribution
+                sum_adjustable = sum(x) - sum(self.output_values[positions_not_adjustable]) # anlagen, die noch adjustable sind, rest der Leistung muss noch erreicht werden
+                x[positions_adjustable] = sum_adjustable * self.output_values_distribution[positions_adjustable]
+                x[positions_not_adjustable] = self.output_values[positions_not_adjustable] # reset value to q_limit
+            
+            else:
+                x = sum(x) * self.output_values_distribution
                         
-            if self.output_adjustable is not None: # none if output element is a shunt
-                if isinstance(x, np.ndarray):
+            if self.output_adjustable is not None and net._options['enforce_q_lims']: # none if output element is a shunt
+                if isinstance(x, np.ndarray) and len(x)>1:
                     # check if x is a list, multiple assets in station controller
                     
                     # check if a limit is reached
@@ -240,25 +237,38 @@ class BinarySearchControl(Controller):
                  
                     if any(reached_max_qmvar):
                         positions = [i for i, val in enumerate(reached_max_qmvar) if val is np.True_] # can be one or multiple
+                        print('Station controlled by %s reached a reactive power limit.' % self.name)
+                        # print('Station %s controlled by %s reached a reactive power limit.' % (self.machines[positions], self.name))
                         self.output_adjustable[positions] = False
                         sum_old = sum(x)
                         max_q_mvar_limit = self.output_max_q_mvar[positions]
                         
                         # adapt distribution and x
                         self.output_values_distribution[positions] = 0
-                        self.output_values_distribution /= sum(self.output_values_distribution)
+                        if np.all(self.output_values_distribution == 0):
+                            # all stations reached limit, prevent for division with 0 resulting in nan array
+                            pass
+                        else:
+                            self.output_values_distribution /= sum(self.output_values_distribution)
                         x = (sum_old-sum(max_q_mvar_limit))*self.output_values_distribution
                         x[positions] = max_q_mvar_limit # reset to limit
                         
                     elif any(reached_min_qmvar):
                         positions = [i for i, val in enumerate(reached_min_qmvar) if val is np.True_]
+                        print('Station controlled by %s reached a reactive power limit.' % self.name)
+                        #print('Station %s controlled by %s reached a reactive power limit.' % (self.machines[positions], self.name))
                         self.output_adjustable[positions] = False
                         sum_old = sum(x)
                         min_q_mvar_limit = self.output_min_q_mvar[positions]
                         
                         # adapt distribution and x
                         self.output_values_distribution[positions] = 0
-                        self.output_values_distribution /= sum(self.output_values_distribution)
+                        if np.all(self.output_values_distribution == 0):
+                            # all stations reached limit, prevent for division with 0 resulting in nan array
+                            pass
+                        else:
+                            self.output_values_distribution /= sum(self.output_values_distribution)
+                        
                         x = (sum_old-sum(min_q_mvar_limit))*self.output_values_distribution
                         x[positions] = min_q_mvar_limit # reset to limit
                          
@@ -269,7 +279,8 @@ class BinarySearchControl(Controller):
                     reached_min_qmvar = x<self.output_min_q_mvar 
                     reached_max_qmvar = x>self.output_max_q_mvar 
                     if reached_min_qmvar or reached_max_qmvar:
-                        self.output_adjustable = False                        
+                        print('Station %s controlled by %s reached a reactive power limit.' % (self.machines[0], self.name))
+                        self.output_adjustable = np.array([False], dtype=np.bool)                       
                         if reached_min_qmvar:
                             self.output_values_old, self.output_values = self.output_values, self.output_min_q_mvar
                         elif reached_max_qmvar:
@@ -277,7 +288,7 @@ class BinarySearchControl(Controller):
                     else:
                         self.output_values_old, self.output_values = self.output_values, x                    
             else:
-                pass
+                self.output_values_old, self.output_values = self.output_values, x  
         
         # write new set values
         write_to_net(net, self.output_element, self.output_element_index, self.output_variable, self.output_values,
