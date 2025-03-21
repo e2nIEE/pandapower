@@ -3783,23 +3783,42 @@ def create_stactrl(net, item):
 
         if item.i_droop:  # Enable Droop
             bsc = pp.control.BinarySearchControl(net, ctrl_in_service=stactrl_in_service,
-                                                 output_element=gen_element, output_variable="q_mvar",
+                                                 output_element=gen_element, 
+                                                 output_variable="q_mvar",
                                                  output_element_index=gen_element_index,
                                                  output_element_in_service=gen_element_in_service,
                                                  output_values_distribution=distribution,
-                                                 input_element=res_element_table, input_variable=variable,
+                                                 output_min_q_mvar=net[gen_element].loc[gen_element_index].min_q_mvar.to_list(), 
+                                                 output_max_q_mvar=net[gen_element].loc[gen_element_index].max_q_mvar.to_list(), 
+                                                 input_element=res_element_table, 
+                                                 input_variable=variable,
                                                  input_element_index=res_element_index,
-                                                 set_point=v_setpoint_pu, voltage_ctrl=True, bus_idx=bus, tol=1e-3)
+                                                 set_point=v_setpoint_pu,
+                                                 voltage_ctrl=True, 
+                                                 bus_idx=bus,
+                                                 tol=1e-3, 
+                                                 name=item.loc_name,
+                                                 machines=[machine_obj.loc_name for machine_obj in item.psym]) 
             pp.control.DroopControl(net, q_droop_mvar=item.Srated * 100 / item.ddroop, bus_idx=bus,
                                     vm_set_pu=v_setpoint_pu, controller_idx=bsc.index, voltage_ctrl=True)
         else:
             pp.control.BinarySearchControl(net, ctrl_in_service=stactrl_in_service,
-                                           output_element=gen_element, output_variable="q_mvar",
+                                           output_element=gen_element, 
+                                           output_variable="q_mvar",
                                            output_element_index=gen_element_index,
-                                           output_element_in_service=gen_element_in_service, input_element="res_bus",
-                                           output_values_distribution=distribution, damping_factor=0.9,
-                                           input_variable="vm_pu", input_element_index=bus,
-                                           set_point=v_setpoint_pu, voltage_ctrl=True, tol=1e-6)
+                                           output_element_in_service=gen_element_in_service,
+                                           output_values_distribution=distribution, 
+                                           output_min_q_mvar=net[gen_element].loc[gen_element_index].min_q_mvar.to_list(), 
+                                           output_max_q_mvar=net[gen_element].loc[gen_element_index].max_q_mvar.to_list(), 
+                                           input_element="res_bus",
+                                           input_variable="vm_pu", 
+                                           input_element_index=bus,
+                                           set_point=v_setpoint_pu, 
+                                           voltage_ctrl=True,
+                                           damping_factor=0.9,
+                                           tol=1e-6, 
+                                           name=item.loc_name, 
+                                           machines=[machine_obj.loc_name for machine_obj in item.psym])
     elif control_mode == 1:  # Q Control mode
         if item.iQorient != 0:
             if not stactrl_in_service:
@@ -3814,14 +3833,18 @@ def create_stactrl(net, item):
                 output_variable="q_mvar",
                 output_element_index=gen_element_index,
                 output_element_in_service=gen_element_in_service,
-                input_element=res_element_table,
                 output_values_distribution=distribution,
-                damping_factor=0.9,
+                output_min_q_mvar=net[gen_element].loc[gen_element_index].min_q_mvar.to_list(), 
+                output_max_q_mvar=net[gen_element].loc[gen_element_index].max_q_mvar.to_list(), 
+                input_element=res_element_table,
                 input_variable=variable,
                 input_element_index=res_element_index,
                 set_point=item.qsetp,
-                voltage_ctrl=False, tol=1e-6
-            )
+                voltage_ctrl=False, 
+                tol=1e-6, 
+                damping_factor=0.9,
+                name=item.loc_name, 
+                machines=[machine_obj.loc_name for machine_obj in item.psym])
         elif item.qu_char == 1:
             controlled_node = item.refbar
             bus = bus_dict[controlled_node]  # controlled node
@@ -3831,15 +3854,19 @@ def create_stactrl(net, item):
                 output_variable="q_mvar",
                 output_element_index=gen_element_index,
                 output_element_in_service=gen_element_in_service,
-                input_element=res_element_table,
                 output_values_distribution=distribution,
-                damping_factor=0.9,
+                output_min_q_mvar=net[gen_element].loc[gen_element_index].min_q_mvar.to_list(), 
+                output_max_q_mvar=net[gen_element].loc[gen_element_index].max_q_mvar.to_list(), 
+                input_element=res_element_table,
                 input_variable=variable,
                 input_element_index=res_element_index,
                 set_point=item.qsetp,
                 voltage_ctrl=False,
                 bus_idx=bus,
-                tol=1e-6
+                tol=1e-6, 
+                damping_factor=0.9,
+                name=item.loc_name, 
+                machines=[machine_obj.loc_name for machine_obj in item.psym]
             )
             pp.control.DroopControl(
                 net,
@@ -3849,7 +3876,7 @@ def create_stactrl(net, item):
                 vm_set_ub=item.udeadbup,
                 vm_set_lb=item.udeadblow,
                 controller_idx=bsc.index,
-                voltage_ctrl=False
+                voltage_ctrl=False, name=item.loc_name, machines=[machine_obj.loc_name for machine_obj in item.psym]
             )
         else:
             raise NotImplementedError
