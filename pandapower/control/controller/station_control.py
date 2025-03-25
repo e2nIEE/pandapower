@@ -4,13 +4,12 @@ import numpy as np
 from pandapower.control.basic_controller import Controller
 from pandapower.auxiliary import _detect_read_write_flag, read_from_net, write_to_net
 
-
 class BinarySearchControl(Controller):
     """
-        The Binary search control is a controller which is used to reach a given set point . It can be used for
+        The Binary search control is a controller which is used to reach a given set point. It can be used for
         reactive power control or voltage control. in case of voltage control, the input parameter voltage_ctrl must be
         set to true. Input and output elements and indexes can be lists. Input elements can be transformers, switches,
-        lines or busses (only in case of voltage control). in case of voltage control, a bus_index must be present,
+        lines or busses (only in case of voltage control). In case of voltage control, a bus_index must be present,
         where the voltage will be controlled. Output elements are sgens, where active and reactive power can be set. The
         output value distribution describes the distribution of reactive power provision between multiple
         output_elements and must sum up to 1.
@@ -53,8 +52,9 @@ class BinarySearchControl(Controller):
             **tol=0.001** - Tolerance criteria of controller convergence.
        """
     def __init__(self, net, ctrl_in_service, output_element, output_variable, output_element_index,
-                 output_element_in_service, output_values_distribution, input_element, input_variable,
-                 input_element_index, set_point, voltage_ctrl, bus_idx=None, tol=0.001, in_service=True, order=0, level=0,
+                 output_element_in_service, output_values_distribution, output_min_q_mvar, output_max_q_mvar,
+                 input_element, input_variable, input_element_index, set_point, voltage_ctrl, 
+                 bus_idx=None, tol=0.001, in_service=True, order=0, level=0,
                  drop_same_existing_ctrl=False, matching_params=None, **kwargs):
         super().__init__(net, in_service=in_service, order=order, level=level,
                          drop_same_existing_ctrl=drop_same_existing_ctrl,
@@ -72,7 +72,13 @@ class BinarySearchControl(Controller):
         self.output_element_in_service = output_element_in_service
         # normalize the values distribution:
         self.output_values_distribution = np.array(output_values_distribution, dtype=np.float64) / np.sum(
-            output_values_distribution)
+                output_values_distribution)
+        self.output_min_q_mvar = np.array(output_min_q_mvar, dtype=np.float64)
+        self.output_max_q_mvar = np.array(output_max_q_mvar, dtype=np.float64)
+        if self.output_element == "shunt":
+            self.output_adjustable = None
+        else: 
+            self.output_adjustable = np.array([True]*len(output_min_q_mvar), dtype=np.bool)
         self.set_point = set_point
         self.voltage_ctrl = voltage_ctrl
         self.bus_idx = bus_idx
@@ -86,6 +92,7 @@ class BinarySearchControl(Controller):
         self.overwrite_covergence = False
         self.write_flag, self.output_variable = _detect_read_write_flag(net, output_element, output_element_index,
                                                                         output_variable)
+               
         self.read_flag = []
         self.input_variable = []
         self.input_element_in_service = []
@@ -155,16 +162,30 @@ class BinarySearchControl(Controller):
             input_values.append(read_from_net(net, self.input_element, input_index,
                                               self.input_variable[counter], self.read_flag[counter]))
             counter += 1
+        
         # read previous set values
         # compare old and new set values
         if not self.voltage_ctrl or self.bus_idx is None:
             self.diff_old = self.diff
-            self.diff = self.set_point - sum(input_values)
-            self.converged = np.all(np.abs(self.diff) < self.tol)
+            #print(self.output_adjustable)
+            
+            if not any(self.output_adjustable):
+                print('All stations controlled by %s reached reactive power limits.' %self.name)
+                #print('jooooo alle sind an Grenze!!! Abbruch !!!')
+                self.converged = True
+                return self.converged
+            else:
+                self.diff = self.set_point - sum(input_values) 
+                #print(self.diff)
+                self.converged = np.all(np.abs(self.diff) < self.tol) 
+            
         else:
             self.diff_old = self.diff
             self.diff = self.set_point - net.res_bus.vm_pu.at[self.bus_idx]
             self.converged = np.all(np.abs(self.diff) < self.tol)
+            
+        ### check mit neuen input values bzw. "fester" sgen (sgen am limit) muss in diff berücksichtigt werden
+        ## warning wenn alle an grenzen, mehr geht nicht, qsetp wird nicht erreicht
 
         if self.overwrite_covergence:
             self.overwrite_covergence = False
@@ -173,21 +194,102 @@ class BinarySearchControl(Controller):
             return self.converged
 
     def control_step(self, net):
+        #print('step', self.name)
+        # if self.name == "SC_ConstQ_case2": # "SC_ConstQ_case6": #"SC_ConstQ_case2":
+        #     print('joooo')
+           
         self._binarysearchcontrol_step(net)
 
     def _binarysearchcontrol_step(self, net):
         if not self.in_service:
             return
-        if self.output_values_old is None:
+        if self.output_values_old is None: # initial or first step
             self.output_values_old, self.output_values = self.output_values, self.output_values + 1e-3
         else:
             step_diff = self.diff - self.diff_old
             x = self.output_values - self.diff * (self.output_values - self.output_values_old) / np.where(
                 step_diff == 0, 1e-6, step_diff)
-            x = x * self.output_values_distribution if isinstance(x, numbers.Number) else sum(
-                x) * self.output_values_distribution
-            self.output_values_old, self.output_values = self.output_values, x
-
+            
+            # if isinstance(x, numbers.Number):
+            #     # das geht so nicht!!!!!
+            #     x = x * self.output_values_distribution 
+            # else:
+            if not all(self.output_adjustable) and net._options['enforce_q_lims']:
+                positions_adjustable = [i for i, val in enumerate(self.output_adjustable) if val] ## gives which is/are adjustable 
+                positions_not_adjustable = [i for i, val in enumerate(self.output_adjustable) if not val] # can be one or multiple ## gives which is/are not adjustable anymore
+                
+                sum_adjustable = sum(x) - sum(self.output_values[positions_not_adjustable]) # anlagen, die noch adjustable sind, rest der Leistung muss noch erreicht werden
+                x[positions_adjustable] = sum_adjustable * self.output_values_distribution[positions_adjustable]
+                x[positions_not_adjustable] = self.output_values[positions_not_adjustable] # reset value to q_limit
+            
+            else:
+                x = sum(x) * self.output_values_distribution
+                        
+            if self.output_adjustable is not None and net._options['enforce_q_lims']: # none if output element is a shunt
+                if isinstance(x, np.ndarray) and len(x)>1:
+                    # check if x is a list, multiple assets in station controller
+                    
+                    # check if a limit is reached
+                    reached_min_qmvar = [val <= min_val
+                                          for val, min_val in zip(x, self.output_min_q_mvar)]
+                    reached_max_qmvar = [val >= max_val 
+                                          for val, max_val in zip(x, self.output_max_q_mvar)]
+                 
+                    if any(reached_max_qmvar):
+                        positions = [i for i, val in enumerate(reached_max_qmvar) if val is np.True_] # can be one or multiple
+                        print('Station controlled by %s reached a reactive power limit.' % self.name)
+                        # print('Station %s controlled by %s reached a reactive power limit.' % (self.machines[positions], self.name))
+                        self.output_adjustable[positions] = False
+                        sum_old = sum(x)
+                        max_q_mvar_limit = self.output_max_q_mvar[positions]
+                        
+                        # adapt distribution and x
+                        self.output_values_distribution[positions] = 0
+                        if np.all(self.output_values_distribution == 0):
+                            # all stations reached limit, prevent for division with 0 resulting in nan array
+                            pass
+                        else:
+                            self.output_values_distribution /= sum(self.output_values_distribution)
+                        x = (sum_old-sum(max_q_mvar_limit))*self.output_values_distribution
+                        x[positions] = max_q_mvar_limit # reset to limit
+                        
+                    elif any(reached_min_qmvar):
+                        positions = [i for i, val in enumerate(reached_min_qmvar) if val is np.True_]
+                        print('Station controlled by %s reached a reactive power limit.' % self.name)
+                        #print('Station %s controlled by %s reached a reactive power limit.' % (self.machines[positions], self.name))
+                        self.output_adjustable[positions] = False
+                        sum_old = sum(x)
+                        min_q_mvar_limit = self.output_min_q_mvar[positions]
+                        
+                        # adapt distribution and x
+                        self.output_values_distribution[positions] = 0
+                        if np.all(self.output_values_distribution == 0):
+                            # all stations reached limit, prevent for division with 0 resulting in nan array
+                            pass
+                        else:
+                            self.output_values_distribution /= sum(self.output_values_distribution)
+                        
+                        x = (sum_old-sum(min_q_mvar_limit))*self.output_values_distribution
+                        x[positions] = min_q_mvar_limit # reset to limit
+                         
+                    self.output_values_old, self.output_values = self.output_values, x                     
+                else:
+                    # check when x is a single value (only one adjustable machine)
+                    # check if limit is reached
+                    reached_min_qmvar = x<self.output_min_q_mvar 
+                    reached_max_qmvar = x>self.output_max_q_mvar 
+                    if reached_min_qmvar or reached_max_qmvar:
+                        print('Station %s controlled by %s reached a reactive power limit.' % (self.machines[0], self.name))
+                        self.output_adjustable = np.array([False], dtype=np.bool)                       
+                        if reached_min_qmvar:
+                            self.output_values_old, self.output_values = self.output_values, self.output_min_q_mvar
+                        elif reached_max_qmvar:
+                            self.output_values_old, self.output_values = self.output_values, self.output_max_q_mvar
+                    else:
+                        self.output_values_old, self.output_values = self.output_values, x                    
+            else:
+                self.output_values_old, self.output_values = self.output_values, x  
+        
         # write new set values
         write_to_net(net, self.output_element, self.output_element_index, self.output_variable, self.output_values,
                      self.write_flag)

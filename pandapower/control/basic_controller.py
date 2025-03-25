@@ -170,6 +170,9 @@ class Controller(BasicCtrl):
                                                 order=order, level=level, index=index, recycle=recycle,
                                                 drop_same_existing_ctrl=drop_same_existing_ctrl,
                                                 overwrite=overwrite, matching_params=matching_params, **kwargs)
+        # write kwargs in self
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
     def add_controller_to_net(self, net, in_service, initial_run, order, level, index, recycle,
                               drop_same_existing_ctrl, overwrite, **kwargs):
