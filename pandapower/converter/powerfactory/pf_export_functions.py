@@ -5,7 +5,7 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-def create_network_dict(app, flag_graphics='GPS'):
+def create_network_dict(app, include_hidden_bus, flag_graphics='GPS'):
     # elements to be exported from PowerFactory
     set_object_extentions = {
         # node elements:
@@ -24,6 +24,7 @@ def create_network_dict(app, flag_graphics='GPS'):
         'ElmSvs',
         'ElmVsc',
         'ElmVscmono',
+        'ElmSvs',
 
 
         # branch elements:
@@ -86,7 +87,7 @@ def create_network_dict(app, flag_graphics='GPS'):
 
     logger.info('collecting network elements')
     for obj in set_object_extentions:
-        if obj == 'ElmTerm':
+        if (obj == 'ElmTerm'):
             dict_net[obj] = app.GetCalcRelevantObjects(obj, 1, 0, 1)
         else:
             dict_net[obj] = app.GetCalcRelevantObjects(obj)
@@ -202,6 +203,8 @@ def run_load_flow(app, scale_feeder_loads=False, load_scaling=None, gen_scaling=
     if com_ldf.iopt_sim == 1:
         logger.warning(f'Calculation method probabilistic loadflow of lv-loads is activated!'
                        f' The validation will not succeed.')
+    if com_ldf.iopt_igntow == 1:
+        logger.warning(f'Line coupling model will be neglected.')
     if load_scaling is not None:
         logger.debug('scaling loads at %.2f' % load_scaling)
         com_ldf.scLoadFac = load_scaling

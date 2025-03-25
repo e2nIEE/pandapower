@@ -1654,8 +1654,8 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
         numba = _check_if_numba_is_installed()
 
     if voltage_depend_loads:
-        if not (np.any(net["load"]["const_z_percent"].values)
-                or np.any(net["load"]["const_i_percent"].values)):
+        if not (np.any(net["load"]["const_z_p_percent"].values)
+                or np.any(net["load"]["const_i_p_percent"].values)):
             voltage_depend_loads = False
 
     lightsim2grid = _check_lightsim2grid_compatibility(net, lightsim2grid, voltage_depend_loads, algorithm,

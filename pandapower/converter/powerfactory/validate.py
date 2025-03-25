@@ -290,7 +290,7 @@ def validate_pf_conversion(net, is_unbalanced=False, **kwargs):
     if len(net.trafo3w[net.trafo3w.in_service]) > 0:
         trafo3w_idx = net.trafo3w.query('in_service').index
         trafo3w_diff = pd.DataFrame(columns=['diff', 'loading_percent_pp', 'loading_percent_pf'],
-                                    index=net.res_trafo3w.loc[trafo3w_idx].index)
+                                    index=net.res_trafo3w.loc[trafo3w_idx].index)        
         _, _, tr3w_pp_res_is, tr3w_pf_res_is, _, tr3w_diff_is = calculate_element_diff_with_is_element_results(net, 'trafo3w', 'pf_loading', 'loading_percent')
         trafo3w_diff['diff'] = tr3w_diff_is
         trafo3w_diff['loading_percent_pp'] = tr3w_pp_res_is
@@ -299,7 +299,8 @@ def validate_pf_conversion(net, is_unbalanced=False, **kwargs):
         logger.info("Maximum trafo3w loading difference between pandapower and powerfactory: %.1f "
                     "percent at trafo3w %d (%s)" % (
                         max(abs(tr3w_diff_is)), max_diff_idx, net.trafo3w.at[max_diff_idx, 'name']))
-
+        
+        all_diffs["trafo3w_diff"] = trafo3w_diff
 
     if len(net.sgen[net.sgen.in_service]) > 0:
         logger.debug('verifying sgen')
