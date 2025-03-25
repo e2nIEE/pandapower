@@ -19,6 +19,12 @@ from pandapower.create import create_empty_network, create_bus_dc, create_switch
     create_asymmetric_load, create_transformer, create_transformer_from_parameters, \
     create_transformer3w_from_parameters, create_impedance, create_xward, create_ward, \
     create_series_reactor_as_impedance
+from pandapower.create import \
+    create_bus as create_bus_pp, \
+    create_load as create_load_pp, \
+    create_vsc as create_vsc_pp, \
+    create_line as create_line_pp, \
+    create_shunt as create_shunt_pp
 from pandapower.results import reset_results
 from pandapower.run import set_user_pf_options
 from pandapower.std_types import add_zero_impedance_parameters, std_type_exists, create_std_type, available_std_types, \
@@ -436,7 +442,7 @@ def create_bus(net, item, flag_graphics, is_unbalanced):
     logger.debug(f">> creating {system_type} bus <{params['name']}>")
 
     if system_type == "ac":
-        bid = create_bus(net, **params)
+        bid = create_bus_pp(net, **params)
         table = "bus"
     elif system_type == "dc":
         bid = create_bus_dc(net, **params)
@@ -614,7 +620,7 @@ def get_connection_nodes(net, item, num_nodes):
         for b, vv in zip(buses, v):
             if b is None:
                 if table == "bus":
-                    aux_bus = create_bus(net, vv, type="n", name=name)
+                    aux_bus = create_bus_pp(net, vv, type="n", name=name)
                 else:
                     aux_bus = create_bus_dc(net, vv, type="n", name=name)
                 new_buses.append(aux_bus)
@@ -932,7 +938,7 @@ def segment_buses(net, bus1, bus2, num_sections, line_name):  # , sec_len, start
         bus_name = f"{line_name} (Muff {m})"
         vn_kv = net.bus.at[bus1, "vn_kv"]
         zone = net.bus.at[bus1, "zone"]
-        bus = create_bus(net, name=bus_name, type='ls', vn_kv=vn_kv, zone=zone)
+        bus = create_bus_pp(net, name=bus_name, type='ls', vn_kv=vn_kv, zone=zone)
 
         # TODO: implement coords for segmentation buses.
         #  Handle coords if line has multiple coords.
@@ -1078,7 +1084,7 @@ def create_line_normal(net, item, bus1, bus2, name, parallel, is_unbalanced, ac,
         params["std_type"] = std_type
         logger.debug('creating normal line with type <%s>' % std_type)
         if ac:
-            lid = create_line(net, from_bus=bus1, to_bus=bus2, **params)
+            lid = create_line_pp(net, from_bus=bus1, to_bus=bus2, **params)
         else:
             lid = create_line_dc(net, from_bus_dc=bus1, to_bus_dc=bus2, **params)
     else:
@@ -1557,15 +1563,15 @@ def split_line_add_bus(net, split_dict):
         for i in range(len(len_sections)):
             # create bus
             name = 'Muff Partial Load'
-            bus = create_bus(net, name=name, vn_kv=vn_kv, geodata=list_bus_coords[i])
+            bus = create_bus_pp(net, name=name, vn_kv=vn_kv, geodata=list_bus_coords[i])
             # create new line
             from_bus = net.line.at[lix, 'from_bus']
             to_bus = net.line.at[lix, 'to_bus']
             std_type = net.line.at[lix, 'std_type']
             name = net.line.at[lix, 'name']
-            new_lix = create_line(net, from_bus=from_bus, to_bus=to_bus,
-                                  length_km=len_sections[i],
-                                  std_type=std_type, name=name)
+            new_lix = create_line_pp(net, from_bus=from_bus, to_bus=to_bus,
+                                     length_km=len_sections[i],
+                                     std_type=std_type, name=name)
             # change old line
             net.line.at[lix, 'to_bus'] = bus
             net.line.at[lix, 'length_km'] = net.line.at[lix, 'length_km'] - len_sections[i]
@@ -1671,7 +1677,7 @@ def split_line_add_bus_old(net, item, parent):
         # create new bus
         vn_kv = net.bus.at[net.line.at[sid, 'from_bus'], 'vn_kv']
         name = 'LodLV-%s' % item.loc_name
-        bus = create_bus(net, vn_kv=vn_kv, name=name, geodata=bus_coords, type='n')
+        bus = create_bus_pp(net, vn_kv=vn_kv, name=name, geodata=bus_coords, type='n')
         net.bus.loc[bus, 'description'] = 'Partial load %s = %.3f kW' % (item.loc_name, item.plini)
         logger.debug('created new bus in net: %s' % net.bus.loc[bus])
 
@@ -1817,7 +1823,7 @@ def create_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
         if is_unbalanced:
             ld = create_asymmetric_load(net, **params)
         else:
-            ld = create_load(net, **params)
+            ld = create_load_pp(net, **params)
         logger.debug('created load with index <%d>' % ld)
     except Exception as err:
         logger.error('While creating %s.%s, error occured: %s' % (params.name, load_class, err))
@@ -3118,7 +3124,7 @@ def create_shunt(net, item):
 
     if 0 <= item.shtype <= 4:
         p_mw, params['q_mvar'] = calc_p_mw_and_q_mvar(r_val, x_val)
-        sid = create_shunt(net, p_mw=p_mw, **params)
+        sid = create_shunt_pp(net, p_mw=p_mw, **params)
 
         add_additional_attributes(
             item,
@@ -3140,7 +3146,7 @@ def create_shunt(net, item):
 
 
 def _add_shunt_to_impedance_bus(net, item, bus):
-    create_shunt(net, bus, -item.bi_pu * net.sn_mva, p_mw=-item.gi_pu * net.sn_mva)
+    create_shunt_pp(net, bus, -item.bi_pu * net.sn_mva, p_mw=-item.gi_pu * net.sn_mva)
 
 
 def create_zpu(net, item):
@@ -3179,11 +3185,11 @@ def create_zpu(net, item):
     logger.debug('params = %s' % params)
 
     # create auxilary buses
-    aux_bus1 = create_bus(net, vn_kv=net.bus.vn_kv.at[bus1], name=net.bus.name.at[bus1] + '_aux',
+    aux_bus1 = create_bus_pp(net, vn_kv=net.bus.vn_kv.at[bus1], name=net.bus.name.at[bus1] + '_aux',
                           type="b", zone=net.bus.zone.at[bus1], in_service=True)
     net.bus.loc[aux_bus1, 'geo'] = net.bus.geo.at[bus1]
     params['from_bus'] = aux_bus1
-    aux_bus2 = create_bus(net, vn_kv=net.bus.vn_kv.at[bus2], name=net.bus.name.at[bus2] + '_aux',
+    aux_bus2 = create_bus_pp(net, vn_kv=net.bus.vn_kv.at[bus2], name=net.bus.name.at[bus2] + '_aux',
                           type="b", zone=net.bus.zone.at[bus2], in_service=True)
     net.bus.loc[aux_bus2, 'geo'] = net.bus.geo.at[bus2]
     params['to_bus'] = aux_bus2
@@ -3318,10 +3324,10 @@ def create_sind(net, item):
         return
 
     # create auxilary buses
-    aux_bus1 = create_bus(net, vn_kv=net.bus.vn_kv.at[bus1], name=net.bus.name.at[bus1] + '_aux',
+    aux_bus1 = create_bus_pp(net, vn_kv=net.bus.vn_kv.at[bus1], name=net.bus.name.at[bus1] + '_aux',
                           type="b", zone=net.bus.zone.at[bus1], in_service=True)
     net.bus.loc[aux_bus1, 'geo'] = net.bus.geo.at[bus1]
-    aux_bus2 = create_bus(net, vn_kv=net.bus.vn_kv.at[bus2], name=net.bus.name.at[bus2] + '_aux',
+    aux_bus2 = create_bus_pp(net, vn_kv=net.bus.vn_kv.at[bus2], name=net.bus.name.at[bus2] + '_aux',
                           type="b", zone=net.bus.zone.at[bus2], in_service=True)
     net.bus.loc[aux_bus2, 'geo'] = net.bus.geo.at[bus2]
 
@@ -3377,10 +3383,10 @@ def create_scap(net, item):
         x_ohm = -item.bcap / (item.gcap ** 2 + item.bcap ** 2)
 
         # create auxilary buses
-        aux_bus1 = create_bus(net, vn_kv=net.bus.vn_kv.at[bus1], name=net.bus.name.at[bus1] + '_aux',
+        aux_bus1 = create_bus_pp(net, vn_kv=net.bus.vn_kv.at[bus1], name=net.bus.name.at[bus1] + '_aux',
                               type="b", zone=net.bus.zone.at[bus1], in_service=True)
         net.bus.loc[aux_bus1, 'geo'] = net.bus.geo.at[bus1]
-        aux_bus2 = create_bus(net, vn_kv=net.bus.vn_kv.at[bus2], name=net.bus.name.at[bus2] + '_aux',
+        aux_bus2 = create_bus_pp(net, vn_kv=net.bus.vn_kv.at[bus2], name=net.bus.name.at[bus2] + '_aux',
                               type="b", zone=net.bus.zone.at[bus2], in_service=True)
         net.bus.loc[aux_bus2, 'geo'] = net.bus.geo.at[bus2]
 
@@ -3537,7 +3543,7 @@ def create_vscmono(net, item):
             f"VSCmono element {params['name']} has no DC resistive loss factor - power flow will not converge!"
         )
 
-    vid = create_vsc(net, **params)
+    vid = create_vsc_pp(net, **params)
     logger.debug(f'created VSC {vid} for vscmono {item.loc_name}')
 
     result_variables = {"pf_p_mw": "m:P:busac",
@@ -3586,8 +3592,8 @@ def create_vsc(net, item):
     if params["r_dc_ohm"] == 0:
         logger.warning(f"VSC element {params['name']} has no DC resistive loss factor - power flow will not converge!")
 
-    vid_1 = create_vsc(net, bus=bus, bus_dc=bus_dc_n, **params)
-    vid_2 = create_vsc(net, bus=bus, bus_dc=bus_dc_p, **params)
+    vid_1 = create_vsc_pp(net, bus=bus, bus_dc=bus_dc_n, **params)
+    vid_2 = create_vsc_pp(net, bus=bus, bus_dc=bus_dc_p, **params)
     logger.debug(f'created two vsc mono {vid_1}, {vid_2} for vsc {item.loc_name}')
 
     result_variables = {"pf_p_mw": "m:P:busac",
@@ -3909,7 +3915,7 @@ def split_line_at_length(net, line, length_pos):
         vn_kv = net.bus.at[bus1, "vn_kv"]
         zone = net.bus.at[bus1, "zone"]
 
-        bus = create_bus(net, name=bus_name, type='ls', vn_kv=vn_kv, zone=zone)
+        bus = create_bus_pp(net, name=bus_name, type='ls', vn_kv=vn_kv, zone=zone)
 
         net.line.at[line, 'to_bus'] = bus
         old_length = net.line.at[line, 'length_km']
@@ -4017,7 +4023,7 @@ def split_line(net, line_idx, pos_at_line, line_item):
         bus_j = net.line.at[line_idx, 'to_bus']
         u = net.bus.at[bus_i, 'vn_kv']
 
-        new_bus = create_bus(net, name="Partial Load", vn_kv=u, type='n')
+        new_bus = create_bus_pp(net, name="Partial Load", vn_kv=u, type='n')
         logger.debug("created new split bus %s" % new_bus)
 
         line_type = net.line.at[line_idx, 'std_type']
@@ -4029,7 +4035,7 @@ def split_line(net, line_idx, pos_at_line, line_item):
         # connect the existing line to the new bus
         net.line.at[line_idx, 'to_bus'] = new_bus
 
-        new_line = create_line(net, new_bus, bus_j, len_b, line_type, name=name)
+        new_line = create_line_pp(net, new_bus, bus_j, len_b, line_type, name=name)
         # change the connection of the bus-line switch to the new line
         sw = net.switch.query("et=='l' & bus==@bus_j & element==@line_idx").index
         if len(sw) > 0:
@@ -4281,8 +4287,8 @@ def split_all_lines(net, lvp_dict):
 
             if p >= 0 or True:
                 # TODO: set const_i_percent to 100 after the pandapower bug is fixed
-                new_load = create_load(net, new_bus, name=load_item.loc_name, p_mw=p, q_mvar=q,
-                                       const_i_percent=0)
+                new_load = create_load_pp(net, new_bus, name=load_item.loc_name, p_mw=p, q_mvar=q,
+                                          const_i_percent=0)
                 logger.debug('created load %s' % new_load)
                 net.res_load.at[new_load, 'pf_p'] = p
                 net.res_load.at[new_load, 'pf_q'] = q
