@@ -3587,8 +3587,7 @@ def create_stactrl(net, item):
 
     top = pp.topology.create_nxgraph(net, respect_switches=True, include_lines=True, include_trafos=True,
                                      include_impedances=True, nogobuses=None, notravbuses=None, multi=True,
-                                     calc_branch_impedances=False, branch_impedance_unit='ohm') #, 
-                                     #include_out_of_service=True)
+                                     calc_branch_impedances=False, branch_impedance_unit='ohm', include_out_of_service=True)
     has_path = False
     for n in range(len(input_busses)):
         for m in range(len(output_busses)):
