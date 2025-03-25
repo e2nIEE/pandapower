@@ -49,6 +49,8 @@ grf_map = {}
 # import network to pandapower:
 import pandas as pd
 
+def ga(element, attr):
+    return element.GetAttribute(attr)
 
 def from_pf(
         dict_net,
@@ -672,11 +674,6 @@ def create_connection_switches(net, item, number_switches, et, buses, elements):
             net.res_switch.loc[cd, ['pf_closed', 'pf_in_service']] = switch_is_closed, True
             new_switch_idx.append(cd)
             new_switch_closed.append(switch_is_closed)
-    return new_switch_idx, new_switch_closed
-
-            new_switch_idx.append(cd)
-            new_switch_closed.append(switch_is_closed)
-
     return new_switch_idx, new_switch_closed
 
 
@@ -3927,45 +3924,44 @@ def create_stactrl(net, item):
             v_setpoint_pu = controlled_node.vtarget  # Bus target voltage
 
         if item.i_droop:  # Enable Droop
-            bsc = pp.control.BinarySearchControl(net, ctrl_in_service=stactrl_in_service,
+            bsc = BinarySearchControl(net, ctrl_in_service=stactrl_in_service,
                                       output_element=gen_element,
-                                                 output_variable="q_mvar",
+                                      output_variable="q_mvar",
                                       output_element_index=gen_element_index,
                                       output_element_in_service=gen_element_in_service,
                                       output_values_distribution=distribution,
-                                                 output_min_q_mvar=net[gen_element].loc[gen_element_index].min_q_mvar.to_list(),
-                                                 output_max_q_mvar=net[gen_element].loc[gen_element_index].max_q_mvar.to_list(),
+                                      output_min_q_mvar=net[gen_element].loc[gen_element_index].min_q_mvar.to_list(),
+                                      output_max_q_mvar=net[gen_element].loc[gen_element_index].max_q_mvar.to_list(),
                                       input_element=res_element_table,
-                                                 input_variable=variable,
+                                      input_variable=variable,
                                       input_element_index=res_element_index,
                                       set_point=v_setpoint_pu,
-                                                 voltage_ctrl=True,
-                                                 bus_idx=bus,
-                                                 tol=1e-3,
-                                                 name=item.loc_name,
-                                                 machines=[machine_obj.loc_name for machine_obj in item.psym])
+                                      voltage_ctrl=True,
+                                      bus_idx=bus,
+                                      tol=1e-3,
+                                      name=item.loc_name,
+                                      machines=[machine_obj.loc_name for machine_obj in item.psym])
             net.controller.loc[max(net.controller.index), 'name'] = item.loc_name
-            pp.control.DroopControl(net, q_droop_mvar=item.Srated * 100 / item.ddroop, bus_idx=bus,
-                                    vm_set_pu=v_setpoint_pu, controller_idx=bsc.index, voltage_ctrl=True)
+            DroopControl(net, q_droop_mvar=item.Srated * 100 / item.ddroop, bus_idx=bus,
+                         vm_set_pu=v_setpoint_pu, controller_idx=bsc.index, voltage_ctrl=True)
             net.controller.loc[max(net.controller.index), 'name'] = item.loc_name
         else:
             BinarySearchControl(net, ctrl_in_service=stactrl_in_service,
-                                output_element=gen_element,
-                                           output_variable="q_mvar",
+                                output_element=gen_element,output_variable="q_mvar",
                                 output_element_index=gen_element_index,
                                 output_element_in_service=gen_element_in_service,
                                 output_values_distribution=distribution,
-                                           output_min_q_mvar=net[gen_element].loc[gen_element_index].min_q_mvar.to_list(),
-                                           output_max_q_mvar=net[gen_element].loc[gen_element_index].max_q_mvar.to_list(),
-                                           input_element="res_bus",
+                                output_min_q_mvar=net[gen_element].loc[gen_element_index].min_q_mvar.to_list(),
+                                output_max_q_mvar=net[gen_element].loc[gen_element_index].max_q_mvar.to_list(),
+                                input_element="res_bus",
                                 input_variable="vm_pu",
-                                           input_element_index=bus,
+                                input_element_index=bus,
                                 set_point=v_setpoint_pu,
-                                           voltage_ctrl=True,
-                                           damping_factor=0.9,
-                                           tol=1e-6,
-                                           name=item.loc_name,
-                                           machines=[machine_obj.loc_name for machine_obj in item.psym])
+                                voltage_ctrl=True,
+                                damping_factor=0.9,
+                                tol=1e-6,
+                                name=item.loc_name,
+                                machines=[machine_obj.loc_name for machine_obj in item.psym])
             net.controller.loc[max(net.controller.index), 'name'] = item.loc_name
     elif control_mode == 1:  # Q Control mode
         if item.iQorient != 0:
