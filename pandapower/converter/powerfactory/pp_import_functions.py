@@ -2516,9 +2516,9 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
             if pf_type.tapchtype == 0:
                 tap_changer_type = "Ratio"
             elif pf_type.tapchtype == 1:
-                tap_changer_type = "Symmetrical"
-            elif pf_type.tapchtype == 2:
                 tap_changer_type = "Ideal"
+            elif pf_type.tapchtype == 2:
+                tap_changer_type = "Symmetrical"
             else:
                 tap_changer_type = "None"
 
@@ -2596,9 +2596,9 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
             if pf_type.tapchtype == 0:
                 tap_changer_type = "Ratio"
             elif pf_type.tapchtype == 1:
-                tap_changer_type = "Symmetrical"
-            elif pf_type.tapchtype == 2:
                 tap_changer_type = "Ideal"
+            elif pf_type.tapchtype == 2:
+                tap_changer_type = "Symmetrical"
             else:
                 tap_changer_type = "None"
 
