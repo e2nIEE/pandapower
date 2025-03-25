@@ -3416,6 +3416,7 @@ def create_vsc(net, item):
 
 def create_stactrl(net, item):
     stactrl_in_service = True
+    logger.info(f"Creating Station Controller {item.loc_name}")
     if item.outserv:
         logger.info(f"Station controller {item.loc_name} is out of service")
         stactrl_in_service = False
@@ -3614,8 +3615,10 @@ def create_stactrl(net, item):
                                                  input_element=res_element_table, input_variable=variable,
                                                  input_element_index=res_element_index,
                                                  set_point=v_setpoint_pu, voltage_ctrl=True, bus_idx=bus, tol=1e-3)
+            net.controller.loc[max(net.controller.index), 'name'] = item.loc_name
             pp.control.DroopControl(net, q_droop_mvar=item.Srated * 100 / item.ddroop, bus_idx=bus,
                                     vm_set_pu=v_setpoint_pu, controller_idx=bsc.index, voltage_ctrl=True)
+            net.controller.loc[max(net.controller.index), 'name'] = item.loc_name
         else:
             pp.control.BinarySearchControl(net, ctrl_in_service=stactrl_in_service,
                                            output_element=gen_element, output_variable="q_mvar",
@@ -3624,6 +3627,7 @@ def create_stactrl(net, item):
                                            output_values_distribution=distribution, damping_factor=0.9,
                                            input_variable="vm_pu", input_element_index=bus,
                                            set_point=v_setpoint_pu, voltage_ctrl=True, tol=1e-6)
+            net.controller.loc[max(net.controller.index), 'name'] = item.loc_name
     elif control_mode == 1:  # Q Control mode
         if item.iQorient != 0:
             if not stactrl_in_service:
@@ -3640,6 +3644,7 @@ def create_stactrl(net, item):
                                                  output_values_distribution=distribution, damping_factor=0.9,
                                                  input_variable=variable, input_element_index=res_element_index,
                                                  set_point=item.qsetp, voltage_ctrl=False, tol=1e-6)
+            net.controller.loc[max(net.controller.index), 'name'] = item.loc_name
         elif item.qu_char == 1:
             controlled_node = item.refbar
             bus = bus_dict[controlled_node]  # controlled node
@@ -3651,9 +3656,11 @@ def create_stactrl(net, item):
                                                  output_values_distribution=distribution, damping_factor=0.9,
                                                  input_variable=variable, input_element_index=res_element_index,
                                                  set_point=item.qsetp, voltage_ctrl=False, bus_idx=bus, tol=1e-6)
+            net.controller.loc[max(net.controller.index), 'name'] = item.loc_name
             pp.control.DroopControl(net, q_droop_mvar=item.Srated * 100 / item.ddroop, bus_idx=bus,
                                     vm_set_pu=item.udeadbup, vm_set_ub=item.udeadbup, vm_set_lb=item.udeadblow,
                                     controller_idx=bsc.index, voltage_ctrl=False)
+            net.controller.loc[max(net.controller.index), 'name'] = item.loc_name
         else:
             raise NotImplementedError
     else:
