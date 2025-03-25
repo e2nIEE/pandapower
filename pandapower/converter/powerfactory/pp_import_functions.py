@@ -3446,9 +3446,10 @@ def create_stactrl(net, item):
             gt = "other"
         gen_types.append(gt)
 
-    if "other" in gen_types or len(np.unique(gen_types)) > 1:
-        logger.error(f"Generator type not supported {gen_types} for {item.loc_name}")
-        return
+    for s in machines:
+        if (s.HasAttribute('c:iRefElement') and s.GetAttribute('c:iRefElement')):
+            logger.error(f"Generator {s.loc_name} is set as slack, Station Controller {item.loc_name} is skipped")
+            return
 
     control_mode = item.i_ctrl
 
@@ -3466,6 +3467,10 @@ def create_stactrl(net, item):
                     gen_types[i] = "sgen"
             else:
                 print("station control type not supported!")
+
+    if "other" in gen_types or len(np.unique(gen_types)) > 1:
+        logger.error(f"Generator type not supported {gen_types} for {item.loc_name}")
+        return
 
     gen_element = gen_types[0]
     gen_element_index = []
