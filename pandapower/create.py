@@ -3898,7 +3898,8 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tap_p
 
         **max_loading_percent** (float) - maximum current loading (only needed for OPF)
 
-        **tap_at_star_point** (bool) - whether tap changer is modelled at star point or at the bus
+        **tap_at_star_point** (bool) - whether tap changer is modelled at star point or at the bus, only applicable if \
+            no tap_dependency_table is used
 
         **tap_dependency_table** (boolean, False) - True if transformer parameters (voltage ratio, angle, impedance) \
             must be adjusted dependent on the tap position of the transformer. Requires the additional column \

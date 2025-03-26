@@ -14,11 +14,12 @@ from pandapower.auxiliary import ADict, get_free_id
 from pandapower.control import ContinuousTapControl, DiscreteTapControl, _create_trafo_characteristics, \
     BinarySearchControl, \
     DroopControl
-from pandapower.create import create_empty_network, create_bus_dc, create_switch, create_line_from_parameters, \
-    create_line_dc, create_sgen, create_gen, create_ext_grid, create_asymmetric_sgen, create_line_dc_from_parameters, \
-    create_asymmetric_load, create_transformer, create_transformer_from_parameters, \
-    create_transformer3w_from_parameters, create_impedance, create_xward, create_ward, \
-    create_series_reactor_as_impedance
+
+from pandapower.create import create_empty_network, create_bus, create_bus_dc, create_load, create_switch, \
+    create_shunt, create_line, create_line_from_parameters, create_line_dc, create_sgen, create_gen, create_ext_grid, \
+    create_asymmetric_sgen, create_line_dc_from_parameters, create_asymmetric_load, create_transformer, \
+    create_transformer_from_parameters, create_transformer3w_from_parameters, create_impedance, create_xward, \
+    create_ward, create_series_reactor_as_impedance
 from pandapower.results import reset_results
 from pandapower.run import set_user_pf_options
 from pandapower.std_types import add_zero_impedance_parameters, std_type_exists, create_std_type, available_std_types, \
@@ -88,7 +89,7 @@ def from_pf(
     # ist leider notwendig
     n = 0
     for n, bus in enumerate(dict_net['ElmTerm'], 1):
-        create_bus(net=net, item=bus, flag_graphics=flag_graphics, is_unbalanced=is_unbalanced)
+        create_pp_bus(net=net, item=bus, flag_graphics=flag_graphics, is_unbalanced=is_unbalanced)
     if n > 0: logger.info('imported %d buses' % n)
 
     logger.debug('creating external grids')
@@ -103,8 +104,8 @@ def from_pf(
     n = 0
     for n, load in enumerate(dict_net['ElmLod'], 1):
         try:
-            create_load(net=net, item=load, pf_variable_p_loads=pf_variable_p_loads,
-                        dict_net=dict_net, is_unbalanced=is_unbalanced)
+            create_pp_load(net=net, item=load, pf_variable_p_loads=pf_variable_p_loads,
+                           dict_net=dict_net, is_unbalanced=is_unbalanced)
         except RuntimeError as err:
             logger.debug('load failed at import and was not imported: %s' % err)
     if n > 0: logger.info('imported %d loads' % n)
@@ -114,8 +115,8 @@ def from_pf(
     n = 0
     for n, load in enumerate(dict_net['ElmLodlv'], 1):
         try:
-            create_load(net=net, item=load, pf_variable_p_loads=pf_variable_p_loads,
-                        dict_net=dict_net, is_unbalanced=is_unbalanced)
+            create_pp_load(net=net, item=load, pf_variable_p_loads=pf_variable_p_loads,
+                           dict_net=dict_net, is_unbalanced=is_unbalanced)
         except RuntimeError as err:
             logger.warning('load failed at import and was not imported: %s' % err)
     if n > 0: logger.info('imported %d lv loads' % n),
@@ -125,8 +126,8 @@ def from_pf(
     n = 0
     for n, load in enumerate(dict_net['ElmLodmv'], 1):
         try:
-            create_load(net=net, item=load, pf_variable_p_loads=pf_variable_p_loads,
-                        dict_net=dict_net, is_unbalanced=is_unbalanced)
+            create_pp_load(net=net, item=load, pf_variable_p_loads=pf_variable_p_loads,
+                           dict_net=dict_net, is_unbalanced=is_unbalanced)
         except RuntimeError as err:
             logger.error('load failed at import and was not imported: %s' % err)
     if n > 0: logger.info('imported %d mv loads' % n)
@@ -205,7 +206,7 @@ def from_pf(
     # create shunts (ElmShnt):
     n = 0
     for n, shunt in enumerate(dict_net['ElmShnt'], 1):
-        create_shunt(net=net, item=shunt)
+        create_pp_shunt(net=net, item=shunt)
     if n > 0: logger.info('imported %d shunts' % n)
 
     logger.debug('creating impedances')
@@ -274,8 +275,8 @@ def from_pf(
     # create lines:
     n = 0
     for n, line in enumerate(dict_net['ElmLne'], 0):
-        create_line(net=net, item=line, flag_graphics=flag_graphics, create_sections=create_sections,
-                    is_unbalanced=is_unbalanced)
+        create_pp_line(net=net, item=line, flag_graphics=flag_graphics, create_sections=create_sections,
+                       is_unbalanced=is_unbalanced)
     logger.info('imported %d lines' % (len(net.line.line_idx.unique())) if len(net.line) else 0)
     net.line['section_idx'] = 0
     if dict_net['global_parameters']["iopt_tem"] == 1:
@@ -314,7 +315,7 @@ def from_pf(
     # n = 0
     # for n, load in enumerate(dict_net['ElmLodlvp'], 1):
     #     try:
-    #         create_load(net=net, item=load, pf_variable_p_loads=pf_variable_p_loads)
+    #         create_pp_load(net=net, item=load, pf_variable_p_loads=pf_variable_p_loads)
     #     except NotImplementedError:
     #         logger.debug('load %s not imported because it is not contained in ElmLod' % load)
     # if n > 0: logger.info('imported %d lv partial loads' % n)
@@ -325,7 +326,7 @@ def from_pf(
     #         partial_loads = line.GetContents('*.ElmLodlvp')
     #         partial_loads.sort(key=lambda x: x.lneposkm)
     #         for load in partial_loads:
-    #             create_load(net=net, item=load, pf_variable_p_loads=pf_variable_p_loads)
+    #             create_pp_load(net=net, item=load, pf_variable_p_loads=pf_variable_p_loads)
     #             n += 1
     #     logger.info('imported %d lv partial loads' % n)
 
@@ -394,7 +395,7 @@ def add_additional_attributes(item, net, element, element_id, attr_list=None, at
                     net[element].loc[element_id, attr_dict[attr]] = chr_name[0]
 
 
-def create_bus(net, item, flag_graphics, is_unbalanced):
+def create_pp_bus(net, item, flag_graphics, is_unbalanced):
     # add geo data
     if flag_graphics == 'GPS':
         x = item.GetAttribute('e:GPSlon')
@@ -726,7 +727,7 @@ def get_coords_from_grf_object(item):
     return coords
 
 
-def create_line(net, item, flag_graphics, create_sections, is_unbalanced):
+def create_pp_line(net, item, flag_graphics, create_sections, is_unbalanced):
     params = {'parallel': item.nlnum, 'name': item.loc_name}
     logger.debug('>> creating line <%s>' % params['name'])
     logger.debug('line <%s> has <%d> parallel lines' % (params['name'], params['parallel']))
@@ -1340,7 +1341,7 @@ def get_pf_ext_grid_results(net, item, xid, is_unbalanced):
 #     logger.debug('%s' % part_lods)
 #     for elm in part_lods:
 #         pass
-#         # create_load(net, elm, use_nominal_power)
+#         # create_pp_load(net, elm, use_nominal_power)
 
 def map_power_var(pf_var, map_var):
     """
@@ -1705,7 +1706,7 @@ def split_line_add_bus_old(net, item, parent):
     return bus
 
 
-def create_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
+def create_pp_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
     # params collects the input parameters for the create function
     params = ADict()
     bus_is_known = False
@@ -2397,7 +2398,7 @@ def create_trafo_type(net, item):
             # checking tap_step_percent because a nonzero value for ideal phase shifter can be stored in the object
             "tap2_step_percent": item.dutap2 if item.tapchtype2 != 1 else 0,
             "tap2_step_degree": item.dphitap2 if item.tapchtype2 == 1 else item.phitr2,
-            "tap2_changer_type":  item.tapchtype2,
+            "tap2_changer_type": item.tapchtype2,
             "tap2_max": item.ntpmx2,
             "tap2_min": item.ntpmn2,
             "tap2_neutral": item.nntap02
@@ -2530,12 +2531,12 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
             tap_changer_type = None
 
         tid = create_transformer(net, hv_bus=bus1, lv_bus=bus2, name=name,
-                                    std_type=std_type, tap_pos=tap_pos,
-                                    tap_dependency_table=tap_dependency_table,
-                                    tap_changer_type=tap_changer_type,
-                                    id_characteristic_table=id_characteristic_table,
-                                    in_service=in_service, parallel=item.ntnum, df=item.ratfac, tap2_pos=tap_pos2,
-                                    leakage_resistance_ratio_hv=pf_type.itrdr, leakage_reactance_ratio_hv=pf_type.itrdl)
+                                 std_type=std_type, tap_pos=tap_pos,
+                                 tap_dependency_table=tap_dependency_table,
+                                 tap_changer_type=tap_changer_type,
+                                 id_characteristic_table=id_characteristic_table,
+                                 in_service=in_service, parallel=item.ntnum, df=item.ratfac, tap2_pos=tap_pos2,
+                                 leakage_resistance_ratio_hv=pf_type.itrdr, leakage_reactance_ratio_hv=pf_type.itrdl)
         trafo_dict[item] = tid
         logger.debug('created trafo at index <%d>' % tid)
     else:
@@ -2794,11 +2795,10 @@ def create_trafo3w(net, item, tap_opt='nntap'):
         logger.warning("trafo3w %s has parallel=%d, this is not implemented. "
                        "Calculation results will be incorrect." % (item.loc_name, item.nt3nm))
 
-
     use_tap_table = item.GetAttribute("iTaps")
     if use_tap_table == 1:
         # tap changer that have measurement tables cannot be at star point, this parameter is also overwritten in pf
-        params['tap_at_star_point'] = False
+        #params['tap_at_star_point'] = False
 
         if "trafo_characteristic_table" not in net:
             net["trafo_characteristic_table"] = pd.DataFrame(
@@ -2854,9 +2854,9 @@ def create_trafo3w(net, item, tap_opt='nntap'):
         new_tap_table["vkr_hv_percent"] = new_tap_table["vkr_hv_percent"] / (
                 np.min([float(strn3_h), float(strn3_m)]) * 1000) * 100
         new_tap_table["vkr_mv_percent"] = new_tap_table["vkr_mv_percent"] / (
-                    np.min([float(strn3_m), float(strn3_l)]) * 1000) * 100
+                np.min([float(strn3_m), float(strn3_l)]) * 1000) * 100
         new_tap_table["vkr_lv_percent"] = new_tap_table["vkr_lv_percent"] / (
-                    np.min([float(strn3_h), float(strn3_l)]) * 1000) * 100
+                np.min([float(strn3_h), float(strn3_l)]) * 1000) * 100
 
         steps = list(range(tap_min, tap_max + 1))
 
@@ -2880,7 +2880,7 @@ def create_trafo3w(net, item, tap_opt='nntap'):
 
     if item.HasAttribute('t:du3tp_h'):
         steps = [pf_type.du3tp_h, pf_type.du3tp_m, pf_type.du3tp_l]
-        if(use_tap_table):
+        if (use_tap_table):
             side = np.array([table_side])
         else:
             side = np.nonzero(steps)[0]
@@ -2904,7 +2904,8 @@ def create_trafo3w(net, item, tap_opt='nntap'):
             tap_step_percent = item.GetAttribute('t:du3tp_' + ts)
             tap_step_degree = item.GetAttribute('t:ph3tr_' + ts)
 
-            if (tap_step_degree is None or tap_step_degree == 0) and (tap_step_percent is None or tap_step_percent == 0):
+            if (tap_step_degree is None or tap_step_degree == 0) and (
+                    tap_step_percent is None or tap_step_percent == 0):
                 tap_changer_type = "None"
             # ratio/asymmetrical phase shifters
             elif (tap_step_degree != 90 and tap_step_percent is not None and tap_step_percent != 0):
@@ -2913,7 +2914,8 @@ def create_trafo3w(net, item, tap_opt='nntap'):
             elif (tap_step_degree == 90 and tap_step_percent is not None and tap_step_percent != 0):
                 tap_changer_type = "Symmetrical"
             # ideal phase shifters
-            elif (tap_step_degree is not None and tap_step_degree != 0 and (tap_step_percent is None or tap_step_percent == 0)):
+            elif (tap_step_degree is not None and tap_step_degree != 0 and (
+                    tap_step_percent is None or tap_step_percent == 0)):
                 tap_changer_type = "Ideal"
 
             params.update({
@@ -3057,7 +3059,7 @@ def create_coup(net, item, is_fuse=False):
 # switch_is_closed, switch_usage))
 
 
-def create_shunt(net, item):
+def create_pp_shunt(net, item):
     try:
         bus = get_connection_nodes(net, item, 1)
     except IndexError:
@@ -3457,8 +3459,8 @@ def create_svc(net, item, pv_as_slack, pf_variable_p_gen, dict_net):
 
         if item.HasResults(0):  # 'm' results...
             logger.debug('<%s> has results' % name)
-            net['res_' + element].at[svc, "pf_p"] = item.GetAttribute('m:P:bus1')  #* multiplier
-            net['res_' + element].at[svc, "pf_q"] = item.GetAttribute('m:Q:bus1')  #* multiplier
+            net['res_' + element].at[svc, "pf_p"] = item.GetAttribute('m:P:bus1')  # * multiplier
+            net['res_' + element].at[svc, "pf_q"] = item.GetAttribute('m:Q:bus1')  # * multiplier
         else:
             net['res_' + element].at[svc, "pf_p"] = np.nan
             net['res_' + element].at[svc, "pf_q"] = np.nan
@@ -3675,7 +3677,7 @@ def create_stactrl(net, item):
                 gen_element_index.append(gen_element_index_try[0])
             else:
                 gen_element_index_try_again = net[gen_element].loc[(net[gen_element].name == s.loc_name) & (
-                            net[gen_element].sta_ctrl == s.c_pstac.loc_name)].index.values
+                        net[gen_element].sta_ctrl == s.c_pstac.loc_name)].index.values
                 if len(gen_element_index_try_again) > 1:
                     raise UserWarning(
                         "error while creating station controller: sgen and controler names must be unique")
