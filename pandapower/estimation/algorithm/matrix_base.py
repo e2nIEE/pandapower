@@ -155,8 +155,8 @@ class BaseAlgebra:
             af_vmeas_E1 = csr_matrix((num_clusters,jac.shape[1])) 
 
             jac_E2 = csr_matrix((jac.shape[0],num_clusters))
-            p_eq_bal_jac_E2 = - self.eppci["rated_power_clusters"][:,:num_clusters]
-            q_eq_bal_jac_E2 = - self.eppci["rated_power_clusters"][:,num_clusters:2*num_clusters]
+            p_eq_bal_jac_E2 = csr_matrix(- self.eppci["rated_power_clusters"][:,:num_clusters])
+            q_eq_bal_jac_E2 = csr_matrix(- self.eppci["rated_power_clusters"][:,num_clusters:2*num_clusters])
             af_vmeas_E2 = eye(num_clusters, num_clusters, format='csr')
 
             jac = vstack((jac,
