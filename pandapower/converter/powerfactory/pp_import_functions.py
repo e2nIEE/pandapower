@@ -2797,6 +2797,9 @@ def create_trafo3w(net, item, tap_opt='nntap'):
 
     use_tap_table = item.GetAttribute("iTaps")
     if use_tap_table == 1:
+        # tap changer that have measurement tables cannot be at star point, this parameter is also overwritten in pf
+        params['tap_at_star_point'] = False
+
         if "trafo_characteristic_table" not in net:
             net["trafo_characteristic_table"] = pd.DataFrame(
                 columns=['id_characteristic', 'step', 'voltage_ratio', 'angle_deg', 'vk_percent', 'vkr_percent',
