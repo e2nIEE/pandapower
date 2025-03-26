@@ -6,8 +6,8 @@
 
 import pytest
 
-import pandapower as pp
-import pandapower.networks as pn
+from pandapower.networks.mv_oberrhein import mv_oberrhein
+from pandapower.run import runpp
 
 
 def test_mv_oberrhein():
@@ -18,8 +18,8 @@ def test_mv_oberrhein():
     for i in scenarios:
         for j in include_substations:
             for k in separation_by_sub:
-                net = pn.mv_oberrhein(scenario=i, include_substations=j)
-                pp.runpp(net)
+                net = mv_oberrhein(scenario=i, include_substations=j)
+                runpp(net)
 
                 if i == "load":
                     assert net.sgen.scaling.mean() < 0.2
@@ -40,11 +40,12 @@ def test_mv_oberrhein():
                 assert net.converged
 
                 if k is True:
-                    net0, net1 = pn.mv_oberrhein(scenario=i, include_substations=j, separation_by_sub=k)
+                    net0, net1 = mv_oberrhein(scenario=i, include_substations=j, separation_by_sub=k)
                     assert len(net1.keys()) == len(net0.keys()) == len(net.keys())
                     assert net1.res_ext_grid.loc[1].all() == net.res_ext_grid.loc[1].all()
                     assert net0.res_ext_grid.loc[0].all() == net.res_ext_grid.loc[0].all()
                     assert len(net.bus) == len(net0.bus) + len(net1.bus)
+
 
 if __name__ == '__main__':
     pytest.main([__file__, "-xs"])
