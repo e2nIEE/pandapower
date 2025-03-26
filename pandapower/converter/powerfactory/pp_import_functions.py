@@ -105,7 +105,7 @@ def from_pf(
     for n, load in enumerate(dict_net['ElmLod'], 1):
         try:
             create_pp_load(net=net, item=load, pf_variable_p_loads=pf_variable_p_loads,
-                           dict_net=dict_net, is_unbalanced=is_unbalanced)
+                        dict_net=dict_net, is_unbalanced=is_unbalanced)
         except RuntimeError as err:
             logger.debug('load failed at import and was not imported: %s' % err)
     if n > 0: logger.info('imported %d loads' % n)
@@ -116,7 +116,7 @@ def from_pf(
     for n, load in enumerate(dict_net['ElmLodlv'], 1):
         try:
             create_pp_load(net=net, item=load, pf_variable_p_loads=pf_variable_p_loads,
-                           dict_net=dict_net, is_unbalanced=is_unbalanced)
+                        dict_net=dict_net, is_unbalanced=is_unbalanced)
         except RuntimeError as err:
             logger.warning('load failed at import and was not imported: %s' % err)
     if n > 0: logger.info('imported %d lv loads' % n),
@@ -127,7 +127,7 @@ def from_pf(
     for n, load in enumerate(dict_net['ElmLodmv'], 1):
         try:
             create_pp_load(net=net, item=load, pf_variable_p_loads=pf_variable_p_loads,
-                           dict_net=dict_net, is_unbalanced=is_unbalanced)
+                        dict_net=dict_net, is_unbalanced=is_unbalanced)
         except RuntimeError as err:
             logger.error('load failed at import and was not imported: %s' % err)
     if n > 0: logger.info('imported %d mv loads' % n)
@@ -276,7 +276,7 @@ def from_pf(
     n = 0
     for n, line in enumerate(dict_net['ElmLne'], 0):
         create_pp_line(net=net, item=line, flag_graphics=flag_graphics, create_sections=create_sections,
-                       is_unbalanced=is_unbalanced)
+                    is_unbalanced=is_unbalanced)
     logger.info('imported %d lines' % (len(net.line.line_idx.unique())) if len(net.line) else 0)
     net.line['section_idx'] = 0
     if dict_net['global_parameters']["iopt_tem"] == 1:
@@ -2798,7 +2798,7 @@ def create_trafo3w(net, item, tap_opt='nntap'):
     use_tap_table = item.GetAttribute("iTaps")
     if use_tap_table == 1:
         # tap changer that have measurement tables cannot be at star point, this parameter is also overwritten in pf
-        #params['tap_at_star_point'] = False
+        params['tap_at_star_point'] = False
 
         if "trafo_characteristic_table" not in net:
             net["trafo_characteristic_table"] = pd.DataFrame(
@@ -3459,8 +3459,8 @@ def create_svc(net, item, pv_as_slack, pf_variable_p_gen, dict_net):
 
         if item.HasResults(0):  # 'm' results...
             logger.debug('<%s> has results' % name)
-            net['res_' + element].at[svc, "pf_p"] = item.GetAttribute('m:P:bus1')  # * multiplier
-            net['res_' + element].at[svc, "pf_q"] = item.GetAttribute('m:Q:bus1')  # * multiplier
+            net['res_' + element].at[svc, "pf_p"] = item.GetAttribute('m:P:bus1')  #* multiplier
+            net['res_' + element].at[svc, "pf_q"] = item.GetAttribute('m:Q:bus1')  #* multiplier
         else:
             net['res_' + element].at[svc, "pf_p"] = np.nan
             net['res_' + element].at[svc, "pf_q"] = np.nan
