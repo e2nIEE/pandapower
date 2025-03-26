@@ -1496,7 +1496,10 @@ def _calculate_3w_tap_changers(t3, t2, sides):
     empty.fill(np.nan)
     tap_arrays = {var: {side: empty.copy() for side in sides} for var in tap_variables}
     tap_arrays["tap_side"] = {side: np.array([None] * nr_trafos) for side in sides}
-    at_star_point = t3.tap_at_star_point.values & ~t3.tap_dependency_table.values
+    if "tap_dependency_table" in t3:
+        at_star_point = t3.tap_at_star_point.values & ~t3.tap_dependency_table.values
+    else:
+        at_star_point = t3.tap_at_star_point.values
     any_at_star_point = at_star_point.any()
     for side in sides:
         tap_mask = t3.tap_side.values == side
