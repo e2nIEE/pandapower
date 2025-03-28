@@ -7,7 +7,8 @@
 import copy
 import pandas as pd
 import numpy as np
-import pandapower as pp
+
+from pandapower import create_impedance, create_switch
 
 try:
     import pandaplan.core.pplog as logging
@@ -24,7 +25,7 @@ from pandapower.toolbox import get_connected_elements, replace_xward_by_ward
 from pandapower.diagnostic_reports import diagnostic_report
 
 # separator between log messages
-log_message_sep = ("\n --------\n")
+log_message_sep = "\n --------\n"
 
 expected_exceptions = (LoadflowNotConverged, OPFNotConverged, ControllerNotConverged, NetCalculationNotConverged)
 
@@ -648,19 +649,19 @@ def implausible_impedance_values(net, min_r_ohm, min_x_ohm, max_r_ohm, max_x_ohm
                         replace_xward_by_ward(net, implausible_idx)
                     elif key == 'trafo':
                         for idx in implausible_idx:
-                            pp.create_impedance(net, net.trafo.at[idx, "hv_bus"], net.trafo.at[idx, "lv_bus"],
+                            create_impedance(net, net.trafo.at[idx, "hv_bus"], net.trafo.at[idx, "lv_bus"],
                                                 0, 0.01, 100)
                     elif key == 'trafo3w':
                         for idx in implausible_idx:
-                            pp.create_impedance(net, net.trafo3w.at[idx, "hv_bus"], net.trafo3w.at[idx, "mv_bus"],
+                            create_impedance(net, net.trafo3w.at[idx, "hv_bus"], net.trafo3w.at[idx, "mv_bus"],
                                                 0, 0.01, 100)
-                            pp.create_impedance(net, net.trafo3w.at[idx, "mv_bus"], net.trafo3w.at[idx, "lv_bus"],
+                            create_impedance(net, net.trafo3w.at[idx, "mv_bus"], net.trafo3w.at[idx, "lv_bus"],
                                                 0, 0.01, 100)
-                            pp.create_impedance(net, net.trafo3w.at[idx, "hv_bus"], net.trafo3w.at[idx, "lv_bus"],
+                            create_impedance(net, net.trafo3w.at[idx, "hv_bus"], net.trafo3w.at[idx, "lv_bus"],
                                                 0, 0.01, 100)
                     else:
                         for idx in implausible_idx:
-                            pp.create_switch(net, net[key].from_bus.at[idx], net[key].to_bus.at[idx], et="b")
+                            create_switch(net, net[key].from_bus.at[idx], net[key].to_bus.at[idx], et="b")
                 run(net)
                 switch_replacement = True
             except expected_exceptions:
@@ -827,9 +828,9 @@ def disconnected_elements(net):
                                                    'disconnected sgens'    : sgen_indices}
 
     """
-    import pandapower.topology as top
-    mg = top.create_nxgraph(net)
-    sections = top.connected_components(mg)
+    from pandapower.topology import create_nxgraph, connected_components
+    mg = create_nxgraph(net)
+    sections = connected_components(mg)
     disc_elements = []
 
     for section in sections:
@@ -1025,7 +1026,6 @@ def parallel_switches(net):
     parallels_bus_and_element = list(
         net.switch.groupby(compare_parameters).count().query('closed > 1').index)
     for bus, element, et in parallels_bus_and_element:
-        parallel_switches.append(list(net.switch.query(
-            'bus==@bus & element==@element & et==@et').index))
+        parallel_switches.append(list(net.switch.query('bus==@bus & element==@element & et==@et').index))
     if parallel_switches:
         return parallel_switches
