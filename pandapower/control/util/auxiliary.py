@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import sys
 import time
@@ -10,7 +10,7 @@ import pandas as pd
 from pandas import Index
 
 from pandapower.auxiliary import soft_dependency_error, ensure_iterability
-from .characteristic import SplineCharacteristic
+from pandapower.control.util.characteristic import SplineCharacteristic
 
 try:
     import matplotlib.pyplot as plt
@@ -53,6 +53,7 @@ def get_controller_index_by_type(net, ctrl_type, idx=[]):
     idx = idx if len(idx) else net.controller.index
     is_of_type = net.controller.object.apply(lambda x: isinstance(x, ctrl_type))
     return list(net.controller.index.values[net.controller.index.isin(idx) & is_of_type])
+
 
 def get_controller_index_by_typename(net, typename, idx=[], case_sensitive=False):
     """

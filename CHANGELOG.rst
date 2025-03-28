@@ -3,6 +3,13 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [ADDED] cim2pp converter - export parameter "governorSCD" in additional column in gen table
+- [FIXED] a problem with create_nxgraph
+- [ADDED] parameter slack_as_gen for `from_ucte()` converter (changed the default behavior)
+- [FIXED] cim2pp: the `ignore_errors` parameter was not respected in the `CimParser`
+
+[3.0.0] - 2025-03-06
+-------------------------------
 
 - [ADDED] cim2pp converter - extract measurements for load, sgen, gen, shunt, ext_grid, ward and xward elements
 - [ADDED] cim2pp converter - extract 'Terminal' and 'description' Analog fields in net.measurement
@@ -84,7 +91,9 @@ Change Log
 - [ADDED] DERController with multiple options to define DER reactive power provision depending on P and V
 - [ADDED] switch results p and q
 - [ADDED] PowerFactory converter: option to export lines with sections as a single line with averaged-out impedance, or export line sections as separate individual lines
-- [ADDED] extend plotly function: add zoomlevel-parameter and hvdc lines
+- [ADDED] extend plotly function: add zoomlevel-parameter, dash-lines and hvdc lines
+- [ADDED] extend plotly draw traces: add trace kwargs, e.g. visibility="legendonly" to not show the trace by default
+- [ADDED] extend plotly draw traces: if filename=None, no HTML will be created and just a ploty.Figure object is returned
 - [ADDED] added support for reading cgmes v3.0 files
 - [ADDED] added support for converting cgmes v3.0
 - [CHANGED] plotting for voltage profile considers also gens that are slacks and only ext_grids and slack gens that are in service
