@@ -17,7 +17,7 @@ from .. import cim_classes
 from .. import cim_tools
 from .. import pp_tools
 from ..other_classes import ReportContainer, Report, LogLevel, ReportCode
-from pandapower.control.util.auxiliary import create_q_capability_curve_characteristics_object
+#from pandapower.control.util.auxiliary import create_q_capability_curve_characteristics_object
 
 logger = logging.getLogger('cim.cim2pp.build_pp_net')
 
@@ -135,7 +135,7 @@ class CimConverter:
         self.classes_dict['powerTransformersCim16'](cimConverter=self).convert_power_transformers_cim16()
 
         # --------- create reactive power capability characteristics ---------
-        create_q_capability_curve_characteristics_object(self.net)
+        #create_q_capability_curve_characteristics_object(self.net)
 
         # create the geo coordinates
         if self.cim['gl']['Location'].index.size > 0 and self.cim['gl']['PositionPoint'].index.size > 0:
