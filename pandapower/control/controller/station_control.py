@@ -502,31 +502,7 @@ class BinarySearchControl(Controller):
                         {'type': 'ineq', 'fun': lambda v: v_max_pu - v}  # Upper soft limits
                     ],
                     options={'maxiter': 1000, 'ftol': 1e-9})  #more iterations, small tolerance 'ftol': 1e-9 only with SLSQP
-                voltage = result.x
-
-                """###newton algorithm###
-                ### get distribution by iteratively writing q to net###
-                vm_pu = np.array(net.res_bus.loc[net.sgen.loc[ #getting initial voltage
-                    np.array(self.output_element_index)[self.output_element_in_service], 'bus'], 'vm_pu'])
-                h = 1e-5 #numeric differentiation
-                iteration = 0
-                difference_v_pu = vm_pu - voltage #initialization of break condition for loop
-                distribution = self.distribution #initial distribution value
-                while np.all(np.abs(difference_v_pu) > 0.001) and iteration <= 20: #finding correct Q distribution value
-                    write_to_net(net, self.output_element,
-                                 list(np.array(self.output_element_index)[self.output_element_in_service]),
-                                 self.output_variable, distribution * self.output_values, self.write_flag)
-                    runpp(net)#actualize net
-                    vm_pu_h = np.array(net.res_bus.loc[net.sgen.loc[ #read new voltage
-                        np.array(self.output_element_index)[self.output_element_in_service], 'bus'], 'vm_pu'])
-                    derivative = (vm_pu_h - vm_pu) / h #differentiate
-                    difference_v_pu = vm_pu_h - voltage #difference old value and new value
-                    distribution = (distribution - difference_v_pu / derivative) + h #newton algorithm
-                    vm_pu = vm_pu_h
-                    iteration += 1
-                    #normalization of values doesnt work and constantly actualising the net is not optimal
-                self.distribution = distribution"""
-
+                voltage = result.x #getting the results of minimize function
                 ### convert sgens to gens, write voltage to gens, read Q and adapt distribution
                 for i in range(len(np.array(self.output_element_index)[self.output_element_in_service])):
                     if self.output_element == 'sgen': #get all sgens
