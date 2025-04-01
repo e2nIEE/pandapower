@@ -45,7 +45,9 @@ def create_network_dict(app, flag_graphics='GPS'):
         # 'TypTr3'
 
         # controllers:
-        'ElmStactrl'
+        'ElmStactrl',
+        #curve
+        'IntQlim'
     }
 
     # here define all element types that have to be configured to have MW as power values
@@ -69,7 +71,8 @@ def create_network_dict(app, flag_graphics='GPS'):
         'ElmTr3': ['W', 'var'],
         'TypTr2': ['W', 'var', 'VA'],
         'TypTr3': ['W', 'var', 'VA'],
-        'TypLne': ['A', 'm']
+        'TypLne': ['A', 'm'],
+        'IntQlim': ['W', 'var', 'var']
     }
 
     # make all values in MW
