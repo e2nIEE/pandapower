@@ -175,7 +175,7 @@ def _evaluate_net(net, levelorder, ctrl_variables, **kwargs):
             # either implement this in a controller that is likely to cause the error,
             # or define a special "load flow police" controller for your use case
             _control_repair(levelorder)
-            # this will raise the error if repair_control did't work
+            # this will raise the error if repair_control didn't work
             # it means that repair control has only 1 try
             try:
                 run_funct(net, **kwargs)

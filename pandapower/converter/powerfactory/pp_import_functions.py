@@ -3417,17 +3417,17 @@ def create_stactrl(net, item):
     if len(gen_element_index) != len(machines):
         raise UserWarning("station controller: could not properly identify the machines")
 
-    ###getting distribution###
+    ###getting distribution mode###
     gen_element_in_service = [net[gen_element].loc[net[gen_element].name == s.loc_name].in_service for s in machines]
     distribution_val = []
     if item.imode < 3: #import from pf without calculation
         """if item.imode == 0:
-            distribution = 'rel_P' #according to active power
+            distribution_mode = 'rel_P' #according to active power
         elif item.imode ==1:
-            distribution = 'rel_rated_P'  #according to maximum rated Power S of output elements
+            distribution_mode = 'rel_rated_P'  #according to maximum rated Power S of output elements
         elif item.imode == 2:
-            distribution = 'set_Q'""" #Individually set Q distribution values
-        distribution = 'imported' #simpler than handing over the values separately, also station controller handles cases differently
+            distribution_mode = 'set_Q'""" #Individually set Q distribution values
+        distribution_mode = 'imported' #simpler than handing over the values separately, also station controller handles cases differently
         i = 0
         for m in item.psym:
             if m is not None and isinstance(item.cvqq, list):
@@ -3436,7 +3436,8 @@ def create_stactrl(net, item):
                 distribution_val.append(item.cvqq / 100)
             i = i + 1
     elif item.imode == 3:
-        distribution = 'max_Q' #maximized reactive power reserve
+        distribution_mode = 'max_Q' #maximized reactive power reserve
+        distribution_val = None
         """i = 0 #scale min/max is not needed
         for m in item.psym:
             if m is not None and isinstance(m.scaleQmax, list) and isinstance(m.scaleQmin, list):
@@ -3446,7 +3447,7 @@ def create_stactrl(net, item):
             i =+ 1"""
 
     elif item.imode == 4:
-        distribution = 'rel_V_pu' #voltage set point adaptation
+        distribution_mode = 'rel_V_pu' #voltage set point adaptation
         i = 0
         for m in item.psym:
             if m is not None and isinstance(item.cvgen, list) and isinstance(item.cvgenmin, list) and isinstance(item.cvgenmax, list):
@@ -3613,7 +3614,7 @@ def create_stactrl(net, item):
                                                  output_element=gen_element, output_variable="q_mvar",
                                                  output_element_index=gen_element_index,
                                                  output_element_in_service=gen_element_in_service,
-                                                 output_values_distribution=distribution,
+                                                 output_values_distribution=distribution_mode,
                                                  output_distribution_values=distribution_val,
                                                  input_element=res_element_table, input_variable=variable,
                                                  input_element_index=res_element_index,
@@ -3625,7 +3626,7 @@ def create_stactrl(net, item):
                                            output_element=gen_element, output_variable="q_mvar",
                                            output_element_index=gen_element_index,
                                            output_element_in_service=gen_element_in_service, input_element="res_bus",
-                                           output_values_distribution=distribution,
+                                           output_values_distribution=distribution_mode,
                                            output_distribution_values=distribution_val, damping_factor=0.9,
                                            input_variable="vm_pu", input_element_index=bus,
                                            set_point=v_setpoint_pu, modus='V_ctrl', tol=1e-6)
@@ -3644,7 +3645,7 @@ def create_stactrl(net, item):
                 output_element_index=gen_element_index,
                 output_element_in_service=gen_element_in_service,
                 input_element=res_element_table,
-                output_values_distribution=distribution,
+                output_values_distribution=distribution_mode,
                 output_distribution_values=distribution_val,
                 damping_factor=0.9,
                 input_variable=variable,
@@ -3662,7 +3663,7 @@ def create_stactrl(net, item):
                 output_element_index=gen_element_index,
                 output_element_in_service=gen_element_in_service,
                 input_element=res_element_table,
-                output_values_distribution=distribution,
+                output_values_distribution=distribution_mode,
                 output_distribution_values=distribution_val,
                 damping_factor=0.9,
                 input_variable=variable,
@@ -3703,7 +3704,7 @@ def create_stactrl(net, item):
                 output_element_index=gen_element_index,
                 output_element_in_service=gen_element_in_service,
                 input_element=res_element_table,
-                output_values_distribution=distribution,
+                output_values_distribution=distribution_mode,
                 output_distribution_values=distribution_val,
                 damping_factor=0.9,
                 input_variable=variable,
@@ -3721,7 +3722,7 @@ def create_stactrl(net, item):
                 output_element_index=gen_element_index,
                 output_element_in_service=gen_element_in_service,
                 input_element=res_element_table,
-                output_values_distribution=distribution,
+                output_values_distribution=distribution_mode,
                 output_distribution_values=distribution_val,
                 damping_factor=0.9,
                 input_variable=variable,
@@ -3734,8 +3735,8 @@ def create_stactrl(net, item):
             pp.control.DroopControl(
                 net,
                 q_droop_mvar=None, #item.Srated * 100 / item.ddroop,
-                PF_overexcited=item.pf_over,
-                PF_underexcited=item.pf_under,
+                pf_overexcited=item.pf_over,
+                pf_underexcited=item.pf_under,
                 vm_set_ub=item.p_over,
                 vm_set_lb=item.p_under,
                 controller_idx=bsc.index,
@@ -3752,7 +3753,7 @@ def create_stactrl(net, item):
                 output_element_index=gen_element_index,
                 output_element_in_service=gen_element_in_service,
                 input_element=res_element_table,
-                output_values_distribution=distribution,
+                output_values_distribution=distribution_mode,
                 output_distribution_values=distribution_val,
                 damping_factor=0.9,
                 input_variable=variable,
@@ -3766,12 +3767,12 @@ def create_stactrl(net, item):
                 net,
                 q_droop_mvar=None,  # item.Srated * 100 / item.ddroop,
                 bus_idx=bus,
-                PF_overexcited = item.pf_over,
-                PF_underexcited=item.pf_under,
+                pf_overexcited = item.pf_over,
+                pf_underexcited=item.pf_under,
                 vm_set_ub=item.u_over,
                 vm_set_lb=item.u_under,
                 controller_idx=bsc.index,
-                modus='PF_ctrl_U',
+                modus='PF_ctrl_V',
                 #bus_idx=None
             )
         else:
@@ -3788,7 +3789,7 @@ def create_stactrl(net, item):
             output_element_index=gen_element_index,
             output_element_in_service=gen_element_in_service,
             input_element=res_element_table,
-            output_values_distribution=distribution,
+            output_values_distribution=distribution_mode,
             output_distribution_values=distribution_val,
             damping_factor=0.9,
             input_variable=variable,
