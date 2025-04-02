@@ -2604,16 +2604,16 @@ def add_tap_dependent_impedance_for_trafo(item, net, pf_type, tid):
     # Creating trafo characteristics table for tap dependence impedance for 2 winding transformer
     tap_neutral = net.trafo.at[tid, "tap_neutral"]
     x_points = (net.trafo.at[tid, "tap_min"], tap_neutral, net.trafo.at[tid, "tap_max"])
-    vk_min, vk_neutral, vk_max = pf_type.uktmn, net.trafo.at[tid, "vk_percent"], pf_type.uktmx
-    vkr_min, vkr_neutral, vkr_max = pf_type.ukrtmn, net.trafo.at[tid, "vkr_percent"], pf_type.ukrtmx
+
+    vk_values = [pf_type.uktmn, net.trafo.at[tid, "vk_percent"], pf_type.uktmx]
+    vkr_values = [pf_type.ukrtmn, net.trafo.at[tid, "vkr_percent"], pf_type.ukrtmx]
 
     # Create Spline characteristics
     steps = np.arange(x_points[0], x_points[2] + 1, 1).astype(int)
-    spline_vk = SplineCharacteristic(net, x_points, ([vk_min, vk_neutral, vk_max]))
-    spline_vkr = SplineCharacteristic(net, x_points, ([vkr_min, vkr_neutral, vkr_max]))
+
     # Determine vk and vkr points
-    vk_points = spline_vk(steps)
-    vkr_points = spline_vkr(steps)
+    vk_points = SplineCharacteristic(net, x_points, vk_values)(steps)
+    vkr_points = SplineCharacteristic(net, x_points, vkr_values)(steps)
     tap_diff = steps - tap_neutral
 
     # Calculate angle and voltage ratio for each step
@@ -2626,38 +2626,35 @@ def add_tap_dependent_impedance_for_trafo(item, net, pf_type, tid):
     index = int(net.trafo_characteristic_table.iat[-1, 0] + 1) if not net['trafo_characteristic_table'].empty else int(
         0)
 
-    # Create temporary dataframe add data into it
-    new_tap_table = pd.DataFrame(columns=['id_characteristic', 'step', 'voltage_ratio', 'angle_deg', 'vk_percent',
-                                          'vkr_percent', 'vk_hv_percent', 'vkr_hv_percent', 'vk_mv_percent',
-                                          'vkr_mv_percent', 'vk_lv_percent', 'vkr_lv_percent'])
-
     if pf_type.tapchtype == 1: # if tapchanger is Ideal
         angle_deg = tap_diff * tap_step_degree * direction
-        new_tap_table['voltage_ratio'] = 1
+        voltage_ratio = 1
     else:
         tap_steps = tap_step_percent * tap_diff / 100
         u1 = pf_type.utrn_l if pf_type.tap_side else pf_type.utrn_h
         du = u1 * tap_steps
-        new_tap_table['voltage_ratio'] = np.sqrt((u1 + du * cos(tap_step_degree)) ** 2 +
-                                                 (du * sin(tap_step_degree)) ** 2) / u1
-        angle_deg = (arctan(direction * du * sin(tap_step_degree) /
-                             (u1 + du * cos(tap_step_degree))))
+        voltage_ratio = np.sqrt((u1 + du * cos(tap_step_degree)) ** 2 + (du * sin(tap_step_degree)) ** 2) / u1
+        angle_deg = (arctan(direction * du * sin(tap_step_degree) / (u1 + du * cos(tap_step_degree))))
     angle_deg[angle_deg == -0] = 0.0
 
     # Add data to trafo characteristics table
-    new_tap_table['step'] = steps
-    new_tap_table['angle_deg'] = angle_deg
-    new_tap_table['vk_percent'] = vk_points
-    new_tap_table['vkr_percent'] = vkr_points
-    new_tap_table['id_characteristic'] = index
+    new_tap_table = pd.DataFrame({
+        'id_characteristic': index,
+        'step': steps,
+        'voltage_ratio': voltage_ratio,
+        'angle_deg': angle_deg,
+        'vk_percent': vk_points,
+        'vkr_percent': vkr_points,'vk_hv_percent':np.nan, 'vkr_hv_percent':np.nan, 'vk_mv_percent':np.nan,
+        'vkr_mv_percent':np.nan, 'vk_lv_percent':np.nan, 'vkr_lv_percent':np.nan
+    })
 
+    # Append new tap characteristics to the network table
     net["trafo_characteristic_table"] = pd.concat([net["trafo_characteristic_table"], new_tap_table],
                                                   ignore_index=True)
 
-    net.trafo.loc[tid, 'tap_dependency_table'] = True
-    net.trafo.loc[tid, 'id_characteristic_table'] = index
-    net.trafo.loc[tid, 'tap_changer_type'] = 'Tabular'
-
+    # Update transformer attributes
+    net.trafo.loc[tid, ['tap_dependency_table', 'id_characteristic_table', 'tap_changer_type']] = [True, index,
+                                                                                                   'Tabular']
 
 def create_trafo_characteristics_from_measurment_protocol(item, net, pf_type):
     last_index = net["trafo_characteristic_table"]['id_characteristic'].max() if not net[
@@ -2982,78 +2979,70 @@ def create_trafo3w(net, item, tap_opt='nntap'):
 def add_tap_dependant_impedance_for_trafo3W(net, pf_type, tid):
     # Creating trafo characteristics table for tap dependence impedance
     # TODO right now Pandapower only supports one tapchanger
-    tp_side = pf_type.itapzside
-    if tp_side == 0:
-        vn = pf_type.utrn3_h
-        tap_step_percent = pf_type.du3tp_h
-        tap_step_degree = pf_type.ph3tr_h
-        tap_netural = pf_type.n3tp0_h
-        tap_min = pf_type.n3tmn_h
-        tap_max = pf_type.n3tmx_h
+    # Mapping for tp_side values to eliminate redundant conditions
+    tp_map = {
+        0: ("h", pf_type.utrn3_h, pf_type.du3tp_h, pf_type.ph3tr_h, pf_type.n3tp0_h, pf_type.n3tmn_h, pf_type.n3tmx_h),
+        1: ("m", pf_type.utrn3_m, pf_type.du3tp_m, pf_type.ph3tr_m, pf_type.n3tp0_m, pf_type.n3tmn_m, pf_type.n3tmx_m),
+        2: ("l", pf_type.utrn3_l, pf_type.du3tp_l, pf_type.ph3tr_l, pf_type.n3tp0_l, pf_type.n3tmn_l, pf_type.n3tmx_l)
+    }
+    # Extract values based on tp_side
+    side, vn, tap_step_percent, tap_step_degree, tap_neutral, tap_min, tap_max = tp_map.get(pf_type.itapzside,
+                                                                                            tp_map[2])
+    x_points = (tap_min, tap_neutral, tap_max)
 
-    elif tp_side == 1:
-        vn = pf_type.utrn3_m
-        tap_step_percent = pf_type.du3tp_m
-        tap_step_degree = pf_type.ph3tr_m
-        tap_netural = pf_type.n3tp0_m
-        tap_min = pf_type.n3tmn_m
-        tap_max = pf_type.n3tmx_m
-
-    else:
-        vn = pf_type.utrn3_l
-        tap_step_percent = pf_type.du3tp_l
-        tap_step_degree = pf_type.ph3tr_l
-        tap_netural = pf_type.n3tp0_l
-        tap_min = pf_type.n3tmn_l
-        tap_max = pf_type.n3tmx_l
-
-    x_points = (tap_min, tap_netural, tap_max)
-    steps = np.arange(x_points[0], x_points[2] + 1, 1).astype(int)
+    steps = np.arange(tap_min, tap_max + 1, 1).astype(int)
+    tap_diff = steps - tap_neutral
 
     index = int(net.trafo_characteristic_table.iat[-1, 0] + 1) if not net['trafo_characteristic_table'].empty else 0
-    tap_diff = steps - tap_netural
+
     cos = lambda x: np.cos(np.deg2rad(x))
     sin = lambda x: np.sin(np.deg2rad(x))
     arctan = lambda x: np.rad2deg(np.arctan(x))
-    direction = -1 if tp_side else 1
-
-    new_tap_table = pd.DataFrame(columns=['id_characteristic', 'step', 'voltage_ratio', 'angle_deg', 'vk_percent',
-                                          'vkr_percent', 'vk_hv_percent', 'vkr_hv_percent', 'vk_mv_percent',
-                                          'vkr_mv_percent', 'vk_lv_percent', 'vkr_lv_percent'])
+    direction = -1 if  pf_type.itapzside else 1
 
     # Calculate voltage ratio and phase shift for each tap
     tap_steps = tap_step_percent * tap_diff / 100
     du = vn * tap_steps
-    new_tap_table['voltage_ratio'] = np.sqrt((vn + du * cos(tap_step_degree)) ** 2 +
-                                             (du * sin(tap_step_degree)) ** 2) / vn
-    angle_deg = (arctan(direction * du * sin(tap_step_degree) /
-                         (vn + du * cos(tap_step_degree))))
+    voltage_ratio = np.sqrt((vn + du * cos(tap_step_degree)) ** 2 + (du * sin(tap_step_degree)) ** 2) / vn
+    angle_deg = (arctan(direction * du * sin(tap_step_degree) / (vn + du * cos(tap_step_degree))))
     angle_deg[angle_deg == -0] = 0.0
 
+    # Compute vk and vkr points for each side efficiently
+    vk_vkr_data = {}
+
     for side in ("h", "m", "l"):
-        vk_min, vk_neutral, vk_max = (pf_type.GetAttribute(f"uktr3mn_{side}"), pf_type.GetAttribute(f"uktr3_{side}"),
-                                      pf_type.GetAttribute(f"uktr3mx_{side}"))
-        vkr_min, vkr_neutral, vkr_max = (pf_type.GetAttribute(f"uktrr3mn_{side}"),
-                                         pf_type.GetAttribute(f"uktrr3_{side}"),
-                                         pf_type.GetAttribute(f"uktrr3mx_{side}"))
+        vk_points = SplineCharacteristic(net, x_points, [
+            pf_type.GetAttribute(f"uktr3mn_{side}"),
+            pf_type.GetAttribute(f"uktr3_{side}"),
+            pf_type.GetAttribute(f"uktr3mx_{side}")
+        ])(steps)
 
-        spline_vk = SplineCharacteristic(net, x_points, ([vk_min, vk_neutral, vk_max]))
-        spline_vkr = SplineCharacteristic(net, x_points, ([vkr_min, vkr_neutral, vkr_max]))
-        vk_points = spline_vk(steps)
-        vkr_points = spline_vkr(steps)
-        new_tap_table[f"vk_{side}v_percent"] = vk_points
-        new_tap_table[f"vkr_{side}v_percent"] = vkr_points
+        vkr_points = SplineCharacteristic(net, x_points, [
+            pf_type.GetAttribute(f"uktrr3mn_{side}"),
+            pf_type.GetAttribute(f"uktrr3_{side}"),
+            pf_type.GetAttribute(f"uktrr3mx_{side}")
+        ])(steps)
 
-    new_tap_table['angle_deg'] = angle_deg
-    new_tap_table['id_characteristic'] = index
-    new_tap_table['step'] = steps
+        vk_vkr_data[f"vk_{side}v_percent"] = vk_points
+        vk_vkr_data[f"vkr_{side}v_percent"] = vkr_points
+
+    # Create DataFrame in one efficient step
+    new_tap_table = pd.DataFrame({
+        'id_characteristic': index,
+        'step': steps,
+        'voltage_ratio': voltage_ratio,
+        'angle_deg': angle_deg,
+        'vk_percent': np.nan,
+        'vkr_percent': np.nan,
+        **vk_vkr_data
+    })
 
     net["trafo_characteristic_table"] = pd.concat([net["trafo_characteristic_table"], new_tap_table],
                                                   ignore_index=True)
 
-    net.trafo3w.loc[tid, 'tap_dependency_table'] = True
-    net.trafo3w.loc[tid, 'id_characteristic_table'] = index
-    net.trafo3w.loc[tid, 'tap_changer_type'] = 'Tabular'
+    # Update transformer attributes efficiently
+    net.trafo3w.loc[tid, ["tap_dependency_table", "id_characteristic_table", "tap_changer_type"]] = [True, index,
+                                                                                                     "Tabular"]
 
 
 def propagate_bus_coords(net, bus1, bus2):
