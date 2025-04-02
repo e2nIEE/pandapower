@@ -9,7 +9,6 @@ from typing import Tuple, List, Union, Iterable
 import warnings
 
 import pandas as pd
-from numba import int64
 from numpy import nan, zeros, isnan, arange, dtype, isin, any as np_any, array, bool_, \
     all as np_all, float64, intersect1d, unique as uni
 from pandas import isnull
@@ -1408,7 +1407,7 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
     _set_value_if_not_nan(net, index, curve_dependency_table, "curve_dependency_table", "sgen",
                           dtype= bool_)
 
-    _set_value_if_not_nan(net, index, curve_style, "curve_style", "sgen")
+    _set_value_if_not_nan(net, index, curve_style, "curve_style", "sgen", dtype=object, default_val=None)
 
     _set_value_if_not_nan(net, index, rx, "rx", "sgen")  # rx is always required
     if np.isfinite(kappa):
@@ -1971,7 +1970,7 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
     _set_value_if_not_nan(net, index, id_q_capability_curve_table, "id_q_capability_curve_table", "gen", dtype="Int64")
 
     # behaviour of reactive power capability curve
-    _set_value_if_not_nan(net, index, curve_style, "curve_style", "gen", dtype="string")
+    _set_value_if_not_nan(net, index, curve_style, "curve_style", "gen", dtype=object, default_val=None)
 
     _set_value_if_not_nan(net, index, curve_dependency_table, "curve_dependency_table", "gen", dtype=bool_)
 
