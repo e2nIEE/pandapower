@@ -1016,7 +1016,7 @@ def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, 
         create_load(net, bus=0, p_mw=10., q_mvar=2.)
 
     """
-    _check_node_element(net, bus)
+    _check_element(net, bus)
 
     index = _get_index_with_check(net, "load", index)
 
@@ -1104,7 +1104,7 @@ def create_loads(net, buses, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=
         create_loads(net, buses=[0, 2], p_mw=[10., 5.], q_mvar=[2., 0.])
 
     """
-    _check_multiple_node_elements(net, buses)
+    _check_multiple_elements(net, buses)
 
     index = _get_multiple_index_with_check(net, "load", index, len(buses))
 
@@ -1175,7 +1175,7 @@ def create_asymmetric_load(net, bus, p_a_mw=0, p_b_mw=0, p_c_mw=0, q_a_mvar=0, q
         **create_asymmetric_load(net, bus=0, p_c_mw=9., q_c_mvar=1.8)**
 
     """
-    _check_node_element(net, bus)
+    _check_element(net, bus)
 
     index = _get_index_with_check(net, "asymmetric_load", index, name="3 phase asymmetric_load")
 
@@ -1368,7 +1368,7 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
         create_sgen(net, 1, p_mw=120)
 
     """
-    _check_node_element(net, bus)
+    _check_element(net, bus)
 
     index = _get_index_with_check(net, "sgen", index, name="static generator")
 
@@ -1492,7 +1492,7 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
         create_sgens(net, buses=[0, 2], p_mw=[10., 5.], q_mvar=[2., 0.])
 
     """
-    _check_multiple_node_elements(net, buses)
+    _check_multiple_elements(net, buses)
 
     index = _get_multiple_index_with_check(net, "sgen", index, len(buses))
 
@@ -1586,7 +1586,7 @@ def create_asymmetric_sgen(net, bus, p_a_mw=0, p_b_mw=0, p_c_mw=0, q_a_mvar=0, q
         create_asymmetric_sgen(net, 1, p_b_mw=0.12)
 
     """
-    _check_node_element(net, bus)
+    _check_element(net, bus)
 
     index = _get_index_with_check(net, "asymmetric_sgen", index,
                                   name="3 phase asymmetric static generator")
@@ -1703,7 +1703,7 @@ def create_storage(net, bus, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_percent=
         create_storage(net, 1, p_mw=-30, max_e_mwh=60, soc_percent=1.0, min_e_mwh=5)
 
     """
-    _check_node_element(net, bus)
+    _check_element(net, bus)
 
     index = _get_index_with_check(net, "storage", index)
 
@@ -1799,7 +1799,7 @@ def create_storages(
         create_storage(net, 1, p_mw=-30, max_e_mwh=60, soc_percent=1.0, min_e_mwh=5)
 
     """
-    _check_multiple_node_elements(net, buses)
+    _check_multiple_elements(net, buses)
 
     index = _get_multiple_index_with_check(net, "storage", index, len(buses))
 
@@ -1901,7 +1901,7 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
         create_gen(net, 1, p_mw=120, vm_pu=1.02)
 
     """
-    _check_node_element(net, bus)
+    _check_element(net, bus)
 
     index = _get_index_with_check(net, "gen", index, name="generator")
 
@@ -2028,7 +2028,7 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
         create_gens(net, [1, 2], p_mw=[120, 100], vm_pu=[1.02, 0.99])
 
     """
-    _check_multiple_node_elements(net, buses)
+    _check_multiple_elements(net, buses)
 
     index = _get_multiple_index_with_check(net, "gen", index, len(buses))
 
@@ -2111,7 +2111,7 @@ def create_motor(net, bus, pn_mech_mw, cos_phi, efficiency_percent=100., loading
                      loading_percent=40, lrc_pu=6.0)
 
     """
-    _check_node_element(net, bus)
+    _check_element(net, bus)
 
     index = _get_index_with_check(net, "motor", index)
 
@@ -2198,7 +2198,7 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
         create_ext_grid(net, 1, voltage=1.03, s_sc_max_mva=1000, rx_max=0.1, r0x0_max=0.1,\
                        x0x_max=1.0)
     """
-    _check_node_element(net, bus)
+    _check_element(net, bus)
 
     index = _get_index_with_check(net, "ext_grid", index, name="external grid")
 
@@ -4396,7 +4396,7 @@ def create_switch(net, bus, element, et, closed=True, type=None, name=None, inde
         create_switch(net, bus=0, element=1, et='l')
 
     """
-    _check_node_element(net, bus)
+    _check_element(net, bus)
     if et == "l":
         elm_tab = 'line'
         if element not in net[elm_tab].index:
@@ -4420,7 +4420,7 @@ def create_switch(net, bus, element, et, closed=True, type=None, name=None, inde
                 not net[elm_tab]["lv_bus"].loc[element] == bus):
             raise UserWarning("Trafo3w %s not connected to bus %s" % (element, bus))
     elif et == "b":
-        _check_node_element(net, element)
+        _check_element(net, element)
     else:
         raise UserWarning("Unknown element type")
 
@@ -4484,29 +4484,40 @@ def create_switches(net, buses, elements, et, closed=True, type=None, name=None,
 
     """
     index = _get_multiple_index_with_check(net, "switch", index, len(buses), name="Switches")
-    _check_multiple_node_elements(net, buses)
-    _check_multiple_node_elements(net, elements, name="elements")
+    _check_multiple_elements(net, buses)
+    rel_els = ['b', 'l', 't', 't3']
+    matcher = {'b': ['bus', 'buses'], 'l': ['line', 'lines'], 't': ['trafo', 'trafos'], 't3': ['trafo3w', 'trafo3ws']}
+    for typ in rel_els:
+        if et == typ: _check_multiple_elements(net, elements, *matcher[typ])
+    if np.any(np.isin(et, ['b', 'l', 't'])):
+        mask_all = np.array([False] * len(et))
+        for typ in rel_els:
+            et_arr = np.array(et)
+            el_arr = np.array(elements)
+            mask = et_arr == typ
+            mask_all |= mask
+            _check_multiple_elements(net, el_arr[mask], *matcher[typ])
+        not_def = ~mask_all
+        if np.any(not_def):
+            raise UserWarning('et type %s is not implemented' % et_arr[not_def])
+    else:
+        raise UserWarning('et type %s is not implemented' %et)
 
-    buses_s = pd.Series(buses, name="bus")
-    elements_s = pd.Series(elements, name="element")
-    et_s = pd.Series([et] * len(buses) if isinstance(et, str) else et, name="et")
+    b_arr = np.array(buses)[:, None]
+    el_arr = np.array(elements)
+    et_arr = np.array([et] * len(buses) if isinstance(et, str) else et)
     # Ensure switches are connected correctly.
     for typ, table, joining_busses in [("l", "line", ["from_bus", "to_bus"]),
                                        ("t", "trafo", ["hv_bus", "lv_bus"]),
                                        ("t3", "trafo3w", ["hv_bus", "mv_bus", "lv_bus"])]:
-        bus_not_connected_mask = ~elements_s[et_s == typ].isin(net[table].index)
-        if np_any(bus_not_connected_mask):
-            raise UserWarning("%s buses do not exist: %s" %
-                              (table.capitalize(), elements_s[et_s == typ][bus_not_connected_mask].to_list()))
-        merged = pd.merge(buses_s[et_s == typ].set_axis(elements_s[et_s == typ]),
-                          net[table][joining_busses], left_index=True, right_index=True)
-        not_connected_mask = True
-        for joining_bus in joining_busses:
-            not_connected_mask &= merged.bus != merged[joining_bus]
+        el = el_arr[et_arr == typ]
+        bs = net[table].loc[el, joining_busses].values
+        not_connected_mask = ~np.isin(b_arr[et_arr == typ], bs)
         if np_any(not_connected_mask):
-            bus_element_pairs = list(zip(merged.bus[not_connected_mask], merged.index[not_connected_mask]))
+            bus_element_pairs = zip(el_arr[et_arr == typ][:, None][not_connected_mask].tolist(),
+                                     b_arr[et_arr == typ][not_connected_mask].tolist())
             raise UserWarning("%s not connected (%s element, bus): %s" %
-                              (table.capitalize(), table, bus_element_pairs))
+                              (table.capitalize(), table, list(bus_element_pairs)))
 
     entries = {"bus": buses, "element": elements, "et": et, "closed": closed, "type": type,
                "name": name, "z_ohm": z_ohm, "in_ka": in_ka}
@@ -4562,7 +4573,7 @@ def create_shunt(net, bus, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, name
     EXAMPLE:
         create_shunt(net, 0, 20)
     """
-    _check_node_element(net, bus)
+    _check_element(net, bus)
 
     index = _get_index_with_check(net, "shunt", index)
 
@@ -4627,7 +4638,7 @@ def create_shunts(net, buses, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, n
     EXAMPLE:
         create_shunts(net, [0, 2], [20, 30])
     """
-    _check_multiple_node_elements(net, buses)
+    _check_multiple_elements(net, buses)
 
     index = _get_multiple_index_with_check(net, "shunt", index, len(buses))
 
@@ -4714,7 +4725,7 @@ def create_svc(net, bus, x_l_ohm, x_cvar_ohm, set_vm_pu, thyristor_firing_angle_
 
     """
 
-    _check_node_element(net, bus)
+    _check_element(net, bus)
 
     index = _get_index_with_check(net, "svc", index)
 
@@ -4773,7 +4784,7 @@ def create_ssc(net, bus, r_ohm, x_ohm, set_vm_pu=1., vm_internal_pu=1., va_inter
 
     """
 
-    _check_node_element(net, bus)
+    _check_element(net, bus)
 
     index = _get_index_with_check(net, "ssc", index)
 
@@ -4834,8 +4845,8 @@ def create_vsc(net, bus, bus_dc, r_ohm, x_ohm, r_dc_ohm, pl_dc_mw=0., control_mo
 
     """
 
-    _check_node_element(net, bus)
-    _check_node_element(net, bus_dc, "bus_dc")
+    _check_element(net, bus)
+    _check_element(net, bus_dc, "bus_dc")
 
     index = _get_index_with_check(net, "vsc", index)
 
@@ -5270,7 +5281,7 @@ def create_ward(net, bus, ps_mw, qs_mvar, pz_mw, qz_mvar, name=None, in_service=
     OUTPUT:
         ward id
     """
-    _check_node_element(net, bus)
+    _check_element(net, bus)
 
     index = _get_index_with_check(net, "ward", index, "ward equivalent")
 
@@ -5304,7 +5315,7 @@ def create_wards(net, buses, ps_mw, qs_mvar, pz_mw, qz_mvar, name=None, in_servi
     OUTPUT:
         ward id
     """
-    _check_multiple_node_elements(net, buses)
+    _check_multiple_elements(net, buses)
 
     index = _get_multiple_index_with_check(net, "storage", index, len(buses))
 
@@ -5349,7 +5360,7 @@ def create_xward(net, bus, ps_mw, qs_mvar, pz_mw, qz_mvar, r_ohm, x_ohm, vm_pu, 
     OUTPUT:
         xward id
     """
-    _check_node_element(net, bus)
+    _check_element(net, bus)
 
     index = _get_index_with_check(net, "xward", index, "extended ward equivalent")
 
@@ -5913,20 +5924,26 @@ def _get_multiple_index_with_check(net, table, index, number, name=None):
     return index
 
 
-def _check_node_element(net, node, node_table="bus"):
-    if node not in net[node_table].index.values:
+def _check_element(net, element_index, element="bus"):
+    if element not in net:
+        raise UserWarning("Node table %s does not exist" %element)
+    if element_index not in net[element].index.values:
         raise UserWarning("Cannot attach to %s %s, %s does not exist"
-                          % (node_table, node, node_table))
+                          % (element, element_index, element_index))
 
 
-def _check_multiple_node_elements(net, nodes, node_table="bus", name="buses"):
-    if np_any(~isin(nodes, net[node_table].index.values)):
-        node_not_exist = set(nodes) - set(net[node_table].index.values)
+def _check_multiple_elements(net, element_indices, element="bus", name="buses"):
+    if element not in net:
+        raise UserWarning("Node table %s does not exist" %element)
+    if np_any(~isin(element_indices, net[element].index.values)):
+        node_not_exist = set(element_indices) - set(net[element].index.values)
         raise UserWarning("Cannot attach to %s %s, they do not exist" % (name, node_not_exist))
 
 
 def _check_branch_element(net, element_name, index, from_node, to_node, node_name="bus",
                           plural="es"):
+    if node_name not in net:
+        raise UserWarning("Node table %s does not exist" %node_name)
     missing_nodes = {from_node, to_node} - set(net[node_name].index.values)
     if len(missing_nodes) > 0:
         raise UserWarning("%s %d tries to attach to non-existing %s(%s) %s"
@@ -5935,6 +5952,8 @@ def _check_branch_element(net, element_name, index, from_node, to_node, node_nam
 
 def _check_multiple_branch_elements(net, from_nodes, to_nodes, element_name, node_name="bus",
                                     plural="es"):
+    if node_name not in net:
+        raise UserWarning("Node table %s does not exist" %node_name)
     all_nodes = set(from_nodes) | set(to_nodes)
     node_not_exist = all_nodes - set(net[node_name].index)
     if len(node_not_exist) > 0:
