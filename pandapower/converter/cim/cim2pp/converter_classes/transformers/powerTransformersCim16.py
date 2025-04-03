@@ -511,7 +511,6 @@ class PowerTransformersCim16:
         power_trafo2w['shift_degree'] = power_trafo2w['phaseAngleClock'].astype(float).fillna(
             power_trafo2w['phaseAngleClock_lv'].astype(float)) * 30
         power_trafo2w['parallel'] = 1
-        power_trafo2w['tap_phase_shifter'] = False
         power_trafo2w['in_service'] = power_trafo2w.connected & power_trafo2w.connected_lv
         power_trafo2w['connectionKind'] = power_trafo2w['connectionKind'].fillna('')
         power_trafo2w['connectionKind_lv'] = power_trafo2w['connectionKind_lv'].fillna('')
