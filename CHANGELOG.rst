@@ -7,6 +7,8 @@ Change Log
 - [FIXED] a problem with create_nxgraph
 - [ADDED] parameter slack_as_gen for `from_ucte()` converter (changed the default behavior)
 - [FIXED] cim2pp: the `ignore_errors` parameter was not respected in the `CimParser`
+- [FIXED] cim2pp: extend cim data structure with missing parameters
+- [FIXED] cim2pp: better vector group assignment
 
 [3.0.0] - 2025-03-06
 -------------------------------
