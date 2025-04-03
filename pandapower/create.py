@@ -21,7 +21,7 @@ from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes, e
     empty_defaults_per_dtype
 from pandapower.results import reset_results
 from pandapower.std_types import add_basic_std_types, load_std_type
-from pandapower.typing import Int, Float
+from pandapower.typing import Int
 import numpy as np
 
 try:
@@ -32,7 +32,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def create_empty_network(name: str = "", f_hz: Float = 50., sn_mva: Float = 1,
+def create_empty_network(name: str = "", f_hz: float = 50., sn_mva: float = 1,
                          add_stdtypes: bool = True) -> pandapowerNet:
     """
     This function initializes the pandapower datastructure.
@@ -669,10 +669,10 @@ def create_empty_network(name: str = "", f_hz: Float = 50., sn_mva: Float = 1,
     return net
 
 
-def create_bus(net: pandapowerNet, vn_kv: Float, name: str | None = None, index: Int | None = None,
-               geodata: tuple[Float, Float] | None = None, type: Literal["n", "b", "m"] = "b",
-               zone: str | None = None, in_service: bool = True, max_vm_pu: Float = nan,
-               min_vm_pu: Float = nan, coords: list[tuple[Float, Float]] | None = None, **kwargs) -> Int:
+def create_bus(net: pandapowerNet, vn_kv: float, name: str | None = None, index: int | None = None,
+               geodata: tuple[float, float] | None = None, type: Literal["n", "b", "m"] = "b",
+               zone: str | None = None, in_service: bool = True, max_vm_pu: float = nan,
+               min_vm_pu: float = nan, coords: list[tuple[float, float]] | None = None, **kwargs) -> Int:
     """
     Adds one bus in table net["bus"].
 
@@ -738,10 +738,10 @@ def create_bus(net: pandapowerNet, vn_kv: Float, name: str | None = None, index:
     return index
 
 
-def create_bus_dc(net: pandapowerNet, vn_kv: Float, name: str | None = None, index: Int | None = None,
-                  geodata: tuple[Float, Float] | None = None, type: Literal["n", "b", "m"] = "b",
-                  zone: str | None = None, in_service: bool = True, max_vm_pu: Float = nan, min_vm_pu: Float = nan,
-                  coords: list[tuple[Float, Float]] | None = None, **kwargs) -> Int:
+def create_bus_dc(net: pandapowerNet, vn_kv: float, name: str | None = None, index: int | None = None,
+                  geodata: tuple[float, float] | None = None, type: Literal["n", "b", "m"] = "b",
+                  zone: str | None = None, in_service: bool = True, max_vm_pu: float = nan, min_vm_pu: float = nan,
+                  coords: list[tuple[float, float]] | None = None, **kwargs) -> Int:
     """
     Adds one dc bus in table net["bus_dc"].
 
@@ -808,11 +808,14 @@ def create_bus_dc(net: pandapowerNet, vn_kv: Float, name: str | None = None, ind
     return index
 
 
-def create_buses(net: pandapowerNet, nr_buses: Int, vn_kv: Float, index: Int | None = None,
-                 name: str | None = None, type: Literal["n", "b", "m"] = "b",
-                 geodata: Iterable[tuple[Float, Float]] | None = None, zone: str | None = None,
-                 in_service: bool = True, max_vm_pu: Float = nan, min_vm_pu: Float = nan,
-                 coords: list[list[tuple[Float, Float]]] | None = None, **kwargs) -> npt.NDArray[Int]:
+def create_buses(net: pandapowerNet, nr_buses: int,
+                 vn_kv: float | Iterable[float], index: int | Iterable[int] | None = None,
+                 name: str | Iterable[str] | None = None,
+                 type: Literal["n", "b", "m"] | Iterable[Literal["n", "b", "m"]] = "b",
+                 geodata: Iterable[tuple[float, float]] | None = None, zone: str | None = None,
+                 in_service: bool | Iterable[bool] = True, max_vm_pu: float | Iterable[float] = nan,
+                 min_vm_pu: float | Iterable[float] = nan,
+                 coords: list[list[tuple[float, float]]] | None = None, **kwargs) -> npt.NDArray[np.integer]:
     """
     Adds several buses in table net["bus"] at once.
 
@@ -856,7 +859,7 @@ def create_buses(net: pandapowerNet, nr_buses: Int, vn_kv: Float, index: Int | N
     """
     index = _get_multiple_index_with_check(net, "bus", index, nr_buses)
 
-    def _geodata_to_geo_series(data: Union[Iterable[Tuple[Float, Float]], Tuple[int, int]]) -> List[str]:
+    def _geodata_to_geo_series(data: Union[Iterable[Tuple[float, float]], Tuple[int, int]]) -> List[str]:
         geo = []
         for g in data:
             if isinstance(g, tuple):
