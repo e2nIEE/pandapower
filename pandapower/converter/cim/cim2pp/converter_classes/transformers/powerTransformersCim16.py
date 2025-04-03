@@ -511,16 +511,17 @@ class PowerTransformersCim16:
         power_trafo2w['shift_degree'] = power_trafo2w['phaseAngleClock'].astype(float).fillna(
             power_trafo2w['phaseAngleClock_lv'].astype(float)) * 30
         power_trafo2w['parallel'] = 1
+        power_trafo2w['tap_phase_shifter'] = False
         power_trafo2w['in_service'] = power_trafo2w.connected & power_trafo2w.connected_lv
         power_trafo2w['connectionKind'] = power_trafo2w['connectionKind'].fillna('')
         power_trafo2w['connectionKind_lv'] = power_trafo2w['connectionKind_lv'].fillna('')
         power_trafo2w['grounded'] = power_trafo2w['grounded'].fillna(True)
         power_trafo2w['grounded_lv'] = power_trafo2w['grounded_lv'].fillna(True)
-        power_trafo2w.loc[~power_trafo2w['grounded'].astype('bool'), 'connectionKind'] = \
-            power_trafo2w.loc[~power_trafo2w['grounded'].astype('bool'), 'connectionKind'].str.replace('n', '')
-        power_trafo2w.loc[~power_trafo2w['grounded_lv'].astype('bool'), 'connectionKind_lv'] = \
-            power_trafo2w.loc[~power_trafo2w['grounded_lv'].astype('bool'), 'connectionKind_lv'].str.replace('n', '')
-        power_trafo2w['vector_group'] = power_trafo2w.connectionKind + power_trafo2w.connectionKind_lv
+        # power_trafo2w.loc[~power_trafo2w['grounded'].astype('bool'), 'connectionKind'] = \
+        #     power_trafo2w.loc[~power_trafo2w['grounded'].astype('bool'), 'connectionKind'].str.replace('n', '')
+        # power_trafo2w.loc[~power_trafo2w['grounded_lv'].astype('bool'), 'connectionKind_lv'] = \
+        #     power_trafo2w.loc[~power_trafo2w['grounded_lv'].astype('bool'), 'connectionKind_lv'].str.replace('n', '')
+        power_trafo2w['vector_group'] = power_trafo2w.connectionKind.str.upper() + power_trafo2w.connectionKind_lv.str.lower()
         power_trafo2w.loc[power_trafo2w['vector_group'] == '', 'vector_group'] = None
         power_trafo2w = power_trafo2w.rename(columns={
             'PowerTransformer': sc['o_id'], 'Terminal': sc['t_hv'], 'Terminal_lv': sc['t_lv'],
@@ -641,14 +642,13 @@ class PowerTransformersCim16:
         power_trafo3w['grounded_mv'] = power_trafo3w['grounded_mv'].fillna(True)
         power_trafo3w['grounded_lv'] = power_trafo3w['grounded_lv'].fillna(True)
 
-        power_trafo3w.loc[~power_trafo3w['grounded'].astype('bool'), 'connectionKind'] = \
-            power_trafo3w.loc[~power_trafo3w['grounded'].astype('bool'), 'connectionKind'].str.replace('n', '')
-        power_trafo3w.loc[~power_trafo3w['grounded_mv'].astype('bool'), 'connectionKind_mv'] = \
-            power_trafo3w.loc[~power_trafo3w['grounded_mv'].astype('bool'), 'connectionKind_mv'].str.replace('n', '')
-        power_trafo3w.loc[~power_trafo3w['grounded_lv'].astype('bool'), 'connectionKind_lv'] = \
-            power_trafo3w.loc[~power_trafo3w['grounded_lv'].astype('bool'), 'connectionKind_lv'].str.replace('n', '')
-        power_trafo3w['vector_group'] = \
-            power_trafo3w.connectionKind + power_trafo3w.connectionKind_mv + power_trafo3w.connectionKind_lv
+        # power_trafo3w.loc[~power_trafo3w['grounded'].astype('bool'), 'connectionKind'] = \
+        #     power_trafo3w.loc[~power_trafo3w['grounded'].astype('bool'), 'connectionKind'].str.replace('n', '')
+        # power_trafo3w.loc[~power_trafo3w['grounded_mv'].astype('bool'), 'connectionKind_mv'] = \
+        #     power_trafo3w.loc[~power_trafo3w['grounded_mv'].astype('bool'), 'connectionKind_mv'].str.replace('n', '')
+        # power_trafo3w.loc[~power_trafo3w['grounded_lv'].astype('bool'), 'connectionKind_lv'] = \
+        #     power_trafo3w.loc[~power_trafo3w['grounded_lv'].astype('bool'), 'connectionKind_lv'].str.replace('n', '')
+        power_trafo3w['vector_group'] = power_trafo3w.connectionKind.str.upper() + power_trafo3w.connectionKind_mv.str.lower() + power_trafo3w.connectionKind_lv.str.lower()
         power_trafo3w.loc[power_trafo3w['vector_group'] == '', 'vector_group'] = None
         power_trafo3w = power_trafo3w.rename(columns={
             'PowerTransformer': sc['o_id'], 'Terminal': sc['t_hv'], 'Terminal_mv': sc['t_mv'],

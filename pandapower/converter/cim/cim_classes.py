@@ -276,7 +276,8 @@ class CimParser:
                 'RatioTapChangerTablePoint': pd.DataFrame(columns=['rdfId', 'RatioTapChangerTable', 'step',
                                                                    'r', 'x', 'ratio']),
                 'LinearShuntCompensator': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'description', 'nomU', 'gPerSection', 'bPerSection', 'maximumSections']),
+                    'rdfId', 'name', 'description', 'nomU', 'gPerSection', 'bPerSection', 'maximumSections',
+                    'normalSections', 'EquipmentContainer']),
                 'NonlinearShuntCompensator': pd.DataFrame(columns=[
                     'rdfId', 'name', 'description', 'nomU', 'maximumSections']),
                 'NonlinearShuntCompensatorPoint': pd.DataFrame(columns=[
@@ -284,7 +285,8 @@ class CimParser:
                 'EquivalentBranch': pd.DataFrame(columns=[
                     'rdfId', 'name', 'description', 'BaseVoltage', 'r', 'x', 'r21', 'x21', 'zeroR12', 'zeroR21',
                     'zeroX12', 'zeroX21']),
-                'EquivalentInjection': pd.DataFrame(columns=['rdfId', 'name', 'description', 'BaseVoltage', 'r', 'x']),
+                'EquivalentInjection': pd.DataFrame(columns=['rdfId', 'name', 'description', 'BaseVoltage', 'r', 'x',
+                                                             'regulationCapability']),
                 'SeriesCompensator': pd.DataFrame(columns=[
                     'rdfId', 'name', 'description', 'BaseVoltage', 'r', 'x', 'r0', 'x0']),
                 'Analog': pd.DataFrame(columns=[
