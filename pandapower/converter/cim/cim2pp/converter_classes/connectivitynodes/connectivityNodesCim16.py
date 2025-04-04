@@ -103,8 +103,7 @@ class ConnectivityNodesCim16:
             eq_subs = eq_subs.drop_duplicates(['rdfId'], keep='first')
             # now merge the VoltageLevel with the ConnectivityNode
             eq_voltage_levels = self.cimConverter.cim['eq']['VoltageLevel'][['rdfId', 'BaseVoltage', 'Substation']]
-            eq_voltage_levels = pd.concat([eq_voltage_levels, eq_bay], ignore_index=True, sort=False)
-            eq_voltage_levels = pd.concat([eq_voltage_levels, eq_subs], ignore_index=True, sort=False)
+            eq_voltage_levels = pd.concat([eq_voltage_levels, eq_bay, eq_subs], ignore_index=True, sort=False)
             eq_voltage_levels = eq_voltage_levels.drop_duplicates(['rdfId'], keep='first')
             del eq_bay, eq_subs, eq_subs_duplicates
             eq_substations = self.cimConverter.cim['eq']['Substation'][['rdfId', 'name']]
@@ -115,7 +114,6 @@ class ConnectivityNodesCim16:
 
             connectivity_nodes = pd.merge(connectivity_nodes, eq_voltage_levels, how='left',
                                           on='ConnectivityNodeContainer')
-            connectivity_nodes[sc['sub_id']] = connectivity_nodes['Substation'][:]
             if 'tp_bd' in self.cimConverter.cim.keys():
                 # now prepare the BaseVoltage from the boundary profile at the ConnectivityNode (4)
                 eq_bd_cns = pd.merge(self.cimConverter.cim['eq_bd']['ConnectivityNode'][['rdfId']],
@@ -170,7 +168,18 @@ class ConnectivityNodesCim16:
                                                     **cn_dict['tp_bd'])],
                                                ignore_index=True, sort=False)
             connectivity_nodes[sc['o_cl']] = 'TopologicalNode'
-            connectivity_nodes['name_substation'] = ''
+            connectivity_nodes = connectivity_nodes.rename(columns={'ConnectivityNodeContainer': sc['cnc_id']})
+            eq_voltage_levels = self.cimConverter.cim['eq']['VoltageLevel'][['rdfId', 'Substation']]
+            eq_voltage_levels = eq_voltage_levels.drop_duplicates(['rdfId'], keep='first')
+            eq_substations = self.cimConverter.cim['eq']['Substation'][['rdfId', 'name']]
+            eq_substations = eq_substations.rename(columns={'rdfId': 'Substation', 'name': 'name_substation'})
+            eq_voltage_levels = pd.merge(eq_voltage_levels, eq_substations, how='left', on='Substation')
+            eq_voltage_levels = eq_voltage_levels.drop_duplicates(subset=['rdfId'])
+            eq_voltage_levels = eq_voltage_levels.rename(columns={'rdfId': sc['cnc_id']})
+            connectivity_nodes = pd.merge(connectivity_nodes, eq_voltage_levels, how='left', on=sc['cnc_id'])
+
+        connectivity_nodes[sc['sub_id']] = connectivity_nodes['Substation'][:]
+        connectivity_nodes[sc['sub_id']] = connectivity_nodes['Substation'][:]
         # prepare the voltages from the buses
         eq_base_voltages = pd.concat([self.cimConverter.cim['eq']['BaseVoltage'][['rdfId', 'nominalVoltage']],
                                       self.cimConverter.cim['eq_bd']['BaseVoltage'][['rdfId', 'nominalVoltage']]],
@@ -240,27 +249,32 @@ class ConnectivityNodesCim16:
                     level=LogLevel.WARNING, code=ReportCode.WARNING_CONVERTING,
                     message="The ConnectivityNode with RDF ID %s has %s TopologicalNodes!" % (rdfId, count)))
             connectivity_nodes = connectivity_nodes.drop_duplicates(subset=['rdfId'], keep='first')
-        # add the busbars
+        # add the busbars: Terminals.ConductingEquipment -> BusbarSection
         bb = self.cimConverter.cim['eq']['BusbarSection'][['rdfId', 'name']]
         bb = bb.rename(columns={'rdfId': 'Busbar_id', 'name': 'Busbar_name'})
-        bb = pd.merge(bb, self.cimConverter.cim['eq']['Terminal'][['ConnectivityNode', 'ConductingEquipment']].rename(
-            columns={'ConnectivityNode': 'rdfId', 'ConductingEquipment': 'Busbar_id'}), how='left', on='Busbar_id')
+        # terminals for node breaker and bus branch model
+        t = pd.merge(self.cimConverter.cim['eq']['Terminal'][['rdfId', 'ConnectivityNode', 'ConductingEquipment']],
+                     self.cimConverter.cim['tp']['Terminal'][['rdfId', 'TopologicalNode']], how='left', on='rdfId')
+        t['ConnectivityNode'] = t['ConnectivityNode'].fillna(t['TopologicalNode'])
+        t = t.drop(columns=['rdfId', 'TopologicalNode'])
+        t = t.rename(columns={'ConnectivityNode': 'rdfId', 'ConductingEquipment': 'Busbar_id'})
+        bb = pd.merge(bb, t, how='left', on='Busbar_id')
         bb = bb.drop_duplicates(subset=['rdfId'], keep='first')
         connectivity_nodes = pd.merge(connectivity_nodes, bb, how='left', on='rdfId')
+        del bb, t
 
-        if "Substation" in connectivity_nodes.columns:
-            # add (sub) geographical regions
-            sgr = self.cimConverter.cim['eq']['SubGeographicalRegion'][['rdfId', 'name', 'Region']]
-            regions = pd.merge(self.cimConverter.cim['eq']['Substation'], sgr, left_on="Region", right_on="rdfId",
-                               suffixes=["_substation", "_SubGeographicalRegion"])
-            regions = pd.merge(self.cimConverter.cim['eq']['GeographicalRegion'], regions, left_on="rdfId", right_on="Region_SubGeographicalRegion")
-            regions = regions.rename(columns={'name': 'GeographicalRegion_name', 'name_SubGeographicalRegion': 'SubGeographicalRegion_name',
-                                              'rdfId': 'GeographicalRegion_id', 'rdfId_SubGeographicalRegion': 'SubGeographicalRegion_id'})
-            regions = regions.drop(columns=['name_substation', 'Region_substation', 'Region_SubGeographicalRegion'])
-            # drop duplicates due to some bugs in several CGMES exports
-            regions = regions.drop_duplicates(subset=['rdfId_substation'], keep='first')
-            connectivity_nodes = pd.merge(connectivity_nodes, regions, how='left', left_on='Substation', right_on='rdfId_substation')
-            connectivity_nodes = connectivity_nodes.drop(columns=["rdfId_substation"])
+        # add (sub) geographical regions
+        sgr = self.cimConverter.cim['eq']['SubGeographicalRegion'][['rdfId', 'name', 'Region']]
+        regions = pd.merge(self.cimConverter.cim['eq']['Substation'], sgr, left_on="Region", right_on="rdfId",
+                           suffixes=["_substation", "_SubGeographicalRegion"])
+        regions = pd.merge(self.cimConverter.cim['eq']['GeographicalRegion'], regions, left_on="rdfId", right_on="Region_SubGeographicalRegion")
+        regions = regions.rename(columns={'name': 'GeographicalRegion_name', 'name_SubGeographicalRegion': 'SubGeographicalRegion_name',
+                                          'rdfId': 'GeographicalRegion_id', 'rdfId_SubGeographicalRegion': 'SubGeographicalRegion_id'})
+        regions = regions.drop(columns=['name_substation', 'Region_substation', 'Region_SubGeographicalRegion'])
+        # drop duplicates due to some bugs in several CGMES exports
+        regions = regions.drop_duplicates(subset=['rdfId_substation'], keep='first')
+        connectivity_nodes = pd.merge(connectivity_nodes, regions, how='left', left_on='Substation', right_on='rdfId_substation')
+        connectivity_nodes = connectivity_nodes.drop(columns=["rdfId_substation"])
 
         connectivity_nodes = connectivity_nodes.rename(columns={'rdfId': sc['o_id'], 'TopologicalNode': sc['ct'],
                                                                 'nominalVoltage': 'vn_kv', 'name_substation': 'zone'})
