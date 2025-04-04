@@ -1130,19 +1130,39 @@ def test_fullgrid_bus(fullgrid_v2):
     element_0 = fullgrid_v2.bus[fullgrid_v2.bus['origin_id'] == '_4c66b132-0977-1e4c-b9bb-d8ce2e912e35']
     assert 'BE-Busbar_7' == element_0['name'].item()
     assert 110.00000 == element_0['vn_kv'].item()
-    assert 'b' == element_0['type'].item()
-    assert '' == element_0['zone'].item()
+    assert 'n' == element_0['type'].item()
+    assert 'PP_Brussels' == element_0['zone'].item()
     assert element_0['in_service'].item()
     assert 'TopologicalNode' == element_0['origin_class'].item()
     assert 'tp' == element_0['origin_profile'].item()
     assert '_4c66b132-0977-1e4c-b9bb-d8ce2e912e35' == element_0['cim_topnode'].item()
-    assert math.isnan(element_0['ConnectivityNodeContainer_id'].item())
-    assert math.isnan(element_0['Substation_id'].item())
+    assert '_8bbd7e74-ae20-4dce-8780-c20f8e18c2e0' == element_0['ConnectivityNodeContainer_id'].item()
+    assert '_37e14a0f-5e34-4647-a062-8bfd9305fa9d' == element_0['Substation_id'].item()
+    assert '_c1d5bfc68f8011e08e4d00247eb1f55e' == element_0['GeographicalRegion_id'].item()
+    assert 'BE' == element_0['GeographicalRegion_name'].item()
+    assert '_c1d5bfc88f8011e08e4d00247eb1f55e' == element_0['SubGeographicalRegion_id'].item()
+    assert 'ELIA-Brussels' == element_0['SubGeographicalRegion_name'].item()
+    assert math.isnan(element_0['Busbar_id'].item())
+    assert math.isnan(element_0['Busbar_name'].item())
     assert 'BBRUS151; BGENT_51' == element_0['description'].item()
 
     element_1 = fullgrid_v2.bus[fullgrid_v2.bus['origin_id'] == '_1098b1c9-dc85-40ce-b65c-39ae02a3afaa']
     assert math.isnan(element_1['cim_topnode'].item())
     assert math.isnan(element_1['description'].item())
+
+    element_2 = fullgrid_v2.bus[fullgrid_v2.bus['origin_id'] == '_99b219f3-4593-428b-a4da-124a54630178']
+    assert 'PP_Brussels' == element_2['zone'].item()
+    assert math.isnan(element_2['geo'].item())
+    assert '_99b219f3-4593-428b-a4da-124a54630178' == element_2['cim_topnode'].item()
+    assert '_b10b171b-3bc5-4849-bb1f-61ed9ea1ec7c' == element_2['ConnectivityNodeContainer_id'].item()
+    assert '_37e14a0f-5e34-4647-a062-8bfd9305fa9d' == element_2['Substation_id'].item()
+    assert 'BE_TR_BUS4' == element_2['description'].item()
+    assert '_5caf27ed-d2f8-458a-834a-6b3193a982e6' == element_2['Busbar_id'].item()
+    assert 'BE-Busbar_3' == element_2['Busbar_name'].item()
+    assert '_c1d5bfc68f8011e08e4d00247eb1f55e' == element_2['GeographicalRegion_id'].item()
+    assert 'BE' == element_2['GeographicalRegion_name'].item()
+    assert '_c1d5bfc88f8011e08e4d00247eb1f55e' == element_2['SubGeographicalRegion_id'].item()
+    assert 'ELIA-Brussels' == element_2['SubGeographicalRegion_name'].item()
 
 
 def test_fullgrid_asymmetric_sgen(fullgrid_v2):

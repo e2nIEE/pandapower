@@ -10,6 +10,7 @@ Change Log
 - [FIXED] a problem with create_nxgraph
 - [ADDED] parameter slack_as_gen for `from_ucte()` converter (changed the default behavior)
 - [FIXED] cim2pp: the `ignore_errors` parameter was not respected in the `CimParser`
+- [FIXED] cim2pp: keep the busbar names and IDs for node breaker and bus branch models
 - [FIXED] cim2pp: extend cim data structure with missing parameters
 - [FIXED] cim2pp: better vector group assignment
 
