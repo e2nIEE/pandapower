@@ -23,7 +23,7 @@ class BasicCtrl(JSONSerializableClass):
     Base-Class of all controllable elements within a network.
     """
 
-    def __init__(self, container, index=None, **kwargs):
+    def __init__(self, container, index=None):
         super().__init__()
         # add oneself to net, creating the ['controller'] DataFrame, if necessary
         if index is None:
@@ -156,25 +156,23 @@ class Controller(BasicCtrl):
     Base-Class of all controllable elements within a network.
     """
 
-    def __init__(self, net, in_service=True, order=0, level=0, index=None, recycle=False,
+    def __init__(self, net, name=None, in_service=True, order=0, level=0, index=None, recycle=False,
                  drop_same_existing_ctrl=False, initial_run=True, overwrite=False,
-                 matching_params=None, **kwargs):
-        super(Controller, self).__init__(net, index, **kwargs)
+                 matching_params=None): 
+        super(Controller, self).__init__(net, index)
         self.matching_params = dict() if matching_params is None else matching_params
         # add oneself to net, creating the ['controller'] DataFrame, if necessary
         # even though this code is repeated in JSONSerializableClass, it is necessary because of how drop_same_existing_controller works
         # it is still needed in JSONSerializableClass because it is used for characteristics
         if index is None and "controller" in net.keys():
             index = get_free_id(net.controller)
-        self.index = self.add_controller_to_net(net=net, in_service=in_service, initial_run=initial_run,
+        self.index = self.add_controller_to_net(net=net, name=name, in_service=in_service, initial_run=initial_run,
                                                 order=order, level=level, index=index, recycle=recycle,
                                                 drop_same_existing_ctrl=drop_same_existing_ctrl,
-                                                overwrite=overwrite, matching_params=matching_params, **kwargs)
-        # write kwargs in self
-        for key, value in kwargs.items():
-            setattr(self, key, value)
+                                                overwrite=overwrite, matching_params=matching_params)
+        
 
-    def add_controller_to_net(self, net, in_service, initial_run, order, level, index, recycle,
+    def add_controller_to_net(self, net, name, in_service, initial_run, order, level, index, recycle,
                               drop_same_existing_ctrl, overwrite, **kwargs):
         """
         adds the controller to net['controller'] dataframe.
@@ -198,7 +196,7 @@ class Controller(BasicCtrl):
 
         # use base class method to raise an error if the object is in DF and overwrite = False
         # if the index is None, the base class is in charge of obtaining the next free index in the data frame
-        fill_dict = {"in_service": in_service, "initial_run": initial_run, "recycle": recycle,
+        fill_dict = {"name": name, "in_service": in_service, "initial_run": initial_run, "recycle": recycle,
                      "order": order, "level": level}
         added_index = super().add_to_net(net=net, element='controller', index=index, overwrite=overwrite,
                            fill_dict=fill_dict, preserve_dtypes=True)
