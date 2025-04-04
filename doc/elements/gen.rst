@@ -34,7 +34,7 @@ Input Parameters
 \*necessary for executing a power flow calculation |br| \*\*optimal power flow parameter |br| \*\*\*short-circuit calculation parameter
 
 Generator Reactive Power Capability Curve Characteristics
-============================
+==========================================================
 
 The generator reactive power capability curve characteristics serve as a reference for determining the reactive power
 limits of a generator (Qmin and Qmax) as a function of its active power output.
