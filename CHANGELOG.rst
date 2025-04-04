@@ -3,6 +3,9 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+
+- [ADDED] add three columns: id_q_capability_curve_table, reactive_capability_curve, curve_style in gen and sgen
+- [ADDED] cim2pp converter- import reactive power capability curve data synchronousMachinesCim16.py
 - [ADDED] cim2pp converter - export parameter "governorSCD" in additional column in gen table
 - [FIXED] a problem with create_nxgraph
 - [ADDED] parameter slack_as_gen for `from_ucte()` converter (changed the default behavior)

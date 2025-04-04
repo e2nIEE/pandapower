@@ -1571,6 +1571,9 @@ def test_create_sgens():
         p_mw=[0, 0, 1],
         q_mvar=0.0,
         controllable=[True, False, False],
+        id_q_capability_curve_table=[0, 1, 2],
+        curve_dependency_table=False,
+        curve_style=["straightLineYValues", "straightLineYValues", "straightLineYValues"],
         max_p_mw=0.2,
         min_p_mw=[0, 0.1, 0],
         max_q_mvar=0.2,
@@ -1602,6 +1605,9 @@ def test_create_sgens():
     assert all(net.sgen.rx.values == 0.4)
     assert all(net.sgen.current_source)
     assert all(net.sgen.test_kwargs == "dummy_string")
+    assert all(net.sgen.id_q_capability_curve_table.values == [0,1,2])
+    assert all(net.sgen.curve_style == "straightLineYValues")
+    assert all(net.sgen.curve_dependency_table == [False, False, False])
 
 
 def test_create_sgens_raise_errorexcept():
@@ -1674,6 +1680,9 @@ def test_create_gens():
         p_mw=[0, 0, 1],
         vm_pu=1.0,
         controllable=[True, False, False],
+        id_q_capability_curve_table=[0, 1, 2],
+        curve_dependency_table=False,
+        curve_style= ["straightLineYValues", "straightLineYValues", "straightLineYValues"],
         max_p_mw=0.2,
         min_p_mw=[0, 0.1, 0],
         max_q_mvar=0.2,
@@ -1707,7 +1716,9 @@ def test_create_gens():
     assert all(net.gen.rdss_pu.values == 0.1)
     assert all(net.gen.cos_phi.values == 1.0)
     assert all(net.gen.test_kwargs == "dummy_string")
-
+    assert all(net.gen.id_q_capability_curve_table.values == [0,1,2])
+    assert all(net.gen.curve_style == "straightLineYValues")
+    assert all(net.gen.curve_dependency_table == [False, False, False])
 
 def test_create_gens_raise_errorexcept():
     net = create_empty_network()
@@ -1773,7 +1784,6 @@ def test_create_gens_raise_errorexcept():
             cos_phi=1.0,
             index=g,
         )
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-xs"])
