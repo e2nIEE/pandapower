@@ -3782,7 +3782,9 @@ def create_stactrl(net, item):
             v_setpoint_pu = controlled_node.vtarget  # Bus target voltage
 
         if item.i_droop:  # Enable Droop
-            bsc = pp.control.BinarySearchControl(net, ctrl_in_service=stactrl_in_service,
+            bsc = pp.control.BinarySearchControl(net, 
+                                                 name=item.loc_name,
+                                                 ctrl_in_service=stactrl_in_service,
                                                  output_element=gen_element, 
                                                  output_variable="q_mvar",
                                                  output_element_index=gen_element_index,
@@ -3797,12 +3799,13 @@ def create_stactrl(net, item):
                                                  voltage_ctrl=True, 
                                                  bus_idx=bus,
                                                  tol=1e-3, 
-                                                 name=item.loc_name,
                                                  machines=[machine_obj.loc_name for machine_obj in item.psym]) 
             pp.control.DroopControl(net, q_droop_mvar=item.Srated * 100 / item.ddroop, bus_idx=bus,
                                     vm_set_pu=v_setpoint_pu, controller_idx=bsc.index, voltage_ctrl=True)
         else:
-            pp.control.BinarySearchControl(net, ctrl_in_service=stactrl_in_service,
+            pp.control.BinarySearchControl(net, 
+                                           name=item.loc_name, 
+                                           ctrl_in_service=stactrl_in_service,
                                            output_element=gen_element, 
                                            output_variable="q_mvar",
                                            output_element_index=gen_element_index,
@@ -3817,7 +3820,6 @@ def create_stactrl(net, item):
                                            voltage_ctrl=True,
                                            damping_factor=0.9,
                                            tol=1e-6, 
-                                           name=item.loc_name, 
                                            machines=[machine_obj.loc_name for machine_obj in item.psym])
     elif control_mode == 1:  # Q Control mode
         if item.iQorient != 0:
@@ -3828,7 +3830,9 @@ def create_stactrl(net, item):
         # q_control_terminal = q_control_cubicle.cterm  # terminal of the cubicle
         if item.qu_char == 0:
             pp.control.BinarySearchControl(
-                net, ctrl_in_service=stactrl_in_service,
+                net,
+                name=item.loc_name,
+                ctrl_in_service=stactrl_in_service,
                 output_element=gen_element,
                 output_variable="q_mvar",
                 output_element_index=gen_element_index,
@@ -3841,15 +3845,16 @@ def create_stactrl(net, item):
                 input_element_index=res_element_index,
                 set_point=item.qsetp,
                 voltage_ctrl=False, 
-                tol=1e-6, 
                 damping_factor=0.9,
-                name=item.loc_name, 
+                tol=1e-6, 
                 machines=[machine_obj.loc_name for machine_obj in item.psym])
         elif item.qu_char == 1:
             controlled_node = item.refbar
             bus = bus_dict[controlled_node]  # controlled node
             bsc = pp.control.BinarySearchControl(
-                net, ctrl_in_service=stactrl_in_service,
+                net, 
+                name=item.loc_name,
+                ctrl_in_service=stactrl_in_service,
                 output_element=gen_element,
                 output_variable="q_mvar",
                 output_element_index=gen_element_index,
@@ -3865,9 +3870,7 @@ def create_stactrl(net, item):
                 bus_idx=bus,
                 tol=1e-6, 
                 damping_factor=0.9,
-                name=item.loc_name, 
-                machines=[machine_obj.loc_name for machine_obj in item.psym]
-            )
+                machines=[machine_obj.loc_name for machine_obj in item.psym])
             pp.control.DroopControl(
                 net,
                 q_droop_mvar=item.Srated * 100 / item.ddroop,

@@ -4,6 +4,14 @@ import numpy as np
 from pandapower.control.basic_controller import Controller
 from pandapower.auxiliary import _detect_read_write_flag, read_from_net, write_to_net
 
+try:
+    import pandaplan.core.pplog as pplog
+except:
+    import logging as pplog
+
+logger = pplog.getLogger(__name__)
+
+
 class BinarySearchControl(Controller):
     """
         The Binary search control is a controller which is used to reach a given set point. It can be used for
@@ -51,14 +59,16 @@ class BinarySearchControl(Controller):
 
             **tol=0.001** - Tolerance criteria of controller convergence.
        """
-    def __init__(self, net, ctrl_in_service, output_element, output_variable, output_element_index,
+    def __init__(self, net, name, ctrl_in_service, output_element, output_variable, output_element_index,
                  output_element_in_service, output_values_distribution, output_min_q_mvar, output_max_q_mvar,
                  input_element, input_variable, input_element_index, set_point, voltage_ctrl, 
                  bus_idx=None, tol=0.001, in_service=True, order=0, level=0,
                  drop_same_existing_ctrl=False, matching_params=None, **kwargs):
-        super().__init__(net, in_service=in_service, order=order, level=level,
+        super().__init__(net, name=name, in_service=in_service, order=order, level=level,
                          drop_same_existing_ctrl=drop_same_existing_ctrl,
-                         matching_params=matching_params, **kwargs)
+                         matching_params=matching_params)
+        
+        self.name = name
         self.in_service = ctrl_in_service
         self.input_element = input_element
         self.input_element_index = []
@@ -92,7 +102,10 @@ class BinarySearchControl(Controller):
         self.overwrite_covergence = False
         self.write_flag, self.output_variable = _detect_read_write_flag(net, output_element, output_element_index,
                                                                         output_variable)
-               
+        # write kwargs in self
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+        
         self.read_flag = []
         self.input_variable = []
         self.input_element_in_service = []
@@ -128,6 +141,10 @@ class BinarySearchControl(Controller):
         """
         Actual implementation of the convergence criteria: If controller is applied, it can stop
         """
+        if self.converged:
+            print(self.name, "is already converged")
+            return self.converged
+        
         # if controller not in_service, return True
         self.in_service = net.controller.in_service[self.index]
         if not self.in_service:
@@ -165,13 +182,12 @@ class BinarySearchControl(Controller):
         
         # read previous set values
         # compare old and new set values
-        if not self.voltage_ctrl or self.bus_idx is None:
+        if not self.voltage_ctrl: # or self.bus_idx is None:
             self.diff_old = self.diff
             #print(self.output_adjustable)
             
             if not any(self.output_adjustable):
                 print('All stations controlled by %s reached reactive power limits.' %self.name)
-                #print('jooooo alle sind an Grenze!!! Abbruch !!!')
                 self.converged = True
                 return self.converged
             else:
@@ -180,9 +196,23 @@ class BinarySearchControl(Controller):
                 self.converged = np.all(np.abs(self.diff) < self.tol) 
             
         else:
+            # self.diff_old = self.diff
+            # self.diff = self.set_point - net.res_bus.vm_pu.at[self.bus_idx]
+            # self.converged = np.all(np.abs(self.diff) < self.tol)
+            
             self.diff_old = self.diff
-            self.diff = self.set_point - net.res_bus.vm_pu.at[self.bus_idx]
-            self.converged = np.all(np.abs(self.diff) < self.tol)
+            #print(self.output_adjustable)
+            
+            if not any(self.output_adjustable):
+                print('V_Ctrl: All stations controlled by %s reached reactive power limits.' %self.name)
+                #print('jooooo alle sind an Grenze!!! Abbruch !!!')
+                self.converged = True
+                return self.converged
+            else:
+                self.diff = self.set_point - net.res_bus.vm_pu.loc[self.input_element_index].values[0]
+                #print(self.diff)
+                self.converged = np.all(np.abs(self.diff) < self.tol) 
+            
             
         ### check mit neuen input values bzw. "fester" sgen (sgen am limit) muss in diff berücksichtigt werden
         ## warning wenn alle an grenzen, mehr geht nicht, qsetp wird nicht erreicht
@@ -201,6 +231,10 @@ class BinarySearchControl(Controller):
         self._binarysearchcontrol_step(net)
 
     def _binarysearchcontrol_step(self, net):
+        # if self.name=="BS30":
+        #     print('single')
+        
+        
         if not self.in_service:
             return
         if self.output_values_old is None: # initial or first step
@@ -278,6 +312,9 @@ class BinarySearchControl(Controller):
                     # check if limit is reached
                     reached_min_qmvar = x<self.output_min_q_mvar 
                     reached_max_qmvar = x>self.output_max_q_mvar 
+                    # if self.name=="BS30":
+                    #     print('single')
+                    
                     if reached_min_qmvar or reached_max_qmvar:
                         print('Station %s controlled by %s reached a reactive power limit.' % (self.machines[0], self.name))
                         self.output_adjustable = np.array([False], dtype=np.bool)                       
@@ -330,12 +367,12 @@ class DroopControl(Controller):
 
                 **vm_set_ub=None** - Upper band border of dead band
            """
-    def __init__(self, net, q_droop_mvar, bus_idx, vm_set_pu, controller_idx, voltage_ctrl, tol=1e-6, in_service=True,
+    def __init__(self, net, name, q_droop_mvar, bus_idx, vm_set_pu, controller_idx, voltage_ctrl, tol=1e-6, in_service=True,
                  order=-1, level=0, drop_same_existing_ctrl=False, matching_params=None, vm_set_lb=None, vm_set_ub=None,
                  **kwargs):
-        super().__init__(net, in_service=in_service, order=order, level=level,
+        super().__init__(net, name, in_service=in_service, order=order, level=level,
                          drop_same_existing_ctrl=drop_same_existing_ctrl,
-                         matching_params=matching_params, **kwargs)
+                         matching_params=matching_params)
         # TODO: implement maximum and minimum of droop control
         self.q_droop_mvar = q_droop_mvar
         self.bus_idx = bus_idx
@@ -355,6 +392,10 @@ class DroopControl(Controller):
         self.q_set_old_mvar = None
         self.diff = None
         self.converged = False
+        
+        # write kwargs in self
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
     def is_converged(self, net):
         if self.voltage_ctrl:
