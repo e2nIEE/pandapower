@@ -179,7 +179,6 @@ class ConnectivityNodesCim16:
             connectivity_nodes = pd.merge(connectivity_nodes, eq_voltage_levels, how='left', on=sc['cnc_id'])
 
         connectivity_nodes[sc['sub_id']] = connectivity_nodes['Substation'][:]
-        connectivity_nodes[sc['sub_id']] = connectivity_nodes['Substation'][:]
         # prepare the voltages from the buses
         eq_base_voltages = pd.concat([self.cimConverter.cim['eq']['BaseVoltage'][['rdfId', 'nominalVoltage']],
                                       self.cimConverter.cim['eq_bd']['BaseVoltage'][['rdfId', 'nominalVoltage']]],
