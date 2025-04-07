@@ -620,8 +620,8 @@ def _calc_tap_from_dataframe(net, trafo_df):
                 tap_table = np.array([False])
                 tap_dependency_table = np.array([False])
             # tap_changer_type = pd.Series(tap_changer_type)
-            tap_table = np.logical_and(tap_dependency_table, np.logical_not(tap_changer_type == "None"))
-            tap_no_table = np.logical_and(~tap_dependency_table, np.logical_not(tap_changer_type == "None"))
+            tap_table = np.logical_and(tap_dependency_table, tap_changer_type is not None)
+            tap_no_table = np.logical_and(~tap_dependency_table, tap_changer_type is not None)
             if any(tap_table):
                 id_characteristic_table = get_trafo_values(trafo_df, "id_characteristic_table")
                 if np.any(tap_dependency_table & pd.isna(id_characteristic_table)):
