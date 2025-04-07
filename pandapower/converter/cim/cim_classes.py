@@ -236,7 +236,7 @@ class CimParser:
                 'NuclearGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP', 'governorSCD']),
                 'RegulatingControl': pd.DataFrame(columns=['rdfId', 'name', 'mode', 'Terminal']),
                 'SynchronousMachine': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'description', 'GeneratingUnit', 'EquipmentContainer', 'ratedU', 'ratedS', 'type',
+                    'rdfId', 'name', 'description', 'GeneratingUnit', 'EquipmentContainer', 'ratedU', 'ratedS', 'type', 'InitialReactiveCapabilityCurve',
                     'r2', 'x2', 'ratedPowerFactor', 'voltageRegulationRange', 'minQ', 'maxQ', 'RegulatingControl']),
                 'AsynchronousMachine': pd.DataFrame(columns=[
                     'rdfId', 'name', 'description', 'GeneratingUnit', 'ratedS', 'ratedU', 'ratedPowerFactor',
@@ -294,7 +294,11 @@ class CimParser:
                     'PowerSystemResource', 'positiveFlowIn']),
                 'AnalogValue': pd.DataFrame(columns=[
                     'rdfId', 'name', 'sensorAccuracy', 'MeasurementValueSource', 'Analog', 'value']),
-                'MeasurementValueSource': pd.DataFrame(columns=['rdfId', 'name'])
+                'MeasurementValueSource': pd.DataFrame(columns=['rdfId', 'name']),
+                'ReactiveCapabilityCurve': pd.DataFrame(columns=['rdfId', 'name', 'curveStyle', 'xUnit', 'y1Unit',
+                                                                 'y2Unit']),
+                'CurveData': pd.DataFrame(columns=['rdfId', 'Curve', 'xvalue', 'y1value', 'y2value'])
+
             }),
             'eq_bd': MappingProxyType({
                 'ConnectivityNode': pd.DataFrame(columns=['rdfId', 'name', 'ConnectivityNodeContainer']),
@@ -639,7 +643,7 @@ class CimParser:
                 'RegulatingControl': pd.DataFrame(columns=['rdfId', 'name', 'mode', 'Terminal']),
                 'SynchronousMachine': pd.DataFrame(columns=[
                     'rdfId', 'name', 'description', 'GeneratingUnit', 'EquipmentContainer', 'ratedU', 'ratedS', 'type',
-                    'ratedPowerFactor', 'minQ', 'maxQ', 'RegulatingControl']),
+                    'InitialReactiveCapabilityCurve','ratedPowerFactor', 'minQ', 'maxQ', 'RegulatingControl']),
                 'AsynchronousMachine': pd.DataFrame(columns=[
                     'rdfId', 'name', 'description', 'GeneratingUnit', 'ratedS', 'ratedU', 'ratedPowerFactor']),
                 'EnergySource': pd.DataFrame(columns=[
@@ -685,7 +689,10 @@ class CimParser:
                 'SeriesCompensator': pd.DataFrame(columns=[
                     'rdfId', 'name', 'description', 'BaseVoltage', 'r', 'x']),
                 'MeasurementValueSource': pd.DataFrame(columns=['rdfId', 'name']),
-                'PetersenCoil': pd.DataFrame(columns=['rdfId', 'name', 'description'])
+                'PetersenCoil': pd.DataFrame(columns=['rdfId', 'name', 'description']),
+                'ReactiveCapabilityCurve': pd.DataFrame(columns=['rdfId', 'name', 'curveStyle', 'xUnit', 'y1Unit',
+                                                                 'y2Unit']),
+                'CurveData': pd.DataFrame(columns=['rdfId', 'Curve', 'xvalue', 'y1value', 'y2value'])
             }),
             'eq_bd': MappingProxyType({
                 'ConnectivityNode': pd.DataFrame(columns=['rdfId', 'name', 'ConnectivityNodeContainer']),
