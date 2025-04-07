@@ -3,7 +3,7 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
-
+- [FIXED] pf2pp converter - trafo characteristic: Fixed tap changer type and included an if-clause that removes the zero sequence components in measurement report (for now)
 - [ADDED] pf2pp converter - added columns `origin_id` in multiple equipment (ext_net, coup, load, (s)gen, shunts, zpu, vac, svc)
 - [ADDED] add three columns: id_q_capability_curve_table, reactive_capability_curve, curve_style in gen and sgen
 - [ADDED] cim2pp converter- import reactive power capability curve data synchronousMachinesCim16.py
