@@ -14,6 +14,8 @@ Change Log
 - [FIXED] cim2pp: keep the busbar names and IDs for node breaker and bus branch models
 - [FIXED] cim2pp: extend cim data structure with missing parameters
 - [FIXED] cim2pp: better vector group assignment
+- [FIXED] cim2pp: manage crash when importing not supported dy profile
+- [ADDED] cim2pp: add tests for short circuit parameters
 
 [3.0.0] - 2025-03-06
 -------------------------------
