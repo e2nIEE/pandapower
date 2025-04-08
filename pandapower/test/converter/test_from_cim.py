@@ -1,4 +1,5 @@
 import os
+from codecs import ignore_errors
 
 import numpy as np
 import pytest
@@ -11,6 +12,32 @@ from pandapower.converter.cim.cim2pp.from_cim import from_cim
 from pandapower.run import runpp
 
 from pandapower.control.util.auxiliary import create_trafo_characteristic_object, create_shunt_characteristic_object
+
+
+@pytest.fixture(scope="session")
+def mini_sc_mod():
+    folder_path = os.path.join(test_path, "test_files", "example_cim")
+
+    cgmes_files = [os.path.join(folder_path, 'CGMES_v2.4.15_MiniGridTestConfiguration_T1_Complete_v3_mod_in_service_ext_grid.zip')]
+
+    return from_cim(file_list=cgmes_files, ignore_errors=False)
+
+@pytest.fixture(scope="session")
+def mini_sc():
+    folder_path = os.path.join(test_path, "test_files", "example_cim")
+
+    cgmes_files = [os.path.join(folder_path, 'CGMES_v2.4.15_MiniGridTestConfiguration_T1_Complete_v3.zip')]
+
+    return from_cim(file_list=cgmes_files, ignore_errors=False)
+
+
+@pytest.fixture(scope="session")
+def mirco_sc():
+    folder_path = os.path.join(test_path, "test_files", "example_cim")
+
+    cgmes_files = [os.path.join(folder_path, 'CGMES_v2.4.15_MicroGridTestConfiguration_T4_BE_NB_Complete_v2.zip')]
+
+    return from_cim(file_list=cgmes_files, ignore_errors=False)
 
 
 @pytest.fixture(scope="session")
@@ -111,6 +138,72 @@ def SimBench_1_HVMVmixed_1_105_0_sw_modified_no_load_flow():
     cgmes_files = [os.path.join(folder_path, 'SimBench_1-HVMV-mixed-1.105-0-sw_modified.zip')]
 
     return from_cim(file_list=cgmes_files)
+
+
+def test_micro_sc_ext_grid(mini_sc_mod):
+    assert len(mini_sc_mod.ext_grid.index) == 2
+    element_0 = mini_sc_mod.ext_grid.iloc[mini_sc_mod.ext_grid[
+        mini_sc_mod.ext_grid['origin_id'] == '_089c1945-4101-487f-a557-66c013b748f6'].index]
+    assert element_0['s_sc_max_mva'].item() == pytest.approx(658.1793068761733, abs=0.00001)
+    assert element_0['s_sc_min_mva'].item() == pytest.approx(0.0, abs=0.00001)
+    assert element_0['rx_max'].item() == pytest.approx(0.1, abs=0.00001)
+    assert element_0['rx_min'].item() == pytest.approx(0.1, abs=0.00001)
+
+
+def test_micro_sc_sgen(mini_sc):
+    assert len(mini_sc.sgen.index) == 4
+    element_0 = mini_sc.sgen.iloc[mini_sc.sgen[
+        mini_sc.sgen['origin_id'] == '_392ea173-4f8e-48fa-b2a3-5c3721e93196'].index]
+    assert element_0['k'].item() == pytest.approx(1.571438545258903, abs=0.00001)
+    assert element_0['rx'].item() == pytest.approx(0.0163, abs=0.00001)
+    assert element_0['vn_kv'].item() == pytest.approx(10.5, abs=0.00001)
+    assert element_0['rdss_ohm'].item() == pytest.approx(0.01797075, abs=0.00001)
+    assert element_0['xdss_pu'].item() == pytest.approx(0.1, abs=0.00001)
+    assert element_0['generator_type'].item() == 'current_source'
+
+
+def test_micro_sc_trafo(mirco_sc):
+    assert len(mirco_sc.trafo.index) == 3
+    element_0 = mirco_sc.trafo.iloc[mirco_sc.trafo[
+        mirco_sc.trafo['origin_id'] == '_e482b89a-fa84-4ea9-8e70-a83d44790957'].index]
+    assert element_0['vk_percent'].item() == pytest.approx(12.000000798749786, abs=0.00001)
+    assert element_0['vkr_percent'].item() == pytest.approx(0.2149991967411512, abs=0.00001)
+    assert element_0['pfe_kw'].item() == pytest.approx(210.9995411616211, abs=0.00001)
+    assert element_0['i0_percent'].item() == pytest.approx(0.4131131902379213, abs=0.00001)
+    assert element_0['vector_group'].item() == 'Yy' #TODO: needs addidtional test
+    assert element_0['vk0_percent'].item() == pytest.approx(12.000000798749786, abs=0.00001)
+    assert element_0['vkr0_percent'].item() == pytest.approx(0.2149991967411512, abs=0.00001)
+    assert not element_0['oltc'].item() #TODO: needs addidtional test
+    assert not element_0['power_station_unit'].item() #TODO: needs addidtional test
+
+def test_micro_sc_trafo3w(mirco_sc):
+    assert len(mirco_sc.trafo3w.index) == 1
+    element_0 = mirco_sc.trafo3w.iloc[mirco_sc.trafo3w[
+        mirco_sc.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246'].index]
+    assert element_0['vk_hv_percent'].item() == pytest.approx(15.000000556608706, abs=0.00001)
+    assert element_0['vk_mv_percent'].item() == pytest.approx(17.000038713248305, abs=0.00001)
+    assert element_0['vk_lv_percent'].item() == pytest.approx(16.000038636114326, abs=0.00001)
+    assert element_0['vkr_hv_percent'].item() == pytest.approx(0.8000006007231405, abs=0.00001)
+    assert element_0['vkr_mv_percent'].item() == pytest.approx(2.400034426828583, abs=0.00001)
+    assert element_0['vkr_lv_percent'].item() == pytest.approx(2.330034201105442, abs=0.00001)
+    assert element_0['vk0_hv_percent'].item() == pytest.approx(14.999999802944213, abs=0.00001)
+    assert element_0['vk0_mv_percent'].item() == pytest.approx(17.0000679239051, abs=0.00001)
+    assert element_0['vk0_lv_percent'].item() == pytest.approx(16.000067933460883, abs=0.00001)
+    assert element_0['vkr0_hv_percent'].item() == pytest.approx(0, abs=0.00001)
+    assert element_0['vkr0_mv_percent'].item() == pytest.approx(0, abs=0.00001)
+    assert element_0['vkr0_lv_percent'].item() == pytest.approx(0, abs=0.00001)
+    assert not element_0['power_station_unit'].item() #TODO: needs addidtional test
+    assert element_0['vector_group'].item() == 'Yyy' #TODO: needs addidtional test
+
+def test_micro_sc_gen(mirco_sc):
+    assert len(mirco_sc.gen.index) == 2
+    element_0 = mirco_sc.gen.iloc[mirco_sc.gen[
+        mirco_sc.gen['origin_id'] == '_550ebe0d-f2b2-48c1-991f-cebea43a21aa'].index]
+    assert element_0['vn_kv'].item() == pytest.approx(21.0, abs=0.00001)
+    assert element_0['xdss_pu'].item() == pytest.approx(0.17, abs=0.00001)
+    assert element_0['rdss_ohm'].item() == pytest.approx(0.0, abs=0.00001) #TODO: needs addidtional test
+    assert element_0['cos_phi'].item() == pytest.approx(0.85, abs=0.00001)
+    assert element_0['pg_percent'].item() == pytest.approx(0.0, abs=0.00001) #TODO: needs addidtional test
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_no_load_flow_res_bus(
