@@ -4,10 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pandapower"
-version = "3.0.0" # File format version '__format_version__' is tracked in _version.py
+version = "3.1.0.dev0" # File format version '__format_version__' is tracked in _version.py
 authors = [
     { name = "Leon Thurner", email = "leon.thurner@retoflow.de" },
-    { name = "Alexander Scheidler", email = "alexander.scheidler@iee.fraunhofer.de" }
+    { name = "Alexander Scheidler", email = "alexander.scheidler@iee.fraunhofer.de" },
+    { name = "Mike Vogt", email = "mike.vogt@iee.fraunhofer.de"}
 ]
 maintainers = [
     { name = "pandapower Developers", email = "info@pandapower.org" }
@@ -36,7 +37,7 @@ classifiers = [
 dependencies = [
     "pandas>=1.0",
     "networkx>=2.5",
-    "scipy<1.14",
+    "scipy",
     "numpy",
     "packaging",
     "tqdm",
@@ -62,7 +63,7 @@ Changelog = "https://github.com/e2nIEE/pandapower/blob/develop/CHANGELOG.rst"
 docs = ["numpydoc>=1.5.0", "matplotlib", "sphinx>=5.3.0", "sphinx_rtd_theme>=1.1.1", "sphinx-pyproject"]
 plotting = ["plotly>=3.1.1", "matplotlib", "igraph", "geopandas>=1.0"]
 test = ["pytest~=8.1", "pytest-xdist", "nbmake"]
-performance = ["ortools", "numba>=0.25", "lightsim2grid==0.9.0"]
+performance = ["ortools", "numba==0.60.0", "lightsim2grid==0.10.1"]
 fileio = ["xlsxwriter", "openpyxl", "cryptography", "geopandas>=1.0", "psycopg2"]
 converter = ["matpowercaseframes"]
 pgm = ["power-grid-model-io"]
@@ -71,7 +72,7 @@ all = [
     "numpydoc>=1.5.0", "sphinx>=5.3.0", "sphinx_rtd_theme>=1.1.1", "sphinx-pyproject",
     "plotly>=3.1.1", "matplotlib", "igraph", "geopandas>=1.0",
     "pytest~=8.1", "pytest-xdist", "nbmake",
-    "ortools", "numba>=0.25", "lightsim2grid==0.9.0",
+    "ortools", "numba==0.60.0", "lightsim2grid==0.10.1",
     "xlsxwriter", "openpyxl", "cryptography", "psycopg2",
     "matpowercaseframes",
     "power-grid-model-io"
@@ -79,9 +80,34 @@ all = [
 # "shapely", "pyproj", "Pyogrio" are dependencies of geopandas and should be already available ("Fiona" got dropped)
 # "hashlib", "zlib", "base64" produce install problems, so they are not included
 
-[tool.setuptools.packages]
-find = {}
 
+[tool.setuptools]
+license-files = [
+    'LICEN[CS]E*',
+    'COPYING*',
+    'NOTICE*',
+    'AUTHORS*',
+    'CHANGELOG*',
+    'CITATION*',
+]
+
+[tool.setuptools.packages.find]
+include = [
+    "pandapower*",
+]
+exclude = [
+    "pandapower.test*",
+]
+
+[tool.setuptools.package-data]
+"*" = [
+    "*.p",
+    "*.m",
+    "*.mat",
+    "*.json",
+    "*.jl",
+    "*.csv"
+]
 
 [tool.pytest.ini_options]
 addopts = ["--strict-markers"]
@@ -92,7 +118,7 @@ markers = [
 [tool.coverage.run]
 omit = [
     "pandapower/test/*"
-    ]
+]
 [tool.coverage.report]
 exclude_lines = [
     "pragma: no cover",

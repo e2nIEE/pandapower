@@ -9,7 +9,7 @@ benchmark grids through the networks module.
 
 The pandapower networks module contains example grids, simple test grids, randomly generated
 grids, CIGRE test grids, IEEE case files (including 3-phase grids) and synthetic low voltage grids from Georg Kerber, Lindner et. al. and Dickert et. al.
-If you want to evaluate your algotihms on benchmark grids with corresponding full-year load, generation, and storage profiles
+If you want to evaluate your algorithms on benchmark grids with corresponding full-year load, generation, and storage profiles
 or want to publish your results in a reproducible manner, we recommend the SimBench repository
 (`Homepage <https://simbench.de/en/>`_, `GitHub Repository to use SimBench with pandapower <https://github.com/e2nIEE/simbench>`_).
 
