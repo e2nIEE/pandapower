@@ -4,11 +4,13 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 from typing import Union, Dict, List
 import pandas as pd
-import pandapower.auxiliary
-import pandapower as pp
 import logging
 import time
 from . import cim_tools
+
+from pandapower.auxiliary import pandapowerNet
+from pandapower.std_types import create_std_type
+from pandapower.create import create_bus, create_ext_grid, create_lines
 
 logger = logging.getLogger(__name__)
 
@@ -21,8 +23,7 @@ def _set_column_to_type(input_df: pd.DataFrame, column: str, data_type):
         logger.exception(e)
 
 
-def set_pp_col_types(net: Union[pandapower.auxiliary.pandapowerNet, Dict], ignore_errors: bool = False) -> \
-        pandapower.auxiliary.pandapowerNet:
+def set_pp_col_types(net: Union[pandapowerNet, Dict], ignore_errors: bool = False) -> pandapowerNet:
     """
     Set the data types for some columns from pandapower assets. This mainly effects bus columns (to int, e.g.
     sgen.bus or line.from_bus) and in_service and other boolean columns (to bool, e.g. line.in_service or gen.slack).
@@ -63,7 +64,7 @@ def set_pp_col_types(net: Union[pandapower.auxiliary.pandapowerNet, Dict], ignor
     return net
 
 
-def add_slack_and_lines_to_boundary_nodes(net: pandapower.auxiliary.pandapowerNet, voltage_levels: List[int] = None):
+def add_slack_and_lines_to_boundary_nodes(net: pandapowerNet, voltage_levels: List[int] = None):
     """
     Add lines with low impedance and a slack to the boundary nodes with the highest voltage.
     :param net: The pandapower network
@@ -78,19 +79,19 @@ def add_slack_and_lines_to_boundary_nodes(net: pandapower.auxiliary.pandapowerNe
         max_voltage = busses['vn_kv'].max()
         logger.info("Highest voltage level: %skV" % max_voltage)
         voltage_levels = [max_voltage]
-    pp.create_std_type(net, data=dict({'r_ohm_per_km': 0, 'x_ohm_per_km': .05, 'c_nf_per_km': 0, 'max_i_ka': 9999}),
+    create_std_type(net, data=dict({'r_ohm_per_km': 0, 'x_ohm_per_km': .05, 'c_nf_per_km': 0, 'max_i_ka': 9999}),
                        name='low_impedance_line', element='line')
     for one_voltage_level in voltage_levels:
         logger.info("Processing voltage level %skV" % one_voltage_level)
         busses_t = busses.loc[busses['vn_kv'] == one_voltage_level]
-        new_bus_id = pp.create_bus(net, vn_kv=one_voltage_level,
+        new_bus_id = create_bus(net, vn_kv=one_voltage_level,
                                    name='virtual slack bus at voltage level ' + str(one_voltage_level))
         logger.info("Added virtual slack bus with ID: %s" % new_bus_id)
-        pp.create_ext_grid(net, bus=new_bus_id, vm_pu=1.0,
+        create_ext_grid(net, bus=new_bus_id, vm_pu=1.0,
                            name='virtual slack at voltage level ' + str(one_voltage_level))
         logger.info("Added slack at bus ID: %s" % new_bus_id)
         new_bus_id_array = [new_bus_id for _ in busses_t.index.values]
-        pp.create_lines(net, from_buses=busses_t.index.values, to_buses=new_bus_id_array, std_type='low_impedance_line',
+        create_lines(net, from_buses=busses_t.index.values, to_buses=new_bus_id_array, std_type='low_impedance_line',
                         name='virtual line to slack node with voltage level ' + str(one_voltage_level), length_km=1)
         logger.info("Created %s low impedance lines." % len(busses_t.index.values))
         del busses_t

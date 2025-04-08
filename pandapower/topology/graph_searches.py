@@ -4,10 +4,11 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
-import networkx as nx
-import pandas as pd
 from collections import deque
 from itertools import combinations
+
+import networkx as nx
+import pandas as pd
 
 from pandapower.topology.create_graph import create_nxgraph
 
@@ -30,12 +31,10 @@ def connected_component(mg, bus, notravbuses=[]):
         **cc** (generator) - Returns a generator that yields all buses connected to the input bus
 
     EXAMPLE:
-         import pandapower.topology as top
-
-         mg = top.create_nxgraph(net)
-
-         cc = top.connected_component(mg, 5)
-
+         >>> from pandapower.topology.create_graph import create_nxgraph
+         >>> from pandapower.topology.graph_searches import connected_component
+         >>> mg = create_nxgraph(net)
+         >>> cc = connected_component(mg, 5)
     """
     yield bus
     visited = {bus}
@@ -66,12 +65,10 @@ def connected_components(mg, notravbuses=set()):
                              to each other.
 
      EXAMPLE:
-         import pandapower.topology as top
-
-         mg = top.create_nxgraph(net)
-
-         cc = top.connected_components(mg, 5)
-
+         >>> from pandapower.topology.create_graph import create_nxgraph
+         >>> from pandapower.topology.graph_searches import connected_components
+         >>> mg = create_nxgraph(net)
+         >>> cc = connected_components(mg, 5)
     """
 
     nodes = set(mg.nodes()) - notravbuses
@@ -117,9 +114,8 @@ def calc_distance_to_bus(net, bus, respect_switches=True, nogobuses=None,
                    in km. If weight=None dist is the topological distance (int).
 
      EXAMPLE:
-         import pandapower.topology as top
-
-         dist = top.calc_distance_to_bus(net, 5)
+         >>> from pandapower.topology.graph_searches import calc_distance_to_bus
+         >>> dist = calc_distance_to_bus(net, 5)
 
     """
     if g is None:
@@ -152,9 +148,8 @@ def unsupplied_buses(net, mg=None, slacks=None, respect_switches=True):
         **ub** (set) - unsupplied buses
 
      EXAMPLE:
-         import pandapower.topology as top
-
-         top.unsupplied_buses(net)
+         >>> from pandapower.topology.graph_searches import unsupplied_buses
+         >>> unsupplied_buses(net)
     """
 
     mg = mg or create_nxgraph(net, respect_switches=respect_switches)
@@ -176,7 +171,6 @@ def find_basic_graph_characteristics(g, roots, characteristics):
     and articulation points.
 
     .. note::
-
         This is the base function for find_graph_characteristics. Please use the latter
         function instead!
     """
@@ -328,7 +322,7 @@ def find_graph_characteristics(g, roots, characteristics):
                 if len(visited_bridges) > 0:
                     char_dict['required_bridges'][parent] = visited_bridges[:]
                 if ((parent, grandparent) in char_dict['bridges'] or
-                    (grandparent, parent) in char_dict['bridges']):
+                        (grandparent, parent) in char_dict['bridges']):
                     visited_bridges.pop()
 
             if notn1_areas and grandparent == notn1_area_start:
@@ -371,11 +365,8 @@ def determine_stubs(net, roots=None, mg=None, respect_switches=False):
                                          ext_grid buses will be set as roots)
 
      EXAMPLE:
-         import pandapower.topology as top
-
-         top.determine_stubs(net, roots = [0, 1])
-
-
+         >>> from pandapower.topology.graph_searches import determine_stubs
+         >>> determine_stubs(net, roots = [0, 1])
     """
     if mg is None:
         mg = create_nxgraph(net, respect_switches=respect_switches)
@@ -445,20 +436,20 @@ def elements_on_path(mg, path, element="line"):
 
      """
     if element not in ["line", "switch", "trafo", "trafo3w"]:
-        raise ValueError("Invalid element type %s"%element)
+        raise ValueError("Invalid element type %s" % element)
     if isinstance(mg, nx.MultiGraph):
         return [edge[1] for b1, b2 in zip(path, path[1:]) for edge in mg.get_edge_data(b1, b2).keys()
-                if edge[0]==element]
+                if edge[0] == element]
     else:
         return [mg.get_edge_data(b1, b2)["key"][1] for b1, b2 in zip(path, path[1:])
-                if mg.get_edge_data(b1, b2)["key"][0]==element]
+                if mg.get_edge_data(b1, b2)["key"][0] == element]
 
 
 def get_end_points_of_continuously_connected_lines(net, lines):
     mg = nx.MultiGraph()
     line_buses = net.line.loc[lines, ["from_bus", "to_bus"]].values
     mg.add_edges_from(line_buses)
-    switch_buses = net.switch[["bus", "element"]].values[net.switch.et.values=="b"]
+    switch_buses = net.switch[["bus", "element"]].values[net.switch.et.values == "b"]
     mg.add_edges_from(switch_buses)
 
     all_buses = set(line_buses.flatten())

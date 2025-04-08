@@ -6,10 +6,12 @@
 
 import os
 
-import pandapower as pp
-import pandapower.topology as top
-import pandapower.plotting.geo as geo
 from pandapower.__init__ import pp_dir
+from pandapower.file_io import from_json
+from pandapower.run import runpp
+from pandapower.toolbox.grid_modification import drop_elements, select_subnet
+from pandapower.topology.create_graph import create_nxgraph
+from pandapower.topology.graph_searches import connected_components
 
 
 def lv_schutterwald(separation_by_sub=False, include_heat_pumps=False, **kwargs):
@@ -36,43 +38,42 @@ def lv_schutterwald(separation_by_sub=False, include_heat_pumps=False, **kwargs)
 
     EXAMPLE:
 
-        ``import pandapower.networks``
-
-        ``net = pandapower.networks.lv_schutterwald()``
+        >>> from pandapower.networks import lv_schutterwald
+        >>> net = lv_schutterwald()
 
         or with separation
 
-        ``net_list = pandapower.networks.lv_schutterwald(separation_by_sub=True)``
+        >>> net_list = lv_schutterwald(separation_by_sub=True)
     """
 
-    net = pp.from_json(os.path.join(pp_dir, "networks", "lv_schutterwald.json"), **kwargs)
+    net = from_json(os.path.join(pp_dir, "networks", "lv_schutterwald.json"), **kwargs)
 
     # modifications on the original file
     # geo.convert_crs(net, epsg_out=4326, epsg_in=31467)
     # geo.convert_geodata_to_geojson(net, lonlat=False)
-    # pp.drop_inactive_elements(net)
+    # drop_inactive_elements(net)
     # net.load.replace({"type": "WP"}, "HP", inplace=True)
     # net.load.replace({"type": "HA"}, "HH", inplace=True)
     # net.load.name = net.load.name.str.replace("H", "HH", regex=False)
     # net.load.name = net.load.name.str.replace("WP", "HP", regex=False)
 
     if not include_heat_pumps:
-        pp.drop_elements(net, "load", net.load.loc[net.load.type == "HP"].index)
+        drop_elements(net, "load", net.load.loc[net.load.type == "HP"].index)
 
     subnets = list()
     if separation_by_sub:
         # creating multigraph
-        mg = top.create_nxgraph(net)
+        mg = create_nxgraph(net)
         # clustering connected buses
-        zones = [list(area) for area in top.connected_components(mg)]
+        zones = [list(area) for area in connected_components(mg)]
         for i, zone in enumerate(zones):
-            net1 = pp.select_subnet(net, buses=zone, include_switch_buses=False,
-                                    include_results=True, keep_everything_else=True)
-            pp.runpp(net1)
+            net1 = select_subnet(net, buses=zone, include_switch_buses=False,
+                                 include_results=True, keep_everything_else=True)
+            runpp(net1)
             net1.name = f'LV Schutterwald {i}'
             subnets.append(net1)
         return subnets
 
-    pp.runpp(net)
+    runpp(net)
     net.name = 'LV Schutterwald'
     return net

@@ -6,8 +6,8 @@
 from numpy import allclose, delete, any
 
 from pandapower.auxiliary import _add_ppc_options
-from pandapower.powerflow import _pd2ppc
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
+from pandapower.powerflow import _pd2ppc
 from pandapower.pypower.idx_brch import BR_G, BR_G_ASYM, BR_B_ASYM, BR_R_ASYM, BR_X_ASYM
 
 try:
@@ -79,14 +79,15 @@ def to_ppc(net, calculate_voltage_angles=True, trafo_model="t", switch_rx_ratio=
         **ppc** - The Pypower casefile for usage with pypower
 
     EXAMPLE:
-        >>> import pandapower.converter as pc
-        >>> import pandapower.networks as pn
-        >>> net = pn.case9()
-        >>> ppc = pc.to_ppc(net)
+        >>> from pandapower.converter import to_ppc
+        >>> from pandapower.networks.power_system_test_cases import case9
+        >>>
+        >>> net = case9()
+        >>> ppc = to_ppc(net)
 
     """
     if (not (net["poly_cost"].empty and net["pwl_cost"].empty) and
-       mode is None) or mode == "opf":
+        mode is None) or mode == "opf":
         mode = "opf"
         _check_necessary_opf_parameters(net, logger)
     else:

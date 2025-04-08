@@ -3,10 +3,11 @@
 # Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-
-import pandapower as pp
-import pandapower.networks as nw
 import pytest
+
+from pandapower.networks import mv_oberrhein
+from pandapower.run import runopp
+
 try:
     import pandaplan.core.pplog as logging
 except ImportError:
@@ -19,7 +20,7 @@ def test_opf_oberrhein():
     """ Testing a  simple network with transformer for loading
     constraints with OPF using a generator """
     # create net
-    net = nw.mv_oberrhein()
+    net = mv_oberrhein()
 
     net.bus["max_vm_pu"] = 1.1
     net.bus["min_vm_pu"] = 0.9
@@ -32,7 +33,7 @@ def test_opf_oberrhein():
     net.sgen["controllable"] = True
     net.load["controllable"] = False
     # run OPF
-    pp.runopp(net, calculate_voltage_angles=False)
+    runopp(net, calculate_voltage_angles=False)
     assert net["OPF_converged"]
 
 

@@ -5,22 +5,23 @@
 import logging
 from typing import Dict
 import json
-import pandapower as pp
-import pandapower.auxiliary
 from . import cim_tools
+
+from pandapower.diagnostic import diagnostic
+from pandapower.auxiliary import pandapowerNet
 
 
 class PandapowerDiagnostic:
     """
     Create a pandapower diagnostic dictionary with CIM IDs instead of pandapower IDs.
     :param net: The pandapower network.
-    :param diagnostic: The pandapower diagnostic. If None a pp.diagnostic(net) will be run. Optional, default: None.
+    :param diagnostic_: The pandapower diagnostic. If None a pp.diagnostic(net) will be run. Optional, default: None.
     :return: The pandapower diagnostic with CIM IDs.
     """
-    def __init__(self, net: pandapower.auxiliary.pandapowerNet, diagnostic: Dict = None):
+    def __init__(self, net: pandapowerNet, diagnostic_: Dict = None):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.net = net
-        self.diagnostic = diagnostic
+        self.diagnostic = diagnostic_
 
     def _rec_replace_pp_diagnostic_with_cim_ids(self, input_obj, element_type: str = None):
         sc = cim_tools.get_pp_net_special_columns_dict()
@@ -73,7 +74,7 @@ class PandapowerDiagnostic:
         :return: The pandapower diagnostic with CIM IDs.
         """
         if self.diagnostic is None:
-            self.diagnostic = pp.diagnostic(self.net)
+            self.diagnostic = diagnostic(self.net)
         result_diagnostic = dict()
         for key, item in self.diagnostic.items():
             result_diagnostic[key] = self._rec_replace_pp_diagnostic_with_cim_ids(item)

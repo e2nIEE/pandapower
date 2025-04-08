@@ -1,72 +1,69 @@
 # -*- coding: utf-8 -*-
-import pandas as pd
 # Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+import pandas as pd
 import pytest
 import numpy as np
-import logging
 
-import pandapower as pp
-from pandapower.control import Characteristic, SplineCharacteristic, TapDependentImpedance
-from pandapower.control.util.diagnostic import (trafo_characteristic_table_diagnostic,
-                                                shunt_characteristic_table_diagnostic)
+from pandapower.control import Characteristic, SplineCharacteristic, TapDependentImpedance, \
+    trafo_characteristic_table_diagnostic
+from pandapower.control.util.diagnostic import shunt_characteristic_table_diagnostic
+from pandapower.create import create_empty_network, create_bus, create_ext_grid, create_transformer_from_parameters, \
+    create_load, create_line_from_parameters, create_transformer, create_shunt
+from pandapower.run import runpp
 
 
 def test_tap_dependent_impedance_control():
-    net = pp.create_empty_network()
-    b1 = pp.create_bus(net, 110)
-    b2 = pp.create_bus(net, 20)
-    pp.create_ext_grid(net, b1)
-    pp.create_transformer_from_parameters(net, b1, b2, 40, 110, 21, 0.5,
-                                          12.3, 25, 0.11, 0, 'hv',
-                                          10, 20, 0, 1.8, 180,
-                                          10, tap_changer_type="Ratio")
+    net = create_empty_network()
+    b1 = create_bus(net, 110)
+    b2 = create_bus(net, 20)
+    create_ext_grid(net, b1)
+    create_transformer_from_parameters(net, b1, b2, 40, 110, 21, 0.5, 12.3, 25, 0.11, 0, 'hv', 10, 20, 0, 1.8, 180, 10,
+                                       tap_changer_type="Ratio")
 
     characteristic_vk = Characteristic.from_points(net, ((0, 13.5), (10, 12.3), (20, 11.1)))
     characteristic_vkr = Characteristic.from_points(net, ((0, 0.52), (10, 0.5), (20, 0.53)))
     TapDependentImpedance(net, 0, characteristic_vk.index, output_variable='vk_percent', restore=False)
     TapDependentImpedance(net, 0, characteristic_vkr.index, output_variable='vkr_percent', restore=False)
 
-    pp.runpp(net, run_control=True)
+    runpp(net, run_control=True)
     assert net.trafo.vk_percent.at[0] == 12.3
     assert net.trafo.vkr_percent.at[0] == 0.5
 
     net.trafo.tap_pos = 0
-    pp.runpp(net, run_control=True)
+    runpp(net, run_control=True)
     assert net.trafo.vk_percent.at[0] == 13.5
     assert net.trafo.vkr_percent.at[0] == 0.52
 
     net.trafo.tap_pos = 20
-    pp.runpp(net, run_control=True)
+    runpp(net, run_control=True)
     assert net.trafo.vk_percent.at[0] == 11.1
     assert net.trafo.vkr_percent.at[0] == 0.53
 
 
 def test_tap_dependent_impedance_restore():
-    net = pp.create_empty_network()
-    b1 = pp.create_bus(net, 110)
-    b2 = pp.create_bus(net, 20)
-    pp.create_ext_grid(net, b1)
-    pp.create_load(net, b2, 20)
-    pp.create_transformer_from_parameters(net, b1, b2, 40, 110, 21, 0.5,
-                                          12.3, 25, 0.11, 0, 'hv',
-                                          10, 20, 0, 1.8, 180,
-                                          10, tap_changer_type="Ratio")
+    net = create_empty_network()
+    b1 = create_bus(net, 110)
+    b2 = create_bus(net, 20)
+    create_ext_grid(net, b1)
+    create_load(net, b2, 20)
+    create_transformer_from_parameters(net, b1, b2, 40, 110, 21, 0.5, 12.3, 25, 0.11, 0, 'hv', 10, 20, 0, 1.8, 180, 10,
+                                       tap_changer_type="Ratio")
 
     characteristic_vk = Characteristic.from_points(net, ((0, 13.5), (10, 12.3), (20, 11.1)))
     characteristic_vkr = Characteristic.from_points(net, ((0, 0.52), (10, 0.5), (20, 0.53)))
     TapDependentImpedance(net, 0, characteristic_vk.index, output_variable='vk_percent', restore=True)
     TapDependentImpedance(net, 0, characteristic_vkr.index, output_variable='vkr_percent', restore=True)
 
-    pp.runpp(net, run_control=True)
+    runpp(net, run_control=True)
     # remember the losses for the neutral position
     pl_mw_neutral = net.res_trafo.pl_mw.at[0]
     assert net.trafo.vk_percent.at[0] == 12.3
     assert net.trafo.vkr_percent.at[0] == 0.5
 
     net.trafo.tap_pos = 0
-    pp.runpp(net, run_control=True)
+    runpp(net, run_control=True)
     # check if the impedance has been restored
     assert net.trafo.vk_percent.at[0] == 12.3
     assert net.trafo.vkr_percent.at[0] == 0.5
@@ -74,7 +71,7 @@ def test_tap_dependent_impedance_restore():
     assert abs(net.res_trafo.pl_mw.at[0] - pl_mw_neutral) > 0.015
 
     net.trafo.tap_pos = 20
-    pp.runpp(net, run_control=True)
+    runpp(net, run_control=True)
     # check if the impedance has been restored
     assert net.trafo.vk_percent.at[0] == 12.3
     assert net.trafo.vkr_percent.at[0] == 0.5
@@ -83,7 +80,7 @@ def test_tap_dependent_impedance_restore():
 
 
 def test_characteristic():
-    net = pp.create_empty_network()
+    net = create_empty_network()
     x_points = [0, 1, 2]
     y_points = [3, 4, 5]
     c = Characteristic(net, x_points, y_points)
@@ -118,16 +115,16 @@ def test_characteristic():
 
 
 def test_trafo_characteristic_table_diagnostic():
-    net = pp.create_empty_network()
+    net = create_empty_network()
     vn_kv = 20
-    b1 = pp.create_bus(net, vn_kv=vn_kv)
-    pp.create_ext_grid(net, b1, vm_pu=1.01)
-    b2 = pp.create_bus(net, vn_kv=vn_kv)
-    pp.create_line_from_parameters(net, b1, b2, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12,
-                                   c_nf_per_km=300, max_i_ka=.2, df=.8)
-    cb = pp.create_bus(net, vn_kv=0.4)
-    pp.create_load(net, cb, 0.2, 0.05)
-    pp.create_transformer(net, hv_bus=b2, lv_bus=cb, std_type="0.25 MVA 20/0.4 kV", tap_pos=2)
+    b1 = create_bus(net, vn_kv=vn_kv)
+    create_ext_grid(net, b1, vm_pu=1.01)
+    b2 = create_bus(net, vn_kv=vn_kv)
+    create_line_from_parameters(net, b1, b2, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12,
+                                        c_nf_per_km=300, max_i_ka=.2, df=.8)
+    cb = create_bus(net, vn_kv=0.4)
+    create_load(net, cb, 0.2, 0.05)
+    create_transformer(net, hv_bus=b2, lv_bus=cb, std_type="0.25 MVA 20/0.4 kV", tap_pos=2)
 
     # initially no trafo_characteristic_table is available
     assert trafo_characteristic_table_diagnostic(net) is False
@@ -167,17 +164,17 @@ def test_trafo_characteristic_table_diagnostic():
 
 
 def test_shunt_characteristic_table_diagnostic():
-    net = pp.create_empty_network()
+    net = create_empty_network()
     vn_kv = 20
-    b1 = pp.create_bus(net, vn_kv=vn_kv)
-    pp.create_shunt(net, bus=b1, q_mvar=-50, p_mw=0, step=1, max_step=5)
-    pp.create_ext_grid(net, b1, vm_pu=1.01)
-    b2 = pp.create_bus(net, vn_kv=vn_kv)
-    pp.create_line_from_parameters(net, b1, b2, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12,
+    b1 = create_bus(net, vn_kv=vn_kv)
+    create_shunt(net, bus=b1, q_mvar=-50, p_mw=0, step=1, max_step=5)
+    create_ext_grid(net, b1, vm_pu=1.01)
+    b2 = create_bus(net, vn_kv=vn_kv)
+    create_line_from_parameters(net, b1, b2, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12,
                                    c_nf_per_km=300, max_i_ka=.2, df=.8)
-    cb = pp.create_bus(net, vn_kv=0.4)
-    pp.create_load(net, cb, 0.2, 0.05)
-    pp.create_transformer(net, hv_bus=b2, lv_bus=cb, std_type="0.25 MVA 20/0.4 kV", tap_pos=2)
+    cb = create_bus(net, vn_kv=0.4)
+    create_load(net, cb, 0.2, 0.05)
+    create_transformer(net, hv_bus=b2, lv_bus=cb, std_type="0.25 MVA 20/0.4 kV", tap_pos=2)
 
     # initially no shunt_characteristic_table is available
     assert shunt_characteristic_table_diagnostic(net) is False
