@@ -14,6 +14,7 @@ Change Log
 - [FIXED] cim2pp: keep the busbar names and IDs for node breaker and bus branch models
 - [FIXED] cim2pp: extend cim data structure with missing parameters
 - [FIXED] cim2pp: better vector group assignment
+- [FIXED] cim2pp: refactor cim2pp test
 
 [3.0.0] - 2025-03-06
 -------------------------------
