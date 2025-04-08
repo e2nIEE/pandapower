@@ -111,9 +111,8 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
         **mg** - Returns the required NetworkX graph
 
      EXAMPLE:
-         import pandapower.topology as top
-
-         mg = top.create_nx_graph(net, respect_switches = False)
+         >>> from pandapower.topology.create_graph import create_nxgraph
+         >>> mg = create_nxgraph(net, respect_switches = False)
          # converts the pandapower network "net" to a MultiGraph. Open switches will be ignored.
 
     Parameters
@@ -140,7 +139,7 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
 
     line = get_edge_table(net, "line", include_lines)
     if line is not None:
-        indices, parameter, in_service = init_par(line, calc_branch_impedances)
+        indices, parameter, in_service = init_par(line, calc_branch_impedances, include_out_of_service)
         indices[:, F_BUS] = line.from_bus.values
         indices[:, T_BUS] = line.to_bus.values
 
@@ -148,7 +147,7 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
             mask = (net.switch.et.values == "l") & open_sw
             if mask.any():
                 open_lines = net.switch.element.values[mask]
-                open_lines_mask = np.in1d(indices[:, INDEX], open_lines)
+                open_lines_mask = np.isin(indices[:, INDEX], open_lines)
                 in_service &= ~open_lines_mask
 
         parameter[:, WEIGHT] = line.length_km.values
@@ -166,7 +165,7 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
 
     impedance = get_edge_table(net, "impedance", include_impedances)
     if impedance is not None:
-        indices, parameter, in_service = init_par(impedance, calc_branch_impedances)
+        indices, parameter, in_service = init_par(impedance, calc_branch_impedances, include_out_of_service)
         indices[:, F_BUS] = impedance.from_bus.values
         indices[:, T_BUS] = impedance.to_bus.values
 
@@ -182,13 +181,14 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
 
     tcsc = get_edge_table(net, "tcsc", include_tcsc)
     if tcsc is not None:
-        indices, parameter, in_service = init_par(tcsc, calc_branch_impedances)
+        indices, parameter, in_service = init_par(tcsc, calc_branch_impedances, include_out_of_service)
         indices[:, F_BUS] = tcsc.from_bus.values
         indices[:, T_BUS] = tcsc.to_bus.values
 
         if calc_branch_impedances:
             baseR = get_baseR(net, ppc, tcsc.from_bus.values)
-            x = 1 / calc_y_svc_pu(net.tcsc.thyristor_firing_angle_degree, net.tcsc.x_l_ohm / baseR, net.tcsc.x_cvar_ohm / baseR)
+            x = 1 / calc_y_svc_pu(net.tcsc.thyristor_firing_angle_degree, net.tcsc.x_l_ohm / baseR,
+                                  net.tcsc.x_cvar_ohm / baseR)
             parameter[:, BR_R] = 0
             parameter[:, BR_X] = x * (baseR if branch_impedance_unit == "ohm" else 1)
 
@@ -197,7 +197,7 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
 
     dclines = get_edge_table(net, "dcline", include_dclines)
     if dclines is not None:
-        indices, parameter, in_service = init_par(dclines, calc_branch_impedances)
+        indices, parameter, in_service = init_par(dclines, calc_branch_impedances, include_out_of_service)
         indices[:, F_BUS] = dclines.from_bus.values
         indices[:, T_BUS] = dclines.to_bus.values
 
@@ -210,7 +210,7 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
 
     trafo = get_edge_table(net, "trafo", include_trafos)
     if trafo is not None:
-        indices, parameter, in_service = init_par(trafo, calc_branch_impedances)
+        indices, parameter, in_service = init_par(trafo, calc_branch_impedances, include_out_of_service)
         indices[:, F_BUS] = trafo.hv_bus.values
         indices[:, T_BUS] = trafo.lv_bus.values
 
@@ -221,7 +221,7 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
             mask = (net.switch.et.values == "t") & open_sw
             if mask.any():
                 open_trafos = net.switch.element.values[mask]
-                open_trafos_mask = np.in1d(indices[:, INDEX], open_trafos)
+                open_trafos_mask = np.isin(indices[:, INDEX], open_trafos)
                 in_service &= ~open_trafos_mask
 
         if calc_branch_impedances:
@@ -255,7 +255,7 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
             open_trafo3w_buses = net.switch.bus.values[mask]
             open_trafo3w = (open_trafo3w_index + open_trafo3w_buses * 1j).flatten()
         for f, t in combinations(sides, 2):
-            indices, parameter, in_service = init_par(trafo3w, calc_branch_impedances)
+            indices, parameter, in_service = init_par(trafo3w, calc_branch_impedances, include_out_of_service)
             indices[:, F_BUS] = trafo3w["%s_bus" % f].values
             indices[:, T_BUS] = trafo3w["%s_bus" % t].values
 
@@ -264,7 +264,7 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
 
             if respect_switches and len(open_trafo3w):
                 for BUS in [F_BUS, T_BUS]:
-                    open_switch = np.in1d(indices[:, INDEX] + indices[:, BUS] * 1j,
+                    open_switch = np.isin(indices[:, INDEX] + indices[:, BUS] * 1j,
                                           open_trafo3w)
                     in_service &= ~open_switch
             if calc_branch_impedances:
@@ -282,7 +282,8 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
             else:
                 # add edges for any bus-bus switches
                 in_service = (switch.et.values == "b")
-            indices, parameter = init_par(switch, calc_branch_impedances)
+            ret = init_par(switch, calc_branch_impedances)
+            indices, parameter = ret[0], ret[1]
             indices[:, F_BUS] = switch.bus.values
             indices[:, T_BUS] = switch.element.values
             if switch_length_km is not None:
@@ -372,7 +373,7 @@ def get_baseR(net, ppc, buses):
     return np.square(base_kv) / net.sn_mva
 
 
-def init_par(tab, calc_branch_impedances=False):
+def init_par(tab, calc_branch_impedances=False, include_out_of_service=False):
     n = tab.shape[0]
     indices = np.zeros((n, 3), dtype=np.int64)
     indices[:, INDEX] = tab.index
@@ -382,7 +383,7 @@ def init_par(tab, calc_branch_impedances=False):
         parameters = np.zeros((n, 1), dtype=float)
 
     if "in_service" in tab:
-        return indices, parameters, tab.in_service.values.copy()
+        return indices, parameters, np.ones(n, dtype=bool) if include_out_of_service else tab.in_service.values.copy()
     else:
         return indices, parameters
 

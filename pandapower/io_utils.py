@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
 import importlib
-import io
 import json
 import numbers
 import os
@@ -21,7 +20,7 @@ import numpy as np
 import pandas.errors
 from deepdiff.diff import DeepDiff
 from packaging.version import Version
-from pandapower import __version__
+from pandapower._version import __version__
 import networkx
 import numpy
 import geojson
@@ -489,17 +488,18 @@ class FromSerializableRegistry():
     class_name = ''
     module_name = ''
 
-    def __init__(self, obj, d, pp_hook_funct):
+    def __init__(self, obj, d, pp_hook_funct, ignore_unknown_objects=False):
         self.obj = obj
         self.d = d
         self.pp_hook = pp_hook_funct
+        self.ignore_unknown_objects = ignore_unknown_objects
 
     @from_serializable.register(class_name='Series', module_name='pandas.core.series')
     def Series(self):
         is_multiindex = self.d.pop('is_multiindex', False)
         index_name = self.d.pop('index_name', None)
         index_names = self.d.pop('index_names', None)
-        ser = pd.read_json(self.obj, precise_float=True, **self.d)
+        ser = pd.read_json(io.StringIO(self.obj), precise_float=True, **self.d)
 
         # restore index name and Multiindex
         if index_name is not None:
@@ -574,12 +574,16 @@ class FromSerializableRegistry():
                 if column_names is not None:
                     df.columns.names = column_names
 
-        # recreate jsoned objects
-        for col in ('object', 'controller'):  # "controller" for backwards compatibility
-            if (col in df.columns):
-                df[col] = df[col].apply(self.pp_hook)
         if 'geo' in df.columns:
             df['geo'] = df['geo'].dropna().apply(json.dumps).apply(geojson.loads)
+
+        df_obj = df.select_dtypes(include=['object'])
+        for col in df_obj:
+            df[col] = df[col].apply(partial(
+                self.pp_hook, ignore_unknown_objects=self.ignore_unknown_objects
+            ))
+            df[col] = df[col].astype(dtype = 'object')
+            df.loc[pd.isnull(df[col]), col] = None
         return df
 
     @from_serializable.register(class_name='pandapowerNet', module_name='pandapower.auxiliary')#,
@@ -627,12 +631,28 @@ class FromSerializableRegistry():
 
     @from_serializable.register()
     def rest(self):
-        module = importlib.import_module(self.module_name)
-        class_ = getattr(module, self.class_name)
+        try:
+            module = importlib.import_module(self.module_name)
+        except ModuleNotFoundError as e:
+            if self.ignore_unknown_objects:
+                warn(f"Module {self.module_name} not found. Returning object as is.")
+                return json.loads(self.obj)
+            else:
+                raise e
+        try:
+            class_ = getattr(module, self.class_name)
+        except AttributeError as e:
+            if self.ignore_unknown_objects:
+                warn(f"Class {self.class_name} not found in module {self.module_name}. Returning object as is.")
+                return json.loads(self.obj)
+            else:
+                raise e
         if isclass(class_) and issubclass(class_, JSONSerializableClass):
             if isinstance(self.obj, str):
                 self.obj = json.loads(self.obj, cls=PPJSONDecoder,
-                                      object_hook=pp_hook)
+                                      object_hook=partial(
+                                          pp_hook, ignore_unknown_objects=self.ignore_unknown_objects
+                                      ))
                 # backwards compatibility
             if "net" in self.obj:
                 del self.obj["net"]
@@ -689,16 +709,18 @@ class PPJSONDecoder(json.JSONDecoder):
         deserialize_pandas = kwargs.pop('deserialize_pandas', True)
         empty_dict_like_object = kwargs.pop('empty_dict_like_object', None)
         registry_class = kwargs.pop("registry_class", FromSerializableRegistry)
+        ignore_unknown_objects = kwargs.pop("ignore_unknown_objects", False)
         super_kwargs = {"object_hook": partial(pp_hook,
                                                deserialize_pandas=deserialize_pandas,
                                                empty_dict_like_object=empty_dict_like_object,
-                                               registry_class=registry_class)}
+                                               registry_class=registry_class,
+                                               ignore_unknown_objects=ignore_unknown_objects)}
         super_kwargs.update(kwargs)
         super().__init__(**super_kwargs)
 
 
 def pp_hook(d, deserialize_pandas=True, empty_dict_like_object=None,
-            registry_class=FromSerializableRegistry):
+            registry_class=FromSerializableRegistry, ignore_unknown_objects=False):
     try:
         if '_module' in d and '_class' in d:
             if 'pandas' in d['_module'] and not deserialize_pandas:
@@ -713,7 +735,8 @@ def pp_hook(d, deserialize_pandas=True, empty_dict_like_object=None,
             else:
                 # obj = {"_init": d, "_state": dict()}  # backwards compatibility
                 obj = {key: val for key, val in d.items() if key not in ['_module', '_class']}
-            fs = registry_class(obj, d, pp_hook)
+            fs = registry_class(obj, d, pp_hook, ignore_unknown_objects)
+
             fs.class_name = d.pop('_class', '')
             fs.module_name = d.pop('_module', '')
             fs.empty_dict_like_object = empty_dict_like_object

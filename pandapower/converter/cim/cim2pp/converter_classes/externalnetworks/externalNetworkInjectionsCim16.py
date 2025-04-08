@@ -42,6 +42,13 @@ class ExternalNetworkInjectionsCim16:
         eni_gens = eqssh_eni.loc[(eqssh_eni['slack_weight'] != ref_prio_min) & (eqssh_eni['controllable'])]
         eni_sgens = eqssh_eni.loc[~eqssh_eni['controllable']]
 
+        # create curve_dependency_table flag
+        if 'curve_dependency_table' not in eni_gens.columns:
+            eni_gens['curve_dependency_table'] = False
+        # create curve_dependency_table flag
+        if 'curve_dependency_table' not in eni_sgens.columns:
+            eni_sgens['curve_dependency_table'] = False
+
         self.cimConverter.copy_to_pp('ext_grid', eni_slacks)
         self.cimConverter.copy_to_pp('gen', eni_gens)
         self.cimConverter.copy_to_pp('sgen', eni_sgens)
@@ -86,11 +93,8 @@ class ExternalNetworkInjectionsCim16:
         eni = pd.merge(eni,
                        self.cimConverter.net.bus[[sc['o_id'], 'zone']].rename({sc['o_id']: 'b_id'}, axis=1),
                        how='left', left_on='ConnectivityNode', right_on='b_id')
-
-        # convert pu generators with prio = 0 to pq generators (PowerFactory does it same)
-        eni.loc[eni['referencePriority'] == 0, 'referencePriority'] = -1
+        
         eni['referencePriority'] = eni['referencePriority'].astype(float)
-        eni.loc[eni['referencePriority'] == -1, 'controlEnabled'] = False
         eni['p'] = -eni['p']
         eni['q'] = -eni['q']
         eni['x0x_max'] = ((eni['maxR1ToX1Ratio'] + 1j) /

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
@@ -126,21 +126,21 @@ def generate_circle_segment(center_x, center_y, radius, start, stop, step):
 
 
 if __name__ == "__main__":
-    import pandapower.control.controller.DERController as DERModels
+    from pandapower.control.controller.DERController import PQVArea4120V1, PQVArea4120V2, PQVArea4120V3
 
-    pq_area = DERModels.PQVArea4120V1()
+    pq_area = PQVArea4120V1()
     plot_pq_area(pq_area, "PQVArea4120V1")
     plt.show()
     plot_qv_area(pq_area, "PQVArea4120V1")
     plt.show()
 
-    pq_area = DERModels.PQVArea4120V2()
+    pq_area = PQVArea4120V2()
     plot_pq_area(pq_area, "PQVArea4120V2")
     plt.show()
     plot_qv_area(pq_area, "PQVArea4120V2")
     plt.show()
 
-    pq_area = DERModels.PQVArea4120V3()
+    pq_area = PQVArea4120V3()
     plot_pq_area(pq_area, "PQVArea4120V3")
     plt.show()
     plot_qv_area(pq_area, "PQVArea4120V3")

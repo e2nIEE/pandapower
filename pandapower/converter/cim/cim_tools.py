@@ -24,8 +24,8 @@ def get_pp_net_special_columns_dict() -> Dict[str, str]:
                  'o_prf': 'origin_profile', 'ct': 'cim_topnode', 'tc': 'tapchanger_class', 'tc_id': 'tapchanger_id',
                  'pte_id': 'PowerTransformerEnd_id', 'pte_id_hv': 'PowerTransformerEnd_id_hv',
                  'pte_id_mv': 'PowerTransformerEnd_id_mv', 'pte_id_lv': 'PowerTransformerEnd_id_lv',
-                 'cnc_id': 'ConnectivityNodeContainer_id', 'sub_id': 'substation_id', 'src': 'source', 'name': 'name',
-                 'desc': 'description', 'a_id': 'analog_id'})
+                 'cnc_id': 'ConnectivityNodeContainer_id', 'sub_id': 'Substation_id', 'src': 'source', 'name': 'name',
+                 'desc': 'description', 'a_id': 'analog_id', 'bus': 'terminal'})
 
 
 def extend_pp_net_cim(net: pandapowerNet, override: bool = True) -> pandapowerNet:
@@ -50,8 +50,9 @@ def extend_pp_net_cim(net: pandapowerNet, override: bool = True) -> pandapowerNe
     fill_dict: Dict[str, Dict[str, List[str]]] = dict()
 
     fill_dict['bus'] = dict()
-    fill_dict['bus'][np_str_type] = [sc['o_prf'], sc['ct'], sc['cnc_id'], sc['sub_id'], 'description', 'busbar_id',
-                                     'busbar_name']
+    fill_dict['bus'][np_str_type] = [sc['o_prf'], sc['ct'], sc['cnc_id'], sc['sub_id'], 'description', 'Busbar_id',
+                                     'Busbar_name', 'GeographicalRegion_id', 'GeographicalRegion_name',
+                                     'SubGeographicalRegion_id', 'SubGeographicalRegion_name']
 
     fill_dict['ext_grid'] = dict()
     fill_dict['ext_grid'][np_str_type] = [sc['t'], sc['sub'], 'description']
@@ -63,7 +64,7 @@ def extend_pp_net_cim(net: pandapowerNet, override: bool = True) -> pandapowerNe
     fill_dict['gen'] = dict()
     fill_dict['gen'][np_str_type] = [sc['t'], 'description']
     fill_dict['gen'][np_float_type] = \
-        ['min_p_mw', 'max_p_mw', 'min_q_mvar', 'max_q_mvar', 'vn_kv', 'rdss_ohm', 'xdss_pu', 'cos_phi', 'pg_percent']
+        ['min_p_mw', 'max_p_mw', 'min_q_mvar', 'max_q_mvar', 'vn_kv', 'rdss_ohm', 'xdss_pu', 'cos_phi', 'pg_percent', 'governorSCD']
     fill_dict['sgen'] = dict()
     fill_dict['sgen'][np_str_type] = [sc['t'], 'description', 'generator_type']
     fill_dict['sgen'][np_float_type] = ['k', 'rx', 'vn_kv', 'rdss_ohm', 'xdss_pu', 'lrc_pu']
@@ -72,7 +73,7 @@ def extend_pp_net_cim(net: pandapowerNet, override: bool = True) -> pandapowerNe
     fill_dict['storage'] = dict()
     fill_dict['storage'][np_str_type] = [sc['t'], 'description']
     fill_dict['shunt'] = dict()
-    fill_dict['shunt'][np_str_type] = [sc['t'], 'description']
+    fill_dict['shunt'][np_str_type] = [sc['t'], 'description','sVCControlMode']
     fill_dict['ward'] = dict()
     fill_dict['ward'][np_str_type] = [sc['t'], 'description']
     fill_dict['xward'] = dict()
@@ -95,20 +96,20 @@ def extend_pp_net_cim(net: pandapowerNet, override: bool = True) -> pandapowerNe
 
     fill_dict['trafo'] = dict()
     fill_dict['trafo'][np_str_type] = [sc['t_hv'], sc['t_lv'], sc['pte_id_hv'], sc['pte_id_lv'], sc['tc'], sc['tc_id'],
-                                       'description', 'vector_group', 'id_characteristic']
+                                       'description', 'vector_group']
     fill_dict['trafo'][np_float_type] = ['vk0_percent', 'vkr0_percent', 'xn_ohm']
     fill_dict['trafo'][np_bool_type] = ['power_station_unit', 'oltc']
 
     fill_dict['trafo3w'] = dict()
     fill_dict['trafo3w'][np_str_type] = [sc['t_hv'], sc['t_mv'], sc['t_lv'], sc['pte_id_hv'], sc['pte_id_mv'],
-                                         sc['pte_id_lv'], sc['tc'], sc['tc_id'], 'description', 'vector_group',
-                                         'id_characteristic']
+                                         sc['pte_id_lv'], sc['tc'], sc['tc_id'], 'description', 'vector_group']
     fill_dict['trafo3w'][np_float_type] = ['vk0_hv_percent', 'vk0_mv_percent', 'vk0_lv_percent', 'vkr0_hv_percent',
                                            'vkr0_mv_percent', 'vkr0_lv_percent']
     fill_dict['trafo3w'][np_bool_type] = ['power_station_unit']
 
     fill_dict['measurement'] = dict()
-    fill_dict['measurement'][np_str_type] = ['source', 'origin_class', 'origin_id', 'analog_id']
+    fill_dict['measurement'][np_str_type] = ['source', 'origin_class', 'origin_id', 'analog_id', 'terminal_id',
+                                             'description']
 
     for pp_type, one_fd in fill_dict.items():
         for np_type, fields in fill_dict_all.items():

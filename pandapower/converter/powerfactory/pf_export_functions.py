@@ -21,8 +21,10 @@ def create_network_dict(app, include_hidden_bus, flag_graphics='GPS'):
         'ElmAsm',
         'ElmShnt',
         'ElmVac',
+        'ElmSvs',
         'ElmVsc',
         'ElmVscmono',
+
 
         # branch elements:
         'ElmLne',
@@ -56,6 +58,7 @@ def create_network_dict(app, include_hidden_bus, flag_graphics='GPS'):
         'ElmPvsys': ['W', 'var', 'VA'],
         'ElmXnet': ['W', 'var', 'VA'],
         'ElmSym': ['W', 'var', 'VA'],
+        'ElmSvs': ['W', 'var', 'VA'],
         'ElmAsm': ['W', 'var', 'VA'],
         'ElmShnt': ['W', 'var', 'VA'],
         'ElmZpu': ['W', 'var', 'VA'],

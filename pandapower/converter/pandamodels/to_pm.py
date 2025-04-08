@@ -154,6 +154,7 @@ def convert_to_pm_structure(net, opf_flow_lim="S", from_time_step=None, to_time_
     ppci = build_ne_branch(net, ppci)
     net["_ppc_opf"] = ppci
     pm = ppc_to_pm(net, ppci)
+    # todo: somewhere here should RATE_A be converted to 0., because only PowerModels uses 0 as no limits (pypower opf converts the zero to inf)
     pm = add_pm_options(pm, net)
     pm = add_params_to_pm(net, pm)
     if from_time_step is not None and to_time_step is not None:

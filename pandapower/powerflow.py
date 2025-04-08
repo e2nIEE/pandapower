@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from numpy import nan_to_num, array, allclose, int64
@@ -59,7 +59,7 @@ def _powerflow(net, **kwargs):
                            "branch": array([], dtype=int64), "branch_dc": array([], dtype=int64)}
 
     # convert pandapower net to ppc
-    ppc, ppci = _pd2ppc(net)
+    ppc, ppci = _pd2ppc(net, **kwargs)
 
     # store variables
     net["_ppc"] = ppc
@@ -104,7 +104,7 @@ def _recycled_powerflow(net, **kwargs):
         # update trafo in branch and Ybus
         lookup = net._pd2ppc_lookups["branch"]
         if "trafo" in lookup:
-            _calc_trafo_parameter(net, ppc)
+            _calc_trafo_parameter(net, ppc,)
         if "trafo3w" in lookup:
             _calc_trafo3w_parameter(net, ppc)
 

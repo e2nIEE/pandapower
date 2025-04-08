@@ -17,6 +17,9 @@ from pandapower.diagnostic import *
 from pandapower.runpm import *
 from pandapower.pf.runpp_3ph import runpp_3ph
 
+import geojson
+geojson.geometry.DEFAULT_PRECISION = 8
+
 import pandas as pd
 pd.options.mode.chained_assignment = None  # default='warn'
 

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 and Energy System Technology (IEE), Kassel. All rights reserved.
 
 """
@@ -10,11 +10,10 @@ import math
 import numpy as np
 from itertools import product
 
-import pandapower.auxiliary as aux
-from pandapower import DC_NONE, DC_BUS_TYPE
+from pandapower.auxiliary import _select_is_elements_numba, _sum_by_group
+from pandapower.pypower.idx_bus_dc import DC_NONE, DC_BUS_TYPE
 from pandapower.build_bus import _build_bus_ppc, _build_svc_ppc, _build_ssc_ppc, _build_vsc_ppc, _build_bus_dc_ppc
 from pandapower.build_gen import _build_gen_ppc
-# from pandapower.pd2ppc import _ppc2ppci, _init_ppc
 from pandapower.pypower.idx_brch import BR_G, BR_B, BR_R, BR_X, F_BUS, T_BUS, branch_cols, BR_STATUS, SHIFT, TAP, BR_R_ASYM, \
     BR_X_ASYM, BR_G_ASYM, BR_B_ASYM
 from pandapower.pypower.idx_bus import BASE_KV, BS, GS, BUS_TYPE, NONE
@@ -36,7 +35,7 @@ def _pd2ppc_zero(net, k_st, sequence=0):
     For short-circuit calculation, the short-circuit impedance of external grids is also considered.
     """
     # select elements in service (time consuming, so we do it once)
-    net["_is_elements"] = aux._select_is_elements_numba(net, sequence=sequence)
+    net["_is_elements"] = _select_is_elements_numba(net, sequence=sequence)
 
     ppc = _init_ppc(net, sequence)
 
@@ -366,7 +365,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
             raise ValueError("Transformer vector group %s is unknown "
                              "/ not implemented for three phase load flow" % vector_group)
 
-    buses, gs, bs = aux._sum_by_group(buses_all, gs_all, bs_all)
+    buses, gs, bs = _sum_by_group(buses_all, gs_all, bs_all)
     ppc["bus"][buses, GS] += gs
     ppc["bus"][buses, BS] += bs
     del net.trafo["_ppc_idx"]
@@ -431,7 +430,7 @@ def _add_ext_grid_sc_impedance_zero(net, ppc):
     r0_grid = net.ext_grid[is_egs]["r0x0_%s" % case].values * x0_grid
     y0_grid = 1 / (r0_grid + x0_grid*1j)
 
-    buses, gs, bs = aux._sum_by_group(eg_buses_ppc, y0_grid.real, y0_grid.imag)
+    buses, gs, bs = _sum_by_group(eg_buses_ppc, y0_grid.real, y0_grid.imag)
     ppc["bus"][buses, GS] = gs
     ppc["bus"][buses, BS] = bs
 

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -415,7 +415,7 @@ def _get_trafo_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t
                     Iabc_sum += abs(I_branch_abc[:, x])
 
             # Loads
-            load_index = np.where(net.asymmetric_load['bus'] == lv_bus)[0]
+            load_index = net.asymmetric_load.index[net.asymmetric_load['bus'] == lv_bus]
             if len(load_index > 0):
                 S_load_abc = abs(np.array([
                     np.array(net.res_asymmetric_load_3ph['p_a_mw'][load_index]
@@ -753,7 +753,7 @@ def _get_switch_results(net, ppc, i_ft, suffix=None):
     _copy_switch_results_from_branches(net, suffix)
     if "in_ka" in net.switch.columns:
         net[res_switch_df]["loading_percent"] = net[res_switch_df]["i_ka"].values / net.switch["in_ka"].values * 100
-        
+
 
 def _copy_switch_results_from_branches(net, suffix=None, current_parameter="i_ka"):
     res_switch_df = "res_switch" if suffix is None else "res_switch%s" % suffix
@@ -762,7 +762,7 @@ def _copy_switch_results_from_branches(net, suffix=None, current_parameter="i_ka
     if len(switch_lines) > 0:
         res_line_df = "res_line" if suffix is None else "res_line%s" % suffix
         net[res_switch_df].loc[switch_lines.index, current_parameter] = net[res_line_df].loc[switch_lines.values, current_parameter].values
-        
+
     switch_trafo = net.switch[net.switch.et.values=="t"]
     if len(switch_trafo) > 0:
         res_trafo_df = "res_trafo" if suffix is None else "res_trafo%s" % suffix
