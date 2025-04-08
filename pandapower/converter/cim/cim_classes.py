@@ -455,6 +455,8 @@ class CimParser:
                 return 'op'
             elif '/ShortCircuit-EU/' in one_profile:
                 return 'sc'
+            elif '/Dynamics/' in one_profile:
+                return 'dy'
         if self.ignore_errors:
             self.logger.warning("The CGMES profile could not be parsed from the XML, returning %s" % default_profile)
             self.report_container.add_log(Report(level=LogLevel.ERROR, code=ReportCode.ERROR_PARSING,
