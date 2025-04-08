@@ -21,6 +21,7 @@ The documentation describes how to use the exporter as a function in "Engine mod
  - ElmPvsys (PV System)
  - ElmSym (Synchronous Generators)
  - ElmAsm (Asynchronous Machines)
+ - ElmStactrl (Station Controller)
  - ElmShnt (Shunts)
  - ElmVac (AC Voltage Source)
  - ElmCoup (Bus-Bus switches)
@@ -30,7 +31,9 @@ The documentation describes how to use the exporter as a function in "Engine mod
  - Elmscap (Series Capacitor)
  - ElmSvs (Static Var Compensator with Voltage Control)
 
- 
+Please note: Not all possible settings from Powerfactory can be imported to pandapower,as either
+pandapower does not support the same range of functionality or the import is not yet possible.
+
 Setup PowerFactory and Python
 =====================================
 
