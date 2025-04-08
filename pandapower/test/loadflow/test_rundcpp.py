@@ -12,7 +12,7 @@ import pytest
 from pandapower.auxiliary import _check_connectivity, _add_ppc_options, LoadflowNotConverged
 from pandapower.create import create_empty_network, create_bus, create_transformer, create_transformer3w, create_load, \
     create_xward, create_switch, create_ext_grid
-from pandapower.networks.power_system_test_cases import case4gs
+from pandapower.networks.power_system_test_cases import case4gs, case118
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.run import rundcpp, runpp
 from pandapower.test.consistency_checks import rundcpp_with_consistency_checks
@@ -125,6 +125,23 @@ def test_res_bus_vm():
                        equal_nan=True)
     assert np.allclose(net.res_bus.loc[net.line.to_bus.values, "vm_pu"], net.res_line.vm_to_pu, equal_nan=True)
     assert np.allclose(net.res_bus.loc[net.line.to_bus.values, "va_degree"], net.res_line.va_to_degree, equal_nan=True)
+
+
+def test_dc_after_ac():
+    net = case118()
+
+    # after a dc powerflow, q_mvar is nan, which is correct
+    rundcpp(net)
+    assert not np.isfinite(net.res_load["q_mvar"]).any()
+
+    # then I run an AC powerflow, q_mvar is finite for all, which is again correct
+    runpp(net)
+    assert np.isfinite(net.res_load["q_mvar"]).all()
+    res_load = 1. * net.res_load["q_mvar"]
+
+    # I run a second DC powerflow after the AC one, results from AC are kept
+    rundcpp(net)
+    assert not np.isfinite(net.res_load["q_mvar"]).any()
 
 
 if __name__ == "__main__":
