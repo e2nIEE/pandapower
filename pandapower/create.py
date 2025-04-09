@@ -867,7 +867,7 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
             raise ValueError("geodata must be a single point or have the same length as nr_buses")
         return geo
 
-    if geodata:
+    if geodata is not None:
         if isinstance(geodata, tuple) and (isinstance(geodata[0], int) or isinstance(geodata[0], float)):
             geo = _geodata_to_geo_series([geodata])
         else:
