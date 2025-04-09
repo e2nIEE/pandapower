@@ -69,13 +69,16 @@ class TrafoController(Controller):
         # update valid trafo and bus
         # update trafo tap parameters
         # we assume side does not change after the controller is created
-        self.trafobus = read_from_net(net, self.element, self.element_index, self.side + '_bus', self._read_write_flag)
         self._set_read_write_flag(net)
+        self._update_trafobus(net)
         # self._set_valid_controlled_index_and_bus(net)
         if self.nothing_to_do(net):
             return
         self._set_tap_parameters(net)
         self._set_tap_side_coeff(net)
+
+    def _update_trafobus(self, net):
+        self.trafobus = read_from_net(net, self.element, self.element_index, self.side + '_bus', self._read_write_flag)
 
     def nothing_to_do(self, net):
         element_in_service = read_from_net(net, self.element, self.element_index, 'in_service', self._read_write_flag)
