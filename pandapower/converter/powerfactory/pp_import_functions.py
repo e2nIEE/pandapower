@@ -2474,7 +2474,7 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
     if std_type is not None:
         if use_tap_table == 1:
             id_characteristic_table, tap_changer_type, tap_dependency_table, tap_side = \
-                (create_trafo_characteristics_from_measurment_protocol(item, net, pf_type))
+                (create_trafo_characteristics_from_measurement_protocol(item, net, pf_type))
         else:
             id_characteristic_table = None
             tap_dependency_table = False
@@ -2493,7 +2493,7 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
         logger.info("Create Trafo 3ph")
         if use_tap_table == 1:
             id_characteristic_table, tap_changer_type, tap_dependency_table, tap_side = \
-                (create_trafo_characteristics_from_measurment_protocol(item, net, pf_type))
+                (create_trafo_characteristics_from_measurement_protocol(item, net, pf_type))
         else:
             id_characteristic_table = None
             tap_dependency_table = False
@@ -2612,8 +2612,8 @@ def add_tap_dependent_impedance_for_trafo(item, net, pf_type, tid):
     steps = np.arange(x_points[0], x_points[2] + 1, 1).astype(int)
 
     # Determine vk and vkr points
-    vk_points = SplineCharacteristic(net, x_points, vk_values)(steps)
-    vkr_points = SplineCharacteristic(net, x_points, vkr_values)(steps)
+    vk_points = SplineCharacteristic(net, x_points, vk_values, table="temporary_characteristics")(steps)
+    vkr_points = SplineCharacteristic(net, x_points, vkr_values, table="temporary_characteristics")(steps)
     tap_diff = steps - tap_neutral
 
     # Calculate angle and voltage ratio for each step
@@ -2655,8 +2655,9 @@ def add_tap_dependent_impedance_for_trafo(item, net, pf_type, tid):
     # Update transformer attributes
     net.trafo.loc[tid, ['tap_dependency_table', 'id_characteristic_table', 'tap_changer_type']] = [True, index,
                                                                                                    'Tabular']
+    del net['temporary_characteristics']
 
-def create_trafo_characteristics_from_measurment_protocol(item, net, pf_type):
+def create_trafo_characteristics_from_measurement_protocol(item, net, pf_type):
     last_index = net["trafo_characteristic_table"]['id_characteristic'].max() if not net[
         "trafo_characteristic_table"].empty else -1
     new_id_characteristic_table = last_index + 1
@@ -3015,13 +3016,13 @@ def add_tap_dependant_impedance_for_trafo3W(net, pf_type, tid):
             pf_type.GetAttribute(f"uktr3mn_{side}"),
             pf_type.GetAttribute(f"uktr3_{side}"),
             pf_type.GetAttribute(f"uktr3mx_{side}")
-        ])(steps)
+        ], table="temporary_characteristics")(steps)
 
         vkr_points = SplineCharacteristic(net, x_points, [
             pf_type.GetAttribute(f"uktrr3mn_{side}"),
             pf_type.GetAttribute(f"uktrr3_{side}"),
             pf_type.GetAttribute(f"uktrr3mx_{side}")
-        ])(steps)
+        ], table="temporary_characteristics")(steps)
 
         vk_vkr_data[f"vk_{side}v_percent"] = vk_points
         vk_vkr_data[f"vkr_{side}v_percent"] = vkr_points
@@ -3043,6 +3044,7 @@ def add_tap_dependant_impedance_for_trafo3W(net, pf_type, tid):
     # Update transformer attributes efficiently
     net.trafo3w.loc[tid, ["tap_dependency_table", "id_characteristic_table", "tap_changer_type"]] = [True, index,
                                                                                                      "Tabular"]
+    del net['temporary_characteristics']
 
 
 def propagate_bus_coords(net, bus1, bus2):
