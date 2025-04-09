@@ -284,11 +284,6 @@ def test_continuous_tap_control_reindexed():
 
     # --- run control reference
     create_continuous_bus_index(net, store_old_index=True)
-    lookup = dict(
-        zip(net['bus'].old_index, net['bus'].index, strict=False)
-    )
-
-    reindex_buses(net, lookup)
     runpp(net, run_control=True)
     assert not np.allclose(net_ref.res_trafo3w.vm_mv_pu.values, 1.02, atol=tol)
     assert np.allclose(net_ref.trafo3w.tap_pos.values, 0)
