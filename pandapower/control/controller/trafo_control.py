@@ -55,7 +55,7 @@ class TrafoController(Controller):
 
         self.set_recycle(net)
 
-        self.trafobus = read_from_net(net, self.element, self.element_index, self.side + '_bus', self._read_write_flag)
+        self.trafobus = None
 
     def _set_read_write_flag(self, net):
         # if someone changes indices of the controller from single index to array and vice versa
@@ -69,6 +69,7 @@ class TrafoController(Controller):
         # update valid trafo and bus
         # update trafo tap parameters
         # we assume side does not change after the controller is created
+        self.trafobus = read_from_net(net, self.element, self.element_index, self.side + '_bus', self._read_write_flag)
         self._set_read_write_flag(net)
         # self._set_valid_controlled_index_and_bus(net)
         if self.nothing_to_do(net):
