@@ -3974,7 +3974,7 @@ def create_stactrl(net, item):
                 if item.pf_recap != 1:
                     logger.error('Powerfactor without specified reactance\nassuming capacitive system\n')
                 modus = 'PF_ctrl_cap'
-            pp.control.BinarySearchControl(
+            BinarySearchControl(
                 net, ctrl_in_service=stactrl_in_service,
                 output_element=gen_element,
                 output_variable="q_mvar",
@@ -3992,7 +3992,7 @@ def create_stactrl(net, item):
         elif item.cosphi_char == 1: #cosphi(P)
             #controlled_node = item.refbar
             #bus = bus_dict[controlled_node]  # controlled node
-            bsc = pp.control.BinarySearchControl(
+            bsc = BinarySearchControl(
                 net, ctrl_in_service=stactrl_in_service,
                 output_element=gen_element,
                 output_variable="q_mvar",
@@ -4009,7 +4009,7 @@ def create_stactrl(net, item):
                 bus_idx=None,
                 tol=1e-6
             )
-            pp.control.DroopControl(
+            DroopControl(
                 net,
                 q_droop_mvar=None, #item.Srated * 100 / item.ddroop,
                 pf_overexcited=item.pf_over,
@@ -4023,7 +4023,7 @@ def create_stactrl(net, item):
         elif item.cosphi_char == 2: #cosphi(U)
             controlled_node = item.refbar
             bus = bus_dict[controlled_node]  # controlled node
-            bsc = pp.control.BinarySearchControl(
+            bsc = BinarySearchControl(
                 net, ctrl_in_service=stactrl_in_service,
                 output_element=gen_element,
                 output_variable="q_mvar",
@@ -4040,7 +4040,7 @@ def create_stactrl(net, item):
                 bus_idx=None,
                 tol=1e-6
             )
-            pp.control.DroopControl(
+            DroopControl(
                 net,
                 q_droop_mvar=None,  # item.Srated * 100 / item.ddroop,
                 bus_idx=bus,
@@ -4059,7 +4059,7 @@ def create_stactrl(net, item):
             if not stactrl_in_service:
                 return
             raise NotImplementedError(f"{item}: Q orientation '-' not supported")
-        pp.control.BinarySearchControl(
+        BinarySearchControl(
             net, ctrl_in_service=stactrl_in_service,
             output_element=gen_element,
             output_variable="q_mvar",
