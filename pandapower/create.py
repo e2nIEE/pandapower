@@ -20,6 +20,9 @@ from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes, e
 from pandapower.results import reset_results
 from pandapower.std_types import add_basic_std_types, load_std_type
 import numpy as np
+import warnings
+from warnings import warn
+warnings.simplefilter('always')
 
 try:
     import pandaplan.core.pplog as logging
@@ -1034,7 +1037,12 @@ def create_load(net, bus, p_mw, q_mvar=0, const_z_p_percent=0, const_i_p_percent
     _check_element(net, bus)
 
     index = _get_index_with_check(net, "load", index)
-
+    
+    if ("const_z_percent" in kwargs) or ("const_i_percent" in kwargs):
+        const_percent_values_list = [const_z_p_percent, const_i_p_percent, const_z_q_percent, const_i_q_percent]
+        const_z_p_percent, const_i_p_percent, const_z_q_percent, const_i_q_percent, kwargs = (
+            _set_const_percent_values(const_percent_values_list, kwargs_input=kwargs))
+            
     entries = dict(zip(["name", "bus", "p_mw", "const_z_p_percent", "const_i_p_percent",
                         "const_z_q_percent", "const_i_q_percent", "scaling",
                         "q_mvar", "sn_mva", "in_service", "type"],
@@ -1131,6 +1139,11 @@ def create_loads(net, buses, p_mw, q_mvar=0, const_z_p_percent=0, const_i_p_perc
     _check_multiple_elements(net, buses)
 
     index = _get_multiple_index_with_check(net, "load", index, len(buses))
+    
+    if ("const_z_percent" in kwargs) or ("const_i_percent" in kwargs):
+        const_percent_values_list = [const_z_p_percent, const_i_p_percent, const_z_q_percent, const_i_q_percent]
+        const_z_p_percent, const_i_p_percent, const_z_q_percent, const_i_q_percent, kwargs = (
+            _set_const_percent_values(const_percent_values_list, kwargs_input=kwargs))
 
     entries = {"bus": buses, "p_mw": p_mw, "q_mvar": q_mvar, "sn_mva": sn_mva,
                "const_z_p_percent": const_z_p_percent, "const_i_p_percent": const_i_p_percent,
@@ -6215,6 +6228,29 @@ def _set_multiple_entries(net, table, index, preserve_dtypes=True, defaults_to_f
     if preserve_dtypes:
         _preserve_dtypes(net[table], dtypes)
 
+
+def _set_const_percent_values(const_percent_values_list, kwargs_input):
+    const_percent_values_default_initials = all(value==0 for value in const_percent_values_list) 
+    if ('const_z_percent' in kwargs_input and 'const_i_percent' in kwargs_input) and \
+        const_percent_values_default_initials:
+            const_z_p_percent = kwargs_input['const_z_percent']
+            const_z_q_percent = kwargs_input['const_z_percent']
+            const_i_p_percent = kwargs_input['const_i_percent']
+            const_i_q_percent = kwargs_input['const_i_percent']
+            del kwargs_input['const_z_percent']
+            del kwargs_input['const_i_percent']
+            msg = ("Parameters const_z_percent and const_i_percent will be deprecated in further " 
+                "pandapower version. For now the values were transfered in " 
+                "const_z_p_percent and const_i_p_percent for you.")
+            warn(msg, DeprecationWarning)
+            return const_z_p_percent, const_i_p_percent, const_z_q_percent, const_i_q_percent, kwargs_input
+    elif ('const_z_percent' in kwargs_input or 'const_i_percent' in kwargs_input) and \
+        const_percent_values_default_initials==False:
+            raise UserWarning('Definition of voltage dependecies is faulty, please check the parameters again.')
+    elif (('const_z_percent' in kwargs_input or 'const_i_percent' not in kwargs_input) or \
+          ('const_z_percent' not in kwargs_input or 'const_i_percent' in kwargs_input)):
+            raise UserWarning('Definition of voltage dependecies is faulty, please check the parameters again.')    
+    
 
 if __name__ == "__main__":
     net = create_empty_network()

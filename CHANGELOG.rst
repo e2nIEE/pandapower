@@ -75,6 +75,9 @@ Change Log
 - [FIXED] avoid duplicated keys in kwargs and pf_options in run_contingency()
 - [ADDED] improved lightsim2grid documentation including compatibility issues
 - [FIXED] cim2pp: set default xml encoding to None to avoid error after changing to lxml
+- [FIXED] Lightsim2grid version
+- [FIXED] geopandas version
+- [FIXED] scipy version
 - [FIXED] PandaModels OPF with 'bus_dc' key errors
 - [FIXED] julia tests
 - [FIXED] copy array element to standard python scalar
