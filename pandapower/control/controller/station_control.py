@@ -84,15 +84,25 @@ class BinarySearchControl(Controller):
         self.in_service = ctrl_in_service
         self.input_element = input_element #point to be controlled
         self.input_element_index = [] #for boundaries
-        if isinstance(input_element_index, list):
+        if isinstance(input_element_index, list) or isinstance(input_element_index, np.ndarray):
             for element in input_element_index:
                 self.input_element_index.append(element)
         else:
             self.input_element_index.append(input_element_index)
         self.output_element = output_element #typically sgens, output of Q
-        self.output_element_index = [int(item) for item in output_element_index]
-        self.output_element_in_service = output_element_in_service
-        self.output_values_distribution = output_values_distribution
+        if isinstance(output_element_index, list) or isinstance(output_element_index, np.ndarray):
+            self.output_element_index = [int(item) for item in output_element_index]
+        else:
+            self.output_element_index = []
+            self.output_element_index.append(output_element_index)
+            self.output_element_index = self.output_element_index
+        if isinstance(output_element_in_service, bool):
+            self.output_element_in_service = [output_element_in_service]
+        else:
+            self.output_element_in_service = output_element_in_service
+        self.output_values_distribution = (output_values_distribution[0] if ((isinstance(output_values_distribution, list)
+            or isinstance(output_values_distribution, np.ndarray)) and isinstance(output_values_distribution[0], str)
+            ) else output_values_distribution)#ruggedized code for miss input
         self.output_distribution_values = output_distribution_values
         self.set_point = set_point
         self.bus_idx = bus_idx #point of voltage control if modus == 'V_ctrl'
@@ -111,14 +121,42 @@ class BinarySearchControl(Controller):
         self.input_element_in_service = []
         self.max_q_mvar = [] #limits of output element Q
         self.min_q_mvar = []
-        self.out_dist_val = output_distribution_values
 
         if self.output_values_distribution == 'rel_V_pu':
             self.bus_idx_dist = [] #initializing bus idx
             output_distribution_values = np.array(self.output_distribution_values) #forming limit arrays
-            self.v_set_point_pu = output_distribution_values[:, 0]
-            self.v_min_pu = output_distribution_values[:, 1]
-            self.v_max_pu = output_distribution_values[:, 2]
+            if output_distribution_values.ndim == 1: #one controlled sgen
+                try:
+                    self.v_set_point_pu = np.array(output_distribution_values)[0]
+                    self.v_min_pu = np.minimum(np.array(output_distribution_values)[1], np.array(output_distribution_values)[2])
+                    self.v_max_pu = np.maximum(np.array(output_distribution_values)[1], np.array(output_distribution_values)[2])
+                except IndexError: #insufficient values in array
+                    logger.warning(f"Insufficient values in distribution rel_V_pu {self.output_distribution_values} In "
+                                   f"Controller {self.index}. Using set point 1 pu and min/max 0.9/1.1 pu\n")
+                    equal_array = [1, 0.9, 1.1]
+                    self.output_distribution_values = np.tile(equal_array, (len(np.array(self.output_element_in_service)), 1))[0]
+                    output_distribution_values = np.array(self.output_distribution_values)  # forming limit arrays
+                    self.v_set_point_pu = output_distribution_values[0]
+                    self.v_min_pu = output_distribution_values[1]
+                    self.v_max_pu = output_distribution_values[2]
+
+            elif output_distribution_values.ndim >= 2: #more than one controlled sgen
+                try:#insufficient values in arrays
+                    self.v_set_point_pu = np.array(output_distribution_values)[:, 0]
+                    self.v_min_pu = np.minimum(np.array(output_distribution_values)[:, 1],np.array(output_distribution_values)[:, 2])
+                    self.v_max_pu = np.maximum(np.array(output_distribution_values)[:, 1],np.array(output_distribution_values)[:, 2])
+                except IndexError:
+                    logger.warning(f"Insufficient values in distribution rel_V_pu {self.output_distribution_values} In "
+                                   f"Controller {self.index}. Using set point 1 pu and min/max 0.9/1.1 pu\n")
+                    equal_array = [1, 0.9, 1.1]
+                    self.output_distribution_values = np.full(len(np.array(self.output_element_in_service)),equal_array)
+                    output_distribution_values = np.array(self.output_distribution_values)  # forming limit arrays
+                    self.v_set_point_pu = output_distribution_values[:, 0]
+                    self.v_min_pu = output_distribution_values[:, 1]
+                    self.v_max_pu = output_distribution_values[:, 2]
+            else:
+                self.output_distribution_values = None
+
         ###finding correct modus, catching deprecated voltage_ctrl argument###
         if modus is None: #catching old attribute voltage_ctrl
             if hasattr(self, 'voltage_ctrl'):
@@ -226,7 +264,8 @@ class BinarySearchControl(Controller):
         raise AttributeError(f"{self.__class__.__name__!r} has no attribute {name!r}")
 
     def initialize_control(self, net):
-        self.output_values = read_from_net(net, self.output_element, self.output_element_index, self.output_variable,
+        output_element_index = self.output_element_index[0] if self.write_flag == 'single_index' else self.output_element_index #ruggedize for single index
+        self.output_values = read_from_net(net, self.output_element, output_element_index, self.output_variable,
                                            self.write_flag)
 
     def is_converged(self, net):
@@ -326,8 +365,8 @@ class BinarySearchControl(Controller):
         if self.converged and not self.overwrite_convergence :
             if self.output_values_distribution == 'rel_V_pu':
                 vm_pu = read_from_net(net, "res_bus", self.bus_idx_dist, "vm_pu", 'auto')
-                v_max_pu = self.v_max_pu[self.output_element_in_service]
-                v_min_pu = self.v_min_pu[self.output_element_in_service]
+                v_max_pu = np.atleast_1d(self.v_max_pu)[self.output_element_in_service]
+                v_min_pu = np.atleast_1d(self.v_min_pu)[self.output_element_in_service]
                 for i in range(len(vm_pu)):
                     if vm_pu[i] > v_max_pu[i]:
                         logger.warning(f'Controller {self.index}: Generator {self.output_element} {self.output_element_index[i]}'
@@ -377,14 +416,18 @@ class BinarySearchControl(Controller):
                         f' in Controller {self.index}.\n' f'Appending values {equal_val} \n')
                     self.output_distribution_values = (np.append(self.output_distribution_values, [equal_val] *
                                          (len(self.output_element_in_service) - len(self.output_distribution_values))))
-                output_distribution_values_in_service = np.array(self.output_distribution_values)  ###only distributing between active output elements
-                output_distribution_values_in_service = output_distribution_values_in_service[np.array(self.output_element_in_service)]
+                output_element_in_service = np.array(self.output_element_in_service)#ruggedizing code for wrong inputs
+                output_element_in_service.resize((len(np.array(self.output_distribution_values)),), refcheck=False)
+                output_distribution_values_in_service = (np.array(self.output_distribution_values)
+                [np.array(output_element_in_service)]) ###only distributing between active output elements
             elif self.output_values_distribution == 'rel_V_pu':
-                if any(len(element) != 3 for element in self.output_distribution_values):
+                if ((np.array(self.output_distribution_values).ndim > 1 and any(len(element) != 3 for element in self.output_distribution_values))
+                        or (np.array(self.output_distribution_values).ndim == 1 and len(self.output_distribution_values) != 3)):
                     logger.warning(f"Insufficient values in distribution rel_V_pu {self.output_distribution_values} In "
                                f"Controller {self.index}. Using set point 1 pu and min/max 0.9/1.1 pu\n")
                     equal_array = [1, 0.9, 1.1]
-                    self.output_distribution_values = np.full(len(np.array(self.output_element_in_service)), equal_array)
+                    self.output_distribution_values = self.output_distribution_values = np.tile(equal_array,
+                                                            (len(np.array(self.output_element_in_service)), 1))[0]
                     output_distribution_values = np.array(self.output_distribution_values)  # forming limit arrays
                     self.v_set_point_pu = output_distribution_values[:, 0]
                     self.v_min_pu = output_distribution_values[:, 1]
@@ -402,12 +445,13 @@ class BinarySearchControl(Controller):
                 equal = 1 / sum(np.array(self.output_element_in_service))
                 self.output_distribution_values = np.full(len(np.array(self.output_element_in_service)), equal)
                 output_distribution_values_in_service = self.output_distribution_values[np.array(self.output_element_in_service)]  #only distributing between active output elements
-            elif self.output_distribution_values == 'rel_V_pu':
+            elif self.output_values_distribution == 'rel_V_pu':
                 logger.error(f"Missing values for output distribution values 'rel_V_pu in Controller {self.index}. "
                              f"Using set point 1 pu and min/max 0.9/1.1 pu\n ")
                 equal_array = [1, 0.9, 1.1]
-                self.output_distribution_values = np.full(len(np.array(self.output_element_in_service)), equal_array)#new vals
-                output_distribution_values = np.array(self.output_distribution_values)  # forming limit arrays
+                self.output_distribution_values = self.output_distribution_values = np.tile(equal_array,
+                                                        (len(np.array(self.output_element_in_service)), 1))[0]#new vals
+                output_distribution_values = np.atleast_2d(self.output_distribution_values)  # forming limit arrays
                 self.v_set_point_pu = output_distribution_values[:, 0]
                 self.v_min_pu = output_distribution_values[:, 1]
                 self.v_max_pu = output_distribution_values[:, 2]
@@ -485,9 +529,9 @@ class BinarySearchControl(Controller):
                 else:
                     raise UserWarning(f"Output Element {self.output_element} in Controller {self.index} is not supported")
             if self.output_values_old is not None: #start with second step
-                v_min_pu = self.v_min_pu[self.output_element_in_service] #adapt min/max and set point for active elements
-                v_max_pu = self.v_max_pu[self.output_element_in_service]
-                v_set_point_pu = self.v_set_point_pu[self.output_element_in_service]
+                v_min_pu = np.atleast_1d(self.v_min_pu)[self.output_element_in_service] #adapt min/max and set point for active elements
+                v_max_pu = np.atleast_1d(self.v_max_pu)[self.output_element_in_service]
+                v_set_point_pu = np.atleast_1d(self.v_set_point_pu)[self.output_element_in_service]
                 vm_pu = read_from_net(net, "res_bus", self.bus_idx_dist, "vm_pu", 'auto') #init
                 sum_vm_pu = np.sum(vm_pu) #total
                 bounds = [(L, U) for L, U in zip(v_min_pu, v_max_pu)] #limits
@@ -506,17 +550,29 @@ class BinarySearchControl(Controller):
                 ### convert sgens to gens, write voltage to gens, read Q and adapt distribution
                 for i in range(len(np.array(self.output_element_index)[self.output_element_in_service])):
                     if self.output_element == 'sgen': #get all sgens
-                        create_gen(net, net.sgen.at[i, 'bus'], net.sgen.at[i, 'p_mw'], vm_pu=voltage[i], #create new gens
-                                in_service=net.sgen.at[i, 'in_service'], sn_mva=net.sgen.at[i,'sn_mva'],
-                                scaling=net.sgen.at[i,'scaling'], min_p_mw=net.sgen.at[i, 'min_p_mw'], max_p_mw=net.sgen.at[i,'max_p_mw'],
-                                min_q_mvar=net.sgen.at[i, 'min_q_mvar'], max_q_mvar=net.sgen.at[i, 'max_q_mvar'],
-                                description=net.sgen.at[i, 'description'], equipment = net.sgen.at[i, 'equipment'], geo = net.sgen.at[i, 'geo'],
-                                current_source=net.sgen.at[i,'current_source'], name = f'temp_gen_{i}') # , type='GEN'
+                        create_gen(net,
+                                net.sgen.at[i, 'bus'],
+                                net.sgen.at[i, 'p_mw'],
+                                vm_pu = voltage[i],  # Voltage array
+                                in_service = net.sgen.at[i, 'in_service'],
+                                sn_mva = net.sgen.at[i, 'sn_mva'] if 'sn_mva' in net.sgen.columns else None,
+                                scaling = net.sgen.at[i, 'scaling'] if 'scaling' in net.sgen.columns else None,
+                                min_p_mw = net.sgen.at[i, 'min_p_mw'] if 'min_p_mw' in net.sgen.columns else None,
+                                max_p_mw = net.sgen.at[i, 'max_p_mw'] if 'max_p_mw' in net.sgen.columns else None,
+                                min_q_mvar = net.sgen.at[i, 'min_q_mvar'] if 'min_q_mvar' in net.sgen.columns else None,
+                                max_q_mvar = net.sgen.at[i, 'max_q_mvar'] if 'max_q_mvar' in net.sgen.columns else None,
+                                description = net.sgen.at[i, 'description'] if 'description' in net.sgen.columns else None,
+                                equipment = net.sgen.at[i, 'equipment'] if 'equipment' in net.sgen.columns else None,
+                                geo = net.sgen.at[i, 'geo'] if 'geo' in net.sgen.columns else None,
+                                current_source = net.sgen.at[
+                                    i, 'current_source'] if 'current_source' in net.sgen.columns else None,
+                                name = f'temp_gen_{i}')#type='GEN'
                         net.sgen.loc[i, 'in_service'] = False #disable sgens
                 index = np.array([])
                 for i in net.gen.index: #get index of created gens
                     if net.gen.loc[i, 'name'].startswith("temp_gen_"):
                         index = np.append(index, i)
+                index = index[0] if self.write_flag == 'single_index' else index
                 write_to_net(net, 'gen', index,'vm_pu', voltage, self.write_flag) #write V to net
                 runpp(net) #run net
                 distribution = np.array(net.res_gen.loc[index, 'q_mvar']) #read Q from net
@@ -528,24 +584,25 @@ class BinarySearchControl(Controller):
                 distribution = np.full(np.sum(np.array(self.output_element_in_service)), equal)
 
         else: #unrecognizable output values distribution, using set_Q
-            if ((isinstance(self.output_values_distribution, list) and all(isinstance(x, numbers.Number) for x in
-                self.output_values_distribution)) or isinstance(self.output_values_distribution, numbers.Number)):#numbers
+            if (((isinstance(self.output_values_distribution, list) or isinstance(self.output_values_distribution, np.ndarray))
+                and all(isinstance(x, numbers.Number) for x in self.output_values_distribution)) or
+                    isinstance(self.output_values_distribution, numbers.Number)):#numbers
                 logger.warning(f'Controller {self.index}: Output_values_distribution must be string from available methods'
                                f' (rel_P, rel_rated_P, set_Q, max_Q or rel_V_pu). Using provided values with method set_Q\n')
                 self.output_distribution_values = np.array(self.output_values_distribution)
                 self.output_values_distribution = 'set_Q'
-                distribution = self.output_distribution_values[sum(np.array(self.output_element_in_service))]
+                distribution = self.output_distribution_values[np.array(self.output_element_in_service)]
             else:
                 raise NotImplementedError(f"Controller {self.index}: Reactive power distribution method {self.output_values_distribution}"
                                           f" not implemented available methods are (rel_P, rel_rated_P, set_Q, max_Q, rel_V_pu).")
         distribution = np.array(distribution, dtype=np.float64) / np.sum(distribution) #normalization
-        if any(abs(x) > 3 for x in distribution): #catching distributions out of bounds
+        if any(abs(x) > 3 for x in np.atleast_1d(distribution)): #catching distributions out of bounds
             equal = 1 / sum(self.output_element_in_service)
             distribution = np.full(np.sum(np.array(self.output_element_in_service)), equal)
         ###calculate output values###
         if self.output_values_old is None:#first step
-            self.output_values_old, self.output_values = (self.output_values[self.output_element_in_service],
-                                                          np.array(self.output_values)[self.output_element_in_service] + 1e-3)
+            self.output_values_old, self.output_values = (np.atleast_1d(self.output_values)[self.output_element_in_service],
+                                                          np.atleast_1d(self.output_values)[self.output_element_in_service] + 1e-3)
         else:
             step_diff = self.diff - self.diff_old
             x = self.output_values - self.diff * (self.output_values - self.output_values_old) / np.where(
@@ -554,8 +611,11 @@ class BinarySearchControl(Controller):
             self.output_values_old, self.output_values = self.output_values, x
 
         ### write new set of Q values to output elements###
-        write_to_net(net, self.output_element, list(np.array(self.output_element_index)[self.output_element_in_service]),
-                     self.output_variable, self.output_values, self.write_flag)
+        output_elem_index = (list(np.atleast_1d(self.output_element_index)[self.output_element_in_service])[0] if self.write_flag
+            == 'single_index' else list(np.array(self.output_element_index)[self.output_element_in_service])) #ruggedizing code
+        output_values = (list(np.atleast_1d(self.output_values)[self.output_element_in_service])[0] if self.write_flag
+            == 'single_index' else list(np.array(self.output_values)[self.output_element_in_service]))  # ruggedizing code
+        write_to_net(net, self.output_element, output_elem_index, self.output_variable, output_values, self.write_flag)
 
     def __str__(self):
         return super().__str__() + " [%s.%s.%s.%s]" % (
@@ -579,20 +639,21 @@ class DroopControl(Controller):
 
                 **in_service = True** - Whether the droop controller is in service or not.
 
-                **modus** - takes string: Q_ctrl, V_ctrl, PF_ctrl or tan(phi)_ctrl. Select droop variety of PF_ctrl by
-                choosing 'PF_ctrl_P' for P-Characteristic or 'PF_ctrl_V' for U-Characteristic. Formerly called
-                voltage_ctrl.
+                **modus** - takes string: Q_ctrl, V_ctrl or PF_ctrl. Select droop variety of PF_ctrl by
+                choosing 'PF_ctrl_P' for P-Characteristic or 'PF_ctrl_V' for V-Characteristic. PF_ctrl_P takes the active
+                power at the input_element as reference, for PF_ctrl_V the reference voltage must be defined via the
+                bus_idx. Formerly called voltage_ctrl.
 
                 **q_droop_var = None** - Droop Value in Mvar/p.u. in case of Q or V control.
 
                 **vm_set_pu = None** - Voltage set point in case of voltage control.
 
-                **bus_idx = None** - Bus index which is used for voltage control.
+                **bus_idx = None** - Bus index which is used for voltage control and PF(V) control.
 
-                **vm_set_lb = None** - Lower band border of dead band; The Power[W] or Voltage[pu] at which Phi is static
+                **vm_set_lb = None** - Lower band border of dead band; The Power [MW] or Voltage[pu] at which Phi is static
                 and underexcited (inductive) in case of PF_ctrl
 
-                **vm_set_ub = None** - Upper band border of dead band; The Power[W] or Voltage[pu] at which Phi is static
+                **vm_set_ub = None** - Upper band border of dead band; The Power [MW] or Voltage[pu] at which Phi is static
                 and overexcited (capacitive) in case of PF_ctrl
 
                 **pf_overexcited = None** - Static overexcited limit for Phi in case of PF_ctrl.
@@ -754,6 +815,10 @@ class DroopControl(Controller):
 
     def _droop_control_step(self, net):
         ###calculating new set point###
+        if type(self.modus) == bool and self.modus == True:
+            self.modus = "V_ctrl" #catching old implementation when importing from json
+        elif type(self.modus) == bool and self.modus == False:
+            self.modus = "Q_ctrl"
         if self.modus != 'PF_ctrl' or not self.p_cosphi: #getting voltage
             self.vm_pu = read_from_net(net, "res_bus", self.bus_idx, "vm_pu", self.read_flag)
             self.vm_pu_old = self.vm_pu

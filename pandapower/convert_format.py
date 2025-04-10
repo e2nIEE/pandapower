@@ -39,6 +39,8 @@ def convert_format(net, elements_to_deserialize=None):
     _rename_columns(net, elements_to_deserialize)
     _add_missing_columns(net, elements_to_deserialize)
     _create_seperate_cost_tables(net, elements_to_deserialize)
+    if Version(str(net.format_version)) <= Version("3.0.0"):
+        _update_station_controller(net)
     if Version(str(net.format_version)) < Version("3.0.0"):
         _convert_geo_data(net, elements_to_deserialize)
         _convert_group_element_index(net)
@@ -546,3 +548,19 @@ def _update_characteristics(net, elements_to_deserialize):
             continue
         c.interpolator_kind = "interp1d"
         c.kwargs = {"kind": c.__dict__.pop("kind"), "bounds_error": False, "fill_value": c.__dict__.pop("fill_value")}
+
+
+def _update_station_controller(net):
+    #update net to be able to run in finalized station controller
+    for controller_attr in net.controller.object.values:
+        if not hasattr(controller_attr, "counter_warning") and controller_attr.__class__.__name__ == 'BinarySearchControl':
+            controller_attr.counter_warning = False
+        if not hasattr(controller_attr, "overwrite_convergence") and controller_attr.__class__.__name__ == 'BinarySearchControl':
+            controller_attr.overwrite_convergence = False
+        if not hasattr(controller_attr, "output_distribution_values") and controller_attr.__class__.__name__ == 'BinarySearchControl':
+            controller_attr.output_distribution_values = None
+        if not hasattr(controller_attr, "min_q_mvar") and controller_attr.__class__.__name__ == 'BinarySearchControl':
+            controller_attr.min_q_mvar = []
+        if not hasattr(controller_attr, "max_q_mvar") and controller_attr.__class__.__name__ == 'BinarySearchControl':
+            controller_attr.max_q_mvar = []
+
