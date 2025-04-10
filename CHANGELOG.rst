@@ -4,11 +4,51 @@ Change Log
 [upcoming release] - 2025-..-..
 -------------------------------
 
+- [FIXED] DC loadflow after AC loadflow, had ambiguous results still present in net
+- [ADDED] add three columns: id_q_capability_curve_table, reactive_capability_curve, curve_style in gen and sgen
+- [ADDED] cim2pp converter- import reactive power capability curve data synchronousMachinesCim16.py
+- [ADDED] cim2pp converter - export parameter "governorSCD" in additional column in gen table
+- [FIXED] a problem with create_nxgraph
+- [ADDED] parameter slack_as_gen for `from_ucte()` converter (changed the default behavior)
+- [FIXED] cim2pp: the `ignore_errors` parameter was not respected in the `CimParser`
+- [FIXED] cim2pp: keep the busbar names and IDs for node breaker and bus branch models
+- [FIXED] cim2pp: extend cim data structure with missing parameters
+- [FIXED] cim2pp: better vector group assignment
+- [FIXED] cim2pp: refactor cim2pp test
+- [FIXED] cim2pp: manage crash when importing not supported dy profile
+- [ADDED] cim2pp: add tests for short circuit parameters
+
+[3.0.0] - 2025-03-06
+-------------------------------
+
+- [ADDED] cim2pp converter - extract measurements for load, sgen, gen, shunt, ext_grid, ward and xward elements
+- [ADDED] cim2pp converter - extract 'Terminal' and 'description' Analog fields in net.measurement
+- [FIXED] cim2pp converter - removed nan rows in net.measurement
 - [ADDED] Static Var Compensator with Voltage Control
 - [ADDED] pf2pp: min/max q_mvar and min/max p_mw limits for sgens and gen will be converted
 - [FIXED] Allow to consider all oos components in nx graph creation
 - [REMOVED] Excluding tests and test_files from built packages
 - [ADDED] Static Var Compensator with Voltage Control
+- [CHANGED] updated PowerFactory to pandapower converter to export measurement reports and reflect changes in trafo/trafo3w tap changer logic
+- [ADDED] shunt_characteristic_spline table
+- [CHANGED] renamed characteristic table to trafo_characteristic_spline table and changed its structure so that there is one row with all spline characteristic objects per trafo/trafo3w
+- [ADDED] step_dependency_table flag for shunt elements
+- [CHANGED] renamed tap_dependent_impedance flag to tap_dependency_table for trafo and trafo3w elements
+- [ADDED] id_characteristic_spline optional variable for shunt elements
+- [REMOVED] vk_hv_percent_characteristic, vk_mv_percent_characteristic, vk_lv_percent_characteristic, vkr_hv_percent_characteristic, vkr_mv_percent_characteristic and vkr_lv_percent_characteristic variables from trafo3w table
+- [REMOVED] vk_percent_characteristic and vkr_percent_characteristic variables from trafo table
+- [ADDED] id_characteristic_spline optional variable for trafo and trafo3w elements
+- [ADDED] id_characteristic_table variable for shunt elements
+- [CHANGED] renamed id_characteristic variable to id_characteristic_table for trafo and trafo3w elements
+- [ADDED] shunt_characteristic_table lookup table for step dependent values for shunt elements
+- [CHANGED] renamed characteristic_temp lookup table to trafo_characteristic_table for trafo and trafo3w elements
+- [CHANGED] cim2pp converter - removed default creation of trafo spline characteristics
+- [ADDED] cim2pp converter - export NonlinearShuntCompensatorPoint values for shunt elements
+- [FIXED] cim2pp converter - correctly populate step, max_step and q_mvar / p_mw values per step for shunt elements
+- [ADDED] cim2pp converter - added tap changer type classification for trafo and trafo3w elements
+- [FIXED] cim2pp converter - correctly populate tap_step_degree and shift_degree variables for trafo and trafo3w elements
+- [ADDED] tap_changer_type variable for net.trafo and net.trafo3w tables (supporting "Ratio", "Symmetrical", "Ideal" and "Tabular" tap changer types)
+- [REMOVED] tap_phase_shifter bool variable from net.trafo table
 - [ADDED] Implementation of Allocation Factor WLS (AF-WLS) for non observable distribution grids
 - [FIXED] Deletion of multiple measurements at the same bus or branch
 - [FIXED] Creation of zero injection measurements in WLS estimator
@@ -33,6 +73,7 @@ Change Log
 - [FIXED] default elements in toolbox function add_zones_to_elements()
 - [ADDED] improved lightsim2grid documentation including compatibitliy issues
 - [FIXED] avoid duplicated keys in kwargs and pf_options in run_contingency()
+- [ADDED] improved lightsim2grid documentation including compatibility issues
 - [FIXED] cim2pp: set default xml encoding to None to avoid error after changing to lxml
 - [FIXED] PandaModels OPF with 'bus_dc' key errors
 - [FIXED] julia tests
@@ -52,6 +93,7 @@ Change Log
 - [ADDED] low voltage grid Schutterwald
 - [FIXED] trafo3w with tap changer at star point corrected
 - [FIXED] namespace changes from numpy 2.0 release
+- [FIXED] ensure that pp.plotting.set_line_geodata_from_bus_geodata() can also handle cases where all geodata are available already
 - [CHANGED] inf to np.full(...) with value inf for array operations in pypower folder
 - [CHANGED] node existence check for multiple branch elements from mixed array and set operations to set operations only
 - [FIXED] geopandas version
@@ -59,13 +101,15 @@ Change Log
 - [ADDED] DERController with multiple options to define DER reactive power provision depending on P and V
 - [ADDED] switch results p and q
 - [ADDED] PowerFactory converter: option to export lines with sections as a single line with averaged-out impedance, or export line sections as separate individual lines
-- [ADDED] extend plotly function: add zoomlevel-parameter and hvdc lines
+- [ADDED] extend plotly function: add zoomlevel-parameter, dash-lines and hvdc lines
+- [ADDED] extend plotly draw traces: add trace kwargs, e.g. visibility="legendonly" to not show the trace by default
+- [ADDED] extend plotly draw traces: if filename=None, no HTML will be created and just a ploty.Figure object is returned
 - [ADDED] added support for reading cgmes v3.0 files
 - [ADDED] added support for converting cgmes v3.0
 - [CHANGED] plotting for voltage profile considers also gens that are slacks and only ext_grids and slack gens that are in service
 - [CHANGED] switched from setup.py to pyproject.toml
 - [CHANGED] updated upload_release.py to not call setup.py anymore (see https://packaging.python.org/en/latest/discussions/setup-py-deprecated/)
-- [CHANGED] updated upload_release.py to install the uploadad package and print the version
+- [CHANGED] updated upload_release.py to install the uploaded package and print the version
 - [CHANGED] updated MANIFEST.in to exclude the ci files from the wheel distribution
 - [CHANGED] cim data structure method in cim converter changed to blueprint approach
 - [CHANGED] cim converter: Avoid huge logging output when ignore_errors = True
@@ -116,6 +160,7 @@ Change Log
 - [ADDED] cim2pp converter: Using lxml to parse XML files (better performance)
 - [FIXED] OC relay name attribute error
 - [FIXED] cim2pp: fixed missing nominal voltages at SeriesCompensator
+- [FIXED] cim2pp: set voltages at StaticVarCompensators with sVCControlMode==reactivePower to NaN
 
 [2.14.11] - 2024-07-08
 -------------------------------
