@@ -12,6 +12,7 @@ from pandapower.file_io import from_json
 def test_shortcircuit():
     net = from_json('4_bus_radial_grid.json')
     net.line.rename(columns={'temperature_degree_celsius': 'endtemp_degree'}, inplace=True)
+    net.line["endtemp_degree"] = 250
     excel_file = '2_Short_Circuit_Results_PF_all.xlsx'
     sheets = pd.ExcelFile(excel_file).sheet_names
     dataframes = {}
