@@ -9,6 +9,8 @@ from pandapower.converter.powerfactory.export_pfd_to_pp import import_project, f
 from pandapower import pp_dir
 from pandapower.file_io import from_json
 
+from pandapower.run import runpp
+
 try:
     import pandaplan.core.pplog as logging
 except ImportError:
@@ -115,10 +117,35 @@ def test_trafo_tap2_results():
         assert delta < tol, "%s has too high difference: %f > %f" % (key, delta, tol)
 
 @pytest.mark.skipif(not PF_INSTALLED, reason='powerfactory must be installed')
+def test_pf_export_trafo3w_tap_depedence_impedance_tapchanger_at_terminal():
+    app = pf.GetApplication("LO3195", "Gbhai001GBHAI!")
+
+    # import the tap changer test grid to powerfactory
+    path = os.path.join(pp_dir, 'test', 'converter', 'tap_table_from_tdi.pfd')
+    prj = import_project(path, app, 'TEST_PF_CONVERTER', import_folder='TEST_IMPORT', clear_import_folder=True)
+    prj_name = prj.GetFullName()
+
+    net = from_pfd(app, prj_name=prj_name)
+    net.trafo3w = net.trafo3w.drop(net.trafo3w.loc[net.trafo3w.tap_at_star_point == True].index)
+    net.load = net.load.drop([3,4])
+
+    all_diffs = validate_pf_conversion(net, tolerance_mva=1e-9)
+
+    tol = 46e-5
+    for key, diff in all_diffs.items():
+        if key == 'ext_grid_p_diff' or key == 'ext_grid_q_diff':
+            continue
+        if type(diff) == pd.Series:
+            delta = diff.abs().max()
+        else:
+            delta = diff['diff'].abs().max()
+        assert delta < tol, "%s has too high difference: %f > %f" % (key, delta, tol)
+
+@pytest.mark.skipif(not PF_INSTALLED, reason='powerfactory must be installed')
 def test_pf_export_tap_changer():
     app = pf.GetApplication()
     # import the tap changer test grid to powerfactory
-    path = os.path.join(pp.pp_dir, 'test', 'converter', 'testfiles', 'test_tap_changer.pfd')
+    path = os.path.join(pp_dir, 'test', 'converter', 'testfiles', 'test_tap_changer.pfd')
     prj = import_project(path, app, 'TEST_PF_CONVERTER', import_folder='TEST_IMPORT', clear_import_folder=True)
     prj_name = prj.GetFullName()
 
