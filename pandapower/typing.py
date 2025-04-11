@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Literal, Union
 
 import numpy as np
 
@@ -6,3 +6,8 @@ import numpy as np
 Int = Union[int, np.integer]
 # union type for integers and floats from the Python standard library and numpy
 Float = Union[float, np.number]
+
+BusType = Literal["n", "b", "m"]
+GeneratorType = Literal["current_source", "async", "async_doubly_fed"]
+UnderOverExcitedType = Literal["underexcited", "overexcited"]
+WyeDeltaType = Literal["wye", "delta"]

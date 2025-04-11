@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 from operator import itemgetter
-from typing import Tuple, List, Union, Iterable, Literal
+from typing import Tuple, List, Union, Iterable, Sequence, Literal
 import warnings
 
 import pandas as pd
@@ -21,7 +21,7 @@ from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes, e
     empty_defaults_per_dtype
 from pandapower.results import reset_results
 from pandapower.std_types import add_basic_std_types, load_std_type
-from pandapower.typing import Int
+from pandapower.typing import BusType, GeneratorType, Int, UnderOverExcitedType, WyeDeltaType
 import numpy as np
 
 try:
@@ -32,7 +32,9 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def create_empty_network(name: str = "", f_hz: float = 50., sn_mva: float = 1,
+def create_empty_network(name: str = "",
+                         f_hz: float = 50.,
+                         sn_mva: float = 1,
                          add_stdtypes: bool = True) -> pandapowerNet:
     """
     This function initializes the pandapower datastructure.
@@ -669,10 +671,18 @@ def create_empty_network(name: str = "", f_hz: float = 50., sn_mva: float = 1,
     return net
 
 
-def create_bus(net: pandapowerNet, vn_kv: float, name: str | None = None, index: int | None = None,
-               geodata: tuple[float, float] | None = None, type: Literal["n", "b", "m"] = "b",
-               zone: str | None = None, in_service: bool = True, max_vm_pu: float = nan,
-               min_vm_pu: float = nan, coords: list[tuple[float, float]] | None = None, **kwargs) -> Int:
+def create_bus(net: pandapowerNet,
+               vn_kv: float,
+               name: str | None = None,
+               index: int | None = None,
+               geodata: tuple[float, float] | None = None,
+               type: BusType = "b",
+               zone: str | None = None,
+               in_service: bool = True,
+               max_vm_pu: float = nan,
+               min_vm_pu: float = nan,
+               coords: list[tuple[float, float]] | None = None,
+               **kwargs) -> Int:
     """
     Adds one bus in table net["bus"].
 
@@ -738,10 +748,18 @@ def create_bus(net: pandapowerNet, vn_kv: float, name: str | None = None, index:
     return index
 
 
-def create_bus_dc(net: pandapowerNet, vn_kv: float, name: str | None = None, index: int | None = None,
-                  geodata: tuple[float, float] | None = None, type: Literal["n", "b", "m"] = "b",
-                  zone: str | None = None, in_service: bool = True, max_vm_pu: float = nan, min_vm_pu: float = nan,
-                  coords: list[tuple[float, float]] | None = None, **kwargs) -> Int:
+def create_bus_dc(net: pandapowerNet,
+                  vn_kv: float,
+                  name: str | None = None,
+                  index: int | None = None,
+                  geodata: tuple[float, float] | None = None,
+                  type: BusType = "b",
+                  zone: str | None = None,
+                  in_service: bool = True,
+                  max_vm_pu: float = nan,
+                  min_vm_pu: float = nan,
+                  coords: list[tuple[float, float]] | None = None,
+                  **kwargs) -> Int:
     """
     Adds one dc bus in table net["bus_dc"].
 
@@ -808,14 +826,19 @@ def create_bus_dc(net: pandapowerNet, vn_kv: float, name: str | None = None, ind
     return index
 
 
-def create_buses(net: pandapowerNet, nr_buses: int,
-                 vn_kv: float | Iterable[float], index: int | Iterable[int] | None = None,
+def create_buses(net: pandapowerNet,
+                 nr_buses: int,
+                 vn_kv: float | Iterable[float],
+                 index: Iterable[int] | None = None,
                  name: str | Iterable[str] | None = None,
-                 type: Literal["n", "b", "m"] | Iterable[Literal["n", "b", "m"]] = "b",
-                 geodata: Iterable[tuple[float, float]] | None = None, zone: str | None = None,
-                 in_service: bool | Iterable[bool] = True, max_vm_pu: float | Iterable[float] = nan,
+                 type: BusType = "b",
+                 geodata: Iterable[tuple[float, float]] | None = None,
+                 zone: str | Iterable[str] | None = None,
+                 in_service: bool | Iterable[bool] = True,
+                 max_vm_pu: float | Iterable[float] = nan,
                  min_vm_pu: float | Iterable[float] = nan,
-                 coords: list[list[tuple[float, float]]] | None = None, **kwargs) -> npt.NDArray[np.integer]:
+                 coords: list[list[tuple[float, float]]] | None = None,
+                 **kwargs) -> npt.NDArray[np.integer]:
     """
     Adds several buses in table net["bus"] at once.
 
@@ -829,9 +852,9 @@ def create_buses(net: pandapowerNet, nr_buses: int,
         **vn_kv** (float) - The grid voltage level.
 
     OPTIONAL:
-        **name** (string, default None) - the name for this bus
+        **name** (list of string, default None) - the name for this bus
 
-        **index** (int, default None) - Force specified IDs if available. If None, the indices \
+        **index** (list of int, default None) - Force specified IDs if available. If None, the indices \
             higher than the highest already existing index are selected.
 
         **geodata** ((x,y)-tuple or Iterable of (x, y)-tuples with length == nr_buses,
@@ -842,11 +865,11 @@ def create_buses(net: pandapowerNet, nr_buses: int,
 
         **zone** (string, None) - grid region
 
-        **in_service** (boolean) - True for in_service or False for out of service
+        **in_service** (list of boolean) - True for in_service or False for out of service
 
-        **max_vm_pu** (float, NAN) - Maximum bus voltage in p.u. - necessary for OPF
+        **max_vm_pu** (list of float, NAN) - Maximum bus voltage in p.u. - necessary for OPF
 
-        **min_vm_pu** (float, NAN) - Minimum bus voltage in p.u. - necessary for OPF
+        **min_vm_pu** (list of float, NAN) - Minimum bus voltage in p.u. - necessary for OPF
 
         **coords** (list (len=nr_buses) of list (len=2) of tuples (len=2), default None) - busbar
             coordinates to plot the bus with multiple points. coords is typically a list of tuples
@@ -897,8 +920,19 @@ def create_buses(net: pandapowerNet, nr_buses: int,
     return index
 
 
-def create_buses_dc(net, nr_buses_dc, vn_kv, index=None, name=None, type="b", geodata=None,
-                    zone=None, in_service=True, max_vm_pu=nan, min_vm_pu=nan, coords=None, **kwargs):
+def create_buses_dc(net: pandapowerNet,
+                    nr_buses_dc: int,
+                    vn_kv: float | Iterable[float],
+                    index: Iterable[int] | None = None,
+                    name: str | Iterable[str] | None = None,
+                    type: BusType = "b",
+                    geodata: Iterable[tuple[float, float]] | None = None,
+                    zone: str | None = None,
+                    in_service: bool | Iterable[bool] = True,
+                    max_vm_pu: float | Iterable[float] = nan,
+                    min_vm_pu: float | Iterable[float] = nan,
+                    coords: list[list[tuple[float, float]]] | None = None,
+                    **kwargs) -> npt.NDArray[np.integer]:
     """
     Adds several dc buses in table net["bus_dc"] at once.
 
@@ -938,7 +972,7 @@ def create_buses_dc(net, nr_buses_dc, vn_kv, index=None, name=None, type="b", ge
 
 
     OUTPUT:
-        **index** (int) - The unique indices ID of the created elements
+        **index** (numpy.ndarray (int)) - The unique indices ID of the created elements
 
     EXAMPLE:
         create_buses_dc(net, 2, [20., 20.], name=["bus1","bus2"])
@@ -957,7 +991,7 @@ def create_buses_dc(net, nr_buses_dc, vn_kv, index=None, name=None, type="b", ge
             pd.DataFrame(zeros((len(index), len(net.bus_dc_geodata.columns)), dtype=np.int64),
                          index=index, columns=net.bus_dc_geodata.columns)])
         net.bus_dc_geodata.loc[index, :] = nan
-        net.bus_dc_geodata.loc[index, ["x", "y"]] = geodata
+        net.bus_dc_geodata.loc[index, ["x", "y"]] = geodata  # type: ignore[call-overload]
     if coords is not None:
         net.bus_dc_geodata = pd.concat(
             [net.bus_dc_geodata, pd.DataFrame(index=index, columns=net.bus_dc_geodata.columns)])
@@ -965,9 +999,24 @@ def create_buses_dc(net, nr_buses_dc, vn_kv, index=None, name=None, type="b", ge
     return index
 
 
-def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, sn_mva=nan,
-                name=None, scaling=1., index=None, in_service=True, type='wye', max_p_mw=nan,
-                min_p_mw=nan, max_q_mvar=nan, min_q_mvar=nan, controllable=nan, **kwargs):
+def create_load(net: pandapowerNet,
+                bus: int,
+                p_mw: float,
+                q_mvar: float = 0,
+                const_z_percent: float = 0,
+                const_i_percent: float = 0,
+                sn_mva: float = nan,
+                name: str | None = None,
+                scaling: float = 1.,
+                index: int | None = None,
+                in_service: bool = True,
+                type: WyeDeltaType = 'wye',
+                max_p_mw: float = nan,
+                min_p_mw: float = nan,
+                max_q_mvar: float = nan,
+                min_q_mvar: float = nan,
+                controllable: bool | float = nan,
+                **kwargs) -> Int:
     """
     Adds one load in table net["load"].
 
@@ -994,7 +1043,7 @@ def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, 
         **const_i_percent** (float, default 0) - percentage of p_mw and q_mvar that will be \
             associated to constant current load at rated voltage
 
-        **sn_mva** (float, default None) - Nominal power of the load
+        **sn_mva** (float, default NaN) - Nominal power of the load
 
         **name** (string, default None) - The name for this load
 
@@ -1051,9 +1100,24 @@ def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, 
     return index
 
 
-def create_loads(net, buses, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, sn_mva=nan,
-                 name=None, scaling=1., index=None, in_service=True, type='wye', max_p_mw=nan,
-                 min_p_mw=nan, max_q_mvar=nan, min_q_mvar=nan, controllable=nan, **kwargs):
+def create_loads(net: pandapowerNet,
+                 buses: Sequence[int],
+                 p_mw: float | Iterable[float],
+                 q_mvar: float | Iterable[float] = 0,
+                 const_z_percent: float | Iterable[float] = 0,
+                 const_i_percent: float | Iterable[float] = 0,
+                 sn_mva: float | Iterable[float] = nan,
+                 name: str | Iterable[str] | None = None,
+                 scaling: float | Iterable[float] = 1.,
+                 index: Iterable[int] | None = None,
+                 in_service: bool | Iterable[bool] = True,
+                 type: WyeDeltaType = 'wye',
+                 max_p_mw: float | Iterable[float] = nan,
+                 min_p_mw: float | Iterable[float] = nan,
+                 max_q_mvar: float | Iterable[float] = nan,
+                 min_q_mvar: float | Iterable[float] = nan,
+                 controllable: bool | Iterable[bool] | float = nan,
+                 **kwargs) -> npt.NDArray[np.integer]:
     """
     Adds a number of loads in table net["load"].
 
@@ -1112,7 +1176,7 @@ def create_loads(net, buses, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=
             Defaults to False if "controllable" column exists in DataFrame
 
     OUTPUT:
-        **index** (int) - The unique IDs of the created elements
+        **index** (numpy.ndarray (int)) - The unique IDs of the created elements
 
     EXAMPLE:
         create_loads(net, buses=[0, 2], p_mw=[10., 5.], q_mvar=[2., 0.])
@@ -1140,9 +1204,21 @@ def create_loads(net, buses, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=
     return index
 
 
-def create_asymmetric_load(net, bus, p_a_mw=0, p_b_mw=0, p_c_mw=0, q_a_mvar=0, q_b_mvar=0,
-                           q_c_mvar=0, sn_mva=nan, name=None, scaling=1., index=None,
-                           in_service=True, type="wye", **kwargs):
+def create_asymmetric_load(net: pandapowerNet,
+                           bus: int,
+                           p_a_mw: float = 0,
+                           p_b_mw: float = 0,
+                           p_c_mw: float = 0,
+                           q_a_mvar: float = 0,
+                           q_b_mvar: float = 0,
+                           q_c_mvar: float = 0,
+                           sn_mva: float = nan,
+                           name: str | None = None,
+                           scaling: float = 1.,
+                           index: int | None = None,
+                           in_service: bool = True,
+                           type: WyeDeltaType = "wye",
+                           **kwargs) -> Int:
     """
     Adds one 3 phase load in table net["asymmetric_load"].
 
@@ -1168,7 +1244,7 @@ def create_asymmetric_load(net, bus, p_a_mw=0, p_b_mw=0, p_c_mw=0, q_a_mvar=0, q
 
         **q_c_mvar** (float, default 0) - The reactive power for Phase C load
 
-        **sn_mva** (float, default: None) - Nominal power of the load
+        **sn_mva** (float, default: NaN) - Nominal power of the load
 
         **name** (string, default: None) - The name for this load
 
@@ -1259,7 +1335,12 @@ def create_asymmetric_load(net, bus, p_a_mw=0, p_b_mw=0, p_c_mw=0, q_a_mvar=0, q
 # =============================================================================
 
 
-def create_load_from_cosphi(net, bus, sn_mva, cos_phi, mode, **kwargs):
+def create_load_from_cosphi(net: pandapowerNet,
+                            bus: int,
+                            sn_mva: float,
+                            cos_phi: float,
+                            mode: UnderOverExcitedType,
+                            **kwargs) -> Int:
     """
     Creates a load element from rated power and power factor cos(phi).
 
@@ -1290,11 +1371,29 @@ def create_load_from_cosphi(net, bus, sn_mva, cos_phi, mode, **kwargs):
     return create_load(net, bus, sn_mva=sn_mva, p_mw=p_mw, q_mvar=q_mvar, **kwargs)
 
 
-def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
-                scaling=1., type='wye', in_service=True, max_p_mw=nan, min_p_mw=nan,
-                max_q_mvar=nan, min_q_mvar=nan, controllable=nan, k=nan, rx=nan,
-                current_source=True, generator_type=None, max_ik_ka=nan, kappa=nan, lrc_pu=nan,
-                **kwargs):
+def create_sgen(net: pandapowerNet,
+                bus: int,
+                p_mw: float,
+                q_mvar: float = 0,
+                sn_mva: float = nan,
+                name: str | None = None,
+                index: int | None = None,
+                scaling: float = 1.,
+                type: WyeDeltaType= 'wye',
+                in_service: bool = True,
+                max_p_mw: float = nan,
+                min_p_mw: float = nan,
+                max_q_mvar: float = nan,
+                min_q_mvar: float = nan,
+                controllable: bool | float = nan,
+                k: float = nan,
+                rx: float = nan,
+                current_source: bool = True,
+                generator_type: GeneratorType | None = None,
+                max_ik_ka: float = nan,
+                kappa: float = nan,
+                lrc_pu: float = nan,
+                **kwargs) -> Int:
     """
     Adds one static generator in table net["sgen"].
 
@@ -1416,11 +1515,29 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
     return index
 
 
-def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
-                 scaling=1., type='wye', in_service=True, max_p_mw=nan, min_p_mw=nan,
-                 max_q_mvar=nan, min_q_mvar=nan, controllable=nan, k=nan, rx=nan,
-                 current_source=True, generator_type="current_source", max_ik_ka=nan,
-                 kappa=nan, lrc_pu=nan, **kwargs):
+def create_sgens(net: pandapowerNet,
+                 buses: Sequence[int],
+                 p_mw: float | Iterable[float],
+                 q_mvar: float | Iterable[float] = 0,
+                 sn_mva: float | Iterable[float] = nan,
+                 name: str | Iterable[str] | None = None,
+                 index: Iterable[int] | None = None,
+                 scaling: float | Iterable[float] = 1.,
+                 type: WyeDeltaType = 'wye',
+                 in_service: bool | Iterable[bool] = True,
+                 max_p_mw: float | Iterable[float] = nan,
+                 min_p_mw: float | Iterable[float] = nan,
+                 max_q_mvar: float | Iterable[float] = nan,
+                 min_q_mvar: float | Iterable[float] = nan,
+                 controllable: bool | Iterable[bool] | float = nan,
+                 k: float | Iterable[float] = nan,
+                 rx: float = nan,
+                 current_source: bool | Iterable[bool] = True,
+                 generator_type: GeneratorType = "current_source",
+                 max_ik_ka: float = nan,
+                 kappa: float = nan,
+                 lrc_pu: float = nan,
+                 **kwargs) -> npt.NDArray[np.integer]:
     """
     Adds a number of sgens in table net["sgen"].
 
@@ -1528,7 +1645,7 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
                                dtype="str", default_val="current_source")
     gen_types = ['current_source', 'async', 'async_doubly_fed']
     gen_type_match = pd.concat([entries["generator_type"] == match for match in gen_types], axis=1,
-                               keys=gen_types)
+                               keys=gen_types)  # type: ignore[call-overload]
     if gen_type_match["current_source"].any():
         _add_to_entries_if_not_nan(net, "sgen", entries, index, "k", k)
     if gen_type_match["async"].any():
@@ -1550,9 +1667,21 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
 # Create 3ph Sgen
 # =============================================================================
 
-def create_asymmetric_sgen(net, bus, p_a_mw=0, p_b_mw=0, p_c_mw=0, q_a_mvar=0, q_b_mvar=0,
-                           q_c_mvar=0, sn_mva=nan, name=None, index=None, scaling=1., type='wye',
-                           in_service=True, **kwargs):
+def create_asymmetric_sgen(net: pandapowerNet,
+                           bus: int,
+                           p_a_mw: float = 0,
+                           p_b_mw: float = 0,
+                           p_c_mw: float = 0,
+                           q_a_mvar: float = 0,
+                           q_b_mvar: float = 0,
+                           q_c_mvar: float = 0,
+                           sn_mva: float = nan,
+                           name: str | None = None,
+                           index: int | None = None,
+                           scaling: float = 1.,
+                           type: WyeDeltaType = 'wye',
+                           in_service: bool = True,
+                           **kwargs) -> Int:
     """
 
     Adds one static generator in table net["asymmetric_sgen"].
@@ -1615,7 +1744,14 @@ def create_asymmetric_sgen(net, bus, p_a_mw=0, p_b_mw=0, p_c_mw=0, q_a_mvar=0, q
     return index
 
 
-def create_sgen_from_cosphi(net, bus, sn_mva, cos_phi, mode, **kwargs):
+def create_sgen_from_cosphi(
+        net: pandapowerNet,
+        bus: int,
+        sn_mva: float,
+        cos_phi: float,
+        mode: UnderOverExcitedType,
+        **kwargs,
+) -> Int:
     """
     Creates an sgen element from rated power and power factor cos(phi).
 
@@ -1644,9 +1780,25 @@ def create_sgen_from_cosphi(net, bus, sn_mva, cos_phi, mode, **kwargs):
     return create_sgen(net, bus, sn_mva=sn_mva, p_mw=p_mw, q_mvar=q_mvar, **kwargs)
 
 
-def create_storage(net, bus, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_percent=nan, min_e_mwh=0.0,
-                   name=None, index=None, scaling=1., type=None, in_service=True, max_p_mw=nan,
-                   min_p_mw=nan, max_q_mvar=nan, min_q_mvar=nan, controllable=nan, **kwargs):
+def create_storage(net: pandapowerNet,
+                   bus: int,
+                   p_mw: float,
+                   max_e_mwh: float,
+                   q_mvar: float = 0,
+                   sn_mva: float = nan,
+                   soc_percent: float = nan,
+                   min_e_mwh: float = 0.0,
+                   name: str | None = None,
+                   index: int | None = None,
+                   scaling: float = 1.,
+                   type: str | None = None,
+                   in_service: bool = True,
+                   max_p_mw: float = nan,
+                   min_p_mw: float = nan,
+                   max_q_mvar: float = nan,
+                   min_q_mvar: float = nan,
+                   controllable: bool | float = nan,
+                   **kwargs) -> Int:
     """
     Adds a storage to the network.
 
@@ -1676,7 +1828,7 @@ def create_storage(net, bus, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_percent=
     OPTIONAL:
         **q_mvar** (float, default 0) - The reactive power of the storage
 
-        **sn_mva** (float, default None) - Nominal power of the storage
+        **sn_mva** (float, default NaN) - Nominal power of the storage
 
         **soc_percent** (float, NaN) - The state of charge of the storage
 
@@ -1739,10 +1891,25 @@ def create_storage(net, bus, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_percent=
     return index
 
 
-def create_storages(
-        net, buses, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_percent=nan, min_e_mwh=0.0,
-        name=None, index=None, scaling=1., type=None, in_service=True, max_p_mw=nan,
-        min_p_mw=nan, max_q_mvar=nan, min_q_mvar=nan, controllable=nan, **kwargs):
+def create_storages(net: pandapowerNet,
+                    buses: Sequence[int],
+                    p_mw: float | Iterable[float],
+                    max_e_mwh: float | Iterable[float],
+                    q_mvar: float | Iterable[float] = 0,
+                    sn_mva: float | Iterable[float] = nan,
+                    soc_percent: float | Iterable[float] = nan,
+                    min_e_mwh: float | Iterable[float] = 0.0,
+                    name: str | Iterable[str] | None = None,
+                    index: Iterable[int] | None = None,
+                    scaling: float | Iterable[float] = 1.,
+                    type: str | Iterable[str] | None = None,
+                    in_service: bool | Iterable[bool] = True,
+                    max_p_mw=nan,
+                    min_p_mw: float | Iterable[float] = nan,
+                    max_q_mvar: float | Iterable[float] = nan,
+                    min_q_mvar: float | Iterable[float] = nan,
+                    controllable: bool | Iterable[bool] | float = nan,
+                    **kwargs) -> npt.NDArray[np.integer]:
     """
     Adds storages to the network.
 
@@ -1835,11 +2002,32 @@ def create_storages(
     return index
 
 
-def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_q_mvar=nan,
-               min_q_mvar=nan, min_p_mw=nan, max_p_mw=nan, min_vm_pu=nan, max_vm_pu=nan,
-               scaling=1., type=None, slack=False, controllable=nan, vn_kv=nan,
-               xdss_pu=nan, rdss_ohm=nan, cos_phi=nan, pg_percent=nan, power_station_trafo=nan,
-               in_service=True, slack_weight=0.0, **kwargs):
+def create_gen(net: pandapowerNet,
+               bus: int,
+               p_mw: float,
+               vm_pu: float = 1.,
+               sn_mva: float = nan,
+               name: str | None = None,
+               index: int | None = None,
+               max_q_mvar: float = nan,
+               min_q_mvar: float = nan,
+               min_p_mw: float = nan,
+               max_p_mw: float = nan,
+               min_vm_pu: float = nan,
+               max_vm_pu: float = nan,
+               scaling: float = 1.,
+               type: str | None = None,
+               slack: bool = False,
+               controllable: bool | float = nan,
+               vn_kv: float = nan,
+               xdss_pu: float = nan,
+               rdss_ohm: float = nan,
+               cos_phi: float = nan,
+               pg_percent: float = nan,
+               power_station_trafo: int | float = nan,
+               in_service: bool = True,
+               slack_weight: float = 0.0,
+               **kwargs) -> Int:
     """
     Adds a generator to the network.
 
@@ -1852,7 +2040,7 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
 
         **bus** (int) - The bus id to which the generator is connected
 
-        **p_mw** (float, default 0) - The active power of the generator (positive for generation!)
+        **p_mw** (float) - The active power of the generator (positive for generation!)
 
     OPTIONAL:
         **vm_pu** (float, default 0) - The voltage set point of the generator.
@@ -1951,11 +2139,32 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
     return index
 
 
-def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_q_mvar=nan,
-                min_q_mvar=nan, min_p_mw=nan, max_p_mw=nan, min_vm_pu=nan, max_vm_pu=nan,
-                scaling=1., type=None, slack=False, controllable=nan, vn_kv=nan,
-                xdss_pu=nan, rdss_ohm=nan, cos_phi=nan, pg_percent=nan, power_station_trafo=nan,
-                in_service=True, slack_weight=0.0, **kwargs):
+def create_gens(net: pandapowerNet,
+                buses: Sequence[int],
+                p_mw: float | Iterable[float],
+                vm_pu: float | Iterable[float] = 1.,
+                sn_mva: float | Iterable[float] = nan,
+                name: str | Iterable[str] | None = None,
+                index: Iterable[int] | None = None,
+                max_q_mvar: float | Iterable[float] = nan,
+                min_q_mvar: float | Iterable[float] = nan,
+                min_p_mw: float | Iterable[float] = nan,
+                max_p_mw: float | Iterable[float] = nan,
+                min_vm_pu: float | Iterable[float] = nan,
+                max_vm_pu: float | Iterable[float] = nan,
+                scaling: float | Iterable[float] = 1.,
+                type: str | Iterable[str] | None = None,
+                slack: bool | Iterable[bool] = False,
+                controllable: bool | float = nan,
+                vn_kv: float | Iterable[float] = nan,
+                xdss_pu: float | Iterable[float] = nan,
+                rdss_ohm: float | Iterable[float] = nan,
+                cos_phi: float | Iterable[float] = nan,
+                pg_percent: float = nan,
+                power_station_trafo: int | float = nan,
+                in_service: bool = True,
+                slack_weight: float = 0.0,
+                **kwargs) -> npt.NDArray[np.integer]:
     """
     Adds generators to the specified buses network.
 
