@@ -38,7 +38,7 @@ class ObservabilityAnalyzer(NetworkAnalysisCore):
 
     def _delete_p_measurement(self, bus_positions: np.ndarray):
         """
-        Delete active power (P) measurements for specified buses and update the non-NaN measurement selector.
+        Delete active power (P) measurements for specified buses and update the non-nan measurement selector.
 
         Parameters:
             bus_positions (np.ndarray): Array of bus positions for which P measurements should be deleted.
@@ -46,11 +46,11 @@ class ObservabilityAnalyzer(NetworkAnalysisCore):
 
         ppci = self.eppci.data
 
-        # Set P measurements and their standard deviations to NaN for the specified buses
-        ppci["bus"][bus_positions, bus_cols + P] = np.NaN
-        ppci["bus"][bus_positions, bus_cols + P_STD] = np.NaN
+        # Set P measurements and their standard deviations to nan for the specified buses
+        ppci["bus"][bus_positions, bus_cols + P] = np.nan
+        ppci["bus"][bus_positions, bus_cols + P_STD] = np.nan
 
-        # Create masks to identify non-NaN P measurements for buses, lines from, and lines to
+        # Create masks to identify non-nan P measurements for buses, lines from, and lines to
         p_bus_not_nan = ~np.isnan(ppci["bus"][:, bus_cols + P])
         p_line_f_not_nan = ~np.isnan(ppci["branch"][:, branch_cols + P_FROM])
         p_line_t_not_nan = ~np.isnan(ppci["branch"][:, branch_cols + P_TO])
@@ -58,7 +58,7 @@ class ObservabilityAnalyzer(NetworkAnalysisCore):
         # Combine the masks to form the overall measurement mask
         meas_mask = np.hstack([p_bus_not_nan, p_line_f_not_nan, p_line_t_not_nan])
 
-        # Update the non-NaN measurement selector
+        # Update the non-nan measurement selector
         self.eppci.non_nan_meas_selector = np.flatnonzero(meas_mask)
 
     def _get_branches_idx_without_power_flow(self, tolerance: float, branch_power_flow: np.ndarray):
@@ -108,6 +108,10 @@ class ObservabilityAnalyzer(NetworkAnalysisCore):
         # Total number of measurements (buses + branches)
         num_buses = len(self.eppci.data['bus'])
         num_branches = len(self.eppci.data['branch'])
+        
+        # all_meas_number includes:
+        # - 1 active power injection measurement per bus
+        # - 2 active power flow measurements per branch (from and to ends)
         all_meas_number = num_buses + 2 * num_branches
 
         # Initialize selectors in the algebra object
@@ -139,11 +143,12 @@ class ObservabilityAnalyzer(NetworkAnalysisCore):
         """
 
         # Step 1: Initialization
+        self._clean_p_without_q_measurements()
         self._clean_not_p_measurements()
-        N = int(self.eppci.data['bus'].shape[0])
+        number_buses = int(self.eppci.data['bus'].shape[0])
         self._set_delta_v_bus_selector()
-        self.eppci.E[:N - 1] = 0
-        self.eppci.E[N:] = 1
+        self.eppci.E[:number_buses - 1] = 0
+        self.eppci.E[number_buses:] = 1
         self._reset_network_values()
 
         all_branches_idx = np.arange(self.eppci.data['branch'].shape[0])
@@ -168,7 +173,7 @@ class ObservabilityAnalyzer(NetworkAnalysisCore):
             # Step 4: LU decomposition and zero pivot validation
             P, L, U = lu(gain_matrix.toarray())
             zero_pivots = np.where(np.abs(np.diag(U)) < tolerance)[0]
-            stop_iterations = self._validate_zero_pivots(zero_pivots, N)
+            stop_iterations = self._validate_zero_pivots(zero_pivots, number_buses)
             if stop_iterations is True:
                 break
 
@@ -197,6 +202,9 @@ class ObservabilityAnalyzer(NetworkAnalysisCore):
         if current_iteration == max_iter:
             raise Exception("Maximum number of iterations reached. Algorithm did not converge.")
 
+        # Drop unobservable branches (marked with -1 in the last column)
+        # This ensures that only observable branches remain, which allows us
+        # to build the connectivity graph and identify observable islands later
         self.eppci.data['branch'] = self.eppci.data['branch'][self.eppci.data['branch'][:, -1] != -1]
 
         graph = create_graph_from_eppci(self.eppci)

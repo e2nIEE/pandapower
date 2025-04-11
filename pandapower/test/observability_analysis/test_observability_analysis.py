@@ -33,7 +33,7 @@ class Test6BusSystem(unittest.TestCase):
                 r_ohm_per_km=0.1, x_ohm_per_km=0.4, c_nf_per_km=10, max_i_ka=1
             )
 
-        # Add external grid connection at bus 6
+        # Add external grid connection at bus 1
         pp.create_ext_grid(net, buses[1], vm_pu=1.03)
 
         cls.net = net
@@ -42,11 +42,12 @@ class Test6BusSystem(unittest.TestCase):
         net = deepcopy(self.net)
 
         # Add measurements to make the network observable
-        pp.create_measurement(net, "p", "bus", 0.0, 0.01, element=6)  # Active power injection
-        pp.create_measurement(net, "p", "bus", 0.0, 0.01, element=4)  # Active power injection
-        pp.create_measurement(net, "p", "bus", 0.0, 0.01, element=1)  # Active power injection
-        pp.create_measurement(net, "p", "line", 1.0, 0.01, element=1, side="from")  # Line active power
-        pp.create_measurement(net, "p", "line", 1.0, 0.01, element=4, side="from")  # Line active power
+        for meas_type in ("p", "q"):
+            pp.create_measurement(net, meas_type, "bus", 0.0, 0.01, element=6)
+            pp.create_measurement(net, meas_type, "bus", 0.0, 0.01, element=4)
+            pp.create_measurement(net, meas_type, "bus", 0.0, 0.01, element=1)
+            pp.create_measurement(net, meas_type, "line", 1.0, 0.01, element=1, side="from")
+            pp.create_measurement(net, meas_type, "line", 1.0, 0.01, element=4, side="from")
 
         graph = run_observability_analysis_for_ppnet(net)
         connected_components = list(sorted(nx.connected_components(graph), key=len, reverse=True))
@@ -69,17 +70,17 @@ class Test6BusSystem(unittest.TestCase):
         assert_array_equal(net._observability_lookup['bus'][observable_buses], np.zeros(len(unobservable_buses)))
         # Line with index 2 is unobservable because it lacks both a flow measurement
         # and at least one injection measurement at its terminal nodes.
-        line_obs_result = [0, 0, -1, 0, 0, 0]
+        line_obs_result = [0, 0, 0, 0, 0, 0]
         lines = [0, 1, 2, 3, 4, 5]
         assert_array_equal(net._observability_lookup['line'][lines], line_obs_result)
 
     def test_observability_case6_A2(self):
         net = deepcopy(self.net)
-
-        pp.create_measurement(net, "p", "bus", 0.0, 0.01, element=4)  # Active power injection
-        pp.create_measurement(net, "p", "bus", 0.0, 0.01, element=1)  # Active power injection
-        pp.create_measurement(net, "p", "line", 1.0, 0.01, element=1, side="from")  # Line active power
-        pp.create_measurement(net, "p", "line", 1.0, 0.01, element=4, side="from")  # Line active power
+        for meas_type in ("p", "q"):
+            pp.create_measurement(net, meas_type, "bus", 0.0, 0.01, element=4)
+            pp.create_measurement(net, meas_type, "bus", 0.0, 0.01, element=1)
+            pp.create_measurement(net, meas_type, "line", 1.0, 0.01, element=1, side="from")
+            pp.create_measurement(net, meas_type, "line", 1.0, 0.01, element=4, side="to")
 
         graph = run_observability_analysis_for_ppnet(net)
         connected_components = list(sorted(nx.connected_components(graph), key=len, reverse=True))
@@ -110,7 +111,7 @@ class Test6BusSystem(unittest.TestCase):
         bus_obs_result = [0, 0, 0, 1, 1, -1]
         assert_array_equal(net._observability_lookup['bus'][buses], bus_obs_result)
         lines = [0, 1, 2, 3, 4, 5]
-        line_obs_result = [0, 0, -1, -1, 1, -1]
+        line_obs_result = [0, 0, 0, -1, 1, -1]
         assert_array_equal(net._observability_lookup['line'][lines], line_obs_result)
 
 
@@ -154,22 +155,23 @@ class Test14BusSystem(unittest.TestCase):
     def test_observability_case14_A1(self):
         net = deepcopy(self.net)
         # Add measurements to make the network observable
-        pp.create_measurement(net, "p", "bus", 0.0, 0.01, element=13)  # Active power injection
-        pp.create_measurement(net, "p", "bus", 0.0, 0.01, element=12)  # Active power injection
-        pp.create_measurement(net, "p", "bus", 0.0, 0.01, element=11)  # Active power injection
-        pp.create_measurement(net, "p", "bus", 0.0, 0.01, element=9)  # Active power injection
-        pp.create_measurement(net, "p", "bus", 0.0, 0.01, element=6)  # Active power injection
-        pp.create_measurement(net, "p", "bus", 0.0, 0.01, element=5)  # Active power injection
-        pp.create_measurement(net, "p", "bus", 0.0, 0.01, element=4)  # Active power injection
-        pp.create_measurement(net, "p", "bus", 0.0, 0.01, element=3)  # Active power injection
-        pp.create_measurement(net, "p", "bus", 0.0, 0.01, element=2)  # Active power injection
-        pp.create_measurement(net, "p", "bus", 0.0, 0.01, element=1)  # Active power injection
+        for meas_type in ("p", "q"):
+            pp.create_measurement(net, meas_type, "bus", 0.0, 0.01, element=13)
+            pp.create_measurement(net, meas_type, "bus", 0.0, 0.01, element=12)
+            pp.create_measurement(net, meas_type, "bus", 0.0, 0.01, element=11)
+            pp.create_measurement(net, meas_type, "bus", 0.0, 0.01, element=9)
+            pp.create_measurement(net, meas_type, "bus", 0.0, 0.01, element=6)
+            pp.create_measurement(net, meas_type, "bus", 0.0, 0.01, element=5)
+            pp.create_measurement(net, meas_type, "bus", 0.0, 0.01, element=4)
+            pp.create_measurement(net, meas_type, "bus", 0.0, 0.01, element=3)
+            pp.create_measurement(net, meas_type, "bus", 0.0, 0.01, element=2)
+            pp.create_measurement(net, meas_type, "bus", 0.0, 0.01, element=1)
 
-        pp.create_measurement(net, "p", "line", 1.0, 0.01, element=1, side="from")  # Line active power
-        pp.create_measurement(net, "p", "line", 1.0, 0.01, element=8, side="from")  # Line active power
-        pp.create_measurement(net, "p", "line", 1.0, 0.01, element=10, side="from")  # Line active power
-        pp.create_measurement(net, "p", "line", 1.0, 0.01, element=11, side="from")  # Line active power
-        pp.create_measurement(net, "p", "line", 1.0, 0.01, element=9, side="from")  # Line active power
+            pp.create_measurement(net, meas_type, "line", 1.0, 0.01, element=1, side="from")
+            pp.create_measurement(net, meas_type, "line", 1.0, 0.01, element=8, side="from")
+            pp.create_measurement(net, meas_type, "line", 1.0, 0.01, element=10, side="from")
+            pp.create_measurement(net, meas_type, "line", 1.0, 0.01, element=11, side="from")
+            pp.create_measurement(net, meas_type, "line", 1.0, 0.01, element=9, side="from")
 
         graph = run_observability_analysis_for_ppnet(net)
         connected_components = list(sorted(nx.connected_components(graph), key=len, reverse=True))
@@ -196,21 +198,22 @@ class Test14BusSystem(unittest.TestCase):
     def test_observability_case14_A2(self):
         net = deepcopy(self.net)
         # Add measurements to make the network observable
-        pp.create_measurement(net, "p", "bus", 0.0, 0.01, element=13)  # Active power injection
-        pp.create_measurement(net, "p", "bus", 0.0, 0.01, element=12)  # Active power injection
-        pp.create_measurement(net, "p", "bus", 0.0, 0.01, element=11)  # Active power injection
-        pp.create_measurement(net, "p", "bus", 0.0, 0.01, element=9)  # Active power injection
-        pp.create_measurement(net, "p", "bus", 0.0, 0.01, element=6)  # Active power injection
-        pp.create_measurement(net, "p", "bus", 0.0, 0.01, element=4)  # Active power injection
-        pp.create_measurement(net, "p", "bus", 0.0, 0.01, element=3)  # Active power injection
-        pp.create_measurement(net, "p", "bus", 0.0, 0.01, element=2)  # Active power injection
-        pp.create_measurement(net, "p", "bus", 0.0, 0.01, element=1)  # Active power injection
+        for meas_type in ("p", "q"):
+            pp.create_measurement(net, meas_type, "bus", 0.0, 0.01, element=13)
+            pp.create_measurement(net, meas_type, "bus", 0.0, 0.01, element=12)
+            pp.create_measurement(net, meas_type, "bus", 0.0, 0.01, element=11)
+            pp.create_measurement(net, meas_type, "bus", 0.0, 0.01, element=9)
+            pp.create_measurement(net, meas_type, "bus", 0.0, 0.01, element=6)
+            pp.create_measurement(net, meas_type, "bus", 0.0, 0.01, element=4)
+            pp.create_measurement(net, meas_type, "bus", 0.0, 0.01, element=3)
+            pp.create_measurement(net, meas_type, "bus", 0.0, 0.01, element=2)
+            pp.create_measurement(net, meas_type, "bus", 0.0, 0.01, element=1)
 
-        pp.create_measurement(net, "p", "line", 1.0, 0.01, element=1, side="from")  # Line active power
-        pp.create_measurement(net, "p", "line", 1.0, 0.01, element=8, side="from")  # Line active power
-        pp.create_measurement(net, "p", "line", 1.0, 0.01, element=10, side="from")  # Line active power
-        pp.create_measurement(net, "p", "line", 1.0, 0.01, element=11, side="from")  # Line active power
-        pp.create_measurement(net, "p", "line", 1.0, 0.01, element=9, side="from")  # Line active power
+            pp.create_measurement(net, meas_type, "line", 1.0, 0.01, element=1, side="from")
+            pp.create_measurement(net, meas_type, "line", 1.0, 0.01, element=8, side="from")
+            pp.create_measurement(net, meas_type, "line", 1.0, 0.01, element=10, side="from")
+            pp.create_measurement(net, meas_type, "line", 1.0, 0.01, element=11, side="from")
+            pp.create_measurement(net, meas_type, "line", 1.0, 0.01, element=9, side="from")
 
         graph = run_observability_analysis_for_ppnet(net)
         connected_components = list(sorted(nx.connected_components(graph), key=len, reverse=True))
@@ -267,7 +270,7 @@ class TestMonticelliBusSystem(unittest.TestCase):
                 r_ohm_per_km=0.1, x_ohm_per_km=0.4, c_nf_per_km=10, max_i_ka=1
             )
 
-        # Add external grid connection at bus 6
+        # Add external grid connection at bus 1
         pp.create_ext_grid(net, buses[1], vm_pu=1.03)
 
         cls.net = net
@@ -275,12 +278,12 @@ class TestMonticelliBusSystem(unittest.TestCase):
     def test_observability(self):
         net = deepcopy(self.net)
         # Add measurements to make the network observable
-        pp.create_measurement(net, "p", "bus", 0.0, 0.01, element=3)  # Active power injection
-
-        pp.create_measurement(net, "p", "line", 1.0, 0.01, element=0, side="from")  # Line active power
-        pp.create_measurement(net, "p", "line", 1.0, 0.01, element=1, side="from")  # Line active power
-        pp.create_measurement(net, "p", "line", 1.0, 0.01, element=5, side="from")  # Line active power
-        pp.create_measurement(net, "p", "line", 1.0, 0.01, element=3, side="from")  # Line active power
+        for meas_type in ("p", "q"):
+            pp.create_measurement(net, meas_type, "bus", 0.0, 0.01, element=3)
+            pp.create_measurement(net, meas_type, "line", 1.0, 0.01, element=0, side="from")
+            pp.create_measurement(net, meas_type, "line", 1.0, 0.01, element=1, side="from")
+            pp.create_measurement(net, meas_type, "line", 1.0, 0.01, element=5, side="from")
+            pp.create_measurement(net, meas_type, "line", 1.0, 0.01, element=3, side="from")
 
         graph = run_observability_analysis_for_ppnet(net)
         connected_components = list(sorted(nx.connected_components(graph), key=len, reverse=True))
@@ -339,7 +342,7 @@ class TestAburBusSystem(unittest.TestCase):
                 r_ohm_per_km=0.1, x_ohm_per_km=0.4, c_nf_per_km=10, max_i_ka=1
             )
 
-        # Add external grid connection at bus 6
+        # Add external grid connection at bus 1
         pp.create_ext_grid(net, buses[1], vm_pu=1.03)
 
         cls.net = net
@@ -348,12 +351,12 @@ class TestAburBusSystem(unittest.TestCase):
 
         net = deepcopy(self.net)
         # Add measurements to make the network observable
-        pp.create_measurement(net, "p", "bus", 0.0, 0.01, element=3)  # Active power injection
-        pp.create_measurement(net, "p", "bus", 0.0, 0.01, element=6)  # Active power injection
-
-        pp.create_measurement(net, "p", "line", 1.0, 0.01, element=5, side="from")  # Line active power
-        pp.create_measurement(net, "p", "line", 1.0, 0.01, element=1, side="from")  # Line active power
-        pp.create_measurement(net, "p", "line", 1.0, 0.01, element=2, side="from")  # Line active power
+        for meas_type in ("p", "q"):
+            pp.create_measurement(net, meas_type, "bus", 0.0, 0.01, element=3)
+            pp.create_measurement(net, meas_type, "bus", 0.0, 0.01, element=6)
+            pp.create_measurement(net, meas_type, "line", 1.0, 0.01, element=5, side="from")
+            pp.create_measurement(net, meas_type, "line", 1.0, 0.01, element=1, side="from")
+            pp.create_measurement(net, meas_type, "line", 1.0, 0.01, element=2, side="from")
 
         graph = run_observability_analysis_for_ppnet(net)
         connected_components = list(sorted(nx.connected_components(graph), key=len, reverse=True))
@@ -381,9 +384,8 @@ class TestAburBusSystem(unittest.TestCase):
         # Now first and second islands are observable, but third island unobservable.
         self.assertEqual(len(connected_components), 3)
         buses = [1, 2, 3, 4, 5, 6]
-        bus_obs_result = [ 0, 1, 1, 1, -1, 0]
+        bus_obs_result = [0, 1, 1, 1, -1, 0]
         assert_array_equal(net._observability_lookup['bus'][buses], bus_obs_result)
         lines = [0, 1, 2, 3, 4, 5, 6, 7]
         line_obs_result = [-1, 0, 1, -1, -1, 1, -1, -1]
         assert_array_equal(net._observability_lookup['line'][lines], line_obs_result)
-

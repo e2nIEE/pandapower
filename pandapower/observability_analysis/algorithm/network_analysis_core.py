@@ -10,8 +10,8 @@ import numpy as np
 from scipy.sparse.linalg import spsolve
 
 from pandapower.estimation.idx_brch import Q_FROM, Q_TO, Q_FROM_STD, Q_TO_STD, IA_FROM, IA_FROM_STD, IA_TO, IA_TO_STD, \
-    IM_FROM, IM_FROM_STD, IM_TO, IM_TO_STD
-from pandapower.estimation.idx_bus import Q, Q_STD, VM, VM_STD, VA, VA_STD
+    IM_FROM, IM_FROM_STD, IM_TO, IM_TO_STD, P_FROM, P_FROM_STD, P_TO, P_TO_STD
+from pandapower.estimation.idx_bus import Q, Q_STD, VM, VM_STD, VA, VA_STD, P, P_STD
 from pandapower.estimation.ppc_conversion import ExtendedPPCI
 from pandapower.pypower.idx_brch import BR_R, BR_X, BR_B, BR_G, SHIFT, TAP
 from pandapower.pypower.idx_brch import branch_cols
@@ -25,35 +25,56 @@ class NetworkAnalysisCore:
     def __init__(self, eppci: ExtendedPPCI):
         self.eppci = deepcopy(eppci)
 
+    def _clean_p_without_q_measurements(self):
+        ppci = self.eppci.data
+        # Create bus mask where Q is NaN
+        q_bus_nan_mask = np.isnan(ppci["bus"][:, bus_cols + Q])
+
+        # Set P and P_STD to NaN only where Q is NaN
+        ppci["bus"][q_bus_nan_mask, bus_cols + P] = np.nan
+        ppci["bus"][q_bus_nan_mask, bus_cols + P_STD] = np.nan
+
+        # Create from branch mask where Q is NaN
+        q_branch_from_nan_mask = np.isnan(ppci["branch"][:, branch_cols + Q_FROM])
+        ppci["branch"][q_branch_from_nan_mask, branch_cols + P_FROM] = np.nan
+        ppci["branch"][q_branch_from_nan_mask, branch_cols + P_FROM_STD] = np.nan
+
+        # Create to branch mask where Q is NaN
+        q_branch_to_nan_mask = np.isnan(ppci["branch"][:, branch_cols + Q_TO])
+        ppci["branch"][q_branch_to_nan_mask, branch_cols + P_TO] = np.nan
+        ppci["branch"][q_branch_to_nan_mask, branch_cols + P_TO_STD] = np.nan
+
+
+
     def _clean_not_p_measurements(self):
         ppci = self.eppci.data
 
-        ppci["bus"][:, bus_cols + VM] = np.NaN
-        ppci["bus"][:, bus_cols + VM_STD] = np.NaN
+        ppci["bus"][:, bus_cols + VM] = np.nan
+        ppci["bus"][:, bus_cols + VM_STD] = np.nan
 
-        ppci["bus"][:, bus_cols + Q] = np.NaN
-        ppci["bus"][:, bus_cols + Q_STD] = np.NaN
+        ppci["bus"][:, bus_cols + Q] = np.nan
+        ppci["bus"][:, bus_cols + Q_STD] = np.nan
 
-        ppci["bus"][:, bus_cols + VA] = np.NaN
-        ppci["bus"][:, bus_cols + VA_STD] = np.NaN
+        ppci["bus"][:, bus_cols + VA] = np.nan
+        ppci["bus"][:, bus_cols + VA_STD] = np.nan
 
-        ppci["branch"][:, branch_cols + Q_FROM] = np.NaN
-        ppci["branch"][:, branch_cols + Q_FROM_STD] = np.NaN
+        ppci["branch"][:, branch_cols + Q_FROM] = np.nan
+        ppci["branch"][:, branch_cols + Q_FROM_STD] = np.nan
 
-        ppci["branch"][:, branch_cols + Q_TO] = np.NaN
-        ppci["branch"][:, branch_cols + Q_TO_STD] = np.NaN
+        ppci["branch"][:, branch_cols + Q_TO] = np.nan
+        ppci["branch"][:, branch_cols + Q_TO_STD] = np.nan
 
-        ppci["branch"][:, branch_cols + IA_FROM] = np.NaN
-        ppci["branch"][:, branch_cols + IA_FROM_STD] = np.NaN
+        ppci["branch"][:, branch_cols + IA_FROM] = np.nan
+        ppci["branch"][:, branch_cols + IA_FROM_STD] = np.nan
 
-        ppci["branch"][:, branch_cols + IA_TO] = np.NaN
-        ppci["branch"][:, branch_cols + IA_TO_STD] = np.NaN
+        ppci["branch"][:, branch_cols + IA_TO] = np.nan
+        ppci["branch"][:, branch_cols + IA_TO_STD] = np.nan
 
-        ppci["branch"][:, branch_cols + IM_FROM] = np.NaN
-        ppci["branch"][:, branch_cols + IM_FROM_STD] = np.NaN
+        ppci["branch"][:, branch_cols + IM_FROM] = np.nan
+        ppci["branch"][:, branch_cols + IM_FROM_STD] = np.nan
 
-        ppci["branch"][:, branch_cols + IM_TO] = np.NaN
-        ppci["branch"][:, branch_cols + IM_TO_STD] = np.NaN
+        ppci["branch"][:, branch_cols + IM_TO] = np.nan
+        ppci["branch"][:, branch_cols + IM_TO_STD] = np.nan
 
         self.eppci._initialize_meas()
 
@@ -104,7 +125,7 @@ class NetworkAnalysisCore:
 
     def _validate_solution(self, A: np.ndarray, x: np.ndarray, b: np.ndarray) -> None:
         """
-           Checks for NaN values in the solution vector x, and if valid, computes and prints the squared residual.
+           Checks for nan values in the solution vector x, and if valid, computes and prints the squared residual.
 
            Parameters:
                A (np.ndarray): The coefficient matrix.
@@ -112,7 +133,7 @@ class NetworkAnalysisCore:
                b (np.ndarray): The right-hand side vector.
 
            Raises:
-               ValueError: If x contains NaN values.
+               ValueError: If x contains nan values.
            """
 
         if np.any(np.isnan(x)):

@@ -14,7 +14,7 @@ from pandapower.estimation.idx_bus import VM
 from pandapower.estimation.ppc_conversion import ExtendedPPCI
 from pandapower.pypower.idx_bus import bus_cols
 from pandapower.results_branch import _get_trafo3w_lookups
-
+from pandapower.pypower.idx_brch import F_BUS, T_BUS
 
 def _map_branches_to_lines(net: pp.pandapowerNet, component_id, component_branches):
     """
@@ -186,8 +186,15 @@ def add_connected_components_to_eppci(graph: nx.MultiGraph, original_eppci: Exte
     all_branch_idx = np.full(original_eppci.data['branch'].shape[0], -1, dtype=int)
     original_eppci.data['branch'] = np.hstack((original_eppci.data['branch'], all_branch_idx.reshape(-1, 1)))
 
-    # Assign each branch to its corresponding observable island
-    for island_id, component in enumerate(subgraphs):
-        component_branches = [edge_data[2][1] for edge_data in component.edges]
-        if any(component_branches):
-            original_eppci.data['branch'][:, -1][component_branches] = island_id
+    # Precompute the island ID for each bus once and store it for quick lookup
+    # This avoids slicing the array in every iteration, which is slow
+    bus_island_ids = original_eppci.data['bus'][:, -1]
+
+    for branch in original_eppci.data['branch']:
+        from_bus = int(branch[F_BUS])
+        to_bus = int(branch[T_BUS])
+
+        # Check if both buses belong to the same island (i.e., same island ID)
+        if bus_island_ids[from_bus] == bus_island_ids[to_bus]:
+            branch[-1] = bus_island_ids[from_bus]
+
