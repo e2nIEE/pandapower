@@ -12,7 +12,7 @@ import pandas as pd
 
 from pandapower.auxiliary import _sum_by_group, phase_to_sequence, version_check
 from pandapower.pypower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN, BUS_TYPE, NONE, \
-    VM, VA, CID, CZD, bus_cols, REF, PV
+    VM, VA, CID_P, CID_Q, CZD_P, CZD_Q, bus_cols, REF, PV
 from pandapower.pypower.idx_bus_sc import C_MAX, C_MIN, bus_cols_sc
 from .pypower.idx_bus_dc import dc_bus_cols, DC_BUS_TYPE, DC_BUS_AREA, DC_VM, DC_ZONE, DC_VMAX, DC_VMIN, DC_P, DC_BUS_I, \
     DC_BASE_KV, DC_NONE, DC_REF, DC_B2B, DC_PD
@@ -588,18 +588,26 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc, sequence=None):
             continue
         active = _is_elements[element].astype(np.float64)
         if element == "load" and voltage_depend_loads:
-            if ((tab["const_z_percent"] + tab["const_i_percent"]) > 100).any():
-                raise ValueError("const_z_percent + const_i_percent need to "
-                                 "be less or equal to 100%!")
+            if ((tab["const_z_p_percent"] + tab["const_i_p_percent"]) > 100).any() or \
+                ((tab["const_z_q_percent"] + tab["const_i_q_percent"]) > 100).any() :
+                raise ValueError("const_z_p_percent + const_i_p_percent need to "
+                                 "be less or equal to 100%! "
+                                 "The same applies to const_z_q_percent + const_i_q_percent!")
             for bus in set(tab["bus"]):
                 mask = (tab["bus"] == bus) & active
                 no_loads = sum(mask)
                 if not no_loads:
                     continue
-                ci_sum = sum(tab["const_i_percent"][mask] / 100.)
-                ppc["bus"][bus_lookup[bus], CID] = ci_sum / no_loads
-                cz_sum = sum(tab["const_z_percent"][mask] / 100.)
-                ppc["bus"][bus_lookup[bus], CZD] = cz_sum / no_loads
+                ci_sum = sum(tab["const_i_p_percent"][mask] / 100.)
+                ppc["bus"][bus_lookup[bus], CID_P] = ci_sum / no_loads
+                cz_sum = sum(tab["const_z_p_percent"][mask] / 100.)
+                ppc["bus"][bus_lookup[bus], CZD_P] = cz_sum / no_loads
+                
+                ci_q_sum = sum(tab["const_i_q_percent"][mask] / 100.)
+                ppc["bus"][bus_lookup[bus], CID_Q] = ci_q_sum / no_loads
+                cz_q_sum = sum(tab["const_z_q_percent"][mask] / 100.)
+                ppc["bus"][bus_lookup[bus], CZD_Q] = cz_q_sum / no_loads
+                
         sign = -1 if element == "sgen" else 1
         if element == "motor":
             p_mw, q_mvar = _get_motor_pq(net)

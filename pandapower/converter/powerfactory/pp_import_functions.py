@@ -1744,24 +1744,43 @@ def create_pp_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
                           dict_net=dict_net, variables=('p_mw', 'q_mvar')))
         load_type = item.typ_id
         if load_type is None:
-            params["const_z_percent"] = 100
+            params["const_z_p_percent"] = 100
         else:
-            if (load_type.kpu != load_type.kqu or load_type.kpu0 != load_type.kqu0 or load_type.aP != load_type.aQ or
-                    load_type.bP != load_type.bQ or load_type.cP != load_type.cQ):
-                logger.warning(f"Load {item.loc_name} ({load_class}) has unsupported voltage dependency configuration!"
-                               f"Only the P parameters will be used to specify the voltage dependency of this load")
-                # todo implement load voltage dependency in this case using CharacteristicControl
-            i = 0
-            z = 0
-            for cc, ee in zip(("aP", "bP", "cP"), ("kpu0", "kpu1", "kpu")):
-                c = load_type.GetAttribute(cc)
-                e = load_type.GetAttribute(ee)
-                if e == 1:
-                    i += 100 * c
-                elif e == 2:
-                    z += 100 * c
-            params["const_i_percent"] = i
-            params["const_z_percent"] = z
+            pf_params = [load_type.kpu0,
+                         load_type.kpu1,
+                         load_type.kpu,
+                         load_type.kqu0,
+                         load_type.kqu1,
+                         load_type.kqu]
+            if (pf_params[:3]!=pf_params[3:]) or \
+                (pf_params[:3]!=[0,1,2]) or \
+                (pf_params[3:]!=[0,1,2]):
+                raise UserWarning(f"Load {item.loc_name} ({load_class}) unsupported voltage dependency configuration")
+            else:
+                i_p = 0
+                z_p = 0
+                i_q = 0
+                z_q = 0
+                for cc_p, ee_p, cc_q, ee_q in zip(("aP", "bP", "cP"), ("kpu0", "kpu1", "kpu"),
+                                      ("aQ", "bQ", "cQ"), ("kqu0", "kqu1", "kqu")):
+                    c_p = ga(load_type, cc_p)
+                    e_p = ga(load_type, ee_p)
+                    if e_p == 1:
+                        i_p += 100 * c_p
+                    elif e_p == 2:
+                        z_p += 100 * c_p
+
+                    c_q = ga(load_type, cc_q)
+                    e_q = ga(load_type, ee_q)
+                    if e_q == 1:
+                        i_q += 100 * c_q
+                    elif e_q == 2:
+                        z_q += 100 * c_q
+
+                params["const_i_p_percent"] = i_p
+                params["const_z_p_percent"] = z_p
+                params["const_i_q_percent"] = i_q
+                params["const_z_q_percent"] = z_q
 
     ### for now - don't import ElmLodlvp
     elif load_class == 'ElmLodlvp':
@@ -2517,9 +2536,9 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
             if pf_type.tapchtype == 0:
                 tap_changer_type = "Ratio"
             elif pf_type.tapchtype == 1:
-                tap_changer_type = "Symmetrical"
-            elif pf_type.tapchtype == 2:
                 tap_changer_type = "Ideal"
+            elif pf_type.tapchtype == 2:
+                tap_changer_type = "Symmetrical"
             else:
                 tap_changer_type = "None"
 
@@ -2597,9 +2616,9 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
             if pf_type.tapchtype == 0:
                 tap_changer_type = "Ratio"
             elif pf_type.tapchtype == 1:
-                tap_changer_type = "Symmetrical"
-            elif pf_type.tapchtype == 2:
                 tap_changer_type = "Ideal"
+            elif pf_type.tapchtype == 2:
+                tap_changer_type = "Symmetrical"
             else:
                 tap_changer_type = "None"
 
@@ -4282,7 +4301,7 @@ def split_all_lines(net, lvp_dict):
             if p >= 0 or True:
                 # TODO: set const_i_percent to 100 after the pandapower bug is fixed
                 new_load = create_load(net, new_bus, name=load_item.loc_name, p_mw=p, q_mvar=q,
-                                       const_i_percent=0)
+                                       const_i_p_percent=0, const_i_q_percent=0)
                 logger.debug('created load %s' % new_load)
                 net.res_load.at[new_load, 'pf_p'] = p
                 net.res_load.at[new_load, 'pf_q'] = q

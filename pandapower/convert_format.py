@@ -269,6 +269,12 @@ def _create_seperate_cost_tables(net, elements_to_deserialize):
 def _rename_columns(net, elements_to_deserialize):
     if _check_elements_to_deserialize('line', elements_to_deserialize):
         net.line = net.line.rename(columns={'imax_ka': 'max_i_ka'})
+    if _check_elements_to_deserialize('load', elements_to_deserialize) and \
+        ('const_z_percent' in net.load.columns and 'const_i_percent' in net.load.columns) :
+            net.load = net.load.rename(columns={'const_z_percent': 'const_z_p_percent',
+                                                'const_i_percent': 'const_i_p_percent'})
+            net.load.insert(net.load.columns.get_loc('const_i_p_percent') + 1, 'const_i_q_percent', net.load.const_i_p_percent)
+            net.load.insert(net.load.columns.get_loc('const_z_p_percent') + 1, 'const_z_q_percent', net.load.const_z_p_percent)
     if _check_elements_to_deserialize('gen', elements_to_deserialize):
         net.gen = net.gen.rename(columns={"qmin_mvar": "min_q_mvar", "qmax_mvar": "max_q_mvar"})
     for typ, data in net.std_types["line"].items():
@@ -329,9 +335,12 @@ def _add_missing_columns(net, elements_to_deserialize):
             "tap_step_degree" not in net.trafo3w:
         net.trafo3w["tap_step_degree"] = 0
     if _check_elements_to_deserialize('load', elements_to_deserialize) and \
-            "const_z_percent" not in net.load or "const_i_percent" not in net.load:
-        net.load["const_z_percent"] = np.zeros(net.load.shape[0])
-        net.load["const_i_percent"] = np.zeros(net.load.shape[0])
+            "const_z_p_percent" not in net.load or "const_i_p_percent" not in net.load and \
+            "const_z_q_percent" not in net.load or "const_i_q_percent" not in net.load:
+        net.load["const_z_p_percent"] = np.zeros(net.load.shape[0])
+        net.load["const_i_p_percent"] = np.zeros(net.load.shape[0])
+        net.load["const_z_q_percent"] = np.zeros(net.load.shape[0])
+        net.load["const_i_q_percent"] = np.zeros(net.load.shape[0])
 
     if _check_elements_to_deserialize('shunt', elements_to_deserialize) and \
             "vn_kv" not in net["shunt"]:

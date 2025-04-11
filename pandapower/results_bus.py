@@ -154,16 +154,20 @@ def write_voltage_dependend_load_results(net, p, q, b):
 
         voltage_depend_loads = net["_options"]["voltage_depend_loads"]
 
-        cz = l["const_z_percent"].values / 100.
-        ci = l["const_i_percent"].values / 100.
+        cz = l["const_z_p_percent"].values / 100.
+        ci = l["const_i_p_percent"].values / 100.
         cp = 1. - (cz + ci)
 
         # constant power
         pl = l["p_mw"].values * scaling * load_is * cp
         net["res_load"]["p_mw"] = pl
         p = np.hstack([p, pl])
+        
+        cz_q = l["const_z_q_percent"].values / 100. #
+        ci_q = l["const_i_q_percent"].values / 100. #
+        cq = 1. - (cz_q + ci_q) # 
 
-        ql = l["q_mvar"].values * scaling * load_is * cp
+        ql = l["q_mvar"].values * scaling * load_is * cq #* cp
         net["res_load"]["q_mvar"] = ql
         q = np.hstack([q, ql])
 
@@ -176,8 +180,9 @@ def write_voltage_dependend_load_results(net, p, q, b):
             pl = l["p_mw"].values * scaling * load_is * volt_depend
             net["res_load"]["p_mw"] += pl
             p = np.hstack([p, pl])
-
-            ql = l["q_mvar"].values * scaling * load_is * volt_depend
+            
+            volt_depend_q = ci_q * vm_l + cz_q * vm_l ** 2
+            ql = l["q_mvar"].values * scaling * load_is * volt_depend_q #* volt_depend
             net["res_load"]["q_mvar"] += ql
             q = np.hstack([q, ql])
 
