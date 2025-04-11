@@ -64,7 +64,7 @@ def extend_pp_net_cim(net: pandapowerNet, override: bool = True) -> pandapowerNe
     fill_dict['gen'] = dict()
     fill_dict['gen'][np_str_type] = [sc['t'], 'description']
     fill_dict['gen'][np_float_type] = \
-        ['min_p_mw', 'max_p_mw', 'min_q_mvar', 'max_q_mvar', 'vn_kv', 'rdss_ohm', 'xdss_pu', 'cos_phi', 'pg_percent']
+        ['min_p_mw', 'max_p_mw', 'min_q_mvar', 'max_q_mvar', 'vn_kv', 'rdss_ohm', 'xdss_pu', 'cos_phi', 'pg_percent', 'governorSCD']
     fill_dict['sgen'] = dict()
     fill_dict['sgen'][np_str_type] = [sc['t'], 'description', 'generator_type']
     fill_dict['sgen'][np_float_type] = ['k', 'rx', 'vn_kv', 'rdss_ohm', 'xdss_pu', 'lrc_pu']
@@ -73,7 +73,7 @@ def extend_pp_net_cim(net: pandapowerNet, override: bool = True) -> pandapowerNe
     fill_dict['storage'] = dict()
     fill_dict['storage'][np_str_type] = [sc['t'], 'description']
     fill_dict['shunt'] = dict()
-    fill_dict['shunt'][np_str_type] = [sc['t'], 'description']
+    fill_dict['shunt'][np_str_type] = [sc['t'], 'description','sVCControlMode']
     fill_dict['ward'] = dict()
     fill_dict['ward'][np_str_type] = [sc['t'], 'description']
     fill_dict['xward'] = dict()

@@ -4,6 +4,23 @@ Change Log
 [upcoming release] - 2025-..-..
 -------------------------------
 
+- [FIXED] DC loadflow after AC loadflow, had ambiguous results still present in net
+- [ADDED] add three columns: id_q_capability_curve_table, reactive_capability_curve, curve_style in gen and sgen
+- [ADDED] cim2pp converter- import reactive power capability curve data synchronousMachinesCim16.py
+- [ADDED] cim2pp converter - export parameter "governorSCD" in additional column in gen table
+- [FIXED] a problem with create_nxgraph
+- [ADDED] parameter slack_as_gen for `from_ucte()` converter (changed the default behavior)
+- [FIXED] cim2pp: the `ignore_errors` parameter was not respected in the `CimParser`
+- [FIXED] cim2pp: keep the busbar names and IDs for node breaker and bus branch models
+- [FIXED] cim2pp: extend cim data structure with missing parameters
+- [FIXED] cim2pp: better vector group assignment
+- [FIXED] cim2pp: refactor cim2pp test
+- [FIXED] cim2pp: manage crash when importing not supported dy profile
+- [ADDED] cim2pp: add tests for short circuit parameters
+
+[3.0.0] - 2025-03-06
+-------------------------------
+
 - [ADDED] cim2pp converter - extract measurements for load, sgen, gen, shunt, ext_grid, ward and xward elements
 - [ADDED] cim2pp converter - extract 'Terminal' and 'description' Analog fields in net.measurement
 - [FIXED] cim2pp converter - removed nan rows in net.measurement
@@ -84,7 +101,9 @@ Change Log
 - [ADDED] DERController with multiple options to define DER reactive power provision depending on P and V
 - [ADDED] switch results p and q
 - [ADDED] PowerFactory converter: option to export lines with sections as a single line with averaged-out impedance, or export line sections as separate individual lines
-- [ADDED] extend plotly function: add zoomlevel-parameter and hvdc lines
+- [ADDED] extend plotly function: add zoomlevel-parameter, dash-lines and hvdc lines
+- [ADDED] extend plotly draw traces: add trace kwargs, e.g. visibility="legendonly" to not show the trace by default
+- [ADDED] extend plotly draw traces: if filename=None, no HTML will be created and just a ploty.Figure object is returned
 - [ADDED] added support for reading cgmes v3.0 files
 - [ADDED] added support for converting cgmes v3.0
 - [CHANGED] plotting for voltage profile considers also gens that are slacks and only ext_grids and slack gens that are in service
@@ -141,6 +160,7 @@ Change Log
 - [ADDED] cim2pp converter: Using lxml to parse XML files (better performance)
 - [FIXED] OC relay name attribute error
 - [FIXED] cim2pp: fixed missing nominal voltages at SeriesCompensator
+- [FIXED] cim2pp: set voltages at StaticVarCompensators with sVCControlMode==reactivePower to NaN
 
 [2.14.11] - 2024-07-08
 -------------------------------

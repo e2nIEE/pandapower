@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import os
@@ -85,7 +85,7 @@ def test_from_ucte(test_case):
     ucte_file = os.path.join(_testfiles_folder(), f"{ucte_file_name}.uct")
 
     # --- convert UCTE data -------------------------------------------------------------------
-    net = pc.from_ucte(ucte_file)
+    net = pc.from_ucte(ucte_file, slack_as_gen=False)
 
     assert isinstance(net, pp.pandapowerNet)
     assert len(net.bus)
@@ -163,7 +163,7 @@ if __name__ == '__main__':
     else:
 
         ucte_file = os.path.join(_testfiles_folder(), "test_ucte_DE.uct")
-        net = pc.from_ucte(ucte_file)
+        net = pc.from_ucte(ucte_file, slack_as_gen=False)
 
         print(net)
         print()

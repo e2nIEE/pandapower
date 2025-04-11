@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
@@ -12,7 +12,7 @@ from pandapower._version import __version__, __format_version__
 from pandapower.create import create_empty_network, create_poly_cost
 from pandapower.results import reset_results
 from pandapower.control import TrafoController
-import pandapower.plotting.geo as geo
+from pandapower.plotting.geo import convert_geodata_to_geojson
 
 try:
     import pandaplan.core.pplog as logging
@@ -71,7 +71,7 @@ def _convert_geo_data(net, elements_to_deserialize=None):
             if Version(str(net.format_version)) < Version("1.6"):
                 net.bus_geodata = pd.DataFrame.from_dict(net.bus_geodata)
                 net.line_geodata = pd.DataFrame.from_dict(net.line_geodata)
-            geo.convert_geodata_to_geojson(net)
+            convert_geodata_to_geojson(net)
 
 
 def _restore_index_names(net):
