@@ -3668,7 +3668,7 @@ def create_stactrl(net, item):
     if len(gen_element_index) != len(machines):
         raise UserWarning("station controller: could not properly identify the machines")
 
-    gen_element_in_service = [net[gen_element].loc[net[gen_element].name == s.loc_name].in_service for s in machines]
+    gen_element_in_service = [net[gen_element].loc[net[gen_element].name == s.loc_name, "in_service"].values[0] for s in machines]
 
     i = 0
     distribution = []
@@ -3798,8 +3798,7 @@ def create_stactrl(net, item):
                                                  set_point=v_setpoint_pu,
                                                  voltage_ctrl=True, 
                                                  bus_idx=bus,
-                                                 tol=1e-3, 
-                                                 machines=[machine_obj.loc_name for machine_obj in item.psym]) 
+                                                 tol=1e-3)
             pp.control.DroopControl(net, q_droop_mvar=item.Srated * 100 / item.ddroop, bus_idx=bus,
                                     vm_set_pu=v_setpoint_pu, controller_idx=bsc.index, voltage_ctrl=True)
         else:
@@ -3819,8 +3818,7 @@ def create_stactrl(net, item):
                                            set_point=v_setpoint_pu, 
                                            voltage_ctrl=True,
                                            damping_factor=0.9,
-                                           tol=1e-6, 
-                                           machines=[machine_obj.loc_name for machine_obj in item.psym])
+                                           tol=1e-6)
     elif control_mode == 1:  # Q Control mode
         if item.iQorient != 0:
             if not stactrl_in_service:
@@ -3846,8 +3844,7 @@ def create_stactrl(net, item):
                 set_point=item.qsetp,
                 voltage_ctrl=False, 
                 damping_factor=0.9,
-                tol=1e-6, 
-                machines=[machine_obj.loc_name for machine_obj in item.psym])
+                tol=1e-6)
         elif item.qu_char == 1:
             controlled_node = item.refbar
             bus = bus_dict[controlled_node]  # controlled node
@@ -3868,19 +3865,18 @@ def create_stactrl(net, item):
                 set_point=item.qsetp,
                 voltage_ctrl=False,
                 bus_idx=bus,
-                tol=1e-6, 
                 damping_factor=0.9,
-                machines=[machine_obj.loc_name for machine_obj in item.psym])
+                tol=1e-6) 
             pp.control.DroopControl(
                 net,
+                name=item.loc_name,
                 q_droop_mvar=item.Srated * 100 / item.ddroop,
                 bus_idx=bus,
                 vm_set_pu=item.udeadbup,
                 vm_set_ub=item.udeadbup,
                 vm_set_lb=item.udeadblow,
                 controller_idx=bsc.index,
-                voltage_ctrl=False, name=item.loc_name, machines=[machine_obj.loc_name for machine_obj in item.psym]
-            )
+                voltage_ctrl=False) 
         else:
             raise NotImplementedError
     else:

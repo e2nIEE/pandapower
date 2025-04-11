@@ -69,6 +69,7 @@ class BinarySearchControl(Controller):
                          matching_params=matching_params)
         
         self.name = name
+        #print(self.name)
         self.in_service = ctrl_in_service
         self.input_element = input_element
         self.input_element_index = []
@@ -80,15 +81,33 @@ class BinarySearchControl(Controller):
         self.output_element = output_element
         self.output_element_index = output_element_index
         self.output_element_in_service = output_element_in_service
+        
         # normalize the values distribution:
-        self.output_values_distribution = np.array(output_values_distribution, dtype=np.float64) / np.sum(
-                output_values_distribution)
+        self._normalize_distribution_in_service(net, initial_pf_distribution=output_values_distribution)   
+            
+        # self.output_values_distribution = [0 if not in_service else value 
+        #                                    for in_service, value in zip(self.output_element_in_service, output_values_distribution)]
+        # total = np.sum(self.output_values_distribution)
+        # if total > 0:  # To avoid division by zero
+        #     self.output_values_distribution = np.array(self.output_values_distribution, dtype=np.float64) / total
+        # else:
+        #     self.output_values_distribution = np.zeros_like(self.output_values_distribution, dtype=np.float64)
+        
         self.output_min_q_mvar = np.array(output_min_q_mvar, dtype=np.float64)
         self.output_max_q_mvar = np.array(output_max_q_mvar, dtype=np.float64)
         if self.output_element == "shunt":
             self.output_adjustable = None
         else: 
-            self.output_adjustable = np.array([True]*len(output_min_q_mvar), dtype=np.bool)
+            #self.output_adjustable = np.array([True]*len(output_min_q_mvar), dtype=np.bool)
+            # self.output_adjustable = np.array(self.output_element_in_service, dtype=np.bool)
+            # print(self.name)
+            # print(self.output_values_distribution)
+            # print(self.output_element_in_service)
+            self.output_adjustable = np.array([False if not distribution else service 
+                                               for distribution, service in zip(self.output_values_distribution, 
+                                                                                self.output_element_in_service)],
+                                              dtype=np.bool)
+            #print(self.output_adjustable)
         self.set_point = set_point
         self.voltage_ctrl = voltage_ctrl
         self.bus_idx = bus_idx
@@ -100,7 +119,8 @@ class BinarySearchControl(Controller):
         self.diff_old = None
         self.converged = False
         self.overwrite_covergence = False
-        self.write_flag, self.output_variable = _detect_read_write_flag(net, output_element, output_element_index,
+        self.write_flag, self.output_variable = _detect_read_write_flag(net, output_element, 
+                                                                        output_element_index,
                                                                         output_variable)
         # write kwargs in self
         for key, value in kwargs.items():
@@ -134,8 +154,8 @@ class BinarySearchControl(Controller):
             counter += 1
 
     def initialize_control(self, net):
-        self.output_values = read_from_net(net, self.output_element, self.output_element_index, self.output_variable,
-                                           self.write_flag)
+        self.output_values = read_from_net(net, self.output_element, self.output_element_index,
+                                           self.output_variable, self.write_flag)
 
     def is_converged(self, net):
         """
@@ -167,6 +187,7 @@ class BinarySearchControl(Controller):
                 self.output_element_in_service.append(net.sgen.in_service[output_index])
             elif self.output_element == "shunt":
                 self.output_element_in_service.append(net.shunt.in_service[output_index])
+        
         # check if at least one input and one output element is in_service
         if not (any(self.input_element_in_service) and any(self.output_element_in_service)):
             self.converged = True
@@ -191,31 +212,54 @@ class BinarySearchControl(Controller):
                 self.converged = True
                 return self.converged
             else:
+                # adapt output adjustable depending on in_service
+                self.output_adjustable = np.array([in_service and adjustable for in_service, adjustable 
+                                                   in zip(self.output_element_in_service, self.output_adjustable)], dtype=np.bool)
+                
+                # normalize the values distribution
+                self._normalize_distribution_in_service(net) 
+                # set output_values_distribution to 0, if station is not in service
+                # self.output_values_distribution = [0 if not in_service else value for in_service, value
+                #                                    in zip(self.output_element_in_service, self.output_values_distribution)]
+                # total = np.sum(self.output_values_distribution)
+                # if total > 0:  # To avoid division by zero
+                #     self.output_values_distribution = np.array(self.output_values_distribution, dtype=np.float64) / total
+                # else:
+                #     self.output_values_distribution = np.zeros_like(self.output_values_distribution, dtype=np.float64)
+                
                 self.diff = self.set_point - sum(input_values) 
                 #print(self.diff)
                 self.converged = np.all(np.abs(self.diff) < self.tol) 
             
         else:
-            # self.diff_old = self.diff
-            # self.diff = self.set_point - net.res_bus.vm_pu.at[self.bus_idx]
-            # self.converged = np.all(np.abs(self.diff) < self.tol)
-            
             self.diff_old = self.diff
-            #print(self.output_adjustable)
             
             if not any(self.output_adjustable):
                 print('V_Ctrl: All stations controlled by %s reached reactive power limits.' %self.name)
-                #print('jooooo alle sind an Grenze!!! Abbruch !!!')
                 self.converged = True
                 return self.converged
             else:
+                # adapt output adjustable depending on in_service
+                self.output_adjustable = np.array([in_service and adjustable for in_service, adjustable 
+                                                   in zip(self.output_element_in_service, self.output_adjustable)], dtype=np.bool)
+                
+                # normalize the values distribution
+                self._normalize_distribution_in_service(net) 
+                
+                # # self.output_values_distribution = np.array(output_values_distribution, dtype=np.float64) / np.sum(
+                # #         output_values_distribution)
+                # self.output_values_distribution = [0 if not in_service else value 
+                #                                    for in_service, value in zip(self.output_element_in_service, self.output_values_distribution)]
+                # # Normalization
+                # total = np.sum(self.output_values_distribution)
+                # if total > 0:  # To avoid division by zero
+                #     self.output_values_distribution = np.array(self.output_values_distribution, dtype=np.float64) / total
+                # else:
+                #     self.output_values_distribution = np.zeros_like(self.output_values_distribution, dtype=np.float64)
+                
                 self.diff = self.set_point - net.res_bus.vm_pu.loc[self.input_element_index].values[0]
                 #print(self.diff)
                 self.converged = np.all(np.abs(self.diff) < self.tol) 
-            
-            
-        ### check mit neuen input values bzw. "fester" sgen (sgen am limit) muss in diff berücksichtigt werden
-        ## warning wenn alle an grenzen, mehr geht nicht, qsetp wird nicht erreicht
 
         if self.overwrite_covergence:
             self.overwrite_covergence = False
@@ -225,7 +269,7 @@ class BinarySearchControl(Controller):
 
     def control_step(self, net):
         #print('step', self.name)
-        # if self.name == "SC_ConstQ_case2": # "SC_ConstQ_case6": #"SC_ConstQ_case2":
+        # if self.name == "SC_ConstQ_case6": 
         #     print('joooo')
            
         self._binarysearchcontrol_step(net)
@@ -234,27 +278,36 @@ class BinarySearchControl(Controller):
         # if self.name=="BS30":
         #     print('single')
         
-        
         if not self.in_service:
             return
-        if self.output_values_old is None: # initial or first step
+        if self.output_values_old is None: 
+            # initial or first step
+            # is ok that values are set for all stations even though they are out of service or not adjustable --> following step will correct this
             self.output_values_old, self.output_values = self.output_values, self.output_values + 1e-3
+            
+            positions_not_adjustable = [i for i, val in enumerate(self.output_adjustable) if not val] 
+            for i in positions_not_adjustable:
+                if self.output_values_distribution[i]==0 or self.output_element_in_service[i]==False :
+                    self.output_values[i] = 0
+                else:
+                    continue
         else:
             step_diff = self.diff - self.diff_old
             x = self.output_values - self.diff * (self.output_values - self.output_values_old) / np.where(
                 step_diff == 0, 1e-6, step_diff)
             
-            # if isinstance(x, numbers.Number):
-            #     # das geht so nicht!!!!!
-            #     x = x * self.output_values_distribution 
-            # else:
             if not all(self.output_adjustable) and net._options['enforce_q_lims']:
-                positions_adjustable = [i for i, val in enumerate(self.output_adjustable) if val] ## gives which is/are adjustable 
+                positions_adjustable = [i for i, val in enumerate(self.output_adjustable) if val] # gives which is/are adjustable 
                 positions_not_adjustable = [i for i, val in enumerate(self.output_adjustable) if not val] # can be one or multiple ## gives which is/are not adjustable anymore
                 
                 sum_adjustable = sum(x) - sum(self.output_values[positions_not_adjustable]) # anlagen, die noch adjustable sind, rest der Leistung muss noch erreicht werden
                 x[positions_adjustable] = sum_adjustable * self.output_values_distribution[positions_adjustable]
-                x[positions_not_adjustable] = self.output_values[positions_not_adjustable] # reset value to q_limit
+                
+                for i in positions_not_adjustable:
+                    if self.output_element_in_service[i]:
+                        x[i] = self.output_values[i] # reset value to q_limit
+                    else:
+                        x[i] = 0 # reset value to 0 because station is oout of service
             
             else:
                 x = sum(x) * self.output_values_distribution
@@ -263,16 +316,19 @@ class BinarySearchControl(Controller):
                 if isinstance(x, np.ndarray) and len(x)>1:
                     # check if x is a list, multiple assets in station controller
                     
-                    # check if a limit is reached
-                    reached_min_qmvar = [val <= min_val
-                                          for val, min_val in zip(x, self.output_min_q_mvar)]
-                    reached_max_qmvar = [val >= max_val 
-                                          for val, max_val in zip(x, self.output_max_q_mvar)]
+                    # check if a limit is reached, consider element in service
+                    reached_min_qmvar = [val <= min_val and in_service
+                                         for val, min_val, in_service 
+                                         in zip(x, self.output_min_q_mvar, self.output_element_in_service)]
+                    reached_max_qmvar = [val >= max_val and in_service
+                                         for val, max_val, in_service 
+                                         in zip(x, self.output_max_q_mvar, self.output_element_in_service)]
                  
                     if any(reached_max_qmvar):
                         positions = [i for i, val in enumerate(reached_max_qmvar) if val is np.True_] # can be one or multiple
-                        print('Station controlled by %s reached a reactive power limit.' % self.name)
-                        # print('Station %s controlled by %s reached a reactive power limit.' % (self.machines[positions], self.name))
+                        reached_index = [self.output_element_index[i] for i in positions]
+                        print('Station(s) controlled by %s reached the maximum reactive power limit: %s' 
+                              % (self.name, ', '.join(net[self.output_element].loc[reached_index].name.tolist())))
                         self.output_adjustable[positions] = False
                         sum_old = sum(x)
                         max_q_mvar_limit = self.output_max_q_mvar[positions]
@@ -289,8 +345,9 @@ class BinarySearchControl(Controller):
                         
                     elif any(reached_min_qmvar):
                         positions = [i for i, val in enumerate(reached_min_qmvar) if val is np.True_]
-                        print('Station controlled by %s reached a reactive power limit.' % self.name)
-                        #print('Station %s controlled by %s reached a reactive power limit.' % (self.machines[positions], self.name))
+                        reached_index = [self.output_element_index[i] for i in positions]
+                        print('Station(s) controlled by %s reached the minimum reactive power limit: %s' 
+                              % (self.name, ', '.join(net[self.output_element].loc[reached_index].name.tolist())))
                         self.output_adjustable[positions] = False
                         sum_old = sum(x)
                         min_q_mvar_limit = self.output_min_q_mvar[positions]
@@ -317,7 +374,7 @@ class BinarySearchControl(Controller):
                     
                     if reached_min_qmvar or reached_max_qmvar:
                         print('Station %s controlled by %s reached a reactive power limit.' % (self.machines[0], self.name))
-                        self.output_adjustable = np.array([False], dtype=np.bool)                       
+                        self.output_adjustable = np.array([False], dtype=np.bool)                   
                         if reached_min_qmvar:
                             self.output_values_old, self.output_values = self.output_values, self.output_min_q_mvar
                         elif reached_max_qmvar:
@@ -330,7 +387,25 @@ class BinarySearchControl(Controller):
         # write new set values
         write_to_net(net, self.output_element, self.output_element_index, self.output_variable, self.output_values,
                      self.write_flag)
-
+        
+    def _normalize_distribution_in_service(self, net, initial_pf_distribution=None):
+        # normalize distribution depending on in service of stations
+        if initial_pf_distribution is None:
+            distribution = self.output_values_distribution
+        else:
+            distribution = initial_pf_distribution
+            
+        # normalize the values distribution
+        # set output_values_distribution to 0, if station is not in service
+        self.output_values_distribution = [0 if not in_service else value 
+                                           for in_service, value in zip(self.output_element_in_service, distribution)]
+        total = np.sum(self.output_values_distribution)
+        if total > 0:  # To avoid division by zero
+            self.output_values_distribution = np.array(self.output_values_distribution, dtype=np.float64) / total
+        else:
+            self.output_values_distribution = np.zeros_like(self.output_values_distribution, dtype=np.float64)
+            
+        
     def __str__(self):
         return super().__str__() + " [%s.%s.%s.%s]" % (
             self.input_element, self.input_variable, self.output_element, self.output_variable)
