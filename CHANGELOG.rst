@@ -4,6 +4,7 @@ Change Log
 [upcoming release] - 2025-..-..
 -------------------------------
 
+- [ADDED] cim2pp converter - additional column "EquipmentContainer_id" in line table 
 - [FIXED] DC loadflow after AC loadflow, had ambiguous results still present in net
 - [ADDED] add three columns: id_q_capability_curve_table, reactive_capability_curve, curve_style in gen and sgen
 - [ADDED] cim2pp converter- import reactive power capability curve data synchronousMachinesCim16.py
@@ -14,6 +15,9 @@ Change Log
 - [FIXED] cim2pp: keep the busbar names and IDs for node breaker and bus branch models
 - [FIXED] cim2pp: extend cim data structure with missing parameters
 - [FIXED] cim2pp: better vector group assignment
+- [FIXED] cim2pp: refactor cim2pp test
+- [FIXED] cim2pp: manage crash when importing not supported dy profile
+- [ADDED] cim2pp: add tests for short circuit parameters
 
 [3.0.0] - 2025-03-06
 -------------------------------
