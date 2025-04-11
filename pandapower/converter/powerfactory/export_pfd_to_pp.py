@@ -13,7 +13,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def from_pfd(app, prj_name: str, path_dst=None, pv_as_slack=False, pf_variable_p_loads='plini',
+def from_pfd(app, prj_name: str, script_name=None, script_settings=None, path_dst=None, pv_as_slack=False, pf_variable_p_loads='plini',
              pf_variable_p_gen='pgini', flag_graphics='GPS', tap_opt='nntap',
              export_controller=True, handle_us="Deactivate", is_unbalanced=False, create_sections=True):
     """
@@ -42,18 +42,41 @@ def from_pfd(app, prj_name: str, path_dst=None, pv_as_slack=False, pf_variable_p
     res = app.ActivateProject(prj_name)
     if res == 1:
         raise RuntimeError('Project %s could not be found or activated' % prj_name)
-
+        
     prj = app.GetActiveProject()        
         
     logger.info('gathering network elements')
     dict_net = create_network_dict(app, flag_graphics)
-    pf_load_flow_failed = run_load_flow(app)
+    
+    if script_name is not None:
+        script = get_script(user, script_name)
+        script_values = script.IntExpr
+        for parameter_name, new_value in script_settings.items():
+            if parameter_name not in script_settings:
+                raise UserWarning('Script settings are faulty. Some parameters do not exist!')
+            pos = script.IntName.index(parameter_name)
+            if script_values[pos] != new_value:
+                script_values[pos] = new_value
+            else:
+                continue 
+        script.SetAttribute('IntExpr', script_values)
+        pf_script_execution_failed = script.Execute()
+        if pf_script_execution_failed != 0:
+            logger.error('Script execution failed.') 
+        pf_load_flow_failed = run_load_flow(app) 
+        if pf_load_flow_failed != 0:
+            logger.error('Load flow failed after executing DPL script.') 
+    else:
+        pf_load_flow_failed = run_load_flow(app)
+        slack_synchron_machine = None
+        
     logger.info('exporting network to pandapower')
     app.SetAttributeModeInternal(1)
+    #net = from_pf(app, dict_net=dict_net, pv_as_slack=pv_as_slack, pf_variable_p_loads=pf_variable_p_loads,
     net = from_pf(dict_net=dict_net, pv_as_slack=pv_as_slack, pf_variable_p_loads=pf_variable_p_loads,
                   pf_variable_p_gen=pf_variable_p_gen, flag_graphics=flag_graphics, tap_opt=tap_opt,
                   export_controller=export_controller, handle_us=handle_us, is_unbalanced=is_unbalanced,
-                  create_sections=create_sections)
+                  create_sections=create_sections) 
     # save a flag, whether the PowerFactory load flow failed
     app.SetAttributeModeInternal(0)
     net["pf_converged"] = not pf_load_flow_failed
@@ -67,6 +90,18 @@ def from_pfd(app, prj_name: str, path_dst=None, pv_as_slack=False, pf_variable_p
         logger.info('saved net as %s', path_dst)
     return net
 
+def get_script(user, script_name):
+    script = None
+
+    for obj in user.GetContents():
+        if obj.loc_name == script_name:
+            script = obj
+            break
+
+    if script is None:
+        raise UserWarning(f"Could not find script with name {script_name}.")
+
+    return script
 
 # experimental feature
 def execute(app, path_src, path_dst, pv_as_slack, scale_feeder_loads=False, var_load='plini',
