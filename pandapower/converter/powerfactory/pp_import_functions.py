@@ -3932,10 +3932,9 @@ def create_stactrl(net, item):
                                         output_variable="q_mvar",
                                         output_element_index=gen_element_index,
                                         output_element_in_service=gen_element_in_service,
-                                        output_values_distribution=distribution,output_min_q_mvar=net[gen_element].loc[gen_element_index].min_q_mvar.to_list(),
+                                        output_values_distribution=distribution,
+                                      output_min_q_mvar=net[gen_element].loc[gen_element_index].min_q_mvar.to_list(),
                                       output_max_q_mvar=net[gen_element].loc[gen_element_index].max_q_mvar.to_list(),
-                                        output_min_q_mvar=net[gen_element].loc[gen_element_index].min_q_mvar.to_list(),
-                                        output_max_q_mvar=net[gen_element].loc[gen_element_index].max_q_mvar.to_list(),
                                         input_element=res_element_table,
                                         input_variable=variable,
                                         input_element_index=res_element_index,
@@ -3943,7 +3942,6 @@ def create_stactrl(net, item):
                                         voltage_ctrl=True,
                                         bus_idx=bus,
                                         tol=1e-3,
-                                      name=item.loc_name,
                                       machines=[machine_obj.loc_name for machine_obj in item.psym])
             net.controller.loc[max(net.controller.index), 'name'] = item.loc_name
             DroopControl(net, q_droop_mvar=item.Srated * 100 / item.ddroop, bus_idx=bus,
@@ -3967,7 +3965,6 @@ def create_stactrl(net, item):
                                 voltage_ctrl=True,
                                 damping_factor=0.9,
                                 tol=1e-6,
-                                name=item.loc_name,
                                 machines=[machine_obj.loc_name for machine_obj in item.psym])
             net.controller.loc[max(net.controller.index), 'name'] = item.loc_name
     elif control_mode == 1:  # Q Control mode
@@ -3996,10 +3993,7 @@ def create_stactrl(net, item):
                 voltage_ctrl=False,
                 damping_factor=0.9,
                 tol=1e-6,
-                damping_factor=0.9,
-                name=item.loc_name,
                 machines=[machine_obj.loc_name for machine_obj in item.psym])
-            net.controller.loc[max(net.controller.index), 'name'] = item.loc_name
         elif item.qu_char == 1:
             controlled_node = item.refbar
             bus = bus_dict[controlled_node]  # controlled node
@@ -4022,8 +4016,6 @@ def create_stactrl(net, item):
                 bus_idx=bus,
                 damping_factor=0.9,
                 tol=1e-6,
-                damping_factor=0.9,
-                name=item.loc_name,
                 machines=[machine_obj.loc_name for machine_obj in item.psym]
             )
             net.controller.loc[max(net.controller.index), 'name'] = item.loc_name
@@ -4036,7 +4028,7 @@ def create_stactrl(net, item):
                 vm_set_ub=item.udeadbup,
                 vm_set_lb=item.udeadblow,
                 controller_idx=bsc.index,
-                voltage_ctrl=False, name=item.loc_name, machines=[machine_obj.loc_name for machine_obj in item.psym]) net.controller.loc[max(net.controller.index), 'name'] = item.loc_name
+                voltage_ctrl=False, machines=[machine_obj.loc_name for machine_obj in item.psym])
         else:
             raise NotImplementedError
     else:
