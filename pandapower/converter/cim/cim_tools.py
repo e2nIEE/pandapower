@@ -80,7 +80,7 @@ def extend_pp_net_cim(net: pandapowerNet, override: bool = True) -> pandapowerNe
     fill_dict['xward'][np_str_type] = [sc['t'], 'description']
 
     fill_dict['line'] = dict()
-    fill_dict['line'][np_str_type] = [sc['t_from'], sc['t_to'], 'description']
+    fill_dict['line'][np_str_type] = [sc['t_from'], sc['t_to'], 'description', 'EquipmentContainer_id']
     fill_dict['line'][np_float_type] = ['r0_ohm_per_km', 'x0_ohm_per_km', 'c0_nf_per_km', 'g0_us_per_km',
                                         'endtemp_degree']
 

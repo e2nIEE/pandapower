@@ -4,6 +4,7 @@ Change Log
 [upcoming release] - 2025-..-..
 -------------------------------
 - [ADDED] PF2PP conversion by considering tap dependent impedance
+- [ADDED] cim2pp converter - additional column "EquipmentContainer_id" in line table
 - [FIXED] DC loadflow after AC loadflow, had ambiguous results still present in net
 - [ADDED] add three columns: id_q_capability_curve_table, reactive_capability_curve, curve_style in gen and sgen
 - [ADDED] cim2pp converter- import reactive power capability curve data synchronousMachinesCim16.py
