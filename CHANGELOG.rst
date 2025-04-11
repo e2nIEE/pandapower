@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+
 - [ADDED] pf2pp converter - import of shunt characteristic tables
 - [FIXED] pf2pp converter - trafo characteristic: Fixed tap changer type and included an if-clause that removes the zero sequence components in measurement report (for now)
 - [FIXED] DC loadflow after AC loadflow, had ambiguous results still present in net
