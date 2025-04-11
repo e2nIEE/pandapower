@@ -143,6 +143,7 @@ def test_pf_export_tap_changer():
             delta = diff['diff'].abs().max()
         assert delta < tol[key], "%s has too high difference: %f > %f" % (key, delta, tol[key])
 
+@pytest.mark.skipif(not PF_INSTALLED, reason='powerfactory must be installed')
 def test_shunt_tables():
     app = pf.GetApplication()
     # import the shunt table test grid to powerfactory
