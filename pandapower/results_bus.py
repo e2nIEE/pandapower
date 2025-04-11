@@ -528,6 +528,7 @@ def _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq):
         step = s["step"]
         v_ratio = (ppc["bus"][sidx, BASE_KV] / net["shunt"]["vn_kv"].values) ** 2
         u_shunt = np.nan_to_num(u_shunt)
+        use_step_table = False
         if "step_dependency_table" in s:
             if any(s.step_dependency_table):
                 use_step_table = True
