@@ -4,7 +4,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -87,11 +87,9 @@ MU_ST       = 18   # Kuhn-Tucker multiplier on MVA limit at "to" bus (u/MVA)
 MU_ANGMIN   = 19   # Kuhn-Tucker multiplier lower angle difference limit
 MU_ANGMAX   = 20   # Kuhn-Tucker multiplier upper angle difference limit
 
-BR_R_ASYM = 21
+BR_R_ASYM = 21     # BR_R for "to" bus = BR_R + BR_R_ASYM
 BR_X_ASYM = 22
-BR_G      = 23    # g, total line charging conductance (p.u.)
-BR_G_ASYM = 24
-BR_B_ASYM = 25
+# enables to move the shunt values from ppc["bus"] to ppc["branch"] in pd2ppc_zero:
+BR_B_ASYM = 23     # BR_B for "to" bus = BR_B + BR_B_ASYM
 
-
-branch_cols = 26
+branch_cols = 24

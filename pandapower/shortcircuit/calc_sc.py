@@ -2,23 +2,9 @@
 
 # Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+import copy
 
-from numbers import Number
-
-import numpy as np
-from scipy.sparse.linalg import factorized
-
-from pandapower.auxiliary import _clean_up, _add_ppc_options, _add_sc_options, _add_auxiliary_elements
-from pandapower.pd2ppc_zero import _pd2ppc_zero
-from pandapower.pypower.idx_brch_sc import K_ST
-from pandapower.results import _copy_results_ppci_to_ppc
-from pandapower.results import init_results
-from pandapower.shortcircuit.currents import _calc_ikss, \
-    _calc_ikss_1ph, _calc_ip, _calc_ith, _calc_branch_currents, _calc_branch_currents_complex
-from pandapower.shortcircuit.impedance import _calc_zbus, _calc_ybus, _calc_rx
-from pandapower.shortcircuit.kappa import _add_kappa_to_ppc
-from pandapower.shortcircuit.ppc_conversion import _init_ppc, _create_k_updated_ppci, _get_is_ppci_bus
-from pandapower.shortcircuit.results import _extract_results, _copy_result_to_ppci_orig
+from pandapower.build_bus import _add_load_sc_impedances_ppc
 
 try:
     import pandaplan.core.pplog as logging
@@ -27,12 +13,31 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+import numpy as np
+from scipy.sparse.linalg import factorized
+from numbers import Number
+
+from pandapower.auxiliary import _clean_up, _add_ppc_options, _add_sc_options, _add_auxiliary_elements
+from pandapower.pd2ppc import _pd2ppc, _ppc2ppci
+from pandapower.pd2ppc_zero import _pd2ppc_zero
+from pandapower.results import _copy_results_ppci_to_ppc
+
+from pandapower.shortcircuit.currents import _calc_ikss, \
+    _calc_ikss_1ph, _calc_ip, _calc_ith, _calc_branch_currents, _calc_branch_currents_complex
+from pandapower.shortcircuit.impedance import _calc_zbus, _calc_ybus, _calc_rx
+from pandapower.shortcircuit.ppc_conversion import _init_ppc, _create_k_updated_ppci, _get_is_ppci_bus
+from pandapower.shortcircuit.kappa import _add_kappa_to_ppc
+from pandapower.shortcircuit.results import _extract_results, _copy_result_to_ppci_orig
+from pandapower.results import init_results
+from pandapower.pypower.idx_brch_sc import K_ST
+
 
 def calc_sc(net, bus=None,
             fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip=False,
             ith=False, tk_s=1., kappa_method="C", r_fault_ohm=0., x_fault_ohm=0.,
             branch_results=False, check_connectivity=True, return_all_currents=False,
             inverse_y=True, use_pre_fault_voltage=False):
+
     """
     Calculates minimal or maximal symmetrical short-circuit currents.
     The calculation is based on the method of the equivalent voltage source
@@ -48,8 +53,7 @@ def calc_sc(net, bus=None,
     INPUT:
         **net** (pandapowerNet) pandapower Network
 
-        **bus** (int, list, np.array, None) defines if short-circuit calculations should only be calculated for
-        defined bus
+        **bus** (int, list, np.array, None) defines if short-circuit calculations should only be calculated for defined bus
 
         ***fault** (str, 3ph) type of fault
 
@@ -94,11 +98,9 @@ def calc_sc(net, bus=None,
         **return_all_currents** (bool, False) applies only if branch_results=True, if True short-circuit currents for
         each (branch, bus) tuple is returned otherwise only the max/min is returned
 
-        **inverse_y** (bool, True) defines if complete inverse should be used instead of LU factorization,
-        factorization version is in experiment which should be faster and memory efficienter
+        **inverse_y** (bool, True) defines if complete inverse should be used instead of LU factorization, factorization version is in experiment which should be faster and memory efficienter
 
-        **use_pre_fault_voltage** (bool, False) whether to consider the pre-fault grid state (superposition method,
-        "Type C")
+        **use_pre_fault_voltage** (bool, False) whether to consider the pre-fault grid state (superposition method, "Type C"). The user must first execute pp.runpp(net) before executing sc.calc_sc in this case
 
 
     OUTPUT:
@@ -130,7 +132,7 @@ def calc_sc(net, bus=None,
 
     if use_pre_fault_voltage:
         init_vm_pu = init_va_degree = "results"
-        trafo_model = net._options["trafo_model"]  # trafo model for SC must match the trafo model for PF calculation
+        trafo_model = net._options["trafo_model"] # trafo model for SC must match the trafo model for PF calculation
         if not isinstance(bus, Number) and len(net.sgen.query("in_service")) > 0:
             raise NotImplementedError("Short-circuit with Type C method and sgen is only implemented for a single bus")
     else:
@@ -157,7 +159,7 @@ def calc_sc(net, bus=None,
 
     if fault in ("2ph", "3ph"):
         _calc_sc(net, bus)
-    elif fault == "1ph":
+    elif fault == "1ph": #ToDo: 2Ph-G
         _calc_sc_1ph(net, bus)
     else:
         raise ValueError("Invalid fault %s" % fault)
@@ -168,13 +170,13 @@ def _calc_current(net, ppci_orig, bus):
     ppci_bus = _get_is_ppci_bus(net, bus)
 
     # update ppci
-    non_ps_gen_ppci_bus, non_ps_gen_ppci, ps_gen_bus_ppci_dict = \
+    non_ps_gen_ppci_bus, non_ps_gen_ppci, ps_gen_bus_ppci_dict =\
         _create_k_updated_ppci(net, ppci_orig, ppci_bus=ppci_bus)
 
     # For each ps_gen_bus one unique ppci is required
     ps_gen_ppci_bus = list(ps_gen_bus_ppci_dict.keys())
 
-    for calc_bus in ps_gen_ppci_bus + [non_ps_gen_ppci_bus]:
+    for calc_bus in ps_gen_ppci_bus+[non_ps_gen_ppci_bus]:
         if isinstance(calc_bus, np.ndarray):
             # Use ppci for general bus
             this_ppci, this_ppci_bus = non_ps_gen_ppci, calc_bus
@@ -211,11 +213,14 @@ def _calc_current(net, ppci_orig, bus):
 
 def _calc_sc(net, bus):
     ppc, ppci = _init_ppc(net)
+    if net._options.get("use_pre_fault_voltage", False):
+        _add_load_sc_impedances_ppc(net, ppc)  # add SC impedances for loads
+        ppci = _ppc2ppci(ppc, net)
 
     _calc_current(net, ppci, bus)
 
     ppc = _copy_results_ppci_to_ppc(ppci, ppc, "sc")
-    _extract_results(net, ppc, ppc_0=None, bus=bus)
+    _extract_results(net, ppc_0=None, ppc_1=ppc, ppc_2=None, bus=bus)
     _clean_up(net)
 
     if "ybus_fact" in ppci["internal"]:
@@ -223,44 +228,63 @@ def _calc_sc(net, bus):
         ppci["internal"].pop("ybus_fact")
 
 
-def _calc_sc_1ph(net, bus):
+def _calc_sc_1ph(net, bus): #ToDo: 2Ph-G (rename the function)
     """
     calculation method for single phase to ground short-circuit currents
     """
     _add_auxiliary_elements(net)
     # pos. seq bus impedance
-    ppc, ppci = _init_ppc(net)
-    # Create k updated ppci
+    ppc_1, ppci_1 = _init_ppc(net)
+    # Create k updated ppci_1
     ppci_bus = _get_is_ppci_bus(net, bus)
-    _, ppci, _ = _create_k_updated_ppci(net, ppci, ppci_bus=ppci_bus)
-    _calc_ybus(ppci)
+    _, ppci_1, _ = _create_k_updated_ppci(net, ppci_1, ppci_bus=ppci_bus)
+    _calc_ybus(ppci_1)
+
+    # input for negative sequence is same as for positive sequence
+    ppc_2 = copy.deepcopy(ppc_1)
+    ppci_2 = copy.deepcopy(ppci_1)
+
+    # placing this here allows saving the calculation of Ybus if not type C
+    if net._options.get("use_pre_fault_voltage", False):
+        _add_load_sc_impedances_ppc(net, ppc_1)  # add SC impedances for sgens and loads
+        ppci_1 = _ppc2ppci(ppc_1, net)
+        _, ppci_1, _ = _create_k_updated_ppci(net, ppci_1, ppci_bus=ppci_bus)
+        _calc_ybus(ppci_1)
+
+        _add_load_sc_impedances_ppc(net, ppc_2, relevant_elements=("load",))  # add SC impedances for loads
+        ppci_2 = _ppc2ppci(ppc_2, net)
+        _calc_ybus(ppci_2)
 
     # zero seq bus impedance
-    ppc_0, ppci_0 = _pd2ppc_zero(net, ppc['branch'][:, K_ST])
+    ppc_0, ppci_0 = _pd2ppc_zero(net, ppc_1['branch'][:, K_ST])
     _calc_ybus(ppci_0)
 
     if net["_options"]["inverse_y"]:
-        _calc_zbus(net, ppci)
         _calc_zbus(net, ppci_0)
+        _calc_zbus(net, ppci_1)
+        _calc_zbus(net, ppci_2)
     else:
         # Factorization Ybus once
-        ppci["internal"]["ybus_fact"] = factorized(ppci["internal"]["Ybus"])
-        ppci_0["internal"]["ybus_fact"] = factorized(ppci_0["internal"]["Ybus"])
+        ppci_0["internal"]["ybus_fact"] = factorized(ppci_0["internal"]["Ybus"].tocsc())
+        ppci_1["internal"]["ybus_fact"] = factorized(ppci_1["internal"]["Ybus"].tocsc())
+        ppci_2["internal"]["ybus_fact"] = factorized(ppci_2["internal"]["Ybus"].tocsc())
 
-    ppci_bus = _get_is_ppci_bus(net, bus)
-    _calc_rx(net, ppci, ppci_bus)
-    _add_kappa_to_ppc(net, ppci)
+    _calc_rx(net, ppci_1, ppci_bus)
+    _add_kappa_to_ppc(net, ppci_1)  # todo add kappa only to ppci_1?
 
     _calc_rx(net, ppci_0, ppci_bus)
-    _calc_ikss_1ph(net, ppci, ppci_0, ppci_bus)
+    _calc_rx(net, ppci_2, ppci_bus)
+
+    _calc_ikss_1ph(net, ppci_0, ppci_1, ppci_2, ppci_bus) #ToDo: 2Ph-G (rename the function)
+    # from here on, the V_ikss in ppci_0, ppci_1, ppci_2 are in phase frame!
 
     if net._options["branch_results"]:
-        if net._options["fault"] == "3ph":
-            _calc_branch_currents_complex(net, ppci, ppci_bus)
-        else:
-            _calc_branch_currents(net, ppci, ppci_bus)
+        _calc_branch_currents_complex(net, ppci_0, ppci_bus)
+        _calc_branch_currents_complex(net, ppci_1, ppci_bus)
+        _calc_branch_currents_complex(net, ppci_2, ppci_bus)
 
     ppc_0 = _copy_results_ppci_to_ppc(ppci_0, ppc_0, "sc")
-    ppc = _copy_results_ppci_to_ppc(ppci, ppc, "sc")
-    _extract_results(net, ppc, ppc_0, bus=bus)
+    ppc_1 = _copy_results_ppci_to_ppc(ppci_1, ppc_1, "sc")
+    ppc_2 = _copy_results_ppci_to_ppc(ppci_2, ppc_2, "sc")
+    _extract_results(net, ppc_0, ppc_1, ppc_2, bus=bus)
     _clean_up(net)
