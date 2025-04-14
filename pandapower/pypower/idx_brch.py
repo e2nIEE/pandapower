@@ -87,9 +87,14 @@ MU_ST       = 18   # Kuhn-Tucker multiplier on MVA limit at "to" bus (u/MVA)
 MU_ANGMIN   = 19   # Kuhn-Tucker multiplier lower angle difference limit
 MU_ANGMAX   = 20   # Kuhn-Tucker multiplier upper angle difference limit
 
-BR_R_ASYM = 21     # BR_R for "to" bus = BR_R + BR_R_ASYM
+BR_R_ASYM = 21
 BR_X_ASYM = 22
-# enables to move the shunt values from ppc["bus"] to ppc["branch"] in pd2ppc_zero:
-BR_B_ASYM = 23     # BR_B for "to" bus = BR_B + BR_B_ASYM
+BR_G      = 23    # g, total line charging conductance (p.u.)
+BR_G_ASYM = 24
+BR_B_ASYM = 25
+
+
+branch_cols = 26
+
 
 branch_cols = 24
