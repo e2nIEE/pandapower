@@ -10,6 +10,7 @@ import numpy as np
 from scipy.sparse.linalg import inv as inv_sparse
 from scipy.linalg import inv
 
+from pandapower.pd2ppc_zero import BIG_NUMBER
 from pandapower.pypower.idx_bus_sc import R_EQUIV, X_EQUIV
 from pandapower.pypower.idx_bus import BASE_KV
 from pandapower.auxiliary import _clean_up
@@ -44,6 +45,15 @@ def _calc_ybus(ppci):
     Ybus, Yf, Yt = makeYbus(ppci["baseMVA"], ppci["bus"], ppci["branch"])
     if np.isnan(Ybus.data).any():
         raise ValueError("nan value detected in Ybus matrix - check calculation parameters for nan values")
+
+    nonzero = Ybus.nonzero()
+    nonzero_mask = np.array(abs(Ybus[nonzero]) <= (10 / (BIG_NUMBER * ppci["baseMVA"])))[0]
+    if len(nonzero_mask) > 0:
+        rows = nonzero[0][nonzero_mask]
+        cols = nonzero[1][nonzero_mask]
+        Ybus[rows[rows != cols], cols[rows != cols]] = 0
+        Ybus.eliminate_zeros()
+
     ppci["internal"]["Yf"] = Yf
     ppci["internal"]["Yt"] = Yt
     ppci["internal"]["Ybus"] = Ybus

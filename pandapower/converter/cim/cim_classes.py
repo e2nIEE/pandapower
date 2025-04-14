@@ -195,7 +195,7 @@ class CimParser:
                     'maxR1ToX1Ratio', 'minR1ToX1Ratio', 'maxR0ToX0Ratio', 'maxZ0ToZ1Ratio']),
                 'ACLineSegment': pd.DataFrame(columns=[
                     'rdfId', 'name', 'description', 'length', 'r', 'x', 'bch', 'gch', 'r0', 'x0', 'b0ch', 'g0ch',
-                    'shortCircuitEndTemperature', 'BaseVoltage']),
+                    'shortCircuitEndTemperature', 'BaseVoltage', 'EquipmentContainer']),
                 'Terminal': pd.DataFrame(columns=[
                     'rdfId', 'name', 'ConnectivityNode', 'ConductingEquipment', 'sequenceNumber']),
                 'OperationalLimitSet': pd.DataFrame(columns=['rdfId', 'name', 'Terminal']),
@@ -603,7 +603,7 @@ class CimParser:
                     'rdfId', 'name', 'description', 'minP', 'maxP', 'minQ', 'maxQ', 'BaseVoltage', 'EquipmentContainer',
                     'RegulatingControl', 'governorSCD']),
                 'ACLineSegment': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'description', 'length', 'r', 'x', 'bch', 'gch', 'BaseVoltage']),
+                    'rdfId', 'name', 'description', 'length', 'r', 'x', 'bch', 'gch', 'BaseVoltage', 'EquipmentContainer']),
                 'Terminal': pd.DataFrame(columns=[
                     'rdfId', 'name', 'ConnectivityNode', 'ConductingEquipment', 'sequenceNumber']),
                 'OperationalLimitSet': pd.DataFrame(columns=['rdfId', 'name', 'Terminal']),

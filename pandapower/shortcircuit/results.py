@@ -6,9 +6,12 @@
 import numpy as np
 import pandas as pd
 
+from pandapower.auxiliary import sequence_to_phase
+from pandapower.pypower.idx_brch import F_BUS, T_BUS
 from pandapower.pypower.idx_brch_sc import IKSS_F, IKSS_T, IP_F, IP_T, ITH_F, ITH_T, PKSS_F, QKSS_F, PKSS_T, QKSS_T, \
     VKSS_MAGN_F, VKSS_MAGN_T, VKSS_ANGLE_F, VKSS_ANGLE_T, IKSS_ANGLE_F, IKSS_ANGLE_T
-from pandapower.pypower.idx_bus_sc import IKSS1, IP, ITH, IKSS2, R_EQUIV_OHM, X_EQUIV_OHM, SKSS
+from pandapower.pypower.idx_bus_sc import IKSS1, IP, ITH, IKSS2, R_EQUIV_OHM, X_EQUIV_OHM, SKSS, PHI_IKSS1_DEGREE, \
+    PHI_IKSS2_DEGREE
 from pandapower.pypower.idx_bus import BUS_TYPE, BASE_KV
 from pandapower.results_branch import _copy_switch_results_from_branches
 from pandapower.results import BRANCH_RESULTS_KEYS
@@ -65,49 +68,190 @@ def _get_bus_ppc_idx_for_br_all_results(net, ppc, bus):
     return bus, ppc_index
 
 
-def _extract_results(net, ppc, ppc_0, bus):
-    _get_bus_results(net, ppc, ppc_0, bus)
+def _calculate_branch_phase_results(ppc_0, ppc_1, ppc_2):
+    # we use 3D arrays here to easily identify via axis:
+    # 0: line index, 1: from/to, 2: phase
+    i_ka_0 = ppc_0['branch'][:, [IKSS_F, IKSS_T]] * np.exp(1j * np.deg2rad(ppc_0['branch'][:, [IKSS_ANGLE_F, IKSS_ANGLE_T]].real))
+    i_ka_1 = ppc_1['branch'][:, [IKSS_F, IKSS_T]] * np.exp(1j * np.deg2rad(ppc_1['branch'][:, [IKSS_ANGLE_F, IKSS_ANGLE_T]].real))
+    i_ka_2 = ppc_2['branch'][:, [IKSS_F, IKSS_T]] * np.exp(1j * np.deg2rad(ppc_2['branch'][:, [IKSS_ANGLE_F, IKSS_ANGLE_T]].real))
+
+    i_012_ka = np.stack([i_ka_0, i_ka_1, i_ka_2], 2)
+    i_abc_ka = np.apply_along_axis(sequence_to_phase, 2, i_012_ka)
+    # i_abc_ka = sequence_to_phase(np.vstack([i_ka_0, i_ka_1, i_ka_2]))
+    i_abc_ka[np.abs(i_abc_ka) < 1e-10] = 0
+    # baseI = ppc_1["internal"]["baseI"][ppc_1["branch"][:, [F_BUS, T_BUS]].real.astype(np.int64)]
+    # i_base_ka = np.stack([baseI, baseI, baseI], 2)
+    # i_abc_ka /= i_base_ka
+
+    v_pu_0 = ppc_0['branch'][:, [VKSS_MAGN_F, VKSS_MAGN_T]] * np.exp(1j * np.deg2rad(ppc_0['branch'][:, [VKSS_ANGLE_F, VKSS_ANGLE_T]].real))
+    v_pu_1 = ppc_1['branch'][:, [VKSS_MAGN_F, VKSS_MAGN_T]] * np.exp(1j * np.deg2rad(ppc_1['branch'][:, [VKSS_ANGLE_F, VKSS_ANGLE_T]].real))
+    v_pu_2 = ppc_2['branch'][:, [VKSS_MAGN_F, VKSS_MAGN_T]] * np.exp(1j * np.deg2rad(ppc_2['branch'][:, [VKSS_ANGLE_F, VKSS_ANGLE_T]].real))
+
+    v_012_pu = np.stack([v_pu_0, v_pu_1, v_pu_2], 2)
+    v_abc_pu = np.apply_along_axis(sequence_to_phase, 2, v_012_pu)
+    # v_abc_pu = sequence_to_phase(np.vstack([v_pu_0, v_pu_1, v_pu_2]))
+    v_abc_pu[np.abs(v_abc_pu) < 1e-10] = 0
+
+    # this is inefficient because it copies data to fit into a shape, better to use a slice,
+    # and even better to find how to use sequence-based powers:
+    baseV = ppc_1["internal"]["baseV"][ppc_1["branch"][:, [F_BUS, T_BUS]].real.astype(np.int64)]
+    v_base_kv = np.stack([baseV, baseV, baseV], 2)
+
+    s_abc_mva = np.conj(i_abc_ka) * v_abc_pu * v_base_kv / np.sqrt(3)
+
+    return v_abc_pu, i_abc_ka, s_abc_mva
+
+
+def _get_line_1ph_results(net, ppc_1, v_abc_pu, i_abc_ka, s_abc_mva):
+    branch_lookup = net._pd2ppc_lookups["branch"]
+    case = net._options["case"]
+    if "line" in branch_lookup:
+        f, t = branch_lookup["line"]
+        minmax = np.max if case == "max" else np.min
+
+        # todo: check axis of max with more lines in the grid
+        i_max_per_line_ka = np.max(np.abs(i_abc_ka), axis=1)
+        net.res_line_sc["ikss_ka"] = minmax(i_max_per_line_ka[f:t, :], axis=1)
+
+        for phase_idx, phase in enumerate(("a", "b", "c")):
+            for side_idx, side in enumerate(("from", "to")):
+                net.res_line_sc[f"ikss_{phase}_{side}_ka"] = np.abs(i_abc_ka[f:t, side_idx, phase_idx])
+                net.res_line_sc[f"ikss_{phase}_{side}_degree"] = np.angle(i_abc_ka[f:t, side_idx, phase_idx], deg=True)
+
+            for side_idx, side in enumerate(("from", "to")):
+                net.res_line_sc[f"p_{phase}_{side}_mw"] = s_abc_mva[f:t, side_idx, phase_idx].real
+                net.res_line_sc[f"q_{phase}_{side}_mvar"] = s_abc_mva[f:t, side_idx, phase_idx].imag
+
+            for side_idx, side in enumerate(("from", "to")):
+                net.res_line_sc[f"vm_{phase}_{side}_pu"] = np.abs(v_abc_pu[f:t, side_idx, phase_idx])
+                net.res_line_sc[f"va_{phase}_{side}_degree"] = np.angle(v_abc_pu[f:t, side_idx, phase_idx], deg=True)
+
+        # todo: ip, ith
+        if net._options["ip"]:
+            net.res_line_sc["ip_ka"] = minmax(ppc_1["branch"][f:t, [IP_F, IP_T]].real, axis=1)
+        if net._options["ith"]:
+            net.res_line_sc["ith_ka"] = minmax(ppc_1["branch"][f:t, [ITH_F, ITH_T]].real, axis=1)
+
+
+def _get_trafo_1ph_results(net, v_abc_pu, i_abc_ka, s_abc_mva):
+    branch_lookup = net._pd2ppc_lookups["branch"]
+    if "trafo" in branch_lookup:
+        f, t = branch_lookup["trafo"]
+
+        for phase_idx, phase in enumerate(("a", "b", "c")):
+            for side_idx, side in enumerate(("hv", "lv")):
+                net.res_trafo_sc[f"ikss_{phase}_{side}_ka"] = np.abs(i_abc_ka[f:t, side_idx, phase_idx])
+                net.res_trafo_sc[f"ikss_{phase}_{side}_degree"] = np.angle(i_abc_ka[f:t, side_idx, phase_idx], deg=True)
+
+            for side_idx, side in enumerate(("hv", "lv")):
+                net.res_trafo_sc[f"p_{phase}_{side}_mw"] = s_abc_mva[f:t, side_idx, phase_idx].real
+                net.res_trafo_sc[f"q_{phase}_{side}_mvar"] = s_abc_mva[f:t, side_idx, phase_idx].imag
+
+            for side_idx, side in enumerate(("hv", "lv")):
+                net.res_trafo_sc[f"vm_{phase}_{side}_pu"] = np.abs(v_abc_pu[f:t, side_idx, phase_idx])
+                net.res_trafo_sc[f"va_{phase}_{side}_degree"] = np.angle(v_abc_pu[f:t, side_idx, phase_idx], deg=True)
+
+    # todo: ip, ith
+
+
+def _calculate_bus_results_2ph(ppc_0, ppc_1, ppc_2, bus):
+    # we use 3D arrays here to easily identify via axis:
+    # 0: line index, 1: from/to, 2: phase
+    # short-ciruit for rotating machine (ext-grid and gen)
+    i_1_ka_0 = ppc_0['bus'][:, IKSS1] * np.exp(1j * np.deg2rad(ppc_0['bus'][:, PHI_IKSS1_DEGREE].real))
+    i_1_ka_1 = ppc_1['bus'][:, IKSS1] * np.exp(1j * np.deg2rad(ppc_1['bus'][:, PHI_IKSS1_DEGREE].real))
+    i_1_ka_2 = ppc_2['bus'][:, IKSS1] * np.exp(1j * np.deg2rad(ppc_2['bus'][:, PHI_IKSS1_DEGREE].real))
+
+    # short-ciruit for inverter-based generation (current source)
+    i_2_ka_0 = ppc_0['bus'][:, IKSS2] * np.exp(1j * np.deg2rad(ppc_0['bus'][:, PHI_IKSS2_DEGREE].real))
+    i_2_ka_1 = ppc_1['bus'][:, IKSS2] * np.exp(1j * np.deg2rad(ppc_1['bus'][:, PHI_IKSS2_DEGREE].real))
+    i_2_ka_2 = ppc_2['bus'][:, IKSS2] * np.exp(1j * np.deg2rad(ppc_2['bus'][:, PHI_IKSS2_DEGREE].real))
+
+    i_1_012_ka = np.stack([i_1_ka_0, i_1_ka_1, i_1_ka_2], 2)
+    i_2_012_ka = np.stack([i_2_ka_0, i_2_ka_1, i_2_ka_2], 2)
+
+    i_1_abc_ka = np.apply_along_axis(sequence_to_phase, 2, i_1_012_ka)
+    i_2_abc_ka = np.apply_along_axis(sequence_to_phase, 2, i_2_012_ka)
+
+    # i_abc_ka = sequence_to_phase(np.vstack([i_ka_0, i_ka_1, i_ka_2]))
+    i_1_abc_ka[np.abs(i_1_abc_ka) < 1e-10] = 0
+    i_2_abc_ka[np.abs(i_2_abc_ka) < 1e-10] = 0
+
+    # ToDo: shape is (n_bus, n_sc_bus), must be 1D array, rows are all buses, columns are fault location buses
+
+    v_pu_0 = ppc_0["internal"]["V_ikss"][bus, bus]
+    v_pu_1 = ppc_1["internal"]["V_ikss"][bus, bus]
+    v_pu_2 = ppc_2["internal"]["V_ikss"][bus, bus]
+
+    v_012_pu = np.stack([v_pu_0, v_pu_1, v_pu_2], 2)
+    v_abc_pu = np.apply_along_axis(sequence_to_phase, 2, v_012_pu)
+    # v_abc_pu = sequence_to_phase(np.vstack([v_pu_0, v_pu_1, v_pu_2]))
+    v_abc_pu[np.abs(v_abc_pu) < 1e-10] = 0
+
+    # this is inefficient because it copies data to fit into a shape, better to use a slice,
+    # and even better to find how to use sequence-based powers:
+    baseV = ppc_1["internal"]["baseV"][bus]
+    v_base_kv = np.stack([baseV, baseV, baseV], 2)
+
+    s_abc_mva = np.conj(i_1_abc_ka + i_2_abc_ka) * v_abc_pu * v_base_kv / np.sqrt(3)  # check if it works like this
+
+    # ToDo: Modify from sequence to phase frame in the right side
+    # net.res_bus_sc["ikss_a_ka"] = i_1_abc_ka[ppc_index] + i_2_abc_ka[ppc_index]  # np.abs(i_abc_ka[f:t, side_idx, phase_idx])
+    # net.res_bus_sc["ikss_b_ka"] = i_1_abc_ka[ppc_index] + i_2_abc_ka[ppc_index]
+
+
+
+def _extract_results(net, ppc_0, ppc_1, ppc_2, bus):
+    #ToDo
+    if net["_options"]["fault"] == "2ph-g":
+       _calculate_bus_results_2ph(ppc_0, ppc_1, ppc_2, bus)
+    else:
+        _get_bus_results(net, ppc_0, ppc_1, ppc_2, bus)
     if net._options["branch_results"]:
-        if net._options['return_all_currents']:
-            _get_line_all_results(net, ppc, bus)
-            _get_trafo_all_results(net, ppc, bus)
-            _get_trafo3w_all_results(net, ppc, bus)
-            _get_switch_all_results(net, ppc, bus)
+        if net["_options"]["fault"] == "1ph":
+            v_abc_pu, i_abc_ka, s_abc_mva = _calculate_branch_phase_results(ppc_0, ppc_1, ppc_2)
+            _get_line_1ph_results(net, ppc_1, v_abc_pu, i_abc_ka, s_abc_mva)
+            _get_trafo_1ph_results(net, v_abc_pu, i_abc_ka, s_abc_mva)
         else:
-            _get_line_results(net, ppc)
-            _get_trafo_results(net, ppc)
-            _get_trafo3w_results(net, ppc)
-            _get_switch_results(net, ppc)
+            if net._options['return_all_currents']:
+                _get_line_all_results(net, ppc_1, bus)
+                _get_trafo_all_results(net, ppc_1, bus)
+                _get_trafo3w_all_results(net, ppc_1, bus)
+                _get_switch_all_results(net, ppc_1, bus)
+            else:
+                _get_line_results(net, ppc_1)
+                _get_trafo_results(net, ppc_1)
+                _get_trafo3w_results(net, ppc_1)
+                _get_switch_results(net, ppc_1)
 
 
-def _get_bus_results(net, ppc, ppc_0, bus):
+def _get_bus_results(net, ppc_0, ppc_1, ppc_2, bus):
     bus_lookup = net._pd2ppc_lookups["bus"]
     ppc_index = bus_lookup[net.bus.index]
 
+    ppc_sequence = {0: ppc_0, 1: ppc_1, 2: ppc_2, "": ppc_1}
     if net["_options"]["fault"] == "1ph":
-        net.res_bus_sc["ikss_ka"] = ppc_0["bus"][ppc_index, IKSS1] + ppc["bus"][ppc_index, IKSS2]
-        net.res_bus_sc["rk0_ohm"] = ppc_0["bus"][ppc_index, R_EQUIV_OHM]
-        net.res_bus_sc["xk0_ohm"] = ppc_0["bus"][ppc_index, X_EQUIV_OHM]
+        net.res_bus_sc["ikss_ka"] = ppc_0["bus"][ppc_index, IKSS1] + ppc_1["bus"][ppc_index, IKSS2]
+        # todo: implement SKSS for "1ph"
+        # net.res_bus_sc["skss_mw"] = ppc_0["bus"][ppc_index, SKSS]
+        sequence_relevant = range(3)
+    else:
+        net.res_bus_sc["ikss_ka"] = ppc_1["bus"][ppc_index, IKSS1] + ppc_1["bus"][ppc_index, IKSS2]
+        net.res_bus_sc["skss_mw"] = ppc_1["bus"][ppc_index, SKSS]
+        sequence_relevant = ("",)
+    for sequence in sequence_relevant:
+        ppc_s = ppc_sequence[sequence]
+        net.res_bus_sc[f"rk{sequence}_ohm"] = ppc_s["bus"][ppc_index, R_EQUIV_OHM]
+        net.res_bus_sc[f"xk{sequence}_ohm"] = ppc_s["bus"][ppc_index, X_EQUIV_OHM]
         # in trafo3w, we add very high numbers (1e10) as impedances to block current
         # here, we need to replace such high values by np.inf
-        baseZ = ppc_0["bus"][ppc_index, BASE_KV] ** 2 / ppc_0["baseMVA"]
-        net.res_bus_sc.loc[net.res_bus_sc["xk0_ohm"]/baseZ > 1e9, "xk0_ohm"] = np.inf
-        net.res_bus_sc.loc[net.res_bus_sc["rk0_ohm"]/baseZ > 1e9, "rk0_ohm"] = np.inf
-    else:
-        net.res_bus_sc["ikss_ka"] = ppc["bus"][ppc_index, IKSS1] + ppc["bus"][ppc_index, IKSS2]
-        net.res_bus_sc["skss_mw"] = ppc["bus"][ppc_index, SKSS]
+        baseZ = ppc_s["bus"][ppc_index, BASE_KV] ** 2 / ppc_s["baseMVA"]
+        net.res_bus_sc[f"xk{sequence}_ohm"].loc[net.res_bus_sc[f"xk{sequence}_ohm"] / baseZ > 1e9] = np.inf
+        net.res_bus_sc[f"rk{sequence}_ohm"].loc[net.res_bus_sc[f"rk{sequence}_ohm"] / baseZ > 1e9] = np.inf
     if net._options["ip"]:
-        net.res_bus_sc["ip_ka"] = ppc["bus"][ppc_index, IP]
+        net.res_bus_sc["ip_ka"] = ppc_1["bus"][ppc_index, IP]
     if net._options["ith"]:
-        net.res_bus_sc["ith_ka"] = ppc["bus"][ppc_index, ITH]
-
-    # Export also equivalent rk, xk on the calculated bus
-    net.res_bus_sc["rk_ohm"] = ppc["bus"][ppc_index, R_EQUIV_OHM]
-    net.res_bus_sc["xk_ohm"] = ppc["bus"][ppc_index, X_EQUIV_OHM]
-    # if for some reason (e.g. contribution of ext_grid set close to 0) we used very high values for rk, xk, we replace them by np.inf
-    baseZ = ppc["bus"][ppc_index, BASE_KV] ** 2 / ppc["baseMVA"]
-    net.res_bus_sc.loc[net.res_bus_sc["rk_ohm"] / baseZ > 1e9, "rk_ohm"] = np.inf
-    net.res_bus_sc.loc[net.res_bus_sc["xk_ohm"] / baseZ > 1e9, "xk_ohm"] = np.inf
+        net.res_bus_sc["ith_ka"] = ppc_1["bus"][ppc_index, ITH]
 
     net.res_bus_sc = net.res_bus_sc.loc[bus, :]
 
