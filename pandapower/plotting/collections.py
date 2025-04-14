@@ -379,7 +379,7 @@ def _create_complex_branch_collection(coords, patch_maker, size=1, infos=None, r
 
 
 def create_bus_collection(net: pandapowerNet, buses: Optional[list]=None, size:float=5., patch_type: str="circle",
-                          color=None, z=None, cmap: Optional[Colormap]=None, norm=None, infofunc: Optional[Callable]=None,
+                          color=None, z=None, cmap=None, norm=None, infofunc: Optional[Callable]=None,
                           picker: bool=False, bus_geodata: Optional[pd.DataFrame]=None,
                           bus_table: str="bus", cbar_title: str="Bus Voltage [pu]", clim: Optional[Tuple[float]]=None,
                           plot_colormap: bool=True, **kwargs):
