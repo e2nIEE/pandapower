@@ -17,6 +17,7 @@ Change Log
 - [FIXED] cim2pp: refactor cim2pp test
 - [FIXED] cim2pp: manage crash when importing not supported dy profile
 - [ADDED] cim2pp: add tests for short circuit parameters
+- [ADDED] possibility to directly compare "geo" columns of dataframes (not assume geojson strings)
 
 [3.0.0] - 2025-03-06
 -------------------------------
