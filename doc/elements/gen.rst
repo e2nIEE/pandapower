@@ -39,13 +39,15 @@ Generator Reactive Power Capability Curve Characteristics
 The generator reactive power capability curve characteristics serve as a reference for determining the reactive power
 limits of a generator (Qmin and Qmax) as a function of its active power output.
 The reactive power capability curve data can be imported into pandapower in a tabular format, populating
-net.q_capability_curve_table. This table is either auto-generated via the CIM CGMES to pandapower converter,
-provided this information is available in the Equipment (EQ) profile, or it can be manually defined by the user.
+net.q_capability_curve_table. This table can either be automatically generated via the CIM CGMES to pandapower converter
+and the PowerFactory to pandapower converter, provided the information is available in the Equipment (EQ) profile and
+the "Capability curve" section, respectively, or it can be manually defined by the user.
 
 Q capability curve characteristic objects are then generated from net.q_capability_curve_table, populating
-net.q_capability_curve_characteristic. The characteristics are either auto-generated via the CIM CGMES to pandapower
-converter or they can be created by the user via the pandapower.control.util.create_q_capability_curve_characteristics_object
-function, provided q_capability_curve_table is previously defined in the network case.
+net.q_capability_curve_characteristic. The characteristics can either be automatically generated via the CIM CGMES to
+pandapower converter or the PowerFactory to pandapower converter, or they can be created by the user using the
+pandapower.control.util.create_q_capability_curve_characteristics_object function, provided that the
+q_capability_curve_table is previously defined in the network case.
 
 If the variable reactive_capability_curve in net.gen is set to True, it indicates that pairs of P vs Qmin/Qmax values
 and the corresponding characteristic are defined in net.q_capability_curve_table and net.q_capability_curve_characteristic

@@ -471,7 +471,7 @@ def _calculate_qmin_qmax_from_q_capability_curve_characteristics(net, element, i
         return
 
     if len(net[element]) == 0:
-        logger.warning(f"No of {element} elements is zero.")
+        logger.warning(f"No. of {element} elements is zero.")
         return
 
     # Filter rows with True 'reactive_capability_curve'
@@ -491,7 +491,7 @@ def _calculate_qmin_qmax_from_q_capability_curve_characteristics(net, element, i
         calc_q_min = np.vectorize(lambda func, p: func(p))(q_min_funcs, p_mw_values)
 
         if np.any(pd.isna(calc_q_min)) or np.any(pd.isna(calc_q_max)):
-            logger.warning(f"the reactive_capability_curve of {element} is True, but the relevant "
+            logger.warning(f"The reactive_capability_curve of {element} is True, but the relevant "
                            f"characteristic value is None. So default Q limit value has been used in the load flow.")
 
         curve_q = net[element][["min_q_mvar", "max_q_mvar"]]
