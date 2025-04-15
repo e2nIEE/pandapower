@@ -289,7 +289,8 @@ def dump_to_geojson(
         branches: Union[bool, List[int]] = False,
         switches: Union[bool,  List[int]] = False,
         trafos: Union[bool, List[int]] = False,
-        t_is_3w: bool = False
+        t_is_3w: bool = False,
+        include_type_id: bool = True
 ) -> geojson.FeatureCollection:
     """
     This function works for pandapowerNet and pandapipesNet. Documentation will refer to names from pandapower.
@@ -313,6 +314,8 @@ def dump_to_geojson(
     :type trafos: bool | list, default False
     :param t_is_3w: if True, the trafos are treated as 3W-trafos
     :type t_is_3w: bool, default False
+    :param include_type_id: if True, pp_type and pp_index is added to every feature
+    :type include_type_id: bool, default true
     :return: A geojson object.
     :return type: geojson.FeatureCollection
     """
@@ -364,8 +367,9 @@ def dump_to_geojson(
                 continue
 
             tempdf = net[table].copy(deep=True)
-            tempdf['pp_type'] = 'bus' if is_pandapower else 'junction'
-            tempdf['pp_index'] = tempdf.index
+            if include_type_id:
+                tempdf['pp_type'] = 'bus' if is_pandapower else 'junction'
+                tempdf['pp_index'] = tempdf.index
             tempdf.index = tempdf.apply(lambda r: f"{r['pp_type']}-{r['pp_index']}", axis=1)
             tempdf.drop(columns=['geo'], inplace=True, axis=1, errors='ignore')
 
@@ -389,8 +393,9 @@ def dump_to_geojson(
                 continue
 
             tempdf = net[table].copy(deep=True)
-            tempdf['pp_type'] = 'line' if is_pandapower else 'pipe'
-            tempdf['pp_index'] = tempdf.index
+            if include_type_id:
+                tempdf['pp_type'] = 'line' if is_pandapower else 'pipe'
+                tempdf['pp_index'] = tempdf.index
             tempdf.index = tempdf.apply(lambda r: f"{r['pp_type']}-{r['pp_index']}", axis=1)
             tempdf.drop(columns=['geo'], inplace=True, axis=1, errors='ignore')
 
@@ -420,10 +425,12 @@ def dump_to_geojson(
                     # switch is not connected to a bus! Will count this as missing geometry.
                     missing_geom[2] += 1
                     continue
-                prop = {
-                    'pp_type': 'switch',
-                    'pp_index': ind,
-                }
+                prop = {}
+                if include_type_id:
+                    prop = {
+                        'pp_type': 'switch',
+                        'pp_index': ind,
+                    }
                 uid = f"switch-{ind}"
                 _get_props(row, cols, prop)
 
@@ -444,10 +451,12 @@ def dump_to_geojson(
             if t_type in net.keys():
                 cols = net[t_type].columns
                 for ind, row in net[t_type].loc[trafos].iterrows():
-                    prop = {
-                        'pp_type': t_type,
-                        'pp_index': ind,
-                    }
+                    prop = {}
+                    if include_type_id:
+                        prop = {
+                            'pp_type': t_type,
+                            'pp_index': ind,
+                        }
                     uid = f"{t_type}-{ind}"
                     _get_props(row, cols, prop)
 

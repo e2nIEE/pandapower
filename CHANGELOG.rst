@@ -4,6 +4,8 @@ Change Log
 [upcoming release] - 2025-..-..
 -------------------------------
 
+- [ADDED] parameter include_type_id to dump_to_geojson, to produce geojson features without the pp_index and pp_type field
+- [FIXED] added a fix which hinders selection of a subsection of busses for plotting
 - [ADDED] cim2pp converter - additional column "EquipmentContainer_id" in line table 
 - [FIXED] DC loadflow after AC loadflow, had ambiguous results still present in net
 - [ADDED] add three columns: id_q_capability_curve_table, reactive_capability_curve, curve_style in gen and sgen

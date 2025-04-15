@@ -8,7 +8,7 @@ import copy
 import inspect
 import re
 import sys
-from typing import Callable, TYPE_CHECKING
+from typing import Callable, TYPE_CHECKING, Optional, Tuple
 
 import geojson
 import pandas as pd
@@ -378,10 +378,11 @@ def _create_complex_branch_collection(coords, patch_maker, size=1, infos=None, r
     return patch_coll, line_coll
 
 
-def create_bus_collection(net, buses=None, size=5, patch_type="circle", color=None, z=None,
-                          cmap=None, norm=None, infofunc=None, picker=False, bus_geodata=None,
-                          bus_table="bus", cbar_title="Bus Voltage [pu]", clim=None,
-                          plot_colormap=True, **kwargs):
+def create_bus_collection(net: pandapowerNet, buses: Optional[list]=None, size:float=5., patch_type: str="circle",
+                          color=None, z=None, cmap=None, norm=None, infofunc: Optional[Callable]=None,
+                          picker: bool=False, bus_geodata: Optional[pd.DataFrame]=None,
+                          bus_table: str="bus", cbar_title: str="Bus Voltage [pu]", clim: Optional[Tuple[float]]=None,
+                          plot_colormap: bool=True, **kwargs):
     """
     Creates a matplotlib patch collection of pandapower buses.
 
@@ -392,7 +393,7 @@ def create_bus_collection(net, buses=None, size=5, patch_type="circle", color=No
         **buses** (list, None) - The buses for which the collections are created.
         If None, all buses in the network are considered.
 
-        **size** (int, 5) - patch size
+        **size** (float, 5) - patch size
 
         **patch_type** (str, "circle") - patch type, can be
 
@@ -407,7 +408,7 @@ def create_bus_collection(net, buses=None, size=5, patch_type="circle", color=No
         **z** (array, None) - array of bus voltage magnitudes for colormap. Used in case of given
         cmap. If None net.res_bus.vm_pu is used.
 
-        **cmap** (ListedColormap, None) - colormap for the patch colors
+        **cmap** (Colormap, None) - colormap for the patch colors
 
         **norm** (matplotlib norm object, None) - matplotlib norm object
 
@@ -444,7 +445,7 @@ def create_bus_collection(net, buses=None, size=5, patch_type="circle", color=No
     # if bus_geodata is None:
     #     bus_geodata = net["bus_geodata"] if not dc else net["bus_dc_geodata"]
 
-    if any(net[bus_table].geo.isna()):
+    if any(net[bus_table].loc[buses].geo.isna()):
         raise AttributeError('net.bus.geo contains NaN values, consider dropping them beforehand.')
 
     if bus_geodata is None:
