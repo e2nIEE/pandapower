@@ -30,7 +30,7 @@ class AcLineSegmentsCim16:
             line_df = line_df.rename(columns={
                 'rdfId': sc['o_id'], 'rdfId_Terminal': sc['t_from'], 'rdfId_Terminal2': sc['t_to'],
                 'index_bus': 'from_bus', 'index_bus2': 'to_bus', 'length': 'length_km',
-                'shortCircuitEndTemperature': 'endtemp_degree'})
+                'shortCircuitEndTemperature': 'endtemp_degree', 'EquipmentContainer': 'EquipmentContainer_id'})
             line_df[sc['o_cl']] = 'ACLineSegment'
             line_df['in_service'] = line_df.connected & line_df.connected2
             line_df['r_ohm_per_km'] = abs(line_df.r) / line_df.length_km
