@@ -1617,8 +1617,9 @@ def test_q_capability_curve():
 def test_q_capability_curve_for_sgen():
     net = _test_net_for_q_capability_curve()
     drop_elements(net, 'gen', 0)
-    create_sgen(net, 0, p_mw=198, sn_mva=255.0, scaling=1.0, type="Hydro",
-                 cos_phi=0.8, pg_percent=0.0, vn_kv=19.0, vm_pu=1.0, min_q_mvar=-255, max_q_mvar=255, controllable=True, min_p_mw=-0.03, max_p_mw=0)# min_p_mw=-331.01001, max_p_mw=331.01001)
+    create_sgen(net, 0, p_mw=198, sn_mva=255.0, scaling=1.0, type="Hydro", cos_phi=0.8, pg_percent=0.0, vn_kv=19.0,
+                vm_pu=1.0, min_q_mvar=-255, max_q_mvar=255, controllable=True, min_p_mw=-0.03, max_p_mw=0)
+    net.ext_grid["controllable"] = True
     create_poly_cost(net, 0, "sgen", cp1_eur_per_mw=0.1)
     create_poly_cost(net, 0, "ext_grid", cp1_eur_per_mw=-0.1)
     net.trafo.loc[0, "parallel"] = 3
