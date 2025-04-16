@@ -31,8 +31,8 @@ The documentation describes how to use the exporter as a function in "Engine mod
  - Elmscap (Series Capacitor)
  - ElmSvs (Static Var Compensator with Voltage Control)
 
-Please note: Not all possible settings from Powerfactory can be imported to pandapower, as either
-pandapower does not support the same range of functionality or the import is not yet possible.
+.. Note:: Not all possible settings from PowerFactory can be imported to pandapower, as either pandapower does not support the same range of functionality or the import is not yet possible.
+
 
 Setup PowerFactory and Python
 =====================================
