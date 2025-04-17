@@ -51,3 +51,9 @@ def test_shortcircuit():
 
 
 test_shortcircuit()
+
+# branch results rein und auch vergleichen
+# r_fault_ohm=5.0, x_fault_ohm=5.0
+
+# max end temp degree in pf konverter als endtemdegree speichern
+# pytest am Ende alles rein
