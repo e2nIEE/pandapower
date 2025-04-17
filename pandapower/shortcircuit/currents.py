@@ -103,35 +103,127 @@ def _calc_ikss(net, ppci, bus_idx):
             (ppci["bus"][gen_bus_idx, V_G] / ppci["bus"][gen_bus_idx, BASE_KV])
 
 
-def _calc_ikss_1ph(net, ppci, ppci_0, bus_idx):
+def _calc_ikss_1ph(net, ppci_0, ppci_1, ppci_2, bus_idx):
+    fault = net._options["fault"] # adding by gourab if 2ph-g will be added here
     case = net._options["case"]
-    c = ppci["bus"][bus_idx, C_MIN] if case == "min" else ppci["bus"][bus_idx, C_MAX]
-    ppci["internal"]["baseI"] = ppci["bus"][:, BASE_KV] * np.sqrt(3) / ppci["baseMVA"]
-    ppci_0["internal"]["baseI"] = ppci_0["bus"][:, BASE_KV] * np.sqrt(3) / ppci_0["baseMVA"]
+    c = ppci_1["bus"][bus_idx, C_MIN] if case == "min" else ppci_1["bus"][bus_idx, C_MAX]
 
-    z_equiv = abs((ppci["bus"][bus_idx, R_EQUIV] + ppci["bus"][bus_idx, X_EQUIV] * 1j) * 2 +
-                  (ppci_0["bus"][bus_idx, R_EQUIV] + ppci_0["bus"][bus_idx, X_EQUIV] * 1j))
+    ppci_0["internal"]["baseI"] = ppci_0["bus"][:, BASE_KV] * np.sqrt(3) / ppci_0["baseMVA"]
+    ppci_1["internal"]["baseI"] = ppci_1["bus"][:, BASE_KV] * np.sqrt(3) / ppci_1["baseMVA"]
+    ppci_2["internal"]["baseI"] = ppci_2["bus"][:, BASE_KV] * np.sqrt(3) / ppci_2["baseMVA"]
+
+    z_equiv_0 = ppci_0["bus"][bus_idx, R_EQUIV] + ppci_0["bus"][bus_idx, X_EQUIV] * 1j
+    z_equiv_1 = ppci_1["bus"][bus_idx, R_EQUIV] + ppci_1["bus"][bus_idx, X_EQUIV] * 1j
+    z_equiv_2 = ppci_2["bus"][bus_idx, R_EQUIV] + ppci_2["bus"][bus_idx, X_EQUIV] * 1j
+
+    # z_equiv 1 and 2 are the same, so could also be 2 * z_equiv_1 + z_equiv_0:
+    z_equiv = z_equiv_0 + z_equiv_1 + z_equiv_2 #ToDo: 2Ph-G
+    z_equiv1 = 2*(z_equiv_0) + (z_equiv_1 + z_equiv_2)/2 # for 2PH-G
 
     # Only for test, should correspondant to PF result
-    baseZ = ppci["bus"][bus_idx, BASE_KV] ** 2 / ppci["baseMVA"]
-    ppci["bus"][bus_idx, R_EQUIV_OHM] = baseZ * ppci['bus'][bus_idx, R_EQUIV]
-    ppci["bus"][bus_idx, X_EQUIV_OHM] = baseZ * ppci['bus'][bus_idx, X_EQUIV]
+    baseZ = ppci_1["bus"][bus_idx, BASE_KV] ** 2 / ppci_1["baseMVA"]
     ppci_0["bus"][bus_idx, R_EQUIV_OHM] = baseZ * ppci_0['bus'][bus_idx, R_EQUIV]
     ppci_0["bus"][bus_idx, X_EQUIV_OHM] = baseZ * ppci_0['bus'][bus_idx, X_EQUIV]
+    ppci_1["bus"][bus_idx, R_EQUIV_OHM] = baseZ * ppci_1['bus'][bus_idx, R_EQUIV]
+    ppci_1["bus"][bus_idx, X_EQUIV_OHM] = baseZ * ppci_1['bus'][bus_idx, X_EQUIV]
+    ppci_2["bus"][bus_idx, R_EQUIV_OHM] = baseZ * ppci_2['bus'][bus_idx, R_EQUIV]
+    ppci_2["bus"][bus_idx, X_EQUIV_OHM] = baseZ * ppci_2['bus'][bus_idx, X_EQUIV]
 
     # # ppci["bus"][bus_idx, IKSS1] = abs(c * ppci["internal"]["baseI"][bus_idx] * ppci["baseMVA"] / (z_equiv * baseZ))
     # # ppci_0["bus"][bus_idx, IKSS1] = abs(c * ppci_0["internal"]["baseI"][bus_idx] * ppci["baseMVA"] / (z_equiv * baseZ))
     # ppci["bus"][bus_idx, IKSS1] = abs(np.sqrt(3) * c / z_equiv / ppci["bus"][bus_idx, BASE_KV] * ppci["baseMVA"])
     # ppci_0["bus"][bus_idx, IKSS1] = abs(np.sqrt(3) * c / z_equiv / ppci_0["bus"][bus_idx, BASE_KV] * ppci["baseMVA"])
-    ppci["bus"][bus_idx, IKSS1] = np.sqrt(3) * c / z_equiv / ppci["bus"][bus_idx, BASE_KV] * ppci["baseMVA"]
-    ppci_0["bus"][bus_idx, IKSS1] = np.sqrt(3) * c / z_equiv / ppci_0["bus"][bus_idx, BASE_KV] * ppci_0["baseMVA"]
-    ppci["bus"][bus_idx, PHI_IKSS1_DEGREE] = 0
-    ppci_0["bus"][bus_idx, PHI_IKSS1_DEGREE] = 0
-
-    _current_source_current(net, ppci, bus_idx)
 
 
-def _current_source_current(net, ppci, bus_idx):
+    # ppci["bus"][bus_idx, IKSS1] = np.sqrt(3) * c / z_equiv / ppci["bus"][bus_idx, BASE_KV] * ppci["baseMVA"]
+    # ppci_0["bus"][bus_idx, IKSS1] = np.sqrt(3) * c / z_equiv / ppci_0["bus"][bus_idx, BASE_KV] * ppci_0["baseMVA"]
+    # ppci["bus"][bus_idx, PHI_IKSS1_DEGREE] = 0
+    # ppci_0["bus"][bus_idx, PHI_IKSS1_DEGREE] = 0
+
+    n_sc_bus = np.shape(bus_idx)[0]
+    n_bus = ppci_1["bus"].shape[0]
+
+    valid_V = True
+    if net._options.get("use_pre_fault_voltage", False):
+        V0 = np.full((n_bus, n_sc_bus), ppci_1["bus"][:, [VM]] * np.exp(np.deg2rad(ppci_1["bus"][:, [VA]]) * 1j))
+    else:
+        V0 = np.full((n_bus, n_sc_bus), ppci_1["bus"][bus_idx, C_MAX if case == "max" else C_MIN], dtype=np.complex128)
+
+        if np.any(ppci_1["branch"][:, TAP] != 1):
+            msg = "Calculation does not support calculation of voltages and branch powers for grids that have" \
+                  " transformers with rated voltages unequal to bus voltages. Change the transformer data or" \
+                  "try using the superposition method by passing 'use_pre_fault_voltage=True'"
+            # raise NotImplementedError(msg)
+            warnings.warn(msg)
+            valid_V = False
+
+    ppci_0["internal"]["valid_V"] = valid_V
+    ppci_1["internal"]["valid_V"] = valid_V
+    ppci_2["internal"]["valid_V"] = valid_V
+
+    ikss1 = 3 * V0[bus_idx, np.arange(n_sc_bus)] / z_equiv #ToDo: 2Ph-G
+
+    if net["_options"]["inverse_y"]:
+        Zbus_0 = ppci_0["internal"]["Zbus"]
+        Zbus_1 = ppci_1["internal"]["Zbus"]
+        Zbus_2 = ppci_2["internal"]["Zbus"]
+
+        # ToDo: 2Ph-G
+        V_ikss_0 = 0 - ikss1 * Zbus_0[:, bus_idx] / 3  # initial value for zero-sequence voltage is 0
+        V_ikss_1 = V0 - ikss1 * Zbus_1[:, bus_idx] / 3 if valid_V else 0 - ikss1 * Zbus_1[:, bus_idx] / 3
+        V_ikss_2 = 0 - ikss1 * Zbus_2[:, bus_idx] / 3  # initial value for negative-sequence voltage is 0
+    else:
+        ybus_fact_0 = ppci_0["internal"]["ybus_fact"]
+        ybus_fact_1 = ppci_1["internal"]["ybus_fact"]
+        ybus_fact_2 = ppci_2["internal"]["ybus_fact"]
+        V_ikss_0 = np.zeros((n_bus, n_sc_bus), dtype=np.complex128)
+        V_ikss_1 = np.zeros((n_bus, n_sc_bus), dtype=np.complex128)
+        V_ikss_2 = np.zeros((n_bus, n_sc_bus), dtype=np.complex128)
+        for ix, b in enumerate(bus_idx):
+            ikss = np.zeros((n_bus, 1), dtype=np.complex128)
+            ikss[b] = ikss1[ix]
+            # ToDo: 2Ph-G
+            V_ikss_0[:, [ix]] = 0 - ybus_fact_0(ikss) / 3
+            V_ikss_1[:, [ix]] = V0[:, [ix]] - ybus_fact_1(ikss) / 3 if valid_V else 0 - ybus_fact_1(ikss) / 3
+            V_ikss_2[:, [ix]] = 0 - ybus_fact_2(ikss) / 3
+
+    V_ikss_0[np.abs(V_ikss_0) < 1e-10] = 0
+    V_ikss_1[np.abs(V_ikss_1) < 1e-10] = 0
+    V_ikss_2[np.abs(V_ikss_2) < 1e-10] = 0
+
+    # ikss1 = -Ybus.dot(V_ikss) / baseI.reshape(-1, 1)
+    # ikss1 = ikss1[bus_idx]
+    # ikss1 = c / z_equiv / ppci["bus"][bus_idx, BASE_KV] / np.sqrt(3) * ppci["baseMVA"]
+    # ikss1 = c / z_equiv / baseI[bus_idx]  # should be same as above
+    # added abs here:
+    ppci_0["bus"][bus_idx, IKSS1] = abs(ikss1 / ppci_0["internal"]["baseI"][bus_idx])
+    ppci_1["bus"][bus_idx, IKSS1] = abs(ikss1 / ppci_1["internal"]["baseI"][bus_idx])
+    ppci_2["bus"][bus_idx, IKSS1] = abs(ikss1 / ppci_2["internal"]["baseI"][bus_idx])
+    # added angle calculation in degree:
+    ppci_0["bus"][bus_idx, PHI_IKSS1_DEGREE] = np.angle(ikss1, deg=True)
+    ppci_1["bus"][bus_idx, PHI_IKSS1_DEGREE] = np.angle(ikss1, deg=True)
+    ppci_2["bus"][bus_idx, PHI_IKSS1_DEGREE] = np.angle(ikss1, deg=True)
+
+    # V_ikss_abc_pu = sequence_to_phase(np.vstack([V_ikss_0.T, V_ikss_1.T, V_ikss_2.T]))
+    # V_ikss_abc_pu[np.abs(V_ikss_abc_pu) < 1e-10] = 0
+    #
+    # # add voltage information to ppci:
+    # ppci_0["internal"]["V_ikss"] = V_ikss_abc_pu.T[:, [0]]
+    # ppci_1["internal"]["V_ikss"] = V_ikss_abc_pu.T[:, [1]]
+    # ppci_2["internal"]["V_ikss"] = V_ikss_abc_pu.T[:, [2]]
+
+    # add voltage information to ppci:
+    ppci_0["internal"]["V_ikss"] = V_ikss_0
+    ppci_1["internal"]["V_ikss"] = V_ikss_1
+    ppci_2["internal"]["V_ikss"] = V_ikss_2
+
+    # todo check how sgen is considered for ppci_0, ppci_2
+    _current_source_current(net, ppci_0, bus_idx, 0)
+    _current_source_current(net, ppci_1, bus_idx, 1)
+    _current_source_current(net, ppci_2, bus_idx, 2)
+
+
+def _current_source_current(net, ppci, bus_idx, sequence=1):
     case = net._options["case"]
     fault_impedance = net._options["fault_impedance"]
     ppci["bus"][:, IKCV] = 0
@@ -139,7 +231,7 @@ def _current_source_current(net, ppci, bus_idx):
     ppci["bus"][:, IKSS2] = 0
     type_c = net._options["use_pre_fault_voltage"]
     # sgen current source contribution only for Type A and case "max" or type C:
-    if case != "max" and not type_c:
+    if case != "max" and not type_c or sequence != 1:
         return
 
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
@@ -181,39 +273,43 @@ def _current_source_current(net, ppci, bus_idx):
                              sgen.k.values.reshape(-1, 1) * i_sgen_n_pu * delta_V,
                              i_sgen_n_pu * sgen.kappa.values.reshape(-1, 1))
         i_sgen_pu = np.abs(i_sgen_pu)
-        extra_angle = ppci["bus"][sgen_buses_ppc, VA]
     else:
         i_sgen_pu = (sgen.sn_mva.values / net.sn_mva * sgen.k.values)
-        extra_angle = 0
 
-    if sgen_angle is not None and fault == "3ph":
+    if sgen_angle is not None and (fault == "3ph" or fault == "1ph" and type_c):
         i_sgen_pu = i_sgen_pu * np.exp(sgen_angle * 1j)
     # if case == "min":
     #     i_sgen_pu *= 0
 
     buses, ikcv_pu, _ = _sum_by_group(sgen_buses_ppc, i_sgen_pu, i_sgen_pu)
+
+    if type_c :
+        extra_angle = ppci["bus"][buses, VA]
+    else :
+        extra_angle = 0
+
     ikcv_pu = ikcv_pu.flatten()
     ppci["bus"][buses, [IKCV]] = ikcv_pu if sgen_angle is None else np.abs(ikcv_pu)
-    if sgen_angle is not None and fault == "3ph":
+    if sgen_angle is not None and (fault == "3ph" or fault == "1ph" and type_c):
         ppci["bus"][buses, PHI_IKCV_DEGREE] = np.angle(ikcv_pu, deg=True)
 
     if net["_options"]["inverse_y"]:
         Zbus = ppci["internal"]["Zbus"]
         diagZ = np.diag(Zbus).copy()  # here diagZ is not writeable
-        if sgen_angle is None and fault == "3ph":
+        if sgen_angle is None and (fault == "3ph" or fault == "1ph" and type_c):
             ppci["bus"][buses, PHI_IKCV_DEGREE] = -np.angle(diagZ[buses], deg=True) + extra_angle
         diagZ[bus_idx] += fault_impedance
         i_kss_2 = 1 / diagZ * np.dot(Zbus, ppci["bus"][:, IKCV] * np.exp(np.deg2rad(ppci["bus"][:, PHI_IKCV_DEGREE]) * 1j))
     else:
         ybus_fact = ppci["internal"]["ybus_fact"]
         diagZ = _calc_zbus_diag(net, ppci)
-        if sgen_angle is None and fault == "3ph":
+        if sgen_angle is None and (fault == "3ph" or fault == "1ph" and type_c):
             ppci["bus"][buses, PHI_IKCV_DEGREE] = -np.angle(diagZ[buses], deg=True) + extra_angle
         diagZ[bus_idx] += fault_impedance
         i_kss_2 = ybus_fact(ppci["bus"][:, IKCV] * np.exp(np.deg2rad(ppci["bus"][:, PHI_IKCV_DEGREE]) * 1j)) / diagZ
 
     ppci["bus"][:, IKSS2] = np.abs(i_kss_2 / baseI)
-    ppci["bus"][:, PHI_IKSS2_DEGREE] = np.angle(i_kss_2, deg=True) if fault == "3ph" else 0
+    ppci["bus"][:, PHI_IKSS2_DEGREE] = np.angle(i_kss_2, deg=True) if (fault == "3ph" or fault == "1ph" and type_c) else 0
     ppci["bus"][buses, IKCV] /= baseI[buses]
 
 
@@ -435,6 +531,7 @@ def _calc_branch_currents_complex(net, ppci, bus_idx):
     n_bus = ppci["bus"].shape[0]
     fb = np.real(ppci["branch"][:, 0]).astype(np.int64)
     tb = np.real(ppci["branch"][:, 1]).astype(np.int64)
+    ppci["internal"]["baseV"] = ppci["bus"][:, BASE_KV]  # shape issue
 
     # branch = ppci["branch"]
     # offtap = np.flatnonzero(branch[:, TAP] != 1)
@@ -537,9 +634,6 @@ def _calc_branch_currents_complex(net, ppci, bus_idx):
             V = np.zeros((n_bus, n_sc_bus), dtype=np.complex128)
             for ix, b in enumerate(bus_idx):
                 V[:, ix] = ybus_fact(current[ix, :] * baseI)
-
-        fb = np.real(ppci["branch"][:, 0]).astype(np.int64)
-        tb = np.real(ppci["branch"][:, 1]).astype(np.int64)
 
         V[np.abs(V) < 1e-10] = 0
 
