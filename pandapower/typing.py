@@ -9,5 +9,8 @@ Float = Union[float, np.number]
 
 BusType = Literal["n", "b", "m"]
 GeneratorType = Literal["current_source", "async", "async_doubly_fed"]
+LineType = Literal["ol", "cs"]
+HVLVType = Literal["hv", "lv"]
+TapChangerType = Literal["Ratio", "Symmetrical", "Ideal", "Tabular"]
 UnderOverExcitedType = Literal["underexcited", "overexcited"]
 WyeDeltaType = Literal["wye", "delta"]

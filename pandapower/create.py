@@ -21,7 +21,8 @@ from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes, e
     empty_defaults_per_dtype
 from pandapower.results import reset_results
 from pandapower.std_types import add_basic_std_types, load_std_type
-from pandapower.typing import BusType, GeneratorType, Int, UnderOverExcitedType, WyeDeltaType
+from pandapower.typing import BusType, GeneratorType, HVLVType, Int, LineType, TapChangerType, UnderOverExcitedType, \
+    WyeDeltaType
 import numpy as np
 
 try:
@@ -674,7 +675,7 @@ def create_empty_network(name: str = "",
 def create_bus(net: pandapowerNet,
                vn_kv: float,
                name: str | None = None,
-               index: int | None = None,
+               index=None,
                geodata: tuple[float, float] | None = None,
                type: BusType = "b",
                zone: str | None = None,
@@ -751,7 +752,7 @@ def create_bus(net: pandapowerNet,
 def create_bus_dc(net: pandapowerNet,
                   vn_kv: float,
                   name: str | None = None,
-                  index: int | None = None,
+                  index=None,
                   geodata: tuple[float, float] | None = None,
                   type: BusType = "b",
                   zone: str | None = None,
@@ -829,8 +830,8 @@ def create_bus_dc(net: pandapowerNet,
 def create_buses(net: pandapowerNet,
                  nr_buses: int,
                  vn_kv: float | Iterable[float],
-                 index: Iterable[int] | None = None,
-                 name: str | Iterable[str] | None = None,
+                 index=None,
+                 name: Iterable[str] | None = None,
                  type: BusType = "b",
                  geodata: Iterable[tuple[float, float]] | None = None,
                  zone: str | Iterable[str] | None = None,
@@ -923,8 +924,8 @@ def create_buses(net: pandapowerNet,
 def create_buses_dc(net: pandapowerNet,
                     nr_buses_dc: int,
                     vn_kv: float | Iterable[float],
-                    index: Iterable[int] | None = None,
-                    name: str | Iterable[str] | None = None,
+                    index=None,
+                    name: Iterable[str] | None = None,
                     type: BusType = "b",
                     geodata: Iterable[tuple[float, float]] | None = None,
                     zone: str | None = None,
@@ -1000,7 +1001,7 @@ def create_buses_dc(net: pandapowerNet,
 
 
 def create_load(net: pandapowerNet,
-                bus: int,
+                bus,
                 p_mw: float,
                 q_mvar: float = 0,
                 const_z_percent: float = 0,
@@ -1008,7 +1009,7 @@ def create_load(net: pandapowerNet,
                 sn_mva: float = nan,
                 name: str | None = None,
                 scaling: float = 1.,
-                index: int | None = None,
+                index=None,
                 in_service: bool = True,
                 type: WyeDeltaType = 'wye',
                 max_p_mw: float = nan,
@@ -1101,15 +1102,15 @@ def create_load(net: pandapowerNet,
 
 
 def create_loads(net: pandapowerNet,
-                 buses: Sequence[int],
+                 buses: Sequence,
                  p_mw: float | Iterable[float],
                  q_mvar: float | Iterable[float] = 0,
                  const_z_percent: float | Iterable[float] = 0,
                  const_i_percent: float | Iterable[float] = 0,
                  sn_mva: float | Iterable[float] = nan,
-                 name: str | Iterable[str] | None = None,
+                 name: Iterable[str] | None = None,
                  scaling: float | Iterable[float] = 1.,
-                 index: Iterable[int] | None = None,
+                 index=None,
                  in_service: bool | Iterable[bool] = True,
                  type: WyeDeltaType = 'wye',
                  max_p_mw: float | Iterable[float] = nan,
@@ -1205,7 +1206,7 @@ def create_loads(net: pandapowerNet,
 
 
 def create_asymmetric_load(net: pandapowerNet,
-                           bus: int,
+                           bus,
                            p_a_mw: float = 0,
                            p_b_mw: float = 0,
                            p_c_mw: float = 0,
@@ -1215,7 +1216,7 @@ def create_asymmetric_load(net: pandapowerNet,
                            sn_mva: float = nan,
                            name: str | None = None,
                            scaling: float = 1.,
-                           index: int | None = None,
+                           index=None,
                            in_service: bool = True,
                            type: WyeDeltaType = "wye",
                            **kwargs) -> Int:
@@ -1336,7 +1337,7 @@ def create_asymmetric_load(net: pandapowerNet,
 
 
 def create_load_from_cosphi(net: pandapowerNet,
-                            bus: int,
+                            bus,
                             sn_mva: float,
                             cos_phi: float,
                             mode: UnderOverExcitedType,
@@ -1372,12 +1373,12 @@ def create_load_from_cosphi(net: pandapowerNet,
 
 
 def create_sgen(net: pandapowerNet,
-                bus: int,
+                bus,
                 p_mw: float,
                 q_mvar: float = 0,
                 sn_mva: float = nan,
                 name: str | None = None,
-                index: int | None = None,
+                index=None,
                 scaling: float = 1.,
                 type: WyeDeltaType= 'wye',
                 in_service: bool = True,
@@ -1516,12 +1517,12 @@ def create_sgen(net: pandapowerNet,
 
 
 def create_sgens(net: pandapowerNet,
-                 buses: Sequence[int],
+                 buses: Sequence,
                  p_mw: float | Iterable[float],
                  q_mvar: float | Iterable[float] = 0,
                  sn_mva: float | Iterable[float] = nan,
-                 name: str | Iterable[str] | None = None,
-                 index: Iterable[int] | None = None,
+                 name: Iterable[str] | None = None,
+                 index=None,
                  scaling: float | Iterable[float] = 1.,
                  type: WyeDeltaType = 'wye',
                  in_service: bool | Iterable[bool] = True,
@@ -1668,7 +1669,7 @@ def create_sgens(net: pandapowerNet,
 # =============================================================================
 
 def create_asymmetric_sgen(net: pandapowerNet,
-                           bus: int,
+                           bus,
                            p_a_mw: float = 0,
                            p_b_mw: float = 0,
                            p_c_mw: float = 0,
@@ -1677,7 +1678,7 @@ def create_asymmetric_sgen(net: pandapowerNet,
                            q_c_mvar: float = 0,
                            sn_mva: float = nan,
                            name: str | None = None,
-                           index: int | None = None,
+                           index=None,
                            scaling: float = 1.,
                            type: WyeDeltaType = 'wye',
                            in_service: bool = True,
@@ -1746,7 +1747,7 @@ def create_asymmetric_sgen(net: pandapowerNet,
 
 def create_sgen_from_cosphi(
         net: pandapowerNet,
-        bus: int,
+        bus,
         sn_mva: float,
         cos_phi: float,
         mode: UnderOverExcitedType,
@@ -1781,7 +1782,7 @@ def create_sgen_from_cosphi(
 
 
 def create_storage(net: pandapowerNet,
-                   bus: int,
+                   bus,
                    p_mw: float,
                    max_e_mwh: float,
                    q_mvar: float = 0,
@@ -1789,7 +1790,7 @@ def create_storage(net: pandapowerNet,
                    soc_percent: float = nan,
                    min_e_mwh: float = 0.0,
                    name: str | None = None,
-                   index: int | None = None,
+                   index=None,
                    scaling: float = 1.,
                    type: str | None = None,
                    in_service: bool = True,
@@ -1892,15 +1893,15 @@ def create_storage(net: pandapowerNet,
 
 
 def create_storages(net: pandapowerNet,
-                    buses: Sequence[int],
+                    buses: Sequence,
                     p_mw: float | Iterable[float],
                     max_e_mwh: float | Iterable[float],
                     q_mvar: float | Iterable[float] = 0,
                     sn_mva: float | Iterable[float] = nan,
                     soc_percent: float | Iterable[float] = nan,
                     min_e_mwh: float | Iterable[float] = 0.0,
-                    name: str | Iterable[str] | None = None,
-                    index: Iterable[int] | None = None,
+                    name: Iterable[str] | None = None,
+                    index=None,
                     scaling: float | Iterable[float] = 1.,
                     type: str | Iterable[str] | None = None,
                     in_service: bool | Iterable[bool] = True,
@@ -2003,12 +2004,12 @@ def create_storages(net: pandapowerNet,
 
 
 def create_gen(net: pandapowerNet,
-               bus: int,
+               bus,
                p_mw: float,
                vm_pu: float = 1.,
                sn_mva: float = nan,
                name: str | None = None,
-               index: int | None = None,
+               index=None,
                max_q_mvar: float = nan,
                min_q_mvar: float = nan,
                min_p_mw: float = nan,
@@ -2140,12 +2141,12 @@ def create_gen(net: pandapowerNet,
 
 
 def create_gens(net: pandapowerNet,
-                buses: Sequence[int],
+                buses: Sequence,
                 p_mw: float | Iterable[float],
                 vm_pu: float | Iterable[float] = 1.,
                 sn_mva: float | Iterable[float] = nan,
-                name: str | Iterable[str] | None = None,
-                index: Iterable[int] | None = None,
+                name: Iterable[str] | None = None,
+                index=None,
                 max_q_mvar: float | Iterable[float] = nan,
                 min_q_mvar: float | Iterable[float] = nan,
                 min_p_mw: float | Iterable[float] = nan,
@@ -2282,9 +2283,21 @@ def create_gens(net: pandapowerNet,
     return index
 
 
-def create_motor(net, bus, pn_mech_mw, cos_phi, efficiency_percent=100., loading_percent=100.,
-                 name=None, lrc_pu=nan, scaling=1.0, vn_kv=nan, rx=nan, index=None, in_service=True,
-                 cos_phi_n=nan, efficiency_n_percent=nan, **kwargs):
+def create_motor(net: pandapowerNet,
+                 bus,
+                 pn_mech_mw: float,
+                 cos_phi: float,
+                 efficiency_percent: float = 100.,
+                 loading_percent: float = 100.,
+                 name: str | None = None,
+                 lrc_pu: float = nan,
+                 scaling: float = 1.0,
+                 vn_kv: float = nan,
+                 rx: float = nan,
+                 index=None,
+                 in_service: bool = True,
+                 cos_phi_n: float = nan,
+                 efficiency_n_percent: float = nan, **kwargs) -> Int:
     """
     Adds a motor to the network.
 
@@ -2348,11 +2361,26 @@ def create_motor(net, bus, pn_mech_mw, cos_phi, efficiency_percent=100., loading
     return index
 
 
-def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=True,
-                    s_sc_max_mva=nan, s_sc_min_mva=nan, rx_max=nan, rx_min=nan,
-                    max_p_mw=nan, min_p_mw=nan, max_q_mvar=nan, min_q_mvar=nan,
-                    index=None, r0x0_max=nan, x0x_max=nan, controllable=nan,
-                    slack_weight=1.0, **kwargs):
+def create_ext_grid(net: pandapowerNet,
+                    bus,
+                    vm_pu: float = 1.0,
+                    va_degree: float = 0.,
+                    name: str | None = None,
+                    in_service: bool = True,
+                    s_sc_max_mva: float = nan,
+                    s_sc_min_mva: float = nan,
+                    rx_max: float = nan,
+                    rx_min: float = nan,
+                    max_p_mw: float = nan,
+                    min_p_mw: float = nan,
+                    max_q_mvar: float = nan,
+                    min_q_mvar: float = nan,
+                    index=None,
+                    r0x0_max: float = nan,
+                    x0x_max: float = nan,
+                    controllable: bool | float = nan,
+                    slack_weight: float = 1.0,
+                    **kwargs) -> Int:
     """
     Creates an external grid connection.
 
@@ -2447,9 +2475,21 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
     return index
 
 
-def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=None, geodata=None,
-                df=1., parallel=1, in_service=True, max_loading_percent=nan, alpha=nan,
-                temperature_degree_celsius=nan, **kwargs):
+def create_line(net: pandapowerNet,
+                from_bus,
+                to_bus,
+                length_km: float,
+                std_type: str,
+                name: str | None = None,
+                index=None,
+                geodata: Iterable[tuple[float, float]] | None = None,
+                df: float = 1.,
+                parallel: int = 1,
+                in_service: bool = True,
+                max_loading_percent: float = nan,
+                alpha: float = nan,
+                temperature_degree_celsius: float = nan,
+                **kwargs) -> Int:
     """
     Creates a line element in net["line"]
     The line parameters are defined through the standard type library.
@@ -2583,9 +2623,21 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
     return index
 
 
-def create_line_dc(net, from_bus_dc, to_bus_dc, length_km, std_type, name=None, index=None, geodata=None,
-                   df=1., parallel=1, in_service=True, max_loading_percent=nan, alpha=nan,
-                   temperature_degree_celsius=nan, **kwargs):
+def create_line_dc(net: pandapowerNet,
+                   from_bus_dc,
+                   to_bus_dc,
+                   length_km: float,
+                   std_type: str,
+                   name: str | None = None,
+                   index=None,
+                   geodata: Iterable[tuple[float, float]] | None = None,
+                   df: float = 1.,
+                   parallel: int = 1,
+                   in_service: bool = True,
+                   max_loading_percent: float = nan,
+                   alpha: float = nan,
+                   temperature_degree_celsius: float = nan,
+                   **kwargs) -> Int:
     """
     Creates a line element in net["line_dc"]
     The line_dc parameters are defined through the standard type library.
@@ -2717,9 +2769,19 @@ def create_line_dc(net, from_bus_dc, to_bus_dc, length_km, std_type, name=None, 
     return index
 
 
-def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, index=None,
-                 geodata=None, df=1., parallel=1, in_service=True, max_loading_percent=nan,
-                 **kwargs):
+def create_lines(net: pandapowerNet,
+                 from_buses: Sequence,
+                 to_buses: Sequence,
+                 length_km: float | Iterable[float],
+                 std_type: str,
+                 name: Iterable[str] | None = None,
+                 index=None,
+                 geodata: Iterable[Iterable[tuple[float, float]]] | None = None,
+                 df: float | Iterable[float] = 1.,
+                 parallel: int | Iterable[int] = 1,
+                 in_service: bool | Iterable[bool] = True,
+                 max_loading_percent: float | Iterable[float] = nan,
+                 **kwargs) -> npt.NDArray[np.integer]:
     """ Convenience function for creating many lines at once. Parameters 'from_buses' and 'to_buses'
         must be arrays of equal length. Other parameters may be either arrays of the same length or
         single or values. In any case the line parameters are defined through a single standard
@@ -2849,9 +2911,19 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
     return index
 
 
-def create_lines_dc(net, from_buses_dc, to_buses_dc, length_km, std_type, name=None, index=None,
-                    geodata=None, df=1., parallel=1, in_service=True, max_loading_percent=nan,
-                    **kwargs):
+def create_lines_dc(net: pandapowerNet,
+                    from_buses_dc: Sequence,
+                    to_buses_dc: Sequence,
+                    length_km: float | Iterable[float],
+                    std_type: str | Sequence[str],
+                    name: Iterable[str]| None = None,
+                    index=None,
+                    geodata: Iterable[Iterable[tuple[float, float]]] | None = None,
+                    df: float | Iterable[float] = 1.,
+                    parallel: int | Iterable[int] = 1,
+                    in_service: bool | Iterable[bool] = True,
+                    max_loading_percent: float | Iterable[float]=nan,
+                    **kwargs) -> npt.NDArray[np.integer]:
     """ Convenience function for creating many dc lines at once. Parameters 'from_buses_dc' and 'to_buses_dc'
         must be arrays of equal length. Other parameters may be either arrays of the same length or
         single or values. In any case the dc line parameters are defined through a single standard
@@ -2975,13 +3047,30 @@ def create_lines_dc(net, from_buses_dc, to_buses_dc, length_km, std_type, name=N
     return index
 
 
-def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, x_ohm_per_km,
-                                c_nf_per_km, max_i_ka, name=None, index=None, type=None,
-                                geodata=None, in_service=True, df=1., parallel=1, g_us_per_km=0.,
-                                max_loading_percent=nan, alpha=nan,
-                                temperature_degree_celsius=nan, r0_ohm_per_km=nan,
-                                x0_ohm_per_km=nan, c0_nf_per_km=nan, g0_us_per_km=0,
-                                endtemp_degree=nan, **kwargs):
+def create_line_from_parameters(net: pandapowerNet,
+                                from_bus,
+                                to_bus,
+                                length_km: float,
+                                r_ohm_per_km: float,
+                                x_ohm_per_km: float,
+                                c_nf_per_km: float,
+                                max_i_ka: float,
+                                name: str | None = None,
+                                index=None,
+                                type: LineType | None = None,
+                                geodata: Iterable[tuple[float, float]] | None = None,
+                                in_service: bool = True,
+                                df: float = 1.,
+                                parallel: int = 1,
+                                g_us_per_km: float = 0.,
+                                max_loading_percent: float = nan,
+                                alpha: float = nan,
+                                temperature_degree_celsius: float = nan,
+                                r0_ohm_per_km: float = nan,
+                                x0_ohm_per_km: float = nan,
+                                c0_nf_per_km: float = nan,
+                                g0_us_per_km: float = 0,
+                                endtemp_degree: float = nan, **kwargs) -> Int:
     """
     Creates a line element in net["line"] from line parameters.
 
@@ -3124,10 +3213,24 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
     return index
 
 
-def create_line_dc_from_parameters(net, from_bus_dc, to_bus_dc, length_km, r_ohm_per_km, max_i_ka,
-                                   name=None, index=None, type=None, geodata=None, in_service=True, df=1., parallel=1,
-                                   max_loading_percent=nan, alpha=nan, temperature_degree_celsius=nan, g_us_per_km=0.,
-                                   **kwargs):
+def create_line_dc_from_parameters(net: pandapowerNet,
+                                   from_bus_dc,
+                                   to_bus_dc,
+                                   length_km: float,
+                                   r_ohm_per_km: float,
+                                   max_i_ka: float,
+                                   name: str | None = None,
+                                   index=None,
+                                   type: LineType | None = None,
+                                   geodata: Iterable[tuple[float, float]] | None = None,
+                                   in_service: bool = True,
+                                   df: float = 1.,
+                                   parallel: int = 1,
+                                   max_loading_percent: float = nan,
+                                   alpha: float = nan,
+                                   temperature_degree_celsius: float = nan,
+                                   g_us_per_km: float = 0.,
+                                   **kwargs) -> Int:
     """
     Creates a dc line element in net["line_dc"] from dc line parameters.
 
@@ -3247,13 +3350,30 @@ def create_line_dc_from_parameters(net, from_bus_dc, to_bus_dc, length_km, r_ohm
     return index
 
 
-def create_lines_from_parameters(net, from_buses, to_buses, length_km, r_ohm_per_km, x_ohm_per_km,
-                                 c_nf_per_km, max_i_ka, name=None, index=None, type=None,
-                                 geodata=None, in_service=True, df=1., parallel=1, g_us_per_km=0.,
-                                 max_loading_percent=nan, alpha=nan,
-                                 temperature_degree_celsius=nan, r0_ohm_per_km=nan,
-                                 x0_ohm_per_km=nan, c0_nf_per_km=nan, g0_us_per_km=nan,
-                                 **kwargs):
+def create_lines_from_parameters(net: pandapowerNet,
+                                 from_buses: Sequence,
+                                 to_buses: Sequence,
+                                 length_km: float | Iterable[float],
+                                 r_ohm_per_km: float | Iterable[float],
+                                 x_ohm_per_km: float | Iterable[float],
+                                 c_nf_per_km: float | Iterable[float],
+                                 max_i_ka: float | Iterable[float],
+                                 name: Iterable[str] | None = None,
+                                 index=None,
+                                 type: LineType | Iterable[LineType] | None = None,
+                                 geodata: Iterable[Iterable[tuple[float, float]]] | None = None,
+                                 in_service: bool | Iterable[bool] = True,
+                                 df: float | Iterable[float] = 1.,
+                                 parallel: int | Iterable[int] = 1,
+                                 g_us_per_km: float | Iterable[float] = 0.,
+                                 max_loading_percent: float | Iterable[float] =nan,
+                                 alpha: float = nan,
+                                 temperature_degree_celsius: float = nan,
+                                 r0_ohm_per_km: float | Iterable[float] = nan,
+                                 x0_ohm_per_km: float | Iterable[float] = nan,
+                                 c0_nf_per_km: float | Iterable[float] = nan,
+                                 g0_us_per_km: float | Iterable[float] = nan,
+                                 **kwargs) -> npt.NDArray[np.integer]:
     """
     Convenience function for creating many lines at once. Parameters 'from_buses' and 'to_buses'
         must be arrays of equal length. Other parameters may be either arrays of the same length or
@@ -3388,11 +3508,24 @@ def create_lines_from_parameters(net, from_buses, to_buses, length_km, r_ohm_per
     return index
 
 
-def create_lines_dc_from_parameters(net, from_buses_dc, to_buses_dc, length_km, r_ohm_per_km,
-                                    max_i_ka, name=None, index=None, type=None, geodata=None,
-                                    in_service=True, df=1., parallel=1, g_us_per_km=0., max_loading_percent=nan,
-                                    alpha=nan,
-                                    temperature_degree_celsius=nan, **kwargs):
+def create_lines_dc_from_parameters(net: pandapowerNet,
+                                    from_buses_dc: Sequence,
+                                    to_buses_dc: Sequence,
+                                    length_km: float | Iterable[float],
+                                    r_ohm_per_km: float | Iterable[float],
+                                    max_i_ka: float | Iterable[float],
+                                    name: Iterable[str] | None = None,
+                                    index=None,
+                                    type: LineType | Iterable[LineType] | None = None,
+                                    geodata: Iterable[Iterable[tuple[float, float]]] | None = None,
+                                    in_service: bool | Iterable[bool] = True,
+                                    df: float | Iterable[float] = 1.,
+                                    parallel: int | Iterable[int] = 1,
+                                    g_us_per_km: float | Iterable[float] = 0.,
+                                    max_loading_percent: float | Iterable[float] = nan,
+                                    alpha: float = nan,
+                                    temperature_degree_celsius: float = nan,
+                                    **kwargs) -> npt.NDArray[np.integer]:
     """
     Convenience function for creating many dc lines at once. Parameters 'from_buses_dc' and 'to_buses_dc'
         must be arrays of equal length. Other parameters may be either arrays of the same length or
@@ -3510,10 +3643,25 @@ def create_lines_dc_from_parameters(net, from_buses_dc, to_buses_dc, length_km, 
     return index
 
 
-def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in_service=True,
-                       index=None, max_loading_percent=nan, parallel=1, df=1., tap_changer_type=None,
-                       tap_dependency_table=nan, id_characteristic_table=nan,
-                       pt_percent=nan, oltc=nan, xn_ohm=nan, tap2_pos=nan, **kwargs):
+def create_transformer(net: pandapowerNet,
+                       hv_bus,
+                       lv_bus,
+                       std_type: str,
+                       name: str | None = None,
+                       tap_pos: int | float = nan,
+                       in_service: bool = True,
+                       index=None,
+                       max_loading_percent: float = nan,
+                       parallel: int = 1,
+                       df: float = 1.,
+                       tap_changer_type: str | None = None,
+                       tap_dependency_table: bool | float = nan,
+                       id_characteristic_table: int | float = nan,
+                       pt_percent: float = nan,
+                       oltc: bool | float = nan,
+                       xn_ohm: float = nan,
+                       tap2_pos: int | float = nan,
+                       **kwargs) -> Int:
     """
     Creates a two-winding transformer in table net.trafo.
     The trafo parameters are defined through the standard type library.
@@ -3661,21 +3809,51 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
     return index
 
 
-def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn_lv_kv,
-                                       vkr_percent, vk_percent, pfe_kw, i0_percent,
-                                       shift_degree=0,
-                                       tap_side=None, tap_neutral=nan, tap_max=nan,
-                                       tap_min=nan, tap_step_percent=nan, tap_step_degree=nan,
-                                       tap_pos=nan, tap_changer_type=None, id_characteristic_table=nan,
-                                       in_service=True, name=None, vector_group=None, index=None,
-                                       max_loading_percent=nan, parallel=1,
-                                       df=1., vk0_percent=nan, vkr0_percent=nan,
-                                       mag0_percent=nan, mag0_rx=nan,
-                                       si0_hv_partial=nan,
-                                       pt_percent=nan, oltc=nan, tap_dependency_table=False,
-                                       xn_ohm=nan, tap2_side=None, tap2_neutral=nan, tap2_max=nan,
-                                       tap2_min=nan, tap2_step_percent=nan, tap2_step_degree=nan,
-                                       tap2_pos=nan, tap2_changer_type=None, **kwargs):
+def create_transformer_from_parameters(net: pandapowerNet,
+                                       hv_bus,
+                                       lv_bus,
+                                       sn_mva: float,
+                                       vn_hv_kv: float,
+                                       vn_lv_kv: float,
+                                       vkr_percent: float,
+                                       vk_percent: float,
+                                       pfe_kw: float,
+                                       i0_percent: float,
+                                       shift_degree: float = 0,
+                                       tap_side: HVLVType | None = None,
+                                       tap_neutral: int | float = nan,
+                                       tap_max: int | float = nan,
+                                       tap_min: int | float = nan,
+                                       tap_step_percent: float = nan,
+                                       tap_step_degree: float = nan,
+                                       tap_pos: int | float = nan,
+                                       tap_changer_type: TapChangerType | None = None,
+                                       id_characteristic_table: int | float = nan,
+                                       in_service: bool = True,
+                                       name: str | None = None,
+                                       vector_group: str | None = None,
+                                       index=None,
+                                       max_loading_percent: float = nan,
+                                       parallel: int = 1,
+                                       df: float = 1.,
+                                       vk0_percent: float = nan,
+                                       vkr0_percent: float = nan,
+                                       mag0_percent: float = nan,
+                                       mag0_rx: float = nan,
+                                       si0_hv_partial: float = nan,
+                                       pt_percent: float = nan,
+                                       oltc: bool | float = nan,
+                                       tap_dependency_table: bool | float = False,
+                                       xn_ohm: float = nan,
+                                       tap2_side: HVLVType | None = None,
+                                       tap2_neutral: int | float = nan,
+                                       tap2_max: int | float = nan,
+                                       tap2_min: int | float = nan,
+                                       tap2_step_percent: float = nan,
+                                       tap2_step_degree: float = nan,
+                                       tap2_pos: int | float = nan,
+                                       tap2_changer_type: TapChangerType | None = None,
+                                       **kwargs) -> Int:
     """
     Creates a two-winding transformer in table net.trafo with the specified parameters.
 
