@@ -232,8 +232,7 @@ def _get_bus_results(net, ppc_0, ppc_1, ppc_2, bus):
     ppc_sequence = {0: ppc_0, 1: ppc_1, 2: ppc_2, "": ppc_1}
     if net["_options"]["fault"] == "1ph":
         net.res_bus_sc["ikss_ka"] = ppc_0["bus"][ppc_index, IKSS1] + ppc_1["bus"][ppc_index, IKSS2]
-        # todo: implement SKSS for "1ph"
-        # net.res_bus_sc["skss_mw"] = ppc_0["bus"][ppc_index, SKSS]
+        net.res_bus_sc["skss_mw"] = ppc_0["bus"][ppc_index, SKSS]
         sequence_relevant = range(3)
     else:
         net.res_bus_sc["ikss_ka"] = ppc_1["bus"][ppc_index, IKSS1] + ppc_1["bus"][ppc_index, IKSS2]
@@ -246,8 +245,8 @@ def _get_bus_results(net, ppc_0, ppc_1, ppc_2, bus):
         # in trafo3w, we add very high numbers (1e10) as impedances to block current
         # here, we need to replace such high values by np.inf
         baseZ = ppc_s["bus"][ppc_index, BASE_KV] ** 2 / ppc_s["baseMVA"]
-        net.res_bus_sc[f"xk{sequence}_ohm"].loc[net.res_bus_sc[f"xk{sequence}_ohm"] / baseZ > 1e9] = np.inf
-        net.res_bus_sc[f"rk{sequence}_ohm"].loc[net.res_bus_sc[f"rk{sequence}_ohm"] / baseZ > 1e9] = np.inf
+        net.res_bus_sc.loc[net.res_bus_sc[f"xk{sequence}_ohm"] / baseZ > 1e9, f"xk{sequence}_ohm"] = np.inf
+        net.res_bus_sc.loc[net.res_bus_sc[f"rk{sequence}_ohm"] / baseZ > 1e9, f"rk{sequence}_ohm"] = np.inf
     if net._options["ip"]:
         net.res_bus_sc["ip_ka"] = ppc_1["bus"][ppc_index, IP]
     if net._options["ith"]:

@@ -212,6 +212,10 @@ def _calc_ikss_1ph(net, ppci_0, ppci_1, ppci_2, bus_idx):
     # ppci_1["internal"]["V_ikss"] = V_ikss_abc_pu.T[:, [1]]
     # ppci_2["internal"]["V_ikss"] = V_ikss_abc_pu.T[:, [2]]
 
+    ppci_0["bus"][bus_idx, SKSS] = ppci_0["bus"][bus_idx, IKSS1]  * ppci_0["bus"][bus_idx, BASE_KV] / np.sqrt(3)
+    # ppci_1["bus"][bus_idx, SKSS] = ppci_1["bus"][bus_idx, IKSS1]  * ppci_1["bus"][bus_idx, BASE_KV] / np.sqrt(3)
+    # ppci_2["bus"][bus_idx, SKSS] = ppci_2["bus"][bus_idx, IKSS1]  * ppci_2["bus"][bus_idx, BASE_KV] / np.sqrt(3)
+
     # add voltage information to ppci:
     ppci_0["internal"]["V_ikss"] = V_ikss_0
     ppci_1["internal"]["V_ikss"] = V_ikss_1

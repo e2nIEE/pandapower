@@ -26,6 +26,8 @@ from pandapower.build_branch import _calc_tap_from_dataframe, _transformer_corre
 from pandapower.build_branch import _switch_branches, _branches_with_oos_buses, _initialize_branch_lookup, _end_temperature_correction_factor
 from pandapower.pd2ppc import _ppc2ppci, _init_ppc
 
+BIG_NUMBER = 1e20
+
 
 def _pd2ppc_zero(net, k_st, sequence=0):
     """
