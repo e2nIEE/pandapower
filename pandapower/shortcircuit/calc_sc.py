@@ -110,7 +110,7 @@ def calc_sc(net, bus=None,
 
         print(net.res_bus_sc)
     """
-    if fault not in ["3ph", "2ph", "1ph"]:
+    if fault not in ["3ph", "2ph", "1ph", "2ph-g"]:
         raise NotImplementedError(
             "Only 3ph, 2ph and 1ph short-circuit currents implemented")
 
@@ -159,7 +159,7 @@ def calc_sc(net, bus=None,
 
     if fault in ("2ph", "3ph"):
         _calc_sc(net, bus)
-    elif fault == "1ph": #ToDo: 2Ph-G
+    elif fault in("1ph", "2ph-g"): #ToDo: 2Ph-G
         _calc_sc_1ph(net, bus)
     else:
         raise ValueError("Invalid fault %s" % fault)

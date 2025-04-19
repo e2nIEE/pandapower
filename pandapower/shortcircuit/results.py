@@ -153,7 +153,7 @@ def _get_trafo_1ph_results(net, v_abc_pu, i_abc_ka, s_abc_mva):
 
     # todo: ip, ith
 
-
+#ToDo 2Ph-G: diese Funktion notwendig?
 def _calculate_bus_results_2ph(ppc_0, ppc_1, ppc_2, bus):
     # we use 3D arrays here to easily identify via axis:
     # 0: line index, 1: from/to, 2: phase
@@ -202,13 +202,12 @@ def _calculate_bus_results_2ph(ppc_0, ppc_1, ppc_2, bus):
 
 
 def _extract_results(net, ppc_0, ppc_1, ppc_2, bus):
-    #ToDo
-    if net["_options"]["fault"] == "2ph-g":
+    if net["_options"]["fault"] == "2ph-gg": #ToDo 2Ph-G
        _calculate_bus_results_2ph(ppc_0, ppc_1, ppc_2, bus)
     else:
         _get_bus_results(net, ppc_0, ppc_1, ppc_2, bus)
     if net._options["branch_results"]:
-        if net["_options"]["fault"] == "1ph":
+        if net["_options"]["fault"] in ("1ph", "2ph-g"): #ToDo 2Ph-G
             v_abc_pu, i_abc_ka, s_abc_mva = _calculate_branch_phase_results(ppc_0, ppc_1, ppc_2)
             _get_line_1ph_results(net, ppc_1, v_abc_pu, i_abc_ka, s_abc_mva)
             _get_trafo_1ph_results(net, v_abc_pu, i_abc_ka, s_abc_mva)
@@ -230,7 +229,7 @@ def _get_bus_results(net, ppc_0, ppc_1, ppc_2, bus):
     ppc_index = bus_lookup[net.bus.index]
 
     ppc_sequence = {0: ppc_0, 1: ppc_1, 2: ppc_2, "": ppc_1}
-    if net["_options"]["fault"] == "1ph":
+    if net["_options"]["fault"] in ("1ph", "2ph-g"): #ToDo: 2Ph-G
         net.res_bus_sc["ikss_ka"] = ppc_0["bus"][ppc_index, IKSS1] + ppc_1["bus"][ppc_index, IKSS2]
         net.res_bus_sc["skss_mw"] = ppc_0["bus"][ppc_index, SKSS]
         sequence_relevant = range(3)
