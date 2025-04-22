@@ -57,10 +57,7 @@ try:
     lightsim2grid_available = True
 except ImportError:
     lightsim2grid_available = False
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 try:
     from geopandas import GeoSeries
     from shapely import from_geojson

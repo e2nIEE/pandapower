@@ -12,10 +12,7 @@ from pandapower.plotting.plotly.mapbox_plot import *
 from pandapower.plotting.plotly.traces import create_bus_trace, create_line_trace, \
     create_trafo_trace, draw_traces
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 logger = logging.getLogger(__name__)
 
 

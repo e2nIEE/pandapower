@@ -8,10 +8,7 @@ import numpy as np
 from pandapower.auxiliary import read_from_net, _detect_read_write_flag
 from pandapower.control.basic_controller import Controller
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 logger = logging.getLogger(__name__)
 
 
