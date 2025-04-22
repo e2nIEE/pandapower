@@ -21,7 +21,8 @@ from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes, e
     empty_defaults_per_dtype
 from pandapower.results import reset_results
 from pandapower.std_types import add_basic_std_types, load_std_type
-from pandapower.typing import BusType, GeneratorType, HVLVType, Int, LineType, TapChangerType, UnderOverExcitedType, \
+from pandapower.typing import BusType, GeneratorType, HVMVLVType, HVLVType, Int, LineType, \
+    MeasurementElementType, MeasurementType, SwitchElementType, SwitchType, TapChangerType, UnderOverExcitedType, \
     WyeDeltaType
 import numpy as np
 
@@ -4063,19 +4064,51 @@ def create_transformer_from_parameters(net: pandapowerNet,
     return index
 
 
-def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_kv, vn_lv_kv,
-                                        vkr_percent, vk_percent, pfe_kw, i0_percent, shift_degree=0,
-                                        tap_side=None, tap_neutral=nan, tap_max=nan, tap_min=nan,
-                                        tap_step_percent=nan, tap_step_degree=nan, tap_pos=nan,
-                                        tap_changer_type=None, id_characteristic_table=nan, in_service=True,
-                                        name=None, vector_group=None, index=None, max_loading_percent=nan,
-                                        parallel=1, df=1., vk0_percent=nan, vkr0_percent=nan,
-                                        mag0_percent=nan, mag0_rx=nan, si0_hv_partial=nan,
-                                        pt_percent=nan, oltc=nan, tap_dependency_table=False,
-                                        xn_ohm=nan, tap2_side=None, tap2_neutral=nan, tap2_max=nan,
-                                        tap2_min=nan, tap2_step_percent=nan, tap2_step_degree=nan,
-                                        tap2_pos=nan, tap2_changer_type=None,
-                                        **kwargs):
+def create_transformers_from_parameters(net: pandapowerNet,
+                                        hv_buses: Sequence,
+                                        lv_buses: Sequence,
+                                        sn_mva: float | Iterable[float],
+                                        vn_hv_kv: float | Iterable[float],
+                                        vn_lv_kv: float | Iterable[float],
+                                        vkr_percent: float | Iterable[float],
+                                        vk_percent: float | Iterable[float],
+                                        pfe_kw: float | Iterable[float],
+                                        i0_percent: float | Iterable[float],
+                                        shift_degree: float | Iterable[float] = 0,
+                                        tap_side: HVLVType | Iterable[HVLVType] | None = None,
+                                        tap_neutral: int | Iterable[int] | float = nan,
+                                        tap_max: int | Iterable[int] | float = nan,
+                                        tap_min: int | Iterable[int] | float = nan,
+                                        tap_step_percent: float | Iterable[float] = nan,
+                                        tap_step_degree: float | Iterable[float] = nan,
+                                        tap_pos: int | Iterable[int] | float = nan,
+                                        tap_changer_type: TapChangerType | Iterable[TapChangerType] | None = None,
+                                        id_characteristic_table: int | Iterable[int] | float = nan,
+                                        in_service: bool | Iterable[bool] = True,
+                                        name: Iterable[str] | None = None,
+                                        vector_group: str | Iterable[str] | None = None,
+                                        index=None,
+                                        max_loading_percent: float | Iterable[float] = nan,
+                                        parallel: int | Iterable[int] = 1,
+                                        df: float | Iterable[float] = 1.,
+                                        vk0_percent: float | Iterable[float] = nan,
+                                        vkr0_percent: float | Iterable[float] = nan,
+                                        mag0_percent: float | Iterable[float] = nan,
+                                        mag0_rx: float | Iterable[float] = nan,
+                                        si0_hv_partial: float | Iterable[float] = nan,
+                                        pt_percent: float | Iterable[float] = nan,
+                                        oltc: bool | Iterable[bool] | float = nan,
+                                        tap_dependency_table: bool | Iterable[bool] = False,
+                                        xn_ohm: float | Iterable[float] = nan,
+                                        tap2_side: HVLVType | Iterable[HVLVType] | None = None,
+                                        tap2_neutral: int | Iterable[int] | float = nan,
+                                        tap2_max: int | Iterable[int] | float = nan,
+                                        tap2_min: int | Iterable[int] | float = nan,
+                                        tap2_step_percent: float | Iterable[float] = nan,
+                                        tap2_step_degree: float | Iterable[float] = nan,
+                                        tap2_pos: int | Iterable[int] | float = nan,
+                                        tap2_changer_type: TapChangerType | Iterable[TapChangerType] | None = None,
+                                        **kwargs) -> npt.NDArray[np.integer]:
     """
     Creates several two-winding transformers in table net.trafo with the specified parameters.
 
@@ -4262,10 +4295,21 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
     return index
 
 
-def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tap_pos=nan,
-                         in_service=True, index=None, max_loading_percent=nan, tap_changer_type=None,
-                         tap_at_star_point=False, tap_dependency_table=nan, id_characteristic_table=nan,
-                         **kwargs):
+def create_transformer3w(net: pandapowerNet,
+                         hv_bus,
+                         mv_bus,
+                         lv_bus,
+                         std_type: str,
+                         name: str | None = None,
+                         tap_pos: int | float = nan,
+                         in_service: bool = True,
+                         index=None,
+                         max_loading_percent: float = nan,
+                         tap_changer_type: TapChangerType | None = None,
+                         tap_at_star_point: bool = False,
+                         tap_dependency_table: bool | float = nan,
+                         id_characteristic_table: int | float = nan,
+                         **kwargs) -> Int:
     """
     Creates a three-winding transformer in table net.trafo3w.
     The trafo parameters are defined through the standard type library.
@@ -4563,18 +4607,49 @@ def create_transformer3w_from_parameters(
 
 
 def create_transformers3w_from_parameters(
-        net, hv_buses, mv_buses, lv_buses, vn_hv_kv, vn_mv_kv,
-        vn_lv_kv, sn_hv_mva, sn_mv_mva, sn_lv_mva, vk_hv_percent,
-        vk_mv_percent, vk_lv_percent, vkr_hv_percent,
-        vkr_mv_percent, vkr_lv_percent, pfe_kw, i0_percent,
-        shift_mv_degree=0., shift_lv_degree=0., tap_side=None,
-        tap_step_percent=nan, tap_step_degree=nan, tap_pos=nan,
-        tap_neutral=nan, tap_max=nan, tap_min=nan, name=None,
-        in_service=True, index=None, max_loading_percent=nan,
-        tap_at_star_point=False, tap_changer_type=None,
-        vk0_hv_percent=nan, vk0_mv_percent=nan, vk0_lv_percent=nan,
-        vkr0_hv_percent=nan, vkr0_mv_percent=nan, vkr0_lv_percent=nan,
-        vector_group=None, tap_dependency_table=False, id_characteristic_table=nan, **kwargs):
+        net: pandapowerNet,
+        hv_buses: Sequence,
+        mv_buses: Sequence,
+        lv_buses: Sequence,
+        vn_hv_kv: float | Iterable[float],
+        vn_mv_kv: float | Iterable[float],
+        vn_lv_kv: float | Iterable[float],
+        sn_hv_mva: float | Iterable[float],
+        sn_mv_mva: float | Iterable[float],
+        sn_lv_mva: float | Iterable[float],
+        vk_hv_percent: float | Iterable[float],
+        vk_mv_percent: float | Iterable[float],
+        vk_lv_percent: float | Iterable[float],
+        vkr_hv_percent: float | Iterable[float],
+        vkr_mv_percent: float | Iterable[float],
+        vkr_lv_percent: float | Iterable[float],
+        pfe_kw: float | Iterable[float],
+        i0_percent: float | Iterable[float],
+        shift_mv_degree: float | Iterable[float] = 0.,
+        shift_lv_degree: float | Iterable[float] = 0.,
+        tap_side: HVMVLVType | Iterable[HVMVLVType] | None = None,
+        tap_step_percent: float | Iterable[float] = nan,
+        tap_step_degree: float | Iterable[float] = nan,
+        tap_pos: int | Iterable[int] | float = nan,
+        tap_neutral: int | Iterable[int] | float = nan,
+        tap_max: int | Iterable[int] | float = nan,
+        tap_min: int | Iterable[int] | float = nan,
+        name: Iterable[str] | None = None,
+        in_service: bool | Iterable[bool] = True,
+        index=None,
+        max_loading_percent: float | Iterable[float] = nan,
+        tap_at_star_point: bool | Iterable[bool] = False,
+        tap_changer_type: float | Iterable[float] | None = None,
+        vk0_hv_percent: float | Iterable[float] = nan,
+        vk0_mv_percent: float | Iterable[float] = nan,
+        vk0_lv_percent: float | Iterable[float] = nan,
+        vkr0_hv_percent: float | Iterable[float] = nan,
+        vkr0_mv_percent: float | Iterable[float] = nan,
+        vkr0_lv_percent: float | Iterable[float] = nan,
+        vector_group: str | Iterable[str] | None = None,
+        tap_dependency_table: bool | Iterable[bool] = False,
+        id_characteristic_table: int | Iterable[int] | float = nan,
+        **kwargs) -> npt.NDArray[np.integer]:
     """
     Adds multiple three-winding transformers in table net.trafo3w with the specified parameters.
     The model currently only supports one tap changer per 3w-transformer.
@@ -4747,8 +4822,17 @@ def create_transformers3w_from_parameters(
     return index
 
 
-def create_switch(net, bus, element, et, closed=True, type=None, name=None, index=None, z_ohm=0,
-                  in_ka=nan, **kwargs):
+def create_switch(net: pandapowerNet,
+                  bus,
+                  element,
+                  et: SwitchElementType,
+                  closed: bool = True,
+                  type: SwitchType | None = None,
+                  name: str | None = None,
+                  index=None,
+                  z_ohm: float = 0,
+                  in_ka: float = nan,
+                  **kwargs) -> Int:
     """
     Adds a switch in the net["switch"] table.
 
@@ -4776,7 +4860,7 @@ def create_switch(net, bus, element, et, closed=True, type=None, name=None, inde
     OPTIONAL:
         **closed** (boolean, True) - switch position: False = open, True = closed
 
-        **type** (int, None) - indicates the type of switch: "LS" = Load Switch, "CB" = \
+        **type** (str, None) - indicates the type of switch: "LS" = Load Switch, "CB" = \
             Circuit Breaker, "LBS" = Load Break Switch or "DS" = Disconnecting Switch
 
         **z_ohm** (float, 0) - indicates the resistance of the switch, which has effect only on
@@ -4834,8 +4918,17 @@ def create_switch(net, bus, element, et, closed=True, type=None, name=None, inde
     return index
 
 
-def create_switches(net, buses, elements, et, closed=True, type=None, name=None, index=None,
-                    z_ohm=0, in_ka=nan, **kwargs):
+def create_switches(net: pandapowerNet,
+                    buses: Sequence,
+                    elements,
+                    et: SwitchElementType | Iterable[SwitchElementType],
+                    closed: bool = True,
+                    type: SwitchType | None = None,
+                    name: Iterable[str] | None = None,
+                    index=None,
+                    z_ohm: float = 0,
+                    in_ka: float = nan,
+                    **kwargs) -> Int:
     """
     Adds a switch in the net["switch"] table.
 
@@ -4863,14 +4956,14 @@ def create_switches(net, buses, elements, et, closed=True, type=None, name=None,
     OPTIONAL:
         **closed** (boolean, True) - switch position: False = open, True = closed
 
-        **type** (int, None) - indicates the type of switch: "LS" = Load Switch, "CB" = \
+        **type** (str, None) - indicates the type of switch: "LS" = Load Switch, "CB" = \
             Circuit Breaker, "LBS" = Load Break Switch or "DS" = Disconnecting Switch
 
         **z_ohm** (float, 0) - indicates the resistance of the switch, which has effect only on
             bus-bus switches, if sets to 0, the buses will be fused like before, if larger than
             0 a branch will be created for the switch which has also effects on the bus mapping
 
-        **name** (string, default None) - The name for this switch
+        **name** (list of str, default None) - The name for this switch
 
         **in_ka** (float, default None) - maximum current that the switch can carry
             normal operating conditions without tripping
@@ -4903,7 +4996,7 @@ def create_switches(net, buses, elements, et, closed=True, type=None, name=None,
                           net[table][joining_busses], left_index=True, right_index=True)
         not_connected_mask = True
         for joining_bus in joining_busses:
-            not_connected_mask &= merged.bus != merged[joining_bus]
+            not_connected_mask &= merged.bus != merged[joining_bus]  # type: ignore[assignment]
         if np_any(not_connected_mask):
             bus_element_pairs = list(zip(merged.bus[not_connected_mask], merged.index[not_connected_mask]))
             raise UserWarning("%s not connected (%s element, bus): %s" %
@@ -4917,8 +5010,19 @@ def create_switches(net, buses, elements, et, closed=True, type=None, name=None,
     return index
 
 
-def create_shunt(net, bus, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, name=None, step_dependency_table=False,
-                 id_characteristic_table=nan, in_service=True, index=None, **kwargs):
+def create_shunt(net: pandapowerNet,
+                 bus,
+                 q_mvar: float,
+                 p_mw: float = 0.,
+                 vn_kv: float | None = None,
+                 step: int = 1,
+                 max_step: int = 1,
+                 name: str | None = None,
+                 step_dependency_table: bool = False,
+                 id_characteristic_table: int | float = nan,
+                 in_service: bool = True,
+                 index=None,
+                 **kwargs) -> Int:
     """
     Creates a shunt element.
 
@@ -4982,8 +5086,19 @@ def create_shunt(net, bus, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, name
     return index
 
 
-def create_shunts(net, buses, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, name=None, step_dependency_table=False,
-                  id_characteristic_table=nan, in_service=True, index=None, **kwargs):
+def create_shunts(net: pandapowerNet,
+                  buses,
+                  q_mvar: float | Iterable[float],
+                  p_mw: float | Iterable[float] = 0.,
+                  vn_kv: float | Iterable[float] | None = None,
+                  step: int | Iterable[int] = 1,
+                  max_step: int | Iterable[int] = 1,
+                  name: Iterable[str] | None = None,
+                  step_dependency_table: bool | Iterable[bool] = False,
+                  id_characteristic_table: int | Iterable[int] | float = nan,
+                  in_service: bool | Iterable[bool] = True,
+                  index=None,
+                  **kwargs) -> npt.NDArray[np.array]:
     """
     Creates a number of shunt elements.
 
@@ -5044,7 +5159,11 @@ def create_shunts(net, buses, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, n
     return index
 
 
-def create_shunt_as_capacitor(net, bus, q_mvar, loss_factor, **kwargs):
+def create_shunt_as_capacitor(net: pandapowerNet,
+                              bus,
+                              q_mvar: float,
+                              loss_factor: float,
+                              **kwargs) -> Int:
     """
     Creates a shunt element representing a capacitor bank.
 
@@ -5069,9 +5188,19 @@ def create_shunt_as_capacitor(net, bus, q_mvar, loss_factor, **kwargs):
     return create_shunt(net, bus, q_mvar=q_mvar, p_mw=p_mw, **kwargs)
 
 
-def create_svc(net, bus, x_l_ohm, x_cvar_ohm, set_vm_pu, thyristor_firing_angle_degree,
-               name=None, controllable=True, in_service=True, index=None,
-               min_angle_degree=90, max_angle_degree=180, **kwargs):
+def create_svc(net: pandapowerNet,
+               bus,
+               x_l_ohm: float,
+               x_cvar_ohm: float,
+               set_vm_pu: float,
+               thyristor_firing_angle_degree: float,
+               name: str | None = None,
+               controllable: bool = True,
+               in_service: bool = True,
+               index=None,
+               min_angle_degree: float = 90,
+               max_angle_degree: float = 180,
+               **kwargs) -> Int:
     """
     Creates an SVC element - a shunt element with adjustable impedance used to control the voltage \
         at the connected bus
@@ -5129,8 +5258,18 @@ def create_svc(net, bus, x_l_ohm, x_cvar_ohm, set_vm_pu, thyristor_firing_angle_
     return index
 
 
-def create_ssc(net, bus, r_ohm, x_ohm, set_vm_pu=1., vm_internal_pu=1., va_internal_degree=0.,
-               name=None, controllable=True, in_service=True, index=None, **kwargs):
+def create_ssc(net: pandapowerNet,
+               bus,
+               r_ohm: float,
+               x_ohm: float,
+               set_vm_pu: float = 1.,
+               vm_internal_pu: float = 1.,
+               va_internal_degree: float = 0.,
+               name: str | None = None,
+               controllable: bool = True,
+               in_service: bool = True,
+               index=None,
+               **kwargs) -> Int:
     """
     Creates an SSC element (STATCOM)- a shunt element with adjustable VSC internal voltage used to control the voltage \
         at the connected bus
@@ -5187,9 +5326,22 @@ def create_ssc(net, bus, r_ohm, x_ohm, set_vm_pu=1., vm_internal_pu=1., va_inter
     return index
 
 
-def create_vsc(net, bus, bus_dc, r_ohm, x_ohm, r_dc_ohm, pl_dc_mw=0., control_mode_ac="vm_pu", control_value_ac=1.,
-               control_mode_dc="p_mw", control_value_dc=0.,
-               name=None, controllable=True, in_service=True, index=None, **kwargs):
+def create_vsc(net: pandapowerNet,
+               bus,
+               bus_dc,
+               r_ohm: float,
+               x_ohm: float,
+               r_dc_ohm: float,
+               pl_dc_mw: float = 0.,
+               control_mode_ac: Literal["vm_pu", "q_mvar"] = "vm_pu",
+               control_value_ac: float = 1.,
+               control_mode_dc: Literal["vm_pu", "p_mw"] = "p_mw",
+               control_value_dc: float = 0.,
+               name: str | None = None,
+               controllable: bool = True,
+               in_service: bool = True,
+               index=None,
+               **kwargs) -> Int:
     """
     Creates an VSC converter element - a shunt element with adjustable VSC internal voltage used to connect the \
     AC grid and the DC grid. The element implements several control modes.
@@ -5250,11 +5402,29 @@ def create_vsc(net, bus, bus_dc, r_ohm, x_ohm, r_dc_ohm, pl_dc_mw=0., control_mo
     return index
 
 
-def create_impedance(net, from_bus, to_bus, rft_pu, xft_pu, sn_mva, rtf_pu=None, xtf_pu=None,
-                     name=None, in_service=True, index=None,
-                     rft0_pu=None, xft0_pu=None, rtf0_pu=None, xtf0_pu=None,
-                     gf_pu=0, bf_pu=0, gt_pu=None, bt_pu=None,
-                     gf0_pu=None, bf0_pu=None, gt0_pu=None, bt0_pu=None, **kwargs):
+def create_impedance(net: pandapowerNet,
+                     from_bus,
+                     to_bus, rft_pu: float,
+                     xft_pu: float,
+                     sn_mva: float,
+                     rtf_pu: float | None = None,
+                     xtf_pu: float | None = None,
+                     name: str | None = None,
+                     in_service: bool = True,
+                     index=None,
+                     rft0_pu: float | None = None,
+                     xft0_pu: float | None = None,
+                     rtf0_pu: float | None = None,
+                     xtf0_pu: float | None = None,
+                     gf_pu: float | None =0,
+                     bf_pu: float | None = 0,
+                     gt_pu: float | None = None,
+                     bt_pu: float | None = None,
+                     gf0_pu: float | None = None,
+                     bf0_pu: float | None = None,
+                     gt0_pu: float | None = None,
+                     bt0_pu: float | None =None,
+                     **kwargs) -> Int:
     """
     Creates an impedance element in per unit (pu).
 
@@ -5395,11 +5565,30 @@ def create_impedance(net, from_bus, to_bus, rft_pu, xft_pu, sn_mva, rtf_pu=None,
     return index
 
 
-def create_impedances(net, from_buses, to_buses, rft_pu, xft_pu, sn_mva, rtf_pu=None, xtf_pu=None,
-                      name=None, in_service=True, index=None,
-                      rft0_pu=None, xft0_pu=None, rtf0_pu=None, xtf0_pu=None,
-                      gf_pu=0, bf_pu=0, gt_pu=None, bt_pu=None,
-                      gf0_pu=None, bf0_pu=None, gt0_pu=None, bt0_pu=None, **kwargs):
+def create_impedances(net: pandapowerNet,
+                      from_buses,
+                      to_buses,
+                      rft_pu: float | Iterable[float],
+                      xft_pu: float | Iterable[float],
+                      sn_mva: float | Iterable[float],
+                      rtf_pu: float | Iterable[float] | None = None,
+                      xtf_pu: float | Iterable[float] | None = None,
+                      name: Iterable[str] | None = None,
+                      in_service: bool | Iterable[str] = True,
+                      index=None,
+                      rft0_pu: float | Iterable[float] | None = None,
+                      xft0_pu: float | Iterable[float] | None = None,
+                      rtf0_pu: float | Iterable[float] | None = None,
+                      xtf0_pu: float | Iterable[float] | None = None,
+                      gf_pu: float | Iterable[float] | None = 0,
+                      bf_pu: float | Iterable[float] | None = 0,
+                      gt_pu: float | Iterable[float] | None = None,
+                      bt_pu: float | Iterable[float] | None = None,
+                      gf0_pu: float | Iterable[float] | None = None,
+                      bf0_pu: float | Iterable[float] | None = None,
+                      gt0_pu: float | Iterable[float] | None = None,
+                      bt0_pu: float | Iterable[float] | None =None,
+                      **kwargs) -> npt.NDArray[np.array]:
     """
     Creates an impedance element in per unit (pu).
 
@@ -5540,10 +5729,20 @@ def create_impedances(net, from_buses, to_buses, rft_pu, xft_pu, sn_mva, rtf_pu=
     return index
 
 
-def create_tcsc(net, from_bus, to_bus, x_l_ohm, x_cvar_ohm, set_p_to_mw,
-                thyristor_firing_angle_degree,
-                name=None, controllable=True, in_service=True, index=None,
-                min_angle_degree=90, max_angle_degree=180, **kwargs):
+def create_tcsc(net: pandapowerNet,
+                from_bus,
+                to_bus,
+                x_l_ohm: float,
+                x_cvar_ohm: float,
+                set_p_to_mw: float,
+                thyristor_firing_angle_degree: float,
+                name: str | None = None,
+                controllable: bool = True,
+                in_service: bool = True,
+                index=None,
+                min_angle_degree: float = 90,
+                max_angle_degree: float = 180,
+                **kwargs) -> Int:
     """
     Creates a TCSC element - series impedance compensator to control series reactance.
     The TCSC device allows controlling the active power flow through the path it is connected in.
@@ -5609,9 +5808,18 @@ def create_tcsc(net, from_bus, to_bus, x_l_ohm, x_cvar_ohm, set_p_to_mw,
     return index
 
 
-def create_series_reactor_as_impedance(net, from_bus, to_bus, r_ohm, x_ohm, sn_mva,
-                                       name=None, in_service=True, index=None,
-                                       r0_ohm=None, x0_ohm=None, **kwargs):
+def create_series_reactor_as_impedance(net: pandapowerNet,
+                                       from_bus,
+                                       to_bus,
+                                       r_ohm: float,
+                                       x_ohm: float,
+                                       sn_mva: float,
+                                       name: str | None = None,
+                                       in_service: bool = True,
+                                       index=None,
+                                       r0_ohm: float | None = None,
+                                       x0_ohm: float | None = None,
+                                       **kwargs) -> Int:
     """
     Creates a series reactor as per-unit impedance
     :param net: (pandapowerNet) - The pandapower network in which the element is created
@@ -5648,8 +5856,16 @@ def create_series_reactor_as_impedance(net, from_bus, to_bus, r_ohm, x_ohm, sn_m
     return index
 
 
-def create_ward(net, bus, ps_mw, qs_mvar, pz_mw, qz_mvar, name=None, in_service=True,
-                index=None, **kwargs):
+def create_ward(net: pandapowerNet,
+                bus,
+                ps_mw: float,
+                qs_mvar: float,
+                pz_mw: float,
+                qz_mvar: float,
+                name: str | None = None,
+                in_service: bool = True,
+                index=None,
+                **kwargs) -> Int:
     """
     Creates a ward equivalent.
 
@@ -5682,8 +5898,16 @@ def create_ward(net, bus, ps_mw, qs_mvar, pz_mw, qz_mvar, name=None, in_service=
     return index
 
 
-def create_wards(net, buses, ps_mw, qs_mvar, pz_mw, qz_mvar, name=None, in_service=True, index=None,
-                 **kwargs):
+def create_wards(net: pandapowerNet,
+                 buses: Sequence,
+                 ps_mw: float | Iterable[float],
+                 qs_mvar: float | Iterable[float],
+                 pz_mw: float | Iterable[float],
+                 qz_mvar: float | Iterable[float],
+                 name: Iterable[str] | None = None,
+                 in_service: bool | Iterable[bool] = True,
+                 index=None,
+                 **kwargs) -> npt.NDArray[np.array]:
     """
     Creates ward equivalents.
 
@@ -5717,8 +5941,19 @@ def create_wards(net, buses, ps_mw, qs_mvar, pz_mw, qz_mvar, name=None, in_servi
     return index
 
 
-def create_xward(net, bus, ps_mw, qs_mvar, pz_mw, qz_mvar, r_ohm, x_ohm, vm_pu, in_service=True,
-                 name=None, index=None, slack_weight=0.0, **kwargs):
+def create_xward(net: pandapowerNet,
+                 bus,
+                 ps_mw: float,
+                 qs_mvar: float,
+                 pz_mw: float,
+                 qz_mvar: float,
+                 r_ohm: float,
+                 x_ohm: float,
+                 vm_pu: float,
+                 in_service: bool = True,
+                 name: str | None = None,
+                 index=None,
+                 slack_weight: float = 0.0, **kwargs):
     """
     Creates an extended ward equivalent.
 
@@ -5744,7 +5979,7 @@ def create_xward(net, bus, ps_mw, qs_mvar, pz_mw, qz_mvar, r_ohm, x_ohm, vm_pu, 
 
         **vm_pu** (float) - voltage magnitude at the additional PV-node
 
-        **slack_weight** (float, default 1.0) - Contribution factor for distributed slack power
+        **slack_weight** (float, default 0.0) - Contribution factor for distributed slack power
             flow calculation (active power balancing)
 
     OUTPUT:
@@ -5763,9 +5998,23 @@ def create_xward(net, bus, ps_mw, qs_mvar, pz_mw, qz_mvar, r_ohm, x_ohm, vm_pu, 
     return index
 
 
-def create_dcline(net, from_bus, to_bus, p_mw, loss_percent, loss_mw, vm_from_pu, vm_to_pu,
-                  index=None, name=None, max_p_mw=nan, min_q_from_mvar=nan, min_q_to_mvar=nan,
-                  max_q_from_mvar=nan, max_q_to_mvar=nan, in_service=True, **kwargs):
+def create_dcline(net: pandapowerNet,
+                  from_bus,
+                  to_bus,
+                  p_mw: float,
+                  loss_percent: float,
+                  loss_mw: float,
+                  vm_from_pu: float,
+                  vm_to_pu: float,
+                  index=None,
+                  name: str | None = None,
+                  max_p_mw: float = nan,
+                  min_q_from_mvar: float = nan,
+                  min_q_to_mvar: float = nan,
+                  max_q_from_mvar: float = nan,
+                  max_q_to_mvar: float = nan,
+                  in_service: bool = True,
+                  **kwargs) -> Int:
     """
     Creates a dc line.
 
@@ -5824,8 +6073,17 @@ def create_dcline(net, from_bus, to_bus, p_mw, loss_percent, loss_mw, vm_from_pu
     return index
 
 
-def create_measurement(net, meas_type, element_type, value, std_dev, element, side=None,
-                       check_existing=False, index=None, name=None, **kwargs):
+def create_measurement(net: pandapowerNet,
+                       meas_type: MeasurementType,
+                       element_type: MeasurementElementType,
+                       value: Literal["MW", "MVAr", "p.u.", "kA"],
+                       std_dev: float,
+                       element,
+                       side=None,
+                       check_existing: bool =False,
+                       index=None,
+                       name: str | None = None,
+                       **kwargs) -> Int:
     """
     Creates a measurement, which is used by the estimation module. Possible types of measurements \
     are: v, p, q, i, va, ia
@@ -5851,9 +6109,9 @@ def create_measurement(net, meas_type, element_type, value, std_dev, element, si
                                                be "hv", "mv" or "lv" or the corresponding bus index, respectively.
 
     OPTIONAL:
-        **check_existing** (bool, default: None) - Check for and replace existing measurements for this bus, type and \
-                                                   element_type. Set it to False for performance improvements which \
-                                                   can cause unsafe behavior.
+        **check_existing** (bool, default: False) - Check for and replace existing measurements for this bus, type and \
+                                                    element_type. Set it to False for performance improvements which \
+                                                    can cause unsafe behavior.
 
         **index** (int, default: None) - Index of the measurement in the measurement table. Should \
                                          not exist already.
