@@ -517,7 +517,7 @@ def _add_trafo3w_sc_impedance_zero(net, ppc):
     #   YYnd
     #   YNynd
     #   YNdd
-    # not relevant (for 1ph):
+    # not relevant (for LG):
     #   Yyy
     #   Ydd
     #   Ydy

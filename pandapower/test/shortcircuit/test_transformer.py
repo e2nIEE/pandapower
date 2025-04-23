@@ -93,9 +93,9 @@ def test_min_6_trafo(net_transformer):
     assert (abs(net.res_bus_sc.ith_ka.at[2] - 13.649789214) < 1e-5)
 
 
-def test_min_10_trafo_2ph(net_transformer):
+def test_min_10_trafo_ll(net_transformer):
     net = net_transformer
-    calc_sc(net, fault="2ph", case='min', ip=True, ith=True, lv_tol_percent=10.)
+    calc_sc(net, fault="LL", case='min', ip=True, ith=True, lv_tol_percent=10.)
     assert (abs(net.res_bus_sc.ikss_ka.at[0] - 2.0000000702) < 1e-5)
     assert (abs(net.res_bus_sc.ikss_ka.at[2] - 11.182525915) < 1e-5)
 

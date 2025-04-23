@@ -175,7 +175,7 @@ def test_all_currents_sgen():
     assert np.allclose(net.res_line_sc.ith_ka.values, np.array([0., 0.40071219, 0.393626, 0., 0., 0.393626]), atol=1e-5)
 
 
-def test_all_currents_1ph_max():
+def test_all_currents_lg_max():
     # Only check coherence between branch currents and bus currents
     #
     # eg--0---l0---1---l1---2
@@ -184,14 +184,14 @@ def test_all_currents_1ph_max():
     #
     # With generator
     net = three_bus_example()
-    calc_sc(net, case="max", fault='1ph', branch_results=True, return_all_currents=True)
+    calc_sc(net, case="max", fault='LG', branch_results=True, return_all_currents=True)
     i_bus_with_sgen = net.res_bus_sc.copy()
     i_line_with_gen = net.res_line_sc.copy()
 
     # Without generator
     net = three_bus_example()
     net.sgen.in_service = False
-    calc_sc(net, case="max", fault='1ph')
+    calc_sc(net, case="max", fault='LG')
     i_bus_without_sgen = net.res_bus_sc.copy()
 
     # Isolate sgen contrib
@@ -206,7 +206,7 @@ def test_all_currents_1ph_max():
     assert np.isclose(i_line_with_gen.ikss_ka.loc[(1, 2)], i_bus_with_sgen.ikss_ka.at[2], atol=1e-4)
 
 
-def test_all_currents_1ph_min():
+def test_all_currents_lg_min():
     # Only check coherence between branch currents and bus currents
     #
     # eg--0---l0---1---l1---2
@@ -215,13 +215,13 @@ def test_all_currents_1ph_min():
     #
     # With generator
     net = three_bus_example()
-    calc_sc(net, case="min", fault='1ph', branch_results=True, return_all_currents=True)
+    calc_sc(net, case="min", fault='LG', branch_results=True, return_all_currents=True)
     i_bus_with_sgen = net.res_bus_sc.copy()
     i_line_with_gen = net.res_line_sc.copy()
 
     # Without generator
     net.sgen.in_service = False
-    calc_sc(net, case="min", fault='1ph', branch_results=True)
+    calc_sc(net, case="min", fault='LG', branch_results=True)
     i_bus_without_sgen = net.res_bus_sc.copy()
 
     # Isolate sgen contrib

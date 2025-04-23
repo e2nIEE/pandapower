@@ -74,13 +74,13 @@ def load_pf_results(excel_file):
     for sheet in sheets:
         pf_results = pd.read_excel(excel_file, sheet_name=sheet).drop(columns=['Netz']).drop(index=0)
 
-        if "3ph" in sheet or "2ph" in sheet:
-            if "2ph" in sheet:
+        if sheet.startswith("LLL_") or sheet.startswith("LL_"):
+            if sheet.startswith("LL_"):
                 pf_results.drop(columns=['Ik" L1', 'Ik" L2', 'Sk" L1', 'Sk" L2', 'Rk0, Re(Zk0)', 'Xk0, Im(Zk0)',
                                          'Rk1, Re(Zk1)', 'Xk1, Im(Zk1)'], inplace=True)
             pf_results.columns = ['name', 'ikss_ka', 'skss_mw', 'rk_ohm', 'xk_ohm']
 
-        elif "1ph" in sheet:
+        elif "LG" in sheet:
             pf_results.drop(columns=['Ik" L2', 'Ik" L3', 'Sk" L2', 'Sk" L3'], inplace=True)
             pf_results.columns = ["name", "ikss_ka", 'skss_mw', "rk0_ohm", "xk0_ohm", "rk1_ohm", "xk1_ohm", "rk2_ohm",
                                   "xk2_ohm"]
@@ -92,9 +92,9 @@ def load_pf_results(excel_file):
 
 def get_columns_to_check(fault):
     """Return the columns to check based on the fault type."""
-    if fault in ["3ph", "2ph"]:
+    if fault in ["LLL", "LL"]:
         return ["ikss_ka", "skss_mw", "rk_ohm", "xk_ohm"]
-    elif fault == "1ph":
+    elif fault == "LG":
         return ["ikss_ka", "skss_mw", "rk0_ohm", "xk0_ohm", "rk1_ohm", "xk1_ohm", "rk2_ohm", "xk2_ohm"]
     return []
 
@@ -110,10 +110,11 @@ def test_all_faults_4_bus_radial_min_max():
     rtol = {"ikss_ka": 0, "skss_mw": 0, "rk_ohm": 0, "xk_ohm": 0}
     atol = {"ikss_ka": 1e-6, "skss_mw": 1e-5, "rk_ohm": 1e-6, "xk_ohm": 1e-6}
 
-    # faults = ["3ph", "2ph", "1ph"]
-    faults = ["3ph", "1ph"]
+    faults = ["LLL", "LL", "LG"]
+    # faults = ["LLL", "LG"]
     cases = ["max", "min"]
     fault_ohm_values = [(0.0, 0.0), (5.0, 5.0)]
+    # fault_ohm_values = [(0.0, 0.0)]
 
     for r_fault_ohm, x_fault_ohm in fault_ohm_values:
         for fault in faults:
@@ -143,10 +144,10 @@ def test_all_faults_4_bus_radial_min_max():
                             rtol=rtol[column_ar], atol=atol[column_ar])
 
 
-"""if __name__ == "__main__":
-    pytest.main([__file__])"""
+if __name__ == "__main__":
+    pytest.main([__file__])
 
-net = from_json('4_bus_radial_grid.json')
+"""net = from_json('4_bus_radial_grid.json')
 net.line.rename(columns={'temperature_degree_celsius': 'endtemp_degree'}, inplace=True)
 net.line["endtemp_degree"] = 250
-calc_sc(net, fault="2ph-g", case="max", branch_results=False, ip=False, r_fault_ohm=0, x_fault_ohm=0)
+calc_sc(net, fault="LLG", case="max", branch_results=False, ip=False, r_fault_ohm=0, x_fault_ohm=0)"""
