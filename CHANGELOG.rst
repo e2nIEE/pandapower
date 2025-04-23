@@ -3,12 +3,14 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
-
+- [ADDED] cim2pp converter - extract 'controlenabled' flag from CGMES SSH profile and populate 'controllable' flag for gen and sgen elements
+- [ADDED] add function to determine qmin and qmax based on current active power in build_gen and update the dataframe with the determined values
 - [ADDED] parameter include_type_id to dump_to_geojson, to produce geojson features without the pp_index and pp_type field
 - [FIXED] added a fix which hinders selection of a subsection of busses for plotting
-- [ADDED] cim2pp converter - additional column "EquipmentContainer_id" in line table 
+- [ADDED] cim2pp converter - additional column "EquipmentContainer_id" in line table
 - [FIXED] DC loadflow after AC loadflow, had ambiguous results still present in net
 - [ADDED] add three columns: id_q_capability_curve_table, reactive_capability_curve, curve_style in gen and sgen
+- [ADDED] create q capability curve characteristics and diagnostics function
 - [ADDED] cim2pp converter- import reactive power capability curve data synchronousMachinesCim16.py
 - [ADDED] cim2pp converter - export parameter "governorSCD" in additional column in gen table
 - [FIXED] a problem with create_nxgraph
