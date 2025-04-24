@@ -8,6 +8,7 @@ Int = Union[int, np.integer]
 Float = Union[float, np.number]
 
 BusType = Literal["n", "b", "m"]
+CostElementType = Literal["gen", "sgen", "ext_grid", "load", "dcline", "storage"]
 GeneratorType = Literal["current_source", "async", "async_doubly_fed"]
 LineType = Literal["ol", "cs"]
 HVLVType = Literal["hv", "lv"]
@@ -15,6 +16,7 @@ HVMVLVType = Literal["hv", "mv", "lv"]
 MeasurementType = Literal["v", "p", "q", "i", "va", "ia"]
 MeasurementElementType = Literal["bus", "line", "trafo", "trafow3", "load", "gen", "sgen", "shunt", "ward", "xward",
                                  "ext_grid"]
+PWLPowerType = Literal["p", "q"]
 SwitchElementType = Literal[
     "b",  # bus
     "l",  # line

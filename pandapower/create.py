@@ -22,8 +22,8 @@ from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes, e
 from pandapower.results import reset_results
 from pandapower.std_types import add_basic_std_types, load_std_type
 from pandapower.typing import BusType, GeneratorType, HVMVLVType, HVLVType, Int, LineType, \
-    MeasurementElementType, MeasurementType, SwitchElementType, SwitchType, TapChangerType, UnderOverExcitedType, \
-    WyeDeltaType
+    MeasurementElementType, MeasurementType, CostElementType, PWLPowerType, SwitchElementType, SwitchType, \
+    TapChangerType, UnderOverExcitedType, WyeDeltaType
 import numpy as np
 
 try:
@@ -6176,7 +6176,14 @@ def create_measurement(net: pandapowerNet,
     return index
 
 
-def create_pwl_cost(net, element, et, points, power_type="p", index=None, check=True, **kwargs):
+def create_pwl_cost(net: pandapowerNet,
+                    element,
+                    et: CostElementType,
+                    points: list[list[float]],
+                    power_type: PWLPowerType = "p",
+                    index=None,
+                    check: bool = True,
+                    **kwargs) -> Int:
     """
     Creates an entry for piecewise linear costs for an element. The currently supported elements are
      - Generator
@@ -6228,7 +6235,14 @@ def create_pwl_cost(net, element, et, points, power_type="p", index=None, check=
     return index
 
 
-def create_pwl_costs(net, elements, et, points, power_type="p", index=None, check=True, **kwargs):
+def create_pwl_costs(net: pandapowerNet,
+                     elements: Sequence,
+                     et: CostElementType | Iterable[CostElementType],
+                     points: list[list[list[float]]],
+                     power_type: PWLPowerType | Iterable[PWLPowerType] = "p",
+                     index=None,
+                     check: bool = True,
+                     **kwargs) -> npt.NDArray[np.integer]:
     """
     Creates entries for piecewise linear costs for multiple elements. The currently supported elements are
      - Generator
@@ -6292,9 +6306,18 @@ def create_pwl_costs(net, elements, et, points, power_type="p", index=None, chec
     return index
 
 
-def create_poly_cost(net, element, et, cp1_eur_per_mw, cp0_eur=0, cq1_eur_per_mvar=0,
-                     cq0_eur=0, cp2_eur_per_mw2=0, cq2_eur_per_mvar2=0, index=None, check=True,
-                     **kwargs):
+def create_poly_cost(net: pandapowerNet,
+                     element,
+                     et: CostElementType,
+                     cp1_eur_per_mw: float,
+                     cp0_eur: float = 0,
+                     cq1_eur_per_mvar: float = 0,
+                     cq0_eur: float = 0,
+                     cp2_eur_per_mw2: float = 0,
+                     cq2_eur_per_mvar2: float = 0,
+                     index=None,
+                     check: bool = True,
+                     **kwargs) -> Int:
     """
     Creates an entry for polynomial costs for an element. The currently supported elements are:
      - Generator ("gen")
@@ -6350,9 +6373,18 @@ def create_poly_cost(net, element, et, cp1_eur_per_mw, cp0_eur=0, cq1_eur_per_mv
     return index
 
 
-def create_poly_costs(net, elements, et, cp1_eur_per_mw, cp0_eur=0, cq1_eur_per_mvar=0,
-                      cq0_eur=0, cp2_eur_per_mw2=0, cq2_eur_per_mvar2=0, index=None, check=True,
-                      **kwargs):
+def create_poly_costs(net: pandapowerNet,
+                      elements: Sequence,
+                      et: CostElementType | Iterable[CostElementType],
+                      cp1_eur_per_mw: float | Iterable[float],
+                      cp0_eur: float | Iterable[float]= 0,
+                      cq1_eur_per_mvar: float | Iterable[float] = 0,
+                      cq0_eur: float | Iterable[float] = 0,
+                      cp2_eur_per_mw2: float | Iterable[float]= 0,
+                      cq2_eur_per_mvar2: float | Iterable[float] = 0,
+                      index=None,
+                      check: bool = True,
+                      **kwargs) -> npt.NDArray[np.array]:
     """
     Creates entries for polynomial costs for multiple elements. The currently supported elements are:
      - Generator ("gen")
