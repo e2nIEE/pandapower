@@ -32,6 +32,22 @@ def simple_test_net():
     create_line(net, 1, 2, length_km=0.1, std_type="NAYY 4x50 SE")
     return net
 
+def distribution_test_net():
+    net = create_empty_network()
+    create_bus(net, 110, index = 0)
+    create_buses(net, 4, 20)
+    create_ext_grid(net, 0)
+    create_transformer(net, 0, 1, "63 MVA 110/20 kV")
+    create_transformer(net, 0, 3, std_type='63 MVA 110/20 kV')
+    create_load(net, 1, 3, 5)
+    create_load(net, 2, 3)
+    create_sgen(net, 2, p_mw=2, sn_mva=10, name="sgen1")
+    create_sgen(net, 4, p_mw=1, sn_mva=5, name='sgen2')
+    create_sgen(net, 4,1, sn_mva=5, name = 'sgen3')
+    create_line(net, 1, 2, length_km=0.1, std_type="NAYY 4x50 SE")
+    create_line(net, 3, 4, length_km=0.2, std_type= 'NAYY 4x50 SE')
+    return net
+
 
 def test_voltctrl():
     net = simple_test_net()
@@ -49,7 +65,7 @@ def test_voltctrl():
 
 def test_voltctrl_droop():
     net = simple_test_net()
-    tol = 1e-3
+    tol = 1e-6
     bsc = BinarySearchControl(net, ctrl_in_service=True,
                                          output_element="sgen", output_variable="q_mvar", output_element_index=[0],
                                          output_element_in_service=[True], output_values_distribution=['rel_P'],
@@ -97,36 +113,36 @@ def test_qctrl_droop():
 def test_stactrl_pf_import():
     path = os.path.join(pp_dir, 'test', 'control', 'testfiles', 'stactrl_test.json')
     net = from_json(path)
-    tol = 1e-3
-
+    tol = 1e-6
+    net.controller.at[0, 'object'].bus_idx = 84#todo bus_idx is missing #scenario 3 const V
     runpp(net, run_control=True)
     print("\n")
     print("--------------------------------------")
     print("Scenario 1 - Constant Q")
-    print("Controlled line, constQ = 0.5 MVar - q_from_mvar and q_to_mvar: \n",
-          net.res_line.loc[0, "q_to_mvar"], "\t", net.res_line.loc[0, "q_from_mvar"])
-    print("Controlled line, constQ = 0.5 MVar - q_from_mvar and q_to_mvar: \n",
+    print("Controlled line 0 to, expected constQ = -0.86 MVar for q_from_mvar and constQ = 0.5 MVar for q_to_mvar: \n",
+          net.res_line.loc[0, "q_from_mvar"], "\t", net.res_line.loc[0, "q_to_mvar"])
+    print("Controlled line 1 to, expected constQ = -0.86 MVar for q_from_mvar and constQ = 0.5 MVar for q_to_mvar: \n",
           net.res_line.loc[1, "q_to_mvar"], "\t", net.res_line.loc[1, "q_from_mvar"])
     assert(abs(net.res_line.loc[0, "q_to_mvar"] - 0.5) < tol)
     assert(abs(net.res_line.loc[1, "q_to_mvar"] - 0.5) < tol)
     print("--------------------------------------")
-    print("Scenario 2 - Constant U, droop 40 MVar/pu")
-    print("Input Measurement q_from_mvar and q_to_mvar, expected: \n 0.2442 MVar, -0.6215 MVar: \n",
-          net.res_line.loc[4, "q_to_mvar"], "\t", net.res_line.loc[4, "q_from_mvar"])
-    print("Input Measurement q_from_mvar and q_to_mvar, expected:\n 0.2442 MVar, -0.6215 MVar: \n",
-          net.res_line.loc[5, "q_to_mvar"], "\t", net.res_line.loc[5, "q_from_mvar"])
+    print("Scenario 2 - Constant V, droop 40 MVar/pu")
+    print("Input Measurement line 4 q_from_mvar and q_to_mvar, expected: \n -0.6215 MVar \t 0.2442 MVar \n",
+          net.res_line.loc[4, "q_from_mvar"], "\t", net.res_line.loc[4, "q_to_mvar"])
+    print("Input Measurement line 5 q_from_mvar and q_to_mvar, expected:\n -0.6215 MVar \t 0.2442 MVar \n",
+          net.res_line.loc[5, "q_from_mvar"], "\t", net.res_line.loc[5, "q_to_mvar"])
     print("Controlled bus, initial set point 1.01 pu and 40 MVar/pu, vm_pu, \n expected: "
-          "2 * 0.2442 MVar / 40 MVar/pu + 1.01 pu = 1.02221: \n", net.res_bus.loc[62, "vm_pu"])
-    assert(abs(net.res_bus.loc[62, "vm_pu"] - ((net.res_line.loc[4, "q_to_mvar"] +
+          "2 * 0.2442 MVar / 40 MVar/pu + 1.01 pu = 1.02221: \n", net.res_bus.loc[103, "vm_pu"])
+    assert(abs(net.res_bus.loc[103, "vm_pu"] - ((net.res_line.loc[4, "q_to_mvar"] +
                                              net.res_line.loc[5, "q_to_mvar"]) /
                                             40 + 1.01)) < (tol + 0.1))  # still not close enough, increased tolerance
     print("--------------------------------------")
-    print("Scenario 3 - Constant U")
-    print("Controlled bus, set point = 1.03 pu, vm_pu: \n", net.res_bus.loc[84, "vm_pu"])
+    print("Scenario 3 - Constant V")
+    print("Controlled bus, set point = 1.03 pu, vm_pu: ", net.res_bus.loc[84, "vm_pu"])
     assert(abs(net.res_bus.loc[84, "vm_pu"] - 1.03) < tol)
     print("--------------------------------------")
     print("Scenario 4 - Q(U) - droop 40 MVar/pu")
-    print("Input Measurement vm_pu: \n", net.res_bus.loc[103, "vm_pu"])
+    print("Input Measurement vm_pu: ", net.res_bus.loc[103, "vm_pu"])
     print("Controlled Transformer Q, lower voltage band 0.999 pu, initial set point 1 MVar and 40 MVar/pu, q_hv_mvar, "
           "expected: \n -(1 MVar + (0.999 pu  - 0.99585 pu) * 40 MVar/pu)= -1.12618: \n",
           net.res_trafo.loc[3, "q_hv_mvar"])
@@ -142,7 +158,7 @@ def test_voltctrl_new():
                                    output_element_in_service=True, output_values_distribution='rel_P',
                                    output_distribution_values = 2,
                                    input_element="res_bus", input_variable="vm_pu", input_element_index=1,
-                                   set_point=1.02, modus='V_ctrl', tol=tol)
+                                   set_point=1.02, modus='V_ctrl', tol=tol, bus_idx = 1)#todo bus index?
     runpp(net, run_control=False)
     assert(abs(net.res_bus.loc[1, "vm_pu"] - 0.999648) < tol)
     runpp(net, run_control=True)
@@ -280,70 +296,208 @@ def test_tan_phi_control():
     assert(abs(net.res_trafo.loc[0, "q_lv_mvar"] / net.res_trafo.loc[0, 'p_lv_mw'] - 2) < tol)
 
 
-
-
 def test_stactrl_pf_import_new():
     path = os.path.join(pp_dir, 'test', 'control', 'testfiles', 'stactrl_test_new.json')
     net = from_json(path)
     tol = 1e-6
+    net.controller.at[5, 'object'].bus_idx = 108  # todo bus_idx is missing #scenario 3 - Constant V
     runpp(net, run_control=True)
     print("\n")
     print("--------------------------------------")
     print("Scenario 1 - Constant Q")
-    print("Controlled line, constQ = 0.5 MVar - q_from_mvar and q_to_mvar: \n",
-          net.res_line.loc[0, "q_to_mvar"], "\t", net.res_line.loc[0, "q_from_mvar"])
-    print("Controlled line, constQ = 0.5 MVar - q_from_mvar and q_to_mvar: \n",
-          net.res_line.loc[15, "q_to_mvar"], "\t", net.res_line.loc[15, "q_from_mvar"])
+    print("Controlled line 0, constQ = -0.86 MVar for q_from_mvar and constQ = 0.5 MVar for q_to_mvar: \n",
+          net.res_line.loc[0, "q_from_mvar"], "\t", net.res_line.loc[0, "q_to_mvar"])
+    print("Controlled line 15, constQ = -0.86 MVar for q_from_mvar and constQ = 0.5 MVar for q_to_mvar: \n",
+          net.res_line.loc[15, "q_from_mvar"], "\t", net.res_line.loc[15, "q_to_mvar"])
     assert(abs(net.res_line.loc[0, "q_to_mvar"] - 0.5) < tol)
     assert(abs(net.res_line.loc[15, "q_to_mvar"] - 0.5) < tol)
     print("--------------------------------------")
-    print("Scenario 2 - Constant U, droop 40 MVar/pu")
-    print("Input Measurement q_from_mvar and q_to_mvar, expected: \n 0.2442 MVar, -0.6215 MVar: \n",
-          net.res_line.loc[3, "q_to_mvar"], "\t", net.res_line.loc[3, "q_from_mvar"])
-    print("Input Measurement q_from_mvar and q_to_mvar, expected:\n 0.2442 MVar, -0.6215 MVar: \n",
-          net.res_line.loc[4, "q_to_mvar"], "\t", net.res_line.loc[4, "q_from_mvar"])
+    print("Scenario 2 - Constant V, droop 40 MVar/pu")
+    print("Input Measurement q_from_mvar and q_to_mvar, expected: \n -0.6215 MVar \t 0.2442 MVar \n",
+          net.res_line.loc[3, "q_from_mvar"], "\t", net.res_line.loc[3, "q_to_mvar"])
+    print("Input Measurement q_from_mvar and q_to_mvar, expected:\n -0.6215 MVar \t 0.2442 MVar \n",
+          net.res_line.loc[4, "q_from_mvar"], "\t", net.res_line.loc[4, "q_to_mvar"])
     print("Controlled bus, initial set point 1.01 pu and 40 MVar/pu, vm_pu, \n expected: "
-          "2 * 0.2442 MVar / 40 MVar/pu + 1.01 pu = 1.02221: \n", net.res_bus.loc[74, "vm_pu"])
-    assert(abs(net.res_bus.loc[74, "vm_pu"] - ((net.res_line.loc[3, "q_to_mvar"] +
+          "2 * 0.2442 MVar / 40 MVar/pu + 1.01 pu = 1.02221: \n", net.res_bus.loc[86, "vm_pu"])
+    assert(abs(net.res_bus.loc[86, "vm_pu"] - ((net.res_line.loc[3, "q_to_mvar"] +
                                              net.res_line.loc[4, "q_to_mvar"]) /
-                                            40 + 1.01)) < tol)
+                                            40 + 1.01)) < tol)#todo check bus
     print("--------------------------------------")
-    print("Scenario 3 - Constant U")
-    print("Controlled bus, set point = 1.03 pu, vm_pu: \n", net.res_bus.loc[96, "vm_pu"])
-    assert(abs(net.res_bus.loc[96, "vm_pu"] - 1.03) < tol)
+    print("Scenario 3 - Constant V")
+    print("Controlled bus, set point = 1.03 pu \n vm_pu: ", net.res_bus.loc[108, "vm_pu"])
+    assert(abs(net.res_bus.loc[108, "vm_pu"] - 1.03) < tol)
     print("--------------------------------------")
     print("Scenario 4 - Q(U) - droop 40 MVar/pu")
-    print("Input Measurement vm_pu: \n", net.res_bus.loc[115, "vm_pu"])
+    print("Input Measurement vm_pu: ", net.res_bus.loc[127, "vm_pu"])
     print("Controlled Transformer Q, lower voltage band 0.999 pu, initial set point 1 MVar and 40 MVar/pu, q_hv_mvar, "
-          "expected: \n -(1 MVar + (0.999 pu  - 0.99585 pu) * 40 MVar/pu)= -1.12618: \n",
+          "expected: \n -(1 MVar + (0.999 pu  - 0.99585 pu) * 40 MVar/pu)= -1.12618 MVar: \n",
           net.res_trafo.loc[3, "q_hv_mvar"])
-    assert(abs(net.res_trafo.loc[3, "q_hv_mvar"] - (-(1 + (0.999 - net.res_bus.loc[115, "vm_pu"]) * 40))) < tol)
+    assert(abs(net.res_trafo.loc[3, "q_hv_mvar"] - (-(1 + (0.999 - net.res_bus.loc[127, "vm_pu"]) * 40))) < tol)
     print("------------------------------------- ")
     print("Scenario 5 - Constant Power factor")
-    print("Controlled line, const PF = -1 Phi_from and Phi_to: \n",
-          -np.cos(np.arctan(net.res_line.loc[16, 'q_from_mvar'] / net.res_line.loc[16, 'p_from_mw'])), "\t",
-          -np.cos(np.arctan(net.res_line.loc[16, 'q_to_mvar'] / net.res_line.loc[16, 'p_to_mw'])))
-    print("Controlled line, const PF = -1 Phi_from and Phi_to: \n",
-          -np.cos(np.arctan(net.res_line.loc[17, 'q_from_mvar'] / net.res_line.loc[17, 'p_from_mw'])), "\t",
-          -np.cos(np.arctan(net.res_line.loc[17, 'q_to_mvar'] / net.res_line.loc[17, 'p_to_mw'])))
-    assert(abs(np.arctan(net.res_line.loc[16, "q_to_mvar"]/net.res_line.loc[16, 'p_to_mw']) - np.arccos(1)) < tol)
+    print("Controlled line 16 to, expected const PF = 0.93 for Phi_from and const PF = 1 for Phi_to: \n",
+          np.cos(np.arctan(net.res_line.loc[16, 'q_from_mvar'] / net.res_line.loc[16, 'p_from_mw'])), "\t",
+          np.cos(np.arctan(net.res_line.loc[16, 'q_to_mvar'] / net.res_line.loc[16, 'p_to_mw'])))
+    print("Controlled line 17 to, expected const PF = 0.93 for Phi_from and const PF = 1 for Phi_to: \n",
+          np.cos(np.arctan(net.res_line.loc[17, 'q_from_mvar'] / net.res_line.loc[17, 'p_from_mw'])), "\t",
+          np.cos(np.arctan(net.res_line.loc[17, 'q_to_mvar'] / net.res_line.loc[17, 'p_to_mw'])))
+    assert(abs(np.arctan(net.res_line.loc[16, "q_to_mvar"]/net.res_line.loc[16, 'p_to_mw']) - np.arccos(1)) < tol) #positive reactance because inductive
     assert(abs(np.arctan(net.res_line.loc[17, "q_to_mvar"]/net.res_line.loc[17, 'p_to_mw']) - np.arccos(1)) < tol)
-    print("------------------------------------- ")#todo
+
+    print("------------------------------------- ")
     print("Scenario 6 - PF_Phi(V)")
+    print("controlled line 26 to, expected PF_phi(V) = 0.83 Phi_from, Phi_to: \n",
+          np.cos(np.arctan(net.res_line.loc[26, 'q_from_mvar'] / net.res_line.loc[26, 'p_from_mw'])), "\t",
+          np.cos(np.arctan(net.res_line.loc[26, 'q_to_mvar'] / net.res_line.loc[26, 'p_to_mw'])))
+    print("Controlled line 27 to, expected PF_phi(V) = 0.83 Phi_from and Phi_to: \n",
+          np.cos(np.arctan(net.res_line.loc[27, 'q_from_mvar'] / net.res_line.loc[27, 'p_from_mw'])), "\t",
+          np.cos(np.arctan(net.res_line.loc[27, 'q_to_mvar'] / net.res_line.loc[27, 'p_to_mw'])))
+    m = ((1 - 1) + (1 - 0.54)) / (1.05 - 0.95)  # getting function m = 4.6
+    b = -(1 - 1) - m * 0.95 #b = -4.37
+    droop_set_point = 1 - (m * net.res_bus.loc[ #should be 0.83
+        192, 'vm_pu'] + b) #reactance positive cause droop set point > 1
+    assert(abs(np.arctan(net.res_line.loc[26, "q_to_mvar"] / net.res_line.loc[26, 'p_to_mw']) - np.arccos(
+        droop_set_point)) < tol)
+    assert(abs(np.arctan(net.res_line.loc[27, "q_to_mvar"] / net.res_line.loc[27, 'p_to_mw']) - np.arccos(
+        droop_set_point)) < tol)
     print("------------------------------------- ")
     print("Scenario 7 - PF_Phi(P)")
-
-
+    print("Controlled line 24 to, expected const PF = 0.65 for  Phi_from and Phi_to: \n",
+          np.cos(np.arctan(net.res_line.loc[24, 'q_from_mvar'] / net.res_line.loc[24, 'p_from_mw'])), "\t",
+          np.cos(np.arctan(net.res_line.loc[24, 'q_to_mvar'] / net.res_line.loc[24, 'p_to_mw'])))
+    print("Controlled line 25 to, expected const PF = 0.65 for Phi_from and Phi_to: \n",
+          np.cos(np.arctan(net.res_line.loc[25, 'q_from_mvar'] / net.res_line.loc[25, 'p_from_mw'])), "\t",
+          np.cos(np.arctan(net.res_line.loc[25, 'q_to_mvar'] / net.res_line.loc[25, 'p_to_mw'])))
+    droop_set_point = net.controller.at[11, 'object'].pf_over #should be 0.65 and positive reactance, because overexcited
+    assert(abs(np.arctan(net.res_line.loc[24, "q_to_mvar"] / net.res_line.loc[24, 'p_to_mw']) - np.arccos(
+        droop_set_point)) < tol)
+    assert(abs(np.arctan(net.res_line.loc[25, "q_to_mvar"] / net.res_line.loc[25, 'p_to_mw']) - np.arccos(
+        droop_set_point)) < tol)
     print("------------------------------------- ")
     print("Scenario 8 - Tan(Phi)")
-    print("Controlled line, tan(phi) = 0 tan(phi)_from and tan(phi)_to: \n",
+    print("Controlled line 20 to, expected tan(phi) = 0.38 for tan(phi)_from and tan(phi) = 0 for tan(phi)_to: \n",
           net.res_line.loc[20, "q_from_mvar"] / net.res_line.loc[20, "p_from_mw"],
           "\t", net.res_line.loc[20, 'q_to_mvar'] / net.res_line.loc[20, 'p_to_mw'])
-    print("Controlled line, tan(phi) = 0 tan(phi)_from and tan(phi)_to: \n",
+    print("Controlled line 21 to, expected tan(phi) = 0.38 for tan(phi)_from and tan(phi) = 0 for tan(phi)_to: \n",
           net.res_line.loc[21, "q_from_mvar"] / net.res_line.loc[21, "p_from_mw"],
           "\t", net.res_line.loc[21, 'q_to_mvar'] / net.res_line.loc[21, 'p_to_mw'])
     assert(abs(net.res_line.loc[20, "q_to_mvar"] / net.res_line.loc[20, 'p_to_mw'] - 0) < tol)
     assert(abs(net.res_line.loc[21, "q_to_mvar"] / net.res_line.loc[21, 'p_to_mw']  - 0) < tol)
+
+### Testing the distributions###
+
+def test_q_relative_to_p_dist():
+    net = distribution_test_net()
+    tol = 1e-6
+    BinarySearchControl(net, True, 'sgen', 'q_mvar',
+                        [0,1], [True, True], 'res_line',
+                        'q_to_mvar', 0, 1, 'rel_P',
+                        None, 'V_ctrl', 4, 1e-6)
+    runpp(net, run_control = False)
+    assert(net.sgen.at[0, 'q_mvar'] == net.sgen.at[1, 'q_mvar'])
+    runpp(net, run_control = True)
+    assert(net.sgen.at[0, 'q_mvar'] != net.sgen.at[1, 'q_mvar'])
+    assert(abs(net.sgen.at[0, 'q_mvar']/(net.sgen.at[0, 'q_mvar'] + net.sgen.at[1, 'q_mvar']) - net.sgen.at[0, 'p_mw']/(
+        net.sgen.at[0, 'p_mw'] + net.sgen.at[1, 'p_mw'])) < tol)
+    assert(abs(net.sgen.at[1, 'q_mvar'] / (net.sgen.at[0, 'q_mvar'] + net.sgen.at[1, 'q_mvar'])-net.sgen.at[1, 'p_mw']/(
+        net.sgen.at[0, 'p_mw'] + net.sgen.at[1, 'p_mw'])) < tol)
+
+
+def test_q_relative_to_rated_s_dist(): #rated p is not implemented and defaults to 50 MVar => 50/50
+    net = distribution_test_net()
+    tol = 1e-6
+    BinarySearchControl(net, True, 'sgen', 'q_mvar',
+                        [0,1], [True, True], 'res_line',
+                        'q_to_mvar', 0, 4, 'rel_rated_P',
+                        None, 'Q_ctrl', None, 1e-6)
+    runpp(net, run_control = False)
+    assert(net.sgen.at[0, 'q_mvar'] == net.sgen.at[1, 'q_mvar'])
+    runpp(net, run_control = True)
+    assert(net.sgen.at[0, 'q_mvar'] == net.sgen.at[1, 'q_mvar']) #not implemented => no change => but no error
+    #assert(abs(net.sgen.at[0, 'q_mvar']/(net.sgen.at[0, 'q_mvar'] + net.sgen.at[1, 'q_mvar'])-net.sgen.at[0, 'rated_S']/
+        #(net.sgen.at[0, 'rated_S'] + net.sgen.at[1, 'rated_S'])) < tol)
+    #assert(abs(net.sgen.at[1, 'q_mvar'] / (net.sgen.at[0, 'q_mvar'] + net.sgen.at[1, 'q_mvar']) - net.sgen.at[1, 'rated_S'] /
+        #(net.sgen.at[0, 'rated_S'] + net.sgen.at[1, 'rated_S'])) < tol) #todo can I just write them?
+
+
+def test_set_q_dist():
+    net = distribution_test_net()
+    tol = 1e-6
+    BinarySearchControl(net, True, 'sgen', 'q_mvar',
+                        [0, 1], [True, True], 'res_line',
+                        'q_to_mvar', 0, 0.6, 'set_Q',
+                        [0.5, 0.8], 'PF_ctrl_ind', None, 1e-6)
+    runpp(net, run_control=False)
+    assert(net.sgen.at[0, 'q_mvar'] == net.sgen.at[1, 'q_mvar'])
+    runpp(net, run_control=True)
+    assert(net.sgen.at[0, 'q_mvar'] != net.sgen.at[1, 'q_mvar'])
+    assert(abs(net.sgen.at[0, 'q_mvar'] / (net.sgen.at[0, 'q_mvar'] + net.sgen.at[1, 'q_mvar']) - 0.5 / (0.5 + 0.8)) < tol)
+    assert(abs(net.sgen.at[1, 'q_mvar'] / (net.sgen.at[0, 'q_mvar'] + net.sgen.at[1, 'q_mvar']) - 0.8 / (0.5 + 0.8)) < tol)
+
+def test_max_q():
+    net = distribution_test_net()
+    BinarySearchControl(net, True, 'sgen', 'q_mvar',
+                        [0,1], [True, True], 'res_line',
+                        'q_to_mvar', 0, 0.2, 'max_Q',
+                        None, 'PF_ctrl_cap', None, 1e-6)
+    runpp(net, run_control = False)
+    assert(net.sgen.at[0, 'q_mvar'] == net.sgen.at[1, 'q_mvar'])
+    runpp(net, run_control = True)
+    assert(net.sgen.at[0, 'q_mvar'] == net.sgen.at[1, 'q_mvar'])#check internal error handling
+    net = distribution_test_net() #recall net to test other functions
+    net.sgen.at[0, 'min_q_mvar'] = -20 #setting necessary parameters
+    net.sgen.at[0, 'max_q_mvar'] = 50
+    net.sgen.at[1, 'min_q_mvar'] = -7
+    net.sgen.at[1, 'max_q_mvar'] = 20
+    #bsc.initialize_control(net) #todo reinitialize control
+    #bsc.set_point = 0.3#change set_point to rerun control
+    #net.controller.drop(index=0, inplace=True)
+    BinarySearchControl(net, True, 'sgen', 'q_mvar',
+                        [0, 1], [True, True], 'res_line',
+                        'q_to_mvar', 0, 0.5, 'max_Q',
+                        None, 'PF_ctrl_cap', None, 1e-6)
+    runpp(net, run_control = True)
+    assert(net.sgen.at[0, 'q_mvar'] != net.sgen.at[1, 'q_mvar'])
+    net = distribution_test_net()
+    net.sgen.at[0, 'min_q_mvar'] = -20 #testing one generator at limit
+    net.sgen.at[0, 'max_q_mvar'] = 0
+    net.sgen.at[1, 'min_q_mvar'] = -7
+    net.sgen.at[1, 'max_q_mvar'] = 20
+    net.sgen.at[2, 'min_q_mvar'] = 4
+    net.sgen.at[2, 'max_q_mvar'] = -7
+    #bsc.initialize_control(net) #todo
+    #net.controller.drop(index=0, inplace=True)
+    BinarySearchControl(net, True, 'sgen', 'q_mvar',
+                        [0, 1, 2], [True, True, True], 'res_line',
+                        'q_to_mvar', 0, 0.2, 'max_Q',
+                        None, 'PF_ctrl_cap', None, 1e-6)
+    runpp(net, run_control = True)
+    assert(net.sgen.at[0, 'q_mvar'] != net.sgen.at[1, 'q_mvar'])
+
+
+def test_rel_v_pu():
+    net = distribution_test_net()
+    tol = 8e-3 #voltage adaption is not very precise
+    BinarySearchControl(net, True, 'sgen', 'q_mvar',
+                        [0,1], [True, True], 'res_line',
+                        'q_to_mvar', 0, 0.5, 'rel_V_pu',
+                        [[0.98, 0.95, 1.1], [0.89, 0.8, 1.3]], 'tan(phi)_ctrl', None, 1e-6)
+    runpp(net, run_control = False)
+    assert(net.sgen.at[0, 'q_mvar'] == net.sgen.at[1, 'q_mvar'] == net.sgen.at[2, 'q_mvar']) #sgens are the same
+    assert(abs(net.res_bus.at[net.sgen.at[0, 'bus'], 'vm_pu'] + net.res_bus.at[net.sgen.at[1, 'bus'], 'vm_pu']
+           - 0.98 - 0.89) > tol) #uncontrolled buses are not at V set points
+    with pytest.raises(NotImplementedError):
+        runpp(net, run_control=True) #test if sgens at same busbar are detected
+    net = distribution_test_net() #todo reinitialize?
+    BinarySearchControl(net, True, 'sgen', 'q_mvar',
+                        [0, 1], [True, True], 'res_line',
+                        'q_to_mvar', 0, 0.5, 'rel_V_pu',
+                        [[0.98, 0.95, 1.1], [0.89, 0.8, 1.3]], 'tan(phi)_ctrl', None, 1e-6)
+    net.sgen.drop(2, inplace=True) #delete interfering controller
+    runpp(net, run_control= True) #, max_iter = 1000)
+    assert(net.sgen.at[0, 'q_mvar'] != net.sgen.at[1, 'q_mvar']) #now controlled sgens
+    assert(abs(net.res_bus.at[net.sgen.at[0, 'bus'], 'vm_pu'] + net.res_bus.at[net.sgen.at[1, 'bus'], 'vm_pu']
+                - 0.98 - 0.89) < tol) #now within set points
 
 
 if __name__ == '__main__':
