@@ -275,8 +275,9 @@ class BinarySearchControl(Controller):
         self._binarysearchcontrol_step(net)
 
     def _binarysearchcontrol_step(self, net):
-        # if self.name=="BS30":
-        #     print('single')
+        if self.name=="EEM380":
+            print('Q:', self.output_values)
+            print('adjustable:', self.output_adjustable)
         
         if not self.in_service:
             return
