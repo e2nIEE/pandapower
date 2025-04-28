@@ -511,8 +511,8 @@ class BinarySearchControl(Controller):
             step_diff = self.diff - self.diff_old
             x = self.output_values - self.diff * (self.output_values - self.output_values_old) / np.where(
                 step_diff == 0, 1e-6, step_diff)  #converging
-            if any(x > 100): #catching overshoots
-                x = np.atleast_1d(self.output_values)[self.output_element_in_service] + 1e-3 #todo gens out of reach
+            if any(abs(x) > 50): #catching overshoots
+                x[np.where(abs(x) > 50)[0]] = np.sign(x[np.where(abs(x) > 50)[0]]) * 50
             ###calculate the distribution of the output values
             if self.output_values_distribution == 'imported': #when importing net from PF, calculation for distribution is not necessary
                 distribution = output_distribution_values_in_service
@@ -661,8 +661,12 @@ class BinarySearchControl(Controller):
                     raise NotImplementedError(f"Controller {self.index}: Reactive power distribution method {self.output_values_distribution}"
                                               f" not implemented available methods are (rel_P, rel_rated_P, set_Q, max_Q, rel_V_pu).")
             if self.output_values_distribution == 'max_Q': #max_Q and voltage gives the correct Qs for the gens
-                values = (sum(x) - sum(distribution)) / len(np.atleast_1d(distribution)[generators_to_consider])
-                np.atleast_1d(distribution)[generators_to_consider] += values
+                if sum(np.atleast_1d(generators_to_consider)) == 0:
+                    values = (sum(x) - sum(distribution)) / len(np.atleast_1d(distribution))
+                    distribution = np.atleast_1d(distribution) + values
+                else:
+                    values = (sum(x) - sum(distribution)) / len(np.atleast_1d(distribution)[generators_to_consider])
+                    np.atleast_1d(distribution)[generators_to_consider] += values
                 x = distribution
             #Voltage set point adaption gives correct Qs but needs convergence
             elif (self.output_values_distribution == 'rel_V_pu' and (len(np.atleast_1d(self.output_element_in_service)) > 1
@@ -676,7 +680,6 @@ class BinarySearchControl(Controller):
                     equal = 1 / sum(self.output_element_in_service)
                     distribution = np.full(np.sum(np.array(self.output_element_in_service)), equal)
                 x = x * distribution if isinstance(x, numbers.Number) else sum(x) * distribution #add distribution to Q values
-
             self.output_values_old, self.output_values = self.output_values, x
 
         ### write new set of Q values to output elements###

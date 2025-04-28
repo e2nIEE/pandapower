@@ -458,13 +458,14 @@ def test_max_q():
                         None, 'PF_ctrl_cap', None, 1e-6)
     runpp(net, run_control = True)
     assert(net.sgen.at[0, 'q_mvar'] != net.sgen.at[1, 'q_mvar'])
-    net = distribution_test_net()
-    net.sgen.at[0, 'min_q_mvar'] = -20 #testing one generator at limit
-    net.sgen.at[0, 'max_q_mvar'] = 0
-    net.sgen.at[1, 'min_q_mvar'] = -7
-    net.sgen.at[1, 'max_q_mvar'] = 20
-    net.sgen.at[2, 'min_q_mvar'] = 4
-    net.sgen.at[2, 'max_q_mvar'] = -7
+    net = distribution_test_net()#testing generators at limit
+    net.sgen.at[0, 'min_q_mvar'] = -20 #lowest
+    net.sgen.at[0, 'max_q_mvar'] = 0 #least high
+    net.sgen.at[1, 'min_q_mvar'] = -7 #second lowest
+    net.sgen.at[1, 'max_q_mvar'] = 20 #highest
+    net.sgen.at[2, 'min_q_mvar'] = 4 #second highest
+    net.sgen.at[2, 'max_q_mvar'] = -6 # least low
+    idx_neg, idx_pos = [2, 1, 0], [0, 2, 1] #correct orders
     #bsc.initialize_control(net) #todo
     #net.controller.drop(index=0, inplace=True)
     BinarySearchControl(net, True, 'sgen', 'q_mvar',
@@ -472,7 +473,16 @@ def test_max_q():
                         'q_to_mvar', 0, 0.2, 'max_Q',
                         None, 'PF_ctrl_cap', None, 1e-6)
     runpp(net, run_control = True)
-    assert(net.sgen.at[0, 'q_mvar'] != net.sgen.at[1, 'q_mvar'])
+    #checking if control worked
+    assert(net.sgen.at[0, 'q_mvar'] != net.sgen.at[1, 'q_mvar'] != net.sgen.at[2, 'q_mvar'])
+    #checking if Q output order coincides with set Q limits
+    all_sgens = np.array([abs(net.sgen.at[0, 'q_mvar']), abs(net.sgen.at[1, 'q_mvar']), abs(net.sgen.at[2, 'q_mvar'])])
+    idx = np.argsort(all_sgens)
+    assert(np.array_equal(idx, idx_pos) or np.array_equal(idx,idx_neg)) #correct order for set values + and -
+    assert(abs(net.sgen.at[idx_neg[0], 'q_mvar']) < abs(net.sgen.at[idx_neg[1], 'q_mvar']) < #redundant
+           abs(net.sgen.at[idx_neg[2], 'q_mvar']) or abs(net.sgen.at[idx_pos[0], 'q_mvar']) <
+           abs(net.sgen.at[idx_pos[1], 'q_mvar']) < abs(net.sgen.at[idx_pos[2], 'q_mvar']))
+
 
 
 def test_rel_v_pu():
