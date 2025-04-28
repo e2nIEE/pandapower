@@ -115,6 +115,8 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
         k_st = np.ones(len(ppc['branch']))
     if "xn_ohm" not in trafo_df.columns:
         trafo_df["xn_ohm"] = 0.
+    if "rn_ohm" not in trafo_df.columns:
+        trafo_df["rn_ohm"] = 0.
     branch_lookup = net["_pd2ppc_lookups"]["branch"]
     if "trafo" not in branch_lookup:
         return
@@ -132,11 +134,14 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
     ppc["branch"][f:t, F_BUS] = bus_lookup[hv_bus]
     ppc["branch"][f:t, T_BUS] = bus_lookup[lv_bus]
     buses_all, gs_all, bs_all = np.array([], dtype=np.int64), np.array([]), np.array([])
-    BIG_NUMBER = 1e20 * ppc["baseMVA"]
+    # BIG_NUMBER = 1e20 * ppc["baseMVA"]
     if mode == "sc":
         # Should be considered as connected for all in_service branches
-        ppc["branch"][f:t, BR_X] = BIG_NUMBER
-        ppc["branch"][f:t, BR_R] = BIG_NUMBER
+        # with np.complex128, we need just the real part of the complex number to be np.inf,
+        # and the imaginary part must be 0 - otherwise the result will be np.nan rather than 0:
+        ppc["branch"][f:t, BR_R] = BIG_NUMBER * ppc["baseMVA"]
+        ppc["branch"][f:t, BR_X] = BIG_NUMBER * ppc["baseMVA"]
+        # ppc["branch"][f:t, BR_X] = 0
         ppc["branch"][f:t, BR_B] = 0
         ppc["branch"][f:t, BR_STATUS] = in_service
     else:
@@ -225,35 +230,42 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
             tap_lv = np.square(vn_trafo_lv / vn_bus_lv) * (3 * net.sn_mva)
             tap_hv = np.square(vn_trafo_hv / vn_bus_hv) * (3 * net.sn_mva)
 
-        tap_corr = tap_hv if vector_group.lower() in ("ynd", "yny") else tap_lv
+        # tap_corr = tap_hv if vector_group.lower() in ("ynd", "yny") else tap_lv
+        tap_corr = tap_lv
         z_sc = vk0_percent / 100. / sn_trafo_mva * tap_corr
         r_sc = vkr0_percent / 100. / sn_trafo_mva * tap_corr
-        z_sc = z_sc.astype(float)
-        r_sc = r_sc.astype(float)
+        z_sc = z_sc.astype(np.float64)
+        r_sc = r_sc.astype(np.float64)
         x_sc = np.sign(z_sc) * np.sqrt(z_sc ** 2 - r_sc ** 2)
         # TODO: This equation needs to be checked!
         # z0_k = (r_sc + x_sc * 1j) / parallel  * max(1, ratio) **2
         # z0_k = (r_sc + x_sc * 1j) / parallel * vn_trafo_hv / vn_bus_hv
         # z0_k = (r_sc + x_sc * 1j) / parallel * tap_hv
         z0_k = (r_sc + x_sc * 1j) / parallel
-        z_n_ohm = trafos["xn_ohm"].fillna(0).values
+        # z_n_ohm = trafos["xn_ohm"].fillna(0).values
+        z_n_ohm = trafos["rn_ohm"].fillna(0).values + 1j * trafos["xn_ohm"].fillna(0).values
         k_st_tr = trafos["k_st"].fillna(1).values
 
         if mode == "sc":  # or trafo_model == "pi":
             cmax = net._ppc["bus"][lv_buses_ppc, C_MAX]
-            kt = _transformer_correction_factor(trafos, vk_percent, vkr_percent, sn_trafo_mva, cmax)
-            z0_k *= kt
+            if not net._options["use_pre_fault_voltage"]:
+                kt = _transformer_correction_factor(trafos, vk_percent, vkr_percent, sn_trafo_mva, cmax)
+                z0_k *= kt
 
             # different formula must be applied for power station unit transformers:
             # z_0THV is for power station block unit transformer -> page 20 of IEC60909-4:2021 (example 4.4.2):
             # todo: check if sn_mva must be included here?
             vkx0_percent = np.sqrt(np.square(vk0_percent) - np.square(vkr0_percent))
             z_0THV = (vkr0_percent / 100 + 1j * vkx0_percent / 100) * (np.square(vn_trafo_hv) / sn_trafo_mva) / parallel
-            z0_k_psu = (z_0THV * k_st_tr + 3j * z_n_ohm) / ((vn_bus_hv ** 2) / net.sn_mva)
-            z0_k = np.where(power_station_unit, z0_k_psu, z0_k)
+            # grounding impedance: for power system unit, the neutral grounding is set at the HV side.
+            # for petersen coil and power transformers, the neutral grounding is at the LV side
+            z_petersen_pu = 3 * z_n_ohm / ((vn_bus_lv ** 2) / net.sn_mva)
+            # z0_k_psu = (z_0THV * k_st_tr + 3 * z_n_ohm) / ((vn_bus_hv ** 2) / net.sn_mva)
+            z0_k_psu = (z_0THV * k_st_tr + 3 * z_n_ohm) / ((vn_trafo_hv ** 2) / net.sn_mva)
+            z0_k = np.where(power_station_unit, z0_k_psu, z0_k + z_petersen_pu)
 
         y0_k = 1 / z0_k  # adding admittance for "pi" model
-        # y0_k = 1 / (z0_k * k_st_tr + 3j * z_n_ohm)  # adding admittance for "pi" model
+        # y0_k = 1 / (z0_k * k_st_tr + 3 * z_n_ohm)  # adding admittance for "pi" model
 
         # =============================================================================
         #       Transformer magnetising impedance for zero sequence

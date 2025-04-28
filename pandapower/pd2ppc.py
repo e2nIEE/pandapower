@@ -169,8 +169,8 @@ def _pd2ppc(net, sequence=None, **kwargs):
         _add_ext_grid_sc_impedance(net, ppc)
         # Generator impedance are seperately added in sc module
         _add_motor_impedances_ppc(net, ppc)
-        if net._options.get("use_pre_fault_voltage", False):
-            _add_load_sc_impedances_ppc(net, ppc)  # add SC impedances for loads
+        # if net._options.get("use_pre_fault_voltage", False):
+        #    _add_load_sc_impedances_ppc(net, ppc)  # add SC impedances for loads
 
     else:
         _calc_pq_elements_and_add_on_ppc(net, ppc, sequence=sequence)
