@@ -168,5 +168,27 @@ def test_pf_export_q_capability_curve():
         [0.01000, 134.00900,  228.00999, 257.01001, 261.01000, 261.01000, 261.01000, 257.01000, 30, 40, 134.0099, 0.01]
     ))
 
+    all_diffs = validate_pf_conversion(net, tolerance_mva=1e-9, enforce_q_lims=True)
+
+    tol = {
+        'diff_vm': 5e-3,
+        'diff_va': 0.1,
+        'trafo_diff': 1e-2,
+        'line_diff': 1e1,
+        'gen_p_diff_is': 1e-5,
+        'gen_q_diff_is': 1e-5,
+        'load_p_diff_is': 1e-5,
+        'load_q_diff_is': 1e-5,
+        'ext_grid_p_diff': 0.1,
+        'ext_grid_q_diff': 0.1
+    }
+
+    for key, diff in all_diffs.items():
+        if type(diff) == pd.Series:
+            delta = diff.abs().max()
+        else:
+            delta = diff['diff'].abs().max()
+        assert delta < tol[key], "%s has too high difference: %f > %f" % (key, delta, tol[key])
+
 if __name__ == '__main__':
     pytest.main([__file__, "-xs"])
