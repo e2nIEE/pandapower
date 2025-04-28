@@ -59,7 +59,7 @@ def _calc_ikss(net, ppci, bus_idx):
     z_equiv = ppci["bus"][bus_idx, R_EQUIV] + ppci["bus"][bus_idx, X_EQUIV] * 1j  # removed the abs()
     ikss1 = V0[bus_idx, np.arange(n_sc_bus)] / z_equiv
 
-    if fault == "3ph":
+    if fault == "LLL":
         if net["_options"]["inverse_y"]:
             Zbus = ppci["internal"]["Zbus"]
             # I don't know how to do this without reshape
@@ -83,15 +83,15 @@ def _calc_ikss(net, ppci, bus_idx):
         # added angle calculation in degree:
         ppci["bus"][bus_idx, PHI_IKSS1_DEGREE] = np.angle(ikss1, deg=True)
         ppci["internal"]["V_ikss"] = V_ikss
-    elif fault == "2ph":
+    elif fault == "LL":
         ppci["bus"][bus_idx, IKSS1] = np.abs(c / z_equiv / ppci["bus"][bus_idx, BASE_KV] / 2 * ppci["baseMVA"])
 
     _current_source_current(net, ppci, bus_idx)
 
     ikss = ppci["bus"][bus_idx, IKSS1] + ppci["bus"][bus_idx, IKSS2]
-    if fault == "3ph":
+    if fault == "LLL":
         ppci["bus"][bus_idx, SKSS] = np.sqrt(3) * ikss * ppci["bus"][bus_idx, BASE_KV]
-    elif fault == "2ph":
+    elif fault == "LL":
         ppci["bus"][bus_idx, SKSS] = ikss * ppci["bus"][bus_idx, BASE_KV] / np.sqrt(3)
 
     # Correct voltage of generator bus inside power station
@@ -103,8 +103,8 @@ def _calc_ikss(net, ppci, bus_idx):
             (ppci["bus"][gen_bus_idx, V_G] / ppci["bus"][gen_bus_idx, BASE_KV])
 
 
-def _calc_ikss_1ph(net, ppci_0, ppci_1, ppci_2, bus_idx):
-    fault = net._options["fault"] # adding by gourab if 2ph-g will be added here
+def _calc_ikss_to_g(net, ppci_0, ppci_1, ppci_2, bus_idx):
+    fault = net._options["fault"]
     case = net._options["case"]
     c = ppci_1["bus"][bus_idx, C_MIN] if case == "min" else ppci_1["bus"][bus_idx, C_MAX]
 
@@ -116,9 +116,11 @@ def _calc_ikss_1ph(net, ppci_0, ppci_1, ppci_2, bus_idx):
     z_equiv_1 = ppci_1["bus"][bus_idx, R_EQUIV] + ppci_1["bus"][bus_idx, X_EQUIV] * 1j
     z_equiv_2 = ppci_2["bus"][bus_idx, R_EQUIV] + ppci_2["bus"][bus_idx, X_EQUIV] * 1j
 
-    # z_equiv 1 and 2 are the same, so could also be 2 * z_equiv_1 + z_equiv_0:
-    z_equiv = z_equiv_0 + z_equiv_1 + z_equiv_2 #ToDo: 2Ph-G
-    z_equiv1 = 2*(z_equiv_0) + (z_equiv_1 + z_equiv_2)/2 # for 2PH-G
+    if fault == "LG":
+        # z_equiv 1 and 2 are the same, so could also be 2 * z_equiv_1 + z_equiv_0:
+        z_equiv = z_equiv_0 + z_equiv_1 + z_equiv_2
+    elif fault == "LLG":
+        z_equiv = 2 * (z_equiv_0) + (z_equiv_1 + z_equiv_2) / 2
 
     # Only for test, should correspondant to PF result
     baseZ = ppci_1["bus"][bus_idx, BASE_KV] ** 2 / ppci_1["baseMVA"]
@@ -161,17 +163,27 @@ def _calc_ikss_1ph(net, ppci_0, ppci_1, ppci_2, bus_idx):
     ppci_1["internal"]["valid_V"] = valid_V
     ppci_2["internal"]["valid_V"] = valid_V
 
-    ikss1 = 3 * V0[bus_idx, np.arange(n_sc_bus)] / z_equiv #ToDo: 2Ph-G
+    if fault == "LG":
+        ikss1 = 3 * V0[bus_idx, np.arange(n_sc_bus)] / z_equiv
+    # ToDo: LLG, hier überhaupt ein Unterschied in den Gleichungen?
+    elif fault == "LLG":
+        # todo fehlt hier nicht ein ikss2?
+        ikss1 = 3 * V0[bus_idx, np.arange(n_sc_bus)] / z_equiv
 
     if net["_options"]["inverse_y"]:
         Zbus_0 = ppci_0["internal"]["Zbus"]
         Zbus_1 = ppci_1["internal"]["Zbus"]
         Zbus_2 = ppci_2["internal"]["Zbus"]
 
-        # ToDo: 2Ph-G
-        V_ikss_0 = 0 - ikss1 * Zbus_0[:, bus_idx] / 3  # initial value for zero-sequence voltage is 0
-        V_ikss_1 = V0 - ikss1 * Zbus_1[:, bus_idx] / 3 if valid_V else 0 - ikss1 * Zbus_1[:, bus_idx] / 3
-        V_ikss_2 = 0 - ikss1 * Zbus_2[:, bus_idx] / 3  # initial value for negative-sequence voltage is 0
+        if fault == "LG":
+            V_ikss_0 = 0 - ikss1 * Zbus_0[:, bus_idx] / 3  # initial value for zero-sequence voltage is 0
+            V_ikss_1 = V0 - ikss1 * Zbus_1[:, bus_idx] / 3 if valid_V else 0 - ikss1 * Zbus_1[:, bus_idx] / 3
+            V_ikss_2 = 0 - ikss1 * Zbus_2[:, bus_idx] / 3  # initial value for negative-sequence voltage is 0
+        # ToDo: LLG, fehlende Gleichungen
+        elif fault == "LLG":
+            V_ikss_0 = 0 - ikss1 * Zbus_0[:, bus_idx] / 3  # initial value for zero-sequence voltage is 0
+            V_ikss_1 = V0 - ikss1 * Zbus_1[:, bus_idx] / 3 if valid_V else 0 - ikss1 * Zbus_1[:, bus_idx] / 3
+            V_ikss_2 = 0 - ikss1 * Zbus_2[:, bus_idx] / 3  # initial value for negative-sequence voltage is 0
     else:
         ybus_fact_0 = ppci_0["internal"]["ybus_fact"]
         ybus_fact_1 = ppci_1["internal"]["ybus_fact"]
@@ -182,10 +194,15 @@ def _calc_ikss_1ph(net, ppci_0, ppci_1, ppci_2, bus_idx):
         for ix, b in enumerate(bus_idx):
             ikss = np.zeros((n_bus, 1), dtype=np.complex128)
             ikss[b] = ikss1[ix]
-            # ToDo: 2Ph-G
-            V_ikss_0[:, [ix]] = 0 - ybus_fact_0(ikss) / 3
-            V_ikss_1[:, [ix]] = V0[:, [ix]] - ybus_fact_1(ikss) / 3 if valid_V else 0 - ybus_fact_1(ikss) / 3
-            V_ikss_2[:, [ix]] = 0 - ybus_fact_2(ikss) / 3
+            if fault == "LG":
+                V_ikss_0[:, [ix]] = 0 - ybus_fact_0(ikss) / 3
+                V_ikss_1[:, [ix]] = V0[:, [ix]] - ybus_fact_1(ikss) / 3 if valid_V else 0 - ybus_fact_1(ikss) / 3
+                V_ikss_2[:, [ix]] = 0 - ybus_fact_2(ikss) / 3
+            # ToDo: LLG, siehe oben fehlende Gleichungen
+            elif fault == "LLG":
+                V_ikss_0[:, [ix]] = 0 - ybus_fact_0(ikss) / 3
+                V_ikss_1[:, [ix]] = V0[:, [ix]] - ybus_fact_1(ikss) / 3 if valid_V else 0 - ybus_fact_1(ikss) / 3
+                V_ikss_2[:, [ix]] = 0 - ybus_fact_2(ikss) / 3
 
     V_ikss_0[np.abs(V_ikss_0) < 1e-10] = 0
     V_ikss_1[np.abs(V_ikss_1) < 1e-10] = 0
@@ -199,10 +216,19 @@ def _calc_ikss_1ph(net, ppci_0, ppci_1, ppci_2, bus_idx):
     ppci_0["bus"][bus_idx, IKSS1] = abs(ikss1 / ppci_0["internal"]["baseI"][bus_idx])
     ppci_1["bus"][bus_idx, IKSS1] = abs(ikss1 / ppci_1["internal"]["baseI"][bus_idx])
     ppci_2["bus"][bus_idx, IKSS1] = abs(ikss1 / ppci_2["internal"]["baseI"][bus_idx])
+    """# ToDo: LLG, notwendig?
+    ppci_0["bus"][bus_idx, IKSS2] = abs(ikss1 / ppci_0["internal"]["baseI"][bus_idx])
+    ppci_1["bus"][bus_idx, IKSS2] = abs(ikss1 / ppci_1["internal"]["baseI"][bus_idx])
+    ppci_2["bus"][bus_idx, IKSS2] = abs(ikss1 / ppci_2["internal"]["baseI"][bus_idx])"""
+
     # added angle calculation in degree:
     ppci_0["bus"][bus_idx, PHI_IKSS1_DEGREE] = np.angle(ikss1, deg=True)
     ppci_1["bus"][bus_idx, PHI_IKSS1_DEGREE] = np.angle(ikss1, deg=True)
     ppci_2["bus"][bus_idx, PHI_IKSS1_DEGREE] = np.angle(ikss1, deg=True)
+    """# ToDo: LLG, notwendig?
+    ppci_0["bus"][bus_idx, PHI_IKSS2_DEGREE] = np.angle(ikss1, deg=True)
+    ppci_1["bus"][bus_idx, PHI_IKSS2_DEGREE] = np.angle(ikss1, deg=True)
+    ppci_2["bus"][bus_idx, PHI_IKSS2_DEGREE] = np.angle(ikss1, deg=True)"""
 
     # V_ikss_abc_pu = sequence_to_phase(np.vstack([V_ikss_0.T, V_ikss_1.T, V_ikss_2.T]))
     # V_ikss_abc_pu[np.abs(V_ikss_abc_pu) < 1e-10] = 0
@@ -211,6 +237,11 @@ def _calc_ikss_1ph(net, ppci_0, ppci_1, ppci_2, bus_idx):
     # ppci_0["internal"]["V_ikss"] = V_ikss_abc_pu.T[:, [0]]
     # ppci_1["internal"]["V_ikss"] = V_ikss_abc_pu.T[:, [1]]
     # ppci_2["internal"]["V_ikss"] = V_ikss_abc_pu.T[:, [2]]
+
+    # ToDo: LLG, hier überhaupt ein Unterschied in den Gleichungen und ppci_1 und 2 notwendig?
+    ppci_0["bus"][bus_idx, SKSS] = ppci_0["bus"][bus_idx, IKSS1]  * ppci_0["bus"][bus_idx, BASE_KV] / np.sqrt(3)
+    # ppci_1["bus"][bus_idx, SKSS] = ppci_1["bus"][bus_idx, IKSS1]  * ppci_1["bus"][bus_idx, BASE_KV] / np.sqrt(3)
+    # ppci_2["bus"][bus_idx, SKSS] = ppci_2["bus"][bus_idx, IKSS1]  * ppci_2["bus"][bus_idx, BASE_KV] / np.sqrt(3)
 
     # add voltage information to ppci:
     ppci_0["internal"]["V_ikss"] = V_ikss_0
@@ -276,7 +307,7 @@ def _current_source_current(net, ppci, bus_idx, sequence=1):
     else:
         i_sgen_pu = (sgen.sn_mva.values / net.sn_mva * sgen.k.values)
 
-    if sgen_angle is not None and (fault == "3ph" or fault == "1ph" and type_c):
+    if sgen_angle is not None and (fault == "LLL" or fault == "LG" and type_c): #Todo auch LLG?
         i_sgen_pu = i_sgen_pu * np.exp(sgen_angle * 1j)
     # if case == "min":
     #     i_sgen_pu *= 0
@@ -290,26 +321,26 @@ def _current_source_current(net, ppci, bus_idx, sequence=1):
 
     ikcv_pu = ikcv_pu.flatten()
     ppci["bus"][buses, [IKCV]] = ikcv_pu if sgen_angle is None else np.abs(ikcv_pu)
-    if sgen_angle is not None and (fault == "3ph" or fault == "1ph" and type_c):
+    if sgen_angle is not None and (fault == "LLL" or fault == "LG" and type_c): #Todo auch LLG?
         ppci["bus"][buses, PHI_IKCV_DEGREE] = np.angle(ikcv_pu, deg=True)
 
     if net["_options"]["inverse_y"]:
         Zbus = ppci["internal"]["Zbus"]
         diagZ = np.diag(Zbus).copy()  # here diagZ is not writeable
-        if sgen_angle is None and (fault == "3ph" or fault == "1ph" and type_c):
+        if sgen_angle is None and (fault == "LLL" or fault == "LG" and type_c): #Todo auch LLG?
             ppci["bus"][buses, PHI_IKCV_DEGREE] = -np.angle(diagZ[buses], deg=True) + extra_angle
         diagZ[bus_idx] += fault_impedance
         i_kss_2 = 1 / diagZ * np.dot(Zbus, ppci["bus"][:, IKCV] * np.exp(np.deg2rad(ppci["bus"][:, PHI_IKCV_DEGREE]) * 1j))
     else:
         ybus_fact = ppci["internal"]["ybus_fact"]
         diagZ = _calc_zbus_diag(net, ppci)
-        if sgen_angle is None and (fault == "3ph" or fault == "1ph" and type_c):
+        if sgen_angle is None and (fault == "LLL" or fault == "LG" and type_c): #Todo auch LLG?
             ppci["bus"][buses, PHI_IKCV_DEGREE] = -np.angle(diagZ[buses], deg=True) + extra_angle
         diagZ[bus_idx] += fault_impedance
         i_kss_2 = ybus_fact(ppci["bus"][:, IKCV] * np.exp(np.deg2rad(ppci["bus"][:, PHI_IKCV_DEGREE]) * 1j)) / diagZ
 
     ppci["bus"][:, IKSS2] = np.abs(i_kss_2 / baseI)
-    ppci["bus"][:, PHI_IKSS2_DEGREE] = np.angle(i_kss_2, deg=True) if (fault == "3ph" or fault == "1ph" and type_c) else 0
+    ppci["bus"][:, PHI_IKSS2_DEGREE] = np.angle(i_kss_2, deg=True) if (fault == "LLL" or fault == "LG" and type_c) else 0 #Todo auch LLG?
     ppci["bus"][buses, IKCV] /= baseI[buses]
 
 
@@ -412,6 +443,7 @@ def _calc_branch_currents(net, ppci, bus_idx):
     n_bus = ppci["bus"].shape[0]
     fb = np.real(ppci["branch"][:, 0]).astype(np.int64)
     tb = np.real(ppci["branch"][:, 1]).astype(np.int64)
+    ppci["internal"]["baseV"] = ppci["bus"][:, BASE_KV]
 
     # calculate voltage source branch current
     if net["_options"]["inverse_y"]:

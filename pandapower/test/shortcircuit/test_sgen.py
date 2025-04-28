@@ -183,19 +183,19 @@ def test_min_3ph_branch_results_big_sgen():
     assert np.allclose(net.res_line_sc.ith_ka.values, np.array([0.400712, 0.393625]), atol=1e-6, rtol=0)
 
 
-def test_max_1ph_branch_small_sgen():
+def test_max_lg_branch_small_sgen():
     # This test just check coherence between branch ikss_ka results and bus ikss_ka results
 
     # With generator
     net = three_bus_example()
-    calc_sc(net, case="max", fault='1ph', branch_results=True)
+    calc_sc(net, case="max", fault='LG', branch_results=True)
     i_bus_with_sgen = net.res_bus_sc.copy()
     i_line_with_gen = net.res_line_sc.copy()
 
     # Without generator
     net = three_bus_example()
     net.sgen.in_service = False
-    calc_sc(net, case="max", fault='1ph', branch_results=True)
+    calc_sc(net, case="max", fault='LG', branch_results=True)
     i_bus_without_sgen = net.res_bus_sc.copy()
 
     # Check coherence between bus result and branch results
@@ -203,19 +203,19 @@ def test_max_1ph_branch_small_sgen():
     assert np.isclose(i_line_with_gen.ikss_ka.at[1], i_bus_with_sgen.ikss_ka.at[2], atol=1e-4)
 
 
-def test_max_1ph_branch_big_sgen():
+def test_max_lg_branch_big_sgen():
     # This test just check coherence between branch ikss_ka results and bus ikss_ka results
 
     # With generator
     net = big_sgen_three_bus_example()
-    calc_sc(net, case="max", fault='1ph', branch_results=True)
+    calc_sc(net, case="max", fault='LG', branch_results=True)
     i_bus_with_sgen = net.res_bus_sc.copy()
     i_line_with_gen = net.res_line_sc.copy()
 
     # Without generator
     net = big_sgen_three_bus_example()
     net.sgen.in_service = False
-    calc_sc(net, case="max", fault='1ph', branch_results=True)
+    calc_sc(net, case="max", fault='LG', branch_results=True)
     i_bus_without_sgen = net.res_bus_sc.copy()
 
     # Isolate sgen contribution
@@ -227,19 +227,19 @@ def test_max_1ph_branch_big_sgen():
     assert np.isclose(i_line_with_gen.ikss_ka.at[1], i_bus_with_sgen.ikss_ka.at[2], atol=1e-4)
 
 
-def test_min_1ph_branch_small_sgen():
+def test_min_lg_branch_small_sgen():
     # This test just check coherence between branch ikss_ka results and bus ikss_ka results
 
     # With generator
     net = three_bus_example()
-    calc_sc(net, case="min", fault='1ph', branch_results=True)
+    calc_sc(net, case="min", fault='LG', branch_results=True)
     i_bus_with_sgen = net.res_bus_sc.copy()
     i_line_with_gen = net.res_line_sc.copy()
 
     # Without generator
     net = three_bus_example()
     net.sgen.in_service = False
-    calc_sc(net, case="min", fault='1ph', branch_results=True)
+    calc_sc(net, case="min", fault='LG', branch_results=True)
     i_bus_without_sgen = net.res_bus_sc.copy()
 
     # Isolate sgen contribution
@@ -252,19 +252,19 @@ def test_min_1ph_branch_small_sgen():
     assert np.isclose(i_line_with_gen.ikss_ka.at[1], i_bus_with_sgen.ikss_ka.at[2], atol=1e-6)
 
 
-def test_min_1ph_branch_big_sgen():
+def test_min_lg_branch_big_sgen():
     # This test just check coherence between branch ikss_ka results and bus ikss_ka results
 
     # With generator
     net = big_sgen_three_bus_example()
-    calc_sc(net, case="min", fault='1ph', branch_results=True)
+    calc_sc(net, case="min", fault='LG', branch_results=True)
     i_bus_with_sgen = net.res_bus_sc.copy()
     i_line_with_sgen = net.res_line_sc.copy()
 
     # Without generator
     net = big_sgen_three_bus_example()
     net.sgen.in_service = False
-    calc_sc(net, case="min", fault='1ph', branch_results=True)
+    calc_sc(net, case="min", fault='LG', branch_results=True)
     i_bus_without_sgen = net.res_bus_sc.copy()
 
     # Isolate sgen contribution

@@ -102,7 +102,7 @@ def _calculate_branch_phase_results(ppc_0, ppc_1, ppc_2):
     return v_abc_pu, i_abc_ka, s_abc_mva
 
 
-def _get_line_1ph_results(net, ppc_1, v_abc_pu, i_abc_ka, s_abc_mva):
+def _get_line_lg_results(net, ppc_1, v_abc_pu, i_abc_ka, s_abc_mva):
     branch_lookup = net._pd2ppc_lookups["branch"]
     case = net._options["case"]
     if "line" in branch_lookup:
@@ -133,7 +133,7 @@ def _get_line_1ph_results(net, ppc_1, v_abc_pu, i_abc_ka, s_abc_mva):
             net.res_line_sc["ith_ka"] = minmax(ppc_1["branch"][f:t, [ITH_F, ITH_T]].real, axis=1)
 
 
-def _get_trafo_1ph_results(net, v_abc_pu, i_abc_ka, s_abc_mva):
+def _get_trafo_lg_results(net, v_abc_pu, i_abc_ka, s_abc_mva):
     branch_lookup = net._pd2ppc_lookups["branch"]
     if "trafo" in branch_lookup:
         f, t = branch_lookup["trafo"]
@@ -153,8 +153,8 @@ def _get_trafo_1ph_results(net, v_abc_pu, i_abc_ka, s_abc_mva):
 
     # todo: ip, ith
 
-
-def _calculate_bus_results_2ph(ppc_0, ppc_1, ppc_2, bus):
+#ToDo LLG: diese Funktion notwendig?
+def _calculate_bus_results_llg(ppc_0, ppc_1, ppc_2, bus):
     # we use 3D arrays here to easily identify via axis:
     # 0: line index, 1: from/to, 2: phase
     # short-ciruit for rotating machine (ext-grid and gen)
@@ -202,16 +202,15 @@ def _calculate_bus_results_2ph(ppc_0, ppc_1, ppc_2, bus):
 
 
 def _extract_results(net, ppc_0, ppc_1, ppc_2, bus):
-    #ToDo
-    if net["_options"]["fault"] == "2ph-g":
-       _calculate_bus_results_2ph(ppc_0, ppc_1, ppc_2, bus)
+    if net["_options"]["fault"] == "LLG": #ToDo LLG
+       _calculate_bus_results_llg(ppc_0, ppc_1, ppc_2, bus)
     else:
         _get_bus_results(net, ppc_0, ppc_1, ppc_2, bus)
     if net._options["branch_results"]:
-        if net["_options"]["fault"] == "1ph":
+        if net["_options"]["fault"] in ("LG", "LLG"): #LLG
             v_abc_pu, i_abc_ka, s_abc_mva = _calculate_branch_phase_results(ppc_0, ppc_1, ppc_2)
-            _get_line_1ph_results(net, ppc_1, v_abc_pu, i_abc_ka, s_abc_mva)
-            _get_trafo_1ph_results(net, v_abc_pu, i_abc_ka, s_abc_mva)
+            _get_line_lg_results(net, ppc_1, v_abc_pu, i_abc_ka, s_abc_mva)
+            _get_trafo_lg_results(net, v_abc_pu, i_abc_ka, s_abc_mva)
         else:
             if net._options['return_all_currents']:
                 _get_line_all_results(net, ppc_1, bus)
@@ -230,10 +229,9 @@ def _get_bus_results(net, ppc_0, ppc_1, ppc_2, bus):
     ppc_index = bus_lookup[net.bus.index]
 
     ppc_sequence = {0: ppc_0, 1: ppc_1, 2: ppc_2, "": ppc_1}
-    if net["_options"]["fault"] == "1ph":
+    if net["_options"]["fault"] in ("LG", "LLG"): #ToDo: LLG
         net.res_bus_sc["ikss_ka"] = ppc_0["bus"][ppc_index, IKSS1] + ppc_1["bus"][ppc_index, IKSS2]
-        # todo: implement SKSS for "1ph"
-        # net.res_bus_sc["skss_mw"] = ppc_0["bus"][ppc_index, SKSS]
+        net.res_bus_sc["skss_mw"] = ppc_0["bus"][ppc_index, SKSS]
         sequence_relevant = range(3)
     else:
         net.res_bus_sc["ikss_ka"] = ppc_1["bus"][ppc_index, IKSS1] + ppc_1["bus"][ppc_index, IKSS2]
@@ -246,8 +244,8 @@ def _get_bus_results(net, ppc_0, ppc_1, ppc_2, bus):
         # in trafo3w, we add very high numbers (1e10) as impedances to block current
         # here, we need to replace such high values by np.inf
         baseZ = ppc_s["bus"][ppc_index, BASE_KV] ** 2 / ppc_s["baseMVA"]
-        net.res_bus_sc[f"xk{sequence}_ohm"].loc[net.res_bus_sc[f"xk{sequence}_ohm"] / baseZ > 1e9] = np.inf
-        net.res_bus_sc[f"rk{sequence}_ohm"].loc[net.res_bus_sc[f"rk{sequence}_ohm"] / baseZ > 1e9] = np.inf
+        net.res_bus_sc.loc[net.res_bus_sc[f"xk{sequence}_ohm"] / baseZ > 1e9, f"xk{sequence}_ohm"] = np.inf
+        net.res_bus_sc.loc[net.res_bus_sc[f"rk{sequence}_ohm"] / baseZ > 1e9, f"rk{sequence}_ohm"] = np.inf
     if net._options["ip"]:
         net.res_bus_sc["ip_ka"] = ppc_1["bus"][ppc_index, IP]
     if net._options["ith"]:

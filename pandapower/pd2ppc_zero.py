@@ -25,7 +25,9 @@ from pandapower.build_branch import _calc_tap_from_dataframe, _transformer_corre
     _calc_impedance_parameters_from_dataframe, _build_tcsc_ppc, _build_branch_dc_ppc
 from pandapower.build_branch import _switch_branches, _branches_with_oos_buses, _initialize_branch_lookup, _end_temperature_correction_factor
 from pandapower.pd2ppc import _ppc2ppci, _init_ppc
+
 BIG_NUMBER = 1e20
+
 
 def _pd2ppc_zero(net, k_st, sequence=0):
     """
@@ -515,7 +517,7 @@ def _add_trafo3w_sc_impedance_zero(net, ppc):
     #   YYnd
     #   YNynd
     #   YNdd
-    # not relevant (for 1ph):
+    # not relevant (for LG):
     #   Yyy
     #   Ydd
     #   Ydy

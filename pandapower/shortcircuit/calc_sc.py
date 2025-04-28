@@ -3,14 +3,13 @@
 # Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import copy
-
+import warnings
 from pandapower.build_bus import _add_load_sc_impedances_ppc
 
 try:
     import pandaplan.core.pplog as logging
 except ImportError:
     import logging
-
 logger = logging.getLogger(__name__)
 
 import numpy as np
@@ -23,7 +22,7 @@ from pandapower.pd2ppc_zero import _pd2ppc_zero
 from pandapower.results import _copy_results_ppci_to_ppc
 
 from pandapower.shortcircuit.currents import _calc_ikss, \
-    _calc_ikss_1ph, _calc_ip, _calc_ith, _calc_branch_currents, _calc_branch_currents_complex
+    _calc_ikss_to_g, _calc_ip, _calc_ith, _calc_branch_currents, _calc_branch_currents_complex
 from pandapower.shortcircuit.impedance import _calc_zbus, _calc_ybus, _calc_rx
 from pandapower.shortcircuit.ppc_conversion import _init_ppc, _create_k_updated_ppci, _get_is_ppci_bus
 from pandapower.shortcircuit.kappa import _add_kappa_to_ppc
@@ -62,6 +61,16 @@ def calc_sc(net, bus=None,
             - "2ph" for two-phase (phase-to-phase) short-circuits
 
             - "1ph" for single-phase-to-ground faults
+
+        ***fault** (str, LLL) type of fault
+
+            - "LLL" for three-phase
+
+            - "LL" for two-phase (phase-to-phase) short-circuits
+
+            - "LG" for single-phase-to-ground faults
+
+            - "LLG" for double-phase-to-ground faults
 
         **case** (str, "max")
 
@@ -110,9 +119,16 @@ def calc_sc(net, bus=None,
 
         print(net.res_bus_sc)
     """
-    if fault not in ["3ph", "2ph", "1ph"]:
+    if fault in ["3ph", "2ph", "1ph", "2ph-g"]:
+        warnings.warn(DeprecationWarning(
+            "Short-circuit fault types 3ph, 2ph, 2ph-g and 1ph have been renamed to LLL, LL, LLG and LG, "
+            "please use the new naming convention as the old convention will be removed in future pandapower versions."))
+        mapping = {"3ph": "LLL", "2ph": "LL", "1ph": "LG", "2ph-g": "LLG"}
+        fault = mapping[fault]
+
+    if fault not in ["LLL", "LL", "LG", "LLG"]:
         raise NotImplementedError(
-            "Only 3ph, 2ph and 1ph short-circuit currents implemented")
+            "Only LLL, LL, LLG and LG short-circuit faults implemented")
 
     if len(net.gen) and (ip or ith):
         logger.warning("aperiodic, thermal short-circuit currents are only implemented for "
@@ -157,10 +173,10 @@ def calc_sc(net, bus=None,
                     inverse_y=inverse_y, use_pre_fault_voltage=use_pre_fault_voltage)
     init_results(net, "sc")
 
-    if fault in ("2ph", "3ph"):
+    if fault in ("LL", "LLL"):
         _calc_sc(net, bus)
-    elif fault == "1ph": #ToDo: 2Ph-G
-        _calc_sc_1ph(net, bus)
+    elif fault in("LG", "LLG"): #ToDo: LLG
+        _calc_sc_to_g(net, bus)
     else:
         raise ValueError("Invalid fault %s" % fault)
 
@@ -202,7 +218,7 @@ def _calc_current(net, ppci_orig, bus):
             _calc_ith(net, this_ppci)
 
         if net._options["branch_results"]:
-            if net._options["fault"] == "3ph":
+            if net._options["fault"] == "LLL":
                 _calc_branch_currents_complex(net, this_ppci, this_ppci_bus)
             else:
                 _calc_branch_currents(net, this_ppci, this_ppci_bus)
@@ -228,7 +244,7 @@ def _calc_sc(net, bus):
         ppci["internal"].pop("ybus_fact")
 
 
-def _calc_sc_1ph(net, bus): #ToDo: 2Ph-G (rename the function)
+def _calc_sc_to_g(net, bus):
     """
     calculation method for single phase to ground short-circuit currents
     """
@@ -275,13 +291,22 @@ def _calc_sc_1ph(net, bus): #ToDo: 2Ph-G (rename the function)
     _calc_rx(net, ppci_0, ppci_bus)
     _calc_rx(net, ppci_2, ppci_bus)
 
-    _calc_ikss_1ph(net, ppci_0, ppci_1, ppci_2, ppci_bus) #ToDo: 2Ph-G (rename the function)
+    _calc_ikss_to_g(net, ppci_0, ppci_1, ppci_2, ppci_bus)
     # from here on, the V_ikss in ppci_0, ppci_1, ppci_2 are in phase frame!
-
     if net._options["branch_results"]:
+        if net._options["fault"] == "LLL":
+            _calc_branch_currents_complex(net, ppci_0, ppci_bus)
+            _calc_branch_currents_complex(net, ppci_1, ppci_bus)
+            _calc_branch_currents_complex(net, ppci_2, ppci_bus)
+        else:
+            _calc_branch_currents(net, ppci_0, ppci_bus)
+            _calc_branch_currents(net, ppci_1, ppci_bus)
+            _calc_branch_currents(net, ppci_2, ppci_bus)
+
+    """    if net._options["branch_results"]:
         _calc_branch_currents_complex(net, ppci_0, ppci_bus)
         _calc_branch_currents_complex(net, ppci_1, ppci_bus)
-        _calc_branch_currents_complex(net, ppci_2, ppci_bus)
+        _calc_branch_currents_complex(net, ppci_2, ppci_bus)"""
 
     ppc_0 = _copy_results_ppci_to_ppc(ppci_0, ppc_0, "sc")
     ppc_1 = _copy_results_ppci_to_ppc(ppci_1, ppc_1, "sc")

@@ -118,7 +118,7 @@ def iec_60909_4():
     create_line_from_parameters(net, b6, b7, name="L6", c_nf_per_km=0, max_i_ka=0, length_km=1, r_ohm_per_km=0.082,
                                 x_ohm_per_km=0.086, r0_ohm_per_km=0.082, x0_ohm_per_km=0.086, c0_nf_per_km=0,
                                 g0_us_per_km=0)
-    # bus F for 1ph fault: 1, 2, 3, 4
+    # bus F for LG fault: 1, 2, 3, 4
     return net
 
 
@@ -241,12 +241,12 @@ def vde_232():
     return net
 
 
-def test_iec_60909_4_3ph_small_without_gen():
+def test_iec_60909_4_lll_small_without_gen():
     net = iec_60909_4_small()
     # Deactivate all gens
     net.gen = net.gen.iloc[0:0, :]
 
-    calc_sc(net, fault="3ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
+    calc_sc(net, fault="LLL", case="max", ip=True, tk_s=0.1, kappa_method="C")
     ikss_pf = [40.3390, 28.4130, 14.2095, 28.7195, 13.4191]
     ip_pf = [99.7374, 72.6580, 32.1954, 72.1443, 36.5036]
 
@@ -254,10 +254,10 @@ def test_iec_60909_4_3ph_small_without_gen():
     assert np.allclose(net.res_bus_sc.ip_ka.values[:5], np.array(ip_pf), atol=1e-3)
 
 
-def test_iec_60909_4_3ph_small_with_gen():
+def test_iec_60909_4_lll_small_with_gen():
     net = iec_60909_4_small()
 
-    calc_sc(net, fault="3ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
+    calc_sc(net, fault="LLL", case="max", ip=True, tk_s=0.1, kappa_method="C")
     ikss_pf = [40.4754, 29.8334, 16.1684, 30.3573]
     ip_pf = [100.1164, 76.1134, 37.3576, 76.2689]
     ib_pf = [40.4754, 29.7337, 15.9593, 30.2245]
@@ -267,18 +267,18 @@ def test_iec_60909_4_3ph_small_with_gen():
     assert np.allclose(net.res_bus_sc.ip_ka.values[:4], np.array(ip_pf), atol=1e-3)
 
 
-def test_iec_60909_4_3ph_small_with_gen_xward():
+def test_iec_60909_4_lll_small_with_gen_xward():
     net = iec_60909_4_small(with_xward=True)
-    calc_sc(net, fault="3ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
+    calc_sc(net, fault="LLL", case="max", ip=True, tk_s=0.1, kappa_method="C")
 
     ikss_pf = [40.6422, 31.6394, 16.7409, 33.2808]
     assert np.allclose(net.res_bus_sc.ikss_ka.values[:4], np.array(ikss_pf), atol=1e-3)
 
 
-def test_iec_60909_4_3ph_small_gen_only():
+def test_iec_60909_4_lll_small_gen_only():
     net = iec_60909_4_small_gen_only()
 
-    calc_sc(net, fault="3ph", case="max", ip=True, ith=True, tk_s=0.1, kappa_method="C")
+    calc_sc(net, fault="LLL", case="max", ip=True, ith=True, tk_s=0.1, kappa_method="C")
     ikss_pf = [1.9755, 39.5042]
     ip_pf = [5.2316, 104.1085]
     ib_pf = [1.6071, 27.3470]
@@ -288,10 +288,10 @@ def test_iec_60909_4_3ph_small_gen_only():
     assert np.allclose(net.res_bus_sc.ip_ka[:2].values, np.array(ip_pf), atol=1e-3)
 
 
-def test_iec_60909_4_3ph_2gen():
+def test_iec_60909_4_lll_2gen():
     net = iec_60909_4_2gen()
 
-    calc_sc(net, fault="3ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
+    calc_sc(net, fault="LLL", case="max", ip=True, tk_s=0.1, kappa_method="C")
     ikss_pf = [4.2821, 4.4280, 39.1090, 57.8129]
     ip_pf = [11.1157, 11.6306, 102.7821, 151.5569]
     ib_pf = [3.6605, 3.7571, 28.3801, 45.3742]
@@ -301,23 +301,23 @@ def test_iec_60909_4_3ph_2gen():
     assert np.allclose(net.res_bus_sc.ip_ka[:4].values, np.array(ip_pf), atol=1e-1)
 
 
-def test_iec_60909_4_3ph_2gen_no_ps_detection():
+def test_iec_60909_4_lll_2gen_no_ps_detection():
     net = iec_60909_4_2gen()
     net.gen.power_station_trafo = np.nan
     net.trafo.power_station_unit = False
     net.gen.at[0, "in_service"] = False
     net.gen = net.gen.query("in_service")
-    calc_sc(net, fault="3ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
+    calc_sc(net, fault="LLL", case="max", ip=True, tk_s=0.1, kappa_method="C")
 
     ikss_pf = [1.8460, 1.6715, 6.8953, 39.5042]
     assert np.allclose(net.res_bus_sc.ikss_ka[:4].values, np.array(ikss_pf), atol=1e-3)
 
 
-def test_iec_60909_4_3ph_without_motor():
+def test_iec_60909_4_lll_without_motor():
     # Generator connected to normal bus does not need voltage correction
     net = iec_60909_4()
     net.motor = net.motor.iloc[0:0, :]
-    calc_sc(net, fault="3ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
+    calc_sc(net, fault="LLL", case="max", ip=True, tk_s=0.1, kappa_method="C")
 
     ikss_pf = [40.6347, 31.6635, 19.6231, 16.1956, 32.9971, 34.3559, 22.2762, 13.5726]
     ip_pf = [100.5427, 80.3509, 45.7157, 36.7855, 82.9406, 90.6143, 43.3826, 36.9103]
@@ -326,9 +326,9 @@ def test_iec_60909_4_3ph_without_motor():
     assert np.allclose(net.res_bus_sc.ip_ka[:8].values, np.array(ip_pf), atol=1e-3)
 
 
-def test_iec_60909_4_3ph():
+def test_iec_60909_4_lll():
     net = iec_60909_4()
-    calc_sc(net, fault="3ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
+    calc_sc(net, fault="LLL", case="max", ip=True, tk_s=0.1, kappa_method="C")
 
     ikss = [40.6447, 31.7831, 19.6730, 16.2277, 33.1894, 37.5629, 25.5895, 13.5778, 52.4438, 80.5720]
     # Ip for kappa B
@@ -342,19 +342,19 @@ def test_iec_60909_4_3ph():
     assert np.allclose(net.res_bus_sc.skss_mw.values[:10], np.array(skss), atol=1e-2)
 
 
-def test_iec_60909_4_3ph_min():
+def test_iec_60909_4_lll_min():
     net = iec_60909_4()
     net.line["endtemp_degree"] = 80.0
     net.ext_grid["s_sc_min_mva"] = net.ext_grid["s_sc_max_mva"] / 10
     net.ext_grid["rx_min"] = net.ext_grid["rx_max"]
-    calc_sc(net, fault="3ph", case="min", ip=True, tk_s=0.1, kappa_method="C")
+    calc_sc(net, fault="LLL", case="min", ip=True, tk_s=0.1, kappa_method="C")
 
     ikss_min = [5.0501, 12.2915, 10.3292, 9.4708, 11.8604, 28.3052, 18.6148, 10.9005, 44.5098, 67.9578]
 
     assert np.allclose(net.res_bus_sc.ikss_ka.values[:10], np.array(ikss_min), atol=1e-3)
 
 
-def test_iec_60909_4_3ph_ps_trafo_flag():
+def test_iec_60909_4_lll_ps_trafo_flag():
     net = iec_60909_4()
     net.trafo["power_station_unit"] = False
     ps_trafo = net.gen.power_station_trafo.values
@@ -363,19 +363,19 @@ def test_iec_60909_4_3ph_ps_trafo_flag():
     net.gen.power_station_trafo.values[:] = np.nan
 
     detect_power_station_unit(net, mode="trafo")
-    calc_sc(net, fault="3ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
+    calc_sc(net, fault="LLL", case="max", ip=True, tk_s=0.1, kappa_method="C")
 
     ikss = [40.6447, 31.7831, 19.6730, 16.2277, 33.1894, 37.5629, 25.5895, 13.5778, 52.4438, 80.5720]
     assert np.allclose(net.res_bus_sc.ikss_ka.values[:10], np.array(ikss), atol=1e-3)
 
 
-def test_iec_60909_4_2ph():
+def test_iec_60909_4_ll():
     net = iec_60909_4()
-    calc_sc(net, fault="2ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
+    calc_sc(net, fault="LL", case="max", ip=True, tk_s=0.1, kappa_method="C")
 
     ikss = [35.1994, 27.5249, 17.0373, 14.0536, 28.7429, 32.5304, 22.1611, 11.7586, 45.4177, 69.7774]
     ip = [87.0941, 69.8085, 39.6736, 31.9067, 72.2294, 84.9946, 44.7648, 31.9760, 118.0221, 182.1389]
-    # No ib for 2ph sc calculation
+    # No ib for LL sc calculation
     skss = [7722.50, 1748.07, 1082.01, 892.52, 1825.42, 187.81, 127.95, 203.67, 524.44, 402.86]
 
     assert np.allclose(net.res_bus_sc.ikss_ka.values[:10], np.array(ikss), atol=1e-3)
@@ -383,14 +383,14 @@ def test_iec_60909_4_2ph():
     assert np.allclose(net.res_bus_sc.skss_mw.values[:10], np.array(skss), atol=1e-1)
 
 
-@pytest.mark.skip("1ph gen-close sc calculation still under develop")
-def test_iec_60909_4_1ph():
+@pytest.mark.skip("LG gen-close sc calculation still under develop")
+def test_iec_60909_4_lg():
     net = iec_60909_4()
-    calc_sc(net, fault="1ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
+    calc_sc(net, fault="LG", case="max", ip=True, tk_s=0.1, kappa_method="C")
 
     ikss = [24.6526, 15.9722, 10.4106, 9.0498, 17.0452, 0.06337, 0.0633, 0, 0.0001, 0.0001]
     ip = [60.9982, 40.5086, 24.2424, 20.5464, 42.8337, 0.1656, 0.1279, 0.0, 0.00025, 0.00033]
-    # No ib for 1ph sc calculation
+    # No ib for LG sc calculation
 
     assert np.allclose(net.res_bus_sc.ikss_ka.values[:10], np.array(ikss),
                        atol=1e-4)  # assert np.allclose(net.res_bus_sc.ip.values[:8], np.array(ip), rtol=1e-4)
@@ -416,7 +416,7 @@ def test_sc_on_line():
 
 def test_vde_232():
     net = vde_232()
-    calc_sc(net, fault="3ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
+    calc_sc(net, fault="LLL", case="max", ip=True, tk_s=0.1, kappa_method="C")
 
 
 if __name__ == '__main__':
