@@ -281,3 +281,79 @@ def setup_project_power_exponent(prj, exponent):
         object.cpowexp = exponent
         object.cpexpshc = exponent
         object.campexp = 'k'  # current kA
+
+
+def run_short_circuit(app, fault_type="lll", calc_mode="max", fault_impedance_rf=0, fault_impedance_xf=0):
+    """
+    Executes a short-circuit calculation in PowerFactory using IEC 60909 standard.
+
+    app : powerfactory.Application
+        The active PowerFactory application instance.
+    fault_type : str, optional
+        Type of fault to simulate:
+        - "lll": three-phase short circuit (default)
+        - "ll": line-to-line fault
+        - "lg": single line-to-ground fault
+        - "llg": double line-to-ground fault
+    calc_mode : str, optional
+        Whether to calculate the maximum or minimum short-circuit currents.
+        Accepts "max" (default) or "min".
+    fault_impedance_rf : float, optional
+        Fault resistance in Ohm (default 0).
+    fault_impedance_xf : float, optional
+        Fault reactance in Ohm (default 0).
+    """
+
+    com_shc = app.GetFromStudyCase('ComShc')
+    if not com_shc:
+        raise RuntimeError("'ComShc' object not found!")
+
+    # set method
+    com_shc.iopt_mde = 1  # IEC 60909
+
+    # set fault type
+    fault_types = {
+        "lll": '3psc',      # 3 phase
+        "ll": '2psc',       # 2 phase
+        "lg": 'spgf',       # 1 phase to ground
+        "llg": '2pgf'       # 2 phase to ground
+    }
+    if fault_type not in fault_types:
+        raise ValueError(f"Unknown fault current: {fault_type}. Use 'lll', 'll', 'lg' or 'llg' for 3 phase, 2 phase, "
+                         f"1 phase to ground or 2 phase to ground ")
+    com_shc.iopt_shc = fault_types[fault_type]
+
+    # calculate max or min short circuit currents
+    if calc_mode == "max":
+        com_shc.iopt_cur = 0
+    elif calc_mode == "min":
+        com_shc.iopt_cur = 1
+    else:
+        raise ValueError(f"Unknown modus: {calc_mode}. Use 'max' or 'min'.")
+
+    # set fault location
+    com_shc.iopt_allbus = 1  # all buses
+    # if fault_location == "all":
+    #     com_shc.iopt_allbus = 1  # all buses
+    # else:
+    #     com_shc.iopt_allbus = 0
+    #     com_shc.shcobj = fault_location
+
+    # set fault impedance
+    com_shc.rFault = fault_impedance_rf
+    com_shc.xFault = fault_impedance_xf
+
+    logger.info("---------------------------------------------------------------------------------")
+    logger.info("PowerFactory short circuit settings:")
+    logger.info(f"Method: IEC 60909 | Fault type: {fault_type} | Mode: {calc_mode}")
+    logger.info(f"Fault locations: all buses | Fault impedance: Rf={fault_impedance_rf} Ohm, Xf={fault_impedance_xf} Ohm")
+    logger.info("---------------------------------------------------------------------------------")
+
+    res = com_shc.Execute()
+
+    if res != 0:
+        logger.error("short circuit calculation failed..")
+    else:
+        logger.info("short circuit calculation succeeded.")
+
+    return res

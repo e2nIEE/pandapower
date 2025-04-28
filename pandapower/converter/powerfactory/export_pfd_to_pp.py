@@ -1,7 +1,7 @@
 from pandapower.file_io import to_json, to_pickle
 from .echo_off import echo_off, echo_on
 from .logger_setup import AppHandler, set_PF_level
-from .pf_export_functions import run_load_flow, create_network_dict
+from .pf_export_functions import run_load_flow, create_network_dict, run_short_circuit
 from .pp_import_functions import from_pf
 from .run_import import choose_imp_dir, clear_dir, prj_dgs_import, prj_import
 
@@ -15,7 +15,8 @@ logger = logging.getLogger(__name__)
 
 def from_pfd(app, prj_name: str, path_dst=None, pv_as_slack=False, pf_variable_p_loads='plini',
              pf_variable_p_gen='pgini', flag_graphics='GPS', tap_opt='nntap',
-             export_controller=True, handle_us="Deactivate", is_unbalanced=False, create_sections=True):
+             export_controller=True, handle_us="Deactivate", is_unbalanced=False, create_sections=True,
+             sc_type=None, sc_mode='max', sc_impedance_r=0, sc_impedance_x=0):
     """
 
     Args:
@@ -48,6 +49,9 @@ def from_pfd(app, prj_name: str, path_dst=None, pv_as_slack=False, pf_variable_p
     logger.info('gathering network elements')
     dict_net = create_network_dict(app, flag_graphics)
     pf_load_flow_failed = run_load_flow(app)
+    if sc_type is not None:
+        pf_short_circuit_calc_failed = run_short_circuit(app,fault_type=sc_type, calc_mode=sc_mode,
+                                                         fault_impedance_rf=sc_impedance_r, fault_impedance_xf=sc_impedance_x)
     logger.info('exporting network to pandapower')
     app.SetAttributeModeInternal(1)
     net = from_pf(dict_net=dict_net, pv_as_slack=pv_as_slack, pf_variable_p_loads=pf_variable_p_loads,
@@ -57,6 +61,8 @@ def from_pfd(app, prj_name: str, path_dst=None, pv_as_slack=False, pf_variable_p
     # save a flag, whether the PowerFactory load flow failed
     app.SetAttributeModeInternal(0)
     net["pf_converged"] = not pf_load_flow_failed
+    if sc_type is not None:
+        net["sc_succeeded"] = not pf_short_circuit_calc_failed
 
     logger.info(net)
 
