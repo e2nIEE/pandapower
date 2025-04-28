@@ -449,6 +449,10 @@ def create_pp_bus(net, item, flag_graphics, is_unbalanced):
     bus_dict[item] = bid
 
     get_pf_bus_results(net, item, bid, is_unbalanced, system_type)
+    try:
+        get_pf_bus_sc_results(net, item, bid)
+    except AttributeError:
+        logger.info("No short circuit calculations.")
 
     substat_descr = ''
     if item.HasAttribute('cpSubstat'):
@@ -4287,3 +4291,23 @@ def remove_folder_of_std_types(net):
             for st in all_types:
                 net.std_types[element][std_type] = net.std_types[element].pop(st)
                 net[element].std_type = net[element].std_type.replace(st, std_type)
+
+
+def get_pf_bus_sc_results(net, item, bid):
+    bus_type = "res_bus_sc"
+
+    result_variables = {
+        "pf_ikss_ka": "m:Ikss",
+        "pf_skss_mw": "m:Skss",
+        "pf_rk_ohm": "m:R",
+        "pf_xk_ohm": "m:X",
+        "pf_ip_ka": "m:ip"
+    }
+
+    for res_var_pp, res_var_pf in result_variables.items():
+        res = np.nan
+        if item.HasResults(0):
+            res = item.GetAttribute(res_var_pf)
+        net[bus_type].at[bid, res_var_pp] = res
+
+
