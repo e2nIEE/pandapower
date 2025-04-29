@@ -614,13 +614,14 @@ def _calc_tap_from_dataframe(net, trafo_df):
             if f'tap{t}_dependency_table' in trafo_df:
                 tap_dependency_table = get_trafo_values(trafo_df, "tap_dependency_table")
                 tap_dependency_table = np.array(
-                    [False if isinstance(x, float) and np.isnan(x) else x for x in tap_dependency_table])
+                    [False if isinstance(x, float) and np.isnan(x) or x is None else x for x in
+                     tap_dependency_table])
             else:
                 tap_table = np.array([False])
                 tap_dependency_table = np.array([False])
             # tap_changer_type = pd.Series(tap_changer_type)
-            tap_table = np.logical_and(tap_dependency_table, np.logical_not(tap_changer_type == "None"))
-            tap_no_table = np.logical_and(~tap_dependency_table, np.logical_not(tap_changer_type == "None"))
+            tap_table = np.logical_and(tap_dependency_table, tap_changer_type is not None)
+            tap_no_table = np.logical_and(~tap_dependency_table, tap_changer_type is not None)
             if any(tap_table):
                 id_characteristic_table = get_trafo_values(trafo_df, "id_characteristic_table")
                 if np.any(tap_dependency_table & pd.isna(id_characteristic_table)):
@@ -649,6 +650,17 @@ def _calc_tap_from_dataframe(net, trafo_df):
                     else:
                         ratio = [voltage_mapping.get(id_val, 1) for id_val in cleaned_id_characteristic]
                         shift = [-shift_mapping.get(id_val, 1) for id_val in cleaned_id_characteristic]
+
+                    if isinstance(trafo_df, dict):
+                        # Invert ratio and shift if tap_at_star_point is true
+                        relevant_tap_at_star_point = mask & trafo_df["tap_at_star_point"]
+                        count_index = 0
+                        for i in range(len(mask)):
+                            if relevant_tap_at_star_point[i]:
+                                ratio[count_index] = 1/ratio[count_index]  # Invertieren des Wertes
+                                shift[count_index] = -shift[count_index]
+                            if mask[i]:  # Increase index if mask[i] is True
+                                count_index += 1
 
                     vn[mask] = vn[mask] * ratio
                     trafo_shift[mask] += shift
@@ -1386,7 +1398,8 @@ def _trafo_df_from_trafo3w(net, sequence=1):
     trafo2["vn_lv_kv"] = {side: t3["vn_%s_kv" % side].values for side in sides}
     trafo2["shift_degree"] = {"hv": np.zeros(nr_trafos), "mv": t3.shift_mv_degree.values,
                               "lv": t3.shift_lv_degree.values}
-    for param in ["tap_changer_type", "tap_dependency_table", "id_characteristic_table", "tap_phase_shifter"]:
+    for param in ["tap_changer_type", "tap_dependency_table", "id_characteristic_table",
+                  "tap_phase_shifter", "tap_at_star_point"]:
         if param in t3:
             trafo2[param] = {side: t3[param] for side in sides}
     trafo2["parallel"] = {side: np.ones(nr_trafos) for side in sides}

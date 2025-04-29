@@ -15,7 +15,7 @@ import pandas as pd
 
 
 class UCTE2pandapower:
-    def __init__(self):
+    def __init__(self, slack_as_gen: bool = True):
         """
         Convert UCTE data to pandapower.
         """
@@ -23,6 +23,7 @@ class UCTE2pandapower:
         self.u_d = dict()
         self.net = self._create_empty_network()
         self.net.bus["node_name"] = ""
+        self.slack_as_gen = slack_as_gen
 
     @staticmethod
     def _create_empty_network():
@@ -40,6 +41,7 @@ class UCTE2pandapower:
                 "amica_name": str,
             },
             "line": {"amica_name": str},
+            "bus": {"ucte_country": str},
         }
         for pp_element in new_columns.keys():
             for col, dtype in new_columns[pp_element].items():
@@ -253,7 +255,10 @@ class UCTE2pandapower:
         gens["slack"] = False
         gens["current_source"] = True
         gens["in_service"] = True
-        self._copy_to_pp("ext_grid", gens.loc[gens["node_type"] == 3])
+        self._copy_to_pp("ext_grid" if not self.slack_as_gen else "gen",
+                         gens.loc[gens["node_type"] == 3])
+        if self.slack_as_gen:
+            self.net.gen["slack"] = True
         self._copy_to_pp("gen", gens.loc[gens["node_type"] == 2])
         self._copy_to_pp(
             "sgen", gens.loc[(gens["node_type"] == 0) | (gens["node_type"] == 1)]

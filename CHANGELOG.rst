@@ -3,6 +3,31 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [ADDED] pf2pp converter - added columns `origin_id` in multiple equipment (ext_net, coup, load, (s)gen, shunts, zpu, vac, svc)
+- [FIXED] pf2pp converter - trafo characteristic: Fixed tap changer type and included an if-clause that removes the zero sequence components in measurement report (for now)
+- [FIXED] corrected implementation of tap changer at star point with tap changer tables
+- [ADDED] cim2pp converter - extract 'controlenabled' flag from CGMES SSH profile and populate 'controllable' flag for gen and sgen elements
+- [ADDED] add function to determine qmin and qmax based on current active power in build_gen and update the dataframe with the determined values
+- [ADDED] parameter include_type_id to dump_to_geojson, to produce geojson features without the pp_index and pp_type field
+- [FIXED] added a fix which hinders selection of a subsection of busses for plotting
+- [ADDED] cim2pp converter - additional column "EquipmentContainer_id" in line table
+- [FIXED] DC loadflow after AC loadflow, had ambiguous results still present in net
+- [ADDED] add three columns: id_q_capability_curve_table, reactive_capability_curve, curve_style in gen and sgen
+- [ADDED] create q capability curve characteristics and diagnostics function
+- [ADDED] cim2pp converter- import reactive power capability curve data synchronousMachinesCim16.py
+- [ADDED] cim2pp converter - export parameter "governorSCD" in additional column in gen table
+- [FIXED] a problem with create_nxgraph
+- [ADDED] parameter slack_as_gen for `from_ucte()` converter (changed the default behavior)
+- [FIXED] cim2pp: the `ignore_errors` parameter was not respected in the `CimParser`
+- [FIXED] cim2pp: keep the busbar names and IDs for node breaker and bus branch models
+- [FIXED] cim2pp: extend cim data structure with missing parameters
+- [FIXED] cim2pp: better vector group assignment
+- [FIXED] cim2pp: refactor cim2pp test
+- [FIXED] cim2pp: manage crash when importing not supported dy profile
+- [ADDED] cim2pp: add tests for short circuit parameters
+
+[3.0.0] - 2025-03-06
+-------------------------------
 
 - [ADDED] cim2pp converter - extract measurements for load, sgen, gen, shunt, ext_grid, ward and xward elements
 - [ADDED] cim2pp converter - extract 'Terminal' and 'description' Analog fields in net.measurement
