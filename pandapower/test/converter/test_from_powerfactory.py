@@ -118,7 +118,7 @@ def test_trafo_tap2_results():
 def test_pf_export_tap_changer():
     app = pf.GetApplication()
     # import the tap changer test grid to powerfactory
-    path = os.path.join(pp.pp_dir, 'test', 'converter', 'testfiles', 'test_tap_changer.pfd')
+    path = os.path.join(pp_dir, 'test', 'converter', 'testfiles', 'test_tap_changer.pfd')
     prj = import_project(path, app, 'TEST_PF_CONVERTER', import_folder='TEST_IMPORT', clear_import_folder=True)
     prj_name = prj.GetFullName()
 

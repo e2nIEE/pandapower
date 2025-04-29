@@ -1304,7 +1304,7 @@ def create_ext_net(net, item, pv_as_slack, is_unbalanced):
     #     xid, ["pf_p", 'pf_q']].values))
 
     net[elm].loc[xid, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    add_additional_attributes(item, net, element=elm, element_id=xid, attr_list=['cpSite.loc_name'])
+    add_additional_attributes(item, net, element=elm, element_id=xid, attr_dict={"for_name": "equipment", "cimRdfId": "origin_id"}, attr_list=['cpSite.loc_name'])
 
     return xid
 
@@ -1835,7 +1835,7 @@ def create_pp_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
     attr_list = ["sernum", "chr_name", 'cpSite.loc_name']
     if load_class == 'ElmLodlv':
         attr_list.extend(['pnight', 'cNrCust', 'cPrCust', 'UtilFactor', 'cSmax', 'cSav', 'ccosphi'])
-    add_additional_attributes(item, net, load_type, ld, attr_dict={"for_name": "equipment"}, attr_list=attr_list)
+    add_additional_attributes(item, net, load_type, ld, attr_dict={"for_name": "equipment", "cimRdfId": "origin_id"}, attr_list=attr_list)
     get_pf_load_results(net, item, ld, is_unbalanced)
     #    if not is_unbalanced:
     #        if item.HasResults(0):  # 'm' results...
@@ -2032,7 +2032,7 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
     logger.debug('created sgen at index <%d>' % sg)
 
     net[element].at[sg, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    add_additional_attributes(item, net, element, sg, attr_dict={"for_name": "equipment"},
+    add_additional_attributes(item, net, element, sg, attr_dict={"for_name": "equipment", "cimRdfId": "origin_id"},
                               attr_list=["sernum", "chr_name", "cpSite.loc_name"])
     net[element].at[sg, 'scaling'] = dict_net['global_parameters']['global_generation_scaling'] * item.scale0
     get_pf_sgen_results(net, item, sg, is_unbalanced, element=element)
@@ -2146,7 +2146,7 @@ def create_sgen_neg_load(net, item, pf_variable_p_loads, dict_net):
     sg = create_sgen(net, **params)
 
     net.sgen.loc[sg, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    add_additional_attributes(item, net, "sgen", sg, attr_dict={"for_name": "equipment"},
+    add_additional_attributes(item, net, "sgen", sg, attr_dict={"for_name": "equipment", "cimRdfId": "origin_id"},
                               attr_list=["sernum", "chr_name", "cpSite.loc_name"])
 
     if item.HasResults(0):  # 'm' results...
@@ -2267,7 +2267,7 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
         logger.debug('created sgen at index <%s>' % sid)
 
     net[element].loc[sid, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    add_additional_attributes(item, net, element, sid, attr_dict={"for_name": "equipment"},
+    add_additional_attributes(item, net, element, sid, attr_dict={"for_name": "equipment", "cimRdfId": "origin_id"},
                               attr_list=["sernum", "chr_name", "cpSite.loc_name"])
 
     if item.HasResults(0):  # 'm' results...
@@ -2365,8 +2365,8 @@ def create_trafo_type(net, item):
         "tap_side": ['hv', 'lv', 'ext'][item.tap_side],  # 'ext' not implemented
     }
 
-    type_data.update({"tap_changer_type": "None"})
-    type_data.update({"tap2_changer_type": "None"})
+    type_data.update({"tap_changer_type": None})
+    type_data.update({"tap2_changer_type": None})
 
     if item.itapch:
         logger.debug('trafo <%s> has tap changer' % name)
@@ -2374,9 +2374,9 @@ def create_trafo_type(net, item):
         if item.tapchtype == 0:
             tap_changer_type = "Ratio"
         elif item.tapchtype == 1:
-            tap_changer_type = "Symmetrical"
-        elif item.tapchtype == 2:
             tap_changer_type = "Ideal"
+        elif item.tapchtype == 2:
+            tap_changer_type = "Symmetrical"
 
         type_data.update({
             # see if it is an ideal phase shifter or a complex phase shifter
@@ -2396,13 +2396,22 @@ def create_trafo_type(net, item):
     # In PowerFactory, if the first tap changer is absent, the second is also, even if the check was there
     if item.itapch and item.itapch2:
         logger.debug('trafo <%s> has tap2 changer' % name)
+
+        if item.tapchtype2 == 0:
+            tap2_changer_type = "Ratio"
+        elif item.tapchtype2 == 1:
+            tap2_changer_type = "Ideal"
+        elif item.tapchtype2 == 2:
+            tap2_changer_type = "Symmetrical"
+
+
         type_data.update({
             "tap2_side": ['hv', 'lv', 'ext'][item.tap_side2],  # 'ext' not implemented
             # see if it is an ideal phase shifter or a complex phase shifter
             # checking tap_step_percent because a nonzero value for ideal phase shifter can be stored in the object
             "tap2_step_percent": item.dutap2 if item.tapchtype2 != 1 else 0,
             "tap2_step_degree": item.dphitap2 if item.tapchtype2 == 1 else item.phitr2,
-            "tap2_changer_type":  item.tapchtype2,
+            "tap2_changer_type":  tap2_changer_type,
             "tap2_max": item.ntpmx2,
             "tap2_min": item.ntpmn2,
             "tap2_neutral": item.nntap02
@@ -2484,10 +2493,18 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
 
             steps = list(range(tap_min, tap_max + 1))
 
-            new_tap_table = pd.DataFrame(item.GetAttribute("mTaps"),
-                                         columns=['voltage_ratio', 'angle_deg', 'vk_percent', 'vkr_percent',
-                                                  'ignore'])
-            new_tap_table = new_tap_table.drop(columns='ignore')
+            measurement_report = item.GetAttribute("mTaps")
+            columns = ['voltage_ratio', 'angle_deg', 'vk_percent', 'vkr_percent']
+            if len(measurement_report) == len(columns):
+                new_tap_table = pd.DataFrame(measurement_report, columns=columns)
+            else:
+                # for now, ignore "Zusätzliche Bemessungsleistung Faktor" and zero sequence components
+                new_tap_table = pd.DataFrame(measurement_report)
+                new_tap_table = new_tap_table.iloc[:, :len(columns)]
+                new_tap_table.columns = columns
+
+            #new_tap_table = pd.DataFrame(item.GetAttribute("mTaps"),
+            #                             columns=columns)
             if meas_side == 0:
                 if tap_side == 0:
                     new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn_h
@@ -2521,11 +2538,11 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
             if pf_type.tapchtype == 0:
                 tap_changer_type = "Ratio"
             elif pf_type.tapchtype == 1:
-                tap_changer_type = "Symmetrical"
-            elif pf_type.tapchtype == 2:
                 tap_changer_type = "Ideal"
+            elif pf_type.tapchtype == 2:
+                tap_changer_type = "Symmetrical"
             else:
-                tap_changer_type = "None"
+                tap_changer_type = None
 
             tap_dependency_table = True
             id_characteristic_table = new_id_characteristic_table
@@ -2563,10 +2580,18 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
 
             steps = list(range(tap_min, tap_max + 1))
 
+            measurement_report = item.GetAttribute("mTaps")
+            columns = ['voltage_ratio', 'angle_deg', 'vk_percent', 'vkr_percent']
+            if len(measurement_report) == len(columns):
+                new_tap_table = pd.DataFrame(measurement_report, columns=columns)
+            else:
+                # for now, ignore "Zusätzliche Bemessungsleistung Faktor" and zero sequence components
+                new_tap_table = pd.DataFrame(measurement_report)
+                new_tap_table = new_tap_table.iloc[:, :len(columns)]
+                new_tap_table.columns = columns
+
             new_tap_table = pd.DataFrame(item.GetAttribute("mTaps"),
-                                         columns=['voltage_ratio', 'angle_deg', 'vk_percent', 'vkr_percent',
-                                                  'ignore'])
-            new_tap_table = new_tap_table.drop(columns='ignore')
+                                         columns=columns)
 
             if meas_side == 0:
                 if tap_side == 0:
@@ -2605,7 +2630,7 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
             elif pf_type.tapchtype == 2:
                 tap_changer_type = "Ideal"
             else:
-                tap_changer_type = "None"
+                tap_changer_type = None
 
             tap_dependency_table = True
             id_characteristic_table = new_id_characteristic_table
@@ -2812,9 +2837,16 @@ def create_trafo3w(net, item, tap_opt='nntap'):
             "trafo_characteristic_table"].empty else -1
         new_id_characteristic_table = last_index + 1
 
-        new_tap_table = pd.DataFrame(item.GetAttribute("mTaps"),
-                                     columns=['voltage_ratio', 'angle_deg', 'vk_hv_percent', 'vk_mv_percent',
-                                              'vk_lv_percent', 'vkr_hv_percent', 'vkr_mv_percent', 'vkr_lv_percent'])
+        measurement_report = item.GetAttribute("mTaps")
+        columns =['voltage_ratio', 'angle_deg', 'vk_hv_percent', 'vk_mv_percent',
+                  'vk_lv_percent', 'vkr_hv_percent', 'vkr_mv_percent', 'vkr_lv_percent']
+        if len(measurement_report) == len(columns):
+            new_tap_table = pd.DataFrame(measurement_report, columns=columns)
+        else:
+            # for now, ignore "Zusätzliche Bemessungsleistung Faktor" and zero sequence components
+            new_tap_table = pd.DataFrame(measurement_report)
+            new_tap_table = new_tap_table.iloc[:, :len(columns)]
+            new_tap_table.columns = columns
 
         if pf_type.itapzdep:
             table_side = pf_type.itapzside
@@ -2907,7 +2939,10 @@ def create_trafo3w(net, item, tap_opt='nntap'):
             tap_step_degree = item.GetAttribute('t:ph3tr_' + ts)
 
             if (tap_step_degree is None or tap_step_degree == 0) and (tap_step_percent is None or tap_step_percent == 0):
-                tap_changer_type = "None"
+                if not params["tap_dependency_table"]:
+                    tap_changer_type = None
+                else:
+                    tap_changer_type ="Tabular"
             # ratio/asymmetrical phase shifters
             elif (tap_step_degree != 90 and tap_step_percent is not None and tap_step_percent != 0):
                 tap_changer_type = "Ratio"
@@ -3023,7 +3058,7 @@ def create_coup(net, item, is_fuse=False):
     switch_dict[item] = cd
 
     add_additional_attributes(item, net, element='switch', element_id=cd,
-                              attr_list=['cpSite.loc_name'], attr_dict={"cimRdfId": "origin_id"})
+                              attr_list=['cpSite.loc_name'], attr_dict={"for_name": "equipment", "cimRdfId": "origin_id"})
 
     logger.debug('created switch at index <%d>, closed = %s, usage = %s' %
                  (cd, switch_is_closed, switch_usage))
@@ -3131,7 +3166,7 @@ def create_pp_shunt(net, item):
             element='shunt',
             element_id=sid,
             attr_list=['cpSite.loc_name'],
-            attr_dict={"cimRdfId": "origin_id"}
+            attr_dict={"cimRdfId": "origin_id", 'for_name': 'equipment'}
         )
     else:
         raise AttributeError(f"Shunt type {item.shtype} not valid: {item}")
@@ -3195,7 +3230,7 @@ def create_zpu(net, item):
 
     xid = create_impedance(net, **params)
     add_additional_attributes(item, net, element='impedance', element_id=xid, attr_list=["cpSite.loc_name"],
-                              attr_dict={"cimRdfId": "origin_id"})
+                              attr_dict={"cimRdfId": "origin_id", 'for_name': 'equipment'})
 
     # consider and create station switches
     new_elements = (aux_bus1, aux_bus2)
@@ -3291,7 +3326,7 @@ def create_vac(net, item):
         net['res_%s' % elm].at[xid, "pf_q"] = np.nan
 
     add_additional_attributes(item, net, element=elm, element_id=xid, attr_list=["cpSite.loc_name"],
-                              attr_dict={"cimRdfId": "origin_id"})
+                              attr_dict={"cimRdfId": "origin_id", 'for_name': 'equipment'})
 
     logger.debug('added pf_p and pf_q to {} {}: {}'.format(elm, xid, net['res_' + elm].loc[
         xid, ["pf_p", 'pf_q']].values))
@@ -3454,7 +3489,7 @@ def create_svc(net, item, pv_as_slack, pf_variable_p_gen, dict_net):
         logger.debug('created svc at index <%s>' % svc)
 
         net[element].loc[svc, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-        add_additional_attributes(item, net, element, svc, attr_dict={"for_name": "equipment"},
+        add_additional_attributes(item, net, element, svc, attr_dict={"cimRdfId": "origin_id", 'for_name': 'equipment'},
                                   attr_list=["sernum", "chr_name", "cpSite.loc_name"])
 
         if item.HasResults(0):  # 'm' results...
