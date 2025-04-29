@@ -3182,8 +3182,12 @@ def create_pp_shunt(net, item):
         r_val = np.real(z)
         x_val = np.imag(z)
 
-    if 0 <= item.shtype <= 4:
-        p_mw, params['q_mvar'] = calc_p_mw_and_q_mvar(r_val, x_val)
+    if 0 <= item.shtype <= 4 :
+        if not use_tap_table:
+            p_mw, params['q_mvar'] = calc_p_mw_and_q_mvar(r_val, x_val)
+        else:
+            p_mw = new_tap_table.loc[new_tap_table['step'] == item.ncapa, "p_mw"].values[0] / item.ncapa
+            params["q_mvar"] = new_tap_table.loc[new_tap_table['step'] == item.ncapa, "q_mvar"].values[0] / item.ncapa
         sid = create_shunt(net, p_mw=p_mw, **params)
 
         add_additional_attributes(
