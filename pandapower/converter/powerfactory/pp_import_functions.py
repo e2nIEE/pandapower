@@ -26,6 +26,8 @@ from pandapower.std_types import add_zero_impedance_parameters, std_type_exists,
     load_std_type
 from pandapower.toolbox.grid_modification import set_isolated_areas_out_of_service, drop_inactive_elements, drop_buses
 from pandapower.topology import create_nxgraph
+from pandapower.control.util.auxiliary import create_q_capability_curve_characteristics_object
+
 
 try:
     import pandaplan.core.pplog as logging
@@ -342,6 +344,11 @@ def from_pf(
 
     if is_unbalanced:
         add_zero_impedance_parameters(net)
+
+    # --------- create reactive power capability characteristics ---------
+    if not net['q_capability_curve_table'].empty:
+        logger.info('Create q_capability_curve_characteristics_object')
+        create_q_capability_curve_characteristics_object(net)
 
     logger.info('imported net')
     return net
@@ -1306,6 +1313,12 @@ def create_ext_net(net, item, pv_as_slack, is_unbalanced):
     net[elm].loc[xid, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
     add_additional_attributes(item, net, element=elm, element_id=xid, attr_dict={"for_name": "equipment", "cimRdfId": "origin_id"}, attr_list=['cpSite.loc_name'])
 
+    if item.pQlimType:
+        id = create_q_capability_curve(net, item.pQlimType)
+        net[elm].loc[xid, 'id_q_capability_curve_characteristic'] = id
+        net[elm].loc[xid, 'reactive_capability_curve'] = True
+        net[elm].loc[xid, 'curve_style'] = 'straightLineYValues'
+
     return xid
 
 
@@ -2035,6 +2048,12 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
     net[element].at[sg, 'scaling'] = dict_net['global_parameters']['global_generation_scaling'] * item.scale0
     get_pf_sgen_results(net, item, sg, is_unbalanced, element=element)
 
+    if item.pQlimType and element != 'ext_grid':
+        id = create_q_capability_curve(net, item.pQlimType)
+        net[element].loc[sg, 'id_q_capability_curve_characteristic'] = id
+        net[element].loc[sg, 'reactive_capability_curve'] = True
+        net[element].loc[sg, 'curve_style'] = 'straightLineYValues'
+
     logger.debug('created genstat <%s> as element <%s> at index <%d>' % (params.name, element, sg))
 
     ###########################
@@ -2265,6 +2284,12 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
     net[element].loc[sid, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
     add_additional_attributes(item, net, element, sid, attr_dict={"for_name": "equipment", "cimRdfId": "origin_id"},
                               attr_list=["sernum", "chr_name", "cpSite.loc_name"])
+
+    if item.pQlimType and element != 'ext_grid':
+        id = create_q_capability_curve(net, item.pQlimType)
+        net[element].loc[sid, 'id_q_capability_curve_characteristic'] = id
+        net[element].loc[sid, 'reactive_capability_curve'] = True
+        net[element].loc[sid, 'curve_style'] = 'straightLineYValues'
 
     if item.HasResults(0):  # 'm' results...
         logger.debug('<%s> has results' % name)
@@ -4322,3 +4347,23 @@ def remove_folder_of_std_types(net):
             for st in all_types:
                 net.std_types[element][std_type] = net.std_types[element].pop(st)
                 net[element].std_type = net[element].std_type.replace(st, std_type)
+
+def create_q_capability_curve(net, item):
+    name = item.loc_name
+    # create q capability curve
+    if 'q_capability_curve_table' not in net:
+        net['q_capability_curve_table'] = pd.DataFrame(
+            columns=['id_q_capability_curve', 'name', 'p_mw', 'q_min_mvar', 'q_max_mvar'])
+
+    logger.debug('>> creating  reactive power capabiltiy curve<%s>' % name)
+    index = net.q_capability_curve_table.iat[-1, 0] + 1 if not net['q_capability_curve_table'].empty else 0
+    new_data = pd.DataFrame({
+        'id_q_capability_curve': index,
+        'p_mw': item.cap_P,
+        'q_min_mvar': item.cap_Qmn,
+        'q_max_mvar': item.cap_Qmx
+    })
+    net['q_capability_curve_table'] = pd.concat([net['q_capability_curve_table'], new_data], ignore_index=True)
+    return index
+
+
