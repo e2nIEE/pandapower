@@ -148,6 +148,7 @@ def test_micro_sc_ext_grid(mini_sc_mod):
     assert element_0['s_sc_min_mva'].item() == pytest.approx(0.0, abs=0.00001)
     assert element_0['rx_max'].item() == pytest.approx(0.1, abs=0.00001)
     assert element_0['rx_min'].item() == pytest.approx(0.1, abs=0.00001)
+    # sc parameter x0x_max, r0x0_max missing
 
 
 def test_micro_sc_sgen(mini_sc):
@@ -175,6 +176,7 @@ def test_micro_sc_trafo(mirco_sc):
     assert element_0['vkr0_percent'].item() == pytest.approx(0.2149991967411512, abs=0.00001)
     assert not element_0['oltc'].item() #TODO: needs addidtional test
     assert not element_0['power_station_unit'].item() #TODO: needs addidtional test
+    # sc parameter si0_hv_partial, mag0_rx, mag0_percent missing
 
 def test_micro_sc_trafo3w(mirco_sc):
     assert len(mirco_sc.trafo3w.index) == 1
@@ -201,9 +203,10 @@ def test_micro_sc_gen(mirco_sc):
         mirco_sc.gen['origin_id'] == '_550ebe0d-f2b2-48c1-991f-cebea43a21aa'].index]
     assert element_0['vn_kv'].item() == pytest.approx(21.0, abs=0.00001)
     assert element_0['xdss_pu'].item() == pytest.approx(0.17, abs=0.00001)
-    assert element_0['rdss_ohm'].item() == pytest.approx(0.0, abs=0.00001) #TODO: needs addidtional test
+    assert element_0['rdss_ohm'].item() == pytest.approx(0.0, abs=0.00001) #TODO: needs addidtional test, docu says should be > 0
     assert element_0['cos_phi'].item() == pytest.approx(0.85, abs=0.00001)
     assert element_0['pg_percent'].item() == pytest.approx(0.0, abs=0.00001) #TODO: needs addidtional test
+    # sc parameter power_station_trafo missing!
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_no_load_flow_res_bus(
