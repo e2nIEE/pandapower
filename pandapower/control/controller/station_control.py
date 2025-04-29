@@ -54,7 +54,7 @@ class BinarySearchControl(Controller):
             control.
 
             **output_values_distribution** - Takes string to select one of the different available reactive power distribution
-            methods: 'rel_P' -Q is relative to used Power, 'rel_rated_P' -Q is relative to the rated power S, 'set_Q' -set
+            methods: 'rel_P' -Q is relative to used Power, 'rel_rated_S' -Q is relative to the rated power S, 'set_Q' -set
             individual reactive power for each output element, 'max_Q' -maximized reactive power reserve for the output
             elements, 'rel_V_pu' -Q is relative to the voltage limits of the output element.
 
@@ -266,7 +266,7 @@ class BinarySearchControl(Controller):
 
     def initialize_control(self, net, converged = False):
         #reinitialize control init  with existing parameters
-        '''net.controller.drop(index=self.index, inplace=True)#todo still doesnt work
+        """net.controller.drop(index=self.index, inplace=True)#todo still doesnt work
         self.__init__(net, ctrl_in_service=self.in_service, output_element=self.output_element,
                       output_variable=self.output_variable, output_element_index=self.output_element_index,
                       output_element_in_service=self.output_element_in_service,input_element=self.input_element,
@@ -274,7 +274,7 @@ class BinarySearchControl(Controller):
                       input_variable=self.input_variable, output_distribution_values=self.output_distribution_values,
                       output_values_distribution=self.output_values_distribution, bus_idx = self.bus_idx, tol = self.tol,
                       in_service=self.reset[0], order = self.reset[1], level = self.reset[2],
-                      drop_same_existing_ctrl=self.reset[3], matching_params=self.reset[4], **self.reset[5])'''
+                      drop_same_existing_ctrl=self.reset[3], matching_params=self.reset[4], **self.reset[5])"""
         #reread output elements
         #net.controller.at[self.index, 'object'].converged = converged
         output_element_index = self.output_element_index[0] if self.write_flag == 'single_index' else\
@@ -445,7 +445,7 @@ class BinarySearchControl(Controller):
             return
         ### Distribution warnings###
         if self.output_distribution_values is not None: #catch warnings
-            if (self.output_values_distribution == 'rel_P' or self.output_values_distribution == 'rel_rated_P' or
+            if (self.output_values_distribution == 'rel_P' or self.output_values_distribution == 'rel_rated_S' or
                     self.output_values_distribution == "max_Q"):
                 logger.warning(f'The inserted values for output distribution values {self.output_distribution_values} '
                                f'will have no effect on the reactive power distribution\n')
@@ -499,7 +499,7 @@ class BinarySearchControl(Controller):
                 self.v_min_pu = output_distribution_values[:, 1]
                 self.v_max_pu = output_distribution_values[:, 2]
                 output_distribution_values_in_service = None
-            else: self.output_distribution_values, output_distribution_values_in_service = None, None#rel_rated_P and rel_P, max_Q
+            else: self.output_distribution_values, output_distribution_values_in_service = None, None#rel_rated_S and rel_P, max_Q
         else: raise UserWarning(f"Output_distribution_values in Controller {self.index} is {self.output_distribution_values}")
 
         ###calculate output values###
@@ -511,8 +511,8 @@ class BinarySearchControl(Controller):
             step_diff = self.diff - self.diff_old
             x = self.output_values - self.diff * (self.output_values - self.output_values_old) / np.where(
                 step_diff == 0, 1e-6, step_diff)  #converging
-            if any(abs(x) > 50): #catching overshoots
-                x[np.where(abs(x) > 50)[0]] = np.sign(x[np.where(abs(x) > 50)[0]]) * 50
+            if any(abs(x) > 100): #catching overshoots, value might need adjustment
+                x[np.where(abs(x) > 100)[0]] = np.sign(x[np.where(abs(x) > 100)[0]]) * 100
             ###calculate the distribution of the output values
             if self.output_values_distribution == 'imported': #when importing net from PF, calculation for distribution is not necessary
                 distribution = output_distribution_values_in_service
@@ -522,13 +522,21 @@ class BinarySearchControl(Controller):
                 dispatched_active_power = dispatched_active_power[np.array(self.output_element_in_service)]
                 distribution = dispatched_active_power/sum(dispatched_active_power)
 
-            elif self.output_values_distribution == 'rel_rated_P': #proportional to the rated apparent power
+            elif self.output_values_distribution == 'rel_rated_S': #proportional to the rated apparent power
                 if self.output_element == 'sgen':
-                    logger.warning(f'The standard type attribute containing the rated apparent power for {self.output_element} is not yet implemented.')
-                #s_rated_mva = np.array(net.sgen.std_type[self.output_element_index]['mva']) #which value contains s rated power? how to get
-                logger.warning(f'{self.output_element} in Controller {self.index} has no defined standard type '
-                                   f'or specified rated apparent power, assuming 50 MVA\n')
-                distribution = np.full(np.sum(self.output_element_in_service), 50)
+                    logger.warning(f'The standard type attribute containing the rated apparent power for'
+                                   f' {self.output_element} is not yet implemented.')
+                try:
+                    s_rated_mva = np.array(net.sgen.loc[self.output_element_index, 'sn_mva']) #correct values? todo
+                    distribution = s_rated_mva
+                    if not all(isinstance(x, numbers.Number) for x in distribution):
+                        logger.warning(f'{self.output_element} in Controller {self.index} has no defined standard type '
+                                       f'or specified rated apparent power, assuming 50 MVA\n')
+                        distribution = np.full(np.sum(self.output_element_in_service), 50)
+                except KeyError:
+                    logger.warning(f'{self.output_element} in Controller {self.index} has no defined standard type '
+                                    f'or specified rated apparent power, assuming 50 MVA\n')
+                    distribution = np.full(np.sum(self.output_element_in_service), 50)
 
             elif self.output_values_distribution == 'set_Q': #individually set Q distribution
                 distribution = output_distribution_values_in_service
@@ -537,7 +545,7 @@ class BinarySearchControl(Controller):
                 #only consider active sgens who are within their limits
                 generators_to_consider = (x <= np.array(self.max_q_mvar)[self.output_element_in_service]) \
                                           & (x >= np.array(self.min_q_mvar)[self.output_element_in_service])
-                #get q for sgens
+                #get Q for sgens
                 total_distributable_q = ((np.sum(np.array(x)[generators_to_consider]) -
                                           np.sum(np.array(self.min_q_mvar)[self.output_element_in_service][generators_to_consider])) /
                                          (np.sum(np.array(self.max_q_mvar)[self.output_element_in_service][generators_to_consider]) -
@@ -545,8 +553,8 @@ class BinarySearchControl(Controller):
                 if np.isnan(total_distributable_q): #no distributable Q
                     total_distributable_q = 0
                 #calculate the qs for generators to be considered from total distributable Q
-                q_max_q = (total_distributable_q * np.array(self.max_q_mvar)[self.output_element_in_service][generators_to_consider] +
-                    np.array(self.min_q_mvar)[self.output_element_in_service][generators_to_consider]) / (1 + total_distributable_q)
+                q_max_q = ((total_distributable_q * np.array(self.max_q_mvar)[self.output_element_in_service][generators_to_consider] +
+                    np.array(self.min_q_mvar)[self.output_element_in_service][generators_to_consider]) / (1 + total_distributable_q))
                 ### output gens not to be considered run at max capacity, all others on calculated Q
                 #output values must be equal in length to distribution
                 if len(np.atleast_1d(q_max_q)) != len(atleast_1d(self.output_element_in_service)):
@@ -653,13 +661,13 @@ class BinarySearchControl(Controller):
                     and all(isinstance(x, numbers.Number) for x in self.output_values_distribution)) or
                         isinstance(self.output_values_distribution, numbers.Number)):#numbers
                     logger.warning(f'Controller {self.index}: Output_values_distribution must be string from available methods'
-                                   f' (rel_P, rel_rated_P, set_Q, max_Q or rel_V_pu). Using provided values with method set_Q\n')
+                                   f' (rel_P, rel_rated_S, set_Q, max_Q or rel_V_pu). Using provided values with method set_Q\n')
                     self.output_distribution_values = np.array(self.output_values_distribution)
                     self.output_values_distribution = 'set_Q'
                     distribution = self.output_distribution_values[np.array(self.output_element_in_service)]
                 else:
                     raise NotImplementedError(f"Controller {self.index}: Reactive power distribution method {self.output_values_distribution}"
-                                              f" not implemented available methods are (rel_P, rel_rated_P, set_Q, max_Q, rel_V_pu).")
+                                              f" not implemented available methods are (rel_P, rel_rated_S, set_Q, max_Q, rel_V_pu).")
             if self.output_values_distribution == 'max_Q': #max_Q and voltage gives the correct Qs for the gens
                 if sum(np.atleast_1d(generators_to_consider)) == 0:
                     values = (sum(x) - sum(distribution)) / len(np.atleast_1d(distribution))

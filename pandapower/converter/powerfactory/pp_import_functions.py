@@ -3736,7 +3736,7 @@ def create_stactrl(net, item):
         """if item.imode == 0:
             distribution_mode = 'rel_P' #according to active power
         elif item.imode ==1:
-            distribution_mode = 'rel_rated_P'  #according to maximum rated Power S of output elements
+            distribution_mode = 'rel_rated_S'  #according to maximum rated Power S of output elements
         elif item.imode == 2:
             distribution_mode = 'set_Q'""" #Individually set Q distribution values
         distribution_mode = 'imported' #simpler than handing over the values separately, also station controller handles cases differently

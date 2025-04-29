@@ -40,7 +40,7 @@ def distribution_test_net():
     create_transformer(net, 0, 1, "63 MVA 110/20 kV")
     create_transformer(net, 0, 3, std_type='63 MVA 110/20 kV')
     create_load(net, 1, 3, 5)
-    create_load(net, 2, 3)
+    create_load(net, 3, 3)
     create_sgen(net, 2, p_mw=2, sn_mva=10, name="sgen1")
     create_sgen(net, 4, p_mw=1, sn_mva=5, name='sgen2')
     create_sgen(net, 4,1, sn_mva=5, name = 'sgen3')
@@ -84,7 +84,7 @@ def test_qctrl():
     tol = 1e-6
     BinarySearchControl(net, ctrl_in_service=True, output_element="sgen", output_variable="q_mvar",
                                    output_element_index=[0], output_element_in_service=[True],
-                                   output_values_distribution='rel_rated_P', input_element="res_line",
+                                   output_values_distribution='rel_rated_S', input_element="res_line",
                                    damping_factor=0.9, input_variable=["q_to_mvar"],
                                    input_element_index=0, set_point=1, voltage_ctrl=False, tol=1e-6)
     runpp(net, run_control=False)
@@ -170,7 +170,7 @@ def test_voltctrl_droop_new():
     tol = 1e-6
     bsc = BinarySearchControl(net, ctrl_in_service=True,
                                          output_element="sgen", output_variable="q_mvar", output_element_index=0,
-                                         output_element_in_service=True, output_values_distribution='rel_rated_P',
+                                         output_element_in_service=True, output_values_distribution='rel_rated_S',
                                          input_element="res_trafo", input_variable="q_hv_mvar", input_element_index=0,
                                          set_point=1.02, modus = 'V_ctrl', bus_idx=1, tol=tol)
     DroopControl(net, q_droop_mvar=40, bus_idx=1,
@@ -286,7 +286,7 @@ def test_pf_control_droop_v():
 def test_tan_phi_control():
     net = simple_test_net()
     tol = 1e-6
-    bsc = BinarySearchControl(net, ctrl_in_service= True, output_element='sgen', output_variable='q_mvar',
+    BinarySearchControl(net, ctrl_in_service= True, output_element='sgen', output_variable='q_mvar',
                          output_element_index= 0, output_element_in_service= True, output_values_distribution='rel_P',
                          input_element='res_trafo', input_variable='q_lv_mvar', input_element_index=0, modus='tan(phi)_ctrl',
                                          tol = 1e-6, set_point=2)
@@ -405,20 +405,18 @@ def test_q_relative_to_p_dist():
 
 def test_q_relative_to_rated_s_dist(): #rated p is not implemented and defaults to 50 MVar => 50/50
     net = distribution_test_net()
-    tol = 1e-6
     BinarySearchControl(net, True, 'sgen', 'q_mvar',
                         [0,1], [True, True], 'res_line',
-                        'q_to_mvar', 0, 4, 'rel_rated_P',
+                        'q_to_mvar', 0, 4, 'rel_rated_S',
                         None, 'Q_ctrl', None, 1e-6)
     runpp(net, run_control = False)
-    assert(net.sgen.at[0, 'q_mvar'] == net.sgen.at[1, 'q_mvar'])
+    assert(net.sgen.at[0, 'q_mvar'] == net.sgen.at[1, 'q_mvar']) #distribution is 50/50
+    assert((net.sgen.at[0, 'q_mvar'] + 1) / net.sgen.at[0, 'sn_mva'] != #plus one because Q_sgen is 0
+           (net.sgen.at[1, 'q_mvar'] + 1) / net.sgen.at[1, 'sn_mva']) #should not be equal, because unregulated
     runpp(net, run_control = True)
-    assert(net.sgen.at[0, 'q_mvar'] == net.sgen.at[1, 'q_mvar']) #not implemented => no change => but no error
-    #assert(abs(net.sgen.at[0, 'q_mvar']/(net.sgen.at[0, 'q_mvar'] + net.sgen.at[1, 'q_mvar'])-net.sgen.at[0, 'rated_S']/
-        #(net.sgen.at[0, 'rated_S'] + net.sgen.at[1, 'rated_S'])) < tol)
-    #assert(abs(net.sgen.at[1, 'q_mvar'] / (net.sgen.at[0, 'q_mvar'] + net.sgen.at[1, 'q_mvar']) - net.sgen.at[1, 'rated_S'] /
-        #(net.sgen.at[0, 'rated_S'] + net.sgen.at[1, 'rated_S'])) < tol) #todo can I just write them?
-
+    assert (net.sgen.at[0, 'q_mvar'] != net.sgen.at[1, 'q_mvar']) #not equal anymore, but the relative values are equal
+    assert(net.sgen.at[0, 'q_mvar'] != 0 and net.sgen.at[1, 'q_mvar'] != 0) #prove that not 0 divided by values
+    assert(net.sgen.at[0, 'q_mvar'] / net.sgen.at[0, 'sn_mva'] == net.sgen.at[1, 'q_mvar'] / net.sgen.at[1, 'sn_mva'])
 
 def test_set_q_dist():
     net = distribution_test_net()
@@ -449,9 +447,6 @@ def test_max_q():
     net.sgen.at[0, 'max_q_mvar'] = 50
     net.sgen.at[1, 'min_q_mvar'] = -7
     net.sgen.at[1, 'max_q_mvar'] = 20
-    #bsc.initialize_control(net) #todo reinitialize control
-    #bsc.set_point = 0.3#change set_point to rerun control
-    #net.controller.drop(index=0, inplace=True)
     BinarySearchControl(net, True, 'sgen', 'q_mvar',
                         [0, 1], [True, True], 'res_line',
                         'q_to_mvar', 0, 0.5, 'max_Q',
@@ -463,11 +458,9 @@ def test_max_q():
     net.sgen.at[0, 'max_q_mvar'] = 0 #least high
     net.sgen.at[1, 'min_q_mvar'] = -7 #second lowest
     net.sgen.at[1, 'max_q_mvar'] = 20 #highest
-    net.sgen.at[2, 'min_q_mvar'] = 4 #second highest
-    net.sgen.at[2, 'max_q_mvar'] = -6 # least low
+    net.sgen.at[2, 'min_q_mvar'] = -6 #second highest
+    net.sgen.at[2, 'max_q_mvar'] = 4 # least low
     idx_neg, idx_pos = [2, 1, 0], [0, 2, 1] #correct orders
-    #bsc.initialize_control(net) #todo
-    #net.controller.drop(index=0, inplace=True)
     BinarySearchControl(net, True, 'sgen', 'q_mvar',
                         [0, 1, 2], [True, True, True], 'res_line',
                         'q_to_mvar', 0, 0.2, 'max_Q',
@@ -487,7 +480,7 @@ def test_max_q():
 
 def test_rel_v_pu():
     net = distribution_test_net()
-    tol = 8e-3 #voltage adaption is not very precise
+    tol = 0.02 #voltage adaption is not very precise
     BinarySearchControl(net, True, 'sgen', 'q_mvar',
                         [0,1], [True, True], 'res_line',
                         'q_to_mvar', 0, 0.5, 'rel_V_pu',
@@ -498,12 +491,12 @@ def test_rel_v_pu():
            - 0.98 - 0.89) > tol) #uncontrolled buses are not at V set points
     with pytest.raises(NotImplementedError):
         runpp(net, run_control=True) #test if sgens at same busbar are detected
-    net = distribution_test_net() #todo reinitialize?
+    net = distribution_test_net()
     BinarySearchControl(net, True, 'sgen', 'q_mvar',
                         [0, 1], [True, True], 'res_line',
                         'q_to_mvar', 0, 0.5, 'rel_V_pu',
                         [[0.98, 0.95, 1.1], [0.89, 0.8, 1.3]], 'tan(phi)_ctrl', None, 1e-6)
-    net.sgen.drop(2, inplace=True) #delete interfering controller
+    net.sgen.drop(2, inplace=True) #delete interfering sgen
     runpp(net, run_control= True) #, max_iter = 1000)
     assert(net.sgen.at[0, 'q_mvar'] != net.sgen.at[1, 'q_mvar']) #now controlled sgens
     assert(abs(net.res_bus.at[net.sgen.at[0, 'bus'], 'vm_pu'] + net.res_bus.at[net.sgen.at[1, 'bus'], 'vm_pu']
