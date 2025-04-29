@@ -28,6 +28,7 @@ SwitchType = Literal[
     "LBS",  # load break switch
     "DS",  # disconnecting switch
 ]
-TapChangerType = Literal["Ratio", "Symmetrical", "Ideal", "Tabular"]
+TapChangerType = Literal["Ratio", "Symmetrical", "Ideal"]
+TapChangerWithTabularType = Literal["Ratio", "Symmetrical", "Ideal", "Tabular"]
 UnderOverExcitedType = Literal["underexcited", "overexcited"]
 WyeDeltaType = Literal["wye", "delta"]
