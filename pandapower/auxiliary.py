@@ -1855,7 +1855,7 @@ def phase_to_sequence(Xabc: NDArray[NumpyDType]) -> NDArray[NumpyDType]:
 # Calculating Sequence Current from sequence Voltages
 # =============================================================================
 
-def I0_from_V012(V012, Y):
+def I0_from_V012(V012: NDArray[NumpyDType], Y: NDArray[NumpyDType]) -> NDArray[NumpyDType]:
     V0 = X012_to_X0(V012)
     if type(Y) in [sp.sparse.csr_matrix, sp.sparse.csc_matrix]:
         return np.asarray(np.matmul(Y.todense(), V0))
@@ -1863,7 +1863,7 @@ def I0_from_V012(V012, Y):
         return np.asarray(np.matmul(Y, V0))
 
 
-def I1_from_V012(V012, Y):
+def I1_from_V012(V012: NDArray[NumpyDType], Y: NDArray[NumpyDType]) -> NDArray[NumpyDType]:
     V1 = X012_to_X1(V012)[:, np.newaxis]
     if type(Y) in [sp.sparse.csr_matrix, sp.sparse.csc_matrix]:
         i1 = np.asarray(np.matmul(Y.todense(), V1))
@@ -1873,7 +1873,7 @@ def I1_from_V012(V012, Y):
         return np.transpose(i1)
 
 
-def I2_from_V012(V012, Y):
+def I2_from_V012(V012: NDArray[NumpyDType], Y: NDArray[NumpyDType]) -> NDArray[NumpyDType]:
     V2 = X012_to_X2(V012)
     if type(Y) in [sp.sparse.csr_matrix, sp.sparse.csc_matrix]:
         return np.asarray(np.matmul(Y.todense(), V2))
@@ -1881,7 +1881,7 @@ def I2_from_V012(V012, Y):
         return np.asarray(np.matmul(Y, V2))
 
 
-def V1_from_ppc(ppc):
+def V1_from_ppc(ppc: PyPowerNetwork) -> NDArray[NumpyDType]:
     return np.transpose(
         np.array(
             ppc["bus"][:, VM] * np.exp(1j * np.deg2rad(ppc["bus"][:, VA]))
@@ -1889,11 +1889,11 @@ def V1_from_ppc(ppc):
     )
 
 
-def V_from_I(Y, I):
+def V_from_I(Y: NDArray[NumpyDType], I: NDArray[NumpyDType]) -> NDArray[NumpyDType]:
     return np.transpose(np.array(sp.sparse.linalg.spsolve(Y, I)))
 
 
-def I_from_V(Y, V):
+def I_from_V(Y: Any, V: NDArray[NumpyDType]) -> NDArray[NumpyDType]:
     if type(Y) in [sp.sparse.csr.csr_matrix, sp.sparse.csc.csc_matrix]:
         return np.asarray(np.matmul(Y.todense(), V))
     else:
@@ -1904,11 +1904,11 @@ def I_from_V(Y, V):
 # Calculating Power
 # =============================================================================
 
-def S_from_VI_elementwise(V, I):
+def S_from_VI_elementwise(V: NDArray[NumpyDType], I: NDArray[NumpyDType]) -> NDArray[NumpyDType]:
     return np.multiply(V, I.conjugate())
 
 
-def I_from_SV_elementwise(S, V):
+def I_from_SV_elementwise(S: NDArray[NumpyDType], V: NDArray[NumpyDType]) -> NDArray[NumpyDType]:
     return np.conjugate(np.divide(S, V, out=np.zeros_like(S), where=V != 0))  # Return zero if div by zero
 
 
