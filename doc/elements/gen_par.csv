@@ -6,18 +6,19 @@ type;string;"| naming conventions:
 ";type variable to classify generators
 bus*;integer;;index of connected bus
 p_mw*;float;:math:`\leq` 0;the real power of the generator [MW]
-vm_pu*;float;;voltage set point of the generator [p.u]
+vm_pu*;float;;voltage set point of the generator [p.u.]
 sn_mva;float;:math:`>` 0;nominal power of the generator [MVA]
-min_q_mvar;float;;minimal reactive power of the generator [MVar]
-max_q_mvar;float;;maximal reactive power of the generator [MVar]
+max_q_mvar**;float;;maximum reactive power of the generator [MVAr]
+min_q_mvar**;float;;minimum reactive power of the generator [MVAr]
 scaling*;float;:math:`\leq` 0;scaling factor for the active power
-max_p_mw**;float;;Maximum active power
-min_p_mw**;float;;Minimum active power
-max_q_mvar**;float;;Maximum reactive power
-min_q_mvar**;float;;Minimum reactive power
-vn_kv***;float;;Rated voltage of the generator
-xdss_pu***;float;:math:`>` 0;Subtransient generator reactance in per unit
-rdss_ohm***;float;:math:`>` 0;Subtransient generator resistence in ohm
-cos_phi***;float;:math:`0 \leq` 1;Rated generator cosine phi
+max_p_mw**;float;;maximum active power
+min_p_mw**;float;;minimum active power
+vn_kv***;float;;rated voltage of the generator
+xdss_pu***;float;:math:`>` 0;subtransient generator reactance in per unit
+rdss_ohm***;float;:math:`>` 0;subtransient generator resistence in ohm
+cos_phi***;float;:math:0 `\leq` 1;rated generator cosine phi
 in_service*;boolean;True / False;specifies if the generator is in service
-power_station_trafo*;integer;;index of the power station trafo (short-circuit relevant).
+power_station_trafo***;integer;;index of the power station trafo (short-circuit relevant)
+id_q_capability_curve_characteristic;integer;;references the index of the characteristic from the q_capability_curve_characteristic
+curve_style;string;either "straightLineYValues" or "constantYValue";the style of the generator reactive power capability curve
+reactive_capability_curve;boolean;True / False;True if generator has dependency on q characteristic
