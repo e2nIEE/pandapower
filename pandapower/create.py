@@ -82,10 +82,13 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                  ("bus", "i8"),
                  ("p_mw", "f8"),
                  ("q_mvar", "f8"),
+                 ("min_q_mvar","f8"),
+                 ("max_q_mvar", "f8"),
                  ("sn_mva", "f8"),
                  ("scaling", "f8"),
-                 ('id_q_capability_curve_table', 'u4'),
-                 ('curve_dependency_table', 'bool'),
+                 ("controllable", "bool"),
+                 ('id_q_capability_curve_characteristic', 'u4'),
+                 ('reactive_capability_curve', 'bool'),
                  ('curve_style', dtype(object)),
                  ("in_service", 'bool'),
                  ("type", dtype(object)),
@@ -150,8 +153,9 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                 ("max_q_mvar", "f8"),
                 ("scaling", "f8"),
                 ("slack", "bool"),
-                ('id_q_capability_curve_table', 'u4'),
-                ('curve_dependency_table', 'bool'),
+                ("controllable", "bool"),
+                ('id_q_capability_curve_characteristic', 'u4'),
+                ('reactive_capability_curve', 'bool'),
                 ('curve_style', dtype(object)),
                 ("in_service", 'bool'),
                 ("slack_weight", 'f8'),
@@ -211,7 +215,8 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                      ("vm_pu", "f8"),
                      ("va_degree", "f8"),
                      ("slack_weight", 'f8'),
-                     ("in_service", 'bool')],
+                     ("in_service", 'bool'),
+                     ("controllable", "bool")],
         "line": [("name", dtype(object)),
                  ("std_type", dtype(object)),
                  ("from_bus", "u4"),
@@ -1316,9 +1321,9 @@ def create_load_from_cosphi(net, bus, sn_mva, cos_phi, mode, **kwargs):
 
 def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
                 scaling=1., type='wye', in_service=True, max_p_mw=nan, min_p_mw=nan,
-                max_q_mvar=nan, min_q_mvar=nan, controllable=nan, k=nan, rx=nan, id_q_capability_curve_table=None,
-                curve_dependency_table=False, curve_style=None, current_source=True, generator_type=None,
-                max_ik_ka=nan, kappa=nan, lrc_pu=nan, **kwargs):
+                max_q_mvar=nan, min_q_mvar=nan, controllable=nan, k=nan, rx=nan,
+                id_q_capability_curve_characteristic=None, reactive_capability_curve=False, curve_style=None,
+                current_source=True, generator_type=None, max_ik_ka=nan, kappa=nan, lrc_pu=nan, **kwargs):
     """
     Adds one static generator in table net["sgen"].
 
@@ -1348,7 +1353,7 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
         **index** (int, None) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
 
-        **scaling** (float, 1.) - An OPTIONAL scaling factor to be set customly.
+        **scaling** (float, 1.) - An optional scaling factor to be set customly.
         Multiplies with p_mw and q_mvar.
 
         **type** (string, None) -  Three phase Connection type of the static generator: wye/delta
@@ -1376,17 +1381,18 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
             specified as motor so that sgen is treated as asynchronous motor. Relevant for \
             short-circuit calculation for all generator types
 
-        **curve_dependency_table** (bool, NaN) - True if both the id_q_capability_curve_table and the curve style\
-         are present in the generator.
+        **reactive_capability_curve** (bool, False) - True if both the id_q_capability_curve_characteristic and the
+            curve style are present in the generator
 
-        **id_q_capability_curve_table** (int, None) - references the index of the characteristic from the lookup table \
-        net.q_capability_curve_table
+        **id_q_capability_curve_characteristic** (int, None) - references the index of the characteristic from the
+            net.q_capability_curve_characteristic table (id_q_capability_curve column)
 
         **curve_style** (string, None) - The curve style of the generator represents the relationship \
-        between active power (P) and reactive power (Q). It indicates whether the reactive power remains \
-        constant as the active power changes or varies dynamically in response to it.
+            between active power (P) and reactive power (Q). It indicates whether the reactive power remains \
+            constant as the active power changes or varies dynamically in response to it, \
+            e.g. "straightLineYValues" and "constantYValue"
 
-        **generator_type** (str, "None") - can be one of "current_source" \
+        **generator_type** (str, None) - can be one of "current_source" \
             (full size converter), "async" (asynchronous generator), or "async_doubly_fed"\
             (doubly fed asynchronous generator, DFIG). Represents the type of the static \
             generator in the context of the short-circuit calculations of wind power station units. \
@@ -1395,13 +1401,13 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
         **lrc_pu** (float, nan) - locked rotor current in relation to the rated generator \
             current. Relevant if the generator_type is "async".
 
-        **max_ik_ka (float, nan)** - the highest instantaneous short-circuit value in case \
+        **max_ik_ka** (float, nan) - the highest instantaneous short-circuit value in case \
             of a three-phase short-circuit (provided by the manufacturer). Relevant if the \
             generator_type is "async_doubly_fed".
 
-        **kappa (float, nan)** - the factor for the calculation of the peak short-circuit \
+        **kappa** (float, nan) - the factor for the calculation of the peak short-circuit \
             current, referred to the high-voltage side (provided by the manufacturer). \
-            Relevant if the generator_type is "async_doubly_fed".
+            Relevant if the generator_type is "async_doubly_fed". \
             If the superposition method is used (use_pre_fault_voltage=True), this parameter \
             is used to pass through the max. current limit of the machine in p.u.
 
@@ -1433,11 +1439,11 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
     _set_value_if_not_nan(net, index, controllable, "controllable", "sgen", dtype=bool_,
                           default_val=False)
 
-    _set_value_if_not_nan(net, index, id_q_capability_curve_table, "id_q_capability_curve_table", "sgen",
-                          dtype= "Int64")
+    _set_value_if_not_nan(net, index, id_q_capability_curve_characteristic,
+                          "id_q_capability_curve_characteristic", "sgen", dtype="Int64")
 
-    _set_value_if_not_nan(net, index, curve_dependency_table, "curve_dependency_table", "sgen",
-                          dtype= bool_)
+    _set_value_if_not_nan(net, index, reactive_capability_curve, "reactive_capability_curve", "sgen",
+                          dtype=bool_)
 
     _set_value_if_not_nan(net, index, curve_style, "curve_style", "sgen", dtype=object, default_val=None)
 
@@ -1461,9 +1467,9 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
 
 def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
                  scaling=1., type='wye', in_service=True, max_p_mw=nan, min_p_mw=nan,
-                 max_q_mvar=nan, min_q_mvar=nan, controllable=nan, k=nan, rx=nan, id_q_capability_curve_table=nan,
-                 curve_dependency_table=False, curve_style=None, current_source=True, generator_type="current_source",
-                 max_ik_ka=nan, kappa=nan, lrc_pu=nan, **kwargs):
+                 max_q_mvar=nan, min_q_mvar=nan, controllable=nan, k=nan, rx=nan,
+                 id_q_capability_curve_characteristic=nan, reactive_capability_curve=False, curve_style=None,
+                 current_source=True, generator_type="current_source", max_ik_ka=nan, kappa=nan, lrc_pu=nan, **kwargs):
     """
     Adds a number of sgens in table net["sgen"].
 
@@ -1522,29 +1528,30 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
             specified as motor so that sgen is treated as asynchronous motor. Relevant for \
             short-circuit calculation for all generator types
 
-        **curve_dependency_table** (bool, NaN) - True if both the id_q_capability_curve_table and the curve style\
-            are present in the generator.
+        **reactive_capability_curve** (list of bools, False) - True if both the id_q_capability_curve_characteristic \
+        and the curve style are present in the generator.
 
-        **id_q_capability_curve_table** (int, None) - references the index of the characteristic from the lookup table \
-            net.q_capability_curve_table
+        **id_q_capability_curve_characteristic** (list of ints, None) - references the index of the characteristic \
+        from the lookup table net.q_capability_curve_characteristic e.g. 0, 1, 2, 3
 
-        **curve_style** (string, None) - The curve style of the generator represents the relationship \
+        **curve_style** (list of strings, None) - The curve style of the generator represents the relationship \
            between active power (P) and reactive power (Q). It indicates whether the reactive power remains \
            constant as the active power changes or varies dynamically in response to it.
+           e.g. "straightLineYValues" and "constantYValue"
 
-        **generator_type** (str, "current_source") - can be one of "current_source" \
+        **generator_type** (list of strings, "current_source") - can be one of "current_source" \
             (full size converter), "async" (asynchronous generator), or "async_doubly_fed"\
             (doubly fed asynchronous generator, DFIG). Represents the type of the static \
             generator in the context of the short-circuit calculations of wind power station units
 
-        **lrc_pu** (float, nan) - locked rotor current in relation to the rated generator \
+        **lrc_pu** (list of float, nan) - locked rotor current in relation to the rated generator \
             current. Relevant if the generator_type is "async".
 
-        **max_ik_ka (float, nan)** - the highest instantaneous short-circuit value in case \
+        **max_ik_ka** (list of float, nan) - the highest instantaneous short-circuit value in case \
             of a three-phase short-circuit (provided by the manufacturer). Relevant if the \
             generator_type is "async_doubly_fed".
 
-        **kappa (float, nan)** - the factor for the calculation of the peak short-circuit \
+        **kappa** (list of float, nan) - the factor for the calculation of the peak short-circuit \
             current, referred to the high-voltage side (provided by the manufacturer). \
             Relevant if the generator_type is "async_doubly_fed".
 
@@ -1564,9 +1571,8 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
     index = _get_multiple_index_with_check(net, "sgen", index, len(buses))
 
     entries = {"bus": buses, "p_mw": p_mw, "q_mvar": q_mvar, "sn_mva": sn_mva, "scaling": scaling,
-               "in_service": in_service, "name": name, "type": type,
-               'current_source': current_source, "curve_dependency_table":curve_dependency_table,
-               "curve_style":curve_style}
+               "in_service": in_service, "name": name, "type": type, "current_source": current_source,
+               "reactive_capability_curve": reactive_capability_curve, "curve_style": curve_style}
 
     _add_to_entries_if_not_nan(net, "sgen", entries, index, "min_p_mw", min_p_mw)
     _add_to_entries_if_not_nan(net, "sgen", entries, index, "max_p_mw", max_p_mw)
@@ -1584,8 +1590,8 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
     gen_type_match = pd.concat([entries["generator_type"] == match for match in gen_types], axis=1,
                                keys=gen_types)
 
-    _add_to_entries_if_not_nan(net, "gen", entries, index, "id_q_capability_curve_table",
-                               id_q_capability_curve_table, dtype="Int64")
+    _add_to_entries_if_not_nan(net, "sgen", entries, index, "id_q_capability_curve_characteristic",
+                               id_q_capability_curve_characteristic, dtype="Int64")
 
     if gen_type_match["current_source"].any():
         _add_to_entries_if_not_nan(net, "sgen", entries, index, "k", k)
@@ -1597,7 +1603,7 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
         raise UserWarning(f"unknown sgen generator_type '{generator_type}'! "
                           f"Must be one of: None, 'current_source', 'async', 'async_doubly_fed'")
 
-    defaults_to_fill = [("controllable", False),('curve_dependency_table', False),("curve_style", None)]
+    defaults_to_fill = [("controllable", False), ('reactive_capability_curve', False), ("curve_style", None)]
     _set_multiple_entries(net, "sgen", index, defaults_to_fill=defaults_to_fill, **entries,
                           **kwargs)
 
@@ -1895,9 +1901,9 @@ def create_storages(
 
 def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_q_mvar=nan,
                min_q_mvar=nan, min_p_mw=nan, max_p_mw=nan, min_vm_pu=nan, max_vm_pu=nan,
-               scaling=1., type=None, slack=False, id_q_capability_curve_table=None, curve_dependency_table=False,
-               curve_style=None, controllable=nan, vn_kv=nan, xdss_pu=nan, rdss_ohm=nan, cos_phi=nan, pg_percent=nan,
-               power_station_trafo=nan, in_service=True, slack_weight=0.0, **kwargs):
+               scaling=1., type=None, slack=False, id_q_capability_curve_characteristic=None,
+               reactive_capability_curve=False, curve_style=None, controllable=nan, vn_kv=nan, xdss_pu=nan, rdss_ohm=nan,
+               cos_phi=nan, pg_percent=nan, power_station_trafo=nan, in_service=True, slack_weight=0.0, **kwargs):
     """
     Adds a generator to the network.
 
@@ -1922,27 +1928,27 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
         **index** (int, None) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
 
-        **scaling** (float, 1.0) - scaling factor which for the active power of the generator
+        **scaling** (float, 1.0) - scaling factor applying to the active power of the generator
 
         **type** (string, None) - type variable to classify generators
 
-        **curve_dependency_table** (bool, NaN) - True if both the id_q_capability_curve_table and the curve style\
-         are present in the generator.
+        **reactive_capability_curve** (bool, False) - True if both the id_q_capability_curve_characteristic and the
+            curve style are present in the generator
 
-        **id_q_capability_curve_table** (int, None) - references the index of the characteristic from the lookup table \
-            net.q_capability_curve_table
+        **id_q_capability_curve_characteristic** (int, None) - references the index of the characteristic from
+            the net.q_capability_curve_characteristic table (id_q_capability_curve column)
 
         **curve_style** (string, None) - The curve style of the generator represents the relationship \
-        between active power (P) and reactive power (Q). It indicates whether the reactive power remains \
-        constant as the active power changes or varies dynamically in response to it.
+            between active power (P) and reactive power (Q). It indicates whether the reactive power remains \
+            constant as the active power changes or varies dynamically in response to it, \
+            e.g. "straightLineYValues" and "constantYValue".
 
         **controllable** (bool, NaN) - True: p_mw, q_mvar and vm_pu limits are enforced for this \
-                generator in OPF
-                False: p_mw and vm_pu set points are enforced and *limits are ignored*.
-                defaults to True if "controllable" column exists in DataFrame
+                generator in OPF; False: p_mw and vm_pu set points are enforced and *limits are ignored*. \
+                Defaults to True if "controllable" column exists in DataFrame.
 
-        **slack_weight** (float, default 0.0) - Contribution factor for distributed slack power
-        flow calculation (active power balancing)
+        **slack_weight** (float, default 0.0) - Contribution factor for distributed slack power \
+            flow calculation (active power balancing)
 
         **vn_kv** (float, NaN) - Rated voltage of the generator for short-circuit calculation
 
@@ -1968,13 +1974,11 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
 
         **min_q_mvar** (float, default NaN) - Minimum reactive power injection - necessary for OPF
 
-        **min_vm_pu** (float, default NaN) - Minimum voltage magnitude. If not set the bus voltage \
-                                             limit is taken.
-                                           - necessary for OPF.
+        **min_vm_pu** (float, default NaN) - Minimum voltage magnitude. If not set, the bus voltage \
+                                             limit is taken - necessary for OPF.
 
-        **max_vm_pu** (float, default NaN) - Maximum voltage magnitude. If not set the bus voltage\
-                                              limit is taken.
-                                            - necessary for OPF
+        **max_vm_pu** (float, default NaN) - Maximum voltage magnitude. If not set, the bus voltage \
+                                             limit is taken - necessary for OPF
 
     OUTPUT:
         **index** (int) - The unique ID of the created generator
@@ -1999,12 +2003,13 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
                           dtype=bool_, default_val=True)
 
     # id for q capability curve table
-    _set_value_if_not_nan(net, index, id_q_capability_curve_table, "id_q_capability_curve_table", "gen", dtype="Int64")
+    _set_value_if_not_nan(net, index, id_q_capability_curve_characteristic,
+                          "id_q_capability_curve_characteristic", "gen", dtype="Int64")
 
     # behaviour of reactive power capability curve
     _set_value_if_not_nan(net, index, curve_style, "curve_style", "gen", dtype=object, default_val=None)
 
-    _set_value_if_not_nan(net, index, curve_dependency_table, "curve_dependency_table", "gen", dtype=bool_)
+    _set_value_if_not_nan(net, index, reactive_capability_curve, "reactive_capability_curve", "gen", dtype=bool_)
 
     # P limits for OPF if controllable == True
     _set_value_if_not_nan(net, index, min_p_mw, "min_p_mw", "gen")
@@ -2030,9 +2035,9 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
 
 def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_q_mvar=nan,
                 min_q_mvar=nan, min_p_mw=nan, max_p_mw=nan, min_vm_pu=nan, max_vm_pu=nan,
-                scaling=1., type=None, slack=False, id_q_capability_curve_table=nan, curve_dependency_table=False,
-                curve_style=None, controllable=nan, vn_kv=nan, xdss_pu=nan, rdss_ohm=nan, cos_phi=nan, pg_percent=nan,
-                power_station_trafo=nan, in_service=True, slack_weight=0.0, **kwargs):
+                scaling=1., type=None, slack=False, id_q_capability_curve_characteristic=nan,
+                reactive_capability_curve=False, curve_style=None, controllable=nan, vn_kv=nan, xdss_pu=nan, rdss_ohm=nan,
+                cos_phi=nan, pg_percent=nan, power_station_trafo=nan, in_service=True, slack_weight=0.0, **kwargs):
     """
     Adds generators to the specified buses network.
 
@@ -2062,17 +2067,18 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
 
         **type** (list of string, None) - type variable to classify generators
 
-        **curve_dependency_table** (bool, NaN) - True if both the id_q_capability_curve_table and the curve style\
-         are present in the generator.
+        **reactive_capability_curve** (list of bools, False) - True if both the id_q_capability_curve_characteristic and
+        the curve style are present in the generator.
 
-        **id_q_capability_curve_table** (int, None) - references the index of the characteristic from the lookup table \
-            net.q_capability_curve_table
+        **id_q_capability_curve_characteristic** (list of ints, None) - references the index of the characteristic from
+            the lookup table net.q_capability_curve_characteristic e.g. 0, 1, 2, 3
 
-        **curve_style** (string, None) - The curve style of the generator represents the relationship \
+        **curve_style** (list of strings, None) - The curve style of the generator represents the relationship \
         between active power (P) and reactive power (Q). It indicates whether the reactive power remains \
         constant as the active power changes or varies dynamically in response to it.
+        e.g. "straightLineYValues" and "constantYValue"
 
-        **controllable** (bool, NaN) - True: p_mw, q_mvar and vm_pu limits are enforced for this \
+        **controllable** (list of bool, NaN) - True: p_mw, q_mvar and vm_pu limits are enforced for this \
                                        generator in OPF
                                        False: p_mw and vm_pu set points are enforced and \
                                        *limits are ignored*.
@@ -2091,15 +2097,15 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
         **cos_phi** (list of float, NaN) - Rated cosine phi of the generator for short-circuit \
             calculation
 
-        **pg_percent** (float, NaN) - Rated pg (voltage control range) of the generator for \
+        **pg_percent** (list of float, NaN) - Rated pg (voltage control range) of the generator for \
             short-circuit calculation
 
-        **power_station_trafo** (int, NaN) - Index of the power station transformer for \
+        **power_station_trafo** (list of int, NaN) - Index of the power station transformer for \
             short-circuit calculation
 
-        **in_service** (bool, True) - True for in_service or False for out of service
+        **in_service** (list of bool, True) - True for in_service or False for out of service
 
-        **slack_weight** (float, default 0.0) - Contribution factor for distributed slack power \
+        **slack_weight** (list of float, default 0.0) - Contribution factor for distributed slack power \
             flow calculation (active power balancing)
 
         **max_p_mw** (list of float, default NaN) - Maximum active power injection - necessary for\
@@ -2135,7 +2141,7 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
 
     entries = {"bus": buses, "p_mw": p_mw, "vm_pu": vm_pu, "sn_mva": sn_mva, "scaling": scaling,
                "in_service": in_service, "slack_weight": slack_weight, "name": name, "type": type,
-               "slack": slack, "curve_style":curve_style, "curve_dependency_table":curve_dependency_table}
+               "slack": slack, "curve_style": curve_style, "reactive_capability_curve": reactive_capability_curve}
 
     _add_to_entries_if_not_nan(net, "gen", entries, index, "min_p_mw", min_p_mw)
     _add_to_entries_if_not_nan(net, "gen", entries, index, "max_p_mw", max_p_mw)
@@ -2148,21 +2154,20 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
     _add_to_entries_if_not_nan(net, "gen", entries, index, "xdss_pu", xdss_pu)
     _add_to_entries_if_not_nan(net, "gen", entries, index, "rdss_ohm", rdss_ohm)
     _add_to_entries_if_not_nan(net, "gen", entries, index, "pg_percent", pg_percent)
-    _add_to_entries_if_not_nan(net, "gen", entries, index, "id_q_capability_curve_table",
-                               id_q_capability_curve_table, dtype="Int64")
+    _add_to_entries_if_not_nan(net, "gen", entries, index, "id_q_capability_curve_characteristic",
+                               id_q_capability_curve_characteristic, dtype="Int64")
 
-    _add_to_entries_if_not_nan(net, "gen", entries, index, "curve_dependency_table",
-                               curve_dependency_table, dtype=bool_)
+    _add_to_entries_if_not_nan(net, "gen", entries, index, "reactive_capability_curve",
+                               reactive_capability_curve, dtype=bool_)
 
     _add_to_entries_if_not_nan(net, "gen", entries, index, "power_station_trafo",
                                power_station_trafo, dtype="Int64")
     _add_to_entries_if_not_nan(net, "gen", entries, index, "controllable", controllable, dtype=bool_,
                                default_val=True)
-    defaults_to_fill = [("controllable", True), ('curve_dependency_table', False),("curve_style", None)]
+    defaults_to_fill = [("controllable", True), ('reactive_capability_curve', False), ("curve_style", None)]
 
     _set_multiple_entries(net, "gen", index, defaults_to_fill=defaults_to_fill, **entries,
                           **kwargs)
-
 
     return index
 
@@ -2320,7 +2325,7 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
     _set_value_if_not_nan(net, index, min_q_mvar, "min_q_mvar", "ext_grid")
     _set_value_if_not_nan(net, index, max_q_mvar, "max_q_mvar", "ext_grid")
     _set_value_if_not_nan(net, index, controllable, "controllable", "ext_grid",
-                          dtype=bool_, default_val=True)
+                          dtype=bool_, default_val=False)
     # others
     _set_value_if_not_nan(net, index, x0x_max, "x0x_max", "ext_grid")
     _set_value_if_not_nan(net, index, r0x0_max, "r0x0_max", "ext_grid")
