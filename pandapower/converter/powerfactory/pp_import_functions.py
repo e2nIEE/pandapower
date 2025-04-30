@@ -1996,7 +1996,7 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
             params.type = cat
 
         # create...
-        pstac = item.c_pstac  # "None" if station controller is not available
+        pstac = item.c_pstac  # None if station controller is not available
         if pstac is not None and not pstac.outserv and export_ctrl:
             if pstac.i_droop:
                 av_mode = 'constq'
@@ -2227,7 +2227,7 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
         p_mw = ngnum * item.pgini * multiplier
 
         pstac = item.c_pstac
-        # "None" if station controller is not available
+        # None if station controller is not available
         if pstac is not None and not pstac.outserv and export_ctrl:
             if pstac.i_droop:
                 av_mode = 'constq'
@@ -2738,7 +2738,7 @@ def create_trafo_characteristics_from_measurement_protocol(item, net, pf_type):
     elif pf_type.tapchtype == 2:
         tap_changer_type = "Ideal"
     else:
-        tap_changer_type = "None"
+        tap_changer_type = None
     tap_dependency_table = True
     id_characteristic_table = new_id_characteristic_table
     return id_characteristic_table, tap_changer_type, tap_dependency_table, tap_side
