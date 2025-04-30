@@ -52,6 +52,7 @@ class TrafoController(Controller):
         self.tol = tol
         self.set_recycle(net)
         self.trafobus = read_from_net(net, self.element, self.element_index, self.side + '_bus', self._read_write_flag)
+        
         # write kwargs in self
         for key, value in kwargs.items():
             setattr(self, key, value)
