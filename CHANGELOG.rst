@@ -4,6 +4,9 @@ Change Log
 [upcoming release] - 2025-..-..
 -------------------------------
 - [ADDED] PF2PP conversion by considering tap dependent impedance
+- [ADDED] pf2pp converter - added columns `origin_id` in multiple equipment (ext_net, coup, load, (s)gen, shunts, zpu, vac, svc)
+- [FIXED] pf2pp converter - trafo characteristic: Fixed tap changer type and included an if-clause that removes the zero sequence components in measurement report (for now)
+- [FIXED] corrected implementation of tap changer at star point with tap changer tables
 - [ADDED] cim2pp converter - extract 'controlenabled' flag from CGMES SSH profile and populate 'controllable' flag for gen and sgen elements
 - [ADDED] add function to determine qmin and qmax based on current active power in build_gen and update the dataframe with the determined values
 - [ADDED] parameter include_type_id to dump_to_geojson, to produce geojson features without the pp_index and pp_type field

@@ -3,6 +3,7 @@ import pandas as pd
 
 import os
 import pytest
+from numpy.ma.testutils import assert_array_equal
 
 from pandapower.converter.powerfactory.validate import validate_pf_conversion
 from pandapower.converter.powerfactory.export_pfd_to_pp import import_project, from_pfd
@@ -162,6 +163,52 @@ def test_pf_export_tap_changer():
         'diff_vm': 5e-3,
         'diff_va': 0.1,
         'trafo_diff': 1e-2,
+        'load_p_diff_is': 1e-5,
+        'load_q_diff_is': 1e-5,
+        'ext_grid_p_diff': 0.1,
+        'ext_grid_q_diff': 0.1
+    }
+
+    for key, diff in all_diffs.items():
+        if type(diff) == pd.Series:
+            delta = diff.abs().max()
+        else:
+            delta = diff['diff'].abs().max()
+        assert delta < tol[key], "%s has too high difference: %f > %f" % (key, delta, tol[key])
+
+@pytest.mark.skipif(not PF_INSTALLED, reason='powerfactory must be installed')
+def test_pf_export_q_capability_curve():
+    app = pf.GetApplication("LO3195", "Gbhai001GBHAI!")
+    # import the tap changer test grid to powerfactory
+    path = os.path.join(pp_dir, 'test', 'converter', 'q_capabiltiy_curve.pfd')
+    prj = import_project(path, app, 'TEST_PF_CONVERTER', import_folder='TEST_IMPORT', clear_import_folder=True)
+    prj_name = prj.GetFullName()
+
+    net = from_pfd(app, prj_name=prj_name)
+
+    assert len(net['q_capability_curve_table']) == 12
+    assert len(net['q_capability_curve_characteristic']) == 1
+    assert net['q_capability_curve_characteristic']['q_max_characteristic'].notna().all()
+    assert net['q_capability_curve_characteristic']['q_min_characteristic'].notna().all()
+    assert_array_equal( np.hstack( net.q_capability_curve_table.p_mw), np.array(
+        [-331.01001, -298.0, -198.0, -66.2000, -0.1, 0, 0.1, 66.200, 100, 198.00, 298.00, 331.0100]))
+    assert_array_equal( np.hstack(net.q_capability_curve_table.q_min_mvar), np.array(
+        [-0.0100, -134.0099, -265.01001, -323.01001, -323.0100, -323.0100, -323.0100, -323.0100, 0, -265.01001,
+         -134.00999, -0.01000]
+    ))
+    assert_array_equal(np.hstack(net.q_capability_curve_table.q_max_mvar), np.array(
+        [0.01000, 134.00900,  228.00999, 257.01001, 261.01000, 261.01000, 261.01000, 257.01000, 30, 40, 134.0099, 0.01]
+    ))
+
+    all_diffs = validate_pf_conversion(net, tolerance_mva=1e-9, enforce_q_lims=True)
+
+    tol = {
+        'diff_vm': 5e-3,
+        'diff_va': 0.1,
+        'trafo_diff': 1e-2,
+        'line_diff': 1e-2,
+        'gen_p_diff_is': 1e-5,
+        'gen_q_diff_is': 1e-5,
         'load_p_diff_is': 1e-5,
         'load_q_diff_is': 1e-5,
         'ext_grid_p_diff': 0.1,
