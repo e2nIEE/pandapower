@@ -55,7 +55,10 @@ class TrafoController(Controller):
   
          # write kwargs in self
         for key, value in kwargs.items():
-            setattr(self, key, value)
+            if key=="vm_set_pu":
+                continue
+            else:
+                setattr(self, key, value)
 
     def _set_read_write_flag(self, net):
         # if someone changes indices of the controller from single index to array and vice versa
