@@ -926,8 +926,8 @@ def test_sc_lg_impedance():
                        rx_max=0.1, x0x_max=1, r0x0_max=0.1,
                        rx_min=0.1, x0x_min=1, r0x0_min=0.1)
     pp.create_impedance(net, 0, 1, rft_pu=0.2, xft_pu=0.4, sn_mva=50, rtf_pu=0.25, xtf_pu=0.5,
-                        rft0_pu=0.1, xft0_pu=0.2, rtf0_pu=0.05, xtf0_pu=0.1)
-
+                        rft0_pu=0.1, xft0_pu=0.2, rtf0_pu=0.05, xtf0_pu=0.1, gf0_pu=0, bf0_pu=0, gt0_pu=0, bt0_pu=0)
+    #ToDo gf0_pu=0, bf0_pu=0, gt0_pu=0, bt0_pu=0 correct values test
     sc.calc_sc(net, fault="LG")
 
     assert np.allclose(net.res_bus_sc.ikss_ka, [5.248639, 0.625166], rtol=0, atol=1e-6)

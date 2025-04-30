@@ -982,11 +982,13 @@ def _add_motor_impedances_ppc(net, ppc):
     ppc["bus"][buses, BS] += bs
 
 
-def _add_load_sc_impedances_ppc(net, ppc):
+def _add_load_sc_impedances_ppc(net, ppc, relevant_elements=None):
     baseMVA = ppc["baseMVA"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
 
     for element_type, sign in (("sgen", -1), ("load", 1)):
+        if relevant_elements is not None and element_type not in relevant_elements:
+            continue
 
         element = net[element_type][net._is_elements[element_type]]
 

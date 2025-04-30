@@ -4,6 +4,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import copy
 import warnings
+# warnings.simplefilter('always', DeprecationWarning)
 from pandapower.build_bus import _add_load_sc_impedances_ppc
 
 try:
@@ -120,9 +121,9 @@ def calc_sc(net, bus=None,
         print(net.res_bus_sc)
     """
     if fault in ["3ph", "2ph", "1ph", "2ph-g"]:
-        warnings.warn(DeprecationWarning(
-            "Short-circuit fault types 3ph, 2ph, 2ph-g and 1ph have been renamed to LLL, LL, LLG and LG, "
-            "please use the new naming convention as the old convention will be removed in future pandapower versions."))
+        msg = ("Short-circuit fault types 3ph, 2ph, 2ph-g and 1ph have been renamed to LLL, LL, LLG and LG, "
+            "please use the new naming convention as the old convention will be removed in future pandapower versions.")
+        warnings.warn(msg, DeprecationWarning)
         mapping = {"3ph": "LLL", "2ph": "LL", "1ph": "LG", "2ph-g": "LLG"}
         fault = mapping[fault]
 
