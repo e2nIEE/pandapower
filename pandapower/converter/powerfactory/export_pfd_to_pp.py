@@ -57,7 +57,7 @@ def from_pfd(app, prj_name: str, path_dst=None, pv_as_slack=False, pf_variable_p
     net = from_pf(dict_net=dict_net, pv_as_slack=pv_as_slack, pf_variable_p_loads=pf_variable_p_loads,
                   pf_variable_p_gen=pf_variable_p_gen, flag_graphics=flag_graphics, tap_opt=tap_opt,
                   export_controller=export_controller, handle_us=handle_us, is_unbalanced=is_unbalanced,
-                  create_sections=create_sections)
+                  create_sections=create_sections, fault_type=sc_type)
     # save a flag, whether the PowerFactory load flow failed
     app.SetAttributeModeInternal(0)
     net["pf_converged"] = not pf_load_flow_failed
