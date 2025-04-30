@@ -236,6 +236,7 @@ class BinarySearchControl(Controller):
         for output_index in self.output_element_index:
             try:
                 min_q = read_from_net(net, self.output_element, output_index, 'min_q_mvar', 'single_index')
+                assert(np.isnan(min_q) == False) # error if nan
             except Exception as e:
                 logger.error(e)
                 logger.warning(
@@ -244,6 +245,7 @@ class BinarySearchControl(Controller):
                 min_q = -20
             try:
                 max_q = read_from_net(net, self.output_element, output_index, 'max_q_mvar', 'single_index')
+                assert(np.isnan(max_q) == False)#error if nan
             except Exception as e:
                 logger.error(e)
                 logger.warning(
@@ -440,7 +442,7 @@ class BinarySearchControl(Controller):
     # noinspection PyTypeChecker
     def _binary_search_control_step(self, net):
         from pandapower import runpp #to avoid circular imports, import here
-        generators_to_consider = None
+        generators_not_at_limit = None
         if not self.in_service: #redundant
             return
         ### Distribution warnings###
@@ -543,28 +545,28 @@ class BinarySearchControl(Controller):
 
             elif self.output_values_distribution == 'max_Q':  # Maximise Reactive Reserve
                 #only consider active sgens who are within their limits
-                generators_to_consider = (x <= np.array(self.max_q_mvar)[self.output_element_in_service]) \
+                generators_not_at_limit = (x <= np.array(self.max_q_mvar)[self.output_element_in_service]) \
                                           & (x >= np.array(self.min_q_mvar)[self.output_element_in_service])
                 #get Q for sgens
-                total_distributable_q = ((np.sum(np.array(x)[generators_to_consider]) -
-                                          np.sum(np.array(self.min_q_mvar)[self.output_element_in_service][generators_to_consider])) /
-                                         (np.sum(np.array(self.max_q_mvar)[self.output_element_in_service][generators_to_consider]) -
-                                          np.sum(np.array(x)[generators_to_consider])))
+                total_distributable_q = ((np.sum(np.array(x)[generators_not_at_limit]) -
+                                          np.sum(np.array(self.min_q_mvar)[self.output_element_in_service][generators_not_at_limit])) /
+                                         (np.sum(np.array(self.max_q_mvar)[self.output_element_in_service][generators_not_at_limit]) -
+                                          np.sum(np.array(x)[generators_not_at_limit])))
                 if np.isnan(total_distributable_q): #no distributable Q
                     total_distributable_q = 0
                 #calculate the qs for generators to be considered from total distributable Q
-                q_max_q = ((total_distributable_q * np.array(self.max_q_mvar)[self.output_element_in_service][generators_to_consider] +
-                    np.array(self.min_q_mvar)[self.output_element_in_service][generators_to_consider]) / (1 + total_distributable_q))
+                q_max_q = ((total_distributable_q * np.array(self.max_q_mvar)[self.output_element_in_service][generators_not_at_limit] +
+                    np.array(self.min_q_mvar)[self.output_element_in_service][generators_not_at_limit]) / (1 + total_distributable_q))
                 ### output gens not to be considered run at max capacity, all others on calculated Q
                 #output values must be equal in length to distribution
                 if len(np.atleast_1d(q_max_q)) != len(atleast_1d(self.output_element_in_service)):
                     counter_values = 0
                     distribution = np.ones(len(np.atleast_1d(self.output_element_in_service)))  #initializing the distribution for correction
-                    for i in range(len(atleast_1d(generators_to_consider))):
-                        if np.atleast_1d(generators_to_consider)[i]:#calculated Q
+                    for i in range(len(atleast_1d(generators_not_at_limit))):
+                        if np.atleast_1d(generators_not_at_limit)[i]:#calculated Q
                             distribution[i] = np.atleast_1d(q_max_q)[counter_values]
                             counter_values += 1
-                        elif not np.atleast_1d(generators_to_consider)[i]:#min or max Q
+                        elif not np.atleast_1d(generators_not_at_limit)[i]:#min or max Q
                             distribution[i] = np.atleast_1d(self.max_q_mvar)[i] if (np.atleast_1d(x)[i]
                                                 >= 0) else np.atleast_1d(self.min_q_mvar)[i]
                 else:
@@ -669,12 +671,12 @@ class BinarySearchControl(Controller):
                     raise NotImplementedError(f"Controller {self.index}: Reactive power distribution method {self.output_values_distribution}"
                                               f" not implemented available methods are (rel_P, rel_rated_S, set_Q, max_Q, rel_V_pu).")
             if self.output_values_distribution == 'max_Q': #max_Q and voltage gives the correct Qs for the gens
-                if sum(np.atleast_1d(generators_to_consider)) == 0:
+                if sum(np.atleast_1d(generators_not_at_limit)) == 0:
                     values = (sum(x) - sum(distribution)) / len(np.atleast_1d(distribution))
-                    distribution = np.atleast_1d(distribution) + values
+                    distribution = np.atleast_1d(distribution) + values #todo if respected Q limits only generators_not_at_limit, might not converge
                 else:
-                    values = (sum(x) - sum(distribution)) / len(np.atleast_1d(distribution)[generators_to_consider])
-                    np.atleast_1d(distribution)[generators_to_consider] += values
+                    values = (sum(x) - sum(distribution)) / len(np.atleast_1d(distribution)[generators_not_at_limit])
+                    np.atleast_1d(distribution)[generators_not_at_limit] += values
                 x = distribution
             #Voltage set point adaption gives correct Qs but needs convergence
             elif (self.output_values_distribution == 'rel_V_pu' and (len(np.atleast_1d(self.output_element_in_service)) > 1
