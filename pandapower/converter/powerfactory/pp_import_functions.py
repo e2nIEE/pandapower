@@ -2734,9 +2734,9 @@ def create_trafo_characteristics_from_measurement_protocol(item, net, pf_type):
     if pf_type.tapchtype == 0:
         tap_changer_type = "Ratio"
     elif pf_type.tapchtype == 1:
-        tap_changer_type = "Symmetrical"
-    elif pf_type.tapchtype == 2:
         tap_changer_type = "Ideal"
+    elif pf_type.tapchtype == 2:
+        tap_changer_type = "Symmetrical"
     else:
         tap_changer_type = None
     tap_dependency_table = True
