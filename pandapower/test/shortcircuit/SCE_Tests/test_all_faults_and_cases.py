@@ -72,18 +72,22 @@ def load_pf_results(excel_file):
     dataframes = {}
 
     for sheet in sheets:
-        pf_results = pd.read_excel(excel_file, sheet_name=sheet).drop(columns=['Netz']).drop(index=0)
+        pf_results = pd.read_excel(excel_file, sheet_name=sheet)
 
         if sheet.startswith("LLL_") or sheet.startswith("LL_"):
             if sheet.startswith("LL_"):
-                pf_results.drop(columns=['Ik" L1', 'Ik" L2', 'Sk" L1', 'Sk" L2', 'Rk0, Re(Zk0)', 'Xk0, Im(Zk0)',
-                                         'Rk1, Re(Zk1)', 'Xk1, Im(Zk1)'], inplace=True)
+                pf_results.drop(columns=['pf_ikss_a_ka', 'pf_ikss_b_ka', 'pf_skss_a_mw', 'pf_skss_b_mw',
+                                         'pf_rk0_ohm', 'pf_rk1_ohm', 'pf_xk0_ohm', 'pf_xk1_ohm'], inplace=True)
             pf_results.columns = ['name', 'ikss_ka', 'skss_mw', 'rk_ohm', 'xk_ohm']
 
-        elif "LG" in sheet:
-            pf_results.drop(columns=['Ik" L2', 'Ik" L3', 'Sk" L2', 'Sk" L3'], inplace=True)
-            pf_results.columns = ["name", "ikss_ka", 'skss_mw', "rk0_ohm", "xk0_ohm", "rk1_ohm", "xk1_ohm", "rk2_ohm",
-                                  "xk2_ohm"]
+        elif sheet.startswith("LLG_"):
+            pf_results.drop(columns=['pf_ikss_a_ka', 'pf_skss_a_mw'], inplace=True)
+            pf_results.columns = ["name", "ikss0_ka", "ikss1_ka", 'skss0_mw', 'skss1_mw',
+                                  "rk0_ohm", "xk0_ohm", "rk1_ohm", "xk1_ohm", "rk2_ohm", "xk2_ohm"]
+        elif sheet.startswith("LG_"):
+            pf_results.drop(columns=['pf_ikss_b_ka', 'pf_ikss_c_ka', 'pf_skss_b_mw', 'pf_skss_c_mw'], inplace=True)
+            pf_results.columns = ["name", "ikss_ka", 'skss_mw', "rk0_ohm", "xk0_ohm", "rk1_ohm",
+                                  "xk1_ohm", "rk2_ohm", "xk2_ohm"]
 
         dataframes[sheet] = pf_results
 
@@ -96,6 +100,9 @@ def get_columns_to_check(fault):
         return ["ikss_ka", "skss_mw", "rk_ohm", "xk_ohm"]
     elif fault == "LG":
         return ["ikss_ka", "skss_mw", "rk0_ohm", "xk0_ohm", "rk1_ohm", "xk1_ohm", "rk2_ohm", "xk2_ohm"]
+    elif fault == 'LLG':
+        return ["name", "ikss0_ka", "ikss1_ka", 'skss0_mw', 'skss1_mw',
+                "rk0_ohm", "xk0_ohm", "rk1_ohm", "xk1_ohm", "rk2_ohm", "xk2_ohm"]
     return []
 
 
@@ -104,7 +111,7 @@ def test_all_faults_4_bus_radial_min_max():
     net.line.rename(columns={'temperature_degree_celsius': 'endtemp_degree'}, inplace=True)
     net.line["endtemp_degree"] = 250
 
-    excel_file = '2_Short_Circuit_Results_PF_all.xlsx'
+    excel_file = 'pf_bus_sc_results_all_cases.xlsx'
     dataframes = load_pf_results(excel_file)
 
     rtol = {"ikss_ka": 0, "skss_mw": 0, "rk_ohm": 0, "xk_ohm": 0}

@@ -56,7 +56,8 @@ def from_pf(
         handle_us: Literal["Deactivate", "Drop", "Nothing"] = "Deactivate",
         max_iter=None,
         is_unbalanced=False,
-        create_sections=True
+        create_sections=True,
+        fault_type='lll'
 ):
     global line_dict, trafo_dict, switch_dict, bus_dict, grf_map
     line_dict = {}
@@ -89,7 +90,7 @@ def from_pf(
     # ist leider notwendig
     n = 0
     for n, bus in enumerate(dict_net['ElmTerm'], 1):
-        create_pp_bus(net=net, item=bus, flag_graphics=flag_graphics, is_unbalanced=is_unbalanced)
+        create_pp_bus(net=net, item=bus, flag_graphics=flag_graphics, is_unbalanced=is_unbalanced, fault_type=fault_type)
     if n > 0: logger.info('imported %d buses' % n)
 
     logger.debug('creating external grids')
@@ -276,7 +277,7 @@ def from_pf(
     n = 0
     for n, line in enumerate(dict_net['ElmLne'], 0):
         create_pp_line(net=net, item=line, flag_graphics=flag_graphics, create_sections=create_sections,
-                    is_unbalanced=is_unbalanced)
+                    is_unbalanced=is_unbalanced, fault_type=fault_type)
     logger.info('imported %d lines' % (len(net.line.line_idx.unique())) if len(net.line) else 0)
     net.line['section_idx'] = 0
     if dict_net['global_parameters']["iopt_tem"] == 1:
@@ -395,7 +396,7 @@ def add_additional_attributes(item, net, element, element_id, attr_list=None, at
                     net[element].loc[element_id, attr_dict[attr]] = chr_name[0]
 
 
-def create_pp_bus(net, item, flag_graphics, is_unbalanced):
+def create_pp_bus(net, item, flag_graphics, is_unbalanced, fault_type='lll'):
     # add geo data
     if flag_graphics == 'GPS':
         x = item.GetAttribute('e:GPSlon')
@@ -450,9 +451,9 @@ def create_pp_bus(net, item, flag_graphics, is_unbalanced):
 
     get_pf_bus_results(net, item, bid, is_unbalanced, system_type)
     try:
-        get_pf_bus_sc_results(net, item, bid)
+        get_pf_bus_sc_results(net, item, bid, fault_type=fault_type)
     except AttributeError:
-        logger.info("No short circuit calculations.")
+        pass
 
     substat_descr = ''
     if item.HasAttribute('cpSubstat'):
@@ -731,7 +732,7 @@ def get_coords_from_grf_object(item):
     return coords
 
 
-def create_pp_line(net, item, flag_graphics, create_sections, is_unbalanced):
+def create_pp_line(net, item, flag_graphics, create_sections, is_unbalanced, fault_type='lll'):
     params = {'parallel': item.nlnum, 'name': item.loc_name}
     logger.debug('>> creating line <%s>' % params['name'])
     logger.debug('line <%s> has <%d> parallel lines' % (params['name'], params['parallel']))
@@ -768,7 +769,7 @@ def create_pp_line(net, item, flag_graphics, create_sections, is_unbalanced):
         if coords:
             params["geodata"] = coords
         logger.debug('line <%s> has no sections' % params['name'])
-        lid = create_line_normal(net=net, item=item, is_unbalanced=is_unbalanced, ac=ac, **params)
+        lid = create_line_normal(net=net, item=item, is_unbalanced=is_unbalanced, ac=ac, fault_type=fault_type, **params)
         sid_list = [lid]
         logger.debug('created line <%s> with index <%d>' % (params['name'], lid))
 
@@ -778,10 +779,10 @@ def create_pp_line(net, item, flag_graphics, create_sections, is_unbalanced):
             if not ac:
                 raise NotImplementedError(f"Export of lines with line sections only implemented for AC lines ({item})")
             sid_list = create_line_sections(net=net, item_list=line_sections, line=item,
-                                            coords=coords, is_unbalanced=is_unbalanced, **params)
+                                            coords=coords, is_unbalanced=is_unbalanced, fault_type=fault_type, **params)
         else:
             lidx = create_line_no_sections(net, item, line_sections, params["bus1"], params["bus2"], coords,
-                                           is_unbalanced, ac)
+                                           is_unbalanced, ac, fault_type=fault_type)
             sid_list = [lidx]
         logger.debug('created <%d> line sections for line <%s>' % (len(sid_list), params['name']))
 
@@ -958,7 +959,7 @@ def segment_buses(net, bus1, bus2, num_sections, line_name):  # , sec_len, start
         yield bus2
 
 
-def create_line_sections(net, item_list, line, bus1, bus2, coords, parallel, is_unbalanced, **kwargs):
+def create_line_sections(net, item_list, line, bus1, bus2, coords, parallel, is_unbalanced, fault_type='lll', **kwargs):
     sid_list = []
     line_name = line.loc_name
     item_list.sort(key=lambda x: x.index)  # to ensure they are in correct order
@@ -980,7 +981,7 @@ def create_line_sections(net, item_list, line, bus1, bus2, coords, parallel, is_
         bus1 = next(buses_gen)
         bus2 = next(buses_gen)
         sid = create_line_normal(net=net, item=item, bus1=bus1, bus2=bus2, name=name, parallel=parallel,
-                                 is_unbalanced=is_unbalanced, ac=True)
+                                 is_unbalanced=is_unbalanced, ac=True, fault_type=fault_type)
         sid_list.append(sid)
         net.line.at[sid, "section"] = section_name
         net.res_line.at[sid, "pf_loading"] = line_loading
@@ -1000,7 +1001,7 @@ def create_line_sections(net, item_list, line, bus1, bus2, coords, parallel, is_
     return sid_list
 
 
-def create_line_no_sections(net, main_item, item_list, bus1, bus2, coords, is_unbalanced, ac, **kwargs):
+def create_line_no_sections(net, main_item, item_list, bus1, bus2, coords, is_unbalanced, ac, fault_type='lll', **kwargs):
     if not ac:
         raise NotImplementedError("Creating DC lines with sections as DC lines without sections not implemented")
 
@@ -1058,11 +1059,15 @@ def create_line_no_sections(net, main_item, item_list, bus1, bus2, coords, is_un
             net["line"].loc[lid, 'origin_id'] = chr_name[0]
 
     get_pf_line_results(net, main_item, lid, is_unbalanced, ac)
+    try:
+        get_pf_line_sc_results(net, main_item, lid, fault_type=fault_type)
+    except AttributeError:
+        pass
 
     return lid
 
 
-def create_line_normal(net, item, bus1, bus2, name, parallel, is_unbalanced, ac, geodata=None):
+def create_line_normal(net, item, bus1, bus2, name, parallel, is_unbalanced, ac, geodata=None, fault_type='lll'):
     pf_type = item.typ_id
     std_type, type_created = create_line_type(net=net, item=pf_type,
                                               cable_in_air=item.inAir if item.HasAttribute(
@@ -1138,6 +1143,10 @@ def create_line_normal(net, item, bus1, bus2, name, parallel, is_unbalanced, ac,
             net["line" if ac else "line_dc"].loc[lid, 'origin_id'] = chr_name[0]
 
     get_pf_line_results(net, item, lid, is_unbalanced, ac)
+    try:
+        get_pf_line_sc_results(net, item, lid, fault_type=fault_type)
+    except AttributeError:
+        pass
 
     return lid
 
@@ -4293,16 +4302,38 @@ def remove_folder_of_std_types(net):
                 net[element].std_type = net[element].std_type.replace(st, std_type)
 
 
-def get_pf_bus_sc_results(net, item, bid):
+def get_pf_bus_sc_results(net, item, bid, fault_type='lll'):
     bus_type = "res_bus_sc"
 
-    result_variables = {
+    result_variables_3ph = {
         "pf_ikss_ka": "m:Ikss",
         "pf_skss_mw": "m:Skss",
         "pf_rk_ohm": "m:R",
         "pf_xk_ohm": "m:X",
         "pf_ip_ka": "m:ip"
     }
+
+    result_variables = {
+        "pf_ikss_a_ka": "m:Ikss:A",
+        "pf_ikss_b_ka": "m:Ikss:B",
+        "pf_ikss_c_ka": "m:Ikss:C",
+        "pf_skss_a_mw": "m:Skss:A",
+        "pf_skss_b_mw": "m:Skss:B",
+        "pf_skss_c_mw": "m:Skss:C",
+        "pf_r0_ohm": "m:R0",
+        "pf_r1_ohm": "m:R1",
+        "pf_r2_ohm": "m:R2",
+        "pf_x0_ohm": "m:X0",
+        "pf_x1_ohm": "m:X1",
+        "pf_x2_ohm": "m:X2"
+    }
+
+    if fault_type == "lll":
+        result_variables = result_variables_3ph
+
+    for col in result_variables.keys():
+        if col not in net[bus_type].columns:
+            net[bus_type][col] = np.nan
 
     for res_var_pp, res_var_pf in result_variables.items():
         res = np.nan
@@ -4311,3 +4342,58 @@ def get_pf_bus_sc_results(net, item, bid):
         net[bus_type].at[bid, res_var_pp] = res
 
 
+def get_pf_line_sc_results(net, item, lid, fault_type='lll'):
+    line_type = "res_line_sc"
+
+    result_variables_3ph = {
+        "pf_ikss_from_ka": "m:Ikss:bus1",
+        "pf_ikss_to_ka": "m:Ikss:bus2",
+        "pf_ip_from_ka": "m:Ip:bus1",
+        "pf_ip_to_ka": "m:Ip:bus2",
+        "pf_skss_from_mw": "m:Skss:bus1",
+        "pf_skss_to_mw": "m:Skss:bus2",
+        "pf_p_from_mw": "m:P:bus1",
+        "pf_p_to_mw": "m:P:bus2",
+        "pf_q_from_mvar": "m:Q:bus1",
+        "pf_q_to_mvar": "m:Q:bus2"
+    }
+
+    result_variables = {
+        "pf_ikss_a_from_ka": "m:Ikss:bus1:A",
+        "pf_ikss_b_from_ka": "m:Ikss:bus1:B",
+        "pf_ikss_c_from_ka": "m:Ikss:bus1:C",
+        "pf_ikss_a_to_ka": "m:Ikss:bus2:A",
+        "pf_ikss_b_to_ka": "m:Ikss:bus2:B",
+        "pf_ikss_c_to_ka": "m:Ikss:bus2:C",
+        "pf_skss_a_from_mw": "m:Skss:bus1:A",
+        "pf_skss_b_from_mw": "m:Skss:bus1:B",
+        "pf_skss_c_from_mw": "m:Skss:bus1:C",
+        "pf_skss_a_to_mw": "m:Skss:bus2:A",
+        "pf_skss_b_to_mw": "m:Skss:bus2:B",
+        "pf_skss_c_to_mw": "m:Skss:bus2:C",
+        "pf_p_a_from_mw": "m:P:bus1:A",
+        "pf_p_b_from_mw": "m:P:bus1:B",
+        "pf_p_c_from_mw": "m:P:bus1:C",
+        "pf_p_a_to_mw": "m:P:bus2:A",
+        "pf_p_b_to_mw": "m:P:bus2:B",
+        "pf_p_c_to_mw": "m:P:bus2:C",
+        "pf_q_a_from_mw": "m:Q:bus1:A",
+        "pf_q_b_from_mw": "m:Q:bus1:B",
+        "pf_q_c_from_mw": "m:Q:bus1:C",
+        "pf_q_a_to_mw": "m:Q:bus2:A",
+        "pf_q_b_to_mw": "m:Q:bus2:B",
+        "pf_q_c_to_mw": "m:Q:bus2:C"
+    }
+
+    if fault_type == "lll":
+        result_variables = result_variables_3ph
+
+    for col in result_variables.keys():
+        if col not in net[line_type].columns:
+            net[line_type][col] = np.nan
+
+    for res_var_pp, res_var_pf in result_variables.items():
+        res = np.nan
+        if item.HasResults(0) and item.HasAttribute(res_var_pf):
+            res = item.GetAttribute(res_var_pf)
+        net[line_type].at[lid, res_var_pp] = res
