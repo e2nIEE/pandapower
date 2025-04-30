@@ -348,7 +348,7 @@ def from_pf(
         add_zero_impedance_parameters(net)
 
     # --------- create reactive power capability characteristics ---------
-    if not net['q_capability_curve_table'].empty:
+    if 'q_capability_curve_table' in net and not net['q_capability_curve_table'].empty:
         logger.info('Create q_capability_curve_characteristics_object')
         create_q_capability_curve_characteristics_object(net)
 
