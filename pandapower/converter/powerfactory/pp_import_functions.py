@@ -176,11 +176,6 @@ def from_pf(
 
     logger.debug('creating transformers')
 
-    if "trafo_characteristic_table" not in net:
-        net["trafo_characteristic_table"] = pd.DataFrame(
-            columns=['id_characteristic', 'step', 'voltage_ratio', 'angle_deg', 'vk_percent', 'vkr_percent',
-                     'vk_hv_percent', 'vkr_hv_percent', 'vk_mv_percent', 'vkr_mv_percent', 'vk_lv_percent',
-                     'vkr_lv_percent'])
     # create trafos:
     n = 0
     for n, trafo in enumerate(dict_net['ElmTr2'], 1):
@@ -2504,6 +2499,14 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
 
     use_tap_table = item.GetAttribute("iTaps")
 
+
+    # Creating trafo characteristics table for tap dependence impedance
+    if "trafo_characteristic_table" not in net:
+        net["trafo_characteristic_table"] = pd.DataFrame(
+            columns=['id_characteristic', 'step', 'voltage_ratio', 'angle_deg', 'vk_percent', 'vkr_percent',
+                     'vk_hv_percent', 'vkr_hv_percent', 'vk_mv_percent', 'vkr_mv_percent', 'vk_lv_percent',
+                     'vkr_lv_percent'])
+
     if std_type is not None:
         if use_tap_table == 1:
             id_characteristic_table, tap_changer_type, tap_dependency_table, tap_side = \
@@ -2827,6 +2830,13 @@ def create_trafo3w(net, item, tap_opt='nntap'):
                        "Calculation results will be incorrect." % (item.loc_name, item.nt3nm))
 
 
+    # Creating trafo characteristics table for tap dependence impedance
+    if "trafo_characteristic_table" not in net:
+        net["trafo_characteristic_table"] = pd.DataFrame(
+            columns=['id_characteristic', 'step', 'voltage_ratio', 'angle_deg', 'vk_percent', 'vkr_percent',
+                     'vk_hv_percent', 'vkr_hv_percent', 'vk_mv_percent', 'vkr_mv_percent', 'vk_lv_percent',
+                     'vkr_lv_percent'])
+
     use_tap_table = item.GetAttribute("iTaps")
     if use_tap_table == 1:
         if "trafo_characteristic_table" not in net:
@@ -3005,12 +3015,10 @@ def create_trafo3w(net, item, tap_opt='nntap'):
         net.res_trafo3w.at[tid, "pf_loading"] = np.nan
 
     # TODO Implement the tap changer controller for 3-winding transformer
-
-    # TODO Implement extracting trafo_characteristic_table if pf_type.itapzdep is true
-    #  and no trafo_characteristic_table available
     if pf_type.itapzdep:
         add_tap_dependant_impedance_for_trafo3W(net, pf_type, tid)
 
+    # TODO right now Pandapower only supports one tapchanger
     #        # todo zero-sequence parameters (must be implemented in build_branch first)
     #       create_trafo_characteristics(net, trafotable="trafo3w", trafo_index=tid,
     #                                                variable=f"vk_{side}_percent", x_points=x_points,
@@ -3021,8 +3029,6 @@ def create_trafo3w(net, item, tap_opt='nntap'):
 
 
 def add_tap_dependant_impedance_for_trafo3W(net, pf_type, tid):
-    # Creating trafo characteristics table for tap dependence impedance
-    # TODO right now Pandapower only supports one tapchanger
     # Mapping for tp_side values to eliminate redundant conditions
     tp_map = {
         0: ("h", pf_type.utrn3_h, pf_type.du3tp_h, pf_type.ph3tr_h, pf_type.n3tp0_h, pf_type.n3tmn_h, pf_type.n3tmx_h),
@@ -4398,7 +4404,7 @@ def create_q_capability_curve(net, item):
     # create q capability curve
     if 'q_capability_curve_table' not in net:
         net['q_capability_curve_table'] = pd.DataFrame(
-            columns=['id_q_capability_curve', 'name', 'p_mw', 'q_min_mvar', 'q_max_mvar'])
+            columns=['id_q_capability_curve', 'p_mw', 'q_min_mvar', 'q_max_mvar'])
 
     logger.debug('>> creating  reactive power capabiltiy curve<%s>' % name)
     index = net.q_capability_curve_table.iat[-1, 0] + 1 if not net['q_capability_curve_table'].empty else 0
