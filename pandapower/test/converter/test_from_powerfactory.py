@@ -116,6 +116,36 @@ def test_trafo_tap2_results():
         assert delta < tol, "%s has too high difference: %f > %f" % (key, delta, tol)
 
 @pytest.mark.skipif(not PF_INSTALLED, reason='powerfactory must be installed')
+def test_pf_export_trafo3w_tap_depedence_impedance_tapchanger():
+    app = pf.GetApplication()
+
+    # import the tap changer test grid to powerfactory
+    path = os.path.join(pp_dir, 'test', 'converter', 'tap_table_from_tdi.pfd')
+    prj = import_project(path, app, 'TEST_PF_CONVERTER', import_folder='TEST_IMPORT', clear_import_folder=True)
+    prj_name = prj.GetFullName()
+
+    net = from_pfd(app, prj_name=prj_name)
+
+    all_diffs = validate_pf_conversion(net, tolerance_mva=1e-9)
+
+    tol = {
+        'diff_vm': 5e-3,
+        'diff_va': 0.1,
+        'trafo_diff': 1e-2,
+        'load_p_diff_is': 1e-5,
+        'load_q_diff_is': 1e-5,
+        'ext_grid_p_diff': 0.1,
+        'ext_grid_q_diff': 0.1
+    }
+
+    for key, diff in all_diffs.items():
+        if type(diff) == pd.Series:
+            delta = diff.abs().max()
+        else:
+            delta = diff['diff'].abs().max()
+        assert delta < tol[key], "%s has too high difference: %f > %f" % (key, delta, tol[key])
+
+@pytest.mark.skipif(not PF_INSTALLED, reason='powerfactory must be installed')
 def test_pf_export_tap_changer():
     app = pf.GetApplication()
     # import the tap changer test grid to powerfactory
