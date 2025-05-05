@@ -626,12 +626,14 @@ class BinarySearchControl(Controller):
                         options={'maxiter': 1000, 'ftol': 1e-9})  #more iterations, small tolerance 'ftol': 1e-9 only with SLSQP
                     voltage = result.x #getting the results of minimize function
                     ### convert sgens to gens, write voltage to gens, read Q and adapt distribution
-                    for i in range(len(np.array(self.output_element_index)[self.output_element_in_service])):
+                    in_service_indices = np.array(self.output_element_index)[self.output_element_in_service]#actual indices
+                    counter = 0
+                    for i in in_service_indices:
                         if self.output_element == 'sgen': #get all sgens, convert to gens
-                            create_gen(net,
-                                    net.sgen.at[i, 'bus'],
-                                    net.sgen.at[i, 'p_mw'],
-                                    vm_pu = voltage[i],  # Voltage array
+                            create_gen(net = net,
+                                    bus = net.sgen.at[i, 'bus'],
+                                    p_mw = net.sgen.at[i, 'p_mw'],
+                                    vm_pu = voltage[counter],  # Voltage array
                                     in_service = net.sgen.at[i, 'in_service'],
                                     sn_mva = net.sgen.at[i, 'sn_mva'] if 'sn_mva' in net.sgen.columns else None,
                                     scaling = net.sgen.at[i, 'scaling'] if 'scaling' in net.sgen.columns else None,
@@ -644,8 +646,9 @@ class BinarySearchControl(Controller):
                                     geo = net.sgen.at[i, 'geo'] if 'geo' in net.sgen.columns else None,
                                     current_source = net.sgen.at[
                                         i, 'current_source'] if 'current_source' in net.sgen.columns else None,
-                                    name = f'temp_gen_{i}')#type='GEN'
-                            net.sgen.loc[i, 'in_service'] = False #disable sgens
+                                    name = f'temp_gen_{counter}')#type='GEN'
+                            net.sgen.at[i, 'in_service'] = False #disable sgens
+                            counter += 1
                     index = np.array([])
                     for i in net.gen.index: #get index of created gens
                         if net.gen.loc[i, 'name'].startswith("temp_gen_"):
@@ -690,7 +693,10 @@ class BinarySearchControl(Controller):
                     equal = 1 / sum(self.output_element_in_service)
                     distribution = np.full(np.sum(np.array(self.output_element_in_service)), equal)
                 x = x * distribution if isinstance(x, numbers.Number) else sum(x) * distribution #add distribution to Q values
+            x = np.sign(x) * np.where(abs(x) > 80, 80, abs(x))  # catching distributions out of bounds
+            print(x)
             self.output_values_old, self.output_values = self.output_values, x
+
 
         ### write new set of Q values to output elements###
         output_element_index = (list(np.atleast_1d(self.output_element_index)[self.output_element_in_service])[0] if self.write_flag

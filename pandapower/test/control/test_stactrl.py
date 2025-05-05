@@ -502,6 +502,11 @@ def test_rel_v_pu():
     assert(abs(net.res_bus.at[net.sgen.at[0, 'bus'], 'vm_pu'] + net.res_bus.at[net.sgen.at[1, 'bus'], 'vm_pu']
                 - 0.98 - 0.89) < tol) #now within set points
 
+def stactrl_pf_import_distributions():#test comparability max_Q and rel_V_pu between PF and pp
+    path = os.path.join(pp_dir, 'test', 'control', 'testfiles', 'stactrl_test_distributions.json')
+    net = from_json(path)
+    tol = 1e-6
+
 
 if __name__ == '__main__':
     pytest.main(['-s', __file__])
