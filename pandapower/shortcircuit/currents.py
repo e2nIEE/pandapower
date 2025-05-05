@@ -104,6 +104,7 @@ def _calc_ikss(net, ppci, bus_idx):
 
 
 def _calc_ikss_to_g(net, ppci_0, ppci_1, ppci_2, bus_idx):
+    # TODO parameter to tell which Phase is affected
     fault = net._options["fault"]
     case = net._options["case"]
     c = ppci_1["bus"][bus_idx, C_MIN] if case == "min" else ppci_1["bus"][bus_idx, C_MAX]

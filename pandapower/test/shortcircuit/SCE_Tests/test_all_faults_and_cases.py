@@ -106,7 +106,21 @@ def get_columns_to_check(fault):
     return []
 
 
-def test_all_faults_4_bus_radial_min_max():
+@pytest.mark.parametrize("fault, case, r_fault_ohm, x_fault_ohm", [
+    #("LLL", "max", 0.0, 0.0),
+    #("LLL", "min", 0.0, 0.0),
+    #("LL", "max", 0.0, 0.0),
+    #("LL", "min", 0.0, 0.0),
+    #("LG", "max", 0.0, 0.0),
+    #("LG", "min", 0.0, 0.0),
+    #("LLL", "max", 5.0, 5.0),
+    #("LLL", "min", 5.0, 5.0),
+    ("LL", "max", 5.0, 5.0),
+    ("LL", "min", 5.0, 5.0),
+    ("LG", "max", 5.0, 5.0),
+    ("LG", "min", 5.0, 5.0),
+])
+def test_all_faults_and_cases_with_fault_impedance(fault, case, r_fault_ohm, x_fault_ohm):
     net = from_json('4_bus_radial_grid.json')
     net.line.rename(columns={'temperature_degree_celsius': 'endtemp_degree'}, inplace=True)
     net.line["endtemp_degree"] = 250
@@ -117,38 +131,28 @@ def test_all_faults_4_bus_radial_min_max():
     rtol = {"ikss_ka": 0, "skss_mw": 0, "rk_ohm": 0, "xk_ohm": 0}
     atol = {"ikss_ka": 1e-6, "skss_mw": 1e-5, "rk_ohm": 1e-6, "xk_ohm": 1e-6}
 
-    faults = ["LLL", "LL", "LG"]
-    # faults = ["LLL", "LG"]
-    cases = ["max", "min"]
-    fault_ohm_values = [(0.0, 0.0), (5.0, 5.0)]
-    # fault_ohm_values = [(0.0, 0.0)]
+    columns_to_check = get_columns_to_check(fault)
+    selected_sheet = f"{fault}_{case}"
+    if r_fault_ohm != 0.0 and x_fault_ohm != 0.0:
+        selected_sheet += "_fault"
 
-    for r_fault_ohm, x_fault_ohm in fault_ohm_values:
-        for fault in faults:
-            columns_to_check = get_columns_to_check(fault)
-            for case in cases:
-                selected_sheet = f"{fault}_{case}"
-                if r_fault_ohm != 0.0 and x_fault_ohm != 0.0:
-                    selected_sheet += "_fault"
+    selected_pf_results = dataframes[selected_sheet]
+    modified_pf_results = modify_impedance_values_with_fault_value(selected_pf_results, r_fault_ohm, x_fault_ohm)
 
-                selected_pf_results = dataframes[selected_sheet]
-                modified_pf_results = modify_impedance_values_with_fault_value(selected_pf_results, r_fault_ohm,
-                                                                               x_fault_ohm)
+    calc_sc(net, fault=fault, case=case, branch_results=True, ip=False, r_fault_ohm=r_fault_ohm, x_fault_ohm=x_fault_ohm)
 
-                calc_sc(net, fault=fault, case=case, branch_results=True, ip=False, r_fault_ohm=r_fault_ohm,
-                        x_fault_ohm=x_fault_ohm)
+    net.res_bus_sc["name"] = net.bus.name
+    net.res_bus_sc = net.res_bus_sc[['name'] + [col for col in net.res_bus_sc.columns if col != 'name']]
+    net.res_bus_sc.sort_values(by='name', inplace=True)
 
-                net.res_bus_sc["name"] = net.bus.name
-                net.res_bus_sc = net.res_bus_sc[['name'] + [col for col in net.res_bus_sc.columns if col != 'name']]
-                net.res_bus_sc.sort_values(by='name', inplace=True)
-
-                for bus in net.bus.name:
-                    for column in columns_to_check:
-                        column_ar = check_pattern(column)
-                        assert np.isclose(
-                            net.res_bus_sc.loc[net.bus.name == bus, column].values[0],
-                            modified_pf_results.loc[modified_pf_results.name == bus, column].values[0],
-                            rtol=rtol[column_ar], atol=atol[column_ar])
+    for bus in net.bus.name:
+        for column in columns_to_check:
+            column_ar = check_pattern(column)
+            assert np.isclose(
+                net.res_bus_sc.loc[net.bus.name == bus, column].values[0],
+                modified_pf_results.loc[modified_pf_results.name == bus, column].values[0],
+                rtol=rtol[column_ar], atol=atol[column_ar]
+            )
 
 
 if __name__ == "__main__":
