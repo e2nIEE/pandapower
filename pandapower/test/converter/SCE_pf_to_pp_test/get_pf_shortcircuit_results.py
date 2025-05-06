@@ -49,10 +49,10 @@ def get_pf_sc_bus_results(app, fault_type='lll', calc_mode='max', fault_impedanc
         "pf_skss_b_mw": "m:Skss:B",
         "pf_skss_c_mw": "m:Skss:C",
         "pf_rk0_ohm": "m:R0",
-        "pf_xk0_ohm": "m:X0",
         "pf_rk1_ohm": "m:R1",
-        "pf_xk1_ohm": "m:X1",
         "pf_rk2_ohm": "m:R2",
+        "pf_xk0_ohm": "m:X0",
+        "pf_xk1_ohm": "m:X1",
         "pf_xk2_ohm": "m:X2"
     }
 

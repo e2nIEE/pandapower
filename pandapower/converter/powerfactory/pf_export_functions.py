@@ -340,8 +340,8 @@ def run_short_circuit(app, fault_type="lll", calc_mode="max", fault_impedance_rf
     #     com_shc.shcobj = fault_location
 
     # set fault impedance
-    com_shc.Rf = fault_impedance_rf
-    com_shc.Xf = fault_impedance_xf
+    com_shc.rFault = fault_impedance_rf
+    com_shc.xFault = fault_impedance_xf
 
     logger.info("---------------------------------------------------------------------------------")
     logger.info("PowerFactory short circuit settings:")

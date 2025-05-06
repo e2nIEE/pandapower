@@ -10,6 +10,8 @@ from pandapower.file_io import from_json
 import pytest
 import re
 import copy
+import os
+from pandapower import pp_dir
 
 
 def check_pattern(pattern):
@@ -106,6 +108,8 @@ def get_columns_to_check(fault):
     return []
 
 
+def test_all_faults_4_bus_radial_min_max():
+    net = from_json(os.path.join(pp_dir, "test", "shortcircuit", "SCE_Tests", "4_bus_radial_grid.json"))
 @pytest.mark.parametrize("fault, case, r_fault_ohm, x_fault_ohm", [
     #("LLL", "max", 0.0, 0.0),
     #("LLL", "min", 0.0, 0.0),
@@ -125,7 +129,7 @@ def test_all_faults_and_cases_with_fault_impedance(fault, case, r_fault_ohm, x_f
     net.line.rename(columns={'temperature_degree_celsius': 'endtemp_degree'}, inplace=True)
     net.line["endtemp_degree"] = 250
 
-    excel_file = 'pf_bus_sc_results_all_cases.xlsx'
+    excel_file = os.path.join(pp_dir, "test", "shortcircuit", "SCE_Tests", "2_Short_Circuit_Results_PF_all.xlsx")
     dataframes = load_pf_results(excel_file)
 
     rtol = {"ikss_ka": 0, "skss_mw": 0, "rk_ohm": 0, "xk_ohm": 0}
