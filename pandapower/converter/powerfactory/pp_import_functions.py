@@ -3808,14 +3808,22 @@ def create_stactrl(net, item):
     ###getting distribution mode###
     gen_element_in_service = [net[gen_element].loc[net[gen_element].name == s.loc_name].in_service for s in machines]
     distribution_val = []
-    if item.imode < 3: #import from pf without calculation
-        """if item.imode == 0:
-            distribution_mode = 'rel_P' #according to active power
-        elif item.imode ==1:
-            distribution_mode = 'rel_rated_S'  #according to maximum rated Power S of output elements
-        elif item.imode == 2:
-            distribution_mode = 'set_Q'""" #Individually set Q distribution values
-        distribution_mode = 'imported' #simpler than handing over the values separately, also station controller handles cases differently
+    #if item.imode < 3: #import from pf without calculation #todo import or not
+    #distribution_mode = 'imported' #simpler than handing over the values separately, also station controller handles cases differently
+    if item.imode == 0:
+        distribution_mode = 'rel_P' #according to active power
+        distribution_val = None
+    elif item.imode ==1:
+        distribution_mode = 'rel_rated_S'  #according to maximum rated Power S of output elements
+        distribution_val = None
+        counter = 0
+        for s in machines:
+            if gen_types[counter] == 'sgen' and np.isnan(net.sgen.loc[gen_element_index[counter], 'sn_mva']):
+                net.sgen.at[gen_element_index[counter], 'sn_mva'] = s.typ_id.sgn #todo import of rated apparent power S, somewhere else?
+            counter += 1
+
+    elif item.imode == 2:
+        distribution_mode = 'set_Q' #Individually set Q distribution values
         i = 0
         for m in item.psym:
             if m is not None and isinstance(item.cvqq, list):
@@ -3826,13 +3834,6 @@ def create_stactrl(net, item):
     elif item.imode == 3:
         distribution_mode = 'max_Q' #maximized reactive power reserve
         distribution_val = None
-        """i = 0 #scale min/max is not needed
-        for m in item.psym:
-            if m is not None and isinstance(m.scaleQmax, list) and isinstance(m.scaleQmin, list):
-                    distribution_val.append(m.scaleQmin[i], m.scaleQmax[i])
-            elif m is not None and not isinstance(m.scaleQmax, list) and not isinstance(m.scaleQmin, list):
-                    distribution_val.append([m.scaleQmin, m.scaleQmax])
-            i =+ 1"""
 
     elif item.imode == 4:
         distribution_mode = 'rel_V_pu' #voltage set point adaptation

@@ -502,10 +502,24 @@ def test_rel_v_pu():
     assert(abs(net.res_bus.at[net.sgen.at[0, 'bus'], 'vm_pu'] + net.res_bus.at[net.sgen.at[1, 'bus'], 'vm_pu']
                 - 0.98 - 0.89) < tol) #now within set points
 
-def stactrl_pf_import_distributions():#test comparability max_Q and rel_V_pu between PF and pp
+def test_stactrl_pf_import_distributions():#test comparability between PF and pp
     path = os.path.join(pp_dir, 'test', 'control', 'testfiles', 'stactrl_test_distributions.json')
     net = from_json(path)
-    tol = 1e-6
+    tol = 5e-6
+    tol_v = 2e-3 #smaller tolerance for voltage set point adaptation rel_V_pu and max_Q
+    runpp(net, run_control=True)
+    assert(all(abs(np.array(net.sgen.loc[net.controller.at[0, 'object'].output_element_index, 'q_mvar']) -
+                [0.06333, 0.33249]) < tol)) #set_Q
+    assert(all(abs(np.array(net.sgen.loc[net.controller.at[1, 'object'].output_element_index, 'q_mvar']) -
+                [0.63910, 0.35675]) < tol)) #rel_rated_S
+    assert(all(abs(np.array(net.sgen.loc[net.controller.at[2, 'object'].output_element_index, 'q_mvar']) -
+                [0.62056, 1.24112]) < tol)) #rel_P
+    assert(all(abs(np.array(net.sgen.loc[net.controller.at[3, 'object'].output_element_index, 'q_mvar']) -
+                [6.77276, -9.79795, -0.89898]) < tol_v)) #max_Q
+    assert(all(abs(np.array(net.sgen.loc[net.controller.at[4, 'object'].output_element_index, 'q_mvar']) -
+                [-31.23760, 1]) < tol_v)) #rel_V_pu Q_vals
+    assert(all(abs(np.array(net.res_bus.loc[net.sgen.loc[net.controller.at[4, 'object'].output_element_index].bus, 'vm_pu']) -
+                [0.89847, 0.98847 ]) < tol_v)) #rel_V_pu busbar voltage
 
 
 if __name__ == '__main__':

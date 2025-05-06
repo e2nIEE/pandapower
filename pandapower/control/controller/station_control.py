@@ -54,9 +54,10 @@ class BinarySearchControl(Controller):
             control.
 
             **output_values_distribution** - Takes string to select one of the different available reactive power distribution
-            methods: 'rel_P' -Q is relative to used Power, 'rel_rated_S' -Q is relative to the rated power S, 'set_Q' -set
-            individual reactive power for each output element, 'max_Q' -maximized reactive power reserve for the output
-            elements, 'rel_V_pu' -Q is relative to the voltage limits of the output element.
+            methods: 'rel_P' -Q is relative to used Power, 'rel_rated_S' -Q is relative to the rated power S, currently
+            using the sgen attribute 'sn_mva', 'set_Q' -set individual reactive power for each output element,
+            'max_Q' -maximized reactive power reserve for the output elements, 'rel_V_pu' -Q is relative to the voltage
+            limits of the output element.
 
             **output_distribution_values=None** -The values of the q_distribution, only applicable if q_distribution = 'set_Q'
             or rel_V_pu. For 'set_Q': Must be list containing the Q Value of each controlled element in percent in the same
@@ -513,10 +514,10 @@ class BinarySearchControl(Controller):
             step_diff = self.diff - self.diff_old
             x = self.output_values - self.diff * (self.output_values - self.output_values_old) / np.where(
                 step_diff == 0, 1e-6, step_diff)  #converging
-            if any(abs(x) > 100): #catching overshoots, value might need adjustment
+            if any(abs(x) > 100): #catching overshoots for calculation, another check before writing into the net
                 x[np.where(abs(x) > 100)[0]] = np.sign(x[np.where(abs(x) > 100)[0]]) * 100
             ###calculate the distribution of the output values
-            if self.output_values_distribution == 'imported': #when importing net from PF, calculation for distribution is not necessary
+            if self.output_values_distribution == 'imported': #when importing net from PF for backwards compatibility
                 distribution = output_distribution_values_in_service
 
             elif self.output_values_distribution == 'rel_P': #proportional to the dispatch active power
@@ -527,14 +528,20 @@ class BinarySearchControl(Controller):
             elif self.output_values_distribution == 'rel_rated_S': #proportional to the rated apparent power
                 if self.output_element == 'sgen':
                     logger.warning(f'The standard type attribute containing the rated apparent power for'
-                                   f' {self.output_element} is not yet implemented.')
+                                   f' {self.output_element} is not correctly implemented yet.')#todo
                 try:
                     s_rated_mva = np.array(net.sgen.loc[self.output_element_index, 'sn_mva']) #correct values? todo
                     distribution = s_rated_mva
-                    if not all(isinstance(x, numbers.Number) for x in distribution):
-                        logger.warning(f'{self.output_element} in Controller {self.index} has no defined standard type '
-                                       f'or specified rated apparent power, assuming 50 MVA\n')
+                    nan_index = np.isnan(distribution)
+                    distribution[nan_index] = 50
+                    if any(nan_index):
+                        logger.warning(f'{self.output_element} at index {np.atleast_1d(self.output_element_index)[nan_index]}'
+                                       f' in Controller {self.index} has no specified rated apparent power, assuming 50 MVA\n')
+                    if not all(isinstance(n, numbers.Number) for n in distribution):
+                        logger.warning(f'{self.output_element} in Controller {self.index} has no'
+                                       f' specified rated apparent power, assuming 50 MVA\n')
                         distribution = np.full(np.sum(self.output_element_in_service), 50)
+
                 except KeyError:
                     logger.warning(f'{self.output_element} in Controller {self.index} has no defined standard type '
                                     f'or specified rated apparent power, assuming 50 MVA\n')
@@ -655,7 +662,7 @@ class BinarySearchControl(Controller):
                             index = np.append(index, i)
                     index = index[0] if self.write_flag == 'single_index' else index
                     write_to_net(net, 'gen', index,'vm_pu', voltage, self.write_flag) #write V to net
-                    runpp(net) #run net
+                    runpp(net, run_control = False) #run net
                     distribution = np.array(net.res_gen.loc[index, 'q_mvar']) #read Q from net
                     net.gen.drop(index=index, inplace=True) #delete created gens
                     net.sgen.loc[np.array(self.output_element_index)[self.output_element_in_service], 'in_service'] = True #reactivate sgens
@@ -693,12 +700,10 @@ class BinarySearchControl(Controller):
                     equal = 1 / sum(self.output_element_in_service)
                     distribution = np.full(np.sum(np.array(self.output_element_in_service)), equal)
                 x = x * distribution if isinstance(x, numbers.Number) else sum(x) * distribution #add distribution to Q values
-            x = np.sign(x) * np.where(abs(x) > 80, 80, abs(x))  # catching distributions out of bounds
-            print(x)
+            x = np.sign(x) * np.where(abs(x) > 84, 84, abs(x))  # catching distributions out of bounds, 84 seems to be the maximum
             self.output_values_old, self.output_values = self.output_values, x
 
-
-        ### write new set of Q values to output elements###
+            ### write new set of Q values to output elements###
         output_element_index = (list(np.atleast_1d(self.output_element_index)[self.output_element_in_service])[0] if self.write_flag
             == 'single_index' else list(np.array(self.output_element_index)[self.output_element_in_service])) #ruggedizing code
         output_values = (list(np.atleast_1d(self.output_values)[self.output_element_in_service])[0] if self.write_flag
