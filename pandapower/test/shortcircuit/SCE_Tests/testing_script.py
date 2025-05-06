@@ -68,6 +68,7 @@ assert np.isclose(i_line_with_gen.ikss_ka.loc[(1, 1)], 0., atol=1e-4)
 assert np.isclose(i_line_with_gen.ikss_ka.loc[(1, 2)], i_bus_with_sgen.ikss_ka.at[2], atol=1e-4)"""
 
 net = from_json(os.path.join(pp_dir, "test", "shortcircuit", "SCE_Tests", "4_bus_radial_grid.json"))
-calc_sc(net, fault="3ph", case="max", branch_results=True, ip=False, r_fault_ohm=0,
+calc_sc(net, fault="LG", case="max", branch_results=True, ip=False, r_fault_ohm=0,
         x_fault_ohm=0)
+print(net.res_bus_sc)
 print(net.res_line_sc)

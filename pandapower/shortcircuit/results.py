@@ -153,19 +153,19 @@ def _get_trafo_lg_results(net, v_abc_pu, i_abc_ka, s_abc_mva):
 
     # todo: ip, ith
 
-#ToDo LLG: diese Funktion notwendig?
+#ToDo LLG: adapt function
 def _calculate_bus_results_llg(ppc_0, ppc_1, ppc_2, bus):
     # we use 3D arrays here to easily identify via axis:
     # 0: line index, 1: from/to, 2: phase
     # short-ciruit for rotating machine (ext-grid and gen)
-    i_1_ka_0 = ppc_0['bus'][:, IKSS1] * np.exp(1j * np.deg2rad(ppc_0['bus'][:, PHI_IKSS1_DEGREE].real))
-    i_1_ka_1 = ppc_1['bus'][:, IKSS1] * np.exp(1j * np.deg2rad(ppc_1['bus'][:, PHI_IKSS1_DEGREE].real))
-    i_1_ka_2 = ppc_2['bus'][:, IKSS1] * np.exp(1j * np.deg2rad(ppc_2['bus'][:, PHI_IKSS1_DEGREE].real))
+    i_1_ka_0 = ppc_0['bus'][:, IKSS1] * np.exp(1j * np.deg2rad(ppc_0['bus'][:, PHI_IKSS1_DEGREE].real))[:, np.newaxis]
+    i_1_ka_1 = ppc_1['bus'][:, IKSS1] * np.exp(1j * np.deg2rad(ppc_1['bus'][:, PHI_IKSS1_DEGREE].real))[:, np.newaxis]
+    i_1_ka_2 = ppc_2['bus'][:, IKSS1] * np.exp(1j * np.deg2rad(ppc_2['bus'][:, PHI_IKSS1_DEGREE].real))[:, np.newaxis]
 
     # short-ciruit for inverter-based generation (current source)
-    i_2_ka_0 = ppc_0['bus'][:, IKSS2] * np.exp(1j * np.deg2rad(ppc_0['bus'][:, PHI_IKSS2_DEGREE].real))
-    i_2_ka_1 = ppc_1['bus'][:, IKSS2] * np.exp(1j * np.deg2rad(ppc_1['bus'][:, PHI_IKSS2_DEGREE].real))
-    i_2_ka_2 = ppc_2['bus'][:, IKSS2] * np.exp(1j * np.deg2rad(ppc_2['bus'][:, PHI_IKSS2_DEGREE].real))
+    i_2_ka_0 = ppc_0['bus'][:, IKSS2] * np.exp(1j * np.deg2rad(ppc_0['bus'][:, PHI_IKSS2_DEGREE].real))[:, np.newaxis]
+    i_2_ka_1 = ppc_1['bus'][:, IKSS2] * np.exp(1j * np.deg2rad(ppc_1['bus'][:, PHI_IKSS2_DEGREE].real))[:, np.newaxis]
+    i_2_ka_2 = ppc_2['bus'][:, IKSS2] * np.exp(1j * np.deg2rad(ppc_2['bus'][:, PHI_IKSS2_DEGREE].real))[:, np.newaxis]
 
     i_1_012_ka = np.stack([i_1_ka_0, i_1_ka_1, i_1_ka_2], 2)
     i_2_012_ka = np.stack([i_2_ka_0, i_2_ka_1, i_2_ka_2], 2)
@@ -179,9 +179,9 @@ def _calculate_bus_results_llg(ppc_0, ppc_1, ppc_2, bus):
 
     # ToDo: shape is (n_bus, n_sc_bus), must be 1D array, rows are all buses, columns are fault location buses
 
-    v_pu_0 = ppc_0["internal"]["V_ikss"][bus, bus]
-    v_pu_1 = ppc_1["internal"]["V_ikss"][bus, bus]
-    v_pu_2 = ppc_2["internal"]["V_ikss"][bus, bus]
+    v_pu_0 = ppc_0["internal"]["V_ikss"][bus, bus][:, np.newaxis]
+    v_pu_1 = ppc_1["internal"]["V_ikss"][bus, bus][:, np.newaxis]
+    v_pu_2 = ppc_2["internal"]["V_ikss"][bus, bus][:, np.newaxis]
 
     v_012_pu = np.stack([v_pu_0, v_pu_1, v_pu_2], 2)
     v_abc_pu = np.apply_along_axis(sequence_to_phase, 2, v_012_pu)
@@ -190,22 +190,22 @@ def _calculate_bus_results_llg(ppc_0, ppc_1, ppc_2, bus):
 
     # this is inefficient because it copies data to fit into a shape, better to use a slice,
     # and even better to find how to use sequence-based powers:
-    baseV = ppc_1["internal"]["baseV"][bus]
+    baseV = ppc_1["internal"]["baseV"][bus][:, np.newaxis]
     v_base_kv = np.stack([baseV, baseV, baseV], 2)
 
-    s_abc_mva = np.conj(i_1_abc_ka + i_2_abc_ka) * v_abc_pu * v_base_kv / np.sqrt(3)  # check if it works like this
+    s_abc_mva = np.conj(i_1_abc_ka + i_2_abc_ka) * v_abc_pu * v_base_kv / np.sqrt(3)
+    s_012_mva = np.apply_along_axis(sequence_to_phase, 2, s_abc_mva) # check if it works like this
 
+    # TODO for LLG fault ikks0 and ikss2 need to be respected
     # ToDo: Modify from sequence to phase frame in the right side
     # net.res_bus_sc["ikss_a_ka"] = i_1_abc_ka[ppc_index] + i_2_abc_ka[ppc_index]  # np.abs(i_abc_ka[f:t, side_idx, phase_idx])
     # net.res_bus_sc["ikss_b_ka"] = i_1_abc_ka[ppc_index] + i_2_abc_ka[ppc_index]
 
 
-
 def _extract_results(net, ppc_0, ppc_1, ppc_2, bus):
     if net["_options"]["fault"] == "LLG": #ToDo LLG
        _calculate_bus_results_llg(ppc_0, ppc_1, ppc_2, bus)
-    else:
-        _get_bus_results(net, ppc_0, ppc_1, ppc_2, bus)
+    _get_bus_results(net, ppc_0, ppc_1, ppc_2, bus)
     if net._options["branch_results"]:
         if net["_options"]["fault"] in ("LG", "LLG"): #LLG
             v_abc_pu, i_abc_ka, s_abc_mva = _calculate_branch_phase_results(ppc_0, ppc_1, ppc_2)

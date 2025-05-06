@@ -300,14 +300,9 @@ def _calc_sc_to_g(net, bus):
             _calc_branch_currents_complex(net, ppci_1, ppci_bus)
             _calc_branch_currents_complex(net, ppci_2, ppci_bus)
         else:
-            _calc_branch_currents(net, ppci_0, ppci_bus)
-            _calc_branch_currents(net, ppci_1, ppci_bus)
-            _calc_branch_currents(net, ppci_2, ppci_bus)
-
-    """    if net._options["branch_results"]:
-        _calc_branch_currents_complex(net, ppci_0, ppci_bus)
-        _calc_branch_currents_complex(net, ppci_1, ppci_bus)
-        _calc_branch_currents_complex(net, ppci_2, ppci_bus)"""
+            _calc_branch_currents_complex(net, ppci_0, ppci_bus)
+            _calc_branch_currents_complex(net, ppci_1, ppci_bus)
+            _calc_branch_currents_complex(net, ppci_2, ppci_bus)
 
     ppc_0 = _copy_results_ppci_to_ppc(ppci_0, ppc_0, "sc")
     ppc_1 = _copy_results_ppci_to_ppc(ppci_1, ppc_1, "sc")
