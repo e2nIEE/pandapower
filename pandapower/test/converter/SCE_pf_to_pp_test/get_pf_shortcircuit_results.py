@@ -49,10 +49,10 @@ def get_pf_sc_bus_results(app, fault_type='lll', calc_mode='max', fault_impedanc
         "pf_skss_b_mw": "m:Skss:B",
         "pf_skss_c_mw": "m:Skss:C",
         "pf_rk0_ohm": "m:R0",
-        "pf_rk1_ohm": "m:R1",
-        "pf_rk2_ohm": "m:R2",
         "pf_xk0_ohm": "m:X0",
+        "pf_rk1_ohm": "m:R1",
         "pf_xk1_ohm": "m:X1",
+        "pf_rk2_ohm": "m:R2",
         "pf_xk2_ohm": "m:X2"
     }
 
@@ -94,7 +94,8 @@ def get_pf_sc_line_results(app, fault_type='lll', calc_mode='max', fault_impedan
         "pf_p_from_mw": "m:P:bus1",
         "pf_p_to_mw": "m:P:bus2",
         "pf_q_from_mvar": "m:Q:bus1",
-        "pf_q_to_mvar": "m:Q:bus2"
+        "pf_q_to_mvar": "m:Q:bus2",
+        "pf_u": "m:u1"
     }
 
     result_variables_lines = {
@@ -159,3 +160,6 @@ with pd.ExcelWriter('pf_bus_sc_results_all_cases.xlsx') as writer:
                     sheet_name = f"{fault_type.upper()}_{case}"
                 sheet_name = sheet_name[:31]
                 df.to_excel(writer, sheet_name=sheet_name, index=False)
+
+##
+

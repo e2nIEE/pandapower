@@ -24,12 +24,15 @@ study_case = study_cases[0]
 study_case.Activate()
 
 ## run load flow in pf and convert net from pf to pp
-net = from_pfd(app, prj_name="Short_Circuit_Test_Case_SCE", sc_type='lll', sc_mode='max')
+net = from_pfd(app, prj_name="Short_Circuit_Test_Case_SCE", sc_type='ll', sc_mode='max')
 pf_sc_results = net.res_bus_sc
 
 ##
 from pandapower.shortcircuit.calc_sc import calc_sc
-calc_sc(net, fault="3ph", case='max', branch_results=False, ip=True)
+calc_sc(net, fault="LL", case='max', branch_results=False, ip=True)
 
 net.res_bus_sc = pd.concat([net.res_bus_sc, pf_sc_results], axis=1)
+
+
+##
 
