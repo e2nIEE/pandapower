@@ -140,6 +140,17 @@ def SimBench_1_HVMVmixed_1_105_0_sw_modified_no_load_flow():
     return from_cim(file_list=cgmes_files)
 
 
+@pytest.fixture(scope="session")
+def fullgrid_node_breaker():
+    test_path = r"C:\Files\Downloads\TestConfigurations_packageCASv2.0 (1)\FullGrid"
+
+    cgmes_files = [os.path.join(test_path, "CGMES_v2.4.15_FullGridTestConfiguration_NB_BE_v3.zip")]
+
+
+    return from_cim(file_list=cgmes_files)
+
+
+
 def test_micro_sc_ext_grid(mini_sc_mod):
     assert len(mini_sc_mod.ext_grid.index) == 2
     element_0 = mini_sc_mod.ext_grid.iloc[mini_sc_mod.ext_grid[
@@ -919,7 +930,7 @@ def test_fullgrid_switch(fullgrid_v2):
     assert element_0['et'].item() == 'b'
     assert element_0['type'].item() == 'DS'
     assert element_0['closed'].item()
-    assert element_0['name'].item() == 'BE_DSC_5'
+    assert 'BE_DSC_5' == element_0['name'].item()
     assert element_0['z_ohm'].item() == pytest.approx(0.0, abs=0.000001)
     assert math.isnan(element_0['in_ka'].item())
     assert 'Disconnector' == element_0['origin_class'].item()
@@ -1267,6 +1278,81 @@ def test_fullgrid_asymmetric_sgen(fullgrid_v2):
 def test_fullgrid_asymmetric_load(fullgrid_v2):
     assert len(fullgrid_v2.asymmetric_load.index) == 0
 
+
+def test_fullgrid_NB_bus(fullgrid_node_breaker):
+    assert len(fullgrid_node_breaker.bus.index) == 40
+    element_0 = fullgrid_node_breaker.bus[fullgrid_node_breaker.bus['origin_id'] == '_ec6b1f37-6c5a-ac43-a366-019f5bcce2b1']
+    assert element_0['name'].item() == 'BB_Disconector_5'
+    assert element_0['vn_kv'].item() == pytest.approx(110.00000, abs=0.000001)
+    assert element_0['type'].item() == 'n'
+    assert element_0['zone'].item() == 'PP_Brussels'
+    assert element_0['in_service'].item()
+    assert element_0['origin_class'].item() == 'ConnectivityNode'
+    assert element_0['origin_profile'].item() == 'eq'
+    assert element_0['cim_topnode'].item() == '_5c74cb26-ce2f-40c6-951d-89091eb781b6'
+    assert element_0['ConnectivityNodeContainer_id'].item() == '_dfa04cac-2b1c-2d4a-b981-ccc03193809f'
+    assert element_0['Substation_id'].item() == '_37e14a0f-5e34-4647-a062-8bfd9305fa9d'
+    assert element_0['GeographicalRegion_id'].item() == '_c1d5bfc68f8011e08e4d00247eb1f55e'
+    assert element_0['GeographicalRegion_name'].item() == 'BE'
+    assert element_0['SubGeographicalRegion_id'].item() == '_c1d5bfc88f8011e08e4d00247eb1f55e'
+    assert element_0['SubGeographicalRegion_name'].item() == 'ELIA-Brussels'
+    assert math.isnan(element_0['Busbar_id'].item())
+    assert math.isnan(element_0['Busbar_name'].item())
+    assert element_0['description'].item() == 'BB_Disconector_5'
+
+    element_1 = fullgrid_node_breaker.bus[fullgrid_node_breaker.bus['origin_id'] == '_4836f99b-c6e9-4ee8-a956-b1e3da882d46']
+    #assert math.isnan(element_1['cim_topnode'].item())
+    #assert math.isnan(element_1['description'].item())
+    assert element_1['Busbar_id'].item() == '_64901aec-5a8a-4bcb-8ca7-a3ddbfcd0e6c'
+    assert element_1['Busbar_name'].item() == 'BE-Busbar_1'
+
+    element_2 = fullgrid_node_breaker.bus[fullgrid_node_breaker.bus['origin_id'] == '_c38adab3-5168-4004-a83d-28d890dedd36']
+    assert element_2['zone'].item() == 'HVDC 1'
+    assert math.isnan(element_2['geo'].item())
+    assert element_2['cim_topnode'].item() == '_b01fe92f-68ab-4123-ae45-f22d3e8daad1'
+    assert element_2['ConnectivityNodeContainer_id'].item() == '_c68f0a24-46cb-42aa-b91d-0b49b8310cc9'
+    assert element_2['Substation_id'].item() == '_9df6213f-c5dc-477c-aab4-74721f7d1fdb'
+    assert element_2['description'].item() == 'HVDC1_BB'
+    assert math.isnan(element_2['Busbar_id'].item())
+    assert math.isnan(element_2['Busbar_name'].item())
+    assert element_2['GeographicalRegion_id'].item() == '_c1d5bfc68f8011e08e4d00247eb1f55e'
+    assert element_2['GeographicalRegion_name'].item() == 'BE'
+    assert element_2['SubGeographicalRegion_id'].item() == '_0296d175-5169-48b8-b96a-1cb90f56fe21'
+    assert element_2['SubGeographicalRegion_name'].item() == 'HVDC Zone'
+
+
+def test_fullgrid_NB_switch(fullgrid_node_breaker):
+    assert len(fullgrid_node_breaker.switch) == 24
+
+    assert len(fullgrid_node_breaker.switch['closed']) == 24 # all are closed
+
+    element_0 = fullgrid_node_breaker.switch[fullgrid_node_breaker.switch['origin_id'] == '_8a3ad6e1-6e23-b649-880e-4865217501c4']
+    assert fullgrid_node_breaker.bus.iloc[element_0['bus'].item()]['origin_id'] == '_ec6b1f37-6c5a-ac43-a366-019f5bcce2b1'
+    assert fullgrid_node_breaker.bus.iloc[element_0['element'].item()]['origin_id'] == '_3293fcc7-4962-47df-a7c1-ce150600c388'
+    assert element_0['et'].item() == 'b'
+    assert element_0['type'].item() == 'DS'
+    assert element_0['closed'].item()
+    assert element_0['name'].item() == 'BE_DSC_5'
+    assert element_0['z_ohm'].item() == pytest.approx(0.0, abs=0.000001)
+    assert math.isnan(element_0['in_ka'].item())
+    assert 'Disconnector' == element_0['origin_class'].item()
+    assert element_0['terminal_bus'].item() == '_2af7ad2c-062c-1c4f-be3e-9c7cd594ddbb'
+    assert element_0['terminal_element'].item() == '_916578a1-7a6e-7347-a5e0-aaf35538949c'
+    assert element_0['description'].item() == 'BE_DSC_5'
+
+    element_1 = fullgrid_node_breaker.switch[fullgrid_node_breaker.switch['origin_id'] == '_ac77624b-0a92-4a49-bb93-02b131e8857c']
+    assert fullgrid_node_breaker.bus.iloc[element_1['bus'].item()]['origin_id'] == '_1695eb20-9044-4133-a3fd-2147f55f170d'
+    assert fullgrid_node_breaker.bus.iloc[element_1['element'].item()]['origin_id'] == '_0afe3c6b-c8b5-d946-b05c-e4a8e00a5e6d'
+    assert element_1['et'].item() == 'b'
+    assert element_1['type'].item() == 'LBS'
+    assert element_1['closed'].item()
+    assert element_1['name'].item() == 'BE_LB_1'
+    assert element_1['z_ohm'].item() == pytest.approx(0.0, abs=0.000001)
+    assert math.isnan(element_1['in_ka'].item())
+    assert element_1['origin_class'].item() == 'LoadBreakSwitch'
+    assert element_1['terminal_bus'].item() == '_1c134839-5bad-124e-93a4-b11663025232'
+    assert element_1['terminal_element'].item() == '_ea6bb748-b513-0947-a59b-abd50155dad2'
+    assert element_1['description'].item() == 'BE_LB_1'
 
 if __name__ == "__main__":
     pytest.main([__file__, "-xs"])
