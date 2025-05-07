@@ -191,7 +191,7 @@ def test_all_currents_lg_max():
     # Without generator
     net = three_bus_example()
     net.sgen.in_service = False
-    calc_sc(net, case="max", fault='LG')
+    calc_sc(net, case="max", fault='LG', branch_results=True, return_all_currents=True)
     i_bus_without_sgen = net.res_bus_sc.copy()
 
     # Isolate sgen contrib

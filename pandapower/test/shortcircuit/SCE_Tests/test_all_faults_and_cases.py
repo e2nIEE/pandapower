@@ -19,19 +19,23 @@ def check_pattern(pattern):
     Checks the given pattern and returns a corresponding identifier.
 
     This function checks if the input pattern matches specific regular expressions
-    for 'rk' and 'xk' types. It returns a standardized identifier if a match is found
+    for 'rk', 'xk', 'ikss', and 'skss' types. It returns a standardized identifier if a match is found
     or returns the original pattern if no match is found.
 
     Parameters:
     pattern (str): The input pattern to check.
 
     Returns:
-    str: A standardized identifier ('rk_ohm', 'xk_ohm') or the original pattern.
+    str: A standardized identifier ('rk_ohm', 'xk_ohm', 'ikss_a_ka', 'skss_a_mw') or the original pattern.
     """
     if re.match(r"^rk[0-2]?_ohm$", pattern):
         return "rk_ohm"
     elif re.match(r"^xk[0-2]?_ohm$", pattern):
         return "xk_ohm"
+    elif re.match(r"^ikss_[abc]_ka$", pattern):  # Matches ikss_a_ka, ikss_b_ka, ikss_c_ka
+        return "ikss_ka"
+    elif re.match(r"^skss_[abc]_mw$", pattern):  # Matches skss_a_mw, skss_b_mw, skss_c_mw
+        return "skss_mw"
     else:
         return pattern
 
@@ -83,8 +87,9 @@ def load_pf_results(excel_file):
             pf_results.columns = ['name', 'ikss_ka', 'skss_mw', 'rk_ohm', 'xk_ohm']
 
         elif sheet.startswith("LLG_"):
-            pf_results.drop(columns=['pf_ikss_a_ka', 'pf_skss_a_mw'], inplace=True)
-            pf_results.columns = ["name", "ikss0_ka", "ikss1_ka", 'skss0_mw', 'skss1_mw',
+            # TODO also check skss_a_mw, skss_b_mw, skss_c_mw
+            pf_results.drop(columns=['pf_skss_a_mw', 'pf_skss_b_mw', 'pf_skss_c_mw'], inplace=True)
+            pf_results.columns = ["name", "ikss_a_ka", "ikss_b_ka", 'ikss_c_ka',
                                   "rk0_ohm", "xk0_ohm", "rk1_ohm", "xk1_ohm", "rk2_ohm", "xk2_ohm"]
         elif sheet.startswith("LG_"):
             pf_results.drop(columns=['pf_ikss_b_ka', 'pf_ikss_c_ka', 'pf_skss_b_mw', 'pf_skss_c_mw'], inplace=True)
@@ -103,8 +108,8 @@ def get_columns_to_check(fault):
     elif fault == "LG":
         return ["ikss_ka", "skss_mw", "rk0_ohm", "xk0_ohm", "rk1_ohm", "xk1_ohm", "rk2_ohm", "xk2_ohm"]
     elif fault == 'LLG':
-        return ["name", "ikss0_ka", "ikss1_ka", 'skss0_mw', 'skss1_mw',
-                "rk0_ohm", "xk0_ohm", "rk1_ohm", "xk1_ohm", "rk2_ohm", "xk2_ohm"]
+        # TODO also check skss_a_mw, skss_b_mw, skss_c_mw
+        return ["ikss_a_ka", "ikss_b_ka", 'ikss_c_ka', "rk0_ohm", "xk0_ohm", "rk1_ohm", "xk1_ohm", "rk2_ohm", "xk2_ohm"]
     return []
 
 
@@ -115,6 +120,8 @@ def get_columns_to_check(fault):
     ("LL", "min", 0.0, 0.0),
     ("LG", "max", 0.0, 0.0),
     ("LG", "min", 0.0, 0.0),
+    ("LLG", "max", 0.0, 0.0),
+    ("LLG", "min", 0.0, 0.0),
     ("LLL", "max", 5.0, 5.0),
     ("LLL", "min", 5.0, 5.0),
     ("LL", "max", 5.0, 5.0),

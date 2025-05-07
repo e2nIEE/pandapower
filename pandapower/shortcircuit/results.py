@@ -153,8 +153,7 @@ def _get_trafo_lg_results(net, v_abc_pu, i_abc_ka, s_abc_mva):
 
     # todo: ip, ith
 
-#ToDo LLG: adapt function
-def _calculate_bus_results_llg(ppc_0, ppc_1, ppc_2, bus):
+def _calculate_bus_results_llg(ppc_0, ppc_1, ppc_2, bus, net):
     # we use 3D arrays here to easily identify via axis:
     # 0: line index, 1: from/to, 2: phase
     # short-ciruit for rotating machine (ext-grid and gen)
@@ -177,8 +176,24 @@ def _calculate_bus_results_llg(ppc_0, ppc_1, ppc_2, bus):
     i_1_abc_ka[np.abs(i_1_abc_ka) < 1e-10] = 0
     i_2_abc_ka[np.abs(i_2_abc_ka) < 1e-10] = 0
 
-    # ToDo: shape is (n_bus, n_sc_bus), must be 1D array, rows are all buses, columns are fault location buses
+    # Todo adapt to new reult format
+    # Initialize a new matrix to store the selected rows
+    # The shape is determined by the length of 'bus' and the number of columns in 'i_1_abc_ka'
+    i_1_abc_ka_abs = np.zeros((len(bus), i_1_abc_ka.shape[2]))
 
+    # Extract the specified rows from 'i_1_abc_ka' based on the indices in 'bus'
+    for index in range(len(bus)):
+        i_1_abc_ka_abs[index] = abs(i_1_abc_ka[bus[index], index])
+
+    # TODO remove this
+    # from pandapower.auxiliary import sequence_to_phase
+    # ik_012_ka = np.stack([ikssv_0, ikssv_1, ikssv_2])
+    # ik_abc_ka = np.apply_along_axis(sequence_to_phase, 0, ik_012_ka)
+    # ik_abc_ka[np.abs(ik_abc_ka) < 1e-10] = 0
+    # i_base = 2.886752
+    # abs(ik_abc_ka) * i_base
+
+    # ToDo: check voltages
     v_pu_0 = ppc_0["internal"]["V_ikss"][bus, bus][:, np.newaxis]
     v_pu_1 = ppc_1["internal"]["V_ikss"][bus, bus][:, np.newaxis]
     v_pu_2 = ppc_2["internal"]["V_ikss"][bus, bus][:, np.newaxis]
@@ -193,18 +208,29 @@ def _calculate_bus_results_llg(ppc_0, ppc_1, ppc_2, bus):
     baseV = ppc_1["internal"]["baseV"][bus][:, np.newaxis]
     v_base_kv = np.stack([baseV, baseV, baseV], 2)
 
-    s_abc_mva = np.conj(i_1_abc_ka + i_2_abc_ka) * v_abc_pu * v_base_kv / np.sqrt(3)
-    s_012_mva = np.apply_along_axis(sequence_to_phase, 2, s_abc_mva) # check if it works like this
+    # TODO SKSS not working
+    """skss_0 = ppc_0["bus"][bus, SKSS]
+    skss_1 = ppc_1["bus"][bus, SKSS]
+    skss_2 = ppc_2["bus"][bus, SKSS]
+    skss_012_mva = np.stack([skss_0, skss_1, skss_2], 1)
+    skss_abc_mva = np.apply_along_axis(sequence_to_phase, 1, skss_012_mva)
 
-    # TODO for LLG fault ikks0 and ikss2 need to be respected
-    # ToDo: Modify from sequence to phase frame in the right side
-    # net.res_bus_sc["ikss_a_ka"] = i_1_abc_ka[ppc_index] + i_2_abc_ka[ppc_index]  # np.abs(i_abc_ka[f:t, side_idx, phase_idx])
-    # net.res_bus_sc["ikss_b_ka"] = i_1_abc_ka[ppc_index] + i_2_abc_ka[ppc_index]
+    s_abc_mva = np.conj(i_1_abc_ka + i_2_abc_ka) * v_abc_pu * v_base_kv / np.sqrt(3)
+    s_012_mva = np.apply_along_axis(sequence_to_phase, 2, s_abc_mva)
+    skss_abc_mva_abs = np.zeros((len(bus), s_abc_mva .shape[2]))
+
+    # Extract the specified rows from 'i_1_abc_ka' based on the indices in 'bus'
+    for index in range(len(bus)):
+        skss_abc_mva_abs[index] = abs(s_abc_mva [bus[index], index])"""
+
+    net.res_bus_sc["ikss_a_ka"] = i_1_abc_ka_abs[:, 0]  # First column
+    net.res_bus_sc["ikss_b_ka"] = i_1_abc_ka_abs[:, 1]  # Second column
+    net.res_bus_sc["ikss_c_ka"] = i_1_abc_ka_abs[:, 2]  # Third column
 
 
 def _extract_results(net, ppc_0, ppc_1, ppc_2, bus):
-    if net["_options"]["fault"] == "LLG": #ToDo LLG
-       _calculate_bus_results_llg(ppc_0, ppc_1, ppc_2, bus)
+    if net["_options"]["fault"] == "LLG":
+       _calculate_bus_results_llg(ppc_0, ppc_1, ppc_2, bus, net)
     _get_bus_results(net, ppc_0, ppc_1, ppc_2, bus)
     if net._options["branch_results"]:
         if net["_options"]["fault"] in ("LG", "LLG"): #LLG
@@ -229,9 +255,14 @@ def _get_bus_results(net, ppc_0, ppc_1, ppc_2, bus):
     ppc_index = bus_lookup[net.bus.index]
 
     ppc_sequence = {0: ppc_0, 1: ppc_1, 2: ppc_2, "": ppc_1}
-    if net["_options"]["fault"] in ("LG", "LLG"): #ToDo: LLG
+    if net["_options"]["fault"] == "LG":
         net.res_bus_sc["ikss_ka"] = ppc_0["bus"][ppc_index, IKSS1] + ppc_1["bus"][ppc_index, IKSS2]
         net.res_bus_sc["skss_mw"] = ppc_0["bus"][ppc_index, SKSS]
+        sequence_relevant = range(3)
+    elif net["_options"]["fault"] == "LLG":
+        # TODO maybe need adaptions here else delete
+        # net.res_bus_sc["ikss_ka"] = ppc_0["bus"][ppc_index, IKSS1] + ppc_1["bus"][ppc_index, IKSS2]
+        # net.res_bus_sc["skss_mw"] = ppc_0["bus"][ppc_index, SKSS]
         sequence_relevant = range(3)
     else:
         net.res_bus_sc["ikss_ka"] = ppc_1["bus"][ppc_index, IKSS1] + ppc_1["bus"][ppc_index, IKSS2]

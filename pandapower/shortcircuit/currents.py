@@ -2,7 +2,7 @@
 # Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import warnings
-
+import copy
 import numpy as np
 import pandas as pd
 
@@ -119,10 +119,6 @@ def _calc_ikss_to_g(net, ppci_0, ppci_1, ppci_2, bus_idx):
     if fault == "LG":
         # z_equiv 1 and 2 are the same, so could also be 2 * z_equiv_1 + z_equiv_0:
         z_equiv = z_equiv_0 + z_equiv_1 + z_equiv_2
-    elif fault == "LLG":
-        #TODO check equation
-        # z_equiv 1 and 2 are the same, so could also be 2 * (z_equiv_0) + (z_equiv_1 + z_equiv_2) / 2
-        z_equiv = 2 * z_equiv_0 + z_equiv_1
 
     # Only for test, should correspondant to PF result
     baseZ = ppci_1["bus"][bus_idx, BASE_KV] ** 2 / ppci_1["baseMVA"]
@@ -137,7 +133,6 @@ def _calc_ikss_to_g(net, ppci_0, ppci_1, ppci_2, bus_idx):
     # # ppci_0["bus"][bus_idx, IKSS1] = abs(c * ppci_0["internal"]["baseI"][bus_idx] * ppci["baseMVA"] / (z_equiv * baseZ))
     # ppci["bus"][bus_idx, IKSS1] = abs(np.sqrt(3) * c / z_equiv / ppci["bus"][bus_idx, BASE_KV] * ppci["baseMVA"])
     # ppci_0["bus"][bus_idx, IKSS1] = abs(np.sqrt(3) * c / z_equiv / ppci_0["bus"][bus_idx, BASE_KV] * ppci["baseMVA"])
-
 
     # ppci["bus"][bus_idx, IKSS1] = np.sqrt(3) * c / z_equiv / ppci["bus"][bus_idx, BASE_KV] * ppci["baseMVA"]
     # ppci_0["bus"][bus_idx, IKSS1] = np.sqrt(3) * c / z_equiv / ppci_0["bus"][bus_idx, BASE_KV] * ppci_0["baseMVA"]
@@ -164,35 +159,24 @@ def _calc_ikss_to_g(net, ppci_0, ppci_1, ppci_2, bus_idx):
     ppci_0["internal"]["valid_V"] = valid_V
     ppci_1["internal"]["valid_V"] = valid_V
     ppci_2["internal"]["valid_V"] = valid_V
-    # todo ikss2 and ikss0 need to be calcualted differently with new equations
     if fault == "LG":
-        ikss1 = 3 * V0[bus_idx, np.arange(n_sc_bus)] / z_equiv
+        ikssv_1 = 3 * V0[bus_idx, np.arange(n_sc_bus)] / z_equiv
+        ikssv_2 = copy.deepcopy(ikssv_1)
+        ikssv_0 = copy.deepcopy(ikssv_1)
     # Ia1 = {v0/ [Z1+Z2Z0/(Z2+Z0)]}; Ia2= -Ia1Z0/(Z2 + Z0) and Ia0 = -Ia1Z2/(Z2 + Z0)
     elif fault == "LLG":
-        ikss1 = V0[bus_idx, np.arange(n_sc_bus)] / (z_equiv_1+z_equiv_2*z_equiv_0/(z_equiv_2+z_equiv_0))
-        ikss2 = -ikss1*z_equiv_0/(z_equiv_0+z_equiv_2)
-        ikss0 = -ikss1*z_equiv_2/(z_equiv_0+z_equiv_2)
-
-    # from pandapower.auxiliary import sequence_to_phase
-    # ik_012_ka = np.conj(ikss0 + ikss1 + ikss2)
-    # ik_012_ka = np.stack([ikss0, ikss1, ikss2], 2)
-    # ik_abc_ka = np.apply_along_axis(sequence_to_phase, 2, ik_012_ka)
-    # ik_abc_ka[np.abs(ik_abc_ka) < 1e-10] = 0
-    # abs(ik_abc_ka)
+        ikssv_1 = V0[bus_idx, np.arange(n_sc_bus)] / (z_equiv_1+z_equiv_2*z_equiv_0/(z_equiv_2+z_equiv_0))
+        ikssv_2 = -ikssv_1*z_equiv_0/(z_equiv_0+z_equiv_2)
+        ikssv_0 = -ikssv_1*z_equiv_2/(z_equiv_0+z_equiv_2)
 
     if net["_options"]["inverse_y"]:
         Zbus_0 = ppci_0["internal"]["Zbus"]
         Zbus_1 = ppci_1["internal"]["Zbus"]
         Zbus_2 = ppci_2["internal"]["Zbus"]
-        #TODO for LLG fault ikks0 and ikss2 need to be respected
-        if fault == "LG":
-            V_ikss_0 = 0 - ikss1 * Zbus_0[:, bus_idx] / 3  # initial value for zero-sequence voltage is 0
-            V_ikss_1 = V0 - ikss1 * Zbus_1[:, bus_idx] / 3 if valid_V else 0 - ikss1 * Zbus_1[:, bus_idx] / 3
-            V_ikss_2 = 0 - ikss1 * Zbus_2[:, bus_idx] / 3  # initial value for negative-sequence voltage is 0
-        if fault == "LLG":
-            V_ikss_0 = 0 - ikss0 * Zbus_0[:, bus_idx] / 3  # initial value for zero-sequence voltage is 0
-            V_ikss_1 = V0 - ikss1 * Zbus_1[:, bus_idx] / 3 if valid_V else 0 - ikss1 * Zbus_1[:, bus_idx] / 3
-            V_ikss_2 = 0 - ikss2 * Zbus_2[:, bus_idx] / 3  # initial value for negative-sequence voltage is 0
+        if (fault == "LG") or (fault == "LLG"):
+            V_ikss_0 = 0 - ikssv_0 * Zbus_0[:, bus_idx] / 3  # initial value for zero-sequence voltage is 0
+            V_ikss_1 = V0 - ikssv_1 * Zbus_1[:, bus_idx] / 3 if valid_V else 0 - ikssv_1 * Zbus_1[:, bus_idx] / 3
+            V_ikss_2 = 0 - ikssv_2 * Zbus_2[:, bus_idx] / 3  # initial value for negative-sequence voltage is 0
 
     else:
         ybus_fact_0 = ppci_0["internal"]["ybus_fact"]
@@ -203,8 +187,8 @@ def _calc_ikss_to_g(net, ppci_0, ppci_1, ppci_2, bus_idx):
         V_ikss_2 = np.zeros((n_bus, n_sc_bus), dtype=np.complex128)
         for ix, b in enumerate(bus_idx):
             ikss = np.zeros((n_bus, 1), dtype=np.complex128)
-            ikss[b] = ikss1[ix]
-            # TODO for LLG fault ikks0 and ikss2 need to be respected
+            ikss[b] = ikssv_1[ix]
+            # TODO for LLG fault ikks0 and ikss2 need to be respected?
             if fault in ["LG", "LLG"]:
                 V_ikss_0[:, [ix]] = 0 - ybus_fact_0(ikss) / 3
                 V_ikss_1[:, [ix]] = V0[:, [ix]] - ybus_fact_1(ikss) / 3 if valid_V else 0 - ybus_fact_1(ikss) / 3
@@ -219,29 +203,27 @@ def _calc_ikss_to_g(net, ppci_0, ppci_1, ppci_2, bus_idx):
     # ikss1 = c / z_equiv / ppci["bus"][bus_idx, BASE_KV] / np.sqrt(3) * ppci["baseMVA"]
     # ikss1 = c / z_equiv / baseI[bus_idx]  # should be same as above
     # added abs here:
-    ppci_0["bus"][bus_idx, IKSS1] = abs(ikss1 / ppci_0["internal"]["baseI"][bus_idx])
-    ppci_1["bus"][bus_idx, IKSS1] = abs(ikss1 / ppci_1["internal"]["baseI"][bus_idx])
-    ppci_2["bus"][bus_idx, IKSS1] = abs(ikss1 / ppci_2["internal"]["baseI"][bus_idx])
-    # TODO for LLG fault ikks0 and ikss2 need to be respected
+    ppci_0["bus"][bus_idx, IKSS1] = abs(ikssv_0  / ppci_0["internal"]["baseI"][bus_idx])
+    ppci_1["bus"][bus_idx, IKSS1] = abs(ikssv_1 / ppci_1["internal"]["baseI"][bus_idx])
+    ppci_2["bus"][bus_idx, IKSS1] = abs(ikssv_2 / ppci_2["internal"]["baseI"][bus_idx])
+    # TODO for LLG  and als LG fault? inverter contribution needs to be calculated ikssc_0, ikssc_1, ikssc_2
     if fault == "LLG":
-        ppci_0["bus"][bus_idx, IKSS2] = abs(ikss2 / ppci_0["internal"]["baseI"][bus_idx])
-        ppci_1["bus"][bus_idx, IKSS2] = abs(ikss2 / ppci_1["internal"]["baseI"][bus_idx])
-        ppci_2["bus"][bus_idx, IKSS2] = abs(ikss2 / ppci_2["internal"]["baseI"][bus_idx])
-
-        # ppci_0["bus"][bus_idx, IKSS0] = abs(ikss0 / ppci_0["internal"]["baseI"][bus_idx])
-        # ppci_1["bus"][bus_idx, IKSS0] = abs(ikss0 / ppci_1["internal"]["baseI"][bus_idx])
-        # ppci_2["bus"][bus_idx, IKSS0] = abs(ikss0 / ppci_2["internal"]["baseI"][bus_idx])
+        ikssc_0 = 0
+        ikssc_1 = 0
+        ikssc_2 = 0
+        ppci_0["bus"][bus_idx, IKSS2] = abs(ikssc_0 / ppci_0["internal"]["baseI"][bus_idx])
+        ppci_1["bus"][bus_idx, IKSS2] = abs(ikssc_1 / ppci_1["internal"]["baseI"][bus_idx])
+        ppci_2["bus"][bus_idx, IKSS2] = abs(ikssc_2 / ppci_2["internal"]["baseI"][bus_idx])
 
     # added angle calculation in degree:
-    ppci_0["bus"][bus_idx, PHI_IKSS1_DEGREE] = np.angle(ikss1, deg=True)
-    ppci_1["bus"][bus_idx, PHI_IKSS1_DEGREE] = np.angle(ikss1, deg=True)
-    ppci_2["bus"][bus_idx, PHI_IKSS1_DEGREE] = np.angle(ikss1, deg=True)
-    # TODO for LLG fault ikks0 and ikss2 need to be respected
+    ppci_0["bus"][bus_idx, PHI_IKSS1_DEGREE] = np.angle(ikssv_0, deg=True)
+    ppci_1["bus"][bus_idx, PHI_IKSS1_DEGREE] = np.angle(ikssv_1, deg=True)
+    ppci_2["bus"][bus_idx, PHI_IKSS1_DEGREE] = np.angle(ikssv_2, deg=True)
+    # TODO for LLG  and als LG fault? inverter contribution needs to be calculated ikssc_0, ikssc_1, ikssc_2
     if fault == "LLG":
-        ppci_0["bus"][bus_idx, PHI_IKSS2_DEGREE] = np.angle(ikss2, deg=True)
-        ppci_1["bus"][bus_idx, PHI_IKSS2_DEGREE] = np.angle(ikss2, deg=True)
-        ppci_2["bus"][bus_idx, PHI_IKSS2_DEGREE] = np.angle(ikss2, deg=True)
-
+        ppci_0["bus"][bus_idx, PHI_IKSS2_DEGREE] = np.angle(ikssc_0, deg=True)
+        ppci_1["bus"][bus_idx, PHI_IKSS2_DEGREE] = np.angle(ikssc_1, deg=True)
+        ppci_2["bus"][bus_idx, PHI_IKSS2_DEGREE] = np.angle(ikssc_2, deg=True)
 
     # V_ikss_abc_pu = sequence_to_phase(np.vstack([V_ikss_0.T, V_ikss_1.T, V_ikss_2.T]))
     # V_ikss_abc_pu[np.abs(V_ikss_abc_pu) < 1e-10] = 0
@@ -251,10 +233,10 @@ def _calc_ikss_to_g(net, ppci_0, ppci_1, ppci_2, bus_idx):
     # ppci_1["internal"]["V_ikss"] = V_ikss_abc_pu.T[:, [1]]
     # ppci_2["internal"]["V_ikss"] = V_ikss_abc_pu.T[:, [2]]
 
-    # ToDo: LLG, hier überhaupt ein Unterschied in den Gleichungen und ppci_1 und 2 notwendig?
+    # ToDo: check for LLG
     ppci_0["bus"][bus_idx, SKSS] = ppci_0["bus"][bus_idx, IKSS1]  * ppci_0["bus"][bus_idx, BASE_KV] / np.sqrt(3)
-    # ppci_1["bus"][bus_idx, SKSS] = ppci_1["bus"][bus_idx, IKSS1]  * ppci_1["bus"][bus_idx, BASE_KV] / np.sqrt(3)
-    # ppci_2["bus"][bus_idx, SKSS] = ppci_2["bus"][bus_idx, IKSS1]  * ppci_2["bus"][bus_idx, BASE_KV] / np.sqrt(3)
+    ppci_1["bus"][bus_idx, SKSS] = ppci_1["bus"][bus_idx, IKSS1]  * ppci_1["bus"][bus_idx, BASE_KV] / np.sqrt(3)
+    ppci_2["bus"][bus_idx, SKSS] = ppci_2["bus"][bus_idx, IKSS1]  * ppci_2["bus"][bus_idx, BASE_KV] / np.sqrt(3)
 
     # add voltage information to ppci:
     ppci_0["internal"]["V_ikss"] = V_ikss_0
