@@ -38,7 +38,11 @@ def get_pf_sc_bus_results(app, fault_type='lll', calc_mode='max', fault_impedanc
         "pf_ikss_ka": "m:Ikss",
         "pf_skss_mw": "m:Skss",
         "pf_rk_ohm": "m:R",
-        "pf_xk_ohm": "m:X"  # ,"pf_ip_ka": "m:ip"
+        "pf_xk_ohm": "m:X",  # ,"pf_ip_ka": "m:ip"
+        "pf_vm_pu": "m:ul",
+        "pf_va_degree": "m:phiul",
+        "pf_p_mw": "m:P",
+        "pf_q_mvar": "m:Q"
     }
 
     result_variables = {
@@ -53,7 +57,13 @@ def get_pf_sc_bus_results(app, fault_type='lll', calc_mode='max', fault_impedanc
         "pf_rk1_ohm": "m:R1",
         "pf_xk1_ohm": "m:X1",
         "pf_rk2_ohm": "m:R2",
-        "pf_xk2_ohm": "m:X2"
+        "pf_xk2_ohm": "m:X2",
+        "pf_vm_a_pu": "m:ul:A",
+        "pf_vm_b_pu": "m:ul:B",
+        "pf_vm_c_pu": "m:ul:C",
+        "pf_va_a_degree": "m:phiul:A",
+        "pf_va_b_degree": "m:phiul:B",
+        "pf_va_c_degree": "m:phiul:C",
     }
 
     if fault_type == 'lll':
@@ -95,7 +105,7 @@ def get_pf_sc_line_results(app, fault_type='lll', calc_mode='max', fault_impedan
         "pf_p_to_mw": "m:P:bus2",
         "pf_q_from_mvar": "m:Q:bus1",
         "pf_q_to_mvar": "m:Q:bus2",
-        "pf_u": "m:u1"
+        "pf_vm_pu": "m:u1"
     }
 
     result_variables_lines = {
@@ -122,7 +132,19 @@ def get_pf_sc_line_results(app, fault_type='lll', calc_mode='max', fault_impedan
         "pf_q_c_from_mw": "m:Q:bus1:C",
         "pf_q_a_to_mw": "m:Q:bus2:A",
         "pf_q_b_to_mw": "m:Q:bus2:B",
-        "pf_q_c_to_mw": "m:Q:bus2:C"
+        "pf_q_c_to_mw": "m:Q:bus2:C",
+        # "pf_vm_a_from_pu": "m:ul:bus1:A",
+        # "pf_vm_b_from_pu": "m:ul:bus1:B",
+        # "pf_vm_c_from_pu": "m:ul:bus1:C",
+        # "pf_vm_a_to_pu": "m:ul:bus2:A",
+        # "pf_vm_b_to_pu": "m:ul:bus2:B",
+        # "pf_vm_c_to_pu": "m:ul:bus2:C",
+        # "pf_va_a_from_degree": "m:phiul:bus1:A",
+        # "pf_va_b_from_degree": "m:phiul:bus1:B",
+        # "pf_va_c_from_degree": "m:phiul:bus1:C",
+        # "pf_va_a_to_degree": "m:phiul:bus2:A",
+        # "pf_va_b_to_degree": "m:phiul:bus2:B",
+        # "pf_va_c_to_degree": "m:phiul:bus2:C"
     }
 
     if fault_type == 'lll':
@@ -148,18 +170,33 @@ fault_types = ['lll', 'll', 'llg', 'lg']
 cases = ['max', 'min']
 fault_impedances = [(0, 0), (5, 5)]
 
-with pd.ExcelWriter('pf_bus_sc_results_all_cases.xlsx') as writer:
+with pd.ExcelWriter('pf_sc_results_all_cases.xlsx') as writer:
     for fault_type in fault_types:
         for case in cases:
             for fault_impedance in fault_impedances:
-                df = get_pf_sc_bus_results(app, fault_type=fault_type, calc_mode=case,
-                                           fault_impedance_rf=fault_impedance[0], fault_impedance_xf=fault_impedance[1])
+                df_bus = get_pf_sc_bus_results(
+                    app,
+                    fault_type=fault_type,
+                    calc_mode=case,
+                    fault_impedance_rf=fault_impedance[0],
+                    fault_impedance_xf=fault_impedance[1]
+                )
+
+                df_line = get_pf_sc_line_results(
+                    app,
+                    fault_type=fault_type,
+                    calc_mode=case,
+                    fault_impedance_rf=fault_impedance[0],
+                    fault_impedance_xf=fault_impedance[1]
+                )
+
                 if fault_impedance[0] > 0:
-                    sheet_name = f"{fault_type.upper()}_{case}_fault"
+                    sheet_name_base = f"{fault_type.upper()}_{case}_fault"
                 else:
-                    sheet_name = f"{fault_type.upper()}_{case}"
-                sheet_name = sheet_name[:31]
-                df.to_excel(writer, sheet_name=sheet_name, index=False)
+                    sheet_name_base = f"{fault_type.upper()}_{case}"
+                sheet_name_base = sheet_name_base[:25]
+                df_bus.to_excel(writer, sheet_name=sheet_name_base, index=False)
+                df_line.to_excel(writer, sheet_name=sheet_name_base + "_branch", index=False)
+
 
 ##
-
