@@ -120,8 +120,8 @@ def test_pf_export_trafo3w_tap_depedence_impedance_tapchanger():
     app = pf.GetApplication()
 
     # import the tap changer test grid to powerfactory
-    path = os.path.join(pp_dir, 'test', 'converter', 'tap_table_from_tdi.pfd')
-    prj = import_project(path, app, 'TEST_PF_CONVERTER', import_folder='TEST_IMPORT', clear_import_folder=True)
+    path = os.path.join(pp_dir, 'test', 'converter', 'testfiles', 'testfiles/tap_table_from_tdi.pfd')
+    prj = import_project(path, app, 'test_tap_table_from_tdi', import_folder='TEST_IMPORT', clear_import_folder=True)
     prj_name = prj.GetFullName()
 
     net = from_pfd(app, prj_name=prj_name)
@@ -178,8 +178,8 @@ def test_pf_export_tap_changer():
 def test_pf_export_q_capability_curve():
     app = pf.GetApplication("LO3195", "Gbhai001GBHAI!")
     # import the tap changer test grid to powerfactory
-    path = os.path.join(pp_dir, 'test', 'converter', 'q_capabiltiy_curve.pfd')
-    prj = import_project(path, app, 'TEST_PF_CONVERTER', import_folder='TEST_IMPORT', clear_import_folder=True)
+    path = os.path.join(pp_dir, 'test', 'converter', 'testfiles', 'testfiles/q_capabiltiy_curve.pfd')
+    prj = import_project(path, app, 'test_q_capability_curve', import_folder='TEST_IMPORT', clear_import_folder=True)
     prj_name = prj.GetFullName()
 
     net = from_pfd(app, prj_name=prj_name)
