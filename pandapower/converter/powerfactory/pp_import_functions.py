@@ -3501,7 +3501,7 @@ def create_svc(net, item, pv_as_slack, pf_variable_p_gen, dict_net):
     logger.debug('>> creating synchronous machine <%s>' % name)
 
     try:
-        bus1 = get_connection_nodes(net, item, 1)
+        bus1, _ = get_connection_nodes(net, item, 1)
     except IndexError:
         logger.error("Cannot add SVC '%s': not connected" % name)
         return
