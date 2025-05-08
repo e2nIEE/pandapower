@@ -142,10 +142,9 @@ def SimBench_1_HVMVmixed_1_105_0_sw_modified_no_load_flow():
 
 @pytest.fixture(scope="session")
 def fullgrid_node_breaker():
-    test_path = r"C:\Files\Downloads\TestConfigurations_packageCASv2.0 (1)\FullGrid"
+    folder_path = os.path.join(test_path, "test_files", "example_cim")
 
-    cgmes_files = [os.path.join(test_path, "CGMES_v2.4.15_FullGridTestConfiguration_NB_BE_v3.zip")]
-
+    cgmes_files = [os.path.join(folder_path, "CGMES_v2.4.15_FullGridTestConfiguration_NB_BE_v3.zip")]
 
     return from_cim(file_list=cgmes_files)
 
@@ -624,7 +623,7 @@ def test_test_SimBench_1_HVMVmixed_1_105_0_sw_modified_ext_grid(SimBench_1_HVMVm
     element_0 = SimBench_1_HVMVmixed_1_105_0_sw_modified.ext_grid[
         SimBench_1_HVMVmixed_1_105_0_sw_modified.ext_grid['origin_id'] == '_5fb17d90-f222-45a2-9e26-05f52a34731f']
     assert element_0['slack_weight'].item() == pytest.approx(1.0, abs=0.000001)
-    assert '_01ff3523-9c93-45fe-8e35-0d2f4f2' == element_0['substation'].item()
+    assert element_0['substation'].item() == '_01ff3523-9c93-45fe-8e35-0d2f4f2'
     assert element_0['min_p_mw'].item() == pytest.approx(0.0, abs=0.000001)
     assert element_0['max_p_mw'].item() == pytest.approx(0.0, abs=0.000001)
     assert element_0['min_q_mvar'].item() == pytest.approx(0.0, abs=0.000001)
@@ -876,14 +875,14 @@ def test_fullgrid_trafo(fullgrid_v2):
     assert element_1['parallel'].item() == pytest.approx(1.0, abs=0.000001)
     assert element_1['df'].item() == pytest.approx(1.0, abs=0.000001)
     assert element_1['in_service'].item()
-    assert 'PowerTransformer' == element_1['origin_class'].item()
-    assert '_f8f712ea-4c6f-a64d-970f-ffec2af4931c' == element_1['terminal_hv'].item()
-    assert '_6fdc4516-25fc-2f4e-996f-1f590fd5677a' == element_1['terminal_lv'].item()
-    assert '_162712fd-bd8f-2d4d-8ac9-84bf324ef796' == element_1['PowerTransformerEnd_id_hv'].item()
-    assert '_3ee25db5-2305-1d40-a515-01acb2a12e93' == element_1['PowerTransformerEnd_id_lv'].item()
+    assert element_1['origin_class'].item() == 'PowerTransformer'
+    assert element_1['terminal_hv'].item() == '_f8f712ea-4c6f-a64d-970f-ffec2af4931c'
+    assert element_1['terminal_lv'].item() == '_6fdc4516-25fc-2f4e-996f-1f590fd5677a'
+    assert element_1['PowerTransformerEnd_id_hv'].item() == '_162712fd-bd8f-2d4d-8ac9-84bf324ef796'
+    assert element_1['PowerTransformerEnd_id_lv'].item() == '_3ee25db5-2305-1d40-a515-01acb2a12e93'
     assert math.isnan(element_1['tapchanger_class'].item())
     assert math.isnan(element_1['tapchanger_id'].item())
-    assert 'Yy' == element_1['vector_group'].item()
+    assert element_1['vector_group'].item() == 'Yy'
     assert isinstance(element_1['id_characteristic_table'].item(), np.int64)
     assert math.isnan(element_1['vk0_percent'].item())
     assert math.isnan(element_1['vkr0_percent'].item())
@@ -930,7 +929,7 @@ def test_fullgrid_switch(fullgrid_v2):
     assert element_0['et'].item() == 'b'
     assert element_0['type'].item() == 'DS'
     assert element_0['closed'].item()
-    assert 'BE_DSC_5' == element_0['name'].item()
+    assert element_0['name'].item() == 'BE_DSC_5'
     assert element_0['z_ohm'].item() == pytest.approx(0.0, abs=0.000001)
     assert math.isnan(element_0['in_ka'].item())
     assert 'Disconnector' == element_0['origin_class'].item()

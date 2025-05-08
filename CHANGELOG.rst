@@ -3,7 +3,7 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
-- [ADDED] cim2pp: refactored code
+- [ADDED] cim2pp: added node breaker test net to pandapower repo
 - [ADDED] PF2PP conversion by considering tap dependent impedance
 - [ADDED] pf2pp converter - added columns `origin_id` in multiple equipment (ext_net, coup, load, (s)gen, shunts, zpu, vac, svc)
 - [FIXED] pf2pp converter - trafo characteristic: Fixed tap changer type and included an if-clause that removes the zero sequence components in measurement report (for now)
@@ -13,7 +13,7 @@ Change Log
 - [ADDED] parameter include_type_id to dump_to_geojson, to produce geojson features without the pp_index and pp_type field
 - [FIXED] added a fix which hinders selection of a subsection of busses for plotting
 - [ADDED] cim2pp converter - additional column "EquipmentContainer_id" in line table
-- [ADDED] cim2pp: add tests for buses and switches for node breaker test net
+- [ADDED] cim2pp: add tests for buses and switches for node breaker test net, add node breaker test net to CGMS folder
 - [FIXED] DC loadflow after AC loadflow, had ambiguous results still present in net
 - [ADDED] add three columns: id_q_capability_curve_table, reactive_capability_curve, curve_style in gen and sgen
 - [ADDED] create q capability curve characteristics and diagnostics function
