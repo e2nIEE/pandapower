@@ -1301,8 +1301,6 @@ def test_fullgrid_NB_bus(fullgrid_node_breaker):
     assert element_0['description'].item() == 'BB_Disconector_5'
 
     element_1 = fullgrid_node_breaker.bus[fullgrid_node_breaker.bus['origin_id'] == '_4836f99b-c6e9-4ee8-a956-b1e3da882d46']
-    #assert math.isnan(element_1['cim_topnode'].item())
-    #assert math.isnan(element_1['description'].item())
     assert element_1['Busbar_id'].item() == '_64901aec-5a8a-4bcb-8ca7-a3ddbfcd0e6c'
     assert element_1['Busbar_name'].item() == 'BE-Busbar_1'
 
@@ -1335,7 +1333,7 @@ def test_fullgrid_NB_switch(fullgrid_node_breaker):
     assert element_0['name'].item() == 'BE_DSC_5'
     assert element_0['z_ohm'].item() == pytest.approx(0.0, abs=0.000001)
     assert math.isnan(element_0['in_ka'].item())
-    assert 'Disconnector' == element_0['origin_class'].item()
+    assert element_0['origin_class'].item() == 'Disconnector'
     assert element_0['terminal_bus'].item() == '_2af7ad2c-062c-1c4f-be3e-9c7cd594ddbb'
     assert element_0['terminal_element'].item() == '_916578a1-7a6e-7347-a5e0-aaf35538949c'
     assert element_0['description'].item() == 'BE_DSC_5'
