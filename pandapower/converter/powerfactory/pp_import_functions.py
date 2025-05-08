@@ -2852,7 +2852,7 @@ def create_trafo3w(net, item, tap_opt='nntap'):
         measurement_report = item.GetAttribute("mTaps")
         columns =['voltage_ratio', 'angle_deg', 'vk_hv_percent', 'vk_mv_percent',
                   'vk_lv_percent', 'vkr_hv_percent', 'vkr_mv_percent', 'vkr_lv_percent']
-        if len(measurement_report) == len(columns):
+        if len(measurement_report[0]) == len(columns):
             new_tap_table = pd.DataFrame(measurement_report, columns=columns)
         else:
             # for now, ignore "Zusätzliche Bemessungsleistung Faktor" and zero sequence components
@@ -3015,7 +3015,7 @@ def create_trafo3w(net, item, tap_opt='nntap'):
         net.res_trafo3w.at[tid, "pf_loading"] = np.nan
 
     # TODO Implement the tap changer controller for 3-winding transformer
-    if pf_type.itapzdep:
+    if pf_type.itapzdep and not use_tap_table:
         add_tap_dependant_impedance_for_trafo3W(net, pf_type, tid)
 
     # TODO right now Pandapower only supports one tapchanger
