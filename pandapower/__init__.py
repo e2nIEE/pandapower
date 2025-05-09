@@ -27,6 +27,7 @@ pd.options.mode.chained_assignment = None  # default='warn'
 import pandapower.control
 import pandapower.converter
 import pandapower.estimation
+import pandapower.observability_analysis
 import pandapower.grid_equivalents
 import pandapower.networks
 # import pandapower.opf  # no imports available yet
