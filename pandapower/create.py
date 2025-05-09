@@ -3470,7 +3470,7 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
         "df": df,
         "shift_degree": ti["shift_degree"] if "shift_degree" in ti else 0
     }
-    for zero_param in ['vk0_percent', 'vkr0_percent', 'mag0_percent', 'mag0_rx', 'si0_hv_partial']:
+    for zero_param in ['vk0_percent', 'vkr0_percent', 'mag0_percent', 'mag0_rx', 'si0_hv_partial', 'vector_group']:
         if zero_param in ti:
             updates[zero_param] = ti[zero_param]
     v.update(updates)
