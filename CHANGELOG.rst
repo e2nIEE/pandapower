@@ -26,6 +26,7 @@ Change Log
 - [FIXED] cim2pp: refactor cim2pp test
 - [FIXED] cim2pp: manage crash when importing not supported dy profile
 - [ADDED] cim2pp: add tests for short circuit parameters
+- [FIXED] add vector_group to zero-sequence parameters in create_trafo()
 
 [3.0.0] - 2025-03-06
 -------------------------------
