@@ -28,6 +28,7 @@ Change Log
 - [FIXED] cim2pp: manage crash when importing not supported dy profile
 - [ADDED] cim2pp: add tests for short circuit parameters
 - [ADDED] cim2pp: add normalSections for shunts at CIM100 and removed old schema
+- [ADDED] cim2pp: add DCLine component to cim16 and cim100 datastructures
 
 [3.0.0] - 2025-03-06
 -------------------------------
