@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [FIXED] cim2pp converter - set sgen 'controllable' flag as False when converting energySources to avoid ValueError when executing create_sgen
 - [ADDED] PF2PP conversion by considering tap dependent impedance
 - [ADDED] pf2pp converter - added columns `origin_id` in multiple equipment (ext_net, coup, load, (s)gen, shunts, zpu, vac, svc)
 - [FIXED] pf2pp converter - trafo characteristic: Fixed tap changer type and included an if-clause that removes the zero sequence components in measurement report (for now)
@@ -32,7 +33,6 @@ Change Log
 
 [3.0.0] - 2025-03-06
 -------------------------------
-
 - [ADDED] cim2pp converter - extract measurements for load, sgen, gen, shunt, ext_grid, ward and xward elements
 - [ADDED] cim2pp converter - extract 'Terminal' and 'description' Analog fields in net.measurement
 - [FIXED] cim2pp converter - removed nan rows in net.measurement
