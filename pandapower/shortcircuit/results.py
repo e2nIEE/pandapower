@@ -161,6 +161,7 @@ def _calculate_bus_results_llg(ppc_0, ppc_1, ppc_2, bus, net):
     i_1_ka_1 = ppc_1['bus'][:, IKSS1] * np.exp(1j * np.deg2rad(ppc_1['bus'][:, PHI_IKSS1_DEGREE].real))[:, np.newaxis]
     i_1_ka_2 = ppc_2['bus'][:, IKSS1] * np.exp(1j * np.deg2rad(ppc_2['bus'][:, PHI_IKSS1_DEGREE].real))[:, np.newaxis]
 
+    # TODO check results with sgen
     # short-ciruit for inverter-based generation (current source)
     i_2_ka_0 = ppc_0['bus'][:, IKSS2] * np.exp(1j * np.deg2rad(ppc_0['bus'][:, PHI_IKSS2_DEGREE].real))[:, np.newaxis]
     i_2_ka_1 = ppc_1['bus'][:, IKSS2] * np.exp(1j * np.deg2rad(ppc_1['bus'][:, PHI_IKSS2_DEGREE].real))[:, np.newaxis]
@@ -185,14 +186,6 @@ def _calculate_bus_results_llg(ppc_0, ppc_1, ppc_2, bus, net):
     for index in range(len(bus)):
         i_1_abc_ka_abs[index] = abs(i_1_abc_ka[bus[index], index])
 
-    # TODO remove this
-    # from pandapower.auxiliary import sequence_to_phase
-    # ik_012_ka = np.stack([ikssv_0, ikssv_1, ikssv_2])
-    # ik_abc_ka = np.apply_along_axis(sequence_to_phase, 0, ik_012_ka)
-    # ik_abc_ka[np.abs(ik_abc_ka) < 1e-10] = 0
-    # i_base = 2.886752
-    # abs(ik_abc_ka) * i_base
-
     # ToDo: check voltages
     v_pu_0 = ppc_0["internal"]["V_ikss"][bus, bus][:, np.newaxis]
     v_pu_1 = ppc_1["internal"]["V_ikss"][bus, bus][:, np.newaxis]
@@ -206,26 +199,13 @@ def _calculate_bus_results_llg(ppc_0, ppc_1, ppc_2, bus, net):
     # this is inefficient because it copies data to fit into a shape, better to use a slice,
     # and even better to find how to use sequence-based powers:
     baseV = ppc_1["internal"]["baseV"][bus][:, np.newaxis]
-    v_base_kv = np.stack([baseV, baseV, baseV], 2)
+    # v_base_kv = np.stack([baseV, baseV, baseV], 2)
+    skss_abc_mva = i_1_abc_ka_abs * baseV / np.sqrt(3)
 
-    # TODO SKSS not working
-    """skss_0 = ppc_0["bus"][bus, SKSS]
-    skss_1 = ppc_1["bus"][bus, SKSS]
-    skss_2 = ppc_2["bus"][bus, SKSS]
-    skss_012_mva = np.stack([skss_0, skss_1, skss_2], 1)
-    skss_abc_mva = np.apply_along_axis(sequence_to_phase, 1, skss_012_mva)
-
-    s_abc_mva = np.conj(i_1_abc_ka + i_2_abc_ka) * v_abc_pu * v_base_kv / np.sqrt(3)
-    s_012_mva = np.apply_along_axis(sequence_to_phase, 2, s_abc_mva)
-    skss_abc_mva_abs = np.zeros((len(bus), s_abc_mva .shape[2]))
-
-    # Extract the specified rows from 'i_1_abc_ka' based on the indices in 'bus'
-    for index in range(len(bus)):
-        skss_abc_mva_abs[index] = abs(s_abc_mva [bus[index], index])"""
-
-    net.res_bus_sc["ikss_a_ka"] = i_1_abc_ka_abs[:, 0]  # First column
-    net.res_bus_sc["ikss_b_ka"] = i_1_abc_ka_abs[:, 1]  # Second column
-    net.res_bus_sc["ikss_c_ka"] = i_1_abc_ka_abs[:, 2]  # Third column
+    # Adding the ikss and skss values
+    for i, phase in enumerate(['a', 'b', 'c']):
+        net.res_bus_sc[f'ikss_{phase}_ka'] = i_1_abc_ka_abs[:, i]  # ikss values
+        net.res_bus_sc[f'skss_{phase}_mw'] = skss_abc_mva[:, i]  # skss values
 
 
 def _extract_results(net, ppc_0, ppc_1, ppc_2, bus):
@@ -260,9 +240,6 @@ def _get_bus_results(net, ppc_0, ppc_1, ppc_2, bus):
         net.res_bus_sc["skss_mw"] = ppc_0["bus"][ppc_index, SKSS]
         sequence_relevant = range(3)
     elif net["_options"]["fault"] == "LLG":
-        # TODO maybe need adaptions here else delete
-        # net.res_bus_sc["ikss_ka"] = ppc_0["bus"][ppc_index, IKSS1] + ppc_1["bus"][ppc_index, IKSS2]
-        # net.res_bus_sc["skss_mw"] = ppc_0["bus"][ppc_index, SKSS]
         sequence_relevant = range(3)
     else:
         net.res_bus_sc["ikss_ka"] = ppc_1["bus"][ppc_index, IKSS1] + ppc_1["bus"][ppc_index, IKSS2]

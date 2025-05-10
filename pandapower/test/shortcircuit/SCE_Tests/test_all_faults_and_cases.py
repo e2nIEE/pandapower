@@ -87,9 +87,7 @@ def load_pf_results(excel_file):
             pf_results.columns = ['name', 'ikss_ka', 'skss_mw', 'rk_ohm', 'xk_ohm']
 
         elif sheet.startswith("LLG_"):
-            # TODO also check skss_a_mw, skss_b_mw, skss_c_mw
-            pf_results.drop(columns=['pf_skss_a_mw', 'pf_skss_b_mw', 'pf_skss_c_mw'], inplace=True)
-            pf_results.columns = ["name", "ikss_a_ka", "ikss_b_ka", 'ikss_c_ka',
+            pf_results.columns = ["name", "ikss_a_ka", "ikss_b_ka", 'ikss_c_ka', 'skss_a_mw', 'skss_b_mw', 'skss_c_mw',
                                   "rk0_ohm", "xk0_ohm", "rk1_ohm", "xk1_ohm", "rk2_ohm", "xk2_ohm"]
         elif sheet.startswith("LG_"):
             pf_results.drop(columns=['pf_ikss_b_ka', 'pf_ikss_c_ka', 'pf_skss_b_mw', 'pf_skss_c_mw'], inplace=True)
@@ -108,8 +106,8 @@ def get_columns_to_check(fault):
     elif fault == "LG":
         return ["ikss_ka", "skss_mw", "rk0_ohm", "xk0_ohm", "rk1_ohm", "xk1_ohm", "rk2_ohm", "xk2_ohm"]
     elif fault == 'LLG':
-        # TODO also check skss_a_mw, skss_b_mw, skss_c_mw
-        return ["ikss_a_ka", "ikss_b_ka", 'ikss_c_ka', "rk0_ohm", "xk0_ohm", "rk1_ohm", "xk1_ohm", "rk2_ohm", "xk2_ohm"]
+        return ["ikss_a_ka", "ikss_b_ka", 'ikss_c_ka', 'skss_a_mw', 'skss_b_mw', 'skss_c_mw', "rk0_ohm", "xk0_ohm",
+                "rk1_ohm", "xk1_ohm", "rk2_ohm", "xk2_ohm"]
     return []
 
 
@@ -148,7 +146,7 @@ def test_all_faults_and_cases_with_fault_impedance(fault, case, r_fault_ohm, x_f
     selected_pf_results = dataframes[selected_sheet]
     modified_pf_results = modify_impedance_values_with_fault_value(selected_pf_results, r_fault_ohm, x_fault_ohm)
 
-    calc_sc(net, fault=fault, case=case, branch_results=True, ip=False, r_fault_ohm=r_fault_ohm, x_fault_ohm=x_fault_ohm)
+    calc_sc(net, fault=fault, case=case, branch_results=True, return_all_currents=True, ip=False, r_fault_ohm=r_fault_ohm, x_fault_ohm=x_fault_ohm)
 
     net.res_bus_sc["name"] = net.bus.name
     net.res_bus_sc = net.res_bus_sc[['name'] + [col for col in net.res_bus_sc.columns if col != 'name']]
