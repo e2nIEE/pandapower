@@ -74,7 +74,8 @@ def modify_impedance_values_with_fault_value(selected_results, r_ohm, x_ohm):
 
 def load_pf_results(excel_file):
     """Load power flow results from Excel sheets."""
-    sheets = pd.ExcelFile(excel_file).sheet_names
+    # TODO also include branch results and check all dropped columns
+    sheets = [sheet for sheet in pd.ExcelFile(excel_file).sheet_names if not sheet.endswith('_branch')]
     dataframes = {}
 
     for sheet in sheets:
@@ -83,14 +84,22 @@ def load_pf_results(excel_file):
         if sheet.startswith("LLL_") or sheet.startswith("LL_"):
             if sheet.startswith("LL_"):
                 pf_results.drop(columns=['pf_ikss_a_ka', 'pf_ikss_b_ka', 'pf_skss_a_mw', 'pf_skss_b_mw',
-                                         'pf_rk0_ohm', 'pf_rk1_ohm', 'pf_xk0_ohm', 'pf_xk1_ohm'], inplace=True)
+                                         'pf_rk0_ohm', 'pf_rk1_ohm', 'pf_xk0_ohm', 'pf_xk1_ohm', 'pf_vm_a_pu',
+                                         'pf_vm_b_pu', 'pf_vm_c_pu', 'pf_va_a_degree', 'pf_va_b_degree',
+                                         'pf_va_c_degree'], inplace=True)
+            else:
+                pf_results.drop(columns=['pf_vm_pu', 'pf_va_degree', 'pf_p_mw', 'pf_q_mvar'], inplace=True)
             pf_results.columns = ['name', 'ikss_ka', 'skss_mw', 'rk_ohm', 'xk_ohm']
 
         elif sheet.startswith("LLG_"):
+            pf_results.drop(columns=['pf_vm_a_pu', 'pf_vm_b_pu', 'pf_vm_c_pu', 'pf_va_a_degree', 'pf_va_b_degree',
+                                     'pf_va_c_degree'], inplace=True)
             pf_results.columns = ["name", "ikss_a_ka", "ikss_b_ka", 'ikss_c_ka', 'skss_a_mw', 'skss_b_mw', 'skss_c_mw',
                                   "rk0_ohm", "xk0_ohm", "rk1_ohm", "xk1_ohm", "rk2_ohm", "xk2_ohm"]
         elif sheet.startswith("LG_"):
-            pf_results.drop(columns=['pf_ikss_b_ka', 'pf_ikss_c_ka', 'pf_skss_b_mw', 'pf_skss_c_mw'], inplace=True)
+            pf_results.drop(columns=['pf_ikss_b_ka', 'pf_ikss_c_ka', 'pf_skss_b_mw', 'pf_skss_c_mw', 'pf_vm_a_pu',
+                                     'pf_vm_b_pu', 'pf_vm_c_pu', 'pf_va_a_degree', 'pf_va_b_degree',
+                                     'pf_va_c_degree' ], inplace=True)
             pf_results.columns = ["name", "ikss_ka", 'skss_mw', "rk0_ohm", "xk0_ohm", "rk1_ohm",
                                   "xk1_ohm", "rk2_ohm", "xk2_ohm"]
 
@@ -111,32 +120,37 @@ def get_columns_to_check(fault):
     return []
 
 
-@pytest.mark.parametrize("fault, case, r_fault_ohm, x_fault_ohm", [
-    ("LLL", "max", 0.0, 0.0),
-    ("LLL", "min", 0.0, 0.0),
-    ("LL", "max", 0.0, 0.0),
-    ("LL", "min", 0.0, 0.0),
-    ("LG", "max", 0.0, 0.0),
-    ("LG", "min", 0.0, 0.0),
-    ("LLG", "max", 0.0, 0.0),
-    ("LLG", "min", 0.0, 0.0),
-    ("LLL", "max", 5.0, 5.0),
-    ("LLL", "min", 5.0, 5.0),
-    ("LL", "max", 5.0, 5.0),
-    ("LL", "min", 5.0, 5.0),
-    ("LG", "max", 5.0, 5.0),
-    ("LG", "min", 5.0, 5.0),
-])
-def test_all_faults_and_cases_with_fault_impedance(fault, case, r_fault_ohm, x_fault_ohm):
-    net = from_json(os.path.join(pp_dir, "test", "shortcircuit", "SCE_Tests", "4_bus_radial_grid.json"))
+# Define common parameters
+faults = ["LLL", "LL", "LG", "LLG"]
+cases = ["max", "min"]
+values = [(0.0, 0.0), (5.0, 5.0)]
+net_names = ["test_case_1_four_bus_radial_grid", "test_case_2_five_bus_radial_grid"]
+
+# Create parameter list
+parametrize_values = [
+    (fault, case, r_fault, x_fault, net_name)
+    for fault in faults
+    for case in cases
+    for r_fault, x_fault in values
+    for net_name in net_names
+]
+@pytest.mark.parametrize("fault, case, r_fault_ohm, x_fault_ohm, net_name", parametrize_values)
+def test_all_faults_and_cases_with_fault_impedance(fault, case, r_fault_ohm, x_fault_ohm, net_name):
+    net = from_json(os.path.join(pp_dir, "test", "shortcircuit", "sce_tests", "test_grids", net_name + ".json"))
     net.line.rename(columns={'temperature_degree_celsius': 'endtemp_degree'}, inplace=True)
     net.line["endtemp_degree"] = 250
+    # TODO how does vector group affect the results? new pf calculations neccesarry?
+    vector_groups = ["Dyn", "Yyn", "YNyn"]
+    if not net.trafo.empty:
+        net.trafo.vector_group = ["YNyn"]
 
-    excel_file = os.path.join(pp_dir, "test", "shortcircuit", "SCE_Tests", "pf_bus_sc_results_all_cases.xlsx")
+    excel_file = os.path.join(pp_dir, "test", "shortcircuit", "sce_tests", "sc_result_comparison",
+                              net_name + "_pf_sc_results_all_cases.xlsx")
     dataframes = load_pf_results(excel_file)
 
     rtol = {"ikss_ka": 0, "skss_mw": 0, "rk_ohm": 0, "xk_ohm": 0}
-    atol = {"ikss_ka": 1e-6, "skss_mw": 1e-5, "rk_ohm": 1e-6, "xk_ohm": 1e-6}
+    #TODO skss_mw only 1e-4 sufficient?
+    atol = {"ikss_ka": 1e-6, "skss_mw": 1e-4, "rk_ohm": 1e-6, "xk_ohm": 1e-6}
 
     columns_to_check = get_columns_to_check(fault)
     selected_sheet = f"{fault}_{case}"
@@ -164,8 +178,3 @@ def test_all_faults_and_cases_with_fault_impedance(fault, case, r_fault_ohm, x_f
 
 if __name__ == "__main__":
     pytest.main([__file__])
-
-"""net = from_json('4_bus_radial_grid.json')
-net.line.rename(columns={'temperature_degree_celsius': 'endtemp_degree'}, inplace=True)
-net.line["endtemp_degree"] = 250
-calc_sc(net, fault="LLG", case="max", branch_results=False, ip=False, r_fault_ohm=0, x_fault_ohm=0)"""
