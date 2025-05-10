@@ -77,8 +77,14 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                  ("bus", "i8"),
                  ("p_mw", "f8"),
                  ("q_mvar", "f8"),
+                 ("min_q_mvar","f8"),
+                 ("max_q_mvar", "f8"),
                  ("sn_mva", "f8"),
                  ("scaling", "f8"),
+                 ("controllable", "bool"),
+                 ('id_q_capability_curve_characteristic', 'u4'),
+                 ('reactive_capability_curve', 'bool'),
+                 ('curve_style', dtype(object)),
                  ("in_service", 'bool'),
                  ("type", dtype(object)),
                  ("current_source", "bool")],
@@ -142,6 +148,10 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                 ("max_q_mvar", "f8"),
                 ("scaling", "f8"),
                 ("slack", "bool"),
+                ("controllable", "bool"),
+                ('id_q_capability_curve_characteristic', 'u4'),
+                ('reactive_capability_curve', 'bool'),
+                ('curve_style', dtype(object)),
                 ("in_service", 'bool'),
                 ("slack_weight", 'f8'),
                 ("type", dtype(object))],
@@ -200,7 +210,8 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                      ("vm_pu", "f8"),
                      ("va_degree", "f8"),
                      ("slack_weight", 'f8'),
-                     ("in_service", 'bool')],
+                     ("in_service", 'bool'),
+                     ("controllable", "bool")],
         "line": [("name", dtype(object)),
                  ("std_type", dtype(object)),
                  ("from_bus", "u4"),
@@ -1016,7 +1027,7 @@ def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, 
         create_load(net, bus=0, p_mw=10., q_mvar=2.)
 
     """
-    _check_node_element(net, bus)
+    _check_element(net, bus)
 
     index = _get_index_with_check(net, "load", index)
 
@@ -1104,7 +1115,7 @@ def create_loads(net, buses, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=
         create_loads(net, buses=[0, 2], p_mw=[10., 5.], q_mvar=[2., 0.])
 
     """
-    _check_multiple_node_elements(net, buses)
+    _check_multiple_elements(net, buses)
 
     index = _get_multiple_index_with_check(net, "load", index, len(buses))
 
@@ -1175,7 +1186,7 @@ def create_asymmetric_load(net, bus, p_a_mw=0, p_b_mw=0, p_c_mw=0, q_a_mvar=0, q
         **create_asymmetric_load(net, bus=0, p_c_mw=9., q_c_mvar=1.8)**
 
     """
-    _check_node_element(net, bus)
+    _check_element(net, bus)
 
     index = _get_index_with_check(net, "asymmetric_load", index, name="3 phase asymmetric_load")
 
@@ -1279,8 +1290,8 @@ def create_load_from_cosphi(net, bus, sn_mva, cos_phi, mode, **kwargs):
 def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
                 scaling=1., type='wye', in_service=True, max_p_mw=nan, min_p_mw=nan,
                 max_q_mvar=nan, min_q_mvar=nan, controllable=nan, k=nan, rx=nan,
-                current_source=True, generator_type=None, max_ik_ka=nan, kappa=nan, lrc_pu=nan,
-                **kwargs):
+                id_q_capability_curve_characteristic=None, reactive_capability_curve=False, curve_style=None,
+                current_source=True, generator_type=None, max_ik_ka=nan, kappa=nan, lrc_pu=nan, **kwargs):
     """
     Adds one static generator in table net["sgen"].
 
@@ -1310,7 +1321,7 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
         **index** (int, None) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
 
-        **scaling** (float, 1.) - An OPTIONAL scaling factor to be set customly.
+        **scaling** (float, 1.) - An optional scaling factor to be set customly.
         Multiplies with p_mw and q_mvar.
 
         **type** (string, None) -  Three phase Connection type of the static generator: wye/delta
@@ -1338,7 +1349,18 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
             specified as motor so that sgen is treated as asynchronous motor. Relevant for \
             short-circuit calculation for all generator types
 
-        **generator_type** (str, "None") - can be one of "current_source" \
+        **reactive_capability_curve** (bool, False) - True if both the id_q_capability_curve_characteristic and the \
+            curve style are present in the generator
+
+        **id_q_capability_curve_characteristic** (int, None) - references the index of the characteristic from the \
+            net.q_capability_curve_characteristic table (id_q_capability_curve column)
+
+        **curve_style** (string, None) - The curve style of the generator represents the relationship \
+            between active power (P) and reactive power (Q). It indicates whether the reactive power remains \
+            constant as the active power changes or varies dynamically in response to it, \
+            e.g. "straightLineYValues" and "constantYValue"
+
+        **generator_type** (str, None) - can be one of "current_source" \
             (full size converter), "async" (asynchronous generator), or "async_doubly_fed"\
             (doubly fed asynchronous generator, DFIG). Represents the type of the static \
             generator in the context of the short-circuit calculations of wind power station units. \
@@ -1347,13 +1369,13 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
         **lrc_pu** (float, nan) - locked rotor current in relation to the rated generator \
             current. Relevant if the generator_type is "async".
 
-        **max_ik_ka (float, nan)** - the highest instantaneous short-circuit value in case \
+        **max_ik_ka** (float, nan) - the highest instantaneous short-circuit value in case \
             of a three-phase short-circuit (provided by the manufacturer). Relevant if the \
             generator_type is "async_doubly_fed".
 
-        **kappa (float, nan)** - the factor for the calculation of the peak short-circuit \
+        **kappa** (float, nan) - the factor for the calculation of the peak short-circuit \
             current, referred to the high-voltage side (provided by the manufacturer). \
-            Relevant if the generator_type is "async_doubly_fed".
+            Relevant if the generator_type is "async_doubly_fed". \
             If the superposition method is used (use_pre_fault_voltage=True), this parameter \
             is used to pass through the max. current limit of the machine in p.u.
 
@@ -1368,7 +1390,7 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
         create_sgen(net, 1, p_mw=120)
 
     """
-    _check_node_element(net, bus)
+    _check_element(net, bus)
 
     index = _get_index_with_check(net, "sgen", index, name="static generator")
 
@@ -1384,6 +1406,15 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
     _set_value_if_not_nan(net, index, max_q_mvar, "max_q_mvar", "sgen")
     _set_value_if_not_nan(net, index, controllable, "controllable", "sgen", dtype=bool_,
                           default_val=False)
+
+    _set_value_if_not_nan(net, index, id_q_capability_curve_characteristic,
+                          "id_q_capability_curve_characteristic", "sgen", dtype="Int64")
+
+    _set_value_if_not_nan(net, index, reactive_capability_curve, "reactive_capability_curve", "sgen",
+                          dtype=bool_)
+
+    _set_value_if_not_nan(net, index, curve_style, "curve_style", "sgen", dtype=object, default_val=None)
+
     _set_value_if_not_nan(net, index, rx, "rx", "sgen")  # rx is always required
     if np.isfinite(kappa):
         _set_value_if_not_nan(net, index, kappa, "kappa", "sgen")
@@ -1405,8 +1436,8 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
 def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
                  scaling=1., type='wye', in_service=True, max_p_mw=nan, min_p_mw=nan,
                  max_q_mvar=nan, min_q_mvar=nan, controllable=nan, k=nan, rx=nan,
-                 current_source=True, generator_type="current_source", max_ik_ka=nan,
-                 kappa=nan, lrc_pu=nan, **kwargs):
+                 id_q_capability_curve_characteristic=nan, reactive_capability_curve=False, curve_style=None,
+                 current_source=True, generator_type="current_source", max_ik_ka=nan, kappa=nan, lrc_pu=nan, **kwargs):
     """
     Adds a number of sgens in table net["sgen"].
 
@@ -1456,8 +1487,7 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
              controllable sgens in OPF
 
         **controllable** (list of boolean, default NaN) - States, whether a sgen is controllable \
-             or not. Only respected for OPF
-             Defaults to False if "controllable" column exists in DataFrame
+             or not. Only respected for OPF. Defaults to False if "controllable" column exists in DataFrame
 
         **k** (list of floats, None) - Ratio of nominal current to short circuit current
 
@@ -1465,19 +1495,30 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
             specified as motor so that sgen is treated as asynchronous motor. Relevant for \
             short-circuit calculation for all generator types
 
-        **generator_type** (str, "current_source") - can be one of "current_source" \
+        **reactive_capability_curve** (list of bools, False) - True if both the id_q_capability_curve_characteristic \
+            and the curve style are present in the generator.
+
+        **id_q_capability_curve_characteristic** (list of ints, None) - references the index of the characteristic \
+            from the lookup table net.q_capability_curve_characteristic e.g. 0, 1, 2, 3
+
+        **curve_style** (list of strings, None) - The curve style of the generator represents the relationship \
+           between active power (P) and reactive power (Q). It indicates whether the reactive power remains \
+           constant as the active power changes or varies dynamically in response to it.
+           e.g. "straightLineYValues" and "constantYValue"
+
+        **generator_type** (list of strings, "current_source") - can be one of "current_source" \
             (full size converter), "async" (asynchronous generator), or "async_doubly_fed"\
             (doubly fed asynchronous generator, DFIG). Represents the type of the static \
             generator in the context of the short-circuit calculations of wind power station units
 
-        **lrc_pu** (float, nan) - locked rotor current in relation to the rated generator \
+        **lrc_pu** (list of float, nan) - locked rotor current in relation to the rated generator \
             current. Relevant if the generator_type is "async".
 
-        **max_ik_ka (float, nan)** - the highest instantaneous short-circuit value in case \
+        **max_ik_ka** (list of float, nan) - the highest instantaneous short-circuit value in case \
             of a three-phase short-circuit (provided by the manufacturer). Relevant if the \
             generator_type is "async_doubly_fed".
 
-        **kappa (float, nan)** - the factor for the calculation of the peak short-circuit \
+        **kappa** (list of float, nan) - the factor for the calculation of the peak short-circuit \
             current, referred to the high-voltage side (provided by the manufacturer). \
             Relevant if the generator_type is "async_doubly_fed".
 
@@ -1492,13 +1533,13 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
         create_sgens(net, buses=[0, 2], p_mw=[10., 5.], q_mvar=[2., 0.])
 
     """
-    _check_multiple_node_elements(net, buses)
+    _check_multiple_elements(net, buses)
 
     index = _get_multiple_index_with_check(net, "sgen", index, len(buses))
 
     entries = {"bus": buses, "p_mw": p_mw, "q_mvar": q_mvar, "sn_mva": sn_mva, "scaling": scaling,
-               "in_service": in_service, "name": name, "type": type,
-               'current_source': current_source}
+               "in_service": in_service, "name": name, "type": type, "current_source": current_source,
+               "reactive_capability_curve": reactive_capability_curve, "curve_style": curve_style}
 
     _add_to_entries_if_not_nan(net, "sgen", entries, index, "min_p_mw", min_p_mw)
     _add_to_entries_if_not_nan(net, "sgen", entries, index, "max_p_mw", max_p_mw)
@@ -1515,6 +1556,10 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
     gen_types = ['current_source', 'async', 'async_doubly_fed']
     gen_type_match = pd.concat([entries["generator_type"] == match for match in gen_types], axis=1,
                                keys=gen_types)
+
+    _add_to_entries_if_not_nan(net, "sgen", entries, index, "id_q_capability_curve_characteristic",
+                               id_q_capability_curve_characteristic, dtype="Int64")
+
     if gen_type_match["current_source"].any():
         _add_to_entries_if_not_nan(net, "sgen", entries, index, "k", k)
     if gen_type_match["async"].any():
@@ -1525,7 +1570,7 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
         raise UserWarning(f"unknown sgen generator_type '{generator_type}'! "
                           f"Must be one of: None, 'current_source', 'async', 'async_doubly_fed'")
 
-    defaults_to_fill = [("controllable", False)]
+    defaults_to_fill = [("controllable", False), ('reactive_capability_curve', False), ("curve_style", None)]
     _set_multiple_entries(net, "sgen", index, defaults_to_fill=defaults_to_fill, **entries,
                           **kwargs)
 
@@ -1586,7 +1631,7 @@ def create_asymmetric_sgen(net, bus, p_a_mw=0, p_b_mw=0, p_c_mw=0, q_a_mvar=0, q
         create_asymmetric_sgen(net, 1, p_b_mw=0.12)
 
     """
-    _check_node_element(net, bus)
+    _check_element(net, bus)
 
     index = _get_index_with_check(net, "asymmetric_sgen", index,
                                   name="3 phase asymmetric static generator")
@@ -1614,7 +1659,7 @@ def create_sgen_from_cosphi(net, bus, sn_mva, cos_phi, mode, **kwargs):
 
         **cos_phi** (float) - power factor cos_phi
 
-        **mode** (str) - "underexcited" (Q absorption, decreases voltage) or "overexcited"
+        **mode** (str) - "underexcited" (Q absorption, decreases voltage) or "overexcited" \
                          (Q injection, increases voltage)
 
     OUTPUT:
@@ -1703,7 +1748,7 @@ def create_storage(net, bus, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_percent=
         create_storage(net, 1, p_mw=-30, max_e_mwh=60, soc_percent=1.0, min_e_mwh=5)
 
     """
-    _check_node_element(net, bus)
+    _check_element(net, bus)
 
     index = _get_index_with_check(net, "storage", index)
 
@@ -1799,7 +1844,7 @@ def create_storages(
         create_storage(net, 1, p_mw=-30, max_e_mwh=60, soc_percent=1.0, min_e_mwh=5)
 
     """
-    _check_multiple_node_elements(net, buses)
+    _check_multiple_elements(net, buses)
 
     index = _get_multiple_index_with_check(net, "storage", index, len(buses))
 
@@ -1823,9 +1868,9 @@ def create_storages(
 
 def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_q_mvar=nan,
                min_q_mvar=nan, min_p_mw=nan, max_p_mw=nan, min_vm_pu=nan, max_vm_pu=nan,
-               scaling=1., type=None, slack=False, controllable=nan, vn_kv=nan,
-               xdss_pu=nan, rdss_ohm=nan, cos_phi=nan, pg_percent=nan, power_station_trafo=nan,
-               in_service=True, slack_weight=0.0, **kwargs):
+               scaling=1., type=None, slack=False, id_q_capability_curve_characteristic=None,
+               reactive_capability_curve=False, curve_style=None, controllable=nan, vn_kv=nan, xdss_pu=nan, rdss_ohm=nan,
+               cos_phi=nan, pg_percent=nan, power_station_trafo=nan, in_service=True, slack_weight=0.0, **kwargs):
     """
     Adds a generator to the network.
 
@@ -1850,17 +1895,27 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
         **index** (int, None) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
 
-        **scaling** (float, 1.0) - scaling factor which for the active power of the generator
+        **scaling** (float, 1.0) - scaling factor applying to the active power of the generator
 
         **type** (string, None) - type variable to classify generators
 
-        **controllable** (bool, NaN) - True: p_mw, q_mvar and vm_pu limits are enforced for this \
-                generator in OPF
-                False: p_mw and vm_pu set points are enforced and *limits are ignored*.
-                defaults to True if "controllable" column exists in DataFrame
+        **reactive_capability_curve** (bool, False) - True if both the id_q_capability_curve_characteristic and the \
+            curve style are present in the generator
 
-        **slack_weight** (float, default 0.0) - Contribution factor for distributed slack power
-        flow calculation (active power balancing)
+        **id_q_capability_curve_characteristic** (int, None) - references the index of the characteristic from \
+            the net.q_capability_curve_characteristic table (id_q_capability_curve column)
+
+        **curve_style** (string, None) - The curve style of the generator represents the relationship \
+            between active power (P) and reactive power (Q). It indicates whether the reactive power remains \
+            constant as the active power changes or varies dynamically in response to it, \
+            e.g. "straightLineYValues" and "constantYValue".
+
+        **controllable** (bool, NaN) - True: p_mw, q_mvar and vm_pu limits are enforced for this \
+                generator in OPF; False: p_mw and vm_pu set points are enforced and *limits are ignored*. \
+                Defaults to True if "controllable" column exists in DataFrame.
+
+        **slack_weight** (float, default 0.0) - Contribution factor for distributed slack power \
+            flow calculation (active power balancing)
 
         **vn_kv** (float, NaN) - Rated voltage of the generator for short-circuit calculation
 
@@ -1870,11 +1925,11 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
 
         **cos_phi** (float, NaN) - Rated cosine phi of the generator for short-circuit calculation
 
-        **pg_percent** (float, NaN) - Rated pg (voltage control range) of the generator for
-        short-circuit calculation
+        **pg_percent** (float, NaN) - Rated pg (voltage control range) of the generator for \
+            short-circuit calculation
 
-        **power_station_trafo** (int, None) - Index of the power station transformer for
-        short-circuit calculation
+        **power_station_trafo** (int, None) - Index of the power station transformer for \
+            short-circuit calculation
 
         **in_service** (bool, True) - True for in_service or False for out of service
 
@@ -1886,13 +1941,11 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
 
         **min_q_mvar** (float, default NaN) - Minimum reactive power injection - necessary for OPF
 
-        **min_vm_pu** (float, default NaN) - Minimum voltage magnitude. If not set the bus voltage \
-                                             limit is taken.
-                                           - necessary for OPF.
+        **min_vm_pu** (float, default NaN) - Minimum voltage magnitude. If not set, the bus voltage \
+                                             limit is taken - necessary for OPF.
 
-        **max_vm_pu** (float, default NaN) - Maximum voltage magnitude. If not set the bus voltage\
-                                              limit is taken.
-                                            - necessary for OPF
+        **max_vm_pu** (float, default NaN) - Maximum voltage magnitude. If not set, the bus voltage \
+                                             limit is taken - necessary for OPF
 
     OUTPUT:
         **index** (int) - The unique ID of the created generator
@@ -1901,7 +1954,7 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
         create_gen(net, 1, p_mw=120, vm_pu=1.02)
 
     """
-    _check_node_element(net, bus)
+    _check_element(net, bus)
 
     index = _get_index_with_check(net, "gen", index, name="generator")
 
@@ -1915,6 +1968,16 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
     # OPF limits
     _set_value_if_not_nan(net, index, controllable, "controllable", "gen",
                           dtype=bool_, default_val=True)
+
+    # id for q capability curve table
+    _set_value_if_not_nan(net, index, id_q_capability_curve_characteristic,
+                          "id_q_capability_curve_characteristic", "gen", dtype="Int64")
+
+    # behaviour of reactive power capability curve
+    _set_value_if_not_nan(net, index, curve_style, "curve_style", "gen", dtype=object, default_val=None)
+
+    _set_value_if_not_nan(net, index, reactive_capability_curve, "reactive_capability_curve", "gen", dtype=bool_)
+
     # P limits for OPF if controllable == True
     _set_value_if_not_nan(net, index, min_p_mw, "min_p_mw", "gen")
     _set_value_if_not_nan(net, index, max_p_mw, "max_p_mw", "gen")
@@ -1939,9 +2002,9 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
 
 def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_q_mvar=nan,
                 min_q_mvar=nan, min_p_mw=nan, max_p_mw=nan, min_vm_pu=nan, max_vm_pu=nan,
-                scaling=1., type=None, slack=False, controllable=nan, vn_kv=nan,
-                xdss_pu=nan, rdss_ohm=nan, cos_phi=nan, pg_percent=nan, power_station_trafo=nan,
-                in_service=True, slack_weight=0.0, **kwargs):
+                scaling=1., type=None, slack=False, id_q_capability_curve_characteristic=nan,
+                reactive_capability_curve=False, curve_style=None, controllable=nan, vn_kv=nan, xdss_pu=nan, rdss_ohm=nan,
+                cos_phi=nan, pg_percent=nan, power_station_trafo=nan, in_service=True, slack_weight=0.0, **kwargs):
     """
     Adds generators to the specified buses network.
 
@@ -1971,7 +2034,18 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
 
         **type** (list of string, None) - type variable to classify generators
 
-        **controllable** (bool, NaN) - True: p_mw, q_mvar and vm_pu limits are enforced for this \
+        **reactive_capability_curve** (list of bools, False) - True if both the id_q_capability_curve_characteristic and
+        the curve style are present in the generator.
+
+        **id_q_capability_curve_characteristic** (list of ints, None) - references the index of the characteristic from
+            the lookup table net.q_capability_curve_characteristic e.g. 0, 1, 2, 3
+
+        **curve_style** (list of strings, None) - The curve style of the generator represents the relationship \
+        between active power (P) and reactive power (Q). It indicates whether the reactive power remains \
+        constant as the active power changes or varies dynamically in response to it.
+        e.g. "straightLineYValues" and "constantYValue"
+
+        **controllable** (list of bool, NaN) - True: p_mw, q_mvar and vm_pu limits are enforced for this \
                                        generator in OPF
                                        False: p_mw and vm_pu set points are enforced and \
                                        *limits are ignored*.
@@ -1990,15 +2064,15 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
         **cos_phi** (list of float, NaN) - Rated cosine phi of the generator for short-circuit \
             calculation
 
-        **pg_percent** (float, NaN) - Rated pg (voltage control range) of the generator for \
+        **pg_percent** (list of float, NaN) - Rated pg (voltage control range) of the generator for \
             short-circuit calculation
 
-        **power_station_trafo** (int, NaN) - Index of the power station transformer for \
+        **power_station_trafo** (list of int, NaN) - Index of the power station transformer for \
             short-circuit calculation
 
-        **in_service** (bool, True) - True for in_service or False for out of service
+        **in_service** (list of bool, True) - True for in_service or False for out of service
 
-        **slack_weight** (float, default 0.0) - Contribution factor for distributed slack power \
+        **slack_weight** (list of float, default 0.0) - Contribution factor for distributed slack power \
             flow calculation (active power balancing)
 
         **max_p_mw** (list of float, default NaN) - Maximum active power injection - necessary for\
@@ -2028,13 +2102,13 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
         create_gens(net, [1, 2], p_mw=[120, 100], vm_pu=[1.02, 0.99])
 
     """
-    _check_multiple_node_elements(net, buses)
+    _check_multiple_elements(net, buses)
 
     index = _get_multiple_index_with_check(net, "gen", index, len(buses))
 
     entries = {"bus": buses, "p_mw": p_mw, "vm_pu": vm_pu, "sn_mva": sn_mva, "scaling": scaling,
                "in_service": in_service, "slack_weight": slack_weight, "name": name, "type": type,
-               "slack": slack}
+               "slack": slack, "curve_style": curve_style, "reactive_capability_curve": reactive_capability_curve}
 
     _add_to_entries_if_not_nan(net, "gen", entries, index, "min_p_mw", min_p_mw)
     _add_to_entries_if_not_nan(net, "gen", entries, index, "max_p_mw", max_p_mw)
@@ -2047,11 +2121,17 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
     _add_to_entries_if_not_nan(net, "gen", entries, index, "xdss_pu", xdss_pu)
     _add_to_entries_if_not_nan(net, "gen", entries, index, "rdss_ohm", rdss_ohm)
     _add_to_entries_if_not_nan(net, "gen", entries, index, "pg_percent", pg_percent)
+    _add_to_entries_if_not_nan(net, "gen", entries, index, "id_q_capability_curve_characteristic",
+                               id_q_capability_curve_characteristic, dtype="Int64")
+
+    _add_to_entries_if_not_nan(net, "gen", entries, index, "reactive_capability_curve",
+                               reactive_capability_curve, dtype=bool_)
+
     _add_to_entries_if_not_nan(net, "gen", entries, index, "power_station_trafo",
                                power_station_trafo, dtype="Int64")
     _add_to_entries_if_not_nan(net, "gen", entries, index, "controllable", controllable, dtype=bool_,
                                default_val=True)
-    defaults_to_fill = [("controllable", True)]
+    defaults_to_fill = [("controllable", True), ('reactive_capability_curve', False), ("curve_style", None)]
 
     _set_multiple_entries(net, "gen", index, defaults_to_fill=defaults_to_fill, **entries,
                           **kwargs)
@@ -2111,7 +2191,7 @@ def create_motor(net, bus, pn_mech_mw, cos_phi, efficiency_percent=100., loading
                      loading_percent=40, lrc_pu=6.0)
 
     """
-    _check_node_element(net, bus)
+    _check_element(net, bus)
 
     index = _get_index_with_check(net, "motor", index)
 
@@ -2198,7 +2278,7 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
         create_ext_grid(net, 1, voltage=1.03, s_sc_max_mva=1000, rx_max=0.1, r0x0_max=0.1,\
                        x0x_max=1.0)
     """
-    _check_node_element(net, bus)
+    _check_element(net, bus)
 
     index = _get_index_with_check(net, "ext_grid", index, name="external grid")
 
@@ -2212,7 +2292,7 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
     _set_value_if_not_nan(net, index, min_q_mvar, "min_q_mvar", "ext_grid")
     _set_value_if_not_nan(net, index, max_q_mvar, "max_q_mvar", "ext_grid")
     _set_value_if_not_nan(net, index, controllable, "controllable", "ext_grid",
-                          dtype=bool_, default_val=True)
+                          dtype=bool_, default_val=False)
     # others
     _set_value_if_not_nan(net, index, x0x_max, "x0x_max", "ext_grid")
     _set_value_if_not_nan(net, index, r0x0_max, "r0x0_max", "ext_grid")
@@ -4396,7 +4476,7 @@ def create_switch(net, bus, element, et, closed=True, type=None, name=None, inde
         create_switch(net, bus=0, element=1, et='l')
 
     """
-    _check_node_element(net, bus)
+    _check_element(net, bus)
     if et == "l":
         elm_tab = 'line'
         if element not in net[elm_tab].index:
@@ -4420,7 +4500,7 @@ def create_switch(net, bus, element, et, closed=True, type=None, name=None, inde
                 not net[elm_tab]["lv_bus"].loc[element] == bus):
             raise UserWarning("Trafo3w %s not connected to bus %s" % (element, bus))
     elif et == "b":
-        _check_node_element(net, element)
+        _check_element(net, element)
     else:
         raise UserWarning("Unknown element type")
 
@@ -4484,29 +4564,40 @@ def create_switches(net, buses, elements, et, closed=True, type=None, name=None,
 
     """
     index = _get_multiple_index_with_check(net, "switch", index, len(buses), name="Switches")
-    _check_multiple_node_elements(net, buses)
-    _check_multiple_node_elements(net, elements, name="elements")
+    _check_multiple_elements(net, buses)
+    rel_els = ['b', 'l', 't', 't3']
+    matcher = {'b': ['bus', 'buses'], 'l': ['line', 'lines'], 't': ['trafo', 'trafos'], 't3': ['trafo3w', 'trafo3ws']}
+    for typ in rel_els:
+        if et == typ: _check_multiple_elements(net, elements, *matcher[typ])
+    if np.any(np.isin(et, ['b', 'l', 't'])):
+        mask_all = np.array([False] * len(et))
+        for typ in rel_els:
+            et_arr = np.array(et)
+            el_arr = np.array(elements)
+            mask = et_arr == typ
+            mask_all |= mask
+            _check_multiple_elements(net, el_arr[mask], *matcher[typ])
+        not_def = ~mask_all
+        if np.any(not_def):
+            raise UserWarning('et type %s is not implemented' % et_arr[not_def])
+    else:
+        raise UserWarning('et type %s is not implemented' %et)
 
-    buses_s = pd.Series(buses, name="bus")
-    elements_s = pd.Series(elements, name="element")
-    et_s = pd.Series([et] * len(buses) if isinstance(et, str) else et, name="et")
+    b_arr = np.array(buses)[:, None]
+    el_arr = np.array(elements)
+    et_arr = np.array([et] * len(buses) if isinstance(et, str) else et)
     # Ensure switches are connected correctly.
     for typ, table, joining_busses in [("l", "line", ["from_bus", "to_bus"]),
                                        ("t", "trafo", ["hv_bus", "lv_bus"]),
                                        ("t3", "trafo3w", ["hv_bus", "mv_bus", "lv_bus"])]:
-        bus_not_connected_mask = ~elements_s[et_s == typ].isin(net[table].index)
-        if np_any(bus_not_connected_mask):
-            raise UserWarning("%s buses do not exist: %s" %
-                              (table.capitalize(), elements_s[et_s == typ][bus_not_connected_mask].to_list()))
-        merged = pd.merge(buses_s[et_s == typ].set_axis(elements_s[et_s == typ]),
-                          net[table][joining_busses], left_index=True, right_index=True)
-        not_connected_mask = True
-        for joining_bus in joining_busses:
-            not_connected_mask &= merged.bus != merged[joining_bus]
+        el = el_arr[et_arr == typ]
+        bs = net[table].loc[el, joining_busses].values
+        not_connected_mask = ~np.isin(b_arr[et_arr == typ], bs)
         if np_any(not_connected_mask):
-            bus_element_pairs = list(zip(merged.bus[not_connected_mask], merged.index[not_connected_mask]))
+            bus_element_pairs = zip(el_arr[et_arr == typ][:, None][not_connected_mask].tolist(),
+                                     b_arr[et_arr == typ][not_connected_mask].tolist())
             raise UserWarning("%s not connected (%s element, bus): %s" %
-                              (table.capitalize(), table, bus_element_pairs))
+                              (table.capitalize(), table, list(bus_element_pairs)))
 
     entries = {"bus": buses, "element": elements, "et": et, "closed": closed, "type": type,
                "name": name, "z_ohm": z_ohm, "in_ka": in_ka}
@@ -4531,7 +4622,7 @@ def create_shunt(net, bus, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, name
         **q_mvar** (float) - shunt reactive power in MVAr at v = 1.0 p.u. per step
 
     OPTIONAL:
-        **vn_kv** (float, None) - rated voltage of the shunt. Defaults to rated voltage of connected bus, since this \ 
+        **vn_kv** (float, None) - rated voltage of the shunt. Defaults to rated voltage of connected bus, since this \
             value is mandatory for powerflow calculations. If it is set to NaN it will be replaced by the bus vn_kv \
             during power flow
 
@@ -4562,7 +4653,7 @@ def create_shunt(net, bus, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, name
     EXAMPLE:
         create_shunt(net, 0, 20)
     """
-    _check_node_element(net, bus)
+    _check_element(net, bus)
 
     index = _get_index_with_check(net, "shunt", index)
 
@@ -4627,7 +4718,7 @@ def create_shunts(net, buses, q_mvar, p_mw=0., vn_kv=None, step=1, max_step=1, n
     EXAMPLE:
         create_shunts(net, [0, 2], [20, 30])
     """
-    _check_multiple_node_elements(net, buses)
+    _check_multiple_elements(net, buses)
 
     index = _get_multiple_index_with_check(net, "shunt", index, len(buses))
 
@@ -4714,7 +4805,7 @@ def create_svc(net, bus, x_l_ohm, x_cvar_ohm, set_vm_pu, thyristor_firing_angle_
 
     """
 
-    _check_node_element(net, bus)
+    _check_element(net, bus)
 
     index = _get_index_with_check(net, "svc", index)
 
@@ -4773,7 +4864,7 @@ def create_ssc(net, bus, r_ohm, x_ohm, set_vm_pu=1., vm_internal_pu=1., va_inter
 
     """
 
-    _check_node_element(net, bus)
+    _check_element(net, bus)
 
     index = _get_index_with_check(net, "ssc", index)
 
@@ -4834,8 +4925,8 @@ def create_vsc(net, bus, bus_dc, r_ohm, x_ohm, r_dc_ohm, pl_dc_mw=0., control_mo
 
     """
 
-    _check_node_element(net, bus)
-    _check_node_element(net, bus_dc, "bus_dc")
+    _check_element(net, bus)
+    _check_element(net, bus_dc, "bus_dc")
 
     index = _get_index_with_check(net, "vsc", index)
 
@@ -5270,7 +5361,7 @@ def create_ward(net, bus, ps_mw, qs_mvar, pz_mw, qz_mvar, name=None, in_service=
     OUTPUT:
         ward id
     """
-    _check_node_element(net, bus)
+    _check_element(net, bus)
 
     index = _get_index_with_check(net, "ward", index, "ward equivalent")
 
@@ -5304,7 +5395,7 @@ def create_wards(net, buses, ps_mw, qs_mvar, pz_mw, qz_mvar, name=None, in_servi
     OUTPUT:
         ward id
     """
-    _check_multiple_node_elements(net, buses)
+    _check_multiple_elements(net, buses)
 
     index = _get_multiple_index_with_check(net, "storage", index, len(buses))
 
@@ -5349,7 +5440,7 @@ def create_xward(net, bus, ps_mw, qs_mvar, pz_mw, qz_mvar, r_ohm, x_ohm, vm_pu, 
     OUTPUT:
         xward id
     """
-    _check_node_element(net, bus)
+    _check_element(net, bus)
 
     index = _get_index_with_check(net, "xward", index, "extended ward equivalent")
 
@@ -5913,20 +6004,26 @@ def _get_multiple_index_with_check(net, table, index, number, name=None):
     return index
 
 
-def _check_node_element(net, node, node_table="bus"):
-    if node not in net[node_table].index.values:
+def _check_element(net, element_index, element="bus"):
+    if element not in net:
+        raise UserWarning("Node table %s does not exist" %element)
+    if element_index not in net[element].index.values:
         raise UserWarning("Cannot attach to %s %s, %s does not exist"
-                          % (node_table, node, node_table))
+                          % (element, element_index, element_index))
 
 
-def _check_multiple_node_elements(net, nodes, node_table="bus", name="buses"):
-    if np_any(~isin(nodes, net[node_table].index.values)):
-        node_not_exist = set(nodes) - set(net[node_table].index.values)
+def _check_multiple_elements(net, element_indices, element="bus", name="buses"):
+    if element not in net:
+        raise UserWarning("Node table %s does not exist" %element)
+    if np_any(~isin(element_indices, net[element].index.values)):
+        node_not_exist = set(element_indices) - set(net[element].index.values)
         raise UserWarning("Cannot attach to %s %s, they do not exist" % (name, node_not_exist))
 
 
 def _check_branch_element(net, element_name, index, from_node, to_node, node_name="bus",
                           plural="es"):
+    if node_name not in net:
+        raise UserWarning("Node table %s does not exist" %node_name)
     missing_nodes = {from_node, to_node} - set(net[node_name].index.values)
     if len(missing_nodes) > 0:
         raise UserWarning("%s %d tries to attach to non-existing %s(%s) %s"
@@ -5935,6 +6032,8 @@ def _check_branch_element(net, element_name, index, from_node, to_node, node_nam
 
 def _check_multiple_branch_elements(net, from_nodes, to_nodes, element_name, node_name="bus",
                                     plural="es"):
+    if node_name not in net:
+        raise UserWarning("Node table %s does not exist" %node_name)
     all_nodes = set(from_nodes) | set(to_nodes)
     node_not_exist = all_nodes - set(net[node_name].index)
     if len(node_not_exist) > 0:
