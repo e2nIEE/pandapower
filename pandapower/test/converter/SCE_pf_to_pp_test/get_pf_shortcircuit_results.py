@@ -168,7 +168,7 @@ def get_pf_sc_line_results(app, fault_type='lll', calc_mode='max', fault_impedan
 ## get results for all fault types and cases and write to excel
 fault_types = ['lll', 'll', 'llg', 'lg']
 cases = ['max', 'min']
-fault_impedances = [(0, 0), (5, 5)]
+fault_impedances = [(0, 0), (10, 10)]
 
 with pd.ExcelWriter('pf_sc_results_all_cases.xlsx') as writer:
     for fault_type in fault_types:
