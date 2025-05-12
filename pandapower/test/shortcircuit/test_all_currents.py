@@ -740,17 +740,17 @@ def test_trafo_impedance():
 
     ppci = net.ppci
     tap = ppci["branch"][:, TAP].real
-    ikss1 = ppci["bus"][:, IKSSV] * np.exp(1j * np.deg2rad(ppci["bus"][:, PHI_IKSSV_DEGREE]))
+    ikssv = ppci["bus"][:, IKSSV] * np.exp(1j * np.deg2rad(ppci["bus"][:, PHI_IKSSV_DEGREE]))
 
-    v_1 = ikss1[2] * z_l / 0.4 * np.sqrt(3)  # kA * Ohm / V_base -> p.u.
+    v_1 = ikssv[2] * z_l / 0.4 * np.sqrt(3)  # kA * Ohm / V_base -> p.u.
     np.abs(v_1)
     np.angle(v_1, deg=True)
 
-    v_0 = v_1 + ikss1[2] * z_tk / 0.4 * np.sqrt(3) * 0.4 / 0.41
+    v_0 = v_1 + ikssv[2] * z_tk / 0.4 * np.sqrt(3) * 0.4 / 0.41
     np.abs(v_0)
     np.angle(v_0, deg=True)
 
-    v_0_ref = v_1 + ikss1[2] * z_tk / 0.4 * np.sqrt(3)
+    v_0_ref = v_1 + ikssv[2] * z_tk / 0.4 * np.sqrt(3)
 
     Yf = ppci["internal"]["Yf"]
     Yt = ppci["internal"]["Yt"]
