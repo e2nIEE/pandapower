@@ -11,7 +11,7 @@ from pandapower.create import create_empty_network, create_bus, create_ext_grid,
     create_transformer_from_parameters, create_transformers_from_parameters, create_line_from_parameters, create_buses, \
     create_lines_from_parameters, create_switch, create_load, create_shunt, create_ward, create_xward
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, TAP, BR_R, BR_X
-from pandapower.pypower.idx_bus_sc import IKSS1, PHI_IKSS1_DEGREE
+from pandapower.pypower.idx_bus_sc import IKSSV, PHI_IKSSV_DEGREE
 from pandapower.run import runpp
 from pandapower.shortcircuit.calc_sc import calc_sc
 
@@ -740,7 +740,7 @@ def test_trafo_impedance():
 
     ppci = net.ppci
     tap = ppci["branch"][:, TAP].real
-    ikss1 = ppci["bus"][:, IKSS1] * np.exp(1j * np.deg2rad(ppci["bus"][:, PHI_IKSS1_DEGREE]))
+    ikss1 = ppci["bus"][:, IKSSV] * np.exp(1j * np.deg2rad(ppci["bus"][:, PHI_IKSSV_DEGREE]))
 
     v_1 = ikss1[2] * z_l / 0.4 * np.sqrt(3)  # kA * Ohm / V_base -> p.u.
     np.abs(v_1)

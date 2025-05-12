@@ -10,8 +10,8 @@ from pandapower.auxiliary import sequence_to_phase
 from pandapower.pypower.idx_brch import F_BUS, T_BUS
 from pandapower.pypower.idx_brch_sc import IKSS_F, IKSS_T, IP_F, IP_T, ITH_F, ITH_T, PKSS_F, QKSS_F, PKSS_T, QKSS_T, \
     VKSS_MAGN_F, VKSS_MAGN_T, VKSS_ANGLE_F, VKSS_ANGLE_T, IKSS_ANGLE_F, IKSS_ANGLE_T
-from pandapower.pypower.idx_bus_sc import IKSS1, IP, ITH, IKSS2, R_EQUIV_OHM, X_EQUIV_OHM, SKSS, PHI_IKSS1_DEGREE, \
-    PHI_IKSS2_DEGREE
+from pandapower.pypower.idx_bus_sc import IKSSV, IP, ITH, IKSSC, R_EQUIV_OHM, X_EQUIV_OHM, SKSS, PHI_IKSSV_DEGREE, \
+    PHI_IKSSC_DEGREE
 from pandapower.pypower.idx_bus import BUS_TYPE, BASE_KV
 from pandapower.results_branch import _copy_switch_results_from_branches
 from pandapower.results import BRANCH_RESULTS_KEYS
@@ -157,15 +157,15 @@ def _calculate_bus_results_llg(ppc_0, ppc_1, ppc_2, bus, net):
     # we use 3D arrays here to easily identify via axis:
     # 0: line index, 1: from/to, 2: phase
     # short-ciruit for rotating machine (ext-grid and gen)
-    i_1_ka_0 = ppc_0['bus'][:, IKSS1] * np.exp(1j * np.deg2rad(ppc_0['bus'][:, PHI_IKSS1_DEGREE].real))[:, np.newaxis]
-    i_1_ka_1 = ppc_1['bus'][:, IKSS1] * np.exp(1j * np.deg2rad(ppc_1['bus'][:, PHI_IKSS1_DEGREE].real))[:, np.newaxis]
-    i_1_ka_2 = ppc_2['bus'][:, IKSS1] * np.exp(1j * np.deg2rad(ppc_2['bus'][:, PHI_IKSS1_DEGREE].real))[:, np.newaxis]
+    i_1_ka_0 = ppc_0['bus'][:, IKSSV] * np.exp(1j * np.deg2rad(ppc_0['bus'][:, PHI_IKSSV_DEGREE].real))[:, np.newaxis]
+    i_1_ka_1 = ppc_1['bus'][:, IKSSV] * np.exp(1j * np.deg2rad(ppc_1['bus'][:, PHI_IKSSV_DEGREE].real))[:, np.newaxis]
+    i_1_ka_2 = ppc_2['bus'][:, IKSSV] * np.exp(1j * np.deg2rad(ppc_2['bus'][:, PHI_IKSSV_DEGREE].real))[:, np.newaxis]
 
     # TODO check results with sgen
     # short-ciruit for inverter-based generation (current source)
-    i_2_ka_0 = ppc_0['bus'][:, IKSS2] * np.exp(1j * np.deg2rad(ppc_0['bus'][:, PHI_IKSS2_DEGREE].real))[:, np.newaxis]
-    i_2_ka_1 = ppc_1['bus'][:, IKSS2] * np.exp(1j * np.deg2rad(ppc_1['bus'][:, PHI_IKSS2_DEGREE].real))[:, np.newaxis]
-    i_2_ka_2 = ppc_2['bus'][:, IKSS2] * np.exp(1j * np.deg2rad(ppc_2['bus'][:, PHI_IKSS2_DEGREE].real))[:, np.newaxis]
+    i_2_ka_0 = ppc_0['bus'][:, IKSSC] * np.exp(1j * np.deg2rad(ppc_0['bus'][:, PHI_IKSSC_DEGREE].real))[:, np.newaxis]
+    i_2_ka_1 = ppc_1['bus'][:, IKSSC] * np.exp(1j * np.deg2rad(ppc_1['bus'][:, PHI_IKSSC_DEGREE].real))[:, np.newaxis]
+    i_2_ka_2 = ppc_2['bus'][:, IKSSC] * np.exp(1j * np.deg2rad(ppc_2['bus'][:, PHI_IKSSC_DEGREE].real))[:, np.newaxis]
 
     i_1_012_ka = np.stack([i_1_ka_0, i_1_ka_1, i_1_ka_2], 2)
     i_2_012_ka = np.stack([i_2_ka_0, i_2_ka_1, i_2_ka_2], 2)
@@ -236,13 +236,13 @@ def _get_bus_results(net, ppc_0, ppc_1, ppc_2, bus):
 
     ppc_sequence = {0: ppc_0, 1: ppc_1, 2: ppc_2, "": ppc_1}
     if net["_options"]["fault"] == "LG":
-        net.res_bus_sc["ikss_ka"] = ppc_0["bus"][ppc_index, IKSS1] + ppc_1["bus"][ppc_index, IKSS2]
+        net.res_bus_sc["ikss_ka"] = ppc_0["bus"][ppc_index, IKSSV] + ppc_1["bus"][ppc_index, IKSSC]
         net.res_bus_sc["skss_mw"] = ppc_0["bus"][ppc_index, SKSS]
         sequence_relevant = range(3)
     elif net["_options"]["fault"] == "LLG":
         sequence_relevant = range(3)
     else:
-        net.res_bus_sc["ikss_ka"] = ppc_1["bus"][ppc_index, IKSS1] + ppc_1["bus"][ppc_index, IKSS2]
+        net.res_bus_sc["ikss_ka"] = ppc_1["bus"][ppc_index, IKSSV] + ppc_1["bus"][ppc_index, IKSSC]
         net.res_bus_sc["skss_mw"] = ppc_1["bus"][ppc_index, SKSS]
         sequence_relevant = ("",)
     for sequence in sequence_relevant:
