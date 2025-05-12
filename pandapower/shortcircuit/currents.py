@@ -29,6 +29,7 @@ def _calc_ikss(net, ppci, bus_idx):
     case = net._options["case"]
     c = ppci["bus"][bus_idx, C_MIN] if case == "min" else ppci["bus"][bus_idx, C_MAX]
     baseI = ppci["internal"]["baseI"] = ppci["bus"][:, BASE_KV] * np.sqrt(3) / ppci["baseMVA"]
+    fault_impedance = net._options["fault_impedance"]
 
     # Only for test, should correspondant to PF result
     baseZ = ppci["bus"][bus_idx, BASE_KV] ** 2 / ppci["baseMVA"]
@@ -83,6 +84,7 @@ def _calc_ikss(net, ppci, bus_idx):
         ppci["bus"][bus_idx, PHI_IKSSV_DEGREE] = np.angle(ikssv, deg=True)
         ppci["internal"]["V_ikss"] = V_ikss
     elif fault == "LL":
+        z_equiv = z_equiv - fault_impedance / 2
         ppci["bus"][bus_idx, IKSSV] = np.abs(c / z_equiv / ppci["bus"][bus_idx, BASE_KV] / 2 * ppci["baseMVA"])
 
     _current_source_current(net, ppci, bus_idx)
