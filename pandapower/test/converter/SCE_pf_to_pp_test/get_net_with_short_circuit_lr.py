@@ -11,10 +11,10 @@ except ImportError:
     import logging
 #logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 #logger = logging.getLogger(__name__)
-
+proj_name = "test_case_1_four_bus_radial_grid"
 
 app = pf.GetApplication()
-app.ActivateProject("Short_Circuit_Test_Case_SCE")
+app.ActivateProject(proj_name)
 active_project = app.GetActiveProject()
 
 # activate study case
@@ -24,7 +24,7 @@ study_case = study_cases[0]
 study_case.Activate()
 
 ## run load flow in pf and convert net from pf to pp
-net = from_pfd(app, prj_name="Short_Circuit_Test_Case_SCE", sc_type='ll', sc_mode='max')
+net = from_pfd(app, prj_name=proj_name, sc_type='ll', sc_mode='max')
 pf_sc_results = net.res_bus_sc
 
 ##

@@ -3,8 +3,12 @@ from pandapower.converter.powerfactory.export_pfd_to_pp import from_pfd
 import pandas as pd
 import numpy as np
 from pandapower.converter.powerfactory.pf_export_functions import run_short_circuit
+from pandapower import pp_dir
+import os
 
 sys.path.append(r"C:\Program Files\DIgSILENT\PowerFactory 2024 SP1\Python\3.11")
+# proj_name = "test_case_1_four_bus_radial_grid"
+proj_name = "test_case_2_five_bus_radial_grid"
 import powerfactory as pf
 
 try:
@@ -13,7 +17,7 @@ except ImportError:
     import logging
 
 app = pf.GetApplication()
-app.ActivateProject("Short_Circuit_Test_Case_SCE")
+app.ActivateProject(proj_name)
 active_project = app.GetActiveProject()
 
 # activate study case
@@ -168,9 +172,11 @@ def get_pf_sc_line_results(app, fault_type='lll', calc_mode='max', fault_impedan
 ## get results for all fault types and cases and write to excel
 fault_types = ['lll', 'll', 'llg', 'lg']
 cases = ['max', 'min']
-fault_impedances = [(0, 0), (10, 10)]
+fault_impedances = [(0, 0), (5, 5)]
+out_path = os.path.join(pp_dir, "test", "shortcircuit", "sce_tests", "sc_result_comparison",
+                             proj_name + '_pf_sc_results_all_cases.xlsx')
 
-with pd.ExcelWriter('pf_sc_results_all_cases.xlsx') as writer:
+with pd.ExcelWriter(out_path) as writer:
     for fault_type in fault_types:
         for case in cases:
             for fault_impedance in fault_impedances:

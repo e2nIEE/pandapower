@@ -578,6 +578,8 @@ def test_trafo_lg(inverse_y):
         fault_bus = 0
         sc.calc_sc(net, fault="LG", case="max", branch_results=True, bus=fault_bus, use_pre_fault_voltage=False,
                    inverse_y=inverse_y)
+        #TODO also check for skss_mw results, add the value in res_bus comparison values 405.244299 correct value?
+        net.res_bus_sc.drop(columns='skss_mw', inplace=True)
         assert np.allclose(res_bus[vector_group][fault_bus], net.res_bus_sc.loc[fault_bus].values, rtol=0, atol=tol[0])
         assert np.allclose(res_trafo[vector_group][fault_bus], net.res_trafo_sc.loc[0].values, rtol=0, atol=tol[1])
 
@@ -635,6 +637,8 @@ def test_trafo_lg_c(inverse_y):
         fault_bus = 0
         sc.calc_sc(net, fault="LG", case="max", branch_results=True, bus=fault_bus, use_pre_fault_voltage=True,
                    inverse_y=inverse_y)
+        #TODO also check for skss_mw results, add the value in res_bus comparison values 405.244299 correct value?
+        net.res_bus_sc.drop(columns='skss_mw', inplace=True)
         assert np.allclose(res_bus[vector_group][fault_bus], net.res_bus_sc.loc[fault_bus].values, rtol=0, atol=tol[0])
         assert np.allclose(res_trafo[vector_group][fault_bus], net.res_trafo_sc.loc[0].values, rtol=0, atol=tol[1])
 
@@ -693,11 +697,15 @@ def test_trafo_lg_c_sgen():
         pp.runpp(net)
         fault_bus = 0
         sc.calc_sc(net, fault="LG", case="max", branch_results=True, bus=fault_bus, use_pre_fault_voltage=True)
+        #TODO also check for skss_mw results, add the value in res_bus comparison values 405.244299 correct value?
+        net.res_bus_sc.drop(columns='skss_mw', inplace=True)
         assert np.allclose(res_bus[vector_group][fault_bus], net.res_bus_sc.loc[fault_bus].values, rtol=0, atol=tol[0])
         assert np.allclose(res_trafo[vector_group][fault_bus], net.res_trafo_sc.loc[0].values, rtol=0, atol=tol[1])
 
         fault_bus = 1
         sc.calc_sc(net, fault="LG", case="max", branch_results=True, bus=fault_bus, use_pre_fault_voltage=True)
+        #TODO also check for skss_mw results, add the value in res_bus comparison values 405.244299 correct value?
+        net.res_bus_sc.drop(columns='skss_mw', inplace=True)
         assert np.allclose(res_bus[vector_group][fault_bus], net.res_bus_sc.loc[fault_bus].values, rtol=0, atol=tol[2])
         assert np.allclose(res_trafo[vector_group][fault_bus], net.res_trafo_sc.loc[0].values, rtol=0, atol=tol[3])
 
@@ -739,6 +747,8 @@ def test_isolated_sgen():
 
     pp.runpp(net)
     sc.calc_sc(net, fault="LG", case="max", bus=0, use_pre_fault_voltage=True)
+    # TODO also check for skss_mw results, add the value in res_bus comparison values 405.244299 correct value?
+    net.res_bus_sc.drop(columns='skss_mw', inplace=True)
     assert np.allclose(net.res_bus_sc.values,
                        [26.217212, 0.043782, 0.437816, 0.019738, 0.441312, 0.043782, 0.437816],
                        rtol=0, atol=1e-5)
@@ -755,6 +765,8 @@ def test_isolated_load():
 
     pp.runpp(net)
     sc.calc_sc(net, fault="LG", case="max", bus=0, use_pre_fault_voltage=True)
+    # TODO also check for skss_mw results, add the value in res_bus comparison values 405.244299 correct value?
+    net.res_bus_sc.drop(columns='skss_mw', inplace=True)
     assert np.allclose(net.res_bus_sc.values,
                        [26.373383, 0.043782, 0.437816, 0.067045, 0.431784, 0.067045, 0.431784],
                        rtol=0, atol=5e-6)
@@ -777,24 +789,32 @@ def test_petersen_coil():
                                           mag0_percent=100, mag0_rx=0, si0_hv_partial=0.5, xn_ohm=50)
     fault_bus = 1
     sc.calc_sc(net, fault="LG", case="max", branch_results=True, bus=fault_bus, use_pre_fault_voltage=False)
+    # TODO also check for skss_mw results, add the value in res_bus comparison values 405.244299 correct value?
+    net.res_bus_sc.drop(columns='skss_mw', inplace=True)
     assert np.allclose(net.res_bus_sc.values,
                        [0.250568, 0.012714, 150.386279, 0.056495, 0.844448, 0.056495, 0.844448],
                        rtol=0, atol=1e-6)
 
     pp.runpp(net)
     sc.calc_sc(net, fault="LG", case="max", branch_results=True, bus=fault_bus, use_pre_fault_voltage=True)
+    # TODO also check for skss_mw results, add the value in res_bus comparison values 405.244299 correct value?
+    net.res_bus_sc.drop(columns='skss_mw', inplace=True)
     assert np.allclose(net.res_bus_sc.values,
                        [0.227683, 0.013334, 150.405114, 0.057101, 0.864115, 0.057101, 0.864115],
                        rtol=0, atol=1e-6)
 
     net.bus.vn_kv = 115, 21
     sc.calc_sc(net, fault="LG", case="max", branch_results=True, bus=fault_bus, use_pre_fault_voltage=False)
+    # TODO also check for skss_mw results, add the value in res_bus comparison values 405.244299 correct value?
+    net.res_bus_sc.drop(columns='skss_mw', inplace=True)
     assert np.allclose(net.res_bus_sc.values,
                        [0.262955, 0.012714, 150.386279, 0.060566, 0.885154, 0.060566, 0.885154],
                        rtol=0, atol=1e-6)
 
     pp.runpp(net)
     sc.calc_sc(net, fault="LG", case="max", branch_results=True, bus=fault_bus, use_pre_fault_voltage=True)
+    # TODO also check for skss_mw results, add the value in res_bus comparison values 405.244299 correct value?
+    net.res_bus_sc.drop(columns='skss_mw', inplace=True)
     assert np.allclose(net.res_bus_sc.values,
                        [0.237905, 0.013334, 150.405114, 0.061169, 0.904801, 0.061169, 0.904801],
                        rtol=0, atol=1e-6)
@@ -857,6 +877,8 @@ def test_fault_impedance():
     fault_bus = 1
     sc.calc_sc(net, fault="LG", case="max", branch_results=True, bus=fault_bus, use_pre_fault_voltage=False,
                x_fault_ohm=5, r_fault_ohm=1)
+    # TODO also check for skss_mw results, add the value in res_bus comparison values 405.244299 correct value?
+    net.res_bus_sc.drop(columns='skss_mw', inplace=True)
     assert np.allclose(net.res_bus_sc.values,
                        [2.195134, 1.012713, 5.386279, 1.056495, 5.844448, 1.056495, 5.844448],
                        rtol=0, atol=1e-6)
@@ -864,6 +886,8 @@ def test_fault_impedance():
     pp.runpp(net)
     sc.calc_sc(net, fault="LG", case="max", branch_results=True, bus=fault_bus, use_pre_fault_voltage=True,
                x_fault_ohm=5, r_fault_ohm=1)
+    # TODO also check for skss_mw results, add the value in res_bus comparison values 405.244299 correct value?
+    net.res_bus_sc.drop(columns='skss_mw', inplace=True)
     assert np.allclose(net.res_bus_sc.values,
                        [1.988823, 1.013333, 5.405114, 1.057101, 5.864115, 1.057101, 5.864115],
                        rtol=0, atol=1e-6)
@@ -871,6 +895,8 @@ def test_fault_impedance():
     net.bus.vn_kv = 115, 21
     sc.calc_sc(net, fault="LG", case="max", branch_results=True, bus=fault_bus, use_pre_fault_voltage=False,
                x_fault_ohm=5, r_fault_ohm=1)
+    # TODO also check for skss_mw results, add the value in res_bus comparison values 405.244299 correct value?
+    net.res_bus_sc.drop(columns='skss_mw', inplace=True)
     assert np.allclose(net.res_bus_sc.values,
                        [2.294113, 1.012713, 5.386279, 1.060566, 5.885154, 1.060566, 5.885154],
                        rtol=0, atol=1e-6)
@@ -878,6 +904,8 @@ def test_fault_impedance():
     pp.runpp(net)
     sc.calc_sc(net, fault="LG", case="max", branch_results=True, bus=fault_bus, use_pre_fault_voltage=True,
                x_fault_ohm=5, r_fault_ohm=1)
+    # TODO also check for skss_mw results, add the value in res_bus comparison values 405.244299 correct value?
+    net.res_bus_sc.drop(columns='skss_mw', inplace=True)
     assert np.allclose(net.res_bus_sc.values,
                        [2.069538, 1.013333, 5.405114, 1.061169, 5.904801, 1.061169, 5.904801],
                        rtol=0, atol=1e-6)
