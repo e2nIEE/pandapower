@@ -206,6 +206,7 @@ class CimParser:
                     'rdfId', 'name', 'OperationalLimitSet', 'OperationalLimitType', 'value']),
                 'DCNode': pd.DataFrame(columns=['rdfId', 'name', 'DCEquipmentContainer']),
                 'DCEquipmentContainer': pd.DataFrame(columns=['rdfId', 'name']),
+                'DCLine': pd.DataFrame(columns=['rdfId', 'name']),
                 'DCConverterUnit': pd.DataFrame(columns=['rdfId', 'name', 'Substation', 'operationMode']),
                 'DCLineSegment': pd.DataFrame(columns=['rdfId', 'name', 'description', 'EquipmentContainer']),
                 'CsConverter': pd.DataFrame(columns=['rdfId', 'BaseVoltage', 'ratedUdc']),
@@ -614,6 +615,7 @@ class CimParser:
                     'rdfId', 'name', 'OperationalLimitSet', 'OperationalLimitType']),
                 'DCNode': pd.DataFrame(columns=['rdfId', 'name', 'DCEquipmentContainer']),
                 'DCEquipmentContainer': pd.DataFrame(columns=['rdfId', 'name']),
+                'DCLine': pd.DataFrame(columns=['rdfId', 'name']),
                 'DCConverterUnit': pd.DataFrame(columns=['rdfId', 'name', 'Substation', 'operationMode']),
                 'DCLineSegment': pd.DataFrame(columns=['rdfId', 'name', 'description', 'EquipmentContainer']),
                 'CsConverter': pd.DataFrame(columns=['rdfId', 'BaseVoltage', 'ratedUdc']),
@@ -680,7 +682,8 @@ class CimParser:
                 'RatioTapChangerTablePoint': pd.DataFrame(columns=['rdfId', 'RatioTapChangerTable', 'step',
                                                                    'r', 'x', 'ratio']),
                 'LinearShuntCompensator': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'description', 'nomU', 'gPerSection', 'bPerSection', 'maximumSections']),
+                    'rdfId', 'name', 'description', 'nomU', 'gPerSection', 'bPerSection', 'maximumSections',
+                    'normalSections']),
                 'NonlinearShuntCompensator': pd.DataFrame(columns=[
                     'rdfId', 'name', 'description', 'nomU', 'maximumSections']),
                 'NonlinearShuntCompensatorPoint': pd.DataFrame(columns=[
