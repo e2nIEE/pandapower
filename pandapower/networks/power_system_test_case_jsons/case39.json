@@ -362,7 +362,7 @@
     "trafo": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"name\",\"std_type\",\"hv_bus\",\"lv_bus\",\"sn_mva\",\"vn_hv_kv\",\"vn_lv_kv\",\"vk_percent\",\"vkr_percent\",\"pfe_kw\",\"i0_percent\",\"shift_degree\",\"tap_side\",\"tap_neutral\",\"tap_min\",\"tap_max\",\"tap_step_percent\",\"tap_step_degree\",\"tap_pos\",\"tap_phase_shifter\",\"parallel\",\"df\",\"in_service\",\"max_loading_percent\"],\"index\":[0,1,10,2,3,4,5,6,7,8,9],\"data\":[[null,null,1,29,900.0,345.0,345.0,16.289999999999999,0.0,0.0,0.0,0.0,\"hv\",0,null,null,2.49999999999999,null,1,false,1,1.0,true,100.0],[null,null,5,30,1800.0,345.0,345.0,45.0,0.0,0.0,0.0,0.0,\"hv\",0,null,null,7.00000000000001,null,1,false,1,1.0,true,100.0],[null,null,28,37,1200.0,345.0,345.0,18.744599222175971,0.96,0.0,0.0,0.0,\"hv\",0,null,null,2.49999999999999,null,1,false,1,1.0,true,100.0],[null,null,9,31,900.0,345.0,345.0,18.0,0.0,0.0,0.0,0.0,\"hv\",0,null,null,7.00000000000001,null,1,false,1,1.0,true,100.0],[null,null,11,10,500.0,345.0,345.0,21.76470767090613,0.8,0.0,0.0,0.0,\"hv\",0,null,null,0.6,null,1,false,1,1.0,true,100.0],[null,null,11,12,500.0,345.0,345.0,21.76470767090613,0.8,0.0,0.0,0.0,\"hv\",0,null,null,0.6,null,1,false,1,1.0,true,100.0],[null,null,18,19,900.0,345.0,345.0,12.435967996099061,0.63,0.0,0.0,0.0,\"hv\",0,null,null,6.00000000000001,null,1,false,1,1.0,true,100.0],[null,null,18,32,900.0,345.0,345.0,12.79551874681132,0.63,0.0,0.0,0.0,\"hv\",0,null,null,7.00000000000001,null,1,false,1,1.0,true,100.0],[null,null,19,33,900.0,345.0,345.0,16.220237359545639,0.81,0.0,0.0,0.0,\"hv\",0,null,null,0.89999999999999,null,1,false,1,1.0,true,100.0],[null,null,21,34,900.0,345.0,345.0,12.869999999999999,0.0,0.0,0.0,0.0,\"hv\",0,null,null,2.49999999999999,null,1,false,1,1.0,true,100.0],[null,null,24,36,900.0,345.0,345.0,20.88698159141239,0.54,0.0,0.0,0.0,\"hv\",0,null,null,2.49999999999999,null,1,false,1,1.0,true,100.0]]}",
+      "_object": "{\"columns\":[\"name\",\"std_type\",\"hv_bus\",\"lv_bus\",\"sn_mva\",\"vn_hv_kv\",\"vn_lv_kv\",\"vk_percent\",\"vkr_percent\",\"pfe_kw\",\"i0_percent\",\"shift_degree\",\"tap_side\",\"tap_neutral\",\"tap_min\",\"tap_max\",\"tap_step_percent\",\"tap_step_degree\",\"tap_pos\",\"parallel\",\"df\",\"in_service\",\"max_loading_percent\",\"tap_changer_type\"],\"index\":[0,1,10,2,3,4,5,6,7,8,9],\"data\":[[null,null,1,29,900.0,345.0,345.0,16.289999999999999,0.0,0.0,0.0,0.0,\"hv\",0,null,null,2.49999999999999,null,1,1,1.0,true,100.0,\"Ratio\"],[null,null,5,30,1800.0,345.0,345.0,45.0,0.0,0.0,0.0,0.0,\"hv\",0,null,null,7.00000000000001,null,1,1,1.0,true,100.0,\"Ratio\"],[null,null,28,37,1200.0,345.0,345.0,18.744599222175971,0.96,0.0,0.0,0.0,\"hv\",0,null,null,2.49999999999999,null,1,1,1.0,true,100.0,\"Ratio\"],[null,null,9,31,900.0,345.0,345.0,18.0,0.0,0.0,0.0,0.0,\"hv\",0,null,null,7.00000000000001,null,1,1,1.0,true,100.0,\"Ratio\"],[null,null,11,10,500.0,345.0,345.0,21.76470767090613,0.8,0.0,0.0,0.0,\"hv\",0,null,null,0.6,null,1,1,1.0,true,100.0,\"Ratio\"],[null,null,11,12,500.0,345.0,345.0,21.76470767090613,0.8,0.0,0.0,0.0,\"hv\",0,null,null,0.6,null,1,1,1.0,true,100.0,\"Ratio\"],[null,null,18,19,900.0,345.0,345.0,12.435967996099061,0.63,0.0,0.0,0.0,\"hv\",0,null,null,6.00000000000001,null,1,1,1.0,true,100.0,\"Ratio\"],[null,null,18,32,900.0,345.0,345.0,12.79551874681132,0.63,0.0,0.0,0.0,\"hv\",0,null,null,7.00000000000001,null,1,1,1.0,true,100.0,\"Ratio\"],[null,null,19,33,900.0,345.0,345.0,16.220237359545639,0.81,0.0,0.0,0.0,\"hv\",0,null,null,0.89999999999999,null,1,1,1.0,true,100.0,\"Ratio\"],[null,null,21,34,900.0,345.0,345.0,12.869999999999999,0.0,0.0,0.0,0.0,\"hv\",0,null,null,2.49999999999999,null,1,1,1.0,true,100.0,\"Ratio\"],[null,null,24,36,900.0,345.0,345.0,20.88698159141239,0.54,0.0,0.0,0.0,\"hv\",0,null,null,2.49999999999999,null,1,1,1.0,true,100.0,\"Ratio\"]]}",
       "orient": "split",
       "dtype": {
         "name": "object",
@@ -384,11 +384,11 @@
         "tap_step_percent": "float64",
         "tap_step_degree": "float64",
         "tap_pos": "int32",
-        "tap_phase_shifter": "bool",
         "parallel": "uint32",
         "df": "float64",
         "in_service": "bool",
-        "max_loading_percent": "float64"
+        "max_loading_percent": "float64",
+        "tap_changer_type": "object"
       },
       "is_multiindex": false,
       "is_multicolumn": false
@@ -586,17 +586,6 @@
       "is_multiindex": false,
       "is_multicolumn": false
     },
-    "characteristic": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[\"object\"],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "dtype": {
-        "object": "object"
-      },
-      "is_multiindex": false,
-      "is_multicolumn": false
-    },
     "controller": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
@@ -627,7 +616,7 @@
       "is_multiindex": false,
       "is_multicolumn": false
     },
-    "version": "3.0.0",
+    "version": "3.0.0.dev1",
     "format_version": "3.1.0",
     "converged": true,
     "OPF_converged": false,
@@ -1907,6 +1896,19 @@
       "is_multiindex": false,
       "is_multicolumn": false
     },
+    "res_shunt_est": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[\"p_mw\",\"q_mvar\",\"vm_pu\"],\"index\":[],\"data\":[]}",
+      "orient": "split",
+      "dtype": {
+        "p_mw": "float64",
+        "q_mvar": "float64",
+        "vm_pu": "float64"
+      },
+      "is_multiindex": false,
+      "is_multicolumn": false
+    },
     "res_bus_sc": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
@@ -2165,6 +2167,17 @@
       "is_multiindex": false,
       "is_multicolumn": false
     },
-    "user_pf_options": {}
+    "user_pf_options": {},
+    "characteristic": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[\"object\"],\"index\":[],\"data\":[]}",
+      "orient": "split",
+      "dtype": {
+        "object": "object"
+      },
+      "is_multiindex": false,
+      "is_multicolumn": false
+    }
   }
 }
