@@ -156,7 +156,7 @@ def write_voltage_dependend_load_results(net, p, q, b):
 
         cz_p = l["const_z_p_percent"].values / 100.
         ci_p = l["const_i_p_percent"].values / 100.
-        cp = 1. - (cz + ci)
+        cp = 1. - (cz_p + ci_p)
 
         # constant power
         pl = l["p_mw"].values * scaling * load_is * cp
