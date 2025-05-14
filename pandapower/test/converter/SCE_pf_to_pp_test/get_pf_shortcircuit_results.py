@@ -9,8 +9,8 @@ import os
 sys.path.append(r"C:\Program Files\DIgSILENT\PowerFactory 2024 SP1\Python\3.11")
 # proj_name = "test_case_1_four_bus_radial_grid"
 # proj_name = "test_case_2_five_bus_radial_grid"
-# proj_name = "test_case_3_five_bus_meshed_grid"
-proj_name = "Short_Circuit_Test_Case_SCE"
+proj_name = "test_case_3_five_bus_meshed_grid"
+
 import powerfactory as pf
 
 try:
@@ -203,3 +203,6 @@ with pd.ExcelWriter(out_path) as writer:
                 sheet_name_base = sheet_name_base[:25]
                 df_bus.to_excel(writer, sheet_name=sheet_name_base, index=False)
                 df_line.to_excel(writer, sheet_name=sheet_name_base + "_branch", index=False)
+
+##
+

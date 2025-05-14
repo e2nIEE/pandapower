@@ -11,7 +11,7 @@ except ImportError:
     import logging
 #logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 #logger = logging.getLogger(__name__)
-proj_name = "test_case_1_four_bus_radial_grid"
+proj_name = "Short_Circuit_Test_Case_2_SCE"
 
 app = pf.GetApplication()
 app.ActivateProject(proj_name)
@@ -32,7 +32,3 @@ from pandapower.shortcircuit.calc_sc import calc_sc
 calc_sc(net, fault="LL", case='max', branch_results=False, ip=True)
 
 net.res_bus_sc = pd.concat([net.res_bus_sc, pf_sc_results], axis=1)
-
-
-##
-
