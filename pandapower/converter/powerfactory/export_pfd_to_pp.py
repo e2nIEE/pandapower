@@ -43,8 +43,8 @@ def from_pfd(app, prj_name: str, path_dst=None, pv_as_slack=False, pf_variable_p
     if res == 1:
         raise RuntimeError('Project %s could not be found or activated' % prj_name)
 
-    prj = app.GetActiveProject()        
-        
+    prj = app.GetActiveProject()
+
     logger.info('gathering network elements')
     dict_net = create_network_dict(app, flag_graphics)
     pf_load_flow_failed = run_load_flow(app)

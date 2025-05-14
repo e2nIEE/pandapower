@@ -28,7 +28,6 @@ def _get_Sload(bus, vm):
         cz = bus[:, CZD_P]
         cp = (1 - ci - cz)
         volt_depend = cp + ci * vm + cz * vm ** 2
-        
         cz_q = bus[:, CZD_Q]
         ci_q = bus[:, CID_Q]
         cq = (1 - ci_q - cz_q)

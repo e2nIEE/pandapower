@@ -602,7 +602,7 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc, sequence=None):
                 ppc["bus"][bus_lookup[bus], CID_P] = ci_sum / no_loads
                 cz_sum = sum(tab["const_z_p_percent"][mask] / 100.)
                 ppc["bus"][bus_lookup[bus], CZD_P] = cz_sum / no_loads
-                
+
                 ci_q_sum = sum(tab["const_i_q_percent"][mask] / 100.)
                 ppc["bus"][bus_lookup[bus], CID_Q] = ci_q_sum / no_loads
                 cz_q_sum = sum(tab["const_z_q_percent"][mask] / 100.)
