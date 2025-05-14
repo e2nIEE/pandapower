@@ -13,8 +13,8 @@ KAPPA       = start + 2
 M           = start + 3
 C_MIN       = start + 4
 C_MAX       = start + 5
-IKSS1       = start + 6 # rename to IKSSV
-IKSS2       = start + 7 # rename to IKSSC
+IKSSV       = start + 6 # formerly IKKSS1
+IKSSC       = start + 7 # formerly IKKSS2
 IKCV        = start + 8
 IP          = start + 9
 IB          = start + 10
@@ -32,8 +32,8 @@ GS_GEN      = start + 21
 BS_GEN      = start + 22
 SKSS        = start + 23
 
-PHI_IKSS1_DEGREE = start + 24
-PHI_IKSS2_DEGREE = start + 25
+PHI_IKSSV_DEGREE = start + 24
+PHI_IKSSC_DEGREE = start + 25
 PHI_IKCV_DEGREE  = start + 26
 
 bus_cols_sc = 27

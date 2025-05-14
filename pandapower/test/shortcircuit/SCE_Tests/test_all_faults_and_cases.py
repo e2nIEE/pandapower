@@ -140,7 +140,7 @@ def test_all_faults_and_cases_with_fault_impedance(fault, case, r_fault_ohm, x_f
     net.line.rename(columns={'temperature_degree_celsius': 'endtemp_degree'}, inplace=True)
     net.line["endtemp_degree"] = 250
     # TODO how does vector group affect the results? new pf calculations neccesarry?
-    vector_groups = ["Dyn", "Yyn", "YNyn"]
+    vector_groups = ['Dyn','Yyn','YNyn']
     if not net.trafo.empty:
         net.trafo.vector_group = ["YNyn"]
 
