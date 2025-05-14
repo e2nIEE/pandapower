@@ -83,8 +83,8 @@ def load_pf_results(excel_file):
         "LLL": ['name', 'pf_ikss_ka', 'pf_skss_mw', 'pf_rk_ohm', 'pf_xk_ohm'],
         "LL": ['name', 'pf_ikss_c_ka', 'pf_skss_c_mw', 'pf_rk2_ohm', 'pf_xk2_ohm'],
         "LLG": ['name', 'pf_ikss_a_ka', 'pf_ikss_b_ka', 'pf_ikss_c_ka', 'pf_skss_a_mw', 'pf_skss_b_mw', 'pf_skss_c_mw',
-                'pf_rk0_ohm', 'pf_rk1_ohm', 'pf_rk2_ohm', 'pf_xk0_ohm', 'pf_xk1_ohm', 'pf_xk2_ohm'],
-        "LG": ['name', 'pf_ikss_a_ka', 'pf_skss_a_mw', 'pf_rk0_ohm', 'pf_rk1_ohm', 'pf_xk0_ohm', 'pf_xk1_ohm',
+                'pf_rk0_ohm', 'pf_xk0_ohm', 'pf_rk1_ohm', 'pf_xk1_ohm', 'pf_rk2_ohm', 'pf_xk2_ohm'],
+        "LG": ['name', 'pf_ikss_a_ka', 'pf_skss_a_mw', 'pf_rk0_ohm', 'pf_xk0_ohm', 'pf_rk1_ohm', 'pf_xk1_ohm',
                'pf_rk2_ohm', 'pf_xk2_ohm']
     }
 
@@ -113,7 +113,6 @@ def load_pf_results(excel_file):
             pf_results.columns = ["name", "ikss_ka", 'skss_mw', "rk0_ohm", "xk0_ohm", "rk1_ohm",
                                   "xk1_ohm", "rk2_ohm", "xk2_ohm"]
 
-        # pf_results.columns = ['name'] + [col.split('pf_')[-1] for col in relevant_columns]
         dataframes[sheet] = pf_results
 
     return dataframes
@@ -135,7 +134,7 @@ def get_columns_to_check(fault):
 faults = ["LLL", "LL", "LG", "LLG"]
 cases = ["max", "min"]
 values = [(0.0, 0.0), (5.0, 5.0)]
-net_names = ["test_case_1_four_bus_radial_grid", "test_case_2_five_bus_radial_grid"]
+net_names = ["test_case_1_four_bus_radial_grid", "test_case_2_five_bus_radial_grid", "test_case_3_five_bus_meshed_grid"]
 
 # Create parameter list
 parametrize_values = [
@@ -148,12 +147,8 @@ parametrize_values = [
 @pytest.mark.parametrize("fault, case, r_fault_ohm, x_fault_ohm, net_name", parametrize_values)
 def test_all_faults_and_cases_with_fault_impedance(fault, case, r_fault_ohm, x_fault_ohm, net_name):
     net = from_json(os.path.join(pp_dir, "test", "shortcircuit", "sce_tests", "test_grids", net_name + ".json"))
-    # net.line.rename(columns={'temperature_degree_celsius': 'endtemp_degree'}, inplace=True)
-    # net.line["endtemp_degree"] = 250
-    # TODO how does vector group affect the results? new pf calculations neccesarry?
-    vector_groups = ['Dyn','Yyn','YNyn']
-    if not net.trafo.empty:
-        net.trafo.vector_group = ["YNyn"]
+    #TODO respect all vector group
+    # vector_groups = ['Dyn','Yyn','YNyn']
 
     excel_file = os.path.join(pp_dir, "test", "shortcircuit", "sce_tests", "sc_result_comparison",
                               net_name + "_pf_sc_results_all_cases.xlsx")
