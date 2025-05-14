@@ -28,7 +28,7 @@ def convert_format(net, elements_to_deserialize=None):
     """
     from pandapower.toolbox import set_data_type_of_columns_to_default
     if not isinstance(net.version, str) or not hasattr(net, 'format_version') or \
-            Version(net.format_version) > Version(net.version):
+            Version(net.format_version) > Version(net.version.split('.dev')[0]):
         net.format_version = net.version
     if isinstance(net.format_version, str) and Version(net.format_version) >= Version(__format_version__):
         return net
