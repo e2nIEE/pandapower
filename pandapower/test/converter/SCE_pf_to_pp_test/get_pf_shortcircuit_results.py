@@ -9,7 +9,8 @@ import os
 sys.path.append(r"C:\Program Files\DIgSILENT\PowerFactory 2024 SP1\Python\3.11")
 # proj_name = "test_case_1_four_bus_radial_grid"
 # proj_name = "test_case_2_five_bus_radial_grid"
-proj_name = "test_case_3_five_bus_meshed_grid"
+# proj_name = "test_case_3_five_bus_meshed_grid"
+proj_name = "Short_Circuit_Test_Case_SCE"
 import powerfactory as pf
 
 try:
@@ -44,10 +45,8 @@ def get_pf_sc_bus_results(app, fault_type='lll', calc_mode='max', fault_impedanc
         "pf_skss_mw": "m:Skss",
         "pf_rk_ohm": "m:R",
         "pf_xk_ohm": "m:X",  # ,"pf_ip_ka": "m:ip"
-        "pf_vm_pu": "m:ul",
-        "pf_va_degree": "m:phiul",
-        "pf_p_mw": "m:P",
-        "pf_q_mvar": "m:Q"
+        "pf_vm_pu": "m:u1",
+        "pf_va_degree": "m:phiui"
     }
 
     result_variables = {
@@ -68,7 +67,7 @@ def get_pf_sc_bus_results(app, fault_type='lll', calc_mode='max', fault_impedanc
         "pf_vm_c_pu": "m:ul:C",
         "pf_va_a_degree": "m:phiul:A",
         "pf_va_b_degree": "m:phiul:B",
-        "pf_va_c_degree": "m:phiul:C",
+        "pf_va_c_degree": "m:phiul:C"
     }
 
     if fault_type == 'lll':
@@ -204,6 +203,3 @@ with pd.ExcelWriter(out_path) as writer:
                 sheet_name_base = sheet_name_base[:25]
                 df_bus.to_excel(writer, sheet_name=sheet_name_base, index=False)
                 df_line.to_excel(writer, sheet_name=sheet_name_base + "_branch", index=False)
-
-
-##

@@ -1093,8 +1093,10 @@ def create_line_normal(net, item, bus1, bus2, name, parallel, is_unbalanced, ac,
         logger.debug('creating normal line with type <%s>' % std_type)
         if ac:
             lid = create_line(net, from_bus=bus1, to_bus=bus2, **params)
+            net.line.loc[lid, "endtemp_degree"] = pf_type.rtemp
         else:
             lid = create_line_dc(net, from_bus_dc=bus1, to_bus_dc=bus2, **params)
+            net.line_dc.loc[lid, "endtemp_degree"] = pf_type.rtemp
     else:
         logger.debug('creating normal line <%s> from parameters' % name)
         r_ohm = item.R1
@@ -2509,7 +2511,7 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
         net["trafo_characteristic_table"] = pd.DataFrame(
             columns=['id_characteristic', 'step', 'voltage_ratio', 'angle_deg', 'vk_percent', 'vkr_percent',
                      'vk_hv_percent', 'vkr_hv_percent', 'vk_mv_percent', 'vkr_mv_percent', 'vk_lv_percent',
-                     'vkr_lv_percent'])
+                     'vkr_lv_percent', 'vector_group'])
 
     if std_type is not None:
         if use_tap_table == 1:
@@ -2527,6 +2529,7 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
                                     id_characteristic_table=id_characteristic_table,
                                     in_service=in_service, parallel=item.ntnum, df=item.ratfac, tap2_pos=tap_pos2,
                                     leakage_resistance_ratio_hv=pf_type.itrdr, leakage_reactance_ratio_hv=pf_type.itrdl)
+        net.trafo.loc[tid, 'vector_group'] = pf_type.vecgrp[:-1]
         trafo_dict[item] = tid
         logger.debug('created trafo at index <%d>' % tid)
     else:
