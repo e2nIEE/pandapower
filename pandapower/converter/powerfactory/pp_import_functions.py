@@ -3906,7 +3906,7 @@ def create_stactrl(net, item):
             logger.error(
                 f"{item}: only line, trafo element and switch flows can be controlled, {element_class[0]=}")
             return
-    elif control_mode != 0:
+    elif control_mode != 0: #not voltage ctrl
         q_control_cubicle = item.p_cub
         if q_control_cubicle is None:
             logger.info(f"Input Element of Controller {item.loc_name} is missing, skipping")
@@ -3989,14 +3989,13 @@ def create_stactrl(net, item):
         return
 
     if control_mode == 0:  # VOLTAGE CONTROL
-        # controlled_node = item.rembar
-        controlled_node = item.cpCtrlNode
+        controlled_node = item.rembar
         bus = bus_dict[controlled_node]  # controlled node
 
         if item.uset_mode == 0:  # Station controller
-            v_setpoint_pu = item.usetp
+            v_set_point_pu = item.usetp
         else:
-            v_setpoint_pu = controlled_node.vtarget  # Bus target voltage
+            v_set_point_pu = item.cpCtrlNode.vtarget  # Bus target voltage, not always the same as item.rembar
 
         if item.i_droop:  # Enable Droop
             bsc = BinarySearchControl(net, ctrl_in_service=stactrl_in_service,
@@ -4005,11 +4004,12 @@ def create_stactrl(net, item):
                                       output_element_in_service=gen_element_in_service,
                                       output_values_distribution=distribution_mode,
                                       output_distribution_values=distribution_val,
-                                      input_element=res_element_table, input_variable=variable,
-                                      input_element_index=res_element_index,
-                                      set_point=v_setpoint_pu,  modus='V_ctrl', bus_idx=bus, tol=1e-3)
-            DroopControl(net, q_droop_mvar=item.Srated * 100 / item.ddroop, bus_idx=bus,
-                         vm_set_pu=v_setpoint_pu, controller_idx=bsc.index, modus='V_ctrl')
+                                      input_element_index = bus,input_element='res_bus', input_variable='vm_pu',
+                                      set_point=v_set_point_pu,  modus='V_ctrl', tol=1e-6)
+            DroopControl(net, q_droop_mvar=item.Srated * 100 / item.ddroop,
+                                      controller_idx=bsc.index, modus='V_ctrl',
+                                      input_element_q_meas=res_element_table, input_variable_q_meas=variable,
+                                      input_element_index_q_meas=res_element_index)
         else:
             BinarySearchControl(net, ctrl_in_service=stactrl_in_service,
                                 output_element=gen_element, output_variable="q_mvar",
@@ -4018,7 +4018,7 @@ def create_stactrl(net, item):
                                 output_values_distribution=distribution_mode,
                                 output_distribution_values=distribution_val, damping_factor=0.9,
                                 input_variable="vm_pu", input_element_index=bus,
-                                set_point=v_setpoint_pu, modus='V_ctrl', tol=1e-6)
+                                set_point=v_set_point_pu, modus='V_ctrl', tol=1e-6)
     elif control_mode == 1:  # Q Control mode
         if item.iQorient != 0:
             if not stactrl_in_service:

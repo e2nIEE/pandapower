@@ -15,14 +15,14 @@ logger = logging.getLogger(__name__)
 
 class BinarySearchControl(Controller):
     """
-        The Binary search control is a controller which is used to reach a given set point . It can be used for
+        The Binary search control is a controller which is used to reach a given set point. It can be used for
         reactive power control, voltage control, cosines(phi) or tangens(phi) control. The control modus can be set via
         the modus parameter. Input and output elements and indexes can be lists. Input elements can be transformers,
-        switches, lines or buses (only in case of voltage control). in case of voltage control, a bus_index must be
-        present, where the voltage will be controlled. Output elements are sgens, where active and reactive power can
+        switches, lines or buses (only in case of voltage control). in case of voltage control, the controlled bus must be
+        given to input_element_index. Output elements are sgens, where active and reactive power can
         be set. The output value distribution takes a string and selects the type of reactive power distribution.
         The output distribution value describes the distribution of reactive power provision between multiple
-        output_elements and must sum up to 1 (only valid for set individual Q and voltage set point adaptation).
+        output_elements and will be normalized to 100 %.
 
         INPUT:
             **self**
@@ -40,18 +40,19 @@ class BinarySearchControl(Controller):
 
             **output_element_in_service** - Whether output elements are in service or not.
 
-            **input_element** - Measurement location, can be a transformers, switches, lines or buses (only with
-            V_ctrl), indicated by string value "res_trafo", "res_switch", "res_line" or "res_bus". In case of
+            **input_element** - Measurement location, can be a transformer, switches or lines. Must be a bus for
+            V_ctrl. Indicated by string value "res_trafo", "res_switch", "res_line" or "res_bus". In case of
             "res_switch": an additional small impedance is introduced in the switch.
 
-            **input_variable** - Variable which is used to take the measurement from. Indicated by string value.
+            **input_variable** - Variable which is used to take the measurement from. Indicated by string value. Must
+            be 'vm_pu' for 'V_ctrl'.
 
-            **input_element_index** - Element of input element in net.
+            **input_element_index** - Element of input element in net. Controlled bus in case of Voltage control
 
             **set_point** - Set point of the controller, can be a reactive power provision or a voltage set point. In
-            case of voltage set point, modus must be V_ctrl, bus_idx must be set to measurement bus and
-            input_element must be "res_bus". Can be overwritten by a droop controller chained with the binary search
-            control.
+            case of voltage set point, modus must be V_ctrl, input_element_index must be a bus (input_variable must be
+            'vm_pu' input_element must be 'res_bus'). Can be overwritten by a droop controller chained with the binary
+            search control.
 
             **output_values_distribution** - Takes string to select one of the different available reactive power distribution
             methods: 'rel_P' -Q is relative to used Power, 'rel_rated_S' -Q is relative to the rated power S, currently
@@ -67,14 +68,12 @@ class BinarySearchControl(Controller):
             **modus=None** - Enables the selection of the available control modi by taking one of the strings: Q_ctrl, V_ctrl,
             PF_ctrl (PF_ctrl_ind or PF_ctrl_cap for reactance of PF_ctrl) or tan(phi)_ctrl. Formerly called Voltage_ctrl
 
-            **bus_idx=None** - Bus index which is used for voltage control.
-
             **tol=0.001** - Tolerance criteria of controller convergence.
        """
     def __init__(self, net, ctrl_in_service:bool, output_element, output_variable, output_element_index,
                  output_element_in_service, input_element, input_variable,
                  input_element_index, set_point:float, output_values_distribution:str, output_distribution_values = None,
-                 modus:str = None, bus_idx=None, tol=0.001, in_service=True, order=0, level=0,
+                 modus:str = None, tol=0.001, in_service=True, order=0, level=0,
                  drop_same_existing_ctrl=False, matching_params=None, **kwargs):
         super().__init__(net, in_service=in_service, order=order, level=level,
                          drop_same_existing_ctrl=drop_same_existing_ctrl,
@@ -107,8 +106,13 @@ class BinarySearchControl(Controller):
             ) else output_values_distribution)#ruggedized code for miss input
         self.output_distribution_values = output_distribution_values
         self.set_point = set_point
-        self.bus_idx = bus_idx #point of voltage control if modus == 'V_ctrl'
         self.tol = tol #tolerance
+        if self.tol is None: #old order
+            if isinstance(in_service, numbers.Number):
+                self.tol = in_service
+                in_service = True
+            else:
+                self.tol = 0.001
         self.output_values = None
         self.output_values_old = None
         self.diff = None
@@ -264,7 +268,16 @@ class BinarySearchControl(Controller):
                     "Use 'modus' ('Q_ctrl', 'V_ctrl', etc.) instead."
                 )
                 self._deprecation_warned = True#only one message that voltage ctrl is deprecated
-            return self.voltage_ctrl  # Raises AttributeError if missing
+            return self.voltage_ctrl
+        if name == 'bus_idx':
+            if not hasattr(self, '_deprecation_warned_bus_idx'):
+                logger.warning(
+                    f"Variable 'bus_idx' in Binary Search Control {self.index} for modus V_ctrl is deprecated. "
+                    f"Give index of controlled bus to input_element_index. Input_variable must be 'vm_pu' and"
+                    f" input_element 'res_bus'"
+                )
+                self._deprecation_warned_bus_idx = True#only one warning about bus_idx deprecation
+            return self.input_element_index
         raise AttributeError(f"{self.__class__.__name__!r} has no attribute {name!r}")
 
     def initialize_control(self, net, converged = False):
@@ -275,7 +288,7 @@ class BinarySearchControl(Controller):
                       output_element_in_service=self.output_element_in_service,input_element=self.input_element,
                       input_element_index=self.input_element_index, set_point=self.set_point, modus=self.modus,
                       input_variable=self.input_variable, output_distribution_values=self.output_distribution_values,
-                      output_values_distribution=self.output_values_distribution, bus_idx = self.bus_idx, tol = self.tol,
+                      output_values_distribution=self.output_values_distribution, tol = self.tol,
                       in_service=self.reset[0], order = self.reset[1], level = self.reset[2],
                       drop_same_existing_ctrl=self.reset[3], matching_params=self.reset[4], **self.reset[5])"""
         #reread output elements
@@ -296,7 +309,7 @@ class BinarySearchControl(Controller):
         ###updating input & output elements in service lists
         self.input_element_in_service.clear()
         self.output_element_in_service.clear()
-        for input_index in self.input_element_index:
+        for input_index in np.atleast_1d(self.input_element_index):
             if self.input_element == "res_line":
                 self.input_element_in_service.append(net.line.in_service[input_index])
             elif self.input_element == "res_trafo":
@@ -338,20 +351,21 @@ class BinarySearchControl(Controller):
         input_values = [] #reactive power q
         p_input_values = [] #active power p for power factor controllers
         counter = 0
-        for input_index in self.input_element_index:
-            if self.input_element_in_service[counter]: # input element not in service
-                input_values.append(read_from_net(net, self.input_element, input_index,
-                                                  self.input_variable[counter], self.read_flag[counter]))
-                if self.modus == "PF_ctrl" or self.modus == 'tan(phi)_ctrl':
-                    p_input_values.append(read_from_net(net,self.input_element, input_index,
-                                                    self.input_variable_p[counter], self.read_flag[counter]))
-            counter += 1
+        if self.input_element != 'res_bus':
+            for input_index in self.input_element_index:
+                if self.input_element_in_service[counter]: # input element not in service
+                    input_values.append(read_from_net(net, self.input_element, input_index,
+                                                      self.input_variable[counter], self.read_flag[counter]))
+                    if self.modus == "PF_ctrl" or self.modus == 'tan(phi)_ctrl':
+                        p_input_values.append(read_from_net(net,self.input_element, input_index,
+                                                        self.input_variable_p[counter], self.read_flag[counter]))
+                counter += 1
 
         # read previously set values
         # compare old and new set values
-        if self.modus == "Q_ctrl" or (self.modus=='V_ctrl' and self.bus_idx is None):
+        if self.modus == "Q_ctrl" or (self.modus=='V_ctrl' and self.input_element_index is None):
             if self.modus == 'V_ctrl':
-                logger.warning('Missing attribute bus_idx, defaulting to Q_ctrl\n')
+                logger.warning('Missing attribute self.input_element_index, defaulting to Q_ctrl\n')
                 self.modus = 'Q_ctrl'
             self.diff_old = self.diff
             self.diff = self.set_point - sum(input_values)
@@ -377,23 +391,31 @@ class BinarySearchControl(Controller):
             self.converged = np.all(np.abs(self.diff) < self.tol)
         else:
             ###catching deprecated modi from old imports
-            if type(self.modus) == bool and self.modus == True and self.bus_idx is not None:
+            if type(self.modus) == bool and self.modus == True and self.input_element_index is not None:
                 self.modus = "V_ctrl"  # catching old implementation
                 logger.warning(
                     f"Deprecated Control Modus in Controller {self.index}, using V_ctrl from available types\n")
             elif (type(self.modus) == bool and self.modus == False) or (type(self.modus) == bool and self.modus == True
-                and self.bus_idx is None):
+                and self.input_element_index is None):
                 if self.modus is True:
                     logger.warning(f'Deprecated Control Modus in Controller {self.index}, attempted to use "V_ctrl" but '
-                                   f'missing attribute bus_idx, defaulting to Q_ctrl\n')
+                                   f'missing attribute input_element_index, defaulting to Q_ctrl\n')
                 else:
                     logger.warning(
                         f"Deprecated Control Modus in Controller {self.index}, using Q_ctrl from available types\n")
                 self.modus = "Q_ctrl"
 
             if self.modus == "V_ctrl":
+                if self.input_element != 'res_bus' and not any(getattr(net.controller.at[x, 'object'], 'controller_idx', False) ==
+                                                                        self.index for x in net.controller.index):
+                    logger.warning(f"'input_element' must be 'res_bus' for V_ctrl not {self.input_element}, correcting.")
+                    self.input_element = 'res_bus'
+                    if np.atleast_1d(self.input_variable)[0] != 'vm_pu':
+                        logger.warning(f"'input_variable' must be 'vm_pu' for V_ctrl not {self.input_variable}, correcting ")
+                        self.input_variable = 'vm_pu'
+
                 self.diff_old = self.diff #V_ctrl
-                self.diff = self.set_point - net.res_bus.vm_pu.at[self.bus_idx]
+                self.diff = self.set_point - net.res_bus.vm_pu.at[np.atleast_1d(self.input_element_index)[0]]
                 self.converged = np.all(np.abs(self.diff) < self.tol)
             else:
                 if self.modus != 'Q_ctrl':
@@ -530,7 +552,7 @@ class BinarySearchControl(Controller):
                     logger.warning(f'The standard type attribute containing the rated apparent power for'
                                    f' {self.output_element} is not correctly implemented yet.')#todo
                 try:
-                    s_rated_mva = np.array(net.sgen.loc[self.output_element_index, 'sn_mva']) #correct values? todo
+                    s_rated_mva = np.array(net.sgen.loc[self.output_element_index, 'sn_mva']) #correct values?
                     distribution = s_rated_mva
                     nan_index = np.isnan(distribution)
                     distribution[nan_index] = 50
@@ -718,17 +740,17 @@ class BinarySearchControl(Controller):
 class DroopControl(Controller):
     """
             The droop controller is used in case of a droop based control. It can operate either as a Q(U) controller,
-            as a U(Q) controller, as a cosphi(P) controller or as a cosphi(U) controller and is used in addition to
+            as a U(Q) controller, as a cosphi(P) controller or as a cosphi(U) controller and is used in tandem with
             a binary search controller (bsc). The linked binary search controller is specified using the
-            controller index, which refers to the linked bsc. The droop controller behaves in a similar way to the
-            station controllers presented in the Power Factory Tech Ref.
+            controller index, which refers to the linked bsc (bsc.index). The droop controller behaves in a similar way
+            to the station controllers presented in the Power Factory Tech Ref.
 
             INPUT:
                 **self**
 
                 **net** - A pandapower grid.
 
-                **controller_idx** - Index of linked Binary search control.
+                **controller_idx** - Index of linked Binary search control (bsc.index).
 
                 **in_service = True** - Whether the droop controller is in service or not.
 
@@ -739,9 +761,7 @@ class DroopControl(Controller):
 
                 **q_droop_var = None** - Droop Value in Mvar/p.u. in case of Q or V control.
 
-                **vm_set_pu = None** - Voltage set point in case of voltage control.
-
-                **bus_idx = None** - Bus index which is used for voltage control and PF(V) control.
+                **bus_idx = None** - Bus index which is used for PF(V) control and Q control.
 
                 **vm_set_lb = None** - Lower band border of dead band; The Power [MW] or Voltage[pu] at which Phi is static
                 and underexcited (inductive) in case of PF_ctrl
@@ -753,10 +773,21 @@ class DroopControl(Controller):
 
                 **pf_underexcited=None** - Static underexcited limit for Phi in case of PF_ctrl.
 
+                **input_type_q_meas=None** - Type of element(s) Q measurement for voltage control with droop is taken from
+                according to v_set_point_new = v_set_point + Q_meas / q_droop_mvar. Takes string.
+
+                **input_variable_q_meas=None** - Variable of element(s) Q measurement for voltage control is taken from
+                according to v_set_point_new = v_set_point + Q_meas / q_droop_mvar. Takes string or list of strings.
+
+                **input_element_index_q_meas=None** - Index of element(s) Q measurement for voltage control is taken from
+                according to v_set_point_new = v_set_point + Q_meas / q_droop_mvar. Takes integer or list of integers.
+                If left to None, Q_meas will be set to 0.
+
                 **tol = 1e-6** - Tolerance criteria of controller convergence.
            """
-    def __init__(self, net, controller_idx:int, in_service:bool=True, modus:str = None, q_droop_mvar = None, vm_set_pu= None,
-                 bus_idx=None, vm_set_lb=None, vm_set_ub=None, pf_overexcited=None, pf_underexcited=None, tol=1e-6,
+    def __init__(self, net, controller_idx:int, in_service:bool=True, modus:str = None, q_droop_mvar = None,
+                 bus_idx=None, vm_set_lb=None, vm_set_ub=None, pf_overexcited=None, pf_underexcited=None,
+                 input_element_q_meas:str = None, input_variable_q_meas = None, input_element_index_q_meas = None, tol=1e-6,
                  order=-1, level=0, drop_same_existing_ctrl=False, matching_params=None, **kwargs):
         super().__init__(net, in_service=in_service, order=order, level=level, drop_same_existing_ctrl=drop_same_existing_ctrl,
                          matching_params=matching_params, **kwargs)
@@ -765,14 +796,17 @@ class DroopControl(Controller):
             setattr(self, key, value)
         #self.reset = [in_service, order, level, drop_same_existing_ctrl, matching_params, kwargs]  #for reinitialization
         self.q_droop_mvar = q_droop_mvar
+        self.input_element_q_meas = input_element_q_meas
+        self.input_variable_q_meas = input_variable_q_meas
+        self.input_element_index_q_meas = input_element_index_q_meas
         self.bus_idx = bus_idx
         self.vm_pu = None
         self.vm_pu_old = self.vm_pu
-        self.vm_set_pu = vm_set_pu
+        self.controller_idx = controller_idx
+        self.vm_set_pu = net.controller.at[self.controller_idx, "object"].set_point
         self.vm_set_pu_new = None
         self.lb_voltage = vm_set_lb
         self.ub_voltage = vm_set_ub
-        self.controller_idx = controller_idx
         self.tol = tol
         self.read_flag, self.input_variable = _detect_read_write_flag(net, "res_bus", bus_idx, "vm_pu")
         self.q_set_mvar_bsc = None
@@ -782,6 +816,7 @@ class DroopControl(Controller):
         self.converged = False
         self.pf_over = pf_overexcited
         self.pf_under = pf_underexcited
+        self.p_cosphi = None #selection of droop modus for pf_ctrl
 
         ###catch modus and deprecated attribute voltage_ctrl
         if modus is None:#catching old attribute voltage_ctrl
@@ -813,8 +848,8 @@ class DroopControl(Controller):
             self.p_cosphi = False
         else:
             if modus == 'Q_ctrl' or modus == "V_ctrl":
-                if vm_set_pu is None and modus == 'V_ctrl': #catching missing voltage set point
-                    raise UserWarning(f'vm_set_pu must be a number, not {type(vm_set_pu)} in Controller {self.index}')
+                if self.vm_set_pu is None and modus == 'V_ctrl': #catching missing voltage set point
+                    raise UserWarning(f'vm_set_pu must be a number, not {type(self.vm_set_pu)} in Controller {self.index}')
                 self.modus = modus
             else:
                 raise UserWarning(f'Droop Control Modus {modus} not decipherable in Controller {self.index}')
@@ -869,8 +904,10 @@ class DroopControl(Controller):
         #reinitialize droop control
         net.controller.drop(index=self.index, inplace=True)
         self.__init__(net, self.controller_idx, in_service = self.reset[0], modus = self.modus, q_droop_mvar=
-            self.q_droop_mvar, vm_set_pu=self.vm_set_pu, bus_idx = self.bus_idx, vm_set_lb=self.lb_voltage,
-            vm_set_ub=self.ub_voltage, pf_overexcited=self.pf_over, pf_underexcited=self.pf_under, tol = self.tol,
+            self.q_droop_mvar, bus_idx = self.bus_idx, vm_set_lb=self.lb_voltage,
+            vm_set_ub=self.ub_voltage, pf_overexcited=self.pf_over, pf_underexcited=self.pf_under,
+            input_type_q_meas = self.input_type_q_meas, input_variable_q_meas = self.input_variable_q_meas,
+            input_element_index_q_meas = input_elemet_index_q_meas, tol = self.tol,
             order = self.reset[1], level=self.reset[2], drop_same_existing_ctrl=self.reset[3], matching_params=
             self.reset[4], **self.reset[5])
         #reread output elements todo what else to reread
@@ -893,8 +930,22 @@ class DroopControl(Controller):
             logger.warning(f"Deprecated Control Modus in Controller {self.index}, using Q_ctrl from available types\n")
 
         if self.modus == 'V_ctrl': #voltage droop
-            if self.bus_idx is None:
-                logger.warning(f"No bus index specified for Controller {self.index} for modus 'V_ctrl', defaulting to "
+            ###backwards compatibility
+            if (hasattr(self, 'bus_idx') and net.controller.at[
+                self.controller_idx, 'object'].input_element != "res_bus" and
+                    self.bus_idx is not None):
+                logger.warning(f"Attribute 'bus_idx' in Droop controller {self.index} is deprecated for modus V_ctrl,"
+                               f"please select the bus via the 'input_element_index' attribute of the linked binary search"
+                               f"controller {self.controller_idx}. Attempting to use bus index {self.bus_idx}.")
+                self.input_element_q_meas = net.controller.at[self.controller_idx, 'object'].input_element
+                self.input_variable_q_meas = net.controller.at[self.controller_idx, 'object'].input_variable
+                self.input_element_index_q_meas = net.controller.at[self.controller_idx, 'object'].input_element_index
+                net.controller.at[self.controller_idx, 'object'].input_element = "res_bus"
+                net.controller.at[self.controller_idx, 'object'].input_element_index = self.bus_idx
+                net.controller.at[self.controller_idx, 'object'].input_variable = "vm_pu"
+                self.bus_idx = None
+            if hasattr(self, 'bus_idx') and self.bus_idx is not None: #Q_ctrl
+                logger.warning(f"Specified 'bus_idx' in Controller {self.index} for modus 'V_ctrl', defaulting to "
                                f"Q_ctrl\n")
                 self.modus = 'Q_ctrl'
                 counter = 0
@@ -906,9 +957,10 @@ class DroopControl(Controller):
                                       net.controller.at[self.controller_idx, "object"].read_flag[counter]))
                     counter += 1
                 self.diff = net.controller.at[self.controller_idx, "object"].set_point - sum(input_values)
-            else:
+            else: #true V_ctrl
                 self.diff = (net.controller.at[self.controller_idx, "object"].set_point -
-                         read_from_net(net, "res_bus", self.bus_idx, "vm_pu", self.read_flag))
+                    read_from_net(net, "res_bus", np.atleast_1d(
+                    net.controller.at[self.controller_idx,'object'].input_element_index)[0], "vm_pu", 'auto'))
         elif str(self.modus).startswith('PF_ctrl'):
             if self.q_set_old_mvar is not None and self.q_set_mvar:
                 self.diff = self.q_set_mvar - self.q_set_old_mvar
@@ -948,14 +1000,13 @@ class DroopControl(Controller):
         #if net.controller.at[self.controller_idx, "object"].input_element == "res_switch":
         #    self.tol = 0.2
 
-        if self.bus_idx is None: #Convergence
+        if self.modus != 'V_ctrl' and self.modus != 'PF_ctrl': #Convergence
             self.converged = np.all(np.abs(self.diff) < self.tol)
-        else: #Convergence for voltage control
+        else: #Convergence for voltage control and PF_ctrl
             if np.all(np.abs(self.diff) < self.tol):
                 self.converged = net.controller.at[self.controller_idx, "object"].converged
             elif net.controller.at[self.controller_idx, "object"].diff_old is not None:
                 net.controller.at[self.controller_idx, "object"].overwrite_convergence = True
-
         return self.converged
 
     def control_step(self, net):
@@ -967,9 +1018,11 @@ class DroopControl(Controller):
             self.modus = "V_ctrl" #catching old implementation when importing from json
         elif type(self.modus) == bool and self.modus == False:
             self.modus = "Q_ctrl"
-        if self.modus != 'PF_ctrl' or not self.p_cosphi: #getting voltage
+        if self.modus != 'V_ctrl' and not getattr(self, 'p_cosphi', False): #getting voltage
             self.vm_pu = read_from_net(net, "res_bus", self.bus_idx, "vm_pu", self.read_flag)
-            self.vm_pu_old = self.vm_pu
+        elif self.modus == 'V_ctrl':
+            self.vm_pu = net.controller.at[self.controller_idx,'object'].set_point
+        self.vm_pu_old = self.vm_pu
 
         if self.modus=='Q_ctrl':
             if self.q_set_mvar_bsc is None:
@@ -1061,14 +1114,22 @@ class DroopControl(Controller):
         if self.q_set_mvar is not None: #q_set_mvar was calculated beforehand
             net.controller.at[self.controller_idx, "object"].set_point = self.q_set_mvar
         else:
-            input_element = net.controller.at[self.controller_idx, "object"].input_element
-            input_element_index = net.controller.at[self.controller_idx, "object"].input_element_index
-            input_variable = net.controller.at[self.controller_idx, "object"].input_variable
-            read_flag = net.controller.at[self.controller_idx, "object"].read_flag
-            input_values = []
-            counter = 0
-            for input_index in input_element_index:
-                input_values.append(read_from_net(net, input_element, input_index,
-                                                  input_variable[counter], read_flag[counter]))
-            self.vm_set_pu_new = self.vm_set_pu + sum(input_values) / self.q_droop_mvar
+            if not hasattr(self, 'input_element_index_q_meas'):
+                logger.error(f"No measurement point for Q value specified in Droop controller {self.index}, attempting to"
+                             f"use point specified in controller {self.controller_idx}.")
+                self.input_element_index_q_meas = net.controller.at[self.controller_idx, 'object'].input_element_index
+                self.input_element_q_meas = net.controller.at[self.controller_idx, 'object'].input_element
+                self.input_variable_q_meas = net.controller.at[self.controller_idx, 'object'].input_variable
+            if self.input_element_index_q_meas is None or self.input_element_q_meas == 'res_bus':
+                input_values = np.atleast_1d(0)#Q_meas = 0
+            else:
+                input_element = self.input_element_q_meas #net.controller.at[self.controller_idx, "object"].input_element
+                input_element_index = self.input_element_index_q_meas #net.controller.at[self.controller_idx, "object"].input_element_index
+                input_variable = np.atleast_1d(self.input_variable_q_meas)#net.controller.at[self.controller_idx, "object"].input_variable
+                read_flag = net.controller.at[self.controller_idx, "object"].read_flag
+                input_values = []
+                counter = 0
+                for input_index in np.atleast_1d(input_element_index):
+                    input_values.append(read_from_net(net, input_element, input_index, str(input_variable[counter]), read_flag[counter]))
+            self.vm_set_pu_new = self.vm_set_pu + sum(input_values) / self.q_droop_mvar #only sum, not divided by elements
             net.controller.at[self.controller_idx, "object"].set_point = self.vm_set_pu_new
