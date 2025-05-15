@@ -475,12 +475,15 @@ def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=
             g, b = 0, 0  # why for sc are we assigning y directly as 0?
         if isinstance(trafo_df, pd.DataFrame):  # 2w trafo is dataframe, 3w trafo is dict
             bus_lookup = net._pd2ppc_lookups["bus"]
-            cmax = ppc["bus"][bus_lookup[net.trafo.lv_bus.values], C_MAX]
+            case = net._options["case"]
+            bus_index = bus_lookup[get_trafo_values(trafo_df, "lv_bus")]
+            column_index = C_MAX if case == "max" else C_MIN
+            c = ppc["bus"][bus_index, column_index]
             # todo: kt is only used for case = max and only for network transformers! (IEC 60909-0:2016 section 6.3.3)
             # kt is only calculated for network transformers (IEC 60909-0:2016 section 6.3.3)
             if not net._options.get("use_pre_fault_voltage", False):
                 kt = _transformer_correction_factor(
-                    trafo_df, trafo_df.vk_percent, trafo_df.vkr_percent, trafo_df.sn_mva, cmax)
+                    trafo_df, trafo_df.vk_percent, trafo_df.vkr_percent, trafo_df.sn_mva, c, case)
                 r *= kt
                 x *= kt
     else:
@@ -1319,7 +1322,7 @@ def _end_temperature_correction_factor(net, short_circuit=False, dc=False):
     return r_correction_for_temperature
 
 
-def _transformer_correction_factor(trafo_df, vk, vkr, sn, cmax):
+def _transformer_correction_factor(trafo_df, vk, vkr, sn, c, case):
     """
         2W-Transformer impedance correction factor in short circuit calculations,
         based on the IEC 60909-0:2016 standard.
@@ -1327,7 +1330,8 @@ def _transformer_correction_factor(trafo_df, vk, vkr, sn, cmax):
             vk: transformer short-circuit voltage, percent
             vkr: real-part of transformer short-circuit voltage, percent
             sn: transformer rating, kVA
-            cmax: voltage factor to account for maximum worst-case currents, based on the lv side
+            c: voltage factor to account for worst-case currents, based on the lv side
+            case: maximum or minimum fault calculation, different calculation of correction factor
 
         Returns:
             kt: transformer impedance correction factor for short-circuit calculations
@@ -1342,11 +1346,13 @@ def _transformer_correction_factor(trafo_df, vk, vkr, sn, cmax):
         power_station_unit = trafo_df.power_station_unit.fillna(False).values.astype(bool)
     else:
         power_station_unit = np.zeros(len(trafo_df)).astype(bool)
-
-    zt = vk / 100 / sn
-    rt = vkr / 100 / sn
-    xt = np.sqrt(zt ** 2 - rt ** 2)
-    kt = 0.95 * cmax / (1 + .6 * xt * sn)
+    if case == "max":
+        zt = vk / 100 / sn
+        rt = vkr / 100 / sn
+        xt = np.sqrt(zt ** 2 - rt ** 2)
+        kt = 0.95 * c / (1 + .6 * xt * sn)
+    else:
+        kt = 1
     return np.where(~power_station_unit, kt, 1)
 
 
@@ -1441,8 +1447,9 @@ def _calculate_sc_voltages_of_equivalent_transformers(
 
     vk_2w_delta = z_br_to_bus_vector(vk_3w, sn)
     vkr_2w_delta = z_br_to_bus_vector(vkr_3w, sn)
+    # TODO for 3wtrafos respect also C_MIN
     if mode == "sc":
-        kt = _transformer_correction_factor(t3, vk_3w, vkr_3w, sn, 1.1)
+        kt = _transformer_correction_factor(t3, vk_3w, vkr_3w, sn, 1.1, "max")
         vk_2w_delta *= kt
         vkr_2w_delta *= kt
     vki_2w_delta = np.sqrt(vk_2w_delta ** 2 - vkr_2w_delta ** 2)
@@ -1467,7 +1474,8 @@ def _calculate_sc_voltages_of_equivalent_transformers_zero_sequence(t3, t2):
     vkr0_2w_delta = z_br_to_bus_vector(vkr0_3w, sn)
 
     # Only for "sc", calculated with positive sequence value
-    kt = _transformer_correction_factor(t3, vk_3w, vkr_3w, sn, 1.1)
+    # TODO for 3wtrafos respect also C_MIN
+    kt = _transformer_correction_factor(t3, vk_3w, vkr_3w, sn, 1.1, "max")
     vk0_2w_delta *= kt
     vkr0_2w_delta *= kt
 

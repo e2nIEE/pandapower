@@ -12,7 +12,7 @@ from pandapower.auxiliary import _add_auxiliary_elements, _sum_by_group
 from pandapower.build_branch import get_trafo_values, _transformer_correction_factor
 from pandapower.pypower.idx_bus import GS, BS, BASE_KV
 from pandapower.pypower.idx_brch import BR_X, BR_R, T_BUS, F_BUS
-from pandapower.pypower.idx_bus_sc import C_MAX, K_G, K_SG, V_G, \
+from pandapower.pypower.idx_bus_sc import C_MIN, C_MAX, K_G, K_SG, V_G, \
     PS_TRAFO_IX, GS_P, BS_P, KAPPA, GS_GEN, BS_GEN
 from pandapower.pypower.idx_brch_sc import K_T, K_ST
 
@@ -68,12 +68,15 @@ def _check_sc_data_integrity(net):
 def _add_kt(net, ppc):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     branch = ppc["branch"]
+    case = net._options["case"]
     # "trafo/trafo3w" are already corrected in pd2ppc, write parameter kt for trafo
     if not net.trafo.empty:
         f, t = net["_pd2ppc_lookups"]["branch"]["trafo"]
         trafo_df = net["trafo"]
-        cmax = ppc["bus"][bus_lookup[get_trafo_values(trafo_df, "lv_bus")], C_MAX]
-        kt = _transformer_correction_factor(trafo_df, trafo_df.vk_percent, trafo_df.vkr_percent, trafo_df.sn_mva, cmax)
+        bus_index = bus_lookup[get_trafo_values(trafo_df, "lv_bus")]
+        column_index = C_MAX if case == "max" else C_MIN
+        c = ppc["bus"][bus_index, column_index]
+        kt = _transformer_correction_factor(trafo_df, trafo_df.vk_percent, trafo_df.vkr_percent, trafo_df.sn_mva, c, case)
         branch[f:t, K_T] = kt
 
 
@@ -182,6 +185,7 @@ def _add_gen_sc_z_kg_ks(net, ppc):
     ppc["bus"][buses, BS_GEN] = bs
 
     # Calculate K_G
+    # TODO C_MIN ?
     cmax = ppc["bus"][gen_buses_ppc, C_MAX]
     # if the terminal voltage of the generator is permanently different from the nominal voltage of the generator, it may be
     # reqired to have a correction for U_{rG} as below (compare to equation 18) when calculating maximum SC current:
@@ -223,6 +227,7 @@ def _add_gen_sc_z_kg_ks(net, ppc):
         ps_trafo_ppc_ix = f + _ps_trafo_real_ix
         ps_trafo_oltc_mask = ps_trafo["oltc"].values.astype(bool)
         ps_gen_buses_ppc = bus_lookup[gen.loc[ps_gen_mask, "bus"]]
+        #TODO C_MIN?
         ps_cmax = ppc["bus"][ps_gen_buses_ppc, C_MAX]
 
         v_trafo_hv, v_trafo_lv = ps_trafo["vn_hv_kv"].values, ps_trafo["vn_lv_kv"].values
@@ -249,6 +254,7 @@ def _add_gen_sc_z_kg_ks(net, ppc):
         if np.any(ps_trafo_oltc_mask):
             # x_g here is x''_d -> ks is correct
             # todo: if the voltage U_G is permanently higher than U_rG, then U_Gmax = U_rG*(1+p_G)
+            # TODO C_MIN?
             ks = (v_q**2/v_g**2) * (v_trafo_lv**2/v_trafo_hv**2) *\
                 ps_cmax / (1 + np.abs(x_g - x_t) * sin_phi_gen[ps_gen_mask])
             ppc["bus"][ps_gen_buses_ppc[ps_trafo_oltc_mask], K_SG] = ks[ps_trafo_oltc_mask]
@@ -262,6 +268,7 @@ def _add_gen_sc_z_kg_ks(net, ppc):
             # (1+-p_t) in the standard
             # (1-p_t) is used if the highest partial short-circuit current of the power station unit at the high-voltage side of the unit transformer is searched for
             # if the unit transformer has no off-load taps or if no such taps are permanently used -> 1-p_t = 1
+            # TODO C_MIN?
             kso = (v_q / (v_g * (1 + p_g))) * (v_trafo_lv / v_trafo_hv) * (1 - p_t) * \
                   ps_cmax / (1 + x_g * sin_phi_gen[ps_gen_mask])
 
@@ -269,6 +276,7 @@ def _add_gen_sc_z_kg_ks(net, ppc):
             ppc["branch"][ps_trafo_ppc_ix[~ps_trafo_oltc_mask], K_ST] = kso[~ps_trafo_oltc_mask]
 
             # kg for sc calculation inside power station units
+            # TODO C_MIN?
             kg = 1 / (1+p_g) * ps_cmax / (1 + x_g * sin_phi_gen[ps_gen_mask])
             ppc["bus"][ps_gen_buses_ppc[~ps_trafo_oltc_mask], K_G] = kg[~ps_trafo_oltc_mask]
 
