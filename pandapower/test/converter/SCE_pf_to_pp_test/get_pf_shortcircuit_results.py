@@ -11,7 +11,10 @@ sys.path.append(r"C:\Program Files\DIgSILENT\PowerFactory 2024 SP1\Python\3.11")
 # proj_name = "test_case_2_five_bus_radial_grid"
 proj_name = "test_case_3_five_bus_meshed_grid"
 
-import powerfactory as pf
+try:
+    import powerfactory as pf
+except:
+    pass
 
 try:
     import pandaplan.core.pplog as logging
