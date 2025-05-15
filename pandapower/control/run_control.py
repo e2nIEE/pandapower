@@ -178,7 +178,7 @@ def check_final_convergence(run_count, max_iter, net_converged, net):
                                                                                         for x in net.controller.index)):
                 txt = f"Controller {i} with modus {net.controller.at[i, 'object'].modus}: {difference_txt}"
             controller_txt = str(controller_txt + txt + "\n")
-        raise UserWarning(f"Maximum number of iterations per controller is reached. " #todo logger
+        logger.error(f"Maximum number of iterations per controller is reached. " 
                                  f"Some controller did not converge after {run_count} calculations!\n{controller_txt}")
     if not net_converged:
         raise NetCalculationNotConverged("Controller did not converge because the calculation did not converge!")
