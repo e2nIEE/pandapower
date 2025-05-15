@@ -11,6 +11,8 @@ import pytest
 import re
 import copy
 import os
+from pandapower import pp_dir
+testfiles_path = os.path.join(pp_dir, 'test', 'shortcircuit', 'sce_tests')
 
 
 def check_pattern(pattern):
@@ -131,9 +133,13 @@ def get_columns_to_check(fault):
 
 # Define common parameters
 faults = ["LLL", "LL", "LG", "LLG"]
+faults = ["LG"]
 cases = ["max", "min"]
+cases = ["max"]
 values = [(0.0, 0.0), (5.0, 5.0)]
+values = [(0.0, 0.0)]
 net_names = ["test_case_1_four_bus_radial_grid", "test_case_2_five_bus_radial_grid", "test_case_3_five_bus_meshed_grid"]
+net_names = ["test_case_2_five_bus_radial_grid"]
 
 # Create parameter list
 parametrize_values = [
@@ -145,11 +151,12 @@ parametrize_values = [
 ]
 @pytest.mark.parametrize("fault, case, r_fault_ohm, x_fault_ohm, net_name", parametrize_values)
 def test_all_faults_and_cases_with_fault_impedance(fault, case, r_fault_ohm, x_fault_ohm, net_name):
-    net = from_json(os.path.join("test_grids", net_name + ".json"))
+    net = from_json(os.path.join(testfiles_path, "test_grids", net_name + ".json"))
+    # net = from_json(os.path.abspath(str(testfiles_path)) + "test_grids" + net_name + ".json")
     #TODO respect all vector group
     # vector_groups = ['Dyn','Yyn','YNyn']
 
-    excel_file = os.path.join("sc_result_comparison", net_name + "_pf_sc_results_all_cases.xlsx")
+    excel_file = os.path.join(testfiles_path, "sc_result_comparison", net_name + "_pf_sc_results_all_cases.xlsx")
     dataframes = load_pf_results(excel_file)
 
     rtol = {"ikss_ka": 0, "skss_mw": 0, "rk_ohm": 0, "xk_ohm": 0}

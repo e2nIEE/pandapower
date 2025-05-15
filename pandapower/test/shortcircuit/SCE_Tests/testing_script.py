@@ -17,10 +17,9 @@ from pandapower import pp_dir
 
 # net_name = "test_case_1_four_bus_radial_grid.json"
 net_name = "test_case_2_five_bus_radial_grid.json"
+# net_name = "test_case_3_five_bus_meshed_grid.json"
 
 net = from_json(os.path.join(pp_dir, "test", "shortcircuit", "sce_tests", "test_grids", net_name))
-net.line.rename(columns={'temperature_degree_celsius': 'endtemp_degree'}, inplace=True)
-net.line["endtemp_degree"] = 250
-calc_sc(net, fault="LLL", case="min", branch_results=True, ip=False, r_fault_ohm=0, x_fault_ohm=0)
+calc_sc(net, fault="LG", case="max", branch_results=True, ip=False, r_fault_ohm=0, x_fault_ohm=0)
 print(net.res_bus_sc)
 # print(net.res_line_sc)
