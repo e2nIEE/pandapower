@@ -11,7 +11,6 @@ import pytest
 import re
 import copy
 import os
-from pandapower import pp_dir
 
 
 def check_pattern(pattern):
@@ -146,12 +145,11 @@ parametrize_values = [
 ]
 @pytest.mark.parametrize("fault, case, r_fault_ohm, x_fault_ohm, net_name", parametrize_values)
 def test_all_faults_and_cases_with_fault_impedance(fault, case, r_fault_ohm, x_fault_ohm, net_name):
-    net = from_json(os.path.join(pp_dir, "test", "shortcircuit", "sce_tests", "test_grids", net_name + ".json"))
+    net = from_json(os.path.join("test_grids", net_name + ".json"))
     #TODO respect all vector group
     # vector_groups = ['Dyn','Yyn','YNyn']
 
-    excel_file = os.path.join(pp_dir, "test", "shortcircuit", "sce_tests", "sc_result_comparison",
-                              net_name + "_pf_sc_results_all_cases.xlsx")
+    excel_file = os.path.join("sc_result_comparison", net_name + "_pf_sc_results_all_cases.xlsx")
     dataframes = load_pf_results(excel_file)
 
     rtol = {"ikss_ka": 0, "skss_mw": 0, "rk_ohm": 0, "xk_ohm": 0}
