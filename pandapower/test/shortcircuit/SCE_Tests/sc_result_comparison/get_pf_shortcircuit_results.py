@@ -7,10 +7,6 @@ from pandapower import pp_dir
 import os
 
 sys.path.append(r"C:\Program Files\DIgSILENT\PowerFactory 2024 SP1\Python\3.11")
-# proj_name = "test_case_1_four_bus_radial_grid"
-proj_name = "test_case_2_five_bus_radial_grid"
-# proj_name = "test_case_3_five_bus_meshed_grid"
-
 try:
     import powerfactory as pf
 except:
@@ -20,16 +16,6 @@ try:
     import pandaplan.core.pplog as logging
 except ImportError:
     import logging
-
-app = pf.GetApplication()
-app.ActivateProject(proj_name)
-active_project = app.GetActiveProject()
-
-# activate study case
-study_case_folder = active_project.GetContents("Study Cases")[0]
-study_cases = study_case_folder.GetContents()
-study_case = study_cases[0]
-study_case.Activate()
 
 
 ## functions to get short circuit results from powerfactory
@@ -172,7 +158,26 @@ def get_pf_sc_line_results(app, fault_type='lll', calc_mode='max', fault_impedan
     return df_line_results
 
 
-## get results for all fault types and cases and write to excel
+##
+base_dir = os.getcwd()
+folder = os.path.join(base_dir, "pandapower", "test", "shortcircuit", "SCE_Tests", "test_grids")
+pfd_files = [f for f in os.listdir(folder) if f.endswith(".pfd")]
+
+# for file in pfd_files:
+# #     proj_name = os.path.splitext(file)[0]
+proj_name = 'test_case_2_five_bus_radial_grid_ynyn'
+app = pf.GetApplication()
+app.ActivateProject(proj_name)
+active_project = app.GetActiveProject()
+
+# activate study case
+study_case_folder = active_project.GetContents("Study Cases")[0]
+study_cases = study_case_folder.GetContents()
+study_case = study_cases[0]
+study_case.Activate()
+
+
+# get results for all fault types and cases and write to excel
 fault_types = ['lll', 'll', 'llg', 'lg']
 cases = ['max', 'min']
 fault_impedances = [(0, 0), (5, 5)]
