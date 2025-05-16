@@ -80,6 +80,8 @@ def test_volt_ctrl_droop():
     assert(abs(net.res_bus.loc[1, "vm_pu"] - (1.02 + net.res_trafo.loc[0, "q_hv_mvar"] / 40)) < tol)
     assert(all(net.controller.at[i, 'object'].converged) for i in net.controller.index)
     assert(net.controller.at[0, 'object'].modus == 'V_ctrl')#test correct modus
+    assert(net.controller.at[1, 'object'].modus == 'V_ctrl')  # test correct modus
+    assert(net.controller.at[1, 'object'].controller_idx == 0)  # test droop controller linkage
 
 
 def test_qctrl():
@@ -117,6 +119,7 @@ def test_qctrl_droop():
     assert(all(net.controller.at[i, 'object'].converged) for i in net.controller.index)
     assert(net.controller.at[0, 'object'].modus == 'Q_ctrl')  # test correct modus
     assert(net.controller.at[1, 'object'].modus == 'Q_ctrl')  # test correct modus
+    assert(net.controller.at[1, 'object'].controller_idx == 0)  # test droop controller linkage
 
 
 def test_station_ctrl_pf_import():
@@ -133,6 +136,7 @@ def test_station_ctrl_pf_import():
           net.res_line.loc[1, "q_from_mvar"], "\t", net.res_line.loc[1, "q_to_mvar"])
     assert(abs(net.res_line.loc[0, "q_to_mvar"] - 0.5) < tol)
     assert(abs(net.res_line.loc[1, "q_to_mvar"] - 0.5) < tol)
+    assert(net.controller.at[1, 'object'].modus == 'Q_ctrl')  # test correct modus
     print("--------------------------------------")
     print("Scenario 2 - Constant V, droop 40 MVar/pu")
     print("Input Measurement line 4 q_from_mvar and q_to_mvar, expected: \n -0.6215 MVar \t 0.2442 MVar \n",
@@ -144,10 +148,14 @@ def test_station_ctrl_pf_import():
     assert(abs(net.res_bus.loc[62, "vm_pu"] - (1.01 + ((net.res_line.loc[4, "q_to_mvar"] +
                                              net.res_line.loc[5, "q_to_mvar"]) /
                                             40))) < tol)  # still not close enough, increased tolerance
+    assert(net.controller.at[2, 'object'].modus == 'V_ctrl')  # test correct modus
+    assert(net.controller.at[3, 'object'].modus == 'V_ctrl')  # test correct modus
+    assert(net.controller.at[3, 'object'].controller_idx == 2)  # test droop controller linkage
     print("--------------------------------------")
     print("Scenario 3 - Constant V")
     print("Controlled bus, set point = 1.03 pu, vm_pu: ", net.res_bus.loc[84, "vm_pu"])
     assert(abs(net.res_bus.loc[84, "vm_pu"] - 1.03) < tol)
+    assert(net.controller.at[0, 'object'].modus == 'V_ctrl')  # test correct modus
     print("--------------------------------------")
     print("Scenario 4 - Q(U) - droop 40 MVar/pu")
     print("Input Measurement vm_pu: ", net.res_bus.loc[103, "vm_pu"])
@@ -156,6 +164,9 @@ def test_station_ctrl_pf_import():
           net.res_trafo.loc[3, "q_hv_mvar"])
     assert(abs(net.res_trafo.loc[3, "q_hv_mvar"] - (-(1 + (0.999 - net.res_bus.loc[103, "vm_pu"]) * 40))) < tol)
     assert(all(net.controller.at[i, 'object'].converged) for i in net.controller.index)
+    assert(net.controller.at[4, 'object'].modus == 'Q_ctrl')  # test correct modus
+    assert(net.controller.at[5, 'object'].modus == 'Q_ctrl')  # test correct modus
+    assert(net.controller.at[5, 'object'].controller_idx == 4) #test droop controller linkage
 
 ### Testing after rework of station controller###
 
@@ -193,6 +204,7 @@ def test_volt_ctrl_droop_new():
     assert(all(net.controller.at[i, 'object'].converged) for i in net.controller.index)
     assert(net.controller.at[0, 'object'].modus == 'V_ctrl')  # test correct modus
     assert(net.controller.at[1, 'object'].modus == 'V_ctrl')  # test correct modus
+    assert(net.controller.at[1, 'object'].controller_idx == 0)  # test droop controller linkage
 
 
 def test_qctrl_new():
@@ -230,6 +242,7 @@ def test_qctrl_droop_new():
     assert(all(net.controller.at[i, 'object'].converged) for i in net.controller.index)
     assert(net.controller.at[0, 'object'].modus == 'Q_ctrl')  # test correct modus
     assert(net.controller.at[1, 'object'].modus == 'Q_ctrl')  # test correct modus
+    assert(net.controller.at[1, 'object'].controller_idx == 0)  # test droop controller linkage
 
 
 def test_pf_control_cap():
@@ -287,6 +300,7 @@ def test_pf_control_droop_q():
     assert(all(net.controller.at[i, 'object'].converged) for i in net.controller.index)
     assert(net.controller.at[0, 'object'].modus == 'PF_ctrl')  # test correct modus
     assert(net.controller.at[1, 'object'].modus == 'PF_ctrl')  # test correct modus
+    assert(net.controller.at[1, 'object'].controller_idx == 0)  # test droop controller linkage
 
 
 def test_pf_control_droop_v():
@@ -310,6 +324,7 @@ def test_pf_control_droop_v():
     assert(all(net.controller.at[i, 'object'].converged) for i in net.controller.index)
     assert(net.controller.at[0, 'object'].modus == 'PF_ctrl')  # test correct modus
     assert(net.controller.at[1, 'object'].modus == 'PF_ctrl')  # test correct modus
+    assert(net.controller.at[1, 'object'].controller_idx == 0)  # test droop controller linkage
 
 
 def test_tan_phi_control():
@@ -341,6 +356,7 @@ def test_station_ctrl_pf_import_new():
           net.res_line.loc[15, "q_from_mvar"], "\t", net.res_line.loc[15, "q_to_mvar"])
     assert(abs(net.res_line.loc[0, "q_to_mvar"] - 0.5) < tol)
     assert(abs(net.res_line.loc[15, "q_to_mvar"] - 0.5) < tol)
+    assert(net.controller.at[0, 'object'].modus == 'Q_ctrl')  # test correct modus
     print("--------------------------------------")
     print("Scenario 2 - Constant V, droop 40 MVar/pu")
     print("Input Measurement q_from_mvar and q_to_mvar, expected: \n -0.6215 MVar \t 0.2442 MVar \n",
@@ -351,10 +367,14 @@ def test_station_ctrl_pf_import_new():
           "2 * 0.2442 MVar / 40 MVar/pu + 1.01 pu = 1.02221: \n", net.res_bus.loc[86, "vm_pu"])
     assert(abs(net.res_bus.loc[86, "vm_pu"] - (1.01 + ((net.res_line.loc[3, "q_to_mvar"] +
                                              net.res_line.loc[4, "q_to_mvar"])) / 40)) < tol)
+    assert(net.controller.at[3, 'object'].modus == 'V_ctrl')  # test correct modus
+    assert(net.controller.at[4, 'object'].modus == 'V_ctrl')  # test correct modus
+    assert(net.controller.at[4, 'object'].controller_idx == 3)  # test droop controller linkage
     print("--------------------------------------")
     print("Scenario 3 - Constant V")
     print("Controlled bus, set point = 1.03 pu \n vm_pu: ", net.res_bus.loc[108, "vm_pu"])
     assert(abs(net.res_bus.loc[108, "vm_pu"] - 1.03) < tol)
+    assert(net.controller.at[5, 'object'].modus == 'V_ctrl')  # test correct modus
     print("--------------------------------------")
     print("Scenario 4 - Q(U) - droop 40 MVar/pu")
     print("Input Measurement vm_pu: ", net.res_bus.loc[127, "vm_pu"])
@@ -362,6 +382,9 @@ def test_station_ctrl_pf_import_new():
           "expected: \n -(1 MVar + (0.999 pu  - 0.99585 pu) * 40 MVar/pu)= -1.12618 MVar: \n",
           net.res_trafo.loc[3, "q_hv_mvar"])
     assert(abs(net.res_trafo.loc[3, "q_hv_mvar"] - (-(1 + (0.999 - net.res_bus.loc[127, "vm_pu"]) * 40))) < tol)
+    assert(net.controller.at[1, 'object'].modus == 'Q_ctrl')  # test correct modus
+    assert(net.controller.at[2, 'object'].modus == 'Q_ctrl')  # test correct modus
+    assert(net.controller.at[2, 'object'].controller_idx == 1)  # test droop controller linkage
     print("------------------------------------- ")
     print("Scenario 5 - Constant Power factor")
     print("Controlled line 16 to, expected const PF = 0.93 for Phi_from and const PF = 1 for Phi_to: \n",
@@ -372,7 +395,7 @@ def test_station_ctrl_pf_import_new():
           np.cos(np.arctan(net.res_line.loc[17, 'q_to_mvar'] / net.res_line.loc[17, 'p_to_mw'])))
     assert(abs(np.arctan(net.res_line.loc[16, "q_to_mvar"]/net.res_line.loc[16, 'p_to_mw']) - np.arccos(1)) < tol) #positive reactance because inductive
     assert(abs(np.arctan(net.res_line.loc[17, "q_to_mvar"]/net.res_line.loc[17, 'p_to_mw']) - np.arccos(1)) < tol)
-
+    assert(net.controller.at[6, 'object'].modus == 'PF_ctrl')  # test correct modus
     print("------------------------------------- ")
     print("Scenario 6 - PF_Phi(V)")
     print("controlled line 26 to, expected PF_phi(V) = 0.83 Phi_from, Phi_to: \n",
@@ -389,6 +412,10 @@ def test_station_ctrl_pf_import_new():
         droop_set_point)) < tol)
     assert(abs(np.arctan(net.res_line.loc[27, "q_to_mvar"] / net.res_line.loc[27, 'p_to_mw']) - np.arccos(
         droop_set_point)) < tol)
+    assert(net.controller.at[8, 'object'].modus == 'PF_ctrl')  # test correct modus
+    assert(net.controller.at[9, 'object'].modus == 'PF_ctrl')  # test correct modus
+    assert(net.controller.at[9, 'object'].p_cosphi == False) #correct modus
+    assert(net.controller.at[9, 'object'].controller_idx == 8)  # test droop controller linkage
     print("------------------------------------- ")
     print("Scenario 7 - PF_Phi(P)")
     print("Controlled line 24 to, expected const PF = 0.65 for  Phi_from and Phi_to: \n",
@@ -402,17 +429,22 @@ def test_station_ctrl_pf_import_new():
         droop_set_point)) < tol)
     assert(abs(np.arctan(net.res_line.loc[25, "q_to_mvar"] / net.res_line.loc[25, 'p_to_mw']) - np.arccos(
         droop_set_point)) < tol)
+    assert(net.controller.at[10, 'object'].modus == 'PF_ctrl')  # test correct modus
+    assert(net.controller.at[11, 'object'].modus == 'PF_ctrl')  # test correct modus
+    assert(net.controller.at[11, 'object'].p_cosphi == True)  # correct modus
+    assert(net.controller.at[11, 'object'].controller_idx == 10)  # test droop controller linkage
     print("------------------------------------- ")
     print("Scenario 8 - Tan(Phi)")
-    print("Controlled line 20 to, expected tan(phi) = 0.38 for tan(phi)_from and tan(phi) = 0 for tan(phi)_to: \n",
+    print("Controlled line 20 to, expected tan(phi) = 0.376 for tan(phi)_from and tan(phi) = 0 for tan(phi)_to: \n",
           net.res_line.loc[20, "q_from_mvar"] / net.res_line.loc[20, "p_from_mw"],
           "\t", net.res_line.loc[20, 'q_to_mvar'] / net.res_line.loc[20, 'p_to_mw'])
-    print("Controlled line 21 to, expected tan(phi) = 0.38 for tan(phi)_from and tan(phi) = 0 for tan(phi)_to: \n",
+    print("Controlled line 21 to, expected tan(phi) = 0.376 for tan(phi)_from and tan(phi) = 0 for tan(phi)_to: \n",
           net.res_line.loc[21, "q_from_mvar"] / net.res_line.loc[21, "p_from_mw"],
           "\t", net.res_line.loc[21, 'q_to_mvar'] / net.res_line.loc[21, 'p_to_mw'])
     assert(abs(net.res_line.loc[20, "q_to_mvar"] / net.res_line.loc[20, 'p_to_mw'] - 0) < tol)
     assert(abs(net.res_line.loc[21, "q_to_mvar"] / net.res_line.loc[21, 'p_to_mw']  - 0) < tol)
     assert(all(net.controller.at[i, 'object'].converged) for i in net.controller.index)
+    assert(net.controller.at[7, 'object'].modus == 'tan(phi)_ctrl')  # test correct modus
 
 ### Testing the distributions###
 
@@ -561,6 +593,11 @@ def test_station_ctrl_pf_import_distributions():#test comparability between PF a
     assert(all(abs(np.array(net.res_bus.loc[net.sgen.loc[net.controller.at[4, 'object'].output_element_index].bus, 'vm_pu']) -
                 [0.89847, 0.98847 ]) < tol_v)) #rel_V_pu busbar voltage
     assert(all(net.controller.at[i, 'object'].converged) for i in net.controller.index)
+    assert(net.controller.at[0, 'object'].modus == 'Q_ctrl')  # test correct modus
+    assert(net.controller.at[1, 'object'].modus == 'tan(phi)_ctrl')  # test correct modus
+    assert(net.controller.at[2, 'object'].modus == 'PF_ctrl')  # test correct modus
+    assert(net.controller.at[3, 'object'].modus == 'PF_ctrl')  # test correct modus
+    assert(net.controller.at[4, 'object'].modus == 'tan(phi)_ctrl')  # test correct modus
 
 
 if __name__ == '__main__':
