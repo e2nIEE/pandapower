@@ -138,7 +138,7 @@ cases = ["max", "min"]
 # cases = ["min"]
 values = [(0.0, 0.0), (5.0, 5.0)]
 # values = [(0.0, 0.0)]
-net_names = ["test_case_1_four_bus_radial_grid", "test_case_2_five_bus_radial_grid", "test_case_3_five_bus_meshed_grid"]
+net_names = ["test_case_1_four_bus_radial_grid", "test_case_2_five_bus_radial_grid_dyn", "test_case_3_five_bus_meshed_grid_dyn"]
 # net_names = ["test_case_2_five_bus_radial_grid"]
 
 # Create parameter list

@@ -16,7 +16,7 @@ app = pf.GetApplication()
 
 ##
 base_dir = os.getcwd()
-folder = os.path.join(base_dir, "pandapower", "test", "shortcircuit", "SCE_Tests", "test_grids")
+folder = os.path.join(base_dir)
 pfd_files = [f for f in os.listdir(folder) if f.endswith(".pfd")]
 net_dict = {}
 all_diff_dict = {}
