@@ -281,16 +281,6 @@ class BinarySearchControl(Controller):
         raise AttributeError(f"{self.__class__.__name__!r} has no attribute {name!r}")
 
     def initialize_control(self, net, converged = False):
-        #reinitialize control init  with existing parameters
-        """net.controller.drop(index=self.index, inplace=True)#todo still doesnt work
-        self.__init__(net, ctrl_in_service=self.in_service, output_element=self.output_element,
-                      output_variable=self.output_variable, output_element_index=self.output_element_index,
-                      output_element_in_service=self.output_element_in_service,input_element=self.input_element,
-                      input_element_index=self.input_element_index, set_point=self.set_point, modus=self.modus,
-                      input_variable=self.input_variable, output_distribution_values=self.output_distribution_values,
-                      output_values_distribution=self.output_values_distribution, tol = self.tol,
-                      in_service=self.reset[0], order = self.reset[1], level = self.reset[2],
-                      drop_same_existing_ctrl=self.reset[3], matching_params=self.reset[4], **self.reset[5])"""
         #reread output elements
         #net.controller.at[self.index, 'object'].converged = converged
         output_element_index = self.output_element_index[0] if self.write_flag == 'single_index' else\
@@ -549,8 +539,10 @@ class BinarySearchControl(Controller):
 
             elif self.output_values_distribution == 'rel_rated_S': #proportional to the rated apparent power
                 if self.output_element == 'sgen':
-                    logger.warning(f'The standard type attribute containing the rated apparent power for'
-                                   f' {self.output_element} is not correctly implemented yet.')#todo
+                    if not hasattr(self, 'rel_rated_S_warned'):
+                        self.rel_rated_S_warned = True
+                        logger.warning(f'The standard type attribute containing the rated apparent power for'
+                                   f' {self.output_element} is not correctly implemented yet (BSC {self.index}).')#todo
                 try:
                     s_rated_mva = np.array(net.sgen.loc[self.output_element_index, 'sn_mva']) #correct values?
                     distribution = s_rated_mva
@@ -898,22 +890,6 @@ class DroopControl(Controller):
             return self.voltage_ctrl
         raise AttributeError(f"{self.__class__.__name__!r} has no attribute {name!r}")# Raises AttributeError if missing
 
-    '''def initialize_droop_control(self, net):
-        #firt, reinitialize linked controller
-        net.controller.object[self.controller.index].initialize_control(net)
-        #reinitialize droop control
-        net.controller.drop(index=self.index, inplace=True)
-        self.__init__(net, self.controller_idx, in_service = self.reset[0], modus = self.modus, q_droop_mvar=
-            self.q_droop_mvar, bus_idx = self.bus_idx, vm_set_lb=self.lb_voltage,
-            vm_set_ub=self.ub_voltage, pf_overexcited=self.pf_over, pf_underexcited=self.pf_under,
-            input_type_q_meas = self.input_type_q_meas, input_variable_q_meas = self.input_variable_q_meas,
-            input_element_index_q_meas = input_elemet_index_q_meas, tol = self.tol,
-            order = self.reset[1], level=self.reset[2], drop_same_existing_ctrl=self.reset[3], matching_params=
-            self.reset[4], **self.reset[5])
-        #reread output elements todo what else to reread
-        output_element_index = self.output_element_index[0] if self.write_flag == 'single_index' else self.output_element_index #ruggedize for single index
-        self.output_values = read_from_net(net, self.output_element, output_element_index, self.output_variable,
-                                           self.write_flag)'''
     def is_converged(self, net):
         ###check convergence
         if self.modus != net.controller.at[self.controller_idx, 'object'].modus:#checking if droop and bsc have the same modus

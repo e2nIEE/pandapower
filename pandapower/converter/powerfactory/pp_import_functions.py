@@ -3896,50 +3896,51 @@ def create_stactrl(net, item):
         #q_control_cubicle = item.p_cub if control_mode == 1 else item.pQmeas #Feld #pqmeas if V_ctrl and droop
         q_control_cubicle = item.p_cub if control_mode != 0 else item.pQmeas  #item.p_cub if other mode and droop?
         if q_control_cubicle is None:
-            logger.info(f"Input Element of Controller {item.loc_name} is missing, skipping")
-            return
-
-        q_control_element = []
-        q_control_side = []
-        element_class = []
-        res_element_index = []
-        variable = []
-        if q_control_cubicle.GetClassName() == "StaCubic":
-            q_control_element.append(q_control_cubicle.obj_id)
-            q_control_side.append(q_control_cubicle.obj_bus)  # 0=from, 1=to
-            element_class.append(q_control_element[0].GetClassName())
-        elif q_control_cubicle.GetClassName() == "ElmBoundary":
-            for cubicles in q_control_cubicle.cubicles:
-                q_control_element.append(cubicles.obj_id)
-                q_control_side.append(cubicles.obj_bus)  # 0=from, 1=to
+            if control_mode != 0:#'V_ctrl' with Q droop sets Q to 0 when pQmeas is None
+                logger.info(f"Input Element of Controller {item.loc_name} is missing, skipping")
+                return
+        else:
+            q_control_element = []
+            q_control_side = []
+            element_class = []
+            res_element_index = []
+            variable = []
+            if q_control_cubicle.GetClassName() == "StaCubic":
+                q_control_element.append(q_control_cubicle.obj_id)
+                q_control_side.append(q_control_cubicle.obj_bus)  # 0=from, 1=to
                 element_class.append(q_control_element[0].GetClassName())
-        else:
-            print("Not implemented class for q_control_cubicle!")
-        if element_class[0] == "ElmLne":
-            res_element_table = "res_line"
-            for i in range(len(q_control_element)):
-                line_sections = line_dict[q_control_element[i]]
-                if q_control_side[i] == 0:
-                    res_element_index.append(line_sections[0])
-                    variable.append("q_from_mvar")
-                else:
-                    res_element_index.append(line_sections[-1])
-                    variable.append("q_to_mvar")
-        elif element_class[0] == "ElmTr2":
-            res_element_table = "res_trafo"
-            for element in q_control_element:
-                res_element_index.append(trafo_dict[element])
-                variable = "q_hv_mvar" if q_control_side == 0 else "q_lv_mvar"
-        elif element_class[0] == "ElmCoup":
-            res_element_table = "res_switch"
-            for element in q_control_element:
-                res_element_index.append(switch_dict[element])
-                net.switch.at[res_element_index[-1], "z_ohm"] = 1e-3
-                variable = "q_from_mvar" if q_control_side == 0 else "q_to_mvar"
-        else:
-            logger.error(
-                f"{item}: only line, trafo element and switch flows can be controlled, {element_class[0]=}")
-            return
+            elif q_control_cubicle.GetClassName() == "ElmBoundary":
+                for cubicles in q_control_cubicle.cubicles:
+                    q_control_element.append(cubicles.obj_id)
+                    q_control_side.append(cubicles.obj_bus)  # 0=from, 1=to
+                    element_class.append(q_control_element[0].GetClassName())
+            else:
+                print("Not implemented class for q_control_cubicle!")
+            if element_class[0] == "ElmLne":
+                res_element_table = "res_line"
+                for i in range(len(q_control_element)):
+                    line_sections = line_dict[q_control_element[i]]
+                    if q_control_side[i] == 0:
+                        res_element_index.append(line_sections[0])
+                        variable.append("q_from_mvar")
+                    else:
+                        res_element_index.append(line_sections[-1])
+                        variable.append("q_to_mvar")
+            elif element_class[0] == "ElmTr2":
+                res_element_table = "res_trafo"
+                for element in q_control_element:
+                    res_element_index.append(trafo_dict[element])
+                    variable = "q_hv_mvar" if q_control_side == 0 else "q_lv_mvar"
+            elif element_class[0] == "ElmCoup":
+                res_element_table = "res_switch"
+                for element in q_control_element:
+                    res_element_index.append(switch_dict[element])
+                    net.switch.at[res_element_index[-1], "z_ohm"] = 1e-3
+                    variable = "q_from_mvar" if q_control_side == 0 else "q_to_mvar"
+            else:
+                logger.error(
+                    f"{item}: only line, trafo element and switch flows can be controlled, {element_class[0]=}")
+                return
     elif control_mode != 0: #not voltage ctrl
         q_control_cubicle = item.p_cub
         if q_control_cubicle is None:
