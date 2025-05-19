@@ -133,13 +133,13 @@ def get_columns_to_check(fault):
 
 # Define common parameters
 faults = ["LLL", "LL", "LG", "LLG"]
-faults = ["LG"]
+# faults = ["LLL"]
 cases = ["max", "min"]
-cases = ["max"]
+# cases = ["min"]
 values = [(0.0, 0.0), (5.0, 5.0)]
-values = [(0.0, 0.0)]
+# values = [(0.0, 0.0)]
 net_names = ["test_case_1_four_bus_radial_grid", "test_case_2_five_bus_radial_grid", "test_case_3_five_bus_meshed_grid"]
-net_names = ["test_case_2_five_bus_radial_grid"]
+# net_names = ["test_case_2_five_bus_radial_grid"]
 
 # Create parameter list
 parametrize_values = [

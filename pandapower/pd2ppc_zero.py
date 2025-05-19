@@ -230,8 +230,8 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
             tap_lv = np.square(vn_trafo_lv / vn_bus_lv) * (3 * net.sn_mva)
             tap_hv = np.square(vn_trafo_hv / vn_bus_hv) * (3 * net.sn_mva)
 
-        # tap_corr = tap_hv if vector_group.lower() in ("ynd", "yny") else tap_lv
-        tap_corr = tap_lv
+        tap_corr = tap_hv if vector_group.lower() in ("ynd", "yny", "Dyn") else tap_lv
+        # tap_corr = tap_lv
         z_sc = vk0_percent / 100. / sn_trafo_mva * tap_corr
         r_sc = vkr0_percent / 100. / sn_trafo_mva * tap_corr
         z_sc = z_sc.astype(np.float64)
@@ -254,6 +254,8 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
             c = ppc["bus"][bus_index, column_index]
             if not net._options["use_pre_fault_voltage"]:
                 kt = _transformer_correction_factor(trafos, vk_percent, vkr_percent, sn_trafo_mva, c, case)
+                if isinstance(kt, np.ndarray) and np.all(kt == kt[0]):
+                    kt = float(kt [0])
                 z0_k *= kt
 
             # different formula must be applied for power station unit transformers:

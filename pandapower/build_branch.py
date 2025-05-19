@@ -1352,7 +1352,9 @@ def _transformer_correction_factor(trafo_df, vk, vkr, sn, c, case):
         xt = np.sqrt(zt ** 2 - rt ** 2)
         kt = 0.95 * c / (1 + .6 * xt * sn)
     else:
+        # kt = np.array([1, 1])
         kt = 1
+
     return np.where(~power_station_unit, kt, 1)
 
 

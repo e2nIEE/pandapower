@@ -1024,11 +1024,13 @@ def _add_c_to_ppc(net, ppc):
     if len(lv_buses) > 0:
         lv_tol_percent = net["_options"]["lv_tol_percent"]
         if lv_tol_percent == 10:
-            c_ns = 1.1
+            c_ns_max = 1.1
+            c_ns_min = 0.9
         elif lv_tol_percent == 6:
-            c_ns = 1.05
+            c_ns_max = 1.05
+            c_ns_min = 0.95
         else:
             raise ValueError("Voltage tolerance in the low voltage grid has" +
                              " to be either 6% or 10% according to IEC 60909")
-        ppc["bus"][lv_buses, C_MAX] = c_ns
-        ppc["bus"][lv_buses, C_MIN] = .95
+        ppc["bus"][lv_buses, C_MAX] = c_ns_max
+        ppc["bus"][lv_buses, C_MIN] = c_ns_min
