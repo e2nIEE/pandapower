@@ -1250,6 +1250,15 @@ def _clean_up(net, res=True):
         if res:
             net.res_gen = net.res_gen.drop(dc_gens)
 
+    if len(net["b2b_vsc"]) > 0:
+        # remove vsc's which were only created for the b2b_vsc's
+        indices = net.b2b_vsc.index.values
+        # naming scheme is b2b_0+, b2b_0-, b2b_1+, b2b_1-, ...
+        naming_scheme = 'b2b_' + np.repeat(indices, 2).astype(str) + np.tile(['+', '-'], len(indices))
+        vsc_idx = net.vsc[net.vsc['name'].isin(naming_scheme)]
+        # drop the vsc's
+        net.vsc.drop(vsc_idx, axis=1, inplace=True)
+
 
 def _set_isolated_buses_out_of_service(net, ppc):
     # set disconnected buses out of service
@@ -1576,12 +1585,7 @@ def SVabc_from_SV012(S012, V012, n_res=None, idx=None):
     return Sabc, Vabc
 
 
-def _add_auxiliary_elements(net):
-    if len(net.dcline) > 0:
-        _add_dcline_gens(net)
-
-
-def _add_dcline_gens(net):
+def _add_dcline_gens(net: pandapowerNet):
     from pandapower.create import create_gen
     for dctab in net.dcline.itertuples():
         pfrom = dctab.p_mw
@@ -1595,6 +1599,48 @@ def _add_dcline_gens(net):
                    min_p_mw=-pmax, max_p_mw=0,
                    max_q_mvar=dctab.max_q_from_mvar, min_q_mvar=dctab.min_q_from_mvar,
                    in_service=dctab.in_service)
+
+
+def _add_b2b_vsc(net: pandapowerNet):
+    from pandapower.create import create_vsc
+    for i, b2b_vsc in net.b2b_vsc.iterrows():
+        ac_bus = b2b_vsc.bus
+        bus_dc_plus = b2b_vsc.bus_dc_plus
+        bus_dc_minus = b2b_vsc.bus_dc_minus
+        control_mode_ac = b2b_vsc.control_mode_ac
+        control_mode_dc = b2b_vsc.control_mode_dc
+        control_value_ac = b2b_vsc.control_value_ac
+        control_value_dc = b2b_vsc.control_value_dc
+        r_ohm = b2b_vsc.r_ohm
+        x_ohm = b2b_vsc.x_ohm
+        r_dc_ohm = b2b_vsc.r_dc_ohm
+        pl_dc_mw = b2b_vsc.pl_dc_mw
+        # idx = int(i)
+        name = "b2b_" + str(b2b_vsc.name)
+
+        create_vsc(net, ac_bus, bus_dc_plus, r_ohm/2., x_ohm/2., r_dc_ohm/2., pl_dc_mw=pl_dc_mw,
+                   control_mode_ac=control_mode_ac, control_value_ac=control_value_ac, name=str(name)+"+",
+                   control_mode_dc=control_mode_dc, control_value_dc=control_value_dc)
+        create_vsc(net, ac_bus, bus_dc_minus, r_ohm/2., x_ohm/2., r_dc_ohm/2., pl_dc_mw=pl_dc_mw,
+                   control_mode_ac=control_mode_ac, control_value_ac=control_value_ac, name=str(name)+"-",
+                   control_mode_dc=control_mode_dc, control_value_dc=control_value_dc)
+
+
+def _add_auxiliary_elements(net: pandapowerNet):
+    """
+    Add auxiliary elements to net, convert the HVDC links to a gen pair and
+    convert the back2back VSC to two monopol VSCs
+    Args:
+        net:
+
+    Returns:
+
+    """
+    if len(net.dcline) > 0:
+        _add_dcline_gens(net)
+
+    if len(net.b2b_vsc) > 0:
+        _add_b2b_vsc(net)
 
 
 def _replace_nans_with_default_limits(net, ppc):
