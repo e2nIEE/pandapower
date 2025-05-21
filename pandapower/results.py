@@ -40,10 +40,21 @@ def _extract_results(net, ppc):
     bus_p_dc = _get_p_dc_results(net, ppc, bus_dc_lookup_aranged)
     # _get_dc_slack_results(net, ppc, bus_dc_lookup_aranged, bus_p_dc)
     _get_bus_dc_results(net, bus_p_dc)
+    _get_b2b_vsc_results(net)
     if net._options["mode"] == "opf":
         _get_costs(net, ppc)
     else:
         _remove_costs(net)
+
+
+def _get_b2b_vsc_results(net):
+    if len(net["b2b_vsc"]) > 0:
+        # remove vsc's which were only created for the b2b_vsc's
+        indices = net.b2b_vsc.index.values
+        # naming scheme is b2b_0+, b2b_0-, b2b_1+, b2b_1-, ...
+        naming_scheme = 'b2b_' + np.repeat(indices, 2).astype(str) + np.tile(['+', '-'], len(indices))
+        vsc_idx = net.vsc[net.vsc['name'].isin(naming_scheme)]
+        # extract results from the vsc's
 
 
 def _extract_results_3ph(net, ppc0, ppc1, ppc2):
@@ -149,7 +160,7 @@ def get_relevant_elements(mode="pf"):
         return ["bus", "bus_dc", "line", "line_dc", "trafo", "trafo3w", "impedance", "ext_grid",
                 "load", "motor", "sgen", "storage", "shunt", "gen", "ward",
                 "xward", "dcline", "asymmetric_load", "asymmetric_sgen",
-                "switch", "tcsc", "svc", "ssc", "vsc"]
+                "switch", "tcsc", "svc", "ssc", "vsc", "b2b_vsc"]
     elif mode == "sc":
         return ["bus", "line", "trafo", "trafo3w", "ext_grid", "gen", "sgen", "switch"]
     elif mode == "se":

@@ -11,7 +11,7 @@ from itertools import product
 import numpy as np
 import pytest
 
-from pandapower import pp_dir
+from pandapower import pp_dir, create_b2b_vsc, LoadflowNotConverged
 from pandapower.converter.powerfactory.validate import validate_pf_conversion
 from pandapower.create import create_impedance, create_shunts, create_buses, create_gens, create_bus,  \
     create_empty_network, create_line_from_parameters, create_gen, \
@@ -1051,28 +1051,36 @@ def test_simple_2vsc_hvdc1():
     create_load(net, 1, 10, q_mvar=5)
 
     # DC part
-    create_bus_dc(net, 110, 'A', geodata=(100, 10))
-    create_bus_dc(net, 110, 'B', geodata=(200, 10))
+    create_bus_dc(net, 110, 'A', geodata=(100, 10))  # 0
+    create_bus_dc(net, 110, 'B', geodata=(200, 10))  # 1
 
-    create_bus_dc(net, 110, 'C', geodata=(100, -10))
-    create_bus_dc(net, 110, 'D', geodata=(200, -10))
+    create_bus_dc(net, 110, 'C', geodata=(100, -10)) # 2
+    create_bus_dc(net, 110, 'D', geodata=(200, -10)) # 3
 
     create_line_dc(net, 0, 1, 100, std_type="2400-CU")
     create_line_dc(net, 2, 3, 100, std_type="2400-CU")
 
-    create_vsc(net, 1, 0, 0.1, 5, 0.15,
-               control_mode_ac='vm_pu', control_value_ac=1,
-               control_mode_dc="p_mw", control_value_dc=10)
-    create_vsc(net, 2, 1, 0.1, 5, 0.15,
-               control_mode_ac='vm_pu', control_value_ac=1,
-               control_mode_dc="vm_pu", control_value_dc=1.02)
+    #create_vsc(net, 1, 0, 0.1, 5, 0.15,
+    #           control_mode_ac='vm_pu', control_value_ac=1,
+    #           control_mode_dc="p_mw", control_value_dc=10)
+    #create_vsc(net, 1, 2, 0.1, 5, 0.15,
+    #           control_mode_ac='vm_pu', control_value_ac=1,
+    #           control_mode_dc="p_mw", control_value_dc=10)
+    create_b2b_vsc(net, 1, 0, 2, 0.2, 10, 0.3,
+                   control_mode_ac='vm_pu', control_value_ac=1, control_mode_dc="p_mw", control_value_dc=10)
 
-    create_vsc(net, 1, 2, 0.1, 5, 0.15,
-               control_mode_ac='vm_pu', control_value_ac=1,
-               control_mode_dc="p_mw", control_value_dc=10)
-    create_vsc(net, 2, 3, 0.1, 5, 0.15,
-               control_mode_ac='vm_pu', control_value_ac=1,
-               control_mode_dc="vm_pu", control_value_dc=1.02)
+    #create_vsc(net, 2, 1, 0.1, 5, 0.15,
+    #           control_mode_ac='vm_pu', control_value_ac=1,
+    #           control_mode_dc="vm_pu", control_value_dc=1.02)
+    #create_vsc(net, 2, 3, 0.1, 5, 0.15,
+    #           control_mode_ac='vm_pu', control_value_ac=1,
+    #           control_mode_dc="vm_pu", control_value_dc=1.02)
+    create_b2b_vsc(net, 2, 1, 3, 0.2, 10, 0.3,
+                   control_mode_ac='vm_pu', control_value_ac=1, control_mode_dc="vm_pu", control_value_dc=1.02)
+    try:
+        runpp(net)
+    except LoadflowNotConverged:
+        pass
 
     runpp_with_consistency_checks(net)
 

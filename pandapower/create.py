@@ -205,6 +205,20 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                 ("control_value_dc", "f8"),
                 ("controllable", "bool"),
                 ("in_service", "bool")],
+        "b2b_vsc": [("name", dtype(object)),
+                    ("bus", "u4"),
+                    ("bus_dc_plus", "u4"),
+                    ("bus_dc_minus", "u4"),
+                    ("r_ohm", "f8"),
+                    ("x_ohm", "f8"),
+                    ("r_dc_ohm", "f8"),
+                    ("pl_dc_mw", "f8"),
+                    ("control_mode_ac", dtype(object)),
+                    ("control_value_ac", "f8"),
+                    ("control_mode_dc", dtype(object)),
+                    ("control_value_dc", "f8"),
+                    ("controllable", "bool"),
+                    ("in_service", "bool")],
         "ext_grid": [("name", dtype(object)),
                      ("bus", "u4"),
                      ("vm_pu", "f8"),
@@ -4873,6 +4887,70 @@ def create_ssc(net, bus, r_ohm, x_ohm, set_vm_pu=1., vm_internal_pu=1., va_inter
         "controllable", "in_service"],
         [name, bus, r_ohm, x_ohm, set_vm_pu, vm_internal_pu, va_internal_degree, controllable, in_service]))
     _set_entries(net, "ssc", index, **entries, **kwargs)
+
+    return index
+
+
+def create_b2b_vsc(net, bus, bus_dc_plus, bus_dc_minus, r_ohm, x_ohm, r_dc_ohm, pl_dc_mw=0., control_mode_ac="vm_pu",
+                   control_value_ac=1., control_mode_dc="p_mw", control_value_dc=0., name=None, controllable=True,
+                   in_service=True, index=None, **kwargs):
+    """
+    Creates an VSC converter element - a shunt element with adjustable VSC internal voltage used to connect the \
+    AC grid and the DC grid. The element implements several control modes.
+
+    Does not work if connected to "PV" bus (gen bus, ext_grid bus)
+
+    INPUT:
+        **net** (pandapowerNet) - The pandapower network in which the element is created
+
+        **bus** (int) - connection bus of the VSC
+
+        **bus_dc** (int) - connection bus of the VSC
+
+        **r_ohm** (float) - resistance of the coupling transformer component of VSC
+
+        **x_ohm** (float) - reactance of the coupling transformer component of VSC
+
+        **r_dc_ohm** (float) - resistance of the internal dc resistance component of VSC
+
+        **pl_dc_mw** (float) - no-load losses of the VSC on the DC side for the shunt R representing the no load losses
+
+        **control_mode_ac** (string) - the control mode of the ac side of the VSC. it could be "vm_pu" or "q_mvar"
+
+        **control_value_ac** (float) - the value of the controlled parameter at the ac bus in "p.u." or "MVAr"
+
+        **control_mode_dc** (string) - the control mode of the dc side of the VSC. it could be "vm_pu" or "p_mw"
+
+        **control_value_dc** (float) - the value of the controlled parameter at the dc bus in "p.u." or "MW"
+
+    OPTIONAL:
+        **name** (list of strs, None) - element name
+
+        **controllable** (bool, True) - whether the element is considered as actively controlling or
+            as a fixed voltage source connected via shunt impedance
+
+        **in_service** (bool, True) - True for in_service or False for out of service
+
+        **index** (int, None) - Force a specified ID if it is available. If None, the
+            index one higher than the highest already existing index is selected.
+
+    OUTPUT:
+        **index** (int) - The unique ID of the created ssc
+
+    """
+
+    _check_element(net, bus)
+    _check_element(net, bus_dc_plus, "bus_dc")
+    _check_element(net, bus_dc_minus, "bus_dc")
+
+    index = _get_index_with_check(net, "b2b_vsc", index)
+
+    entries = dict(zip([
+        "name", "bus", "bus_dc_plus", "bus_dc_minus", "r_ohm", "x_ohm", "r_dc_ohm", "pl_dc_mw", "control_mode_ac",
+        "control_value_ac", "control_mode_dc", "control_value_dc", "controllable", "in_service"],
+        [name, bus, bus_dc_plus, bus_dc_minus, r_ohm, x_ohm, r_dc_ohm, pl_dc_mw, control_mode_ac, control_value_ac,
+         control_mode_dc, control_value_dc, controllable, in_service]))
+    _set_entries(net, "b2b_vsc", index, **entries, **kwargs)
 
     return index
 
