@@ -1,6 +1,7 @@
 import numbers
 import numpy as np
 
+from pandapower import create_gen
 from pandapower.control.basic_controller import Controller
 from pandapower.auxiliary import _detect_read_write_flag, read_from_net, write_to_net
 
@@ -73,6 +74,8 @@ class BinarySearchControl(Controller):
         # normalize the values distribution:
         self.output_values_distribution = np.array(output_values_distribution, dtype=np.float64) / np.sum(
             output_values_distribution)
+        if self.output_element == "gen":
+            self.check_gen_at_same_bus(net)
         self.set_point = set_point
         self.voltage_ctrl = voltage_ctrl
         self.bus_idx = bus_idx
@@ -175,6 +178,27 @@ class BinarySearchControl(Controller):
     def control_step(self, net):
         self._binarysearchcontrol_step(net)
 
+    def check_gen_at_same_bus(self, net):
+        if len(self.output_element_index) == 1:
+            return
+        if not net.gen.loc[self.output_element_index, "bus"].is_unique:
+            bus_series = net.gen.loc[self.output_element_index, "bus"]
+            non_unique_indices = bus_series[bus_series.duplicated(keep=False)].index.tolist()
+            duplicated_buses = bus_series[bus_series.duplicated(keep=False)]
+
+            # Gruppen von Indizes zu den Duplikaten erstellen
+            duplicated_gen_groups = duplicated_buses.groupby(duplicated_buses).apply(lambda x: x.index.tolist())
+            self.generate_replacement_gen(net, duplicated_gen_groups)
+            print("test")
+
+    def generate_replacement_gen(self, net, duplicated_gen_groups):
+        for bus_number, indices in duplicated_gen_groups.items():
+            net.gen.loc[indices, "in_service"] = False
+            temp_gen = create_gen(net, bus_number, net.gen.loc[indices, "p_mw"].sum(), net.gen.loc[indices[0], "vm_pu"])
+            self.output_element_index = [temp_gen]
+            self.output_element_in_service = [True]
+            self.output_values_distribution = np.array([1.0])
+
     def _binarysearchcontrol_step(self, net):
         if not self.in_service:
             return
@@ -184,7 +208,7 @@ class BinarySearchControl(Controller):
             step_diff = self.diff - self.diff_old
             x = self.output_values - self.diff * (self.output_values - self.output_values_old) / np.where(
                 step_diff == 0, 1e-6, step_diff)
-            x = x * self.output_values_distribution if isinstance(x, numbers.Number) else sum(
+            x = x * self.output_values_distribution if isinstance(x, numbers.Number) or type(x) else sum(
                 x) * self.output_values_distribution
             self.output_values_old, self.output_values = self.output_values, x
 
