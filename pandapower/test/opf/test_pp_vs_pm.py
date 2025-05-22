@@ -78,6 +78,7 @@ def test_case5_pm_pd2ppc():
     net = case5_pm_matfile_i()
     # run pd2ppc with ext_grid controllable = False
     runpp(net)
+    net.ext_grid = net.ext_grid.drop(columns=['controllable'])
     assert "controllable" not in net.ext_grid
     net["_options"]["mode"] = "opf"
     ppc = _pd2ppc(net)

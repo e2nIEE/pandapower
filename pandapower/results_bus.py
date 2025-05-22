@@ -528,12 +528,25 @@ def _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq):
         step = s["step"]
         v_ratio = (ppc["bus"][sidx, BASE_KV] / net["shunt"]["vn_kv"].values) ** 2
         u_shunt = np.nan_to_num(u_shunt)
-        p_shunt = u_shunt ** 2 * net["shunt"]["p_mw"].values * shunt_is * v_ratio * step
+        use_step_table = False
+        if "step_dependency_table" in s:
+            if any(s.step_dependency_table):
+                use_step_table = True
+        if use_step_table:
+            merged_df = s.merge(net.shunt_characteristic_table, left_on=['id_characteristic_table', 'step'],
+                                right_on=['id_characteristic', 'step'], how='left', suffixes=('', '_char'))
+            p_shunt_step = np.where(merged_df['step_dependency_table'], merged_df['p_mw_char'].values/merged_df['step'].values, merged_df['p_mw'].values).astype(np.float64)
+            q_shunt_step = np.where(merged_df['step_dependency_table'], merged_df['q_mvar_char'].values/merged_df['step'].values, merged_df['q_mvar'].values).astype(np.float64)
+            print(f"p_shunt_step dtype: {p_shunt_step.dtype}, q_shunt_step dtype: {q_shunt_step.dtype}")
+        else:
+            p_shunt_step = net["shunt"]["p_mw"].values
+            q_shunt_step = net["shunt"]["q_mvar"].values
+        p_shunt = u_shunt ** 2 * p_shunt_step * shunt_is * v_ratio * step
         net["res_shunt"]["p_mw"].values[:] = p_shunt
         p = np.hstack([p, p_shunt])
         if ac:
             net["res_shunt"]["vm_pu"].values[:] = u_shunt
-            q_shunt = u_shunt ** 2 * net["shunt"]["q_mvar"].values * shunt_is * v_ratio * step
+            q_shunt = u_shunt ** 2 * q_shunt_step * shunt_is * v_ratio * step
             net["res_shunt"]["q_mvar"].values[:] = q_shunt
             q = np.hstack([q, q_shunt])
         b = np.hstack([b, s["bus"].values])
