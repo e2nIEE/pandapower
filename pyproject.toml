@@ -15,7 +15,7 @@ maintainers = [
 ]
 description = "An easy to use open source tool for power system modeling, analysis and optimization with a high degree of automation."
 readme = "README.rst"
-license-file = ["LICENSE", "AUTHORS"]
+license-files = ["LICENSE", "AUTHORS"]
 requires-python = ">=3.9"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
