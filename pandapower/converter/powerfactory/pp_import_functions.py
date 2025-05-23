@@ -371,7 +371,14 @@ def add_additional_attributes(item, net, element, element_id, attr_list=None, at
     """
     if attr_dict is None:
         attr_dict = {k: k for k in attr_list}
-
+    
+    # if attr_list is not None:
+    #     for attr_l in attr_list:
+    #         if attr_l in attr_dict:
+    #             continue
+    #         else:
+    #             attr_dict[attr_l] = attr_l
+                
     for attr in attr_dict.keys():
         if '.' in attr:
             # go in the object chain of a.b.c.d until finally get the chr_name
@@ -1729,6 +1736,7 @@ def create_pp_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
         try:
             params.update(ask(item, pf_variable_p_loads, dict_net=dict_net,
                               variables=('p_mw', 'sn_mva')))
+            # 'chr_name'
         except Exception as err:
             logger.error("m:P:bus1 and m:Q:bus1 should be used with ElmLodlv")
             logger.error('While creating load %s, error occurred for '
