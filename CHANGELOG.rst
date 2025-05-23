@@ -37,7 +37,6 @@ Change Log
 
 [3.0.0] - 2025-03-06
 -------------------------------
-
 - [ADDED] cim2pp converter - extract measurements for load, sgen, gen, shunt, ext_grid, ward and xward elements
 - [ADDED] cim2pp converter - extract 'Terminal' and 'description' Analog fields in net.measurement
 - [FIXED] cim2pp converter - removed nan rows in net.measurement
