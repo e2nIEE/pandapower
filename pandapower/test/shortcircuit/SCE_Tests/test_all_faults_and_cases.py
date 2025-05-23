@@ -133,28 +133,32 @@ def get_columns_to_check(fault):
 
 # Define common parameters
 faults = ["LLL", "LL", "LG", "LLG"]
-# faults = ["LLL"]
+# faults = ["LG"]
 cases = ["max", "min"]
-# cases = ["min"]
+# cases = ["max"]
 values = [(0.0, 0.0), (5.0, 5.0)]
 # values = [(0.0, 0.0)]
-net_names = ["test_case_1_four_bus_radial_grid", "test_case_2_five_bus_radial_grid_dyn", "test_case_3_five_bus_meshed_grid_dyn"]
+net_names = ["test_case_1_four_bus_radial_grid", "test_case_2_five_bus_radial_grid", "test_case_3_five_bus_meshed_grid"]
 # net_names = ["test_case_2_five_bus_radial_grid"]
+vector_groups = ['Dyn','Yyn','YNyn']
+# vector_groups = ["Yy", "Yyn","Yd","YNy","YNyn","YNd","Dy","Dyn","Dd"]
+# vector_groups = ['Dyn']
 
 # Create parameter list
 parametrize_values = [
-    (fault, case, r_fault, x_fault, net_name)
+    (fault, case, r_fault, x_fault, net_name, vector_group)
     for fault in faults
     for case in cases
     for r_fault, x_fault in values
     for net_name in net_names
+    for vector_group in vector_groups
 ]
-@pytest.mark.parametrize("fault, case, r_fault_ohm, x_fault_ohm, net_name", parametrize_values)
-def test_all_faults_and_cases_with_fault_impedance(fault, case, r_fault_ohm, x_fault_ohm, net_name):
+@pytest.mark.parametrize("fault, case, r_fault_ohm, x_fault_ohm, net_name, vector_group", parametrize_values)
+def test_all_faults_and_cases_with_fault_impedance(fault, case, r_fault_ohm, x_fault_ohm, net_name, vector_group):
+    if net_name != "test_case_1_four_bus_radial_grid":
+        net_name += "_" + vector_group.lower()
+
     net = from_json(os.path.join(testfiles_path, "test_grids", net_name + ".json"))
-    # net = from_json(os.path.abspath(str(testfiles_path)) + "test_grids" + net_name + ".json")
-    #TODO respect all vector group
-    # vector_groups = ['Dyn','Yyn','YNyn']
 
     excel_file = os.path.join(testfiles_path, "sc_result_comparison", net_name + "_pf_sc_results_all_cases.xlsx")
     dataframes = load_pf_results(excel_file)

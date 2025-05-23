@@ -32,7 +32,7 @@ def motor_net():
                                 endtemp_degree=80)
     return net
 
-
+# TODO fix test by adding new comparison values from 2016 standard
 def test_motor_min(motor_net):
     net = motor_net
     calc_sc(net, case="min")
