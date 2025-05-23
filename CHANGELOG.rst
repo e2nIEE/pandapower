@@ -33,6 +33,7 @@ Change Log
 - [ADDED] ucte2pp: consider G&B values in impedances
 - [ADDED] cim2pp: add normalSections for shunts at CIM100 and removed old schema
 - [ADDED] cim2pp: add DCLine component to cim16 and cim100 datastructures
+- [FIXED] cim2pp: fix deprecation warning in cim_classes.py and fix bug in measurements
 
 [3.0.0] - 2025-03-06
 -------------------------------
