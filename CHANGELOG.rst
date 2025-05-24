@@ -3,6 +3,8 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [REMOVED] kwargs in basic controller class
+- [ADDED] name attribute in basic controller class
 - [ADDED] pf2pp converter - import of shunt characteristic tables
 - [ADDED] pf2pp conversion by considering tap dependent impedance
 - [FIXED] cim2pp converter - set sgen 'controllable' flag as False when converting energySources to avoid ValueError when executing create_sgen

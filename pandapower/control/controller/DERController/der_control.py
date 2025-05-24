@@ -126,8 +126,8 @@ class DERController(PQController):
                          profile_scale=profile_scale, in_service=in_service,
                          ts_absolute=ts_absolute, initial_run=True,
                          drop_same_existing_ctrl=drop_same_existing_ctrl,
-                         matching_params=matching_params, initial_powerflow=False,
-                         order=order, level=level, **kwargs)
+                         matching_params=matching_params, 
+                         order=order, level=level, **kwargs) 
 
         # --- init DER Model params
         self.q_model = q_model

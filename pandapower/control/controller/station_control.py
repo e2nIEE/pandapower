@@ -58,7 +58,7 @@ class BinarySearchControl(Controller):
                  drop_same_existing_ctrl=False, matching_params=None, **kwargs):
         super().__init__(net, in_service=in_service, order=order, level=level,
                          drop_same_existing_ctrl=drop_same_existing_ctrl,
-                         matching_params=matching_params, **kwargs)
+                         matching_params=matching_params) 
         self.in_service = ctrl_in_service
         self.input_element = input_element
         self.input_element_index = []
@@ -86,6 +86,11 @@ class BinarySearchControl(Controller):
         self.overwrite_covergence = False
         self.write_flag, self.output_variable = _detect_read_write_flag(net, output_element, output_element_index,
                                                                         output_variable)
+        
+        # write kwargs in self
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+        
         self.read_flag = []
         self.input_variable = []
         self.input_element_in_service = []
