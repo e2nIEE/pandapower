@@ -52,6 +52,7 @@ jobs:
         with:
           repository-url: https://test.pypi.org/legacy/
           verbose: true
+          skip-existing: true
         #run: |
         #  python3 -m build
         #  python3 -m twine check dist/* --strict
