@@ -50,7 +50,7 @@ jobs:
         if: ${{ inputs.upload_server == 'testpypi' }}
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          repository-url: https://test.pypi.org/p/pandapower/
+          repository-url: https://test.pypi.org/legacy/
         #run: |
         #  python3 -m build
         #  python3 -m twine check dist/* --strict
