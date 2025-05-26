@@ -22,6 +22,10 @@ jobs:
   upload:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
@@ -39,37 +43,46 @@ jobs:
           python3 -m pip install --upgrade pip
           # Install twine
           python3 -m pip install build setuptools wheel twine
+          python3 -m build
 
       # Upload to TestPyPI
       - name: Build and Upload to TestPyPI
         if: ${{ inputs.upload_server == 'testpypi' }}
-        run: |
-          python3 -m build
-          python3 -m twine check dist/* --strict
-          python3 -m twine upload dist/*
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.TESTPYPI }}
-          TWINE_REPOSITORY: testpypi
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          verbose: true
+          skip-existing: true
+        #run: |
+        #  python3 -m build
+        #  python3 -m twine check dist/* --strict
+        #  python3 -m twine upload dist/*
+        #env:
+        #  TWINE_USERNAME: __token__
+        #  TWINE_PASSWORD: ${{ secrets.TESTPYPI }}
+        #  TWINE_REPOSITORY: testpypi
 
       # Upload to PyPI
       - name: Build and Upload to PyPI
         if: ${{ inputs.upload_server == 'pypi' }}
-        run: |
-          python3 -m build
-          python3 -m twine check dist/* --strict 
-          python3 -m twine upload dist/*
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI }}
-          TWINE_REPOSITORY: pypi
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://pypi.org/p/pandapower/
+        #run: |
+        #  python3 -m build
+        #  python3 -m twine check dist/* --strict
+        #  python3 -m twine upload dist/*
+        #env:
+        #  TWINE_USERNAME: __token__
+        #  TWINE_PASSWORD: ${{ secrets.PYPI }}
+        #  TWINE_REPOSITORY: pypi
 
       # Waste some time
-      - name: Sleep for 150s to make release available
-        if: ${{ inputs.upload_server == 'pypi' }}
-        uses: juliangruber/sleep-action@v1
-        with:
-          time: 150s
+      #- name: Sleep for 150s to make release available
+      #  if: ${{ inputs.upload_server == 'pypi' }}
+      #  uses: juliangruber/sleep-action@v1
+      #  with:
+      #    time: 150s
 
       # Notify fraunhofer ci about the new version
       - uses: eic/trigger-gitlab-ci@v3
