@@ -27,12 +27,11 @@ class CreateMeasurements:
         if pp_type not in self.net.keys():
             self.logger.warning("Missing pandapower type %s in the pandapower network!" % pp_type)
             return
-        start_index_pp_net = self.net[pp_type].index.size
-        self.net[pp_type] = pd.concat([self.net[pp_type], pd.DataFrame(None, index=[list(range(input_df.index.size))])],
+        if input_df.empty:
+            return
+        self.net[pp_type] = pd.concat([self.net[pp_type],
+                                      input_df[list(set(self.net[pp_type].columns).intersection(input_df.columns))]],
                                       ignore_index=True, sort=False)
-        for one_attr in self.net[pp_type].columns:
-            if one_attr in input_df.columns:
-                self.net[pp_type].loc[start_index_pp_net:, one_attr] = input_df[one_attr][:]
 
     def create_measurements_from_analog(self):
         self.logger.info("------------------------- Creating measurements from Analog -------------------------")
