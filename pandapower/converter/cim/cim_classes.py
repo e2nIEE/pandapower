@@ -549,8 +549,10 @@ class CimParser:
         else:
             for ele, df in prf_content.items():
                 if ele not in output[prf].keys():
-                    output[prf][ele] = pd.DataFrame()
-                output[prf][ele] = pd.concat([output[prf][ele], prf_content[ele]], ignore_index=True, sort=False)
+                    concat_list = [prf_content[ele]]
+                else:
+                    concat_list = [output[prf][ele], prf_content[ele]]
+                output[prf][ele] = pd.concat(concat_list, ignore_index=True, sort=False)
 
     def _check_file(self, file: str) -> bool:
         if not os.path.isfile(file):

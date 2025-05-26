@@ -3,6 +3,13 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+
+[3.1.0] - 2025-05-26
+-------------------------------
+- [FIXED] URL for digital attestation
+
+[3.1.0] - 2025-05-26
+-------------------------------
 - [ADDED] pf2pp converter - import of shunt characteristic tables
 - [ADDED] pf2pp conversion by considering tap dependent impedance
 - [FIXED] cim2pp converter - set sgen 'controllable' flag as False when converting energySources to avoid ValueError when executing create_sgen
@@ -30,8 +37,10 @@ Change Log
 - [FIXED] cim2pp: refactor cim2pp test
 - [FIXED] cim2pp: manage crash when importing not supported dy profile
 - [ADDED] cim2pp: add tests for short circuit parameters
+- [ADDED] ucte2pp: consider G&B values in impedances
 - [ADDED] cim2pp: add normalSections for shunts at CIM100 and removed old schema
 - [ADDED] cim2pp: add DCLine component to cim16 and cim100 datastructures
+- [FIXED] cim2pp: fix deprecation warning in cim_classes.py and fix bug in measurements
 
 [3.0.0] - 2025-03-06
 -------------------------------

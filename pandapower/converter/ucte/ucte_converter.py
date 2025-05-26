@@ -334,6 +334,10 @@ class UCTE2pandapower:
         impedances["rtf_pu"] = impedances["r"] / impedances["z_ohm"]
         impedances["xft_pu"] = impedances["x"] / impedances["z_ohm"]
         impedances["xtf_pu"] = impedances["x"] / impedances["z_ohm"]
+        impedances["gf_pu"] = impedances["g"] / impedances["z_ohm"]
+        impedances["gt_pu"] = impedances["g"] / impedances["z_ohm"]
+        impedances["bf_pu"] = impedances["b"] / impedances["z_ohm"]
+        impedances["bt_pu"] = impedances["b"] / impedances["z_ohm"]
         self._fill_empty_names(impedances)
         self._copy_to_pp("impedance", impedances)
         self.logger.info("Finished converting the impedances.")
