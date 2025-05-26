@@ -3,6 +3,13 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+
+[3.1.0] - 2025-05-26
+-------------------------------
+- [FIXED] URL for digital attestation
+
+[3.1.0] - 2025-05-26
+-------------------------------
 - [ADDED] pf2pp converter - import of shunt characteristic tables
 - [ADDED] pf2pp conversion by considering tap dependent impedance
 - [FIXED] cim2pp converter - set sgen 'controllable' flag as False when converting energySources to avoid ValueError when executing create_sgen
