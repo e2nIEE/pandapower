@@ -154,7 +154,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
     for vector_group, trafos in trafo_df.groupby("vector_group"):
         # TODO Roman: check this/expand this
         ppc_idx = trafos["_ppc_idx"].values.astype(np.int64)
-
+        # vector groups without "N" have no impact on the LG
         if vector_group.lower() in ["yy", "yd", "dy", "dd"]:
             continue
 
@@ -172,9 +172,10 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
         if "vkr0_percent" not in trafos:
             raise ValueError("Real part of short circuit voltage Vk0(Real) needs to be specified for transformer "
                              "modelling \n Try : net.trafo[\"vkr0_percent\"] = net.trafo[\"vkr_percent\"]")
-        vkr0_percent = trafos["vkr0_percent"].values.astype(float) if \
-            trafos["vkr0_percent"].values.astype(float).all() != 0. else \
-            trafos["vkr_percent"].values.astype(float)
+        # vkr0_percent = trafos["vkr0_percent"].values.astype(float) if \
+        #     trafos["vkr0_percent"].values.astype(float).all() != 0. else \
+        #    trafos["vkr_percent"].values.astype(float)
+        vkr0_percent = trafos["vkr0_percent"].values.astype(float)
         lv_buses = trafos["lv_bus"].values.astype(np.int64)
         hv_buses = trafos["hv_bus"].values.astype(np.int64)
         lv_buses_ppc = bus_lookup[lv_buses]
@@ -230,7 +231,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
             tap_lv = np.square(vn_trafo_lv / vn_bus_lv) * (3 * net.sn_mva)
             tap_hv = np.square(vn_trafo_hv / vn_bus_hv) * (3 * net.sn_mva)
 
-        tap_corr = tap_hv if vector_group.lower() in ("ynd", "yny", "Dyn") else tap_lv
+        tap_corr = tap_hv if vector_group.lower() in ("ynd", "yny", "dyn", "yyn") else tap_lv
         # tap_corr = tap_lv
         z_sc = vk0_percent / 100. / sn_trafo_mva * tap_corr
         r_sc = vkr0_percent / 100. / sn_trafo_mva * tap_corr

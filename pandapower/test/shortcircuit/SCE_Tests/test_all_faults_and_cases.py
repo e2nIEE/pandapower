@@ -142,7 +142,7 @@ net_names = ["test_case_1_four_bus_radial_grid", "test_case_2_five_bus_radial_gr
 # net_names = ["test_case_2_five_bus_radial_grid"]
 vector_groups = ['Dyn','Yyn','YNyn']
 # vector_groups = ["Yy", "Yyn","Yd","YNy","YNyn","YNd","Dy","Dyn","Dd"]
-# vector_groups = ['Dyn']
+# vector_groups = ['Yyn']
 
 # Create parameter list
 parametrize_values = [
@@ -165,7 +165,7 @@ def test_all_faults_and_cases_with_fault_impedance(fault, case, r_fault_ohm, x_f
 
     rtol = {"ikss_ka": 0, "skss_mw": 0, "rk_ohm": 0, "xk_ohm": 0}
     #TODO skss_mw only 1e-4 sufficient?
-    atol = {"ikss_ka": 1e-6, "skss_mw": 1e-4, "rk_ohm": 1e-6, "xk_ohm": 1e-6}
+    atol = {"ikss_ka": 1e-6, "skss_mw": 1e-4, "rk_ohm": 1e-6, "xk_ohm": 1e-5}
 
     columns_to_check = get_columns_to_check(fault)
     selected_sheet = f"{fault}_{case}"

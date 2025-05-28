@@ -16,7 +16,7 @@ import os
 from pandapower import pp_dir
 
 # net_name = "test_case_1_four_bus_radial_grid.json"
-net_name = "test_case_2_five_bus_radial_grid_Dyn.json"
+net_name = "test_case_2_five_bus_radial_grid_Yyn.json"
 # net_name = "test_case_3_five_bus_meshed_grid_Dyn.json"
 # net_name = "test_trafo_simple.json"
 
