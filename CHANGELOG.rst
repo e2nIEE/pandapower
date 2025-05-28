@@ -3,10 +3,10 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [FIXED] pf2pp converter - corrected consideration of line temperature during import
 - [ADDED] pf2pp converter - import of shunt characteristic tables
-- [ADDED] pf2pp conversion by considering tap dependent impedance
+- [ADDED] pf2pp converter - considering tap dependent impedance
 - [FIXED] cim2pp converter - set sgen 'controllable' flag as False when converting energySources to avoid ValueError when executing create_sgen
-- [ADDED] PF2PP conversion by considering tap dependent impedance
 - [ADDED] pf2pp converter - added columns `origin_id` in multiple equipment (ext_net, coup, load, (s)gen, shunts, zpu, vac, svc)
 - [FIXED] pf2pp converter - trafo characteristic: Fixed tap changer type and included an if-clause that removes the zero sequence components in measurement report (for now)
 - [FIXED] corrected implementation of tap changer at star point with tap changer tables
