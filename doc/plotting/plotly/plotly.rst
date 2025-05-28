@@ -26,4 +26,3 @@ If a network has geocoordinates, there is a possibility to represent interactive
 
     built-in_plots
     create_traces
-    geo_data_to_latlong
