@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [ADDED] possibility to directly compare "geo" columns of dataframes (not assume geojson strings)
 
 [3.1.0] - 2025-05-26
 -------------------------------
