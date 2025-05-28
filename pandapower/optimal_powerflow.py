@@ -37,8 +37,8 @@ def _optimal_powerflow(net, verbose, suppress_warnings, **kwargs):
         kwargs["OPF_FLOW_LIM"] = 2
 
     if net["_options"]["voltage_depend_loads"] and not (
-            allclose(net.load.const_z_percent.values, 0) and
-            allclose(net.load.const_i_percent.values, 0)):
+            allclose(net.load.const_z_p_percent.values, 0) and
+            allclose(net.load.const_i_p_percent.values, 0)):
         logger.error("pandapower optimal_powerflow does not support voltage depend loads.")
 
     ppopt = ppoption(VERBOSE=verbose, PF_DC=not ac, INIT=init, **kwargs)
