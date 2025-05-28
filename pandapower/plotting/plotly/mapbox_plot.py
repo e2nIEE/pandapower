@@ -10,10 +10,7 @@ from typing_extensions import deprecated
 
 from pandapower.plotting.geo import convert_crs
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 logger = logging.getLogger(__name__)
 
 

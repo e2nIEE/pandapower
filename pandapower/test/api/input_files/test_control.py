@@ -5,10 +5,7 @@
 
 from pandapower.control.controller.const_control import ConstControl as ConstController
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 

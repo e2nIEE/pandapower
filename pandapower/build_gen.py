@@ -18,10 +18,7 @@ from pandapower.pypower.idx_ssc import SSC_BUS, SSC_SET_VM_PU, SSC_CONTROLLABLE
 from pandapower.pypower.idx_vsc import VSC_MODE_AC, VSC_BUS, VSC_VALUE_AC, VSC_CONTROLLABLE, VSC_MODE_AC_V, \
     VSC_MODE_AC_SL
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 

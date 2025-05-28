@@ -4,10 +4,7 @@ from pandapower.grid_equivalents.auxiliary import drop_internal_branch_elements,
 import pandas as pd
 import numpy as np
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 from pandapower.create import create_shunt, create_impedance, create_switch, create_ward, create_xward
 from pandapower.toolbox.grid_modification import drop_buses

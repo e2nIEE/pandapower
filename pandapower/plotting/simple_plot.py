@@ -18,10 +18,7 @@ from pandapower.plotting.collections import create_bus_collection, create_line_c
     create_gen_collection, create_load_collection, create_dcline_collection, create_vsc_collection
 from pandapower.plotting.generic_geodata import create_generic_coordinates
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 

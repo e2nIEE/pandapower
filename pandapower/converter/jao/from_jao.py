@@ -18,10 +18,7 @@ from pandapower.topology import create_nxgraph, connected_components
 from pandapower.plotting import set_line_geodata_from_bus_geodata
 from pandapower.toolbox import drop_buses, fuse_buses
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 

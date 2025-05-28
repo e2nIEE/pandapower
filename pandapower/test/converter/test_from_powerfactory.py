@@ -10,10 +10,7 @@ from pandapower.converter.powerfactory.export_pfd_to_pp import import_project, f
 from pandapower import pp_dir
 from pandapower.file_io import from_json
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 

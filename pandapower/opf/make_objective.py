@@ -11,10 +11,7 @@ from numpy import zeros, array, int64
 from pandapower.pypower.idx_cost import MODEL, NCOST, COST, PW_LINEAR, POLYNOMIAL
 from pandapower.pypower.idx_gen import PMIN, PMAX
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 

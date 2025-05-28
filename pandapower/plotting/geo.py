@@ -20,10 +20,7 @@ from numpy import array
 from pandapower.auxiliary import soft_dependency_error, pandapowerNet
 
 # get logger (same as in simple_plot)
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 

@@ -13,10 +13,7 @@ from packaging.version import Version
 from pandapower._version import __version__
 from pandapower.auxiliary import ets_to_element_types
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 

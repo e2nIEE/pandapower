@@ -11,10 +11,7 @@ from pandapower.create import create_empty_network, create_bus, create_transform
     create_ext_grid, create_gen, create_poly_cost
 from pandapower.run import runopp
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 

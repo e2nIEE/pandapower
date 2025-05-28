@@ -11,10 +11,7 @@ from scipy.io import savemat
 
 from pandapower.converter.pypower import to_ppc
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 

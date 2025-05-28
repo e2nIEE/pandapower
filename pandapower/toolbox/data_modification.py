@@ -14,10 +14,7 @@ from pandapower.create import create_empty_network
 from pandapower.toolbox.comparison import compare_arrays
 from pandapower.toolbox.element_selection import element_bus_tuples, pp_elements
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 

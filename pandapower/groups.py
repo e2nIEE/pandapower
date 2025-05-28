@@ -18,10 +18,7 @@ from pandapower.toolbox.element_selection import branch_element_bus_dict, elemen
     pp_elements, get_connected_elements_dict
 from pandapower.toolbox.result_info import res_power_columns
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 

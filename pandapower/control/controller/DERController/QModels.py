@@ -9,10 +9,7 @@ from pandapower.auxiliary import ensure_iterability
 from pandapower.control.controller.DERController.DERBasics import BaseModel, QVCurve, \
     CosphiVCurve, CosphiPCurve
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 

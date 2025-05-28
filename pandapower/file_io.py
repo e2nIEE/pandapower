@@ -36,10 +36,7 @@ from pandapower.io_utils import to_dict_with_coord_transform, to_dict_of_dfs, PP
     get_raw_data_from_pickle, transform_net_with_df_and_geo, check_net_version, from_dict_of_dfs, decrypt_string, \
     PPJSONDecoder
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 

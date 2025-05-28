@@ -25,10 +25,7 @@ from pandapower.pypower.bustypes import bustypes
 from pandapower.run import _passed_runpp_parameters
 from pandapower.results import _copy_results_ppci_to_ppc, _extract_results_3ph,\
     init_results
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 logger = logging.getLogger(__name__)
 
 

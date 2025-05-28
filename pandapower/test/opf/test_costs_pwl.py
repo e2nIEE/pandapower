@@ -11,10 +11,7 @@ from pandapower.create import create_empty_network, create_bus, create_gen, crea
     create_line_from_parameters, create_pwl_cost, create_sgen
 from pandapower.run import runopp
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 
 def test_cost_piecewise_linear_gen():

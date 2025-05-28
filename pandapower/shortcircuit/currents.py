@@ -17,10 +17,7 @@ from pandapower.pypower.idx_bus_sc import C_MIN, C_MAX, KAPPA, R_EQUIV, IKSS1, I
     PHI_IKSS1_DEGREE, PHI_IKSS2_DEGREE, PHI_IKCV_DEGREE
 from pandapower.shortcircuit.impedance import _calc_zbus_diag
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 

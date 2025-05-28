@@ -17,10 +17,7 @@ from pandapower.pypower.idx_ssc import SSC_X_CONTROL_VM, SSC_X_CONTROL_VA, SSC_Q
 from pandapower.pypower.idx_svc import SVC_THYRISTOR_FIRING_ANGLE, SVC_Q, SVC_X_PU
 from pandapower.pypower.idx_vsc import VSC_Q, VSC_P, VSC_P_DC, VSC_BUS_DC, VSC_INTERNAL_BUS_DC, VSC_INTERNAL_BUS
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 

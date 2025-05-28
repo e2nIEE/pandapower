@@ -10,10 +10,7 @@ from pandapower.create import create_empty_network, create_bus, create_line, cre
     create_load_from_cosphi, create_sgen, create_storage
 from pandapower.std_types import create_std_type
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 logger = logging.getLogger(__name__)
 
 

@@ -17,10 +17,7 @@ from pandapower.estimation.ppc_conversion import pp2eppci, _initialize_voltage
 from pandapower.estimation.results import eppci2pp
 from pandapower.estimation.util import set_bb_switch_impedance, reset_bb_switch_impedance
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 std_logger = logging.getLogger(__name__)
 
 ALGORITHM_MAPPING = {'wls': WLSAlgorithm,

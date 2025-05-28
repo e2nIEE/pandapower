@@ -6,10 +6,7 @@
 from pandapower.auxiliary import _detect_read_write_flag, write_to_net
 from pandapower.control.basic_controller import Controller
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 

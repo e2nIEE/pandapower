@@ -10,10 +10,7 @@ import numpy as np
 
 from pandapower import create_impedance, create_switch
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 

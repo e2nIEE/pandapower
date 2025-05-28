@@ -33,10 +33,7 @@ from pandapower.estimation.idx_brch import (P_FROM, P_FROM_IDX, P_FROM_STD,
                                             IA_TO, IA_TO_IDX, IA_TO_STD,
                                             branch_cols_se)
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 std_logger = logging.getLogger(__name__)
 ZERO_INJECTION_STD_DEV = 0.001
 

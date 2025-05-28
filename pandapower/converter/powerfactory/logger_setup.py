@@ -1,9 +1,6 @@
 from logging import StreamHandler, Formatter
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 
 class AppHandler(StreamHandler):

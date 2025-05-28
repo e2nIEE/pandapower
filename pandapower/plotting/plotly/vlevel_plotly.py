@@ -13,10 +13,7 @@ from pandapower.plotting.plotly.get_colors import get_plotly_color_palette
 from pandapower.plotting.plotly.mapbox_plot import geo_data_to_latlong
 from pandapower.topology import create_nxgraph, connected_components
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 logger = logging.getLogger(__name__)
 
 

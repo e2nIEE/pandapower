@@ -21,10 +21,7 @@ from pandapower.results import reset_results
 from pandapower.std_types import add_basic_std_types, load_std_type
 import numpy as np
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 

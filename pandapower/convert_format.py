@@ -14,10 +14,7 @@ from pandapower.results import reset_results
 from pandapower.control import TrafoController
 from pandapower.plotting.geo import convert_geodata_to_geojson
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 

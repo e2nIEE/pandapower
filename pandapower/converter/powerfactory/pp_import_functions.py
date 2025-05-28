@@ -30,10 +30,7 @@ from pandapower.control.util.auxiliary import create_q_capability_curve_characte
 from pandapower.control.util.characteristic import SplineCharacteristic
 
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
