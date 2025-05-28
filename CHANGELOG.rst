@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [FIXED] corrected create_continuous_elements_index to consider trafo_characteristic_tables correctly
 - [ADDED] pf2pp converter - import of shunt characteristic tables
 - [ADDED] pf2pp conversion by considering tap dependent impedance
 - [FIXED] cim2pp converter - set sgen 'controllable' flag as False when converting energySources to avoid ValueError when executing create_sgen

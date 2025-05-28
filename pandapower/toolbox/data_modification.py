@@ -334,9 +334,18 @@ def reindex_elements(net, element_type, new_indices=None, old_indices=None, look
                                                                               element_in_cost_df], lookup)
 
     # --- adapt tap_characteristic
-    if element_type ==  "trafo":
+    combined_characteristic_id = pd.concat(
+        [net["trafo"]["id_characteristic_table"], net["trafo3w"]["id_characteristic_table"]]).dropna()
+    trafo_characteristic_id_lookup = \
+        {value: index for index, value in enumerate(sorted(combined_characteristic_id.unique()))}
+    if element_type == "trafo":
         if "trafo_characteristic_table" in net and  "id_characteristic" in net["trafo_characteristic_table"]:
-            net["trafo_characteristic_table"]["id_characteristic"] = net["trafo_characteristic_table"]["id_characteristic"].map(lookup)
+            net["trafo_characteristic_table"]["id_characteristic"] = (
+                net["trafo_characteristic_table"]["id_characteristic"].map(trafo_characteristic_id_lookup))
+            net["trafo"]["id_characteristic_table"] = (
+                net["trafo"]["id_characteristic_table"].map(trafo_characteristic_id_lookup))
+            net["trafo3w"]["id_characteristic_table"] = (
+                net["trafo3w"]["id_characteristic_table"].map(trafo_characteristic_id_lookup))
 
 def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
     """
