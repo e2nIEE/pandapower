@@ -160,15 +160,15 @@ def copy_with_impedance(net):
 def test_vsc_hvdc():
     net = create_empty_network()
     # AC part
-    create_buses(net, 3, 110)
+    create_buses(net, 3, 110, geodata=[(0, 0), (100, 0), (200, 0)])
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
     create_line_from_parameters(net, 0, 2, 30, 0.0487, 0.13823, 160, 0.664)
     create_ext_grid(net, 0)
     create_load(net, 2, 10, 5)
 
     # DC part
-    create_bus_dc(net, 110, 'A')
-    create_bus_dc(net, 110, 'B')
+    create_bus_dc(net, 110, 'A', geodata=(100, 10))
+    create_bus_dc(net, 110, 'B', geodata=(200, 10))
 
     create_line_dc_from_parameters(net, 0, 1, 100, 0.1, 1)
 
@@ -1043,12 +1043,14 @@ def test_simple_vsc_hvdc():
 def test_simple_2vsc_hvdc1():
     # np.set_printoptions(linewidth=1000, suppress=True, precision=3)
     net = create_empty_network()
+
     # AC part
-    create_buses(net, 3, 110, geodata=[(0, 0), (100, 0), (200, 0)])
+    create_buses(net, 4, 110, geodata=[(0, 0), (100, 0), (200, 0), (300, 0)])
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
-    create_line_from_parameters(net, 1, 2, 30, 0.0487, 0.13823, 160, 0.664)
+    create_line_from_parameters(net, 2, 3, 30, 0.0487, 0.13823, 160, 0.664)
+    # create_line_from_parameters(net, 1, 2, 30, 0.0487, 0.13823, 160, 0.664)
     create_ext_grid(net, 0)
-    create_load(net, 1, 10, q_mvar=5)
+    create_load(net, 3, 10, q_mvar=5)
 
     # DC part
     create_bus_dc(net, 110, 'A', geodata=(100, 10))  # 0
@@ -1060,27 +1062,19 @@ def test_simple_2vsc_hvdc1():
     create_line_dc(net, 0, 1, 100, std_type="2400-CU")
     create_line_dc(net, 2, 3, 100, std_type="2400-CU")
 
-    #create_vsc(net, 1, 0, 0.1, 5, 0.15,
-    #           control_mode_ac='vm_pu', control_value_ac=1,
-    #           control_mode_dc="p_mw", control_value_dc=10)
-    #create_vsc(net, 1, 2, 0.1, 5, 0.15,
-    #           control_mode_ac='vm_pu', control_value_ac=1,
-    #           control_mode_dc="p_mw", control_value_dc=10)
-    create_b2b_vsc(net, 1, 0, 2, 0.2, 10, 0.3,
-                   control_mode_ac='vm_pu', control_value_ac=1, control_mode_dc="p_mw", control_value_dc=10)
+    create_vsc(net, 1, 0, 0.1, 5, 0.15,
+               control_mode_ac='vm_pu', control_value_ac=1.,
+               control_mode_dc="vm_pu", control_value_dc=1.02)
+    create_vsc(net, 1, 2, 0.1, 5, 0.15,
+               control_mode_ac='vm_pu', control_value_ac=1.,
+               control_mode_dc="vm_pu", control_value_dc=1.02)
 
-    #create_vsc(net, 2, 1, 0.1, 5, 0.15,
-    #           control_mode_ac='vm_pu', control_value_ac=1,
-    #           control_mode_dc="vm_pu", control_value_dc=1.02)
-    #create_vsc(net, 2, 3, 0.1, 5, 0.15,
-    #           control_mode_ac='vm_pu', control_value_ac=1,
-    #           control_mode_dc="vm_pu", control_value_dc=1.02)
-    create_b2b_vsc(net, 2, 1, 3, 0.2, 10, 0.3,
-                   control_mode_ac='vm_pu', control_value_ac=1, control_mode_dc="vm_pu", control_value_dc=1.02)
-    try:
-        runpp(net)
-    except LoadflowNotConverged:
-        pass
+    create_vsc(net, 2, 1, 0.1, 5, 0.15,
+               control_mode_ac='slack', control_value_ac=1.,
+               control_mode_dc="p_mw", control_value_dc=-5)
+    create_vsc(net, 2, 3, 0.1, 5, 0.15,
+               control_mode_ac='slack', control_value_ac=1.,
+               control_mode_dc="p_mw", control_value_dc=5.007)
 
     runpp_with_consistency_checks(net)
 
