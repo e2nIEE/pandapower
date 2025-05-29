@@ -5066,7 +5066,7 @@ def create_vsc(net, bus, bus_dc, r_ohm, x_ohm, r_dc_ohm, pl_dc_mw=0., control_mo
 
         **pl_dc_mw** (float) - no-load losses of the VSC on the DC side for the shunt R representing the no load losses
 
-        **control_mode_ac** (string) - the control mode of the ac side of the VSC. it could be "vm_pu" or "q_mvar"
+        **control_mode_ac** (string) - the control mode of the ac side of the VSC. it could be "vm_pu", "q_mvar" or "slack"
 
         **control_value_ac** (float) - the value of the controlled parameter at the ac bus in "p.u." or "MVAr"
 
