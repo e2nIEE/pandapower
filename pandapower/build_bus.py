@@ -882,13 +882,15 @@ def _build_vsc_ppc(net, ppc, mode):
         raise NotImplementedError("VSC element only supports the following control modes for AC side: vm_pu, q_mvar")
 
     if np.any(~np.isin(mode_dc, ["vm_pu", "p_mw"])):
-        raise NotImplementedError("VSC element only supports the following control modes for AC side: vm_pu, q_mvar")
+        raise NotImplementedError("VSC element only supports the following control modes for DC side: vm_pu, q_mvar")
 
+    # check ac mode
     mode_ac_code = np.where(mode_ac == "vm_pu", VSC_MODE_AC_V,
                             np.where(mode_ac == "q_mvar", VSC_MODE_AC_Q, VSC_MODE_AC_SL))
     vsc[f:t, VSC_MODE_AC] = mode_ac_code
     vsc[f:t, VSC_VALUE_AC] = np.where((mode_ac_code == VSC_MODE_AC_V) | (mode_ac_code == VSC_MODE_AC_SL),
                                       value_ac, value_ac / baseMVA)
+
     mode_dc_code = np.where(mode_dc == "vm_pu", VSC_MODE_DC_V, VSC_MODE_DC_P)
     vsc[f:t, VSC_MODE_DC] = mode_dc_code
     vsc[f:t, VSC_VALUE_DC] = np.where(mode_dc == "vm_pu", value_dc, value_dc / baseMVA)
