@@ -1257,7 +1257,7 @@ def _clean_up(net, res=True):
         naming_scheme = 'b2b_' + np.repeat(indices, 2).astype(str) + np.tile(['+', '-'], len(indices))
         vsc_idx = net.vsc[net.vsc['name'].isin(naming_scheme)]
         # drop the vsc's
-        net.vsc.drop(vsc_idx, axis=1, inplace=True)
+        net.vsc.drop(vsc_idx.index, axis=0, inplace=True)
 
 
 def _set_isolated_buses_out_of_service(net, ppc):
@@ -1730,7 +1730,8 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
     default_max_iteration = {"nr": 10, "iwamoto_nr": 10, "bfsw": 100, "gs": 10000, "fdxb": 30,
                              "fdbx": 30}
     with_facts = net.svc.in_service.any() or net.tcsc.in_service.any() or \
-                 net.ssc.in_service.any() or net.vsc.in_service.any()
+                 net.ssc.in_service.any() or net.vsc.in_service.any() or \
+                 net.b2b_vsc.in_service.any()
 
     if with_facts and algorithm != "nr":
         if algorithm != 'nr':
