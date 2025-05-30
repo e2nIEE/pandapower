@@ -162,7 +162,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
     net_internal, net_external = _get_internal_and_external_nets(
         net, boundary_buses, all_internal_buses, all_external_buses,
         show_computing_time, calc_volt_angles=calc_volt_angles, runpp_fct=runpp_fct, **kwargs)
-    if "trafo_characteristic_table" in net_internal:
+    if net_internal is not None and "trafo_characteristic_table" in net_internal:
         net_internal.trafo_characteristic_table = net_internal.trafo_characteristic_table[
             ~net_internal.trafo_characteristic_table.id_characteristic.isin(net_external.trafo.id_characteristic_table)
         ]
