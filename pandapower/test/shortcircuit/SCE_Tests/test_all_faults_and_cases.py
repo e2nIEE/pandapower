@@ -3,15 +3,19 @@
 # Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-import pandas as pd
-import numpy as np
-from pandapower.shortcircuit.calc_sc import calc_sc
-from pandapower.file_io import from_json
-import pytest
-import re
+from itertools import product
+from re import match
 import copy
 import os
+
+import pytest
+import pandas as pd
+import numpy as np
+
+from pandapower.shortcircuit.calc_sc import calc_sc
+from pandapower.file_io import from_json
 from pandapower import pp_dir
+
 testfiles_path = os.path.join(pp_dir, 'test', 'shortcircuit', 'sce_tests')
 
 
@@ -23,19 +27,16 @@ def check_pattern(pattern):
     for 'rk', 'xk', 'ikss', and 'skss' types. It returns a standardized identifier if a match is found
     or returns the original pattern if no match is found.
 
-    Parameters:
-    pattern (str): The input pattern to check.
-
-    Returns:
-    str: A standardized identifier ('rk_ohm', 'xk_ohm', 'ikss_a_ka', 'skss_a_mw') or the original pattern.
+    :param str pattern: The input pattern to check.
+    :returns str: A standardized identifier ('rk_ohm', 'xk_ohm', 'ikss_a_ka', 'skss_a_mw') or the original pattern.
     """
-    if re.match(r"^rk[0-2]?_ohm$", pattern):
+    if match(r"^rk[0-2]?_ohm$", pattern):
         return "rk_ohm"
-    elif re.match(r"^xk[0-2]?_ohm$", pattern):
+    elif match(r"^xk[0-2]?_ohm$", pattern):
         return "xk_ohm"
-    elif re.match(r"^ikss_[abc]_ka$", pattern):  # Matches ikss_a_ka, ikss_b_ka, ikss_c_ka
+    elif match(r"^ikss_[abc]_ka$", pattern):  # Matches ikss_a_ka, ikss_b_ka, ikss_c_ka
         return "ikss_ka"
-    elif re.match(r"^skss_[abc]_mw$", pattern):  # Matches skss_a_mw, skss_b_mw, skss_c_mw
+    elif match(r"^skss_[abc]_mw$", pattern):  # Matches skss_a_mw, skss_b_mw, skss_c_mw
         return "skss_mw"
     else:
         return pattern
@@ -46,13 +47,11 @@ def modify_impedance_values_with_fault_value(selected_results, r_ohm, x_ohm):
     Modifies the impedance values in a DataFrame by subtracting r_ohm from rk columns
     and x_ohm from xk columns.
 
-    Parameters:
-    selected_results (pd.DataFrame): The input DataFrame containing impedance values.
-    r_ohm (float): The value to be subtracted from the rk columns.
-    x_ohm (float): The value to be subtracted from the xk columns.
+    :param pd.DataFrame selected_results: The input DataFrame containing impedance values.
+    :param float r_ohm: The value to be subtracted from the rk columns.
+    :param float x_ohm: The value to be subtracted from the xk columns.
 
-    Returns:
-    pd.DataFrame: The modified DataFrame with adjusted values.
+    :returns pd.DataFrame: The modified DataFrame with adjusted values.
     """
     # Create a deep copy of the input DataFrame
     copy_selected_results = copy.deepcopy(selected_results)
@@ -102,7 +101,6 @@ def load_pf_results(excel_file):
         elif sheet.startswith("LG_"):
             fault_type = "LG"
 
-
         relevant_columns = columns_mapping[fault_type]
         pf_results = pf_results[relevant_columns]
         if fault_type == 'LLL' or fault_type == 'LL':
@@ -140,21 +138,16 @@ values = [(0.0, 0.0), (5.0, 5.0)]
 # values = [(0.0, 0.0)]
 net_names = ["test_case_1_four_bus_radial_grid", "test_case_2_five_bus_radial_grid", "test_case_3_five_bus_meshed_grid"]
 # net_names = ["test_case_2_five_bus_radial_grid"]
-vector_groups = ['Dyn','Yyn','YNyn']
+vector_groups = ['Dyn', 'Yyn', 'YNyn']
 # vector_groups = ["Yy", "Yyn","Yd","YNy","YNyn","YNd","Dy","Dyn","Dd"]
 # vector_groups = ['Dyn']
 
 # Create parameter list
-parametrize_values = [
-    (fault, case, r_fault, x_fault, net_name, vector_group)
-    for fault in faults
-    for case in cases
-    for r_fault, x_fault in values
-    for net_name in net_names
-    for vector_group in vector_groups
-]
-@pytest.mark.parametrize("fault, case, r_fault_ohm, x_fault_ohm, net_name, vector_group", parametrize_values)
-def test_all_faults_and_cases_with_fault_impedance(fault, case, r_fault_ohm, x_fault_ohm, net_name, vector_group):
+parametrize_values = product(faults, cases, values, net_names, vector_groups)
+
+@pytest.mark.parametrize("fault, case, fault_values, net_name, vector_group", parametrize_values)
+def test_all_faults_and_cases_with_fault_impedance(fault, case, fault_values, net_name, vector_group):
+    r_fault_ohm, x_fault_ohm = fault_values
     if net_name != "test_case_1_four_bus_radial_grid":
         net_name += "_" + vector_group.lower()
 
@@ -164,7 +157,7 @@ def test_all_faults_and_cases_with_fault_impedance(fault, case, r_fault_ohm, x_f
     dataframes = load_pf_results(excel_file)
 
     rtol = {"ikss_ka": 0, "skss_mw": 0, "rk_ohm": 0, "xk_ohm": 0}
-    #TODO skss_mw only 1e-4 sufficient?
+    # TODO skss_mw only 1e-4 sufficient?
     atol = {"ikss_ka": 1e-6, "skss_mw": 1e-4, "rk_ohm": 1e-6, "xk_ohm": 1e-6}
 
     columns_to_check = get_columns_to_check(fault)
@@ -174,21 +167,21 @@ def test_all_faults_and_cases_with_fault_impedance(fault, case, r_fault_ohm, x_f
 
     selected_pf_results = dataframes[selected_sheet]
     modified_pf_results = modify_impedance_values_with_fault_value(selected_pf_results, r_fault_ohm, x_fault_ohm)
+    modified_pf_results.sort_values(by='name', inplace=True)
 
-    calc_sc(net, fault=fault, case=case, branch_results=True, return_all_currents=True, ip=False, r_fault_ohm=r_fault_ohm, x_fault_ohm=x_fault_ohm)
+    calc_sc(net, fault=fault, case=case, branch_results=True, return_all_currents=True, ip=False,
+            r_fault_ohm=r_fault_ohm, x_fault_ohm=x_fault_ohm)
 
-    net.res_bus_sc["name"] = net.bus.name
-    net.res_bus_sc = net.res_bus_sc[['name'] + [col for col in net.res_bus_sc.columns if col != 'name']]
+    net.res_bus_sc.insert(0, "name", net.bus.name)
     net.res_bus_sc.sort_values(by='name', inplace=True)
 
-    for bus in net.bus.name:
-        for column in columns_to_check:
-            column_ar = check_pattern(column)
-            assert np.isclose(
-                net.res_bus_sc.loc[net.bus.name == bus, column].values[0],
-                modified_pf_results.loc[modified_pf_results.name == bus, column].values[0],
-                rtol=rtol[column_ar], atol=atol[column_ar]
-            )
+    for column in columns_to_check:
+        column_ar = check_pattern(column)
+        assert np.isclose(
+            net.res_bus_sc.loc[:, column],
+            modified_pf_results.loc[:, column],
+            rtol=rtol[column_ar], atol=atol[column_ar]
+        ).all()
 
 
 if __name__ == "__main__":
