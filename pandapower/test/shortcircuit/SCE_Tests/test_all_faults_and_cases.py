@@ -27,6 +27,14 @@ parametrize_values = [
     for case in cases
     for r_fault, x_fault in values]
 
+# Create parameter list with vector group
+parametrize_values_vector = [
+    (fault, case, r_fault, x_fault, vector_group)
+    for fault in faults
+    for case in cases
+    for r_fault, x_fault in values
+    for vector_group in vector_groups]
+
 
 @pytest.mark.parametrize("fault, case, r_fault_ohm, x_fault_ohm", parametrize_values)
 def test_four_bus_radial_grid_all_faults_and_cases_with_fault_impedance(fault, case, r_fault_ohm, x_fault_ohm):
@@ -36,17 +44,7 @@ def test_four_bus_radial_grid_all_faults_and_cases_with_fault_impedance(fault, c
     dataframes = load_pf_results(excel_file)
     run_test_cases(net, dataframes, fault, case, r_fault_ohm, x_fault_ohm)
 
-
-# Create parameter list
-parametrize_values = [
-    (fault, case, r_fault, x_fault, vector_group)
-    for fault in faults
-    for case in cases
-    for r_fault, x_fault in values
-    for vector_group in vector_groups]
-
-
-@pytest.mark.parametrize("fault, case, r_fault_ohm, x_fault_ohm, vector_group", parametrize_values)
+@pytest.mark.parametrize("fault, case, r_fault_ohm, x_fault_ohm, vector_group", parametrize_values_vector)
 def test_five_bus_radial_grid_all_faults_and_cases_with_fault_impedance(fault, case, r_fault_ohm, x_fault_ohm, vector_group):
     net_name = "test_case_2_five_bus_radial_grid"
     net_name += "_" + vector_group.lower()
@@ -55,7 +53,7 @@ def test_five_bus_radial_grid_all_faults_and_cases_with_fault_impedance(fault, c
     dataframes = load_pf_results(excel_file)
     run_test_cases(net, dataframes, fault, case, r_fault_ohm, x_fault_ohm)
 
-@pytest.mark.parametrize("fault, case, r_fault_ohm, x_fault_ohm, vector_group", parametrize_values)
+@pytest.mark.parametrize("fault, case, r_fault_ohm, x_fault_ohm, vector_group", parametrize_values_vector)
 def test_five_bus_meshed_grid_all_faults_and_cases_with_fault_impedance(fault, case, r_fault_ohm, x_fault_ohm, vector_group):
     net_name = "test_case_3_five_bus_meshed_grid"
     net_name += "_" + vector_group.lower()
