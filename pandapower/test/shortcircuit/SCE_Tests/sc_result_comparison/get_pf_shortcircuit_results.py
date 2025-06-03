@@ -160,8 +160,8 @@ def get_pf_sc_branch_results(app, fault_type='lll', calc_mode='max', fault_imped
             if fault_type == 'lll':
                 line_data["pf_vm_from_pu"] = from_bus.GetAttribute("m:u1")
                 line_data["pf_vm_to_pu"] = to_bus.GetAttribute("m:u1")
-                line_data["pf_va_from_degree"] = from_bus.GetAttribute("m:phiui")
-                line_data["pf_va_to_degree"] = to_bus.GetAttribute("m:phiui")
+                line_data["pf_va_from_degree"] = from_bus.GetAttribute("m:phiu")
+                line_data["pf_va_to_degree"] = to_bus.GetAttribute("m:phiu")
             else:
                 line_data["pf_vm_a_from_pu"] = from_bus.GetAttribute("m:ul:A")
                 line_data["pf_vm_b_from_pu"] = from_bus.GetAttribute("m:ul:B")
@@ -169,12 +169,12 @@ def get_pf_sc_branch_results(app, fault_type='lll', calc_mode='max', fault_imped
                 line_data["pf_vm_a_to_pu"] = to_bus.GetAttribute("m:ul:A")
                 line_data["pf_vm_b_to_pu"] = to_bus.GetAttribute("m:ul:B")
                 line_data["pf_vm_c_to_pu"] = to_bus.GetAttribute("m:ul:C")
-                line_data["pf_va_a_from_degree"] = from_bus.GetAttribute("m:phiul:A")
-                line_data["pf_va_b_from_degree"] = from_bus.GetAttribute("m:phiul:B")
-                line_data["pf_va_c_from_degree"] = from_bus.GetAttribute("m:phiul:C")
-                line_data["pf_va_a_to_degree"] = to_bus.GetAttribute("m:phiul:A")
-                line_data["pf_va_b_to_degree"] = to_bus.GetAttribute("m:phiul:B")
-                line_data["pf_va_c_to_degree"] = to_bus.GetAttribute("m:phiul:C")
+                line_data["pf_va_a_from_degree"] = from_bus.GetAttribute("m:phiu:A")
+                line_data["pf_va_b_from_degree"] = from_bus.GetAttribute("m:phiu:B")
+                line_data["pf_va_c_from_degree"] = from_bus.GetAttribute("m:phiu:C")
+                line_data["pf_va_a_to_degree"] = to_bus.GetAttribute("m:phiu:A")
+                line_data["pf_va_b_to_degree"] = to_bus.GetAttribute("m:phiu:B")
+                line_data["pf_va_c_to_degree"] = to_bus.GetAttribute("m:phiu:C")
 
             line_results.append(line_data)
 
