@@ -105,8 +105,8 @@ def get_pf_sc_branch_results(app, fault_type='lll', calc_mode='max', fault_imped
         "pf_p_to_mw": "m:P:bus2",
         "pf_q_from_mvar": "m:Q:bus1",
         "pf_q_to_mvar": "m:Q:bus2",
-        "pf_ikss_from_deg": "n:phii:bus2",
-        "pf_ikss_to_deg": "m:phii:bus2"
+        "pf_ikss_from_degree": "n:phii:bus2",
+        "pf_ikss_to_degree": "m:phii:bus2"
     }
 
     result_variables_lines = {
@@ -128,18 +128,18 @@ def get_pf_sc_branch_results(app, fault_type='lll', calc_mode='max', fault_imped
         "pf_p_a_to_mw": "m:P:bus2:A",
         "pf_p_b_to_mw": "m:P:bus2:B",
         "pf_p_c_to_mw": "m:P:bus2:C",
-        "pf_q_a_from_mw": "m:Q:bus1:A",
-        "pf_q_b_from_mw": "m:Q:bus1:B",
-        "pf_q_c_from_mw": "m:Q:bus1:C",
-        "pf_q_a_to_mw": "m:Q:bus2:A",
-        "pf_q_b_to_mw": "m:Q:bus2:B",
-        "pf_q_c_to_mw": "m:Q:bus2:C",
-        "pf_ikss_a_from_deg": "n:phii:bus2:A",
-        "pf_ikss_b_from_deg": "n:phii:bus2:B",
-        "pf_ikss_c_from_deg": "n:phii:bus2:C",
-        "pf_ikss_a_to_deg": "m:phii:bus2:A",
-        "pf_ikss_b_to_deg": "m:phii:bus2:B",
-        "pf_ikss_c_to_deg": "m:phii:bus2:C"
+        "pf_q_a_from_mvar": "m:Q:bus1:A",
+        "pf_q_b_from_mvar": "m:Q:bus1:B",
+        "pf_q_c_from_mvar": "m:Q:bus1:C",
+        "pf_q_a_to_mvar": "m:Q:bus2:A",
+        "pf_q_b_to_mvar": "m:Q:bus2:B",
+        "pf_q_c_to_mvar": "m:Q:bus2:C",
+        "pf_ikss_a_from_degree": "n:phii:bus2:A",
+        "pf_ikss_b_from_degree": "n:phii:bus2:B",
+        "pf_ikss_c_from_degree": "n:phii:bus2:C",
+        "pf_ikss_a_to_degree": "m:phii:bus2:A",
+        "pf_ikss_b_to_degree": "m:phii:bus2:B",
+        "pf_ikss_c_to_degree": "m:phii:bus2:C"
     }
 
     if fault_type == 'lll':
@@ -160,21 +160,21 @@ def get_pf_sc_branch_results(app, fault_type='lll', calc_mode='max', fault_imped
             if fault_type == 'lll':
                 line_data["pf_vm_from_pu"] = from_bus.GetAttribute("m:u1")
                 line_data["pf_vm_to_pu"] = to_bus.GetAttribute("m:u1")
-                line_data["pf_va_from_deg"] = from_bus.GetAttribute("m:phiui")
-                line_data["pf_va_to_deg"] = to_bus.GetAttribute("m:phiui")
+                line_data["pf_va_from_degree"] = from_bus.GetAttribute("m:phiui")
+                line_data["pf_va_to_degree"] = to_bus.GetAttribute("m:phiui")
             else:
                 line_data["pf_vm_a_from_pu"] = from_bus.GetAttribute("m:ul:A")
-                line_data["pf_vm_b_from_bus_pu"] = from_bus.GetAttribute("m:ul:B")
-                line_data["pf_vm_c_from_bus_pu"] = from_bus.GetAttribute("m:ul:C")
-                line_data["pf_vm_a_to_bus_pu"] = to_bus.GetAttribute("m:ul:A")
-                line_data["pf_vm_b_to_bus_pu"] = to_bus.GetAttribute("m:ul:B")
-                line_data["pf_vm_c_to_bus_pu"] = to_bus.GetAttribute("m:ul:C")
-                line_data["pf_va_a_from_bus_deg"] = from_bus.GetAttribute("m:phiul:A")
-                line_data["pf_va_b_from_bus_deg"] = from_bus.GetAttribute("m:phiul:B")
-                line_data["pf_va_c_from_bus_deg"] = from_bus.GetAttribute("m:phiul:C")
-                line_data["pf_va_a_to_bus_deg"] = to_bus.GetAttribute("m:phiul:A")
-                line_data["pf_va_b_to_bus_deg"] = to_bus.GetAttribute("m:phiul:B")
-                line_data["pf_va_c_to_bus_deg"] = to_bus.GetAttribute("m:phiul:C")
+                line_data["pf_vm_b_from_pu"] = from_bus.GetAttribute("m:ul:B")
+                line_data["pf_vm_c_from_pu"] = from_bus.GetAttribute("m:ul:C")
+                line_data["pf_vm_a_to_pu"] = to_bus.GetAttribute("m:ul:A")
+                line_data["pf_vm_b_to_pu"] = to_bus.GetAttribute("m:ul:B")
+                line_data["pf_vm_c_to_pu"] = to_bus.GetAttribute("m:ul:C")
+                line_data["pf_va_a_from_degree"] = from_bus.GetAttribute("m:phiul:A")
+                line_data["pf_va_b_from_degree"] = from_bus.GetAttribute("m:phiul:B")
+                line_data["pf_va_c_from_degree"] = from_bus.GetAttribute("m:phiul:C")
+                line_data["pf_va_a_to_degree"] = to_bus.GetAttribute("m:phiul:A")
+                line_data["pf_va_b_to_degree"] = to_bus.GetAttribute("m:phiul:B")
+                line_data["pf_va_c_to_degree"] = to_bus.GetAttribute("m:phiul:C")
 
             line_results.append(line_data)
 
