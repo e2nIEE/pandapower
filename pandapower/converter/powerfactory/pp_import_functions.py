@@ -1998,7 +1998,7 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
         # create...
         pstac = item.c_pstac  # None if station controller is not available
         if pstac is not None and not pstac.outserv and export_ctrl:
-            if pstac.i_droop:
+            if pstac.i_droop and pstac.i_ctrl == 0:
                 av_mode = 'constv'
             else:
                 if pstac.i_ctrl == 0:
@@ -2019,6 +2019,18 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
         if av_mode == 'constv':
             logger.debug('av_mode: %s - creating as gen' % av_mode)
             params.vm_pu = item.usetp
+            if pstac is not None and not pstac.outserv and export_ctrl:
+                try:
+                    params.vm_pu = item.GetAttribute('m:u:bus1')
+                except AttributeError:
+                    print("Exception vm_pu not available! Outserv: ")
+                    print(item.GetFullName())
+                    print(item.outserv)
+                    print(pstac.outserv)
+                    if not pstac.uset_mode:
+                        params.vm_pu = pstac.usetp
+                    else:
+                        params.vm_pu = pstac.cpCtrlNode.vtarget  # Bus target voltage
             del params['q_mvar']
 
             # add reactive and active power limits
@@ -2035,6 +2047,15 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
                 element = "asymmetric_sgen"
             else:
                 # add reactive and active power limits
+                if pstac is not None and not pstac.outserv and export_ctrl:
+                    try:
+                        params['q_mvar'] = item.GetAttribute('m:Q:bus1')
+                    except AttributeError:
+                        print("Exception q_mvar not available! Outserv: ")
+                        print(item.GetFullName())
+                        print(item.outserv)
+                        print(pstac.outserv)
+                        pass
                 params.min_q_mvar = item.cQ_min
                 params.max_q_mvar = item.cQ_max
                 params.min_p_mw = item.Pmin_uc
@@ -2229,7 +2250,7 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
         pstac = item.c_pstac
         # None if station controller is not available
         if pstac is not None and not pstac.outserv and export_ctrl:
-            if pstac.i_droop:
+            if pstac.i_droop and pstac.i_ctrl == 0:
                 av_mode = 'constv'
             else:
                 i_ctrl = pstac.i_ctrl
@@ -2250,6 +2271,19 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
         if av_mode == 'constv':
             logger.debug('creating sym %s as gen' % name)
             vm_pu = item.usetp
+
+            if pstac is not None and not pstac.outserv and export_ctrl:
+                try:
+                    vm_pu = item.GetAttribute('m:u:bus1')
+                except AttributeError:
+                    print("Exception vm_pu not available! Outserv: ")
+                    print(item.GetFullName())
+                    print(item.outserv)
+                    print(pstac.outserv)
+                    if not pstac.uset_mode:
+                        vm_pu = pstac.usetp
+                    else:
+                        vm_pu = pstac.cpCtrlNode.vtarget  # Bus target voltage
             if item.iqtype == 1:
                 type = item.typ_id
                 sid = create_gen(net, bus=bus1, p_mw=p_mw, vm_pu=vm_pu,
@@ -2263,8 +2297,10 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
                                  name=name, type=cat, in_service=in_service, scaling=global_scaling)
             element = 'gen'
         elif av_mode == 'constq':
-            q_mvar = ngnum * item.qgini * multiplier
-            q_mvar = item.GetAttribute('m:Q:bus1') * multiplier
+            try:
+                q_mvar = item.GetAttribute('m:Q:bus1') * multiplier
+            except AttributeError:
+                q_mvar = ngnum * item.qgini * multiplier
             if item.iqtype == 1:
                 type = item.typ_id
                 sid = create_sgen(net, bus=bus1, p_mw=p_mw, q_mvar=q_mvar,
@@ -3758,7 +3794,7 @@ def create_stactrl(net, item):
 
     # Overwrite gen_type if local control differs from station controller type
     if control_mode is not None:
-        if item.i_droop:
+        if item.i_droop and control_mode == 0:
             for i in range(len(gen_types)):
                 gen_types[i] = "gen"
         else:
