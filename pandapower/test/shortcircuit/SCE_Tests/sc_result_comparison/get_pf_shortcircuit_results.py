@@ -19,10 +19,12 @@ except ImportError:
 
 
 ## functions to get short circuit results from powerfactory
-def get_pf_sc_bus_results(app, fault_type='lll', calc_mode='max', fault_impedance_rf=0, fault_impedance_xf=0):
+def get_pf_sc_bus_results(app, fault_type='lll', calc_mode='max', fault_impedance_rf=0, fault_impedance_xf=0,
+                          lv_tol_percent=10):
 
     res = run_short_circuit(app, fault_type=fault_type, calc_mode=calc_mode,
-                            fault_impedance_rf=fault_impedance_rf, fault_impedance_xf=fault_impedance_xf)
+                            fault_impedance_rf=fault_impedance_rf, fault_impedance_xf=fault_impedance_xf,
+                            lv_tol_percent=lv_tol_percent)
     if res == 1:
         raise UserWarning("short circuit results could not be calculated in powerfactory")
 
@@ -77,15 +79,20 @@ def get_pf_sc_bus_results(app, fault_type='lll', calc_mode='max', fault_impedanc
     return df_bus_results
 
 
-def get_pf_sc_line_results(app, fault_type='lll', calc_mode='max', fault_impedance_rf=0, fault_impedance_xf=0):
+def get_pf_sc_branch_results(app, fault_type='lll', calc_mode='max', fault_impedance_rf=0, fault_impedance_xf=0,
+                           lv_tol_percent=10):
 
     res = run_short_circuit(app, fault_type=fault_type, calc_mode=calc_mode,
-                            fault_impedance_rf=fault_impedance_rf, fault_impedance_xf=fault_impedance_xf)
+                            fault_impedance_rf=fault_impedance_rf, fault_impedance_xf=fault_impedance_xf,
+                            lv_tol_percent=lv_tol_percent)
     if res == 1:
         raise UserWarning("short circuit results could not be calculated in powerfactory")
 
     line_results = []
     line_elements = app.GetCalcRelevantObjects('*.ElmLne')
+
+    bus_results = []
+    bus_elements = app.GetCalcRelevantObjects('*.ElmTerm')
 
     result_variables_lines_3ph = {
         "pf_ikss_from_ka": "m:Ikss:bus1",
@@ -98,7 +105,8 @@ def get_pf_sc_line_results(app, fault_type='lll', calc_mode='max', fault_impedan
         "pf_p_to_mw": "m:P:bus2",
         "pf_q_from_mvar": "m:Q:bus1",
         "pf_q_to_mvar": "m:Q:bus2",
-        "pf_vm_pu": "m:u1"
+        "pf_ikss_from_deg": "n:phii:bus2",
+        "pf_ikss_to_deg": "m:phii:bus2"
     }
 
     result_variables_lines = {
@@ -126,18 +134,12 @@ def get_pf_sc_line_results(app, fault_type='lll', calc_mode='max', fault_impedan
         "pf_q_a_to_mw": "m:Q:bus2:A",
         "pf_q_b_to_mw": "m:Q:bus2:B",
         "pf_q_c_to_mw": "m:Q:bus2:C",
-        # "pf_vm_a_from_pu": "m:ul:bus1:A",
-        # "pf_vm_b_from_pu": "m:ul:bus1:B",
-        # "pf_vm_c_from_pu": "m:ul:bus1:C",
-        # "pf_vm_a_to_pu": "m:ul:bus2:A",
-        # "pf_vm_b_to_pu": "m:ul:bus2:B",
-        # "pf_vm_c_to_pu": "m:ul:bus2:C",
-        # "pf_va_a_from_degree": "m:phiul:bus1:A",
-        # "pf_va_b_from_degree": "m:phiul:bus1:B",
-        # "pf_va_c_from_degree": "m:phiul:bus1:C",
-        # "pf_va_a_to_degree": "m:phiul:bus2:A",
-        # "pf_va_b_to_degree": "m:phiul:bus2:B",
-        # "pf_va_c_to_degree": "m:phiul:bus2:C"
+        "pf_ikss_a_from_deg": "n:phii:bus2:A",
+        "pf_ikss_b_from_deg": "n:phii:bus2:B",
+        "pf_ikss_c_from_deg": "n:phii:bus2:C",
+        "pf_ikss_a_to_deg": "m:phii:bus2:A",
+        "pf_ikss_b_to_deg": "m:phii:bus2:B",
+        "pf_ikss_c_to_deg": "m:phii:bus2:C"
     }
 
     if fault_type == 'lll':
@@ -152,6 +154,28 @@ def get_pf_sc_line_results(app, fault_type='lll', calc_mode='max', fault_impedan
                 except Exception:
                     value = np.nan
                 line_data[col_name] = value
+            from_bus = line.bus1.cterm
+            to_bus = line.bus2.cterm
+
+            if fault_type == 'lll':
+                line_data["pf_vm_from_pu"] = from_bus.GetAttribute("m:u1")
+                line_data["pf_vm_to_pu"] = to_bus.GetAttribute("m:u1")
+                line_data["pf_va_from_deg"] = from_bus.GetAttribute("m:phiui")
+                line_data["pf_va_to_deg"] = to_bus.GetAttribute("m:phiui")
+            else:
+                line_data["pf_vm_a_from_pu"] = from_bus.GetAttribute("m:ul:A")
+                line_data["pf_vm_b_from_bus_pu"] = from_bus.GetAttribute("m:ul:B")
+                line_data["pf_vm_c_from_bus_pu"] = from_bus.GetAttribute("m:ul:C")
+                line_data["pf_vm_a_to_bus_pu"] = to_bus.GetAttribute("m:ul:A")
+                line_data["pf_vm_b_to_bus_pu"] = to_bus.GetAttribute("m:ul:B")
+                line_data["pf_vm_c_to_bus_pu"] = to_bus.GetAttribute("m:ul:C")
+                line_data["pf_va_a_from_bus_deg"] = from_bus.GetAttribute("m:phiul:A")
+                line_data["pf_va_b_from_bus_deg"] = from_bus.GetAttribute("m:phiul:B")
+                line_data["pf_va_c_from_bus_deg"] = from_bus.GetAttribute("m:phiul:C")
+                line_data["pf_va_a_to_bus_deg"] = to_bus.GetAttribute("m:phiul:A")
+                line_data["pf_va_b_to_bus_deg"] = to_bus.GetAttribute("m:phiul:B")
+                line_data["pf_va_c_to_bus_deg"] = to_bus.GetAttribute("m:phiul:C")
+
             line_results.append(line_data)
 
     df_line_results = pd.DataFrame(line_results)
@@ -160,57 +184,81 @@ def get_pf_sc_line_results(app, fault_type='lll', calc_mode='max', fault_impedan
 
 ##
 base_dir = os.getcwd()
-folder = os.path.join(base_dir, "pandapower", "test", "shortcircuit", "SCE_Tests", "test_grids")
+#folder = os.path.join(base_dir, "pandapower", "test", "shortcircuit", "SCE_Tests", "test_grids")
+folder = r"C:\Users\lriedl\PycharmProjects\pandapower\pandapower\test\shortcircuit\SCE_Tests\test_grids"
 pfd_files = [f for f in os.listdir(folder) if f.endswith(".pfd")]
 
-# for file in pfd_files:
-# #     proj_name = os.path.splitext(file)[0]
-proj_name = 'test_case_2_five_bus_radial_grid_ynyn'
-app = pf.GetApplication()
-app.ActivateProject(proj_name)
-active_project = app.GetActiveProject()
+for file in pfd_files:
+    proj_name = os.path.splitext(file)[0]
+    #proj_name = 'test_case_1_four_bus_radial_grid'
+    app = pf.GetApplication()
+    app.ActivateProject(proj_name)
+    active_project = app.GetActiveProject()
 
-# activate study case
-study_case_folder = active_project.GetContents("Study Cases")[0]
-study_cases = study_case_folder.GetContents()
-study_case = study_cases[0]
-study_case.Activate()
+    # activate study case
+    study_case_folder = active_project.GetContents("Study Cases")[0]
+    study_cases = study_case_folder.GetContents()
+    study_case = study_cases[0]
+    study_case.Activate()
 
 
-# get results for all fault types and cases and write to excel
-fault_types = ['lll', 'll', 'llg', 'lg']
-cases = ['max', 'min']
-fault_impedances = [(0, 0), (5, 5)]
-out_path = os.path.join(pp_dir, "test", "shortcircuit", "sce_tests", "sc_result_comparison",
-                             proj_name + '_pf_sc_results_all_cases.xlsx')
+    # get results for all fault types and cases and write to excel
+    fault_types = ['lll', 'll', 'llg', 'lg']
+    cases = ['max', 'min']
+    fault_impedances = [(0, 0), (5, 5)]
+    lv_tol_percents = [6, 10]
 
-with pd.ExcelWriter(out_path) as writer:
-    for fault_type in fault_types:
-        for case in cases:
-            for fault_impedance in fault_impedances:
-                df_bus = get_pf_sc_bus_results(
-                    app,
-                    fault_type=fault_type,
-                    calc_mode=case,
-                    fault_impedance_rf=fault_impedance[0],
-                    fault_impedance_xf=fault_impedance[1]
-                )
+    # bus results
+    out_path = os.path.join(pp_dir, "test", "shortcircuit", "sce_tests", "sc_result_comparison",
+                                 proj_name + '_pf_sc_results_bus.xlsx')
 
-                df_line = get_pf_sc_line_results(
-                    app,
-                    fault_type=fault_type,
-                    calc_mode=case,
-                    fault_impedance_rf=fault_impedance[0],
-                    fault_impedance_xf=fault_impedance[1]
-                )
+    with pd.ExcelWriter(out_path) as writer:
+        for fault_type in fault_types:
+            for case in cases:
+                for fault_impedance in fault_impedances:
+                    for lv_tol_percent in lv_tol_percents:
+                        df_bus = get_pf_sc_bus_results(
+                            app,
+                            fault_type=fault_type,
+                            calc_mode=case,
+                            fault_impedance_rf=fault_impedance[0],
+                            fault_impedance_xf=fault_impedance[1],
+                            lv_tol_percent=lv_tol_percent
+                        )
 
-                if fault_impedance[0] > 0:
-                    sheet_name_base = f"{fault_type.upper()}_{case}_fault"
-                else:
-                    sheet_name_base = f"{fault_type.upper()}_{case}"
-                sheet_name_base = sheet_name_base[:25]
-                df_bus.to_excel(writer, sheet_name=sheet_name_base, index=False)
-                df_line.to_excel(writer, sheet_name=sheet_name_base + "_branch", index=False)
+                        if fault_impedance[0] > 0:
+                            sheet_name_base = f"{fault_type.upper()}_{case}_fault"
+                        else:
+                            sheet_name_base = f"{fault_type.upper()}_{case}"
+                        sheet_name_base = f"{sheet_name_base}_{lv_tol_percent}"
+                        sheet_name_base = sheet_name_base[:25]
+                        df_bus.to_excel(writer, sheet_name=sheet_name_base, index=False)
+
+    # branch results
+    out_path = os.path.join(pp_dir, "test", "shortcircuit", "sce_tests", "sc_result_comparison",
+                                 proj_name + '_pf_sc_results_branch.xlsx')
+
+    with pd.ExcelWriter(out_path) as writer:
+        for fault_type in fault_types:
+            for case in cases:
+                for fault_impedance in fault_impedances:
+                    for lv_tol_percent in lv_tol_percents:
+
+                        df_line = get_pf_sc_branch_results(
+                            app,
+                            fault_type=fault_type,
+                            calc_mode=case,
+                            fault_impedance_rf=fault_impedance[0],
+                            fault_impedance_xf=fault_impedance[1],
+                            lv_tol_percent=lv_tol_percent
+                        )
+
+                        if fault_impedance[0] > 0:
+                            sheet_name_base = f"{fault_type.upper()}_{case}_fault"
+                        else:
+                            sheet_name_base = f"{fault_type.upper()}_{case}"
+                        sheet_name_base = f"{sheet_name_base}_{lv_tol_percent}"
+                        sheet_name_base = sheet_name_base[:25]
+                        df_line.to_excel(writer, sheet_name=sheet_name_base, index=False)
 
 ##
-

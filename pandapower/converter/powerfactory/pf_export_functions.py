@@ -283,7 +283,8 @@ def setup_project_power_exponent(prj, exponent):
         object.campexp = 'k'  # current kA
 
 
-def run_short_circuit(app, fault_type="lll", calc_mode="max", fault_impedance_rf=0, fault_impedance_xf=0):
+def run_short_circuit(app, fault_type="lll", calc_mode="max", fault_impedance_rf=0, fault_impedance_xf=0,
+                      lv_tol_percent=10):
     """
     Executes a short-circuit calculation in PowerFactory using IEC 60909 standard.
 
@@ -345,6 +346,9 @@ def run_short_circuit(app, fault_type="lll", calc_mode="max", fault_impedance_rf
     com_shc.Rf = fault_impedance_rf
     com_shc.Xf = fault_impedance_xf
 
+    # set lv_tol_percent
+    com_shc.i_lvtol = lv_tol_percent
+
     logger.info("---------------------------------------------------------------------------------")
     logger.info("PowerFactory short circuit settings:")
     logger.info(f"Method: IEC 60909 | Fault type: {fault_type} | Mode: {calc_mode}")
@@ -354,7 +358,7 @@ def run_short_circuit(app, fault_type="lll", calc_mode="max", fault_impedance_rf
     res = com_shc.Execute()
 
     if res != 0:
-        logger.error("short circuit calculation failed..")
+        logger.error("short circuit calculation failed.")
     else:
         logger.info("short circuit calculation succeeded.")
 
