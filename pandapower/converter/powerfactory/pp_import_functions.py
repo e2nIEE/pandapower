@@ -377,14 +377,14 @@ def add_additional_attributes(item, net, element, element_id, attr_list=None, at
     """
     if attr_dict is None:
         attr_dict = {k: k for k in attr_list}
-    
+
     if attr_list is not None:
         for attr_l in attr_list:
             if attr_l in attr_dict:
                 continue
             else:
                 attr_dict[attr_l] = attr_l
-                
+
     for attr in attr_dict.keys():
         if '.' in attr:
             # go in the object chain of a.b.c.d until finally get the chr_name
@@ -488,7 +488,7 @@ def create_pp_bus(net, item, flag_graphics, is_unbalanced):
     net[table].at[bid, "description"] = descr
     net[table].at[bid, "substat"] = substat_descr
     net[table].at[bid, "folder_id"] = item.fold_id.loc_name
-    
+
     attr_dict={"for_name": "equipment", "cimRdfId": "origin_id", "cpSite.loc_name": "site"}
     add_additional_attributes(item, net, table, bid, attr_dict=attr_dict,
                               attr_list=["sernum", "chr_name"])
@@ -2031,7 +2031,19 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
                     return
         if av_mode == 'constv':
             logger.debug('av_mode: %s - creating as gen' % av_mode)
-            params.vm_pu = item.usetp
+            #params.vm_pu = item.usetp
+            if pstac is not None and not pstac.outserv and export_ctrl:
+                try:
+                    params.vm_pu = item.GetAttribute('m:u:bus1')
+                except AttributeError:
+                    print("Exception vm_pu not available! Outserv: ")
+                    print(item.GetFullName())
+                    print(item.outserv)
+                    print(pstac.outserv)
+                    if not pstac.uset_mode:
+                        params.vm_pu = pstac.usetp
+                    else:
+                        params.vm_pu = pstac.cpCtrlNode.vtarget  # Bus target voltage
             del params['q_mvar']
 
             # add reactive and active power limits
@@ -2048,6 +2060,15 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
                 element = "asymmetric_sgen"
             else:
                 # add reactive and active power limits
+                if pstac is not None and not pstac.outserv and export_ctrl:
+                    try:
+                        params['q_mvar'] = item.GetAttribute('m:Q:bus1')
+                    except AttributeError:
+                        print("Exception q_mvar not available! Outserv: ")
+                        print(item.GetFullName())
+                        print(item.outserv)
+                        print(pstac.outserv)
+                        pass
                 params.min_q_mvar = item.cQ_min
                 params.max_q_mvar = item.cQ_max
                 params.min_p_mw = item.Pmin_uc
@@ -2266,6 +2287,18 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
         if av_mode == 'constv':
             logger.debug('creating sym %s as gen' % name)
             vm_pu = item.usetp
+            if pstac is not None and not pstac.outserv and export_ctrl:
+                try:
+                    vm_pu = item.GetAttribute('m:u:bus1')
+                except AttributeError:
+                    print("Exception vm_pu not available! Outserv: ")
+                    print(item.GetFullName())
+                    print(item.outserv)
+                    print(pstac.outserv)
+                    if not pstac.uset_mode:
+                        vm_pu = pstac.usetp
+                    else:
+                        vm_pu = pstac.cpCtrlNode.vtarget  # Bus target voltage
             if item.iqtype == 1:
                 type = item.typ_id
                 sid = create_gen(net, bus=bus1, p_mw=p_mw, vm_pu=vm_pu,
@@ -2279,7 +2312,10 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
                                  name=name, type=cat, in_service=in_service, scaling=global_scaling)
             element = 'gen'
         elif av_mode == 'constq':
-            q_mvar = ngnum * item.qgini * multiplier
+            try:
+                q_mvar = item.GetAttribute('m:Q:bus1') * multiplier
+            except AttributeError:
+                q_mvar = ngnum * item.qgini * multiplier
             if item.iqtype == 1:
                 type = item.typ_id
                 sid = create_sgen(net, bus=bus1, p_mw=p_mw, q_mvar=q_mvar,
@@ -2300,7 +2336,7 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
         logger.debug('created sgen at index <%s>' % sid)
 
     net[element].loc[sid, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    add_additional_attributes(item, net, element, sid, attr_dict={"for_name": "equipment", "cimRdfId": "origin_id", 
+    add_additional_attributes(item, net, element, sid, attr_dict={"for_name": "equipment", "cimRdfId": "origin_id",
                                                                   "cpSite.loc_name": "site"},
                                                       attr_list=["sernum", "chr_name"])
     if item.pQlimType and element != 'ext_grid':

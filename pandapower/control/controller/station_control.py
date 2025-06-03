@@ -1053,6 +1053,9 @@ class DroopControl(Controller):
 
     def is_converged(self, net):
         ###check convergence
+        self.in_service = net.controller.in_service[self.index]
+        if not self.in_service:
+            return True
         if self.modus != net.controller.at[self.controller_idx, 'object'].modus:#checking if droop and bsc have the same modus
             if (self.modus != 'PF_ctrl_P' and self.modus != 'PF_ctrl_V' and #here the droop is included in the string
                 (net.controller.at[self.controller_idx, 'object'].modus != True and self.modus != True)):#converting in process
