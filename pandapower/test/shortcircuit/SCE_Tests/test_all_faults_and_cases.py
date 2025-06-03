@@ -182,7 +182,7 @@ def modify_impedance_values_with_fault_value(selected_results, r_ohm, x_ohm):
 
 def load_pf_results(excel_file):
     """Load power flow results from Excel sheets."""
-    # TODO check all dropped columns --> Done :)
+    # TODO check all dropped columns
     sheets = [sheet for sheet in pd.ExcelFile(excel_file).sheet_names]
     dataframes = {}
 
