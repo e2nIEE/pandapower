@@ -437,8 +437,8 @@ def test_t1_iec60909_4():
     assert np.isclose(net.res_bus_sc.at[0, 'ikss_ka'], 1.587457, rtol=0, atol=1e-4)
     assert np.isclose(net.res_bus_sc.at[0, 'rk0_ohm'], 0.439059, rtol=0, atol=1e-4)
     assert np.isclose(net.res_bus_sc.at[0, 'xk0_ohm'], 79.340169, rtol=0, atol=1e-4)
-    assert np.isclose(net.res_bus_sc.at[0, 'rk_ohm'], 0.498795, rtol=0, atol=1e-4)
-    assert np.isclose(net.res_bus_sc.at[0, 'xk_ohm'], 26.336676, rtol=0, atol=1e-4)
+    assert np.isclose(net.res_bus_sc.at[0, 'rk1_ohm'], 0.498795, rtol=0, atol=1e-4)
+    assert np.isclose(net.res_bus_sc.at[0, 'xk1_ohm'], 26.336676, rtol=0, atol=1e-4)
 
 
 def test_lg_sn_mva_ext_grid():

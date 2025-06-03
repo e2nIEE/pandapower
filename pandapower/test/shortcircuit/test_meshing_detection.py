@@ -55,7 +55,7 @@ def test_max_6_meshed_grid(meshed_grid):
                        [5.871191, 14.90284, 4.44457, 4.077662, 13.60275,
                         2.709475, 1.163276, 1.464961, 1.707423, 1.505985], atol=1e-5)
 
-
+# TODO fix test by adding new comparison values from 2016 standard
 def test_min_10_meshed_grid(meshed_grid):
     net = meshed_grid
     calc_sc(net, case='min', ip=True, ith=True, lv_tol_percent=10., kappa_method="B")
@@ -71,7 +71,7 @@ def test_min_10_meshed_grid(meshed_grid):
                        [2.348476, 11.44622, 2.883161, 1.889675, 10.45195,
                         1.698768, 0.712725, 0.9026074, 1.057233, 0.9311316], atol=1e-5)
 
-
+# TODO fix test by adding new comparison values from 2016 standard
 def test_min_6_meshed_grid(meshed_grid):
     net = meshed_grid
     calc_sc(net, case='min', ip=True, ith=True, lv_tol_percent=6., kappa_method="B")

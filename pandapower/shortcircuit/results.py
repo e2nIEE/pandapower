@@ -75,6 +75,14 @@ def _calculate_branch_phase_results(ppc_0, ppc_1, ppc_2):
     i_ka_1 = ppc_1['branch'][:, [IKSS_F, IKSS_T]] * np.exp(1j * np.deg2rad(ppc_1['branch'][:, [IKSS_ANGLE_F, IKSS_ANGLE_T]].real))
     i_ka_2 = ppc_2['branch'][:, [IKSS_F, IKSS_T]] * np.exp(1j * np.deg2rad(ppc_2['branch'][:, [IKSS_ANGLE_F, IKSS_ANGLE_T]].real))
 
+    # TODO branch phase reuslts for all currents
+    """branch_lookup = net._pd2ppc_lookups["branch"]
+    ppc_0["internal"]["branch_ikss_f"] = np.nan_to_num(np.abs(ikss_all_f)) / baseI[fb, None]
+    ppc_0["internal"]["branch_ikss_t"] = np.nan_to_num(np.abs(ikss_all_t)) / baseI[tb, None]
+
+    ppc_0["internal"]["branch_ikss_angle_f"] = np.nan_to_num(np.angle(ikss_all_f, deg=True))
+    ppc_0["internal"]["branch_ikss_angle_t"] = np.nan_to_num(np.angle(ikss_all_t, deg=True))"""
+
     i_012_ka = np.stack([i_ka_0, i_ka_1, i_ka_2], 2)
     i_abc_ka = np.apply_along_axis(sequence_to_phase, 2, i_012_ka)
     # i_abc_ka = sequence_to_phase(np.vstack([i_ka_0, i_ka_1, i_ka_2]))
@@ -213,7 +221,8 @@ def _extract_results(net, ppc_0, ppc_1, ppc_2, bus):
        _calculate_bus_results_llg(ppc_0, ppc_1, ppc_2, bus, net)
     _get_bus_results(net, ppc_0, ppc_1, ppc_2, bus)
     if net._options["branch_results"]:
-        if net["_options"]["fault"] in ("LG", "LLG"): #LLG
+        # TODO check option return all current here
+        if (net["_options"]["fault"] in ("LG", "LLG")) & (~net["_options"]['return_all_currents']): #LLG
             v_abc_pu, i_abc_ka, s_abc_mva = _calculate_branch_phase_results(ppc_0, ppc_1, ppc_2)
             _get_line_lg_results(net, ppc_1, v_abc_pu, i_abc_ka, s_abc_mva)
             _get_trafo_lg_results(net, v_abc_pu, i_abc_ka, s_abc_mva)
