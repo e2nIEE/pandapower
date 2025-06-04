@@ -38,7 +38,7 @@ def convert_format(net, elements_to_deserialize=None, drop_invalid_geodata=True)
     _rename_columns(net, elements_to_deserialize)
     _add_missing_columns(net, elements_to_deserialize)
     _create_seperate_cost_tables(net, elements_to_deserialize)
-    if Version("3.0.0") <= Version(str(net.format_version)) < Version("3.1.2.dev0"):
+    if Version("3.0.0") <= Version(str(net.format_version)) < Version("3.1.2"):
         _replace_invalid_data(net, drop_invalid_geodata)
     if Version(str(net.format_version)) < Version("3.0.0"):
         _convert_geo_data(net, elements_to_deserialize, drop_invalid_geodata)
@@ -66,7 +66,10 @@ def convert_format(net, elements_to_deserialize=None, drop_invalid_geodata=True)
 
 def _replace_invalid_data(net, drop_invalid_geodata):
     for element in ['bus', 'bus_dc']:
-        geo_df = net[element]['geo'].dropna().apply(geojson.loads)
+        try:
+            geo_df = net[element]['geo'].dropna().apply(geojson.loads)
+        except TypeError:
+            geo_df = net[element]['geo'].dropna()
         for i, geo in geo_df.items():
             coords = geo['coordinates']
             if not drop_invalid_geodata and ((not _is_valid_number(coords[0])) | (not _is_valid_number(coords[1]))):
@@ -77,7 +80,10 @@ def _replace_invalid_data(net, drop_invalid_geodata):
                 logger.warning("bus geodata at index %s is invalid and replaced by None" % i)
 
     for element in ['line', 'line_dc']:
-        geo_df = net[element]['geo'].dropna().apply(geojson.loads)
+        try:
+            geo_df = net[element]['geo'].dropna().apply(geojson.loads)
+        except TypeError:
+            geo_df = net[element]['geo'].dropna()
         for i, geo in geo_df.items():
             for x, y in geo['coordinates']:
                 if not drop_invalid_geodata and ((not _is_valid_number(x)) | (not _is_valid_number(y))):
