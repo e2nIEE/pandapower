@@ -314,8 +314,8 @@ def load_pf_results(excel_file):
                                       'ikss_to_degree',
                                       'p_from_mw', 'q_from_mvar', 'p_to_mw', 'q_to_mvar',
                                       'vm_from_pu', 'va_from_degree', 'vm_to_pu', 'va_to_degree']
-                pf_results['ikss_ka'] = pf_results['ikss_to_ka']
-                pf_results['ikss_from_ka'] = pf_results['ikss_to_ka']
+                pf_results['ikss_ka'] = pf_results['ikss_to_ka']  # TODO: maybe only for LLL valid?
+                pf_results['ikss_from_ka'] = pf_results['ikss_to_ka']  # TODO: maybe only for LLL valid?
             elif fault_type == 'LLG' or fault_type == 'LG':
                 pf_results.columns = ['name', 'ikss_ka', 'ikss_a_from_ka', 'ikss_a_from_degree', 'ikss_a_to_ka',
                                       'ikss_a_to_degree',
