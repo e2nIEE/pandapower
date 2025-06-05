@@ -110,7 +110,7 @@ SplineCharacteristic
 
 Station Controller
 ==================
-The following controllers are used for the representation of station controllers as used in PowerFactory
+The following controllers are used for the representation of station controllers as used in PowerFactory.
 
 **********************
 Binary Search Control

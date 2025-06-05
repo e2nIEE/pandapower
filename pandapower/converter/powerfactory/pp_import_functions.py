@@ -1996,10 +1996,10 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
         pstac = item.c_pstac  # None if station controller is not available
         if pstac is not None and not pstac.outserv and export_ctrl:
             if pstac.i_droop:
-                av_mode = 'constq'
+                av_mode = 'constv'#'constq'
             else:
                 if pstac.i_ctrl == 0:
-                    av_mode = 'constq'#why? shouldnt it be constv? Only sgen element?
+                    av_mode = 'constv'#'constq'#why? shouldnt it be constv? Only sgen element?
                 elif pstac.i_ctrl == 1:
                     av_mode = 'constq'
                 elif pstac.i_ctrl == 2:
@@ -2233,7 +2233,7 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
             else:
                 i_ctrl = pstac.i_ctrl
                 if i_ctrl == 0:
-                    av_mode = 'constq'#why not constv? Ahh, only sgen implemented
+                    av_mode = 'constv'#'constq'#why not constv? Ahh, only sgen implemented
                 elif i_ctrl == 1:
                     av_mode = 'constq'
                 elif i_ctrl == 2:
@@ -3796,12 +3796,12 @@ def create_stactrl(net, item):
     if control_mode is not None:
         if item.i_droop:
             for i in range(len(gen_types)):
-                gen_types[i] = "sgen"
+                gen_types[i] = "gen"
         else:
-            if control_mode == 0:
+            if control_mode == 0: #V_ctrl
                 for i in range(len(gen_types)):
-                    gen_types[i] = "sgen"
-            elif control_mode == 1:
+                    gen_types[i] = "gen"
+            elif control_mode == 1: #Q_ctrl
                 for i in range(len(gen_types)):
                     gen_types[i] = "sgen"
             elif control_mode == 2: #PF
@@ -3815,7 +3815,7 @@ def create_stactrl(net, item):
 
     gen_element = gen_types[0]
     gen_element_index = []
-    if duplicated_sgen_names == False:
+    if not duplicated_sgen_names:
         for s in machines:
             gen_element_index.append(net[gen_element].loc[net[gen_element].name == s.loc_name].index.values[0])
     else:
@@ -3839,7 +3839,7 @@ def create_stactrl(net, item):
     ###getting distribution mode###
     gen_element_in_service = [net[gen_element].loc[net[gen_element].name == s.loc_name].in_service for s in machines]
     distribution_val = []
-    #if item.imode < 3: #import from pf without calculation #todo import or not
+    #if item.imode < 3: #import from pf without calculation
     #distribution_mode = 'imported' #simpler than handing over the values separately, also station controller handles cases differently
     if item.imode == 0:
         distribution_mode = 'rel_P' #according to active power
@@ -3849,7 +3849,8 @@ def create_stactrl(net, item):
         distribution_val = None
         counter = 0
         for s in machines:
-            if gen_types[counter] == 'sgen' and np.isnan(net.sgen.loc[gen_element_index[counter], 'sn_mva']):
+            if ((gen_types[counter] == 'sgen' or gen_types[counter] == 'gen')
+                    and np.isnan(net.sgen.loc[gen_element_index[counter], 'sn_mva'])):
                 net.sgen.at[gen_element_index[counter], 'sn_mva'] = s.typ_id.sgn #todo import of rated apparent power S, somewhere else?
             counter += 1
 
@@ -4031,7 +4032,7 @@ def create_stactrl(net, item):
 
         if item.i_droop:  # Enable Droop
             bsc = BinarySearchControl(net, ctrl_in_service=stactrl_in_service,
-                                      output_element=gen_element, output_variable="q_mvar",
+                                      output_element=gen_element, output_variable="vm_pu",
                                       output_element_index=gen_element_index,
                                       output_element_in_service=gen_element_in_service,
                                       output_values_distribution=distribution_mode,
@@ -4044,7 +4045,7 @@ def create_stactrl(net, item):
                                       input_element_index_q_meas=res_element_index)
         else:
             BinarySearchControl(net, ctrl_in_service=stactrl_in_service,
-                                output_element=gen_element, output_variable="q_mvar",
+                                output_element=gen_element, output_variable="vm_pu",
                                 output_element_index=gen_element_index,
                                 output_element_in_service=gen_element_in_service, input_element="res_bus",
                                 output_values_distribution=distribution_mode,
