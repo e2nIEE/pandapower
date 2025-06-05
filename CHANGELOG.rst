@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [FIXED] pp control - handle NaN in 'enabled' column when computing 'controlEnabled' to ensure safe boolean evaluation
 
 [3.1.0] - 2025-05-26
 -------------------------------
