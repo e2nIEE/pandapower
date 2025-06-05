@@ -73,14 +73,14 @@ class BinarySearchControl(Controller):
     def __init__(self, net, ctrl_in_service:bool, output_element, output_variable, output_element_index,
                  output_element_in_service, input_element, input_variable,
                  input_element_index, set_point:float, output_values_distribution:str, output_distribution_values = None,
-                 modus:str = None, tol=0.001, in_service=True, order=0, level=0,
+                 modus:str = None, tol=0.001, order=0, level=0,
                  drop_same_existing_ctrl=False, matching_params=None, **kwargs):
-        super().__init__(net, in_service=in_service, order=order, level=level,
+        super().__init__(net, in_service=ctrl_in_service, order=order, level=level,
                          drop_same_existing_ctrl=drop_same_existing_ctrl,
                          matching_params=matching_params, **kwargs)
         for key, value in kwargs.items(): #setting up kwargs arguments
             setattr(self, key, value)
-        #self.reset = [in_service, order, level, drop_same_existing_ctrl, matching_params, kwargs]#for reinitialization
+        #self.reset = [order, level, drop_same_existing_ctrl, matching_params, kwargs]#for reinitialization
         self.counter_warning = False #only one message that only one active output element
         self.in_service = ctrl_in_service
         self.input_element = input_element #point to be controlled
@@ -277,16 +277,6 @@ class BinarySearchControl(Controller):
         raise AttributeError(f"{self.__class__.__name__!r} has no attribute {name!r}")
 
     def initialize_control(self, net, converged = False):
-        #reinitialize control init  with existing parameters
-        """net.controller.drop(index=self.index, inplace=True)#todo still doesnt work
-        self.__init__(net, ctrl_in_service=self.in_service, output_element=self.output_element,
-                      output_variable=self.output_variable, output_element_index=self.output_element_index,
-                      output_element_in_service=self.output_element_in_service,input_element=self.input_element,
-                      input_element_index=self.input_element_index, set_point=self.set_point, modus=self.modus,
-                      input_variable=self.input_variable, output_distribution_values=self.output_distribution_values,
-                      output_values_distribution=self.output_values_distribution, tol = self.tol,
-                      in_service=self.reset[0], order = self.reset[1], level = self.reset[2],
-                      drop_same_existing_ctrl=self.reset[3], matching_params=self.reset[4], **self.reset[5])"""
         #reread output elements
         #net.controller.at[self.index, 'object'].converged = converged
         output_element_index = self.output_element_index[0] if self.write_flag == 'single_index' else\
@@ -833,7 +823,7 @@ class DroopControl(Controller):
         for key, value in kwargs.items(): #setting up kwargs arguments
             setattr(self, key, value)
         #self.reset = [in_service, order, level, drop_same_existing_ctrl, matching_params, kwargs]  #for reinitialization
-        self.q_droop_mvar = q_droop_mvar
+        self.q_droop_mvar = q_droop_mvar #droop in Q_ctrl
         self.input_element_q_meas = input_element_q_meas
         self.input_variable_q_meas = input_variable_q_meas
         self.input_element_index_q_meas = input_element_index_q_meas
@@ -936,22 +926,6 @@ class DroopControl(Controller):
             return self.voltage_ctrl
         raise AttributeError(f"{self.__class__.__name__!r} has no attribute {name!r}")# Raises AttributeError if missing
 
-    '''def initialize_droop_control(self, net):
-        #firt, reinitialize linked controller
-        net.controller.object[self.controller.index].initialize_control(net)
-        #reinitialize droop control
-        net.controller.drop(index=self.index, inplace=True)
-        self.__init__(net, self.controller_idx, in_service = self.reset[0], modus = self.modus, q_droop_mvar=
-            self.q_droop_mvar, bus_idx = self.bus_idx, vm_set_lb=self.lb_voltage,
-            vm_set_ub=self.ub_voltage, pf_overexcited=self.pf_over, pf_underexcited=self.pf_under,
-            input_type_q_meas = self.input_type_q_meas, input_variable_q_meas = self.input_variable_q_meas,
-            input_element_index_q_meas = input_elemet_index_q_meas, tol = self.tol,
-            order = self.reset[1], level=self.reset[2], drop_same_existing_ctrl=self.reset[3], matching_params=
-            self.reset[4], **self.reset[5])
-        #reread output elements todo what else to reread
-        output_element_index = self.output_element_index[0] if self.write_flag == 'single_index' else self.output_element_index #ruggedize for single index
-        self.output_values = read_from_net(net, self.output_element, output_element_index, self.output_variable,
-                                           self.write_flag)'''
     def is_converged(self, net):
         ###check convergence
         if self.modus != net.controller.at[self.controller_idx, 'object'].modus:#checking if droop and bsc have the same modus
