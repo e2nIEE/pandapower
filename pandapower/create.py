@@ -1467,10 +1467,10 @@ def create_sgen(net: pandapowerNet,
             specified as motor so that sgen is treated as asynchronous motor. Relevant for \
             short-circuit calculation for all generator types
 
-        **reactive_capability_curve** (bool, False) - True if both the id_q_capability_curve_characteristic and the
+        **reactive_capability_curve** (bool, False) - True if both the id_q_capability_curve_characteristic and the \
             curve style are present in the generator
 
-        **id_q_capability_curve_characteristic** (int, None) - references the index of the characteristic from the
+        **id_q_capability_curve_characteristic** (int, None) - references the index of the characteristic from the \
             net.q_capability_curve_characteristic table (id_q_capability_curve column)
 
         **curve_style** (string, None) - The curve style of the generator represents the relationship \
@@ -1626,8 +1626,7 @@ def create_sgens(net: pandapowerNet,
              controllable sgens in OPF
 
         **controllable** (list of boolean, default NaN) - States, whether a sgen is controllable \
-             or not. Only respected for OPF
-             Defaults to False if "controllable" column exists in DataFrame
+             or not. Only respected for OPF. Defaults to False if "controllable" column exists in DataFrame
 
         **k** (list of floats, None) - Ratio of nominal current to short circuit current
 
@@ -1636,10 +1635,10 @@ def create_sgens(net: pandapowerNet,
             short-circuit calculation for all generator types
 
         **reactive_capability_curve** (list of bools, False) - True if both the id_q_capability_curve_characteristic \
-        and the curve style are present in the generator.
+            and the curve style are present in the generator.
 
         **id_q_capability_curve_characteristic** (list of ints, None) - references the index of the characteristic \
-        from the lookup table net.q_capability_curve_characteristic e.g. 0, 1, 2, 3
+            from the lookup table net.q_capability_curve_characteristic e.g. 0, 1, 2, 3
 
         **curve_style** (list of strings, None) - The curve style of the generator represents the relationship \
            between active power (P) and reactive power (Q). It indicates whether the reactive power remains \
@@ -1818,7 +1817,7 @@ def create_sgen_from_cosphi(
 
         **cos_phi** (float) - power factor cos_phi
 
-        **mode** (str) - "underexcited" (Q absorption, decreases voltage) or "overexcited"
+        **mode** (str) - "underexcited" (Q absorption, decreases voltage) or "overexcited" \
                          (Q injection, increases voltage)
 
     OUTPUT:
@@ -2113,10 +2112,10 @@ def create_gen(net: pandapowerNet,
 
         **type** (string, None) - type variable to classify generators
 
-        **reactive_capability_curve** (bool, False) - True if both the id_q_capability_curve_characteristic and the
+        **reactive_capability_curve** (bool, False) - True if both the id_q_capability_curve_characteristic and the \
             curve style are present in the generator
 
-        **id_q_capability_curve_characteristic** (int, None) - references the index of the characteristic from
+        **id_q_capability_curve_characteristic** (int, None) - references the index of the characteristic from \
             the net.q_capability_curve_characteristic table (id_q_capability_curve column)
 
         **curve_style** (string, None) - The curve style of the generator represents the relationship \
@@ -2139,11 +2138,11 @@ def create_gen(net: pandapowerNet,
 
         **cos_phi** (float, NaN) - Rated cosine phi of the generator for short-circuit calculation
 
-        **pg_percent** (float, NaN) - Rated pg (voltage control range) of the generator for
-        short-circuit calculation
+        **pg_percent** (float, NaN) - Rated pg (voltage control range) of the generator for \
+            short-circuit calculation
 
-        **power_station_trafo** (int, None) - Index of the power station transformer for
-        short-circuit calculation
+        **power_station_trafo** (int, None) - Index of the power station transformer for \
+            short-circuit calculation
 
         **in_service** (bool, True) - True for in_service or False for out of service
 

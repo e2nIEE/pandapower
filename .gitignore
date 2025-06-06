@@ -31,3 +31,5 @@ pandapower/timeseries/logs/*
 pandapower/test/opf/buffer_file.json
 pandapower/test/buffer_file.json
 /pandapower/test/test_files/postgresql_connect_data.json
+.scannerwork/
+sonar-project.properties

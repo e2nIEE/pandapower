@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pandapower"
-version = "3.1.0.dev0" # File format version '__format_version__' is tracked in _version.py
+version = "3.1.1" # File format version '__format_version__' is tracked in _version.py
 authors = [
     { name = "Leon Thurner", email = "leon.thurner@retoflow.de" },
     { name = "Alexander Scheidler", email = "alexander.scheidler@iee.fraunhofer.de" },
@@ -15,7 +15,7 @@ maintainers = [
 ]
 description = "An easy to use open source tool for power system modeling, analysis and optimization with a high degree of automation."
 readme = "README.rst"
-license = { file = "LICENSE" }
+license-files = ["LICENSE", "AUTHORS"]
 requires-python = ">=3.9"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -82,16 +82,6 @@ all = [
 # "shapely", "pyproj", "Pyogrio" are dependencies of geopandas and should be already available ("Fiona" got dropped)
 # "hashlib", "zlib", "base64" produce install problems, so they are not included
 
-
-[tool.setuptools]
-license-files = [
-    'LICEN[CS]E*',
-    'COPYING*',
-    'NOTICE*',
-    'AUTHORS*',
-    'CHANGELOG*',
-    'CITATION*',
-]
 
 [tool.setuptools.packages.find]
 include = [
