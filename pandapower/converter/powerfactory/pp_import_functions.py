@@ -372,12 +372,12 @@ def add_additional_attributes(item, net, element, element_id, attr_list=None, at
     if attr_dict is None:
         attr_dict = {k: k for k in attr_list}
     
-    # if attr_list is not None:
-    #     for attr_l in attr_list:
-    #         if attr_l in attr_dict:
-    #             continue
-    #         else:
-    #             attr_dict[attr_l] = attr_l
+    if attr_list is not None:
+        for attr_l in attr_list:
+            if attr_l in attr_dict:
+                continue
+            else:
+                attr_dict[attr_l] = attr_l
                 
     for attr in attr_dict.keys():
         if '.' in attr:
@@ -482,9 +482,10 @@ def create_pp_bus(net, item, flag_graphics, is_unbalanced):
     net[table].at[bid, "description"] = descr
     net[table].at[bid, "substat"] = substat_descr
     net[table].at[bid, "folder_id"] = item.fold_id.loc_name
-
-    add_additional_attributes(item, net, table, bid, attr_dict={"for_name": "equipment", "cimRdfId": "origin_id"},
-                              attr_list=["sernum", "chr_name", "cpSite.loc_name"])
+    
+    attr_dict={"for_name": "equipment", "cimRdfId": "origin_id", "cpSite.loc_name": "site"}
+    add_additional_attributes(item, net, table, bid, attr_dict=attr_dict,
+                              attr_list=["sernum", "chr_name"])
 
 
 def get_pf_bus_results(net, item, bid, is_unbalanced, system_type):
@@ -1311,7 +1312,8 @@ def create_ext_net(net, item, pv_as_slack, is_unbalanced):
     #     xid, ["pf_p", 'pf_q']].values))
 
     net[elm].loc[xid, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    add_additional_attributes(item, net, element=elm, element_id=xid, attr_list=['cpSite.loc_name'])
+    
+    add_additional_attributes(item, net, element=elm, element_id=xid, attr_dict={"cpSite.loc_name": "site"})
 
     return xid
 
@@ -1840,10 +1842,12 @@ def create_pp_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
         load_type = "load"
 
     net[load_type].loc[ld, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    attr_list = ["sernum", "chr_name", 'cpSite.loc_name']
+    attr_list = ["sernum", "chr_name"]
+    attr_dict={"for_name": "equipment", 'cpSite.loc_name': 'site'}
     if load_class == 'ElmLodlv':
         attr_list.extend(['pnight', 'cNrCust', 'cPrCust', 'UtilFactor', 'cSmax', 'cSav', 'ccosphi'])
-    add_additional_attributes(item, net, load_type, ld, attr_dict={"for_name": "equipment"}, attr_list=attr_list)
+        attr_dict['cpGrid.loc_name'] = 'grid'
+    add_additional_attributes(item, net, load_type, ld, attr_dict=attr_dict, attr_list=attr_list)
     get_pf_load_results(net, item, ld, is_unbalanced)
     #    if not is_unbalanced:
     #        if item.HasResults(0):  # 'm' results...
@@ -2038,8 +2042,8 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
     logger.debug('created sgen at index <%d>' % sg)
 
     net[element].at[sg, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    add_additional_attributes(item, net, element, sg, attr_dict={"for_name": "equipment"},
-                              attr_list=["sernum", "chr_name", "cpSite.loc_name"])
+    add_additional_attributes(item, net, element, sg, attr_dict={"for_name": "equipment", "cpSite.loc_name": "site"},
+                              attr_list=["sernum", "chr_name"])
     net[element].at[sg, 'scaling'] = dict_net['global_parameters']['global_generation_scaling'] * item.scale0
     get_pf_sgen_results(net, item, sg, is_unbalanced, element=element)
 
@@ -2152,8 +2156,8 @@ def create_sgen_neg_load(net, item, pf_variable_p_loads, dict_net):
     sg = create_sgen(net, **params)
 
     net.sgen.loc[sg, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    add_additional_attributes(item, net, "sgen", sg, attr_dict={"for_name": "equipment"},
-                              attr_list=["sernum", "chr_name", "cpSite.loc_name"])
+    add_additional_attributes(item, net, "sgen", sg, attr_dict={"for_name": "equipment", "cpSite.loc_name": "site"},
+                              attr_list=["sernum", "chr_name"])
 
     if item.HasResults(0):  # 'm' results...
         logger.debug('<%s> has results' % params.name)
@@ -2271,8 +2275,8 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
         logger.debug('created sgen at index <%s>' % sid)
 
     net[element].loc[sid, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    add_additional_attributes(item, net, element, sid, attr_dict={"for_name": "equipment"},
-                              attr_list=["sernum", "chr_name", "cpSite.loc_name"])
+    add_additional_attributes(item, net, element, sid, attr_dict={"for_name": "equipment", "cpSite.loc_name": "site"},
+                              attr_list=["sernum", "chr_name"])
 
     if item.HasResults(0):  # 'm' results...
         logger.debug('<%s> has results' % name)
@@ -2325,8 +2329,9 @@ def create_sgen_asm(net, item, pf_variable_p_gen, dict_net):
     sid = create_sgen(net, **params)
 
     net.sgen.loc[sid, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    add_additional_attributes(item, net, "sgen", sid, attr_dict={"for_name": "equipment", "cimRdfId": "origin_id"},
-                              attr_list=["sernum", "chr_name", "cpSite.loc_name"])
+    attr_dict={"for_name": "equipment", "cimRdfId": "origin_id",  "cpSite.loc_name": "site" }
+    add_additional_attributes(item, net, "sgen", sid, attr_dict=attr_dict,
+                              attr_list=["sernum", "chr_name"])
 
     if item.HasResults(0):
         net.res_sgen.at[sid, 'pf_p'] = item.GetAttribute('m:P:bus1') * multiplier
@@ -3027,7 +3032,7 @@ def create_coup(net, item, is_fuse=False):
     switch_dict[item] = cd
 
     add_additional_attributes(item, net, element='switch', element_id=cd,
-                              attr_list=['cpSite.loc_name'], attr_dict={"cimRdfId": "origin_id"})
+                              attr_dict={"cimRdfId": "origin_id", "cpSite.loc_name": "site"})
 
     logger.debug('created switch at index <%d>, closed = %s, usage = %s' %
                  (cd, switch_is_closed, switch_usage))
@@ -3134,8 +3139,7 @@ def create_pp_shunt(net, item):
             net,
             element='shunt',
             element_id=sid,
-            attr_list=['cpSite.loc_name'],
-            attr_dict={"cimRdfId": "origin_id"}
+            attr_dict={"cimRdfId": "origin_id", "cpSite.loc_name": "site"}
         )
     else:
         raise AttributeError(f"Shunt type {item.shtype} not valid: {item}")
@@ -3198,8 +3202,8 @@ def create_zpu(net, item):
     params['to_bus'] = aux_bus2
 
     xid = create_impedance(net, **params)
-    add_additional_attributes(item, net, element='impedance', element_id=xid, attr_list=["cpSite.loc_name"],
-                              attr_dict={"cimRdfId": "origin_id"})
+    add_additional_attributes(item, net, element='impedance', element_id=xid,
+                              attr_dict={"cimRdfId": "origin_id", "cpSite.loc_name": "site"})
 
     # consider and create station switches
     new_elements = (aux_bus1, aux_bus2)
@@ -3294,8 +3298,8 @@ def create_vac(net, item):
         net['res_%s' % elm].at[xid, "pf_p"] = np.nan
         net['res_%s' % elm].at[xid, "pf_q"] = np.nan
 
-    add_additional_attributes(item, net, element=elm, element_id=xid, attr_list=["cpSite.loc_name"],
-                              attr_dict={"cimRdfId": "origin_id"})
+    add_additional_attributes(item, net, element=elm, element_id=xid,
+                              attr_dict={"cimRdfId": "origin_id", "cpSite.loc_name": "site"})
 
     logger.debug('added pf_p and pf_q to {} {}: {}'.format(elm, xid, net['res_' + elm].loc[
         xid, ["pf_p", 'pf_q']].values))
@@ -3458,8 +3462,8 @@ def create_svc(net, item, pv_as_slack, pf_variable_p_gen, dict_net):
         logger.debug('created svc at index <%s>' % svc)
 
         net[element].loc[svc, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-        add_additional_attributes(item, net, element, svc, attr_dict={"for_name": "equipment"},
-                                  attr_list=["sernum", "chr_name", "cpSite.loc_name"])
+        add_additional_attributes(item, net, element, svc, attr_dict={"for_name": "equipment", "cpSite.loc_name": "site"},
+                                  attr_list=["sernum", "chr_name"])
 
         if item.HasResults(0):  # 'm' results...
             logger.debug('<%s> has results' % name)
