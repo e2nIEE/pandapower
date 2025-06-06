@@ -100,11 +100,13 @@ def _convert_geo_data(net, elements_to_deserialize=None, drop_invalid_geodata=Tr
          and _check_elements_to_deserialize('bus', elements_to_deserialize))
         or (_check_elements_to_deserialize('line_geodata', elements_to_deserialize)
             and _check_elements_to_deserialize('line', elements_to_deserialize))):
-        if hasattr(net, 'bus_geodata') and (Version(str(net.format_version)) < Version("1.6")):
-            net.bus_geodata = pd.DataFrame.from_dict(net.bus_geodata)
-        if hasattr(net, 'line_geodata') and (Version(str(net.format_version)) < Version("1.6")):
-            net.line_geodata = pd.DataFrame.from_dict(net.line_geodata)
-        convert_geodata_to_geojson(net, drop_invalid_geodata=drop_invalid_geodata)
+        if hasattr(net, 'bus_geodata') or hasattr(net, 'line_geodata'):
+            if Version(str(net.format_version)) < Version("1.6"):
+                if hasattr(net, 'bus_geodata'):
+                    net.bus_geodata = pd.DataFrame.from_dict(net.bus_geodata)
+                if hasattr(net, 'line_geodata'):
+                    net.line_geodata = pd.DataFrame.from_dict(net.line_geodata)
+            convert_geodata_to_geojson(net)
 
 
 def _restore_index_names(net):
