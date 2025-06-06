@@ -19,6 +19,7 @@ try:
 except ImportError:
     import logging
 std_logger = logging.getLogger(__name__)
+std_logger.setLevel(logging.DEBUG)
 
 __all__ = ["WLSAlgorithm", "WLSZeroInjectionConstraintsAlgorithm", "IRWLSAlgorithm"]
 
@@ -78,7 +79,6 @@ class WLSAlgorithm(BaseAlgorithm):
         self.hx = None
         self.iterations = None
         self.obj_func = None
-        logging.basicConfig(level=logging.DEBUG)
 
     def estimate(self, eppci: ExtendedPPCI, **kwargs):
         self.initialize(eppci)
