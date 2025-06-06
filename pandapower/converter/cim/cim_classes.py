@@ -195,7 +195,7 @@ class CimParser:
                     'maxR1ToX1Ratio', 'minR1ToX1Ratio', 'maxR0ToX0Ratio', 'maxZ0ToZ1Ratio']),
                 'ACLineSegment': pd.DataFrame(columns=[
                     'rdfId', 'name', 'description', 'length', 'r', 'x', 'bch', 'gch', 'r0', 'x0', 'b0ch', 'g0ch',
-                    'shortCircuitEndTemperature', 'BaseVoltage']),
+                    'shortCircuitEndTemperature', 'BaseVoltage', 'EquipmentContainer']),
                 'Terminal': pd.DataFrame(columns=[
                     'rdfId', 'name', 'ConnectivityNode', 'ConductingEquipment', 'sequenceNumber']),
                 'OperationalLimitSet': pd.DataFrame(columns=['rdfId', 'name', 'Terminal']),
@@ -206,6 +206,7 @@ class CimParser:
                     'rdfId', 'name', 'OperationalLimitSet', 'OperationalLimitType', 'value']),
                 'DCNode': pd.DataFrame(columns=['rdfId', 'name', 'DCEquipmentContainer']),
                 'DCEquipmentContainer': pd.DataFrame(columns=['rdfId', 'name']),
+                'DCLine': pd.DataFrame(columns=['rdfId', 'name']),
                 'DCConverterUnit': pd.DataFrame(columns=['rdfId', 'name', 'Substation', 'operationMode']),
                 'DCLineSegment': pd.DataFrame(columns=['rdfId', 'name', 'description', 'EquipmentContainer']),
                 'CsConverter': pd.DataFrame(columns=['rdfId', 'BaseVoltage', 'ratedUdc']),
@@ -548,8 +549,10 @@ class CimParser:
         else:
             for ele, df in prf_content.items():
                 if ele not in output[prf].keys():
-                    output[prf][ele] = pd.DataFrame()
-                output[prf][ele] = pd.concat([output[prf][ele], prf_content[ele]], ignore_index=True, sort=False)
+                    concat_list = [prf_content[ele]]
+                else:
+                    concat_list = [output[prf][ele], prf_content[ele]]
+                output[prf][ele] = pd.concat(concat_list, ignore_index=True, sort=False)
 
     def _check_file(self, file: str) -> bool:
         if not os.path.isfile(file):
@@ -603,7 +606,7 @@ class CimParser:
                     'rdfId', 'name', 'description', 'minP', 'maxP', 'minQ', 'maxQ', 'BaseVoltage', 'EquipmentContainer',
                     'RegulatingControl', 'governorSCD']),
                 'ACLineSegment': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'description', 'length', 'r', 'x', 'bch', 'gch', 'BaseVoltage']),
+                    'rdfId', 'name', 'description', 'length', 'r', 'x', 'bch', 'gch', 'BaseVoltage', 'EquipmentContainer']),
                 'Terminal': pd.DataFrame(columns=[
                     'rdfId', 'name', 'ConnectivityNode', 'ConductingEquipment', 'sequenceNumber']),
                 'OperationalLimitSet': pd.DataFrame(columns=['rdfId', 'name', 'Terminal']),
@@ -614,6 +617,7 @@ class CimParser:
                     'rdfId', 'name', 'OperationalLimitSet', 'OperationalLimitType']),
                 'DCNode': pd.DataFrame(columns=['rdfId', 'name', 'DCEquipmentContainer']),
                 'DCEquipmentContainer': pd.DataFrame(columns=['rdfId', 'name']),
+                'DCLine': pd.DataFrame(columns=['rdfId', 'name']),
                 'DCConverterUnit': pd.DataFrame(columns=['rdfId', 'name', 'Substation', 'operationMode']),
                 'DCLineSegment': pd.DataFrame(columns=['rdfId', 'name', 'description', 'EquipmentContainer']),
                 'CsConverter': pd.DataFrame(columns=['rdfId', 'BaseVoltage', 'ratedUdc']),
@@ -680,7 +684,8 @@ class CimParser:
                 'RatioTapChangerTablePoint': pd.DataFrame(columns=['rdfId', 'RatioTapChangerTable', 'step',
                                                                    'r', 'x', 'ratio']),
                 'LinearShuntCompensator': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'description', 'nomU', 'gPerSection', 'bPerSection', 'maximumSections']),
+                    'rdfId', 'name', 'description', 'nomU', 'gPerSection', 'bPerSection', 'maximumSections',
+                    'normalSections']),
                 'NonlinearShuntCompensator': pd.DataFrame(columns=[
                     'rdfId', 'name', 'description', 'nomU', 'maximumSections']),
                 'NonlinearShuntCompensatorPoint': pd.DataFrame(columns=[
