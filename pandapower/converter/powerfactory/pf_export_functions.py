@@ -344,7 +344,7 @@ def run_short_circuit(app, fault_type="LLL", calc_mode="max", fault_impedance_rf
         com_shc.iopt_allbus = 1  # all buses
         location_str = "all buses"
     else:
-        busbars = app.GetCalcRelevantObjects('*.ElmTerm')
+        busbars = sorted(app.GetCalcRelevantObjects('*.ElmTerm'), key=lambda b: b.loc_name)
         if not busbars:
             raise RuntimeError("No busbars (ElmTerm) found in the project.")
         if fault_location_index < 0 or fault_location_index >= len(busbars):

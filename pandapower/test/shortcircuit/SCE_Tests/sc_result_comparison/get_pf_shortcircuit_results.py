@@ -24,7 +24,12 @@ def get_all_pf_sc_results(proj_name, fault_location=None, save_to_excel=True):
     cases = ["max", "min"]
     fault_impedances = [(0.0, 0.0), (5.0, 5.0)]
     lv_tol_percents = [6, 10]
-    fault_locations = [fault_location] if fault_location is None else fault_location
+    if fault_location is None:
+        fault_locations = [None]
+    elif isinstance(fault_location, (list, tuple)):
+        fault_locations = fault_location
+    else:
+        fault_locations = [fault_location]
     elements = ['bus', 'branch']
 
     dict_results = {}
@@ -67,7 +72,7 @@ def get_all_pf_sc_results(proj_name, fault_location=None, save_to_excel=True):
 
 ## get results for single project
 proj_name = 'test_case_1_four_bus_radial_grid'
-fault_location = [3]
+fault_location = 2
 pf_dict = get_all_pf_sc_results(proj_name, fault_location, save_to_excel=False)
 
 
@@ -76,13 +81,14 @@ base_dir = os.getcwd()
 folder = os.path.join(base_dir, "pandapower", "test", "shortcircuit", "SCE_Tests", "test_grids")
 #folder = r"C:\Users\lriedl\PycharmProjects\pandapower\pandapower\test\shortcircuit\SCE_Tests\test_grids"
 pfd_files = [f for f in os.listdir(folder) if f.endswith(".pfd")]
-fault_location = [3]
+fault_location = 2
 
-pf_dict_all = {}
-for file in pfd_files:
-    proj_name = os.path.splitext(file)[0]
-    pf_dict = get_all_pf_sc_results(proj_name, fault_location, save_to_excel=True)
-    pf_dict_all[proj_name] = pf_dict
+for fault_location in [0, 1, 2, 3]:
+    pf_dict_all = {}
+    for file in pfd_files:
+        proj_name = os.path.splitext(file)[0]
+        pf_dict = get_all_pf_sc_results(proj_name, fault_location, save_to_excel=True)
+        pf_dict_all[proj_name] = pf_dict
 
 ##
 
