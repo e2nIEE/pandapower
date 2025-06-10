@@ -206,7 +206,8 @@ def _calculate_bus_results_llg(ppc_0, ppc_1, ppc_2, bus, net):
 
     # this is inefficient because it copies data to fit into a shape, better to use a slice,
     # and even better to find how to use sequence-based powers:
-    baseV = ppc_1["internal"]["baseV"][bus][:, np.newaxis]
+    baseV = ppc_1['bus'][:, BASE_KV][:, np.newaxis]
+    # baseV = ppc_1["internal"]["baseV"][bus][:, np.newaxis]
     # v_base_kv = np.stack([baseV, baseV, baseV], 2)
     skss_abc_mva = i_1_abc_ka_abs * baseV / np.sqrt(3)
 
