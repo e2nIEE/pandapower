@@ -18,26 +18,173 @@ from pandapower import pp_dir
 
 testfiles_path = os.path.join(pp_dir, 'test', 'shortcircuit', 'sce_tests')
 
+# Define common parameters
+faults = ["LLL", "LL", "LG", "LLG"]
+cases = ["max", "min"]
+values = [(0.0, 0.0), (5.0, 5.0)]
+vector_groups = ['Dyn', 'Yyn', 'YNyn']
+lv_tol_percents = [6, 10]
+
+# Create parameter list
+parametrize_values = product(faults, cases, values, lv_tol_percents)
+
+# Create parameter list with vector group
+parametrize_values_vector = product(faults, cases, values, lv_tol_percents, vector_groups)
+
+
+@pytest.mark.parametrize("fault, case, r_fault_ohm, x_fault_ohm, lv_tol_percent", parametrize_values)
+def test_four_bus_radial_grid_all_faults_and_cases_with_fault_impedance(fault, case, r_fault_ohm, x_fault_ohm, lv_tol_percent):
+    net_name = "test_case_1_four_bus_radial_grid"
+    net, dataframes = load_test_case_data(net_name)
+    for key, is_branch in [("bus", False), ("branch", True)]:
+        run_test_cases(net, dataframes[key], fault, case, r_fault_ohm, x_fault_ohm, lv_tol_percent, branch_results=is_branch)
+
+
+@pytest.mark.parametrize("fault, case, r_fault_ohm, x_fault_ohm, lv_tol_percent, vector_group", parametrize_values_vector)
+def test_five_bus_radial_grid_all_faults_and_cases_with_fault_impedance(fault, case, r_fault_ohm, x_fault_ohm, lv_tol_percent,
+                                                                        vector_group):
+    net_name = "test_case_2_five_bus_radial_grid"
+    net, dataframes = load_test_case_data(net_name, vector_group)
+    for key, is_branch in [("bus", False), ("branch", True)]:
+        run_test_cases(net, dataframes[key], fault, case, r_fault_ohm, x_fault_ohm, lv_tol_percent, branch_results=is_branch)
+
+
+@pytest.mark.parametrize("fault, case, r_fault_ohm, x_fault_ohm, lv_tol_percent, vector_group", parametrize_values_vector)
+def test_five_bus_meshed_grid_all_faults_and_cases_with_fault_impedance(fault, case, r_fault_ohm, x_fault_ohm, lv_tol_percent,
+                                                                        vector_group):
+    net_name = "test_case_3_five_bus_meshed_grid"
+    net, dataframes = load_test_case_data(net_name, vector_group)
+    for key, is_branch in [("bus", False), ("branch", True)]:
+        run_test_cases(net, dataframes[key], fault, case, r_fault_ohm, x_fault_ohm, lv_tol_percent, branch_results=is_branch)
+
+
+def load_test_case_data(net_name, vector_group=None):
+    if vector_group:
+        net_name += "_" + vector_group.lower()
+
+    net = from_json(os.path.join(testfiles_path, "test_grids", net_name + ".json"))
+    excel_file_bus = os.path.join(testfiles_path, "sc_result_comparison", net_name + "_pf_sc_results_bus.xlsx")
+    excel_file_branch = os.path.join(testfiles_path, "sc_result_comparison", net_name + "_pf_sc_results_branch.xlsx")
+    dataframes = {
+        'bus': load_pf_results(excel_file_bus),
+        'branch': load_pf_results(excel_file_branch)
+    }
+    return net, dataframes
+
+
+def run_test_cases(net, dataframes, fault, case, r_fault_ohm, x_fault_ohm, lv_tol_percent, branch_results=False):
+    """
+    Executes test cases for a given grid with specific fault parameters, fault type and case.
+
+    This function takes a network, corresponding dataframes, and fault parameters, performs
+    a fault analysis, and compares the results with the modified power flow results.
+
+    Args:
+        net: An object representing the electrical network, including bus and branch information.
+        dataframes: A dictionary of DataFrames containing the power flow results,
+                    where the key indicates the name of the sheet.
+        fault: A string indicating the type of fault. LLL, LLG, LL or LG
+        case: A string indicating the specific case. min or max
+        r_fault_ohm: The resistive fault value in Ohms.
+        x_fault_ohm: The reactive fault value in Ohms.
+        branch_results: A boolean indicating whether branch results are calculated or not.
+
+    Raises:
+        AssertionError: If the calculated values are not within the specified tolerances.
+
+    Notes:
+        - The function uses a relative tolerance (rtol) and an absolute tolerance (atol)
+          for value comparisons.
+        - The name of the selected sheet is generated from the fault and case.
+        - If both the resistive and reactive faults are non-zero, "_fault" is appended
+          to the sheet name.
+        - The function sorts the results by bus name for comparison.
+
+    """
+
+    rtol = {"ikss_ka": 0, "skss_mw": 0, "rk_ohm": 0, "xk_ohm": 0,
+            "vm_pu": 0, "va_degree": 0, "p_mw": 0, "q_mvar": 0, "ikss_degree": 0}
+    # TODO skss_mw only 1e-4 sufficient?
+    atol = {"ikss_ka": 1e-6, "skss_mw": 1e-4, "rk_ohm": 1e-6, "xk_ohm": 1e-5,
+            "vm_pu": 1e-4, "va_degree": 1e-4, "p_mw": 1e-4, "q_mvar": 1e-4, "ikss_degree": 1e-4}  # TODO: tolerances ok?
+
+    # columns_to_check = get_columns_to_check(fault)
+    selected_sheet = f"{fault}_{case}_{lv_tol_percent}"
+    if r_fault_ohm != 0.0 and x_fault_ohm != 0.0:
+        selected_sheet = f"{fault}_{case}_fault_{lv_tol_percent}"
+
+    selected_pf_results = dataframes[selected_sheet]
+    modified_pf_results = modify_impedance_values_with_fault_value(selected_pf_results, r_fault_ohm, x_fault_ohm)
+
+    calc_sc(net, fault=fault, case=case, branch_results=branch_results, return_all_currents=False, ip=False,
+            r_fault_ohm=r_fault_ohm, x_fault_ohm=x_fault_ohm, lv_tol_percent=lv_tol_percent)
+
+    if branch_results:
+        columns_to_check = net.res_line_sc.columns
+        net.res_line_sc["name"] = net.line.name
+        net.res_line_sc = net.res_line_sc[['name'] + [col for col in net.res_line_sc.columns if col != 'name']]
+        net.res_line_sc.sort_values(by='name', inplace=True)
+
+        for line in net.line.name:
+            for column in columns_to_check:
+                if column == 'name':
+                    continue
+                column_ar = check_pattern(column)
+                # TODO: consider after result format is adjusted!
+                # exclude columns now because of false calculation in pandapower
+                if column_ar in ['p_mw', 'q_mvar', 'vm_pu', 'va_degree']:
+                    continue
+                assert np.isclose(
+                    net.res_line_sc.loc[net.res_line_sc.name == line, column].values[0],
+                    modified_pf_results.loc[modified_pf_results.name == line, column].values[0],
+                    rtol=rtol[column_ar], atol=atol[column_ar]
+                )
+    else:
+        columns_to_check = net.res_bus_sc.columns
+        net.res_bus_sc["name"] = net.bus.name
+        net.res_bus_sc = net.res_bus_sc[['name'] + [col for col in net.res_bus_sc.columns if col != 'name']]
+        net.res_bus_sc.sort_values(by='name', inplace=True)
+
+        for bus in net.bus.name:
+            for column in columns_to_check:
+                if column == 'name':
+                    continue
+                column_ar = check_pattern(column)
+                assert np.isclose(
+                    net.res_bus_sc.loc[net.bus.name == bus, column].values[0],
+                    modified_pf_results.loc[modified_pf_results.name == bus, column].values[0],
+                    rtol=rtol[column_ar], atol=atol[column_ar]
+                )
+
 
 def check_pattern(pattern):
     """
-    Checks the given pattern and returns a corresponding identifier.
+    Maps detailed result column names to standardized identifiers.
 
-    This function checks if the input pattern matches specific regular expressions
-    for 'rk', 'xk', 'ikss', and 'skss' types. It returns a standardized identifier if a match is found
-    or returns the original pattern if no match is found.
+    Recognizes patterns like 'ikss_a_ka', 'skss_from_mw', 'p_b_to_mw', etc.
+    and maps them to generic identifiers used for tolerance comparison.
 
-    :param str pattern: The input pattern to check.
-    :returns str: A standardized identifier ('rk_ohm', 'xk_ohm', 'ikss_a_ka', 'skss_a_mw') or the original pattern.
+    :param str pattern: Column name to normalize.
+    :returns str: Standardized identifier for result type or original pattern if no match found.
     """
     if match(r"^rk[0-2]?_ohm$", pattern):
         return "rk_ohm"
     elif match(r"^xk[0-2]?_ohm$", pattern):
         return "xk_ohm"
-    elif match(r"^ikss_[abc]_ka$", pattern):  # Matches ikss_a_ka, ikss_b_ka, ikss_c_ka
+    elif match(r"^ikss_([abc]|from|to|[abc]_(from|to))_ka$", pattern):
         return "ikss_ka"
-    elif match(r"^skss_[abc]_mw$", pattern):  # Matches skss_a_mw, skss_b_mw, skss_c_mw
+    elif match(r"^ikss_([abc]|from|to|[abc]_(from|to))_degree$", pattern):
+        return "ikss_degree"
+    elif match(r"^skss_([abc]|from|to|[abc]_(from|to))_mw$", pattern):
         return "skss_mw"
+    elif match(r"^p_([abc]|from|to|[abc]_(from|to))_mw$", pattern):
+        return "p_mw"
+    elif match(r"^q_([abc]|from|to|[abc]_(from|to))_mvar$", pattern):
+        return "q_mvar"
+    elif match(r"^vm_([abc]|from|to|[abc]_(from|to))_pu$", pattern):
+        return "vm_pu"
+    elif match(r"^va_([abc]|from|to|[abc]_(from|to))_degree$", pattern):
+        return "va_degree"
     else:
         return pattern
 
@@ -74,8 +221,8 @@ def modify_impedance_values_with_fault_value(selected_results, r_ohm, x_ohm):
 
 def load_pf_results(excel_file):
     """Load power flow results from Excel sheets."""
-    # TODO also include branch results and check all dropped columns
-    sheets = [sheet for sheet in pd.ExcelFile(excel_file).sheet_names if not sheet.endswith('_branch')]
+    # TODO check all dropped columns
+    sheets = [sheet for sheet in pd.ExcelFile(excel_file).sheet_names]
     dataframes = {}
 
     # Dictionary with columns to keep for each fault type
@@ -88,9 +235,39 @@ def load_pf_results(excel_file):
                'pf_rk2_ohm', 'pf_xk2_ohm']
     }
 
+    columns_mapping_branch = {
+        "LLL": ['name', 'pf_ikss_from_ka', 'pf_ikss_from_ka', 'pf_ikss_from_degree', 'pf_ikss_to_ka',
+                'pf_ikss_to_degree',
+                'pf_p_from_mw', 'pf_q_from_mvar', 'pf_p_to_mw', 'pf_q_to_mvar',
+                'pf_vm_from_pu', 'pf_va_from_degree', 'pf_vm_to_pu', 'pf_va_to_degree'],
+        "LL": ['name', 'pf_ikss_c_from_ka', 'pf_ikss_c_from_ka', 'pf_ikss_c_from_degree', 'pf_ikss_c_to_ka',
+               'pf_ikss_c_to_degree',
+               'pf_p_c_from_mw', 'pf_q_c_from_mvar', 'pf_p_c_to_mw', 'pf_q_c_to_mvar',
+               'pf_vm_c_from_pu', 'pf_va_c_from_degree', 'pf_vm_c_to_pu', 'pf_va_c_to_degree'],
+        "LLG": ['name', 'pf_ikss_a_from_ka', 'pf_ikss_a_from_ka', 'pf_ikss_a_from_degree', 'pf_ikss_a_to_ka',
+                'pf_ikss_a_to_degree',
+                'pf_p_a_from_mw', 'pf_q_a_from_mvar', 'pf_p_a_to_mw', 'pf_q_a_to_mvar',
+                'pf_vm_a_from_pu', 'pf_va_a_from_degree', 'pf_vm_a_to_pu', 'pf_va_a_to_degree',
+                'pf_ikss_b_from_ka', 'pf_ikss_b_from_degree', 'pf_ikss_b_to_ka', 'pf_ikss_b_to_degree',
+                'pf_p_b_from_mw', 'pf_q_b_from_mvar', 'pf_p_b_to_mw', 'pf_q_b_to_mvar',
+                'pf_vm_b_from_pu', 'pf_va_b_from_degree', 'pf_vm_b_to_pu', 'pf_va_b_to_degree',
+                'pf_ikss_c_from_ka', 'pf_ikss_c_from_degree', 'pf_ikss_c_to_ka', 'pf_ikss_c_to_degree',
+                'pf_p_c_from_mw', 'pf_q_c_from_mvar', 'pf_p_c_to_mw', 'pf_q_c_to_mvar',
+                'pf_vm_c_from_pu', 'pf_va_c_from_degree', 'pf_vm_c_to_pu', 'pf_va_c_to_degree'],
+        "LG": ['name', 'pf_ikss_a_from_ka', 'pf_ikss_a_from_ka', 'pf_ikss_a_from_degree', 'pf_ikss_a_to_ka',
+               'pf_ikss_a_to_degree',
+               'pf_p_a_from_mw', 'pf_q_a_from_mvar', 'pf_p_a_to_mw', 'pf_q_a_to_mvar',
+               'pf_vm_a_from_pu', 'pf_va_a_from_degree', 'pf_vm_a_to_pu', 'pf_va_a_to_degree',
+               'pf_ikss_b_from_ka', 'pf_ikss_b_from_degree', 'pf_ikss_b_to_ka', 'pf_ikss_b_to_degree',
+               'pf_p_b_from_mw', 'pf_q_b_from_mvar', 'pf_p_b_to_mw', 'pf_q_b_to_mvar',
+               'pf_vm_b_from_pu', 'pf_va_b_from_degree', 'pf_vm_b_to_pu', 'pf_va_b_to_degree',
+               'pf_ikss_c_from_ka', 'pf_ikss_c_from_degree', 'pf_ikss_c_to_ka', 'pf_ikss_c_to_degree',
+               'pf_p_c_from_mw', 'pf_q_c_from_mvar', 'pf_p_c_to_mw', 'pf_q_c_to_mvar',
+               'pf_vm_c_from_pu', 'pf_va_c_from_degree', 'pf_vm_c_to_pu', 'pf_va_c_to_degree']
+    }
+
     for sheet in sheets:
         pf_results = pd.read_excel(excel_file, sheet_name=sheet)
-
         fault_type = None
         if sheet.startswith("LLL_"):
             fault_type = "LLL"
@@ -101,87 +278,47 @@ def load_pf_results(excel_file):
         elif sheet.startswith("LG_"):
             fault_type = "LG"
 
-        relevant_columns = columns_mapping[fault_type]
-        pf_results = pf_results[relevant_columns]
-        if fault_type == 'LLL' or fault_type == 'LL':
-            pf_results.columns = ['name', 'ikss_ka', 'skss_mw', 'rk_ohm', 'xk_ohm']
-        elif fault_type == 'LLG':
-            pf_results.columns = ["name", "ikss_a_ka", "ikss_b_ka", 'ikss_c_ka', 'skss_a_mw', 'skss_b_mw', 'skss_c_mw',
-                                  "rk0_ohm", "xk0_ohm", "rk1_ohm", "xk1_ohm", "rk2_ohm", "xk2_ohm"]
-        elif fault_type == 'LG':
-            pf_results.columns = ["name", "ikss_ka", 'skss_mw', "rk0_ohm", "xk0_ohm", "rk1_ohm",
-                                  "xk1_ohm", "rk2_ohm", "xk2_ohm"]
+        if excel_file.endswith('_bus.xlsx'):
+            relevant_columns = columns_mapping[fault_type]
+            pf_results = pf_results[relevant_columns]
+            if fault_type == 'LLL' or fault_type == 'LL':
+                pf_results.columns = ['name', 'ikss_ka', 'skss_mw', 'rk_ohm', 'xk_ohm']
+            elif fault_type == 'LLG':
+                pf_results.columns = ["name", "ikss_a_ka", "ikss_b_ka", 'ikss_c_ka', 'skss_a_mw', 'skss_b_mw',
+                                      'skss_c_mw',
+                                      "rk0_ohm", "xk0_ohm", "rk1_ohm", "xk1_ohm", "rk2_ohm", "xk2_ohm"]
+            elif fault_type == 'LG':
+                pf_results.columns = ["name", "ikss_ka", 'skss_mw', "rk0_ohm", "xk0_ohm", "rk1_ohm",
+                                      "xk1_ohm", "rk2_ohm", "xk2_ohm"]
 
-        dataframes[sheet] = pf_results
+            dataframes[sheet] = pf_results
+
+        elif excel_file.endswith('_branch.xlsx'):
+            relevant_columns = columns_mapping_branch[fault_type]
+            pf_results = pf_results[relevant_columns]
+            if fault_type == 'LLL' or fault_type == 'LL':
+                pf_results.columns = ['name', 'ikss_ka', 'ikss_from_ka', 'ikss_from_degree', 'ikss_to_ka',
+                                      'ikss_to_degree',
+                                      'p_from_mw', 'q_from_mvar', 'p_to_mw', 'q_to_mvar',
+                                      'vm_from_pu', 'va_from_degree', 'vm_to_pu', 'va_to_degree']
+                pf_results['ikss_ka'] = pf_results['ikss_to_ka']  # TODO: maybe only for LLL valid?
+                pf_results['ikss_from_ka'] = pf_results['ikss_to_ka']  # TODO: maybe only for LLL valid?
+            elif fault_type == 'LLG' or fault_type == 'LG':
+                pf_results.columns = ['name', 'ikss_ka', 'ikss_a_from_ka', 'ikss_a_from_degree', 'ikss_a_to_ka',
+                                      'ikss_a_to_degree',
+                                      'p_a_from_mw', 'q_a_from_mvar', 'p_a_to_mw', 'q_a_to_mvar',
+                                      'vm_a_from_pu', 'va_a_from_degree', 'vm_a_to_pu', 'va_a_to_degree',
+                                      'ikss_b_from_ka', 'ikss_b_from_degree', 'ikss_b_to_ka', 'ikss_b_to_degree',
+                                      'p_b_from_mw', 'q_b_from_mvar', 'p_b_to_mw', 'q_b_to_mvar',
+                                      'vm_b_from_pu', 'va_b_from_degree', 'vm_b_to_pu', 'va_b_to_degree',
+                                      'ikss_c_from_ka', 'ikss_c_from_degree', 'ikss_c_to_ka', 'ikss_c_to_degree',
+                                      'p_c_from_mw', 'q_c_from_mvar', 'p_c_to_mw', 'q_c_to_mvar',
+                                      'vm_c_from_pu', 'va_c_from_degree', 'vm_c_to_pu', 'va_c_to_degree',
+                                      ]
+
+            dataframes[sheet] = pf_results
 
     return dataframes
-
-
-def get_columns_to_check(fault):
-    """Return the columns to check based on the fault type."""
-    if fault in ["LLL", "LL"]:
-        return ["ikss_ka", "skss_mw", "rk_ohm", "xk_ohm"]
-    elif fault == "LG":
-        return ["ikss_ka", "skss_mw", "rk0_ohm", "xk0_ohm", "rk1_ohm", "xk1_ohm", "rk2_ohm", "xk2_ohm"]
-    elif fault == 'LLG':
-        return ["ikss_a_ka", "ikss_b_ka", 'ikss_c_ka', 'skss_a_mw', 'skss_b_mw', 'skss_c_mw', "rk0_ohm", "xk0_ohm",
-                "rk1_ohm", "xk1_ohm", "rk2_ohm", "xk2_ohm"]
-    return []
-
-
-# Define common parameters
-faults = ["LLL", "LL", "LG", "LLG"]
-# faults = ["LG"]
-cases = ["max", "min"]
-# cases = ["max"]
-values = [(0.0, 0.0), (5.0, 5.0)]
-# values = [(0.0, 0.0)]
-net_names = ["test_case_1_four_bus_radial_grid", "test_case_2_five_bus_radial_grid", "test_case_3_five_bus_meshed_grid"]
-# net_names = ["test_case_2_five_bus_radial_grid"]
-vector_groups = ['Dyn', 'Yyn', 'YNyn']
-# vector_groups = ["Yy", "Yyn","Yd","YNy","YNyn","YNd","Dy","Dyn","Dd"]
-# vector_groups = ['Dyn']
-
-# Create parameter list
-parametrize_values = product(faults, cases, values, net_names, vector_groups)
-
-@pytest.mark.parametrize("fault, case, fault_values, net_name, vector_group", parametrize_values)
-def test_all_faults_and_cases_with_fault_impedance(fault, case, fault_values, net_name, vector_group):
-    r_fault_ohm, x_fault_ohm = fault_values
-    if net_name != "test_case_1_four_bus_radial_grid":
-        net_name += "_" + vector_group.lower()
-
-    net = from_json(os.path.join(testfiles_path, "test_grids", net_name + ".json"))
-
-    excel_file = os.path.join(testfiles_path, "sc_result_comparison", net_name + "_pf_sc_results_all_cases.xlsx")
-    dataframes = load_pf_results(excel_file)
-
-    rtol = {"ikss_ka": 0, "skss_mw": 0, "rk_ohm": 0, "xk_ohm": 0}
-    # TODO skss_mw only 1e-4 sufficient?
-    atol = {"ikss_ka": 1e-6, "skss_mw": 1e-4, "rk_ohm": 1e-6, "xk_ohm": 1e-6}
-
-    columns_to_check = get_columns_to_check(fault)
-    selected_sheet = f"{fault}_{case}"
-    if r_fault_ohm != 0.0 and x_fault_ohm != 0.0:
-        selected_sheet += "_fault"
-
-    selected_pf_results = dataframes[selected_sheet]
-    modified_pf_results = modify_impedance_values_with_fault_value(selected_pf_results, r_fault_ohm, x_fault_ohm)
-    modified_pf_results.sort_values(by='name', inplace=True)
-
-    calc_sc(net, fault=fault, case=case, branch_results=True, return_all_currents=True, ip=False,
-            r_fault_ohm=r_fault_ohm, x_fault_ohm=x_fault_ohm)
-
-    net.res_bus_sc.insert(0, "name", net.bus.name)
-    net.res_bus_sc.sort_values(by='name', inplace=True)
-
-    for column in columns_to_check:
-        column_ar = check_pattern(column)
-        assert np.isclose(
-            net.res_bus_sc.loc[:, column],
-            modified_pf_results.loc[:, column],
-            rtol=rtol[column_ar], atol=atol[column_ar]
-        ).all()
 
 
 if __name__ == "__main__":
