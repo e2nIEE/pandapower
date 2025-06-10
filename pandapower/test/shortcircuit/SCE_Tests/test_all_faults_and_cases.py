@@ -21,58 +21,66 @@ cases = ["max", "min"]
 values = [(0.0, 0.0), (5.0, 5.0)]
 vector_groups = ['Dyn', 'Yyn', 'YNyn']
 lv_tol_percents = [6, 10]
+fault_location_buses = [0, 1, 2, 3]
 
 # Create parameter list
 parametrize_values = [
-    (fault, case, r_fault, x_fault, lv_tol_percent)
-    for fault in faults
-    for case in cases
-    for r_fault, x_fault in values
-    for lv_tol_percent in lv_tol_percents]
-
-# Create parameter list with vector group
-parametrize_values_vector = [
-    (fault, case, r_fault, x_fault, lv_tol_percent, vector_group)
+    (fault, case, r_fault, x_fault, lv_tol_percent, fault_location_bus)
     for fault in faults
     for case in cases
     for r_fault, x_fault in values
     for lv_tol_percent in lv_tol_percents
-    for vector_group in vector_groups]
+    for fault_location_bus in fault_location_buses]
+
+# Create parameter list with vector group
+parametrize_values_vector = [
+    (fault, case, r_fault, x_fault, lv_tol_percent, vector_group, fault_location_bus)
+    for fault in faults
+    for case in cases
+    for r_fault, x_fault in values
+    for lv_tol_percent in lv_tol_percents
+    for vector_group in vector_groups
+    for fault_location_bus in fault_location_buses]
 
 
-@pytest.mark.parametrize("fault, case, r_fault_ohm, x_fault_ohm, lv_tol_percent", parametrize_values)
-def test_four_bus_radial_grid_all_faults_and_cases_with_fault_impedance(fault, case, r_fault_ohm, x_fault_ohm, lv_tol_percent):
+@pytest.mark.parametrize("fault, case, r_fault_ohm, x_fault_ohm, lv_tol_percent, fault_location_bus", parametrize_values)
+def test_four_bus_radial_grid_all_faults_and_cases_with_fault_impedance(fault, case, r_fault_ohm, x_fault_ohm, lv_tol_percent, fault_location_bus):
     net_name = "test_case_1_four_bus_radial_grid"
-    net, dataframes = load_test_case_data(net_name)
+    net, dataframes = load_test_case_data(net_name, fault_location_bus)
     for key, is_branch in [("bus", False), ("branch", True)]:
-        run_test_cases(net, dataframes[key], fault, case, r_fault_ohm, x_fault_ohm, lv_tol_percent, branch_results=is_branch)
+        run_test_cases(net, dataframes[key], fault, case, r_fault_ohm, x_fault_ohm, lv_tol_percent, fault_location_bus,
+                       branch_results=is_branch)
 
 
-@pytest.mark.parametrize("fault, case, r_fault_ohm, x_fault_ohm, lv_tol_percent, vector_group", parametrize_values_vector)
+@pytest.mark.parametrize("fault, case, r_fault_ohm, x_fault_ohm, lv_tol_percent, vector_group, fault_location_bus", parametrize_values_vector)
 def test_five_bus_radial_grid_all_faults_and_cases_with_fault_impedance(fault, case, r_fault_ohm, x_fault_ohm, lv_tol_percent,
-                                                                        vector_group):
+                                                                        vector_group, fault_location_bus):
     net_name = "test_case_2_five_bus_radial_grid"
-    net, dataframes = load_test_case_data(net_name, vector_group)
+    net, dataframes = load_test_case_data(net_name, fault_location_bus, vector_group)
     for key, is_branch in [("bus", False), ("branch", True)]:
-        run_test_cases(net, dataframes[key], fault, case, r_fault_ohm, x_fault_ohm, lv_tol_percent, branch_results=is_branch)
+        run_test_cases(net, dataframes[key], fault, case, r_fault_ohm, x_fault_ohm, lv_tol_percent, fault_location_bus,
+                       branch_results=is_branch)
 
 
-@pytest.mark.parametrize("fault, case, r_fault_ohm, x_fault_ohm, lv_tol_percent, vector_group", parametrize_values_vector)
+@pytest.mark.parametrize("fault, case, r_fault_ohm, x_fault_ohm, lv_tol_percent, vector_group, fault_location_bus", parametrize_values_vector)
 def test_five_bus_meshed_grid_all_faults_and_cases_with_fault_impedance(fault, case, r_fault_ohm, x_fault_ohm, lv_tol_percent,
-                                                                        vector_group):
+                                                                        vector_group, fault_location_bus):
     net_name = "test_case_3_five_bus_meshed_grid"
-    net, dataframes = load_test_case_data(net_name, vector_group)
+    net, dataframes = load_test_case_data(net_name, fault_location_bus, vector_group)
     for key, is_branch in [("bus", False), ("branch", True)]:
-        run_test_cases(net, dataframes[key], fault, case, r_fault_ohm, x_fault_ohm, lv_tol_percent, branch_results=is_branch)
+        run_test_cases(net, dataframes[key], fault, case, r_fault_ohm, x_fault_ohm, lv_tol_percent, fault_location_bus,
+                       branch_results=is_branch)
 
 
-def load_test_case_data(net_name, vector_group=None):
+def load_test_case_data(net_name, fault_location_bus, vector_group=None):
     if vector_group:
         net_name += "_" + vector_group.lower()
 
     net = from_json(os.path.join(testfiles_path, "test_grids", net_name + ".json"))
-    excel_file_bus = os.path.join(testfiles_path, "sc_result_comparison", net_name + "_pf_sc_results_bus.xlsx")
-    excel_file_branch = os.path.join(testfiles_path, "sc_result_comparison", net_name + "_pf_sc_results_branch.xlsx")
+    excel_file_bus = os.path.join(testfiles_path, "sc_result_comparison",
+                                  net_name + "_pf_sc_results_" + str(fault_location_bus) + "_bus.xlsx")
+    excel_file_branch = os.path.join(testfiles_path, "sc_result_comparison",
+                                     net_name + "_pf_sc_results_" + str(fault_location_bus) + "_branch.xlsx")
     dataframes = {
         'bus': load_pf_results(excel_file_bus),
         'branch': load_pf_results(excel_file_branch)
@@ -80,7 +88,8 @@ def load_test_case_data(net_name, vector_group=None):
     return net, dataframes
 
 
-def run_test_cases(net, dataframes, fault, case, r_fault_ohm, x_fault_ohm, lv_tol_percent, branch_results=False):
+def run_test_cases(net, dataframes, fault, case, r_fault_ohm, x_fault_ohm, lv_tol_percent, fault_location_bus,
+                   branch_results=False):
     """
     Executes test cases for a given grid with specific fault parameters, fault type and case.
 
@@ -95,6 +104,7 @@ def run_test_cases(net, dataframes, fault, case, r_fault_ohm, x_fault_ohm, lv_to
         case: A string indicating the specific case. min or max
         r_fault_ohm: The resistive fault value in Ohms.
         x_fault_ohm: The reactive fault value in Ohms.
+        fault_location_bus: index of the bus the fault is located at.
         branch_results: A boolean indicating whether branch results are calculated or not.
 
     Raises:
@@ -124,7 +134,7 @@ def run_test_cases(net, dataframes, fault, case, r_fault_ohm, x_fault_ohm, lv_to
     selected_pf_results = dataframes[selected_sheet]
     modified_pf_results = modify_impedance_values_with_fault_value(selected_pf_results, r_fault_ohm, x_fault_ohm)
 
-    calc_sc(net, fault=fault, case=case, branch_results=branch_results, return_all_currents=False, ip=False,
+    calc_sc(net, bus=fault_location_bus, fault=fault, case=case, branch_results=branch_results, return_all_currents=False, ip=False,
             r_fault_ohm=r_fault_ohm, x_fault_ohm=x_fault_ohm, lv_tol_percent=lv_tol_percent)
 
     if branch_results:
@@ -155,7 +165,7 @@ def run_test_cases(net, dataframes, fault, case, r_fault_ohm, x_fault_ohm, lv_to
         net.res_bus_sc = net.res_bus_sc[['name'] + [col for col in net.res_bus_sc.columns if col != 'name']]
         net.res_bus_sc.sort_values(by='name', inplace=True)
 
-        for bus in net.bus.name:
+        for bus in net.res_bus_sc.name:
             for column in columns_to_check:
                 if column == 'name':
                     continue
