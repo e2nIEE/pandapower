@@ -5,6 +5,7 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+
 def create_network_dict(app, flag_graphics='GPS'):
     # elements to be exported from PowerFactory
     set_object_extentions = {
@@ -24,7 +25,6 @@ def create_network_dict(app, flag_graphics='GPS'):
         'ElmSvs',
         'ElmVsc',
         'ElmVscmono',
-
 
         # branch elements:
         'ElmLne',
@@ -234,13 +234,13 @@ def run_load_flow(app, scale_feeder_loads=False, load_scaling=None, gen_scaling=
     # print("pf result", res)
     if res != 0:
         logger.error('Load flow failed due to divergence of %s loops' % ['inner', 'outer'][res - 1])
-#        raise RuntimeError(
-#            'Load flow failed due to divergence of %s loops' % ['inner', 'outer'][res - 1])
+    #        raise RuntimeError(
+    #            'Load flow failed due to divergence of %s loops' % ['inner', 'outer'][res - 1])
     return res
 
 
 def setup_unit_exponents(prj, elm_class, unit, exponent):
-    cdigexp = 'M' if unit in ['var', 'W', 'VA'] else 'u' if unit in ['F/km', 'F'] else 'k' if unit=='A' else ''
+    cdigexp = 'M' if unit in ['var', 'W', 'VA'] else 'u' if unit in ['F/km', 'F'] else 'k' if unit == 'A' else ''
     logger.debug('setting unit exponents: %s, %s, %s, %s' % (elm_class, unit, cdigexp, exponent))
     settings_folder = prj.GetContents('*.SetFold')[0]
     units_folder = settings_folder.GetContents('*.IntUnit')
@@ -283,8 +283,8 @@ def setup_project_power_exponent(prj, exponent):
         object.campexp = 'k'  # current kA
 
 
-def run_short_circuit(app, fault_type="lll", calc_mode="max", fault_impedance_rf=0, fault_impedance_xf=0,
-                      lv_tol_percent=10):
+def run_short_circuit(app, fault_type="LLL", calc_mode="max", fault_impedance_rf=0, fault_impedance_xf=0,
+                      lv_tol_percent=10, fault_location_index=None):
     """
     Executes a short-circuit calculation in PowerFactory using IEC 60909 standard.
 
@@ -292,7 +292,7 @@ def run_short_circuit(app, fault_type="lll", calc_mode="max", fault_impedance_rf
         The active PowerFactory application instance.
     fault_type : str, optional
         Type of fault to simulate:
-        - "lll": three-phase short circuit (default)
+        - "LLL": three-phase short circuit (default)
         - "ll": line-to-line fault
         - "lg": single line-to-ground fault
         - "llg": double line-to-ground fault
@@ -314,13 +314,13 @@ def run_short_circuit(app, fault_type="lll", calc_mode="max", fault_impedance_rf
 
     # set fault type
     fault_types = {
-        "lll": '3psc',      # 3 phase
-        "ll": '2psc',       # 2 phase
-        "lg": 'spgf',       # 1 phase to ground
-        "llg": '2pgf'       # 2 phase to ground
+        "LLL": '3psc',  # 3 phase
+        "LL": '2psc',  # 2 phase
+        "LG": 'spgf',  # 1 phase to ground
+        "LLG": '2pgf'  # 2 phase to ground
     }
     if fault_type not in fault_types:
-        raise ValueError(f"Unknown fault current: {fault_type}. Use 'lll', 'll', 'lg' or 'llg' for 3 phase, 2 phase, "
+        raise ValueError(f"Unknown fault current: {fault_type}. Use 'LLL', 'LL', 'LG or 'LLG' for 3 phase, 2 phase, "
                          f"1 phase to ground or 2 phase to ground ")
     com_shc.iopt_shc = fault_types[fault_type]
 
@@ -332,27 +332,34 @@ def run_short_circuit(app, fault_type="lll", calc_mode="max", fault_impedance_rf
     else:
         raise ValueError(f"Unknown modus: {calc_mode}. Use 'max' or 'min'.")
 
-    # set fault location
-    com_shc.iopt_allbus = 1  # all buses
-    # if fault_location == "all":
-    #     com_shc.iopt_allbus = 1  # all buses
-    # else:
-    #     com_shc.iopt_allbus = 0
-    #     com_shc.shcobj = fault_location
-
     # set fault impedance
-    # com_shc.rFault = fault_impedance_rf
-    # com_shc.xFault = fault_impedance_xf
     com_shc.Rf = fault_impedance_rf
     com_shc.Xf = fault_impedance_xf
 
     # set lv_tol_percent
     com_shc.i_lvtol = lv_tol_percent
 
+    # set fault location
+    if fault_location_index is None:
+        com_shc.iopt_allbus = 1  # all buses
+        location_str = "all buses"
+    else:
+        busbars = app.GetCalcRelevantObjects('*.ElmTerm')
+        if not busbars:
+            raise RuntimeError("No busbars (ElmTerm) found in the project.")
+        if fault_location_index < 0 or fault_location_index >= len(busbars):
+            raise IndexError(f"fault_location_index {fault_location_index} out of range."
+                             f" Max. possible index: {len(busbars)-1}")
+        fault_bus = busbars[fault_location_index]
+        com_shc.iopt_allbus = 0  # specific bus
+        com_shc.shcobj = fault_bus
+        location_str = f"{fault_bus.loc_name} ({fault_bus.GetFullName()})"
+
     logger.info("---------------------------------------------------------------------------------")
     logger.info("PowerFactory short circuit settings:")
     logger.info(f"Method: IEC 60909 | Fault type: {fault_type} | Mode: {calc_mode}")
-    logger.info(f"Fault locations: all buses | Fault impedance: Rf={fault_impedance_rf} Ohm, Xf={fault_impedance_xf} Ohm")
+    logger.info(
+        f"Fault locations: {location_str} | Fault impedance: Rf={fault_impedance_rf} Ohm, Xf={fault_impedance_xf} Ohm")
     logger.info("---------------------------------------------------------------------------------")
 
     res = com_shc.Execute()

@@ -146,7 +146,9 @@ def run_test_cases(net, dataframes, fault, case, r_fault_ohm, x_fault_ohm, lv_to
                     net.res_line_sc.loc[net.res_line_sc.name == line, column].values[0],
                     modified_pf_results.loc[modified_pf_results.name == line, column].values[0],
                     rtol=rtol[column_ar], atol=atol[column_ar]
-                )
+                ), \
+                    (f"{column} mismatch for {line}: {net.res_line_sc.loc[net.res_line_sc.name == line, column].values[0]}"
+                     f"vs {modified_pf_results.loc[modified_pf_results.name == line, column].values[0]}")
     else:
         columns_to_check = net.res_bus_sc.columns
         net.res_bus_sc["name"] = net.bus.name
@@ -162,7 +164,8 @@ def run_test_cases(net, dataframes, fault, case, r_fault_ohm, x_fault_ohm, lv_to
                     net.res_bus_sc.loc[net.bus.name == bus, column].values[0],
                     modified_pf_results.loc[modified_pf_results.name == bus, column].values[0],
                     rtol=rtol[column_ar], atol=atol[column_ar]
-                )
+                ), (f"{column} mismatch for {bus}: {net.res_bus_sc.loc[net.bus.name == bus, column].values[0]}"
+                    f"vs {modified_pf_results.loc[modified_pf_results.name == bus, column].values[0]}")
 
 
 def check_pattern(pattern):
