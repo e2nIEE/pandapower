@@ -11,7 +11,7 @@ except ImportError:
     import logging
 #logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 #logger = logging.getLogger(__name__)
-proj_name = "Short_Circuit_Test_Case_2_SCE"
+proj_name = "test_case_2_five_bus_radial_grid_dyn_gen"
 
 app = pf.GetApplication()
 app.ActivateProject(proj_name)
