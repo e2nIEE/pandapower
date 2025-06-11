@@ -165,6 +165,11 @@ def _calculate_bus_results_llg(ppc_0, ppc_1, ppc_2, bus, net):
     # we use 3D arrays here to easily identify via axis:
     # 0: line index, 1: from/to, 2: phase
     # short-ciruit for rotating machine (ext-grid and gen)
+    bus_lookup = net._pd2ppc_lookups["bus"]
+    ppc_index = bus_lookup[net.bus.index]
+    skss_abc_mva = np.full((len(ppc_index), 3), np.nan, dtype=np.float64)
+    ikss_abc_ka = np.full((len(ppc_index), 3), np.nan, dtype=np.float64)
+
     i_1_ka_0 = ppc_0['bus'][:, IKSSV] * np.exp(1j * np.deg2rad(ppc_0['bus'][:, PHI_IKSSV_DEGREE].real))[:, np.newaxis]
     i_1_ka_1 = ppc_1['bus'][:, IKSSV] * np.exp(1j * np.deg2rad(ppc_1['bus'][:, PHI_IKSSV_DEGREE].real))[:, np.newaxis]
     i_1_ka_2 = ppc_2['bus'][:, IKSSV] * np.exp(1j * np.deg2rad(ppc_2['bus'][:, PHI_IKSSV_DEGREE].real))[:, np.newaxis]
@@ -206,14 +211,16 @@ def _calculate_bus_results_llg(ppc_0, ppc_1, ppc_2, bus, net):
 
     # this is inefficient because it copies data to fit into a shape, better to use a slice,
     # and even better to find how to use sequence-based powers:
-    baseV = ppc_1['bus'][:, BASE_KV][:, np.newaxis]
+    baseV = ppc_1['bus'][bus, BASE_KV][:, np.newaxis]
     # baseV = ppc_1["internal"]["baseV"][bus][:, np.newaxis]
     # v_base_kv = np.stack([baseV, baseV, baseV], 2)
-    skss_abc_mva = i_1_abc_ka_abs * baseV / np.sqrt(3)
+    skss_abc_mva_phase = i_1_abc_ka_abs * baseV / np.sqrt(3)
+    skss_abc_mva[np.ix_(bus, [0,1,2,])] = skss_abc_mva_phase
+    ikss_abc_ka[np.ix_(bus, [0,1,2,])] = i_1_abc_ka_abs
 
     # Adding the ikss and skss values
     for i, phase in enumerate(['a', 'b', 'c']):
-        net.res_bus_sc[f'ikss_{phase}_ka'] = i_1_abc_ka_abs[:, i]  # ikss values
+        net.res_bus_sc[f'ikss_{phase}_ka'] = ikss_abc_ka[:, i]  # ikss values
         net.res_bus_sc[f'skss_{phase}_mw'] = skss_abc_mva[:, i]  # skss values
 
 
