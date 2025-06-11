@@ -4,8 +4,8 @@ import pandas as pd
 import numpy as np
 from pandapower.shortcircuit.calc_sc import calc_sc
 from pandapower.file_io import from_json
-from pandapower.test.shortcircuit.SCE_Tests.sc_result_comparison.get_pf_shortcircuit_results import fault_location
-from pandapower.test.shortcircuit.SCE_Tests.test_all_faults_and_cases import (check_pattern,
+from pandapower.test.shortcircuit.sce_Tests.sc_result_comparison.get_pf_shortcircuit_results import fault_location
+from pandapower.test.shortcircuit.sce_Tests.test_all_faults_and_cases import (check_pattern,
                                                                               modify_impedance_values_with_fault_value,
                                                                               load_pf_results)
 

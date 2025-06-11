@@ -1,5 +1,5 @@
 from pandapower.converter.powerfactory.pf_export_functions import run_short_circuit
-from pandapower.test.shortcircuit.SCE_Tests.sc_result_comparison.get_pf_shortcircuit_results import get_pf_sc_bus_results, get_pf_sc_branch_results
+from pandapower.test.shortcircuit.sce_tests.sc_result_comparison.get_pf_shortcircuit_results import get_pf_sc_bus_results, get_pf_sc_branch_results
 import sys
 sys.path.append(r"C:\Program Files\DIgSILENT\PowerFactory 2024 SP1\Python\3.11")
 try:
