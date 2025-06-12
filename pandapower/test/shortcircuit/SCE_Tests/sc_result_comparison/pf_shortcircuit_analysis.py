@@ -147,7 +147,7 @@ class PFShortCircuitAnalysis:
             "pf_p_to_mw": "m:P:bus2",
             "pf_q_from_mvar": "m:Q:bus1",
             "pf_q_to_mvar": "m:Q:bus2",
-            "pf_ikss_from_degree": "n:phii:bus2",
+            "pf_ikss_from_degree": "m:phii:bus1",
             "pf_ikss_to_degree": "m:phii:bus2"
         }
 
@@ -176,9 +176,9 @@ class PFShortCircuitAnalysis:
             "pf_q_a_to_mvar": "m:Q:bus2:A",
             "pf_q_b_to_mvar": "m:Q:bus2:B",
             "pf_q_c_to_mvar": "m:Q:bus2:C",
-            "pf_ikss_a_from_degree": "n:phii:bus2:A",
-            "pf_ikss_b_from_degree": "n:phii:bus2:B",
-            "pf_ikss_c_from_degree": "n:phii:bus2:C",
+            "pf_ikss_a_from_degree": "m:phii:bus1:A",
+            "pf_ikss_b_from_degree": "m:phii:bus1:B",
+            "pf_ikss_c_from_degree": "m:phii:bus1:C",
             "pf_ikss_a_to_degree": "m:phii:bus2:A",
             "pf_ikss_b_to_degree": "m:phii:bus2:B",
             "pf_ikss_c_to_degree": "m:phii:bus2:C"
