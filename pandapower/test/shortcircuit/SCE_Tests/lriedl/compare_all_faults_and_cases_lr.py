@@ -4,8 +4,8 @@ import pandas as pd
 import numpy as np
 from pandapower.shortcircuit.calc_sc import calc_sc
 from pandapower.file_io import from_json
-from pandapower.test.shortcircuit.sce_Tests.sc_result_comparison.get_pf_shortcircuit_results import fault_location
-from pandapower.test.shortcircuit.sce_Tests.test_all_faults_and_cases import (check_pattern,
+from pandapower.test.shortcircuit.sce_tests.sc_result_comparison.get_pf_shortcircuit_results import fault_location
+from pandapower.test.shortcircuit.sce_tests.test_all_faults_and_cases import (check_pattern,
                                                                               modify_impedance_values_with_fault_value,
                                                                               load_pf_results)
 
@@ -101,23 +101,23 @@ def compare_sc_results(net, excel_file, branch=False, fault_location=None):
 #net.sgen['k'] = 1.2
 #excel_file = r'/pandapower/test/shortcircuit/SCE_Tests/sc_result_comparison/test_case_2_five_bus_radial_grid_dyn_gen_pf_sc_results_bus.xlsx'
 
-net = from_json('test_case_1_four_bus_radial_grid.json')
-excel_file = r"C:\Users\lriedl\PycharmProjects\pandapower\pandapower\test\shortcircuit\SCE_Tests\sc_result_comparison\test_case_1_four_bus_radial_grid_pf_sc_results_[2]_bus.xlsx"
+#net = from_json('test_case_1_four_bus_radial_grid.json')
+excel_file = r"C:\Users\lriedl\PycharmProjects\pandapower\pandapower\test\shortcircuit\SCE_Tests\sc_result_comparison\test_case_1_four_bus_radial_grid_pf_sc_results_2_bus.xlsx"
 diff_df = compare_sc_results(net, excel_file, fault_location=2)
 
 ##
-net = from_json('test_case_1_four_bus_radial_grid.json')
+net = from_json(r"C:\Users\lriedl\PycharmProjects\pandapower\pandapower\test\shortcircuit\sce_tests\test_grids\test_case_1_four_bus_radial_grid.json")
 # excel_file = r'/pandapower/test/shortcircuit/SCE_Tests/sc_result_comparison/test_case_1_four_bus_radial_grid_pf_sc_results_branch.xlsx'
 excel_file = r"C:\Users\lriedl\PycharmProjects\pandapower\pandapower\test\shortcircuit\SCE_Tests\sc_result_comparison\test_case_1_four_bus_radial_grid_pf_sc_results_2_branch.xlsx"
 diff_df_branch = compare_sc_results(net, excel_file, branch=True, fault_location=2)
 
 ##
-fault = 'LLL'
+fault = 'LG'
 branch= True
-case = 'min'
+case = 'max'
 r_fault_ohm = 0
 x_fault_ohm = 0
-fault_location = 0
+fault_location = 2
 calc_sc(net, fault=fault, case=case, branch_results=branch, ip=False,
                             r_fault_ohm=r_fault_ohm, x_fault_ohm=x_fault_ohm, bus=fault_location, return_all_currents=True)
 

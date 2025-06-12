@@ -1,6 +1,9 @@
 import sys
 from pandapower.converter.powerfactory.export_pfd_to_pp import from_pfd
 import pandas as pd
+import os
+from pandapower import pp_dir
+import pandapower as pp
 from pandapower.converter.powerfactory.pf_export_functions import run_load_flow
 from pandapower.converter.powerfactory.validate import validate_pf_conversion
 sys.path.append(r"C:\Program Files\DIgSILENT\PowerFactory 2024 SP1\Python\3.11")
@@ -32,3 +35,18 @@ from pandapower.shortcircuit.calc_sc import calc_sc
 calc_sc(net, fault="LL", case='max', branch_results=False, ip=True)
 
 net.res_bus_sc = pd.concat([net.res_bus_sc, pf_sc_results], axis=1)
+
+## convert all pf nets
+folder = os.path.join(pp_dir, "test", "shortcircuit", "sce_tests", "test_grids")
+pfd_files = [f for f in os.listdir(folder) if f.endswith(".pfd")]
+pfd_files.remove('test_case_2_five_bus_radial_grid_dyn_gen.pfd')
+pfd_files.remove('test_case_4_twenty_bus_radial_grid_Dyn.pfd')
+pfd_files.remove('test_case_4_twenty_bus_radial_grid_YNyn.pfd')
+pfd_files.remove('test_case_4_twenty_bus_radial_grid_Yyn.pfd')
+for proj_name in pfd_files:
+    proj_name = proj_name[:-4]
+    net = from_pfd(app, prj_name=proj_name)
+    pp.to_json(net, fr"C:\Users\lriedl\PycharmProjects\pandapower\pandapower\test\shortcircuit\sce_tests\test_grids\{proj_name}.json")
+
+##
+
