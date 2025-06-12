@@ -1,4 +1,4 @@
-import pandapower as pp
+from pandapower.file_io import to_json, to_pickle
 from .echo_off import echo_off, echo_on
 from .logger_setup import AppHandler, set_PF_level
 from .pf_export_functions import run_load_flow, create_network_dict
@@ -63,7 +63,7 @@ def from_pfd(app, prj_name: str, path_dst=None, pv_as_slack=False, pf_variable_p
     prj.Deactivate()
     echo_on(app)
     if path_dst is not None:
-        pp.to_json(net, path_dst)
+        to_json(net, path_dst)
         logger.info('saved net as %s', path_dst)
     return net
 
@@ -105,7 +105,7 @@ def execute(app, path_src, path_dst, pv_as_slack, scale_feeder_loads=False, var_
     prj.Deactivate()
     echo_on(app)
 
-    pp.to_pickle(net, path_dst)
+    to_pickle(net, path_dst)
 
     return net, trafo_name, trafo_desc
 

@@ -47,7 +47,7 @@ The power equation in the balanced three phase system is therefore given as :mat
 For unbalanced three phase systems, the following conventions apply:
     - voltage values are entered as phase-to-phase voltages
     - current values are entered as phase currents
-    - But, Phase power values can be entered seperately in the new element **asymmetric_load** 
+    - But, Phase power values can be entered separately in the new element **asymmetric_load**
 
 The power equation in each phase is therefore given as :math:`S_{ph-e} = \frac{V_{ph-ph} \cdot I_{ph-ph}}{\sqrt3 }`.
 	

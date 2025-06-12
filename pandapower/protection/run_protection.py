@@ -1,6 +1,4 @@
-import pandapower.shortcircuit as sc
 import pandas as pd
-
 
 def calculate_protection_times(net, scenario="sc"):
     """

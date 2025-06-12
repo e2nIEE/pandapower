@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -13,14 +13,15 @@ import numpy as np
 import pandas as pd
 import pytest
 
-import pandapower as pp
-import pandapower.control as ct
-import pandapower.networks as nw
-import pandapower.timeseries as ts
 from pandapower.control import ConstControl
+from pandapower.create import create_pwl_cost
+from pandapower.file_io import to_json, from_json
 from pandapower.networks import simple_four_bus_system
+from pandapower.networks.power_system_test_cases import case5
+from pandapower.run import runpp
 from pandapower.test.timeseries.test_timeseries import create_data_source, simple_test_net
-from pandapower.timeseries import DFData, OutputWriter
+from pandapower.timeseries.data_sources.frame_data import DFData
+from pandapower.timeseries.output_writer import OutputWriter
 from pandapower.timeseries.run_time_series import run_timeseries
 
 logger = logging.getLogger(__name__)
@@ -37,8 +38,8 @@ def test_output_writer_log(simple_test_net):
     ds = DFData(df)
 
     # Create gen controller with datasource
-    ct.ConstControl(net, element="load", variable="p_mw", element_index=[0, 2], data_source=ds,
-                    profile_name=[0, 2])
+    ConstControl(net, element="load", variable="p_mw", element_index=[0, 2], data_source=ds,
+                 profile_name=[0, 2])
 
     # Create, add output and set outputwriter
     ow = OutputWriter(net, output_path=tempfile.gettempdir())
@@ -235,14 +236,14 @@ def test_store_and_load(simple_test_net):
     ow = OutputWriter(net, output_path=dirname, output_file_type=".json")
     ow.remove_log_variable("res_bus")
     tmp_file = os.path.join(dirname, "net.json")
-    pp.to_json(net, tmp_file)
+    to_json(net, tmp_file)
     del net
     del ow
     res_line_file = os.path.join(dirname, "res_line", "loading_percent.json")
     # del result file is one is present
     if os.path.isfile(res_line_file):
         os.remove(res_line_file)
-    net = pp.from_json(tmp_file)
+    net = from_json(tmp_file)
     ow = net.output_writer.iat[0, 0]
     assert len(ow.log_variables) == 1
     assert ow.output_path == dirname
@@ -266,7 +267,7 @@ def test_ppc_log(simple_test_net):
                       log_variables=list())
     ow.log_variable('ppc_bus', 'vm')
     ow.log_variable('ppc_bus', 'va')
-    pp.runpp(net, only_v_results=True, recycle={"bus_pq": True, "gen": False, "trafo": False})
+    runpp(net, only_v_results=True, recycle={"bus_pq": True, "gen": False, "trafo": False})
     run_timeseries(net, time_steps, recycle={"bus_pq": True, "gen": False, "trafo": False},
                    only_v_results=True, verbose=False)
     assert len(ow.output["ppc_bus.vm"]) == n_timesteps
@@ -285,12 +286,12 @@ def test_ow_index():
     ds_p = DFData(p_data)
     ds_v = DFData(v_data)
 
-    ct.ConstControl(net, element='load', variable='p_mw',
-                    element_index=net.load.index.tolist(), data_source=ds_p,
-                    profile_name=p_data.columns)
-    ct.ConstControl(net, element='ext_grid', variable='vm_pu',
-                    element_index=0, data_source=ds_v,
-                    profile_name='0')
+    ConstControl(net, element='load', variable='p_mw',
+                 element_index=net.load.index.tolist(), data_source=ds_p,
+                 profile_name=p_data.columns)
+    ConstControl(net, element='ext_grid', variable='vm_pu',
+                 element_index=0, data_source=ds_v,
+                 profile_name='0')
 
     ow = OutputWriter(net)
     ow.log_variable('res_bus', 'vm_pu')
@@ -302,24 +303,24 @@ def test_ow_index():
 
 
 def test_equal_eval_name_warning_and_costs():
-    net = nw.case5()
+    net = case5()
     net.poly_cost = net.poly_cost.iloc[0:0]
-    pp.create_pwl_cost(net, 0, "sgen", [[0, 20, 1], [20, 30, 2]])
-    pp.create_pwl_cost(net, 0, "gen", [[0, 20, 1], [20, 30, 2]])
-    pp.create_pwl_cost(net, 1, "gen", [[0, 20, 1], [20, 30, 2]])
-    pp.create_pwl_cost(net, 2, "gen", [[0, 20, 1], [20, 30, 2]])
+    create_pwl_cost(net, 0, "sgen", [[0, 20, 1], [20, 30, 2]])
+    create_pwl_cost(net, 0, "gen", [[0, 20, 1], [20, 30, 2]])
+    create_pwl_cost(net, 1, "gen", [[0, 20, 1], [20, 30, 2]])
+    create_pwl_cost(net, 2, "gen", [[0, 20, 1], [20, 30, 2]])
     df = pd.DataFrame({0: [200, 300, 400, 500], 1: [400, 300, 100, 50], 2: [100, 300, 200, 100]})
-    ds = ts.DFData(df.astype(np.float64))
-    _ = ct.ConstControl(net, "load", "p_mw", net.load.index, profile_name=net.load.index,
-                        data_source=ds)
-    ow = ts.OutputWriter(net, output_path=None)
+    ds = DFData(df.astype(np.float64))
+    _ = ConstControl(net, "load", "p_mw", net.load.index, profile_name=net.load.index,
+                     data_source=ds)
+    ow = OutputWriter(net, output_path=None)
     ow.log_variable("res_sgen", "p_mw", None, np.max, 'warnme')
     ow.log_variable("res_load", "p_mw", None, np.max, 'warnme')
     ow.log_variable("pwl_cost", "points", eval_function=cost_logging)
 
     ow.remove_log_variable("res_bus", "vm_pu")
     ow.remove_log_variable("res_line", "loading_percent")
-    ts.run_timeseries(net, verbose=False)
+    run_timeseries(net, verbose=False)
 
     p_sgen = ow.output["res_sgen.p_mw"]
     p_load = ow.output["res_load.p_mw"]

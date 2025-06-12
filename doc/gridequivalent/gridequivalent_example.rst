@@ -13,12 +13,13 @@ First, we create an example network.
 
 .. code:: python
 
-	import pandapower as pp
+	from pandapower import runpp
+    from pandapower.networks import case9
 
-	net = pp.case9()
+	net = case9()
     
 	# getting power flow results
-	pp.runpp(net)
+	runpp(net)
     
     
 Define Grid Areas

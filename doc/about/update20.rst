@@ -39,10 +39,10 @@ it will be for the convert_format function to apply all necessary changes. There
 With pandapower 2.0, we also advice to save networks in the .json format. It is much more robust to updates of libraries (for example, a .p file created with pandas < 0.20 can
 not be loaded with pandas 0.20 due to a change in the internal data structures. This is not an issue when saving the networks as .json files). So resave your pickle files as .json files such as ::
 
-    import pandapower as pp
-    net = pp.from_pickle("C:\\my_file.p")
-    pp.runpp(net)
-    pp.to_json(net, "C:\\my_file_2.0.json")
+    from pandapower import from_pickle, runpp, to_json
+    net = from_pickle("C:\\my_file.p")
+    runpp(net)
+    to_json(net, "C:\\my_file_2.0.json")
 
 
 Transformer parameter naming
@@ -181,7 +181,7 @@ the cost parameters can be directly specified as parameters instead of passing a
 | **pandapower 2.x** | :code:`pp.create_poly_cost(net, 3, "gen", c_per_mw=0.1, c2_per_mw2=0.01)`                                    |
 +--------------------+--------------------------------------------------------------------------------------------------------------+
 
-The definition of piecewise linear costs has also changed. In pandapower 1.x, the cost polyonmial is given as list of cost points: ::
+The definition of piecewise linear costs has also changed. In pandapower 1.x, the cost polynomial is given as list of cost points: ::
 
     [(p1, c1), (p2, c2), (p3, c3)]
 

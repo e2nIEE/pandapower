@@ -37,8 +37,13 @@ class LinearShuntCompensatorCim16:
         eqssh_shunts = eqssh_shunts.rename(columns={
             'rdfId': sc['o_id'], 'rdfId_Terminal': sc['t'], 'connected': 'in_service', 'index_bus': 'bus',
             'nomU': 'vn_kv', 'sections': 'step', 'maximumSections': 'max_step'})
+        # complex conductance
         y = eqssh_shunts['gPerSection'] + eqssh_shunts['bPerSection'] * 1j
+        # apparent power
         s = eqssh_shunts['vn_kv'] ** 2 * np.conj(y)
         eqssh_shunts['p_mw'] = s.values.real
         eqssh_shunts['q_mvar'] = s.values.imag
+        # create step_dependency_table flag
+        if 'step_dependency_table' not in eqssh_shunts.columns:
+            eqssh_shunts["step_dependency_table"] = False
         return eqssh_shunts

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 def match_sql_type(dtype):
     if dtype in ("float", "float32", "float64"):
         return "double precision"
-    elif dtype in ("int", "int32", "int64", "uint32", "uint64"):
+    elif dtype in ("int", "int32", "int64", "uint32", "uint64", "Int64"):
         return "bigint"
     elif dtype in ("object", "str"):
         return "varchar"
@@ -117,6 +117,8 @@ def upload_sql_table(conn, cursor, table_name, table, index_name=None, timestamp
                   for x in table[table_columns].itertuples(index=tuples_index)]
     else:
         tuples = [tuple(x) for x in table[table_columns].itertuples(index=tuples_index)]
+    # Replace pd.NA values with None for conversion to postgres NULL
+    tuples = [tuple(None if value is pd.NA else value for value in row) for row in tuples]
 
     # Comma-separated dataframe columns
     sql_columns = [index_name, *table_columns, *id_columns.keys()]

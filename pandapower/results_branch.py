@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -753,7 +753,7 @@ def _get_switch_results(net, ppc, i_ft, suffix=None):
     _copy_switch_results_from_branches(net, suffix)
     if "in_ka" in net.switch.columns:
         net[res_switch_df]["loading_percent"] = net[res_switch_df]["i_ka"].values / net.switch["in_ka"].values * 100
-        
+
 
 def _copy_switch_results_from_branches(net, suffix=None, current_parameter="i_ka"):
     res_switch_df = "res_switch" if suffix is None else "res_switch%s" % suffix
@@ -762,7 +762,7 @@ def _copy_switch_results_from_branches(net, suffix=None, current_parameter="i_ka
     if len(switch_lines) > 0:
         res_line_df = "res_line" if suffix is None else "res_line%s" % suffix
         net[res_switch_df].loc[switch_lines.index, current_parameter] = net[res_line_df].loc[switch_lines.values, current_parameter].values
-        
+
     switch_trafo = net.switch[net.switch.et.values=="t"]
     if len(switch_trafo) > 0:
         res_trafo_df = "res_trafo" if suffix is None else "res_trafo%s" % suffix

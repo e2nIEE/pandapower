@@ -33,13 +33,13 @@ This structure is saved to a ``*.csv`` file and can be read by pandas and passed
     import numpy as np
     import pandas as pd
 
-    import pandapower.control as control
-    import pandapower.networks as nw
-    import pandapower.timeseries as timeseries
+    from pandapower.control import ConstControl
+    from pandapower.networks import mv_oberrhein
+    from pandapower.timeseries import run_timeseries, OutputWriter
     from pandapower.timeseries.data_sources.frame_data import DFData
 
     # load a pandapower network
-    net = nw.mv_oberrhein(scenario='generation')
+    net = mv_oberrhein(scenario='generation')
     # number of time steps
     n_ts = 95
     # load your timeseries from a file (here csv file)
@@ -54,8 +54,8 @@ This structure is saved to a ``*.csv`` file and can be read by pandas and passed
     # the element_index specifies which elements to update (here all sgens in the net since net.sgen.index is passed)
     # the controlled variable is "p_mw"
     # the profile_name are the columns in the csv file (here this is also equal to the sgen indices 0-N )
-    const_sgen = control.ConstControl(net, element='sgen', element_index=net.sgen.index,
-                                      variable='p_mw', data_source=ds, profile_name=net.sgen.index)
+    const_sgen = ConstControl(net, element='sgen', element_index=net.sgen.index,
+                              variable='p_mw', data_source=ds, profile_name=net.sgen.index)
 
     # do the same for loads
     # df = pd.read_csv("load_timeseries.csv")
@@ -63,11 +63,11 @@ This structure is saved to a ``*.csv`` file and can be read by pandas and passed
     df = pd.DataFrame(np.random.normal(1., 0.1, size=(n_ts, len(net.load.index))),
                       index=list(range(n_ts)), columns=net.load.index) * net.load.p_mw.values
     ds = DFData(df)
-    const_load = control.ConstControl(net, element='load', element_index=net.load.index,
-                                      variable='p_mw', data_source=ds, profile_name=net.load.index)
+    const_load = ConstControl(net, element='load', element_index=net.load.index,
+                              variable='p_mw', data_source=ds, profile_name=net.load.index)
 
     # starting the timeseries simulation for one day -> 96 15 min values.
-    timeseries.run_timeseries(net)
+    run_timeseries(net)
 
 
 We created a ``DataSource`` and passed it to the ``ConstControl``, while also providing the name of the
@@ -76,13 +76,13 @@ P-profile. To get the time series calculation results and save it to separate fi
 ::
 
     # initialising the outputwriter to save data to excel files in the current folder. You can change this to .json, .csv, or .pickle as well
-    ow = timeseries.OutputWriter(net, output_path="./", output_file_type=".xlsx")
+    ow = OutputWriter(net, output_path="./", output_file_type=".xlsx")
     # adding vm_pu of all buses and line_loading in percent of all lines as outputs to be stored
     ow.log_variable('res_bus', 'vm_pu')
     ow.log_variable('res_line', 'loading_percent')
 
     # starting the timeseries simulation for one day -> 96 15 min values.
-    timeseries.run_timeseries(net)
+    run_timeseries(net)
     # now checkout the folders res_bus and res_line in your current working dir
 
 We created an ``OutputWriter`` and stored the voltage magnitude **vm_pu** for each bus and the line loading in percent

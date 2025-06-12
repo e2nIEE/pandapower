@@ -40,7 +40,7 @@ The network constraints contain constraints for bus voltages and branch flows:
    :file: opf_constraints.csv
    :delim: ;
 
-The defaults are unconstraint branch loadings and :math:`\pm 1.0 pu` for bus voltages.
+The defaults are unconstrained branch loadings and :math:`\pm 1.0 pu` for bus voltages.
 
 Cost functions
 ---------------
@@ -74,10 +74,10 @@ Polynomial cost functions can be specified using create_poly_cost():
 
 .. note::
 	Please note, that polynomial costs for reactive power can only be quadratic, linear or constant.
-	Piecewise linear cost funcions for reactive power are not working at the moment with 2 segments or more.
+	Piecewise linear cost functions for reactive power are not working at the moment with 2 segments or more.
 	Loads can only have 2 data points in their piecewise linear cost function for active power.
 
-Active and reactive power costs are calculted separately. The costs of all types are summed up to determine the overall costs for a grid state.
+Active and reactive power costs are calculated separately. The costs of all types are summed up to determine the overall costs for a grid state.
 
 Visualization of cost functions
 --------------------------------

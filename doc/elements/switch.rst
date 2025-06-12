@@ -43,7 +43,7 @@ This has the following advantages compared to modelling the switch as a small im
     
 *Bus-Element-Switches:*
 
-When the power flow is calculated internally for every open bus-element switch an auxilary bus is created in the pypower case file. The pypower branch that corresponds to the element is then connected to this bus. This has the following advantages compared to modelling the switch by setting the element out of service:
+When the power flow is calculated internally for every open bus-element switch an auxiliary bus is created in the pypower case file. The pypower branch that corresponds to the element is then connected to this bus. This has the following advantages compared to modelling the switch by setting the element out of service:
 
     - loading current is considered
     - information about switch position is preserved

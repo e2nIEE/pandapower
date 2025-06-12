@@ -11,7 +11,7 @@ pandapower uses PYPOWER to solve the power flow problem:
 .. note::
 
     If you are interested in the pypower casefile that pandapower is using for power flow, you can find it in net["_ppc"].
-    However all necessary informations are written into the pandpower format net, so the pandapower user should not usually have to deal with pypower.
+    However all necessary information is written into the pandapower format net, so the pandapower user should not usually have to deal with pypower.
 
 Accelerating Packages
 -------------------------
@@ -23,7 +23,7 @@ Two external packages are available which let accelerate pandapower's power flow
 
 If available, i.e. installed on the operating computer, the code will check by default all
 prerequisites to use the external packages. numba is a python JIT compiler,
-cf. `link <https://pypi.org/project/numba/>`_. In constrast, the library lightsim2grid
+cf. `link <https://pypi.org/project/numba/>`_. In contrast, the library lightsim2grid
 is used as a backend for power flow simulation instead of the
 implementation in pandapower. It leads to a boost in performance. The library lightsim2grid is
 implemented in C++ and can either be installed with pip install lightsim2grid, or built from source.

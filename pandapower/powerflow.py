@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from numpy import nan_to_num, array, allclose, int64
@@ -81,7 +81,6 @@ def _recycled_powerflow(net, **kwargs):
     algorithm = options["algorithm"]
     ac = options["ac"]
     recycle = options["recycle"]
-    update_vk_values = kwargs.get("update_vk_values", True)
     ppci = {"bus": net["_ppc"]["internal"]["bus"],
             "gen": net["_ppc"]["internal"]["gen"],
             "branch": net["_ppc"]["internal"]["branch"],
@@ -105,9 +104,9 @@ def _recycled_powerflow(net, **kwargs):
         # update trafo in branch and Ybus
         lookup = net._pd2ppc_lookups["branch"]
         if "trafo" in lookup:
-            _calc_trafo_parameter(net, ppc, update_vk_values=update_vk_values)
+            _calc_trafo_parameter(net, ppc,)
         if "trafo3w" in lookup:
-            _calc_trafo3w_parameter(net, ppc, update_vk_values=update_vk_values)
+            _calc_trafo3w_parameter(net, ppc)
 
     if "gen" in recycle and recycle["gen"]:
         # updates the ppc["gen"] part

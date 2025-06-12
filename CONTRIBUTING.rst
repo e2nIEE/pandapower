@@ -145,8 +145,8 @@ Making sure you don't break anything
 
 If you make changes to pandapower that you plan to submit, first make sure that all tests are still passing. You can do this locally with: ::
 
-    import pandapower.test
-    pandapower.test.run_all_tests()
+    from pandapower.test import run_all_tests
+    run_all_tests()
 
 When you submit a pull request, github actions will run the same tests with actual, by pandapower supported Python versions. In most cases, if tests pass for you locally, they will also pass on github actions. But it can also happen that the tests pass for you locally, but still fail on github actions, because the new code is not compatible with all Python versions.
 In this case you will have to update your pull request until the tests pass in all Python versions. Pull requests that lead to failing tests will not be accepted.

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -31,7 +31,7 @@ def required_std_type_parameters(element="line"):
     elif element == "fuse":
         required = ["fuse_type", "i_rated_a"]
     else:
-        raise ValueError("Unkown element type %s" % element)
+        raise ValueError("Unknown element type %s" % element)
     return required
 
 
@@ -71,7 +71,7 @@ def create_std_type(net, data, name, element="line", overwrite=True, check_requi
                     "endtemp_degree": 70.0, "r0_ohm_per_km": 0.7766,
                     "x0_ohm_per_km": 0.2990796,
                     "c0_nf_per_km":  496.2}, name="unsymmetric_line_type",element = "line")
-    >>> #Three phase transformer creation
+    >>> # Three phase transformer creation
     >>> pp.create_std_type(net, {"sn_mva": 1.6,
             "vn_hv_kv": 10,
             "vn_lv_kv": 0.4,
@@ -87,7 +87,7 @@ def create_std_type(net, data, name, element="line", overwrite=True, check_requi
             "tap_max": 2,
             "tap_step_degree": 0,
             "tap_step_percent": 2.5,
-            "tap_phase_shifter": False,
+            "tap_changer_type": "Ratio",
             "vk0_percent": 6,
             "vkr0_percent": 0.78125,
             "mag0_percent": 100,
@@ -115,7 +115,7 @@ def create_std_types(net, data, element="line", overwrite=True, check_required=T
         **net** - The pandapower network
         **data** - dictionary of standard type parameter sets
 
-        **element** - "line","line_dc", "trafo" or "trafo3w"
+        **element** - "line", "line_dc", "trafo" or "trafo3w"
 
     EXAMPLE:
 
@@ -150,7 +150,7 @@ def copy_std_types(to_net, from_net, element="line", overwrite=True):
 
 def load_std_type(net, name, element="line"):
     """
-    Loads standard type data from the linetypes data base. Issues a warning if
+    Loads standard type data from the linetypes database. Issues a warning if
     linetype is unknown.
 
     INPUT:
@@ -158,7 +158,7 @@ def load_std_type(net, name, element="line"):
 
         **name** - name of the standard type as string
 
-        **element** -  "line","line_dc","trafo" or "trafo3w"
+        **element** -  "line", "line_dc", "trafo" or "trafo3w"
 
     OUTPUT:
         **typedata** - dictionary containing type data
@@ -270,11 +270,12 @@ def parameter_from_std_type(net, parameter, element="line", fill=None):
             type does not have a value for the parameter
 
     EXAMPLE:
-        import pandapower as pp
-        import pandapower.networks as pn
 
-        net = pn.simple_mv_open_ring_net()
-        pp.parameter_from_std_type(net, "q_mm2")
+        >>> from pandapower import parameter_from_std_type
+        >>> from pandapower.networks import simple_mv_open_ring_net
+        >>>
+        >>> net = simple_mv_open_ring_net()
+        >>> parameter_from_std_type(net, "q_mm2")
     """
     if parameter not in net[element]:
         net[element][parameter] = fill
@@ -423,7 +424,7 @@ def add_zero_impedance_parameters(net):
 
 def add_temperature_coefficient(net, fill=None):
     """
-    Adds alpha paarameter for calculations of line temperature
+    Adds alpha parameter for calculations of line temperature
     Args:
         fill: fill value for when the parameter in std_type is missing, e.g. 4.03e-3 for aluminum
                 or  3.93e-3 for copper
@@ -1013,7 +1014,8 @@ def basic_trafo_std_types():
             "tap_max": 9,
             "tap_step_degree": 0,
             "tap_step_percent": 1.5,
-            "tap_phase_shifter": False},
+            "tap_changer_type": "Ratio",
+            "trafo_characteristic_table": False},
         "100 MVA 220/110 kV":
         {"i0_percent": 0.06,
             "pfe_kw": 55,
@@ -1030,7 +1032,8 @@ def basic_trafo_std_types():
             "tap_max": 9,
             "tap_step_degree": 0,
             "tap_step_percent": 1.5,
-            "tap_phase_shifter": False},
+            "tap_changer_type": "Ratio",
+            "trafo_characteristic_table": False},
 
         # compare to IFT Ingenieurbüro data and Schlabbach book
         "63 MVA 110/20 kV":
@@ -1049,7 +1052,8 @@ def basic_trafo_std_types():
             "tap_max": 9,
             "tap_step_degree": 0,
             "tap_step_percent": 1.5,
-            "tap_phase_shifter": False},
+            "tap_changer_type": "Ratio",
+            "trafo_characteristic_table": False},
         "40 MVA 110/20 kV":
         {"i0_percent": 0.05,
             "pfe_kw": 18,
@@ -1066,7 +1070,8 @@ def basic_trafo_std_types():
             "tap_max": 9,
             "tap_step_degree": 0,
             "tap_step_percent": 1.5,
-            "tap_phase_shifter": False},
+            "tap_changer_type": "Ratio",
+            "trafo_characteristic_table": False},
         "25 MVA 110/20 kV":
         {"i0_percent": 0.07,
             "pfe_kw": 14,
@@ -1083,7 +1088,8 @@ def basic_trafo_std_types():
             "tap_max": 9,
             "tap_step_degree": 0,
             "tap_step_percent": 1.5,
-            "tap_phase_shifter": False},
+            "tap_changer_type": "Ratio",
+            "trafo_characteristic_table": False},
         "63 MVA 110/10 kV":
         {"sn_mva": 63,
             "vn_hv_kv": 110,
@@ -1100,7 +1106,8 @@ def basic_trafo_std_types():
             "tap_max": 9,
             "tap_step_degree": 0,
             "tap_step_percent": 1.5,
-            "tap_phase_shifter": False},
+            "tap_changer_type": "Ratio",
+            "trafo_characteristic_table": False},
         "40 MVA 110/10 kV":
         {"sn_mva": 40,
             "vn_hv_kv": 110,
@@ -1117,7 +1124,8 @@ def basic_trafo_std_types():
             "tap_max": 9,
             "tap_step_degree": 0,
             "tap_step_percent": 1.5,
-            "tap_phase_shifter": False},
+            "tap_changer_type": "Ratio",
+            "trafo_characteristic_table": False},
         "25 MVA 110/10 kV":
         {"sn_mva": 25,
             "vn_hv_kv": 110,
@@ -1134,8 +1142,9 @@ def basic_trafo_std_types():
             "tap_max": 9,
             "tap_step_degree": 0,
             "tap_step_percent": 1.5,
-            "tap_phase_shifter": False},
-        # Tafo20/0.4
+            "tap_changer_type": "Ratio",
+            "trafo_characteristic_table": False},
+        # Trafo 20/0.4
         # 0.25 MVA 20/0.4 kV 0.45 Trafo Union
         "0.25 MVA 20/0.4 kV":
         {"sn_mva": 0.25,
@@ -1153,7 +1162,8 @@ def basic_trafo_std_types():
             "tap_max": 2,
             "tap_step_degree": 0,
             "tap_step_percent": 2.5,
-            "tap_phase_shifter": False},
+            "tap_changer_type": "Ratio",
+            "trafo_characteristic_table": False},
         # 0.4 MVA 20/0.4 kV Trafo Union
         "0.4 MVA 20/0.4 kV":
         {"sn_mva": 0.4, "vn_hv_kv": 20, "vn_lv_kv": 0.4,
@@ -1169,7 +1179,8 @@ def basic_trafo_std_types():
             "tap_max": 2,
             "tap_step_degree": 0,
             "tap_step_percent": 2.5,
-            "tap_phase_shifter": False},
+            "tap_changer_type": "Ratio",
+            "trafo_characteristic_table": False},
         # 0.63 MVA 20/0.4 kV Trafo Union
         "0.63 MVA 20/0.4 kV":
         {"sn_mva": 0.63,
@@ -1187,8 +1198,9 @@ def basic_trafo_std_types():
             "tap_max": 2,
             "tap_step_degree": 0,
             "tap_step_percent": 2.5,
-            "tap_phase_shifter": False},
-        # Tafo10/0.4:
+            "tap_changer_type": "Ratio",
+            "trafo_characteristic_table": False},
+        # Trafo 10/0.4:
         # 0.25 MVA 10/0.4 kV 0.4 Trafo Union wnr
         "0.25 MVA 10/0.4 kV":
         {"sn_mva": 0.25,
@@ -1206,7 +1218,8 @@ def basic_trafo_std_types():
             "tap_max": 2,
             "tap_step_degree": 0,
             "tap_step_percent": 2.5,
-            "tap_phase_shifter": False},
+            "tap_changer_type": "Ratio",
+            "trafo_characteristic_table": False},
         # 0.4 MVA 10/0.4 kV Trafo Union wnr
         "0.4 MVA 10/0.4 kV":
         {"sn_mva": 0.4,
@@ -1224,7 +1237,8 @@ def basic_trafo_std_types():
             "tap_max": 2,
             "tap_step_degree": 0,
             "tap_step_percent": 2.5,
-            "tap_phase_shifter": False},
+            "tap_changer_type": "Ratio",
+            "trafo_characteristic_table": False},
         # 0.63 MVA 10/0.4 kV Trafo Union wnr
         "0.63 MVA 10/0.4 kV":
         {"sn_mva": 0.63,
@@ -1242,7 +1256,8 @@ def basic_trafo_std_types():
             "tap_max": 2,
             "tap_step_degree": 0,
             "tap_step_percent": 2.5,
-            "tap_phase_shifter": False},
+            "tap_changer_type": "Ratio",
+            "trafo_characteristic_table": False},
     }
     return trafotypes
 
@@ -1272,7 +1287,9 @@ def basic_trafo3w_std_types():
             "tap_neutral": 0,
             "tap_min": -10,
             "tap_max": 10,
-            "tap_step_percent": 1.2},
+            "tap_step_percent": 1.2,
+            "tap_changer_type": "Ratio",
+            "trafo_characteristic_table": False},
         "63/25/38 MVA 110/10/10 kV":
         {"sn_hv_mva": 63,
             "sn_mv_mva": 25,
@@ -1295,7 +1312,9 @@ def basic_trafo3w_std_types():
             "tap_neutral": 0,
             "tap_min": -10,
             "tap_max": 10,
-            "tap_step_percent": 1.2}
+            "tap_step_percent": 1.2,
+            "tap_changer_type": "Ratio",
+            "trafo_characteristic_table": False}
     }
     return trafo3wtypes
 

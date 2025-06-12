@@ -2,7 +2,7 @@
 Examples
 ==========
 
-The combination of a suitable MultiGraph and the availabe topology functions enables you to perform a wide range of topological
+The combination of a suitable MultiGraph and the available topology functions enables you to perform a wide range of topological
 searches and analyses.
 
 Here are a few examples of what you can do:
@@ -11,62 +11,63 @@ Here are a few examples of what you can do:
 
 .. code:: python
 
-	import pandapower as pp
+	from pandapower.create import create_empty_network, create_bus, create_ext_grid, create_line, \
+         create_transformer_from_parameters, create_load, create_switch
 
-	net = pp.create_empty_network()
+	net = create_empty_network()
 
-	pp.create_bus(net, name = "110 kV bar", vn_kv = 110, type = 'b')
-	pp.create_bus(net, name = "20 kV bar", vn_kv = 20, type = 'b')
-	pp.create_bus(net, name = "bus 2", vn_kv = 20, type = 'b')
-	pp.create_bus(net, name = "bus 3", vn_kv = 20, type = 'b')
-	pp.create_bus(net, name = "bus 4", vn_kv = 20, type = 'b')
-	pp.create_bus(net, name = "bus 5", vn_kv = 20, type = 'b')
-	pp.create_bus(net, name = "bus 6", vn_kv = 20, type = 'b')
+	create_bus(net, name = "110 kV bar", vn_kv = 110, type = 'b')
+	create_bus(net, name = "20 kV bar", vn_kv = 20, type = 'b')
+	create_bus(net, name = "bus 2", vn_kv = 20, type = 'b')
+	create_bus(net, name = "bus 3", vn_kv = 20, type = 'b')
+	create_bus(net, name = "bus 4", vn_kv = 20, type = 'b')
+	create_bus(net, name = "bus 5", vn_kv = 20, type = 'b')
+	create_bus(net, name = "bus 6", vn_kv = 20, type = 'b')
 
-	pp.create_ext_grid(net, 0, vm_pu = 1)
+	create_ext_grid(net, 0, vm_pu = 1)
 
-	pp.create_line(net, name = "line 0", from_bus = 1, to_bus = 2, length_km = 1, std_type = "NAYY 4x150 SE")
-	pp.create_line(net, name = "line 1", from_bus = 2, to_bus = 3, length_km = 1, std_type = "NAYY 4x150 SE")
-	pp.create_line(net, name = "line 2", from_bus = 3, to_bus = 4, length_km = 1, std_type = "NAYY 4x150 SE")
-	pp.create_line(net, name = "line 3", from_bus = 4, to_bus = 5, length_km = 1, std_type = "NAYY 4x150 SE")
-	pp.create_line(net, name = "line 4", from_bus = 5, to_bus = 6, length_km = 1, std_type = "NAYY 4x150 SE")
-	pp.create_line(net, name = "line 5", from_bus = 6, to_bus = 1, length_km = 1, std_type = "NAYY 4x150 SE")
+	create_line(net, name = "line 0", from_bus = 1, to_bus = 2, length_km = 1, std_type = "NAYY 4x150 SE")
+	create_line(net, name = "line 1", from_bus = 2, to_bus = 3, length_km = 1, std_type = "NAYY 4x150 SE")
+	create_line(net, name = "line 2", from_bus = 3, to_bus = 4, length_km = 1, std_type = "NAYY 4x150 SE")
+	create_line(net, name = "line 3", from_bus = 4, to_bus = 5, length_km = 1, std_type = "NAYY 4x150 SE")
+	create_line(net, name = "line 4", from_bus = 5, to_bus = 6, length_km = 1, std_type = "NAYY 4x150 SE")
+	create_line(net, name = "line 5", from_bus = 6, to_bus = 1, length_km = 1, std_type = "NAYY 4x150 SE")
 
-	pp.create_transformer_from_parameters(net, hv_bus=0, lv_bus=1, i0_percent=0.038, pfe_kw=11.6,
+	create_transformer_from_parameters(net, hv_bus=0, lv_bus=1, i0_percent=0.038, pfe_kw=11.6,
 		vkr_percent=0.322, sn_mva=40, vn_lv_kv=22.0, vn_hv_kv=110.0, vk_percent=17.8)
 
-	pp.create_load(net, 2, p_mw = 1, q_mvar = 0.2, name = "load 0")
-	pp.create_load(net, 3, p_mw = 1, q_mvar = 0.2, name = "load 1")
-	pp.create_load(net, 4, p_mw = 1, q_mvar = 0.2, name = "load 2")
-	pp.create_load(net, 5, p_mw = 1, q_mvar = 0.2, name = "load 3")
-	pp.create_load(net, 6, p_mw = 1, q_mvar = 0.2, name = "load 4")
+	create_load(net, 2, p_mw = 1, q_mvar = 0.2, name = "load 0")
+	create_load(net, 3, p_mw = 1, q_mvar = 0.2, name = "load 1")
+	create_load(net, 4, p_mw = 1, q_mvar = 0.2, name = "load 2")
+	create_load(net, 5, p_mw = 1, q_mvar = 0.2, name = "load 3")
+	create_load(net, 6, p_mw = 1, q_mvar = 0.2, name = "load 4")
 
-	pp.create_switch(net, bus = 1, element = 0, et = 'l')
-	pp.create_switch(net, bus = 2, element = 0, et = 'l')
-	pp.create_switch(net, bus = 2, element = 1, et = 'l')
-	pp.create_switch(net, bus = 3, element = 1, et = 'l')
-	pp.create_switch(net, bus = 3, element = 2, et = 'l')
-	pp.create_switch(net, bus = 4, element = 2, et = 'l')
-	pp.create_switch(net, bus = 4, element = 3, et = 'l', closed = 0)
-	pp.create_switch(net, bus = 5, element = 3, et = 'l')
-	pp.create_switch(net, bus = 5, element = 4, et = 'l')
-	pp.create_switch(net, bus = 6, element = 4, et = 'l')
-	pp.create_switch(net, bus = 6, element = 5, et = 'l')
-	pp.create_switch(net, bus = 1, element = 5, et = 'l')
+	create_switch(net, bus = 1, element = 0, et = 'l')
+	create_switch(net, bus = 2, element = 0, et = 'l')
+	create_switch(net, bus = 2, element = 1, et = 'l')
+	create_switch(net, bus = 3, element = 1, et = 'l')
+	create_switch(net, bus = 3, element = 2, et = 'l')
+	create_switch(net, bus = 4, element = 2, et = 'l')
+	create_switch(net, bus = 4, element = 3, et = 'l', closed = 0)
+	create_switch(net, bus = 5, element = 3, et = 'l')
+	create_switch(net, bus = 5, element = 4, et = 'l')
+	create_switch(net, bus = 6, element = 4, et = 'l')
+	create_switch(net, bus = 6, element = 5, et = 'l')
+	create_switch(net, bus = 1, element = 5, et = 'l')
 
 
 Using NetworkX algorithms: shortest path
 -----------------------------------------
 
-For many basic network analyses the algorithms that come with the NetworkX package will work just fine and you won't need one of the spezialised topology functions.
+For many basic network analyses the algorithms that come with the NetworkX package will work just fine and you won't need one of the specialised topology functions.
 Finding the shortest path between two buses is a good example for that.
 
 .. code:: python
 
-	import pandapower.topology as top
+	from pandapower.topology import create_nxgraph
 	import networkx as nx
 
-	mg = top.create_nxgraph(net)
+	mg = create_nxgraph(net)
 	nx.shortest_path(mg, 0, 5)
 
 .. code:: python
@@ -85,10 +86,10 @@ With *unsupplied_buses* you can easily find buses that are not connected to an e
 
 .. code:: python
 
-	import pandapower.topology as top
+	from pandapower.topology import unsupplied_buses
 
 	net.switch.closed.at[11] = 0
-	top.unsupplied_buses(net)
+	unsupplied_buses(net)
 
 .. code:: python
 
@@ -109,11 +110,11 @@ This is possible since line lengths are being transferred into the MultiGraph as
 
 .. code:: python
 
-	import pandapower.topology as top
+	from pandapower.topology import calc_distance_to_bus
 
 	net.switch.closed.at[6] = 1
 	net.switch.closed.at[8] = 0
-	top.calc_distance_to_bus(net, 1)
+	calc_distance_to_bus(net, 1)
 
 .. code:: python
 
@@ -139,10 +140,10 @@ Find connected buses with the same voltage level
 
 .. code:: python
 
-	import pandapower.topology as top
+	from pandapower.topology import create_nxgraph, connected_components
 
-	mg_no_trafos = top.create_nxgraph(net, include_trafos = False)
-	cc = top.connected_components(mg_no_trafos)
+	mg_no_trafos = create_nxgraph(net, include_trafos = False)
+	cc = connected_components(mg_no_trafos)
 
 .. code:: python
 
@@ -166,10 +167,10 @@ be set as a nogobuses. With *respect_switches = True* you get the ring sections,
 
 .. code:: python
 
-	import pandapower.topology as top
+	from pandapower.topology import create_nxgraph, connected_components
 
-	mg_ring_sections = top.create_nxgraph(net, nogobuses = [0, 1])
-	cc_ring_sections = top.connected_components(mg_ring_sections)
+	mg_ring_sections = create_nxgraph(net, nogobuses = [0, 1])
+	cc_ring_sections = connected_components(mg_ring_sections)
 
 .. code:: python
 
@@ -188,10 +189,10 @@ be set as a nogobuses. With *respect_switches = True* you get the ring sections,
 
 .. code:: python
 
-	import pandapower.topology as top
+	from pandapower.topology import create_nxgraph, connected_components
 
-	mg_ring = top.create_nxgraph(net, respect_switches = False, nogobuses = [0,1])
-	cc_ring = top.connected_components(mg_ring)
+	mg_ring = create_nxgraph(net, respect_switches = False, nogobuses = [0,1])
+	cc_ring = connected_components(mg_ring)
 
 .. code:: python
 
@@ -226,8 +227,8 @@ This is a small extension for the example network:
 
 .. code:: python
 
-	import pandapower.topology as top
-	top.determine_stubs(net, roots = [0,1])
+	from pandapower.topology import determine_stubs
+	determine_stubs(net, roots = [0,1])
 
 .. code:: python
 

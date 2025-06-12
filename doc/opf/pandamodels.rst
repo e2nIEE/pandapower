@@ -31,9 +31,9 @@ If you are not yet using `Julia <https://julialang.org/downloads/>`_, install it
     :code:`ENV["PYTHON"]="/Users/%Username/opt/anaconda3/bin/python"`
 
 
-3. Access the package manager by typing :code:`]`. Now install the packages: :code:`add Ipopt PowerModels PyCall`. To pass the python environment variable, running :code:`build PyCall` inside the julia package manager may be neccessary.
+3. Access the package manager by typing :code:`]`. Now install the packages: :code:`add Ipopt PowerModels PyCall`. To pass the python environment variable, running :code:`build PyCall` inside the julia package manager may be necessary.
 
-4. Inside package manager, test your `PowerModels <https://lanl-ansi.github.io/PowerModels.jl/stable/#Installation-1>`_ installation by executing :code:`test PowerModels`. Alternatively, you can call :code:`using Pkg` and then :code:`Pkg.test("PowerModels")` outside the package manager directly as julia expression. Then, test wether calling Python from Julia works, as described `here <https://github.com/JuliaPy/PyCall.jl#usage>`__.
+4. Inside package manager, test your `PowerModels <https://lanl-ansi.github.io/PowerModels.jl/stable/#Installation-1>`_ installation by executing :code:`test PowerModels`. Alternatively, you can call :code:`using Pkg` and then :code:`Pkg.test("PowerModels")` outside the package manager directly as julia expression. Then, test whether calling Python from Julia works, as described `here <https://github.com/JuliaPy/PyCall.jl#usage>`__.
 
 .. note:: If you cannot plot using PyCall and PyPlot in Julia, see the workarounds offered `here <https://github.com/JuliaPy/PyCall.jl/issues/665>`__.
 
@@ -43,7 +43,7 @@ If you are not yet using `Julia <https://julialang.org/downloads/>`_, install it
 
 7. Now install our interface `PandaModels.jl` by type :code:`add PandaModels` inside Julia package manager.
 
-8. Finally, you can then test whether the PandaModels.jl interface works: Navigate to your local pandapower test folder :code:`pandapower/pandapower/test/opf` folder and run :code:`python-jl test_pandamodels_runpm.py` or :code:`pytest test_pandamodels_runpm.py` if pytest is intalled. If everything works there should be no error.
+8. Finally, you can then test whether the PandaModels.jl interface works: Navigate to your local pandapower test folder :code:`pandapower/pandapower/test/opf` folder and run :code:`python-jl test_pandamodels_runpm.py` or :code:`pytest test_pandamodels_runpm.py` if pytest is installed. If everything works there should be no error.
 
 
 Additional Solvers

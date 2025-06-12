@@ -107,11 +107,10 @@ SplineCharacteristic
 .. autoclass:: pandapower.control.util.characteristic.SplineCharacteristic
     :members:
 
-The following controllers are used for the representation of station controllers as used in PowerFactory
-
 
 Station Controller
 ==================
+The following controllers are used for the representation of station controllers as used in PowerFactory
 
 **********************
 Binary Search Control

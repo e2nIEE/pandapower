@@ -2,9 +2,10 @@
 
 import pandas as pd
 import numpy as np
-import pandapower as pp
+
+from pandapower.run import runpp
+from pandapower.pf.runpp_3ph import runpp_3ph
 from pandapower.toolbox import replace_zero_branches_with_switches
-from pandapower import diagnostic
 
 try:
     import pandaplan.core.pplog as logging
@@ -265,10 +266,10 @@ def validate_pf_conversion(net, is_unbalanced=False, **kwargs):
             kwargs.pop(arg)
     if is_unbalanced:
         logger.info("running pandapower 3ph loadflow")
-        pp.runpp_3ph(net, trafo_model="t", check_connectivity=True, run_control=run_control, **kwargs)
+        runpp_3ph(net, trafo_model="t", check_connectivity=True, run_control=run_control, **kwargs)
     else:
         logger.info("running pandapower loadflow")
-        pp.runpp(net, trafo_model="t", check_connectivity=True, run_control=run_control, **kwargs)
+        runpp(net, trafo_model="t", check_connectivity=True, run_control=run_control, **kwargs)
 
     all_diffs = dict()
     logger.info('pandapower net converged: %s' % net.converged)
@@ -475,11 +476,13 @@ def _validate_pf_conversion_balanced(net, in_both, all_diffs):
         bus_dc_idx = net.bus_dc.query('in_service').index
         bus_dc_diff = net.res_bus_dc.loc[bus_dc_idx].pf_vm_pu - net.res_bus_dc.loc[
             bus_dc_idx].vm_pu
-        bus_dc_id = abs(bus_dc_diff).abs().idxmax().astype('int64')
-        logger.info("Maximum bus_dc vm_pu difference between pandapower and powerfactory: %.6f "
-                    "p.u. at bus_dc %d (%s)" % (
-                        max(abs(bus_dc_diff)), bus_dc_id, net.bus_dc.at[bus_dc_id, 'name']))
-        all_diffs["bus_dc_diff"] = bus_dc_diff
+        if bus_dc_diff.isna().all():
+            logger.info("bus_dc_diff contains only NaN values. Continuing without evaluating dc busses.")
+        else:
+            bus_dc_id = abs(bus_dc_diff).abs().idxmax().astype('int64')
+            logger.info("Maximum bus_dc vm_pu difference between pandapower and powerfactory: %.6f "
+                        "p.u. at bus_dc %d (%s)" % (max(abs(bus_dc_diff)), bus_dc_id, net.bus_dc.at[bus_dc_id, 'name']))
+            all_diffs["bus_dc_diff"] = bus_dc_diff
 
     if len(net.line[net.line.in_service]) > 0:
         section_loadings = pd.concat([net.line[["name", "line_idx"]], net.res_line[

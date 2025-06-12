@@ -47,3 +47,4 @@ Example with load and sgen bubbles::
     markers_sgen = create_weighted_marker_trace(net, elm_type="sgen", color="green",
                                                 marker_scaling=100)
     simple_plotly(net, bus_size=1, additional_traces=[markers_load, markers_sgen])
+

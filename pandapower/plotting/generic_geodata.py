@@ -12,7 +12,8 @@ import pandas as pd
 import numpy as np
 
 from pandapower.auxiliary import soft_dependency_error
-import pandapower.topology as top
+from pandapower.topology.create_graph import create_nxgraph
+from pandapower.topology.graph_searches import connected_components
 
 try:
     import igraph
@@ -123,7 +124,7 @@ def _get_element_mask_from_nodes(net, element, node_elements, nodes=None):
 def _get_switch_mask(net, element, switch_element, open_switches):
     element_switches = net.switch.et.values == switch_element
     open_elements = net.switch.element.values[open_switches & element_switches]
-    open_element_mask = np.in1d(net[element].index, open_elements, invert=True)
+    open_element_mask = np.isin(net[element].index, open_elements, invert=True)
     return open_element_mask
 
 def coords_from_igraph(graph, roots, meshed=False, calculate_meshed=False):
@@ -218,7 +219,7 @@ def create_generic_coordinates(net, mg=None, library="igraph",
         coords = coords_from_igraph(graph, roots, meshed)
     elif library == "networkx":
         if mg is None:
-            nxg = top.create_nxgraph(net, respect_switches=respect_switches,
+            nxg = create_nxgraph(net, respect_switches=respect_switches,
                                      include_out_of_service=True,
                                      trafo_length_km=trafo_length_km, switch_length_km=switch_length_km)
         else:
@@ -246,9 +247,9 @@ def _prepare_geodata_table(net, geodata_table, overwrite):
         net[geodata_table] = pd.DataFrame(columns=["geo"])
 
 def fuse_geodata(net):
-    mg = top.create_nxgraph(net, include_lines=False, include_impedances=False, respect_switches=False)
+    mg = create_nxgraph(net, include_lines=False, include_impedances=False, respect_switches=False)
     geocoords = set(net.bus.dropna(subset=['geo']).index)
-    for area in top.connected_components(mg):
+    for area in connected_components(mg):
         if len(area & geocoords) > 1:
             geo = net.bus.loc[list(area & geocoords), 'geo'].apply(geojson.loads)
             for bus in area:
