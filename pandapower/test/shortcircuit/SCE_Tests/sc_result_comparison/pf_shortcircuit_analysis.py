@@ -39,7 +39,14 @@ class PFShortCircuitAnalysis:
         active_project = app.GetActiveProject()
 
         # activate study case
-        study_case_folder = active_project.GetContents("Study Cases")[0]
+        study_cases = active_project.GetContents("Study Cases")
+        berechnungsfaelle = active_project.GetContents("Berechnungsfälle")
+
+        if study_cases:  # Check if the list is not empty
+            study_case_folder = study_cases[0]
+        else:
+            # Set to None if both lists are empty
+            study_case_folder = berechnungsfaelle[0] if berechnungsfaelle else None
         study_cases = study_case_folder.GetContents()
         study_case = study_cases[0]
         study_case.Activate()

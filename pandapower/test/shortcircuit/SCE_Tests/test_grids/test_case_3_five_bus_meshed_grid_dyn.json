@@ -5,7 +5,7 @@
     "bus": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"name\",\"vn_kv\",\"type\",\"zone\",\"in_service\",\"geo\",\"description\",\"substat\",\"folder_id\",\"equipment\"],\"index\":[0,1,2,3,4],\"data\":[[\"Bus_1\",20.0,\"b\",\"Grid\",true,\"{\\\"coordinates\\\":[0.0,0.0], \\\"type\\\":\\\"Point\\\"}\",\"Grid\",\"\",\"Grid\",\"\"],[\"Bus_3\",20.0,\"b\",\"Grid\",true,\"{\\\"coordinates\\\":[0.0,0.0], \\\"type\\\":\\\"Point\\\"}\",\"Grid\",\"\",\"Grid\",\"\"],[\"Bus_4\",20.0,\"b\",\"Grid\",true,\"{\\\"coordinates\\\":[0.0,0.0], \\\"type\\\":\\\"Point\\\"}\",\"Grid\",\"\",\"Grid\",\"\"],[\"Bus_0\",110.0,\"b\",\"Grid\",true,\"{\\\"coordinates\\\":[0.0,0.0], \\\"type\\\":\\\"Point\\\"}\",\"Grid\",\"\",\"Grid\",\"\"],[\"Bus_2\",20.0,\"b\",\"Grid\",true,\"{\\\"coordinates\\\":[0.0,0.0], \\\"type\\\":\\\"Point\\\"}\",\"Grid\",\"\",\"Grid\",\"\"]]}",
+      "_object": "{\"columns\":[\"name\",\"vn_kv\",\"type\",\"zone\",\"in_service\",\"geo\",\"description\",\"substat\",\"folder_id\",\"equipment\"],\"index\":[0,1,2,3,4],\"data\":[[\"Bus_0\",110.0,\"b\",\"Grid\",true,\"{\\\"coordinates\\\":[0.0,0.0], \\\"type\\\":\\\"Point\\\"}\",\"Grid\",\"\",\"Grid\",\"\"],[\"Bus_1\",20.0,\"b\",\"Grid\",true,\"{\\\"coordinates\\\":[0.0,0.0], \\\"type\\\":\\\"Point\\\"}\",\"Grid\",\"\",\"Grid\",\"\"],[\"Bus_2\",20.0,\"b\",\"Grid\",true,\"{\\\"coordinates\\\":[0.0,0.0], \\\"type\\\":\\\"Point\\\"}\",\"Grid\",\"\",\"Grid\",\"\"],[\"Bus_3\",20.0,\"b\",\"Grid\",true,\"{\\\"coordinates\\\":[0.0,0.0], \\\"type\\\":\\\"Point\\\"}\",\"Grid\",\"\",\"Grid\",\"\"],[\"Bus_4\",20.0,\"b\",\"Grid\",true,\"{\\\"coordinates\\\":[0.0,0.0], \\\"type\\\":\\\"Point\\\"}\",\"Grid\",\"\",\"Grid\",\"\"]]}",
       "orient": "split",
       "dtype": {
         "name": "object",
@@ -41,7 +41,7 @@
     "load": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"name\",\"bus\",\"p_mw\",\"q_mvar\",\"const_z_percent\",\"const_i_percent\",\"sn_mva\",\"scaling\",\"in_service\",\"type\",\"description\",\"equipment\"],\"index\":[0,1],\"data\":[[\"Load_1\",1,5.0,0.0,100.0,0.0,null,1.0,true,\"wye\",\"\",\"\"],[\"Load_2\",2,5.0,0.0,100.0,0.0,null,1.0,true,\"wye\",\"\",\"\"]]}",
+      "_object": "{\"columns\":[\"name\",\"bus\",\"p_mw\",\"q_mvar\",\"const_z_percent\",\"const_i_percent\",\"sn_mva\",\"scaling\",\"in_service\",\"type\",\"description\",\"equipment\"],\"index\":[0,1],\"data\":[[\"Load_1\",3,5.0,0.0,100.0,0.0,null,1.0,true,\"wye\",\"\",\"\"],[\"Load_2\",4,5.0,0.0,100.0,0.0,null,1.0,true,\"wye\",\"\",\"\"]]}",
       "orient": "split",
       "dtype": {
         "name": "object",
@@ -63,7 +63,7 @@
     "sgen": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"name\",\"bus\",\"p_mw\",\"q_mvar\",\"min_q_mvar\",\"max_q_mvar\",\"sn_mva\",\"scaling\",\"controllable\",\"id_q_capability_curve_characteristic\",\"reactive_capability_curve\",\"curve_style\",\"in_service\",\"type\",\"current_source\",\"min_p_mw\",\"max_p_mw\",\"description\",\"equipment\"],\"index\":[0,1],\"data\":[[\"Static Generator_2\",2,4.0,0.0,-5.0,5.0,5.0,1.0,false,null,false,null,false,\"SGEN\",true,0.0,9999.0,\"\",\"\"],[\"Static Generator_1\",1,4.0,0.0,-5.0,5.0,5.0,1.0,false,null,false,null,false,\"SGEN\",true,0.0,9999.0,\"\",\"\"]]}",
+      "_object": "{\"columns\":[\"name\",\"bus\",\"p_mw\",\"q_mvar\",\"min_q_mvar\",\"max_q_mvar\",\"sn_mva\",\"scaling\",\"controllable\",\"id_q_capability_curve_characteristic\",\"reactive_capability_curve\",\"curve_style\",\"in_service\",\"type\",\"current_source\",\"min_p_mw\",\"max_p_mw\",\"description\",\"equipment\"],\"index\":[0,1],\"data\":[[\"Static Generator_1\",3,4.0,0.0,-5.0,5.0,5.0,1.0,false,null,false,null,false,\"SGEN\",true,0.0,9999.0,\"\",\"\"],[\"Static Generator_2\",4,4.0,0.0,-5.0,5.0,5.0,1.0,false,null,false,null,false,\"SGEN\",true,0.0,9999.0,\"\",\"\"]]}",
       "orient": "split",
       "dtype": {
         "name": "object",
@@ -207,7 +207,7 @@
     "switch": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"bus\",\"element\",\"et\",\"type\",\"closed\",\"name\",\"z_ohm\",\"in_ka\"],\"index\":[0,1,2,3,4,5,6,7,8,9],\"data\":[[3,0,\"t\",\"CB\",true,\"Bus_0\\\\Feld_3\\\\Schalter\",0.0,null],[0,0,\"t\",\"CB\",true,\"Bus_1\\\\Feld_4\\\\Schalter\",0.0,null],[1,0,\"l\",\"CB\",true,\"Bus_3\\\\Feld_4\\\\Schalter\",0.0,null],[4,0,\"l\",\"CB\",true,\"Bus_2\\\\Cub_2\\\\Switch\",0.0,null],[2,1,\"l\",\"CB\",true,\"Bus_4\\\\Feld_4\\\\Schalter\",0.0,null],[4,1,\"l\",\"CB\",true,\"Bus_2\\\\Cub_3\\\\Switch\",0.0,null],[0,2,\"l\",\"CB\",true,\"Bus_1\\\\Feld_5\\\\Schalter\",0.0,null],[4,2,\"l\",\"CB\",true,\"Bus_2\\\\Feld_4\\\\Schalter\",0.0,null],[1,3,\"l\",\"CB\",true,\"Bus_3\\\\Feld_5\\\\Schalter\",0.0,null],[2,3,\"l\",\"CB\",true,\"Bus_4\\\\Feld_5\\\\Schalter\",0.0,null]]}",
+      "_object": "{\"columns\":[\"bus\",\"element\",\"et\",\"type\",\"closed\",\"name\",\"z_ohm\",\"in_ka\"],\"index\":[0,1,2,3,4,5,6,7,8,9],\"data\":[[0,0,\"t\",\"CB\",true,\"Bus_0\\\\Feld_3\\\\Schalter\",0.0,null],[1,0,\"t\",\"CB\",true,\"Bus_1\\\\Feld_4\\\\Schalter\",0.0,null],[1,0,\"l\",\"CB\",true,\"Bus_1\\\\Feld_5\\\\Schalter\",0.0,null],[2,0,\"l\",\"CB\",true,\"Bus_2\\\\Feld_4\\\\Schalter\",0.0,null],[3,1,\"l\",\"CB\",true,\"Bus_3\\\\Feld_4\\\\Schalter\",0.0,null],[2,1,\"l\",\"CB\",true,\"Bus_2\\\\Cub_2\\\\Switch\",0.0,null],[4,2,\"l\",\"CB\",true,\"Bus_4\\\\Feld_4\\\\Schalter\",0.0,null],[2,2,\"l\",\"CB\",true,\"Bus_2\\\\Cub_3\\\\Switch\",0.0,null],[3,3,\"l\",\"CB\",true,\"Bus_3\\\\Feld_5\\\\Schalter\",0.0,null],[4,3,\"l\",\"CB\",true,\"Bus_4\\\\Feld_5\\\\Schalter\",0.0,null]]}",
       "orient": "split",
       "dtype": {
         "bus": "int64",
@@ -307,7 +307,7 @@
     "ext_grid": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"name\",\"bus\",\"vm_pu\",\"va_degree\",\"slack_weight\",\"in_service\",\"controllable\",\"s_sc_max_mva\",\"s_sc_min_mva\",\"rx_min\",\"rx_max\",\"r0x0_max\",\"x0x_max\",\"r0x0_min\",\"x0x_min\",\"description\",\"equipment\"],\"index\":[0],\"data\":[[\"External Grid\",3,1.0,0.0,1.0,true,false,1000.0,800.0,0.100000001490116,0.100000001490116,0.100000001490116,1.0,0.100000001490116,1.0,\"\",\"\"]]}",
+      "_object": "{\"columns\":[\"name\",\"bus\",\"vm_pu\",\"va_degree\",\"slack_weight\",\"in_service\",\"controllable\",\"s_sc_max_mva\",\"s_sc_min_mva\",\"rx_min\",\"rx_max\",\"r0x0_max\",\"x0x_max\",\"r0x0_min\",\"x0x_min\",\"description\",\"equipment\"],\"index\":[0],\"data\":[[\"External Grid\",0,1.0,0.0,1.0,true,false,1000.0,800.0,0.100000001490116,0.100000001490116,0.100000001490116,1.0,0.100000001490116,1.0,\"\",\"\"]]}",
       "orient": "split",
       "dtype": {
         "name": "object",
@@ -334,7 +334,7 @@
     "line": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"name\",\"std_type\",\"from_bus\",\"to_bus\",\"length_km\",\"r_ohm_per_km\",\"x_ohm_per_km\",\"c_nf_per_km\",\"g_us_per_km\",\"max_i_ka\",\"df\",\"parallel\",\"type\",\"in_service\",\"geo\",\"r0_ohm_per_km\",\"x0_ohm_per_km\",\"c0_nf_per_km\",\"alpha\",\"temperature_degree_celsius\",\"endtemp_degree\",\"description\",\"line_idx\",\"folder_id\",\"equipment\",\"section_idx\"],\"index\":[0,1,2,3],\"data\":[[\"Line_1\",\"N2XS2Y 1x185RM 12\\/20kV it\",1,4,5.0,0.104000002145767,0.118000000715256,273.000001907348633,0.0,0.462000012397766,1.0,1,\"cs\",true,\"{\\\"coordinates\\\": [[0.0, 0.0], [0.0, 0.0]], \\\"type\\\": \\\"LineString\\\"}\",0.739000022411346,0.293999999761581,272.899985313415527,0.003930000122637,90.0,250.0,\"\",0.0,\"Grid\",\"\",0],[\"Line_2\",\"N2XS2Y 1x185RM 12\\/20kV it\",2,4,5.0,0.104000002145767,0.118000000715256,273.000001907348633,0.0,0.462000012397766,1.0,1,\"cs\",true,\"{\\\"coordinates\\\": [[0.0, 0.0], [0.0, 0.0]], \\\"type\\\": \\\"LineString\\\"}\",0.739000022411346,0.293999999761581,272.899985313415527,0.003930000122637,90.0,250.0,\"\",1.0,\"Grid\",\"\",0],[\"Line_0\",\"N2XS2Y 1x185RM 12\\/20kV it\",0,4,5.0,0.104000002145767,0.118000000715256,273.000001907348633,0.0,0.462000012397766,1.0,1,\"cs\",true,\"{\\\"coordinates\\\": [[0.0, 0.0], [0.0, 0.0]], \\\"type\\\": \\\"LineString\\\"}\",0.739000022411346,0.293999999761581,272.899985313415527,0.003930000122637,90.0,250.0,\"\",2.0,\"Grid\",\"\",0],[\"Line_4\",\"N2XS2Y 1x185RM 12\\/20kV it\",1,2,5.0,0.104000002145767,0.118000000715256,273.000001907348633,0.0,0.462000012397766,1.0,1,\"cs\",true,\"{\\\"coordinates\\\": [[0.0, 0.0], [0.0, 0.0]], \\\"type\\\": \\\"LineString\\\"}\",0.739000022411346,0.293999999761581,272.899985313415527,0.003930000122637,90.0,250.0,\"\",3.0,\"Grid\",\"\",0]]}",
+      "_object": "{\"columns\":[\"name\",\"std_type\",\"from_bus\",\"to_bus\",\"length_km\",\"r_ohm_per_km\",\"x_ohm_per_km\",\"c_nf_per_km\",\"g_us_per_km\",\"max_i_ka\",\"df\",\"parallel\",\"type\",\"in_service\",\"geo\",\"r0_ohm_per_km\",\"x0_ohm_per_km\",\"c0_nf_per_km\",\"alpha\",\"temperature_degree_celsius\",\"endtemp_degree\",\"description\",\"line_idx\",\"folder_id\",\"equipment\",\"section_idx\"],\"index\":[0,1,2,3],\"data\":[[\"Line_0\",\"N2XS2Y 1x185RM 12\\/20kV it\",1,2,5.0,0.104000002145767,0.118000000715256,273.000001907348633,0.0,0.462000012397766,1.0,1,\"cs\",true,\"{\\\"coordinates\\\": [[0.0, 0.0], [0.0, 0.0]], \\\"type\\\": \\\"LineString\\\"}\",0.739000022411346,0.293999999761581,272.899985313415527,0.003930000122637,90.0,250.0,\"\",0.0,\"Grid\",\"\",0],[\"Line_1\",\"N2XS2Y 1x185RM 12\\/20kV it\",3,2,5.0,0.104000002145767,0.118000000715256,273.000001907348633,0.0,0.462000012397766,1.0,1,\"cs\",true,\"{\\\"coordinates\\\": [[0.0, 0.0], [0.0, 0.0]], \\\"type\\\": \\\"LineString\\\"}\",0.739000022411346,0.293999999761581,272.899985313415527,0.003930000122637,90.0,250.0,\"\",1.0,\"Grid\",\"\",0],[\"Line_2\",\"N2XS2Y 1x185RM 12\\/20kV it\",4,2,5.0,0.104000002145767,0.118000000715256,273.000001907348633,0.0,0.462000012397766,1.0,1,\"cs\",true,\"{\\\"coordinates\\\": [[0.0, 0.0], [0.0, 0.0]], \\\"type\\\": \\\"LineString\\\"}\",0.739000022411346,0.293999999761581,272.899985313415527,0.003930000122637,90.0,250.0,\"\",2.0,\"Grid\",\"\",0],[\"Line_4\",\"N2XS2Y 1x185RM 12\\/20kV it\",3,4,5.0,0.104000002145767,0.118000000715256,273.000001907348633,0.0,0.462000012397766,1.0,1,\"cs\",true,\"{\\\"coordinates\\\": [[0.0, 0.0], [0.0, 0.0]], \\\"type\\\": \\\"LineString\\\"}\",0.739000022411346,0.293999999761581,272.899985313415527,0.003930000122637,90.0,250.0,\"\",3.0,\"Grid\",\"\",0]]}",
       "orient": "split",
       "dtype": {
         "name": "object",
@@ -393,7 +393,7 @@
     "trafo": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"name\",\"std_type\",\"hv_bus\",\"lv_bus\",\"sn_mva\",\"vn_hv_kv\",\"vn_lv_kv\",\"vk_percent\",\"vkr_percent\",\"pfe_kw\",\"i0_percent\",\"shift_degree\",\"tap_side\",\"tap_neutral\",\"tap_min\",\"tap_max\",\"tap_step_percent\",\"tap_step_degree\",\"tap_pos\",\"tap_changer_type\",\"id_characteristic_table\",\"tap_dependency_table\",\"parallel\",\"df\",\"in_service\",\"vk0_percent\",\"vkr0_percent\",\"mag0_percent\",\"mag0_rx\",\"si0_hv_partial\",\"tap2_changer_type\",\"leakage_resistance_ratio_hv\",\"leakage_reactance_ratio_hv\",\"vector_group\",\"tap_set_vm_pu\",\"description\",\"equipment\"],\"index\":[0],\"data\":[[\"2-Wicklungstransformator_Dyn_Yyn_YNyn\",\"2-Wicklungstransformatortyp\",3,0,25.0,110.0,20.0,12.0,0.409999996423721,14.0,0.070000000298023,0.0,\"hv\",0,-10,10,1.5,0.0,0,\"Ratio\",null,false,1,1.0,true,3.0,0.0,100.0,0.0,0.899999976158142,null,0.5,0.5,\"Dyn\",1.0,\"\",\"\"]]}",
+      "_object": "{\"columns\":[\"name\",\"std_type\",\"hv_bus\",\"lv_bus\",\"sn_mva\",\"vn_hv_kv\",\"vn_lv_kv\",\"vk_percent\",\"vkr_percent\",\"pfe_kw\",\"i0_percent\",\"shift_degree\",\"tap_side\",\"tap_neutral\",\"tap_min\",\"tap_max\",\"tap_step_percent\",\"tap_step_degree\",\"tap_pos\",\"tap_changer_type\",\"id_characteristic_table\",\"tap_dependency_table\",\"parallel\",\"df\",\"in_service\",\"vk0_percent\",\"vkr0_percent\",\"mag0_percent\",\"mag0_rx\",\"si0_hv_partial\",\"tap2_changer_type\",\"leakage_resistance_ratio_hv\",\"leakage_reactance_ratio_hv\",\"vector_group\",\"tap_set_vm_pu\",\"description\",\"equipment\"],\"index\":[0],\"data\":[[\"2-Wicklungstransformator_Dyn_Yyn_YNyn\",\"2-Wicklungstransformatortyp\",0,1,25.0,110.0,20.0,12.0,0.409999996423721,14.0,0.070000000298023,0.0,\"hv\",0,-10,10,1.5,0.0,0,\"Ratio\",null,false,1,1.0,true,3.0,0.0,100.0,0.0,0.899999976158142,null,0.5,0.5,\"Dyn\",1.0,\"\",\"\"]]}",
       "orient": "split",
       "dtype": {
         "name": "object",
@@ -672,246 +672,6 @@
     "sn_mva": 100.0,
     "std_types": {
       "line": {
-        "70-AL1/11-ST1A 110.0": {
-          "c_nf_per_km": 8.4,
-          "r_ohm_per_km": 0.4132,
-          "x_ohm_per_km": 0.45,
-          "max_i_ka": 0.29,
-          "type": "ol",
-          "q_mm2": 70,
-          "alpha": 0.00403,
-          "voltage_rating": "HV"
-        },
-        "149-AL1/24-ST1A 110.0": {
-          "c_nf_per_km": 8.75,
-          "r_ohm_per_km": 0.194,
-          "x_ohm_per_km": 0.41,
-          "max_i_ka": 0.47,
-          "type": "ol",
-          "q_mm2": 149,
-          "alpha": 0.00403,
-          "voltage_rating": "HV"
-        },
-        "NA2XS2Y 1x70 RM/25 12/20 kV": {
-          "c_nf_per_km": 190,
-          "r_ohm_per_km": 0.443,
-          "x_ohm_per_km": 0.132,
-          "max_i_ka": 0.22,
-          "type": "cs",
-          "q_mm2": 70,
-          "alpha": 0.00403,
-          "voltage_rating": "MV"
-        },
-        "34-AL1/6-ST1A 10.0": {
-          "c_nf_per_km": 9.7,
-          "r_ohm_per_km": 0.8342,
-          "x_ohm_per_km": 0.36,
-          "max_i_ka": 0.17,
-          "type": "ol",
-          "q_mm2": 34,
-          "alpha": 0.00403,
-          "voltage_rating": "MV"
-        },
-        "70-AL1/11-ST1A 20.0": {
-          "c_nf_per_km": 9.7,
-          "r_ohm_per_km": 0.4132,
-          "x_ohm_per_km": 0.36,
-          "max_i_ka": 0.29,
-          "type": "ol",
-          "q_mm2": 70,
-          "alpha": 0.00403,
-          "voltage_rating": "MV"
-        },
-        "48-AL1/8-ST1A 10.0": {
-          "c_nf_per_km": 10.1,
-          "r_ohm_per_km": 0.5939,
-          "x_ohm_per_km": 0.35,
-          "max_i_ka": 0.21,
-          "type": "ol",
-          "q_mm2": 48,
-          "alpha": 0.00403,
-          "voltage_rating": "MV"
-        },
-        "70-AL1/11-ST1A 10.0": {
-          "c_nf_per_km": 10.4,
-          "r_ohm_per_km": 0.4132,
-          "x_ohm_per_km": 0.339,
-          "max_i_ka": 0.29,
-          "type": "ol",
-          "q_mm2": 70,
-          "alpha": 0.00403,
-          "voltage_rating": "MV"
-        },
-        "490-AL1/64-ST1A 220.0": {
-          "c_nf_per_km": 10,
-          "r_ohm_per_km": 0.059,
-          "x_ohm_per_km": 0.285,
-          "max_i_ka": 0.96,
-          "type": "ol",
-          "q_mm2": 490,
-          "alpha": 0.00403,
-          "voltage_rating": "HV"
-        },
-        "679-AL1/86-ST1A 380.0": {
-          "c_nf_per_km": 14.6,
-          "r_ohm_per_km": 0.042,
-          "x_ohm_per_km": 0.25,
-          "max_i_ka": 1.15,
-          "type": "ol",
-          "q_mm2": 679,
-          "alpha": 0.00403,
-          "voltage_rating": "HV"
-        },
-        "NA2XS2Y 1x120 RM/25 12/20 kV": {
-          "c_nf_per_km": 230,
-          "r_ohm_per_km": 0.253,
-          "x_ohm_per_km": 0.119,
-          "max_i_ka": 0.283,
-          "type": "cs",
-          "q_mm2": 120,
-          "alpha": 0.00403,
-          "voltage_rating": "MV"
-        },
-        "NAYY 4x120 SE": {
-          "c_nf_per_km": 264,
-          "r_ohm_per_km": 0.225,
-          "x_ohm_per_km": 0.08,
-          "max_i_ka": 0.242,
-          "type": "cs",
-          "q_mm2": 120,
-          "alpha": 0.00403,
-          "voltage_rating": "LV"
-        },
-        "122-AL1/20-ST1A 10.0": {
-          "c_nf_per_km": 11.1,
-          "r_ohm_per_km": 0.2376,
-          "x_ohm_per_km": 0.323,
-          "max_i_ka": 0.41,
-          "type": "ol",
-          "q_mm2": 122,
-          "alpha": 0.00403,
-          "voltage_rating": "MV"
-        },
-        "48-AL1/8-ST1A 110.0": {
-          "c_nf_per_km": 8,
-          "r_ohm_per_km": 0.5939,
-          "x_ohm_per_km": 0.46,
-          "max_i_ka": 0.21,
-          "type": "ol",
-          "q_mm2": 48,
-          "alpha": 0.00403,
-          "voltage_rating": "HV"
-        },
-        "94-AL1/15-ST1A 10.0": {
-          "c_nf_per_km": 10.75,
-          "r_ohm_per_km": 0.306,
-          "x_ohm_per_km": 0.33,
-          "max_i_ka": 0.35,
-          "type": "ol",
-          "q_mm2": 94,
-          "alpha": 0.00403,
-          "voltage_rating": "MV"
-        },
-        "679-AL1/86-ST1A 110.0": {
-          "c_nf_per_km": 9.95,
-          "r_ohm_per_km": 0.042,
-          "x_ohm_per_km": 0.36,
-          "max_i_ka": 1.15,
-          "type": "ol",
-          "q_mm2": 679,
-          "alpha": 0.00403,
-          "voltage_rating": "HV"
-        },
-        "NA2XS2Y 1x240 RM/25 12/20 kV": {
-          "c_nf_per_km": 304,
-          "r_ohm_per_km": 0.122,
-          "x_ohm_per_km": 0.112,
-          "max_i_ka": 0.421,
-          "type": "cs",
-          "q_mm2": 240,
-          "alpha": 0.00403,
-          "voltage_rating": "MV"
-        },
-        "122-AL1/20-ST1A 20.0": {
-          "c_nf_per_km": 10.3,
-          "r_ohm_per_km": 0.2376,
-          "x_ohm_per_km": 0.344,
-          "max_i_ka": 0.41,
-          "type": "ol",
-          "q_mm2": 122,
-          "alpha": 0.00403,
-          "voltage_rating": "MV"
-        },
-        "490-AL1/64-ST1A 110.0": {
-          "c_nf_per_km": 9.75,
-          "r_ohm_per_km": 0.059,
-          "x_ohm_per_km": 0.37,
-          "max_i_ka": 0.96,
-          "type": "ol",
-          "q_mm2": 490,
-          "alpha": 0.00403,
-          "voltage_rating": "HV"
-        },
-        "NA2XS2Y 1x95 RM/25 6/10 kV": {
-          "c_nf_per_km": 315,
-          "r_ohm_per_km": 0.313,
-          "x_ohm_per_km": 0.123,
-          "max_i_ka": 0.249,
-          "type": "cs",
-          "q_mm2": 95,
-          "alpha": 0.00403,
-          "voltage_rating": "MV"
-        },
-        "NAYY 4x50 SE": {
-          "c_nf_per_km": 210,
-          "r_ohm_per_km": 0.642,
-          "x_ohm_per_km": 0.083,
-          "max_i_ka": 0.142,
-          "type": "cs",
-          "q_mm2": 50,
-          "alpha": 0.00403,
-          "voltage_rating": "LV"
-        },
-        "15-AL1/3-ST1A 0.4": {
-          "c_nf_per_km": 11,
-          "r_ohm_per_km": 1.8769,
-          "x_ohm_per_km": 0.35,
-          "max_i_ka": 0.105,
-          "type": "ol",
-          "q_mm2": 16,
-          "alpha": 0.00403,
-          "voltage_rating": "LV"
-        },
-        "243-AL1/39-ST1A 20.0": {
-          "c_nf_per_km": 11,
-          "r_ohm_per_km": 0.1188,
-          "x_ohm_per_km": 0.32,
-          "max_i_ka": 0.645,
-          "type": "ol",
-          "q_mm2": 243,
-          "alpha": 0.00403,
-          "voltage_rating": "MV"
-        },
-        "184-AL1/30-ST1A 110.0": {
-          "c_nf_per_km": 8.8,
-          "r_ohm_per_km": 0.1571,
-          "x_ohm_per_km": 0.4,
-          "max_i_ka": 0.535,
-          "type": "ol",
-          "q_mm2": 184,
-          "alpha": 0.00403,
-          "voltage_rating": "HV"
-        },
-        "94-AL1/15-ST1A 0.4": {
-          "c_nf_per_km": 13.2,
-          "r_ohm_per_km": 0.306,
-          "x_ohm_per_km": 0.29,
-          "max_i_ka": 0.35,
-          "type": "ol",
-          "q_mm2": 94,
-          "alpha": 0.00403,
-          "voltage_rating": "LV"
-        },
         "NA2XS2Y 1x150 RM/25 12/20 kV": {
           "c_nf_per_km": 250,
           "r_ohm_per_km": 0.206,
@@ -932,6 +692,26 @@
           "alpha": 0.00403,
           "voltage_rating": "MV"
         },
+        "NAYY 4x120 SE": {
+          "c_nf_per_km": 264,
+          "r_ohm_per_km": 0.225,
+          "x_ohm_per_km": 0.08,
+          "max_i_ka": 0.242,
+          "type": "cs",
+          "q_mm2": 120,
+          "alpha": 0.00403,
+          "voltage_rating": "LV"
+        },
+        "48-AL1/8-ST1A 20.0": {
+          "c_nf_per_km": 9.5,
+          "r_ohm_per_km": 0.5939,
+          "x_ohm_per_km": 0.372,
+          "max_i_ka": 0.21,
+          "type": "ol",
+          "q_mm2": 48,
+          "alpha": 0.00403,
+          "voltage_rating": "MV"
+        },
         "N2XS(FL)2Y 1x120 RM/35 64/110 kV": {
           "c_nf_per_km": 112,
           "r_ohm_per_km": 0.153,
@@ -942,25 +722,35 @@
           "alpha": 0.00393,
           "voltage_rating": "HV"
         },
-        "679-AL1/86-ST1A 220.0": {
-          "c_nf_per_km": 11.7,
-          "r_ohm_per_km": 0.042,
-          "x_ohm_per_km": 0.275,
-          "max_i_ka": 1.15,
+        "70-AL1/11-ST1A 10.0": {
+          "c_nf_per_km": 10.4,
+          "r_ohm_per_km": 0.4132,
+          "x_ohm_per_km": 0.339,
+          "max_i_ka": 0.29,
           "type": "ol",
-          "q_mm2": 679,
+          "q_mm2": 70,
+          "alpha": 0.00403,
+          "voltage_rating": "MV"
+        },
+        "122-AL1/20-ST1A 20.0": {
+          "c_nf_per_km": 10.3,
+          "r_ohm_per_km": 0.2376,
+          "x_ohm_per_km": 0.344,
+          "max_i_ka": 0.41,
+          "type": "ol",
+          "q_mm2": 122,
+          "alpha": 0.00403,
+          "voltage_rating": "MV"
+        },
+        "184-AL1/30-ST1A 110.0": {
+          "c_nf_per_km": 8.8,
+          "r_ohm_per_km": 0.1571,
+          "x_ohm_per_km": 0.4,
+          "max_i_ka": 0.535,
+          "type": "ol",
+          "q_mm2": 184,
           "alpha": 0.00403,
           "voltage_rating": "HV"
-        },
-        "48-AL1/8-ST1A 0.4": {
-          "c_nf_per_km": 12.2,
-          "r_ohm_per_km": 0.5939,
-          "x_ohm_per_km": 0.3,
-          "max_i_ka": 0.21,
-          "type": "ol",
-          "q_mm2": 48,
-          "alpha": 0.00403,
-          "voltage_rating": "LV"
         },
         "N2XS(FL)2Y 1x300 RM/35 64/110 kV": {
           "c_nf_per_km": 144,
@@ -972,73 +762,33 @@
           "alpha": 0.00393,
           "voltage_rating": "HV"
         },
-        "149-AL1/24-ST1A 10.0": {
-          "c_nf_per_km": 11.25,
-          "r_ohm_per_km": 0.194,
-          "x_ohm_per_km": 0.315,
-          "max_i_ka": 0.47,
-          "type": "ol",
-          "q_mm2": 149,
-          "alpha": 0.00403,
-          "voltage_rating": "MV"
-        },
-        "24-AL1/4-ST1A 0.4": {
-          "c_nf_per_km": 11.25,
-          "r_ohm_per_km": 1.2012,
-          "x_ohm_per_km": 0.335,
-          "max_i_ka": 0.14,
-          "type": "ol",
-          "q_mm2": 24,
-          "alpha": 0.00403,
-          "voltage_rating": "LV"
-        },
-        "94-AL1/15-ST1A 20.0": {
-          "c_nf_per_km": 10,
-          "r_ohm_per_km": 0.306,
-          "x_ohm_per_km": 0.35,
-          "max_i_ka": 0.35,
-          "type": "ol",
-          "q_mm2": 94,
-          "alpha": 0.00403,
-          "voltage_rating": "MV"
-        },
-        "34-AL1/6-ST1A 20.0": {
-          "c_nf_per_km": 9.15,
-          "r_ohm_per_km": 0.8342,
-          "x_ohm_per_km": 0.382,
-          "max_i_ka": 0.17,
-          "type": "ol",
-          "q_mm2": 34,
-          "alpha": 0.00403,
-          "voltage_rating": "MV"
-        },
-        "NA2XS2Y 1x185 RM/25 6/10 kV": {
-          "c_nf_per_km": 406,
-          "r_ohm_per_km": 0.161,
-          "x_ohm_per_km": 0.11,
-          "max_i_ka": 0.358,
-          "type": "cs",
-          "q_mm2": 185,
-          "alpha": 0.00403,
-          "voltage_rating": "MV"
-        },
-        "N2XS(FL)2Y 1x240 RM/35 64/110 kV": {
-          "c_nf_per_km": 135,
-          "r_ohm_per_km": 0.075,
-          "x_ohm_per_km": 0.149,
-          "max_i_ka": 0.526,
+        "NA2XS2Y 1x240 RM/25 6/10 kV": {
+          "c_nf_per_km": 456,
+          "r_ohm_per_km": 0.122,
+          "x_ohm_per_km": 0.105,
+          "max_i_ka": 0.416,
           "type": "cs",
           "q_mm2": 240,
-          "alpha": 0.00393,
-          "voltage_rating": "HV"
+          "alpha": 0.00403,
+          "voltage_rating": "MV"
         },
-        "NAYY 4x150 SE": {
-          "c_nf_per_km": 261,
-          "r_ohm_per_km": 0.208,
-          "x_ohm_per_km": 0.08,
-          "max_i_ka": 0.27,
+        "NA2XS2Y 1x120 RM/25 12/20 kV": {
+          "c_nf_per_km": 230,
+          "r_ohm_per_km": 0.253,
+          "x_ohm_per_km": 0.119,
+          "max_i_ka": 0.283,
           "type": "cs",
-          "q_mm2": 150,
+          "q_mm2": 120,
+          "alpha": 0.00403,
+          "voltage_rating": "MV"
+        },
+        "15-AL1/3-ST1A 0.4": {
+          "c_nf_per_km": 11,
+          "r_ohm_per_km": 1.8769,
+          "x_ohm_per_km": 0.35,
+          "max_i_ka": 0.105,
+          "type": "ol",
+          "q_mm2": 16,
           "alpha": 0.00403,
           "voltage_rating": "LV"
         },
@@ -1052,43 +802,23 @@
           "alpha": 0.00403,
           "voltage_rating": "HV"
         },
-        "94-AL1/15-ST1A 110.0": {
-          "c_nf_per_km": 8.65,
-          "r_ohm_per_km": 0.306,
-          "x_ohm_per_km": 0.44,
-          "max_i_ka": 0.35,
+        "679-AL1/86-ST1A 220.0": {
+          "c_nf_per_km": 11.7,
+          "r_ohm_per_km": 0.042,
+          "x_ohm_per_km": 0.275,
+          "max_i_ka": 1.15,
           "type": "ol",
-          "q_mm2": 94,
+          "q_mm2": 679,
           "alpha": 0.00403,
           "voltage_rating": "HV"
         },
-        "NA2XS2Y 1x240 RM/25 6/10 kV": {
-          "c_nf_per_km": 456,
-          "r_ohm_per_km": 0.122,
-          "x_ohm_per_km": 0.105,
-          "max_i_ka": 0.416,
-          "type": "cs",
-          "q_mm2": 240,
-          "alpha": 0.00403,
-          "voltage_rating": "MV"
-        },
-        "NA2XS2Y 1x150 RM/25 6/10 kV": {
-          "c_nf_per_km": 360,
-          "r_ohm_per_km": 0.206,
-          "x_ohm_per_km": 0.11,
-          "max_i_ka": 0.315,
-          "type": "cs",
-          "q_mm2": 150,
-          "alpha": 0.00403,
-          "voltage_rating": "MV"
-        },
-        "305-AL1/39-ST1A 110.0": {
-          "c_nf_per_km": 9.2,
-          "r_ohm_per_km": 0.0949,
-          "x_ohm_per_km": 0.38,
-          "max_i_ka": 0.74,
+        "679-AL1/86-ST1A 380.0": {
+          "c_nf_per_km": 14.6,
+          "r_ohm_per_km": 0.042,
+          "x_ohm_per_km": 0.25,
+          "max_i_ka": 1.15,
           "type": "ol",
-          "q_mm2": 305,
+          "q_mm2": 679,
           "alpha": 0.00403,
           "voltage_rating": "HV"
         },
@@ -1102,6 +832,86 @@
           "alpha": 0.00403,
           "voltage_rating": "MV"
         },
+        "N2XS(FL)2Y 1x240 RM/35 64/110 kV": {
+          "c_nf_per_km": 135,
+          "r_ohm_per_km": 0.075,
+          "x_ohm_per_km": 0.149,
+          "max_i_ka": 0.526,
+          "type": "cs",
+          "q_mm2": 240,
+          "alpha": 0.00393,
+          "voltage_rating": "HV"
+        },
+        "94-AL1/15-ST1A 10.0": {
+          "c_nf_per_km": 10.75,
+          "r_ohm_per_km": 0.306,
+          "x_ohm_per_km": 0.33,
+          "max_i_ka": 0.35,
+          "type": "ol",
+          "q_mm2": 94,
+          "alpha": 0.00403,
+          "voltage_rating": "MV"
+        },
+        "490-AL1/64-ST1A 220.0": {
+          "c_nf_per_km": 10,
+          "r_ohm_per_km": 0.059,
+          "x_ohm_per_km": 0.285,
+          "max_i_ka": 0.96,
+          "type": "ol",
+          "q_mm2": 490,
+          "alpha": 0.00403,
+          "voltage_rating": "HV"
+        },
+        "70-AL1/11-ST1A 20.0": {
+          "c_nf_per_km": 9.7,
+          "r_ohm_per_km": 0.4132,
+          "x_ohm_per_km": 0.36,
+          "max_i_ka": 0.29,
+          "type": "ol",
+          "q_mm2": 70,
+          "alpha": 0.00403,
+          "voltage_rating": "MV"
+        },
+        "48-AL1/8-ST1A 0.4": {
+          "c_nf_per_km": 12.2,
+          "r_ohm_per_km": 0.5939,
+          "x_ohm_per_km": 0.3,
+          "max_i_ka": 0.21,
+          "type": "ol",
+          "q_mm2": 48,
+          "alpha": 0.00403,
+          "voltage_rating": "LV"
+        },
+        "149-AL1/24-ST1A 110.0": {
+          "c_nf_per_km": 8.75,
+          "r_ohm_per_km": 0.194,
+          "x_ohm_per_km": 0.41,
+          "max_i_ka": 0.47,
+          "type": "ol",
+          "q_mm2": 149,
+          "alpha": 0.00403,
+          "voltage_rating": "HV"
+        },
+        "NAYY 4x150 SE": {
+          "c_nf_per_km": 261,
+          "r_ohm_per_km": 0.208,
+          "x_ohm_per_km": 0.08,
+          "max_i_ka": 0.27,
+          "type": "cs",
+          "q_mm2": 150,
+          "alpha": 0.00403,
+          "voltage_rating": "LV"
+        },
+        "184-AL1/30-ST1A 20.0": {
+          "c_nf_per_km": 10.75,
+          "r_ohm_per_km": 0.1571,
+          "x_ohm_per_km": 0.33,
+          "max_i_ka": 0.535,
+          "type": "ol",
+          "q_mm2": 184,
+          "alpha": 0.00403,
+          "voltage_rating": "MV"
+        },
         "149-AL1/24-ST1A 20.0": {
           "c_nf_per_km": 10.5,
           "r_ohm_per_km": 0.194,
@@ -1112,15 +922,85 @@
           "alpha": 0.00403,
           "voltage_rating": "MV"
         },
-        "N2XS(FL)2Y 1x185 RM/35 64/110 kV": {
-          "c_nf_per_km": 125,
-          "r_ohm_per_km": 0.099,
-          "x_ohm_per_km": 0.156,
-          "max_i_ka": 0.457,
+        "94-AL1/15-ST1A 0.4": {
+          "c_nf_per_km": 13.2,
+          "r_ohm_per_km": 0.306,
+          "x_ohm_per_km": 0.29,
+          "max_i_ka": 0.35,
+          "type": "ol",
+          "q_mm2": 94,
+          "alpha": 0.00403,
+          "voltage_rating": "LV"
+        },
+        "149-AL1/24-ST1A 10.0": {
+          "c_nf_per_km": 11.25,
+          "r_ohm_per_km": 0.194,
+          "x_ohm_per_km": 0.315,
+          "max_i_ka": 0.47,
+          "type": "ol",
+          "q_mm2": 149,
+          "alpha": 0.00403,
+          "voltage_rating": "MV"
+        },
+        "NA2XS2Y 1x95 RM/25 6/10 kV": {
+          "c_nf_per_km": 315,
+          "r_ohm_per_km": 0.313,
+          "x_ohm_per_km": 0.123,
+          "max_i_ka": 0.249,
+          "type": "cs",
+          "q_mm2": 95,
+          "alpha": 0.00403,
+          "voltage_rating": "MV"
+        },
+        "NA2XS2Y 1x240 RM/25 12/20 kV": {
+          "c_nf_per_km": 304,
+          "r_ohm_per_km": 0.122,
+          "x_ohm_per_km": 0.112,
+          "max_i_ka": 0.421,
+          "type": "cs",
+          "q_mm2": 240,
+          "alpha": 0.00403,
+          "voltage_rating": "MV"
+        },
+        "NA2XS2Y 1x95 RM/25 12/20 kV": {
+          "c_nf_per_km": 216,
+          "r_ohm_per_km": 0.313,
+          "x_ohm_per_km": 0.132,
+          "max_i_ka": 0.252,
+          "type": "cs",
+          "q_mm2": 95,
+          "alpha": 0.00403,
+          "voltage_rating": "MV"
+        },
+        "NA2XS2Y 1x185 RM/25 6/10 kV": {
+          "c_nf_per_km": 406,
+          "r_ohm_per_km": 0.161,
+          "x_ohm_per_km": 0.11,
+          "max_i_ka": 0.358,
           "type": "cs",
           "q_mm2": 185,
-          "alpha": 0.00393,
-          "voltage_rating": "HV"
+          "alpha": 0.00403,
+          "voltage_rating": "MV"
+        },
+        "94-AL1/15-ST1A 20.0": {
+          "c_nf_per_km": 10,
+          "r_ohm_per_km": 0.306,
+          "x_ohm_per_km": 0.35,
+          "max_i_ka": 0.35,
+          "type": "ol",
+          "q_mm2": 94,
+          "alpha": 0.00403,
+          "voltage_rating": "MV"
+        },
+        "NAYY 4x50 SE": {
+          "c_nf_per_km": 210,
+          "r_ohm_per_km": 0.642,
+          "x_ohm_per_km": 0.083,
+          "max_i_ka": 0.142,
+          "type": "cs",
+          "q_mm2": 50,
+          "alpha": 0.00403,
+          "voltage_rating": "LV"
         },
         "NA2XS2Y 1x185 RM/25 12/20 kV": {
           "c_nf_per_km": 273,
@@ -1132,6 +1012,26 @@
           "alpha": 0.00403,
           "voltage_rating": "MV"
         },
+        "490-AL1/64-ST1A 110.0": {
+          "c_nf_per_km": 9.75,
+          "r_ohm_per_km": 0.059,
+          "x_ohm_per_km": 0.37,
+          "max_i_ka": 0.96,
+          "type": "ol",
+          "q_mm2": 490,
+          "alpha": 0.00403,
+          "voltage_rating": "HV"
+        },
+        "679-AL1/86-ST1A 110.0": {
+          "c_nf_per_km": 9.95,
+          "r_ohm_per_km": 0.042,
+          "x_ohm_per_km": 0.36,
+          "max_i_ka": 1.15,
+          "type": "ol",
+          "q_mm2": 679,
+          "alpha": 0.00403,
+          "voltage_rating": "HV"
+        },
         "243-AL1/39-ST1A 110.0": {
           "c_nf_per_km": 9,
           "r_ohm_per_km": 0.1188,
@@ -1142,15 +1042,55 @@
           "alpha": 0.00403,
           "voltage_rating": "HV"
         },
-        "184-AL1/30-ST1A 20.0": {
-          "c_nf_per_km": 10.75,
-          "r_ohm_per_km": 0.1571,
-          "x_ohm_per_km": 0.33,
-          "max_i_ka": 0.535,
-          "type": "ol",
-          "q_mm2": 184,
+        "NA2XS2Y 1x150 RM/25 6/10 kV": {
+          "c_nf_per_km": 360,
+          "r_ohm_per_km": 0.206,
+          "x_ohm_per_km": 0.11,
+          "max_i_ka": 0.315,
+          "type": "cs",
+          "q_mm2": 150,
           "alpha": 0.00403,
           "voltage_rating": "MV"
+        },
+        "48-AL1/8-ST1A 110.0": {
+          "c_nf_per_km": 8,
+          "r_ohm_per_km": 0.5939,
+          "x_ohm_per_km": 0.46,
+          "max_i_ka": 0.21,
+          "type": "ol",
+          "q_mm2": 48,
+          "alpha": 0.00403,
+          "voltage_rating": "HV"
+        },
+        "N2XS(FL)2Y 1x185 RM/35 64/110 kV": {
+          "c_nf_per_km": 125,
+          "r_ohm_per_km": 0.099,
+          "x_ohm_per_km": 0.156,
+          "max_i_ka": 0.457,
+          "type": "cs",
+          "q_mm2": 185,
+          "alpha": 0.00393,
+          "voltage_rating": "HV"
+        },
+        "243-AL1/39-ST1A 20.0": {
+          "c_nf_per_km": 11,
+          "r_ohm_per_km": 0.1188,
+          "x_ohm_per_km": 0.32,
+          "max_i_ka": 0.645,
+          "type": "ol",
+          "q_mm2": 243,
+          "alpha": 0.00403,
+          "voltage_rating": "MV"
+        },
+        "70-AL1/11-ST1A 110.0": {
+          "c_nf_per_km": 8.4,
+          "r_ohm_per_km": 0.4132,
+          "x_ohm_per_km": 0.45,
+          "max_i_ka": 0.29,
+          "type": "ol",
+          "q_mm2": 70,
+          "alpha": 0.00403,
+          "voltage_rating": "HV"
         },
         "N2XS2Y 1x185RM 12/20kV it": {
           "r_ohm_per_km": 0.10400000214576721,
@@ -1165,25 +1105,65 @@
           "c0_nf_per_km": 272.8999853134155,
           "alpha": 0.003930000122636557
         },
-        "48-AL1/8-ST1A 20.0": {
-          "c_nf_per_km": 9.5,
+        "305-AL1/39-ST1A 110.0": {
+          "c_nf_per_km": 9.2,
+          "r_ohm_per_km": 0.0949,
+          "x_ohm_per_km": 0.38,
+          "max_i_ka": 0.74,
+          "type": "ol",
+          "q_mm2": 305,
+          "alpha": 0.00403,
+          "voltage_rating": "HV"
+        },
+        "34-AL1/6-ST1A 20.0": {
+          "c_nf_per_km": 9.15,
+          "r_ohm_per_km": 0.8342,
+          "x_ohm_per_km": 0.382,
+          "max_i_ka": 0.17,
+          "type": "ol",
+          "q_mm2": 34,
+          "alpha": 0.00403,
+          "voltage_rating": "MV"
+        },
+        "94-AL1/15-ST1A 110.0": {
+          "c_nf_per_km": 8.65,
+          "r_ohm_per_km": 0.306,
+          "x_ohm_per_km": 0.44,
+          "max_i_ka": 0.35,
+          "type": "ol",
+          "q_mm2": 94,
+          "alpha": 0.00403,
+          "voltage_rating": "HV"
+        },
+        "NA2XS2Y 1x70 RM/25 12/20 kV": {
+          "c_nf_per_km": 190,
+          "r_ohm_per_km": 0.443,
+          "x_ohm_per_km": 0.132,
+          "max_i_ka": 0.22,
+          "type": "cs",
+          "q_mm2": 70,
+          "alpha": 0.00403,
+          "voltage_rating": "MV"
+        },
+        "48-AL1/8-ST1A 10.0": {
+          "c_nf_per_km": 10.1,
           "r_ohm_per_km": 0.5939,
-          "x_ohm_per_km": 0.372,
+          "x_ohm_per_km": 0.35,
           "max_i_ka": 0.21,
           "type": "ol",
           "q_mm2": 48,
           "alpha": 0.00403,
           "voltage_rating": "MV"
         },
-        "NA2XS2Y 1x95 RM/25 12/20 kV": {
-          "c_nf_per_km": 216,
-          "r_ohm_per_km": 0.313,
-          "x_ohm_per_km": 0.132,
-          "max_i_ka": 0.252,
-          "type": "cs",
-          "q_mm2": 95,
+        "24-AL1/4-ST1A 0.4": {
+          "c_nf_per_km": 11.25,
+          "r_ohm_per_km": 1.2012,
+          "x_ohm_per_km": 0.335,
+          "max_i_ka": 0.14,
+          "type": "ol",
+          "q_mm2": 24,
           "alpha": 0.00403,
-          "voltage_rating": "MV"
+          "voltage_rating": "LV"
         },
         "490-AL1/64-ST1A 380.0": {
           "c_nf_per_km": 11,
@@ -1194,6 +1174,26 @@
           "q_mm2": 490,
           "alpha": 0.00403,
           "voltage_rating": "HV"
+        },
+        "34-AL1/6-ST1A 10.0": {
+          "c_nf_per_km": 9.7,
+          "r_ohm_per_km": 0.8342,
+          "x_ohm_per_km": 0.36,
+          "max_i_ka": 0.17,
+          "type": "ol",
+          "q_mm2": 34,
+          "alpha": 0.00403,
+          "voltage_rating": "MV"
+        },
+        "122-AL1/20-ST1A 10.0": {
+          "c_nf_per_km": 11.1,
+          "r_ohm_per_km": 0.2376,
+          "x_ohm_per_km": 0.323,
+          "max_i_ka": 0.41,
+          "type": "ol",
+          "q_mm2": 122,
+          "alpha": 0.00403,
+          "voltage_rating": "MV"
         }
       },
       "line_dc": {
@@ -1255,22 +1255,79 @@
         }
       },
       "trafo": {
-        "0.25 MVA 10/0.4 kV": {
-          "sn_mva": 0.25,
-          "vn_hv_kv": 10,
-          "vn_lv_kv": 0.4,
-          "vk_percent": 4,
-          "vkr_percent": 1.2,
-          "pfe_kw": 0.6,
-          "i0_percent": 0.24,
+        "25 MVA 110/20 kV": {
+          "i0_percent": 0.07,
+          "pfe_kw": 14,
+          "vkr_percent": 0.41,
+          "sn_mva": 25,
+          "vn_lv_kv": 20.0,
+          "vn_hv_kv": 110.0,
+          "vk_percent": 12,
           "shift_degree": 150,
-          "vector_group": "Dyn5",
+          "vector_group": "YNd5",
+          "tap_side": "hv",
+          "tap_neutral": 0,
+          "tap_min": -9,
+          "tap_max": 9,
+          "tap_step_degree": 0,
+          "tap_step_percent": 1.5,
+          "tap_changer_type": "Ratio",
+          "trafo_characteristic_table": false
+        },
+        "25 MVA 110/10 kV": {
+          "sn_mva": 25,
+          "vn_hv_kv": 110,
+          "vn_lv_kv": 10,
+          "vk_percent": 12,
+          "vkr_percent": 0.41,
+          "pfe_kw": 14,
+          "i0_percent": 0.07,
+          "shift_degree": 150,
+          "vector_group": "YNd5",
+          "tap_side": "hv",
+          "tap_neutral": 0,
+          "tap_min": -9,
+          "tap_max": 9,
+          "tap_step_degree": 0,
+          "tap_step_percent": 1.5,
+          "tap_changer_type": "Ratio",
+          "trafo_characteristic_table": false
+        },
+        "0.25 MVA 20/0.4 kV": {
+          "sn_mva": 0.25,
+          "vn_hv_kv": 20,
+          "vn_lv_kv": 0.4,
+          "vk_percent": 6,
+          "vkr_percent": 1.44,
+          "pfe_kw": 0.8,
+          "i0_percent": 0.32,
+          "shift_degree": 150,
+          "vector_group": "Yzn5",
           "tap_side": "hv",
           "tap_neutral": 0,
           "tap_min": -2,
           "tap_max": 2,
           "tap_step_degree": 0,
           "tap_step_percent": 2.5,
+          "tap_changer_type": "Ratio",
+          "trafo_characteristic_table": false
+        },
+        "100 MVA 220/110 kV": {
+          "i0_percent": 0.06,
+          "pfe_kw": 55,
+          "vkr_percent": 0.26,
+          "sn_mva": 100,
+          "vn_lv_kv": 110.0,
+          "vn_hv_kv": 220.0,
+          "vk_percent": 12.0,
+          "shift_degree": 0,
+          "vector_group": "Yy0",
+          "tap_side": "hv",
+          "tap_neutral": 0,
+          "tap_min": -9,
+          "tap_max": 9,
+          "tap_step_degree": 0,
+          "tap_step_percent": 1.5,
           "tap_changer_type": "Ratio",
           "trafo_characteristic_table": false
         },
@@ -1312,33 +1369,14 @@
           "tap_changer_type": "Ratio",
           "trafo_characteristic_table": false
         },
-        "25 MVA 110/20 kV": {
-          "i0_percent": 0.07,
-          "pfe_kw": 14,
-          "vkr_percent": 0.41,
-          "sn_mva": 25,
-          "vn_lv_kv": 20.0,
-          "vn_hv_kv": 110.0,
-          "vk_percent": 12,
-          "shift_degree": 150,
-          "vector_group": "YNd5",
-          "tap_side": "hv",
-          "tap_neutral": 0,
-          "tap_min": -9,
-          "tap_max": 9,
-          "tap_step_degree": 0,
-          "tap_step_percent": 1.5,
-          "tap_changer_type": "Ratio",
-          "trafo_characteristic_table": false
-        },
-        "0.63 MVA 10/0.4 kV": {
+        "0.63 MVA 20/0.4 kV": {
           "sn_mva": 0.63,
-          "vn_hv_kv": 10,
+          "vn_hv_kv": 20,
           "vn_lv_kv": 0.4,
-          "vk_percent": 4,
-          "vkr_percent": 1.0794,
-          "pfe_kw": 1.18,
-          "i0_percent": 0.1873,
+          "vk_percent": 6,
+          "vkr_percent": 1.206,
+          "pfe_kw": 1.65,
+          "i0_percent": 0.2619,
           "shift_degree": 150,
           "vector_group": "Dyn5",
           "tap_side": "hv",
@@ -1347,44 +1385,6 @@
           "tap_max": 2,
           "tap_step_degree": 0,
           "tap_step_percent": 2.5,
-          "tap_changer_type": "Ratio",
-          "trafo_characteristic_table": false
-        },
-        "63 MVA 110/10 kV": {
-          "sn_mva": 63,
-          "vn_hv_kv": 110,
-          "vn_lv_kv": 10,
-          "vk_percent": 18,
-          "vkr_percent": 0.32,
-          "pfe_kw": 22,
-          "i0_percent": 0.04,
-          "shift_degree": 150,
-          "vector_group": "YNd5",
-          "tap_side": "hv",
-          "tap_neutral": 0,
-          "tap_min": -9,
-          "tap_max": 9,
-          "tap_step_degree": 0,
-          "tap_step_percent": 1.5,
-          "tap_changer_type": "Ratio",
-          "trafo_characteristic_table": false
-        },
-        "100 MVA 220/110 kV": {
-          "i0_percent": 0.06,
-          "pfe_kw": 55,
-          "vkr_percent": 0.26,
-          "sn_mva": 100,
-          "vn_lv_kv": 110.0,
-          "vn_hv_kv": 220.0,
-          "vk_percent": 12.0,
-          "shift_degree": 0,
-          "vector_group": "Yy0",
-          "tap_side": "hv",
-          "tap_neutral": 0,
-          "tap_min": -9,
-          "tap_max": 9,
-          "tap_step_degree": 0,
-          "tap_step_percent": 1.5,
           "tap_changer_type": "Ratio",
           "trafo_characteristic_table": false
         },
@@ -1407,33 +1407,14 @@
           "tap_changer_type": "Ratio",
           "trafo_characteristic_table": false
         },
-        "25 MVA 110/10 kV": {
-          "sn_mva": 25,
+        "40 MVA 110/10 kV": {
+          "sn_mva": 40,
           "vn_hv_kv": 110,
           "vn_lv_kv": 10,
-          "vk_percent": 12,
-          "vkr_percent": 0.41,
-          "pfe_kw": 14,
-          "i0_percent": 0.07,
-          "shift_degree": 150,
-          "vector_group": "YNd5",
-          "tap_side": "hv",
-          "tap_neutral": 0,
-          "tap_min": -9,
-          "tap_max": 9,
-          "tap_step_degree": 0,
-          "tap_step_percent": 1.5,
-          "tap_changer_type": "Ratio",
-          "trafo_characteristic_table": false
-        },
-        "63 MVA 110/20 kV": {
-          "i0_percent": 0.04,
-          "pfe_kw": 22,
-          "vkr_percent": 0.32,
-          "sn_mva": 63,
-          "vn_lv_kv": 20.0,
-          "vn_hv_kv": 110.0,
-          "vk_percent": 18,
+          "vk_percent": 16.2,
+          "vkr_percent": 0.34,
+          "pfe_kw": 18,
+          "i0_percent": 0.05,
           "shift_degree": 150,
           "vector_group": "YNd5",
           "tap_side": "hv",
@@ -1469,6 +1450,63 @@
           "tap_min": -10,
           "tap_neutral": 0
         },
+        "0.63 MVA 10/0.4 kV": {
+          "sn_mva": 0.63,
+          "vn_hv_kv": 10,
+          "vn_lv_kv": 0.4,
+          "vk_percent": 4,
+          "vkr_percent": 1.0794,
+          "pfe_kw": 1.18,
+          "i0_percent": 0.1873,
+          "shift_degree": 150,
+          "vector_group": "Dyn5",
+          "tap_side": "hv",
+          "tap_neutral": 0,
+          "tap_min": -2,
+          "tap_max": 2,
+          "tap_step_degree": 0,
+          "tap_step_percent": 2.5,
+          "tap_changer_type": "Ratio",
+          "trafo_characteristic_table": false
+        },
+        "0.25 MVA 10/0.4 kV": {
+          "sn_mva": 0.25,
+          "vn_hv_kv": 10,
+          "vn_lv_kv": 0.4,
+          "vk_percent": 4,
+          "vkr_percent": 1.2,
+          "pfe_kw": 0.6,
+          "i0_percent": 0.24,
+          "shift_degree": 150,
+          "vector_group": "Dyn5",
+          "tap_side": "hv",
+          "tap_neutral": 0,
+          "tap_min": -2,
+          "tap_max": 2,
+          "tap_step_degree": 0,
+          "tap_step_percent": 2.5,
+          "tap_changer_type": "Ratio",
+          "trafo_characteristic_table": false
+        },
+        "63 MVA 110/20 kV": {
+          "i0_percent": 0.04,
+          "pfe_kw": 22,
+          "vkr_percent": 0.32,
+          "sn_mva": 63,
+          "vn_lv_kv": 20.0,
+          "vn_hv_kv": 110.0,
+          "vk_percent": 18,
+          "shift_degree": 150,
+          "vector_group": "YNd5",
+          "tap_side": "hv",
+          "tap_neutral": 0,
+          "tap_min": -9,
+          "tap_max": 9,
+          "tap_step_degree": 0,
+          "tap_step_percent": 1.5,
+          "tap_changer_type": "Ratio",
+          "trafo_characteristic_table": false
+        },
         "40 MVA 110/20 kV": {
           "i0_percent": 0.05,
           "pfe_kw": 18,
@@ -1488,52 +1526,14 @@
           "tap_changer_type": "Ratio",
           "trafo_characteristic_table": false
         },
-        "0.25 MVA 20/0.4 kV": {
-          "sn_mva": 0.25,
-          "vn_hv_kv": 20,
-          "vn_lv_kv": 0.4,
-          "vk_percent": 6,
-          "vkr_percent": 1.44,
-          "pfe_kw": 0.8,
-          "i0_percent": 0.32,
-          "shift_degree": 150,
-          "vector_group": "Yzn5",
-          "tap_side": "hv",
-          "tap_neutral": 0,
-          "tap_min": -2,
-          "tap_max": 2,
-          "tap_step_degree": 0,
-          "tap_step_percent": 2.5,
-          "tap_changer_type": "Ratio",
-          "trafo_characteristic_table": false
-        },
-        "0.63 MVA 20/0.4 kV": {
-          "sn_mva": 0.63,
-          "vn_hv_kv": 20,
-          "vn_lv_kv": 0.4,
-          "vk_percent": 6,
-          "vkr_percent": 1.206,
-          "pfe_kw": 1.65,
-          "i0_percent": 0.2619,
-          "shift_degree": 150,
-          "vector_group": "Dyn5",
-          "tap_side": "hv",
-          "tap_neutral": 0,
-          "tap_min": -2,
-          "tap_max": 2,
-          "tap_step_degree": 0,
-          "tap_step_percent": 2.5,
-          "tap_changer_type": "Ratio",
-          "trafo_characteristic_table": false
-        },
-        "40 MVA 110/10 kV": {
-          "sn_mva": 40,
+        "63 MVA 110/10 kV": {
+          "sn_mva": 63,
           "vn_hv_kv": 110,
           "vn_lv_kv": 10,
-          "vk_percent": 16.2,
-          "vkr_percent": 0.34,
-          "pfe_kw": 18,
-          "i0_percent": 0.05,
+          "vk_percent": 18,
+          "vkr_percent": 0.32,
+          "pfe_kw": 22,
+          "i0_percent": 0.04,
           "shift_degree": 150,
           "vector_group": "YNd5",
           "tap_side": "hv",
@@ -2636,7 +2636,7 @@
     "res_bus": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"vm_pu\",\"va_degree\",\"p_mw\",\"q_mvar\",\"pf_vm_pu\",\"pf_va_degree\"],\"index\":[0,1,2,3,4],\"data\":[[0.999181307414017,-2.813941934782258,0.0,0.0,0.999181308080952,-2.81394187130261],[0.980129181331964,-4.164847734838333,5.0,0.0,0.980129182356707,-4.164847683432613],[0.980129181331964,-4.164847734838333,5.0,0.0,0.980129182356708,-4.164847683432606],[1.0,0.0,-10.234596243231991,-0.077570274027766,1.000000000000051,0.000000000006933],[0.98654336664991,-3.715146039826149,0.0,0.0,0.986543367550717,-3.715145984699093]]}",
+      "_object": "{\"columns\":[\"vm_pu\",\"va_degree\",\"p_mw\",\"q_mvar\",\"pf_vm_pu\",\"pf_va_degree\"],\"index\":[0,1,2,3,4],\"data\":[[1.0,0.0,-10.234596243231872,-0.077570274027705,1.000000000000051,0.000000000006933],[0.999181307414016,-2.813941934782232,0.0,0.0,0.999181308080952,-2.81394187130261],[0.986543366649909,-3.715146039826105,0.0,0.0,0.986543367550717,-3.715145984699093],[0.980129181331963,-4.164847734838288,5.0,0.0,0.980129182356707,-4.164847683432613],[0.980129181331963,-4.164847734838292,5.0,0.0,0.980129182356708,-4.164847683432606]]}",
       "orient": "split",
       "dtype": {
         "vm_pu": "float64",
@@ -2665,7 +2665,7 @@
     "res_line": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"p_from_mw\",\"q_from_mvar\",\"p_to_mw\",\"q_to_mvar\",\"pl_mw\",\"ql_mvar\",\"i_from_ka\",\"i_to_ka\",\"i_ka\",\"vm_from_pu\",\"va_from_degree\",\"vm_to_pu\",\"va_to_degree\",\"loading_percent\",\"pf_loading\"],\"index\":[0,1,2,3],\"data\":[[-4.999999999935624,0.082390883905297,5.033867892324809,-0.209827517907032,0.033867892389185,-0.127436634001736,0.147283811896635,0.147425283928644,0.147425283928644,0.980129181331964,-4.164847734838333,0.98654336664991,-3.715146039826149,31.910233760278768,31.9102336911447],[-4.999999999935624,0.082390883905297,5.033867892324809,-0.209827517907032,0.033867892389185,-0.127436634001736,0.147283811896635,0.147425283928644,0.147425283928644,0.980129181331964,-4.164847734838333,0.98654336664991,-3.715146039826149,31.910233760278768,31.910233691144285],[10.203460170763192,-0.434757949277257,-10.067735784682762,0.41965503584454,0.13572438608043,-0.015102913432717,0.295057342624672,0.294850567858294,0.295057342624672,0.999181307414017,-2.813941934782258,0.98654336664991,-3.715146039826149,63.865223962513227,63.865223891660818],[0.000000000000008,-0.08239088388973,0.000000000000008,-0.08239088388973,0.000000000000016,-0.16478176777946,0.0024266392583,0.0024266392583,0.0024266392583,0.980129181331964,-4.164847734838333,0.980129181331964,-4.164847734838333,0.525246578610586,0.525246579155581]]}",
+      "_object": "{\"columns\":[\"p_from_mw\",\"q_from_mvar\",\"p_to_mw\",\"q_to_mvar\",\"pl_mw\",\"ql_mvar\",\"i_from_ka\",\"i_to_ka\",\"i_ka\",\"vm_from_pu\",\"va_from_degree\",\"vm_to_pu\",\"va_to_degree\",\"loading_percent\",\"pf_loading\"],\"index\":[0,1,2,3],\"data\":[[10.203460170763014,-0.434757949277187,-10.067735784682592,0.419655035844409,0.135724386080422,-0.015102913432779,0.295057342624667,0.294850567858289,0.295057342624667,0.999181307414016,-2.813941934782232,0.986543366649909,-3.715146039826105,63.865223962512154,63.865223891660818],[-4.999999999935623,0.082390883905237,5.033867892324808,-0.209827517906972,0.033867892389185,-0.127436634001735,0.147283811896635,0.147425283928644,0.147425283928644,0.980129181331963,-4.164847734838288,0.986543366649909,-3.715146039826105,31.910233760278771,31.9102336911447],[-4.999999999935675,0.082390883905297,5.033867892324804,-0.209827517907028,0.03386789238913,-0.127436634001731,0.147283811896636,0.147425283928644,0.147425283928644,0.980129181331963,-4.164847734838292,0.986543366649909,-3.715146039826105,31.910233760278771,31.910233691144285],[0.000000000000004,-0.082390883889785,-0.000000000000043,-0.08239088388967,-0.000000000000039,-0.164781767779455,0.002426639258301,0.002426639258298,0.002426639258301,0.980129181331963,-4.164847734838288,0.980129181331963,-4.164847734838292,0.52524657861094,0.525246579155581]]}",
       "orient": "split",
       "dtype": {
         "p_from_mw": "float64",
@@ -2710,7 +2710,7 @@
     "res_trafo": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"p_hv_mw\",\"q_hv_mvar\",\"p_lv_mw\",\"q_lv_mvar\",\"pl_mw\",\"ql_mvar\",\"i_hv_ka\",\"i_lv_ka\",\"vm_hv_pu\",\"va_hv_degree\",\"vm_lv_pu\",\"va_lv_degree\",\"loading_percent\",\"pf_loading\"],\"index\":[0],\"data\":[[10.234596243155632,0.077570273922504,-10.203460170782458,0.43475794932091,0.031136072373174,0.512328223243414,0.053719241928598,0.295057342625282,1.0,0.0,0.999181307414017,-2.813941934782258,40.939560800343088,40.93956079730745]]}",
+      "_object": "{\"columns\":[\"p_hv_mw\",\"q_hv_mvar\",\"p_lv_mw\",\"q_lv_mvar\",\"pl_mw\",\"ql_mvar\",\"i_hv_ka\",\"i_lv_ka\",\"vm_hv_pu\",\"va_hv_degree\",\"vm_lv_pu\",\"va_lv_degree\",\"loading_percent\",\"pf_loading\"],\"index\":[0],\"data\":[[10.234596243155538,0.077570273922731,-10.203460170782366,0.434757949320674,0.031136072373172,0.512328223243405,0.053719241928598,0.295057342625279,1.0,0.0,0.999181307414016,-2.813941934782232,40.939560800342718,40.93956079730745]]}",
       "orient": "split",
       "dtype": {
         "p_hv_mw": "float64",
@@ -2783,7 +2783,7 @@
     "res_ext_grid": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"p_mw\",\"q_mvar\",\"pf_p\",\"pf_q\"],\"index\":[0],\"data\":[[10.234596243231991,0.077570274027766,3.411532084785728,0.02585670692312]]}",
+      "_object": "{\"columns\":[\"p_mw\",\"q_mvar\",\"pf_p\",\"pf_q\"],\"index\":[0],\"data\":[[10.234596243231872,0.077570274027705,3.411532084785728,0.02585670692312]]}",
       "orient": "split",
       "dtype": {
         "p_mw": "float64",
@@ -2953,7 +2953,7 @@
     "res_switch": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"i_ka\",\"loading_percent\",\"p_from_mw\",\"q_from_mvar\",\"p_to_mw\",\"q_to_mvar\",\"pf_closed\"],\"index\":[0,1,2,3,4,5,6,7,8,9],\"data\":[[0.053719241928598,null,null,null,null,null,true],[0.295057342625282,null,null,null,null,null,true],[0.147425283928644,null,null,null,null,null,true],[0.147425283928644,null,null,null,null,null,true],[0.147425283928644,null,null,null,null,null,true],[0.147425283928644,null,null,null,null,null,true],[0.295057342624672,null,null,null,null,null,true],[0.295057342624672,null,null,null,null,null,true],[0.0024266392583,null,null,null,null,null,true],[0.0024266392583,null,null,null,null,null,true]]}",
+      "_object": "{\"columns\":[\"i_ka\",\"loading_percent\",\"p_from_mw\",\"q_from_mvar\",\"p_to_mw\",\"q_to_mvar\",\"pf_closed\"],\"index\":[0,1,2,3,4,5,6,7,8,9],\"data\":[[0.053719241928598,null,null,null,null,null,true],[0.295057342625279,null,null,null,null,null,true],[0.295057342624667,null,null,null,null,null,true],[0.295057342624667,null,null,null,null,null,true],[0.147425283928644,null,null,null,null,null,true],[0.147425283928644,null,null,null,null,null,true],[0.147425283928644,null,null,null,null,null,true],[0.147425283928644,null,null,null,null,null,true],[0.002426639258301,null,null,null,null,null,true],[0.002426639258301,null,null,null,null,null,true]]}",
       "orient": "split",
       "dtype": {
         "i_ka": "float64",
