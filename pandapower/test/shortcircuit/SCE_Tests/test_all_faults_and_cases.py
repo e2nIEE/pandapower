@@ -130,10 +130,14 @@ def run_test_cases(net, dataframes, fault, case, fault_values, lv_tol_percent, f
 
     if branch_results:
         columns_to_check = net.res_line_sc.columns
-        columns_to_check = columns_to_check.drop("ikss_to_degree")
-        columns_to_check = columns_to_check.drop("ikss_from_degree")
+        if "ikss_to_degree" in columns_to_check:
+            columns_to_check = columns_to_check.drop("ikss_to_degree")
+        if "ikss_from_degree" in columns_to_check:
+            columns_to_check = columns_to_check.drop("ikss_from_degree")
         net.res_line_sc.insert(0, "name", net.line.name)
         net.res_line_sc.sort_values(by='name', inplace=True)
+
+        modified_pf_results_selection = modified_pf_results[modified_pf_results['name'].isin(net.res_line_sc['name'])]
 
         for column in columns_to_check:
             if column == 'name':
@@ -143,17 +147,23 @@ def run_test_cases(net, dataframes, fault, case, fault_values, lv_tol_percent, f
             # exclude columns now because of false calculation in pandapower
             if column_ar in ['p_mw', 'q_mvar', 'vm_pu', 'va_degree']:
                 continue
-            assert np.isclose(
+            mismatch = np.isclose(
                 net.res_line_sc.loc[:, column],
-                modified_pf_results.loc[:, column],
+                modified_pf_results_selection.loc[:, column],
                 rtol=rtol[column_ar], atol=atol[column_ar]
-            ).all(), \
-                    (f"{column} mismatch for {line}: {net.res_line_sc.loc[net.res_line_sc.name == line, column].values[0]}"
-                     f"vs {modified_pf_results.loc[modified_pf_results.name == line, column].values[0]}")
+            )
+            assert mismatch.all(), (
+                f"{column} mismatch for {net.res_line_sc.loc[~mismatch, 'name']}: {net.res_line_sc.loc[~mismatch, column]}"
+                f"vs {modified_pf_results_selection.loc[~mismatch, column]}"
+            )
     else:
         columns_to_check = net.res_bus_sc.columns
         net.res_bus_sc.insert(0, "name", net.bus.name)
         net.res_bus_sc.sort_values(by='name', inplace=True)
+
+        # shorten the results from the file to the ones calculated by pp.
+        # This was done by only iterating over the net table before.
+        modified_pf_results_selection = modified_pf_results[modified_pf_results['name'].isin(net.res_bus_sc['name'])]
 
         for column in columns_to_check:
             if column == 'name':
@@ -161,11 +171,11 @@ def run_test_cases(net, dataframes, fault, case, fault_values, lv_tol_percent, f
             column_ar = check_pattern(column)
             mismatch = np.isclose(
                 net.res_bus_sc.loc[:, column],
-                modified_pf_results.loc[:, column],
+                modified_pf_results_selection.loc[:, column],
                 rtol=rtol[column_ar], atol=atol[column_ar]
             )
             assert mismatch.all(), (f"{column} mismatch: {net.res_bus_sc.loc[~mismatch, column]}"
-                f"vs {modified_pf_results.loc[~mismatch, column]}")
+                f"vs {modified_pf_results_selection.loc[~mismatch, column]}")
 
 
 def check_pattern(pattern):
