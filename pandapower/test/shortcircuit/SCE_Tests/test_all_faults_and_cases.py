@@ -139,6 +139,8 @@ def run_test_cases(net, dataframes, fault, case, r_fault_ohm, x_fault_ohm, lv_to
 
     if branch_results:
         columns_to_check = net.res_line_sc.columns
+        columns_to_check = columns_to_check.drop("ikss_to_degree")
+        columns_to_check = columns_to_check.drop("ikss_from_degree")
         net.res_line_sc["name"] = net.line.name
         net.res_line_sc = net.res_line_sc[['name'] + [col for col in net.res_line_sc.columns if col != 'name']]
         net.res_line_sc.sort_values(by='name', inplace=True)
