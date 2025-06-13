@@ -3,6 +3,7 @@ import pandapower as pp
 from pandapower.estimation.idx_brch import P_TO, P_TO_STD
 from pandapower.estimation.ppc_conversion import pp2eppci
 from pandapower.pypower.idx_brch import branch_cols
+import pytest
 
 
 def test_duplicate_measurements_at_trafo3w():
@@ -57,10 +58,13 @@ def test_duplicate_measurements_at_trafo3w():
                                   std_dev=1,
                                   name=f"P2_{side.upper()}_Trafo{trafo}")
 
-    _, _, eppci = pp2eppci(net, v_start="flat", delta_start="flat", zero_injection="auto")
+    _, _, eppci = pp2eppci(net, v_start="flat", delta_start="flat", zero_injection="aux_bus")
     vals = eppci.data["branch"][[2, 3], branch_cols + P_TO]
     np.testing.assert_array_equal(vals, [3, 3])
 
     std_dev = eppci.data["branch"][[2, 3], branch_cols + P_TO_STD]
     # 0.707107 =  ((1^2 + 1^2)^0.5)/2
     np.testing.assert_array_almost_equal(std_dev, [0.707107, 0.707107], decimal=6)
+
+if __name__ == '__main__':
+    pytest.main([__file__, "-xs"])

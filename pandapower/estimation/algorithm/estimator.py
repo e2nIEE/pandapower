@@ -5,6 +5,7 @@
 
 import numpy as np
 from scipy.stats import chi2
+import scipy.sparse as sparse
 
 from pandapower.auxiliary import version_check
 try:
@@ -103,6 +104,8 @@ class SHGMEstimatorIRWLS(BaseEstimatorIRWLS):
     @staticmethod
     def _ps(H):
         omega = np.dot(H, H.T)
+        if sparse.issparse(omega):
+            omega = omega.todense()
 
         x = np.zeros(omega.shape[0]-1)
         y = np.zeros(omega.shape[0])

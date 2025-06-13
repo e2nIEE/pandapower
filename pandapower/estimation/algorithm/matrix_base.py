@@ -310,10 +310,6 @@ class BaseAlgebraZeroInjConstraints(BaseAlgebra):
 
     def create_cx_jacobian(self, E, p_zero_inj, q_zero_inj):
         V = self.eppci.E2V(E)
-        dSbus_dth, dSbus_dv = self._dSbus_dv(V)
-        c_jac_th = np.r_[dSbus_dth.toarray().real[p_zero_inj],
-                         dSbus_dth.toarray().imag[q_zero_inj]]
-        c_jac_v = np.r_[dSbus_dv.toarray().real[p_zero_inj],
-                        dSbus_dv.toarray().imag[q_zero_inj]]
-        c_jac = np.c_[c_jac_th, c_jac_v]
-        return c_jac[:, self.delta_v_bus_mask]
+        dPbus, dQbus = self._dSbus_dv(V, p_zero_inj, q_zero_inj)
+        c_jac = vstack((dPbus,dQbus))
+        return c_jac[:][:, self.delta_v_bus_mask]

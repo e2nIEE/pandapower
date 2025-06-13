@@ -537,7 +537,7 @@ def _add_zero_injection(net, ppci, bus_append, zero_injection):
                         tab = net[element]
                         if len(tab) == 0:
                             continue
-                        in_service = tab["in_service"]
+                        in_service = (tab["in_service"]) & (net.bus["in_service"][tab["bus"].values])
                         b = np.hstack([b, tab["bus"][in_service]])
                     active_buses = np.unique(b)
                     active_buses = bus_lookup[active_buses]

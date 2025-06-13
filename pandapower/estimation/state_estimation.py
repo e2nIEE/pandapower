@@ -121,7 +121,7 @@ def remove_bad_data(net, init='flat', tolerance=1e-6, maximum_iterations=10,
         **successful** (boolean) - Was the state estimation successful?
     """
     wls_se = StateEstimation(net, tolerance, maximum_iterations, algorithm="wls")
-    v_start, delta_start = _initialize_voltage(net, init, calculate_voltage_angles)
+    v_start, delta_start = _initialize_voltage(net, init)
     return wls_se.perform_rn_max_test(v_start, delta_start, calculate_voltage_angles,
                                       rn_max_threshold)
 
@@ -154,7 +154,7 @@ def chi2_analysis(net, init='flat', tolerance=1e-6, maximum_iterations=10,
         **bad_data_detected** (boolean) - Returns true if bad data has been detected
     """
     wls_se = StateEstimation(net, tolerance, maximum_iterations, algorithm="wls")
-    v_start, delta_start = _initialize_voltage(net, init, calculate_voltage_angles)
+    v_start, delta_start = _initialize_voltage(net, init)
     return wls_se.perform_chi2_test(v_start, delta_start, calculate_voltage_angles,
                                     chi2_prob_false)
 
