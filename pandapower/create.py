@@ -2259,8 +2259,6 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
         **slack_weight** (float, default 1.0) - Contribution factor for distributed slack power flow calculation \
             (active power balancing)
 
-            considered in load flow if distributed_slack = True
-
         **controllable** (bool, NaN) - Control of value limits 
 
                                         - True: p_mw, q_mvar and vm_pu limits are enforced for the \
@@ -2271,6 +2269,8 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
                                               ignored*. The vm_pu set point is enforced and limits \
                                               of the bus table are ignored. Defaults to False if \
                                               "controllable" column exists in DataFrame
+
+        \* considered in load flow if calculate_voltage_angle = True
 
     EXAMPLE:
         create_ext_grid(net, 1, voltage=1.03)
