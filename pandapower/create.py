@@ -2251,24 +2251,26 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
         **min_q_mvar** (float, NaN) - Minimum reactive power injection. Only respected for OPF
 
         **r0x0_max** (float, NaN) - maximum R/X-ratio to calculate Zero sequence
-        internal impedance of ext_grid
+            internal impedance of ext_grid
 
         **x0x_max** (float, NaN) - maximum X0/X-ratio to calculate Zero sequence
-        internal impedance of ext_grid
+            internal impedance of ext_grid
 
-        **slack_weight** (float, default 1.0) - Contribution factor for distributed slack power flow calculation
-                                                (active power balancing)
+        **slack_weight** (float, default 1.0) - Contribution factor for distributed slack power flow calculation \
+            (active power balancing)
 
-        \* considered in load flow if calculate_voltage_angles = True
+            considered in load flow if distributed_slack = True
 
-        **controllable** (bool, NaN) - True: p_mw, q_mvar and vm_pu limits are enforced for the \
+        **controllable** (bool, NaN) - Control of value limits 
+
+                                        - True: p_mw, q_mvar and vm_pu limits are enforced for the \
                                              ext_grid in OPF. The voltage limits set in the \
                                              ext_grid bus are enforced.
-                                       False: p_mw and vm_pu set points are enforced and *limits are\
+
+                                        - False: p_mw and vm_pu set points are enforced and *limits are\
                                               ignored*. The vm_pu set point is enforced and limits \
-                                              of the bus table are ignored.
-                                       defaults to False if "controllable" column exists in\
-                                       DataFrame
+                                              of the bus table are ignored. Defaults to False if \
+                                              "controllable" column exists in DataFrame
 
     EXAMPLE:
         create_ext_grid(net, 1, voltage=1.03)
