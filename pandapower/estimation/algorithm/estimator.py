@@ -70,7 +70,9 @@ class WLSEstimator(BaseEstimatorOpt, BaseEstimatorIRWLS):
         rx = self.create_rx(E)
         hx_jac = self.create_hx_jacobian(E)
         drho_dr = 2 * (rx * (1/self.sigma**2))
-        jac = - np.sum(drho_dr.reshape((-1, 1)) * hx_jac, axis=0)
+        # jac = - np.sum(drho_dr.reshape((-1, 1)) * hx_jac, axis=0)
+        tmp = hx_jac.multiply(drho_dr.reshape(-1, 1)) # .multiply does elementwise, broadcasting the single column
+        jac = - np.array(tmp.sum(axis=0)).ravel()  # sum returns a (1×63) sparse
         return jac
 
     def create_phi(self, E):
@@ -149,7 +151,12 @@ class LAVEstimator(BaseEstimatorOpt):
         rx = self.create_rx(E)
         hx_jac = self.create_hx_jacobian(E)
         drho_dr = np.sign(rx)
-        jac = - np.sum(drho_dr.reshape((-1, 1)) * hx_jac, axis=0)
+        # jac = - np.sum(drho_dr.reshape((-1, 1)) * hx_jac, axis=0)
+
+        # .multiply macht elementweise Mul in Sparse
+        # tmp = hx_jac.multiply(drho_dr)  # (63,17) sparse
+        # jac = -np.array(tmp.sum(axis=0)).ravel()  # (17,)
+        jac = -hx_jac.T.dot(drho_dr)
         return jac
 
 
@@ -178,7 +185,8 @@ class QCEstimatorOpt(BaseEstimatorOpt):
         large_dev_mask = (np.abs(rx/self.sigma) > self.a)
         if np.any(large_dev_mask):
             drho_dr[large_dev_mask] = 0.001
-        jac = - np.sum(drho_dr.reshape((-1, 1)) * hx_jac, axis=0)
+        # jac = - np.sum(drho_dr.reshape((-1, 1)) * hx_jac, axis=0)
+        jac = - hx_jac.T.dot(drho_dr)        
         return jac
 
 
@@ -206,7 +214,15 @@ class QLEstimatorOpt(BaseEstimatorOpt):
         hx_jac = self.create_hx_jacobian(E)
         drho_dr = 2 * (rx * (1/self.sigma)**2)
         large_dev_mask = np.abs(rx/self.sigma) > self.a
-        if np.any(large_dev_mask):
-            drho_dr[large_dev_mask] = (np.sign(rx)* (1/self.sigma))[large_dev_mask]
-        jac = - np.sum(drho_dr.reshape((-1, 1)) * hx_jac, axis=0)
+        #if np.any(large_dev_mask):
+        #    drho_dr[large_dev_mask] = (np.sign(rx)* (1/self.sigma))[large_dev_mask]
+        #jac = - np.sum(drho_dr.reshape((-1, 1)) * hx_jac, axis=0)
+
+        # drho_dr[large_dev_mask] = np.sign(rx[large_dev_mask]) * (1 / self.sigma)
+        drho_dr = np.where(
+            large_dev_mask,
+            np.sign(rx) * (1 / self.sigma),  # wenn große Abweichung
+            2 * rx * (1 / self.sigma) ** 2  # sonst
+        )
+        jac = - hx_jac.T.dot(drho_dr)
         return jac
