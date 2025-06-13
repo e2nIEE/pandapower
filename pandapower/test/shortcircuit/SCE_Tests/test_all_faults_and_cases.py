@@ -19,6 +19,11 @@ from pandapower.file_io import from_json
 testfiles_path = os.path.join(pp_dir, 'test', 'shortcircuit', 'sce_tests')
 
 # Define common parameters
+net_names = [
+    "test_case_2_five_bus_radial_grid",
+    "test_case_3_five_bus_meshed_grid",
+    "test_case_4_twenty_bus_radial_grid"
+]
 faults = ["LLL", "LL", "LG", "LLG"]
 cases = ["max", "min"]
 values = [(0.0, 0.0), (5.0, 5.0)]
@@ -26,50 +31,45 @@ vector_groups = ['Dyn', 'Yyn', 'YNyn']
 # Todo lv tol percents only necessary for min case, reduces amount of tests
 lv_tol_percents = [6, 10]
 fault_location_buses = [0, 1, 2, 3]
+is_branch_test = [False, True]
 
 # Create parameter list
-parametrize_values = list(product(faults, cases, values, lv_tol_percents, fault_location_buses))
+parametrize_values = list(product(faults, cases, values, lv_tol_percents, fault_location_buses, is_branch_test))
 
 # Create parameter list with vector group
-parametrize_values_vector = list(product(faults, cases, values, lv_tol_percents, vector_groups, fault_location_buses))
+parametrize_values_vector = list(product(
+    net_names, faults, cases, values, lv_tol_percents, vector_groups, fault_location_buses, is_branch_test
+))
 
 
-@pytest.mark.parametrize("fault, case, fault_values, lv_tol_percent, fault_location_bus", parametrize_values)
-def test_four_bus_radial_grid(fault, case, fault_values, lv_tol_percent, fault_location_bus):
-    net_name = "test_case_1_four_bus_radial_grid"
-    net, dataframes = load_test_case_data(net_name, fault_location_bus)
-    for key, is_branch in [("bus", False), ("branch", True)]:
-        run_test_cases(net, dataframes[key], fault, case, fault_values, lv_tol_percent, fault_location_bus,
-                       branch_results=is_branch)
+@pytest.mark.parametrize("fault, case, fault_values, lv_tol_percent, fault_location_bus, is_branch_test", parametrize_values)
+def test_four_bus_radial_grid(fault, case, fault_values, lv_tol_percent, fault_location_bus, is_branch_test):
+    net, dataframes = load_test_case_data("test_case_1_four_bus_radial_grid", fault_location_bus)
+    run_test_cases(
+        net,
+        dataframes["branch" if is_branch_test else "bus"],
+        fault,
+        case,
+        fault_values,
+        lv_tol_percent,
+        fault_location_bus,
+        branch_results=is_branch_test
+    )
 
 
-@pytest.mark.parametrize("fault, case, fault_values, lv_tol_percent, vector_group, fault_location_bus", parametrize_values_vector)
-def test_five_bus_radial_grid(fault, case, fault_values, lv_tol_percent,
-                                                                        vector_group, fault_location_bus):
-    net_name = "test_case_2_five_bus_radial_grid"
+@pytest.mark.parametrize("net_name, fault, case, fault_values, lv_tol_percent, vector_group, fault_location_bus, is_branch_test", parametrize_values_vector)
+def test_radial_grids(net_name, fault, case, fault_values, lv_tol_percent, vector_group, fault_location_bus, is_branch_test):
     net, dataframes = load_test_case_data(net_name, fault_location_bus, vector_group)
-    for key, is_branch in [("bus", False), ("branch", True)]:
-        run_test_cases(net, dataframes[key], fault, case, fault_values, lv_tol_percent, fault_location_bus,
-                       branch_results=is_branch)
-
-
-@pytest.mark.parametrize("fault, case, fault_values, lv_tol_percent, vector_group, fault_location_bus", parametrize_values_vector)
-def test_five_bus_meshed_grid(fault, case, fault_values, lv_tol_percent,
-                                                                        vector_group, fault_location_bus):
-    net_name = "test_case_3_five_bus_meshed_grid"
-    net, dataframes = load_test_case_data(net_name, fault_location_bus, vector_group)
-    for key, is_branch in [("bus", False), ("branch", True)]:
-        run_test_cases(net, dataframes[key], fault, case, fault_values, lv_tol_percent, fault_location_bus,
-                       branch_results=is_branch)
-
-@pytest.mark.parametrize("fault, case, fault_values, lv_tol_percent, vector_group, fault_location_bus", parametrize_values_vector)
-def test_twenty_bus_radial_grid(fault, case, fault_values, lv_tol_percent,
-                                                                        vector_group, fault_location_bus):
-    net_name = "test_case_4_twenty_bus_radial_grid"
-    net, dataframes = load_test_case_data(net_name, fault_location_bus, vector_group)
-    for key, is_branch in [("bus", False), ("branch", True)]:
-        run_test_cases(net, dataframes[key], fault, case, fault_values, lv_tol_percent, fault_location_bus,
-                       branch_results=is_branch)
+    run_test_cases(
+        net,
+        dataframes["branch" if is_branch_test else "bus"],
+        fault,
+        case,
+        fault_values,
+        lv_tol_percent,
+        fault_location_bus,
+        branch_results=is_branch_test
+    )
 
 
 def load_test_case_data(net_name, fault_location_bus, vector_group=None):
