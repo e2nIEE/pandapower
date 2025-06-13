@@ -45,7 +45,7 @@ parametrize_values_vector = list(product(
 @pytest.mark.parametrize("fault, case, fault_values, lv_tol_percent, fault_location_bus, is_branch_test", parametrize_values)
 def test_four_bus_radial_grid(fault, case, fault_values, lv_tol_percent, fault_location_bus, is_branch_test):
     net, dataframes = load_test_case_data("test_case_1_four_bus_radial_grid", fault_location_bus)
-    run_test_cases(
+    results = run_test_cases(
         net,
         dataframes["branch" if is_branch_test else "bus"],
         fault,
@@ -55,12 +55,13 @@ def test_four_bus_radial_grid(fault, case, fault_values, lv_tol_percent, fault_l
         fault_location_bus,
         branch_results=is_branch_test
     )
+    compare_results(*results, is_branch_test)
 
 
 @pytest.mark.parametrize("net_name, fault, case, fault_values, lv_tol_percent, vector_group, fault_location_bus, is_branch_test", parametrize_values_vector)
 def test_radial_grids(net_name, fault, case, fault_values, lv_tol_percent, vector_group, fault_location_bus, is_branch_test):
     net, dataframes = load_test_case_data(net_name, fault_location_bus, vector_group)
-    run_test_cases(
+    results = run_test_cases(
         net,
         dataframes["branch" if is_branch_test else "bus"],
         fault,
@@ -70,6 +71,34 @@ def test_radial_grids(net_name, fault, case, fault_values, lv_tol_percent, vecto
         fault_location_bus,
         branch_results=is_branch_test
     )
+    compare_results(*results, is_branch_test)
+
+
+def compare_results(columns_to_check, net_df, pf_results, branch_results):
+    # define tolerances
+    rtol = {"ikss_ka": 0, "skss_mw": 0, "rk_ohm": 0, "xk_ohm": 0,
+            "vm_pu": 0, "va_degree": 0, "p_mw": 0, "q_mvar": 0, "ikss_degree": 0}
+    # TODO skss_mw and ikss_ka only 1e-4 sufficient?
+    atol = {"ikss_ka": 1e-4, "skss_mw": 1e-4, "rk_ohm": 1e-6, "xk_ohm": 1e-5,
+            "vm_pu": 1e-4, "va_degree": 1e-4, "p_mw": 1e-4, "q_mvar": 1e-4, "ikss_degree": 1e-4}  # TODO: tolerances ok?
+
+    for column in columns_to_check:
+        if column == 'name':
+            continue
+        column_ar = check_pattern(column)
+        # TODO: consider after result format is adjusted!
+        # exclude columns now because of false calculation in pandapower
+        if branch_results and column_ar in ['p_mw', 'q_mvar', 'vm_pu', 'va_degree']:
+            continue
+        mismatch = np.isclose(
+            net_df.loc[:, column],
+            pf_results.loc[:, column],
+            rtol=rtol[column_ar], atol=atol[column_ar]
+        )
+        assert mismatch.all(), (
+            f"{column} mismatch for {net_df.loc[~mismatch, 'name']}: {net_df.loc[~mismatch, column]}"
+            f"vs {pf_results.loc[~mismatch, column]}"
+        )
 
 
 def load_test_case_data(net_name, fault_location_bus, vector_group=None):
@@ -117,12 +146,6 @@ def run_test_cases(net, dataframes, fault, case, fault_values, lv_tol_percent, f
     """
     r_fault_ohm, x_fault_ohm = fault_values
 
-    rtol = {"ikss_ka": 0, "skss_mw": 0, "rk_ohm": 0, "xk_ohm": 0,
-            "vm_pu": 0, "va_degree": 0, "p_mw": 0, "q_mvar": 0, "ikss_degree": 0}
-    # TODO skss_mw and ikss_ka only 1e-4 sufficient?
-    atol = {"ikss_ka": 1e-4, "skss_mw": 1e-4, "rk_ohm": 1e-6, "xk_ohm": 1e-5,
-            "vm_pu": 1e-4, "va_degree": 1e-4, "p_mw": 1e-4, "q_mvar": 1e-4, "ikss_degree": 1e-4}  # TODO: tolerances ok?
-
     # columns_to_check = get_columns_to_check(fault)
     selected_sheet = f"{fault}_{case}_{lv_tol_percent}"
     if r_fault_ohm != 0.0 and x_fault_ohm != 0.0:
@@ -153,24 +176,7 @@ def run_test_cases(net, dataframes, fault, case, fault_values, lv_tol_percent, f
         net.res_line_sc.sort_values(by='name', inplace=True)
 
         modified_pf_results_selection = modified_pf_results[modified_pf_results['name'].isin(net.res_line_sc['name'])]
-
-        for column in columns_to_check:
-            if column == 'name':
-                continue
-            column_ar = check_pattern(column)
-            # TODO: consider after result format is adjusted!
-            # exclude columns now because of false calculation in pandapower
-            if column_ar in ['p_mw', 'q_mvar', 'vm_pu', 'va_degree']:
-                continue
-            mismatch = np.isclose(
-                net.res_line_sc.loc[:, column],
-                modified_pf_results_selection.loc[:, column],
-                rtol=rtol[column_ar], atol=atol[column_ar]
-            )
-            assert mismatch.all(), (
-                f"{column} mismatch for {net.res_line_sc.loc[~mismatch, 'name']}: {net.res_line_sc.loc[~mismatch, column]}"
-                f"vs {modified_pf_results_selection.loc[~mismatch, column]}"
-            )
+        net_df = net.res_line_sc
     else:
         columns_to_check = net.res_bus_sc.columns
         net.res_bus_sc.insert(0, "name", net.bus.name)
@@ -179,18 +185,8 @@ def run_test_cases(net, dataframes, fault, case, fault_values, lv_tol_percent, f
         # shorten the results from the file to the ones calculated by pp.
         # This was done by only iterating over the net table before.
         modified_pf_results_selection = modified_pf_results[modified_pf_results['name'].isin(net.res_bus_sc['name'])]
-
-        for column in columns_to_check:
-            if column == 'name':
-                continue
-            column_ar = check_pattern(column)
-            mismatch = np.isclose(
-                net.res_bus_sc.loc[:, column],
-                modified_pf_results_selection.loc[:, column],
-                rtol=rtol[column_ar], atol=atol[column_ar]
-            )
-            assert mismatch.all(), (f"{column} mismatch: {net.res_bus_sc.loc[~mismatch, column]}"
-                f"vs {modified_pf_results_selection.loc[~mismatch, column]}")
+        net_df = net.res_bus_sc
+    return columns_to_check, net_df, modified_pf_results_selection
 
 
 def check_pattern(pattern):
