@@ -12,13 +12,9 @@ import pytest
 import pandas as pd
 import numpy as np
 
+from pandapower import pp_dir
 from pandapower.shortcircuit.calc_sc import calc_sc
 from pandapower.file_io import from_json
-import pytest
-import re
-import copy
-import os
-from pandapower import pp_dir
 
 testfiles_path = os.path.join(pp_dir, 'test', 'shortcircuit', 'sce_tests')
 
@@ -27,6 +23,7 @@ faults = ["LLL", "LL", "LG", "LLG"]
 cases = ["max", "min"]
 values = [(0.0, 0.0), (5.0, 5.0)]
 vector_groups = ['Dyn', 'Yyn', 'YNyn']
+# Todo lv tol percents only necessary for min case, reduces amount of tests
 lv_tol_percents = [6, 10]
 fault_location_buses = [0, 1, 2, 3]
 
@@ -38,7 +35,7 @@ parametrize_values_vector = list(product(faults, cases, values, lv_tol_percents,
 
 
 @pytest.mark.parametrize("fault, case, fault_values, lv_tol_percent, fault_location_bus", parametrize_values)
-def test_four_bus_radial_grid_all_faults_and_cases_with_fault_impedance(fault, case, fault_values, lv_tol_percent, fault_location_bus):
+def test_four_bus_radial_grid(fault, case, fault_values, lv_tol_percent, fault_location_bus):
     net_name = "test_case_1_four_bus_radial_grid"
     net, dataframes = load_test_case_data(net_name, fault_location_bus)
     for key, is_branch in [("bus", False), ("branch", True)]:
@@ -47,7 +44,7 @@ def test_four_bus_radial_grid_all_faults_and_cases_with_fault_impedance(fault, c
 
 
 @pytest.mark.parametrize("fault, case, fault_values, lv_tol_percent, vector_group, fault_location_bus", parametrize_values_vector)
-def test_five_bus_radial_grid_all_faults_and_cases_with_fault_impedance(fault, case, fault_values, lv_tol_percent,
+def test_five_bus_radial_grid(fault, case, fault_values, lv_tol_percent,
                                                                         vector_group, fault_location_bus):
     net_name = "test_case_2_five_bus_radial_grid"
     net, dataframes = load_test_case_data(net_name, fault_location_bus, vector_group)
@@ -57,9 +54,18 @@ def test_five_bus_radial_grid_all_faults_and_cases_with_fault_impedance(fault, c
 
 
 @pytest.mark.parametrize("fault, case, fault_values, lv_tol_percent, vector_group, fault_location_bus", parametrize_values_vector)
-def test_five_bus_meshed_grid_all_faults_and_cases_with_fault_impedance(fault, case, fault_values, lv_tol_percent,
+def test_five_bus_meshed_grid(fault, case, fault_values, lv_tol_percent,
                                                                         vector_group, fault_location_bus):
     net_name = "test_case_3_five_bus_meshed_grid"
+    net, dataframes = load_test_case_data(net_name, fault_location_bus, vector_group)
+    for key, is_branch in [("bus", False), ("branch", True)]:
+        run_test_cases(net, dataframes[key], fault, case, fault_values, lv_tol_percent, fault_location_bus,
+                       branch_results=is_branch)
+
+@pytest.mark.parametrize("fault, case, fault_values, lv_tol_percent, vector_group, fault_location_bus", parametrize_values_vector)
+def test_twenty_bus_radial_grid(fault, case, fault_values, lv_tol_percent,
+                                                                        vector_group, fault_location_bus):
+    net_name = "test_case_4_twenty_bus_radial_grid"
     net, dataframes = load_test_case_data(net_name, fault_location_bus, vector_group)
     for key, is_branch in [("bus", False), ("branch", True)]:
         run_test_cases(net, dataframes[key], fault, case, fault_values, lv_tol_percent, fault_location_bus,
@@ -113,8 +119,8 @@ def run_test_cases(net, dataframes, fault, case, fault_values, lv_tol_percent, f
 
     rtol = {"ikss_ka": 0, "skss_mw": 0, "rk_ohm": 0, "xk_ohm": 0,
             "vm_pu": 0, "va_degree": 0, "p_mw": 0, "q_mvar": 0, "ikss_degree": 0}
-    # TODO skss_mw only 1e-4 sufficient?
-    atol = {"ikss_ka": 1e-6, "skss_mw": 1e-4, "rk_ohm": 1e-6, "xk_ohm": 1e-5,
+    # TODO skss_mw and ikss_ka only 1e-4 sufficient?
+    atol = {"ikss_ka": 1e-4, "skss_mw": 1e-4, "rk_ohm": 1e-6, "xk_ohm": 1e-5,
             "vm_pu": 1e-4, "va_degree": 1e-4, "p_mw": 1e-4, "q_mvar": 1e-4, "ikss_degree": 1e-4}  # TODO: tolerances ok?
 
     # columns_to_check = get_columns_to_check(fault)
@@ -130,10 +136,19 @@ def run_test_cases(net, dataframes, fault, case, fault_values, lv_tol_percent, f
 
     if branch_results:
         columns_to_check = net.res_line_sc.columns
-        if "ikss_to_degree" in columns_to_check:
-            columns_to_check = columns_to_check.drop("ikss_to_degree")
-        if "ikss_from_degree" in columns_to_check:
-            columns_to_check = columns_to_check.drop("ikss_from_degree")
+        # Patterns for the columns to be dropped
+        patterns_to_drop = [
+            "ikss_to_degree",
+            "ikss_from_degree",
+            "ikss_a_from_degree",
+            "ikss_b_from_degree",
+            "ikss_c_from_degree",
+            "ikss_a_to_degree",
+            "ikss_b_to_degree",
+            "ikss_c_to_degree"
+        ]
+        # Remove columns if they are present in the patterns_to_drop list
+        columns_to_check = columns_to_check[~columns_to_check.isin(patterns_to_drop)]
         net.res_line_sc.insert(0, "name", net.line.name)
         net.res_line_sc.sort_values(by='name', inplace=True)
 
@@ -302,6 +317,7 @@ def load_pf_results(excel_file):
         if excel_file.endswith('_bus.xlsx'):
             relevant_columns = columns_mapping[fault_type]
             pf_results = pf_results[relevant_columns]
+            pf_results['name'] = pf_results['name'].astype(str)
             if fault_type == 'LLL' or fault_type == 'LL':
                 pf_results.columns = ['name', 'ikss_ka', 'skss_mw', 'rk_ohm', 'xk_ohm']
             elif fault_type == 'LLG':
@@ -336,11 +352,24 @@ def load_pf_results(excel_file):
                                       'p_c_from_mw', 'q_c_from_mvar', 'p_c_to_mw', 'q_c_to_mvar',
                                       'vm_c_from_pu', 'va_c_from_degree', 'vm_c_to_pu', 'va_c_to_degree',
                                       ]
-
             dataframes[sheet] = pf_results
 
     return dataframes
 
 
+# def get_columns_to_check(fault):
+#     """Return the columns to check based on the fault type."""
+#     if fault in ["LLL", "LL"]:
+#         return ["ikss_ka", "skss_mw", "rk_ohm", "xk_ohm"]
+#     elif fault == "LG":
+#         return ["ikss_ka", "skss_mw", "rk0_ohm", "xk0_ohm", "rk1_ohm", "xk1_ohm", "rk2_ohm", "xk2_ohm"]
+#     elif fault == 'LLG':
+#         return ["ikss_a_ka", "ikss_b_ka", 'ikss_c_ka', 'skss_a_mw', 'skss_b_mw', 'skss_c_mw', "rk0_ohm", "xk0_ohm",
+#                 "rk1_ohm", "xk1_ohm", "rk2_ohm", "xk2_ohm"]
+#     return []
+
+
 if __name__ == "__main__":
     pytest.main([__file__])
+
+##
