@@ -110,9 +110,12 @@ def _calculate_branch_phase_results(ppc_0, ppc_1, ppc_2):
     return v_abc_pu, i_abc_ka, s_abc_mva
 
 
-def _get_line_lg_results(net, ppc_1, v_abc_pu, i_abc_ka, s_abc_mva):
+def _get_line_to_g_results(net, ppc_1, v_abc_pu, i_abc_ka, s_abc_mva):
     branch_lookup = net._pd2ppc_lookups["branch"]
     case = net._options["case"]
+    if net["_options"]["fault"] == "LLG":
+        i_abc_ka *= 3
+
     if "line" in branch_lookup:
         f, t = branch_lookup["line"]
         minmax = np.max if case == "max" else np.min
@@ -200,9 +203,9 @@ def _calculate_bus_results_llg(ppc_0, ppc_1, ppc_2, bus, net):
         i_1_abc_ka_abs[index] = abs(i_1_abc_ka[bus[index], index])
 
     # ToDo: check voltages
-    v_pu_0 = ppc_0["internal"]["V_ikss"][bus, bus][:, np.newaxis]
-    v_pu_1 = ppc_1["internal"]["V_ikss"][bus, bus][:, np.newaxis]
-    v_pu_2 = ppc_2["internal"]["V_ikss"][bus, bus][:, np.newaxis]
+    v_pu_0 = ppc_0["internal"]["V_ikss"][bus][:, np.newaxis]
+    v_pu_1 = ppc_1["internal"]["V_ikss"][bus][:, np.newaxis]
+    v_pu_2 = ppc_2["internal"]["V_ikss"][bus][:, np.newaxis]
 
     v_012_pu = np.stack([v_pu_0, v_pu_1, v_pu_2], 2)
     v_abc_pu = np.apply_along_axis(sequence_to_phase, 2, v_012_pu)
@@ -232,7 +235,8 @@ def _extract_results(net, ppc_0, ppc_1, ppc_2, bus):
         # TODO check option return all current here
         if (net["_options"]["fault"] in ("LG", "LLG")) & (~net["_options"]['return_all_currents']): #LLG
             v_abc_pu, i_abc_ka, s_abc_mva = _calculate_branch_phase_results(ppc_0, ppc_1, ppc_2)
-            _get_line_lg_results(net, ppc_1, v_abc_pu, i_abc_ka, s_abc_mva)
+            _get_line_to_g_results(net, ppc_1, v_abc_pu, i_abc_ka, s_abc_mva)
+            #TODO might need to be adapted
             _get_trafo_lg_results(net, v_abc_pu, i_abc_ka, s_abc_mva)
         else:
             if net._options['return_all_currents']:
