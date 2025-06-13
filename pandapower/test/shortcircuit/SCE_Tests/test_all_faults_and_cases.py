@@ -31,10 +31,10 @@ lv_tol_percents = [6, 10]
 fault_location_buses = [0, 1, 2, 3]
 
 # Create parameter list
-parametrize_values = product(faults, cases, values, lv_tol_percents, fault_location_buses)
+parametrize_values = list(product(faults, cases, values, lv_tol_percents, fault_location_buses))
 
 # Create parameter list with vector group
-parametrize_values_vector = product(faults, cases, values, lv_tol_percents, vector_groups, fault_location_buses)
+parametrize_values_vector = list(product(faults, cases, values, lv_tol_percents, vector_groups, fault_location_buses))
 
 
 @pytest.mark.parametrize("fault, case, fault_values, lv_tol_percent, fault_location_bus", parametrize_values)
