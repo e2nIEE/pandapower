@@ -1346,10 +1346,10 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
             specified as motor so that sgen is treated as asynchronous motor. Relevant for \
             short-circuit calculation for all generator types
 
-        **reactive_capability_curve** (bool, False) - True if both the id_q_capability_curve_characteristic and the
+        **reactive_capability_curve** (bool, False) - True if both the id_q_capability_curve_characteristic and the \
             curve style are present in the generator
 
-        **id_q_capability_curve_characteristic** (int, None) - references the index of the characteristic from the
+        **id_q_capability_curve_characteristic** (int, None) - references the index of the characteristic from the \
             net.q_capability_curve_characteristic table (id_q_capability_curve column)
 
         **curve_style** (string, None) - The curve style of the generator represents the relationship \
@@ -1484,8 +1484,7 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
              controllable sgens in OPF
 
         **controllable** (list of boolean, default NaN) - States, whether a sgen is controllable \
-             or not. Only respected for OPF
-             Defaults to False if "controllable" column exists in DataFrame
+             or not. Only respected for OPF. Defaults to False if "controllable" column exists in DataFrame
 
         **k** (list of floats, None) - Ratio of nominal current to short circuit current
 
@@ -1494,10 +1493,10 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
             short-circuit calculation for all generator types
 
         **reactive_capability_curve** (list of bools, False) - True if both the id_q_capability_curve_characteristic \
-        and the curve style are present in the generator.
+            and the curve style are present in the generator.
 
         **id_q_capability_curve_characteristic** (list of ints, None) - references the index of the characteristic \
-        from the lookup table net.q_capability_curve_characteristic e.g. 0, 1, 2, 3
+            from the lookup table net.q_capability_curve_characteristic e.g. 0, 1, 2, 3
 
         **curve_style** (list of strings, None) - The curve style of the generator represents the relationship \
            between active power (P) and reactive power (Q). It indicates whether the reactive power remains \
@@ -1657,7 +1656,7 @@ def create_sgen_from_cosphi(net, bus, sn_mva, cos_phi, mode, **kwargs):
 
         **cos_phi** (float) - power factor cos_phi
 
-        **mode** (str) - "underexcited" (Q absorption, decreases voltage) or "overexcited"
+        **mode** (str) - "underexcited" (Q absorption, decreases voltage) or "overexcited" \
                          (Q injection, increases voltage)
 
     OUTPUT:
@@ -1897,10 +1896,10 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
 
         **type** (string, None) - type variable to classify generators
 
-        **reactive_capability_curve** (bool, False) - True if both the id_q_capability_curve_characteristic and the
+        **reactive_capability_curve** (bool, False) - True if both the id_q_capability_curve_characteristic and the \
             curve style are present in the generator
 
-        **id_q_capability_curve_characteristic** (int, None) - references the index of the characteristic from
+        **id_q_capability_curve_characteristic** (int, None) - references the index of the characteristic from \
             the net.q_capability_curve_characteristic table (id_q_capability_curve column)
 
         **curve_style** (string, None) - The curve style of the generator represents the relationship \
@@ -1923,11 +1922,11 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
 
         **cos_phi** (float, NaN) - Rated cosine phi of the generator for short-circuit calculation
 
-        **pg_percent** (float, NaN) - Rated pg (voltage control range) of the generator for
-        short-circuit calculation
+        **pg_percent** (float, NaN) - Rated pg (voltage control range) of the generator for \
+            short-circuit calculation
 
-        **power_station_trafo** (int, None) - Index of the power station transformer for
-        short-circuit calculation
+        **power_station_trafo** (int, None) - Index of the power station transformer for \
+            short-circuit calculation
 
         **in_service** (bool, True) - True for in_service or False for out of service
 
@@ -2249,24 +2248,26 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
         **min_q_mvar** (float, NaN) - Minimum reactive power injection. Only respected for OPF
 
         **r0x0_max** (float, NaN) - maximum R/X-ratio to calculate Zero sequence
-        internal impedance of ext_grid
+            internal impedance of ext_grid
 
         **x0x_max** (float, NaN) - maximum X0/X-ratio to calculate Zero sequence
-        internal impedance of ext_grid
+            internal impedance of ext_grid
 
-        **slack_weight** (float, default 1.0) - Contribution factor for distributed slack power flow calculation
-                                                (active power balancing)
+        **slack_weight** (float, default 1.0) - Contribution factor for distributed slack power flow calculation \
+            (active power balancing)
 
-        \* considered in load flow if calculate_voltage_angles = True
+        **controllable** (bool, NaN) - Control of value limits 
 
-        **controllable** (bool, NaN) - True: p_mw, q_mvar and vm_pu limits are enforced for the \
+                                        - True: p_mw, q_mvar and vm_pu limits are enforced for the \
                                              ext_grid in OPF. The voltage limits set in the \
                                              ext_grid bus are enforced.
-                                       False: p_mw and vm_pu set points are enforced and *limits are\
+
+                                        - False: p_mw and vm_pu set points are enforced and *limits are\
                                               ignored*. The vm_pu set point is enforced and limits \
-                                              of the bus table are ignored.
-                                       defaults to False if "controllable" column exists in\
-                                       DataFrame
+                                              of the bus table are ignored. Defaults to False if \
+                                              "controllable" column exists in DataFrame
+
+        \\* considered in load flow if calculate_voltage_angles = True
 
     EXAMPLE:
         create_ext_grid(net, 1, voltage=1.03)
@@ -3467,7 +3468,7 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
         "df": df,
         "shift_degree": ti["shift_degree"] if "shift_degree" in ti else 0
     }
-    for zero_param in ['vk0_percent', 'vkr0_percent', 'mag0_percent', 'mag0_rx', 'si0_hv_partial']:
+    for zero_param in ['vk0_percent', 'vkr0_percent', 'mag0_percent', 'mag0_rx', 'si0_hv_partial', 'vector_group']:
         if zero_param in ti:
             updates[zero_param] = ti[zero_param]
     v.update(updates)
@@ -3645,7 +3646,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
 
         **leakage_reactance_ratio_hv** (bool) - ratio of transformer short-circuit reactance on HV side (default 0.5)
 
-        \* only considered in load flow if calculate_voltage_angles = True
+        \\* only considered in load flow if calculate_voltage_angles = True
 
     OUTPUT:
         **index** (int) - the unique ID of the created transformer
@@ -3864,7 +3865,7 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
         **tap2_changer_type** (list of str, None) - specifies the tap changer type ("Ratio", "Symmetrical", "Ideal", \
                                                     None: no tap changer)*
 
-        \* only considered in load flow if calculate_voltage_angles = True
+        \\* only considered in load flow if calculate_voltage_angles = True
 
     OUTPUT:
         **index** (list of int) - The list of IDs of the created transformers
@@ -4353,7 +4354,7 @@ def create_transformers3w_from_parameters(
 
         **vector_group** (list of str) - vector group of the 3w-transformers
 
-        \* only considered in load flow if calculate_voltage_angles = True
+        \\* only considered in load flow if calculate_voltage_angles = True
 
     OUTPUT:
         **trafo_id** (list of int) - list of trafo_ids of the created 3w-transformers
