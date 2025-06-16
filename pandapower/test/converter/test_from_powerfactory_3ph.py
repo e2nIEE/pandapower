@@ -1,20 +1,22 @@
 # -*- coding: utf-8 -*-
 
 import os
-
-import pandapower as pp
+import json
 import pytest
 import numpy as np
+
+from pandapower import pp_dir
+from pandapower.pf.runpp_3ph import runpp_3ph
+from pandapower.file_io import from_json
 
 try:
     from pandaplan.core import pplog as logging
 except ImportError:
     import logging
 
-import json
 
 logger = logging.getLogger(__name__)
-testfiles_path = os.path.join(pp.pp_dir, 'test', 'converter', 'testfiles')
+testfiles_path = os.path.join(pp_dir, 'test', 'converter', 'testfiles')
 
 try:
     import powerfactory as pf
@@ -38,7 +40,7 @@ import pandas as pd
 #     # and Yyn needs to be corrected, so there will be xfail atm
 #     prj_name= "\\e2n049.IntUser\\Transformer 2 bus_trafo_11.03.20.IntPrj"
 #     app = initialize_powerfactory(prj_name)
-#     net = pp.from_json(os.path.join(this_file_path, "test_trafo_3ph.json"))
+#     net = from_json(os.path.join(this_file_path, "test_trafo_3ph.json"))
 #     for loadtype in ["delta", "wye", "bal_wye"]:
 #         for vector_group in [ "Dyn", "YNyn","Yzn"]:
 #             print(loadtype, vector_group)
@@ -51,8 +53,8 @@ import pandas as pd
 #     # Only works with PowerFactory installed and configured atm
 #     prj_name= "\\e2n049.IntUser\\2 bus_line_load_25.02.20.IntPrj"
 #     app = initialize_powerfactory(prj_name)
-#     net = pp.from_json(os.path.join(this_file_path, "test_line_3ph.json"))
-#     pp.runpp_3ph(net)
+#     net = from_json(os.path.join(this_file_path, "test_line_3ph.json"))
+#     runpp_3ph(net)
 #     get_pf_results(app, net)
 #     compare_3ph_pp_pf_results(net)
 #     return net
@@ -65,7 +67,7 @@ import pandas as pd
 #     # and Yyn needs to be corrected, so there will be xfail atm
 #     prj_name= "\\e2n049.IntUser\\3 bus_trafo_line_load_22.06.20.IntPrj"
 #     app = initialize_powerfactory(prj_name)
-#     net = pp.from_json(os.path.join(this_file_path, "test_net_3ph.json"))
+#     net = from_json(os.path.join(this_file_path, "test_net_3ph.json"))
 #     for loadtype in ["delta", "wye", "bal_wye"]:
 #         for vector_group in [ "Dyn", "YNyn","Yzn"]:
 #             print(loadtype, vector_group)
@@ -73,40 +75,40 @@ import pandas as pd
 
 
 def test_trafo_asym():
-    net = pp.from_json(os.path.join(testfiles_path, "test_trafo_3ph.json"))
+    net = from_json(os.path.join(testfiles_path, "test_trafo_3ph.json"))
     for loadtype in ["delta", "wye"]:  # , "bal_wye"]:
         for vector_group in ["Dyn", "YNyn", "Yzn"]:
             logger.debug(loadtype, vector_group)
             net.asymmetric_load.type = loadtype
             net.trafo.vector_group = vector_group
-            pp.runpp_3ph(net)
+            runpp_3ph(net)
             read_pf_results_from_file_to_net(os.path.join(testfiles_path, "pf_combinations_results_trafo.json"), net,
                                              vector_group + "_" + loadtype)
             compare_3ph_pp_pf_results(net)
-    return net
+    # return net
 
 
 def test_line_asym():
-    net = pp.from_json(os.path.join(testfiles_path, "test_line_3ph.json"))
-    pp.runpp_3ph(net)
+    net = from_json(os.path.join(testfiles_path, "test_line_3ph.json"))
+    runpp_3ph(net)
     read_pf_results_from_file_to_net(os.path.join(testfiles_path, "pf_results_line.json"), net)
     compare_3ph_pp_pf_results(net)
-    return net
+    # return net
 
 
 def test_net_asym():
-    net = pp.from_json(os.path.join(testfiles_path, "test_net_3ph_test_2020_10_19.json"))
+    net = from_json(os.path.join(testfiles_path, "test_net_3ph_test_2020_10_19.json"))
     for loadtype in ["wye", "delta"]:
         for vector_group in ["Dyn", "YNyn", "Yzn"]:
             logger.debug(loadtype, vector_group)
             net.asymmetric_load.type = loadtype
             net.trafo.vector_group = vector_group
-            pp.runpp_3ph(net)
+            runpp_3ph(net)
             read_pf_results_from_file_to_net(
                 os.path.join(testfiles_path, "pf_combinations_results_net_bus_trafo_line_load_19.10.20.json"), net,
                 vector_group + "_" + loadtype)
             compare_3ph_pp_pf_results(net)
-    return net
+    # return net
 
 
 def initialize_powerfactory(prj_name):
@@ -129,7 +131,7 @@ def analyse_3ph_loadtypes_and_vectorgroups(app, net, loadtype, vector_group):
     if not loadtype.startswith("bal_"):
         net.asymmetric_load.type = loadtype
         net.trafo.vector_group = vector_group
-        pp.runpp_3ph(net)
+        runpp_3ph(net)
         study_case_name = "Study Case_%s_%s" % (vector_group, loadtype)
         activate_study_case(app, study_case_name)
         get_pf_results(app, net)

@@ -3,12 +3,10 @@
 # Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from builtins import zip
-from builtins import object
 import numpy as np
-
 from numpy import interp
 from scipy.interpolate import interp1d, PchipInterpolator
+
 from pandapower.io_utils import JSONSerializableClass
 
 try:
@@ -74,6 +72,7 @@ class Characteristic(JSONSerializableClass):
         >>> c.satisfies(x=2.5, measured=3.1, epsilon=0.1)
         False
     """
+
     def __init__(self, net, x_values, y_values, table="characteristic", **kwargs):
         super().__init__()
         self.x_vals = x_values

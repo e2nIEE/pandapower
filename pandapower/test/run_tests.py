@@ -12,15 +12,11 @@ from multiprocessing import cpu_count
 
 import pytest
 
-from pandapower.test import test_path, tutorials_path
+from pandapower import pp_dir
+from pandapower.test import tutorials_path
 
-import pandapower as pp
-
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
-test_dir = os.path.abspath(os.path.join(pp.pp_dir, "test"))
+import logging
+test_dir = os.path.abspath(os.path.join(pp_dir, "test"))
 
 logger = logging.getLogger()
 
