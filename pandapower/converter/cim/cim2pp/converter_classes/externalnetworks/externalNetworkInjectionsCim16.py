@@ -82,7 +82,7 @@ class ExternalNetworkInjectionsCim16:
                        how='left', left_on='index_bus', right_index=True)
         eni = pd.merge(eni, self.cimConverter.cim['sv']['SvVoltage'][['TopologicalNode', 'v', 'angle']],
                        how='left', left_on=sc['ct'], right_on='TopologicalNode')
-        eni['controlEnabled'] = eni['controlEnabled'] & eni['enabled']
+        eni['controlEnabled'] = eni['controlEnabled'] & eni['enabled'].fillna(False)
         eni['vm_pu'] = eni['targetValue'] / eni['vn_kv']  # voltage from regulation
         eni['vm_pu'] = eni['vm_pu'].fillna(eni['v'] / eni['vn_kv'])  # voltage from measurement
         eni['vm_pu'] = eni['vm_pu'].fillna(1.)  # default voltage

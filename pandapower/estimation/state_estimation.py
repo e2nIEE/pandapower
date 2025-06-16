@@ -33,10 +33,9 @@ ALLOWED_OPT_VAR = {"a", "opt_method", "estimator"}
 
 
 def estimate(net, algorithm='wls',
-             init='flat', tolerance=1e-6, maximum_iterations=10,
-             calculate_voltage_angles=True,
+             init='flat', tolerance=1e-6, maximum_iterations=50,
              zero_injection='aux_bus', fuse_buses_with_bb_switch='all',
-             **opt_vars):
+             debug_mode=False, **opt_vars):
     """
     Wrapper function for WLS state estimation.
 
@@ -51,19 +50,19 @@ def estimate(net, algorithm='wls',
         **tolerance** (float) - When the maximum state change between iterations is less than \
             tolerance, the process stops. Default is 1e-6
 
-        **maximum_iterations** (integer) - Maximum number of iterations. Default is 10
-
-        **calculate_voltage_angles** (boolean) - Take into account absolute voltage angles and phase \
-            shifts in transformers, if init is 'slack'. Default is True
+        **maximum_iterations** (integer) - Maximum number of iterations. Default is 50
 
         **zero_injection** (str, iterable, None) - Defines which buses are zero injection bus or the method \
                 to identify zero injection bus, with 'wls_estimator' virtual measurements will be added, with \
                 'wls_estimator with zero constraints' the buses will be handled as constraints
 
-                - "auto": all bus without p,q measurement, without p, q value (load, sgen...) and aux buses will be \
-                        identified as zero injection bus
-                - "aux_bus": only aux bus will be identified as zero injection bus
                 - None: no bus will be identified as zero injection bus
+                - "aux_bus": only aux bus will be identified as zero injection bus
+                - "no_inj_bus": aux bus and bus without p,q measurement and without any connected injection (load, sgen...) \
+                        will be identified as zero injection bus
+                - "zero_pwr_bus": aux bus and all bus without p,q measurement that have either no connected injection \
+                        (load, sgen...) or a connected injection (load, sgen...) equal to zero will be identified as \
+                        zero injection bus
                 - iterable: the iterable should contain index of the zero injection bus and also aux bus will be identified \
                     as zero-injection bus
 
@@ -86,12 +85,11 @@ def estimate(net, algorithm='wls',
         raise UserWarning("Algorithm {} is not a valid estimator".format(algorithm))
 
     se = StateEstimation(net, tolerance, maximum_iterations, algorithm=algorithm)
-    v_start, delta_start = _initialize_voltage(net, init, calculate_voltage_angles)
+    v_start, delta_start = _initialize_voltage(net, init)
     return se.estimate(v_start=v_start, delta_start=delta_start,
-                       calculate_voltage_angles=calculate_voltage_angles,
                        zero_injection=zero_injection,
                        fuse_buses_with_bb_switch=fuse_buses_with_bb_switch, 
-                       algorithm=algorithm, **opt_vars)
+                       algorithm=algorithm, debug_mode=debug_mode, **opt_vars)
 
 
 def remove_bad_data(net, init='flat', tolerance=1e-6, maximum_iterations=10,
@@ -123,7 +121,7 @@ def remove_bad_data(net, init='flat', tolerance=1e-6, maximum_iterations=10,
         **successful** (boolean) - Was the state estimation successful?
     """
     wls_se = StateEstimation(net, tolerance, maximum_iterations, algorithm="wls")
-    v_start, delta_start = _initialize_voltage(net, init, calculate_voltage_angles)
+    v_start, delta_start = _initialize_voltage(net, init)
     return wls_se.perform_rn_max_test(v_start, delta_start, calculate_voltage_angles,
                                       rn_max_threshold)
 
@@ -156,7 +154,7 @@ def chi2_analysis(net, init='flat', tolerance=1e-6, maximum_iterations=10,
         **bad_data_detected** (boolean) - Returns true if bad data has been detected
     """
     wls_se = StateEstimation(net, tolerance, maximum_iterations, algorithm="wls")
-    v_start, delta_start = _initialize_voltage(net, init, calculate_voltage_angles)
+    v_start, delta_start = _initialize_voltage(net, init)
     return wls_se.perform_chi2_test(v_start, delta_start, calculate_voltage_angles,
                                     chi2_prob_false)
 
@@ -169,7 +167,7 @@ class StateEstimation:
     process.
     """
 
-    def __init__(self, net, tolerance=1e-6, maximum_iterations=10, algorithm='wls', logger=None, recycle=False):
+    def __init__(self, net, tolerance=1e-6, maximum_iterations=50, algorithm='wls', logger=None, recycle=False):
         self.logger = logger
         if self.logger is None:
             self.logger = std_logger
@@ -186,55 +184,51 @@ class StateEstimation:
         self.delta = None
         self.bad_data_present = None
 
-    def estimate(self, v_start='flat', delta_start='flat', calculate_voltage_angles=True,
-                 zero_injection=None, fuse_buses_with_bb_switch='all', algorithm='wls', **opt_vars):
+    def estimate(self, v_start='flat', delta_start='flat', zero_injection=None, 
+                 fuse_buses_with_bb_switch='all', algorithm='wls', debug_mode=False, **opt_vars):
         """
-        The function estimate is the main function of the module. It takes up to three input
-        arguments: v_start, delta_start and calculate_voltage_angles. The first two are the initial
-        state variables for the estimation process. Usually they can be initialized in a
-        "flat-start" condition: All voltages being 1.0 pu and all voltage angles being 0 degrees.
-        In this case, the parameters can be left at their default values (None). If the estimation
-        is applied continuously, using the results from the last estimation as the starting
-        condition for the current estimation can decrease the  amount of iterations needed to
-        estimate the current state. The third parameter defines whether all voltage angles are
-        calculated absolutely, including phase shifts from transformers. If only the relative
-        differences between buses are required, this parameter can be set to False. Returned is a
-        boolean value, which is true after a successful estimation and false otherwise.
+        The function estimate is the main function of the module. It takes the inputs
+        v_start and delta_start to initialize the state variables for the estimation process. 
+        Usually they can be initialized in a "flat-start" condition: All voltages being 1.0 pu and 
+        all voltage angles being 0 degrees. In this case, the parameters can be left at their 
+        default values (None). If the estimation is applied continuously, using the results from 
+        the last estimation as the starting condition for the current estimation can decrease the 
+        amount of iterations needed to estimate the current state. 
+        Returned is a boolean value, which is true after a successful estimation and false otherwise.
         The resulting complex voltage will be written into the pandapower network. The result
         fields are found res_bus_est of the pandapower network.
+
         INPUT:
             **net** - The net within this line should be created
             **v_start** (np.array, shape=(1,), optional) - Vector with initial values for all
             voltage magnitudes in p.u. (sorted by bus index)
             **delta_start** (np.array, shape=(1,), optional) - Vector with initial values for all
             voltage angles in degrees (sorted by bus index)
+
         OPTIONAL:
-        **tolerance** - (float) - When the maximum state change between iterations is less than
-        tolerance, the process stops. Default is 1e-6
+            **tolerance** - (float) - When the maximum state change between iterations is less than
+            tolerance, the process stops. Default is 1e-6
 
-        **maximum_iterations** - (integer) - Maximum number of iterations. Default is 10
+            **maximum_iterations** - (integer) - Maximum number of iterations. Default is 50
 
-        **calculate_voltage_angles** - (boolean) - Take into account absolute voltage angles and phase
-        shifts in transformers, if init is 'slack'. Default is True
-
-        **zero_injection** - (str, iterable, None) - Defines which buses are zero injection bus or the method
-        to identify zero injection bus, with 'wls_estimator' virtual measurements will be added, with
-        'wls_estimator with zero constraints' the buses will be handled as constraints
-            "auto": all bus without p,q measurement, without p, q value (load, sgen...) and aux buses will be
+            **zero_injection** - (str, iterable, None) - Defines which buses are zero injection bus or the method
+            to identify zero injection bus, with 'wls_estimator' virtual measurements will be added, with
+            'wls_estimator with zero constraints' the buses will be handled as constraints.
+                "auto": all bus without p,q measurement, without p, q value (load, sgen...) + aux buses will be
                 identified as zero injection bus
-            "aux_bus": only aux bus will be identified as zero injection bus
-            None: no bus will be identified as zero injection bus
-            iterable: the iterable should contain index of the zero injection bus and also aux bus will be identified
+                "aux_bus": only aux bus will be identified as zero injection bus
+                None: no bus will be identified as zero injection bus
+                iterable: the iterable should contain index of the zero injection bus and also aux bus will be identified
                 as zero-injection bus
 
-        **fuse_buses_with_bb_switch** - (str, iterable, None) - Defines how buses with closed bb switches should
-        be handled, if fuse buses will only fused to one for calculation, if not fuse, an auxiliary bus and
-        auxiliary line will be automatically added to the network to make the buses with different p,q injection
-        measurements identifieble
-            "all": all buses with bb-switches will be fused, the same as the default behaviour in load flow
-            None: buses with bb-switches and individual p,q measurements will be reconfigurated
+            **fuse_buses_with_bb_switch** - (str, iterable, None) - Defines how buses with closed bb switches should
+            be handled, if fuse buses will only fused to one for calculation, if not fuse, an auxiliary bus and
+            auxiliary line will be automatically added to the network to make the buses with different p,q injection
+            measurements identifieble
+                "all": all buses with bb-switches will be fused, the same as the default behaviour in load flow
+                None: buses with bb-switches and individual p,q measurements will be reconfigurated
                 by auxiliary elements
-            iterable: the iterable should contain the index of buses to be fused, the behaviour is contigous e.g.
+                iterable: the iterable should contain the index of buses to be fused, the behaviour is contigous e.g.
                 if one of the bus among the buses connected through bb switch is given, then all of them will still
                 be fused
         OUTPUT:
@@ -265,12 +259,12 @@ class StateEstimation:
             set_bb_switch_impedance(self.net, bus_to_be_fused)
 
         self.net, self.ppc, self.eppci = pp2eppci(self.net, v_start=v_start, delta_start=delta_start,
-                                                  calculate_voltage_angles=calculate_voltage_angles,
+                                                  calculate_voltage_angles=True,
                                                   zero_injection=zero_injection, algorithm=algorithm, 
                                                   ppc=self.ppc, eppci=self.eppci)
 
         # Estimate voltage magnitude and angle with the given estimator
-        self.eppci = self.solver.estimate(self.eppci, **opt_vars)
+        self.eppci = self.solver.estimate(self.eppci, debug_mode=debug_mode, **opt_vars)
 
         if self.solver.successful:
             self.net = eppci2pp(self.net, self.ppc, self.eppci)
