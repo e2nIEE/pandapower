@@ -30,10 +30,7 @@ from pandapower.control.util.auxiliary import create_q_capability_curve_characte
 from pandapower.control.util.characteristic import SplineCharacteristic
 
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -1080,7 +1077,7 @@ def create_line_normal(net, item, bus1, bus2, name, parallel, is_unbalanced, ac,
         'df': item.fline,
         'parallel': parallel,
         'alpha': pf_type.alpha if pf_type is not None else None,
-        'temperature_degree_celsius': pf_type.tmax if pf_type is not None else None,
+        'temperature_degree_celsius': item.Top,
         'geodata': geodata
     }
 
@@ -3942,7 +3939,7 @@ def create_stactrl(net, item):
             v_setpoint_pu = controlled_node.vtarget  # Bus target voltage
 
         if item.i_droop:  # Enable Droop
-            bsc = control.BinarySearchControl(net, ctrl_in_service=stactrl_in_service,
+            bsc = BinarySearchControl(net, ctrl_in_service=stactrl_in_service,
                                                  output_element=gen_element, output_variable="q_mvar",
                                                  output_element_index=gen_element_index,
                                                  output_element_in_service=gen_element_in_service,
@@ -3950,10 +3947,10 @@ def create_stactrl(net, item):
                                                  input_element=res_element_table, input_variable=variable,
                                                  input_element_index=res_element_index,
                                                  set_point=v_setpoint_pu, voltage_ctrl=True, bus_idx=bus, tol=1e-3)
-            control.DroopControl(net, q_droop_mvar=item.Srated * 100 / item.ddroop, bus_idx=bus,
+            DroopControl(net, q_droop_mvar=item.Srated * 100 / item.ddroop, bus_idx=bus,
                                     vm_set_pu=v_setpoint_pu, controller_idx=bsc.index, voltage_ctrl=True)
         else:
-            control.BinarySearchControl(net, ctrl_in_service=stactrl_in_service,
+            BinarySearchControl(net, ctrl_in_service=stactrl_in_service,
                                            output_element=gen_element, output_variable="q_mvar",
                                            output_element_index=gen_element_index,
                                            output_element_in_service=gen_element_in_service, input_element="res_bus",
