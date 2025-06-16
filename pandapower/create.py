@@ -2270,7 +2270,7 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
                                               of the bus table are ignored. Defaults to False if \
                                               "controllable" column exists in DataFrame
 
-        \* considered in load flow if calculate_voltage_angle = True
+        \\* considered in load flow if calculate_voltage_angles = True
 
     EXAMPLE:
         create_ext_grid(net, 1, voltage=1.03)
@@ -3649,7 +3649,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
 
         **leakage_reactance_ratio_hv** (bool) - ratio of transformer short-circuit reactance on HV side (default 0.5)
 
-        \* only considered in load flow if calculate_voltage_angles = True
+        \\* only considered in load flow if calculate_voltage_angles = True
 
     OUTPUT:
         **index** (int) - the unique ID of the created transformer
@@ -3868,7 +3868,7 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
         **tap2_changer_type** (list of str, None) - specifies the tap changer type ("Ratio", "Symmetrical", "Ideal", \
                                                     None: no tap changer)*
 
-        \* only considered in load flow if calculate_voltage_angles = True
+        \\* only considered in load flow if calculate_voltage_angles = True
 
     OUTPUT:
         **index** (list of int) - The list of IDs of the created transformers
@@ -4357,7 +4357,7 @@ def create_transformers3w_from_parameters(
 
         **vector_group** (list of str) - vector group of the 3w-transformers
 
-        \* only considered in load flow if calculate_voltage_angles = True
+        \\* only considered in load flow if calculate_voltage_angles = True
 
     OUTPUT:
         **trafo_id** (list of int) - list of trafo_ids of the created 3w-transformers
