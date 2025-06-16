@@ -53,23 +53,25 @@ def _extract_result_ppci_to_pp(net, ppc, ppci):
     # add shunt power because the injection at the node computed via Ybus is only the extra injection on top of the shunt
     for element in ["shunt", "ward", "xward"]:
         if ~net[element].empty:
-            for i in range(net[element].shape[0]):
-                bus = net[element].bus.iloc[i]
-                if element == "shunt":
-                    Sn = complex(net[element].p_mw.iloc[i],net[element].q_mvar.iloc[i])*net[element].step.iloc[i]
-                    Ysh = Sn / (net[element].vn_kv.iloc[i]**2)
-                else:
-                    Sn = complex(net[element].pz_mw.iloc[i],net[element].qz_mvar.iloc[i])
-                    Ysh = Sn / (net.bus.loc[bus,"vn_kv"]**2)
-                V = net["res_bus_est"].loc[bus,"vm_pu"]*net["bus"].loc[bus,"vn_kv"]
-                Sinj = Ysh*(V**2)
-                net["res_bus_est"].loc[bus,"p_mw"] += Sinj.real
-                net["res_bus_est"].loc[bus,"q_mvar"] += Sinj.imag
-                if element == "shunt":
-                    element_res_est = "res_" + element + "_est"
-                    net[element_res_est].loc[net[element].loc[:,"bus"]==bus,"p_mw"] = Sinj.real
-                    net[element_res_est].loc[net[element].loc[:,"bus"]==bus,"q_mvar"] = Sinj.imag
-                    net[element_res_est].loc[net[element].loc[:,"bus"]==bus,"vm_pu"] = net["res_bus_est"].loc[bus,"vm_pu"]
+            bus = net[element].bus.values
+            if element == "shunt":
+                Sn = 1j*(net[element].q_mvar.values)
+                Sn += net[element].p_mw.values
+                Sn *= net[element].step.values
+                Ysh = Sn / ((net[element].vn_kv.values)**2)
+            else:
+                Sn = 1j*(net[element].qz_mvar.values)
+                Sn += net[element].pz_mw.values
+                Ysh = Sn / ((net.bus.loc[bus,"vn_kv"].values)**2)
+            V = net["res_bus_est"].loc[bus,"vm_pu"].values * net["bus"].loc[bus,"vn_kv"].values
+            Sinj = Ysh*(V**2)
+            net["res_bus_est"].loc[bus,"p_mw"] += Sinj.real
+            net["res_bus_est"].loc[bus,"q_mvar"] += Sinj.imag
+            if element == "shunt":
+                element_res_est = "res_" + element + "_est"
+                net[element_res_est]["p_mw"] = Sinj.real
+                net[element_res_est]["q_mvar"] = Sinj.imag
+                net[element_res_est]["vm_pu"] = net["res_bus_est"].loc[bus,"vm_pu"].values
     return net
 
 
