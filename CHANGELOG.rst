@@ -4,6 +4,15 @@ Change Log
 [upcoming release] - 2025-..-..
 -------------------------------
 - [FIXED] pp control - handle NaN in 'enabled' column when computing 'controlEnabled' to ensure safe boolean evaluation
+- [FIXED] State Estimation: optimized SE code to minimize RAM usage
+- [FIXED] State Estimation: optimized SE code to speed-up calculations
+- [FIXED] State Estimation: converted internal matrices into sparse for better performance
+- [FIXED] State Estimation: changed Jacobian creation to avoid useless computations for not existing measurements
+- [ADDED] State Estimation: introduced option to run state estimation in debug mode and print relevant information during WLS iterations
+- [FIXED] State Estimation: optimized merge computations for multiple measurements at the same element
+- [ADDED] State Estimation: introduced multiple options for automatic creation of zero injection measurements
+- [FIXED] State Estimation: fixed bugs with AF-WLS estimator
+- [FIXED] State Estimation: fixed bugs with automatic test creation
 
 [3.1.0] - 2025-05-26
 -------------------------------
