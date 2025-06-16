@@ -9,10 +9,7 @@ import pandas as pd
 import warnings
 from packaging.version import Version
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 try:
