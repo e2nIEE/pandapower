@@ -3,19 +3,27 @@
 # Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-import pandas as pd
-import numpy as np
-from pandapower.shortcircuit.calc_sc import calc_sc
-from pandapower.file_io import from_json
-import pytest
-import re
+from itertools import product
+from re import match
 import copy
 import os
+
+import pytest
+import pandas as pd
+import numpy as np
+
 from pandapower import pp_dir
+from pandapower.shortcircuit.calc_sc import calc_sc
+from pandapower.file_io import from_json
 
 testfiles_path = os.path.join(pp_dir, 'test', 'shortcircuit', 'sce_tests')
 
 # Define common parameters
+net_names = [
+    "test_case_2_five_bus_radial_grid",
+    "test_case_3_five_bus_meshed_grid",
+    "test_case_4_twenty_bus_radial_grid"
+]
 faults = ["LLL", "LL", "LG", "LLG"]
 cases = ["max", "min"]
 values = [(0.0, 0.0), (5.0, 5.0)]
@@ -23,63 +31,74 @@ vector_groups = ['Dyn', 'Yyn', 'YNyn']
 # Todo lv tol percents only necessary for min case, reduces amount of tests
 lv_tol_percents = [6, 10]
 fault_location_buses = [0, 1, 2, 3]
+is_branch_test = [False, True]
 
 # Create parameter list
-parametrize_values = [
-    (fault, case, r_fault, x_fault, lv_tol_percent, fault_location_bus)
-    for fault in faults
-    for case in cases
-    for r_fault, x_fault in values
-    for lv_tol_percent in lv_tol_percents
-    for fault_location_bus in fault_location_buses]
+parametrize_values = list(product(faults, cases, values, lv_tol_percents, fault_location_buses, is_branch_test))
 
 # Create parameter list with vector group
-parametrize_values_vector = [
-    (fault, case, r_fault, x_fault, lv_tol_percent, vector_group, fault_location_bus)
-    for fault in faults
-    for case in cases
-    for r_fault, x_fault in values
-    for lv_tol_percent in lv_tol_percents
-    for vector_group in vector_groups
-    for fault_location_bus in fault_location_buses]
+parametrize_values_vector = list(product(
+    net_names, faults, cases, values, lv_tol_percents, vector_groups, fault_location_buses, is_branch_test
+))
 
 
-@pytest.mark.parametrize("fault, case, r_fault_ohm, x_fault_ohm, lv_tol_percent, fault_location_bus", parametrize_values)
-def test_four_bus_radial_grid(fault, case, r_fault_ohm, x_fault_ohm, lv_tol_percent, fault_location_bus):
-    net_name = "test_case_1_four_bus_radial_grid"
-    net, dataframes = load_test_case_data(net_name, fault_location_bus)
-    for key, is_branch in [("bus", False), ("branch", True)]:
-        run_test_cases(net, dataframes[key], fault, case, r_fault_ohm, x_fault_ohm, lv_tol_percent, fault_location_bus,
-                       branch_results=is_branch)
+@pytest.mark.parametrize("fault, case, fault_values, lv_tol_percent, fault_location_bus, is_branch_test", parametrize_values)
+def test_four_bus_radial_grid(fault, case, fault_values, lv_tol_percent, fault_location_bus, is_branch_test):
+    net, dataframes = load_test_case_data("test_case_1_four_bus_radial_grid", fault_location_bus)
+    results = run_test_cases(
+        net,
+        dataframes["branch" if is_branch_test else "bus"],
+        fault,
+        case,
+        fault_values,
+        lv_tol_percent,
+        fault_location_bus,
+        branch_results=is_branch_test
+    )
+    compare_results(*results, is_branch_test)
 
 
-@pytest.mark.parametrize("fault, case, r_fault_ohm, x_fault_ohm, lv_tol_percent, vector_group, fault_location_bus", parametrize_values_vector)
-def test_five_bus_radial_grid(fault, case, r_fault_ohm, x_fault_ohm, lv_tol_percent,
-                                                                        vector_group, fault_location_bus):
-    net_name = "test_case_2_five_bus_radial_grid"
+@pytest.mark.parametrize("net_name, fault, case, fault_values, lv_tol_percent, vector_group, fault_location_bus, is_branch_test", parametrize_values_vector)
+def test_radial_grids(net_name, fault, case, fault_values, lv_tol_percent, vector_group, fault_location_bus, is_branch_test):
     net, dataframes = load_test_case_data(net_name, fault_location_bus, vector_group)
-    for key, is_branch in [("bus", False), ("branch", True)]:
-        run_test_cases(net, dataframes[key], fault, case, r_fault_ohm, x_fault_ohm, lv_tol_percent, fault_location_bus,
-                       branch_results=is_branch)
+    results = run_test_cases(
+        net,
+        dataframes["branch" if is_branch_test else "bus"],
+        fault,
+        case,
+        fault_values,
+        lv_tol_percent,
+        fault_location_bus,
+        branch_results=is_branch_test
+    )
+    compare_results(*results, is_branch_test)
 
 
-@pytest.mark.parametrize("fault, case, r_fault_ohm, x_fault_ohm, lv_tol_percent, vector_group, fault_location_bus", parametrize_values_vector)
-def test_five_bus_meshed_grid(fault, case, r_fault_ohm, x_fault_ohm, lv_tol_percent,
-                                                                        vector_group, fault_location_bus):
-    net_name = "test_case_3_five_bus_meshed_grid"
-    net, dataframes = load_test_case_data(net_name, fault_location_bus, vector_group)
-    for key, is_branch in [("bus", False), ("branch", True)]:
-        run_test_cases(net, dataframes[key], fault, case, r_fault_ohm, x_fault_ohm, lv_tol_percent, fault_location_bus,
-                       branch_results=is_branch)
+def compare_results(columns_to_check, net_df, pf_results, branch_results):
+    # define tolerances
+    rtol = {"ikss_ka": 0, "skss_mw": 0, "rk_ohm": 0, "xk_ohm": 0,
+            "vm_pu": 0, "va_degree": 0, "p_mw": 0, "q_mvar": 0, "ikss_degree": 0}
+    # TODO skss_mw and ikss_ka only 1e-4 sufficient?
+    atol = {"ikss_ka": 1e-4, "skss_mw": 1e-4, "rk_ohm": 1e-6, "xk_ohm": 1e-5,
+            "vm_pu": 1e-4, "va_degree": 1e-4, "p_mw": 1e-4, "q_mvar": 1e-4, "ikss_degree": 1e-4}  # TODO: tolerances ok?
 
-@pytest.mark.parametrize("fault, case, r_fault_ohm, x_fault_ohm, lv_tol_percent, vector_group, fault_location_bus", parametrize_values_vector)
-def test_twenty_bus_radial_grid(fault, case, r_fault_ohm, x_fault_ohm, lv_tol_percent,
-                                                                        vector_group, fault_location_bus):
-    net_name = "test_case_4_twenty_bus_radial_grid"
-    net, dataframes = load_test_case_data(net_name, fault_location_bus, vector_group)
-    for key, is_branch in [("bus", False), ("branch", True)]:
-        run_test_cases(net, dataframes[key], fault, case, r_fault_ohm, x_fault_ohm, lv_tol_percent, fault_location_bus,
-                       branch_results=is_branch)
+    for column in columns_to_check:
+        if column == 'name':
+            continue
+        column_ar = check_pattern(column)
+        # TODO: consider after result format is adjusted!
+        # exclude columns now because of false calculation in pandapower
+        if branch_results and column_ar in ['p_mw', 'q_mvar', 'vm_pu', 'va_degree']:
+            continue
+        mismatch = np.isclose(
+            net_df.loc[:, column],
+            pf_results.loc[:, column],
+            rtol=rtol[column_ar], atol=atol[column_ar]
+        )
+        assert mismatch.all(), (
+            f"{column} mismatch for {net_df.loc[~mismatch, 'name']}: {net_df.loc[~mismatch, column]}"
+            f"vs {pf_results.loc[~mismatch, column]}"
+        )
 
 
 def load_test_case_data(net_name, fault_location_bus, vector_group=None):
@@ -98,7 +117,7 @@ def load_test_case_data(net_name, fault_location_bus, vector_group=None):
     return net, dataframes
 
 
-def run_test_cases(net, dataframes, fault, case, r_fault_ohm, x_fault_ohm, lv_tol_percent, fault_location_bus,
+def run_test_cases(net, dataframes, fault, case, fault_values, lv_tol_percent, fault_location_bus,
                    branch_results=False):
     """
     Executes test cases for a given grid with specific fault parameters, fault type and case.
@@ -106,35 +125,26 @@ def run_test_cases(net, dataframes, fault, case, r_fault_ohm, x_fault_ohm, lv_to
     This function takes a network, corresponding dataframes, and fault parameters, performs
     a fault analysis, and compares the results with the modified power flow results.
 
-    Args:
-        net: An object representing the electrical network, including bus and branch information.
-        dataframes: A dictionary of DataFrames containing the power flow results,
-                    where the key indicates the name of the sheet.
-        fault: A string indicating the type of fault. LLL, LLG, LL or LG
-        case: A string indicating the specific case. min or max
-        r_fault_ohm: The resistive fault value in Ohms.
-        x_fault_ohm: The reactive fault value in Ohms.
-        fault_location_bus: index of the bus the fault is located at.
-        branch_results: A boolean indicating whether branch results are calculated or not.
+    :param pandapowerNet net: An object representing the electrical network, including bus and branch information.
+    :param dataframes: A dictionary of DataFrames containing the power flow results,
+                       where the key indicates the name of the sheet.
+    :param str fault: A string indicating the type of fault. LLL, LLG, LL or LG
+    :param str case: A string indicating the specific case. min or max
+    :param tuple[float, float] fault_values: The resistive and reactive fault value in Ohms.
+    :param int fault_location_bus: index of the bus the fault is located at.
+    :param bool branch_results: A boolean indicating whether branch results are calculated or not.
 
-    Raises:
-        AssertionError: If the calculated values are not within the specified tolerances.
+    :raises AssertionError: If the calculated values are not within the specified tolerances.
 
-    Notes:
+    :note:
         - The function uses a relative tolerance (rtol) and an absolute tolerance (atol)
           for value comparisons.
         - The name of the selected sheet is generated from the fault and case.
         - If both the resistive and reactive faults are non-zero, "_fault" is appended
           to the sheet name.
         - The function sorts the results by bus name for comparison.
-
     """
-
-    rtol = {"ikss_ka": 0, "skss_mw": 0, "rk_ohm": 0, "xk_ohm": 0,
-            "vm_pu": 0, "va_degree": 0, "p_mw": 0, "q_mvar": 0, "ikss_degree": 0}
-    # TODO skss_mw and ikss_ka only 1e-4 sufficient?
-    atol = {"ikss_ka": 1e-4, "skss_mw": 1e-4, "rk_ohm": 1e-6, "xk_ohm": 1e-5,
-            "vm_pu": 1e-4, "va_degree": 1e-4, "p_mw": 1e-4, "q_mvar": 1e-4, "ikss_degree": 1e-4}  # TODO: tolerances ok?
+    r_fault_ohm, x_fault_ohm = fault_values
 
     # columns_to_check = get_columns_to_check(fault)
     selected_sheet = f"{fault}_{case}_{lv_tol_percent}"
@@ -168,39 +178,18 @@ def run_test_cases(net, dataframes, fault, case, r_fault_ohm, x_fault_ohm, lv_to
         net.res_line_sc = net.res_line_sc[['name'] + [col for col in net.res_line_sc.columns if col != 'name']]
         net.res_line_sc.sort_values(by='name', inplace=True)
 
-        for line in net.line.name:
-            for column in columns_to_check:
-                if column == 'name':
-                    continue
-                column_ar = check_pattern(column)
-                # TODO: consider after result format is adjusted!
-                # exclude columns now because of false calculation in pandapower
-                if column_ar in ['p_mw', 'q_mvar', 'vm_pu', 'va_degree']:
-                    continue
-                assert np.isclose(
-                    net.res_line_sc.loc[net.res_line_sc.name == line, column].values[0],
-                    modified_pf_results.loc[modified_pf_results.name == line, column].values[0],
-                    rtol=rtol[column_ar], atol=atol[column_ar]
-                ), \
-                    (f"{column} mismatch for {line}: {net.res_line_sc.loc[net.res_line_sc.name == line, column].values[0]}"
-                     f"vs {modified_pf_results.loc[modified_pf_results.name == line, column].values[0]}")
+        modified_pf_results_selection = modified_pf_results[modified_pf_results['name'].isin(net.res_line_sc['name'])]
+        net_df = net.res_line_sc
     else:
         columns_to_check = net.res_bus_sc.columns
-        net.res_bus_sc["name"] = net.bus.name
-        net.res_bus_sc = net.res_bus_sc[['name'] + [col for col in net.res_bus_sc.columns if col != 'name']]
+        net.res_bus_sc.insert(0, "name", net.bus.name)
         net.res_bus_sc.sort_values(by='name', inplace=True)
 
-        for bus in net.res_bus_sc.name:
-            for column in columns_to_check:
-                if column == 'name':
-                    continue
-                column_ar = check_pattern(column)
-                assert np.isclose(
-                    net.res_bus_sc.loc[net.bus.name == bus, column].values[0],
-                    modified_pf_results.loc[modified_pf_results.name == bus, column].values[0],
-                    rtol=rtol[column_ar], atol=atol[column_ar]
-                ), (f"{column} mismatch for {bus}: {net.res_bus_sc.loc[net.bus.name == bus, column].values[0]}"
-                    f"vs {modified_pf_results.loc[modified_pf_results.name == bus, column].values[0]}")
+        # shorten the results from the file to the ones calculated by pp.
+        # This was done by only iterating over the net table before.
+        modified_pf_results_selection = modified_pf_results[modified_pf_results['name'].isin(net.res_bus_sc['name'])]
+        net_df = net.res_bus_sc
+    return columns_to_check, net_df, modified_pf_results_selection
 
 
 def check_pattern(pattern):
@@ -210,29 +199,26 @@ def check_pattern(pattern):
     Recognizes patterns like 'ikss_a_ka', 'skss_from_mw', 'p_b_to_mw', etc.
     and maps them to generic identifiers used for tolerance comparison.
 
-    Parameters:
-    pattern (str): Column name to normalize.
-
-    Returns:
-    str: Standardized identifier for result type or original pattern if no match found.
+    :param str pattern: Column name to normalize.
+    :returns str: Standardized identifier for result type or original pattern if no match found.
     """
-    if re.match(r"^rk[0-2]?_ohm$", pattern):
+    if match(r"^rk[0-2]?_ohm$", pattern):
         return "rk_ohm"
-    elif re.match(r"^xk[0-2]?_ohm$", pattern):
+    elif match(r"^xk[0-2]?_ohm$", pattern):
         return "xk_ohm"
-    elif re.match(r"^ikss_([abc]|from|to|[abc]_(from|to))_ka$", pattern):
+    elif match(r"^ikss_([abc]|from|to|[abc]_(from|to))_ka$", pattern):
         return "ikss_ka"
-    elif re.match(r"^ikss_([abc]|from|to|[abc]_(from|to))_degree$", pattern):
+    elif match(r"^ikss_([abc]|from|to|[abc]_(from|to))_degree$", pattern):
         return "ikss_degree"
-    elif re.match(r"^skss_([abc]|from|to|[abc]_(from|to))_mw$", pattern):
+    elif match(r"^skss_([abc]|from|to|[abc]_(from|to))_mw$", pattern):
         return "skss_mw"
-    elif re.match(r"^p_([abc]|from|to|[abc]_(from|to))_mw$", pattern):
+    elif match(r"^p_([abc]|from|to|[abc]_(from|to))_mw$", pattern):
         return "p_mw"
-    elif re.match(r"^q_([abc]|from|to|[abc]_(from|to))_mvar$", pattern):
+    elif match(r"^q_([abc]|from|to|[abc]_(from|to))_mvar$", pattern):
         return "q_mvar"
-    elif re.match(r"^vm_([abc]|from|to|[abc]_(from|to))_pu$", pattern):
+    elif match(r"^vm_([abc]|from|to|[abc]_(from|to))_pu$", pattern):
         return "vm_pu"
-    elif re.match(r"^va_([abc]|from|to|[abc]_(from|to))_degree$", pattern):
+    elif match(r"^va_([abc]|from|to|[abc]_(from|to))_degree$", pattern):
         return "va_degree"
     else:
         return pattern
@@ -243,13 +229,11 @@ def modify_impedance_values_with_fault_value(selected_results, r_ohm, x_ohm):
     Modifies the impedance values in a DataFrame by subtracting r_ohm from rk columns
     and x_ohm from xk columns.
 
-    Parameters:
-    selected_results (pd.DataFrame): The input DataFrame containing impedance values.
-    r_ohm (float): The value to be subtracted from the rk columns.
-    x_ohm (float): The value to be subtracted from the xk columns.
+    :param pd.DataFrame selected_results: The input DataFrame containing impedance values.
+    :param float r_ohm: The value to be subtracted from the rk columns.
+    :param float x_ohm: The value to be subtracted from the xk columns.
 
-    Returns:
-    pd.DataFrame: The modified DataFrame with adjusted values.
+    :returns pd.DataFrame: The modified DataFrame with adjusted values.
     """
     # Create a deep copy of the input DataFrame
     copy_selected_results = copy.deepcopy(selected_results)
