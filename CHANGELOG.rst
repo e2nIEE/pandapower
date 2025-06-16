@@ -14,6 +14,7 @@ Change Log
 - [FIXED] State Estimation: optimized merge computations for multiple measurements at the same element
 - [ADDED] State Estimation: introduced multiple options for automatic creation of zero injection measurements
 - [FIXED] State Estimation: fixed bugs with AF-WLS estimator
+- [FIXED] State Estimation: fixed bugs with automatic test creation
 - [ADDED] cim2pp converter: added test to check standard dtypes of pandapower net element columns
 
 [3.1.0] - 2025-05-26
