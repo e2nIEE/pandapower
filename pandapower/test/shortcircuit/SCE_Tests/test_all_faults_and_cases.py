@@ -159,20 +159,23 @@ def run_test_cases(net, dataframes, fault, case, fault_values, lv_tol_percent, f
 
     if branch_results:
         columns_to_check = net.res_line_sc.columns
-        # Patterns for the columns to be dropped
-        patterns_to_drop = [
-            "ikss_to_degree",
-            "ikss_from_degree",
-            "ikss_a_from_degree",
-            "ikss_b_from_degree",
-            "ikss_c_from_degree",
-            "ikss_a_to_degree",
-            "ikss_b_to_degree",
-            "ikss_c_to_degree"
-        ]
-        # Remove columns if they are present in the patterns_to_drop list
-        columns_to_check = columns_to_check[~columns_to_check.isin(patterns_to_drop)]
-        net.res_line_sc.insert(0, "name", net.line.name)
+        if fault == "LL":
+            # ikss_degrees are not considered in IEC 60909 method for LL
+            # Patterns for the columns to be dropped
+            patterns_to_drop = [
+                "ikss_to_degree",
+                "ikss_from_degree",
+                "ikss_a_from_degree",
+                "ikss_b_from_degree",
+                "ikss_c_from_degree",
+                "ikss_a_to_degree",
+                "ikss_b_to_degree",
+                "ikss_c_to_degree"
+            ]
+            # Remove columns if they are present in the patterns_to_drop list
+            columns_to_check = columns_to_check[~columns_to_check.isin(patterns_to_drop)]
+        net.res_line_sc["name"] = net.line.name
+        net.res_line_sc = net.res_line_sc[['name'] + [col for col in net.res_line_sc.columns if col != 'name']]
         net.res_line_sc.sort_values(by='name', inplace=True)
 
         modified_pf_results_selection = modified_pf_results[modified_pf_results['name'].isin(net.res_line_sc['name'])]
