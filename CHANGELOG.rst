@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [ADDED] iteration count for convergence as an output dict parameter
 - [FIXED] pf2pp converter - corrected consideration of line temperature during import
 - [FIXED] corrected create_continuous_elements_index to consider trafo_characteristic_tables correctly
 - [FIXED] pp control - handle NaN in 'enabled' column when computing 'controlEnabled' to ensure safe boolean evaluation
