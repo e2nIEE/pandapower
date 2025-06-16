@@ -3,6 +3,10 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+
+[3.1.2] - 2025-06-16
+-------------------------------
+- [ADDED] iteration count for convergence as an output dict parameter
 - [FIXED] pf2pp converter - corrected consideration of line temperature during import
 - [FIXED] corrected create_continuous_elements_index to consider trafo_characteristic_tables correctly
 - [FIXED] pp control - handle NaN in 'enabled' column when computing 'controlEnabled' to ensure safe boolean evaluation
@@ -17,7 +21,7 @@ Change Log
 - [FIXED] State Estimation: fixed bugs with automatic test creation
 - [ADDED] cim2pp converter: added test to check standard dtypes of pandapower net element columns
 
-[3.1.0] - 2025-05-26
+[3.1.1] - 2025-05-26
 -------------------------------
 - [FIXED] URL for digital attestation
 
