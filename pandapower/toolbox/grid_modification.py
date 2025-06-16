@@ -23,10 +23,7 @@ from pandapower.toolbox.data_modification import reindex_elements
 from pandapower.groups import detach_from_groups, attach_to_group, attach_to_groups, isin_group, \
     check_unique_group_rows, element_associated_groups
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 

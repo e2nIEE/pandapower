@@ -14,10 +14,7 @@ from pandapower.estimation.idx_bus import ZERO_INJ_FLAG, P, P_STD, Q, Q_STD
 from pandapower.estimation.ppc_conversion import ExtendedPPCI
 from pandapower.pypower.idx_bus import bus_cols
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 std_logger = logging.getLogger(__name__)
 
 __all__ = ["WLSAlgorithm", "WLSZeroInjectionConstraintsAlgorithm", "IRWLSAlgorithm"]

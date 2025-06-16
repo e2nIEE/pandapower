@@ -20,10 +20,7 @@ import time
 import re
 from functools import reduce
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
