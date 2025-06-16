@@ -42,12 +42,15 @@ class ExternalNetworkInjectionsCim16:
         eni_gens = eqssh_eni.loc[(eqssh_eni['slack_weight'] != ref_prio_min) & (eqssh_eni['controllable'])]
         eni_sgens = eqssh_eni.loc[~eqssh_eni['controllable']]
 
-        # create curve_dependency_table flag
-        if 'curve_dependency_table' not in eni_gens.columns:
-            eni_gens['curve_dependency_table'] = False
-        # create curve_dependency_table flag
-        if 'curve_dependency_table' not in eni_sgens.columns:
-            eni_sgens['curve_dependency_table'] = False
+        # create reactive_capability_curve flag
+        if 'reactive_capability_curve' not in eni_gens.columns:
+            eni_gens['reactive_capability_curve'] = False
+        # create reactive_capability_curve flag
+        if 'reactive_capability_curve' not in eni_sgens.columns:
+            eni_sgens['reactive_capability_curve'] = False
+        # create reactive_capability_curve flag
+        if 'reactive_capability_curve' not in eni_slacks.columns:
+            eni_slacks['reactive_capability_curve'] = False
 
         self.cimConverter.copy_to_pp('ext_grid', eni_slacks)
         self.cimConverter.copy_to_pp('gen', eni_gens)
@@ -79,7 +82,7 @@ class ExternalNetworkInjectionsCim16:
                        how='left', left_on='index_bus', right_index=True)
         eni = pd.merge(eni, self.cimConverter.cim['sv']['SvVoltage'][['TopologicalNode', 'v', 'angle']],
                        how='left', left_on=sc['ct'], right_on='TopologicalNode')
-        eni['controlEnabled'] = eni['controlEnabled'] & eni['enabled']
+        eni['controlEnabled'] = eni['controlEnabled'] & eni['enabled'].fillna(False)
         eni['vm_pu'] = eni['targetValue'] / eni['vn_kv']  # voltage from regulation
         eni['vm_pu'] = eni['vm_pu'].fillna(eni['v'] / eni['vn_kv'])  # voltage from measurement
         eni['vm_pu'] = eni['vm_pu'].fillna(1.)  # default voltage

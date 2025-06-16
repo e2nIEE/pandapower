@@ -16,10 +16,7 @@ from pandapower.networks import simple_four_bus_system
 from pandapower.run import runopp, rundcopp, runpp
 from pandapower.test.helper_functions import add_grid_connection
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 

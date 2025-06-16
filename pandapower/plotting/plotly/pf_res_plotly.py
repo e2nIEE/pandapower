@@ -13,10 +13,7 @@ from pandapower.plotting.plotly.traces import create_bus_trace, create_line_trac
     create_trafo_trace, draw_traces
 from pandapower.plotting.geo import convert_crs
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 logger = logging.getLogger(__name__)
 
 
