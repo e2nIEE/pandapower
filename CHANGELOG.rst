@@ -48,6 +48,7 @@ Change Log
 - [FIXED] cim2pp: refactor cim2pp test
 - [FIXED] cim2pp: manage crash when importing not supported dy profile
 - [ADDED] cim2pp: add tests for short circuit parameters
+- [FIXED] add vector_group to zero-sequence parameters in create_trafo()
 - [ADDED] ucte2pp: consider G&B values in impedances
 - [ADDED] cim2pp: add normalSections for shunts at CIM100 and removed old schema
 - [ADDED] cim2pp: add DCLine component to cim16 and cim100 datastructures
