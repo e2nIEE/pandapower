@@ -6,6 +6,7 @@ import pytest
 import math
 import pandas as pd
 
+import pandapower as pp
 from pandapower.test import test_path
 
 from pandapower.converter.cim.cim2pp.from_cim import from_cim
@@ -1353,6 +1354,191 @@ def test_fullgrid_NB_switch(fullgrid_node_breaker):
     assert element_1['terminal_bus'].item() == '_1c134839-5bad-124e-93a4-b11663025232'
     assert element_1['terminal_element'].item() == '_ea6bb748-b513-0947-a59b-abd50155dad2'
     assert element_1['description'].item() == 'BE_LB_1'
+
+
+def test_column_dtype(fullgrid_v2):
+    net = pp.create_empty_network()
+    net_bus_dtypes = net.bus.dtypes
+    bus_dtypes = fullgrid_v2.bus.dtypes
+    # assert len(net_bus_dtypes) == len(bus_dtypes) # TODO fails
+    assert net_bus_dtypes['name'] == bus_dtypes['name']
+    assert net_bus_dtypes['vn_kv'] == bus_dtypes['vn_kv']
+    assert net_bus_dtypes['type'] == bus_dtypes['type']
+    assert net_bus_dtypes['zone'] == bus_dtypes['zone']
+    assert net_bus_dtypes['in_service'] == bus_dtypes['in_service']
+    assert net_bus_dtypes['geo'] == bus_dtypes['geo']
+
+    net_line_dtypes = net.line.dtypes
+    line_dtypes = fullgrid_v2.line.dtypes
+    # assert len(net_line_dtypes) == len(line_dtypes) # TODO fails
+    assert net_line_dtypes['name'] == line_dtypes['name']
+    assert net_line_dtypes['std_type'] == line_dtypes['std_type']
+    # assert net_line_dtypes['from_bus'] == line_dtypes['from_bus'] # TODO fails
+    # assert net_line_dtypes['to_bus'] == line_dtypes['to_bus'] # TODO fails
+    assert net_line_dtypes['length_km'] == line_dtypes['length_km']
+    assert net_line_dtypes['r_ohm_per_km'] == line_dtypes['r_ohm_per_km']
+    assert net_line_dtypes['x_ohm_per_km'] == line_dtypes['x_ohm_per_km']
+    assert net_line_dtypes['c_nf_per_km'] == line_dtypes['c_nf_per_km']
+    assert net_line_dtypes['g_us_per_km'] == line_dtypes['g_us_per_km']
+    assert net_line_dtypes['max_i_ka'] == line_dtypes['max_i_ka']
+    # assert net_line_dtypes['parallel'] == line_dtypes['parallel'] # TODO fails
+    assert net_line_dtypes['type'] == line_dtypes['type']
+    assert net_line_dtypes['in_service'] == line_dtypes['in_service']
+    assert net_line_dtypes['geo'] == line_dtypes['geo']
+
+    net_load_dtypes = net.load.dtypes
+    load_dtypes = fullgrid_v2.load.dtypes
+    # assert len(net_load_dtypes) == len(load_dtypes) # TODO fails
+    # assert net_load_dtypes['bus'] == load_dtypes['bus'] # TODO fails
+    assert net_load_dtypes['name'] == load_dtypes['name']
+    assert net_load_dtypes['p_mw'] == load_dtypes['p_mw']
+    assert net_load_dtypes['q_mvar'] == load_dtypes['q_mvar']
+    assert net_load_dtypes['const_z_percent'] == load_dtypes['const_z_percent']
+    assert net_load_dtypes['const_i_percent'] == load_dtypes['const_i_percent']
+    assert net_load_dtypes['sn_mva'] == load_dtypes['sn_mva']
+    assert net_load_dtypes['scaling'] == load_dtypes['scaling']
+    assert net_load_dtypes['in_service'] == load_dtypes['in_service']
+    assert net_load_dtypes['type'] == load_dtypes['type']
+
+    net_trafo_dtypes = net.trafo.dtypes
+    trafo_dtypes = fullgrid_v2.trafo.dtypes
+    # assert len(net_trafo_dtypes) == len(trafo_dtypes) # TODO fails
+    assert net_trafo_dtypes['name'] == trafo_dtypes['name']
+    assert net_trafo_dtypes['std_type'] == trafo_dtypes['std_type']
+    # assert net_trafo_dtypes['hv_bus'] == trafo_dtypes['hv_bus'] # TODO fails
+    # assert net_trafo_dtypes['lv_bus'] == trafo_dtypes['lv_bus'] # TODO fails
+    assert net_trafo_dtypes['sn_mva'] == trafo_dtypes['sn_mva']
+    assert net_trafo_dtypes['vn_hv_kv'] == trafo_dtypes['vn_hv_kv']
+    assert net_trafo_dtypes['vn_lv_kv'] == trafo_dtypes['vn_lv_kv']
+    assert net_trafo_dtypes['vk_percent'] == trafo_dtypes['vk_percent']
+    assert net_trafo_dtypes['vkr_percent'] == trafo_dtypes['vkr_percent']
+    assert net_trafo_dtypes['pfe_kw'] == trafo_dtypes['pfe_kw']
+    assert net_trafo_dtypes['i0_percent'] == trafo_dtypes['i0_percent']
+    assert net_trafo_dtypes['shift_degree'] == trafo_dtypes['shift_degree']
+    assert net_trafo_dtypes['tap_side'] == trafo_dtypes['tap_side']
+    # assert net_trafo_dtypes['tap_neutral'] == trafo_dtypes['tap_neutral'] # TODO fails
+    # assert net_trafo_dtypes['tap_min'] == trafo_dtypes['tap_min'] # TODO fails
+    # assert net_trafo_dtypes['tap_max'] == trafo_dtypes['tap_max'] # TODO fails
+    assert net_trafo_dtypes['tap_step_percent'] == trafo_dtypes['tap_step_percent']
+    assert net_trafo_dtypes['tap_step_degree'] == trafo_dtypes['tap_step_degree']
+    # assert net_trafo_dtypes['tap_pos'] == trafo_dtypes['tap_pos'] # TODO fails
+    assert net_trafo_dtypes['tap_changer_type'] == trafo_dtypes['tap_changer_type']
+    # assert net_trafo_dtypes['id_characteristic_table'] == trafo_dtypes['id_characteristic_table'] # TODO fails
+    assert net_trafo_dtypes['tap_dependency_table'] == trafo_dtypes['tap_dependency_table']
+    # assert net_trafo_dtypes['parallel'] == trafo_dtypes['parallel'] # TODO fails
+    assert net_trafo_dtypes['df'] == trafo_dtypes['df']
+    assert net_trafo_dtypes['in_service'] == trafo_dtypes['in_service']
+
+    net_trafo3w_dtypes = net.trafo3w.dtypes
+    trafo3w_dtypes = fullgrid_v2.trafo3w.dtypes
+    # assert len(net_trafo3w_dtypes) == len(trafo3w_dtypes) # TODO fails
+    assert net_trafo3w_dtypes['name'] == trafo3w_dtypes['name']
+    assert net_trafo3w_dtypes['std_type'] == trafo3w_dtypes['std_type']
+    # assert net_trafo3w_dtypes['hv_bus'] == trafo3w_dtypes['hv_bus'] # TODO fails uint32 -> int64
+    # assert net_trafo3w_dtypes['mv_bus'] == trafo3w_dtypes['mv_bus'] # TODO fails uint32 -> int64
+    # assert net_trafo3w_dtypes['lv_bus'] == trafo3w_dtypes['lv_bus'] # TODO fails uint32 -> int64
+    assert net_trafo3w_dtypes['sn_hv_mva'] == trafo3w_dtypes['sn_hv_mva']
+    assert net_trafo3w_dtypes['sn_mv_mva'] == trafo3w_dtypes['sn_mv_mva']
+    assert net_trafo3w_dtypes['sn_lv_mva'] == trafo3w_dtypes['sn_lv_mva']
+    assert net_trafo3w_dtypes['vn_hv_kv'] == trafo3w_dtypes['vn_hv_kv']
+    assert net_trafo3w_dtypes['vn_mv_kv'] == trafo3w_dtypes['vn_mv_kv']
+    assert net_trafo3w_dtypes['vn_lv_kv'] == trafo3w_dtypes['vn_lv_kv']
+    assert net_trafo3w_dtypes['vk_hv_percent'] == trafo3w_dtypes['vk_hv_percent']
+    assert net_trafo3w_dtypes['vk_mv_percent'] == trafo3w_dtypes['vk_mv_percent']
+    assert net_trafo3w_dtypes['vk_lv_percent'] == trafo3w_dtypes['vk_lv_percent']
+    assert net_trafo3w_dtypes['vkr_hv_percent'] == trafo3w_dtypes['vkr_hv_percent']
+    assert net_trafo3w_dtypes['vkr_mv_percent'] == trafo3w_dtypes['vkr_mv_percent']
+    assert net_trafo3w_dtypes['vkr_lv_percent'] == trafo3w_dtypes['vkr_lv_percent']
+    assert net_trafo3w_dtypes['pfe_kw'] == trafo3w_dtypes['pfe_kw']
+    assert net_trafo3w_dtypes['i0_percent'] == trafo3w_dtypes['i0_percent']
+    assert net_trafo3w_dtypes['shift_mv_degree'] == trafo3w_dtypes['shift_mv_degree']
+    assert net_trafo3w_dtypes['shift_lv_degree'] == trafo3w_dtypes['shift_lv_degree']
+    assert net_trafo3w_dtypes['tap_side'] == trafo3w_dtypes['tap_side']
+    # assert net_trafo3w_dtypes['tap_neutral'] == trafo3w_dtypes['tap_neutral'] # TODO fails int32 -> Int64
+    # assert net_trafo3w_dtypes['tap_min'] == trafo3w_dtypes['tap_min'] # TODO fails int32 -> Int64
+    # assert net_trafo3w_dtypes['tap_max'] == trafo3w_dtypes['tap_max'] # TODO fails int32 -> Int64
+    assert net_trafo3w_dtypes['tap_step_percent'] == trafo3w_dtypes['tap_step_percent']
+    assert net_trafo3w_dtypes['tap_step_degree'] == trafo3w_dtypes['tap_step_degree']
+    # assert net_trafo3w_dtypes['tap_pos'] == trafo3w_dtypes['tap_pos'] # TODO fails int32 -> float64
+    assert net_trafo3w_dtypes['tap_at_star_point'] == trafo3w_dtypes['tap_at_star_point']
+    assert net_trafo3w_dtypes['tap_changer_type'] == trafo3w_dtypes['tap_changer_type']
+    # assert net_trafo3w_dtypes['id_characteristic_table'] == trafo3w_dtypes['id_characteristic_table'] # TODO fails uint32 -> Int64
+    assert net_trafo3w_dtypes['tap_dependency_table'] == trafo3w_dtypes['tap_dependency_table']
+    assert net_trafo3w_dtypes['in_service'] == trafo3w_dtypes['in_service']
+
+    net_sgen_dtypes = net.sgen.dtypes
+    sgen_dtypes = fullgrid_v2.sgen.dtypes
+    # assert len(net_sgen_dtypes) == len(sgen_dtypes) # TODO fails
+    assert net_sgen_dtypes['name'] == sgen_dtypes['name']
+    assert net_sgen_dtypes['bus'] == sgen_dtypes['bus']
+    assert net_sgen_dtypes['p_mw'] == sgen_dtypes['p_mw']
+    assert net_sgen_dtypes['q_mvar'] == sgen_dtypes['q_mvar']
+    assert net_sgen_dtypes['min_q_mvar'] == sgen_dtypes['min_q_mvar']
+    assert net_sgen_dtypes['max_q_mvar'] == sgen_dtypes['max_q_mvar']
+    assert net_sgen_dtypes['sn_mva'] == sgen_dtypes['sn_mva']
+    assert net_sgen_dtypes['scaling'] == sgen_dtypes['scaling']
+    # assert net_sgen_dtypes['controllable'] == sgen_dtypes['controllable'] # TODO fails bool -> boolean
+    # assert net_sgen_dtypes['id_q_capability_curve_characteristic'] == sgen_dtypes['id_q_capability_curve_characteristic'] #TODO fails uint32 -> Float64
+    assert net_sgen_dtypes['reactive_capability_curve'] == sgen_dtypes['reactive_capability_curve']
+    assert net_sgen_dtypes['curve_style'] == sgen_dtypes['curve_style']
+    assert net_sgen_dtypes['in_service'] == sgen_dtypes['in_service']
+    assert net_sgen_dtypes['type'] == sgen_dtypes['type']
+    assert net_sgen_dtypes['current_source'] == sgen_dtypes['current_source']
+
+    net_switch_dtypes = net.switch.dtypes
+    switch_dtypes = fullgrid_v2.switch.dtypes
+    # assert len(net_switch_dtypes) == len(switch_dtypes) # TODO fails
+    assert net_switch_dtypes['bus'] == switch_dtypes['bus']
+    assert net_switch_dtypes['element'] == switch_dtypes['element']
+    assert net_switch_dtypes['et'] == switch_dtypes['et']
+    assert net_switch_dtypes['type'] == switch_dtypes['type']
+    assert net_switch_dtypes['closed'] == switch_dtypes['closed']
+    assert net_switch_dtypes['name'] == switch_dtypes['name']
+    assert net_switch_dtypes['z_ohm'] == switch_dtypes['z_ohm']
+    assert net_switch_dtypes['in_ka'] == switch_dtypes['in_ka']
+
+    net_ext_grid_dtypes = net.ext_grid.dtypes
+    ext_grid_dtypes = fullgrid_v2.ext_grid.dtypes
+    # assert len(net_ext_grid_dtypes) == len(ext_grid_dtypes) # TODO fails
+    assert net_ext_grid_dtypes['name'] == ext_grid_dtypes['name']
+    # assert net_ext_grid_dtypes['bus'] == ext_grid_dtypes['bus'] #TODO fails uint32 -> int64
+    assert net_ext_grid_dtypes['vm_pu'] == ext_grid_dtypes['vm_pu']
+    assert net_ext_grid_dtypes['va_degree'] == ext_grid_dtypes['va_degree']
+    assert net_ext_grid_dtypes['slack_weight'] == ext_grid_dtypes['slack_weight']
+    assert net_ext_grid_dtypes['in_service'] == ext_grid_dtypes['in_service']
+    # assert net_ext_grid_dtypes['controllable'] == ext_grid_dtypes['controllable'] # TODO fails bool -> boolean
+
+    net_impedance_dtypes = net.impedance.dtypes
+    impedance_dtypes = fullgrid_v2.impedance.dtypes
+    # assert len(net_impedance_dtypes) == len(impedance_dtypes) # TODO fails
+    assert net_impedance_dtypes['name'] == impedance_dtypes['name']
+    # assert net_impedance_dtypes['from_bus'] == impedance_dtypes['from_bus'] # TODO fails uint32 -> int64
+    # assert net_impedance_dtypes['to_bus'] == impedance_dtypes['to_bus'] # TODO fails uint32 -> int64
+    assert net_impedance_dtypes['rft_pu'] == impedance_dtypes['rft_pu']
+    assert net_impedance_dtypes['xft_pu'] == impedance_dtypes['xft_pu']
+    assert net_impedance_dtypes['rtf_pu'] == impedance_dtypes['rtf_pu']
+    assert net_impedance_dtypes['xtf_pu'] == impedance_dtypes['xtf_pu']
+    assert net_impedance_dtypes['gf_pu'] == impedance_dtypes['gf_pu']
+    assert net_impedance_dtypes['bf_pu'] == impedance_dtypes['bf_pu']
+    assert net_impedance_dtypes['gt_pu'] == impedance_dtypes['gt_pu']
+    assert net_impedance_dtypes['bt_pu'] == impedance_dtypes['bt_pu']
+    assert net_impedance_dtypes['sn_mva'] == impedance_dtypes['sn_mva']
+    assert net_impedance_dtypes['in_service'] == impedance_dtypes['in_service']
+
+    net_shunt_dtypes = net.shunt.dtypes
+    shunt_dtypes = fullgrid_v2.shunt.dtypes
+    # assert len(net_shunt_dtypes) == len(shunt_dtypes) # TODO fails
+    # assert net_shunt_dtypes['bus'] == shunt_dtypes['bus'] #TODO fails uint32 -> int64
+    assert net_shunt_dtypes['name'] == shunt_dtypes['name']
+    assert net_shunt_dtypes['q_mvar'] == shunt_dtypes['q_mvar']
+    assert net_shunt_dtypes['p_mw'] == shunt_dtypes['p_mw']
+    assert net_shunt_dtypes['vn_kv'] == shunt_dtypes['vn_kv']
+    # assert net_shunt_dtypes['step'] == shunt_dtypes['step'] #TODO fails uint32 -> int64
+    # assert net_shunt_dtypes['max_step'] == shunt_dtypes['max_step'] #TODO fails uint32 -> int64
+    # assert net_shunt_dtypes['id_characteristic_table'] == shunt_dtypes['id_characteristic_table'] #TODO fails uint32 -> Int64
+    assert net_shunt_dtypes['step_dependency_table'] == shunt_dtypes['step_dependency_table']
+    assert net_shunt_dtypes['in_service'] == shunt_dtypes['in_service']
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-xs"])
