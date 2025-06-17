@@ -35,7 +35,7 @@ def set_pp_col_types(net: Union[pandapowerNet, Dict], ignore_errors: bool = Fals
     pp_elements = ['bus', 'dcline', 'ext_grid', 'gen', 'impedance', 'line', 'load', 'motor', 'sgen', 'shunt', 'storage',
                    'switch', 'trafo', 'trafo3w', 'ward', 'xward']
     to_int = ['bus', 'element', 'to_bus', 'from_bus', 'hv_bus', 'mv_bus', 'lv_bus']
-    to_bool = ['in_service', 'closed']
+    to_bool = ['in_service', 'controllable']
     logger.info("Setting the columns data types for buses to int and in_service to bool for the following elements: "
                 "%s" % pp_elements)
     int_type = int
@@ -53,6 +53,8 @@ def set_pp_col_types(net: Union[pandapowerNet, Dict], ignore_errors: bool = Fals
             if one_bool in net[ele].columns:
                 _set_column_to_type(net[ele], one_bool, bool_type)
     # some individual things
+    if hasattr(net, 'switch'):
+        _set_column_to_type(net['switch'], 'closed', bool_type)
     if hasattr(net, 'sgen'):
         _set_column_to_type(net['sgen'], 'current_source', bool_type)
     if hasattr(net, 'gen'):
