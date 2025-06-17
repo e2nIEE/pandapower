@@ -18,6 +18,7 @@ from pandapower._version import __version__, __format_version__
 from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes, ensure_iterability, \
     empty_defaults_per_dtype
 from pandapower.results import reset_results
+from pandapower.plotting.geo import _is_valid_number
 from pandapower.std_types import add_basic_std_types, load_std_type
 import numpy as np
 
@@ -720,6 +721,10 @@ def create_bus(net, vn_kv, name=None, index=None, geodata=None, type="b", zone=N
         if isinstance(geodata, tuple):
             if len(geodata) != 2:
                 raise UserWarning("geodata must be given as (x, y) tuple")
+            elif not _is_valid_number(geodata[0]):
+                raise UserWarning("geodata x must be a valid number")
+            elif not _is_valid_number(geodata[1]):
+                raise UserWarning("geodata y must be a valid number")
             geo = f'{{"coordinates":[{geodata[0]},{geodata[1]}], "type":"Point"}}'
         else:
             raise UserWarning("geodata must be a valid coordinate tuple")
@@ -787,7 +792,12 @@ def create_bus_dc(net, vn_kv, name=None, index=None, geodata=None, type="b", zon
         if isinstance(geodata, tuple):
             if len(geodata) != 2:
                 raise UserWarning("geodata must be given as (x, y) tuple")
-            geo = f'{{"coordinates":[{geodata[0]},{geodata[1]}], "type":"Point"}}'
+            elif not _is_valid_number(geodata[0]):
+                raise UserWarning("geodata x must be a valid number")
+            elif not _is_valid_number(geodata[1]):
+                raise UserWarning("geodata y must be a valid number")
+            else:
+                geo = f'{{"coordinates":[{geodata[0]},{geodata[1]}], "type":"Point"}}'
         else:
             raise UserWarning("geodata must be a valid coordinate tuple")
     else:
@@ -853,28 +863,12 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
     """
     index = _get_multiple_index_with_check(net, "bus", index, nr_buses)
 
-    def _geodata_to_geo_series(data: Union[Iterable[Tuple[float, float]], Tuple[int, int]]) -> List[str]:
-        geo = []
-        for g in data:
-            if isinstance(g, tuple):
-                if len(g) != 2:
-                    raise ValueError("geodata tuples must be of length 2")
-                x, y = g
-                geo.append(f'{{"coordinates": [{x}, {y}], "type": "Point"}}')
-            else:
-                raise ValueError("geodata must be iterable of tuples of (x, y) coordinates")
-        if len(geo) == 1:
-            geo = [geo[0]] * nr_buses
-        if len(geo) != nr_buses:
-            raise ValueError("geodata must be a single point or have the same length as nr_buses")
-        return geo
-
     if geodata:
         if isinstance(geodata, tuple) and (isinstance(geodata[0], int) or isinstance(geodata[0], float)):
-            geo = _geodata_to_geo_series([geodata])
+            geo = _geodata_to_geo_series([geodata], nr_buses)
         else:
             assert hasattr(geodata, "__iter__"), "geodata must be an iterable"
-            geo = _geodata_to_geo_series(geodata)
+            geo = _geodata_to_geo_series(geodata, nr_buses)
     else:
         geo = [None] * nr_buses
 
@@ -885,7 +879,6 @@ def create_buses(net, nr_buses, vn_kv, index=None, name=None, type="b", geodata=
     _add_to_entries_if_not_nan(net, "bus", entries, index, "min_vm_pu", min_vm_pu)
     _add_to_entries_if_not_nan(net, "bus", entries, index, "max_vm_pu", max_vm_pu)
     _set_multiple_entries(net, "bus", index, **entries, **kwargs)
-    net.bus.loc[net.bus.geo == "", "geo"] = None  # overwrite
     # empty_defaults_per_dtype() applied in _set_multiple_entries()
 
     return index
@@ -939,25 +932,47 @@ def create_buses_dc(net, nr_buses_dc, vn_kv, index=None, name=None, type="b", ge
     """
     index = _get_multiple_index_with_check(net, "bus_dc", index, nr_buses_dc)
 
-    entries = {"vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "name": name}
+    if geodata:
+        if isinstance(geodata, tuple) and (isinstance(geodata[0], int) or isinstance(geodata[0], float)):
+            geo = _geodata_to_geo_series([geodata], nr_buses_dc)
+        else:
+            assert hasattr(geodata, "__iter__"), "geodata must be an iterable"
+            geo = _geodata_to_geo_series(geodata, nr_buses_dc)
+    else:
+        geo = [None] * nr_buses_dc
+
+    entries = {"vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "name": name, "geo": geo}
     _add_to_entries_if_not_nan(net, "bus_dc", entries, index, "min_vm_pu", min_vm_pu)
     _add_to_entries_if_not_nan(net, "bus_dc", entries, index, "max_vm_pu", max_vm_pu)
     _set_multiple_entries(net, "bus_dc", index, **entries, **kwargs)
 
-    if geodata is not None:
-        # works with a 2-tuple or a matching array
-        net.bus_dc_geodata = pd.concat([
-            net.bus_dc_geodata,
-            pd.DataFrame(zeros((len(index), len(net.bus_dc_geodata.columns)), dtype=np.int64),
-                         index=index, columns=net.bus_dc_geodata.columns)])
-        net.bus_dc_geodata.loc[index, :] = nan
-        net.bus_dc_geodata.loc[index, ["x", "y"]] = geodata
-    if coords is not None:
-        net.bus_dc_geodata = pd.concat(
-            [net.bus_dc_geodata, pd.DataFrame(index=index, columns=net.bus_dc_geodata.columns)])
-        net["bus_dc_geodata"].loc[index, "coords"] = coords
+    if coords:
+        raise UserWarning("busbar plotting is not implemented fully and will likely be removed in the future")
+
     return index
 
+
+def _geodata_to_geo_series(data: Union[Iterable[Tuple[float, float]], Tuple[int, int]],
+                           nr_buses: int) -> List[str]:
+    geo = []
+    for g in data:
+        if isinstance(g, tuple):
+            if len(g) != 2:
+                raise ValueError("geodata tuples must be of length 2")
+            elif not _is_valid_number(g[0]):
+                raise UserWarning("geodata x must be a valid number")
+            elif not _is_valid_number(g[1]):
+                raise UserWarning("geodata y must be a valid number")
+            else:
+                x, y = g
+                geo.append(f'{{"coordinates": [{x}, {y}], "type": "Point"}}')
+        else:
+            raise ValueError("geodata must be iterable of tuples of (x, y) coordinates")
+    if len(geo) == 1:
+        geo = [geo[0]] * nr_buses
+    if len(geo) != nr_buses:
+        raise ValueError("geodata must be a single point or have the same length as nr_buses")
+    return geo
 
 def create_load(net, bus, p_mw, q_mvar=0, const_z_percent=0, const_i_percent=0, sn_mva=nan,
                 name=None, scaling=1., index=None, in_service=True, type='wye', max_p_mw=nan,
@@ -2423,10 +2438,6 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
 
     _set_entries(net, "line", index, **v, **kwargs)
 
-    if geodata and hasattr(geodata, '__iter__'):
-        geo = [[x, y] for x, y in geodata]
-        net.line.at[index, "geo"] = f'{{"coordinates": {geo}, "type": "LineString"}}'
-
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "line")
     _set_value_if_not_nan(net, index, alpha, "alpha", "line")
     _set_value_if_not_nan(net, index, temperature_degree_celsius,
@@ -2435,6 +2446,8 @@ def create_line(net, from_bus, to_bus, length_km, std_type, name=None, index=Non
     _set_value_if_not_nan(net, index, kwargs.get("tdpf"), "tdpf", "line", bool_)
     for column, value in tdpf_parameters.items():
         _set_value_if_not_nan(net, index, value, column, "line", float64)
+
+    _add_branch_geodata(net, geodata, index)
 
     return index
 
@@ -2557,10 +2570,6 @@ def create_line_dc(net, from_bus_dc, to_bus_dc, length_km, std_type, name=None, 
 
     _set_entries(net, "line_dc", index, **v, **kwargs)
 
-    if geodata is not None:
-        net["line_dc_geodata"].loc[index, "coords"] = None
-        net["line_dc_geodata"].at[index, "coords"] = geodata
-
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "line_dc")
     _set_value_if_not_nan(net, index, alpha, "alpha", "line_dc")
     _set_value_if_not_nan(net, index, temperature_degree_celsius,
@@ -2569,6 +2578,8 @@ def create_line_dc(net, from_bus_dc, to_bus_dc, length_km, std_type, name=None, 
     _set_value_if_not_nan(net, index, kwargs.get("tdpf"), "tdpf", "line_dc", bool_)
     for column, value in tdpf_parameters.items():
         _set_value_if_not_nan(net, index, value, column, "line_dc", float64)
+
+    _add_branch_geodata(net, geodata, index, "line_dc")
 
     return index
 
@@ -2696,11 +2707,9 @@ def create_lines(net, from_buses, to_buses, length_km, std_type, name=None, inde
         _add_to_entries_if_not_nan(net, "line", entries, index, column, value, float64)
 
     _set_multiple_entries(net, "line", index, **entries, **kwargs)
-    net.line.loc[net.line.geo == "", "geo"] = None  # overwrite
     # empty_defaults_per_dtype() applied in _set_multiple_entries()
 
-    if geodata:
-        _add_multiple_branch_geodata(net, geodata, index)
+    _add_multiple_branch_geodata(net, geodata, index)
 
     return index
 
@@ -2825,8 +2834,7 @@ def create_lines_dc(net, from_buses_dc, to_buses_dc, length_km, std_type, name=N
 
     _set_multiple_entries(net, "line_dc", index, **entries, **kwargs)
 
-    if geodata is not None:
-        _add_multiple_branch_geodata(net, "line_dc", geodata, index)
+    _add_multiple_branch_geodata(net, geodata, index,"line_dc")
 
     return index
 
@@ -2962,11 +2970,6 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
         logger.warning("Zero sequence values are given for only some parameters. Please specify "
                        "them for all parameters, otherwise they are not set!")
 
-    if geodata is not None:
-        net.line.at[index, "geo"] = f'{{"coordinates":{geodata}, "type":"LineString"}}'
-    else:
-        net.line.at[index, "geo"] = None
-
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "line")
     _set_value_if_not_nan(net, index, alpha, "alpha", "line")
     _set_value_if_not_nan(net, index, temperature_degree_celsius, "temperature_degree_celsius", "line")
@@ -2977,6 +2980,7 @@ def create_line_from_parameters(net, from_bus, to_bus, length_km, r_ohm_per_km, 
     for column, value in tdpf_parameters.items():
         _set_value_if_not_nan(net, index, value, column, "line", float64)
 
+    _add_branch_geodata(net, geodata, index)
     return index
 
 
@@ -3086,10 +3090,6 @@ def create_line_dc_from_parameters(net, from_bus_dc, to_bus_dc, length_km, r_ohm
 
     _set_entries(net, "line_dc", index, **v, **kwargs)
 
-    if geodata is not None:
-        net["line_dc_geodata"].loc[index, "coords"] = None
-        net["line_dc_geodata"].at[index, "coords"] = geodata
-
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "line_dc")
     _set_value_if_not_nan(net, index, alpha, "alpha", "line_dc")
     _set_value_if_not_nan(net, index, temperature_degree_celsius,
@@ -3099,6 +3099,8 @@ def create_line_dc_from_parameters(net, from_bus_dc, to_bus_dc, length_km, r_ohm
     _set_value_if_not_nan(net, index, kwargs.get("tdpf"), "tdpf", "line_dc", bool_)
     for column, value in tdpf_parameters.items():
         _set_value_if_not_nan(net, index, value, column, "line_dc", float64)
+
+    _add_branch_geodata(net, geodata, index, "line_dc")
 
     return index
 
@@ -3235,11 +3237,7 @@ def create_lines_from_parameters(net, from_buses, to_buses, length_km, r_ohm_per
 
     _set_multiple_entries(net, "line", index, **entries, **kwargs)
 
-    if geodata is not None:
-        _add_multiple_branch_geodata(net, geodata, index)
-    else:
-        for i in index:
-            net.line.at[i, "geo"] = None
+    _add_multiple_branch_geodata(net, geodata, index)
 
     return index
 
@@ -3360,8 +3358,7 @@ def create_lines_dc_from_parameters(net, from_buses_dc, to_buses_dc, length_km, 
 
     _set_multiple_entries(net, "line_dc", index, **entries, **kwargs)
 
-    if geodata is not None:
-        _add_multiple_branch_geodata(net, "line_dc", geodata, index)
+    _add_multiple_branch_geodata(net, geodata, index, 'line_dc')
 
     return index
 
@@ -6125,25 +6122,48 @@ def _add_to_entries_if_not_nan(net, element_type, entries, index, column, values
         entries[column] = pd.Series(data=default_val, index=index)
         try_astype(entries, column, dtype)
 
+def _branch_geodata(geodata):
+    geo = []
+    for x, y in geodata:
+        if (not _is_valid_number(x)) | (not _is_valid_number(y)):
+            raise ValueError("geodata contains invalid values")
+        geo += [[x, y]]
+    return geo
+
+def _add_branch_geodata(net, geodata, index, table="line"):
+    if geodata is not None:
+        if not isinstance(geodata, (list, tuple)):
+            raise ValueError("geodata needs to be list or tuple")
+        geodata = _branch_geodata(geodata)
+        geodata = f'{{"coordinates": {geodata}, "type": "LineString"}}'
+    else:
+        geodata = None
+    net[table].loc[index, "geo"] = geodata
 
 def _add_multiple_branch_geodata(net, geodata, index, table="line"):
     dtypes = net[table].dtypes
-    if hasattr(geodata, '__iter__') and all([isinstance(g, tuple) and len(g) == 2 for g in geodata]):
-        # geodata is a single Iterable of coordinate tuples
-        geo = [[x, y] for x, y in geodata]
-        series = [f'{{"coordinates": {geo}, "type": "LineString"}}'] * len(index)
-    elif hasattr(geodata, '__iter__') and all([isinstance(g, Iterable) for g in geodata]):
-        # geodata is Iterable of coordinate tuples
-        geo = [[[x, y] for x, y in g] for g in geodata]
-        series = pd.Series([f'{{"coordinates": {g}, "type": "LineString"}}' for g in geo], index=index)
-    else:
-        raise ValueError(
-            "geodata must be an Iterable of Iterable of coordinate tuples or an Iterable of coordinate tuples")
 
-    net[table].loc[:, "geo"] = series
+    if geodata is not None:
+        if not isinstance(geodata, (list, tuple)):
+            raise ValueError("geodata needs to be list or tuple")
+        elif all([isinstance(g, tuple) and len(g) == 2 for g in geodata]):
+            geodata = _branch_geodata(geodata)
+            geodata = [f'{{"coordinates": {geodata}, "type": "LineString"}}']
+            series = geodata * len(index)
+        elif all([isinstance(g, Iterable) for g in geodata]):
+            series = []
+            for g in geodata:
+                geo = _branch_geodata(g)
+                series += [f'{{"coordinates": {geo}, "type": "LineString"}}']
+        else:
+            raise ValueError(
+                "geodata must be an Iterable of Iterable of coordinate tuples or an Iterable of coordinate tuples")
+    else:
+        series = None
+
+    net[table].loc[index, "geo"] = series
 
     _preserve_dtypes(net[table], dtypes)
-
 
 def _set_entries(net, table, index, preserve_dtypes=True, **entries):
     dtypes = None

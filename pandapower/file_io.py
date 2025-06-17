@@ -243,7 +243,7 @@ def _from_excel_old(xls):
 
 def from_json(filename, convert=True, encryption_key=None, elements_to_deserialize=None,
               keep_serialized_elements=True, add_basic_std_types=False, replace_elements=None,
-              empty_dict_like_object=None, ignore_unknown_objects=False):
+              empty_dict_like_object=None, ignore_unknown_objects=False, drop_invalid_geodata=False):
     """
     Load a pandapower network from a JSON file.
     The index of the returned network is not necessarily in the same order as the original network.
@@ -303,12 +303,14 @@ def from_json(filename, convert=True, encryption_key=None, elements_to_deseriali
         add_basic_std_types=add_basic_std_types,
         replace_elements=replace_elements,
         empty_dict_like_object=empty_dict_like_object,
-        ignore_unknown_objects=ignore_unknown_objects)
+        ignore_unknown_objects=ignore_unknown_objects,
+        drop_invalid_geodata=drop_invalid_geodata)
 
 
 def from_json_string(json_string, convert=False, encryption_key=None, elements_to_deserialize=None,
                      keep_serialized_elements=True, add_basic_std_types=False,
-                     replace_elements=None, empty_dict_like_object=None, ignore_unknown_objects=False):
+                     replace_elements=None, empty_dict_like_object=None, ignore_unknown_objects=False,
+                     drop_invalid_geodata=False):
     """
     Load a pandapower network from a JSON string.
     The index of the returned network is not necessarily in the same order as the original network.
@@ -400,7 +402,7 @@ def from_json_string(json_string, convert=False, encryption_key=None, elements_t
         net = from_json_dict(net)
 
     if convert:
-        convert_format(net, elements_to_deserialize=elements_to_deserialize)
+        convert_format(net, elements_to_deserialize=elements_to_deserialize, drop_invalid_geodata=drop_invalid_geodata)
 
         # compare pandapowerNet-format_version and package-version
         check_net_version(net)

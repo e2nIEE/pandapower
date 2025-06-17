@@ -856,7 +856,6 @@ def create_weighted_marker_trace(net, elm_type="load", elm_ids=None, column_to_p
                                  scale_legend_unit=None, trace_kwargs=None):
     """Create a single-color plotly trace markers/patches (e.g., bubbles) of value-dependent size.
 
-    Can be used with pandapipes.plotting.plotly.simple_plotly (pass as "additional_trace").
     If present in the respective pandapower-net table, the "in_service" and "scaling" column will be
     taken into account as factors to calculate the markers' weights.
     Negative values might lead to unexpected results, especially when pos. and neg. values are
@@ -894,7 +893,7 @@ def create_weighted_marker_trace(net, elm_type="load", elm_ids=None, column_to_p
         **infofunc** (pd.Series, default None): hover-infofuction to overwrite the internal infofunction
 
         **node_element** (str, default "bus") - the name of node elements in the net. "bus" for
-        pandapower networks, "junction" for pandapipes networks
+        pandapower networks
 
         **show_scale_legend** (bool, default True): display a marker legend at the top right of the
          plot
@@ -986,8 +985,6 @@ def create_weighted_marker_trace(net, elm_type="load", elm_ids=None, column_to_p
 def create_scale_trace(net, weighted_trace, down_shift=0):
     """Create a scale (marker size legend) for a weighted_marker_trace.
 
-    Will be used with pandapipes.plotting.plotly.simple_plotly, when "additional_trace" contains
-    a trace created by :func:`create_weighted_marker_trace` with :code:`show_scale_legend=True`.
     The default reference marker is of average size of all weighted markers, rounded to the next 5,
     and comes with a string with the respective reference value and unit.
 
