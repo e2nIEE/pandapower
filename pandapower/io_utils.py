@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
 import importlib
-import io
 import json
 import numbers
 import os
@@ -81,10 +80,7 @@ try:
 except (ImportError, OSError):
     SHAPELY_INSTALLED = False
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -575,14 +571,16 @@ class FromSerializableRegistry():
                 if column_names is not None:
                     df.columns.names = column_names
 
-        # recreate jsoned objects
-        for col in ('object', 'controller'):  # "controller" for backwards compatibility
-            if (col in df.columns):
-                df[col] = df[col].apply(partial(
-                    self.pp_hook, ignore_unknown_objects=self.ignore_unknown_objects
-                ))
         if 'geo' in df.columns:
             df['geo'] = df['geo'].dropna().apply(json.dumps).apply(geojson.loads)
+
+        df_obj = df.select_dtypes(include=['object'])
+        for col in df_obj:
+            df[col] = df[col].apply(partial(
+                self.pp_hook, ignore_unknown_objects=self.ignore_unknown_objects
+            ))
+            df[col] = df[col].astype(dtype = 'object')
+            df.loc[pd.isnull(df[col]), col] = None
         return df
 
     @from_serializable.register(class_name='pandapowerNet', module_name='pandapower.auxiliary')#,

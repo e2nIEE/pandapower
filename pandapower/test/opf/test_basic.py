@@ -1,21 +1,22 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 import numpy as np
 import pytest
 
-import pandapower as pp
+from pandapower.auxiliary import OPFNotConverged
 from pandapower.convert_format import convert_format
+from pandapower.create import create_empty_network, create_bus, create_gen, create_ext_grid, create_load, \
+    create_poly_cost, create_line_from_parameters, create_transformer3w_from_parameters, create_line, create_sgen, \
+    create_transformer_from_parameters, create_transformer3w, create_pwl_cost, create_storage
 from pandapower.networks import simple_four_bus_system
+from pandapower.run import runopp, rundcopp, runpp
 from pandapower.test.helper_functions import add_grid_connection
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -26,73 +27,73 @@ def simplest_grid():
     vm_min = 0.95
 
     # create net
-    net = pp.create_empty_network()
-    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
-    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-    pp.create_gen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.005, max_p_mw=0.15,
-                  max_q_mvar=0.005, min_q_mvar=-0.005)
-    pp.create_ext_grid(net, 0)
-    pp.create_load(net, 1, p_mw=0.02, controllable=False)
-    pp.create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
-                                   c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
-                                   max_loading_percent=100)
-    pp.create_poly_cost(net, 0, "gen", cp1_eur_per_mw=0.1)
+    net = create_empty_network()
+    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
+    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
+    create_gen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.005, max_p_mw=0.15,
+               max_q_mvar=0.005, min_q_mvar=-0.005)
+    create_ext_grid(net, 0)
+    create_load(net, 1, p_mw=0.02, controllable=False)
+    create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
+                                c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
+                                max_loading_percent=100)
+    create_poly_cost(net, 0, "gen", cp1_eur_per_mw=0.1)
 
     return net
 
 
 @pytest.fixture
 def net_3w_trafo_opf():
-    net = pp.create_empty_network()
+    net = create_empty_network()
 
     # create buses
-    bus1 = pp.create_bus(net, vn_kv=220.)
-    bus2 = pp.create_bus(net, vn_kv=110.)
-    bus3 = pp.create_bus(net, vn_kv=110.)
-    bus4 = pp.create_bus(net, vn_kv=110.)
-    bus5 = pp.create_bus(net, vn_kv=110.)
+    bus1 = create_bus(net, vn_kv=220.)
+    bus2 = create_bus(net, vn_kv=110.)
+    bus3 = create_bus(net, vn_kv=110.)
+    bus4 = create_bus(net, vn_kv=110.)
+    bus5 = create_bus(net, vn_kv=110.)
 
-    pp.create_bus(net, vn_kv=110., in_service=False)
+    create_bus(net, vn_kv=110., in_service=False)
 
     # create 220/110 kV transformer
-    pp.create_transformer3w_from_parameters(net, bus1, bus2, bus5, vn_hv_kv=220, vn_mv_kv=110,
-                                            vn_lv_kv=110, vk_hv_percent=10., vk_mv_percent=10.,
-                                            vk_lv_percent=10., vkr_hv_percent=0.5,
-                                            vkr_mv_percent=0.5, vkr_lv_percent=0.5, pfe_kw=100,
-                                            i0_percent=0.1, shift_mv_degree=0, shift_lv_degree=0,
-                                            sn_hv_mva=100, sn_mv_mva=50, sn_lv_mva=50)
+    create_transformer3w_from_parameters(net, bus1, bus2, bus5, vn_hv_kv=220, vn_mv_kv=110,
+                                         vn_lv_kv=110, vk_hv_percent=10., vk_mv_percent=10.,
+                                         vk_lv_percent=10., vkr_hv_percent=0.5,
+                                         vkr_mv_percent=0.5, vkr_lv_percent=0.5, pfe_kw=100,
+                                         i0_percent=0.1, shift_mv_degree=0, shift_lv_degree=0,
+                                         sn_hv_mva=100, sn_mv_mva=50, sn_lv_mva=50)
 
     # create 110 kV lines
-    pp.create_line(net, bus2, bus3, length_km=70., std_type='149-AL1/24-ST1A 110.0')
-    pp.create_line(net, bus3, bus4, length_km=50., std_type='149-AL1/24-ST1A 110.0')
-    pp.create_line(net, bus4, bus2, length_km=40., std_type='149-AL1/24-ST1A 110.0')
-    pp.create_line(net, bus4, bus5, length_km=30., std_type='149-AL1/24-ST1A 110.0')
+    create_line(net, bus2, bus3, length_km=70., std_type='149-AL1/24-ST1A 110.0')
+    create_line(net, bus3, bus4, length_km=50., std_type='149-AL1/24-ST1A 110.0')
+    create_line(net, bus4, bus2, length_km=40., std_type='149-AL1/24-ST1A 110.0')
+    create_line(net, bus4, bus5, length_km=30., std_type='149-AL1/24-ST1A 110.0')
 
     # create loads
-    pp.create_load(net, bus2, p_mw=60, controllable=False)
-    pp.create_load(net, bus3, p_mw=70, controllable=False)
-    pp.create_sgen(net, bus3, p_mw=10, controllable=False)
+    create_load(net, bus2, p_mw=60, controllable=False)
+    create_load(net, bus3, p_mw=70, controllable=False)
+    create_sgen(net, bus3, p_mw=10, controllable=False)
 
     # create generators
-    pp.create_ext_grid(net, bus1, min_p_mw=0, max_p_mw=1000, max_q_mvar=0.01, min_q_mvar=0)
-    pp.create_gen(net, bus3, p_mw=80, min_p_mw=0, max_p_mw=80, vm_pu=1.01)
-    pp.create_gen(net, bus4, p_mw=80, min_p_mw=0, max_p_mw=80, vm_pu=1.01)
+    create_ext_grid(net, bus1, min_p_mw=0, max_p_mw=1000, max_q_mvar=0.01, min_q_mvar=0)
+    create_gen(net, bus3, p_mw=80, min_p_mw=0, max_p_mw=80, vm_pu=1.01)
+    create_gen(net, bus4, p_mw=80, min_p_mw=0, max_p_mw=80, vm_pu=1.01)
     net.gen["controllable"] = False
     return net
 
 
 @pytest.fixture
 def simple_opf_test_net():
-    net = pp.create_empty_network()
-    pp.create_bus(net, vn_kv=10.)
-    pp.create_bus(net, vn_kv=.4)
-    pp.create_gen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.005, max_p_mw=0.15,
-                  max_q_mvar=0.05, min_q_mvar=-.005)
-    pp.create_ext_grid(net, 0)
-    pp.create_load(net, 1, p_mw=0.020, controllable=False)
-    pp.create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
-                                   c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
-                                   max_loading_percent=100)
+    net = create_empty_network()
+    create_bus(net, vn_kv=10.)
+    create_bus(net, vn_kv=.4)
+    create_gen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.005, max_p_mw=0.15,
+               max_q_mvar=0.05, min_q_mvar=-.005)
+    create_ext_grid(net, 0)
+    create_load(net, 1, p_mw=0.020, controllable=False)
+    create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
+                                c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
+                                max_loading_percent=100)
     return net
 
 
@@ -105,22 +106,22 @@ def test_convert_format():
     vm_min = 0.95
 
     # create net
-    net = pp.create_empty_network()
-    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
-    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-    pp.create_gen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.005, max_p_mw=0.15,
-                  max_q_mvar=0.05, min_q_mvar=-0.005)
+    net = create_empty_network()
+    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
+    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
+    create_gen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.005, max_p_mw=0.15,
+               max_q_mvar=0.05, min_q_mvar=-0.005)
     net.gen["cost_per_mw"] = 100
-    pp.create_ext_grid(net, 0)
-    pp.create_load(net, 1, p_mw=0.02, controllable=False)
-    pp.create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
-                                   c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
-                                   max_loading_percent=100 * 690)
+    create_ext_grid(net, 0)
+    create_load(net, 1, p_mw=0.02, controllable=False)
+    create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
+                                c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
+                                max_loading_percent=100 * 690)
     # run OPF
     convert_format(net)
 
     for init in ["pf", "flat"]:
-        pp.runopp(net, init=init)
+        runopp(net, init=init)
         assert net["OPF_converged"]
 
     # check and assert result
@@ -143,7 +144,7 @@ def test_simplest_voltage():
     net = simplest_grid()
     # run OPF
     for init in ["pf", "flat"]:
-        pp.runopp(net, init=init)
+        runopp(net, init=init)
         assert net["OPF_converged"]
 
     # check and assert result
@@ -154,7 +155,7 @@ def test_simplest_voltage():
     assert max(net.res_bus.vm_pu) < vm_max
     assert min(net.res_bus.vm_pu) > vm_min
 
-    pp.runopp(net, check_connectivity=True)
+    runopp(net, check_connectivity=True)
     assert net["OPF_converged"]
 
     # check and assert result
@@ -175,19 +176,19 @@ def test_simplest_voltage():
 #    vm_min = 0.95
 #
 #    # create net
-#    net = pp.create_empty_network()
-#    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
-#    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-#    pp.create_gen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.005, max_p_mw=0.150,
+#    net = create_empty_network()
+#    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
+#    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
+#    create_gen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.005, max_p_mw=0.150,
 #                  max_q_mvar=0.05, min_q_mvar=-0.05)
-#    pp.create_ext_grid(net, 0, vm_pu=1.01)
-#    pp.create_load(net, 1, p_mw=0.02, controllable=False)
-#    pp.create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
+#    create_ext_grid(net, 0, vm_pu=1.01)
+#    create_load(net, 1, p_mw=0.02, controllable=False)
+#    create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
 #                                   c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
 #                                   max_loading_percent=100)
 #    # run OPF
 #    for init in ["pf", "flat"]:
-#        pp.runopp(net, init=init)
+#        runopp(net, init=init)
 #        assert net["OPF_converged"]
 #
 #    # check and assert result
@@ -207,21 +208,21 @@ def test_simplest_dispatch():
     vm_min = 0.95
 
     # create net
-    net = pp.create_empty_network()
-    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
-    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-    pp.create_gen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.005, max_p_mw=0.150,
-                  max_q_mvar=0.05, min_q_mvar=-0.05)
-    pp.create_poly_cost(net, 0, "gen", cp1_eur_per_mw=100)
-    pp.create_ext_grid(net, 0)
-    pp.create_poly_cost(net, 0, "ext_grid", cp1_eur_per_mw=101)
-    pp.create_load(net, 1, p_mw=0.02, controllable=False)
-    pp.create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
-                                   c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
-                                   max_loading_percent=100 * 690)
+    net = create_empty_network()
+    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
+    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
+    create_gen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.005, max_p_mw=0.150,
+               max_q_mvar=0.05, min_q_mvar=-0.05)
+    create_poly_cost(net, 0, "gen", cp1_eur_per_mw=100)
+    create_ext_grid(net, 0)
+    create_poly_cost(net, 0, "ext_grid", cp1_eur_per_mw=101)
+    create_load(net, 1, p_mw=0.02, controllable=False)
+    create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
+                                c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
+                                max_loading_percent=100 * 690)
     # run OPF
     for init in ["pf", "flat"]:
-        pp.runopp(net, cost_function="linear", init=init)
+        runopp(net, cost_function="linear", init=init)
         assert net["OPF_converged"]
 
     # check and assert result
@@ -242,33 +243,33 @@ def test_opf_gen_voltage():
     vm_min = 0.95
 
     # ceate net
-    net = pp.create_empty_network()
-    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
-    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-    pp.create_transformer_from_parameters(net, 0, 1, vk_percent=3.75,
-                                          tap_max=2, vn_lv_kv=0.4,
-                                          shift_degree=150, tap_neutral=0,
-                                          vn_hv_kv=10.0, vkr_percent=2.8125,
-                                          tap_pos=0, tap_side="hv", tap_min=-2,
-                                          tap_step_percent=2.5, i0_percent=0.68751,
-                                          sn_mva=0.016, pfe_kw=0.11, name=None,
-                                          in_service=True, index=None, max_loading_percent=200)
-    pp.create_gen(net, 3, p_mw=0.01, controllable=True, min_p_mw=0, max_p_mw=0.025, max_q_mvar=0.5,
-                  min_q_mvar=-0.5)
-    pp.create_poly_cost(net, 0, "gen", cp1_eur_per_mw=10)
-    pp.create_ext_grid(net, 0)
-    pp.create_line_from_parameters(net, 1, 2, 1, name="line2", r_ohm_per_km=0.876,
-                                   c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
-                                   max_loading_percent=100000)
-    pp.create_line_from_parameters(net, 2, 3, 1, name="line2", r_ohm_per_km=0.876,
-                                   c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
-                                   max_loading_percent=100000)
+    net = create_empty_network()
+    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
+    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
+    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
+    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
+    create_transformer_from_parameters(net, 0, 1, vk_percent=3.75,
+                                       tap_max=2, vn_lv_kv=0.4,
+                                       shift_degree=150, tap_neutral=0,
+                                       vn_hv_kv=10.0, vkr_percent=2.8125,
+                                       tap_pos=0, tap_side="hv", tap_min=-2,
+                                       tap_step_percent=2.5, i0_percent=0.68751,
+                                       sn_mva=0.016, pfe_kw=0.11, name=None, tap_changer_type="Ratio",
+                                       in_service=True, index=None, max_loading_percent=200)
+    create_gen(net, 3, p_mw=0.01, controllable=True, min_p_mw=0, max_p_mw=0.025, max_q_mvar=0.5,
+               min_q_mvar=-0.5)
+    create_poly_cost(net, 0, "gen", cp1_eur_per_mw=10)
+    create_ext_grid(net, 0)
+    create_line_from_parameters(net, 1, 2, 1, name="line2", r_ohm_per_km=0.876,
+                                c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
+                                max_loading_percent=100000)
+    create_line_from_parameters(net, 2, 3, 1, name="line2", r_ohm_per_km=0.876,
+                                c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
+                                max_loading_percent=100000)
 
     # run OPF
     for init in ["pf", "flat"]:
-        pp.runopp(net, init=init, calculate_voltage_angles=False)
+        runopp(net, init=init, calculate_voltage_angles=False)
         assert net["OPF_converged"]
 
     # check and assert result
@@ -288,33 +289,33 @@ def test_opf_sgen_voltage():
     vm_min = 0.96
 
     # create net
-    net = pp.create_empty_network()
-    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
-    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-    pp.create_transformer_from_parameters(net, 0, 1, vk_percent=3.75,
-                                          tap_max=2, vn_lv_kv=0.4,
-                                          shift_degree=150, tap_neutral=0,
-                                          vn_hv_kv=10.0, vkr_percent=2.8125,
-                                          tap_pos=0, tap_side="hv", tap_min=-2,
-                                          tap_step_percent=2.5, i0_percent=0.68751,
-                                          sn_mva=0.016, pfe_kw=0.11, name=None,
-                                          in_service=True, index=None, max_loading_percent=1000000)
-    pp.create_sgen(net, 3, p_mw=0.01, controllable=True, min_p_mw=-0.005, max_p_mw=0.015,
-                   max_q_mvar=0.025, min_q_mvar=-0.025)
-    pp.create_poly_cost(net, 0, "sgen", cp1_eur_per_mw=0.1)
-    pp.create_ext_grid(net, 0)
-    pp.create_line_from_parameters(net, 1, 2, 1, name="line2", r_ohm_per_km=0.876,
-                                   c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
-                                   max_loading_percent=1000000)
-    pp.create_line_from_parameters(net, 2, 3, 1, name="line2", r_ohm_per_km=0.876,
-                                   c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
-                                   max_loading_percent=1000000)
+    net = create_empty_network()
+    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
+    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
+    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
+    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
+    create_transformer_from_parameters(net, 0, 1, vk_percent=3.75,
+                                       tap_max=2, vn_lv_kv=0.4,
+                                       shift_degree=150, tap_neutral=0,
+                                       vn_hv_kv=10.0, vkr_percent=2.8125,
+                                       tap_pos=0, tap_side="hv", tap_min=-2,
+                                       tap_step_percent=2.5, i0_percent=0.68751,
+                                       sn_mva=0.016, pfe_kw=0.11, name=None, tap_changer_type="Ratio",
+                                       in_service=True, index=None, max_loading_percent=1000000)
+    create_sgen(net, 3, p_mw=0.01, controllable=True, min_p_mw=-0.005, max_p_mw=0.015,
+                max_q_mvar=0.025, min_q_mvar=-0.025)
+    create_poly_cost(net, 0, "sgen", cp1_eur_per_mw=0.1)
+    create_ext_grid(net, 0)
+    create_line_from_parameters(net, 1, 2, 1, name="line2", r_ohm_per_km=0.876,
+                                c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
+                                max_loading_percent=1000000)
+    create_line_from_parameters(net, 2, 3, 1, name="line2", r_ohm_per_km=0.876,
+                                c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
+                                max_loading_percent=1000000)
 
     # run OPF
     for init in ["pf", "flat"]:
-        pp.runopp(net, init=init, calculate_voltage_angles=False)
+        runopp(net, init=init, calculate_voltage_angles=False)
         assert net["OPF_converged"]
 
     # assert and check result
@@ -335,36 +336,36 @@ def test_opf_gen_loading():
     max_line_loading = 11
 
     # create net
-    net = pp.create_empty_network()
-    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
-    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-    pp.create_transformer_from_parameters(net, 0, 1, vk_percent=3.75,
-                                          tap_max=2, vn_lv_kv=0.4,
-                                          shift_degree=150, tap_neutral=0,
-                                          vn_hv_kv=10.0, vkr_percent=2.8125,
-                                          tap_pos=0, tap_side="hv", tap_min=-2,
-                                          tap_step_percent=2.5, i0_percent=0.68751,
-                                          sn_mva=0.016, pfe_kw=0.11, name=None,
-                                          in_service=True, index=None, max_loading_percent=145)
-    pp.create_gen(net, 3, p_mw=0.01, controllable=True, min_p_mw=0.005, max_p_mw=0.015,
-                  max_q_mvar=0.05, min_q_mvar=-0.05)
-    pp.create_poly_cost(net, 0, "gen", cp1_eur_per_mw=-10)
-    pp.create_ext_grid(net, 0)
-    pp.create_poly_cost(net, 0, "ext_grid", cp1_eur_per_mw=.1)
-    pp.create_line_from_parameters(net, 1, 2, 1, name="line2", r_ohm_per_km=0.876,
-                                   c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
-                                   max_loading_percent=max_line_loading)
-    pp.create_line_from_parameters(net, 2, 3, 1, name="line2", r_ohm_per_km=0.876,
-                                   c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
-                                   max_loading_percent=max_line_loading)
+    net = create_empty_network()
+    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
+    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
+    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
+    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
+    create_transformer_from_parameters(net, 0, 1, vk_percent=3.75,
+                                       tap_max=2, vn_lv_kv=0.4,
+                                       shift_degree=150, tap_neutral=0,
+                                       vn_hv_kv=10.0, vkr_percent=2.8125,
+                                       tap_pos=0, tap_side="hv", tap_min=-2,
+                                       tap_step_percent=2.5, i0_percent=0.68751,
+                                       sn_mva=0.016, pfe_kw=0.11, name=None, tap_changer_type="Ratio",
+                                       in_service=True, index=None, max_loading_percent=145)
+    create_gen(net, 3, p_mw=0.01, controllable=True, min_p_mw=0.005, max_p_mw=0.015,
+               max_q_mvar=0.05, min_q_mvar=-0.05)
+    create_poly_cost(net, 0, "gen", cp1_eur_per_mw=-10)
+    create_ext_grid(net, 0)
+    create_poly_cost(net, 0, "ext_grid", cp1_eur_per_mw=.1)
+    create_line_from_parameters(net, 1, 2, 1, name="line2", r_ohm_per_km=0.876,
+                                c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
+                                max_loading_percent=max_line_loading)
+    create_line_from_parameters(net, 2, 3, 1, name="line2", r_ohm_per_km=0.876,
+                                c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
+                                max_loading_percent=max_line_loading)
 
     # run OPF
 
-    pp.runopp(net, OPF_VIOLATION=1e-1, OUT_LIM_LINE=2,
-              PDIPM_GRADTOL=1e-10, PDIPM_COMPTOL=1e-10, PDIPM_COSTTOL=1e-10,
-              calculate_voltage_angles=False)
+    runopp(net, OPF_VIOLATION=1e-1, OUT_LIM_LINE=2,
+           PDIPM_GRADTOL=1e-10, PDIPM_COMPTOL=1e-10, PDIPM_COSTTOL=1e-10,
+           calculate_voltage_angles=False)
     assert net["OPF_converged"]
 
     # assert and check result
@@ -389,32 +390,32 @@ def test_opf_sgen_loading():
     max_line_loading = 13
 
     # create net
-    net = pp.create_empty_network()
-    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
-    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-    pp.create_transformer_from_parameters(net, 0, 1, vk_percent=3.75, tap_max=2, vn_lv_kv=0.4,
-                                          shift_degree=150, tap_neutral=0, vn_hv_kv=10.0,
-                                          vkr_percent=2.8125, tap_pos=0, tap_side="hv", tap_min=-2,
-                                          tap_step_percent=2.5, i0_percent=0.68751, sn_mva=0.016,
-                                          pfe_kw=0.11, name=None, in_service=True, index=None,
-                                          max_loading_percent=max_trafo_loading)
-    pp.create_sgen(net, 3, p_mw=0.01, controllable=True, min_p_mw=0.005, max_p_mw=.015,
-                   max_q_mvar=0.025, min_q_mvar=-0.025)
-    pp.create_poly_cost(net, 0, "sgen", cp1_eur_per_mw=-10)
-    pp.create_ext_grid(net, 0)
-    pp.create_poly_cost(net, 0, "ext_grid", cp1_eur_per_mw=.1)
-    pp.create_line_from_parameters(net, 1, 2, 1, name="line2", r_ohm_per_km=0.876,
-                                   c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
-                                   max_loading_percent=max_line_loading)
-    pp.create_line_from_parameters(net, 2, 3, 1, name="line2", r_ohm_per_km=0.876,
-                                   c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
-                                   max_loading_percent=max_line_loading)
+    net = create_empty_network()
+    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
+    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
+    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
+    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
+    create_transformer_from_parameters(net, 0, 1, vk_percent=3.75, tap_max=2, vn_lv_kv=0.4,
+                                       shift_degree=150, tap_neutral=0, vn_hv_kv=10.0,
+                                       vkr_percent=2.8125, tap_pos=0, tap_side="hv", tap_min=-2,
+                                       tap_step_percent=2.5, i0_percent=0.68751, sn_mva=0.016,
+                                       pfe_kw=0.11, name=None, in_service=True, index=None,
+                                       max_loading_percent=max_trafo_loading, tap_changer_type="Ratio")
+    create_sgen(net, 3, p_mw=0.01, controllable=True, min_p_mw=0.005, max_p_mw=.015,
+                max_q_mvar=0.025, min_q_mvar=-0.025)
+    create_poly_cost(net, 0, "sgen", cp1_eur_per_mw=-10)
+    create_ext_grid(net, 0)
+    create_poly_cost(net, 0, "ext_grid", cp1_eur_per_mw=.1)
+    create_line_from_parameters(net, 1, 2, 1, name="line2", r_ohm_per_km=0.876,
+                                c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
+                                max_loading_percent=max_line_loading)
+    create_line_from_parameters(net, 2, 3, 1, name="line2", r_ohm_per_km=0.876,
+                                c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
+                                max_loading_percent=max_line_loading)
 
     # run OPF
     for init in ["pf", "flat"]:
-        pp.runopp(net, init=init, calculate_voltage_angles=False)
+        runopp(net, init=init, calculate_voltage_angles=False)
         assert net["OPF_converged"]
 
     # assert and check result
@@ -427,7 +428,7 @@ def test_opf_sgen_loading():
     assert max(net.res_bus.vm_pu) < vm_max
     assert min(net.res_bus.vm_pu) > vm_min
     # check connectivity check
-    pp.runopp(net, check_connectivity=True, calculate_voltage_angles=False)
+    runopp(net, check_connectivity=True, calculate_voltage_angles=False)
 
 
 def test_unconstrained_line():
@@ -439,19 +440,19 @@ def test_unconstrained_line():
     vm_min = 0.95
 
     # create net
-    net = pp.create_empty_network()
-    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
-    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-    pp.create_gen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.005, max_p_mw=0.15,
-                  max_q_mvar=0.05, min_q_mvar=-0.05)
-    pp.create_ext_grid(net, 0)
-    pp.create_load(net, 1, p_mw=0.02, controllable=False)
-    pp.create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
-                                   c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876)
-    pp.create_poly_cost(net, 0, "gen", cp1_eur_per_mw=1)
+    net = create_empty_network()
+    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
+    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
+    create_gen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.005, max_p_mw=0.15,
+               max_q_mvar=0.05, min_q_mvar=-0.05)
+    create_ext_grid(net, 0)
+    create_load(net, 1, p_mw=0.02, controllable=False)
+    create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
+                                c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876)
+    create_poly_cost(net, 0, "gen", cp1_eur_per_mw=1)
     # run OPF
     for init in ["pf", "flat"]:
-        pp.runopp(net, init=init, calculate_voltage_angles=False)
+        runopp(net, init=init, calculate_voltage_angles=False)
         assert net["OPF_converged"]
 
     # check and assert result
@@ -464,32 +465,32 @@ def test_unconstrained_line():
 
 
 def test_trafo3w_loading():
-    net = pp.create_empty_network()
+    net = create_empty_network()
     b1, b2, l1 = add_grid_connection(net, vn_kv=110.)
-    b3 = pp.create_bus(net, vn_kv=20.)
-    b4 = pp.create_bus(net, vn_kv=10.)
-    tidx = pp.create_transformer3w(net, b2, b3, b4, std_type='63/25/38 MVA 110/20/10 kV',
-                                   max_loading_percent=120)
-    pp.create_load(net, b3, p_mw=5, controllable=False)
-    load_id = pp.create_load(net, b4, p_mw=5, controllable=True, max_p_mw=50, min_p_mw=0,
-                             min_q_mvar=-1e6, max_q_mvar=1e6)
-    pp.create_poly_cost(net, load_id, "load", cp1_eur_per_mw=-1000)
-    # pp.create_xward(net, b4, 1000, 1000, 1000, 1000, 0.1, 0.1, 1.0)
+    b3 = create_bus(net, vn_kv=20.)
+    b4 = create_bus(net, vn_kv=10.)
+    tidx = create_transformer3w(net, b2, b3, b4, std_type='63/25/38 MVA 110/20/10 kV',
+                                max_loading_percent=120)
+    create_load(net, b3, p_mw=5, controllable=False)
+    load_id = create_load(net, b4, p_mw=5, controllable=True, max_p_mw=50, min_p_mw=0,
+                          min_q_mvar=-1e6, max_q_mvar=1e6)
+    create_poly_cost(net, load_id, "load", cp1_eur_per_mw=-1000)
+    # create_xward(net, b4, 1000, 1000, 1000, 1000, 0.1, 0.1, 1.0)
     net.trafo3w.at[tidx, "shift_lv_degree"] = 120
     net.trafo3w.at[tidx, "shift_mv_degree"] = 80
 
-    # pp.runopp(net, calculate_voltage_angles = True)  >> Doesn't converge
+    # runopp(net, calculate_voltage_angles = True)  >> Doesn't converge
     for init in ["pf", "flat"]:
-        pp.runopp(net, calculate_voltage_angles=False, init=init)
+        runopp(net, calculate_voltage_angles=False, init=init)
         assert net["OPF_converged"]
     assert abs(net.res_trafo3w.loading_percent.values - 120) < 1e-3
 
 
 def test_dcopf_poly(simple_opf_test_net):
     net = simple_opf_test_net
-    pp.create_poly_cost(net, 0, "gen", cp1_eur_per_mw=100)
+    create_poly_cost(net, 0, "gen", cp1_eur_per_mw=100)
     # run OPF
-    pp.rundcopp(net)
+    rundcopp(net)
 
     # check and assert result
     logger.debug("test_simplest_voltage")
@@ -501,10 +502,10 @@ def test_dcopf_poly(simple_opf_test_net):
 
 def test_opf_poly(simple_opf_test_net):
     net = simple_opf_test_net
-    pp.create_poly_cost(net, 0, "gen", cp1_eur_per_mw=100)
+    create_poly_cost(net, 0, "gen", cp1_eur_per_mw=100)
     # run OPF
     for init in ["pf", "flat"]:
-        pp.runopp(net, init=init)
+        runopp(net, init=init)
         assert net["OPF_converged"]
     # check and assert result
     logger.debug("test_simplest_voltage")
@@ -517,10 +518,10 @@ def test_opf_poly(simple_opf_test_net):
 def test_opf_pwl(simple_opf_test_net):
     # create net
     net = simple_opf_test_net
-    pp.create_pwl_cost(net, 0, "gen", [[0, 100, 100], [100, 200, 100]])
+    create_pwl_cost(net, 0, "gen", [[0, 100, 100], [100, 200, 100]])
     # run OPF
     for init in ["pf", "flat"]:
-        pp.runopp(net, init=init)
+        runopp(net, init=init)
         assert net["OPF_converged"]
 
     # check and assert result
@@ -534,10 +535,10 @@ def test_opf_pwl(simple_opf_test_net):
 def test_dcopf_pwl(simple_opf_test_net):
     # create net
     net = simple_opf_test_net
-    pp.create_pwl_cost(net, 0, "gen", [[0, 100, 100], [100, 200, 100]])
-    pp.create_pwl_cost(net, 0, "ext_grid", [[0, 100, 0], [100, 200, 0]])
+    create_pwl_cost(net, 0, "gen", [[0, 100, 100], [100, 200, 100]])
+    create_pwl_cost(net, 0, "ext_grid", [[0, 100, 0], [100, 200, 0]])
     # run OPF
-    pp.rundcopp(net)
+    rundcopp(net)
     assert net["OPF_converged"]
 
     # check and assert result
@@ -559,35 +560,35 @@ def test_opf_varying_max_line_loading():
     max_line_loading = 13
 
     # create net
-    net = pp.create_empty_network()
-    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
-    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-    pp.create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-    pp.create_transformer_from_parameters(net, 0, 1, vk_percent=3.75, tap_max=2, vn_lv_kv=0.4,
-                                          shift_degree=150, tap_neutral=0, vn_hv_kv=10.0,
-                                          vkr_percent=2.8125, tap_pos=0, tap_side="hv", tap_min=-2,
-                                          tap_step_percent=2.5, i0_percent=0.68751, sn_mva=0.016,
-                                          pfe_kw=0.11, name=None, in_service=True, index=None,
-                                          max_loading_percent=max_trafo_loading)
+    net = create_empty_network()
+    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
+    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
+    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
+    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
+    create_transformer_from_parameters(net, 0, 1, vk_percent=3.75, tap_max=2, vn_lv_kv=0.4,
+                                       shift_degree=150, tap_neutral=0, vn_hv_kv=10.0,
+                                       vkr_percent=2.8125, tap_pos=0, tap_side="hv", tap_min=-2,
+                                       tap_step_percent=2.5, i0_percent=0.68751, sn_mva=0.016,
+                                       pfe_kw=0.11, name=None, in_service=True, index=None,
+                                       max_loading_percent=max_trafo_loading, tap_changer_type="Ratio")
 
-    pp.create_sgen(net, 3, p_mw=0.1, controllable=True, min_p_mw=0.005, max_p_mw=0.15,
-                   max_q_mvar=0.025, min_q_mvar=-0.025)
-    pp.create_sgen(net, 2, p_mw=0.1, controllable=True, min_p_mw=0.005, max_p_mw=0.15,
-                   max_q_mvar=0.025, min_q_mvar=-0.025)
-    pp.create_poly_cost(net, 0, "sgen", cp1_eur_per_mw=10)
-    pp.create_poly_cost(net, 1, "sgen", cp1_eur_per_mw=10)
-    pp.create_ext_grid(net, 0)
-    pp.create_poly_cost(net, 0, "ext_grid", cp1_eur_per_mw=.1)
-    pp.create_line_from_parameters(net, 1, 2, 1, name="line1", r_ohm_per_km=0.876,
-                                   c_nf_per_km=260.0, max_i_ka=0.200, x_ohm_per_km=0.1159876,
-                                   max_loading_percent=20)
-    pp.create_line_from_parameters(net, 1, 3, 1, name="line2", r_ohm_per_km=0.876,
-                                   c_nf_per_km=260.0, max_i_ka=0.100, x_ohm_per_km=0.1159876,
-                                   max_loading_percent=10)
+    create_sgen(net, 3, p_mw=0.1, controllable=True, min_p_mw=0.005, max_p_mw=0.15,
+                max_q_mvar=0.025, min_q_mvar=-0.025)
+    create_sgen(net, 2, p_mw=0.1, controllable=True, min_p_mw=0.005, max_p_mw=0.15,
+                max_q_mvar=0.025, min_q_mvar=-0.025)
+    create_poly_cost(net, 0, "sgen", cp1_eur_per_mw=10)
+    create_poly_cost(net, 1, "sgen", cp1_eur_per_mw=10)
+    create_ext_grid(net, 0)
+    create_poly_cost(net, 0, "ext_grid", cp1_eur_per_mw=.1)
+    create_line_from_parameters(net, 1, 2, 1, name="line1", r_ohm_per_km=0.876,
+                                c_nf_per_km=260.0, max_i_ka=0.200, x_ohm_per_km=0.1159876,
+                                max_loading_percent=20)
+    create_line_from_parameters(net, 1, 3, 1, name="line2", r_ohm_per_km=0.876,
+                                c_nf_per_km=260.0, max_i_ka=0.100, x_ohm_per_km=0.1159876,
+                                max_loading_percent=10)
 
     # run OPF
-    pp.runopp(net, init="flat", calculate_voltage_angles=False)
+    runopp(net, init="flat", calculate_voltage_angles=False)
     assert net["OPF_converged"]
 
     assert np.allclose(net["_ppc"]["branch"][:, 5], np.array([0.02771281 + 0.j, 0.00692820 + 0.j,
@@ -612,35 +613,35 @@ def test_storage_opf():
     max_line_loading_percent = 100
 
     # create network
-    net = pp.create_empty_network()
+    net = create_empty_network()
 
-    b1 = pp.create_bus(net, vn_kv=0.4, max_vm_pu=vm_max, min_vm_pu=vm_min)
-    b2 = pp.create_bus(net, vn_kv=0.4, max_vm_pu=vm_max, min_vm_pu=vm_min)
+    b1 = create_bus(net, vn_kv=0.4, max_vm_pu=vm_max, min_vm_pu=vm_min)
+    b2 = create_bus(net, vn_kv=0.4, max_vm_pu=vm_max, min_vm_pu=vm_min)
 
-    pp.create_line(net, b1, b2, length_km=5, std_type="NAYY 4x50 SE",
-                   max_loading_percent=max_line_loading_percent)
+    create_line(net, b1, b2, length_km=5, std_type="NAYY 4x50 SE",
+                max_loading_percent=max_line_loading_percent)
 
     # test elements static
-    pp.create_ext_grid(net, b2)
-    pp.create_load(net, b1, p_mw=0.0075, controllable=False)
-    pp.create_sgen(net, b1, p_mw=0.025, controllable=True, min_p_mw=0.01, max_p_mw=0.025,
-                   max_q_mvar=0.025, min_q_mvar=-0.025)
+    create_ext_grid(net, b2)
+    create_load(net, b1, p_mw=0.0075, controllable=False)
+    create_sgen(net, b1, p_mw=0.025, controllable=True, min_p_mw=0.01, max_p_mw=0.025,
+                max_q_mvar=0.025, min_q_mvar=-0.025)
 
     # test elements
-    pp.create_storage(net, b1, p_mw=-.0025, max_e_mwh=50, controllable=True, max_p_mw=0,
-                      min_p_mw=-0.025, max_q_mvar=0.025, min_q_mvar=-0.025)
-    pp.create_sgen(net, b1, p_mw=0.025, controllable=True, min_p_mw=0, max_p_mw=0.025,
-                   max_q_mvar=0.025, min_q_mvar=-0.025)
-    pp.create_load(net, b1, p_mw=0.025, controllable=True, max_p_mw=0.025, min_p_mw=0,
-                   max_q_mvar=0.025, min_q_mvar=-0.025)
+    create_storage(net, b1, p_mw=-.0025, max_e_mwh=50, controllable=True, max_p_mw=0,
+                   min_p_mw=-0.025, max_q_mvar=0.025, min_q_mvar=-0.025)
+    create_sgen(net, b1, p_mw=0.025, controllable=True, min_p_mw=0, max_p_mw=0.025,
+                max_q_mvar=0.025, min_q_mvar=-0.025)
+    create_load(net, b1, p_mw=0.025, controllable=True, max_p_mw=0.025, min_p_mw=0,
+                max_q_mvar=0.025, min_q_mvar=-0.025)
 
     # costs
-    pp.create_poly_cost(net, 0, "ext_grid", cp1_eur_per_mw=3)
-    pp.create_poly_cost(net, 0, "sgen", cp1_eur_per_mw=2)
-    pp.create_poly_cost(net, 0, "storage", cp1_eur_per_mw=-1)
-    pp.create_poly_cost(net, 1, "sgen", cp1_eur_per_mw=1)
+    create_poly_cost(net, 0, "ext_grid", cp1_eur_per_mw=3)
+    create_poly_cost(net, 0, "sgen", cp1_eur_per_mw=2)
+    create_poly_cost(net, 0, "storage", cp1_eur_per_mw=-1)
+    create_poly_cost(net, 1, "sgen", cp1_eur_per_mw=1)
 
-    pp.create_poly_cost(net, 1, "load", cp1_eur_per_mw=-3)
+    create_poly_cost(net, 1, "load", cp1_eur_per_mw=-3)
 
     # test storage generator behaviour
     net["storage"].loc[0, 'in_service'] = True
@@ -648,7 +649,7 @@ def test_storage_opf():
     net["sgen"].loc[1, 'in_service'] = False
     net["load"].loc[1, 'in_service'] = False
 
-    pp.runopp(net)
+    runopp(net)
     assert net["OPF_converged"]
 
     res_stor_p_mw = net["res_storage"].p_mw.iloc[0]
@@ -660,7 +661,7 @@ def test_storage_opf():
     net["sgen"].loc[1, 'in_service'] = True
     net["load"].loc[1, 'in_service'] = False
 
-    pp.runopp(net)
+    runopp(net)
     assert net["OPF_converged"]
 
     res_sgen_p_mw = net["res_sgen"].p_mw.iloc[1]
@@ -685,7 +686,7 @@ def test_storage_opf():
     net["sgen"].loc[1, 'in_service'] = False
     net["load"].loc[1, 'in_service'] = False
 
-    pp.runopp(net)
+    runopp(net)
     assert net["OPF_converged"]
 
     res_stor_p_mw = net["res_storage"].p_mw.iloc[0]
@@ -697,7 +698,7 @@ def test_storage_opf():
     net["sgen"].loc[1, 'in_service'] = False
     net["load"].loc[1, 'in_service'] = True
 
-    pp.runopp(net)
+    runopp(net)
     assert net["OPF_converged"]
 
     res_load_p_mw = net["res_load"].p_mw.iloc[1]
@@ -718,37 +719,37 @@ def test_in_service_controllables():
     max_line_loading_percent = 100
 
     # create network
-    net = pp.create_empty_network()
-    b1 = pp.create_bus(net, vn_kv=0.4, max_vm_pu=vm_max, min_vm_pu=vm_min)
-    b2 = pp.create_bus(net, vn_kv=0.4, max_vm_pu=vm_max, min_vm_pu=vm_min)
+    net = create_empty_network()
+    b1 = create_bus(net, vn_kv=0.4, max_vm_pu=vm_max, min_vm_pu=vm_min)
+    b2 = create_bus(net, vn_kv=0.4, max_vm_pu=vm_max, min_vm_pu=vm_min)
 
-    pp.create_line(net, b1, b2, length_km=5, std_type="NAYY 4x50 SE",
-                   max_loading_percent=max_line_loading_percent)
+    create_line(net, b1, b2, length_km=5, std_type="NAYY 4x50 SE",
+                max_loading_percent=max_line_loading_percent)
 
     # test elements static
-    pp.create_ext_grid(net, b2)
-    pp.create_load(net, b1, p_mw=7.5, controllable=True, max_p_mw=0.010, min_p_mw=0,
-                   max_q_mvar=2.5, min_q_mvar=-2.5)
-    pp.create_sgen(net, b1, p_mw=0.025, controllable=True, min_p_mw=0.01, max_p_mw=0.025,
-                   max_q_mvar=0.025, min_q_mvar=-0.025)
+    create_ext_grid(net, b2)
+    create_load(net, b1, p_mw=7.5, controllable=True, max_p_mw=0.010, min_p_mw=0,
+                max_q_mvar=2.5, min_q_mvar=-2.5)
+    create_sgen(net, b1, p_mw=0.025, controllable=True, min_p_mw=0.01, max_p_mw=0.025,
+                max_q_mvar=0.025, min_q_mvar=-0.025)
 
     # test elements
-    pp.create_sgen(net, b1, p_mw=0.025, controllable=True, min_p_mw=0, max_p_mw=0.025,
-                   max_q_mvar=0.025, min_q_mvar=-0.025)
-    pp.create_load(net, b1, p_mw=0.025, controllable=True, max_p_mw=0.0025, min_p_mw=0,
-                   max_q_mvar=2.5, min_q_mvar=-2.5)
+    create_sgen(net, b1, p_mw=0.025, controllable=True, min_p_mw=0, max_p_mw=0.025,
+                max_q_mvar=0.025, min_q_mvar=-0.025)
+    create_load(net, b1, p_mw=0.025, controllable=True, max_p_mw=0.0025, min_p_mw=0,
+                max_q_mvar=2.5, min_q_mvar=-2.5)
 
     # costs
-    pp.create_poly_cost(net, 0, "ext_grid", cp1_eur_per_mw=3)
-    pp.create_poly_cost(net, 0, "load", cp1_eur_per_mw=-1)
-    pp.create_poly_cost(net, 0, "sgen", cp1_eur_per_mw=2)
-    pp.create_poly_cost(net, 1, "sgen", cp1_eur_per_mw=1)
-    pp.create_poly_cost(net, 1, "load", cp1_eur_per_mw=-1)
+    create_poly_cost(net, 0, "ext_grid", cp1_eur_per_mw=3)
+    create_poly_cost(net, 0, "load", cp1_eur_per_mw=-1)
+    create_poly_cost(net, 0, "sgen", cp1_eur_per_mw=2)
+    create_poly_cost(net, 1, "sgen", cp1_eur_per_mw=1)
+    create_poly_cost(net, 1, "load", cp1_eur_per_mw=-1)
 
     net["sgen"].loc[1, 'in_service'] = False
     net["load"].loc[1, 'in_service'] = False
 
-    pp.runopp(net)
+    runopp(net)
     assert net["OPF_converged"]
 
 
@@ -756,17 +757,17 @@ def test_no_controllables(simple_opf_test_net):
     # was ist das problwem an diesem fall und wie fange ich es ab?
     net = simple_opf_test_net
     net.gen.controllable = False
-    pp.create_poly_cost(net, 0, "gen", cp1_eur_per_mw=-2)
-    pp.create_poly_cost(net, 0, "load", cp1_eur_per_mw=1)
+    create_poly_cost(net, 0, "gen", cp1_eur_per_mw=-2)
+    create_poly_cost(net, 0, "load", cp1_eur_per_mw=1)
     try:
-        pp.runopp(net)
-    except pp.OPFNotConverged:
+        runopp(net)
+    except OPFNotConverged:
         # opf will fail if not bus limits are set and vm_pu is the default value of 1.0 (
         # it is enforced)
         assert True
     net.gen.loc[:, "vm_pu"] = 1.062  # vm_pu setpoint is mandatory if controllable=False
     net.gen.loc[:, "p_mw"] = 0.149
-    pp.runopp(net)
+    runopp(net)
     assert np.allclose(net.res_gen.at[0, "vm_pu"], 1.062)
     assert np.allclose(net.res_gen.at[0, "p_mw"], 0.149)
 
@@ -781,33 +782,33 @@ def test_opf_no_controllables_vs_pf():
     max_line_loading_percent = 100
 
     # create network
-    net = pp.create_empty_network()
+    net = create_empty_network()
 
-    b1 = pp.create_bus(net, vn_kv=0.4, max_vm_pu=vm_max, min_vm_pu=vm_min)
-    b2 = pp.create_bus(net, vn_kv=0.4, max_vm_pu=vm_max, min_vm_pu=vm_min)
+    b1 = create_bus(net, vn_kv=0.4, max_vm_pu=vm_max, min_vm_pu=vm_min)
+    b2 = create_bus(net, vn_kv=0.4, max_vm_pu=vm_max, min_vm_pu=vm_min)
 
-    pp.create_line(net, b1, b2, length_km=5, std_type="NAYY 4x50 SE",
-                   max_loading_percent=max_line_loading_percent)
+    create_line(net, b1, b2, length_km=5, std_type="NAYY 4x50 SE",
+                max_loading_percent=max_line_loading_percent)
 
     # test elements static
-    pp.create_ext_grid(net, b2)
-    pp.create_load(net, b1, p_mw=.0075, controllable=False)
-    pp.create_sgen(net, b1, p_mw=0.025, controllable=False, min_p_mw=0.01, max_p_mw=0.025,
-                   max_q_mvar=0.025, min_q_mvar=-0.025)
+    create_ext_grid(net, b2)
+    create_load(net, b1, p_mw=.0075, controllable=False)
+    create_sgen(net, b1, p_mw=0.025, controllable=False, min_p_mw=0.01, max_p_mw=0.025,
+                max_q_mvar=0.025, min_q_mvar=-0.025)
 
     # testing cost assignment (for non-controllable elements - see Gitlab Issue #27)
-    pp.create_poly_cost(net, 0, "ext_grid", cp1_eur_per_mw=3)
-    pp.create_poly_cost(net, 0, "load", cp1_eur_per_mw=-3)
-    pp.create_poly_cost(net, 0, "sgen", cp1_eur_per_mw=2)
+    create_poly_cost(net, 0, "ext_grid", cp1_eur_per_mw=3)
+    create_poly_cost(net, 0, "load", cp1_eur_per_mw=-3)
+    create_poly_cost(net, 0, "sgen", cp1_eur_per_mw=2)
 
     # do calculations
-    pp.runopp(net)
+    runopp(net)
     assert net["OPF_converged"]
 
     res_opf_line_loading = net.res_line.loading_percent
     res_opf_bus_voltages = net.res_bus.vm_pu
 
-    pp.runpp(net)
+    runpp(net)
     assert net["converged"]
 
     res_pf_line_loading = net.res_line.loading_percent
@@ -823,7 +824,7 @@ def test_line_temperature():
     r_init = net.line.r_ohm_per_km.copy()
 
     # run OPF
-    pp.runopp(net, verbose=False)
+    runopp(net, verbose=False)
     va_init = net.res_bus.va_degree
     assert "r_ohm_per_km" not in net.res_line.columns
 
@@ -831,12 +832,12 @@ def test_line_temperature():
     net.line["temperature_degree_celsius"] = 80
     alpha = 4.03e-3
     net.line['alpha'] = alpha
-    pp.runopp(net, verbose=False, consider_line_temperature=True)
+    runopp(net, verbose=False, consider_line_temperature=True)
     r_temp = r_init * (1 + alpha * (80 - 20))
     assert np.allclose(net.res_line.r_ohm_per_km, r_temp, rtol=0, atol=1e-16)
     assert not np.allclose(net.res_bus.va_degree, va_init, rtol=0, atol=1e-2)
 
-    pp.runopp(net, verbose=False, consider_line_temperature=False)
+    runopp(net, verbose=False, consider_line_temperature=False)
     assert np.allclose(net.res_bus.va_degree, va_init, rtol=0, atol=1e-16)
     assert "r_ohm_per_km" not in net.res_line.columns
 
@@ -854,12 +855,12 @@ def test_three_slacks_vm_setpoint(four_bus_net):
     # only one is allowed per area. The others should have vmin / vmax set as their vm_pu setpoint
     net = four_bus_net
     # create two additional slacks with different voltage setpoints
-    pp.create_ext_grid(net, 1, vm_pu=1.01, max_p_mw=1., min_p_mw=-1., min_q_mvar=-1, max_q_mvar=1.)
-    pp.create_ext_grid(net, 3, vm_pu=1.02, max_p_mw=1., min_p_mw=-1., min_q_mvar=-1, max_q_mvar=1.)
-    pp.runpp(net)
+    create_ext_grid(net, 1, vm_pu=1.01, max_p_mw=1., min_p_mw=-1., min_q_mvar=-1, max_q_mvar=1.)
+    create_ext_grid(net, 3, vm_pu=1.02, max_p_mw=1., min_p_mw=-1., min_q_mvar=-1, max_q_mvar=1.)
+    runpp(net)
     # assert if voltage limits are correct in result in pf an opf
     assert np.allclose(net.res_bus.loc[[0, 1, 3], "vm_pu"], [1., 1.01, 1.02])
-    pp.runopp(net, calculate_voltage_angles=False)
+    runopp(net, calculate_voltage_angles=False)
     assert np.allclose(net.res_bus.loc[[0, 1, 3], "vm_pu"], [1., 1.01, 1.02])
 
 
@@ -871,17 +872,17 @@ def test_only_gen_slack_vm_setpoint(four_bus_net):
     net.bus.loc[:, "min_vm_pu"] = 0.9
     net.bus.loc[:, "max_vm_pu"] = 1.1
     # create two additional slacks with different voltage setpoints
-    pp.create_gen(net, 0, p_mw=0., vm_pu=1., max_p_mw=1., min_p_mw=-1., min_q_mvar=-1,
-                  max_q_mvar=1., slack=True)
-    pp.create_gen(net, 1, p_mw=0.02, vm_pu=1.01, max_p_mw=1., min_p_mw=-1., min_q_mvar=-1,
-                  max_q_mvar=1., controllable=False)  # controllable == False -> vm_pu enforced
-    pp.create_gen(net, 3, p_mw=0.01, vm_pu=1.02, max_p_mw=1., min_p_mw=-1.,
-                  min_q_mvar=-1, max_q_mvar=1.)  # controllable == True -> vm_pu between
+    create_gen(net, 0, p_mw=0., vm_pu=1., max_p_mw=1., min_p_mw=-1., min_q_mvar=-1,
+               max_q_mvar=1., slack=True)
+    create_gen(net, 1, p_mw=0.02, vm_pu=1.01, max_p_mw=1., min_p_mw=-1., min_q_mvar=-1,
+               max_q_mvar=1., controllable=False)  # controllable == False -> vm_pu enforced
+    create_gen(net, 3, p_mw=0.01, vm_pu=1.02, max_p_mw=1., min_p_mw=-1.,
+               min_q_mvar=-1, max_q_mvar=1.)  # controllable == True -> vm_pu between
     # bus voltages
-    pp.runpp(net)
+    runpp(net)
     # assert if voltage limits are correct in result in pf an opf
     assert np.allclose(net.res_bus.loc[[0, 1, 3], "vm_pu"], [1., 1.01, 1.02])
-    pp.runopp(net, calculate_voltage_angles=False)
+    runopp(net, calculate_voltage_angles=False)
 
     # controllable == True is more important than  slack == True -> vm_pu is between bus limits
     assert not np.allclose(net.res_bus.at[0, "vm_pu"], 1.)
@@ -905,9 +906,9 @@ def test_gen_p_vm_fixed(four_bus_net):
     bus = 1
 
     # controllable == False -> limits are ignored and p_mw / vm_pu values are enforced
-    pp.create_gen(net, bus, p_mw=p_mw, vm_pu=vm_pu, controllable=False,
-                  min_vm_pu=min_vm_pu, max_vm_pu=max_vm_pu, min_p_mw=min_p_mw, max_p_mw=max_p_mw)
-    pp.runopp(net, calculate_voltage_angles=False)
+    create_gen(net, bus, p_mw=p_mw, vm_pu=vm_pu, controllable=False,
+               min_vm_pu=min_vm_pu, max_vm_pu=max_vm_pu, min_p_mw=min_p_mw, max_p_mw=max_p_mw)
+    runopp(net, calculate_voltage_angles=False)
     assert np.allclose(net.res_bus.at[bus, "vm_pu"], vm_pu)
     assert np.allclose(net.res_bus.at[bus, "p_mw"], -p_mw)
 
@@ -921,9 +922,9 @@ def test_gen_p_vm_limits(four_bus_net):
     min_p_mw, max_p_mw = 0., 1.
     bus = 1
     # controllable == False -> limits are ignored and p_mw / vm_pu values are enforced
-    pp.create_gen(net, bus, p_mw=0.02, vm_pu=1.01, controllable=True,
-                  min_vm_pu=min_vm_pu, max_vm_pu=max_vm_pu, min_p_mw=min_p_mw, max_p_mw=max_p_mw)
-    pp.runopp(net, calculate_voltage_angles=False)
+    create_gen(net, bus, p_mw=0.02, vm_pu=1.01, controllable=True,
+               min_vm_pu=min_vm_pu, max_vm_pu=max_vm_pu, min_p_mw=min_p_mw, max_p_mw=max_p_mw)
+    runopp(net, calculate_voltage_angles=False)
     assert not np.allclose(net.res_bus.at[bus, "vm_pu"], 1.01)
     assert not np.allclose(net.res_bus.at[bus, "p_mw"], 0.02)
     assert min_vm_pu < net.res_bus.at[bus, "vm_pu"] < max_vm_pu
@@ -940,15 +941,15 @@ def test_gen_violated_p_vm_limits(four_bus_net):
     min_p_mw, max_p_mw = 0., 1.
     bus = 1
     # controllable == False -> limits are ignored and p_mw / vm_pu values are enforced
-    g = pp.create_gen(net, bus, p_mw=0.02, vm_pu=1.01, controllable=True,
-                      min_vm_pu=.9, max_vm_pu=1.1, min_p_mw=min_p_mw, max_p_mw=max_p_mw)
-    pp.runopp(net, calculate_voltage_angles=False)
+    g = create_gen(net, bus, p_mw=0.02, vm_pu=1.01, controllable=True,
+                   min_vm_pu=.9, max_vm_pu=1.1, min_p_mw=min_p_mw, max_p_mw=max_p_mw)
+    runopp(net, calculate_voltage_angles=False)
     assert not np.allclose(net.res_bus.at[bus, "vm_pu"], 1.01)
     assert not np.allclose(net.res_bus.at[bus, "p_mw"], 0.02)
     assert min_vm_pu < net.res_bus.at[bus, "vm_pu"] < max_vm_pu
     assert min_p_mw <= -net.res_bus.at[bus, "p_mw"] < max_p_mw
     net.gen.at[g, "vm_pu"] = 0.9  # lower bus vm_pu limit violation
-    pp.runopp(net, calculate_voltage_angles=False)
+    runopp(net, calculate_voltage_angles=False)
     assert min_vm_pu < net.res_bus.at[bus, "vm_pu"] < max_vm_pu
 
 

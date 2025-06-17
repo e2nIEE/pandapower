@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-import pandapower as pp
 import numpy as np
 
 try:
@@ -17,6 +16,8 @@ from pandapower.optimal_powerflow import OPFNotConverged
 from pandapower.control.util.auxiliary import asarray
 
 logger = pplog.getLogger(__name__)
+
+from pandapower.run import runpp
 
 
 def get_controller_order(nets, controller):
@@ -87,7 +88,7 @@ def ctrl_variables_default(net, **kwargs):
         ctrl_variables["level"], ctrl_variables["controller_order"] = [0], [[]]
     else:
         ctrl_variables["level"], ctrl_variables["controller_order"] = get_controller_order(net, net.controller)
-    ctrl_variables["run"] = kwargs.pop('run', pp.runpp)
+    ctrl_variables["run"] = kwargs.pop('run', runpp)
     ctrl_variables["initial_run"] = check_for_initial_run(ctrl_variables["controller_order"])
     ctrl_variables['continue_on_divergence'] = False
     ctrl_variables['check_each_level'] = True
