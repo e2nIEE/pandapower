@@ -143,9 +143,10 @@ def calc_sc(net, bus=None,
         raise ValueError(
             'specify network structure as "meshed", "radial" or "auto"')
 
-    if branch_results:
+    # not neccesarry anymore as the issues werer fixed and testes
+    """if branch_results:
         logger.warning("Branch results are in beta mode and might not always be reliable, "
-                       "especially for transformers")
+                       "especially for transformers")"""
 
     if use_pre_fault_voltage:
         init_vm_pu = init_va_degree = "results"

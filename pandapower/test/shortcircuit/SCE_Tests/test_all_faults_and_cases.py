@@ -28,7 +28,6 @@ faults = ["LLL", "LL", "LG", "LLG"]
 cases = ["max", "min"]
 values = [(0.0, 0.0), (5.0, 5.0)]
 vector_groups = ['Dyn', 'Yyn', 'YNyn']
-# Todo lv tol percents only necessary for min case, reduces amount of tests
 lv_tol_percents = [6, 10]
 fault_location_buses = [0, 1, 2, 3]
 is_branch_test = [False, True]
@@ -62,7 +61,7 @@ def test_four_bus_radial_grid(fault, case, fault_values, lv_tol_percent, fault_l
 @pytest.mark.parametrize(
     "net_name, fault, case, fault_values, lv_tol_percent, vector_group, fault_location_bus, is_branch_test",
     parametrize_values_vector)
-def test_radial_grids(net_name, fault, case, fault_values, lv_tol_percent, vector_group, fault_location_bus,
+def test_grids_with_trafo(net_name, fault, case, fault_values, lv_tol_percent, vector_group, fault_location_bus,
                       is_branch_test):
     net, dataframes = load_test_case_data(net_name, fault_location_bus, vector_group)
     results = run_test_cases(
