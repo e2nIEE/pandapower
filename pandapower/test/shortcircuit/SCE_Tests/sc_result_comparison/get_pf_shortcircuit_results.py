@@ -71,9 +71,9 @@ def get_all_pf_sc_results(proj_name, fault_location=None, save_to_excel=True):
 
 
 ## get results for single project
-proj_name = 'test_case_1_four_bus_radial_grid'
-fault_location = 2
-pf_dict = get_all_pf_sc_results(proj_name, fault_location, save_to_excel=False)
+proj_name = 'test_case_2_five_bus_radial_grid_dyn'
+fault_location = 3
+pf_dict = get_all_pf_sc_results(proj_name, fault_location, save_to_excel=True)
 
 
 ## get results for all projects

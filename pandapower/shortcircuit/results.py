@@ -200,7 +200,7 @@ def _calculate_bus_results_llg(ppc_0, ppc_1, ppc_2, bus, net):
 
     # Extract the specified rows from 'i_1_abc_ka' based on the indices in 'bus'
     for index in range(len(bus)):
-        i_1_abc_ka_abs[index] = abs(i_1_abc_ka[bus[index], index])
+        i_1_abc_ka_abs[index] = abs(i_1_abc_ka[bus[index], bus[index]])
 
     # ToDo: check voltages
     v_pu_0 = ppc_0["internal"]["V_ikss"][bus][:, np.newaxis]

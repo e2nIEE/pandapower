@@ -42,7 +42,8 @@ parametrize_values_vector = list(product(
 ))
 
 
-@pytest.mark.parametrize("fault, case, fault_values, lv_tol_percent, fault_location_bus, is_branch_test", parametrize_values)
+@pytest.mark.parametrize("fault, case, fault_values, lv_tol_percent, fault_location_bus, is_branch_test",
+                         parametrize_values)
 def test_four_bus_radial_grid(fault, case, fault_values, lv_tol_percent, fault_location_bus, is_branch_test):
     net, dataframes = load_test_case_data("test_case_1_four_bus_radial_grid", fault_location_bus)
     results = run_test_cases(
@@ -58,8 +59,11 @@ def test_four_bus_radial_grid(fault, case, fault_values, lv_tol_percent, fault_l
     compare_results(*results, is_branch_test)
 
 
-@pytest.mark.parametrize("net_name, fault, case, fault_values, lv_tol_percent, vector_group, fault_location_bus, is_branch_test", parametrize_values_vector)
-def test_radial_grids(net_name, fault, case, fault_values, lv_tol_percent, vector_group, fault_location_bus, is_branch_test):
+@pytest.mark.parametrize(
+    "net_name, fault, case, fault_values, lv_tol_percent, vector_group, fault_location_bus, is_branch_test",
+    parametrize_values_vector)
+def test_radial_grids(net_name, fault, case, fault_values, lv_tol_percent, vector_group, fault_location_bus,
+                      is_branch_test):
     net, dataframes = load_test_case_data(net_name, fault_location_bus, vector_group)
     results = run_test_cases(
         net,
@@ -154,7 +158,8 @@ def run_test_cases(net, dataframes, fault, case, fault_values, lv_tol_percent, f
     selected_pf_results = dataframes[selected_sheet]
     modified_pf_results = modify_impedance_values_with_fault_value(selected_pf_results, r_fault_ohm, x_fault_ohm)
 
-    calc_sc(net, bus=fault_location_bus, fault=fault, case=case, branch_results=branch_results, return_all_currents=False, ip=False,
+    calc_sc(net, bus=fault_location_bus, fault=fault, case=case, branch_results=branch_results,
+            return_all_currents=False, ip=False,
             r_fault_ohm=r_fault_ohm, x_fault_ohm=x_fault_ohm, lv_tol_percent=lv_tol_percent)
 
     if branch_results:
@@ -163,6 +168,7 @@ def run_test_cases(net, dataframes, fault, case, fault_values, lv_tol_percent, f
             # ikss_degrees are not considered in IEC 60909 method for LL
             # Patterns for the columns to be dropped
             patterns_to_drop = [
+                "ikss_ka",
                 "ikss_to_degree",
                 "ikss_from_degree",
                 "ikss_a_from_degree",
@@ -174,6 +180,10 @@ def run_test_cases(net, dataframes, fault, case, fault_values, lv_tol_percent, f
             ]
             # Remove columns if they are present in the patterns_to_drop list
             columns_to_check = columns_to_check[~columns_to_check.isin(patterns_to_drop)]
+        elif fault == "LG" or fault == "LLG":
+            if branch_results:
+                patterns_to_drop = ["ikss_ka"]  # ToDo: Do we need the value ikss_ka ?
+                columns_to_check = columns_to_check[~columns_to_check.isin(patterns_to_drop)]
         net.res_line_sc["name"] = net.line.name
         net.res_line_sc = net.res_line_sc[['name'] + [col for col in net.res_line_sc.columns if col != 'name']]
         net.res_line_sc.sort_values(by='name', inplace=True)
@@ -337,8 +347,10 @@ def load_pf_results(excel_file):
                                       'ikss_to_degree',
                                       'p_from_mw', 'q_from_mvar', 'p_to_mw', 'q_to_mvar',
                                       'vm_from_pu', 'va_from_degree', 'vm_to_pu', 'va_to_degree']
-                pf_results['ikss_ka'] = pf_results['ikss_to_ka']  # TODO: maybe only for LLL valid?
-                pf_results['ikss_from_ka'] = pf_results['ikss_to_ka']  # TODO: maybe only for LLL valid?
+                if fault_type == 'LLL' or fault_type == 'LL':
+                    pf_results['ikss_ka'] = pf_results['ikss_to_ka']  # TODO: maybe only for LLL valid?
+                    pf_results['ikss_from_ka'] = pf_results['ikss_to_ka']  # TODO: maybe only for LLL valid?
+
             elif fault_type == 'LLG' or fault_type == 'LG':
                 pf_results.columns = ['name', 'ikss_ka', 'ikss_a_from_ka', 'ikss_a_from_degree', 'ikss_a_to_ka',
                                       'ikss_a_to_degree',
@@ -351,6 +363,9 @@ def load_pf_results(excel_file):
                                       'p_c_from_mw', 'q_c_from_mvar', 'p_c_to_mw', 'q_c_to_mvar',
                                       'vm_c_from_pu', 'va_c_from_degree', 'vm_c_to_pu', 'va_c_to_degree',
                                       ]
+                if fault_type == 'LG' and 'min' in sheet:
+                    pf_results['ikss_ka'] = pf_results['ikss_b_from_ka']  # ToDo: Do we need the value ikss_ka ?
+
             dataframes[sheet] = pf_results
 
     return dataframes
