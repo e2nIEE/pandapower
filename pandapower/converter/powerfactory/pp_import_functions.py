@@ -30,10 +30,7 @@ from pandapower.control.util.auxiliary import create_q_capability_curve_characte
 from pandapower.control.util.characteristic import SplineCharacteristic
 
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -1080,7 +1077,7 @@ def create_line_normal(net, item, bus1, bus2, name, parallel, is_unbalanced, ac,
         'df': item.fline,
         'parallel': parallel,
         'alpha': pf_type.alpha if pf_type is not None else None,
-        'temperature_degree_celsius': pf_type.tmax if pf_type is not None else None,
+        'temperature_degree_celsius': item.Top,
         'geodata': geodata
     }
 
@@ -3173,6 +3170,34 @@ def create_pp_shunt(net, item):
         logger.error("Cannot add Shunt '%s': not connected" % item.loc_name)
         return
 
+    use_tap_table = item.GetAttribute("iTaps")
+    if use_tap_table == 1:
+        if "shunt_characteristic_table" not in net:
+            net["shunt_characteristic_table"] = pd.DataFrame(
+                columns=['id_characteristic', 'step', 'q_mvar', 'p_mw'])
+
+        last_index = net["shunt_characteristic_table"]['id_characteristic'].max() if not net[
+            "shunt_characteristic_table"].empty else -1
+
+        id_characteristic_table = last_index + 1
+
+        new_tap_table = pd.DataFrame(item.GetAttribute("mTaps"), columns=['q_mvar', 'p_mw'])
+
+        steps = list(range(0, item.GetAttribute("ncapx") + 1))
+        if len(new_tap_table) == len(steps):
+            new_tap_table['step'] = steps[:len(new_tap_table)]
+        else:
+            raise ValueError("The number of steps differs from the number of rows in new_tap_table.")
+
+        # pf table for p_mw contains quality factor only, p_mw must be calculated by dividing q_mvar by quality factor
+        new_tap_table["p_mw"] = np.where(new_tap_table["p_mw"] == 0, 0, new_tap_table["q_mvar"] / new_tap_table["p_mw"])
+        new_tap_table['id_characteristic'] = id_characteristic_table
+
+        net["shunt_characteristic_table"] = pd.concat([net["shunt_characteristic_table"], new_tap_table],
+                                                      ignore_index=True)
+    else:
+        use_tap_table = 0
+        id_characteristic_table = None
     def calc_p_mw_and_q_mvar(r: float, x: float) -> tuple[float, float]:
         if r == 0 and x == 0:
             return 0, 0
@@ -3188,7 +3213,9 @@ def create_pp_shunt(net, item):
         'vn_kv': item.ushnm,
         'q_mvar': item.Qact * multiplier,
         'step': item.ncapa,
-        'max_step': item.ncapx
+        'max_step': item.ncapx,
+        'step_dependency_table': use_tap_table == 1,
+        'id_characteristic_table': id_characteristic_table
     }
     r_val: float = .0
     x_val: float = .0
@@ -3228,8 +3255,12 @@ def create_pp_shunt(net, item):
         r_val = np.real(z)
         x_val = np.imag(z)
 
-    if 0 <= item.shtype <= 4:
-        p_mw, params['q_mvar'] = calc_p_mw_and_q_mvar(r_val, x_val)
+    if 0 <= item.shtype <= 4 :
+        if not use_tap_table:
+            p_mw, params['q_mvar'] = calc_p_mw_and_q_mvar(r_val, x_val)
+        else:
+            p_mw = new_tap_table.loc[new_tap_table['step'] == item.ncapa, "p_mw"].values[0] / item.ncapa
+            params["q_mvar"] = new_tap_table.loc[new_tap_table['step'] == item.ncapa, "q_mvar"].values[0] / item.ncapa
         sid = create_shunt(net, p_mw=p_mw, **params)
 
         add_additional_attributes(
@@ -3543,7 +3574,7 @@ def create_svc(net, item, pv_as_slack, pf_variable_p_gen, dict_net):
     logger.debug('>> creating synchronous machine <%s>' % name)
 
     try:
-        bus1 = get_connection_nodes(net, item, 1)
+        bus1, _ = get_connection_nodes(net, item, 1)
     except IndexError:
         logger.error("Cannot add SVC '%s': not connected" % name)
         return
@@ -3909,23 +3940,23 @@ def create_stactrl(net, item):
 
         if item.i_droop:  # Enable Droop
             bsc = BinarySearchControl(net, ctrl_in_service=stactrl_in_service,
-                                      output_element=gen_element, output_variable="q_mvar",
-                                      output_element_index=gen_element_index,
-                                      output_element_in_service=gen_element_in_service,
-                                      output_values_distribution=distribution,
-                                      input_element=res_element_table, input_variable=variable,
-                                      input_element_index=res_element_index,
-                                      set_point=v_setpoint_pu, voltage_ctrl=True, bus_idx=bus, tol=1e-3)
+                                                 output_element=gen_element, output_variable="q_mvar",
+                                                 output_element_index=gen_element_index,
+                                                 output_element_in_service=gen_element_in_service,
+                                                 output_values_distribution=distribution,
+                                                 input_element=res_element_table, input_variable=variable,
+                                                 input_element_index=res_element_index,
+                                                 set_point=v_setpoint_pu, voltage_ctrl=True, bus_idx=bus, tol=1e-3)
             DroopControl(net, q_droop_mvar=item.Srated * 100 / item.ddroop, bus_idx=bus,
-                         vm_set_pu=v_setpoint_pu, controller_idx=bsc.index, voltage_ctrl=True)
+                                    vm_set_pu=v_setpoint_pu, controller_idx=bsc.index, voltage_ctrl=True)
         else:
             BinarySearchControl(net, ctrl_in_service=stactrl_in_service,
-                                output_element=gen_element, output_variable="q_mvar",
-                                output_element_index=gen_element_index,
-                                output_element_in_service=gen_element_in_service, input_element="res_bus",
-                                output_values_distribution=distribution, damping_factor=0.9,
-                                input_variable="vm_pu", input_element_index=bus,
-                                set_point=v_setpoint_pu, voltage_ctrl=True, tol=1e-6)
+                                           output_element=gen_element, output_variable="q_mvar",
+                                           output_element_index=gen_element_index,
+                                           output_element_in_service=gen_element_in_service, input_element="res_bus",
+                                           output_values_distribution=distribution, damping_factor=0.9,
+                                           input_variable="vm_pu", input_element_index=bus,
+                                           set_point=v_setpoint_pu, voltage_ctrl=True, tol=1e-6)
     elif control_mode == 1:  # Q Control mode
         if item.iQorient != 0:
             if not stactrl_in_service:

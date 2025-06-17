@@ -35,3 +35,5 @@ pandapower/test/buffer_file.json
 env/
 env*/
 venv/
+.scannerwork/
+sonar-project.properties
