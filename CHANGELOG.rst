@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [ADDED] possibility to directly compare "geo" columns of dataframes (not assume geojson strings)
 - [FIXED] cim2pp: Make sure that the controllable flag is never nan for any generators
 
 [3.1.2] - 2025-06-16
