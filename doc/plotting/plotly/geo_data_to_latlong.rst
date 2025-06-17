@@ -7,3 +7,4 @@ the map-projections, it may be converted to lat/long by providing number of the 
 A sample of converting geodata from mv_oberrhein network can be found in the tutorial.
 
 .. autofunction:: pandapower.plotting.geo.convert_crs
+    :no-index:
