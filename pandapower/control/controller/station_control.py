@@ -3,9 +3,11 @@ import numpy as np
 from numpy.ma.extras import atleast_1d
 from scipy.optimize import minimize
 from pandapower import create_gen
+from pandas import concat
 
 from pandapower.control.basic_controller import Controller
 from pandapower.auxiliary import _detect_read_write_flag, read_from_net, write_to_net
+import pandapower.topology as top
 try:
     import pandaplan.core.pplog as logging
 except ImportError:
@@ -47,12 +49,17 @@ class BinarySearchControl(Controller):
             **input_variable** - Variable which is used to take the measurement from. Indicated by string value. Must
             be 'vm_pu' for 'V_ctrl'.
 
-            **input_element_index** - Element of input element in net. Controlled bus in case of Voltage control
+            **input_element_index** - Element of input element in net. Controlled bus in case of Voltage control. Can be
+            given the string 'auto' in modus 'V_ctrl' to automatically select a bus whose nominal voltage is >= X kV.
+            The X must be given to 'set_point'. Will take target voltage of the encountered bus. If no bus is found,
+            uses the bus next to the controlled generator group. Not completely implemented, generators on multiple buses
+            are not correctly handled.
 
             **set_point** - Set point of the controller, can be a reactive power provision or a voltage set point. In
             case of voltage set point, modus must be V_ctrl, input_element_index must be a bus (input_variable must be
             'vm_pu' input_element must be 'res_bus'). Can be overwritten by a droop controller chained with the binary
-            search control.
+            search control. If 'V_ctrl' and automated bus selection (input_element_index == 'auto'), set_point will be
+            the search criteria in kV for the controlled bus (V_bus >= V_set_point).
 
             **output_values_distribution** - Takes string to select one of the different available reactive power distribution
             methods: 'rel_P' -Q is relative to used Power, 'rel_rated_S' -Q is relative to the rated power S, currently
@@ -60,7 +67,7 @@ class BinarySearchControl(Controller):
             'max_Q' -maximized reactive power reserve for the output elements, 'rel_V_pu' -Q is relative to the voltage
             limits of the output element.
 
-            **output_distribution_values=None** -The values of the q_distribution, only applicable if q_distribution = 'set_Q'
+            **output_distribution_values=None** -The values of the Q distribution, only applicable if q_distribution = 'set_Q'
             or rel_V_pu. For 'set_Q': Must be list containing the Q Value of each controlled element in percent in the same
             order as the controlled elements. For 'rel_V_pu': must be a list containing [Target Voltage, minimal allowed
             Voltage, maximal allowed Voltage] for each output element.
@@ -84,12 +91,6 @@ class BinarySearchControl(Controller):
         self.counter_warning = False #only one message that only one active output element
         self.in_service = ctrl_in_service
         self.input_element = input_element #point to be controlled
-        self.input_element_index = [] #for boundaries
-        if isinstance(input_element_index, list) or isinstance(input_element_index, np.ndarray):
-            for element in input_element_index:
-                self.input_element_index.append(element)
-        else:
-            self.input_element_index.append(input_element_index)
         self.output_element = output_element #typically sgens, output of Q
         if isinstance(output_element_index, list) or isinstance(output_element_index, np.ndarray):
             self.output_element_index = [int(item) for item in output_element_index]
@@ -106,6 +107,14 @@ class BinarySearchControl(Controller):
             ) else output_values_distribution)#ruggedized code for miss input
         self.output_distribution_values = output_distribution_values
         self.set_point = set_point
+        self.input_element_index = []  # for boundaries
+        if input_element_index == 'auto':
+            self.automatic_selection(net)
+        elif isinstance(input_element_index, list) or isinstance(input_element_index, np.ndarray):
+            for element in input_element_index:
+                self.input_element_index.append(element)
+        else:
+            self.input_element_index.append(input_element_index)
         self.tol = tol #tolerance
         if self.tol is None: #old order
             self.tol = 0.001
@@ -201,7 +210,7 @@ class BinarySearchControl(Controller):
                 raise UserWarning(f'Power Factor Controller {self.index}: Set point out of range ([-1,1]')
         ###adding input elements###
         counter = 0
-        for input_index in self.input_element_index:
+        for input_index in np.atleast_1d(self.input_element_index):
             if self.input_element == "res_line":
                 self.input_element_in_service.append(net.line.in_service[input_index])
             elif self.input_element == "res_trafo":
@@ -255,6 +264,10 @@ class BinarySearchControl(Controller):
                 max_q = 20
             self.max_q_mvar.append(max(min_q, max_q)) #if min > max, switch
             self.min_q_mvar.append(min(min_q, max_q))
+
+    def __str__(self):
+        return super().__str__() + " [%s.%s.%s.%s]" % (
+            self.input_element, self.input_variable, self.output_element, self.output_variable)
 
     def __getattr__(self, name):
         if name == "modus":
@@ -577,9 +590,9 @@ class BinarySearchControl(Controller):
                 if not hasattr(self, 'rel_rated_S_warned'):
                     self.rel_rated_S_warned = True
                     logger.warning(f'The standard type attribute containing the rated apparent power for'
-                               f' {self.output_element} is not correctly implemented yet (BSC {self.index}).')#todo
+                               f' {self.output_element} is not correctly implemented yet (BSC {self.index}).')
                 try:
-                    s_rated_mva = np.array(net.sgen.loc[self.output_element_index, 'sn_mva']) #correct values?
+                    s_rated_mva = np.array(net.sgen.loc[self.output_element_index, 'sn_mva']) #todo correct attribute?
                     distribution = s_rated_mva
                     nan_index = np.isnan(distribution)
                     distribution[nan_index] = 50
@@ -760,9 +773,32 @@ class BinarySearchControl(Controller):
             == 'single_index' else list(np.atleast_1d(self.output_values)[self.output_element_in_service]))  # ruggedizing code
         write_to_net(net, self.output_element, output_element_index, self.output_variable, output_values, self.write_flag)
 
-    def __str__(self):
-        return super().__str__() + " [%s.%s.%s.%s]" % (
-            self.input_element, self.input_variable, self.output_element, self.output_variable)
+    def automatic_selection(self, net):  # automatic selection of controlled Busbar in V_ctrl. Only new creation of nets
+        target_buses = net.bus[net.bus.vn_kv >= self.set_point].index.tolist()  # All buses fulfilling the criteria
+        ref_buses = net.sgen.loc[self.output_element_index, 'bus'].tolist() if self.output_element == 'sgen' \
+            else net.gen.loc[self.output_element_index, 'bus'].tolist() # the start buses
+        ref_buses = np.unique(ref_buses)  # see if machines at one bus
+        distances_list = []
+        for i in ref_buses:  # get distances of bus to possible buses
+            distances = top.calc_distance_to_bus(net, i,
+                                                 weight=None)  # criteria is the distance in the network, not in km
+            distances_list.append(distances.loc[target_buses])
+        distances_filtered = concat(distances_list, axis=0, ignore_index=False)
+        if distances_filtered.empty:  # no possible busbar -> Bus next to gen, in PF using gen target vm_pu
+            self.input_element_index = net.sgen.at[np.atleast_1d(self.output_element_index)[0], 'bus'] if self.output_element == 'sgen'\
+                else net.gen.at[np.atleast_1d(self.output_element_index)[0], 'bus'] # here bus target v cause no gen target vm_pu
+        else:
+            self.input_element_index = distances_filtered.idxmin()  # minimal distances index
+            min_distance = np.atleast_1d(distances_filtered).min()  # minimal distance
+            distances_filtered = distances_filtered.drop(self.input_element_index)  # check if multiple buses within minimal distance
+            if min_distance in distances_filtered.values:
+                raise UserWarning  # what todo when multiple buses within minimal distance
+        try:
+            self.set_point = net.bus.at[self.input_element_index, 'set_pu'] #todo correct attribute?
+        except KeyError:
+            logger.error(f"The automatically selected bus {self.input_element_index} in Controller {self.index} "
+                         f"has no target voltage (attribute 'set_pu', trying target voltage 1 pu\n") #todo attribute
+            self.set_point = 1
 
 
 class DroopControl(Controller):
@@ -1042,7 +1078,7 @@ class DroopControl(Controller):
             if self.lb_voltage is not None and self.ub_voltage is not None:
                 if self.vm_pu > self.ub_voltage:
                     self.q_set_old_mvar, self.q_set_mvar = (
-                        self.q_set_mvar, self.q_set_mvar_bsc - (self.ub_voltage - self.vm_pu) * self.q_droop_mvar)#todo
+                        self.q_set_mvar, self.q_set_mvar_bsc - (self.ub_voltage - self.vm_pu) * self.q_droop_mvar)
                 elif self.vm_pu < self.lb_voltage:
                     self.q_set_old_mvar, self.q_set_mvar = (
                         self.q_set_mvar, self.q_set_mvar_bsc + (self.lb_voltage - self.vm_pu) * self.q_droop_mvar)
