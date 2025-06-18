@@ -3,6 +3,8 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [ADDED] cim2pp converter: added test to check standard dtypes of pandapower net element columns
+- [ADDED] cim2pp converter: typing for converted networks
 
 [3.1.2] - 2025-06-16
 -------------------------------
@@ -19,7 +21,6 @@ Change Log
 - [ADDED] State Estimation: introduced multiple options for automatic creation of zero injection measurements
 - [FIXED] State Estimation: fixed bugs with AF-WLS estimator
 - [FIXED] State Estimation: fixed bugs with automatic test creation
-- [ADDED] cim2pp converter: added test to check standard dtypes of pandapower net element columns
 
 [3.1.1] - 2025-05-26
 -------------------------------
