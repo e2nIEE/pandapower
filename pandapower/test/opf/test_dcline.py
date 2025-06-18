@@ -12,10 +12,7 @@ from pandapower.create import create_empty_network, create_bus, create_ext_grid,
 from pandapower.run import runopp
 from pandapower.test.consistency_checks import consistency_checks
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
