@@ -1995,8 +1995,8 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
         # create...
         pstac = item.c_pstac  # None if station controller is not available
         if pstac is not None and not pstac.outserv and export_ctrl:
-            if pstac.i_droop:
-                av_mode = 'constv'#'constq'
+            if pstac.i_droop and pstac.i_ctrl == 0:
+                av_mode = 'constv'#'constq' #todo obsolete?
             else:
                 if pstac.i_ctrl == 0:
                     av_mode = 'constv'#'constq'#why? shouldnt it be constv? Only sgen element?
@@ -2228,8 +2228,8 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
         pstac = item.c_pstac
         # None if station controller is not available
         if pstac is not None and not pstac.outserv and export_ctrl:
-            if pstac.i_droop:
-                av_mode = 'constq'
+            if pstac.i_droop and pstac.i_ctrl == 0:
+                av_mode = 'constv' #todo obsolete?
             else:
                 i_ctrl = pstac.i_ctrl
                 if i_ctrl == 0:
@@ -3794,7 +3794,7 @@ def create_stactrl(net, item):
 
     # Overwrite gen_type if local control differs from station controller type
     if control_mode is not None:
-        if item.i_droop:
+        if item.i_droop and control_mode == 0: #todo obsolete
             for i in range(len(gen_types)):
                 gen_types[i] = "gen"
         else:
