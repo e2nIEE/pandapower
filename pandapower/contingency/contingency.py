@@ -41,38 +41,29 @@ def run_contingency(net, nminus1_cases, pf_options=None, pf_options_nminus1=None
                     contingency_evaluation_function=runpp, **kwargs):
     """
     Obtain either loading (N-0) or max. loading (N-0 and all N-1 cases), and min/max bus voltage magnitude.
-    The variable "temperature_degree_celsius" can be used in addition to "loading_percent" to obtain max. temperature.
-    In the returned dictionary, the variable "loading_percent" represents the loading in N-0 case,
-    "max_loading_percent" and "min_loading_percent" represent highest and lowest observed loading_percent among all
-    calculated N-1 cases. The same convention applies to "temperature_degree_celsius" when applicable.
-    This function can be passed through to pandapower.timeseries.run_timeseries as the run_control_fct argument.
+    The variable `temperature_degree_celsius` can be used in addition to `loading_percent` to obtain max. temperature.
+    In the returned dictionary, the variable `loading_percent` represents the loading in N-0 case,
+    `max_loading_percent` and `min_loading_percent` represent highest and lowest observed `loading_percent` among all
+    calculated N-1 cases. The same convention applies to `temperature_degree_celsius` when applicable.
+    This function can be passed through to :func:`pandapower.timeseries.run_timeseries` as the `run_control_fct` argument.
 
-    INPUT
-    ----------
-    **net** - pandapowerNet
-    **nminus1_cases** - dict
-        describes all N-1 cases, e.g. {"line": {"index": [1, 2, 3]}, "trafo": {"index": [0]}, "trafo3w": {"index": [1]}}
-    **pf_options** - dict
-        options for power flow calculation in N-0 case
-    **pf_options_nminus1** - dict
-        options for power flow calculation in N-1 cases
-    **write_to_net** - bool
-        whether to write the results of contingency analysis to net (in "res_" tables). The results will be written for
-        the following additional variables: table res_bus with columns "max_vm_pu", "min_vm_pu",
-        tables res_line, res_trafo, res_trafo3w with columns "max_loading_percent", "min_loading_percent",
-        "causes_overloading", "cause_element", "cause_index", table res_line with columns
-        "max_temperature_degree_celsius", "min_temperature_degree_celsius" (if "tdpf" set to True)
+    :param pandapowerNet net: The pandapower network
+    :param dict nminus1_cases: describes all N-1 cases, e.g. {"line": {"index": [1, 2, 3]}, "trafo": {"index": [0]}, "trafo3w": {"index": [1]}}
+    :param dict pf_options: options for power flow calculation in N-0 case
+    :param dict pf_options_nminus1: options for power flow calculation in N-1 cases
+    :param bool write_to_net: whether to write the results of contingency analysis to net (in `res_` tables). The results will be written for
+        the following additional variables: table `res_bus` with columns `max_vm_pu`, `min_vm_pu`,
+        tables `res_line`, `res_trafo`, `res_trafo3w` with columns `max_loading_percent`, `min_loading_percent`,
+        `causes_overloading`, `cause_element`, `cause_index`, table `res_line` with columns
+        `max_temperature_degree_celsius`, `min_temperature_degree_celsius` (if `tdpf` set to True)
         "causes_overloading": does this element, when defining the N-1 case, cause overloading of other elements? the
         overloading is defined by net.line["max_loading_percent_nminus1"] (if set) or net.line["max_loading_percent"]
         "cause_element": element ("line", "trafo", "trafo3w") that causes max. loading of this element
         "cause_index": index of the element ("line", "trafo", "trafo3w") that causes max. loading of this element
-    **contingency_evaluation_function** - func
-        function to use for power flow calculation, default pp.runpp
+    :param callable contingency_evaluation_function: function to use for power flow calculation, default pp.runpp
 
-    OUTPUT
-    -------
-    **contingency_results** - dict
-        dict of arrays per element for index, min/max result
+    :return: contingency results dict of arrays per element for index, min/max result
+    :rtype: dict
     """
     # set up the dict for results and relevant variables
     # ".get" in case the options have been set in pp.set_user_pf_options:
@@ -143,14 +134,16 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=run
     This function can be passed through to pandapower.timeseries.run_timeseries as the
     run_control_fct argument.
 
-    **Limitation:** the results for branch flows are valid only for the "from_bus" of lines and
-    "hv_bus" of transformers. This can lead to a small difference to the results using pandapower.
-    The results are written in pandapower results tables. Make sure that the N-1 cases do not lead
-    to isolated grid, otherwise results with pandapower and this function will
-    be different. Reason: pandapower selects a different gen as slack if the grid becomes isolated,
-    but lightsim2grid would simply return nan as results for such a contingency situation.
+    .. admonition:: Limitation
 
-    **WARNING:** continuous bus indices, 0-start, are required!
+        The results for branch flows are valid only for the "from_bus" of lines and
+        "hv_bus" of transformers. This can lead to a small difference to the results using pandapower.
+        The results are written in pandapower results tables. Make sure that the N-1 cases do not lead
+        to isolated grid, otherwise results with pandapower and this function will
+        be different. Reason: pandapower selects a different gen as slack if the grid becomes isolated,
+        but lightsim2grid would simply return nan as results for such a contingency situation.
+
+    .. warning:: continuous bus indices, starting from 0, are required!
 
     The results will written for the
     following additional variables: table res_bus with columns "max_vm_pu", "min_vm_pu",
@@ -163,15 +156,10 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=run
     "cause_index": index of the element ("line", "trafo", "trafo3w") that causes max. loading of this element
     "congestion_caused_mva": overall congestion in the grid in MVA during the N-1 case due to the failure of the element
 
-    INPUT
-    ----------
-
-    **net** - pandapowerNet
-    **nminus1_cases** - dict
-        describes all N-1 cases, e.g. {"line": {"index": [1, 2, 3]}, "trafo": {"index": [0]}}
+    :param pandapowerNet net: The pandapower network
+    :param dict nminus1_cases: describes all N-1 cases, e.g. {"line": {"index": [1, 2, 3]}, "trafo": {"index": [0]}}
         Note: trafo3w is not supported
-    **contingency_evaluation_function** - func
-        function to use for power flow calculation, default pp.runpp (but only relevant for N-0 case)
+    :param callable contingency_evaluation_function: function to use for power flow calculation, default pp.runpp (but only relevant for N-0 case)
     """
     if not lightsim2grid_installed:
         raise UserWarning("lightsim2grid package not installed. "
@@ -388,13 +376,10 @@ def get_element_limits(net):
     """
     Construct the dictionary of element limits
 
-    INPUT
-    ----------
-    **net** - pandapowerNet
+    :param pandapowerNet net:
 
-    OUTPUT
-    -------
-    **element_limits** - dict
+    :return: element limits
+    :rtype: dict
     """
     element_limits = {}
     if "max_vm_pu" in net.bus and "min_vm_pu" in net.bus:
@@ -455,19 +440,14 @@ def check_elements_within_limits(element_limits, contingency_results, nminus1=Fa
     """
     Check if elements are within limits
 
-    INPUT
-    ----------
-    **element_limits** - dict
-    **contingency_results** - dict
-    **nminus1** - bool
-    **branch_tol** - float
-        tolerance of the limit violation check for branch limits
-    **bus_tol** - float
-        tolerance of the limit violation check for bus limits
+    :param dict element_limits:
+    :param dict contingency_results:
+    :param bool nminus1:
+    :param float branch_tol: tolerance of the limit violation check for branch limits
+    :param float bus_tol: tolerance of the limit violation check for bus limits
 
-    OUTPUT
-    -------
-    True if all within limits (no violations), False if any limits violated
+    :return: True if all within limits (no violations), False if any limits violated
+    :rtype: bool
     """
     for element, values in contingency_results.items():
         limit = element_limits[element]
@@ -519,14 +499,10 @@ def report_contingency_results(element_limits, contingency_results, branch_tol=1
     """
     Print log messages for elements with violations of limits
 
-    INPUT
-    ----------
-    **element_limits** - dict
-    **contingency_results** - dict
-    **branch_tol** - float
-        tolerance for branch results
-    **bus_tol** - float
-        tolerance for bus results
+    :param dict element_limits:
+    :param dict contingency_results:
+    :param float branch_tol: tolerance for branch results
+    :param float bus_tol: tolerance for bus results
     """
     for element, results in contingency_results.items():
         limit = element_limits[element]

@@ -5,6 +5,8 @@ Change Log
 -------------------------------
 - [ADDED] cim2pp converter: added test to check standard dtypes of pandapower net element columns
 - [ADDED] cim2pp converter: typing for converted networks
+- [FIXED] remove print statement from results_bus.py
+- [FIXED] cim2pp: Make sure that the controllable flag is never nan for any generators
 
 [3.1.2] - 2025-06-16
 -------------------------------
