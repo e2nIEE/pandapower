@@ -73,7 +73,7 @@ def get_all_pf_sc_results(proj_name, fault_location=None, save_to_excel=True):
 ## get results for single project
 proj_name = 'test_case_1_four_bus_radial_grid'
 fault_location = 3
-pf_dict = get_all_pf_sc_results(proj_name, fault_location, save_to_excel=True)
+pf_dict = get_all_pf_sc_results(proj_name, fault_location, save_to_excel=False)
 
 
 ## get results for all projects
@@ -82,7 +82,7 @@ pf_dict = get_all_pf_sc_results(proj_name, fault_location, save_to_excel=True)
 #folder = r"C:\Users\lriedl\PycharmProjects\pandapower\pandapower\test\shortcircuit\SCE_Tests\test_grids"
 folder = os.path.join(pp_dir, "test", "shortcircuit", "sce_tests", "test_grids")
 pfd_files = [f for f in os.listdir(folder) if f.endswith(".pfd")]
-fault_location = 2
+# fault_location = 2
 
 for fault_location in [0, 1, 2, 3]:
     pf_dict_all = {}

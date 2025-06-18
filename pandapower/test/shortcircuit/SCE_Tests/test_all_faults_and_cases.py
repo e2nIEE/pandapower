@@ -362,8 +362,9 @@ def load_pf_results(excel_file):
                                       'p_c_from_mw', 'q_c_from_mvar', 'p_c_to_mw', 'q_c_to_mvar',
                                       'vm_c_from_pu', 'va_c_from_degree', 'vm_c_to_pu', 'va_c_to_degree',
                                       ]
-                if fault_type == 'LG' and 'min' in sheet:
-                    pf_results['ikss_ka'] = pf_results['ikss_b_from_ka']  # ToDo: Do we need the value ikss_ka ?
+                if fault_type in ['LG', 'LLG']:
+                    # ToDo: Do we need the value ikss_ka ?
+                    pf_results['ikss_ka'] = np.max([pf_results['ikss_b_from_ka'], pf_results['ikss_b_to_ka']])
 
             dataframes[sheet] = pf_results
 
