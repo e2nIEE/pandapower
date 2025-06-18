@@ -90,9 +90,9 @@ def compare_results(columns_to_check, net_df, pf_results, branch_results):
             continue
         column_ar = check_pattern(column)
         # TODO: consider after result format is adjusted!
-        # exclude columns now because of false calculation in pandapower
-        if branch_results and column_ar in ['p_mw', 'q_mvar', 'vm_pu', 'va_degree']:
-            continue
+        # # exclude columns now because of false calculation in pandapower
+        # if branch_results and column_ar in ['p_mw', 'q_mvar', 'vm_pu', 'va_degree']:
+        #     continue
         mismatch = np.isclose(
             net_df.loc[:, column],
             pf_results.loc[:, column],

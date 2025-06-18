@@ -21,12 +21,14 @@ pfd_files = [f for f in os.listdir(folder) if f.endswith(".pfd")]
 net_dict = {}
 all_diff_dict = {}
 
-for file in pfd_files:
-    prj_name = os.path.splitext(file)[0]
-    net = from_pfd(app, prj_name=prj_name)
-    all_diffs = validate_pf_conversion(net, tolerance_mva=1e-9)
-    to_json(net, f"{prj_name}.json")
-    net_dict[prj_name] = net
-    all_diff_dict[prj_name] = all_diffs
+# for file in pfd_files:
+prj_name = "test_case_2_five_bus_radial_grid_dyn"
+net = from_pfd(app, prj_name=prj_name)
+all_diffs = validate_pf_conversion(net, tolerance_mva=1e-9)
+to_json(net, f"{prj_name}.json")
+net_dict[prj_name] = net
+all_diff_dict[prj_name] = all_diffs
 
 ##
+##
+
