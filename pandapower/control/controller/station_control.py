@@ -1,8 +1,10 @@
 import numbers
+from cmath import isnan
 import numpy as np
 from numpy.ma.extras import atleast_1d
 from scipy.optimize import minimize
 from pandapower import create_gen
+from pandapower import create_sgen
 from pandas import concat
 
 from pandapower.control.basic_controller import Controller
@@ -85,6 +87,8 @@ class BinarySearchControl(Controller):
         super().__init__(net, in_service=ctrl_in_service, order=order, level=level,
                          drop_same_existing_ctrl=drop_same_existing_ctrl,
                          matching_params=matching_params, **kwargs)
+        self.min_q_mvar_replaced, self.max_q_mvar_replaced = None, None #Values to save for redistributed gens
+        self.fused_bus_index, self.duplicated_gen_groups = None, None #Values to save for redistributed gens
         for key, value in kwargs.items(): #setting up kwargs arguments
             setattr(self, key, value)
         #self.reset = [order, level, drop_same_existing_ctrl, matching_params, kwargs]#for reinitialization
@@ -290,6 +294,59 @@ class BinarySearchControl(Controller):
         raise AttributeError(f"{self.__class__.__name__!r} has no attribute {name!r}")
 
     def initialize_control(self, net, converged = False):
+        ###For V_ctrl, concatenate all gens to a single gen. Redistribution in finalize_control()###
+        if self.modus == 'V_ctrl' and self.output_element == 'gen' and len(self.output_element_index) != 1:
+            logger.error(f'concatenated multiple gens to single gen in Voltage Controller {self.index}')
+            fused_bus_by_switch = False
+            fused_bus_index = []
+            for i in net.switch.index: #check if ideal switch between buses with controlled gens
+                if (net.switch.at[i, 'et'] == 'b' and net.switch.at[i, 'closed'] and net.switch.at[i, 'z_ohm'] == 0 and
+                        net.switch.at[i, 'bus'] in np.atleast_1d(
+                            net.gen.loc[self.output_element_index, 'bus'])):  # fused buses by ideal switch
+                    if net.switch.at[i, 'element'] in np.atleast_1d(net.gen.loc[self.output_element_index, 'bus']): #controlled gens at buses
+                        fused_bus_by_switch = True
+                        fused_bus_index.append([[net.switch.at[i, 'bus'], net.switch.at[i, 'element']],
+                                                [self.output_element_index[np.where(
+                                                    np.atleast_1d(net.gen.loc[self.output_element_index, 'bus']) ==
+                                                    net.switch.at[i, 'bus'])[0][0]],
+                                                 self.output_element_index[np.where(
+                                                     np.atleast_1d(net.gen.loc[self.output_element_index, 'bus']) ==
+                                                     net.switch.at[i, 'element'])[0][0]]]])#append buses in groups with indexes and gen index
+            if not net.gen.loc[self.output_element_index, "bus"].is_unique or fused_bus_by_switch:
+                bus_series = net.gen.loc[self.output_element_index, "bus"]
+                #non_unique_indices = bus_series[bus_series.duplicated(keep=False)].index.tolist()
+                duplicated_buses = bus_series[bus_series.duplicated(keep=False)]#check if buses of gens are unique
+                # Groups of indices of buses of gens at same bus
+                duplicated_gen_groups = duplicated_buses.groupby(duplicated_buses).apply(lambda x: x.index.tolist())
+                ###concatenate gens at same bus or at ideally connected bus###
+                index_replaced_fused = []
+                index_replaced = []
+                for i in fused_bus_index: #first fused buses
+                    bus_number, indices = i[0], i[1]
+                    if all(net.gen.loc[indices, 'in_service']):  # todo what if 2 out of 3
+                        net.gen.loc[indices, 'in_service'] = False
+                        temp_gen_fused = create_gen(net, bus_number[0], net.gen.loc[indices, 'p_mw'].sum(),
+                                                       net.gen.loc[indices[0], 'vm_pu'])
+                        index_replaced_fused.append([temp_gen_fused])
+                for bus_number, indices in duplicated_gen_groups.items(): #second normal buses
+                    if all(net.gen.loc[indices, 'in_service']):  # todo what if 2 out of 3
+                        net.gen.loc[indices, "in_service"] = False
+                        temp_gen = create_gen(net, bus_number, net.gen.loc[indices, "p_mw"].sum(),
+                                                 net.gen.loc[indices[0], "vm_pu"])
+                        index_replaced.append([temp_gen])
+                #replace values in controller
+                self.output_element_index = np.atleast_1d(np.array(index_replaced_fused + index_replaced)).flatten()
+                self.output_element_in_service = np.full(len(self.output_element_index), True, dtype=bool)
+                self.min_q_mvar_replaced = self.min_q_mvar
+                self.max_q_mvar_replaced = self.max_q_mvar
+                self.min_q_mvar = np.full(len(np.atleast_1d(self.output_element_index)),
+                                      (sum(np.atleast_1d(self.min_q_mvar)) / len(np.atleast_1d(self.min_q_mvar))), float)
+                self.max_q_mvar = np.full(len(np.atleast_1d(self.output_element_index)),
+                                      (sum(np.atleast_1d(self.max_q_mvar)) / len(np.atleast_1d(self.max_q_mvar))), float)
+                #runpp(net, run_control=True)#should run automatically now
+                #save values for redistribution
+                self.duplicated_gen_groups = duplicated_gen_groups
+                self.fused_bus_index = fused_bus_index
         #reread output elements
         #net.controller.at[self.index, 'object'].converged = converged
         output_element_index = self.output_element_index[0] if self.write_flag == 'single_index' else\
@@ -306,42 +363,6 @@ class BinarySearchControl(Controller):
         self.in_service = net.controller.in_service[self.index]
         if not self.in_service:
             return True
-        """### Changing sgens to gens for V_ctrl ###
-        if (self.output_element == 'sgen' and
-            (self.modus == "V_ctrl" or (type(self.modus) == bool and self.modus == True and self.input_element_index is not None))):
-            in_service_indices = np.atleast_1d(self.output_element_index)[np.atleast_1d(self.output_element_in_service).flatten()]  #indices of active sgens
-            counter = 0
-            for i in in_service_indices:
-                voltage = net.res_bus.at[net.sgen.at[i, 'bus'], 'vm_pu']
-                create_gen(net=net,
-                           bus=net.sgen.at[i, 'bus'],
-                           p_mw=net.sgen.at[i, 'p_mw'],
-                           vm_pu=voltage,
-                           in_service=net.sgen.at[i, 'in_service'],
-                           sn_mva=net.sgen.at[i, 'sn_mva'] if 'sn_mva' in net.sgen.columns else None,
-                           scaling=net.sgen.at[i, 'scaling'] if 'scaling' in net.sgen.columns else None,
-                           min_p_mw=net.sgen.at[i, 'min_p_mw'] if 'min_p_mw' in net.sgen.columns else None,
-                           max_p_mw=net.sgen.at[i, 'max_p_mw'] if 'max_p_mw' in net.sgen.columns else None,
-                           min_q_mvar=net.sgen.at[i, 'min_q_mvar'] if 'min_q_mvar' in net.sgen.columns else None,
-                           max_q_mvar=net.sgen.at[i, 'max_q_mvar'] if 'max_q_mvar' in net.sgen.columns else None,
-                           description=net.sgen.at[i, 'description'] if 'description' in net.sgen.columns else None,
-                           equipment=net.sgen.at[i, 'equipment'] if 'equipment' in net.sgen.columns else None,
-                           geo=net.sgen.at[i, 'geo'] if 'geo' in net.sgen.columns else None,
-                           current_source=net.sgen.at[
-                               i, 'current_source'] if 'current_source' in net.sgen.columns else None,
-                           name=f'temp_gen_{counter}')  # type='GEN'
-                net.sgen.at[i, 'in_service'] = False  # disable sgens
-                counter += 1
-            self.gen_index = np.array([])
-            self.output_element = 'gen'
-            for i in net.gen.index:  # get index of created gens
-                if net.gen.loc[i, 'name'].startswith("temp_gen_"):
-                    self.gen_index = np.append(self.gen_index, i)
-            self.output_element_index_sgen = self.output_element_index
-            self.output_element_index = self.gen_index
-            self.output_variable = 'vm_pu'
-            #self.initialize_control(net, converged = self.converged)"""
-
         ###updating input & output elements in service lists
         self.input_element_in_service = list(self.input_element_in_service)
         self.output_element_in_service = list(self.output_element_in_service)
@@ -742,7 +763,6 @@ class BinarySearchControl(Controller):
                 else:
                     raise NotImplementedError(f"Controller {self.index}: Reactive power distribution method {self.output_values_distribution}"
                                               f" not implemented available methods are (rel_P, rel_rated_S, set_Q, max_Q, rel_V_pu).")
-            #if self.modus != 'V_ctrl':#todo ??
             if self.output_values_distribution == 'max_Q': #max_Q and voltage gives the correct Qs for the gens
                 if sum(np.atleast_1d(generators_not_at_limit)) == 0:
                     values = (sum(x) - sum(distribution)) / len(np.atleast_1d(distribution))
@@ -800,6 +820,79 @@ class BinarySearchControl(Controller):
                          f"has no target voltage (attribute 'set_pu', trying target voltage 1 pu\n") #todo attribute
             self.set_point = 1
 
+    def finalize_control(self, net):
+        ###redistribute the gens to multiple gens if they were concatenated in initialize_control()
+        if getattr(self, "fused_bus_index", None) is not None and getattr(self, "duplicated_gen_groups", None) is not None:
+            logger.error(f'Redistributed gens to sgens in Voltage controller {self.index}\n')
+            counter = 0
+            temp_gen_index = self.output_element_index
+            gen_bus_index = []
+            for i in self.fused_bus_index:
+                bus_number, indices = i[0], i[1]
+                net.res_gen.loc[indices, 'q_mvar'] = net.res_gen.at[
+                                                     np.atleast_1d(temp_gen_index)[counter], 'q_mvar'] / len(indices)
+                gen_bus_index.extend(np.atleast_1d(indices).tolist())#get bus index for fused bus
+                counter += 1
+            for bus_number, indices in self.duplicated_gen_groups.items():#get bus index for normal bus
+                net.res_gen.loc[indices, 'q_mvar'] = net.res_gen.at[
+                                                     np.atleast_1d(temp_gen_index)[counter], 'q_mvar'] / len(indices)
+                gen_bus_index.extend(np.atleast_1d(indices).tolist())
+                counter += 1
+            net.gen.drop(temp_gen_index, inplace=True)#delete the replacement gen
+            ###change the gens to sgens for Q_distribution
+            counter = 0
+            index = []
+            for i in gen_bus_index:  #self.output_element_index: #only gens of controller
+                if not net.gen.at[i, 'in_service']:  # get all gens of controller who where disabled, convert to sgens. todo What if they were offline from the beginning
+                    sgen = create_sgen(net=net,#create sgens
+                                          bus=net.gen.at[i, 'bus'],
+                                          p_mw=net.gen.at[i, 'p_mw'],
+                                          q_mvar=net.res_gen.at[i, 'q_mvar'],
+                                          in_service=True,  # net.gen.at[i, 'in_service'],
+                                          sn_mva=net.gen.at[i, 'sn_mva'] if 'sn_mva' in net.gen.columns and not isnan(
+                                              net.gen.at[i, 'sn_mva']) else None,
+                                          scaling=net.gen.at[
+                                              i, 'scaling'] if 'scaling' in net.gen.columns and not isnan(
+                                              net.gen.at[i, 'scaling']) else None,
+                                          min_p_mw=net.gen.at[
+                                              i, 'min_p_mw'] if 'min_p_mw' in net.gen.columns and not isnan(
+                                              net.gen.at[i, 'min_p_mw']) else None,
+                                          max_p_mw=net.gen.at[
+                                              i, 'max_p_mw'] if 'max_p_mw' in net.gen.columns and not isnan(
+                                              net.gen.at[i, 'max_p_mw']) else None,
+                                          min_q_mvar=net.gen.at[
+                                              i, 'min_q_mvar'] if 'min_q_mvar' in net.gen.columns and not isnan(
+                                              net.gen.at[i, 'min_q_mvar']) else None,
+                                          max_q_mvar=net.gen.at[
+                                              i, 'max_q_mvar'] if 'max_q_mvar' in net.gen.columns and not isnan(
+                                              net.gen.at[i, 'max_q_mvar']) else None,
+                                          description=net.gen.at[
+                                              i, 'description'] if 'description' in net.gen.columns and type(
+                                              net.gen.at[i, 'description']) == str else None,
+                                          equipment=net.gen.at[
+                                              i, 'equipment'] if 'equipment' in net.gen.columns and type(
+                                              net.gen.at[i, 'equipment']) == str else None,
+                                          geo=net.gen.at[i, 'geo'] if 'geo' in net.gen.columns and type(
+                                              net.gen.at[i, 'geo']) == str else None,
+                                          # current_source=(net.gen.at[i, 'current_source'] if 'current_source' and
+                                          #not isnan(net.gen.at[i, 'current_source']) in net.gen.columns else None),
+                                          controllable=net.gen.at[i, 'controllable'],
+                                          name=net.gen.at[i, 'name'])  # type='SGEN'
+                    index.append(sgen)
+                    counter += 1
+            net.gen.drop(gen_bus_index, inplace=True) #delete now obsolete gens
+            #change controller values
+            self.output_element_index = index
+            self.output_element = 'sgen'
+            self.output_variable = 'q_mvar'
+            self.output_values = net.sgen.loc[index, 'q_mvar']
+            self.output_values_old = self.output_values + 10 #to have the controller not start as converged
+            self.output_element_in_service = list(np.full(len(index), True, dtype=bool))
+            self.min_q_mvar = self.min_q_mvar_replaced
+            self.max_q_mvar = self.max_q_mvar_replaced
+            self.duplicated_gen_groups, self.fused_bus_index = None, None #to avoid being stuck in loop
+            self.min_q_mvar_replaced, self.max_q_mvar_replaced = None, None
+            self._binary_search_control_step(net)
 
 class DroopControl(Controller):
     """
