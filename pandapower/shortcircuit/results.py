@@ -5,6 +5,7 @@
 
 import numpy as np
 import pandas as pd
+from copy import deepcopy
 
 from pandapower.auxiliary import sequence_to_phase
 from pandapower.pypower.idx_brch import F_BUS, T_BUS
@@ -48,14 +49,32 @@ def _copy_result_to_ppci_orig(ppci_orig, ppci, ppci_bus, calc_options):
                 ppci_orig["branch"][:, branch_results_cols] =\
                     np.maximum(np.nan_to_num(ppci["branch"][:, branch_results_cols]),
                                np.nan_to_num(ppci_orig["branch"][:, branch_results_cols]))
+
                 # excluding new values from nan to num
                 ppci_orig["branch"][:, branch_results_cols_add] = ppci["branch"][:, branch_results_cols_add]
+                ppci_orig["branch"][:, branch_results_cols_add] = ppci["branch"][:, branch_results_cols_add]
+
+                if "branch_LL" in ppci.keys():
+                    ppci_orig["branch_LL"] = deepcopy(ppci_orig["branch"])
+                    ppci_orig["branch_LL"][:, branch_results_cols] =\
+                        np.maximum(np.nan_to_num(ppci["branch_LL"][:, branch_results_cols]),
+                                np.nan_to_num(ppci_orig["branch_LL"][:, branch_results_cols]))
+                    ppci_orig["branch_LL"][:, branch_results_cols_add] = ppci["branch_LL"][:, branch_results_cols_add]
+
             else:
                 ppci_orig["branch"][:, branch_results_cols] =\
                     np.minimum(np.nan_to_num(ppci["branch"][:, branch_results_cols], nan=1e10),
                                np.nan_to_num(ppci_orig["branch"][:, branch_results_cols], nan=1e10))
                 # excluding new values from nan to num
                 ppci_orig["branch"][:, branch_results_cols_add] = ppci["branch"][:, branch_results_cols_add]
+                if "branch_LL" in ppci.keys(): 
+                    ppci_orig["branch_LL"] = deepcopy(ppci_orig["branch"])
+                    ppci_orig["branch_LL"][:, branch_results_cols] =\
+                        np.minimum(np.nan_to_num(ppci["branch_LL"][:, branch_results_cols], nan=1e10),
+                                np.nan_to_num(ppci_orig["branch_LL"][:, branch_results_cols], nan=1e10))
+                    # excluding new values from nan to num
+                    ppci_orig["branch_LL"][:, branch_results_cols_add] = ppci["branch_LL"][:, branch_results_cols_add]
+
 
 
 def _get_bus_ppc_idx_for_br_all_results(net, ppc, bus):
@@ -86,7 +105,7 @@ def _calculate_branch_phase_results(ppc_0, ppc_1, ppc_2):
     i_012_ka = np.stack([i_ka_0, i_ka_1, i_ka_2], 2)
     i_abc_ka = np.apply_along_axis(sequence_to_phase, 2, i_012_ka)
     # i_abc_ka = sequence_to_phase(np.vstack([i_ka_0, i_ka_1, i_ka_2]))
-    i_abc_ka[np.abs(i_abc_ka) < 1e-10] = 0
+    i_abc_ka[np.abs(i_abc_ka) < 1e-5] = 0
     # baseI = ppc_1["internal"]["baseI"][ppc_1["branch"][:, [F_BUS, T_BUS]].real.astype(np.int64)]
     # i_base_ka = np.stack([baseI, baseI, baseI], 2)
     # i_abc_ka /= i_base_ka
@@ -98,7 +117,7 @@ def _calculate_branch_phase_results(ppc_0, ppc_1, ppc_2):
     v_012_pu = np.stack([v_pu_0, v_pu_1, v_pu_2], 2)
     v_abc_pu = np.apply_along_axis(sequence_to_phase, 2, v_012_pu)
     # v_abc_pu = sequence_to_phase(np.vstack([v_pu_0, v_pu_1, v_pu_2]))
-    v_abc_pu[np.abs(v_abc_pu) < 1e-10] = 0
+    v_abc_pu[np.abs(v_abc_pu) < 1e-5] = 0
 
     # this is inefficient because it copies data to fit into a shape, better to use a slice,
     # and even better to find how to use sequence-based powers:
@@ -113,8 +132,6 @@ def _calculate_branch_phase_results(ppc_0, ppc_1, ppc_2):
 def _get_line_to_g_results(net, ppc_1, v_abc_pu, i_abc_ka, s_abc_mva):
     branch_lookup = net._pd2ppc_lookups["branch"]
     case = net._options["case"]
-    if net["_options"]["fault"] == "LLG":
-        i_abc_ka *= 3
 
     if "line" in branch_lookup:
         f, t = branch_lookup["line"]
@@ -190,8 +207,8 @@ def _calculate_bus_results_llg(ppc_0, ppc_1, ppc_2, bus, net):
     i_2_abc_ka = np.apply_along_axis(sequence_to_phase, 2, i_2_012_ka)
 
     # i_abc_ka = sequence_to_phase(np.vstack([i_ka_0, i_ka_1, i_ka_2]))
-    i_1_abc_ka[np.abs(i_1_abc_ka) < 1e-10] = 0
-    i_2_abc_ka[np.abs(i_2_abc_ka) < 1e-10] = 0
+    i_1_abc_ka[np.abs(i_1_abc_ka) < 1e-5] = 0
+    i_2_abc_ka[np.abs(i_2_abc_ka) < 1e-5] = 0
 
     # Todo adapt to new reult format
     # Initialize a new matrix to store the selected rows
@@ -210,7 +227,7 @@ def _calculate_bus_results_llg(ppc_0, ppc_1, ppc_2, bus, net):
     v_012_pu = np.stack([v_pu_0, v_pu_1, v_pu_2], 2)
     v_abc_pu = np.apply_along_axis(sequence_to_phase, 2, v_012_pu)
     # v_abc_pu = sequence_to_phase(np.vstack([v_pu_0, v_pu_1, v_pu_2]))
-    v_abc_pu[np.abs(v_abc_pu) < 1e-10] = 0
+    v_abc_pu[np.abs(v_abc_pu) < 1e-5] = 0
 
     # this is inefficient because it copies data to fit into a shape, better to use a slice,
     # and even better to find how to use sequence-based powers:
@@ -238,6 +255,10 @@ def _extract_results(net, ppc_0, ppc_1, ppc_2, bus):
             _get_line_to_g_results(net, ppc_1, v_abc_pu, i_abc_ka, s_abc_mva)
             #TODO might need to be adapted
             _get_trafo_lg_results(net, v_abc_pu, i_abc_ka, s_abc_mva)
+        elif (net["_options"]["fault"] in ("LL")) & (~net["_options"]['return_all_currents']):
+            _get_line_ll_results(net, ppc_1)
+            #TODO
+            # _get_trafo_ll_results(net, ppc_1)
         else:
             if net._options['return_all_currents']:
                 _get_line_all_results(net, ppc_1, bus)
@@ -307,6 +328,37 @@ def _get_line_results(net, ppc):
 
         net.res_line_sc["vm_to_pu"] = ppc["branch"][f:t, VKSS_MAGN_T].real
         net.res_line_sc["va_to_degree"] = ppc["branch"][f:t, VKSS_ANGLE_T].real
+
+        if net._options["ip"]:
+            net.res_line_sc["ip_ka"] = minmax(ppc["branch"][f:t, [IP_F, IP_T]].real, axis=1)
+        if net._options["ith"]:
+            net.res_line_sc["ith_ka"] = minmax(ppc["branch"][f:t, [ITH_F, ITH_T]].real, axis=1)
+
+def _get_line_ll_results(net, ppc):
+    branch_lookup = net._pd2ppc_lookups["branch"]
+    case = net._options["case"]
+    if "line" in branch_lookup:
+        f, t = branch_lookup["line"]
+        minmax = np.max if case == "max" else np.min
+        net.res_line_sc["ikss_ka"] = minmax(ppc["branch"][f:t, [IKSS_F, IKSS_T]].real, axis=1)
+        for phase, name in ("b","branch"),("c","branch_LL"):
+            net.res_line_sc[f"ikss_{phase}_from_ka"] = ppc[name][f:t, IKSS_F].real
+            net.res_line_sc[f"ikss_{phase}_from_degree"] = ppc[name][f:t, IKSS_ANGLE_F].real
+            net.res_line_sc[f"ikss_{phase}_to_ka"] = ppc[name][f:t, IKSS_T].real
+            net.res_line_sc[f"ikss_{phase}_to_degree"] = ppc[name][f:t, IKSS_ANGLE_T].real
+
+            # adding columns for new calculated VPQ
+            net.res_line_sc[f"p_{phase}_from_mw"] = ppc[name][f:t, PKSS_F].real
+            net.res_line_sc[f"q_{phase}_from_mvar"] = ppc[name][f:t, QKSS_F].real
+
+            net.res_line_sc[f"p_{phase}_to_mw"] = ppc[name][f:t, PKSS_T].real
+            net.res_line_sc[f"q_{phase}_to_mvar"] = ppc[name][f:t, QKSS_T].real
+
+            net.res_line_sc[f"vm_{phase}_from_pu"] = ppc[name][f:t, VKSS_MAGN_F].real
+            net.res_line_sc[f"va_{phase}_from_degree"] = ppc[name][f:t, VKSS_ANGLE_F].real
+
+            net.res_line_sc[f"vm_{phase}_to_pu"] = ppc[name][f:t, VKSS_MAGN_T].real
+            net.res_line_sc[f"va_{phase}_to_degree"] = ppc[name][f:t, VKSS_ANGLE_T].real
 
         if net._options["ip"]:
             net.res_line_sc["ip_ka"] = minmax(ppc["branch"][f:t, [IP_F, IP_T]].real, axis=1)

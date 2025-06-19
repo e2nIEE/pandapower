@@ -220,10 +220,10 @@ def _calc_current(net, ppci_orig, bus):
             _calc_ith(net, this_ppci)
 
         if net._options["branch_results"]:
-            if net._options["fault"] == "LLL":
-                _calc_branch_currents_complex(net, this_ppci, this_ppci_bus)
-            else:
-                _calc_branch_currents(net, this_ppci, this_ppci_bus)
+            # if net._options["fault"] == "LLL":
+            _calc_branch_currents_complex(net, this_ppci, this_ppci_bus)
+            # else:
+            #     _calc_branch_currents(net, this_ppci, this_ppci_bus)
 
         _copy_result_to_ppci_orig(ppci_orig, this_ppci, this_ppci_bus,
                                   calc_options=net._options)
@@ -248,7 +248,7 @@ def _calc_sc(net, bus):
 
 def _calc_sc_to_g(net, bus):
     """
-    calculation method for single phase to ground short-circuit currents
+    calculation method for phase to ground short-circuit currents
     """
     _add_auxiliary_elements(net)
     # pos. seq bus impedance
@@ -296,14 +296,14 @@ def _calc_sc_to_g(net, bus):
     _calc_ikss_to_g(net, ppci_0, ppci_1, ppci_2, ppci_bus)
     # from here on, the V_ikss in ppci_0, ppci_1, ppci_2 are in phase frame!
     if net._options["branch_results"]:
-        if net._options["fault"] == "LLL":
-            _calc_branch_currents_complex(net, ppci_0, ppci_bus)
-            _calc_branch_currents_complex(net, ppci_1, ppci_bus)
-            _calc_branch_currents_complex(net, ppci_2, ppci_bus)
-        else:
-            _calc_branch_currents_complex(net, ppci_0, ppci_bus)
-            _calc_branch_currents_complex(net, ppci_1, ppci_bus)
-            _calc_branch_currents_complex(net, ppci_2, ppci_bus)
+        # if net._options["fault"] == "LLL":
+        #     _calc_branch_currents_complex(net, ppci_0, ppci_bus)
+        #     _calc_branch_currents_complex(net, ppci_1, ppci_bus)
+        #     _calc_branch_currents_complex(net, ppci_2, ppci_bus)
+        # else:
+        _calc_branch_currents_complex(net, ppci_0, ppci_bus)
+        _calc_branch_currents_complex(net, ppci_1, ppci_bus)
+        _calc_branch_currents_complex(net, ppci_2, ppci_bus)
 
     ppc_0 = _copy_results_ppci_to_ppc(ppci_0, ppc_0, "sc")
     ppc_1 = _copy_results_ppci_to_ppc(ppci_1, ppc_1, "sc")

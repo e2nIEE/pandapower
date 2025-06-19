@@ -6,6 +6,7 @@
 
 import numpy as np
 import pandas as pd
+from copy import deepcopy
 
 from pandapower.results_branch import _get_branch_results, _get_branch_results_3ph
 from pandapower.results_bus import _get_bus_results, _get_bus_dc_results, _set_buses_out_of_service, \
@@ -198,7 +199,12 @@ def _ppci_bus_to_ppc(result, ppc):
 def _ppci_branch_to_ppc(result, ppc):
     # in service branches and gens are taken from 'internal'
     branch_cols = np.shape(ppc['branch'])[1]
+
     ppc['branch'][result["internal"]['branch_is'], :branch_cols] = result['branch'][:, :branch_cols]
+
+    if "branch_LL" in result.keys():
+        ppc["branch_LL"] = deepcopy(ppc["branch"])
+        ppc['branch_LL'][result["internal"]['branch_is'], :branch_cols] = result['branch_LL'][:, :branch_cols]
 
     ppc['tcsc'][result["internal"]['tcsc_is'], :] = result['tcsc'][:, :]
 

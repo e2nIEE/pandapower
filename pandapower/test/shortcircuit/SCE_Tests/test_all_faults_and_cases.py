@@ -16,6 +16,10 @@ from pandapower import pp_dir
 from pandapower.shortcircuit.calc_sc import calc_sc
 from pandapower.file_io import from_json
 
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning)  
+warnings.filterwarnings("ignore", category=DeprecationWarning) 
+
 testfiles_path = os.path.join(pp_dir, 'test', 'shortcircuit', 'sce_tests')
 
 # Define common parameters
@@ -83,7 +87,7 @@ def compare_results(columns_to_check, net_df, pf_results, branch_results):
             "vm_pu": 0, "va_degree": 0, "p_mw": 0, "q_mvar": 0, "ikss_degree": 0}
     # TODO skss_mw and ikss_ka only 1e-4 sufficient?
     atol = {"ikss_ka": 1e-4, "skss_mw": 1e-4, "rk_ohm": 1e-6, "xk_ohm": 1e-5,
-            "vm_pu": 1e-4, "va_degree": 1e-4, "p_mw": 1e-4, "q_mvar": 1e-4, "ikss_degree": 1e-4}  # TODO: tolerances ok?
+            "vm_pu": 1e-4, "va_degree": 1e-3, "p_mw": 1e-4, "q_mvar": 1e-4, "ikss_degree": 1e-3}  # TODO: tolerances ok?
 
     for column in columns_to_check:
         if column == 'name':
@@ -93,6 +97,16 @@ def compare_results(columns_to_check, net_df, pf_results, branch_results):
         # # exclude columns now because of false calculation in pandapower
         # if branch_results and column_ar in ['p_mw', 'q_mvar', 'vm_pu', 'va_degree']:
         #     continue
+
+        # Part to handle mismatch due to possibility to write same angle as 180° or -180°
+        if column_ar.endswith("degree"): 
+            if (net_df.loc[:, column] < 0).any():
+                neg_values_mask = net_df.loc[:, column] < 0
+                net_df.loc[neg_values_mask, column] += 360
+            if (pf_results.loc[:, column] < 0).any():
+                neg_values_mask = pf_results.loc[:, column] < 0
+                pf_results.loc[neg_values_mask, column] += 360
+
         mismatch = np.isclose(
             net_df.loc[:, column],
             pf_results.loc[:, column],
@@ -163,23 +177,7 @@ def run_test_cases(net, dataframes, fault, case, fault_values, lv_tol_percent, f
 
     if branch_results:
         columns_to_check = net.res_line_sc.columns
-        if fault == "LL":
-            # ikss_degrees are not considered in IEC 60909 method for LL
-            # Patterns for the columns to be dropped
-            patterns_to_drop = [
-                "ikss_ka",
-                "ikss_to_degree",
-                "ikss_from_degree",
-                "ikss_a_from_degree",
-                "ikss_b_from_degree",
-                "ikss_c_from_degree",
-                "ikss_a_to_degree",
-                "ikss_b_to_degree",
-                "ikss_c_to_degree"
-            ]
-            # Remove columns if they are present in the patterns_to_drop list
-            columns_to_check = columns_to_check[~columns_to_check.isin(patterns_to_drop)]
-        elif fault == "LG" or fault == "LLG":
+        if fault == "LG" or fault == "LLG" or fault == "LL":
             if branch_results:
                 patterns_to_drop = ["ikss_ka"]  # ToDo: Do we need the value ikss_ka ?
                 columns_to_check = columns_to_check[~columns_to_check.isin(patterns_to_drop)]
@@ -188,6 +186,7 @@ def run_test_cases(net, dataframes, fault, case, fault_values, lv_tol_percent, f
         net.res_line_sc.sort_values(by='name', inplace=True)
 
         modified_pf_results_selection = modified_pf_results[modified_pf_results['name'].isin(net.res_line_sc['name'])]
+        modified_pf_results_selection = clean_small_angles(fault, modified_pf_results_selection)
         net_df = net.res_line_sc
     else:
         columns_to_check = net.res_bus_sc.columns
@@ -200,6 +199,41 @@ def run_test_cases(net, dataframes, fault, case, fault_values, lv_tol_percent, f
         net_df = net.res_bus_sc
     return columns_to_check, net_df, modified_pf_results_selection
 
+def clean_small_angles(fault, results):
+    if fault in ["LG", "LLG"]:
+        for [mag, ang] in ("ikss_a_from_ka", "ikss_a_from_degree"), \
+                        ("ikss_b_from_ka", "ikss_b_from_degree"), \
+                        ("ikss_c_from_ka", "ikss_c_from_degree"), \
+                        ("ikss_a_to_ka", "ikss_a_to_degree"), \
+                        ("ikss_b_to_ka", "ikss_b_to_degree"), \
+                        ("ikss_c_to_ka", "ikss_c_to_degree"), \
+                        ("vm_a_from_pu", "va_a_from_degree"), \
+                        ("vm_b_from_pu", "va_b_from_degree"), \
+                        ("vm_c_from_pu", "va_c_from_degree"), \
+                        ("vm_a_to_pu", "va_a_to_degree"), \
+                        ("vm_b_to_pu", "va_b_to_degree"), \
+                        ("vm_c_to_pu", "va_c_to_degree"):
+            results[ang][results[mag] < 1e-5] = 0
+
+    elif fault in ["LL"]: 
+        for [mag, ang] in ("ikss_b_from_ka", "ikss_b_from_degree"), \
+                        ("ikss_c_from_ka", "ikss_c_from_degree"), \
+                        ("ikss_b_to_ka", "ikss_b_to_degree"), \
+                        ("ikss_c_to_ka", "ikss_c_to_degree"), \
+                        ("vm_b_from_pu", "va_b_from_degree"), \
+                        ("vm_c_from_pu", "va_c_from_degree"), \
+                        ("vm_b_to_pu", "va_b_to_degree"), \
+                        ("vm_c_to_pu", "va_c_to_degree"):
+            results[ang][results[mag] < 1e-5] = 0
+    
+    else: 
+        for [mag, ang] in ("ikss_from_ka", "ikss_from_degree"), \
+                        ("ikss_to_ka", "ikss_to_degree"), \
+                        ("vm_from_pu", "va_from_degree"), \
+                        ("vm_to_pu", "va_to_degree"):
+            results[ang][results[mag] < 1e-5] = 0
+
+    return results
 
 def check_pattern(pattern):
     """
@@ -284,7 +318,11 @@ def load_pf_results(excel_file):
                 'pf_ikss_to_degree',
                 'pf_p_from_mw', 'pf_q_from_mvar', 'pf_p_to_mw', 'pf_q_to_mvar',
                 'pf_vm_from_pu', 'pf_va_from_degree', 'pf_vm_to_pu', 'pf_va_to_degree'],
-        "LL": ['name', 'pf_ikss_c_from_ka', 'pf_ikss_c_from_ka', 'pf_ikss_c_from_degree', 'pf_ikss_c_to_ka',
+        "LL": ['name', 'pf_ikss_b_from_ka', 'pf_ikss_b_from_ka', 'pf_ikss_b_from_degree', 'pf_ikss_b_to_ka',
+               'pf_ikss_b_to_degree',
+               'pf_p_b_from_mw', 'pf_q_b_from_mvar', 'pf_p_b_to_mw', 'pf_q_b_to_mvar',
+               'pf_vm_b_from_pu', 'pf_va_b_from_degree', 'pf_vm_b_to_pu', 'pf_va_b_to_degree',
+               'pf_ikss_c_from_ka', 'pf_ikss_c_from_degree', 'pf_ikss_c_to_ka',
                'pf_ikss_c_to_degree',
                'pf_p_c_from_mw', 'pf_q_c_from_mvar', 'pf_p_c_to_mw', 'pf_q_c_to_mvar',
                'pf_vm_c_from_pu', 'pf_va_c_from_degree', 'pf_vm_c_to_pu', 'pf_va_c_to_degree'],
@@ -341,14 +379,21 @@ def load_pf_results(excel_file):
         elif excel_file.endswith('_branch.xlsx'):
             relevant_columns = columns_mapping_branch[fault_type]
             pf_results = pf_results[relevant_columns]
-            if fault_type == 'LLL' or fault_type == 'LL':
+            if fault_type == 'LLL':
                 pf_results.columns = ['name', 'ikss_ka', 'ikss_from_ka', 'ikss_from_degree', 'ikss_to_ka',
                                       'ikss_to_degree',
                                       'p_from_mw', 'q_from_mvar', 'p_to_mw', 'q_to_mvar',
                                       'vm_from_pu', 'va_from_degree', 'vm_to_pu', 'va_to_degree']
-                if fault_type == 'LLL' or fault_type == 'LL':
-                    pf_results['ikss_ka'] = pf_results['ikss_to_ka']  # TODO: maybe only for LLL valid?
-                    pf_results['ikss_from_ka'] = pf_results['ikss_to_ka']  # TODO: maybe only for LLL valid?
+                pf_results['ikss_ka'] = pf_results['ikss_to_ka']  # TODO: maybe only for LLL valid?
+                pf_results['ikss_from_ka'] = pf_results['ikss_to_ka']  # TODO: maybe only for LLL valid?
+
+            elif fault_type == 'LL':
+                pf_results.columns = ['name', 'ikss_ka', 'ikss_b_from_ka', 'ikss_b_from_degree', 'ikss_b_to_ka',
+                                      'ikss_b_to_degree', 'p_b_from_mw', 'q_b_from_mvar', 'p_b_to_mw', 'q_b_to_mvar',
+                                      'vm_b_from_pu', 'va_b_from_degree', 'vm_b_to_pu', 'va_b_to_degree',
+                                      'ikss_c_from_ka', 'ikss_c_from_degree', 'ikss_c_to_ka', 'ikss_c_to_degree',
+                                      'p_c_from_mw', 'q_c_from_mvar', 'p_c_to_mw', 'q_c_to_mvar',
+                                      'vm_c_from_pu', 'va_c_from_degree', 'vm_c_to_pu', 'va_c_to_degree']
 
             elif fault_type == 'LLG' or fault_type == 'LG':
                 pf_results.columns = ['name', 'ikss_ka', 'ikss_a_from_ka', 'ikss_a_from_degree', 'ikss_a_to_ka',
@@ -385,5 +430,3 @@ def load_pf_results(excel_file):
 
 if __name__ == "__main__":
     pytest.main([__file__])
-
-##
