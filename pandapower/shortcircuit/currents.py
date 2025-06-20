@@ -204,7 +204,7 @@ def _calc_ikss_to_g(net, ppci_0, ppci_1, ppci_2, bus_idx):
               # initial value for negative-sequence voltage is 0
         elif (fault == "LLG"):
             V_ikss_0 = 0 - ikssv_0 * Zbus_0[:, bus_idx]  # initial value for zero-sequence voltage is 0
-            V_ikss_1 = V0 - ikssv_1 * Zbus_1[:, bus_idx] if valid_V else 0 - ikssv_1 * Zbus_1[:, bus_idx] / 3
+            V_ikss_1 = V0 - ikssv_1 * Zbus_1[:, bus_idx] if valid_V else 0 - ikssv_1 * Zbus_1[:, bus_idx]
             V_ikss_2 = 0 - ikssv_2 * Zbus_2[:, bus_idx]
 
     else:
