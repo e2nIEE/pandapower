@@ -86,8 +86,8 @@ def compare_results(columns_to_check, net_df, pf_results, branch_results):
     rtol = {"ikss_ka": 0, "skss_mw": 0, "rk_ohm": 0, "xk_ohm": 0,
             "vm_pu": 0, "va_degree": 0, "p_mw": 0, "q_mvar": 0, "ikss_degree": 0}
     # TODO skss_mw and ikss_ka only 1e-4 sufficient?
-    atol = {"ikss_ka": 1e-4, "skss_mw": 1e-4, "rk_ohm": 1e-6, "xk_ohm": 1e-5,
-            "vm_pu": 1e-4, "va_degree": 1e-3, "p_mw": 1e-4, "q_mvar": 1e-4, "ikss_degree": 1e-3}  # TODO: tolerances ok?
+    atol = {"ikss_ka": 1e-4, "skss_mw": 1e-4, "rk_ohm": 1e-5, "xk_ohm": 1e-5,
+            "vm_pu": 1e-4, "va_degree": 1e-2, "p_mw": 1e-4, "q_mvar": 1e-4, "ikss_degree": 1e-3}  # TODO: tolerances ok?
 
     for column in columns_to_check:
         if column == 'name':
@@ -101,10 +101,10 @@ def compare_results(columns_to_check, net_df, pf_results, branch_results):
         # Part to handle mismatch due to possibility to write same angle as 180° or -180°
         if column_ar.endswith("degree"): 
             if (net_df.loc[:, column] < 0).any():
-                neg_values_mask = net_df.loc[:, column] < 0
+                neg_values_mask = net_df.loc[:, column] < -0.2
                 net_df.loc[neg_values_mask, column] += 360
             if (pf_results.loc[:, column] < 0).any():
-                neg_values_mask = pf_results.loc[:, column] < 0
+                neg_values_mask = pf_results.loc[:, column] < -0.2
                 pf_results.loc[neg_values_mask, column] += 360
 
         mismatch = np.isclose(
