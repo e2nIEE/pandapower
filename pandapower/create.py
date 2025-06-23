@@ -1289,7 +1289,7 @@ def create_load_from_cosphi(net, bus, sn_mva, cos_phi, mode, **kwargs):
 
 def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
                 scaling=1., type='wye', in_service=True, max_p_mw=nan, min_p_mw=nan,
-                max_q_mvar=nan, min_q_mvar=nan, controllable=nan, k=nan, rx=nan,
+                max_q_mvar=nan, min_q_mvar=nan, controllable=nan, k=nan, active_current=False, rx=nan,
                 id_q_capability_curve_characteristic=None, reactive_capability_curve=False, curve_style=None,
                 current_source=True, generator_type=None, max_ik_ka=nan, kappa=nan, lrc_pu=nan, **kwargs):
     """
@@ -1343,7 +1343,11 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
         **controllable** (bool, NaN) - Whether this generator is controllable by the optimal \
             powerflow; defaults to False if "controllable" column exists in DataFrame
 
-        **k** (float, NaN) - Ratio of short circuit current to nominal current
+        **k** (float, NaN) - Ratio of short circuit current to nominal current or \
+            short circuit current to active current 
+                
+        **active_current** (boolean) - False by default - necessary for calculating \
+            short-circuit current considering active current option instead of nominal current
 
         **rx** (float, NaN) - R/X ratio for short circuit impedance. Only relevant if type is \
             specified as motor so that sgen is treated as asynchronous motor. Relevant for \
@@ -1422,6 +1426,7 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
                           dtype="str", default_val="current_source")
     if generator_type == "current_source" or generator_type is None:
         _set_value_if_not_nan(net, index, k, "k", "sgen")
+
     elif generator_type == "async":
         _set_value_if_not_nan(net, index, lrc_pu, "lrc_pu", "sgen")
     elif generator_type == "async_doubly_fed":
@@ -1429,7 +1434,8 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
     else:
         raise UserWarning(f"unknown sgen generator_type {generator_type}! "
                           f"Must be one of: None, 'current_source', 'async', 'async_doubly_fed'")
-
+        
+    _set_value_if_not_nan(net, index, active_current, "active_current", "sgen")
     return index
 
 
@@ -1489,7 +1495,11 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
         **controllable** (list of boolean, default NaN) - States, whether a sgen is controllable \
              or not. Only respected for OPF. Defaults to False if "controllable" column exists in DataFrame
 
-        **k** (list of floats, None) - Ratio of nominal current to short circuit current
+        **k** (float, NaN) - Ratio of short circuit current to nominal current or \
+            short circuit current to active current 
+                
+        **active_current** (boolean) - False by default - necessary for calculating \
+            short-circuit current considering active current option instead of nominal current
 
         **rx** (float, NaN) - R/X ratio for short circuit impedance. Only relevant if type is \
             specified as motor so that sgen is treated as asynchronous motor. Relevant for \
