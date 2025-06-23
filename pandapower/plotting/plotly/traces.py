@@ -15,10 +15,7 @@ from pandapower.auxiliary import soft_dependency_error, version_check, MapboxTok
 from pandapower.plotting.plotly.get_colors import get_plotly_color, get_plotly_cmap
 from pandapower.plotting.plotly.mapbox_plot import _on_map_test, _get_mapbox_token
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 logger = logging.getLogger(__name__)
 
 try:
@@ -1094,7 +1091,7 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
         if on_map is False:
             logger.warning("Existing geodata are not real lat/lon geographical coordinates. -> "
                            "plot on maps is not possible.\n"
-                           "Use geo_data_to_latlong(net, projection) to transform geodata from specific projection.")
+                           "Use convert_crs(net, epsg_in=projection) to transform geodata from specific projection.")
 
     if on_map:
         # change traces for mapbox

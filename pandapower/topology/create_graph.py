@@ -16,10 +16,7 @@ from pandapower.pd2ppc import _init_ppc
 from pandapower.pf.makeYbus_facts import calc_y_svc_pu
 from pandapower.pypower.idx_bus import BASE_KV
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 try:
     from pandapower.topology.graph_tool_interface import GraphToolInterface

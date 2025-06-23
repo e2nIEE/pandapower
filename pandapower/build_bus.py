@@ -224,11 +224,10 @@ def create_bus_lookup_numpy(net, bus_index, closed_bb_switch_mask):
                         # neither pv buses nor active buses. Use any bus in dj
                         ref_bus = dj.pop()
                 map_to = bus_lookup[ref_bus]
-                for bus in dj:
-                    # update lookup
-                    bus_lookup[bus] = map_to
-                    if bus != ref_bus:
-                        merged_bus[bus] = 1
+                dj = list(dj)
+                bus_lookup[dj] = map_to
+                merged_bus[dj] = 1
+                merged_bus[ref_bus] = 0
         else:
             # no PV buses in set
             for dj in disjoint_sets:
@@ -241,11 +240,10 @@ def create_bus_lookup_numpy(net, bus_index, closed_bb_switch_mask):
                     # neither pv buses nor active busese. Use any bus in dj
                     ref_bus = dj.pop()
                 map_to = bus_lookup[ref_bus]
-                for bus in dj:
-                    # update bus lookup
-                    bus_lookup[bus] = map_to
-                    if bus != ref_bus:
-                        merged_bus[bus] = 1
+                dj = list(dj)
+                bus_lookup[dj] = map_to
+                merged_bus[dj] = 1
+                merged_bus[ref_bus] = 0
     return bus_lookup, merged_bus
 
 

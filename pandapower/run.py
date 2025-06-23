@@ -13,10 +13,7 @@ from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 from pandapower.powerflow import _powerflow, _recycled_powerflow
 from pandapower.optimal_powerflow import _optimal_powerflow
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 try:
     from power_grid_model import PowerGridModel, CalculationType, CalculationMethod

@@ -1,10 +1,7 @@
 import numpy as np
 from pandapower.control.basic_controller import Controller
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 class ShuntController(Controller):
     """

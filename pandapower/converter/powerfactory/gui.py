@@ -3,10 +3,7 @@ import tkinter as tk
 from pandapower.auxiliary import ADict
 from pandapower.converter.powerfactory.main_pf import exit_gracefully
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 

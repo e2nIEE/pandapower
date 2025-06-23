@@ -18,7 +18,8 @@ from pandapower.control.util.auxiliary import (
     get_controller_index,
     plot_characteristic,
     _create_trafo_characteristics,
-    create_trafo_characteristic_object
+    create_trafo_characteristic_object,
+    create_q_capability_curve_characteristics_object
 )
 from pandapower.control.util.characteristic import Characteristic, SplineCharacteristic
 from pandapower.control.util.diagnostic import control_diagnostic, trafo_characteristic_table_diagnostic

@@ -223,6 +223,8 @@ def add_virtual_pmu_meas_from_loadflow(net, v_std_dev=0.001, i_std_dev=0.1,
             else:
                 create_measurement(net, meas_type=meas_type, element_type='bus', element=bus_ix,
                                       value=meas_value, std_dev=v_std_dev)
+    remove_shunt_injection_from_meas(net,"shunt")
+    remove_shunt_injection_from_meas(net,"ward")
 
     for br_type in branch_meas_type.keys():
         if not net['res_' + br_type].empty:

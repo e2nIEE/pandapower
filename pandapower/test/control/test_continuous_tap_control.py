@@ -14,6 +14,7 @@ from pandapower import set_user_pf_options, runpp
 from pandapower.create import create_empty_network, create_buses, create_ext_grid, create_lines, create_transformer, \
     create_load, create_bus, create_line, create_transformer3w
 from pandapower.networks import simple_four_bus_system, mv_oberrhein
+from pandapower.toolbox import reindex_buses, create_continuous_bus_index
 from pandapower.control import ContinuousTapControl
 
 
@@ -254,6 +255,36 @@ def test_continuous_tap_control_side_mv():
     # --- run control reference
     runpp(net, run_control=True)
 
+    assert not np.allclose(net_ref.res_trafo3w.vm_mv_pu.values, 1.02, atol=tol)
+    assert np.allclose(net_ref.trafo3w.tap_pos.values, 0)
+    assert np.allclose(net.res_trafo3w.vm_mv_pu.values, 1.02, atol=tol)
+    assert not np.allclose(net.trafo3w.tap_pos.values, 0)
+
+def test_continuous_tap_control_reindexed():
+    # --- load system and run power flow
+    net = create_empty_network()
+    create_buses(net, 2, 110, index=[350, 230])
+    create_buses(net, 1, 20, index=[240])
+    create_bus(net, 10, index=100)
+    create_ext_grid(net, 350)
+    create_line(net, 350, 230, 10, "243-AL1/39-ST1A 110.0")
+    create_transformer3w(net, 230, 240, 100, "63/25/38 MVA 110/20/10 kV")
+    create_load(net, 240, 5., 2.)
+    create_load(net, 100, 5., 2.)
+    set_user_pf_options(net, init='dc', calculate_voltage_angles=True)
+    tol = 1e-4
+
+    # --- run loadflow
+    runpp(net)
+    assert not np.allclose(net.res_trafo3w.vm_mv_pu.values, 1.02, atol=tol)  # there should be
+    # something to do for the controllers
+
+    net_ref = deepcopy(net)
+    ContinuousTapControl(net, 0, side='mv', vm_set_pu=1.02, tol=tol, element="trafo3w")
+
+    # --- run control reference
+    create_continuous_bus_index(net, store_old_index=True)
+    runpp(net, run_control=True)
     assert not np.allclose(net_ref.res_trafo3w.vm_mv_pu.values, 1.02, atol=tol)
     assert np.allclose(net_ref.trafo3w.tap_pos.values, 0)
     assert np.allclose(net.res_trafo3w.vm_mv_pu.values, 1.02, atol=tol)

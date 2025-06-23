@@ -18,10 +18,7 @@ try:
 except ImportError:
     matpowercaseframes_imported = False
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 

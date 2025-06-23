@@ -7,10 +7,7 @@ from pandapower.run import runpp
 from pandapower.pf.runpp_3ph import runpp_3ph
 from pandapower.toolbox import replace_zero_branches_with_switches
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 

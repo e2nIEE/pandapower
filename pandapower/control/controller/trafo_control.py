@@ -8,10 +8,7 @@ import numpy as np
 from pandapower.auxiliary import read_from_net, _detect_read_write_flag
 from pandapower.control.basic_controller import Controller
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 logger = logging.getLogger(__name__)
 
 
@@ -55,7 +52,7 @@ class TrafoController(Controller):
 
         self.set_recycle(net)
 
-        self.trafobus = read_from_net(net, self.element, self.element_index, self.side + '_bus', self._read_write_flag)
+        self.trafobus = None
 
     def _set_read_write_flag(self, net):
         # if someone changes indices of the controller from single index to array and vice versa
@@ -70,11 +67,15 @@ class TrafoController(Controller):
         # update trafo tap parameters
         # we assume side does not change after the controller is created
         self._set_read_write_flag(net)
+        self._update_trafobus(net)
         # self._set_valid_controlled_index_and_bus(net)
         if self.nothing_to_do(net):
             return
         self._set_tap_parameters(net)
         self._set_tap_side_coeff(net)
+
+    def _update_trafobus(self, net):
+        self.trafobus = read_from_net(net, self.element, self.element_index, self.side + '_bus', self._read_write_flag)
 
     def nothing_to_do(self, net):
         element_in_service = read_from_net(net, self.element, self.element_index, 'in_service', self._read_write_flag)

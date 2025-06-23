@@ -189,21 +189,29 @@ latex_elements = {
 #'pointsize': '10pt',
 
 # Additional stuff for the LaTeX preamble.
-# here: fix the fancy table formmatting the "ugly" way -> longtable instead of tabular globaally
-'preamble': '\\renewenvironment{tabular}{\\begin{longtable}}{\\end{longtable}} \n\\usepackage{minted} \n\\fvset{breaklines=true}\n\\usepackage{graphicx}\n\\setkeys{Gin}{width=.85\\textwidth}',
-'babel': '\\usepackage[english]{babel}'
+# here: fix the fancy table formatting the "ugly" way -> longtable instead of tabular globally
+'preamble': r'''
+\usepackage{newunicodechar}
+\newunicodechar{➔}{\rightarrow}
+\renewenvironment{tabular}{\begin{longtable}}{\end{longtable}}
+\usepackage{minted}
+\fvset{breaklines=true}
+\usepackage{graphicx}
+\setkeys{Gin}{width=.85\textwidth}
+''',
+'babel': r'\usepackage[english]{babel}'
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('latex_index', 'pandapower.tex', u'pandapower Documentation',
-   'Fraunhofer IEE\\\ Universit\\"{a}t Kassel', 'manual'),
+  ('index', 'pandapower.tex', u'pandapower Documentation',
+   r'Fraunhofer IEE\\Universität Kassel', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
 # the title page.
-#latex_logo = 'doc/pandapower/pics/LogoE2N.png'
+#latex_logo = 'pics/e2n.png'
 
 # For "manual" documents, if this is true, then toplevel headings are parts,
 # not chapters.
