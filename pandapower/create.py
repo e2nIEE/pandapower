@@ -24,10 +24,7 @@ import warnings
 from warnings import warn
 warnings.simplefilter('always')
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -2283,24 +2280,26 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
         **min_q_mvar** (float, NaN) - Minimum reactive power injection. Only respected for OPF
 
         **r0x0_max** (float, NaN) - maximum R/X-ratio to calculate Zero sequence
-        internal impedance of ext_grid
+            internal impedance of ext_grid
 
         **x0x_max** (float, NaN) - maximum X0/X-ratio to calculate Zero sequence
-        internal impedance of ext_grid
+            internal impedance of ext_grid
 
-        **slack_weight** (float, default 1.0) - Contribution factor for distributed slack power flow calculation
-                                                (active power balancing)
+        **slack_weight** (float, default 1.0) - Contribution factor for distributed slack power flow calculation \
+            (active power balancing)
 
-        \* considered in load flow if calculate_voltage_angles = True
+        **controllable** (bool, NaN) - Control of value limits 
 
-        **controllable** (bool, NaN) - True: p_mw, q_mvar and vm_pu limits are enforced for the \
+                                        - True: p_mw, q_mvar and vm_pu limits are enforced for the \
                                              ext_grid in OPF. The voltage limits set in the \
                                              ext_grid bus are enforced.
-                                       False: p_mw and vm_pu set points are enforced and *limits are\
+
+                                        - False: p_mw and vm_pu set points are enforced and *limits are\
                                               ignored*. The vm_pu set point is enforced and limits \
-                                              of the bus table are ignored.
-                                       defaults to False if "controllable" column exists in\
-                                       DataFrame
+                                              of the bus table are ignored. Defaults to False if \
+                                              "controllable" column exists in DataFrame
+
+        \\* considered in load flow if calculate_voltage_angles = True
 
     EXAMPLE:
         create_ext_grid(net, 1, voltage=1.03)
@@ -3501,7 +3500,7 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
         "df": df,
         "shift_degree": ti["shift_degree"] if "shift_degree" in ti else 0
     }
-    for zero_param in ['vk0_percent', 'vkr0_percent', 'mag0_percent', 'mag0_rx', 'si0_hv_partial']:
+    for zero_param in ['vk0_percent', 'vkr0_percent', 'mag0_percent', 'mag0_rx', 'si0_hv_partial', 'vector_group']:
         if zero_param in ti:
             updates[zero_param] = ti[zero_param]
     v.update(updates)
@@ -3679,7 +3678,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
 
         **leakage_reactance_ratio_hv** (bool) - ratio of transformer short-circuit reactance on HV side (default 0.5)
 
-        \* only considered in load flow if calculate_voltage_angles = True
+        \\* only considered in load flow if calculate_voltage_angles = True
 
     OUTPUT:
         **index** (int) - the unique ID of the created transformer
@@ -3898,7 +3897,7 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
         **tap2_changer_type** (list of str, None) - specifies the tap changer type ("Ratio", "Symmetrical", "Ideal", \
                                                     None: no tap changer)*
 
-        \* only considered in load flow if calculate_voltage_angles = True
+        \\* only considered in load flow if calculate_voltage_angles = True
 
     OUTPUT:
         **index** (list of int) - The list of IDs of the created transformers
@@ -4387,7 +4386,7 @@ def create_transformers3w_from_parameters(
 
         **vector_group** (list of str) - vector group of the 3w-transformers
 
-        \* only considered in load flow if calculate_voltage_angles = True
+        \\* only considered in load flow if calculate_voltage_angles = True
 
     OUTPUT:
         **trafo_id** (list of int) - list of trafo_ids of the created 3w-transformers

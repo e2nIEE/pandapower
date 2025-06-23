@@ -5,10 +5,7 @@ from .pf_export_functions import run_load_flow, create_network_dict
 from .pp_import_functions import from_pf
 from .run_import import choose_imp_dir, clear_dir, prj_dgs_import, prj_import
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 

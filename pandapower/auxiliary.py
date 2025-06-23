@@ -57,10 +57,7 @@ try:
     lightsim2grid_available = True
 except ImportError:
     lightsim2grid_available = False
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 try:
     from geopandas import GeoSeries
     from shapely import from_geojson
@@ -1857,7 +1854,7 @@ def _init_runse_options(net, v_start, delta_start, calculate_voltage_angles,
                      init_va_degree=delta_start, enforce_q_lims=False, recycle=None,
                      voltage_depend_loads=False, trafo3w_losses=trafo3w_losses)
     _add_pf_options(net, tolerance_mva="1e-8", trafo_loading="power",
-                    numba=False, ac=True, algorithm="nr", max_iteration="auto",
+                    numba=True, ac=True, algorithm="nr", max_iteration="auto",
                     only_v_results=False)
 
 
