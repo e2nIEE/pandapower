@@ -1441,7 +1441,7 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
 
 def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
                  scaling=1., type='wye', in_service=True, max_p_mw=nan, min_p_mw=nan,
-                 max_q_mvar=nan, min_q_mvar=nan, controllable=nan, k=nan, rx=nan,
+                 max_q_mvar=nan, min_q_mvar=nan, controllable=nan, k=nan, active_current=False, rx=nan,
                  id_q_capability_curve_characteristic=nan, reactive_capability_curve=False, curve_style=None,
                  current_source=True, generator_type="current_source", max_ik_ka=nan, kappa=nan, lrc_pu=nan, **kwargs):
     """
@@ -1576,6 +1576,8 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
         _add_to_entries_if_not_nan(net, "sgen", entries, index, "lrc_pu", lrc_pu)
     if gen_type_match["async_doubly_fed"].any():
         _add_to_entries_if_not_nan(net, "sgen", entries, index, "max_ik_ka", max_ik_ka)
+    _add_to_entries_if_not_nan(net, "sgen", entries, index, "active_current", active_current, dtype=bool_,
+                                   default_val=False)
     if not gen_type_match.any(axis=1).all():
         raise UserWarning(f"unknown sgen generator_type '{generator_type}'! "
                           f"Must be one of: None, 'current_source', 'async', 'async_doubly_fed'")
@@ -1656,7 +1658,7 @@ def create_asymmetric_sgen(net, bus, p_a_mw=0, p_b_mw=0, p_c_mw=0, q_a_mvar=0, q
     return index
 
 
-def create_sgen_from_cosphi(net, bus, sn_mva, cos_phi, mode, **kwargs):
+def create_sgen_from_cosphi(net, bus, sn_mva, cos_phi, mode, active_current=False, **kwargs):
     """
     Creates an sgen element from rated power and power factor cos(phi).
 
@@ -1671,6 +1673,8 @@ def create_sgen_from_cosphi(net, bus, sn_mva, cos_phi, mode, **kwargs):
 
         **mode** (str) - "underexcited" (Q absorption, decreases voltage) or "overexcited" \
                          (Q injection, increases voltage)
+        **active_current** (boolean) - False by default - necessary for calculating short-circuit current \
+                        considering active current option instead of nominal current
 
     OUTPUT:
         **index** (int) - The unique ID of the created sgen
@@ -1682,7 +1686,7 @@ def create_sgen_from_cosphi(net, bus, sn_mva, cos_phi, mode, **kwargs):
     """
     from pandapower.toolbox import pq_from_cosphi
     p_mw, q_mvar = pq_from_cosphi(sn_mva, cos_phi, qmode=mode, pmode="gen")
-    return create_sgen(net, bus, sn_mva=sn_mva, p_mw=p_mw, q_mvar=q_mvar, **kwargs)
+    return create_sgen(net, bus, sn_mva=sn_mva, p_mw=p_mw, q_mvar=q_mvar, active_current=active_current, **kwargs)
 
 
 def create_storage(net, bus, p_mw, max_e_mwh, q_mvar=0, sn_mva=nan, soc_percent=nan, min_e_mwh=0.0,
