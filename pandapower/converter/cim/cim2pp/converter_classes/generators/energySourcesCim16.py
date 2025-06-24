@@ -59,6 +59,7 @@ class EnergySourceCim16:
         eqssh_energy_sources['scaling'] = 1.
         eqssh_energy_sources['current_source'] = True
         eqssh_energy_sources['generator_type'] = 'current_source'
+        eqssh_energy_sources['controllable'] = False
         if 'inService' in eqssh_energy_sources.columns:
             eqssh_energy_sources['connected'] = (eqssh_energy_sources['connected']
                                                  & eqssh_energy_sources['inService'])
