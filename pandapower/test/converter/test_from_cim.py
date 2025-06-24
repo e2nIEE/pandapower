@@ -1379,7 +1379,7 @@ def test_column_dtype(fullgrid_v2: pandapowerNet):
             for index, dtype in dtypes.items():
                 # assert if they are not the same
                 if fullgrid_table.dtypes[index] != dtype:
-                    res['element'] = ('table', 'dtype_is', 'should_be')
+                    res['_element'] = ('table', 'dtype_is', 'should_be')
                     res[index] = (table, fullgrid_table.dtypes[index], dtype)
     # display all columns that have different dtypes with following structure
     # (<element column>: <net element>, <dtype of converted net>, <dtype of empty net>)
