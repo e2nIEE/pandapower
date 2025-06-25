@@ -121,8 +121,12 @@ def compare_results(columns_to_check, net_df, pf_results, branch_results):
 def load_test_case_data(net_name, fault_location_bus, vector_group=None):
     if vector_group:
         net_name += "_" + vector_group.lower()
+    if net_name.endswith("_sgen"):
+        grid_folder = "wp_2.2"
+    else:
+        grid_folder = "wp_2.1"
 
-    net = from_json(os.path.join(testfiles_path, "test_grids", net_name + ".json"))
+    net = from_json(os.path.join(testfiles_path, "test_grids", grid_folder, net_name + ".json"))
     excel_file_bus = os.path.join(testfiles_path, "sc_result_comparison",
                                   net_name + "_pf_sc_results_" + str(fault_location_bus) + "_bus.xlsx")
     excel_file_branch = os.path.join(testfiles_path, "sc_result_comparison",
