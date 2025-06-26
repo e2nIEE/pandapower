@@ -2,20 +2,23 @@
 
 # Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-from typing import Union, Dict, List
-import pandas as pd
 import logging
 import time
-from . import cim_tools
+from typing import Union, Dict, List
+
+import numpy as np
+import pandas as pd
 
 from pandapower.auxiliary import pandapowerNet
-from pandapower.std_types import create_std_type
 from pandapower.create import create_bus, create_ext_grid, create_lines
+from pandapower.network_structure import get_structure_dict
+from pandapower.std_types import create_std_type
+from . import cim_tools
 
 logger = logging.getLogger(__name__)
 
 
-def _set_column_to_type(input_df: pd.DataFrame, column: str, data_type):
+def _set_column_to_type(input_df: pd.DataFrame, column: str, data_type: str) -> None:
     try:
         input_df[column] = input_df[column].astype(data_type)
     except Exception as e:
@@ -32,36 +35,31 @@ def set_pp_col_types(net: Union[pandapowerNet, Dict], ignore_errors: bool = Fals
     :return: The pandapower network with updated data types.
     """
     time_start = time.time()
+    structure_dict = get_structure_dict()
     pp_elements = ['bus', 'dcline', 'ext_grid', 'gen', 'impedance', 'line', 'load', 'motor', 'sgen', 'shunt', 'storage',
                    'switch', 'trafo', 'trafo3w', 'ward', 'xward']
-    to_int = ['bus', 'element', 'to_bus', 'from_bus', 'hv_bus', 'mv_bus', 'lv_bus']
-    to_bool = ['in_service', 'controllable']
+    columns = ['bus', 'element', 'to_bus', 'from_bus', 'hv_bus', 'mv_bus', 'lv_bus', 'in_service', 'controllable']
     logger.info("Setting the columns data types for buses to int and in_service to bool for the following elements: "
                 "%s" % pp_elements)
-    int_type = int
-    bool_type = bool
     for ele in pp_elements:
         logger.info("Accessing pandapower element %s." % ele)
         if not hasattr(net, ele):
             if not ignore_errors:
                 logger.warning("Missing the pandapower element %s in the input pandapower network!" % ele)
             continue
-        for one_int in to_int:
-            if one_int in net[ele].columns:
-                _set_column_to_type(net[ele], one_int, int_type)
-        for one_bool in to_bool:
-            if one_bool in net[ele].columns:
-                _set_column_to_type(net[ele], one_bool, bool_type)
+        for column in columns:
+            if column in net[ele].columns:
+                _set_column_to_type(net[ele], column, dict(structure_dict[ele])[column])
     # some individual things
     if hasattr(net, 'switch'):
-        _set_column_to_type(net['switch'], 'closed', bool_type)
+        _set_column_to_type(net['switch'], 'closed', dict(structure_dict['switch'])['closed'])
     if hasattr(net, 'sgen'):
-        _set_column_to_type(net['sgen'], 'current_source', bool_type)
+        _set_column_to_type(net['sgen'], 'current_source', dict(structure_dict['sgen'])['current_source'])
     if hasattr(net, 'gen'):
-        _set_column_to_type(net['gen'], 'slack', bool_type)
+        _set_column_to_type(net['gen'], 'slack', dict(structure_dict['gen'])['slack'])
     if hasattr(net, 'shunt'):
-        _set_column_to_type(net['shunt'], 'step', int_type)
-        _set_column_to_type(net['shunt'], 'max_step', int_type)
+        _set_column_to_type(net['shunt'], 'step', dict(structure_dict['shunt'])['step'])
+        _set_column_to_type(net['shunt'], 'max_step', dict(structure_dict['shunt'])['max_step'])
     logger.info("Finished setting the data types for the pandapower network in %ss." % (time.time() - time_start))
     return net
 

@@ -5,6 +5,9 @@ Change Log
 -------------------------------
 - [FIXED] remove print statement from results_bus.py
 - [FIXED] cim2pp: Make sure that the controllable flag is never nan for any generators
+- [CHANGED] move pandapower network pandas structure dict from create_empty_network to its own file
+- [FIXED] set dtypes for columns with only values >=0 to unsigned integer in pandapower network pandas structure dict, if not already the case
+- [FIXED] cim2pp: use pandapower network pandas structure dict to set needed dtypes instead of hardcoded values
 
 [3.1.2] - 2025-06-16
 -------------------------------
