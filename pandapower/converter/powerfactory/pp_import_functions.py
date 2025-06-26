@@ -9,6 +9,9 @@ import geojson
 import networkx as nx
 import numpy as np
 from pandas import DataFrame
+from pandas import concat
+
+
 
 from pandapower.auxiliary import ADict, get_free_id
 from pandapower.control import ContinuousTapControl, DiscreteTapControl, _create_trafo_characteristics, \
@@ -26,9 +29,9 @@ from pandapower.std_types import add_zero_impedance_parameters, std_type_exists,
     load_std_type
 from pandapower.toolbox.grid_modification import set_isolated_areas_out_of_service, drop_inactive_elements, drop_buses
 from pandapower.topology import create_nxgraph
+from pandapower.topology import calc_distance_to_bus
 from pandapower.control.util.auxiliary import create_q_capability_curve_characteristics_object
 from pandapower.control.util.characteristic import SplineCharacteristic
-
 
 import logging
 
@@ -296,7 +299,7 @@ def from_pf(
     if export_controller:
         n = 0
         for n, stactrl in enumerate(dict_net['ElmStactrl'], 1):
-            create_stactrl(net=net, item=stactrl)
+            create_stactrl(net=net, item=stactrl, bus_dict_Elm_Term = dict_net['ElmTerm'])
         if n > 0: logger.info('imported %d station controllers' % n)
 
     remove_folder_of_std_types(net)
@@ -3769,7 +3772,11 @@ def create_vsc(net, item):
         net.res_vsc.loc[vid_2, ["pf_p_mw", "pf_q_mvar", "pf_p_dc_mw"]] = np.nan
 
 
-def create_stactrl(net, item):
+def create_stactrl(net, item, **kwargs):
+    if 'bus_dict_Elm_Term' in kwargs:
+        bus_dict_stactrl = kwargs.get('bus_dict_Elm_Term')
+    else:
+        bus_dict_stactrl = None
     stactrl_in_service = True
     if item.outserv:
         logger.info(f"Station controller {item.loc_name} is out of service")
@@ -3899,10 +3906,6 @@ def create_stactrl(net, item):
     phase = item.i_phase
     if phase != 0:
         raise NotImplementedError(f"{item}: phase {item.i_phase=} not implemented")
-
-    # Controlled Node: User selection vs Automatic selection  # User selection
-    if item.selBus != 0:
-        raise NotImplementedError(f"{item}: controlled node selection {item.selBus=} not implemented")
 
     variable = None
     res_element_table = None
@@ -4039,13 +4042,56 @@ def create_stactrl(net, item):
         return
 
     if control_mode == 0:  # VOLTAGE CONTROL
-        controlled_node = item.rembar
-        bus = bus_dict[controlled_node]  # controlled node
-
-        if item.uset_mode == 0:  # Station controller
-            v_set_point_pu = item.usetp
+        # Controlled Node: User selection vs Automatic selection  # User selection
+        if item.selBus == 0:
+            controlled_node = item.rembar
+            bus = bus_dict[controlled_node]  # controlled node
+            if item.uset_mode == 0:  # Station controller
+                v_set_point_pu = item.usetp
+            else:
+                v_set_point_pu = item.cpCtrlNode.vtarget  # Bus target voltage, not always the same as item.rembar
+        elif item.selBus == 1: #automatic selection
+            target_buses = net.bus[net.bus.vn_kv >= item.selAutoUn].index.tolist()  # All buses fulfilling the criteria
+            ref_buses = net.sgen.loc[gen_element_index, 'bus'].tolist() if gen_element == 'sgen' \
+                else net.gen.loc[gen_element_index, 'bus'].tolist()  # the start buses
+            ref_buses = np.unique(ref_buses)  # if machines at one bus
+            distances_list = []
+            if len(ref_buses) != 1:  # control group for multiple generators
+                for i in ref_buses:  # get distances of bus to possible buses
+                    if len(net.ext_grid.bus) > 1:  # multiple external nets dont work
+                        raise UserWarning(
+                            f'Multiple External Grids for control group in controller {len(net.controller)+1} with modus'
+                            f' V_ctrl, auto-selection of controlled busbar not possible, aborting\n') #todo what about multiple nets
+                    g = create_nxgraph(net, respect_switches=True)  # create graph for connecting buses
+                    distances_list.append(nx.shortest_path(g, source=i, target=int(
+                        net.ext_grid.bus.values)))  # all buses between generators and external net
+                common = set(distances_list[0]).intersection(*distances_list[1:])  # all buses in same lists
+                control_group_bus = next((x for x in distances_list[0] if x in common), None)  # closest bus to gens
+            else:
+                control_group_bus = ref_buses[0]
+            distances = calc_distance_to_bus(net, control_group_bus,
+                                                 weight=None)  # criteria is the distance in the network, not in km
+            distances_list = [distances.loc[target_buses]]
+            distances_filtered = concat(distances_list, axis=0, ignore_index=False)
+            if distances_filtered.empty:  # no possible busbar -> Bus next to gen, in PF using gen target vm_pu
+                bus = net.sgen.at[
+                    np.atleast_1d(gen_element_index)[0], 'bus'] if gen_element == 'sgen' \
+                    else net.gen.at[
+                    np.atleast_1d(gen_element_index)[0], 'bus']  # here bus target v cause no gen target vm_pu
+            else:
+                bus = distances_filtered.idxmin()  # minimal distances index
+                min_distance = np.atleast_1d(distances_filtered).min()  # minimal distance
+                distances_filtered = distances_filtered.drop(bus)  # check if multiple buses within minimal distance
+                if min_distance in distances_filtered.values:
+                    raise UserWarning  # what todo when multiple buses within minimal distance
+            try:
+                v_set_point_pu = bus_dict_stactrl[bus].vtarget
+            except KeyError:
+                logger.error(f"The automatically selected bus {bus} in Controller {len(net.controller)+1} with modus V_ctrl"
+                             f" has no target voltage, trying target voltage 1 pu\n")
+                v_set_point_pu = 1
         else:
-            v_set_point_pu = item.cpCtrlNode.vtarget  # Bus target voltage, not always the same as item.rembar
+            raise NotImplementedError(f"{item}: controlled node selection {item.selBus} not implemented")
 
         if item.i_droop:  # Enable Droop
             bsc = BinarySearchControl(net, ctrl_in_service=stactrl_in_service,
