@@ -5,6 +5,7 @@ Change Log
 -------------------------------
 - [FIXED] remove print statement from results_bus.py
 - [FIXED] cim2pp: Make sure that the controllable flag is never nan for any generators
+- [FIXED] saturate_sn_mva parameter in DER controller
 
 [3.1.2] - 2025-06-16
 -------------------------------
