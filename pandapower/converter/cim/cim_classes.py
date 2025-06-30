@@ -263,7 +263,7 @@ class CimParser:
                     'TapChangerControl']),
                 'PhaseTapChangerAsymmetrical': pd.DataFrame(columns=[
                     'rdfId', 'TransformerEnd', 'neutralStep', 'lowStep', 'highStep', 'voltageStepIncrement',
-                    'TapChangerControl']),
+                    'TapChangerControl', 'windingConnectionAngle']),
                 'PhaseTapChangerSymmetrical': pd.DataFrame(columns=[
                     'rdfId', 'TransformerEnd', 'neutralStep', 'lowStep', 'highStep', 'voltageStepIncrement',
                     'TapChangerControl']),
@@ -670,7 +670,7 @@ class CimParser:
                     'TapChangerControl']),
                 'PhaseTapChangerAsymmetrical': pd.DataFrame(columns=[
                     'rdfId', 'TransformerEnd', 'neutralStep', 'lowStep', 'highStep', 'voltageStepIncrement',
-                    'TapChangerControl']),
+                    'TapChangerControl', 'windingConnectionAngle']),
                 'PhaseTapChangerSymmetrical': pd.DataFrame(columns=[
                     'rdfId', 'TransformerEnd', 'neutralStep', 'lowStep', 'highStep', 'voltageStepIncrement',
                     'TapChangerControl']),

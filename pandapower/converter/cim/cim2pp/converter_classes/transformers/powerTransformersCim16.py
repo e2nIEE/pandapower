@@ -324,6 +324,8 @@ class PowerTransformersCim16:
                                             on='rdfId')
         eqssh_tap_changers_async['stepVoltageIncrement'] = eqssh_tap_changers_async['voltageStepIncrement'][:]
         eqssh_tap_changers_async = eqssh_tap_changers_async.drop(columns=['voltageStepIncrement'])
+        eqssh_tap_changers_async['stepPhaseShiftIncrement'] = eqssh_tap_changers_async['windingConnectionAngle'][:]
+        eqssh_tap_changers_async = eqssh_tap_changers_async.drop(columns=['windingConnectionAngle'])
         eqssh_tap_changers_async[sc['tc']] = 'PhaseTapChangerAsymmetrical'
         eqssh_tap_changers_async['tap_changer_type'] = "Ratio"  # Ratio/Asymmetrical phase shifter
         eqssh_tap_changers_async[sc['tc_id']] = eqssh_tap_changers_async['rdfId'].copy()
