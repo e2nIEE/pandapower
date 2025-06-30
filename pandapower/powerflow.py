@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from numpy import nan_to_num, array, allclose, int64
@@ -21,10 +21,7 @@ from pandapower.pypower.pfsoln import pfsoln as pfsoln_pypower
 from pandapower.results import _extract_results, _copy_results_ppci_to_ppc, init_results, \
     verify_results, _ppci_bus_to_ppc, _ppci_other_to_ppc
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +78,6 @@ def _recycled_powerflow(net, **kwargs):
     algorithm = options["algorithm"]
     ac = options["ac"]
     recycle = options["recycle"]
-    update_vk_values = kwargs.get("update_vk_values", True)
     ppci = {"bus": net["_ppc"]["internal"]["bus"],
             "gen": net["_ppc"]["internal"]["gen"],
             "branch": net["_ppc"]["internal"]["branch"],
@@ -105,9 +101,9 @@ def _recycled_powerflow(net, **kwargs):
         # update trafo in branch and Ybus
         lookup = net._pd2ppc_lookups["branch"]
         if "trafo" in lookup:
-            _calc_trafo_parameter(net, ppc, update_vk_values=update_vk_values)
+            _calc_trafo_parameter(net, ppc,)
         if "trafo3w" in lookup:
-            _calc_trafo3w_parameter(net, ppc, update_vk_values=update_vk_values)
+            _calc_trafo3w_parameter(net, ppc)
 
     if "gen" in recycle and recycle["gen"]:
         # updates the ppc["gen"] part
@@ -149,7 +145,7 @@ def _run_pf_algorithm(ppci, options, **kwargs):
             # ommission not correct if distributed slack is used or facts devices are present
             result = _bypass_pf_and_set_results(ppci, options)
         elif algorithm == 'bfsw':  # forward/backward sweep power flow algorithm
-            result = _run_bfswpf(ppci, options, **kwargs)[0]
+            result = _run_bfswpf(ppci, options, **kwargs)
         elif algorithm in ['nr', 'iwamoto_nr']:
             result = _run_newton_raphson_pf(ppci, options)
         elif algorithm in ['fdbx', 'fdxb', 'gs']:  # algorithms existing within pypower

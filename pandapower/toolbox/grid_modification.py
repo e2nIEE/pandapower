@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
@@ -23,10 +23,7 @@ from pandapower.toolbox.data_modification import reindex_elements
 from pandapower.groups import detach_from_groups, attach_to_group, attach_to_groups, isin_group, \
     check_unique_group_rows, element_associated_groups
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -96,16 +93,22 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
                                       (net.measurement.element.isin(p2.trafo.index))) |
                                      ((net.measurement.element_type == "trafo3w") &
                                       (net.measurement.element.isin(p2.trafo3w.index)))]
-    relevant_characteristics = set()
-    for col in ("vk_percent_characteristic", "vkr_percent_characteristic"):
-        if col in net.trafo.columns:
-            relevant_characteristics |= set(net.trafo.loc[~net.trafo[col].isnull(), col].values)
-    for col in (f"vk_hv_percent_characteristic", f"vkr_hv_percent_characteristic",
-                f"vk_mv_percent_characteristic", f"vkr_mv_percent_characteristic",
-                f"vk_lv_percent_characteristic", f"vkr_lv_percent_characteristic"):
-        if col in net.trafo3w.columns:
-            relevant_characteristics |= set(net.trafo3w.loc[~net.trafo3w[col].isnull(), col].values)
-    p2.characteristic = net.characteristic.loc[list(relevant_characteristics)]
+
+    if "trafo_characteristic_table" in net:
+        p2["trafo_characteristic_table"] = net["trafo_characteristic_table"][
+            net["trafo_characteristic_table"].id_characteristic.isin(p2["trafo"].id_characteristic_table.values) |
+            net["trafo_characteristic_table"].id_characteristic.isin(p2["trafo3w"].id_characteristic_table.values)]
+    for table in ["shunt_characteristic_table", "gen_characteristic_table"]:
+        if table in net:
+            p2[table] = net[table][net[table].id_characteristic.isin(p2[table[:-21]].id_characteristic_table.values)]
+
+    if "trafo_characteristic_spline" in net:
+        p2["trafo_characteristic_spline"] = net["trafo_characteristic_spline"][
+            net["trafo_characteristic_spline"].id_characteristic.isin(p2["trafo"].id_characteristic_spline.values) |
+            net["trafo_characteristic_spline"].id_characteristic.isin(p2["trafo3w"].id_characteristic_spline.values)]
+    for table in ["shunt_characteristic_spline", "gen_characteristic_spline"]:
+        if table in net:
+            p2[table] = net[table][net[table].id_characteristic.isin(p2[table[:-22]].id_characteristic_spline.values)]
 
     _select_cost_df(net, p2, "poly_cost")
     _select_cost_df(net, p2, "pwl_cost")
@@ -234,6 +237,14 @@ def _merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
                 old_indices = pd.Series(old_indices).loc[~pd.Series(old_indices).duplicated()].tolist()
             new_indices = range(start, start + len(old_indices))
             reindex_lookup[elm_type] = dict(zip(old_indices, new_indices))
+            if "trafo_characteristic_table" in net and "id_characteristic" in net["trafo_characteristic_table"]:
+                if elm_type == "trafo_characteristic_table":
+                    id_start = net1[elm_type].id_characteristic.max() + 1
+                    id_max = net2[elm_type].id_characteristic.max() + id_start
+                    combined_ids = net2[elm_type].id_characteristic.dropna().unique()
+                    reindex_lookup[elm_type] = {
+                        old_id: new_id for old_id, new_id in zip(sorted(combined_ids), range(id_start, id_max + 1))
+                    }
             reindex_elements(net2, elm_type, lookup=reindex_lookup[elm_type])
     if len(reindex_lookup.keys()):
         log_to_level("net2 elements of these types has been reindexed by merge_nets() because " + \
@@ -728,6 +739,8 @@ def drop_elements_at_buses(net, buses, bus_elements=True, branch_elements=True,
                 n_el = net[element_type].shape[0]
                 detach_from_groups(net, element_type, eid)
                 net[element_type] = net[element_type].drop(eid)
+                # drop associated measurements
+                drop_measurements_at_elements(net, element_type, idx=eid)
                 # res_element_type
                 res_element_type = "res_" + element_type
                 if res_element_type in net.keys() and isinstance(net[res_element_type], pd.DataFrame):

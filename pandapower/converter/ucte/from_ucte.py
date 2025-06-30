@@ -13,7 +13,7 @@ from pandapower.converter.ucte.ucte_parser import UCTEParser
 logger = logging.getLogger('ucte.from_ucte')
 
 
-def from_ucte_dict(ucte_parser: UCTEParser):
+def from_ucte_dict(ucte_parser: UCTEParser, slack_as_gen: bool = True):
     """Creates a pandapower net from an UCTE data structure.
 
     Parameters
@@ -21,31 +21,43 @@ def from_ucte_dict(ucte_parser: UCTEParser):
     ucte_parser : UCTEParser
         The UCTEParser with parsed UCTE data.
 
+    slack_as_gen : bool
+        decides whether slack elements are converted as gen or ext_grid elements.
+
     Returns
     -------
     pandapowerNet
         net
     """
 
-    ucte_converter = UCTE2pandapower()
+    ucte_converter = UCTE2pandapower(slack_as_gen=slack_as_gen)
     net = ucte_converter.convert(ucte_parser.get_data())
 
     return net
 
 
-def from_ucte(ucte_file: str):
+def from_ucte(ucte_file: str, slack_as_gen: bool = True):
     """Converts net data stored as an UCTE file to a pandapower net.
-
 
     Parameters
     ----------
     ucte_file : str
         path to the ucte file which includes all the data of the grid (EHV or HV or both)
 
+    slack_as_gen : bool
+        decides whether slack elements are converted as gen or ext_grid elements.
+
     Returns
     -------
     pandapowerNet
         net
+
+    Example
+    -------
+    >>> import os
+    >>> import pandapower as pp
+    >>> ucte_file = os.path.join(pp.pp_dir, "test", "converter", "testfiles", "test_ucte_DK.uct")
+    >>> net = pp.converter.from_ucte(ucte_file)
     """
 
     # Note:
@@ -59,7 +71,7 @@ def from_ucte(ucte_file: str):
 
     time_start_converting = time.time()
 
-    pp_net = from_ucte_dict(ucte_parser)
+    pp_net = from_ucte_dict(ucte_parser, slack_as_gen=slack_as_gen)
 
     time_end_converting = time.time()
 
@@ -68,3 +80,12 @@ def from_ucte(ucte_file: str):
     logger.info("Total Time (from_ucte()): %s" % (time_end_converting - time_start_parsing))
 
     return pp_net
+
+
+if __name__ == "__main__":
+    import os
+    import pandapower as pp
+
+    ### loading the line test as example
+    ucte_file = os.path.join(pp.pp_dir, "test", "converter", "testfiles", "test_ucte_DK.uct")
+    net = pp.converter.from_ucte(ucte_file)

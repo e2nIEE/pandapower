@@ -5,11 +5,13 @@
 
 from scipy.optimize import minimize
 
-from pandapower.estimation.ppc_conversion import ExtendedPPCI
 from pandapower.estimation.algorithm.base import BaseAlgorithm
 from pandapower.estimation.algorithm.estimator import BaseEstimatorOpt, get_estimator
+from pandapower.estimation.ppc_conversion import ExtendedPPCI
 
 DEFAULT_OPT_METHOD = "Newton-CG"
+
+
 # DEFAULT_OPT_METHOD = "TNC"
 # DEFAULT_OPT_METHOD = "SLSQP"
 # DEFAULT_OPT_METHOD = 'L-BFGS-B'
@@ -33,4 +35,4 @@ class OptAlgorithm(BaseAlgorithm):
             eppci.update_E(E)
             return eppci
         else:
-            raise Exception("Optimiaztion failed! State Estimation not successful!")
+            raise Exception("Optimization failed! State Estimation not successful!")

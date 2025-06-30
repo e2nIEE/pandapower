@@ -19,7 +19,7 @@ from .cim_tools import get_cim_schema
 
 class CimParser:
 
-    def __init__(self, cim: Dict[str, Dict[str, pd.DataFrame]] = None, cgmes_version: str = None):
+    def __init__(self, cim: Dict[str, Dict[str, pd.DataFrame]] = None, cgmes_version: str = None, **kwargs):
         """
         This class parses CIM files and loads its content to a dictionary of
         CIM profile (dict) -> CIM element type (str) -> CIM elements (DataFrame)
@@ -33,6 +33,7 @@ class CimParser:
         self.cim: Dict[str, Dict[str, pd.DataFrame]] = cim if cim is not None else self.get_cim_data_structure()
         self.file_names: Dict[str, str] = dict()
         self.report_container = ReportContainer()
+        self.ignore_errors = bool(kwargs.get("ignore_errors", False))
 
     def parse_files(self, file_list: List[str] or str = None, encoding: str = None, prepare_cim_net: bool = False,
                     set_data_types: bool = False) -> CimParser:
@@ -194,7 +195,7 @@ class CimParser:
                     'maxR1ToX1Ratio', 'minR1ToX1Ratio', 'maxR0ToX0Ratio', 'maxZ0ToZ1Ratio']),
                 'ACLineSegment': pd.DataFrame(columns=[
                     'rdfId', 'name', 'description', 'length', 'r', 'x', 'bch', 'gch', 'r0', 'x0', 'b0ch', 'g0ch',
-                    'shortCircuitEndTemperature', 'BaseVoltage']),
+                    'shortCircuitEndTemperature', 'BaseVoltage', 'EquipmentContainer']),
                 'Terminal': pd.DataFrame(columns=[
                     'rdfId', 'name', 'ConnectivityNode', 'ConductingEquipment', 'sequenceNumber']),
                 'OperationalLimitSet': pd.DataFrame(columns=['rdfId', 'name', 'Terminal']),
@@ -205,6 +206,7 @@ class CimParser:
                     'rdfId', 'name', 'OperationalLimitSet', 'OperationalLimitType', 'value']),
                 'DCNode': pd.DataFrame(columns=['rdfId', 'name', 'DCEquipmentContainer']),
                 'DCEquipmentContainer': pd.DataFrame(columns=['rdfId', 'name']),
+                'DCLine': pd.DataFrame(columns=['rdfId', 'name']),
                 'DCConverterUnit': pd.DataFrame(columns=['rdfId', 'name', 'Substation', 'operationMode']),
                 'DCLineSegment': pd.DataFrame(columns=['rdfId', 'name', 'description', 'EquipmentContainer']),
                 'CsConverter': pd.DataFrame(columns=['rdfId', 'BaseVoltage', 'ratedUdc']),
@@ -227,15 +229,15 @@ class CimParser:
                 'NonConformLoad': pd.DataFrame(columns=['rdfId', 'name', 'description']),
                 'StationSupply': pd.DataFrame(columns=['rdfId', 'name', 'description', 'BaseVoltage']),
                 'GeneratingUnit': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'nominalP', 'initialP', 'minOperatingP', 'maxOperatingP', 'EquipmentContainer']),
-                'WindGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP']),
-                'HydroGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP']),
-                'SolarGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP']),
-                'ThermalGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP']),
-                'NuclearGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP']),
+                    'rdfId', 'name', 'nominalP', 'initialP', 'minOperatingP', 'maxOperatingP', 'EquipmentContainer', 'governorSCD']),
+                'WindGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP', 'governorSCD']),
+                'HydroGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP', 'governorSCD']),
+                'SolarGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP', 'governorSCD']),
+                'ThermalGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP', 'governorSCD']),
+                'NuclearGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP', 'governorSCD']),
                 'RegulatingControl': pd.DataFrame(columns=['rdfId', 'name', 'mode', 'Terminal']),
                 'SynchronousMachine': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'description', 'GeneratingUnit', 'EquipmentContainer', 'ratedU', 'ratedS', 'type',
+                    'rdfId', 'name', 'description', 'GeneratingUnit', 'EquipmentContainer', 'ratedU', 'ratedS', 'type', 'InitialReactiveCapabilityCurve',
                     'r2', 'x2', 'ratedPowerFactor', 'voltageRegulationRange', 'minQ', 'maxQ', 'RegulatingControl']),
                 'AsynchronousMachine': pd.DataFrame(columns=[
                     'rdfId', 'name', 'description', 'GeneratingUnit', 'ratedS', 'ratedU', 'ratedPowerFactor',
@@ -244,7 +246,7 @@ class CimParser:
                     'rdfId', 'name', 'description', 'nominalVoltage', 'EnergySchedulingType', 'BaseVoltage',
                     'EquipmentContainer', 'voltageAngle', 'voltageMagnitude']),
                 'EnergySchedulingType': pd.DataFrame(columns=['rdfId', 'name']),
-                'StaticVarCompensator': pd.DataFrame(columns=['rdfId', 'name', 'description', 'voltageSetPoint']),
+                'StaticVarCompensator': pd.DataFrame(columns=['rdfId', 'name', 'description', 'voltageSetPoint','sVCControlMode']),
                 'PowerTransformer': pd.DataFrame(columns=[
                     'rdfId', 'name', 'description', 'EquipmentContainer', 'isPartOfGeneratorUnit']),
                 'PowerTransformerEnd': pd.DataFrame(columns=[
@@ -275,7 +277,8 @@ class CimParser:
                 'RatioTapChangerTablePoint': pd.DataFrame(columns=['rdfId', 'RatioTapChangerTable', 'step',
                                                                    'r', 'x', 'ratio']),
                 'LinearShuntCompensator': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'description', 'nomU', 'gPerSection', 'bPerSection', 'maximumSections']),
+                    'rdfId', 'name', 'description', 'nomU', 'gPerSection', 'bPerSection', 'maximumSections',
+                    'normalSections', 'EquipmentContainer']),
                 'NonlinearShuntCompensator': pd.DataFrame(columns=[
                     'rdfId', 'name', 'description', 'nomU', 'maximumSections']),
                 'NonlinearShuntCompensatorPoint': pd.DataFrame(columns=[
@@ -283,7 +286,8 @@ class CimParser:
                 'EquivalentBranch': pd.DataFrame(columns=[
                     'rdfId', 'name', 'description', 'BaseVoltage', 'r', 'x', 'r21', 'x21', 'zeroR12', 'zeroR21',
                     'zeroX12', 'zeroX21']),
-                'EquivalentInjection': pd.DataFrame(columns=['rdfId', 'name', 'description', 'BaseVoltage', 'r', 'x']),
+                'EquivalentInjection': pd.DataFrame(columns=['rdfId', 'name', 'description', 'BaseVoltage', 'r', 'x',
+                                                             'regulationCapability']),
                 'SeriesCompensator': pd.DataFrame(columns=[
                     'rdfId', 'name', 'description', 'BaseVoltage', 'r', 'x', 'r0', 'x0']),
                 'Analog': pd.DataFrame(columns=[
@@ -291,7 +295,11 @@ class CimParser:
                     'PowerSystemResource', 'positiveFlowIn']),
                 'AnalogValue': pd.DataFrame(columns=[
                     'rdfId', 'name', 'sensorAccuracy', 'MeasurementValueSource', 'Analog', 'value']),
-                'MeasurementValueSource': pd.DataFrame(columns=['rdfId', 'name'])
+                'MeasurementValueSource': pd.DataFrame(columns=['rdfId', 'name']),
+                'ReactiveCapabilityCurve': pd.DataFrame(columns=['rdfId', 'name', 'curveStyle', 'xUnit', 'y1Unit',
+                                                                 'y2Unit']),
+                'CurveData': pd.DataFrame(columns=['rdfId', 'Curve', 'xvalue', 'y1value', 'y2value'])
+
             }),
             'eq_bd': MappingProxyType({
                 'ConnectivityNode': pd.DataFrame(columns=['rdfId', 'name', 'ConnectivityNodeContainer']),
@@ -388,14 +396,11 @@ class CimParser:
     def _get_df(self, items):
         return pd.DataFrame([self._parse_element(child) for child in iter(items)])
 
-    def _get_cgmes_profile_from_xml(self, root: etree.Element, ignore_errors: bool = False,
-                                    default_profile: str = 'unknown') -> str:
+    def _get_cgmes_profile_from_xml(self, root: etree.Element, default_profile: str = 'unknown') -> str:
         """
         Get the CGMES profile from the XML file.
 
         :param root: The root element from the XML tree
-        :param ignore_errors: Ignore errors and return a profile version if possible. If no profile is readable,
-        the content from the parameter default will be returned. Optional, default: False
         :param default_profile: The default profile name which will be returned if ignore_errors is set to True.
         Optional, default: 'unknown'
         :return: The profile in short from: 'eq' for Equipment, 'eq_bd' for EquipmentBoundary,
@@ -411,16 +416,16 @@ class CimParser:
             full_model = 'FullModel'
         full_model_profile = full_model[:-9] + 'Model.profile'
         full_model_df = self._get_df(root.findall('.//' + full_model))
-        if full_model_df.index.size == 0 and ignore_errors:
+        if full_model_df.index.size == 0 and self.ignore_errors:
             self.logger.warning("The FullModel is not given in the XML tree, returning %s" % default_profile)
             return default_profile
         elif full_model_df.index.size == 0:
             raise Exception("The FullModel is not given in the XML tree.")
-        if full_model_df.index.size > 1 and ignore_errors:
+        if full_model_df.index.size > 1 and self.ignore_errors:
             self.logger.warning("It is more than one FullModel given, returning the profile from the first FullModel.")
         elif full_model_df.index.size > 1:
             raise Exception("It is more than one FullModel given.")
-        if full_model_profile not in full_model_df.columns and ignore_errors:
+        if full_model_profile not in full_model_df.columns and self.ignore_errors:
             self.logger.warning("The profile is not given in the FullModel, returning %s" % default_profile)
             return default_profile
         elif full_model_profile not in full_model_df.columns:
@@ -451,7 +456,9 @@ class CimParser:
                 return 'op'
             elif '/ShortCircuit-EU/' in one_profile:
                 return 'sc'
-        if ignore_errors:
+            elif '/Dynamics/' in one_profile:
+                return 'dy'
+        if self.ignore_errors:
             self.logger.warning("The CGMES profile could not be parsed from the XML, returning %s" % default_profile)
             self.report_container.add_log(Report(level=LogLevel.ERROR, code=ReportCode.ERROR_PARSING,
                                                  message="The CGMES profile could not be parsed from the XML, "
@@ -542,8 +549,10 @@ class CimParser:
         else:
             for ele, df in prf_content.items():
                 if ele not in output[prf].keys():
-                    output[prf][ele] = pd.DataFrame()
-                output[prf][ele] = pd.concat([output[prf][ele], prf_content[ele]], ignore_index=True, sort=False)
+                    concat_list = [prf_content[ele]]
+                else:
+                    concat_list = [output[prf][ele], prf_content[ele]]
+                output[prf][ele] = pd.concat(concat_list, ignore_index=True, sort=False)
 
     def _check_file(self, file: str) -> bool:
         if not os.path.isfile(file):
@@ -597,7 +606,7 @@ class CimParser:
                     'rdfId', 'name', 'description', 'minP', 'maxP', 'minQ', 'maxQ', 'BaseVoltage', 'EquipmentContainer',
                     'RegulatingControl', 'governorSCD']),
                 'ACLineSegment': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'description', 'length', 'r', 'x', 'bch', 'gch', 'BaseVoltage']),
+                    'rdfId', 'name', 'description', 'length', 'r', 'x', 'bch', 'gch', 'BaseVoltage', 'EquipmentContainer']),
                 'Terminal': pd.DataFrame(columns=[
                     'rdfId', 'name', 'ConnectivityNode', 'ConductingEquipment', 'sequenceNumber']),
                 'OperationalLimitSet': pd.DataFrame(columns=['rdfId', 'name', 'Terminal']),
@@ -608,6 +617,7 @@ class CimParser:
                     'rdfId', 'name', 'OperationalLimitSet', 'OperationalLimitType']),
                 'DCNode': pd.DataFrame(columns=['rdfId', 'name', 'DCEquipmentContainer']),
                 'DCEquipmentContainer': pd.DataFrame(columns=['rdfId', 'name']),
+                'DCLine': pd.DataFrame(columns=['rdfId', 'name']),
                 'DCConverterUnit': pd.DataFrame(columns=['rdfId', 'name', 'Substation', 'operationMode']),
                 'DCLineSegment': pd.DataFrame(columns=['rdfId', 'name', 'description', 'EquipmentContainer']),
                 'CsConverter': pd.DataFrame(columns=['rdfId', 'BaseVoltage', 'ratedUdc']),
@@ -630,23 +640,23 @@ class CimParser:
                 'NonConformLoad': pd.DataFrame(columns=['rdfId', 'name', 'description']),
                 'StationSupply': pd.DataFrame(columns=['rdfId', 'name', 'description', 'BaseVoltage']),
                 'GeneratingUnit': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'nominalP', 'minOperatingP', 'maxOperatingP', 'EquipmentContainer']),
-                'WindGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP']),
-                'HydroGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP']),
-                'SolarGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP']),
-                'ThermalGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP']),
-                'NuclearGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP']),
+                    'rdfId', 'name', 'nominalP', 'minOperatingP', 'maxOperatingP', 'EquipmentContainer', 'governorSCD']),
+                'WindGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP', 'governorSCD']),
+                'HydroGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP', 'governorSCD']),
+                'SolarGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP', 'governorSCD']),
+                'ThermalGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP', 'governorSCD']),
+                'NuclearGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP', 'governorSCD']),
                 'RegulatingControl': pd.DataFrame(columns=['rdfId', 'name', 'mode', 'Terminal']),
                 'SynchronousMachine': pd.DataFrame(columns=[
                     'rdfId', 'name', 'description', 'GeneratingUnit', 'EquipmentContainer', 'ratedU', 'ratedS', 'type',
-                    'ratedPowerFactor', 'minQ', 'maxQ', 'RegulatingControl']),
+                    'InitialReactiveCapabilityCurve','ratedPowerFactor', 'minQ', 'maxQ', 'RegulatingControl']),
                 'AsynchronousMachine': pd.DataFrame(columns=[
                     'rdfId', 'name', 'description', 'GeneratingUnit', 'ratedS', 'ratedU', 'ratedPowerFactor']),
                 'EnergySource': pd.DataFrame(columns=[
                     'rdfId', 'name', 'description', 'nominalVoltage', 'EnergySchedulingType',
                     'EquipmentContainer']),
                 'EnergySchedulingType': pd.DataFrame(columns=['rdfId', 'name']),
-                'StaticVarCompensator': pd.DataFrame(columns=['rdfId', 'name', 'description', 'voltageSetPoint']),
+                'StaticVarCompensator': pd.DataFrame(columns=['rdfId', 'name', 'description', 'voltageSetPoint','sVCControlMode']),
                 'PowerTransformer': pd.DataFrame(columns=['rdfId', 'name', 'description', 'EquipmentContainer']),
                 'PowerTransformerEnd': pd.DataFrame(columns=[
                     'rdfId', 'name', 'PowerTransformer', 'endNumber', 'Terminal', 'ratedS', 'ratedU',
@@ -674,7 +684,8 @@ class CimParser:
                 'RatioTapChangerTablePoint': pd.DataFrame(columns=['rdfId', 'RatioTapChangerTable', 'step',
                                                                    'r', 'x', 'ratio']),
                 'LinearShuntCompensator': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'description', 'nomU', 'gPerSection', 'bPerSection', 'maximumSections']),
+                    'rdfId', 'name', 'description', 'nomU', 'gPerSection', 'bPerSection', 'maximumSections',
+                    'normalSections']),
                 'NonlinearShuntCompensator': pd.DataFrame(columns=[
                     'rdfId', 'name', 'description', 'nomU', 'maximumSections']),
                 'NonlinearShuntCompensatorPoint': pd.DataFrame(columns=[
@@ -685,7 +696,10 @@ class CimParser:
                 'SeriesCompensator': pd.DataFrame(columns=[
                     'rdfId', 'name', 'description', 'BaseVoltage', 'r', 'x']),
                 'MeasurementValueSource': pd.DataFrame(columns=['rdfId', 'name']),
-                'PetersenCoil': pd.DataFrame(columns=['rdfId', 'name', 'description'])
+                'PetersenCoil': pd.DataFrame(columns=['rdfId', 'name', 'description']),
+                'ReactiveCapabilityCurve': pd.DataFrame(columns=['rdfId', 'name', 'curveStyle', 'xUnit', 'y1Unit',
+                                                                 'y2Unit']),
+                'CurveData': pd.DataFrame(columns=['rdfId', 'Curve', 'xvalue', 'y1value', 'y2value'])
             }),
             'eq_bd': MappingProxyType({
                 'ConnectivityNode': pd.DataFrame(columns=['rdfId', 'name', 'ConnectivityNodeContainer']),

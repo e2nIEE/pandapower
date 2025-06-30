@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -17,10 +17,7 @@ from pandapower.pypower.idx_ssc import SSC_X_CONTROL_VM, SSC_X_CONTROL_VA, SSC_Q
 from pandapower.pypower.idx_svc import SVC_THYRISTOR_FIRING_ANGLE, SVC_Q, SVC_X_PU
 from pandapower.pypower.idx_vsc import VSC_Q, VSC_P, VSC_P_DC, VSC_BUS_DC, VSC_INTERNAL_BUS_DC, VSC_INTERNAL_BUS
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -243,6 +240,9 @@ def write_pq_results_to_element(net, ppc, element, suffix=None):
         net[res_]["q_mvar"].values[:] = el_data[q_mvar].values * scaling * element_in_service
         if is_controllable:
             net[res_].loc[controlled_elements, "q_mvar"] = ppc["gen"][gen_idx, QG] * gen_sign
+    else:
+        net[res_]["q_mvar"].values[:] = np.nan
+
     return net
 
 
@@ -525,12 +525,24 @@ def _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq):
         step = s["step"]
         v_ratio = (ppc["bus"][sidx, BASE_KV] / net["shunt"]["vn_kv"].values) ** 2
         u_shunt = np.nan_to_num(u_shunt)
-        p_shunt = u_shunt ** 2 * net["shunt"]["p_mw"].values * shunt_is * v_ratio * step
+        use_step_table = False
+        if "step_dependency_table" in s:
+            if any(s.step_dependency_table):
+                use_step_table = True
+        if use_step_table:
+            merged_df = s.merge(net.shunt_characteristic_table, left_on=['id_characteristic_table', 'step'],
+                                right_on=['id_characteristic', 'step'], how='left', suffixes=('', '_char'))
+            p_shunt_step = np.where(merged_df['step_dependency_table'], merged_df['p_mw_char'].values/merged_df['step'].values, merged_df['p_mw'].values).astype(np.float64)
+            q_shunt_step = np.where(merged_df['step_dependency_table'], merged_df['q_mvar_char'].values/merged_df['step'].values, merged_df['q_mvar'].values).astype(np.float64)
+        else:
+            p_shunt_step = net["shunt"]["p_mw"].values
+            q_shunt_step = net["shunt"]["q_mvar"].values
+        p_shunt = u_shunt ** 2 * p_shunt_step * shunt_is * v_ratio * step
         net["res_shunt"]["p_mw"].values[:] = p_shunt
         p = np.hstack([p, p_shunt])
         if ac:
             net["res_shunt"]["vm_pu"].values[:] = u_shunt
-            q_shunt = u_shunt ** 2 * net["shunt"]["q_mvar"].values * shunt_is * v_ratio * step
+            q_shunt = u_shunt ** 2 * q_shunt_step * shunt_is * v_ratio * step
             net["res_shunt"]["q_mvar"].values[:] = q_shunt
             q = np.hstack([q, q_shunt])
         b = np.hstack([b, s["bus"].values])
