@@ -4,7 +4,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
-
+import pandas as pd
 from pandapower.auxiliary import ensure_iterability
 from pandapower.control.controller.DERController.PQVAreas import BaseArea, PQVArea4110, QVArea4110
 from pandapower.control.controller.DERController.QModels import QModel
@@ -44,48 +44,67 @@ class DERController(PQController):
         the elements (called P_{b,installed} in the VDE AR N standards). Scalings and limits are
         usually relative to that (sn_mva) values.
 
-    :param pandapowerNet net: The pandapower network
-    :param list[int] element_index: IDs of the controlled elements
-    :param Optional[str] element: element type which is controlled (default: "sgen")
-    :param Optional q_model: an q_model, such as provided in this file, should be passed to
-        model how the q value should be determined. (default: None)
-    :param Optional pqv_area: an pqv_area, such as provided in this file, should be passed
-        to model q values are allowed. (default: None)
-    :param Optional[float] saturate_sn_mva: Maximum apparent power of the inverter. If given, the
+    INPUT:
+        **net** (pandapower net)
+
+        **element_index** (int[]) - IDs of the controlled elements
+
+    OPTIONAL:
+        **element** (str, "sgen") - element type which is controlled
+
+        **q_model** (object, None) - an q_model, such as provided in this file, should be passed to
+        model how the q value should be determined.
+
+        **pqv_area** (object, None) - an pqv_area, such as provided in this file, should be passed
+        to model q values are allowed.
+
+        **saturate_sn_mva** (float, NaN) - Maximum apparent power of the inverter. If given, the
         p or q values (depending on q_prio) are reduced to this maximum apparent power. Usually,
         it is not necessary to pass this values since the inverter needs to be dimensioned to provide
-        the standardized reactive power requirements. (default: NaN)
-    :param Optional[bool] q_prio: If True, the active power is reduced first in case of power
-        reduction due to saturate_sn_mva. Otherwise, the reactive power is reduced first. (default: True)
-    :param Optional[float] damping_coef: damping coefficient to influence the power updating process
+        the standardized reactive power requirements.
+
+        **q_prio** (bool, True) - If True, the active power is reduced first in case of power
+        reduction due to saturate_sn_mva. Otherwise, the reactive power is reduced first.
+
+        **damping_coef** (float, 2) - damping coefficient to influence the power updating process
         of the control loop. A higher value mean slower changes of p and q towards the latest target
-        values (default: 2.0)
-    :param Optional[float] max_p_error: Maximum absolute error of active power in MW (default: 0.0001)
-    :param Optional[float] max_q_error: Maximum absolute error of reactive power in Mvar (default: 0.0001)
-    :param Optional[float] pq_simultaneity_factor: Simultaneity factor applied to P and Q (default: 1.0)
-    :param Optional data_source: A DataSource that contains profiles (default: None)
-    :param Optional[list[str]] p_profile: The profile names of the controlled elements in the data
-        source for active power time series values (default: None)
-    :param Optional[bool] profile_from_name: If True, the profile names of the controlled elements
+        values
+
+        **max_p_error** (float, 0.0001) - Maximum absolute error of active power in MW
+
+        **max_q_error** (float, 0.0001) - Maximum absolute error of reactive power in Mvar
+
+        **pq_simultaneity_factor** (float, 1.0) - Simultaneity factor applied to P and Q
+
+        **data_source** ( , None) - A DataSource that contains profiles
+
+        **p_profile** (str[], None) - The profile names of the controlled elements in the data
+        source for active power time series values
+
+        **profile_from_name** (bool, False) - If True, the profile names of the controlled elements
         in the data source for active power time series values will be set be the name of the
         controlled elements, e.g. for controlled sgen "SGEN_1", the active power profile "P_SGEN_1"
-        is applied (default: False)
-    :param Optional[float] profile_scale: A scaling factor applied to the values of profiles (default: 1.0)
-    :param Optional[bool] in_service: Indicates if the controller is currently in_service (default: True)
-    :param Optional[bool] ts_absolute: Whether the time step values are absolute power values or
-        scaling factors (default: True)
+        is applied
 
-    :example:
-        >>> from pandapower.networks.cigre_networks import create_cigre_network_mv
-        >>> from pandapower.control.controller.DERController import DERController, QModelCosphiP, PQVArea4120V2
-        >>> from pandapower.run import runpp
-        >>> net = create_cigre_network_mv(with_der=True)
-        >>> controlled_sgens = DERController(
-        ...     net, net.sgen.index,
-        ...     q_model=QModelCosphiP(cosphi=-0.95),
-        ...     pqv_area=PQVArea4120V2()
-        ... )
-        >>> runpp(net, run_control=True)
+        **profile_scale** (float, 1.0) - A scaling factor applied to the values of profiles
+
+        **in_service** (bool, True) - Indicates if the controller is currently in_service
+
+        **ts_absolute** (bool, True) - Whether the time step values are absolute power values or
+        scaling factors
+
+    Example
+    -------
+    >>> from pandapower.networks.cigre_networks import create_cigre_network_mv
+    >>> from pandapower.control.controller.DERController import DERController, QModelCosphiP, PQVArea4120V2
+    >>> from pandapower.run import runpp
+    >>> net = create_cigre_network_mv(with_der=True)
+    >>> controlled_sgens = DERController(
+    ...     net, net.sgen.index,
+    ...     q_model=QModelCosphiP(cosphi=-0.95),
+    ...     pqv_area=PQVArea4120V2()
+    ... )
+    >>> runpp(net, run_control=True)
     """
 
     def __init__(self, net, element_index, element="sgen",
@@ -96,6 +115,12 @@ class DERController(PQController):
                  profile_scale=1.0, in_service=True, ts_absolute=True,
                  order=0, level=0, drop_same_existing_ctrl=False, matching_params=None, **kwargs):
         element_index = list(ensure_iterability(element_index))
+        #----new
+        df = getattr(net, element)
+        if isinstance(df.index, pd.MultiIndex):
+            element_index = self._expand_multiindex(df.index, element_index)
+
+        #----old
         if matching_params is None:
             matching_params = {"element_index": element_index}
         super().__init__(net, element_index=element_index, element=element, max_p_error=max_p_error,
@@ -156,7 +181,17 @@ class DERController(PQController):
         self.write_to_net(net)
 
     def _determine_target_powers(self, net):
-        vm_pu = net.res_bus.loc[self.bus, "vm_pu"].set_axis(self.element_index)
+        full_vm = net.res_bus["vm_pu"]
+        if isinstance(full_vm.index, pd.MultiIndex): #multiindex version
+            # ToDo: should the from_phase results be taken here?
+            mi = pd.MultiIndex.from_tuples(self.element_index,
+                                           names=full_vm.index.names)
+            vm_pu = full_vm.reindex(mi)
+        else: #old version
+            raw = full_vm.loc[self.bus]
+            vm_pu = pd.Series([raw] * len(self.element_index),
+                              index=self.element_index)
+        #vm_pu = net.res_bus.loc[self.bus, "vm_pu"].set_axis(self.element_index)
         p_series_mw = getattr(self, "p_series_mw", getattr(self, "p_mw", self.sn_mva))
         q_series_mvar = getattr(self, "q_series_mw", self.q_mvar)
 
@@ -233,6 +268,24 @@ class DERController(PQController):
                 q_pu[to_saturate] = np.sqrt(sat_s_pu[to_saturate] ** 2 - p_pu[to_saturate] ** 2) * \
                                     np.sign(q_pu[to_saturate])
         return p_pu, q_pu
+
+    @staticmethod
+    def _expand_multiindex(df_index: pd.Index, keys):
+        """
+        Given a pandas.MultiIndex and a list of keys (some top‐level, some full tuples),
+        return the flattened list of full tuples.
+        """
+        out = []
+        for k in keys:
+            if isinstance(k, tuple):
+                out.append(k)
+            else:
+                # collect all tuples whose first level == k
+                matches = df_index[df_index.get_level_values(0) == k].tolist()
+                if not matches:
+                    raise KeyError(f"No entries in index for top‐level key {k}")
+                out += matches
+        return out
 
     def __str__(self):
         el_id_str = f"len(element_index)={len(self.element_index)}" if len(self.element_index) > 6 \
