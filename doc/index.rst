@@ -21,7 +21,7 @@ More information about pandapower can be found on `www.pandapower.org <https://w
 
 If you are interested in the newest pandapower developments, subscribe to our `mailing list <https://www.pandapower.org/contact/#list>`_!
 
-pandapower is a joint development of the research group Energy Management and Power System Operation, University of Kassel and the Department for Distribution System
+pandapower is a joint development of the research group of the Department for Sustainable Electrical Energy Systems (e2n), University of Kassel and the Department for Distribution System
 Operation at the Fraunhofer Institute for Energy Economics and Energy System Technology (IEE), Kassel.
 
 .. image:: /pics/iee.png
@@ -46,6 +46,7 @@ Operation at the Fraunhofer Institute for Energy Economics and Energy System Tec
     elements
     std_types
     powerflow
+    contingency
     opf
     shortcircuit
     estimation

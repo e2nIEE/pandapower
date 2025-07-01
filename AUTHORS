@@ -1,11 +1,14 @@
-Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 and Energy System Technology (IEE), Kassel. All rights reserved.
 
-Lead Developers:
+pandapower is maintained and developed by a community on `GitHub <https://github.com/e2nIEE/pandapower>`_. Lists of maintainers and contributors can be found here:
+ - `All Contributors <https://github.com/e2nIEE/pandapower/graphs/contributors>`_
+ - `pandapower Maintainers <https://github.com/orgs/e2nIEE/teams/pandapower-maintainers>`_
+
+
+Previous list of Contributors:
     - Leon Thurner
     - Alexander Scheidler
-    
-Main Contributers:
     - Julian Dollichon
     - Florian Schäfer
     - Friederike Meier
@@ -14,8 +17,6 @@ Main Contributers:
     - Roman Bolgaryn
     - Jakov Krstulović Opara
     - Winfried Lorenzen
-  
-Further Contributions by:
     - Tobias Deß
     - Bastian Junker
     - Jannis Kupka
@@ -27,9 +28,15 @@ Further Contributions by:
     - Daniel Lohmeier
     - Massimo di Pierro
     - Shankho Ghosh
-    - Alexander Prostejovsky	
-
-Coordination:
-    - Martin Braun 
-    - Johann-Christian Töbermann 
+    - Zhenqi Wang
+    - Alexander Prostejovsky
+    - Maryam Majidi
+    - Martin Braun
+    - Johann-Christian Töbermann
     - Stefan Gehler
+    - Mike Vogt
+    - Pawel Lytaev
+    - Dominik Hilbrich
+    - Mario Richter
+    - David Heck
+    - Hjalmar Körtge

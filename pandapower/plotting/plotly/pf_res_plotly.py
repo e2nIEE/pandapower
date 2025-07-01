@@ -11,15 +11,13 @@ from pandapower.plotting.generic_geodata import create_generic_coordinates
 from pandapower.plotting.plotly.mapbox_plot import *
 from pandapower.plotting.plotly.traces import create_bus_trace, create_line_trace, \
     create_trafo_trace, draw_traces
+from pandapower.plotting.geo import convert_crs
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 logger = logging.getLogger(__name__)
 
 
-def pf_res_plotly(net, cmap="Jet", use_line_geodata=None, on_map=False, projection=None,
+def pf_res_plotly(net, cmap="Jet", use_line_geo=None, on_map=False, projection=None,
                   map_style='basic', figsize=1, aspectratio='auto', line_width=2, bus_size=10,
                   climits_volt=(0.9, 1.1), climits_load=(0, 100), cpos_volt=1.0, cpos_load=1.1,
                   filename="temp-plot.html", auto_open=True):
@@ -84,33 +82,30 @@ def pf_res_plotly(net, cmap="Jet", use_line_geodata=None, on_map=False, projecti
         runpp(net)
 
     # create geocoord if none are available
-    if 'line_geodata' not in net:
-        net.line_geodata = pd.DataFrame(columns=['coords'])
-    if 'bus_geodata' not in net:
-        net.bus_geodata = pd.DataFrame(columns=["x", "y"])
-    if len(net.line_geodata) == 0 and len(net.bus_geodata) == 0:
+    if any(net.line.geo.isna()) and any(net.bus.geo.isna()):
         logger.warning("No or insufficient geodata available --> Creating artificial coordinates." +
                        " This may take some time")
         create_generic_coordinates(net, respect_switches=True)
         if on_map:
             logger.warning("Map plots not available with artificial coordinates and will be disabled!")
             on_map = False
-    for geo_type in ["bus_geodata", "line_geodata"]:
-        dupl_geo_idx = pd.Series(net[geo_type].index)[pd.Series(
-                net[geo_type].index).duplicated()]
-        if len(dupl_geo_idx):
-            if len(dupl_geo_idx) > 20:
-                logger.warning("In net.%s are %i duplicated " % (geo_type, len(dupl_geo_idx)) +
-                               "indices. That can cause troubles for draw_traces()")
-            else:
-                logger.warning("In net.%s are the following duplicated " % geo_type +
-                               "indices. That can cause troubles for draw_traces(): " + str(
-                               dupl_geo_idx))
+
+    # for geo_type in ["bus_geodata", "line_geodata"]:
+    #     dupl_geo_idx = pd.Series(net[geo_type].index)[pd.Series(
+    #             net[geo_type].index).duplicated()]
+    #     if len(dupl_geo_idx):
+    #         if len(dupl_geo_idx) > 20:
+    #             logger.warning("In net.%s are %i duplicated " % (geo_type, len(dupl_geo_idx)) +
+    #                            "indices. That can cause troubles for draw_traces()")
+    #         else:
+    #             logger.warning("In net.%s are the following duplicated " % geo_type +
+    #                            "indices. That can cause troubles for draw_traces(): " + str(
+    #                            dupl_geo_idx))
 
 
     # check if geodata are real geographycal lat/lon coordinates using geopy
     if on_map and projection is not None:
-        geo_data_to_latlong(net, projection=projection)
+        convert_crs(net, epsg_in=projection)
 
     # ----- Buses ------
     # initializating bus trace
@@ -130,11 +125,11 @@ def pf_res_plotly(net, cmap="Jet", use_line_geodata=None, on_map=False, projecti
     # if bus geodata is available, but no line geodata
     # if bus geodata is available, but no line geodata
     cmap_lines = 'jet' if cmap == 'Jet' else cmap
-    if use_line_geodata is None:
-        use_line_geodata = False if len(net.line_geodata) == 0 else True
-    elif use_line_geodata and len(net.line_geodata) == 0:
+    if use_line_geo is None:
+        use_line_geo = False if any(net.line.geo.isna()) else True
+    elif use_line_geo and any(net.line.geo.isna()):
         logger.warning("No or insufficient line geodata available --> only bus geodata will be used.")
-        use_line_geodata = False
+        use_line_geo = False
     # hoverinfo which contains name and pf results
     hoverinfo = (
             net.line.name.astype(str) + '<br />' +
@@ -142,7 +137,7 @@ def pf_res_plotly(net, cmap="Jet", use_line_geodata=None, on_map=False, projecti
             'I_from = ' + net.res_line.i_from_ka.round(precision).astype(str) + ' kA' + '<br />' +
             'I_to = ' + net.res_line.i_to_ka.round(precision).astype(str) + ' kA' + '<br />').tolist()
     hoverinfo = pd.Series(index=net.line.index, data=hoverinfo)
-    line_traces = create_line_trace(net, use_line_geodata=use_line_geodata, respect_switches=True,
+    line_traces = create_line_trace(net, use_line_geo=use_line_geo, respect_switches=True,
                                     width=line_width,
                                     infofunc=hoverinfo,
                                     cmap=cmap_lines,

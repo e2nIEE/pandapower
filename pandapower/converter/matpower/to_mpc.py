@@ -11,10 +11,7 @@ from scipy.io import savemat
 
 from pandapower.converter.pypower import to_ppc
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -34,11 +31,11 @@ def to_mpc(net, filename=None, **kwargs):
         ****kwargs** - please look at to_ppc() documentation
 
     EXAMPLE:
-        import pandapower.converter as pc
-        import pandapower.networks as pn
-        net = pn.case9()
-        pc.to_mpc(net, "case9.mat")
-
+        >>> from pandapower.converter import to_mpc
+        >>> from pandapower.networks.power_system_test_cases import case9
+        >>>
+        >>> net = case9()
+        >>> to_mpc(net, "case9.mat")
     """
     ppc = to_ppc(net, **kwargs)
 

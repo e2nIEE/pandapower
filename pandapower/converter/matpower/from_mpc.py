@@ -4,6 +4,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import os
+
 import numpy as np
 import pandas as pd
 import scipy.io
@@ -12,14 +13,12 @@ from pandapower.converter.pypower import from_ppc
 
 try:
     from matpowercaseframes import CaseFrames
+
     matpowercaseframes_imported = True
 except ImportError:
     matpowercaseframes_imported = False
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -52,12 +51,10 @@ def from_mpc(mpc_file, f_hz=50, casename_mpc_file='mpc', validate_conversion=Fal
         **net** - The pandapower network
 
     EXAMPLE:
-
-        import pandapower.converter as pc
-
-        pp_net1 = cv.from_mpc('case9.mat', f_hz=60)
-        pp_net2 = cv.from_mpc('case9.m', f_hz=60)
-
+        >>> from pandapower.converter import from_mpc
+        >>>
+        >>> pp_net1 = from_mpc('case9.mat', f_hz=60)
+        >>> pp_net2 = from_mpc('case9.m', f_hz=60)
     """
     ending = os.path.splitext(os.path.basename(mpc_file))[1]
     if ending == ".mat":
@@ -66,6 +63,8 @@ def from_mpc(mpc_file, f_hz=50, casename_mpc_file='mpc', validate_conversion=Fal
         ppc = _m2ppc(mpc_file, casename_mpc_file)
     net = from_ppc(ppc, f_hz=f_hz, validate_conversion=validate_conversion, **kwargs)
     if "mpc_additional_data" in ppc:
+        if "_options" not in net:
+            net["_options"] = dict()
         net._options.update(ppc["mpc_additional_data"])
         logger.info('added fields %s in net._options' % list(ppc["mpc_additional_data"].keys()))
 
@@ -129,8 +128,8 @@ def _copy_data_from_mpc_to_ppc(ppc, mpc, casename_mpc_file):
             logger.info('gencost is not in mpc')
 
         for k in mpc[casename_mpc_file]._fieldnames:
-           if k not in ppc:
-               ppc.setdefault("mpc_additional_data", dict())[k] = getattr(mpc[casename_mpc_file], k)
+            if k not in ppc:
+                ppc.setdefault("mpc_additional_data", dict())[k] = getattr(mpc[casename_mpc_file], k)
 
     else:
         logger.error('Matfile does not contain a valid mpc structure.')

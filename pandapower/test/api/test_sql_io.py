@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import json
 import os
-import tempfile
+import copy
 
 import pandas as pd
 import pandas.testing as pdt
@@ -13,12 +13,11 @@ import numpy as np
 import pytest
 import time
 
-import pandapower as pp
-import pandapower.networks
-import pandapower.control
-from pandapower import pp_dir
+from pandapower import reset_results, runpp, pp_dir
+from pandapower.networks import case9, case14, case39, simple_mv_open_ring_net, create_cigre_network_hv, mv_oberrhein
+from pandapower.plotting.geo import convert_geodata_to_geojson
 from pandapower.auxiliary import _preserve_dtypes
-from pandapower.sql_io import download_sql_table
+from pandapower.sql_io import download_sql_table, to_postgresql, from_postgresql, delete_postgresql_net
 from pandapower.test import assert_res_equal
 
 try:
@@ -39,16 +38,15 @@ except ImportError:
     SQLITE_INSTALLED = False
 
 
-@pytest.fixture(params=["case9", "case14", "case39", "simple_mv_open_ring_net",
-                        "create_cigre_network_hv", "mv_oberrhein"])
+@pytest.fixture(params=[case9, case14, case39, simple_mv_open_ring_net,
+                        create_cigre_network_hv, mv_oberrhein])
 def net_in(request):
-    method = pp.networks.__dict__[request.param]
-    net = method()
-    net.line_geodata.loc[0, "coords"] = [(1.1, 2.2), (3.3, 4.4)]
-    net.line_geodata.loc[11, "coords"] = [(5.5, 5.5), (6.6, 6.6), (7.7, 7.7)]
-    if len(net.trafo) > 0:
-        net.trafo.tap_side = "lv"
-        pp.control.DiscreteTapControl(net, net.trafo.index.values[0], 0.98, 1.02)
+    net = request.param()
+    # net.line.loc[0, "geo"] = '{"coordinates": [[1.1, 2.2], [3.3, 4.4]], "type": "LineString"}'
+    # net.line.loc[11, "geo"] = '{"coordinates": [[5.5, 5.5], [6.6, 6.6], [7.7, 7.7]], "type": "LineString"}'
+    # if len(net.trafo) > 0:
+    #     net.trafo.tap_side = "lv"
+    #     pp.control.DiscreteTapControl(net, net.trafo.index.values[0], 0.98, 1.02)
     return net
 
 
@@ -75,27 +73,29 @@ def postgresql_listening(**connect_data):
 
 
 def assert_postgresql_roundtrip(net_in, **kwargs):
-    net = net_in.deepcopy()
+    net = copy.deepcopy(net_in)
+    if hasattr(net, "bus_geodata") or hasattr(net, "line_geodata"):
+        convert_geodata_to_geojson(net)
     include_results = kwargs.pop("include_results", False)
     if not include_results:
-        pp.reset_results(net)
+        reset_results(net)
     else:
-        pp.runpp(net)
+        runpp(net)
     connection_data, schema = get_postgresql_connection_data()
-    grid_id = pp.to_postgresql(net, schema=schema, include_results=include_results, **connection_data, **kwargs)
+    grid_id = to_postgresql(net, schema=schema, include_results=include_results, **connection_data, **kwargs)
 
-    net_out = pp.from_postgresql(grid_id=grid_id, schema=schema, **connection_data, **kwargs)
+    net_out = from_postgresql(grid_id=grid_id, schema=schema, **connection_data, **kwargs)
 
     if not include_results:
-        pp.runpp(net)
-        pp.runpp(net_out)
+        runpp(net)
+        runpp(net_out)
 
     assert_res_equal(net, net_out)
 
     for element, table in net.items():
         # dictionaries (e.g. std_type) not included
         # json serialization/deserialization of objects not implemented
-        if not isinstance(table, pd.DataFrame) or table.empty or "geodata" in element:
+        if not isinstance(table, pd.DataFrame) or table.empty:
             continue
         # code below: very difficult to compare columns with NaN values due to None vs np.nan and dtypes,
         # "1" vs 1 and dtype object
@@ -107,7 +107,7 @@ def assert_postgresql_roundtrip(net_in, **kwargs):
         pdt.assert_frame_equal(table_in, table_out, check_dtype=False)
 
     # clean-up
-    pp.delete_postgresql_net(grid_id=grid_id, schema=schema, **connection_data)
+    delete_postgresql_net(grid_id=grid_id, schema=schema, **connection_data)
 
 
 POSTGRESQL_AVAILABLE = PSYCOPG2_INSTALLED and postgresql_listening(**get_postgresql_connection_data()[0])
@@ -123,13 +123,13 @@ def test_postgresql(net_in):
 @pytest.mark.skipif(not POSTGRESQL_AVAILABLE,
                     reason="testing happens on GitHub Actions where we create a temporary instance of PostgreSQL")
 def test_unique():
-    net = pp.networks.case9()
+    net = case9()
     connection_data, schema = get_postgresql_connection_data()
-    grid_id = pp.to_postgresql(net, **connection_data, schema=schema)
+    grid_id = to_postgresql(net, **connection_data, schema=schema)
     with pytest.raises(UserWarning):
-        pp.to_postgresql(net, **connection_data, schema=schema, grid_id=grid_id)
+        to_postgresql(net, **connection_data, schema=schema, grid_id=grid_id)
     # clean-up:
-    pp.delete_postgresql_net(grid_id=grid_id, schema=schema, **connection_data)
+    delete_postgresql_net(grid_id=grid_id, schema=schema, **connection_data)
 
 
 @pytest.mark.skipif(not POSTGRESQL_AVAILABLE,
@@ -138,14 +138,14 @@ def test_delete():
     connection_data, schema = get_postgresql_connection_data()
     # cannot delete if the net does not exist
     with pytest.raises(UserWarning):
-        pp.delete_postgresql_net(grid_id=int(time.time()), schema=schema, **connection_data)
+        delete_postgresql_net(grid_id=int(time.time()), schema=schema, **connection_data)
 
     # check that net is deleted
-    net = pp.networks.case9()
-    grid_id = pp.to_postgresql(net, **connection_data, schema=schema)
-    pp.delete_postgresql_net(grid_id=grid_id, schema=schema, **connection_data)
+    net = case9()
+    grid_id = to_postgresql(net, **connection_data, schema=schema)
+    delete_postgresql_net(grid_id=grid_id, schema=schema, **connection_data)
     with pytest.raises(UserWarning):
-        _ = pp.from_postgresql(grid_id=grid_id, schema=schema, **connection_data)
+        _ = from_postgresql(grid_id=grid_id, schema=schema, **connection_data)
 
     # check that it is not only deleted from the grid catalogue
     conn = psycopg2.connect(**connection_data)
@@ -156,4 +156,4 @@ def test_delete():
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-s"])
+    pytest.main([__file__, "-xs"])

@@ -3,10 +3,12 @@ from functools import reduce
 import operator
 import numpy as np
 import pandas as pd
-import pandapower as pp
-import pandapower.toolbox
-import pandapower.topology as top
-from pandapower.grid_equivalents.auxiliary import drop_internal_branch_elements
+
+from pandapower.auxiliary import ensure_iterability
+from pandapower.toolbox.element_selection import pp_elements, element_bus_tuples
+from pandapower.topology.create_graph import create_nxgraph
+from pandapower.topology.graph_searches import connected_component, connected_components
+
 
 try:
     from pandaplan.core import pplog as logging
@@ -50,17 +52,17 @@ def setSetInDict(dict_, keys, set_):
 def append_set_to_dict(dict_, set_, keys):
     """ Appends a nested dict by the values of a set, independant if the keys already exist or not.
     """
-    keys = pp.ensure_iterability(keys)
+    keys = ensure_iterability(keys)
 
     # ensure that the dict way to the last key exist
     for pos, _ in enumerate(keys[:-1]):
         if isinstance(getFromDict(dict_, keys[:pos]), dict):
             if keys[pos] not in getFromDict(dict_, keys[:pos]).keys():
-                setInDict(dict_, keys[:pos+1], dict())
+                setInDict(dict_, keys[:pos + 1], dict())
         else:
             raise ValueError("This function expects a dict for 'getFromDict(dict_, " +
                              str(keys[:pos]) + ")', not a" + str(type(getFromDict(
-                                 dict_, keys[:pos]))))
+                dict_, keys[:pos]))))
 
     # set the value
     setSetInDict(dict_, keys, set_)
@@ -84,9 +86,9 @@ def set_bus_zone_by_boundary_branches(net, all_boundary_branches):
         else:
             include[elm] = True
 
-    mg = top.create_nxgraph(net, include_lines=include["line"], include_impedances=include[
+    mg = create_nxgraph(net, include_lines=include["line"], include_impedances=include[
         "impedance"], include_trafos=include["trafo"], include_trafo3ws=include["trafo3w"])
-    cc = top.connected_components(mg)
+    cc = connected_components(mg)
     ccl = [set_ for set_ in cc]
     areas = []
 
@@ -105,7 +107,7 @@ def set_bus_zone_by_boundary_branches(net, all_boundary_branches):
                     areas[-1] |= ccl.pop(i)
 
     for i, area in enumerate(areas):
-        net.bus.zone.loc[list(area)] = i
+        net.bus.loc[list(area), "zone"] = i
 
 
 def get_boundaries_by_bus_zone_with_boundary_branches(net):
@@ -153,6 +155,7 @@ def get_boundaries_by_bus_zone_with_boundary_branches(net):
              3: {"line": {1}}
              }
     """
+
     def append_boundary_buses_externals_per_zone(boundary_buses, boundaries, zone, other_zone_cols):
         """ iterate throw all boundaries which matches this_zone and add the other_zone_bus to
         boundary_buses """
@@ -167,20 +170,20 @@ def get_boundaries_by_bus_zone_with_boundary_branches(net):
 
     if "all" in set(net.bus.zone.values):
         raise ValueError("'all' is not a proper zone name.")  # all is used later for other purpose
-    branch_elms = pandapower.toolbox.pp_elements(bus=False, bus_elements=False, branch_elements=True,
-                                                                   other_elements=False, res_elements=False)
-    branch_tuples = pandapower.toolbox.element_bus_tuples(bus_elements=False, branch_elements=True,
-                                                                            res_elements=False) + [("switch", "element")]
+    branch_elms = pp_elements(bus=False, bus_elements=False, branch_elements=True,
+                              other_elements=False, res_elements=False)
+    branch_tuples = element_bus_tuples(bus_elements=False, branch_elements=True,
+                                       res_elements=False) + [("switch", "element")]
     branch_dict = {branch_elm: [] for branch_elm in branch_elms}
     for elm, bus in branch_tuples:
         branch_dict[elm] += [bus]
 
     zones = net.bus.zone.unique()
     boundary_branches = {zone if net.bus.zone.dtype == object else zone.item():
-                         dict() for zone in zones}
+                             dict() for zone in zones}
     boundary_branches["all"] = dict()
     boundary_buses = {zone if net.bus.zone.dtype == object else zone.item():
-                      {"all": set(), "internal": set(), "external": set()} for zone in zones}
+                          {"all": set(), "internal": set(), "external": set()} for zone in zones}
     boundary_buses["all"] = set()
 
     for elm, buses in branch_dict.items():
@@ -200,7 +203,7 @@ def get_boundaries_by_bus_zone_with_boundary_branches(net):
                 boundaries["is_boundary"] = False
         # reduce the DataFrame 'boundaries' to those branches which actually are boundaries
         boundaries = boundaries.loc[boundaries["is_boundary"],
-                                    boundaries.columns.difference(["is_boundary"])]
+        boundaries.columns.difference(["is_boundary"])]
 
         # determine boundary_branches and boundary_buses
         if len(boundaries):
@@ -210,7 +213,7 @@ def get_boundaries_by_bus_zone_with_boundary_branches(net):
             for zone in set(boundaries[zone_cols].values.flatten()):
 
                 # determine which columns belong to this zone and which not
-                this_zone_col = np.zeros(boundaries.shape[0])*np.nan
+                this_zone_col = np.zeros(boundaries.shape[0]) * np.nan
                 for i, _ in enumerate(buses):
                     this_zone_col[boundaries[zone_cols[i]] == zone] = i
                 this_zone_col = pd.Series(this_zone_col).dropna().astype(np.int64)
@@ -220,7 +223,7 @@ def get_boundaries_by_bus_zone_with_boundary_branches(net):
                     other_zone_col1.loc[other_zone_col1 < 0] = 0
                     other_zone_col2 = pd.Series(3 * np.ones(this_zone_col.shape, dtype=np.int64),
                                                 index=this_zone_col.index) - \
-                        this_zone_col - other_zone_col1
+                                      this_zone_col - other_zone_col1
 
                 # fill zone dependant values to boundary_branches and boundary_buses
                 boundary_branches[zone][elm] = set(boundaries.index[this_zone_col.index])
@@ -232,7 +235,7 @@ def get_boundaries_by_bus_zone_with_boundary_branches(net):
                 boundary_buses[zone]["all"] |= ext | nint
                 if len(buses) == 3:
                     ext = set(boundaries[buses].values[
-                        other_zone_col2.index, other_zone_col2.values])
+                                  other_zone_col2.index, other_zone_col2.values])
                     boundary_buses[zone]["external"] |= ext
                     boundary_buses[zone]["all"] |= ext
 
@@ -257,15 +260,15 @@ def get_boundaries_by_bus_zone_with_boundary_branches(net):
 def get_connected_switch_buses_groups(net, buses):
     all_buses = set()
     bus_dict = []
-    mg_sw = top.create_nxgraph(net, include_trafos=False,
-                               include_trafo3ws=False,
-                               respect_switches=True,
-                               include_lines=False,
-                               include_impedances=False)
+    mg_sw = create_nxgraph(net, include_trafos=False,
+                           include_trafo3ws=False,
+                           respect_switches=True,
+                           include_lines=False,
+                           include_impedances=False)
     for bbus in buses:
         if bbus in all_buses:
             continue
-        new_bus_set = set(top.connected_component(mg_sw, bbus))
+        new_bus_set = set(connected_component(mg_sw, bbus))
         all_buses |= new_bus_set
         bus_dict.append(list(new_bus_set))
     return all_buses, bus_dict

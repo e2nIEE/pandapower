@@ -2,7 +2,8 @@
 
 # Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-from numpy import int64
+import numbers
+import numpy as np
 from pandapower.timeseries.data_source import DataSource
 
 try:
@@ -34,8 +35,8 @@ class DFData(DataSource):
         self.df = df
         if multi:
             # casting column and index to int for multi- columns accessing
-            self.df.index = self.df.index.astype(int64)
-            self.df.columns = self.df.columns.astype(int64)
+            self.df.index = self.df.index.astype(np.int64)
+            self.df.columns = self.df.columns.astype(np.int64)
 
     def __repr__(self):
         s = "%s with %d rows and %d columns" % (
@@ -49,7 +50,11 @@ class DFData(DataSource):
         res = self.df.loc[time_step, profile_name]
         if hasattr(res, 'values'):
             res = res.values
-        res = res*scale_factor
+            isnumber = np.issubdtype(res.dtype, np.number)
+        else:
+            isnumber = isinstance(res, numbers.Number) and not isinstance(res, bool)
+        if isnumber:
+            res = res * scale_factor
         return res
 
     def get_time_steps_len(self):

@@ -4,12 +4,11 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
-from numpy import complex128, float64, int64, r_
-from numpy.core.multiarray import zeros, empty, array
+from numpy import complex128, float64, int64, r_, zeros, empty, array
 from scipy.sparse import csr_matrix as sparse, vstack, hstack
 
 from pandapower.pypower.dSbus_dV import dSbus_dV

@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Aug 28 12:15:13 2019
 
-@author: uk067483
-"""
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import os
-import pandapower as pp
-from pandapower import pp_dir
+
+from pandapower.__init__ import pp_dir
+from pandapower.file_io import from_json
 
 
 def ieee_european_lv_asymmetric(scenario="on_peak_566", **kwargs):
@@ -36,19 +35,18 @@ def ieee_european_lv_asymmetric(scenario="on_peak_566", **kwargs):
          **net** - pandapower network
 
     EXAMPLE:
-
-    import pandapower.networks
-    net = pandapower.networks.ieee_european_lv_asymmetric("off_start")
+        >>> from pandapower.networks import ieee_european_lv_asymmetric
+        >>> net = ieee_european_lv_asymmetric("off_start")
     """
     if scenario == "off_peak_1":
-        net = pp.from_json(os.path.join(pp_dir, "networks", "IEEE_European_LV_Off_Peak_1.json"),
-                           **kwargs)
+        net = from_json(os.path.join(pp_dir, "networks", "IEEE_European_LV_Off_Peak_1.json"),
+                        **kwargs)
     elif scenario == "on_peak_566":
-        net = pp.from_json(os.path.join(pp_dir, "networks", "IEEE_European_LV_On_Peak_566.json"),
-                           **kwargs)
+        net = from_json(os.path.join(pp_dir, "networks", "IEEE_European_LV_On_Peak_566.json"),
+                        **kwargs)
     elif scenario == "off_peak_1440":
-        net = pp.from_json(os.path.join(pp_dir, "networks", "IEEE_European_LV_Off_Peak_1440.json"),
-                           **kwargs)
+        net = from_json(os.path.join(pp_dir, "networks", "IEEE_European_LV_Off_Peak_1440.json"),
+                        **kwargs)
     else:
         raise ValueError("Unknown scenario %s - chose 'on_peak_566' or " % scenario +
                          "'off_peak_1' or 'off_peak_1440'")

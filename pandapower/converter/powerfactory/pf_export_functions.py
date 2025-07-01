@@ -1,7 +1,4 @@
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +18,10 @@ def create_network_dict(app, flag_graphics='GPS'):
         'ElmAsm',
         'ElmShnt',
         'ElmVac',
+        'ElmSvs',
+        'ElmVsc',
+        'ElmVscmono',
+
 
         # branch elements:
         'ElmLne',
@@ -28,9 +29,10 @@ def create_network_dict(app, flag_graphics='GPS'):
         'RelFuse',
         'ElmZpu',
         'ElmSind',
+        'ElmScap',
         'StaSwitch',
         'ElmTr2',
-        'ElmTr3'
+        'ElmTr3',
 
         # we don't gather types anymore, because they are not collected for elements that are out
         #  of service
@@ -38,6 +40,9 @@ def create_network_dict(app, flag_graphics='GPS'):
         # 'TypLne',
         # 'TypTr2',
         # 'TypTr3'
+
+        # controllers:
+        'ElmStactrl'
     }
 
     # here define all element types that have to be configured to have MW as power values
@@ -50,10 +55,12 @@ def create_network_dict(app, flag_graphics='GPS'):
         'ElmPvsys': ['W', 'var', 'VA'],
         'ElmXnet': ['W', 'var', 'VA'],
         'ElmSym': ['W', 'var', 'VA'],
+        'ElmSvs': ['W', 'var', 'VA'],
         'ElmAsm': ['W', 'var', 'VA'],
         'ElmShnt': ['W', 'var', 'VA'],
         'ElmZpu': ['W', 'var', 'VA'],
         'ElmSind': ['W', 'var', 'VA', 'V'],
+        'ElmScap': ['W', 'var', 'VA', 'V'],
         'ElmVac': ['W', 'var', 'VA'],
         'ElmTr2': ['W', 'var'],
         'ElmTr3': ['W', 'var'],
@@ -76,7 +83,10 @@ def create_network_dict(app, flag_graphics='GPS'):
 
     logger.info('collecting network elements')
     for obj in set_object_extentions:
-        dict_net[obj] = app.GetCalcRelevantObjects(obj)
+        if obj == 'ElmTerm':
+            dict_net[obj] = app.GetCalcRelevantObjects(obj, 1, 0, 1)
+        else:
+            dict_net[obj] = app.GetCalcRelevantObjects(obj)
 
     if flag_graphics not in ['GPS', 'no geodata']:
         logger.info('gathering graphic objects')
@@ -104,7 +114,8 @@ def get_lvp_params(app):
         'Svar': com_ldf.Svar,
         'cosvar': com_ldf.cosvar,
         'ginf': com_ldf.ginf,
-        'i_volt': com_ldf.i_volt
+        'i_volt': com_ldf.i_volt,
+        'hunting_limit': com_ldf.maxTapTrans
     }
 
     return lvp_params
@@ -126,7 +137,8 @@ def get_global_parameters(app):
         'global_load_scaling': global_load_scaling,
         'global_generation_scaling': global_generation_scaling,
         'global_motor_scaling': global_motor_scaling,
-        'iopt_tem': com_ldf.iopt_tem  # calculate load flow at 20 °C or at max. temperature
+        'iopt_tem': com_ldf.iopt_tem,  # calculate load flow at 20 °C or at max. temperature
+        'global_load_voltage_dependency': com_ldf.iopt_pq  # consider voltage dependency of loads
     }
     return global_parameters
 
@@ -184,6 +196,9 @@ def run_load_flow(app, scale_feeder_loads=False, load_scaling=None, gen_scaling=
     # com_ldf.errlf = 0.001
     # com_ldf.erreq = 0.01
 
+    if com_ldf.iopt_sim == 1:
+        logger.warning(f'Calculation method probabilistic loadflow of lv-loads is activated!'
+                       f' The validation will not succeed.')
     if load_scaling is not None:
         logger.debug('scaling loads at %.2f' % load_scaling)
         com_ldf.scLoadFac = load_scaling
@@ -198,6 +213,7 @@ def run_load_flow(app, scale_feeder_loads=False, load_scaling=None, gen_scaling=
     logger.info('PowerFactory load flow settings:')
     # Active power regulation
     logger.info('Calculation method (AC balanced, AC unbalanced): %s' % com_ldf.iopt_net)
+    logger.info(f'Calculation method probabilistic loadflow of lv-loads: {com_ldf.iopt_sim}')
     logger.info('Automatic tap adjustment of phase shifters: %s' % com_ldf.iPST_at)
     logger.info('Consider active power limits: %s' % com_ldf.iopt_plim)
     # Voltage and reactive power regulation

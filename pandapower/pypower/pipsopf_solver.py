@@ -4,14 +4,14 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 """Solves AC optimal power flow using PIPS.
 """
 
-from numpy import flatnonzero as find, ones, zeros, Inf, pi, exp, conj, r_, int64
+from numpy import flatnonzero as find, ones, zeros, inf, pi, exp, conj, r_, int64
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, RATE_A, PF, QF, PT, QT, MU_SF, MU_ST
 from pandapower.pypower.idx_bus import BUS_TYPE, REF, VM, VA, MU_VMAX, MU_VMIN, LAM_P, LAM_Q
 from pandapower.pypower.idx_cost import MODEL, PW_LINEAR, NCOST
@@ -117,8 +117,8 @@ def pipsopf_solver(om, ppopt, out_opt=None):
     ## try to select an interior initial point if init is not available from a previous powerflow
     if init != "pf":
         ll, uu = xmin.copy(), xmax.copy()
-        ll[xmin == -Inf] = -1e10   ## replace Inf with numerical proxies
-        uu[xmax ==  Inf] =  1e10
+        ll[xmin == -inf] = -1e10   ## replace Inf with numerical proxies
+        uu[xmax ==  inf] =  1e10
         x0 = (ll + uu) / 2
         Varefs = bus[bus[:, BUS_TYPE] == REF, VA] * (pi / 180)
         ## angles set to first reference angle
