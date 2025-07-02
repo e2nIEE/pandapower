@@ -8,6 +8,8 @@ Change Log
 - [CHANGED] move pandapower network pandas structure dict from create_empty_network to its own file
 - [FIXED] set dtypes for columns with only values >=0 to unsigned integer in pandapower network pandas structure dict, if not already the case
 - [FIXED] cim2pp: use pandapower network pandas structure dict to set needed dtypes instead of hardcoded values
+- [ADDED] cim2pp: export trafo `tap_step_degree` parameter
+- [ADDED] cim2pp: export trafo tap changer parameters for trafos with two tap changers
 
 [3.1.2] - 2025-06-16
 -------------------------------
