@@ -5,6 +5,8 @@ Change Log
 -------------------------------
 - [FIXED] remove print statement from results_bus.py
 - [FIXED] cim2pp: Make sure that the controllable flag is never nan for any generators
+- [ADDED] cim2pp: export trafo `tap_step_degree` parameter
+- [ADDED] cim2pp: export trafo tap changer parameters for trafos with two tap changers
 
 [3.1.2] - 2025-06-16
 -------------------------------
