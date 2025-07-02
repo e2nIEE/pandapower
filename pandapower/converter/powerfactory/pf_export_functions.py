@@ -296,7 +296,7 @@ def setup_project_power_exponent(prj, exponent):
 
 
 def run_short_circuit(app, fault_type="LLL", calc_mode="max", fault_impedance_rf=0, fault_impedance_xf=0,
-                      lv_tol_percent=10, fault_location_index=None):
+                      lv_tol_percent=10, fault_location_index=None, activate_sgen_at_bus=None):
     """
     Executes a short-circuit calculation in PowerFactory using IEC 60909 standard.
 
@@ -366,6 +366,26 @@ def run_short_circuit(app, fault_type="LLL", calc_mode="max", fault_impedance_rf
         com_shc.iopt_allbus = 0  # specific bus
         com_shc.shcobj = fault_bus
         location_str = f"{fault_bus.loc_name} ({fault_bus.GetFullName()})"
+
+    # set sgen activation
+    if activate_sgen_at_bus is not None and activate_sgen_at_bus != [None]:
+        sgens = app.GetCalcRelevantObjects('*.ElmGenstat')
+        switches = app.GetCalcRelevantObjects('*.StaSwitch')
+        for sgen in sgens:
+            sta_cubic = sgen.bus1
+            bus = sta_cubic.GetParent()
+            if not bus:
+                continue
+            if int(bus.loc_name[-1]) in activate_sgen_at_bus:
+                sgen.outserv = 0
+                for sw in switches:
+                    sw_sta_cubic = sw.GetParent()
+                    sw_bus = sw_sta_cubic.GetParent()
+                    if sw_sta_cubic.obj_id == sgen and sw_bus == bus:
+                        sw.on_off = 1
+                        break
+            else:
+                sgen.outserv = 1
 
     logger.info("---------------------------------------------------------------------------------")
     logger.info("PowerFactory short circuit settings:")

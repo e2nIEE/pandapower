@@ -17,7 +17,7 @@ def compare_sc_results(net, excel_file, branch=False, fault_location=None):
                   "vm_pu": 1e-4, "va_degree": 1e-2, "p_mw": 1e-4, "q_mvar": 1e-4, "ikss_degree": 1e-4}
 
     faults = ["LLL","LL", "LG", "LLG"]
-    cases = ["max", "min"]
+    cases = ["max"]
     fault_ohm_values = [(0.0, 0.0), (5.0, 5.0)]
 
     all_differences = []
@@ -74,6 +74,7 @@ def compare_sc_results(net, excel_file, branch=False, fault_location=None):
 
                             diff = pp_val - pf_val
                             diff_perc = 1 - pp_val / pf_val if pf_val != 0 else np.nan
+                            diff_perc = diff_perc * 100
                             tol = tolerances[column_key]
                             status = "OK" if abs(diff) <= tol else "Exceeds tolerance"
 
@@ -86,8 +87,8 @@ def compare_sc_results(net, excel_file, branch=False, fault_location=None):
                                 "Quantity": column,
                                 "Pandapower Result": pp_val,
                                 "PowerFactory Result": pf_val,
-                                "Difference": diff,
-                                "Difference_perc": diff_perc,
+                                "Difference": np.round(diff, 4),
+                                "Difference_perc": np.round(diff_perc, 4),
                                 "Status": status
                             })
                         except Exception as e:
@@ -97,31 +98,35 @@ def compare_sc_results(net, excel_file, branch=False, fault_location=None):
 
 
 ##
-net = from_json(r"/pandapower/test/shortcircuit/sce_tests/test_grids/test_case_2_five_bus_radial_grid_dyn.json")
-excel_file = r"/pandapower/test/shortcircuit/sce_tests/sc_result_comparison/test_case_2_five_bus_radial_grid_dyn_pf_sc_results_1_bus.xlsx"
-diff_df = compare_sc_results(net, excel_file, fault_location=1)
+# net = from_json(r"/pandapower/test/shortcircuit/sce_tests/test_grids/test_case_2_five_bus_radial_grid_dyn.json")
+# excel_file = r"/pandapower/test/shortcircuit/sce_tests/sc_result_comparison/test_case_2_five_bus_radial_grid_dyn_pf_sc_results_1_bus.xlsx"
+# diff_df = compare_sc_results(net, excel_file, fault_location=1)
+# #
+# ##
+# net = from_json(r"/pandapower/test/shortcircuit/sce_tests/test_grids/test_case_2_five_bus_radial_grid_dyn.json")
+# excel_file = r"/pandapower/test/shortcircuit/sce_tests/sc_result_comparison/test_case_2_five_bus_radial_grid_dyn_pf_sc_results_0_branch.xlsx"
+# diff_df_branch = compare_sc_results(net, excel_file, branch=True, fault_location=0)
 #
-##
-net = from_json(r"/pandapower/test/shortcircuit/sce_tests/test_grids/test_case_2_five_bus_radial_grid_dyn.json")
-excel_file = r"/pandapower/test/shortcircuit/sce_tests/sc_result_comparison/test_case_2_five_bus_radial_grid_dyn_pf_sc_results_0_branch.xlsx"
-diff_df_branch = compare_sc_results(net, excel_file, branch=True, fault_location=0)
-
-##
-net = from_json(r"/pandapower/test/shortcircuit/sce_tests/test_grids/test_case_1_four_bus_radial_grid.json")
-fault = 'LL'
-branch= True
-case = 'max'
-r_fault_ohm = 0
-x_fault_ohm = 0
-fault_location = 1
-
-calc_sc(net, fault=fault, case=case, branch_results=branch, ip=False,
-                            r_fault_ohm=r_fault_ohm, x_fault_ohm=x_fault_ohm, bus=fault_location, return_all_currents=False)
+# ##
+# net = from_json(r"/pandapower/test/shortcircuit/sce_tests/test_grids/test_case_1_four_bus_radial_grid.json")
+# fault = 'LL'
+# branch= True
+# case = 'max'
+# r_fault_ohm = 0
+# x_fault_ohm = 0
+# fault_location = 1
+#
+# calc_sc(net, fault=fault, case=case, branch_results=branch, ip=False,
+#                             r_fault_ohm=r_fault_ohm, x_fault_ohm=x_fault_ohm, bus=fault_location, return_all_currents=False)
 
 ## sgen
-net = from_json(r"/pandapower/test/shortcircuit/sce_tests/test_grids/test_case_1_four_bus_radial_grid_sgen.json")
+net = from_json(r"C:\Users\lriedl\PycharmProjects\pandapower\pandapower\test\shortcircuit\sce_tests\test_grids\wp_2.2\1_four_bus_radial_grid_sgen.json")
+#net = from_json(r"C:\Users\lriedl\PycharmProjects\pandapower\pandapower\test\shortcircuit\sce_tests\test_grids\wp_2.2\2_five_bus_radial_grid_dyn_sgen.json")
 net.sgen['k'] = 1.2
 net.sgen['active_current'] = False
+net.sgen.loc[net.sgen.bus == 1, 'in_service'] = True
+net.sgen.loc[net.sgen.bus == 2, 'in_service'] = False
+net.sgen.loc[net.sgen.bus == 3, 'in_service'] = False
 fault = 'LL'
 branch= False
 case = 'max'
@@ -132,11 +137,12 @@ calc_sc(net, fault=fault, case=case, branch_results=branch, ip=False,
                             r_fault_ohm=r_fault_ohm, x_fault_ohm=x_fault_ohm, bus=fault_location, return_all_currents=False)
 
 ## sgen bus
-excel_file = r"/pandapower/test/shortcircuit/sce_tests/sc_result_comparison/test_case_1_four_bus_radial_grid_sgen_pf_sc_results_0_bus.xlsx"
+excel_file = r"C:\Users\lriedl\PycharmProjects\pandapower\pandapower\test\shortcircuit\sce_tests\sc_result_comparison\1_four_bus_radial_grid_sgen_pf_sc_results_0_bus_sgen1.xlsx"
+#excel_file = r"C:\Users\lriedl\PycharmProjects\pandapower\pandapower\test\shortcircuit\sce_tests\sc_result_comparison\2_five_bus_radial_grid_dyn_sgen_pf_sc_results_1_bus_sgenNone.xlsx"
 diff_df = compare_sc_results(net, excel_file, fault_location=0)
 
 ## sgen branch
-excel_file = r"/pandapower/test/shortcircuit/sce_tests/sc_result_comparison/test_case_1_four_bus_radial_grid_sgen_pf_sc_results_0_branch.xlsx"
+excel_file = r"C:\Users\lriedl\PycharmProjects\pandapower\pandapower\test\shortcircuit\sce_tests\sc_result_comparison\1_four_bus_radial_grid_sgen_pf_sc_results_0_branch_sgen1.xlsx"
 diff_df_branch = compare_sc_results(net, excel_file, branch=True, fault_location=0)
 
 

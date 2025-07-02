@@ -10,7 +10,7 @@ testfiles_path = os.path.join(pp_dir, 'test', 'shortcircuit', 'sce_tests')
 class PFShortCircuitAnalysis:
     def __init__(self, app, proj_name, fault_type='LLL', calc_mode='max',
                  fault_impedance_rf=0.0, fault_impedance_xf=0.0,
-                 lv_tol_percent=10, fault_location_index=None, load_pp_net=False):
+                 lv_tol_percent=10, fault_location_index=None, activate_sgens_at_bus=None):
         """
                 Parameters:
                 - app: powerfactory.Application
@@ -31,6 +31,7 @@ class PFShortCircuitAnalysis:
         self.fault_impedance_xf = fault_impedance_xf
         self.lv_tol_percent = lv_tol_percent
         self.fault_location_index = fault_location_index
+        self.activate_sgens_at_bus = activate_sgens_at_bus
         self.pf_results_bus_sc = None
         self.pf_results_branch_sc = None
 
@@ -60,10 +61,12 @@ class PFShortCircuitAnalysis:
         fault_impedance_xf = self.fault_impedance_xf
         lv_tol_percent = self.lv_tol_percent
         fault_location_index = self.fault_location_index
+        activate_sgens = self.activate_sgens_at_bus
 
         res = run_short_circuit(app=app, fault_type=fault_type, calc_mode=calc_mode,
                                 fault_impedance_rf=fault_impedance_rf, fault_impedance_xf=fault_impedance_xf,
-                                lv_tol_percent=lv_tol_percent, fault_location_index=fault_location_index)
+                                lv_tol_percent=lv_tol_percent, fault_location_index=fault_location_index,
+                                activate_sgen_at_bus=activate_sgens)
         if res == 1:
             raise UserWarning("short circuit results could not be calculated in powerfactory")
 
@@ -126,10 +129,12 @@ class PFShortCircuitAnalysis:
         fault_impedance_xf = self.fault_impedance_xf
         lv_tol_percent = self.lv_tol_percent
         fault_location_index = self.fault_location_index
+        activate_sgens = self.activate_sgens_at_bus
 
         res = run_short_circuit(app=app, fault_type=fault_type, calc_mode=calc_mode,
                                 fault_impedance_rf=fault_impedance_rf, fault_impedance_xf=fault_impedance_xf,
-                                lv_tol_percent=lv_tol_percent, fault_location_index=fault_location_index)
+                                lv_tol_percent=lv_tol_percent, fault_location_index=fault_location_index,
+                                activate_sgen_at_bus=activate_sgens)
         if res == 1:
             raise UserWarning("short circuit results could not be calculated in powerfactory")
 
