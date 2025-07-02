@@ -40,8 +40,11 @@ is_branch_test = [False, True]
 parametrize_values = list(product(faults, cases, values, lv_tol_percents, fault_location_buses, is_branch_test))
 
 # Create parameter list with vector group
+#  uses "Dyn" as vector group for LLL and LL. LLG and LG are combined with all vector groups.
 parametrize_values_vector = list(product(
-    net_names, faults, cases, values, lv_tol_percents, vector_groups, fault_location_buses, is_branch_test
+    net_names, faults[:2], cases, values, lv_tol_percents, vector_groups[:1], fault_location_buses, is_branch_test
+))+list(product(
+    net_names, faults[2:], cases, values, lv_tol_percents, vector_groups, fault_location_buses, is_branch_test
 ))
 
 
