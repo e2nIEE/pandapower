@@ -500,5 +500,104 @@ class PQVArea4105(BasePQVArea):
         self.qv_area = QVArea4105(variant)
 
 
+class QVAreaInverterSupport(BaseArea):
+    """
+    Volt–VAR characteristic only.  No PQ logic here.
+    """
+    def __init__(self, v1=0.92, v2=0.967, v3=1.033, v4=1.07, q_lim=0.3):
+        self.v1, self.v2, self.v3, self.v4 = v1, v2, v3, v4
+        self.q_lim = q_lim
+        self.slope_low  = q_lim / (v2 - v1)
+        self.slope_high = q_lim / (v4 - v3)
+
+    def q_setpoint(self, vm):
+        vm = np.asarray(vm, float)
+        q  = np.zeros_like(vm)
+
+        # undervoltage
+        m = vm < self.v1
+        q[m] =  self.q_lim
+
+        # linear ramp +q_lim → 0
+        m = (vm >= self.v1) & (vm < self.v2)
+        q[m] = (self.v2 - vm[m]) * self.slope_low
+
+        # midband [v2, v3]: q stays 0
+
+        # linear ramp 0 → -q_lim
+        m = (vm > self.v3) & (vm <= self.v4)
+        q[m] = -(vm[m] - self.v3) * self.slope_high
+
+        # overvoltage
+        m = vm > self.v4
+        q[m] = -self.q_lim
+
+        return q
+
+    def q_flexibility(self, p_pu, vm_pu):
+        """
+        Just return [q_setpoint, q_setpoint] for each vm_pu.
+        """
+        q_ref = self.q_setpoint(vm_pu)
+        return np.vstack((q_ref, q_ref)).T
+
+    def in_area(self, p_pu, q_pu, vm_pu):
+        q_ref = self.q_setpoint(vm_pu)
+        return np.isclose(q_pu, q_ref)
+
+
+import numpy as np
+
+class PQVAreaInverterBase(PQVArea4120Base):
+    """
+    PQV area that uses the standard VDE-4120 P–Q envelope
+    but applies a pure volt–VAR curve: Q=0 in [v2,v3],
+    outside that band Q follows ±q_lim ramp.
+    """
+    def __init__(self,
+                 min_q_pu=-0.328684,
+                 max_q_pu= 0.410775,
+                 version=2018,
+                 raise_merge_overlap=True,
+                 v1=0.92, v2=0.967, v3=1.033, v4=1.07,
+                 q_lim=0.3):
+        # initialize the PQ‐area (min_q_pu, max_q_pu)
+        super().__init__(min_q_pu,
+                         max_q_pu,
+                         version=version,
+                         raise_merge_overlap=raise_merge_overlap)
+        # volt–VAR curve
+        self.qv_area = QVAreaInverterSupport(
+            v1=v1, v2=v2, v3=v3, v4=v4, q_lim=q_lim
+        )
+
+        self.v2, self.v3 = v2, v3
+
+    def q_flexibility(self, p_pu, vm_pu):
+        qv_ref = self.qv_area.q_setpoint(vm_pu)
+        # mid-band mask: keep Q=0
+        midband = (vm_pu >= self.v2) & (vm_pu <= self.v3)
+        q_out = np.where(midband, 0.0, qv_ref)
+        return np.vstack((q_out, q_out)).T
+
+    def in_area(self, p_pu, q_pu, vm_pu):
+        q_ref = self.q_flexibility(p_pu, vm_pu)[:, 0]
+        return np.isclose(q_pu, q_ref)
+
+class DERVoltageOnly(BaseArea):
+    """
+    Completely ignore P–Q envelope; follow only the 0.92–1.07 pu curve.
+    """
+    def __init__(self, v1=0.92, v2=0.967, v3=1.033, v4=1.07, q_lim=0.3):
+        self.qv_area = QVAreaInverterSupport(v1=v1, v2=v2, v3=v3, v4=v4, q_lim=q_lim)
+
+    def q_flexibility(self, p_pu, vm_pu):
+        return self.qv_area.q_flexibility(None, vm_pu)
+
+    def in_area(self, p_pu, q_pu, vm_pu):
+        return self.qv_area.in_area(None, q_pu, vm_pu)
+
+
+
 if __name__ == "__main__":
     pass

@@ -183,11 +183,20 @@ class DERController(PQController):
     def _determine_target_powers(self, net):
         full_vm = net.res_bus["vm_pu"]
         if isinstance(full_vm.index, pd.MultiIndex): #multiindex version
-            # ToDo: should the from_phase results be taken here?
+            # ToDo: This is not optimal yet. At the moment element index gives bus and from phase to get the bus vm_pu results.
             mi = pd.MultiIndex.from_tuples(self.element_index,
                                            names=full_vm.index.names)
-            vm_pu = full_vm.reindex(mi)
-        else: #old version
+            buses = net[self.element].loc[mi].bus.values
+            from_phases = net[self.element].loc[mi].from_phase.values
+            tuples = list(zip(buses.astype(int), from_phases.astype(int)))
+
+            # now create the MultiIndex
+            midx = pd.MultiIndex.from_tuples(
+                tuples,
+                names=["bus", "from_phase"]
+            )
+            vm_pu = full_vm.reindex(midx)
+        else: #existing code
             raw = full_vm.loc[self.bus]
             vm_pu = pd.Series([raw] * len(self.element_index),
                               index=self.element_index)
