@@ -17,10 +17,7 @@ from pandapower.pypower.idx_ssc import SSC_X_CONTROL_VM, SSC_X_CONTROL_VA, SSC_Q
 from pandapower.pypower.idx_svc import SVC_THYRISTOR_FIRING_ANGLE, SVC_Q, SVC_X_PU
 from pandapower.pypower.idx_vsc import VSC_Q, VSC_P, VSC_P_DC, VSC_BUS_DC, VSC_INTERNAL_BUS_DC, VSC_INTERNAL_BUS
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -537,7 +534,6 @@ def _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq):
                                 right_on=['id_characteristic', 'step'], how='left', suffixes=('', '_char'))
             p_shunt_step = np.where(merged_df['step_dependency_table'], merged_df['p_mw_char'].values/merged_df['step'].values, merged_df['p_mw'].values).astype(np.float64)
             q_shunt_step = np.where(merged_df['step_dependency_table'], merged_df['q_mvar_char'].values/merged_df['step'].values, merged_df['q_mvar'].values).astype(np.float64)
-            print(f"p_shunt_step dtype: {p_shunt_step.dtype}, q_shunt_step dtype: {q_shunt_step.dtype}")
         else:
             p_shunt_step = net["shunt"]["p_mw"].values
             q_shunt_step = net["shunt"]["q_mvar"].values

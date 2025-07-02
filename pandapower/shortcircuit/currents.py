@@ -5,7 +5,7 @@ import warnings
 import copy
 import numpy as np
 import pandas as pd
-
+from copy import deepcopy
 from pandapower.auxiliary import _sum_by_group
 from pandapower.pypower.idx_bus import BASE_KV, VM, VA
 from pandapower.pypower.idx_brch import TAP
@@ -16,12 +16,8 @@ from pandapower.pypower.idx_bus_sc import C_MIN, C_MAX, KAPPA, R_EQUIV, IKSSV, I
     PHI_IKSSV_DEGREE, PHI_IKSSC_DEGREE, PHI_IKCV_DEGREE
 from pandapower.shortcircuit.impedance import _calc_zbus_diag
 
-from copy import deepcopy
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 

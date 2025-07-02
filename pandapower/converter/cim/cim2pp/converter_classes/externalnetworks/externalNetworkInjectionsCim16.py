@@ -115,6 +115,7 @@ class ExternalNetworkInjectionsCim16:
         eni['scaling'] = 1.
         eni['type'] = None
         eni['slack'] = False
+        eni['controllable'] = eni['controllable'].fillna(False)
 
         return eni
 

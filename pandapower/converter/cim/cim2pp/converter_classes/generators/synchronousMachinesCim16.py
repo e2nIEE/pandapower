@@ -100,6 +100,7 @@ class SynchronousMachinesCim16:
         synchronous_machines['vm_pu'] = synchronous_machines['vm_pu'].fillna(1.)
         synchronous_machines = synchronous_machines.rename(columns={'vn_kv': 'bus_voltage'})
         synchronous_machines['slack'] = False
+        synchronous_machines['controllable'] = synchronous_machines['controllable'].fillna(False)
         # set the slack = True for gens with highest prio
         # get the highest prio from SynchronousMachines
         sync_ref_prio_min = synchronous_machines.loc[
