@@ -286,6 +286,7 @@ def _current_source_current(net, ppci, bus_idx, sequence=1):
     case = net._options["case"]
     fault_impedance = net._options["fault_impedance"]
     ppci["bus"][:, IKCV] = 0
+    # TODO chekc if this is all the same for every sequence
     ppci["bus"][:, PHI_IKCV_DEGREE] = -90
     ppci["bus"][:, IKSSC] = 0
     type_c = net._options["use_pre_fault_voltage"]
@@ -332,14 +333,12 @@ def _current_source_current(net, ppci, bus_idx, sequence=1):
                              sgen.k.values.reshape(-1, 1) * i_sgen_n_pu * delta_V,
                              i_sgen_n_pu * sgen.kappa.values.reshape(-1, 1))
         i_sgen_pu = np.abs(i_sgen_pu)
-    # else:
-    #     i_sgen_pu = np.where(sgen.active_current.values, 
-    #                          (sgen.sn_mva.values * sgen.scaling.values / net.sn_mva * sgen.k.values), 
-    #                          (sgen.sn_mva.values / net.sn_mva * sgen.k.values))
     else:
-        i_sgen_pu = np.where(sgen.active_current.values, 
-                             (sgen.p_mw.values / net.sn_mva * sgen.k.values), 
-                             (sgen.sn_mva.values / net.sn_mva * sgen.k.values))
+        i_sgen_pu = (sgen.sn_mva.values / net.sn_mva * sgen.k.values)
+        # i_sgen_pu = np.where(sgen.active_current.values,
+        #                     (sgen.p_mw.values / net.sn_mva * sgen.k.values),
+        #                     (sgen.sn_mva.values / net.sn_mva * sgen.k.values))
+        # TODO check if (sgen.sn_mva.values * sgen.scaling.values / net.sn_mva * sgen.k.values) or just p_mw with scaling
 
 
     if sgen_angle is not None and (fault == "LLL" or fault == "LG" and type_c): #Todo auch LLG?

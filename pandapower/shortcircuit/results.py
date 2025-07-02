@@ -94,6 +94,14 @@ def _calculate_branch_phase_results(ppc_0, ppc_1, ppc_2):
     i_ka_1 = ppc_1['branch'][:, [IKSS_F, IKSS_T]] * np.exp(1j * np.deg2rad(ppc_1['branch'][:, [IKSS_ANGLE_F, IKSS_ANGLE_T]].real))
     i_ka_2 = ppc_2['branch'][:, [IKSS_F, IKSS_T]] * np.exp(1j * np.deg2rad(ppc_2['branch'][:, [IKSS_ANGLE_F, IKSS_ANGLE_T]].real))
 
+    """i_ka_0_c = ppc_0["bus"][:, IKSSC]
+    i_ka_1_c = ppc_1["bus"][:, IKSSC]
+    i_ka_2_c = ppc_2["bus"][:, IKSSC]
+    i_012_c_ka = np.stack([i_ka_0_c, i_ka_1_c, i_ka_2_c], 0)
+    i_abc_c_ka = np.apply_along_axis(sequence_to_phase, 0, i_012_c_ka)
+    i_abc_c_ka = abs(i_abc_c_ka)
+    i_abc_c_ka[np.abs(i_abc_c_ka) < 1e-5] = 0"""
+
     # TODO branch phase reuslts for all currents
     """branch_lookup = net._pd2ppc_lookups["branch"]
     ppc_0["internal"]["branch_ikss_f"] = np.nan_to_num(np.abs(ikss_all_f)) / baseI[fb, None]

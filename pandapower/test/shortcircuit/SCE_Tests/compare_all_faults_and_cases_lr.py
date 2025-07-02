@@ -17,6 +17,7 @@ def compare_sc_results(net, excel_file, branch=False, fault_location=None):
                   "vm_pu": 1e-4, "va_degree": 1e-2, "p_mw": 1e-4, "q_mvar": 1e-4, "ikss_degree": 1e-4}
 
     faults = ["LLL","LL", "LG", "LLG"]
+    faults = ["LG"]
     cases = ["max"]
     fault_ohm_values = [(0.0, 0.0), (5.0, 5.0)]
 
@@ -120,14 +121,17 @@ def compare_sc_results(net, excel_file, branch=False, fault_location=None):
 #                             r_fault_ohm=r_fault_ohm, x_fault_ohm=x_fault_ohm, bus=fault_location, return_all_currents=False)
 
 ## sgen
-net = from_json(r"C:\Users\lriedl\PycharmProjects\pandapower\pandapower\test\shortcircuit\sce_tests\test_grids\wp_2.2\1_four_bus_radial_grid_sgen.json")
-#net = from_json(r"C:\Users\lriedl\PycharmProjects\pandapower\pandapower\test\shortcircuit\sce_tests\test_grids\wp_2.2\2_five_bus_radial_grid_dyn_sgen.json")
+import os
+current_path = os.getcwd()
+file_path = r"test_grids\wp_2.2\1_four_bus_radial_grid_sgen.json"
+# file_path = r"test_grids\wp_2.2\2_five_bus_radial_grid_dyn_sgen.json"
+net = from_json(os.path.join(current_path, file_path))
 net.sgen['k'] = 1.2
 net.sgen['active_current'] = False
 net.sgen.loc[net.sgen.bus == 1, 'in_service'] = True
 net.sgen.loc[net.sgen.bus == 2, 'in_service'] = False
 net.sgen.loc[net.sgen.bus == 3, 'in_service'] = False
-fault = 'LL'
+fault = 'LG'
 branch= False
 case = 'max'
 r_fault_ohm = 0
@@ -137,13 +141,13 @@ calc_sc(net, fault=fault, case=case, branch_results=branch, ip=False,
                             r_fault_ohm=r_fault_ohm, x_fault_ohm=x_fault_ohm, bus=fault_location, return_all_currents=False)
 
 ## sgen bus
-excel_file = r"C:\Users\lriedl\PycharmProjects\pandapower\pandapower\test\shortcircuit\sce_tests\sc_result_comparison\1_four_bus_radial_grid_sgen_pf_sc_results_0_bus_sgen1.xlsx"
-#excel_file = r"C:\Users\lriedl\PycharmProjects\pandapower\pandapower\test\shortcircuit\sce_tests\sc_result_comparison\2_five_bus_radial_grid_dyn_sgen_pf_sc_results_1_bus_sgenNone.xlsx"
-diff_df = compare_sc_results(net, excel_file, fault_location=0)
+excel_file = r"sc_result_comparison\1_four_bus_radial_grid_sgen_pf_sc_results_0_bus_sgen1.xlsx"
+#excel_file = r"sc_result_comparison\2_five_bus_radial_grid_dyn_sgen_pf_sc_results_1_bus_sgenNone.xlsx"
+diff_df = compare_sc_results(net, os.path.join(current_path, excel_file), fault_location=0)
 
 ## sgen branch
-excel_file = r"C:\Users\lriedl\PycharmProjects\pandapower\pandapower\test\shortcircuit\sce_tests\sc_result_comparison\1_four_bus_radial_grid_sgen_pf_sc_results_0_branch_sgen1.xlsx"
-diff_df_branch = compare_sc_results(net, excel_file, branch=True, fault_location=0)
+excel_file = r"sc_result_comparison\1_four_bus_radial_grid_sgen_pf_sc_results_0_branch_sgen1.xlsx"
+diff_df_branch = compare_sc_results(net, os.path.join(current_path, excel_file), branch=True, fault_location=0)
 
 
 
