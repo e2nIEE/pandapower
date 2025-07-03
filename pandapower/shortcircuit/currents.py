@@ -753,6 +753,8 @@ def _calc_branch_currents_complex(net, ppci, bus_idx):
     minmax_ikss_all_t = nan_minmax(ikss_all_t, rows_tb, argminmax)
 
     if fault == "LL":
+        ikss_all_fbis = ikssv_all_fbis
+        ikss_all_tbis = ikssv_all_tbis
         skss_all_fbis = np.conj(ikss_all_fbis) * V_ikss_bis[fb]
         pkss_all_fbis = skss_all_fbis.real
         qkss_all_fbis = skss_all_fbis.imag
