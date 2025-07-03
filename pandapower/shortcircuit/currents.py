@@ -332,9 +332,9 @@ def _current_source_current(net, ppci, bus_idx, sequence=1):
     else:
         i_sgen_pu = (sgen.sn_mva.values / net.sn_mva * sgen.k.values)
         # i_sgen_pu = np.where(sgen.active_current.values,
-        #                     (sgen.p_mw.values / net.sn_mva * sgen.k.values),
+        #                     (sgen.p_mw.values* sgen.scaling.values / net.sn_mva * sgen.k.values),
         #                     (sgen.sn_mva.values / net.sn_mva * sgen.k.values))
-        # TODO check if (sgen.sn_mva.values * sgen.scaling.values / net.sn_mva * sgen.k.values) or just p_mw with scaling
+        # TODO check if (sgen.sn_mva.values * sgen.scaling.values / net.sn_mva * sgen.k.values) or just p_mw with scaling #just p_mw
 
 
     if sgen_angle is not None and (fault == "LLL" or fault == "LG" and type_c): #Todo auch LLG?
