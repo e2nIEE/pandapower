@@ -17,7 +17,7 @@ def compare_sc_results(net, excel_file, branch=False, fault_location=None):
                   "vm_pu": 1e-4, "va_degree": 1e-2, "p_mw": 1e-4, "q_mvar": 1e-4, "ikss_degree": 1e-4}
 
     faults = ["LLL","LL", "LG", "LLG"]
-    faults = ["LG"]
+    faults = ["LLL"]
     cases = ["max"]
     fault_ohm_values = [(0.0, 0.0), (5.0, 5.0)]
 
@@ -131,7 +131,7 @@ net.sgen['active_current'] = False
 net.sgen.loc[net.sgen.bus == 1, 'in_service'] = True
 net.sgen.loc[net.sgen.bus == 2, 'in_service'] = False
 net.sgen.loc[net.sgen.bus == 3, 'in_service'] = False
-fault = 'LG'
+fault = 'LLL'
 branch= False
 case = 'max'
 r_fault_ohm = 0
