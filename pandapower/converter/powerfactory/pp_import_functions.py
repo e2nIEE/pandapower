@@ -30,10 +30,7 @@ from pandapower.control.util.auxiliary import create_q_capability_curve_characte
 from pandapower.control.util.characteristic import SplineCharacteristic
 
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -380,7 +377,14 @@ def add_additional_attributes(item, net, element, element_id, attr_list=None, at
     """
     if attr_dict is None:
         attr_dict = {k: k for k in attr_list}
-
+    
+    if attr_list is not None:
+        for attr_l in attr_list:
+            if attr_l in attr_dict:
+                continue
+            else:
+                attr_dict[attr_l] = attr_l
+                
     for attr in attr_dict.keys():
         if '.' in attr:
             # go in the object chain of a.b.c.d until finally get the chr_name
@@ -488,9 +492,10 @@ def create_pp_bus(net, item, flag_graphics, is_unbalanced):
     net[table].at[bid, "description"] = descr
     net[table].at[bid, "substat"] = substat_descr
     net[table].at[bid, "folder_id"] = item.fold_id.loc_name
-
-    add_additional_attributes(item, net, table, bid, attr_dict={"for_name": "equipment", "cimRdfId": "origin_id"},
-                              attr_list=["sernum", "chr_name", "cpSite.loc_name"])
+    
+    attr_dict={"for_name": "equipment", "cimRdfId": "origin_id", "cpSite.loc_name": "site"}
+    add_additional_attributes(item, net, table, bid, attr_dict=attr_dict,
+                              attr_list=["sernum", "chr_name"])
 
 
 def get_pf_bus_results(net, item, bid, is_unbalanced, system_type):
@@ -1084,7 +1089,7 @@ def create_line_normal(net, item, bus1, bus2, name, parallel, is_unbalanced, ac,
         'df': item.fline,
         'parallel': parallel,
         'alpha': pf_type.alpha if pf_type is not None else None,
-        'temperature_degree_celsius': pf_type.tmax if pf_type is not None else None,
+        'temperature_degree_celsius': item.Top,
         'geodata': geodata
     }
 
@@ -1319,7 +1324,9 @@ def create_ext_net(net, item, pv_as_slack, is_unbalanced):
     #     xid, ["pf_p", 'pf_q']].values))
 
     net[elm].loc[xid, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    add_additional_attributes(item, net, element=elm, element_id=xid, attr_dict={"for_name": "equipment", "cimRdfId": "origin_id"}, attr_list=['cpSite.loc_name'])
+
+
+    add_additional_attributes(item, net, element=elm, element_id=xid, attr_dict={"for_name": "equipment", "cimRdfId": "origin_id", "cpSite.loc_name": "site"})
 
     if item.pQlimType:
         id = create_q_capability_curve(net, item.pQlimType)
@@ -1750,6 +1757,7 @@ def create_pp_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
         try:
             params.update(ask(item, pf_variable_p_loads, dict_net=dict_net,
                               variables=('p_mw', 'sn_mva')))
+            # 'chr_name'
         except Exception as err:
             logger.error("m:P:bus1 and m:Q:bus1 should be used with ElmLodlv")
             logger.error('While creating load %s, error occurred for '
@@ -1853,10 +1861,13 @@ def create_pp_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
         load_type = "load"
 
     net[load_type].loc[ld, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    attr_list = ["sernum", "chr_name", 'cpSite.loc_name']
+    attr_list = ["sernum", "chr_name"]
+    attr_dict={"for_name": "equipment", "cimRdfId": "origin_id", 'cpSite.loc_name': 'site'}
     if load_class == 'ElmLodlv':
         attr_list.extend(['pnight', 'cNrCust', 'cPrCust', 'UtilFactor', 'cSmax', 'cSav', 'ccosphi'])
-    add_additional_attributes(item, net, load_type, ld, attr_dict={"for_name": "equipment", "cimRdfId": "origin_id"}, attr_list=attr_list)
+        attr_dict['cpGrid.loc_name'] = 'grid'
+    add_additional_attributes(item, net, load_type, ld, attr_dict=attr_dict, attr_list=attr_list)
+
     get_pf_load_results(net, item, ld, is_unbalanced)
     #    if not is_unbalanced:
     #        if item.HasResults(0):  # 'm' results...
@@ -2051,8 +2062,8 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
     logger.debug('created sgen at index <%d>' % sg)
 
     net[element].at[sg, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    add_additional_attributes(item, net, element, sg, attr_dict={"for_name": "equipment", "cimRdfId": "origin_id"},
-                              attr_list=["sernum", "chr_name", "cpSite.loc_name"])
+    add_additional_attributes(item, net, element, sg, attr_dict={"for_name": "equipment", "cpSite.loc_name": "site"},
+                              attr_list=["sernum", "chr_name"])
     net[element].at[sg, 'scaling'] = dict_net['global_parameters']['global_generation_scaling'] * item.scale0
     get_pf_sgen_results(net, item, sg, is_unbalanced, element=element)
 
@@ -2171,8 +2182,9 @@ def create_sgen_neg_load(net, item, pf_variable_p_loads, dict_net):
     sg = create_sgen(net, **params)
 
     net.sgen.loc[sg, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    add_additional_attributes(item, net, "sgen", sg, attr_dict={"for_name": "equipment", "cimRdfId": "origin_id"},
-                              attr_list=["sernum", "chr_name", "cpSite.loc_name"])
+    add_additional_attributes(item, net, "sgen", sg, attr_dict={"for_name": "equipment", "cimRdfId": "origin_id",
+                                                                "cpSite.loc_name": "site"},
+                                                              attr_list=["sernum", "chr_name"])
 
     if item.HasResults(0):  # 'm' results...
         logger.debug('<%s> has results' % params.name)
@@ -2290,9 +2302,9 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
         logger.debug('created sgen at index <%s>' % sid)
 
     net[element].loc[sid, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    add_additional_attributes(item, net, element, sid, attr_dict={"for_name": "equipment", "cimRdfId": "origin_id"},
-                              attr_list=["sernum", "chr_name", "cpSite.loc_name"])
-
+    add_additional_attributes(item, net, element, sid, attr_dict={"for_name": "equipment", "cimRdfId": "origin_id", 
+                                                                  "cpSite.loc_name": "site"},
+                                                      attr_list=["sernum", "chr_name"])
     if item.pQlimType and element != 'ext_grid':
         id = create_q_capability_curve(net, item.pQlimType)
         net[element].loc[sid, 'id_q_capability_curve_characteristic'] = id
@@ -2350,8 +2362,9 @@ def create_sgen_asm(net, item, pf_variable_p_gen, dict_net):
     sid = create_sgen(net, **params)
 
     net.sgen.loc[sid, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    add_additional_attributes(item, net, "sgen", sid, attr_dict={"for_name": "equipment", "cimRdfId": "origin_id"},
-                              attr_list=["sernum", "chr_name", "cpSite.loc_name"])
+    attr_dict={"for_name": "equipment", "cimRdfId": "origin_id",  "cpSite.loc_name": "site" }
+    add_additional_attributes(item, net, "sgen", sid, attr_dict=attr_dict,
+                              attr_list=["sernum", "chr_name"])
 
     if item.HasResults(0):
         net.res_sgen.at[sid, 'pf_p'] = item.GetAttribute('m:P:bus1') * multiplier
@@ -3137,7 +3150,7 @@ def create_coup(net, item, is_fuse=False):
     switch_dict[item] = cd
 
     add_additional_attributes(item, net, element='switch', element_id=cd,
-                              attr_list=['cpSite.loc_name'], attr_dict={"for_name": "equipment", "cimRdfId": "origin_id"})
+                              attr_dict={"for_name": "equipment", "cimRdfId": "origin_id", "cpSite.loc_name": "site"})
 
     logger.debug('created switch at index <%d>, closed = %s, usage = %s' %
                  (cd, switch_is_closed, switch_usage))
@@ -3278,9 +3291,8 @@ def create_pp_shunt(net, item):
             net,
             element='shunt',
             element_id=sid,
-            attr_list=['cpSite.loc_name'],
-            attr_dict={"cimRdfId": "origin_id", 'for_name': 'equipment'}
-        )
+            attr_dict={'for_name': 'equipment', "cimRdfId": "origin_id", "cpSite.loc_name": "site"}
+            )
     else:
         raise AttributeError(f"Shunt type {item.shtype} not valid: {item}")
 
@@ -3342,8 +3354,8 @@ def create_zpu(net, item):
     params['to_bus'] = aux_bus2
 
     xid = create_impedance(net, **params)
-    add_additional_attributes(item, net, element='impedance', element_id=xid, attr_list=["cpSite.loc_name"],
-                              attr_dict={"cimRdfId": "origin_id", 'for_name': 'equipment'})
+    add_additional_attributes(item, net, element='impedance', element_id=xid,
+                              attr_dict={'for_name': 'equipment', "cimRdfId": "origin_id", "cpSite.loc_name": "site"})
 
     # consider and create station switches
     new_elements = (aux_bus1, aux_bus2)
@@ -3438,8 +3450,8 @@ def create_vac(net, item):
         net['res_%s' % elm].at[xid, "pf_p"] = np.nan
         net['res_%s' % elm].at[xid, "pf_q"] = np.nan
 
-    add_additional_attributes(item, net, element=elm, element_id=xid, attr_list=["cpSite.loc_name"],
-                              attr_dict={"cimRdfId": "origin_id", 'for_name': 'equipment'})
+    add_additional_attributes(item, net, element=elm, element_id=xid,
+                              attr_dict={'for_name': 'equipment', "cimRdfId": "origin_id", "cpSite.loc_name": "site"})
 
     logger.debug('added pf_p and pf_q to {} {}: {}'.format(elm, xid, net['res_' + elm].loc[
         xid, ["pf_p", 'pf_q']].values))
@@ -3602,8 +3614,10 @@ def create_svc(net, item, pv_as_slack, pf_variable_p_gen, dict_net):
         logger.debug('created svc at index <%s>' % svc)
 
         net[element].loc[svc, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-        add_additional_attributes(item, net, element, svc, attr_dict={"cimRdfId": "origin_id", 'for_name': 'equipment'},
-                                  attr_list=["sernum", "chr_name", "cpSite.loc_name"])
+        add_additional_attributes(item, net, element, svc, attr_dict={"for_name": "equipment",
+                                                                      "cimRdfId": "origin_id",
+                                                                      "cpSite.loc_name": "site"},
+                                                          attr_list=["sernum", "chr_name"])
 
         if item.HasResults(0):  # 'm' results...
             logger.debug('<%s> has results' % name)
@@ -3949,7 +3963,7 @@ def create_stactrl(net, item):
             v_setpoint_pu = controlled_node.vtarget  # Bus target voltage
 
         if item.i_droop:  # Enable Droop
-            bsc = control.BinarySearchControl(net, ctrl_in_service=stactrl_in_service,
+            bsc = BinarySearchControl(net, ctrl_in_service=stactrl_in_service,
                                                  output_element=gen_element, output_variable="q_mvar",
                                                  output_element_index=gen_element_index,
                                                  output_element_in_service=gen_element_in_service,
@@ -3957,10 +3971,10 @@ def create_stactrl(net, item):
                                                  input_element=res_element_table, input_variable=variable,
                                                  input_element_index=res_element_index,
                                                  set_point=v_setpoint_pu, voltage_ctrl=True, bus_idx=bus, tol=1e-3)
-            control.DroopControl(net, q_droop_mvar=item.Srated * 100 / item.ddroop, bus_idx=bus,
+            DroopControl(net, q_droop_mvar=item.Srated * 100 / item.ddroop, bus_idx=bus,
                                     vm_set_pu=v_setpoint_pu, controller_idx=bsc.index, voltage_ctrl=True)
         else:
-            control.BinarySearchControl(net, ctrl_in_service=stactrl_in_service,
+            BinarySearchControl(net, ctrl_in_service=stactrl_in_service,
                                            output_element=gen_element, output_variable="q_mvar",
                                            output_element_index=gen_element_index,
                                            output_element_in_service=gen_element_in_service, input_element="res_bus",
