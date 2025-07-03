@@ -96,7 +96,7 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
     dict_net = to_dict_of_dfs(net, include_results=include_results,
                                        include_empty_tables=include_empty_tables)
     for item, table in dict_net.items():
-        table.to_excel(writer, sheet_name=item)
+        table.to_excel(writer, sheet_name=item[:31])
 
     try:
         writer.save()
