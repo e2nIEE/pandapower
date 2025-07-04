@@ -13,6 +13,7 @@ from pandapower.create import create_empty_network, create_poly_cost
 from pandapower.results import reset_results
 from pandapower.control import TrafoController
 from pandapower.plotting.geo import convert_geodata_to_geojson
+from pandapower.auxiliary import pandapowerNet
 
 import logging
 
@@ -34,6 +35,8 @@ def convert_format(net, elements_to_deserialize=None):
     _rename_columns(net, elements_to_deserialize)
     _add_missing_columns(net, elements_to_deserialize)
     _create_seperate_cost_tables(net, elements_to_deserialize)
+    if Version(str(net.format_version)) < Version("3.1.3"):
+        _convert_q_capability_characteristic(net)
     if Version(str(net.format_version)) < Version("3.0.0"):
         _convert_geo_data(net, elements_to_deserialize)
         _convert_group_element_index(net)
@@ -57,6 +60,17 @@ def convert_format(net, elements_to_deserialize=None):
     net.version = __version__
     _restore_index_names(net)
     return net
+
+
+def _convert_q_capability_characteristic(net: pandapowerNet):
+    # rename the q_capability_curve_characteristic table to q_capability_characteristic if exists
+    # this is necessary due to the fact that Excel sheet names have a limit of 31 characters
+    if 'q_capability_curve_characteristic' in net:
+        net['q_capability_characteristic'] = net.pop('q_capability_curve_characteristic')
+    for ele in ['gen', 'sgen']:
+        if 'id_q_capability_curve_characteristic' in net[ele].columns:
+            net[ele] = net[ele].rename(
+                columns={'id_q_capability_curve_characteristic': 'id_q_capability_characteristic'})
 
 
 def _convert_geo_data(net, elements_to_deserialize=None):
