@@ -288,6 +288,8 @@ def _current_source_current(net, ppci, bus_idx, sequence=1):
     type_c = net._options["use_pre_fault_voltage"]
     # sgen current source contribution only for Type A and case "max" or type C:
     if case != "max" and not type_c or sequence != 1: # TODO not only return 0 this leas to NaN values
+        ppci["bus"][:, PHI_IKCV_DEGREE] = 0
+        ppci["bus"][:, PHI_IKSSC_DEGREE] = 0
         return
 
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
@@ -357,20 +359,20 @@ def _current_source_current(net, ppci, bus_idx, sequence=1):
     if net["_options"]["inverse_y"]:
         Zbus = ppci["internal"]["Zbus"]
         diagZ = np.diag(Zbus).copy()  # here diagZ is not writeable
-        if sgen_angle is None and (fault == "LLL" or fault == "LG" and type_c): #Todo auch LLG?  check logic here of type_c
+        if sgen_angle is None and (fault == "LLL" or fault == "LG"): #Todo auch LLG?  check logic here of type_c
             ppci["bus"][buses, PHI_IKCV_DEGREE] = -np.angle(Zbus[buses, bus_idx], deg=True) + extra_angle
         diagZ[bus_idx] += fault_impedance
         i_kss_2 = 1 / diagZ * np.dot(Zbus, ppci["bus"][:, IKCV] * np.exp(np.deg2rad(ppci["bus"][:, PHI_IKCV_DEGREE]) * 1j))
     else:
         ybus_fact = ppci["internal"]["ybus_fact"]
         diagZ = _calc_zbus_diag(net, ppci)
-        if sgen_angle is None and (fault == "LLL" or fault == "LG" and type_c): #Todo auch LLG?  check logic here of type_c
+        if sgen_angle is None and (fault == "LLL" or fault == "LG"): #Todo auch LLG?  check logic here of type_c
             ppci["bus"][buses, PHI_IKCV_DEGREE] = -np.angle(diagZ[buses], deg=True) + extra_angle
         diagZ[bus_idx] += fault_impedance
         i_kss_2 = ybus_fact(ppci["bus"][:, IKCV] * np.exp(np.deg2rad(ppci["bus"][:, PHI_IKCV_DEGREE]) * 1j)) / diagZ
 
     ppci["bus"][:, IKSSC] = np.abs(i_kss_2 / baseI)
-    ppci["bus"][:, PHI_IKSSC_DEGREE] = np.angle(i_kss_2, deg=True) if (fault == "LLL" or fault == "LG" and type_c) else 0 #Todo auch LLG?  check logic here of type_c
+    ppci["bus"][:, PHI_IKSSC_DEGREE] = np.angle(i_kss_2, deg=True) if (fault == "LLL" or fault == "LG") else 0 #Todo auch LLG?  check logic here of type_c
     ppci["bus"][buses, IKCV] /= baseI[buses]
 
 
