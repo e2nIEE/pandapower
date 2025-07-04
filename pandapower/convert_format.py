@@ -68,7 +68,7 @@ def _convert_q_capability_characteristic(net: pandapowerNet):
     if 'q_capability_curve_characteristic' in net:
         net['q_capability_characteristic'] = net.pop('q_capability_curve_characteristic')
     for ele in ['gen', 'sgen']:
-        if 'id_q_capability_curve_characteristic' in net[ele].columns:
+        if isinstance(net[ele], pd.DataFrame) and 'id_q_capability_curve_characteristic' in net[ele].columns:
             net[ele] = net[ele].rename(
                 columns={'id_q_capability_curve_characteristic': 'id_q_capability_characteristic'})
 

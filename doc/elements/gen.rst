@@ -85,6 +85,20 @@ The table below illustrates an example of a q_capability_characteristic table po
 The function pandapower.control.util.q_capability_curve_table_diagnostic is available to perform sanity checks
 on the generator reactive power capability curve table.
 
+*net.q_capability_characteristic*
+
+.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}
+.. csv-table::
+   :file: gen_q_capability_characteristic.csv
+   :delim: ;
+
+*net.q_capability_curve_table*
+
+.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.55\linewidth}|p{0.55\linewidth}
+.. csv-table::
+   :file: gen_q_capability_curve_table.csv
+   :delim: ;
+
 Electric Model
 =================
 
