@@ -413,7 +413,8 @@ def load_pf_results(excel_file):
                                       ]
                 if fault_type in ['LG', 'LLG']:
                     # ToDo: Do we need the value ikss_ka ?
-                    pf_results['ikss_ka'] = np.max([pf_results['ikss_b_from_ka'], pf_results['ikss_b_to_ka']])
+                    pf_results['ikss_ka'] = np.max([pf_results['ikss_a_from_ka'], pf_results['ikss_a_to_ka'], pf_results['ikss_b_from_ka'], \
+                                                    pf_results['ikss_b_to_ka'], pf_results['ikss_c_from_ka'], pf_results['ikss_c_to_ka']], axis=0)
 
             dataframes[sheet] = pf_results
 

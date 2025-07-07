@@ -214,7 +214,7 @@ def _calc_current(net, ppci_orig, bus):
 
         if net._options["branch_results"]:
             # if net._options["fault"] == "LLL":
-            _calc_branch_currents_complex(net, this_ppci, this_ppci_bus)
+            _calc_branch_currents_complex(net, this_ppci_bus, None, this_ppci, None, 1)
             # else:
             #     _calc_branch_currents(net, this_ppci, this_ppci_bus)
 
@@ -294,9 +294,9 @@ def _calc_sc_to_g(net, bus):
         #     _calc_branch_currents_complex(net, ppci_1, ppci_bus)
         #     _calc_branch_currents_complex(net, ppci_2, ppci_bus)
         # else:
-        _calc_branch_currents_complex(net, ppci_0, ppci_bus)
-        _calc_branch_currents_complex(net, ppci_1, ppci_bus)
-        _calc_branch_currents_complex(net, ppci_2, ppci_bus)
+        _calc_branch_currents_complex(net, ppci_bus, ppci_0, ppci_1, ppci_2, 0)
+        _calc_branch_currents_complex(net, ppci_bus, ppci_0, ppci_1, ppci_2, 1)
+        _calc_branch_currents_complex(net, ppci_bus, ppci_0, ppci_1, ppci_2, 2)
 
     ppc_0 = _copy_results_ppci_to_ppc(ppci_0, ppc_0, "sc")
     ppc_1 = _copy_results_ppci_to_ppc(ppci_1, ppc_1, "sc")
