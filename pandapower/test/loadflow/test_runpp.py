@@ -797,6 +797,43 @@ def test_zip_loads_out_of_service():
     net1.res_load = net1.res_load.drop(oos_load)
     assert nets_equal(net, net1, check_only_results=True)
 
+def test_zip_loads_mixed_voltage_dependencies():
+    net = create_empty_network()
+
+    bus1 = create_bus(net, vn_kv=110., name="Bus 1")
+    bus2 = create_bus(net, vn_kv=110., name="Bus 2")
+
+    # create bus elements
+    create_ext_grid(net, bus=bus1, vm_pu=1.00, name="Grid Connection")
+    create_load(net, bus=bus2, p_mw=50, q_mvar=100, name="Load",
+                const_i_p_percent=0, const_i_q_percent=0, 
+                const_z_p_percent=0, const_z_q_percent=0)
+    create_line(net, from_bus=bus1, to_bus=bus2, length_km=50,
+                std_type="N2XS(FL)2Y 1x120 RM/35 64/110 kV", name="Line")
+    
+    const_i_p_percent = [0, 0, 0, 0, 100, 35]
+    const_i_q_percent = [0, 0, 0, 100, 0, 7]
+    const_z_p_percent = [0, 0, 100, 0, 0, 45]
+    const_z_q_percent = [0, 100, 0, 0, 0, 13]
+    # results from PowerFactory 2024
+    res_load_p_mw = [50, 50, 40.62979, 50, 44.905873, 44.066154]
+    res_load_q_mvar = [100, 82.701731, 100, 90.279771, 100, 96.877779]
+    res_bus_vm_pu = [0.894107, 0.909405, 0.901441, 0.902798, 0.898117, 0.901571]
+    
+    for c_i_p, c_i_q, c_z_p, c_z_q, res_load_p, res_load_q, res_bus_v in zip(const_i_p_percent, const_i_q_percent, 
+                                                                             const_z_p_percent, const_z_q_percent, 
+                                                                             res_load_p_mw, res_load_q_mvar, 
+                                                                             res_bus_vm_pu):
+        net.load.const_i_p_percent.at[0] = c_i_p
+        net.load.const_i_q_percent.at[0] = c_i_q
+        net.load.const_z_p_percent.at[0] = c_z_p
+        net.load.const_z_q_percent.at[0] = c_z_q
+
+        runpp(net, tolerance_mva=1e-6)
+        
+        assert np.allclose(net.res_load.p_mw.at[0], res_load_p)
+        assert np.allclose(net.res_load.q_mvar.at[0], res_load_q)
+        assert np.allclose(net.res_bus.vm_pu.at[1], res_bus_v)
 
 def test_xward_buses():
     """
