@@ -123,22 +123,31 @@ def compare_results(columns_to_check, net_df, pf_results, branch_results):
 
 def load_test_case_data(net_name, fault_location_bus, vector_group=None):
     if vector_group:
-        net_name += "_" + vector_group.lower()
+        net_name = f"{net_name}_{vector_group.lower()}"
     if net_name.endswith("_sgen"):
         grid_folder = "wp_2.2"
     else:
         grid_folder = "wp_2.1"
 
-    net = from_json(os.path.join(testfiles_path, "test_grids", grid_folder, net_name + ".json"))
-    excel_file_bus = os.path.join(testfiles_path, "sc_result_comparison",
-                                  net_name + "_pf_sc_results_" + str(fault_location_bus) + "_bus.xlsx")
-    excel_file_branch = os.path.join(testfiles_path, "sc_result_comparison",
-                                     net_name + "_pf_sc_results_" + str(fault_location_bus) + "_branch.xlsx")
-    dataframes = {
-        'bus': load_pf_results(excel_file_bus),
-        'branch': load_pf_results(excel_file_branch)
-    }
-    return net, dataframes
+    net = from_json(os.path.join(testfiles_path, "test_grids", grid_folder, f"{net_name}.json"))
+    excel_file_bus = os.path.join(
+        testfiles_path,
+        "sc_result_comparison",
+        f"{net_name}_pf_sc_results_{fault_location_bus}_bus.xlsx"
+    )
+    excel_file_branch = os.path.join(
+        testfiles_path,
+        "sc_result_comparison",
+        f"{net_name}_pf_sc_results_{fault_location_bus}_branch.xlsx"
+    )
+    try:
+        dataframes = {
+            'bus': load_pf_results(excel_file_bus),
+            'branch': load_pf_results(excel_file_branch)
+        }
+        return net, dataframes
+    except FileNotFoundError:
+        return net, FileNotFoundError("At least one of the results files does not exist.")
 
 
 def run_test_cases(net, dataframes, fault, case, fault_values, lv_tol_percent, fault_location_bus,

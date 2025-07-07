@@ -1,4 +1,3 @@
-import pandapower as pp
 import pandapower.shortcircuit as sc
 from pandapower.shortcircuit.calc_sc import calc_sc
 import numpy as np
