@@ -279,9 +279,7 @@ def validate_pf_conversion(net, is_unbalanced=False, **kwargs):
 
     pf_closed = pf_results['pf_switch_status']
     wrong_switches = net.res_switch.loc[pf_closed != net.switch.loc[pf_closed.index, 'closed']].index.values if 'res_switch' in net.keys() else []
-    # wrong_switches = net.res_switch.loc[
-    #         pf_closed != net.switch.loc[net.switch.index.isin(pf_closed.index), 'closed']
-    # ].index.values if 'res_switch' in net.keys() else []
+
     if len(net.switch) > 0:
         logger.info('%d switches are wrong: %s' % (len(wrong_switches), wrong_switches))
 
