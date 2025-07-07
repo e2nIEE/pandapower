@@ -4,32 +4,28 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
+import logging
+import warnings
 from operator import itemgetter
 from typing import Tuple, List, Union, Iterable
-import warnings
 
+import numpy as np
 import pandas as pd
-from numpy import nan, zeros, isnan, arange, dtype, isin, any as np_any, array, bool_, \
+from numpy import nan, zeros, isnan, arange, isin, any as np_any, array, bool_, \
     all as np_all, float64, intersect1d, unique as uni
 from pandas import isnull
 from pandas.api.types import is_object_dtype
 
-from pandapower._version import __version__, __format_version__
 from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes, ensure_iterability, \
     empty_defaults_per_dtype
+from pandapower.network_structure import get_structure_dict
 from pandapower.results import reset_results
 from pandapower.std_types import add_basic_std_types, load_std_type
-import numpy as np
-
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
 
 logger = logging.getLogger(__name__)
 
 
-def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
+def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True) -> pandapowerNet:
     """
     This function initializes the pandapower datastructure.
 
@@ -49,613 +45,12 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
         net = create_empty_network()
 
     """
-    net = pandapowerNet({
-        # structure data
-        "bus": [('name', dtype(object)),
-                ('vn_kv', 'f8'),
-                ('type', dtype(object)),
-                ('zone', dtype(object)),
-                ('in_service', 'bool'),
-                ('geo', dtype(str))],
-        "bus_dc": [('name', dtype(object)),
-                   ('vn_kv', 'f8'),
-                   ('type', dtype(object)),
-                   ('zone', dtype(object)),
-                   ('in_service', 'bool'),
-                   ('geo', dtype(str))],
-        "load": [("name", dtype(object)),
-                 ("bus", "u4"),
-                 ("p_mw", "f8"),
-                 ("q_mvar", "f8"),
-                 ("const_z_percent", "f8"),
-                 ("const_i_percent", "f8"),
-                 ("sn_mva", "f8"),
-                 ("scaling", "f8"),
-                 ("in_service", 'bool'),
-                 ("type", dtype(object))],
-        "sgen": [("name", dtype(object)),
-                 ("bus", "i8"),
-                 ("p_mw", "f8"),
-                 ("q_mvar", "f8"),
-                 ("sn_mva", "f8"),
-                 ("scaling", "f8"),
-                 ('id_q_capability_curve_table', 'u4'),
-                 ('curve_dependency_table', 'bool'),
-                 ('curve_style', dtype(object)),
-                 ("in_service", 'bool'),
-                 ("type", dtype(object)),
-                 ("current_source", "bool")],
-        "motor": [("name", dtype(object)),
-                  ("bus", "i8"),
-                  ("pn_mech_mw", "f8"),
-                  ("loading_percent", "f8"),
-                  ("cos_phi", "f8"),
-                  ("cos_phi_n", "f8"),
-                  ("efficiency_percent", "f8"),
-                  ("efficiency_n_percent", "f8"),
-                  ("lrc_pu", "f8"),
-                  ("vn_kv", "f8"),
-                  ("scaling", "f8"),
-                  ("in_service", 'bool'),
-                  ("rx", 'f8')
-                  ],
-        "asymmetric_load": [("name", dtype(object)),
-                            ("bus", "u4"),
-                            ("p_a_mw", "f8"),
-                            ("q_a_mvar", "f8"),
-                            ("p_b_mw", "f8"),
-                            ("q_b_mvar", "f8"),
-                            ("p_c_mw", "f8"),
-                            ("q_c_mvar", "f8"),
-                            ("sn_mva", "f8"),
-                            ("scaling", "f8"),
-                            ("in_service", 'bool'),
-                            ("type", dtype(object))],
+    network_structure_dict = get_structure_dict()
+    network_structure_dict['name'] = name
+    network_structure_dict['f_hz'] = f_hz
+    network_structure_dict['sn_mva'] = sn_mva
 
-        "asymmetric_sgen": [("name", dtype(object)),
-                            ("bus", "i8"),
-                            ("p_a_mw", "f8"),
-                            ("q_a_mvar", "f8"),
-                            ("p_b_mw", "f8"),
-                            ("q_b_mvar", "f8"),
-                            ("p_c_mw", "f8"),
-                            ("q_c_mvar", "f8"),
-                            ("sn_mva", "f8"),
-                            ("scaling", "f8"),
-                            ("in_service", 'bool'),
-                            ("type", dtype(object)),
-                            ("current_source", "bool")],
-        "storage": [("name", dtype(object)),
-                    ("bus", "i8"),
-                    ("p_mw", "f8"),
-                    ("q_mvar", "f8"),
-                    ("sn_mva", "f8"),
-                    ("soc_percent", "f8"),
-                    ("min_e_mwh", "f8"),
-                    ("max_e_mwh", "f8"),
-                    ("scaling", "f8"),
-                    ("in_service", 'bool'),
-                    ("type", dtype(object))],
-        "gen": [("name", dtype(object)),
-                ("bus", "u4"),
-                ("p_mw", "f8"),
-                ("vm_pu", "f8"),
-                ("sn_mva", "f8"),
-                ("min_q_mvar", "f8"),
-                ("max_q_mvar", "f8"),
-                ("scaling", "f8"),
-                ("slack", "bool"),
-                ('id_q_capability_curve_table', 'u4'),
-                ('curve_dependency_table', 'bool'),
-                ('curve_style', dtype(object)),
-                ("in_service", 'bool'),
-                ("slack_weight", 'f8'),
-                ("type", dtype(object))],
-        "switch": [("bus", "i8"),
-                   ("element", "i8"),
-                   ("et", dtype(object)),
-                   ("type", dtype(object)),
-                   ("closed", "bool"),
-                   ("name", dtype(object)),
-                   ("z_ohm", "f8"),
-                   ("in_ka", "f8")],
-        "shunt": [("bus", "u4"),
-                  ("name", dtype(object)),
-                  ("q_mvar", "f8"),
-                  ("p_mw", "f8"),
-                  ("vn_kv", "f8"),
-                  ("step", "u4"),
-                  ("max_step", "u4"),
-                  ('id_characteristic_table', 'u4'),
-                  ('step_dependency_table', 'bool'),
-                  ("in_service", "bool")],
-        "svc": [("name", dtype(object)),
-                ("bus", "u4"),
-                ("x_l_ohm", "f8"),
-                ("x_cvar_ohm", "f8"),
-                ("set_vm_pu", "f8"),
-                ("thyristor_firing_angle_degree", "f8"),
-                ("controllable", "bool"),
-                ("in_service", "bool"),
-                ("min_angle_degree", "f8"),
-                ("max_angle_degree", "f8")],
-        "ssc": [("name", dtype(object)),
-                ("bus", "u4"),
-                ("r_ohm", "f8"),
-                ("x_ohm", "f8"),
-                ("vm_internal_pu", "f8"),
-                ("va_internal_degree", "f8"),
-                ("set_vm_pu", "f8"),
-                ("controllable", "bool"),
-                ("in_service", "bool")],
-        "vsc": [("name", dtype(object)),
-                ("bus", "u4"),
-                ("bus_dc", "u4"),
-                ("r_ohm", "f8"),
-                ("x_ohm", "f8"),
-                ("r_dc_ohm", "f8"),
-                ("pl_dc_mw", "f8"),
-                ("control_mode_ac", dtype(object)),
-                ("control_value_ac", "f8"),
-                ("control_mode_dc", dtype(object)),
-                ("control_value_dc", "f8"),
-                ("controllable", "bool"),
-                ("in_service", "bool")],
-        "ext_grid": [("name", dtype(object)),
-                     ("bus", "u4"),
-                     ("vm_pu", "f8"),
-                     ("va_degree", "f8"),
-                     ("slack_weight", 'f8'),
-                     ("in_service", 'bool')],
-        "line": [("name", dtype(object)),
-                 ("std_type", dtype(object)),
-                 ("from_bus", "u4"),
-                 ("to_bus", "u4"),
-                 ("length_km", "f8"),
-                 ("r_ohm_per_km", "f8"),
-                 ("x_ohm_per_km", "f8"),
-                 ("c_nf_per_km", "f8"),
-                 ("g_us_per_km", "f8"),
-                 ("max_i_ka", "f8"),
-                 ("df", "f8"),
-                 ("parallel", "u4"),
-                 ("type", dtype(object)),
-                 ("in_service", 'bool'),
-                 ("geo", dtype(str))],
-        "line_dc": [("name", dtype(object)),
-                    ("std_type", dtype(object)),
-                    ("from_bus_dc", "u4"),
-                    ("to_bus_dc", "u4"),
-                    ("length_km", "f8"),
-                    ("r_ohm_per_km", "f8"),
-                    ("g_us_per_km", "f8"),  # TODO: check if DC lines also have any shunt components
-                    ("max_i_ka", "f8"),
-                    ("df", "f8"),
-                    ("parallel", "u4"),
-                    ("type", dtype(object)),
-                    ("in_service", 'bool'),
-                    ('geo', dtype(str))],
-        "trafo": [("name", dtype(object)),
-                  ("std_type", dtype(object)),
-                  ("hv_bus", "u4"),
-                  ("lv_bus", "u4"),
-                  ("sn_mva", "f8"),
-                  ("vn_hv_kv", "f8"),
-                  ("vn_lv_kv", "f8"),
-                  ("vk_percent", "f8"),
-                  ("vkr_percent", "f8"),
-                  ("pfe_kw", "f8"),
-                  ("i0_percent", "f8"),
-                  ("shift_degree", "f8"),
-                  ("tap_side", dtype(object)),
-                  ("tap_neutral", "i4"),
-                  ("tap_min", "i4"),
-                  ("tap_max", "i4"),
-                  ("tap_step_percent", "f8"),
-                  ("tap_step_degree", "f8"),
-                  ("tap_pos", "i4"),
-                  ("tap_changer_type", dtype(object)),
-                  ('id_characteristic_table', 'u4'),
-                  ('tap_dependency_table', 'bool'),
-                  ("parallel", "u4"),
-                  ("df", "f8"),
-                  ("in_service", 'bool')],
-        "trafo3w": [("name", dtype(object)),
-                    ("std_type", dtype(object)),
-                    ("hv_bus", "u4"),
-                    ("mv_bus", "u4"),
-                    ("lv_bus", "u4"),
-                    ("sn_hv_mva", "f8"),
-                    ("sn_mv_mva", "f8"),
-                    ("sn_lv_mva", "f8"),
-                    ("vn_hv_kv", "f8"),
-                    ("vn_mv_kv", "f8"),
-                    ("vn_lv_kv", "f8"),
-                    ("vk_hv_percent", "f8"),
-                    ("vk_mv_percent", "f8"),
-                    ("vk_lv_percent", "f8"),
-                    ("vkr_hv_percent", "f8"),
-                    ("vkr_mv_percent", "f8"),
-                    ("vkr_lv_percent", "f8"),
-                    ("pfe_kw", "f8"),
-                    ("i0_percent", "f8"),
-                    ("shift_mv_degree", "f8"),
-                    ("shift_lv_degree", "f8"),
-                    ("tap_side", dtype(object)),
-                    ("tap_neutral", "i4"),
-                    ("tap_min", "i4"),
-                    ("tap_max", "i4"),
-                    ("tap_step_percent", "f8"),
-                    ("tap_step_degree", "f8"),
-                    ("tap_pos", "i4"),
-                    ("tap_at_star_point", 'bool'),
-                    ("tap_changer_type", dtype(object)),
-                    ('id_characteristic_table', 'u4'),
-                    ('tap_dependency_table', 'bool'),
-                    ("in_service", 'bool')],
-        "impedance": [("name", dtype(object)),
-                      ("from_bus", "u4"),
-                      ("to_bus", "u4"),
-                      ("rft_pu", "f8"),
-                      ("xft_pu", "f8"),
-                      ("rtf_pu", "f8"),
-                      ("xtf_pu", "f8"),
-                      ("gf_pu", "f8"),
-                      ("bf_pu", "f8"),
-                      ("gt_pu", "f8"),
-                      ("bt_pu", "f8"),
-                      ("sn_mva", "f8"),
-                      ("in_service", 'bool')],
-        "tcsc": [("name", dtype(object)),
-                 ("from_bus", "u4"),
-                 ("to_bus", "u4"),
-                 ("x_l_ohm", "f8"),
-                 ("x_cvar_ohm", "f8"),
-                 ("set_p_to_mw", "f8"),
-                 ("thyristor_firing_angle_degree", "f8"),
-                 ("controllable", "bool"),
-                 ("in_service", "bool")],
-        "dcline": [("name", dtype(object)),
-                   ("from_bus", "u4"),
-                   ("to_bus", "u4"),
-                   ("p_mw", "f8"),
-                   ("loss_percent", 'f8'),
-                   ("loss_mw", 'f8'),
-                   ("vm_from_pu", "f8"),
-                   ("vm_to_pu", "f8"),
-                   ("max_p_mw", "f8"),
-                   ("min_q_from_mvar", "f8"),
-                   ("min_q_to_mvar", "f8"),
-                   ("max_q_from_mvar", "f8"),
-                   ("max_q_to_mvar", "f8"),
-                   ("in_service", 'bool')],
-        "ward": [("name", dtype(object)),
-                 ("bus", "u4"),
-                 ("ps_mw", "f8"),
-                 ("qs_mvar", "f8"),
-                 ("qz_mvar", "f8"),
-                 ("pz_mw", "f8"),
-                 ("in_service", "bool")],
-        "xward": [("name", dtype(object)),
-                  ("bus", "u4"),
-                  ("ps_mw", "f8"),
-                  ("qs_mvar", "f8"),
-                  ("qz_mvar", "f8"),
-                  ("pz_mw", "f8"),
-                  ("r_ohm", "f8"),
-                  ("x_ohm", "f8"),
-                  ("vm_pu", "f8"),
-                  ("slack_weight", 'f8'),
-                  ("in_service", "bool")],
-        "measurement": [("name", dtype(object)),
-                        ("measurement_type", dtype(object)),
-                        ("element_type", dtype(object)),
-                        ("element", "uint32"),
-                        ("value", "float64"),
-                        ("std_dev", "float64"),
-                        ("side", dtype(object))],
-        "pwl_cost": [("power_type", dtype(object)),
-                     ("element", "u4"),
-                     ("et", dtype(object)),
-                     ("points", dtype(object))],
-        "poly_cost": [("element", "u4"),
-                      ("et", dtype(object)),
-                      ("cp0_eur", dtype("f8")),
-                      ("cp1_eur_per_mw", dtype("f8")),
-                      ("cp2_eur_per_mw2", dtype("f8")),
-                      ("cq0_eur", dtype("f8")),
-                      ("cq1_eur_per_mvar", dtype("f8")),
-                      ("cq2_eur_per_mvar2", dtype("f8"))
-                      ],
-        'controller': [
-            ('object', dtype(object)),
-            ('in_service', "bool"),
-            ('order', "float64"),
-            ('level', dtype(object)),
-            ('initial_run', "bool"),
-            ("recycle", dtype(object))
-        ],
-        'group': [
-            ('name', dtype(object)),
-            ('element_type', dtype(object)),
-            ('element_index', dtype(object)),
-            ('reference_column', dtype(object)),
-        ],
-        # geodata (now as line.geo, bus.geo, bus_dc.geo, line_dc.geo)
-        # "bus_geodata": [("x", "f8"), ("y", "f8"), ("coords", dtype(object))],
-        # "bus_dc_geodata": [("x", "f8"), ("y", "f8"), ("coords", dtype(object))],
-        # "line_geodata": [("coords", dtype(object))],
-        # "line_dc_geodata": [("coords", dtype(object))],
-
-        # result tables
-        "_empty_res_bus": [("vm_pu", "f8"),
-                           ("va_degree", "f8"),
-                           ("p_mw", "f8"),
-                           ("q_mvar", "f8")],
-        "_empty_res_bus_dc": [("vm_pu", "f8"),
-                              ("p_mw", "f8")],
-        "_empty_res_ext_grid": [("p_mw", "f8"),
-                                ("q_mvar", "f8")],
-        "_empty_res_line": [("p_from_mw", "f8"),
-                            ("q_from_mvar", "f8"),
-                            ("p_to_mw", "f8"),
-                            ("q_to_mvar", "f8"),
-                            ("pl_mw", "f8"),
-                            ("ql_mvar", "f8"),
-                            ("i_from_ka", "f8"),
-                            ("i_to_ka", "f8"),
-                            ("i_ka", "f8"),
-                            ("vm_from_pu", "f8"),
-                            ("va_from_degree", "f8"),
-                            ("vm_to_pu", "f8"),
-                            ("va_to_degree", "f8"),
-                            ("loading_percent", "f8")],
-        "_empty_res_line_dc": [("p_from_mw", "f8"),
-                               ("p_to_mw", "f8"),
-                               ("pl_mw", "f8"),
-                               ("i_from_ka", "f8"),
-                               ("i_to_ka", "f8"),
-                               ("i_ka", "f8"),
-                               ("vm_from_pu", "f8"),
-                               ("vm_to_pu", "f8"),
-                               ("loading_percent", "f8")],
-        "_empty_res_trafo": [("p_hv_mw", "f8"),
-                             ("q_hv_mvar", "f8"),
-                             ("p_lv_mw", "f8"),
-                             ("q_lv_mvar", "f8"),
-                             ("pl_mw", "f8"),
-                             ("ql_mvar", "f8"),
-                             ("i_hv_ka", "f8"),
-                             ("i_lv_ka", "f8"),
-                             ("vm_hv_pu", "f8"),
-                             ("va_hv_degree", "f8"),
-                             ("vm_lv_pu", "f8"),
-                             ("va_lv_degree", "f8"),
-                             ("loading_percent", "f8")],
-        "_empty_res_load": [("p_mw", "f8"),
-                            ("q_mvar", "f8")],
-        "_empty_res_asymmetric_load": [("p_mw", "f8"),
-                                       ("q_mvar", "f8")],
-        "_empty_res_asymmetric_sgen": [("p_mw", "f8"),
-                                       ("q_mvar", "f8")],
-        "_empty_res_motor": [("p_mw", "f8"),
-                             ("q_mvar", "f8")],
-        "_empty_res_sgen": [("p_mw", "f8"),
-                            ("q_mvar", "f8")],
-        "_empty_res_shunt": [("p_mw", "f8"),
-                             ("q_mvar", "f8"),
-                             ("vm_pu", "f8")],
-        "_empty_res_svc": [("thyristor_firing_angle_degree", "f8"),
-                           ("x_ohm", "f8"),
-                           ("q_mvar", "f8"),
-                           ("vm_pu", "f8"),
-                           ("va_degree", "f8")],
-        "_empty_res_ssc": [("q_mvar", "f8"),
-                           ("vm_internal_pu", "f8"),
-                           ("va_internal_degree", "f8"),
-                           ("vm_pu", "f8"),
-                           ("va_degree", "f8")],
-        "_empty_res_vsc": [("p_mw", "f8"),
-                           ("q_mvar", "f8"),
-                           ("p_dc_mw", "f8"),
-                           ("vm_internal_pu", "f8"),
-                           ("va_internal_degree", "f8"),
-                           ("vm_pu", "f8"),
-                           ("va_degree", "f8"),
-                           ("vm_internal_dc_pu", "f8"),
-                           ("vm_dc_pu", "f8")],
-        "_empty_res_switch": [("i_ka", "f8"),
-                              ("loading_percent", "f8"),
-                              ("p_from_mw", "f8"),
-                              ("q_from_mvar", "f8"),
-                              ("p_to_mw", "f8"),
-                              ("q_to_mvar", "f8")],
-        "_empty_res_impedance": [("p_from_mw", "f8"),
-                                 ("q_from_mvar", "f8"),
-                                 ("p_to_mw", "f8"),
-                                 ("q_to_mvar", "f8"),
-                                 ("pl_mw", "f8"),
-                                 ("ql_mvar", "f8"),
-                                 ("i_from_ka", "f8"),
-                                 ("i_to_ka", "f8")],
-        "_empty_res_tcsc": [("thyristor_firing_angle_degree", "f8"),
-                            ("x_ohm", "f8"),
-                            ("p_from_mw", "f8"),
-                            ("q_from_mvar", "f8"),
-                            ("p_to_mw", "f8"),
-                            ("q_to_mvar", "f8"),
-                            ("pl_mw", "f8"),
-                            ("ql_mvar", "f8"),
-                            ("i_ka", "f8"),
-                            ("vm_from_pu", "f8"),
-                            ("va_from_degree", "f8"),
-                            ("vm_to_pu", "f8"),
-                            ("va_to_degree", "f8")],
-        "_empty_res_dcline": [("p_from_mw", "f8"),
-                              ("q_from_mvar", "f8"),
-                              ("p_to_mw", "f8"),
-                              ("q_to_mvar", "f8"),
-                              ("pl_mw", "f8"),
-                              ("vm_from_pu", "f8"),
-                              ("va_from_degree", "f8"),
-                              ("vm_to_pu", "f8"),
-                              ("va_to_degree", "f8")],
-        "_empty_res_ward": [("p_mw", "f8"),
-                            ("q_mvar", "f8"),
-                            ("vm_pu", "f8")],
-        "_empty_res_xward": [("p_mw", "f8"),
-                             ("q_mvar", "f8"),
-                             ("vm_pu", "f8"),
-                             ("va_internal_degree", "f8"),
-                             ("vm_internal_pu", "f8")],
-
-        "_empty_res_trafo_3ph": [("p_a_hv_mw", "f8"),
-                                 ("q_a_hv_mvar", "f8"),
-                                 ("p_b_hv_mw", "f8"),
-                                 ("q_b_hv_mvar", "f8"),
-                                 ("p_c_hv_mw", "f8"),
-                                 ("q_c_hv_mvar", "f8"),
-                                 ("p_a_lv_mw", "f8"),
-                                 ("q_a_lv_mvar", "f8"),
-                                 ("p_b_lv_mw", "f8"),
-                                 ("q_b_lv_mvar", "f8"),
-                                 ("p_c_lv_mw", "f8"),
-                                 ("q_c_lv_mvar", "f8"),
-                                 ("p_a_l_mw", "f8"),
-                                 ("q_a_l_mvar", "f8"),
-                                 ("p_b_l_mw", "f8"),
-                                 ("q_b_l_mvar", "f8"),
-                                 ("p_c_l_mw", "f8"),
-                                 ("q_c_l_mvar", "f8"),
-                                 ("i_a_hv_ka", "f8"),
-                                 ("i_a_lv_ka", "f8"),
-                                 ("i_b_hv_ka", "f8"),
-                                 ("i_b_lv_ka", "f8"),
-                                 ("i_c_hv_ka", "f8"),
-                                 ("i_c_lv_ka", "f8"),
-                                 # ("i_n_hv_ka", "f8"),
-                                 # ("i_n_lv_ka", "f8"),
-                                 ("loading_a_percent", "f8"),
-                                 ("loading_b_percent", "f8"),
-                                 ("loading_c_percent", "f8"),
-                                 ("loading_percent", "f8")],
-        "_empty_res_trafo3w": [("p_hv_mw", "f8"),
-                               ("q_hv_mvar", "f8"),
-                               ("p_mv_mw", "f8"),
-                               ("q_mv_mvar", "f8"),
-                               ("p_lv_mw", "f8"),
-                               ("q_lv_mvar", "f8"),
-                               ("pl_mw", "f8"),
-                               ("ql_mvar", "f8"),
-                               ("i_hv_ka", "f8"),
-                               ("i_mv_ka", "f8"),
-                               ("i_lv_ka", "f8"),
-                               ("vm_hv_pu", "f8"),
-                               ("va_hv_degree", "f8"),
-                               ("vm_mv_pu", "f8"),
-                               ("va_mv_degree", "f8"),
-                               ("vm_lv_pu", "f8"),
-                               ("va_lv_degree", "f8"),
-                               ("va_internal_degree", "f8"),
-                               ("vm_internal_pu", "f8"),
-                               ("loading_percent", "f8")],
-        "_empty_res_bus_3ph": [("vm_a_pu", "f8"),
-                               ("va_a_degree", "f8"),
-                               ("vm_b_pu", "f8"),
-                               ("va_b_degree", "f8"),
-                               ("vm_c_pu", "f8"),
-                               ("va_c_degree", "f8"),
-                               ("p_a_mw", "f8"),
-                               ("q_a_mvar", "f8"),
-                               ("p_b_mw", "f8"),
-                               ("q_b_mvar", "f8"),
-                               ("p_c_mw", "f8"),
-                               ("q_c_mvar", "f8")],
-        "_empty_res_ext_grid_3ph": [("p_a_mw", "f8"),
-                                    ("q_a_mvar", "f8"),
-                                    ("p_b_mw", "f8"),
-                                    ("q_b_mvar", "f8"),
-                                    ("p_c_mw", "f8"),
-                                    ("q_c_mvar", "f8")],
-        "_empty_res_line_3ph": [("p_a_from_mw", "f8"),
-                                ("q_a_from_mvar", "f8"),
-                                ("p_b_from_mw", "f8"),
-                                ("q_b_from_mvar", "f8"),
-                                ("q_c_from_mvar", "f8"),
-                                ("p_a_to_mw", "f8"),
-                                ("q_a_to_mvar", "f8"),
-                                ("p_b_to_mw", "f8"),
-                                ("q_b_to_mvar", "f8"),
-                                ("p_c_to_mw", "f8"),
-                                ("q_c_to_mvar", "f8"),
-                                ("p_a_l_mw", "f8"),
-                                ("q_a_l_mvar", "f8"),
-                                ("p_b_l_mw", "f8"),
-                                ("q_b_l_mvar", "f8"),
-                                ("p_c_l_mw", "f8"),
-                                ("q_c_l_mvar", "f8"),
-                                ("i_a_from_ka", "f8"),
-                                ("i_a_to_ka", "f8"),
-                                ("i_b_from_ka", "f8"),
-                                ("i_b_to_ka", "f8"),
-                                ("i_c_from_ka", "f8"),
-                                ("i_c_to_ka", "f8"),
-                                ("i_a_ka", "f8"),
-                                ("i_b_ka", "f8"),
-                                ("i_c_ka", "f8"),
-                                ("i_n_from_ka", "f8"),
-                                ("i_n_to_ka", "f8"),
-                                ("i_n_ka", "f8"),
-                                ("loading_a_percent", "f8"),
-                                ("loading_b_percent", "f8"),
-                                ("loading_c_percent", "f8")],
-        "_empty_res_asymmetric_load_3ph": [("p_a_mw", "f8"),
-                                           ("q_a_mvar", "f8"),
-                                           ("p_b_mw", "f8"),
-                                           ("q_b_mvar", "f8"),
-                                           ("p_c_mw", "f8"),
-                                           ("q_c_mvar", "f8")],
-        "_empty_res_asymmetric_sgen_3ph": [("p_a_mw", "f8"),
-                                           ("q_a_mvar", "f8"),
-                                           ("p_b_mw", "f8"),
-                                           ("q_b_mvar", "f8"),
-                                           ("p_c_mw", "f8"),
-                                           ("q_c_mvar", "f8")],
-        "_empty_res_storage": [("p_mw", "f8"),
-                               ("q_mvar", "f8")],
-        "_empty_res_storage_3ph": [("p_a_mw", "f8"), ("p_b_mw", "f8"), ("p_c_mw", "f8"),
-                                   ("q_a_mvar", "f8"), ("q_b_mvar", "f8"), ("q_c_mvar", "f8")],
-        "_empty_res_gen": [("p_mw", "f8"),
-                           ("q_mvar", "f8"),
-                           ("va_degree", "f8"),
-                           ("vm_pu", "f8")],
-        "_empty_res_protection": [("switch_id", "f8"),
-                                  ("prot_type", dtype(object)),
-                                  ("trip_melt", "bool"),
-                                  ("act_param", dtype(object)),
-                                  ("act_param_val", "f8"),
-                                  ("trip_melt_time_s", "f8")],
-
-        # internal
-        "_ppc": None,
-        "_ppc0": None,
-        "_ppc1": None,
-        "_ppc2": None,
-        "_is_elements": None,
-        "_pd2ppc_lookups": {"bus": None,
-                            "bus_dc": None,
-                            "ext_grid": None,
-                            "gen": None,
-                            "branch": None,
-                            "branch_dc": None},
-        "version": __version__,
-        "format_version": __format_version__,
-        "converged": False,
-        "OPF_converged": False,
-        "name": name,
-        "f_hz": f_hz,
-        "sn_mva": sn_mva
-    })
+    net = pandapowerNet(network_structure_dict)
 
     net._empty_res_load_3ph = net._empty_res_load
     net._empty_res_sgen_3ph = net._empty_res_sgen
@@ -1284,9 +679,9 @@ def create_load_from_cosphi(net, bus, sn_mva, cos_phi, mode, **kwargs):
 
 def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
                 scaling=1., type='wye', in_service=True, max_p_mw=nan, min_p_mw=nan,
-                max_q_mvar=nan, min_q_mvar=nan, controllable=nan, k=nan, rx=nan, id_q_capability_curve_table=None,
-                curve_dependency_table=False, curve_style=None, current_source=True, generator_type=None,
-                max_ik_ka=nan, kappa=nan, lrc_pu=nan, **kwargs):
+                max_q_mvar=nan, min_q_mvar=nan, controllable=nan, k=nan, rx=nan,
+                id_q_capability_characteristic=None, reactive_capability_curve=False, curve_style=None,
+                current_source=True, generator_type=None, max_ik_ka=nan, kappa=nan, lrc_pu=nan, **kwargs):
     """
     Adds one static generator in table net["sgen"].
 
@@ -1316,7 +711,7 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
         **index** (int, None) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
 
-        **scaling** (float, 1.) - An OPTIONAL scaling factor to be set customly.
+        **scaling** (float, 1.) - An optional scaling factor to be set customly.
         Multiplies with p_mw and q_mvar.
 
         **type** (string, None) -  Three phase Connection type of the static generator: wye/delta
@@ -1344,17 +739,18 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
             specified as motor so that sgen is treated as asynchronous motor. Relevant for \
             short-circuit calculation for all generator types
 
-        **curve_dependency_table** (bool, NaN) - True if both the id_q_capability_curve_table and the curve style\
-         are present in the generator.
+        **reactive_capability_curve** (bool, False) - True if both the id_q_capability_characteristic and the \
+            curve style are present in the generator
 
-        **id_q_capability_curve_table** (int, None) - references the index of the characteristic from the lookup table \
-        net.q_capability_curve_table
+        **id_q_capability_characteristic** (int, None) - references the index of the characteristic from the \
+            net.q_capability_characteristic table (id_q_capability_curve column)
 
         **curve_style** (string, None) - The curve style of the generator represents the relationship \
-        between active power (P) and reactive power (Q). It indicates whether the reactive power remains \
-        constant as the active power changes or varies dynamically in response to it.
+            between active power (P) and reactive power (Q). It indicates whether the reactive power remains \
+            constant as the active power changes or varies dynamically in response to it, \
+            e.g. "straightLineYValues" and "constantYValue"
 
-        **generator_type** (str, "None") - can be one of "current_source" \
+        **generator_type** (str, None) - can be one of "current_source" \
             (full size converter), "async" (asynchronous generator), or "async_doubly_fed"\
             (doubly fed asynchronous generator, DFIG). Represents the type of the static \
             generator in the context of the short-circuit calculations of wind power station units. \
@@ -1363,13 +759,13 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
         **lrc_pu** (float, nan) - locked rotor current in relation to the rated generator \
             current. Relevant if the generator_type is "async".
 
-        **max_ik_ka (float, nan)** - the highest instantaneous short-circuit value in case \
+        **max_ik_ka** (float, nan) - the highest instantaneous short-circuit value in case \
             of a three-phase short-circuit (provided by the manufacturer). Relevant if the \
             generator_type is "async_doubly_fed".
 
-        **kappa (float, nan)** - the factor for the calculation of the peak short-circuit \
+        **kappa** (float, nan) - the factor for the calculation of the peak short-circuit \
             current, referred to the high-voltage side (provided by the manufacturer). \
-            Relevant if the generator_type is "async_doubly_fed".
+            Relevant if the generator_type is "async_doubly_fed". \
             If the superposition method is used (use_pre_fault_voltage=True), this parameter \
             is used to pass through the max. current limit of the machine in p.u.
 
@@ -1401,11 +797,11 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
     _set_value_if_not_nan(net, index, controllable, "controllable", "sgen", dtype=bool_,
                           default_val=False)
 
-    _set_value_if_not_nan(net, index, id_q_capability_curve_table, "id_q_capability_curve_table", "sgen",
-                          dtype= "Int64")
+    _set_value_if_not_nan(net, index, id_q_capability_characteristic,
+                          "id_q_capability_characteristic", "sgen", dtype="Int64")
 
-    _set_value_if_not_nan(net, index, curve_dependency_table, "curve_dependency_table", "sgen",
-                          dtype= bool_)
+    _set_value_if_not_nan(net, index, reactive_capability_curve, "reactive_capability_curve", "sgen",
+                          dtype=bool_)
 
     _set_value_if_not_nan(net, index, curve_style, "curve_style", "sgen", dtype=object, default_val=None)
 
@@ -1429,9 +825,9 @@ def create_sgen(net, bus, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
 
 def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
                  scaling=1., type='wye', in_service=True, max_p_mw=nan, min_p_mw=nan,
-                 max_q_mvar=nan, min_q_mvar=nan, controllable=nan, k=nan, rx=nan, id_q_capability_curve_table=nan,
-                 curve_dependency_table=False, curve_style=None, current_source=True, generator_type="current_source",
-                 max_ik_ka=nan, kappa=nan, lrc_pu=nan, **kwargs):
+                 max_q_mvar=nan, min_q_mvar=nan, controllable=nan, k=nan, rx=nan,
+                 id_q_capability_characteristic=nan, reactive_capability_curve=False, curve_style=None,
+                 current_source=True, generator_type="current_source", max_ik_ka=nan, kappa=nan, lrc_pu=nan, **kwargs):
     """
     Adds a number of sgens in table net["sgen"].
 
@@ -1481,8 +877,7 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
              controllable sgens in OPF
 
         **controllable** (list of boolean, default NaN) - States, whether a sgen is controllable \
-             or not. Only respected for OPF
-             Defaults to False if "controllable" column exists in DataFrame
+             or not. Only respected for OPF. Defaults to False if "controllable" column exists in DataFrame
 
         **k** (list of floats, None) - Ratio of nominal current to short circuit current
 
@@ -1490,29 +885,30 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
             specified as motor so that sgen is treated as asynchronous motor. Relevant for \
             short-circuit calculation for all generator types
 
-        **curve_dependency_table** (bool, NaN) - True if both the id_q_capability_curve_table and the curve style\
-            are present in the generator.
+        **reactive_capability_curve** (list of bools, False) - True if both the id_q_capability_characteristic \
+            and the curve style are present in the generator.
 
-        **id_q_capability_curve_table** (int, None) - references the index of the characteristic from the lookup table \
-            net.q_capability_curve_table
+        **id_q_capability_characteristic** (list of ints, None) - references the index of the characteristic \
+            from the lookup table net.q_capability_characteristic e.g. 0, 1, 2, 3
 
-        **curve_style** (string, None) - The curve style of the generator represents the relationship \
+        **curve_style** (list of strings, None) - The curve style of the generator represents the relationship \
            between active power (P) and reactive power (Q). It indicates whether the reactive power remains \
            constant as the active power changes or varies dynamically in response to it.
+           e.g. "straightLineYValues" and "constantYValue"
 
-        **generator_type** (str, "current_source") - can be one of "current_source" \
+        **generator_type** (list of strings, "current_source") - can be one of "current_source" \
             (full size converter), "async" (asynchronous generator), or "async_doubly_fed"\
             (doubly fed asynchronous generator, DFIG). Represents the type of the static \
             generator in the context of the short-circuit calculations of wind power station units
 
-        **lrc_pu** (float, nan) - locked rotor current in relation to the rated generator \
+        **lrc_pu** (list of float, nan) - locked rotor current in relation to the rated generator \
             current. Relevant if the generator_type is "async".
 
-        **max_ik_ka (float, nan)** - the highest instantaneous short-circuit value in case \
+        **max_ik_ka** (list of float, nan) - the highest instantaneous short-circuit value in case \
             of a three-phase short-circuit (provided by the manufacturer). Relevant if the \
             generator_type is "async_doubly_fed".
 
-        **kappa (float, nan)** - the factor for the calculation of the peak short-circuit \
+        **kappa** (list of float, nan) - the factor for the calculation of the peak short-circuit \
             current, referred to the high-voltage side (provided by the manufacturer). \
             Relevant if the generator_type is "async_doubly_fed".
 
@@ -1532,9 +928,8 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
     index = _get_multiple_index_with_check(net, "sgen", index, len(buses))
 
     entries = {"bus": buses, "p_mw": p_mw, "q_mvar": q_mvar, "sn_mva": sn_mva, "scaling": scaling,
-               "in_service": in_service, "name": name, "type": type,
-               'current_source': current_source, "curve_dependency_table":curve_dependency_table,
-               "curve_style":curve_style}
+               "in_service": in_service, "name": name, "type": type, "current_source": current_source,
+               "reactive_capability_curve": reactive_capability_curve, "curve_style": curve_style}
 
     _add_to_entries_if_not_nan(net, "sgen", entries, index, "min_p_mw", min_p_mw)
     _add_to_entries_if_not_nan(net, "sgen", entries, index, "max_p_mw", max_p_mw)
@@ -1552,8 +947,8 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
     gen_type_match = pd.concat([entries["generator_type"] == match for match in gen_types], axis=1,
                                keys=gen_types)
 
-    _add_to_entries_if_not_nan(net, "gen", entries, index, "id_q_capability_curve_table",
-                               id_q_capability_curve_table, dtype="Int64")
+    _add_to_entries_if_not_nan(net, "sgen", entries, index, "id_q_capability_characteristic",
+                               id_q_capability_characteristic, dtype="Int64")
 
     if gen_type_match["current_source"].any():
         _add_to_entries_if_not_nan(net, "sgen", entries, index, "k", k)
@@ -1565,7 +960,7 @@ def create_sgens(net, buses, p_mw, q_mvar=0, sn_mva=nan, name=None, index=None,
         raise UserWarning(f"unknown sgen generator_type '{generator_type}'! "
                           f"Must be one of: None, 'current_source', 'async', 'async_doubly_fed'")
 
-    defaults_to_fill = [("controllable", False),('curve_dependency_table', False),("curve_style", None)]
+    defaults_to_fill = [("controllable", False), ('reactive_capability_curve', False), ("curve_style", None)]
     _set_multiple_entries(net, "sgen", index, defaults_to_fill=defaults_to_fill, **entries,
                           **kwargs)
 
@@ -1654,7 +1049,7 @@ def create_sgen_from_cosphi(net, bus, sn_mva, cos_phi, mode, **kwargs):
 
         **cos_phi** (float) - power factor cos_phi
 
-        **mode** (str) - "underexcited" (Q absorption, decreases voltage) or "overexcited"
+        **mode** (str) - "underexcited" (Q absorption, decreases voltage) or "overexcited" \
                          (Q injection, increases voltage)
 
     OUTPUT:
@@ -1863,9 +1258,9 @@ def create_storages(
 
 def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_q_mvar=nan,
                min_q_mvar=nan, min_p_mw=nan, max_p_mw=nan, min_vm_pu=nan, max_vm_pu=nan,
-               scaling=1., type=None, slack=False, id_q_capability_curve_table=None, curve_dependency_table=False,
-               curve_style=None, controllable=nan, vn_kv=nan, xdss_pu=nan, rdss_ohm=nan, cos_phi=nan, pg_percent=nan,
-               power_station_trafo=nan, in_service=True, slack_weight=0.0, **kwargs):
+               scaling=1., type=None, slack=False, id_q_capability_characteristic=None,
+               reactive_capability_curve=False, curve_style=None, controllable=nan, vn_kv=nan, xdss_pu=nan, rdss_ohm=nan,
+               cos_phi=nan, pg_percent=nan, power_station_trafo=nan, in_service=True, slack_weight=0.0, **kwargs):
     """
     Adds a generator to the network.
 
@@ -1890,27 +1285,27 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
         **index** (int, None) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
 
-        **scaling** (float, 1.0) - scaling factor which for the active power of the generator
+        **scaling** (float, 1.0) - scaling factor applying to the active power of the generator
 
         **type** (string, None) - type variable to classify generators
 
-        **curve_dependency_table** (bool, NaN) - True if both the id_q_capability_curve_table and the curve style\
-         are present in the generator.
+        **reactive_capability_curve** (bool, False) - True if both the id_q_capability_characteristic and the \
+            curve style are present in the generator
 
-        **id_q_capability_curve_table** (int, None) - references the index of the characteristic from the lookup table \
-            net.q_capability_curve_table
+        **id_q_capability_characteristic** (int, None) - references the index of the characteristic from \
+            the net.q_capability_characteristic table (id_q_capability_curve column)
 
         **curve_style** (string, None) - The curve style of the generator represents the relationship \
-        between active power (P) and reactive power (Q). It indicates whether the reactive power remains \
-        constant as the active power changes or varies dynamically in response to it.
+            between active power (P) and reactive power (Q). It indicates whether the reactive power remains \
+            constant as the active power changes or varies dynamically in response to it, \
+            e.g. "straightLineYValues" and "constantYValue".
 
         **controllable** (bool, NaN) - True: p_mw, q_mvar and vm_pu limits are enforced for this \
-                generator in OPF
-                False: p_mw and vm_pu set points are enforced and *limits are ignored*.
-                defaults to True if "controllable" column exists in DataFrame
+                generator in OPF; False: p_mw and vm_pu set points are enforced and *limits are ignored*. \
+                Defaults to True if "controllable" column exists in DataFrame.
 
-        **slack_weight** (float, default 0.0) - Contribution factor for distributed slack power
-        flow calculation (active power balancing)
+        **slack_weight** (float, default 0.0) - Contribution factor for distributed slack power \
+            flow calculation (active power balancing)
 
         **vn_kv** (float, NaN) - Rated voltage of the generator for short-circuit calculation
 
@@ -1920,11 +1315,11 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
 
         **cos_phi** (float, NaN) - Rated cosine phi of the generator for short-circuit calculation
 
-        **pg_percent** (float, NaN) - Rated pg (voltage control range) of the generator for
-        short-circuit calculation
+        **pg_percent** (float, NaN) - Rated pg (voltage control range) of the generator for \
+            short-circuit calculation
 
-        **power_station_trafo** (int, None) - Index of the power station transformer for
-        short-circuit calculation
+        **power_station_trafo** (int, None) - Index of the power station transformer for \
+            short-circuit calculation
 
         **in_service** (bool, True) - True for in_service or False for out of service
 
@@ -1936,13 +1331,11 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
 
         **min_q_mvar** (float, default NaN) - Minimum reactive power injection - necessary for OPF
 
-        **min_vm_pu** (float, default NaN) - Minimum voltage magnitude. If not set the bus voltage \
-                                             limit is taken.
-                                           - necessary for OPF.
+        **min_vm_pu** (float, default NaN) - Minimum voltage magnitude. If not set, the bus voltage \
+                                             limit is taken - necessary for OPF.
 
-        **max_vm_pu** (float, default NaN) - Maximum voltage magnitude. If not set the bus voltage\
-                                              limit is taken.
-                                            - necessary for OPF
+        **max_vm_pu** (float, default NaN) - Maximum voltage magnitude. If not set, the bus voltage \
+                                             limit is taken - necessary for OPF
 
     OUTPUT:
         **index** (int) - The unique ID of the created generator
@@ -1967,12 +1360,13 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
                           dtype=bool_, default_val=True)
 
     # id for q capability curve table
-    _set_value_if_not_nan(net, index, id_q_capability_curve_table, "id_q_capability_curve_table", "gen", dtype="Int64")
+    _set_value_if_not_nan(net, index, id_q_capability_characteristic,
+                          "id_q_capability_characteristic", "gen", dtype="Int64")
 
     # behaviour of reactive power capability curve
     _set_value_if_not_nan(net, index, curve_style, "curve_style", "gen", dtype=object, default_val=None)
 
-    _set_value_if_not_nan(net, index, curve_dependency_table, "curve_dependency_table", "gen", dtype=bool_)
+    _set_value_if_not_nan(net, index, reactive_capability_curve, "reactive_capability_curve", "gen", dtype=bool_)
 
     # P limits for OPF if controllable == True
     _set_value_if_not_nan(net, index, min_p_mw, "min_p_mw", "gen")
@@ -1998,9 +1392,9 @@ def create_gen(net, bus, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_
 
 def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, max_q_mvar=nan,
                 min_q_mvar=nan, min_p_mw=nan, max_p_mw=nan, min_vm_pu=nan, max_vm_pu=nan,
-                scaling=1., type=None, slack=False, id_q_capability_curve_table=nan, curve_dependency_table=False,
-                curve_style=None, controllable=nan, vn_kv=nan, xdss_pu=nan, rdss_ohm=nan, cos_phi=nan, pg_percent=nan,
-                power_station_trafo=nan, in_service=True, slack_weight=0.0, **kwargs):
+                scaling=1., type=None, slack=False, id_q_capability_characteristic=nan,
+                reactive_capability_curve=False, curve_style=None, controllable=nan, vn_kv=nan, xdss_pu=nan, rdss_ohm=nan,
+                cos_phi=nan, pg_percent=nan, power_station_trafo=nan, in_service=True, slack_weight=0.0, **kwargs):
     """
     Adds generators to the specified buses network.
 
@@ -2030,17 +1424,18 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
 
         **type** (list of string, None) - type variable to classify generators
 
-        **curve_dependency_table** (bool, NaN) - True if both the id_q_capability_curve_table and the curve style\
-         are present in the generator.
+        **reactive_capability_curve** (list of bools, False) - True if both the id_q_capability_characteristic and
+        the curve style are present in the generator.
 
-        **id_q_capability_curve_table** (int, None) - references the index of the characteristic from the lookup table \
-            net.q_capability_curve_table
+        **id_q_capability_characteristic** (list of ints, None) - references the index of the characteristic from
+            the lookup table net.q_capability_characteristic e.g. 0, 1, 2, 3
 
-        **curve_style** (string, None) - The curve style of the generator represents the relationship \
+        **curve_style** (list of strings, None) - The curve style of the generator represents the relationship \
         between active power (P) and reactive power (Q). It indicates whether the reactive power remains \
         constant as the active power changes or varies dynamically in response to it.
+        e.g. "straightLineYValues" and "constantYValue"
 
-        **controllable** (bool, NaN) - True: p_mw, q_mvar and vm_pu limits are enforced for this \
+        **controllable** (list of bool, NaN) - True: p_mw, q_mvar and vm_pu limits are enforced for this \
                                        generator in OPF
                                        False: p_mw and vm_pu set points are enforced and \
                                        *limits are ignored*.
@@ -2059,15 +1454,15 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
         **cos_phi** (list of float, NaN) - Rated cosine phi of the generator for short-circuit \
             calculation
 
-        **pg_percent** (float, NaN) - Rated pg (voltage control range) of the generator for \
+        **pg_percent** (list of float, NaN) - Rated pg (voltage control range) of the generator for \
             short-circuit calculation
 
-        **power_station_trafo** (int, NaN) - Index of the power station transformer for \
+        **power_station_trafo** (list of int, NaN) - Index of the power station transformer for \
             short-circuit calculation
 
-        **in_service** (bool, True) - True for in_service or False for out of service
+        **in_service** (list of bool, True) - True for in_service or False for out of service
 
-        **slack_weight** (float, default 0.0) - Contribution factor for distributed slack power \
+        **slack_weight** (list of float, default 0.0) - Contribution factor for distributed slack power \
             flow calculation (active power balancing)
 
         **max_p_mw** (list of float, default NaN) - Maximum active power injection - necessary for\
@@ -2103,7 +1498,7 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
 
     entries = {"bus": buses, "p_mw": p_mw, "vm_pu": vm_pu, "sn_mva": sn_mva, "scaling": scaling,
                "in_service": in_service, "slack_weight": slack_weight, "name": name, "type": type,
-               "slack": slack, "curve_style":curve_style, "curve_dependency_table":curve_dependency_table}
+               "slack": slack, "curve_style": curve_style, "reactive_capability_curve": reactive_capability_curve}
 
     _add_to_entries_if_not_nan(net, "gen", entries, index, "min_p_mw", min_p_mw)
     _add_to_entries_if_not_nan(net, "gen", entries, index, "max_p_mw", max_p_mw)
@@ -2116,21 +1511,20 @@ def create_gens(net, buses, p_mw, vm_pu=1., sn_mva=nan, name=None, index=None, m
     _add_to_entries_if_not_nan(net, "gen", entries, index, "xdss_pu", xdss_pu)
     _add_to_entries_if_not_nan(net, "gen", entries, index, "rdss_ohm", rdss_ohm)
     _add_to_entries_if_not_nan(net, "gen", entries, index, "pg_percent", pg_percent)
-    _add_to_entries_if_not_nan(net, "gen", entries, index, "id_q_capability_curve_table",
-                               id_q_capability_curve_table, dtype="Int64")
+    _add_to_entries_if_not_nan(net, "gen", entries, index, "id_q_capability_characteristic",
+                               id_q_capability_characteristic, dtype="Int64")
 
-    _add_to_entries_if_not_nan(net, "gen", entries, index, "curve_dependency_table",
-                               curve_dependency_table, dtype=bool_)
+    _add_to_entries_if_not_nan(net, "gen", entries, index, "reactive_capability_curve",
+                               reactive_capability_curve, dtype=bool_)
 
     _add_to_entries_if_not_nan(net, "gen", entries, index, "power_station_trafo",
                                power_station_trafo, dtype="Int64")
     _add_to_entries_if_not_nan(net, "gen", entries, index, "controllable", controllable, dtype=bool_,
                                default_val=True)
-    defaults_to_fill = [("controllable", True), ('curve_dependency_table', False),("curve_style", None)]
+    defaults_to_fill = [("controllable", True), ('reactive_capability_curve', False), ("curve_style", None)]
 
     _set_multiple_entries(net, "gen", index, defaults_to_fill=defaults_to_fill, **entries,
                           **kwargs)
-
 
     return index
 
@@ -2247,24 +1641,26 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
         **min_q_mvar** (float, NaN) - Minimum reactive power injection. Only respected for OPF
 
         **r0x0_max** (float, NaN) - maximum R/X-ratio to calculate Zero sequence
-        internal impedance of ext_grid
+            internal impedance of ext_grid
 
         **x0x_max** (float, NaN) - maximum X0/X-ratio to calculate Zero sequence
-        internal impedance of ext_grid
+            internal impedance of ext_grid
 
-        **slack_weight** (float, default 1.0) - Contribution factor for distributed slack power flow calculation
-                                                (active power balancing)
+        **slack_weight** (float, default 1.0) - Contribution factor for distributed slack power flow calculation \
+            (active power balancing)
 
-        \* considered in load flow if calculate_voltage_angles = True
+        **controllable** (bool, NaN) - Control of value limits
 
-        **controllable** (bool, NaN) - True: p_mw, q_mvar and vm_pu limits are enforced for the \
+                                        - True: p_mw, q_mvar and vm_pu limits are enforced for the \
                                              ext_grid in OPF. The voltage limits set in the \
                                              ext_grid bus are enforced.
-                                       False: p_mw and vm_pu set points are enforced and *limits are\
+
+                                        - False: p_mw and vm_pu set points are enforced and *limits are\
                                               ignored*. The vm_pu set point is enforced and limits \
-                                              of the bus table are ignored.
-                                       defaults to False if "controllable" column exists in\
-                                       DataFrame
+                                              of the bus table are ignored. Defaults to False if \
+                                              "controllable" column exists in DataFrame
+
+        \\* considered in load flow if calculate_voltage_angles = True
 
     EXAMPLE:
         create_ext_grid(net, 1, voltage=1.03)
@@ -2288,7 +1684,7 @@ def create_ext_grid(net, bus, vm_pu=1.0, va_degree=0., name=None, in_service=Tru
     _set_value_if_not_nan(net, index, min_q_mvar, "min_q_mvar", "ext_grid")
     _set_value_if_not_nan(net, index, max_q_mvar, "max_q_mvar", "ext_grid")
     _set_value_if_not_nan(net, index, controllable, "controllable", "ext_grid",
-                          dtype=bool_, default_val=True)
+                          dtype=bool_, default_val=False)
     # others
     _set_value_if_not_nan(net, index, x0x_max, "x0x_max", "ext_grid")
     _set_value_if_not_nan(net, index, r0x0_max, "r0x0_max", "ext_grid")
@@ -3465,7 +2861,7 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
         "df": df,
         "shift_degree": ti["shift_degree"] if "shift_degree" in ti else 0
     }
-    for zero_param in ['vk0_percent', 'vkr0_percent', 'mag0_percent', 'mag0_rx', 'si0_hv_partial']:
+    for zero_param in ['vk0_percent', 'vkr0_percent', 'mag0_percent', 'mag0_rx', 'si0_hv_partial', 'vector_group']:
         if zero_param in ti:
             updates[zero_param] = ti[zero_param]
     v.update(updates)
@@ -3643,7 +3039,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
 
         **leakage_reactance_ratio_hv** (bool) - ratio of transformer short-circuit reactance on HV side (default 0.5)
 
-        \* only considered in load flow if calculate_voltage_angles = True
+        \\* only considered in load flow if calculate_voltage_angles = True
 
     OUTPUT:
         **index** (int) - the unique ID of the created transformer
@@ -3862,7 +3258,7 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
         **tap2_changer_type** (list of str, None) - specifies the tap changer type ("Ratio", "Symmetrical", "Ideal", \
                                                     None: no tap changer)*
 
-        \* only considered in load flow if calculate_voltage_angles = True
+        \\* only considered in load flow if calculate_voltage_angles = True
 
     OUTPUT:
         **index** (list of int) - The list of IDs of the created transformers
@@ -4351,7 +3747,7 @@ def create_transformers3w_from_parameters(
 
         **vector_group** (list of str) - vector group of the 3w-transformers
 
-        \* only considered in load flow if calculate_voltage_angles = True
+        \\* only considered in load flow if calculate_voltage_angles = True
 
     OUTPUT:
         **trafo_id** (list of int) - list of trafo_ids of the created 3w-transformers

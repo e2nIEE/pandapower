@@ -17,7 +17,7 @@ from pandapower.control import _create_trafo_characteristics, SplineCharacterist
 from pandapower.create import create_bus, create_empty_network, create_ext_grid, create_dcline, create_load, \
     create_sgen, create_switch, create_transformer, create_xward, create_transformer3w, create_gen, create_shunt, \
     create_line_from_parameters, create_line, create_impedance, create_storage, create_buses, \
-    create_transformer3w_from_parameters
+    create_transformer_from_parameters, create_transformer3w_from_parameters, create_poly_cost
 from pandapower.file_io import from_json
 from pandapower.networks import create_cigre_network_mv, four_loads_with_branches_out, \
     example_simple, simple_four_bus_system, example_multivoltage, case118
@@ -28,13 +28,14 @@ from pandapower.powerflow import LoadflowNotConverged
 from pandapower.pypower.idx_brch import BR_R, BR_X, BR_B, BR_G
 from pandapower.pypower.makeYbus import makeYbus as makeYbus_pypower
 from pandapower.results import reset_results
-from pandapower.run import set_user_pf_options, runpp
+from pandapower.run import set_user_pf_options, runpp, runopp
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
 from pandapower.test.control.test_shunt_control import simple_test_net_shunt_control
 from pandapower.test.helper_functions import add_grid_connection, create_test_line, assert_net_equal, assert_res_equal
 from pandapower.test.loadflow.result_test_network_generator import add_test_xward, add_test_trafo3w, \
     add_test_line, add_test_oos_bus_with_is_element, result_test_network_generator, add_test_trafo
-from pandapower.toolbox import nets_equal
+from pandapower.toolbox import nets_equal, drop_elements
+from pandapower.control.util.auxiliary import create_q_capability_characteristics_object
 
 try:
     from pandapower.pf.makeYbus_numba import makeYbus as makeYbus_numba
@@ -1547,6 +1548,7 @@ def test_at_isolated_bus():
     runpp(net)
     assert net._options["init_vm_pu"] == 1.
 
+
 def test_shunt_with_missing_vn_kv():
     net = create_empty_network()
     create_buses(net, 2, 110)
@@ -1557,6 +1559,115 @@ def test_shunt_with_missing_vn_kv():
     net.shunt.vn_kv=np.nan
 
     runpp(net)
+
+
+def _test_net_for_q_capability_curve():
+    net = create_empty_network()
+
+    bus1 = create_bus(net, name="bus1", vn_kv=20., type="b", min_vm_pu=0.96, max_vm_pu=1.02)
+    bus2 = create_bus(net, name="bus2", vn_kv=110., type="b", min_vm_pu=0.96, max_vm_pu=1.02)
+    bus3 = create_bus(net, name="bus3", vn_kv=110., type="b", min_vm_pu=0.96, max_vm_pu=1.02)
+
+    create_ext_grid(net, bus3, name="External Grid", vm_pu=1.0, va_degree=0.0,max_p_mw=100000, min_p_mw=0,
+                    min_q_mvar=-300, max_q_mvar=300, s_sc_max_mva=10000, s_sc_min_mva=8000, rx_max=0.1, rx_min=0.1)
+    # create lines
+    create_line_from_parameters(net, bus2, bus3, length_km=10,df=1,max_loading_percent=100,vn_kv=110,max_i_ka=0.74,type="ol",
+                   r_ohm_per_km=0.0949, x_ohm_per_km =0.38, c_nf_per_km=0.0092, name="Line")
+    # create load
+    create_load(net, bus3, p_mw=198, q_mvar=500, name="Load", vm_pu=1.0 )
+
+    # create transformer
+    create_transformer_from_parameters(net, bus2, bus1, name="110kV/20kV transformer", parallel=1,max_loading_percent=100,sn_mva=210,
+    vn_hv_kv=110, vn_lv_kv=20, vk_percent=12.5, vkr_percent=0.01904762, vk0_percent=10, vkr0_percent=0,
+                          shift_degree=330, vector_group="YNd11", i0_percent= 0.26, pfe_kw=0,si0_hv_partial=0.5)
+
+    create_gen(net, bus1, p_mw=100, sn_mva=255.0, scaling=1.0, type="Hydro",
+                 cos_phi=0.8, pg_percent=0.0, vn_kv=19.0, vm_pu=1.0) #,min_q_mvar=-255, max_q_mvar=255,  min_p_mw=-331.01001, max_p_mw=331.01001)
+    return net
+
+
+def test_q_capability_curve():
+    net = _test_net_for_q_capability_curve()
+    runpp(net)
+
+    net.gen.loc[0,"max_q_mvar"] = 50.0
+    net.gen.loc[0, "min_q_mvar"] = -3
+    runpp(net, enforce_q_lims=True)
+    assert net.res_gen.q_mvar.loc[0] == -3
+    assert net.res_gen.p_mw.loc[0] == 100
+
+    # create q characteristics table
+    net["q_capability_curve_table"] = pd.DataFrame(
+        {'id_q_capability_curve': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+         'p_mw': [-331.01001, -298.0, -198.0, -66.2000, -0.1, 0, 0.1, 66.200, 100, 198.00, 298.00, 331.01001],
+         'q_min_mvar': [-0.0100, -134.0099, -265.01001, -323.01001, -323.01001, -323.01001, -323.01001, -323.01001,
+                        0, -265.01001, -134.00999, -0.01000],
+         'q_max_mvar': [0.01000, 134.00999,  228.00999, 257.01001, 261.01001, 261.01001, 261.01001, 257.01001, 30, 40,
+                        134.0099, 0.01]})
+
+    net.gen.id_q_capability_characteristic.at[0] = 0
+    net.gen['curve_style'] = "straightLineYValues"
+
+    # Add q_capability_characteristic for one gen based on q_capability_curve_table
+    create_q_capability_characteristics_object(net)
+    runpp(net, enforce_q_lims=True)
+    assert net.res_gen.q_mvar.loc[0] == 0
+    assert net.res_gen.p_mw.loc[0] == 100
+
+def test_q_capability_curve_for_sgen():
+    net = _test_net_for_q_capability_curve()
+    drop_elements(net, 'gen', 0)
+    create_sgen(net, 0, p_mw=198, sn_mva=255.0, scaling=1.0, type="Hydro", cos_phi=0.8, pg_percent=0.0, vn_kv=19.0,
+                vm_pu=1.0, min_q_mvar=-255, max_q_mvar=255, controllable=True, min_p_mw=-0.03, max_p_mw=0)
+    net.ext_grid["controllable"] = True
+    create_poly_cost(net, 0, "sgen", cp1_eur_per_mw=0.1)
+    create_poly_cost(net, 0, "ext_grid", cp1_eur_per_mw=-0.1)
+    net.trafo.loc[0, "parallel"] = 3
+    net.line.parallel = 5
+    runopp(net, init='pf', calculate_voltage_angles=False)
+    assert max(net.res_bus.vm_pu) < 1.02
+    assert min(net.res_bus.vm_pu) > 0.96
+    assert net.res_sgen.q_mvar.loc[0] < 255
+    assert net.res_sgen.q_mvar.loc[0] > -255
+    print("------------general limit------------------")
+    #print("test_opf_sgen_voltage")
+    print("res_sgen:\n%s" % net.res_sgen)
+    print("res_bus.vm_pu: \n%s" % net.res_bus)
+
+    print("------------given maximum limit------------------\n")
+    net.sgen.loc[0,"max_q_mvar"] = 261.01001
+    net.sgen.loc[0, "min_q_mvar"] = -323.01001
+    runopp(net, init='pf', calculate_voltage_angles=False)
+    #print("test_opf_sgen_voltage")
+    print("res_sgen:\n%s" % net.res_sgen)
+    print("res_bus.vm_pu: \n%s" % net.res_bus)
+    assert max(net.res_bus.vm_pu) < 1.02
+    assert min(net.res_bus.vm_pu) > 0.96
+    assert net.res_sgen.q_mvar.loc[0] < 261.01001
+    assert net.res_sgen.q_mvar.loc[0] > -323.01001
+
+    print("------------curve limit------------------\n")
+    # create q characteristics table
+    net["q_capability_curve_table"] = pd.DataFrame(
+        {'id_q_capability_curve': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+         'p_mw': [-331.01001, -298.0, -198.0, -66.2000, -0.1, 0, 0.1, 66.200, 198.00, 298.00, 331.01001],
+         'q_min_mvar': [-0.0100, -134.0099, -265.01001, -323.01001, -323.01001, -323.01001, -323.01001, -323.01001,
+                        -265.01001, -134.00999, -0.01000],
+         'q_max_mvar': [0.01000, 134.00999,  228.00999, 257.01001, 261.01001, 261.01001, 261.01001, 257.01001, 218.0099945068,
+                        134.0099, 0.01]})
+
+    net.sgen.id_q_capability_characteristic.at[0] = 0
+    net.sgen['curve_style'] = "straightLineYValues"
+    create_q_capability_characteristics_object(net)
+
+    runopp(net, init='pf', calculate_voltage_angles=False)
+    #print("test_opf_sgen_voltage")
+    print("res_sgen:\n%s" % net.res_sgen)
+    print("res_bus.vm_pu: \n%s" % net.res_bus)
+    assert max(net.res_bus.vm_pu) < 1.02
+    assert min(net.res_bus.vm_pu) > 0.96
+    assert net.res_sgen.q_mvar.loc[0] < 218.0099945068
+    assert net.res_sgen.q_mvar.loc[0] > -265.01001
 
 if __name__ == "__main__":
     pytest.main([__file__, "-xs"])
