@@ -35,7 +35,7 @@ from pandapower.test.helper_functions import add_grid_connection, create_test_li
 from pandapower.test.loadflow.result_test_network_generator import add_test_xward, add_test_trafo3w, \
     add_test_line, add_test_oos_bus_with_is_element, result_test_network_generator, add_test_trafo
 from pandapower.toolbox import nets_equal, drop_elements
-from pandapower.control.util.auxiliary import create_q_capability_curve_characteristics_object
+from pandapower.control.util.auxiliary import create_q_capability_characteristics_object
 
 try:
     from pandapower.pf.makeYbus_numba import makeYbus as makeYbus_numba
@@ -1650,11 +1650,11 @@ def test_q_capability_curve():
          'q_max_mvar': [0.01000, 134.00999,  228.00999, 257.01001, 261.01001, 261.01001, 261.01001, 257.01001, 30, 40,
                         134.0099, 0.01]})
 
-    net.gen.id_q_capability_curve_characteristic.at[0] = 0
+    net.gen.id_q_capability_characteristic.at[0] = 0
     net.gen['curve_style'] = "straightLineYValues"
 
-    # Add q_capability_curve_characteristic for one gen based on q_capability_curve_table
-    create_q_capability_curve_characteristics_object(net)
+    # Add q_capability_characteristic for one gen based on q_capability_curve_table
+    create_q_capability_characteristics_object(net)
     runpp(net, enforce_q_lims=True)
     assert net.res_gen.q_mvar.loc[0] == 0
     assert net.res_gen.p_mw.loc[0] == 100
@@ -1701,9 +1701,9 @@ def test_q_capability_curve_for_sgen():
          'q_max_mvar': [0.01000, 134.00999,  228.00999, 257.01001, 261.01001, 261.01001, 261.01001, 257.01001, 218.0099945068,
                         134.0099, 0.01]})
 
-    net.sgen.id_q_capability_curve_characteristic.at[0] = 0
+    net.sgen.id_q_capability_characteristic.at[0] = 0
     net.sgen['curve_style'] = "straightLineYValues"
-    create_q_capability_curve_characteristics_object(net)
+    create_q_capability_characteristics_object(net)
 
     runopp(net, init='pf', calculate_voltage_angles=False)
     #print("test_opf_sgen_voltage")

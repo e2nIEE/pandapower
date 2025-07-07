@@ -26,7 +26,7 @@ from pandapower.std_types import add_zero_impedance_parameters, std_type_exists,
     load_std_type
 from pandapower.toolbox.grid_modification import set_isolated_areas_out_of_service, drop_inactive_elements, drop_buses
 from pandapower.topology import create_nxgraph
-from pandapower.control.util.auxiliary import create_q_capability_curve_characteristics_object
+from pandapower.control.util.auxiliary import create_q_capability_characteristics_object
 from pandapower.control.util.characteristic import SplineCharacteristic
 
 
@@ -346,8 +346,8 @@ def from_pf(
 
     # --------- create reactive power capability characteristics ---------
     if 'q_capability_curve_table' in net and not net['q_capability_curve_table'].empty:
-        logger.info('Create q_capability_curve_characteristics_object')
-        create_q_capability_curve_characteristics_object(net)
+        logger.info('Create q_capability_characteristics_object')
+        create_q_capability_characteristics_object(net)
 
     logger.info('imported net')
     return net
@@ -1324,7 +1324,7 @@ def create_ext_net(net, item, pv_as_slack, is_unbalanced):
 
     if item.pQlimType:
         id = create_q_capability_curve(net, item.pQlimType)
-        net[elm].loc[xid, 'id_q_capability_curve_characteristic'] = id
+        net[elm].loc[xid, 'id_q_capability_characteristic'] = id
         net[elm].loc[xid, 'reactive_capability_curve'] = True
         net[elm].loc[xid, 'curve_style'] = 'straightLineYValues'
 
@@ -2082,7 +2082,7 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
 
     if item.pQlimType and element != 'ext_grid':
         id = create_q_capability_curve(net, item.pQlimType)
-        net[element].loc[sg, 'id_q_capability_curve_characteristic'] = id
+        net[element].loc[sg, 'id_q_capability_characteristic'] = id
         net[element].loc[sg, 'reactive_capability_curve'] = True
         net[element].loc[sg, 'curve_style'] = 'straightLineYValues'
 
@@ -2320,7 +2320,7 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
                                                       attr_list=["sernum", "chr_name"])
     if item.pQlimType and element != 'ext_grid':
         id = create_q_capability_curve(net, item.pQlimType)
-        net[element].loc[sid, 'id_q_capability_curve_characteristic'] = id
+        net[element].loc[sid, 'id_q_capability_characteristic'] = id
         net[element].loc[sid, 'reactive_capability_curve'] = True
         net[element].loc[sid, 'curve_style'] = 'straightLineYValues'
 
