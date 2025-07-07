@@ -287,7 +287,9 @@ def _current_source_current(net, ppci, bus_idx, sequence=1):
     # ppci["bus"][:, IKSSC] = 0
     type_c = net._options["use_pre_fault_voltage"]
     # sgen current source contribution only for Type A and case "max" or type C:
-    if case != "max" and not type_c or sequence != 1:
+    if case != "max" and not type_c or sequence != 1: # TODO not only return 0 this leas to NaN values
+        ppci["bus"][:, PHI_IKCV_DEGREE] = 0
+        ppci["bus"][:, PHI_IKSSC_DEGREE] = 0
         return
 
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
@@ -332,9 +334,9 @@ def _current_source_current(net, ppci, bus_idx, sequence=1):
     else:
         i_sgen_pu = (sgen.sn_mva.values / net.sn_mva * sgen.k.values)
         # i_sgen_pu = np.where(sgen.active_current.values,
-        #                     (sgen.p_mw.values / net.sn_mva * sgen.k.values),
+        #                     (sgen.p_mw.values * sgen.scaling.values  / net.sn_mva * sgen.k.values),
         #                     (sgen.sn_mva.values / net.sn_mva * sgen.k.values))
-        # TODO check if (sgen.sn_mva.values * sgen.scaling.values / net.sn_mva * sgen.k.values) or just p_mw with scaling
+        # TODO check if (sgen.sn_mva.values * sgen.scaling.values / net.sn_mva * sgen.k.values) or just p_mw with scaling #just p_mw
 
 
     if sgen_angle is not None and (fault == "LLL" or fault == "LG" and type_c): #Todo auch LLG?
@@ -351,7 +353,7 @@ def _current_source_current(net, ppci, bus_idx, sequence=1):
 
     ikcv_pu = ikcv_pu.flatten()
     ppci["bus"][buses, [IKCV]] = ikcv_pu if sgen_angle is None else np.abs(ikcv_pu)
-    if sgen_angle is not None and (fault == "LLL" or fault == "LG" and type_c): #Todo auch LLG?
+    if sgen_angle is not None and (fault == "LLL" or fault == "LG" and type_c): #Todo auch LLG? check logic here of type_c
         ppci["bus"][buses, PHI_IKCV_DEGREE] = np.angle(ikcv_pu, deg=True)
 
     if net["_options"]["inverse_y"]:
@@ -796,6 +798,8 @@ def _calc_branch_currents_complex(net, bus_idx, ppci0, ppci1, ppci2, sequence):
     minmax_ikss_all_t = nan_minmax(ikss_all_t, rows_tb, argminmax)
 
     if fault == "LL":
+        ikss_all_fbis = ikssv_all_fbis
+        ikss_all_tbis = ikssv_all_tbis
         skss_all_fbis = np.conj(ikss_all_fbis) * V_ikss_bis[fb]
         pkss_all_fbis = skss_all_fbis.real
         qkss_all_fbis = skss_all_fbis.imag
