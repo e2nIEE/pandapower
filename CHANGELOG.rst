@@ -7,6 +7,12 @@ Change Log
 - [ADDED] cim2pp converter: type annotations for test cases
 - [FIXED] remove print statement from results_bus.py
 - [FIXED] cim2pp: Make sure that the controllable flag is never nan for any generators
+- [CHANGED] move pandapower network pandas structure dict from create_empty_network to its own file
+- [FIXED] cim2pp: use pandapower network pandas structure dict to set needed dtypes instead of hardcoded values
+- [ADDED] cim2pp: export trafo `tap_step_degree` parameter
+- [ADDED] cim2pp: export trafo tap changer parameters for trafos with two tap changers
+- [CHANGED] renamed q_capability_curve_characteristic to q_capability_characteristic to fix the 31 character length limit from Excel
+- [ADDED] added documentation for q_capability_characteristic and q_capability_curve_table DataFrames in the pandapower net
 
 [3.1.2] - 2025-06-16
 -------------------------------
