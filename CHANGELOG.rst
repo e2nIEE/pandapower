@@ -12,6 +12,7 @@ Change Log
 - [CHANGED] renamed q_capability_curve_characteristic to q_capability_characteristic to fix the 31 character length limit from Excel
 - [ADDED] added documentation for q_capability_characteristic and q_capability_curve_table DataFrames in the pandapower net
 - [FIXED] issue on case9 grid: Missing columns id_characteristic_table and step_dependency_table at shunt leading to errors when adding them
+- [FIXED] fixed convert_format for missing information (in gen, sgen, shunt) and tables (q_capability_characteristic, q_capability_curve_table
 
 [3.1.2] - 2025-06-16
 -------------------------------
