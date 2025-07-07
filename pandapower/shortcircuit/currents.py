@@ -738,7 +738,7 @@ def _calc_branch_currents_complex(net, bus_idx, ppci0, ppci1, ppci2, sequence):
                     elif sequence == 2:
                         # Z = 1/Zbus2[b,b]
                         # isgen = ikcv[sgen_bus] * Z / ((1/Zbus1[b,b]) + (1/Zbus2[b,b]) + (1/(Zbus0[b,b]+3*fault_impedance)))
-                        isgen = i02 * (Zbus0[b,b] + fault_impedance) / (Zbus2[b,b]+Zbus0[b,b]+2*fault_impedance)
+                        isgen = i02 * (Zbus0[b,b] + 3*fault_impedance) / (Zbus2[b,b]+Zbus0[b,b]+3*fault_impedance)
                     current[ix, b] += sum(isgen)
 
         # calculate voltage source branch current
