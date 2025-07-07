@@ -6,7 +6,6 @@ import logging
 import time
 from typing import Union, Dict, List
 
-import numpy as np
 import pandas as pd
 
 from pandapower.auxiliary import pandapowerNet

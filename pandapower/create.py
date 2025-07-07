@@ -25,7 +25,7 @@ from pandapower.std_types import add_basic_std_types, load_std_type
 logger = logging.getLogger(__name__)
 
 
-def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
+def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True) -> pandapowerNet:
     """
     This function initializes the pandapower datastructure.
 
