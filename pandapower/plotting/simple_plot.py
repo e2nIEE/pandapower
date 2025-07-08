@@ -20,7 +20,7 @@ from pandapower.plotting.collections import create_bus_collection, create_line_c
     create_ext_grid_collection, create_sgen_collection, \
     create_gen_collection, create_load_collection, create_dcline_collection, create_vsc_collection
 from pandapower.plotting.generic_geodata import create_generic_coordinates
-from pandapower import get_connected_elements_dict
+from pandapower.toolbox.element_selection import get_connected_elements_dict
 
 logger = logging.getLogger(__name__)
 
