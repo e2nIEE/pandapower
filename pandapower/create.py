@@ -5,7 +5,7 @@
 
 
 import logging
-from warnings import warn
+import warnings
 from operator import itemgetter
 from typing import Tuple, List, Union, Iterable
 
@@ -2909,7 +2909,7 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
     for key in ['tap_dependent_impedance', 'vk_percent_characteristic', 'vkr_percent_characteristic']:
         if key in kwargs:
             del kwargs[key]
-            warn(DeprecationWarning(
+            warnings.warn(DeprecationWarning(
                 f"The {key} parameter is not supported in pandapower version 3.0 or later. "
                 f"The transformer with index {index} will be created without tap_dependent_impedance characteristics. "
                 "To set up tap-dependent characteristics for this transformer, provide the "
@@ -2920,7 +2920,7 @@ def create_transformer(net, hv_bus, lv_bus, std_type, name=None, tap_pos=nan, in
 
     if any(key in kwargs for key in ['tap_phase_shifter', 'tap2_phase_shifter']):
         convert_trafo_pst_logic(net)
-        warn(DeprecationWarning(
+        warnings.warn(DeprecationWarning(
             "The tap_phase_shifter/tap2_phase_shifter parameter is not supported in pandapower version 3.0 or later. "
             f"The transformer parameters (index {index}) have been updated to the new format."))
 
@@ -3111,7 +3111,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
     for key in ['tap_dependent_impedance', 'vk_percent_characteristic', 'vkr_percent_characteristic']:
         if key in kwargs:
             del kwargs[key]
-            warn(DeprecationWarning(
+            warnings.warn(DeprecationWarning(
                 f"The {key} parameter is not supported in pandapower version 3.0 or later. "
                 f"The transformer with index {index} will be created without tap_dependent_impedance characteristics. "
                 "To set up tap-dependent characteristics for this transformer, provide the "
@@ -3142,7 +3142,7 @@ def create_transformer_from_parameters(net, hv_bus, lv_bus, sn_mva, vn_hv_kv, vn
 
     if any(key in kwargs for key in ['tap_phase_shifter', 'tap2_phase_shifter']):
         convert_trafo_pst_logic(net)
-        warn(DeprecationWarning(
+        warnings.warn(DeprecationWarning(
             "The tap_phase_shifter/tap2_phase_shifter parameter is not supported in pandapower version 3.0 or later. "
             f"The transformer parameters (index {index}) have been updated to the new format."))
 
@@ -3343,7 +3343,7 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
     for key in ['tap_dependent_impedance', 'vk_percent_characteristic', 'vkr_percent_characteristic']:
         if key in kwargs:
             del kwargs[key]
-            warn(DeprecationWarning(
+            warnings.warn(DeprecationWarning(
                 f"The {key} parameter is not supported in pandapower version 3.0 or later. "
                 f"The transformer with index {index} will be created without tap_dependent_impedance characteristics. "
                 "To set up tap-dependent characteristics for this transformer, provide the "
@@ -3354,7 +3354,7 @@ def create_transformers_from_parameters(net, hv_buses, lv_buses, sn_mva, vn_hv_k
 
     if any(key in kwargs for key in ['tap_phase_shifter', 'tap2_phase_shifter']):
         convert_trafo_pst_logic(net)
-        warn(DeprecationWarning(
+        warnings.warn(DeprecationWarning(
             "The tap_phase_shifter/tap2_phase_shifter parameter is not supported in pandapower version 3.0 or later. "
             f"The transformer parameters (index {index}) have been updated to the new format."))
 
@@ -3480,7 +3480,7 @@ def create_transformer3w(net, hv_bus, mv_bus, lv_bus, std_type, name=None, tap_p
                 'vkr_lv_percent_characteristic']:
         if key in kwargs:
             del kwargs[key]
-            warn(DeprecationWarning(
+            warnings.warn(DeprecationWarning(
                 f"The {key} parameter is not supported in pandapower version 3.0 or later. "
                 f"The 3w-transformer with index {index} will be created without tap_dependent_impedance "
                 "characteristics. To set up tap-dependent characteristics for this 3w-transformer, provide the "
@@ -3641,7 +3641,7 @@ def create_transformer3w_from_parameters(
                 'vkr_lv_percent_characteristic']:
         if key in kwargs:
             del kwargs[key]
-            warn(DeprecationWarning(
+            warnings.warn(DeprecationWarning(
                 f"The {key} parameter is not supported in pandapower version 3.0 or later. "
                 f"The 3w-transformer with index {index} will be created without tap_dependent_impedance "
                 "characteristics. To set up tap-dependent characteristics for this 3w-transformer, provide the "
@@ -3833,7 +3833,7 @@ def create_transformers3w_from_parameters(
                 'vkr_lv_percent_characteristic']:
         if key in kwargs:
             del kwargs[key]
-            warn(DeprecationWarning(
+            warnings.warn(DeprecationWarning(
                 f"The {key} parameter is not supported in pandapower version 3.0 or later. "
                 f"The 3w-transformer with index {index} will be created without tap_dependent_impedance "
                 "characteristics. To set up tap-dependent characteristics for this 3w-transformer, provide the "
@@ -5634,7 +5634,7 @@ def _set_const_percent_values(const_percent_values_list, kwargs_input):
             msg = ("Parameters const_z_percent and const_i_percent will be deprecated in further " 
                 "pandapower version. For now the values were transfered in " 
                 "const_z_p_percent and const_i_p_percent for you.")
-            warn(msg, DeprecationWarning)
+            warnings.warn(msg, DeprecationWarning)
             return const_z_p_percent, const_i_p_percent, const_z_q_percent, const_i_q_percent, kwargs_input
     elif ('const_z_percent' in kwargs_input or 'const_i_percent' in kwargs_input) and \
         const_percent_values_default_initials==False:

@@ -32,10 +32,8 @@ def _get_Sload(bus, vm):
         ci_q = bus[:, CID_Q]
         cq = (1 - ci_q - cz_q)
         volt_depend_q = cq + ci_q * vm + cz_q * vm ** 2
-        
         S_load_real = S_load.real * volt_depend
         S_load_imag = S_load.imag * volt_depend_q
-        
         S_load = S_load_real+S_load_imag*1j
         
     return S_load

@@ -605,7 +605,7 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc, sequence=None):
                 ppc["bus"][bus_lookup[bus], CID_Q] = ci_q_sum / no_loads
                 cz_q_sum = sum(tab["const_z_q_percent"][mask] / 100.)
                 ppc["bus"][bus_lookup[bus], CZD_Q] = cz_q_sum / no_loads
-                
+
         sign = -1 if element == "sgen" else 1
         if element == "motor":
             p_mw, q_mvar = _get_motor_pq(net)

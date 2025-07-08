@@ -6,6 +6,7 @@
 
 import copy
 import os
+import re
 
 import numpy as np
 import pandas as pd
@@ -834,6 +835,31 @@ def test_zip_loads_mixed_voltage_dependencies():
         assert np.allclose(net.res_load.p_mw.at[0], res_load_p)
         assert np.allclose(net.res_load.q_mvar.at[0], res_load_q)
         assert np.allclose(net.res_bus.vm_pu.at[1], res_bus_v)
+
+def test_invalid_zip_percentage_sum():
+    net = create_empty_network()
+    create_bus(net, 20.0)
+    create_ext_grid(net, 0)
+    create_load(net, 0, p_mw=1.0, q_mvar=0.5)
+
+    err_msg = "const_z_p_percent + const_i_p_percent need to be less or equal to 100%! The same applies to const_z_q_percent + const_i_q_percent!"
+
+    with pytest.raises(ValueError, match=re.escape(err_msg)):
+        net.load.const_z_p_percent.at[0] = 60
+        net.load.const_i_p_percent.at[0] = 50
+        net.load.const_z_q_percent.at[0] = 30
+        net.load.const_i_q_percent.at[0] = 20
+        runpp(net, voltage_depend_loads=True)
+
+    with pytest.raises(ValueError, match=re.escape(err_msg)):
+        net.load.const_z_q_percent.at[0] = 60
+        net.load.const_i_q_percent.at[0] = 50 
+        runpp(net, voltage_depend_loads=True)
+    
+    with pytest.raises(ValueError, match=re.escape(err_msg)):
+        net.load.const_z_p_percent.at[0] = 30
+        net.load.const_i_p_percent.at[0] = 20 
+        runpp(net, voltage_depend_loads=True)
 
 def test_xward_buses():
     """

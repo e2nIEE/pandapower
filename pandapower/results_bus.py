@@ -177,7 +177,7 @@ def write_voltage_dependend_load_results(net, p, q, b):
             pl = l["p_mw"].values * scaling * load_is * volt_depend_p
             net["res_load"]["p_mw"] += pl
             p = np.hstack([p, pl])
-            
+
             volt_depend_q = ci_q * vm_l + cz_q * vm_l ** 2
             ql = l["q_mvar"].values * scaling * load_is * volt_depend_q #* volt_depend
             net["res_load"]["q_mvar"] += ql
