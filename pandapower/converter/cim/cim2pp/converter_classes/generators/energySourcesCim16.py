@@ -24,6 +24,9 @@ class EnergySourceCim16:
         eqssh_energy_sources = self._prepare_energy_sources_cim16()
         es_slack = eqssh_energy_sources.loc[eqssh_energy_sources.vm_pu.notna()]
         es_sgen = eqssh_energy_sources.loc[eqssh_energy_sources.vm_pu.isna()]
+        # create reactive_capability_curve flag
+        if 'reactive_capability_curve' not in es_sgen.columns:
+            es_sgen['reactive_capability_curve'] = False
         self.cimConverter.copy_to_pp('ext_grid', es_slack)
         self.cimConverter.copy_to_pp('sgen', es_sgen)
         # self._copy_to_pp('sgen', eqssh_energy_sources)
@@ -38,7 +41,8 @@ class EnergySourceCim16:
             pd.concat([self.cimConverter.cim['eq']['EnergySchedulingType'],
                        self.cimConverter.cim['eq_bd']['EnergySchedulingType']],
                       sort=False)
-        eq_energy_scheduling_type = eq_energy_scheduling_type.rename(columns={'rdfId': 'EnergySchedulingType', 'name': 'type'})
+        eq_energy_scheduling_type = eq_energy_scheduling_type.rename(
+            columns={'rdfId': 'EnergySchedulingType', 'name': 'type'})
         eqssh_energy_sources = self.cimConverter.merge_eq_ssh_profile('EnergySource', add_cim_type_column=True)
         eqssh_energy_sources = pd.merge(eqssh_energy_sources, eq_energy_scheduling_type, how='left',
                                         on='EnergySchedulingType')
@@ -55,6 +59,10 @@ class EnergySourceCim16:
         eqssh_energy_sources['scaling'] = 1.
         eqssh_energy_sources['current_source'] = True
         eqssh_energy_sources['generator_type'] = 'current_source'
-        eqssh_energy_sources = eqssh_energy_sources.rename(columns={'rdfId_Terminal': sc['t'], 'rdfId': sc['o_id'], 'connected': 'in_service',
-                                             'index_bus': 'bus'})
+        eqssh_energy_sources['controllable'] = False
+        if 'inService' in eqssh_energy_sources.columns:
+            eqssh_energy_sources['connected'] = (eqssh_energy_sources['connected']
+                                                 & eqssh_energy_sources['inService'])
+        eqssh_energy_sources = eqssh_energy_sources.rename(columns={'rdfId_Terminal': sc['t'], 'rdfId': sc['o_id'],
+                                                                    'connected': 'in_service', 'index_bus': 'bus'})
         return eqssh_energy_sources

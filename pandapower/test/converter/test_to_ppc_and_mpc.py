@@ -1,40 +1,41 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 import numpy as np
 import pytest
-import pandapower as pp
-import pandapower.converter as cv
-from pandapower.test.converter.test_from_ppc import get_testgrids
-from pandapower.pypower.idx_bus import VM, BUS_I, VA
-from pandapower.powerflow import LoadflowNotConverged
-from pandapower.results import reset_results
+
+from pandapower.converter import to_ppc, to_mpc
+from pandapower.networks import case4gs, case6ww, case30, case39
 from pandapower.pf.runpf_pypower import _runpf_pypower
+from pandapower.powerflow import LoadflowNotConverged
+from pandapower.pypower.idx_bus import VM, BUS_I, VA
+from pandapower.results import reset_results
+from pandapower.run import runpp
+from pandapower.test.converter.test_from_ppc import get_testgrids
 
 
 def test_to_ppc_and_mpc():
     # pypower cases to validate
-    functions = ['case4gs', 'case6ww', 'case30', 'case39']
-    for fn in functions:
+    case_functions = [case4gs, case6ww, case30, case39]
+    case_names = ['case4gs', 'case6ww', 'case30', 'case39']
+    for pandapower_function, case_name in zip(case_functions, case_names):
         # get pypower grids with results
-        ppc_net = get_testgrids('pypower_cases', fn+'.json')
+        ppc_net = get_testgrids('pypower_cases', f"{case_name}.json")
 
         # get pandapower grids
-        pandapower_module = __import__('pandapower', fromlist=['networks'])
-        pandapower_function = getattr(pandapower_module.networks, fn)
         net = pandapower_function()
         reset_results(net)
 
         # This should be reviewed
-        pp.runpp(net)
+        runpp(net)
 
         # convert pandapower grids to ppc
-        ppc = cv.to_ppc(net)
+        ppc = to_ppc(net)
         # convert pandapower grids to mpc (no result validation)
-        mpc = cv.to_mpc(net)
+        mpc = to_mpc(net)
 
         # validate voltage results of pandapower-to-ppc-converted grids vs. original pypower results
         net["_options"]['ac'] = True

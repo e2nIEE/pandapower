@@ -1,9 +1,12 @@
 import pytest
 from copy import deepcopy
-import pandapower as pp
-import pandapower.networks as pn
-import pandapower.grid_equivalents
 import logging
+
+from pandapower.grid_equivalents.get_equivalent import get_equivalent
+from pandapower.run import runpp
+from pandapower.create import create_switch
+
+from pandapower.networks.power_system_test_cases import case9, case30, case39, case118
 
 
 def test_networks():
@@ -16,16 +19,16 @@ def test_networks():
     "get_equivalent.py")
 
     if tolerance_mva = 1e-8, this test mit epsilon=1e-6 should work.
-    if tolerance_mva = 1e-6, we should hier give a bigger value, e.g. epsilon = 1e-5
+    if tolerance_mva = 1e-6, we should here give a bigger value, e.g. epsilon = 1e-5
 
     """
 
     for eq_type in ["xward", "rei", "ward"]:
         # case9
         for sn_mva in [1.0, 23.0, 89.0]:
-            net = pn.case9()
+            net = case9()
             net.sn_mva = sn_mva
-            pp.runpp(net)
+            runpp(net)
             logging.debug('test with case9:')
 
             max_error, related_values = get_max_error(
@@ -65,9 +68,9 @@ def test_networks():
 
             # case30
             logging.debug('test with case30:')
-            net = pn.case30()
+            net = case30()
             net.sn_mva = sn_mva
-            pp.runpp(net)
+            runpp(net)
 
             max_error, related_values = get_max_error(
                 net, eq_type, boundary_buses=[8], internal_buses=[0], return_internal=True,
@@ -100,9 +103,9 @@ def test_networks():
 
             # case39
             logging.debug('test with case39:')
-            net = pn.case39()
+            net = case39()
             net.sn_mva = sn_mva
-            pp.runpp(net)
+            runpp(net)
             max_error, related_values = get_max_error(
                 net, eq_type, boundary_buses=[1, 7], internal_buses=[0], return_internal=False,
                 buses_out_of_service=[4, 8], switch_changes=[['b', 2, 25]])
@@ -115,9 +118,9 @@ def test_networks():
 
             # case118
             logging.debug('case118:')
-            net = pn.case118()
+            net = case118()
             net.sn_mva = sn_mva
-            pp.runpp(net)
+            runpp(net)
             va_degree = eq_type != "xward"
             max_error, related_values = get_max_error(
                 net, eq_type, boundary_buses=[7], internal_buses=[0], return_internal=True,
@@ -161,13 +164,13 @@ def get_max_error(net, eq_type, boundary_buses, internal_buses, return_internal,
     if switch_changes:
         net = deepcopy(net)
         for i in range(len(switch_changes)):
-            pp.create_switch(net, bus=switch_changes[i][1], element=switch_changes[i][2],
-                             et=switch_changes[i][0])
-    pp.runpp(net)
+            create_switch(net, bus=switch_changes[i][1], element=switch_changes[i][2],
+                          et=switch_changes[i][0])
+    runpp(net)
     #  --- get net_eq
-    net_eq = pp.grid_equivalents.get_equivalent(net, eq_type, boundary_buses, internal_buses,
-                                                return_internal=return_internal,
-                                                calculate_voltage_angles=True)
+    net_eq = get_equivalent(net, eq_type, boundary_buses, internal_buses,
+                            return_internal=return_internal,
+                            calculate_voltage_angles=True)
 
     # --- calulate max. error
     max_error, related_values = calc_max_error(net, net_eq, return_internal, **kwargs)
@@ -206,8 +209,4 @@ def calc_max_error(net_org, net_eq, return_internal, va_degree=True):
 
 
 if __name__ == "__main__":
-    if 0:
-        pytest.main(['-x', __file__])
-    else:
-        test_networks()
-    pass
+    pytest.main([__file__, "-xs"])

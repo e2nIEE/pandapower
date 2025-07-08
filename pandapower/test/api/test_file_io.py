@@ -1,50 +1,61 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
 import json
 import os
 
+import geojson
 import numpy as np
 import pandas as pd
-from pandas.testing import assert_frame_equal, assert_series_equal
 import pytest
+from pandas.testing import assert_frame_equal, assert_series_equal
 
-import pandapower as pp
-import pandapower.control as control
-import pandapower.networks as networks
-import pandapower.toolbox
-import pandapower.topology as topology
 from pandapower import pp_dir
+from pandapower.auxiliary import pandapowerNet
+from pandapower.control import DiscreteTapControl, ConstControl, ContinuousTapControl, Characteristic, \
+    SplineCharacteristic
+from pandapower.create import create_transformer
+from pandapower.file_io import to_pickle, from_pickle, to_excel, from_excel, convert_format, from_json, to_json, \
+    from_json_string, create_empty_network
 from pandapower.io_utils import PPJSONEncoder, PPJSONDecoder
-from pandapower.test.helper_functions import assert_net_equal, assert_res_equal, create_test_network, create_test_network2
+from pandapower.networks import mv_oberrhein, simple_four_bus_system, case9, case14, create_kerber_dorfnetz
+from pandapower.run import set_user_pf_options, runpp
+from pandapower.sql_io import to_sqlite, from_sqlite
+from pandapower.test.helper_functions import assert_net_equal, create_test_network, create_test_network2
 from pandapower.timeseries import DFData
-from pandapower.toolbox import nets_equal
+from pandapower.toolbox import nets_equal, dataframes_equal
+from pandapower.topology.create_graph import create_nxgraph
 
 try:
     import cryptography.fernet
+
     cryptography_INSTALLED = True
 except ImportError:
     cryptography_INSTALLED = False
 try:
     import openpyxl
+
     openpyxl_INSTALLED = True
 except ImportError:
     openpyxl_INSTALLED = False
 try:
     import xlsxwriter
+
     xlsxwriter_INSTALLED = True
 except ImportError:
     xlsxwriter_INSTALLED = False
 try:
     import geopandas as gpd
+
     GEOPANDAS_INSTALLED = True
 except ImportError:
     GEOPANDAS_INSTALLED = False
 try:
     import shapely
+
     SHAPELY_INSTALLED = True
 except ImportError:
     SHAPELY_INSTALLED = False
@@ -54,8 +65,8 @@ except ImportError:
 def net_in(request):
     if request.param == 1:
         net = create_test_network()
-        net.line_geodata.loc[0, "coords"] = [(1.1, 2.2), (3.3, 4.4)]
-        net.line_geodata.loc[11, "coords"] = [(5.5, 5.5), (6.6, 6.6), (7.7, 7.7)]
+        net.line.at[0, "geo"] = geojson.dumps(geojson.LineString([(1.1, 2.2), (3.3, 4.4)]))
+        net.line.at[1, "geo"] = geojson.dumps(geojson.LineString([(5.5, 5.5), (6.6, 6.6), (7.7, 7.7)]))
         return net
 
 
@@ -65,25 +76,25 @@ def net_in(request):
 
 def test_pickle(net_in, tmp_path):
     filename = os.path.abspath(str(tmp_path)) + "testfile.p"
-    pp.to_pickle(net_in, filename)
-    net_out = pp.from_pickle(filename)
+    to_pickle(net_in, filename)
+    net_out = from_pickle(filename)
     # pickle sems to changes column types
     assert_net_equal(net_in, net_out)
 
 
-@pytest.mark.skipif(not xlsxwriter_INSTALLED or not openpyxl_INSTALLED, reason=("xlsxwriter is "
-                    "mandatory to write excel files and openpyxl to read excels, but is not "
-                    "installed."))
+@pytest.mark.skipif(not xlsxwriter_INSTALLED or not openpyxl_INSTALLED, reason=(
+        "xlsxwriter is mandatory to write excel files and openpyxl to read excels, but is not installed."
+))
 def test_excel(net_in, tmp_path):
     filename = os.path.abspath(str(tmp_path)) + "testfile.xlsx"
-    pp.to_excel(net_in, filename)
-    net_out = pp.from_excel(filename)
+    to_excel(net_in, filename)
+    net_out = from_excel(filename)
     assert_net_equal(net_in, net_out)
 
     # test if user_pf_options are equal
-    pp.set_user_pf_options(net_in, tolerance_mva=1e3)
-    pp.to_excel(net_in, filename)
-    net_out = pp.from_excel(filename)
+    set_user_pf_options(net_in, tolerance_mva=1e3)
+    to_excel(net_in, filename)
+    net_out = from_excel(filename)
     assert_net_equal(net_in, net_out)
     assert net_out.user_pf_options == net_in.user_pf_options
 
@@ -92,9 +103,9 @@ def test_excel(net_in, tmp_path):
                     reason="xlsxwriter is mandatory to write excel files, but is not installed.")
 def test_excel_controllers(net_in, tmp_path):
     filename = os.path.abspath(str(tmp_path)) + "testfile.xlsx"
-    pp.control.DiscreteTapControl(net_in, 0, 0.95, 1.05)
-    pp.to_excel(net_in, filename)
-    net_out = pp.from_excel(filename)
+    DiscreteTapControl(net_in, 0, 0.95, 1.05)
+    to_excel(net_in, filename)
+    net_out = from_excel(filename)
     assert net_in.controller.object.at[0] == net_out.controller.object.at[0]
     assert_net_equal(net_in, net_out)
 
@@ -107,15 +118,15 @@ def test_json_basic(net_in, tmp_path):
 
     with open(filename) as fp:
         net_out = json.load(fp, cls=PPJSONDecoder)
-        pp.convert_format(net_out)
+        convert_format(net_out)
 
     assert_net_equal(net_in, net_out)
 
 
 def test_json_controller_none():
     try:
-        pp.from_json(os.path.join(pp_dir, 'test', 'test_files',
-                                  'controller_containing_NoneNan.json'), convert=False)
+        from_json(os.path.join(pp_dir, 'test', 'test_files',
+                               'controller_containing_NoneNan.json'), convert=False)
     except:
         raise (UserWarning("empty net with controller containing Nan/None can't be loaded"))
 
@@ -126,18 +137,16 @@ def test_json(net_in, tmp_path):
     if GEOPANDAS_INSTALLED and SHAPELY_INSTALLED:
         net_geo = copy.deepcopy(net_in)
         # make GeodataFrame
-        from shapely.geometry import Point, LineString
+        from shapely.geometry import shape, Point, LineString
         import geopandas as gpd
 
-        for tab in ('bus_geodata', 'line_geodata'):
-            if tab == 'bus_geodata':
-                geometry = list(map(Point, net_geo[tab][["x", "y"]].values))
-            else:
-                geometry = net_geo[tab].coords.apply(LineString)
-            net_geo[tab] = gpd.GeoDataFrame(net_geo[tab], geometry=geometry, crs=f"epsg:4326")
+        bus_geometry = net_geo.bus["geo"].dropna().apply(geojson.loads).apply(shape)
+        net_geo["bus_geodata"] = gpd.GeoDataFrame(geometry=bus_geometry, crs=f"epsg:4326")
+        line_geometry = net_geo.line["geo"].dropna().apply(geojson.loads).apply(shape)
+        net_geo["line_geodata"] = gpd.GeoDataFrame(geometry=line_geometry, crs=f"epsg:4326")
 
-        pp.to_json(net_geo, filename)
-        net_out = pp.from_json(filename)
+        to_json(net_geo, filename)
+        net_out = from_json(filename)
         assert_net_equal(net_geo, net_out)
         # assert isinstance(net_out.line_geodata, gpd.GeoDataFrame)
         # assert isinstance(net_out.bus_geodata, gpd.GeoDataFrame)
@@ -147,29 +156,29 @@ def test_json(net_in, tmp_path):
     # check if restore_all_dtypes works properly:
     net_in.line['test'] = 123
     net_in.res_line['test'] = 123
-    pp.to_json(net_in, filename)
-    net_out = pp.from_json(filename)
+    to_json(net_in, filename)
+    net_out = from_json(filename)
     assert_net_equal(net_in, net_out)
 
 
 @pytest.mark.skipif(not cryptography_INSTALLED, reason=("cryptography is mandatory to encrypt "
-                    "json files, but is not installed."))
+                                                        "json files, but is not installed."))
 def test_encrypted_json(net_in, tmp_path):
     filename = os.path.abspath(str(tmp_path)) + "testfile.json"
-    pp.to_json(net_in, filename, encryption_key="verysecret")
+    to_json(net_in, filename, encryption_key="verysecret")
     with pytest.raises(json.JSONDecodeError):
-        pp.from_json(filename)
+        from_json(filename)
     with pytest.raises(cryptography.fernet.InvalidToken):
-        pp.from_json(filename, encryption_key="wrong")
-    net_out = pp.from_json(filename, encryption_key="verysecret")
+        from_json(filename, encryption_key="wrong")
+    net_out = from_json(filename, encryption_key="verysecret")
     assert_net_equal(net_in, net_out)
 
 
 def test_type_casting_json(net_in, tmp_path):
     filename = os.path.abspath(str(tmp_path)) + "testfile.json"
     net_in.sn_kva = 1000
-    pp.to_json(net_in, filename)
-    net = pp.from_json(filename)
+    to_json(net_in, filename)
+    net = from_json(filename)
     assert_net_equal(net_in, net)
 
 
@@ -180,8 +189,8 @@ def test_from_json_add_basic_std_types(tmp_path):
     net.std_types["line"]['15-AL1/3-ST1A 0.4']["max_i_ka"] = 111
     num_std_types = sum(len(std) for std in net.std_types.values())
 
-    pp.to_json(net, filename)
-    net_updated = pp.from_json(filename, add_basic_std_types=True)
+    to_json(net, filename)
+    net_updated = from_json(filename, add_basic_std_types=True)
 
     # check if old std-types didn't change but new ones are added
     assert net.std_types["line"]['15-AL1/3-ST1A 0.4']["max_i_ka"] == 111
@@ -192,28 +201,28 @@ def test_from_json_add_basic_std_types(tmp_path):
                           " a workaround test was created to check everything else.")
 def test_sqlite(net_in, tmp_path):
     filename = os.path.abspath(str(tmp_path)) + "testfile.db"
-    pp.to_sqlite(net_in, filename)
-    net_out = pp.from_sqlite(filename)
+    to_sqlite(net_in, filename)
+    net_out = from_sqlite(filename)
     assert_net_equal(net_in, net_out)
 
 
 def test_sqlite_workaround(net_in, tmp_path):
     filename = os.path.abspath(str(tmp_path)) + "testfile.db"
-    pp.to_sqlite(net_in, filename)
-    net_out = pp.from_sqlite(filename)
+    to_sqlite(net_in, filename)
+    net_out = from_sqlite(filename)
     assert_net_equal(net_in, net_out, exclude_elms=["std_types"])
 
 
 def test_convert_format():  # TODO what is this thing testing ?
-    net = pp.from_pickle(os.path.join(pp.pp_dir, "test", "api", "old_net.p"))
-    pp.runpp(net)
+    net = from_pickle(os.path.join(pp_dir, "test", "api", "old_net.p"))
+    runpp(net)
     assert net.converged
 
 
 def test_to_json_dtypes(tmp_path):
     filename = os.path.abspath(str(tmp_path)) + "testfile.json"
     net = create_test_network()
-    pp.runpp(net)
+    runpp(net)
     net['res_test'] = pd.DataFrame(columns=['test'], data=[1, 2, 3])
     net['test'] = pd.DataFrame(columns=['test'], data=[1, 2, 3])
     net.line['test'] = 123
@@ -221,16 +230,16 @@ def test_to_json_dtypes(tmp_path):
     net.bus['test'] = 123
     net.res_bus['test'] = 123
     net.res_load['test'] = 123
-    pp.to_json(net, filename)
-    net1 = pp.from_json(filename)
+    to_json(net, filename)
+    net1 = from_json(filename)
     assert_net_equal(net, net1)
 
 
 def test_json_encoding_decoding():
-    net = networks.mv_oberrhein()
+    net = mv_oberrhein()
     net.tuple = (1, "4")
-    net.mg = topology.create_nxgraph(net)
-    s = set(['1', 4])
+    net.mg = create_nxgraph(net)
+    s = {'1', 4}
     t = tuple(['2', 3])
     f = frozenset(['12', 3])
     a = np.array([1., 2.])
@@ -246,8 +255,8 @@ def test_json_encoding_decoding():
 
     # TODO line_geodata isn't the same since tuples inside DataFrames are converted to lists
     #  (see test_json_tuple_in_dataframe)
-    assert pandapower.toolbox.nets_equal(net, net1, exclude_elms=["line_geodata", "mg"])
-    assert pandapower.toolbox.nets_equal(d["a"], d1["a"], exclude_elms=["line_geodata", "mg"])
+    assert nets_equal(net, net1, exclude_elms=["line_geodata", "mg"])
+    assert nets_equal(d["a"], d1["a"], exclude_elms=["line_geodata", "mg"])
     assert d["b"] == d1["b"]
     assert_graphs_equal(net.mg, net1.mg)
 
@@ -282,13 +291,13 @@ def test_json_tuple_in_pandas():
 
 
 def test_new_pp_object_io():
-    net = networks.mv_oberrhein()
+    net = mv_oberrhein()
     ds = DFData(pd.DataFrame(data=np.array([[0, 1, 2], [7, 8, 9]])))
-    control.ConstControl(net, 'sgen', 'p_mw', 42, profile_name=0, data_source=ds)
-    control.ContinuousTapControl(net, 142, 1)
+    ConstControl(net, 'sgen', 'p_mw', 42, profile_name=0, data_source=ds)
+    ContinuousTapControl(net, 142, 1)
 
     obj = net.controller.object.at[0]
-    obj.run = pp.runpp
+    obj.run = runpp
 
     s = json.dumps(net, cls=PPJSONEncoder)
 
@@ -297,18 +306,18 @@ def test_new_pp_object_io():
     obj1 = net1.controller.object.at[0]
     obj2 = net1.controller.object.at[1]
 
-    assert isinstance(obj1, control.ConstControl)
-    assert isinstance(obj2, control.ContinuousTapControl)
-    assert obj1.run is pp.runpp
+    assert isinstance(obj1, ConstControl)
+    assert isinstance(obj2, ContinuousTapControl)
+    assert obj1.run is runpp
     assert isinstance(obj1.data_source, DFData)
     assert isinstance(obj1.data_source.df, pd.DataFrame)
 
 
 def test_convert_format_for_pp_objects(net_in):
-    pp.create_transformer(net_in, net_in.bus.index.values[0], net_in.bus.index.values[1],
-                          '0.25 MVA 20/0.4 kV', tap_pos=0)
-    c1 = control.ContinuousTapControl(net_in, 0, 1.02)
-    c2 = control.DiscreteTapControl(net_in, 0, 1, 1)
+    create_transformer(net_in, net_in.bus.index.values[0], net_in.bus.index.values[1],
+                       '0.25 MVA 20/0.4 kV', tap_pos=0)
+    c1 = ContinuousTapControl(net_in, 0, 1.02)
+    c2 = DiscreteTapControl(net_in, 0, 1, 1)
     c1.u_set = 0.98
     c2.u_lower = 0.99
     c2.u_upper = 1.1
@@ -319,7 +328,7 @@ def test_convert_format_for_pp_objects(net_in):
     assert 'controller' in net_in.controller.columns
 
     s = json.dumps(net_in, cls=PPJSONEncoder)
-    net1 = pp.from_json_string(s, convert=True)
+    net1 = from_json_string(s, convert=True)
 
     assert 'controller' not in net1.controller.columns
     assert 'object' in net1.controller.columns
@@ -336,36 +345,36 @@ def test_convert_format_for_pp_objects(net_in):
 
 
 def test_json_io_same_net(net_in, tmp_path):
-    control.ConstControl(net_in, 'load', 'p_mw', 0)
+    ConstControl(net_in, 'load', 'p_mw', 0)
 
-    s = pp.to_json(net_in)
-    net1 = pp.from_json_string(s)
-    assert isinstance(net1.controller.object.at[0], control.ConstControl)
+    s = to_json(net_in)
+    net1 = from_json_string(s)
+    assert isinstance(net1.controller.object.at[0], ConstControl)
 
     filename = os.path.abspath(str(tmp_path)) + "testfile.json"
-    pp.to_json(net_in, filename)
-    net2 = pp.from_json(filename)
-    assert isinstance(net2.controller.object.at[0], control.ConstControl)
+    to_json(net_in, filename)
+    net2 = from_json(filename)
+    assert isinstance(net2.controller.object.at[0], ConstControl)
 
 
 def test_json_different_nets():
-    net = networks.mv_oberrhein()
-    net2 = networks.simple_four_bus_system()
-    control.ContinuousTapControl(net, 114, 1.02)
+    net = mv_oberrhein()
+    net2 = simple_four_bus_system()
+    ContinuousTapControl(net, 114, 1.02)
     net.tuple = (1, "4")
-    net.mg = topology.create_nxgraph(net)
+    net.mg = create_nxgraph(net)
     json_string = json.dumps([net, net2], cls=PPJSONEncoder)
     [net_out, net2_out] = json.loads(json_string, cls=PPJSONDecoder)
     assert_net_equal(net_out, net)
     assert_net_equal(net2_out, net2)
-    pp.runpp(net_out, run_control=True)
-    pp.runpp(net, run_control=True)
+    runpp(net_out, run_control=True)
+    runpp(net, run_control=True)
     assert_net_equal(net, net_out)
 
 
 def test_deepcopy_controller():
-    net = pp.networks.mv_oberrhein()
-    control.ContinuousTapControl(net, 114, 1.01)
+    net = mv_oberrhein()
+    ContinuousTapControl(net, 114, 1.01)
     net2 = copy.deepcopy(net)
     ct1 = net.controller.object.iloc[0]
     ct2 = net2.controller.object.iloc[0]
@@ -376,10 +385,10 @@ def test_deepcopy_controller():
 
 
 def test_elements_to_deserialize(tmp_path):
-    net = networks.mv_oberrhein()
+    net = mv_oberrhein()
     filename = os.path.abspath(str(tmp_path)) + "testfile.json"
-    pp.to_json(net, filename)
-    net_select = pp.from_json(filename, elements_to_deserialize=['bus', 'load'])
+    to_json(net, filename)
+    net_select = from_json(filename, elements_to_deserialize=['bus', 'load'])
     for key, item in net_select.items():
         if key in ['bus', 'load']:
             assert isinstance(item, pd.DataFrame)
@@ -399,18 +408,18 @@ def test_elements_to_deserialize(tmp_path):
             assert isinstance(item, float)
         else:
             assert isinstance(item, str)
-    pp.to_json(net_select, filename)
-    net_select = pp.from_json(filename)
+    to_json(net_select, filename)
+    net_select = from_json(filename)
     assert net.trafo.equals(net_select.trafo)
     assert_net_equal(net, net_select)
 
 
 def test_elements_to_deserialize_wo_keep(tmp_path):
-    net = networks.mv_oberrhein()
+    net = mv_oberrhein()
     filename = os.path.abspath(str(tmp_path)) + "testfile.json"
-    pp.to_json(net, filename)
-    net_select = pp.from_json(filename, elements_to_deserialize=['bus', 'load'],
-                              keep_serialized_elements=False)
+    to_json(net, filename)
+    net_select = from_json(filename, elements_to_deserialize=['bus', 'load'],
+                           keep_serialized_elements=False)
     for key, item in net_select.items():
         if key in ['bus', 'load']:
             assert isinstance(item, pd.DataFrame)
@@ -433,74 +442,74 @@ def test_elements_to_deserialize_wo_keep(tmp_path):
                 assert len(item) == 0
             else:
                 assert isinstance(item, str)
-    pp.to_json(net_select, filename)
-    net_select = pp.from_json(filename)
+    to_json(net_select, filename)
+    net_select = from_json(filename)
     assert_net_equal(net, net_select, name_selection=['bus', 'load'])
 
 
 @pytest.mark.skipif(not GEOPANDAS_INSTALLED, reason="requires the GeoPandas library")
 def test_empty_geo_dataframe():
-    net = pp.create_empty_network()
-    net.bus_geodata['geometry'] = None
-    net.bus_geodata = gpd.GeoDataFrame(net.bus_geodata)
-    s = pp.to_json(net)
-    net1 = pp.from_json_string(s)
+    net = create_empty_network()
+    net['bus_geodata'] = pd.DataFrame(columns=['geometry'])
+    net['bus_geodata'] = gpd.GeoDataFrame(net['bus_geodata'])
+    s = to_json(net)
+    net1 = from_json_string(s)
     assert_net_equal(net, net1)
 
 
 def test_json_io_with_characteristics(net_in):
-    c1 = pp.control.Characteristic.from_points(net_in, [(0, 0), (1, 1)])
-    c2 = pp.control.SplineCharacteristic.from_points(net_in, [(2, 2), (3, 4), (4, 5)])
+    c1 = Characteristic.from_points(net_in, [(0, 0), (1, 1)])
+    c2 = SplineCharacteristic.from_points(net_in, [(2, 2), (3, 4), (4, 5)])
 
-    net_out = pp.from_json_string(pp.to_json(net_in))
+    net_out = from_json_string(to_json(net_in))
     assert_net_equal(net_in, net_out)
     assert "characteristic" in net_out.keys()
-    assert isinstance(net_out.characteristic.object.at[c1.index], pp.control.Characteristic)
-    assert isinstance(net_out.characteristic.object.at[c2.index], pp.control.SplineCharacteristic)
+    assert isinstance(net_out.characteristic.object.at[c1.index], Characteristic)
+    assert isinstance(net_out.characteristic.object.at[c2.index], SplineCharacteristic)
     assert np.isclose(net_out.characteristic.object.at[c1.index](0.5), c1(0.5), rtol=0, atol=1e-12)
     assert np.isclose(net_out.characteristic.object.at[c2.index](2.5), c2(2.5), rtol=0, atol=1e-12)
 
 
 def test_replace_elements_json_string(net_in):
     net_orig = copy.deepcopy(net_in)
-    control.ConstControl(net_orig, 'load', 'p_mw', 0)
-    json_string = pp.to_json(net_orig)
-    net_load = pp.from_json_string(json_string,
-                                   replace_elements={r'pandapower.control.controller.const_control':
-                                                     r'pandapower.test.api.input_files.test_control',
-                                                     r'ConstControl': r'MyTestControl'})
+    ConstControl(net_orig, 'load', 'p_mw', 0)
+    json_string = to_json(net_orig)
+    net_load = from_json_string(json_string,
+                                replace_elements={r'pandapower.control.controller.const_control':
+                                                      r'pandapower.test.api.input_files.test_control',
+                                                  r'ConstControl': r'MyTestControl'})
     assert net_orig.controller.at[0, 'object'] != net_load.controller.at[0, 'object']
     assert not nets_equal(net_orig, net_load)
 
-    net_load = pp.from_json_string(json_string,
-                                   replace_elements={r'pandapower.control.controller.const_control':
-                                                         r'pandapower.test.api.input_files.test_control'})
+    net_load = from_json_string(json_string,
+                                replace_elements={r'pandapower.control.controller.const_control':
+                                                      r'pandapower.test.api.input_files.test_control'})
     assert net_orig.controller.at[0, 'object'] == net_load.controller.at[0, 'object']
     assert nets_equal(net_orig, net_load)
-    pp.runpp(net_load, run_control=True)
-    pp.runpp(net_orig, run_control=True)
+    runpp(net_load, run_control=True)
+    runpp(net_orig, run_control=True)
     assert net_load.controller.loc[0, 'object'].check_word == 'banana'
     assert net_orig.controller.at[0, 'object'] != net_load.controller.at[0, 'object']
     assert not nets_equal(net_orig, net_load)
 
 
 def test_json_generalized():
-    general_net0 = pp.pandapowerNet({
+    general_net0 = pandapowerNet({
         # structure data
         "df1": [('col1', np.dtype(object)),
-                ('col2', 'f8'),],
+                ('col2', 'f8'), ],
         "df2": [("col3", 'bool'),
-                 ("col4", "i8")]
+                ("col4", "i8")]
     })
     general_net1 = copy.deepcopy(general_net0)
     general_net1.df1.loc[0] = ["hey", 1.2]
     general_net1.df2.loc[2] = [False, 2]
 
     for general_in in [general_net0, general_net1]:
-        out = pp.from_json_string(pp.to_json(general_in),
-                                  empty_dict_like_object=pp.pandapowerNet({}))
+        out = from_json_string(to_json(general_in),
+                               empty_dict_like_object=pandapowerNet({}))
         assert sorted(list(out.keys())) == ["df1", "df2"]
-        assert pandapower.toolbox.nets_equal(out, general_in)
+        assert nets_equal(out, general_in)
 
 
 def test_json_simple_index_type():
@@ -514,10 +523,10 @@ def test_json_simple_index_type():
     df4 = pd.DataFrame(s4)
     df5, df6, df7, df8 = df1.T, df2.T, df3.T, df4.T
     df9 = pd.DataFrame([[1, 2, 3], [4, 5, 7]], index=[1, "2"], columns=[4, "5", 6])
-    input =  {key: val for key, val in zip("abcdefghijkl", [
+    input = {key: val for key, val in zip("abcdefghijkl", [
         s1, s2, s3, s4, df1, df2, df3, df4, df5, df6, df7, df8, df9])}
-    json_str = pp.to_json(input)
-    output = pp.from_json_string(json_str, convert=False)
+    json_str = to_json(input)
+    output = from_json_string(json_str, convert=False)
     for key in list("abcd"):
         assert_series_equal(input[key], output[key], check_dtype=False)
     for key in list("efghijkl"):
@@ -525,20 +534,19 @@ def test_json_simple_index_type():
 
 
 def test_json_index_names():
-    net_in = networks.mv_oberrhein()
+    net_in = mv_oberrhein()
     net_in.bus.index.name = "bus_index"
     net_in.line.columns.name = "line_column"
     net_in["test_series"] = pd.Series([8], index=pd.Index([2], name="idx_name"))
-    json_str = pp.to_json(net_in)
-    net_out = pp.from_json_string(json_str)
+    json_str = to_json(net_in)
+    net_out = from_json_string(json_str)
     assert net_out.bus.index.name == "bus_index"
     assert net_out.line.columns.name == "line_column"
     assert net_out.test_series.index.name == "idx_name"
-    assert pandapower.toolbox.nets_equal(net_out, net_in)
+    assert nets_equal(net_out, net_in)
 
 
 def test_json_multiindex_and_index_names():
-
     # idx_tuples = tuple(zip(["a", "a", "b", "b"], ["bar", "baz", "foo", "qux"]))
     idx_tuples = tuple(zip([1, 1, 2, 2], ["bar", "baz", "foo", "qux"]))
     col_tuples = tuple(zip(["d", "d", "e"], ["bak", "baq", "fuu"]))
@@ -546,19 +554,19 @@ def test_json_multiindex_and_index_names():
     idx2 = pd.MultiIndex.from_tuples(idx_tuples, names=[5, 6])
     idx3 = pd.MultiIndex.from_tuples(idx_tuples, names=["fifth", "sixth"])
     col1 = pd.MultiIndex.from_tuples(col_tuples)
-    col2 = pd.MultiIndex.from_tuples(col_tuples, names=[7, 8]) # ["7", "8"] is not possible since
+    col2 = pd.MultiIndex.from_tuples(col_tuples, names=[7, 8])  # ["7", "8"] is not possible since
     # orient="columns" loses info whether index/column is an iteger or a string
     col3 = pd.MultiIndex.from_tuples(col_tuples, names=[7, None])
 
     for idx, col in zip([idx1, idx2, idx3], [col1, col2, col3]):
         s_mi = pd.Series(range(4), index=idx)
-        df_mi = pd.DataFrame(np.arange(4*3).reshape((4, 3)), index=idx)
-        df_mc = pd.DataFrame(np.arange(4*3).reshape((4, 3)), columns=col)
-        df_mi_mc = pd.DataFrame(np.arange(4*3).reshape((4, 3)), index=idx, columns=col)
+        df_mi = pd.DataFrame(np.arange(4 * 3).reshape((4, 3)), index=idx)
+        df_mc = pd.DataFrame(np.arange(4 * 3).reshape((4, 3)), columns=col)
+        df_mi_mc = pd.DataFrame(np.arange(4 * 3).reshape((4, 3)), index=idx, columns=col)
 
-        input =  {key: val for key, val in zip("abcd", [s_mi, df_mi, df_mc, df_mi_mc])}
-        json_str = pp.to_json(input)
-        output = pp.from_json_string(json_str, convert=False)
+        input = {key: val for key, val in zip("abcd", [s_mi, df_mi, df_mc, df_mi_mc])}
+        json_str = to_json(input)
+        output = from_json_string(json_str, convert=False)
         assert_series_equal(input["a"], output["a"], check_dtype=False)
         assert_frame_equal(input["b"], output["b"], check_dtype=False, check_column_type=False)
         assert_frame_equal(input["c"], output["c"], check_dtype=False, check_index_type=False)
@@ -567,40 +575,71 @@ def test_json_multiindex_and_index_names():
 
 
 def test_json_dict_of_stuff():
-    net1 = pp.networks.case9()
-    net2 = pp.networks.case14()
+    net1 = case9()
+    net2 = case14()
     df = pd.DataFrame([[1, 2, 3], [3, 4, 5]])
     text = "hello world"
     d = {"net1": net1, "net2": net2, "df": df, "text": text}
-    s = pp.to_json(d)
-    dd = pp.from_json_string(s)
+    s = to_json(d)
+    dd = from_json_string(s)
     assert d.keys() == dd.keys()
     assert_net_equal(net1, dd["net1"])
     assert_net_equal(net2, dd["net2"])
-    pandapower.toolbox.dataframes_equal(df, dd["df"])
+    dataframes_equal(df, dd["df"])
     assert text == dd["text"]
 
 
 def test_json_list_of_stuff():
-    net1 = pp.networks.case9()
-    net2 = pp.networks.case14()
+    net1 = case9()
+    net2 = case14()
     df = pd.DataFrame([[1, 2, 3], [3, 4, 5]])
     text = "hello world"
-    s = pp.to_json([net1, net2, df, text])
-    loaded_list = pp.from_json_string(s)
+    s = to_json([net1, net2, df, text])
+    loaded_list = from_json_string(s)
 
     assert_net_equal(net1, loaded_list[0])
     assert_net_equal(net2, loaded_list[1])
-    pandapower.toolbox.dataframes_equal(df, loaded_list[2])
+    dataframes_equal(df, loaded_list[2])
     assert text == loaded_list[3]
 
 
 def test_multi_index():
     df = pd.DataFrame(columns=["a", "b", "c"], dtype=np.int64)
     df = df.set_index(["a", "b"])
-    df2 = pp.from_json_string(pp.to_json(df))
+    df2 = from_json_string(to_json(df))
     assert_frame_equal(df, df2)
 
 
+def test_ignore_unknown_objects():
+    net = create_kerber_dorfnetz()
+    ContinuousTapControl(net, 0, 1.02)
+    json_str = to_json(net)
+    net2 = from_json_string(json_str, ignore_unknown_objects=False)
+
+    # in general, reloaded net should be equal to original net
+    assert isinstance(net2.controller.object.at[0], ContinuousTapControl)
+    assert_net_equal(net, net2)
+
+    # slightly change the class name of the controller so that it cannot be identified
+    # by file_io anymore, but can still be loaded as dict if ignore_unknown_objects=True
+    json_str2 = json_str.replace("pandapower.control.controller.trafo.ContinuousTapControl",
+                                 "pandapower.control.controller.trafo.ContinuousTapControl2")
+    with pytest.raises(ModuleNotFoundError):
+        from_json_string(json_str2, ignore_unknown_objects=False)
+    json_str3 = json_str.replace("\"ContinuousTapControl", "\"ContinuousTapControl2")
+    with pytest.raises(AttributeError):
+        from_json_string(json_str3, ignore_unknown_objects=False)
+    net3 = from_json_string(json_str2, ignore_unknown_objects=True)
+    assert isinstance(net3.controller.object.at[0], dict)
+    net4 = from_json_string(json_str3, ignore_unknown_objects=True)
+    assert isinstance(net4.controller.object.at[0], dict)
+
+    # make sure that the loaded net equals the original net except for the controller
+    net3.controller.object.at[0] = net.controller.object.at[0]
+    net4.controller.object.at[0] = net.controller.object.at[0]
+    assert_net_equal(net, net3)
+    assert_net_equal(net, net4)
+
+
 if __name__ == "__main__":
-    pytest.main([__file__, "-s"])
+    pytest.main([__file__, "-xs"])

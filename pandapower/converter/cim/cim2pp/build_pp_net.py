@@ -4,22 +4,23 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import logging
 import traceback
-from typing import Dict
+from typing import Dict, List
 
 import pandas as pd
 
-import pandapower as pp
-import pandapower.auxiliary
+from pandapower.toolbox.grid_modification import fuse_buses
+from pandapower.run import runpp
+from pandapower.create import create_empty_network
+from pandapower.auxiliary import pandapowerNet
 from .convert_measurements import CreateMeasurements
 from .. import cim_classes
 from .. import cim_tools
 from .. import pp_tools
 from ..other_classes import ReportContainer, Report, LogLevel, ReportCode
+from pandapower.control.util.auxiliary import create_q_capability_characteristics_object
 
 logger = logging.getLogger('cim.cim2pp.build_pp_net')
 
-pd.set_option('display.max_columns', 900)
-pd.set_option('display.max_rows', 90000)
 sc = cim_tools.get_pp_net_special_columns_dict()
 
 
@@ -30,7 +31,7 @@ class CimConverter:
         self.cim_parser: cim_classes.CimParser = cim_parser
         self.kwargs = kwargs
         self.cim: Dict[str, Dict[str, pd.DataFrame]] = self.cim_parser.get_cim_dict()
-        self.net: pandapower.auxiliary.pandapowerNet = pp.create_empty_network()
+        self.net: pandapowerNet = create_empty_network()
         self.bus_merge: pd.DataFrame = pd.DataFrame()
         self.power_trafo2w: pd.DataFrame = pd.DataFrame()
         self.power_trafo3w: pd.DataFrame = pd.DataFrame()
@@ -38,7 +39,19 @@ class CimConverter:
         self.classes_dict = converter_classes
 
     def merge_eq_ssh_profile(self, cim_type: str, add_cim_type_column: bool = False) -> pd.DataFrame:
-        df = pd.merge(self.cim['eq'][cim_type], self.cim['ssh'][cim_type], how='left', on='rdfId')
+        return self.merge_eq_other_profiles(['ssh'], cim_type, add_cim_type_column)
+
+    def merge_eq_sc_profile(self, cim_type: str, add_cim_type_column: bool = False) -> pd.DataFrame:
+        return self.merge_eq_other_profiles(['sc'], cim_type, add_cim_type_column)
+
+    def merge_eq_other_profiles(self, other_profiles: List[str], cim_type: str,
+                                add_cim_type_column: bool = False) -> pd.DataFrame:
+        df = self.cim['eq'][cim_type]
+        for other_profile in other_profiles:
+            if cim_type not in self.cim[other_profile].keys():
+                self.logger.debug("No entries found in %s profile for cim object %s", other_profile, cim_type)
+                return self.cim['eq'][cim_type].copy()
+            df = pd.merge(df, self.cim[other_profile][cim_type], how='left', on='rdfId')
         if add_cim_type_column:
             df[sc['o_cl']] = cim_type
         return df
@@ -51,17 +64,14 @@ class CimConverter:
                 level=LogLevel.WARNING, code=ReportCode.WARNING_CONVERTING,
                 message="Missing pandapower type %s in the pandapower network!" % pp_type))
             return
-        start_index_pp_net = self.net[pp_type].index.size
-        self.net[pp_type] = pd.concat([self.net[pp_type], pd.DataFrame(None, index=[list(range(input_df.index.size))])],
+        self.net[pp_type] = pd.concat([self.net[pp_type],
+                                      input_df[list(set(self.net[pp_type].columns).intersection(input_df.columns))]],
                                       ignore_index=True, sort=False)
-        for one_attr in self.net[pp_type].columns:
-            if one_attr in input_df.columns:
-                self.net[pp_type][one_attr][start_index_pp_net:] = input_df[one_attr][:]
 
     # noinspection PyShadowingNames
-    def convert_to_pp(self, convert_line_to_switch: bool = False, line_r_limit: float = 0.1,
-                      line_x_limit: float = 0.1, **kwargs) \
-            -> pandapower.auxiliary.pandapowerNet:
+    def convert_to_pp(
+            self, convert_line_to_switch: bool = False, line_r_limit: float = 0.1, line_x_limit: float = 0.1, **kwargs
+    ) -> pandapowerNet:
         """
         Build the pandapower net.
 
@@ -103,7 +113,7 @@ class CimConverter:
         # --------- convert switches ---------
         self.classes_dict['switchesCim16'](cimConverter=self).convert_switches_cim16()
         # --------- convert loads ---------
-        self.classes_dict['energyConcumersCim16'](cimConverter=self).convert_energy_consumers_cim16()
+        self.classes_dict['energyConcumersCim16'](cimConverter=self).convert_energy_consumers_cim16()  #todo  correction of spelling mistake
         self.classes_dict['conformLoadsCim16'](cimConverter=self).convert_conform_loads_cim16()
         self.classes_dict['nonConformLoadsCim16'](cimConverter=self).convert_non_conform_loads_cim16()
         self.classes_dict['stationSuppliesCim16'](cimConverter=self).convert_station_supplies_cim16()
@@ -124,19 +134,11 @@ class CimConverter:
         # --------- convert transformers ---------
         self.classes_dict['powerTransformersCim16'](cimConverter=self).convert_power_transformers_cim16()
 
+        # --------- create reactive power capability characteristics ---------
+        create_q_capability_characteristics_object(self.net)
+
         # create the geo coordinates
-        gl_or_dl = str(self.kwargs.get('use_GL_or_DL_profile', 'both')).lower()
-        if gl_or_dl == 'gl':
-            use_gl_profile = True
-            use_dl_profile = False
-        elif gl_or_dl == 'dl':
-            use_gl_profile = False
-            use_dl_profile = True
-        else:
-            use_gl_profile = True
-            use_dl_profile = True
-        if self.cim['gl']['Location'].index.size > 0 and self.cim['gl']['PositionPoint'].index.size > 0 and \
-                use_gl_profile:
+        if self.cim['gl']['Location'].index.size > 0 and self.cim['gl']['PositionPoint'].index.size > 0:
             try:
                 self.classes_dict['geoCoordinatesFromGLCim16'](cimConverter=self).add_geo_coordinates_from_gl_cim16()
             except Exception as e:
@@ -148,11 +150,8 @@ class CimConverter:
                 self.report_container.add_log(Report(
                     level=LogLevel.EXCEPTION, code=ReportCode.EXCEPTION_CONVERTING,
                     message=traceback.format_exc()))
-                self.net.bus_geodata = self.net.bus_geodata[0:0]
-                self.net.line_geodata = self.net.line_geodata[0:0]
         if self.cim['dl']['Diagram'].index.size > 0 and self.cim['dl']['DiagramObject'].index.size > 0 and \
-                self.cim['dl']['DiagramObjectPoint'].index.size > 0 and self.net.bus_geodata.index.size == 0 and \
-                use_dl_profile:
+                self.cim['dl']['DiagramObjectPoint'].index.size > 0:
             try:
                 self.classes_dict['coordinatesFromDLCim16'](cimConverter=self).add_coordinates_from_dl_cim16(
                     diagram_name=kwargs.get('diagram_name', None))
@@ -164,8 +163,6 @@ class CimConverter:
                     message="Creating the coordinates failed, returning the net without coordinates!"))
                 self.report_container.add_log(Report(level=LogLevel.EXCEPTION, code=ReportCode.EXCEPTION_CONVERTING,
                                                      message=traceback.format_exc()))
-                self.net.bus_geodata = self.net.bus_geodata[0:0]
-                self.net.line_geodata = self.net.line_geodata[0:0]
         self.net = pp_tools.set_pp_col_types(net=self.net)
 
         # create transformer tap controller
@@ -176,7 +173,7 @@ class CimConverter:
             level=LogLevel.INFO, code=ReportCode.INFO, message="Running a power flow."))
         if kwargs.get('run_powerflow', False):
             try:
-                pp.runpp(self.net)
+                runpp(self.net)
             except Exception as e:
                 self.logger.error("Failed running a powerflow.")
                 self.logger.exception(e)
@@ -225,7 +222,7 @@ class CimConverter:
         if bus_drop.index.size > 0:
             for b1, b2 in bus_drop[['b1', 'b2']].itertuples(index=False):
                 self.logger.info("Fusing buses: b1: %s, b2: %s" % (b1, b2))
-                pp.fuse_buses(self.net, b1, b2, drop=True, fuse_bus_measurements=True)
+                fuse_buses(self.net, b1, b2, drop=True, fuse_bus_measurements=True)
         # finally a fix for EquivalentInjections: If an EquivalentInjection is attached to boundary node, check if the
         # network behind this boundary node is attached. In this case, disable the EquivalentInjection.
         ward_t = self.net.ward.copy()

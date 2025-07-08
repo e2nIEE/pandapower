@@ -6,14 +6,17 @@ type;string;"| naming conventions:
 | *""CHP""* - combined heating and power system";type of generator
 bus*;integer;;index of connected bus
 p_mw*;float;:math:`\leq` 0;active power of the static generator [MW]
-q_mvar*;float;;reactive power of the static generator [MVar]
+q_mvar*;float;;reactive power of the static generator [MVAr]
 sn_mva;float;:math:`>` 0;rated power ot the static generator [MVA]
 scaling*;float;:math:`\geq` 0;scaling factor for the active and reactive power
-max_p_mw**;float;;Maximum active power [MW]
-min_p_mw**;float;;Minimum active power [MW]
-max_q_mvar**;float;;Maximum reactive power [MVar]
-min_q_mvar**;float;;Minimum reactive power [MVar]
-controllable**;bool;;States if sgen is controllable or not, sgen will not be used as a flexibilty if it is not controllable
-k***;float;:math:`\geq` 0;Ratio of nominal current to short circuit current
+max_p_mw**;float;;maximum active power [MW]
+min_p_mw**;float;;minimum active power [MW]
+max_q_mvar**;float;;maximum reactive power [MVAr]
+min_q_mvar**;float;;minimum reactive power [MVAr]
+controllable**;bool;;states if sgen is controllable or not, sgen will not be used as a flexibility if it is not controllable
+k***;float;:math:`\geq` 0;ratio of short circuit current to nominal current
 rx***;float;:math:`\geq` 0;R/X ratio for short circuit impedance. Only relevant if type is specified as motor so that sgen is treated as asynchronous motor
 in_service*;boolean;True / False;specifies if the generator is in service.
+id_q_capability_characteristic;integer;;references the index of the characteristic from the q_capability_characteristic
+curve_style;string;either "straightLineYValues" or "constantYValue";the style of the static generator reactive power capability curve
+reactive_capability_curve;boolean;True / False;True if static generator has dependency on q characteristic

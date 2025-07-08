@@ -9,7 +9,7 @@ pandapower provides a function to translate pandapower networks into networkx gr
 are available in networkx can be used to analyse the network. For example you can find the shortest path between two nodes, find out if two areas in a network are connected to each other or
 if there are cycles in a network.  For a complete list of all NetworkX algorithms see https://networkx.org/documentation/stable/reference/algorithms/index.html
 
-pandapower also provides some search algorithms specialiced for electric networks, such as finding all buses that are connected to a slack node.
+pandapower also provides some search algorithms specialised for electric networks, such as finding all buses that are connected to a slack node.
 
 .. toctree::
     :maxdepth: 1

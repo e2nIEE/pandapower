@@ -38,11 +38,6 @@ def read_pm_results_to_net(net, ppc, ppci, result_pm):
             _extract_results(net, result)
         else:
             neti = deepcopy(net)
-            removed_keys = set(net.keys()) - pp_elements(res_elements=True) - \
-                {"_options", "_is_elements", "_pd2ppc_lookups", "res_bus", "res_switch"} | \
-                {"measurement"}
-            for rk in removed_keys:
-                neti.pop(rk)
             for tp, ri in result.items():
                 add_time_series_data_to_net(neti, net.controller, tp)
                 _extract_results(neti, ri)

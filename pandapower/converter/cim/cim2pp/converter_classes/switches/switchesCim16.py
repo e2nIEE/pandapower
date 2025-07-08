@@ -36,19 +36,19 @@ class SwitchesCim16:
             pd.concat(
                 [eqssh_switches, self.cimConverter.merge_eq_ssh_profile('Disconnector', add_cim_type_column=True)],
                 ignore_index=True, sort=False)
-        eqssh_switches.type[start_index_cim_net:] = 'DS'
+        eqssh_switches.loc[start_index_cim_net:, 'type'] = 'DS'
         start_index_cim_net = eqssh_switches.index.size
         eqssh_switches = \
             pd.concat(
                 [eqssh_switches, self.cimConverter.merge_eq_ssh_profile('LoadBreakSwitch', add_cim_type_column=True)],
                 ignore_index=True, sort=False)
-        eqssh_switches.type[start_index_cim_net:] = 'LBS'
+        eqssh_switches.loc[start_index_cim_net:, 'type'] = 'LBS'
         start_index_cim_net = eqssh_switches.index.size
         # switches needs to be the last which getting appended because of class inherit problem in jpa
         eqssh_switches = pd.concat(
             [eqssh_switches, self.cimConverter.merge_eq_ssh_profile('Switch', add_cim_type_column=True)],
             ignore_index=True, sort=False)
-        eqssh_switches.type[start_index_cim_net:] = 'LS'
+        eqssh_switches.loc[start_index_cim_net:, 'type'] = 'LS'
         # drop all duplicates to fix class inherit problem in jpa
         eqssh_switches = eqssh_switches.drop_duplicates(subset=['rdfId'], keep='first')
         switch_length_before_merge = eqssh_switches.index.size
@@ -59,7 +59,7 @@ class SwitchesCim16:
         # now join with the terminals
         eqssh_switches = pd.merge(eqssh_switches, self.cimConverter.bus_merge, how='left', on='rdfId')
         eqssh_switches = eqssh_switches.sort_values(by=['rdfId', 'sequenceNumber'])
-        eqssh_switches.reset_index(inplace=True)
+        eqssh_switches = eqssh_switches.reset_index()
         # copy the columns which are needed to reduce the eqssh_switches to one line per switch
         eqssh_switches['rdfId_Terminal2'] = eqssh_switches['rdfId_Terminal'].copy()
         eqssh_switches['connected2'] = eqssh_switches['connected'].copy()
@@ -91,6 +91,9 @@ class SwitchesCim16:
                                        'rdfId_Terminal': sc['t_bus'], 'rdfId_Terminal2': sc['t_ele']})
         eqssh_switches['et'] = 'b'
         eqssh_switches['z_ohm'] = 0
+        if 'inService' not in eqssh_switches.columns:
+            eqssh_switches['inService'] = True
         if eqssh_switches.index.size > 0:
-            eqssh_switches['closed'] = ~eqssh_switches.open & eqssh_switches.connected & eqssh_switches.connected2
+            eqssh_switches['closed'] = (~eqssh_switches.open & eqssh_switches.connected & eqssh_switches.connected2
+                                        & eqssh_switches.inService)
         return eqssh_switches
