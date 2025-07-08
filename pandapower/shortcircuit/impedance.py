@@ -21,8 +21,9 @@ except ImportError:
     from pandapower.pypower.makeYbus import makeYbus
 
 
-def _calc_rx(net, ppci, bus_idx):
+def _calc_rx(net, ppci, bus_idx, sequence):
     # Vectorized for multiple bus
+    fault = net._options["fault"]
     r_fault = net["_options"]["r_fault_ohm"]
     x_fault = net["_options"]["x_fault_ohm"]
     if r_fault > 0 or x_fault > 0:
@@ -34,8 +35,19 @@ def _calc_rx(net, ppci, bus_idx):
 
     if net["_options"]["inverse_y"]:
         Zbus = ppci["internal"]["Zbus"]
-        z_equiv = np.diag(Zbus)[bus_idx] + fault_impedance
-    else:
+        if (fault == "LLL") or (fault == "LG"):
+            z_equiv = np.diag(Zbus)[bus_idx] + fault_impedance
+        elif (fault == "LLG"):
+            if sequence == 0:
+                z_equiv = np.diag(Zbus)[bus_idx] + 3*fault_impedance 
+            else:
+                z_equiv = np.diag(Zbus)[bus_idx]
+        elif (fault == "LL"):
+            if (sequence == 1) or (sequence == 2): 
+                z_equiv = np.diag(Zbus)[bus_idx] + fault_impedance/2
+            else: 
+                z_equiv = np.diag(Zbus)[bus_idx]
+    else: 
         z_equiv = _calc_zbus_diag(net, ppci, bus_idx) + fault_impedance
     ppci["bus"][bus_idx, R_EQUIV] = z_equiv.real
     ppci["bus"][bus_idx, X_EQUIV] = z_equiv.imag

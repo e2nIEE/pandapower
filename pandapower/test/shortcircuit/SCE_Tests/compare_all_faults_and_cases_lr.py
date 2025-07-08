@@ -19,7 +19,7 @@ def compare_sc_results(net, excel_file, branch=False, fault_location=None):
     # faults = ["LLL","LL", "LG", "LLG"]
     faults = ["LLG"]
     cases = ["max"]
-    fault_ohm_values = [(0.0, 0.0)]
+    fault_ohm_values = [(5.0, 5.0)]
     # fault_ohm_values = [(0.0, 0.0), (5.0, 5.0)]
 
     all_differences = []
@@ -123,10 +123,10 @@ def compare_sc_results(net, excel_file, branch=False, fault_location=None):
 
 ## sgen
 import os
-current_path = os.getcwd()
-file_path = r"test_grids\wp_2.2\1_four_bus_radial_grid_sgen.json"
-# current_path = "pandapower/pandapower/test/shortcircuit/SCE_Tests/"
-# file_path = "test_grids/wp_2.2/1_four_bus_radial_grid_sgen.json"
+# current_path = os.getcwd()
+# file_path = r"test_grids\wp_2.2\1_four_bus_radial_grid_sgen.json"
+current_path = "pandapower/pandapower/test/shortcircuit/SCE_Tests/"
+file_path = "test_grids/wp_2.2/1_four_bus_radial_grid_sgen.json"
 # file_path = r"test_grids\wp_2.2\2_five_bus_radial_grid_dyn_sgen.json"
 net = from_json(os.path.join(current_path, file_path))
 net.sgen['k'] = 1.2
@@ -141,7 +141,7 @@ branch= True
 case = 'max'
 # r_fault_ohm = 5
 # x_fault_ohm = 5
-fault_location = 0
+fault_location = 2
 # calc_sc(net, fault=fault, case=case, branch_results=branch, ip=False,
                             # r_fault_ohm=r_fault_ohm, x_fault_ohm=x_fault_ohm, bus=fault_location, return_all_currents=False)
 
@@ -151,11 +151,9 @@ fault_location = 0
 # diff_df = compare_sc_results(net, os.path.join(current_path, excel_file), fault_location=0)
 
 ## sgen branch
-excel_file = r"sc_result_comparison\1_four_bus_radial_grid_sgen_pf_sc_results_0_branch_sgen1.xlsx"
-# excel_file = "sc_result_comparison/1_four_bus_radial_grid_sgen_pf_sc_results_0_branch_sgen1.xlsx"
+# excel_file = r"sc_result_comparison\1_four_bus_radial_grid_sgen_pf_sc_results_0_branch_sgen1.xlsx"
+excel_file = "sc_result_comparison/1_four_bus_radial_grid_sgen_pf_sc_results_2_branch_sgen1.xlsx"
 diff_df_branch = compare_sc_results(net, os.path.join(current_path, excel_file), branch=True, fault_location=fault_location)
 
-
-
+aaa = diff_df_branch
 ##
-

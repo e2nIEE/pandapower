@@ -258,26 +258,26 @@ def _extract_results(net, ppc_0, ppc_1, ppc_2, bus):
     _get_bus_results(net, ppc_0, ppc_1, ppc_2, bus)
     if net._options["branch_results"]:
         # TODO check option return all current here
-        if (net["_options"]["fault"] in ("LG", "LLG")) & (~net["_options"]['return_all_currents']): #LLG
+        if (~net["_options"]['return_all_currents']):
             v_abc_pu, i_abc_ka, s_abc_mva = _calculate_branch_phase_results(ppc_0, ppc_1, ppc_2)
             _get_line_to_g_results(net, ppc_1, v_abc_pu, i_abc_ka, s_abc_mva)
             #TODO might need to be adapted
             _get_trafo_lg_results(net, v_abc_pu, i_abc_ka, s_abc_mva)
-        elif (net["_options"]["fault"] in ("LL")) & (~net["_options"]['return_all_currents']):
-            _get_line_ll_results(net, ppc_1)
-            #TODO
-            # _get_trafo_ll_results(net, ppc_1)
+        # elif (net["_options"]["fault"] in ("LL")) & (~net["_options"]['return_all_currents']):
+        #     _get_line_ll_results(net, ppc_1)
+        #     #TODO
+        #     # _get_trafo_ll_results(net, ppc_1)
         else:
-            if net._options['return_all_currents']:
-                _get_line_all_results(net, ppc_1, bus)
-                _get_trafo_all_results(net, ppc_1, bus)
-                _get_trafo3w_all_results(net, ppc_1, bus)
-                _get_switch_all_results(net, ppc_1, bus)
-            else:
-                _get_line_results(net, ppc_1)
-                _get_trafo_results(net, ppc_1)
-                _get_trafo3w_results(net, ppc_1)
-                _get_switch_results(net, ppc_1)
+            # if net._options['return_all_currents']:
+            _get_line_all_results(net, ppc_1, bus)
+            _get_trafo_all_results(net, ppc_1, bus)
+            _get_trafo3w_all_results(net, ppc_1, bus)
+            _get_switch_all_results(net, ppc_1, bus)
+            # else:
+            #     _get_line_results(net, ppc_1)
+            #     _get_trafo_results(net, ppc_1)
+            #     _get_trafo3w_results(net, ppc_1)
+            #     _get_switch_results(net, ppc_1)
 
 
 def _get_bus_results(net, ppc_0, ppc_1, ppc_2, bus):
@@ -342,37 +342,36 @@ def _get_line_results(net, ppc):
         if net._options["ith"]:
             net.res_line_sc["ith_ka"] = minmax(ppc["branch"][f:t, [ITH_F, ITH_T]].real, axis=1)
 
-def _get_line_ll_results(net, ppc):
-    branch_lookup = net._pd2ppc_lookups["branch"]
-    case = net._options["case"]
-    if "line" in branch_lookup:
-        f, t = branch_lookup["line"]
-        minmax = np.max if case == "max" else np.min
-        net.res_line_sc["ikss_ka"] = minmax(ppc["branch"][f:t, [IKSS_F, IKSS_T]].real, axis=1)
-        for phase, name in ("b","branch"),("c","branch_LL"):
-            net.res_line_sc[f"ikss_{phase}_from_ka"] = ppc[name][f:t, IKSS_F].real
-            net.res_line_sc[f"ikss_{phase}_from_degree"] = ppc[name][f:t, IKSS_ANGLE_F].real
-            net.res_line_sc[f"ikss_{phase}_to_ka"] = ppc[name][f:t, IKSS_T].real
-            net.res_line_sc[f"ikss_{phase}_to_degree"] = ppc[name][f:t, IKSS_ANGLE_T].real
+# def _get_line_ll_results(net, ppc):
+#     branch_lookup = net._pd2ppc_lookups["branch"]
+#     case = net._options["case"]
+#     if "line" in branch_lookup:
+#         f, t = branch_lookup["line"]
+#         minmax = np.max if case == "max" else np.min
+#         net.res_line_sc["ikss_ka"] = minmax(ppc["branch"][f:t, [IKSS_F, IKSS_T]].real, axis=1)
+#         for phase, name in ("b","branch"),("c","branch_LL"):
+#             net.res_line_sc[f"ikss_{phase}_from_ka"] = ppc[name][f:t, IKSS_F].real
+#             net.res_line_sc[f"ikss_{phase}_from_degree"] = ppc[name][f:t, IKSS_ANGLE_F].real
+#             net.res_line_sc[f"ikss_{phase}_to_ka"] = ppc[name][f:t, IKSS_T].real
+#             net.res_line_sc[f"ikss_{phase}_to_degree"] = ppc[name][f:t, IKSS_ANGLE_T].real
 
-            # adding columns for new calculated VPQ
-            net.res_line_sc[f"p_{phase}_from_mw"] = ppc[name][f:t, PKSS_F].real
-            net.res_line_sc[f"q_{phase}_from_mvar"] = ppc[name][f:t, QKSS_F].real
+#             # adding columns for new calculated VPQ
+#             net.res_line_sc[f"p_{phase}_from_mw"] = ppc[name][f:t, PKSS_F].real
+#             net.res_line_sc[f"q_{phase}_from_mvar"] = ppc[name][f:t, QKSS_F].real
 
-            net.res_line_sc[f"p_{phase}_to_mw"] = ppc[name][f:t, PKSS_T].real
-            net.res_line_sc[f"q_{phase}_to_mvar"] = ppc[name][f:t, QKSS_T].real
+#             net.res_line_sc[f"p_{phase}_to_mw"] = ppc[name][f:t, PKSS_T].real
+#             net.res_line_sc[f"q_{phase}_to_mvar"] = ppc[name][f:t, QKSS_T].real
 
-            net.res_line_sc[f"vm_{phase}_from_pu"] = ppc[name][f:t, VKSS_MAGN_F].real
-            net.res_line_sc[f"va_{phase}_from_degree"] = ppc[name][f:t, VKSS_ANGLE_F].real
+#             net.res_line_sc[f"vm_{phase}_from_pu"] = ppc[name][f:t, VKSS_MAGN_F].real
+#             net.res_line_sc[f"va_{phase}_from_degree"] = ppc[name][f:t, VKSS_ANGLE_F].real
 
-            net.res_line_sc[f"vm_{phase}_to_pu"] = ppc[name][f:t, VKSS_MAGN_T].real
-            net.res_line_sc[f"va_{phase}_to_degree"] = ppc[name][f:t, VKSS_ANGLE_T].real
+#             net.res_line_sc[f"vm_{phase}_to_pu"] = ppc[name][f:t, VKSS_MAGN_T].real
+#             net.res_line_sc[f"va_{phase}_to_degree"] = ppc[name][f:t, VKSS_ANGLE_T].real
 
-        if net._options["ip"]:
-            net.res_line_sc["ip_ka"] = minmax(ppc["branch"][f:t, [IP_F, IP_T]].real, axis=1)
-        if net._options["ith"]:
-            net.res_line_sc["ith_ka"] = minmax(ppc["branch"][f:t, [ITH_F, ITH_T]].real, axis=1)
-
+#         if net._options["ip"]:
+#             net.res_line_sc["ip_ka"] = minmax(ppc["branch"][f:t, [IP_F, IP_T]].real, axis=1)
+#         if net._options["ith"]:
+#             net.res_line_sc["ith_ka"] = minmax(ppc["branch"][f:t, [ITH_F, ITH_T]].real, axis=1)
 
 def _get_switch_results(net, ppc):
     if len(net.switch) == 0:

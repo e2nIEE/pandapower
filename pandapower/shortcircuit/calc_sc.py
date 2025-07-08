@@ -12,8 +12,7 @@ from pandapower.auxiliary import _clean_up, _add_ppc_options, _add_sc_options, _
 from pandapower.pd2ppc import _pd2ppc, _ppc2ppci
 from pandapower.pd2ppc_zero import _pd2ppc_zero
 from pandapower.results import _copy_results_ppci_to_ppc
-from pandapower.shortcircuit.currents import _calc_ikss, \
-    _calc_ikss_to_g, _calc_ip, _calc_ith, _calc_branch_currents, _calc_branch_currents_complex
+from pandapower.shortcircuit.currents import _calc_ikss_to_g, _calc_ip, _calc_ith, _calc_branch_currents_complex
 from pandapower.shortcircuit.impedance import _calc_zbus, _calc_ybus, _calc_rx
 from pandapower.shortcircuit.ppc_conversion import _init_ppc, _create_k_updated_ppci, _get_is_ppci_bus
 from pandapower.shortcircuit.kappa import _add_kappa_to_ppc
@@ -168,75 +167,75 @@ def calc_sc(net, bus=None,
                     inverse_y=inverse_y, use_pre_fault_voltage=use_pre_fault_voltage)
     init_results(net, "sc")
 
-    if fault in ("LL", "LLL"):
-        _calc_sc(net, bus)
-    elif fault in("LG", "LLG"): #ToDo: LLG
+    # if fault == ("LLL"):
+    #     _calc_sc(net, bus)
+    if fault in ("LLL", "LG", "LLG", "LL"):
         _calc_sc_to_g(net, bus)
     else:
         raise ValueError("Invalid fault %s" % fault)
 
 
-def _calc_current(net, ppci_orig, bus):
-    # Select required ppci bus
-    ppci_bus = _get_is_ppci_bus(net, bus)
+# def _calc_current(net, ppci_orig, bus):
+#     # Select required ppci bus
+#     ppci_bus = _get_is_ppci_bus(net, bus)
 
-    # update ppci
-    non_ps_gen_ppci_bus, non_ps_gen_ppci, ps_gen_bus_ppci_dict =\
-        _create_k_updated_ppci(net, ppci_orig, ppci_bus=ppci_bus)
+#     # update ppci
+#     non_ps_gen_ppci_bus, non_ps_gen_ppci, ps_gen_bus_ppci_dict =\
+#         _create_k_updated_ppci(net, ppci_orig, ppci_bus=ppci_bus)
 
-    # For each ps_gen_bus one unique ppci is required
-    ps_gen_ppci_bus = list(ps_gen_bus_ppci_dict.keys())
+#     # For each ps_gen_bus one unique ppci is required
+#     ps_gen_ppci_bus = list(ps_gen_bus_ppci_dict.keys())
 
-    for calc_bus in ps_gen_ppci_bus+[non_ps_gen_ppci_bus]:
-        if isinstance(calc_bus, np.ndarray):
-            # Use ppci for general bus
-            this_ppci, this_ppci_bus = non_ps_gen_ppci, calc_bus
-        else:
-            # Use specific ps_gen_bus ppci
-            this_ppci, this_ppci_bus = ps_gen_bus_ppci_dict[calc_bus], np.array([calc_bus])
+#     for calc_bus in ps_gen_ppci_bus+[non_ps_gen_ppci_bus]:
+#         if isinstance(calc_bus, np.ndarray):
+#             # Use ppci for general bus
+#             this_ppci, this_ppci_bus = non_ps_gen_ppci, calc_bus
+#         else:
+#             # Use specific ps_gen_bus ppci
+#             this_ppci, this_ppci_bus = ps_gen_bus_ppci_dict[calc_bus], np.array([calc_bus])
 
-        _calc_ybus(this_ppci)
-        if net["_options"]["inverse_y"]:
-            _calc_zbus(net, this_ppci)
-        else:
-            # Factorization Ybus once
-            # scipy.sparse.linalg.factorized converts the input matrix to csc from csr and raises a warning
-            # todo: create Ybus in CSC format instead of CSR format if known that inverse_y is False?
-            this_ppci["internal"]["ybus_fact"] = factorized(this_ppci["internal"]["Ybus"].tocsc())
+#         _calc_ybus(this_ppci)
+#         if net["_options"]["inverse_y"]:
+#             _calc_zbus(net, this_ppci)
+#         else:
+#             # Factorization Ybus once
+#             # scipy.sparse.linalg.factorized converts the input matrix to csc from csr and raises a warning
+#             # todo: create Ybus in CSC format instead of CSR format if known that inverse_y is False?
+#             this_ppci["internal"]["ybus_fact"] = factorized(this_ppci["internal"]["Ybus"].tocsc())
 
-        _calc_rx(net, this_ppci, this_ppci_bus)
-        _calc_ikss(net, this_ppci, this_ppci_bus)
-        _add_kappa_to_ppc(net, this_ppci)
-        if net["_options"]["ip"]:
-            _calc_ip(net, this_ppci)
-        if net["_options"]["ith"]:
-            _calc_ith(net, this_ppci)
+#         _calc_rx(net, this_ppci, this_ppci_bus)
+#         _calc_ikss(net, this_ppci, this_ppci_bus)
+#         _add_kappa_to_ppc(net, this_ppci)
+#         if net["_options"]["ip"]:
+#             _calc_ip(net, this_ppci)
+#         if net["_options"]["ith"]:
+#             _calc_ith(net, this_ppci)
 
-        if net._options["branch_results"]:
-            # if net._options["fault"] == "LLL":
-            _calc_branch_currents_complex(net, this_ppci_bus, None, this_ppci, None, 1)
-            # else:
-            #     _calc_branch_currents(net, this_ppci, this_ppci_bus)
+#         if net._options["branch_results"]:
+#             # if net._options["fault"] == "LLL":
+#             _calc_branch_currents_complex(net, this_ppci_bus, None, this_ppci, None, 1)
+#             # else:
+#             #     _calc_branch_currents(net, this_ppci, this_ppci_bus)
 
-        _copy_result_to_ppci_orig(ppci_orig, this_ppci, this_ppci_bus,
-                                  calc_options=net._options)
+#         _copy_result_to_ppci_orig(ppci_orig, this_ppci, this_ppci_bus,
+#                                   calc_options=net._options)
 
 
-def _calc_sc(net, bus):
-    ppc, ppci = _init_ppc(net)
-    if net._options.get("use_pre_fault_voltage", False):
-        _add_load_sc_impedances_ppc(net, ppc)  # add SC impedances for loads
-        ppci = _ppc2ppci(ppc, net)
+# def _calc_sc(net, bus):
+#     ppc, ppci = _init_ppc(net)
+#     if net._options.get("use_pre_fault_voltage", False):
+#         _add_load_sc_impedances_ppc(net, ppc)  # add SC impedances for loads
+#         ppci = _ppc2ppci(ppc, net)
 
-    _calc_current(net, ppci, bus)
+#     _calc_current(net, ppci, bus)
 
-    ppc = _copy_results_ppci_to_ppc(ppci, ppc, "sc")
-    _extract_results(net, ppc_0=None, ppc_1=ppc, ppc_2=None, bus=bus)
-    _clean_up(net)
+#     ppc = _copy_results_ppci_to_ppc(ppci, ppc, "sc")
+#     _extract_results(net, ppc_0=None, ppc_1=ppc, ppc_2=None, bus=bus)
+#     _clean_up(net)
 
-    if "ybus_fact" in ppci["internal"]:
-        # Delete factorization object
-        ppci["internal"].pop("ybus_fact")
+#     if "ybus_fact" in ppci["internal"]:
+#         # Delete factorization object
+#         ppci["internal"].pop("ybus_fact")
 
 
 def _calc_sc_to_g(net, bus):
@@ -280,20 +279,14 @@ def _calc_sc_to_g(net, bus):
         ppci_1["internal"]["ybus_fact"] = factorized(ppci_1["internal"]["Ybus"].tocsc())
         ppci_2["internal"]["ybus_fact"] = factorized(ppci_2["internal"]["Ybus"].tocsc())
 
-    _calc_rx(net, ppci_1, ppci_bus)
+    _calc_rx(net, ppci_1, ppci_bus, 1)
     _add_kappa_to_ppc(net, ppci_1)  # todo add kappa only to ppci_1?
 
-    _calc_rx(net, ppci_0, ppci_bus)
-    _calc_rx(net, ppci_2, ppci_bus)
+    _calc_rx(net, ppci_0, ppci_bus, 0)
+    _calc_rx(net, ppci_2, ppci_bus, 2)
 
     _calc_ikss_to_g(net, ppci_0, ppci_1, ppci_2, ppci_bus)
-    # from here on, the V_ikss in ppci_0, ppci_1, ppci_2 are in phase frame!
     if net._options["branch_results"]:
-        # if net._options["fault"] == "LLL":
-        #     _calc_branch_currents_complex(net, ppci_0, ppci_bus)
-        #     _calc_branch_currents_complex(net, ppci_1, ppci_bus)
-        #     _calc_branch_currents_complex(net, ppci_2, ppci_bus)
-        # else:
         _calc_branch_currents_complex(net, ppci_bus, ppci_0, ppci_1, ppci_2, 0)
         _calc_branch_currents_complex(net, ppci_bus, ppci_0, ppci_1, ppci_2, 1)
         _calc_branch_currents_complex(net, ppci_bus, ppci_0, ppci_1, ppci_2, 2)
