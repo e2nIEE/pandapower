@@ -67,18 +67,6 @@ def _convert_q_capability_characteristic(net: pandapowerNet):
     # this is necessary due to the fact that Excel sheet names have a limit of 31 characters
     if 'q_capability_curve_characteristic' in net:
         net['q_capability_characteristic'] = net.pop('q_capability_curve_characteristic')
-    # if 'q_capability_characteristic' not in net:
-    #     net['q_capability_characteristic'] = pd.DataFrame({
-    #         'id_q_capability_curve': pd.Series(dtype='Int64'),
-    #         'q_max_characteristic': pd.Series(dtype='object'),
-    #         'q_min_characteristic': pd.Series(dtype='object')
-    #     })
-    # if 'q_capability_curve_table' not in net:
-    #    net['q_capability_curve_table'] = pd.DataFrame({
-    #        'id_q_capability_curve': pd.Series(dtype='Int64'),
-    #        'p_mw': pd.Series(dtype='float64'),
-    #        'q_min_mvar': pd.Series(dtype='float64')
-    #    })
 
 
 def _convert_geo_data(net, elements_to_deserialize=None):
