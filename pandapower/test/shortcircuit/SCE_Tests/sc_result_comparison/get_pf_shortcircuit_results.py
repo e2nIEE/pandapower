@@ -39,17 +39,17 @@ def get_all_pf_sc_results(proj_name, fault_location=None, activate_sgen=None, sa
         dict_results[element] = {}
 
         if save_to_excel:
-            out_path = os.path.join(pp_dir, "test", "shortcircuit", "sce_tests", "sc_result_comparison",
+            out_path = os.path.join(pp_dir, "test", "shortcircuit", "sce_tests", "sc_result_comparison", "wp_2.1",
                                     proj_name + f'_pf_sc_results_{element}.xlsx')
             if fault_location is not None:
-                out_path = os.path.join(pp_dir, "test", "shortcircuit", "sce_tests", "sc_result_comparison",
+                out_path = os.path.join(pp_dir, "test", "shortcircuit", "sce_tests", "sc_result_comparison", "wp_2.1",
                                     proj_name + f'_pf_sc_results_{fault_location}_{element}.xlsx')
             if activate_sgen is not None:
                 sgen_names = ''
                 for active_sgen in activate_sgen:
                     sgen_name = str(active_sgen)
                     sgen_names += sgen_name
-                out_path = os.path.join(pp_dir, "test", "shortcircuit", "sce_tests", "sc_result_comparison",
+                out_path = os.path.join(pp_dir, "test", "shortcircuit", "sce_tests", "sc_result_comparison", "wp_2.2",
                                     proj_name + f'_pf_sc_results_{fault_location}_{element}_sgen{sgen_names}.xlsx')
             writer = pd.ExcelWriter(out_path)
 
@@ -81,11 +81,11 @@ def get_all_pf_sc_results(proj_name, fault_location=None, activate_sgen=None, sa
 
 
 ## get results for single project
-proj_name = '1_four_bus_radial_grid_sgen'
-fault_location = 0
-activate_sgen = 1
-
-pf_dict = get_all_pf_sc_results(proj_name, fault_location, activate_sgen=activate_sgen, save_to_excel=True)
+proj_name = '4_twenty_bus_radial_grid_ynyn_sgen'
+fault_location = [8, 18]
+activate_sgen = [4, 7, 14, 19]
+for fl in fault_location:
+    pf_dict = get_all_pf_sc_results(proj_name, fl, activate_sgen=activate_sgen, save_to_excel=True)
 
 
 ## get results for all projects
@@ -94,13 +94,13 @@ pf_dict = get_all_pf_sc_results(proj_name, fault_location, activate_sgen=activat
 #folder = r"C:\Users\lriedl\PycharmProjects\pandapower\pandapower\test\shortcircuit\SCE_Tests\test_grids"
 folder = os.path.join(pp_dir, "test", "shortcircuit", "sce_tests", "test_grids", "wp_2.2")
 pfd_files = [f for f in os.listdir(folder) if f.endswith(".pfd")]
-# fault_location = 2
 
+activate_sgen = [3, 4]
 for fault_location in [0, 1, 2, 3]:
     pf_dict_all = {}
     for file in pfd_files:
         proj_name = os.path.splitext(file)[0]
-        pf_dict = get_all_pf_sc_results(proj_name, fault_location, save_to_excel=False)
+        pf_dict = get_all_pf_sc_results(proj_name, fault_location, activate_sgen=activate_sgen, save_to_excel=True)
         pf_dict_all[proj_name] = pf_dict
 
 ##
