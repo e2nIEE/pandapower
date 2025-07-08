@@ -35,7 +35,6 @@ def _get_Sload(bus, vm):
         S_load_real = S_load.real * volt_depend
         S_load_imag = S_load.imag * volt_depend_q
         S_load = S_load_real+S_load_imag*1j
-        
     return S_load
 
 
