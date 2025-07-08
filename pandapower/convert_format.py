@@ -67,31 +67,18 @@ def _convert_q_capability_characteristic(net: pandapowerNet):
     # this is necessary due to the fact that Excel sheet names have a limit of 31 characters
     if 'q_capability_curve_characteristic' in net:
         net['q_capability_characteristic'] = net.pop('q_capability_curve_characteristic')
-    if 'q_capability_characteristic' not in net:
-        net['q_capability_characteristic'] = pd.DataFrame({
-            'id_q_capability_curve': pd.Series(dtype='Int64'),
-            'q_max_characteristic': pd.Series(dtype='object'),
-            'q_min_characteristic': pd.Series(dtype='object')
-        })
-    if 'q_capability_curve_table' not in net:
-        net['q_capability_curve_table'] = pd.DataFrame({
-            'id_q_capability_curve': pd.Series(dtype='Int64'),
-            'p_mw': pd.Series(dtype='float64'),
-            'q_min_mvar': pd.Series(dtype='float64')
-        })
-    for ele in ['gen', 'sgen']:
-        if isinstance(net[ele], pd.DataFrame) and 'id_q_capability_curve_characteristic' in net[ele].columns:
-            net[ele] = net[ele].rename(
-                columns={'id_q_capability_curve_characteristic': 'id_q_capability_characteristic'})
-        if isinstance(net[ele], pd.DataFrame) and 'id_q_capability_characteristic' not in net[ele].columns:
-            net[ele]['id_q_capability_characteristic'] = pd.Series(dtype='Int64')
-        if isinstance(net[ele], pd.DataFrame) and 'reactive_capability_curve' not in net[ele].columns:
-            net[ele]['reactive_capability_curve'] = False
-    # add shunt information if not added yet
-    if isinstance(net.shunt, pd.DataFrame) and 'id_characteristic_table' not in net.shunt.columns:
-        net.shunt['id_characteristic_table'] = pd.Series(dtype='Int64')
-    if isinstance(net.shunt, pd.DataFrame) and 'step_dependency_table' not in net.shunt.columns:
-        net.shunt['step_dependency_table'] = False
+    # if 'q_capability_characteristic' not in net:
+    #     net['q_capability_characteristic'] = pd.DataFrame({
+    #         'id_q_capability_curve': pd.Series(dtype='Int64'),
+    #         'q_max_characteristic': pd.Series(dtype='object'),
+    #         'q_min_characteristic': pd.Series(dtype='object')
+    #     })
+    # if 'q_capability_curve_table' not in net:
+    #    net['q_capability_curve_table'] = pd.DataFrame({
+    #        'id_q_capability_curve': pd.Series(dtype='Int64'),
+    #        'p_mw': pd.Series(dtype='float64'),
+    #        'q_min_mvar': pd.Series(dtype='float64')
+    #    })
 
 
 def _convert_geo_data(net, elements_to_deserialize=None):
@@ -374,6 +361,12 @@ def _add_missing_columns(net, elements_to_deserialize):
     if _check_elements_to_deserialize('shunt', elements_to_deserialize) and \
             "max_step" not in net["shunt"]:
         net.shunt["max_step"] = 1
+    if _check_elements_to_deserialize('shunt', elements_to_deserialize) and \
+            "id_characteristic_table" not in net["shunt"]:
+        net.shunt["id_characteristic_table"] = pd.Series(dtype='Int64')
+    if _check_elements_to_deserialize('shunt', elements_to_deserialize) and \
+            "step_dependency_table" not in net["shunt"]:
+        net.shunt["step_dependency_table"] = False
     if _check_elements_to_deserialize('trafo3w', elements_to_deserialize) and \
             "std_type" not in net.trafo3w:
         net.trafo3w["std_type"] = None
@@ -382,6 +375,12 @@ def _add_missing_columns(net, elements_to_deserialize):
             "current_source" not in net.sgen:
         net.sgen["current_source"] = net.sgen["type"].apply(
             func=lambda x: False if x == "motor" else True)
+    if _check_elements_to_deserialize('sgen', elements_to_deserialize) and \
+            "id_q_capability_characteristic" not in net.sgen:
+        net.sgen["id_q_capability_characteristic"] = pd.Series(dtype='Int64')
+    if _check_elements_to_deserialize('sgen', elements_to_deserialize) and \
+            "step_dependency_table" not in net.sgen:
+        net.sgen["step_dependency_table"] = False
 
     if _check_elements_to_deserialize('line', elements_to_deserialize):
         if "g_us_per_km" not in net.line:
@@ -392,6 +391,12 @@ def _add_missing_columns(net, elements_to_deserialize):
     if _check_elements_to_deserialize('gen', elements_to_deserialize) and \
             "slack" not in net.gen:
         net.gen["slack"] = False
+    if _check_elements_to_deserialize('gen', elements_to_deserialize) and \
+            "id_q_capability_characteristic" not in net.gen:
+        net.gen["id_q_capability_characteristic"] = pd.Series(dtype='Int64')
+    if _check_elements_to_deserialize('gen', elements_to_deserialize) and \
+            "reactive_capability_curve" not in net.gen:
+        net.gen["reactive_capability_curve"] = False
 
     if _check_elements_to_deserialize('trafo', elements_to_deserialize) and \
             "tap_changer_type" not in net.trafo:
