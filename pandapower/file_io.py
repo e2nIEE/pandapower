@@ -207,10 +207,10 @@ def from_excel(filename, convert=True):
         soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "openpyxl")
     xls = pd.read_excel(filename, sheet_name=None, index_col=0, engine="openpyxl")
 
-    # try:
-    net = from_dict_of_dfs(xls)
-    # except:
-    #     net = _from_excel_old(xls)
+    try:
+        net = from_dict_of_dfs(xls)
+    except:
+        net = _from_excel_old(xls)
     if convert:
         convert_format(net)
 
