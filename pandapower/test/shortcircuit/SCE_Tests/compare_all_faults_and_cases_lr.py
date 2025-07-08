@@ -133,7 +133,7 @@ net.sgen['k'] = 1.2
 net.sgen['active_current'] = False
 net.sgen.loc[net.sgen.bus == 1, 'in_service'] = True
 net.sgen.loc[net.sgen.bus == 2, 'in_service'] = False
-net.sgen.loc[net.sgen.bus == 3, 'in_service'] = False
+net.sgen.loc[net.sgen.bus == 3, 'in_service'] = True
 # net.line["c0_nf_per_km"] = 0
 # net.line["c_nf_per_km"] = 0
 fault = 'LLG'
@@ -152,7 +152,7 @@ fault_location = 2
 
 ## sgen branch
 # excel_file = r"sc_result_comparison\1_four_bus_radial_grid_sgen_pf_sc_results_0_branch_sgen1.xlsx"
-excel_file = "sc_result_comparison/1_four_bus_radial_grid_sgen_pf_sc_results_2_branch_sgen1.xlsx"
+excel_file = "sc_result_comparison/wp_2.2/1_four_bus_radial_grid_sgen_pf_sc_results_2_branch_sgen13.xlsx"
 diff_df_branch = compare_sc_results(net, os.path.join(current_path, excel_file), branch=True, fault_location=fault_location)
 
 aaa = diff_df_branch

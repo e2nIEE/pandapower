@@ -685,14 +685,14 @@ def _calc_branch_currents_complex(net, bus_idx, ppci0, ppci1, ppci2, sequence):
                     isgen = - ikcv[sgen_bus] * Zbus1[sgen_bus,b] / (Zbus1[b,b] + Zbus2[b,b] + fault_impedance)
 
             elif fault == "LLG":
-                i02 = ikcv[sgen_bus] * Zbus1[sgen_bus,b] / (Zbus1[b,b] + \
-                                    (Zbus2[b,b]*(Zbus0[b,b]+3*fault_impedance))/(Zbus2[b,b]+Zbus0[b,b]+3*fault_impedance))
+                i02 = ikcv[sgen_bus] * Zbus1[sgen_bus,b] / (Zbus1[b,b] + fault_impedance + \
+                                    ((Zbus2[b,b]+fault_impedance)*(Zbus0[b,b]+fault_impedance))/(Zbus2[b,b]+Zbus0[b,b]+2*fault_impedance))
                 if sequence == 0:
-                    isgen = - i02 * (Zbus2[b,b]) / (Zbus2[b,b]+Zbus0[b,b]+3*fault_impedance)
+                    isgen = - i02 * (Zbus2[b,b] +fault_impedance) / (Zbus2[b,b]+Zbus0[b,b]+2*fault_impedance)
                 if sequence == 1:
                     isgen = i02
                 elif sequence == 2:
-                    isgen = - i02 * (Zbus0[b,b] + 3*fault_impedance) / (Zbus2[b,b]+Zbus0[b,b]+3*fault_impedance)
+                    isgen = - i02 * (Zbus0[b,b] + fault_impedance) / (Zbus2[b,b]+Zbus0[b,b]+2*fault_impedance)
                 
             current[ix, b] -= sum(isgen)
 
