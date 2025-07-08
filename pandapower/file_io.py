@@ -175,6 +175,7 @@ def from_pickle(filename, convert=True):
         convert_format(net)
 
         # compare pandapowerNet-format_version and package-version
+        # check if installed pandapower version is older then imported network file
         check_net_version(net)
     return net
 
@@ -206,14 +207,15 @@ def from_excel(filename, convert=True):
         soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "openpyxl")
     xls = pd.read_excel(filename, sheet_name=None, index_col=0, engine="openpyxl")
 
-    try:
-        net = from_dict_of_dfs(xls)
-    except:
-        net = _from_excel_old(xls)
+    # try:
+    net = from_dict_of_dfs(xls)
+    # except:
+    #     net = _from_excel_old(xls)
     if convert:
         convert_format(net)
 
         # compare pandapowerNet-format_version and package-version
+        # check if installed pandapower version is older then imported network file
         check_net_version(net)
     return net
 
@@ -403,6 +405,7 @@ def from_json_string(json_string, convert=False, encryption_key=None, elements_t
         convert_format(net, elements_to_deserialize=elements_to_deserialize)
 
         # compare pandapowerNet-format_version and package-version
+        # check if installed pandapower version is older then imported network file
         check_net_version(net)
     if add_basic_std_types:
         # get std-types and add only new keys ones
