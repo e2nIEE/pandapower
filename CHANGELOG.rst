@@ -11,6 +11,7 @@ Change Log
 - [ADDED] cim2pp: export trafo tap changer parameters for trafos with two tap changers
 - [CHANGED] renamed q_capability_curve_characteristic to q_capability_characteristic to fix the 31 character length limit from Excel
 - [ADDED] added documentation for q_capability_characteristic and q_capability_curve_table DataFrames in the pandapower net
+- [FIXED] cim2pp: add GeneratingUnit to SSH profile, add new cim16 schema
 - [FIXED] issue on case9 grid: Missing columns id_characteristic_table and step_dependency_table at shunt leading to errors when adding them
 
 [3.1.2] - 2025-06-16
