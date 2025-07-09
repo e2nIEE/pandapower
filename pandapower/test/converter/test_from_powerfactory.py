@@ -254,5 +254,26 @@ def test_shunt_tables():
             delta = diff['diff'].abs().max()
         assert delta < tol[key], "%s has too high difference: %f > %f" % (key, delta, tol[key])
 
+@pytest.mark.skipif(not PF_INSTALLED, reason='powerfactory must be installed')
+def test_mixed_zip_loads_import():
+    app = pf.GetApplication()
+    # import the mixed zip load test grid
+    path = os.path.join(pp_dir, 'test', 'converter', 'testfiles', 'test_shunt_table.pfd')
+    prj = import_project(path, app, 'mixed_zip_loads', import_folder='TEST_IMPORT', clear_import_folder=True)
+    prj_name = prj.GetFullName()
+
+    net = from_pfd(app, prj_name=prj_name)
+
+    all_diffs = validate_pf_conversion(net, tolerance_mva=1e-6)
+
+    tol = get_tol()
+
+    for key, diff in all_diffs.items():
+        if type(diff) == pd.Series:
+            delta = diff.abs().max()
+        else:
+            delta = diff['diff'].abs().max()
+        assert delta < tol[key], "%s has too high difference: %f > %f" % (key, delta, tol[key])
+
 if __name__ == '__main__':
     pytest.main([__file__, "-xs"])
