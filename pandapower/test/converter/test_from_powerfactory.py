@@ -182,9 +182,9 @@ def test_pf_export_q_capability_curve():
     net = from_pfd(app, prj_name=prj_name)
 
     assert len(net['q_capability_curve_table']) == 12
-    assert len(net['q_capability_curve_characteristic']) == 1
-    assert net['q_capability_curve_characteristic']['q_max_characteristic'].notna().all()
-    assert net['q_capability_curve_characteristic']['q_min_characteristic'].notna().all()
+    assert len(net['q_capability_characteristic']) == 1
+    assert net['q_capability_characteristic']['q_max_characteristic'].notna().all()
+    assert net['q_capability_characteristic']['q_min_characteristic'].notna().all()
     assert_array_equal( np.hstack( net.q_capability_curve_table.p_mw), np.array(
         [-331.01001, -298.0, -198.0, -66.2000, -0.1, 0, 0.1, 66.200, 100, 198.00, 298.00, 331.0100]))
     assert_array_equal( np.hstack(net.q_capability_curve_table.q_min_mvar), np.array(
