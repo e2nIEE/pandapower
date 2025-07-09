@@ -2031,7 +2031,7 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
                     return
         if av_mode == 'constv':
             logger.debug('av_mode: %s - creating as gen' % av_mode)
-            #params.vm_pu = item.usetp
+            params.vm_pu = item.usetp
             if pstac is not None and not pstac.outserv and export_ctrl:
                 try:
                     params.vm_pu = item.GetAttribute('m:u:bus1')
@@ -3829,8 +3829,6 @@ def create_stactrl(net, item):
             gt = "other"
         elif not hasattr(s, 'av_mode'):
             gt = "other"
-        #elif not hasattr(s, 'av_mode'):
-            #gt = "other"
         elif s.av_mode == "constq":
             gt = "sgen"
         elif s.av_mode == "constv":
