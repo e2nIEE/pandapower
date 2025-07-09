@@ -16,10 +16,7 @@ from pandapower.pypower.idx_bus import BUS_I
 
 from scipy.sparse import csr_matrix, csc_matrix
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
