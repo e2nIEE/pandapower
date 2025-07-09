@@ -256,6 +256,7 @@ def test_shunt_tables():
 
 @pytest.mark.skipif(not PF_INSTALLED, reason='powerfactory must be installed')
 def test_mixed_zip_loads_import():
+    # the file is done with PF2024 SP1
     app = pf.GetApplication()
     # import the mixed zip load test grid
     path = os.path.join(pp_dir, 'test', 'converter', 'testfiles', 'test_shunt_table.pfd')
