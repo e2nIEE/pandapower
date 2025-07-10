@@ -13,7 +13,7 @@ Change Log
 - [ADDED] added documentation for q_capability_characteristic and q_capability_curve_table DataFrames in the pandapower net
 - [FIXED] cim2pp: add GeneratingUnit to SSH profile, add new cim16 schema
 - [FIXED] issue on case9 grid: Missing columns id_characteristic_table and step_dependency_table at shunt leading to errors when adding them
-- [FIXED] fixed convert_format for missing information (in gen, sgen, shunt) and tables (q_capability_characteristic, q_capability_curve_table
+- [FIXED] fixed convert_format for missing information (in gen, sgen, shunt) and tables (q_capability_characteristic, q_capability_curve_table)
 
 [3.1.2] - 2025-06-16
 -------------------------------
