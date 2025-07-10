@@ -35,7 +35,7 @@ def convert_format(net, elements_to_deserialize=None):
     _rename_columns(net, elements_to_deserialize)
     _add_missing_columns(net, elements_to_deserialize)
     _create_seperate_cost_tables(net, elements_to_deserialize)
-    if Version(str(net.format_version)) < Version("3.1.1"):
+    if Version(str(net.format_version)) < Version("3.1.0"):
         _convert_q_capability_characteristic(net)
     if Version(str(net.format_version)) < Version("3.0.0"):
         _convert_geo_data(net, elements_to_deserialize)
