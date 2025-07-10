@@ -140,8 +140,14 @@ class DisjointSet(dict):
         self[p1] = p2
 
 
-def create_consecutive_bus_lookup(net, bus_index):
-    # create a mapping from arbitrary pp-index to a consecutive index starting at zero (ppc-index)
+def create_consecutive_bus_lookup(bus_index: np.array):
+    """
+    create a mapping from arbitrary pp-index to a consecutive index starting at zero (ppc-index)
+    Args:
+        bus_index: the original bus index to create a mapping from.
+    Returns:
+
+    """
     if len(bus_index) == 0:
         return np.array([], dtype=np.int64)
     consec_buses = np.arange(len(bus_index), dtype=np.int64)
@@ -154,7 +160,7 @@ def create_consecutive_bus_lookup(net, bus_index):
 
 
 def create_bus_lookup_numpy(net, bus_index, closed_bb_switch_mask):
-    bus_lookup = create_consecutive_bus_lookup(net, bus_index)
+    bus_lookup = create_consecutive_bus_lookup(bus_index)
     net._fused_bb_switches = closed_bb_switch_mask & (net["switch"]["z_ohm"].values <= 0)
     merged_bus = np.zeros(len(bus_lookup), dtype=bool)
     if net._fused_bb_switches.any():
@@ -352,7 +358,7 @@ def _build_bus_ppc(net, ppc, sequence=None):
     # get in service elements
 
     if mode == "nx":
-        bus_lookup = create_consecutive_bus_lookup(net, bus_index)
+        bus_lookup = create_consecutive_bus_lookup(bus_index)
     else:
         _is_elements = net["_is_elements"]
         # eg_is_mask = _is_elements['ext_grid']
@@ -450,7 +456,7 @@ def _build_bus_dc_ppc(net, ppc):
         aux["vsc"] = aux_vsc
         bus_index = np.concatenate([bus_index, aux_vsc])
 
-    bus_lookup = create_consecutive_bus_lookup(net, bus_index)
+    bus_lookup = create_consecutive_bus_lookup(bus_index)
     # todo if dc switches are added, adjust this part to implement @fuse buses@ for bus_dc:
     #if mode == "nx":
      #   bus_lookup = create_consecutive_bus_lookup(net, bus_index)
@@ -482,8 +488,7 @@ def _build_bus_dc_ppc(net, ppc):
     # set buses out of service (BUS_TYPE == 4)
 
     if nr_vsc > 0:
-        in_service = np.concatenate([net["bus_dc"]["in_service"].values,
-                                 net["vsc"]["in_service"].values])
+        in_service = np.concatenate([net["bus_dc"]["in_service"].values, net["vsc"]["in_service"].values])
     else:
         in_service = net["bus_dc"]["in_service"].values
 
@@ -511,7 +516,7 @@ def _build_bus_dc_ppc(net, ppc):
     net["_pd2ppc_lookups"]["aux_dc"] = aux
 
     if mode != "nx":
-        set_reference_buses_dc(net, ppc, bus_lookup, mode)
+        set_reference_buses_dc(net, ppc, bus_lookup)
 
 
 def _fill_auxiliary_buses(net, ppc, bus_lookup, element, bus_column, aux, bus_table="bus"):
@@ -556,11 +561,12 @@ def set_reference_buses(net, ppc, bus_lookup, mode):
         ppc["internal"]["ac_slack_buses"] |= set(bus_lookup[slack_buses])  # needed later in _select_is_elements_numba
     ppc["internal"]["ac_slack_buses"] = list(ppc["internal"]["ac_slack_buses"])
 
-def set_reference_buses_dc(net, ppc, bus_lookup, mode):
-    if mode == "nx":
-        return
+
+def set_reference_buses_dc(net, ppc, bus_lookup):
+
     vsc_dc_slack = net.vsc.control_mode_dc.values == "vm_pu"
     vsc_ac_slack = net.vsc.control_mode_ac.values == "slack"  # VSC that defines AC slack cannot define DC slack
+
     # todo vsc
     # ref_buses = bus_lookup[net._pd2ppc_lookups["aux_dc"].get("vsc", np.array([], dtype=np.int64))[net._is_elements["vsc"] & vsc_dc_slack & ~vsc_ac_slack]]
     ref_buses = bus_lookup[net.vsc.bus_dc.values[net._is_elements["vsc"] & vsc_dc_slack & ~vsc_ac_slack]]
@@ -571,6 +577,12 @@ def set_reference_buses_dc(net, ppc, bus_lookup, mode):
     p_buses = bus_lookup[net._pd2ppc_lookups["aux_dc"].get("vsc", np.array([], dtype=np.int64))[net._is_elements["vsc"] & vsc_dc_p]]
     b2b_buses = np.intersect1d(ref_buses, p_buses)
     ppc["bus_dc"][b2b_buses, DC_BUS_TYPE] = DC_B2B
+
+    # set dc sources
+    if "source_dc" in net and len(net.source_dc) > 0:
+        source_buses = bus_lookup[net.source_dc.bus.values]
+        ppc["bus_dc"][source_buses, DC_BUS_TYPE] = DC_REF
+        ppc["bus_dc"][source_buses, DC_VM] = net.source_dc.vm_pu.values
 
 
 def _calc_pq_elements_and_add_on_ppc(net, ppc, sequence=None):
