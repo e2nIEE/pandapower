@@ -23,7 +23,7 @@ from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes, e
 from pandapower.network_structure import get_structure_dict
 from pandapower.results import reset_results
 from pandapower.std_types import add_basic_std_types, load_std_type
-from pandapower.typing import BusType, GeneratorType, HVMVLVType, HVLVType, Int, LineType, \
+from pandapower.pp_types import BusType, GeneratorType, HVMVLVType, HVLVType, Int, LineType, \
     MeasurementElementType, MeasurementType, CostElementType, PWLPowerType, SwitchElementType, SwitchType, \
     TapChangerType, TapChangerWithTabularType, UnderOverExcitedType, WyeDeltaType
 
