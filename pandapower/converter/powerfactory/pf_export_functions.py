@@ -10,7 +10,7 @@ def extract_number(obj):
     return int(match.group()) if match else float('inf')
 
 
-def create_network_dict(app, flag_graphics='GPS'):
+def create_network_dict(app, include_hidden_bus, flag_graphics='GPS'):
     # elements to be exported from PowerFactory
     set_object_extentions = {
         # node elements:
@@ -90,7 +90,7 @@ def create_network_dict(app, flag_graphics='GPS'):
 
     logger.info('collecting network elements')
     for obj in set_object_extentions:
-        if obj == 'ElmTerm':
+        if (obj == 'ElmTerm'):
             dict_net[obj] = app.GetCalcRelevantObjects(obj, 1, 0, 1)
         else:
             dict_net[obj] = app.GetCalcRelevantObjects(obj)

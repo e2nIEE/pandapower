@@ -182,9 +182,9 @@ def test_pf_export_q_capability_curve():
     net = from_pfd(app, prj_name=prj_name)
 
     assert len(net['q_capability_curve_table']) == 12
-    assert len(net['q_capability_curve_characteristic']) == 1
-    assert net['q_capability_curve_characteristic']['q_max_characteristic'].notna().all()
-    assert net['q_capability_curve_characteristic']['q_min_characteristic'].notna().all()
+    assert len(net['q_capability_characteristic']) == 1
+    assert net['q_capability_characteristic']['q_max_characteristic'].notna().all()
+    assert net['q_capability_characteristic']['q_min_characteristic'].notna().all()
     assert_array_equal( np.hstack( net.q_capability_curve_table.p_mw), np.array(
         [-331.01001, -298.0, -198.0, -66.2000, -0.1, 0, 0.1, 66.200, 100, 198.00, 298.00, 331.0100]))
     assert_array_equal( np.hstack(net.q_capability_curve_table.q_min_mvar), np.array(
@@ -246,6 +246,28 @@ def test_shunt_tables():
     assert np.isclose(Q_shunt_with_table, net.res_shunt.loc[1, "q_mvar"], rtol=0, atol=1e-5)
     assert np.isclose(P_shunt_without_table, net.res_shunt.loc[0, "p_mw"], rtol=0, atol=1e-5)
     assert np.isclose(Q_shunt_without_table, net.res_shunt.loc[0, "q_mvar"], rtol=0, atol=1e-5)
+
+    for key, diff in all_diffs.items():
+        if type(diff) == pd.Series:
+            delta = diff.abs().max()
+        else:
+            delta = diff['diff'].abs().max()
+        assert delta < tol[key], "%s has too high difference: %f > %f" % (key, delta, tol[key])
+
+@pytest.mark.skipif(not PF_INSTALLED, reason='powerfactory must be installed')
+def test_mixed_zip_loads_import():
+    # the file is done with PF2024 SP1
+    app = pf.GetApplication()
+    # import the mixed zip load test grid
+    path = os.path.join(pp_dir, 'test', 'converter', 'testfiles', 'test_shunt_table.pfd')
+    prj = import_project(path, app, 'mixed_zip_loads', import_folder='TEST_IMPORT', clear_import_folder=True)
+    prj_name = prj.GetFullName()
+
+    net = from_pfd(app, prj_name=prj_name)
+
+    all_diffs = validate_pf_conversion(net, tolerance_mva=1e-6)
+
+    tol = get_tol()
 
     for key, diff in all_diffs.items():
         if type(diff) == pd.Series:
