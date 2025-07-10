@@ -30,7 +30,7 @@ try:
 except ImportError:
     from pandapower.pf.no_numba import jit
 
-EPS = finfo(float).eps
+EPS = finfo(float).eps  # type: ignore[var-annotated]
 
 
 def pfsoln(baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, Ybus, Yf, Yt, V, ref, ref_gens, Ibus=None,
