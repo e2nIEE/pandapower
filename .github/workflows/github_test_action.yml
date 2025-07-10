@@ -23,8 +23,8 @@ jobs:
         # remove it also in pyproject.toml 'requires-python'
         group: [ 1, 2 ]
     steps:
-      - uses: actions/checkout@v4
-      #- uses: julia-actions/setup-julia@v1.5
+#      - uses: actions/checkout@v4
+#      - uses: julia-actions/setup-julia@v1.5
       - uses: actions/checkout@v4
       - name: Install uv
         uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
@@ -319,23 +319,13 @@ jobs:
         # remove it also in pyproject.toml 'requires-python'
     steps:
       - uses: actions/checkout@v4
-      #- uses: julia-actions/setup-julia@v1.5
-      - uses: actions/checkout@v4
       - name: Install uv
         uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
-          uv sync --all-extras          
-          if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi
-          uv pip install pytest-split
-          if ${{ matrix.python-version == '3.9' }}; then uv pip install pypower; fi
-          if ${{ matrix.python-version != '3.9' }}; then uv pip install numba; fi
-          if ${{ matrix.python-version == '3.10' }}; then uv pip install lightsim2grid; fi
-      - name: List of installed packages
-        run: |
-          uv pip list
+          uv sync --all-extras
       - name: Check types with mypy
         run: |
           uv run mypy
