@@ -26,7 +26,7 @@ columns 0-12 must be included in the input matrix (vsc in ppc dict)
     4.  C{VSC_R}                        VSC resistance (p.u.)
     5.  C{VSC_X}                        VSC reactance (p.u.)
     6.  C{VSC_R_DC}                     VSC dc-side resistance (p.u.)
-    7.  C{VSC_MODE_AC}                  AC mode selector, 0 - vm_pu, 1 - q_mvar
+    7.  C{VSC_MODE_AC}                  AC mode selector, 0 - vm_pu, 1 - q_mvar, 2 - slack
     8.  C{VSC_VALUE_AC}                 AC mode value (p.u.)
     9.  C{VSC_MODE_DC}                  DC mode selector, 0 - vm_pu, 1 - p_mw
     10  C{VSC_VALUE_DC}                 DC mode value (p.u.)
@@ -37,10 +37,12 @@ columns 0-12 must be included in the input matrix (vsc in ppc dict)
     15. C{VSC_P_DC}                     DC bus resultant active power (MW)
 
 """
-
+# define AC modes
 VSC_MODE_AC_V = 0
 VSC_MODE_AC_Q = 1
 VSC_MODE_AC_SL = 2
+
+# define DC modes
 VSC_MODE_DC_V = 0
 VSC_MODE_DC_P = 1
 
