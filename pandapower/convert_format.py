@@ -35,7 +35,7 @@ def convert_format(net, elements_to_deserialize=None):
     _rename_columns(net, elements_to_deserialize)
     _add_missing_columns(net, elements_to_deserialize)
     _create_seperate_cost_tables(net, elements_to_deserialize)
-    if Version(str(net.format_version)) < Version("3.1.3"):
+    if Version(str(net.format_version)) < Version("3.1.1"):
         _convert_q_capability_characteristic(net)
     if Version(str(net.format_version)) < Version("3.0.0"):
         _convert_geo_data(net, elements_to_deserialize)
@@ -371,8 +371,8 @@ def _add_missing_columns(net, elements_to_deserialize):
             "id_q_capability_characteristic" not in net.sgen:
         net.sgen["id_q_capability_characteristic"] = pd.Series(dtype='Int64')
     if _check_elements_to_deserialize('sgen', elements_to_deserialize) and \
-            "step_dependency_table" not in net.sgen:
-        net.sgen["step_dependency_table"] = False
+            "reactive_capability_curve" not in net.sgen:
+        net.sgen["reactive_capability_curve"] = False
 
     if _check_elements_to_deserialize('line', elements_to_deserialize):
         if "g_us_per_km" not in net.line:
@@ -441,8 +441,10 @@ def _add_missing_columns(net, elements_to_deserialize):
         for _, ctrl in net.controller.iterrows():
             if hasattr(ctrl['object'], 'initial_run'):
                 net.controller.at[ctrl.name, 'initial_run'] = ctrl['object'].initial_run
-            else:
+            elif hasattr(ctrl['object'], 'initial_powerflow'):
                 net.controller.at[ctrl.name, 'initial_run'] = ctrl['object'].initial_powerflow
+            else:
+                net.controller.at[ctrl.name, 'initial_run'] = False
 
     # distributed slack
     if _check_elements_to_deserialize('ext_grid', elements_to_deserialize) and \
