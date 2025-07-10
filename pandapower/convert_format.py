@@ -35,7 +35,7 @@ def convert_format(net, elements_to_deserialize=None):
     _rename_columns(net, elements_to_deserialize)
     _add_missing_columns(net, elements_to_deserialize)
     _create_seperate_cost_tables(net, elements_to_deserialize)
-    if Version(str(net.format_version)) < Version("3.1.3"):
+    if Version(str(net.format_version)) < Version("3.1.0"):
         _convert_q_capability_characteristic(net)
     if Version(str(net.format_version)) < Version("3.0.0"):
         _convert_geo_data(net, elements_to_deserialize)
@@ -362,6 +362,12 @@ def _add_missing_columns(net, elements_to_deserialize):
     if _check_elements_to_deserialize('shunt', elements_to_deserialize) and \
             "max_step" not in net["shunt"]:
         net.shunt["max_step"] = 1
+    if _check_elements_to_deserialize('shunt', elements_to_deserialize) and \
+            "id_characteristic_table" not in net["shunt"]:
+        net.shunt["id_characteristic_table"] = pd.Series(dtype='Int64')
+    if _check_elements_to_deserialize('shunt', elements_to_deserialize) and \
+            "step_dependency_table" not in net["shunt"]:
+        net.shunt["step_dependency_table"] = False
     if _check_elements_to_deserialize('trafo3w', elements_to_deserialize) and \
             "std_type" not in net.trafo3w:
         net.trafo3w["std_type"] = None
@@ -370,6 +376,12 @@ def _add_missing_columns(net, elements_to_deserialize):
             "current_source" not in net.sgen:
         net.sgen["current_source"] = net.sgen["type"].apply(
             func=lambda x: False if x == "motor" else True)
+    if _check_elements_to_deserialize('sgen', elements_to_deserialize) and \
+            "id_q_capability_characteristic" not in net.sgen:
+        net.sgen["id_q_capability_characteristic"] = pd.Series(dtype='Int64')
+    if _check_elements_to_deserialize('sgen', elements_to_deserialize) and \
+            "reactive_capability_curve" not in net.sgen:
+        net.sgen["reactive_capability_curve"] = False
 
     if _check_elements_to_deserialize('line', elements_to_deserialize):
         if "g_us_per_km" not in net.line:
@@ -380,6 +392,12 @@ def _add_missing_columns(net, elements_to_deserialize):
     if _check_elements_to_deserialize('gen', elements_to_deserialize) and \
             "slack" not in net.gen:
         net.gen["slack"] = False
+    if _check_elements_to_deserialize('gen', elements_to_deserialize) and \
+            "id_q_capability_characteristic" not in net.gen:
+        net.gen["id_q_capability_characteristic"] = pd.Series(dtype='Int64')
+    if _check_elements_to_deserialize('gen', elements_to_deserialize) and \
+            "reactive_capability_curve" not in net.gen:
+        net.gen["reactive_capability_curve"] = False
 
     if _check_elements_to_deserialize('trafo', elements_to_deserialize) and \
             "tap_changer_type" not in net.trafo:
@@ -432,8 +450,10 @@ def _add_missing_columns(net, elements_to_deserialize):
         for _, ctrl in net.controller.iterrows():
             if hasattr(ctrl['object'], 'initial_run'):
                 net.controller.at[ctrl.name, 'initial_run'] = ctrl['object'].initial_run
-            else:
+            elif hasattr(ctrl['object'], 'initial_powerflow'):
                 net.controller.at[ctrl.name, 'initial_run'] = ctrl['object'].initial_powerflow
+            else:
+                net.controller.at[ctrl.name, 'initial_run'] = False
 
     # distributed slack
     if _check_elements_to_deserialize('ext_grid', elements_to_deserialize) and \
