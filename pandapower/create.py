@@ -59,8 +59,6 @@ def create_empty_network(name: str = "",
     network_structure_dict['f_hz'] = f_hz
     network_structure_dict['sn_mva'] = sn_mva
 
-    net = pandapowerNet(pandapowerNet.create_dataframes(network_structure_dict))
-
     net._empty_res_load_3ph = net._empty_res_load
     net._empty_res_sgen_3ph = net._empty_res_sgen
     net._empty_res_storage_3ph = net._empty_res_storage
@@ -4815,6 +4813,7 @@ def create_shunt_as_capacitor(
     return create_shunt(net, bus, q_mvar=q_mvar, p_mw=p_mw, **kwargs)
 
 
+<<<<<<< HEAD
 def create_svc(
     net: pandapowerNet,
     bus,
@@ -4830,6 +4829,46 @@ def create_svc(
     max_angle_degree: float = 180,
     **kwargs
 ) -> Int:
+=======
+def create_source_dc(net, bus, vm_pu=1.0, index=None, name=None, in_service=True, **kwargs):
+    """
+    Creates a dc voltage source in a dc grid with an adjustable set point
+    INPUT:
+
+        **net** (pandapowerNet) - The pandapower network in which the element is created
+
+        **bus** (int) - index of the bus the shunt is connected to
+
+        **vm_pu** (float) - set-point for the bus voltage magnitude at the connection bus
+
+    OPTIONAL:
+        **name** (str, None) - element name
+
+        **index** (int, None) - Force a specified ID if it is available. If None, the index one \
+            higher than the highest already existing index is selected.
+
+        **in_service** (bool, True) - True for in_service or False for out of service
+
+    OUTPUT:
+        **index** (int) - The unique ID of the created svc
+
+    """
+    _check_element(net, bus, element='bus_dc')
+
+    index = _get_index_with_check(net, "source_dc", index)
+
+    entries = dict(zip(["name", "bus", "vm_pu", "in_service"],
+                       [name, bus, vm_pu, bool(in_service)]))
+
+    _set_entries(net, "source_dc", index, True, **entries, **kwargs)
+
+    return index
+
+
+def create_svc(net, bus, x_l_ohm, x_cvar_ohm, set_vm_pu, thyristor_firing_angle_degree,
+               name=None, controllable=True, in_service=True, index=None,
+               min_angle_degree=90, max_angle_degree=180, **kwargs):
+>>>>>>> 8b085b3a9 (added a source_dc to be able to model voltage sources.)
     """
     Creates an SVC element - a shunt element with adjustable impedance used to control the voltage \
         at the connected bus
