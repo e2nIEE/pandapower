@@ -27,10 +27,7 @@ except ImportError:
     sqlite3 = None  # type: ignore[assignment]
     SQLITE_INSTALLED = False
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 

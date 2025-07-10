@@ -3,33 +3,29 @@
 # Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-
 from __future__ import annotations
-from operator import itemgetter
-from typing import Tuple, List, Union, Iterable, Sequence, Literal
-import warnings
 
+import logging
+import warnings
+from operator import itemgetter
+from typing import Tuple, List, Union, Iterable, Sequence, Literal, Optional
+
+import numpy as np
 import pandas as pd
-from numpy import nan, zeros, isnan, arange, dtype, isin, any as np_any, array, bool_, \
+from numpy import nan, zeros, isnan, arange, isin, any as np_any, array, bool_, \
     all as np_all, float64, intersect1d, unique as uni
 import numpy.typing as npt
 from pandas import isnull
 from pandas.api.types import is_object_dtype
 
-from pandapower._version import __version__, __format_version__
 from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes, ensure_iterability, \
     empty_defaults_per_dtype
+from pandapower.network_structure import get_structure_dict
 from pandapower.results import reset_results
 from pandapower.std_types import add_basic_std_types, load_std_type
 from pandapower.typing import BusType, GeneratorType, HVMVLVType, HVLVType, Int, LineType, \
     MeasurementElementType, MeasurementType, CostElementType, PWLPowerType, SwitchElementType, SwitchType, \
     TapChangerType, TapChangerWithTabularType, UnderOverExcitedType, WyeDeltaType
-import numpy as np
-
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
 
 logger = logging.getLogger(__name__)
 
@@ -57,618 +53,12 @@ def create_empty_network(name: str = "",
         net = create_empty_network()
 
     """
-    net = pandapowerNet({
-        # structure data
-        "bus": [('name', dtype(object)),
-                ('vn_kv', 'f8'),
-                ('type', dtype(object)),
-                ('zone', dtype(object)),
-                ('in_service', 'bool'),
-                ('geo', dtype(str))],
-        "bus_dc": [('name', dtype(object)),
-                   ('vn_kv', 'f8'),
-                   ('type', dtype(object)),
-                   ('zone', dtype(object)),
-                   ('in_service', 'bool'),
-                   ('geo', dtype(str))],
-        "load": [("name", dtype(object)),
-                 ("bus", "u4"),
-                 ("p_mw", "f8"),
-                 ("q_mvar", "f8"),
-                 ("const_z_percent", "f8"),
-                 ("const_i_percent", "f8"),
-                 ("sn_mva", "f8"),
-                 ("scaling", "f8"),
-                 ("in_service", 'bool'),
-                 ("type", dtype(object))],
-        "sgen": [("name", dtype(object)),
-                 ("bus", "i8"),
-                 ("p_mw", "f8"),
-                 ("q_mvar", "f8"),
-                 ("min_q_mvar","f8"),
-                 ("max_q_mvar", "f8"),
-                 ("sn_mva", "f8"),
-                 ("scaling", "f8"),
-                 ("controllable", "bool"),
-                 ('id_q_capability_curve_characteristic', 'u4'),
-                 ('reactive_capability_curve', 'bool'),
-                 ('curve_style', dtype(object)),
-                 ("in_service", 'bool'),
-                 ("type", dtype(object)),
-                 ("current_source", "bool")],
-        "motor": [("name", dtype(object)),
-                  ("bus", "i8"),
-                  ("pn_mech_mw", "f8"),
-                  ("loading_percent", "f8"),
-                  ("cos_phi", "f8"),
-                  ("cos_phi_n", "f8"),
-                  ("efficiency_percent", "f8"),
-                  ("efficiency_n_percent", "f8"),
-                  ("lrc_pu", "f8"),
-                  ("vn_kv", "f8"),
-                  ("scaling", "f8"),
-                  ("in_service", 'bool'),
-                  ("rx", 'f8')
-                  ],
-        "asymmetric_load": [("name", dtype(object)),
-                            ("bus", "u4"),
-                            ("p_a_mw", "f8"),
-                            ("q_a_mvar", "f8"),
-                            ("p_b_mw", "f8"),
-                            ("q_b_mvar", "f8"),
-                            ("p_c_mw", "f8"),
-                            ("q_c_mvar", "f8"),
-                            ("sn_mva", "f8"),
-                            ("scaling", "f8"),
-                            ("in_service", 'bool'),
-                            ("type", dtype(object))],
+    network_structure_dict = get_structure_dict()
+    network_structure_dict['name'] = name
+    network_structure_dict['f_hz'] = f_hz
+    network_structure_dict['sn_mva'] = sn_mva
 
-        "asymmetric_sgen": [("name", dtype(object)),
-                            ("bus", "i8"),
-                            ("p_a_mw", "f8"),
-                            ("q_a_mvar", "f8"),
-                            ("p_b_mw", "f8"),
-                            ("q_b_mvar", "f8"),
-                            ("p_c_mw", "f8"),
-                            ("q_c_mvar", "f8"),
-                            ("sn_mva", "f8"),
-                            ("scaling", "f8"),
-                            ("in_service", 'bool'),
-                            ("type", dtype(object)),
-                            ("current_source", "bool")],
-        "storage": [("name", dtype(object)),
-                    ("bus", "i8"),
-                    ("p_mw", "f8"),
-                    ("q_mvar", "f8"),
-                    ("sn_mva", "f8"),
-                    ("soc_percent", "f8"),
-                    ("min_e_mwh", "f8"),
-                    ("max_e_mwh", "f8"),
-                    ("scaling", "f8"),
-                    ("in_service", 'bool'),
-                    ("type", dtype(object))],
-        "gen": [("name", dtype(object)),
-                ("bus", "u4"),
-                ("p_mw", "f8"),
-                ("vm_pu", "f8"),
-                ("sn_mva", "f8"),
-                ("min_q_mvar", "f8"),
-                ("max_q_mvar", "f8"),
-                ("scaling", "f8"),
-                ("slack", "bool"),
-                ("controllable", "bool"),
-                ('id_q_capability_curve_characteristic', 'u4'),
-                ('reactive_capability_curve', 'bool'),
-                ('curve_style', dtype(object)),
-                ("in_service", 'bool'),
-                ("slack_weight", 'f8'),
-                ("type", dtype(object))],
-        "switch": [("bus", "i8"),
-                   ("element", "i8"),
-                   ("et", dtype(object)),
-                   ("type", dtype(object)),
-                   ("closed", "bool"),
-                   ("name", dtype(object)),
-                   ("z_ohm", "f8"),
-                   ("in_ka", "f8")],
-        "shunt": [("bus", "u4"),
-                  ("name", dtype(object)),
-                  ("q_mvar", "f8"),
-                  ("p_mw", "f8"),
-                  ("vn_kv", "f8"),
-                  ("step", "u4"),
-                  ("max_step", "u4"),
-                  ('id_characteristic_table', 'u4'),
-                  ('step_dependency_table', 'bool'),
-                  ("in_service", "bool")],
-        "svc": [("name", dtype(object)),
-                ("bus", "u4"),
-                ("x_l_ohm", "f8"),
-                ("x_cvar_ohm", "f8"),
-                ("set_vm_pu", "f8"),
-                ("thyristor_firing_angle_degree", "f8"),
-                ("controllable", "bool"),
-                ("in_service", "bool"),
-                ("min_angle_degree", "f8"),
-                ("max_angle_degree", "f8")],
-        "ssc": [("name", dtype(object)),
-                ("bus", "u4"),
-                ("r_ohm", "f8"),
-                ("x_ohm", "f8"),
-                ("vm_internal_pu", "f8"),
-                ("va_internal_degree", "f8"),
-                ("set_vm_pu", "f8"),
-                ("controllable", "bool"),
-                ("in_service", "bool")],
-        "vsc": [("name", dtype(object)),
-                ("bus", "u4"),
-                ("bus_dc", "u4"),
-                ("r_ohm", "f8"),
-                ("x_ohm", "f8"),
-                ("r_dc_ohm", "f8"),
-                ("pl_dc_mw", "f8"),
-                ("control_mode_ac", dtype(object)),
-                ("control_value_ac", "f8"),
-                ("control_mode_dc", dtype(object)),
-                ("control_value_dc", "f8"),
-                ("controllable", "bool"),
-                ("in_service", "bool")],
-        "ext_grid": [("name", dtype(object)),
-                     ("bus", "u4"),
-                     ("vm_pu", "f8"),
-                     ("va_degree", "f8"),
-                     ("slack_weight", 'f8'),
-                     ("in_service", 'bool'),
-                     ("controllable", "bool")],
-        "line": [("name", dtype(object)),
-                 ("std_type", dtype(object)),
-                 ("from_bus", "u4"),
-                 ("to_bus", "u4"),
-                 ("length_km", "f8"),
-                 ("r_ohm_per_km", "f8"),
-                 ("x_ohm_per_km", "f8"),
-                 ("c_nf_per_km", "f8"),
-                 ("g_us_per_km", "f8"),
-                 ("max_i_ka", "f8"),
-                 ("df", "f8"),
-                 ("parallel", "u4"),
-                 ("type", dtype(object)),
-                 ("in_service", 'bool'),
-                 ("geo", dtype(str))],
-        "line_dc": [("name", dtype(object)),
-                    ("std_type", dtype(object)),
-                    ("from_bus_dc", "u4"),
-                    ("to_bus_dc", "u4"),
-                    ("length_km", "f8"),
-                    ("r_ohm_per_km", "f8"),
-                    ("g_us_per_km", "f8"),  # TODO: check if DC lines also have any shunt components
-                    ("max_i_ka", "f8"),
-                    ("df", "f8"),
-                    ("parallel", "u4"),
-                    ("type", dtype(object)),
-                    ("in_service", 'bool'),
-                    ('geo', dtype(str))],
-        "trafo": [("name", dtype(object)),
-                  ("std_type", dtype(object)),
-                  ("hv_bus", "u4"),
-                  ("lv_bus", "u4"),
-                  ("sn_mva", "f8"),
-                  ("vn_hv_kv", "f8"),
-                  ("vn_lv_kv", "f8"),
-                  ("vk_percent", "f8"),
-                  ("vkr_percent", "f8"),
-                  ("pfe_kw", "f8"),
-                  ("i0_percent", "f8"),
-                  ("shift_degree", "f8"),
-                  ("tap_side", dtype(object)),
-                  ("tap_neutral", "i4"),
-                  ("tap_min", "i4"),
-                  ("tap_max", "i4"),
-                  ("tap_step_percent", "f8"),
-                  ("tap_step_degree", "f8"),
-                  ("tap_pos", "i4"),
-                  ("tap_changer_type", dtype(object)),
-                  ('id_characteristic_table', 'u4'),
-                  ('tap_dependency_table', 'bool'),
-                  ("parallel", "u4"),
-                  ("df", "f8"),
-                  ("in_service", 'bool')],
-        "trafo3w": [("name", dtype(object)),
-                    ("std_type", dtype(object)),
-                    ("hv_bus", "u4"),
-                    ("mv_bus", "u4"),
-                    ("lv_bus", "u4"),
-                    ("sn_hv_mva", "f8"),
-                    ("sn_mv_mva", "f8"),
-                    ("sn_lv_mva", "f8"),
-                    ("vn_hv_kv", "f8"),
-                    ("vn_mv_kv", "f8"),
-                    ("vn_lv_kv", "f8"),
-                    ("vk_hv_percent", "f8"),
-                    ("vk_mv_percent", "f8"),
-                    ("vk_lv_percent", "f8"),
-                    ("vkr_hv_percent", "f8"),
-                    ("vkr_mv_percent", "f8"),
-                    ("vkr_lv_percent", "f8"),
-                    ("pfe_kw", "f8"),
-                    ("i0_percent", "f8"),
-                    ("shift_mv_degree", "f8"),
-                    ("shift_lv_degree", "f8"),
-                    ("tap_side", dtype(object)),
-                    ("tap_neutral", "i4"),
-                    ("tap_min", "i4"),
-                    ("tap_max", "i4"),
-                    ("tap_step_percent", "f8"),
-                    ("tap_step_degree", "f8"),
-                    ("tap_pos", "i4"),
-                    ("tap_at_star_point", 'bool'),
-                    ("tap_changer_type", dtype(object)),
-                    ('id_characteristic_table', 'u4'),
-                    ('tap_dependency_table', 'bool'),
-                    ("in_service", 'bool')],
-        "impedance": [("name", dtype(object)),
-                      ("from_bus", "u4"),
-                      ("to_bus", "u4"),
-                      ("rft_pu", "f8"),
-                      ("xft_pu", "f8"),
-                      ("rtf_pu", "f8"),
-                      ("xtf_pu", "f8"),
-                      ("gf_pu", "f8"),
-                      ("bf_pu", "f8"),
-                      ("gt_pu", "f8"),
-                      ("bt_pu", "f8"),
-                      ("sn_mva", "f8"),
-                      ("in_service", 'bool')],
-        "tcsc": [("name", dtype(object)),
-                 ("from_bus", "u4"),
-                 ("to_bus", "u4"),
-                 ("x_l_ohm", "f8"),
-                 ("x_cvar_ohm", "f8"),
-                 ("set_p_to_mw", "f8"),
-                 ("thyristor_firing_angle_degree", "f8"),
-                 ("controllable", "bool"),
-                 ("in_service", "bool")],
-        "dcline": [("name", dtype(object)),
-                   ("from_bus", "u4"),
-                   ("to_bus", "u4"),
-                   ("p_mw", "f8"),
-                   ("loss_percent", 'f8'),
-                   ("loss_mw", 'f8'),
-                   ("vm_from_pu", "f8"),
-                   ("vm_to_pu", "f8"),
-                   ("max_p_mw", "f8"),
-                   ("min_q_from_mvar", "f8"),
-                   ("min_q_to_mvar", "f8"),
-                   ("max_q_from_mvar", "f8"),
-                   ("max_q_to_mvar", "f8"),
-                   ("in_service", 'bool')],
-        "ward": [("name", dtype(object)),
-                 ("bus", "u4"),
-                 ("ps_mw", "f8"),
-                 ("qs_mvar", "f8"),
-                 ("qz_mvar", "f8"),
-                 ("pz_mw", "f8"),
-                 ("in_service", "bool")],
-        "xward": [("name", dtype(object)),
-                  ("bus", "u4"),
-                  ("ps_mw", "f8"),
-                  ("qs_mvar", "f8"),
-                  ("qz_mvar", "f8"),
-                  ("pz_mw", "f8"),
-                  ("r_ohm", "f8"),
-                  ("x_ohm", "f8"),
-                  ("vm_pu", "f8"),
-                  ("slack_weight", 'f8'),
-                  ("in_service", "bool")],
-        "measurement": [("name", dtype(object)),
-                        ("measurement_type", dtype(object)),
-                        ("element_type", dtype(object)),
-                        ("element", "uint32"),
-                        ("value", "float64"),
-                        ("std_dev", "float64"),
-                        ("side", dtype(object))],
-        "pwl_cost": [("power_type", dtype(object)),
-                     ("element", "u4"),
-                     ("et", dtype(object)),
-                     ("points", dtype(object))],
-        "poly_cost": [("element", "u4"),
-                      ("et", dtype(object)),
-                      ("cp0_eur", dtype("f8")),
-                      ("cp1_eur_per_mw", dtype("f8")),
-                      ("cp2_eur_per_mw2", dtype("f8")),
-                      ("cq0_eur", dtype("f8")),
-                      ("cq1_eur_per_mvar", dtype("f8")),
-                      ("cq2_eur_per_mvar2", dtype("f8"))
-                      ],
-        'controller': [
-            ('object', dtype(object)),
-            ('in_service', "bool"),
-            ('order', "float64"),
-            ('level', dtype(object)),
-            ('initial_run', "bool"),
-            ("recycle", dtype(object))
-        ],
-        'group': [
-            ('name', dtype(object)),
-            ('element_type', dtype(object)),
-            ('element_index', dtype(object)),
-            ('reference_column', dtype(object)),
-        ],
-        # geodata (now as line.geo, bus.geo, bus_dc.geo, line_dc.geo)
-        # "bus_geodata": [("x", "f8"), ("y", "f8"), ("coords", dtype(object))],
-        # "bus_dc_geodata": [("x", "f8"), ("y", "f8"), ("coords", dtype(object))],
-        # "line_geodata": [("coords", dtype(object))],
-        # "line_dc_geodata": [("coords", dtype(object))],
-
-        # result tables
-        "_empty_res_bus": [("vm_pu", "f8"),
-                           ("va_degree", "f8"),
-                           ("p_mw", "f8"),
-                           ("q_mvar", "f8")],
-        "_empty_res_bus_dc": [("vm_pu", "f8"),
-                              ("p_mw", "f8")],
-        "_empty_res_ext_grid": [("p_mw", "f8"),
-                                ("q_mvar", "f8")],
-        "_empty_res_line": [("p_from_mw", "f8"),
-                            ("q_from_mvar", "f8"),
-                            ("p_to_mw", "f8"),
-                            ("q_to_mvar", "f8"),
-                            ("pl_mw", "f8"),
-                            ("ql_mvar", "f8"),
-                            ("i_from_ka", "f8"),
-                            ("i_to_ka", "f8"),
-                            ("i_ka", "f8"),
-                            ("vm_from_pu", "f8"),
-                            ("va_from_degree", "f8"),
-                            ("vm_to_pu", "f8"),
-                            ("va_to_degree", "f8"),
-                            ("loading_percent", "f8")],
-        "_empty_res_line_dc": [("p_from_mw", "f8"),
-                               ("p_to_mw", "f8"),
-                               ("pl_mw", "f8"),
-                               ("i_from_ka", "f8"),
-                               ("i_to_ka", "f8"),
-                               ("i_ka", "f8"),
-                               ("vm_from_pu", "f8"),
-                               ("vm_to_pu", "f8"),
-                               ("loading_percent", "f8")],
-        "_empty_res_trafo": [("p_hv_mw", "f8"),
-                             ("q_hv_mvar", "f8"),
-                             ("p_lv_mw", "f8"),
-                             ("q_lv_mvar", "f8"),
-                             ("pl_mw", "f8"),
-                             ("ql_mvar", "f8"),
-                             ("i_hv_ka", "f8"),
-                             ("i_lv_ka", "f8"),
-                             ("vm_hv_pu", "f8"),
-                             ("va_hv_degree", "f8"),
-                             ("vm_lv_pu", "f8"),
-                             ("va_lv_degree", "f8"),
-                             ("loading_percent", "f8")],
-        "_empty_res_load": [("p_mw", "f8"),
-                            ("q_mvar", "f8")],
-        "_empty_res_asymmetric_load": [("p_mw", "f8"),
-                                       ("q_mvar", "f8")],
-        "_empty_res_asymmetric_sgen": [("p_mw", "f8"),
-                                       ("q_mvar", "f8")],
-        "_empty_res_motor": [("p_mw", "f8"),
-                             ("q_mvar", "f8")],
-        "_empty_res_sgen": [("p_mw", "f8"),
-                            ("q_mvar", "f8")],
-        "_empty_res_shunt": [("p_mw", "f8"),
-                             ("q_mvar", "f8"),
-                             ("vm_pu", "f8")],
-        "_empty_res_svc": [("thyristor_firing_angle_degree", "f8"),
-                           ("x_ohm", "f8"),
-                           ("q_mvar", "f8"),
-                           ("vm_pu", "f8"),
-                           ("va_degree", "f8")],
-        "_empty_res_ssc": [("q_mvar", "f8"),
-                           ("vm_internal_pu", "f8"),
-                           ("va_internal_degree", "f8"),
-                           ("vm_pu", "f8"),
-                           ("va_degree", "f8")],
-        "_empty_res_vsc": [("p_mw", "f8"),
-                           ("q_mvar", "f8"),
-                           ("p_dc_mw", "f8"),
-                           ("vm_internal_pu", "f8"),
-                           ("va_internal_degree", "f8"),
-                           ("vm_pu", "f8"),
-                           ("va_degree", "f8"),
-                           ("vm_internal_dc_pu", "f8"),
-                           ("vm_dc_pu", "f8")],
-        "_empty_res_switch": [("i_ka", "f8"),
-                              ("loading_percent", "f8"),
-                              ("p_from_mw", "f8"),
-                              ("q_from_mvar", "f8"),
-                              ("p_to_mw", "f8"),
-                              ("q_to_mvar", "f8")],
-        "_empty_res_impedance": [("p_from_mw", "f8"),
-                                 ("q_from_mvar", "f8"),
-                                 ("p_to_mw", "f8"),
-                                 ("q_to_mvar", "f8"),
-                                 ("pl_mw", "f8"),
-                                 ("ql_mvar", "f8"),
-                                 ("i_from_ka", "f8"),
-                                 ("i_to_ka", "f8")],
-        "_empty_res_tcsc": [("thyristor_firing_angle_degree", "f8"),
-                            ("x_ohm", "f8"),
-                            ("p_from_mw", "f8"),
-                            ("q_from_mvar", "f8"),
-                            ("p_to_mw", "f8"),
-                            ("q_to_mvar", "f8"),
-                            ("pl_mw", "f8"),
-                            ("ql_mvar", "f8"),
-                            ("i_ka", "f8"),
-                            ("vm_from_pu", "f8"),
-                            ("va_from_degree", "f8"),
-                            ("vm_to_pu", "f8"),
-                            ("va_to_degree", "f8")],
-        "_empty_res_dcline": [("p_from_mw", "f8"),
-                              ("q_from_mvar", "f8"),
-                              ("p_to_mw", "f8"),
-                              ("q_to_mvar", "f8"),
-                              ("pl_mw", "f8"),
-                              ("vm_from_pu", "f8"),
-                              ("va_from_degree", "f8"),
-                              ("vm_to_pu", "f8"),
-                              ("va_to_degree", "f8")],
-        "_empty_res_ward": [("p_mw", "f8"),
-                            ("q_mvar", "f8"),
-                            ("vm_pu", "f8")],
-        "_empty_res_xward": [("p_mw", "f8"),
-                             ("q_mvar", "f8"),
-                             ("vm_pu", "f8"),
-                             ("va_internal_degree", "f8"),
-                             ("vm_internal_pu", "f8")],
-
-        "_empty_res_trafo_3ph": [("p_a_hv_mw", "f8"),
-                                 ("q_a_hv_mvar", "f8"),
-                                 ("p_b_hv_mw", "f8"),
-                                 ("q_b_hv_mvar", "f8"),
-                                 ("p_c_hv_mw", "f8"),
-                                 ("q_c_hv_mvar", "f8"),
-                                 ("p_a_lv_mw", "f8"),
-                                 ("q_a_lv_mvar", "f8"),
-                                 ("p_b_lv_mw", "f8"),
-                                 ("q_b_lv_mvar", "f8"),
-                                 ("p_c_lv_mw", "f8"),
-                                 ("q_c_lv_mvar", "f8"),
-                                 ("p_a_l_mw", "f8"),
-                                 ("q_a_l_mvar", "f8"),
-                                 ("p_b_l_mw", "f8"),
-                                 ("q_b_l_mvar", "f8"),
-                                 ("p_c_l_mw", "f8"),
-                                 ("q_c_l_mvar", "f8"),
-                                 ("i_a_hv_ka", "f8"),
-                                 ("i_a_lv_ka", "f8"),
-                                 ("i_b_hv_ka", "f8"),
-                                 ("i_b_lv_ka", "f8"),
-                                 ("i_c_hv_ka", "f8"),
-                                 ("i_c_lv_ka", "f8"),
-                                 # ("i_n_hv_ka", "f8"),
-                                 # ("i_n_lv_ka", "f8"),
-                                 ("loading_a_percent", "f8"),
-                                 ("loading_b_percent", "f8"),
-                                 ("loading_c_percent", "f8"),
-                                 ("loading_percent", "f8")],
-        "_empty_res_trafo3w": [("p_hv_mw", "f8"),
-                               ("q_hv_mvar", "f8"),
-                               ("p_mv_mw", "f8"),
-                               ("q_mv_mvar", "f8"),
-                               ("p_lv_mw", "f8"),
-                               ("q_lv_mvar", "f8"),
-                               ("pl_mw", "f8"),
-                               ("ql_mvar", "f8"),
-                               ("i_hv_ka", "f8"),
-                               ("i_mv_ka", "f8"),
-                               ("i_lv_ka", "f8"),
-                               ("vm_hv_pu", "f8"),
-                               ("va_hv_degree", "f8"),
-                               ("vm_mv_pu", "f8"),
-                               ("va_mv_degree", "f8"),
-                               ("vm_lv_pu", "f8"),
-                               ("va_lv_degree", "f8"),
-                               ("va_internal_degree", "f8"),
-                               ("vm_internal_pu", "f8"),
-                               ("loading_percent", "f8")],
-        "_empty_res_bus_3ph": [("vm_a_pu", "f8"),
-                               ("va_a_degree", "f8"),
-                               ("vm_b_pu", "f8"),
-                               ("va_b_degree", "f8"),
-                               ("vm_c_pu", "f8"),
-                               ("va_c_degree", "f8"),
-                               ("p_a_mw", "f8"),
-                               ("q_a_mvar", "f8"),
-                               ("p_b_mw", "f8"),
-                               ("q_b_mvar", "f8"),
-                               ("p_c_mw", "f8"),
-                               ("q_c_mvar", "f8")],
-        "_empty_res_ext_grid_3ph": [("p_a_mw", "f8"),
-                                    ("q_a_mvar", "f8"),
-                                    ("p_b_mw", "f8"),
-                                    ("q_b_mvar", "f8"),
-                                    ("p_c_mw", "f8"),
-                                    ("q_c_mvar", "f8")],
-        "_empty_res_line_3ph": [("p_a_from_mw", "f8"),
-                                ("q_a_from_mvar", "f8"),
-                                ("p_b_from_mw", "f8"),
-                                ("q_b_from_mvar", "f8"),
-                                ("q_c_from_mvar", "f8"),
-                                ("p_a_to_mw", "f8"),
-                                ("q_a_to_mvar", "f8"),
-                                ("p_b_to_mw", "f8"),
-                                ("q_b_to_mvar", "f8"),
-                                ("p_c_to_mw", "f8"),
-                                ("q_c_to_mvar", "f8"),
-                                ("p_a_l_mw", "f8"),
-                                ("q_a_l_mvar", "f8"),
-                                ("p_b_l_mw", "f8"),
-                                ("q_b_l_mvar", "f8"),
-                                ("p_c_l_mw", "f8"),
-                                ("q_c_l_mvar", "f8"),
-                                ("i_a_from_ka", "f8"),
-                                ("i_a_to_ka", "f8"),
-                                ("i_b_from_ka", "f8"),
-                                ("i_b_to_ka", "f8"),
-                                ("i_c_from_ka", "f8"),
-                                ("i_c_to_ka", "f8"),
-                                ("i_a_ka", "f8"),
-                                ("i_b_ka", "f8"),
-                                ("i_c_ka", "f8"),
-                                ("i_n_from_ka", "f8"),
-                                ("i_n_to_ka", "f8"),
-                                ("i_n_ka", "f8"),
-                                ("loading_a_percent", "f8"),
-                                ("loading_b_percent", "f8"),
-                                ("loading_c_percent", "f8")],
-        "_empty_res_asymmetric_load_3ph": [("p_a_mw", "f8"),
-                                           ("q_a_mvar", "f8"),
-                                           ("p_b_mw", "f8"),
-                                           ("q_b_mvar", "f8"),
-                                           ("p_c_mw", "f8"),
-                                           ("q_c_mvar", "f8")],
-        "_empty_res_asymmetric_sgen_3ph": [("p_a_mw", "f8"),
-                                           ("q_a_mvar", "f8"),
-                                           ("p_b_mw", "f8"),
-                                           ("q_b_mvar", "f8"),
-                                           ("p_c_mw", "f8"),
-                                           ("q_c_mvar", "f8")],
-        "_empty_res_storage": [("p_mw", "f8"),
-                               ("q_mvar", "f8")],
-        "_empty_res_storage_3ph": [("p_a_mw", "f8"), ("p_b_mw", "f8"), ("p_c_mw", "f8"),
-                                   ("q_a_mvar", "f8"), ("q_b_mvar", "f8"), ("q_c_mvar", "f8")],
-        "_empty_res_gen": [("p_mw", "f8"),
-                           ("q_mvar", "f8"),
-                           ("va_degree", "f8"),
-                           ("vm_pu", "f8")],
-        "_empty_res_protection": [("switch_id", "f8"),
-                                  ("prot_type", dtype(object)),
-                                  ("trip_melt", "bool"),
-                                  ("act_param", dtype(object)),
-                                  ("act_param_val", "f8"),
-                                  ("trip_melt_time_s", "f8")],
-
-        # internal
-        "_ppc": None,
-        "_ppc0": None,
-        "_ppc1": None,
-        "_ppc2": None,
-        "_is_elements": None,
-        "_pd2ppc_lookups": {"bus": None,
-                            "bus_dc": None,
-                            "ext_grid": None,
-                            "gen": None,
-                            "branch": None,
-                            "branch_dc": None},
-        "version": __version__,
-        "format_version": __format_version__,
-        "converged": False,
-        "OPF_converged": False,
-        "name": name,
-        "f_hz": f_hz,
-        "sn_mva": sn_mva
-    })
+    net = pandapowerNet(network_structure_dict)
 
     net._empty_res_load_3ph = net._empty_res_load
     net._empty_res_sgen_3ph = net._empty_res_sgen
@@ -684,18 +74,20 @@ def create_empty_network(name: str = "",
     return net
 
 
-def create_bus(net: pandapowerNet,
-               vn_kv: float,
-               name: str | None = None,
-               index=None,
-               geodata: tuple[float, float] | None = None,
-               type: BusType = "b",
-               zone: str | None = None,
-               in_service: bool = True,
-               max_vm_pu: float = nan,
-               min_vm_pu: float = nan,
-               coords: list[tuple[float, float]] | None = None,
-               **kwargs) -> Int:
+def create_bus(
+    net: pandapowerNet,
+    vn_kv: float,
+    name: Optional[str] = None,
+    index: Optional = None,
+    geodata: Optional[tuple[float, float]] = None,
+    type: BusType = "b",
+    zone: Optional[str] = None,
+    in_service: bool = True,
+    max_vm_pu: float = nan,
+    min_vm_pu: float = nan,
+    coords: Optional[list[tuple[float, float]]] = None,
+    **kwargs
+) -> Int:
     """
     Adds one bus in table net["bus"].
 
@@ -761,18 +153,20 @@ def create_bus(net: pandapowerNet,
     return index
 
 
-def create_bus_dc(net: pandapowerNet,
-                  vn_kv: float,
-                  name: str | None = None,
-                  index=None,
-                  geodata: tuple[float, float] | None = None,
-                  type: BusType = "b",
-                  zone: str | None = None,
-                  in_service: bool = True,
-                  max_vm_pu: float = nan,
-                  min_vm_pu: float = nan,
-                  coords: list[tuple[float, float]] | None = None,
-                  **kwargs) -> Int:
+def create_bus_dc(
+    net: pandapowerNet,
+    vn_kv: float,
+    name: Optional[str] = None,
+    index: Optional = None,
+    geodata: Optional[tuple[float, float]] = None,
+    type: BusType = "b",
+    zone: Optional[str] = None,
+    in_service: bool = True,
+    max_vm_pu: float = nan,
+    min_vm_pu: float = nan,
+    coords: Optional[list[tuple[float, float]]] = None,
+    **kwargs
+) -> Int:
     """
     Adds one dc bus in table net["bus_dc"].
 
@@ -839,19 +233,21 @@ def create_bus_dc(net: pandapowerNet,
     return index
 
 
-def create_buses(net: pandapowerNet,
-                 nr_buses: int,
-                 vn_kv: float | Iterable[float],
-                 index=None,
-                 name: Iterable[str] | None = None,
-                 type: BusType = "b",
-                 geodata: Iterable[tuple[float, float]] | None = None,
-                 zone: str | Iterable[str] | None = None,
-                 in_service: bool | Iterable[bool] = True,
-                 max_vm_pu: float | Iterable[float] = nan,
-                 min_vm_pu: float | Iterable[float] = nan,
-                 coords: list[list[tuple[float, float]]] | None = None,
-                 **kwargs) -> npt.NDArray[np.integer]:
+def create_buses(
+    net: pandapowerNet,
+    nr_buses: int,
+    vn_kv: float | Iterable[float],
+    index: Optional = None,
+    name: Optional[Iterable[str]] = None,
+    type: BusType = "b",
+    geodata: Optional[Iterable[tuple[float, float]]] = None,
+    zone: Optional[str | Iterable[str]] = None,
+    in_service: bool | Iterable[bool] = True,
+    max_vm_pu: float | Iterable[float] = nan,
+    min_vm_pu: float | Iterable[float] = nan,
+    coords: Optional[list[list[tuple[float, float]]]] = None,
+    **kwargs
+) -> npt.NDArray[np.integer]:
     """
     Adds several buses in table net["bus"] at once.
 
@@ -933,19 +329,21 @@ def create_buses(net: pandapowerNet,
     return index
 
 
-def create_buses_dc(net: pandapowerNet,
-                    nr_buses_dc: int,
-                    vn_kv: float | Iterable[float],
-                    index=None,
-                    name: Iterable[str] | None = None,
-                    type: BusType = "b",
-                    geodata: Iterable[tuple[float, float]] | None = None,
-                    zone: str | None = None,
-                    in_service: bool | Iterable[bool] = True,
-                    max_vm_pu: float | Iterable[float] = nan,
-                    min_vm_pu: float | Iterable[float] = nan,
-                    coords: list[list[tuple[float, float]]] | None = None,
-                    **kwargs) -> npt.NDArray[np.integer]:
+def create_buses_dc(
+    net: pandapowerNet,
+    nr_buses_dc: int,
+    vn_kv: float | Iterable[float],
+    index: Optional = None,
+    name: Optional[Iterable[str]] = None,
+    type: BusType = "b",
+    geodata: Optional[Iterable[tuple[float, float]]] = None,
+    zone: Optional[str] = None,
+    in_service: bool | Iterable[bool] = True,
+    max_vm_pu: float | Iterable[float] = nan,
+    min_vm_pu: float | Iterable[float] = nan,
+    coords: Optional[list[list[tuple[float, float]]]] = None,
+    **kwargs
+) -> npt.NDArray[np.integer]:
     """
     Adds several dc buses in table net["bus_dc"] at once.
 
@@ -1012,24 +410,26 @@ def create_buses_dc(net: pandapowerNet,
     return index
 
 
-def create_load(net: pandapowerNet,
-                bus,
-                p_mw: float,
-                q_mvar: float = 0,
-                const_z_percent: float = 0,
-                const_i_percent: float = 0,
-                sn_mva: float = nan,
-                name: str | None = None,
-                scaling: float = 1.,
-                index=None,
-                in_service: bool = True,
-                type: WyeDeltaType = 'wye',
-                max_p_mw: float = nan,
-                min_p_mw: float = nan,
-                max_q_mvar: float = nan,
-                min_q_mvar: float = nan,
-                controllable: bool | float = nan,
-                **kwargs) -> Int:
+def create_load(
+    net: pandapowerNet,
+    bus,
+    p_mw: float,
+    q_mvar: float = 0,
+    const_z_percent: float = 0,
+    const_i_percent: float = 0,
+    sn_mva: float = nan,
+    name: Optional[str] = None,
+    scaling: float = 1.,
+    index: Optional = None,
+    in_service: bool = True,
+    type: WyeDeltaType = 'wye',
+    max_p_mw: float = nan,
+    min_p_mw: float = nan,
+    max_q_mvar: float = nan,
+    min_q_mvar: float = nan,
+    controllable: bool | float = nan,
+    **kwargs
+) -> Int:
     """
     Adds one load in table net["load"].
 
@@ -1113,24 +513,26 @@ def create_load(net: pandapowerNet,
     return index
 
 
-def create_loads(net: pandapowerNet,
-                 buses: Sequence,
-                 p_mw: float | Iterable[float],
-                 q_mvar: float | Iterable[float] = 0,
-                 const_z_percent: float | Iterable[float] = 0,
-                 const_i_percent: float | Iterable[float] = 0,
-                 sn_mva: float | Iterable[float] = nan,
-                 name: Iterable[str] | None = None,
-                 scaling: float | Iterable[float] = 1.,
-                 index=None,
-                 in_service: bool | Iterable[bool] = True,
-                 type: WyeDeltaType = 'wye',
-                 max_p_mw: float | Iterable[float] = nan,
-                 min_p_mw: float | Iterable[float] = nan,
-                 max_q_mvar: float | Iterable[float] = nan,
-                 min_q_mvar: float | Iterable[float] = nan,
-                 controllable: bool | Iterable[bool] | float = nan,
-                 **kwargs) -> npt.NDArray[np.integer]:
+def create_loads(
+    net: pandapowerNet,
+    buses: Sequence,
+    p_mw: float | Iterable[float],
+    q_mvar: float | Iterable[float] = 0,
+    const_z_percent: float | Iterable[float] = 0,
+    const_i_percent: float | Iterable[float] = 0,
+    sn_mva: float | Iterable[float] = nan,
+    name: Optional[Iterable[str]] = None,
+    scaling: float | Iterable[float] = 1.,
+    index: Optional = None,
+    in_service: bool | Iterable[bool] = True,
+    type: WyeDeltaType = 'wye',
+    max_p_mw: float | Iterable[float] = nan,
+    min_p_mw: float | Iterable[float] = nan,
+    max_q_mvar: float | Iterable[float] = nan,
+    min_q_mvar: float | Iterable[float] = nan,
+    controllable: bool | Iterable[bool] | float = nan,
+    **kwargs
+) -> npt.NDArray[np.integer]:
     """
     Adds a number of loads in table net["load"].
 
@@ -1217,21 +619,23 @@ def create_loads(net: pandapowerNet,
     return index
 
 
-def create_asymmetric_load(net: pandapowerNet,
-                           bus,
-                           p_a_mw: float = 0,
-                           p_b_mw: float = 0,
-                           p_c_mw: float = 0,
-                           q_a_mvar: float = 0,
-                           q_b_mvar: float = 0,
-                           q_c_mvar: float = 0,
-                           sn_mva: float = nan,
-                           name: str | None = None,
-                           scaling: float = 1.,
-                           index=None,
-                           in_service: bool = True,
-                           type: WyeDeltaType = "wye",
-                           **kwargs) -> Int:
+def create_asymmetric_load(
+    net: pandapowerNet,
+    bus,
+    p_a_mw: float = 0,
+    p_b_mw: float = 0,
+    p_c_mw: float = 0,
+    q_a_mvar: float = 0,
+    q_b_mvar: float = 0,
+    q_c_mvar: float = 0,
+    sn_mva: float = nan,
+    name: Optional[str] = None,
+    scaling: float = 1.,
+    index: Optional = None,
+    in_service: bool = True,
+    type: WyeDeltaType = "wye",
+    **kwargs
+) -> Int:
     """
     Adds one 3 phase load in table net["asymmetric_load"].
 
@@ -1295,7 +699,7 @@ def create_asymmetric_load(net: pandapowerNet,
 # =============================================================================
 # def create_impedance_load(net, bus, r_A , r_B , r_C, x_A=0, x_B=0, x_C=0,
 #                      sn_mva=nan, name=None, scaling=1.,
-#                     index=None, in_service=True, type=None,
+#                     index: Optional = None, in_service=True, type=None,
 #                     ):
 #     """
 #     Creates a constant impedance load element ABC.
@@ -1348,12 +752,14 @@ def create_asymmetric_load(net: pandapowerNet,
 # =============================================================================
 
 
-def create_load_from_cosphi(net: pandapowerNet,
-                            bus,
-                            sn_mva: float,
-                            cos_phi: float,
-                            mode: UnderOverExcitedType,
-                            **kwargs) -> Int:
+def create_load_from_cosphi(
+    net: pandapowerNet,
+    bus,
+    sn_mva: float,
+    cos_phi: float,
+    mode: UnderOverExcitedType,
+    **kwargs
+) -> Int:
     """
     Creates a load element from rated power and power factor cos(phi).
 
@@ -1384,32 +790,34 @@ def create_load_from_cosphi(net: pandapowerNet,
     return create_load(net, bus, sn_mva=sn_mva, p_mw=p_mw, q_mvar=q_mvar, **kwargs)
 
 
-def create_sgen(net: pandapowerNet,
-                bus,
-                p_mw: float,
-                q_mvar: float = 0,
-                sn_mva: float = nan,
-                name: str | None = None,
-                index=None,
-                scaling: float = 1.,
-                type: WyeDeltaType= 'wye',
-                in_service: bool = True,
-                max_p_mw: float = nan,
-                min_p_mw: float = nan,
-                max_q_mvar: float = nan,
-                min_q_mvar: float = nan,
-                controllable: bool | float = nan,
-                k: float = nan,
-                rx: float = nan,
-                id_q_capability_curve_characteristic=None,
-                reactive_capability_curve=False,
-                curve_style=None,
-                current_source: bool = True,
-                generator_type: GeneratorType | None = None,
-                max_ik_ka: float = nan,
-                kappa: float = nan,
-                lrc_pu: float = nan,
-                **kwargs) -> Int:
+def create_sgen(
+    net: pandapowerNet,
+    bus,
+    p_mw: float,
+    q_mvar: float = 0,
+    sn_mva: float = nan,
+    name: Optional[str] = None,
+    index: Optional = None,
+    scaling: float = 1.,
+    type: WyeDeltaType= 'wye',
+    in_service: bool = True,
+    max_p_mw: float = nan,
+    min_p_mw: float = nan,
+    max_q_mvar: float = nan,
+    min_q_mvar: float = nan,
+    controllable: bool | float = nan,
+    k: float = nan,
+    rx: float = nan,
+    id_q_capability_characteristic: int = None,
+    reactive_capability_curve: bool = False,
+    curve_style = None,
+    current_source: bool = True,
+    generator_type: Optional[GeneratorType] = None,
+    max_ik_ka: float = nan,
+    kappa: float = nan,
+    lrc_pu: float = nan,
+    **kwargs
+) -> Int:
     """
     Adds one static generator in table net["sgen"].
 
@@ -1467,11 +875,11 @@ def create_sgen(net: pandapowerNet,
             specified as motor so that sgen is treated as asynchronous motor. Relevant for \
             short-circuit calculation for all generator types
 
-        **reactive_capability_curve** (bool, False) - True if both the id_q_capability_curve_characteristic and the \
+        **reactive_capability_curve** (bool, False) - True if both the id_q_capability_characteristic and the \
             curve style are present in the generator
 
-        **id_q_capability_curve_characteristic** (int, None) - references the index of the characteristic from the \
-            net.q_capability_curve_characteristic table (id_q_capability_curve column)
+        **id_q_capability_characteristic** (int, None) - references the index of the characteristic from the \
+            net.q_capability_characteristic table (id_q_capability_curve column)
 
         **curve_style** (string, None) - The curve style of the generator represents the relationship \
             between active power (P) and reactive power (Q). It indicates whether the reactive power remains \
@@ -1525,8 +933,8 @@ def create_sgen(net: pandapowerNet,
     _set_value_if_not_nan(net, index, controllable, "controllable", "sgen", dtype=bool_,
                           default_val=False)
 
-    _set_value_if_not_nan(net, index, id_q_capability_curve_characteristic,
-                          "id_q_capability_curve_characteristic", "sgen", dtype="Int64")
+    _set_value_if_not_nan(net, index, id_q_capability_characteristic,
+                          "id_q_capability_characteristic", "sgen", dtype="Int64")
 
     _set_value_if_not_nan(net, index, reactive_capability_curve, "reactive_capability_curve", "sgen",
                           dtype=bool_)
@@ -1551,32 +959,34 @@ def create_sgen(net: pandapowerNet,
     return index
 
 
-def create_sgens(net: pandapowerNet,
-                 buses: Sequence,
-                 p_mw: float | Iterable[float],
-                 q_mvar: float | Iterable[float] = 0,
-                 sn_mva: float | Iterable[float] = nan,
-                 name: Iterable[str] | None = None,
-                 index=None,
-                 scaling: float | Iterable[float] = 1.,
-                 type: WyeDeltaType = 'wye',
-                 in_service: bool | Iterable[bool] = True,
-                 max_p_mw: float | Iterable[float] = nan,
-                 min_p_mw: float | Iterable[float] = nan,
-                 max_q_mvar: float | Iterable[float] = nan,
-                 min_q_mvar: float | Iterable[float] = nan,
-                 controllable: bool | Iterable[bool] | float = nan,
-                 k: float | Iterable[float] = nan,
-                 rx: float = nan,
-                 id_q_capability_curve_characteristic=nan,
-                 reactive_capability_curve=False,
-                 curve_style=None,
-                 current_source: bool | Iterable[bool] = True,
-                 generator_type: GeneratorType = "current_source",
-                 max_ik_ka: float = nan,
-                 kappa: float = nan,
-                 lrc_pu: float = nan,
-                 **kwargs) -> npt.NDArray[np.integer]:
+def create_sgens(
+    net: pandapowerNet,
+    buses: Sequence,
+    p_mw: float | Iterable[float],
+    q_mvar: float | Iterable[float] = 0,
+    sn_mva: float | Iterable[float] = nan,
+    name: Optional[Iterable[str]] = None,
+    index: Optional = None,
+    scaling: float | Iterable[float] = 1.,
+    type: WyeDeltaType = 'wye',
+    in_service: bool | Iterable[bool] = True,
+    max_p_mw: float | Iterable[float] = nan,
+    min_p_mw: float | Iterable[float] = nan,
+    max_q_mvar: float | Iterable[float] = nan,
+    min_q_mvar: float | Iterable[float] = nan,
+    controllable: bool | Iterable[bool] | float = nan,
+    k: float | Iterable[float] = nan,
+    rx: float = nan,
+    id_q_capability_characteristic = nan,
+    reactive_capability_curve = False,
+    curve_style = None,
+    current_source: bool | Iterable[bool] = True,
+    generator_type: GeneratorType = "current_source",
+    max_ik_ka: float = nan,
+    kappa: float = nan,
+    lrc_pu: float = nan,
+    **kwargs
+) -> npt.NDArray[np.integer]:
     """
     Adds a number of sgens in table net["sgen"].
 
@@ -1634,11 +1044,11 @@ def create_sgens(net: pandapowerNet,
             specified as motor so that sgen is treated as asynchronous motor. Relevant for \
             short-circuit calculation for all generator types
 
-        **reactive_capability_curve** (list of bools, False) - True if both the id_q_capability_curve_characteristic \
+        **reactive_capability_curve** (list of bools, False) - True if both the id_q_capability_characteristic \
             and the curve style are present in the generator.
 
-        **id_q_capability_curve_characteristic** (list of ints, None) - references the index of the characteristic \
-            from the lookup table net.q_capability_curve_characteristic e.g. 0, 1, 2, 3
+        **id_q_capability_characteristic** (list of ints, None) - references the index of the characteristic \
+            from the lookup table net.q_capability_characteristic e.g. 0, 1, 2, 3
 
         **curve_style** (list of strings, None) - The curve style of the generator represents the relationship \
            between active power (P) and reactive power (Q). It indicates whether the reactive power remains \
@@ -1696,8 +1106,8 @@ def create_sgens(net: pandapowerNet,
     gen_type_match = pd.concat([entries["generator_type"] == match for match in gen_types], axis=1,
                                keys=gen_types)  # type: ignore[call-overload]
 
-    _add_to_entries_if_not_nan(net, "sgen", entries, index, "id_q_capability_curve_characteristic",
-                               id_q_capability_curve_characteristic, dtype="Int64")
+    _add_to_entries_if_not_nan(net, "sgen", entries, index, "id_q_capability_characteristic",
+                               id_q_capability_characteristic, dtype="Int64")
 
     if gen_type_match["current_source"].any():
         _add_to_entries_if_not_nan(net, "sgen", entries, index, "k", k)
@@ -1720,21 +1130,23 @@ def create_sgens(net: pandapowerNet,
 # Create 3ph Sgen
 # =============================================================================
 
-def create_asymmetric_sgen(net: pandapowerNet,
-                           bus,
-                           p_a_mw: float = 0,
-                           p_b_mw: float = 0,
-                           p_c_mw: float = 0,
-                           q_a_mvar: float = 0,
-                           q_b_mvar: float = 0,
-                           q_c_mvar: float = 0,
-                           sn_mva: float = nan,
-                           name: str | None = None,
-                           index=None,
-                           scaling: float = 1.,
-                           type: WyeDeltaType = 'wye',
-                           in_service: bool = True,
-                           **kwargs) -> Int:
+def create_asymmetric_sgen(
+    net: pandapowerNet,
+    bus,
+    p_a_mw: float = 0,
+    p_b_mw: float = 0,
+    p_c_mw: float = 0,
+    q_a_mvar: float = 0,
+    q_b_mvar: float = 0,
+    q_c_mvar: float = 0,
+    sn_mva: float = nan,
+    name: Optional[str] = None,
+    index: Optional = None,
+    scaling: float = 1.,
+    type: WyeDeltaType = 'wye',
+    in_service: bool = True,
+    **kwargs
+) -> Int:
     """
 
     Adds one static generator in table net["asymmetric_sgen"].
@@ -1833,25 +1245,27 @@ def create_sgen_from_cosphi(
     return create_sgen(net, bus, sn_mva=sn_mva, p_mw=p_mw, q_mvar=q_mvar, **kwargs)
 
 
-def create_storage(net: pandapowerNet,
-                   bus,
-                   p_mw: float,
-                   max_e_mwh: float,
-                   q_mvar: float = 0,
-                   sn_mva: float = nan,
-                   soc_percent: float = nan,
-                   min_e_mwh: float = 0.0,
-                   name: str | None = None,
-                   index=None,
-                   scaling: float = 1.,
-                   type: str | None = None,
-                   in_service: bool = True,
-                   max_p_mw: float = nan,
-                   min_p_mw: float = nan,
-                   max_q_mvar: float = nan,
-                   min_q_mvar: float = nan,
-                   controllable: bool | float = nan,
-                   **kwargs) -> Int:
+def create_storage(
+    net: pandapowerNet,
+    bus,
+    p_mw: float,
+    max_e_mwh: float,
+    q_mvar: float = 0,
+    sn_mva: float = nan,
+    soc_percent: float = nan,
+    min_e_mwh: float = 0.0,
+    name: Optional[str] = None,
+    index: Optional = None,
+    scaling: float = 1.,
+    type: Optional[str] = None,
+    in_service: bool = True,
+    max_p_mw: float = nan,
+    min_p_mw: float = nan,
+    max_q_mvar: float = nan,
+    min_q_mvar: float = nan,
+    controllable: bool | float = nan,
+    **kwargs
+) -> Int:
     """
     Adds a storage to the network.
 
@@ -1944,25 +1358,27 @@ def create_storage(net: pandapowerNet,
     return index
 
 
-def create_storages(net: pandapowerNet,
-                    buses: Sequence,
-                    p_mw: float | Iterable[float],
-                    max_e_mwh: float | Iterable[float],
-                    q_mvar: float | Iterable[float] = 0,
-                    sn_mva: float | Iterable[float] = nan,
-                    soc_percent: float | Iterable[float] = nan,
-                    min_e_mwh: float | Iterable[float] = 0.0,
-                    name: Iterable[str] | None = None,
-                    index=None,
-                    scaling: float | Iterable[float] = 1.,
-                    type: str | Iterable[str] | None = None,
-                    in_service: bool | Iterable[bool] = True,
-                    max_p_mw=nan,
-                    min_p_mw: float | Iterable[float] = nan,
-                    max_q_mvar: float | Iterable[float] = nan,
-                    min_q_mvar: float | Iterable[float] = nan,
-                    controllable: bool | Iterable[bool] | float = nan,
-                    **kwargs) -> npt.NDArray[np.integer]:
+def create_storages(
+    net: pandapowerNet,
+    buses: Sequence,
+    p_mw: float | Iterable[float],
+    max_e_mwh: float | Iterable[float],
+    q_mvar: float | Iterable[float] = 0,
+    sn_mva: float | Iterable[float] = nan,
+    soc_percent: float | Iterable[float] = nan,
+    min_e_mwh: float | Iterable[float] = 0.0,
+    name: Optional[Iterable[str]] = None,
+    index: Optional = None,
+    scaling: float | Iterable[float] = 1.,
+    type: Optional[str | Iterable[str]] = None,
+    in_service: bool | Iterable[bool] = True,
+    max_p_mw=nan,
+    min_p_mw: float | Iterable[float] = nan,
+    max_q_mvar: float | Iterable[float] = nan,
+    min_q_mvar: float | Iterable[float] = nan,
+    controllable: bool | Iterable[bool] | float = nan,
+    **kwargs
+) -> npt.NDArray[np.integer]:
     """
     Adds storages to the network.
 
@@ -2055,35 +1471,37 @@ def create_storages(net: pandapowerNet,
     return index
 
 
-def create_gen(net: pandapowerNet,
-               bus,
-               p_mw: float,
-               vm_pu: float = 1.,
-               sn_mva: float = nan,
-               name: str | None = None,
-               index=None,
-               max_q_mvar: float = nan,
-               min_q_mvar: float = nan,
-               min_p_mw: float = nan,
-               max_p_mw: float = nan,
-               min_vm_pu: float = nan,
-               max_vm_pu: float = nan,
-               scaling: float = 1.,
-               type: str | None = None,
-               slack: bool = False,
-               id_q_capability_curve_characteristic=None,
-               reactive_capability_curve=False,
-               curve_style=None, 
-               controllable: bool | float = nan,
-               vn_kv: float = nan,
-               xdss_pu: float = nan,
-               rdss_ohm: float = nan,
-               cos_phi: float = nan,
-               pg_percent: float = nan,
-               power_station_trafo: int | float = nan,
-               in_service: bool = True,
-               slack_weight: float = 0.0,
-               **kwargs) -> Int:
+def create_gen(
+    net: pandapowerNet,
+    bus,
+    p_mw: float,
+    vm_pu: float = 1.,
+    sn_mva: float = nan,
+    name: Optional[str] = None,
+    index = None,
+    max_q_mvar: float = nan,
+    min_q_mvar: float = nan,
+    min_p_mw: float = nan,
+    max_p_mw: float = nan,
+    min_vm_pu: float = nan,
+    max_vm_pu: float = nan,
+    scaling: float = 1.,
+    type: Optional[str] = None,
+    slack: bool = False,
+    id_q_capability_characteristic = None,
+    reactive_capability_curve: bool = False,
+    curve_style = None,
+    controllable: bool | float = nan,
+    vn_kv: float = nan,
+    xdss_pu: float = nan,
+    rdss_ohm: float = nan,
+    cos_phi: float = nan,
+    pg_percent: float = nan,
+    power_station_trafo: int | float = nan,
+    in_service: bool = True,
+    slack_weight: float = 0.0,
+    **kwargs
+) -> Int:
     """
     Adds a generator to the network.
 
@@ -2112,11 +1530,11 @@ def create_gen(net: pandapowerNet,
 
         **type** (string, None) - type variable to classify generators
 
-        **reactive_capability_curve** (bool, False) - True if both the id_q_capability_curve_characteristic and the \
+        **reactive_capability_curve** (bool, False) - True if both the id_q_capability_characteristic and the \
             curve style are present in the generator
 
-        **id_q_capability_curve_characteristic** (int, None) - references the index of the characteristic from \
-            the net.q_capability_curve_characteristic table (id_q_capability_curve column)
+        **id_q_capability_characteristic** (int, None) - references the index of the characteristic from \
+            the net.q_capability_characteristic table (id_q_capability_curve column)
 
         **curve_style** (string, None) - The curve style of the generator represents the relationship \
             between active power (P) and reactive power (Q). It indicates whether the reactive power remains \
@@ -2183,8 +1601,8 @@ def create_gen(net: pandapowerNet,
                           dtype=bool_, default_val=True)
 
     # id for q capability curve table
-    _set_value_if_not_nan(net, index, id_q_capability_curve_characteristic,
-                          "id_q_capability_curve_characteristic", "gen", dtype="Int64")
+    _set_value_if_not_nan(net, index, id_q_capability_characteristic,
+                          "id_q_capability_characteristic", "gen", dtype="Int64")
 
     # behaviour of reactive power capability curve
     _set_value_if_not_nan(net, index, curve_style, "curve_style", "gen", dtype=object, default_val=None)
@@ -2213,35 +1631,37 @@ def create_gen(net: pandapowerNet,
     return index
 
 
-def create_gens(net: pandapowerNet,
-                buses: Sequence,
-                p_mw: float | Iterable[float],
-                vm_pu: float | Iterable[float] = 1.,
-                sn_mva: float | Iterable[float] = nan,
-                name: Iterable[str] | None = None,
-                index=None,
-                max_q_mvar: float | Iterable[float] = nan,
-                min_q_mvar: float | Iterable[float] = nan,
-                min_p_mw: float | Iterable[float] = nan,
-                max_p_mw: float | Iterable[float] = nan,
-                min_vm_pu: float | Iterable[float] = nan,
-                max_vm_pu: float | Iterable[float] = nan,
-                scaling: float | Iterable[float] = 1.,
-                type: str | Iterable[str] | None = None,
-                slack: bool | Iterable[bool] = False,
-                id_q_capability_curve_characteristic=nan,
-                reactive_capability_curve=False,
-                curve_style=None,
-                controllable: bool | float = nan,
-                vn_kv: float | Iterable[float] = nan,
-                xdss_pu: float | Iterable[float] = nan,
-                rdss_ohm: float | Iterable[float] = nan,
-                cos_phi: float | Iterable[float] = nan,
-                pg_percent: float = nan,
-                power_station_trafo: int | float = nan,
-                in_service: bool = True,
-                slack_weight: float = 0.0,
-                **kwargs) -> npt.NDArray[np.integer]:
+def create_gens(
+    net: pandapowerNet,
+    buses: Sequence,
+    p_mw: float | Iterable[float],
+    vm_pu: float | Iterable[float] = 1.,
+    sn_mva: float | Iterable[float] = nan,
+    name: Optional[Iterable[str]] = None,
+    index: Optional = None,
+    max_q_mvar: float | Iterable[float] = nan,
+    min_q_mvar: float | Iterable[float] = nan,
+    min_p_mw: float | Iterable[float] = nan,
+    max_p_mw: float | Iterable[float] = nan,
+    min_vm_pu: float | Iterable[float] = nan,
+    max_vm_pu: float | Iterable[float] = nan,
+    scaling: float | Iterable[float] = 1.,
+    type: Optional[str | Iterable[str]] = None,
+    slack: bool | Iterable[bool] = False,
+    id_q_capability_characteristic = nan,
+    reactive_capability_curve: bool = False,
+    curve_style = None,
+    controllable: bool | float = nan,
+    vn_kv: float | Iterable[float] = nan,
+    xdss_pu: float | Iterable[float] = nan,
+    rdss_ohm: float | Iterable[float] = nan,
+    cos_phi: float | Iterable[float] = nan,
+    pg_percent: float = nan,
+    power_station_trafo: int | float = nan,
+    in_service: bool = True,
+    slack_weight: float = 0.0,
+    **kwargs
+) -> npt.NDArray[np.integer]:
     """
     Adds generators to the specified buses network.
 
@@ -2271,11 +1691,11 @@ def create_gens(net: pandapowerNet,
 
         **type** (list of string, None) - type variable to classify generators
 
-        **reactive_capability_curve** (list of bools, False) - True if both the id_q_capability_curve_characteristic and
+        **reactive_capability_curve** (list of bools, False) - True if both the id_q_capability_characteristic and
         the curve style are present in the generator.
 
-        **id_q_capability_curve_characteristic** (list of ints, None) - references the index of the characteristic from
-            the lookup table net.q_capability_curve_characteristic e.g. 0, 1, 2, 3
+        **id_q_capability_characteristic** (list of ints, None) - references the index of the characteristic from
+            the lookup table net.q_capability_characteristic e.g. 0, 1, 2, 3
 
         **curve_style** (list of strings, None) - The curve style of the generator represents the relationship \
         between active power (P) and reactive power (Q). It indicates whether the reactive power remains \
@@ -2358,8 +1778,8 @@ def create_gens(net: pandapowerNet,
     _add_to_entries_if_not_nan(net, "gen", entries, index, "xdss_pu", xdss_pu)
     _add_to_entries_if_not_nan(net, "gen", entries, index, "rdss_ohm", rdss_ohm)
     _add_to_entries_if_not_nan(net, "gen", entries, index, "pg_percent", pg_percent)
-    _add_to_entries_if_not_nan(net, "gen", entries, index, "id_q_capability_curve_characteristic",
-                               id_q_capability_curve_characteristic, dtype="Int64")
+    _add_to_entries_if_not_nan(net, "gen", entries, index, "id_q_capability_characteristic",
+                               id_q_capability_characteristic, dtype="Int64")
 
     _add_to_entries_if_not_nan(net, "gen", entries, index, "reactive_capability_curve",
                                reactive_capability_curve, dtype=bool_)
@@ -2376,22 +1796,24 @@ def create_gens(net: pandapowerNet,
     return index
 
 
-def create_motor(net: pandapowerNet,
-                 bus,
-                 pn_mech_mw: float,
-                 cos_phi: float,
-                 efficiency_percent: float = 100.,
-                 loading_percent: float = 100.,
-                 name: str | None = None,
-                 lrc_pu: float = nan,
-                 scaling: float = 1.0,
-                 vn_kv: float = nan,
-                 rx: float = nan,
-                 index=None,
-                 in_service: bool = True,
-                 cos_phi_n: float = nan,
-                 efficiency_n_percent: float = nan,
-                 **kwargs) -> Int:
+def create_motor(
+    net: pandapowerNet,
+    bus,
+    pn_mech_mw: float,
+    cos_phi: float,
+    efficiency_percent: float = 100.,
+    loading_percent: float = 100.,
+    name: Optional[str] = None,
+    lrc_pu: float = nan,
+    scaling: float = 1.0,
+    vn_kv: float = nan,
+    rx: float = nan,
+    index: Optional = None,
+    in_service: bool = True,
+    cos_phi_n: float = nan,
+    efficiency_n_percent: float = nan,
+    **kwargs
+) -> Int:
     """
     Adds a motor to the network.
 
@@ -2455,26 +1877,28 @@ def create_motor(net: pandapowerNet,
     return index
 
 
-def create_ext_grid(net: pandapowerNet,
-                    bus,
-                    vm_pu: float = 1.0,
-                    va_degree: float = 0.,
-                    name: str | None = None,
-                    in_service: bool = True,
-                    s_sc_max_mva: float = nan,
-                    s_sc_min_mva: float = nan,
-                    rx_max: float = nan,
-                    rx_min: float = nan,
-                    max_p_mw: float = nan,
-                    min_p_mw: float = nan,
-                    max_q_mvar: float = nan,
-                    min_q_mvar: float = nan,
-                    index=None,
-                    r0x0_max: float = nan,
-                    x0x_max: float = nan,
-                    controllable: bool | float = nan,
-                    slack_weight: float = 1.0,
-                    **kwargs) -> Int:
+def create_ext_grid(
+    net: pandapowerNet,
+    bus,
+    vm_pu: float = 1.0,
+    va_degree: float = 0.,
+    name: Optional[str] = None,
+    in_service: bool = True,
+    s_sc_max_mva: float = nan,
+    s_sc_min_mva: float = nan,
+    rx_max: float = nan,
+    rx_min: float = nan,
+    max_p_mw: float = nan,
+    min_p_mw: float = nan,
+    max_q_mvar: float = nan,
+    min_q_mvar: float = nan,
+    index: Optional = None,
+    r0x0_max: float = nan,
+    x0x_max: float = nan,
+    controllable: bool | float = nan,
+    slack_weight: float = 1.0,
+    **kwargs
+) -> Int:
     """
     Creates an external grid connection.
 
@@ -2516,24 +1940,26 @@ def create_ext_grid(net: pandapowerNet,
         **min_q_mvar** (float, NaN) - Minimum reactive power injection. Only respected for OPF
 
         **r0x0_max** (float, NaN) - maximum R/X-ratio to calculate Zero sequence
-        internal impedance of ext_grid
+            internal impedance of ext_grid
 
         **x0x_max** (float, NaN) - maximum X0/X-ratio to calculate Zero sequence
-        internal impedance of ext_grid
+            internal impedance of ext_grid
 
-        **slack_weight** (float, default 1.0) - Contribution factor for distributed slack power flow calculation
-                                                (active power balancing)
+        **slack_weight** (float, default 1.0) - Contribution factor for distributed slack power flow calculation \
+            (active power balancing)
 
-        \* considered in load flow if calculate_voltage_angles = True
+        **controllable** (bool, NaN) - Control of value limits
 
-        **controllable** (bool, NaN) - True: p_mw, q_mvar and vm_pu limits are enforced for the \
+                                        - True: p_mw, q_mvar and vm_pu limits are enforced for the \
                                              ext_grid in OPF. The voltage limits set in the \
                                              ext_grid bus are enforced.
-                                       False: p_mw and vm_pu set points are enforced and *limits are\
+
+                                        - False: p_mw and vm_pu set points are enforced and *limits are\
                                               ignored*. The vm_pu set point is enforced and limits \
-                                              of the bus table are ignored.
-                                       defaults to False if "controllable" column exists in\
-                                       DataFrame
+                                              of the bus table are ignored. Defaults to False if \
+                                              "controllable" column exists in DataFrame
+
+        \\* considered in load flow if calculate_voltage_angles = True
 
     EXAMPLE:
         create_ext_grid(net, 1, voltage=1.03)
@@ -2569,21 +1995,23 @@ def create_ext_grid(net: pandapowerNet,
     return index
 
 
-def create_line(net: pandapowerNet,
-                from_bus,
-                to_bus,
-                length_km: float,
-                std_type: str,
-                name: str | None = None,
-                index=None,
-                geodata: Iterable[tuple[float, float]] | None = None,
-                df: float = 1.,
-                parallel: int = 1,
-                in_service: bool = True,
-                max_loading_percent: float = nan,
-                alpha: float = nan,
-                temperature_degree_celsius: float = nan,
-                **kwargs) -> Int:
+def create_line(
+    net: pandapowerNet,
+    from_bus,
+    to_bus,
+    length_km: float,
+    std_type: str,
+    name: Optional[str] = None,
+    index: Optional = None,
+    geodata: Optional[Iterable[tuple[float, float]]]= None,
+    df: float = 1.,
+    parallel: int = 1,
+    in_service: bool = True,
+    max_loading_percent: float = nan,
+    alpha: float = nan,
+    temperature_degree_celsius: float = nan,
+    **kwargs
+) -> Int:
     """
     Creates a line element in net["line"]
     The line parameters are defined through the standard type library.
@@ -2717,21 +2145,23 @@ def create_line(net: pandapowerNet,
     return index
 
 
-def create_line_dc(net: pandapowerNet,
-                   from_bus_dc,
-                   to_bus_dc,
-                   length_km: float,
-                   std_type: str,
-                   name: str | None = None,
-                   index=None,
-                   geodata: Iterable[tuple[float, float]] | None = None,
-                   df: float = 1.,
-                   parallel: int = 1,
-                   in_service: bool = True,
-                   max_loading_percent: float = nan,
-                   alpha: float = nan,
-                   temperature_degree_celsius: float = nan,
-                   **kwargs) -> Int:
+def create_line_dc(
+    net: pandapowerNet,
+    from_bus_dc,
+    to_bus_dc,
+    length_km: float,
+    std_type: str,
+    name: Optional[str] = None,
+    index: Optional = None,
+    geodata: Optional[Iterable[tuple[float, float]]] = None,
+    df: float = 1.,
+    parallel: int = 1,
+    in_service: bool = True,
+    max_loading_percent: float = nan,
+    alpha: float = nan,
+    temperature_degree_celsius: float = nan,
+    **kwargs
+) -> Int:
     """
     Creates a line element in net["line_dc"]
     The line_dc parameters are defined through the standard type library.
@@ -2863,19 +2293,21 @@ def create_line_dc(net: pandapowerNet,
     return index
 
 
-def create_lines(net: pandapowerNet,
-                 from_buses: Sequence,
-                 to_buses: Sequence,
-                 length_km: float | Iterable[float],
-                 std_type: str,
-                 name: Iterable[str] | None = None,
-                 index=None,
-                 geodata: Iterable[Iterable[tuple[float, float]]] | None = None,
-                 df: float | Iterable[float] = 1.,
-                 parallel: int | Iterable[int] = 1,
-                 in_service: bool | Iterable[bool] = True,
-                 max_loading_percent: float | Iterable[float] = nan,
-                 **kwargs) -> npt.NDArray[np.integer]:
+def create_lines(
+    net: pandapowerNet,
+    from_buses: Sequence,
+    to_buses: Sequence,
+    length_km: float | Iterable[float],
+    std_type: str,
+    name: Optional[Iterable[str]] = None,
+    index: Optional = None,
+    geodata: Optional[Iterable[Iterable[tuple[float, float]]]] = None,
+    df: float | Iterable[float] = 1.,
+    parallel: int | Iterable[int] = 1,
+    in_service: bool | Iterable[bool] = True,
+    max_loading_percent: float | Iterable[float] = nan,
+    **kwargs
+) -> npt.NDArray[np.integer]:
     """ Convenience function for creating many lines at once. Parameters 'from_buses' and 'to_buses'
         must be arrays of equal length. Other parameters may be either arrays of the same length or
         single or values. In any case the line parameters are defined through a single standard
@@ -3005,19 +2437,20 @@ def create_lines(net: pandapowerNet,
     return index
 
 
-def create_lines_dc(net: pandapowerNet,
-                    from_buses_dc: Sequence,
-                    to_buses_dc: Sequence,
-                    length_km: float | Iterable[float],
-                    std_type: str | Sequence[str],
-                    name: Iterable[str]| None = None,
-                    index=None,
-                    geodata: Iterable[Iterable[tuple[float, float]]] | None = None,
-                    df: float | Iterable[float] = 1.,
-                    parallel: int | Iterable[int] = 1,
-                    in_service: bool | Iterable[bool] = True,
-                    max_loading_percent: float | Iterable[float]=nan,
-                    **kwargs) -> npt.NDArray[np.integer]:
+def create_lines_dc(
+    net: pandapowerNet,
+    from_buses_dc: Sequence,
+    to_buses_dc: Sequence,
+    length_km: float | Iterable[float],
+    std_type: str | Sequence[str],
+    name: Optional[Iterable[str]] = None,
+    index: Optional = None,
+    geodata: Optional[Iterable[Iterable[tuple[float, float]]]] = None,
+    df: float | Iterable[float] = 1.,
+    parallel: int | Iterable[int] = 1,
+    in_service: bool | Iterable[bool] = True,
+    max_loading_percent: float | Iterable[float]=nan,
+**kwargs) -> npt.NDArray[np.integer]:
     """ Convenience function for creating many dc lines at once. Parameters 'from_buses_dc' and 'to_buses_dc'
         must be arrays of equal length. Other parameters may be either arrays of the same length or
         single or values. In any case the dc line parameters are defined through a single standard
@@ -3141,30 +2574,32 @@ def create_lines_dc(net: pandapowerNet,
     return index
 
 
-def create_line_from_parameters(net: pandapowerNet,
-                                from_bus,
-                                to_bus,
-                                length_km: float,
-                                r_ohm_per_km: float,
-                                x_ohm_per_km: float,
-                                c_nf_per_km: float,
-                                max_i_ka: float,
-                                name: str | None = None,
-                                index=None,
-                                type: LineType | None = None,
-                                geodata: Iterable[tuple[float, float]] | None = None,
-                                in_service: bool = True,
-                                df: float = 1.,
-                                parallel: int = 1,
-                                g_us_per_km: float = 0.,
-                                max_loading_percent: float = nan,
-                                alpha: float = nan,
-                                temperature_degree_celsius: float = nan,
-                                r0_ohm_per_km: float = nan,
-                                x0_ohm_per_km: float = nan,
-                                c0_nf_per_km: float = nan,
-                                g0_us_per_km: float = 0,
-                                endtemp_degree: float = nan, **kwargs) -> Int:
+def create_line_from_parameters(
+    net: pandapowerNet,
+    from_bus,
+    to_bus,
+    length_km: float,
+    r_ohm_per_km: float,
+    x_ohm_per_km: float,
+    c_nf_per_km: float,
+    max_i_ka: float,
+    name: Optional[str] = None,
+    index: Optional = None,
+    type: Optional[LineType] = None,
+    geodata: Optional[Iterable[tuple[float, float]]] = None,
+    in_service: bool = True,
+    df: float = 1.,
+    parallel: int = 1,
+    g_us_per_km: float = 0.,
+    max_loading_percent: float = nan,
+    alpha: float = nan,
+    temperature_degree_celsius: float = nan,
+    r0_ohm_per_km: float = nan,
+    x0_ohm_per_km: float = nan,
+    c0_nf_per_km: float = nan,
+    g0_us_per_km: float = 0,
+    endtemp_degree: float = nan, **kwargs
+) -> Int:
     """
     Creates a line element in net["line"] from line parameters.
 
@@ -3307,24 +2742,26 @@ def create_line_from_parameters(net: pandapowerNet,
     return index
 
 
-def create_line_dc_from_parameters(net: pandapowerNet,
-                                   from_bus_dc,
-                                   to_bus_dc,
-                                   length_km: float,
-                                   r_ohm_per_km: float,
-                                   max_i_ka: float,
-                                   name: str | None = None,
-                                   index=None,
-                                   type: LineType | None = None,
-                                   geodata: Iterable[tuple[float, float]] | None = None,
-                                   in_service: bool = True,
-                                   df: float = 1.,
-                                   parallel: int = 1,
-                                   max_loading_percent: float = nan,
-                                   alpha: float = nan,
-                                   temperature_degree_celsius: float = nan,
-                                   g_us_per_km: float = 0.,
-                                   **kwargs) -> Int:
+def create_line_dc_from_parameters(
+    net: pandapowerNet,
+    from_bus_dc,
+    to_bus_dc,
+    length_km: float,
+    r_ohm_per_km: float,
+    max_i_ka: float,
+    name: Optional[str] = None,
+    index: Optional = None,
+    type: Optional[LineType] = None,
+    geodata: Optional[Iterable[tuple[float, float]]] = None,
+    in_service: bool = True,
+    df: float = 1.,
+    parallel: int = 1,
+    max_loading_percent: float = nan,
+    alpha: float = nan,
+    temperature_degree_celsius: float = nan,
+    g_us_per_km: float = 0.,
+    **kwargs
+) -> Int:
     """
     Creates a dc line element in net["line_dc"] from dc line parameters.
 
@@ -3444,30 +2881,32 @@ def create_line_dc_from_parameters(net: pandapowerNet,
     return index
 
 
-def create_lines_from_parameters(net: pandapowerNet,
-                                 from_buses: Sequence,
-                                 to_buses: Sequence,
-                                 length_km: float | Iterable[float],
-                                 r_ohm_per_km: float | Iterable[float],
-                                 x_ohm_per_km: float | Iterable[float],
-                                 c_nf_per_km: float | Iterable[float],
-                                 max_i_ka: float | Iterable[float],
-                                 name: Iterable[str] | None = None,
-                                 index=None,
-                                 type: LineType | Iterable[str] | None = None,
-                                 geodata: Iterable[Iterable[tuple[float, float]]] | None = None,
-                                 in_service: bool | Iterable[bool] = True,
-                                 df: float | Iterable[float] = 1.,
-                                 parallel: int | Iterable[int] = 1,
-                                 g_us_per_km: float | Iterable[float] = 0.,
-                                 max_loading_percent: float | Iterable[float] =nan,
-                                 alpha: float = nan,
-                                 temperature_degree_celsius: float = nan,
-                                 r0_ohm_per_km: float | Iterable[float] = nan,
-                                 x0_ohm_per_km: float | Iterable[float] = nan,
-                                 c0_nf_per_km: float | Iterable[float] = nan,
-                                 g0_us_per_km: float | Iterable[float] = nan,
-                                 **kwargs) -> npt.NDArray[np.integer]:
+def create_lines_from_parameters(
+    net: pandapowerNet,
+    from_buses: Sequence,
+    to_buses: Sequence,
+    length_km: float | Iterable[float],
+    r_ohm_per_km: float | Iterable[float],
+    x_ohm_per_km: float | Iterable[float],
+    c_nf_per_km: float | Iterable[float],
+    max_i_ka: float | Iterable[float],
+    name: Optional[Iterable[str]] = None,
+    index: Optional = None,
+    type: Optional[LineType | Iterable[str]] = None,
+    geodata: Optional[Iterable[Iterable[tuple[float, float]]]] = None,
+    in_service: bool | Iterable[bool] = True,
+    df: float | Iterable[float] = 1.,
+    parallel: int | Iterable[int] = 1,
+    g_us_per_km: float | Iterable[float] = 0.,
+    max_loading_percent: float | Iterable[float] =nan,
+    alpha: float = nan,
+    temperature_degree_celsius: float = nan,
+    r0_ohm_per_km: float | Iterable[float] = nan,
+    x0_ohm_per_km: float | Iterable[float] = nan,
+    c0_nf_per_km: float | Iterable[float] = nan,
+    g0_us_per_km: float | Iterable[float] = nan,
+    **kwargs
+) -> npt.NDArray[np.integer]:
     """
     Convenience function for creating many lines at once. Parameters 'from_buses' and 'to_buses'
         must be arrays of equal length. Other parameters may be either arrays of the same length or
@@ -3602,24 +3041,26 @@ def create_lines_from_parameters(net: pandapowerNet,
     return index
 
 
-def create_lines_dc_from_parameters(net: pandapowerNet,
-                                    from_buses_dc: Sequence,
-                                    to_buses_dc: Sequence,
-                                    length_km: float | Iterable[float],
-                                    r_ohm_per_km: float | Iterable[float],
-                                    max_i_ka: float | Iterable[float],
-                                    name: Iterable[str] | None = None,
-                                    index=None,
-                                    type: LineType | Iterable[str] | None = None,
-                                    geodata: Iterable[Iterable[tuple[float, float]]] | None = None,
-                                    in_service: bool | Iterable[bool] = True,
-                                    df: float | Iterable[float] = 1.,
-                                    parallel: int | Iterable[int] = 1,
-                                    g_us_per_km: float | Iterable[float] = 0.,
-                                    max_loading_percent: float | Iterable[float] = nan,
-                                    alpha: float = nan,
-                                    temperature_degree_celsius: float = nan,
-                                    **kwargs) -> npt.NDArray[np.integer]:
+def create_lines_dc_from_parameters(
+    net: pandapowerNet,
+    from_buses_dc: Sequence,
+    to_buses_dc: Sequence,
+    length_km: float | Iterable[float],
+    r_ohm_per_km: float | Iterable[float],
+    max_i_ka: float | Iterable[float],
+    name: Optional[Iterable[str]] = None,
+    index: Optional=None,
+    type: Optional[LineType | Iterable[str]] = None,
+    geodata: Optional[Iterable[Iterable[tuple[float, float]]]] = None,
+    in_service: bool | Iterable[bool] = True,
+    df: float | Iterable[float] = 1.,
+    parallel: int | Iterable[int] = 1,
+    g_us_per_km: float | Iterable[float] = 0.,
+    max_loading_percent: float | Iterable[float] = nan,
+    alpha: float = nan,
+    temperature_degree_celsius: float = nan,
+    **kwargs
+) -> npt.NDArray[np.integer]:
     """
     Convenience function for creating many dc lines at once. Parameters 'from_buses_dc' and 'to_buses_dc'
         must be arrays of equal length. Other parameters may be either arrays of the same length or
@@ -3737,25 +3178,27 @@ def create_lines_dc_from_parameters(net: pandapowerNet,
     return index
 
 
-def create_transformer(net: pandapowerNet,
-                       hv_bus,
-                       lv_bus,
-                       std_type: str,
-                       name: str | None = None,
-                       tap_pos: int | float = nan,
-                       in_service: bool = True,
-                       index=None,
-                       max_loading_percent: float = nan,
-                       parallel: int = 1,
-                       df: float = 1.,
-                       tap_changer_type: str | None = None,
-                       tap_dependency_table: bool | float = nan,
-                       id_characteristic_table: int | float = nan,
-                       pt_percent: float = nan,
-                       oltc: bool | float = nan,
-                       xn_ohm: float = nan,
-                       tap2_pos: int | float = nan,
-                       **kwargs) -> Int:
+def create_transformer(
+    net: pandapowerNet,
+    hv_bus,
+    lv_bus,
+    std_type: str,
+    name: Optional[str] = None,
+    tap_pos: int | float = nan,
+    in_service: bool = True,
+    index: Optional = None,
+    max_loading_percent: float = nan,
+    parallel: int = 1,
+    df: float = 1.,
+    tap_changer_type: Optional[str] = None,
+    tap_dependency_table: bool | float = nan,
+    id_characteristic_table: int | float = nan,
+    pt_percent: float = nan,
+    oltc: bool | float = nan,
+    xn_ohm: float = nan,
+    tap2_pos: int | float = nan,
+    **kwargs
+) -> Int:
     """
     Creates a two-winding transformer in table net.trafo.
     The trafo parameters are defined through the standard type library.
@@ -3854,7 +3297,7 @@ def create_transformer(net: pandapowerNet,
         "df": df,
         "shift_degree": ti["shift_degree"] if "shift_degree" in ti else 0
     }
-    for zero_param in ['vk0_percent', 'vkr0_percent', 'mag0_percent', 'mag0_rx', 'si0_hv_partial']:
+    for zero_param in ['vk0_percent', 'vkr0_percent', 'mag0_percent', 'mag0_rx', 'si0_hv_partial', 'vector_group']:
         if zero_param in ti:
             updates[zero_param] = ti[zero_param]
     v.update(updates)
@@ -3903,51 +3346,53 @@ def create_transformer(net: pandapowerNet,
     return index
 
 
-def create_transformer_from_parameters(net: pandapowerNet,
-                                       hv_bus,
-                                       lv_bus,
-                                       sn_mva: float,
-                                       vn_hv_kv: float,
-                                       vn_lv_kv: float,
-                                       vkr_percent: float,
-                                       vk_percent: float,
-                                       pfe_kw: float,
-                                       i0_percent: float,
-                                       shift_degree: float = 0,
-                                       tap_side: HVLVType | None = None,
-                                       tap_neutral: int | float = nan,
-                                       tap_max: int | float = nan,
-                                       tap_min: int | float = nan,
-                                       tap_step_percent: float = nan,
-                                       tap_step_degree: float = nan,
-                                       tap_pos: int | float = nan,
-                                       tap_changer_type: TapChangerWithTabularType | None = None,
-                                       id_characteristic_table: int | float = nan,
-                                       in_service: bool = True,
-                                       name: str | None = None,
-                                       vector_group: str | None = None,
-                                       index=None,
-                                       max_loading_percent: float = nan,
-                                       parallel: int = 1,
-                                       df: float = 1.,
-                                       vk0_percent: float = nan,
-                                       vkr0_percent: float = nan,
-                                       mag0_percent: float = nan,
-                                       mag0_rx: float = nan,
-                                       si0_hv_partial: float = nan,
-                                       pt_percent: float = nan,
-                                       oltc: bool | float = nan,
-                                       tap_dependency_table: bool | float = False,
-                                       xn_ohm: float = nan,
-                                       tap2_side: HVLVType | None = None,
-                                       tap2_neutral: int | float = nan,
-                                       tap2_max: int | float = nan,
-                                       tap2_min: int | float = nan,
-                                       tap2_step_percent: float = nan,
-                                       tap2_step_degree: float = nan,
-                                       tap2_pos: int | float = nan,
-                                       tap2_changer_type: TapChangerType | None = None,
-                                       **kwargs) -> Int:
+def create_transformer_from_parameters(
+    net: pandapowerNet,
+    hv_bus,
+    lv_bus,
+    sn_mva: float,
+    vn_hv_kv: float,
+    vn_lv_kv: float,
+    vkr_percent: float,
+    vk_percent: float,
+    pfe_kw: float,
+    i0_percent: float,
+    shift_degree: float = 0,
+    tap_side: Optional[HVLVType] = None,
+    tap_neutral: int | float = nan,
+    tap_max: int | float = nan,
+    tap_min: int | float = nan,
+    tap_step_percent: float = nan,
+    tap_step_degree: float = nan,
+    tap_pos: int | float = nan,
+    tap_changer_type: Optional[TapChangerWithTabularType] = None,
+    id_characteristic_table: int | float = nan,
+    in_service: bool = True,
+    name: Optional[str] = None,
+    vector_group: Optional[str] = None,
+    index: Optional = None,
+    max_loading_percent: float = nan,
+    parallel: int = 1,
+    df: float = 1.,
+    vk0_percent: float = nan,
+    vkr0_percent: float = nan,
+    mag0_percent: float = nan,
+    mag0_rx: float = nan,
+    si0_hv_partial: float = nan,
+    pt_percent: float = nan,
+    oltc: bool | float = nan,
+    tap_dependency_table: bool | float = False,
+    xn_ohm: float = nan,
+    tap2_side: Optional[HVLVType] = None,
+    tap2_neutral: int | float = nan,
+    tap2_max: int | float = nan,
+    tap2_min: int | float = nan,
+    tap2_step_percent: float = nan,
+    tap2_step_degree: float = nan,
+    tap2_pos: int | float = nan,
+    tap2_changer_type: Optional[TapChangerType] = None,
+    **kwargs
+) -> Int:
     """
     Creates a two-winding transformer in table net.trafo with the specified parameters.
 
@@ -4062,7 +3507,7 @@ def create_transformer_from_parameters(net: pandapowerNet,
 
         **leakage_reactance_ratio_hv** (bool) - ratio of transformer short-circuit reactance on HV side (default 0.5)
 
-        \* only considered in load flow if calculate_voltage_angles = True
+        \\* only considered in load flow if calculate_voltage_angles = True
 
     OUTPUT:
         **index** (int) - the unique ID of the created transformer
@@ -4157,51 +3602,53 @@ def create_transformer_from_parameters(net: pandapowerNet,
     return index
 
 
-def create_transformers_from_parameters(net: pandapowerNet,
-                                        hv_buses: Sequence,
-                                        lv_buses: Sequence,
-                                        sn_mva: float | Iterable[float],
-                                        vn_hv_kv: float | Iterable[float],
-                                        vn_lv_kv: float | Iterable[float],
-                                        vkr_percent: float | Iterable[float],
-                                        vk_percent: float | Iterable[float],
-                                        pfe_kw: float | Iterable[float],
-                                        i0_percent: float | Iterable[float],
-                                        shift_degree: float | Iterable[float] = 0,
-                                        tap_side: HVLVType | Iterable[str] | None = None,
-                                        tap_neutral: int | Iterable[int] | float = nan,
-                                        tap_max: int | Iterable[int] | float = nan,
-                                        tap_min: int | Iterable[int] | float = nan,
-                                        tap_step_percent: float | Iterable[float] = nan,
-                                        tap_step_degree: float | Iterable[float] = nan,
-                                        tap_pos: int | Iterable[int] | float = nan,
-                                        tap_changer_type: TapChangerWithTabularType | Iterable[str] | None = None,
-                                        id_characteristic_table: int | Iterable[int] | float = nan,
-                                        in_service: bool | Iterable[bool] = True,
-                                        name: Iterable[str] | None = None,
-                                        vector_group: str | Iterable[str] | None = None,
-                                        index=None,
-                                        max_loading_percent: float | Iterable[float] = nan,
-                                        parallel: int | Iterable[int] = 1,
-                                        df: float | Iterable[float] = 1.,
-                                        vk0_percent: float | Iterable[float] = nan,
-                                        vkr0_percent: float | Iterable[float] = nan,
-                                        mag0_percent: float | Iterable[float] = nan,
-                                        mag0_rx: float | Iterable[float] = nan,
-                                        si0_hv_partial: float | Iterable[float] = nan,
-                                        pt_percent: float | Iterable[float] = nan,
-                                        oltc: bool | Iterable[bool] | float = nan,
-                                        tap_dependency_table: bool | Iterable[bool] = False,
-                                        xn_ohm: float | Iterable[float] = nan,
-                                        tap2_side: HVLVType | Iterable[str] | None = None,
-                                        tap2_neutral: int | Iterable[int] | float = nan,
-                                        tap2_max: int | Iterable[int] | float = nan,
-                                        tap2_min: int | Iterable[int] | float = nan,
-                                        tap2_step_percent: float | Iterable[float] = nan,
-                                        tap2_step_degree: float | Iterable[float] = nan,
-                                        tap2_pos: int | Iterable[int] | float = nan,
-                                        tap2_changer_type: TapChangerType | Iterable[str] | None = None,
-                                        **kwargs) -> npt.NDArray[np.integer]:
+def create_transformers_from_parameters(
+    net: pandapowerNet,
+    hv_buses: Sequence,
+    lv_buses: Sequence,
+    sn_mva: float | Iterable[float],
+    vn_hv_kv: float | Iterable[float],
+    vn_lv_kv: float | Iterable[float],
+    vkr_percent: float | Iterable[float],
+    vk_percent: float | Iterable[float],
+    pfe_kw: float | Iterable[float],
+    i0_percent: float | Iterable[float],
+    shift_degree: float | Iterable[float] = 0,
+    tap_side: Optional[HVLVType | Iterable[str]] = None,
+    tap_neutral: int | Iterable[int] | float = nan,
+    tap_max: int | Iterable[int] | float = nan,
+    tap_min: int | Iterable[int] | float = nan,
+    tap_step_percent: float | Iterable[float] = nan,
+    tap_step_degree: float | Iterable[float] = nan,
+    tap_pos: int | Iterable[int] | float = nan,
+    tap_changer_type: Optional[TapChangerWithTabularType | Iterable[str]] = None,
+    id_characteristic_table: int | Iterable[int] | float = nan,
+    in_service: bool | Iterable[bool] = True,
+    name: Optional[Iterable[str]] = None,
+    vector_group: Optional[str | Iterable[str]] = None,
+    index: Optional = None,
+    max_loading_percent: float | Iterable[float] = nan,
+    parallel: int | Iterable[int] = 1,
+    df: float | Iterable[float] = 1.,
+    vk0_percent: float | Iterable[float] = nan,
+    vkr0_percent: float | Iterable[float] = nan,
+    mag0_percent: float | Iterable[float] = nan,
+    mag0_rx: float | Iterable[float] = nan,
+    si0_hv_partial: float | Iterable[float] = nan,
+    pt_percent: float | Iterable[float] = nan,
+    oltc: bool | Iterable[bool] | float = nan,
+    tap_dependency_table: bool | Iterable[bool] = False,
+    xn_ohm: float | Iterable[float] = nan,
+    tap2_side: Optional[HVLVType | Iterable[str]] = None,
+    tap2_neutral: int | Iterable[int] | float = nan,
+    tap2_max: int | Iterable[int] | float = nan,
+    tap2_min: int | Iterable[int] | float = nan,
+    tap2_step_percent: float | Iterable[float] = nan,
+    tap2_step_degree: float | Iterable[float] = nan,
+    tap2_pos: int | Iterable[int] | float = nan,
+    tap2_changer_type: Optional[TapChangerType | Iterable[str]] = None,
+    **kwargs
+) -> npt.NDArray[np.integer]:
     """
     Creates several two-winding transformers in table net.trafo with the specified parameters.
 
@@ -4313,7 +3760,7 @@ def create_transformers_from_parameters(net: pandapowerNet,
         **tap2_changer_type** (list of str, None) - specifies the tap changer type ("Ratio", "Symmetrical", "Ideal", \
                                                     None: no tap changer)*
 
-        \* only considered in load flow if calculate_voltage_angles = True
+        \\* only considered in load flow if calculate_voltage_angles = True
 
     OUTPUT:
         **index** (list of int) - The list of IDs of the created transformers
@@ -4388,21 +3835,23 @@ def create_transformers_from_parameters(net: pandapowerNet,
     return index
 
 
-def create_transformer3w(net: pandapowerNet,
-                         hv_bus,
-                         mv_bus,
-                         lv_bus,
-                         std_type: str,
-                         name: str | None = None,
-                         tap_pos: int | float = nan,
-                         in_service: bool = True,
-                         index=None,
-                         max_loading_percent: float = nan,
-                         tap_changer_type: TapChangerWithTabularType | None = None,
-                         tap_at_star_point: bool = False,
-                         tap_dependency_table: bool | float = nan,
-                         id_characteristic_table: int | float = nan,
-                         **kwargs) -> Int:
+def create_transformer3w(
+    net: pandapowerNet,
+    hv_bus,
+    mv_bus,
+    lv_bus,
+    std_type: str,
+    name: Optional[str] = None,
+    tap_pos: int | float = nan,
+    in_service: bool = True,
+    index: Optional = None,
+    max_loading_percent: float = nan,
+    tap_changer_type: Optional[TapChangerWithTabularType] = None,
+    tap_at_star_point: bool = False,
+    tap_dependency_table: bool | float = nan,
+    id_characteristic_table: int | float = nan,
+    **kwargs
+) -> Int:
     """
     Creates a three-winding transformer in table net.trafo3w.
     The trafo parameters are defined through the standard type library.
@@ -4549,17 +3998,17 @@ def create_transformer3w_from_parameters(
         i0_percent: float,
         shift_mv_degree: float = 0.,
         shift_lv_degree: float = 0.,
-        tap_side: HVMVLVType | None = None,
+        tap_side: Optional[HVMVLVType] = None,
         tap_step_percent: float = nan,
         tap_step_degree: float = nan,
         tap_pos: int | float = nan,
         tap_neutral: int | float = nan,
         tap_max: int | float = nan,
-        tap_changer_type: TapChangerWithTabularType | None = None,
-        tap_min: float | None = nan,
-        name: str | None = None,
+        tap_changer_type: Optional[TapChangerWithTabularType] = None,
+        tap_min: Optional[float] = nan,
+        name: Optional[str] = None,
         in_service: bool = True,
-        index=None,
+        index: Optional = None,
         max_loading_percent: float = nan,
         tap_at_star_point: bool = False,
         vk0_hv_percent: float = nan,
@@ -4568,7 +4017,7 @@ def create_transformer3w_from_parameters(
         vkr0_hv_percent: float = nan,
         vkr0_mv_percent: float = nan,
         vkr0_lv_percent: float = nan,
-        vector_group: str | None = None,
+        vector_group: Optional[str] = None,
         tap_dependency_table: bool = False,
         id_characteristic_table: int | float = nan,
         **kwargs) -> Int:
@@ -4751,26 +4200,26 @@ def create_transformers3w_from_parameters(
         i0_percent: float | Iterable[float],
         shift_mv_degree: float | Iterable[float] = 0.,
         shift_lv_degree: float | Iterable[float] = 0.,
-        tap_side: HVMVLVType | Iterable[str] | None = None,
+        tap_side: Optional[HVMVLVType | Iterable[str]] = None,
         tap_step_percent: float | Iterable[float] = nan,
         tap_step_degree: float | Iterable[float] = nan,
         tap_pos: int | Iterable[int] | float = nan,
         tap_neutral: int | Iterable[int] | float = nan,
         tap_max: int | Iterable[int] | float = nan,
         tap_min: int | Iterable[int] | float = nan,
-        name: Iterable[str] | None = None,
+        name: Optional[Iterable[str]] = None,
         in_service: bool | Iterable[bool] = True,
-        index=None,
+        index: Optional = None,
         max_loading_percent: float | Iterable[float] = nan,
         tap_at_star_point: bool | Iterable[bool] = False,
-        tap_changer_type: float | Iterable[float] | None = None,
+        tap_changer_type: Optional[float | Iterable[float]] = None,
         vk0_hv_percent: float | Iterable[float] = nan,
         vk0_mv_percent: float | Iterable[float] = nan,
         vk0_lv_percent: float | Iterable[float] = nan,
         vkr0_hv_percent: float | Iterable[float] = nan,
         vkr0_mv_percent: float | Iterable[float] = nan,
         vkr0_lv_percent: float | Iterable[float] = nan,
-        vector_group: str | Iterable[str] | None = None,
+        vector_group: Optional[str | Iterable[str]] = None,
         tap_dependency_table: bool | Iterable[bool] = False,
         id_characteristic_table: int | Iterable[int] | float = nan,
         **kwargs) -> npt.NDArray[np.integer]:
@@ -4875,7 +4324,7 @@ def create_transformers3w_from_parameters(
 
         **vector_group** (list of str) - vector group of the 3w-transformers
 
-        \* only considered in load flow if calculate_voltage_angles = True
+        \\* only considered in load flow if calculate_voltage_angles = True
 
     OUTPUT:
         **trafo_id** (list of int) - list of trafo_ids of the created 3w-transformers
@@ -4946,17 +4395,19 @@ def create_transformers3w_from_parameters(
     return index
 
 
-def create_switch(net: pandapowerNet,
-                  bus,
-                  element,
-                  et: SwitchElementType,
-                  closed: bool = True,
-                  type: SwitchType | None = None,
-                  name: str | None = None,
-                  index=None,
-                  z_ohm: float = 0,
-                  in_ka: float = nan,
-                  **kwargs) -> Int:
+def create_switch(
+    net: pandapowerNet,
+    bus,
+    element,
+    et: SwitchElementType,
+    closed: bool = True,
+    type: Optional[SwitchType] = None,
+    name: Optional[str] = None,
+    index: Optional = None,
+    z_ohm: float = 0,
+    in_ka: float = nan,
+    **kwargs
+) -> Int:
     """
     Adds a switch in the net["switch"] table.
 
@@ -5042,17 +4493,19 @@ def create_switch(net: pandapowerNet,
     return index
 
 
-def create_switches(net: pandapowerNet,
-                    buses: Sequence,
-                    elements,
-                    et: SwitchElementType | Sequence[str],
-                    closed: bool = True,
-                    type: SwitchType | None = None,
-                    name: Iterable[str] | None = None,
-                    index=None,
-                    z_ohm: float = 0,
-                    in_ka: float = nan,
-                    **kwargs) -> Int:
+def create_switches(
+    net: pandapowerNet,
+    buses: Sequence,
+    elements,
+    et: SwitchElementType | Sequence[str],
+    closed: bool = True,
+    type: Optional[SwitchType] = None,
+    name: Optional[Iterable[str]] = None,
+    index: Optional = None,
+    z_ohm: float = 0,
+    in_ka: float = nan,
+    **kwargs
+) -> Int:
     """
     Adds a switch in the net["switch"] table.
 
@@ -5145,19 +4598,21 @@ def create_switches(net: pandapowerNet,
     return index
 
 
-def create_shunt(net: pandapowerNet,
-                 bus,
-                 q_mvar: float,
-                 p_mw: float = 0.,
-                 vn_kv: float | None = None,
-                 step: int = 1,
-                 max_step: int = 1,
-                 name: str | None = None,
-                 step_dependency_table: bool = False,
-                 id_characteristic_table: int | float = nan,
-                 in_service: bool = True,
-                 index=None,
-                 **kwargs) -> Int:
+def create_shunt(
+    net: pandapowerNet,
+    bus,
+    q_mvar: float,
+    p_mw: float = 0.,
+    vn_kv: Optional[float] = None,
+    step: int = 1,
+    max_step: int = 1,
+    name: Optional[str] = None,
+    step_dependency_table: bool = False,
+    id_characteristic_table: int | float = nan,
+    in_service: bool = True,
+    index: Optional = None,
+    **kwargs
+) -> Int:
     """
     Creates a shunt element.
 
@@ -5221,19 +4676,21 @@ def create_shunt(net: pandapowerNet,
     return index
 
 
-def create_shunts(net: pandapowerNet,
-                  buses,
-                  q_mvar: float | Iterable[float],
-                  p_mw: float | Iterable[float] = 0.,
-                  vn_kv: float | Iterable[float] | None = None,
-                  step: int | Iterable[int] = 1,
-                  max_step: int | Iterable[int] = 1,
-                  name: Iterable[str] | None = None,
-                  step_dependency_table: bool | Iterable[bool] = False,
-                  id_characteristic_table: int | Iterable[int] | float = nan,
-                  in_service: bool | Iterable[bool] = True,
-                  index=None,
-                  **kwargs) -> npt.NDArray[np.array]:
+def create_shunts(
+    net: pandapowerNet,
+    buses,
+    q_mvar: float | Iterable[float],
+    p_mw: float | Iterable[float] = 0.,
+    vn_kv: Optional[float | Iterable[float]] = None,
+    step: int | Iterable[int] = 1,
+    max_step: int | Iterable[int] = 1,
+    name: Optional[Iterable[str]] = None,
+    step_dependency_table: bool | Iterable[bool] = False,
+    id_characteristic_table: int | Iterable[int] | float = nan,
+    in_service: bool | Iterable[bool] = True,
+    index: Optional = None,
+    **kwargs
+) -> npt.NDArray[np.array]:
     """
     Creates a number of shunt elements.
 
@@ -5294,11 +4751,13 @@ def create_shunts(net: pandapowerNet,
     return index
 
 
-def create_shunt_as_capacitor(net: pandapowerNet,
-                              bus,
-                              q_mvar: float,
-                              loss_factor: float,
-                              **kwargs) -> Int:
+def create_shunt_as_capacitor(
+    net: pandapowerNet,
+    bus,
+    q_mvar: float,
+    loss_factor: float,
+    **kwargs
+) -> Int:
     """
     Creates a shunt element representing a capacitor bank.
 
@@ -5323,19 +4782,21 @@ def create_shunt_as_capacitor(net: pandapowerNet,
     return create_shunt(net, bus, q_mvar=q_mvar, p_mw=p_mw, **kwargs)
 
 
-def create_svc(net: pandapowerNet,
-               bus,
-               x_l_ohm: float,
-               x_cvar_ohm: float,
-               set_vm_pu: float,
-               thyristor_firing_angle_degree: float,
-               name: str | None = None,
-               controllable: bool = True,
-               in_service: bool = True,
-               index=None,
-               min_angle_degree: float = 90,
-               max_angle_degree: float = 180,
-               **kwargs) -> Int:
+def create_svc(
+    net: pandapowerNet,
+    bus,
+    x_l_ohm: float,
+    x_cvar_ohm: float,
+    set_vm_pu: float,
+    thyristor_firing_angle_degree: float,
+    name: Optional[str] = None,
+    controllable: bool = True,
+    in_service: bool = True,
+    index: Optional = None,
+    min_angle_degree: float = 90,
+    max_angle_degree: float = 180,
+    **kwargs
+) -> Int:
     """
     Creates an SVC element - a shunt element with adjustable impedance used to control the voltage \
         at the connected bus
@@ -5393,18 +4854,20 @@ def create_svc(net: pandapowerNet,
     return index
 
 
-def create_ssc(net: pandapowerNet,
-               bus,
-               r_ohm: float,
-               x_ohm: float,
-               set_vm_pu: float = 1.,
-               vm_internal_pu: float = 1.,
-               va_internal_degree: float = 0.,
-               name: str | None = None,
-               controllable: bool = True,
-               in_service: bool = True,
-               index=None,
-               **kwargs) -> Int:
+def create_ssc(
+    net: pandapowerNet,
+    bus,
+    r_ohm: float,
+    x_ohm: float,
+    set_vm_pu: float = 1.,
+    vm_internal_pu: float = 1.,
+    va_internal_degree: float = 0.,
+    name: Optional[str] = None,
+    controllable: bool = True,
+    in_service: bool = True,
+    index: Optional = None,
+    **kwargs
+) -> Int:
     """
     Creates an SSC element (STATCOM)- a shunt element with adjustable VSC internal voltage used to control the voltage \
         at the connected bus
@@ -5461,22 +4924,24 @@ def create_ssc(net: pandapowerNet,
     return index
 
 
-def create_vsc(net: pandapowerNet,
-               bus,
-               bus_dc,
-               r_ohm: float,
-               x_ohm: float,
-               r_dc_ohm: float,
-               pl_dc_mw: float = 0.,
-               control_mode_ac: Literal["vm_pu", "q_mvar"] = "vm_pu",
-               control_value_ac: float = 1.,
-               control_mode_dc: Literal["vm_pu", "p_mw"] = "p_mw",
-               control_value_dc: float = 0.,
-               name: str | None = None,
-               controllable: bool = True,
-               in_service: bool = True,
-               index=None,
-               **kwargs) -> Int:
+def create_vsc(
+    net: pandapowerNet,
+    bus,
+    bus_dc,
+    r_ohm: float,
+    x_ohm: float,
+    r_dc_ohm: float,
+    pl_dc_mw: float = 0.,
+    control_mode_ac: Literal["vm_pu", "q_mvar"] = "vm_pu",
+    control_value_ac: float = 1.,
+    control_mode_dc: Literal["vm_pu", "p_mw"] = "p_mw",
+    control_value_dc: float = 0.,
+    name: Optional[str] = None,
+    controllable: bool = True,
+    in_service: bool = True,
+    index: Optional = None,
+    **kwargs
+) -> Int:
     """
     Creates an VSC converter element - a shunt element with adjustable VSC internal voltage used to connect the \
     AC grid and the DC grid. The element implements several control modes.
@@ -5537,29 +5002,31 @@ def create_vsc(net: pandapowerNet,
     return index
 
 
-def create_impedance(net: pandapowerNet,
-                     from_bus,
-                     to_bus, rft_pu: float,
-                     xft_pu: float,
-                     sn_mva: float,
-                     rtf_pu: float | None = None,
-                     xtf_pu: float | None = None,
-                     name: str | None = None,
-                     in_service: bool = True,
-                     index=None,
-                     rft0_pu: float | None = None,
-                     xft0_pu: float | None = None,
-                     rtf0_pu: float | None = None,
-                     xtf0_pu: float | None = None,
-                     gf_pu: float | None =0,
-                     bf_pu: float | None = 0,
-                     gt_pu: float | None = None,
-                     bt_pu: float | None = None,
-                     gf0_pu: float | None = None,
-                     bf0_pu: float | None = None,
-                     gt0_pu: float | None = None,
-                     bt0_pu: float | None =None,
-                     **kwargs) -> Int:
+def create_impedance(
+    net: pandapowerNet,
+    from_bus,
+    to_bus, rft_pu: float,
+    xft_pu: float,
+    sn_mva: float,
+    rtf_pu: Optional[float] = None,
+    xtf_pu: Optional[float] = None,
+    name: Optional[str] = None,
+    in_service: bool = True,
+    index: Optional = None,
+    rft0_pu: Optional[float] = None,
+    xft0_pu: Optional[float] = None,
+    rtf0_pu: Optional[float] = None,
+    xtf0_pu: Optional[float] = None,
+    gf_pu: Optional[float] =0,
+    bf_pu: Optional[float] = 0,
+    gt_pu: Optional[float] = None,
+    bt_pu: Optional[float] = None,
+    gf0_pu: Optional[float] = None,
+    bf0_pu: Optional[float] = None,
+    gt0_pu: Optional[float] = None,
+    bt0_pu: Optional[float] =None,
+    **kwargs
+) -> Int:
     """
     Creates an impedance element in per unit (pu).
 
@@ -5700,30 +5167,32 @@ def create_impedance(net: pandapowerNet,
     return index
 
 
-def create_impedances(net: pandapowerNet,
-                      from_buses,
-                      to_buses,
-                      rft_pu: float | Iterable[float],
-                      xft_pu: float | Iterable[float],
-                      sn_mva: float | Iterable[float],
-                      rtf_pu: float | Iterable[float] | None = None,
-                      xtf_pu: float | Iterable[float] | None = None,
-                      name: Iterable[str] | None = None,
-                      in_service: bool | Iterable[str] = True,
-                      index=None,
-                      rft0_pu: float | Iterable[float] | None = None,
-                      xft0_pu: float | Iterable[float] | None = None,
-                      rtf0_pu: float | Iterable[float] | None = None,
-                      xtf0_pu: float | Iterable[float] | None = None,
-                      gf_pu: float | Iterable[float] | None = 0,
-                      bf_pu: float | Iterable[float] | None = 0,
-                      gt_pu: float | Iterable[float] | None = None,
-                      bt_pu: float | Iterable[float] | None = None,
-                      gf0_pu: float | Iterable[float] | None = None,
-                      bf0_pu: float | Iterable[float] | None = None,
-                      gt0_pu: float | Iterable[float] | None = None,
-                      bt0_pu: float | Iterable[float] | None =None,
-                      **kwargs) -> npt.NDArray[np.array]:
+def create_impedances(
+    net: pandapowerNet,
+    from_buses,
+    to_buses,
+    rft_pu: float | Iterable[float],
+    xft_pu: float | Iterable[float],
+    sn_mva: float | Iterable[float],
+    rtf_pu: Optional[float | Iterable[float]] = None,
+    xtf_pu: Optional[float | Iterable[float]] = None,
+    name: Optional[Iterable[str]] = None,
+    in_service: bool | Iterable[str] = True,
+    index: Optional = None,
+    rft0_pu: Optional[float | Iterable[float]] = None,
+    xft0_pu: Optional[float | Iterable[float]] = None,
+    rtf0_pu: Optional[float | Iterable[float]] = None,
+    xtf0_pu: Optional[float | Iterable[float]] = None,
+    gf_pu: Optional[float | Iterable[float]] = 0,
+    bf_pu: Optional[float | Iterable[float]] = 0,
+    gt_pu: Optional[float | Iterable[float]] = None,
+    bt_pu: Optional[float | Iterable[float]] = None,
+    gf0_pu: Optional[float | Iterable[float]] = None,
+    bf0_pu: Optional[float | Iterable[float]] = None,
+    gt0_pu: Optional[float | Iterable[float]] = None,
+    bt0_pu: Optional[float | Iterable[float]] =None,
+    **kwargs
+) -> npt.NDArray[np.array]:
     """
     Creates an impedance element in per unit (pu).
 
@@ -5864,20 +5333,22 @@ def create_impedances(net: pandapowerNet,
     return index
 
 
-def create_tcsc(net: pandapowerNet,
-                from_bus,
-                to_bus,
-                x_l_ohm: float,
-                x_cvar_ohm: float,
-                set_p_to_mw: float,
-                thyristor_firing_angle_degree: float,
-                name: str | None = None,
-                controllable: bool = True,
-                in_service: bool = True,
-                index=None,
-                min_angle_degree: float = 90,
-                max_angle_degree: float = 180,
-                **kwargs) -> Int:
+def create_tcsc(
+    net: pandapowerNet,
+    from_bus,
+    to_bus,
+    x_l_ohm: float,
+    x_cvar_ohm: float,
+    set_p_to_mw: float,
+    thyristor_firing_angle_degree: float,
+    name: Optional[str] = None,
+    controllable: bool = True,
+    in_service: bool = True,
+    index: Optional = None,
+    min_angle_degree: float = 90,
+    max_angle_degree: float = 180,
+    **kwargs
+) -> Int:
     """
     Creates a TCSC element - series impedance compensator to control series reactance.
     The TCSC device allows controlling the active power flow through the path it is connected in.
@@ -5943,18 +5414,20 @@ def create_tcsc(net: pandapowerNet,
     return index
 
 
-def create_series_reactor_as_impedance(net: pandapowerNet,
-                                       from_bus,
-                                       to_bus,
-                                       r_ohm: float,
-                                       x_ohm: float,
-                                       sn_mva: float,
-                                       name: str | None = None,
-                                       in_service: bool = True,
-                                       index=None,
-                                       r0_ohm: float | None = None,
-                                       x0_ohm: float | None = None,
-                                       **kwargs) -> Int:
+def create_series_reactor_as_impedance(
+    net: pandapowerNet,
+    from_bus,
+    to_bus,
+    r_ohm: float,
+    x_ohm: float,
+    sn_mva: float,
+    name: Optional[str] = None,
+    in_service: bool = True,
+    index: Optional = None,
+    r0_ohm: Optional[float] = None,
+    x0_ohm: Optional[float] = None,
+    **kwargs
+) -> Int:
     """
     Creates a series reactor as per-unit impedance
     :param net: (pandapowerNet) - The pandapower network in which the element is created
@@ -5991,16 +5464,18 @@ def create_series_reactor_as_impedance(net: pandapowerNet,
     return index
 
 
-def create_ward(net: pandapowerNet,
-                bus,
-                ps_mw: float,
-                qs_mvar: float,
-                pz_mw: float,
-                qz_mvar: float,
-                name: str | None = None,
-                in_service: bool = True,
-                index=None,
-                **kwargs) -> Int:
+def create_ward(
+    net: pandapowerNet,
+    bus,
+    ps_mw: float,
+    qs_mvar: float,
+    pz_mw: float,
+    qz_mvar: float,
+    name: Optional[str] = None,
+    in_service: bool = True,
+    index: Optional = None,
+    **kwargs
+) -> Int:
     """
     Creates a ward equivalent.
 
@@ -6033,16 +5508,18 @@ def create_ward(net: pandapowerNet,
     return index
 
 
-def create_wards(net: pandapowerNet,
-                 buses: Sequence,
-                 ps_mw: float | Iterable[float],
-                 qs_mvar: float | Iterable[float],
-                 pz_mw: float | Iterable[float],
-                 qz_mvar: float | Iterable[float],
-                 name: Iterable[str] | None = None,
-                 in_service: bool | Iterable[bool] = True,
-                 index=None,
-                 **kwargs) -> npt.NDArray[np.array]:
+def create_wards(
+    net: pandapowerNet,
+    buses: Sequence,
+    ps_mw: float | Iterable[float],
+    qs_mvar: float | Iterable[float],
+    pz_mw: float | Iterable[float],
+    qz_mvar: float | Iterable[float],
+    name: Optional[Iterable[str]] = None,
+    in_service: bool | Iterable[bool] = True,
+    index: Optional = None,
+    **kwargs
+) -> npt.NDArray[np.array]:
     """
     Creates ward equivalents.
 
@@ -6076,19 +5553,22 @@ def create_wards(net: pandapowerNet,
     return index
 
 
-def create_xward(net: pandapowerNet,
-                 bus,
-                 ps_mw: float,
-                 qs_mvar: float,
-                 pz_mw: float,
-                 qz_mvar: float,
-                 r_ohm: float,
-                 x_ohm: float,
-                 vm_pu: float,
-                 in_service: bool = True,
-                 name: str | None = None,
-                 index=None,
-                 slack_weight: float = 0.0, **kwargs):
+def create_xward(
+    net: pandapowerNet,
+    bus,
+    ps_mw: float,
+    qs_mvar: float,
+    pz_mw: float,
+    qz_mvar: float,
+    r_ohm: float,
+    x_ohm: float,
+    vm_pu: float,
+    in_service: bool = True,
+    name: Optional[str] = None,
+    index: Optional = None,
+    slack_weight: float = 0.0,
+    **kwargs
+):
     """
     Creates an extended ward equivalent.
 
@@ -6133,23 +5613,25 @@ def create_xward(net: pandapowerNet,
     return index
 
 
-def create_dcline(net: pandapowerNet,
-                  from_bus,
-                  to_bus,
-                  p_mw: float,
-                  loss_percent: float,
-                  loss_mw: float,
-                  vm_from_pu: float,
-                  vm_to_pu: float,
-                  index=None,
-                  name: str | None = None,
-                  max_p_mw: float = nan,
-                  min_q_from_mvar: float = nan,
-                  min_q_to_mvar: float = nan,
-                  max_q_from_mvar: float = nan,
-                  max_q_to_mvar: float = nan,
-                  in_service: bool = True,
-                  **kwargs) -> Int:
+def create_dcline
+    pandapowerNet,
+    from_bus,
+    to_bus,
+    p_mw: float,
+    loss_percent: float,
+    loss_mw: float,
+    vm_from_pu: float,
+    vm_to_pu: float,
+    index: Optional = None,
+    name: Optional[str] = None,
+    max_p_mw: float = nan,
+    min_q_from_mvar: float = nan,
+    min_q_to_mvar: float = nan,
+    max_q_from_mvar: float = nan,
+    max_q_to_mvar: float = nan,
+    in_service: bool = True,
+    **kwargs
+) -> Int:
     """
     Creates a dc line.
 
@@ -6208,17 +5690,19 @@ def create_dcline(net: pandapowerNet,
     return index
 
 
-def create_measurement(net: pandapowerNet,
-                       meas_type: MeasurementType,
-                       element_type: MeasurementElementType,
-                       value: Literal["MW", "MVAr", "p.u.", "kA"],
-                       std_dev: float,
-                       element,
-                       side=None,
-                       check_existing: bool =False,
-                       index=None,
-                       name: str | None = None,
-                       **kwargs) -> Int:
+def create_measurement(
+    net: pandapowerNet,
+    meas_type: MeasurementType,
+    element_type: MeasurementElementType,
+    value: Literal["MW", "MVAr", "p.u.", "kA"],
+    std_dev: float,
+    element,
+    side=None,
+    check_existing: bool =False,
+    index: Optional = None,
+    name: Optional[str] = None,
+    **kwargs
+) -> Int:
     """
     Creates a measurement, which is used by the estimation module. Possible types of measurements \
     are: v, p, q, i, va, ia
@@ -6311,14 +5795,16 @@ def create_measurement(net: pandapowerNet,
     return index
 
 
-def create_pwl_cost(net: pandapowerNet,
-                    element,
-                    et: CostElementType,
-                    points: list[list[float]],
-                    power_type: PWLPowerType = "p",
-                    index=None,
-                    check: bool = True,
-                    **kwargs) -> Int:
+def create_pwl_cost
+    pandapowerNet,
+    element,
+    et: CostElementType,
+    points: list[list[float]],
+    power_type: PWLPowerType = "p",
+    index: Optional = None,
+    check: bool = True,
+    **kwargs
+) -> Int:
     """
     Creates an entry for piecewise linear costs for an element. The currently supported elements are
      - Generator
@@ -6370,14 +5856,16 @@ def create_pwl_cost(net: pandapowerNet,
     return index
 
 
-def create_pwl_costs(net: pandapowerNet,
-                     elements: Sequence,
-                     et: CostElementType | Iterable[str],
-                     points: list[list[list[float]]],
-                     power_type: PWLPowerType | Iterable[str] = "p",
-                     index=None,
-                     check: bool = True,
-                     **kwargs) -> npt.NDArray[np.integer]:
+def create_pwl_costs(
+    net: pandapowerNet,
+    elements: Sequence,
+    et: CostElementType | Iterable[str],
+    points: list[list[list[float]]],
+    power_type: PWLPowerType | Iterable[str] = "p",
+    index: Optional = None,
+    check: bool = True,
+    **kwargs
+) -> npt.NDArray[np.integer]:
     """
     Creates entries for piecewise linear costs for multiple elements. The currently supported elements are
      - Generator
@@ -6441,18 +5929,20 @@ def create_pwl_costs(net: pandapowerNet,
     return index
 
 
-def create_poly_cost(net: pandapowerNet,
-                     element,
-                     et: CostElementType,
-                     cp1_eur_per_mw: float,
-                     cp0_eur: float = 0,
-                     cq1_eur_per_mvar: float = 0,
-                     cq0_eur: float = 0,
-                     cp2_eur_per_mw2: float = 0,
-                     cq2_eur_per_mvar2: float = 0,
-                     index=None,
-                     check: bool = True,
-                     **kwargs) -> Int:
+def create_poly_cost(
+    net: pandapowerNet,
+    element,
+    et: CostElementType,
+    cp1_eur_per_mw: float,
+    cp0_eur: float = 0,
+    cq1_eur_per_mvar: float = 0,
+    cq0_eur: float = 0,
+    cp2_eur_per_mw2: float = 0,
+    cq2_eur_per_mvar2: float = 0,
+    index: Optional = None,
+    check: bool = True,
+    **kwargs
+) -> Int:
     """
     Creates an entry for polynomial costs for an element. The currently supported elements are:
      - Generator ("gen")
@@ -6508,18 +5998,20 @@ def create_poly_cost(net: pandapowerNet,
     return index
 
 
-def create_poly_costs(net: pandapowerNet,
-                      elements: Sequence,
-                      et: CostElementType | Iterable[str],
-                      cp1_eur_per_mw: float | Iterable[float],
-                      cp0_eur: float | Iterable[float]= 0,
-                      cq1_eur_per_mvar: float | Iterable[float] = 0,
-                      cq0_eur: float | Iterable[float] = 0,
-                      cp2_eur_per_mw2: float | Iterable[float]= 0,
-                      cq2_eur_per_mvar2: float | Iterable[float] = 0,
-                      index=None,
-                      check: bool = True,
-                      **kwargs) -> npt.NDArray[np.array]:
+def create_poly_costs(
+    net: pandapowerNet,
+    elements: Sequence,
+    et: CostElementType | Iterable[str],
+    cp1_eur_per_mw: float | Iterable[float],
+    cp0_eur: float | Iterable[float]= 0,
+    cq1_eur_per_mvar: float | Iterable[float] = 0,
+    cq0_eur: float | Iterable[float] = 0,
+    cp2_eur_per_mw2: float | Iterable[float]= 0,
+    cq2_eur_per_mvar2: float | Iterable[float] = 0,
+    index: Optional = None,
+    check: bool = True,
+    **kwargs
+) -> npt.NDArray[np.array]:
     """
     Creates entries for polynomial costs for multiple elements. The currently supported elements are:
      - Generator ("gen")
@@ -6612,7 +6104,7 @@ def _check_elements_existence(net, element_types, elements, reference_columns):
             raise UserWarning(f"Cannot create group with {et} members {diff}.")
 
 
-def create_group(net, element_types, element_indices, name="", reference_columns=None, index=None,
+def create_group(net, element_types, element_indices, name="", reference_columns=None, index: Optional = None,
                  **kwargs):
     """Add a new group to net['group'] dataframe.
 
@@ -6665,15 +6157,19 @@ def create_group(net, element_types, element_indices, name="", reference_columns
     return index[0]
 
 
-def create_group_from_dict(net, elements_dict, name="", reference_column=None, index=None,
+def create_group_from_dict(net, elements_dict, name="", reference_column=None, index: Optional = None,
                            **kwargs):
     """ Wrapper function of create_group(). """
     return create_group(net, elements_dict.keys(), elements_dict.values(),
                         name=name, reference_columns=reference_column, index=index, **kwargs)
 
 
-def _get_index_with_check(net: pandapowerNet, table: str, index: Int | None,
-                          name: str | None = None) -> Int:
+def _get_index_with_check(
+    net: pandapowerNet,
+    table: str,
+    index: Optional[Int],
+    name: Optional[str] = None
+) -> Int:
     if name is None:
         name = table
     if index is None:
