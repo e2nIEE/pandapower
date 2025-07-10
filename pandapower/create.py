@@ -88,6 +88,10 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                  ("in_service", 'bool'),
                  ("type", dtype(object)),
                  ("current_source", "bool")],
+        "source_dc": [("name", dtype(object)),
+                      ("bus", "i8"),
+                      ("vm_pu", "f8"),
+                      ("in_service", 'bool')],
         "motor": [("name", dtype(object)),
                   ("bus", "i8"),
                   ("pn_mech_mw", "f8"),
@@ -464,6 +468,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
         "_empty_res_shunt": [("p_mw", "f8"),
                              ("q_mvar", "f8"),
                              ("vm_pu", "f8")],
+        "_empty_res_source_dc": [("p_mw", "f8")],
         "_empty_res_svc": [("thyristor_firing_angle_degree", "f8"),
                            ("x_ohm", "f8"),
                            ("q_mvar", "f8"),
@@ -4771,6 +4776,41 @@ def create_shunt_as_capacitor(net, bus, q_mvar, loss_factor, **kwargs):
     q_mvar = -abs(q_mvar)  # q is always negative for capacitor
     p_mw = abs(q_mvar * loss_factor)  # p is always positive for active power losses
     return create_shunt(net, bus, q_mvar=q_mvar, p_mw=p_mw, **kwargs)
+
+
+def create_source_dc(net, bus, vm_pu=1.0, index=None, name=None, in_service=True, **kwargs):
+    """
+    Creates a dc voltage source in a dc grid with an adjustable set point
+    INPUT:
+
+        **net** (pandapowerNet) - The pandapower network in which the element is created
+
+        **bus** (int) - index of the bus the shunt is connected to
+
+        **vm_pu** (float) - set-point for the bus voltage magnitude at the connection bus
+
+    OPTIONAL:
+        **name** (str, None) - element name
+
+        **index** (int, None) - Force a specified ID if it is available. If None, the index one \
+            higher than the highest already existing index is selected.
+
+        **in_service** (bool, True) - True for in_service or False for out of service
+
+    OUTPUT:
+        **index** (int) - The unique ID of the created svc
+
+    """
+    _check_element(net, bus, element='bus_dc')
+
+    index = _get_index_with_check(net, "source_dc", index)
+
+    entries = dict(zip(["name", "bus", "vm_pu", "in_service"],
+                       [name, bus, vm_pu, bool(in_service)]))
+
+    _set_entries(net, "source_dc", index, True, **entries, **kwargs)
+
+    return index
 
 
 def create_svc(net, bus, x_l_ohm, x_cvar_ohm, set_vm_pu, thyristor_firing_angle_degree,
