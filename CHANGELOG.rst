@@ -13,6 +13,7 @@ Change Log
 - [ADDED] added documentation for q_capability_characteristic and q_capability_curve_table DataFrames in the pandapower net
 - [FIXED] cim2pp: add GeneratingUnit to SSH profile, add new cim16 schema
 - [FIXED] issue on case9 grid: Missing columns id_characteristic_table and step_dependency_table at shunt leading to errors when adding them
+- [CHANGED] separate voltage dependencies for P and Q for loads: const_z_percent --> const_z_p_percent, const_z_q_percent, const_i_percent --> const_i_p_percent, const_i_q_percent
 
 [3.1.2] - 2025-06-16
 -------------------------------
