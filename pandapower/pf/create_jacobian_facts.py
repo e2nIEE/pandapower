@@ -314,7 +314,7 @@ def create_J_modification_ssc_vsc(J, V, Vm, y_pu, f, t, pvpq, pq, pvpq_lookup, p
     Parameters
     ----------
     Vm
-    control_delta
+        control_delta
     V
         array of np.complex128
     y_pu
@@ -531,8 +531,21 @@ def create_J_modification_ssc_vsc(J, V, Vm, y_pu, f, t, pvpq, pq, pvpq_lookup, p
 
 
 @np.errstate(all="raise")
-def create_J_modification_hvdc(J, V_dc, Ybus_hvdc, Ybus_vsc_dc, vsc_g_pu, vsc_gl_pu, dc_p, dc_p_lookup,
-                               vsc_dc_fb, vsc_dc_tb, vsc_dc_slack, vsc_dc_mode_p):
+def create_J_modification_hvdc(
+        J: csr_matrix,
+        V_dc: np.ndarray,
+        Ybus_hvdc: csr_matrix,
+        Ybus_vsc_dc: csr_matrix,
+        vsc_g_pu: np.ndarray,
+        vsc_gl_pu: np.ndarray,
+        dc_p: np.ndarray,
+        dc_p_lookup: np.ndarray,
+        vsc_dc_fb: np.ndarray,
+        vsc_dc_tb: np.ndarray,
+        vsc_dc_slack: np.ndarray,
+        vsc_dc_mode_p: np.ndarray
+    ):
+
     # Calculate the first matrix for all elements
     J_all = (Ybus_hvdc - Ybus_vsc_dc).multiply(V_dc)
     # Calculate the second matrix for diagonal elements only
