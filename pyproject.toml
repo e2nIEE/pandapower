@@ -76,7 +76,7 @@ all = ["pandapower[docs,plotting,test,performance,fileio,converter,pgm,control,t
 
 
 [tool.setuptools.dynamic]
-version = {attr = "pandapower.__version__"}
+version = {attr = "pandapower._version.__version__"}
 
 [tool.setuptools.packages.find]
 include = [
