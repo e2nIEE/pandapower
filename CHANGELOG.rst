@@ -13,6 +13,7 @@ Change Log
 - [ADDED] added documentation for q_capability_characteristic and q_capability_curve_table DataFrames in the pandapower net
 - [FIXED] cim2pp: add GeneratingUnit to SSH profile, add new cim16 schema
 - [FIXED] issue on case9 grid: Missing columns id_characteristic_table and step_dependency_table at shunt leading to errors when adding them
+- [CHANGED] separate voltage dependencies for P and Q for loads: const_z_percent --> const_z_p_percent, const_z_q_percent, const_i_percent --> const_i_p_percent, const_i_q_percent
 - [FIXED] fixed convert_format for missing information (in gen, sgen, shunt) and tables (q_capability_characteristic, q_capability_curve_table, id_characteristic_table, step_dependency_table)
 
 [3.1.2] - 2025-06-16
@@ -125,6 +126,9 @@ Change Log
 - [FIXED] avoid duplicated keys in kwargs and pf_options in run_contingency()
 - [ADDED] improved lightsim2grid documentation including compatibility issues
 - [FIXED] cim2pp: set default xml encoding to None to avoid error after changing to lxml
+- [FIXED] Lightsim2grid version
+- [FIXED] geopandas version
+- [FIXED] scipy version
 - [FIXED] PandaModels OPF with 'bus_dc' key errors
 - [FIXED] julia tests
 - [FIXED] copy array element to standard python scalar

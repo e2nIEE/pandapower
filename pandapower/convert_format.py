@@ -26,17 +26,18 @@ def convert_format(net, elements_to_deserialize=None):
     """
     from pandapower.toolbox import set_data_type_of_columns_to_default
     if not isinstance(net.version, str) or not hasattr(net, 'format_version') or \
-            Version(net.format_version) > Version(net.version):
+            Version(net.format_version) > Version(net.version.split('.dev')[0]):
         net.format_version = net.version
     if isinstance(net.format_version, str) and Version(net.format_version) >= Version(__format_version__):
         return net
     _add_nominal_power(net)
     _add_missing_tables(net)
     _rename_columns(net, elements_to_deserialize)
-    _add_missing_columns(net, elements_to_deserialize)
-    _create_seperate_cost_tables(net, elements_to_deserialize)
+    # _convert_q_capability_characteristic renames a column that would be created by _add_missing_columns
     if Version(str(net.format_version)) < Version("3.1.0"):
         _convert_q_capability_characteristic(net)
+    _add_missing_columns(net, elements_to_deserialize)
+    _create_seperate_cost_tables(net, elements_to_deserialize)
     if Version(str(net.format_version)) < Version("3.0.0"):
         _convert_geo_data(net, elements_to_deserialize)
         _convert_group_element_index(net)
@@ -276,6 +277,12 @@ def _create_seperate_cost_tables(net, elements_to_deserialize):
 def _rename_columns(net, elements_to_deserialize):
     if _check_elements_to_deserialize('line', elements_to_deserialize):
         net.line = net.line.rename(columns={'imax_ka': 'max_i_ka'})
+    if _check_elements_to_deserialize('load', elements_to_deserialize) and \
+        ('const_z_percent' in net.load.columns and 'const_i_percent' in net.load.columns) :
+            net.load = net.load.rename(columns={'const_z_percent': 'const_z_p_percent',
+                                                'const_i_percent': 'const_i_p_percent'})
+            net.load.insert(net.load.columns.get_loc('const_i_p_percent') + 1, 'const_i_q_percent', net.load.const_i_p_percent)
+            net.load.insert(net.load.columns.get_loc('const_z_p_percent') + 1, 'const_z_q_percent', net.load.const_z_p_percent)
     if _check_elements_to_deserialize('gen', elements_to_deserialize):
         net.gen = net.gen.rename(columns={"qmin_mvar": "min_q_mvar", "qmax_mvar": "max_q_mvar"})
     for typ, data in net.std_types["line"].items():
@@ -341,9 +348,12 @@ def _add_missing_columns(net, elements_to_deserialize):
             "tap_step_degree" not in net.trafo3w:
         net.trafo3w["tap_step_degree"] = 0
     if _check_elements_to_deserialize('load', elements_to_deserialize) and \
-            "const_z_percent" not in net.load or "const_i_percent" not in net.load:
-        net.load["const_z_percent"] = np.zeros(net.load.shape[0])
-        net.load["const_i_percent"] = np.zeros(net.load.shape[0])
+            "const_z_p_percent" not in net.load or "const_i_p_percent" not in net.load and \
+            "const_z_q_percent" not in net.load or "const_i_q_percent" not in net.load:
+        net.load["const_z_p_percent"] = np.zeros(net.load.shape[0])
+        net.load["const_i_p_percent"] = np.zeros(net.load.shape[0])
+        net.load["const_z_q_percent"] = np.zeros(net.load.shape[0])
+        net.load["const_i_q_percent"] = np.zeros(net.load.shape[0])
 
     if _check_elements_to_deserialize('shunt', elements_to_deserialize) and \
             "vn_kv" not in net["shunt"]:

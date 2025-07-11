@@ -235,7 +235,8 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
         **voltage_depend_loads** (bool, True)
         (Not tested with 3 Phase load flow) - consideration of voltage-dependent loads.
 
-            If False, ``net.load.const_z_percent`` and ``net.load.const_i_percent``
+            If False, ``net.load.const_z_p_percent``, ``net.load.const_i_p_percent``,
+            ``net.load.const_z_q_percent`` and ``net.load.const_i_q_percent``
             are not considered, i.e. ``net.load.p_mw`` and ``net.load.q_mvar``
             are considered as constant-power loads.
 
