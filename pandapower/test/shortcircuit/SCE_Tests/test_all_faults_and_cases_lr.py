@@ -62,8 +62,7 @@ def test_four_bus_radial_grid(fault, case, fault_values, lv_tol_percent, fault_l
     if is_sgen:
         sgen_idx = [1, [1, 3]]
         for idx in sgen_idx:
-            net, dataframes = load_test_case_data("1_four_bus_radial_grid_sgen", fault_location_bus,
-                                                  is_sgen=is_sgen, sgen_idx=idx)
+            net, dataframes = load_test_case_data("1_four_bus_radial_grid_sgen", fault_location_bus, sgen_idx=idx)
             results = run_test_cases(
                 net,
                 dataframes["branch" if is_branch_test else "bus"],
@@ -152,8 +151,9 @@ def load_test_case(net_name: str) -> pandapowerNet:
 
 
 def load_test_case_data(net_name, fault_location_bus, vector_group=None, sgen_idx=None):
+    is_sgen = sgen_idx is not None
     if vector_group:
-        if is_sgen is not None:
+        if is_sgen:
             net_name = f"{net_name[:-5]}_{vector_group.lower()}_sgen"
         else:
             net_name = f"{net_name}_{vector_group.lower()}"
@@ -177,7 +177,7 @@ def load_test_case_data(net_name, fault_location_bus, vector_group=None, sgen_id
         try:
             dataframes[bb] = load_pf_results(os.path.join(
                 testfiles_path,
-                "sc_result_comparison", grid_folder,
+                "sc_result_comparison", "wp_2.2" if is_sgen else "wp_2.1",
                 file_name
             ))
         except FileNotFoundError:
