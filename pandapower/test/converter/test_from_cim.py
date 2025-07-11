@@ -1101,7 +1101,7 @@ def test_fullgrid_gen(fullgrid_v2):
     assert math.isnan(element_0['xdss_pu'].item())
     assert element_0['cos_phi'].item() == pytest.approx(0.850, abs=0.000001)
     assert element_0['pg_percent'].item() == pytest.approx(0.0, abs=0.000001)
-    assert element_0['q_capability_curve_table'].item()
+    assert element_0['reactive_capability_curve'].item()
     assert element_0['id_q_capability_characteristic'].item() == 0
     assert element_0['curve_style'].item() == 'straightLineYValues'
 
