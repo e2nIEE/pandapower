@@ -173,8 +173,6 @@ def to_dict_of_dfs(net, include_results=False, include_std_types=True, include_p
             for to_json_col in to_json_columns:
                 tab[to_json_col] = value[to_json_col].apply(lambda x: json.dumps(x, cls=PPJSONEncoder, indent=2))
             tab = tab[value.columns]
-            if "recycle" in tab.columns:
-                tab["recycle"] = tab["recycle"].apply(json.dumps)
             dodfs[item] = tab
         elif "geo" in value.columns:
             columns = [c for c in value.columns if c != "geo"]
