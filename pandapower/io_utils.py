@@ -165,6 +165,17 @@ def to_dict_of_dfs(net, include_results=False, include_std_types=True, include_p
             if "recycle" in tab.columns:
                 tab["recycle"] = tab["recycle"].apply(json.dumps)
             dodfs[item] = tab
+        elif item == "q_capability_characteristic":
+            item_dtypes = value.dtypes.astype(str).to_dict()
+            columns = [c for c in value.columns if item_dtypes[c] != "object"]
+            to_json_columns = [c for c in value.columns if item_dtypes[c] == "object"]
+            tab = value[columns].copy()
+            for to_json_col in to_json_columns:
+                tab[to_json_col] = value[to_json_col].apply(lambda x: json.dumps(x, cls=PPJSONEncoder, indent=2))
+            tab = tab[value.columns]
+            if "recycle" in tab.columns:
+                tab["recycle"] = tab["recycle"].apply(json.dumps)
+            dodfs[item] = tab
         elif "geo" in value.columns:
             columns = [c for c in value.columns if c != "geo"]
             tab = value[columns].copy()
@@ -250,12 +261,13 @@ def from_dict_of_dfs(dodfs, net=None):
             net['user_pf_options'] = {c: v for c, v in zip(table.columns, table.values[0])}
             continue  # don't go into try..except
         else:
-            for json_column in ("object", "recycle"):
+            for json_column in ("object", "recycle", "q_max_characteristic", "q_min_characteristic"):
                 if json_column in table.columns:
                     table[json_column] = table[json_column].apply(
                         lambda x: json.loads(x, cls=PPJSONDecoder))
             if not isinstance(table.index, pd.MultiIndex):
-                table = table.rename_axis(net[item].index.name)
+                if item in net:
+                    table = table.rename_axis(net[item].index.name)
             net[item] = table
             # convert geodata to geojson
             if item in ["bus", "line"]:
@@ -265,7 +277,7 @@ def from_dict_of_dfs(dodfs, net=None):
                     )
         # set the index to be Int
         try:
-            net[item].set_index(net[item].index.astype(np.int64), inplace=True)
+            net[item] = net[item].set_index(net[item].index.astype(np.int64))
         except (TypeError, ValueError):
             # TypeError or ValueError: if not int index (e.g. str)
             pass
