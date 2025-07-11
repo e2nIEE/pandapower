@@ -67,10 +67,6 @@ def _convert_q_capability_characteristic(net: pandapowerNet):
     # this is necessary due to the fact that Excel sheet names have a limit of 31 characters
     if 'q_capability_curve_characteristic' in net:
         net['q_capability_characteristic'] = net.pop('q_capability_curve_characteristic')
-    for ele in ['gen', 'sgen']:
-        if isinstance(net[ele], pd.DataFrame) and 'id_q_capability_curve_characteristic' in net[ele].columns:
-            net[ele] = net[ele].rename(
-                columns={'id_q_capability_curve_characteristic': 'id_q_capability_characteristic'})
 
 
 def _convert_geo_data(net, elements_to_deserialize=None):
@@ -300,6 +296,11 @@ def _rename_columns(net, elements_to_deserialize):
                     net.measurement.loc[~bus_measurements, "bus"].values
                 net.measurement = net.measurement.rename(columns={'type': 'measurement_type'})
                 net.measurement = net.measurement.drop(["bus"], axis=1)
+    for ele in ['gen', 'sgen']:
+        if (_check_elements_to_deserialize(ele, elements_to_deserialize) and
+                'id_q_capability_curve_characteristic' in net[ele]):
+            net[ele] = net[ele].rename(
+                columns={'id_q_capability_curve_characteristic': 'id_q_capability_characteristic'})
     if _check_elements_to_deserialize('controller', elements_to_deserialize):
         if "controller" in net:
             net["controller"] = net["controller"].rename(columns={"controller": "object"})
@@ -373,6 +374,9 @@ def _add_missing_columns(net, elements_to_deserialize):
     if _check_elements_to_deserialize('sgen', elements_to_deserialize) and \
             "reactive_capability_curve" not in net.sgen:
         net.sgen["reactive_capability_curve"] = False
+    if _check_elements_to_deserialize('sgen', elements_to_deserialize) and \
+            "curve_style" not in net.sgen:
+        net.sgen["curve_style"] = None
 
     if _check_elements_to_deserialize('line', elements_to_deserialize):
         if "g_us_per_km" not in net.line:
@@ -389,6 +393,9 @@ def _add_missing_columns(net, elements_to_deserialize):
     if _check_elements_to_deserialize('gen', elements_to_deserialize) and \
             "reactive_capability_curve" not in net.gen:
         net.gen["reactive_capability_curve"] = False
+    if _check_elements_to_deserialize('gen', elements_to_deserialize) and \
+            "curve_style" not in net.gen:
+        net.gen["curve_style"] = None
 
     if _check_elements_to_deserialize('trafo', elements_to_deserialize) and \
             "tap_changer_type" not in net.trafo:

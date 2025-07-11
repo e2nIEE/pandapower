@@ -1099,9 +1099,21 @@ def test_fullgrid_gen(fullgrid_v2):
     assert math.isnan(element_0['xdss_pu'].item())
     assert element_0['cos_phi'].item() == pytest.approx(0.850, abs=0.000001)
     assert element_0['pg_percent'].item() == pytest.approx(0.0, abs=0.000001)
+    assert element_0['q_capability_curve_table'].item()
+    assert element_0['id_q_capability_characteristic'].item() == 0
+    assert element_0['curve_style'].item() == 'straightLineYValues'
 
     element_1 = fullgrid_v2.gen[fullgrid_v2.gen['origin_id'] == '_3a3b27be-b18b-4385-b557-6735d733baf0']
     assert element_1['vm_pu'].item() == pytest.approx(1.050, abs=0.000001)
+
+
+def test_full_grid_q_capability_table(fullgrid_v2):
+    capa_df = pd.DataFrame({'id_q_capability_curve': {0: 0, 1: 0, 2: 0},
+                            'p_mw': {0: -100.0, 1: 0.0, 2: 100.0},
+                            'q_min_mvar': {0: -200.0, 1: -300.0, 2: -200.0},
+                            'q_max_mvar': {0: 200.0, 1: 300.0, 2: 200.0}})
+    capa_df['id_q_capability_curve'] = capa_df['id_q_capability_curve'].astype('Int64')
+    pd.testing.assert_frame_equal(fullgrid_v2['q_capability_curve_table'], capa_df, atol=1e-5)
 
 
 def test_fullgrid_ext_grid(fullgrid_v2):
