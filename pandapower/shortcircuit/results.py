@@ -137,9 +137,11 @@ def _calculate_branch_phase_results(ppc_0, ppc_1, ppc_2):
     return v_abc_pu, i_abc_ka, s_abc_mva
 
 
-def _get_line_to_g_results(net, ppc_1, v_abc_pu, i_abc_ka, s_abc_mva):
+# def _get_line_to_g_results(net, ppc_1, v_abc_pu, i_abc_ka, s_abc_mva):
+def _get_line_branch_results(net, ppc_1, v_abc_pu, i_abc_ka, s_abc_mva): #renamaed the function properly
     branch_lookup = net._pd2ppc_lookups["branch"]
     case = net._options["case"]
+    fault = net._options["fault"]
 
     if "line" in branch_lookup:
         f, t = branch_lookup["line"]
@@ -148,6 +150,11 @@ def _get_line_to_g_results(net, ppc_1, v_abc_pu, i_abc_ka, s_abc_mva):
         # todo: check axis of max with more lines in the grid
         i_max_per_line_ka = np.max(np.abs(i_abc_ka), axis=1)
         net.res_line_sc["ikss_ka"] = minmax(i_max_per_line_ka[f:t, :], axis=1)
+        
+        if fault == 'LLL': #corrected bramch p amd q values
+            mult = 3
+        else:
+            mult = 1
 
         for phase_idx, phase in enumerate(("a", "b", "c")):
             for side_idx, side in enumerate(("from", "to")):
@@ -155,8 +162,8 @@ def _get_line_to_g_results(net, ppc_1, v_abc_pu, i_abc_ka, s_abc_mva):
                 net.res_line_sc[f"ikss_{phase}_{side}_degree"] = np.angle(i_abc_ka[f:t, side_idx, phase_idx], deg=True)
 
             for side_idx, side in enumerate(("from", "to")):
-                net.res_line_sc[f"p_{phase}_{side}_mw"] = s_abc_mva[f:t, side_idx, phase_idx].real
-                net.res_line_sc[f"q_{phase}_{side}_mvar"] = s_abc_mva[f:t, side_idx, phase_idx].imag
+                net.res_line_sc[f"p_{phase}_{side}_mw"] = s_abc_mva[f:t, side_idx, phase_idx].real * mult
+                net.res_line_sc[f"q_{phase}_{side}_mvar"] = s_abc_mva[f:t, side_idx, phase_idx].imag * mult
 
             for side_idx, side in enumerate(("from", "to")):
                 net.res_line_sc[f"vm_{phase}_{side}_pu"] = np.abs(v_abc_pu[f:t, side_idx, phase_idx])
@@ -260,7 +267,7 @@ def _extract_results(net, ppc_0, ppc_1, ppc_2, bus):
         # TODO check option return all current here
         if (~net["_options"]['return_all_currents']):
             v_abc_pu, i_abc_ka, s_abc_mva = _calculate_branch_phase_results(ppc_0, ppc_1, ppc_2)
-            _get_line_to_g_results(net, ppc_1, v_abc_pu, i_abc_ka, s_abc_mva)
+            _get_line_branch_results(net, ppc_1, v_abc_pu, i_abc_ka, s_abc_mva)
             #TODO might need to be adapted
             _get_trafo_lg_results(net, v_abc_pu, i_abc_ka, s_abc_mva)
         # elif (net["_options"]["fault"] in ("LL")) & (~net["_options"]['return_all_currents']):
