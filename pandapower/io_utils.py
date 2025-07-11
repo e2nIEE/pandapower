@@ -265,9 +265,8 @@ def from_dict_of_dfs(dodfs, net=None):
                 if json_column in table.columns:
                     table[json_column] = table[json_column].apply(
                         lambda x: json.loads(x, cls=PPJSONDecoder))
-            if not isinstance(table.index, pd.MultiIndex):
-                if item in net:
-                    table = table.rename_axis(net[item].index.name)
+            if not isinstance(table.index, pd.MultiIndex) and item in net:
+                table = table.rename_axis(net[item].index.name)
             net[item] = table
             # convert geodata to geojson
             if item in ["bus", "line"]:
