@@ -15,6 +15,7 @@ Change Log
 - [FIXED] issue on case9 grid: Missing columns id_characteristic_table and step_dependency_table at shunt leading to errors when adding them
 - [CHANGED] separate voltage dependencies for P and Q for loads: const_z_percent --> const_z_p_percent, const_z_q_percent, const_i_percent --> const_i_p_percent, const_i_q_percent
 - [FIXED] fixed convert_format for missing information (in gen, sgen, shunt) and tables (q_capability_characteristic, q_capability_curve_table, id_characteristic_table, step_dependency_table)
+- [ADDED] added tests for q_capability_curve_table in cim2pp and convert_format.py for format_version 3.1.0
 
 [3.1.2] - 2025-06-16
 -------------------------------
