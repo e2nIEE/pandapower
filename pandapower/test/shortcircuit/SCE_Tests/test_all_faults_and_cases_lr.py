@@ -11,6 +11,7 @@ import os
 import pytest
 import pandas as pd
 import numpy as np
+from pandapower.auxiliary import pandapowerNet
 
 from pandapower import pp_dir
 from pandapower.shortcircuit.calc_sc import calc_sc
@@ -43,7 +44,8 @@ is_branch_test = [True]
 is_sgen = [True]
 # Create parameter list
 parametrize_values = list(
-    product(faults, cases, values, lv_tol_percents, fault_location_buses, is_branch_test, is_sgen))
+    product(faults, cases, values, lv_tol_percents, fault_location_buses, is_branch_test, is_sgen)
+)
 
 # Create parameter list with vector group
 #  uses "Dyn" as vector group for LLL and LL. LLG and LG are combined with all vector groups.
@@ -140,53 +142,47 @@ def compare_results(columns_to_check, net_df, pf_results):
         )
 
 
-def load_test_case_data(net_name, fault_location_bus, vector_group=None, is_sgen=False, sgen_idx=None):
-    if vector_group:
-        net_name = f"{net_name}_{vector_group.lower()}"
-    if is_sgen:
+def load_test_case(net_name: str) -> pandapowerNet:
+    if net_name.endswith("_sgen"):
         grid_folder = "wp_2.2"
     else:
         grid_folder = "wp_2.1"
 
-    net = from_json(os.path.join(testfiles_path, "test_grids", grid_folder, f"{net_name}.json"))
+    return from_json(os.path.join(testfiles_path, "test_grids", grid_folder, f"{net_name}.json"))
+
+
+def load_test_case_data(net_name, fault_location_bus, vector_group=None, sgen_idx=None):
+    if vector_group:
+        if is_sgen is not None:
+            net_name = f"{net_name[:-5]}_{vector_group.lower()}_sgen"
+        else:
+            net_name = f"{net_name}_{vector_group.lower()}"
+
+    net = load_test_case(net_name)
+
     if is_sgen:
         net.sgen["k"] = 1.2
         if isinstance(sgen_idx, list):
             net.sgen.loc[net.sgen.bus.isin(sgen_idx), 'in_service'] = True
             net.sgen.loc[~net.sgen.bus.isin(sgen_idx), 'in_service'] = False
-            sgen_str = ''.join(str(idx) for idx in sgen_idx)
+            sgen_str = f"_sgen{''.join(str(idx) for idx in sgen_idx)}"
         else:
-            sgen_str = str(sgen_idx)
-
-        excel_file_bus = os.path.join(
-            testfiles_path,
-            "sc_result_comparison", grid_folder,
-            f"{net_name}_pf_sc_results_{fault_location_bus}_bus_sgen{sgen_str}.xlsx"
-        )
-        excel_file_branch = os.path.join(
-            testfiles_path,
-            "sc_result_comparison", grid_folder,
-            f"{net_name}_pf_sc_results_{fault_location_bus}_branch_sgen{sgen_str}.xlsx"
-        )
+            sgen_str = f"_sgen{sgen_idx}"
     else:
-        excel_file_bus = os.path.join(
-            testfiles_path,
-            "sc_result_comparison", grid_folder,
-            f"{net_name}_pf_sc_results_{fault_location_bus}_bus.xlsx"
-        )
-        excel_file_branch = os.path.join(
-            testfiles_path,
-            "sc_result_comparison", grid_folder,
-            f"{net_name}_pf_sc_results_{fault_location_bus}_branch.xlsx"
-        )
-    try:
-        dataframes = {
-            'bus': load_pf_results(excel_file_bus),
-            'branch': load_pf_results(excel_file_branch)
-        }
-        return net, dataframes
-    except FileNotFoundError:
-        return net, FileNotFoundError("At least one of the results files does not exist.")
+        sgen_str = ''
+
+    dataframes = {}
+    for bb in ['bus', 'branch']:
+        file_name = f"{net_name}_pf_sc_results_{fault_location_bus}_{bb}{sgen_str}.xlsx"
+        try:
+            dataframes[bb] = load_pf_results(os.path.join(
+                testfiles_path,
+                "sc_result_comparison", grid_folder,
+                file_name
+            ))
+        except FileNotFoundError:
+            logger.warning(f"File {file_name} not found in {testfiles_path}/sc_result_comparison/{grid_folder}")
+    return net, dataframes
 
 
 def run_test_cases(net, dataframes, fault, case, fault_values, lv_tol_percent, fault_location_bus,

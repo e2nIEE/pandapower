@@ -18,8 +18,9 @@ from pandapower.shortcircuit.calc_sc import calc_sc
 from pandapower.file_io import from_json
 
 import warnings
-warnings.filterwarnings("ignore", category=FutureWarning)  
-warnings.filterwarnings("ignore", category=DeprecationWarning) 
+
+warnings.filterwarnings("ignore", category=FutureWarning)
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 testfiles_path = os.path.join(pp_dir, 'test', 'shortcircuit', 'sce_tests')
 
@@ -44,7 +45,7 @@ parametrize_values = list(product(faults, cases, values, lv_tol_percents, fault_
 #  uses "Dyn" as vector group for LLL and LL. LLG and LG are combined with all vector groups.
 parametrize_values_vector = list(product(
     net_names, faults[:2], cases, values, lv_tol_percents, vector_groups[:1], fault_location_buses, is_branch_test
-))+list(product(
+)) + list(product(
     net_names, faults[2:], cases, values, lv_tol_percents, vector_groups, fault_location_buses, is_branch_test
 ))
 
@@ -103,7 +104,7 @@ def compare_results(columns_to_check, net_df, pf_results, branch_results):
         #     continue
 
         # Part to handle mismatch due to possibility to write same angle as 180° or -180°
-        if column_ar.endswith("degree"): 
+        if column_ar.endswith("degree"):
             if (net_df.loc[:, column] < 0).any():
                 neg_values_mask = net_df.loc[:, column] < -0.2
                 net_df.loc[neg_values_mask, column] += 360
@@ -218,6 +219,7 @@ def run_test_cases(net, dataframes, fault, case, fault_values, lv_tol_percent, f
         net_df = net.res_bus_sc
     return columns_to_check, net_df, modified_pf_results_selection
 
+
 def clean_small_angles(fault, results):
     if fault in ["LG", "LLG"]:
         for [mag, ang] in ("ikss_a_from_ka", "ikss_a_from_degree"), \
@@ -253,6 +255,7 @@ def clean_small_angles(fault, results):
             results[ang][results[mag] < 1e-5] = 0
 
     return results
+
 
 def check_pattern(pattern):
     """
