@@ -31,106 +31,79 @@ net_names = [
     "test_case_4_twenty_bus_radial_grid"
 ]
 faults = ["LLL", "LL", "LG", "LLG"]
-# cases = ["max", "min"]
-cases = ["max"]
+cases = ["max", "min"]
 values = [(0.0, 0.0), (5.0, 5.0)]
 vector_groups = ['Dyn', 'Yyn', 'YNyn']
 lv_tol_percents = [6, 10]
 fault_location_buses = [1, 2, 3]
-#is_branch_test = [False, True]
-is_branch_test = [True]
-#is_sgen = [False, True]
-is_sgen = [True]
+is_branch_test = [True, False]
+sgen_idx = [None, 1, [1, 3]] # None for is_sgen=false
+
 # Create parameter list
 parametrize_values = list(
-    product(faults, cases, values, lv_tol_percents, fault_location_buses, is_branch_test, is_sgen)
+    product(faults, cases, values, lv_tol_percents, fault_location_buses, is_branch_test, sgen_idx)
 )
 
 # Create parameter list with vector group
 #  uses "Dyn" as vector group for LLL and LL. LLG and LG are combined with all vector groups.
 parametrize_values_vector = list(product(
-    net_names, faults[:2], cases, values, lv_tol_percents, vector_groups[:1], fault_location_buses, is_branch_test, is_sgen
+    net_names, faults[:2], cases, values, lv_tol_percents, vector_groups[:1], fault_location_buses, is_branch_test, [None]
 )) + list(product(
-    net_names, faults[2:], cases, values, lv_tol_percents, vector_groups, fault_location_buses, is_branch_test, is_sgen
+    net_names, faults[2:], cases, values, lv_tol_percents, vector_groups, fault_location_buses, is_branch_test, [None]
 ))
+# add sgen test to the vector test
+sgen_params = set()
+for values in parametrize_values_vector:
+    net_name = values[0].replace("test_case_", "")
+    if "five_bus" in net_name:
+        sgen_params.add((net_name, *values[1:-1], (3, 4)))
+    elif "twenty_bus" in net_name:
+        vector_group = values[5]
+        if vector_group == "Dyn":
+            sgen_params.add((net_name, *values[1:-3], 8, values[-2], (4,)))
+        elif vector_group == "YNyn":
+            sgen_params.add((net_name, *values[1:-3], 8, values[-2], (4, 7, 14, 19)))
+        elif vector_group == "Yyn":
+            sgen_params.add((net_name, *values[1:-3], 8, values[-2], (4, 7, 14)))
+parametrize_values_vector += list(sgen_params)
 
 
-@pytest.mark.parametrize("fault, case, fault_values, lv_tol_percent, fault_location_bus, is_branch_test, is_sgen",
+@pytest.mark.parametrize("fault, case, fault_values, lv_tol_percent, fault_location_bus, is_branch_test, sgen_idx",
                          parametrize_values)
-def test_four_bus_radial_grid(fault, case, fault_values, lv_tol_percent, fault_location_bus, is_branch_test, is_sgen):
-    if is_sgen:
-        sgen_idx = [1, [1, 3]]
-        for idx in sgen_idx:
-            net, dataframes = load_test_case_data("1_four_bus_radial_grid_sgen", fault_location_bus, sgen_idx=idx)
-            results = run_test_cases(
-                net,
-                dataframes["branch" if is_branch_test else "bus"],
-                fault,
-                case,
-                fault_values,
-                lv_tol_percent,
-                fault_location_bus,
-                branch_results=is_branch_test
-            )
-            compare_results(*results)
+def test_four_bus_radial_grid(fault, case, fault_values, lv_tol_percent, fault_location_bus, is_branch_test, sgen_idx):
+    if sgen_idx is not None:
+        net, dataframes = load_test_case_data("1_four_bus_radial_grid_sgen", fault_location_bus, sgen_idx=sgen_idx)
     else:
         net, dataframes = load_test_case_data("test_case_1_four_bus_radial_grid", fault_location_bus)
-        results = run_test_cases(
-            net,
-            dataframes["branch" if is_branch_test else "bus"],
-            fault,
-            case,
-            fault_values,
-            lv_tol_percent,
-            fault_location_bus,
-            branch_results=is_branch_test
-        )
-        compare_results(*results)
-
+    results = run_test_cases(
+        net,
+        dataframes["branch" if is_branch_test else "bus"],
+        fault,
+        case,
+        fault_values,
+        lv_tol_percent,
+        fault_location_bus,
+        branch_results=is_branch_test
+    )
+    compare_results(*results)
 
 @pytest.mark.parametrize(
-    "net_name, fault, case, fault_values, lv_tol_percent, vector_group, fault_location_bus, is_branch_test, is_sgen",
+    "net_name, fault, case, fault_values, lv_tol_percent, vector_group, fault_location_bus, is_branch_test, sgen_idx",
     parametrize_values_vector)
 def test_grids_with_trafo(net_name, fault, case, fault_values, lv_tol_percent, vector_group, fault_location_bus,
-                      is_branch_test, is_sgen):
-    if is_sgen:
-        net_name = net_name.replace("test_case_", "")
-        if "five_bus" in net_name:
-            sgen_idx = [[3, 4]]
-        elif "twenty_bus" in net_name:
-            fault_location_bus = 8
-            if vector_group == "Dyn":
-                sgen_idx = [4]
-            elif vector_group == "YNyn":
-                sgen_idx = [[4, 7, 14, 19]]
-            elif vector_group == "Yyn":
-                sgen_idx = [[4, 7, 14]]
-        for idx in sgen_idx:
-            net, dataframes = load_test_case_data(net_name, fault_location_bus, vector_group, sgen_idx=idx)
-            results = run_test_cases(
-                net,
-                dataframes["branch" if is_branch_test else "bus"],
-                fault,
-                case,
-                fault_values,
-                lv_tol_percent,
-                fault_location_bus,
-                branch_results=is_branch_test
-            )
-            compare_results(*results)
-    else:
-        net, dataframes = load_test_case_data(net_name, fault_location_bus, vector_group)
-        results = run_test_cases(
-            net,
-            dataframes["branch" if is_branch_test else "bus"],
-            fault,
-            case,
-            fault_values,
-            lv_tol_percent,
-            fault_location_bus,
-            branch_results=is_branch_test
-        )
-        compare_results(*results)
+                      is_branch_test, sgen_idx):
+    net, dataframes = load_test_case_data(net_name, fault_location_bus, vector_group, sgen_idx=sgen_idx)
+    results = run_test_cases(
+        net,
+        dataframes["branch" if is_branch_test else "bus"],
+        fault,
+        case,
+        fault_values,
+        lv_tol_percent,
+        fault_location_bus,
+        branch_results=is_branch_test
+    )
+    compare_results(*results)
 
 
 def compare_results(columns_to_check, net_df, pf_results):
@@ -187,7 +160,7 @@ def load_test_case_data(net_name, fault_location_bus, vector_group=None, sgen_id
 
     if is_sgen:
         net.sgen["k"] = 1.2
-        if isinstance(sgen_idx, list):
+        if isinstance(sgen_idx, list) | isinstance(sgen_idx, tuple):
             net.sgen.loc[net.sgen.bus.isin(sgen_idx), 'in_service'] = True
             net.sgen.loc[~net.sgen.bus.isin(sgen_idx), 'in_service'] = False
             sgen_str = f"_sgen{''.join(str(idx) for idx in sgen_idx)}"
