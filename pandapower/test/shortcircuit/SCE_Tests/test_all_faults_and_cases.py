@@ -27,8 +27,7 @@ testfiles_path = os.path.join(pp_dir, 'test', 'shortcircuit', 'sce_tests')
 # Define common parameters
 net_names = [
     "test_case_2_five_bus_radial_grid",
-    "test_case_3_five_bus_meshed_grid",
-    "test_case_4_twenty_bus_radial_grid"
+    "test_case_3_five_bus_meshed_grid"
 ]
 faults = ["LLL", "LL", "LG", "LLG"]
 # cases = ["max", "min"]
@@ -52,6 +51,12 @@ parametrize_values_vector = list(product(
     net_names, faults[:2], cases, values, lv_tol_percents, vector_groups[:1], fault_location_buses, is_branch_test, is_sgen
 )) + list(product(
     net_names, faults[2:], cases, values, lv_tol_percents, vector_groups, fault_location_buses, is_branch_test, is_sgen
+))
+
+parametrize_values_vector_20 = list(product(
+    faults[:2], cases, values, lv_tol_percents, vector_groups[:1], fault_location_buses_20, is_branch_test, is_sgen
+)) + list(product(
+    faults[2:], cases, values, lv_tol_percents, vector_groups, fault_location_buses_20, is_branch_test, is_sgen
 ))
 
 
@@ -95,16 +100,7 @@ def test_grids_with_trafo(net_name, fault, case, fault_values, lv_tol_percent, v
                       is_branch_test, is_sgen):
     if is_sgen:
         net_name = net_name.replace("test_case_", "")
-        if "five_bus" in net_name:
-            sgen_idx = [[3, 4]]
-        elif "twenty_bus" in net_name:
-            fault_location_bus = 8
-            if vector_group == "Dyn":
-                sgen_idx = [4]
-            elif vector_group == "YNyn":
-                sgen_idx = [[4, 7, 14, 19]]
-            elif vector_group == "Yyn":
-                sgen_idx = [[4, 7, 14]]
+        sgen_idx = [[3, 4]]
         for idx in sgen_idx:
             net, dataframes = load_test_case_data(net_name, fault_location_bus, vector_group, sgen_idx=idx)
             results = run_test_cases(
@@ -128,6 +124,46 @@ def test_grids_with_trafo(net_name, fault, case, fault_values, lv_tol_percent, v
             fault_values,
             lv_tol_percent,
             fault_location_bus,
+            branch_results=is_branch_test
+        )
+        compare_results(*results)
+
+
+@pytest.mark.parametrize(
+    "fault, case, fault_values, lv_tol_percent, vector_group, fault_location_bus_20, is_branch_test, is_sgen",
+    parametrize_values_vector_20)
+def test_grids_with_trafo_20(fault, case, fault_values, lv_tol_percent, vector_group, fault_location_bus_20,
+                      is_branch_test, is_sgen):
+    if is_sgen:
+        if vector_group == "Dyn":
+            sgen_idx = [4]
+        elif vector_group == "YNyn":
+            sgen_idx = [[4, 7, 14, 19]]
+        elif vector_group == "Yyn":
+            sgen_idx = [[4, 7, 14]]
+        for idx in sgen_idx:
+            net, dataframes = load_test_case_data("4_twenty_bus_radial_grid", fault_location_bus_20, vector_group, sgen_idx=idx)
+            results = run_test_cases(
+                net,
+                dataframes["branch" if is_branch_test else "bus"],
+                fault,
+                case,
+                fault_values,
+                lv_tol_percent,
+                fault_location_bus_20,
+                branch_results=is_branch_test
+            )
+            compare_results(*results)
+    else:
+        net, dataframes = load_test_case_data("test_case_4_twenty_bus_radial_grid", fault_location_bus_20, vector_group)
+        results = run_test_cases(
+            net,
+            dataframes["branch" if is_branch_test else "bus"],
+            fault,
+            case,
+            fault_values,
+            lv_tol_percent,
+            fault_location_bus_20,
             branch_results=is_branch_test
         )
         compare_results(*results)
