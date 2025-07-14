@@ -36,10 +36,7 @@ from pandapower.io_utils import to_dict_with_coord_transform, to_dict_of_dfs, PP
     get_raw_data_from_pickle, transform_net_with_df_and_geo, check_net_version, from_dict_of_dfs, decrypt_string, \
     PPJSONDecoder
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -178,6 +175,7 @@ def from_pickle(filename, convert=True):
         convert_format(net)
 
         # compare pandapowerNet-format_version and package-version
+        # check if installed pandapower version is older then imported network file
         check_net_version(net)
     return net
 
@@ -217,6 +215,7 @@ def from_excel(filename, convert=True):
         convert_format(net)
 
         # compare pandapowerNet-format_version and package-version
+        # check if installed pandapower version is older then imported network file
         check_net_version(net)
     return net
 
@@ -406,6 +405,7 @@ def from_json_string(json_string, convert=False, encryption_key=None, elements_t
         convert_format(net, elements_to_deserialize=elements_to_deserialize)
 
         # compare pandapowerNet-format_version and package-version
+        # check if installed pandapower version is older then imported network file
         check_net_version(net)
     if add_basic_std_types:
         # get std-types and add only new keys ones

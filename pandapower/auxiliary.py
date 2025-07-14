@@ -57,10 +57,7 @@ try:
     lightsim2grid_available = True
 except ImportError:
     lightsim2grid_available = False
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 try:
     from geopandas import GeoSeries
     from shapely import from_geojson
@@ -1654,8 +1651,10 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
         numba = _check_if_numba_is_installed()
 
     if voltage_depend_loads:
-        if not (np.any(net["load"]["const_z_percent"].values)
-                or np.any(net["load"]["const_i_percent"].values)):
+        if not (np.any(net["load"]["const_z_p_percent"].values)
+                or np.any(net["load"]["const_i_p_percent"].values)
+                or np.any(net["load"]["const_z_q_percent"].values)
+                or np.any(net["load"]["const_i_q_percent"].values)):
             voltage_depend_loads = False
 
     lightsim2grid = _check_lightsim2grid_compatibility(net, lightsim2grid, voltage_depend_loads, algorithm,
@@ -1855,7 +1854,7 @@ def _init_runse_options(net, v_start, delta_start, calculate_voltage_angles,
                      init_va_degree=delta_start, enforce_q_lims=False, recycle=None,
                      voltage_depend_loads=False, trafo3w_losses=trafo3w_losses)
     _add_pf_options(net, tolerance_mva="1e-8", trafo_loading="power",
-                    numba=False, ac=True, algorithm="nr", max_iteration="auto",
+                    numba=True, ac=True, algorithm="nr", max_iteration="auto",
                     only_v_results=False)
 
 

@@ -323,7 +323,8 @@ class PowerTransformersCim16:
                                             self.cimConverter.cim['ssh']['PhaseTapChangerAsymmetrical'], how='left',
                                             on='rdfId')
         eqssh_tap_changers_async['stepVoltageIncrement'] = eqssh_tap_changers_async['voltageStepIncrement'][:]
-        eqssh_tap_changers_async = eqssh_tap_changers_async.drop(columns=['voltageStepIncrement'])
+        eqssh_tap_changers_async['stepPhaseShiftIncrement'] = eqssh_tap_changers_async['windingConnectionAngle'][:]
+        eqssh_tap_changers_async = eqssh_tap_changers_async.drop(columns=['voltageStepIncrement', 'windingConnectionAngle'])
         eqssh_tap_changers_async[sc['tc']] = 'PhaseTapChangerAsymmetrical'
         eqssh_tap_changers_async['tap_changer_type'] = "Ratio"  # Ratio/Asymmetrical phase shifter
         eqssh_tap_changers_async[sc['tc_id']] = eqssh_tap_changers_async['rdfId'].copy()
@@ -459,13 +460,9 @@ class PowerTransformersCim16:
         del copy_list, one_item
         # detect on which winding a tap changer is attached
         power_trafo2w['tap_side'] = None
-        power_trafo2w.loc[power_trafo2w['step_lv'].notna(), 'tap_side'] = 'lv'
+        power_trafo2w['tap2_side'] = None
         power_trafo2w.loc[power_trafo2w['step'].notna(), 'tap_side'] = 'hv'
-        fillna_list = ['neutralStep', 'lowStep', 'highStep', 'stepVoltageIncrement', 'stepPhaseShiftIncrement', 'step',
-                       sc['tc'], sc['tc_id'], 'tap_changer_type']
-        for one_item in fillna_list:
-            power_trafo2w[one_item] = power_trafo2w[one_item].fillna(power_trafo2w[one_item + '_lv'])
-        del fillna_list, one_item
+        power_trafo2w.loc[power_trafo2w['step_lv'].notna(), 'tap2_side'] = 'lv'
         # just keep one transformer
         power_trafo2w = power_trafo2w.drop_duplicates(subset=['PowerTransformer'], keep='first')
 
@@ -528,7 +525,11 @@ class PowerTransformersCim16:
             'index_bus_lv': 'lv_bus', 'neutralStep': 'tap_neutral', 'lowStep': 'tap_min', 'highStep': 'tap_max',
             'step': 'tap_pos', 'stepVoltageIncrement': 'tap_step_percent', 'stepPhaseShiftIncrement': 'tap_step_degree',
             'isPartOfGeneratorUnit': 'power_station_unit', 'ratedU': 'vn_hv_kv', 'ratedU_lv': 'vn_lv_kv',
-            'ratedS': 'sn_mva', 'xground': 'xn_ohm', 'grounded': 'oltc'})
+            'ratedS': 'sn_mva', 'xground': 'xn_ohm', 'grounded': 'oltc',
+            'neutralStep_lv': 'tap2_neutral',  'lowStep_lv': 'tap2_min', 'highStep_lv': 'tap2_max',
+            'step_lv': 'tap2_pos', 'stepVoltageIncrement_lv': 'tap2_step_percent',\
+            'stepPhaseShiftIncrement_lv': 'tap2_step_degree', 'tap_changer_type_lv': 'tap2_changer_type',\
+            'tapchanger_class_lv': sc['tc2'], 'tapchanger_id_lv': sc['tc2_id']})
         return power_trafo2w
 
     def _prepare_trafo3w_cim16(self, power_trafo3w: pd.DataFrame) -> pd.DataFrame:

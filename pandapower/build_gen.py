@@ -18,10 +18,7 @@ from pandapower.pypower.idx_ssc import SSC_BUS, SSC_SET_VM_PU, SSC_CONTROLLABLE
 from pandapower.pypower.idx_vsc import VSC_MODE_AC, VSC_BUS, VSC_VALUE_AC, VSC_CONTROLLABLE, VSC_MODE_AC_V, \
     VSC_MODE_AC_SL
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -287,9 +284,9 @@ def add_q_constraints(net, element, is_element, ppc, f, t, delta, inverted=False
         else:
             ppc["gen"][f:t, QMAX] = tab["max_q_mvar"].values[is_element] + delta
 
-    # Add qmin and qmax limit from q_capability_curve_characteristic
-    if "q_capability_curve_characteristic" in net.keys() and net._options["enforce_q_lims"]:
-        _calculate_qmin_qmax_from_q_capability_curve_characteristics(net, element, is_element, ppc, f, t, delta,
+    # Add qmin and qmax limit from q_capability_characteristic
+    if "q_capability_characteristic" in net.keys() and net._options["enforce_q_lims"]:
+        _calculate_qmin_qmax_from_q_capability_characteristics(net, element, is_element, ppc, f, t, delta,
                                                                      inverted)
 
 
@@ -464,7 +461,7 @@ def _normalise_slack_weights(ppc, gen_mask, xward_mask, xward_pq_buses):
                                   "please calculate the zones separately.")
 
 
-def _calculate_qmin_qmax_from_q_capability_curve_characteristics(net, element, is_element, ppc, f, t, delta, inverted):
+def _calculate_qmin_qmax_from_q_capability_characteristics(net, element, is_element, ppc, f, t, delta, inverted):
     if element not in ["gen", "sgen"]:
         logger.warning(f"The given element type is not valid for q_min and q_max reactive power capability calculation "
                        f"of the {element}. Please give gen or sgen as an argument of the function")
@@ -479,12 +476,12 @@ def _calculate_qmin_qmax_from_q_capability_curve_characteristics(net, element, i
 
     if len(element_data) > 0:
         # Extract the relevant data
-        q_table_ids = element_data['id_q_capability_curve_characteristic']
+        q_table_ids = element_data['id_q_capability_characteristic']
         p_mw_values = element_data['p_mw']
 
         # Retrieve the q_max and q_min characteristic functions as vectorized callables
-        q_max_funcs = net.q_capability_curve_characteristic.loc[q_table_ids, 'q_max_characteristic']
-        q_min_funcs = net.q_capability_curve_characteristic.loc[q_table_ids, 'q_min_characteristic']
+        q_max_funcs = net.q_capability_characteristic.loc[q_table_ids, 'q_max_characteristic']
+        q_min_funcs = net.q_capability_characteristic.loc[q_table_ids, 'q_min_characteristic']
 
         # Vectorized function application using NumPy
         calc_q_max = np.vectorize(lambda func, p: func(p))(q_max_funcs, p_mw_values)
