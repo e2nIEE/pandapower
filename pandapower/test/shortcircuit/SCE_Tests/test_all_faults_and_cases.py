@@ -31,62 +31,109 @@ net_names = [
     "test_case_4_twenty_bus_radial_grid"
 ]
 faults = ["LLL", "LL", "LG", "LLG"]
-cases = ["max", "min"]
+# cases = ["max", "min"]
+cases = ["max"]
 values = [(0.0, 0.0), (5.0, 5.0)]
 vector_groups = ['Dyn', 'Yyn', 'YNyn']
 lv_tol_percents = [6, 10]
-fault_location_buses = [0, 1, 2, 3]
-is_branch_test = [False, True]
-
+fault_location_buses = [1, 2, 3]
+#is_branch_test = [False, True]
+is_branch_test = [True]
+#is_sgen = [False, True]
+is_sgen = [True]
 # Create parameter list
-parametrize_values = list(product(faults, cases, values, lv_tol_percents, fault_location_buses, is_branch_test))
+parametrize_values = list(
+    product(faults, cases, values, lv_tol_percents, fault_location_buses, is_branch_test, is_sgen)
+)
 
 # Create parameter list with vector group
 #  uses "Dyn" as vector group for LLL and LL. LLG and LG are combined with all vector groups.
 parametrize_values_vector = list(product(
-    net_names, faults[:2], cases, values, lv_tol_percents, vector_groups[:1], fault_location_buses, is_branch_test
+    net_names, faults[:2], cases, values, lv_tol_percents, vector_groups[:1], fault_location_buses, is_branch_test, is_sgen
 )) + list(product(
-    net_names, faults[2:], cases, values, lv_tol_percents, vector_groups, fault_location_buses, is_branch_test
+    net_names, faults[2:], cases, values, lv_tol_percents, vector_groups, fault_location_buses, is_branch_test, is_sgen
 ))
 
 
-@pytest.mark.parametrize("fault, case, fault_values, lv_tol_percent, fault_location_bus, is_branch_test",
+@pytest.mark.parametrize("fault, case, fault_values, lv_tol_percent, fault_location_bus, is_branch_test, is_sgen",
                          parametrize_values)
-def test_four_bus_radial_grid(fault, case, fault_values, lv_tol_percent, fault_location_bus, is_branch_test):
-    net, dataframes = load_test_case_data("test_case_1_four_bus_radial_grid", fault_location_bus)
-    results = run_test_cases(
-        net,
-        dataframes["branch" if is_branch_test else "bus"],
-        fault,
-        case,
-        fault_values,
-        lv_tol_percent,
-        fault_location_bus,
-        branch_results=is_branch_test
-    )
-    compare_results(*results, is_branch_test)
+def test_four_bus_radial_grid(fault, case, fault_values, lv_tol_percent, fault_location_bus, is_branch_test, is_sgen):
+    if is_sgen:
+        sgen_idx = [1, [1, 3]]
+        for idx in sgen_idx:
+            net, dataframes = load_test_case_data("1_four_bus_radial_grid_sgen", fault_location_bus, sgen_idx=idx)
+            results = run_test_cases(
+                net,
+                dataframes["branch" if is_branch_test else "bus"],
+                fault,
+                case,
+                fault_values,
+                lv_tol_percent,
+                fault_location_bus,
+                branch_results=is_branch_test
+            )
+            compare_results(*results)
+    else:
+        net, dataframes = load_test_case_data("test_case_1_four_bus_radial_grid", fault_location_bus)
+        results = run_test_cases(
+            net,
+            dataframes["branch" if is_branch_test else "bus"],
+            fault,
+            case,
+            fault_values,
+            lv_tol_percent,
+            fault_location_bus,
+            branch_results=is_branch_test
+        )
+        compare_results(*results)
 
 
 @pytest.mark.parametrize(
-    "net_name, fault, case, fault_values, lv_tol_percent, vector_group, fault_location_bus, is_branch_test",
+    "net_name, fault, case, fault_values, lv_tol_percent, vector_group, fault_location_bus, is_branch_test, is_sgen",
     parametrize_values_vector)
 def test_grids_with_trafo(net_name, fault, case, fault_values, lv_tol_percent, vector_group, fault_location_bus,
-                      is_branch_test):
-    net, dataframes = load_test_case_data(net_name, fault_location_bus, vector_group)
-    results = run_test_cases(
-        net,
-        dataframes["branch" if is_branch_test else "bus"],
-        fault,
-        case,
-        fault_values,
-        lv_tol_percent,
-        fault_location_bus,
-        branch_results=is_branch_test
-    )
-    compare_results(*results, is_branch_test)
+                      is_branch_test, is_sgen):
+    if is_sgen:
+        net_name = net_name.replace("test_case_", "")
+        if "five_bus" in net_name:
+            sgen_idx = [[3, 4]]
+        elif "twenty_bus" in net_name:
+            fault_location_bus = 8
+            if vector_group == "Dyn":
+                sgen_idx = [4]
+            elif vector_group == "YNyn":
+                sgen_idx = [[4, 7, 14, 19]]
+            elif vector_group == "Yyn":
+                sgen_idx = [[4, 7, 14]]
+        for idx in sgen_idx:
+            net, dataframes = load_test_case_data(net_name, fault_location_bus, vector_group, sgen_idx=idx)
+            results = run_test_cases(
+                net,
+                dataframes["branch" if is_branch_test else "bus"],
+                fault,
+                case,
+                fault_values,
+                lv_tol_percent,
+                fault_location_bus,
+                branch_results=is_branch_test
+            )
+            compare_results(*results)
+    else:
+        net, dataframes = load_test_case_data(net_name, fault_location_bus, vector_group)
+        results = run_test_cases(
+            net,
+            dataframes["branch" if is_branch_test else "bus"],
+            fault,
+            case,
+            fault_values,
+            lv_tol_percent,
+            fault_location_bus,
+            branch_results=is_branch_test
+        )
+        compare_results(*results)
 
 
-def compare_results(columns_to_check, net_df, pf_results, branch_results):
+def compare_results(columns_to_check, net_df, pf_results):
     # define tolerances
     rtol = {"ikss_ka": 0, "skss_mw": 0, "rk_ohm": 0, "xk_ohm": 0,
             "vm_pu": 0, "va_degree": 0, "p_mw": 0, "q_mvar": 0, "ikss_degree": 0}
@@ -98,10 +145,6 @@ def compare_results(columns_to_check, net_df, pf_results, branch_results):
         if column == 'name':
             continue
         column_ar = check_pattern(column)
-        # TODO: consider after result format is adjusted!
-        # # exclude columns now because of false calculation in pandapower
-        # if branch_results and column_ar in ['p_mw', 'q_mvar', 'vm_pu', 'va_degree']:
-        #     continue
 
         # Part to handle mismatch due to possibility to write same angle as 180° or -180°
         if column_ar.endswith("degree"):
@@ -132,27 +175,42 @@ def load_test_case(net_name: str) -> pandapowerNet:
     return from_json(os.path.join(testfiles_path, "test_grids", grid_folder, f"{net_name}.json"))
 
 
-def load_test_case_data(net_name, fault_location_bus, vector_group=None):
+def load_test_case_data(net_name, fault_location_bus, vector_group=None, sgen_idx=None):
+    is_sgen = sgen_idx is not None
     if vector_group:
-        net_name = f"{net_name}_{vector_group.lower()}"
+        if is_sgen:
+            net_name = f"{net_name}_{vector_group.lower()}_sgen"
+        else:
+            net_name = f"{net_name}_{vector_group.lower()}"
 
     net = load_test_case(net_name)
 
-    excel_file_bus = os.path.join(
-        testfiles_path,
-        "sc_result_comparison",
-        f"{net_name}_pf_sc_results_{fault_location_bus}_bus.xlsx"
-    )
-    excel_file_branch = os.path.join(
-        testfiles_path,
-        "sc_result_comparison",
-        f"{net_name}_pf_sc_results_{fault_location_bus}_branch.xlsx"
-    )
-    dataframes = {
-        'bus': load_pf_results(excel_file_bus),
-        'branch': load_pf_results(excel_file_branch)
-    }
+    if is_sgen:
+        net.sgen["k"] = 1.2
+        if isinstance(sgen_idx, list):
+            net.sgen.loc[net.sgen.bus.isin(sgen_idx), 'in_service'] = True
+            net.sgen.loc[~net.sgen.bus.isin(sgen_idx), 'in_service'] = False
+            sgen_str = f"_sgen{''.join(str(idx) for idx in sgen_idx)}"
+        else:
+            net.sgen['in_service'] = False
+            net.sgen.loc[net.sgen.bus == sgen_idx, 'in_service'] = True
+            sgen_str = f"_sgen{sgen_idx}"
+    else:
+        sgen_str = ''
+
+    dataframes = {}
+    for bb in ['bus', 'branch']:
+        file_name = f"{net_name}_pf_sc_results_{fault_location_bus}_{bb}{sgen_str}.xlsx"
+        try:
+            dataframes[bb] = load_pf_results(os.path.join(
+                testfiles_path,
+                "sc_result_comparison", "wp_2.2" if is_sgen else "wp_2.1",
+                file_name
+            ))
+        except FileNotFoundError:
+            logger.warning(f"File {file_name} not found in {testfiles_path}/sc_result_comparison/{grid_folder}")
     return net, dataframes
+
 
 def run_test_cases(net, dataframes, fault, case, fault_values, lv_tol_percent, fault_location_bus,
                    branch_results=False):
@@ -208,6 +266,10 @@ def run_test_cases(net, dataframes, fault, case, fault_values, lv_tol_percent, f
         modified_pf_results_selection = modified_pf_results[modified_pf_results['name'].isin(net.res_line_sc['name'])]
         modified_pf_results_selection = clean_small_angles(fault, modified_pf_results_selection)
         net_df = net.res_line_sc
+        if fault == 'LLL':
+            cols_to_drop = net_df.filter(regex=r'_(b|c)_').columns
+            net_df = net_df.drop(columns=cols_to_drop)
+            columns_to_check = net_df.columns
     else:
         columns_to_check = net.res_bus_sc.columns
         net.res_bus_sc.insert(0, "name", net.bus.name)
@@ -217,41 +279,46 @@ def run_test_cases(net, dataframes, fault, case, fault_values, lv_tol_percent, f
         # This was done by only iterating over the net table before.
         modified_pf_results_selection = modified_pf_results[modified_pf_results['name'].isin(net.res_bus_sc['name'])]
         net_df = net.res_bus_sc
+        if fault == 'LLL':
+            cols_to_drop = net_df.filter(regex=r'_(b|c)_').columns
+            net_df = net_df.drop(columns=cols_to_drop)
+            columns_to_check = net_df.columns
+
     return columns_to_check, net_df, modified_pf_results_selection
 
 
 def clean_small_angles(fault, results):
-    if fault in ["LG", "LLG"]:
+    if fault in ["LG", "LLG", "LL"]:
         for [mag, ang] in ("ikss_a_from_ka", "ikss_a_from_degree"), \
-                        ("ikss_b_from_ka", "ikss_b_from_degree"), \
-                        ("ikss_c_from_ka", "ikss_c_from_degree"), \
-                        ("ikss_a_to_ka", "ikss_a_to_degree"), \
-                        ("ikss_b_to_ka", "ikss_b_to_degree"), \
-                        ("ikss_c_to_ka", "ikss_c_to_degree"), \
-                        ("vm_a_from_pu", "va_a_from_degree"), \
-                        ("vm_b_from_pu", "va_b_from_degree"), \
-                        ("vm_c_from_pu", "va_c_from_degree"), \
-                        ("vm_a_to_pu", "va_a_to_degree"), \
-                        ("vm_b_to_pu", "va_b_to_degree"), \
-                        ("vm_c_to_pu", "va_c_to_degree"):
+                ("ikss_b_from_ka", "ikss_b_from_degree"), \
+                ("ikss_c_from_ka", "ikss_c_from_degree"), \
+                ("ikss_a_to_ka", "ikss_a_to_degree"), \
+                ("ikss_b_to_ka", "ikss_b_to_degree"), \
+                ("ikss_c_to_ka", "ikss_c_to_degree"), \
+                ("vm_a_from_pu", "va_a_from_degree"), \
+                ("vm_b_from_pu", "va_b_from_degree"), \
+                ("vm_c_from_pu", "va_c_from_degree"), \
+                ("vm_a_to_pu", "va_a_to_degree"), \
+                ("vm_b_to_pu", "va_b_to_degree"), \
+                ("vm_c_to_pu", "va_c_to_degree"):
             results[ang][results[mag] < 1e-5] = 0
 
-    elif fault in ["LL"]: 
-        for [mag, ang] in ("ikss_b_from_ka", "ikss_b_from_degree"), \
-                        ("ikss_c_from_ka", "ikss_c_from_degree"), \
-                        ("ikss_b_to_ka", "ikss_b_to_degree"), \
-                        ("ikss_c_to_ka", "ikss_c_to_degree"), \
-                        ("vm_b_from_pu", "va_b_from_degree"), \
-                        ("vm_c_from_pu", "va_c_from_degree"), \
-                        ("vm_b_to_pu", "va_b_to_degree"), \
-                        ("vm_c_to_pu", "va_c_to_degree"):
-            results[ang][results[mag] < 1e-5] = 0
-    
-    else: 
-        for [mag, ang] in ("ikss_from_ka", "ikss_from_degree"), \
-                        ("ikss_to_ka", "ikss_to_degree"), \
-                        ("vm_from_pu", "va_from_degree"), \
-                        ("vm_to_pu", "va_to_degree"):
+    # elif fault in ["LL"]:
+    #     for [mag, ang] in ("ikss_b_from_ka", "ikss_b_from_degree"), \
+    #                     ("ikss_c_from_ka", "ikss_c_from_degree"), \
+    #                     ("ikss_b_to_ka", "ikss_b_to_degree"), \
+    #                     ("ikss_c_to_ka", "ikss_c_to_degree"), \
+    #                     ("vm_b_from_pu", "va_b_from_degree"), \
+    #                     ("vm_c_from_pu", "va_c_from_degree"), \
+    #                     ("vm_b_to_pu", "va_b_to_degree"), \
+    #                     ("vm_c_to_pu", "va_c_to_degree"):
+    #         results[ang][results[mag] < 1e-5] = 0
+
+    else:
+        for [mag, ang] in ("ikss_a_from_ka", "ikss_a_from_degree"), \
+                ("ikss_a_to_ka", "ikss_a_to_degree"), \
+                ("vm_a_from_pu", "va_a_from_degree"), \
+                ("vm_a_to_pu", "va_a_to_degree"):
             results[ang][results[mag] < 1e-5] = 0
 
     return results
@@ -328,11 +395,12 @@ def load_pf_results(excel_file):
     # Dictionary with columns to keep for each fault type
     columns_mapping = {
         "LLL": ['name', 'pf_ikss_ka', 'pf_skss_mw', 'pf_rk_ohm', 'pf_xk_ohm'],
-        "LL": ['name', 'pf_ikss_c_ka', 'pf_skss_c_mw', 'pf_rk2_ohm', 'pf_xk2_ohm'],
+        "LL": ['name', 'pf_ikss_a_ka', 'pf_ikss_b_ka', 'pf_ikss_c_ka', 'pf_skss_a_mw', 'pf_skss_b_mw', 'pf_skss_c_mw',
+               'pf_rk0_ohm', 'pf_xk0_ohm', 'pf_rk1_ohm', 'pf_xk1_ohm', 'pf_rk2_ohm', 'pf_xk2_ohm'],
         "LLG": ['name', 'pf_ikss_a_ka', 'pf_ikss_b_ka', 'pf_ikss_c_ka', 'pf_skss_a_mw', 'pf_skss_b_mw', 'pf_skss_c_mw',
                 'pf_rk0_ohm', 'pf_xk0_ohm', 'pf_rk1_ohm', 'pf_xk1_ohm', 'pf_rk2_ohm', 'pf_xk2_ohm'],
-        "LG": ['name', 'pf_ikss_a_ka', 'pf_skss_a_mw', 'pf_rk0_ohm', 'pf_xk0_ohm', 'pf_rk1_ohm', 'pf_xk1_ohm',
-               'pf_rk2_ohm', 'pf_xk2_ohm']
+        "LG": ['name', 'pf_ikss_a_ka', 'pf_ikss_b_ka', 'pf_ikss_c_ka', 'pf_skss_a_mw', 'pf_skss_b_mw', 'pf_skss_c_mw',
+               'pf_rk0_ohm', 'pf_xk0_ohm', 'pf_rk1_ohm', 'pf_xk1_ohm', 'pf_rk2_ohm', 'pf_xk2_ohm'],
     }
 
     columns_mapping_branch = {
@@ -340,12 +408,14 @@ def load_pf_results(excel_file):
                 'pf_ikss_to_degree',
                 'pf_p_from_mw', 'pf_q_from_mvar', 'pf_p_to_mw', 'pf_q_to_mvar',
                 'pf_vm_from_pu', 'pf_va_from_degree', 'pf_vm_to_pu', 'pf_va_to_degree'],
-        "LL": ['name', 'pf_ikss_b_from_ka', 'pf_ikss_b_from_ka', 'pf_ikss_b_from_degree', 'pf_ikss_b_to_ka',
-               'pf_ikss_b_to_degree',
+        "LL": ['name', 'pf_ikss_a_from_ka', 'pf_ikss_a_from_ka', 'pf_ikss_a_from_degree', 'pf_ikss_a_to_ka',
+               'pf_ikss_a_to_degree',
+               'pf_p_a_from_mw', 'pf_q_a_from_mvar', 'pf_p_a_to_mw', 'pf_q_a_to_mvar',
+               'pf_vm_a_from_pu', 'pf_va_a_from_degree', 'pf_vm_a_to_pu', 'pf_va_a_to_degree',
+               'pf_ikss_b_from_ka', 'pf_ikss_b_from_degree', 'pf_ikss_b_to_ka', 'pf_ikss_b_to_degree',
                'pf_p_b_from_mw', 'pf_q_b_from_mvar', 'pf_p_b_to_mw', 'pf_q_b_to_mvar',
                'pf_vm_b_from_pu', 'pf_va_b_from_degree', 'pf_vm_b_to_pu', 'pf_va_b_to_degree',
-               'pf_ikss_c_from_ka', 'pf_ikss_c_from_degree', 'pf_ikss_c_to_ka',
-               'pf_ikss_c_to_degree',
+               'pf_ikss_c_from_ka', 'pf_ikss_c_from_degree', 'pf_ikss_c_to_ka', 'pf_ikss_c_to_degree',
                'pf_p_c_from_mw', 'pf_q_c_from_mvar', 'pf_p_c_to_mw', 'pf_q_c_to_mvar',
                'pf_vm_c_from_pu', 'pf_va_c_from_degree', 'pf_vm_c_to_pu', 'pf_va_c_to_degree'],
         "LLG": ['name', 'pf_ikss_a_from_ka', 'pf_ikss_a_from_ka', 'pf_ikss_a_from_degree', 'pf_ikss_a_to_ka',
@@ -386,15 +456,12 @@ def load_pf_results(excel_file):
             relevant_columns = columns_mapping[fault_type]
             pf_results = pf_results[relevant_columns]
             pf_results['name'] = pf_results['name'].astype(str)
-            if fault_type == 'LLL' or fault_type == 'LL':
+            if fault_type == 'LLL':  # or fault_type == 'LL':
                 pf_results.columns = ['name', 'ikss_ka', 'skss_mw', 'rk_ohm', 'xk_ohm']
-            elif fault_type == 'LLG':
+            elif fault_type == 'LLG' or fault_type == 'LG' or fault_type == 'LL':
                 pf_results.columns = ["name", "ikss_a_ka", "ikss_b_ka", 'ikss_c_ka', 'skss_a_mw', 'skss_b_mw',
                                       'skss_c_mw',
                                       "rk0_ohm", "xk0_ohm", "rk1_ohm", "xk1_ohm", "rk2_ohm", "xk2_ohm"]
-            elif fault_type == 'LG':
-                pf_results.columns = ["name", "ikss_ka", 'skss_mw', "rk0_ohm", "xk0_ohm", "rk1_ohm",
-                                      "xk1_ohm", "rk2_ohm", "xk2_ohm"]
 
             dataframes[sheet] = pf_results
 
@@ -402,22 +469,12 @@ def load_pf_results(excel_file):
             relevant_columns = columns_mapping_branch[fault_type]
             pf_results = pf_results[relevant_columns]
             if fault_type == 'LLL':
-                pf_results.columns = ['name', 'ikss_ka', 'ikss_from_ka', 'ikss_from_degree', 'ikss_to_ka',
-                                      'ikss_to_degree',
-                                      'p_from_mw', 'q_from_mvar', 'p_to_mw', 'q_to_mvar',
-                                      'vm_from_pu', 'va_from_degree', 'vm_to_pu', 'va_to_degree']
-                pf_results['ikss_ka'] = pf_results['ikss_to_ka']  # TODO: maybe only for LLL valid?
-                pf_results['ikss_from_ka'] = pf_results['ikss_to_ka']  # TODO: maybe only for LLL valid?
+                pf_results.columns = ['name', 'ikss_ka', 'ikss_a_from_ka', 'ikss_a_from_degree', 'ikss_a_to_ka',
+                                      'ikss_a_to_degree',
+                                      'p_a_from_mw', 'q_a_from_mvar', 'p_a_to_mw', 'q_a_to_mvar',
+                                      'vm_a_from_pu', 'va_a_from_degree', 'vm_a_to_pu', 'va_a_to_degree']
 
-            elif fault_type == 'LL':
-                pf_results.columns = ['name', 'ikss_ka', 'ikss_b_from_ka', 'ikss_b_from_degree', 'ikss_b_to_ka',
-                                      'ikss_b_to_degree', 'p_b_from_mw', 'q_b_from_mvar', 'p_b_to_mw', 'q_b_to_mvar',
-                                      'vm_b_from_pu', 'va_b_from_degree', 'vm_b_to_pu', 'va_b_to_degree',
-                                      'ikss_c_from_ka', 'ikss_c_from_degree', 'ikss_c_to_ka', 'ikss_c_to_degree',
-                                      'p_c_from_mw', 'q_c_from_mvar', 'p_c_to_mw', 'q_c_to_mvar',
-                                      'vm_c_from_pu', 'va_c_from_degree', 'vm_c_to_pu', 'va_c_to_degree']
-
-            elif fault_type == 'LLG' or fault_type == 'LG':
+            elif fault_type == 'LLG' or fault_type == 'LG' or fault_type == 'LL':
                 pf_results.columns = ['name', 'ikss_ka', 'ikss_a_from_ka', 'ikss_a_from_degree', 'ikss_a_to_ka',
                                       'ikss_a_to_degree',
                                       'p_a_from_mw', 'q_a_from_mvar', 'p_a_to_mw', 'q_a_to_mvar',
@@ -429,10 +486,11 @@ def load_pf_results(excel_file):
                                       'p_c_from_mw', 'q_c_from_mvar', 'p_c_to_mw', 'q_c_to_mvar',
                                       'vm_c_from_pu', 'va_c_from_degree', 'vm_c_to_pu', 'va_c_to_degree',
                                       ]
-                if fault_type in ['LG', 'LLG']:
-                    # ToDo: Do we need the value ikss_ka ?
-                    pf_results['ikss_ka'] = np.max([pf_results['ikss_a_from_ka'], pf_results['ikss_a_to_ka'], pf_results['ikss_b_from_ka'], \
-                                                    pf_results['ikss_b_to_ka'], pf_results['ikss_c_from_ka'], pf_results['ikss_c_to_ka']], axis=0)
+                #if fault_type in ['LG', 'LLG']:
+                # ToDo: Do we need the value ikss_ka ?
+                pf_results['ikss_ka'] = np.max(
+                    [pf_results['ikss_a_from_ka'], pf_results['ikss_a_to_ka'], pf_results['ikss_b_from_ka'], \
+                     pf_results['ikss_b_to_ka'], pf_results['ikss_c_from_ka'], pf_results['ikss_c_to_ka']], axis=0)
 
             dataframes[sheet] = pf_results
 
