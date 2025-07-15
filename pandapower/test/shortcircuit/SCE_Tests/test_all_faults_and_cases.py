@@ -40,7 +40,7 @@ vector_groups = ['Dyn', 'Yyn', 'YNyn']
 lv_tol_percents = [6, 10]
 fault_location_buses = [1, 2, 3]
 is_branch_test = [True, False]
-sgen_idx = [None, 1, [1, 3]] # None for is_sgen=false
+sgen_idx = [None, 1, [1, 3]]  # None for is_sgen=false
 
 # Create parameter list
 parametrize_values = list(
@@ -50,12 +50,13 @@ parametrize_values = list(
 # Create parameter list with vector group
 #  uses "Dyn" as vector group for LLL and LL. LLG and LG are combined with all vector groups.
 parametrize_values_vector = list(product(
-    net_names, faults[:2], cases, values, lv_tol_percents, vector_groups[:1], fault_location_buses, is_branch_test, [None]
+    net_names, faults[:2], cases, values, lv_tol_percents, vector_groups[:1], fault_location_buses, is_branch_test,
+    [None]
 )) + list(product(
     net_names, faults[2:], cases, values, lv_tol_percents, vector_groups, fault_location_buses, is_branch_test, [None]
 ))
 # add sgen test to the vector test
-sgen_params = set()
+sgen_params: set[tuple[str, str, str, tuple[float, float], int, int, bool, None|int|list[int]|tuple[int, ...]]] = set()
 for values in parametrize_values_vector:
     net_name = values[0].replace("test_case_", "")
     if "five_bus" in net_name:
@@ -90,11 +91,12 @@ def test_four_bus_radial_grid(fault, case, fault_values, lv_tol_percent, fault_l
     )
     compare_results(*results)
 
+
 @pytest.mark.parametrize(
     "net_name, fault, case, fault_values, lv_tol_percent, vector_group, fault_location_bus, is_branch_test, sgen_idx",
     parametrize_values_vector)
 def test_grids_with_trafo(net_name, fault, case, fault_values, lv_tol_percent, vector_group, fault_location_bus,
-                      is_branch_test, sgen_idx):
+                          is_branch_test, sgen_idx):
     net, dataframes = load_test_case_data(net_name, fault_location_bus, vector_group, sgen_idx=sgen_idx)
     results = run_test_cases(
         net,
