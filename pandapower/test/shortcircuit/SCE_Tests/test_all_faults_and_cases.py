@@ -18,6 +18,9 @@ from pandapower.shortcircuit.calc_sc import calc_sc
 from pandapower.file_io import from_json
 
 import warnings
+import logging
+
+logger = logging.getLogger(__name__)
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
