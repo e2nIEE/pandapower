@@ -124,6 +124,7 @@ def _calc_ikss_to_g(net, ppci_0, ppci_1, ppci_2, bus_idx):
     # TODO parameter to tell which Phase is affected
     fault = net._options["fault"]
     case = net._options["case"]
+    fault_impedance = net._options["fault_impedance"]
 
     ppci_0["internal"]["baseI"] = ppci_0["bus"][:, BASE_KV] * np.sqrt(3) / ppci_0["baseMVA"]
     ppci_1["internal"]["baseI"] = ppci_1["bus"][:, BASE_KV] * np.sqrt(3) / ppci_1["baseMVA"]
@@ -209,9 +210,20 @@ def _calc_ikss_to_g(net, ppci_0, ppci_1, ppci_2, bus_idx):
     V_ikss_2[np.abs(V_ikss_2) < 1e-10] = 0
 
     # added abs here:
-    ppci_0["bus"][bus_idx, IKSSV] = abs(ikssv_0 / ppci_0["internal"]["baseI"][bus_idx])
-    ppci_1["bus"][bus_idx, IKSSV] = abs(ikssv_1 / ppci_1["internal"]["baseI"][bus_idx])
-    ppci_2["bus"][bus_idx, IKSSV] = abs(ikssv_2 / ppci_2["internal"]["baseI"][bus_idx])
+    if fault == "LL":
+        ppci_0["bus"][bus_idx, IKSSV] = np.sqrt(3) * abs(ikssv_0 / ppci_0["internal"]["baseI"][bus_idx])
+        ppci_1["bus"][bus_idx, IKSSV] = np.sqrt(3) * abs(ikssv_1 / ppci_1["internal"]["baseI"][bus_idx])
+        ppci_2["bus"][bus_idx, IKSSV] = np.sqrt(3) * abs(ikssv_2 / ppci_2["internal"]["baseI"][bus_idx])
+
+    elif fault == "LG":
+        ppci_0["bus"][bus_idx, IKSSV] = 3 * abs(ikssv_0 / ppci_0["internal"]["baseI"][bus_idx])
+        ppci_1["bus"][bus_idx, IKSSV] = 3 * abs(ikssv_1 / ppci_1["internal"]["baseI"][bus_idx])
+        ppci_2["bus"][bus_idx, IKSSV] = 3 * abs(ikssv_2 / ppci_2["internal"]["baseI"][bus_idx])
+
+    else:
+        ppci_0["bus"][bus_idx, IKSSV] = abs(ikssv_0 / ppci_0["internal"]["baseI"][bus_idx])
+        ppci_1["bus"][bus_idx, IKSSV] = abs(ikssv_1 / ppci_1["internal"]["baseI"][bus_idx])
+        ppci_2["bus"][bus_idx, IKSSV] = abs(ikssv_2 / ppci_2["internal"]["baseI"][bus_idx])
 
     # added angle calculation in degree:
     ppci_0["bus"][bus_idx, PHI_IKSSV_DEGREE] = np.angle(ikssv_0, deg=True)
@@ -234,6 +246,11 @@ def _calc_ikss_to_g(net, ppci_0, ppci_1, ppci_2, bus_idx):
     _current_source_current(net, ppci_0, bus_idx, 0)
     _current_source_current(net, ppci_1, bus_idx, 1)
     _current_source_current(net, ppci_2, bus_idx, 2)
+
+    if fault == "LL":
+        ppci_0["bus"][bus_idx, IKSSC] = np.sqrt(3)/2 * ppci_0["bus"][bus_idx, IKSSC]
+        ppci_1["bus"][bus_idx, IKSSC] = np.sqrt(3)/2 * ppci_1["bus"][bus_idx, IKSSC]
+        ppci_2["bus"][bus_idx, IKSSC] = np.sqrt(3)/2 * ppci_2["bus"][bus_idx, IKSSC]
 
     if fault == "LLL":
         ppci_0["bus"][bus_idx, SKSS] = np.sqrt(3) * (ppci_0["bus"][bus_idx, IKSSV] + ppci_0["bus"][bus_idx, IKSSC]) * ppci_0["bus"][bus_idx, BASE_KV]
@@ -262,6 +279,8 @@ def _current_source_current(net, ppci, bus_idx, sequence=1):
     ppci["bus"][:, IKSSC] = 0
     type_c = net._options["use_pre_fault_voltage"]
     fault_impedance = net._options["fault_impedance"]
+    if net._options["fault"] == "LL":
+        fault_impedance = fault_impedance/2
     # sgen current source contribution only for Type A and case "max" or type C:
     if case != "max" and not type_c or sequence != 1: # TODO not only return 0 this leas to NaN values
         return

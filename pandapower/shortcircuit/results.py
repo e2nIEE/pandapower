@@ -290,6 +290,7 @@ def _extract_results(net, ppc_0, ppc_1, ppc_2, bus):
 def _get_bus_results(net, ppc_0, ppc_1, ppc_2, bus):
     bus_lookup = net._pd2ppc_lookups["bus"]
     ppc_index = bus_lookup[net.bus.index]
+    fault_impedance = net["_options"]["fault_impedance"]
 
     ppc_sequence = {0: ppc_0, 1: ppc_1, 2: ppc_2, "": ppc_1}
     if net["_options"]["fault"] == "LG":
@@ -298,14 +299,22 @@ def _get_bus_results(net, ppc_0, ppc_1, ppc_2, bus):
         sequence_relevant = range(3)
     elif net["_options"]["fault"] == "LLG":
         sequence_relevant = range(3)
+    elif net["_options"]["fault"] == "LL":
+        net.res_bus_sc["ikss_ka"] = ppc_1["bus"][ppc_index, IKSSV] + ppc_1["bus"][ppc_index, IKSSC]
+        net.res_bus_sc["skss_mw"] = ppc_1["bus"][ppc_index, SKSS]
+        sequence_relevant = ("",)
     else:
         net.res_bus_sc["ikss_ka"] = ppc_1["bus"][ppc_index, IKSSV] + ppc_1["bus"][ppc_index, IKSSC]
         net.res_bus_sc["skss_mw"] = ppc_1["bus"][ppc_index, SKSS]
         sequence_relevant = ("",)
     for sequence in sequence_relevant:
         ppc_s = ppc_sequence[sequence]
-        net.res_bus_sc[f"rk{sequence}_ohm"] = ppc_s["bus"][ppc_index, R_EQUIV_OHM]
-        net.res_bus_sc[f"xk{sequence}_ohm"] = ppc_s["bus"][ppc_index, X_EQUIV_OHM]
+        if net["_options"]["fault"] == "LL" and np.abs(fault_impedance) > 0:
+            net.res_bus_sc[f"rk{sequence}_ohm"] = ppc_s["bus"][ppc_index, R_EQUIV_OHM]  + 5/2 # TODO: ask Marco
+            net.res_bus_sc[f"xk{sequence}_ohm"] = ppc_s["bus"][ppc_index, X_EQUIV_OHM]  + 5/2
+        else:
+            net.res_bus_sc[f"rk{sequence}_ohm"] = ppc_s["bus"][ppc_index, R_EQUIV_OHM]
+            net.res_bus_sc[f"xk{sequence}_ohm"] = ppc_s["bus"][ppc_index, X_EQUIV_OHM]
         # in trafo3w, we add very high numbers (1e10) as impedances to block current
         # here, we need to replace such high values by np.inf
         baseZ = ppc_s["bus"][ppc_index, BASE_KV] ** 2 / ppc_s["baseMVA"]

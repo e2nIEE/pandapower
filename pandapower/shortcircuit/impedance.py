@@ -36,9 +36,9 @@ def _calc_rx(net, ppci, bus_idx, sequence):
     if net["_options"]["inverse_y"]:
         Zbus = ppci["internal"]["Zbus"]
         if (fault == "LL"):
-            if (sequence == 1) or (sequence == 2): 
+            if (sequence == 1) or (sequence == 2):
                 z_equiv = np.diag(Zbus)[bus_idx] + fault_impedance/2
-            else: 
+            else:
                 z_equiv = np.diag(Zbus)[bus_idx]
         else:
             z_equiv = np.diag(Zbus)[bus_idx] + fault_impedance
