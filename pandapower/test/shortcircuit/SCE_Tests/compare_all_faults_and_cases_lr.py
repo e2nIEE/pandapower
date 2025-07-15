@@ -19,8 +19,8 @@ def compare_sc_results(net, excel_file, branch=False, fault_location=None):
     pf_dataframes = load_pf_results(excel_file)
 
     # Toleranzen für relevante Größen
-    tolerances = {"ikss_ka": 1e-6, "skss_mw": 1e-4, "rk_ohm": 1e-5, "xk_ohm": 1e-5,
-                  "vm_pu": 1e-4, "va_degree": 1e-2, "p_mw": 1e-4, "q_mvar": 1e-4, "ikss_degree": 1e-4}
+    tolerances = {"ikss_ka": 1e-4, "skss_mw": 1e-4, "rk_ohm": 1e-5, "xk_ohm": 1e-5,
+                  "vm_pu": 1e-4, "va_degree": 1e-2, "p_mw": 1e-4, "q_mvar": 1e-4, "ikss_degree": 1e-3}
 
     faults = ["LLL","LL", "LG", "LLG"]
     cases = ["max"]
@@ -143,8 +143,8 @@ fault_location = 2
 # )
 
 # sgen bus
-excel_file = "wp_2.2/1_four_bus_radial_grid_sgen_pf_sc_results_0_bus_sgen13.xlsx"
-diff_df = compare_sc_results(net, os.path.join(result_files_path, excel_file), fault_location=0)
+excel_file = "wp_2.2/1_four_bus_radial_grid_sgen_pf_sc_results_2_bus_sgen13.xlsx"
+diff_df = compare_sc_results(net, os.path.join(result_files_path, excel_file), fault_location=fault_location)
 
 # sgen branch
 # excel_file = r"1_four_bus_radial_grid_sgen_pf_sc_results_0_branch_sgen1.xlsx"

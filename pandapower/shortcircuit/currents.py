@@ -247,11 +247,21 @@ def _calc_ikss_to_g(net, ppci_0, ppci_1, ppci_2, bus_idx):
     _current_source_current(net, ppci_1, bus_idx, 1)
     _current_source_current(net, ppci_2, bus_idx, 2)
 
+    # calculate correct ikssc for bus results
     if fault == "LL":
         ppci_0["bus"][bus_idx, IKSSC] = np.sqrt(3)/2 * ppci_0["bus"][bus_idx, IKSSC]
         ppci_1["bus"][bus_idx, IKSSC] = np.sqrt(3)/2 * ppci_1["bus"][bus_idx, IKSSC]
         ppci_2["bus"][bus_idx, IKSSC] = np.sqrt(3)/2 * ppci_2["bus"][bus_idx, IKSSC]
+    # elif fault == "LG":
+    #     ppci_0["bus"][bus_idx, IKSSC] = ppci_0["bus"][bus_idx, IKSSC]
+    #     ppci_1["bus"][bus_idx, IKSSC] = ppci_1["bus"][bus_idx, IKSSC]
+    #     ppci_2["bus"][bus_idx, IKSSC] = ppci_2["bus"][bus_idx, IKSSC]
+    # elif fault == "LLG":
+    #     ppci_0["bus"][bus_idx, IKSSC] = ppci_0["bus"][bus_idx, IKSSC]
+    #     ppci_1["bus"][bus_idx, IKSSC] = ppci_1["bus"][bus_idx, IKSSC]
+    #     ppci_2["bus"][bus_idx, IKSSC] = ppci_2["bus"][bus_idx, IKSSC]
 
+    # calculate skss
     if fault == "LLL":
         ppci_0["bus"][bus_idx, SKSS] = np.sqrt(3) * (ppci_0["bus"][bus_idx, IKSSV] + ppci_0["bus"][bus_idx, IKSSC]) * ppci_0["bus"][bus_idx, BASE_KV]
         ppci_1["bus"][bus_idx, SKSS] = np.sqrt(3) * (ppci_1["bus"][bus_idx, IKSSV] + ppci_1["bus"][bus_idx, IKSSC]) * ppci_1["bus"][bus_idx, BASE_KV]

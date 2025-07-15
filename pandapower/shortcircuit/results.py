@@ -290,7 +290,6 @@ def _extract_results(net, ppc_0, ppc_1, ppc_2, bus):
 def _get_bus_results(net, ppc_0, ppc_1, ppc_2, bus):
     bus_lookup = net._pd2ppc_lookups["bus"]
     ppc_index = bus_lookup[net.bus.index]
-    fault_impedance = net["_options"]["fault_impedance"]
 
     ppc_sequence = {0: ppc_0, 1: ppc_1, 2: ppc_2, "": ppc_1}
     if net["_options"]["fault"] == "LG":
@@ -309,9 +308,10 @@ def _get_bus_results(net, ppc_0, ppc_1, ppc_2, bus):
         sequence_relevant = ("",)
     for sequence in sequence_relevant:
         ppc_s = ppc_sequence[sequence]
-        if net["_options"]["fault"] == "LL" and np.abs(fault_impedance) > 0:
-            net.res_bus_sc[f"rk{sequence}_ohm"] = ppc_s["bus"][ppc_index, R_EQUIV_OHM]  + 5/2 # TODO: ask Marco
-            net.res_bus_sc[f"xk{sequence}_ohm"] = ppc_s["bus"][ppc_index, X_EQUIV_OHM]  + 5/2
+        if net["_options"]["fault"] == "LL":
+            # TODO: ask Marco where this can be done before results are written into tables
+            net.res_bus_sc[f"rk{sequence}_ohm"] = ppc_s["bus"][ppc_index, R_EQUIV_OHM] + net["_options"]["r_fault_ohm"]/2
+            net.res_bus_sc[f"xk{sequence}_ohm"] = ppc_s["bus"][ppc_index, X_EQUIV_OHM] + net["_options"]["x_fault_ohm"]/2
         else:
             net.res_bus_sc[f"rk{sequence}_ohm"] = ppc_s["bus"][ppc_index, R_EQUIV_OHM]
             net.res_bus_sc[f"xk{sequence}_ohm"] = ppc_s["bus"][ppc_index, X_EQUIV_OHM]
