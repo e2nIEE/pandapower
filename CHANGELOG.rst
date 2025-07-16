@@ -3,6 +3,8 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [REMOVED] kwargs in basic controller class
+- [ADDED] name attribute in basic controller class
 - [FIXED] remove print statement from results_bus.py
 - [FIXED] cim2pp: Make sure that the controllable flag is never nan for any generators
 - [CHANGED] move pandapower network pandas structure dict from create_empty_network to its own file
@@ -16,6 +18,7 @@ Change Log
 - [CHANGED] separate voltage dependencies for P and Q for loads: const_z_percent --> const_z_p_percent, const_z_q_percent, const_i_percent --> const_i_p_percent, const_i_q_percent
 - [FIXED] fixed convert_format for missing information (in gen, sgen, shunt) and tables (q_capability_characteristic, q_capability_curve_table, id_characteristic_table, step_dependency_table)
 - [ADDED] added tests for q_capability_curve_table in cim2pp and convert_format.py for format_version 3.1.0
+- [FIXED] deserialising q_capability_characteristic in from_excel and added test for it
 
 [3.1.2] - 2025-06-16
 -------------------------------

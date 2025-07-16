@@ -69,6 +69,10 @@ def net_in(request):
         net.line.at[1, "geo"] = geojson.dumps(geojson.LineString([(5.5, 5.5), (6.6, 6.6), (7.7, 7.7)]))
         return net
 
+@pytest.fixture()
+def net_charactistics():
+    return from_json(os.path.join(pp_dir, "test", "test_files", "from_excel_characteristics.json"))
+
 
 #    if request.param == 2:
 #        return networks.case145()
@@ -108,6 +112,24 @@ def test_excel_controllers(net_in, tmp_path):
     net_out = from_excel(filename)
     assert net_in.controller.object.at[0] == net_out.controller.object.at[0]
     assert_net_equal(net_in, net_out)
+
+
+@pytest.mark.skipif(not xlsxwriter_INSTALLED,
+                    reason="xlsxwriter is mandatory to write excel files, but is not installed.")
+def test_excel_characteristics(net_charactistics, tmp_path):
+    filename = os.path.abspath(str(tmp_path)) + "testfile.xlsx"
+    to_excel(net_charactistics, filename)
+    net_out = from_excel(filename)
+    pd.testing.assert_frame_equal(net_charactistics['q_capability_characteristic'],
+                                  net_out['q_capability_characteristic'], atol=1e-5)
+    for minmax in ['q_max_characteristic', 'q_min_characteristic']:
+        net_1_ch = net_charactistics['q_capability_characteristic'].loc[0, minmax].to_dict()
+        net_2_ch = net_out['q_capability_characteristic'].loc[0, minmax].to_dict()
+        for key in net_1_ch:
+            if isinstance(net_1_ch[key], list) or isinstance(net_1_ch[key], np.ndarray):
+                assert (net_1_ch[key] == net_2_ch[key]).all()
+            else:
+                assert net_1_ch[key] == net_2_ch[key]
 
 
 def test_json_basic(net_in, tmp_path):
