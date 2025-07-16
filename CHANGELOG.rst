@@ -3,6 +3,8 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [REMOVED] kwargs in basic controller class
+- [ADDED] name attribute in basic controller class
 - [FIXED] remove print statement from results_bus.py
 - [FIXED] cim2pp: Make sure that the controllable flag is never nan for any generators
 - [CHANGED] move pandapower network pandas structure dict from create_empty_network to its own file
@@ -11,7 +13,12 @@ Change Log
 - [ADDED] cim2pp: export trafo tap changer parameters for trafos with two tap changers
 - [CHANGED] renamed q_capability_curve_characteristic to q_capability_characteristic to fix the 31 character length limit from Excel
 - [ADDED] added documentation for q_capability_characteristic and q_capability_curve_table DataFrames in the pandapower net
+- [FIXED] cim2pp: add GeneratingUnit to SSH profile, add new cim16 schema
 - [FIXED] issue on case9 grid: Missing columns id_characteristic_table and step_dependency_table at shunt leading to errors when adding them
+- [CHANGED] separate voltage dependencies for P and Q for loads: const_z_percent --> const_z_p_percent, const_z_q_percent, const_i_percent --> const_i_p_percent, const_i_q_percent
+- [FIXED] fixed convert_format for missing information (in gen, sgen, shunt) and tables (q_capability_characteristic, q_capability_curve_table, id_characteristic_table, step_dependency_table)
+- [ADDED] added tests for q_capability_curve_table in cim2pp and convert_format.py for format_version 3.1.0
+- [FIXED] deserialising q_capability_characteristic in from_excel and added test for it
 
 [3.1.2] - 2025-06-16
 -------------------------------
@@ -123,6 +130,9 @@ Change Log
 - [FIXED] avoid duplicated keys in kwargs and pf_options in run_contingency()
 - [ADDED] improved lightsim2grid documentation including compatibility issues
 - [FIXED] cim2pp: set default xml encoding to None to avoid error after changing to lxml
+- [FIXED] Lightsim2grid version
+- [FIXED] geopandas version
+- [FIXED] scipy version
 - [FIXED] PandaModels OPF with 'bus_dc' key errors
 - [FIXED] julia tests
 - [FIXED] copy array element to standard python scalar
