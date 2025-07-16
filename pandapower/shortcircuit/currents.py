@@ -255,9 +255,14 @@ def _calc_ikss_to_g(net, ppci_0, ppci_1, ppci_2, bus_idx):
         ppci_1["bus"][bus_idx, IKSSC] = factor * ikssc_1
         ppci_2["bus"][bus_idx, IKSSC] = factor * ikssc_1
     elif fault == "LLG":
-        ppci_0["bus"][bus_idx, IKSSC] = 0
-        ppci_1["bus"][bus_idx, IKSSC] = abs((3 * z_equiv_1 / (z_equiv_1 + 2 * z_equiv_0))) * ikssc_1
-        ppci_2["bus"][bus_idx, IKSSC] = 0
+        factor = (3 * z_equiv_1 / (z_equiv_1 + 2 * z_equiv_0))
+        ppci_0["bus"][bus_idx, IKSSC] = ikssc_1 * 0
+        ppci_1["bus"][bus_idx, IKSSC] = ikssc_1 * factor
+        ppci_2["bus"][bus_idx, IKSSC] = ikssc_1 * 0
+
+        ppci_0["bus"][bus_idx, PHI_IKSSC_DEGREE] = np.angle(ppci_0["bus"][bus_idx, IKSSC], deg=True)
+        ppci_1["bus"][bus_idx, PHI_IKSSC_DEGREE] = np.angle(ppci_1["bus"][bus_idx, IKSSC], deg=True)
+        ppci_2["bus"][bus_idx, PHI_IKSSC_DEGREE] = np.angle(ppci_2["bus"][bus_idx, IKSSC], deg=True)
 
     # calculate skss
     if fault == "LLL":
