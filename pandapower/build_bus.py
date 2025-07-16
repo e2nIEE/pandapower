@@ -224,11 +224,10 @@ def create_bus_lookup_numpy(net, bus_index, closed_bb_switch_mask):
                         # neither pv buses nor active buses. Use any bus in dj
                         ref_bus = dj.pop()
                 map_to = bus_lookup[ref_bus]
-                for bus in dj:
-                    # update lookup
-                    bus_lookup[bus] = map_to
-                    if bus != ref_bus:
-                        merged_bus[bus] = 1
+                dj = list(dj)
+                bus_lookup[dj] = map_to
+                merged_bus[dj] = 1
+                merged_bus[ref_bus] = 0
         else:
             # no PV buses in set
             for dj in disjoint_sets:
@@ -241,11 +240,10 @@ def create_bus_lookup_numpy(net, bus_index, closed_bb_switch_mask):
                     # neither pv buses nor active busese. Use any bus in dj
                     ref_bus = dj.pop()
                 map_to = bus_lookup[ref_bus]
-                for bus in dj:
-                    # update bus lookup
-                    bus_lookup[bus] = map_to
-                    if bus != ref_bus:
-                        merged_bus[bus] = 1
+                dj = list(dj)
+                bus_lookup[dj] = map_to
+                merged_bus[dj] = 1
+                merged_bus[ref_bus] = 0
     return bus_lookup, merged_bus
 
 
@@ -602,12 +600,12 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc, sequence=None):
                 ppc["bus"][bus_lookup[bus], CID_P] = ci_sum / no_loads
                 cz_sum = sum(tab["const_z_p_percent"][mask] / 100.)
                 ppc["bus"][bus_lookup[bus], CZD_P] = cz_sum / no_loads
-                
+
                 ci_q_sum = sum(tab["const_i_q_percent"][mask] / 100.)
                 ppc["bus"][bus_lookup[bus], CID_Q] = ci_q_sum / no_loads
                 cz_q_sum = sum(tab["const_z_q_percent"][mask] / 100.)
                 ppc["bus"][bus_lookup[bus], CZD_Q] = cz_q_sum / no_loads
-                
+
         sign = -1 if element == "sgen" else 1
         if element == "motor":
             p_mw, q_mvar = _get_motor_pq(net)

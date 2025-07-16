@@ -8,10 +8,7 @@ import numpy as np
 from pandapower.auxiliary import read_from_net, _detect_read_write_flag
 from pandapower.control.basic_controller import Controller
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 logger = logging.getLogger(__name__)
 
 
@@ -39,8 +36,7 @@ class TrafoController(Controller):
 
     def __init__(self, net, element_index, side, tol, in_service, element, level=0, order=0,
                  recycle=True, **kwargs):
-        super().__init__(net, in_service=in_service, level=level, order=order, recycle=recycle,
-                         **kwargs)
+        super().__init__(net, in_service=in_service, level=level, order=order, recycle=recycle) 
 
         self.element = element
         self.element_index = element_index
@@ -50,12 +46,16 @@ class TrafoController(Controller):
         # self._set_valid_controlled_index_and_bus(net)
         self._set_tap_parameters(net)
         self._set_tap_side_coeff(net)
-
         self.tol = tol
-
         self.set_recycle(net)
-
-        self.trafobus = read_from_net(net, self.element, self.element_index, self.side + '_bus', self._read_write_flag)
+        self.trafobus = None
+  
+         # write kwargs in self
+        for key, value in kwargs.items():
+            if key=="vm_set_pu":
+                continue
+            else:
+                setattr(self, key, value)
 
     def _set_read_write_flag(self, net):
         # if someone changes indices of the controller from single index to array and vice versa
@@ -70,11 +70,15 @@ class TrafoController(Controller):
         # update trafo tap parameters
         # we assume side does not change after the controller is created
         self._set_read_write_flag(net)
+        self._update_trafobus(net)
         # self._set_valid_controlled_index_and_bus(net)
         if self.nothing_to_do(net):
             return
         self._set_tap_parameters(net)
         self._set_tap_side_coeff(net)
+
+    def _update_trafobus(self, net):
+        self.trafobus = read_from_net(net, self.element, self.element_index, self.side + '_bus', self._read_write_flag)
 
     def nothing_to_do(self, net):
         element_in_service = read_from_net(net, self.element, self.element_index, 'in_service', self._read_write_flag)
