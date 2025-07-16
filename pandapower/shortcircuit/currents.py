@@ -238,14 +238,11 @@ def _calc_ikss_to_g(net, ppci_0, ppci_1, ppci_2, bus_idx):
     # ppci_1["internal"]["V_ikss"] = V_ikss_abc_pu.T[:, [1]]
     # ppci_2["internal"]["V_ikss"] = V_ikss_abc_pu.T[:, [2]]
 
-    # TODO for LLG  and also LG fault? inverter contribution needs to be calculated ikssc_0, ikssc_1, ikssc_2
     _current_source_current(net, ppci_0, bus_idx, 0)
     _current_source_current(net, ppci_1, bus_idx, 1)
     _current_source_current(net, ppci_2, bus_idx, 2)
 
-    ikssc_0 = ppci_0["bus"][bus_idx, IKSSC]  # = 0
     ikssc_1 = ppci_1["bus"][bus_idx, IKSSC]
-    ikssc_2 = ppci_2["bus"][bus_idx, IKSSC]  # = 0
 
     # calculate correct ikssc for bus results
     if fault == "LL":
@@ -253,13 +250,14 @@ def _calc_ikss_to_g(net, ppci_0, ppci_1, ppci_2, bus_idx):
         ppci_1["bus"][bus_idx, IKSSC] = np.sqrt(3)/2 * ikssc_1
         ppci_2["bus"][bus_idx, IKSSC] = 0
     elif fault == "LG":
-        ppci_0["bus"][bus_idx, IKSSC] = (3*(z_equiv_1)/(z_equiv_1 * 2 + z_equiv_0)) * ikssc_0
-        ppci_1["bus"][bus_idx, IKSSC] = (3*(z_equiv_1)/(z_equiv_1 * 2 + z_equiv_0)) * ikssc_1
-        ppci_2["bus"][bus_idx, IKSSC] = (3*(z_equiv_1)/(z_equiv_1 * 2 + z_equiv_0)) * ikssc_2
+        factor = abs(3 * z_equiv_1 / (z_equiv_1 + z_equiv_2 + z_equiv_0))
+        ppci_0["bus"][bus_idx, IKSSC] = factor * ikssc_1
+        ppci_1["bus"][bus_idx, IKSSC] = factor * ikssc_1
+        ppci_2["bus"][bus_idx, IKSSC] = factor * ikssc_1
     elif fault == "LLG":
-        ppci_0["bus"][bus_idx, IKSSC] = (3*(z_equiv_1)/(z_equiv_1 + 2 * z_equiv_0)) * ikssc_0
-        ppci_1["bus"][bus_idx, IKSSC] = (3*(z_equiv_1)/(z_equiv_1 + 2 * z_equiv_0)) * ikssc_1
-        ppci_2["bus"][bus_idx, IKSSC] = (3*(z_equiv_1)/(z_equiv_1 + 2 * z_equiv_0)) * ikssc_2
+        ppci_0["bus"][bus_idx, IKSSC] = 0
+        ppci_1["bus"][bus_idx, IKSSC] = abs((3 * z_equiv_1 / (z_equiv_1 + 2 * z_equiv_0))) * ikssc_1
+        ppci_2["bus"][bus_idx, IKSSC] = 0
 
     # calculate skss
     if fault == "LLL":
@@ -276,11 +274,6 @@ def _calc_ikss_to_g(net, ppci_0, ppci_1, ppci_2, bus_idx):
     ppci_1["internal"]["V_ikss"] = V_ikss_1
     ppci_2["internal"]["V_ikss"] = V_ikss_2
 
-    # # todo check how sgen is considered for ppci_0, ppci_2
-    # _current_source_current(net, ppci_0, bus_idx, 0)
-    # _current_source_current(net, ppci_1, bus_idx, 1)
-    # _current_source_current(net, ppci_2, bus_idx, 2)
-
 
 def _current_source_current(net, ppci, bus_idx, sequence=1):
     case = net._options["case"]
@@ -292,7 +285,7 @@ def _current_source_current(net, ppci, bus_idx, sequence=1):
     if net._options["fault"] == "LL":
         fault_impedance = fault_impedance/2
     # sgen current source contribution only for Type A and case "max" or type C:
-    if case != "max" and not type_c or sequence != 1: # TODO not only return 0 this leas to NaN values
+    if case != "max" and not type_c or sequence != 1:
         return
 
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
@@ -366,13 +359,13 @@ def _current_source_current(net, ppci, bus_idx, sequence=1):
     else:
         ybus_fact = ppci["internal"]["ybus_fact"]   # TO BE UPDATED, does not include modifications done in SCE project
         diagZ = _calc_zbus_diag(net, ppci)
-        if sgen_angle is None: #Todo auch LLG?
+        if sgen_angle is None:
             ppci["bus"][buses, PHI_IKCV_DEGREE] = -np.angle(diagZ[buses], deg=True) + extra_angle
         diagZ[bus_idx] += fault_impedance
         i_kss_2 = ybus_fact(ppci["bus"][:, IKCV] * np.exp(np.deg2rad(ppci["bus"][:, PHI_IKCV_DEGREE]) * 1j)) / diagZ
 
     ppci["bus"][:, IKSSC] = np.abs(i_kss_2 / baseI)
-    # ppci["bus"][:, PHI_IKSSC_DEGREE] = np.angle(i_kss_2, deg=True) if (fault == "LLL" or fault == "LG") else 0 #Todo auch LLG?
+    # ppci["bus"][:, PHI_IKSSC_DEGREE] = np.angle(i_kss_2, deg=True) if (fault == "LLL" or fault == "LG") else 0
     ppci["bus"][buses, IKCV] /= baseI[buses]
 
 
