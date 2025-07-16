@@ -69,8 +69,6 @@ def compare_sc_results(net, excel_file, branch=False, fault_location=None):
                         if column == element_id_column:
                             continue
                         column_key = check_pattern(column)
-                        # if column_key in ['p_mw', 'q_mvar', 'vm_pu', 'va_degree']:
-                        #     continue
                         if column_key not in tolerances:
                             continue
                         try:
@@ -98,23 +96,24 @@ def compare_sc_results(net, excel_file, branch=False, fault_location=None):
                                 "Status": status
                             })
                         except Exception as e:
-                            print(f"Error at {element_type} {element}, column {column}: {e}")
+                            continue
+                            # print(f"Error at {element_type} {element}, column {column}: {e}")
 
     return pd.DataFrame(all_differences)
 
 
 ##
-net_name = "test_case_1_four_bus_radial_grid"
-result_files_path = os.path.join(pp_dir, 'test', 'shortcircuit', 'sce_tests', 'sc_result_comparison')
-
-net = load_test_case(net_name)
-fault_location = 2
-
-excel_file = "wp_2.1/test_case_1_four_bus_radial_grid_pf_sc_results_2_bus.xlsx"
-diff_df = compare_sc_results(net, os.path.join(result_files_path, excel_file), fault_location=fault_location)
-
-excel_file = r"C:\Users\lriedl\PycharmProjects\pandapower\pandapower\test\shortcircuit\sce_tests\sc_result_comparison\wp_2.1\test_case_1_four_bus_radial_grid_pf_sc_results_2_branch.xlsx"
-diff_df_branch = compare_sc_results(net, excel_file, branch=True, fault_location=fault_location)
+# net_name = "test_case_1_four_bus_radial_grid"
+# result_files_path = os.path.join(pp_dir, 'test', 'shortcircuit', 'sce_tests', 'sc_result_comparison')
+#
+# net = load_test_case(net_name)
+# fault_location = 2
+#
+# excel_file = "wp_2.1/test_case_1_four_bus_radial_grid_pf_sc_results_2_bus.xlsx"
+# diff_df = compare_sc_results(net, os.path.join(result_files_path, excel_file), fault_location=fault_location)
+#
+# excel_file = r"C:\Users\lriedl\PycharmProjects\pandapower\pandapower\test\shortcircuit\sce_tests\sc_result_comparison\wp_2.1\test_case_1_four_bus_radial_grid_pf_sc_results_2_branch.xlsx"
+# diff_df_branch = compare_sc_results(net, excel_file, branch=True, fault_location=fault_location)
 
 
 ## sgen
@@ -133,25 +132,59 @@ net.sgen.loc[net.sgen.bus == 3, 'in_service'] = True
 fault = 'LLG'
 branch = True
 case = 'max'
-# r_fault_ohm = 5
-# x_fault_ohm = 5
+r_fault_ohm = 0
+x_fault_ohm = 0
 fault_location = 2
 
-# calc_sc(
-#       net, fault=fault, case=case, branch_results=branch, ip=False,
-#       r_fault_ohm=r_fault_ohm, x_fault_ohm=x_fault_ohm, bus=fault_location, return_all_currents=False
-# )
-
+calc_sc(
+      net, fault=fault, case=case, branch_results=branch, ip=False,
+      r_fault_ohm=r_fault_ohm, x_fault_ohm=x_fault_ohm, bus=fault_location, return_all_currents=False
+)
+#
 # sgen bus
 excel_file = "wp_2.2/1_four_bus_radial_grid_sgen_pf_sc_results_2_bus_sgen13.xlsx"
 diff_df = compare_sc_results(net, os.path.join(result_files_path, excel_file), fault_location=fault_location)
 
 # sgen branch
 # excel_file = r"1_four_bus_radial_grid_sgen_pf_sc_results_0_branch_sgen1.xlsx"
-excel_file = f"wp_2.2/1_four_bus_radial_grid_sgen_pf_sc_results_2_branch_sgen13.xlsx"
+# excel_file = f"wp_2.2/1_four_bus_radial_grid_sgen_pf_sc_results_2_branch_sgen13.xlsx"
+# diff_df_branch = compare_sc_results(
+#     net, os.path.join(result_files_path, excel_file), branch=True, fault_location=fault_location
+# )
+
+## sgen with active current
+net_name = "3_five_bus_meshed_grid_yyn_sgen_act"
+result_files_path = os.path.join(pp_dir, 'test', 'shortcircuit', 'sce_tests', 'sc_result_comparison')
+
+net = load_test_case(net_name)
+
+net.sgen['active_current'] = True
+# net.sgen.loc[net.sgen.bus == 1, 'in_service'] = True
+# net.sgen.loc[net.sgen.bus == 2, 'in_service'] = False
+# net.sgen.loc[net.sgen.bus == 3, 'in_service'] = True
+
+fault = 'LLL'
+branch = True
+case = 'max'
+r_fault_ohm = 0
+x_fault_ohm = 0
+fault_location = 3
+
+calc_sc(
+      net, fault=fault, case=case, branch_results=branch, ip=False,
+      r_fault_ohm=r_fault_ohm, x_fault_ohm=x_fault_ohm, bus=fault_location, return_all_currents=False
+)
+#
+# sgen bus
+excel_file = "wp_2.2/3_five_bus_meshed_grid_yyn_sgen_act_pf_sc_results_3_bus_sgen34.xlsx"
+diff_df = compare_sc_results(net, os.path.join(result_files_path, excel_file), fault_location=fault_location)
+
+# sgen branch
+excel_file = f"wp_2.2/3_five_bus_meshed_grid_yyn_sgen_act_pf_sc_results_3_branch_sgen34.xlsx"
 diff_df_branch = compare_sc_results(
     net, os.path.join(result_files_path, excel_file), branch=True, fault_location=fault_location
 )
+
 
 ##
 

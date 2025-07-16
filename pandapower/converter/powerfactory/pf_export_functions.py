@@ -373,7 +373,11 @@ def run_short_circuit(app, fault_type="LLL", calc_mode="max", fault_impedance_rf
             bus = sta_cubic.GetParent()
             if not bus:
                 continue
-            if int(bus.loc_name) in activate_sgen_at_bus:
+            if '_' in bus.loc_name:
+                bus_name = bus.loc_name[4:]
+            else:
+                bus_name = bus.loc_name
+            if int(bus_name) in activate_sgen_at_bus:
                 sgen.outserv = 0
                 for sw in switches:
                     sw_sta_cubic = sw.GetParent()
