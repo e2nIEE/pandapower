@@ -255,7 +255,7 @@ def _calc_ikss_to_g(net, ppci_0, ppci_1, ppci_2, bus_idx):
     elif fault == "LG":
         ppci_0["bus"][bus_idx, IKSSC] = (3*(z_equiv_1)/(z_equiv_1 + z_equiv_2 + z_equiv_0)) * ppci_0["bus"][bus_idx, IKSSC]
         ppci_1["bus"][bus_idx, IKSSC] = (3*(z_equiv_1)/(z_equiv_1 + z_equiv_2 + z_equiv_0)) * ppci_1["bus"][bus_idx, IKSSC]
-        ppci_2["bus"][bus_idx, IKSSC] = (3*(z_equiv_1)/(z_equiv_1 + z_equiv_2 + z_equiv_0)) * ppci_2"bus"][bus_idx, IKSSC]
+        ppci_2["bus"][bus_idx, IKSSC] = (3*(z_equiv_1)/(z_equiv_1 + z_equiv_2 + z_equiv_0)) * ppci_2["bus"][bus_idx, IKSSC]
     elif fault == "LLG":
         ppci_0["bus"][bus_idx, IKSSC] = (3*(z_equiv_1)/(z_equiv_1 + 2*z_equiv_0)) * ppci_0["bus"][bus_idx, IKSSC]
         ppci_1["bus"][bus_idx, IKSSC] = (3*(z_equiv_1)/(z_equiv_1 + 2*z_equiv_0)) * ppci_1["bus"][bus_idx, IKSSC]

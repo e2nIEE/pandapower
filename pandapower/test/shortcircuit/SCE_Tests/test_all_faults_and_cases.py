@@ -72,6 +72,7 @@ for values in parametrize_values_vector:
 parametrize_values_vector += list(sgen_params)
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("fault, case, fault_values, lv_tol_percent, fault_location_bus, is_branch_test, sgen_idx",
                          parametrize_values)
 def test_four_bus_radial_grid(fault, case, fault_values, lv_tol_percent, fault_location_bus, is_branch_test, sgen_idx):
@@ -92,6 +93,7 @@ def test_four_bus_radial_grid(fault, case, fault_values, lv_tol_percent, fault_l
     compare_results(*results)
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize(
     "net_name, fault, case, fault_values, lv_tol_percent, vector_group, fault_location_bus, is_branch_test, sgen_idx",
     parametrize_values_vector)
