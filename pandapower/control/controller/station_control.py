@@ -1,4 +1,3 @@
-import numbers
 import numpy as np
 
 from pandapower.control.basic_controller import Controller
@@ -14,61 +13,75 @@ logger = pplog.getLogger(__name__)
 
 class BinarySearchControl(Controller):
     """
-        The Binary search control is a controller which is used to reach a given set point. It can be used for
-        reactive power control or voltage control. in case of voltage control, the input parameter voltage_ctrl must be
-        set to true. Input and output elements and indexes can be lists. Input elements can be transformers, switches,
-        lines or busses (only in case of voltage control). In case of voltage control, a bus_index must be present,
-        where the voltage will be controlled. Output elements are sgens, where active and reactive power can be set. The
-        output value distribution describes the distribution of reactive power provision between multiple
-        output_elements and must sum up to 1.
+        The BinarySearchControl is a controller used to reach a given set point, either for reactive power control or voltage control.
+        In case of voltage control, the input parameter voltage_ctrl must be set to True. Input and output elements and indexes can be lists.
+        Input elements can be transformers, switches, lines, or buses (only in case of voltage control). For voltage control, a bus_idx must be provided,
+        indicating the bus where the voltage will be controlled. Output elements can be "gen", "sgen", or "shunt", and the output_variable is typically "q_mvar".
+        The output_values_distribution describes the distribution of reactive power provision between multiple output elements and must sum up to 1.
 
         INPUT:
             **self**
 
-            **net** - A pandapower grid
+            **net** - A pandapower grid.
 
             **ctrl_in_service** - Whether the controller is in service or not.
 
-            **output_element** - Output element of the controller. Takes a string value "gen" or "sgen", with
-            reactive power control, currently only "sgen" is possible.
+            **output_element** - Output element of the controller. String value, e.g., "gen", "sgen", or "shunt".
 
             **output_variable** - Output variable of that element, normally "q_mvar".
 
-            **output_element_index** - Index of output element in e.g. "net.sgen".
+            **output_element_index** - Index or list of indices of the output element(s) in net.
 
-            **output_element_in_service** - Whether output elements are in service or not.
+            **output_element_in_service** - List indicating whether each output element is in service.
 
-            **output_values_distribution** - Distribution of reactive power provision.
+            **output_values_distribution** - Distribution of reactive power provision among output elements.
 
-            **input_element** - Measurement location, can be a transformers, switches, lines or busses (only with
-            voltage_ctrl), indicated by string value "res_trafo", "res_switch", "res_line" or "res_bus". In case of
-            "res_switch", an additional small impedance is introduced in the switch.
+            **output_min_q_mvar** - Minimum reactive power limits for each output element.
 
-            **input_variable** - Variable which is used to take the measurement from. Indicated by string value.
+            **output_max_q_mvar** - Maximum reactive power limits for each output element.
 
-            **input_element_index** - Element of input element in net.
+            **input_element** - Measurement location, can be "res_trafo", "res_switch", "res_line", or "res_bus".
 
-            **set_point** - Set point of the controller, can be a reactive power provision or a voltage set point. In
-            case of voltage set point, voltage control must be set to true, bus_idx must be set to measurement bus and
-            input_element must be "res_bus". Can be overwritten by a droop controller chained with the binary search
-            control.
+            **input_variable** - Variable(s) used for measurement, string or list of strings.
 
-            **voltage_ctrl** - Whether the controller is used for voltage control or not.
+            **input_element_index** - Index or list of indices of the input element(s) in net.
 
-            **bus_idx=None** - Bus index which is used for voltage control.
+            **set_point** - Set point for the controller (reactive power or voltage). For voltage control, voltage_ctrl must be True,
+                            bus_idx must be set, and input_element must be "res_bus". Can be overwritten by a chained droop controller.
 
-            **tol=0.001** - Tolerance criteria of controller convergence.
-       """
-    def __init__(self, net, name, ctrl_in_service, output_element, output_variable, output_element_index,
-                 output_element_in_service, output_values_distribution, output_min_q_mvar, output_max_q_mvar,
-                 input_element, input_variable, input_element_index, set_point, voltage_ctrl,
+            **voltage_ctrl** - Whether the controller is used for voltage control.
+
+            **bus_idx=None** - Bus index used for voltage control.
+
+            **tol=0.001** - Tolerance for controller convergence.
+
+            **in_service=True** - Whether the controller itself is in service.
+
+            **order=0** - Execution order of the controller.
+
+            **level=0** - Execution level of the controller.
+
+            **drop_same_existing_ctrl=False** - Whether to drop existing controllers with the same parameters.
+
+            **matching_params=None** - Parameters for matching controllers.
+
+            **name=""** - Name of the controller.
+
+            **kwargs** - Additional keyword arguments.
+    """
+    def __init__(self, net, ctrl_in_service, output_element, output_variable, output_element_index,
+                 output_element_in_service, output_values_distribution, input_element, input_variable,
+                 input_element_index, set_point, voltage_ctrl, output_min_q_mvar=None, output_max_q_mvar=None,
                  bus_idx=None, tol=0.001, in_service=True, order=0, level=0,
-                 drop_same_existing_ctrl=False, matching_params=None, **kwargs):
+                 drop_same_existing_ctrl=False, matching_params=None, name=None, **kwargs):
         super().__init__(net, name=name, in_service=in_service, order=order, level=level,
                          drop_same_existing_ctrl=drop_same_existing_ctrl,
                          matching_params=matching_params)
 
-        self.name = name
+        if name is not None:
+            self.name = str(name)
+        else:
+            self.name = ""
         self.in_service = ctrl_in_service
         self.input_element = input_element
         self.input_element_index = []
@@ -84,29 +97,20 @@ class BinarySearchControl(Controller):
         # normalize the values distribution:
         self._normalize_distribution_in_service(net, initial_pf_distribution=output_values_distribution)
 
-        # self.output_values_distribution = [0 if not in_service else value
-        #                                    for in_service, value in zip(self.output_element_in_service, output_values_distribution)]
-        # total = np.sum(self.output_values_distribution)
-        # if total > 0:  # To avoid division by zero
-        #     self.output_values_distribution = np.array(self.output_values_distribution, dtype=np.float64) / total
-        # else:
-        #     self.output_values_distribution = np.zeros_like(self.output_values_distribution, dtype=np.float64)
-
-        self.output_min_q_mvar = np.array(output_min_q_mvar, dtype=np.float64)
-        self.output_max_q_mvar = np.array(output_max_q_mvar, dtype=np.float64)
-        if self.output_element == "shunt":
-            self.output_adjustable = None
+        if output_min_q_mvar is not None:
+            self.output_min_q_mvar = np.array(output_min_q_mvar, dtype=np.float64)
         else:
-            #self.output_adjustable = np.array([True]*len(output_min_q_mvar), dtype=np.bool)
-            # self.output_adjustable = np.array(self.output_element_in_service, dtype=np.bool)
-            # print(self.name)
-            # print(self.output_values_distribution)
-            # print(self.output_element_in_service)
-            self.output_adjustable = np.array([False if not distribution else service
-                                               for distribution, service in zip(self.output_values_distribution,
-                                                                                self.output_element_in_service)],
-                                              dtype=np.bool)
-            #print(self.output_adjustable)
+            self.output_min_q_mvar = np.array([-np.inf]*len(output_element_index), dtype=np.float64)
+        if output_max_q_mvar is not None:
+            self.output_max_q_mvar = np.array(output_max_q_mvar, dtype=np.float64)
+        else:
+            self.output_max_q_mvar = np.array([np.inf]*len(output_element_index), dtype=np.float64)
+
+        self.output_adjustable = np.array([False if not distribution else service
+                                            for distribution, service in zip(self.output_values_distribution,
+                                                                            self.output_element_in_service)],
+                                            dtype=np.bool)
+
         self.set_point = set_point
         self.voltage_ctrl = voltage_ctrl
         self.bus_idx = bus_idx
@@ -205,7 +209,6 @@ class BinarySearchControl(Controller):
         # compare old and new set values
         if not self.voltage_ctrl: # or self.bus_idx is None:
             self.diff_old = self.diff
-            #print(self.output_adjustable)
 
             if not any(self.output_adjustable):
                 print('All stations controlled by %s reached reactive power limits.' %self.name)
@@ -218,14 +221,6 @@ class BinarySearchControl(Controller):
 
                 # normalize the values distribution
                 self._normalize_distribution_in_service(net)
-                # set output_values_distribution to 0, if station is not in service
-                # self.output_values_distribution = [0 if not in_service else value for in_service, value
-                #                                    in zip(self.output_element_in_service, self.output_values_distribution)]
-                # total = np.sum(self.output_values_distribution)
-                # if total > 0:  # To avoid division by zero
-                #     self.output_values_distribution = np.array(self.output_values_distribution, dtype=np.float64) / total
-                # else:
-                #     self.output_values_distribution = np.zeros_like(self.output_values_distribution, dtype=np.float64)
 
                 self.diff = self.set_point - sum(input_values)
                 #print(self.diff)
@@ -246,17 +241,6 @@ class BinarySearchControl(Controller):
                 # normalize the values distribution
                 self._normalize_distribution_in_service(net)
 
-                # # self.output_values_distribution = np.array(output_values_distribution, dtype=np.float64) / np.sum(
-                # #         output_values_distribution)
-                # self.output_values_distribution = [0 if not in_service else value
-                #                                    for in_service, value in zip(self.output_element_in_service, self.output_values_distribution)]
-                # # Normalization
-                # total = np.sum(self.output_values_distribution)
-                # if total > 0:  # To avoid division by zero
-                #     self.output_values_distribution = np.array(self.output_values_distribution, dtype=np.float64) / total
-                # else:
-                #     self.output_values_distribution = np.zeros_like(self.output_values_distribution, dtype=np.float64)
-
                 self.diff = self.set_point - net.res_bus.vm_pu.loc[self.input_element_index].values[0]
                 #print(self.diff)
                 self.converged = np.all(np.abs(self.diff) < self.tol)
@@ -268,17 +252,9 @@ class BinarySearchControl(Controller):
             return self.converged
 
     def control_step(self, net):
-        #print('step', self.name)
-        # if self.name == "SC_ConstQ_case6":
-        #     print('joooo')
-
         self._binarysearchcontrol_step(net)
 
     def _binarysearchcontrol_step(self, net):
-        if self.name=="EEM380":
-            print('Q:', self.output_values)
-            print('adjustable:', self.output_adjustable)
-
         if not self.in_service:
             return
         if self.output_values_old is None:
@@ -288,7 +264,7 @@ class BinarySearchControl(Controller):
 
             positions_not_adjustable = [i for i, val in enumerate(self.output_adjustable) if not val]
             for i in positions_not_adjustable:
-                if self.output_values_distribution[i]==0 or self.output_element_in_service[i]==False :
+                if self.output_values_distribution[i]==0 or not self.output_element_in_service[i] :
                     self.output_values[i] = 0
                 else:
                     continue
@@ -370,8 +346,6 @@ class BinarySearchControl(Controller):
                     # check if limit is reached
                     reached_min_qmvar = x<self.output_min_q_mvar
                     reached_max_qmvar = x>self.output_max_q_mvar
-                    # if self.name=="BS30":
-                    #     print('single')
 
                     if reached_min_qmvar or reached_max_qmvar:
                         print('Station %s controlled by %s reached a reactive power limit.' % (self.machines[0], self.name))
@@ -443,13 +417,17 @@ class DroopControl(Controller):
 
                 **vm_set_ub=None** - Upper band border of dead band
            """
-    def __init__(self, net, name, q_droop_mvar, bus_idx, vm_set_pu, controller_idx, voltage_ctrl, tol=1e-6, in_service=True,
+    def __init__(self, net, q_droop_mvar, bus_idx, vm_set_pu, controller_idx, voltage_ctrl, name=None, tol=1e-6, in_service=True,
                  order=-1, level=0, drop_same_existing_ctrl=False, matching_params=None, vm_set_lb=None, vm_set_ub=None,
                  **kwargs):
         super().__init__(net, name, in_service=in_service, order=order, level=level,
                          drop_same_existing_ctrl=drop_same_existing_ctrl,
                          matching_params=matching_params)
         # TODO: implement maximum and minimum of droop control
+        if name is not None:
+            self.name = str(name)
+        else:
+            self.name = ""
         self.q_droop_mvar = q_droop_mvar
         self.bus_idx = bus_idx
         self.vm_pu = None
