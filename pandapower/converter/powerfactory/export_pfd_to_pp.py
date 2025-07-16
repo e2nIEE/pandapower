@@ -68,7 +68,6 @@ def from_pfd(app, prj_name: str, script_name=None, script_settings=None, path_ds
 
     logger.info('exporting network to pandapower')
     app.SetAttributeModeInternal(1)
-    #net = from_pf(app, dict_net=dict_net, pv_as_slack=pv_as_slack, pf_variable_p_loads=pf_variable_p_loads,
     net = from_pf(dict_net=dict_net, pv_as_slack=pv_as_slack, pf_variable_p_loads=pf_variable_p_loads,
                   pf_variable_p_gen=pf_variable_p_gen, flag_graphics=flag_graphics, tap_opt=tap_opt,
                   export_controller=export_controller, handle_us=handle_us, is_unbalanced=is_unbalanced,

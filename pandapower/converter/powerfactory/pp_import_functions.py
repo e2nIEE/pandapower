@@ -8,10 +8,10 @@ from typing import Literal, Optional, Union
 import geojson
 import networkx as nx
 import numpy as np
-from pandas import DataFrame
+from pandas import DataFrame, concat
 
 from pandapower.auxiliary import ADict, get_free_id
-from pandapower.control import ContinuousTapControl, DiscreteTapControl, _create_trafo_characteristics, \
+from pandapower.control import ContinuousTapControl, DiscreteTapControl, \
     BinarySearchControl, \
     DroopControl
 
@@ -20,9 +20,6 @@ from pandapower.create import create_empty_network, create_bus, create_bus_dc, c
     create_asymmetric_sgen, create_line_dc_from_parameters, create_asymmetric_load, create_transformer, \
     create_transformer_from_parameters, create_transformer3w_from_parameters, create_impedance, create_xward, \
     create_ward, create_series_reactor_as_impedance
-from pandapower.create import \
-    create_line as create_line_pp, \
-    create_shunt as create_shunt_pp
 from pandapower.results import reset_results
 from pandapower.run import set_user_pf_options
 from pandapower.std_types import add_zero_impedance_parameters, std_type_exists, create_std_type, available_std_types, \
@@ -44,8 +41,6 @@ switch_dict = {}
 bus_dict = {}
 grf_map = {}
 
-# import network to pandapower:
-import pandas as pd
 
 def ga(element, attr):
     return element.GetAttribute(attr)
@@ -127,8 +122,9 @@ def from_pf(
                         dict_net=dict_net, is_unbalanced=is_unbalanced)
         except RuntimeError as err:
             logger.warning('load failed at import and was not imported: %s' % err)
-    if n > 0: logger.info('imported %d lv loads' % n),
-
+    if n > 0:
+        logger.info('imported %d lv loads' % n)
+    
     logger.debug('creating mv loads')
     # create loads:
     n = 0
@@ -2606,7 +2602,7 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
 
     # Creating trafo characteristics table for tap dependence impedance
     if "trafo_characteristic_table" not in net:
-        net["trafo_characteristic_table"] = pd.DataFrame(
+        net["trafo_characteristic_table"] = DataFrame(
             columns=['id_characteristic', 'step', 'voltage_ratio', 'angle_deg', 'vk_percent', 'vkr_percent',
                      'vk_hv_percent', 'vkr_hv_percent', 'vk_mv_percent', 'vkr_mv_percent', 'vk_lv_percent',
                      'vkr_lv_percent'])
@@ -2781,7 +2777,7 @@ def add_tap_dependent_impedance_for_trafo(item, net, pf_type, tid):
     angle_deg[angle_deg == -0] = 0.0
 
     # Add data to trafo characteristics table
-    new_tap_table = pd.DataFrame({
+    new_tap_table = DataFrame({
         'id_characteristic': index,
         'step': steps,
         'voltage_ratio': voltage_ratio,
@@ -2792,7 +2788,7 @@ def add_tap_dependent_impedance_for_trafo(item, net, pf_type, tid):
     })
 
     # Append new tap characteristics to the network table
-    net["trafo_characteristic_table"] = pd.concat([net["trafo_characteristic_table"], new_tap_table],
+    net["trafo_characteristic_table"] = concat([net["trafo_characteristic_table"], new_tap_table],
                                                   ignore_index=True)
 
     # Update transformer attributes
@@ -2809,7 +2805,7 @@ def create_trafo_characteristics_from_measurement_protocol(item, net, pf_type):
     tap_side = pf_type.tap_side
     meas_side = item.GetAttribute("iMeasLoc")  # 0: meas-side == tap_side
     steps = list(range(tap_min, tap_max + 1))
-    new_tap_table = pd.DataFrame(item.GetAttribute("mTaps"),
+    new_tap_table = DataFrame(item.GetAttribute("mTaps"),
                                  columns=['voltage_ratio', 'angle_deg', 'vk_percent', 'vkr_percent',
                                           'ignore'])
     new_tap_table = new_tap_table.drop(columns='ignore')
@@ -2836,7 +2832,7 @@ def create_trafo_characteristics_from_measurement_protocol(item, net, pf_type):
     missing_columns = set(net["trafo_characteristic_table"].columns) - set(new_tap_table.columns)
     for col in missing_columns:
         new_tap_table[col] = np.nan
-    net["trafo_characteristic_table"] = pd.concat([net["trafo_characteristic_table"], new_tap_table],
+    net["trafo_characteristic_table"] = concat([net["trafo_characteristic_table"], new_tap_table],
                                                   ignore_index=True)
     if pf_type.tapchtype == 0:
         tap_changer_type = "Ratio"
@@ -2950,7 +2946,7 @@ def create_trafo3w(net, item, tap_opt='nntap'):
 
     # Creating trafo characteristics table for tap dependence impedance
     if "trafo_characteristic_table" not in net:
-        net["trafo_characteristic_table"] = pd.DataFrame(
+        net["trafo_characteristic_table"] = DataFrame(
             columns=['id_characteristic', 'step', 'voltage_ratio', 'angle_deg', 'vk_percent', 'vkr_percent',
                      'vk_hv_percent', 'vkr_hv_percent', 'vk_mv_percent', 'vkr_mv_percent', 'vk_lv_percent',
                      'vkr_lv_percent'])
@@ -2958,7 +2954,7 @@ def create_trafo3w(net, item, tap_opt='nntap'):
     use_tap_table = item.GetAttribute("iTaps")
     if use_tap_table == 1:
         if "trafo_characteristic_table" not in net:
-            net["trafo_characteristic_table"] = pd.DataFrame(
+            net["trafo_characteristic_table"] = DataFrame(
                 columns=['id_characteristic', 'step', 'voltage_ratio', 'angle_deg', 'vk_percent', 'vkr_percent',
                          'vk_hv_percent', 'vkr_hv_percent', 'vk_mv_percent', 'vkr_mv_percent', 'vk_lv_percent',
                          'vkr_lv_percent'])
@@ -2971,10 +2967,10 @@ def create_trafo3w(net, item, tap_opt='nntap'):
         columns =['voltage_ratio', 'angle_deg', 'vk_hv_percent', 'vk_mv_percent',
                   'vk_lv_percent', 'vkr_hv_percent', 'vkr_mv_percent', 'vkr_lv_percent']
         if len(measurement_report[0]) == len(columns):
-            new_tap_table = pd.DataFrame(measurement_report, columns=columns)
+            new_tap_table = DataFrame(measurement_report, columns=columns)
         else:
             # for now, ignore "Zusätzliche Bemessungsleistung Faktor" and zero sequence components
-            new_tap_table = pd.DataFrame(measurement_report)
+            new_tap_table = DataFrame(measurement_report)
             new_tap_table = new_tap_table.iloc[:, :len(columns)]
             new_tap_table.columns = columns
 
@@ -3034,7 +3030,7 @@ def create_trafo3w(net, item, tap_opt='nntap'):
         for col in missing_columns:
             new_tap_table[col] = np.nan
 
-        net["trafo_characteristic_table"] = pd.concat([net["trafo_characteristic_table"], new_tap_table],
+        net["trafo_characteristic_table"] = concat([net["trafo_characteristic_table"], new_tap_table],
                                                       ignore_index=True)
 
         params['tap_dependency_table'] = True
@@ -3195,7 +3191,7 @@ def add_tap_dependant_impedance_for_trafo3W(net, pf_type, tid):
         vk_vkr_data[f"vkr_{side}v_percent"] = vkr_points
 
     # Create DataFrame in one efficient step
-    new_tap_table = pd.DataFrame({
+    new_tap_table = DataFrame({
         'id_characteristic': index,
         'step': steps,
         'voltage_ratio': voltage_ratio,
@@ -3205,7 +3201,7 @@ def add_tap_dependant_impedance_for_trafo3W(net, pf_type, tid):
         **vk_vkr_data
     })
 
-    net["trafo_characteristic_table"] = pd.concat([net["trafo_characteristic_table"], new_tap_table],
+    net["trafo_characteristic_table"] = concat([net["trafo_characteristic_table"], new_tap_table],
                                                   ignore_index=True)
 
     # Update transformer attributes efficiently
@@ -3294,7 +3290,7 @@ def create_pp_shunt(net, item):
     use_tap_table = item.GetAttribute("iTaps")
     if use_tap_table == 1:
         if "shunt_characteristic_table" not in net:
-            net["shunt_characteristic_table"] = pd.DataFrame(
+            net["shunt_characteristic_table"] = DataFrame(
                 columns=['id_characteristic', 'step', 'q_mvar', 'p_mw'])
 
         last_index = net["shunt_characteristic_table"]['id_characteristic'].max() if not net[
@@ -3302,7 +3298,7 @@ def create_pp_shunt(net, item):
 
         id_characteristic_table = last_index + 1
 
-        new_tap_table = pd.DataFrame(item.GetAttribute("mTaps"), columns=['q_mvar', 'p_mw'])
+        new_tap_table = DataFrame(item.GetAttribute("mTaps"), columns=['q_mvar', 'p_mw'])
 
         steps = list(range(0, item.GetAttribute("ncapx") + 1))
         if len(new_tap_table) == len(steps):
@@ -3314,7 +3310,7 @@ def create_pp_shunt(net, item):
         new_tap_table["p_mw"] = np.where(new_tap_table["p_mw"] == 0, 0, new_tap_table["q_mvar"] / new_tap_table["p_mw"])
         new_tap_table['id_characteristic'] = id_characteristic_table
 
-        net["shunt_characteristic_table"] = pd.concat([net["shunt_characteristic_table"], new_tap_table],
+        net["shunt_characteristic_table"] = concat([net["shunt_characteristic_table"], new_tap_table],
                                                       ignore_index=True)
     else:
         use_tap_table = 0
@@ -3402,7 +3398,7 @@ def create_pp_shunt(net, item):
 
 
 def _add_shunt_to_impedance_bus(net, item, bus):
-    create_shunt_pp(net, bus, -item.bi_pu * net.sn_mva, p_mw=-item.gi_pu * net.sn_mva)
+    create_shunt(net, bus, -item.bi_pu * net.sn_mva, p_mw=-item.gi_pu * net.sn_mva)
 
 
 def create_zpu(net, item):
@@ -3567,22 +3563,6 @@ def update_in_service_depending_station_switch(net, element_type, new_elements, 
                                  (net[element_type].at[new_elements[i], 'name'], new_elements[i]))
     else:
         pass
-
-def update_in_service_depending_station_switch(net, element_type, new_elements, new_switch_idx, new_switch_closed):
-    ### fcn is not used!
-    if len(new_switch_idx) != 0:
-        for i in range(len(new_switch_idx)):
-            if new_switch_closed[i] == 0:
-                if net[element_type].loc[new_elements[i], 'in_service'] == False:
-                    continue
-                else:
-                    net[element_type].loc[new_elements[i], 'in_service'] = False
-                    logger.debug('element of element_type %s with index %d is set\
-                                 out of service because station switch is open ' %
-                                 (net[element_type].at[new_elements[i], 'name'], new_elements[i]))
-    else:
-        pass
-
 
 def create_sind(net, item):
     # series reactor is modelled as per-unit impedance, values in Ohm are calculated into values in
@@ -4323,7 +4303,7 @@ def split_line(net, line_idx, pos_at_line, line_item):
         # connect the existing line to the new bus
         net.line.at[line_idx, 'to_bus'] = new_bus
 
-        new_line = create_line_pp(net, new_bus, bus_j, len_b, line_type, name=name)
+        new_line = create_line(net, new_bus, bus_j, len_b, line_type, name=name)
         # change the connection of the bus-line switch to the new line
         sw = net.switch.query("et=='l' & bus==@bus_j & element==@line_idx").index
         if len(sw) > 0:
@@ -4612,18 +4592,18 @@ def create_q_capability_curve(net, item):
     name = item.loc_name
     # create q capability curve
     if 'q_capability_curve_table' not in net:
-        net['q_capability_curve_table'] = pd.DataFrame(
+        net['q_capability_curve_table'] = DataFrame(
             columns=['id_q_capability_curve', 'p_mw', 'q_min_mvar', 'q_max_mvar'])
 
     logger.debug('>> creating  reactive power capabiltiy curve<%s>' % name)
     index = net.q_capability_curve_table.iat[-1, 0] + 1 if not net['q_capability_curve_table'].empty else 0
-    new_data = pd.DataFrame({
+    new_data = DataFrame({
         'id_q_capability_curve': index,
         'p_mw': item.cap_P,
         'q_min_mvar': item.cap_Qmn,
         'q_max_mvar': item.cap_Qmx
     })
-    net['q_capability_curve_table'] = pd.concat([net['q_capability_curve_table'], new_data], ignore_index=True)
+    net['q_capability_curve_table'] = concat([net['q_capability_curve_table'], new_data], ignore_index=True)
     return index
 
 

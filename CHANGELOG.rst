@@ -19,6 +19,10 @@ Change Log
 - [FIXED] fixed convert_format for missing information (in gen, sgen, shunt) and tables (q_capability_characteristic, q_capability_curve_table, id_characteristic_table, step_dependency_table)
 - [ADDED] added tests for q_capability_curve_table in cim2pp and convert_format.py for format_version 3.1.0
 - [FIXED] deserialising q_capability_characteristic in from_excel and added test for it
+- [ADDED] pf2pp: possibility to convert a specific varaint and scenario
+- [ADDED] Static Var Compensator with Voltage Control
+- [ADDED] pf2pp: min/max q_mvar and min/max p_mw limits for sgens and gen will be converted
+- [ADDED] Static Var Compensator with Voltage Control
 
 [3.1.2] - 2025-06-16
 -------------------------------
@@ -137,11 +141,6 @@ Change Log
 - [FIXED] julia tests
 - [FIXED] copy array element to standard python scalar
 - [FIXED] passing literal json to 'read_json' is deprecated
-
-- [ADDED] pf2pp: possibility to convert a specific varaint and scenario
-- [ADDED] Static Var Compensator with Voltage Control
-- [ADDED] pf2pp: min/max q_mvar and min/max p_mw limits for sgens and gen will be converted
-- [ADDED] Static Var Compensator with Voltage Control
 - [FIXED] replacing deprecated in1d with isin
 - [ADDED] A switch to disable updating the vk and vkr values for trafo3w
 - [FIXED] cast the column to the correct type before assigning values
