@@ -229,11 +229,6 @@ def _calc_ikss_to_g(net, ppci_0, ppci_1, ppci_2, bus_idx):
     ppci_0["bus"][bus_idx, PHI_IKSSV_DEGREE] = np.angle(ikssv_0, deg=True)
     ppci_1["bus"][bus_idx, PHI_IKSSV_DEGREE] = np.angle(ikssv_1, deg=True)
     ppci_2["bus"][bus_idx, PHI_IKSSV_DEGREE] = np.angle(ikssv_2, deg=True)
-    # TODO for LLG  and als LG fault? inverter contribution needs to be calculated ikssc_0, ikssc_1, ikssc_2
-    # if fault == "LLG":
-    #     ppci_0["bus"][bus_idx, PHI_IKSSC_DEGREE] = np.angle(ikssc_0, deg=True)
-    #     ppci_1["bus"][bus_idx, PHI_IKSSC_DEGREE] = np.angle(ikssc_1, deg=True)
-    #     ppci_2["bus"][bus_idx, PHI_IKSSC_DEGREE] = np.angle(ikssc_2, deg=True)
 
     # V_ikss_abc_pu = sequence_to_phase(np.vstack([V_ikss_0.T, V_ikss_1.T, V_ikss_2.T]))
     # V_ikss_abc_pu[np.abs(V_ikss_abc_pu) < 1e-10] = 0
@@ -243,23 +238,29 @@ def _calc_ikss_to_g(net, ppci_0, ppci_1, ppci_2, bus_idx):
     # ppci_1["internal"]["V_ikss"] = V_ikss_abc_pu.T[:, [1]]
     # ppci_2["internal"]["V_ikss"] = V_ikss_abc_pu.T[:, [2]]
 
+    # TODO for LLG  and also LG fault? inverter contribution needs to be calculated ikssc_0, ikssc_1, ikssc_2
     _current_source_current(net, ppci_0, bus_idx, 0)
     _current_source_current(net, ppci_1, bus_idx, 1)
     _current_source_current(net, ppci_2, bus_idx, 2)
 
+    ikssc_0 = ppci_0["bus"][bus_idx, IKSSC]  # = 0
+    ikssc_1 = ppci_1["bus"][bus_idx, IKSSC]
+    ikssc_2 = ppci_2["bus"][bus_idx, IKSSC]  # = 0
+
     # calculate correct ikssc for bus results
     if fault == "LL":
-        ppci_0["bus"][bus_idx, IKSSC] = np.sqrt(3)/2 * ppci_0["bus"][bus_idx, IKSSC]
-        ppci_1["bus"][bus_idx, IKSSC] = np.sqrt(3)/2 * ppci_1["bus"][bus_idx, IKSSC]
-        ppci_2["bus"][bus_idx, IKSSC] = np.sqrt(3)/2 * ppci_2["bus"][bus_idx, IKSSC]
+        ppci_0["bus"][bus_idx, IKSSC] = 0
+        ppci_1["bus"][bus_idx, IKSSC] = np.sqrt(3)/2 * ikssc_1
+        ppci_2["bus"][bus_idx, IKSSC] = 0
     elif fault == "LG":
-        ppci_0["bus"][bus_idx, IKSSC] = (3*(z_equiv_1)/(z_equiv_1 + z_equiv_2 + z_equiv_0)) * ppci_0["bus"][bus_idx, IKSSC]
-        ppci_1["bus"][bus_idx, IKSSC] = (3*(z_equiv_1)/(z_equiv_1 + z_equiv_2 + z_equiv_0)) * ppci_1["bus"][bus_idx, IKSSC]
-        ppci_2["bus"][bus_idx, IKSSC] = (3*(z_equiv_1)/(z_equiv_1 + z_equiv_2 + z_equiv_0)) * ppci_2["bus"][bus_idx, IKSSC]
+        ppci_0["bus"][bus_idx, IKSSC] = (3*(z_equiv_1)/(z_equiv_1 * 2 + z_equiv_0)) * ikssc_0
+        ppci_1["bus"][bus_idx, IKSSC] = (3*(z_equiv_1)/(z_equiv_1 * 2 + z_equiv_0)) * ikssc_1
+        ppci_2["bus"][bus_idx, IKSSC] = (3*(z_equiv_1)/(z_equiv_1 * 2 + z_equiv_0)) * ikssc_2
     elif fault == "LLG":
-        ppci_0["bus"][bus_idx, IKSSC] = (3*(z_equiv_1)/(z_equiv_1 + 2*z_equiv_0)) * ppci_0["bus"][bus_idx, IKSSC]
-        ppci_1["bus"][bus_idx, IKSSC] = (3*(z_equiv_1)/(z_equiv_1 + 2*z_equiv_0)) * ppci_1["bus"][bus_idx, IKSSC]
-        ppci_2["bus"][bus_idx, IKSSC] = (3*(z_equiv_1)/(z_equiv_1 + 2*z_equiv_0)) * ppci_2["bus"][bus_idx, IKSSC]
+        ppci_0["bus"][bus_idx, IKSSC] = (3*(z_equiv_1)/(z_equiv_1 + 2 * z_equiv_0)) * ikssc_0
+        ppci_1["bus"][bus_idx, IKSSC] = (3*(z_equiv_1)/(z_equiv_1 + 2 * z_equiv_0)) * ikssc_1
+        ppci_2["bus"][bus_idx, IKSSC] = (3*(z_equiv_1)/(z_equiv_1 + 2 * z_equiv_0)) * ikssc_2
+
     # calculate skss
     if fault == "LLL":
         ppci_0["bus"][bus_idx, SKSS] = np.sqrt(3) * (ppci_0["bus"][bus_idx, IKSSV] + ppci_0["bus"][bus_idx, IKSSC]) * ppci_0["bus"][bus_idx, BASE_KV]

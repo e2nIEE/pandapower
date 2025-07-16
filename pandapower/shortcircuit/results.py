@@ -196,72 +196,76 @@ def _get_trafo_lg_results(net, v_abc_pu, i_abc_ka, s_abc_mva):
 
     # todo: ip, ith
 
-def _calculate_bus_results_llg(ppc_0, ppc_1, ppc_2, bus, net):
-    # we use 3D arrays here to easily identify via axis:
-    # 0: line index, 1: from/to, 2: phase
-    # short-ciruit for rotating machine (ext-grid and gen)
-    bus_lookup = net._pd2ppc_lookups["bus"]
-    ppc_index = bus_lookup[net.bus.index]
-    skss_abc_mva = np.full((len(ppc_index), 3), np.nan, dtype=np.float64)
-    ikss_abc_ka = np.full((len(ppc_index), 3), np.nan, dtype=np.float64)
-
-    i_1_ka_0 = ppc_0['bus'][:, IKSSV] * np.exp(1j * np.deg2rad(ppc_0['bus'][:, PHI_IKSSV_DEGREE].real))[:, np.newaxis]
-    i_1_ka_1 = ppc_1['bus'][:, IKSSV] * np.exp(1j * np.deg2rad(ppc_1['bus'][:, PHI_IKSSV_DEGREE].real))[:, np.newaxis]
-    i_1_ka_2 = ppc_2['bus'][:, IKSSV] * np.exp(1j * np.deg2rad(ppc_2['bus'][:, PHI_IKSSV_DEGREE].real))[:, np.newaxis]
-
-    # TODO check results with sgen
-    # short-ciruit for inverter-based generation (current source)
-    i_2_ka_0 = ppc_0['bus'][:, IKSSC] * np.exp(1j * np.deg2rad(ppc_0['bus'][:, PHI_IKSSC_DEGREE].real))[:, np.newaxis]
-    i_2_ka_1 = ppc_1['bus'][:, IKSSC] * np.exp(1j * np.deg2rad(ppc_1['bus'][:, PHI_IKSSC_DEGREE].real))[:, np.newaxis]
-    i_2_ka_2 = ppc_2['bus'][:, IKSSC] * np.exp(1j * np.deg2rad(ppc_2['bus'][:, PHI_IKSSC_DEGREE].real))[:, np.newaxis]
-
-    i_1_012_ka = np.stack([i_1_ka_0, i_1_ka_1, i_1_ka_2], 2)
-    i_2_012_ka = np.stack([i_2_ka_0, i_2_ka_1, i_2_ka_2], 2)
-
-    i_1_abc_ka = np.apply_along_axis(sequence_to_phase, 2, i_1_012_ka)
-    i_2_abc_ka = np.apply_along_axis(sequence_to_phase, 2, i_2_012_ka)
-
-    # i_abc_ka = sequence_to_phase(np.vstack([i_ka_0, i_ka_1, i_ka_2]))
-    i_1_abc_ka[np.abs(i_1_abc_ka) < 1e-5] = 0
-    i_2_abc_ka[np.abs(i_2_abc_ka) < 1e-5] = 0
-
-    # Todo adapt to new reult format
-    # Initialize a new matrix to store the selected rows
-    # The shape is determined by the length of 'bus' and the number of columns in 'i_1_abc_ka'
-    i_1_abc_ka_abs = np.zeros((len(bus), i_1_abc_ka.shape[2]))
-
-    # Extract the specified rows from 'i_1_abc_ka' based on the indices in 'bus'
-    for index in range(len(bus)):
-        i_1_abc_ka_abs[index] = abs(i_1_abc_ka[bus[index], bus[index]])
-
-    # ToDo: check voltages
-    v_pu_0 = ppc_0["internal"]["V_ikss"][bus][:, np.newaxis]
-    v_pu_1 = ppc_1["internal"]["V_ikss"][bus][:, np.newaxis]
-    v_pu_2 = ppc_2["internal"]["V_ikss"][bus][:, np.newaxis]
-
-    v_012_pu = np.stack([v_pu_0, v_pu_1, v_pu_2], 2)
-    v_abc_pu = np.apply_along_axis(sequence_to_phase, 2, v_012_pu)
-    # v_abc_pu = sequence_to_phase(np.vstack([v_pu_0, v_pu_1, v_pu_2]))
-    v_abc_pu[np.abs(v_abc_pu) < 1e-5] = 0
-
-    # this is inefficient because it copies data to fit into a shape, better to use a slice,
-    # and even better to find how to use sequence-based powers:
-    baseV = ppc_1['bus'][bus, BASE_KV][:, np.newaxis]
-    # baseV = ppc_1["internal"]["baseV"][bus][:, np.newaxis]
-    # v_base_kv = np.stack([baseV, baseV, baseV], 2)
-    skss_abc_mva_phase = i_1_abc_ka_abs * baseV / np.sqrt(3)
-    skss_abc_mva[np.ix_(bus, [0,1,2,])] = skss_abc_mva_phase
-    ikss_abc_ka[np.ix_(bus, [0,1,2,])] = i_1_abc_ka_abs
-
-    # Adding the ikss and skss values
-    for i, phase in enumerate(['a', 'b', 'c']):
-        net.res_bus_sc[f'ikss_{phase}_ka'] = ikss_abc_ka[:, i]  # ikss values
-        net.res_bus_sc[f'skss_{phase}_mw'] = skss_abc_mva[:, i]  # skss values
+# def _calculate_bus_results_llg(ppc_0, ppc_1, ppc_2, bus, net):
+#     # we use 3D arrays here to easily identify via axis:
+#     # 0: line index, 1: from/to, 2: phase
+#     # short-ciruit for rotating machine (ext-grid and gen)
+#     bus_lookup = net._pd2ppc_lookups["bus"]
+#     ppc_index = bus_lookup[net.bus.index]
+#     skss_abc_mva = np.full((len(ppc_index), 3), np.nan, dtype=np.float64)
+#     ikss_abc_ka = np.full((len(ppc_index), 3), np.nan, dtype=np.float64)
+#
+#     i_1_ka_0 = ppc_0['bus'][:, IKSSV] * np.exp(1j * np.deg2rad(ppc_0['bus'][:, PHI_IKSSV_DEGREE].real))[:, np.newaxis]
+#     i_1_ka_1 = ppc_1['bus'][:, IKSSV] * np.exp(1j * np.deg2rad(ppc_1['bus'][:, PHI_IKSSV_DEGREE].real))[:, np.newaxis]
+#     i_1_ka_2 = ppc_2['bus'][:, IKSSV] * np.exp(1j * np.deg2rad(ppc_2['bus'][:, PHI_IKSSV_DEGREE].real))[:, np.newaxis]
+#
+#     # TODO check results with sgen
+#     # short-ciruit for inverter-based generation (current source)
+#     i_2_ka_0 = ppc_0['bus'][:, IKSSC] * np.exp(1j * np.deg2rad(ppc_0['bus'][:, PHI_IKSSC_DEGREE].real))[:, np.newaxis]
+#     i_2_ka_1 = ppc_1['bus'][:, IKSSC] * np.exp(1j * np.deg2rad(ppc_1['bus'][:, PHI_IKSSC_DEGREE].real))[:, np.newaxis]
+#     i_2_ka_2 = ppc_2['bus'][:, IKSSC] * np.exp(1j * np.deg2rad(ppc_2['bus'][:, PHI_IKSSC_DEGREE].real))[:, np.newaxis]
+#
+#     i_1_012_ka = np.stack([i_1_ka_0, i_1_ka_1, i_1_ka_2], 2)
+#     i_2_012_ka = np.stack([i_2_ka_0, i_2_ka_1, i_2_ka_2], 2)
+#
+#     i_1_abc_ka = np.apply_along_axis(sequence_to_phase, 2, i_1_012_ka)
+#     i_2_abc_ka = np.apply_along_axis(sequence_to_phase, 2, i_2_012_ka)
+#
+#     # i_abc_ka = sequence_to_phase(np.vstack([i_ka_0, i_ka_1, i_ka_2]))
+#     i_1_abc_ka[np.abs(i_1_abc_ka) < 1e-5] = 0
+#     i_2_abc_ka[np.abs(i_2_abc_ka) < 1e-5] = 0
+#
+#     # ToDo: check if this works without sgen
+#     i_total_abc_ka = i_1_abc_ka + i_2_abc_ka
+#
+#     # Todo adapt to new reult format
+#     # Initialize a new matrix to store the selected rows
+#     # The shape is determined by the length of 'bus' and the number of columns in 'i_1_abc_ka'
+#     i_total_abc_ka_abs = np.zeros((len(bus), i_total_abc_ka.shape[2]))
+#
+#     # Extract the specified rows from 'i_1_abc_ka' based on the indices in 'bus'
+#     for index in range(len(bus)):
+#         i_total_abc_ka_abs[index] = abs(i_total_abc_ka[bus[index], bus[index]])
+#
+#     # ToDo: check voltages
+#     v_pu_0 = ppc_0["internal"]["V_ikss"][bus][:, np.newaxis]
+#     v_pu_1 = ppc_1["internal"]["V_ikss"][bus][:, np.newaxis]
+#     v_pu_2 = ppc_2["internal"]["V_ikss"][bus][:, np.newaxis]
+#
+#     v_012_pu = np.stack([v_pu_0, v_pu_1, v_pu_2], 2)
+#     v_abc_pu = np.apply_along_axis(sequence_to_phase, 2, v_012_pu)
+#     # v_abc_pu = sequence_to_phase(np.vstack([v_pu_0, v_pu_1, v_pu_2]))
+#     v_abc_pu[np.abs(v_abc_pu) < 1e-5] = 0
+#
+#     # this is inefficient because it copies data to fit into a shape, better to use a slice,
+#     # and even better to find how to use sequence-based powers:
+#     baseV = ppc_1['bus'][bus, BASE_KV][:, np.newaxis]
+#     # baseV = ppc_1["internal"]["baseV"][bus][:, np.newaxis]
+#     # v_base_kv = np.stack([baseV, baseV, baseV], 2)
+#
+#     skss_abc_mva_phase = i_total_abc_ka_abs * baseV / np.sqrt(3)
+#     skss_abc_mva[np.ix_(bus, [0,1,2,])] = skss_abc_mva_phase
+#     ikss_abc_ka[np.ix_(bus, [0,1,2,])] = i_total_abc_ka_abs
+#
+#     # Adding the ikss and skss values
+#     for i, phase in enumerate(['a', 'b', 'c']):
+#         net.res_bus_sc[f'ikss_{phase}_ka'] = ikss_abc_ka[:, i]  # ikss values
+#         net.res_bus_sc[f'skss_{phase}_mw'] = skss_abc_mva[:, i]  # skss values
 
 
 def _extract_results(net, ppc_0, ppc_1, ppc_2, bus):
-    if net["_options"]["fault"] == "LLG":
-       _calculate_bus_results_llg(ppc_0, ppc_1, ppc_2, bus, net)
+    # if net["_options"]["fault"] == "LLG":
+    #    _calculate_bus_results_llg(ppc_0, ppc_1, ppc_2, bus, net)
     _get_bus_results(net, ppc_0, ppc_1, ppc_2, bus)
     if net._options["branch_results"]:
         # TODO check option return all current here
@@ -297,6 +301,8 @@ def _get_bus_results(net, ppc_0, ppc_1, ppc_2, bus):
         net.res_bus_sc["skss_mw"] = ppc_0["bus"][ppc_index, SKSS]
         sequence_relevant = range(3)
     elif net["_options"]["fault"] == "LLG":
+        net.res_bus_sc["ikss_ka"] = ppc_0["bus"][ppc_index, IKSSV] + ppc_1["bus"][ppc_index, IKSSC]
+        net.res_bus_sc["skss_mw"] = ppc_0["bus"][ppc_index, SKSS]
         sequence_relevant = range(3)
     elif net["_options"]["fault"] == "LL":
         net.res_bus_sc["ikss_ka"] = ppc_1["bus"][ppc_index, IKSSV] + ppc_1["bus"][ppc_index, IKSSC]
