@@ -58,6 +58,8 @@ class PQController(ConstControl):
         super().__init__(net, element=element, variable="p_mw", element_index=element_index,
                          in_service=in_service, order=order, level=level, **kwargs)
 
+
+
         # read attributes from net
         self.element_index = element_index
         self.element = element
