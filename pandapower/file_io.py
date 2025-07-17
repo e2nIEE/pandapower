@@ -306,7 +306,8 @@ def from_json(filename, convert=True, encryption_key=None, elements_to_deseriali
         replace_elements=replace_elements,
         empty_dict_like_object=empty_dict_like_object,
         ignore_unknown_objects=ignore_unknown_objects,
-        drop_invalid_geodata=drop_invalid_geodata)
+        drop_invalid_geodata=drop_invalid_geodata
+    )
 
 
 def from_json_string(json_string, convert=False, encryption_key=None, elements_to_deserialize=None,

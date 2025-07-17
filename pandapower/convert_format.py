@@ -39,7 +39,7 @@ def convert_format(net, elements_to_deserialize=None, drop_invalid_geodata=True)
     if Version(str(net.format_version)) < Version("3.1.0"):
         _convert_q_capability_characteristic(net)
     if Version("3.0.0") <= Version(str(net.format_version)) < Version("3.1.3"):
-        _replace_invalid_data(net, drop_invalid_geodata)
+        _replace_invalid_data(net, elements_to_deserialize, drop_invalid_geodata)
     if Version(str(net.format_version)) < Version("3.0.0"):
         _convert_geo_data(net, elements_to_deserialize, drop_invalid_geodata)
         _convert_group_element_index(net)
@@ -72,8 +72,10 @@ def _convert_q_capability_characteristic(net: pandapowerNet):
         net['q_capability_characteristic'] = net.pop('q_capability_curve_characteristic')
 
 
-def _replace_invalid_data(net, drop_invalid_geodata):
+def _replace_invalid_data(net, elements_to_deserialize, drop_invalid_geodata):
     for element in ['bus', 'bus_dc']:
+        if not _check_elements_to_deserialize(element, elements_to_deserialize):
+            continue
         try:
             geo_df = net[element]['geo'].dropna().apply(geojson.loads)
         except TypeError:
@@ -88,6 +90,8 @@ def _replace_invalid_data(net, drop_invalid_geodata):
                 logger.warning("bus geodata at index %s is invalid and replaced by None" % i)
 
     for element in ['line', 'line_dc']:
+        if not _check_elements_to_deserialize(element, elements_to_deserialize):
+            continue
         try:
             geo_df = net[element]['geo'].dropna().apply(geojson.loads)
         except TypeError:
