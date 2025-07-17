@@ -2183,11 +2183,6 @@ def create_line(
 
     _set_entries(net, "line", index, **v, **kwargs)
 
-    # TODO: possiply duplicate of _add_branch_geodata below
-    if geodata and hasattr(geodata, '__iter__'):
-        geo = [[x, y] for x, y in geodata]
-        net.line.at[index, "geo"] = f'{{"coordinates": {geo}, "type": "LineString"}}'
-
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "line")
     _set_value_if_not_nan(net, index, alpha, "alpha", "line")
     _set_value_if_not_nan(net, index, temperature_degree_celsius,
@@ -2333,11 +2328,6 @@ def create_line_dc(
     tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
 
     _set_entries(net, "line_dc", index, **v, **kwargs)
-
-    # TODO: possibly duplicate of _add_branch_geodata
-    if geodata is not None:
-        net["line_dc_geodata"].loc[index, "coords"] = None
-        net["line_dc_geodata"].at[index, "coords"] = geodata
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "line_dc")
     _set_value_if_not_nan(net, index, alpha, "alpha", "line_dc")
@@ -2781,12 +2771,6 @@ def create_line_from_parameters(
         logger.warning("Zero sequence values are given for only some parameters. Please specify "
                        "them for all parameters, otherwise they are not set!")
 
-    # TODO: possibly duplicate of _add_branch_geodata below
-    if geodata is not None:
-        net.line.at[index, "geo"] = f'{{"coordinates":{geodata}, "type":"LineString"}}'
-    else:
-        net.line.at[index, "geo"] = None
-
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "line")
     _set_value_if_not_nan(net, index, alpha, "alpha", "line")
     _set_value_if_not_nan(net, index, temperature_degree_celsius, "temperature_degree_celsius", "line")
@@ -2922,11 +2906,6 @@ def create_line_dc_from_parameters(
     tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
 
     _set_entries(net, "line_dc", index, **v, **kwargs)
-
-    # TODO: check if this is duplicate of _add_branch_geodata below
-    if geodata is not None:
-        net["line_dc_geodata"].loc[index, "coords"] = None
-        net["line_dc_geodata"].at[index, "coords"] = geodata
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "line_dc")
     _set_value_if_not_nan(net, index, alpha, "alpha", "line_dc")
@@ -6428,15 +6407,15 @@ def _add_to_entries_if_not_nan(net, element_type, entries, index, column, values
         entries[column] = pd.Series(data=default_val, index=index)
         try_astype(entries, column, dtype)
 
-def _branch_geodata(geodata):
-    geo = []
+def _branch_geodata(geodata: Iterable[list[float]|tuple[float]]) -> list[list[float]]:
+    geo: list[list[float]] = []
     for x, y in geodata:
         if (not _is_valid_number(x)) | (not _is_valid_number(y)):
             raise ValueError("geodata contains invalid values")
-        geo += [[x, y]]
+        geo.append([x, y])
     return geo
 
-def _add_branch_geodata(net, geodata, index, table="line"):
+def _add_branch_geodata(net: pandapowerNet, geodata, index, table="line"):
     if geodata is not None:
         if not isinstance(geodata, (list, tuple)):
             raise ValueError("geodata needs to be list or tuple")
