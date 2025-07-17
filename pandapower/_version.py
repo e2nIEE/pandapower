@@ -1,4 +1,2 @@
-import importlib.metadata
-
-__version__ = importlib.metadata.version("pandapower")
-__format_version__ = "3.1.2.dev0"
+__version__ = "3.1.3"
+__format_version__ = "3.1.0"

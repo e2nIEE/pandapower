@@ -210,8 +210,10 @@ class UCTE2pandapower:
         loads = loads.reset_index(level=0, drop=True)
         loads["scaling"] = 1
         loads["in_service"] = True
-        loads["const_z_percent"] = 0
-        loads["const_i_percent"] = 0
+        loads["const_z_p_percent"] = 0
+        loads["const_z_q_percent"] = 0
+        loads["const_i_p_percent"] = 0
+        loads["const_i_q_percent"] = 0
         self._copy_to_pp("load", loads)
         self.logger.info("Finished converting the loads.")
 

@@ -14,6 +14,7 @@ from pandapower.create import create_empty_network, create_poly_cost
 from pandapower.results import reset_results
 from pandapower.control import TrafoController
 from pandapower.plotting.geo import convert_geodata_to_geojson, _is_valid_number
+from pandapower.auxiliary import pandapowerNet
 
 import logging
 
@@ -26,7 +27,7 @@ def convert_format(net, elements_to_deserialize=None, drop_invalid_geodata=True)
     """
     from pandapower.toolbox import set_data_type_of_columns_to_default
     if not isinstance(net.version, str) or not hasattr(net, 'format_version') or \
-            Version(net.format_version) > Version(net.version):
+            Version(net.format_version) > Version(net.version.split('.dev')[0]):
         net.format_version = net.version
     if isinstance(net.format_version, str) and Version(net.format_version) >= Version(__format_version__):
         return net
@@ -35,6 +36,8 @@ def convert_format(net, elements_to_deserialize=None, drop_invalid_geodata=True)
     _rename_columns(net, elements_to_deserialize)
     _add_missing_columns(net, elements_to_deserialize)
     _create_seperate_cost_tables(net, elements_to_deserialize)
+    if Version(str(net.format_version)) < Version("3.1.0"):
+        _convert_q_capability_characteristic(net)
     if Version("3.0.0") <= Version(str(net.format_version)) < Version("3.1.3"):
         _replace_invalid_data(net, drop_invalid_geodata)
     if Version(str(net.format_version)) < Version("3.0.0"):
@@ -60,6 +63,14 @@ def convert_format(net, elements_to_deserialize=None, drop_invalid_geodata=True)
     net.version = __version__
     _restore_index_names(net)
     return net
+
+
+def _convert_q_capability_characteristic(net: pandapowerNet):
+    # rename the q_capability_curve_characteristic table to q_capability_characteristic if exists
+    # this is necessary due to the fact that Excel sheet names have a limit of 31 characters
+    if 'q_capability_curve_characteristic' in net:
+        net['q_capability_characteristic'] = net.pop('q_capability_curve_characteristic')
+
 
 def _replace_invalid_data(net, drop_invalid_geodata):
     for element in ['bus', 'bus_dc']:
@@ -301,6 +312,12 @@ def _create_seperate_cost_tables(net, elements_to_deserialize):
 def _rename_columns(net, elements_to_deserialize):
     if _check_elements_to_deserialize('line', elements_to_deserialize):
         net.line = net.line.rename(columns={'imax_ka': 'max_i_ka'})
+    if _check_elements_to_deserialize('load', elements_to_deserialize) and \
+        ('const_z_percent' in net.load.columns and 'const_i_percent' in net.load.columns) :
+            net.load = net.load.rename(columns={'const_z_percent': 'const_z_p_percent',
+                                                'const_i_percent': 'const_i_p_percent'})
+            net.load.insert(net.load.columns.get_loc('const_i_p_percent') + 1, 'const_i_q_percent', net.load.const_i_p_percent)
+            net.load.insert(net.load.columns.get_loc('const_z_p_percent') + 1, 'const_z_q_percent', net.load.const_z_p_percent)
     if _check_elements_to_deserialize('gen', elements_to_deserialize):
         net.gen = net.gen.rename(columns={"qmin_mvar": "min_q_mvar", "qmax_mvar": "max_q_mvar"})
     for typ, data in net.std_types["line"].items():
@@ -321,6 +338,11 @@ def _rename_columns(net, elements_to_deserialize):
                     net.measurement.loc[~bus_measurements, "bus"].values
                 net.measurement = net.measurement.rename(columns={'type': 'measurement_type'})
                 net.measurement = net.measurement.drop(["bus"], axis=1)
+    for ele in ['gen', 'sgen']:
+        if (_check_elements_to_deserialize(ele, elements_to_deserialize) and
+                'id_q_capability_curve_characteristic' in net[ele]):
+            net[ele] = net[ele].rename(
+                columns={'id_q_capability_curve_characteristic': 'id_q_capability_characteristic'})
     if _check_elements_to_deserialize('controller', elements_to_deserialize):
         if "controller" in net:
             net["controller"] = net["controller"].rename(columns={"controller": "object"})
@@ -361,9 +383,12 @@ def _add_missing_columns(net, elements_to_deserialize):
             "tap_step_degree" not in net.trafo3w:
         net.trafo3w["tap_step_degree"] = 0
     if _check_elements_to_deserialize('load', elements_to_deserialize) and \
-            "const_z_percent" not in net.load or "const_i_percent" not in net.load:
-        net.load["const_z_percent"] = np.zeros(net.load.shape[0])
-        net.load["const_i_percent"] = np.zeros(net.load.shape[0])
+            "const_z_p_percent" not in net.load or "const_i_p_percent" not in net.load and \
+            "const_z_q_percent" not in net.load or "const_i_q_percent" not in net.load:
+        net.load["const_z_p_percent"] = np.zeros(net.load.shape[0])
+        net.load["const_i_p_percent"] = np.zeros(net.load.shape[0])
+        net.load["const_z_q_percent"] = np.zeros(net.load.shape[0])
+        net.load["const_i_q_percent"] = np.zeros(net.load.shape[0])
 
     if _check_elements_to_deserialize('shunt', elements_to_deserialize) and \
             "vn_kv" not in net["shunt"]:
@@ -374,6 +399,12 @@ def _add_missing_columns(net, elements_to_deserialize):
     if _check_elements_to_deserialize('shunt', elements_to_deserialize) and \
             "max_step" not in net["shunt"]:
         net.shunt["max_step"] = 1
+    if _check_elements_to_deserialize('shunt', elements_to_deserialize) and \
+            "id_characteristic_table" not in net["shunt"]:
+        net.shunt["id_characteristic_table"] = pd.Series(dtype='Int64')
+    if _check_elements_to_deserialize('shunt', elements_to_deserialize) and \
+            "step_dependency_table" not in net["shunt"]:
+        net.shunt["step_dependency_table"] = False
     if _check_elements_to_deserialize('trafo3w', elements_to_deserialize) and \
             "std_type" not in net.trafo3w:
         net.trafo3w["std_type"] = None
@@ -382,6 +413,15 @@ def _add_missing_columns(net, elements_to_deserialize):
             "current_source" not in net.sgen:
         net.sgen["current_source"] = net.sgen["type"].apply(
             func=lambda x: False if x == "motor" else True)
+    if _check_elements_to_deserialize('sgen', elements_to_deserialize) and \
+            "id_q_capability_characteristic" not in net.sgen:
+        net.sgen["id_q_capability_characteristic"] = pd.Series(dtype='Int64')
+    if _check_elements_to_deserialize('sgen', elements_to_deserialize) and \
+            "reactive_capability_curve" not in net.sgen:
+        net.sgen["reactive_capability_curve"] = False
+    if _check_elements_to_deserialize('sgen', elements_to_deserialize) and \
+            "curve_style" not in net.sgen:
+        net.sgen["curve_style"] = None
 
     if _check_elements_to_deserialize('line', elements_to_deserialize):
         if "g_us_per_km" not in net.line:
@@ -392,6 +432,15 @@ def _add_missing_columns(net, elements_to_deserialize):
     if _check_elements_to_deserialize('gen', elements_to_deserialize) and \
             "slack" not in net.gen:
         net.gen["slack"] = False
+    if _check_elements_to_deserialize('gen', elements_to_deserialize) and \
+            "id_q_capability_characteristic" not in net.gen:
+        net.gen["id_q_capability_characteristic"] = pd.Series(dtype='Int64')
+    if _check_elements_to_deserialize('gen', elements_to_deserialize) and \
+            "reactive_capability_curve" not in net.gen:
+        net.gen["reactive_capability_curve"] = False
+    if _check_elements_to_deserialize('gen', elements_to_deserialize) and \
+            "curve_style" not in net.gen:
+        net.gen["curve_style"] = None
 
     if _check_elements_to_deserialize('trafo', elements_to_deserialize) and \
             "tap_changer_type" not in net.trafo:
@@ -444,8 +493,10 @@ def _add_missing_columns(net, elements_to_deserialize):
         for _, ctrl in net.controller.iterrows():
             if hasattr(ctrl['object'], 'initial_run'):
                 net.controller.at[ctrl.name, 'initial_run'] = ctrl['object'].initial_run
-            else:
+            elif hasattr(ctrl['object'], 'initial_powerflow'):
                 net.controller.at[ctrl.name, 'initial_run'] = ctrl['object'].initial_powerflow
+            else:
+                net.controller.at[ctrl.name, 'initial_run'] = False
 
     # distributed slack
     if _check_elements_to_deserialize('ext_grid', elements_to_deserialize) and \

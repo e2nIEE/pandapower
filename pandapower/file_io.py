@@ -175,6 +175,7 @@ def from_pickle(filename, convert=True):
         convert_format(net)
 
         # compare pandapowerNet-format_version and package-version
+        # check if installed pandapower version is older then imported network file
         check_net_version(net)
     return net
 
@@ -214,6 +215,7 @@ def from_excel(filename, convert=True):
         convert_format(net)
 
         # compare pandapowerNet-format_version and package-version
+        # check if installed pandapower version is older then imported network file
         check_net_version(net)
     return net
 
@@ -405,6 +407,7 @@ def from_json_string(json_string, convert=False, encryption_key=None, elements_t
         convert_format(net, elements_to_deserialize=elements_to_deserialize, drop_invalid_geodata=drop_invalid_geodata)
 
         # compare pandapowerNet-format_version and package-version
+        # check if installed pandapower version is older then imported network file
         check_net_version(net)
     if add_basic_std_types:
         # get std-types and add only new keys ones
