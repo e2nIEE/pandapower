@@ -116,9 +116,9 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
     if include_results:
         for table in net.keys():
             if net[table] is None or not isinstance(net[table], pd.DataFrame) or not \
-               net[table].shape[0] or not table.startswith("res_") or table[4:] not in \
-               net.keys() or not isinstance(net[table[4:]], pd.DataFrame) or not \
-               net[table[4:]].shape[0]:
+                net[table].shape[0] or not table.startswith("res_") or table[4:] not in \
+                net.keys() or not isinstance(net[table[4:]], pd.DataFrame) or not \
+                net[table[4:]].shape[0]:
                 continue
             elif table == "res_bus":
                 p2[table] = net[table].loc[pd.Index(buses).intersection(net[table].index)]
