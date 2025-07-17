@@ -19,6 +19,10 @@ Change Log
 - [FIXED] fixed convert_format for missing information (in gen, sgen, shunt) and tables (q_capability_characteristic, q_capability_curve_table, id_characteristic_table, step_dependency_table)
 - [ADDED] added tests for q_capability_curve_table in cim2pp and convert_format.py for format_version 3.1.0
 - [FIXED] deserialising q_capability_characteristic in from_excel and added test for it
+- [FIXED] make network structure more accessible, including needed adaptation in pandapowerNet constructor
+- [FIXED] cim2pp: add more dtype parameters, fix some tests
+- [FIXED] convert_format fix check when net version is below format version
+- [FIXED] json io test with new network structure dict
 
 [3.1.2] - 2025-06-16
 -------------------------------
