@@ -59,7 +59,7 @@ def create_empty_network(name: str = "",
     network_structure_dict['f_hz'] = f_hz
     network_structure_dict['sn_mva'] = sn_mva
 
-    net = pandapowerNet(network_structure_dict)
+    net = pandapowerNet(pandapowerNet.create_dataframes(network_structure_dict))
 
     net._empty_res_load_3ph = net._empty_res_load
     net._empty_res_sgen_3ph = net._empty_res_sgen
