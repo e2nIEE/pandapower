@@ -254,7 +254,6 @@ def _calc_ikss_to_g(net, ppci_0, ppci_1, ppci_2, bus_idx):
         ppci_1["bus"][bus_idx, IKSSC] = factor * ikssc_1
         ppci_2["bus"][bus_idx, IKSSC] = factor * ikssc_1
     elif fault == "LLG":
-        # only magnitude is stored
         ppci_0["bus"][bus_idx, IKSSC] = abs(ikssc_1 * ((z_equiv_1*z_equiv_2) / (z_equiv_2*z_equiv_0 + z_equiv_1*z_equiv_0 + z_equiv_1*z_equiv_2)))
         ppci_1["bus"][bus_idx, IKSSC] = abs(ikssc_1 * ((z_equiv_1*(z_equiv_0+z_equiv_1)) / (z_equiv_2*z_equiv_0 + z_equiv_1*z_equiv_0 + z_equiv_1*z_equiv_2)))
         ppci_2["bus"][bus_idx, IKSSC] = abs(ikssc_1 * ((z_equiv_0*z_equiv_1) / (z_equiv_2*z_equiv_0 + z_equiv_1*z_equiv_0 + z_equiv_1*z_equiv_2)))
