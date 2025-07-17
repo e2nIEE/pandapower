@@ -126,7 +126,7 @@ net.sgen['k'] = 1.2
 net.sgen['active_current'] = False
 net.sgen.loc[net.sgen.bus == 1, 'in_service'] = True
 net.sgen.loc[net.sgen.bus == 2, 'in_service'] = False
-net.sgen.loc[net.sgen.bus == 3, 'in_service'] = True
+net.sgen.loc[net.sgen.bus == 3, 'in_service'] = False
 # net.line["c0_nf_per_km"] = 0
 # net.line["c_nf_per_km"] = 0
 fault = 'LLG'
@@ -134,7 +134,7 @@ branch = True
 case = 'max'
 r_fault_ohm = 0
 x_fault_ohm = 0
-fault_location = 2
+fault_location = 1
 
 calc_sc(
       net, fault=fault, case=case, branch_results=branch, ip=False,
@@ -142,15 +142,14 @@ calc_sc(
 )
 #
 # sgen bus
-excel_file = "wp_2.2/1_four_bus_radial_grid_sgen_pf_sc_results_2_bus_sgen13.xlsx"
+excel_file = "wp_2.2/1_four_bus_radial_grid_sgen_pf_sc_results_1_bus_sgen1.xlsx"
 diff_df = compare_sc_results(net, os.path.join(result_files_path, excel_file), fault_location=fault_location)
 
 # sgen branch
-# excel_file = r"1_four_bus_radial_grid_sgen_pf_sc_results_0_branch_sgen1.xlsx"
-# excel_file = f"wp_2.2/1_four_bus_radial_grid_sgen_pf_sc_results_2_branch_sgen13.xlsx"
-# diff_df_branch = compare_sc_results(
-#     net, os.path.join(result_files_path, excel_file), branch=True, fault_location=fault_location
-# )
+excel_file = f"wp_2.2/1_four_bus_radial_grid_sgen_pf_sc_results_1_branch_sgen1.xlsx"
+diff_df_branch = compare_sc_results(
+    net, os.path.join(result_files_path, excel_file), branch=True, fault_location=fault_location
+)
 
 ## sgen with active current
 net_name = "3_five_bus_meshed_grid_yyn_sgen_act"
@@ -163,7 +162,7 @@ net.sgen['active_current'] = True
 # net.sgen.loc[net.sgen.bus == 2, 'in_service'] = False
 # net.sgen.loc[net.sgen.bus == 3, 'in_service'] = True
 
-fault = 'LLL'
+fault = 'LLG'
 branch = True
 case = 'max'
 r_fault_ohm = 0
