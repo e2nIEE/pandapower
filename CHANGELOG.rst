@@ -23,6 +23,7 @@ Change Log
 - [FIXED] cim2pp: add more dtype parameters, fix some tests
 - [FIXED] convert_format fix check when net version is below format version
 - [FIXED] json io test with new network structure dict
+- [FIXED] DC OPF bug if verbose = True
 
 [3.1.2] - 2025-06-16
 -------------------------------
