@@ -490,7 +490,8 @@ def test_dcopf_poly(simple_opf_test_net):
     net = simple_opf_test_net
     create_poly_cost(net, 0, "gen", cp1_eur_per_mw=100)
     # run OPF
-    rundcopp(net)
+    rundcopp(net, verbose=True)
+    rundcopp(net, verbose=False)
 
     # check and assert result
     logger.debug("test_simplest_voltage")
