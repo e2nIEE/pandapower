@@ -787,6 +787,7 @@ def test_fullgrid_trafo3w(fullgrid_v2):
     assert element_0['tapchanger_id'].item() == '_fe25f43a-7341-446e-a71a-8ab7119ba806'
     assert element_0['vector_group'].item() == 'Yyy'
     assert isinstance(element_0['id_characteristic_table'].item(), np.int64)
+    assert isinstance(element_0['id_characteristic_table'].dtype, pd.Int64Dtype)
     assert math.isnan(element_0['vk0_hv_percent'].item())
     assert math.isnan(element_0['vk0_mv_percent'].item())
     assert math.isnan(element_0['vk0_lv_percent'].item())
@@ -847,6 +848,7 @@ def test_fullgrid_trafo(fullgrid_v2):
     assert element_0['tapchanger_id'].item() == '_f6b6428b-d201-4170-89f3-4f630c662b7c'
     assert element_0['vector_group'].item() == 'YNyn'
     assert isinstance(element_0['id_characteristic_table'].item(), np.int64)
+    assert isinstance(element_0['id_characteristic_table'].dtype, pd.Int64Dtype)
     assert math.isnan(element_0['vk0_percent'].item())
     assert math.isnan(element_0['vkr0_percent'].item())
     assert math.isnan(element_0['xn_ohm'].item())
@@ -887,6 +889,7 @@ def test_fullgrid_trafo(fullgrid_v2):
     assert math.isnan(element_1['tapchanger_id'].item())
     assert element_1['vector_group'].item() == 'Yy'
     assert isinstance(element_1['id_characteristic_table'].item(), np.int64)
+    assert isinstance(element_0['id_characteristic_table'].dtype, pd.Int64Dtype)
     assert math.isnan(element_1['vk0_percent'].item())
     assert math.isnan(element_1['vkr0_percent'].item())
     assert math.isnan(element_1['xn_ohm'].item())
@@ -1101,9 +1104,20 @@ def test_fullgrid_gen(fullgrid_v2):
     assert math.isnan(element_0['xdss_pu'].item())
     assert element_0['cos_phi'].item() == pytest.approx(0.850, abs=0.000001)
     assert element_0['pg_percent'].item() == pytest.approx(0.0, abs=0.000001)
+    assert element_0['reactive_capability_curve'].item()
+    assert element_0['id_q_capability_characteristic'].item() == 0
+    assert element_0['curve_style'].item() == 'straightLineYValues'
 
     element_1 = fullgrid_v2.gen[fullgrid_v2.gen['origin_id'] == '_3a3b27be-b18b-4385-b557-6735d733baf0']
     assert element_1['vm_pu'].item() == pytest.approx(1.050, abs=0.000001)
+
+
+def test_full_grid_q_capability_table(fullgrid_v2):
+    capa_df = pd.DataFrame({'id_q_capability_curve': {0: 0, 1: 0, 2: 0},
+                            'p_mw': {0: -100.0, 1: 0.0, 2: 100.0},
+                            'q_min_mvar': {0: -200.0, 1: -300.0, 2: -200.0},
+                            'q_max_mvar': {0: 200.0, 1: 300.0, 2: 200.0}})
+    pd.testing.assert_frame_equal(fullgrid_v2['q_capability_curve_table'], capa_df, atol=1e-5)
 
 
 def test_fullgrid_ext_grid(fullgrid_v2):

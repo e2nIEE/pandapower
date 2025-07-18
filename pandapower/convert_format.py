@@ -25,19 +25,20 @@ def convert_format(net, elements_to_deserialize=None):
     Converts old nets to new format to ensure consistency. The converted net is returned.
     """
     from pandapower.toolbox import set_data_type_of_columns_to_default
-    if not isinstance(net.version, str) or not hasattr(net, 'format_version') or \
-            Version(net.format_version) > Version(net.version.split('.dev')[0]):
+    if not isinstance(net.version, str) or not hasattr(net, 'format_version'):
+        net.format_version = net.version
+    if Version(str(net.format_version)) > Version(str(net.version).split('.dev')[0]):
+        # TODO: create error/warning when pandapower version is older then network
         net.format_version = net.version
     if isinstance(net.format_version, str) and Version(net.format_version) >= Version(__format_version__):
         return net
     _add_nominal_power(net)
     _add_missing_tables(net)
     _rename_columns(net, elements_to_deserialize)
-    # _convert_q_capability_characteristic renames a column that would be created by _add_missing_columns
-    if Version(str(net.format_version)) < Version("3.1.0"):
-        _convert_q_capability_characteristic(net)
     _add_missing_columns(net, elements_to_deserialize)
     _create_seperate_cost_tables(net, elements_to_deserialize)
+    if Version(str(net.format_version)) < Version("3.1.0"):
+        _convert_q_capability_characteristic(net)
     if Version(str(net.format_version)) < Version("3.0.0"):
         _convert_geo_data(net, elements_to_deserialize)
         _convert_group_element_index(net)
@@ -68,10 +69,6 @@ def _convert_q_capability_characteristic(net: pandapowerNet):
     # this is necessary due to the fact that Excel sheet names have a limit of 31 characters
     if 'q_capability_curve_characteristic' in net:
         net['q_capability_characteristic'] = net.pop('q_capability_curve_characteristic')
-    for ele in ['gen', 'sgen']:
-        if isinstance(net[ele], pd.DataFrame) and 'id_q_capability_curve_characteristic' in net[ele].columns:
-            net[ele] = net[ele].rename(
-                columns={'id_q_capability_curve_characteristic': 'id_q_capability_characteristic'})
 
 
 def _convert_geo_data(net, elements_to_deserialize=None):
@@ -307,6 +304,11 @@ def _rename_columns(net, elements_to_deserialize):
                     net.measurement.loc[~bus_measurements, "bus"].values
                 net.measurement = net.measurement.rename(columns={'type': 'measurement_type'})
                 net.measurement = net.measurement.drop(["bus"], axis=1)
+    for ele in ['gen', 'sgen']:
+        if (_check_elements_to_deserialize(ele, elements_to_deserialize) and
+                'id_q_capability_curve_characteristic' in net[ele]):
+            net[ele] = net[ele].rename(
+                columns={'id_q_capability_curve_characteristic': 'id_q_capability_characteristic'})
     if _check_elements_to_deserialize('controller', elements_to_deserialize):
         if "controller" in net:
             net["controller"] = net["controller"].rename(columns={"controller": "object"})
@@ -383,6 +385,9 @@ def _add_missing_columns(net, elements_to_deserialize):
     if _check_elements_to_deserialize('sgen', elements_to_deserialize) and \
             "reactive_capability_curve" not in net.sgen:
         net.sgen["reactive_capability_curve"] = False
+    if _check_elements_to_deserialize('sgen', elements_to_deserialize) and \
+            "curve_style" not in net.sgen:
+        net.sgen["curve_style"] = None
 
     if _check_elements_to_deserialize('line', elements_to_deserialize):
         if "g_us_per_km" not in net.line:
@@ -399,6 +404,9 @@ def _add_missing_columns(net, elements_to_deserialize):
     if _check_elements_to_deserialize('gen', elements_to_deserialize) and \
             "reactive_capability_curve" not in net.gen:
         net.gen["reactive_capability_curve"] = False
+    if _check_elements_to_deserialize('gen', elements_to_deserialize) and \
+            "curve_style" not in net.gen:
+        net.gen["curve_style"] = None
 
     if _check_elements_to_deserialize('trafo', elements_to_deserialize) and \
             "tap_changer_type" not in net.trafo:
