@@ -24,6 +24,7 @@ Change Log
 - [FIXED] convert_format fix check when net version is below format version
 - [FIXED] json io test with new network structure dict
 - [FIXED] DC OPF bug if verbose = True
+- [CHANGED] cim2pp conversion of SVC parameter active power: p is set to 0, instead of using the p-value from the SV-profile
 
 [3.1.2] - 2025-06-16
 -------------------------------
