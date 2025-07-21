@@ -108,8 +108,6 @@ def test_four_bus_radial_grid(fault, case, fault_values, lv_tol_percent, fault_l
     parametrize_values_vector)
 def test_grids_with_trafo(net_name, fault, case, fault_values, lv_tol_percent, vector_group, fault_location_bus,
                           is_branch_test, sgen_idx, is_active_current):
-    if sgen_idx is None:
-        return
     net, dataframes = load_test_case_data(net_name, fault_location_bus, vector_group, sgen_idx=sgen_idx, is_active_current=is_active_current)
     results = run_test_cases(
         net,
