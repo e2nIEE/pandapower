@@ -337,7 +337,7 @@ def _current_source_current(net, ppci, bus_idx, sequence=1):
         # short-circuit contribution from sgen nominal and active current method
         i_sgen_pu = np.where(sgen.active_current.values,
                              (sgen.p_mw.values * sgen.scaling.values / net.sn_mva * sgen.k.values),
-                             (sgen.sn_mva.values / net.sn_mva * sgen.k.values))
+                             (sgen.sn_mva.values * sgen.scaling.values / net.sn_mva * sgen.k.values))
 
     if sgen_angle is not None:  # check logic here of type_c
         i_sgen_pu = i_sgen_pu * np.exp(sgen_angle * 1j)
