@@ -13,7 +13,7 @@ from pandapower.test import test_path
 from pandapower.converter.cim.cim2pp.from_cim import from_cim
 from pandapower.run import runpp
 from pandapower.create import create_empty_network
-
+from pandapower.network_structure import get_structure_dict
 from pandapower.control.util.auxiliary import create_trafo_characteristic_object, create_shunt_characteristic_object
 
 
@@ -1376,29 +1376,27 @@ def test_fullgrid_NB_switch(fullgrid_node_breaker: pandapowerNet) -> None:
 
 def test_column_dtype(fullgrid_v2: pandapowerNet) -> None:
     """
-    Test all the columns in a cim derived network, against an empty network (since the empty network holds all correct dtypes)
+    Test all the columns in a cim derived network, against the dict of dtypes defined for standard pandapower nets
+    (network_structure.py)
     """
-    # Since dtypes are defined in an empty network, create one.
-    net = create_empty_network()
+    # Since dtypes are defined in network_structure.py, get the dict.
+    structure_dict = get_structure_dict()
     res = {}
 
     # iterate over all tables
-    for table in net.keys():
+    for element, table in structure_dict.items():
         # check if the table is in the fullgrid, (since the cim can have custom types, which we cannot check)
-        if table in fullgrid_v2 and isinstance(net[table], pd.DataFrame):
-            # and extract the dtypes for all columns
-            dtypes = net[table].dtypes
+        if element in fullgrid_v2 and isinstance(table, type({})):
             # derive the table
-            fullgrid_table = fullgrid_v2[table]
-
+            fullgrid_table = fullgrid_v2[element]
             # and iterate over all columns / dtypes in the table
-            for index, dtype in dtypes.items():
+            for index, dtype in table.items():
                 # assert if they are not the same
-                if fullgrid_table.dtypes[index] != dtype:
-                    res['_element'] = ('table', 'dtype_is', 'should_be')
-                    res[index] = (table, fullgrid_table.dtypes[index], dtype)
+                if index in fullgrid_table.columns and fullgrid_table.dtypes[index] != dtype:
+                    res['_element'] = ('index', 'dtype_is', 'should_be')
+                    res[element] = (index, fullgrid_table.dtypes[index], dtype)
     # display all columns that have different dtypes with following structure
-    # (<element column>: <net element>, <dtype of converted net>, <dtype of empty net>)
+    # (<element>: <element column>, <dtype of converted net>, <dtype of empty net>)
     test_case = TestCase()
     test_case.maxDiff = None
     test_case.assertDictEqual(res, {})

@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [FIXED] cim2pp converter: now uses the dtype tables directly instead of creating an empty net
 - [ADDED] cim2pp converter: added test to check standard dtypes of pandapower net element columns
 - [ADDED] cim2pp converter: type annotations for test cases
 - [REMOVED] kwargs in basic controller class
