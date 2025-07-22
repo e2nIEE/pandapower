@@ -102,88 +102,118 @@ def compare_sc_results(net, excel_file, branch=False, fault_location=None):
     return pd.DataFrame(all_differences)
 
 
-##
-# net_name = "test_case_1_four_bus_radial_grid"
-# result_files_path = os.path.join(pp_dir, 'test', 'shortcircuit', 'sce_tests', 'sc_result_comparison')
-#
-# net = load_test_case(net_name)
-# fault_location = 2
-#
-# excel_file = "wp_2.1/test_case_1_four_bus_radial_grid_pf_sc_results_2_bus.xlsx"
-# diff_df = compare_sc_results(net, os.path.join(result_files_path, excel_file), fault_location=fault_location)
-#
-# excel_file = r"C:\Users\lriedl\PycharmProjects\pandapower\pandapower\test\shortcircuit\sce_tests\sc_result_comparison\wp_2.1\test_case_1_four_bus_radial_grid_pf_sc_results_2_branch.xlsx"
-# diff_df_branch = compare_sc_results(net, excel_file, branch=True, fault_location=fault_location)
+## without sgen
+net_name = "test_case_1_four_bus_radial_grid"
+net_name = "test_case_3_five_bus_meshed_grid_yyn"
+result_files_path = os.path.join(pp_dir, 'test', 'shortcircuit', 'sce_tests', 'sc_result_comparison')
 
+net = load_test_case(net_name)
+fault_location = 0
+
+excel_file = f"wp_2.1/{net_name}_pf_sc_results_{fault_location}_bus.xlsx"
+diff_df = compare_sc_results(net, os.path.join(result_files_path, excel_file), fault_location=fault_location)
+
+excel_file = f"wp_2.1/{net_name}_pf_sc_results_{fault_location}_branch.xlsx"
+diff_df_branch = compare_sc_results(net, os.path.join(result_files_path, excel_file), fault_location=fault_location, branch=True)
 
 ## sgen
-net_name = "1_four_bus_radial_grid_sgen"
+#net_name = "1_four_bus_radial_grid_sgen"
+net_name = "2_five_bus_radial_grid_yyn_sgen"
+net_name = "3_five_bus_meshed_grid_ynyn_sgen"
+#net_name = "4_twenty_bus_radial_grid_dyn_sgen"
 result_files_path = os.path.join(pp_dir, 'test', 'shortcircuit', 'sce_tests', 'sc_result_comparison')
 
 net = load_test_case(net_name)
 
 net.sgen['k'] = 1.2
 net.sgen['active_current'] = False
-net.sgen.loc[net.sgen.bus == 1, 'in_service'] = True
-net.sgen.loc[net.sgen.bus == 2, 'in_service'] = False
-net.sgen.loc[net.sgen.bus == 3, 'in_service'] = False
+if net_name.startswith('1_'):
+    net.sgen.loc[net.sgen.bus == 1, 'in_service'] = True
+    net.sgen.loc[net.sgen.bus == 2, 'in_service'] = False
+    net.sgen.loc[net.sgen.bus == 3, 'in_service'] = True
 # net.line["c0_nf_per_km"] = 0
 # net.line["c_nf_per_km"] = 0
-fault = 'LLG'
+fault = 'LLL'
 branch = True
 case = 'max'
 r_fault_ohm = 0
 x_fault_ohm = 0
-fault_location = 1
+fault_location = 2
 
 calc_sc(
       net, fault=fault, case=case, branch_results=branch, ip=False,
       r_fault_ohm=r_fault_ohm, x_fault_ohm=x_fault_ohm, bus=fault_location, return_all_currents=False
 )
-#
+
+if net_name.startswith('1_'):
+    sgen_loc = '13'
+elif net_name.startswith('2_') or net_name.startswith('3_') :
+    sgen_loc = '34'
+else:
+    if '_dyn_' in net_name:
+        sgen_loc = '4'
+    elif '_yyn_' in net_name:
+        sgen_loc = '4714'
+    elif '_ynyn_' in net_name:
+        sgen_loc = '471419'
+
 # sgen bus
-excel_file = "wp_2.2/1_four_bus_radial_grid_sgen_pf_sc_results_1_bus_sgen1.xlsx"
+excel_file = f"wp_2.2/{net_name}_pf_sc_results_{fault_location}_bus_sgen{sgen_loc}.xlsx"
 diff_df = compare_sc_results(net, os.path.join(result_files_path, excel_file), fault_location=fault_location)
+diff_df_nom = diff_df.copy()
 
 # sgen branch
-excel_file = f"wp_2.2/1_four_bus_radial_grid_sgen_pf_sc_results_1_branch_sgen1.xlsx"
+excel_file = f"wp_2.2/{net_name}_pf_sc_results_{fault_location}_branch_sgen{sgen_loc}.xlsx"
 diff_df_branch = compare_sc_results(
     net, os.path.join(result_files_path, excel_file), branch=True, fault_location=fault_location
 )
 
 ## sgen with active current
-net_name = "3_five_bus_meshed_grid_yyn_sgen_act"
+# net_name = '1_four_bus_radial_grid_sgen_act'
+# net_name = "2_five_bus_radial_grid_ynyn_sgen_act"
+# net_name = "3_five_bus_meshed_grid_yyn_sgen_act"
+net_name = "4_twenty_bus_radial_grid_dyn_sgen_act"
+
 result_files_path = os.path.join(pp_dir, 'test', 'shortcircuit', 'sce_tests', 'sc_result_comparison')
 
 net = load_test_case(net_name)
 
 net.sgen['active_current'] = True
-# net.sgen.loc[net.sgen.bus == 1, 'in_service'] = True
-# net.sgen.loc[net.sgen.bus == 2, 'in_service'] = False
-# net.sgen.loc[net.sgen.bus == 3, 'in_service'] = True
+if net_name.startswith('1_'):
+    net.sgen.loc[net.sgen.bus == 1, 'in_service'] = True
+    net.sgen.loc[net.sgen.bus == 2, 'in_service'] = False
+    net.sgen.loc[net.sgen.bus == 3, 'in_service'] = True
 
-fault = 'LLG'
+fault = 'LLL'
 branch = True
 case = 'max'
 r_fault_ohm = 0
 x_fault_ohm = 0
-fault_location = 3
+fault_location = 8
 
 calc_sc(
       net, fault=fault, case=case, branch_results=branch, ip=False,
       r_fault_ohm=r_fault_ohm, x_fault_ohm=x_fault_ohm, bus=fault_location, return_all_currents=False
 )
 #
+if net_name.startswith('1_'):
+    sgen_loc = '13'
+elif net_name.startswith('2_') or net_name.startswith('3_') :
+    sgen_loc = '34'
+else:
+    if '_dyn_' in net_name:
+        sgen_loc = '4'
+    elif '_yyn_' in net_name:
+        sgen_loc = '4714'
+    elif '_ynyn_' in net_name:
+        sgen_loc = '471419'
+
 # sgen bus
-excel_file = "wp_2.2/3_five_bus_meshed_grid_yyn_sgen_act_pf_sc_results_3_bus_sgen34.xlsx"
+excel_file = f"wp_2.2/{net_name}_pf_sc_results_{fault_location}_bus_sgen{sgen_loc}.xlsx"
 diff_df = compare_sc_results(net, os.path.join(result_files_path, excel_file), fault_location=fault_location)
 
 # sgen branch
-excel_file = f"wp_2.2/3_five_bus_meshed_grid_yyn_sgen_act_pf_sc_results_3_branch_sgen34.xlsx"
+excel_file = f"wp_2.2/{net_name}_pf_sc_results_{fault_location}_branch_sgen{sgen_loc}.xlsx"
 diff_df_branch = compare_sc_results(
     net, os.path.join(result_files_path, excel_file), branch=True, fault_location=fault_location
 )
-
-
-##
-
