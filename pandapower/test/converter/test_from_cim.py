@@ -6,16 +6,19 @@ import pytest
 import math
 import pandas as pd
 
-from pandapower.test import test_path
+from unittest import TestCase
 
+from pandapower.auxiliary import pandapowerNet
+from pandapower.test import test_path
 from pandapower.converter.cim.cim2pp.from_cim import from_cim
 from pandapower.run import runpp
-
+from pandapower.create import create_empty_network
+from pandapower.network_structure import get_structure_dict
 from pandapower.control.util.auxiliary import create_trafo_characteristic_object, create_shunt_characteristic_object
 
 
 @pytest.fixture(scope="session")
-def mini_sc_mod():
+def mini_sc_mod() -> pandapowerNet:
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
     cgmes_files = [os.path.join(folder_path, 'CGMES_v2.4.15_MiniGridTestConfiguration_T1_Complete_v3_mod_in_service_ext_grid.zip')]
@@ -23,7 +26,7 @@ def mini_sc_mod():
     return from_cim(file_list=cgmes_files, ignore_errors=False)
 
 @pytest.fixture(scope="session")
-def mini_sc():
+def mini_sc() -> pandapowerNet:
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
     cgmes_files = [os.path.join(folder_path, 'CGMES_v2.4.15_MiniGridTestConfiguration_T1_Complete_v3.zip')]
@@ -32,7 +35,7 @@ def mini_sc():
 
 
 @pytest.fixture(scope="session")
-def mirco_sc():
+def mirco_sc() -> pandapowerNet:
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
     cgmes_files = [os.path.join(folder_path, 'CGMES_v2.4.15_MicroGridTestConfiguration_T4_BE_NB_Complete_v2.zip')]
@@ -41,7 +44,7 @@ def mirco_sc():
 
 
 @pytest.fixture(scope="session")
-def fullgrid_v2():
+def fullgrid_v2() -> pandapowerNet:
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
     cgmes_files = [os.path.join(folder_path, 'CGMES_v2.4.15_FullGridTestConfiguration_BB_BE_v1.zip'),
@@ -51,7 +54,7 @@ def fullgrid_v2():
 
 
 @pytest.fixture(scope="session")
-def fullgrid_v2_spline():
+def fullgrid_v2_spline() -> pandapowerNet:
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
     cgmes_files = [os.path.join(folder_path, 'CGMES_v2.4.15_FullGridTestConfiguration_BB_BE_v1.zip'),
@@ -65,7 +68,7 @@ def fullgrid_v2_spline():
 
 
 @pytest.fixture(scope="session")
-def fullgrid_v3():
+def fullgrid_v3() -> pandapowerNet:
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
     cgmes_files = [os.path.join(folder_path, 'CGMES_v3.0_FullGrid-Merged_v3.0.2.zip')]
@@ -74,7 +77,7 @@ def fullgrid_v3():
 
 
 @pytest.fixture(scope="session")
-def smallgrid_GL():
+def smallgrid_GL() -> pandapowerNet:
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
     cgmes_files = [os.path.join(folder_path, 'CGMES_v2.4.15_SmallGridTestConfiguration_Boundary_v3.0.0.zip'),
@@ -84,7 +87,7 @@ def smallgrid_GL():
 
 
 @pytest.fixture(scope="session")
-def smallgrid_DL():
+def smallgrid_DL() -> pandapowerNet:
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
     cgmes_files = [os.path.join(folder_path, 'CGMES_v2.4.15_SmallGridTestConfiguration_Boundary_v3.0.0.zip'),
@@ -94,7 +97,7 @@ def smallgrid_DL():
 
 
 @pytest.fixture(scope="session")
-def realgrid():
+def realgrid() -> pandapowerNet:
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
     cgmes_files = [os.path.join(folder_path, 'CGMES_v2.4.15_RealGridTestConfiguration_v2.zip')]
@@ -103,7 +106,7 @@ def realgrid():
 
 
 @pytest.fixture(scope="session")
-def SimBench_1_HVMVmixed_1_105_0_sw_modified():
+def SimBench_1_HVMVmixed_1_105_0_sw_modified() -> pandapowerNet:
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
     cgmes_files = [os.path.join(folder_path, 'SimBench_1-HVMV-mixed-1.105-0-sw_modified.zip')]
@@ -112,7 +115,7 @@ def SimBench_1_HVMVmixed_1_105_0_sw_modified():
 
 
 @pytest.fixture(scope="session")
-def Simbench_1_EHV_mixed__2_no_sw():
+def Simbench_1_EHV_mixed__2_no_sw() -> pandapowerNet:
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
     cgmes_files = [os.path.join(folder_path, 'Simbench_1-EHV-mixed--2-no_sw.zip')]
@@ -121,7 +124,7 @@ def Simbench_1_EHV_mixed__2_no_sw():
 
 
 @pytest.fixture(scope="session")
-def example_multivoltage():
+def example_multivoltage() -> pandapowerNet:
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
     cgmes_files = [os.path.join(folder_path, 'example_multivoltage.zip')]
@@ -132,7 +135,7 @@ def example_multivoltage():
 
 
 @pytest.fixture(scope="session")
-def SimBench_1_HVMVmixed_1_105_0_sw_modified_no_load_flow():
+def SimBench_1_HVMVmixed_1_105_0_sw_modified_no_load_flow() -> pandapowerNet:
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
     cgmes_files = [os.path.join(folder_path, 'SimBench_1-HVMV-mixed-1.105-0-sw_modified.zip')]
@@ -141,7 +144,7 @@ def SimBench_1_HVMVmixed_1_105_0_sw_modified_no_load_flow():
 
 
 @pytest.fixture(scope="session")
-def fullgrid_node_breaker():
+def fullgrid_node_breaker() -> pandapowerNet:
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
     cgmes_files = [os.path.join(folder_path, "CGMES_v2.4.15_FullGridTestConfiguration_NB_BE_v3.zip")]
@@ -150,7 +153,7 @@ def fullgrid_node_breaker():
 
 
 
-def test_micro_sc_ext_grid(mini_sc_mod):
+def test_micro_sc_ext_grid(mini_sc_mod: pandapowerNet) -> None:
     assert len(mini_sc_mod.ext_grid.index) == 2
     element_0 = mini_sc_mod.ext_grid.iloc[mini_sc_mod.ext_grid[
         mini_sc_mod.ext_grid['origin_id'] == '_089c1945-4101-487f-a557-66c013b748f6'].index]
@@ -161,7 +164,7 @@ def test_micro_sc_ext_grid(mini_sc_mod):
     # sc parameter x0x_max, r0x0_max missing
 
 
-def test_micro_sc_sgen(mini_sc):
+def test_micro_sc_sgen(mini_sc: pandapowerNet) -> None:
     assert len(mini_sc.sgen.index) == 4
     element_0 = mini_sc.sgen.iloc[mini_sc.sgen[
         mini_sc.sgen['origin_id'] == '_392ea173-4f8e-48fa-b2a3-5c3721e93196'].index]
@@ -173,7 +176,7 @@ def test_micro_sc_sgen(mini_sc):
     assert element_0['generator_type'].item() == 'current_source'
 
 
-def test_micro_sc_trafo(mirco_sc):
+def test_micro_sc_trafo(mirco_sc: pandapowerNet) -> None:
     assert len(mirco_sc.trafo.index) == 3
     element_0 = mirco_sc.trafo.iloc[mirco_sc.trafo[
         mirco_sc.trafo['origin_id'] == '_e482b89a-fa84-4ea9-8e70-a83d44790957'].index]
@@ -188,7 +191,7 @@ def test_micro_sc_trafo(mirco_sc):
     assert not element_0['power_station_unit'].item() #TODO: needs addidtional test
     # sc parameter si0_hv_partial, mag0_rx, mag0_percent missing
 
-def test_micro_sc_trafo3w(mirco_sc):
+def test_micro_sc_trafo3w(mirco_sc: pandapowerNet) -> None:
     assert len(mirco_sc.trafo3w.index) == 1
     element_0 = mirco_sc.trafo3w.iloc[mirco_sc.trafo3w[
         mirco_sc.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246'].index]
@@ -207,7 +210,7 @@ def test_micro_sc_trafo3w(mirco_sc):
     assert not element_0['power_station_unit'].item() #TODO: needs addidtional test
     assert element_0['vector_group'].item() == 'Yyy' #TODO: needs addidtional test
 
-def test_micro_sc_gen(mirco_sc):
+def test_micro_sc_gen(mirco_sc: pandapowerNet) -> None:
     assert len(mirco_sc.gen.index) == 2
     element_0 = mirco_sc.gen.iloc[mirco_sc.gen[
         mirco_sc.gen['origin_id'] == '_550ebe0d-f2b2-48c1-991f-cebea43a21aa'].index]
@@ -220,11 +223,11 @@ def test_micro_sc_gen(mirco_sc):
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_no_load_flow_res_bus(
-        SimBench_1_HVMVmixed_1_105_0_sw_modified_no_load_flow):
+        SimBench_1_HVMVmixed_1_105_0_sw_modified_no_load_flow: pandapowerNet) -> None:
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified_no_load_flow.res_bus.index) == 0
 
 
-def test_example_multivoltage_res_xward(example_multivoltage):
+def test_example_multivoltage_res_xward(example_multivoltage: pandapowerNet) -> None:
     assert len(example_multivoltage.res_xward.index) == 2
     element_0 = example_multivoltage.res_xward.iloc[example_multivoltage.xward[
         example_multivoltage.xward['origin_id'] == '_78c751ae-91b7-4d81-8732-670085cf8e94'].index]
@@ -235,7 +238,7 @@ def test_example_multivoltage_res_xward(example_multivoltage):
     assert element_0['vm_internal_pu'].item() == pytest.approx(1.02616, abs=0.000001)
 
 
-def test_example_multivoltage_res_trafo3w(example_multivoltage):
+def test_example_multivoltage_res_trafo3w(example_multivoltage: pandapowerNet) -> None:
     assert 1 == len(example_multivoltage.res_trafo3w)
     element_0 = example_multivoltage.res_trafo3w.iloc[example_multivoltage.trafo3w[
         example_multivoltage.trafo3w['origin_id'] == '_094b399b-84bb-4c0c-9160-f322ba106b99'].index] #TODO was davon ist der originale wert?
@@ -261,7 +264,7 @@ def test_example_multivoltage_res_trafo3w(example_multivoltage):
     assert element_0['loading_percent'].item() == pytest.approx(24.712456719781486, abs=0.0001)
 
 
-def test_example_multivoltage_xward(example_multivoltage):
+def test_example_multivoltage_xward(example_multivoltage: pandapowerNet) -> None:
     assert len(example_multivoltage.xward.index) == 2
     element_0 = example_multivoltage.xward[
         example_multivoltage.xward['origin_id'] == '_78c751ae-91b7-4d81-8732-670085cf8e94']
@@ -281,7 +284,7 @@ def test_example_multivoltage_xward(example_multivoltage):
     assert element_0['terminal'].item() == '_044c980b-210d-4ec0-8a99-245dcf1ae5c5'
 
 
-def test_Simbench_1_EHV_mixed__2_no_sw_res_gen(Simbench_1_EHV_mixed__2_no_sw):
+def test_Simbench_1_EHV_mixed__2_no_sw_res_gen(Simbench_1_EHV_mixed__2_no_sw: pandapowerNet) -> None:
     assert len(Simbench_1_EHV_mixed__2_no_sw.res_gen.index) == pytest.approx(338, abs=0.000001)
     element_0 = Simbench_1_EHV_mixed__2_no_sw.res_gen.iloc[Simbench_1_EHV_mixed__2_no_sw.gen[
         Simbench_1_EHV_mixed__2_no_sw.gen['origin_id'] == '_5b01c8ba-9847-49bc-a1f2-0100ccf7df74'].index]
@@ -298,7 +301,7 @@ def test_Simbench_1_EHV_mixed__2_no_sw_res_gen(Simbench_1_EHV_mixed__2_no_sw):
     assert element_1['vm_pu'].item() == pytest.approx(1.0679999999999996, abs=0.000001)
 
 
-def test_Simbench_1_EHV_mixed__2_no_sw_res_dcline(Simbench_1_EHV_mixed__2_no_sw):
+def test_Simbench_1_EHV_mixed__2_no_sw_res_dcline(Simbench_1_EHV_mixed__2_no_sw: pandapowerNet) -> None:
     assert 6 == len(Simbench_1_EHV_mixed__2_no_sw.res_dcline.index)
     element_0 = Simbench_1_EHV_mixed__2_no_sw.res_dcline.iloc[Simbench_1_EHV_mixed__2_no_sw.dcline[
         Simbench_1_EHV_mixed__2_no_sw.dcline['origin_id'] == '_ee269f63-6d79-4089-923d-a3a0ee080f92'].index]
@@ -313,7 +316,7 @@ def test_Simbench_1_EHV_mixed__2_no_sw_res_dcline(Simbench_1_EHV_mixed__2_no_sw)
     assert element_0['va_to_degree'].item() == pytest.approx(33.3178813629858, abs=0.0001)
 
 
-def test_Simbench_1_EHV_mixed__2_no_sw_measurement(Simbench_1_EHV_mixed__2_no_sw):
+def test_Simbench_1_EHV_mixed__2_no_sw_measurement(Simbench_1_EHV_mixed__2_no_sw) -> None:
     assert len(Simbench_1_EHV_mixed__2_no_sw.measurement.index) == 571
     element_0 = Simbench_1_EHV_mixed__2_no_sw.measurement[
         Simbench_1_EHV_mixed__2_no_sw.measurement['element'] ==
@@ -327,39 +330,39 @@ def test_Simbench_1_EHV_mixed__2_no_sw_measurement(Simbench_1_EHV_mixed__2_no_sw
     assert element_0['side'].item() is None
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_xward(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_xward(SimBench_1_HVMVmixed_1_105_0_sw_modified: pandapowerNet) -> None:
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_xward.index) == 0
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_ward(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_ward(SimBench_1_HVMVmixed_1_105_0_sw_modified: pandapowerNet) -> None:
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_ward.index) == 0  # TODO:
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_trafo_sc(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_trafo_sc(SimBench_1_HVMVmixed_1_105_0_sw_modified: pandapowerNet) -> None:
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_trafo_sc.index) == 0
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_trafo_est(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_trafo_est(SimBench_1_HVMVmixed_1_105_0_sw_modified: pandapowerNet) -> None:
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_trafo_est.index) == 0
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_trafo_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_trafo_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified: pandapowerNet) -> None:
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_trafo_3ph.index) == 0
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_trafo3w_sc(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_trafo3w_sc(SimBench_1_HVMVmixed_1_105_0_sw_modified: pandapowerNet) -> None:
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_trafo3w_sc.index) == 0
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_trafo3w_est(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_trafo3w_est(SimBench_1_HVMVmixed_1_105_0_sw_modified: pandapowerNet) -> None:
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_trafo3w_est.index) == 0
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_trafo3w(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_trafo3w(SimBench_1_HVMVmixed_1_105_0_sw_modified: pandapowerNet) -> None:
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_trafo3w.index) == 0
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_trafo(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_trafo(SimBench_1_HVMVmixed_1_105_0_sw_modified: pandapowerNet) -> None:
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_trafo.index) == 8
     element_0 = SimBench_1_HVMVmixed_1_105_0_sw_modified.res_trafo.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.trafo[
         SimBench_1_HVMVmixed_1_105_0_sw_modified.trafo['origin_id'] == '_0e8aabc2-5ddb-4946-9ced-9e1eb20881e9'].index]
@@ -382,19 +385,19 @@ def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_trafo(SimBench_1_HVMVmixed
                'va_hv_degree'].item() == pytest.approx(4.683488464449254, abs=0.0001)
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_tcsc(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_tcsc(SimBench_1_HVMVmixed_1_105_0_sw_modified: pandapowerNet) -> None:
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_tcsc.index) == 0
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_switch_sc(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_switch_sc(SimBench_1_HVMVmixed_1_105_0_sw_modified: pandapowerNet) -> None:
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_switch_sc.index) == 0
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_switch_est(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_switch_est(SimBench_1_HVMVmixed_1_105_0_sw_modified: pandapowerNet) -> None:
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_switch_est.index) == 0
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_switch(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_switch(SimBench_1_HVMVmixed_1_105_0_sw_modified: pandapowerNet) -> None:
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_switch) == 625  # TODO: test with different net with better values
     element_0 = SimBench_1_HVMVmixed_1_105_0_sw_modified.res_switch.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.switch[
         SimBench_1_HVMVmixed_1_105_0_sw_modified.switch['origin_id'] == '_004e90a8-cc0d-43f2-a9eb-c374f9479e8f'].index]
@@ -408,35 +411,35 @@ def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_switch(SimBench_1_HVMVmixe
     assert element_1['i_ka'].item() == pytest.approx(0.0, abs=0.0001)
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_svc(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_svc(SimBench_1_HVMVmixed_1_105_0_sw_modified: pandapowerNet) -> None:
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_svc.index) == 0
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_storage_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_storage_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified: pandapowerNet) -> None:
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_storage_3ph.index) == 0
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_storage(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_storage(SimBench_1_HVMVmixed_1_105_0_sw_modified: pandapowerNet) -> None:
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_storage.index) == 0
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_shunt_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_shunt_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified: pandapowerNet):
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_shunt_3ph.index) == 0
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_shunt(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_shunt(SimBench_1_HVMVmixed_1_105_0_sw_modified: pandapowerNet) -> None:
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_shunt.index) == 0
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_sgen_sc(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_sgen_sc(SimBench_1_HVMVmixed_1_105_0_sw_modified: pandapowerNet) -> None:
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_sgen_sc.index) == 0
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_sgen_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_sgen_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified: pandapowerNet) -> None:
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_sgen_3ph.index) == 0
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_sgen(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_sgen(SimBench_1_HVMVmixed_1_105_0_sw_modified: pandapowerNet) -> None:
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_sgen.index) == 205
     element_0 = SimBench_1_HVMVmixed_1_105_0_sw_modified.res_sgen.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.sgen[
         SimBench_1_HVMVmixed_1_105_0_sw_modified.sgen['origin_id'] == '_24a34602-5f03-4293-9e5b-bb95201356c6'].index]
@@ -454,15 +457,15 @@ def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_sgen(SimBench_1_HVMVmixed_
     assert element_2['q_mvar'].item() == pytest.approx(0.0, abs=0.0001)
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_motor(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_motor(SimBench_1_HVMVmixed_1_105_0_sw_modified: pandapowerNet) -> None:
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_motor.index) == 0
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_load_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_load_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified: pandapowerNet) -> None:
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_load_3ph.index) == 0
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_load(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_load(SimBench_1_HVMVmixed_1_105_0_sw_modified: pandapowerNet) -> None:
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_load.index) == 154
     element_0 = SimBench_1_HVMVmixed_1_105_0_sw_modified.res_load.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.load[
         SimBench_1_HVMVmixed_1_105_0_sw_modified.load['origin_id'] == '_6bcbb329-364a-461e-bdd0-aef5fb25947a'].index]
@@ -480,19 +483,19 @@ def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_load(SimBench_1_HVMVmixed_
     assert element_2['q_mvar'].item() == pytest.approx(13.6270, abs=0.0001)
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_line_sc(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_line_sc(SimBench_1_HVMVmixed_1_105_0_sw_modified: pandapowerNet) -> None:
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line_sc.index) == 0
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_line_est(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_line_est(SimBench_1_HVMVmixed_1_105_0_sw_modified: pandapowerNet) -> None:
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line_est.index) == 0
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_line_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_line_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified: pandapowerNet) -> None:
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line_3ph.index) == 0
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_line(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_line(SimBench_1_HVMVmixed_1_105_0_sw_modified: pandapowerNet) -> None:
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.index) == 194
     element_0 = SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.line[
         SimBench_1_HVMVmixed_1_105_0_sw_modified.line['origin_id'] == '_9c2727d3-0232-4352-ac78-b1e4ff562d85'].index]
@@ -531,31 +534,31 @@ def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_line(SimBench_1_HVMVmixed_
     assert element_1['loading_percent'].item() == pytest.approx(6.015006212368526, abs=0.0001)
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_impedance_est(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_impedance_est(SimBench_1_HVMVmixed_1_105_0_sw_modified: pandapowerNet) -> None:
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_impedance_est.index) == 0
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_impedance(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_impedance(SimBench_1_HVMVmixed_1_105_0_sw_modified: pandapowerNet) -> None:
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_impedance.index) == 0
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_gen_sc(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_gen_sc(SimBench_1_HVMVmixed_1_105_0_sw_modified: pandapowerNet) -> None:
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_gen_sc.index) == 0
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_gen(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_gen(SimBench_1_HVMVmixed_1_105_0_sw_modified: pandapowerNet) -> None:
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_gen.index) == 0
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_ext_grid_sc(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_ext_grid_sc(SimBench_1_HVMVmixed_1_105_0_sw_modified: pandapowerNet) -> None:
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_ext_grid_sc.index) == 0
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_ext_grid_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_ext_grid_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified: pandapowerNet) -> None:
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_ext_grid_3ph.index) == 0
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_ext_grid(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_ext_grid(SimBench_1_HVMVmixed_1_105_0_sw_modified: pandapowerNet) -> None:
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_ext_grid.index) == 3
     element_0 = SimBench_1_HVMVmixed_1_105_0_sw_modified.res_ext_grid.iloc[
         SimBench_1_HVMVmixed_1_105_0_sw_modified.ext_grid[
@@ -565,23 +568,23 @@ def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_ext_grid(SimBench_1_HVMVmi
     assert element_0['q_mvar'].item() == pytest.approx(134.7707263896562, abs=0.0001)
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_bus_dcline(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_bus_dcline(SimBench_1_HVMVmixed_1_105_0_sw_modified: pandapowerNet) -> None:
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_dcline.index) == 0
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_bus_sc(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_bus_sc(SimBench_1_HVMVmixed_1_105_0_sw_modified: pandapowerNet) -> None:
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_bus_sc.index) == 0
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_bus_est(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_bus_est(SimBench_1_HVMVmixed_1_105_0_sw_modified: pandapowerNet) -> None:
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_bus_est.index) == 0
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_bus_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_bus_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified: pandapowerNet) -> None:
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_bus_3ph.index) == 0
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_bus(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_bus(SimBench_1_HVMVmixed_1_105_0_sw_modified: pandapowerNet) -> None:
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_bus.index) == 605
     element_0 = SimBench_1_HVMVmixed_1_105_0_sw_modified.res_bus.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.bus[
         SimBench_1_HVMVmixed_1_105_0_sw_modified.bus['origin_id'] == '_35ad5aa9-056f-4fc1-86e3-563842550764'].index]
@@ -605,23 +608,23 @@ def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_bus(SimBench_1_HVMVmixed_1
     assert element_2['q_mvar'].item() == pytest.approx(0.0, abs=0.0001)
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_asymmetric_sgen_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_asymmetric_sgen_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified: pandapowerNet) -> None:
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_asymmetric_sgen_3ph.index) == 0
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_asymmetric_sgen(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_asymmetric_sgen(SimBench_1_HVMVmixed_1_105_0_sw_modified: pandapowerNet) -> None:
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_asymmetric_sgen.index) == 0
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_asymmetric_load_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_asymmetric_load_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified: pandapowerNet) -> None:
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_asymmetric_load_3ph.index) == 0
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_asymmetric_load(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_asymmetric_load(SimBench_1_HVMVmixed_1_105_0_sw_modified: pandapowerNet) -> None:
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_asymmetric_load.index) == 0
 
 
-def test_test_SimBench_1_HVMVmixed_1_105_0_sw_modified_ext_grid(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+def test_test_SimBench_1_HVMVmixed_1_105_0_sw_modified_ext_grid(SimBench_1_HVMVmixed_1_105_0_sw_modified: pandapowerNet) -> None:
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.ext_grid.index) == 3
     element_0 = SimBench_1_HVMVmixed_1_105_0_sw_modified.ext_grid[
         SimBench_1_HVMVmixed_1_105_0_sw_modified.ext_grid['origin_id'] == '_5fb17d90-f222-45a2-9e26-05f52a34731f']
@@ -634,7 +637,7 @@ def test_test_SimBench_1_HVMVmixed_1_105_0_sw_modified_ext_grid(SimBench_1_HVMVm
     assert element_0['geo'].item() == '{"coordinates": [11.3706, 53.601], "type": "Point"}'
 
 
-def test_realgrid_sgen(realgrid):
+def test_realgrid_sgen(realgrid: pandapowerNet) -> None:
     assert len(realgrid.sgen.index) == 819
     element_0 = realgrid.sgen[realgrid.sgen['origin_id'] == '_1149773851_HGU_SM']
     assert element_0['name'].item() == '1149773851'
@@ -677,7 +680,7 @@ def test_realgrid_sgen(realgrid):
     assert element_1['generator_type'].item() == 'current_source'
 
 
-def test_smallgrid_DL_line_geodata(smallgrid_DL):
+def test_smallgrid_DL_line_geodata(smallgrid_DL: pandapowerNet) -> None:
     assert "diagram" in smallgrid_DL.line.columns
     assert len(smallgrid_DL.line.loc[smallgrid_DL.line.diagram.notna()].index) == 176
     element_0 = smallgrid_DL.line[smallgrid_DL.line['origin_id'] == '_0447c6f1-c766-11e1-8775-005056c00008']
@@ -689,7 +692,7 @@ def test_smallgrid_DL_line_geodata(smallgrid_DL):
         'diagram'].item() == '{"coordinates": [[12.87877, 58.5714264], [12.8923006, 69.33862]], "type": "LineString"}'
 
 
-def test_smallgrid_DL_bus_geodata(smallgrid_DL):
+def test_smallgrid_DL_bus_geodata(smallgrid_DL: pandapowerNet) -> None:
     assert "diagram" in smallgrid_DL.bus.columns
     assert len(smallgrid_DL.bus.loc[smallgrid_DL.bus.diagram.notna()].index) == 118
     element_0 = smallgrid_DL.bus[smallgrid_DL.bus['origin_id'] == '_0471bd2a-c766-11e1-8775-005056c00008']
@@ -699,11 +702,11 @@ def test_smallgrid_DL_bus_geodata(smallgrid_DL):
     assert element_1['diagram'].item() == '{"coordinates": [39.15344, 94.86773], "type": "Point"}'
 
 
-def test_cim2pp(smallgrid_GL):
+def test_cim2pp(smallgrid_GL: pandapowerNet) -> None:
     assert len(smallgrid_GL.bus.index) == 118
 
 
-def test_smallgrid_GL_line_geodata(smallgrid_GL):
+def test_smallgrid_GL_line_geodata(smallgrid_GL: pandapowerNet) -> None:
     assert "geo" in smallgrid_GL.line.columns
     assert len(smallgrid_GL.line.loc[smallgrid_GL.line.geo.notna()].index) == 176
     element_0 = smallgrid_GL.line.loc[smallgrid_GL.line['origin_id'] == '_0447c6f1-c766-11e1-8775-005056c00008']
@@ -718,18 +721,18 @@ def test_smallgrid_GL_line_geodata(smallgrid_GL):
             '[-4.405538082122803, 57.53498840332031]], "type": "LineString"}')
 
 
-def test_smallgrid_GL_bus_geodata(smallgrid_GL):
+def test_smallgrid_GL_bus_geodata(smallgrid_GL: pandapowerNet) -> None:
     assert "geo" in smallgrid_GL.bus.columns
     assert len(smallgrid_GL.bus.loc[smallgrid_GL.bus.geo.notna()].index) == 115
     element_0 = smallgrid_GL.bus.loc[smallgrid_GL.bus['origin_id'] == '_0471bd2a-c766-11e1-8775-005056c00008']
     assert element_0['geo'].item() == '{"coordinates": [-4.844991207122803, 55.92612075805664], "type": "Point"}'
 
 
-def test_fullgrid_xward(fullgrid_v2):
+def test_fullgrid_xward(fullgrid_v2: pandapowerNet) -> None:
     assert len(fullgrid_v2.xward.index) == 0
 
 
-def test_fullgrid_ward(fullgrid_v2):
+def test_fullgrid_ward(fullgrid_v2: pandapowerNet) -> None:
     assert len(fullgrid_v2.ward.index) == 5
     element_0 = fullgrid_v2.ward[fullgrid_v2.ward['origin_id'] == '_24413233-26c3-4f7e-9f72-4461796938be']
     assert element_0['name'].item() == 'BE-Inj-XCA_AL11'
@@ -743,7 +746,7 @@ def test_fullgrid_ward(fullgrid_v2):
     assert element_0['terminal'].item() == '_53072f42-f77b-47e2-bd9a-e097c910b173'
 
 
-def test_fullgrid_trafo3w(fullgrid_v2):
+def test_fullgrid_trafo3w(fullgrid_v2: pandapowerNet) -> None:
     assert len(fullgrid_v2.trafo3w.index) == 1 # TODO: test with more elements
     element_0 = fullgrid_v2.trafo3w[fullgrid_v2.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']
     assert element_0['name'].item() == 'BE-TR3_1'
@@ -798,7 +801,7 @@ def test_fullgrid_trafo3w(fullgrid_v2):
     assert element_0['tap_dependency_table'].item()
 
 
-def test_fullgrid_trafo3w_spline(fullgrid_v2_spline):
+def test_fullgrid_trafo3w_spline(fullgrid_v2_spline: pandapowerNet) -> None:
     assert "trafo_characteristic_spline" in fullgrid_v2_spline
     element_0 = fullgrid_v2_spline.trafo3w[
         fullgrid_v2_spline.trafo3w['origin_id'] == '_84ed55f4-61f5-4d9d-8755-bba7b877a246']
@@ -813,7 +816,7 @@ def test_fullgrid_trafo3w_spline(fullgrid_v2_spline):
     assert spline_row[cols].notna().all(axis=1).item()
 
 
-def test_fullgrid_trafo(fullgrid_v2):
+def test_fullgrid_trafo(fullgrid_v2: pandapowerNet) -> None:
     assert len(fullgrid_v2.trafo.index) == 10
     element_0 = fullgrid_v2.trafo[fullgrid_v2.trafo['origin_id'] == '_4ebd554c-1cdb-4f3d-8dd0-dfd4bda8e18c']
     assert element_0['name'].item() == 'HVDC1_TR2_HVDC2'
@@ -905,7 +908,7 @@ def test_fullgrid_trafo(fullgrid_v2):
     assert not element_2['tap_dependency_table'].item()
 
 
-def test_fullgrid_trafo_spline(fullgrid_v2_spline):
+def test_fullgrid_trafo_spline(fullgrid_v2_spline: pandapowerNet) -> None:
     assert "trafo_characteristic_spline" in fullgrid_v2_spline
     element_0 = fullgrid_v2_spline.trafo[
         fullgrid_v2_spline.trafo['origin_id'] == '_99f55ee9-2c75-3340-9539-b835ec8c5994']
@@ -923,11 +926,11 @@ def test_fullgrid_trafo_spline(fullgrid_v2_spline):
     assert pd.isna(element_1['id_characteristic_spline'].item())
 
 
-def test_fullgrid_tcsc(fullgrid_v2):
+def test_fullgrid_tcsc(fullgrid_v2: pandapowerNet) -> None:
     assert len(fullgrid_v2.tcsc.index) == 0
 
 
-def test_fullgrid_switch(fullgrid_v2):
+def test_fullgrid_switch(fullgrid_v2: pandapowerNet) -> None:
     assert len(fullgrid_v2.switch.index) == 4
     element_0 = fullgrid_v2.switch[fullgrid_v2.switch['origin_id'] == '_8a3ad6e1-6e23-b649-880e-4865217501c4']
     assert fullgrid_v2.bus.iloc[element_0['bus'].item()]['origin_id'] == '_5c74cb26-ce2f-40c6-951d-89091eb781b6'
@@ -943,15 +946,15 @@ def test_fullgrid_switch(fullgrid_v2):
     assert element_0['terminal_element'].item() == '_916578a1-7a6e-7347-a5e0-aaf35538949c'
 
 
-def test_fullgrid_svc(fullgrid_v2):
+def test_fullgrid_svc(fullgrid_v2: pandapowerNet) -> None:
     assert len(fullgrid_v2.svc.index) == 0
 
 
-def test_fullgrid_storage(fullgrid_v2):
+def test_fullgrid_storage(fullgrid_v2: pandapowerNet) -> None:
     assert len(fullgrid_v2.storage.index) == 0
 
 
-def test_fullgrid_shunt(fullgrid_v2):
+def test_fullgrid_shunt(fullgrid_v2: pandapowerNet) -> None:
     assert len(fullgrid_v2.shunt.index) == 6
     element_0 = fullgrid_v2.shunt[fullgrid_v2.shunt['origin_id'] == '_d771118f-36e9-4115-a128-cc3d9ce3e3da']
     assert element_0['name'].item() == 'BE_S1'
@@ -968,19 +971,19 @@ def test_fullgrid_shunt(fullgrid_v2):
     assert pd.isna(element_0['id_characteristic_table'].item())
 
 
-def test_fullgrid_sgen(fullgrid_v2):
+def test_fullgrid_sgen(fullgrid_v2: pandapowerNet) -> None:
     assert len(fullgrid_v2.sgen.index) == 0
 
 
-def test_fullgrid_pwl_cost(fullgrid_v2):
+def test_fullgrid_pwl_cost(fullgrid_v2: pandapowerNet) -> None:
     assert len(fullgrid_v2.pwl_cost.index) == 0
 
 
-def test_fullgrid_poly_cost(fullgrid_v2):
+def test_fullgrid_poly_cost(fullgrid_v2: pandapowerNet) -> None:
     assert len(fullgrid_v2.poly_cost.index) == 0
 
 
-def test_fullgrid_motor(fullgrid_v2):
+def test_fullgrid_motor(fullgrid_v2: pandapowerNet) -> None:
     assert len(fullgrid_v2.motor.index) == 1
     element_0 = fullgrid_v2.motor[fullgrid_v2.motor['origin_id'] == '_2b618292-5fec-af43-ae39-c32566d0a752']
     assert element_0['name'].item() == 'ASM_1'
@@ -1000,11 +1003,11 @@ def test_fullgrid_motor(fullgrid_v2):
     assert element_0['terminal'].item() == '_7b71e695-3977-f544-b31f-777cfbbde49b'
 
 
-def test_fullgrid_measurement(fullgrid_v2):
+def test_fullgrid_measurement(fullgrid_v2: pandapowerNet) -> None:
     assert len(fullgrid_v2.measurement.index) == 0  # TODO: analogs
 
 
-def test_fullgrid_load(fullgrid_v2):
+def test_fullgrid_load(fullgrid_v2: pandapowerNet) -> None:
     assert len(fullgrid_v2.load.index) == 5
     element_0 = fullgrid_v2.load[fullgrid_v2.load['origin_id'] == '_1324b99a-59ee-0d44-b1f6-15dc0d9d81ff']
     assert element_0['name'].item() == 'BE_CL_1'
@@ -1023,13 +1026,13 @@ def test_fullgrid_load(fullgrid_v2):
     assert element_0['terminal'].item() == '_84f6ff75-6bf9-8742-ae06-1481aa3b34de'
 
 
-def test_fullgrid_line_geodata(fullgrid_v2):
+def test_fullgrid_line_geodata(fullgrid_v2: pandapowerNet) -> None:
     assert 'geo' in fullgrid_v2.line.columns
     assert len(fullgrid_v2.line.loc[fullgrid_v2.line.geo.notna()].index) == 0
     assert 'diagram' not in fullgrid_v2.line.columns
 
 
-def test_fullgrid_line(fullgrid_v2):
+def test_fullgrid_line(fullgrid_v2: pandapowerNet) -> None:
     assert len(fullgrid_v2.line.index) == 11
     element_0 = fullgrid_v2.line[fullgrid_v2.line['origin_id'] == '_a16b4a6c-70b1-4abf-9a9d-bd0fa47f9fe4']
     assert element_0['name'].item() == 'BE-Line_7'
@@ -1059,7 +1062,7 @@ def test_fullgrid_line(fullgrid_v2):
     assert math.isnan(element_1['max_i_ka'].item())
 
 
-def test_fullgrid_impedance(fullgrid_v2):
+def test_fullgrid_impedance(fullgrid_v2: pandapowerNet) -> None:
     assert len(fullgrid_v2.impedance.index) == 1 # TODO: test with more elements
     element_0 = fullgrid_v2.impedance[fullgrid_v2.impedance['origin_id'] == '_3619970b-7c3d-bf4f-b499-fb0a99efb362']
     assert element_0['name'].item() == 'BE_SC_1'
@@ -1080,7 +1083,7 @@ def test_fullgrid_impedance(fullgrid_v2):
     assert math.isnan(element_0['xtf0_pu'].item())
 
 
-def test_fullgrid_gen(fullgrid_v2):
+def test_fullgrid_gen(fullgrid_v2: pandapowerNet) -> None:
     assert len(fullgrid_v2.gen.index) == 8
     element_0 = fullgrid_v2.gen[fullgrid_v2.gen['origin_id'] == '_55d4aae2-0d4b-4248-bc90-1193f3499fa0']
     assert element_0['name'].item() == 'BE-G5'
@@ -1112,7 +1115,7 @@ def test_fullgrid_gen(fullgrid_v2):
     assert element_1['vm_pu'].item() == pytest.approx(1.050, abs=0.000001)
 
 
-def test_full_grid_q_capability_table(fullgrid_v2):
+def test_full_grid_q_capability_table(fullgrid_v2: pandapowerNet) -> None:
     capa_df = pd.DataFrame({'id_q_capability_curve': {0: 0, 1: 0, 2: 0},
                             'p_mw': {0: -100.0, 1: 0.0, 2: 100.0},
                             'q_min_mvar': {0: -200.0, 1: -300.0, 2: -200.0},
@@ -1146,7 +1149,7 @@ def test_fullgrid_ext_grid(fullgrid_v2):
     assert math.isnan(element_0['x0x_max'].item())
 
 
-def test_fullgrid_dcline(fullgrid_v2):
+def test_fullgrid_dcline(fullgrid_v2: pandapowerNet) -> None:
     assert len(fullgrid_v2.dcline.index) == 2
     element_0 = fullgrid_v2.dcline[fullgrid_v2.dcline['origin_id'] == '_70a3750c-6e8e-47bc-b1bf-5a568d9733f7']
     assert element_0['name'].item() == 'LDC-1230816355'
@@ -1176,7 +1179,7 @@ def test_fullgrid_dcline(fullgrid_v2):
     assert math.isnan(element_0['terminal_to'].item())
 
 
-def test_fullgrid_controller(fullgrid_v2):
+def test_fullgrid_controller(fullgrid_v2: pandapowerNet) -> None:
     assert len(fullgrid_v2.controller.index) == 8
     for _, obj in fullgrid_v2.controller.iterrows():
         if obj.object.matching_params.get('tid') == \
@@ -1239,17 +1242,17 @@ def test_fullgrid_controller(fullgrid_v2):
             assert math.isnan(obj.object.vm_upper_pu)
 
 
-def test_fullgrid_trafo_characteristic_table(fullgrid_v2):
+def test_fullgrid_trafo_characteristic_table(fullgrid_v2: pandapowerNet) -> None:
     assert len(fullgrid_v2.trafo_characteristic_table.index) == 8
 
 
-def test_fullgrid_bus_geodata(fullgrid_v2):
+def test_fullgrid_bus_geodata(fullgrid_v2: pandapowerNet) -> None:
     assert 'geo' in fullgrid_v2.bus.columns
     assert len(fullgrid_v2.bus.loc[fullgrid_v2.bus.geo.notna()].index) == 0
     assert 'diagram' not in fullgrid_v2.bus.columns
 
 
-def test_fullgrid_bus(fullgrid_v2):
+def test_fullgrid_bus(fullgrid_v2: pandapowerNet) -> None:
     assert len(fullgrid_v2.bus.index) == 26
     element_0 = fullgrid_v2.bus[fullgrid_v2.bus['origin_id'] == '_4c66b132-0977-1e4c-b9bb-d8ce2e912e35']
     assert element_0['name'].item() == 'BE-Busbar_7'
@@ -1289,15 +1292,15 @@ def test_fullgrid_bus(fullgrid_v2):
     assert element_2['SubGeographicalRegion_name'].item() == 'ELIA-Brussels'
 
 
-def test_fullgrid_asymmetric_sgen(fullgrid_v2):
+def test_fullgrid_asymmetric_sgen(fullgrid_v2: pandapowerNet) -> None:
     assert len(fullgrid_v2.asymmetric_sgen.index) == 0
 
 
-def test_fullgrid_asymmetric_load(fullgrid_v2):
+def test_fullgrid_asymmetric_load(fullgrid_v2: pandapowerNet) -> None:
     assert len(fullgrid_v2.asymmetric_load.index) == 0
 
 
-def test_fullgrid_NB_bus(fullgrid_node_breaker):
+def test_fullgrid_NB_bus(fullgrid_node_breaker: pandapowerNet) -> None:
     assert len(fullgrid_node_breaker.bus.index) == 40
     element_0 = fullgrid_node_breaker.bus[fullgrid_node_breaker.bus['origin_id'] == '_ec6b1f37-6c5a-ac43-a366-019f5bcce2b1']
     assert element_0['name'].item() == 'BB_Disconector_5'
@@ -1337,7 +1340,7 @@ def test_fullgrid_NB_bus(fullgrid_node_breaker):
     assert element_2['SubGeographicalRegion_name'].item() == 'HVDC Zone'
 
 
-def test_fullgrid_NB_switch(fullgrid_node_breaker):
+def test_fullgrid_NB_switch(fullgrid_node_breaker: pandapowerNet) -> None:
     assert len(fullgrid_node_breaker.switch) == 24
 
     assert len(fullgrid_node_breaker.switch['closed']) == 24 # all are closed
@@ -1369,6 +1372,35 @@ def test_fullgrid_NB_switch(fullgrid_node_breaker):
     assert element_1['terminal_bus'].item() == '_1c134839-5bad-124e-93a4-b11663025232'
     assert element_1['terminal_element'].item() == '_ea6bb748-b513-0947-a59b-abd50155dad2'
     assert element_1['description'].item() == 'BE_LB_1'
+
+
+def test_column_dtype(fullgrid_v2: pandapowerNet) -> None:
+    """
+    Test all the columns in a cim derived network, against the dict of dtypes defined for standard pandapower nets
+    (network_structure.py)
+    """
+    # Since dtypes are defined in network_structure.py, get the dict.
+    structure_dict = get_structure_dict()
+    res = {}
+
+    # iterate over all tables
+    for element, table in structure_dict.items():
+        # check if the table is in the fullgrid, (since the cim can have custom types, which we cannot check)
+        if element in fullgrid_v2 and isinstance(table, type({})):
+            # derive the table
+            fullgrid_table = fullgrid_v2[element]
+            # and iterate over all columns / dtypes in the table
+            for index, dtype in table.items():
+                # assert if they are not the same
+                if index in fullgrid_table.columns and fullgrid_table.dtypes[index] != dtype:
+                    res['_element'] = ('index', 'dtype_is', 'should_be')
+                    res[element] = (index, fullgrid_table.dtypes[index], dtype)
+    # display all columns that have different dtypes with following structure
+    # (<element>: <element column>, <dtype of converted net>, <dtype of empty net>)
+    test_case = TestCase()
+    test_case.maxDiff = None
+    test_case.assertDictEqual(res, {})
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-xs"])
