@@ -35,8 +35,10 @@ class NonConformLoadsCim16:
             eqssh_non_conform_loads['connected'] = eqssh_non_conform_loads['connected'] & eqssh_non_conform_loads['inService']
         eqssh_non_conform_loads = eqssh_non_conform_loads.rename(columns={'rdfId': sc['o_id'], 'rdfId_Terminal': sc['t'], 'index_bus': 'bus',
                                                 'connected': 'in_service', 'p': 'p_mw', 'q': 'q_mvar'})
-        eqssh_non_conform_loads['const_i_percent'] = 0.
-        eqssh_non_conform_loads['const_z_percent'] = 0.
+        eqssh_non_conform_loads['const_i_p_percent'] = 0.
+        eqssh_non_conform_loads['const_z_p_percent'] = 0.
+        eqssh_non_conform_loads['const_i_q_percent'] = 0.
+        eqssh_non_conform_loads['const_z_q_percent'] = 0.
         eqssh_non_conform_loads['scaling'] = 1.
         eqssh_non_conform_loads['type'] = None
         return eqssh_non_conform_loads

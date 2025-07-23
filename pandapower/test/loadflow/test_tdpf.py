@@ -53,7 +53,7 @@ def create_single_line_net(std_type):
 
     # Chose the load to match nominal current
     p_ac = vn_kv * max_i_ka * np.sqrt(3)  # Q=0
-    create_load(net, b2, sn_mva=p_ac, p_mw=p_ac, name="load_b8", const_i_percent=100)
+    create_load(net, b2, sn_mva=p_ac, p_mw=p_ac, name="load_b8", const_i_p_percent=100, const_i_q_percent=100)
 
     create_ext_grid(net, b1)
 
@@ -406,7 +406,7 @@ def test_IEEE_example_1():
 
     # Chose the load to match nominal current
     p_ac = 380 * 1.024 * np.sqrt(3)
-    create_load(net, b2, p_mw=p_ac, q_mvar=0, name="load_b8", const_i_percent=100)
+    create_load(net, b2, p_mw=p_ac, q_mvar=0, name="load_b8", const_i_p_percent=100, const_i_q_percent=100)
 
     create_ext_grid(net, b1, vm_pu=1, va_degree=0, s_sc_max_mva=20 * 110 * np.sqrt(3), rx_max=0.1)
 
@@ -458,7 +458,7 @@ def test_IEEE_example_2():
 
     # Chose the load to match nominal current
     p_ac = 380 * 1.0 * np.sqrt(3)  # Q=0
-    create_load(net, b2, p_mw=p_ac, q_mvar=0, name="load_b8", const_i_percent=100)
+    create_load(net, b2, p_mw=p_ac, q_mvar=0, name="load_b8", const_i_p_percent=100, const_i_q_percent=100)
 
     create_ext_grid(net, b1, vm_pu=1, va_degree=0, s_sc_max_mva=20 * 110 * np.sqrt(3), rx_max=0.1)
 
@@ -506,7 +506,7 @@ def test_IEEE_example_3():
 
     # Chose the load to match nominal current
     p_ac = 380 * 1.003 * np.sqrt(3)  # Q=0
-    create_load(net, b2, p_mw=p_ac, q_mvar=0, name="load_b8", const_i_percent=100)
+    create_load(net, b2, p_mw=p_ac, q_mvar=0, name="load_b8", const_i_p_percent=100, const_i_q_percent=100)
 
     create_ext_grid(net, b1, vm_pu=1, va_degree=0, s_sc_max_mva=20 * 110 * np.sqrt(3), rx_max=0.1)
 
