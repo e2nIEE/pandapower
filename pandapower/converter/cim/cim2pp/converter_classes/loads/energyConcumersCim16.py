@@ -35,8 +35,10 @@ class EnergyConsumersCim16:
             eqssh_energy_consumers['connected'] = eqssh_energy_consumers['connected'] & eqssh_energy_consumers['inService']
         eqssh_energy_consumers = eqssh_energy_consumers.rename(columns={'rdfId': sc['o_id'], 'rdfId_Terminal': sc['t'], 'index_bus': 'bus',
                                                'connected': 'in_service', 'p': 'p_mw', 'q': 'q_mvar'})
-        eqssh_energy_consumers['const_i_percent'] = 0.
-        eqssh_energy_consumers['const_z_percent'] = 0.
+        eqssh_energy_consumers['const_i_p_percent'] = 0.
+        eqssh_energy_consumers['const_z_p_percent'] = 0.
+        eqssh_energy_consumers['const_i_q_percent'] = 0.
+        eqssh_energy_consumers['const_z_q_percent'] = 0.
         eqssh_energy_consumers['scaling'] = 1.
         eqssh_energy_consumers['type'] = None
         return eqssh_energy_consumers

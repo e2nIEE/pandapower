@@ -292,6 +292,7 @@ def test_create_buses():
     for i, ind in enumerate(b3):
         assert net.bus.at[ind, "geo"] == geojson.dumps(geojson.Point(geodata[i]), sort_keys=True)
 
+
 def test_create_lines():
     # standard
     net = create_empty_network()
@@ -1300,11 +1301,11 @@ def test_create_switches_raise_errorexcept():
         create_switches(
             net, buses=[6, b2, b3], elements=[l1, t1, b4], et=["l", "t", "b"], z_ohm=0.0
         )
-    with pytest.raises(UserWarning, match=r"Line buses do not exist: \[1\]"):
+    with pytest.raises(UserWarning, match=r"Cannot attach to lines {np\.int64\(1\)}, they do not exist"):
         create_switches(
             net, buses=[b1, b2, b3], elements=[1, t1, b4], et=["l", "t", "b"], z_ohm=0.0
         )
-    with pytest.raises(UserWarning, match=rf"Line not connected \(line element, bus\): \[\({b3}, {l1}\)\]"):
+    with pytest.raises(UserWarning, match=rf"Line not connected \(line element, bus\): \[\({l1}, {b3}\)\]"):
         create_switches(
             net,
             buses=[b3, b2, b3],
@@ -1312,7 +1313,7 @@ def test_create_switches_raise_errorexcept():
             et=["l", "t", "b"],
             z_ohm=0.0,
         )
-    with pytest.raises(UserWarning, match=r"Trafo buses do not exist: \[1\]"):
+    with pytest.raises(UserWarning, match=r"Cannot attach to trafos {np\.int64\(1\)}, they do not exist"):
         create_switches(
             net, buses=[b1, b2, b3], elements=[l1, 1, b4], et=["l", "t", "b"], z_ohm=0.0
         )
@@ -1327,12 +1328,12 @@ def test_create_switches_raise_errorexcept():
             z_ohm=0.0,
         )
     with pytest.raises(
-            UserWarning, match=r"Cannot attach to elements \{6\}, they do not exist"
+            UserWarning, match=r"Cannot attach to buses {np\.int64\(6\)}, they do not exist"
     ):
         create_switches(
             net, buses=[b1, b2, b3], elements=[l1, t1, 6], et=["l", "t", "b"], z_ohm=0.0
         )
-    with pytest.raises(UserWarning, match=r"Trafo3w buses do not exist: \[1\]"):
+    with pytest.raises(UserWarning, match=r"Cannot attach to trafo3ws {np\.int64\(1\)}, they do not exist"):
         create_switches(
             net,
             buses=[b1, b2, b3],
@@ -1341,7 +1342,7 @@ def test_create_switches_raise_errorexcept():
             z_ohm=0.0,
         )
     with pytest.raises(
-            UserWarning, match=r"Trafo3w not connected \(trafo3w element, bus\): \[\(%s, %s\)\]" % (b3, t3w1)
+            UserWarning, match=r"Trafo3w not connected \(trafo3w element, bus\): \[\(%s, %s\)\]" % (t3w1, b3)
     ):
         create_switches(
             net,
@@ -1351,7 +1352,7 @@ def test_create_switches_raise_errorexcept():
             z_ohm=0.0,
         )
     with pytest.raises(
-        UserWarning, match=r"Cannot attach to elements \{12398\}, they do not exist"
+        UserWarning, match=r"Cannot attach to buses {np\.int64\(12398\)}, they do not exist"
     ):
         create_switches(
             net,
@@ -1361,7 +1362,7 @@ def test_create_switches_raise_errorexcept():
             z_ohm=0.0,
         )
     with pytest.raises(
-        UserWarning, match=r"Cannot attach to buses \{13098\}, they do not exist"
+            UserWarning, match=r"Cannot attach to buses \{13098\}, they do not exist"
     ):
         create_switches(
             net,
@@ -1462,6 +1463,22 @@ def test_create_loads_raise_errorexcept():
             index=l,
         )
 
+def test_const_percent_values_deprecated_handling():
+    # This test checks that passing const_z_percent and const_i_percent to create_load
+    # sets all four percent columns and triggers the deprecation warning.
+    net = create_empty_network()
+    b1 = create_bus(net, 20)
+    with pytest.warns(DeprecationWarning, match="const_z_percent and const_i_percent will be deprecated"):
+        idx = create_load(
+            net, b1, p_mw=1.0, q_mvar=0.5,
+            const_z_percent=11, const_i_percent=22
+        )
+    # Check that the values are set correctly
+    load_idx = net.load.loc[idx]
+    assert load_idx.const_z_p_percent == 11
+    assert load_idx.const_z_q_percent == 11
+    assert load_idx.const_i_p_percent == 22
+    assert load_idx.const_i_q_percent == 22
 
 def test_create_storages():
     net = create_empty_network()
@@ -1571,6 +1588,9 @@ def test_create_sgens():
         p_mw=[0, 0, 1],
         q_mvar=0.0,
         controllable=[True, False, False],
+        id_q_capability_characteristic=[0, 1, 2],
+        reactive_capability_curve=False,
+        curve_style=["straightLineYValues", "straightLineYValues", "straightLineYValues"],
         max_p_mw=0.2,
         min_p_mw=[0, 0.1, 0],
         max_q_mvar=0.2,
@@ -1602,6 +1622,9 @@ def test_create_sgens():
     assert all(net.sgen.rx.values == 0.4)
     assert all(net.sgen.current_source)
     assert all(net.sgen.test_kwargs == "dummy_string")
+    assert all(net.sgen.id_q_capability_characteristic.values == [0, 1, 2])
+    assert all(net.sgen.curve_style == "straightLineYValues")
+    assert all(net.sgen.reactive_capability_curve == [False, False, False])
 
 
 def test_create_sgens_raise_errorexcept():
@@ -1674,6 +1697,9 @@ def test_create_gens():
         p_mw=[0, 0, 1],
         vm_pu=1.0,
         controllable=[True, False, False],
+        id_q_capability_characteristic=[0, 1, 2],
+        reactive_capability_curve=False,
+        curve_style=["straightLineYValues", "straightLineYValues", "straightLineYValues"],
         max_p_mw=0.2,
         min_p_mw=[0, 0.1, 0],
         max_q_mvar=0.2,
@@ -1707,6 +1733,9 @@ def test_create_gens():
     assert all(net.gen.rdss_pu.values == 0.1)
     assert all(net.gen.cos_phi.values == 1.0)
     assert all(net.gen.test_kwargs == "dummy_string")
+    assert all(net.gen.id_q_capability_characteristic.values == [0, 1, 2])
+    assert all(net.gen.curve_style == "straightLineYValues")
+    assert all(net.gen.reactive_capability_curve == [False, False, False])
 
 
 def test_create_gens_raise_errorexcept():

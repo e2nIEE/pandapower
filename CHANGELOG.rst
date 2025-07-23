@@ -3,14 +3,85 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [REMOVED] kwargs in basic controller class
+- [ADDED] name attribute in basic controller class
+- [FIXED] remove print statement from results_bus.py
+- [FIXED] cim2pp: Make sure that the controllable flag is never nan for any generators
+- [CHANGED] move pandapower network pandas structure dict from create_empty_network to its own file
+- [FIXED] cim2pp: use pandapower network pandas structure dict to set needed dtypes instead of hardcoded values
+- [ADDED] cim2pp: export trafo `tap_step_degree` parameter
+- [ADDED] cim2pp: export trafo tap changer parameters for trafos with two tap changers
+- [CHANGED] renamed q_capability_curve_characteristic to q_capability_characteristic to fix the 31 character length limit from Excel
+- [ADDED] added documentation for q_capability_characteristic and q_capability_curve_table DataFrames in the pandapower net
+- [FIXED] cim2pp: add GeneratingUnit to SSH profile, add new cim16 schema
+- [FIXED] issue on case9 grid: Missing columns id_characteristic_table and step_dependency_table at shunt leading to errors when adding them
+- [CHANGED] separate voltage dependencies for P and Q for loads: const_z_percent --> const_z_p_percent, const_z_q_percent, const_i_percent --> const_i_p_percent, const_i_q_percent
+- [FIXED] fixed convert_format for missing information (in gen, sgen, shunt) and tables (q_capability_characteristic, q_capability_curve_table, id_characteristic_table, step_dependency_table)
+- [ADDED] added tests for q_capability_curve_table in cim2pp and convert_format.py for format_version 3.1.0
+- [FIXED] deserialising q_capability_characteristic in from_excel and added test for it
+- [FIXED] make network structure more accessible, including needed adaptation in pandapowerNet constructor
+- [FIXED] cim2pp: add more dtype parameters, fix some tests
+- [FIXED] convert_format fix check when net version is below format version
+- [FIXED] json io test with new network structure dict
+- [FIXED] DC OPF bug if verbose = True
+- [CHANGED] cim2pp conversion of SVC parameter active power: p is set to 0, instead of using the p-value from the SV-profile
+
+[3.1.2] - 2025-06-16
+-------------------------------
+- [ADDED] iteration count for convergence as an output dict parameter
+- [FIXED] pf2pp converter - corrected consideration of line temperature during import
+- [FIXED] corrected create_continuous_elements_index to consider trafo_characteristic_tables correctly
+- [FIXED] pp control - handle NaN in 'enabled' column when computing 'controlEnabled' to ensure safe boolean evaluation
+- [FIXED] State Estimation: optimized SE code to minimize RAM usage
+- [FIXED] State Estimation: optimized SE code to speed-up calculations
+- [FIXED] State Estimation: converted internal matrices into sparse for better performance
+- [FIXED] State Estimation: changed Jacobian creation to avoid useless computations for not existing measurements
+- [ADDED] State Estimation: introduced option to run state estimation in debug mode and print relevant information during WLS iterations
+- [FIXED] State Estimation: optimized merge computations for multiple measurements at the same element
+- [ADDED] State Estimation: introduced multiple options for automatic creation of zero injection measurements
+- [FIXED] State Estimation: fixed bugs with AF-WLS estimator
+- [FIXED] State Estimation: fixed bugs with automatic test creation
+
+[3.1.1] - 2025-05-26
+-------------------------------
+- [FIXED] URL for digital attestation
+
+[3.1.0] - 2025-05-26
+-------------------------------
+- [ADDED] pf2pp converter - import of shunt characteristic tables
+- [ADDED] pf2pp converter - considering tap dependent impedance
+- [FIXED] cim2pp converter - set sgen 'controllable' flag as False when converting energySources to avoid ValueError when executing create_sgen
+- [ADDED] pf2pp converter - added columns `origin_id` in multiple equipment (ext_net, coup, load, (s)gen, shunts, zpu, vac, svc)
+- [FIXED] pf2pp converter - trafo characteristic: Fixed tap changer type and included an if-clause that removes the zero sequence components in measurement report (for now)
+- [FIXED] corrected implementation of tap changer at star point with tap changer tables
+- [ADDED] cim2pp converter - extract 'controlenabled' flag from CGMES SSH profile and populate 'controllable' flag for gen and sgen elements
+- [ADDED] add function to determine qmin and qmax based on current active power in build_gen and update the dataframe with the determined values
+- [ADDED] parameter include_type_id to dump_to_geojson, to produce geojson features without the pp_index and pp_type field
+- [FIXED] added a fix which hinders selection of a subsection of busses for plotting
+- [ADDED] cim2pp converter - additional column "EquipmentContainer_id" in line table
+- [ADDED] cim2pp: add tests for buses and switches for node breaker test net, add node breaker test net to CGMES folder
+- [FIXED] DC loadflow after AC loadflow, had ambiguous results still present in net
+- [ADDED] add three columns: id_q_capability_curve_table, reactive_capability_curve, curve_style in gen and sgen
+- [ADDED] create q capability curve characteristics and diagnostics function
+- [ADDED] cim2pp converter - import reactive power capability curve data synchronousMachinesCim16.py
 - [ADDED] cim2pp converter - export parameter "governorSCD" in additional column in gen table
 - [FIXED] a problem with create_nxgraph
 - [ADDED] parameter slack_as_gen for `from_ucte()` converter (changed the default behavior)
 - [FIXED] cim2pp: the `ignore_errors` parameter was not respected in the `CimParser`
+- [FIXED] cim2pp: keep the busbar names and IDs for node breaker and bus branch models
+- [FIXED] cim2pp: extend cim data structure with missing parameters
+- [FIXED] cim2pp: better vector group assignment
+- [FIXED] cim2pp: refactor cim2pp test
+- [FIXED] cim2pp: manage crash when importing not supported dy profile
+- [ADDED] cim2pp: add tests for short circuit parameters
+- [FIXED] add vector_group to zero-sequence parameters in create_trafo()
+- [ADDED] ucte2pp: consider G&B values in impedances
+- [ADDED] cim2pp: add normalSections for shunts at CIM100 and removed old schema
+- [ADDED] cim2pp: add DCLine component to cim16 and cim100 datastructures
+- [FIXED] cim2pp: fix deprecation warning in cim_classes.py and fix bug in measurements
 
 [3.0.0] - 2025-03-06
 -------------------------------
-
 - [ADDED] cim2pp converter - extract measurements for load, sgen, gen, shunt, ext_grid, ward and xward elements
 - [ADDED] cim2pp converter - extract 'Terminal' and 'description' Analog fields in net.measurement
 - [FIXED] cim2pp converter - removed nan rows in net.measurement
@@ -65,6 +136,9 @@ Change Log
 - [FIXED] avoid duplicated keys in kwargs and pf_options in run_contingency()
 - [ADDED] improved lightsim2grid documentation including compatibility issues
 - [FIXED] cim2pp: set default xml encoding to None to avoid error after changing to lxml
+- [FIXED] Lightsim2grid version
+- [FIXED] geopandas version
+- [FIXED] scipy version
 - [FIXED] PandaModels OPF with 'bus_dc' key errors
 - [FIXED] julia tests
 - [FIXED] copy array element to standard python scalar
