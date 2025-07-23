@@ -1786,15 +1786,16 @@ def create_pp_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
                 z_q = 0
                 for cc_p, ee_p, cc_q, ee_q in zip(("aP", "bP", "cP"), ("kpu0", "kpu1", "kpu"),
                                       ("aQ", "bQ", "cQ"), ("kqu0", "kqu1", "kqu")):
-                    c_p = ga(load_type, cc_p)
-                    e_p = ga(load_type, ee_p)
+                    
+                    c_p = load_type.GetAttribute(cc_p)
+                    e_p = load_type.GetAttribute(ee_p)
                     if e_p == 1:
                         i_p += 100 * c_p
                     elif e_p == 2:
                         z_p += 100 * c_p
 
-                    c_q = ga(load_type, cc_q)
-                    e_q = ga(load_type, ee_q)
+                    c_q = load_type.GetAttribute(cc_q)
+                    e_q = load_type.GetAttribute(ee_q)
                     if e_q == 1:
                         i_q += 100 * c_q
                     elif e_q == 2:
