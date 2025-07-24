@@ -118,9 +118,9 @@ diff_df_branch = compare_sc_results(net, os.path.join(result_files_path, excel_f
 
 ## sgen
 #net_name = "1_four_bus_radial_grid_sgen"
-net_name = "2_five_bus_radial_grid_yyn_sgen"
-net_name = "3_five_bus_meshed_grid_ynyn_sgen"
-#net_name = "4_twenty_bus_radial_grid_dyn_sgen"
+# net_name = "2_five_bus_radial_grid_yyn_sgen"
+# net_name = "3_five_bus_meshed_grid_ynyn_sgen"
+net_name = "4_twenty_bus_radial_grid_yyn_sgen"
 result_files_path = os.path.join(pp_dir, 'test', 'shortcircuit', 'sce_tests', 'sc_result_comparison')
 
 net = load_test_case(net_name)
@@ -138,7 +138,7 @@ branch = True
 case = 'max'
 r_fault_ohm = 0
 x_fault_ohm = 0
-fault_location = 2
+fault_location = 18
 
 calc_sc(
       net, fault=fault, case=case, branch_results=branch, ip=False,
@@ -172,7 +172,7 @@ diff_df_branch = compare_sc_results(
 # net_name = '1_four_bus_radial_grid_sgen_act'
 # net_name = "2_five_bus_radial_grid_ynyn_sgen_act"
 # net_name = "3_five_bus_meshed_grid_yyn_sgen_act"
-net_name = "4_twenty_bus_radial_grid_dyn_sgen_act"
+net_name = "4_twenty_bus_radial_grid_ynyn_sgen_act"
 
 result_files_path = os.path.join(pp_dir, 'test', 'shortcircuit', 'sce_tests', 'sc_result_comparison')
 
@@ -189,7 +189,7 @@ branch = True
 case = 'max'
 r_fault_ohm = 0
 x_fault_ohm = 0
-fault_location = 8
+fault_location = 18
 
 calc_sc(
       net, fault=fault, case=case, branch_results=branch, ip=False,
@@ -217,3 +217,6 @@ excel_file = f"wp_2.2/{net_name}_pf_sc_results_{fault_location}_branch_sgen{sgen
 diff_df_branch = compare_sc_results(
     net, os.path.join(result_files_path, excel_file), branch=True, fault_location=fault_location
 )
+
+##
+
