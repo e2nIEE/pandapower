@@ -30,7 +30,7 @@ from pandapower.std_types import add_zero_impedance_parameters, std_type_exists,
 from pandapower.toolbox.grid_modification import set_isolated_areas_out_of_service, drop_inactive_elements, drop_buses
 from pandapower.topology import create_nxgraph
 from pandapower.topology import calc_distance_to_bus
-from pandapower.control.util.auxiliary import create_q_capability_curve_characteristics_object
+from pandapower.control.util.auxiliary import create_q_capability_characteristics_object
 from pandapower.control.util.characteristic import SplineCharacteristic
 
 import logging

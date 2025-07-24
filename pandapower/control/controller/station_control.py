@@ -88,7 +88,7 @@ class BinarySearchControl(Controller):
                  drop_same_existing_ctrl=False, matching_params=None, **kwargs):
         super().__init__(net, in_service=ctrl_in_service, order=order, level=level,
                          drop_same_existing_ctrl=drop_same_existing_ctrl,
-                         matching_params=matching_params, **kwargs)
+                         matching_params=matching_params)#, **kwargs)
         for key, value in kwargs.items(): #setting up kwargs arguments
             setattr(self, key, value)
         self.redistribute_values = None  # Values to save for redistributed gens
@@ -292,6 +292,7 @@ class BinarySearchControl(Controller):
             return self.input_element_index
         raise AttributeError(f"{self.__class__.__name__!r} has no attribute {name!r}")
 
+
     def initialize_control(self, net, converged = False):
         ###For V_ctrl, concatenate all gens to a single gen. Redistribution in finalize_control()###
         active_gens = (self.output_element_in_service if isinstance(self.output_element_in_service[0], bool) else
@@ -392,7 +393,7 @@ class BinarySearchControl(Controller):
             self.converged = True
             return self.converged
         # if only one output element is in service
-        if sum(self.output_element_in_service) <= 1 and self.counter_warning == False:
+        if sum(self.output_element_in_service) <= 1 and not getattr(self, 'counter_warning', False):
             self.counter_warning = True
             if len(self.output_element_in_service) <= 1:
                 logger.warning(
@@ -419,6 +420,31 @@ class BinarySearchControl(Controller):
                         p_input_values.append(read_from_net(net,self.input_element, input_index,
                                                         self.input_variable_p[counter], self.read_flag[counter]))
                 counter += 1
+        ###reading Q limits in case of skipped initialization###
+        if not hasattr(self, 'min_q_mvar') or not hasattr(self, 'max_q_mvar'):
+            self.max_q_mvar = []  # limits of output element Q
+            self.min_q_mvar = []
+            for output_index in self.output_element_index:
+                try:
+                    min_q = read_from_net(net, self.output_element, output_index, 'min_q_mvar', 'single_index')
+                    assert(np.isnan(min_q) == False) # error if nan
+                except Exception as e:
+                    logger.error(e)
+                    logger.warning(
+                        f'Output element {self.output_element} at index {output_index} is missing required attribute min_q_mvar'
+                        f' for Controller {self.index}. Using -20 as lower limit\n')
+                    min_q = -20
+                try:
+                    max_q = read_from_net(net, self.output_element, output_index, 'max_q_mvar', 'single_index')
+                    assert(np.isnan(max_q) == False)#error if nan
+                except Exception as e:
+                    logger.error(e)
+                    logger.warning(
+                        f'Output element {self.output_element} at index {output_index} is missing required attribute max_q_mvar'
+                        f' for Controller {self.index}. Using 20 as upper limit\n')
+                    max_q = 20
+                self.max_q_mvar.append(max(min_q, max_q)) #if min > max, switch
+                self.min_q_mvar.append(min(min_q, max_q))
 
         # read previously set values
         # compare old and new set values
@@ -486,7 +512,7 @@ class BinarySearchControl(Controller):
                 self.converged = np.all(np.abs(self.diff) < self.tol)
 
         ### check limits after convergence###
-        if self.converged and not self.overwrite_convergence:
+        if self.converged and not getattr(self, 'overwrite_convergence', False):
             if self.output_values_distribution == 'rel_V_pu':
                 vm_pu = read_from_net(net, "res_bus", self.bus_idx_dist, "vm_pu", 'auto')
                 v_max_pu = np.atleast_1d(self.v_max_pu)[self.output_element_in_service]
@@ -512,7 +538,7 @@ class BinarySearchControl(Controller):
                                            f'Possible exceedance of output element {self.output_element}'
                                f' {str(np.array(self.output_element_index))} limits\n')
 
-        if self.overwrite_convergence: ###overwrite convergence in case of droop controller
+        if getattr(self,'overwrite_convergence', False): ###overwrite convergence in case of droop controller
             self.overwrite_convergence = False
             return False
         else:
@@ -527,7 +553,7 @@ class BinarySearchControl(Controller):
         if not self.in_service: #redundant
             return
         ### Distribution warnings###
-        if self.output_distribution_values is not None: #catch warnings
+        if getattr(self, 'output_distribution_values', None) is not None: #catch warnings
             if (self.output_values_distribution == 'rel_P' or self.output_values_distribution == 'rel_rated_S' or
                     self.output_values_distribution == "max_Q"):
                 logger.warning(f'The inserted values for output distribution values {self.output_distribution_values} '
@@ -560,7 +586,7 @@ class BinarySearchControl(Controller):
                     self.v_max_pu = output_distribution_values[:, 2]
                 output_distribution_values_in_service = None
             else: output_distribution_values_in_service, self.output_distribution_values = None, None
-        elif self.output_distribution_values is None:
+        elif getattr(self, 'output_distribution_values', None) is None:
             if self.output_values_distribution == 'set_Q' or self.output_values_distribution == 'imported':
                 if self.output_values_distribution == 'set_Q':
                     logger.warning(f'Reactive Power Distribution method "set_Q" needs values given to output_distribution_values '
@@ -860,7 +886,7 @@ class BinarySearchControl(Controller):
                                           bus=net.gen.at[i, 'bus'],
                                           p_mw=net.gen.at[i, 'p_mw'],
                                           q_mvar=net.res_gen.at[i, 'q_mvar'],
-                                          in_service= np.atleast_1d(active_gens)[counter],
+                                          in_service= bool(np.atleast_1d(active_gens)[counter]),
                                           sn_mva=net.gen.at[i, 'sn_mva'] if 'sn_mva' in net.gen.columns and not isnan(
                                               net.gen.at[i, 'sn_mva']) else None,
                                           scaling=net.gen.at[
@@ -959,7 +985,7 @@ class DroopControl(Controller):
                  input_element_q_meas:str = None, input_variable_q_meas = None, input_element_index_q_meas = None, tol=1e-6,
                  order=-1, level=0, drop_same_existing_ctrl=False, matching_params=None, **kwargs):
         super().__init__(net, in_service=in_service, order=order, level=level, drop_same_existing_ctrl=drop_same_existing_ctrl,
-                         matching_params=matching_params, **kwargs)
+                         matching_params=matching_params)#, **kwargs)
         # TODO: implement maximum and minimum of droop control
         for key, value in kwargs.items(): #setting up kwargs arguments
             setattr(self, key, value)
