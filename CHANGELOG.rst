@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [ADDED] description for `slack` argument in docstring of create_gen function
 - [REMOVED] kwargs in basic controller class
 - [ADDED] name attribute in basic controller class
 - [FIXED] remove print statement from results_bus.py

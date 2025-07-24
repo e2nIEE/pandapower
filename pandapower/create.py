@@ -1560,6 +1560,8 @@ def create_gen(
 
         **type** (string, None) - type variable to classify generators
 
+        **slack** (bool, False) - flag that sets the generator as slack if True
+
         **reactive_capability_curve** (bool, False) - True if both the id_q_capability_characteristic and the \
             curve style are present in the generator
 
