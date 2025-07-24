@@ -88,9 +88,7 @@ class BinarySearchControl(Controller):
                  drop_same_existing_ctrl=False, matching_params=None, **kwargs):
         super().__init__(net, in_service=ctrl_in_service, order=order, level=level,
                          drop_same_existing_ctrl=drop_same_existing_ctrl,
-                         matching_params=matching_params)#, **kwargs)
-        for key, value in kwargs.items(): #setting up kwargs arguments
-            setattr(self, key, value)
+                         matching_params=matching_params)
         self.redistribute_values = None  # Values to save for redistributed gens
         self.counter_warning = False #only one message that only one active output element
         self.in_service = ctrl_in_service
@@ -130,6 +128,9 @@ class BinarySearchControl(Controller):
         self.overwrite_convergence = False #for droop
         self.write_flag, self.output_variable = _detect_read_write_flag(net, output_element, output_element_index,
                                                                         output_variable)
+        # write kwargs in self
+        for key, value in kwargs.items():
+            setattr(self, key, value)
         self.read_flag = [] #type of read value
         self.input_variable = [] #unit of controlled element Q
         self.input_variable_p = [] #unit of controlled element P
@@ -985,7 +986,7 @@ class DroopControl(Controller):
                  input_element_q_meas:str = None, input_variable_q_meas = None, input_element_index_q_meas = None, tol=1e-6,
                  order=-1, level=0, drop_same_existing_ctrl=False, matching_params=None, **kwargs):
         super().__init__(net, in_service=in_service, order=order, level=level, drop_same_existing_ctrl=drop_same_existing_ctrl,
-                         matching_params=matching_params)#, **kwargs)#todo
+                         matching_params=matching_params)
         # TODO: implement maximum and minimum of droop control
         for key, value in kwargs.items(): #setting up kwargs arguments
             setattr(self, key, value)
