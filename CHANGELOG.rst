@@ -3,6 +3,10 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [FIXED] pf2pp: dc-lines geodata error is fixed, outdated line_dc_geodata field replaced by newer geo-column
+- [FIXED] pf2pp: zip load import error fixed by replacing unknown ga() function with actual GetAttribute-function
+- [FIXED] pf2pp: Ipython tutorial converter_powerfactory import statements (pf) corrected by directly importing powerfactory as pf
+- [ADDED] pf2pp: Ipython tutorial converter_powerfactory now has additional text description and uses a standard 14-bus network example network
 - [REMOVED] kwargs in basic controller class
 - [ADDED] name attribute in basic controller class
 - [FIXED] remove print statement from results_bus.py
@@ -24,6 +28,7 @@ Change Log
 - [FIXED] convert_format fix check when net version is below format version
 - [FIXED] json io test with new network structure dict
 - [FIXED] DC OPF bug if verbose = True
+- [CHANGED] cim2pp conversion of SVC parameter active power: p is set to 0, instead of using the p-value from the SV-profile
 
 [3.1.2] - 2025-06-16
 -------------------------------
