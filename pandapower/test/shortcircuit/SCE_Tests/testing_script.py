@@ -1,3 +1,4 @@
+import pandapower as pp
 import pandapower.shortcircuit as sc
 from pandapower.shortcircuit.calc_sc import calc_sc
 import numpy as np
@@ -29,6 +30,6 @@ net.sgen.loc[net.sgen.bus == 2, 'in_service'] = False
 net.sgen.loc[net.sgen.bus == 3, 'in_service'] = False
 net.line["c0_nf_per_km"] = 0
 net.line["c_nf_per_km"] = 0
-calc_sc(net, fault="LG", case="max", bus=0, return_all_currents=False, branch_results=True, ip=False, r_fault_ohm=0, x_fault_ohm=0, lv_tol_percent=6)
+calc_sc(net, fault="LG", case="max", bus=1, return_all_currents=False, branch_results=True, ip=False, r_fault_ohm=0, x_fault_ohm=0, lv_tol_percent=6)
 print(net.res_bus_sc)
 print(net.res_line_sc)
