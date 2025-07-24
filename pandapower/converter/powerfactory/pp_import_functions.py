@@ -9,6 +9,9 @@ import geojson
 import networkx as nx
 import numpy as np
 from pandas import DataFrame
+from pandas import concat
+
+
 
 from pandapower.auxiliary import ADict, get_free_id
 from pandapower.control import ContinuousTapControl, DiscreteTapControl, _create_trafo_characteristics, \
@@ -26,9 +29,9 @@ from pandapower.std_types import add_zero_impedance_parameters, std_type_exists,
     load_std_type
 from pandapower.toolbox.grid_modification import set_isolated_areas_out_of_service, drop_inactive_elements, drop_buses
 from pandapower.topology import create_nxgraph
-from pandapower.control.util.auxiliary import create_q_capability_characteristics_object
+from pandapower.topology import calc_distance_to_bus
+from pandapower.control.util.auxiliary import create_q_capability_curve_characteristics_object
 from pandapower.control.util.characteristic import SplineCharacteristic
-
 
 import logging
 
@@ -296,7 +299,7 @@ def from_pf(
     if export_controller:
         n = 0
         for n, stactrl in enumerate(dict_net['ElmStactrl'], 1):
-            create_stactrl(net=net, item=stactrl)
+            create_stactrl(net=net, item=stactrl, bus_dict_Elm_Term = dict_net['ElmTerm'])
         if n > 0: logger.info('imported %d station controllers' % n)
 
     remove_folder_of_std_types(net)
@@ -1767,24 +1770,43 @@ def create_pp_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
                           dict_net=dict_net, variables=('p_mw', 'q_mvar')))
         load_type = item.typ_id
         if load_type is None:
-            params["const_z_percent"] = 100
+            params["const_z_p_percent"] = 100
         else:
-            if (load_type.kpu != load_type.kqu or load_type.kpu0 != load_type.kqu0 or load_type.aP != load_type.aQ or
-                    load_type.bP != load_type.bQ or load_type.cP != load_type.cQ):
-                logger.warning(f"Load {item.loc_name} ({load_class}) has unsupported voltage dependency configuration!"
-                               f"Only the P parameters will be used to specify the voltage dependency of this load")
-                # todo implement load voltage dependency in this case using CharacteristicControl
-            i = 0
-            z = 0
-            for cc, ee in zip(("aP", "bP", "cP"), ("kpu0", "kpu1", "kpu")):
-                c = load_type.GetAttribute(cc)
-                e = load_type.GetAttribute(ee)
-                if e == 1:
-                    i += 100 * c
-                elif e == 2:
-                    z += 100 * c
-            params["const_i_percent"] = i
-            params["const_z_percent"] = z
+            pf_params = [load_type.kpu0,
+                         load_type.kpu1,
+                         load_type.kpu,
+                         load_type.kqu0,
+                         load_type.kqu1,
+                         load_type.kqu]
+            if (pf_params[:3]!=pf_params[3:]) or \
+                (pf_params[:3]!=[0,1,2]) or \
+                (pf_params[3:]!=[0,1,2]):
+                raise UserWarning(f"Load {item.loc_name} ({load_class}) unsupported voltage dependency configuration")
+            else:
+                i_p = 0
+                z_p = 0
+                i_q = 0
+                z_q = 0
+                for cc_p, ee_p, cc_q, ee_q in zip(("aP", "bP", "cP"), ("kpu0", "kpu1", "kpu"),
+                                      ("aQ", "bQ", "cQ"), ("kqu0", "kqu1", "kqu")):
+                    c_p = ga(load_type, cc_p)
+                    e_p = ga(load_type, ee_p)
+                    if e_p == 1:
+                        i_p += 100 * c_p
+                    elif e_p == 2:
+                        z_p += 100 * c_p
+
+                    c_q = ga(load_type, cc_q)
+                    e_q = ga(load_type, ee_q)
+                    if e_q == 1:
+                        i_q += 100 * c_q
+                    elif e_q == 2:
+                        z_q += 100 * c_q
+
+                params["const_i_p_percent"] = i_p
+                params["const_z_p_percent"] = z_p
+                params["const_i_q_percent"] = i_q
+                params["const_z_q_percent"] = z_q
 
     ### for now - don't import ElmLodlvp
     elif load_class == 'ElmLodlvp':
@@ -2581,6 +2603,7 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
     else:
         logger.info("Create Trafo 3ph")
         if use_tap_table == 1:
+
             id_characteristic_table, tap_changer_type, tap_dependency_table, tap_side = \
                 (create_trafo_characteristics_from_measurement_protocol(item, net, pf_type))
         else:
@@ -3805,7 +3828,11 @@ def create_vsc(net, item):
         net.res_vsc.loc[vid_2, ["pf_p_mw", "pf_q_mvar", "pf_p_dc_mw"]] = np.nan
 
 
-def create_stactrl(net, item):
+def create_stactrl(net, item, **kwargs):
+    if 'bus_dict_Elm_Term' in kwargs:
+        bus_dict_stactrl = kwargs.get('bus_dict_Elm_Term')
+    else:
+        bus_dict_stactrl = None
     stactrl_in_service = True
     if item.outserv:
         logger.info(f"Station controller {item.loc_name} is out of service")
@@ -3933,10 +3960,6 @@ def create_stactrl(net, item):
     phase = item.i_phase
     if phase != 0:
         raise NotImplementedError(f"{item}: phase {item.i_phase=} not implemented")
-
-    # Controlled Node: User selection vs Automatic selection  # User selection
-    if item.selBus != 0:
-        raise NotImplementedError(f"{item}: controlled node selection {item.selBus=} not implemented")
 
     variable = None
     res_element_table = None
@@ -4073,13 +4096,56 @@ def create_stactrl(net, item):
         return
 
     if control_mode == 0:  # VOLTAGE CONTROL
-        controlled_node = item.rembar
-        bus = bus_dict[controlled_node]  # controlled node
-
-        if item.uset_mode == 0:  # Station controller
-            v_set_point_pu = item.usetp
+        # Controlled Node: User selection vs Automatic selection  # User selection
+        if item.selBus == 0:
+            controlled_node = item.rembar
+            bus = bus_dict[controlled_node]  # controlled node
+            if item.uset_mode == 0:  # Station controller
+                v_set_point_pu = item.usetp
+            else:
+                v_set_point_pu = item.cpCtrlNode.vtarget  # Bus target voltage, not always the same as item.rembar
+        elif item.selBus == 1: #automatic selection
+            target_buses = net.bus[net.bus.vn_kv >= item.selAutoUn].index.tolist()  # All buses fulfilling the criteria
+            ref_buses = net.sgen.loc[gen_element_index, 'bus'].tolist() if gen_element == 'sgen' \
+                else net.gen.loc[gen_element_index, 'bus'].tolist()  # the start buses
+            ref_buses = np.unique(ref_buses)  # if machines at one bus
+            distances_list = []
+            if len(ref_buses) != 1:  # control group for multiple generators
+                for i in ref_buses:  # get distances of bus to possible buses
+                    if len(net.ext_grid.bus) > 1:  # multiple external nets dont work
+                        raise UserWarning(
+                            f'Multiple External Grids for control group in controller {len(net.controller)+1} with modus'
+                            f' V_ctrl, auto-selection of controlled busbar not possible, aborting\n') #todo what about multiple nets
+                    g = create_nxgraph(net, respect_switches=True)  # create graph for connecting buses
+                    distances_list.append(nx.shortest_path(g, source=i, target=int(
+                        net.ext_grid.bus.values)))  # all buses between generators and external net
+                common = set(distances_list[0]).intersection(*distances_list[1:])  # all buses in same lists
+                control_group_bus = next((x for x in distances_list[0] if x in common), None)  # closest bus to gens
+            else:
+                control_group_bus = ref_buses[0]
+            distances = calc_distance_to_bus(net, control_group_bus,
+                                                 weight=None)  # criteria is the distance in the network, not in km
+            distances_list = [distances.loc[target_buses]]
+            distances_filtered = concat(distances_list, axis=0, ignore_index=False)
+            if distances_filtered.empty:  # no possible busbar -> Bus next to gen, in PF using gen target vm_pu
+                bus = net.sgen.at[
+                    np.atleast_1d(gen_element_index)[0], 'bus'] if gen_element == 'sgen' \
+                    else net.gen.at[
+                    np.atleast_1d(gen_element_index)[0], 'bus']  # here bus target v cause no gen target vm_pu
+            else:
+                bus = distances_filtered.idxmin()  # minimal distances index
+                min_distance = np.atleast_1d(distances_filtered).min()  # minimal distance
+                distances_filtered = distances_filtered.drop(bus)  # check if multiple buses within minimal distance
+                if min_distance in distances_filtered.values:
+                    raise UserWarning  # what todo when multiple buses within minimal distance
+            try:
+                v_set_point_pu = bus_dict_stactrl[bus].vtarget
+            except KeyError:
+                logger.error(f"The automatically selected bus {bus} in Controller {len(net.controller)+1} with modus V_ctrl"
+                             f" has no target voltage, trying target voltage 1 pu\n")
+                v_set_point_pu = 1
         else:
-            v_set_point_pu = item.cpCtrlNode.vtarget  # Bus target voltage, not always the same as item.rembar
+            raise NotImplementedError(f"{item}: controlled node selection {item.selBus} not implemented")
 
         if item.i_droop:  # Enable Droop
             bsc = BinarySearchControl(net, ctrl_in_service=stactrl_in_service,
@@ -4658,7 +4724,7 @@ def split_all_lines(net, lvp_dict):
             if p >= 0 or True:
                 # TODO: set const_i_percent to 100 after the pandapower bug is fixed
                 new_load = create_load(net, new_bus, name=load_item.loc_name, p_mw=p, q_mvar=q,
-                                       const_i_percent=0)
+                                       const_i_p_percent=0, const_i_q_percent=0)
                 logger.debug('created load %s' % new_load)
                 net.res_load.at[new_load, 'pf_p'] = p
                 net.res_load.at[new_load, 'pf_q'] = q

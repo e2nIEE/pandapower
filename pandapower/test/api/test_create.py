@@ -1463,6 +1463,22 @@ def test_create_loads_raise_errorexcept():
             index=l,
         )
 
+def test_const_percent_values_deprecated_handling():
+    # This test checks that passing const_z_percent and const_i_percent to create_load
+    # sets all four percent columns and triggers the deprecation warning.
+    net = create_empty_network()
+    b1 = create_bus(net, 20)
+    with pytest.warns(DeprecationWarning, match="const_z_percent and const_i_percent will be deprecated"):
+        idx = create_load(
+            net, b1, p_mw=1.0, q_mvar=0.5,
+            const_z_percent=11, const_i_percent=22
+        )
+    # Check that the values are set correctly
+    load_idx = net.load.loc[idx]
+    assert load_idx.const_z_p_percent == 11
+    assert load_idx.const_z_q_percent == 11
+    assert load_idx.const_i_p_percent == 22
+    assert load_idx.const_i_q_percent == 22
 
 def test_create_storages():
     net = create_empty_network()

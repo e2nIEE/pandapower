@@ -53,7 +53,8 @@ def to_ppc(net, calculate_voltage_angles=True, trafo_model="t", switch_rx_ratio=
             perfomed. If the check finds unsupplied buses, they are set out of service in the ppc
 
         **voltage_depend_loads** (bool, False) - consideration of voltage-dependent loads.
-        If False, net.load.const_z_percent and net.load.const_i_percent are not considered, i.e.
+        If False, net.load.const_z_p_percent, net.load.const_i_p_percent, 
+        net.load.const_z_q_percent and net.load.const_i_q_percentare not considered, i.e.
         net.load.p_mw and net.load.q_mvar are considered as constant-power loads.
 
         **init** (str, "results") - initialization method of the converter
@@ -108,8 +109,10 @@ def to_ppc(net, calculate_voltage_angles=True, trafo_model="t", switch_rx_ratio=
                      recycle=None, voltage_depend_loads=voltage_depend_loads)
 
     if net["_options"]["voltage_depend_loads"] and not (
-            allclose(net.load.const_z_percent.values, 0) and
-            allclose(net.load.const_i_percent.values, 0)):
+            allclose(net.load.const_z_p_percent.values, 0) and
+            allclose(net.load.const_i_p_percent.values, 0) and
+            allclose(net.load.const_z_q_percent.values, 0) and
+            allclose(net.load.const_i_q_percent.values, 0)):
         logger.error("to_ppc() does not consider voltage depend loads. The z and i parts of "
                      "voltage depend loads are set to additional columns 13 and 14 but the p/q part"
                      " is still unchanged.")

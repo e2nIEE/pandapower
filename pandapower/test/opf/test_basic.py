@@ -490,7 +490,7 @@ def test_dcopf_poly(simple_opf_test_net):
     net = simple_opf_test_net
     create_poly_cost(net, 0, "gen", cp1_eur_per_mw=100)
     # run OPF
-    rundcopp(net)
+    rundcopp(net, verbose=False)
 
     # check and assert result
     logger.debug("test_simplest_voltage")
@@ -499,6 +499,18 @@ def test_dcopf_poly(simple_opf_test_net):
     logger.debug("res_bus.vm_pu: \n%s" % net.res_bus.vm_pu)
     assert abs(100 * net.res_gen.p_mw.values - net.res_cost) < 1e-3
 
+def test_dcopf_poly_verbose_true(simple_opf_test_net):
+    net = simple_opf_test_net
+    create_poly_cost(net, 0, "gen", cp1_eur_per_mw=100)
+    # run OPF
+    rundcopp(net, verbose=True)
+
+    # check and assert result
+    logger.debug("test_simplest_voltage")
+    logger.debug("res_gen:\n%s" % net.res_gen)
+    logger.debug("res_ext_grid:\n%s" % net.res_ext_grid)
+    logger.debug("res_bus.vm_pu: \n%s" % net.res_bus.vm_pu)
+    assert abs(100 * net.res_gen.p_mw.values - net.res_cost) < 1e-3
 
 def test_opf_poly(simple_opf_test_net):
     net = simple_opf_test_net

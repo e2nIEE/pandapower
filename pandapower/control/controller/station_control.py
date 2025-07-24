@@ -1,6 +1,7 @@
 import numbers
 from cmath import isnan
 import numpy as np
+from numba.core.ir import Raise
 from numpy.ma.extras import atleast_1d
 from scipy.optimize import minimize
 from pandapower import create_gen
@@ -10,6 +11,7 @@ from pandas import concat
 from pandapower.control.basic_controller import Controller
 from pandapower.auxiliary import _detect_read_write_flag, read_from_net, write_to_net
 import pandapower.topology as top
+import networkx as nx
 try:
     import pandaplan.core.pplog as logging
 except ImportError:
@@ -296,7 +298,6 @@ class BinarySearchControl(Controller):
                         np.atleast_1d(self.output_element_in_service)[:, 0].tolist()) #ugly
         if (self.modus == 'V_ctrl' and self.output_element == 'gen' and
                         len(np.atleast_1d(self.output_element_index)[active_gens]) >= 2):
-            logger.info(f'concatenated multiple gens to single gen in Voltage Controller {self.index}')
             fused_bus_by_switch = False
             fused_bus_index = []
             for i in net.switch.index: #check if ideal switch between buses with controlled gens
@@ -314,6 +315,7 @@ class BinarySearchControl(Controller):
                                  np.atleast_1d(net.gen.loc[np.atleast_1d(self.output_element_index)[active_gens], 'bus']) ==
                                  net.switch.at[i, 'element'])[0][0]]]])#append buses in groups with indexes and gen index
             if not net.gen.loc[np.atleast_1d(self.output_element_index)[active_gens], "bus"].is_unique or fused_bus_by_switch:
+                logger.info(f'concatenated multiple gens to single gen in Voltage Controller {self.index}')
                 bus_series = net.gen.loc[np.atleast_1d(self.output_element_index)[active_gens], "bus"]
                 #non_unique_indices = bus_series[bus_series.duplicated(keep=False)].index.tolist()
                 duplicated_buses = bus_series[bus_series.duplicated(keep=False)]#check if buses of gens are unique
@@ -795,12 +797,22 @@ class BinarySearchControl(Controller):
         target_buses = net.bus[net.bus.vn_kv >= self.set_point].index.tolist()  # All buses fulfilling the criteria
         ref_buses = net.sgen.loc[self.output_element_index, 'bus'].tolist() if self.output_element == 'sgen' \
             else net.gen.loc[self.output_element_index, 'bus'].tolist() # the start buses
-        ref_buses = np.unique(ref_buses)  # see if machines at one bus
+        ref_buses = np.unique(ref_buses)  #if machines at one bus
         distances_list = []
-        for i in ref_buses:  # get distances of bus to possible buses
-            distances = top.calc_distance_to_bus(net, i,
-                                                 weight=None)  # criteria is the distance in the network, not in km
-            distances_list.append(distances.loc[target_buses])
+        if len(ref_buses) != 1:  # control group for multiple generators
+            for i in ref_buses:  # get distances of bus to possible buses
+                if len(net.ext_grid.bus) > 1: # multiple external nets dont work
+                    raise UserWarning(
+                        f'Multiple External Grids for control group in controller {self.index}, auto-selection'
+                        f'of controlled busbar not possible, aborting\n')
+                g = top.create_nxgraph(net, respect_switches=True) #create graph for connecting buses
+                distances_list.append(nx.shortest_path(g, source=i, target=int(net.ext_grid.bus.values)))#all buses between generators and external net
+            common = set(distances_list[0]).intersection(*distances_list[1:]) #all buses in same lists
+            control_group_bus = next((x for x in distances_list[0] if x in common), None) #closest bus to gens
+        else:
+            control_group_bus = ref_buses[0]
+        distances = top.calc_distance_to_bus(net, control_group_bus, weight=None)  # criteria is the distance in the network, not in km
+        distances_list = [distances.loc[target_buses]]
         distances_filtered = concat(distances_list, axis=0, ignore_index=False)
         if distances_filtered.empty:  # no possible busbar -> Bus next to gen, in PF using gen target vm_pu
             self.input_element_index = net.sgen.at[np.atleast_1d(self.output_element_index)[0], 'bus'] if self.output_element == 'sgen'\
@@ -819,6 +831,7 @@ class BinarySearchControl(Controller):
             self.set_point = 1
 
     def finalize_control(self, net):
+        from pandapower import runpp  # to avoid circular imports, import here
         ###redistribute the gens to multiple gens if they were concatenated in initialize_control()
         if getattr(self, "redistribute_values", None) is not None:
             logger.info(f'Redistributed gens to sgens in Voltage controller {self.index}\n')
@@ -891,6 +904,7 @@ class BinarySearchControl(Controller):
             self.max_q_mvar = self.redistribute_values[3]
             self.redistribute_values = None #to avoid being stuck in loop
             self._binary_search_control_step(net)
+            runpp(net)
 
 class DroopControl(Controller):
     """
