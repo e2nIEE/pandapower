@@ -86,7 +86,6 @@ class BinarySearchControl(Controller):
         self.overwrite_covergence = False
         self.write_flag, self.output_variable = _detect_read_write_flag(net, output_element, output_element_index,
                                                                         output_variable)
-        
         # write kwargs in self
         for key, value in kwargs.items():
             setattr(self, key, value)
@@ -238,8 +237,11 @@ class DroopControl(Controller):
                  **kwargs):
         super().__init__(net, in_service=in_service, order=order, level=level,
                          drop_same_existing_ctrl=drop_same_existing_ctrl,
-                         matching_params=matching_params, **kwargs)
+                         matching_params=matching_params)
         # TODO: implement maximum and minimum of droop control
+        # write kwargs in self
+        for key, value in kwargs.items():
+            setattr(self, key, value)
         self.q_droop_mvar = q_droop_mvar
         self.bus_idx = bus_idx
         self.vm_pu = None
