@@ -10,7 +10,7 @@ testfiles_path = os.path.join(pp_dir, 'test', 'shortcircuit', 'sce_tests')
 class PFShortCircuitAnalysis:
     def __init__(self, app, proj_name, fault_type='LLL', calc_mode='max',
                  fault_impedance_rf=0.0, fault_impedance_xf=0.0,
-                 lv_tol_percent=10, fault_location_index=None, activate_sgens_at_bus=None):
+                 lv_tol_percent=10, fault_location_index=None, activate_sgens_at_bus=None, activate_gens_at_bus=None):
         """
                 Parameters:
                 - app: powerfactory.Application
@@ -32,6 +32,7 @@ class PFShortCircuitAnalysis:
         self.lv_tol_percent = lv_tol_percent
         self.fault_location_index = fault_location_index
         self.activate_sgens_at_bus = activate_sgens_at_bus
+        self.activate_gens_at_bus = activate_gens_at_bus
         self.pf_results_bus_sc = None
         self.pf_results_branch_sc = None
 
@@ -61,12 +62,11 @@ class PFShortCircuitAnalysis:
         fault_impedance_xf = self.fault_impedance_xf
         lv_tol_percent = self.lv_tol_percent
         fault_location_index = self.fault_location_index
-        activate_sgens = self.activate_sgens_at_bus
 
+        self.activate_elements()
         res = run_short_circuit(app=app, fault_type=fault_type, calc_mode=calc_mode,
                                 fault_impedance_rf=fault_impedance_rf, fault_impedance_xf=fault_impedance_xf,
-                                lv_tol_percent=lv_tol_percent, fault_location_index=fault_location_index,
-                                activate_sgen_at_bus=activate_sgens)
+                                lv_tol_percent=lv_tol_percent, fault_location_index=fault_location_index)
         if res == 1:
             raise UserWarning("short circuit results could not be calculated in powerfactory")
 
@@ -129,12 +129,11 @@ class PFShortCircuitAnalysis:
         fault_impedance_xf = self.fault_impedance_xf
         lv_tol_percent = self.lv_tol_percent
         fault_location_index = self.fault_location_index
-        activate_sgens = self.activate_sgens_at_bus
 
+        self.activate_elements()
         res = run_short_circuit(app=app, fault_type=fault_type, calc_mode=calc_mode,
                                 fault_impedance_rf=fault_impedance_rf, fault_impedance_xf=fault_impedance_xf,
-                                lv_tol_percent=lv_tol_percent, fault_location_index=fault_location_index,
-                                activate_sgen_at_bus=activate_sgens)
+                                lv_tol_percent=lv_tol_percent, fault_location_index=fault_location_index)
         if res == 1:
             raise UserWarning("short circuit results could not be calculated in powerfactory")
 
@@ -244,3 +243,39 @@ class PFShortCircuitAnalysis:
         #     sheet_name_base = f"{sheet_name_base}_bus_{fault_location}"
         sheet_name_base = sheet_name_base[:25]
         return sheet_name_base
+
+    def activate_elements(self):
+        app = self.app
+        switches = app.GetCalcRelevantObjects('*.StaSwitch')
+
+        activate_elements_at_bus = {
+            '*.ElmGenstat': self.activate_sgens_at_bus,
+            '*.ElmSym': self.activate_gens_at_bus,
+        }
+
+        for element_type, activate_at_bus in activate_elements_at_bus.items():
+            elements = app.GetCalcRelevantObjects(element_type)
+            if activate_at_bus is None or activate_at_bus == [None]:
+                for elm in elements:
+                    elm.outserv = 1
+                continue
+
+            if isinstance(activate_at_bus, int):
+                activate_at_bus = [activate_at_bus]
+
+            for elm in elements:
+                bus = elm.bus1.GetParent()
+                if not bus:
+                    continue
+                bus_name = bus.loc_name[4:] if '_' in bus.loc_name else bus.loc_name
+                if int(bus_name) in activate_at_bus:
+                    elm.outserv = 0
+                    for sw in switches:
+                        sw_sta_cubic = sw.GetParent()
+                        sw_bus = sw_sta_cubic.GetParent()
+                        if sw_sta_cubic.obj_id == elm and sw_bus == bus:
+                            sw.on_off = 1
+                            break
+                else:
+                    elm.outserv = 1
+
