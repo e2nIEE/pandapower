@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [ADDED] description for `slack` argument in docstring of create_gen function
 - [FIXED] pf2pp: dc-lines geodata error is fixed, outdated line_dc_geodata field replaced by newer geo-column
 - [FIXED] pf2pp: zip load import error fixed by replacing unknown ga() function with actual GetAttribute-function
 - [FIXED] pf2pp: Ipython tutorial converter_powerfactory import statements (pf) corrected by directly importing powerfactory as pf

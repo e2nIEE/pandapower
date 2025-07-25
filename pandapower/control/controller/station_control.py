@@ -988,7 +988,8 @@ class DroopControl(Controller):
         super().__init__(net, in_service=in_service, order=order, level=level, drop_same_existing_ctrl=drop_same_existing_ctrl,
                          matching_params=matching_params)
         # TODO: implement maximum and minimum of droop control
-        for key, value in kwargs.items(): #setting up kwargs arguments
+        # write kwargs in self
+        for key, value in kwargs.items():
             setattr(self, key, value)
         self.q_droop_mvar = q_droop_mvar #droop in Q_ctrl
         self.input_element_q_meas = input_element_q_meas
