@@ -70,12 +70,19 @@ def compare_sc_results(net, excel_file, branch=False, fault_location=None):
                         column_key = check_pattern(column)
                         if column_key not in tolerances:
                             continue
+                        if branch and column_key == "ikss_ka" and column == "ikss_ka":
+                            continue
                         try:
                             pp_val = result_df.loc[result_df[element_id_column] == element, column].values[0]
                             pf_val = \
                             modified_pf_results.loc[modified_pf_results[element_id_column] == element, column].values[0]
 
-                            diff = pp_val - pf_val
+                            if column_key.endswith("degree"):
+                                diff = (pp_val - pf_val + 180) % 360 - 180
+                            else:
+                                diff = pp_val - pf_val
+
+                            # diff = pp_val - pf_val
                             diff_perc = 1 - pp_val / pf_val if pf_val != 0 else np.nan
                             diff_perc = diff_perc * 100
                             tol = tolerances[column_key]
@@ -209,5 +216,5 @@ diff_df, diff_df_branch = get_result_dfs(net_name, fault_location)
 
 ## overview for all grids
 names = net_names_gen
-fault_location = 0
+fault_location = [0]
 df_summary = generate_summary_table(names, fault_location)
