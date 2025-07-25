@@ -158,12 +158,12 @@ else:
         sgen_loc = '471419'
 
 # sgen bus
-excel_file = f"wp_2.2/{net_name}_pf_sc_results_{fault_location}_bus_sgen{sgen_loc}.xlsx"
+excel_file = f"wp_2.2_2.4/{net_name}_pf_sc_results_{fault_location}_bus_sgen{sgen_loc}.xlsx"
 diff_df = compare_sc_results(net, os.path.join(result_files_path, excel_file), fault_location=fault_location)
 diff_df_nom = diff_df.copy()
 
 # sgen branch
-excel_file = f"wp_2.2/{net_name}_pf_sc_results_{fault_location}_branch_sgen{sgen_loc}.xlsx"
+excel_file = f"wp_2.2_2.4/{net_name}_pf_sc_results_{fault_location}_branch_sgen{sgen_loc}.xlsx"
 diff_df_branch = compare_sc_results(
     net, os.path.join(result_files_path, excel_file), branch=True, fault_location=fault_location
 )
@@ -209,11 +209,11 @@ else:
         sgen_loc = '471419'
 
 # sgen bus
-excel_file = f"wp_2.2/{net_name}_pf_sc_results_{fault_location}_bus_sgen{sgen_loc}.xlsx"
+excel_file = f"wp_2.2_2.4/{net_name}_pf_sc_results_{fault_location}_bus_sgen{sgen_loc}.xlsx"
 diff_df = compare_sc_results(net, os.path.join(result_files_path, excel_file), fault_location=fault_location)
 
 # sgen branch
-excel_file = f"wp_2.2/{net_name}_pf_sc_results_{fault_location}_branch_sgen{sgen_loc}.xlsx"
+excel_file = f"wp_2.2_2.4/{net_name}_pf_sc_results_{fault_location}_branch_sgen{sgen_loc}.xlsx"
 diff_df_branch = compare_sc_results(
     net, os.path.join(result_files_path, excel_file), branch=True, fault_location=fault_location
 )
