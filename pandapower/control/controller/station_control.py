@@ -86,7 +86,6 @@ class BinarySearchControl(Controller):
         self.overwrite_covergence = False
         self.write_flag, self.output_variable = _detect_read_write_flag(net, output_element, output_element_index,
                                                                         output_variable)
-        
         # write kwargs in self
         for key, value in kwargs.items():
             setattr(self, key, value)
