@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import os
-
+from tqdm import tqdm
 import pandas as pd
 import numpy as np
 from pandapower import pp_dir
-
 from pandapower.shortcircuit.calc_sc import calc_sc
 from pandapower.test.shortcircuit.sce_tests.test_all_faults_and_cases import (
     load_test_case,
@@ -23,7 +22,7 @@ def compare_sc_results(net, excel_file, branch=False, fault_location=None):
                   "vm_pu": 1e-4, "va_degree": 1e-2, "p_mw": 1e-4, "q_mvar": 1e-4, "ikss_degree": 1e-3}
 
     faults = ["LLL","LL", "LG", "LLG"]
-    cases = ["max"]
+    cases = ["min", "max"]
     fault_ohm_values = [(0.0, 0.0), (5.0, 5.0)]
 
     all_differences = []
@@ -102,121 +101,113 @@ def compare_sc_results(net, excel_file, branch=False, fault_location=None):
     return pd.DataFrame(all_differences)
 
 
-## without sgen
-net_name = "test_case_1_four_bus_radial_grid"
-net_name = "test_case_3_five_bus_meshed_grid_yyn"
-result_files_path = os.path.join(pp_dir, 'test', 'shortcircuit', 'sce_tests', 'sc_result_comparison')
+def get_result_dfs(net_name, fault_location):
+    result_files_path = os.path.join(pp_dir, 'test', 'shortcircuit', 'sce_tests', 'sc_result_comparison')
+    net = load_test_case(net_name)
+    if net_name.endswith('_sgen') or net_name.endswith('_gen') or net_name.endswith('_sgen_act'):
+        wp_folder = 'wp_2.2_2.4'
 
-net = load_test_case(net_name)
+        if net_name.endswith('_sgen') or net_name.endswith('_sgen_act'):
+            net.sgen['k'] = 1.2
+            net.sgen['active_current'] = False if net_name.endswith('_sgen') else True
+            elm_name = '_sgen'
+            if net_name.startswith('1_'):
+                net.sgen.loc[net.sgen.bus == 1, 'in_service'] = True
+                net.sgen.loc[net.sgen.bus == 2, 'in_service'] = False
+                net.sgen.loc[net.sgen.bus == 3, 'in_service'] = True
+
+        elif net_name.endswith('_gen'):
+            net.gen['k'] = 6
+            net.gen['active_current'] = False
+            elm_name = '_gen'
+            if net_name.startswith('1_'):
+                net.gen.loc[net.gen.bus == 1, 'in_service'] = True
+                net.gen.loc[net.gen.bus == 2, 'in_service'] = False
+                net.gen.loc[net.gen.bus == 3, 'in_service'] = True
+
+        if net_name.startswith('1_'):
+            gen_loc = f'{elm_name}13'
+        elif net_name.startswith('2_') or net_name.startswith('3_'):
+            gen_loc = f'{elm_name}34'
+        else:
+            if '_dyn_' in net_name:
+                gen_loc = f'{elm_name}4'
+            elif '_yyn_' in net_name:
+                gen_loc = f'{elm_name}4714'
+            elif '_ynyn_' in net_name:
+                gen_loc = f'{elm_name}471419'
+
+    else:
+        wp_folder = 'wp_2.1'
+        gen_loc = ''
+
+    # bus
+    excel_file = f"{wp_folder}/{net_name}_pf_sc_results_{fault_location}_bus{gen_loc}.xlsx"
+    diff_df = compare_sc_results(net, os.path.join(result_files_path, excel_file), fault_location=fault_location)
+
+    # branch
+    excel_file = f"{wp_folder}/{net_name}_pf_sc_results_{fault_location}_branch{gen_loc}.xlsx"
+    diff_df_branch = compare_sc_results(net, os.path.join(result_files_path, excel_file), branch=True, fault_location=fault_location)
+
+    return diff_df, diff_df_branch
+
+
+def generate_summary_table(net_names, fault_locations):
+    summary = []
+
+    current_keys = ["ikss_ka", "ikss_degree"]
+    impedance_keys = ["rk_ohm", "xk_ohm"]
+    voltage_keys = ["vm_pu", "va_degree"]
+
+    combinations = [(net, loc) for net in net_names for loc in fault_locations]
+
+    for net_name, fault_location in tqdm(combinations, desc="generate_summary", unit="grid"):
+        try:
+            diff_df, diff_df_branch = get_result_dfs(net_name, fault_location)
+
+            for df, scope in [(diff_df, "bus"), (diff_df_branch, "branch")]:
+                if df.empty:
+                    continue
+                grouped = df.groupby(["Fault Type", "Case", "r_fault_ohm", "x_fault_ohm"])
+
+                for group_keys, group_df in grouped:
+                    current_ok = all(group_df[group_df["Quantity"].isin(current_keys)]["Status"] == "OK")
+                    impedance_ok = all(group_df[group_df["Quantity"].isin(impedance_keys)]["Status"] == "OK")
+                    voltage_ok = all(group_df[group_df["Quantity"].isin(voltage_keys)]["Status"] == "OK")
+
+                    overall_ok = all([current_ok, impedance_ok, voltage_ok])
+                    summary.append({
+                        "name": net_name,
+                        "location": fault_location,
+                        "element": scope,
+                        "fault_type": group_keys[0],
+                        "case": group_keys[1],
+                        "rx_fault_ohm": group_keys[2],
+                        "current OK": "OK" if current_ok else "Exceeds",
+                        "impedance OK": "OK" if impedance_ok else "Exceeds",
+                        "voltage OK": "OK" if voltage_ok else "Exceeds",
+                        "total": "OK" if overall_ok else "Exceeds"
+                    })
+        except Exception as e:
+            print(f"Fehler bei {net_name}, Ort {fault_location}: {e}")
+            continue
+
+    return pd.DataFrame(summary)
+
+
+## all net names
+testfiles_path = os.path.join(pp_dir, 'test', 'shortcircuit', 'sce_tests', 'test_grids', 'wp_2.1')
+testfiles_gen_path = os.path.join(pp_dir, 'test', 'shortcircuit', 'sce_tests', 'test_grids', 'wp_2.2_2.4')
+net_names = [f[:-5] for f in os.listdir(testfiles_path) if f.endswith(".json")]
+net_names_gen = [f[:-5] for f in os.listdir(testfiles_gen_path) if f.endswith(".json")]
+
+## show panadpower and powerfactory results for specified grid and location
+net_name = "3_five_bus_meshed_grid_ynyn_sgen"  # possible net_name in net_names and net_names_gen
+fault_location = 2  # 0, 1, 2, 3 for four- and five-bus grids; 0, 8, 18 for twenty-bus grid
+
+diff_df, diff_df_branch = get_result_dfs(net_name, fault_location)
+
+## overview for all grids
+names = net_names_gen
 fault_location = 0
-
-excel_file = f"wp_2.1/{net_name}_pf_sc_results_{fault_location}_bus.xlsx"
-diff_df = compare_sc_results(net, os.path.join(result_files_path, excel_file), fault_location=fault_location)
-
-excel_file = f"wp_2.1/{net_name}_pf_sc_results_{fault_location}_branch.xlsx"
-diff_df_branch = compare_sc_results(net, os.path.join(result_files_path, excel_file), fault_location=fault_location, branch=True)
-
-## sgen
-#net_name = "1_four_bus_radial_grid_sgen"
-# net_name = "2_five_bus_radial_grid_yyn_sgen"
-# net_name = "3_five_bus_meshed_grid_ynyn_sgen"
-net_name = "4_twenty_bus_radial_grid_yyn_sgen"
-result_files_path = os.path.join(pp_dir, 'test', 'shortcircuit', 'sce_tests', 'sc_result_comparison')
-
-net = load_test_case(net_name)
-
-net.sgen['k'] = 1.2
-net.sgen['active_current'] = False
-if net_name.startswith('1_'):
-    net.sgen.loc[net.sgen.bus == 1, 'in_service'] = True
-    net.sgen.loc[net.sgen.bus == 2, 'in_service'] = False
-    net.sgen.loc[net.sgen.bus == 3, 'in_service'] = True
-# net.line["c0_nf_per_km"] = 0
-# net.line["c_nf_per_km"] = 0
-fault = 'LLL'
-branch = True
-case = 'max'
-r_fault_ohm = 0
-x_fault_ohm = 0
-fault_location = 18
-
-calc_sc(
-      net, fault=fault, case=case, branch_results=branch, ip=False,
-      r_fault_ohm=r_fault_ohm, x_fault_ohm=x_fault_ohm, bus=fault_location, return_all_currents=False
-)
-
-if net_name.startswith('1_'):
-    sgen_loc = '13'
-elif net_name.startswith('2_') or net_name.startswith('3_') :
-    sgen_loc = '34'
-else:
-    if '_dyn_' in net_name:
-        sgen_loc = '4'
-    elif '_yyn_' in net_name:
-        sgen_loc = '4714'
-    elif '_ynyn_' in net_name:
-        sgen_loc = '471419'
-
-# sgen bus
-excel_file = f"wp_2.2_2.4/{net_name}_pf_sc_results_{fault_location}_bus_sgen{sgen_loc}.xlsx"
-diff_df = compare_sc_results(net, os.path.join(result_files_path, excel_file), fault_location=fault_location)
-diff_df_nom = diff_df.copy()
-
-# sgen branch
-excel_file = f"wp_2.2_2.4/{net_name}_pf_sc_results_{fault_location}_branch_sgen{sgen_loc}.xlsx"
-diff_df_branch = compare_sc_results(
-    net, os.path.join(result_files_path, excel_file), branch=True, fault_location=fault_location
-)
-
-## sgen with active current
-# net_name = '1_four_bus_radial_grid_sgen_act'
-# net_name = "2_five_bus_radial_grid_ynyn_sgen_act"
-# net_name = "3_five_bus_meshed_grid_yyn_sgen_act"
-net_name = "4_twenty_bus_radial_grid_ynyn_sgen_act"
-
-result_files_path = os.path.join(pp_dir, 'test', 'shortcircuit', 'sce_tests', 'sc_result_comparison')
-
-net = load_test_case(net_name)
-
-net.sgen['active_current'] = True
-if net_name.startswith('1_'):
-    net.sgen.loc[net.sgen.bus == 1, 'in_service'] = True
-    net.sgen.loc[net.sgen.bus == 2, 'in_service'] = False
-    net.sgen.loc[net.sgen.bus == 3, 'in_service'] = True
-
-fault = 'LLL'
-branch = True
-case = 'max'
-r_fault_ohm = 0
-x_fault_ohm = 0
-fault_location = 18
-
-calc_sc(
-      net, fault=fault, case=case, branch_results=branch, ip=False,
-      r_fault_ohm=r_fault_ohm, x_fault_ohm=x_fault_ohm, bus=fault_location, return_all_currents=False
-)
-#
-if net_name.startswith('1_'):
-    sgen_loc = '13'
-elif net_name.startswith('2_') or net_name.startswith('3_') :
-    sgen_loc = '34'
-else:
-    if '_dyn_' in net_name:
-        sgen_loc = '4'
-    elif '_yyn_' in net_name:
-        sgen_loc = '4714'
-    elif '_ynyn_' in net_name:
-        sgen_loc = '471419'
-
-# sgen bus
-excel_file = f"wp_2.2_2.4/{net_name}_pf_sc_results_{fault_location}_bus_sgen{sgen_loc}.xlsx"
-diff_df = compare_sc_results(net, os.path.join(result_files_path, excel_file), fault_location=fault_location)
-
-# sgen branch
-excel_file = f"wp_2.2_2.4/{net_name}_pf_sc_results_{fault_location}_branch_sgen{sgen_loc}.xlsx"
-diff_df_branch = compare_sc_results(
-    net, os.path.join(result_files_path, excel_file), branch=True, fault_location=fault_location
-)
-
-##
-
+df_summary = generate_summary_table(names, fault_location)

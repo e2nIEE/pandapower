@@ -158,7 +158,7 @@ def compare_results(columns_to_check, net_df, pf_results):
 
 
 def load_test_case(net_name: str) -> pandapowerNet:
-    if net_name.endswith("_sgen") or net_name.endswith("_sgen_act"):
+    if net_name.endswith("_sgen") or net_name.endswith("_sgen_act") or net_name.endswith("_gen"):
         grid_folder = "wp_2.2_2.4"
     else:
         grid_folder = "wp_2.1"
