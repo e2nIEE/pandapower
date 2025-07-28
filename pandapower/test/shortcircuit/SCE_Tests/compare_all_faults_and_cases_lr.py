@@ -250,7 +250,7 @@ def generate_summary_tables(net_names, fault_locations, detailed=False):
                         })
 
         except Exception as e:
-            print(f"Fehler bei {net_name}, Ort {fault_location}: {e}")
+            print(f"error for {net_name}, {fault_location}: {e}")
             continue
 
     return pd.DataFrame(bus_summary), pd.DataFrame(branch_summary)
@@ -272,10 +272,10 @@ if __name__ == "__main__":
 
     ## detailed overview for all grids
     names = net_names
-    fault_location = [1]
+    fault_location = [0, 1]
     df_bus, df_branch = generate_summary_tables(names, fault_location, detailed=True)
 
     ## simple overview for all grids
     names = [name for name in net_names_gen if name.endswith("_gen")]
-    fault_location = [1]
+    fault_location = [0]
     df_bus_simple, df_branch_simple = generate_summary_tables(names, fault_location, detailed=False)
