@@ -11,7 +11,7 @@ from packaging.version import Version
 from pandapower._version import __version__, __format_version__
 from pandapower.create import create_empty_network, create_poly_cost
 from pandapower.results import reset_results
-from pandapower.control import TrafoController
+from pandapower.control import TrafoController, BinarySearchControl
 from pandapower.plotting.geo import convert_geodata_to_geojson
 from pandapower.auxiliary import pandapowerNet
 
@@ -548,21 +548,35 @@ def _update_object_attributes(obj):
     """
     Rename attributes of a given object. A new attribute is added and the old one is removed.
     """
-    to_rename = {"u_set": "vm_set_pu",
-                 "u_lower": "vm_lower_pu",
-                 "u_upper": "vm_upper_pu"}
+    if "name" not in obj.__dict__:
+        obj.__dict__["name"] = ""
 
-    for key, val in to_rename.items():
-        if key in obj.__dict__:
-            obj.__dict__[val] = obj.__dict__.pop(key)
+    if isinstance(obj, TrafoController):
+        to_rename = {"u_set": "vm_set_pu",
+                    "u_lower": "vm_lower_pu",
+                    "u_upper": "vm_upper_pu"}
 
-    if "vm_lower_pu" in obj.__dict__ and "hunting_limit" not in obj.__dict__:
-        obj.__dict__["hunting_limit"] = None
+        for key, val in to_rename.items():
+            if key in obj.__dict__:
+                obj.__dict__[val] = obj.__dict__.pop(key)
 
+        if "vm_lower_pu" in obj.__dict__ and "hunting_limit" not in obj.__dict__:
+            obj.__dict__["hunting_limit"] = None
+    elif isinstance(obj, BinarySearchControl):
+        if "output_adjustable" not in obj.__dict__:
+            obj.__dict__["output_adjustable"] = np.array([False if not distribution else service
+                                            for distribution, service in zip(obj.output_values_distribution,
+                                                                            obj.output_element_in_service)],
+                                            dtype=np.bool)
+        if "output_max_q_mvar" not in obj.__dict__:
+            obj.__dict__["output_max_q_mvar"] = np.array([np.inf]*len(obj.output_element_index), dtype=np.float64)
+        if "output_min_q_mvar" not in obj.__dict__:
+            obj.__dict__["output_min_q_mvar"] = np.array([-np.inf]*len(obj.output_element_index), dtype=np.float64)
 
 def _convert_objects(net, elements_to_deserialize):
     """
-    The function updates attribute names in pandapower objects. For now, it affects TrafoController.
+    This function updates attributes (adds new attributes or renames existing ones) in pandapower objects.
+    For now, it affects TrafoController and BinarySearchController.
     Should be expanded for other objects if necessary.
     """
     _check_elements_to_deserialize('controller', elements_to_deserialize)
