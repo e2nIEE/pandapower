@@ -115,7 +115,7 @@ def get_result_dfs(net_name, fault_location):
         wp_folder = 'wp_2.2_2.4'
 
         if net_name.endswith('_sgen') or net_name.endswith('_sgen_act'):
-            net.sgen['k'] = 1.2
+            net.sgen['k'] = 1.2 if net_name.endswith('_sgen') else 1.25
             net.sgen['active_current'] = False if net_name.endswith('_sgen') else True
             elm_name = '_sgen'
             if net_name.startswith('1_'):
@@ -124,7 +124,6 @@ def get_result_dfs(net_name, fault_location):
                 net.sgen.loc[net.sgen.bus == 3, 'in_service'] = True
 
         elif net_name.endswith('_gen'):
-            net.gen['k'] = 6
             net.gen['active_current'] = False
             elm_name = '_gen'
             if net_name.startswith('1_'):
@@ -159,12 +158,22 @@ def get_result_dfs(net_name, fault_location):
     return diff_df, diff_df_branch
 
 
-def generate_summary_table(net_names, fault_locations):
-    summary = []
+def generate_summary_tables(net_names, fault_locations, detailed=False):
+    bus_summary = []
+    branch_summary = []
 
-    current_keys = ["ikss_ka", "ikss_degree"]
-    impedance_keys = ["rk_ohm", "xk_ohm"]
-    voltage_keys = ["vm_pu", "va_degree"]
+    current_keys = ["ikss_ka", "ikss_degree", "ikss_a_ka", "ikss_b_ka", "ikss_c_ka",
+                    "ikss_a_degree", "ikss_b_degree", "ikss_c_degree",
+                    "ikss_a_from_ka", "ikss_b_from_ka", "ikss_c_from_ka",
+                    "ikss_a_to_ka", "ikss_b_to_ka", "ikss_c_to_ka"]
+
+    impedance_keys = ["rk_ohm", "xk_ohm", "rk0_ohm", "rk1_ohm", "rk2_ohm",
+                      "xk0_ohm", "xk1_ohm", "xk2_ohm"]
+
+    voltage_keys = ["vm_pu", "va_degree", "vm_a_from_pu", "vm_b_from_pu", "vm_c_from_pu",
+                    "vm_a_to_pu", "vm_b_to_pu", "vm_c_to_pu",
+                    "va_a_from_degree", "va_b_from_degree", "va_c_from_degree",
+                    "va_a_to_degree", "va_b_to_degree", "va_c_to_degree"]
 
     combinations = [(net, loc) for net in net_names for loc in fault_locations]
 
@@ -172,49 +181,101 @@ def generate_summary_table(net_names, fault_locations):
         try:
             diff_df, diff_df_branch = get_result_dfs(net_name, fault_location)
 
-            for df, scope in [(diff_df, "bus"), (diff_df_branch, "branch")]:
-                if df.empty:
-                    continue
-                grouped = df.groupby(["Fault Type", "Case", "r_fault_ohm", "x_fault_ohm"])
+            # bus
+            if not diff_df.empty:
+                if detailed:
+                    grouped_bus = diff_df.groupby(["Fault Type", "Case", "r_fault_ohm", "x_fault_ohm"])
+                    for group_keys, group_df in grouped_bus:
+                        current_ok = all(group_df[group_df["Quantity"].isin(current_keys)]["Status"] == "OK")
+                        impedance_ok = all(group_df[group_df["Quantity"].isin(impedance_keys)]["Status"] == "OK")
+                        overall_ok = all([current_ok, impedance_ok])
+                        bus_summary.append({
+                            "name": net_name,
+                            "location": fault_location,
+                            "fault_type": group_keys[0],
+                            "case": group_keys[1],
+                            "rx_fault_ohm": group_keys[2],
+                            "current OK": "OK" if current_ok else "Exceeds",
+                            "impedance OK": "OK" if impedance_ok else "Exceeds",
+                            "total": "OK" if overall_ok else "Exceeds"
+                        })
+                else:
+                    for fault_type, group_df in diff_df.groupby("Fault Type"):
+                        current_ok = all(group_df[group_df["Quantity"].isin(current_keys)]["Status"] == "OK")
+                        impedance_ok = all(group_df[group_df["Quantity"].isin(impedance_keys)]["Status"] == "OK")
+                        overall_ok = all([current_ok, impedance_ok])
+                        bus_summary.append({
+                            "name": net_name,
+                            "location": fault_location,
+                            "fault_type": fault_type,
+                            "current OK": "OK" if current_ok else "Exceeds",
+                            "impedance OK": "OK" if impedance_ok else "Exceeds",
+                            "total": "OK" if overall_ok else "Exceeds"
+                        })
 
-                for group_keys, group_df in grouped:
-                    current_ok = all(group_df[group_df["Quantity"].isin(current_keys)]["Status"] == "OK")
-                    impedance_ok = all(group_df[group_df["Quantity"].isin(impedance_keys)]["Status"] == "OK")
-                    voltage_ok = all(group_df[group_df["Quantity"].isin(voltage_keys)]["Status"] == "OK")
+            # branch
+            if not diff_df_branch.empty:
+                if detailed:
+                    grouped_branch = diff_df_branch.groupby(["Fault Type", "Case", "r_fault_ohm", "x_fault_ohm"])
+                    for group_keys, group_df in grouped_branch:
+                        current_ok = all(group_df[group_df["Quantity"].isin(current_keys)]["Status"] == "OK")
+                        impedance_ok = all(group_df[group_df["Quantity"].isin(impedance_keys)]["Status"] == "OK")
+                        voltage_ok = all(group_df[group_df["Quantity"].isin(voltage_keys)]["Status"] == "OK")
+                        overall_ok = all([current_ok, impedance_ok, voltage_ok])
+                        branch_summary.append({
+                            "name": net_name,
+                            "location": fault_location,
+                            "fault_type": group_keys[0],
+                            "case": group_keys[1],
+                            "rx_fault_ohm": group_keys[2],
+                            "current OK": "OK" if current_ok else "Exceeds",
+                            "impedance OK": "OK" if impedance_ok else "Exceeds",
+                            "voltage OK": "OK" if voltage_ok else "Exceeds",
+                            "total": "OK" if overall_ok else "Exceeds"
+                        })
+                else:
+                    for fault_type, group_df in diff_df_branch.groupby("Fault Type"):
+                        current_ok = all(group_df[group_df["Quantity"].isin(current_keys)]["Status"] == "OK")
+                        impedance_ok = all(group_df[group_df["Quantity"].isin(impedance_keys)]["Status"] == "OK")
+                        voltage_ok = all(group_df[group_df["Quantity"].isin(voltage_keys)]["Status"] == "OK")
+                        overall_ok = all([current_ok, impedance_ok, voltage_ok])
+                        branch_summary.append({
+                            "name": net_name,
+                            "location": fault_location,
+                            "fault_type": fault_type,
+                            "current OK": "OK" if current_ok else "Exceeds",
+                            "impedance OK": "OK" if impedance_ok else "Exceeds",
+                            "voltage OK": "OK" if voltage_ok else "Exceeds",
+                            "total": "OK" if overall_ok else "Exceeds"
+                        })
 
-                    overall_ok = all([current_ok, impedance_ok, voltage_ok])
-                    summary.append({
-                        "name": net_name,
-                        "location": fault_location,
-                        "element": scope,
-                        "fault_type": group_keys[0],
-                        "case": group_keys[1],
-                        "rx_fault_ohm": group_keys[2],
-                        "current OK": "OK" if current_ok else "Exceeds",
-                        "impedance OK": "OK" if impedance_ok else "Exceeds",
-                        "voltage OK": "OK" if voltage_ok else "Exceeds",
-                        "total": "OK" if overall_ok else "Exceeds"
-                    })
         except Exception as e:
             print(f"Fehler bei {net_name}, Ort {fault_location}: {e}")
             continue
 
-    return pd.DataFrame(summary)
+    return pd.DataFrame(bus_summary), pd.DataFrame(branch_summary)
 
 
-## all net names
-testfiles_path = os.path.join(pp_dir, 'test', 'shortcircuit', 'sce_tests', 'test_grids', 'wp_2.1')
-testfiles_gen_path = os.path.join(pp_dir, 'test', 'shortcircuit', 'sce_tests', 'test_grids', 'wp_2.2_2.4')
-net_names = [f[:-5] for f in os.listdir(testfiles_path) if f.endswith(".json")]
-net_names_gen = [f[:-5] for f in os.listdir(testfiles_gen_path) if f.endswith(".json")]
+##
+if __name__ == "__main__":
+    ## all net names
+    testfiles_path = os.path.join(pp_dir, 'test', 'shortcircuit', 'sce_tests', 'test_grids', 'wp_2.1')
+    testfiles_gen_path = os.path.join(pp_dir, 'test', 'shortcircuit', 'sce_tests', 'test_grids', 'wp_2.2_2.4')
+    net_names = [f[:-5] for f in os.listdir(testfiles_path) if f.endswith(".json")]
+    net_names_gen = [f[:-5] for f in os.listdir(testfiles_gen_path) if f.endswith(".json")]
 
-## show panadpower and powerfactory results for specified grid and location
-net_name = "3_five_bus_meshed_grid_ynyn_sgen"  # possible net_name in net_names and net_names_gen
-fault_location = 2  # 0, 1, 2, 3 for four- and five-bus grids; 0, 8, 18 for twenty-bus grid
+    ## show panadpower and powerfactory results for specified grid and location
+    net_name = "1_four_bus_radial_grid_gen"  # possible net_name in net_names and net_names_gen
+    fault_location = 1  # 0, 1, 2, 3 for four- and five-bus grids; 0, 8, 18 for twenty-bus grid
 
-diff_df, diff_df_branch = get_result_dfs(net_name, fault_location)
+    diff_df, diff_df_branch = get_result_dfs(net_name, fault_location)
 
-## overview for all grids
-names = net_names_gen
-fault_location = [0]
-df_summary = generate_summary_table(names, fault_location)
+    ## detailed overview for all grids
+    names = net_names
+    fault_location = [1]
+    df_bus, df_branch = generate_summary_tables(names, fault_location, detailed=True)
+
+    ## simple overview for all grids
+    names = [name for name in net_names_gen if name.endswith("_gen")]
+    fault_location = [1]
+    df_bus_simple, df_branch_simple = generate_summary_tables(names, fault_location, detailed=False)
