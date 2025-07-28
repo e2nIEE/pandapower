@@ -1,4 +1,5 @@
 import numpy as np
+import logging
 
 from pandapower.control.basic_controller import Controller
 from pandapower.auxiliary import _detect_read_write_flag, read_from_net, write_to_net
@@ -88,7 +89,7 @@ class BinarySearchControl(Controller):
         self.output_element_in_service = output_element_in_service
 
         # normalize the values distribution:
-        self._normalize_distribution_in_service(net, initial_pf_distribution=output_values_distribution)
+        self._normalize_distribution_in_service(initial_pf_distribution=output_values_distribution)
 
         if output_min_q_mvar is not None:
             self.output_min_q_mvar = np.array(output_min_q_mvar, dtype=np.float64)
@@ -157,10 +158,6 @@ class BinarySearchControl(Controller):
         """
         Actual implementation of the convergence criteria: If controller is applied, it can stop
         """
-        # if self.converged:
-        #     logger.debug(f"{self.name} is already converged")
-        #     return self.converged
-
         # if controller not in_service, return True
         self.in_service = net.controller.in_service[self.index]
         if not self.in_service:
@@ -199,11 +196,11 @@ class BinarySearchControl(Controller):
 
         # read previous set values
         # compare old and new set values
-        if not self.voltage_ctrl: # or self.bus_idx is None:
+        if not self.voltage_ctrl or self.bus_idx is None:
             self.diff_old = self.diff
 
             if not any(self.output_adjustable):
-                print('All stations controlled by %s reached reactive power limits.' %self.name)
+                logging.info('All stations controlled by %s reached reactive power limits.' %self.name)
                 self.converged = True
                 return self.converged
             else:
@@ -212,17 +209,16 @@ class BinarySearchControl(Controller):
                                                    in zip(self.output_element_in_service, self.output_adjustable)], dtype=np.bool)
 
                 # normalize the values distribution
-                self._normalize_distribution_in_service(net)
+                self._normalize_distribution_in_service()
 
                 self.diff = self.set_point - sum(input_values)
-                #print(self.diff)
                 self.converged = np.all(np.abs(self.diff) < self.tol)
 
         else:
             self.diff_old = self.diff
 
             if not any(self.output_adjustable):
-                print('V_Ctrl: All stations controlled by %s reached reactive power limits.' %self.name)
+                logging.info('V_Ctrl: All stations controlled by %s reached reactive power limits.' %self.name)
                 self.converged = True
                 return self.converged
             else:
@@ -231,15 +227,10 @@ class BinarySearchControl(Controller):
                                                    in zip(self.output_element_in_service, self.output_adjustable)], dtype=np.bool)
 
                 # normalize the values distribution
-                self._normalize_distribution_in_service(net)
+                self._normalize_distribution_in_service()
 
-                self.diff = self.set_point - net.res_bus.vm_pu.loc[self.input_element_index].values[0]
-                #print(self.diff)
+                self.diff = self.set_point - net.res_bus.vm_pu.at[self.bus_idx]
                 self.converged = np.all(np.abs(self.diff) < self.tol)
-        print("Voltage Value at bus:", net.res_bus.vm_pu.loc[self.input_element_index].values[0])
-        print("Set point at bus:", self.set_point)
-        print("converged?", self.converged, "overwrite convergence is set afterwards")
-        print("station control diff", self.diff)
         if self.overwrite_covergence:
             self.overwrite_covergence = False
             return False
@@ -299,7 +290,7 @@ class BinarySearchControl(Controller):
                     if any(reached_max_qmvar):
                         positions = [i for i, val in enumerate(reached_max_qmvar) if val is np.True_] # can be one or multiple
                         reached_index = [self.output_element_index[i] for i in positions]
-                        print('Station(s) controlled by %s reached the maximum reactive power limit: %s'
+                        logging.info('Station(s) controlled by %s reached the maximum reactive power limit: %s'
                               % (self.name, ', '.join(net[self.output_element].loc[reached_index].name.tolist())))
                         self.output_adjustable[positions] = False
                         sum_old = sum(x)
@@ -318,7 +309,7 @@ class BinarySearchControl(Controller):
                     elif any(reached_min_qmvar):
                         positions = [i for i, val in enumerate(reached_min_qmvar) if val is np.True_]
                         reached_index = [self.output_element_index[i] for i in positions]
-                        print('Station(s) controlled by %s reached the minimum reactive power limit: %s'
+                        logging.info('Station(s) controlled by %s reached the minimum reactive power limit: %s'
                               % (self.name, ', '.join(net[self.output_element].loc[reached_index].name.tolist())))
                         self.output_adjustable[positions] = False
                         sum_old = sum(x)
@@ -343,7 +334,7 @@ class BinarySearchControl(Controller):
                     reached_max_qmvar = x>self.output_max_q_mvar
 
                     if reached_min_qmvar or reached_max_qmvar:
-                        print('Station %s controlled by %s reached a reactive power limit.' % (self.machines[0], self.name))
+                        logging.info('Station %s controlled by %s reached a reactive power limit.' % (self.machines[0], self.name))
                         self.output_adjustable = np.array([False], dtype=np.bool)
                         if reached_min_qmvar:
                             self.output_values_old, self.output_values = self.output_values, self.output_min_q_mvar
@@ -358,7 +349,7 @@ class BinarySearchControl(Controller):
         write_to_net(net, self.output_element, self.output_element_index, self.output_variable, self.output_values,
                      self.write_flag)
 
-    def _normalize_distribution_in_service(self, net, initial_pf_distribution=None):
+    def _normalize_distribution_in_service(self, initial_pf_distribution=None):
         # normalize distribution depending on in service of stations
         if initial_pf_distribution is None:
             distribution = self.output_values_distribution
@@ -511,6 +502,4 @@ class DroopControl(Controller):
                 input_values.append(read_from_net(net, input_element, input_index,
                                                   input_variable[counter], read_flag[counter]))
             self.vm_set_pu_new = self.vm_set_pu + sum(input_values) / self.q_droop_mvar
-            print("new vm set point from droop control:", self.vm_set_pu_new)
-            print("droop control diff", self.diff)
             net.controller.at[self.controller_idx, "object"].set_point = self.vm_set_pu_new
