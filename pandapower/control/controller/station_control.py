@@ -3,13 +3,6 @@ import numpy as np
 from pandapower.control.basic_controller import Controller
 from pandapower.auxiliary import _detect_read_write_flag, read_from_net, write_to_net
 
-try:
-    import pandaplan.core.pplog as pplog
-except:
-    import logging as pplog
-
-logger = pplog.getLogger(__name__)
-
 
 class BinarySearchControl(Controller):
     """
@@ -165,9 +158,9 @@ class BinarySearchControl(Controller):
         """
         Actual implementation of the convergence criteria: If controller is applied, it can stop
         """
-        if self.converged:
-            print(self.name, "is already converged")
-            return self.converged
+        # if self.converged:
+        #     logger.debug(f"{self.name} is already converged")
+        #     return self.converged
 
         # if controller not in_service, return True
         self.in_service = net.controller.in_service[self.index]
@@ -244,7 +237,10 @@ class BinarySearchControl(Controller):
                 self.diff = self.set_point - net.res_bus.vm_pu.loc[self.input_element_index].values[0]
                 #print(self.diff)
                 self.converged = np.all(np.abs(self.diff) < self.tol)
-
+        print("Voltage Value at bus:", net.res_bus.vm_pu.loc[self.input_element_index].values[0])
+        print("Set point at bus:", self.set_point)
+        print("converged?", self.converged, "overwrite convergence is set afterwards")
+        print("station control diff", self.diff)
         if self.overwrite_covergence:
             self.overwrite_covergence = False
             return False
@@ -516,4 +512,6 @@ class DroopControl(Controller):
                 input_values.append(read_from_net(net, input_element, input_index,
                                                   input_variable[counter], read_flag[counter]))
             self.vm_set_pu_new = self.vm_set_pu + sum(input_values) / self.q_droop_mvar
+            print("new vm set point from droop control:", self.vm_set_pu_new)
+            print("droop control diff", self.diff)
             net.controller.at[self.controller_idx, "object"].set_point = self.vm_set_pu_new

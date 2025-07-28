@@ -5,6 +5,7 @@
 
 import pytest
 import os
+import logging
 
 from pandapower.control.controller.station_control import BinarySearchControl, DroopControl
 from pandapower.create import create_empty_network, create_bus, create_buses, create_ext_grid, create_transformer, \
@@ -12,11 +13,6 @@ from pandapower.create import create_empty_network, create_bus, create_buses, cr
 from pandapower.run import runpp
 from pandapower.file_io import from_json
 from pandapower import pp_dir
-
-try:
-    from pandaplan.core import pplog as logging
-except ImportError:
-    import logging
 
 logger = logging.getLogger(__name__)
 
@@ -135,4 +131,25 @@ def test_stactrl_pf_import():
 
 
 if __name__ == '__main__':
-    pytest.main(['-s', __file__])
+    import os
+    import logging
+
+    from pandapower.control.controller.station_control import BinarySearchControl, DroopControl
+    from pandapower.create import create_empty_network, create_bus, create_buses, create_ext_grid, create_transformer, \
+        create_load, create_line, create_sgen
+    from pandapower.run import runpp
+    from pandapower.file_io import from_json
+    from pandapower import pp_dir
+    net = simple_test_net()
+    tol = 1e-3
+    bsc = BinarySearchControl(net, ctrl_in_service=True,
+                                         output_element="sgen", output_variable="q_mvar", output_element_index=[0],
+                                         output_element_in_service=[True], output_values_distribution=[1],
+                                         input_element="res_trafo", input_variable="q_hv_mvar", input_element_index=[0],
+                                         set_point=1.02, voltage_ctrl=True, bus_idx=1, tol=tol)
+    DroopControl(net, q_droop_mvar=40, bus_idx=1,
+                            vm_set_pu=1.02, controller_idx=bsc.index, voltage_ctrl=True)
+    runpp(net, run_control=False)
+    assert (abs(net.res_bus.loc[1, "vm_pu"] - 0.999648) < tol)
+    runpp(net, run_control=True)
+    assert (abs(net.res_bus.loc[1, "vm_pu"] - (1.02 + net.res_trafo.loc[0, "q_hv_mvar"] / 40)) < tol)
