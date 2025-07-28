@@ -195,9 +195,9 @@ def generate_summary_tables(net_names, fault_locations, detailed=False):
                             "fault_type": group_keys[0],
                             "case": group_keys[1],
                             "rx_fault_ohm": group_keys[2],
-                            "current OK": "OK" if current_ok else "Exceeds",
-                            "impedance OK": "OK" if impedance_ok else "Exceeds",
-                            "total": "OK" if overall_ok else "Exceeds"
+                            "current OK": "YES" if current_ok else "NO",
+                            "impedance OK": "YES" if impedance_ok else "NO",
+                            "total OK": "YES" if overall_ok else "NO"
                         })
                 else:
                     for fault_type, group_df in diff_df.groupby("Fault Type"):
@@ -208,9 +208,9 @@ def generate_summary_tables(net_names, fault_locations, detailed=False):
                             "name": net_name,
                             "location": fault_location,
                             "fault_type": fault_type,
-                            "current OK": "OK" if current_ok else "Exceeds",
-                            "impedance OK": "OK" if impedance_ok else "Exceeds",
-                            "total": "OK" if overall_ok else "Exceeds"
+                            "current OK": "YES" if current_ok else "NO",
+                            "impedance OK": "YES" if impedance_ok else "NO",
+                            "total OK": "YES" if overall_ok else "NO"
                         })
 
             # branch
@@ -228,10 +228,9 @@ def generate_summary_tables(net_names, fault_locations, detailed=False):
                             "fault_type": group_keys[0],
                             "case": group_keys[1],
                             "rx_fault_ohm": group_keys[2],
-                            "current OK": "OK" if current_ok else "Exceeds",
-                            "impedance OK": "OK" if impedance_ok else "Exceeds",
-                            "voltage OK": "OK" if voltage_ok else "Exceeds",
-                            "total": "OK" if overall_ok else "Exceeds"
+                            "current OK": "YES" if current_ok else "NO",
+                            "voltage OK": "YES" if voltage_ok else "NO",
+                            "total OK": "YES" if overall_ok else "NO"
                         })
                 else:
                     for fault_type, group_df in diff_df_branch.groupby("Fault Type"):
@@ -243,10 +242,9 @@ def generate_summary_tables(net_names, fault_locations, detailed=False):
                             "name": net_name,
                             "location": fault_location,
                             "fault_type": fault_type,
-                            "current OK": "OK" if current_ok else "Exceeds",
-                            "impedance OK": "OK" if impedance_ok else "Exceeds",
-                            "voltage OK": "OK" if voltage_ok else "Exceeds",
-                            "total": "OK" if overall_ok else "Exceeds"
+                            "current OK": "YES" if current_ok else "NO",
+                            "voltage OK": "YES" if voltage_ok else "NO",
+                            "total OK": "YES" if overall_ok else "NO"
                         })
 
         except Exception as e:
@@ -271,7 +269,7 @@ if __name__ == "__main__":
     diff_df, diff_df_branch = get_result_dfs(net_name, fault_location)
 
     ## detailed overview for all grids
-    names = net_names
+    names = [name for name in net_names_gen if name.endswith("_sgen")]
     fault_location = [0, 1]
     df_bus, df_branch = generate_summary_tables(names, fault_location, detailed=True)
 
