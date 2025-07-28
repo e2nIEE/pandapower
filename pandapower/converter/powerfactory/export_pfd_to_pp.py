@@ -1,9 +1,8 @@
 from pandapower.file_io import to_json, to_pickle
 from .echo_off import echo_off, echo_on
-from .logger_setup import AppHandler, set_PF_level
 from .pf_export_functions import run_load_flow, create_network_dict
 from .pp_import_functions import from_pf
-from .run_import import choose_imp_dir, clear_dir, prj_dgs_import, prj_import
+from .run_import import choose_imp_dir, clear_dir, prj_dgs_import
 
 import logging
 
@@ -64,7 +63,6 @@ def from_pfd(app, prj_name: str, script_name=None, script_settings=None, path_ds
             logger.error('Load flow failed after executing DPL script.')
     else:
         pf_load_flow_failed = run_load_flow(app)
-        slack_synchron_machine = None
 
     logger.info('exporting network to pandapower')
     app.SetAttributeModeInternal(1)
@@ -227,16 +225,3 @@ def _check_network(app):
             # raise Exception('Adjusted by load scaling set to True')
 
     return trafos[0].loc_name, trafos[0].desc
-
-
-if __name__ == '__main__':
-    try:
-        import powerfactory as pf
-
-        app = pf.GetApplication()
-        app_handler = AppHandler(app, freeze_app_between_messages=True)
-        logger.addHandler(app_handler)
-        set_PF_level(logger, app_handler, 'INFO')
-    except:
-        pass
-

@@ -47,6 +47,7 @@ def create_network_dict(app, include_hidden_bus, flag_graphics='GPS'):
     }
 
     # here define all element types that have to be configured to have MW as power values
+    # assigned but never used?
     elm_units = {
         'ElmLod': ['W', 'var', 'VA'],
         'ElmLodlv': ['W', 'var', 'VA'],
@@ -198,10 +199,10 @@ def run_load_flow(app, scale_feeder_loads=False, load_scaling=None, gen_scaling=
     # com_ldf.erreq = 0.01
 
     if com_ldf.iopt_sim == 1:
-        logger.warning(f'Calculation method probabilistic loadflow of lv-loads is activated!'
-                       f' The validation will not succeed.')
+        logger.warning('Calculation method probabilistic loadflow of lv-loads is activated!'
+                       ' The validation will not succeed.')
     if com_ldf.iopt_igntow == 1:
-        logger.warning(f'Line coupling model will be neglected.')
+        logger.warning('Line coupling model will be neglected.')
     if load_scaling is not None:
         logger.debug('scaling loads at %.2f' % load_scaling)
         com_ldf.scLoadFac = load_scaling
