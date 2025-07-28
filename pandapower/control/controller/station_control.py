@@ -125,7 +125,6 @@ class BinarySearchControl(Controller):
         self.write_flag, self.output_variable = _detect_read_write_flag(net, output_element,
                                                                         output_element_index,
                                                                         output_variable)
-
         # write kwargs in self
         for key, value in kwargs.items():
             setattr(self, key, value)
@@ -428,6 +427,9 @@ class DroopControl(Controller):
             self.name = str(name)
         else:
             self.name = ""
+        # write kwargs in self
+        for key, value in kwargs.items():
+            setattr(self, key, value)
         self.q_droop_mvar = q_droop_mvar
         self.bus_idx = bus_idx
         self.vm_pu = None
@@ -447,9 +449,6 @@ class DroopControl(Controller):
         self.diff = None
         self.converged = False
 
-        # write kwargs in self
-        for key, value in kwargs.items():
-            setattr(self, key, value)
 
     def is_converged(self, net):
         if self.voltage_ctrl:

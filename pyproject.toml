@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pandapower"
-version = "3.1.3" # File format version '__format_version__' is tracked in _version.py
+dynamic = ["version"]
 authors = [
     { name = "Leon Thurner", email = "leon.thurner@retoflow.de" },
     { name = "Alexander Scheidler", email = "alexander.scheidler@iee.fraunhofer.de" },
@@ -74,6 +74,9 @@ all = ["pandapower[docs,plotting,test,performance,fileio,converter,pgm,control,t
 # "shapely", "pyproj", "Pyogrio" are dependencies of geopandas and should be already available ("Fiona" got dropped)
 # "hashlib", "zlib", "base64" produce install problems, so they are not included
 
+
+[tool.setuptools.dynamic]
+version = {attr = "pandapower._version.__version__"}
 
 [tool.setuptools.packages.find]
 include = [
