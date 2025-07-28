@@ -194,10 +194,10 @@ def generate_summary_tables(net_names, fault_locations, detailed=False):
                             "location": fault_location,
                             "fault_type": group_keys[0],
                             "case": group_keys[1],
-                            "rx_fault_ohm": group_keys[2],
-                            "current OK": "YES" if current_ok else "NO",
-                            "impedance OK": "YES" if impedance_ok else "NO",
-                            "total OK": "YES" if overall_ok else "NO"
+                            "rx_fault_ohm": str(group_keys[2]),
+                            "current ok": True if current_ok else False,
+                            "impedance ok": True if impedance_ok else False,
+                            "total ok": True if overall_ok else False
                         })
                 else:
                     for fault_type, group_df in diff_df.groupby("Fault Type"):
@@ -208,9 +208,9 @@ def generate_summary_tables(net_names, fault_locations, detailed=False):
                             "name": net_name,
                             "location": fault_location,
                             "fault_type": fault_type,
-                            "current OK": "YES" if current_ok else "NO",
-                            "impedance OK": "YES" if impedance_ok else "NO",
-                            "total OK": "YES" if overall_ok else "NO"
+                            "current ok": True if current_ok else False,
+                            "impedance ok": True if impedance_ok else False,
+                            "total ok": True if overall_ok else False
                         })
 
             # branch
@@ -219,32 +219,30 @@ def generate_summary_tables(net_names, fault_locations, detailed=False):
                     grouped_branch = diff_df_branch.groupby(["Fault Type", "Case", "r_fault_ohm", "x_fault_ohm"])
                     for group_keys, group_df in grouped_branch:
                         current_ok = all(group_df[group_df["Quantity"].isin(current_keys)]["Status"] == "OK")
-                        impedance_ok = all(group_df[group_df["Quantity"].isin(impedance_keys)]["Status"] == "OK")
                         voltage_ok = all(group_df[group_df["Quantity"].isin(voltage_keys)]["Status"] == "OK")
-                        overall_ok = all([current_ok, impedance_ok, voltage_ok])
+                        overall_ok = all([current_ok, voltage_ok])
                         branch_summary.append({
                             "name": net_name,
                             "location": fault_location,
                             "fault_type": group_keys[0],
                             "case": group_keys[1],
-                            "rx_fault_ohm": group_keys[2],
-                            "current OK": "YES" if current_ok else "NO",
-                            "voltage OK": "YES" if voltage_ok else "NO",
-                            "total OK": "YES" if overall_ok else "NO"
+                            "rx_fault_ohm": str(group_keys[2]),
+                            "current ok": True if current_ok else False,
+                            "voltage ok": True if voltage_ok else False,
+                            "total ok": True if overall_ok else False
                         })
                 else:
                     for fault_type, group_df in diff_df_branch.groupby("Fault Type"):
                         current_ok = all(group_df[group_df["Quantity"].isin(current_keys)]["Status"] == "OK")
-                        impedance_ok = all(group_df[group_df["Quantity"].isin(impedance_keys)]["Status"] == "OK")
                         voltage_ok = all(group_df[group_df["Quantity"].isin(voltage_keys)]["Status"] == "OK")
-                        overall_ok = all([current_ok, impedance_ok, voltage_ok])
+                        overall_ok = all([current_ok, voltage_ok])
                         branch_summary.append({
                             "name": net_name,
                             "location": fault_location,
                             "fault_type": fault_type,
-                            "current OK": "YES" if current_ok else "NO",
-                            "voltage OK": "YES" if voltage_ok else "NO",
-                            "total OK": "YES" if overall_ok else "NO"
+                            "current ok": True if current_ok else False,
+                            "voltage ok": True if voltage_ok else False,
+                            "total ok": True if overall_ok else False
                         })
 
         except Exception as e:
