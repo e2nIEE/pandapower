@@ -38,7 +38,8 @@ def _extract_results(net, ppc):
     _get_gen_results(net, ppc, bus_lookup_aranged, bus_pq)
     _get_bus_results(net, ppc, bus_pq)
     bus_p_dc = _get_p_dc_results(net, ppc, bus_dc_lookup_aranged)
-    # _get_dc_slack_results(net, ppc, bus_dc_lookup_aranged, bus_p_dc)
+    _get_dc_slack_results(net, ppc, bus_dc_lookup_aranged, bus_p_dc)
+    # _get_branch_dc_results(net, ppc, bus_dc_lookup_aranged, bus_p_dc) # not needed since it is calculated in _get_branch_results
     _get_bus_dc_results(net, bus_p_dc)
     _get_b2b_vsc_results(net)
     if net._options["mode"] == "opf":
@@ -184,8 +185,8 @@ def init_element(net, element, suffix=None):
 def get_relevant_elements(mode="pf"):
     if mode == "pf" or mode == "opf":
         return ["bus", "bus_dc", "line", "line_dc", "trafo", "trafo3w", "impedance", "ext_grid",
-                "load", "motor", "sgen", "storage", "shunt", "gen", "ward",
-                "xward", "dcline", "asymmetric_load", "asymmetric_sgen",
+                "load", "load_dc", "motor", "sgen", "storage", "shunt", "gen", "ward",
+                "xward", "dcline", "asymmetric_load", "asymmetric_sgen", "source_dc",
                 "switch", "tcsc", "svc", "ssc", "vsc", "b2b_vsc"]
     elif mode == "sc":
         return ["bus", "line", "trafo", "trafo3w", "ext_grid", "gen", "sgen", "switch"]
