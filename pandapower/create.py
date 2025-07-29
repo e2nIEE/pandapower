@@ -829,7 +829,7 @@ def create_sgen(
     name: Optional[str] = None,
     index = None,
     scaling: float = 1.,
-    type: WyeDeltaType= 'wye',
+    type: str=None,
     in_service: bool = True,
     max_p_mw: float = nan,
     min_p_mw: float = nan,
@@ -880,7 +880,7 @@ def create_sgen(
         **scaling** (float, 1.) - An optional scaling factor to be set customly.
         Multiplies with p_mw and q_mvar.
 
-        **type** (string, None) -  Three phase Connection type of the static generator: wye/delta
+        **type** (string, None) -  Type of the generator, custom identifier, some can use custom patches for a type.
 
         **in_service** (boolean) - True for in_service or False for out of service
 
