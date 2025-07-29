@@ -8,7 +8,8 @@ import copy
 import inspect
 import re
 import sys
-from typing import Callable, TYPE_CHECKING, Optional, Tuple
+import math
+from typing import Callable, TYPE_CHECKING, Optional, Tuple, Literal
 
 import geojson
 import pandas as pd
@@ -79,6 +80,7 @@ class CustomTextPath(TextPath):
         size : font size
         prop : font property
         """
+        super().__init__()
         if not MATPLOTLIB_INSTALLED:
             soft_dependency_error("class CustomTextPath", "matplotlib")
         if prop is None:
@@ -247,7 +249,7 @@ def _create_line2d_collection(coords, indices, infos=None, picker=False, **kwarg
 def _create_node_element_collection(node_coords, patch_maker, size=1., infos=None,
                                     repeat_infos=(1, 1), orientation=np.pi, picker=False,
                                     patch_facecolor="w", patch_edgecolor="k", line_color="k",
-                                    patch_type=None, unique_angles=None, draw_sgens_by_type=None,
+                                    patch_type=None, unique_angles=None, draw_by_type=None,
                                     **kwargs):
     """
     Creates matplotlib collections of node elements. All node element collections usually consist of
@@ -255,14 +257,14 @@ def _create_node_element_collection(node_coords, patch_maker, size=1., infos=Non
     the element to the respective node.
 
     :param node_coords: the coordinates (x, y) of the nodes with shape (N, 2)
-    :type node_coords: iterable
+    :type node_coords: iterable[tuple[float, float]]
     :param patch_maker: a function to generate the patches of which the collections consist (cf. \
         the patch_maker module)
     :type patch_maker: function
     :param size: patch size
     :type size: float, default 1
     :param unique_angles: angles for patches
-    :type size: dict
+    :type unique_angles: dict
     :param infos: list of infos belonging to each of the elements (can be displayed when hovering \
         over them)
     :type infos: iterable, default None
@@ -282,9 +284,10 @@ def _create_node_element_collection(node_coords, patch_maker, size=1., infos=Non
     :type line_color: matplotlib color, "k"
     :param kwargs: key word arguments are passed to the patch function
     :type kwargs:
-    :return: Return values:\
-        - patch_coll - patch collection representing the element\
-        - line_coll - connecting line collection
+    :return:
+        - patch collection representing the element\
+        - connecting line collection
+    :rtype: tuple
 
     """
     if not MATPLOTLIB_INSTALLED:
@@ -304,10 +307,12 @@ def _create_node_element_collection(node_coords, patch_maker, size=1., infos=Non
     linewidths = kwargs.pop("lw", linewidths)
 
     lines, polys, popped_keywords = patch_maker(
-        node_coords, size, angles,
+        node_coords=node_coords,
+        size=size,
+        angles=angles,
         patch_type=patch_type,
         unique_angles=unique_angles,
-        draw_sgens_by_type=draw_sgens_by_type,
+        draw_by_type=draw_by_type,
         patch_facecolor=patch_facecolor,
         patch_edgecolor=patch_edgecolor,
         **kwargs
@@ -1228,114 +1233,150 @@ def create_load_collection(net, loads=None, size=1., infofunc=None, orientation=
     #     unique_angles = calculate_unique_angles(net)
     loads = get_index_array(loads, net.load.index)
     infos = [infofunc(i) for i in range(len(loads))] if infofunc is not None else []
-    node_coords = net.bus.loc[net.load.loc[loads, "bus"].values, "geo"].apply(geojson.loads).apply(
-        geojson.utils.coords).apply(next).to_list()
+    buses = net.load.loc[loads, "bus"].values
+    node_coords = net.bus.loc[buses, "geo"].apply(geojson.loads).apply(geojson.utils.coords).apply(next).to_list()
 
     color = kwargs.pop("color", "k")
 
+    if unique_angles is not None:
+        angles = [unique_angles[b]["load"] for b in buses]
+    else:
+        angles = orientation
+
     load_pc, load_lc = _create_node_element_collection(
-        node_coords, load_patches, size=size, infos=infos, orientation=orientation,
-        picker=picker, line_color=color, unique_angles=unique_angles, **kwargs)
+        node_coords=node_coords,
+        patch_maker=load_patches,
+        size=size,
+        infos=infos,
+        orientation=angles,
+        picker=picker,
+        line_color=color,
+        **kwargs
+    )
     return load_pc, load_lc
 
 
-def create_gen_collection(net, gens=None, size=1., infofunc=None, orientation=np.pi, picker=False,
-                          unique_angles=None, **kwargs):
-    """
-    Creates a matplotlib patch collection of pandapower gens.
-
-    Input:
-        **net** (pandapowerNet) - The pandapower network
-
-    OPTIONAL:
-        **gens** (list of ints, None) - the generators to include in the collection
-
-        **size** (float, 1) - patch size
-
-        **unique_angles** {dict} angles for patches
-
-        **infofunc** (function, None) - infofunction for the patch element
-
-        **orientation** (float or list of floats, np.pi) - orientation of gen collection. pi is\
-        directed downwards, increasing values lead to clockwise direction changes.
-
-        **picker** (bool, False) - picker argument passed to the patch collectionent
-
-        **kwargs - key word arguments are passed to the patch function
-
-    OUTPUT:
-        **gen_pc** - patch collection
-
-        **gen_lc** - line collection
-    """
-    from pandapower.plotting.simple_plot import calculate_unique_angles
-
-    # if unique_angles == None:
-    #     unique_angles = calculate_unique_angles(net)
-    gens = get_index_array(gens, net.gen.index)
-    infos = [infofunc(i) for i in range(len(gens))] if infofunc is not None else []
-    node_coords = net.bus.loc[net.gen.loc[gens, "bus"].values, "geo"].apply(geojson.loads).apply(
-        geojson.utils.coords).apply(next).to_list()
+def _create_gen_or_sgen_collection(
+        net: pandapowerNet,
+        indices,
+        size: float,
+        infofunc,
+        orientation,
+        picker: bool,
+        patch_type,
+        unique_angles,
+        draw_by_type: bool,
+        attribute: Literal["sgen", "gen"],
+        **kwargs
+):
+    df = net[attribute]
+    indices = get_index_array(indices, df.index)
+    infos = [infofunc(i) for i in indices] if infofunc is not None else []
+    buses = df.loc[indices, "bus"]
+    node_coords = net.bus.loc[buses, "geo"].apply(geojson.loads).apply(geojson.utils.coords).apply(next).to_list()
+    if draw_by_type:
+        if unique_angles is None:
+            raise AttributeError(
+                f'unique_angles was not passed to create_{attribute}_collection, but draw_by_type was set to True'
+            )
+        if patch_type is None:
+            patch_type = df.loc[indices, "type"].to_list()
+            angles = [unique_angles[b][attribute][t if t else "none"] for b, t in zip(buses, patch_type)]
+        else:
+            angles = [unique_angles[b][attribute][patch_type] for b in buses]
+    else:
+        angles = orientation
 
     color = kwargs.pop("color", "k")
-    gen_pc, gen_lc = _create_node_element_collection(
-        node_coords, gen_patches, size=size, infos=infos, orientation=orientation,
-        picker=picker, line_color=color, unique_angles=unique_angles, **kwargs)
-    return gen_pc, gen_lc
-
-
-def create_sgen_collection(net, sgens=None, size=1., infofunc=None, orientation=None, picker=False,
-                           patch_type=None, unique_angles=None, draw_sgens_by_type=None, **kwargs):
-    """
-    Creates a matplotlib patch collection of pandapower sgen.
-
-    Input:
-        **net** (pandapowerNet) - The pandapower network
-
-    OPTIONAL:
-        **sgens** (list of ints, None) - the static generators to include in the collection
-
-        **size** (float, 1) - patch size
-
-        **unique_angles** {dict} angles for patches
-
-        **infofunc** (function, None) - infofunction for the patch elem
-
-        **picker** (bool, False) - picker argument passed to the patch collectionent
-
-        **orientation** (float, np.pi) - orientation of static generator collection. pi is directed\
-        downwards, increasing values lead to clockwise direction changes.
-
-        **kwargs - key word arguments are passed to the patch function
-
-    OUTPUT:
-        **sgen_pc** - patch collection
-
-        **sgen_lc** - line collection
-    """
-    from pandapower.plotting.simple_plot import calculate_unique_angles
-
-    # if draw_sgens_by_type == True:
-    #     unique_angles = calculate_unique_angles(net)
-    infos = [infofunc(i) for i in range(len(sgens))] if infofunc is not None else []
-    node_coords = net.bus.loc[net.sgen.loc[sgens, "bus"].values, "geo"].apply(geojson.loads).apply(
-        geojson.utils.coords).apply(next).to_list()
-
-    color = kwargs.pop("color", "k")
-
-    sgen_pc, sgen_lc = _create_node_element_collection(
-        node_coords, sgen_patches,
+    return _create_node_element_collection(
+        node_coords=node_coords,
+        patch_maker=sgen_patches if attribute == "sgen" else gen_patches,
         size=size,
         infos=infos,
-        orientation=orientation,
+        orientation=angles,
         picker=picker,
         line_color=color,
         patch_type=patch_type,
-        unique_angles=unique_angles,
-        draw_sgens_by_type=draw_sgens_by_type,
+        draw_by_type=draw_by_type,
         **kwargs
     )
-    return sgen_pc, sgen_lc
+
+
+def create_gen_collection(
+        net: pandapowerNet,
+        gens=None,
+        size: float = 1.,
+        infofunc=None,
+        orientation=math.pi,
+        picker: bool = False,
+        patch_type=None,
+        unique_angles=None,
+        draw_by_type: bool = False,
+        **kwargs):
+    """
+    Creates a matplotlib patch collection of pandapower gens.
+
+    :param pandapowerNet net: The pandapower network
+    :param gens: the generators to include in the collection
+    :type gens: list[int] or None
+    :param float size: patch size
+    :param infofunc: infofunction for the patch element
+    :type infofunc: callable or None
+    :param orientation: orientation of gen collection. pi is\
+        directed downwards, increasing values lead to clockwise direction changes, dafault math.pi
+    :type orientation: list[float] or float
+    :param bool picker: picker argument passed to the patch collectionent, default False
+    :param patch_type: patch types to use for each patch or a single type for all patches, default None
+    :type patch_type: iterable[str] or str
+    :param unique_angles: angles for patches
+    :type unique_angles: dict
+    :param bool draw_by_type: should gens be drawn grouped by type or as one patch, default False
+    :param **kwargs: key word arguments are passed to the patch function
+
+    :return: a patch collection and a line collection for the gens
+    :rtype: tuple
+    """
+    return _create_gen_or_sgen_collection(
+        net, gens, size, infofunc, orientation, picker, patch_type, unique_angles, draw_by_type, "gen", **kwargs
+    )
+
+
+def create_sgen_collection(
+        net: pandapowerNet,
+        sgens=None,
+        size: float = 1.,
+        infofunc=None,
+        orientation=math.pi,
+        picker: bool = False,
+        patch_type=None,
+        unique_angles=None,
+        draw_by_type = False,
+        **kwargs
+):
+    """
+    Creates a matplotlib patch collection of pandapower sgen.
+
+    :param pandapowerNet net: The pandapower network
+    :param sgens: the static generators to include in the collection
+    :type sgens: list[int] or None
+    :param float size: patch size, default 1.0
+    :param callable infofunc: infofunction for the patch elem, default None
+    :param float orientation: orientation of static generator collection. pi is directed\
+        downwards, increasing values lead to clockwise direction changes, default math.pi
+    :param bool picker: picker argument passed to the patch collectionent, default False
+    :param patch_type: patch types to use for each patch or a single type for all patches, default None
+    :type patch_type: iterable[str] or str
+    :param unique_angles: angles for patches
+    :type unique_angles: dict
+    :param bool draw_by_type: should sgens be drawn grouped by type or as one patch, default False
+    :param **kwargs: key word arguments are passed to the patch function
+
+    :returns: patch collection, line collection
+    :rtype: tuple
+    """
+    return _create_gen_or_sgen_collection(
+        net, sgens, size, infofunc, orientation, picker, patch_type, unique_angles, draw_by_type, "sgen", **kwargs
+    )
 
 
 def create_storage_collection(net, storages=None, size=1., infofunc=None, orientation=np.pi,

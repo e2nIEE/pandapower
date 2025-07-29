@@ -67,7 +67,7 @@ def simple_plot(
         library="igraph",
         show_plot: bool = True,
         ax=None,
-        draw_sgens_by_type=None,
+        draw_by_type: bool=True,
         bus_dc_size: float = 1.0,
         bus_dc_color="m",
         line_dc_color="c",
@@ -292,7 +292,7 @@ def simple_plot(
         )
         collections.append(sc)
 
-    angles = calculate_unique_angles(net) if draw_sgens_by_type else None
+    angles = calculate_unique_angles(net) if draw_by_type else None
 
     if plot_sgens and len(net.sgen):
         sgc = create_sgen_collection(
@@ -300,7 +300,7 @@ def simple_plot(
             size=sgen_size,
             orientation=orientation,
             unique_angles=angles,
-            draw_sgens_by_type=draw_sgens_by_type,
+            draw_by_type=draw_by_type,
         )
         collections.append(sgc)
 
@@ -310,7 +310,7 @@ def simple_plot(
             size=gen_size,
             orientation=orientation,
             unique_angles=angles,
-            draw_gens_by_type=draw_sgens_by_type
+            draw_by_type=draw_by_type
         )
         collections.append(gc)
 
