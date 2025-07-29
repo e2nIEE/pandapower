@@ -15,7 +15,7 @@ from pandapower.pypower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMI
     VM, VA, CID, CZD, bus_cols, REF, PV
 from pandapower.pypower.idx_bus_sc import C_MAX, C_MIN, bus_cols_sc
 from .pypower.idx_bus_dc import dc_bus_cols, DC_BUS_TYPE, DC_BUS_AREA, DC_VM, DC_ZONE, DC_VMAX, DC_VMIN, DC_P, DC_BUS_I, \
-    DC_BASE_KV, DC_NONE, DC_REF, DC_B2B, DC_PD
+    DC_BASE_KV, DC_NONE, DC_REF, DC_B2B, DC_PD, DC_SOURCE
 from .pypower.idx_ssc import ssc_cols, SSC_BUS, SSC_R, SSC_X, SSC_SET_VM_PU, SSC_X_CONTROL_VA, SSC_X_CONTROL_VM, \
     SSC_STATUS, SSC_CONTROLLABLE, SSC_INTERNAL_BUS
 from .pypower.idx_svc import svc_cols, SVC_BUS, SVC_SET_VM_PU, SVC_MIN_FIRING_ANGLE, SVC_MAX_FIRING_ANGLE, SVC_STATUS, \
@@ -23,6 +23,7 @@ from .pypower.idx_svc import svc_cols, SVC_BUS, SVC_SET_VM_PU, SVC_MIN_FIRING_AN
 from .pypower.idx_vsc import vsc_cols, VSC_BUS, VSC_INTERNAL_BUS, VSC_R, VSC_X, VSC_STATUS, VSC_CONTROLLABLE, \
     VSC_BUS_DC, VSC_MODE_AC, VSC_VALUE_AC, VSC_MODE_DC, VSC_VALUE_DC, VSC_MODE_AC_V, VSC_MODE_AC_Q, VSC_MODE_AC_SL, \
     VSC_MODE_DC_V, VSC_MODE_DC_P, VSC_INTERNAL_BUS_DC, VSC_R_DC, VSC_PL_DC
+from .pypower.idx_source_dc import SOURCE_DC_BUS, SOURCE_DC_STATUS, SOURCE_DC_VG, source_dc_cols
 
 try:
     from numba import jit
@@ -184,9 +185,11 @@ def create_bus_lookup_numpy(net, bus_index, closed_bb_switch_mask):
         pv_list = [net["ext_grid"]["bus"].values[eg_is_mask], net["gen"]["bus"].values[gen_is_mask]]
         pv_ref = np.unique(np.hstack(pv_list))
         # Find active nodes -> their bus must be possibly kept when fused with a zero injection node
-        active_bus = [net["load"]["bus"].values[load_is_mask], net["motor"]["bus"].values[motor_is_mask], \
-                    net["sgen"]["bus"].values[sgen_is_mask], net["shunt"]["bus"].values[shunt_is_mask], \
-                    net["ward"]["bus"].values[ward_is_mask], net["xward"]["bus"].values[xward_is_mask]]
+        active_bus = [
+            net["load"]["bus"].values[load_is_mask], net["motor"]["bus"].values[motor_is_mask],
+            net["sgen"]["bus"].values[sgen_is_mask], net["shunt"]["bus"].values[shunt_is_mask],
+            net["ward"]["bus"].values[ward_is_mask], net["xward"]["bus"].values[xward_is_mask],
+        ]
         active_ref = np.unique(np.hstack(active_bus))
         # get the pp-indices of the buses which are connected to a switch to be fused
         fbus = net["switch"]["bus"].values[net._fused_bb_switches]
@@ -515,6 +518,18 @@ def _build_bus_dc_ppc(net, ppc):
     net["_pd2ppc_lookups"]["bus_dc"] = bus_lookup
     net["_pd2ppc_lookups"]["aux_dc"] = aux
 
+    # set dc sources
+    n_source_dc = len(net.source_dc)
+    ppc["source_dc"] = np.zeros(shape=(n_source_dc, source_dc_cols), dtype=np.float64)
+    if n_source_dc > 0:
+        source_buses = bus_lookup[net.source_dc.bus_dc.values]
+        ppc["bus_dc"][source_buses, DC_BUS_TYPE] = DC_REF
+        ppc["bus_dc"][source_buses, DC_VM] = net.source_dc.vm_pu.values
+
+        ppc["source_dc"][:n_source_dc, SOURCE_DC_BUS] = source_buses
+        ppc["source_dc"][:n_source_dc, SOURCE_DC_VG] = net.source_dc.vm_pu.values
+        ppc["source_dc"][:n_source_dc, SOURCE_DC_STATUS] = net.source_dc.in_service.values
+
     if mode != "nx":
         set_reference_buses_dc(net, ppc, bus_lookup)
 
@@ -578,12 +593,6 @@ def set_reference_buses_dc(net, ppc, bus_lookup):
     b2b_buses = np.intersect1d(ref_buses, p_buses)
     ppc["bus_dc"][b2b_buses, DC_BUS_TYPE] = DC_B2B
 
-    # set dc sources
-    if "source_dc" in net and len(net.source_dc) > 0:
-        source_buses = bus_lookup[net.source_dc.bus.values]
-        ppc["bus_dc"][source_buses, DC_BUS_TYPE] = DC_REF
-        ppc["bus_dc"][source_buses, DC_VM] = net.source_dc.vm_pu.values
-
 
 def _calc_pq_elements_and_add_on_ppc(net, ppc, sequence=None):
     # init values
@@ -644,7 +653,7 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc, sequence=None):
     # init values DC
     b_dc, p_dc = np.array([], dtype=np.int64), np.array([], dtype=np.float64)
 
-    p_dc_elements = []  # todo add more DC elements like DC loads, DC sgens
+    p_dc_elements = ["load_dc"]  # todo add more DC elements like DC loads, DC sgens
     # p_dc_elements = ["vsc"]  # todo add more DC elements like DC loads, DC sgens
     bus_dc_lookup = net["_pd2ppc_lookups"]["bus_dc"]
 
@@ -656,7 +665,7 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc, sequence=None):
         scaling = tab["scaling"].values if "scaling" in tab.columns else 1.
         sign = -1 if element == "sgen_dc" else 1  # todo add DC sgen etc.
         if element == "vsc":
-            # old: we model pl_dc as shsunt resistor instead (here left for reference, can be deleted safely)
+            # old: we model pl_dc as shunt resistor instead (here left for reference, can be deleted safely)
             p_dc = np.hstack([p_dc, tab["pl_dc_mw"].values * active * scaling * sign])
             # b_dc = np.hstack([b_dc, tab["bus_dc"].values])
             b_dc = np.hstack([b_dc, net["_pd2ppc_lookups"]["aux_dc"]["vsc"]])
