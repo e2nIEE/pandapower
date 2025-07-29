@@ -25,6 +25,7 @@ from pandapower.pypower.idx_tcsc import TCSC_STATUS, TCSC_F_BUS, TCSC_T_BUS
 from pandapower.pypower.idx_svc import SVC_STATUS, SVC_BUS
 from pandapower.pypower.idx_vsc import VSC_BUS, VSC_INTERNAL_BUS, VSC_BUS_DC, VSC_STATUS, VSC_MODE_AC, VSC_MODE_AC_V, \
     VSC_MODE_AC_Q, VSC_MODE_AC_SL, VSC_INTERNAL_BUS_DC
+from pandapower.pypower.idx_source_dc import SOURCE_DC_BUS, SOURCE_DC_STATUS
 from pandapower.pypower.run_userfcn import run_userfcn
 from itertools import combinations
 
@@ -236,27 +237,28 @@ def _init_ppc(net, mode="pf", sequence=None):
     # init empty ppc
     ppc = {
         "baseMVA": net.sn_mva,
-            "version": 2,
-            "bus": np.array([], dtype=float),
-            "bus_dc": np.array([], dtype=np.float64),
-            "branch": np.array([], dtype=np.complex128),
-            "branch_dc": np.array([], dtype=np.float64),
-            "tcsc": np.array([], dtype=np.complex128),
-            "svc": np.array([], dtype=np.complex128),
-            "ssc": np.array([], dtype=np.complex128),
-            "vsc": np.array([], dtype=np.float64),
-            "gen": np.array([], dtype=float),
-            "internal": {
-                "Ybus": np.array([], dtype=np.complex128),
-                "Yf": np.array([], dtype=np.complex128),
-                "Yt": np.array([], dtype=np.complex128),
-                "branch_is": np.array([], dtype=bool),
-                "branch_dc_is": np.array([], dtype=bool),
-                "gen_is": np.array([], dtype=bool),
-                "DLF": np.array([], dtype=np.complex128),
-                "buses_ord_bfs_nets": np.array([], dtype=float)
-            }
+        "version": 2,
+        "bus": np.array([], dtype=float),
+        "bus_dc": np.array([], dtype=np.float64),
+        "branch": np.array([], dtype=np.complex128),
+        "branch_dc": np.array([], dtype=np.float64),
+        "tcsc": np.array([], dtype=np.complex128),
+        "svc": np.array([], dtype=np.complex128),
+        "ssc": np.array([], dtype=np.complex128),
+        "vsc": np.array([], dtype=np.float64),
+        "gen": np.array([], dtype=float),
+        "source_dc": np.array([], dtype=float),
+        "internal": {
+            "Ybus": np.array([], dtype=np.complex128),
+            "Yf": np.array([], dtype=np.complex128),
+            "Yt": np.array([], dtype=np.complex128),
+            "branch_is": np.array([], dtype=bool),
+            "branch_dc_is": np.array([], dtype=bool),
+            "gen_is": np.array([], dtype=bool),
+            "DLF": np.array([], dtype=np.complex128),
+            "buses_ord_bfs_nets": np.array([], dtype=float)
         }
+    }
     if mode == "opf":
         # additional fields in ppc
         ppc["gencost"] = np.array([], dtype=float)
@@ -344,6 +346,7 @@ def _ppc2ppci(ppc, net, ppci=None):
 
     # update branch, gen and areas bus numbering
     ppc['gen'][:, GEN_BUS] = e2i[np.real(ppc["gen"][:, GEN_BUS]).astype(np.int64)].copy()
+    ppc['source_dc'][:, SOURCE_DC_BUS] = e2i_dc[np.real(ppc['source_dc'][:, SOURCE_DC_BUS]).astype(np.int64)].copy()
     ppc['svc'][:, SVC_BUS] = e2i[np.real(ppc["svc"][:, SVC_BUS]).astype(np.int64)].copy()
     ppc['ssc'][:, SSC_BUS] = e2i[np.real(ppc["ssc"][:, SSC_BUS]).astype(np.int64)].copy()
     ppc['ssc'][:, SSC_INTERNAL_BUS] = e2i[np.real(ppc["ssc"][:, SSC_INTERNAL_BUS]).astype(np.int64)].copy()
@@ -415,6 +418,11 @@ def _ppc2ppci(ppc, net, ppci=None):
            bs[n2i[np.real(ppc["tcsc"][:, TCSC_T_BUS]).astype(np.int64)]]).astype(bool)
     ppci["internal"]["tcsc_is"] = trs
 
+    # source_dc in service list
+    srcs = ((ppc["source_dc"][:, SOURCE_DC_STATUS] > 0) &  # source_dc status
+             bs_dc[n2i_dc[np.real(ppc["source_dc"][:, SOURCE_DC_BUS]).astype(np.int64)]])
+    ppci["internal"]["source_dc_is"] = srcs
+
     if 'areas' in ppc:
         ar = bs[n2i[ppc["areas"][:, PRICE_REF_BUS].astype(np.int64)]]
         # delete out of service areas
@@ -429,6 +437,7 @@ def _ppc2ppci(ppc, net, ppci=None):
     ppci["svc"] = ppc["svc"][svcs]
     ppci["ssc"] = ppc["ssc"][sscs]
     ppci["vsc"] = ppc["vsc"][vscs]
+    ppci["source_dc"] = ppc["source_dc"][srcs]
 
     if 'dcline' in ppc:
         ppci['dcline'] = ppc['dcline']
