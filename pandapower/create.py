@@ -73,6 +73,12 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                  ("scaling", "f8"),
                  ("in_service", 'bool'),
                  ("type", dtype(object))],
+        "load_dc": [("name", dtype(object)),
+                 ("bus_dc", "u4"),
+                 ("p_dc_mw", "f8"),
+                 ("scaling", "f8"),
+                 ("in_service", 'bool'),
+                 ("type", dtype(object))],
         "sgen": [("name", dtype(object)),
                  ("bus", "i8"),
                  ("p_mw", "f8"),
@@ -89,7 +95,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                  ("type", dtype(object)),
                  ("current_source", "bool")],
         "source_dc": [("name", dtype(object)),
-                      ("bus", "i8"),
+                      ("bus_dc", "i8"),
                       ("vm_pu", "f8"),
                       ("in_service", 'bool')],
         "motor": [("name", dtype(object)),
@@ -457,6 +463,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
                              ("loading_percent", "f8")],
         "_empty_res_load": [("p_mw", "f8"),
                             ("q_mvar", "f8")],
+        "_empty_res_load_dc": [("p_dc_mw", "f8")],
         "_empty_res_asymmetric_load": [("p_mw", "f8"),
                                        ("q_mvar", "f8")],
         "_empty_res_asymmetric_sgen": [("p_mw", "f8"),
@@ -468,7 +475,7 @@ def create_empty_network(name="", f_hz=50., sn_mva=1, add_stdtypes=True):
         "_empty_res_shunt": [("p_mw", "f8"),
                              ("q_mvar", "f8"),
                              ("vm_pu", "f8")],
-        "_empty_res_source_dc": [("p_mw", "f8")],
+        "_empty_res_source_dc": [("p_dc_mw", "f8")],
         "_empty_res_svc": [("thyristor_firing_angle_degree", "f8"),
                            ("x_ohm", "f8"),
                            ("q_mvar", "f8"),
@@ -4778,7 +4785,7 @@ def create_shunt_as_capacitor(net, bus, q_mvar, loss_factor, **kwargs):
     return create_shunt(net, bus, q_mvar=q_mvar, p_mw=p_mw, **kwargs)
 
 
-def create_source_dc(net, bus, vm_pu=1.0, index=None, name=None, in_service=True, **kwargs):
+def create_source_dc(net, bus_dc, vm_pu=1.0, index=None, name=None, in_service=True, **kwargs):
     """
     Creates a dc voltage source in a dc grid with an adjustable set point
     INPUT:
@@ -4801,14 +4808,63 @@ def create_source_dc(net, bus, vm_pu=1.0, index=None, name=None, in_service=True
         **index** (int) - The unique ID of the created svc
 
     """
-    _check_element(net, bus, element='bus_dc')
+    _check_element(net, bus_dc, element='bus_dc')
 
     index = _get_index_with_check(net, "source_dc", index)
 
-    entries = dict(zip(["name", "bus", "vm_pu", "in_service"],
-                       [name, bus, vm_pu, bool(in_service)]))
+    entries = dict(zip(["name", "bus_dc", "vm_pu", "in_service"],
+                       [name, bus_dc, vm_pu, bool(in_service)]))
 
     _set_entries(net, "source_dc", index, True, **entries, **kwargs)
+
+    return index
+
+
+def create_load_dc(
+        net: pandapowerNet,
+        bus_dc: int,
+        p_dc_mw: float,
+        scaling: float=1.0,
+        type: str=None,
+        index=None,
+        name=None,
+        in_service=True,
+        **kwargs
+    ):
+    """
+    Creates a dc voltage source in a dc grid with an adjustable set point
+    INPUT:
+
+        **net** (pandapowerNet) - The pandapower network in which the element is created
+
+        **bus_dc** (int) - index of the dc bus the dc load is connected to
+
+        **p_dc_mw** (float) - The power of the load
+
+    OPTIONAL:
+        **name** (str, None) - element name
+
+        **index** (int, None) - Force a specified ID if it is available. If None, the index one \
+            higher than the highest already existing index is selected.
+
+        **in_service** (bool, True) - True for in service or False for out of service.
+
+        **scaling** (float, default 1.) - An OPTIONAL scaling factor, is multiplied with p_dc_mw.
+
+        **type** (str) - A string describing the type.
+
+    OUTPUT:
+        **index** (int) - The unique ID of the created svc
+
+    """
+    _check_element(net, bus_dc, element='bus_dc')
+
+    index = _get_index_with_check(net, "source_dc", index)
+
+    entries = dict(zip(["name", "bus_dc", "p_dc_mw", "in_service", "scaling", "type"],
+                       [name, bus_dc, p_dc_mw, bool(in_service), scaling, type]))
+
+    _set_entries(net, "load_dc", index, True, **entries, **kwargs)
 
     return index
 
