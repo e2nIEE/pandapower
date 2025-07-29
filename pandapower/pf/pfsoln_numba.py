@@ -73,7 +73,7 @@ def pf_solution_single_slack(baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, Ybu
     faster version of pfsoln for a grid with a single slack bus
 
     NOTE: Do not use in combination with shunts (check if ppc["bus"][:, GS/BS] are != 0.)
-    NOTE: Do not use in combination with voltage dependend loads
+    NOTE: Do not use in combination with voltage dependent loads
 
     """
 
