@@ -6,7 +6,7 @@
 
 import numpy as np
 import pytest
-
+import copy
 from pandapower.control import ContinuousTapControl
 from pandapower.create import create_empty_network, create_buses, create_gen, create_load, create_ext_grid, \
     create_line_from_parameters, create_xward, create_bus, create_shunt
@@ -148,7 +148,7 @@ def check_xward_results(net, tol=1e-9):
 
 def run_and_assert_numba(net, **kwargs):
     if numba_installed:
-        net_temp = net.deepcopy()
+        net_temp = copy.deepcopy(net)
         runpp(net_temp, distributed_slack=True, numba=False, **kwargs)
         runpp(net, distributed_slack=True, **kwargs)
         assert_res_equal(net, net_temp)
@@ -182,7 +182,7 @@ def test_small_example():
     # ext_grids are responsible to take the slack power
     net.gen["slack_weight"] = 1
 
-    net2 = net.deepcopy()
+    net2 = copy.deepcopy(net)
 
     runpp(net, distributed_slack=True, numba=False)
 
@@ -456,7 +456,7 @@ def test_multivoltage_example_with_controller():
     expected_slack_power = load_disp + expected_losses - gen_disp  # MW
     tol = 0.5  # MW
 
-    net2 = net.deepcopy()
+    net2 = copy.deepcopy(net)
     # test distributed_slack
     run_and_assert_numba(net)
 
@@ -510,7 +510,7 @@ def test_dist_slack_user_pf_options():
     # ext_grids are responsible to take the slack power
     net.gen["slack_weight"] = 1
 
-    net2 = net.deepcopy()
+    net2 = copy.deepcopy(net)
 
     runpp(net, distributed_slack=True)
 
