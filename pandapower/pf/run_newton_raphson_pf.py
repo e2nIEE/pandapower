@@ -164,8 +164,8 @@ def _run_ac_pf_without_qlims_enforced(ppci, options):
         V, success, iterations, J, Vm_it, Va_it, r_theta_kelvin_per_mw, T = newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus)
         # due to TPDF, SVC, TCSC, the Ybus matrices can be updated in the newtonpf and stored in ppci["internal"],
         # so we extract them here for later use:
-        Ybus, Ybus_svc, Ybus_tcsc, Ybus_ssc, Ybus_vsc = (ppci["internal"].get(key) for key in ("Ybus", "Ybus_svc", "Ybus_tcsc", "Ybus_ssc", "Ybus_vsc"))
-        Ybus = Ybus + Ybus_svc + Ybus_tcsc + Ybus_ssc + Ybus_vsc
+        Ybus = ppci["internal"]["Ybus"] + ppci["internal"]["Ybus_svc"] + ppci["internal"]["Ybus_tcsc"] + \
+               ppci["internal"]["Ybus_ssc"] + ppci["internal"]["Ybus_vsc"]
 
     # keep "internal" variables in  memory / net["_ppc"]["internal"] -> needed for recycle.
     ppci['internal'].update(
