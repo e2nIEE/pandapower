@@ -42,9 +42,9 @@ from pandapower.pypower.idx_svc import SVC_BUS, SVC_STATUS, SVC_CONTROLLABLE, SV
     SVC_MIN_FIRING_ANGLE, SVC_Q
 from pandapower.pypower.idx_ssc import SSC_BUS, SSC_R, SSC_X, SSC_SET_VM_PU, SSC_STATUS, \
     SSC_CONTROLLABLE, SSC_Q, SSC_X_CONTROL_VM, SSC_X_CONTROL_VA, SSC_INTERNAL_BUS
-
 from pandapower.pf.create_jacobian_tdpf import calc_g_b, calc_a0_a1_a2_tau, calc_r_theta, \
     calc_T_frank, calc_i_square_p_loss, create_J_tdpf
+from pandapower.pypower.idx_source_dc import SOURCE_DC_PG
 
 from pandapower.pf.create_jacobian_facts import create_J_modification_svc, \
     create_J_modification_tcsc, create_J_modification_ssc_vsc, create_J_modification_hvdc
@@ -87,6 +87,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     svc = ppci['svc']
     ssc = ppci['ssc']
     vsc = ppci['vsc']
+    source_dc = ppci['source_dc']
     slack_weights = bus[:, SL_FAC].astype(float64)  ## contribution factors for distributed slack
     tdpf = options.get('tdpf', False)
 
@@ -138,7 +139,6 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     any_ssc_controllable = num_ssc_controllable > 0
 
     ## vsc
-    bus_dc[:, DC_BUS_TYPE] = DC_P # todo vsc
     vsc_branches = flatnonzero(nan_to_num(vsc[:, VSC_STATUS]))
     vsc_fb = vsc[vsc_branches, [VSC_BUS]].real.astype(np.int64)
     vsc_tb = vsc[vsc_branches, [VSC_INTERNAL_BUS]].real.astype(np.int64)
@@ -160,6 +160,9 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     any_vsc_controllable = num_vsc_controllable > 0
     vsc_dc_mode_p = (vsc_mode_dc == VSC_MODE_DC_P) & (vsc_mode_ac != VSC_MODE_AC_SL)
     vsc_dc_mode_v = (vsc_mode_dc == VSC_MODE_DC_V) & (vsc_mode_ac != VSC_MODE_AC_SL)
+
+    if any_vsc:
+        bus_dc[vsc[:,VSC_BUS_DC].astype(int), DC_BUS_TYPE] = DC_P  # todo implement vsc / sources / dc slacks
 
     hvdc_fb = branch_dc[:, DC_F_BUS].astype(np.int64)
     hvdc_tb = branch_dc[:, DC_T_BUS].astype(np.int64)
@@ -186,7 +189,6 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     num_facts_controllable = num_svc_controllable + num_tcsc_controllable # + 2 * num_ssc_controllable
     num_facts = num_svc + num_tcsc + num_ssc  # todo schould it be num_bus?
 
-
     #
     # tcsc_in_pq_f = np.isin(branch[tcsc_branches, F_BUS].real.astype(np.int64), pq)
     # tcsc_in_pq_t = np.isin(branch[tcsc_branches, T_BUS].real.astype(np.int64), pq)
@@ -200,7 +202,8 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     # initialize
     i = 0
     V = V0
-    V_dc = np.ones(num_bus_dc, dtype=np.float64)  # initial voltage vector for the DC line
+    #V_dc = np.ones(num_bus_dc, dtype=np.float64)  # initial voltage vector for the DC line
+    V_dc = bus_dc[:, DC_VM]
     v_set_point_index = vsc_controllable & (vsc_mode_dc == 0)
     if len(vsc_value_dc[v_set_point_index]) > 0:
         V_dc[:] = np.mean(vsc_value_dc[v_set_point_index])
@@ -398,7 +401,22 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
             g, b = calc_g_b(r, x)
 
         # todo: adjust the SSC J function to take care about the Ybus_ssc_not_controllable instead
-        J = create_jacobian_matrix(Ybus+Ybus_ssc_not_controllable+Ybus_vsc_not_controllable, V, ref, refpvpq, pvpq, pq, createJ, pvpq_lookup, nref, npv, npq, numba, slack_weights, dist_slack)
+        J = create_jacobian_matrix(
+            Ybus+Ybus_ssc_not_controllable+Ybus_vsc_not_controllable,
+            V,
+            ref,
+            refpvpq,
+            pvpq,
+            pq,
+            createJ,
+            pvpq_lookup,
+            nref,
+            npv,
+            npq,
+            numba,
+            slack_weights,
+            dist_slack
+        )
 
         if tdpf:
             # p.u. values for T, a1, a2, I, S
@@ -434,8 +452,21 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
                                                     vsc_mode_ac == VSC_MODE_AC_SL)
             J = J + J_m_vsc
         if any_branch_dc:
-            J_m_hvdc = create_J_modification_hvdc(J, V_dc, Ybus_hvdc, Ybus_vsc_dc, vsc_g_pu, vsc_gl_pu, dc_p,
-                                                  dc_p_lookup, vsc_dc_fb, vsc_dc_tb, vsc_dc_mode_v, vsc_dc_mode_p)
+            J_m_hvdc = create_J_modification_hvdc(
+                J,
+                V_dc,
+                Ybus_hvdc,
+                Ybus_vsc_dc,
+                vsc_g_pu,
+                vsc_gl_pu,
+                dc_p,
+                dc_p_lookup,
+                vsc_dc_fb,
+                vsc_dc_tb,
+                vsc_dc_mode_v,
+                vsc_dc_mode_p
+            )
+
             J = J + J_m_hvdc
 
         dx = -1 * spsolve(J, F, permc_spec=permc_spec, use_umfpack=use_umfpack)
@@ -569,19 +600,29 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         # bus_dc[relevant_bus_dc, DC_PD] = -P_dc
 
     # todo move this to pfsoln
+    # calculate the power and currents running through the dc buses and lines
     if any_branch_dc:
         Yf_hvdc, Yt_hvdc = make_Yft_facts(hvdc_fb, hvdc_tb, hvdc_y_pu, num_bus_dc)
+
         # Pbus_dc = V_dc * (Ybus_hvdc + Ybus_vsc_dc).dot(V_dc)
         Pbus_dc = V_dc * Ybus_hvdc.dot(V_dc)
         bus_dc[relevant_bus_dc, DC_PD] = Pbus_dc
+
+        # update branch flows
         i_hvdc_f = Yf_hvdc.dot(V_dc)
         p_hvdc_f = i_hvdc_f * V_dc[hvdc_fb] * baseMVA
         i_hvdc_t = Yt_hvdc.dot(V_dc)
         p_hvdc_t = i_hvdc_t * V_dc[hvdc_tb] * baseMVA
+
         branch_dc[hvdc_branches, DC_PF] = p_hvdc_f.real
         branch_dc[hvdc_branches, DC_IF] = i_hvdc_f.real
         branch_dc[hvdc_branches, DC_PT] = p_hvdc_t.real
         branch_dc[hvdc_branches, DC_IT] = i_hvdc_t.real
+
+        # calculate the dc sources and fill them with the correct values
+        if source_dc.shape[0] > 0:
+            source_bus = flatnonzero(bus_dc[relevant_bus_dc, DC_BUS_TYPE] == DC_REF)
+            source_dc[source_bus, SOURCE_DC_PG] = bus_dc[source_bus, DC_PD]
 
     # todo: remove this
     # Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
@@ -619,13 +660,15 @@ def _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights=None, dist_slack=Fals
     return F
 
 
-def _evaluate_Fx_facts(V,pq ,svc_buses=None, svc_set_vm_pu=None, tcsc_controllable=None, tcsc_set_p_pu=None, tcsc_tb=None,
-                       Ybus_tcsc=None, ssc_fb=None, ssc_tb=None, Ybus_ssc=None,
-                       ssc_controllable=None, ssc_set_vm_pu=None, old_F=None, pq_lookup=None,
-                       vsc_controllable=None, vsc_fb=None, vsc_tb=None,
-                       Ybus_vsc=None, Ybus_vsc_dc=None, Yf_vsc_dc=None, Yt_vsc_dc=None, Yf_vsc=None,
-                       vsc_mode_ac=None, vsc_mode_dc=None, vsc_value_ac=None, vsc_value_dc=None, vsc_dc_fb=None, vsc_dc_tb=None,
-                       vsc_dc_mode_v=None, vsc_dc_mode_p=None, vsc_gl_pu=None,
+def _evaluate_Fx_facts(V, pq ,
+                       svc_buses=None, svc_set_vm_pu=None,
+                       tcsc_controllable=None, tcsc_set_p_pu=None, tcsc_tb=None, Ybus_tcsc=None,
+                       ssc_fb=None, ssc_tb=None, Ybus_ssc=None, ssc_controllable=None, ssc_set_vm_pu=None,
+                       old_F=None, pq_lookup=None,
+                       vsc_controllable=None, vsc_fb=None, vsc_tb=None, Ybus_vsc=None, Ybus_vsc_dc=None, Yf_vsc_dc=None,
+                       Yt_vsc_dc=None, Yf_vsc=None,
+                       vsc_mode_ac=None, vsc_mode_dc=None, vsc_value_ac=None, vsc_value_dc=None, vsc_dc_fb=None,
+                       vsc_dc_tb=None, vsc_dc_mode_v=None, vsc_dc_mode_p=None, vsc_gl_pu=None,
                        V_dc=None, Ybus_hvdc=None, num_branch_dc=None, P_dc=None, dc_p=None, dc_ref=None, dc_b2b=None,
                        dc_p_lookup=None, dc_ref_lookup=None, dc_b2b_lookup=None, P_dc_sum_sl=None):
     mis_facts = np.array([], dtype=np.float64)
@@ -675,6 +718,7 @@ def _evaluate_Fx_facts(V,pq ,svc_buses=None, svc_set_vm_pu=None, tcsc_controllab
     if np.any(vsc_controllable):
         Sbus_vsc = V * conj(Ybus_vsc * V)
         sf_vsc = V[vsc_fb] * conj(Yf_vsc.dot(V))
+
         ###### Mismatch for the first VSC variable:
         # the mismatch value is written for the aux bus, but calculated based on the AC bus
         ac_mode_v = (vsc_mode_ac == VSC_MODE_AC_V) | (vsc_mode_ac == VSC_MODE_AC_SL)
