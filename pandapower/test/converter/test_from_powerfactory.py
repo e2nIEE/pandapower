@@ -10,10 +10,7 @@ from pandapower.converter.powerfactory.export_pfd_to_pp import import_project, f
 from pandapower import pp_dir
 from pandapower.file_io import from_json
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -120,8 +117,8 @@ def test_pf_export_trafo3w_tap_depedence_impedance_tapchanger():
     app = pf.GetApplication()
 
     # import the tap changer test grid to powerfactory
-    path = os.path.join(pp_dir, 'test', 'converter', 'tap_table_from_tdi.pfd')
-    prj = import_project(path, app, 'TEST_PF_CONVERTER', import_folder='TEST_IMPORT', clear_import_folder=True)
+    path = os.path.join(pp_dir, 'test', 'converter', 'testfiles', 'tap_table_from_tdi.pfd')
+    prj = import_project(path, app, 'test_tap_table_from_tdi', import_folder='TEST_IMPORT', clear_import_folder=True)
     prj_name = prj.GetFullName()
 
     net = from_pfd(app, prj_name=prj_name)
@@ -150,7 +147,7 @@ def test_pf_export_tap_changer():
     app = pf.GetApplication()
     # import the tap changer test grid to powerfactory
     path = os.path.join(pp_dir, 'test', 'converter', 'testfiles', 'test_tap_changer.pfd')
-    prj = import_project(path, app, 'TEST_PF_CONVERTER', import_folder='TEST_IMPORT', clear_import_folder=True)
+    prj = import_project(path, app, 'test_tap_changer', import_folder='TEST_IMPORT', clear_import_folder=True)
     prj_name = prj.GetFullName()
 
     net = from_pfd(app, prj_name=prj_name)
@@ -178,16 +175,16 @@ def test_pf_export_tap_changer():
 def test_pf_export_q_capability_curve():
     app = pf.GetApplication("LO3195", "Gbhai001GBHAI!")
     # import the tap changer test grid to powerfactory
-    path = os.path.join(pp_dir, 'test', 'converter', 'q_capabiltiy_curve.pfd')
-    prj = import_project(path, app, 'TEST_PF_CONVERTER', import_folder='TEST_IMPORT', clear_import_folder=True)
+    path = os.path.join(pp_dir, 'test', 'converter', 'testfiles', 'q_capabiltiy_curve.pfd')
+    prj = import_project(path, app, 'test_q_capability_curve', import_folder='TEST_IMPORT', clear_import_folder=True)
     prj_name = prj.GetFullName()
 
     net = from_pfd(app, prj_name=prj_name)
 
     assert len(net['q_capability_curve_table']) == 12
-    assert len(net['q_capability_curve_characteristic']) == 1
-    assert net['q_capability_curve_characteristic']['q_max_characteristic'].notna().all()
-    assert net['q_capability_curve_characteristic']['q_min_characteristic'].notna().all()
+    assert len(net['q_capability_characteristic']) == 1
+    assert net['q_capability_characteristic']['q_max_characteristic'].notna().all()
+    assert net['q_capability_characteristic']['q_min_characteristic'].notna().all()
     assert_array_equal( np.hstack( net.q_capability_curve_table.p_mw), np.array(
         [-331.01001, -298.0, -198.0, -66.2000, -0.1, 0, 0.1, 66.200, 100, 198.00, 298.00, 331.0100]))
     assert_array_equal( np.hstack(net.q_capability_curve_table.q_min_mvar), np.array(
@@ -212,6 +209,65 @@ def test_pf_export_q_capability_curve():
         'ext_grid_p_diff': 0.1,
         'ext_grid_q_diff': 0.1
     }
+
+    for key, diff in all_diffs.items():
+        if type(diff) == pd.Series:
+            delta = diff.abs().max()
+        else:
+            delta = diff['diff'].abs().max()
+        assert delta < tol[key], "%s has too high difference: %f > %f" % (key, delta, tol[key])
+
+@pytest.mark.skipif(not PF_INSTALLED, reason='powerfactory must be installed')
+def test_shunt_tables():
+    app = pf.GetApplication()
+    # import the shunt table test grid to powerfactory
+    path = os.path.join(pp_dir, 'test', 'converter', 'testfiles', 'test_shunt_table.pfd')
+    prj = import_project(path, app, 'test_shunt_table', import_folder='TEST_IMPORT', clear_import_folder=True)
+    prj_name = prj.GetFullName()
+
+    net = from_pfd(app, prj_name=prj_name)
+
+    all_diffs = validate_pf_conversion(net, tolerance_mva=1e-9)
+
+    tol = {
+        'diff_vm': 1e-6,
+        'diff_va': 1e-4,
+        'line_diff': 1e-2,
+        'ext_grid_p_diff': 1e-3,
+        'ext_grid_q_diff': 1e-3
+    }
+
+    P_shunt_with_table = 0.009812678
+    Q_shunt_with_table = 49.063389854
+    P_shunt_without_table = 0
+    Q_shunt_without_table = 114.265130255
+
+    assert np.isclose(P_shunt_with_table, net.res_shunt.loc[1, "p_mw"], rtol=0, atol=1e-5)
+    assert np.isclose(Q_shunt_with_table, net.res_shunt.loc[1, "q_mvar"], rtol=0, atol=1e-5)
+    assert np.isclose(P_shunt_without_table, net.res_shunt.loc[0, "p_mw"], rtol=0, atol=1e-5)
+    assert np.isclose(Q_shunt_without_table, net.res_shunt.loc[0, "q_mvar"], rtol=0, atol=1e-5)
+
+    for key, diff in all_diffs.items():
+        if type(diff) == pd.Series:
+            delta = diff.abs().max()
+        else:
+            delta = diff['diff'].abs().max()
+        assert delta < tol[key], "%s has too high difference: %f > %f" % (key, delta, tol[key])
+
+@pytest.mark.skipif(not PF_INSTALLED, reason='powerfactory must be installed')
+def test_mixed_zip_loads_import():
+    # the file is done with PF2024 SP1
+    app = pf.GetApplication()
+    # import the mixed zip load test grid
+    path = os.path.join(pp_dir, 'test', 'converter', 'testfiles', 'test_shunt_table.pfd')
+    prj = import_project(path, app, 'mixed_zip_loads', import_folder='TEST_IMPORT', clear_import_folder=True)
+    prj_name = prj.GetFullName()
+
+    net = from_pfd(app, prj_name=prj_name)
+
+    all_diffs = validate_pf_conversion(net, tolerance_mva=1e-6)
+
+    tol = get_tol()
 
     for key, diff in all_diffs.items():
         if type(diff) == pd.Series:

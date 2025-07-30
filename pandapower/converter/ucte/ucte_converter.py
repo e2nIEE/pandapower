@@ -210,8 +210,10 @@ class UCTE2pandapower:
         loads = loads.reset_index(level=0, drop=True)
         loads["scaling"] = 1
         loads["in_service"] = True
-        loads["const_z_percent"] = 0
-        loads["const_i_percent"] = 0
+        loads["const_z_p_percent"] = 0
+        loads["const_z_q_percent"] = 0
+        loads["const_i_p_percent"] = 0
+        loads["const_i_q_percent"] = 0
         self._copy_to_pp("load", loads)
         self.logger.info("Finished converting the loads.")
 
@@ -332,6 +334,10 @@ class UCTE2pandapower:
         impedances["rtf_pu"] = impedances["r"] / impedances["z_ohm"]
         impedances["xft_pu"] = impedances["x"] / impedances["z_ohm"]
         impedances["xtf_pu"] = impedances["x"] / impedances["z_ohm"]
+        impedances["gf_pu"] = impedances["g"] / impedances["z_ohm"]
+        impedances["gt_pu"] = impedances["g"] / impedances["z_ohm"]
+        impedances["bf_pu"] = impedances["b"] / impedances["z_ohm"]
+        impedances["bt_pu"] = impedances["b"] / impedances["z_ohm"]
         self._fill_empty_names(impedances)
         self._copy_to_pp("impedance", impedances)
         self.logger.info("Finished converting the impedances.")

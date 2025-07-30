@@ -32,10 +32,7 @@ try:
 except ImportError:
     lightsim2grid_installed = False
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 

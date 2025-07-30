@@ -19,7 +19,7 @@ def test_networks():
     "get_equivalent.py")
 
     if tolerance_mva = 1e-8, this test mit epsilon=1e-6 should work.
-    if tolerance_mva = 1e-6, we should hier give a bigger value, e.g. epsilon = 1e-5
+    if tolerance_mva = 1e-6, we should here give a bigger value, e.g. epsilon = 1e-5
 
     """
 
