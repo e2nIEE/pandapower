@@ -263,7 +263,7 @@ class CimParser:
                     'TapChangerControl']),
                 'PhaseTapChangerAsymmetrical': pd.DataFrame(columns=[
                     'rdfId', 'TransformerEnd', 'neutralStep', 'lowStep', 'highStep', 'voltageStepIncrement',
-                    'TapChangerControl']),
+                    'TapChangerControl', 'windingConnectionAngle']),
                 'PhaseTapChangerSymmetrical': pd.DataFrame(columns=[
                     'rdfId', 'TransformerEnd', 'neutralStep', 'lowStep', 'highStep', 'voltageStepIncrement',
                     'TapChangerControl']),
@@ -332,6 +332,7 @@ class CimParser:
                     'rdfId', 'discrete', 'enabled', 'targetValue', 'targetValueUnitMultiplier']),
                 'SynchronousMachine': pd.DataFrame(columns=[
                     'rdfId', 'p', 'q', 'referencePriority', 'operatingMode', 'controlEnabled']),
+                'GeneratingUnit': pd.DataFrame(columns=['rdfId', 'normalPF']),
                 'AsynchronousMachine': pd.DataFrame(columns=['rdfId', 'p', 'q']),
                 'EnergySource': pd.DataFrame(columns=['rdfId', 'activePower', 'reactivePower']),
                 'StaticVarCompensator': pd.DataFrame(columns=['rdfId', 'q']),
@@ -549,8 +550,10 @@ class CimParser:
         else:
             for ele, df in prf_content.items():
                 if ele not in output[prf].keys():
-                    output[prf][ele] = pd.DataFrame()
-                output[prf][ele] = pd.concat([output[prf][ele], prf_content[ele]], ignore_index=True, sort=False)
+                    concat_list = [prf_content[ele]]
+                else:
+                    concat_list = [output[prf][ele], prf_content[ele]]
+                output[prf][ele] = pd.concat(concat_list, ignore_index=True, sort=False)
 
     def _check_file(self, file: str) -> bool:
         if not os.path.isfile(file):
@@ -668,7 +671,7 @@ class CimParser:
                     'TapChangerControl']),
                 'PhaseTapChangerAsymmetrical': pd.DataFrame(columns=[
                     'rdfId', 'TransformerEnd', 'neutralStep', 'lowStep', 'highStep', 'voltageStepIncrement',
-                    'TapChangerControl']),
+                    'TapChangerControl', 'windingConnectionAngle']),
                 'PhaseTapChangerSymmetrical': pd.DataFrame(columns=[
                     'rdfId', 'TransformerEnd', 'neutralStep', 'lowStep', 'highStep', 'voltageStepIncrement',
                     'TapChangerControl']),
@@ -773,7 +776,7 @@ class CimParser:
                 'NonlinearShuntCompensator': pd.DataFrame(columns=['rdfId', 'controlEnabled', 'sections', 'inService']),
                 'EquivalentInjection': pd.DataFrame(columns=[
                     'rdfId', 'regulationTarget', 'regulationStatus', 'p', 'q', 'inService']),
-                'GeneratingUnit': pd.DataFrame(columns=['rdfId', 'inService']),
+                'GeneratingUnit': pd.DataFrame(columns=['rdfId', 'normalPF', 'inService']),
                 'NuclearGeneratingUnit': pd.DataFrame(columns=['rdfId', 'inService']),
                 'HydroGeneratingUnit': pd.DataFrame(columns=['rdfId', 'inService']),
                 'ThermalGeneratingUnit': pd.DataFrame(columns=['rdfId', 'inService']),

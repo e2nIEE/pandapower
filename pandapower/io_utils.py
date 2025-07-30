@@ -14,7 +14,7 @@ import types
 import weakref
 from ast import literal_eval
 from functools import partial
-from inspect import isclass, _findclass
+from inspect import isclass, _findclass  # type: ignore[attr-defined]
 from warnings import warn
 import numpy as np
 import pandas.errors
@@ -34,12 +34,12 @@ try:
     import psycopg2.extras
     PSYCOPG2_INSTALLED = True
 except ImportError:
-    psycopg2 = None
+    psycopg2 = None  # type: ignore[assignment]
     PSYCOPG2_INSTALLED = False
 try:
     from pandas.testing import assert_series_equal, assert_frame_equal
 except ImportError:
-    from pandas.util.testing import assert_series_equal, assert_frame_equal
+    from pandas.util.testing import assert_series_equal, assert_frame_equal  # type: ignore[no-redef,import-not-found]
 try:
     from cryptography.fernet import Fernet
     cryptography_INSTALLED = True
@@ -80,10 +80,7 @@ try:
 except (ImportError, OSError):
     SHAPELY_INSTALLED = False
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -167,6 +164,15 @@ def to_dict_of_dfs(net, include_results=False, include_std_types=True, include_p
             tab = tab[value.columns]
             if "recycle" in tab.columns:
                 tab["recycle"] = tab["recycle"].apply(json.dumps)
+            dodfs[item] = tab
+        elif item == "q_capability_characteristic":
+            item_dtypes = value.dtypes.astype(str).to_dict()
+            columns = [c for c in value.columns if item_dtypes[c] != "object"]
+            to_json_columns = [c for c in value.columns if item_dtypes[c] == "object"]
+            tab = value[columns].copy()
+            for to_json_col in to_json_columns:
+                tab[to_json_col] = value[to_json_col].apply(lambda x: json.dumps(x, cls=PPJSONEncoder, indent=2))
+            tab = tab[value.columns]
             dodfs[item] = tab
         elif "geo" in value.columns:
             columns = [c for c in value.columns if c != "geo"]
@@ -253,11 +259,11 @@ def from_dict_of_dfs(dodfs, net=None):
             net['user_pf_options'] = {c: v for c, v in zip(table.columns, table.values[0])}
             continue  # don't go into try..except
         else:
-            for json_column in ("object", "recycle"):
+            for json_column in ("object", "recycle", "q_max_characteristic", "q_min_characteristic"):
                 if json_column in table.columns:
                     table[json_column] = table[json_column].apply(
                         lambda x: json.loads(x, cls=PPJSONDecoder))
-            if not isinstance(table.index, pd.MultiIndex):
+            if not isinstance(table.index, pd.MultiIndex) and item in net:
                 table = table.rename_axis(net[item].index.name)
             net[item] = table
             # convert geodata to geojson
@@ -268,7 +274,7 @@ def from_dict_of_dfs(dodfs, net=None):
                     )
         # set the index to be Int
         try:
-            net[item].set_index(net[item].index.astype(np.int64), inplace=True)
+            net[item] = net[item].set_index(net[item].index.astype(np.int64))
         except (TypeError, ValueError):
             # TypeError or ValueError: if not int index (e.g. str)
             pass
