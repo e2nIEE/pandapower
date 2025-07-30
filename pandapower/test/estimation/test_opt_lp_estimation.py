@@ -7,7 +7,7 @@ import sys
 
 import numpy as np
 import pytest
-
+import copy
 from pandapower.estimation import estimate
 from pandapower.estimation.algorithm.base import WLSAlgorithm
 from pandapower.estimation.algorithm.lp import LPAlgorithm
