@@ -42,7 +42,7 @@ fault_location_buses = [0, 1, 2, 3]
 is_branch_test = [True, False]
 gen_idx = [1, [1, 3]]  # includes both, static generator and synchronous generator
 is_active_current = [True, False]
-gen_mode = ['sgen', 'gen']  # TODO: implement mode 'all'
+gen_mode = ['sgen', 'gen']  # TODO: mode 'all' is implemented but results are not created yet
 
 
 # Create parameter list
@@ -228,7 +228,7 @@ def load_test_case_data(net_name, fault_location_bus, vector_group=None, gen_idx
     is_gen = gen_idx is not None
     if vector_group:
         if is_gen:
-            net_name = f"{net_name}_{vector_group.lower()}_{gen_mode}"
+            net_name = f"{net_name}_{vector_group.lower()}_gen"
             if is_active_current:
                 net_name = f"{net_name}_act"
         else:
@@ -237,21 +237,21 @@ def load_test_case_data(net_name, fault_location_bus, vector_group=None, gen_idx
     net = load_test_case(net_name)
 
     if is_gen:
-        if gen_mode == "sgen":
+        if gen_mode == "sgen" or gen_mode == "all":
             net.sgen["k"] = 1.25 if is_active_current else 1.2
         if isinstance(gen_idx, list) | isinstance(gen_idx, tuple):
-            if gen_mode == "sgen":
+            if gen_mode == "sgen" or gen_mode == "all":
                 net.sgen.loc[net.sgen.bus.isin(gen_idx), 'in_service'] = True
                 net.sgen.loc[~net.sgen.bus.isin(gen_idx), 'in_service'] = False
-            if gen_mode == "gen":
+            if gen_mode == "gen" or gen_mode == "all":
                 net.gen.loc[net.gen.bus.isin(gen_idx), 'in_service'] = True
                 net.gen.loc[~net.gen.bus.isin(gen_idx), 'in_service'] = False
             gen_str = f"_{gen_mode}{''.join(str(idx) for idx in gen_idx)}"
         else:
-            if gen_mode == "sgen":
+            if gen_mode == "sgen" or gen_mode == "all":
                 net.sgen['in_service'] = False
                 net.sgen.loc[net.sgen.bus == gen_idx, 'in_service'] = True
-            if gen_mode == "gen":
+            if gen_mode == "gen" or gen_mode == "all":
                 net.gen['in_service'] = False
                 net.gen.loc[net.gen.bus == gen_idx, 'in_service'] = True
             gen_str = f"_{gen_mode}{gen_idx}"
@@ -266,8 +266,8 @@ def load_test_case_data(net_name, fault_location_bus, vector_group=None, gen_idx
     dataframes = {}
     for bb in ['bus', 'branch']:
         file_name = f"{net_name}_pf_sc_results_{fault_location_bus}_{bb}{gen_str}.xlsx"
-        if gen_mode == 'sgen':
-            file_name = file_name.replace('_gen_', '_sgen_')
+        if gen_mode != 'gen' and gen_mode is not None:
+            file_name = file_name.replace('_gen_', gen_mode)
         try:
             dataframes[bb] = load_pf_results(os.path.join(
                 testfiles_path,

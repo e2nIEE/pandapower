@@ -24,6 +24,7 @@ def get_all_pf_sc_results(proj_name, fault_location=None, activate_sgen=None, ac
     cases = ["max", "min"]
     fault_impedances = [(0.0, 0.0), (5.0, 5.0)]
     lv_tol_percents = [6, 10]
+    activate_all = True if activate_sgen is not None and activate_gen is not None else False
     if fault_location is None:
         fault_locations = [None]
     elif isinstance(fault_location, (list, tuple)):
@@ -48,7 +49,12 @@ def get_all_pf_sc_results(proj_name, fault_location=None, activate_sgen=None, ac
                                     proj_name + f'_pf_sc_results_{fault_location}_{element}.xlsx')
             if activate_sgen is not None or activate_gen is not None:
                 gen_names = ''
-                if activate_sgen is not None:
+                if activate_all:
+                    for active_sgen in activate_sgen:
+                        gen_name = str(active_sgen)
+                        gen_names += gen_name
+                        elm_name = '_all'
+                elif activate_sgen is not None:
                     for active_sgen in activate_sgen:
                         gen_name = str(active_sgen)
                         gen_names += gen_name
