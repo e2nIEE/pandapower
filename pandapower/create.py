@@ -1560,6 +1560,8 @@ def create_gen(
 
         **type** (string, None) - type variable to classify generators
 
+        **slack** (bool, False) - flag that sets the generator as slack if True
+
         **reactive_capability_curve** (bool, False) - True if both the id_q_capability_characteristic and the \
             curve style are present in the generator
 
@@ -2304,12 +2306,13 @@ def create_line_dc(
                     "solar_radiation_w_per_sq_m", "solar_absorptivity", "emissivity",
                     "r_theta_kelvin_per_mw", "mc_joule_per_m_k")
     tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
-
     _set_entries(net, "line_dc", index, **v, **kwargs)
 
-    if geodata is not None:
-        net["line_dc_geodata"].loc[index, "coords"] = None
-        net["line_dc_geodata"].at[index, "coords"] = geodata
+
+    if geodata and hasattr(geodata, '__iter__'):
+        geo = [[x, y] for x, y in geodata]
+        net.line_dc.at[index, "geo"] = f'{{"coordinates": {geo}, "type": "LineString"}}'
+
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "line_dc")
     _set_value_if_not_nan(net, index, alpha, "alpha", "line_dc")
@@ -2894,9 +2897,11 @@ def create_line_dc_from_parameters(
 
     _set_entries(net, "line_dc", index, **v, **kwargs)
 
-    if geodata is not None:
-        net["line_dc_geodata"].loc[index, "coords"] = None
-        net["line_dc_geodata"].at[index, "coords"] = geodata
+
+    if geodata and hasattr(geodata, '__iter__'):
+        geo = [[x, y] for x, y in geodata]
+        net.line_dc.at[index, "geo"] = f'{{"coordinates": {geo}, "type": "LineString"}}'
+
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "line_dc")
     _set_value_if_not_nan(net, index, alpha, "alpha", "line_dc")
