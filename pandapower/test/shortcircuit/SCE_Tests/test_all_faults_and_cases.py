@@ -40,52 +40,106 @@ vector_groups = ['Dyn', 'Yyn', 'YNyn']
 lv_tol_percents = [6, 10]
 fault_location_buses = [0, 1, 2, 3]
 is_branch_test = [True, False]
-sgen_idx = [None, 1, [1, 3]]  # None for is_sgen=false
-is_active_current = [False]  # use True only if sgen_idx is not None
+gen_idx = [1, [1, 3]]  # includes both, static generator and synchronous generator
+is_active_current = [False]  # use True only if gen_idx is not None
+gen_mode = ['sgen', 'gen']  # TODO: implement mode 'all'
 
 
 # Create parameter list
-parametrize_values = list(
-    product(faults, cases, values, lv_tol_percents, fault_location_buses, is_branch_test, sgen_idx, is_active_current)
+# parametrize_values = list(
+#     product(faults, cases, values, lv_tol_percents, fault_location_buses, is_branch_test, gen_idx, is_active_current, gen_mode)
+# )
+# gen_idx = None → without gen_mode
+parametrize_values_1 = product(
+    faults, cases, values, lv_tol_percents, fault_location_buses,
+    is_branch_test, [None], is_active_current, [None]
 )
+# gen_idx != None → with gen_mode
+parametrize_values_2 = product(
+    faults, cases, values, lv_tol_percents, fault_location_buses,
+    is_branch_test, gen_idx, is_active_current, gen_mode
+)
+
+parametrize_values = list(parametrize_values_1) + list(parametrize_values_2)
+
 
 # Create parameter list with vector group
 #  uses "Dyn" as vector group for LLL and LL. LLG and LG are combined with all vector groups.
+# gen_idx = None → without gen_mode
 parametrize_values_vector = list(product(
-    net_names, faults[:2], cases, values, lv_tol_percents, vector_groups[:1], fault_location_buses, is_branch_test,
-    [None], is_active_current
+    net_names, faults[:2], cases, values, lv_tol_percents, vector_groups[:1],
+    fault_location_buses, is_branch_test, [None], is_active_current, [None]
 )) + list(product(
-    net_names, faults[2:], cases, values, lv_tol_percents, vector_groups, fault_location_buses, is_branch_test, [None],
-    is_active_current
+    net_names, faults[2:], cases, values, lv_tol_percents, vector_groups,
+    fault_location_buses, is_branch_test, [None], is_active_current, [None]
 ))
+
 # add sgen test to the vector test
-sgen_params: set[tuple[str, str, str, tuple[float, float], int, int, bool, None|int|list[int]|tuple[int, ...]]] = set()
-for values in parametrize_values_vector:
-    net_name = values[0].replace("test_case_", "")
+# sgen_params: set[tuple[str, str, str, tuple[float, float], int, int, bool, None|int|list[int]|tuple[int, ...]]] = set()
+# for values in parametrize_values_vector:
+#     net_name = values[0].replace("test_case_", "")
+#     if "five_bus" in net_name:
+#         sgen_params.add((net_name, *values[1:-2], (3, 4), values[-1]))
+#     elif "twenty_bus" in net_name:
+#         vector_group = values[5]
+#         if vector_group == "Dyn":
+#             sgen_params.add((net_name, *values[1:-4], 8, values[-3], (4,), values[-1]))
+#         elif vector_group == "YNyn":
+#             sgen_params.add((net_name, *values[1:-4], 8, values[-3], (4, 7, 14, 19), values[-1]))
+#         elif vector_group == "Yyn":
+#             sgen_params.add((net_name, *values[1:-4], 8, values[-3], (4, 7, 14), values[-1]))
+# parametrize_values_vector += list(sgen_params)
+sgen_params = set()
+
+for vals in parametrize_values_vector:
+    (
+        net_name, fault, case, val, lv_tol, vec_group,
+        fault_bus, branch_test, gen_idx, is_active, gen_mode_val
+    ) = vals
+
+    short_name = net_name.replace("test_case_", "")
     if "five_bus" in net_name:
-        sgen_params.add((net_name, *values[1:-2], (3, 4), values[-1]))
+        for mode in gen_mode:
+            sgen_params.add((
+                short_name, fault, case, val, lv_tol, vec_group,
+                fault_bus, branch_test, (3, 4), is_active, mode
+            ))
+
     elif "twenty_bus" in net_name:
-        vector_group = values[5]
-        if vector_group == "Dyn":
-            sgen_params.add((net_name, *values[1:-4], 8, values[-3], (4,), values[-1]))
-        elif vector_group == "YNyn":
-            sgen_params.add((net_name, *values[1:-4], 8, values[-3], (4, 7, 14, 19), values[-1]))
-        elif vector_group == "Yyn":
-            sgen_params.add((net_name, *values[1:-4], 8, values[-3], (4, 7, 14), values[-1]))
+        for fl in (0, 8, 18):
+            if vec_group == "Dyn":
+                gen_idx_new = (4,)
+            elif vec_group == "YNyn":
+                gen_idx_new = (4, 7, 14, 19)
+            elif vec_group == "Yyn":
+                gen_idx_new = (4, 7, 14)
+            else:
+                continue
+
+            for mode in gen_mode:
+                sgen_params.add((
+                    short_name, fault, case, val, lv_tol, vec_group,
+                    fl, branch_test, gen_idx_new, is_active, mode
+                ))
+
 parametrize_values_vector += list(sgen_params)
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize("fault, case, fault_values, lv_tol_percent, fault_location_bus, is_branch_test, sgen_idx, "
-                         "is_active_current",
+@pytest.mark.parametrize("fault, case, fault_values, lv_tol_percent, fault_location_bus, is_branch_test, gen_idx, "
+                         "is_active_current, gen_mode",
                          parametrize_values)
-def test_four_bus_radial_grid(fault, case, fault_values, lv_tol_percent, fault_location_bus, is_branch_test, sgen_idx, is_active_current):
-    if sgen_idx is not None:
+def test_four_bus_radial_grid(fault, case, fault_values, lv_tol_percent, fault_location_bus, is_branch_test,
+                              gen_idx, is_active_current, gen_mode):
+    # if gen_idx is None: # use for tests with sgen/gen only
+    #     return
+    if gen_idx is not None:
         if is_active_current:
             net_name = "1_four_bus_radial_grid_sgen_act"
         else:
-            net_name = "1_four_bus_radial_grid_sgen"
-        net, dataframes = load_test_case_data(net_name, fault_location_bus, sgen_idx=sgen_idx, is_active_current=is_active_current)
+            net_name = "1_four_bus_radial_grid_gen"
+        net, dataframes = load_test_case_data(net_name, fault_location_bus,
+                                              gen_idx=gen_idx, is_active_current=is_active_current, gen_mode=gen_mode)
     else:
         net, dataframes = load_test_case_data("test_case_1_four_bus_radial_grid", fault_location_bus)
     results = run_test_cases(
@@ -103,14 +157,15 @@ def test_four_bus_radial_grid(fault, case, fault_values, lv_tol_percent, fault_l
 
 @pytest.mark.slow
 @pytest.mark.parametrize(
-    "net_name, fault, case, fault_values, lv_tol_percent, vector_group, fault_location_bus, is_branch_test, sgen_idx, "
-    "is_active_current",
+    "net_name, fault, case, fault_values, lv_tol_percent, vector_group, fault_location_bus, is_branch_test, gen_idx, "
+    "is_active_current, gen_mode",
     parametrize_values_vector)
 def test_grids_with_trafo(net_name, fault, case, fault_values, lv_tol_percent, vector_group, fault_location_bus,
-                          is_branch_test, sgen_idx, is_active_current):
-    if sgen_idx is None:
-        return
-    net, dataframes = load_test_case_data(net_name, fault_location_bus, vector_group, sgen_idx=sgen_idx, is_active_current=is_active_current)
+                          is_branch_test, gen_idx, is_active_current, gen_mode):
+    # if gen_idx is None: # use for tests with sgen/gen only
+    #     return
+    net, dataframes = load_test_case_data(net_name, fault_location_bus, vector_group,
+                                          gen_idx=gen_idx, is_active_current=is_active_current, gen_mode=gen_mode)
     results = run_test_cases(
         net,
         dataframes["branch" if is_branch_test else "bus"],
@@ -166,11 +221,12 @@ def load_test_case(net_name: str) -> pandapowerNet:
     return from_json(os.path.join(testfiles_path, "test_grids", grid_folder, f"{net_name}.json"))
 
 
-def load_test_case_data(net_name, fault_location_bus, vector_group=None, sgen_idx=None, is_active_current=False):
-    is_sgen = sgen_idx is not None
+def load_test_case_data(net_name, fault_location_bus, vector_group=None, gen_idx=None, is_active_current=False,
+                        gen_mode=None):
+    is_gen = gen_idx is not None
     if vector_group:
-        if is_sgen:
-            net_name = f"{net_name}_{vector_group.lower()}_sgen"
+        if is_gen:
+            net_name = f"{net_name}_{vector_group.lower()}_{gen_mode}"
             if is_active_current:
                 net_name = f"{net_name}_act"
         else:
@@ -178,18 +234,27 @@ def load_test_case_data(net_name, fault_location_bus, vector_group=None, sgen_id
 
     net = load_test_case(net_name)
 
-    if is_sgen:
-        net.sgen["k"] = 1.25 if is_active_current else 1.2
-        if isinstance(sgen_idx, list) | isinstance(sgen_idx, tuple):
-            net.sgen.loc[net.sgen.bus.isin(sgen_idx), 'in_service'] = True
-            net.sgen.loc[~net.sgen.bus.isin(sgen_idx), 'in_service'] = False
-            sgen_str = f"_sgen{''.join(str(idx) for idx in sgen_idx)}"
+    if is_gen:
+        if gen_mode == "sgen":
+            net.sgen["k"] = 1.25 if is_active_current else 1.2
+        if isinstance(gen_idx, list) | isinstance(gen_idx, tuple):
+            if gen_mode == "sgen":
+                net.sgen.loc[net.sgen.bus.isin(gen_idx), 'in_service'] = True
+                net.sgen.loc[~net.sgen.bus.isin(gen_idx), 'in_service'] = False
+            if gen_mode == "gen":
+                net.gen.loc[net.gen.bus.isin(gen_idx), 'in_service'] = True
+                net.gen.loc[~net.gen.bus.isin(gen_idx), 'in_service'] = False
+            gen_str = f"_{gen_mode}{''.join(str(idx) for idx in gen_idx)}"
         else:
-            net.sgen['in_service'] = False
-            net.sgen.loc[net.sgen.bus == sgen_idx, 'in_service'] = True
-            sgen_str = f"_sgen{sgen_idx}"
+            if gen_mode == "sgen":
+                net.sgen['in_service'] = False
+                net.sgen.loc[net.sgen.bus == gen_idx, 'in_service'] = True
+            if gen_mode == "gen":
+                net.gen['in_service'] = False
+                net.gen.loc[net.gen.bus == gen_idx, 'in_service'] = True
+            gen_str = f"_{gen_mode}{gen_idx}"
     else:
-        sgen_str = ''
+        gen_str = ''
 
     if is_active_current:
         net.sgen["active_current"] = True
@@ -198,11 +263,13 @@ def load_test_case_data(net_name, fault_location_bus, vector_group=None, sgen_id
 
     dataframes = {}
     for bb in ['bus', 'branch']:
-        file_name = f"{net_name}_pf_sc_results_{fault_location_bus}_{bb}{sgen_str}.xlsx"
+        file_name = f"{net_name}_pf_sc_results_{fault_location_bus}_{bb}{gen_str}.xlsx"
+        if gen_mode == 'sgen':
+            file_name = file_name.replace('_gen_', '_sgen_')
         try:
             dataframes[bb] = load_pf_results(os.path.join(
                 testfiles_path,
-                "sc_result_comparison", "wp_2.2_2.4" if is_sgen else "wp_2.1",
+                "sc_result_comparison", "wp_2.2_2.4" if is_gen else "wp_2.1",
                 file_name
             ))
         except FileNotFoundError:
