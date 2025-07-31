@@ -113,3 +113,7 @@ exclude_lines = [
     "def __str__",
     "if __name__ == .__main__.:"
 ]
+
+# styeling information for black formatter
+[tool.black]
+line-length = 120
