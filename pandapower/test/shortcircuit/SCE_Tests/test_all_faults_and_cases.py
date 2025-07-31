@@ -41,7 +41,7 @@ lv_tol_percents = [6, 10]
 fault_location_buses = [0, 1, 2, 3]
 is_branch_test = [True, False]
 gen_idx = [1, [1, 3]]  # includes both, static generator and synchronous generator
-is_active_current = [False]  # use True only if gen_idx is not None
+is_active_current = [True, False]
 gen_mode = ['sgen', 'gen']  # TODO: implement mode 'all'
 
 
@@ -52,7 +52,7 @@ gen_mode = ['sgen', 'gen']  # TODO: implement mode 'all'
 # gen_idx = None → without gen_mode
 parametrize_values_1 = product(
     faults, cases, values, lv_tol_percents, fault_location_buses,
-    is_branch_test, [None], is_active_current, [None]
+    is_branch_test, [None], [False], [None]
 )
 # gen_idx != None → with gen_mode
 parametrize_values_2 = product(
@@ -68,10 +68,10 @@ parametrize_values = list(parametrize_values_1) + list(parametrize_values_2)
 # gen_idx = None → without gen_mode
 parametrize_values_vector = list(product(
     net_names, faults[:2], cases, values, lv_tol_percents, vector_groups[:1],
-    fault_location_buses, is_branch_test, [None], is_active_current, [None]
+    fault_location_buses, is_branch_test, [None], [False], [None]
 )) + list(product(
     net_names, faults[2:], cases, values, lv_tol_percents, vector_groups,
-    fault_location_buses, is_branch_test, [None], is_active_current, [None]
+    fault_location_buses, is_branch_test, [None], [False], [None]
 ))
 
 # add sgen test to the vector test
@@ -100,10 +100,11 @@ for vals in parametrize_values_vector:
     short_name = net_name.replace("test_case_", "")
     if "five_bus" in net_name:
         for mode in gen_mode:
-            sgen_params.add((
-                short_name, fault, case, val, lv_tol, vec_group,
-                fault_bus, branch_test, (3, 4), is_active, mode
-            ))
+            for is_active in is_active_current:
+                sgen_params.add((
+                    short_name, fault, case, val, lv_tol, vec_group,
+                    fault_bus, branch_test, (3, 4), is_active, mode
+                ))
 
     elif "twenty_bus" in net_name:
         for fl in (0, 8, 18):
@@ -117,10 +118,11 @@ for vals in parametrize_values_vector:
                 continue
 
             for mode in gen_mode:
-                sgen_params.add((
-                    short_name, fault, case, val, lv_tol, vec_group,
-                    fl, branch_test, gen_idx_new, is_active, mode
-                ))
+                for is_active in is_active_current:
+                    sgen_params.add((
+                        short_name, fault, case, val, lv_tol, vec_group,
+                        fl, branch_test, gen_idx_new, is_active, mode
+                    ))
 
 parametrize_values_vector += list(sgen_params)
 
