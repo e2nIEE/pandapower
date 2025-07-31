@@ -16,7 +16,7 @@ try:
 
     PSYCOPG2_INSTALLED = True
 except ImportError:
-    psycopg2 = None
+    psycopg2 = None  # type: ignore[assignment]
     PSYCOPG2_INSTALLED = False
 
 try:
@@ -24,7 +24,7 @@ try:
 
     SQLITE_INSTALLED = True
 except ImportError:
-    sqlite3 = None
+    sqlite3 = None  # type: ignore[assignment]
     SQLITE_INSTALLED = False
 
 import logging
