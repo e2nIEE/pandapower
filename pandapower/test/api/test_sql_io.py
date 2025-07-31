@@ -5,7 +5,6 @@
 
 import json
 import os
-import tempfile
 import copy
 
 import pandas as pd
@@ -14,13 +13,11 @@ import numpy as np
 import pytest
 import time
 
-import pandapower as pp
-import pandapower.networks
-import pandapower.control
+from pandapower import reset_results, runpp, pp_dir
+from pandapower.networks import case9, case14, case39, simple_mv_open_ring_net, create_cigre_network_hv, mv_oberrhein
 from pandapower.plotting.geo import convert_geodata_to_geojson
-from pandapower import pp_dir
 from pandapower.auxiliary import _preserve_dtypes
-from pandapower.sql_io import download_sql_table
+from pandapower.sql_io import download_sql_table, to_postgresql, from_postgresql, delete_postgresql_net
 from pandapower.test import assert_res_equal
 
 try:
@@ -29,7 +26,7 @@ try:
 
     PSYCOPG2_INSTALLED = True
 except ImportError:
-    psycopg2 = None
+    psycopg2 = None  # type: ignore[assignment]
     PSYCOPG2_INSTALLED = False
 
 try:
@@ -37,15 +34,14 @@ try:
 
     SQLITE_INSTALLED = True
 except ImportError:
-    sqlite3 = None
+    sqlite3 = None  # type: ignore[assignment]
     SQLITE_INSTALLED = False
 
 
-@pytest.fixture(params=["case9", "case14", "case39", "simple_mv_open_ring_net",
-                        "create_cigre_network_hv", "mv_oberrhein"])
+@pytest.fixture(params=[case9, case14, case39, simple_mv_open_ring_net,
+                        create_cigre_network_hv, mv_oberrhein])
 def net_in(request):
-    method = pp.networks.__dict__[request.param]
-    net = method()
+    net = request.param()
     # net.line.loc[0, "geo"] = '{"coordinates": [[1.1, 2.2], [3.3, 4.4]], "type": "LineString"}'
     # net.line.loc[11, "geo"] = '{"coordinates": [[5.5, 5.5], [6.6, 6.6], [7.7, 7.7]], "type": "LineString"}'
     # if len(net.trafo) > 0:
@@ -82,17 +78,17 @@ def assert_postgresql_roundtrip(net_in, **kwargs):
         convert_geodata_to_geojson(net)
     include_results = kwargs.pop("include_results", False)
     if not include_results:
-        pp.reset_results(net)
+        reset_results(net)
     else:
-        pp.runpp(net)
+        runpp(net)
     connection_data, schema = get_postgresql_connection_data()
-    grid_id = pp.to_postgresql(net, schema=schema, include_results=include_results, **connection_data, **kwargs)
+    grid_id = to_postgresql(net, schema=schema, include_results=include_results, **connection_data, **kwargs)
 
-    net_out = pp.from_postgresql(grid_id=grid_id, schema=schema, **connection_data, **kwargs)
+    net_out = from_postgresql(grid_id=grid_id, schema=schema, **connection_data, **kwargs)
 
     if not include_results:
-        pp.runpp(net)
-        pp.runpp(net_out)
+        runpp(net)
+        runpp(net_out)
 
     assert_res_equal(net, net_out)
 
@@ -111,7 +107,7 @@ def assert_postgresql_roundtrip(net_in, **kwargs):
         pdt.assert_frame_equal(table_in, table_out, check_dtype=False)
 
     # clean-up
-    pp.delete_postgresql_net(grid_id=grid_id, schema=schema, **connection_data)
+    delete_postgresql_net(grid_id=grid_id, schema=schema, **connection_data)
 
 
 POSTGRESQL_AVAILABLE = PSYCOPG2_INSTALLED and postgresql_listening(**get_postgresql_connection_data()[0])
@@ -127,13 +123,13 @@ def test_postgresql(net_in):
 @pytest.mark.skipif(not POSTGRESQL_AVAILABLE,
                     reason="testing happens on GitHub Actions where we create a temporary instance of PostgreSQL")
 def test_unique():
-    net = pp.networks.case9()
+    net = case9()
     connection_data, schema = get_postgresql_connection_data()
-    grid_id = pp.to_postgresql(net, **connection_data, schema=schema)
+    grid_id = to_postgresql(net, **connection_data, schema=schema)
     with pytest.raises(UserWarning):
-        pp.to_postgresql(net, **connection_data, schema=schema, grid_id=grid_id)
+        to_postgresql(net, **connection_data, schema=schema, grid_id=grid_id)
     # clean-up:
-    pp.delete_postgresql_net(grid_id=grid_id, schema=schema, **connection_data)
+    delete_postgresql_net(grid_id=grid_id, schema=schema, **connection_data)
 
 
 @pytest.mark.skipif(not POSTGRESQL_AVAILABLE,
@@ -142,14 +138,14 @@ def test_delete():
     connection_data, schema = get_postgresql_connection_data()
     # cannot delete if the net does not exist
     with pytest.raises(UserWarning):
-        pp.delete_postgresql_net(grid_id=int(time.time()), schema=schema, **connection_data)
+        delete_postgresql_net(grid_id=int(time.time()), schema=schema, **connection_data)
 
     # check that net is deleted
-    net = pp.networks.case9()
-    grid_id = pp.to_postgresql(net, **connection_data, schema=schema)
-    pp.delete_postgresql_net(grid_id=grid_id, schema=schema, **connection_data)
+    net = case9()
+    grid_id = to_postgresql(net, **connection_data, schema=schema)
+    delete_postgresql_net(grid_id=grid_id, schema=schema, **connection_data)
     with pytest.raises(UserWarning):
-        _ = pp.from_postgresql(grid_id=grid_id, schema=schema, **connection_data)
+        _ = from_postgresql(grid_id=grid_id, schema=schema, **connection_data)
 
     # check that it is not only deleted from the grid catalogue
     conn = psycopg2.connect(**connection_data)

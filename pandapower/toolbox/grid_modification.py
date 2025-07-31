@@ -23,10 +23,7 @@ from pandapower.toolbox.data_modification import reindex_elements
 from pandapower.groups import detach_from_groups, attach_to_group, attach_to_groups, isin_group, \
     check_unique_group_rows, element_associated_groups
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -119,9 +116,9 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
     if include_results:
         for table in net.keys():
             if net[table] is None or not isinstance(net[table], pd.DataFrame) or not \
-               net[table].shape[0] or not table.startswith("res_") or table[4:] not in \
-               net.keys() or not isinstance(net[table[4:]], pd.DataFrame) or not \
-               net[table[4:]].shape[0]:
+                net[table].shape[0] or not table.startswith("res_") or table[4:] not in \
+                net.keys() or not isinstance(net[table[4:]], pd.DataFrame) or not \
+                net[table[4:]].shape[0]:
                 continue
             elif table == "res_bus":
                 p2[table] = net[table].loc[pd.Index(buses).intersection(net[table].index)]
@@ -240,6 +237,14 @@ def _merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
                 old_indices = pd.Series(old_indices).loc[~pd.Series(old_indices).duplicated()].tolist()
             new_indices = range(start, start + len(old_indices))
             reindex_lookup[elm_type] = dict(zip(old_indices, new_indices))
+            if "trafo_characteristic_table" in net and "id_characteristic" in net["trafo_characteristic_table"]:
+                if elm_type == "trafo_characteristic_table":
+                    id_start = net1[elm_type].id_characteristic.max() + 1
+                    id_max = net2[elm_type].id_characteristic.max() + id_start
+                    combined_ids = net2[elm_type].id_characteristic.dropna().unique()
+                    reindex_lookup[elm_type] = {
+                        old_id: new_id for old_id, new_id in zip(sorted(combined_ids), range(id_start, id_max + 1))
+                    }
             reindex_elements(net2, elm_type, lookup=reindex_lookup[elm_type])
     if len(reindex_lookup.keys()):
         log_to_level("net2 elements of these types has been reindexed by merge_nets() because " + \

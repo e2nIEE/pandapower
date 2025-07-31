@@ -25,10 +25,7 @@ from pandapower.pypower.bustypes import bustypes
 from pandapower.run import _passed_runpp_parameters
 from pandapower.results import _copy_results_ppci_to_ppc, _extract_results_3ph,\
     init_results
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 logger = logging.getLogger(__name__)
 
 
@@ -238,7 +235,8 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
         **voltage_depend_loads** (bool, True)
         (Not tested with 3 Phase load flow) - consideration of voltage-dependent loads.
 
-            If False, ``net.load.const_z_percent`` and ``net.load.const_i_percent``
+            If False, ``net.load.const_z_p_percent``, ``net.load.const_i_p_percent``,
+            ``net.load.const_z_q_percent`` and ``net.load.const_i_q_percent``
             are not considered, i.e. ``net.load.p_mw`` and ``net.load.q_mvar``
             are considered as constant-power loads.
 
