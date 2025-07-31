@@ -41,7 +41,7 @@ lv_tol_percents = [6, 10]
 fault_location_buses = [0, 1, 2, 3]
 is_branch_test = [True, False]
 gen_idx = [1, [1, 3]]  # includes both, static generator and synchronous generator
-is_active_current = [True, False]
+is_active_current = [False, True]
 gen_mode = ['sgen', 'gen']  # TODO: mode 'all' is implemented but results are not created yet
 
 
@@ -266,8 +266,8 @@ def load_test_case_data(net_name, fault_location_bus, vector_group=None, gen_idx
     dataframes = {}
     for bb in ['bus', 'branch']:
         file_name = f"{net_name}_pf_sc_results_{fault_location_bus}_{bb}{gen_str}.xlsx"
-        if gen_mode != 'gen' and gen_mode is not None:
-            file_name = file_name.replace('_gen_', gen_mode)
+        if gen_mode == 'sgen':
+            file_name = file_name.replace('_gen_', '_sgen_')
         try:
             dataframes[bb] = load_pf_results(os.path.join(
                 testfiles_path,
