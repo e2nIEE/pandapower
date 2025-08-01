@@ -3,6 +3,9 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [ADDED] Station controller support for measurements on trafo3w
+- [CHANGED] Station controller with measurements at switches: added a topological search to find nearby line or transformer and relocated measurement to avoid small impedances on switches
+- [FIXED] Station controller bug with Q(U) (wrong sign in equation for droop calculation)
 - [ADDED] description for `slack` argument in docstring of create_gen function
 - [FIXED] pf2pp: dc-lines geodata error is fixed, outdated line_dc_geodata field replaced by newer geo-column
 - [FIXED] pf2pp: zip load import error fixed by replacing unknown ga() function with actual GetAttribute-function

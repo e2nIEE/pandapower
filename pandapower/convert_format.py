@@ -38,6 +38,7 @@ def convert_format(net, elements_to_deserialize=None):
     _add_missing_columns(net, elements_to_deserialize)
     _create_seperate_cost_tables(net, elements_to_deserialize)
     if Version(str(net.format_version)) < Version("3.1.0"):
+        _convert_SC_invert_paramater(net)
         _convert_q_capability_characteristic(net)
     if Version(str(net.format_version)) < Version("3.0.0"):
         _convert_geo_data(net, elements_to_deserialize)
@@ -63,6 +64,15 @@ def convert_format(net, elements_to_deserialize=None):
     _restore_index_names(net)
     return net
 
+
+def _convert_SC_invert_paramater(net):
+    # introduce invert parameter for Binary Search Controller and initate as False
+    for idx, ctrl in net.controller["object"].items():
+        if ctrl is None:
+            continue
+        if getattr(ctrl.__class__, "__name__", "") == "BinarySearchControl":
+            if not hasattr(ctrl, "invert"):
+                ctrl.invert = 1
 
 def _convert_q_capability_characteristic(net: pandapowerNet):
     # rename the q_capability_curve_characteristic table to q_capability_characteristic if exists

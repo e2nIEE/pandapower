@@ -39,6 +39,8 @@ class BinarySearchControl(Controller):
 
             **input_variable** - Variable which is used to take the measurement from. Indicated by string value.
 
+            **input_invert** - Boolean that indicates if the measurement of the input element must be inverted.
+
             **input_element_index** - Element of input element in net.
 
             **set_point** - Set point of the controller, can be a reactive power provision or a voltage set point. In
@@ -54,7 +56,7 @@ class BinarySearchControl(Controller):
        """
     def __init__(self, net, ctrl_in_service, output_element, output_variable, output_element_index,
                  output_element_in_service, output_values_distribution, input_element, input_variable,
-                 input_element_index, set_point, voltage_ctrl, bus_idx=None, tol=0.001, in_service=True, order=0, level=0,
+                 input_element_index, set_point, voltage_ctrl, input_invert=False, bus_idx=None, tol=0.001, in_service=True, order=0, level=0,
                  drop_same_existing_ctrl=False, matching_params=None, **kwargs):
         super().__init__(net, in_service=in_service, order=order, level=level,
                          drop_same_existing_ctrl=drop_same_existing_ctrl,
@@ -67,6 +69,7 @@ class BinarySearchControl(Controller):
                 self.input_element_index.append(element)
         else:
             self.input_element_index.append(input_element_index)
+        self.invert = -1 if input_invert else 1
         self.output_element = output_element
         self.output_element_index = output_element_index
         self.output_element_in_service = output_element_in_service
@@ -136,6 +139,8 @@ class BinarySearchControl(Controller):
                 self.input_element_in_service.append(net.line.in_service[input_index])
             elif self.input_element == "res_trafo":
                 self.input_element_in_service.append(net.trafo.in_service[input_index])
+            elif self.input_element == "res_trafo3w":
+                self.input_element_in_service.append(net.trafo3w.in_service[input_index])
             elif self.input_element == "res_switch":
                 self.input_element_in_service.append(net.switch.closed[input_index])
             elif self.input_element == "res_bus":
@@ -159,6 +164,7 @@ class BinarySearchControl(Controller):
             input_values.append(read_from_net(net, self.input_element, input_index,
                                               self.input_variable[counter], self.read_flag[counter]))
             counter += 1
+        input_values = (self.invert * np.asarray(input_values)).tolist()
         # read previous set values
         # compare old and new set values
         if not self.voltage_ctrl or self.bus_idx is None:
@@ -274,6 +280,7 @@ class DroopControl(Controller):
                                   net.controller.at[self.controller_idx, "object"].input_variable[counter],
                                   net.controller.at[self.controller_idx, "object"].read_flag[counter]))
                 counter += 1
+            input_values = (net.controller.at[self.controller_idx, "object"].invert * np.asarray(input_values)).tolist()
             self.diff = ((net.controller.at[self.controller_idx, "object"].set_point - sum(input_values)))
         # bigger differences with switches as input elements, increase tolerance
         #if net.controller.at[self.controller_idx, "object"].input_element == "res_switch":
@@ -300,10 +307,10 @@ class DroopControl(Controller):
             if self.lb_voltage is not None and self.ub_voltage is not None:
                 if self.vm_pu > self.ub_voltage:
                     self.q_set_old_mvar, self.q_set_mvar = (
-                        self.q_set_mvar, self.q_set_mvar_bsc + (self.ub_voltage - self.vm_pu) * self.q_droop_mvar)
+                        self.q_set_mvar, self.q_set_mvar_bsc + (self.vm_pu - self.ub_voltage) * self.q_droop_mvar)
                 elif self.vm_pu < self.lb_voltage:
                     self.q_set_old_mvar, self.q_set_mvar = (
-                        self.q_set_mvar, self.q_set_mvar_bsc + (self.lb_voltage - self.vm_pu) * self.q_droop_mvar)
+                        self.q_set_mvar, self.q_set_mvar_bsc + (self.vm_pu - self.lb_voltage) * self.q_droop_mvar)
                 else:
                     self.q_set_old_mvar, self.q_set_mvar = (self.q_set_mvar, self.q_set_mvar_bsc)
             else:
@@ -325,5 +332,6 @@ class DroopControl(Controller):
             for input_index in input_element_index:
                 input_values.append(read_from_net(net, input_element, input_index,
                                                   input_variable[counter], read_flag[counter]))
+            input_values = (net.controller.at[self.controller_idx, "object"].invert * np.asarray(input_values)).tolist()
             self.vm_set_pu_new = self.vm_set_pu + sum(input_values) / self.q_droop_mvar
             net.controller.at[self.controller_idx, "object"].set_point = self.vm_set_pu_new
