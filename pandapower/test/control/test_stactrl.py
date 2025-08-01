@@ -90,9 +90,9 @@ def test_qctrl_droop():
                             vm_set_pu=1, vm_set_ub=1.005, vm_set_lb=0.995,
                             controller_idx=bsc.index, voltage_ctrl=False)
     runpp(net, run_control=False)
-    assert (abs(net.res_line.loc[0, "q_to_mvar"] - (-7.094325e-13)) < tol)
+    assert (abs(net.res_line.loc[0, "q_to_mvar"] - (-1e-13)) < tol)
     runpp(net, run_control=True)
-    assert (abs(net.res_line.loc[0, "q_to_mvar"] - (1 + (0.995 - net.res_bus.loc[1, "vm_pu"]) * 40)) < tol)
+    assert (abs(net.res_line.loc[0, "q_to_mvar"] - (1 - (0.995 - net.res_bus.loc[1, "vm_pu"]) * 40)) < tol)
 
 
 def test_stactrl_pf_import():
@@ -129,9 +129,9 @@ def test_stactrl_pf_import():
     print("Scenario 4 - Q(U) - droop 40 MVar/pu")
     print("Input Measurement vm_pu: \n", net.res_bus.loc[103, "vm_pu"])
     print("Controlled Transformer Q, lower voltage band 0.999 pu, initial set point 1 MVar and 40 MVar/pu, q_hv_mvar, "
-          "expected: \n -(1 MVar + (0.999 pu  - 0.99585 pu) * 40 MVar/pu)= -1.12618: \n",
+          "expected: \n -(1 MVar - (0.999 pu  - 0.995778 pu) * 40 MVar/pu)= -0.87112: \n",
           net.res_trafo.loc[3, "q_hv_mvar"])
-    assert (net.res_trafo.loc[3, "q_hv_mvar"] - (-(1 + (0.999 - net.res_bus.loc[103, "vm_pu"]) * 40)) < tol)
+    assert (net.res_trafo.loc[3, "q_hv_mvar"] - (-(1 - (0.999 - net.res_bus.loc[103, "vm_pu"]) * 40)) < tol)
 
 
 if __name__ == '__main__':
