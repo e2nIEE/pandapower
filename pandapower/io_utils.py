@@ -397,12 +397,7 @@ def check_net_version(net):
 
 class PPJSONEncoder(json.JSONEncoder):
     def __init__(self, isinstance_func=isinstance_partial, **kwargs):
-        # In Python 3.13, the indent handling moved from _make_iterencode to iterencode.
-        # We now handle indent here: convert integers to spaces, then pass to super.
-        indent = kwargs.pop("indent", None)
-        if indent is not None and not isinstance(indent, str):
-            indent = " " * indent
-        super().__init__(indent=indent, **kwargs)
+        super().__init__(**kwargs)
         self.isinstance_func = isinstance_func
 
     def iterencode(self, o, _one_shot=False):
@@ -445,8 +440,13 @@ class PPJSONEncoder(json.JSONEncoder):
 
             return text
 
+        if self.indent is None or isinstance(self.indent, str):
+            indent = self.indent
+        else:
+            indent = ' ' * self.indent
+
         _iterencode = json.encoder._make_iterencode(
-            markers, self.default, _encoder, self.indent, floatstr,
+            markers, self.default, _encoder, indent, floatstr,
             self.key_separator, self.item_separator, self.sort_keys,
             self.skipkeys, _one_shot, isinstance=self.isinstance_func)
         return _iterencode(o, 0)
