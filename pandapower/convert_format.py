@@ -67,7 +67,7 @@ def convert_format(net, elements_to_deserialize=None):
 
 def _convert_SC_invert_paramater(net):
     # introduce invert parameter for Binary Search Controller and initate as False
-    for idx, ctrl in net.controller["object"].items():
+    for ctrl in net.controller["object"].items():
         if ctrl is None:
             continue
         if getattr(ctrl.__class__, "__name__", "") == "BinarySearchControl":
