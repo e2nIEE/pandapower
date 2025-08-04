@@ -3896,7 +3896,6 @@ def create_stactrl(net, item):
         if q_control_cubicle is None:
             logger.info(f"Input Element of Controller {item.loc_name} is missing, skipping")
             return
-
         q_control_element = []
         q_control_side = []
         element_class = []
@@ -3947,7 +3946,6 @@ def create_stactrl(net, item):
             else:
                 element_type = None
             if element_type == "trafo":
-                print(f"→ Trafo {element_index}")
                 res_element_table = "res_trafo"
                 res_element_index.append(element_index)
                 # invert if control_side and actual_side are same
@@ -3956,7 +3954,6 @@ def create_stactrl(net, item):
                 input_invert = (direction == q_control_side[0])
                 variable = "q_hv_mvar" if connection_side == "hv_bus" else "q_lv_mvar"
             elif element_type == "trafo3w":
-                print(f"→ Trafo3w {element_index}")
                 res_element_table = "res_trafo3w"
                 res_element_index.append(element_index)
                 # invert if control_side and actual_side are same
@@ -3966,7 +3963,6 @@ def create_stactrl(net, item):
                 variable = "q_hv_mvar" if connection_side == "hv_bus" else \
                     "q_mv_mvar" if connection_side == "mv_bus" else "q_lv_mvar"
             elif element_type == "line":
-                print(f"→ Leitung {element_index}")
                 res_element_table = "res_line"
                 res_element_index.append(element_index)
                 # invert if control_side and actual_side are same
@@ -3975,6 +3971,9 @@ def create_stactrl(net, item):
                 input_invert = (direction == q_control_side[0])
                 variable = "q_from_mvar" if connection_side == "from_bus" else "q_to_mvar"
             else:
+                logger.info(
+                    f"{item}: Station Controller with switch measurement that cannot be relocated, adding switch with "
+                    f"small impedance")
                 for element in q_control_element:
                     res_element_index.append(switch_dict[element])
                     net.switch.at[res_element_index[-1], "z_ohm"] = 1e-3
@@ -3996,7 +3995,7 @@ def create_stactrl(net, item):
             input_busses.append(net.trafo.at[index, 'hv_bus'])
     elif res_element_table == "res_trafo3w":
         for index in res_element_index:
-            input_busses.append(net.trafo.at[index, 'hv_bus'])
+            input_busses.append(net.trafo3w.at[index, 'hv_bus'])
     elif res_element_table == "res_switch":
         for index in res_element_index:
             input_busses.append(net.switch.at[index, 'bus'])
@@ -4132,12 +4131,33 @@ def GetBranchElementFromSwitch(net, q_control_element):
 
             neighbors = [n for n in graph.neighbors(current) if n != blocked_bus and n not in visited]
 
-            # Stop if more than one neighbor
-            if len(neighbors) > 1:
-                return None
+            # Stop if more than one neighbor and not a three winding transformer
+            if 'trafo3w' in net and not net.trafo3w.empty:
+                is_current_in_trafo = (
+                        (net.trafo3w["hv_bus"] == current) |
+                        (net.trafo3w["mv_bus"] == current) |
+                        (net.trafo3w["lv_bus"] == current)
+                )
 
-            if len(neighbors) == 1:
+                t3w_match = net.trafo3w[is_current_in_trafo]
+            if len(neighbors) > 1:
+                if len(t3w_match) == 1:
+                    # check if all neighbors belong to three winding transformer
+                    idx = t3w_match.index[0]
+                    row = net.trafo3w.loc[idx]
+                    t3w_buses = {row.hv_bus, row.mv_bus, row.lv_bus}
+                    if set(neighbors).issubset(t3w_buses - {current}):
+                        valid_t3w_neighbors = True
+                        pass
+                    else:
+                        return None
+                else:
+                    return None
+
+
+            if len(neighbors) == 1 or valid_t3w_neighbors:
                 nb = neighbors[0]
+                matches = []
 
                 # Parallele Leitungen current <-> nb
                 par_lines = net.line[
@@ -4168,23 +4188,17 @@ def GetBranchElementFromSwitch(net, q_control_element):
                     return None
 
                 # trafo3w match?
-                if 'trafo3w' in net and not net.trafo3w.empty:
-                    trafo3w_match = net.trafo3w[
-                        (net.trafo3w.hv_bus == current) |
-                        (net.trafo3w.mv_bus == current) |
-                        (net.trafo3w.lv_bus == current)
-                        ]
-                    if not trafo3w_match.empty:
-                        idx = int(trafo3w_match.index[0])
-                        row = net.trafo3w.loc[idx]
-                        if current == row.hv_bus:
-                            connection_side = "hv_bus"
-                        elif current == row.mv_bus:
-                            connection_side = "mv_bus"
-                        else:
-                            connection_side = "lv_bus"
+                if len(t3w_match) == 1:
+                    idx = t3w_match.index[0]
+                    row = net.trafo3w.loc[idx]
+                    if current == row.hv_bus:
+                        connection_side = "hv_bus"
+                    elif current == row.mv_bus:
+                        connection_side = "mv_bus"
+                    else:
+                        connection_side = "lv_bus"
 
-                        return ("trafo3w", idx, connection_side)
+                    return ("trafo3w", idx, connection_side)
 
                 # line match?
                 line_match = net.line[(net.line.from_bus == current) | (net.line.to_bus == current)]
