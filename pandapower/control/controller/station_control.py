@@ -39,7 +39,8 @@ class BinarySearchControl(Controller):
 
             **input_variable** - Variable which is used to take the measurement from. Indicated by string value.
 
-            **input_invert** - Boolean that indicates if the measurement of the input element must be inverted.
+            **input_invert** - Boolean that indicates if the measurement of the input element must be inverted. Required
+            when importing from PowerFactory.
 
             **input_element_index** - Element of input element in net.
 
@@ -282,9 +283,6 @@ class DroopControl(Controller):
                 counter += 1
             input_values = (net.controller.at[self.controller_idx, "object"].invert * np.asarray(input_values)).tolist()
             self.diff = ((net.controller.at[self.controller_idx, "object"].set_point - sum(input_values)))
-        # bigger differences with switches as input elements, increase tolerance
-        #if net.controller.at[self.controller_idx, "object"].input_element == "res_switch":
-        #    self.tol = 0.2
         if self.bus_idx is None:
             self.converged = np.all(np.abs(self.diff) < self.tol)
         else:
