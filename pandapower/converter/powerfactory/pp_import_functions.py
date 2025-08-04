@@ -3859,7 +3859,7 @@ def create_stactrl(net, item):
                             net[gen_element].sta_ctrl == s.c_pstac.loc_name)].index.values
                 if len(gen_element_index_try_again) > 1:
                     raise UserWarning(
-                        "error while creating station controller: sgen and controler names must be unique")
+                        "error while creating station controller: sgen and controller names must be unique")
                 else:
                     gen_element_index.append(gen_element_index_try_again[0])
 
