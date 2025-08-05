@@ -38,7 +38,6 @@ def convert_format(net, elements_to_deserialize=None):
     _add_missing_columns(net, elements_to_deserialize)
     _create_seperate_cost_tables(net, elements_to_deserialize)
     if Version(str(net.format_version)) < Version("3.1.0"):
-        _convert_SC_invert_paramater(net)
         _convert_q_capability_characteristic(net)
     if Version(str(net.format_version)) < Version("3.0.0"):
         _convert_geo_data(net, elements_to_deserialize)
@@ -473,6 +472,14 @@ def _add_missing_columns(net, elements_to_deserialize):
                 net.controller.at[ctrl.name, 'initial_run'] = ctrl['object'].initial_powerflow
             else:
                 net.controller.at[ctrl.name, 'initial_run'] = False
+
+    if _check_elements_to_deserialize('controller', elements_to_deserialize):
+        for ctrl in net.controller["object"].values:
+            if ctrl is None:
+                continue
+            if getattr(ctrl.__class__, "__name__", "") == "BinarySearchControl":
+                if not hasattr(ctrl, "invert"):
+                    ctrl.invert = 1
 
     # distributed slack
     if _check_elements_to_deserialize('ext_grid', elements_to_deserialize) and \
