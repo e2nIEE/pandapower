@@ -4,6 +4,12 @@ import numpy as np
 from pandapower.control.basic_controller import Controller
 from pandapower.auxiliary import _detect_read_write_flag, read_from_net, write_to_net
 
+try:
+    import pandaplan.core.pplog as pplog
+except ImportError:
+    import logging as pplog
+
+logger = pplog.getLogger(__name__)
 
 class BinarySearchControl(Controller):
     """
@@ -55,13 +61,14 @@ class BinarySearchControl(Controller):
 
             **tol=0.001** - Tolerance criteria of controller convergence.
        """
-    def __init__(self, net, ctrl_in_service, output_element, output_variable, output_element_index,
+    def __init__(self, net, name, ctrl_in_service, output_element, output_variable, output_element_index,
                  output_element_in_service, output_values_distribution, input_element, input_variable,
                  input_element_index, set_point, voltage_ctrl, input_invert=False, bus_idx=None, tol=0.001, in_service=True, order=0, level=0,
                  drop_same_existing_ctrl=False, matching_params=None, **kwargs):
         super().__init__(net, in_service=in_service, order=order, level=level,
                          drop_same_existing_ctrl=drop_same_existing_ctrl,
                          matching_params=matching_params) 
+        self.name = name
         self.in_service = ctrl_in_service
         self.input_element = input_element
         self.input_element_index = []
@@ -155,7 +162,11 @@ class BinarySearchControl(Controller):
                 self.output_element_in_service.append(net.shunt.in_service[output_index])
         # check if at least one input and one output element is in_service
         if not (any(self.input_element_in_service) and any(self.output_element_in_service)):
+            logger.warning("Input and/or output elements for controller %i out of service, putting controller "
+                           "out of service" % self.index)
             self.converged = True
+            net.controller.in_service[self.index] = False
+            self.in_service = False
             return self.converged
 
         # read input values
@@ -239,7 +250,7 @@ class DroopControl(Controller):
 
                 **vm_set_ub=None** - Upper band border of dead band
            """
-    def __init__(self, net, q_droop_mvar, bus_idx, vm_set_pu, controller_idx, voltage_ctrl, tol=1e-6, in_service=True,
+    def __init__(self, net, name, q_droop_mvar, bus_idx, vm_set_pu, controller_idx, voltage_ctrl, tol=1e-6, in_service=True,
                  order=-1, level=0, drop_same_existing_ctrl=False, matching_params=None, vm_set_lb=None, vm_set_ub=None,
                  **kwargs):
         super().__init__(net, in_service=in_service, order=order, level=level,
@@ -249,6 +260,7 @@ class DroopControl(Controller):
         # write kwargs in self
         for key, value in kwargs.items():
             setattr(self, key, value)
+        self.name = name
         self.q_droop_mvar = q_droop_mvar
         self.bus_idx = bus_idx
         self.vm_pu = None
@@ -269,6 +281,8 @@ class DroopControl(Controller):
         self.converged = False
 
     def is_converged(self, net):
+        if not net.controller.at[self.controller_idx, "object"].in_service:
+            return True
         if self.voltage_ctrl:
             self.diff = (net.controller.at[self.controller_idx, "object"].set_point -
                          read_from_net(net, "res_bus", self.bus_idx, "vm_pu", self.read_flag))
