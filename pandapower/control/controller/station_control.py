@@ -392,6 +392,8 @@ class BinarySearchControl(Controller):
             logger.warning(f"Controller {self.index} has no active output elements: {self.output_element}:"
                            f" {self.output_element_index} are disabled.\n Control aborted\n")
             self.converged = True
+            net.controller.in_service[self.index] = False
+            self.in_service = False
             return self.converged
         # if only one output element is in service
         if sum(self.output_element_in_service) <= 1 and not getattr(self, 'counter_warning', False):
@@ -1095,8 +1097,7 @@ class DroopControl(Controller):
 
     def is_converged(self, net):
         ###check convergence
-        self.in_service = net.controller.in_service[self.index]
-        if not self.in_service:
+        if not net.controller.at[self.controller_idx, "object"].in_service:
             return True
         if self.modus != net.controller.at[self.controller_idx, 'object'].modus:#checking if droop and bsc have the same modus
             if (self.modus != 'PF_ctrl_P' and self.modus != 'PF_ctrl_V' and #here the droop is included in the string
