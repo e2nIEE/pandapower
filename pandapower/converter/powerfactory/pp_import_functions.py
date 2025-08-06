@@ -59,10 +59,11 @@ def from_pf(
         is_unbalanced=False,
         create_sections=True
 ):
-    global line_dict, trafo_dict, trafo3w_dict, switch_dict, bus_dict, grf_map
+    global line_dict, trafo_dict, trafo3w_dict, impedance_dict, switch_dict, bus_dict, grf_map
     line_dict = {}
     trafo_dict = {}
     trafo3w_dict = {}
+    impedance_dict = {}
     switch_dict = {}
     logger.debug("__name__: %s" % __name__)
     logger.debug('started from_pf')
@@ -3374,6 +3375,7 @@ def create_zpu(net, item):
     add_additional_attributes(item, net, element='impedance', element_id=xid,
                               attr_dict={'for_name': 'equipment', "cimRdfId": "origin_id", "cpSite.loc_name": "site"})
 
+    impedance_dict[item] = xid
     # consider and create station switches
     new_elements = (aux_bus1, aux_bus2)
     new_switch_idx, new_switch_closed = create_connection_switches(net, item, 2, 'b', (bus1, bus2),
@@ -3934,6 +3936,11 @@ def create_stactrl(net, item):
                 res_element_index.append(trafo3w_dict[element])
                 variable = "q_hv_mvar" if q_control_side[0] == 0 else \
                     "q_mv_mvar" if q_control_side[0] == 1 else "q_lv_mvar"
+        elif element_class[0] == "ElmZpu":
+            res_element_table = "res_impedance"
+            for element in q_control_element:
+                res_element_index.append(impedance_dict[element])
+                variable = "q_from_mvar" if q_control_side[0] == 0 else "q_to_mvar"
         elif element_class[0] == "ElmCoup":
             res = GetBranchElementFromSwitch(net, q_control_element)
             if not res[switch_dict[q_control_element[0]]] is None:
@@ -3970,6 +3977,14 @@ def create_stactrl(net, item):
                 # direction: 0 = dir1 (terminal side of switch), 1 = dir2 (element side of switch)
                 input_invert = (direction == q_control_side[0])
                 variable = "q_from_mvar" if connection_side == "from_bus" else "q_to_mvar"
+            elif element_type == "impedance":
+                res_element_table = "res_impedance"
+                res_element_index.append(element_index)
+                # invert if control_side and actual_side are same
+                # q_control_side: 0 = from side, 1 = to side
+                # direction: 0 = dir1 (terminal side of switch), 1 = dir2 (element side of switch)
+                input_invert = (direction == q_control_side[0])
+                variable = "q_from_mvar" if connection_side == "from_bus" else "q_to_mvar"
             else:
                 logger.info(
                     f"{item}: Station Controller with switch measurement that cannot be relocated, adding switch with "
@@ -3981,7 +3996,7 @@ def create_stactrl(net, item):
                 res_element_table = "res_switch"
         else:
             logger.error(
-                f"{item}: only line, trafo element and switch flows can be controlled, {element_class[0]=}")
+                f"{item}: only line, trafo 2W/3W element and switch flows can be controlled, {element_class[0]=}")
             return
     elif control_mode == 0:
         res_element_table = "res_bus"
@@ -3996,6 +4011,9 @@ def create_stactrl(net, item):
     elif res_element_table == "res_trafo3w":
         for index in res_element_index:
             input_busses.append(net.trafo3w.at[index, 'hv_bus'])
+    elif res_element_table == "res_impedance":
+        for index in res_element_index:
+            input_busses.append(net.impedance.at[index, 'to_bus'])
     elif res_element_table == "res_switch":
         for index in res_element_index:
             input_busses.append(net.switch.at[index, 'bus'])
@@ -4027,7 +4045,7 @@ def create_stactrl(net, item):
             v_setpoint_pu = controlled_node.vtarget  # Bus target voltage
 
         if item.i_droop:  # Enable Droop
-            bsc = BinarySearchControl(net, ctrl_in_service=stactrl_in_service,
+            bsc = BinarySearchControl(net, name=item.loc_name, ctrl_in_service=stactrl_in_service,
                                                  output_element=gen_element, output_variable="q_mvar",
                                                  output_element_index=gen_element_index,
                                                  output_element_in_service=gen_element_in_service,
@@ -4035,10 +4053,10 @@ def create_stactrl(net, item):
                                                  input_element=res_element_table, input_variable=variable,
                                                  input_invert=input_invert, input_element_index=res_element_index,
                                                  set_point=v_setpoint_pu, voltage_ctrl=True, bus_idx=bus, tol=1e-3)
-            DroopControl(net, q_droop_mvar=item.Srated * 100 / item.ddroop, bus_idx=bus,
+            DroopControl(net, name=item.loc_name, q_droop_mvar=item.Srated * 100 / item.ddroop, bus_idx=bus,
                                     vm_set_pu=v_setpoint_pu, controller_idx=bsc.index, voltage_ctrl=True)
         else:
-            BinarySearchControl(net, ctrl_in_service=stactrl_in_service,
+            BinarySearchControl(net, name=item.loc_name, ctrl_in_service=stactrl_in_service,
                                            output_element=gen_element, output_variable="q_mvar",
                                            output_element_index=gen_element_index,
                                            output_element_in_service=gen_element_in_service, input_element="res_bus",
@@ -4054,7 +4072,8 @@ def create_stactrl(net, item):
         # q_control_terminal = q_control_cubicle.cterm  # terminal of the cubicle
         if item.qu_char == 0:
             BinarySearchControl(
-                net, ctrl_in_service=stactrl_in_service,
+                net, name=item.loc_name,
+                ctrl_in_service=stactrl_in_service,
                 output_element=gen_element,
                 output_variable="q_mvar",
                 output_element_index=gen_element_index,
@@ -4072,7 +4091,8 @@ def create_stactrl(net, item):
             controlled_node = item.refbar
             bus = bus_dict[controlled_node]  # controlled node
             bsc = BinarySearchControl(
-                net, ctrl_in_service=stactrl_in_service,
+                net, name=item.loc_name,
+                ctrl_in_service=stactrl_in_service,
                 output_element=gen_element,
                 output_variable="q_mvar",
                 output_element_index=gen_element_index,
@@ -4090,6 +4110,7 @@ def create_stactrl(net, item):
             )
             DroopControl(
                 net,
+                name=item.loc_name,
                 q_droop_mvar=item.Srated * 100 / item.ddroop,
                 bus_idx=bus,
                 vm_set_pu=item.udeadbup,
@@ -4140,6 +4161,7 @@ def GetBranchElementFromSwitch(net, q_control_element):
                 )
 
                 t3w_match = net.trafo3w[is_current_in_trafo]
+            valid_t3w_neighbors = False
             if len(neighbors) > 1:
                 if len(t3w_match) == 1:
                     # check if all neighbors belong to three winding transformer
@@ -4153,7 +4175,6 @@ def GetBranchElementFromSwitch(net, q_control_element):
                         return None
                 else:
                     return None
-
 
             if len(neighbors) == 1 or valid_t3w_neighbors:
                 nb = neighbors[0]
@@ -4218,9 +4239,18 @@ def GetBranchElementFromSwitch(net, q_control_element):
                     connection_side = "hv_bus" if current == hv_bus else "lv_bus"
                     return ("trafo", idx, connection_side)
 
+                # Impedance match?
+                impedance_match = net.impedance[(net.impedance.from_bus == current) | (net.impedance.to_bus == current)]
+                if not impedance_match.empty:
+                    idx = impedance_match.index[0]
+                    from_bus = net.impedance.at[idx, "from_bus"]
+                    to_bus = net.impedance.at[idx, "to_bus"]
+                    connection_side = "from_bus" if current == from_bus else "to_bus"
+                    return ("impedance", idx, connection_side)
+
                 # Other elements, stop for now
                 elements_at_bus = []
-                for elm in ['load', 'sgen', 'gen', 'shunt', 'ext_grid', 'impedance']:
+                for elm in ['load', 'sgen', 'gen', 'shunt', 'ext_grid']:
                     if elm in net:
                         df = net[elm]
                         if isinstance(df, pd.DataFrame):
