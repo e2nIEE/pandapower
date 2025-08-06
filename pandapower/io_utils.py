@@ -32,6 +32,7 @@ try:
     import psycopg2
     import psycopg2.errors
     import psycopg2.extras
+
     PSYCOPG2_INSTALLED = True
 except ImportError:
     psycopg2 = None  # type: ignore[assignment]
@@ -42,21 +43,25 @@ except ImportError:
     from pandas.util.testing import assert_series_equal, assert_frame_equal  # type: ignore[no-redef,import-not-found]
 try:
     from cryptography.fernet import Fernet
+
     cryptography_INSTALLED = True
 except ImportError:
     cryptography_INSTALLED = False
 try:
     import hashlib
+
     hashlib_INSTALLED = True
 except ImportError:
     hashlib_INSTALLED = False
 try:
     import base64
+
     base64_INSTALLED = True
 except ImportError:
     base64_INSTALLED = False
 try:
     import zlib
+
     zlib_INSTALLED = True
 except ImportError:
     zlib_INSTALLED = False
@@ -85,6 +90,7 @@ import logging
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+
 def coords_to_df(value, geotype="line"):
     columns = ["x", "y", "coords"] if geotype == "bus" else ["coords"]
     geo = pd.DataFrame(columns=columns, index=value.index)
@@ -112,14 +118,14 @@ def to_dict_of_dfs(net, include_results=False, include_std_types=True, include_p
     dtypes = []
     parameters = dict()  # pd.DataFrame(columns=["parameter"])
     for item, value in net.items():
-        # dont save internal variables and results (if not explicitely specified)
+        # don't save internal variables and results (if not explicitly specified)
         if item.startswith("_") or (item.startswith("res") and not include_results):
             continue
         elif item == "std_types":
             if not include_std_types:
                 continue
             for t in net.std_types.keys():  # which are ["line", "trafo", "trafo3w", "fuse"]
-                if net.std_types[t]:  # avoid empty excel sheets for std_types if empty
+                if net.std_types[t]:  # avoid empty Excel sheets for std_types if empty
                     type_df = pd.DataFrame(net.std_types[t]).T
                     if t == "fuse":
                         for c in type_df.columns:
@@ -128,7 +134,7 @@ def to_dict_of_dfs(net, include_results=False, include_std_types=True, include_p
             continue
         elif item == "profiles":
             for t in net.profiles.keys():  # which could be e.g. "sgen", "gen", "load", ...
-                if net.profiles[t].shape[0]:  # avoid empty excel sheets for std_types if empty
+                if net.profiles[t].shape[0]:  # avoid empty Excel sheets for std_types if empty
                     dodfs["%s_profiles" % t] = pd.DataFrame(net.profiles[t])
             continue
         elif item == "user_pf_options":
@@ -246,18 +252,19 @@ def from_dict_of_dfs(dodfs, net=None):
             # to lists here. There is probably a better way to deal with it.
             if item.startswith("fuse"):
                 for c in table.columns:
-                    table[c] = table[c].apply(lambda x: json.loads(x) if isinstance(x, str) and x.startswith("[") else x)
+                    table[c] = table[c].apply(
+                        lambda x: json.loads(x) if isinstance(x, str) and x.startswith("[") else x)
             net["std_types"][item[:-10]] = table.T.to_dict()
-            continue  # don't go into try..except
+            continue  # don't go into try…except
         elif item.endswith("_profiles"):
             if "profiles" not in net.keys():
                 net["profiles"] = dict()
             table = table.rename_axis(None)
             net["profiles"][item[:-9]] = table
-            continue  # don't go into try..except
+            continue  # don't go into try…except
         elif item == "user_pf_options":
             net['user_pf_options'] = {c: v for c, v in zip(table.columns, table.values[0])}
-            continue  # don't go into try..except
+            continue  # don't go into try…except
         else:
             for json_column in ("object", "recycle", "q_max_characteristic", "q_min_characteristic"):
                 if json_column in table.columns:
@@ -317,16 +324,13 @@ def to_dict_with_coord_transform(net, point_geo_columns, line_geo_columns):
 
 
 def get_raw_data_from_pickle(filename):
-    def read(f):
-        return pd.read_pickle(f)
-
     if hasattr(filename, 'read'):
-        net = read(filename)
+        net = pd.read_pickle(filename)
     elif not os.path.isfile(filename):
         raise UserWarning("File %s does not exist!!" % filename)
     else:
         with open(filename, "rb") as f:
-            net = read(f)
+            net = pd.read_pickle(f)
     return net
 
 
@@ -455,10 +459,11 @@ class PPJSONEncoder(json.JSONEncoder):
         try:
             s = to_serializable(o)
         except TypeError:
-            # Let the base class default method raise the TypeError
-            return json.JSONEncoder.default(self, o)
+            pass
         else:
             return s
+        # Let the base class default method raise the TypeError
+        return super().default(self, o)
 
 
 class FromSerializable:
@@ -593,12 +598,11 @@ class FromSerializableRegistry():
             df[col] = df[col].apply(partial(
                 self.pp_hook, ignore_unknown_objects=self.ignore_unknown_objects
             ))
-            df[col] = df[col].astype(dtype = 'object')
+            df[col] = df[col].astype(dtype='object')
             df.loc[pd.isnull(df[col]), col] = None
         return df
 
-    @from_serializable.register(class_name='pandapowerNet', module_name='pandapower.auxiliary')#,
-                                # empty_dict_like_object=None)
+    @from_serializable.register(class_name='pandapowerNet', module_name='pandapower.auxiliary')
     def pandapowerNet(self):
         if isinstance(self.obj, str):  # backwards compatibility
             from pandapower import from_json_string
@@ -953,7 +957,7 @@ class JSONSerializableClass(object):
             return len(d) == 0
 
     def __hash__(self):
-        # for now we use the address of the object for hash, but we can change it in the future
+        # for now, we use the address of the object for hash, but we can change it in the future
         # to be based on the attributes e.g. with DeepHash or similar
         return hash(id(self))
 
