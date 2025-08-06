@@ -37,22 +37,38 @@ def create_parameter_list(net_names, faults, cases, values, lv_tol_percents, fau
 
     # parameter list with vector group for WP 2.1
     #  uses "Dyn" as vector group for LLL and LL. LLG and LG are combined with all vector groups.
-    parametrize_values_vector_wp21 = list(product(
-        net_names, faults[:2], cases, values, lv_tol_percents, vector_groups[:1],
-        fault_location_buses, is_branch_test
-    )) + list(product(
-        net_names, faults[2:], cases, values, lv_tol_percents, vector_groups,
-        fault_location_buses, is_branch_test
-    ))
+    parametrize_values_vector_wp21 = []
+    for net_name in net_names:
+        # fault location abhängig vom Grid
+        if "twenty_bus" in net_name:
+            fl_buses = [0, 8, 18]
+        else:
+            fl_buses = fault_location_buses
+
+        parametrize_values_vector_wp21 += list(product(
+            [net_name], faults[:2], cases, values, lv_tol_percents, vector_groups[:1],
+            fl_buses, is_branch_test
+        ))
+        parametrize_values_vector_wp21 += list(product(
+            [net_name], faults[2:], cases, values, lv_tol_percents, vector_groups,
+            fl_buses, is_branch_test
+        ))
 
     # parameter list with vector group for WP 2.2 and WP 2.4
-    base_wp22 = list(product(
-        net_names, faults[:2], ['max'], values, lv_tol_percents, vector_groups[:1],
-        fault_location_buses, is_branch_test, [None], is_active_current, gen_mode
-    )) + list(product(
-        net_names, faults[2:], ['max'], values, lv_tol_percents, vector_groups,
-        fault_location_buses, is_branch_test, [None], is_active_current, gen_mode
-    ))
+    base_wp22 = []
+    for net_name in net_names:
+        if "twenty_bus" in net_name:
+            fl_buses = [0, 8, 18]
+        else:
+            fl_buses = fault_location_buses
+        base_wp22 += list(product(
+            [net_name], faults[:2], ['max'], values, lv_tol_percents, vector_groups[:1],
+            fl_buses, is_branch_test, [None], is_active_current, gen_mode
+        ))
+        base_wp22 += list(product(
+            [net_name], faults[2:], ['max'], values, lv_tol_percents, vector_groups,
+            fl_buses, is_branch_test, [None], is_active_current, gen_mode
+        ))
 
     parametrize_values_vector_wp22 = []
     for params in base_wp22:
@@ -66,7 +82,6 @@ def create_parameter_list(net_names, faults, cases, values, lv_tol_percents, fau
             gen_id = [3, 4]
 
         if "twenty_bus" in net_name:
-            fault_loc = [0, 8, 18]
             if vgroup == "Dyn":
                 gen_id = 4
             elif vgroup == "Yyn":
