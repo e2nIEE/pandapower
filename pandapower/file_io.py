@@ -98,7 +98,7 @@ def to_json(net, filename=None, encryption_key=None, store_index_names=None, ind
         will not be saved. Std types will also not be saved.
 
         :param pandapowerNet net: The pandapower format network
-        :param filename:The absolute or relative path to the output file or a file-like object,
+        :param filename: The absolute or relative path to the output file or a file-like object,
             if 'None' the function returns a json string, default None
         :type filename: str or file
         :param encryption_key: If given, the pandapower network is stored as an encrypted json string, default None
