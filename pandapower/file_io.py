@@ -221,7 +221,7 @@ def _from_excel_old(xls):
     return net
 
 
-def from_json(filename, convert=True, encryption_key=None, elements_to_deserialize=None,
+def from_json(filename_or_str, convert=True, encryption_key=None, elements_to_deserialize=None,
               keep_serialized_elements=True, add_basic_std_types=False, replace_elements=None,
               empty_dict_like_object=None, ignore_unknown_objects=False):
     """
@@ -255,26 +255,30 @@ def from_json(filename, convert=True, encryption_key=None, elements_to_deseriali
     :rtype: pandapowerNet
 
     :example:
+        >>> from pandapower.file_io import from_json
         >>> net = pp.from_json("example.json")
     """
-    if hasattr(filename, 'read'):
-        json_string = filename.read()
-    elif not os.path.isfile(filename):
-        raise UserWarning("File {} does not exist!!".format(filename))
-    else:
-        with open(filename, "r") as fp:
+    if hasattr(filename_or_str, 'read'):
+        json_string = filename_or_str.read()
+    elif os.path.isfile(filename_or_str):
+        with open(filename_or_str, "r") as fp:
             json_string = fp.read()
-
-    return from_json_string(
-        json_string,
-        convert=convert,
-        encryption_key=encryption_key,
-        elements_to_deserialize=elements_to_deserialize,
-        keep_serialized_elements=keep_serialized_elements,
-        add_basic_std_types=add_basic_std_types,
-        replace_elements=replace_elements,
-        empty_dict_like_object=empty_dict_like_object,
-        ignore_unknown_objects=ignore_unknown_objects)
+    else:
+        json_string = filename_or_str
+    try:
+        return from_json_string(
+            json_string,
+            convert=convert,
+            encryption_key=encryption_key,
+            elements_to_deserialize=elements_to_deserialize,
+            keep_serialized_elements=keep_serialized_elements,
+            add_basic_std_types=add_basic_std_types,
+            replace_elements=replace_elements,
+            empty_dict_like_object=empty_dict_like_object,
+            ignore_unknown_objects=ignore_unknown_objects
+        )
+    except ValueError as e:
+        raise UserWarning(f"Failed to load as json or file: {e}")
 
 
 def from_json_string(
