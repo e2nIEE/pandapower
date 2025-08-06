@@ -687,7 +687,7 @@ def _calc_branch_currents_complex(net, bus_idx, ppci0, ppci1, ppci2, sequence):
     # add current source branch current if there is one
     current_sources = any(~np.isnan(ppci1["bus"][:, IKCV])) and np.any(ppci1["bus"][:, IKCV] != 0)
     if current_sources:
-        ikcv = ppci1["bus"][:, IKCV] * np.exp(np.deg2rad(ppci1["bus"][:, PHI_IKCV_DEGREE]) * 1j)
+        ikcv = ppci1["bus"][:, IKCV] * np.exp(np.deg2rad(ppci1["bus"][:, PHI_IKCV_DEGREE]) * 1j) *baseI
         # ikssc = ppci1["bus"][:, IKSSC] * np.exp(1j * np.deg2rad(ppci1["bus"][:, PHI_IKSSC_DEGREE]))
         sgen_bus = sgen_bus = ikcv != 0
 
@@ -736,12 +736,12 @@ def _calc_branch_currents_complex(net, bus_idx, ppci0, ppci1, ppci2, sequence):
         # calculate voltage source branch current
         if net["_options"]["inverse_y"]:
             Zbus = ppci["internal"]["Zbus"]
-            V = np.dot(Zbus, (current * baseI).T)
+            V = np.dot(Zbus, (current).T)
         else:
             ybus_fact = ppci["internal"]["ybus_fact"]
             V = np.zeros((n_bus, n_sc_bus), dtype=np.complex128)
             for ix, b in enumerate(bus_idx):
-                V[:, ix] = ybus_fact(current[ix, :] * baseI)
+                V[:, ix] = ybus_fact(current[ix, :])
 
         V[np.abs(V) < 1e-10] = 0
 
