@@ -444,8 +444,13 @@ class PPJSONEncoder(json.JSONEncoder):
 
             return text
 
+        if self.indent is None or isinstance(self.indent, str):
+            indent = self.indent
+        else:
+            indent = ' ' * self.indent
+
         _iterencode = json.encoder._make_iterencode(
-            markers, self.default, _encoder, self.indent, floatstr,
+            markers, self.default, _encoder, indent, floatstr,
             self.key_separator, self.item_separator, self.sort_keys,
             self.skipkeys, _one_shot, isinstance=self.isinstance_func)
         return _iterencode(o, 0)
