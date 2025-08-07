@@ -2941,9 +2941,11 @@ def create_line_dc(
     tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
     _set_entries(net, "line_dc", index, **v, **kwargs)
 
+
     if geodata and hasattr(geodata, '__iter__'):
         geo = [[x, y] for x, y in geodata]
         net.line_dc.at[index, "geo"] = f'{{"coordinates": {geo}, "type": "LineString"}}'
+
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "line_dc")
     _set_value_if_not_nan(net, index, alpha, "alpha", "line_dc")
@@ -3529,9 +3531,11 @@ def create_line_dc_from_parameters(
 
     _set_entries(net, "line_dc", index, **v, **kwargs)
 
+
     if geodata and hasattr(geodata, '__iter__'):
         geo = [[x, y] for x, y in geodata]
         net.line_dc.at[index, "geo"] = f'{{"coordinates": {geo}, "type": "LineString"}}'
+
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "line_dc")
     _set_value_if_not_nan(net, index, alpha, "alpha", "line_dc")
@@ -5446,28 +5450,7 @@ def create_shunt_as_capacitor(
     return create_shunt(net, bus, q_mvar=q_mvar, p_mw=p_mw, **kwargs)
 
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-def create_svc(
-    net: pandapowerNet,
-    bus,
-    x_l_ohm: float,
-    x_cvar_ohm: float,
-    set_vm_pu: float,
-    thyristor_firing_angle_degree: float,
-    name: Optional[str] = None,
-    controllable: bool = True,
-    in_service: bool = True,
-    index = None,
-    min_angle_degree: float = 90,
-    max_angle_degree: float = 180,
-    **kwargs
-) -> Int:
-=======
-def create_source_dc(net, bus, vm_pu=1.0, index=None, name=None, in_service=True, **kwargs):
-=======
 def create_source_dc(net, bus_dc, vm_pu=1.0, index=None, name=None, in_service=True, **kwargs):
->>>>>>> b273e4e3e (updated create.py to create dc loads.)
     """
     Creates a dc voltage source in a dc grid with an adjustable set point
     INPUT:
@@ -5551,10 +5534,21 @@ def create_load_dc(
     return index
 
 
-def create_svc(net, bus, x_l_ohm, x_cvar_ohm, set_vm_pu, thyristor_firing_angle_degree,
-               name=None, controllable=True, in_service=True, index=None,
-               min_angle_degree=90, max_angle_degree=180, **kwargs):
->>>>>>> 8b085b3a9 (added a source_dc to be able to model voltage sources.)
+def create_svc(
+    net: pandapowerNet,
+    bus,
+    x_l_ohm: float,
+    x_cvar_ohm: float,
+    set_vm_pu: float,
+    thyristor_firing_angle_degree: float,
+    name: Optional[str] = None,
+    controllable: bool = True,
+    in_service: bool = True,
+    index = None,
+    min_angle_degree: float = 90,
+    max_angle_degree: float = 180,
+    **kwargs
+) -> Int:
     """
     Creates an SVC element - a shunt element with adjustable impedance used to control the voltage \
         at the connected bus
@@ -5682,26 +5676,6 @@ def create_ssc(
     return index
 
 
-<<<<<<< HEAD
-def create_vsc(
-    net: pandapowerNet,
-    bus,
-    bus_dc,
-    r_ohm: float,
-    x_ohm: float,
-    r_dc_ohm: float,
-    pl_dc_mw: float = 0.,
-    control_mode_ac: Literal["vm_pu", "q_mvar"] = "vm_pu",
-    control_value_ac: float = 1.,
-    control_mode_dc: Literal["vm_pu", "p_mw"] = "p_mw",
-    control_value_dc: float = 0.,
-    name: Optional[str] = None,
-    controllable: bool = True,
-    in_service: bool = True,
-    index = None,
-    **kwargs
-) -> Int:
-=======
 def create_b2b_vsc(net, bus, bus_dc_plus, bus_dc_minus, r_ohm, x_ohm, r_dc_ohm, pl_dc_mw=0., control_mode_ac="vm_pu",
                    control_value_ac=1., control_mode_dc="p_mw", control_value_dc=0., name=None, controllable=True,
                    in_service=True, index=None, **kwargs):
@@ -5769,7 +5743,6 @@ def create_b2b_vsc(net, bus, bus_dc_plus, bus_dc_minus, r_ohm, x_ohm, r_dc_ohm, 
 def create_vsc(net, bus, bus_dc, r_ohm, x_ohm, r_dc_ohm, pl_dc_mw=0., control_mode_ac="vm_pu", control_value_ac=1.,
                control_mode_dc="p_mw", control_value_dc=0.,
                name=None, controllable=True, in_service=True, index=None, **kwargs):
->>>>>>> c0a33b739 (first draft of a bipolar vsc implementation.)
     """
     Creates an VSC converter element - a shunt element with adjustable VSC internal voltage used to connect the \
     AC grid and the DC grid. The element implements several control modes.
