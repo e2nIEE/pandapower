@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 from pandapower import pp_dir
 from pandapower.shortcircuit.calc_sc import calc_sc
-from pandapower.test.shortcircuit.sce_tests.test_all_faults_and_cases import (
+from pandapower.test.shortcircuit.sce_tests.functions_tests import (
     load_test_case,
     check_pattern,
     modify_impedance_values_with_fault_value,
