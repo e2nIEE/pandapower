@@ -190,6 +190,7 @@ def get_structure_dict() -> dict:
             "control_value_dc": "f8",
             "controllable": "bool",
             "in_service": "bool",
+            "ref_bus": "u4",
         },
         "ext_grid": {
             "name": dtype(object),

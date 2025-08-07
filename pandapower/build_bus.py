@@ -22,7 +22,8 @@ from .pypower.idx_svc import svc_cols, SVC_BUS, SVC_SET_VM_PU, SVC_MIN_FIRING_AN
     SVC_CONTROLLABLE, SVC_X_L, SVC_X_CVAR, SVC_THYRISTOR_FIRING_ANGLE
 from .pypower.idx_vsc import vsc_cols, VSC_BUS, VSC_INTERNAL_BUS, VSC_R, VSC_X, VSC_STATUS, VSC_CONTROLLABLE, \
     VSC_BUS_DC, VSC_MODE_AC, VSC_VALUE_AC, VSC_MODE_DC, VSC_VALUE_DC, VSC_MODE_AC_V, VSC_MODE_AC_Q, VSC_MODE_AC_SL, \
-    VSC_MODE_DC_V, VSC_MODE_DC_P, VSC_INTERNAL_BUS_DC, VSC_R_DC, VSC_PL_DC
+    VSC_MODE_DC_V, VSC_MODE_DC_P, VSC_INTERNAL_BUS_DC, VSC_R_DC, VSC_PL_DC, VSC_DIFF_REF_BUS, VSC_MODE_DC_DP, \
+    VSC_MODE_DC_DM
 from .pypower.idx_source_dc import SOURCE_DC_BUS, SOURCE_DC_STATUS, SOURCE_DC_VG, source_dc_cols
 
 try:
@@ -577,7 +578,7 @@ def set_reference_buses(net, ppc, bus_lookup, mode):
 
 def set_reference_buses_dc(net, ppc, bus_lookup):
 
-    vsc_dc_slack = net.vsc.control_mode_dc.values == "vm_pu"
+    vsc_dc_slack = net.vsc.control_mode_dc.values != "p_mw"
     vsc_ac_slack = net.vsc.control_mode_ac.values == "slack"  # VSC that defines AC slack cannot define DC slack
 
     # todo vsc
@@ -887,6 +888,7 @@ def _build_vsc_ppc(net, ppc, mode):
     mode_dc = net["vsc"]["control_mode_dc"].values
     value_ac = net["vsc"]["control_value_ac"].values
     value_dc = net["vsc"]["control_value_dc"].values
+    ref_bus_values = net["vsc"]["ref_bus"].fillna(0).values.astype(int)
 
     vsc = ppc["vsc"]
     baseV = ppc["bus"][bus, BASE_KV]
@@ -899,6 +901,7 @@ def _build_vsc_ppc(net, ppc, mode):
     vsc[f:t, VSC_INTERNAL_BUS] = bus_lookup[aux["vsc"]]
     vsc[f:t, VSC_BUS_DC] = bus_dc
     vsc[f:t, VSC_INTERNAL_BUS_DC] = bus_lookup_dc[aux_dc["vsc"]]
+    vsc[f:t, VSC_DIFF_REF_BUS] = bus_lookup_dc[ref_bus_values]
 
     vsc[f:t, VSC_R] = net["vsc"]["r_ohm"].values / baseZ
     vsc[f:t, VSC_X] = net["vsc"]["x_ohm"].values / baseZ
@@ -908,7 +911,7 @@ def _build_vsc_ppc(net, ppc, mode):
     if np.any(~np.isin(mode_ac, ["vm_pu", "q_mvar", "slack"])):
         raise NotImplementedError("VSC element only supports the following control modes for AC side: vm_pu, q_mvar")
 
-    if np.any(~np.isin(mode_dc, ["vm_pu", "p_mw"])):
+    if np.any(~np.isin(mode_dc, ["vm_pu", "p_mw", "vm_pu_diff_p", "vm_pu_diff_m"])):
         raise NotImplementedError("VSC element only supports the following control modes for DC side: vm_pu, q_mvar")
 
     # check ac mode
@@ -918,7 +921,14 @@ def _build_vsc_ppc(net, ppc, mode):
     vsc[f:t, VSC_VALUE_AC] = np.where((mode_ac_code == VSC_MODE_AC_V) | (mode_ac_code == VSC_MODE_AC_SL),
                                       value_ac, value_ac / baseMVA)
 
-    mode_dc_code = np.where(mode_dc == "vm_pu", VSC_MODE_DC_V, VSC_MODE_DC_P)
+    # mode_dc_code = np.where(mode_dc == "vm_pu", VSC_MODE_DC_V, VSC_MODE_DC_P)
+    conditions = [
+        mode_dc == "vm_pu",
+        mode_dc == "vm_pu_diff_p",
+        mode_dc == "vm_pu_diff_m"
+    ]
+
+    mode_dc_code = np.select(conditions, [VSC_MODE_DC_V, VSC_MODE_DC_DP, VSC_MODE_DC_DM], default=VSC_MODE_DC_P)
     vsc[f:t, VSC_MODE_DC] = mode_dc_code
     vsc[f:t, VSC_VALUE_DC] = np.where(mode_dc == "vm_pu", value_dc, value_dc / baseMVA)
 

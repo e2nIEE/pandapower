@@ -43,8 +43,10 @@ VSC_MODE_AC_Q = 1
 VSC_MODE_AC_SL = 2
 
 # define DC modes
-VSC_MODE_DC_V = 0
-VSC_MODE_DC_P = 1
+VSC_MODE_DC_V = 0 # constant voltage regulation on dc bus aka dc slack
+VSC_MODE_DC_P = 1 # constant power regulation on dc bus
+VSC_MODE_DC_DP = 2 # constant difference regulation as a test for bipolar vsc, upper vsc
+VSC_MODE_DC_DM = 3 # constant difference regulation as a test for bipolar vsc, lower vsc
 
 # define the indices
 VSC_BUS = 0  # f, from bus number
@@ -57,7 +59,7 @@ VSC_R_DC = 6  # (p.u.)
 VSC_PL_DC = 7  # p.u., specifies the no-load losses (initially input as MW and converted to p.u. for ppc)
 VSC_MODE_AC = 8  # 0 - vm_pu, 1 - q_mvar, 2 - slack
 VSC_VALUE_AC = 9
-VSC_MODE_DC = 10  # 0 - vm_pu, 1 - p_mw
+VSC_MODE_DC = 10  # 0 - vm_pu, 1 - p_mw, 2 - vm_pu_diff
 VSC_VALUE_DC = 11
 VSC_STATUS = 12  # initial branch status, 1 - in service, 0 - out of service
 VSC_CONTROLLABLE = 13
@@ -67,5 +69,6 @@ VSC_P = 14  # result for P
 VSC_Q = 15  # result for Q
 VSC_P_DC = 16  # result for P
 
+VSC_DIFF_REF_BUS = 17 # reference bus for difference regulation
 
-vsc_cols = 17
+vsc_cols = 18
