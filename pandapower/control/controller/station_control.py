@@ -61,9 +61,9 @@ class BinarySearchControl(Controller):
 
             **tol=0.001** - Tolerance criteria of controller convergence.
        """
-    def __init__(self, net, name, ctrl_in_service, output_element, output_variable, output_element_index,
+    def __init__(self, net, ctrl_in_service, output_element, output_variable, output_element_index,
                  output_element_in_service, output_values_distribution, input_element, input_variable,
-                 input_element_index, set_point, voltage_ctrl, input_invert=False, bus_idx=None, tol=0.001, in_service=True, order=0, level=0,
+                 input_element_index, set_point, voltage_ctrl, name="", input_invert=False, bus_idx=None, tol=0.001, in_service=True, order=0, level=0,
                  drop_same_existing_ctrl=False, matching_params=None, **kwargs):
         super().__init__(net, in_service=in_service, order=order, level=level,
                          drop_same_existing_ctrl=drop_same_existing_ctrl,
@@ -165,7 +165,7 @@ class BinarySearchControl(Controller):
             logger.warning("Input and/or output elements for controller %i out of service, putting controller "
                            "out of service" % self.index)
             self.converged = True
-            net.controller.in_service[self.index] = False
+            net.controller.loc[self.index, "in_service"] = False
             self.in_service = False
             return self.converged
 
@@ -250,8 +250,8 @@ class DroopControl(Controller):
 
                 **vm_set_ub=None** - Upper band border of dead band
            """
-    def __init__(self, net, name, q_droop_mvar, bus_idx, vm_set_pu, controller_idx, voltage_ctrl, tol=1e-6, in_service=True,
-                 order=-1, level=0, drop_same_existing_ctrl=False, matching_params=None, vm_set_lb=None, vm_set_ub=None,
+    def __init__(self, net, q_droop_mvar, bus_idx, vm_set_pu, controller_idx, voltage_ctrl, tol=1e-6, in_service=True,
+                 order=-1, level=0, name="", drop_same_existing_ctrl=False, matching_params=None, vm_set_lb=None, vm_set_ub=None,
                  **kwargs):
         super().__init__(net, in_service=in_service, order=order, level=level,
                          drop_same_existing_ctrl=drop_same_existing_ctrl,
@@ -300,10 +300,10 @@ class DroopControl(Controller):
         if self.bus_idx is None:
             self.converged = np.all(np.abs(self.diff) < self.tol)
         else:
-            if np.all(np.abs(self.diff) < self.tol):
-                self.converged = net.controller.at[self.controller_idx, "object"].converged
-            elif net.controller.at[self.controller_idx, "object"].diff_old is not None:
-                net.controller.at[self.controller_idx, "object"].overwrite_covergence = True
+            #if np.all(np.abs(self.diff) < self.tol):
+            self.converged = net.controller.at[self.controller_idx, "object"].converged
+            #elif net.controller.at[self.controller_idx, "object"].diff_old is not None:
+            #    net.controller.at[self.controller_idx, "object"].overwrite_covergence = True
 
         return self.converged
 

@@ -1772,42 +1772,53 @@ def create_pp_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
         if load_type is None:
             params["const_z_p_percent"] = 100
         else:
-            pf_params = [load_type.kpu0,
-                         load_type.kpu1,
-                         load_type.kpu,
-                         load_type.kqu0,
-                         load_type.kqu1,
-                         load_type.kqu]
-            if (pf_params[:3]!=pf_params[3:]) or \
-                (pf_params[:3]!=[0,1,2]) or \
-                (pf_params[3:]!=[0,1,2]):
-                raise UserWarning(f"Load {item.loc_name} ({load_class}) unsupported voltage dependency configuration")
-            else:
-                i_p = 0
-                z_p = 0
-                i_q = 0
-                z_q = 0
-                for cc_p, ee_p, cc_q, ee_q in zip(("aP", "bP", "cP"), ("kpu0", "kpu1", "kpu"),
+            used_e_p = set()
+            used_e_q = set()
+            for cc_p, ee_p, cc_q, ee_q in zip(("aP", "bP", "cP"), ("kpu0", "kpu1", "kpu"),
                                       ("aQ", "bQ", "cQ"), ("kqu0", "kqu1", "kqu")):
-                    
-                    c_p = load_type.GetAttribute(cc_p)
-                    e_p = load_type.GetAttribute(ee_p)
-                    if e_p == 1:
-                        i_p += 100 * c_p
-                    elif e_p == 2:
-                        z_p += 100 * c_p
 
-                    c_q = load_type.GetAttribute(cc_q)
-                    e_q = load_type.GetAttribute(ee_q)
-                    if e_q == 1:
-                        i_q += 100 * c_q
-                    elif e_q == 2:
-                        z_q += 100 * c_q
+                c_p = load_type.GetAttribute(cc_p)
+                e_p = load_type.GetAttribute(ee_p)
+                c_q = load_type.GetAttribute(cc_q)
+                e_q = load_type.GetAttribute(ee_q)
 
-                params["const_i_p_percent"] = i_p
-                params["const_z_p_percent"] = z_p
-                params["const_i_q_percent"] = i_q
-                params["const_z_q_percent"] = z_q
+                if c_p:  # prüfen ob cc_p "nicht null" ist
+                    if e_p not in {0, 1, 2} or e_p in used_e_p:
+                        raise UserWarning(
+                            f"Load {item.loc_name} ({load_class}) unsupported voltage dependency configuration")
+                    used_e_p.add(e_p)
+
+                if c_q:
+                    if e_q not in {0, 1, 2} or e_q in used_e_q:
+                        raise UserWarning(
+                            f"Load {item.loc_name} ({load_class}) unsupported voltage dependency configuration")
+                    used_e_q.add(e_q)
+
+            i_p = 0
+            z_p = 0
+            i_q = 0
+            z_q = 0
+            for cc_p, ee_p, cc_q, ee_q in zip(("aP", "bP", "cP"), ("kpu0", "kpu1", "kpu"),
+                                  ("aQ", "bQ", "cQ"), ("kqu0", "kqu1", "kqu")):
+
+                c_p = load_type.GetAttribute(cc_p)
+                e_p = load_type.GetAttribute(ee_p)
+                if e_p == 1:
+                    i_p += 100 * c_p
+                elif e_p == 2:
+                    z_p += 100 * c_p
+
+                c_q = load_type.GetAttribute(cc_q)
+                e_q = load_type.GetAttribute(ee_q)
+                if e_q == 1:
+                    i_q += 100 * c_q
+                elif e_q == 2:
+                    z_q += 100 * c_q
+
+            params["const_i_p_percent"] = i_p
+            params["const_z_p_percent"] = z_p
+            params["const_i_q_percent"] = i_q
+            params["const_z_q_percent"] = z_q
 
     ### for now - don't import ElmLodlvp
     elif load_class == 'ElmLodlvp':
