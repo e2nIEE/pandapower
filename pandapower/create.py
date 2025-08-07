@@ -5186,6 +5186,7 @@ def create_vsc(
     controllable: bool = True,
     in_service: bool = True,
     index = None,
+    ref_bus = None,
     **kwargs
 ) -> Int:
     """
@@ -5240,9 +5241,9 @@ def create_vsc(
 
     entries = dict(zip([
         "name", "bus", "bus_dc", "r_ohm", "x_ohm", "r_dc_ohm", "pl_dc_mw", "control_mode_ac", "control_value_ac",
-        "control_mode_dc", "control_value_dc", "controllable", "in_service"],
+        "control_mode_dc", "control_value_dc", "controllable", "in_service", "ref_bus"],
         [name, bus, bus_dc, r_ohm, x_ohm, r_dc_ohm, pl_dc_mw, control_mode_ac, control_value_ac,
-         control_mode_dc, control_value_dc, controllable, in_service]))
+         control_mode_dc, control_value_dc, controllable, in_service, ref_bus]))
     _set_entries(net, "vsc", index, **entries, **kwargs)
 
     return index

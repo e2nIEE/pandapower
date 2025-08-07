@@ -1271,8 +1271,7 @@ def _set_isolated_buses_out_of_service(net, ppc):
                             np.int64).flatten())
 
     # but also check if they may be the only connection to an ext_grid
-    net._isolated_buses = np.setdiff1d(disco, ppc['bus'][ppc['bus'][:, BUS_TYPE] == REF,
-    BUS_I].real.astype(np.int64))
+    net._isolated_buses = np.setdiff1d(disco, ppc['bus'][ppc['bus'][:, BUS_TYPE] == REF, BUS_I].real.astype(np.int64))
     ppc["bus"][net._isolated_buses, BUS_TYPE] = NONE
 
     # check DC buses - not connected to DC lines and not connected to VSC DC side
@@ -1282,8 +1281,7 @@ def _set_isolated_buses_out_of_service(net, ppc):
                                       ppc["vsc"][ppc["vsc"][:, VSC_STATUS] == 1, VSC_BUS_DC].real.astype(np.int64)))
 
     # but also check if they may be the only connection to an ext_grid
-    net._isolated_buses_dc = np.setdiff1d(disco_dc, ppc['bus_dc'][ppc['bus_dc'][:, DC_BUS_TYPE] == REF,
-    DC_BUS_I].real.astype(np.int64))
+    net._isolated_buses_dc = np.setdiff1d(disco_dc, ppc['bus_dc'][ppc['bus_dc'][:, DC_BUS_TYPE] == REF, DC_BUS_I].real.astype(np.int64))
     ppc["bus_dc"][net._isolated_buses_dc, DC_BUS_TYPE] = DC_NONE
 
 
@@ -1621,21 +1619,23 @@ def _add_b2b_vsc(net: pandapowerNet):
         name = "b2b_" + str(b2b_vsc.name)
 
         # If in voltage control mode, the voltage is split equally between the VSCs
-        #if control_mode_dc == 'vm_pu':
-        #    control_value_dc /= 2.
+        ref_bus = None
+        if control_mode_dc == 'vm_pu_diff':
+            ref_bus = bus_dc_minus
+            control_mode_dc = 'vm_pu_diff_p'
 
         create_vsc(net, ac_bus, bus_dc_plus, r_ohm/2., x_ohm/2., r_dc_ohm/2., pl_dc_mw=pl_dc_mw,
                    control_mode_ac=control_mode_ac, control_value_ac=control_value_ac, name=str(name)+"+",
-                   control_mode_dc=control_mode_dc, control_value_dc=control_value_dc)
+                   control_mode_dc=control_mode_dc, control_value_dc=control_value_dc, ref_bus=ref_bus)
 
-        #in_service = True
-        #if control_mode_dc == 'vm_pu':
-        #    # control_value_dc = 1e-6
-        #    in_service = False
+        ref_bus = None
+        if control_mode_dc == 'vm_pu_diff_p':
+            ref_bus = bus_dc_plus
+            control_mode_dc = 'vm_pu_diff_m'
 
         create_vsc(net, ac_bus, bus_dc_minus, r_ohm/2., x_ohm/2., r_dc_ohm/2., pl_dc_mw=pl_dc_mw,
                    control_mode_ac=control_mode_ac, control_value_ac=control_value_ac, name=str(name)+"-",
-                   control_mode_dc=control_mode_dc, control_value_dc=control_value_dc)
+                   control_mode_dc=control_mode_dc, control_value_dc=control_value_dc, ref_bus=ref_bus)
 
 
 def _add_auxiliary_elements(net: pandapowerNet):
