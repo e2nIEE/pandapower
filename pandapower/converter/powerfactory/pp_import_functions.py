@@ -2033,10 +2033,10 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
         pstac = item.c_pstac  # None if station controller is not available
         if pstac is not None and not pstac.outserv and export_ctrl:
             if pstac.i_droop and pstac.i_ctrl == 0:
-                av_mode = 'constv'#'constq' #todo obsolete?
+                av_mode = 'constq'#'constv' for gen #todo obsolete?
             else:
                 if pstac.i_ctrl == 0:
-                    av_mode = 'constv'#'constq'#why? shouldnt it be constv? Only sgen element?
+                    av_mode = 'constq'#'constq' for sgen, constv for gen? #todo
                 elif pstac.i_ctrl == 1:
                     av_mode = 'constq'
                 elif pstac.i_ctrl == 2:
@@ -2288,11 +2288,11 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
         # None if station controller is not available
         if pstac is not None and not pstac.outserv and export_ctrl:
             if pstac.i_droop and pstac.i_ctrl == 0:
-                av_mode = 'constv' #todo obsolete?
+                av_mode = 'constq' #todo obsolete?
             else:
                 i_ctrl = pstac.i_ctrl
                 if i_ctrl == 0:
-                    av_mode = 'constv'#'constq'#why not constv? Ahh, only sgen implemented
+                    av_mode = 'constq'#'constq'#why not constv? Ahh, only sgen implemented
                 elif i_ctrl == 1:
                     av_mode = 'constq'
                 elif i_ctrl == 2:
@@ -3860,7 +3860,7 @@ def create_stactrl(net, item, **kwargs):
         elif s.av_mode == "constq":
             gt = "sgen"
         elif s.av_mode == "constv":
-            gt = "gen"
+            gt = "sgen"#todo
         else:
             gt = "other"
         gen_types.append(gt)
@@ -3875,11 +3875,11 @@ def create_stactrl(net, item, **kwargs):
     if control_mode is not None:
         if item.i_droop and control_mode == 0: #todo obsolete
             for i in range(len(gen_types)):
-                gen_types[i] = "gen"
+                gen_types[i] = "sgen"
         else:
             if control_mode == 0: #V_ctrl
                 for i in range(len(gen_types)):
-                    gen_types[i] = "gen"
+                    gen_types[i] = "sgen"#todo
             elif control_mode == 1: #Q_ctrl
                 for i in range(len(gen_types)):
                     gen_types[i] = "sgen"
@@ -4150,7 +4150,7 @@ def create_stactrl(net, item, **kwargs):
 
         if item.i_droop:  # Enable Droop
             bsc = BinarySearchControl(net, ctrl_in_service=stactrl_in_service,
-                                      output_element=gen_element, output_variable="vm_pu",
+                                      output_element=gen_element, output_variable="q_mvar",
                                       output_element_index=gen_element_index,
                                       output_element_in_service=gen_element_in_service,
                                       output_values_distribution=distribution_mode,
@@ -4163,7 +4163,7 @@ def create_stactrl(net, item, **kwargs):
                                       input_element_index_q_meas=res_element_index)
         else:
             BinarySearchControl(net, ctrl_in_service=stactrl_in_service,
-                                output_element=gen_element, output_variable="vm_pu",
+                                output_element=gen_element, output_variable="q_mvar",
                                 output_element_index=gen_element_index,
                                 output_element_in_service=gen_element_in_service, input_element="res_bus",
                                 output_values_distribution=distribution_mode,

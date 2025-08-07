@@ -528,8 +528,10 @@ class BinarySearchControl(Controller):
                         logger.warning(f'Controller {self.index}: Generator {self.output_element} {self.output_element_index[i]}'
                             f' exceeded maximum Voltage at bus {self.bus_idx_dist[i]}: {vm_pu[i]} < {v_min_pu[i]}\n')
             if len(self.min_q_mvar) == len(self.max_q_mvar) == len(self.output_element_in_service):
-                exceed_limit_min = np.where(self.output_values < np.array(self.min_q_mvar)[np.array(self.output_element_in_service)])[0]
-                exceed_limit_max = np.where(self.output_values > np.array(self.max_q_mvar)[np.array(self.output_element_in_service)])[0]
+                exceed_limit_min = np.where(np.array(self.output_values)[np.array(self.output_element_in_service)]
+                                            < np.array(self.min_q_mvar)[np.array(self.output_element_in_service)])[0]
+                exceed_limit_max = np.where(np.array(self.output_values)[np.array(self.output_element_in_service)]
+                                            > np.array(self.max_q_mvar)[np.array(self.output_element_in_service)])[0]
                 for i in exceed_limit_max:
                     logger.warning(f'Controller {self.index} converged but the Reactive Power Output for Element '
                 f'{self.output_element}: {self.output_element_index[i]} exceeds upper limits: {self.output_values[i]} > {self.max_q_mvar[i]}\n')
