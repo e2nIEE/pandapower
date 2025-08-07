@@ -1780,7 +1780,7 @@ def create_pp_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
                          load_type.kqu]
             if (pf_params[:3]!=pf_params[3:]) or \
                 (pf_params[:3]!=[0,1,2]) or \
-                (pf_params[3:]!=[0,1,2]):
+                (pf_params[3:]!=[0,1,2]):#todo ersetzen mit fix
                 raise UserWarning(f"Load {item.loc_name} ({load_class}) unsupported voltage dependency configuration")
             else:
                 i_p = 0

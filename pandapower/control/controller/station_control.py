@@ -1214,7 +1214,7 @@ class DroopControl(Controller):
                 self.q_set_mvar_bsc = net.controller.at[self.controller_idx, "object"].set_point
             if self.lb_voltage is not None and self.ub_voltage is not None:
                 if self.vm_pu > self.ub_voltage:
-                    self.q_set_old_mvar, self.q_set_mvar = (
+                    self.q_set_old_mvar, self.q_set_mvar = (#todo correctur
                         self.q_set_mvar, self.q_set_mvar_bsc - (self.ub_voltage - self.vm_pu) * self.q_droop_mvar)
                 elif self.vm_pu < self.lb_voltage:
                     self.q_set_old_mvar, self.q_set_mvar = (
