@@ -17,7 +17,12 @@ try:
 except ImportError:
     import logging
 
-logger = logging.getLogger(__name__)
+try:
+    import pandaplan.core.pplog as pplog
+except ImportError:
+    import logging as pplog
+
+logger = pplog.getLogger(__name__)
 
 class BinarySearchControl(Controller):
     """
@@ -59,6 +64,9 @@ class BinarySearchControl(Controller):
             uses the bus next to the controlled generator group. Not completely implemented, generators on multiple buses
             are not correctly handled.
 
+            **input_invert** - Boolean that indicates if the measurement of the input element must be inverted. Required
+            when importing from PowerFactory.
+
             **set_point** - Set point of the controller, can be a reactive power provision or a voltage set point. In
             case of voltage set point, modus must be V_ctrl, input_element_index must be a bus (input_variable must be
             'vm_pu' input_element must be 'res_bus'). Can be overwritten by a droop controller chained with the binary
@@ -84,11 +92,12 @@ class BinarySearchControl(Controller):
     def __init__(self, net, ctrl_in_service:bool, output_element, output_variable, output_element_index,
                  output_element_in_service, input_element, input_variable,
                  input_element_index, set_point:float, output_values_distribution:str, output_distribution_values = None,
-                 modus:str = None, tol=0.001, order=0, level=0,
+                 modus:str = None, name="", input_invert=False, tol=0.001, order=0, level=0,
                  drop_same_existing_ctrl=False, matching_params=None, **kwargs):
         super().__init__(net, in_service=ctrl_in_service, order=order, level=level,
                          drop_same_existing_ctrl=drop_same_existing_ctrl,
                          matching_params=matching_params)
+        self.name = name
         self.redistribute_values = None  # Values to save for redistributed gens
         self.counter_warning = False #only one message that only one active output element
         self.in_service = ctrl_in_service
@@ -117,6 +126,7 @@ class BinarySearchControl(Controller):
                 self.input_element_index.append(element)
         else:
             self.input_element_index.append(input_element_index)
+        self.invert = -1 if input_invert else 1
         self.tol = tol #tolerance
         if self.tol is None: #old order
             self.tol = 0.001
@@ -375,6 +385,8 @@ class BinarySearchControl(Controller):
                 self.input_element_in_service.append(net.line.in_service[input_index])
             elif self.input_element == "res_trafo":
                 self.input_element_in_service.append(net.trafo.in_service[input_index])
+            elif self.input_element == "res_trafo3w":
+                self.input_element_in_service.append(net.trafo3w.in_service[input_index])
             elif self.input_element == "res_switch":
                 self.input_element_in_service.append(net.switch.closed[input_index])
             elif self.input_element == "res_bus":
@@ -419,9 +431,11 @@ class BinarySearchControl(Controller):
                 if self.input_element_in_service[counter]: # input element not in service
                     input_values.append(read_from_net(net, self.input_element, input_index,
                                                       self.input_variable[counter], self.read_flag[counter]))
+                    input_values = (self.invert * np.asarray(input_values)).tolist()
                     if self.modus == "PF_ctrl" or self.modus == 'tan(phi)_ctrl':
                         p_input_values.append(read_from_net(net,self.input_element, input_index,
                                                         self.input_variable_p[counter], self.read_flag[counter]))
+                        p_input_values = (self.invert * np.asarray(p_input_values)).tolist()
                 counter += 1
         ###reading Q limits in case of skipped initialization###
         if not hasattr(self, 'min_q_mvar') or not hasattr(self, 'max_q_mvar'):
@@ -988,13 +1002,14 @@ class DroopControl(Controller):
     def __init__(self, net, controller_idx:int, in_service:bool=True, modus:str = None, q_droop_mvar = None,
                  bus_idx=None, vm_set_lb=None, vm_set_ub=None, pf_overexcited=None, pf_underexcited=None,
                  input_element_q_meas:str = None, input_variable_q_meas = None, input_element_index_q_meas = None, tol=1e-6,
-                 order=-1, level=0, drop_same_existing_ctrl=False, matching_params=None, **kwargs):
+                 order=-1, level=0, name="", drop_same_existing_ctrl=False, matching_params=None, **kwargs):
         super().__init__(net, in_service=in_service, order=order, level=level, drop_same_existing_ctrl=drop_same_existing_ctrl,
                          matching_params=matching_params)
         # TODO: implement maximum and minimum of droop control
         # write kwargs in self
         for key, value in kwargs.items():
             setattr(self, key, value)
+        self.name = name
         self.q_droop_mvar = q_droop_mvar #droop in Q_ctrl
         self.input_element_q_meas = input_element_q_meas
         self.input_variable_q_meas = input_variable_q_meas
@@ -1181,17 +1196,13 @@ class DroopControl(Controller):
                                   net.controller.at[self.controller_idx, "object"].read_flag[counter]))
                 counter += 1
             self.diff = net.controller.at[self.controller_idx, "object"].set_point - sum(input_values)
-        # bigger differences with switches as input elements, increase tolerance
-        #if net.controller.at[self.controller_idx, "object"].input_element == "res_switch":
-        #    self.tol = 0.2
-
         if self.modus != 'V_ctrl' and self.modus != 'PF_ctrl': #Convergence
             self.converged = np.all(np.abs(self.diff) < self.tol)
         else: #Convergence for voltage control and PF_ctrl
-            if np.all(np.abs(self.diff) < self.tol):
-                self.converged = net.controller.at[self.controller_idx, "object"].converged
-            elif net.controller.at[self.controller_idx, "object"].diff_old is not None:
-                net.controller.at[self.controller_idx, "object"].overwrite_convergence = True
+            #if np.all(np.abs(self.diff) < self.tol):
+            self.converged = net.controller.at[self.controller_idx, "object"].converged
+            #elif net.controller.at[self.controller_idx, "object"].diff_old is not None:
+            #    net.controller.at[self.controller_idx, "object"].overwrite_convergence = True
         return self.converged
 
     def control_step(self, net):
@@ -1316,5 +1327,7 @@ class DroopControl(Controller):
                 counter = 0
                 for input_index in np.atleast_1d(input_element_index):
                     input_values.append(read_from_net(net, input_element, input_index, str(input_variable[counter]), read_flag[counter]))
+                input_values = (
+                            net.controller.at[self.controller_idx, "object"].invert * np.asarray(input_values)).tolist()
             self.vm_set_pu_new = self.vm_set_pu + sum(input_values) / self.q_droop_mvar #only sum, not divided by elements
             net.controller.at[self.controller_idx, "object"].set_point = self.vm_set_pu_new
