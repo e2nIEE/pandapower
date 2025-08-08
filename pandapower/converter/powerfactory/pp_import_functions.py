@@ -4089,46 +4089,47 @@ def create_stactrl(net, item, **kwargs):
                 f"{item}: only line, trafo 2W/3W element and switch flows can be controlled, {element_class[0]=}")
             return
 
-        q_control_element = []
-        q_control_side = []
-        element_class = []
-        res_element_index = []
-        variable = []
-        if q_control_cubicle.GetClassName() == "StaCubic":
-            q_control_element.append(q_control_cubicle.obj_id)
-            q_control_side.append(q_control_cubicle.obj_bus)  # 0=from, 1=to
-            element_class.append(q_control_element[0].GetClassName())
-        elif q_control_cubicle.GetClassName() == "ElmBoundary":
-            for cubicles in q_control_cubicle.cubicles:
-                q_control_element.append(cubicles.obj_id)
-                q_control_side.append(cubicles.obj_bus)  # 0=from, 1=to
+        if False:
+            q_control_element = []
+            q_control_side = []
+            element_class = []
+            res_element_index = []
+            variable = []
+            if q_control_cubicle.GetClassName() == "StaCubic":
+                q_control_element.append(q_control_cubicle.obj_id)
+                q_control_side.append(q_control_cubicle.obj_bus)  # 0=from, 1=to
                 element_class.append(q_control_element[0].GetClassName())
-        else:
-            print("Not implemented class for q_control_cubicle!")
-        if element_class[0] == "ElmLne":
-            res_element_table = "res_line"
-            for i in range(len(q_control_element)):
-                line_sections = line_dict[q_control_element[i]]
-                if q_control_side[i] == 0:
-                    res_element_index.append(line_sections[0])
-                    variable.append("q_from_mvar")
-                else:
-                    res_element_index.append(line_sections[-1])
-                    variable.append("q_to_mvar")
-        elif element_class[0] == "ElmTr2":
-            res_element_table = "res_trafo"
-            for element in q_control_element:
-                res_element_index.append(trafo_dict[element])
-                variable = "q_hv_mvar" if q_control_side == 0 else "q_lv_mvar"
-        elif element_class[0] == "ElmCoup":
-            res_element_table = "res_switch"
-            for element in q_control_element:
-                res_element_index.append(switch_dict[element])
-                net.switch.at[res_element_index[-1], "z_ohm"] = 1e-3
-                variable = "q_from_mvar" if q_control_side == 0 else "q_to_mvar"
-        #elif control_mode == 0:
-        else:
-            res_element_table = "res_bus"
+            elif q_control_cubicle.GetClassName() == "ElmBoundary":
+                for cubicles in q_control_cubicle.cubicles:
+                    q_control_element.append(cubicles.obj_id)
+                    q_control_side.append(cubicles.obj_bus)  # 0=from, 1=to
+                    element_class.append(q_control_element[0].GetClassName())
+            else:
+                print("Not implemented class for q_control_cubicle!")
+            if element_class[0] == "ElmLne":
+                res_element_table = "res_line"
+                for i in range(len(q_control_element)):
+                    line_sections = line_dict[q_control_element[i]]
+                    if q_control_side[i] == 0:
+                        res_element_index.append(line_sections[0])
+                        variable.append("q_from_mvar")
+                    else:
+                        res_element_index.append(line_sections[-1])
+                        variable.append("q_to_mvar")
+            elif element_class[0] == "ElmTr2":
+                res_element_table = "res_trafo"
+                for element in q_control_element:
+                    res_element_index.append(trafo_dict[element])
+                    variable = "q_hv_mvar" if q_control_side == 0 else "q_lv_mvar"
+            elif element_class[0] == "ElmCoup":
+                res_element_table = "res_switch"
+                for element in q_control_element:
+                    res_element_index.append(switch_dict[element])
+                    net.switch.at[res_element_index[-1], "z_ohm"] = 1e-3
+                    variable = "q_from_mvar" if q_control_side == 0 else "q_to_mvar"
+            #elif control_mode == 0:
+            else:
+                res_element_table = "res_bus"
     #elif control_mode == 0:
     else:
         res_element_table = "res_bus"
