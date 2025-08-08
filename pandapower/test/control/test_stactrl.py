@@ -52,7 +52,7 @@ def distribution_test_net():
 def test_volt_ctrl():
     net = simple_test_net()
     tol = 1e-6
-    BinarySearchControl(net, ctrl_in_service=True,
+    BinarySearchControl(net, name="BSC1", ctrl_in_service=True,
                                    output_element="sgen", output_variable="q_mvar", output_element_index=[0],
                                    output_element_in_service=[True], output_values_distribution=[1],
                                    input_element="res_bus", input_variable="vm_pu", input_element_index=[1],
@@ -72,7 +72,7 @@ def test_volt_ctrl_droop():
                                          output_element_in_service=[True], output_values_distribution=['rel_P'],
                                          input_element="res_trafo", input_variable="q_hv_mvar", input_element_index=[0],
                                          set_point=1.02, voltage_ctrl=True, bus_idx=1, tol=tol)
-    DroopControl(net, q_droop_mvar=40, bus_idx=1,
+    DroopControl(net, name="DC1", q_droop_mvar=40, bus_idx=1,
                             vm_set_pu=1.02, controller_idx=bsc.index, voltage_ctrl=True)
     runpp(net, run_control=False)
     assert(abs(net.res_bus.loc[1, "vm_pu"] - 0.999648) < tol)
@@ -87,7 +87,7 @@ def test_volt_ctrl_droop():
 def test_qctrl():
     net = simple_test_net()
     tol = 1e-6
-    BinarySearchControl(net, ctrl_in_service=True, output_element="sgen", output_variable="q_mvar",
+    BinarySearchControl(net, name="BSC1", ctrl_in_service=True, output_element="sgen", output_variable="q_mvar",
                                    output_element_index=[0], output_element_in_service=[True],
                                    output_values_distribution='rel_rated_S', input_element="res_line",
                                    damping_factor=0.9, input_variable=["q_to_mvar"],
@@ -104,16 +104,16 @@ def test_qctrl_droop():
     net = simple_test_net()
     tol = 1e-6
     net.load.loc[0, "p_mw"] = 60  # create voltage drop at bus 1
-    bsc = BinarySearchControl(net, ctrl_in_service=True,
+    bsc = BinarySearchControl(net, name="BSC1", ctrl_in_service=True,
                                          output_element="sgen", output_variable="q_mvar", output_element_index=[0],
                                          output_element_in_service=[True], output_values_distribution='set_Q',
                                          input_element="res_line", damping_factor=0.9, input_variable=["q_to_mvar"],
                                          input_element_index=0, set_point=1, voltage_ctrl=False, tol=1e-6)
-    DroopControl(net, q_droop_mvar=40, bus_idx=1,
+    DroopControl(net, name="DC1", q_droop_mvar=40, bus_idx=1,
                             vm_set_pu=1, vm_set_ub=1.005, vm_set_lb=0.995,
                             controller_idx=bsc.index, voltage_ctrl=False)
     runpp(net, run_control=False)
-    assert(abs(net.res_line.loc[0, "q_to_mvar"] - (-7.094325e-13)) < tol)
+    assert (abs(net.res_line.loc[0, "q_to_mvar"] - (-1e-13)) < tol)
     runpp(net, run_control=True)
     assert(abs(net.res_line.loc[0, "q_to_mvar"] - (1 + (0.995 - net.res_bus.loc[1, "vm_pu"]) * 40)) < tol)
     assert(all(net.controller.at[i, 'object'].converged) for i in net.controller.index)
@@ -160,7 +160,7 @@ def test_station_ctrl_pf_import():
     print("Scenario 4 - Q(U) - droop 40 MVar/pu")
     print("Input Measurement vm_pu: ", net.res_bus.loc[103, "vm_pu"])
     print("Controlled Transformer Q, lower voltage band 0.999 pu, initial set point 1 MVar and 40 MVar/pu, q_hv_mvar, "
-          "expected: \n -(1 MVar + (0.999 pu  - 0.99585 pu) * 40 MVar/pu)= -1.12618: \n",
+          "expected: \n -(1 MVar + (0.999 pu  - 0.995846 pu) * 40 MVar/pu) = -1.126176: \n",
           net.res_trafo.loc[3, "q_hv_mvar"])
     assert(abs(net.res_trafo.loc[3, "q_hv_mvar"] - (-(1 + (0.999 - net.res_bus.loc[103, "vm_pu"]) * 40))) < tol)
     assert(all(net.controller.at[i, 'object'].converged) for i in net.controller.index)

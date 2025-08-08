@@ -40,6 +40,8 @@ logger = logging.getLogger(__name__)
 # Define global variables
 line_dict = {}
 trafo_dict = {}
+trafo3w_dict = {}
+impedance_dict = {}
 switch_dict = {}
 bus_dict = {}
 grf_map = {}
@@ -61,9 +63,11 @@ def from_pf(
         is_unbalanced=False,
         create_sections=True
 ):
-    global line_dict, trafo_dict, switch_dict, bus_dict, grf_map
+    global line_dict, trafo_dict, trafo3w_dict, impedance_dict, switch_dict, bus_dict, grf_map
     line_dict = {}
     trafo_dict = {}
+    trafo3w_dict = {}
+    impedance_dict = {}
     switch_dict = {}
     logger.debug("__name__: %s" % __name__)
     logger.debug('started from_pf')
@@ -1765,7 +1769,6 @@ def create_pp_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
         params.update(ask(item, pf_variable_p_loads=pf_variable_p_loads,
                           dict_net=dict_net, variables=('p_mw', 'sn_mva')))
 
-
     elif load_class == 'ElmLod':
         params.update(ask(item, pf_variable_p_loads=pf_variable_p_loads,
                           dict_net=dict_net, variables=('p_mw', 'q_mvar')))
@@ -1773,57 +1776,53 @@ def create_pp_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
         if load_type is None:
             params["const_z_p_percent"] = 100
         else:
-            pf_params = [load_type.kpu0,
-                         load_type.kpu1,
-                         load_type.kpu,
-                         load_type.kqu0,
-                         load_type.kqu1,
-                         load_type.kqu]
             used_e_p = set()
             used_e_q = set()
             for cc_p, ee_p, cc_q, ee_q in zip(("aP", "bP", "cP"), ("kpu0", "kpu1", "kpu"),
-                                              ("aQ", "bQ", "cQ"), ("kqu0", "kqu1", "kqu")):
+                                      ("aQ", "bQ", "cQ"), ("kqu0", "kqu1", "kqu")):
+
                 c_p = load_type.GetAttribute(cc_p)
                 e_p = load_type.GetAttribute(ee_p)
                 c_q = load_type.GetAttribute(cc_q)
                 e_q = load_type.GetAttribute(ee_q)
+
                 if c_p:  # prüfen ob cc_p "nicht null" ist
                     if e_p not in {0, 1, 2} or e_p in used_e_p:
                         raise UserWarning(
                             f"Load {item.loc_name} ({load_class}) unsupported voltage dependency configuration")
-                    used_e_p.add(ee_p)
+                    used_e_p.add(e_p)
+
                 if c_q:
                     if e_q not in {0, 1, 2} or e_q in used_e_q:
                         raise UserWarning(
                             f"Load {item.loc_name} ({load_class}) unsupported voltage dependency configuration")
                     used_e_q.add(e_q)
-            # if (pf_params[:3]!=pf_params[3:]) or \
-            #    (pf_params[:3]!=[0,1,2]) or \
-            #    (pf_params[3:]!=[0,1,2]):
-            #    raise UserWarning(f"Load {item.loc_name} ({load_class}) unsupported voltage dependency configuration")
-            # else:
+
             i_p = 0
             z_p = 0
             i_q = 0
             z_q = 0
             for cc_p, ee_p, cc_q, ee_q in zip(("aP", "bP", "cP"), ("kpu0", "kpu1", "kpu"),
-                                              ("aQ", "bQ", "cQ"), ("kqu0", "kqu1", "kqu")):
+                                  ("aQ", "bQ", "cQ"), ("kqu0", "kqu1", "kqu")):
+
                 c_p = load_type.GetAttribute(cc_p)
                 e_p = load_type.GetAttribute(ee_p)
                 if e_p == 1:
                     i_p += 100 * c_p
                 elif e_p == 2:
                     z_p += 100 * c_p
+
                 c_q = load_type.GetAttribute(cc_q)
                 e_q = load_type.GetAttribute(ee_q)
                 if e_q == 1:
                     i_q += 100 * c_q
                 elif e_q == 2:
                     z_q += 100 * c_q
-                params["const_i_p_percent"] = i_p
-                params["const_z_p_percent"] = z_p
-                params["const_i_q_percent"] = i_q
-                params["const_z_q_percent"] = z_q
+
+            params["const_i_p_percent"] = i_p
+            params["const_z_p_percent"] = z_p
+            params["const_i_q_percent"] = i_q
+            params["const_z_q_percent"] = z_q
 
     ### for now - don't import ElmLodlvp
     elif load_class == 'ElmLodlvp':
@@ -3072,6 +3071,7 @@ def create_trafo3w(net, item, tap_opt='nntap'):
     logger.debug('collected params: %s' % params)
     logger.debug('creating trafo3w from parameters')
     tid = create_transformer3w_from_parameters(net, **params)  # type:int
+    trafo3w_dict[item] = tid
 
     # adding switches
     # False if open, True if closed, None if no switch
@@ -3430,6 +3430,7 @@ def create_zpu(net, item):
     add_additional_attributes(item, net, element='impedance', element_id=xid,
                               attr_dict={'for_name': 'equipment', "cimRdfId": "origin_id", "cpSite.loc_name": "site"})
 
+    impedance_dict[item] = xid
     # consider and create station switches
     new_elements = (aux_bus1, aux_bus2)
     new_switch_idx, new_switch_closed = create_connection_switches(net, item, 2, 'b', (bus1, bus2),
@@ -3985,10 +3986,110 @@ def create_stactrl(net, item, **kwargs):
         #q_control_cubicle = item.p_cub if control_mode == 1 else item.pQmeas #Feld #pqmeas if V_ctrl and droop
         q_control_cubicle = item.p_cub if control_mode != 0 else item.pQmeas  #item.p_cub if other mode and droop?
         if q_control_cubicle is None:
-            if control_mode != 0:#'V_ctrl' with Q droop sets Q to 0 when pQmeas is None
-                logger.info(f"Input Element of Controller {item.loc_name} is missing, skipping")
-                return
+            logger.info(f"Input Element of Controller {item.loc_name} is missing, skipping")
+            return
+        q_control_element = []
+        q_control_side = []
+        element_class = []
+        res_element_index = []
+        variable = []
+        input_invert = False
+        if q_control_cubicle.GetClassName() == "StaCubic":
+            q_control_element.append(q_control_cubicle.obj_id)
+            q_control_side.append(q_control_cubicle.obj_bus)  # 0=from, 1=to // trafo3w 0=HV, 1 = MV, 2=LV
+            element_class.append(q_control_element[0].GetClassName())
+        elif q_control_cubicle.GetClassName() == "ElmBoundary":
+            for cubicles in q_control_cubicle.cubicles:
+                q_control_element.append(cubicles.obj_id)
+                q_control_side.append(cubicles.obj_bus)  # 0=from, 1=to
+                element_class.append(q_control_element[0].GetClassName())
         else:
+            print("Not implemented class for q_control_cubicle!")
+        if element_class[0] == "ElmLne":
+            res_element_table = "res_line"
+            for i in range(len(q_control_element)):
+                line_sections = line_dict[q_control_element[i]]
+                if q_control_side[i] == 0:
+                    res_element_index.append(line_sections[0])
+                    variable.append("q_from_mvar")
+                else:
+                    res_element_index.append(line_sections[-1])
+                    variable.append("q_to_mvar")
+        elif element_class[0] == "ElmTr2":
+            res_element_table = "res_trafo"
+            for element in q_control_element:
+                res_element_index.append(trafo_dict[element])
+                variable = "q_hv_mvar" if q_control_side[0] == 0 else "q_lv_mvar"
+        elif element_class[0] == "ElmTr3":
+            res_element_table = "res_trafo3w"
+            for element in q_control_element:
+                res_element_index.append(trafo3w_dict[element])
+                variable = "q_hv_mvar" if q_control_side[0] == 0 else \
+                    "q_mv_mvar" if q_control_side[0] == 1 else "q_lv_mvar"
+        elif element_class[0] == "ElmZpu":
+            res_element_table = "res_impedance"
+            for element in q_control_element:
+                res_element_index.append(impedance_dict[element])
+                variable = "q_from_mvar" if q_control_side[0] == 0 else "q_to_mvar"
+        elif element_class[0] == "ElmCoup":
+            res = GetBranchElementFromSwitch(net, q_control_element)
+            if not res[switch_dict[q_control_element[0]]] is None:
+                element_type, element_index, connection_side, direction = (
+                    res[switch_dict[q_control_element[0]]].get("element_type"),
+                    res[switch_dict[q_control_element[0]]].get("element_index"),
+                    res[switch_dict[q_control_element[0]]].get("connection_side"),
+                    res[switch_dict[q_control_element[0]]].get("direction")
+                )
+            else:
+                element_type = None
+            if element_type == "trafo":
+                res_element_table = "res_trafo"
+                res_element_index.append(element_index)
+                # invert if control_side and actual_side are same
+                # q_control_side: 0 = terminal side, 1 = element side (measurment side)
+                # direction: 0 = dir1 (direction is terminal side of switch), 1 = dir2 (direction is element side of switch)
+                input_invert = (direction == q_control_side[0])
+                variable = "q_hv_mvar" if connection_side == "hv_bus" else "q_lv_mvar"
+            elif element_type == "trafo3w":
+                res_element_table = "res_trafo3w"
+                res_element_index.append(element_index)
+                # invert if control_side and actual_side are same
+                # q_control_side: 0 = terminal side, 1 = element side
+                # direction: 0 = dir1 (terminal side of switch), 1 = dir2 (element side of switch)
+                input_invert = (direction == q_control_side[0])
+                variable = "q_hv_mvar" if connection_side == "hv_bus" else \
+                    "q_mv_mvar" if connection_side == "mv_bus" else "q_lv_mvar"
+            elif element_type == "line":
+                res_element_table = "res_line"
+                res_element_index.append(element_index)
+                # invert if control_side and actual_side are same
+                # q_control_side: 0 = from side, 1 = to side
+                # direction: 0 = dir1 (terminal side of switch), 1 = dir2 (element side of switch)
+                input_invert = (direction == q_control_side[0])
+                variable = "q_from_mvar" if connection_side == "from_bus" else "q_to_mvar"
+            elif element_type == "impedance":
+                res_element_table = "res_impedance"
+                res_element_index.append(element_index)
+                # invert if control_side and actual_side are same
+                # q_control_side: 0 = from side, 1 = to side
+                # direction: 0 = dir1 (terminal side of switch), 1 = dir2 (element side of switch)
+                input_invert = (direction == q_control_side[0])
+                variable = "q_from_mvar" if connection_side == "from_bus" else "q_to_mvar"
+            else:
+                logger.info(
+                    f"{item}: Station Controller with switch measurement that cannot be relocated, adding switch with "
+                    f"small impedance")
+                for element in q_control_element:
+                    res_element_index.append(switch_dict[element])
+                    net.switch.at[res_element_index[-1], "z_ohm"] = 1e-3
+                    variable = "q_from_mvar" if q_control_side[0] == 0 else "q_to_mvar"
+                res_element_table = "res_switch"
+        else:
+            logger.error(
+                f"{item}: only line, trafo 2W/3W element and switch flows can be controlled, {element_class[0]=}")
+            return
+
+        if False:
             q_control_element = []
             q_control_side = []
             element_class = []
@@ -4026,60 +4127,12 @@ def create_stactrl(net, item, **kwargs):
                     res_element_index.append(switch_dict[element])
                     net.switch.at[res_element_index[-1], "z_ohm"] = 1e-3
                     variable = "q_from_mvar" if q_control_side == 0 else "q_to_mvar"
+            #elif control_mode == 0:
             else:
-                logger.error(
-                    f"{item}: only line, trafo element and switch flows can be controlled, {element_class[0]=}")
-                return
-    elif control_mode != 0: #not voltage ctrl
-        q_control_cubicle = item.p_cub
-        if q_control_cubicle is None:
-            logger.info(f"Input Element of Controller {item.loc_name} is missing, skipping")
-            return
-
-        q_control_element = []
-        q_control_side = []
-        element_class = []
-        res_element_index = []
-        variable = []
-        if q_control_cubicle.GetClassName() == "StaCubic":
-            q_control_element.append(q_control_cubicle.obj_id)
-            q_control_side.append(q_control_cubicle.obj_bus)  # 0=from, 1=to
-            element_class.append(q_control_element[0].GetClassName())
-        elif q_control_cubicle.GetClassName() == "ElmBoundary":
-            for cubicles in q_control_cubicle.cubicles:
-                q_control_element.append(cubicles.obj_id)
-                q_control_side.append(cubicles.obj_bus)  # 0=from, 1=to
-                element_class.append(q_control_element[0].GetClassName())
-        else:
-            print("Not implemented class for q_control_cubicle!")
-        if element_class[0] == "ElmLne":
-            res_element_table = "res_line"
-            for i in range(len(q_control_element)):
-                line_sections = line_dict[q_control_element[i]]
-                if q_control_side[i] == 0:
-                    res_element_index.append(line_sections[0])
-                    variable.append("q_from_mvar")
-                else:
-                    res_element_index.append(line_sections[-1])
-                    variable.append("q_to_mvar")
-        elif element_class[0] == "ElmTr2":
-            res_element_table = "res_trafo"
-            for element in q_control_element:
-                res_element_index.append(trafo_dict[element])
-                variable = "q_hv_mvar" if q_control_side == 0 else "q_lv_mvar"
-        elif element_class[0] == "ElmCoup":
-            res_element_table = "res_switch"
-            for element in q_control_element:
-                res_element_index.append(switch_dict[element])
-                net.switch.at[res_element_index[-1], "z_ohm"] = 1e-3
-                variable = "q_from_mvar" if q_control_side == 0 else "q_to_mvar"
-        #elif control_mode == 0:
-        else:
-            res_element_table = "res_bus"
+                res_element_table = "res_bus"
     #elif control_mode == 0:
     else:
         res_element_table = "res_bus"
-
     input_busses = []
     output_busses = []
     if res_element_table == "res_line":
@@ -4088,6 +4141,12 @@ def create_stactrl(net, item, **kwargs):
     elif res_element_table == "res_trafo":
         for index in res_element_index:
             input_busses.append(net.trafo.at[index, 'hv_bus'])
+    elif res_element_table == "res_trafo3w":
+        for index in res_element_index:
+            input_busses.append(net.trafo3w.at[index, 'hv_bus'])
+    elif res_element_table == "res_impedance":
+        for index in res_element_index:
+            input_busses.append(net.impedance.at[index, 'to_bus'])
     elif res_element_table == "res_switch":
         for index in res_element_index:
             input_busses.append(net.switch.at[index, 'bus'])
@@ -4165,26 +4224,26 @@ def create_stactrl(net, item, **kwargs):
             raise NotImplementedError(f"{item}: controlled node selection {item.selBus} not implemented")
 
         if item.i_droop:  # Enable Droop
-            bsc = BinarySearchControl(net, ctrl_in_service=stactrl_in_service,
-                                      output_element=gen_element, output_variable="q_mvar",
-                                      output_element_index=gen_element_index,
-                                      output_element_in_service=gen_element_in_service,
-                                      output_values_distribution=distribution_mode,
-                                      output_distribution_values=distribution_val,
-                                      input_element_index = bus,input_element='res_bus', input_variable='vm_pu',
-                                      set_point=v_set_point_pu,  modus='V_ctrl', tol=1e-6)
-            DroopControl(net, q_droop_mvar=item.Srated * 100 / item.ddroop,
-                                      controller_idx=bsc.index, modus='V_ctrl',
-                                      input_element_q_meas=res_element_table, input_variable_q_meas=variable,
-                                      input_element_index_q_meas=res_element_index)
+            bsc = BinarySearchControl(net, name=item.loc_name, ctrl_in_service=stactrl_in_service,
+                                  output_element=gen_element, output_variable="q_mvar",
+                                  output_element_index=gen_element_index,
+                                  output_element_in_service=gen_element_in_service,
+                                  output_values_distribution=distribution_mode,
+                                  output_distribution_values=distribution_val,
+                                  input_element_index=bus, input_element='res_bus', input_variable='vm_pu',
+                                  input_invert=input_invert, set_point=v_set_point_pu,  modus='V_ctrl', tol=1e-6)
+            DroopControl(net, name=item.loc_name, q_droop_mvar=item.Srated * 100 / item.ddroop,
+                                  controller_idx=bsc.index, modus='V_ctrl',
+                                  input_element_q_meas=res_element_table, input_variable_q_meas=variable,
+                                  input_element_index_q_meas=res_element_index)
         else:
-            BinarySearchControl(net, ctrl_in_service=stactrl_in_service,
+            BinarySearchControl(net, name=item.loc_name, ctrl_in_service=stactrl_in_service,
                                 output_element=gen_element, output_variable="q_mvar",
                                 output_element_index=gen_element_index,
                                 output_element_in_service=gen_element_in_service, input_element="res_bus",
                                 output_values_distribution=distribution_mode,
                                 output_distribution_values=distribution_val, damping_factor=0.9,
-                                input_variable="vm_pu", input_element_index=bus,
+                                input_variable="vm_pu", input_invert=input_invert,  input_element_index=bus,
                                 set_point=v_set_point_pu, modus='V_ctrl', tol=1e-6)
     elif control_mode == 1:  # Q Control mode
         if item.iQorient != 0:
@@ -4195,7 +4254,8 @@ def create_stactrl(net, item, **kwargs):
         # q_control_terminal = q_control_cubicle.cterm  # terminal of the cubicle
         if item.qu_char == 0:
             BinarySearchControl(
-                net, ctrl_in_service=stactrl_in_service,
+                net, name=item.loc_name,
+                ctrl_in_service=stactrl_in_service,
                 output_element=gen_element,
                 output_variable="q_mvar",
                 output_element_index=gen_element_index,
@@ -4205,6 +4265,7 @@ def create_stactrl(net, item, **kwargs):
                 output_distribution_values=distribution_val,
                 damping_factor=0.9,
                 input_variable=variable,
+                input_invert=input_invert,
                 input_element_index=res_element_index,
                 set_point=item.qsetp,
                 modus='Q_ctrl', tol=1e-6
@@ -4213,7 +4274,8 @@ def create_stactrl(net, item, **kwargs):
             controlled_node = item.refbar
             bus = bus_dict[controlled_node]  # controlled node
             bsc = BinarySearchControl(
-                net, ctrl_in_service=stactrl_in_service,
+                net, name=item.loc_name,
+                ctrl_in_service=stactrl_in_service,
                 output_element=gen_element,
                 output_variable="q_mvar",
                 output_element_index=gen_element_index,
@@ -4223,6 +4285,7 @@ def create_stactrl(net, item, **kwargs):
                 output_distribution_values=distribution_val,
                 damping_factor=0.9,
                 input_variable=variable,
+                input_invert=input_invert,
                 input_element_index=res_element_index,
                 set_point=item.qsetp,
                 modus='Q_ctrl',
@@ -4231,6 +4294,7 @@ def create_stactrl(net, item, **kwargs):
             )
             DroopControl(
                 net,
+                name=item.loc_name,
                 q_droop_mvar=item.Srated * 100 / item.ddroop,
                 bus_idx=bus,
                 #vm_set_pu=item.udeadbup,
@@ -4356,6 +4420,183 @@ def create_stactrl(net, item, **kwargs):
     else:
         raise NotImplementedError(f"{item}: control mode {item.i_ctrl=} not implemented")
 
+
+def GetBranchElementFromSwitch(net, q_control_element):
+    """
+    Searches for the nearest branch element (line or transformer 2W/3W) for each switch
+    in both directions (dir1 = from the bus to the equipment, dir2 = the other way around).
+
+    Returns a dictionary with:
+      - element_type
+      - element_index
+      - connection_side
+      - direction: 0 = dir1, 1 = dir2
+
+    trafo3w is treated as a regular branch (NOT a split); connection_side is the winding we hit.
+    """
+
+    graph = create_nxgraph(net, include_switches=True, respect_switches=True)
+    result = {}
+
+    def find_branch(graph, start_bus, blocked_bus):
+        visited = set()
+        queue = [start_bus]
+
+        while queue:
+            current = queue.pop(0)
+            visited.add(current)
+
+            neighbors = [n for n in graph.neighbors(current) if n != blocked_bus and n not in visited]
+
+            # Stop if more than one neighbor and not a three winding transformer
+            if 'trafo3w' in net and not net.trafo3w.empty:
+                is_current_in_trafo = (
+                        (net.trafo3w["hv_bus"] == current) |
+                        (net.trafo3w["mv_bus"] == current) |
+                        (net.trafo3w["lv_bus"] == current)
+                )
+
+                t3w_match = net.trafo3w[is_current_in_trafo]
+            valid_t3w_neighbors = False
+            if len(neighbors) > 1:
+                if len(t3w_match) == 1:
+                    # check if all neighbors belong to three winding transformer
+                    idx = t3w_match.index[0]
+                    row = net.trafo3w.loc[idx]
+                    t3w_buses = {row.hv_bus, row.mv_bus, row.lv_bus}
+                    if set(neighbors).issubset(t3w_buses - {current}):
+                        valid_t3w_neighbors = True
+                        pass
+                    else:
+                        return None
+                else:
+                    return None
+
+            if len(neighbors) == 1 or valid_t3w_neighbors:
+                nb = neighbors[0]
+                matches = []
+
+                # Parallele Leitungen current <-> nb
+                par_lines = net.line[
+                    ((net.line.from_bus == current) & (net.line.to_bus == nb)) |
+                    ((net.line.from_bus == nb) & (net.line.to_bus == current))
+                    ]
+
+                # Parallele Impedanzen current <-> nb (falls Tabelle vorhanden)
+                par_imp = net.impedance[
+                    ((net.impedance.from_bus == current) & (net.impedance.to_bus == nb)) |
+                    ((net.impedance.from_bus == nb) & (net.impedance.to_bus == current))
+                    ]
+
+                # Parallele 2W-Trafos current <-> nb (selten, aber möglich)
+                par_trafos = net.trafo[
+                    ((net.trafo.hv_bus == current) & (net.trafo.lv_bus == nb)) |
+                    ((net.trafo.hv_bus == nb) & (net.trafo.lv_bus == current))
+                    ]
+
+                parallel_count = len(par_lines) + len(par_imp) + len(par_trafos)
+
+                if parallel_count > 1:
+                    logger.warning(
+                        f"Parallel Branches between bus {current} and {nb} "
+                        f"(Lines: {len(par_lines)}, Impedances: {len(par_imp)}, "
+                        f"Trafos: {len(par_trafos)}) – Stopping."
+                    )
+                    return None
+
+                # trafo3w match?
+                if len(t3w_match) == 1:
+                    idx = t3w_match.index[0]
+                    row = net.trafo3w.loc[idx]
+                    if current == row.hv_bus:
+                        connection_side = "hv_bus"
+                    elif current == row.mv_bus:
+                        connection_side = "mv_bus"
+                    else:
+                        connection_side = "lv_bus"
+
+                    return ("trafo3w", idx, connection_side)
+
+                # line match?
+                line_match = net.line[(net.line.from_bus == current) | (net.line.to_bus == current)]
+                if not line_match.empty:
+                    idx = line_match.index[0]
+                    from_bus = net.line.at[idx, "from_bus"]
+                    to_bus = net.line.at[idx, "to_bus"]
+                    connection_side = "from_bus" if current == from_bus else "to_bus"
+                    return ("line", idx, connection_side)
+
+                # transformer match?
+                trafo_match = net.trafo[(net.trafo.hv_bus == current) | (net.trafo.lv_bus == current)]
+                if not trafo_match.empty:
+                    idx = trafo_match.index[0]
+                    hv_bus = net.trafo.at[idx, "hv_bus"]
+                    lv_bus = net.trafo.at[idx, "lv_bus"]
+                    connection_side = "hv_bus" if current == hv_bus else "lv_bus"
+                    return ("trafo", idx, connection_side)
+
+                # Impedance match?
+                impedance_match = net.impedance[(net.impedance.from_bus == current) | (net.impedance.to_bus == current)]
+                if not impedance_match.empty:
+                    idx = impedance_match.index[0]
+                    from_bus = net.impedance.at[idx, "from_bus"]
+                    to_bus = net.impedance.at[idx, "to_bus"]
+                    connection_side = "from_bus" if current == from_bus else "to_bus"
+                    return ("impedance", idx, connection_side)
+
+                # Other elements, stop for now
+                elements_at_bus = []
+                for elm in ['load', 'sgen', 'gen', 'shunt', 'ext_grid']:
+                    if elm in net:
+                        df = net[elm]
+                        if isinstance(df, pd.DataFrame):
+                            if 'bus' in df.columns and current in df.bus.values:
+                                elements_at_bus.append(elm)
+                                break
+                            elif 'from_bus' in df.columns or 'to_bus' in df.columns:
+                                if current in df.get('from_bus', pd.Series()).values or \
+                                        current in df.get('to_bus', pd.Series()).values:
+                                    elements_at_bus.append(elm)
+                                    break
+                if elements_at_bus:
+                    logger.warning(f"Bus {current} is connected with {elements_at_bus} – Stopping.")
+                    return None
+
+                queue += neighbors
+
+        return None  # no branch found
+
+    # Main logic
+    for element in q_control_element:
+        sw_idx = switch_dict[element]
+        if sw_idx not in net.switch.index:
+            result[sw_idx] = None
+            continue
+
+        bus = net.switch.at[sw_idx, 'bus']
+        equipment = net.switch.at[sw_idx, 'element']
+
+        dir1 = find_branch(graph, bus, equipment)
+        dir2 = find_branch(graph, equipment, bus)
+
+        if dir1:
+            element_type, idx, conn = dir1
+            direction = 0  # dir1
+        elif dir2:
+            element_type, idx, conn = dir2
+            direction = 1  # dir2
+        else:
+            result[sw_idx] = None
+            continue
+
+        result[sw_idx] = {
+            "element_type": element_type,
+            "element_index": idx,
+            "connection_side": conn,
+            "direction": direction
+        }
+
+    return result
 
 def split_line_at_length(net, line, length_pos):
     bus1, bus2 = net.line.loc[line, ['from_bus', 'to_bus']]
