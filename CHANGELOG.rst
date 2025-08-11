@@ -3,6 +3,9 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [ADDED] Station controller support for measurements on trafo3w
+- [CHANGED] Station controller with measurements at switches: added a topological search to find nearby line or transformer and relocated measurement to avoid small impedances on switches
+- [FIXED] Station controller bug with Q(U) (wrong sign in equation for droop calculation)
 - [FIXED] ensure proper handling of `indent` parameter for PPJSONEncoder, fixing compatibility with Python3.13
 - [ADDED] description for `slack` argument in docstring of create_gen function
 - [FIXED] pf2pp: dc-lines geodata error is fixed, outdated line_dc_geodata field replaced by newer geo-column
@@ -25,6 +28,10 @@ Change Log
 - [FIXED] fixed convert_format for missing information (in gen, sgen, shunt) and tables (q_capability_characteristic, q_capability_curve_table, id_characteristic_table, step_dependency_table)
 - [ADDED] added tests for q_capability_curve_table in cim2pp and convert_format.py for format_version 3.1.0
 - [FIXED] deserialising q_capability_characteristic in from_excel and added test for it
+- [ADDED] pf2pp: possibility to convert a specific varaint and scenario
+- [ADDED] Static Var Compensator with Voltage Control
+- [ADDED] pf2pp: min/max q_mvar and min/max p_mw limits for sgens and gen will be converted
+- [ADDED] Static Var Compensator with Voltage Control
 - [FIXED] make network structure more accessible, including needed adaptation in pandapowerNet constructor
 - [FIXED] cim2pp: add more dtype parameters, fix some tests
 - [FIXED] convert_format fix check when net version is below format version
