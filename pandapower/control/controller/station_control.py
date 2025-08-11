@@ -415,17 +415,14 @@ class DroopControl(Controller):
 
                 **vm_set_ub=None** - Upper band border of dead band
            """
-    def __init__(self, net, q_droop_mvar, bus_idx, vm_set_pu, controller_idx, voltage_ctrl, name=None, tol=1e-6, in_service=True,
+    def __init__(self, net, q_droop_mvar, bus_idx, vm_set_pu, controller_idx, voltage_ctrl, tol=1e-6, in_service=True,
                  order=-1, level=0, name="", drop_same_existing_ctrl=False, matching_params=None, vm_set_lb=None, vm_set_ub=None,
                  **kwargs):
-        super().__init__(net, name, in_service=in_service, order=order, level=level,
+        super().__init__(net, in_service=in_service, order=order, level=level,
                          drop_same_existing_ctrl=drop_same_existing_ctrl,
                          matching_params=matching_params)
         # TODO: implement maximum and minimum of droop control
-        if name is not None:
-            self.name = str(name)
-        else:
-            self.name = ""
+        self.name = name
         # write kwargs in self
         for key, value in kwargs.items():
             setattr(self, key, value)
