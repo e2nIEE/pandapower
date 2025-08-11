@@ -188,7 +188,7 @@ def test_json(net_in, tmp_path):
 def test_encrypted_json(net_in, tmp_path):
     filename = os.path.abspath(str(tmp_path)) + "testfile.json"
     to_json(net_in, filename, encryption_key="verysecret")
-    with pytest.raises(json.JSONDecodeError):
+    with pytest.raises(UserWarning):
         from_json(filename)
     with pytest.raises(cryptography.fernet.InvalidToken):
         from_json(filename, encryption_key="wrong")

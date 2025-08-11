@@ -64,6 +64,15 @@ def convert_format(net, elements_to_deserialize=None):
     return net
 
 
+def _convert_SC_invert_paramater(net):
+    # introduce invert parameter for Binary Search Controller and initate as False
+    for ctrl in net.controller["object"].values:
+        if ctrl is None:
+            continue
+        if getattr(ctrl.__class__, "__name__", "") == "BinarySearchControl":
+            if not hasattr(ctrl, "invert"):
+                ctrl.invert = 1
+
 def _convert_q_capability_characteristic(net: pandapowerNet):
     # rename the q_capability_curve_characteristic table to q_capability_characteristic if exists
     # this is necessary due to the fact that Excel sheet names have a limit of 31 characters
@@ -463,6 +472,14 @@ def _add_missing_columns(net, elements_to_deserialize):
                 net.controller.at[ctrl.name, 'initial_run'] = ctrl['object'].initial_powerflow
             else:
                 net.controller.at[ctrl.name, 'initial_run'] = False
+
+    if _check_elements_to_deserialize('controller', elements_to_deserialize):
+        for ctrl in net.controller["object"].values:
+            if ctrl is None:
+                continue
+            if getattr(ctrl.__class__, "__name__", "") == "BinarySearchControl":
+                if not hasattr(ctrl, "invert"):
+                    ctrl.invert = 1
 
     # distributed slack
     if _check_elements_to_deserialize('ext_grid', elements_to_deserialize) and \
