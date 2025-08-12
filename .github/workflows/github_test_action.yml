@@ -279,11 +279,11 @@ jobs:
     - name: Test pandapower File I/O
       run: |
         uv run python -c "import os; import json; from pandapower import pp_dir; conn_data={'host': 'localhost', 'user': 'test_user', 'database': 'sandbox', 'password': 'secret', 'schema': 'test_schema'}; fp = open(os.path.join(pp_dir, 'test', 'test_files', 'postgresql_connect_data.json'), 'w'); json.dump(conn_data, fp); fp.close()"
-        uv run python -c 'from pandapower import pp_dir; import pytest; import sys; import os; ec = pytest.main([os.path.join(pp_dir,"test","api","test_sql_io.py")]); sys.exit(ec)'
+        uv run python -c "from pandapower import pp_dir; import pytest; import sys; import os; ec = pytest.main([os.path.join(pp_dir,'test','api','test_sql_io.py')]); sys.exit(ec)"
     - name: Test pandapower File I/O against alternative port
       run: |
         uv run python -c "import os; import json; from pandapower import pp_dir; conn_data={'host': 'localhost', 'user': 'test_user', 'database': 'sandbox', 'password': 'secret', 'schema': 'test_schema', 'port': 55432}; fp = open(os.path.join(pp_dir, 'test', 'test_files', 'postgresql_connect_data.json'), 'w'); json.dump(conn_data, fp); fp.close()"
-        uv run python -c "from pandapower import pp_dir; import pytest; import sys; import os; ec = pytest.main([os.path.join(pp_dir,"test","api","test_sql_io.py")]); sys.exit(ec)'
+        uv run python -c "from pandapower import pp_dir; import pytest; import sys; import os; ec = pytest.main([os.path.join(pp_dir,'test','api','test_sql_io.py')]); sys.exit(ec)"
 
   tutorial_tests:
     needs: build
