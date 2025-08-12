@@ -233,6 +233,7 @@ jobs:
           - 5432:5432
           - 55432:5432 # custom port to test against.
         options: >-
+          --name postgres
           --health-cmd pg_isready
           --health-interval 10s
           --health-timeout 5s
@@ -243,8 +244,7 @@ jobs:
     steps:
     - name: Check psql and service version compatibility
       run: |
-        CONTAINER=${{ job.service.postgres.id }}
-        SERVER_VERSION=$(docker exec $CONTAINER psql -U test_user -d sandbox -tA -c "SHOW server_version;")
+        SERVER_VERSION=$(docker exec postgres psql -U test_user -d sandbox -tA -c "SHOW server_version;")
         CLIENT_VERSION=$(psql --version | awk '{print $3}')
         SERVER_MAJOR=${SERVER_VERSION%%.*}
         CLIENT_MAJOR=${CLIENT_VERSION%%.*}
