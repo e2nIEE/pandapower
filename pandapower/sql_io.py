@@ -203,36 +203,35 @@ def create_sql_table_if_not_exists(conn, cursor, table_name, grid_id_column, cat
     conn.commit()
 
 
-def delete_postgresql_net(grid_id, host, user, password, database, schema, grid_id_column="grid_id",
-                          grid_catalogue_name="grid_catalogue"):
+def delete_postgresql_net(
+        grid_id: int,
+        host: str,
+        user: str,
+        password: str,
+        database: str,
+        schema: str,
+        grid_id_column: str = "grid_id",
+        grid_catalogue_name: str = "grid_catalogue",
+        port: Optional[int] = None
+) -> None:
     """
     Removes a grid model from the PostgreSQL database.
 
-    Parameters
-    ----------
-    grid_id : int
-        unique grid_id that will be used to identify the data for the grid model
-    host : str
-        hostname for the DB, e.g. "localhost"
-    user : str
-    password : str
-    database : str
-        name of the database
-    schema : str
-        name of the database schema (e.g. 'postgres')
-    grid_id_column : str
-        name of the column for "grid_id" in the PosgreSQL tables, default="grid_id".
-    grid_catalogue_name : str
-        name of the catalogue table that includes all grid_id values and the timestamp when the grid data were added
-
-    Returns
-    -------
-
+    :param grid_id: unique grid_id that will be used to identify the data for the grid model
+    :param host: hostname for the DB, e.g. "localhost"
+    :param user:
+    :param password:
+    :param database: name of the database
+    :param schema: name of the database schema (e.g. 'postgres')
+    :param grid_id_column: name of the column for "grid_id" in the PosgreSQL tables, default="grid_id".
+    :param grid_catalogue_name: name of the catalogue table that includes all grid_id values and the timestamp when the
+        grid data were added
+    :param port: port at which the database is listening
     """
     if not PSYCOPG2_INSTALLED:
         raise UserWarning("install the package psycopg2 to use PostgreSQL I/O in pandapower")
 
-    conn = psycopg2.connect(host=host, user=user, password=password, database=database)
+    conn = psycopg2.connect(host=host, user=user, password=password, database=database, port=port)
     cursor = conn.cursor()
     catalogue_table_name = grid_catalogue_name if schema is None else f"{schema}.{grid_catalogue_name}"
     check_postgresql_catalogue_table(cursor, catalogue_table_name, grid_id, grid_id_column, download=True)
