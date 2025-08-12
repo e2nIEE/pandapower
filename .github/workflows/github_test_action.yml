@@ -242,6 +242,12 @@ jobs:
       matrix:
         python-version: ['3.12']
     steps:
+    - name: Wait for PostgreSQL database to be ready
+      run: |
+        until pg_isready -h localhost -U test_user; do
+          echo "Waiting for Postgres…"
+          sleep 2
+        done
     - name: Check psql and service version compatibility
       run: |
         SERVER_VERSION=$(docker exec postgres psql -U test_user -d sandbox -tA -c "SHOW server_version;")
@@ -264,12 +270,6 @@ jobs:
     - name: List of installed packages
       run: |
         uv pip list
-    - name: Wait for PostgreSQL database to be ready
-      run: |
-        until pg_isready -h localhost -U test_user; do
-          echo "Waiting for Postgres…"
-          sleep 2
-        done
     - name: Create test_schema in sandbox database
       env:
         PGPASSWORD: secret
