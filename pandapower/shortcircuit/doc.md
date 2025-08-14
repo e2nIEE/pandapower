@@ -44,12 +44,26 @@ flowchart TD
 ```
 #
 ### calc_sc.py
+This module contains the main entry point (calc_sc) for short-circuit calculations.
+It processes user options (fault type, min/max case, branch results), initializes internal data structures (PPC/PPCI),
+and calls the detailed computation in _calc_sc.
+Here, the sequence networks are built, impedances and kappa factors are calculated,
+short-circuit currents are determined, and the results are stored in net.res_bus_sc
+and optionally in branch results.
+
 | Function             | Type     | Description                                                                                                                                                                                                                    |
 |----------------------|----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `calc_sc(net, ...)`  | Main     | Entry point for short-circuit calculations. Handles user options, fault types (LLL, LL, LG, LLG), minimal/maximal case, branch results, and initializes PPC and results tables.                                                |
 | `_calc_sc(net, bus)` | Internal | Performs the detailed short-circuit calculations. Initializes PPC/PPci, computes sequence impedances (positive, negative, zero), applies kappa, calculates short-circuit currents, and extracts results into `net.res_bus_sc`. |
 #
 ### currents.py
+This module focuses on computing short-circuit currents (IKSS)
+and their peak and thermal equivalents (Ip, Ith).
+It accounts for different fault types (LLL, LL, LG, LLG) and source contributions
+(e.g., generators, motors), and computes both bus-level and branch-level currents.
+The central helper function _calc_branch_currents_complex
+calculates complex currents in lines/transformers for all relevant sequences.
+
 | Function                                                                             | Type                        | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 |--------------------------------------------------------------------------------------|-----------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `_calc_ikss_to_g(net, ppci_0, ppci_1, ppci_2, bus_idx)`                              | Internal                    | Calculates the short-circuit currents (IKSS) at the buses for different fault types (LLL, LL, LG, LLG). Initializes base currents, computes equivalent impedances, considers pre-fault voltages, and applies Ybus- or Zbus-based methods. Updates IKSS, IKSSC, SKSS, and voltage information in ppci.                                                                                                                                                                                          |
@@ -60,6 +74,12 @@ flowchart TD
 | `_calc_branch_currents_complex(net, bus_idx, ppci0, ppci1, ppci2, sequence)`         | Internal (Core calculation) | Calculates branch short-circuit currents (both magnitude and angle) for a given sequence (0: zero, 1: positive, 2: negative) in a power grid. Handles: Voltage source contributions (ikssv), current source contributions (ikcv), different fault types (LG, LL, LLL, LLG), power and voltage calculations for branches , optional calculation of peak (Ip) and thermal (Ith) currents, stores results either in ppci["internal"] (all currents) or in ppci["branch"] (min/max per branch). |                                                                                                                                                                                                                                                                                                                      
 #
 ### impedance.py
+Handles all operations related to the network admittance and impedance matrices.
+This includes building the Y-bus matrix, inverting it to obtain the Z-bus matrix,
+computing self-impedances of individual buses, and calculating
+equivalent R and X values for fault calculations.
+These functions provide the foundation for accurate short-circuit current computation.
+
 | Function                                   | Type     | Description                                                                                                                                                                                                               |
 |--------------------------------------------|----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `_calc_rx(net, ppci, bus_idx, sequence)`   | Internal | Computes equivalent bus impedance (R and X) for a given bus or set of buses under a fault, accounting for fault type (LL, 3-phase, etc.) and optional fault impedance. Updates ppci["bus"] with real and imaginary parts. |
@@ -68,6 +88,12 @@ flowchart TD
 | `_calc_zbus_diag(net, ppci, bus_idx=None)` | Internal | Computes the diagonal elements of Z-bus (self-impedances). Can compute for all buses or a subset. Uses ybus_fact linear solver for efficiency. Returns diagZ.                                                             |
 #
 ### kappa.py
+Calculates the kappa factor used for determining peak short-circuit currents.
+Depending on network type (radial/meshed) and calculation method (B or C),
+it applies different adjustments to the network parameters.
+It can also build a network graph (nxgraph_from_ppc)
+to support topology-based kappa calculations.
+
 | Function                      | Type     | Description                                                                                                                                                                                                  |
 |-------------------------------|----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `_add_kappa_to_ppc(net, ppc)` | Internal | Adds the KAPPA factor to the bus data in ppc depending on the selected method (B or C) or radial topology. Preserves existing KAPPA if already defined.                                                      |
@@ -77,6 +103,12 @@ flowchart TD
 | `nxgraph_from_ppc(net, ppc)`  | Helper   | Builds a gridx MultiGraph representing the grid from ppc. Includes buses, branches, and connections to “earth” based on generator and shunt impedances. Used for topology-based Kappa calculations.    |
 #
 ### ppc_conversion.py
+Provides functions to create the internal Pypower data structures (ppc/ppci)
+from a Pandapower network (net) for short-circuit calculations.
+It adds short-circuit impedances for generators, static generators, Ward equivalents,
+and transformer correction factors, and checks that all required data fields exist.
+It can also produce an updated ppci with modified k-factors applied.
+
 | Function                   | Type     | Description                                                                                                                                |
 |----------------------------|----------|--------------------------------------------------------------------------------------------------------------------------------------------|
 | `_get_is_ppci_bus`         | Internal | Returns the Pypower internal bus indices for buses marked in net._is_elements_final["bus_is_idx"].                                         |
@@ -89,6 +121,12 @@ flowchart TD
 | `_create_k_updated_ppci`   | Internal | Creates a ppci copy with updated short-circuit factors (K_G, K_SG, K_ST) applied to generators and transformers.                           |
 #
 ### results.py
+Responsible for extracting and storing the short-circuit calculation results.
+It computes and records short-circuit values for buses, lines, transformers, and switches,
+both overall and per phase.
+Includes functions for converting sequence-domain results to phase-domain quantities
+and for writing the results into the corresponding net.res_*_sc DataFrames.
+
 | Function                                                              | Type     | Description                                                                                                                                                                                                                                                                   |
 |-----------------------------------------------------------------------|----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `_copy_result_to_ppci_orig`                                           | Internal | Copies branch and bus short-circuit results from one ppci structure to another, handling max/min cases and additional branch results (currents, powers, voltages). Handles both all-currents mode and reduced results mode.                                                   |
@@ -110,6 +148,12 @@ flowchart TD
 | `_get_trafo3w_all_results(net, ppc, bus)`                             | Internal | Populates net.res_trafo3w_sc with multi-bus short-circuit results for HV, MV, and LV sides using internal branch data.                                                                                                                                                        |
 #
 ### toolbox.py
+Contains various helper functions for special cases in short-circuit analysis.
+Includes performing short-circuit calculations at arbitrary points on a line,
+creating auxiliary networks, adjusting pre-fault voltages
+(e.g., for transformer tap positions), and building the network adjacency matrix.
+It also includes functionality for detecting power station unit configurations.
+
 | Function                          | Type     | Description                                                                                                       |
 |-----------------------------------|----------|-------------------------------------------------------------------------------------------------------------------|
 | `detect_power_station_unit`       | Helper   | Identifies generators connected to power station transformers and updates power_station_trafo in net.gen.         |
