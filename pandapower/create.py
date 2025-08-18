@@ -12,7 +12,7 @@ from typing import Tuple, List, Union, Iterable, Sequence, Literal, Optional
 
 import numpy as np
 import pandas as pd
-from numpy import nan, zeros, isnan, arange, isin, any as np_any, array, bool_, \
+from numpy import nan, isnan, arange, isin, any as np_any, array, bool_, \
     all as np_all, float64, intersect1d, unique as uni
 import numpy.typing as npt
 from pandas import isnull
@@ -265,7 +265,6 @@ def create_buses(
     min_vm_pu: float | Iterable[float] = nan,
     coords: Optional[list[list[tuple[float, float]]]] = None,
     **kwargs
-) -> npt.NDArray[np.integer]:
 ) -> npt.NDArray[Int]:
     """
     Adds several buses in table net["bus"] at once.
@@ -346,7 +345,6 @@ def create_buses_dc(
     min_vm_pu: float | Iterable[float] = nan,
     coords: Optional[list[list[tuple[float, float]]]] = None,
     **kwargs
-) -> npt.NDArray[np.integer]:
 ) -> npt.NDArray[Int]:
     """
     Adds several dc buses in table net["bus_dc"] at once.
@@ -554,7 +552,6 @@ def create_loads(
     min_q_mvar: float | Iterable[float] = nan,
     controllable: bool | Iterable[bool] | float = nan,
     **kwargs
-) -> npt.NDArray[np.integer]:
 ) -> npt.NDArray[Int]:
     """
     Adds a number of loads in table net["load"].
@@ -1021,7 +1018,6 @@ def create_sgens(
     kappa: float = nan,
     lrc_pu: float = nan,
     **kwargs
-) -> npt.NDArray[np.integer]:
 ) -> npt.NDArray[Int]:
     """
     Adds a number of sgens in table net["sgen"].
@@ -1414,7 +1410,6 @@ def create_storages(
     min_q_mvar: float | Iterable[float] = nan,
     controllable: bool | Iterable[bool] | float = nan,
     **kwargs
-) -> npt.NDArray[np.integer]:
 ) -> npt.NDArray[Int]:
     """
     Adds storages to the network.
@@ -1700,7 +1695,6 @@ def create_gens(
     in_service: bool = True,
     slack_weight: float = 0.0,
     **kwargs
-) -> npt.NDArray[np.integer]:
 ) -> npt.NDArray[Int]:
     """
     Adds generators to the specified buses network.
@@ -2346,7 +2340,6 @@ def create_lines(
     in_service: bool | Iterable[bool] = True,
     max_loading_percent: float | Iterable[float] = nan,
     **kwargs
-) -> npt.NDArray[np.integer]:
 ) -> npt.NDArray[Int]:
     """ Convenience function for creating many lines at once. Parameters 'from_buses' and 'to_buses'
         must be arrays of equal length. Other parameters may be either arrays of the same length or
@@ -2490,7 +2483,7 @@ def create_lines_dc(
     parallel: int | Iterable[int] = 1,
     in_service: bool | Iterable[bool] = True,
     max_loading_percent: float | Iterable[float]=nan,
-**kwargs) -> npt.NDArray[np.integer]:
+**kwargs
 ) -> npt.NDArray[Int]:
     """ Convenience function for creating many dc lines at once. Parameters 'from_buses_dc' and 'to_buses_dc'
         must be arrays of equal length. Other parameters may be either arrays of the same length or
@@ -2947,7 +2940,6 @@ def create_lines_from_parameters(
     c0_nf_per_km: float | Iterable[float] = nan,
     g0_us_per_km: float | Iterable[float] = nan,
     **kwargs
-) -> npt.NDArray[np.integer]:
 ) -> npt.NDArray[Int]:
     """
     Convenience function for creating many lines at once. Parameters 'from_buses' and 'to_buses'
@@ -3102,7 +3094,6 @@ def create_lines_dc_from_parameters(
     alpha: float = nan,
     temperature_degree_celsius: float = nan,
     **kwargs
-) -> npt.NDArray[np.integer]:
 ) -> npt.NDArray[Int]:
     """
     Convenience function for creating many dc lines at once. Parameters 'from_buses_dc' and 'to_buses_dc'
@@ -3691,7 +3682,6 @@ def create_transformers_from_parameters(
     tap2_pos: int | Iterable[int] | float = nan,
     tap2_changer_type: Optional[TapChangerType | Iterable[str]] = None,
     **kwargs
-) -> npt.NDArray[np.integer]:
 ) -> npt.NDArray[Int]:
     """
     Creates several two-winding transformers in table net.trafo with the specified parameters.
@@ -6504,10 +6494,10 @@ def _set_const_percent_values(const_percent_values_list, kwargs_input):
                "const_z_p_percent and const_i_p_percent for you.")
         warnings.warn(msg, DeprecationWarning)
         return const_z_p_percent, const_i_p_percent, const_z_q_percent, const_i_q_percent, kwargs_input
-    elif ('const_z_percent' in kwargs_input or 'const_i_percent' in kwargs_input) and \
-            const_percent_values_default_initials == False:
+    elif (('const_z_percent' in kwargs_input or 'const_i_percent' in kwargs_input) and
+          (const_percent_values_default_initials == False)):
         raise UserWarning('Definition of voltage dependecies is faulty, please check the parameters again.')
-    elif (('const_z_percent' in kwargs_input or 'const_i_percent' not in kwargs_input) or \
+    elif (('const_z_percent' in kwargs_input or 'const_i_percent' not in kwargs_input) or
           ('const_z_percent' not in kwargs_input or 'const_i_percent' in kwargs_input)):
         raise UserWarning('Definition of voltage dependecies is faulty, please check the parameters again.')
 
