@@ -12,7 +12,7 @@ from typing import Tuple, List, Union, Iterable, Sequence, Literal, Optional
 
 import numpy as np
 import pandas as pd
-from numpy import nan, zeros, isnan, arange, isin, any as np_any, array, bool_, \
+from numpy import nan, isnan, arange, isin, any as np_any, array, bool_, \
     all as np_all, float64, intersect1d, unique as uni
 import numpy.typing as npt
 from pandas import isnull
@@ -234,6 +234,23 @@ def create_bus_dc(
     return index
 
 
+def _geodata_to_geo_series(data: Union[Iterable[Tuple[float, float]], Tuple[int, int]], nr_buses: int) -> List[str]:
+    geo = []
+    for g in data:
+        if isinstance(g, tuple):
+            if len(g) != 2:
+                raise ValueError("geodata tuples must be of length 2")
+            x, y = g
+            geo.append(f'{{"coordinates": [{x}, {y}], "type": "Point"}}')
+        else:
+            raise ValueError("geodata must be iterable of tuples of (x, y) coordinates")
+    if len(geo) == 1:
+        geo = [geo[0]] * nr_buses
+    if len(geo) != nr_buses:
+        raise ValueError("geodata must be a single point or have the same length as nr_buses")
+    return geo
+
+
 def create_buses(
     net: pandapowerNet,
     nr_buses: int,
@@ -248,7 +265,7 @@ def create_buses(
     min_vm_pu: float | Iterable[float] = nan,
     coords: Optional[list[list[tuple[float, float]]]] = None,
     **kwargs
-) -> npt.NDArray[np.integer]:
+) -> npt.NDArray[Int]:
     """
     Adds several buses in table net["bus"] at once.
 
@@ -292,28 +309,12 @@ def create_buses(
     """
     index = _get_multiple_index_with_check(net, "bus", index, nr_buses)
 
-    def _geodata_to_geo_series(data: Union[Iterable[Tuple[float, float]], Tuple[int, int]]) -> List[str]:
-        geo = []
-        for g in data:
-            if isinstance(g, tuple):
-                if len(g) != 2:
-                    raise ValueError("geodata tuples must be of length 2")
-                x, y = g
-                geo.append(f'{{"coordinates": [{x}, {y}], "type": "Point"}}')
-            else:
-                raise ValueError("geodata must be iterable of tuples of (x, y) coordinates")
-        if len(geo) == 1:
-            geo = [geo[0]] * nr_buses
-        if len(geo) != nr_buses:
-            raise ValueError("geodata must be a single point or have the same length as nr_buses")
-        return geo
-
     if geodata:
         if isinstance(geodata, tuple) and (isinstance(geodata[0], int) or isinstance(geodata[0], float)):
-            geo = _geodata_to_geo_series([geodata])
+            geo = _geodata_to_geo_series([geodata], nr_buses)
         else:
             assert hasattr(geodata, "__iter__"), "geodata must be an iterable"
-            geo = _geodata_to_geo_series(geodata)
+            geo = _geodata_to_geo_series(geodata, nr_buses)
     else:
         geo = [None] * nr_buses  # type: ignore[list-item,assignment]
 
@@ -344,7 +345,7 @@ def create_buses_dc(
     min_vm_pu: float | Iterable[float] = nan,
     coords: Optional[list[list[tuple[float, float]]]] = None,
     **kwargs
-) -> npt.NDArray[np.integer]:
+) -> npt.NDArray[Int]:
     """
     Adds several dc buses in table net["bus_dc"] at once.
 
@@ -391,23 +392,23 @@ def create_buses_dc(
     """
     index = _get_multiple_index_with_check(net, "bus_dc", index, nr_buses_dc)
 
-    entries = {"vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "name": name}
+    if geodata:
+        if isinstance(geodata, tuple) and (isinstance(geodata[0], int) or isinstance(geodata[0], float)):
+            geo = _geodata_to_geo_series([geodata], nr_buses_dc)
+        else:
+            assert hasattr(geodata, "__iter__"), "geodata must be an iterable"
+            geo = _geodata_to_geo_series(geodata, nr_buses_dc)
+    else:
+        geo = [None] * nr_buses_dc  # type: ignore[list-item,assignment]
+
+    if coords:
+        raise UserWarning("busbar plotting is not implemented fully and will likely be removed in the future")
+
+    entries = {"vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "name": name, "geo": geo}
     _add_to_entries_if_not_nan(net, "bus_dc", entries, index, "min_vm_pu", min_vm_pu)
     _add_to_entries_if_not_nan(net, "bus_dc", entries, index, "max_vm_pu", max_vm_pu)
     _set_multiple_entries(net, "bus_dc", index, **entries, **kwargs)
 
-    if geodata is not None:
-        # works with a 2-tuple or a matching array
-        net.bus_dc_geodata = pd.concat([
-            net.bus_dc_geodata,
-            pd.DataFrame(zeros((len(index), len(net.bus_dc_geodata.columns)), dtype=np.int64),
-                         index=index, columns=net.bus_dc_geodata.columns)])
-        net.bus_dc_geodata.loc[index, :] = nan
-        net.bus_dc_geodata.loc[index, ["x", "y"]] = geodata  # type: ignore[call-overload]
-    if coords is not None:
-        net.bus_dc_geodata = pd.concat(
-            [net.bus_dc_geodata, pd.DataFrame(index=index, columns=net.bus_dc_geodata.columns)])
-        net["bus_dc_geodata"].loc[index, "coords"] = coords
     return index
 
 
@@ -505,17 +506,17 @@ def create_load(
     _check_element(net, bus)
 
     index = _get_index_with_check(net, "load", index)
-    
+
     if ("const_z_percent" in kwargs) or ("const_i_percent" in kwargs):
         const_percent_values_list = [const_z_p_percent, const_i_p_percent, const_z_q_percent, const_i_q_percent]
         const_z_p_percent, const_i_p_percent, const_z_q_percent, const_i_q_percent, kwargs = (
             _set_const_percent_values(const_percent_values_list, kwargs_input=kwargs))
-            
+
     entries = dict(zip(["name", "bus", "p_mw", "const_z_p_percent", "const_i_p_percent",
                         "const_z_q_percent", "const_i_q_percent", "scaling",
                         "q_mvar", "sn_mva", "in_service", "type"],
                        [name, bus, p_mw, const_z_p_percent, const_i_p_percent,
-                        const_z_q_percent, const_i_q_percent, scaling, 
+                        const_z_q_percent, const_i_q_percent, scaling,
                         q_mvar, sn_mva, bool(in_service), type]))
 
     _set_entries(net, "load", index, True, **entries, **kwargs)
@@ -528,6 +529,7 @@ def create_load(
                           default_val=False)
 
     return index
+
 
 def create_loads(
     net: pandapowerNet,
@@ -550,7 +552,7 @@ def create_loads(
     min_q_mvar: float | Iterable[float] = nan,
     controllable: bool | Iterable[bool] | float = nan,
     **kwargs
-) -> npt.NDArray[np.integer]:
+) -> npt.NDArray[Int]:
     """
     Adds a number of loads in table net["load"].
 
@@ -624,7 +626,7 @@ def create_loads(
     _check_multiple_elements(net, buses)
 
     index = _get_multiple_index_with_check(net, "load", index, len(buses))
-    
+
     if ("const_z_percent" in kwargs) or ("const_i_percent" in kwargs):
         const_percent_values_list = [const_z_p_percent, const_i_p_percent, const_z_q_percent, const_i_q_percent]
         const_z_p_percent, const_i_p_percent, const_z_q_percent, const_i_q_percent, kwargs = (
@@ -1016,7 +1018,7 @@ def create_sgens(
     kappa: float = nan,
     lrc_pu: float = nan,
     **kwargs
-) -> npt.NDArray[np.integer]:
+) -> npt.NDArray[Int]:
     """
     Adds a number of sgens in table net["sgen"].
 
@@ -1408,7 +1410,7 @@ def create_storages(
     min_q_mvar: float | Iterable[float] = nan,
     controllable: bool | Iterable[bool] | float = nan,
     **kwargs
-) -> npt.NDArray[np.integer]:
+) -> npt.NDArray[Int]:
     """
     Adds storages to the network.
 
@@ -1693,7 +1695,7 @@ def create_gens(
     in_service: bool = True,
     slack_weight: float = 0.0,
     **kwargs
-) -> npt.NDArray[np.integer]:
+) -> npt.NDArray[Int]:
     """
     Adds generators to the specified buses network.
 
@@ -2308,11 +2310,9 @@ def create_line_dc(
     tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
     _set_entries(net, "line_dc", index, **v, **kwargs)
 
-
     if geodata and hasattr(geodata, '__iter__'):
         geo = [[x, y] for x, y in geodata]
         net.line_dc.at[index, "geo"] = f'{{"coordinates": {geo}, "type": "LineString"}}'
-
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "line_dc")
     _set_value_if_not_nan(net, index, alpha, "alpha", "line_dc")
@@ -2340,7 +2340,7 @@ def create_lines(
     in_service: bool | Iterable[bool] = True,
     max_loading_percent: float | Iterable[float] = nan,
     **kwargs
-) -> npt.NDArray[np.integer]:
+) -> npt.NDArray[Int]:
     """ Convenience function for creating many lines at once. Parameters 'from_buses' and 'to_buses'
         must be arrays of equal length. Other parameters may be either arrays of the same length or
         single or values. In any case the line parameters are defined through a single standard
@@ -2483,7 +2483,8 @@ def create_lines_dc(
     parallel: int | Iterable[int] = 1,
     in_service: bool | Iterable[bool] = True,
     max_loading_percent: float | Iterable[float]=nan,
-**kwargs) -> npt.NDArray[np.integer]:
+**kwargs
+) -> npt.NDArray[Int]:
     """ Convenience function for creating many dc lines at once. Parameters 'from_buses_dc' and 'to_buses_dc'
         must be arrays of equal length. Other parameters may be either arrays of the same length or
         single or values. In any case the dc line parameters are defined through a single standard
@@ -2897,11 +2898,9 @@ def create_line_dc_from_parameters(
 
     _set_entries(net, "line_dc", index, **v, **kwargs)
 
-
     if geodata and hasattr(geodata, '__iter__'):
         geo = [[x, y] for x, y in geodata]
         net.line_dc.at[index, "geo"] = f'{{"coordinates": {geo}, "type": "LineString"}}'
-
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "line_dc")
     _set_value_if_not_nan(net, index, alpha, "alpha", "line_dc")
@@ -2941,7 +2940,7 @@ def create_lines_from_parameters(
     c0_nf_per_km: float | Iterable[float] = nan,
     g0_us_per_km: float | Iterable[float] = nan,
     **kwargs
-) -> npt.NDArray[np.integer]:
+) -> npt.NDArray[Int]:
     """
     Convenience function for creating many lines at once. Parameters 'from_buses' and 'to_buses'
         must be arrays of equal length. Other parameters may be either arrays of the same length or
@@ -3095,7 +3094,7 @@ def create_lines_dc_from_parameters(
     alpha: float = nan,
     temperature_degree_celsius: float = nan,
     **kwargs
-) -> npt.NDArray[np.integer]:
+) -> npt.NDArray[Int]:
     """
     Convenience function for creating many dc lines at once. Parameters 'from_buses_dc' and 'to_buses_dc'
         must be arrays of equal length. Other parameters may be either arrays of the same length or
@@ -3683,7 +3682,7 @@ def create_transformers_from_parameters(
     tap2_pos: int | Iterable[int] | float = nan,
     tap2_changer_type: Optional[TapChangerType | Iterable[str]] = None,
     **kwargs
-) -> npt.NDArray[np.integer]:
+) -> npt.NDArray[Int]:
     """
     Creates several two-winding transformers in table net.trafo with the specified parameters.
 
@@ -4605,9 +4604,9 @@ def create_switches(
             _check_multiple_elements(net, el_arr[mask], *matcher[typ])
         not_def = ~mask_all
         if np.any(not_def):
-            raise UserWarning('et type %s is not implemented' % et_arr[not_def])
+            raise UserWarning(f"et type {et_arr[not_def]} is not implemented")
     else:
-        raise UserWarning('et type %s is not implemented' %et)
+        raise UserWarning(f"et type {et} is not implemented")
 
     b_arr = np.array(buses)[:, None]
     el_arr = np.array(elements)
@@ -4621,9 +4620,8 @@ def create_switches(
         not_connected_mask = ~np.isin(b_arr[et_arr == typ], bs)
         if np_any(not_connected_mask):
             bus_element_pairs = zip(el_arr[et_arr == typ][:, None][not_connected_mask].tolist(),
-                                     b_arr[et_arr == typ][not_connected_mask].tolist())
-            raise UserWarning("%s not connected (%s element, bus): %s" %
-                              (table.capitalize(), table, list(bus_element_pairs)))
+                                    b_arr[et_arr == typ][not_connected_mask].tolist())
+            raise UserWarning(f"{table.capitalize()} not connected ({table} element, bus): {list(bus_element_pairs)}")
 
     entries = {"bus": buses, "element": elements, "et": et, "closed": closed, "type": type,
                "name": name, "z_ohm": z_ohm, "in_ka": in_ka}
@@ -6286,7 +6284,7 @@ def _get_multiple_index_with_check(net, table, index, number, name=None):
 
 def _check_element(net, element_index, element="bus"):
     if element not in net:
-        raise UserWarning("Node table %s does not exist" %element)
+        raise UserWarning(f"Node table {element} does not exist")
     if element_index not in net[element].index.values:
         raise UserWarning("Cannot attach to %s %s, %s does not exist"
                           % (element, element_index, element_index))
@@ -6294,16 +6292,16 @@ def _check_element(net, element_index, element="bus"):
 
 def _check_multiple_elements(net, element_indices, element="bus", name="buses"):
     if element not in net:
-        raise UserWarning("Node table %s does not exist" %element)
+        raise UserWarning(f"Node table {element} does not exist")
     if np_any(~isin(element_indices, net[element].index.values)):
         node_not_exist = set(element_indices) - set(net[element].index.values)
-        raise UserWarning("Cannot attach to %s %s, they do not exist" % (name, node_not_exist))
+        raise UserWarning(f"Cannot attach to {name} {node_not_exist}, they do not exist")
 
 
 def _check_branch_element(net, element_name, index, from_node, to_node, node_name="bus",
                           plural="es"):
     if node_name not in net:
-        raise UserWarning("Node table %s does not exist" %node_name)
+        raise UserWarning(f"Node table {node_name} does not exist")
     missing_nodes = {from_node, to_node} - set(net[node_name].index.values)
     if len(missing_nodes) > 0:
         raise UserWarning("%s %d tries to attach to non-existing %s(%s) %s"
@@ -6313,7 +6311,7 @@ def _check_branch_element(net, element_name, index, from_node, to_node, node_nam
 def _check_multiple_branch_elements(net, from_nodes, to_nodes, element_name, node_name="bus",
                                     plural="es"):
     if node_name not in net:
-        raise UserWarning("Node table %s does not exist" %node_name)
+        raise UserWarning(f"Node table {node_name} does not exist")
     all_nodes = set(from_nodes) | set(to_nodes)
     node_not_exist = all_nodes - set(net[node_name].index)
     if len(node_not_exist) > 0:
@@ -6482,27 +6480,27 @@ def _set_multiple_entries(net, table, index, preserve_dtypes=True, defaults_to_f
 
 
 def _set_const_percent_values(const_percent_values_list, kwargs_input):
-    const_percent_values_default_initials = all(value==0 for value in const_percent_values_list) 
-    if ('const_z_percent' in kwargs_input and 'const_i_percent' in kwargs_input) and \
-        const_percent_values_default_initials:
-            const_z_p_percent = kwargs_input['const_z_percent']
-            const_z_q_percent = kwargs_input['const_z_percent']
-            const_i_p_percent = kwargs_input['const_i_percent']
-            const_i_q_percent = kwargs_input['const_i_percent']
-            del kwargs_input['const_z_percent']
-            del kwargs_input['const_i_percent']
-            msg = ("Parameters const_z_percent and const_i_percent will be deprecated in further " 
-                "pandapower version. For now the values were transfered in " 
-                "const_z_p_percent and const_i_p_percent for you.")
-            warnings.warn(msg, DeprecationWarning)
-            return const_z_p_percent, const_i_p_percent, const_z_q_percent, const_i_q_percent, kwargs_input
-    elif ('const_z_percent' in kwargs_input or 'const_i_percent' in kwargs_input) and \
-        const_percent_values_default_initials==False:
-            raise UserWarning('Definition of voltage dependecies is faulty, please check the parameters again.')
-    elif (('const_z_percent' in kwargs_input or 'const_i_percent' not in kwargs_input) or \
+    const_percent_values_default_initials = all(value == 0 for value in const_percent_values_list)
+    if (('const_z_percent' in kwargs_input and 'const_i_percent' in kwargs_input) and
+            const_percent_values_default_initials):
+        const_z_p_percent = kwargs_input['const_z_percent']
+        const_z_q_percent = kwargs_input['const_z_percent']
+        const_i_p_percent = kwargs_input['const_i_percent']
+        const_i_q_percent = kwargs_input['const_i_percent']
+        del kwargs_input['const_z_percent']
+        del kwargs_input['const_i_percent']
+        msg = ("Parameters const_z_percent and const_i_percent will be deprecated in further "
+               "pandapower version. For now the values were transfered in "
+               "const_z_p_percent and const_i_p_percent for you.")
+        warnings.warn(msg, DeprecationWarning)
+        return const_z_p_percent, const_i_p_percent, const_z_q_percent, const_i_q_percent, kwargs_input
+    elif (('const_z_percent' in kwargs_input or 'const_i_percent' in kwargs_input) and
+          (const_percent_values_default_initials == False)):
+        raise UserWarning('Definition of voltage dependecies is faulty, please check the parameters again.')
+    elif (('const_z_percent' in kwargs_input or 'const_i_percent' not in kwargs_input) or
           ('const_z_percent' not in kwargs_input or 'const_i_percent' in kwargs_input)):
-            raise UserWarning('Definition of voltage dependecies is faulty, please check the parameters again.')    
-    
+        raise UserWarning('Definition of voltage dependecies is faulty, please check the parameters again.')
+
 
 if __name__ == "__main__":
     net = create_empty_network()

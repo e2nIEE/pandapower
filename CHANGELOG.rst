@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [FIXED] create_buses_dc: incorrect handling of geodata
 - [ADDED] postgresql: support for setting a port for the connection
 - [FIXED] ensure proper handling of `indent` parameter for PPJSONEncoder, fixing compatibility with Python3.13
 - [ADDED] description for `slack` argument in docstring of create_gen function
