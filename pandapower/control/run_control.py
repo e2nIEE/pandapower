@@ -5,6 +5,8 @@
 
 import numpy as np
 
+from pandapower import read_from_net
+
 try:
     import pandaplan.core.pplog as pplog
 except ImportError:
@@ -123,11 +125,61 @@ def prepare_run_ctrl(net, ctrl_variables, **kwargs):
     return ctrl_variables
 
 
-def check_final_convergence(run_count, max_iter, net_converged):
+def check_final_convergence(run_count, max_iter, net_converged, net):
     if run_count > max_iter:
-        raise ControllerNotConverged("Maximum number of iterations per controller is reached. "
-                                     "Some controller did not converge after %i calculations!"
-                                     % run_count)
+        not_converged_idx = [i for i in net.controller.index if not net.controller.at[i, 'object'].converged]
+        controller_txt = f"Controllers who did not converge:\n"
+        txt = ""
+        difference_txt = ""
+        for i in not_converged_idx:
+            if not (any(np.atleast_1d(getattr(net.controller.at[x, 'object'], 'controller_idx', None)) == i  # controller
+                for x in net.controller.index)):#to not doubly calculate linked controllers
+                input_values = []  # reactive power q
+                p_input_values = []  # active power p for power factor controllers
+                counter = 0
+                ###calculating divergence from set point
+                if net.controller.order[i] == -1: #droop control calculates values of linked bsc
+                    k = net.controller.at[i, 'object'].controller_idx
+                else: k = i
+                if net.controller.at[k, 'object'].input_element != 'res_bus':
+                    for input_index in net.controller.at[k, 'object'].input_element_index:
+                        if net.controller.at[k, 'object'].input_element_in_service[counter]:  # input element not in service
+                            input_values.append(
+                                read_from_net(net, net.controller.at[k, 'object'].input_element, input_index,
+                                              net.controller.at[k, 'object'].input_variable[counter],
+                                              net.controller.at[k, 'object'].read_flag[counter]))
+                            if (net.controller.at[k, 'object'].modus == "PF_ctrl" or
+                                    net.controller.at[k, 'object'].modus == 'tan(phi)_ctrl'):
+                                p_input_values.append(
+                                    read_from_net(net, net.controller.at[k, 'object'].input_element, input_index,
+                                                  net.controller.at[k, 'object'].input_variable_p[counter],
+                                                  net.controller.at[k, 'object'].read_flag[counter]))
+                        counter += 1
+                if net.controller.at[k, 'object'].modus == 'V_ctrl':
+                    value = read_from_net(net, 'res_bus', np.atleast_1d(net.controller.at[k, 'object'].input_element_index)[0],
+                                          'vm_pu', 'single_index')
+                elif net.controller.at[k, 'object'].modus == 'Q_ctrl':
+                    value = sum(np.atleast_1d(input_values))
+                elif net.controller.at[k, 'object'].modus == 'PF_ctrl':
+                    value = np.cos(np.arctan(net.controller.at[k, 'object'].reactance * sum(np.atleast_1d(input_values)) /
+                                             len(np.atleast_1d(input_values)) / sum(np.atleast_1d(p_input_values)) / len(
+                        np.atleast_1d(p_input_values))))
+                elif net.controller.at[k, 'object'].modus == 'tan(phi)_ctrl':
+                    value = (sum(np.atleast_1d(input_values)) / len(np.atleast_1d(input_values)) /
+                             sum(np.atleast_1d(p_input_values)) / len(np.atleast_1d(p_input_values)))
+                else:
+                    value = 'error: No value could be calculated'
+                difference_txt = f"Set point: {net.controller.at[k, 'object'].set_point} not reached, value is: {value}"
+
+            if net.controller.order[i] == -1: #droop controller
+                txt = (f"Controller {net.controller.at[i,'object'].controller_idx} with Droop Controller {i} and modus "
+                       f"{net.controller.at[i, 'object'].modus}: {difference_txt}")
+            elif not (any(np.atleast_1d(getattr(net.controller.at[x, 'object'], 'controller_idx', None)) == i #controller
+                                                                                        for x in net.controller.index)):
+                txt = f"Controller {i} with modus {net.controller.at[i, 'object'].modus}: {difference_txt}"
+            controller_txt = str(controller_txt + txt + "\n")
+        logger.error(f"Maximum number of iterations per controller is reached. " 
+                                 f"Some controller did not converge after {run_count} calculations!\n{controller_txt}")
     if not net_converged:
         raise NetCalculationNotConverged("Controller did not converge because the calculation did not converge!")
     else:
@@ -176,7 +228,7 @@ def _evaluate_net(net, levelorder, ctrl_variables, **kwargs):
             # either implement this in a controller that is likely to cause the error,
             # or define a special "load flow police" controller for your use case
             _control_repair(levelorder)
-            # this will raise the error if repair_control did't work
+            # this will raise the error if repair_control didn't work
             # it means that repair control has only 1 try
             try:
                 run_funct(net, **kwargs)
@@ -209,9 +261,9 @@ def control_implementation(net, controller_order, ctrl_variables, max_iter,
                 ctrl_variables = evaluate_net_fct(net, levelorder, ctrl_variables, **kwargs)
         # raises controller not converged
         if ctrl_variables['check_each_level']:
-            check_final_convergence(run_count, max_iter, ctrl_variables['converged'])
+            check_final_convergence(run_count, max_iter, ctrl_variables['converged'], net)
     # is required if you only want to check if in the last level everything is converged
-    check_final_convergence(run_count, max_iter, ctrl_variables['converged'])
+    check_final_convergence(run_count, max_iter, ctrl_variables['converged'], net)
 
 def _reset_convergence(levelorder):
     for ctrl, net in levelorder:
