@@ -24,7 +24,7 @@ def one_line_one_generator():
     create_gen(net, b1, vn_kv=10.5, xdss_pu=0.2, rdss_ohm=0.001, cos_phi=0.8, p_mw=0.1, sn_mva=2.5)
     create_gen(net, b1, vn_kv=10.5, xdss_pu=0.2, rdss_ohm=0.001, cos_phi=0.8, p_mw=0.1, sn_mva=2.5)
     line = create_line_from_parameters(net, b2, b1, length_km=1.0, max_i_ka=0.29, r_ohm_per_km=0.1548,
-                                       x_ohm_per_km=0.0816814, c_nf_per_km=165)
+                                       x_ohm_per_km=0.0816814, c_nf_per_km=165, r0_ohm_per_km=1., x0_ohm_per_km=1., c0_nf_per_km=1.)
     net.line.loc[line, "endtemp_degree"] = 165
     create_switch(net, b3, b1, et="b")
     return net
@@ -39,11 +39,11 @@ def gen_three_bus_example():
     # create_bus(net, vn_kv=0.4, in_service=False)
     create_gen(net, b2, vn_kv=10.5, xdss_pu=0.2, rdss_ohm=0.001, cos_phi=0.8, p_mw=0.1, sn_mva=2.5)
     create_line_from_parameters(net, b1, b2, length_km=1.0, max_i_ka=0.29, r_ohm_per_km=0.1548, x_ohm_per_km=0.0816814,
-                                c_nf_per_km=165)
+                                c_nf_per_km=165, r0_ohm_per_km=1., x0_ohm_per_km=1., c0_nf_per_km=1.)
     create_line_from_parameters(net, b2, b3, length_km=1.0, max_i_ka=0.29, r_ohm_per_km=0.1548, x_ohm_per_km=0.0816814,
-                                c_nf_per_km=165)
+                                c_nf_per_km=165, r0_ohm_per_km=1, x0_ohm_per_km=1, c0_nf_per_km=1.)
     net.line["endtemp_degree"] = 165
-    create_ext_grid(net, b1, s_sc_max_mva=10., s_sc_min_mva=8., rx_min=0.4, rx_max=0.4)
+    create_ext_grid(net, b1, s_sc_max_mva=10., s_sc_min_mva=8., rx_min=0.4, rx_max=0.4, r0x0_max=1., r0x0_min=0., x0x_max=1., x0x_min=0.)
     # create_switch(net, b3, b1, et="b")
     return net
 
@@ -73,7 +73,6 @@ def test_min_gen(one_line_one_generator):
     # assert abs(net.res_bus_sc.ikss_ka.at[1] - 1.3697407) < 1e-7
     assert pd.isnull(net.res_bus_sc.ikss_ka.at[3])
 
-
 def test_branch_min_gen(gen_three_bus_example):
     net = gen_three_bus_example
     calc_sc(net, case="min", branch_results=True)
@@ -95,7 +94,7 @@ def test_gen_ext_grid_same_bus():
     b = create_bus(net, 110)
 
     net1 = copy.deepcopy(net)
-    create_ext_grid(net1, b, s_sc_max_mva=1000, rx_max=0.4)
+    create_ext_grid(net1, b, s_sc_max_mva=1000, rx_max=0.4, r0x0_max=1., r0x0_min = 0., x0x_max=1., x0x_min=0.)
     calc_sc(net1)
 
     net2 = copy.deepcopy(net)

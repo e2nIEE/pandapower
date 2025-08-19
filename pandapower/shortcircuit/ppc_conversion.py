@@ -182,11 +182,13 @@ def _add_gen_sc_z_kg_ks(net, ppc):
     ppc["bus"][buses, BS_GEN] = bs
 
     # Calculate K_G
-    # TODO C_MIN ?
     cmax = ppc["bus"][gen_buses_ppc, C_MAX]
     # if the terminal voltage of the generator is permanently different from the nominal voltage of the generator, it may be
     # reqired to have a correction for U_{rG} as below (compare to equation 18) when calculating maximum SC current:
     kg = vn_net/(vn_gen * (1+pg_percent/100)) * cmax / (1 + xdss_pu * sin_phi_gen)
+    case = net._options["case"]
+    if case == "min":
+        kg = 1
     ppc["bus"][gen_buses_ppc, K_G] = kg
     ppc["bus"][gen_buses_ppc, V_G] = vn_gen
 
