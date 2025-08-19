@@ -2288,21 +2288,24 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
         if av_mode == 'constv':
             logger.debug('creating sym %s as gen' % name)
             vm_pu = item.usetp
+            sn_mva = item.typ_id.sgn
+            vn_kv = item.typ_id.ugn
+            rdss = item.typ_id.rstr * (vn_kv**2 / sn_mva)  # from p.u. to ohm
             if item.iqtype == 1:
                 type = item.typ_id
                 sid = create_gen(net, bus=bus1, p_mw=p_mw, vm_pu=vm_pu,
                                  min_q_mvar=type.Q_min, max_q_mvar=type.Q_max,
                                  min_p_mw=item.Pmin_uc, max_p_mw=item.Pmax_uc,
                                  name=name, type=cat, in_service=in_service, scaling=global_scaling,
-                                 xdss_pu=item.typ_id.xdss, rdss_ohm=item.typ_id.rstr, cos_phi=item.typ_id.cosn,
-                                 vn_kv=item.typ_id.ugn)
+                                 xdss_pu=item.typ_id.xdss, rdss_ohm=rdss, cos_phi=item.typ_id.cosn,
+                                 vn_kv=vn_kv, sn_mva=sn_mva)
             else:
                 sid = create_gen(net, bus=bus1, p_mw=p_mw, vm_pu=vm_pu,
                                  min_q_mvar=item.cQ_min, max_q_mvar=item.cQ_max,
                                  min_p_mw=item.Pmin_uc, max_p_mw=item.Pmax_uc,
                                  name=name, type=cat, in_service=in_service, scaling=global_scaling,
-                                 xdss_pu=item.typ_id.xdss, rdss_ohm=item.typ_id.rstr, cos_phi=item.typ_id.cosn,
-                                 vn_kv=item.typ_id.ugn)
+                                 xdss_pu=item.typ_id.xdss, rdss_ohm=rdss, cos_phi=item.typ_id.cosn,
+                                 vn_kv=vn_kv, sn_mva=sn_mva)
             element = 'gen'
         elif av_mode == 'constq':
             q_mvar = ngnum * item.qgini * multiplier

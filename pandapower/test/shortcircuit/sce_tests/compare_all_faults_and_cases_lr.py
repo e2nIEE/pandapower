@@ -267,11 +267,12 @@ if __name__ == "__main__":
     diff_df, diff_df_branch = get_result_dfs(net_name, fault_location)
 
     ## detailed overview for all grids
-    names = [name for name in net_names_gen if name.endswith("_sgen")]
-    fault_location = [0, 1]
+    names = [name for name in net_names_gen if name.endswith("_gen")]
+    fault_location = [2]
     df_bus, df_branch = generate_summary_tables(names, fault_location, detailed=True)
 
     ## simple overview for all grids
     names = [name for name in net_names_gen if name.endswith("_gen")]
-    fault_location = [0]
+    fault_location = [2]
     df_bus_simple, df_branch_simple = generate_summary_tables(names, fault_location, detailed=False)
+
