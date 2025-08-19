@@ -377,14 +377,14 @@ def add_additional_attributes(item, net, element, element_id, attr_list=None, at
     """
     if attr_dict is None:
         attr_dict = {k: k for k in attr_list}
-    
+
     if attr_list is not None:
         for attr_l in attr_list:
             if attr_l in attr_dict:
                 continue
             else:
                 attr_dict[attr_l] = attr_l
-                
+
     for attr in attr_dict.keys():
         if '.' in attr:
             # go in the object chain of a.b.c.d until finally get the chr_name
@@ -488,7 +488,7 @@ def create_pp_bus(net, item, flag_graphics, is_unbalanced):
     net[table].at[bid, "description"] = descr
     net[table].at[bid, "substat"] = substat_descr
     net[table].at[bid, "folder_id"] = item.fold_id.loc_name
-    
+
     attr_dict={"for_name": "equipment", "cimRdfId": "origin_id", "cpSite.loc_name": "site"}
     add_additional_attributes(item, net, table, bid, attr_dict=attr_dict,
                               attr_list=["sernum", "chr_name"])
@@ -2029,11 +2029,11 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
         # create...
         pstac = item.c_pstac  # None if station controller is not available
         if pstac is not None and not pstac.outserv and export_ctrl:
-            if pstac.i_droop:
-                av_mode = 'constq'
+            if pstac.i_droop and pstac.i_ctrl == 0:
+                av_mode = 'constv'
             else:
                 if pstac.i_ctrl == 0:
-                    av_mode = 'constq'
+                    av_mode = 'constv'
                 elif pstac.i_ctrl == 1:
                     av_mode = 'constq'
                 elif pstac.i_ctrl == 2:
@@ -2050,6 +2050,18 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
         if av_mode == 'constv':
             logger.debug('av_mode: %s - creating as gen' % av_mode)
             params.vm_pu = item.usetp
+            if pstac is not None and not pstac.outserv and export_ctrl:
+                try:
+                    params.vm_pu = item.GetAttribute('m:u:bus1')
+                except AttributeError:
+                    print("Exception vm_pu not available! Outserv: ")
+                    print(item.GetFullName())
+                    print(item.outserv)
+                    print(pstac.outserv)
+                    if not pstac.uset_mode:
+                        params.vm_pu = pstac.usetp
+                    else:
+                        params.vm_pu = pstac.cpCtrlNode.vtarget  # Bus target voltage
             del params['q_mvar']
 
             # add reactive and active power limits
@@ -2066,6 +2078,15 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
                 element = "asymmetric_sgen"
             else:
                 # add reactive and active power limits
+                if pstac is not None and not pstac.outserv and export_ctrl:
+                    try:
+                        params['q_mvar'] = item.GetAttribute('m:Q:bus1')
+                    except AttributeError:
+                        print("Exception q_mvar not available! Outserv: ")
+                        print(item.GetFullName())
+                        print(item.outserv)
+                        print(pstac.outserv)
+                        pass
                 params.min_q_mvar = item.cQ_min
                 params.max_q_mvar = item.cQ_max
                 params.min_p_mw = item.Pmin_uc
@@ -2261,12 +2282,12 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
         pstac = item.c_pstac
         # None if station controller is not available
         if pstac is not None and not pstac.outserv and export_ctrl:
-            if pstac.i_droop:
-                av_mode = 'constq'
+            if pstac.i_droop and pstac.i_ctrl == 0:
+                av_mode = 'constv'
             else:
                 i_ctrl = pstac.i_ctrl
                 if i_ctrl == 0:
-                    av_mode = 'constq'
+                    av_mode = 'constv'
                 elif i_ctrl == 1:
                     av_mode = 'constq'
                 elif i_ctrl == 2:
@@ -2282,6 +2303,19 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
         if av_mode == 'constv':
             logger.debug('creating sym %s as gen' % name)
             vm_pu = item.usetp
+
+            if pstac is not None and not pstac.outserv and export_ctrl:
+                try:
+                    vm_pu = item.GetAttribute('m:u:bus1')
+                except AttributeError:
+                    print("Exception vm_pu not available! Outserv: ")
+                    print(item.GetFullName())
+                    print(item.outserv)
+                    print(pstac.outserv)
+                    if not pstac.uset_mode:
+                        vm_pu = pstac.usetp
+                    else:
+                        vm_pu = pstac.cpCtrlNode.vtarget  # Bus target voltage
             if item.iqtype == 1:
                 type = item.typ_id
                 sid = create_gen(net, bus=bus1, p_mw=p_mw, vm_pu=vm_pu,
@@ -2295,7 +2329,10 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
                                  name=name, type=cat, in_service=in_service, scaling=global_scaling)
             element = 'gen'
         elif av_mode == 'constq':
-            q_mvar = ngnum * item.qgini * multiplier
+            try:
+                q_mvar = item.GetAttribute('m:Q:bus1') * multiplier
+            except AttributeError:
+                q_mvar = ngnum * item.qgini * multiplier
             if item.iqtype == 1:
                 type = item.typ_id
                 sid = create_sgen(net, bus=bus1, p_mw=p_mw, q_mvar=q_mvar,
@@ -2316,7 +2353,7 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
         logger.debug('created sgen at index <%s>' % sid)
 
     net[element].loc[sid, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    add_additional_attributes(item, net, element, sid, attr_dict={"for_name": "equipment", "cimRdfId": "origin_id", 
+    add_additional_attributes(item, net, element, sid, attr_dict={"for_name": "equipment", "cimRdfId": "origin_id",
                                                                   "cpSite.loc_name": "site"},
                                                       attr_list=["sernum", "chr_name"])
     if item.pQlimType and element != 'ext_grid':
@@ -3826,13 +3863,13 @@ def create_stactrl(net, item):
 
     # Overwrite gen_type if local control differs from station controller type
     if control_mode is not None:
-        if item.i_droop:
+        if item.i_droop and control_mode == 0:
             for i in range(len(gen_types)):
-                gen_types[i] = "sgen"
+                gen_types[i] = "gen"
         else:
             if control_mode == 0:
                 for i in range(len(gen_types)):
-                    gen_types[i] = "sgen"
+                    gen_types[i] = "gen"
             elif control_mode == 1:
                 for i in range(len(gen_types)):
                     gen_types[i] = "sgen"
@@ -3978,23 +4015,23 @@ def create_stactrl(net, item):
 
         if item.i_droop:  # Enable Droop
             bsc = BinarySearchControl(net, ctrl_in_service=stactrl_in_service,
-                                                 output_element=gen_element, output_variable="q_mvar",
-                                                 output_element_index=gen_element_index,
-                                                 output_element_in_service=gen_element_in_service,
-                                                 output_values_distribution=distribution,
-                                                 input_element=res_element_table, input_variable=variable,
-                                                 input_element_index=res_element_index,
-                                                 set_point=v_setpoint_pu, voltage_ctrl=True, bus_idx=bus, tol=1e-3)
+                                      output_element=gen_element, output_variable="vm_pu",
+                                      output_element_index=gen_element_index,
+                                      output_element_in_service=gen_element_in_service,
+                                      output_values_distribution=distribution,
+                                      input_element=res_element_table, input_variable=variable,
+                                      input_element_index=res_element_index,
+                                      set_point=v_setpoint_pu, voltage_ctrl=True, bus_idx=bus, tol=1e-3)
             DroopControl(net, q_droop_mvar=item.Srated * 100 / item.ddroop, bus_idx=bus,
                                     vm_set_pu=v_setpoint_pu, controller_idx=bsc.index, voltage_ctrl=True)
         else:
             BinarySearchControl(net, ctrl_in_service=stactrl_in_service,
-                                           output_element=gen_element, output_variable="q_mvar",
-                                           output_element_index=gen_element_index,
-                                           output_element_in_service=gen_element_in_service, input_element="res_bus",
-                                           output_values_distribution=distribution, damping_factor=0.9,
-                                           input_variable="vm_pu", input_element_index=bus,
-                                           set_point=v_setpoint_pu, voltage_ctrl=True, tol=1e-6)
+                                output_element=gen_element, output_variable="vm_pu",
+                                output_element_index=gen_element_index,
+                                output_element_in_service=gen_element_in_service, input_element="res_bus",
+                                output_values_distribution=distribution, damping_factor=0.9,
+                                input_variable="vm_pu", input_element_index=bus,
+                                set_point=v_setpoint_pu, voltage_ctrl=True, tol=1e-6)
     elif control_mode == 1:  # Q Control mode
         if item.iQorient != 0:
             if not stactrl_in_service:
