@@ -96,10 +96,10 @@ def get_all_pf_sc_results(proj_name, fault_location=None, activate_sgen=None, ac
 
 
 ## get results for single project
-proj_name = '1_four_bus_radial_grid_gen'
-fault_location = [0, 1, 2, 3]
+proj_name = 'test_case_4_twenty_bus_radial_grid_YNyn'
+fault_location = [0, 8, 18]
 activate_sgen = None
-activate_gen = [1, 3]
+activate_gen = None
 for fl in fault_location:
     pf_dict = get_all_pf_sc_results(proj_name, fl, activate_sgen=activate_sgen, activate_gen=activate_gen,
                                     save_to_excel=False)

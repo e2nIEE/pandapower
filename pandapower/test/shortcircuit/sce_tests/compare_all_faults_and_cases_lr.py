@@ -103,12 +103,19 @@ def compare_sc_results(net, excel_file, branch=False, fault_location=None):
                             })
                         except Exception as e:
                             continue
-                            # print(f"Error at {element_type} {element}, column {column}: {e}")
+                            #print(f"Error at {element_type} {element}, column {column}: {e}")
 
     return pd.DataFrame(all_differences)
 
 
 def get_result_dfs(net_name, fault_location):
+    if 'twenty_bus' in net_name and fault_location not in [0, 8, 18]:
+        print(f"For {net_name} only fault locations 0, 8, 18 are supported. Skipping fault location {fault_location}.")
+        return None, None
+    elif 'twenty_bus' not in net_name and fault_location not in [0, 1, 2, 3]:
+        print(f"For {net_name} only fault locations 0, 1, 2, 3 are supported. Skipping fault location {fault_location}.")
+        return None, None
+
     result_files_path = os.path.join(pp_dir, 'test', 'shortcircuit', 'sce_tests', 'sc_result_comparison')
     net = load_test_case(net_name)
     if net_name.endswith('_sgen') or net_name.endswith('_gen') or net_name.endswith('_sgen_act'):
@@ -180,6 +187,8 @@ def generate_summary_tables(net_names, fault_locations, detailed=False):
     for net_name, fault_location in tqdm(combinations, desc="generate_summary", unit="grid"):
         try:
             diff_df, diff_df_branch = get_result_dfs(net_name, fault_location)
+            if diff_df is None and diff_df_branch is None:
+                continue
 
             # bus
             if not diff_df.empty:
@@ -268,11 +277,11 @@ if __name__ == "__main__":
 
     ## detailed overview for all grids
     names = [name for name in net_names_gen if name.endswith("_gen")]
-    fault_location = [2]
+    fault_location = [0]
     df_bus, df_branch = generate_summary_tables(names, fault_location, detailed=True)
 
     ## simple overview for all grids
     names = [name for name in net_names_gen if name.endswith("_gen")]
-    fault_location = [2]
+    fault_location = [0]
     df_bus_simple, df_branch_simple = generate_summary_tables(names, fault_location, detailed=False)
 
