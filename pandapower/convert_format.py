@@ -11,7 +11,7 @@ from packaging.version import Version
 from pandapower._version import __version__, __format_version__
 from pandapower.create import create_empty_network, create_poly_cost
 from pandapower.results import reset_results
-from pandapower.control import TrafoController
+from pandapower.control import TrafoController, BinarySearchControl
 from pandapower.plotting.geo import convert_geodata_to_geojson
 from pandapower.auxiliary import pandapowerNet
 
@@ -63,15 +63,6 @@ def convert_format(net, elements_to_deserialize=None):
     _restore_index_names(net)
     return net
 
-
-def _convert_SC_invert_paramater(net):
-    # introduce invert parameter for Binary Search Controller and initate as False
-    for ctrl in net.controller["object"].values:
-        if ctrl is None:
-            continue
-        if getattr(ctrl.__class__, "__name__", "") == "BinarySearchControl":
-            if not hasattr(ctrl, "invert"):
-                ctrl.invert = 1
 
 def _convert_q_capability_characteristic(net: pandapowerNet):
     # rename the q_capability_curve_characteristic table to q_capability_characteristic if exists
@@ -473,14 +464,6 @@ def _add_missing_columns(net, elements_to_deserialize):
             else:
                 net.controller.at[ctrl.name, 'initial_run'] = False
 
-    if _check_elements_to_deserialize('controller', elements_to_deserialize):
-        for ctrl in net.controller["object"].values:
-            if ctrl is None:
-                continue
-            if getattr(ctrl.__class__, "__name__", "") == "BinarySearchControl":
-                if not hasattr(ctrl, "invert"):
-                    ctrl.invert = 1
-
     # distributed slack
     if _check_elements_to_deserialize('ext_grid', elements_to_deserialize) and \
             "slack_weight" not in net.ext_grid:
@@ -576,6 +559,9 @@ def _update_object_attributes(obj):
     if "vm_lower_pu" in obj.__dict__ and "hunting_limit" not in obj.__dict__:
         obj.__dict__["hunting_limit"] = None
 
+    elif isinstance(obj, BinarySearchControl):
+        if "invert_" not in obj.__dict__:
+            obj.__dict__["input_sign"] = 1
 
 def _convert_objects(net, elements_to_deserialize):
     """

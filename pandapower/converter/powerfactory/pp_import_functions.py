@@ -25,7 +25,7 @@ from pandapower.run import set_user_pf_options
 from pandapower.std_types import add_zero_impedance_parameters, std_type_exists, create_std_type, available_std_types, \
     load_std_type
 from pandapower.toolbox.grid_modification import set_isolated_areas_out_of_service, drop_inactive_elements, drop_buses
-from pandapower.topology import create_nxgraph
+from pandapower.topology import create_nxgraph, calc_distance_to_bus
 from pandapower.control.util.auxiliary import create_q_capability_characteristics_object
 from pandapower.control.util.characteristic import SplineCharacteristic
 
@@ -1782,7 +1782,7 @@ def create_pp_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
                 c_q = load_type.GetAttribute(cc_q)
                 e_q = load_type.GetAttribute(ee_q)
 
-                if c_p:  # prüfen ob cc_p "nicht null" ist
+                if c_p:  # check whether c_p is 0 or not
                     if e_p not in {0, 1, 2} or e_p in used_e_p:
                         raise UserWarning(
                             f"Load {item.loc_name} ({load_class}) unsupported voltage dependency configuration")
@@ -3838,6 +3838,8 @@ def create_stactrl(net, item):
         logger.error(f"Generator type not supported {gen_types} for {item.loc_name}")
         return
 
+    input_inverted = []
+    gen_Q_response = []
     control_mode = item.i_ctrl
 
     # Overwrite gen_type if local control differs from station controller type
@@ -3904,6 +3906,10 @@ def create_stactrl(net, item):
     variable = None
     res_element_table = None
     res_element_index = None
+    # Create nx graph for further usage
+    top = create_nxgraph(net, respect_switches=True, include_lines=True, include_trafos=True,
+                         include_impedances=True, nogobuses=None, notravbuses=None, multi=True,
+                         calc_branch_impedances=False, branch_impedance_unit='ohm')
     if control_mode == 1 or item.i_droop:
         q_control_cubicle = item.p_cub if control_mode == 1 else item.pQmeas  # Feld
         if q_control_cubicle is None:
@@ -3914,7 +3920,6 @@ def create_stactrl(net, item):
         element_class = []
         res_element_index = []
         variable = []
-        input_invert = False
         if q_control_cubicle.GetClassName() == "StaCubic":
             q_control_element.append(q_control_cubicle.obj_id)
             q_control_side.append(q_control_cubicle.obj_bus)  # 0=from, 1=to // trafo3w 0=HV, 1 = MV, 2=LV
@@ -3926,6 +3931,8 @@ def create_stactrl(net, item):
                 element_class.append(q_control_element[0].GetClassName())
         else:
             print("Not implemented class for q_control_cubicle!")
+
+
         if element_class[0] == "ElmLne":
             res_element_table = "res_line"
             for i in range(len(q_control_element)):
@@ -3933,81 +3940,195 @@ def create_stactrl(net, item):
                 if q_control_side[i] == 0:
                     res_element_index.append(line_sections[0])
                     variable.append("q_from_mvar")
+                    gen_dist_from_bus = nx.shortest_path_length(top,
+                                                                get_element_bus(net, gen_element, gen_element_index[0]),
+                                                                net.line.loc[res_element_index[-1]].from_bus)
+                    gen_dist_to_bus = nx.shortest_path_length(top,
+                                                              get_element_bus(net, gen_element, gen_element_index[0]),
+                                                              net.line.loc[res_element_index[-1]].to_bus)
+                    if gen_dist_from_bus > gen_dist_to_bus:
+                        gen_Q_response.append(-1)
+                    else:
+                        gen_Q_response.append(1)
                 else:
                     res_element_index.append(line_sections[-1])
                     variable.append("q_to_mvar")
+                    gen_dist_from_bus = nx.shortest_path_length(top,
+                                                                get_element_bus(net, gen_element, gen_element_index[0]),
+                                                                net.line.loc[res_element_index[-1]].from_bus)
+                    gen_dist_to_bus = nx.shortest_path_length(top,
+                                                              get_element_bus(net, gen_element, gen_element_index[0]),
+                                                              net.line.loc[res_element_index[-1]].to_bus)
+                    if gen_dist_from_bus < gen_dist_to_bus:
+                        gen_Q_response.append(-1)
+                    else:
+                        gen_Q_response.append(1)
         elif element_class[0] == "ElmTr2":
             res_element_table = "res_trafo"
             for element in q_control_element:
                 res_element_index.append(trafo_dict[element])
-                variable = "q_hv_mvar" if q_control_side[0] == 0 else "q_lv_mvar"
+                gen_dist_lv_bus = nx.shortest_path_length(top,
+                                                          get_element_bus(net, gen_element, gen_element_index[0]),
+                                                          net.trafo.loc[res_element_index[-1]].lv_bus)
+                gen_dist_hv_bus = nx.shortest_path_length(top,
+                                                          get_element_bus(net, gen_element, gen_element_index[0]),
+                                                          net.line.loc[res_element_index[-1]].hv_bus)
+                if q_control_side[0] == 0:
+                    variable = "q_hv_mvar"
+                    if gen_dist_lv_bus > gen_dist_hv_bus:
+                        gen_Q_response.append(-1)
+                    else:
+                        gen_Q_response.append(1)
+                else:
+                    variable = "q_lv_mvar"
+                    if gen_dist_lv_bus < gen_dist_hv_bus:
+                        gen_Q_response.append(-1)
+                    else:
+                        gen_Q_response.append(1)
         elif element_class[0] == "ElmTr3":
             res_element_table = "res_trafo3w"
             for element in q_control_element:
                 res_element_index.append(trafo3w_dict[element])
-                variable = "q_hv_mvar" if q_control_side[0] == 0 else \
-                    "q_mv_mvar" if q_control_side[0] == 1 else "q_lv_mvar"
+                gen_dist_t3w_lv_bus = nx.shortest_path_length(top,
+                                                          get_element_bus(net, gen_element, gen_element_index[0]),
+                                                          net.trafo3w.loc[res_element_index[-1]].lv_bus)
+                gen_dist_t3w_mv_bus = nx.shortest_path_length(top,
+                                                         get_element_bus(net, gen_element, gen_element_index[0]),
+                                                         net.trafo3w.loc[res_element_index[-1]].mv_bus)
+                gen_dist_t3w_hv_bus = nx.shortest_path_length(top,
+                                                          get_element_bus(net, gen_element, gen_element_index[0]),
+                                                          net.trafo3w.loc[res_element_index[-1]].hv_bus)
+                if q_control_side[0] == 0:
+                    variable = "q_hv_mvar"
+                    if min(gen_dist_t3w_lv_bus, gen_dist_t3w_mv_bus, gen_dist_t3w_hv_bus) != gen_dist_t3w_hv_bus:
+                        gen_Q_response.append(-1)
+                    else:
+                        gen_Q_response.append(1)
+                elif q_control_side[0] == 1:
+                    variable = "q_mv_mvar"
+                    if min(gen_dist_t3w_lv_bus, gen_dist_t3w_mv_bus, gen_dist_t3w_hv_bus) != gen_dist_t3w_mv_bus:
+                        gen_Q_response.append(-1)
+                    else:
+                        gen_Q_response.append(1)
+                elif q_control_side[0] == 2:
+                    variable = "q_lv_mvar"
+                    if min(gen_dist_t3w_lv_bus, gen_dist_t3w_mv_bus, gen_dist_t3w_hv_bus) != gen_dist_t3w_lv_bus:
+                        gen_Q_response.append(-1)
+                    else:
+                        gen_Q_response.append(1)
         elif element_class[0] == "ElmZpu":
             res_element_table = "res_impedance"
             for element in q_control_element:
-                res_element_index.append(impedance_dict[element])
                 variable = "q_from_mvar" if q_control_side[0] == 0 else "q_to_mvar"
+                if q_control_side[i] == 0:
+                    res_element_index.append(impedance_dict[element])
+                    variable.append("q_from_mvar")
+                    gen_dist_from_bus = nx.shortest_path_length(top,
+                                                                get_element_bus(net, gen_element, gen_element_index[0]),
+                                                                net.line.loc[res_element_index[-1]].from_bus)
+                    gen_dist_to_bus = nx.shortest_path_length(top,
+                                                              get_element_bus(net, gen_element, gen_element_index[0]),
+                                                              net.line.loc[res_element_index[-1]].to_bus)
+                    if gen_dist_from_bus > gen_dist_to_bus:
+                        gen_Q_response.append(-1)
+                    else:
+                        gen_Q_response.append(1)
+                else:
+                    res_element_index.append(impedance_dict[element])
+                    variable.append("q_to_mvar")
+                    gen_dist_from_bus = nx.shortest_path_length(top,
+                                                                get_element_bus(net, gen_element, gen_element_index[0]),
+                                                                net.line.loc[res_element_index[-1]].from_bus)
+                    gen_dist_to_bus = nx.shortest_path_length(top,
+                                                              get_element_bus(net, gen_element, gen_element_index[0]),
+                                                              net.line.loc[res_element_index[-1]].to_bus)
+                    if gen_dist_from_bus < gen_dist_to_bus:
+                        gen_Q_response.append(-1)
+                    else:
+                        gen_Q_response.append(1)
+
         elif element_class[0] == "ElmCoup":
-            res = GetBranchElementFromSwitch(net, q_control_element)
-            if not res[switch_dict[q_control_element[0]]] is None:
-                element_type, element_index, connection_side, direction = (
-                    res[switch_dict[q_control_element[0]]].get("element_type"),
-                    res[switch_dict[q_control_element[0]]].get("element_index"),
-                    res[switch_dict[q_control_element[0]]].get("connection_side"),
-                    res[switch_dict[q_control_element[0]]].get("direction")
-                )
-            else:
-                element_type = None
-            if element_type == "trafo":
-                res_element_table = "res_trafo"
-                res_element_index.append(element_index)
-                # invert if control_side and actual_side are same
-                # q_control_side: 0 = terminal side, 1 = element side (measurment side)
-                # direction: 0 = dir1 (direction is terminal side of switch), 1 = dir2 (direction is element side of switch)
-                input_invert = (direction == q_control_side[0])
-                variable = "q_hv_mvar" if connection_side == "hv_bus" else "q_lv_mvar"
-            elif element_type == "trafo3w":
-                res_element_table = "res_trafo3w"
-                res_element_index.append(element_index)
-                # invert if control_side and actual_side are same
-                # q_control_side: 0 = terminal side, 1 = element side
-                # direction: 0 = dir1 (terminal side of switch), 1 = dir2 (element side of switch)
-                input_invert = (direction == q_control_side[0])
-                variable = "q_hv_mvar" if connection_side == "hv_bus" else \
-                    "q_mv_mvar" if connection_side == "mv_bus" else "q_lv_mvar"
-            elif element_type == "line":
-                res_element_table = "res_line"
-                res_element_index.append(element_index)
-                # invert if control_side and actual_side are same
-                # q_control_side: 0 = from side, 1 = to side
-                # direction: 0 = dir1 (terminal side of switch), 1 = dir2 (element side of switch)
-                input_invert = (direction == q_control_side[0])
-                variable = "q_from_mvar" if connection_side == "from_bus" else "q_to_mvar"
-            elif element_type == "impedance":
-                res_element_table = "res_impedance"
-                res_element_index.append(element_index)
-                # invert if control_side and actual_side are same
-                # q_control_side: 0 = from side, 1 = to side
-                # direction: 0 = dir1 (terminal side of switch), 1 = dir2 (element side of switch)
-                input_invert = (direction == q_control_side[0])
-                variable = "q_from_mvar" if connection_side == "from_bus" else "q_to_mvar"
-            else:
-                logger.info(
-                    f"{item}: Station Controller with switch measurement that cannot be relocated, adding switch with "
-                    f"small impedance")
-                for element in q_control_element:
+            for element in q_control_element:
+                if q_control_side[0] == 0:
+                    #variable = "q_from_mvar"
+                    gen_dist_bus = nx.shortest_path_length(top,
+                                                                get_element_bus(net, gen_element, gen_element_index[0]),
+                                                                net.switch.loc[switch_dict[element], "bus"])
+                    gen_dist_element = nx.shortest_path_length(top,
+                                                              get_element_bus(net, gen_element, gen_element_index[0]),
+                                                              net.switch.loc[switch_dict[element], "element"])
+                    if gen_dist_bus > gen_dist_element:
+                        gen_Q_response.append(-1)
+                    else:
+                        gen_Q_response.append(1)
+                else:
+                    #variable = "q_to_mvar"
+                    gen_dist_bus = nx.shortest_path_length(top,
+                                                                get_element_bus(net, gen_element, gen_element_index[0]),
+                                                                net.switch.loc[switch_dict[element], "bus"])
+                    gen_dist_element = nx.shortest_path_length(top,
+                                                              get_element_bus(net, gen_element, gen_element_index[0]),
+                                                              net.switch.loc[switch_dict[element], "element"])
+                    if gen_dist_bus < gen_dist_element:
+                        gen_Q_response.append(-1)
+                    else:
+                        gen_Q_response.append(1)
+
+                res = GetBranchElementFromSwitch(net, q_control_element, top)
+                if not res[switch_dict[q_control_element[0]]] is None:
+                    element_type, element_index, connection_side, direction = (
+                        res[switch_dict[q_control_element[0]]].get("element_type"),
+                        res[switch_dict[q_control_element[0]]].get("element_index"),
+                        res[switch_dict[q_control_element[0]]].get("connection_side"),
+                        res[switch_dict[q_control_element[0]]].get("direction")
+                    )
+                else:
+                    element_type = None
+                if element_type == "trafo":
+                    res_element_table = "res_trafo"
+                    res_element_index.append(element_index)
+                    # invert if control_side and actual_side are same
+                    # q_control_side: 0 = terminal side, 1 = element side (measurment side)
+                    # direction: 0 = dir1 (direction is terminal side of switch), 1 = dir2 (direction is element side of switch)
+                    input_inverted = [(direction == q_control_side[0])]
+                    variable = "q_hv_mvar" if connection_side == "hv_bus" else "q_lv_mvar"
+                elif element_type == "trafo3w":
+                    res_element_table = "res_trafo3w"
+                    res_element_index.append(element_index)
+                    # invert if control_side and actual_side are same
+                    # q_control_side: 0 = terminal side, 1 = element side
+                    # direction: 0 = dir1 (terminal side of switch), 1 = dir2 (element side of switch)
+                    input_inverted = [(direction == q_control_side[0])]
+                    variable = "q_hv_mvar" if connection_side == "hv_bus" else \
+                        "q_mv_mvar" if connection_side == "mv_bus" else "q_lv_mvar"
+                elif element_type == "line":
+                    res_element_table = "res_line"
+                    res_element_index.append(element_index)
+                    # invert if control_side and actual_side are same
+                    # q_control_side: 0 = from side, 1 = to side
+                    # direction: 0 = dir1 (terminal side of switch), 1 = dir2 (element side of switch)
+                    input_inverted = [(direction == q_control_side[0])]
+                    variable = "q_from_mvar" if connection_side == "from_bus" else "q_to_mvar"
+                elif element_type == "impedance":
+                    res_element_table = "res_impedance"
+                    res_element_index.append(element_index)
+                    # invert if control_side and actual_side are same
+                    # q_control_side: 0 = from side, 1 = to side
+                    # direction: 0 = dir1 (terminal side of switch), 1 = dir2 (element side of switch)
+                    input_inverted = [(direction == q_control_side[0])]
+                    variable = "q_from_mvar" if connection_side == "from_bus" else "q_to_mvar"
+                else:
+                    logger.info(
+                        f"{item}: Station Controller with switch measurement that cannot be relocated, adding switch with "
+                        f"small impedance")
+
                     res_element_index.append(switch_dict[element])
                     net.switch.at[res_element_index[-1], "z_ohm"] = 1e-3
                     variable = "q_from_mvar" if q_control_side[0] == 0 else "q_to_mvar"
-                res_element_table = "res_switch"
+                    res_element_table = "res_switch"
         else:
             logger.error(
-                f"{item}: only line, trafo 2W/3W element and switch flows can be controlled, {element_class[0]=}")
+                f"{item}: only line, impedance, trafo 2W/3W element and switch flows can be controlled, {element_class[0]=}")
             return
     elif control_mode == 0:
         res_element_table = "res_bus"
@@ -4035,9 +4156,6 @@ def create_stactrl(net, item):
         for index in gen_element_index:
             output_busses.append(net.sgen.at[index, 'bus'])
 
-    top = create_nxgraph(net, respect_switches=True, include_lines=True, include_trafos=True,
-                         include_impedances=True, nogobuses=None, notravbuses=None, multi=True,
-                         calc_branch_impedances=False, branch_impedance_unit='ohm')
     has_path = False
     for n in range(len(input_busses)):
         for m in range(len(output_busses)):
@@ -4062,8 +4180,9 @@ def create_stactrl(net, item):
                                                  output_element_in_service=gen_element_in_service,
                                                  output_values_distribution=distribution,
                                                  input_element=res_element_table, input_variable=variable,
-                                                 input_invert=input_invert, input_element_index=res_element_index,
-                                                 set_point=v_setpoint_pu, voltage_ctrl=True, bus_idx=bus, tol=1e-3)
+                                                 input_inverted=input_inverted, gen_Q_response=gen_Q_response,
+                                                 input_element_index=res_element_index, set_point=v_setpoint_pu,
+                                                 voltage_ctrl=True, bus_idx=bus, tol=1e-5)
             DroopControl(net, name=item.loc_name, q_droop_mvar=item.Srated * 100 / item.ddroop, bus_idx=bus,
                                     vm_set_pu=v_setpoint_pu, controller_idx=bsc.index, voltage_ctrl=True)
         else:
@@ -4072,7 +4191,8 @@ def create_stactrl(net, item):
                                            output_element_index=gen_element_index,
                                            output_element_in_service=gen_element_in_service, input_element="res_bus",
                                            output_values_distribution=distribution, damping_factor=0.9,
-                                           input_variable="vm_pu", input_invert=input_invert, input_element_index=bus,
+                                           input_variable="vm_pu", input_inverted=input_inverted,
+                                           gen_Q_response=gen_Q_response, input_element_index=bus,
                                            set_point=v_setpoint_pu, voltage_ctrl=True, tol=1e-6)
     elif control_mode == 1:  # Q Control mode
         if item.iQorient != 0:
@@ -4093,7 +4213,8 @@ def create_stactrl(net, item):
                 output_values_distribution=distribution,
                 damping_factor=0.9,
                 input_variable=variable,
-                input_invert=input_invert,
+                input_inverted=input_inverted,
+                gen_Q_response=gen_Q_response,
                 input_element_index=res_element_index,
                 set_point=item.qsetp,
                 voltage_ctrl=False, tol=1e-6
@@ -4112,7 +4233,8 @@ def create_stactrl(net, item):
                 output_values_distribution=distribution,
                 damping_factor=0.9,
                 input_variable=variable,
-                input_invert=input_invert,
+                input_inverted=input_inverted,
+                gen_Q_response=gen_Q_response,
                 input_element_index=res_element_index,
                 set_point=item.qsetp,
                 voltage_ctrl=False,
@@ -4136,7 +4258,7 @@ def create_stactrl(net, item):
         raise NotImplementedError(f"{item}: control mode {item.i_ctrl=} not implemented")
 
 
-def GetBranchElementFromSwitch(net, q_control_element):
+def GetBranchElementFromSwitch(net, q_control_element, graph):
     """
     Searches for the nearest branch element (line or transformer 2W/3W) for each switch
     in both directions (dir1 = from the bus to the equipment, dir2 = the other way around).
@@ -4149,8 +4271,6 @@ def GetBranchElementFromSwitch(net, q_control_element):
 
     trafo3w is treated as a regular branch (NOT a split); connection_side is the winding we hit.
     """
-
-    graph = create_nxgraph(net, include_switches=True, respect_switches=True)
     result = {}
 
     def find_branch(graph, start_bus, blocked_bus):
@@ -4172,6 +4292,8 @@ def GetBranchElementFromSwitch(net, q_control_element):
                 )
 
                 t3w_match = net.trafo3w[is_current_in_trafo]
+            else:
+                t3w_match = []
             valid_t3w_neighbors = False
             if len(neighbors) > 1:
                 if len(t3w_match) == 1:
@@ -4747,4 +4869,11 @@ def create_q_capability_curve(net, item):
     net['q_capability_curve_table'] = pd.concat([net['q_capability_curve_table'], new_data], ignore_index=True)
     return index
 
-
+def get_element_bus(net, etype: str, eidx: int) -> int:
+    """
+    Returns the bus of an element defined by etype and eidx
+    etype: 'gen', 'sgen', 'load', ...
+    Does not work for branches (trafo, trafo3w, line, impedance ...)
+    """
+    df = getattr(net, etype)
+    return int(df.at[eidx, "bus"])

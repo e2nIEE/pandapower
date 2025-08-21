@@ -174,12 +174,17 @@ def test_pf_export_tap_changer():
 @pytest.mark.skipif(not PF_INSTALLED, reason='powerfactory must be installed')
 def test_pf_SC_meas_relocate():
     app = pf.GetApplication()
-    # import the tap changer test grid to powerfactory
-    path = os.path.join(pp_dir, 'test', 'converter', 'testfiles', 'test_SC_meas_relocate.pfd')
-    prj = import_project(path, app, 'test_tap_changer', import_folder='TEST_IMPORT', clear_import_folder=True)
+    # import the SC relocate test grid to powerfactory
+    #path = os.path.join(pp_dir, 'test', 'converter', 'testfiles', 'test_SC_meas_relocate.pfd')
+    path = os.path.join(pp_dir, 'test', 'converter', 'test_SC_meas_relocate.pfd')
+    prj = import_project(path, app, 'test_SC_meas_relocate', import_folder='TEST_IMPORT', clear_import_folder=True)
     prj_name = prj.GetFullName()
 
     net = from_pfd(app, prj_name=prj_name)
+
+    # For now, change measurement direction manually.
+    #net.controller.object[1].input_sign = -1
+    net.controller.object[1].tol = 1e-9
 
     all_diffs = validate_pf_conversion(net, tolerance_mva=1e-9)
 
@@ -204,7 +209,7 @@ def test_pf_SC_meas_relocate():
 
 @pytest.mark.skipif(not PF_INSTALLED, reason='powerfactory must be installed')
 def test_pf_export_q_capability_curve():
-    app = pf.GetApplication("LO3195", "Gbhai001GBHAI!")
+    app = pf.GetApplication()
     # import the tap changer test grid to powerfactory
     path = os.path.join(pp_dir, 'test', 'converter', 'testfiles', 'q_capabiltiy_curve.pfd')
     prj = import_project(path, app, 'test_q_capability_curve', import_folder='TEST_IMPORT', clear_import_folder=True)
