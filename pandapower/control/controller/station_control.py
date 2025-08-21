@@ -1,15 +1,13 @@
 import numbers
 import numpy as np
+from collections.abc import Sequence
 
 from pandapower.control.basic_controller import Controller
 from pandapower.auxiliary import _detect_read_write_flag, read_from_net, write_to_net
 
-try:
-    import pandaplan.core.pplog as pplog
-except ImportError:
-    import logging as pplog
+import logging
 
-logger = pplog.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 class BinarySearchControl(Controller):
     """
@@ -45,8 +43,8 @@ class BinarySearchControl(Controller):
 
             **input_variable** - Variable which is used to take the measurement from. Indicated by string value.
 
-            **input_invert** - Boolean that indicates if the measurement of the input element must be inverted. Required
-            when importing from PowerFactory.
+            **input_inverted** - Boolean list that indicates if the measurement of the input element must be inverted.
+            Required when importing from PowerFactory.
 
             **input_element_index** - Element of input element in net.
 
@@ -63,7 +61,8 @@ class BinarySearchControl(Controller):
        """
     def __init__(self, net, ctrl_in_service, output_element, output_variable, output_element_index,
                  output_element_in_service, output_values_distribution, input_element, input_variable,
-                 input_element_index, set_point, voltage_ctrl, name="", input_invert=False, bus_idx=None, tol=0.001, in_service=True, order=0, level=0,
+                 input_element_index, set_point, voltage_ctrl, name="", input_inverted=[], gen_Q_response=[],
+                 bus_idx=None, tol=0.001, in_service=True, order=0, level=0,
                  drop_same_existing_ctrl=False, matching_params=None, **kwargs):
         super().__init__(net, in_service=in_service, order=order, level=level,
                          drop_same_existing_ctrl=drop_same_existing_ctrl,
@@ -77,13 +76,47 @@ class BinarySearchControl(Controller):
                 self.input_element_index.append(element)
         else:
             self.input_element_index.append(input_element_index)
-        self.invert = -1 if input_invert else 1
+        self.input_sign = []
+        ################
+        n = len(self.input_element_index)
+        if input_inverted is None or (isinstance(input_inverted, Sequence) and len(input_inverted) == 0):
+            # leer -> alles +1
+            self.input_sign = [1] * n
+        elif isinstance(input_inverted, bool):
+            # einzelner bool -> auf n Elemente broadcasten
+            self.input_sign = ([-1] if input_inverted else [1]) * n
+        else:
+            # Sequenz -> auf Länge n kürzen/auffüllen, dann map zu ±1
+            inv_list = list(input_inverted)[:n]
+            if len(inv_list) < n:
+                inv_list += [False] * (n - len(inv_list))  # fehlende als False (=+1)
+            self.input_sign = [-1 if inv else 1 for inv in inv_list]
+        #if input_inverted:
+        #    for inv in input_inverted[:len(self.input_element_index)]:
+        #        self.input_sign.append(-1 if inv else 1)
+        #else:
+        #    for i in :len(self.input_element_index):
+        #        self.input_sign.append(1)
+        ######################
         self.output_element = output_element
         self.output_element_index = output_element_index
         self.output_element_in_service = output_element_in_service
         # normalize the values distribution:
         self.output_values_distribution = np.array(output_values_distribution, dtype=np.float64) / np.sum(
             output_values_distribution)
+        #################
+
+        n = len(self.output_element_index)
+        if gen_Q_response is None or (isinstance(gen_Q_response, Sequence) and len(gen_Q_response) == 0):
+            # leer -> alles +1
+            self.gen_Q_response = [1] * n
+        else:
+            # Sequenz -> auf Länge n kürzen/auffüllen, dann map zu ±1
+            if len(gen_Q_response) < n:
+                gen_Q_response += [1] * (n - len(gen_Q_response))  # fehlende als +1
+            self.gen_Q_response = gen_Q_response
+        ############################
+
         self.set_point = set_point
         self.voltage_ctrl = voltage_ctrl
         self.bus_idx = bus_idx
@@ -176,7 +209,7 @@ class BinarySearchControl(Controller):
             input_values.append(read_from_net(net, self.input_element, input_index,
                                               self.input_variable[counter], self.read_flag[counter]))
             counter += 1
-        input_values = (self.invert * np.asarray(input_values)).tolist()
+        input_values = (self.input_sign * np.asarray(input_values)).tolist()
         # read previous set values
         # compare old and new set values
         if not self.voltage_ctrl or self.bus_idx is None:
@@ -206,9 +239,45 @@ class BinarySearchControl(Controller):
             step_diff = self.diff - self.diff_old
             x = self.output_values - self.diff * (self.output_values - self.output_values_old) / np.where(
                 step_diff == 0, 1e-6, step_diff)
+           # x = self.output_values - self.diff * (self.output_values - self.output_values_old) / np.where(
+           #     np.abs(step_diff) < 1e-9 * (1.0 + np.abs(self.diff_old)),  # rel. Schwelle: Sekante unbrauchbar?
+           #     np.nan,  # -> später Momentum-Fallback
+           #     step_diff
+           # )
+            #delta = x - self.output_values
+            #cap = np.maximum(np.abs(self.output_values), 0.5)  # 100% relativ, min. 0.5 absolut
+            #if np.sign(delta) != np.sign(self.output_values - self.output_values_old):
+            #    cap = 0.3 * cap  # strengere Begrenzung bei Richtungswechsel
+            #delta = cap * np.tanh(delta / cap)
+
+            # Delta bilden; Fallback: wenn Sekanten-x NaN (weil step_diff ~ 0), nimm Momentum in letzte Richtung
+            #cap = np.maximum(np.abs(self.output_values), 5)  # 100% relativ, min. 0.5 absolut
+            #delta = np.where(
+            #    np.isnan(x),  # Sekante ausgefallen?
+            #    0.3 * cap * np.sign(self.output_values - self.output_values_old),  # kleiner Vorwärts-Schritt
+            #    x - self.output_values
+            #)
+
+            # optionale Hysterese: bei Richtungswechsel Kappe verkleinern
+            #cap = np.where(
+            #    np.sign(delta) != np.sign(self.output_values - self.output_values_old),
+            #    0.3 * cap,  # vorsichtiger bei Flip
+            #    cap
+            #)
+
+            # weiche Begrenzung
+            #delta = cap * np.tanh(delta / cap)
+            #delta = np.minimum(np.abs(x - self.output_values), cap)
+            rel_cap = 2
+            cap = rel_cap * (np.abs(self.output_values) + 1e-6) + 50  # +epsilon gegen Null +50MVAr absolut
+
+            delta = x - self.output_values
+            delta = np.clip(delta, -cap, +cap)
+
+            x = self.output_values + delta
             x = x * self.output_values_distribution if isinstance(x, numbers.Number) else sum(
                 x) * self.output_values_distribution
-            self.output_values_old, self.output_values = self.output_values, x
+            self.output_values_old, self.output_values = self.output_values, x #* self.gen_Q_response
 
         # write new set values
         write_to_net(net, self.output_element, self.output_element_index, self.output_variable, self.output_values,
@@ -295,15 +364,13 @@ class DroopControl(Controller):
                                   net.controller.at[self.controller_idx, "object"].input_variable[counter],
                                   net.controller.at[self.controller_idx, "object"].read_flag[counter]))
                 counter += 1
-            input_values = (net.controller.at[self.controller_idx, "object"].invert * np.asarray(input_values)).tolist()
+            input_sign = np.asarray(net.controller.at[self.controller_idx, "object"].input_sign)
+            input_values = (input_sign * np.asarray(input_values)).tolist()
             self.diff = ((net.controller.at[self.controller_idx, "object"].set_point - sum(input_values)))
         if self.bus_idx is None:
             self.converged = np.all(np.abs(self.diff) < self.tol)
         else:
-            #if np.all(np.abs(self.diff) < self.tol):
             self.converged = net.controller.at[self.controller_idx, "object"].converged
-            #elif net.controller.at[self.controller_idx, "object"].diff_old is not None:
-            #    net.controller.at[self.controller_idx, "object"].overwrite_covergence = True
 
         return self.converged
 
@@ -318,16 +385,16 @@ class DroopControl(Controller):
                 self.q_set_mvar_bsc = net.controller.at[self.controller_idx, "object"].set_point
             if self.lb_voltage is not None and self.ub_voltage is not None:
                 if self.vm_pu > self.ub_voltage:
-                    self.q_set_old_mvar, self.q_set_mvar = (
-                        self.q_set_mvar, self.q_set_mvar_bsc + (self.ub_voltage - self.vm_pu) * self.q_droop_mvar)
+                    self.q_set_old_mvar, self.q_set_mvar = (self.q_set_mvar, self.q_set_mvar_bsc +
+                                                            net.controller.object[self.controller_idx].gen_Q_response[0] * (self.vm_pu - self.ub_voltage) * self.q_droop_mvar)
                 elif self.vm_pu < self.lb_voltage:
-                    self.q_set_old_mvar, self.q_set_mvar = (
-                        self.q_set_mvar, self.q_set_mvar_bsc + (self.lb_voltage - self.vm_pu) * self.q_droop_mvar)
+                    self.q_set_old_mvar, self.q_set_mvar = (self.q_set_mvar, self.q_set_mvar_bsc +
+                                                            net.controller.object[self.controller_idx].gen_Q_response[0] * (self.vm_pu - self.lb_voltage) * self.q_droop_mvar)
                 else:
                     self.q_set_old_mvar, self.q_set_mvar = (self.q_set_mvar, self.q_set_mvar_bsc)
             else:
                 self.q_set_old_mvar, self.q_set_mvar = (
-                    self.q_set_mvar, self.q_set_mvar - (self.vm_set_pu - self.vm_pu) * self.q_droop_mvar)
+                    self.q_set_mvar, self.q_set_mvar + net.controller.object[self.controller_idx].gen_Q_response[0] * (self.vm_set_pu - self.vm_pu) * self.q_droop_mvar)
 
             if self.q_set_old_mvar is not None:
                 self.diff = self.q_set_mvar - self.q_set_old_mvar
@@ -344,6 +411,6 @@ class DroopControl(Controller):
             for input_index in input_element_index:
                 input_values.append(read_from_net(net, input_element, input_index,
                                                   input_variable[counter], read_flag[counter]))
-            input_values = (net.controller.at[self.controller_idx, "object"].invert * np.asarray(input_values)).tolist()
-            self.vm_set_pu_new = self.vm_set_pu + sum(input_values) / self.q_droop_mvar
+            input_values = (net.controller.at[self.controller_idx, "object"].input_sign * np.asarray(input_values)).tolist()
+            self.vm_set_pu_new = self.vm_set_pu + net.controller.at[self.controller_idx, "object"].gen_Q_response[0] * sum(input_values) / self.q_droop_mvar
             net.controller.at[self.controller_idx, "object"].set_point = self.vm_set_pu_new
