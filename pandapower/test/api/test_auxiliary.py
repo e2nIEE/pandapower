@@ -10,9 +10,9 @@ import geojson
 import numpy as np
 import pandas as pd
 
-from pandapower.control import SplineCharacteristic
-from pandapower.control.util.auxiliary import create_shunt_characteristic_object
+from pandapower.control import SplineCharacteristic, Characteristic
 from pandapower.control.util.characteristic import LogSplineCharacteristic
+from math import isclose
 
 try:
     import geopandas as gpd
@@ -21,13 +21,20 @@ try:
 except ImportError:
     GEOPANDAS_INSTALLED = False
 
-from pandapower.auxiliary import get_indices
-
-import pandapower as pp
-import pandapower.networks
-import pandapower.control
-import pandapower.timeseries
-from math import isclose
+from pandapower import get_gc_objects_dict
+from pandapower.file_io import from_json_string, to_json, create_empty_network
+from pandapower.create import create_bus, create_lines, create_line, create_buses, create_shunt
+from pandapower.auxiliary import get_indices, pandapowerNet
+from pandapower.networks import example_simple, example_multivoltage, mv_oberrhein
+from pandapower.timeseries import DFData
+from pandapower.control import (
+    SplineCharacteristic,
+    ContinuousTapControl,
+    ConstControl,
+    create_trafo_characteristic_object,
+)
+from pandapower.control.util.auxiliary import (create_shunt_characteristic_object, _create_trafo_characteristics,
+                                               create_q_capability_characteristics_object)
 
 
 class MemoryLeakDemo:
@@ -90,13 +97,13 @@ def test_get_indices():
 
 
 def test_net_deepcopy():
-    net = pp.networks.example_simple()
+    net = example_simple()
     net.line.at[0, 'geo'] = geojson.LineString([(0., 1.), (1., 2.)])
     net.bus.at[0, 'geo'] = geojson.Point((0., 1.))
 
-    pp.control.ContinuousTapControl(net, element_index=0, vm_set_pu=1)
-    ds = pp.timeseries.DFData(pd.DataFrame(data=[[0, 1, 2], [3, 4, 5]]))
-    pp.control.ConstControl(net, element='load', variable='p_mw', element_index=[0],
+    ContinuousTapControl(net, element_index=0, vm_set_pu=1)
+    ds = DFData(pd.DataFrame(data=[[0, 1, 2], [3, 4, 5]]))
+    ConstControl(net, element='load', variable='p_mw', element_index=[0],
                             profile_name=[0], data_source=ds)
 
     net1 = copy.deepcopy(net)
@@ -116,29 +123,29 @@ def test_net_deepcopy():
 
 
 def test_memory_leaks():
-    net = pp.networks.example_simple()
+    net = example_simple()
 
     # first, test to check that there are no memory leaks
-    types_dict1 = pp.get_gc_objects_dict()
+    types_dict1 = get_gc_objects_dict()
     num = 3
     for _ in range(num):
         net_copy = copy.deepcopy(net)
         # In each net copy it has only one controller
-        pp.control.ContinuousTapControl(net_copy, element_index=0, vm_set_pu=1)
+        ContinuousTapControl(net_copy, element_index=0, vm_set_pu=1)
 
     gc.collect()
 
-    types_dict2 = pp.get_gc_objects_dict()
+    types_dict2 = get_gc_objects_dict()
 
-    assert types_dict2[pandapower.auxiliary.pandapowerNet] - types_dict1[pandapower.auxiliary.pandapowerNet] == 1
-    assert types_dict2[pandapower.control.ContinuousTapControl] - types_dict1.get(
-        pandapower.control.ContinuousTapControl, 0) == 1
+    assert types_dict2[pandapowerNet] - types_dict1[pandapowerNet] == 1
+    assert types_dict2[ContinuousTapControl] - types_dict1.get(
+        ContinuousTapControl, 0) == 1
 
 
 def test_memory_leaks_demo():
-    net = pp.networks.example_simple()
+    net = example_simple()
     # first, test to check that there are no memory leaks
-    types_dict1 = pp.get_gc_objects_dict()
+    types_dict1 = get_gc_objects_dict()
     # now, demonstrate how a memory leak occurs
     # emulates the earlier behavior before the fix with weakref
     num = 3
@@ -148,68 +155,68 @@ def test_memory_leaks_demo():
 
     # demonstrate how the garbage collector doesn't remove the objects even if called explicitly
     gc.collect()
-    types_dict2 = pp.get_gc_objects_dict()
-    assert types_dict2[pandapower.auxiliary.pandapowerNet] - types_dict1[pandapower.auxiliary.pandapowerNet] == num
+    types_dict2 = get_gc_objects_dict()
+    assert types_dict2[pandapowerNet] - types_dict1[pandapowerNet] == num
     assert types_dict2[MemoryLeakDemo] - types_dict1.get(MemoryLeakDemo, 0) == num
 
 
 def test_memory_leaks_no_copy():
-    types_dict0 = pp.get_gc_objects_dict()
+    types_dict0 = get_gc_objects_dict()
     num = 3
     for _ in range(num):
-        net = pp.create_empty_network()
+        net = create_empty_network()
         # In each net copy it has only one controller
-        pp.control.ConstControl(net, 'sgen', 'p_mw', 0)
+        ConstControl(net, 'sgen', 'p_mw', 0)
 
     gc.collect()
-    types_dict1 = pp.get_gc_objects_dict()
-    assert types_dict1[pandapower.control.ConstControl] - types_dict0.get(pandapower.control.ConstControl, 0) == 1
-    assert types_dict1[pandapower.auxiliary.pandapowerNet] - types_dict0.get(pandapower.auxiliary.pandapowerNet, 0) <= 1
+    types_dict1 = get_gc_objects_dict()
+    assert types_dict1[ConstControl] - types_dict0.get(ConstControl, 0) == 1
+    assert types_dict1[pandapowerNet] - types_dict0.get(pandapowerNet, 0) <= 1
 
 
 def test_memory_leak_no_copy_demo():
-    types_dict1 = pp.get_gc_objects_dict()
+    types_dict1 = get_gc_objects_dict()
     # now, demonstrate how a memory leak occurs
     # emulates the earlier behavior before the fix with weakref
     num = 3
     for _ in range(num):
-        net = pp.networks.example_simple()
+        net = example_simple()
         MemoryLeakDemo(net)
 
     # demonstrate how the garbage collector doesn't remove the objects even if called explicitly
     gc.collect()
-    types_dict2 = pp.get_gc_objects_dict()
-    assert types_dict2[pandapower.auxiliary.pandapowerNet] - \
-           types_dict1.get(pandapower.auxiliary.pandapowerNet, 0) >= num-1
+    types_dict2 = get_gc_objects_dict()
+    assert types_dict2[pandapowerNet] - \
+           types_dict1.get(pandapowerNet, 0) >= num-1
     assert types_dict2[MemoryLeakDemo] - types_dict1.get(MemoryLeakDemo, 0) == num
 
 
 def test_memory_leak_df():
-    types_dict1 = pp.get_gc_objects_dict()
+    types_dict1 = get_gc_objects_dict()
     num = 3
     for _ in range(num):
         df = pd.DataFrame()
         MemoryLeakDemoDF(df)
 
     gc.collect()
-    types_dict2 = pp.get_gc_objects_dict()
+    types_dict2 = get_gc_objects_dict()
     assert types_dict2[MemoryLeakDemoDF] - types_dict1.get(MemoryLeakDemoDF, 0) == num
 
 
 def test_memory_leak_dict():
-    types_dict1 = pp.get_gc_objects_dict()
+    types_dict1 = get_gc_objects_dict()
     num = 3
     for _ in range(num):
         d = dict()
         MemoryLeakDemoDict(d)
 
     gc.collect()
-    types_dict2 = pp.get_gc_objects_dict()
+    types_dict2 = get_gc_objects_dict()
     assert types_dict2[MemoryLeakDemoDict] - types_dict1.get(MemoryLeakDemoDict, 0) <= 1
 
 
 def test_create_trafo_characteristics():
-    net = pp.networks.example_multivoltage()
+    net = example_multivoltage()
     net["trafo_characteristic_table"] = pd.DataFrame(
         {'id_characteristic': [0, 0, 0, 0, 0], 'step': [-2, -1, 0, 1, 2], 'voltage_ratio': [1, 1, 1, 1, 1],
          'angle_deg': [0, 0, 0, 0, 0], 'vk_percent': [2, 3, 4, 5, 6],
@@ -219,7 +226,7 @@ def test_create_trafo_characteristics():
     net.trafo['tap_dependency_table'].at[0] = False
     net.trafo['tap_dependency_table'].at[1] = True
     # add spline characteristics for one transformer based on trafo_characteristic_table
-    pp.control.create_trafo_characteristic_object(net)
+    create_trafo_characteristic_object(net)
     assert "trafo_characteristic_spline" in net
     assert "id_characteristic_spline" in net.trafo.columns
     assert len(net.trafo_characteristic_spline) == 1
@@ -231,11 +238,12 @@ def test_create_trafo_characteristics():
         'vk_percent_characteristic', 'vkr_percent_characteristic'])
     assert isinstance(net.trafo_characteristic_spline.at[
                           net.trafo.id_characteristic_spline.at[1], 'vk_percent_characteristic'],
-                      pp.control.SplineCharacteristic)
+                      SplineCharacteristic)
     assert isclose(net.trafo_characteristic_spline.at[
-            net.trafo.id_characteristic_spline.at[1], 'vk_percent_characteristic'](-2).item(), 2, rel_tol=1e-9)
+                       net.trafo.id_characteristic_spline.at[1], 'vk_percent_characteristic'](-2).item(),
+                   2, rel_tol=1e-9)
     assert pd.isna(net.trafo_characteristic_spline.at[
-                          net.trafo.id_characteristic_spline.at[1], 'vkr_hv_percent_characteristic'])
+                       net.trafo.id_characteristic_spline.at[1], 'vkr_hv_percent_characteristic'])
 
     # create spline characteristics again for two transformers based on the updated trafo_characteristic_table
     new_rows = pd.DataFrame(
@@ -245,17 +253,17 @@ def test_create_trafo_characteristics():
     net["trafo_characteristic_table"] = pd.concat([net["trafo_characteristic_table"], new_rows], ignore_index=True)
     net.trafo['id_characteristic_table'].at[0] = 1
     net.trafo['tap_dependency_table'].at[0] = True
-    pp.control.create_trafo_characteristic_object(net)
+    create_trafo_characteristic_object(net)
     assert len(net.trafo_characteristic_spline) == 2
     assert net.trafo.at[0, 'id_characteristic_spline'] == 1
     assert isinstance(net.trafo_characteristic_spline.at[
                           net.trafo.id_characteristic_spline.at[0], 'vk_percent_characteristic'],
-                      pp.control.SplineCharacteristic)
+                      SplineCharacteristic)
     assert isclose(net.trafo_characteristic_spline.at[
                net.trafo.id_characteristic_spline.at[0], 'vk_percent_characteristic'](2).item(), 6, rel_tol=1e-9)
     assert isinstance(net.trafo_characteristic_spline.at[
                           net.trafo.id_characteristic_spline.at[1], 'vk_percent_characteristic'],
-                      pp.control.SplineCharacteristic)
+                      SplineCharacteristic)
     assert isclose(net.trafo_characteristic_spline.at[
                net.trafo.id_characteristic_spline.at[1], 'vk_percent_characteristic'](-1).item(), 3, rel_tol=1e-9)
     assert pd.isna(net.trafo_characteristic_spline.at[
@@ -274,14 +282,14 @@ def test_create_trafo_characteristics():
     net.trafo3w['id_characteristic_table'].at[0] = 2
     net.trafo3w['tap_dependency_table'].at[0] = True
     # create spline characteristics again including a 3-winding transformer
-    pp.control.create_trafo_characteristic_object(net)
+    create_trafo_characteristic_object(net)
     assert len(net.trafo_characteristic_spline) == 3
     assert "id_characteristic_spline" in net.trafo3w.columns
     assert isinstance(net.trafo3w.id_characteristic_spline.at[0], np.int64)
     assert net.trafo_characteristic_spline.loc[net.trafo3w['id_characteristic_table'].at[0]].notna().sum() == 9
     assert isinstance(net.trafo_characteristic_spline.at[
                           net.trafo3w.id_characteristic_spline.at[0], 'vkr_hv_percent_characteristic'],
-                      pp.control.SplineCharacteristic)
+                      SplineCharacteristic)
     assert isclose(net.trafo_characteristic_spline.at[
                net.trafo3w.id_characteristic_spline.at[0], 'vk_hv_percent_characteristic'](0).item(), 10, rel_tol=1e-9)
     assert isclose(net.trafo_characteristic_spline.at[
@@ -301,31 +309,32 @@ def test_create_trafo_characteristics():
 
     # invalid variable
     with pytest.raises(UserWarning):
-        pp.control._create_trafo_characteristics(net, "trafo3w", 0, 'vk_percent',
-                                                 [-8, -4, 0, 4, 8], [8.1, 9.1, 10.1, 11.1, 12.1])
+        _create_trafo_characteristics(net, "trafo3w", 0, 'vk_percent',
+                                                [-8, -4, 0, 4, 8], [8.1, 9.1, 10.1, 11.1, 12.1])
 
     # invalid shapes
     with pytest.raises(UserWarning):
-        pp.control._create_trafo_characteristics(net, "trafo3w", 0, 'vk_hv_percent',
-                                                 [-8, -4, 0, 4, 8], [8.1, 9.1, 10.1, 11.1])
+        _create_trafo_characteristics(net, "trafo3w", 0, 'vk_hv_percent',
+                                                [-8, -4, 0, 4, 8], [8.1, 9.1, 10.1, 11.1])
 
     with pytest.raises(UserWarning):
-        pp.control._create_trafo_characteristics(net, "trafo3w", [0], 'vk_hv_percent',
-                                                 [-8, -4, 0, 4, 8], [8.1, 9.1, 10.1, 11.1, 12.1])
+        _create_trafo_characteristics(net, "trafo3w", [0], 'vk_hv_percent',
+                                                [-8, -4, 0, 4, 8], [8.1, 9.1, 10.1, 11.1, 12.1])
 
     with pytest.raises(UserWarning):
-        pp.control._create_trafo_characteristics(net, "trafo3w", [0, 1], 'vk_hv_percent',
-                                                 [[-8, -4, 0, 4, 8]], [[8.1, 9.1, 10.1, 11.1, 12.1]])
+        _create_trafo_characteristics(net, "trafo3w", [0, 1], 'vk_hv_percent',
+                                                [[-8, -4, 0, 4, 8]], [[8.1, 9.1, 10.1, 11.1, 12.1]])
 
     with pytest.raises(UserWarning):
-        pp.control._create_trafo_characteristics(net, "trafo3w", [0, 1], 'vk_hv_percent',
-                                                 [[-8, -4, 0, 4, 8], [-8, -4, 0, 4, 8]],
-                                                 [[8.1, 9.1, 10.1, 11.1, 12.1]])
+        _create_trafo_characteristics(net, "trafo3w", [0, 1], 'vk_hv_percent',
+                                                [[-8, -4, 0, 4, 8], [-8, -4, 0, 4, 8]],
+                                                [[8.1, 9.1, 10.1, 11.1, 12.1]])
+
 
 def test_creation_of_shunt_characteristics():
-    net = pp.create_empty_network()
-    b = pp.create_buses(net, 2, 110)
-    pp.create_shunt(net, bus=b[1], q_mvar=-50, p_mw=0, step=1, max_step=5)
+    net = create_empty_network()
+    b = create_buses(net, 2, 110)
+    create_shunt(net, bus=b[1], q_mvar=-50, p_mw=0, step=1, max_step=5)
     net["shunt_characteristic_table"] = pd.DataFrame(
         {'id_characteristic': [0, 0, 0, 0, 0], 'step': [1, 2, 3, 4, 5], 'q_mvar': [-25, -55, -75, -120, -125],
          'p_mw': [1, 1.5, 3, 4.5, 5]})
@@ -357,17 +366,71 @@ def test_creation_of_shunt_characteristics():
     assert np.isclose(net.shunt_characteristic_spline.loc[0, "p_mw_characteristic"](5), 10)
 
 
+def test_creation_of_q_capability_characteristics():
+    net = example_multivoltage()
+    net["q_capability_curve_table"] = pd.DataFrame(
+        {'id_q_capability_curve': [0, 0, 0, 0, 0], 'p_mw': [0.0, 50.0, 100.0, 125.0, 125.0],
+         'q_min_mvar': [-100.0, -75.0, -50.0, -25.0, -10], 'q_max_mvar': [150.0, 125.0, 75, 50.0, 10.0]})
+    net.gen.id_q_capability_characteristic.at[0] = 0
+    net.gen['curve_style'] = "straightLineYValues"
+
+    # Add q_capability_characteristic for one gen based on q_capability_curve_table
+    create_q_capability_characteristics_object(net)
+    assert "q_capability_characteristic" in net
+    assert len(net.q_capability_characteristic) == 1
+    assert net.gen.id_q_capability_characteristic.dtype == pd.Int64Dtype()
+    assert isinstance(net.gen.id_q_capability_characteristic.at[0], np.int64)
+    assert pd.notna(net.gen.id_q_capability_characteristic.at[0])
+    assert all(col in net.q_capability_characteristic.columns for col in ["q_max_characteristic",
+                                                                                "q_min_characteristic"])
+    assert isinstance(net.q_capability_characteristic.loc
+                      [net.gen.id_q_capability_characteristic.at[0], 'q_max_characteristic'],
+                      Characteristic)
+    assert isclose(net.q_capability_characteristic.at
+                   [net.gen.id_q_capability_characteristic.at[0], 'q_max_characteristic'](-2).item(), 150,
+                   rel_tol=1e-9)
+    assert pd.notna(net.q_capability_characteristic.at
+                    [net.gen.id_q_capability_characteristic.at[0], 'q_min_characteristic'])
+
+    # Create q_capability_characteristic again for the same gen based on the updated q_capability_curve_table
+    new_rows = pd.DataFrame(
+        {'id_q_capability_curve': [1, 1, 1, 1, 1], 'p_mw': [0.0, 30.0, 50.0, 70.0, 130],
+         'q_min_mvar': [-29.0, -27, -26.0, -25.0, -20.0], 'q_max_mvar': [141.0, 141.0, 137.0, 134.0, 128.0]})
+    net["q_capability_curve_table"] = pd.concat([net["q_capability_curve_table"], new_rows], ignore_index=True)
+    net.gen.id_q_capability_characteristic.at[0] = 1
+    create_q_capability_characteristics_object(net)
+    assert len(net.q_capability_characteristic) == 2
+    assert net.gen.at[0, "id_q_capability_characteristic"] == 1
+    assert isinstance(net.q_capability_characteristic.loc
+                      [net.gen.id_q_capability_characteristic.at[0], 'q_max_characteristic'],
+                      Characteristic)
+
+    assert isinstance(net.q_capability_characteristic.loc
+                      [net.gen.id_q_capability_characteristic.at[0], 'q_min_characteristic'],
+                      Characteristic)
+
+    assert isclose(net.q_capability_characteristic.at[
+                       net.gen.id_q_capability_characteristic.at[0], 'q_max_characteristic'](130).item(), 128.0,
+                   rel_tol=1e-9)
+    assert isclose(net.q_capability_characteristic.at[
+                       net.gen.id_q_capability_characteristic.at[0], 'q_max_characteristic'](0).item(), 141.0,
+                   rel_tol=1e-9)
+    assert pd.notna(net.q_capability_characteristic.loc
+                    [net.gen.id_q_capability_characteristic.at[0], 'q_max_characteristic'])
+    assert pd.notna(net.q_capability_characteristic.loc
+                    [net.gen.id_q_capability_characteristic.at[0], 'q_min_characteristic'])
+
+
 @pytest.mark.parametrize("file_io", (False, True), ids=("Without JSON I/O", "With JSON I/O"))
 def test_characteristic(file_io):
-    net = pp.create_empty_network()
+    net = create_empty_network()
     c1 = SplineCharacteristic(net, [0, 1, 2], [0, 1, 4], fill_value=(0, 4))
     c2 = SplineCharacteristic(net, [0, 1, 2], [0, 1, 4], interpolator_kind="Pchip", extrapolate=False)
     c3 = SplineCharacteristic(net, [0, 1, 2], [0, 1, 4], interpolator_kind="hello")
-    c4 = LogSplineCharacteristic(
-        net, [0, 1, 2], [0, 1, 4], interpolator_kind="Pchip", extrapolate=False)
+    c4 = LogSplineCharacteristic(net, [0,1,2], [0, 1, 4], interpolator_kind="Pchip", extrapolate=False)
 
     if file_io:
-        net_copy = pp.from_json_string(pp.to_json(net))
+        net_copy = from_json_string(to_json(net))
         c1, c2, c3, c4 = net_copy.characteristic.object.values
 
     assert np.allclose(c1([-1]), [0], rtol=0, atol=1e-6)
@@ -382,18 +445,17 @@ def test_characteristic(file_io):
 
 
 def test_log_characteristic_property():
-    net = pp.create_empty_network()
-    c = LogSplineCharacteristic(net, [10, 1000, 10000], [1000, 0.1, 0.001],
-                                interpolator_kind="Pchip", extrapolate=False)
+    net = create_empty_network()
+    c = LogSplineCharacteristic(net, [10, 1000, 10000], [1000, 0.1, 0.001], interpolator_kind="Pchip", extrapolate=False)
     c._x_vals
     c([2])
 
 
 def test_geo_accessor_geojson():
-    net = pp.create_empty_network()
-    b1 = pp.create_bus(net, 10, geodata=(1, 1))
-    b2 = pp.create_bus(net, 10, geodata=(2, 2))
-    l = pp.create_lines(
+    net = create_empty_network()
+    b1 = create_bus(net, 10, geodata=(1, 1))
+    b2 = create_bus(net, 10, geodata=(2, 2))
+    l = create_lines(
         net,
         [b1, b1],
         [b2, b2],
@@ -401,7 +463,7 @@ def test_geo_accessor_geojson():
         std_type="48-AL1/8-ST1A 10.0",
         geodata=[[(1, 1), (2, 2), (3, 3)], [(1, 1), (1, 2)]],
     )
-    pp.create_line(net, b1, b2, 1.5, std_type="48-AL1/8-ST1A 10.0")
+    create_line(net, b1, b2, 1.5, std_type="48-AL1/8-ST1A 10.0")
 
     assert len(net.line.geo.geojson._coords) == 2
     assert np.array_equal(net.line.geo.geojson._coords.at[l[0]], [[1, 1], [2, 2], [3, 3]])
@@ -420,7 +482,7 @@ def test_geo_accessor_geojson():
 
 @pytest.mark.skipif(not GEOPANDAS_INSTALLED, reason="geopandas is not installed")
 def test_geo_accessor_geopandas():
-    net = pp.networks.mv_oberrhein()
+    net = mv_oberrhein()
     reference_point = (7.781067, 48.389774)
     radius_m = 2200
     circle_polygon = gpd.GeoSeries([shapely.geometry.Point(reference_point)],

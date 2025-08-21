@@ -8,13 +8,16 @@ from typing import Dict, List
 
 import pandas as pd
 
-import pandapower as pp
-import pandapower.auxiliary
+from pandapower.toolbox.grid_modification import fuse_buses
+from pandapower.run import runpp
+from pandapower.create import create_empty_network
+from pandapower.auxiliary import pandapowerNet
 from .convert_measurements import CreateMeasurements
 from .. import cim_classes
 from .. import cim_tools
 from .. import pp_tools
 from ..other_classes import ReportContainer, Report, LogLevel, ReportCode
+from pandapower.control.util.auxiliary import create_q_capability_characteristics_object
 
 logger = logging.getLogger('cim.cim2pp.build_pp_net')
 
@@ -28,7 +31,7 @@ class CimConverter:
         self.cim_parser: cim_classes.CimParser = cim_parser
         self.kwargs = kwargs
         self.cim: Dict[str, Dict[str, pd.DataFrame]] = self.cim_parser.get_cim_dict()
-        self.net: pandapower.auxiliary.pandapowerNet = pp.create_empty_network()
+        self.net: pandapowerNet = create_empty_network()
         self.bus_merge: pd.DataFrame = pd.DataFrame()
         self.power_trafo2w: pd.DataFrame = pd.DataFrame()
         self.power_trafo3w: pd.DataFrame = pd.DataFrame()
@@ -66,9 +69,9 @@ class CimConverter:
                                       ignore_index=True, sort=False)
 
     # noinspection PyShadowingNames
-    def convert_to_pp(self, convert_line_to_switch: bool = False, line_r_limit: float = 0.1,
-                      line_x_limit: float = 0.1, **kwargs) \
-            -> pandapower.auxiliary.pandapowerNet:
+    def convert_to_pp(
+            self, convert_line_to_switch: bool = False, line_r_limit: float = 0.1, line_x_limit: float = 0.1, **kwargs
+    ) -> pandapowerNet:
         """
         Build the pandapower net.
 
@@ -110,7 +113,7 @@ class CimConverter:
         # --------- convert switches ---------
         self.classes_dict['switchesCim16'](cimConverter=self).convert_switches_cim16()
         # --------- convert loads ---------
-        self.classes_dict['energyConcumersCim16'](cimConverter=self).convert_energy_consumers_cim16()
+        self.classes_dict['energyConcumersCim16'](cimConverter=self).convert_energy_consumers_cim16()  #todo  correction of spelling mistake
         self.classes_dict['conformLoadsCim16'](cimConverter=self).convert_conform_loads_cim16()
         self.classes_dict['nonConformLoadsCim16'](cimConverter=self).convert_non_conform_loads_cim16()
         self.classes_dict['stationSuppliesCim16'](cimConverter=self).convert_station_supplies_cim16()
@@ -130,6 +133,9 @@ class CimConverter:
         self.classes_dict['equivalentInjectionsCim16'](cimConverter=self).convert_equivalent_injections_cim16()
         # --------- convert transformers ---------
         self.classes_dict['powerTransformersCim16'](cimConverter=self).convert_power_transformers_cim16()
+
+        # --------- create reactive power capability characteristics ---------
+        create_q_capability_characteristics_object(self.net)
 
         # create the geo coordinates
         if self.cim['gl']['Location'].index.size > 0 and self.cim['gl']['PositionPoint'].index.size > 0:
@@ -167,7 +173,7 @@ class CimConverter:
             level=LogLevel.INFO, code=ReportCode.INFO, message="Running a power flow."))
         if kwargs.get('run_powerflow', False):
             try:
-                pp.runpp(self.net)
+                runpp(self.net)
             except Exception as e:
                 self.logger.error("Failed running a powerflow.")
                 self.logger.exception(e)
@@ -216,7 +222,7 @@ class CimConverter:
         if bus_drop.index.size > 0:
             for b1, b2 in bus_drop[['b1', 'b2']].itertuples(index=False):
                 self.logger.info("Fusing buses: b1: %s, b2: %s" % (b1, b2))
-                pp.fuse_buses(self.net, b1, b2, drop=True, fuse_bus_measurements=True)
+                fuse_buses(self.net, b1, b2, drop=True, fuse_bus_measurements=True)
         # finally a fix for EquivalentInjections: If an EquivalentInjection is attached to boundary node, check if the
         # network behind this boundary node is attached. In this case, disable the EquivalentInjection.
         ward_t = self.net.ward.copy()

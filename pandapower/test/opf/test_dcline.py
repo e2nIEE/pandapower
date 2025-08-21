@@ -3,41 +3,40 @@
 # Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-
 import pytest
 from numpy import array, allclose, isclose
 
-import pandapower as pp
+from pandapower.auxiliary import OPFNotConverged
+from pandapower.create import create_empty_network, create_bus, create_ext_grid, create_line, create_dcline, \
+    create_load, create_pwl_cost, create_poly_cost
+from pandapower.run import runopp
 from pandapower.test.consistency_checks import consistency_checks
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
 
 @pytest.fixture
 def dcline_net():
-    net = pp.create_empty_network()
+    net = create_empty_network()
 
-    b5 = pp.create_bus(net, 380)
-    b3 = pp.create_bus(net, 380)
-    b2 = pp.create_bus(net, 380)
-    b4 = pp.create_bus(net, 380)
-    b1 = pp.create_bus(net, 380)
+    b5 = create_bus(net, 380)
+    b3 = create_bus(net, 380)
+    b2 = create_bus(net, 380)
+    b4 = create_bus(net, 380)
+    b1 = create_bus(net, 380)
 
-    pp.create_ext_grid(net, b1, 1.02, min_p_mw=0., max_p_mw=1e9)
-    pp.create_line(net, b1, b2, 30, "490-AL1/64-ST1A 380.0")
-    pp.create_dcline(net, name="dc line", from_bus=b2, to_bus=b3, p_mw=200, loss_percent=1.0,
-                     loss_mw=0.5, vm_from_pu=1.01, vm_to_pu=1.012, max_p_mw=1000,
-                     in_service=True, index=4)
-    pp.create_line(net, b3, b4, 20, "490-AL1/64-ST1A 380.0")
+    create_ext_grid(net, b1, 1.02, min_p_mw=0., max_p_mw=1e9)
+    create_line(net, b1, b2, 30, "490-AL1/64-ST1A 380.0")
+    create_dcline(net, name="dc line", from_bus=b2, to_bus=b3, p_mw=200, loss_percent=1.0,
+                  loss_mw=0.5, vm_from_pu=1.01, vm_to_pu=1.012, max_p_mw=1000,
+                  in_service=True, index=4)
+    create_line(net, b3, b4, 20, "490-AL1/64-ST1A 380.0")
 
-    pp.create_load(net, bus=b4, p_mw=800, controllable=False)
-    pp.create_line(net, b4, b5, 20, "490-AL1/64-ST1A 380.0")
-    pp.create_ext_grid(net, b5, 1.02, min_p_mw=0., max_p_mw=1e9)
+    create_load(net, bus=b4, p_mw=800, controllable=False)
+    create_line(net, b4, b5, 20, "490-AL1/64-ST1A 380.0")
+    create_ext_grid(net, b5, 1.02, min_p_mw=0., max_p_mw=1e9)
 
     return net
 
@@ -45,9 +44,9 @@ def dcline_net():
 def get_delta_try_except(net):
     for delta in [1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10, 1e-11, 1e-12]:
         try:
-            pp.runopp(net, delta=delta)
+            runopp(net, delta=delta)
             return delta
-        except pp.OPFNotConverged:
+        except OPFNotConverged:
             continue
     return 1e-10
 
@@ -56,12 +55,12 @@ def get_delta_try_except(net):
                           " python version. Should be reworked.")
 def test_dispatch1(dcline_net):
     net = dcline_net
-    pp.create_pwl_cost(net, 0, "ext_grid", [[-1e12, 1e9, 100]])
-    pp.create_pwl_cost(net, 1, "ext_grid", [[-1e12, 1e9, 80]])
+    create_pwl_cost(net, 0, "ext_grid", [[-1e12, 1e9, 100]])
+    create_pwl_cost(net, 1, "ext_grid", [[-1e12, 1e9, 80]])
     net.bus["max_vm_pu"] = 2
     net.bus["min_vm_pu"] = 0  # needs to be constrained more than default
     net.line["max_loading_percent"] = 1000  # does not converge if unconstrained
-    pp.runopp(net, delta=1e-8)
+    runopp(net, delta=1e-8)
     consistency_checks(net)
     rel_loss_expect = (net.res_dcline.pl_mw - net.dcline.loss_mw) / \
                       (net.res_dcline.p_from_mw - net.res_dcline.pl_mw) * 100
@@ -81,17 +80,17 @@ def test_dispatch1(dcline_net):
                           "ext_grid -> fail. See build_gen() in line 111 + 112")
 def test_dcline_dispatch2(dcline_net):
     net = dcline_net
-    pp.create_poly_cost(net, 0, "ext_grid", cp1_eur_per_mw=80)
-    pp.create_poly_cost(net, 1, "ext_grid", cp1_eur_per_mw=100)
-    #    pp.create_poly_cost(net, 0, "ext_grid", array([.08, 0]))
-    #    pp.create_poly_cost(net, 1, "ext_grid", array([.1, 0]))
+    create_poly_cost(net, 0, "ext_grid", cp1_eur_per_mw=80)
+    create_poly_cost(net, 1, "ext_grid", cp1_eur_per_mw=100)
+    #    create_poly_cost(net, 0, "ext_grid", array([.08, 0]))
+    #    create_poly_cost(net, 1, "ext_grid", array([.1, 0]))
 
     net.bus["max_vm_pu"] = 2
     net.bus["min_vm_pu"] = 0  # needs to be constrained more than default
     net.line["max_loading_percent"] = 1000  # does not converge if unconstrained
 
-    # pp.runopp(net, delta=get_delta_try_except(net))
-    pp.runopp(net)
+    # runopp(net, delta=get_delta_try_except(net))
+    runopp(net)
     consistency_checks(net, rtol=1e-3)
     rel_loss_expect = (net.res_dcline.pl_mw - net.dcline.loss_mw) / \
                       (net.res_dcline.p_from_mw - net.res_dcline.pl_mw) * 100
@@ -119,11 +118,11 @@ def test_dcline_dispatch2(dcline_net):
                           "ext_grid -> fail. See build_gen() in line 111 + 112")
 def test_dcline_dispatch3(dcline_net):
     net = dcline_net
-    pp.create_poly_cost(net, 4, "dcline", cp1_eur_per_mw=1.5)
+    create_poly_cost(net, 4, "dcline", cp1_eur_per_mw=1.5)
     net.bus["max_vm_pu"] = 1.03  # needs to be constrained more than default
     net.line["max_loading_percent"] = 1000  # does not converge if unconstrained
-    # pp.runopp(net, delta=get_delta_try_except(net))
-    pp.runopp(net)
+    # runopp(net, delta=get_delta_try_except(net))
+    runopp(net)
     consistency_checks(net, rtol=1e-1)
 
     # dc line is not dispatched because of the assigned costs
@@ -131,9 +130,9 @@ def test_dcline_dispatch3(dcline_net):
     assert all(net.res_ext_grid.p_mw.values > 0)
 
     # costs for ext_grid at the end of the DC line get double the costs of DC line transfer
-    pp.create_poly_cost(net, 1, "ext_grid", cp1_eur_per_mw=2000)
-    pp.runopp(net)
-    # pp.runopp(net, delta=get_delta_try_except(net))
+    create_poly_cost(net, 1, "ext_grid", cp1_eur_per_mw=2000)
+    runopp(net)
+    # runopp(net, delta=get_delta_try_except(net))
 
     # now the total power is supplied through the DC line
     assert (net.res_dcline.at[4, "p_to_mw"]) < 1e3

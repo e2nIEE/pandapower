@@ -6,14 +6,11 @@
 import numpy as np
 
 from pandapower.auxiliary import ensure_iterability
-from pandapower.control.controller.pq_control import PQController
-from pandapower.control.controller.DERController.QModels import QModel
 from pandapower.control.controller.DERController.PQVAreas import BaseArea, PQVArea4110, QVArea4110
+from pandapower.control.controller.DERController.QModels import QModel
+from pandapower.control.controller.pq_control import PQController
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -47,67 +44,50 @@ class DERController(PQController):
         the elements (called P_{b,installed} in the VDE AR N standards). Scalings and limits are
         usually relative to that (sn_mva) values.
 
-    INPUT:
-        **net** (pandapower net)
-
-        **element_index** (int[]) - IDs of the controlled elements
-
-    OPTIONAL:
-        **element** (str, "sgen") - element type which is controlled
-
-        **q_model** (object, None) - an q_model, such as provided in this file, should be passed to
-        model how the q value should be determined.
-
-        **pqv_area** (object, None) - an pqv_area, such as provided in this file, should be passed
-        to model q values are allowed.
-
-        **saturate_sn_mva** (float, NaN) - Maximum apparent power of the inverter. If given, the
+    :param pandapowerNet net: The pandapower network
+    :param list[int] element_index: IDs of the controlled elements
+    :param Optional[str] element: element type which is controlled (default: "sgen")
+    :param Optional q_model: an q_model, such as provided in this file, should be passed to
+        model how the q value should be determined. (default: None)
+    :param Optional pqv_area: an pqv_area, such as provided in this file, should be passed
+        to model q values are allowed. (default: None)
+    :param Optional[float] saturate_sn_mva: Maximum apparent power of the inverter. If given, the
         p or q values (depending on q_prio) are reduced to this maximum apparent power. Usually,
         it is not necessary to pass this values since the inverter needs to be dimensioned to provide
-        the standardized reactive power requirements.
-
-        **q_prio** (bool, True) - If True, the active power is reduced first in case of power
-        reduction due to saturate_sn_mva. Otherwise, the reactive power is reduced first.
-
-        **damping_coef** (float, 2) - damping coefficient to influence the power updating process
+        the standardized reactive power requirements. (default: NaN)
+    :param Optional[bool] q_prio: If True, the active power is reduced first in case of power
+        reduction due to saturate_sn_mva. Otherwise, the reactive power is reduced first. (default: True)
+    :param Optional[float] damping_coef: damping coefficient to influence the power updating process
         of the control loop. A higher value mean slower changes of p and q towards the latest target
-        values
-
-        **max_p_error** (float, 0.0001) - Maximum absolute error of active power in MW
-
-        **max_q_error** (float, 0.0001) - Maximum absolute error of reactive power in Mvar
-
-        **pq_simultaneity_factor** (float, 1.0) - Simultaneity factor applied to P and Q
-
-        **data_source** ( , None) - A DataSource that contains profiles
-
-        **p_profile** (str[], None) - The profile names of the controlled elements in the data
-        source for active power time series values
-
-        **profile_from_name** (bool, False) - If True, the profile names of the controlled elements
+        values (default: 2.0)
+    :param Optional[float] max_p_error: Maximum absolute error of active power in MW (default: 0.0001)
+    :param Optional[float] max_q_error: Maximum absolute error of reactive power in Mvar (default: 0.0001)
+    :param Optional[float] pq_simultaneity_factor: Simultaneity factor applied to P and Q (default: 1.0)
+    :param Optional data_source: A DataSource that contains profiles (default: None)
+    :param Optional[list[str]] p_profile: The profile names of the controlled elements in the data
+        source for active power time series values (default: None)
+    :param Optional[bool] profile_from_name: If True, the profile names of the controlled elements
         in the data source for active power time series values will be set be the name of the
         controlled elements, e.g. for controlled sgen "SGEN_1", the active power profile "P_SGEN_1"
-        is applied
+        is applied (default: False)
+    :param Optional[float] profile_scale: A scaling factor applied to the values of profiles (default: 1.0)
+    :param Optional[bool] in_service: Indicates if the controller is currently in_service (default: True)
+    :param Optional[bool] ts_absolute: Whether the time step values are absolute power values or
+        scaling factors (default: True)
 
-        **profile_scale** (float, 1.0) - A scaling factor applied to the values of profiles
-
-        **in_service** (bool, True) - Indicates if the controller is currently in_service
-
-        **ts_absolute** (bool, True) - Whether the time step values are absolute power values or
-        scaling factors
-
-    Example
-    -------
-    >>> import pandapower as pp
-    >>> import pandapower.control.controller.DERController as DERModels
-    >>> net = create_cigre_network_mv(with_der=True)
-    >>> controlled_sgens = pp.control.DERController(
-    ...     net, net.sgen.index,
-    ...     q_model=DERModels.QModelCosphiP(cosphi=-0.95),
-    ...     pqv_area=DERModels.PQVArea4120V2()
-    ...     )
-    ... pp.runpp(net, run_control=True)
+    :example:
+        >>> from pandapower.networks.cigre_networks import create_cigre_network_mv
+        >>> from pandapower.control.controller.DERController import DERController, QModelCosphiP, PQVArea4120V2
+        >>> from pandapower.run import runpp
+        >>> net = create_cigre_network_mv(with_der=True)
+        >>> controlled_sgens = DERController(
+        ...     net, net.sgen.index,
+        ...     q_model=QModelCosphiP(cosphi=-0.95),
+        ...     pqv_area=PQVArea4120V2()
+        ... )
+        >>> runpp(net, run_control=True)
     """
+
     def __init__(self, net, element_index, element="sgen",
                  q_model=None, pqv_area=None,
                  saturate_sn_mva=np.nan, q_prio=True, damping_coef=2,
@@ -124,8 +104,8 @@ class DERController(PQController):
                          profile_scale=profile_scale, in_service=in_service,
                          ts_absolute=ts_absolute, initial_run=True,
                          drop_same_existing_ctrl=drop_same_existing_ctrl,
-                         matching_params=matching_params, initial_powerflow=False,
-                         order=order, level=level, **kwargs)
+                         matching_params=matching_params, 
+                         order=order, level=level, **kwargs) 
 
         # --- init DER Model params
         self.q_model = q_model
@@ -157,13 +137,13 @@ class DERController(PQController):
         self.p_series_mw = self.p_mw
         self.q_series_mvar = self.q_mvar
 
-#        self.write_to_net(net)
+    #        self.write_to_net(net)
 
     def is_converged(self, net):
 
         self._determine_target_powers(net)
 
-        return np.allclose(self.target_q_mvar, self.q_mvar, atol=self.max_q_error) and\
+        return np.allclose(self.target_q_mvar, self.q_mvar, atol=self.max_q_error) and \
             np.allclose(self.target_p_mw, self.p_mw, atol=self.max_p_error)
 
     def control_step(self, net):
@@ -207,7 +187,7 @@ class DERController(PQController):
     def _step_q(self, p_series_mw=None, q_series_mvar=None, vm_pu=None):
         """Q priority: Q setpoint > Q model > Q series"""
         if self.q_model is not None:
-            q_pu = self.q_model.step(vm_pu=vm_pu, p_pu=p_series_mw/self.sn_mva)
+            q_pu = self.q_model.step(vm_pu=vm_pu, p_pu=p_series_mw / self.sn_mva)
         else:
             if q_series_mvar is None:
                 raise Exception("No Q_model and no q_profile available.")
@@ -232,28 +212,27 @@ class DERController(PQController):
 
     def _saturate_sn_mva_step(self, p_pu, q_pu, vm_pu):
         # Saturation on SnMVA according to priority mode
-        sat_s_pu = self.saturate_sn_mva / self.sn_mva # sat_s is relative to sn_mva
-        to_saturate = p_pu**2 + q_pu**2 > sat_s_pu**2
+        sat_s_pu = self.saturate_sn_mva / self.sn_mva  # sat_s is relative to sn_mva
+        to_saturate = p_pu ** 2 + q_pu ** 2 > sat_s_pu ** 2
         if any(to_saturate):
             if self.q_prio:
                 if (
-                    isinstance(self.pqv_area, PQVArea4110) or isinstance(self.pqv_area, QVArea4110)
-                   ) and any(
+                        isinstance(self.pqv_area, PQVArea4110) or isinstance(self.pqv_area, QVArea4110)
+                ) and any(
                     (0.95 < vm[to_saturate]) & (vm[to_saturate] < 1.05) &
                     (-0.328684 < q_pu[to_saturate]) & any(q_pu[to_saturate] < 0.328684)
-                   ):
+                ):
                     logger.warning(f"Such kind of saturation is performed that is not in line with"
                                    " VDE AR N 4110: p reduction within 0.95 < vm < 1.05 and "
                                    "0.95 < cosphi.")
                 q_pu[to_saturate] = np.clip(q_pu[to_saturate], -sat_s_pu[to_saturate],
                                             sat_s_pu[to_saturate])
-                p_pu[to_saturate] = np.sqrt(sat_s_pu[to_saturate]**2 - q_pu[to_saturate]**2)
+                p_pu[to_saturate] = np.sqrt(sat_s_pu[to_saturate] ** 2 - q_pu[to_saturate] ** 2)
             else:
                 p_pu[to_saturate] = np.clip(p_pu[to_saturate], 0., sat_s_pu[to_saturate])
-                q_pu[to_saturate] = np.sqrt(sat_s_pu[to_saturate]**2 - p_pu[to_saturate]**2) * \
-                    np.sign(q_pu[to_saturate])
+                q_pu[to_saturate] = np.sqrt(sat_s_pu[to_saturate] ** 2 - p_pu[to_saturate] ** 2) * \
+                                    np.sign(q_pu[to_saturate])
         return p_pu, q_pu
-
 
     def __str__(self):
         el_id_str = f"len(element_index)={len(self.element_index)}" if len(self.element_index) > 6 \

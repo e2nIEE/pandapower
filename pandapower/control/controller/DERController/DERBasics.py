@@ -7,10 +7,7 @@ import numpy as np
 
 from pandapower.toolbox.power_factor import cosphi_to_pos, cosphi_from_pos
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 

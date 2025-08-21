@@ -26,7 +26,8 @@ class UCTEParser:
         self.logger = logging.getLogger(self.__class__.__name__)
         self.ucte_elements = ["##C", "##N", "##L", "##T", "##R", "##TT", "##E"]
         self.data: Dict[str, pd.DataFrame] = dict()
-        self.date: datetime.datetime = datetime.datetime.utcnow()
+        self.date: datetime.datetime = datetime.datetime.now(datetime.timezone.utc)
+        self.bus_ucte_countries : list = list()
 
     def parse_file(self, path_ucte_file: str = None) -> bool:
         """
@@ -59,9 +60,16 @@ class UCTEParser:
         with open(self.path_ucte_file, "r") as f:
             # current_element contains the UCTE element type which is actually in parse progress, e.g. '##N'
             current_element = ""
+            ucte_country = ""
+            is_in_N = False
             # iterate through the origin input file
             for row in f.readlines():
                 row = row.strip()
+                if row.startswith("##N"):
+                    is_in_N = True
+                elif any([row.startswith(other_ucte_element) for other_ucte_element in
+                          self.ucte_elements if other_ucte_element != "##N"]):
+                    is_in_N = False
                 if row in self.ucte_elements:
                     # the start of a new UCTE element type in the origin file
                     current_element = row
@@ -71,7 +79,10 @@ class UCTEParser:
                     raw_input_dict[current_element].append(row)
                 elif row.startswith("##"):
                     self.logger.debug("Skipping row %s" % row)
+                    ucte_country = row[3:] if row[2] == "Z" else row[2:] # usually country zones are marked by ##Z
                 else:
+                    if is_in_N:
+                        self.bus_ucte_countries.append(ucte_country)
                     raw_input_dict[current_element].append(row)
         self._create_df_from_raw(raw_input_dict)
         self.logger.info(
@@ -216,6 +227,7 @@ class UCTEParser:
         df["three_ph_short_circuit_power"] = df[0].str[111:118].str.strip()
         df["x_r_ratio"] = df[0].str[119:126].str.strip()
         df["type"] = df[0].str[127:128].str.strip()
+        df["ucte_country"] = self.bus_ucte_countries
 
     def _split_connections_from_raw(self, element_type: str):
         # get the connections to nodes (node1 and node2) from the asset for e.g. ##L or ##T

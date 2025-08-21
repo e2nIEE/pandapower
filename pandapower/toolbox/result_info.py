@@ -11,10 +11,7 @@ import pandas as pd
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 from pandapower.toolbox import pp_elements
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 

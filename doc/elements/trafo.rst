@@ -196,7 +196,7 @@ tap_changer_type "Symmetrical".
    :nowrap:
 
    \begin{align*}
-    n_{tap} = 1 + (tap\_pos - tap\_neutral) \cdot \frac{tap\_st\_percent}{100} \exp(\mathrm j \phi)
+    n_{tap} = 1 + (tap\_pos - tap\_neutral) \cdot \frac{tap\_st\_percent}{100} e^{(\mathrm j \phi)}
     \end{align*}
 
 **Ideal phase shifter**
@@ -249,14 +249,17 @@ Trafo characteristic table
 ----------------------------
 
 A transformer characteristic table (trafo_characteristic_table) can be used to adjust the transformer parameters
-(voltage ratio, angle, impedance) according to the selected tap position. This lookup table is created automatically
+(voltage ratio, angle, impedance (Note: Zero sequence components and adjust nominal power factor are also possible
+entries, but not yet implemented)) according to the selected tap position. This lookup table is created automatically
 from version 3.0 onwards through the CIM CGMES to pandapower converter (if this information is available in the EQ
-profile), or the user may define this table manually. The id_characteristic_table variable in net.trafo references
-the id_characteristic column in net.trafo_characteristic_table per transformer.
+profile), the powerfactory to pandapower converter, or the user may define this table manually. The
+id_characteristic_table variable in net.trafo references the id_characteristic column in net.trafo_characteristic_table
+per transformer.
 
 If the tap_dependency_table variable in net.trafo is set to True, this indicates that there is a corresponding
 characteristic available in net.trafo_characteristic_table, which overwrites the default trafo parameters
-tap_step_percent, tap_step_degree, vk_percent and vkr_percent.
+tap_step_percent, tap_step_degree, vk_percent and vkr_percent. If tap_dependency_table is set to True, tapat_star_point
+has no effect.
 
 The below table provides an example trafo_characteristic_table, populated for two 2-winding transformers.
 

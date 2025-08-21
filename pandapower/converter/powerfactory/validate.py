@@ -2,14 +2,12 @@
 
 import pandas as pd
 import numpy as np
-import pandapower as pp
-from pandapower.toolbox import replace_zero_branches_with_switches
-from pandapower import diagnostic
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+from pandapower.run import runpp
+from pandapower.pf.runpp_3ph import runpp_3ph
+from pandapower.toolbox import replace_zero_branches_with_switches
+
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -265,10 +263,10 @@ def validate_pf_conversion(net, is_unbalanced=False, **kwargs):
             kwargs.pop(arg)
     if is_unbalanced:
         logger.info("running pandapower 3ph loadflow")
-        pp.runpp_3ph(net, trafo_model="t", check_connectivity=True, run_control=run_control, **kwargs)
+        runpp_3ph(net, trafo_model="t", check_connectivity=True, run_control=run_control, **kwargs)
     else:
         logger.info("running pandapower loadflow")
-        pp.runpp(net, trafo_model="t", check_connectivity=True, run_control=run_control, **kwargs)
+        runpp(net, trafo_model="t", check_connectivity=True, run_control=run_control, **kwargs)
 
     all_diffs = dict()
     logger.info('pandapower net converged: %s' % net.converged)
@@ -280,9 +278,8 @@ def validate_pf_conversion(net, is_unbalanced=False, **kwargs):
     in_both = np.setdiff1d(net.bus.index, only_in_pandapower)
 
     pf_closed = pf_results['pf_switch_status']
-    wrong_switches = net.res_switch.loc[
-            pf_closed != net.switch.loc[pf_closed.index, 'closed']
-    ].index.values if 'res_switch' in net.keys() else []
+    wrong_switches = net.res_switch.loc[pf_closed != net.switch.loc[pf_closed.index, 'closed']].index.values if 'res_switch' in net.keys() else []
+
     if len(net.switch) > 0:
         logger.info('%d switches are wrong: %s' % (len(wrong_switches), wrong_switches))
 
