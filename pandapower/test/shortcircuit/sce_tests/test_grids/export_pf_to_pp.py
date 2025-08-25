@@ -21,7 +21,7 @@ net_dict = {}
 all_diff_dict = {}
 
 ## convert one grif
-prj_name = '4_twenty_bus_radial_grid_ynyn_gen'
+prj_name = '1_four_bus_radial_grid_gen'
 net = from_pfd(app, prj_name=prj_name)
 to_json(net, rf"{folder}\\{prj_name}.json")
 
