@@ -307,7 +307,7 @@ def _get_bus_results(net, ppc_0, ppc_1, ppc_2, bus):
     elif net["_options"]["fault"] == "LL":
         net.res_bus_sc["ikss_ka"] = ppc_1["bus"][ppc_index, IKSSV] + ppc_1["bus"][ppc_index, IKSSC]
         net.res_bus_sc["skss_mw"] = ppc_1["bus"][ppc_index, SKSS]
-        sequence_relevant = ("",)
+        sequence_relevant = range(3)
     else:
         net.res_bus_sc["ikss_ka"] = ppc_1["bus"][ppc_index, IKSSV] + ppc_1["bus"][ppc_index, IKSSC]
         net.res_bus_sc["skss_mw"] = ppc_1["bus"][ppc_index, SKSS]
@@ -316,8 +316,14 @@ def _get_bus_results(net, ppc_0, ppc_1, ppc_2, bus):
         ppc_s = ppc_sequence[sequence]
         if net["_options"]["fault"] == "LL":
             # TODO: ask Marco where this can be done before results are written into tables
-            net.res_bus_sc[f"rk{sequence}_ohm"] = ppc_s["bus"][ppc_index, R_EQUIV_OHM] + net["_options"]["r_fault_ohm"]/2
-            net.res_bus_sc[f"xk{sequence}_ohm"] = ppc_s["bus"][ppc_index, X_EQUIV_OHM] + net["_options"]["x_fault_ohm"]/2
+            if sequence in [1, 2]:
+                fault_ohm_factor = 2
+            elif sequence == 0:
+                fault_ohm_factor = 1
+            net.res_bus_sc[f"rk{sequence}_ohm"] = (ppc_s["bus"][ppc_index, R_EQUIV_OHM] +
+                                                   net["_options"]["r_fault_ohm"]/fault_ohm_factor)
+            net.res_bus_sc[f"xk{sequence}_ohm"] = (ppc_s["bus"][ppc_index, X_EQUIV_OHM] +
+                                                   net["_options"]["x_fault_ohm"]/fault_ohm_factor)
         else:
             net.res_bus_sc[f"rk{sequence}_ohm"] = ppc_s["bus"][ppc_index, R_EQUIV_OHM]
             net.res_bus_sc[f"xk{sequence}_ohm"] = ppc_s["bus"][ppc_index, X_EQUIV_OHM]

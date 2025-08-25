@@ -25,6 +25,10 @@ from pandapower.build_branch import _calc_tap_from_dataframe, _transformer_corre
     _calc_impedance_parameters_from_dataframe, _build_tcsc_ppc, _build_branch_dc_ppc
 from pandapower.build_branch import _switch_branches, _branches_with_oos_buses, _initialize_branch_lookup, _end_temperature_correction_factor
 from pandapower.pd2ppc import _ppc2ppci, _init_ppc
+from pandapower.shortcircuit.ppc_conversion import _add_gen_sc_z_kg_ks
+from pandapower.pypower.idx_bus_sc import C_MIN, C_MAX, K_G, K_SG, V_G, \
+    PS_TRAFO_IX, GS_P, BS_P, KAPPA, GS_GEN, BS_GEN
+from pandapower.pypower.idx_brch_sc import K_T, K_ST
 
 BIG_NUMBER = 1e20
 
@@ -67,6 +71,10 @@ def _pd2ppc_zero(net, k_st, sequence=0):
     # generates "internal" ppci format (for powerflow calc) from "external" ppc format and updates the bus lookup
     # Note: Also reorders buses and gens in ppc
     ppci = _ppc2ppci(ppc, net)
+    gen_bus_mask = np.isnan(ppci["bus"][:, K_SG]) & (~np.isnan(ppci["bus"][:, K_G]))
+    ppci["bus"][np.ix_(gen_bus_mask, [GS_P, BS_P])] /= ppci["bus"][np.ix_(gen_bus_mask, [K_G])]
+    ppci["bus"][np.ix_(gen_bus_mask, [GS, BS])] += (1 / ppci["bus"][np.ix_(gen_bus_mask, [K_G])] - 1) * \
+                                                   ppc["bus"][np.ix_(gen_bus_mask, [GS_GEN, BS_GEN])]
     # net._ppc0 = ppc    <--Obsolete. now covered in _init_ppc
     return ppc, ppci
 
@@ -395,21 +403,64 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
 
 
 def _add_gen_sc_impedance_zero(net, ppc):
-    mode = net["_options"]["mode"]
+    """
+    This function modifies the power flow relevant impedance values for generators in a power network by calculating
+    the zero-sequence impedance and updating the corresponding bus entries in the power flow case (ppc).
+
+    Parameters:
+    - net: The pandapower network data structure containing generator and bus information.
+    - ppc: The power flow case data structure that will be updated with calculated values.
+    """
+
+    mode = net["_options"]["mode"]  # Retrieve operating mode
+    case = net["_options"]["case"]  # Retrieve the case type (e.g., min, max)
+
+    # Early exit if the mode is 'pf_3ph' (three-phase power flow) as there is no zero sequence parameters necessary
     if mode == 'pf_3ph':
         return
 
-    eg = net["gen"][net._is_elements["gen"]]
-    if len(eg) == 0:
+    # Extract generator data
+    gen = net["gen"][net._is_elements["gen"]]
+    if len(gen) == 0:  # If no generators are present, exit the function
         return
-    eg_buses = eg.bus.values
-    bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    eg_buses_ppc = bus_lookup[eg_buses]
 
-    y0_gen = 1 / (1e3 + 1e3*1j)
-    # buses, gs, bs = aux._sum_by_group(eg_buses_ppc, y0_gen.real, y0_gen.imag)
-    ppc["bus"][eg_buses_ppc, GS] += y0_gen.real
-    ppc["bus"][eg_buses_ppc, BS] += y0_gen.imag
+    # Retrieve bus indices for these generators
+    gen_buses = gen.bus.values
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]  # Lookup table for mapping buses
+    gen_buses_ppc = bus_lookup[gen_buses]  # Map generator buses to ppc indices
+
+    # Extract necessary parameters from the network and generator data
+    vn_net = net.bus.loc[gen_buses, "vn_kv"].values  # Nominal voltage of the network
+    r0_ohm = gen.r0_ohm.values  # Zero-sequence resistance of generators
+    x0_ohm = gen.x0_ohm.values  # Zero-sequence reactance of generators
+    vn_gen = gen.vn_kv.values  # Nominal voltage of the generators
+    xdss_pu = gen.xdss_pu.values  # Subtransient reactance in per unit, only necessary for kg-factor
+    cmax = ppc["bus"][gen_buses_ppc, C_MAX]  # c-factor according to IEC standard
+
+    # Calculate generator active power as a percentage and ensure no NaNs are present
+    pg_percent = np.nan_to_num(gen.pg_percent.values)
+
+    # Calculate sine of the power factor angle based on the cosine value
+    sin_phi_gen = np.sqrt(np.clip(1 - gen.cos_phi.values ** 2, 0, None))
+
+    # Base impedance calculation for the generators
+    gen_base_z_ohm = vn_net ** 2
+    z_gen = (r0_ohm + x0_ohm * 1j)  # Complex impedance of the generator
+    z_gen_pu = z_gen / gen_base_z_ohm  # Impedance in per unit system
+
+    # Calculate the admittance (inverse of impedance) in per unit
+    y0_gen = 1 / z_gen_pu
+
+    # Calculate the correction factor based on network and generator parameters according to IEC standard
+    kg = vn_net / (vn_gen * (1 + pg_percent / 100)) * cmax / (1 + xdss_pu * sin_phi_gen)
+
+    # If the case is "min", set kg to 1 (as per IEC standard)
+    if case == "min":
+        kg = 1
+
+    # Update the bus entries in ppc for conductance (GS) and susceptance (BS)
+    ppc["bus"][gen_buses_ppc, GS] += y0_gen.real / kg  # Update real part (conductance)
+    ppc["bus"][gen_buses_ppc, BS] += y0_gen.imag / kg  # Update imaginary part (susceptance)
 
 
 def _add_ext_grid_sc_impedance_zero(net, ppc):

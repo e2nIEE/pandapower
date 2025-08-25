@@ -250,9 +250,14 @@ def _calc_sc_to_g(net, bus):
     _, ppci_1, _ = _create_k_updated_ppci(net, ppci_1, ppci_bus=ppci_bus)
     _calc_ybus(ppci_1)
 
+    ppc_2, ppci_2 = _init_ppc(net, sequence=2)
+    # Create k updated ppci_2
+    _, ppci_2, _ = _create_k_updated_ppci(net, ppci_2, ppci_bus=ppci_bus)
+    _calc_ybus(ppci_2)
+
     # input for negative sequence is same as for positive sequence
-    ppc_2 = copy.deepcopy(ppc_1)
-    ppci_2 = copy.deepcopy(ppci_1)
+    # ppc_2 = copy.deepcopy(ppc_1)
+    # ppci_2 = copy.deepcopy(ppci_1)
 
     # placing this here allows saving the calculation of Ybus if not type C
     if net._options.get("use_pre_fault_voltage", False):

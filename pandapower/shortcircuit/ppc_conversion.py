@@ -27,7 +27,7 @@ def _get_is_ppci_bus(net, bus):
     return ppci_bus
 
 
-def _init_ppc(net):
+def _init_ppc(net, sequence=1):
     _check_sc_data_integrity(net)
     _add_auxiliary_elements(net)
     ppc, _ = _pd2ppc(net)
@@ -38,7 +38,7 @@ def _init_ppc(net):
 
     # Add parameter K into ppc
     _add_kt(net, ppc)
-    _add_gen_sc_z_kg_ks(net, ppc)
+    _add_gen_sc_z_kg_ks(net, ppc, sequence)
     _add_sgen_sc_z(net, ppc)
     _add_ward_sc_z(net, ppc)
 
@@ -146,49 +146,75 @@ def _add_sgen_sc_z(net, ppc):
         ppc['bus'][bus_idx, BS] = sgen_bs
 
 
-def _add_gen_sc_z_kg_ks(net, ppc):
+def _add_gen_sc_z_kg_ks(net, ppc, sequence=1):
+    """
+    This function updates the power flow case (ppc) with generator impedance and
+    short-circuit parameters, specifically the generator's admittance and scaling factors.
+
+    Parameters:
+    - net: The network data structure containing generator and bus information.
+    - ppc: The power flow case data structure that will be updated with calculated values.
+    """
+
+    # Retrieve generator data
     gen = net["gen"][net._is_elements_final["gen"]]
-    if len(gen) == 0:
+    if len(gen) == 0:  # Exit if there are no generators
         return
+
+    # Extract bus indices for generators
     gen_buses = gen.bus.values
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     gen_buses_ppc = bus_lookup[gen_buses]
 
-    vn_gen = gen.vn_kv.values
-    sn_gen = gen.sn_mva.values
-    rdss_ohm = gen.rdss_ohm.values
-    xdss_pu = gen.xdss_pu.values
+    # Extract necessary generator parameters
+    vn_gen = gen.vn_kv.values  # Nominal voltages of generators
+    sn_gen = gen.sn_mva.values  # Apparent power ratings of generators
+    # Extracting generator parameters for subtransient resistance and reactance
+    rdss_ohm = gen.rdss_ohm.values  # Subtransient generator resistance in ohms
+    xdss_pu = gen.xdss_pu.values  # Subtransient reactance in per unit
 
-    # Set to zero to avoid nan
+    # Handle NaN values for active power percentage
     pg_percent = np.nan_to_num(gen.pg_percent.values)
-    vn_net = net.bus.loc[gen_buses, "vn_kv"].values
-    # Avoid warning by slight zero crossing caused
-    sin_phi_gen = np.sqrt(np.clip(1 - gen.cos_phi.values**2, 0, None))
+    vn_net = net.bus.loc[gen_buses, "vn_kv"].values  # Nominal voltage of the network
 
-    # todo: division by net.sn_mva is correct but why does it cause tests to fail????
-    gen_base_z_ohm = vn_net ** 2# / net.sn_mva
-    r_gen, x_gen = rdss_ohm, xdss_pu * vn_gen ** 2 / sn_gen
-    z_gen = (r_gen + x_gen * 1j)
-    z_gen_pu = z_gen / gen_base_z_ohm
-    y_gen_pu = 1 / z_gen_pu
+    # Calculate sine of the power factor angle
+    sin_phi_gen = np.sqrt(np.clip(1 - gen.cos_phi.values ** 2, 0, None))
 
-    # this includes the Z_G from equation 21 by adding g and b to the ppc bus table
+    # Base impedance calculation for the generators
+    gen_base_z_ohm = vn_net ** 2
+
+    # Use conditional assignment to set resistance and reactance based on sequence
+    if sequence == 2:
+        r_gen = gen.r2_ohm.values  # Resistance for sequence 2 in ohms
+        x_gen = gen.x2_ohm.values  # Reactance for sequence 2 in per unit
+    else:
+        r_gen = rdss_ohm  # Resistance of the generator
+        x_gen = xdss_pu * vn_gen ** 2 / sn_gen  # Reactance of the generator
+
+    z_gen = (r_gen + x_gen * 1j)  # Complex impedance of the generator
+    z_gen_pu = z_gen / gen_base_z_ohm  # Impedance in per unit
+    y_gen_pu = 1 / z_gen_pu  # Admittance in per unit
+
+    # Aggregate admittance contributions from generators to the bus
     buses, gs, bs = _sum_by_group(gen_buses_ppc, y_gen_pu.real, y_gen_pu.imag)
-    ppc["bus"][buses, GS] += gs
-    ppc["bus"][buses, BS] += bs
+    ppc["bus"][buses, GS] += gs  # Update conductance
+    ppc["bus"][buses, BS] += bs  # Update susceptance
 
-    # we need to keep track of the GS abd BS values that only come from generators
+    # Store generator-specific admittance values
     ppc["bus"][buses, GS_GEN] = gs
     ppc["bus"][buses, BS_GEN] = bs
 
-    # Calculate K_G
-    cmax = ppc["bus"][gen_buses_ppc, C_MAX]
-    # if the terminal voltage of the generator is permanently different from the nominal voltage of the generator, it may be
-    # reqired to have a correction for U_{rG} as below (compare to equation 18) when calculating maximum SC current:
-    kg = vn_net/(vn_gen * (1+pg_percent/100)) * cmax / (1 + xdss_pu * sin_phi_gen)
+    # Calculate the correction factor kg for generators
+    cmax = ppc["bus"][gen_buses_ppc, C_MAX] # c-factor according to IEC standard
+    # Calculate the correction factor based on network and generator parameters according to IEC standard
+    kg = vn_net / (vn_gen * (1 + pg_percent / 100)) * cmax / (1 + xdss_pu * sin_phi_gen)
+
+    # If the case is "min", set kg to 1 (as per IEC standard)
     case = net._options["case"]
     if case == "min":
         kg = 1
+
+    # Update the ppc with calculated K_G and nominal generator voltage
     ppc["bus"][gen_buses_ppc, K_G] = kg
     ppc["bus"][gen_buses_ppc, V_G] = vn_gen
 
