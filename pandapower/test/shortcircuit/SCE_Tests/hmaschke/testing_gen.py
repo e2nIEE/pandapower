@@ -20,14 +20,17 @@ from pandapower import pp_dir
 # net_name = "test_case_3_five_bus_meshed_grid_Dyn.json"
 # net_name = "test_trafo_simple.json"
 # net_name = "test_case_4_twenty_bus_radial_grid_YNyn.json"
-net_name = r"wp_2.2_2.4\1_four_bus_radial_grid_gen.json"
+# net_name = r"wp_2.2_2.4\1_four_bus_radial_grid_gen.json"
+net_name = r"wp_2.2_2.4\4_twenty_bus_radial_grid_dyn_gen.json"
 
 net = from_json(os.path.join(pp_dir, "test", "shortcircuit", "sce_tests", "test_grids", net_name))
 net.sgen.in_service = False
-net.gen.loc[net.gen.bus == 1, 'in_service'] = True
+net.gen.in_service = False
+net.gen.loc[net.gen.bus == 1, 'in_service'] = False
 net.gen.loc[net.gen.bus == 2, 'in_service'] = False
 net.gen.loc[net.gen.bus == 3, 'in_service'] = False
+net.gen.loc[net.gen.bus == 4, 'in_service'] = True
 
-calc_sc(net, fault="LL", case="max", bus=1, return_all_currents=False, branch_results=True, ip=False, r_fault_ohm=0, x_fault_ohm=0, lv_tol_percent=10)
+calc_sc(net, fault="LG", case="min", bus=0, return_all_currents=False, branch_results=True, ip=False, r_fault_ohm=5, x_fault_ohm=5, lv_tol_percent=10)
 print(net.res_bus_sc)
 print(net.res_line_sc)

@@ -681,8 +681,9 @@ def _calc_branch_currents_complex(net, bus_idx, ppci0, ppci1, ppci2, sequence):
 
     ikssv_all_f = Yf.dot(V_ikss)
     ikssv_all_t = Yt.dot(V_ikss)
-    ikssv_all_f[np.abs(ikssv_all_f) < 1e-6] = 0.
-    ikssv_all_t[np.abs(ikssv_all_t) < 1e-6] = 0.
+    # TODO check if this might be necessary
+    # ikssv_all_f[np.abs(ikssv_all_f) < 1e-6] = 0.
+    # ikssv_all_t[np.abs(ikssv_all_t) < 1e-6] = 0.
 
     # add current source branch current if there is one
     current_sources = any(~np.isnan(ppci1["bus"][:, IKCV])) and np.any(ppci1["bus"][:, IKCV] != 0)
