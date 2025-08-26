@@ -147,7 +147,7 @@ def load_test_case_data(net_name, fault_location_bus, vector_group=None, gen_idx
         if is_gen and is_active_current:
             net_name = f"{net_name}_{vector_group.lower()}_{gen_mode}_act"
         elif is_gen:
-            net_name = f"{net_name}_{vector_group.lower()}_gen"
+            net_name = f"{net_name}_{vector_group.lower()}_{gen_mode}"
         else:
             net_name = f"{net_name}_{vector_group.lower()}"
 
