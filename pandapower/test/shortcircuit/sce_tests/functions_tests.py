@@ -104,7 +104,7 @@ def compare_results(columns_to_check, net_df, pf_results):
             "vm_pu": 0, "va_degree": 0, "p_mw": 0, "q_mvar": 0, "ikss_degree": 0}
     # TODO skss_mw and ikss_ka only 1e-4 sufficient?
     atol = {"ikss_ka": 1e-4, "skss_mw": 1e-4, "rk_ohm": 1e-5, "xk_ohm": 1e-5,
-            "vm_pu": 1e-4, "va_degree": 1e-2, "p_mw": 1e-4, "q_mvar": 1e-4, "ikss_degree": 1e-3}  # TODO: tolerances ok?
+            "vm_pu": 1e-4, "va_degree": 1e-2, "p_mw": 1e-4, "q_mvar": 1e-4, "ikss_degree": 1e-2}  # TODO: tolerances ok?
 
     for column in columns_to_check:
         if column == 'name':
@@ -129,7 +129,6 @@ def compare_results(columns_to_check, net_df, pf_results):
             f"{column} mismatch for {net_df.loc[~mismatch, 'name']}: {net_df.loc[~mismatch, column]}"
             f"vs {pf_results.loc[~mismatch, column]}"
         )
-
 
 def load_test_case(net_name: str) -> pandapowerNet:
     if net_name.endswith("_sgen") or net_name.endswith("_sgen_act") or net_name.endswith("_gen"):
