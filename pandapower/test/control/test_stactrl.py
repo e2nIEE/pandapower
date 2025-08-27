@@ -103,21 +103,10 @@ def test_qctrl_droop():
 
 
 def test_stactrl_pf_import():
-    # TODO: Currently the station controllers in PowerFactory 2025 and 2023 behave different. To be checked with PowerFactory.
-    app = pf.GetApplication()
-    # import the tap changer test grid to powerfactory
-    path = os.path.join(pp_dir, 'test', 'converter', 'testfiles', 'StationControllerTest.pfd')
-    prj = import_project(path, app, 'StationControllerTest', import_folder='TEST_IMPORT', clear_import_folder=True)
-    prj_name = prj.GetFullName()
-
-    net = from_pfd(app, prj_name=prj_name)
+    path = os.path.join(pp_dir, 'test', 'control', 'testfiles', 'stactrl_test.json')
+    net = from_json(path)
 
     tol = 1e-3
-
-    if Version(str(pf.__version__)) > Version("25.0.0"):
-        net.controller.object[2].q_droop_mvar = -net.controller.object[2].q_droop_mvar
-        # TODO: Inversion of droop is not required for boundaries, to be discussed with powerfactory
-        #net.controller.object[4].q_droop_mvar = -net.controller.object[4].q_droop_mvar
 
     # Decrease controllers tolerance
     net.controller.object[2].tol = 0.00001
@@ -149,16 +138,16 @@ def test_stactrl_pf_import():
     print("--------------------------------------")
     print("Scenario 4 - Q(U) - droop 40 MVar/pu")
     print("Input Measurement vm_pu: \n", net.res_bus.loc[103, "vm_pu"])
-    if Version(str(pf.__version__)) > Version("25.0.0"):
-        print(
-            "Controlled Transformer Q, lower voltage band 0.999 pu, initial set point 1 MVar and 40 MVar/pu, "
-            "q_hv_mvar, expected: \n -(1 MVar + (0.999 pu  - 0.995778 pu) * -40 MVar/pu) = -0.87112 MVar: \n",
-            net.res_trafo.loc[3, "q_hv_mvar"])
-    else:
-        print(
-            "Controlled Transformer Q, lower voltage band 0.999 pu, initial set point 1 MVar and 40 MVar/pu, "
-            "q_hv_mvar, expected: \n -(1 MVar + (0.999 pu  - 0.995846 pu) * 40 MVar/pu) = -1.126176 MV1ar: \n",
-            net.res_trafo.loc[3, "q_hv_mvar"])
+    #if Version(str(pf.__version__)) > Version("25.0.0"):
+    print(
+        "Controlled Transformer Q, lower voltage band 0.999 pu, initial set point 1 MVar and 40 MVar/pu, "
+        "q_hv_mvar, expected: \n -(1 MVar + (0.999 pu  - 0.995778 pu) * -40 MVar/pu) = -0.87112 MVar: \n",
+        net.res_trafo.loc[3, "q_hv_mvar"])
+    #else:
+    #    print(
+    #        "Controlled Transformer Q, lower voltage band 0.999 pu, initial set point 1 MVar and 40 MVar/pu, "
+    #        "q_hv_mvar, expected: \n -(1 MVar + (0.999 pu  - 0.995846 pu) * 40 MVar/pu) = -1.126176 MV1ar: \n",
+    #        net.res_trafo.loc[3, "q_hv_mvar"])
     assert (net.res_trafo.loc[3, "q_hv_mvar"] - (-(1 + (0.999 - net.res_bus.loc[91, "vm_pu"])
                                                    * net.controller.object[2].q_droop_mvar)) < tol)
 
