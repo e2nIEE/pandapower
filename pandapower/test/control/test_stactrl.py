@@ -13,18 +13,12 @@ from pandapower.run import runpp
 from pandapower.file_io import from_json
 from pandapower import pp_dir
 
-from pandapower.converter.powerfactory.validate import validate_pf_conversion
-from pandapower.converter.powerfactory.export_pfd_to_pp import import_project, from_pfd
-import powerfactory as pf
-from packaging.version import Version
-
 try:
     from pandaplan.core import pplog as logging
 except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
-
 
 
 def simple_test_net():
