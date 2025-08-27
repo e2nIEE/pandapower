@@ -46,6 +46,9 @@ class BinarySearchControl(Controller):
             **input_inverted** - Boolean list that indicates if the measurement of the input element must be inverted.
             Required when importing from PowerFactory.
 
+            **gen_Q_response** - List of +/- 1 that indicates the Q gen response of the measurement location. Used in
+            order to invert the droop value of the controller.
+
             **input_element_index** - Element of input element in net.
 
             **set_point** - Set point of the controller, can be a reactive power provision or a voltage set point. In
@@ -77,46 +80,32 @@ class BinarySearchControl(Controller):
         else:
             self.input_element_index.append(input_element_index)
         self.input_sign = []
-        ################
         n = len(self.input_element_index)
         if input_inverted is None or (isinstance(input_inverted, Sequence) and len(input_inverted) == 0):
-            # leer -> alles +1
+            # empty, then set all entries to 1
             self.input_sign = [1] * n
         elif isinstance(input_inverted, bool):
-            # einzelner bool -> auf n Elemente broadcasten
+            # single bool, then set all entries to desired value pf +/-1 -> auf n Elemente broadcasten
             self.input_sign = ([-1] if input_inverted else [1]) * n
         else:
-            # Sequenz -> auf Länge n kürzen/auffüllen, dann map zu ±1
             inv_list = list(input_inverted)[:n]
             if len(inv_list) < n:
-                inv_list += [False] * (n - len(inv_list))  # fehlende als False (=+1)
+                inv_list += [False] * (n - len(inv_list))
             self.input_sign = [-1 if inv else 1 for inv in inv_list]
-        #if input_inverted:
-        #    for inv in input_inverted[:len(self.input_element_index)]:
-        #        self.input_sign.append(-1 if inv else 1)
-        #else:
-        #    for i in :len(self.input_element_index):
-        #        self.input_sign.append(1)
-        ######################
         self.output_element = output_element
         self.output_element_index = output_element_index
         self.output_element_in_service = output_element_in_service
         # normalize the values distribution:
         self.output_values_distribution = np.array(output_values_distribution, dtype=np.float64) / np.sum(
             output_values_distribution)
-        #################
-
         n = len(self.output_element_index)
         if gen_Q_response is None or (isinstance(gen_Q_response, Sequence) and len(gen_Q_response) == 0):
-            # leer -> alles +1
+            # empty, then set all entries to 1
             self.gen_Q_response = [1] * n
         else:
-            # Sequenz -> auf Länge n kürzen/auffüllen, dann map zu ±1
             if len(gen_Q_response) < n:
                 gen_Q_response += [1] * (n - len(gen_Q_response))  # fehlende als +1
             self.gen_Q_response = gen_Q_response
-        ############################
-
         self.set_point = set_point
         self.voltage_ctrl = voltage_ctrl
         self.bus_idx = bus_idx

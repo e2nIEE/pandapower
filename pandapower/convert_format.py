@@ -560,12 +560,17 @@ def _update_object_attributes(obj):
         obj.__dict__["hunting_limit"] = None
 
     elif isinstance(obj, BinarySearchControl):
-        if "invert_" not in obj.__dict__:
-            obj.__dict__["input_sign"] = 1
+        if "input_sign" not in obj.__dict__:
+            n = len(obj.input_element_index)
+            obj.__dict__["input_sign"] = [1] * n
+        if "gen_Q_response" not in obj.__dict__:
+            n = len(obj.output_element_index)
+            obj.__dict__["gen_Q_response"] = [1] * n
 
 def _convert_objects(net, elements_to_deserialize):
     """
-    The function updates attribute names in pandapower objects. For now, it affects TrafoController.
+    The function updates  attribute names and adds new attributes in pandapower objects. For now, it affects
+    TrafoController and Station Controller.
     Should be expanded for other objects if necessary.
     """
     _check_elements_to_deserialize('controller', elements_to_deserialize)

@@ -115,7 +115,7 @@ def test_trafo_tap2_results():
         assert delta < tol, "%s has too high difference: %f > %f" % (key, delta, tol)
 
 @pytest.mark.skipif(not PF_INSTALLED, reason='powerfactory must be installed')
-def test_pf_export_trafo3w_tap_depedence_impedance_tapchanger():
+def test_trafo3w_tap_dependent_imp_with_tc():
     app = pf.GetApplication()
 
     # import the tap changer test grid to powerfactory
