@@ -228,35 +228,7 @@ class BinarySearchControl(Controller):
             step_diff = self.diff - self.diff_old
             x = self.output_values - self.diff * (self.output_values - self.output_values_old) / np.where(
                 step_diff == 0, 1e-6, step_diff)
-           # x = self.output_values - self.diff * (self.output_values - self.output_values_old) / np.where(
-           #     np.abs(step_diff) < 1e-9 * (1.0 + np.abs(self.diff_old)),  # rel. Schwelle: Sekante unbrauchbar?
-           #     np.nan,  # -> später Momentum-Fallback
-           #     step_diff
-           # )
-            #delta = x - self.output_values
-            #cap = np.maximum(np.abs(self.output_values), 0.5)  # 100% relativ, min. 0.5 absolut
-            #if np.sign(delta) != np.sign(self.output_values - self.output_values_old):
-            #    cap = 0.3 * cap  # strengere Begrenzung bei Richtungswechsel
-            #delta = cap * np.tanh(delta / cap)
 
-            # Delta bilden; Fallback: wenn Sekanten-x NaN (weil step_diff ~ 0), nimm Momentum in letzte Richtung
-            #cap = np.maximum(np.abs(self.output_values), 5)  # 100% relativ, min. 0.5 absolut
-            #delta = np.where(
-            #    np.isnan(x),  # Sekante ausgefallen?
-            #    0.3 * cap * np.sign(self.output_values - self.output_values_old),  # kleiner Vorwärts-Schritt
-            #    x - self.output_values
-            #)
-
-            # optionale Hysterese: bei Richtungswechsel Kappe verkleinern
-            #cap = np.where(
-            #    np.sign(delta) != np.sign(self.output_values - self.output_values_old),
-            #    0.3 * cap,  # vorsichtiger bei Flip
-            #    cap
-            #)
-
-            # weiche Begrenzung
-            #delta = cap * np.tanh(delta / cap)
-            #delta = np.minimum(np.abs(x - self.output_values), cap)
             rel_cap = 2
             cap = rel_cap * (np.abs(self.output_values) + 1e-6) + 50  # +epsilon gegen Null +50MVAr absolut
 
