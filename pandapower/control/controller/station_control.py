@@ -366,7 +366,7 @@ class DroopControl(Controller):
                 counter += 1
             input_sign = np.asarray(net.controller.at[self.controller_idx, "object"].input_sign)
             input_values = (input_sign * np.asarray(input_values)).tolist()
-            self.diff = ((net.controller.at[self.controller_idx, "object"].set_point - sum(input_values)))
+            self.diff = (net.controller.at[self.controller_idx, "object"].set_point - sum(input_values))
         if self.bus_idx is None:
             self.converged = np.all(np.abs(self.diff) < self.tol)
         else:
@@ -386,10 +386,10 @@ class DroopControl(Controller):
             if self.lb_voltage is not None and self.ub_voltage is not None:
                 if self.vm_pu > self.ub_voltage:
                     self.q_set_old_mvar, self.q_set_mvar = (self.q_set_mvar, self.q_set_mvar_bsc +
-                                                            net.controller.object[self.controller_idx].gen_Q_response[0] * (self.vm_pu - self.ub_voltage) * self.q_droop_mvar)
+                                                            net.controller.object[self.controller_idx].gen_Q_response[0] * (self.ub_voltage - self.vm_pu) * self.q_droop_mvar)
                 elif self.vm_pu < self.lb_voltage:
                     self.q_set_old_mvar, self.q_set_mvar = (self.q_set_mvar, self.q_set_mvar_bsc +
-                                                            net.controller.object[self.controller_idx].gen_Q_response[0] * (self.vm_pu - self.lb_voltage) * self.q_droop_mvar)
+                                                            net.controller.object[self.controller_idx].gen_Q_response[0] * (self.lb_voltage - self.vm_pu) * self.q_droop_mvar)
                 else:
                     self.q_set_old_mvar, self.q_set_mvar = (self.q_set_mvar, self.q_set_mvar_bsc)
             else:

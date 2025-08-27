@@ -16,6 +16,7 @@ from pandapower import pp_dir
 from pandapower.converter.powerfactory.validate import validate_pf_conversion
 from pandapower.converter.powerfactory.export_pfd_to_pp import import_project, from_pfd
 import powerfactory as pf
+from packaging.version import Version
 
 try:
     from pandaplan.core import pplog as logging
@@ -23,6 +24,7 @@ except ImportError:
     import logging
 
 logger = logging.getLogger(__name__)
+
 
 
 def simple_test_net():
@@ -96,18 +98,12 @@ def test_qctrl_droop():
     runpp(net, run_control=False)
     assert (abs(net.res_line.loc[0, "q_to_mvar"] - (-1e-13)) < tol)
     runpp(net, run_control=True)
-    assert (abs(net.controller.object[0].input_sign * net.res_line.loc[0, "q_from_mvar"] - (
-                net.controller.object[1].q_set_mvar_bsc + net.controller.object[0].input_sign *
-                (0.995 - net.res_bus.loc[1, "vm_pu"]) * 40)) < tol)
+    assert (abs(net.controller.object[0].input_sign[0] * net.res_line.loc[0, "q_from_mvar"] - (
+                net.controller.object[1].q_set_mvar_bsc + (0.995 - net.res_bus.loc[1, "vm_pu"]) * 40)) < tol)
 
 
 def test_stactrl_pf_import():
-    path = os.path.join(pp_dir, 'test', 'control', 'testfiles', 'stactrl_test.json')
-    net = from_json(path)
-    tol = 1e-3
-
-
-
+    # TODO: Currently the station controllers in PowerFactory 2025 and 2023 behave different. To be checked with PowerFactory.
     app = pf.GetApplication()
     # import the tap changer test grid to powerfactory
     path = os.path.join(pp_dir, 'test', 'converter', 'testfiles', 'StationControllerTest.pfd')
@@ -115,6 +111,13 @@ def test_stactrl_pf_import():
     prj_name = prj.GetFullName()
 
     net = from_pfd(app, prj_name=prj_name)
+
+    tol = 1e-3
+
+    if Version(str(pf.__version__)) > Version("25.0.0"):
+        net.controller.object[2].q_droop_mvar = -net.controller.object[2].q_droop_mvar
+        # TODO: Inversion of droop is not required for boundaries, to be discussed with powerfactory
+        #net.controller.object[4].q_droop_mvar = -net.controller.object[4].q_droop_mvar
 
     # Decrease controllers tolerance
     net.controller.object[2].tol = 0.00001
@@ -126,7 +129,7 @@ def test_stactrl_pf_import():
     print("Controlled line, constQ = 0.5 MVar - q_from_mvar and q_to_mvar: \n",
           net.res_line.loc[0, "q_to_mvar"], "\t", net.res_line.loc[0, "q_from_mvar"])
     print("Controlled line, constQ = 0.5 MVar - q_from_mvar and q_to_mvar: \n",
-          net.res_line.loc[1, "q_to_mvar"], "\t", net.res_line.loc[1, "q_from_mvar"])
+          net.res_line.loc[2, "q_to_mvar"], "\t", net.res_line.loc[1, "q_from_mvar"])
     assert (net.res_line.loc[0, "q_to_mvar"] - 0.5 < tol)
     assert (net.res_line.loc[2, "q_to_mvar"] - 0.5 < tol)
     print("--------------------------------------")
@@ -136,10 +139,9 @@ def test_stactrl_pf_import():
     print("Input Measurement q_from_mvar and q_to_mvar, expected:\n 0.2442 MVar, -0.6215 MVar: \n",
           net.res_line.loc[5, "q_to_mvar"], "\t", net.res_line.loc[5, "q_from_mvar"])
     print("Controlled bus, initial set point 1.01 pu and 40 MVar/pu, vm_pu, \n expected: "
-          "2 * 0.2442 MVar / 40 MVar/pu + 1.01 pu = 1.02221: \n", net.res_bus.loc[62, "vm_pu"])
-    assert (net.res_bus.loc[62, "vm_pu"] - ((net.res_line.loc[4, "q_to_mvar"] +
-                                             net.res_line.loc[5, "q_to_mvar"]) /
-                                            40 + 1.01) < tol)
+        "2 * 0.2442 MVar / 40 MVar/pu + 1.01 pu = 1.02221: \n", net.res_bus.loc[62, "vm_pu"])
+    assert (net.res_bus.loc[62, "vm_pu"] - (1.01 + (net.res_line.loc[4, "q_to_mvar"] + net.res_line.loc[5, "q_to_mvar"])
+                                            / net.controller.object[4].q_droop_mvar) < tol)
     print("--------------------------------------")
     print("Scenario 3 - Constant U")
     print("Controlled bus, set point = 1.03 pu, vm_pu: \n", net.res_bus.loc[84, "vm_pu"])
@@ -147,10 +149,18 @@ def test_stactrl_pf_import():
     print("--------------------------------------")
     print("Scenario 4 - Q(U) - droop 40 MVar/pu")
     print("Input Measurement vm_pu: \n", net.res_bus.loc[103, "vm_pu"])
-    print("Controlled Transformer Q, lower voltage band 0.999 pu, initial set point 1 MVar and 40 MVar/pu, q_hv_mvar, "
-          "expected: \n -(1 MVar + (0.999 pu  - 0.995846 pu) * 40 MVar/pu) = -1.126176: \n",
-          net.res_trafo.loc[3, "q_hv_mvar"])
-    assert (net.res_trafo.loc[3, "q_hv_mvar"] - (-(1 + (0.999 - net.res_bus.loc[91, "vm_pu"]) * 40)) < tol)
+    if Version(str(pf.__version__)) > Version("25.0.0"):
+        print(
+            "Controlled Transformer Q, lower voltage band 0.999 pu, initial set point 1 MVar and 40 MVar/pu, "
+            "q_hv_mvar, expected: \n -(1 MVar + (0.999 pu  - 0.995778 pu) * -40 MVar/pu) = -0.87112 MVar: \n",
+            net.res_trafo.loc[3, "q_hv_mvar"])
+    else:
+        print(
+            "Controlled Transformer Q, lower voltage band 0.999 pu, initial set point 1 MVar and 40 MVar/pu, "
+            "q_hv_mvar, expected: \n -(1 MVar + (0.999 pu  - 0.995846 pu) * 40 MVar/pu) = -1.126176 MV1ar: \n",
+            net.res_trafo.loc[3, "q_hv_mvar"])
+    assert (net.res_trafo.loc[3, "q_hv_mvar"] - (-(1 + (0.999 - net.res_bus.loc[91, "vm_pu"])
+                                                   * net.controller.object[2].q_droop_mvar)) < tol)
 
 
 if __name__ == '__main__':

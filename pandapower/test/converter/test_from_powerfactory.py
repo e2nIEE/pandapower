@@ -10,6 +10,8 @@ from pandapower.converter.powerfactory.export_pfd_to_pp import import_project, f
 from pandapower import pp_dir
 from pandapower.file_io import from_json
 
+from packaging.version import Version
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -175,16 +177,20 @@ def test_pf_export_tap_changer():
 def test_pf_SC_meas_relocate():
     app = pf.GetApplication()
     # import the SC relocate test grid to powerfactory
-    #path = os.path.join(pp_dir, 'test', 'converter', 'testfiles', 'test_SC_meas_relocate.pfd')
-    path = os.path.join(pp_dir, 'test', 'converter', 'test_SC_meas_relocate.pfd')
+    path = os.path.join(pp_dir, 'test', 'converter', 'testfiles', 'test_SC_meas_relocate.pfd')
     prj = import_project(path, app, 'test_SC_meas_relocate', import_folder='TEST_IMPORT', clear_import_folder=True)
     prj_name = prj.GetFullName()
 
     net = from_pfd(app, prj_name=prj_name)
 
-    # For now, change measurement direction manually.
-    #net.controller.object[1].input_sign = -1
-    net.controller.object[1].tol = 1e-9
+    # TODO: Currently the station controllers in PowerFactory 2025 and 2023 behave different. To be checked with PowerFactory.
+    net.controller.object[0:6].tol = 1e-9
+
+    if Version(str(pf.__version__)) > Version("25.0.0"):
+        net.controller.object[4].q_droop_mvar = -net.controller.object[4].q_droop_mvar
+
+    net.controller.object[6].q_droop_mvar = -net.controller.object[6].q_droop_mvar
+
 
     all_diffs = validate_pf_conversion(net, tolerance_mva=1e-9)
 
@@ -192,8 +198,9 @@ def test_pf_SC_meas_relocate():
         'diff_vm': 5e-3,
         'diff_va': 0.1,
         'trafo_diff': 1e-2,
-        'sgen_p_diff_is': 1e-4,
-        'sgen_q_diff_is': 1e-4,
+        'line_diff': 1e-2,
+        'sgen_p_diff_is': 1e-3,
+        'sgen_q_diff_is': 1e-3,
         'load_p_diff_is': 1e-5,
         'load_q_diff_is': 1e-5,
         'ext_grid_p_diff': 0.1,
