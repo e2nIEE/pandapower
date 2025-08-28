@@ -3910,6 +3910,9 @@ def create_stactrl(net, item):
     top = create_nxgraph(net, respect_switches=True, include_lines=True, include_trafos=True,
                          include_impedances=True, nogobuses=None, notravbuses=None, multi=True,
                          calc_branch_impedances=False, branch_impedance_unit='ohm')
+    top_all = create_nxgraph(net, respect_switches=False, include_lines=True, include_trafos=True,
+                         include_impedances=True, nogobuses=None, notravbuses=None, multi=True,
+                         calc_branch_impedances=False, branch_impedance_unit='ohm')
     if control_mode == 1 or item.i_droop:
         q_control_cubicle = item.p_cub if control_mode == 1 else item.pQmeas  # Feld
         if q_control_cubicle is None:
@@ -3940,10 +3943,10 @@ def create_stactrl(net, item):
                 if q_control_side[i] == 0:
                     res_element_index.append(line_sections[0])
                     variable.append("q_from_mvar")
-                    gen_dist_from_bus = nx.shortest_path_length(top,
+                    gen_dist_from_bus = nx.shortest_path_length(top_all,
                                                                 get_element_bus(net, gen_element, gen_element_index[0]),
                                                                 net.line.loc[res_element_index[-1]].from_bus)
-                    gen_dist_to_bus = nx.shortest_path_length(top,
+                    gen_dist_to_bus = nx.shortest_path_length(top_all,
                                                               get_element_bus(net, gen_element, gen_element_index[0]),
                                                               net.line.loc[res_element_index[-1]].to_bus)
                     if gen_dist_from_bus > gen_dist_to_bus:
@@ -3953,10 +3956,10 @@ def create_stactrl(net, item):
                 else:
                     res_element_index.append(line_sections[-1])
                     variable.append("q_to_mvar")
-                    gen_dist_from_bus = nx.shortest_path_length(top,
+                    gen_dist_from_bus = nx.shortest_path_length(top_all,
                                                                 get_element_bus(net, gen_element, gen_element_index[0]),
                                                                 net.line.loc[res_element_index[-1]].from_bus)
-                    gen_dist_to_bus = nx.shortest_path_length(top,
+                    gen_dist_to_bus = nx.shortest_path_length(top_all,
                                                               get_element_bus(net, gen_element, gen_element_index[0]),
                                                               net.line.loc[res_element_index[-1]].to_bus)
                     if gen_dist_from_bus < gen_dist_to_bus:
@@ -3967,12 +3970,12 @@ def create_stactrl(net, item):
             res_element_table = "res_trafo"
             for element in q_control_element:
                 res_element_index.append(trafo_dict[element])
-                gen_dist_lv_bus = nx.shortest_path_length(top,
+                gen_dist_lv_bus = nx.shortest_path_length(top_all,
                                                           get_element_bus(net, gen_element, gen_element_index[0]),
                                                           net.trafo.loc[res_element_index[-1]].lv_bus)
-                gen_dist_hv_bus = nx.shortest_path_length(top,
+                gen_dist_hv_bus = nx.shortest_path_length(top_all,
                                                           get_element_bus(net, gen_element, gen_element_index[0]),
-                                                          net.line.loc[res_element_index[-1]].hv_bus)
+                                                          net.trafo.loc[res_element_index[-1]].hv_bus)
                 if q_control_side[0] == 0:
                     variable = "q_hv_mvar"
                     if gen_dist_lv_bus > gen_dist_hv_bus:
@@ -3989,13 +3992,13 @@ def create_stactrl(net, item):
             res_element_table = "res_trafo3w"
             for element in q_control_element:
                 res_element_index.append(trafo3w_dict[element])
-                gen_dist_t3w_lv_bus = nx.shortest_path_length(top,
+                gen_dist_t3w_lv_bus = nx.shortest_path_length(top_all,
                                                           get_element_bus(net, gen_element, gen_element_index[0]),
                                                           net.trafo3w.loc[res_element_index[-1]].lv_bus)
-                gen_dist_t3w_mv_bus = nx.shortest_path_length(top,
+                gen_dist_t3w_mv_bus = nx.shortest_path_length(top_all,
                                                          get_element_bus(net, gen_element, gen_element_index[0]),
                                                          net.trafo3w.loc[res_element_index[-1]].mv_bus)
-                gen_dist_t3w_hv_bus = nx.shortest_path_length(top,
+                gen_dist_t3w_hv_bus = nx.shortest_path_length(top_all,
                                                           get_element_bus(net, gen_element, gen_element_index[0]),
                                                           net.trafo3w.loc[res_element_index[-1]].hv_bus)
                 if q_control_side[0] == 0:
@@ -4023,10 +4026,10 @@ def create_stactrl(net, item):
                 if q_control_side[i] == 0:
                     res_element_index.append(impedance_dict[element])
                     variable.append("q_from_mvar")
-                    gen_dist_from_bus = nx.shortest_path_length(top,
+                    gen_dist_from_bus = nx.shortest_path_length(top_all,
                                                                 get_element_bus(net, gen_element, gen_element_index[0]),
                                                                 net.line.loc[res_element_index[-1]].from_bus)
-                    gen_dist_to_bus = nx.shortest_path_length(top,
+                    gen_dist_to_bus = nx.shortest_path_length(top_all,
                                                               get_element_bus(net, gen_element, gen_element_index[0]),
                                                               net.line.loc[res_element_index[-1]].to_bus)
                     if gen_dist_from_bus > gen_dist_to_bus:
@@ -4036,10 +4039,10 @@ def create_stactrl(net, item):
                 else:
                     res_element_index.append(impedance_dict[element])
                     variable.append("q_to_mvar")
-                    gen_dist_from_bus = nx.shortest_path_length(top,
+                    gen_dist_from_bus = nx.shortest_path_length(top_all,
                                                                 get_element_bus(net, gen_element, gen_element_index[0]),
                                                                 net.line.loc[res_element_index[-1]].from_bus)
-                    gen_dist_to_bus = nx.shortest_path_length(top,
+                    gen_dist_to_bus = nx.shortest_path_length(top_all,
                                                               get_element_bus(net, gen_element, gen_element_index[0]),
                                                               net.line.loc[res_element_index[-1]].to_bus)
                     if gen_dist_from_bus < gen_dist_to_bus:
@@ -4051,10 +4054,10 @@ def create_stactrl(net, item):
             for element in q_control_element:
                 if q_control_side[0] == 0:
                     #variable = "q_from_mvar"
-                    gen_dist_bus = nx.shortest_path_length(top,
+                    gen_dist_bus = nx.shortest_path_length(top_all,
                                                                 get_element_bus(net, gen_element, gen_element_index[0]),
                                                                 net.switch.loc[switch_dict[element], "bus"])
-                    gen_dist_element = nx.shortest_path_length(top,
+                    gen_dist_element = nx.shortest_path_length(top_all,
                                                               get_element_bus(net, gen_element, gen_element_index[0]),
                                                               net.switch.loc[switch_dict[element], "element"])
                     if gen_dist_bus > gen_dist_element:
@@ -4063,10 +4066,10 @@ def create_stactrl(net, item):
                         gen_Q_response.append(1)
                 else:
                     #variable = "q_to_mvar"
-                    gen_dist_bus = nx.shortest_path_length(top,
+                    gen_dist_bus = nx.shortest_path_length(top_all,
                                                                 get_element_bus(net, gen_element, gen_element_index[0]),
                                                                 net.switch.loc[switch_dict[element], "bus"])
-                    gen_dist_element = nx.shortest_path_length(top,
+                    gen_dist_element = nx.shortest_path_length(top_all,
                                                               get_element_bus(net, gen_element, gen_element_index[0]),
                                                               net.switch.loc[switch_dict[element], "element"])
                     if gen_dist_bus < gen_dist_element:
