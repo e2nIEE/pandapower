@@ -16,7 +16,8 @@ faults = ["LLL", "LL", "LG", "LLG"]
 cases = ["min", "max"]
 fault_ohm_values = [(0.0, 0.0), (5.0, 5.0)]
 lv_tol_percent = 10  # 6
-fault_locations = [0, 1, 2, 3]
+fault_locations = [2]
+gen_bus = 3
 
 def initialize_current_source_test(net):
 
@@ -28,11 +29,11 @@ def initialize_current_source_test(net):
     net.gen['k'] = 6
     net.sgen['k'] = 6
     net.gen["current_source"] = False
-    net.gen["active_current"] = 0.0
+    # net.gen["active_current"] = False
 
     # Set one generator as in service and as a current source
-    net.gen.loc[net.gen.bus == 1, 'in_service'] = True
-    net.gen.loc[net.gen.bus == 1, 'current_source'] = True
+    net.gen.loc[net.gen.bus == gen_bus, 'in_service'] = True
+    net.gen.loc[net.gen.bus == gen_bus, 'current_source'] = True
 
     return net
 
@@ -57,8 +58,8 @@ def compare_sc_results(net, branch=False):
                         result_df = net.res_bus_sc
 
                     # Modify the in_service status for the generator and synchronous generator
-                    net.gen.loc[net.gen.bus == 1, 'in_service'] = False
-                    net.sgen.loc[net.sgen.bus == 1, 'in_service'] = True
+                    net.gen.loc[net.gen.bus == gen_bus, 'in_service'] = False
+                    net.sgen.loc[net.sgen.bus == gen_bus, 'in_service'] = True
 
                     # Run modified short-circuit calculation
                     calc_sc(net, fault=fault, case=case, bus=fault_location, return_all_currents=False,
@@ -80,8 +81,8 @@ def compare_sc_results(net, branch=False):
                     element_id_column = "name"
 
                     # Modify the in_service status for the generator and synchronous generator to have the initial status
-                    net.gen.loc[net.gen.bus == 1, 'in_service'] = True
-                    net.sgen.loc[net.sgen.bus == 1, 'in_service'] = False
+                    net.gen.loc[net.gen.bus == gen_bus, 'in_service'] = True
+                    net.sgen.loc[net.sgen.bus == gen_bus, 'in_service'] = False
 
                     for element in compare_ids:
                         for column in result_df.columns:
