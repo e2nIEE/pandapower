@@ -1548,6 +1548,8 @@ def create_gen(
     power_station_trafo: int | float = nan,
     in_service: bool = True,
     slack_weight: float = 0.0,
+    current_source: bool = False,
+    k: float | Iterable[float] = nan,
     **kwargs
 ) -> Int:
     """
@@ -1628,6 +1630,12 @@ def create_gen(
         **max_vm_pu** (float, default NaN) - Maximum voltage magnitude. If not set, the bus voltage \
                                              limit is taken - necessary for OPF
 
+        **current_source** (bool, default False) - Model this gen as a current source during short- circuit calculations \
+                                                default value is False, so the generator is modelled as a voltage-source
+        **k** (float | list of float, NaN) - If generator is modelled as current_source k-factor is necessary \
+                                            Ratio of short circuit current to nominal current or \
+                                            short circuit current to active current
+
     OUTPUT:
         **index** (int) - The unique ID of the created generator
 
@@ -1677,6 +1685,10 @@ def create_gen(
     _set_value_if_not_nan(net, index, pg_percent, "pg_percent", "gen")
     _set_value_if_not_nan(net, index, power_station_trafo,
                           "power_station_trafo", "gen", dtype="Int64")
+    _set_value_if_not_nan(net, index, current_source,
+                          "current_source", "gen", dtype=bool_, default_val=False)
+    if current_source:
+        _set_value_if_not_nan(net, index, k, "k", "gen")
 
     return index
 
@@ -1710,6 +1722,8 @@ def create_gens(
     power_station_trafo: int | float = nan,
     in_service: bool = True,
     slack_weight: float = 0.0,
+    current_source: bool = False,
+    k: float | Iterable[float] = nan,
     **kwargs
 ) -> npt.NDArray[Int]:
     """
@@ -1801,6 +1815,11 @@ def create_gens(
         **max_vm_pu** (list of float, default NaN) - Maximum voltage magnitude. If not set the bus\
                                                       voltage limit is taken.
                                                     - necessary for OPF
+        **current_source** (bool, default False) - Model this gen as a current source during short- circuit calculations \
+                                                default value is False, so the generator is modelled as a voltage-source
+        **k** (float | list of float, NaN) - If generator is modelled as current_source k-factor is necessary \
+                                            Ratio of short circuit current to nominal current or \
+                                            short circuit current to active current
 
     OUTPUT:
         **index** (int) - The unique ID of the created generator
@@ -1836,8 +1855,12 @@ def create_gens(
 
     _add_to_entries_if_not_nan(net, "gen", entries, index, "power_station_trafo",
                                power_station_trafo, dtype="Int64")
+    _add_to_entries_if_not_nan(net, "gen", entries, index, "current_source",
+                               current_source, dtype=bool_, default_val=False)
     _add_to_entries_if_not_nan(net, "gen", entries, index, "controllable", controllable, dtype=bool_,
                                default_val=True)
+    if current_source:
+        _add_to_entries_if_not_nan(net, "gen", entries, index, "k", k)
     defaults_to_fill = [("controllable", True), ('reactive_capability_curve', False), ("curve_style", None)]
 
     _set_multiple_entries(net, "gen", index, defaults_to_fill=defaults_to_fill, **entries,

@@ -132,6 +132,7 @@ def get_result_dfs(net_name, fault_location):
 
         elif net_name.endswith('_gen'):
             net.gen['active_current'] = False
+            net.gen['current_source'] = False
             elm_name = '_gen'
             if net_name.startswith('1_'):
                 net.gen.loc[net.gen.bus == 1, 'in_service'] = True

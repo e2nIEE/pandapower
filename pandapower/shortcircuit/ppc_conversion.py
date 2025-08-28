@@ -157,7 +157,7 @@ def _add_gen_sc_z_kg_ks(net, ppc, sequence=1):
     """
 
     # Retrieve generator data
-    gen = net["gen"][net._is_elements_final["gen"]]
+    gen = net["gen"][(net._is_elements_final["gen"]) & (net["gen"]["current_source"] == False)]
     if len(gen) == 0:  # Exit if there are no generators
         return
 
