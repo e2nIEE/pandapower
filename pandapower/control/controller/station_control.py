@@ -230,7 +230,7 @@ class BinarySearchControl(Controller):
                 step_diff == 0, 1e-6, step_diff)
 
             rel_cap = 2
-            cap = rel_cap * (np.abs(self.output_values) + 1e-6) + 50  # +epsilon gegen Null +50MVAr absolut
+            cap = rel_cap * (np.abs(self.output_values) + 1e-6) + 50  # +epsilon if ouput values = 0 +50MVAr abs
 
             delta = x - self.output_values
             delta = np.clip(delta, -cap, +cap)
