@@ -238,7 +238,7 @@ class BinarySearchControl(Controller):
             x = self.output_values + delta
             x = x * self.output_values_distribution if isinstance(x, numbers.Number) else sum(
                 x) * self.output_values_distribution
-            self.output_values_old, self.output_values = self.output_values, x #* self.gen_Q_response
+            self.output_values_old, self.output_values = self.output_values, x
 
         # write new set values
         write_to_net(net, self.output_element, self.output_element_index, self.output_variable, self.output_values,
