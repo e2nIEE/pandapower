@@ -3,6 +3,9 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [ADDED] Station controller support for measurements on trafo3w and impedance
+- [CHANGED] Station controller with measurements at switches: added a topological search to find nearby line or transformer and relocated measurement to avoid small impedances on switches
+- [FIXED] Station controller bug with Q(U) (wrong sign in equation for droop calculation)
 - [ADDED] python: support for version 3.13 added to the test pipelines
 - [FIXED] create_buses_dc: incorrect handling of geodata
 - [ADDED] postgresql: support for setting a port for the connection
