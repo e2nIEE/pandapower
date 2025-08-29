@@ -89,10 +89,7 @@ def test_wp22_24_four_bus_radial_grid(fault, case, fault_values, lv_tol_percent,
                                       gen_loc, active_current, mode):
 
     # TODO: remove when implemented
-    if mode == 'all':
-        logger.warning("results for mode 'all' not created yet, skipping tests")
-        return
-    elif mode == 'gen' and active_current:
+    if (mode in ('gen', 'all')) and active_current:
         logger.warning("results and grids for generators with active_current=True not created yet, skipping tests")
         return
 

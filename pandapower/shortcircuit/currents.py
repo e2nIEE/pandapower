@@ -294,30 +294,42 @@ def _current_source_current(net, ppci, bus_idx, sequence=1):
         return
 
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    fault = net._options["fault"]
 
-    # _is_elements_final exists for some reason, and weirdly it can be different than _is_elements. 
+    # Collect active sgen and gen entries with current_source=True
+    active_sgens = net.sgen[net._is_elements_final["sgen"] & net.sgen.current_source]
+    # consider generators with current_source type
+    active_gens = net.gen[net._is_elements_final["gen"] & net.gen.current_source]
+
+    # Combine active sgens and gens into one DataFrame
+    combined_sources = pd.concat([active_sgens, active_gens], ignore_index=True)
+
+    # _is_elements_final exists for some reason, and weirdly it can be different than _is_elements.
     # it is not documented anywhere why it exists and I don't have any time to find out, but this here fixes the problem.
-    if np.all(net.sgen.current_source.values):
+    """if np.all(net.sgen.current_source.values):
         sgen = net.sgen[net._is_elements_final["sgen"]]
     else:
-        sgen = net.sgen[net._is_elements_final["sgen"] & net.sgen.current_source]
-    if len(sgen) == 0:
+        sgen = net.sgen[net._is_elements_final["sgen"] & net.sgen.current_source]"""
+    if len(combined_sources) == 0:
         return
-    if any(pd.isnull(sgen.sn_mva)):
-        raise ValueError("sn_mva needs to be specified for all sgens in net.sgen.sn_mva")
-    if "current_angle_degree" in sgen.columns:
-        sgen_angle = np.deg2rad(sgen.current_angle_degree.values)
+    if any(pd.isnull(combined_sources.sn_mva)):
+        raise ValueError("sn_mva needs to be specified for all sgens in net.sgen.sn_mva,"
+                         " also check net.gen.sn_mva if you are using current_source generators")
+    if any(pd.isnull(combined_sources.current_source)):
+        raise ValueError("current_source needs to be specified for all sgens in net.sgen.current_source,"
+                         " also check net.gen.current_source if you are using current_source generators")
+    if "current_angle_degree" in combined_sources.columns:
+        sgen_angle = np.deg2rad(combined_sources.current_angle_degree.values)
     else:
         sgen_angle = None
 
     baseI = ppci["internal"]["baseI"]
-    sgen_buses = sgen.bus.values
+    sgen_buses = combined_sources.bus.values
     sgen_buses_ppc = bus_lookup[sgen_buses]
 
-    if "k" not in sgen:
-        raise ValueError("Nominal to short-circuit current has to specified in net.sgen.k")
-    if type_c and "kappa" not in sgen:
+    if "k" not in combined_sources:
+        raise ValueError("Nominal to short-circuit current has to specified in net.sgen.k also check net.gen.k"
+                         " if you are using current_source generators")
+    if type_c and "kappa" not in combined_sources:
         raise ValueError("Max. short-circuit current in p.u. must be specified in net.sgen.kappa for the "
                          "short-circuit calculation with superposition method")
 
@@ -326,18 +338,18 @@ def _current_source_current(net, ppci, bus_idx, sequence=1):
         # rotating machines only is used to determine the current injection. The parameter kappa here
         # is used to denote the maximal current contribution of the sgen in the short-circuit case "Type C"
         V_ikss = ppci["internal"]["V_ikss"]
-        i_sgen_n_pu = (sgen.sn_mva.values.reshape(-1, 1) / net.sn_mva)
+        i_sgen_n_pu = (combined_sources.sn_mva.values.reshape(-1, 1) / net.sn_mva)
         delta_V = ppci["bus"][sgen_buses_ppc][:, [VM]] - np.abs(V_ikss[sgen_buses_ppc])
-        i_sgen_pu = np.where(sgen.k.values.reshape(-1, 1) * delta_V < sgen.kappa.values.reshape(-1, 1),
-                             sgen.k.values.reshape(-1, 1) * i_sgen_n_pu * delta_V,
-                             i_sgen_n_pu * sgen.kappa.values.reshape(-1, 1))
+        i_sgen_pu = np.where(combined_sources.k.values.reshape(-1, 1) * delta_V < combined_sources.kappa.values.reshape(-1, 1),
+                             combined_sources.k.values.reshape(-1, 1) * i_sgen_n_pu * delta_V,
+                             i_sgen_n_pu * combined_sources.kappa.values.reshape(-1, 1))
         i_sgen_pu = np.abs(i_sgen_pu)
     else:
         # i_sgen_pu = (sgen.sn_mva.values / net.sn_mva * sgen.k.values)
         # short-circuit contribution from sgen nominal and active current method
-        i_sgen_pu = np.where(sgen.active_current.values,
-                             (sgen.p_mw.values * sgen.scaling.values / net.sn_mva * sgen.k.values),
-                             (sgen.sn_mva.values * sgen.scaling.values / net.sn_mva * sgen.k.values))
+        i_sgen_pu = np.where(combined_sources.active_current.values,
+                             (combined_sources.p_mw.values * combined_sources.scaling.values / net.sn_mva * combined_sources.k.values),
+                             (combined_sources.sn_mva.values * combined_sources.scaling.values / net.sn_mva * combined_sources.k.values))
 
     if sgen_angle is not None:  # check logic here of type_c
         i_sgen_pu = i_sgen_pu * np.exp(sgen_angle * 1j)

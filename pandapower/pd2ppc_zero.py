@@ -420,7 +420,7 @@ def _add_gen_sc_impedance_zero(net, ppc):
         return
 
     # Extract generator data
-    gen = net["gen"][net._is_elements["gen"]]
+    gen = net["gen"][(net._is_elements["gen"]) & (net["gen"]["current_source"] == False)]
     if len(gen) == 0:  # If no generators are present, exit the function
         return
 
