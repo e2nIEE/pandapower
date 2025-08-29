@@ -29,7 +29,6 @@ def initialize_current_source_test(net):
     net.gen['k'] = 6
     net.sgen['k'] = 6
     net.gen["current_source"] = False
-    # net.gen["active_current"] = False
 
     # Set one generator as in service and as a current source
     net.gen.loc[net.gen.bus == gen_bus, 'in_service'] = True

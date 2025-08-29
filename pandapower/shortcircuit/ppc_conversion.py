@@ -156,6 +156,9 @@ def _add_gen_sc_z_kg_ks(net, ppc, sequence=1):
     - ppc: The power flow case data structure that will be updated with calculated values.
     """
 
+    # Check if 'current_source' exists and has no null values in one line
+    if 'current_source' not in net.gen.columns or any(pd.isnull(net.gen.current_source)):
+        raise ValueError("The column 'current_source' must exist and cannot contain null values in net.gen.")
     # Retrieve generator data
     gen = net["gen"][(net._is_elements_final["gen"]) & (net["gen"]["current_source"] == False)]
     if len(gen) == 0:  # Exit if there are no generators
