@@ -11,57 +11,57 @@ logger = logging.getLogger(__name__)
 
 class BinarySearchControl(Controller):
     """
-        The Binary search control is a controller which is used to reach a given set point . It can be used for
-        reactive power control or voltage control. in case of voltage control, the input parameter voltage_ctrl must be
-        set to true. Input and output elements and indexes can be lists. Input elements can be transformers, switches,
-        lines or busses (only in case of voltage control). in case of voltage control, a bus_index must be present,
-        where the voltage will be controlled. Output elements are sgens, where active and reactive power can be set. The
-        output value distribution describes the distribution of reactive power provision between multiple
-        output_elements and must sum up to 1.
+    The Binary search control is a controller which is used to reach a given set point . It can be used for
+    reactive power control or voltage control. in case of voltage control, the input parameter voltage_ctrl must be
+    set to true. Input and output elements and indexes can be lists. Input elements can be transformers, switches,
+    lines or busses (only in case of voltage control). in case of voltage control, a bus_index must be present,
+    where the voltage will be controlled. Output elements are sgens, where active and reactive power can be set. The
+    output value distribution describes the distribution of reactive power provision between multiple
+    output_elements and must sum up to 1.
 
-        INPUT:
-            **self**
+    INPUT:
+        **self**
 
-            **net** - A pandapower grid
+        **net** - A pandapower grid
 
-            **ctrl_in_service** - Whether the controller is in service or not.
+        **ctrl_in_service** - Whether the controller is in service or not.
 
-            **output_element** - Output element of the controller. Takes a string value "gen" or "sgen", with
-            reactive power control, currently only "sgen" is possible.
+        **output_element** - Output element of the controller. Takes a string value "gen" or "sgen", with
+        reactive power control, currently only "sgen" is possible.
 
-            **output_variable** - Output variable of that element, normally "q_mvar".
+        **output_variable** - Output variable of that element, normally "q_mvar".
 
-            **output_element_index** - Index of output element in e.g. "net.sgen".
+        **output_element_index** - Index of output element in e.g. "net.sgen".
 
-            **output_element_in_service** - Whether output elements are in service or not.
+        **output_element_in_service** - Whether output elements are in service or not.
 
-            **output_values_distribution** - Distribution of reactive power provision.
+        **output_values_distribution** - Distribution of reactive power provision.
 
-            **input_element** - Measurement location, can be a transformers, switches, lines or busses (only with
-            voltage_ctrl), indicated by string value "res_trafo", "res_switch", "res_line" or "res_bus". In case of
-            "res_switch", an additional small impedance is introduced in the switch.
+        **input_element** - Measurement location, can be a transformers, switches, lines or busses (only with
+        voltage_ctrl), indicated by string value "res_trafo", "res_switch", "res_line" or "res_bus". In case of
+        "res_switch", an additional small impedance is introduced in the switch.
 
-            **input_variable** - Variable which is used to take the measurement from. Indicated by string value.
+        **input_variable** - Variable which is used to take the measurement from. Indicated by string value.
 
-            **input_inverted** - Boolean list that indicates if the measurement of the input element must be inverted.
-            Required when importing from PowerFactory.
+        **input_inverted** - Boolean list that indicates if the measurement of the input element must be inverted.
+        Required when importing from PowerFactory.
 
-            **gen_Q_response** - List of +/- 1 that indicates the Q gen response of the measurement location. Used in
-            order to invert the droop value of the controller.
+        **gen_Q_response** - List of +/- 1 that indicates the Q gen response of the measurement location. Used in
+        order to invert the droop value of the controller.
 
-            **input_element_index** - Element of input element in net.
+        **input_element_index** - Element of input element in net.
 
-            **set_point** - Set point of the controller, can be a reactive power provision or a voltage set point. In
-            case of voltage set point, voltage control must be set to true, bus_idx must be set to measurement bus and
-            input_element must be "res_bus". Can be overwritten by a droop controller chained with the binary search
-            control.
+        **set_point** - Set point of the controller, can be a reactive power provision or a voltage set point. In
+        case of voltage set point, voltage control must be set to true, bus_idx must be set to measurement bus and
+        input_element must be "res_bus". Can be overwritten by a droop controller chained with the binary search
+        control.
 
-            **voltage_ctrl** - Whether the controller is used for voltage control or not.
+        **voltage_ctrl** - Whether the controller is used for voltage control or not.
 
-            **bus_idx=None** - Bus index which is used for voltage control.
+        **bus_idx=None** - Bus index which is used for voltage control.
 
-            **tol=0.001** - Tolerance criteria of controller convergence.
-       """
+        **tol=0.001** - Tolerance criteria of controller convergence.
+   """
     def __init__(self, net, ctrl_in_service, output_element, output_variable, output_element_index,
                  output_element_in_service, output_values_distribution, input_element, input_variable,
                  input_element_index, set_point, voltage_ctrl, name="", input_inverted=[], gen_Q_response=[],
@@ -251,38 +251,38 @@ class BinarySearchControl(Controller):
 
 class DroopControl(Controller):
     """
-            The droop controller is used in case of a droop based control. It can operate either as a Q(U) controller or
-            as a U(Q) controller and is used in addition to a binary search controller (bsc). The linked binary search
-            controller is specified using the controller index, which refers to the linked bsc. The droop controller
-            behaves in a similar way to the station controllers presented in the Power Factory Tech Ref, although not
-            all possible settings from Power Factory are yet available.
+    The droop controller is used in case of a droop based control. It can operate either as a Q(U) controller or
+    as a U(Q) controller and is used in addition to a binary search controller (bsc). The linked binary search
+    controller is specified using the controller index, which refers to the linked bsc. The droop controller
+    behaves in a similar way to the station controllers presented in the Power Factory Tech Ref, although not
+    all possible settings from Power Factory are yet available.
 
-            INPUT:
-                **self**
+    INPUT:
+        **self**
 
-                **net** - A pandapower grid.
+        **net** - A pandapower grid.
 
-                **q_droop_var** - Droop Value in Mvar/p.u.
+        **q_droop_var** - Droop Value in Mvar/p.u.
 
-                **bus_idx** - Bus index in case of voltage control.
+        **bus_idx** - Bus index in case of voltage control.
 
-                **vm_set_pu** - Voltage set point in case of voltage control.
+        **vm_set_pu_bsc** - Voltage set point in case of voltage control.
 
-                **controller_idx** - Index of linked Binary< search control (if present).
+        **controller_idx** - Index of linked Binary< search control (if present).
 
-                **voltage_ctrl** - Whether the controller is used for voltage control or not.
+        **voltage_ctrl** - Whether the controller is used for voltage control or not.
 
-                **bus_idx=None** - Bus index which is used for voltage control.
+        **bus_idx=None** - Bus index which is used for voltage control.
 
-                **tol=1e-6** - Tolerance criteria of controller convergence.
+        **tol=1e-6** - Tolerance criteria of controller convergence.
 
-                **vm_set_lb=None** - Lower band border of dead band
+        **vm_set_lb=None** - Lower band border of dead band
 
-                **vm_set_ub=None** - Upper band border of dead band
-           """
-    def __init__(self, net, q_droop_mvar, bus_idx, vm_set_pu, controller_idx, voltage_ctrl, tol=1e-6, in_service=True,
-                 order=-1, level=0, name="", drop_same_existing_ctrl=False, matching_params=None, vm_set_lb=None, vm_set_ub=None,
-                 **kwargs):
+        **vm_set_ub=None** - Upper band border of dead band
+   """
+    def __init__(self, net, q_droop_mvar, bus_idx, vm_set_pu, q_set_mvar_bsc,  controller_idx, voltage_ctrl, tol=1e-6,
+                 q_set_mvar_bsc=None, in_service=True, order=-1, level=0, name="", drop_same_existing_ctrl=False,
+                 matching_params=None, vm_set_lb=None, vm_set_ub=None, **kwargs):
         super().__init__(net, in_service=in_service, order=order, level=level,
                          drop_same_existing_ctrl=drop_same_existing_ctrl,
                          matching_params=matching_params)
@@ -295,7 +295,7 @@ class DroopControl(Controller):
         self.bus_idx = bus_idx
         self.vm_pu = None
         self.vm_pu_old = self.vm_pu
-        self.vm_set_pu = vm_set_pu
+        self.vm_set_pu_bsc = vm_set_pu
         self.vm_set_pu_new = None
         self.lb_voltage = vm_set_lb
         self.ub_voltage = vm_set_ub
@@ -304,7 +304,7 @@ class DroopControl(Controller):
         self.tol = tol
         self.applied = False
         self.read_flag, self.input_variable = _detect_read_write_flag(net, "res_bus", bus_idx, "vm_pu")
-        self.q_set_mvar_bsc = None
+        self.q_set_mvar_bsc = q_set_mvar_bsc
         self.q_set_mvar = None
         self.q_set_old_mvar = None
         self.diff = None
@@ -373,5 +373,5 @@ class DroopControl(Controller):
                 input_values.append(read_from_net(net, input_element, input_index,
                                                   input_variable[counter], read_flag[counter]))
             input_values = (net.controller.at[self.controller_idx, "object"].input_sign * np.asarray(input_values)).tolist()
-            self.vm_set_pu_new = self.vm_set_pu + net.controller.at[self.controller_idx, "object"].gen_Q_response[0] * sum(input_values) / self.q_droop_mvar
+            self.vm_set_pu_new = self.vm_set_pu_bsc + net.controller.at[self.controller_idx, "object"].gen_Q_response[0] * sum(input_values) / self.q_droop_mvar
             net.controller.at[self.controller_idx, "object"].set_point = self.vm_set_pu_new

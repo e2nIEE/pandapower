@@ -4249,9 +4249,10 @@ def create_stactrl(net, item):
                 name=item.loc_name,
                 q_droop_mvar=item.Srated * 100 / item.ddroop,
                 bus_idx=bus,
-                vm_set_pu=item.udeadbup,
+                vm_set_pu=None,
                 vm_set_ub=item.udeadbup,
                 vm_set_lb=item.udeadblow,
+                q_set_mvar_bsc=item.qsetp,
                 controller_idx=bsc.index,
                 voltage_ctrl=False
             )
