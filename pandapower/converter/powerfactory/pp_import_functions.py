@@ -380,14 +380,14 @@ def add_additional_attributes(item, net, element, element_id, attr_list=None, at
     """
     if attr_dict is None:
         attr_dict = {k: k for k in attr_list}
-    
+
     if attr_list is not None:
         for attr_l in attr_list:
             if attr_l in attr_dict:
                 continue
             else:
                 attr_dict[attr_l] = attr_l
-                
+
     for attr in attr_dict.keys():
         if '.' in attr:
             # go in the object chain of a.b.c.d until finally get the chr_name
@@ -491,7 +491,7 @@ def create_pp_bus(net, item, flag_graphics, is_unbalanced):
     net[table].at[bid, "description"] = descr
     net[table].at[bid, "substat"] = substat_descr
     net[table].at[bid, "folder_id"] = item.fold_id.loc_name
-    
+
     attr_dict={"for_name": "equipment", "cimRdfId": "origin_id", "cpSite.loc_name": "site"}
     add_additional_attributes(item, net, table, bid, attr_dict=attr_dict,
                               attr_list=["sernum", "chr_name"])
@@ -2330,7 +2330,7 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
         logger.debug('created sgen at index <%s>' % sid)
 
     net[element].loc[sid, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    add_additional_attributes(item, net, element, sid, attr_dict={"for_name": "equipment", "cimRdfId": "origin_id", 
+    add_additional_attributes(item, net, element, sid, attr_dict={"for_name": "equipment", "cimRdfId": "origin_id",
                                                                   "cpSite.loc_name": "site"},
                                                       attr_list=["sernum", "chr_name"])
     if item.pQlimType and element != 'ext_grid':
@@ -4313,19 +4313,19 @@ def GetBranchElementFromSwitch(net, q_control_element, graph):
                 nb = neighbors[0]
                 matches = []
 
-                # Parallele Leitungen current <-> nb
+                # parallel lines
                 par_lines = net.line[
                     ((net.line.from_bus == current) & (net.line.to_bus == nb)) |
                     ((net.line.from_bus == nb) & (net.line.to_bus == current))
                     ]
 
-                # Parallele Impedanzen current <-> nb (falls Tabelle vorhanden)
+                # parallel impedances
                 par_imp = net.impedance[
                     ((net.impedance.from_bus == current) & (net.impedance.to_bus == nb)) |
                     ((net.impedance.from_bus == nb) & (net.impedance.to_bus == current))
                     ]
 
-                # Parallele 2W-Trafos current <-> nb (selten, aber möglich)
+                # parallel trafo2w current
                 par_trafos = net.trafo[
                     ((net.trafo.hv_bus == current) & (net.trafo.lv_bus == nb)) |
                     ((net.trafo.hv_bus == nb) & (net.trafo.lv_bus == current))
@@ -4341,7 +4341,7 @@ def GetBranchElementFromSwitch(net, q_control_element, graph):
                     )
                     return None
 
-                # trafo3w match?
+                # trafo3w match
                 if len(t3w_match) == 1:
                     idx = t3w_match.index[0]
                     row = net.trafo3w.loc[idx]
@@ -4354,7 +4354,7 @@ def GetBranchElementFromSwitch(net, q_control_element, graph):
 
                     return ("trafo3w", idx, connection_side)
 
-                # line match?
+                # line match
                 line_match = net.line[(net.line.from_bus == current) | (net.line.to_bus == current)]
                 if not line_match.empty:
                     idx = line_match.index[0]
@@ -4363,7 +4363,7 @@ def GetBranchElementFromSwitch(net, q_control_element, graph):
                     connection_side = "from_bus" if current == from_bus else "to_bus"
                     return ("line", idx, connection_side)
 
-                # transformer match?
+                # transformer match
                 trafo_match = net.trafo[(net.trafo.hv_bus == current) | (net.trafo.lv_bus == current)]
                 if not trafo_match.empty:
                     idx = trafo_match.index[0]
@@ -4372,7 +4372,7 @@ def GetBranchElementFromSwitch(net, q_control_element, graph):
                     connection_side = "hv_bus" if current == hv_bus else "lv_bus"
                     return ("trafo", idx, connection_side)
 
-                # Impedance match?
+                # impedance match
                 impedance_match = net.impedance[(net.impedance.from_bus == current) | (net.impedance.to_bus == current)]
                 if not impedance_match.empty:
                     idx = impedance_match.index[0]

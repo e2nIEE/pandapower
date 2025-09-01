@@ -85,7 +85,7 @@ class BinarySearchControl(Controller):
             # empty, then set all entries to 1
             self.input_sign = [1] * n
         elif isinstance(input_inverted, bool):
-            # single bool, then set all entries to desired value pf +/-1 -> auf n Elemente broadcasten
+            # single bool, then set all entries to desired value +/-1
             self.input_sign = ([-1] if input_inverted else [1]) * n
         else:
             inv_list = list(input_inverted)[:n]
@@ -104,7 +104,7 @@ class BinarySearchControl(Controller):
             self.gen_Q_response = [1] * n
         else:
             if len(gen_Q_response) < n:
-                gen_Q_response += [1] * (n - len(gen_Q_response))  # fehlende als +1
+                gen_Q_response += [1] * (n - len(gen_Q_response))  # missing entries with +1
             self.gen_Q_response = gen_Q_response
         self.set_point = set_point
         self.voltage_ctrl = voltage_ctrl
@@ -230,7 +230,7 @@ class BinarySearchControl(Controller):
                 step_diff == 0, 1e-6, step_diff)
 
             rel_cap = 2
-            cap = rel_cap * (np.abs(self.output_values) + 1e-6) + 50  # +epsilon gegen Null +50MVAr absolut
+            cap = rel_cap * (np.abs(self.output_values) + 1e-6) + 50  # add epsilon to avoid zero; absolute cap +50 MVAr
 
             delta = x - self.output_values
             delta = np.clip(delta, -cap, +cap)
@@ -251,35 +251,35 @@ class BinarySearchControl(Controller):
 
 class DroopControl(Controller):
     """
-            The droop controller is used in case of a droop based control. It can operate either as a Q(U) controller or
-            as a U(Q) controller and is used in addition to a binary search controller (bsc). The linked binary search
-            controller is specified using the controller index, which refers to the linked bsc. The droop controller
-            behaves in a similar way to the station controllers presented in the Power Factory Tech Ref, although not
-            all possible settings from Power Factory are yet available.
+        The droop controller is used in case of a droop based control. It can operate either as a Q(U) controller or
+        as a U(Q) controller and is used in addition to a binary search controller (bsc). The linked binary search
+        controller is specified using the controller index, which refers to the linked bsc. The droop controller
+        behaves in a similar way to the station controllers presented in the Power Factory Tech Ref, although not
+        all possible settings from Power Factory are yet available.
 
-            INPUT:
-                **self**
+        INPUT:
+            **self**
 
-                **net** - A pandapower grid.
+            **net** - A pandapower grid.
 
-                **q_droop_var** - Droop Value in Mvar/p.u.
+            **q_droop_var** - Droop Value in Mvar/p.u.
 
-                **bus_idx** - Bus index in case of voltage control.
+            **bus_idx** - Bus index in case of voltage control.
 
-                **vm_set_pu** - Voltage set point in case of voltage control.
+            **vm_set_pu** - Voltage set point in case of voltage control.
 
-                **controller_idx** - Index of linked Binary< search control (if present).
+            **controller_idx** - Index of linked Binary< search control (if present).
 
-                **voltage_ctrl** - Whether the controller is used for voltage control or not.
+            **voltage_ctrl** - Whether the controller is used for voltage control or not.
 
-                **bus_idx=None** - Bus index which is used for voltage control.
+            **bus_idx=None** - Bus index which is used for voltage control.
 
-                **tol=1e-6** - Tolerance criteria of controller convergence.
+            **tol=1e-6** - Tolerance criteria of controller convergence.
 
-                **vm_set_lb=None** - Lower band border of dead band
+            **vm_set_lb=None** - Lower band border of dead band
 
-                **vm_set_ub=None** - Upper band border of dead band
-           """
+            **vm_set_ub=None** - Upper band border of dead band
+       """
     def __init__(self, net, q_droop_mvar, bus_idx, vm_set_pu, controller_idx, voltage_ctrl, tol=1e-6, in_service=True,
                  order=-1, level=0, name="", drop_same_existing_ctrl=False, matching_params=None, vm_set_lb=None, vm_set_ub=None,
                  **kwargs):
@@ -373,5 +373,5 @@ class DroopControl(Controller):
                 input_values.append(read_from_net(net, input_element, input_index,
                                                   input_variable[counter], read_flag[counter]))
             input_values = (net.controller.at[self.controller_idx, "object"].input_sign * np.asarray(input_values)).tolist()
-            self.vm_set_pu_new = self.vm_set_pu + net.controller.at[self.controller_idx, "object"].gen_Q_response[0] * sum(input_values) / self.q_droop_mvar
+            self.vm_set_pu_new = self.vm_set_pu + sum(input_values) / self.q_droop_mvar #net.controller.at[self.controller_idx, "object"].gen_Q_response[0] *
             net.controller.at[self.controller_idx, "object"].set_point = self.vm_set_pu_new
