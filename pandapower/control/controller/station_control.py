@@ -282,9 +282,9 @@ class DroopControl(Controller):
 
         **vm_set_ub=None** - Upper band border of dead band
        """
-    def __init__(self, net, q_droop_mvar, bus_idx, vm_set_pu_bsc, controller_idx, voltage_ctrl, tol=1e-6,
+    def __init__(self, net, q_droop_mvar, bus_idx, controller_idx, voltage_ctrl, tol=1e-6,
                  q_set_mvar_bsc=None, in_service=True, order=-1, level=0, name="", drop_same_existing_ctrl=False,
-                 matching_params=None, vm_set_lb=None, vm_set_ub=None, **kwargs):
+                 matching_params=None, vm_set_pu_bsc=None, vm_set_lb=None, vm_set_ub=None, **kwargs):
         super().__init__(net, in_service=in_service, order=order, level=level,
                          drop_same_existing_ctrl=drop_same_existing_ctrl,
                          matching_params=matching_params)
@@ -297,7 +297,11 @@ class DroopControl(Controller):
         self.bus_idx = bus_idx
         self.vm_pu = None
         self.vm_pu_old = self.vm_pu
-        self.vm_set_pu_bsc = vm_set_pu
+        value = vm_set_pu_bsc if vm_set_pu_bsc is not None else kwargs.get('vm_set_pu')
+        if voltage_ctrl and value is None:
+            raise ValueError("vm_set_pu_bsc missing in input variables of droop controller!")
+        else:
+            self.vm_set_pu_bsc = value
         self.vm_set_pu_new = None
         self.lb_voltage = vm_set_lb
         self.ub_voltage = vm_set_ub

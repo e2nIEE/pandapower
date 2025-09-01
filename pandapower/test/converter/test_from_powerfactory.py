@@ -189,9 +189,6 @@ def test_pf_SC_meas_relocate():
     if Version(str(pf.__version__)) > Version("25.0.0"):
         net.controller.object[4].q_droop_mvar = -net.controller.object[4].q_droop_mvar
 
-    #net.controller.object[6].q_droop_mvar = -net.controller.object[6].q_droop_mvar
-
-
     all_diffs = validate_pf_conversion(net, tolerance_mva=1e-9)
 
     tol = {

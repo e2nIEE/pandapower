@@ -4223,7 +4223,7 @@ def create_stactrl(net, item):
                                                  input_element_index=res_element_index, set_point=v_setpoint_pu,
                                                  voltage_ctrl=True, bus_idx=bus, tol=1e-5)
             DroopControl(net, name=item.loc_name, q_droop_mvar=item.Srated * 100 / item.ddroop, bus_idx=bus,
-                                    vm_set_pu=v_setpoint_pu, controller_idx=bsc.index, voltage_ctrl=True)
+                                    vm_set_pu_bsc=v_setpoint_pu, controller_idx=bsc.index, voltage_ctrl=True)
         else:
             BinarySearchControl(net, name=item.loc_name, ctrl_in_service=stactrl_in_service,
                                            output_element=gen_element, output_variable="q_mvar",
@@ -4285,7 +4285,7 @@ def create_stactrl(net, item):
                 name=item.loc_name,
                 q_droop_mvar=item.Srated * 100 / item.ddroop,
                 bus_idx=bus,
-                vm_set_pu=None,
+                vm_set_pu_bsc=None,
                 vm_set_ub=item.udeadbup,
                 vm_set_lb=item.udeadblow,
                 q_set_mvar_bsc=item.qsetp,
