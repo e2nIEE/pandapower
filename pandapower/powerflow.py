@@ -3,7 +3,7 @@
 # Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from numpy import nan_to_num, array, allclose, int64
+from numpy import nan_to_num, array, allclose, int64, concatenate
 
 from pandapower.auxiliary import LoadflowNotConverged, AlgorithmUnknown, _clean_up, _add_auxiliary_elements
 from pandapower.build_branch import _calc_trafo_parameter, _calc_trafo3w_parameter
@@ -45,8 +45,8 @@ def _powerflow(net, **kwargs):
         init_results(net)
 
     if net["_options"]["voltage_depend_loads"] and algorithm not in ['nr', 'bfsw'] and not (
-            allclose(net.load.const_z_percent.values, 0) and
-            allclose(net.load.const_i_percent.values, 0)):
+            allclose(concatenate((net.load.const_z_p_percent.values, net.load.const_z_q_percent.values)), 0) and
+            allclose(concatenate((net.load.const_z_p_percent.values, net.load.const_z_q_percent.values)), 0)):
         logger.error(("pandapower powerflow does not support voltage depend loads for algorithm "
                       "'%s'!") % algorithm)
 

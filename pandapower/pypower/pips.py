@@ -19,7 +19,7 @@ from scipy.sparse import vstack, hstack, eye, csr_matrix as sparse
 from scipy.sparse.linalg import spsolve
 
 
-EPS = finfo(float).eps
+EPS = finfo(float).eps  # type: ignore[var-annotated]
 
 
 def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None,

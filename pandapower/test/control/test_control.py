@@ -141,8 +141,8 @@ def test_in_service_bool(net):
 
 def test_multiple_levels(net):
     TrafoController(net, 0, side="lv", element="trafo", level=1, tol=1e-6, in_service=True)
-    Controller(net, gid=2, level=[1, 2])
-    Controller(net, gid=2, level=[1, 2])
+    Controller(net, level=[1, 2])
+    Controller(net, level=[1, 2])
     level, order = get_controller_order(net, net.controller)
     # three levels with unspecific controller order => in order of appearance
     # assert order == [[0, 1], [1,2]]
