@@ -35,7 +35,7 @@ is_branch_test = [True, False]
 # parameters for WP 2.2 and WP 2.4
 gen_idx = [1, [1, 3]]  # includes both, static generator and synchronous generator
 is_active_current = [False, True]  # TODO: for gen not working yet (grids and results not created)
-gen_mode = ['sgen', 'gen', 'all']  # TODO: mode 'all' is implemented but results are not created yet
+gen_mode = ['sgen', 'gen']  # TODO: mode 'all' is implemented but results are not created yet
 
 # create parameter lists for WPs
 param_wp21, param_vec_wp21, param_wp22, param_vec_wp22 = create_parameter_list(
