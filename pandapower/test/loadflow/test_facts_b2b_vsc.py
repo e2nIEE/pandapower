@@ -12,45 +12,62 @@ from pandapower.run import runpp
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
 from pandapower.test.loadflow.test_facts import copy_with_impedance, facts_case_study_grid, compare_ssc_impedance_gen
 
-def test_vsc_as_ground():
+
+def test_hvdc_interconnect_with_dmr():
+    """
+    Test to check the dmr (the portion in the middle) of an hvdc interconnect.
+             +-------+        +-------+
+             |       |--------|       |
+    Ext -----| BiVsc |        | BiVsc |--- Load
+             |       |-+    +-|       |
+             +-------+ |    | +-------+
+                       +----+
+             +-------+ |    | +-------+
+             |       |-+    +-|       |
+    Ext -----| BiVsc |        | BiVsc |--- Load
+             |       |--------|       |
+             +-------+        +-------+
+
+    """
     net = create_empty_network()
-    create_bus(net, 380)
-    #create_bus(net, 380)
-    #create_line_from_parameters(net, 0, 1, 1, 0.0487, 0.13823, 160, 0.664)
 
-    create_load(net, 0, p_mw=10)
-    create_ext_grid(net, bus=0)
+    create_buses(net, 8, 380)#, geodata=[(0, 0), (100, 0), (200, 0), (300, 0)])
 
-    create_bus_dc(net, 380, 'A', geodata=(100, 10))  # 0
-    create_bus_dc(net, 380, 'B', geodata=(200, 10))  # 1
+    create_ext_grid(net, bus=0, vm_pu=1.0)
+    create_ext_grid(net, bus=1, vm_pu=1.0)
 
-    create_line_dc_from_parameters(net, 0, 1, length_km=100, r_ohm_per_km=0.0212, max_i_ka=0.963)
+    create_line_from_parameters(net, 0, 2, 1, 0.0487, 0.13823, 160, 0.664)
+    create_line_from_parameters(net, 1, 3, 1, 0.0487, 0.13823, 160, 0.664)
+    create_line_from_parameters(net, 4, 6, 1, 0.0487, 0.13823, 160, 0.664)
+    create_line_from_parameters(net, 5, 7, 1, 0.0487, 0.13823, 160, 0.664)
 
-    create_vsc(
-        net,
-        bus=0,
-        bus_dc=0,
-        control_mode_ac='q_mvar',
-        control_value_ac=0.,
-        control_mode_dc='vm_pu',
-        control_value_dc=0.,
-        r_ohm=0.006,
-        x_ohm=1.,
-        r_dc_ohm=0.1,
-    )
+    create_load(net, bus=6, p_mw=100.)
+    create_load(net, bus=7, p_mw=150.)
 
-    # create_vsc(
-    #     net,
-    #     bus=1,
-    #     bus_dc=1,
-    #     control_mode_ac='vm_pu',
-    #     control_value_ac=1.,
-    #     control_mode_dc='vm_pu',
-    #     control_value_dc=0.,
-    #     r_ohm=0.006,
-    #     x_ohm=1.,
-    #     r_dc_ohm=0.1,
-    # )
+    # DC part
+    create_bus_dc(net, 380, 'A', geodata=(100,  10))  # 0
+    create_bus_dc(net, 380, 'B', geodata=(100,   0))  # 1
+    create_bus_dc(net, 380, 'C', geodata=(100, -10))  # 2
+
+    create_bus_dc(net, 380, 'D', geodata=(200,  10))  # 3
+    create_bus_dc(net, 380, 'E', geodata=(200,   0))  # 4
+    create_bus_dc(net, 380, 'F', geodata=(200, -10))  # 5
+
+    create_line_dc_from_parameters(net, 0, 3, length_km=100, r_ohm_per_km=0.0212, max_i_ka=0.963)
+    create_line_dc_from_parameters(net, 1, 4, length_km=100, r_ohm_per_km=0.0212, max_i_ka=0.963)
+    create_line_dc_from_parameters(net, 2, 5, length_km=100, r_ohm_per_km=0.0212, max_i_ka=0.963)
+
+    # Left side
+    create_b2b_vsc(net, 2, 0, 1, 0.2, 10, 0.3,
+                   control_mode_ac='vm_pu', control_value_ac=1, control_mode_dc="vm_pu", control_value_dc=1.)
+    create_b2b_vsc(net, 3, 1, 2, 0.2, 10, 0.3,
+                   control_mode_ac='vm_pu', control_value_ac=1, control_mode_dc="vm_pu", control_value_dc=1.)
+
+    # Right side
+    create_b2b_vsc(net, 4, 3, 4, 0.2, 10, 0.3,
+                   control_mode_ac='slack', control_value_ac=1, control_mode_dc="p_mw", control_value_dc=1.02)
+    create_b2b_vsc(net, 5, 4, 5, 0.2, 10, 0.3,
+                   control_mode_ac='slack', control_value_ac=1, control_mode_dc="p_mw", control_value_dc=1.02)
 
     runpp(net)
     pass
@@ -71,19 +88,6 @@ def test_source_dc():
     create_source_dc(net, bus_dc=0, vm_pu=.5)
     create_load_dc(net, bus_dc=1, p_dc_mw=10)
 
-    # create_vsc(
-    #     net,
-    #     bus=0,
-    #     bus_dc=1,
-    #     control_mode_ac='slack',
-    #     control_value_ac=1.,
-    #     control_mode_dc='p_mw',
-    #     control_value_dc=15,
-    #     r_ohm=0.006,
-    #     x_ohm=1.,
-    #     r_dc_ohm=0.1,
-    # )
-
     runpp(net)
     pass
 
@@ -101,7 +105,6 @@ def test_b2b_vsc_shorted():
     net = create_empty_network()
 
     # AC part
-    # create_buses(net, 2, 380, geodata=[(0, 0), (300, 0)])
     ext_bus = 10
     create_buses(net, 4, 380, geodata=[(0, 0), (100, 0), (200, 0), (300, 0)], index=[ext_bus, 1, 2, 3])
     create_line_from_parameters(net, ext_bus, 1, 1, 0.0487, 0.13823, 160, 0.664)
@@ -118,9 +121,9 @@ def test_b2b_vsc_shorted():
     create_bus_dc(net, 380, 'D', geodata=(200, -10)) # 3
 
     # Earthing
-    create_bus_dc(net, 380, 'Earth', geodata=(200, -20)) # 4
+    #create_bus_dc(net, 380, 'Earth', geodata=(200, -20)) # 4
     # create_bus_dc(net, -380, 'Earth', geodata=(200, -20)) # 5
-    create_line_dc_from_parameters(net, 1, 4, length_km=10, r_ohm_per_km=0.0212, max_i_ka=0.963)
+    #create_line_dc_from_parameters(net, 1, 4, length_km=10, r_ohm_per_km=0.0212, max_i_ka=0.963)
     # create_line_dc_from_parameters(net, 0, 5, length_km=10, r_ohm_per_km=0.0212, max_i_ka=0.963)
     # create_source_dc(net, bus_dc=4, vm_pu=0.1, in_service=True)
     #create_load_dc(net, bus_dc=4, p_dc_mw=10.)
@@ -131,7 +134,7 @@ def test_b2b_vsc_shorted():
 
     # b2b VSC, first one regulates the voltages
     create_b2b_vsc(net, 1, 0, 2, 0.006, 1., 0.1,
-                   control_mode_ac='vm_pu', control_value_ac=1., control_mode_dc="vm_pu_diff", control_value_dc=1.)
+                   control_mode_ac='vm_pu', control_value_ac=1., control_mode_dc="vm_pu", control_value_dc=1.)
 
     # second one draws constant power and works as a slack on the ac side
     create_b2b_vsc(net, 2, 1, 3, 0.006, 1., 0.1,
