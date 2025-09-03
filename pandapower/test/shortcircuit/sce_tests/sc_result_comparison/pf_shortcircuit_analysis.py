@@ -286,10 +286,14 @@ class PFShortCircuitAnalysis:
     def initialize_grounding(self):
         app = self.app
         grounding_type = self.grounding_type
+        trafo = app.GetCalcRelevantObjects('*.ElmTr2')[0]
         if grounding_type is None:
+            trafo.cgnd_l = 0
+            trafo.re0tr_l = 0
+            trafo.xe0tr_l = 0
             return
 
-        trafo = app.GetCalcRelevantObjects('*.ElmTr2')[0]
+        trafo.cgnd_l = 1 if grounding_type == 'isolated' else 0
         if grounding_type == 'solid':
             trafo.re0tr_l = 0
             trafo.xe0tr_l = 0
@@ -305,6 +309,3 @@ class PFShortCircuitAnalysis:
         elif grounding_type == 'resonant':  # ToDO: only place holder right now, add correct values
             trafo.re0tr_l = 0
             trafo.xe0tr_l = 0
-        elif grounding_type == 'isolated':
-            trafo.re0tr_l = 1e99
-            trafo.xe0tr_l = 1e99
