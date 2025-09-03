@@ -34,16 +34,11 @@ from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as version_str
 from typing import (
     Any,
-    Dict,
     Iterable,
-    List,
     Literal,
-    Union,
-    Tuple,
     Type,
     TYPE_CHECKING,
     TypeVar,
-    Optional,
     overload,
 )
 
@@ -82,7 +77,7 @@ except ImportError:
     geopandas_available = False
 
 if TYPE_CHECKING:
-    PyPowerNetwork = Dict[str, Any]
+    PyPowerNetwork = dict[str, Any]
     NumpyDType = TypeVar("NumpyDType", bound=np.generic, covariant=True)
 
 logger = logging.getLogger(__name__)
@@ -94,7 +89,7 @@ T = TypeVar("T")
 def log_to_level(
     msg: str,
     passed_logger: logging.Logger,
-    level: Optional[Literal["error", "warning", "info", "debug", "UserWarning"]]
+    level: Literal["error", "warning", "info", "debug", "UserWarning"] | None
 ) -> None:
     if level == "error":
         passed_logger.error(msg)
@@ -151,7 +146,7 @@ except ImportError:
     NUMBA_INSTALLED = False
 
 
-def soft_dependency_error(fct_name: str, required_packages: Union[str, Iterable[str]]) -> None:
+def soft_dependency_error(fct_name: str, required_packages: str | Iterable[str]) -> None:
     required_packages = required_packages if isinstance(required_packages, str) else \
         "','".join(required_packages)
     error_msg = "\n".join([
@@ -178,7 +173,7 @@ def warn_and_fix_parameter_renaming(
     return new_parameter
 
 
-class ADict(Dict[str, Any], MutableMapping[str, Any]):
+class ADict(dict[str, Any], MutableMapping[str, Any]):
     _allow_invalid_attributes: bool
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -196,19 +191,19 @@ class ADict(Dict[str, Any], MutableMapping[str, Any]):
 
     # --- taken from AttrDict
 
-    def __getstate__(self) -> Tuple[Dict[str, Any], bool]:
+    def __getstate__(self) -> tuple[dict[str, Any], bool]:
         return self.copy(), self._allow_invalid_attributes
 
-    def __dir__(self) -> List[str]:
+    def __dir__(self) -> list[str]:
         return list(self.keys())
 
-    def __setstate__(self, state: Tuple[Dict[str, Any], bool]) -> None:
+    def __setstate__(self, state: tuple[dict[str, Any], bool]) -> None:
         mapping, allow_invalid_attributes = state
         self.update(mapping)
         self._setattr('_allow_invalid_attributes', allow_invalid_attributes)
 
     @classmethod
-    def _constructor(cls, mapping: Dict[str, Any]) -> "ADict":
+    def _constructor(cls, mapping: dict[str, Any]) -> "ADict":
         return cls(mapping)
 
     # --- taken from MutableAttr
@@ -293,7 +288,7 @@ class ADict(Dict[str, Any], MutableMapping[str, Any]):
 
         return self._build(self[key])
 
-    def __deepcopy__(self, memo: Dict[int, Any]) -> "ADict":
+    def __deepcopy__(self, memo: dict[int, Any]) -> "ADict":
         """
         overloads the deepcopy function of pandapower if at least one DataFrame with column
         "object" is in net
@@ -462,14 +457,14 @@ class pandapowerNet(ADict):
     name: str
     f_hz: float
     sn_mva: float
-    std_types: Dict[str, Any]
-    user_pf_options: Dict[str, Any]
-    _ppc: Optional[PyPowerNetwork]
-    _ppc0: Optional[PyPowerNetwork]
-    _ppc1: Optional[PyPowerNetwork]
-    _ppc2: Optional[PyPowerNetwork]
-    _is_elements: Optional[pd.DataFrame]
-    _pd2ppc_lookups: Dict[str, Any]
+    std_types: dict[str, Any]
+    user_pf_options: dict[str, Any]
+    _ppc: PyPowerNetwork | None
+    _ppc0: PyPowerNetwork | None
+    _ppc1: PyPowerNetwork | None
+    _ppc2: PyPowerNetwork | None
+    _is_elements: pd.DataFrame | None
+    _pd2ppc_lookups: dict[str, Any]
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
@@ -544,7 +539,7 @@ class GeoAccessor:
             soft_dependency_error("GeoAccessor", "geopandas")
 
     @staticmethod
-    def _extract_coords(x: GeoJSON) -> Union[NDArray[np.float64], List[NDArray[np.float64]]]:
+    def _extract_coords(x: GeoJSON) -> NDArray[np.float64] | list[NDArray[np.float64]]:
         if x["type"] == "Point":
             return np.array(x["coordinates"])
         return [np.array(y) for y in x["coordinates"]]
@@ -603,7 +598,7 @@ class GeoAccessor:
         raise AttributeError(f"'GeoAccessor' object has no attribute '{item}'")
 
 
-def plural_s(number: Union[int, float]) -> str:
+def plural_s(number: int | float]) -> str:
     return "" if number == 1 else "s"
 
 
@@ -620,12 +615,12 @@ def ets_to_element_types(ets: EtType) -> ElementType: ...
 
 
 @overload
-def ets_to_element_types(ets: List[EtType]) -> List[ElementType]: ...
+def ets_to_element_types(ets: list[EtType]) -> list[ElementType]: ...
 
 
 def ets_to_element_types(
-    ets: Union[EtType, List[EtType], None] = None
-) -> Union[pd.Series[ElementType], ElementType, List[ElementType]]:
+    ets: EtType | list[EtType] | None = None
+) -> pd.Series[ElementType] | ElementType | list[ElementType]:
     ser = pd.Series(["bus", "line", "trafo", "trafo3w", "impedance"],
                     index=["b", "l", "t", "t3", "i"])
     if ets is None:
@@ -645,10 +640,10 @@ def element_types_to_ets(element_types: ElementType) -> EtType: ...
 
 
 @overload
-def element_types_to_ets(element_types: List[ElementType]) -> List[EtType]: ...
+def element_types_to_ets(element_types: list[ElementType]) -> list[EtType]: ...
 
 
-def element_types_to_ets(element_types: Union[ElementType, List[ElementType], None] = None) -> Union[pd.Series[EtType], EtType, List[EtType]]:
+def element_types_to_ets(element_types: ElementType | list[ElementType] | None = None) -> pd.Series[EtType] | EtType | list[EtType]:
     ser1 = ets_to_element_types()
     ser2 = pd.Series(ser1.index, index=list(ser1))
     if element_types is None:
@@ -742,7 +737,7 @@ class MapboxTokenMissing(ppException):
 
 def _sum_by_group(
     bus: NDArray[np.int64], first_val: NDArray[np.float64], second_val: NDArray[np.float64]
-) -> Tuple[NDArray[np.int64], NDArray[np.float64], NDArray[np.float64]]:
+) -> tuple[NDArray[np.int64], NDArray[np.float64], NDArray[np.float64]]:
     order: NDArray[np.int64] = np.argsort(bus)
     bus = bus[order]
     index: NDArray[np.bool] = np.ones(len(bus), 'bool')
@@ -761,7 +756,7 @@ def _sum_by_group(
 
 def _sum_by_group_nvals(
     bus: NDArray[np.int64], *vals: NDArray[np.float64]
-) -> Tuple[NDArray[np.int64], *Tuple[NDArray[np.float64], ...]]:
+) -> tuple[NDArray[np.float64], ...]:
     order = np.argsort(bus)
     bus = bus[order]
     index = np.ones(len(bus), 'bool')
@@ -782,18 +777,18 @@ def _sum_by_group_nvals(
 
 @overload
 def get_indices(
-    selection: NDArray[np.int64], lookup: Dict[str, Dict[np.int64, np.int64]], fused_indices: Literal[False] = False
+    selection: NDArray[np.int64], lookup: dict[str, dict[np.int64, np.int64]], fused_indices: Literal[False] = False
 ) -> NDArray[np.int64]: ...
 
 
 @overload
 def get_indices(
-    selection: NDArray[np.int64], lookup: Dict[np.int64, np.int64], fused_indices: Literal[True] = True
+    selection: NDArray[np.int64], lookup: dict[np.int64, np.int64], fused_indices: Literal[True] = True
 ) -> NDArray[np.int64]: ...
 
 
 def get_indices(
-    selection: NDArray[np.int64], lookup: Union[Dict[np.int64, np.int64], Dict[str, Dict[np.int64, np.int64]]], fused_indices: bool = True
+    selection: NDArray[np.int64], lookup: dict[np.int64, np.int64] | dict[str, dict[np.int64, np.int64]], fused_indices: bool = True
 ) -> NDArray[np.int64]:
     """
     Helper function during pd2mpc conversion. It resolves the mapping from a
@@ -812,7 +807,7 @@ def get_indices(
 
 
 def _get_values(
-    source: NDArray[np.float64], selection: NDArray[np.int64], lookup: Dict[np.int64, np.int64]
+    source: NDArray[np.float64], selection: NDArray[np.int64], lookup: dict[np.int64, np.int64]
 ) -> NDArray[np.float64]:
     """
     Returns values for a selection of values after a lookup.
@@ -830,16 +825,16 @@ def _get_values(
 
 
 @overload
-def ensure_iterability(var: Iterable[T], len_: Optional[int] = None) -> Iterable[T]:
+def ensure_iterability(var: Iterable[T], len_: int | None = None) -> Iterable[T]:
     ...
 
 
 @overload
-def ensure_iterability(var: T, len_: Optional[int] = None) -> Iterable[T]:
+def ensure_iterability(var: T, len_: int | None = None) -> Iterable[T]:
     ...
 
 
-def ensure_iterability(var: Any, len_: Optional[int] = None) -> Any:
+def ensure_iterability(var: Any, len_: int | None = None) -> Any:
     """
     Ensures iterability of a variable (and also the length if given).
 
@@ -887,7 +882,7 @@ def read_from_net(
 def read_from_net(
     net: pandapowerNet,
     element: str,
-    index: Union[np.int64, NDArray[np.int64]],
+    index: np.int64 | NDArray[np.int64],
     variable: str,
     flag: Literal["auto", "single_index", "all_index", "loc", "object"] = 'auto'
 ) -> Any:
@@ -950,9 +945,9 @@ def write_to_net(
 def write_to_net(
     net: pandapowerNet,
     element: str,
-    index: Union[np.int64, NDArray[np.int64]],
+    index: np.int64 | NDArray[np.int64],
     variable: str,
-    values: Union[Any, NDArray[np.int64]],
+    values: Any | NDArray[np.int64],
     flag: Literal["auto", "single_index", "all_index", "loc", "object"] = 'auto'
 ) -> None:
     """
@@ -993,7 +988,7 @@ def write_to_net(
 
 def _detect_read_write_flag(
     net: pandapowerNet, element: str, index: Any, variable: str
-) -> Tuple[Literal["single_index", "all_index", "loc", "object"], str]:
+) -> tuple[Literal["single_index", "all_index", "loc", "object"], str]:
     if variable.startswith('object'):
         # write to object attribute
         return "object", variable.split(".")[1]
@@ -1035,8 +1030,8 @@ def _read_from_object_attribute(
 
 
 def _read_from_object_attribute(
-    net: pandapowerNet, element: str, variable: str, index: Union[np.int64, NDArray[np.int64]]
-) -> Union[Any, NDArray[Any]]:
+    net: pandapowerNet, element: str, variable: str, index: np.int64 | NDArray[np.int64]
+) -> Any | NDArray[Any]:
     if hasattr(index, '__iter__') and len(index) > 1:
         values = np.array(shape=index.shape)
         for i, idx in enumerate(index):
@@ -1060,7 +1055,7 @@ def _write_with_loc(net: pandapowerNet, element: str, index: NDArray[np.int64], 
 
 
 def _write_to_object_attribute(
-    net: pandapowerNet, element: str, index: Union[np.int64, NDArray[np.int64]], variable: str, values: Union[Any, NDArray[Any]]
+    net: pandapowerNet, element: str, index: np.int64 | NDArray[np.int64], variable: str, values: Any | NDArray[Any]
 ) -> None:
     if hasattr(index, '__iter__') and len(index) > 1:
         for idx, val in zip(index, values):
@@ -1071,7 +1066,7 @@ def _write_to_object_attribute(
 
 def _set_isolated_nodes_out_of_service(
     ppc: PyPowerNetwork, bus_not_reachable: NDArray[np.bool], dc: bool = False
-) -> Tuple[NDArray[np.bool], int, int, PyPowerNetwork]:
+) -> tuple[NDArray[np.bool], int, int, PyPowerNetwork]:
     isolated_nodes = np.where(bus_not_reachable)[0]
     if len(isolated_nodes) > 0:
         logger.debug("There are isolated buses in the network! (%i nodes in the PPC)" % len(isolated_nodes))
@@ -1092,7 +1087,7 @@ def _set_isolated_nodes_out_of_service(
     return isolated_nodes, pus, qus, ppc
 
 
-def _check_connectivity_opf(ppc: PyPowerNetwork) -> Tuple[NDArray[np.bool], int, int]:
+def _check_connectivity_opf(ppc: PyPowerNetwork) -> tuple[NDArray[np.bool], int, int]:
     """
     Checks if the ppc contains isolated buses and changes slacks to PV nodes if multiple slacks are
     in net.
@@ -1132,7 +1127,7 @@ def _check_connectivity_opf(ppc: PyPowerNetwork) -> Tuple[NDArray[np.bool], int,
     return isolated_nodes, pus, qus
 
 
-def _check_connectivity(ppc: PyPowerNetwork) -> Tuple[NDArray[np.bool], int, int, NDArray[np.bool], int, int]:
+def _check_connectivity(ppc: PyPowerNetwork) -> tuple[NDArray[np.bool], int, int, NDArray[np.bool], int, int]:
     """
     Checks if the ppc contains isolated buses. If yes this isolated buses are set out of service
     :param ppc: pypower case file
@@ -1203,7 +1198,7 @@ def _check_connectivity(ppc: PyPowerNetwork) -> Tuple[NDArray[np.bool], int, int
     return isolated_nodes, pus, qus, isolated_nodes_dc, pus_dc, qus_dc
 
 
-def _subnetworks(ppc: PyPowerNetwork) -> List[List[int]]:
+def _subnetworks(ppc: PyPowerNetwork) -> list[list[int]]:
     """
     Return a list of lists of the connected buses of the network
     :param ppc: pypower case file
@@ -1266,10 +1261,10 @@ except RuntimeError:
 
 def _select_is_elements_numba(
     net: pandapowerNet,
-    isolated_nodes: Optional[NDArray[np.int64]] = None,
-    isolated_nodes_dc: Optional[NDArray[np.int64]] = None,
-    sequence: Optional[str] = None,
-) -> Dict[str, NDArray[np.int64]]:
+    isolated_nodes: NDArray[np.int64] | None = None,
+    isolated_nodes_dc: NDArray[np.int64] | None = None,
+    sequence: str | None = None,
+) -> dict[str, NDArray[np.int64]]:
     """
     Selects in-service elements in the grid (both AC and DC) based on the network's state
     and sets this information in the internal lookups.
@@ -1397,12 +1392,12 @@ def _add_ppc_options(
     mode: Literal["opf", "pf", "pf_3ph", "sc", "nx", "se"],
     switch_rx_ratio: int,
     enforce_q_lims: bool,
-    recycle: Dict[str, bool],
+    recycle: dict[str, bool],
     delta: float = 1e-10,
     voltage_depend_loads: bool = False,
     trafo3w_losses: Literal["hv", "lv", "star"] = "hv",
-    init_vm_pu: Union[Literal["flat", "results"], float] = 1.0,
-    init_va_degree: Union[Literal["dc", "flat", "results"], float] = 0,
+    init_vm_pu: Literal["flat", "results"] | float = 1.0,
+    init_va_degree: Literal["dc", "flat", "results"] | float = 0,
     p_lim_default: float = 1e9,
     q_lim_default: float = 1e9,
     neglect_open_switch_branches: bool = False,
@@ -1410,7 +1405,7 @@ def _add_ppc_options(
     distributed_slack: bool = False,
     tdpf: bool = False,
     tdpf_update_r_theta: bool = True,
-    tdpf_delay_s: Optional[float] = None,
+    tdpf_delay_s: float | None = None,
 ) -> None:
     """
     creates dictionary for pf, opf and short circuit calculations from input parameters.
@@ -1472,7 +1467,7 @@ def _add_pf_options(
     numba: bool,
     ac: bool,
     algorithm: Literal["nr", "iwamoto_nr", "bfsw", "gs", "fdxb", "fdbx", "lp"],
-    max_iteration: Union[int, Literal["auto"]],
+    max_iteration: int | Literal["auto"],
     **kwargs: Any,
 ) -> None:
     """
@@ -1553,7 +1548,7 @@ def _add_sc_options(
     _add_options(net, options)
 
 
-def _add_options(net: pandapowerNet, options: Dict[str, Any]) -> None:
+def _add_options(net: pandapowerNet, options: dict[str, Any]) -> None:
     # double_parameters = set(net.__internal_options.keys()) & set(options.keys())
     double_parameters = set(net._options.keys()) & set(options.keys())
     if len(double_parameters) > 0:
@@ -1641,7 +1636,7 @@ def _check_if_numba_is_installed(level: Literal["error", "warning", "info", "deb
 
 def _check_lightsim2grid_compatibility(
     net: pandapowerNet,
-    lightsim2grid: Union[Literal["auto"], bool],
+    lightsim2grid: Literal["auto"] | bool,
     voltage_depend_loads: bool,
     algorithm: Literal["nr", "iwamoto_nr", "bfsw", "gs", "fdxb", "fdbx"],
     distributed_slack: bool,
@@ -1726,7 +1721,7 @@ def _check_lightsim2grid_compatibility(
 def _check_tdpf_parameters(
     net: pandapowerNet,
     tdpf_update_r_theta: bool,
-    tdpf_delay_s: Optional[float]
+    tdpf_delay_s: float | None
 ) -> None:
     required_columns = ["tdpf"]  # required, cannot be filled with assumptions
     if "tdpf" not in net.line.columns:
@@ -1922,9 +1917,9 @@ def I_from_SV_elementwise(S: NDArray[NumpyDType], V: NDArray[NumpyDType]) -> NDA
 def SVabc_from_SV012(
     S012: NDArray[NumpyDType],
     V012: NDArray[NumpyDType],
-    n_res: Optional[int] = None,
-    idx: Optional[NDArray[np.bool]] = None,
-) -> Tuple[NDArray[NumpyDType], NDArray[NumpyDType]]:
+    n_res: int | None = None,
+    idx: NDArray[np.bool] | None = None,
+) -> tuple[NDArray[NumpyDType], NDArray[NumpyDType]]:
     if n_res is None:
         n_res = S012.shape[1]
     if idx is None:
@@ -1973,21 +1968,21 @@ def _replace_nans_with_default_limits(net: pandapowerNet, ppc: PyPowerNetwork) -
 def _init_runpp_options(
     net: pandapowerNet,
     algorithm: Literal["nr", "iwamoto_nr", "bfsw", "gs", "fdxb", "fdbx"],
-    calculate_voltage_angles: Union[Literal["auto"], bool],
+    calculate_voltage_angles: Literal["auto"] | bool,
     init: Literal["auto", "dc", "flat", "results"],
-    max_iteration: Union[Literal["auto"], int],
+    max_iteration: Literal["auto"] | int,
     tolerance_mva: float,
     trafo_model: Literal["t", "pi"],
     trafo_loading: Literal["current", "power"],
     enforce_q_lims: bool,
     check_connectivity: bool,
     voltage_depend_loads: bool,
-    passed_parameters: Optional[Dict[str, Any]] = None,
+    passed_parameters: dict[str, Any] | None = None,
     consider_line_temperature: bool = False,
     distributed_slack: bool = False,
     tdpf: bool = False,
     tdpf_update_r_theta: bool = True,
-    tdpf_delay_s: Optional[float] = None,
+    tdpf_delay_s: float | None = None,
     **kwargs: Any
 ) -> None:
     """
@@ -2146,7 +2141,7 @@ def _init_rundcpp_options(
     net: pandapowerNet,
     trafo_model: Literal["t", "pi"],
     trafo_loading: Literal["current", "power"],
-    recycle: Optional[Dict[str, Any]],
+    recycle: dict[str, Any] | None,
     check_connectivity: bool,
     switch_rx_ratio: int,
     trafo3w_losses: Literal["hv", "lv", "star"],
@@ -2183,7 +2178,7 @@ def _init_runopp_options(
     check_connectivity: bool,
     switch_rx_ratio: int,
     delta: float,
-    init: Union[Literal["dc", "flat", "results"], float],
+    init: Literal["dc", "flat", "results"] | float,
     numba: bool,
     trafo3w_losses: Literal["hv", "lv", "star"],
     consider_line_temperature: bool = False,
@@ -2250,8 +2245,8 @@ def _init_rundcopp_options(
 
 def _init_runse_options(
     net: pandapowerNet,
-    v_start: Union[float, Literal["flat", "results"]],
-    delta_start: Union[float, Literal["dc", "flat", "results"]],
+    v_start: float | Literal["flat", "results"],
+    delta_start: float | Literal["dc", "flat", "results"],
     calculate_voltage_angles: bool,
     check_connectivity: bool = True,
     trafo_model: Literal["t", "pi"] = "t",
