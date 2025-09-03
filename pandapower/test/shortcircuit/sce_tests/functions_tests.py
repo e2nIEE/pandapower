@@ -23,7 +23,7 @@ testfiles_path = os.path.join(pp_dir, 'test', 'shortcircuit', 'sce_tests')
 
 
 def create_parameter_list(net_names, faults, cases, values, lv_tol_percents, fault_location_buses, is_branch_test,
-                          vector_groups, gen_idx, is_active_current, gen_mode):
+                          vector_groups, gen_idx, is_active_current, gen_mode, grounding_types):
     # parameter list for WP 2.1
     parametrize_values_wp21 = list(
         product(faults, cases, values, lv_tol_percents, fault_location_buses, is_branch_test)
@@ -39,7 +39,6 @@ def create_parameter_list(net_names, faults, cases, values, lv_tol_percents, fau
     #  uses "Dyn" as vector group for LLL and LL. LLG and LG are combined with all vector groups.
     parametrize_values_vector_wp21 = []
     for net_name in net_names:
-        # fault location abhängig vom Grid
         if "twenty_bus" in net_name:
             fl_buses = [0, 8, 18]
         else:
@@ -94,8 +93,21 @@ def create_parameter_list(net_names, faults, cases, values, lv_tol_percents, fau
             fault_loc, branch_test, gen_id, active_curr, mode
         ))
 
+    # parameter list with vector group for WP 2.5
+    parametrize_values_vector_wp25 = []
+    for net_name in net_names:
+        if "twenty_bus" in net_name:
+            fl_buses = [0, 8, 18]
+        else:
+            fl_buses = fault_location_buses
+
+        parametrize_values_vector_wp25 += list(product(
+            [net_name[10:]], faults[2:], cases, values, lv_tol_percents, vector_groups,
+            fl_buses, is_branch_test, grounding_types
+        ))
+
     return (parametrize_values_wp21, parametrize_values_vector_wp21,
-            parametrize_values_wp22, parametrize_values_vector_wp22)
+            parametrize_values_wp22, parametrize_values_vector_wp22, parametrize_values_vector_wp25)
 
 
 def compare_results(columns_to_check, net_df, pf_results):
@@ -140,17 +152,44 @@ def load_test_case(net_name: str) -> pandapowerNet:
 
 
 def load_test_case_data(net_name, fault_location_bus, vector_group=None, gen_idx=None, is_active_current=False,
-                        gen_mode=None):
+                        gen_mode=None, grounding_type=None):
     is_gen = gen_idx is not None
+
+    if is_gen:
+        wp_folder = "wp_2.2_2.4"
+    elif grounding_type is not None:
+        wp_folder = "wp_2.5"
+    else:
+        wp_folder = "wp_2.1"
+
     if vector_group:
         if is_gen and is_active_current:
             net_name = f"{net_name}_{vector_group.lower()}_{gen_mode}_act"
         elif is_gen:
             net_name = f"{net_name}_{vector_group.lower()}_{gen_mode}"
+        elif grounding_type is not None:
+            net_name = f"{net_name}_{vector_group.lower()}_gen"
         else:
             net_name = f"{net_name}_{vector_group.lower()}"
 
     net = load_test_case(net_name)
+
+    if grounding_type is not None:
+        if grounding_type == "solid":
+            net.trafo['xn_ohm'] = 0
+            net.trafo['rn_ohm'] = 0
+        elif grounding_type == "resistance":
+            net.trafo['xn_ohm'] = 5
+            net.trafo['rn_ohm'] = 0
+        elif grounding_type == "inductance":
+            net.trafo['xn_ohm'] = 0
+            net.trafo['rn_ohm'] = 5
+        elif grounding_type == "impedance":
+            net.trafo['xn_ohm'] = 5
+            net.trafo['rn_ohm'] = 5
+        elif grounding_type == "isolated":
+            net.trafo['xn_ohm'] = 1e99
+            net.trafo['rn_ohm'] = 1e99
 
     if is_gen:
         if gen_mode == "sgen" or gen_mode == "all":
@@ -182,12 +221,14 @@ def load_test_case_data(net_name, fault_location_bus, vector_group=None, gen_idx
     dataframes = {}
     for bb in ['bus', 'branch']:
         file_name = f"{net_name}_pf_sc_results_{fault_location_bus}_{bb}{gen_str}.xlsx"
+        if grounding_type is not None:
+            file_name = f"{net_name}_pf_sc_results_{fault_location_bus}_{bb}{gen_str}_{grounding_type}.xlsx"
         if gen_mode == 'sgen':
             file_name = file_name.replace('_gen_', '_sgen_')
         try:
             dataframes[bb] = load_pf_results(os.path.join(
                 testfiles_path,
-                "sc_result_comparison", "wp_2.2_2.4" if is_gen else "wp_2.1",
+                "sc_result_comparison", wp_folder,
                 file_name
             ))
         except FileNotFoundError:

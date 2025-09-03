@@ -37,10 +37,13 @@ gen_idx = [1, [1, 3]]  # includes both, static generator and synchronous generat
 is_active_current = [False, True]  # TODO: for gen not working yet (grids and results not created)
 gen_mode = ['sgen', 'gen', 'all']  # TODO: mode 'all' is implemented but results are not created yet
 
+# parameters for WP 2.5
+grounding_types = ["solid", "resistance", "inductance", "impedance", "isolated"]  # ToDo: resonant needs to be added
+
 # create parameter lists for WPs
-param_wp21, param_vec_wp21, param_wp22, param_vec_wp22 = create_parameter_list(
+param_wp21, param_vec_wp21, param_wp22, param_vec_wp22, param_vec_wp25 = create_parameter_list(
     net_names, faults, cases, values, lv_tol_percents, fault_location_buses, is_branch_test, vector_groups,
-    gen_idx, is_active_current, gen_mode)
+    gen_idx, is_active_current, gen_mode, grounding_types)
 
 
 @pytest.mark.slow
@@ -129,6 +132,26 @@ def test_wp22_24_grids_with_trafo(net_name, fault, case, fault_values, lv_tol_pe
 
     net, dataframes = load_test_case_data(net_name, fault_location_bus, vector_group,
                                           gen_idx=gen_loc, is_active_current=active_current, gen_mode=mode)
+    results = run_test_cases(
+        net,
+        dataframes["branch" if is_branch else "bus"],
+        fault,
+        case,
+        fault_values,
+        lv_tol_percent,
+        fault_location_bus,
+        branch_results=is_branch
+    )
+    compare_results(*results)
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize(
+    "net_name, fault, case, fault_values, lv_tol_percent, vector_group, fault_location_bus, is_branch, grounding_type",
+    param_vec_wp25, ids=lambda val: str(val))
+def test_wp25_grids_with_trafo(net_name, fault, case, fault_values, lv_tol_percent, vector_group, fault_location_bus,
+                               is_branch, grounding_type):
+    net, dataframes = load_test_case_data(net_name, fault_location_bus, vector_group, grounding_type=grounding_type)
     results = run_test_cases(
         net,
         dataframes["branch" if is_branch else "bus"],
