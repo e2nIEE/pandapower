@@ -179,11 +179,11 @@ def load_test_case_data(net_name, fault_location_bus, vector_group=None, gen_idx
             net.trafo['xn_ohm'] = 0
             net.trafo['rn_ohm'] = 0
         elif grounding_type == "resistance":
-            net.trafo['xn_ohm'] = 5
-            net.trafo['rn_ohm'] = 0
-        elif grounding_type == "inductance":
             net.trafo['xn_ohm'] = 0
             net.trafo['rn_ohm'] = 5
+        elif grounding_type == "inductance":
+            net.trafo['xn_ohm'] = 5
+            net.trafo['rn_ohm'] = 0
         elif grounding_type == "impedance":
             net.trafo['xn_ohm'] = 5
             net.trafo['rn_ohm'] = 5
