@@ -10,10 +10,7 @@ from pandapower.control.controller.DERController.PQVAreas import BaseArea, PQVAr
 from pandapower.control.controller.DERController.QModels import QModel
 from pandapower.control.controller.pq_control import PQController
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 

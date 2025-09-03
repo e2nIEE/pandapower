@@ -27,6 +27,8 @@ class EnergySourceCim16:
         # create reactive_capability_curve flag
         if 'reactive_capability_curve' not in es_sgen.columns:
             es_sgen['reactive_capability_curve'] = False
+        if 'controllable' not in es_sgen.columns:
+            es_sgen['controllable'] = False
         self.cimConverter.copy_to_pp('ext_grid', es_slack)
         self.cimConverter.copy_to_pp('sgen', es_sgen)
         # self._copy_to_pp('sgen', eqssh_energy_sources)
