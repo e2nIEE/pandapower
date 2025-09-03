@@ -4,7 +4,6 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
-
 import numpy as np
 import pandas as pd
 import pytest
@@ -21,10 +20,13 @@ def one_line_one_generator():
     b2 = create_bus(net, vn_kv=10.)
     b3 = create_bus(net, vn_kv=10.)
     create_bus(net, vn_kv=0.4, in_service=False)
-    create_gen(net, b1, vn_kv=10.5, xdss_pu=0.2, rdss_ohm=0.001, cos_phi=0.8, p_mw=0.1, sn_mva=2.5, r2_ohm=1, x2_ohm=1, r0_ohm=1, x0_ohm=1) # r2_ohm, x2_ohm, r0_ohm, x0_ohm added
-    create_gen(net, b1, vn_kv=10.5, xdss_pu=0.2, rdss_ohm=0.001, cos_phi=0.8, p_mw=0.1, sn_mva=2.5, r2_ohm=1, x2_ohm=1, r0_ohm=1, x0_ohm=1) # r2_ohm, x2_ohm, r0_ohm, x0_ohm added
+    create_gen(net, b1, vn_kv=10.5, xdss_pu=0.2, rdss_ohm=0.001, cos_phi=0.8, p_mw=0.1, sn_mva=2.5, r2_ohm=1, x2_ohm=1,
+               r0_ohm=1, x0_ohm=1) # r2_ohm, x2_ohm, r0_ohm, x0_ohm added
+    create_gen(net, b1, vn_kv=10.5, xdss_pu=0.2, rdss_ohm=0.001, cos_phi=0.8, p_mw=0.1, sn_mva=2.5, r2_ohm=1, x2_ohm=1,
+               r0_ohm=1, x0_ohm=1) # r2_ohm, x2_ohm, r0_ohm, x0_ohm added
     line = create_line_from_parameters(net, b2, b1, length_km=1.0, max_i_ka=0.29, r_ohm_per_km=0.1548,
-                                       x_ohm_per_km=0.0816814, c_nf_per_km=165, r0_ohm_per_km=1., x0_ohm_per_km=1., c0_nf_per_km=1.)
+                                       x_ohm_per_km=0.0816814, c_nf_per_km=165, r0_ohm_per_km=1.,
+                                       x0_ohm_per_km=1., c0_nf_per_km=1.)
     net.line.loc[line, "endtemp_degree"] = 165
     create_switch(net, b3, b1, et="b")
     return net
@@ -37,7 +39,8 @@ def gen_three_bus_example():
     b2 = create_bus(net, vn_kv=10.)
     b3 = create_bus(net, vn_kv=10.)
     # create_bus(net, vn_kv=0.4, in_service=False)
-    create_gen(net, b2, vn_kv=10.5, xdss_pu=0.2, rdss_ohm=0.001, cos_phi=0.8, p_mw=0.1, sn_mva=2.5, r2_ohm=1, x2_ohm=1, r0_ohm=1, x0_ohm=1) # r2_ohm, x2_ohm, r0_ohm, x0_ohm added
+    create_gen(net, b2, vn_kv=10.5, xdss_pu=0.2, rdss_ohm=0.001, cos_phi=0.8, p_mw=0.1, sn_mva=2.5, r2_ohm=1, x2_ohm=1,
+               r0_ohm=1, x0_ohm=1) # r2_ohm, x2_ohm, r0_ohm, x0_ohm added
     create_line_from_parameters(net, b1, b2, length_km=1.0, max_i_ka=0.29, r_ohm_per_km=0.1548, x_ohm_per_km=0.0816814,
                                 c_nf_per_km=165, r0_ohm_per_km=1., x0_ohm_per_km=1., c0_nf_per_km=1.)
     create_line_from_parameters(net, b2, b3, length_km=1.0, max_i_ka=0.29, r_ohm_per_km=0.1548, x_ohm_per_km=0.0816814,
@@ -68,7 +71,8 @@ def test_min_gen(one_line_one_generator):
     net = one_line_one_generator
     calc_sc(net, case="min")
     print(net.res_bus_sc.ikss_ka.values[:3])
-    assert np.allclose(net.res_bus_sc.ikss_ka.values[:3], [1.3996195, 1.3697407, 1.3996195], atol=1e-3)
+    #assert np.allclose(net.res_bus_sc.ikss_ka.values[:3], [1.3996195, 1.3697407, 1.3996195], atol=1e-3) # values from edition 2001
+    assert np.allclose(net.res_bus_sc.ikss_ka.values[:3], [1.3091679, 1.2831181, 1.3091679], atol=1e-3) # values from edition 2016
     # assert abs(net.res_bus_sc.ikss_ka.at[0] - 1.3996195) < 1e-7
     # assert abs(net.res_bus_sc.ikss_ka.at[2] - 1.3996195) < 1e-7
     # assert abs(net.res_bus_sc.ikss_ka.at[1] - 1.3697407) < 1e-7
@@ -77,7 +81,8 @@ def test_min_gen(one_line_one_generator):
 def test_branch_min_gen(gen_three_bus_example):
     net = gen_three_bus_example
     calc_sc(net, case="min", branch_results=True)
-    assert np.allclose(net.res_line_sc.ikss_ka.values, np.array([0.44487882, 1.10747517]), atol=1e-3)
+    assert np.allclose(net.res_line_sc.ikss_ka.values, np.array([0.44487882, 1.10747517]), atol=1e-3) # values from edition 2001
+    #assert np.allclose(net.res_line_sc.ikss_ka.values, np.array([0,64824486, 1.06462959]), atol=1e-3) # values from edition 2016 (not working yet)
 
 
 def test_max_gen_fault_impedance(one_line_one_generator):
