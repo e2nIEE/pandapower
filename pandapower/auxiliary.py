@@ -1632,6 +1632,7 @@ def _add_b2b_vsc(net: pandapowerNet):
         if control_mode_dc == 'vm_pu_diff_p':
             ref_bus = bus_dc_plus
             control_mode_dc = 'vm_pu_diff_m'
+            control_value_dc = -control_value_dc
 
         create_vsc(net, ac_bus, bus_dc_minus, r_ohm/2., x_ohm/2., r_dc_ohm/2., pl_dc_mw=pl_dc_mw,
                    control_mode_ac=control_mode_ac, control_value_ac=control_value_ac, name=str(name)+"-",
