@@ -10,6 +10,7 @@
 
 """Solves the power flow using a full Newton's method.
 """
+import copy
 import numpy as np
 from numpy import float64, array, angle, sqrt, square, exp, linalg, conj, r_, inf, arange, zeros, \
     max, zeros_like, column_stack, flatnonzero, nan_to_num
@@ -25,7 +26,8 @@ from pandapower.pf.makeYbus_facts import makeYbus_svc, makeYft_tcsc, calc_y_svc_
 from pandapower.pypower.idx_bus_dc import DC_PD, DC_VM, DC_BUS_TYPE, DC_NONE, DC_BUS_I, DC_REF, DC_P
 from pandapower.pypower.idx_vsc import VSC_CONTROLLABLE, VSC_MODE_AC, VSC_VALUE_AC, VSC_MODE_DC, VSC_VALUE_DC, VSC_R, \
     VSC_X, VSC_Q, VSC_P, VSC_BUS_DC, VSC_P_DC, VSC_MODE_AC_SL, VSC_MODE_AC_V, VSC_MODE_AC_Q, VSC_MODE_DC_P, \
-    VSC_MODE_DC_V, VSC_INTERNAL_BUS_DC, VSC_R_DC, VSC_PL_DC, VSC_STATUS, VSC_BUS, VSC_INTERNAL_BUS
+    VSC_MODE_DC_V, VSC_INTERNAL_BUS_DC, VSC_R_DC, VSC_PL_DC, VSC_STATUS, VSC_BUS, VSC_INTERNAL_BUS, VSC_MODE_DC_DP, \
+    VSC_MODE_DC_DM, VSC_DIFF_REF_BUS
 from pandapower.pypower.makeSbus import makeSbus
 from pandapower.pf.create_jacobian import create_jacobian_matrix, get_fastest_jacobian_function
 from pandapower.pypower.idx_gen import PG
@@ -188,7 +190,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
 
     # J for HVDC is expanded by the number of DC "P" buses (added below)
     num_facts_controllable = num_svc_controllable + num_tcsc_controllable # + 2 * num_ssc_controllable
-    num_facts = num_svc + num_tcsc + num_ssc  # todo schould it be num_bus?
+    num_facts = num_svc + num_tcsc + num_ssc  # todo should it be num_bus?
 
     #
     # tcsc_in_pq_f = np.isin(branch[tcsc_branches, F_BUS].real.astype(np.int64), pq)
@@ -205,10 +207,32 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     V = V0
     #V_dc = np.ones(num_bus_dc, dtype=np.float64)  # initial voltage vector for the DC line
     V_dc = bus_dc[:, DC_VM]
-    v_set_point_index = vsc_controllable & (vsc_mode_dc == 0)
+
+    # Set VSC dc voltage if vsc in dc slack mode
+    v_set_point_index = vsc_controllable & (vsc_mode_dc == VSC_MODE_DC_V)
     if len(vsc_value_dc[v_set_point_index]) > 0:
         # V_dc[:] = np.mean(vsc_value_dc[v_set_point_index])
         V_dc[vsc[v_set_point_index, VSC_BUS_DC].astype(np.int64)] = vsc_value_dc[v_set_point_index]
+
+    v_set_point_plus_index = vsc_controllable & (vsc_mode_dc == VSC_MODE_DC_DP)
+    if len(vsc_value_dc[v_set_point_plus_index]) > 0:
+        # fetch reference buses
+        ref_bus = vsc[v_set_point_plus_index, VSC_DIFF_REF_BUS].astype(np.int64)
+        # calculate the current voltage plus the offset voltage
+        value = V_dc[ref_bus] + vsc_value_dc[v_set_point_plus_index]
+        # set the result as new bus voltage for "regulation" by the vsc
+        V_dc_copy = copy.copy(V_dc)
+        V_dc[vsc[v_set_point_plus_index, VSC_BUS_DC].astype(np.int64)] = value
+
+    v_set_point_minus_index = vsc_controllable & (vsc_mode_dc == VSC_MODE_DC_DM)
+    if len(vsc_value_dc[v_set_point_minus_index]) > 0:
+        # fetch reference buses
+        ref_bus = vsc[v_set_point_minus_index, VSC_DIFF_REF_BUS].astype(np.int64)
+        # calculate the current voltage plus the offset voltage
+        value = V_dc_copy[ref_bus] - vsc_value_dc[v_set_point_minus_index]
+        # set the result as new bus voltage for "regulation" by the vsc
+        V_dc[vsc[v_set_point_minus_index, VSC_BUS_DC].astype(np.int64)] = value
+
 
     Ybus_svc = makeYbus_svc(Ybus, x_control_svc, svc_x_l_pu, svc_x_cvar_pu, svc_buses)
     y_tcsc_pu = -1j * calc_y_svc_pu(x_control_tcsc, tcsc_x_l_pu, tcsc_x_cvar_pu)
