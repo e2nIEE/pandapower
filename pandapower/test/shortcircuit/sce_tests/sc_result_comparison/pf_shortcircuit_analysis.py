@@ -10,7 +10,8 @@ testfiles_path = os.path.join(pp_dir, 'test', 'shortcircuit', 'sce_tests')
 class PFShortCircuitAnalysis:
     def __init__(self, app, proj_name, fault_type='LLL', calc_mode='max',
                  fault_impedance_rf=0.0, fault_impedance_xf=0.0,
-                 lv_tol_percent=10, fault_location_index=None, activate_sgens_at_bus=None, activate_gens_at_bus=None):
+                 lv_tol_percent=10, fault_location_index=None, activate_sgens_at_bus=None, activate_gens_at_bus=None,
+                 grounding_type=None):
         """
                 Parameters:
                 - app: powerfactory.Application
@@ -21,6 +22,9 @@ class PFShortCircuitAnalysis:
                 - fault_impedance_xf: float
                 - lv_tol_percent: float
                 - fault_location_index: int or None
+                - activate_sgens_at_bus: list of int or None
+                - activate_gens_at_bus: list of int or None
+                - grounding_type: str or None ("solid", "resistance", "inductance", "impedance", "resonant", "isolated")
         """
 
         self.app = app
@@ -33,6 +37,7 @@ class PFShortCircuitAnalysis:
         self.fault_location_index = fault_location_index
         self.activate_sgens_at_bus = activate_sgens_at_bus
         self.activate_gens_at_bus = activate_gens_at_bus
+        self.grounding_type = grounding_type
         self.pf_results_bus_sc = None
         self.pf_results_branch_sc = None
 
@@ -64,6 +69,7 @@ class PFShortCircuitAnalysis:
         fault_location_index = self.fault_location_index
 
         self.activate_elements()
+        self.initialize_grounding()
         res = run_short_circuit(app=app, fault_type=fault_type, calc_mode=calc_mode,
                                 fault_impedance_rf=fault_impedance_rf, fault_impedance_xf=fault_impedance_xf,
                                 lv_tol_percent=lv_tol_percent, fault_location_index=fault_location_index)
@@ -131,6 +137,7 @@ class PFShortCircuitAnalysis:
         fault_location_index = self.fault_location_index
 
         self.activate_elements()
+        self.initialize_grounding()
         res = run_short_circuit(app=app, fault_type=fault_type, calc_mode=calc_mode,
                                 fault_impedance_rf=fault_impedance_rf, fault_impedance_xf=fault_impedance_xf,
                                 lv_tol_percent=lv_tol_percent, fault_location_index=fault_location_index)
@@ -232,15 +239,12 @@ class PFShortCircuitAnalysis:
         case = self.calc_mode
         fault_impedance = self.fault_impedance_rf, self.fault_impedance_xf
         lv_tol_percent = self.lv_tol_percent
-        # fault_location = self.fault_location_index
 
         if fault_impedance[0] > 0:
             sheet_name_base = f"{fault_type.upper()}_{case}_fault"
         else:
             sheet_name_base = f"{fault_type.upper()}_{case}"
         sheet_name_base = f"{sheet_name_base}_{lv_tol_percent}"
-        # if fault_location is not None:
-        #     sheet_name_base = f"{sheet_name_base}_bus_{fault_location}"
         sheet_name_base = sheet_name_base[:25]
         return sheet_name_base
 
@@ -279,3 +283,28 @@ class PFShortCircuitAnalysis:
                 else:
                     elm.outserv = 1
 
+    def initialize_grounding(self):
+        app = self.app
+        grounding_type = self.grounding_type
+        if grounding_type is None:
+            return
+
+        trafo = app.GetCalcRelevantObjects('*.ElmTr2')[0]
+        if grounding_type == 'solid':
+            trafo.re0tr_l = 0
+            trafo.xe0tr_l = 0
+        elif grounding_type == 'resistance':
+            trafo.re0tr_l = 5
+            trafo.xe0tr_l = 0
+        elif grounding_type == 'inductance':
+            trafo.re0tr_l = 0
+            trafo.xe0tr_l = 5
+        elif grounding_type == 'impedance':
+            trafo.re0tr_l = 5
+            trafo.xe0tr_l = 5
+        elif grounding_type == 'resonant':  # ToDO: only place holder right now, add correct values
+            trafo.re0tr_l = 0
+            trafo.xe0tr_l = 0
+        elif grounding_type == 'isolated':
+            trafo.re0tr_l = 1e99
+            trafo.xe0tr_l = 1e99

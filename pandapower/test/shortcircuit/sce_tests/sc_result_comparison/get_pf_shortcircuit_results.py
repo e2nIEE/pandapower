@@ -19,7 +19,8 @@ testfiles_path = os.path.join(pp_dir, 'test', 'shortcircuit', 'sce_tests')
 
 
 ## Function to export and save all pf short circuit results for a given project
-def get_all_pf_sc_results(proj_name, fault_location=None, activate_sgen=None, activate_gen=None, save_to_excel=True):
+def get_all_pf_sc_results(proj_name, fault_location=None, activate_sgen=None, activate_gen=None,
+                          grounding_type=None, save_to_excel=True):
     fault_types = ["LLL", "LL", "LG", "LLG"]
     cases = ["max", "min"]
     fault_impedances = [(0.0, 0.0), (5.0, 5.0)]
@@ -46,7 +47,7 @@ def get_all_pf_sc_results(proj_name, fault_location=None, activate_sgen=None, ac
                                     proj_name + f'_pf_sc_results_{element}.xlsx')
             if fault_location is not None:
                 out_path = os.path.join(testfiles_path, "sc_result_comparison", "wp_2.1",
-                                    proj_name + f'_pf_sc_results_{fault_location}_{element}.xlsx')
+                                        proj_name + f'_pf_sc_results_{fault_location}_{element}.xlsx')
             if activate_sgen is not None or activate_gen is not None:
                 gen_names = ''
                 if activate_all:
@@ -65,7 +66,10 @@ def get_all_pf_sc_results(proj_name, fault_location=None, activate_sgen=None, ac
                         gen_names += gen_name
                         elm_name = '_gen'
                 out_path = os.path.join(testfiles_path, "sc_result_comparison", "wp_2.2_2.4",
-                                    proj_name + f'_pf_sc_results_{fault_location}_{element}{elm_name}{gen_names}.xlsx')
+                                        proj_name + f'_pf_sc_results_{fault_location}_{element}{elm_name}{gen_names}.xlsx')
+            if grounding_type is not None:
+                out_path = os.path.join(testfiles_path, "sc_result_comparison", "wp_2.5",
+                                        proj_name + f'_pf_sc_results_{fault_location}_{element}_{grounding_type}.xlsx')
             writer = pd.ExcelWriter(out_path)
 
         for fault_type in fault_types:
@@ -77,7 +81,8 @@ def get_all_pf_sc_results(proj_name, fault_location=None, activate_sgen=None, ac
                                 app=app, proj_name=proj_name, fault_type=fault_type, calc_mode=case,
                                 fault_impedance_rf=fault_impedance[0], fault_impedance_xf=fault_impedance[1],
                                 lv_tol_percent=lv_tol_percent, fault_location_index=fault_location,
-                                activate_sgens_at_bus=activate_sgen, activate_gens_at_bus = activate_gen
+                                activate_sgens_at_bus=activate_sgen, activate_gens_at_bus=activate_gen,
+                                grounding_type=grounding_type
                             )
                             if element == 'bus':
                                 df = pf_analysis.get_pf_sc_bus_results()
@@ -96,14 +101,15 @@ def get_all_pf_sc_results(proj_name, fault_location=None, activate_sgen=None, ac
 
 
 ## get results for single project
-proj_name = 'test_case_4_twenty_bus_radial_grid_YNyn'
+proj_name = '4_twenty_bus_radial_grid_dyn_gen'
 fault_location = [0, 8, 18]
 activate_sgen = None
 activate_gen = None
+grounding_types = ["solid", "resistance", "inductance", "impedance", "isolated"]  # "solid", "resistance", "inductance", "impedance", "resonant", "isolated"
 for fl in fault_location:
-    pf_dict = get_all_pf_sc_results(proj_name, fl, activate_sgen=activate_sgen, activate_gen=activate_gen,
-                                    save_to_excel=False)
-
+    for grounding_type in grounding_types:
+        pf_dict = get_all_pf_sc_results(proj_name, fl, activate_sgen=activate_sgen, activate_gen=activate_gen,
+                                        grounding_type=grounding_type, save_to_excel=True)
 
 ## get results for all projects
 folder = os.path.join(testfiles_path, "test_grids", "wp_2.2_2.4")
