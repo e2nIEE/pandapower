@@ -211,6 +211,8 @@ def load_test_case_data(net_name, fault_location_bus, vector_group=None, gen_idx
                 net.gen.loc[net.gen.bus == gen_idx, 'in_service'] = True
             gen_str = f"_{gen_mode}{gen_idx}"
     else:
+        net.sgen['in_service'] = False
+        net.gen['in_service'] = False
         gen_str = ''
 
     if is_active_current:
