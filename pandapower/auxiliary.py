@@ -345,6 +345,10 @@ class ADict(Dict[str, Any], MutableMapping[str, Any]):
 
 
 class pandapowerNet(ADict):
+    """
+    pandapowerNet constructor
+    given dict needs to contain the pandapower network dataframes, for example use classmethod create_dataframes
+    """
     bus: pd.DataFrame
     load: pd.DataFrame
     sgen: pd.DataFrame
@@ -475,9 +479,15 @@ class pandapowerNet(ADict):
             self.update(**copy.deepcopy(net))
 
         for key in self:
-            if isinstance(self[key], list):
-                self[key] = pd.DataFrame(np.zeros(0, dtype=self[key]), index=pd.Index([],
-                                                                                      dtype=np.int64))
+            if isinstance(self[key], list) and len(self[key]) == 1:
+                self[key] = self[key][0]
+
+    @classmethod
+    def create_dataframes(cls, data):
+        for key in data: #TODO: change index dtype to np.uint32
+            if isinstance(data[key], dict):
+                data[key] = pd.DataFrame(columns=data[key].keys(), index=pd.Index([], dtype=np.int64)).astype(data[key])
+        return data
 
     @deprecated("Use copy.deepcopy(net) instead of net.deepcopy()")
     def deepcopy(self) -> "pandapowerNet":
@@ -2025,8 +2035,10 @@ def _init_runpp_options(
         numba = _check_if_numba_is_installed()
 
     if voltage_depend_loads:
-        if not (np.any(net["load"]["const_z_percent"].values)
-                or np.any(net["load"]["const_i_percent"].values)):
+        if not (np.any(net["load"]["const_z_p_percent"].values)
+                or np.any(net["load"]["const_i_p_percent"].values)
+                or np.any(net["load"]["const_z_q_percent"].values)
+                or np.any(net["load"]["const_i_q_percent"].values)):
             voltage_depend_loads = False
 
     lightsim2grid = _check_lightsim2grid_compatibility(net, lightsim2grid, voltage_depend_loads, algorithm,

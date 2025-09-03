@@ -232,6 +232,7 @@ def convert_crs(net: pandapowerNet or 'pandapipes.pandapipesNet', epsg_in=4326, 
     This function works for pandapowerNet and pandapipesNet. Documentation will refer to names from pandapower.
     Converts bus and line geodata in net from epsg_in to epsg_out
     if GeoDataFrame data is present convert_geodata_to_gis should be used to update geometries after crs conversion
+    Supported geojson geometries are Point and LineString. Although Conversion away from WGS84 is highly discouraged.
 
     :param net: The pandapower network
     :type net: pandapowerNet|pandapipesNet
@@ -245,15 +246,38 @@ def convert_crs(net: pandapowerNet or 'pandapipes.pandapipesNet', epsg_in=4326, 
     if epsg_in == epsg_out:
         return
 
-    if ('geo' in net.bus and not all(net.bus.geo.isna()) and
-            'geo' in net.line and not all(net.line.geo.isna()) and
-            epsg_out == 4326):
-        # by definition geojson is in wgs84
-        return
-
     if not pyproj_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "pyproj")
     transformer = Transformer.from_crs(epsg_in, epsg_out, always_xy=True)
+
+    if ('geo' in net.bus and (net.bus.empty or not all(net.bus.geo.isna())) and
+        'geo' in net.line and (net.line.empty or not all(net.line.geo.isna()))):
+        if epsg_out != 4326:
+            logger.warning("Converting geojson to crs other than WGS84 is highly discouraged.")
+
+        def _geojson_transformer(geojson_str):
+            geometry = geojson.loads(geojson_str)
+
+            if geometry['type'] == 'Point':
+                x, y = geometry['coordinates']
+                x_new, y_new = transformer.transform(x, y)
+                geometry['coordinates'] = [x_new, y_new]
+            elif geometry['type'] == 'LineString':
+                new_coordinates = []
+                for coord in geometry['coordinates']:
+                    x, y = coord
+                    x_new, y_new = transformer.transform(x, y)
+                    new_coordinates.append([x_new, y_new])
+                geometry['coordinates'] = new_coordinates
+            return geojson.dumps(geometry)
+
+        if is_pandapower:
+            net.line.geo = net.line.geo.apply(_geojson_transformer)
+            net.bus.geo = net.bus.geo.apply(_geojson_transformer)
+        else:
+            net.pipe.geo = net.pipe.geo.apply(_geojson_transformer)
+            net.junction.geo = net.junction.geo.apply(_geojson_transformer)
+        return
 
     def _geo_node_transformer(r):
         (x, y) = transformer.transform(r.x, r.y)

@@ -151,16 +151,20 @@ def write_voltage_dependend_load_results(net, p, q, b):
 
         voltage_depend_loads = net["_options"]["voltage_depend_loads"]
 
-        cz = l["const_z_percent"].values / 100.
-        ci = l["const_i_percent"].values / 100.
-        cp = 1. - (cz + ci)
+        cz_p = l["const_z_p_percent"].values / 100.
+        ci_p = l["const_i_p_percent"].values / 100.
+        cp = 1. - (cz_p + ci_p)
 
         # constant power
         pl = l["p_mw"].values * scaling * load_is * cp
         net["res_load"]["p_mw"] = pl
         p = np.hstack([p, pl])
 
-        ql = l["q_mvar"].values * scaling * load_is * cp
+        cz_q = l["const_z_q_percent"].values / 100.
+        ci_q = l["const_i_q_percent"].values / 100.
+        cq = 1. - (cz_q + ci_q)
+
+        ql = l["q_mvar"].values * scaling * load_is * cq
         net["res_load"]["q_mvar"] = ql
         q = np.hstack([q, ql])
 
@@ -169,12 +173,13 @@ def write_voltage_dependend_load_results(net, p, q, b):
         if voltage_depend_loads:
             # constant impedance and constant current
             vm_l = net["_ppc"]["bus"][lidx, 7]
-            volt_depend = ci * vm_l + cz * vm_l ** 2
-            pl = l["p_mw"].values * scaling * load_is * volt_depend
+            volt_depend_p = ci_p * vm_l + cz_p * vm_l ** 2
+            pl = l["p_mw"].values * scaling * load_is * volt_depend_p
             net["res_load"]["p_mw"] += pl
             p = np.hstack([p, pl])
 
-            ql = l["q_mvar"].values * scaling * load_is * volt_depend
+            volt_depend_q = ci_q * vm_l + cz_q * vm_l ** 2
+            ql = l["q_mvar"].values * scaling * load_is * volt_depend_q #* volt_depend
             net["res_load"]["q_mvar"] += ql
             q = np.hstack([q, ql])
 
@@ -534,7 +539,6 @@ def _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq):
                                 right_on=['id_characteristic', 'step'], how='left', suffixes=('', '_char'))
             p_shunt_step = np.where(merged_df['step_dependency_table'], merged_df['p_mw_char'].values/merged_df['step'].values, merged_df['p_mw'].values).astype(np.float64)
             q_shunt_step = np.where(merged_df['step_dependency_table'], merged_df['q_mvar_char'].values/merged_df['step'].values, merged_df['q_mvar'].values).astype(np.float64)
-            print(f"p_shunt_step dtype: {p_shunt_step.dtype}, q_shunt_step dtype: {q_shunt_step.dtype}")
         else:
             p_shunt_step = net["shunt"]["p_mw"].values
             q_shunt_step = net["shunt"]["q_mvar"].values
