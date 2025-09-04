@@ -2068,10 +2068,6 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
                 try:
                     params.vm_pu = item.GetAttribute('m:u:bus1')
                 except AttributeError:
-                    print("Exception vm_pu not available! Outserv: ")
-                    print(item.GetFullName())
-                    print(item.outserv)
-                    print(pstac.outserv)
                     if not pstac.uset_mode:
                         params.vm_pu = pstac.usetp
                     else:
@@ -2095,10 +2091,6 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
                     try:
                         params['q_mvar'] = item.GetAttribute('m:Q:bus1')
                     except AttributeError:
-                        print("Exception q_mvar not available! Outserv: ")
-                        print(item.GetFullName())
-                        print(item.outserv)
-                        print(pstac.outserv)
                         pass
                 # add reactive and active power limits
                 params.min_q_mvar = item.cQ_min
@@ -2321,10 +2313,6 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
                 try:
                     vm_pu = item.GetAttribute('m:u:bus1')
                 except AttributeError:
-                    print("Exception vm_pu not available! Outserv: ")
-                    print(item.GetFullName())
-                    print(item.outserv)
-                    print(pstac.outserv)
                     if not pstac.uset_mode:
                         vm_pu = pstac.usetp
                     else:
