@@ -35,7 +35,7 @@ is_branch_test = [True, False]
 # parameters for WP 2.2 and WP 2.4
 gen_idx = [1, [1, 3]]  # includes both, static generator and synchronous generator
 is_active_current = [False, True]  # TODO: for gen not working yet (grids and results not created)
-gen_mode = ['sgen', 'gen', 'all']  # TODO: mode 'all' is implemented but results are not created yet
+gen_mode = ['sgen', 'gen']  # TODO: mode 'all' is implemented but results are not created yet
 
 # parameters for WP 2.5
 grounding_types = ["solid", "resistance", "inductance", "impedance", "isolated"]  # ToDo: resonant needs to be added
