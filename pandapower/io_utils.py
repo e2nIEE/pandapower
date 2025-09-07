@@ -127,6 +127,10 @@ def to_dict_of_dfs(net, include_results=False, include_std_types=True, include_p
             for t in net.std_types.keys():  # which are ["line", "trafo", "trafo3w", "fuse"]
                 if net.std_types[t]:  # avoid empty Excel sheets for std_types if empty
                     type_df = pd.DataFrame(net.std_types[t]).T
+                    # Since std_types are stored as dicts, with mix dtypes as in trafo, dtypes are not properly inferred
+                    common_cols = list(net[t].columns.intersection(type_df.columns))
+                    type_df = type_df.astype(net[t][common_cols].dtypes)
+                    type_df = type_df.infer_objects()
                     if t == "fuse":
                         for c in type_df.columns:
                             type_df[c] = type_df[c].apply(lambda x: str(x) if isinstance(x, list) else x)
