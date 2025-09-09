@@ -5,6 +5,7 @@
 
 from pandapower.auxiliary import pandapowerNet
 from pandapower.control.basic_controller import Controller
+import numpy as np
 import logging
 
 logger = logging.getLogger(__name__)
@@ -29,8 +30,8 @@ class DmrControl(Controller):
         self.dc_plus_line = dc_plus_line
         self.dc_minus_line = dc_minus_line
 
-        #if not np.all(net.line_dc.index.isin([dmr_line, dc_plus_line, dc_minus_line])):
-        #    raise ValueError("Wrong dc line index given. Please check if all lines are in line_dc!")
+        if not np.all(net.line_dc.index.isin([dmr_line, dc_plus_line, dc_minus_line])):
+            raise ValueError("Wrong dc line index given. Please check if all lines are in line_dc!")
 
         self.applied = False
 
