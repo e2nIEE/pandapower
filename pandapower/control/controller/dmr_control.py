@@ -49,9 +49,18 @@ class DmrControl(Controller):
         load flow calculation.
         """
         # dmr.i_ka = dcp.i_ka - dcm.i_ka
-        dcp = net.res_line_dc.loc[self.dc_plus_line, ['i_from_ka', 'i_to_ka', 'i_ka']]
-        dcm = net.res_line_dc.loc[self.dc_minus_line, ['i_from_ka', 'i_to_ka', 'i_ka']]
-        net.res_line_dc.loc[self.dmr_line, ['i_from_ka', 'i_to_ka', 'i_ka']] = dcp - dcm
+        max_i_ka = net.line_dc.loc[self.dmr_line, 'max_i_ka']
+        parallel = net.line_dc.loc[self.dmr_line, 'parallel']
+
+        dcp = net.res_line_dc.loc[self.dc_plus_line, ['i_from_ka', 'i_to_ka']]
+        dcm = net.res_line_dc.loc[self.dc_minus_line, ['i_from_ka', 'i_to_ka']]
+        net.res_line_dc.loc[self.dmr_line, ['i_from_ka', 'i_to_ka']] = dcp - dcm
+
+        dcp = net.res_line_dc.loc[self.dc_plus_line, 'i_ka']
+        dcm = net.res_line_dc.loc[self.dc_minus_line, 'i_ka']
+        net.res_line_dc.loc[self.dmr_line, 'i_ka'] = np.abs(dcp - dcm)
+
+        net.res_line_dc.loc[self.dmr_line, 'loading_percent'] = np.abs(dcp - dcm) / (max_i_ka * parallel) * 100.
 
 
     def __str__(self):
