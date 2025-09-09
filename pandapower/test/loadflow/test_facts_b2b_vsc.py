@@ -6,11 +6,11 @@ import pytest
 from pandapower import create_line_dc_from_parameters
 from pandapower.create import create_buses, create_bus, create_empty_network, create_line_from_parameters, \
     create_load, create_ext_grid, create_bus_dc, create_b2b_vsc, create_line_dc, create_vsc, create_source_dc, \
-    create_load_dc, create_bi_vsc
+    create_load_dc
 
 from pandapower.run import runpp
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
-from pandapower.test.loadflow.test_facts import copy_with_impedance, facts_case_study_grid, compare_ssc_impedance_gen
+import pandapower.control as control
 
 
 def test_hvdc_interconnect_with_dmr():
@@ -28,6 +28,7 @@ def test_hvdc_interconnect_with_dmr():
              |       |--------|       |
              +-------+        +-------+
 
+    The solution is to add a dmr control, which will calculate the current in the dmr line.
     """
     net = create_empty_network()
 
@@ -45,17 +46,18 @@ def test_hvdc_interconnect_with_dmr():
     create_load(net, bus=7, p_mw=150.)
 
     # DC part
-    create_bus_dc(net, 380, 'A', geodata=(100,  10))  # 0
-    create_bus_dc(net, 380, 'B', geodata=(100,   0))  # 1
-    create_bus_dc(net, 380, 'C', geodata=(100, -10))  # 2
+    create_bus_dc(net, 380., 'A', geodata=(100,  10))  # 0
+    create_bus_dc(net, 380., 'B', geodata=(100,   0))  # 1
+    create_bus_dc(net, 380., 'C', geodata=(100, -10))  # 2
 
-    create_bus_dc(net, 380, 'D', geodata=(200,  10))  # 3
-    create_bus_dc(net, 380, 'E', geodata=(200,   0))  # 4
-    create_bus_dc(net, 380, 'F', geodata=(200, -10))  # 5
+    create_bus_dc(net, 380., 'D', geodata=(200,  10))  # 3
+    create_bus_dc(net, 380., 'E', geodata=(200,   0))  # 4
+    create_bus_dc(net, 380., 'F', geodata=(200, -10))  # 5
 
-    create_line_dc_from_parameters(net, 0, 3, length_km=100, r_ohm_per_km=0.0212, max_i_ka=0.963)
-    create_line_dc_from_parameters(net, 1, 4, length_km=100, r_ohm_per_km=0.0212, max_i_ka=0.963)
-    create_line_dc_from_parameters(net, 2, 5, length_km=100, r_ohm_per_km=0.0212, max_i_ka=0.963)
+    dcp = create_line_dc_from_parameters(net, 0, 3, length_km=100, r_ohm_per_km=0.0212, max_i_ka=0.963)
+    dcm = create_line_dc_from_parameters(net, 2, 5, length_km=100, r_ohm_per_km=0.0212, max_i_ka=0.963)
+    # DMR Line
+    dmr = create_line_dc_from_parameters(net, 1, 4, length_km=100, r_ohm_per_km=0.0212, max_i_ka=0.963, in_service=False)
 
     # Left side
     create_b2b_vsc(net, 2, 0, 1, 0.2, 10, 0.3,
@@ -65,11 +67,14 @@ def test_hvdc_interconnect_with_dmr():
 
     # Right side
     create_b2b_vsc(net, 4, 3, 4, 0.2, 10, 0.3,
-                   control_mode_ac='slack', control_value_ac=1, control_mode_dc="p_mw", control_value_dc=1.02)
+                   control_mode_ac='slack', control_value_ac=1, control_mode_dc="p_mw", control_value_dc=1.5)
     create_b2b_vsc(net, 5, 4, 5, 0.2, 10, 0.3,
-                   control_mode_ac='slack', control_value_ac=1, control_mode_dc="p_mw", control_value_dc=1.02)
+                   control_mode_ac='slack', control_value_ac=1, control_mode_dc="p_mw", control_value_dc=0.5)
 
-    runpp(net)
+    # dmr current calculator
+    control.DmrControl(net, dmr_line=dmr, dc_minus_line=dcm, dc_plus_line=dcp)
+
+    runpp(net, run_control=True)
     pass
 
 
