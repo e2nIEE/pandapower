@@ -277,7 +277,7 @@ def write_p_dc_results_to_element(net, ppc, element):
         gen_sign = 1 if element == "sgen" else -1
         is_controllable = True
 
-    if element is "vsc":
+    if element == "vsc":
         p_mw = "control_value_dc"  # in "vsc" element
         vsc_p_mode = _is_elements[element] & (net.vsc.control_mode_dc == "p_mw")
 
