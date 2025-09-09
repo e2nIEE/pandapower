@@ -3,9 +3,8 @@
 # Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from pandapower.auxiliary import _detect_read_write_flag, write_to_net, pandapowerNet
+from pandapower.auxiliary import pandapowerNet
 from pandapower.control.basic_controller import Controller
-import numpy as np
 import logging
 
 logger = logging.getLogger(__name__)
@@ -30,8 +29,8 @@ class DmrControl(Controller):
         self.dc_plus_line = dc_plus_line
         self.dc_minus_line = dc_minus_line
 
-        if not np.all(net.line_dc.index.isin([dmr_line, dc_plus_line, dc_minus_line])):
-            raise ValueError(f"Wrong dc line index given. Please check if all lines are in line_dc!")
+        #if not np.all(net.line_dc.index.isin([dmr_line, dc_plus_line, dc_minus_line])):
+        #    raise ValueError("Wrong dc line index given. Please check if all lines are in line_dc!")
 
         self.applied = False
 
@@ -52,8 +51,6 @@ class DmrControl(Controller):
         dcp = net.res_line_dc.loc[self.dc_plus_line, ['i_from_ka', 'i_to_ka', 'i_ka']]
         dcm = net.res_line_dc.loc[self.dc_minus_line, ['i_from_ka', 'i_to_ka', 'i_ka']]
         net.res_line_dc.loc[self.dmr_line, ['i_from_ka', 'i_to_ka', 'i_ka']] = dcp - dcm
-
-        # self.applied = True
 
 
     def __str__(self):
