@@ -75,7 +75,9 @@ def test_hvdc_interconnect_with_dmr():
     control.DmrControl(net, dmr_line=dmr, dc_minus_line=dcm, dc_plus_line=dcp)
 
     runpp(net, run_control=True)
-    pass
+
+    # check results, -0.133 was calculated using powerfactory
+    assert np.isclose(net.res_line_dc.loc[dmr, 'i_ka'], -0.133, atol=0.001)
 
 
 def test_source_dc():
