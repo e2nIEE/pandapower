@@ -161,7 +161,8 @@ class BinarySearchControl(Controller):
         # if controller not in_service, return True
         self.in_service = net.controller.in_service[self.index]
         if not self.in_service:
-            return True
+            self.converged = True
+            return self.converged
         self.input_element_in_service.clear()
         self.output_element_in_service.clear()
         for input_index in self.input_element_index:
@@ -318,7 +319,8 @@ class DroopControl(Controller):
 
     def is_converged(self, net):
         if not net.controller.at[self.controller_idx, "object"].in_service:
-            return True
+            self.converged = True
+            return self.converged
         if self.voltage_ctrl:
             self.diff = (net.controller.at[self.controller_idx, "object"].set_point -
                          read_from_net(net, "res_bus", self.bus_idx, "vm_pu", self.read_flag))
