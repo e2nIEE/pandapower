@@ -22,7 +22,7 @@ def _compare_arrays(arr1, arr2, tolerance=0.1):
     diff = np.abs(arr1 - arr2)
 
     # Find positions where the difference exceeds the tolerance
-    indices = np.where(diff > tolerance)[0]
+    indices = np.nonzero(diff > tolerance)[0]
 
     # Return the positions of differences that are too large
     # indices contains the row indices for 1D arrays
