@@ -888,7 +888,7 @@ def _build_vsc_ppc(net, ppc, mode):
     mode_dc = net["vsc"]["control_mode_dc"].values
     value_ac = net["vsc"]["control_value_ac"].values
     value_dc = net["vsc"]["control_value_dc"].values
-    ref_bus_values = net["vsc"]["ref_bus"].fillna(0).values.astype(int)
+
 
     vsc = ppc["vsc"]
     baseV = ppc["bus"][bus, BASE_KV]
@@ -901,7 +901,10 @@ def _build_vsc_ppc(net, ppc, mode):
     vsc[f:t, VSC_INTERNAL_BUS] = bus_lookup[aux["vsc"]]
     vsc[f:t, VSC_BUS_DC] = bus_dc
     vsc[f:t, VSC_INTERNAL_BUS_DC] = bus_lookup_dc[aux_dc["vsc"]]
-    vsc[f:t, VSC_DIFF_REF_BUS] = bus_lookup_dc[ref_bus_values]
+
+    if 'ref_bus' in net['vsc']:
+        ref_bus_values = net["vsc"]["ref_bus"].fillna(0).values.astype(int)
+        vsc[f:t, VSC_DIFF_REF_BUS] = bus_lookup_dc[ref_bus_values]
 
     vsc[f:t, VSC_R] = net["vsc"]["r_ohm"].values / baseZ
     vsc[f:t, VSC_X] = net["vsc"]["x_ohm"].values / baseZ
