@@ -1852,7 +1852,6 @@ def test_results_pf_grid():
     # todo: improve accuracy of DC losses and reduce tolerances
     path = os.path.join(pp_dir, "test", "test_files", "test_ac_dc.json")
     net = from_json(path)
-    net.vsc['ref_bus'] = None
     res = validate_pf_conversion(net)
     assert np.max(np.abs(res['diff_vm']['diff'])) < 1e-6
     assert np.max(np.abs(res['diff_va']['diff'])) < 1e-3
