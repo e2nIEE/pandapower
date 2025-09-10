@@ -3,6 +3,18 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [ADDED] Station controller support for measurements on trafo3w and impedance
+- [CHANGED] Station controller with measurements at switches: added a topological search to find nearby line or transformer and relocated measurement to avoid small impedances on switches
+- [FIXED] Station controller bug with Q(U) (wrong sign in equation for droop calculation)
+- [ADDED] python: support for version 3.13 added to the test pipelines
+- [FIXED] create_buses_dc: incorrect handling of geodata
+- [ADDED] postgresql: support for setting a port for the connection
+- [FIXED] ensure proper handling of `indent` parameter for PPJSONEncoder, fixing compatibility with Python3.13
+- [ADDED] description for `slack` argument in docstring of create_gen function
+- [FIXED] pf2pp: dc-lines geodata error is fixed, outdated line_dc_geodata field replaced by newer geo-column
+- [FIXED] pf2pp: zip load import error fixed by replacing unknown ga() function with actual GetAttribute-function
+- [FIXED] pf2pp: Ipython tutorial converter_powerfactory import statements (pf) corrected by directly importing powerfactory as pf
+- [ADDED] pf2pp: Ipython tutorial converter_powerfactory now has additional text description and uses a standard 14-bus network example network
 - [REMOVED] kwargs in basic controller class
 - [ADDED] name attribute in basic controller class
 - [FIXED] remove print statement from results_bus.py
