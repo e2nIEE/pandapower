@@ -132,7 +132,6 @@ def to_dict_of_dfs(net, include_results=False, include_std_types=True, include_p
                     if t == "fuse":
                         for c in type_df.columns:
                             type_df[c] = type_df[c].apply(lambda x: str(x) if isinstance(x, list) else x)
-                    # Since std_types are stored as dicts, with mix dtypes as in trafo, dtypes are not properly inferred
                     std_type_structure = std_type_structure_dict[t]
                     for el in std_type_structure.keys():
                         if el in type_df.columns:
