@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pandapower"
-version = "3.1.2" # File format version '__format_version__' is tracked in _version.py
+dynamic = ["version"]
 authors = [
     { name = "Leon Thurner", email = "leon.thurner@retoflow.de" },
     { name = "Alexander Scheidler", email = "alexander.scheidler@iee.fraunhofer.de" },
@@ -32,7 +32,8 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12"
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13"
 ]
 dependencies = [
     "pandas>=1.0",
@@ -63,23 +64,20 @@ Changelog = "https://github.com/e2nIEE/pandapower/blob/develop/CHANGELOG.rst"
 docs = ["numpydoc>=1.5.0", "matplotlib", "sphinx>=5.3.0", "sphinx_rtd_theme>=1.1.1", "sphinx-pyproject"]
 plotting = ["plotly>=3.1.1", "matplotlib", "igraph", "geopandas>=1.0"]
 test = ["pytest~=8.1", "pytest-xdist", "nbmake"]
-performance = ["ortools", "numba==0.60.0", "lightsim2grid==0.10.1"]
+performance = ["ortools", "numba>=0.60.0", "lightsim2grid~=0.10.1"]
 fileio = ["xlsxwriter", "openpyxl", "cryptography", "geopandas>=1.0", "psycopg2"]
 converter = ["matpowercaseframes"]
 pgm = ["power-grid-model-io"]
 control = ["shapely"]
-all = [
-    "numpydoc>=1.5.0", "sphinx>=5.3.0", "sphinx_rtd_theme>=1.1.1", "sphinx-pyproject",
-    "plotly>=3.1.1", "matplotlib", "igraph", "geopandas>=1.0",
-    "pytest~=8.1", "pytest-xdist", "nbmake",
-    "ortools", "numba==0.60.0", "lightsim2grid==0.10.1",
-    "xlsxwriter", "openpyxl", "cryptography", "psycopg2",
-    "matpowercaseframes",
-    "power-grid-model-io"
-]
+typing = ["mypy", "pandas-stubs", "types-shapely", "types-psycopg2", "types-openpyxl", "types-networkx", "types-tqdm"]
+
+all = ["pandapower[docs,plotting,test,performance,fileio,converter,pgm,control,typing]"]
 # "shapely", "pyproj", "Pyogrio" are dependencies of geopandas and should be already available ("Fiona" got dropped)
 # "hashlib", "zlib", "base64" produce install problems, so they are not included
 
+
+[tool.setuptools.dynamic]
+version = {attr = "pandapower._version.__version__"}
 
 [tool.setuptools.packages.find]
 include = [
@@ -116,3 +114,7 @@ exclude_lines = [
     "def __str__",
     "if __name__ == .__main__.:"
 ]
+
+# styeling information for black formatter
+[tool.black]
+line-length = 120
