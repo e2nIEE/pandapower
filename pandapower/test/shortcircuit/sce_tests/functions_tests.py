@@ -279,6 +279,8 @@ def run_test_cases(net, dataframes, fault, case, fault_values, lv_tol_percent, f
             return_all_currents=False, ip=False,
             r_fault_ohm=r_fault_ohm, x_fault_ohm=x_fault_ohm, lv_tol_percent=lv_tol_percent)
 
+     # TODO: add 3xIß column to net.res_bus_sc and net.res_line_sc!
+
     if branch_results:
         columns_to_check = net.res_line_sc.columns
         if fault == "LG" or fault == "LLG" or fault == "LL":
@@ -454,6 +456,12 @@ def load_pf_results(excel_file):
                'pf_vm_c_from_pu', 'pf_va_c_from_degree', 'pf_vm_c_to_pu', 'pf_va_c_to_degree']
     }
 
+    if '_resonant' in excel_file:
+        columns_mapping['LG'].append('3xI0')
+        columns_mapping['LLG'].append('3xI0')
+        columns_mapping_branch['LG'].append('3xI0')
+        columns_mapping_branch['LLG'].append('3xI0')
+
     for sheet in sheets:
         pf_results = pd.read_excel(excel_file, sheet_name=sheet)
         fault_type = None
@@ -475,13 +483,23 @@ def load_pf_results(excel_file):
             if fault_type == 'LL':
                 pf_results.columns = ['name', 'ikss_ka', 'skss_mw',
                                       "rk0_ohm", "xk0_ohm", "rk1_ohm", "xk1_ohm", "rk2_ohm", "xk2_ohm"]
-            elif fault_type == 'LLG': #  or fault_type == 'LG': # or fault_type == 'LL':
-                pf_results.columns = ["name", "ikss_a_ka", "ikss_b_ka", 'ikss_c_ka', 'skss_a_mw', 'skss_b_mw',
-                                      'skss_c_mw',
-                                      "rk0_ohm", "xk0_ohm", "rk1_ohm", "xk1_ohm", "rk2_ohm", "xk2_ohm"]
+            elif fault_type == 'LLG':
+                if '_resonant' in excel_file:
+                    pf_results.columns = ["name", "ikss_a_ka", "ikss_b_ka", 'ikss_c_ka', 'skss_a_mw', 'skss_b_mw',
+                                          'skss_c_mw',
+                                          "rk0_ohm", "xk0_ohm", "rk1_ohm", "xk1_ohm", "rk2_ohm", "xk2_ohm", "3xI0"]
+                else:
+                    pf_results.columns = ["name", "ikss_a_ka", "ikss_b_ka", 'ikss_c_ka', 'skss_a_mw', 'skss_b_mw',
+                                          'skss_c_mw',
+                                          "rk0_ohm", "xk0_ohm", "rk1_ohm", "xk1_ohm", "rk2_ohm", "xk2_ohm"]
             elif fault_type == 'LG':
-                pf_results.columns = ["name", "ikss_ka", 'skss_mw',
-                                      "rk0_ohm", "xk0_ohm", "rk1_ohm", "xk1_ohm", "rk2_ohm", "xk2_ohm"]
+                if '_resonant' in excel_file:
+                    pf_results.columns = ["name", "ikss_ka", 'skss_mw',
+                                          "rk0_ohm", "xk0_ohm", "rk1_ohm", "xk1_ohm", "rk2_ohm", "xk2_ohm", "3xI0"]
+                else:
+                    pf_results.columns = ["name", "ikss_ka", 'skss_mw',
+                                        "rk0_ohm", "xk0_ohm", "rk1_ohm", "xk1_ohm", "rk2_ohm", "xk2_ohm"]
+
 
             dataframes[sheet] = pf_results
 
@@ -495,20 +513,33 @@ def load_pf_results(excel_file):
                                       'vm_a_from_pu', 'va_a_from_degree', 'vm_a_to_pu', 'va_a_to_degree']
 
             elif fault_type == 'LLG' or fault_type == 'LG' or fault_type == 'LL':
-                pf_results.columns = ['name', 'ikss_ka', 'ikss_a_from_ka', 'ikss_a_from_degree', 'ikss_a_to_ka',
-                                      'ikss_a_to_degree',
-                                      'p_a_from_mw', 'q_a_from_mvar', 'p_a_to_mw', 'q_a_to_mvar',
-                                      'vm_a_from_pu', 'va_a_from_degree', 'vm_a_to_pu', 'va_a_to_degree',
-                                      'ikss_b_from_ka', 'ikss_b_from_degree', 'ikss_b_to_ka', 'ikss_b_to_degree',
-                                      'p_b_from_mw', 'q_b_from_mvar', 'p_b_to_mw', 'q_b_to_mvar',
-                                      'vm_b_from_pu', 'va_b_from_degree', 'vm_b_to_pu', 'va_b_to_degree',
-                                      'ikss_c_from_ka', 'ikss_c_from_degree', 'ikss_c_to_ka', 'ikss_c_to_degree',
-                                      'p_c_from_mw', 'q_c_from_mvar', 'p_c_to_mw', 'q_c_to_mvar',
-                                      'vm_c_from_pu', 'va_c_from_degree', 'vm_c_to_pu', 'va_c_to_degree',
-                                      ]
+                if '_resonant' in excel_file and fault_type in ['LLG', 'LG']:
+                    pf_results.columns = ['name', 'ikss_ka', 'ikss_a_from_ka', 'ikss_a_from_degree', 'ikss_a_to_ka',
+                                          'ikss_a_to_degree',
+                                          'p_a_from_mw', 'q_a_from_mvar', 'p_a_to_mw', 'q_a_to_mvar',
+                                          'vm_a_from_pu', 'va_a_from_degree', 'vm_a_to_pu', 'va_a_to_degree',
+                                          'ikss_b_from_ka', 'ikss_b_from_degree', 'ikss_b_to_ka', 'ikss_b_to_degree',
+                                          'p_b_from_mw', 'q_b_from_mvar', 'p_b_to_mw', 'q_b_to_mvar',
+                                          'vm_b_from_pu', 'va_b_from_degree', 'vm_b_to_pu', 'va_b_to_degree',
+                                          'ikss_c_from_ka', 'ikss_c_from_degree', 'ikss_c_to_ka', 'ikss_c_to_degree',
+                                          'p_c_from_mw', 'q_c_from_mvar', 'p_c_to_mw', 'q_c_to_mvar',
+                                          'vm_c_from_pu', 'va_c_from_degree', 'vm_c_to_pu', 'va_c_to_degree',
+                                          '3xI0']
+                else:
+                    pf_results.columns = ['name', 'ikss_ka', 'ikss_a_from_ka', 'ikss_a_from_degree', 'ikss_a_to_ka',
+                                          'ikss_a_to_degree',
+                                          'p_a_from_mw', 'q_a_from_mvar', 'p_a_to_mw', 'q_a_to_mvar',
+                                          'vm_a_from_pu', 'va_a_from_degree', 'vm_a_to_pu', 'va_a_to_degree',
+                                          'ikss_b_from_ka', 'ikss_b_from_degree', 'ikss_b_to_ka', 'ikss_b_to_degree',
+                                          'p_b_from_mw', 'q_b_from_mvar', 'p_b_to_mw', 'q_b_to_mvar',
+                                          'vm_b_from_pu', 'va_b_from_degree', 'vm_b_to_pu', 'va_b_to_degree',
+                                          'ikss_c_from_ka', 'ikss_c_from_degree', 'ikss_c_to_ka', 'ikss_c_to_degree',
+                                          'p_c_from_mw', 'q_c_from_mvar', 'p_c_to_mw', 'q_c_to_mvar',
+                                          'vm_c_from_pu', 'va_c_from_degree', 'vm_c_to_pu', 'va_c_to_degree',
+                                          ]
                 # ToDo: Do we need the value ikss_ka ?
                 pf_results['ikss_ka'] = np.max(
-                    [pf_results['ikss_a_from_ka'], pf_results['ikss_a_to_ka'], pf_results['ikss_b_from_ka'], \
+                    [pf_results['ikss_a_from_ka'], pf_results['ikss_a_to_ka'], pf_results['ikss_b_from_ka'],
                      pf_results['ikss_b_to_ka'], pf_results['ikss_c_from_ka'], pf_results['ikss_c_to_ka']], axis=0)
 
             dataframes[sheet] = pf_results
