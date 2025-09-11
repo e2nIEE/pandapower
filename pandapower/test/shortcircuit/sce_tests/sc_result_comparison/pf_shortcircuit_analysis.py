@@ -111,6 +111,8 @@ class PFShortCircuitAnalysis:
 
         if fault_type == 'LLL':
             result_variables = result_variables_3ph
+        elif fault_type == 'LLG' or fault_type == 'LG':
+            result_variables["3xI0"] = "m:I0x3"
 
         for bus in bus_elements:
             if bus.HasResults(0):
@@ -197,6 +199,8 @@ class PFShortCircuitAnalysis:
 
         if fault_type == 'LLL':
             result_variables_lines = result_variables_lines_3ph
+        elif fault_type == 'LLG' or fault_type == 'LG':
+            result_variables_lines["3xI0"] = "m:I0x3"
 
         for line in line_elements:
             if line.HasResults(0):

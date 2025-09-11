@@ -102,11 +102,11 @@ def get_all_pf_sc_results(proj_name, fault_location=None, activate_sgen=None, ac
 
 ## get results for single project
 proj_name = '2_five_bus_radial_grid_dyn_gen'
-fault_location = [0, 8, 18]
+fault_location = [0, 1, 2, 3]
 activate_sgen = None
 activate_gen = None
-grounding_types = ["isolated"]  # "solid", "resistance", "inductance", "impedance", "resonant", "isolated"
-proj_names = ['4_twenty_bus_radial_grid_dyn_gen', '4_twenty_bus_radial_grid_yyn_gen', '4_twenty_bus_radial_grid_ynyn_gen']
+grounding_types = ["resonant"]  # "solid", "resistance", "inductance", "impedance", "resonant", "isolated"
+proj_names = ['3_five_bus_meshed_grid_dyn_gen', '3_five_bus_meshed_grid_yyn_gen', '3_five_bus_meshed_grid_ynyn_gen']
 
 for proj_name in proj_names:
     for fl in fault_location:
