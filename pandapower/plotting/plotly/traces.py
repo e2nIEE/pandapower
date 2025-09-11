@@ -23,8 +23,8 @@ try:
     from plotly.graph_objs import Figure, Layout
     from plotly.graph_objs.layout import XAxis, YAxis
     from plotly.graph_objs.scatter import Line, Marker
-    from plotly.graph_objs.scattermapbox import Line as scmLine
-    from plotly.graph_objs.scattermapbox import Marker as scmMarker
+    from plotly.graph_objs.scattermap import Line as scmLine
+    from plotly.graph_objs.scattermap import Marker as scmMarker
 
     version_check('plotly')
     PLOTLY_INSTALLED = True
@@ -1053,15 +1053,24 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
         generated using: `create_bus_trace`, `create_line_trace`, `create_trafo_trace`
 
     OPTIONAL:
-        **on_map** (bool, False) - enables using mapbox plot in plotly
+        **on_map** (bool, False) - enables using mapLibre plot in plotly
 
-        **map_style** (str, 'basic') - enables using mapbox plot in plotly
+        **map_style** (str, 'basic') - enables using mapLibre plot in plotly
 
-            - 'streets'
-            - 'bright'
-            - 'light'
+            - 'basic'
+            - 'carto-darkmatter'
+            - 'carto-darkmatter-nolabels'
+            - 'carto-positron'
+            - 'carto-positron-nolabels'
+            - 'carto-voyager'
+            - 'carto-voyager-nolabels'
             - 'dark'
-            - 'satellite'
+            - 'light'
+            - 'open-street-map'
+            - 'outdoors'           
+            - 'satellite''
+            - 'satellite-streets'
+            - 'streets'
 
         **showlegend** (bool, 'True') - enables legend display
 
@@ -1094,16 +1103,17 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
                            "Use convert_crs(net, epsg_in=projection) to transform geodata from specific projection.")
 
     if on_map:
-        # change traces for mapbox
-        # change trace_type to scattermapbox and rename x to lat and y to lon
+        # change traces for mapLibre
+        # change trace_type to scattermap and rename x to lat and y to lon
         for trace in traces:
             if 'x' in trace.keys():
                 trace['lon'] = trace.pop('x')
             if 'y' in trace.keys():
                 trace['lat'] = trace.pop('y')
-            trace['type'] = 'scattermapbox'
+            trace['type'] = 'scattermap'
             if "line" in trace and isinstance(trace["line"], Line):
                 # scattermapboxplot lines do not support dash for some reason, make it a red line instead
+                # --> maybe Dash is working now ? 
                 if "dash" in trace["line"]._props:
                     _prps = dict(trace["line"]._props)
                     _prps.pop("dash")
@@ -1149,8 +1159,7 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
                              'pandapower.plotting.plotly.mapbox_plot.set_mapbox_token(\'<token>\')')
             raise MapboxTokenMissing
 
-        fig['layout']['mapbox'] = dict(accesstoken=mapbox_access_token,
-                                       bearing=0,
+        fig['layout']['map'] = dict(   bearing=0,
                                        center=dict(lat=pd.Series(traces[0]['lat']).dropna().mean(),
                                                    lon=pd.Series(traces[0]['lon']).dropna().mean()),
                                        style=map_style,

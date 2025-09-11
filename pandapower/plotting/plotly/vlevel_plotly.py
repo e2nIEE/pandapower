@@ -38,20 +38,29 @@ def vlevel_plotly(net, respect_switches=True, use_line_geo=None, colors_dict=Non
         *colors_dict** (dict, None) - dictionary for customization of colors for each voltage level
         in the form: voltage : color
 
-        **on_map** (bool, False) - enables using mapbox plot in plotly If provided geodata are not
+        **on_map** (bool, False) - enables using mapLibre plot in plotly If provided geodata are not
         real geo-coordinates in lon/lat form, on_map will be set to False.
 
         **projection** (String, None) - defines a projection from which network geo-data will be
         transformed to lat-long. For each projection a string can be found at
         http://spatialreference.org/ref/epsg/
 
-        **map_style** (str, 'basic') - enables using mapbox plot in plotly
+        **map_style** (str, 'basic') - enables using mapLibre plot in plotly
 
-            - 'streets'
-            - 'bright'
-            - 'light'
+            - 'basic'
+            - 'carto-darkmatter'
+            - 'carto-darkmatter-nolabels'
+            - 'carto-positron'
+            - 'carto-positron-nolabels'
+            - 'carto-voyager'
+            - 'carto-voyager-nolabels'
             - 'dark'
-            - 'satellite'
+            - 'light'
+            - 'open-street-map'
+            - 'outdoors'           
+            - 'satellite''
+            - 'satellite-streets'
+            - 'streets'
 
         **figsize** (float, 1) - aspectratio is multiplied by it in order to get final image size
 
