@@ -57,7 +57,15 @@ try:
     lightsim2grid_available = True
 except ImportError:
     lightsim2grid_available = False
+
+try:
+    from helmpy.core import helm
+    helmpy_available = True
+except ImportError:
+    helmpy_available = False
+
 import logging
+
 try:
     from geopandas import GeoSeries
     from shapely import from_geojson
@@ -1682,9 +1690,9 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
                 calculate_voltage_angles = True
 
     default_max_iteration = {"nr": 10, "iwamoto_nr": 10, "bfsw": 100, "gs": 10000, "fdxb": 30,
-                             "fdbx": 30}
-    with_facts = net.svc.in_service.any() or net.tcsc.in_service.any() or \
-                 net.ssc.in_service.any() or net.vsc.in_service.any()
+                             "fdbx": 30, "helm": 40}
+    with_facts = len(net.svc.query("in_service & controllable")) > 0 or \
+                 len(net.tcsc.query("in_service & controllable")) > 0
 
     if with_facts and algorithm != "nr":
         if algorithm != 'nr':
@@ -1731,9 +1739,9 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
             logger.warning("Currently distributed_slack is implemented for 'ext_grid', 'gen' "
                            "and 'xward' only, not for '" + "', '".join(
                 false_slack_weight_elms) + "'.")
-        if algorithm != 'nr':
+        if algorithm != 'nr' and algorithm != 'helm':
             raise NotImplementedError(
-                'Distributed slack is only implemented for Newton Raphson algorithm.')
+                'Distributed slack is only implemented for Newton Raphson algorithm and HELM.')
 
     if tdpf:
         if algorithm != 'nr':
