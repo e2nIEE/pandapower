@@ -53,7 +53,6 @@ def create_empty_network(name: str = "",
         net = create_empty_network()
 
     """
-
     network_structure_dict = get_structure_dict()
     network_structure_dict['name'] = name
     network_structure_dict['f_hz'] = f_hz
