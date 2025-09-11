@@ -11,7 +11,7 @@ from packaging.version import Version
 from pandapower._version import __version__, __format_version__
 from pandapower.create import create_empty_network, create_poly_cost
 from pandapower.results import reset_results
-from pandapower.control import TrafoController
+from pandapower.control import TrafoController, BinarySearchControl
 from pandapower.plotting.geo import convert_geodata_to_geojson
 from pandapower.auxiliary import pandapowerNet
 
@@ -559,10 +559,18 @@ def _update_object_attributes(obj):
     if "vm_lower_pu" in obj.__dict__ and "hunting_limit" not in obj.__dict__:
         obj.__dict__["hunting_limit"] = None
 
+    elif isinstance(obj, BinarySearchControl):
+        if "input_sign" not in obj.__dict__:
+            n = len(obj.input_element_index)
+            obj.__dict__["input_sign"] = [1] * n
+        if "gen_Q_response" not in obj.__dict__:
+            n = len(obj.output_element_index)
+            obj.__dict__["gen_Q_response"] = [1] * n
 
 def _convert_objects(net, elements_to_deserialize):
     """
-    The function updates attribute names in pandapower objects. For now, it affects TrafoController.
+    The function updates  attribute names and adds new attributes in pandapower objects. For now, it affects
+    TrafoController and Station Controller.
     Should be expanded for other objects if necessary.
     """
     _check_elements_to_deserialize('controller', elements_to_deserialize)

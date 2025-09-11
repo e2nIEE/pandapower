@@ -8,6 +8,13 @@ Change Log
 - [ADDED] Load_dc and Source_dc, which represent a conventional load and a generator in dc
 - [ADDED] DMR controller, which calculates the current on metallic return lines
 - [ADDED] Back2Back VSC converter, including extensive tests
+- [ADDED] Station controller support for measurements on trafo3w and impedance
+- [CHANGED] Station controller with measurements at switches: added a topological search to find nearby line or transformer and relocated measurement to avoid small impedances on switches
+- [FIXED] Station controller bug with Q(U) (wrong sign in equation for droop calculation)
+- [ADDED] python: support for version 3.13 added to the test pipelines
+- [FIXED] create_buses_dc: incorrect handling of geodata
+- [ADDED] postgresql: support for setting a port for the connection
+- [FIXED] ensure proper handling of `indent` parameter for PPJSONEncoder, fixing compatibility with Python3.13
 - [ADDED] description for `slack` argument in docstring of create_gen function
 - [FIXED] pf2pp: dc-lines geodata error is fixed, outdated line_dc_geodata field replaced by newer geo-column
 - [FIXED] pf2pp: zip load import error fixed by replacing unknown ga() function with actual GetAttribute-function
