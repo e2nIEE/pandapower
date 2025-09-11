@@ -147,15 +147,6 @@ def test_b2b_vsc_shorted():
     create_b2b_vsc(net, 2, 1, 3, 0.006, 1., 0.1,
                    control_mode_ac='slack', control_value_ac=1., control_mode_dc="p_mw", control_value_dc=0.)
 
-    import pandas as pd
-
-    pd.set_option('display.max_rows', 1000)
-    pd.set_option('display.max_columns', 1000)
-    pd.set_option('display.width', 1000)
-
-    runpp(net, check_connectivity=True)
-    # net.res_b2b_vsc
-    # net.res_bus_dc
     runpp_with_consistency_checks(net)
 
 
