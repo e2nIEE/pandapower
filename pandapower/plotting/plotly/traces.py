@@ -1150,7 +1150,7 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
 
     # check if geodata are real geographical lat/lon coordinates using geopy
     if on_map:
-        try:
+        try: #Token still working but useless/deprecated
             mapbox_access_token = _get_mapbox_token()
         except Exception:
             logger.exception('mapbox token required for map plots. '
@@ -1158,7 +1158,7 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
                              'After getting a token, set it to pandapower using:\n'
                              'pandapower.plotting.plotly.mapbox_plot.set_mapbox_token(\'<token>\')')
             raise MapboxTokenMissing
-        print("HELLO")
+        
         fig['layout']['map'] = dict(   bearing=0,
                                        center=dict(lat=pd.Series(traces[0]['lat']).dropna().mean(),
                                                    lon=pd.Series(traces[0]['lon']).dropna().mean()),

@@ -41,7 +41,7 @@ def _on_map_test(x, y):
     return True
 
 
-def set_mapbox_token(token): # To be deprecated in future releases?
+def set_mapbox_token(token): # Still working but useless/deprecated
     from pandapower.__init__ import pp_dir
     path = os.path.join(pp_dir, "plotting", "plotly")
     filename = os.path.join(path, 'mapbox_token.txt')
@@ -49,7 +49,7 @@ def set_mapbox_token(token): # To be deprecated in future releases?
         mapbox_file.write(token)
 
 
-def _get_mapbox_token(): # To be deprecated in future releases?
+def _get_mapbox_token(): # Still working but useless/deprecated
     from pandapower.__init__ import pp_dir
     path = os.path.join(pp_dir, "plotting", "plotly")
     filename = os.path.join(path, 'mapbox_token.txt')
