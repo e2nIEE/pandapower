@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 def pf_res_plotly(net, cmap="Jet", use_line_geo=None, on_map=False, projection=None,
                   map_style='basic', figsize=1, aspectratio='auto', line_width=2, bus_size=10,
                   climits_volt=(0.9, 1.1), climits_load=(0, 100), cpos_volt=1.0, cpos_load=1.1,
-                  filename="temp-plot.html", auto_open=True):
+                  filename="temp-plot.html", auto_open=True, zoomlevel=11):
     """
         Plots a pandapower network in plotly
 
@@ -81,6 +81,8 @@ def pf_res_plotly(net, cmap="Jet", use_line_geo=None, on_map=False, projection=N
             **filename** (str, "temp-plot.html") - filename / path to plot to. Should end on `*.html`
 
             **auto_open** (bool, True) - automatically open plot in browser
+
+            **zoomlevel** (int, 11) - initial zoomlevel of map plot (only if on_map=True)
 
         OUTPUT:
             **figure** (graph_objs._figure.Figure) figure object
@@ -178,4 +180,5 @@ def pf_res_plotly(net, cmap="Jet", use_line_geo=None, on_map=False, projection=N
 
     return draw_traces(line_traces + trafo_traces + ext_grid_trace + bus_trace,
                        showlegend=False, aspectratio=aspectratio, on_map=on_map,
-                       map_style=map_style, figsize=figsize, filename=filename, auto_open=auto_open)
+                       map_style=map_style, figsize=figsize, filename=filename,
+                       auto_open=auto_open,zoomlevel=zoomlevel)

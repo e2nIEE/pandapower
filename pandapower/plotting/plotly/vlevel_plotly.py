@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 def vlevel_plotly(net, respect_switches=True, use_line_geo=None, colors_dict=None, on_map=False,
                   projection=None, map_style='basic', figsize=1, aspectratio='auto', line_width=2,
-                  bus_size=10, filename="temp-plot.html", auto_open=True):
+                  bus_size=10, filename="temp-plot.html", auto_open=True,zoomlevel=11):
     """
     Plots a pandapower network in plotly
     using lines/buses colors according to the voltage level they belong to.
@@ -75,6 +75,8 @@ def vlevel_plotly(net, respect_switches=True, use_line_geo=None, colors_dict=Non
 
         **auto_open** (bool, True) - automatically open plot in browser
 
+        **zoomlevel** (int, 11) - initial zoomlevel of map plot (only if on_map=True)
+
     OUTPUT:
         **figure** (graph_objs._figure.Figure) figure object
 
@@ -103,13 +105,13 @@ def vlevel_plotly(net, respect_switches=True, use_line_geo=None, colors_dict=Non
         net, bus_groups, respect_switches=respect_switches,
         use_line_geo=use_line_geo, on_map=on_map, projection=projection,
         map_style=map_style, figsize=figsize, aspectratio=aspectratio, line_width=line_width,
-        bus_size=bus_size, filename=filename, auto_open=auto_open)
+        bus_size=bus_size, filename=filename, auto_open=auto_open,zoomlevel=zoomlevel)
 
 
 def _draw_colored_bus_groups_plotly(
     net, bus_groups, respect_switches=True, use_line_geo=None,
     on_map=False, projection=None, map_style='basic', figsize=1, aspectratio='auto', line_width=2,
-    bus_size=10, filename="temp-plot.html", auto_open=True):
+    bus_size=10, filename="temp-plot.html", auto_open=True,zoomlevel=11):
     """
     Internal function of vlevel_plotly()
 
@@ -172,7 +174,7 @@ def _draw_colored_bus_groups_plotly(
 
     return draw_traces(line_traces + trafo_traces + bus_traces, showlegend=True,
                        aspectratio=aspectratio, on_map=on_map, map_style=map_style, figsize=figsize,
-                       filename=filename, auto_open=auto_open)
+                       filename=filename, auto_open=auto_open,zoomlevel=zoomlevel)
 
 
 if __name__ == '__main__':

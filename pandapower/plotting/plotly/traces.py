@@ -1158,13 +1158,13 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
                              'After getting a token, set it to pandapower using:\n'
                              'pandapower.plotting.plotly.mapbox_plot.set_mapbox_token(\'<token>\')')
             raise MapboxTokenMissing
-
+        print("HELLO")
         fig['layout']['map'] = dict(   bearing=0,
                                        center=dict(lat=pd.Series(traces[0]['lat']).dropna().mean(),
                                                    lon=pd.Series(traces[0]['lon']).dropna().mean()),
                                        style=map_style,
                                        pitch=0,
-                                       zoom=kwargs.pop('zoomlevel', 3))
+                                       zoom=kwargs.pop('zoomlevel', 11))
 
     # default aspectratio: if on_map use auto, else use 'original'
     aspectratio = 'original' if not on_map and aspectratio == 'auto' else aspectratio
