@@ -279,7 +279,7 @@ def run_test_cases(net, dataframes, fault, case, fault_values, lv_tol_percent, f
             return_all_currents=False, ip=False,
             r_fault_ohm=r_fault_ohm, x_fault_ohm=x_fault_ohm, lv_tol_percent=lv_tol_percent)
 
-     # TODO: add 3xIß column to net.res_bus_sc and net.res_line_sc!
+     # TODO: add 3xI0 column to net.res_bus_sc and net.res_line_sc!
 
     if branch_results:
         columns_to_check = net.res_line_sc.columns

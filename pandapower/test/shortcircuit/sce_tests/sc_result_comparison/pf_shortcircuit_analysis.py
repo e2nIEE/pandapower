@@ -298,6 +298,7 @@ class PFShortCircuitAnalysis:
             return
 
         trafo.cgnd_l = 1 if grounding_type == 'isolated' else 0
+        trafo.cpeter_l = 0
         if grounding_type == 'solid':
             trafo.re0tr_l = 0
             trafo.xe0tr_l = 0
@@ -310,6 +311,7 @@ class PFShortCircuitAnalysis:
         elif grounding_type == 'impedance':
             trafo.re0tr_l = 5
             trafo.xe0tr_l = 5
-        elif grounding_type == 'resonant':  # ToDO: only place holder right now, add correct values
+        elif grounding_type == 'resonant':
             trafo.re0tr_l = 0
-            trafo.xe0tr_l = 0
+            trafo.xe0tr_l = 777
+            trafo.cpeter_l = 1
