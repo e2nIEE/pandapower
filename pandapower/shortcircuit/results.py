@@ -16,6 +16,8 @@ from pandapower.pypower.idx_bus_sc import IKSSV, IP, ITH, IKSSC, R_EQUIV_OHM, X_
 from pandapower.pypower.idx_bus import BUS_TYPE, BASE_KV
 from pandapower.results_branch import _copy_switch_results_from_branches
 from pandapower.results import BRANCH_RESULTS_KEYS
+import logging
+logger = logging.getLogger(__name__)
 
 
 def _copy_result_to_ppci_orig(ppci_orig, ppci, ppci_bus, calc_options):
@@ -291,6 +293,9 @@ def _extract_results(net, ppc_0, ppc_1, ppc_2, bus):
             #     _get_trafo_results(net, ppc_1)
             #     _get_trafo3w_results(net, ppc_1)
             #     _get_switch_results(net, ppc_1)
+    if ("grounding_type" in net.trafo.columns) and (net.trafo["grounding_type"] == "resonant").any():
+        _validate_resonate_grounding(net, ppc_0, bus)
+
 
 
 def _get_bus_results(net, ppc_0, ppc_1, ppc_2, bus):
@@ -554,3 +559,24 @@ def _get_trafo3w_all_results(net, ppc, bus):
         net.res_trafo3w_sc["ikss_hv_ka"] = ppc["internal"]["branch_ikss_f"].iloc[f:hv,:].loc[:, ppc_index].values.real.reshape(-1, 1)
         net.res_trafo3w_sc["ikss_mv_ka"] = ppc["internal"]["branch_ikss_t"].iloc[hv:mv, :].loc[:, ppc_index].values.real.reshape(-1, 1)
         net.res_trafo3w_sc["ikss_lv_ka"] = ppc["internal"]["branch_ikss_t"].iloc[mv:lv, :].loc[:, ppc_index].values.real.reshape(-1, 1)
+
+def _validate_resonate_grounding(net, ppc_0, bus):
+    bus_lookup = net._pd2ppc_lookups["bus"]
+    ppc_index = bus_lookup[net.bus.index]
+    net.res_bus_sc["3xI0"] = (ppc_0["bus"][ppc_index, IKSSV] + ppc_0["bus"][ppc_index, IKSSC])[bus]
+    voltage_level = net.bus.loc[bus, 'vn_kv']
+    if voltage_level.nunique() == 1:
+        voltage_level = voltage_level.iloc[0]
+    else:
+        raise ValueError("Different voltage levels encountered for resonant grounding,"
+                         " please check the location of fault buses")
+    # voltage in kV, maximum current in neutral/earth conenction
+    thresholds = {
+        "high": (110.0, 0.130),
+        "low": (20.0, 0.060)
+    }
+    for key, (voltage, current) in thresholds.items():
+        if (key == "high" and voltage_level >= voltage) or (key == "low" and voltage_level <= voltage):
+            if (net.res_bus_sc.loc[bus, '3xI0'] > current).any():
+                logger.warning(f"\nWarning: Current 3xI0 exceeds threshold of {current} A at {voltage} kV level."
+                               f" Please check the parameters of your grounding impedance {net.name}")

@@ -16,7 +16,7 @@ def compare_sc_results(net, excel_file, branch=False, fault_location=None):
     pf_dataframes = load_pf_results(excel_file)
 
     # Toleranzen für relevante Größen
-    tolerances = {"ikss_ka": 1e-4, "skss_mw": 1e-4, "rk_ohm": 1e-5, "xk_ohm": 1e-5,
+    tolerances = {"ikss_ka": 1e-4, "skss_mw": 1e-4, "rk_ohm": 1e-5, "xk_ohm": 1e-5, "3xI0": 1e-4,
                   "vm_pu": 1e-4, "va_degree": 1e-2, "p_mw": 1e-4, "q_mvar": 1e-4, "ikss_degree": 1e-3}
 
     faults = ["LG", "LLG"]
@@ -120,9 +120,11 @@ def get_result_dfs(net_name, fault_location, grounding_type):
 
     result_files_path = os.path.join('sc_result_comparison')
     net = load_test_case(net_name)
+    net.name = net_name
     net.load.in_service = False
     net.sgen.in_service = False
     net.gen.in_service = False
+    net.trafo['grounding_type'] = grounding_type
 
     if grounding_type == "solid":
         net.trafo['xn_ohm'] = 0
@@ -139,13 +141,16 @@ def get_result_dfs(net_name, fault_location, grounding_type):
     elif grounding_type == "isolated":
         net.trafo['xn_ohm'] = 1e20
         net.trafo['rn_ohm'] = 1e20
+    elif grounding_type == "resonant":
+        net.trafo['xn_ohm'] = 777
+        net.trafo['rn_ohm'] = 0
 
     # bus
-    excel_file = f"{"wp_2.5"}/{net_name}_pf_sc_results_{fault_location}_bus_{grounding_type}.xlsx"
+    excel_file = f"wp_2.5/{net_name}_pf_sc_results_{fault_location}_bus_{grounding_type}.xlsx"
     diff_df = compare_sc_results(net, os.path.join(result_files_path, excel_file), fault_location=fault_location)
 
     # branch
-    excel_file = f"{"wp_2.5"}/{net_name}_pf_sc_results_{fault_location}_branch_{grounding_type}.xlsx"
+    excel_file = f"wp_2.5/{net_name}_pf_sc_results_{fault_location}_branch_{grounding_type}.xlsx"
     diff_df_branch = compare_sc_results(net, os.path.join(result_files_path, excel_file), branch=True, fault_location=fault_location)
 
     return diff_df, diff_df_branch
@@ -260,17 +265,18 @@ if __name__ == "__main__":
 
     ## show panadpower and powerfactory results for specified grid and location
     net_name = '2_five_bus_radial_grid_dyn_gen'   # possible net_name in net_names and net_names_gen
+    # net_name = '4_twenty_bus_radial_grid_yyn_gen'   # possible net_name in net_names and net_names_gen
+
     fault_location = 1  # 0, 1, 2, 3 for four- and five-bus grids; 0, 8, 18 for twenty-bus grid
-    grounding_type = "isolated"
-    grounding_types = ["solid", "resistance", "inductance", "impedance", "isolated"]
-    grounding_types = ["solid", "resistance", "inductance", "impedance"]
+    grounding_type = "resonant"
+    grounding_types = ["solid", "resistance", "inductance", "impedance", "isolated", "resonant"]
 
     diff_df, diff_df_branch = get_result_dfs(net_name, fault_location, grounding_type)
 
-    """fault_location = [fault_location]
+    fault_location = [fault_location]
     ## detailed overview for all grids
     df_bus, df_branch = generate_summary_tables(names, fault_location, grounding_types, detailed=True)
 
     ## simple overview for all grids
-    df_bus_simple, df_branch_simple = generate_summary_tables(names, fault_location, grounding_types, detailed=False)"""
+    df_bus_simple, df_branch_simple = generate_summary_tables(names, fault_location, grounding_types, detailed=False)
 
