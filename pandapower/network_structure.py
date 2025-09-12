@@ -731,7 +731,7 @@ def get_structure_dict() -> dict:
     }
 def get_std_type_structure_dict() -> dict:
     """
-    This function returns the structure dict of the network
+    This function returns the structure dict of the std_types
     """
     return {
         # structure data
