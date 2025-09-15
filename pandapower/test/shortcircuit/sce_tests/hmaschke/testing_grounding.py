@@ -15,20 +15,22 @@ import copy
 import os
 from pandapower import pp_dir
 
-net_name = r"wp_2.1\test_case_2_five_bus_radial_grid_YNyn.json"
+# net_name = r"wp_2.1\test_case_2_five_bus_radial_grid_YNyn.json"
 # net_name = "test_case_3_five_bus_meshed_grid_Dyn.json"
 # net_name = "test_trafo_simple.json"
 # net_name = "test_case_4_twenty_bus_radial_grid_YNyn.json"
 # net_name = r"wp_2.2_2.4\1_four_bus_radial_grid_gen.json"
 # net_name = r"wp_2.2_2.4\4_twenty_bus_radial_grid_dyn_gen.json"
+net_name = r"wp_2.2_2.4\2_five_bus_radial_grid_dyn_gen.json"
 
 net = from_json(os.path.join(pp_dir, "test", "shortcircuit", "sce_tests", "test_grids", net_name))
 net.sgen.in_service = False
 net.gen.in_service = False
 net.load.in_service = False
 
-grounding_types = ["solid", "resistance", "inductance", "impedance", "isolated"]
-grounding_type = "impedance"
+grounding_types = ["solid", "resistance", "inductance", "impedance", "isolated", "resonant"]
+grounding_type = "resonant"
+net.trafo['grounding_type'] = grounding_type
 
 if grounding_type == "solid":
     net.trafo['xn_ohm'] = 0
@@ -43,10 +45,12 @@ elif grounding_type == "impedance":
     net.trafo['xn_ohm'] = 5
     net.trafo['rn_ohm'] = 5
 elif grounding_type == "isolated":
-    # net.trafo['xn_ohm'] = 1e99
-    # net.trafo['rn_ohm'] = 1e99
     net.trafo['xn_ohm'] = 1e20
     net.trafo['rn_ohm'] = 1e20
+elif grounding_type == "resonant":
+    # 20000 / np.sqrt(3) / 14.84958 = 777.598
+    net.trafo['xn_ohm'] = 777
+    net.trafo['rn_ohm'] = 0
 
 # only LG and LLG
 calc_sc(net, fault="LG", case="max", bus=1, return_all_currents=False, branch_results=True, ip=False, r_fault_ohm=0, x_fault_ohm=0, lv_tol_percent=10)

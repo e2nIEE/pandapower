@@ -17,7 +17,7 @@ def compare_sc_results(net, excel_file, branch=False, fault_location=None, gen_a
     pf_dataframes = load_pf_results(excel_file)
 
     # Toleranzen für relevante Größen
-    tolerances = {"ikss_ka": 1e-4, "skss_mw": 1e-4, "rk_ohm": 1e-5, "xk_ohm": 1e-5,
+    tolerances = {"ikss_ka": 1e-4, "skss_mw": 1e-4, "rk_ohm": 1e-5, "xk_ohm": 1e-5, "3xI0": 1e-4,
                   "vm_pu": 1e-4, "va_degree": 1e-2, "p_mw": 1e-4, "q_mvar": 1e-4, "ikss_degree": 1e-3}
 
     faults = ["LG", "LLG"]
@@ -122,9 +122,11 @@ def get_result_dfs(net_name, fault_location, grounding_type, gen_active=False):
     result_files_path = os.path.join('sc_result_comparison')
     result_files_path = os.path.join(pp_dir, 'test', 'shortcircuit', 'sce_tests', 'sc_result_comparison')
     net = load_test_case(net_name)
+    net.name = net_name
     net.load.in_service = False
     net.sgen.in_service = False
     net.gen.in_service = False
+    net.trafo['grounding_type'] = grounding_type
     gen_loc = ""
 
     if gen_active:
