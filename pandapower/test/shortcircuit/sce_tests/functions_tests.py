@@ -473,7 +473,7 @@ def load_pf_results(excel_file):
         elif sheet.startswith("LG_"):
             fault_type = "LG"
         parts_excel_file = excel_file.split('_')
-        if parts_excel_file[-1] == 'bus.xlsx' or parts_excel_file[-2] == 'bus':
+        if 'bus' in parts_excel_file and 'branch' not in parts_excel_file:
             relevant_columns = columns_mapping[fault_type]
             pf_results = pf_results[relevant_columns]
             pf_results['name'] = pf_results['name'].astype(str)
@@ -502,7 +502,7 @@ def load_pf_results(excel_file):
 
             dataframes[sheet] = pf_results
 
-        elif parts_excel_file[-1] == 'branch.xlsx' or parts_excel_file[-2] == 'branch':
+        elif 'branch' in parts_excel_file:
             relevant_columns = columns_mapping_branch[fault_type]
             pf_results = pf_results[relevant_columns]
             if fault_type == 'LLL':

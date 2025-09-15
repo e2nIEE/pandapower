@@ -5,6 +5,7 @@ from tqdm import tqdm
 import pandas as pd
 import numpy as np
 from pandapower.shortcircuit.calc_sc import calc_sc
+from pandapower import pp_dir
 from pandapower.test.shortcircuit.sce_tests.functions_tests import (
     load_test_case,
     check_pattern,
@@ -12,7 +13,7 @@ from pandapower.test.shortcircuit.sce_tests.functions_tests import (
     load_pf_results
 )
 
-def compare_sc_results(net, excel_file, branch=False, fault_location=None):
+def compare_sc_results(net, excel_file, branch=False, fault_location=None, gen_active=False):
     pf_dataframes = load_pf_results(excel_file)
 
     # Toleranzen für relevante Größen
@@ -109,7 +110,7 @@ def compare_sc_results(net, excel_file, branch=False, fault_location=None):
     return pd.DataFrame(all_differences)
 
 
-def get_result_dfs(net_name, fault_location, grounding_type):
+def get_result_dfs(net_name, fault_location, grounding_type, gen_active=False):
 
     if 'twenty_bus' in net_name and fault_location not in [0, 8, 18]:
         print(f"For {net_name} only fault locations 0, 8, 18 are supported. Skipping fault location {fault_location}.")
@@ -119,10 +120,47 @@ def get_result_dfs(net_name, fault_location, grounding_type):
         return None, None
 
     result_files_path = os.path.join('sc_result_comparison')
+    result_files_path = os.path.join(pp_dir, 'test', 'shortcircuit', 'sce_tests', 'sc_result_comparison')
     net = load_test_case(net_name)
     net.load.in_service = False
     net.sgen.in_service = False
     net.gen.in_service = False
+    gen_loc = ""
+
+    if gen_active:
+        net.sgen['k'] = 1.2
+        net.gen['active_current'] = False
+        net.gen['current_source'] = False
+        elm_name = '_all'
+        if net_name.startswith('2_') or net_name.startswith('3_'):
+            gen_loc = f'{elm_name}34'
+            net.sgen.loc[net.sgen.bus == 3, 'in_service'] = True
+            net.sgen.loc[net.sgen.bus == 4, 'in_service'] = True
+            net.gen.loc[net.gen.bus == 3, 'in_service'] = True
+            net.gen.loc[net.gen.bus == 4, 'in_service'] = True
+        else:
+            if '_dyn_' in net_name:
+                gen_loc = f'{elm_name}4'
+                net.sgen.loc[net.sgen.bus == 4, 'in_service'] = True
+                net.gen.loc[net.gen.bus == 4, 'in_service'] = True
+            elif '_yyn_' in net_name:
+                gen_loc = f'{elm_name}4714'
+                net.sgen.loc[net.sgen.bus == 4, 'in_service'] = True
+                net.sgen.loc[net.sgen.bus == 7, 'in_service'] = True
+                net.sgen.loc[net.sgen.bus == 14, 'in_service'] = True
+                net.gen.loc[net.gen.bus == 4, 'in_service'] = True
+                net.gen.loc[net.gen.bus == 7, 'in_service'] = True
+                net.gen.loc[net.gen.bus == 14, 'in_service'] = True
+            elif '_ynyn_' in net_name:
+                gen_loc = f'{elm_name}471419'
+                net.sgen.loc[net.sgen.bus == 4, 'in_service'] = True
+                net.sgen.loc[net.sgen.bus == 7, 'in_service'] = True
+                net.sgen.loc[net.sgen.bus == 14, 'in_service'] = True
+                net.sgen.loc[net.sgen.bus == 19, 'in_service'] = True
+                net.gen.loc[net.gen.bus == 4, 'in_service'] = True
+                net.gen.loc[net.gen.bus == 7, 'in_service'] = True
+                net.gen.loc[net.gen.bus == 14, 'in_service'] = True
+                net.gen.loc[net.gen.bus == 19, 'in_service'] = True
 
     if grounding_type == "solid":
         net.trafo['xn_ohm'] = 0
@@ -139,19 +177,22 @@ def get_result_dfs(net_name, fault_location, grounding_type):
     elif grounding_type == "isolated":
         net.trafo['xn_ohm'] = 1e20
         net.trafo['rn_ohm'] = 1e20
+    elif grounding_type == "resonant":
+        net.trafo['xn_ohm'] = 777
+        net.trafo['rn_ohm'] = 0
 
     # bus
-    excel_file = f"{"wp_2.5"}/{net_name}_pf_sc_results_{fault_location}_bus_{grounding_type}.xlsx"
+    excel_file = f"wp_2.5/{net_name}_pf_sc_results_{fault_location}_bus{gen_loc}_{grounding_type}.xlsx"
     diff_df = compare_sc_results(net, os.path.join(result_files_path, excel_file), fault_location=fault_location)
 
     # branch
-    excel_file = f"{"wp_2.5"}/{net_name}_pf_sc_results_{fault_location}_branch_{grounding_type}.xlsx"
+    excel_file = f"wp_2.5/{net_name}_pf_sc_results_{fault_location}_branch{gen_loc}_{grounding_type}.xlsx"
     diff_df_branch = compare_sc_results(net, os.path.join(result_files_path, excel_file), branch=True, fault_location=fault_location)
 
     return diff_df, diff_df_branch
 
 
-def generate_summary_tables(net_names, fault_locations, grounding_types, detailed=False):
+def generate_summary_tables(net_names, fault_locations, grounding_types, detailed=False, gen_active=False):
     bus_summary = []
     branch_summary = []
 
@@ -172,7 +213,7 @@ def generate_summary_tables(net_names, fault_locations, grounding_types, detaile
 
     for net_name, fault_location, grounding_type in tqdm(combinations, desc="generate_summary", unit="grid"):
         try:
-            diff_df, diff_df_branch = get_result_dfs(net_name, fault_location, grounding_type)
+            diff_df, diff_df_branch = get_result_dfs(net_name, fault_location, grounding_type, gen_active=gen_active)
             if diff_df is None and diff_df_branch is None:
                 continue
 
@@ -255,22 +296,28 @@ def generate_summary_tables(net_names, fault_locations, grounding_types, detaile
 if __name__ == "__main__":
     ## all net names
     testfiles_gen_path = os.path.join('test_grids', 'wp_2.2_2.4')
+    testfiles_gen_path = os.path.join(pp_dir, 'test', 'shortcircuit', 'sce_tests', 'test_grids', 'wp_2.2_2.4')
     names = [f[:-5] for f in os.listdir(testfiles_gen_path)
         if f.endswith(".json") and f[:-5].endswith("_gen") and '1_four_bus_radial_grid' not in f[:-5]]
 
     ## show panadpower and powerfactory results for specified grid and location
-    net_name = '2_five_bus_radial_grid_dyn_gen'   # possible net_name in net_names and net_names_gen
+    net_name = '2_five_bus_radial_grid_yyn_gen'   # possible net_name in net_names and net_names_gen
     fault_location = 1  # 0, 1, 2, 3 for four- and five-bus grids; 0, 8, 18 for twenty-bus grid
-    grounding_type = "isolated"
-    grounding_types = ["solid", "resistance", "inductance", "impedance", "isolated"]
-    grounding_types = ["solid", "resistance", "inductance", "impedance"]
+    grounding_type = "inductance"
+    grounding_types = ["solid", "resistance", "inductance", "impedance", "isolated", "resonant"]
+    gen_active = True
 
-    diff_df, diff_df_branch = get_result_dfs(net_name, fault_location, grounding_type)
+    diff_df, diff_df_branch = get_result_dfs(net_name, fault_location, grounding_type, gen_active=gen_active)
 
-    """fault_location = [fault_location]
+    fault_location = [fault_location]
     ## detailed overview for all grids
-    df_bus, df_branch = generate_summary_tables(names, fault_location, grounding_types, detailed=True)
+    df_bus, df_branch = generate_summary_tables(names, fault_location, grounding_types, detailed=True,
+                                                gen_active=gen_active)
 
     ## simple overview for all grids
-    df_bus_simple, df_branch_simple = generate_summary_tables(names, fault_location, grounding_types, detailed=False)"""
+    df_bus_simple, df_branch_simple = generate_summary_tables(names, fault_location, grounding_types, detailed=False,
+                                                              gen_active=gen_active)
+
+
+##
 
