@@ -403,6 +403,7 @@ def get_structure_dict() -> dict:
             "bus_dc": "u4",
             "vm_pu": "f8",
             "in_service": "bool",
+            "type": dtype(object),
         },
         "load_dc": {
             "name": dtype(object),
@@ -410,6 +411,7 @@ def get_structure_dict() -> dict:
             "p_dc_mw": "f8",
             "scaling": "f8",
             "in_service": "bool",
+            "controllable": "bool",
             "type": dtype(object),
         },
         "b2b_vsc": {
@@ -438,7 +440,7 @@ def get_structure_dict() -> dict:
             "vm_pu": "f8",
             "va_degree": "f8",
             "vm_internal_dc_pu_p": "f8",
-            "vm_internal_dc_pu_n": "f8",
+            "vm_internal_dc_pu_m": "f8",
             "vm_dc_pu_p": "f8",
             "vm_dc_pu_m": "f8",
         },
@@ -468,7 +470,7 @@ def get_structure_dict() -> dict:
             "vm_pu": "f8",
             "va_degree": "f8",
             "vm_internal_dc_pu_p": "f8",
-            "vm_internal_dc_pu_n": "f8",
+            "vm_internal_dc_pu_m": "f8",
             "vm_dc_pu_p": "f8",
             "vm_dc_pu_m": "f8",
         },

@@ -4818,7 +4818,15 @@ def create_shunt_as_capacitor(
     return create_shunt(net, bus, q_mvar=q_mvar, p_mw=p_mw, **kwargs)
 
 
-def create_source_dc(net, bus_dc, vm_pu=1.0, index=None, name=None, in_service=True, **kwargs):
+def create_source_dc(
+        net: pandapowerNet,
+        bus_dc: int,
+        vm_pu: float = 1.0,
+        index: int | None = None,
+        name: str | None = None,
+        in_service: bool = True,
+        type: str| None = None,
+        **kwargs):
     """
     Creates a dc voltage source in a dc grid with an adjustable set point
     INPUT:
@@ -4837,6 +4845,8 @@ def create_source_dc(net, bus_dc, vm_pu=1.0, index=None, name=None, in_service=T
 
         **in_service** (bool, True) - True for in_service or False for out of service
 
+        **type** (str) - A string describing the type.
+
     OUTPUT:
         **index** (int) - The unique ID of the created svc
 
@@ -4845,8 +4855,8 @@ def create_source_dc(net, bus_dc, vm_pu=1.0, index=None, name=None, in_service=T
 
     index = _get_index_with_check(net, "source_dc", index)
 
-    entries = dict(zip(["name", "bus_dc", "vm_pu", "in_service"],
-                       [name, bus_dc, vm_pu, bool(in_service)]))
+    entries = dict(zip(["name", "bus_dc", "vm_pu", "in_service", "type"],
+                       [name, bus_dc, vm_pu, bool(in_service), type]))
 
     _set_entries(net, "source_dc", index, True, **entries, **kwargs)
 
@@ -4858,10 +4868,11 @@ def create_load_dc(
         bus_dc: int,
         p_dc_mw: float,
         scaling: float=1.0,
-        type: str=None,
-        index=None,
-        name=None,
-        in_service=True,
+        type: str | None = None,
+        index: str | None = None,
+        name: str | None = None,
+        in_service: bool = True,
+        controllable: bool = False,
         **kwargs
     ):
     """
@@ -4886,6 +4897,9 @@ def create_load_dc(
 
         **type** (str) - A string describing the type.
 
+        **controllable** (boolean, default NaN) - States, whether a load is controllable or not. \
+            Only respected for OPF; defaults to False if "controllable" column exists in DataFrame
+
     OUTPUT:
         **index** (int) - The unique ID of the created svc
 
@@ -4894,8 +4908,8 @@ def create_load_dc(
 
     index = _get_index_with_check(net, "source_dc", index)
 
-    entries = dict(zip(["name", "bus_dc", "p_dc_mw", "in_service", "scaling", "type"],
-                       [name, bus_dc, p_dc_mw, bool(in_service), scaling, type]))
+    entries = dict(zip(["name", "bus_dc", "p_dc_mw", "in_service", "scaling", "type", "controllable"],
+                       [name, bus_dc, p_dc_mw, bool(in_service), scaling, type, controllable]))
 
     _set_entries(net, "load_dc", index, True, **entries, **kwargs)
 
@@ -5056,23 +5070,25 @@ def create_b2b_vsc(net, bus, bus_dc_plus, bus_dc_minus, r_ohm, x_ohm, r_dc_ohm, 
     INPUT:
         **net** (pandapowerNet) - The pandapower network in which the element is created
 
-        **bus** (int) - connection bus of the VSC
+        **bus** (int) - AC connection of the B2B VSC
 
-        **bus_dc** (int) - connection bus of the VSC
+        **bus_dc_plus** (int) - connection bus of the plus side of the B2B VSC
 
-        **r_ohm** (float) - resistance of the coupling transformer component of VSC
+        **bus_dc_minus** (int) - connection bus of the minus side of the B2B VSC
 
-        **x_ohm** (float) - reactance of the coupling transformer component of VSC
+        **r_ohm** (float) - resistance of the coupling transformer component of B2B VSC
 
-        **r_dc_ohm** (float) - resistance of the internal dc resistance component of VSC
+        **x_ohm** (float) - reactance of the coupling transformer component of B2B VSC
 
-        **pl_dc_mw** (float) - no-load losses of the VSC on the DC side for the shunt R representing the no load losses
+        **r_dc_ohm** (float) - resistance of the internal dc resistance component of B2B VSC
+
+        **pl_dc_mw** (float) - no-load losses of the B2B VSC on the DC side for the shunt R representing the no load losses
 
         **control_mode_ac** (string) - the control mode of the ac side of the VSC. it could be "vm_pu", "q_mvar" or "slack"
 
         **control_value_ac** (float) - the value of the controlled parameter at the ac bus in "p.u." or "MVAr"
 
-        **control_mode_dc** (string) - the control mode of the dc side of the VSC. it could be "vm_pu" or "p_mw"
+        **control_mode_dc** (string) - the control mode of the dc side of the B2B VSC. it could be "vm_pu" or "p_mw"
 
         **control_value_dc** (float) - the value of the controlled parameter at the dc bus in "p.u." or "MW"
 
