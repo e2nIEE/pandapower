@@ -21,6 +21,7 @@ doc/_build/*
 *.bak
 *.orig
 *.ini
+!mypy.ini
 pandapower/plotting/plotly/mapbox_token.txt
 pandapower/plotting/plotly/temp-plot.html
 pandapower/test/timeseries/run_timeseries_output/*
@@ -35,5 +36,5 @@ pandapower/test/buffer_file.json
 env/
 env*/
 venv/
-.scannerwork/
 sonar-project.properties
+.scannerwork/
