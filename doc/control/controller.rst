@@ -127,9 +127,9 @@ Droop Control
 .. autoclass:: pandapower.control.controller.station_control.DroopControl
     :members:
 
-***************
+**********************
 Local VDroop Control
-***************
+**********************
 
 .. autoclass:: pandapower.control.controller.station_control.VDroopControl_local
     :members:
