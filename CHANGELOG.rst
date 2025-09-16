@@ -8,6 +8,8 @@ Change Log
 - [ADDED] Load_dc and Source_dc, which represent a conventional load and a generator in dc
 - [ADDED] DMR controller, which calculates the current on metallic return lines
 - [ADDED] Back2Back VSC converter, including extensive tests
+- [FIXED] Setting the correct Dtype in io_utils for sql databases
+- [ADDED] std_types as a dict to be fetched from the network_structure
 - [ADDED] Station controller support for measurements on trafo3w and impedance
 - [CHANGED] Station controller with measurements at switches: added a topological search to find nearby line or transformer and relocated measurement to avoid small impedances on switches
 - [FIXED] Station controller bug with Q(U) (wrong sign in equation for droop calculation)
