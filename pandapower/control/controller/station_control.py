@@ -9,6 +9,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class BinarySearchControl(Controller):
     """
     The Binary search control is a controller which is used to reach a given set point . It can be used for
@@ -62,6 +63,7 @@ class BinarySearchControl(Controller):
 
         **tol=0.001** - Tolerance criteria of controller convergence.
    """
+
     def __init__(self, net, ctrl_in_service, output_element, output_variable, output_element_index,
                  output_element_in_service, output_values_distribution, input_element, input_variable,
                  input_element_index, set_point, voltage_ctrl, name="", input_inverted=[], gen_Q_response=[],
@@ -69,7 +71,7 @@ class BinarySearchControl(Controller):
                  drop_same_existing_ctrl=False, matching_params=None, **kwargs):
         super().__init__(net, in_service=in_service, order=order, level=level,
                          drop_same_existing_ctrl=drop_same_existing_ctrl,
-                         matching_params=matching_params) 
+                         matching_params=matching_params)
         self.name = name
         self.in_service = ctrl_in_service
         self.input_element = input_element
@@ -122,7 +124,7 @@ class BinarySearchControl(Controller):
         # write kwargs in self
         for key, value in kwargs.items():
             setattr(self, key, value)
-        
+
         self.read_flag = []
         self.input_variable = []
         self.input_element_in_service = []
@@ -137,6 +139,8 @@ class BinarySearchControl(Controller):
                     net[self.input_element].pf_in_service[input_index])
             elif self.input_element == "res_bus":
                 self.input_element_in_service.append(net.bus.in_service[input_index])
+            elif self.input_element == "res_gen":
+                self.input_element_in_service.append(ctrl_in_service)
 
             if isinstance(input_variable, list):
                 read_flag_temp, input_variable_temp = _detect_read_write_flag(net, self.input_element,
@@ -176,6 +180,8 @@ class BinarySearchControl(Controller):
                 self.input_element_in_service.append(net.switch.closed[input_index])
             elif self.input_element == "res_bus":
                 self.input_element_in_service.append(net.bus.in_service[input_index])
+            elif self.input_element == "res_gen":
+                self.input_element_in_service.append(net.gen.in_service[input_index])
         for output_index in self.output_element_index:
             if self.output_element == "gen":
                 self.output_element_in_service.append(net.gen.in_service[output_index])
@@ -283,6 +289,7 @@ class DroopControl(Controller):
 
         **vm_set_ub=None** - Upper band border of dead band
        """
+
     def __init__(self, net, q_droop_mvar, bus_idx, controller_idx, voltage_ctrl, tol=1e-6,
                  q_set_mvar_bsc=None, in_service=True, order=-1, level=0, name="", drop_same_existing_ctrl=False,
                  matching_params=None, vm_set_pu_bsc=None, vm_set_lb=None, vm_set_ub=None, **kwargs):
@@ -318,7 +325,8 @@ class DroopControl(Controller):
         self.converged = False
 
     def is_converged(self, net):
-        if not net.controller.at[self.controller_idx, "object"].in_service:
+        if (not net.controller.at[self.controller_idx, "object"].in_service or
+                net.controller.at[self.controller_idx, "object"].converged):
             self.converged = True
             return self.converged
         if self.voltage_ctrl:
@@ -355,15 +363,18 @@ class DroopControl(Controller):
             if self.lb_voltage is not None and self.ub_voltage is not None:
                 if self.vm_pu > self.ub_voltage:
                     self.q_set_old_mvar, self.q_set_mvar = (self.q_set_mvar, self.q_set_mvar_bsc +
-                                                            net.controller.object[self.controller_idx].gen_Q_response[0] * (self.ub_voltage - self.vm_pu) * self.q_droop_mvar)
+                                                            net.controller.object[self.controller_idx].gen_Q_response[0
+                                                            ] * (self.ub_voltage - self.vm_pu) * self.q_droop_mvar)
                 elif self.vm_pu < self.lb_voltage:
                     self.q_set_old_mvar, self.q_set_mvar = (self.q_set_mvar, self.q_set_mvar_bsc +
-                                                            net.controller.object[self.controller_idx].gen_Q_response[0] * (self.lb_voltage - self.vm_pu) * self.q_droop_mvar)
+                                                            net.controller.object[self.controller_idx].gen_Q_response[0]
+                                                             * (self.lb_voltage - self.vm_pu) * self.q_droop_mvar)
                 else:
                     self.q_set_old_mvar, self.q_set_mvar = (self.q_set_mvar, self.q_set_mvar_bsc)
             else:
                 self.q_set_old_mvar, self.q_set_mvar = (
-                    self.q_set_mvar, self.q_set_mvar + net.controller.object[self.controller_idx].gen_Q_response[0] * (self.vm_set_pu - self.vm_pu) * self.q_droop_mvar)
+                    self.q_set_mvar, self.q_set_mvar + net.controller.object[self.controller_idx].gen_Q_response[0] * (
+                                self.vm_set_pu - self.vm_pu) * self.q_droop_mvar)
 
             if self.q_set_old_mvar is not None:
                 self.diff = self.q_set_mvar - self.q_set_old_mvar
@@ -380,6 +391,94 @@ class DroopControl(Controller):
             for input_index in input_element_index:
                 input_values.append(read_from_net(net, input_element, input_index,
                                                   input_variable[counter], read_flag[counter]))
-            input_values = (net.controller.at[self.controller_idx, "object"].input_sign * np.asarray(input_values)).tolist()
-            self.vm_set_pu_new = self.vm_set_pu_bsc + sum(input_values) / self.q_droop_mvar #net.controller.at[self.controller_idx, "object"].gen_Q_response[0] *
+            input_values = (
+                        net.controller.at[self.controller_idx, "object"].input_sign * np.asarray(input_values)).tolist()
+            self.vm_set_pu_new = self.vm_set_pu_bsc + sum(
+                input_values) / self.q_droop_mvar  # net.controller.at[self.controller_idx, "object"].gen_Q_response[0] *
             net.controller.at[self.controller_idx, "object"].set_point = self.vm_set_pu_new
+
+
+class VDroopControl_local(Controller):
+    """
+    The VDroopControl_local is used in case of a local droop based voltage control. It is used in addition to
+    a binary search controller (bsc). The linked binary search controller is specified using the controller index,
+    which refers to the linked bsc.
+
+    INPUT:
+        **self**
+
+        **net** - A pandapower grid.
+
+        **q_droop_var** - Droop Value in Mvar/p.u.
+
+        **vm_set_pu_bsc** - Inital voltage set point.
+
+        **controller_idx** - Index of linked Binary< search control (if present).
+
+        **tol=1e-6** - Tolerance criteria of controller convergence.
+
+        **vm_set_lb=None** - Lower band border of dead band
+
+        **vm_set_ub=None** - Upper band border of dead band
+       """
+
+    def __init__(self, net, q_droop_mvar, controller_idx, bus_idx, tol=1e-6, in_service=True, order=-1, level=0,
+                 name="", drop_same_existing_ctrl=False, matching_params=None, q_set_mvar=None, vm_set_pu_bsc=None,
+                 vm_set_lb=None, vm_set_ub=None, **kwargs):
+        super().__init__(net, in_service=in_service, order=order, level=level,
+                         drop_same_existing_ctrl=drop_same_existing_ctrl,
+                         matching_params=matching_params)
+        # TODO: implement maximum and minimum of droop control
+        # write kwargs in self
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+        self.name = name
+        self.q_droop_mvar = q_droop_mvar
+        self.vm_pu = None
+        self.vm_pu_old = self.vm_pu
+        value = vm_set_pu_bsc if vm_set_pu_bsc is not None else kwargs.get('vm_set_pu')
+        self.vm_set_pu_bsc = value
+        self.vm_set_pu_new = None
+        self.q_set_mvar = q_set_mvar
+        self.lb_voltage = vm_set_lb
+        self.ub_voltage = vm_set_ub
+        self.controller_idx = controller_idx
+        self.bus_idx = bus_idx
+        self.tol = tol
+        self.applied = False
+        gen_idx = net.controller.at[self.controller_idx, "object"].input_element_index[0]
+        self.read_flag, self.input_variable = _detect_read_write_flag(net, "res_bus", bus_idx, "vm_pu")
+        self.diff = None
+        self.converged = False
+
+    def is_converged(self, net):
+        if (not net.controller.at[self.controller_idx, "object"].in_service or
+                net.controller.at[self.controller_idx, "object"].converged):
+            self.converged = True
+            return self.converged
+
+        self.diff = (net.controller.at[self.controller_idx, "object"].set_point -
+                     read_from_net(net, "res_bus", self.bus_idx, "vm_pu", self.read_flag))
+        self.converged = np.all(np.abs(self.diff) < self.tol)
+        return self.converged
+
+    def control_step(self, net):
+        self._Vdroopcontrol_step(net)
+
+    def _Vdroopcontrol_step(self, net):
+        self.vm_pu_old = self.vm_pu
+        self.vm_pu = read_from_net(net, "res_bus", self.bus_idx, "vm_pu", self.read_flag)
+
+        input_element = net.controller.at[self.controller_idx, "object"].input_element
+        input_element_index = net.controller.at[self.controller_idx, "object"].input_element_index
+        input_variable = net.controller.at[self.controller_idx, "object"].input_variable
+        read_flag = net.controller.at[self.controller_idx, "object"].read_flag
+        input_values = []
+        counter = 0
+        for input_index in input_element_index:
+            input_values.append(read_from_net(net, input_element, input_index,
+                                              input_variable[counter], read_flag[counter]))
+        input_values = (net.controller.at[self.controller_idx, "object"].input_sign * np.asarray(input_values)).tolist()
+        self.vm_set_pu_new = self.vm_set_pu_bsc - (sum(
+            input_values) - self.q_set_mvar) / self.q_droop_mvar
+        net.controller.at[self.controller_idx, "object"].set_point = self.vm_set_pu_new
