@@ -1618,7 +1618,7 @@ def _add_b2b_vsc(net: pandapowerNet):
         # idx = int(i)
         name = "b2b_" + str(b2b_vsc.name)
 
-        # If in voltage control mode, the voltage is split equally between the VSCs
+        # TODO: currently not working. If in voltage control mode, the voltage is split equally between the VSCs
         ref_bus = None
         if control_mode_dc == 'vm_pu_diff':
             ref_bus = bus_dc_minus

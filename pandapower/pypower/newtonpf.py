@@ -303,14 +303,11 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     num_dc_ref = len(dc_ref)
     dc_refb2bp = r_[dc_ref, dc_b2b, dc_p]
     if len(dc_refb2bp) > 0:
-        # dc_p_lookup = zeros(max(dc_refb2bp) + 1, dtype=np.int64)
-        dc_p_lookup = np.array([-1] * (max(dc_refb2bp) + 1), dtype=np.int64)
+        dc_p_lookup = zeros(max(dc_refb2bp) + 1, dtype=np.int64)
         dc_p_lookup[dc_p] = arange(num_dc_ref, num_dc_p + num_dc_ref)
-        #dc_ref_lookup = zeros(max(dc_refb2bp) + 1, dtype=np.int64)
-        dc_ref_lookup = np.array([-1] * (max(dc_refb2bp) + 1), dtype=np.int64)
+        dc_ref_lookup = zeros(max(dc_refb2bp) + 1, dtype=np.int64)
         dc_ref_lookup[dc_ref] = arange(num_dc_ref)
-        #dc_b2b_lookup = zeros(max(dc_refb2bp) + 1, dtype=np.int64)
-        dc_b2b_lookup = np.array([-1] * (max(dc_refb2bp) + 1), dtype=np.int64)
+        dc_b2b_lookup = zeros(max(dc_refb2bp) + 1, dtype=np.int64)
         dc_b2b_lookup[dc_b2b] = arange(len(dc_b2b))
         V_sl_dc = bus_dc[dc_ref, DC_VM]
         num_facts_controllable += num_dc_p + num_dc_ref
