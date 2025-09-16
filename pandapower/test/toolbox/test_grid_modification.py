@@ -568,7 +568,7 @@ def test_drop_elements_at_buses():
     # bus id needs to be entered as iterable, not done in the function
 
     for b in net.bus.index.values:
-        net1 = net.deepcopy()
+        net1 = copy.deepcopy(net)
         cd = get_connected_elements_dict(net1, b, connected_buses=False)
         swt3w = set(net1.switch.loc[net1.switch.element.isin(cd.get('trafo3w', [1000])) &
                                     (net1.switch.et == 't3')].index)

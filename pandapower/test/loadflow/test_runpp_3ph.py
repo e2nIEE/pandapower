@@ -8,7 +8,7 @@ import os
 
 import numpy as np
 import pytest
-
+import copy
 from pandapower import pp_dir
 from pandapower import replace_line_by_impedance
 from pandapower.auxiliary import get_free_id
@@ -548,7 +548,7 @@ def test_3ph_with_impedance():
     net.line.g_nf_per_km = 0.
     net.line["c0_nf_per_km"] = 0.
     net.line["g0_us_per_km"] = 0.
-    net_imp = net.deepcopy()
+    net_imp = copy.deepcopy(net)
     replace_line_by_impedance(net_imp, net.line.index, 100)
     runpp_3ph(net)
     runpp_3ph(net_imp)

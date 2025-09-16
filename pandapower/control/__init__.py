@@ -12,6 +12,7 @@ from pandapower.control.controller.trafo.DiscreteTapControl import DiscreteTapCo
 from pandapower.control.controller.trafo.TapDependentImpedance import TapDependentImpedance
 from pandapower.control.controller.trafo.VmSetTapControl import VmSetTapControl
 from pandapower.control.controller.trafo_control import TrafoController
+from pandapower.control.controller.dmr_control import DmrControl
 # --- Other ---
 from pandapower.control.run_control import *
 from pandapower.control.util.auxiliary import (

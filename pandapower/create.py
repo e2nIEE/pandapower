@@ -53,7 +53,6 @@ def create_empty_network(name: str = "",
         net = create_empty_network()
 
     """
-
     network_structure_dict = get_structure_dict()
     network_structure_dict['name'] = name
     network_structure_dict['f_hz'] = f_hz
@@ -2310,9 +2309,11 @@ def create_line_dc(
     tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
     _set_entries(net, "line_dc", index, **v, **kwargs)
 
+
     if geodata and hasattr(geodata, '__iter__'):
         geo = [[x, y] for x, y in geodata]
         net.line_dc.at[index, "geo"] = f'{{"coordinates": {geo}, "type": "LineString"}}'
+
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "line_dc")
     _set_value_if_not_nan(net, index, alpha, "alpha", "line_dc")
@@ -2898,9 +2899,11 @@ def create_line_dc_from_parameters(
 
     _set_entries(net, "line_dc", index, **v, **kwargs)
 
+
     if geodata and hasattr(geodata, '__iter__'):
         geo = [[x, y] for x, y in geodata]
         net.line_dc.at[index, "geo"] = f'{{"coordinates": {geo}, "type": "LineString"}}'
+
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "line_dc")
     _set_value_if_not_nan(net, index, alpha, "alpha", "line_dc")
@@ -4815,6 +4818,104 @@ def create_shunt_as_capacitor(
     return create_shunt(net, bus, q_mvar=q_mvar, p_mw=p_mw, **kwargs)
 
 
+def create_source_dc(
+        net: pandapowerNet,
+        bus_dc: int,
+        vm_pu: float = 1.0,
+        index: int | None = None,
+        name: str | None = None,
+        in_service: bool = True,
+        type: str| None = None,
+        **kwargs):
+    """
+    Creates a dc voltage source in a dc grid with an adjustable set point
+    INPUT:
+
+        **net** (pandapowerNet) - The pandapower network in which the element is created
+
+        **bus** (int) - index of the bus the shunt is connected to
+
+        **vm_pu** (float) - set-point for the bus voltage magnitude at the connection bus
+
+    OPTIONAL:
+        **name** (str, None) - element name
+
+        **index** (int, None) - Force a specified ID if it is available. If None, the index one \
+            higher than the highest already existing index is selected.
+
+        **in_service** (bool, True) - True for in_service or False for out of service
+
+        **type** (str) - A string describing the type.
+
+    OUTPUT:
+        **index** (int) - The unique ID of the created svc
+
+    """
+    _check_element(net, bus_dc, element='bus_dc')
+
+    index = _get_index_with_check(net, "source_dc", index)
+
+    entries = dict(zip(["name", "bus_dc", "vm_pu", "in_service", "type"],
+                       [name, bus_dc, vm_pu, bool(in_service), type]))
+
+    _set_entries(net, "source_dc", index, True, **entries, **kwargs)
+
+    return index
+
+
+def create_load_dc(
+        net: pandapowerNet,
+        bus_dc: int,
+        p_dc_mw: float,
+        scaling: float=1.0,
+        type: str | None = None,
+        index: int | None = None,
+        name: str | None = None,
+        in_service: bool = True,
+        controllable: bool = False,
+        **kwargs
+    ):
+    """
+    Creates a dc voltage source in a dc grid with an adjustable set point
+    INPUT:
+
+        **net** (pandapowerNet) - The pandapower network in which the element is created
+
+        **bus_dc** (int) - index of the dc bus the dc load is connected to
+
+        **p_dc_mw** (float) - The power of the load
+
+    OPTIONAL:
+        **name** (str, None) - element name
+
+        **index** (int, None) - Force a specified ID if it is available. If None, the index one \
+            higher than the highest already existing index is selected.
+
+        **in_service** (bool, True) - True for in service or False for out of service.
+
+        **scaling** (float, default 1.) - An OPTIONAL scaling factor, is multiplied with p_dc_mw.
+
+        **type** (str) - A string describing the type.
+
+        **controllable** (boolean, default NaN) - States, whether a load is controllable or not. \
+            Only respected for OPF; defaults to False if "controllable" column exists in DataFrame
+
+    OUTPUT:
+        **index** (int) - The unique ID of the created svc
+
+    """
+    _check_element(net, bus_dc, element='bus_dc')
+
+    index = _get_index_with_check(net, "source_dc", index=index)
+
+    entries = dict(zip(["name", "bus_dc", "p_dc_mw", "in_service", "scaling", "type", "controllable"],
+                       [name, bus_dc, p_dc_mw, bool(in_service), scaling, type, controllable]))
+
+    _set_entries(net, "load_dc", index, True, **entries, **kwargs)
+
+    return index
+
+
 def create_svc(
     net: pandapowerNet,
     bus,
@@ -4957,6 +5058,136 @@ def create_ssc(
     return index
 
 
+def create_b2b_vsc(net, bus, bus_dc_plus, bus_dc_minus, r_ohm, x_ohm, r_dc_ohm, pl_dc_mw=0., control_mode_ac="vm_pu",
+                   control_value_ac=1., control_mode_dc="p_mw", control_value_dc=0., name=None, controllable=True,
+                   in_service=True, index=None, **kwargs):
+    """
+    Creates an VSC converter element - a shunt element with adjustable VSC internal voltage used to connect the \
+    AC grid and the DC grid. The element implements several control modes.
+
+    Does not work if connected to "PV" bus (gen bus, ext_grid bus)
+
+    INPUT:
+        **net** (pandapowerNet) - The pandapower network in which the element is created
+
+        **bus** (int) - AC connection of the B2B VSC
+
+        **bus_dc_plus** (int) - connection bus of the plus side of the B2B VSC
+
+        **bus_dc_minus** (int) - connection bus of the minus side of the B2B VSC
+
+        **r_ohm** (float) - resistance of the coupling transformer component of B2B VSC
+
+        **x_ohm** (float) - reactance of the coupling transformer component of B2B VSC
+
+        **r_dc_ohm** (float) - resistance of the internal dc resistance component of B2B VSC
+
+        **pl_dc_mw** (float) - no-load losses of the B2B VSC on the DC side for the shunt R representing the no load losses
+
+        **control_mode_ac** (string) - the control mode of the ac side of the VSC. it could be "vm_pu", "q_mvar" or "slack"
+
+        **control_value_ac** (float) - the value of the controlled parameter at the ac bus in "p.u." or "MVAr"
+
+        **control_mode_dc** (string) - the control mode of the dc side of the B2B VSC. it could be "vm_pu" or "p_mw"
+
+        **control_value_dc** (float) - the value of the controlled parameter at the dc bus in "p.u." or "MW"
+
+    OPTIONAL:
+        **name** (list of strs, None) - element name
+
+        **controllable** (bool, True) - whether the element is considered as actively controlling or
+            as a fixed voltage source connected via shunt impedance
+
+        **in_service** (bool, True) - True for in_service or False for out of service
+
+        **index** (int, None) - Force a specified ID if it is available. If None, the
+            index one higher than the highest already existing index is selected.
+
+    OUTPUT:
+        **index** (int) - The unique ID of the created ssc
+
+    """
+
+    _check_element(net, bus)
+    _check_element(net, bus_dc_plus, "bus_dc")
+    _check_element(net, bus_dc_minus, "bus_dc")
+
+    index = _get_index_with_check(net, "b2b_vsc", index)
+
+    entries = dict(zip([
+        "name", "bus", "bus_dc_plus", "bus_dc_minus", "r_ohm", "x_ohm", "r_dc_ohm", "pl_dc_mw", "control_mode_ac",
+        "control_value_ac", "control_mode_dc", "control_value_dc", "controllable", "in_service"],
+        [name, bus, bus_dc_plus, bus_dc_minus, r_ohm, x_ohm, r_dc_ohm, pl_dc_mw, control_mode_ac, control_value_ac,
+         control_mode_dc, control_value_dc, controllable, in_service]))
+    _set_entries(net, "b2b_vsc", index, **entries, **kwargs)
+
+    return index
+
+
+def create_bi_vsc(net, bus, bus_dc_plus, bus_dc_minus, r_ohm, x_ohm, r_dc_ohm, pl_dc_mw=0., control_mode_ac="vm_pu",
+                   control_value_ac=1., control_mode_dc="p_mw", control_value_dc=0., name=None, controllable=True,
+                   in_service=True, index=None, **kwargs):
+    """
+    Creates an VSC converter element - a shunt element with adjustable VSC internal voltage used to connect the \
+    AC grid and the DC grid. The element implements several control modes.
+
+    Does not work if connected to "PV" bus (gen bus, ext_grid bus)
+
+    INPUT:
+        **net** (pandapowerNet) - The pandapower network in which the element is created
+
+        **bus** (int) - connection bus of the VSC
+
+        **bus_dc** (int) - connection bus of the VSC
+
+        **r_ohm** (float) - resistance of the coupling transformer component of VSC
+
+        **x_ohm** (float) - reactance of the coupling transformer component of VSC
+
+        **r_dc_ohm** (float) - resistance of the internal dc resistance component of VSC
+
+        **pl_dc_mw** (float) - no-load losses of the VSC on the DC side for the shunt R representing the no load losses
+
+        **control_mode_ac** (string) - the control mode of the ac side of the VSC. it could be "vm_pu", "q_mvar" or "slack"
+
+        **control_value_ac** (float) - the value of the controlled parameter at the ac bus in "p.u." or "MVAr"
+
+        **control_mode_dc** (string) - the control mode of the dc side of the VSC. it could be "vm_pu" or "p_mw"
+
+        **control_value_dc** (float) - the value of the controlled parameter at the dc bus in "p.u." or "MW"
+
+    OPTIONAL:
+        **name** (list of strs, None) - element name
+
+        **controllable** (bool, True) - whether the element is considered as actively controlling or
+            as a fixed voltage source connected via shunt impedance
+
+        **in_service** (bool, True) - True for in_service or False for out of service
+
+        **index** (int, None) - Force a specified ID if it is available. If None, the
+            index one higher than the highest already existing index is selected.
+
+    OUTPUT:
+        **index** (int) - The unique ID of the created ssc
+
+    """
+
+    _check_element(net, bus)
+    _check_element(net, bus_dc_plus, "bus_dc")
+    _check_element(net, bus_dc_minus, "bus_dc")
+
+    index = _get_index_with_check(net, "bi_vsc", index)
+
+    entries = dict(zip([
+        "name", "bus", "bus_dc_plus", "bus_dc_minus", "r_ohm", "x_ohm", "r_dc_ohm", "pl_dc_mw", "control_mode_ac",
+        "control_value_ac", "control_mode_dc", "control_value_dc", "controllable", "in_service"],
+        [name, bus, bus_dc_plus, bus_dc_minus, r_ohm, x_ohm, r_dc_ohm, pl_dc_mw, control_mode_ac, control_value_ac,
+         control_mode_dc, control_value_dc, controllable, in_service]))
+    _set_entries(net, "bi_vsc", index, **entries, **kwargs)
+
+    return index
+
+
 def create_vsc(
     net: pandapowerNet,
     bus,
@@ -4973,6 +5204,7 @@ def create_vsc(
     controllable: bool = True,
     in_service: bool = True,
     index = None,
+    ref_bus = None,
     **kwargs
 ) -> Int:
     """
@@ -4996,7 +5228,7 @@ def create_vsc(
 
         **pl_dc_mw** (float) - no-load losses of the VSC on the DC side for the shunt R representing the no load losses
 
-        **control_mode_ac** (string) - the control mode of the ac side of the VSC. it could be "vm_pu" or "q_mvar"
+        **control_mode_ac** (string) - the control mode of the ac side of the VSC. it could be "vm_pu", "q_mvar" or "slack"
 
         **control_value_ac** (float) - the value of the controlled parameter at the ac bus in "p.u." or "MVAr"
 
@@ -5027,9 +5259,9 @@ def create_vsc(
 
     entries = dict(zip([
         "name", "bus", "bus_dc", "r_ohm", "x_ohm", "r_dc_ohm", "pl_dc_mw", "control_mode_ac", "control_value_ac",
-        "control_mode_dc", "control_value_dc", "controllable", "in_service"],
+        "control_mode_dc", "control_value_dc", "controllable", "in_service", "ref_bus"],
         [name, bus, bus_dc, r_ohm, x_ohm, r_dc_ohm, pl_dc_mw, control_mode_ac, control_value_ac,
-         control_mode_dc, control_value_dc, controllable, in_service]))
+         control_mode_dc, control_value_dc, controllable, in_service, ref_bus]))
     _set_entries(net, "vsc", index, **entries, **kwargs)
 
     return index
@@ -6213,15 +6445,15 @@ def create_group_from_dict(
 def _get_index_with_check(
     net: pandapowerNet,
     table: str,
-    index: Optional[Int],
-    name: Optional[str] = None
+    index: Int | None,
+    name: str | None = None
 ) -> Int:
     if name is None:
         name = table
     if index is None:
         index = get_free_id(net[table])
     if index in net[table].index:
-        raise UserWarning("A %s with the id %s already exists" % (name, index))
+        raise UserWarning(f"A {name} with the id {index} already exists")
     return index
 
 
