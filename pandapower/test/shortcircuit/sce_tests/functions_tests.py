@@ -25,13 +25,24 @@ testfiles_path = os.path.join(pp_dir, 'test', 'shortcircuit', 'sce_tests')
 def create_parameter_list(net_names, faults, cases, values, lv_tol_percents, fault_location_buses, is_branch_test,
                           vector_groups, gen_idx, is_active_current, gen_mode, grounding_types):
     # parameter list for WP 2.1
-    parametrize_values_wp21 = list(
-        product(faults, cases, values, lv_tol_percents, fault_location_buses, is_branch_test)
-    )
+    parametrize_values_wp21 = []
+
+    for fault, case, value, fault_bus, branch_test in product(
+            faults, cases, values, fault_location_buses, is_branch_test
+    ):
+        if case == "min":
+            for lv_tol in lv_tol_percents:
+                parametrize_values_wp21.append(
+                    (fault, case, value, lv_tol, fault_bus, branch_test)
+                )
+        elif case == "max":
+            parametrize_values_wp21.append(
+                (fault, case, value, 10, fault_bus, branch_test)
+            )
 
     # parameter list for WP 2.2 and WP 2.4
     parametrize_values_wp22 = list(
-        product(faults, ['max'], values, lv_tol_percents, fault_location_buses, is_branch_test,
+        product(faults, ['max'], values, [10], fault_location_buses, is_branch_test,
                 gen_idx, is_active_current, gen_mode)
     )
 
@@ -61,11 +72,11 @@ def create_parameter_list(net_names, faults, cases, values, lv_tol_percents, fau
         else:
             fl_buses = fault_location_buses
         base_wp22 += list(product(
-            [net_name], faults[:2], ['max'], values, lv_tol_percents, vector_groups[:1],
+            [net_name], faults[:2], ['max'], values, [10], vector_groups[:1],
             fl_buses, is_branch_test, [None], is_active_current, gen_mode
         ))
         base_wp22 += list(product(
-            [net_name], faults[2:], ['max'], values, lv_tol_percents, vector_groups,
+            [net_name], faults[2:], ['max'], values, [10], vector_groups,
             fl_buses, is_branch_test, [None], is_active_current, gen_mode
         ))
 
@@ -473,7 +484,7 @@ def load_pf_results(excel_file):
         elif sheet.startswith("LG_"):
             fault_type = "LG"
         parts_excel_file = excel_file.split('_')
-        if 'bus' in parts_excel_file and 'branch' not in parts_excel_file:
+        if 'bus' in parts_excel_file and 'branch' not in parts_excel_file and 'branch.xlsx' not in parts_excel_file:
             relevant_columns = columns_mapping[fault_type]
             pf_results = pf_results[relevant_columns]
             pf_results['name'] = pf_results['name'].astype(str)
@@ -502,7 +513,7 @@ def load_pf_results(excel_file):
 
             dataframes[sheet] = pf_results
 
-        elif 'branch' in parts_excel_file:
+        elif 'branch' in parts_excel_file or 'branch.xlsx' in parts_excel_file:
             relevant_columns = columns_mapping_branch[fault_type]
             pf_results = pf_results[relevant_columns]
             if fault_type == 'LLL':
