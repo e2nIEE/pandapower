@@ -4869,7 +4869,7 @@ def create_load_dc(
         p_dc_mw: float,
         scaling: float=1.0,
         type: str | None = None,
-        index: str | None = None,
+        index: int | None = None,
         name: str | None = None,
         in_service: bool = True,
         controllable: bool = False,
@@ -4906,7 +4906,7 @@ def create_load_dc(
     """
     _check_element(net, bus_dc, element='bus_dc')
 
-    index = _get_index_with_check(net, "source_dc", index)
+    index = _get_index_with_check(net, "source_dc", index=index)
 
     entries = dict(zip(["name", "bus_dc", "p_dc_mw", "in_service", "scaling", "type", "controllable"],
                        [name, bus_dc, p_dc_mw, bool(in_service), scaling, type, controllable]))
@@ -6445,15 +6445,15 @@ def create_group_from_dict(
 def _get_index_with_check(
     net: pandapowerNet,
     table: str,
-    index: Optional[Int],
-    name: Optional[str] = None
+    index: Int | None,
+    name: str | None = None
 ) -> Int:
     if name is None:
         name = table
     if index is None:
         index = get_free_id(net[table])
     if index in net[table].index:
-        raise UserWarning("A %s with the id %s already exists" % (name, index))
+        raise UserWarning(f"A {name} with the id {index} already exists")
     return index
 
 
