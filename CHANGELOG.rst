@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [ADDED] Station Controller for local voltage control with droop, adjusted powerfactory import
 - [FIXED] Case5 tests, now the calculated values are compared to results from powerfactory
 - [FIXED] FACTS tests through restructuring all of the tests
 - [ADDED] Load_dc and Source_dc, which represent a conventional load and a generator in dc

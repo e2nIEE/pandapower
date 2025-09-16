@@ -6,7 +6,7 @@ from pandapower.control.controller.characteristic_control import CharacteristicC
 from pandapower.control.controller.const_control import ConstControl
 from pandapower.control.controller.pq_control import PQController
 from pandapower.control.controller.shunt_control import DiscreteShuntController
-from pandapower.control.controller.station_control import BinarySearchControl, DroopControl
+from pandapower.control.controller.station_control import BinarySearchControl, DroopControl, VDroopControl_local
 from pandapower.control.controller.trafo.ContinuousTapControl import ContinuousTapControl
 from pandapower.control.controller.trafo.DiscreteTapControl import DiscreteTapControl
 from pandapower.control.controller.trafo.TapDependentImpedance import TapDependentImpedance
