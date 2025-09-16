@@ -3,6 +3,11 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [FIXED] Case5 tests, now the calculated values are compared to results from powerfactory
+- [FIXED] FACTS tests through restructuring all of the tests
+- [ADDED] Load_dc and Source_dc, which represent a conventional load and a generator in dc
+- [ADDED] DMR controller, which calculates the current on metallic return lines
+- [ADDED] Back2Back VSC converter, including extensive tests
 - [FIXED] Setting the correct Dtype in io_utils for sql databases
 - [ADDED] std_types as a dict to be fetched from the network_structure
 - [ADDED] Station controller support for measurements on trafo3w and impedance
@@ -12,6 +17,11 @@ Change Log
 - [FIXED] create_buses_dc: incorrect handling of geodata
 - [ADDED] postgresql: support for setting a port for the connection
 - [FIXED] ensure proper handling of `indent` parameter for PPJSONEncoder, fixing compatibility with Python3.13
+- [FIXED] Case5 tests, now the calculated values are compared to results from powerfactory
+- [FIXED] FACTS tests through restructuring all of the tests
+- [ADDED] Load_dc and Source_dc, which represent a conventional load and a generator in dc
+- [ADDED] DMR controller, which calculates the current on metallic return lines
+- [ADDED] Back2Back VSC converter, including extensive tests
 - [ADDED] description for `slack` argument in docstring of create_gen function
 - [FIXED] pf2pp: dc-lines geodata error is fixed, outdated line_dc_geodata field replaced by newer geo-column
 - [FIXED] pf2pp: zip load import error fixed by replacing unknown ga() function with actual GetAttribute-function
