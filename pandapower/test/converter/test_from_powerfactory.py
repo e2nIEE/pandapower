@@ -316,9 +316,6 @@ def test_mixed_zip_loads_import():
             delta = diff['diff'].abs().max()
         assert delta < tol[key], "%s has too high difference: %f > %f" % (key, delta, tol[key])
 
-if __name__ == '__main__':
-    pytest.main([__file__, "-xs"])
-
 @pytest.mark.skipif(not PF_INSTALLED, reason='powerfactory must be installed')
 def test_vdroop_ctrl_local():
     app = pf.GetApplication()
@@ -349,3 +346,6 @@ def test_vdroop_ctrl_local():
         else:
             delta = diff['diff'].abs().max()
         assert delta < tol[key], "%s has too high difference: %f > %f" % (key, delta, tol[key])
+
+if __name__ == '__main__':
+    pytest.main([__file__, "-xs"])

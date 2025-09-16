@@ -3951,6 +3951,8 @@ def create_stactrl(net, item):
     res_element_table = None
     res_element_index = None
     # Create nx graph for further usage
+    # top is needed to check connectivity between inpout and output elements, therefore respect switches
+    # top_all is the full topology to identify the sign of measurements, that is why respect_switches = False
     top = create_nxgraph(net, respect_switches=True, include_lines=True, include_trafos=True,
                          include_impedances=True, nogobuses=None, notravbuses=None, multi=True,
                          calc_branch_impedances=False, branch_impedance_unit='ohm')
