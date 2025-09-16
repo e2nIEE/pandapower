@@ -50,6 +50,7 @@ def set_mapbox_token(token): # Still working but useless/deprecated
 
 
 def _get_mapbox_token(): # Still working but useless/deprecated
+    return 'Empty_Token'  # Dummy token to avoid errors in case user does not set a token
     from pandapower.__init__ import pp_dir
     path = os.path.join(pp_dir, "plotting", "plotly")
     filename = os.path.join(path, 'mapbox_token.txt')
