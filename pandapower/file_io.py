@@ -91,7 +91,14 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
             table.to_excel(writer, sheet_name=item)
 
 
-def to_json(net, filename=None, encryption_key=None, store_index_names=None, indent: Union[int, str] = 2):
+def to_json(
+    net: pandapowerNet,
+    filename: Union[str, None] = None,
+    encryption_key: Union[str, None] = None,
+    store_index_names: Union[bool, None] = None,
+    indent: Union[int, str, None] = 2,
+    sort_keys: bool = False,
+):
     """
         Saves a pandapower Network in JSON format. The index columns of all pandas DataFrames will
         be saved in ascending order. net elements which name begins with "_" (internal elements)
@@ -104,7 +111,9 @@ def to_json(net, filename=None, encryption_key=None, store_index_names=None, ind
         :param encryption_key: If given, the pandapower network is stored as an encrypted json string, default None
         :type encryption_key: str or None
         :param indent: indentation to use for the json. String or amount of spaces to use, defaut 2
-        :type indent: int or str
+        :type indent: int or str or None
+        :param sort_keys: sort dictionaries by key, default False
+        :type sort_keys: bool
 
         :example:
              >>> from pandapower.file_io import to_json
@@ -118,7 +127,7 @@ def to_json(net, filename=None, encryption_key=None, store_index_names=None, ind
         else:
             raise DeprecationWarning(msg)
 
-    json_string = json.dumps(net, cls=PPJSONEncoder, indent=indent)
+    json_string = json.dumps(net, cls=PPJSONEncoder, indent=indent, sort_keys=sort_keys)
     if encryption_key is not None:
         json_string = encrypt_string(json_string, encryption_key)
 
