@@ -152,6 +152,12 @@ def element_power_consistent_with_bus_power(net, rtol=1e-2, test_q=True):
         bus_q.at[tab.bus] += net.res_vsc.q_mvar.at[idx]
         bus_p_dc.at[tab.bus_dc] += net.res_vsc.p_dc_mw.at[idx]
 
+    for idx, tab in net.b2b_vsc.iterrows():
+        bus_p.at[tab.bus] += net.res_b2b_vsc.p_mw.at[idx]
+        bus_q.at[tab.bus] += net.res_b2b_vsc.q_mvar.at[idx]
+        bus_p_dc.at[tab.bus_dc_plus] += net.res_b2b_vsc.p_dc_mw_p.at[idx]
+        bus_p_dc.at[tab.bus_dc_minus] += net.res_b2b_vsc.p_dc_mw_m.at[idx]
+
     assert allclose(net.res_bus.p_mw.values, bus_p.values, equal_nan=True, rtol=rtol)
     assert allclose(net.res_bus_dc.p_mw.values, bus_p_dc.values, equal_nan=True, rtol=rtol)
     if test_q:
