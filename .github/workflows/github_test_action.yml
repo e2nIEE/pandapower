@@ -18,7 +18,7 @@ jobs:
     timeout-minutes: 60
     strategy:
       matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12']
+        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
         # Reminder: when removing the support of an old python version here, then don't forget to
         # remove it also in pyproject.toml 'requires-python'
         group: [ 1, 2 ]
@@ -37,14 +37,14 @@ jobs:
           uv pip install pytest-split
           if ${{ matrix.python-version == '3.9' }}; then uv pip install pypower; fi
           if ${{ matrix.python-version != '3.9' }}; then uv pip install numba; fi
-          if ${{ matrix.python-version == '3.10' }}; then uv pip install lightsim2grid; fi
+          if ${{ matrix.python-version == '3.13' }}; then uv pip install lightsim2grid; fi
       - name: List of installed packages
         run: |
           uv pip list
       - name: Test with pytest
         if: ${{ matrix.python-version != '3.9' }}
         run: |
-          uv run pytest --splits 2 --group ${{ matrix.group }}
+          uv run pytest -n=auto --splits 2 --group ${{ matrix.group }}
       - name: Test with pytest, Codecov and Coverage
         if: ${{ matrix.python-version == '3.9' }}
         run: |
@@ -65,7 +65,7 @@ jobs:
     continue-on-error: true
     strategy:
       matrix:
-        python-version: ['3.9']
+        python-version: ['3.13']
         # Reminder: when removing the support of an old python version here, then don't forget to
         # remove it also in pyproject.toml 'requires-python'
         group: [ 1, 2 ]
@@ -83,7 +83,7 @@ jobs:
           if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi
       - name: Install Julia
         run: |
-          ./.install_julia.sh 1.10.4
+          ./.install_julia.sh 1.11.7
           uv pip install julia
           uv run python ./.install_pycall.py
       - name: List of installed packages
@@ -158,7 +158,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12']
+        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
     steps:
     - uses: actions/checkout@v4
     - name: Install uv
