@@ -1141,7 +1141,8 @@ def test_drop_trafos_incorrect_table_names():
 
     with pytest.raises(UserWarning) as exc:
         drop_trafos(net, net.trafo3w, table="bus")
-        assert exc.value.message == "parameter 'table' must be 'trafo' or 'trafo3w'"
+
+    assert exc.value.args[0] == "parameter 'table' must be 'trafo' or 'trafo3w'"
 
 def test_drop_elements_buses():
     net = create_empty_network()
