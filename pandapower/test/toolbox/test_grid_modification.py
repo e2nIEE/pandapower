@@ -9,7 +9,7 @@ from pandas._testing import assert_series_equal
 
 from pandapower.create import create_transformer, create_line, create_transformer3w_from_parameters, create_pwl_cost, \
     create_poly_cost, create_group, create_transformer3w, create_measurement, create_buses, create_loads, \
-    create_xward, create_group_from_dict
+    create_xward, create_group_from_dict, create_transformer_from_parameters
 from pandapower.groups import group_element_index, count_group_elements
 from pandapower.networks.cigre_networks import create_cigre_network_mv, create_cigre_network_lv
 from pandapower.networks.create_examples import example_simple, example_multivoltage
@@ -1166,6 +1166,47 @@ def test_drop_elements_trafos():
     assert 0 not in net.trafo.index
 
 
+def _simple_line_net():
+    """
+    Two buses connected by one line.
+    """
+    net = create_empty_network()
+    bus0 = create_bus(net, vn_kv=20.)
+    bus1 = create_bus(net, vn_kv=20.)
+    create_line_from_parameters(
+        net, from_bus=bus0, to_bus=bus1, length_km=1.0,
+        r_ohm_per_km=0.1, x_ohm_per_km=0.1, c_nf_per_km=0.0,
+        max_i_ka=1.0, name="L01"
+    )
+    return net, bus0, bus1, net.line.index[0]
+
+def test_set_isolated_areas_out_of_service_switch_marks_line():
+    net, bus0, bus1, line_idx = _simple_line_net()
+    net.bus.at[bus1, "in_service"] = False
+    create_switch(net, bus=bus0, element=line_idx, et="l", closed=False)
+    assert net.line.at[line_idx, "in_service"]
+
+    set_isolated_areas_out_of_service(net)
+
+    assert bool(net.line.at[line_idx, "in_service"]) is False
+
+def test_set_isolated_areas_out_of_service_marks_trafo_oos():
+    net = create_empty_network()
+    b_hv = create_bus(net, vn_kv=110.)
+    b_lv = create_bus(net, vn_kv=20.)
+    t_idx = create_transformer_from_parameters(
+        net, hv_bus=b_hv, lv_bus=b_lv,
+        sn_mva=40, vn_hv_kv=110, vn_lv_kv=20,
+        vk_percent=10, vkr_percent=0.5,
+        pfe_kw=0, i0_percent=0.1
+    )
+    net.bus.at[b_lv, "in_service"] = False
+    create_switch(net, bus=b_hv, element=t_idx, et="t", closed=False)
+
+    assert net.trafo.at[t_idx, "in_service"]
+
+    set_isolated_areas_out_of_service(net)
+    assert bool(net.trafo.at[t_idx, "in_service"]) is False
 
 if __name__ == '__main__':
     pytest.main([__file__, "-xs"])
