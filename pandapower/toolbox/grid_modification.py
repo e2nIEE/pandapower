@@ -950,6 +950,47 @@ def drop_inner_branches(net, buses, branch_elements=None):
     """
     _inner_branches(net, buses, "drop", branch_elements=branch_elements)
 
+def __drop_inactive_elements_other(net):
+    """
+    Drops inactive elements other than branches and buses
+    """
+    non_branch_bus_and_others = pp_elements(
+        bus=False, bus_elements=True, branch_elements=False, other_elements=True
+    )
+
+    for elm in non_branch_bus_and_others:
+        df = net[elm]
+
+        if not len(df):
+            continue
+
+        if "in_service" not in df.columns:
+            if elm not in {"measurement", "switch"}:
+                logger.info(
+                    "Out-of-service elements cannot be dropped since 'in_service' "
+                    f"is not in net[{elm}].columns"
+                )
+            continue
+
+        idx = df.index[~df.in_service]
+        if len(idx):
+            drop_elements_simple(net, elm, idx)
+
+def __drop_inactive_other_branches(net):
+    """
+    Cleans up a pandapower network by removing all out-of-service “other branch elements”.
+    """
+    other_branch_elms = (
+            pp_elements(bus=False, bus_elements=False, branch_elements=True, other_elements=False)
+            - ({"line", "trafo", "trafo3w", "switch"})
+    )
+
+    for elm in other_branch_elms:
+        df = net[elm]
+        if len(df) and "in_service" in df.columns:
+            idx = df.index[~df.in_service]
+            if len(idx):
+                drop_elements_simple(net, elm, idx)
 
 def drop_out_of_service_elements(net):
     """
@@ -971,17 +1012,7 @@ def drop_out_of_service_elements(net):
         inactive_trafos3w = net.trafo3w.index[~net.trafo3w.in_service]
         drop_trafos(net, inactive_trafos3w, table="trafo3w")
 
-    other_branch_elms = (
-            pp_elements(bus=False, bus_elements=False, branch_elements=True, other_elements=False)
-            - ({"line", "trafo", "trafo3w", "switch"})
-    )
-
-    for elm in other_branch_elms:
-        df = net[elm]
-        if len(df) and "in_service" in df.columns:
-            idx = df.index[~df.in_service]
-            if len(idx):
-                drop_elements_simple(net, elm, idx)
+    __drop_inactive_other_branches(net)
 
     ebt = [(elm, bus_col) for (elm, bus_col) in element_bus_tuples(bus_elements=False)
            if elm != "switch" and len(net[elm])]
@@ -1001,28 +1032,7 @@ def drop_out_of_service_elements(net):
         safe_to_drop = inactive_buses.difference(do_not_delete)
         drop_buses(net, safe_to_drop, drop_elements=True)
 
-    # --- drop inactive elements other than branches and buses
-
-    non_branch_bus_and_others = pp_elements(
-        bus=False, bus_elements=True, branch_elements=False, other_elements=True
-    )
-    for elm in non_branch_bus_and_others:
-        df = net[elm]
-
-        if not len(df):
-            continue
-
-        if "in_service" not in df.columns:
-            if elm not in {"measurement", "switch"}:
-                logger.info(
-                    "Out-of-service elements cannot be dropped since 'in_service' "
-                    f"is not in net[{elm}].columns"
-                )
-            continue
-
-        idx = df.index[~df.in_service]
-        if len(idx):
-            drop_elements_simple(net, elm, idx)
+    __drop_inactive_elements_other(net)
 
 
 def drop_inactive_elements(net, respect_switches=True):
