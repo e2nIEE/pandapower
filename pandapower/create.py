@@ -1683,7 +1683,7 @@ def create_gens(
     slack: bool | Iterable[bool] = False,
     id_q_capability_characteristic: Optional[int] | Optional[Iterable[int]] = nan,
     reactive_capability_curve: bool | Iterable[bool] = False,
-    curve_style: str | Iterable[str] = None,
+    curve_style: Optional[str] | Optional[Iterable[str]] = None,
     controllable: bool | float = nan,
     vn_kv: float | Iterable[float] = nan,
     xdss_pu: float | Iterable[float] = nan,
