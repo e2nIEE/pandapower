@@ -157,7 +157,7 @@ def create_bus_dc(
     net: pandapowerNet,
     vn_kv: float,
     name: Optional[str] = None,
-    index: int = None,
+    index: Optional[int] = None,
     geodata: Optional[tuple[float, float]] = None,
     type: BusType = "b",
     zone: Optional[str] = None,
@@ -783,7 +783,7 @@ def create_asymmetric_load(
 # =============================================================================
 
 
-def create_load_from_cosphi(
+def create_load_from_cosphi( # no index ?
     net: pandapowerNet,
     bus: int,
     sn_mva: float,
@@ -997,7 +997,7 @@ def create_sgens(
     q_mvar: float | Iterable[float] = 0,
     sn_mva: float | Iterable[float] = nan,
     name: Optional[Iterable[str]] = None,
-    index: Optional[int] | Optional[Iterable[int]]  = None,
+    index: Optional[int] | Optional[Iterable[int]] = None,
     scaling: float | Iterable[float] = 1.,
     type: WyeDeltaType = 'wye',
     in_service: bool | Iterable[bool] = True,
@@ -1008,7 +1008,7 @@ def create_sgens(
     controllable: bool | Iterable[bool] | float = nan,
     k: float | Iterable[float] = nan,
     rx: float = nan,
-    id_q_capability_characteristic: Optional[int] | Optional[Iterable[int]]  = nan,
+    id_q_capability_characteristic: Optional[int] | Optional[Iterable[int]] = nan,
     reactive_capability_curve: bool | Iterable[bool] = False,
     curve_style: str | Iterable[str] = None,
     current_source: bool | Iterable[bool] = True,
@@ -1240,7 +1240,7 @@ def create_asymmetric_sgen(
     return index
 
 
-def create_sgen_from_cosphi(
+def create_sgen_from_cosphi( # no index ?
         net: pandapowerNet,
         bus: int,
         sn_mva: float,
@@ -1671,7 +1671,7 @@ def create_gens(
     vm_pu: float | Iterable[float] = 1.,
     sn_mva: float | Iterable[float] = nan,
     name: Optional[Iterable[str]] = None,
-    index: Optional[int] | Optional[Iterable[int]]  = None,
+    index: Optional[int] | Optional[Iterable[int]] = None,
     max_q_mvar: float | Iterable[float] = nan,
     min_q_mvar: float | Iterable[float] = nan,
     min_p_mw: float | Iterable[float] = nan,
@@ -1681,7 +1681,7 @@ def create_gens(
     scaling: float | Iterable[float] = 1.,
     type: Optional[str | Iterable[str]] = None,
     slack: bool | Iterable[bool] = False,
-    id_q_capability_characteristic: Optional[int] | Optional[Iterable[int]]  = nan,
+    id_q_capability_characteristic: Optional[int] | Optional[Iterable[int]] = nan,
     reactive_capability_curve: bool | Iterable[bool] = False,
     curve_style: str | Iterable[str] = None,
     controllable: bool | float = nan,
@@ -2334,7 +2334,7 @@ def create_lines(
     length_km: float | Iterable[float],
     std_type: str,
     name: Optional[Iterable[str]] = None,
-    index: Optional[int] | Optional[Iterable[int]]  = None,
+    index: Optional[int] | Optional[Iterable[int]] = None,
     geodata: Optional[Iterable[Iterable[tuple[float, float]]]] = None,
     df: float | Iterable[float] = 1.,
     parallel: int | Iterable[int] = 1,
@@ -2478,7 +2478,7 @@ def create_lines_dc(
     length_km: float | Iterable[float],
     std_type: str | Sequence[str],
     name: Optional[Iterable[str]] = None,
-    index: Optional[int] | Optional[Iterable[int]]  = None,
+    index: Optional[int] | Optional[Iterable[int]] = None,
     geodata: Optional[Iterable[Iterable[tuple[float, float]]]] = None,
     df: float | Iterable[float] = 1.,
     parallel: int | Iterable[int] = 1,
