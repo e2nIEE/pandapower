@@ -3316,7 +3316,7 @@ def create_transformer(
     if df <= 0:
         raise UserWarning("derating factor df must be positive: df = %.3f" % df)
 
-    v = {
+    v: dict[str, str | None | int | bool | float] = {
         "name": name, "hv_bus": hv_bus, "lv_bus": lv_bus,
         "in_service": bool(in_service), "std_type": std_type
     }
@@ -3947,7 +3947,7 @@ def create_transformer3w(
         if b not in net["bus"].index.values:
             raise UserWarning("Trafo tries to attach to bus %s" % b)
 
-    v = {
+    v: dict[str, str | None | int | bool | float] = {
         "name": name, "hv_bus": hv_bus, "mv_bus": mv_bus, "lv_bus": lv_bus,
         "in_service": bool(in_service), "std_type": std_type
     }
