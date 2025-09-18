@@ -4,6 +4,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import pytest
+from unittest import mock
 from pandas._testing import assert_series_equal
 
 from pandapower.create import create_transformer, create_line, create_transformer3w_from_parameters, create_pwl_cost, \
@@ -16,13 +17,19 @@ from pandapower.networks.ieee_europen_lv_asymmetric import ieee_european_lv_asym
 from pandapower.networks.mv_oberrhein import mv_oberrhein
 from pandapower.networks.power_system_test_cases import case9, case24_ieee_rts
 from pandapower.networks.simple_pandapower_test_networks import simple_four_bus_system
-from pandapower.run import runpp
 from pandapower.test.helper_functions import assert_net_equal
 from pandapower.toolbox.comparison import nets_equal, dataframes_equal
 from pandapower.toolbox.data_modification import reindex_buses, add_zones_to_elements
 from pandapower.toolbox.element_selection import count_elements
 from pandapower.toolbox.grid_modification import *
 
+
+@pytest.fixture
+def mock_logger(monkeypatch):
+    from unittest.mock import MagicMock
+    mock = MagicMock()
+    monkeypatch.setattr("pandapower.toolbox.grid_modification.logger", mock)
+    return mock
 
 def test_drop_inactive_elements():
     for service in (False, True):
@@ -80,6 +87,94 @@ def test_drop_inactive_elements():
     drop_inactive_elements(net)
 
     assert gen0 not in net.gen.index
+
+
+def test_drop_inactive_elements_with_empty_net():
+    net = create_empty_network()
+    try:
+        drop_inactive_elements(net)
+    except Exception:
+        pytest.fail("Unexpected Exception.")
+
+
+def test_drop_inactive_elements_with_missing_in_service_column(mock_logger):
+    net = create_empty_network()
+    bus_sl = create_bus(net, vn_kv=.4)
+    create_ext_grid(net, bus_sl)
+    bus0 = create_bus(net, vn_kv=.4)
+    create_ward(
+        net, bus0, ps_mw=0,
+        qs_mvar=0,
+        pz_mw=0,
+        qz_mvar=0,
+    )
+    net.ward.drop("in_service", axis=1, inplace=True)
+
+    # drop them
+    drop_inactive_elements(net)
+    mock_logger.info.assert_called_with(
+        'Set 0 of 1 unsupplied buses out of service'
+    )
+
+    sum_of_elements = 0
+    for element, table in net.items():
+        # skip this one since we expect items here
+        if element.startswith("_") or not isinstance(table, pd.DataFrame):
+            continue
+        try:
+            if len(table) > 0:
+                sum_of_elements += len(table)
+                # print(element)
+        except TypeError:
+            # _ppc is initialized with None and clashes when checking
+            continue
+
+    assert sum_of_elements == 2
+
+    net = create_empty_network()
+
+    bus0 = create_bus(net, vn_kv=.4)
+    create_ext_grid(net, bus0)
+    bus1 = create_bus(net, vn_kv=.4)
+    create_line(net, bus0, bus1, length_km=1, std_type='149-AL1/24-ST1A 10.0')
+    gen0 = create_gen(net, bus=bus1, p_mw=0.001, in_service=False)
+
+    drop_inactive_elements(net)
+
+    assert gen0 not in net.gen.index
+
+
+def test_drop_inactive_elements_other_branches():
+    net = create_empty_network()
+
+    bus0 = create_bus(net, vn_kv=.4)
+    create_ext_grid(net, bus0)
+    bus1 = create_bus(net, vn_kv=.4)
+    create_line(net, bus0, bus1, length_km=1, std_type='149-AL1/24-ST1A 10.0')
+
+    impedance0 = create_impedance(
+        net, from_bus=bus0,
+        to_bus=bus1,
+        rft_pu=0.0,
+        xft_pu=0.0,
+        sn_mva=0.0, in_service=False
+    )
+
+    drop_inactive_elements(net)
+
+    assert impedance0 not in net.motor.index
+
+def test_drop_elements_simple_with_trafo(mock_logger):
+    net = create_empty_network()
+    bus0 = create_bus(net, vn_kv=.4)
+    create_ext_grid(net, bus0)
+    drop_elements_simple(net, "bus", 0)
+
+    drop_inactive_elements(net)
+    mock_logger.warning.assert_called_with(
+        "drop_elements_simple() is not appropriate to drop buss. It is recommended to use drop_elements() instead."
+    )
+    assert bus0 not in net.bus.index
 
 
 def test_merge_indices():
@@ -1037,6 +1132,65 @@ def test_set_isolated_areas_out_of_service():
 
     assert not np.any(net.line.loc[isolated_lines, 'in_service'])
     assert np.all(net.line.loc[np.setdiff1d(net.line.index, isolated_lines), 'in_service'])
+
+def test_drop_trafos_incorrect_table_names():
+    net = create_empty_network()
+    bus_sl = create_bus(net, vn_kv=.4)
+    create_ext_grid(net, bus_sl)
+    bus0 = create_bus(net, vn_kv=.4)
+    create_switch(net, bus_sl, bus0, 'b')
+    bus1 = create_bus(net, vn_kv=.4)
+    create_transformer(net, bus0, bus1,
+                       std_type='63 MVA 110/20 kV')
+    bus2 = create_bus(net, vn_kv=.4)
+    create_line(net, bus1, bus2, length_km=1,
+                std_type='149-AL1/24-ST1A 10.0')
+    create_load(net, bus2, p_mw=0.)
+    create_sgen(net, bus2, p_mw=0.)
+    bus3 = create_bus(net, vn_kv=.4)
+    bus4 = create_bus(net, vn_kv=.4)
+    create_transformer3w_from_parameters(net, bus2, bus3, bus4, 0.4, 0.4, 0.4, 100, 50, 50,
+                                         3, 3, 3, 1, 1, 1, 5, 1)
+
+    with pytest.raises(UserWarning) as exc:
+        drop_trafos(net, net.trafo3w, table="bus")
+        assert exc.value.message == "parameter 'table' must be 'trafo' or 'trafo3w'"
+
+def test_drop_elements_buses():
+    net = create_empty_network()
+    bus0 = create_bus(net, vn_kv=.4)
+    drop_elements(net, "bus", element_index=[0])
+    assert bus0 not in net.bus.index
+
+def test_drop_elements_lines():
+    net = create_empty_network()
+    bus0 = create_bus(net, vn_kv=.4)
+    bus1 = create_bus(net, vn_kv=.4)
+    line0 = create_line(net, bus0, bus1, length_km=1, std_type='149-AL1/24-ST1A 10.0')
+    drop_elements(net, "line", element_index=[0])
+    assert line0 not in net.line.index
+
+def test_drop_elements_trafos():
+    net = create_empty_network()
+    bus_sl = create_bus(net, vn_kv=.4)
+    create_ext_grid(net, bus_sl)
+    bus0 = create_bus(net, vn_kv=.4)
+    create_switch(net, bus_sl, bus0, 'b')
+    bus1 = create_bus(net, vn_kv=.4)
+    create_transformer(net, bus0, bus1,
+                       std_type='63 MVA 110/20 kV')
+    bus2 = create_bus(net, vn_kv=.4)
+    create_line(net, bus1, bus2, length_km=1,
+                std_type='149-AL1/24-ST1A 10.0')
+    create_load(net, bus2, p_mw=0.)
+    create_sgen(net, bus2, p_mw=0.)
+    bus3 = create_bus(net, vn_kv=.4)
+    bus4 = create_bus(net, vn_kv=.4)
+    trafo0 = create_transformer3w_from_parameters(net, bus2, bus3, bus4, 0.4, 0.4, 0.4, 100, 50, 50,
+                                         3, 3, 3, 1, 1, 1, 5, 1)
+    drop_elements(net, "trafo", element_index=[0])
+    assert trafo0 not in net.trafo.index
+
 
 
 if __name__ == '__main__':
