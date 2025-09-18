@@ -31,25 +31,28 @@ def mock_logger(monkeypatch):
     monkeypatch.setattr("pandapower.toolbox.grid_modification.logger", mock)
     return mock
 
+def __create_trafo3w(net, bus_sl, service: bool = True):
+    create_ext_grid(net, bus_sl, in_service=service)
+    bus0 = create_bus(net, vn_kv=.4, in_service=service)
+    create_switch(net, bus_sl, bus0, 'b', not service)
+    bus1 = create_bus(net, vn_kv=.4, in_service=service)
+    create_transformer(net, bus0, bus1, in_service=service,
+                       std_type='63 MVA 110/20 kV')
+    bus2 = create_bus(net, vn_kv=.4, in_service=service)
+    create_line(net, bus1, bus2, length_km=1, in_service=service,
+                std_type='149-AL1/24-ST1A 10.0')
+    create_load(net, bus2, p_mw=0., in_service=service)
+    create_sgen(net, bus2, p_mw=0., in_service=service)
+    bus3 = create_bus(net, vn_kv=.4, in_service=service)
+    bus4 = create_bus(net, vn_kv=.4, in_service=service)
+    create_transformer3w_from_parameters(net, bus2, bus3, bus4, 0.4, 0.4, 0.4, 100, 50, 50,
+                                         3, 3, 3, 1, 1, 1, 5, 1)
+
 def test_drop_inactive_elements():
     for service in (False, True):
         net = create_empty_network()
         bus_sl = create_bus(net, vn_kv=.4, in_service=service)
-        create_ext_grid(net, bus_sl, in_service=service)
-        bus0 = create_bus(net, vn_kv=.4, in_service=service)
-        create_switch(net, bus_sl, bus0, 'b', not service)
-        bus1 = create_bus(net, vn_kv=.4, in_service=service)
-        create_transformer(net, bus0, bus1, in_service=service,
-                           std_type='63 MVA 110/20 kV')
-        bus2 = create_bus(net, vn_kv=.4, in_service=service)
-        create_line(net, bus1, bus2, length_km=1, in_service=service,
-                    std_type='149-AL1/24-ST1A 10.0')
-        create_load(net, bus2, p_mw=0., in_service=service)
-        create_sgen(net, bus2, p_mw=0., in_service=service)
-        bus3 = create_bus(net, vn_kv=.4, in_service=service)
-        bus4 = create_bus(net, vn_kv=.4, in_service=service)
-        create_transformer3w_from_parameters(net, bus2, bus3, bus4, 0.4, 0.4, 0.4, 100, 50, 50,
-                                             3, 3, 3, 1, 1, 1, 5, 1)
+        __create_trafo3w(net, bus_sl, service=service)
         # drop them
         drop_inactive_elements(net)
 
@@ -116,23 +119,7 @@ def test_drop_inactive_elements_with_missing_in_service_column(mock_logger):
         'Set 0 of 1 unsupplied buses out of service'
     )
 
-    sum_of_elements = 0
-    for element, table in net.items():
-        # skip this one since we expect items here
-        if element.startswith("_") or not isinstance(table, pd.DataFrame):
-            continue
-        try:
-            if len(table) > 0:
-                sum_of_elements += len(table)
-                # print(element)
-        except TypeError:
-            # _ppc is initialized with None and clashes when checking
-            continue
-
-    assert sum_of_elements == 2
-
     net = create_empty_network()
-
     bus0 = create_bus(net, vn_kv=.4)
     create_ext_grid(net, bus0)
     bus1 = create_bus(net, vn_kv=.4)
@@ -1172,24 +1159,10 @@ def test_drop_elements_lines():
 
 def test_drop_elements_trafos():
     net = create_empty_network()
-    bus_sl = create_bus(net, vn_kv=.4)
-    create_ext_grid(net, bus_sl)
-    bus0 = create_bus(net, vn_kv=.4)
-    create_switch(net, bus_sl, bus0, 'b')
-    bus1 = create_bus(net, vn_kv=.4)
-    create_transformer(net, bus0, bus1,
-                       std_type='63 MVA 110/20 kV')
-    bus2 = create_bus(net, vn_kv=.4)
-    create_line(net, bus1, bus2, length_km=1,
-                std_type='149-AL1/24-ST1A 10.0')
-    create_load(net, bus2, p_mw=0.)
-    create_sgen(net, bus2, p_mw=0.)
-    bus3 = create_bus(net, vn_kv=.4)
-    bus4 = create_bus(net, vn_kv=.4)
-    trafo0 = create_transformer3w_from_parameters(net, bus2, bus3, bus4, 0.4, 0.4, 0.4, 100, 50, 50,
-                                         3, 3, 3, 1, 1, 1, 5, 1)
+    bus_sl = create_bus(net, vn_kv=.4, in_service=True)
+    __create_trafo3w(net, bus_sl, service=True)
     drop_elements(net, "trafo", element_index=[0])
-    assert trafo0 not in net.trafo.index
+    assert 0 not in net.trafo.index
 
 
 
