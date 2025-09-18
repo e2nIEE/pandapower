@@ -18,13 +18,13 @@ jobs:
     timeout-minutes: 60
     strategy:
       matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12']
+        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
         # Reminder: when removing the support of an old python version here, then don't forget to
         # remove it also in pyproject.toml 'requires-python'
         group: [ 1, 2 ]
     steps:
-      - uses: actions/checkout@v4
-      #- uses: julia-actions/setup-julia@v1.5
+#      - uses: actions/checkout@v4
+#      - uses: julia-actions/setup-julia@v1.5
       - uses: actions/checkout@v4
       - name: Install uv
         uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
@@ -59,6 +59,7 @@ jobs:
           path: ./coverage-${{ matrix.group }}.xml
 
   julia:
+    needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 60
     continue-on-error: true
@@ -127,11 +128,12 @@ jobs:
 
   warnings:
     # make pytest raise warnings as errors to see if there are warnings
+    needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
       matrix:
-        python-version: ['3.12']
+        python-version: ['3.13']
         group: [ 1, 2 ]
     steps:
     - uses: actions/checkout@v4
@@ -152,10 +154,11 @@ jobs:
         uv run pytest -W error --splits 2 --group ${{ matrix.group }}
 
   relying: # packages that rely on pandapower
+    needs: build
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12']
+        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
     steps:
     - uses: actions/checkout@v4
     - name: Install uv
@@ -185,6 +188,7 @@ jobs:
 
   linting:
     # run flake8 and check for errors
+    needs: build
     runs-on: ubuntu-latest
     continue-on-error: true
     strategy:
@@ -204,7 +208,7 @@ jobs:
     - name: List of installed packages
       run: |
         uv pip list
-    - name: Lint with flake8 (sytax errors and undefined names)
+    - name: Lint with flake8 (syntax errors and undefined names)
       continue-on-error: true
       run: |
         # stop the build if there are Python syntax errors or undefined names (omitted by exit-zero)
@@ -216,11 +220,45 @@ jobs:
 
   postgresql:
     # for the one test to cover postgresql
+    needs: build
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: secret
+          POSTGRES_DB: sandbox
+        ports:
+          - 5432:5432
+          - 55432:5432 # custom port to test against.
+        options: >-
+          --name postgres
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     strategy:
       matrix:
-        python-version: ['3.12']
+        python-version: ['3.13']
     steps:
+    - name: Wait for PostgreSQL database to be ready
+      run: |
+        until pg_isready -h localhost -U test_user; do
+          echo "Waiting for Postgres…"
+          sleep 2
+        done
+    - name: Check psql and service version compatibility
+      run: |
+        SERVER_VERSION=$(docker exec postgres psql -U test_user -d sandbox -tA -c "SHOW server_version;")
+        CLIENT_VERSION=$(psql --version | awk '{print $3}')
+        SERVER_MAJOR=${SERVER_VERSION%%.*}
+        CLIENT_MAJOR=${CLIENT_VERSION%%.*}
+        echo "PostgreSQL Server Version: $SERVER_MAJOR - Client Version: $CLIENT_MAJOR"
+        if [ "$SERVER_MAJOR" != "$CLIENT_MAJOR" ]; then
+          echo "::error::psql version mismatch - server=$SERVER_MAJOR vs client=$CLIENT_MAJOR"
+          exit 1
+        fi
     - uses: actions/checkout@v4
     - name: Install uv
       uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
@@ -232,20 +270,23 @@ jobs:
     - name: List of installed packages
       run: |
         uv pip list
-    - name: Create PostgreSQL database
+    - name: Create test_schema in sandbox database
+      env:
+        PGPASSWORD: secret
       run: |
-        sudo systemctl start postgresql.service
-        pg_isready
-        sudo -u postgres psql --command="CREATE USER test_user PASSWORD 'secret'" --command="\du"
-        sudo -u postgres createdb --owner=test_user sandbox
-        sudo -u postgres psql --command="\c sandbox" --command="CREATE SCHEMA test_schema AUTHORIZATION test_user"
-        PGPASSWORD=secret psql --username=test_user --host=localhost --list sandbox
+        psql -h localhost -U test_user -d sandbox -c "CREATE SCHEMA test_schema AUTHORIZATION test_user"
+        psql -h localhost -U test_user --list sandbox
     - name: Test pandapower File I/O
       run: |
         uv run python -c "import os; import json; from pandapower import pp_dir; conn_data={'host': 'localhost', 'user': 'test_user', 'database': 'sandbox', 'password': 'secret', 'schema': 'test_schema'}; fp = open(os.path.join(pp_dir, 'test', 'test_files', 'postgresql_connect_data.json'), 'w'); json.dump(conn_data, fp); fp.close()"
-        uv run python -c 'from pandapower import pp_dir; import pytest; import sys; import os; ec = pytest.main([os.path.join(pp_dir,"test","api","test_sql_io.py")]); sys.exit(ec)'
+        uv run python -c "from pandapower import pp_dir; import pytest; import sys; import os; ec = pytest.main([os.path.join(pp_dir,'test','api','test_sql_io.py')]); sys.exit(ec)"
+    - name: Test pandapower File I/O against alternative port
+      run: |
+        uv run python -c "import os; import json; from pandapower import pp_dir; conn_data={'host': 'localhost', 'user': 'test_user', 'database': 'sandbox', 'password': 'secret', 'schema': 'test_schema', 'port': 55432}; fp = open(os.path.join(pp_dir, 'test', 'test_files', 'postgresql_connect_data.json'), 'w'); json.dump(conn_data, fp); fp.close()"
+        uv run python -c "from pandapower import pp_dir; import pytest; import sys; import os; ec = pytest.main([os.path.join(pp_dir,'test','api','test_sql_io.py')]); sys.exit(ec)"
 
   tutorial_tests:
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -269,6 +310,7 @@ jobs:
           uv run pytest --nbmake -n=auto --nbmake-timeout=900 "./tutorials"
 
   tutorial_warnings_tests:
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -290,6 +332,7 @@ jobs:
           uv run pytest -W error --nbmake -n=auto --nbmake-timeout=900 "./tutorials"
 
   docs_check:
+    needs: build
     name: Sphinx docs check
     runs-on: ubuntu-latest
     steps:
@@ -300,3 +343,24 @@ jobs:
           pre-build-command: "python -m pip install uv && uv pip install .[docs] --system --link-mode=copy"
           build-command: "sphinx-build -b html . _build -W"
           docs-folder: "doc/"
+
+  typing:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      matrix:
+        python-version: ['3.9']
+        # Reminder: when removing the support of an old python version here, then don't forget to
+        # remove it also in pyproject.toml 'requires-python'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          uv sync --all-extras
+      - name: Check types with mypy
+        run: |
+          uv run mypy

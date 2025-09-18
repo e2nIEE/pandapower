@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
@@ -23,10 +23,7 @@ from pandapower.toolbox.data_modification import reindex_elements
 from pandapower.groups import detach_from_groups, attach_to_group, attach_to_groups, isin_group, \
     check_unique_group_rows, element_associated_groups
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -119,9 +116,9 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
     if include_results:
         for table in net.keys():
             if net[table] is None or not isinstance(net[table], pd.DataFrame) or not \
-               net[table].shape[0] or not table.startswith("res_") or table[4:] not in \
-               net.keys() or not isinstance(net[table[4:]], pd.DataFrame) or not \
-               net[table[4:]].shape[0]:
+                net[table].shape[0] or not table.startswith("res_") or table[4:] not in \
+                net.keys() or not isinstance(net[table[4:]], pd.DataFrame) or not \
+                net[table[4:]].shape[0]:
                 continue
             elif table == "res_bus":
                 p2[table] = net[table].loc[pd.Index(buses).intersection(net[table].index)]
@@ -240,6 +237,14 @@ def _merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
                 old_indices = pd.Series(old_indices).loc[~pd.Series(old_indices).duplicated()].tolist()
             new_indices = range(start, start + len(old_indices))
             reindex_lookup[elm_type] = dict(zip(old_indices, new_indices))
+            if "trafo_characteristic_table" in net and "id_characteristic" in net["trafo_characteristic_table"]:
+                if elm_type == "trafo_characteristic_table":
+                    id_start = net1[elm_type].id_characteristic.max() + 1
+                    id_max = net2[elm_type].id_characteristic.max() + id_start
+                    combined_ids = net2[elm_type].id_characteristic.dropna().unique()
+                    reindex_lookup[elm_type] = {
+                        old_id: new_id for old_id, new_id in zip(sorted(combined_ids), range(id_start, id_max + 1))
+                    }
             reindex_elements(net2, elm_type, lookup=reindex_lookup[elm_type])
     if len(reindex_lookup.keys()):
         log_to_level("net2 elements of these types has been reindexed by merge_nets() because " + \
@@ -775,6 +780,8 @@ def drop_elements_at_buses(net, buses, bus_elements=True, branch_elements=True,
                 n_el = net[element_type].shape[0]
                 detach_from_groups(net, element_type, eid)
                 net[element_type] = net[element_type].drop(eid)
+                # drop associated measurements
+                drop_measurements_at_elements(net, element_type, idx=eid)
                 # res_element_type
                 res_element_type = "res_" + element_type
                 if res_element_type in net.keys() and isinstance(net[res_element_type], pd.DataFrame):
@@ -1180,26 +1187,14 @@ def replace_impedance_by_line(net, index=None, only_valid_replace=True, max_i_ka
     _replace_group_member_element_type(net, index, "impedance", new_index, "line",
                                        detach_from_gr=False)
     drop_elements_simple(net, "impedance", index)
+
+    # --- result data
+    _adapt_result_tables_in_replace_functions(net, "impedance", index, "line", new_index)
+
+    # --- adapt profiles
+    _adapt_profiles_in_replace_functions(net, "impedance", index, "line", new_index)
+
     return new_index
-
-
-def _replace_group_member_element_type(
-        net, old_elements, old_element_type, new_elements, new_element_type, detach_from_gr=True):
-    assert not isinstance(old_element_type, set)
-    assert not isinstance(new_element_type, set)
-    old_elements = pd.Series(old_elements)
-    new_elements = pd.Series(new_elements)
-
-    check_unique_group_rows(net)
-    gr_et = net.group.loc[net.group.element_type == old_element_type]
-    for gr_index in gr_et.index:
-        isin = old_elements.isin(gr_et.at[gr_index, "element_index"])
-        if any(isin):
-            attach_to_group(net, gr_index, new_element_type, [new_elements.loc[isin].tolist()],
-                            reference_columns=gr_et.at[gr_index, "reference_column"])
-    if detach_from_gr:
-        detach_from_groups(net, old_element_type, old_elements)  # sometimes done afterwarts when
-        # dropping the old elements
 
 
 def replace_line_by_impedance(net, index=None, sn_mva=None, only_valid_replace=True):
@@ -1261,6 +1256,13 @@ def replace_line_by_impedance(net, index=None, sn_mva=None, only_valid_replace=T
     _replace_group_member_element_type(net, index, "line", new_index, "impedance",
                                        detach_from_gr=False)
     drop_lines(net, index)
+
+    # --- result data
+    _adapt_result_tables_in_replace_functions(net, "line", index, "impedance", new_index)
+
+    # --- adapt profiles
+    _adapt_profiles_in_replace_functions(net, "line", index, "impedance", new_index)
+
     return new_index
 
 
@@ -1345,12 +1347,11 @@ def replace_ext_grid_by_gen(net, ext_grids=None, gen_indices=None, slack=False, 
                     new_idx, net[table]["element"].dtypes)
 
     # --- result data
-    if net.res_ext_grid.shape[0]:
-        in_res = pd.Series(ext_grids).isin(net["res_ext_grid"].index).values
-        to_add = net.res_ext_grid.loc[pd.Index(ext_grids)[in_res]]
-        to_add.index = pd.Index(new_idx)[in_res]
-        net.res_gen = pd.concat([net.res_gen, to_add], sort=True)
-        net.res_ext_grid = net.res_ext_grid.drop(pd.Index(ext_grids)[in_res])
+    _adapt_result_tables_in_replace_functions(net, "ext_grid", ext_grids, "gen", new_idx)
+
+    # --- adapt profiles
+    _adapt_profiles_in_replace_functions(net, "ext_grid", ext_grids, "gen", new_idx)
+
     return new_idx
 
 
@@ -1427,12 +1428,11 @@ def replace_gen_by_ext_grid(net, gens=None, ext_grid_indices=None, cols_to_keep=
                 net[table].loc[to_change, "element"] = new_idx
 
     # --- result data
-    if net.res_gen.shape[0]:
-        in_res = pd.Series(gens).isin(net["res_gen"].index).values
-        to_add = net.res_gen.loc[pd.Index(gens)[in_res]]
-        to_add.index = pd.Index(new_idx)[in_res]
-        net.res_ext_grid = pd.concat([net.res_ext_grid, to_add], sort=True)
-        net.res_gen = net.res_gen.drop(pd.Index(gens)[in_res])
+    _adapt_result_tables_in_replace_functions(net, "gen", gens, "ext_grid", new_idx)
+
+    # --- adapt profiles
+    _adapt_profiles_in_replace_functions(net, "gen", gens, "ext_grid", new_idx)
+
     return new_idx
 
 
@@ -1512,12 +1512,11 @@ def replace_gen_by_sgen(net, gens=None, sgen_indices=None, cols_to_keep=None,
                     new_idx, net[table]["element"].dtypes)
 
     # --- result data
-    if net.res_gen.shape[0]:
-        in_res = pd.Series(gens).isin(net["res_gen"].index).values
-        to_add = net.res_gen.loc[pd.Index(gens)[in_res]]
-        to_add.index = pd.Index(new_idx)[in_res]
-        net.res_sgen = pd.concat([net.res_sgen, to_add], sort=True)
-        net.res_gen = net.res_gen.drop(pd.Index(gens)[in_res])
+    _adapt_result_tables_in_replace_functions(net, "gen", gens, "sgen", new_idx)
+
+    # --- adapt profiles
+    _adapt_profiles_in_replace_functions(net, "gen", gens, "sgen", new_idx)
+
     return new_idx
 
 
@@ -1612,13 +1611,12 @@ def replace_sgen_by_gen(net, sgens=None, gen_indices=None, cols_to_keep=None,
                 net[table].loc[to_change, "et"] = "gen"
                 net[table].loc[to_change, "element"] = new_idx
 
-    # --- result data
-    if net.res_sgen.shape[0]:
-        in_res = pd.Series(sgens).isin(net["res_sgen"].index).values
-        to_add = net.res_sgen.loc[pd.Index(sgens)[in_res]]
-        to_add.index = pd.Index(new_idx)[in_res]
-        net.res_gen = pd.concat([net.res_gen, to_add], sort=True)
-        net.res_sgen = net.res_sgen.drop(pd.Index(sgens)[in_res])
+    # --- adapt result data
+    _adapt_result_tables_in_replace_functions(net, "sgen", sgens, "gen", new_idx)
+
+    # --- adapt profiles
+    _adapt_profiles_in_replace_functions(net, "sgen", sgens, "gen", new_idx)
+
     return new_idx
 
 
@@ -1733,14 +1731,14 @@ def replace_pq_elmtype(net, old_element_type, new_element_type, old_indices=None
                 net[table].loc[to_change, "element"] = np.array(
                     new_idx, net[table]["element"].dtypes)
 
-
     # --- result data
-    if net["res_" + old_element_type].shape[0]:
-        in_res = pd.Series(old_indices).isin(net["res_" + old_element_type].index).values
-        to_add = net["res_" + old_element_type].loc[pd.Index(old_indices)[in_res]]
-        to_add.index = pd.Index(new_idx)[in_res]
-        net["res_" + new_element_type] = pd.concat([net["res_" + new_element_type], to_add], sort=True)
-        net["res_" + old_element_type] = net["res_" + old_element_type].drop(pd.Index(old_indices)[in_res])
+    _adapt_result_tables_in_replace_functions(
+        net, old_element_type, old_indices, new_element_type, new_idx)
+
+    # --- adapt profiles
+    _adapt_profiles_in_replace_functions(
+        net, old_element_type, old_indices, new_element_type, new_idx)
+
     return new_idx
 
 
@@ -1803,8 +1801,7 @@ def replace_ward_by_internal_elements(net, wards=None, log_level="warning"):
     drop_elements_simple(net, "ward", wards)
 
 
-def replace_xward_by_internal_elements(net, xwards=None, set_xward_bus_limits=False,
-                                       log_level="warning"):
+def replace_xward_by_internal_elements(net, xwards=None, set_xward_bus_limits=False):
     """
     Replaces xward by loads, shunts, impedance and generators
 
@@ -1816,9 +1813,6 @@ def replace_xward_by_internal_elements(net, xwards=None, set_xward_bus_limits=Fa
         indices of xwards which should be replaced. If None, all xwards are replaced, by default None
     set_xward_bus_limits : bool, optional
         if True, the buses internal in xwards get vm limits from the connected buses
-    log_level : str, optional
-        logging level of the message which element types of net2 got reindexed elements. Options
-        are, for example "debug", "info", "warning", "error", or None, by default "info"
 
     Returns
     -------
@@ -1856,7 +1850,7 @@ def replace_xward_by_internal_elements(net, xwards=None, set_xward_bus_limits=Fa
     # --- result data
     if net.res_xward.shape[0]:
         log_to_level("Implementations to move xward results to new internal elements are missing.",
-                     logger, log_level)
+                     logger, "info")
         net.res_xward = net.res_xward.drop(xwards)
 
     # --- drop replaced wards
@@ -1894,6 +1888,9 @@ def replace_xward_by_ward(net, index=None, drop=True):
     The function ensures that the group membership and associated element type of the replaced
     elements are updated accordingly.
     """
+    # TODO: parameter `drop` is implemented only to this replace function. needed if yes why not
+    # implementing at the other replace functions?
+
     index = list(ensure_iterability(index)) if index is not None else list(net.impedance.index)
 
     new_index = []
@@ -1910,3 +1907,56 @@ def replace_xward_by_ward(net, index=None, drop=True):
     else:
         net.xward.loc[index, "in_service"] = False
     return new_index
+
+
+def _replace_group_member_element_type(
+        net, old_elements, old_element_type, new_elements, new_element_type, detach_from_gr=True):
+    assert not isinstance(old_element_type, set)
+    assert not isinstance(new_element_type, set)
+    old_elements = pd.Series(old_elements)
+    new_elements = pd.Series(new_elements)
+
+    check_unique_group_rows(net)
+    gr_et = net.group.loc[net.group.element_type == old_element_type]
+    for gr_index in gr_et.index:
+        isin = old_elements.isin(gr_et.at[gr_index, "element_index"])
+        if any(isin):
+            attach_to_group(net, gr_index, new_element_type, [new_elements.loc[isin].tolist()],
+                            reference_columns=gr_et.at[gr_index, "reference_column"])
+    if detach_from_gr:
+        detach_from_groups(net, old_element_type, old_elements)  # sometimes done afterwarts when
+        # dropping the old elements
+
+
+def _adapt_result_tables_in_replace_functions(
+    net, element_type_old, element_index_old, element_type_new, element_index_new):
+    et_old, et_new = "res_" + element_type_old, "res_" + element_type_new
+    idx_old, idx_new = pd.Index(element_index_old), pd.Index(element_index_new)
+    if net[et_old].shape[0]:
+        in_res = pd.Series(idx_old).isin(net[et_old].index).values
+        to_add = net[et_old].loc[idx_old[in_res]]
+        to_add.index = idx_new[in_res]
+        net[et_new] = pd.concat([net[et_new], to_add], sort=True)
+        net[et_old] = net[et_old].drop(idx_old[in_res])
+
+
+def _adapt_profiles_in_replace_functions(
+        net, element_type_old, element_index_old, element_type_new, element_index_new
+    ):
+    if "profiles" not in net or not isinstance(net.profiles, dict):
+        return
+    et_old, et_new = element_type_old, element_type_new
+    idx_old, idx_new = pd.Index(element_index_old), pd.Index(element_index_new)
+
+    keys_old = [key for key in net.profiles.keys() if (
+        key.startswith(f"{et_old}.") or key.startswith(f"res_{et_old}."))]
+    for key_old in keys_old:
+        key_new = key_old.replace(et_old, et_new)
+        in_prof = pd.Series(idx_old).isin(net.profiles[key_old].columns).values
+        to_add = net.profiles[key_old].loc[:, idx_old[in_prof]]
+        to_add.columns = idx_new[in_prof]
+        if key_new in net.profiles.keys():
+            net.profiles[key_new] = pd.concat([net.profiles[key_new], to_add], sort=True)
+        else:
+            net.profiles[key_new] = to_add
+        net.profiles[key_old] = net.profiles[key_old].drop(idx_old[in_prof], axis=1)

@@ -56,7 +56,7 @@ class PowerTransformersCim16:
 
     def _create_trafo_characteristic_table(self, trafo_type, trafo_df_origin):
         if 'id_characteristic_table' not in trafo_df_origin.columns:
-            trafo_df_origin['id_characteristic_table'] = pd.Series(pd.NA, dtype="Int64")
+            trafo_df_origin['id_characteristic_table'] = float("NaN")
         if 'trafo_characteristic_table' not in self.cimConverter.net.keys():
             self.cimConverter.net['trafo_characteristic_table'] = pd.DataFrame(
                 columns=['id_characteristic', 'step', 'voltage_ratio', 'angle_deg', 'vk_percent',
@@ -74,7 +74,6 @@ class PowerTransformersCim16:
         ptct = pd.concat([ptct, ptct_ratio], ignore_index=True, sort=False)
         ptct = ptct.rename(columns={'step': 'tabular_step', 'r': 'r_dev', 'x': 'x_dev', 'TransformerEnd': sc['pte_id'],
                                     'ratio': 'ratio_dev', 'angle': 'angle_dev'})
-        ptct = ptct.drop(columns=['PhaseTapChangerTable'])
         if trafo_type == 'trafo':
             trafo_df = trafo_df_origin.sort_values(['PowerTransformer', 'endNumber']).reset_index()
             # processing the transformer data
@@ -177,8 +176,9 @@ class PowerTransformersCim16:
                                            how='left', on=sc['pte_id'] + '_lv')
                                   ], ignore_index=True, sort=False)
             # remove elements with more than one tap changer per trafo
+            # todo: for multiple tap changers the deletion of tap entries must be changed
             trafo_df = trafo_df.loc[(~trafo_df.duplicated(subset=['PowerTransformer', 'tabular_step'], keep=False)) | (
-                ~trafo_df.RatioTapChangerTable.isna())]
+               ~trafo_df.RatioTapChangerTable.isna()) | (~trafo_df.PhaseTapChangerTable.isna())]
             fillna_list = ['tabular_step']
             for one_item in fillna_list:
                 trafo_df[one_item] = trafo_df[one_item].fillna(trafo_df[one_item + '_mv'])
@@ -309,6 +309,7 @@ class PowerTransformersCim16:
         eqssh_tap_changers[sc['tc']] = 'RatioTapChanger'
         eqssh_tap_changers['tap_changer_type'] = "Ratio"  # Ratio/Asymmetrical phase shifter
         eqssh_tap_changers[sc['tc_id']] = eqssh_tap_changers['rdfId'].copy()
+        # todo: check correct implementation for PhaseTapChangerLinear tap changers
         eqssh_tap_changers_linear = pd.merge(self.cimConverter.cim['eq']['PhaseTapChangerLinear'],
                                              self.cimConverter.cim['ssh']['PhaseTapChangerLinear'], how='left',
                                              on='rdfId')
@@ -317,15 +318,18 @@ class PowerTransformersCim16:
         eqssh_tap_changers_linear['tap_changer_type'] = "Ideal"  # Ideal phase shifter
         eqssh_tap_changers_linear[sc['tc_id']] = eqssh_tap_changers_linear['rdfId'].copy()
         eqssh_tap_changers = pd.concat([eqssh_tap_changers, eqssh_tap_changers_linear], ignore_index=True, sort=False)
+        # todo: check correct implementation for PhaseTapChangerAsymmetrical tap changers
         eqssh_tap_changers_async = pd.merge(self.cimConverter.cim['eq']['PhaseTapChangerAsymmetrical'],
                                             self.cimConverter.cim['ssh']['PhaseTapChangerAsymmetrical'], how='left',
                                             on='rdfId')
         eqssh_tap_changers_async['stepVoltageIncrement'] = eqssh_tap_changers_async['voltageStepIncrement'][:]
-        eqssh_tap_changers_async = eqssh_tap_changers_async.drop(columns=['voltageStepIncrement'])
+        eqssh_tap_changers_async['stepPhaseShiftIncrement'] = eqssh_tap_changers_async['windingConnectionAngle'][:]
+        eqssh_tap_changers_async = eqssh_tap_changers_async.drop(columns=['voltageStepIncrement', 'windingConnectionAngle'])
         eqssh_tap_changers_async[sc['tc']] = 'PhaseTapChangerAsymmetrical'
         eqssh_tap_changers_async['tap_changer_type'] = "Ratio"  # Ratio/Asymmetrical phase shifter
         eqssh_tap_changers_async[sc['tc_id']] = eqssh_tap_changers_async['rdfId'].copy()
         eqssh_tap_changers = pd.concat([eqssh_tap_changers, eqssh_tap_changers_async], ignore_index=True, sort=False)
+        # todo: check correct implementation for PhaseTapChangerSymmetrical tap changers
         eqssh_ratio_tap_changers_sync = pd.merge(self.cimConverter.cim['eq']['PhaseTapChangerSymmetrical'],
                                                  self.cimConverter.cim['ssh']['PhaseTapChangerSymmetrical'], how='left',
                                                  on='rdfId')
@@ -355,18 +359,18 @@ class PowerTransformersCim16:
                 ptct = ptct.drop(drop_index)
                 continue
             one_df = one_df.set_index('step')
-            current_step = one_df['current_step'].iloc[0]
             neutral_step = one_df['neutralStep'].iloc[0]
             ptct = ptct.drop(drop_index)
-            # calculate the angle and ratio per tap based on the current tap position
-            ptct.loc[keep_index, 'angle'] = one_df.loc[current_step, 'angle'] / max(1, abs(current_step - neutral_step))
-            ptct.loc[keep_index, 'ratio'] = \
-                (one_df.loc[current_step, 'ratio'] - 1) * 100 / max(1, abs(current_step - neutral_step))
+            # keep the angle and ratio based on neutral tap position (to populate tap_step_percent and tap_step_degree)
+            ptct.loc[keep_index, 'angle'] = one_df.loc[neutral_step, 'angle']
+            ptct.loc[keep_index, 'ratio'] = (one_df.loc[neutral_step, 'ratio'] - 1) * 100
+        ptct[sc['tc']] = 'PhaseTapChangerTabular'
+        ptct[sc['tc_id']] = ptct['rdfId'].copy()
         ptct = ptct.drop(columns=['rdfId', 'PhaseTapChangerTable', 'step'])
         ptct = ptct.rename(columns={'current_step': 'step'})
         ptct['stepPhaseShiftIncrement'] = ptct['angle'][:]
         ptct['stepVoltageIncrement'] = ptct['ratio'][:]
-        ptct['tap_changer_type'] = "Ratio"  # Ratio/Asymmetrical phase shifter
+        ptct['tap_changer_type'] = "Tabular"  # PhaseTapChangerTabular
         eqssh_tap_changers = pd.concat([eqssh_tap_changers, ptct], ignore_index=True, sort=False)
         del eqssh_tap_changers_linear, eqssh_tap_changers_async, eqssh_ratio_tap_changers_sync
 
@@ -437,7 +441,6 @@ class PowerTransformersCim16:
                                          how='left', left_on='Terminal', right_on='rdfId_Terminal')
         # add the TapChangers
         power_transformers = pd.merge(power_transformers, eqssh_tap_changers, how='left', on=sc['pte_id'])
-        power_transformers['tap_changer_type'] = power_transformers['tap_changer_type']
         return power_transformers
 
     def _prepare_trafos_cim16(self, power_trafo2w: pd.DataFrame) -> pd.DataFrame:
@@ -457,13 +460,9 @@ class PowerTransformersCim16:
         del copy_list, one_item
         # detect on which winding a tap changer is attached
         power_trafo2w['tap_side'] = None
-        power_trafo2w.loc[power_trafo2w['step_lv'].notna(), 'tap_side'] = 'lv'
+        power_trafo2w['tap2_side'] = None
         power_trafo2w.loc[power_trafo2w['step'].notna(), 'tap_side'] = 'hv'
-        fillna_list = ['neutralStep', 'lowStep', 'highStep', 'stepVoltageIncrement', 'stepPhaseShiftIncrement', 'step',
-                       sc['tc'], sc['tc_id'], 'tap_changer_type']
-        for one_item in fillna_list:
-            power_trafo2w[one_item] = power_trafo2w[one_item].fillna(power_trafo2w[one_item + '_lv'])
-        del fillna_list, one_item
+        power_trafo2w.loc[power_trafo2w['step_lv'].notna(), 'tap2_side'] = 'lv'
         # just keep one transformer
         power_trafo2w = power_trafo2w.drop_duplicates(subset=['PowerTransformer'], keep='first')
 
@@ -514,11 +513,11 @@ class PowerTransformersCim16:
         power_trafo2w['connectionKind_lv'] = power_trafo2w['connectionKind_lv'].fillna('')
         power_trafo2w['grounded'] = power_trafo2w['grounded'].fillna(True)
         power_trafo2w['grounded_lv'] = power_trafo2w['grounded_lv'].fillna(True)
-        power_trafo2w.loc[~power_trafo2w['grounded'].astype('bool'), 'connectionKind'] = \
-            power_trafo2w.loc[~power_trafo2w['grounded'].astype('bool'), 'connectionKind'].str.replace('n', '')
-        power_trafo2w.loc[~power_trafo2w['grounded_lv'].astype('bool'), 'connectionKind_lv'] = \
-            power_trafo2w.loc[~power_trafo2w['grounded_lv'].astype('bool'), 'connectionKind_lv'].str.replace('n', '')
-        power_trafo2w['vector_group'] = power_trafo2w.connectionKind + power_trafo2w.connectionKind_lv
+        # power_trafo2w.loc[~power_trafo2w['grounded'].astype('bool'), 'connectionKind'] = \
+        #     power_trafo2w.loc[~power_trafo2w['grounded'].astype('bool'), 'connectionKind'].str.replace('n', '')
+        # power_trafo2w.loc[~power_trafo2w['grounded_lv'].astype('bool'), 'connectionKind_lv'] = \
+        #     power_trafo2w.loc[~power_trafo2w['grounded_lv'].astype('bool'), 'connectionKind_lv'].str.replace('n', '')
+        power_trafo2w['vector_group'] = power_trafo2w.connectionKind.str.upper() + power_trafo2w.connectionKind_lv.str.lower()
         power_trafo2w.loc[power_trafo2w['vector_group'] == '', 'vector_group'] = None
         power_trafo2w = power_trafo2w.rename(columns={
             'PowerTransformer': sc['o_id'], 'Terminal': sc['t_hv'], 'Terminal_lv': sc['t_lv'],
@@ -526,7 +525,11 @@ class PowerTransformersCim16:
             'index_bus_lv': 'lv_bus', 'neutralStep': 'tap_neutral', 'lowStep': 'tap_min', 'highStep': 'tap_max',
             'step': 'tap_pos', 'stepVoltageIncrement': 'tap_step_percent', 'stepPhaseShiftIncrement': 'tap_step_degree',
             'isPartOfGeneratorUnit': 'power_station_unit', 'ratedU': 'vn_hv_kv', 'ratedU_lv': 'vn_lv_kv',
-            'ratedS': 'sn_mva', 'xground': 'xn_ohm', 'grounded': 'oltc'})
+            'ratedS': 'sn_mva', 'xground': 'xn_ohm', 'grounded': 'oltc',
+            'neutralStep_lv': 'tap2_neutral',  'lowStep_lv': 'tap2_min', 'highStep_lv': 'tap2_max',
+            'step_lv': 'tap2_pos', 'stepVoltageIncrement_lv': 'tap2_step_percent',\
+            'stepPhaseShiftIncrement_lv': 'tap2_step_degree', 'tap_changer_type_lv': 'tap2_changer_type',\
+            'tapchanger_class_lv': sc['tc2'], 'tapchanger_id_lv': sc['tc2_id']})
         return power_trafo2w
 
     def _prepare_trafo3w_cim16(self, power_trafo3w: pd.DataFrame) -> pd.DataFrame:
@@ -639,14 +642,13 @@ class PowerTransformersCim16:
         power_trafo3w['grounded_mv'] = power_trafo3w['grounded_mv'].fillna(True)
         power_trafo3w['grounded_lv'] = power_trafo3w['grounded_lv'].fillna(True)
 
-        power_trafo3w.loc[~power_trafo3w['grounded'].astype('bool'), 'connectionKind'] = \
-            power_trafo3w.loc[~power_trafo3w['grounded'].astype('bool'), 'connectionKind'].str.replace('n', '')
-        power_trafo3w.loc[~power_trafo3w['grounded_mv'].astype('bool'), 'connectionKind_mv'] = \
-            power_trafo3w.loc[~power_trafo3w['grounded_mv'].astype('bool'), 'connectionKind_mv'].str.replace('n', '')
-        power_trafo3w.loc[~power_trafo3w['grounded_lv'].astype('bool'), 'connectionKind_lv'] = \
-            power_trafo3w.loc[~power_trafo3w['grounded_lv'].astype('bool'), 'connectionKind_lv'].str.replace('n', '')
-        power_trafo3w['vector_group'] = \
-            power_trafo3w.connectionKind + power_trafo3w.connectionKind_mv + power_trafo3w.connectionKind_lv
+        # power_trafo3w.loc[~power_trafo3w['grounded'].astype('bool'), 'connectionKind'] = \
+        #     power_trafo3w.loc[~power_trafo3w['grounded'].astype('bool'), 'connectionKind'].str.replace('n', '')
+        # power_trafo3w.loc[~power_trafo3w['grounded_mv'].astype('bool'), 'connectionKind_mv'] = \
+        #     power_trafo3w.loc[~power_trafo3w['grounded_mv'].astype('bool'), 'connectionKind_mv'].str.replace('n', '')
+        # power_trafo3w.loc[~power_trafo3w['grounded_lv'].astype('bool'), 'connectionKind_lv'] = \
+        #     power_trafo3w.loc[~power_trafo3w['grounded_lv'].astype('bool'), 'connectionKind_lv'].str.replace('n', '')
+        power_trafo3w['vector_group'] = power_trafo3w.connectionKind.str.upper() + power_trafo3w.connectionKind_mv.str.lower() + power_trafo3w.connectionKind_lv.str.lower()
         power_trafo3w.loc[power_trafo3w['vector_group'] == '', 'vector_group'] = None
         power_trafo3w = power_trafo3w.rename(columns={
             'PowerTransformer': sc['o_id'], 'Terminal': sc['t_hv'], 'Terminal_mv': sc['t_mv'],

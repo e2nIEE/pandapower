@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 from copy import deepcopy
 
@@ -82,22 +82,40 @@ def trafo_characteristic_table_diagnostic(net):
             continue
         # check if both tap_dependency_table & id_characteristic_table columns are populated
         mismatch_a = net[trafo_table][
-            (net[trafo_table]['tap_dependency_table'] & net[trafo_table]['id_characteristic_table'].isna()) |
-            (~net[trafo_table]['tap_dependency_table'] & net[trafo_table]['id_characteristic_table'].notna())
+            ((net[trafo_table]['tap_dependency_table']) & (net[trafo_table]['id_characteristic_table'].isna())) |
+            ((~net[trafo_table]['tap_dependency_table']) & (net[trafo_table]['id_characteristic_table'].notna()))
             ].shape[0]
         if mismatch_a != 0:
             warnings.warn(f"{trafo_table}: found {mismatch_a} transformer(s) with not both "
                           f"tap_dependency_table and id_characteristic_table parameters populated. "
                           f"Power flow calculation will raise an error.", category=UserWarning)
             warnings_count += 1
-        # check if both tap_dependency_table & tap_phase_shifter_type columns are populated
+        # check if both tap_dependency_table & tap_changer_type columns are populated
         mismatch_b = net[trafo_table][
-            (net[trafo_table]['tap_dependency_table'] & net[trafo_table]['tap_changer_type'].isna())
+            (net[trafo_table]['tap_dependency_table']) & (net[trafo_table]['tap_changer_type'].isna())
             ].shape[0]
         if mismatch_b != 0:
             warnings.warn(f"{trafo_table}: found {mismatch_b} transformer(s) with tap_dependency_table set to "
                           f"True and tap_changer_type parameter not populated. The characteristics from "
                           f"trafo_characteristic_table will not be considered.", category=UserWarning)
+            warnings_count += 1
+        # check if tap_changer_type is "Tabular" but tap_dependency_table is False
+        mismatch_c = net[trafo_table][
+            (~net[trafo_table]['tap_dependency_table']) & (net[trafo_table]['tap_changer_type'] == 'Tabular')
+            ].shape[0]
+        if mismatch_c != 0:
+            warnings.warn(f"{trafo_table}: found {mismatch_c} transformer(s) with tap_changer_type parameter "
+                          f"set to 'Tabular' but tap_dependency_table flag set to False. The characteristics from "
+                          f"trafo_characteristic_table will not be considered.", category=UserWarning)
+            warnings_count += 1
+        # check if tap_changer_type is "Symmetrical" but tap_step_degree is not 90
+        mismatch_d = net[trafo_table][
+            (net[trafo_table]['tap_step_degree'] != 90) & (net[trafo_table]['tap_changer_type'] == 'Symmetrical')
+            ].shape[0]
+        if mismatch_d != 0:
+            warnings.warn(f"{trafo_table}: found {mismatch_d} transformer(s) with tap_changer_type parameter "
+                          f"set to 'Symmetrical' but tap_step_degree value not set to 90 degrees.",
+                          category=UserWarning)
             warnings_count += 1
         # check if all relevant columns are populated in the trafo_characteristic_table
         temp = net[trafo_table].dropna(subset=["id_characteristic_table"])[
@@ -126,10 +144,7 @@ def trafo_characteristic_table_diagnostic(net):
                           f"in id_characteristic column of trafo_characteristic_table.", category=UserWarning)
             warnings_count += 1
     logger.info(f"{warnings_count} warnings were issued")
-    if warnings_count > 0:
-        return False
-    else:
-        return True
+    return warnings_count == 0
 
 
 def shunt_characteristic_table_diagnostic(net):
@@ -138,6 +153,7 @@ def shunt_characteristic_table_diagnostic(net):
         logger.info("No shunt characteristic table found")
         return False
     cols = ["id_characteristic", "step", "q_mvar", "p_mw"]
+    warnings_count = 0
     if len(net["shunt"]) == 0 or \
             not all(col in net["shunt"] for col in ['id_characteristic_table', 'step_dependency_table']) or \
             (not net["shunt"]['id_characteristic_table'].notna().any() and
@@ -153,6 +169,7 @@ def shunt_characteristic_table_diagnostic(net):
         warnings.warn(f"Found {mismatch} shunt(s) with not both "
                       f"step_dependency_table and id_characteristic_table parameters populated. "
                       f"Power flow calculation will raise an error.", category=UserWarning)
+        warnings_count += 1
     # check if all relevant columns are populated in the shunt_characteristic_table
     temp = net["shunt"].dropna(subset=["id_characteristic_table"])[
         ["step_dependency_table", "id_characteristic_table"]]
@@ -162,16 +179,96 @@ def shunt_characteristic_table_diagnostic(net):
     if not unpopulated.empty:
         warnings.warn("There are some shunts with not all characteristics "
                       "populated in the shunt_characteristic_table.", category=UserWarning)
+        warnings_count += 1
     # check step_dependency_table & id_characteristic_table column types
     if net["shunt"]['step_dependency_table'].dtype != 'bool':
         warnings.warn("The step_dependency_table column in the shunt table is not of bool type.",
                       category=UserWarning)
+        warnings_count += 1
     if net["shunt"]['id_characteristic_table'].dtype != 'Int64':
         warnings.warn("The id_characteristic_table column in the shunt table is not of Int64 type.",
                       category=UserWarning)
+        warnings_count += 1
     # check if all id_characteristic_table values are present in id_characteristic column
     # of shunt_characteristic_table
     if not net["shunt"]['id_characteristic_table'].dropna().isin(
             net["shunt_characteristic_table"]['id_characteristic']).all():
         warnings.warn("Not all id_characteristic_table values in the shunt table are present "
                       "in id_characteristic column of shunt_characteristic_table.", category=UserWarning)
+        warnings_count += 1
+    logger.info(f"{warnings_count} warnings were issued")
+    return warnings_count == 0
+
+
+def q_capability_curve_table_diagnostic(net, element):
+    if element not in ["gen", "sgen"]:
+        warnings.warn("The given element type is not valid for diagnostics. Please give gen or sgen "
+                      "as a argument of the function", category=UserWarning)
+        return False
+
+    logger.info(f"Checking {element} Q capability curve characteristic table")
+    if "q_capability_curve_table" not in net:
+        logger.info("No Q capability curve table found")
+        return False
+    cols = ["id_q_capability_curve", "p_mw", "q_min_mvar", "q_max_mvar", "curve_style"]
+    warnings_count = 0
+
+    # Quick checks for element table and required columns
+    if (len(net[element]) == 0 or not {"id_q_capability_characteristic", "reactive_capability_curve", "curve_style"}.
+            issubset(net[element].columns) or (not net[element]['id_q_capability_characteristic'].notna().any()
+            and not net[element]['reactive_capability_curve'].any()) and not net[element]['curve_style'].any()):
+        logger.info(f"No {element} with Q capability curve table found.")
+        return False
+
+    # Check if both reactive_capability_curve & id_q_capability_characteristic columns are populated
+    mismatch = net[element][(net[element]['reactive_capability_curve'] & (
+                (net[element]['id_q_capability_characteristic'].isna()) | (
+            net[element]['curve_style'].isna()))) | (~net[element]['reactive_capability_curve'] & (
+                (net[element]['id_q_capability_characteristic'].notna()) | (
+            net[element]['curve_style'].notna())))].shape[0]
+    if mismatch != 0:
+        warnings.warn(f"Found {mismatch} {element}(s) with mismatched between curve_style, "
+                      f"reactive_capability_curve and id_q_capability_characteristic parameters populated. "
+                      f"Power flow calculation will raise an error.", category=UserWarning)
+        warnings_count += 1
+
+    # Validate relevant columns in q_capability_curve_table
+    temp = net[element].dropna(subset=["id_q_capability_characteristic"])[
+        ["reactive_capability_curve", "id_q_capability_characteristic", "curve_style"]]
+    merged_df = temp.merge(net["q_capability_curve_table"], left_on="id_q_capability_characteristic",
+                           right_on="id_q_capability_curve", how="inner")
+
+    if not merged_df[cols].notna().all(axis=1).all():
+        warnings.warn(f"There are some {element}(s) with not all characteristics "
+                      "populated in the q_capability_curve_table.", category=UserWarning)
+        warnings_count += 1
+
+    # Check reactive_capability_curve & id_characteristic_table column types
+    if net[element]['reactive_capability_curve'].dtype != 'bool':
+        warnings.warn(f"The reactive_capability_curve column in the {element} table is not of bool type.",
+                      category=UserWarning)
+        warnings_count += 1
+
+    if net[element]['id_q_capability_characteristic'].dtype != 'Int64':
+        warnings.warn(f"The id_characteristic_table column in the {element} table is not of Int64 type.",
+                      category=UserWarning)
+        warnings_count += 1
+
+    # check the curve style is known or not
+    curve_df = net[element]['curve_style']
+    curve_df = curve_df[~curve_df.isin(["straightLineYValues", "constantYValue"])].dropna()
+    if curve_df.count() > 0:
+        warnings.warn(f"There are {curve_df.count()} unknown curve style in curve_style column of the "
+                      f"{element} table", category=UserWarning)
+        warnings_count += 1
+
+    # check if all id_q_capability_characteristic values are present in id_q_capability_curve column
+    # of q_capability_curve_table
+    if not net[element]['id_q_capability_characteristic'].dropna().isin(
+            net["q_capability_curve_table"]['id_q_capability_curve']).any():
+        warnings.warn(f"Not all id_q_capability_characteristic values of {element} are present in the "
+                      f"q_capability_curve_table.", category=UserWarning)
+        warnings_count += 1
+
+    logger.info(f"{warnings_count} warnings were issued")
+    return warnings_count == 0

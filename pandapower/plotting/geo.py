@@ -17,14 +17,10 @@ import math
 import pandas as pd
 from numpy import array
 
-import pandapower
 from pandapower.auxiliary import soft_dependency_error, pandapowerNet
 
 # get logger (same as in simple_plot)
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -236,6 +232,7 @@ def convert_crs(net: pandapowerNet or 'pandapipes.pandapipesNet', epsg_in=4326, 
     This function works for pandapowerNet and pandapipesNet. Documentation will refer to names from pandapower.
     Converts bus and line geodata in net from epsg_in to epsg_out
     if GeoDataFrame data is present convert_geodata_to_gis should be used to update geometries after crs conversion
+    Supported geojson geometries are Point and LineString. Although Conversion away from WGS84 is highly discouraged.
 
     :param net: The pandapower network
     :type net: pandapowerNet|pandapipesNet
@@ -249,15 +246,38 @@ def convert_crs(net: pandapowerNet or 'pandapipes.pandapipesNet', epsg_in=4326, 
     if epsg_in == epsg_out:
         return
 
-    if ('geo' in net.bus and not all(net.bus.geo.isna()) and
-            'geo' in net.line and not all(net.line.geo.isna()) and
-            epsg_out == 4326):
-        # by definition geojson is in wgs84
-        return
-
     if not pyproj_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "pyproj")
     transformer = Transformer.from_crs(epsg_in, epsg_out, always_xy=True)
+
+    if ('geo' in net.bus and (net.bus.empty or not all(net.bus.geo.isna())) and
+        'geo' in net.line and (net.line.empty or not all(net.line.geo.isna()))):
+        if epsg_out != 4326:
+            logger.warning("Converting geojson to crs other than WGS84 is highly discouraged.")
+
+        def _geojson_transformer(geojson_str):
+            geometry = geojson.loads(geojson_str)
+
+            if geometry['type'] == 'Point':
+                x, y = geometry['coordinates']
+                x_new, y_new = transformer.transform(x, y)
+                geometry['coordinates'] = [x_new, y_new]
+            elif geometry['type'] == 'LineString':
+                new_coordinates = []
+                for coord in geometry['coordinates']:
+                    x, y = coord
+                    x_new, y_new = transformer.transform(x, y)
+                    new_coordinates.append([x_new, y_new])
+                geometry['coordinates'] = new_coordinates
+            return geojson.dumps(geometry)
+
+        if is_pandapower:
+            net.line.geo = net.line.geo.apply(_geojson_transformer)
+            net.bus.geo = net.bus.geo.apply(_geojson_transformer)
+        else:
+            net.pipe.geo = net.pipe.geo.apply(_geojson_transformer)
+            net.junction.geo = net.junction.geo.apply(_geojson_transformer)
+        return
 
     def _geo_node_transformer(r):
         (x, y) = transformer.transform(r.x, r.y)
@@ -290,7 +310,8 @@ def dump_to_geojson(
         branches: Union[bool, List[int]] = False,
         switches: Union[bool,  List[int]] = False,
         trafos: Union[bool, List[int]] = False,
-        t_is_3w: bool = False
+        t_is_3w: bool = False,
+        include_type_id: bool = True
 ) -> geojson.FeatureCollection:
     """
     This function works for pandapowerNet and pandapipesNet. Documentation will refer to names from pandapower.
@@ -314,6 +335,8 @@ def dump_to_geojson(
     :type trafos: bool | list, default False
     :param t_is_3w: if True, the trafos are treated as 3W-trafos
     :type t_is_3w: bool, default False
+    :param include_type_id: if True, pp_type and pp_index is added to every feature
+    :type include_type_id: bool, default true
     :return: A geojson object.
     :return type: geojson.FeatureCollection
     """
@@ -365,8 +388,9 @@ def dump_to_geojson(
                 continue
 
             tempdf = net[table].copy(deep=True)
-            tempdf['pp_type'] = 'bus' if is_pandapower else 'junction'
-            tempdf['pp_index'] = tempdf.index
+            if include_type_id:
+                tempdf['pp_type'] = 'bus' if is_pandapower else 'junction'
+                tempdf['pp_index'] = tempdf.index
             tempdf.index = tempdf.apply(lambda r: f"{r['pp_type']}-{r['pp_index']}", axis=1)
             tempdf.drop(columns=['geo'], inplace=True, axis=1, errors='ignore')
 
@@ -390,8 +414,9 @@ def dump_to_geojson(
                 continue
 
             tempdf = net[table].copy(deep=True)
-            tempdf['pp_type'] = 'line' if is_pandapower else 'pipe'
-            tempdf['pp_index'] = tempdf.index
+            if include_type_id:
+                tempdf['pp_type'] = 'line' if is_pandapower else 'pipe'
+                tempdf['pp_index'] = tempdf.index
             tempdf.index = tempdf.apply(lambda r: f"{r['pp_type']}-{r['pp_index']}", axis=1)
             tempdf.drop(columns=['geo'], inplace=True, axis=1, errors='ignore')
 
@@ -421,10 +446,12 @@ def dump_to_geojson(
                     # switch is not connected to a bus! Will count this as missing geometry.
                     missing_geom[2] += 1
                     continue
-                prop = {
-                    'pp_type': 'switch',
-                    'pp_index': ind,
-                }
+                prop = {}
+                if include_type_id:
+                    prop = {
+                        'pp_type': 'switch',
+                        'pp_index': ind,
+                    }
                 uid = f"switch-{ind}"
                 _get_props(row, cols, prop)
 
@@ -445,10 +472,12 @@ def dump_to_geojson(
             if t_type in net.keys():
                 cols = net[t_type].columns
                 for ind, row in net[t_type].loc[trafos].iterrows():
-                    prop = {
-                        'pp_type': t_type,
-                        'pp_index': ind,
-                    }
+                    prop = {}
+                    if include_type_id:
+                        prop = {
+                            'pp_type': t_type,
+                            'pp_index': ind,
+                        }
                     uid = f"{t_type}-{ind}"
                     _get_props(row, cols, prop)
 

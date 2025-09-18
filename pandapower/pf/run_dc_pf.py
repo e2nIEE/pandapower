@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -20,6 +20,15 @@ from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_res
 
 
 def _run_dc_pf(ppci, recycle=False):
+    """
+    Runs a decoupled (dc) powerflow to initalize all the values
+    Args:
+        ppci:
+        recycle:
+
+    Returns:
+
+    """
     t0 = perf_counter()
 
     # if TAP is changed, the Bbus and Bf must be calculated from scratch

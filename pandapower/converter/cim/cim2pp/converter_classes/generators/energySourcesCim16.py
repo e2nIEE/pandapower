@@ -24,6 +24,9 @@ class EnergySourceCim16:
         eqssh_energy_sources = self._prepare_energy_sources_cim16()
         es_slack = eqssh_energy_sources.loc[eqssh_energy_sources.vm_pu.notna()]
         es_sgen = eqssh_energy_sources.loc[eqssh_energy_sources.vm_pu.isna()]
+        # create reactive_capability_curve flag
+        if 'reactive_capability_curve' not in es_sgen.columns:
+            es_sgen['reactive_capability_curve'] = False
         self.cimConverter.copy_to_pp('ext_grid', es_slack)
         self.cimConverter.copy_to_pp('sgen', es_sgen)
         # self._copy_to_pp('sgen', eqssh_energy_sources)
@@ -56,6 +59,7 @@ class EnergySourceCim16:
         eqssh_energy_sources['scaling'] = 1.
         eqssh_energy_sources['current_source'] = True
         eqssh_energy_sources['generator_type'] = 'current_source'
+        eqssh_energy_sources['controllable'] = False
         if 'inService' in eqssh_energy_sources.columns:
             eqssh_energy_sources['connected'] = (eqssh_energy_sources['connected']
                                                  & eqssh_energy_sources['inService'])

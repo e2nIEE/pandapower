@@ -1,18 +1,19 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 import pandas as pd
 from numpy import allclose, isclose
+
+from pandapower import runpp, rundcpp, runpp_pgm
 from pandapower.pf.runpp_3ph import runpp_3ph
 from pandapower.results import get_relevant_elements
-import pandapower as pp
 
 
 def runpp_with_consistency_checks(net, **kwargs):
-    pp.runpp(net, **kwargs)
+    runpp(net, **kwargs)
     consistency_checks(net)
     return True
 
@@ -22,17 +23,17 @@ def runpp_3ph_with_consistency_checks(net, **kwargs):
     return True
 
 def rundcpp_with_consistency_checks(net, **kwargs):
-    pp.rundcpp(net, **kwargs)
+    rundcpp(net, **kwargs)
     consistency_checks(net, test_q=False)
     return True
 
 def runpp_pgm_with_consistency_checks(net):
-    pp.runpp_pgm(net, error_tolerance_vm_pu=1e-11, symmetric=True)
+    runpp_pgm(net, error_tolerance_vm_pu=1e-11, symmetric=True)
     consistency_checks(net)
     return True
 
 def runpp_pgm_3ph_with_consistency_checks(net):
-    pp.runpp_pgm(net, error_tolerance_vm_pu=1e-11, symmetric=False)
+    runpp_pgm(net, error_tolerance_vm_pu=1e-11, symmetric=False)
     consistency_checks_3ph(net)
     return True
 
@@ -150,6 +151,12 @@ def element_power_consistent_with_bus_power(net, rtol=1e-2, test_q=True):
         bus_p.at[tab.bus] += net.res_vsc.p_mw.at[idx]
         bus_q.at[tab.bus] += net.res_vsc.q_mvar.at[idx]
         bus_p_dc.at[tab.bus_dc] += net.res_vsc.p_dc_mw.at[idx]
+
+    for idx, tab in net.b2b_vsc.iterrows():
+        bus_p.at[tab.bus] += net.res_b2b_vsc.p_mw.at[idx]
+        bus_q.at[tab.bus] += net.res_b2b_vsc.q_mvar.at[idx]
+        bus_p_dc.at[tab.bus_dc_plus] += net.res_b2b_vsc.p_dc_mw_p.at[idx]
+        bus_p_dc.at[tab.bus_dc_minus] += net.res_b2b_vsc.p_dc_mw_m.at[idx]
 
     assert allclose(net.res_bus.p_mw.values, bus_p.values, equal_nan=True, rtol=rtol)
     assert allclose(net.res_bus_dc.p_mw.values, bus_p_dc.values, equal_nan=True, rtol=rtol)

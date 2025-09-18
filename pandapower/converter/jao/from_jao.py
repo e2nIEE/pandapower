@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-nt
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from copy import deepcopy
@@ -18,10 +18,7 @@ from pandapower.topology import create_nxgraph, connected_components
 from pandapower.plotting import set_line_geodata_from_bus_geodata
 from pandapower.toolbox import drop_buses, fuse_buses
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -33,88 +30,88 @@ def from_jao(excel_file_path: str,
              apply_data_correction: bool = True,
              max_i_ka_fillna: Union[float, int] = 999,
              **kwargs) -> pandapowerNet:
-    """Converts European (Core) EHV grid data provided by JAO (Joint Allocation Office), the
+    """
+    Converts European (Core) EHV grid data provided by JAO (Joint Allocation Office), the
     "Single Allocation Platform (SAP) for all European Transmission System Operators (TSOs) that
     operate in accordance to EU legislation".
 
     **Data Sources and Availability:**
-
     The data are available at the website
     `JAO Static Grid Model <https://www.jao.eu/static-grid-model>`_ (November 2024).
     There, a map is provided to get an fine overview of the geographical extent and the scope of
     the data. These inlcude information about European (Core) lines, tielines, and transformers.
 
     **Limitations:**
-
     No information is available on load or generation.
     The data quality with regard to the interconnection of the equipment, the information provided
     and the (incomplete) geodata should be considered with caution.
 
     **Features of the converter:**
-
     - **Data Correction:** corrects known data inconsistencies, such as inconsistent spellings and missing necessary information.
     - **Geographical Data Parsing:** Parses geographical data from the HTML file to add geolocation information to buses and lines.
     - **Grid Group Connections:** Optionally extends the network by connecting islanded grid groups to avoid disconnected components.
     - **Data Customization:** Allows for customization through additional parameters to control transformer creation, grid group dropping, and voltage level deviations.
 
-    Parameters
-    ----------
-    excel_file_path : str
+    :param str excel_file_path:
         input data including electrical parameters of grids' utilities, stored in multiple sheets
         of an excel file
-    html_file_path : str
+
+    :param str html_file_path:
         input data for geo information. If The converter should be run without geo information, None
         can be passed., provided by an html file
-    extend_data_for_grid_group_connections : bool
+
+    :param bool extend_data_for_grid_group_connections:
         if True, connections (additional transformers and merging buses) are created to avoid
         islanded grid groups, by default False
-    drop_grid_groups_islands : bool, optional
+
+    :param Optional[bool] drop_grid_groups_islands:
         if True, islanded grid groups will be dropped if their number of buses is below
-        min_bus_number (default is 6), by default False
-    apply_data_correction : bool, optional
-        _description_, by default True
-    max_i_ka_fillna : float | int, optional
+        `min_bus_number` default for this is 6 (default: False)
+
+    :param Optional[bool] apply_data_correction:
+        _description_ (default: True)
+
+    :param Optional[float|int] max_i_ka_fillna:
         value to fill missing values or data of false type in max_i_ka of lines and transformers.
-        If no value should be set, you can also pass np.nan. By default 999
+        If no value should be set, you can also pass np.nan. (default: 999)
 
-    Returns
-    -------
-    pandapowerNet
-        net created from the jao data
+    :param '**'kwargs: following params are available
 
-    Additional Parameters
-    ---------------------
-    minimal_trafo_invention : bool, optional
+    :param Optional[bool] minimal_trafo_invention:
         applies if extend_data_for_grid_group_connections is True. Then, if minimal_trafo_invention
         is True, adding transformers stops when no grid groups is islanded anymore (does not apply
         for release version 5 or 6, i.e. it does not care what value is passed to
         minimal_trafo_invention). If False, all equally named buses that have different voltage
-        level and lay in different groups will be connected via additional transformers,
-        by default False
-    min_bus_number : Union[int,str], optional
+        level and lay in different groups will be connected via additional transformers (default: False)
+
+    :param Optional[int|str] min_bus_number:
         Threshold value to decide which small grid groups should be dropped and which large grid
         groups should be kept. If all islanded grid groups should be dropped except of the one
         largest, set "max". If all grid groups that do not contain a slack element should be
-        dropped, set "unsupplied". By default 6
-    rel_deviation_threshold_for_trafo_bus_creation : float, optional
+        dropped, set "unsupplied". (default: 6)
+
+    :param Optional[float] rel_deviation_threshold_for_trafo_bus_creation:
         If the voltage level of transformer locations is far different than the transformer data,
         additional buses are created. rel_deviation_threshold_for_trafo_bus_creation defines the
-        tolerance in which no additional buses are created. By default 0.2
-    log_rel_vn_deviation : float, optional
-        This parameter allows a range below rel_deviation_threshold_for_trafo_bus_creation in which
-        a warning is logged instead of a creating additional buses. By default 0.12
+        tolerance in which no additional buses are created. (default: 0.2)
 
-    Examples
-    --------
-    >>> from pathlib import Path
-    >>> import os
-    >>> import pandapower as pp
-    >>> net = pp.converter.from_jao()
-    >>> home = str(Path.home())
-    >>> # assume that the files are located at your desktop:
-    >>> excel_file_path = os.path.join(home, "desktop", "202409_Core Static Grid Mode_6th release")
-    >>> html_file_path = os.path.join(home, "desktop", "2024-09-13_Core_SGM_publication.html")
-    >>> net = from_jao(excel_file_path, html_file_path, True, drop_grid_groups_islands=True)
+    :param Optional[float] log_rel_vn_deviation:
+        This parameter allows a range below rel_deviation_threshold_for_trafo_bus_creation in which
+        a warning is logged instead of a creating additional buses. (default: 0.12)
+
+    :return: net created from the jao data
+    :rtype: pandapowerNet
+
+    :example:
+        >>> from pathlib import Path
+        >>> import os
+        >>> import pandapower as pp
+        >>> net = pp.converter.from_jao()
+        >>> home = str(Path.home())
+        >>> # assume that the files are located at your desktop:
+        >>> excel_file_path = os.path.join(home, "desktop", "202409_Core Static Grid Mode_6th release")
+        >>> html_file_path = os.path.join(home, "desktop", "2024-09-13_Core_SGM_publication.html")
+        >>> net = from_jao(excel_file_path, html_file_path, True, drop_grid_groups_islands=True)
     """
 
     # --- read data
@@ -166,23 +163,17 @@ def _data_correction(
         data: dict[str, pd.DataFrame],
         html_str: Optional[str],
         max_i_ka_fillna: Union[float, int]) -> Optional[str]:
-    """Corrects input data in particular with regard to obvious weaknesses in the data provided,
+    """
+    Corrects input data in particular with regard to obvious weaknesses in the data provided,
     such as inconsistent spellings and missing necessary information
 
-    Parameters
-    ----------
-    data : dict[str, pd.DataFrame]
-        data provided by the excel file which will be corrected
-    html_str : str | None
-        data provided by the html file which will be corrected
-    max_i_ka_fillna : float | int
-        value to fill missing values or data of false type in max_i_ka of lines and transformers.
+    :param dict[str, pd.DataFrame] data: data provided by the excel file which will be corrected
+    :param str|None html_str: data provided by the html file which will be corrected
+    :param float|int max_i_ka_fillna: value to fill missing values or data of false type in max_i_ka of lines and transformers.
         If no value should be set, you can also pass np.nan.
 
-    Returns
-    -------
-    str
-        corrected html_str
+    :return: corrected html_str
+    :rtype: str
     """
     # old name -> new name
     rename_locnames = [("PSTMIKULOWA", "PST MIKULOWA"),
@@ -256,18 +247,14 @@ def _data_correction(
 
 
 def _parse_html_str(html_str: str) -> pd.DataFrame:
-    """Converts ths geodata from the html file (information hidden in the string), from Lines in
+    """
+    Converts ths geodata from the html file (information hidden in the string), from Lines in
     particular, to a DataFrame that can be used later in _add_bus_geo()
 
-    Parameters
-    ----------
-    html_str : str
-        html file that includes geodata information
+    :param str html_str: html file that includes geodata information
 
-    Returns
-    -------
-    pd.DataFrame
-        extracted geodata for a later and easy use
+    :return: extracted geodata for a later and easy use
+    :rtype: pd.DataFrame
     """
     def _filter_name(st: str) -> str:
         name_start = "<b>NE name: "
@@ -306,12 +293,8 @@ def _create_buses_from_line_data(net: pandapowerNet, data: dict[str, pd.DataFram
     """Creates buses to the pandapower net using information from the lines and tielines sheets
     (excel file).
 
-    Parameters
-    ----------
-    net : pandapowerNet
-        net to be filled by buses
-    data : dict[str, pd.DataFrame]
-        data provided by the excel file which will be corrected
+    :param pandapowerNet net: net to be filled by buses
+    :param dict[str, pd.DataFrame data: data provided by the excel file which will be corrected
     """
     bus_df_empty = pd.DataFrame({"name": str(), "vn_kv": float(), "TSO": str()}, index=[])
     bus_df = deepcopy(bus_df_empty)
@@ -333,17 +316,12 @@ def _create_lines(
         net: pandapowerNet,
         data: dict[str, pd.DataFrame],
         max_i_ka_fillna: Union[float, int]) -> None:
-    """Creates lines to the pandapower net using information from the lines and tielines sheets
-    (excel file).
+    """
+    Creates lines to the pandapower net using information from the lines and tielines sheets (excel file).
 
-    Parameters
-    ----------
-    net : pandapowerNet
-        net to be filled by buses
-    data : dict[str, pd.DataFrame]
-        data provided by the excel file which will be corrected
-    max_i_ka_fillna : float | int
-        value to fill missing values or data of false type in max_i_ka of lines and transformers.
+    :param pandapowerNet net: net to be filled by buses
+    :param dict[str, pd.DataFrame] data: data provided by the excel file which will be corrected
+    :param float|int max_i_ka_fillna: value to fill missing values or data of false type in max_i_ka of lines and transformers.
         If no value should be set, you can also pass np.nan.
     """
 
@@ -382,15 +360,11 @@ def _create_lines(
 
 def _create_transformers_and_buses(
         net: pandapowerNet, data: dict[str, pd.DataFrame], **kwargs) -> None:
-    """Creates transformers to the pandapower net using information from the transformers sheet
-    (excel file).
+    """
+    Creates transformers to the pandapower net using information from the transformers sheet (excel file).
 
-    Parameters
-    ----------
-    net : pandapowerNet
-        net to be filled by buses
-    data : dict[str, pd.DataFrame]
-        data provided by the excel file which will be corrected
+    :param pandapowerNet net: net to be filled by buses
+    :param dict[str, pd.DataFrame] data: data provided by the excel file which will be corrected
     """
 
     # --- data preparations
@@ -451,22 +425,19 @@ def _create_transformers_and_buses(
 
 def _invent_connections_between_grid_groups(
         net: pandapowerNet, minimal_trafo_invention: bool = False, **kwargs) -> None:
-    """Adds connections between islanded grid groups via:
+    """
+    Adds connections between islanded grid groups via:
 
     - adding transformers between equally named buses that have different voltage level and lay in different groups
     - merge buses of same voltage level, different grid groups and equal name base
     - fuse buses that are close to each other
 
-    Parameters
-    ----------
-    net : pandapowerNet
-        net to be manipulated
-    minimal_trafo_invention : bool, optional
-        if True, adding transformers stops when no grid groups is islanded anymore (does not apply
+    :param pandapowerNet net: net to be manipulated
+    :param Optional[bool] minimal_trafo_invention: if True, adding transformers stops when no grid groups is islanded anymore (does not apply
         for release version 5 or 6, i.e. it does not care what value is passed to
         minimal_trafo_invention). If False, all equally named buses that have different voltage
         level and lay in different groups will be connected via additional transformers,
-        by default False
+        (default: False)
     """
     grid_groups = get_grid_groups(net)
     bus_idx = _get_bus_idx(net)
@@ -565,14 +536,11 @@ def drop_islanded_grid_groups(
         net: pandapowerNet,
         min_bus_number: Union[int, str],
         **kwargs) -> None:
-    """Drops grid groups that are islanded and include a number of buses below min_bus_number.
+    """
+    Drops grid groups that are islanded and include a number of buses below min_bus_number.
 
-    Parameters
-    ----------
-    net : pandapowerNet
-        net in which islanded grid groups will be dropped
-    min_bus_number : int | str, optional
-        Threshold value to decide which small grid groups should be dropped and which large grid
+    :param panadpowerNet net: net in which islanded grid groups will be dropped
+    :param Optional[int|str] min_bus_number: Threshold value to decide which small grid groups should be dropped and which large grid
         groups should be kept. If all islanded grid groups should be dropped except of the one
         largest, set "max". If all grid groups that do not contain a slack element should be
         dropped, set "unsupplied".
@@ -610,12 +578,8 @@ def _add_bus_geo(net: pandapowerNet, line_geo_data: pd.DataFrame) -> None:
     include no or multiple geodata per bus. Primarly, the geodata are allocate via EIC Code names,
     if ambigous, names are considered.
 
-    Parameters
-    ----------
-    net : pandapowerNet
-        net in which geodata are added to the buses
-    line_geo_data : pd.DataFrame
-        Converted geodata from the html file
+    :param pandapowerNet net: net in which geodata are added to the buses
+    :param pd.DataFrame: line_geo_data: Converted geodata from the html file
     """
     iSl = pd.IndexSlice
     lgd_EIC_bus = line_geo_data.pivot_table(values="value", index=["EIC_Code", "bus"],
@@ -753,31 +717,21 @@ def _allocate_trafos_to_buses_and_create_buses(
     voltage level than the transformer, either a warning is logged or additional buses are created
     according to rel_deviation_threshold_for_trafo_bus_creation and log_rel_vn_deviation.
 
-    Parameters
-    ----------
-    net : pandapowerNet
-        pandapower net
-    data : dict[str, pd.DataFrame]
-        _description_
-    bus_idx : pd.Series
-        Series of indices and corresponding location names and voltage levels in the MultiIndex of
+    :param pandapowerNet net: pandapower net
+    :param dict[str, pd.DataFrame] data: _description_
+    :param pd.Series bus_idx: Series of indices and corresponding location names and voltage levels in the MultiIndex of
         the Series
-    vn_hv_kv : np.ndarray
-        nominal voltages of the hv side of the transformers
-    vn_lv_kv : np.ndarray
-        Nominal voltages of the lv side of the transformers
-    rel_deviation_threshold_for_trafo_bus_creation : float, optional
-        If the voltage level of transformer locations is far different than the transformer data,
+    :param np.ndarray vn_hv_kv: nominal voltages of the hv side of the transformers
+    :param np.ndarray vn_lv_kv: Nominal voltages of the lv side of the transformers
+    :param Optional[float] rel_deviation_threshold_for_trafo_bus_creation: If the voltage level of transformer locations
+        is far different than the transformer data,
         additional buses are created. rel_deviation_threshold_for_trafo_bus_creation defines the
-        tolerance in which no additional buses are created. By default 0.2
-    log_rel_vn_deviation : float, optional
-        This parameter allows a range below rel_deviation_threshold_for_trafo_bus_creation in which
-        a warning is logged instead of a creating additional buses. By default 0.12
+        tolerance in which no additional buses are created. (default: 0.2)
+    :param Optional[float] log_rel_vn_deviation: This parameter allows a range below rel_deviation_threshold_for_trafo_bus_creation in which
+        a warning is logged instead of a creating additional buses. (default: 0.12)
 
-    Returns
-    -------
-    pd.DataFrame
-        information to which bus the trafos should be connected to. Columns are
+    :rtype: pd.DataFrame
+    :return: information to which bus the trafos should be connected to. Columns are
         ["name", "hv_bus", "lv_bus", "vn_hv_kv", "vn_lv_kv", ...]
     """
 

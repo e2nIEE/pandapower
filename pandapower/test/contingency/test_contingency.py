@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import copy
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -9,13 +9,21 @@ import numpy as np
 import pandas as pd
 from pandas.testing import assert_frame_equal
 
-import pandapower as pp
-import pandapower.networks
-import pandapower.control
-import pandapower.timeseries
-import pandapower.contingency
 import pytest
-from pandapower.contingency.contingency import _convert_trafo_phase_shifter
+
+from pandapower.control import ConstControl
+from pandapower.run import set_user_pf_options, runpp
+from pandapower.toolbox.grid_modification import replace_ext_grid_by_gen
+from pandapower.toolbox.data_modification import reindex_elements, create_continuous_bus_index
+from pandapower.contingency.contingency import _convert_trafo_phase_shifter, get_element_limits, run_contingency, \
+    report_contingency_results, check_elements_within_limits, run_contingency_ls2g
+from pandapower.networks.power_system_test_cases import case9, case118, case14
+from pandapower.create import create_empty_network, create_buses, create_ext_grid, create_lines, \
+    create_transformer_from_parameters, create_load, create_lines_from_parameters, create_transformers_from_parameters, \
+    create_gen
+from pandapower.timeseries.output_writer import OutputWriter
+from pandapower.timeseries.run_time_series import run_timeseries
+from pandapower.timeseries.data_sources.frame_data import DFData
 
 try:
     import lightsim2grid
@@ -24,52 +32,49 @@ try:
 except ImportError:
     lightsim2grid_installed = False
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
 
 def test_contingency():
-    net = pp.networks.case9()
+    net = case9()
 
-    element_limits = pp.contingency.get_element_limits(net)
+    element_limits = get_element_limits(net)
     nminus1_cases = {"line": {"index": net.line.index.values}}
-    res = pp.contingency.run_contingency(net, nminus1_cases)
-    pp.contingency.report_contingency_results(element_limits, res)
+    res = run_contingency(net, nminus1_cases)
+    report_contingency_results(element_limits, res)
 
-    pp.contingency.check_elements_within_limits(element_limits, res, True)
+    check_elements_within_limits(element_limits, res, True)
 
     net.line["max_loading_percent"] = np.nan
     net.line.loc[0:5, 'max_loading_percent'] = 70
 
-    element_limits = pp.contingency.get_element_limits(net)
+    element_limits = get_element_limits(net)
     nminus1_cases = {"line": {"index": net.line.index.values}}
-    res = pp.contingency.run_contingency(net, nminus1_cases)
-    pp.contingency.report_contingency_results(element_limits, res)
+    res = run_contingency(net, nminus1_cases)
+    report_contingency_results(element_limits, res)
 
 
 def test_contingency_timeseries(get_net):
     nminus1_cases = {element: {"index": get_net[element].index.values}
                      for element in ("line", "trafo") if len(get_net[element]) > 0}
 
-    contingency_functions = [pp.contingency.run_contingency]
+    contingency_functions = [run_contingency]
     if lightsim2grid_installed:
-        contingency_functions = [*contingency_functions, pp.contingency.run_contingency_ls2g]
+        contingency_functions = [*contingency_functions, run_contingency_ls2g]
 
     for contingency_function in contingency_functions:
-        net0 = get_net.deepcopy()
+        net0 = copy.deepcopy(get_net)
         setup_timeseries(net0)
         ow = net0.output_writer.object.at[0]
 
-        pp.timeseries.run_timeseries(net0, time_steps=range(2), run_control_fct=contingency_function,
+        run_timeseries(net0, time_steps=range(2), run_control_fct=contingency_function,
                                      nminus1_cases=nminus1_cases,
                                      contingency_evaluation_function=run_for_from_bus_loading)
 
         # check for the last time step:
-        res1 = pp.contingency.run_contingency(net0, nminus1_cases,
+        res1 = run_contingency(net0, nminus1_cases,
                                               contingency_evaluation_function=run_for_from_bus_loading)
         net1 = net0.deepcopy()
 
@@ -77,7 +82,7 @@ def test_contingency_timeseries(get_net):
         for c in net0.controller.object.values:
             c.time_step(net0, 0)
             c.control_step(net0)
-        res0 = pp.contingency.run_contingency(net0, nminus1_cases,
+        res0 = run_contingency(net0, nminus1_cases,
                                               contingency_evaluation_function=run_for_from_bus_loading)
 
         for var in ("vm_pu", "max_vm_pu", "min_vm_pu"):
@@ -115,9 +120,9 @@ def test_with_lightsim2grid(get_net, get_case):
                          for element in ("line", "trafo") if len(net[element]) > 0}
 
     net.line.max_loading_percent = 50
-    res = pp.contingency.run_contingency(net, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading)
+    res = run_contingency(net, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading)
 
-    pp.contingency.run_contingency_ls2g(net, nminus1_cases)
+    run_contingency_ls2g(net, nminus1_cases)
 
     assert np.array_equal(res["line"]["causes_overloading"], net.res_line.causes_overloading.values)
     if len(net.trafo) > 0:
@@ -135,14 +140,14 @@ def test_with_lightsim2grid(get_net, get_case):
 @pytest.mark.xfail(reason="remove this xfail when new version of lightsim2grid available")
 @pytest.mark.skipif(not lightsim2grid_installed, reason="lightsim2grid package is not installed")
 def test_case118():
-    net = pp.networks.case118()
+    net = case118()
     net2 = copy.deepcopy(net)
     nminus1_cases = {"line": {"index": net.line.index.values},
                      "trafo": {"index": net.trafo.index.values}}
 
-    res = pp.contingency.run_contingency(net2, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading)
+    res = run_contingency(net2, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading)
 
-    pp.contingency.run_contingency_ls2g(net, nminus1_cases)
+    run_contingency_ls2g(net, nminus1_cases)
 
     for s in ("min", "max"):
         assert np.allclose(res["bus"][f"{s}_vm_pu"], net.res_bus[f"{s}_vm_pu"].values, atol=1e-9, rtol=0), s
@@ -156,26 +161,26 @@ def test_case118():
 @pytest.mark.xfail(reason="remove this xfail when new version of lightsim2grid available")
 @pytest.mark.skipif(not lightsim2grid_installed, reason="lightsim2grid package is not installed")
 def test_unequal_trafo_hv_lv_impedances():
-    net = pp.create_empty_network()
-    pp.create_buses(net, 4, 110)
-    pp.create_ext_grid(net, 0)
+    net = create_empty_network()
+    create_buses(net, 4, 110)
+    create_ext_grid(net, 0)
 
-    pp.create_lines(net, [0, 0], [1, 1], 40, "243-AL1/39-ST1A 110.0",
+    create_lines(net, [0, 0], [1, 1], 40, "243-AL1/39-ST1A 110.0",
                     max_loading_percent=100)
-    pp.create_transformer_from_parameters(net, 1, 2, 150, 110, 110, 0.5,
+    create_transformer_from_parameters(net, 1, 2, 150, 110, 110, 0.5,
                                           10, 15, 0.1, 150,
                                           'hv', 0, 10, -10, 0,
-                                          1, 5, max_loading_percent=100, tap_changer_type = "Ideal",
+                                          1, 5, max_loading_percent=100, tap_changer_type="Ideal",
                                           leakage_resistance_ratio_hv=0.2, leakage_reactance_ratio_hv=0.4)
-    pp.create_lines(net, [2, 2], [3, 3], 25, "243-AL1/39-ST1A 110.0",
+    create_lines(net, [2, 2], [3, 3], 25, "243-AL1/39-ST1A 110.0",
                     max_loading_percent=100)
 
-    pp.create_load(net, 3, 110)
+    create_load(net, 3, 110)
 
     nminus1_cases = {"line": {"index": net.line.index.values}}
-    res = pp.contingency.run_contingency(net, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading)
+    res = run_contingency(net, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading)
 
-    pp.contingency.run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading)
+    run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading)
 
     for s in ("min", "max"):
         assert np.allclose(res["bus"][f"{s}_vm_pu"], net.res_bus[f"{s}_vm_pu"].values, atol=1e-9, rtol=0), s
@@ -188,21 +193,21 @@ def test_unequal_trafo_hv_lv_impedances():
 
 @pytest.mark.skipif(not lightsim2grid_installed, reason="lightsim2grid package is not installed")
 def test_lightsim2grid_distributed_slack():
-    net = pp.networks.case9()
+    net = case9()
     net.gen["slack_weight"] = 1
-    pp.replace_ext_grid_by_gen(net, slack=True, cols_to_keep=["slack_weight"])
+    replace_ext_grid_by_gen(net, slack=True, cols_to_keep=["slack_weight"])
     nminus1_cases = {"line": {"index": np.array([1, 2, 4, 5, 7, 8])}}
 
-    net1 = net.deepcopy()
+    net1 = copy.deepcopy(net)
     net1.gen.loc[~net1.gen.slack, 'slack_weight'] = 0
 
-    res = pp.contingency.run_contingency(net, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading,
+    res = run_contingency(net, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading,
                                          distributed_slack=True)
-    res1 = pp.contingency.run_contingency(net1, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading)
+    res1 = run_contingency(net1, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading)
 
-    pp.contingency.run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading,
+    run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading,
                                         distributed_slack=True)
-    pp.contingency.run_contingency_ls2g(net1, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading)
+    run_contingency_ls2g(net1, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading)
 
     assert np.array_equal(res["line"]["causes_overloading"], net.res_line.causes_overloading.values)
     if len(net.trafo) > 0:
@@ -218,22 +223,22 @@ def test_lightsim2grid_distributed_slack():
 
 @pytest.mark.skipif(not lightsim2grid_installed, reason="lightsim2grid package is not installed")
 def test_lightsim2grid_phase_shifters():
-    net = pp.create_empty_network()
-    pp.set_user_pf_options(net, calculate_voltage_angles=True)
-    pp.create_buses(net, 4, 110)
-    pp.create_gen(net, 0, 0, slack=True, slack_weight=1)
+    net = create_empty_network()
+    set_user_pf_options(net, calculate_voltage_angles=True)
+    create_buses(net, 4, 110)
+    create_gen(net, 0, 0, slack=True, slack_weight=1)
 
-    pp.create_lines(net, [0, 0], [1, 1], 40, "243-AL1/39-ST1A 110.0", max_loading_percent=100)
-    pp.create_transformer_from_parameters(net, 1, 2, 150, 110, 110, 0.5, 10, 15, 0.1, 150,
+    create_lines(net, [0, 0], [1, 1], 40, "243-AL1/39-ST1A 110.0", max_loading_percent=100)
+    create_transformer_from_parameters(net, 1, 2, 150, 110, 110, 0.5, 10, 15, 0.1, 150,
                                           'hv', 0, 10, -10, 0, 1, 5, "Ideal", max_loading_percent=100)
-    pp.create_lines(net, [2, 2], [3, 3], 25, "243-AL1/39-ST1A 110.0", max_loading_percent=100)
+    create_lines(net, [2, 2], [3, 3], 25, "243-AL1/39-ST1A 110.0", max_loading_percent=100)
 
-    pp.create_load(net, 3, 110)
+    create_load(net, 3, 110)
 
     nminus1_cases = {"line": {"index": net.line.index.values}}
-    res = pp.contingency.run_contingency(net, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading)
+    res = run_contingency(net, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading)
 
-    pp.contingency.run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading,
+    run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading,
                                         distributed_slack=True)
 
     assert net.trafo.shift_degree.values[0] == 150
@@ -249,7 +254,7 @@ def test_lightsim2grid_phase_shifters():
     for var in ("vm_pu", "max_vm_pu", "min_vm_pu"):
         assert np.allclose(res["bus"][var], net.res_bus[var].values, atol=1e-9, rtol=0)
 
-    pp.runpp(net)
+    runpp(net)
     bus_res = net.res_bus.copy()
     if "tap_phase_shifter" in net.trafo.columns:
         _convert_trafo_phase_shifter(net, "trafo", "tap_phase_shifter")
@@ -258,20 +263,20 @@ def test_lightsim2grid_phase_shifters():
             _convert_trafo_phase_shifter(net, "trafo", "tap_changer_type")
         if np.any(net.trafo3w.tap_changer_type == "Ideal"):
             _convert_trafo_phase_shifter(net, "trafo3w", "tap_changer_type")
-    pp.runpp(net)
+    runpp(net)
     assert_frame_equal(bus_res, net.res_bus)
 
 
 @pytest.mark.skipif(not lightsim2grid_installed, reason="lightsim2grid package is not installed")
 def test_cause_congestion():
-    net = pp.networks.case14()
+    net = case14()
     for c in ("tap_neutral", "tap_step_percent", "tap_pos", "tap_step_degree"):
         net.trafo[c] = 0
     net.trafo.sn_mva /= 200
     net.trafo.vk_percent /= 200
     net.line.max_i_ka /= 100
     net.gen["slack_weight"] = 1
-    pp.replace_ext_grid_by_gen(net, slack=True, cols_to_keep=["slack_weight"])
+    replace_ext_grid_by_gen(net, slack=True, cols_to_keep=["slack_weight"])
 
     _randomize_indices(net)
 
@@ -280,7 +285,7 @@ def test_cause_congestion():
     # trafo with iloc index 3 causes 2 disconnected grid areas, which is handled differently by
     # lightsim2grid and pandapower, so the results do not match for the contingency defined by net.trafo.iloc[3]
 
-    pp.contingency.run_contingency_ls2g(net, nminus1_cases,
+    run_contingency_ls2g(net, nminus1_cases,
                                         contingency_evaluation_function=run_for_from_bus_loading)
     res = {"trafo": net.res_trafo.copy(), "line": net.res_line.copy()}
     for element, val in nminus1_cases.items():
@@ -307,18 +312,18 @@ def test_cause_congestion():
 
 
 def test_cause_element_index():
-    net = pp.networks.case14()
+    net = case14()
     for c in ("tap_neutral", "tap_step_percent", "tap_pos", "tap_step_degree"):
         net.trafo[c] = 0
     net.gen["slack_weight"] = 1
-    pp.replace_ext_grid_by_gen(net, slack=True, cols_to_keep=["slack_weight"])
+    replace_ext_grid_by_gen(net, slack=True, cols_to_keep=["slack_weight"])
 
     _randomize_indices(net)
 
     nminus1_cases = {"line": {"index": net.line.iloc[[4, 2, 1, 5, 7, 8]].index.values},
                      "trafo": {"index": net.trafo.iloc[[2, 3, 1, 0, 4]].index.values}}
 
-    _ = pp.contingency.run_contingency(net, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading)
+    _ = run_contingency(net, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading)
 
     cause_res_copy_line = net.res_line.copy()
     cause_res_copy_trafo = net.res_trafo.copy()
@@ -326,7 +331,7 @@ def test_cause_element_index():
     check_cause_index(net, nminus1_cases)
 
     if lightsim2grid_installed:
-        pp.contingency.run_contingency_ls2g(net, nminus1_cases,
+        run_contingency_ls2g(net, nminus1_cases,
                                             contingency_evaluation_function=run_for_from_bus_loading)
 
         columns = ["loading_percent", "max_loading_percent", "min_loading_percent", "causes_overloading",
@@ -342,7 +347,7 @@ def check_cause_index(net, nminus1_cases):
     This is a not so efficient but very easy to understand auxiliary function to test the "cause element" feature
     that is otherwise complicated to test properly.
     """
-    net_copy = net.deepcopy()
+    net_copy = copy.deepcopy(net)
     elements_to_check = [e for e in ("line", "trafo") if len(net[e]) > 0]
     for check_element in elements_to_check:
         result_table = net_copy[f"res_{check_element}"]
@@ -369,7 +374,7 @@ def check_cause_index(net, nminus1_cases):
 
 
 def run_for_from_bus_loading(net, **kwargs):
-    pp.runpp(net, **kwargs)
+    runpp(net, **kwargs)
     net.res_line["loading_percent"] = net.res_line.i_from_ka / net.line.max_i_ka * 100
     if len(net.trafo) > 0:
         max_i_ka_limit = net.trafo.sn_mva.values / (net.trafo.vn_hv_kv.values * np.sqrt(3))
@@ -379,17 +384,17 @@ def run_for_from_bus_loading(net, **kwargs):
 def setup_timeseries(net):
     load_profiles = pd.DataFrame(net.load.p_mw.values * (np.random.random((4, len(net.load))) * 0.4 + 0.8),
                                  index=np.arange(4), columns=net.load.index.values)
-    dsl = pp.timeseries.DFData(load_profiles)
-    pp.control.ConstControl(net, element="load", variable="p_mw", element_index=net.load.index.values,
+    dsl = DFData(load_profiles)
+    ConstControl(net, element="load", variable="p_mw", element_index=net.load.index.values,
                             profile_name=net.load.index.values, data_source=dsl)
 
     gen_profiles = pd.DataFrame(net.gen.p_mw.values * (np.random.random((4, len(net.gen))) * 0.4 + 0.8),
                                 index=np.arange(4), columns=net.gen.index.values)
-    dsg = pp.timeseries.DFData(gen_profiles)
-    pp.control.ConstControl(net, element="gen", variable="p_mw", element_index=net.gen.index.values,
+    dsg = DFData(gen_profiles)
+    ConstControl(net, element="gen", variable="p_mw", element_index=net.gen.index.values,
                             profile_name=net.gen.index.values, data_source=dsg)
 
-    ow = pp.timeseries.OutputWriter(net)
+    ow = OutputWriter(net)
     ow.log_variable("res_bus", "max_vm_pu")
     ow.log_variable("res_bus", "min_vm_pu")
     ow.log_variable("res_line", "max_loading_percent")
@@ -407,17 +412,11 @@ def _randomize_indices(net):
             continue
         new_index = net[element].index.values + rng.integers(1, 10)
         rng.shuffle(new_index)
-        pp.reindex_elements(net, element, new_index)
+        reindex_elements(net, element, new_index)
 
 
-def test_reminder_bring_back_case118():
-    from packaging.version import Version
-    if lightsim2grid_installed and Version(lightsim2grid.__version__) > Version("0.9.0"):
-        raise UserWarning("bring back case 118 and remove xfail for test_unequal_trafo_impedances and test_case118")
-
-
-# todo: bring back case 118 when lightsim2grid new version is released
-#  (created a test that fails if lightsim2grid new version is available so that this is not missed (above)
+# todo: bring back case118 and remove xfail from test_unequal_trafo_hv_lv_impedances and test_case118 pytests
+#  when lightsim2grid new version is released - see https://github.com/Grid2op/lightsim2grid/issues/88
 # @pytest.fixture(params=["case9", "case14", "case118"])
 @pytest.fixture(params=["case9", "case14"])
 def get_net(request):
@@ -425,13 +424,13 @@ def get_net(request):
     # pandapower selects next gen and uses it as ext_grid, and lightsim2grid does not and therefore has nan for results
     # to circumvent this issue in this test, we add parallel lines to the grid
 
-    net = pp.networks.__dict__[request.param]()
-    pp.replace_ext_grid_by_gen(net, slack=True, cols_to_keep=["slack_weight"])
+    net = globals()[request.param]()
+    replace_ext_grid_by_gen(net, slack=True, cols_to_keep=["slack_weight"])
 
     add_parallel = True
 
     if add_parallel:
-        pp.create_lines_from_parameters(net, net.line.from_bus.values, net.line.to_bus.values,
+        create_lines_from_parameters(net, net.line.from_bus.values, net.line.to_bus.values,
                                         net.line.length_km.values,
                                         net.line.r_ohm_per_km.values, net.line.x_ohm_per_km.values,
                                         net.line.c_nf_per_km.values,
@@ -439,7 +438,7 @@ def get_net(request):
                                         max_loading_percent=net.line.max_loading_percent.values)
 
         if len(net.trafo) > 0:
-            pp.create_transformers_from_parameters(net, net.trafo.hv_bus.values, net.trafo.lv_bus.values,
+            create_transformers_from_parameters(net, net.trafo.hv_bus.values, net.trafo.lv_bus.values,
                                                    net.trafo.sn_mva.values, net.trafo.vn_hv_kv.values,
                                                    net.trafo.vn_lv_kv.values, net.trafo.vkr_percent.values,
                                                    net.trafo.vk_percent.values, net.trafo.pfe_kw.values,
@@ -451,7 +450,7 @@ def get_net(request):
 
     _randomize_indices(net)
 
-    pp.create_continuous_bus_index(net)
+    create_continuous_bus_index(net)
 
     if np.any(net.line.max_i_ka > 10):
         net.line.max_i_ka = 1
