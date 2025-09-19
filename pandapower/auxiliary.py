@@ -1588,8 +1588,12 @@ def SVabc_from_SV012(S012, V012, n_res=None, idx=None):
 def _add_dcline_gens(net: pandapowerNet):
     from pandapower.create import create_gen
     for dctab in net.dcline.itertuples():
-        pfrom = dctab.p_mw
-        pto = (pfrom * (1 - dctab.loss_percent / 100) - dctab.loss_mw)
+        if dctab.p_mw < 0:
+            pfrom = dctab.p_mw
+            pto = (pfrom - dctab.loss_mw) / (1 - dctab.loss_percent / 100)
+        else:
+            pfrom = dctab.p_mw
+            pto = (pfrom * (1 - dctab.loss_percent / 100) - dctab.loss_mw)
         pmax = dctab.max_p_mw
         create_gen(net, bus=dctab.to_bus, p_mw=pto, vm_pu=dctab.vm_to_pu,
                    min_p_mw=0, max_p_mw=pmax,
