@@ -120,7 +120,7 @@ def from_pf(
                            dict_net=dict_net, is_unbalanced=is_unbalanced)
         except RuntimeError as err:
             logger.warning('load failed at import and was not imported: %s' % err)
-    if n > 0: logger.info('imported %d lv loads' % n),
+    if n > 0: logger.info('imported %d lv loads' % n)
 
     logger.debug('creating mv loads')
     # create loads:
@@ -287,12 +287,30 @@ def from_pf(
         set_user_pf_options(net, voltage_depend_loads=True)
     else:
         set_user_pf_options(net, voltage_depend_loads=False)
-
+        
     if len(dict_net['ElmLodlvp']) > 0:
-        lvp_dict = get_lvp_for_lines(dict_net)
-        logger.debug(lvp_dict)
-        split_all_lines(net, lvp_dict)
-
+        
+        # ElmLodlvp within line
+        # here we split lines and import the partial LV loads that are part of lines 
+        lvp_lne_dict = get_lvp_for_lines(dict_net)
+        logger.debug(lvp_lne_dict)
+        split_all_lines(net, lvp_lne_dict)
+        if len(lvp_lne_dict) > 0: logger.info('imported %d partial loads on line, seperated line' % len(lvp_lne_dict))
+        
+        # ElmLodLvp within load (ElmLodlv)
+        lvp_lod_items = [lvp for lvp in dict_net['ElmLodlvp'] if lvp.fold_id.GetClassName() == 'ElmLodlv']
+        logger.debug('creating lv partial loads')
+        # create loads:
+        n = 0
+        for n, load in enumerate(lvp_lod_items, 1):
+            try:
+                create_pp_load(net=net, item=load, pf_variable_p_loads=pf_variable_p_loads,
+                               dict_net=dict_net, is_unbalanced=is_unbalanced)
+            except RuntimeError as err:
+                logger.warning('load failed at import and was not imported: %s' % err)
+        if n > 0: logger.info('imported %d lv loads' % n)
+        
+        
     # create station controllers (ElmStactrl):
     if export_controller:
         n = 0
@@ -301,36 +319,6 @@ def from_pf(
         if n > 0: logger.info('imported %d station controllers' % n)
 
     remove_folder_of_std_types(net)
-
-    ### don't import the ElmLodlvp for now...
-    # logger.debug('creating lv partial loads')
-    # # create loads:
-    # n = 0
-    # for n, load in enumerate(dict_net['ElmLodlvp'], 1):
-    #     create_load(net=net, item=load, pf_variable_p_loads=pf_variable_p_loads)
-    # if n > 0: logger.info('imported %d lv partial loads' % n)
-
-    # # here we import the partial LV loads that are part of lines because of line section
-    # coordinates
-    # logger.debug('creating lv partial loads')
-    # # create loads:
-    # n = 0
-    # for n, load in enumerate(dict_net['ElmLodlvp'], 1):
-    #     try:
-    #         create_pp_load(net=net, item=load, pf_variable_p_loads=pf_variable_p_loads)
-    #     except NotImplementedError:
-    #         logger.debug('load %s not imported because it is not contained in ElmLod' % load)
-    # if n > 0: logger.info('imported %d lv partial loads' % n)
-
-    # if len(dict_net['ElmLodlvp']) > 0:
-    #     n = 0
-    #     for line in dict_net['ElmLne']:
-    #         partial_loads = line.GetContents('*.ElmLodlvp')
-    #         partial_loads.sort(key=lambda x: x.lneposkm)
-    #         for load in partial_loads:
-    #             create_pp_load(net=net, item=load, pf_variable_p_loads=pf_variable_p_loads)
-    #             n += 1
-    #     logger.info('imported %d lv partial loads' % n)
 
     if handle_us == "Deactivate":
         logger.info('deactivating unsupplied elements')
@@ -1006,7 +994,7 @@ def create_line_sections(net, item_list, line, bus1, bus2, coords, parallel, is_
                 # p2 = sec_coords[-1]
                 net.bus.loc[bus2, ['geo']] = geojson.dumps(geojson.Point(sec_coords[-1]))
             except ZeroDivisionError:
-                logger.warning("Could not generate geodata for line !!")
+                logger.warning("Could not generate geodata for line sections!")
 
     return sid_list
 
@@ -1359,13 +1347,6 @@ def get_pf_ext_grid_results(net, item, xid, is_unbalanced):
         net[ext_grid_type].at[xid, res_var_pp] = res
 
 
-# def extract_partial_loads_from_lv_load(net, item):
-#     part_lods = item.GetContents('*.ElmLodlvp')
-#     logger.debug('%s' % part_lods)
-#     for elm in part_lods:
-#         pass
-#         # create_pp_load(net, elm, use_nominal_power)
-
 def map_power_var(pf_var, map_var):
     """
     Returns additional variables from pf_variable_p_xxxx
@@ -1462,7 +1443,11 @@ def ask_load_params(item, pf_variable_p_loads, dict_net, variables):
         logger.debug('load parameters: %s' % params)
 
     global_scaling = dict_net['global_parameters']['global_load_scaling']
-    params.scaling = global_scaling * item.scale0 \
+    if item.GetClassName()== "ElmLodlvp":
+        scale = 1 # Elmlodlvp no scale0, scaling set on 1
+    else:
+        scale = item.scale0
+    params.scaling = global_scaling * scale \
         if pf_variable_p_loads == 'plini' else 1
     if item.HasAttribute('zonefact'):
         params.scaling *= item.zonefact
@@ -1742,17 +1727,14 @@ def create_pp_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
     ask = ask_unbalanced_load_params if is_unbalanced else ask_load_params
 
     if load_class == 'ElmLodlv':
-        # if bool(item.GetAttribute('e:cHasPartLod')):
-        #     logger.info('ElmLodlv %s has partial loads - skip' % item.loc_name)
-        #     part_lods = item.GetContents('*.ElmLodlvp')
-        #     logger.debug('%s' % part_lods)
-        #     return
-        # else:
-        #     params.update(ask(item, pf_variable_p_loads, 'p_mw', 'sn_mva'))
         try:
             params.update(ask(item, pf_variable_p_loads, dict_net=dict_net,
-                              variables=('p_mw', 'sn_mva')))
-            # 'chr_name'
+                              variables=('p_mw', 'sn_mva'))) # 'chr_name'
+            if bool(item.GetAttribute('e:cHasPartLod')): #item.HasAttribute('e:cHasPartLod'):
+                params['partial_loads_included']=True
+            else: 
+                params['partial_loads_included']=False
+                
         except Exception as err:
             logger.error("m:P:bus1 and m:Q:bus1 should be used with ElmLodlv")
             logger.error('While creating load %s, error occurred for '
@@ -1818,23 +1800,30 @@ def create_pp_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
             params["const_i_q_percent"] = i_q
             params["const_z_q_percent"] = z_q
 
-    ### for now - don't import ElmLodlvp
+    ### added
     elif load_class == 'ElmLodlvp':
-        parent = item.fold_id
+        params.update(ask(item, pf_variable_p_loads, dict_net=dict_net,
+                                      variables=('p_mw','sn_mva')))
+        parent = item.GetParent()
         parent_class = parent.GetClassName()
         logger.debug('parent class name of ElmLodlvp: %s' % parent_class)
         if parent_class == 'ElmLodlv':
-            raise NotImplementedError('ElmLodlvp as not part of ElmLne not implemented')
-        elif parent_class == 'ElmLne':
-            logger.debug('creating load that is part of line %s' % parent)
-            params.update(ask(item, pf_variable_p_loads=pf_variable_p_loads,
-                              dict_net=dict_net, variables=('p_mw', 'sn_mva')))
-            params.name += '(%s)' % parent.loc_name
-            split_dict = make_split_dict(parent)
-            # todo remake this
-            params.bus = split_line_add_bus(net, split_dict)
+            # set parent load out of service
+            net.load.loc[net.load.name==parent.loc_name, 'in_service'] = False
+            params['parent_load'] = parent.loc_name
             bus_is_known = True
-            logger.debug('created bus <%d> in net and changed lines' % params.bus)
+            params['bus'] = net.load.loc[net.load.name==parent.loc_name, 'bus'].values[0]
+            
+        # elif parent_class == 'ElmLne':
+        #     logger.debug('creating load that is part of line %s' % parent)
+        #     params.update(ask(item, pf_variable_p_loads=pf_variable_p_loads,
+        #                       dict_net=dict_net, variables=('p_mw', 'sn_mva')))
+        #     params.name += '(%s)' % parent.loc_name
+        #     split_dict = make_split_dict(parent)
+        #     # todo remake this
+        #     params.bus = split_line_add_bus(net, split_dict)
+        #     bus_is_known = True
+        #     logger.debug('created bus <%d> in net and changed lines' % params.bus)
         else:
             raise NotImplementedError('ElmLodlvp as part of %s not implemented' % parent)
 
@@ -1889,7 +1878,7 @@ def create_pp_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
     net[load_type].loc[ld, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
     attr_list = ["sernum", "chr_name"]
     attr_dict = {"for_name": "equipment", "cimRdfId": "origin_id", 'cpSite.loc_name': 'site'}
-    if load_class == 'ElmLodlv':
+    if load_class == 'ElmLodlv' or load_class == 'ElmLodlvp':
         attr_list.extend(['pnight', 'cNrCust', 'cPrCust', 'UtilFactor', 'cSmax', 'cSav', 'ccosphi'])
         attr_dict['cpGrid.loc_name'] = 'grid'
     add_additional_attributes(item, net, load_type, ld, attr_dict=attr_dict, attr_list=attr_list)
@@ -4651,8 +4640,12 @@ def calc_segment_length(x1, y1, x2, y2):
 
 
 def get_scale_factor(length_line, coords):
-    if any(coords) is np.nan:
-        return np.nan
+    if np.isscalar(coords):  # single value
+        if np.isnan(coords):
+            return np.nan
+    else:  # array or list
+        if np.any(np.isnan(coords)):
+            return np.nan
     temp_len = 0
     num_coords = len(coords)
     for i in range(num_coords - 1):
@@ -4668,8 +4661,15 @@ def get_scale_factor(length_line, coords):
 def break_coords_sections(coords, section_length, scale_factor_length):
     section_length *= scale_factor_length
     # breaks coordinates into 2 parts (chops the line section away)
-    if any(coords) is np.nan:
-        return [[np.nan, np.nan]], [[np.nan, np.nan]]
+    if np.isscalar(coords):  # single value
+        if np.isnan(coords):
+            return [[np.nan, np.nan]], [[np.nan, np.nan]]
+    else:  # array or list
+        if np.any(np.isnan(coords)):
+            return [[np.nan, np.nan]], [[np.nan, np.nan]]
+    
+    # if any(coords) is np.nan:
+    #     return [[np.nan, np.nan]], [[np.nan, np.nan]]
 
     num_coords = len(coords)
     if num_coords < 2:
@@ -4706,15 +4706,19 @@ def set_new_coords(net, bus_id, line_idx, new_line_idx, line_length, pos_at_line
     logger.debug('got coords for line %s' % line_idx)
 
     scale_factor_length = get_scale_factor(line_length, line_coords)
-    section_coords, new_coords = break_coords_sections(line_coords, pos_at_line,
-                                                       scale_factor_length)
-
-    logger.debug('calculated new coords: %s, %s ' % (section_coords, new_coords))
-
-    net.line.at[line_idx, 'geo'] = geojson.dumps(geojson.LineString(section_coords))
-    net.line.at[new_line_idx, 'geo'] = geojson.dumps(geojson.LineString(new_coords))
-
-    net.bus.at[bus_id, 'geo'] = geojson.dumps(geojson.Point(new_coords[0]))
+    
+    if np.isnan(scale_factor_length):
+        logger.warning("Could not generate geodata for line sections (partial loads on line)!")
+    else:
+        section_coords, new_coords = break_coords_sections(line_coords, pos_at_line,
+                                                           scale_factor_length)
+    
+        logger.debug('calculated new coords: %s, %s ' % (section_coords, new_coords))
+    
+        net.line.at[line_idx, 'geo'] = geojson.dumps(geojson.LineString(section_coords))
+        net.line.at[new_line_idx, 'geo'] = geojson.dumps(geojson.LineString(new_coords))
+        
+        net.bus.at[bus_id, 'geo'] = geojson.dumps(geojson.Point(new_coords[0]))
 
 
 # gather info about ElmLodlvp in a dict
@@ -4796,8 +4800,8 @@ def get_lvp_for_lines(dict_net):
     return lvp_dict
 
 
-# find position of ElmLodlvp at the section
 def get_pos_at_sec(net, lvp_dict, line_item, load_item):
+    # find position of ElmLodlvp at the section
     val = lvp_dict[line_item]
     pos_at_line = 0
 
@@ -4844,8 +4848,8 @@ def write_line_order(net):
             k += 1000
 
 
-# split all lines and create loads in place of ElmLodlvp
 def split_all_lines(net, lvp_dict):
+    # split all lines and create loads in place of ElmLodlvp
     write_line_order(net)
     # for idx in net.line.index:
     for line_item, val in lvp_dict.items():
@@ -4872,7 +4876,6 @@ def split_all_lines(net, lvp_dict):
             net.bus.at[new_bus, 'description'] = 'Partial Line LV-Load %.2f kW' % p
 
             if p >= 0 or True:
-                # TODO: set const_i_percent to 100 after the pandapower bug is fixed
                 new_load = create_load(net, new_bus, name=load_item.loc_name, p_mw=p, q_mvar=q,
                                        const_i_p_percent=0, const_i_q_percent=0)
                 logger.debug('created load %s' % new_load)
