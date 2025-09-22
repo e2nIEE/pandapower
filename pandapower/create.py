@@ -87,7 +87,7 @@ def create_bus(
     min_vm_pu: float = nan,
     coords: Optional[list[tuple[float, float]]] = None,
     **kwargs
-) -> int:
+) -> Int:
     """
     Adds one bus in table net["bus"].
 
@@ -166,7 +166,7 @@ def create_bus_dc(
     min_vm_pu: float = nan,
     coords: Optional[list[tuple[float, float]]] = None,
     **kwargs
-) -> int:
+) -> Int:
     """
     Adds one dc bus in table net["bus_dc"].
 
@@ -433,7 +433,7 @@ def create_load(
     min_q_mvar: float = nan,
     controllable: bool | float = nan,
     **kwargs
-) -> int:
+) -> Int:
     """
     Adds one load in table net["load"].
 
@@ -666,7 +666,7 @@ def create_asymmetric_load(
     in_service: bool = True,
     type: WyeDeltaType = "wye",
     **kwargs
-) -> int:
+) -> Int:
     """
     Adds one 3 phase load in table net["asymmetric_load"].
 
@@ -790,7 +790,7 @@ def create_load_from_cosphi( # no index ?
     cos_phi: float,
     mode: UnderOverExcitedType,
     **kwargs
-) -> int:
+) -> Int:
     """
     Creates a load element from rated power and power factor cos(phi).
 
@@ -848,7 +848,7 @@ def create_sgen(
     kappa: float = nan,
     lrc_pu: float = nan,
     **kwargs
-) -> int:
+) -> Int:
     """
     Adds one static generator in table net["sgen"].
 
@@ -1177,7 +1177,7 @@ def create_asymmetric_sgen(
     type: WyeDeltaType = 'wye',
     in_service: bool = True,
     **kwargs
-) -> int:
+) -> Int:
     """
 
     Adds one static generator in table net["asymmetric_sgen"].
@@ -1247,7 +1247,7 @@ def create_sgen_from_cosphi( # no index ?
         cos_phi: float,
         mode: UnderOverExcitedType,
         **kwargs,
-) -> int:
+) -> Int:
     """
     Creates an sgen element from rated power and power factor cos(phi).
 
@@ -1296,7 +1296,7 @@ def create_storage(
     min_q_mvar: float = nan,
     controllable: bool | float = nan,
     **kwargs
-) -> int:
+) -> Int:
     """
     Adds a storage to the network.
 
@@ -1532,7 +1532,7 @@ def create_gen(
     in_service: bool = True,
     slack_weight: float = 0.0,
     **kwargs
-) -> int:
+) -> Int:
     """
     Adds a generator to the network.
 
@@ -1846,7 +1846,7 @@ def create_motor(
     cos_phi_n: float = nan,
     efficiency_n_percent: float = nan,
     **kwargs
-) -> int:
+) -> Int:
     """
     Adds a motor to the network.
 
@@ -1931,7 +1931,7 @@ def create_ext_grid(
     controllable: bool | float = nan,
     slack_weight: float = 1.0,
     **kwargs
-) -> int:
+) -> Int:
     """
     Creates an external grid connection.
 
@@ -2044,7 +2044,7 @@ def create_line(
     alpha: float = nan,
     temperature_degree_celsius: float = nan,
     **kwargs
-) -> int:
+) -> Int:
     """
     Creates a line element in net["line"]
     The line parameters are defined through the standard type library.
@@ -2194,7 +2194,7 @@ def create_line_dc(
     alpha: float = nan,
     temperature_degree_celsius: float = nan,
     **kwargs
-) -> int:
+) -> Int:
     """
     Creates a line element in net["line_dc"]
     The line_dc parameters are defined through the standard type library.
@@ -2634,7 +2634,7 @@ def create_line_from_parameters(
     c0_nf_per_km: float = nan,
     g0_us_per_km: float = 0,
     endtemp_degree: float = nan, **kwargs
-) -> int:
+) -> Int:
     """
     Creates a line element in net["line"] from line parameters.
 
@@ -2796,7 +2796,7 @@ def create_line_dc_from_parameters(
     temperature_degree_celsius: float = nan,
     g_us_per_km: float = 0.,
     **kwargs
-) -> int:
+) -> Int:
     """
     Creates a dc line element in net["line_dc"] from dc line parameters.
 
@@ -3235,7 +3235,7 @@ def create_transformer(
     xn_ohm: float = nan,
     tap2_pos: int | float = nan,
     **kwargs
-) -> int:
+) -> Int:
     """
     Creates a two-winding transformer in table net.trafo.
     The trafo parameters are defined through the standard type library.
@@ -3429,7 +3429,7 @@ def create_transformer_from_parameters(
     tap2_pos: int | float = nan,
     tap2_changer_type: Optional[TapChangerType] = None,
     **kwargs
-) -> int:
+) -> Int:
     """
     Creates a two-winding transformer in table net.trafo with the specified parameters.
 
@@ -3888,7 +3888,7 @@ def create_transformer3w(
     tap_dependency_table: bool | float = nan,
     id_characteristic_table: int | float = nan,
     **kwargs
-) -> int:
+) -> Int:
     """
     Creates a three-winding transformer in table net.trafo3w.
     The trafo parameters are defined through the standard type library.
@@ -4057,7 +4057,7 @@ def create_transformer3w_from_parameters(
         vector_group: Optional[str] = None,
         tap_dependency_table: bool = False,
         id_characteristic_table: int | float = nan,
-        **kwargs) -> int:
+        **kwargs) -> Int:
     """
     Adds a three-winding transformer in table net.trafo3w with the specified parameters.
     The model currently only supports one tap changer per 3w-transformer.
@@ -4444,7 +4444,7 @@ def create_switch(
     z_ohm: float = 0,
     in_ka: float = nan,
     **kwargs
-) -> int:
+) -> Int:
     """
     Adds a switch in the net["switch"] table.
 
@@ -4542,7 +4542,7 @@ def create_switches(
     z_ohm: float = 0,
     in_ka: float = nan,
     **kwargs
-) -> int:
+) -> Int:
     """
     Adds a switch in the net["switch"] table.
 
@@ -4648,7 +4648,7 @@ def create_shunt(
     in_service: bool = True,
     index: Optional[int] = None,
     **kwargs
-) -> int:
+) -> Int:
     """
     Creates a shunt element.
 
@@ -4793,7 +4793,7 @@ def create_shunt_as_capacitor(
     q_mvar: float,
     loss_factor: float,
     **kwargs
-) -> int:
+) -> Int:
     """
     Creates a shunt element representing a capacitor bank.
 
@@ -4930,7 +4930,7 @@ def create_svc(
     min_angle_degree: float = 90,
     max_angle_degree: float = 180,
     **kwargs
-) -> int:
+) -> Int:
     """
     Creates an SVC element - a shunt element with adjustable impedance used to control the voltage \
         at the connected bus
@@ -5001,7 +5001,7 @@ def create_ssc(
     in_service: bool = True,
     index: Optional[int] = None,
     **kwargs
-) -> int:
+) -> Int:
     """
     Creates an SSC element (STATCOM)- a shunt element with adjustable VSC internal voltage used to control the voltage \
         at the connected bus
@@ -5206,7 +5206,7 @@ def create_vsc(
     index: Optional[int] = None,
     ref_bus = None,
     **kwargs
-) -> int:
+) -> Int:
     """
     Creates an VSC converter element - a shunt element with adjustable VSC internal voltage used to connect the \
     AC grid and the DC grid. The element implements several control modes.
@@ -5292,7 +5292,7 @@ def create_impedance(
     gt0_pu: Optional[float] = None,
     bt0_pu: Optional[float] = None,
     **kwargs
-) -> int:
+) -> Int:
     """
     Creates an impedance element in per unit (pu).
 
@@ -5614,7 +5614,7 @@ def create_tcsc(
     min_angle_degree: float = 90,
     max_angle_degree: float = 180,
     **kwargs
-) -> int:
+) -> Int:
     """
     Creates a TCSC element - series impedance compensator to control series reactance.
     The TCSC device allows controlling the active power flow through the path it is connected in.
@@ -5693,7 +5693,7 @@ def create_series_reactor_as_impedance(
     r0_ohm: Optional[float] = None,
     x0_ohm: Optional[float] = None,
     **kwargs
-) -> int:
+) -> Int:
     """
     Creates a series reactor as per-unit impedance
     :param net: (pandapowerNet) - The pandapower network in which the element is created
@@ -5741,7 +5741,7 @@ def create_ward(
     in_service: bool = True,
     index: Optional[int] = None,
     **kwargs
-) -> int:
+) -> Int:
     """
     Creates a ward equivalent.
 
@@ -5897,7 +5897,7 @@ def create_dcline(
     max_q_to_mvar: float = nan,
     in_service: bool = True,
     **kwargs
-) -> int:
+) -> Int:
     """
     Creates a dc line.
 
@@ -5968,7 +5968,7 @@ def create_measurement(
     index: Optional[int] = None,
     name: Optional[str] = None,
     **kwargs
-) -> int:
+) -> Int:
     """
     Creates a measurement, which is used by the estimation module. Possible types of measurements \
     are: v, p, q, i, va, ia
@@ -6070,7 +6070,7 @@ def create_pwl_cost(
     index = None,
     check: bool = True,
     **kwargs
-) -> int:
+) -> Int:
     """
     Creates an entry for piecewise linear costs for an element. The currently supported elements are
      - Generator
@@ -6208,7 +6208,7 @@ def create_poly_cost(
     index = None,
     check: bool = True,
     **kwargs
-) -> int:
+) -> Int:
     """
     Creates an entry for polynomial costs for an element. The currently supported elements are:
      - Generator ("gen")
@@ -6448,7 +6448,7 @@ def _get_index_with_check(
     table: str,
     index: Optional[int],
     name: Optional[str] = None
-) -> int:
+) -> Int:
     if name is None:
         name = table
     if index is None:
