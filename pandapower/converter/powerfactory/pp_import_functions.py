@@ -1813,7 +1813,18 @@ def create_pp_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
             params['parent_load'] = parent.loc_name
             bus_is_known = True
             params['bus'] = net.load.loc[net.load.name==parent.loc_name, 'bus'].values[0]
-            
+        
+            # check for night storange heater
+            if item.pnight!=0:
+                if item.plini==0:
+                    # there is a extra Elmlodlvp only containing the night storage heater
+                    scale_p_night = dict_net['lvp_params']['scPnight'] / 100
+                    params['p_mw'] = item.pnight*scale_p_night / 1000 # is given in kW, we need MW
+                else: 
+                    logger.warning(
+                        'item <%s> has a night storange heater integrated and a load '
+                        '- not implemented yet!' % (item.loc_name))
+                              
         # elif parent_class == 'ElmLne':
         #     logger.debug('creating load that is part of line %s' % parent)
         #     params.update(ask(item, pf_variable_p_loads=pf_variable_p_loads,
