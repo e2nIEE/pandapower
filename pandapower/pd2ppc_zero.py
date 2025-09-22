@@ -188,7 +188,6 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
             power_station_unit = trafos.power_station_unit.fillna(False).astype(bool)
         else:
             power_station_unit = np.zeros(len(trafos), dtype=bool)
-        in_service = trafos["in_service"].astype(np.int64)
 
         vn_trafo_hv, vn_trafo_lv, shift = _calc_tap_from_dataframe(net, trafos)
         vn_bus_lv = ppc["bus"][lv_buses_ppc, BASE_KV]
