@@ -719,6 +719,7 @@ def get_structure_dict() -> dict:
             "q_a_from_mvar": "f8",
             "p_b_from_mw": "f8",
             "q_b_from_mvar": "f8",
+            "p_c_from_mw": "f8",
             "q_c_from_mvar": "f8",
             "p_a_to_mw": "f8",
             "q_a_to_mvar": "f8",
