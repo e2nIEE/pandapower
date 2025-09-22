@@ -51,6 +51,8 @@ Change Log
 - [FIXED] DC OPF bug if verbose = True
 - [CHANGED] cim2pp conversion of SVC parameter active power: p is set to 0, instead of using the p-value from the SV-profile
 - [FIXED] type annotations in create methods
+- [CHANGED] drop_inactive_elements performance improvements: using pandas methods instead of looping
+- [ADDED] add a few more tests for the grid modification functions
 
 [3.1.2] - 2025-06-16
 -------------------------------
