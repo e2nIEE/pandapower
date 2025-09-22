@@ -10,6 +10,8 @@ from pandapower.converter.powerfactory.export_pfd_to_pp import import_project, f
 from pandapower import pp_dir
 from pandapower.file_io import from_json
 
+from packaging.version import Version
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -113,7 +115,7 @@ def test_trafo_tap2_results():
         assert delta < tol, "%s has too high difference: %f > %f" % (key, delta, tol)
 
 @pytest.mark.skipif(not PF_INSTALLED, reason='powerfactory must be installed')
-def test_pf_export_trafo3w_tap_depedence_impedance_tapchanger():
+def test_trafo3w_tap_dependent_imp_with_tc():
     app = pf.GetApplication()
 
     # import the tap changer test grid to powerfactory
@@ -158,6 +160,44 @@ def test_pf_export_tap_changer():
         'diff_vm': 5e-3,
         'diff_va': 0.1,
         'trafo_diff': 1e-2,
+        'load_p_diff_is': 1e-5,
+        'load_q_diff_is': 1e-5,
+        'ext_grid_p_diff': 0.1,
+        'ext_grid_q_diff': 0.1
+    }
+
+    for key, diff in all_diffs.items():
+        if type(diff) == pd.Series:
+            delta = diff.abs().max()
+        else:
+            delta = diff['diff'].abs().max()
+        assert delta < tol[key], "%s has too high difference: %f > %f" % (key, delta, tol[key])
+
+@pytest.mark.skipif(not PF_INSTALLED, reason='powerfactory must be installed')
+def test_pf_SC_meas_relocate():
+    app = pf.GetApplication()
+    # import the SC relocate test grid to powerfactory
+    path = os.path.join(pp_dir, 'test', 'converter', 'testfiles', 'test_SC_meas_relocate.pfd')
+    prj = import_project(path, app, 'test_SC_meas_relocate', import_folder='TEST_IMPORT', clear_import_folder=True)
+    prj_name = prj.GetFullName()
+
+    net = from_pfd(app, prj_name=prj_name)
+
+    # TODO: Currently the station controllers in PowerFactory 2025 and 2023 behave different. To be checked with PowerFactory.
+    net.controller.object[0:6].tol = 1e-9
+
+    if Version(str(pf.__version__)) > Version("25.0.0"):
+        net.controller.object[4].q_droop_mvar = -net.controller.object[4].q_droop_mvar
+
+    all_diffs = validate_pf_conversion(net, tolerance_mva=1e-9)
+
+    tol = {
+        'diff_vm': 5e-3,
+        'diff_va': 0.1,
+        'trafo_diff': 1e-2,
+        'line_diff': 1e-2,
+        'sgen_p_diff_is': 1e-3,
+        'sgen_q_diff_is': 1e-3,
         'load_p_diff_is': 1e-5,
         'load_q_diff_is': 1e-5,
         'ext_grid_p_diff': 0.1,
@@ -268,6 +308,37 @@ def test_mixed_zip_loads_import():
     all_diffs = validate_pf_conversion(net, tolerance_mva=1e-6)
 
     tol = get_tol()
+
+    for key, diff in all_diffs.items():
+        if type(diff) == pd.Series:
+            delta = diff.abs().max()
+        else:
+            delta = diff['diff'].abs().max()
+        assert delta < tol[key], "%s has too high difference: %f > %f" % (key, delta, tol[key])
+
+@pytest.mark.skipif(not PF_INSTALLED, reason='powerfactory must be installed')
+def test_vdroop_ctrl_local():
+    app = pf.GetApplication()
+    path = os.path.join(pp_dir, 'test', 'converter', 'testfiles', 'test_vdroop_local.pfd')
+    prj = import_project(path, app, 'test_vdroop_local', import_folder='TEST_IMPORT', clear_import_folder=True)
+    prj_name = prj.GetFullName()
+
+    net = from_pfd(app, prj_name=prj_name)
+
+    all_diffs = validate_pf_conversion(net, tolerance_mva=1e-9)
+
+    tol = {
+        'diff_vm': 5e-3,
+        'diff_va': 0.1,
+        'trafo_diff': 1e-2,
+        'line_diff': 1e-2,
+        'gen_p_diff_is': 1e-5,
+        'gen_q_diff_is': 1e-5,
+        'load_p_diff_is': 1e-5,
+        'load_q_diff_is': 1e-5,
+        'ext_grid_p_diff': 0.1,
+        'ext_grid_q_diff': 0.1
+    }
 
     for key, diff in all_diffs.items():
         if type(diff) == pd.Series:
