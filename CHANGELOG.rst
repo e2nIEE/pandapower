@@ -53,6 +53,7 @@ Change Log
 - [FIXED] type annotations in create methods
 - [CHANGED] drop_inactive_elements performance improvements: using pandas methods instead of looping
 - [ADDED] add a few more tests for the grid modification functions
+- [FIXED] cim2pp: minor speed increase through faster dict creation and removal of not needed .keys() call
 
 [3.1.2] - 2025-06-16
 -------------------------------
