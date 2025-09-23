@@ -1010,7 +1010,7 @@ def create_sgens(
     controllable: bool | Iterable[bool] | float = nan,
     k: float | Iterable[float] = nan,
     rx: float = nan,
-    id_q_capability_characteristic: Optional[Int] | Iterable[Int] = nan,
+    id_q_capability_characteristic: Optional[Int] | Iterable[Int] = None,
     reactive_capability_curve: bool | Iterable[bool] = False,
     curve_style: Optional[str] | Optional[Iterable[str]] = None,
     current_source: bool | Iterable[bool] = True,
@@ -1683,7 +1683,7 @@ def create_gens(
     scaling: float | Iterable[float] = 1.,
     type: Optional[str | Iterable[str]] = None,
     slack: bool | Iterable[bool] = False,
-    id_q_capability_characteristic: Optional[Int] | Iterable[Int] = nan,
+    id_q_capability_characteristic: Optional[Int] | Iterable[Int] = None,
     reactive_capability_curve: bool | Iterable[bool] = False,
     curve_style: Optional[str] | Optional[Iterable[str]] = None,
     controllable: bool | float = nan,
@@ -5073,7 +5073,7 @@ def create_b2b_vsc(
         control_value_ac: float = 1.,
         control_mode_dc: str = "p_mw",
         control_value_dc: float = 0.,
-        name: str = None,
+        name: Optional[str] = None,
         controllable: bool = True,
         in_service: bool = True,
         index: Optional[Int] = None,
@@ -5155,7 +5155,7 @@ def create_bi_vsc(
         control_value_ac: float = 1.,
         control_mode_dc: str = "p_mw",
         control_value_dc: float = 0.,
-        name: str = None,
+        name: Optional[str] = None,
         controllable: bool = True,
         in_service: bool = True,
         index: Optional[Int] = None,
@@ -6097,7 +6097,7 @@ def create_measurement(
 
 def create_pwl_cost(
     net: pandapowerNet,
-    element: Int,
+    element, #TODO: type unclear
     et: CostElementType,
     points: list[list[float]],
     power_type: PWLPowerType = "p",
@@ -6231,7 +6231,7 @@ def create_pwl_costs(
 
 def create_poly_cost(
     net: pandapowerNet,
-    element: Int,
+    element, #TODO: type unclear
     et: CostElementType,
     cp1_eur_per_mw: float,
     cp0_eur: float = 0,
