@@ -2180,8 +2180,8 @@ def create_line(
 
 def create_line_dc(
     net: pandapowerNet,
-    from_bus_dc: int,
-    to_bus_dc: int,
+    from_bus_dc: Int,
+    to_bus_dc: Int,
     length_km: float,
     std_type: str,
     name: Optional[str] = None,
@@ -4820,9 +4820,9 @@ def create_shunt_as_capacitor(
 
 def create_source_dc(
         net: pandapowerNet,
-        bus_dc: int,
+        bus_dc: Int,
         vm_pu: float = 1.0,
-        index: int | None = None,
+        index: Optional[Int] = None,
         name: str | None = None,
         in_service: bool = True,
         type: str| None = None,
@@ -4865,12 +4865,12 @@ def create_source_dc(
 
 def create_load_dc(
         net: pandapowerNet,
-        bus_dc: int,
+        bus_dc: Int,
         p_dc_mw: float,
-        scaling: float=1.0,
-        type: str | None = None,
-        index: int | None = None,
-        name: str | None = None,
+        scaling: float = 1.0,
+        type: Optional[str] = None,
+        index: Optional[Int] = None,
+        name: Optional[str] = None,
         in_service: bool = True,
         controllable: bool = False,
         **kwargs
