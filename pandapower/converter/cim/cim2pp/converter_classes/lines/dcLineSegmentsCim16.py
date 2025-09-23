@@ -101,7 +101,7 @@ class DcLineSegmentsCim16:
                             return converters.loc[converters['ConnectivityNode'] == id_temp, 'converters'].values[0]
                         if id_temp not in visited_cns:
                             new_cn_dict[id_temp] = one_t['ConductingEquipment']
-            if len(list(new_cn_dict)) > 0:
+            if len(new_cn_dict) > 0:
                 visited_cns.extend(list(cn_ids))
                 return search_converter(cn_ids=new_cn_dict, visited_cns=visited_cns)
 
