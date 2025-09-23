@@ -12,7 +12,7 @@ from typing import Tuple, List, Union, Iterable, Sequence, Literal, Optional
 
 import numpy as np
 import pandas as pd
-from numpy import nan, zeros, isnan, arange, isin, any as np_any, array, bool_, \
+from numpy import nan, isnan, arange, isin, any as np_any, array, bool_, \
     all as np_all, float64, intersect1d, unique as uni
 import numpy.typing as npt
 from pandas import isnull
@@ -53,7 +53,6 @@ def create_empty_network(name: str = "",
         net = create_empty_network()
 
     """
-
     network_structure_dict = get_structure_dict()
     network_structure_dict['name'] = name
     network_structure_dict['f_hz'] = f_hz
@@ -234,6 +233,23 @@ def create_bus_dc(
     return index
 
 
+def _geodata_to_geo_series(data: Union[Iterable[Tuple[float, float]], Tuple[int, int]], nr_buses: int) -> List[str]:
+    geo = []
+    for g in data:
+        if isinstance(g, tuple):
+            if len(g) != 2:
+                raise ValueError("geodata tuples must be of length 2")
+            x, y = g
+            geo.append(f'{{"coordinates": [{x}, {y}], "type": "Point"}}')
+        else:
+            raise ValueError("geodata must be iterable of tuples of (x, y) coordinates")
+    if len(geo) == 1:
+        geo = [geo[0]] * nr_buses
+    if len(geo) != nr_buses:
+        raise ValueError("geodata must be a single point or have the same length as nr_buses")
+    return geo
+
+
 def create_buses(
     net: pandapowerNet,
     nr_buses: int,
@@ -248,7 +264,7 @@ def create_buses(
     min_vm_pu: float | Iterable[float] = nan,
     coords: Optional[list[list[tuple[float, float]]]] = None,
     **kwargs
-) -> npt.NDArray[np.integer]:
+) -> npt.NDArray[Int]:
     """
     Adds several buses in table net["bus"] at once.
 
@@ -292,28 +308,12 @@ def create_buses(
     """
     index = _get_multiple_index_with_check(net, "bus", index, nr_buses)
 
-    def _geodata_to_geo_series(data: Union[Iterable[Tuple[float, float]], Tuple[int, int]]) -> List[str]:
-        geo = []
-        for g in data:
-            if isinstance(g, tuple):
-                if len(g) != 2:
-                    raise ValueError("geodata tuples must be of length 2")
-                x, y = g
-                geo.append(f'{{"coordinates": [{x}, {y}], "type": "Point"}}')
-            else:
-                raise ValueError("geodata must be iterable of tuples of (x, y) coordinates")
-        if len(geo) == 1:
-            geo = [geo[0]] * nr_buses
-        if len(geo) != nr_buses:
-            raise ValueError("geodata must be a single point or have the same length as nr_buses")
-        return geo
-
     if geodata:
         if isinstance(geodata, tuple) and (isinstance(geodata[0], int) or isinstance(geodata[0], float)):
-            geo = _geodata_to_geo_series([geodata])
+            geo = _geodata_to_geo_series([geodata], nr_buses)
         else:
             assert hasattr(geodata, "__iter__"), "geodata must be an iterable"
-            geo = _geodata_to_geo_series(geodata)
+            geo = _geodata_to_geo_series(geodata, nr_buses)
     else:
         geo = [None] * nr_buses  # type: ignore[list-item,assignment]
 
@@ -344,7 +344,7 @@ def create_buses_dc(
     min_vm_pu: float | Iterable[float] = nan,
     coords: Optional[list[list[tuple[float, float]]]] = None,
     **kwargs
-) -> npt.NDArray[np.integer]:
+) -> npt.NDArray[Int]:
     """
     Adds several dc buses in table net["bus_dc"] at once.
 
@@ -391,23 +391,23 @@ def create_buses_dc(
     """
     index = _get_multiple_index_with_check(net, "bus_dc", index, nr_buses_dc)
 
-    entries = {"vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "name": name}
+    if geodata:
+        if isinstance(geodata, tuple) and (isinstance(geodata[0], int) or isinstance(geodata[0], float)):
+            geo = _geodata_to_geo_series([geodata], nr_buses_dc)
+        else:
+            assert hasattr(geodata, "__iter__"), "geodata must be an iterable"
+            geo = _geodata_to_geo_series(geodata, nr_buses_dc)
+    else:
+        geo = [None] * nr_buses_dc  # type: ignore[list-item,assignment]
+
+    if coords:
+        raise UserWarning("busbar plotting is not implemented fully and will likely be removed in the future")
+
+    entries = {"vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "name": name, "geo": geo}
     _add_to_entries_if_not_nan(net, "bus_dc", entries, index, "min_vm_pu", min_vm_pu)
     _add_to_entries_if_not_nan(net, "bus_dc", entries, index, "max_vm_pu", max_vm_pu)
     _set_multiple_entries(net, "bus_dc", index, **entries, **kwargs)
 
-    if geodata is not None:
-        # works with a 2-tuple or a matching array
-        net.bus_dc_geodata = pd.concat([
-            net.bus_dc_geodata,
-            pd.DataFrame(zeros((len(index), len(net.bus_dc_geodata.columns)), dtype=np.int64),
-                         index=index, columns=net.bus_dc_geodata.columns)])
-        net.bus_dc_geodata.loc[index, :] = nan
-        net.bus_dc_geodata.loc[index, ["x", "y"]] = geodata  # type: ignore[call-overload]
-    if coords is not None:
-        net.bus_dc_geodata = pd.concat(
-            [net.bus_dc_geodata, pd.DataFrame(index=index, columns=net.bus_dc_geodata.columns)])
-        net["bus_dc_geodata"].loc[index, "coords"] = coords
     return index
 
 
@@ -505,17 +505,17 @@ def create_load(
     _check_element(net, bus)
 
     index = _get_index_with_check(net, "load", index)
-    
+
     if ("const_z_percent" in kwargs) or ("const_i_percent" in kwargs):
         const_percent_values_list = [const_z_p_percent, const_i_p_percent, const_z_q_percent, const_i_q_percent]
         const_z_p_percent, const_i_p_percent, const_z_q_percent, const_i_q_percent, kwargs = (
             _set_const_percent_values(const_percent_values_list, kwargs_input=kwargs))
-            
+
     entries = dict(zip(["name", "bus", "p_mw", "const_z_p_percent", "const_i_p_percent",
                         "const_z_q_percent", "const_i_q_percent", "scaling",
                         "q_mvar", "sn_mva", "in_service", "type"],
                        [name, bus, p_mw, const_z_p_percent, const_i_p_percent,
-                        const_z_q_percent, const_i_q_percent, scaling, 
+                        const_z_q_percent, const_i_q_percent, scaling,
                         q_mvar, sn_mva, bool(in_service), type]))
 
     _set_entries(net, "load", index, True, **entries, **kwargs)
@@ -528,6 +528,7 @@ def create_load(
                           default_val=False)
 
     return index
+
 
 def create_loads(
     net: pandapowerNet,
@@ -550,7 +551,7 @@ def create_loads(
     min_q_mvar: float | Iterable[float] = nan,
     controllable: bool | Iterable[bool] | float = nan,
     **kwargs
-) -> npt.NDArray[np.integer]:
+) -> npt.NDArray[Int]:
     """
     Adds a number of loads in table net["load"].
 
@@ -624,7 +625,7 @@ def create_loads(
     _check_multiple_elements(net, buses)
 
     index = _get_multiple_index_with_check(net, "load", index, len(buses))
-    
+
     if ("const_z_percent" in kwargs) or ("const_i_percent" in kwargs):
         const_percent_values_list = [const_z_p_percent, const_i_p_percent, const_z_q_percent, const_i_q_percent]
         const_z_p_percent, const_i_p_percent, const_z_q_percent, const_i_q_percent, kwargs = (
@@ -1016,7 +1017,7 @@ def create_sgens(
     kappa: float = nan,
     lrc_pu: float = nan,
     **kwargs
-) -> npt.NDArray[np.integer]:
+) -> npt.NDArray[Int]:
     """
     Adds a number of sgens in table net["sgen"].
 
@@ -1408,7 +1409,7 @@ def create_storages(
     min_q_mvar: float | Iterable[float] = nan,
     controllable: bool | Iterable[bool] | float = nan,
     **kwargs
-) -> npt.NDArray[np.integer]:
+) -> npt.NDArray[Int]:
     """
     Adds storages to the network.
 
@@ -1693,7 +1694,7 @@ def create_gens(
     in_service: bool = True,
     slack_weight: float = 0.0,
     **kwargs
-) -> npt.NDArray[np.integer]:
+) -> npt.NDArray[Int]:
     """
     Adds generators to the specified buses network.
 
@@ -2340,7 +2341,7 @@ def create_lines(
     in_service: bool | Iterable[bool] = True,
     max_loading_percent: float | Iterable[float] = nan,
     **kwargs
-) -> npt.NDArray[np.integer]:
+) -> npt.NDArray[Int]:
     """ Convenience function for creating many lines at once. Parameters 'from_buses' and 'to_buses'
         must be arrays of equal length. Other parameters may be either arrays of the same length or
         single or values. In any case the line parameters are defined through a single standard
@@ -2483,7 +2484,8 @@ def create_lines_dc(
     parallel: int | Iterable[int] = 1,
     in_service: bool | Iterable[bool] = True,
     max_loading_percent: float | Iterable[float]=nan,
-**kwargs) -> npt.NDArray[np.integer]:
+**kwargs
+) -> npt.NDArray[Int]:
     """ Convenience function for creating many dc lines at once. Parameters 'from_buses_dc' and 'to_buses_dc'
         must be arrays of equal length. Other parameters may be either arrays of the same length or
         single or values. In any case the dc line parameters are defined through a single standard
@@ -2941,7 +2943,7 @@ def create_lines_from_parameters(
     c0_nf_per_km: float | Iterable[float] = nan,
     g0_us_per_km: float | Iterable[float] = nan,
     **kwargs
-) -> npt.NDArray[np.integer]:
+) -> npt.NDArray[Int]:
     """
     Convenience function for creating many lines at once. Parameters 'from_buses' and 'to_buses'
         must be arrays of equal length. Other parameters may be either arrays of the same length or
@@ -3095,7 +3097,7 @@ def create_lines_dc_from_parameters(
     alpha: float = nan,
     temperature_degree_celsius: float = nan,
     **kwargs
-) -> npt.NDArray[np.integer]:
+) -> npt.NDArray[Int]:
     """
     Convenience function for creating many dc lines at once. Parameters 'from_buses_dc' and 'to_buses_dc'
         must be arrays of equal length. Other parameters may be either arrays of the same length or
@@ -3683,7 +3685,7 @@ def create_transformers_from_parameters(
     tap2_pos: int | Iterable[int] | float = nan,
     tap2_changer_type: Optional[TapChangerType | Iterable[str]] = None,
     **kwargs
-) -> npt.NDArray[np.integer]:
+) -> npt.NDArray[Int]:
     """
     Creates several two-winding transformers in table net.trafo with the specified parameters.
 
@@ -4605,9 +4607,9 @@ def create_switches(
             _check_multiple_elements(net, el_arr[mask], *matcher[typ])
         not_def = ~mask_all
         if np.any(not_def):
-            raise UserWarning('et type %s is not implemented' % et_arr[not_def])
+            raise UserWarning(f"et type {et_arr[not_def]} is not implemented")
     else:
-        raise UserWarning('et type %s is not implemented' %et)
+        raise UserWarning(f"et type {et} is not implemented")
 
     b_arr = np.array(buses)[:, None]
     el_arr = np.array(elements)
@@ -4621,9 +4623,8 @@ def create_switches(
         not_connected_mask = ~np.isin(b_arr[et_arr == typ], bs)
         if np_any(not_connected_mask):
             bus_element_pairs = zip(el_arr[et_arr == typ][:, None][not_connected_mask].tolist(),
-                                     b_arr[et_arr == typ][not_connected_mask].tolist())
-            raise UserWarning("%s not connected (%s element, bus): %s" %
-                              (table.capitalize(), table, list(bus_element_pairs)))
+                                    b_arr[et_arr == typ][not_connected_mask].tolist())
+            raise UserWarning(f"{table.capitalize()} not connected ({table} element, bus): {list(bus_element_pairs)}")
 
     entries = {"bus": buses, "element": elements, "et": et, "closed": closed, "type": type,
                "name": name, "z_ohm": z_ohm, "in_ka": in_ka}
@@ -4817,6 +4818,104 @@ def create_shunt_as_capacitor(
     return create_shunt(net, bus, q_mvar=q_mvar, p_mw=p_mw, **kwargs)
 
 
+def create_source_dc(
+        net: pandapowerNet,
+        bus_dc: int,
+        vm_pu: float = 1.0,
+        index: int | None = None,
+        name: str | None = None,
+        in_service: bool = True,
+        type: str| None = None,
+        **kwargs):
+    """
+    Creates a dc voltage source in a dc grid with an adjustable set point
+    INPUT:
+
+        **net** (pandapowerNet) - The pandapower network in which the element is created
+
+        **bus** (int) - index of the bus the shunt is connected to
+
+        **vm_pu** (float) - set-point for the bus voltage magnitude at the connection bus
+
+    OPTIONAL:
+        **name** (str, None) - element name
+
+        **index** (int, None) - Force a specified ID if it is available. If None, the index one \
+            higher than the highest already existing index is selected.
+
+        **in_service** (bool, True) - True for in_service or False for out of service
+
+        **type** (str) - A string describing the type.
+
+    OUTPUT:
+        **index** (int) - The unique ID of the created svc
+
+    """
+    _check_element(net, bus_dc, element='bus_dc')
+
+    index = _get_index_with_check(net, "source_dc", index)
+
+    entries = dict(zip(["name", "bus_dc", "vm_pu", "in_service", "type"],
+                       [name, bus_dc, vm_pu, bool(in_service), type]))
+
+    _set_entries(net, "source_dc", index, True, **entries, **kwargs)
+
+    return index
+
+
+def create_load_dc(
+        net: pandapowerNet,
+        bus_dc: int,
+        p_dc_mw: float,
+        scaling: float=1.0,
+        type: str | None = None,
+        index: int | None = None,
+        name: str | None = None,
+        in_service: bool = True,
+        controllable: bool = False,
+        **kwargs
+    ):
+    """
+    Creates a dc voltage source in a dc grid with an adjustable set point
+    INPUT:
+
+        **net** (pandapowerNet) - The pandapower network in which the element is created
+
+        **bus_dc** (int) - index of the dc bus the dc load is connected to
+
+        **p_dc_mw** (float) - The power of the load
+
+    OPTIONAL:
+        **name** (str, None) - element name
+
+        **index** (int, None) - Force a specified ID if it is available. If None, the index one \
+            higher than the highest already existing index is selected.
+
+        **in_service** (bool, True) - True for in service or False for out of service.
+
+        **scaling** (float, default 1.) - An OPTIONAL scaling factor, is multiplied with p_dc_mw.
+
+        **type** (str) - A string describing the type.
+
+        **controllable** (boolean, default NaN) - States, whether a load is controllable or not. \
+            Only respected for OPF; defaults to False if "controllable" column exists in DataFrame
+
+    OUTPUT:
+        **index** (int) - The unique ID of the created svc
+
+    """
+    _check_element(net, bus_dc, element='bus_dc')
+
+    index = _get_index_with_check(net, "source_dc", index=index)
+
+    entries = dict(zip(["name", "bus_dc", "p_dc_mw", "in_service", "scaling", "type", "controllable"],
+                       [name, bus_dc, p_dc_mw, bool(in_service), scaling, type, controllable]))
+
+    _set_entries(net, "load_dc", index, True, **entries, **kwargs)
+
+    return index
+
+
 def create_svc(
     net: pandapowerNet,
     bus,
@@ -4959,6 +5058,136 @@ def create_ssc(
     return index
 
 
+def create_b2b_vsc(net, bus, bus_dc_plus, bus_dc_minus, r_ohm, x_ohm, r_dc_ohm, pl_dc_mw=0., control_mode_ac="vm_pu",
+                   control_value_ac=1., control_mode_dc="p_mw", control_value_dc=0., name=None, controllable=True,
+                   in_service=True, index=None, **kwargs):
+    """
+    Creates an VSC converter element - a shunt element with adjustable VSC internal voltage used to connect the \
+    AC grid and the DC grid. The element implements several control modes.
+
+    Does not work if connected to "PV" bus (gen bus, ext_grid bus)
+
+    INPUT:
+        **net** (pandapowerNet) - The pandapower network in which the element is created
+
+        **bus** (int) - AC connection of the B2B VSC
+
+        **bus_dc_plus** (int) - connection bus of the plus side of the B2B VSC
+
+        **bus_dc_minus** (int) - connection bus of the minus side of the B2B VSC
+
+        **r_ohm** (float) - resistance of the coupling transformer component of B2B VSC
+
+        **x_ohm** (float) - reactance of the coupling transformer component of B2B VSC
+
+        **r_dc_ohm** (float) - resistance of the internal dc resistance component of B2B VSC
+
+        **pl_dc_mw** (float) - no-load losses of the B2B VSC on the DC side for the shunt R representing the no load losses
+
+        **control_mode_ac** (string) - the control mode of the ac side of the VSC. it could be "vm_pu", "q_mvar" or "slack"
+
+        **control_value_ac** (float) - the value of the controlled parameter at the ac bus in "p.u." or "MVAr"
+
+        **control_mode_dc** (string) - the control mode of the dc side of the B2B VSC. it could be "vm_pu" or "p_mw"
+
+        **control_value_dc** (float) - the value of the controlled parameter at the dc bus in "p.u." or "MW"
+
+    OPTIONAL:
+        **name** (list of strs, None) - element name
+
+        **controllable** (bool, True) - whether the element is considered as actively controlling or
+            as a fixed voltage source connected via shunt impedance
+
+        **in_service** (bool, True) - True for in_service or False for out of service
+
+        **index** (int, None) - Force a specified ID if it is available. If None, the
+            index one higher than the highest already existing index is selected.
+
+    OUTPUT:
+        **index** (int) - The unique ID of the created ssc
+
+    """
+
+    _check_element(net, bus)
+    _check_element(net, bus_dc_plus, "bus_dc")
+    _check_element(net, bus_dc_minus, "bus_dc")
+
+    index = _get_index_with_check(net, "b2b_vsc", index)
+
+    entries = dict(zip([
+        "name", "bus", "bus_dc_plus", "bus_dc_minus", "r_ohm", "x_ohm", "r_dc_ohm", "pl_dc_mw", "control_mode_ac",
+        "control_value_ac", "control_mode_dc", "control_value_dc", "controllable", "in_service"],
+        [name, bus, bus_dc_plus, bus_dc_minus, r_ohm, x_ohm, r_dc_ohm, pl_dc_mw, control_mode_ac, control_value_ac,
+         control_mode_dc, control_value_dc, controllable, in_service]))
+    _set_entries(net, "b2b_vsc", index, **entries, **kwargs)
+
+    return index
+
+
+def create_bi_vsc(net, bus, bus_dc_plus, bus_dc_minus, r_ohm, x_ohm, r_dc_ohm, pl_dc_mw=0., control_mode_ac="vm_pu",
+                   control_value_ac=1., control_mode_dc="p_mw", control_value_dc=0., name=None, controllable=True,
+                   in_service=True, index=None, **kwargs):
+    """
+    Creates an VSC converter element - a shunt element with adjustable VSC internal voltage used to connect the \
+    AC grid and the DC grid. The element implements several control modes.
+
+    Does not work if connected to "PV" bus (gen bus, ext_grid bus)
+
+    INPUT:
+        **net** (pandapowerNet) - The pandapower network in which the element is created
+
+        **bus** (int) - connection bus of the VSC
+
+        **bus_dc** (int) - connection bus of the VSC
+
+        **r_ohm** (float) - resistance of the coupling transformer component of VSC
+
+        **x_ohm** (float) - reactance of the coupling transformer component of VSC
+
+        **r_dc_ohm** (float) - resistance of the internal dc resistance component of VSC
+
+        **pl_dc_mw** (float) - no-load losses of the VSC on the DC side for the shunt R representing the no load losses
+
+        **control_mode_ac** (string) - the control mode of the ac side of the VSC. it could be "vm_pu", "q_mvar" or "slack"
+
+        **control_value_ac** (float) - the value of the controlled parameter at the ac bus in "p.u." or "MVAr"
+
+        **control_mode_dc** (string) - the control mode of the dc side of the VSC. it could be "vm_pu" or "p_mw"
+
+        **control_value_dc** (float) - the value of the controlled parameter at the dc bus in "p.u." or "MW"
+
+    OPTIONAL:
+        **name** (list of strs, None) - element name
+
+        **controllable** (bool, True) - whether the element is considered as actively controlling or
+            as a fixed voltage source connected via shunt impedance
+
+        **in_service** (bool, True) - True for in_service or False for out of service
+
+        **index** (int, None) - Force a specified ID if it is available. If None, the
+            index one higher than the highest already existing index is selected.
+
+    OUTPUT:
+        **index** (int) - The unique ID of the created ssc
+
+    """
+
+    _check_element(net, bus)
+    _check_element(net, bus_dc_plus, "bus_dc")
+    _check_element(net, bus_dc_minus, "bus_dc")
+
+    index = _get_index_with_check(net, "bi_vsc", index)
+
+    entries = dict(zip([
+        "name", "bus", "bus_dc_plus", "bus_dc_minus", "r_ohm", "x_ohm", "r_dc_ohm", "pl_dc_mw", "control_mode_ac",
+        "control_value_ac", "control_mode_dc", "control_value_dc", "controllable", "in_service"],
+        [name, bus, bus_dc_plus, bus_dc_minus, r_ohm, x_ohm, r_dc_ohm, pl_dc_mw, control_mode_ac, control_value_ac,
+         control_mode_dc, control_value_dc, controllable, in_service]))
+    _set_entries(net, "bi_vsc", index, **entries, **kwargs)
+
+    return index
+
+
 def create_vsc(
     net: pandapowerNet,
     bus,
@@ -4975,6 +5204,7 @@ def create_vsc(
     controllable: bool = True,
     in_service: bool = True,
     index = None,
+    ref_bus = None,
     **kwargs
 ) -> Int:
     """
@@ -4998,7 +5228,7 @@ def create_vsc(
 
         **pl_dc_mw** (float) - no-load losses of the VSC on the DC side for the shunt R representing the no load losses
 
-        **control_mode_ac** (string) - the control mode of the ac side of the VSC. it could be "vm_pu" or "q_mvar"
+        **control_mode_ac** (string) - the control mode of the ac side of the VSC. it could be "vm_pu", "q_mvar" or "slack"
 
         **control_value_ac** (float) - the value of the controlled parameter at the ac bus in "p.u." or "MVAr"
 
@@ -5029,9 +5259,9 @@ def create_vsc(
 
     entries = dict(zip([
         "name", "bus", "bus_dc", "r_ohm", "x_ohm", "r_dc_ohm", "pl_dc_mw", "control_mode_ac", "control_value_ac",
-        "control_mode_dc", "control_value_dc", "controllable", "in_service"],
+        "control_mode_dc", "control_value_dc", "controllable", "in_service", "ref_bus"],
         [name, bus, bus_dc, r_ohm, x_ohm, r_dc_ohm, pl_dc_mw, control_mode_ac, control_value_ac,
-         control_mode_dc, control_value_dc, controllable, in_service]))
+         control_mode_dc, control_value_dc, controllable, in_service, ref_bus]))
     _set_entries(net, "vsc", index, **entries, **kwargs)
 
     return index
@@ -6215,15 +6445,15 @@ def create_group_from_dict(
 def _get_index_with_check(
     net: pandapowerNet,
     table: str,
-    index: Optional[Int],
-    name: Optional[str] = None
+    index: Int | None,
+    name: str | None = None
 ) -> Int:
     if name is None:
         name = table
     if index is None:
         index = get_free_id(net[table])
     if index in net[table].index:
-        raise UserWarning("A %s with the id %s already exists" % (name, index))
+        raise UserWarning(f"A {name} with the id {index} already exists")
     return index
 
 
@@ -6286,7 +6516,7 @@ def _get_multiple_index_with_check(net, table, index, number, name=None):
 
 def _check_element(net, element_index, element="bus"):
     if element not in net:
-        raise UserWarning("Node table %s does not exist" %element)
+        raise UserWarning(f"Node table {element} does not exist")
     if element_index not in net[element].index.values:
         raise UserWarning("Cannot attach to %s %s, %s does not exist"
                           % (element, element_index, element_index))
@@ -6294,16 +6524,16 @@ def _check_element(net, element_index, element="bus"):
 
 def _check_multiple_elements(net, element_indices, element="bus", name="buses"):
     if element not in net:
-        raise UserWarning("Node table %s does not exist" %element)
+        raise UserWarning(f"Node table {element} does not exist")
     if np_any(~isin(element_indices, net[element].index.values)):
         node_not_exist = set(element_indices) - set(net[element].index.values)
-        raise UserWarning("Cannot attach to %s %s, they do not exist" % (name, node_not_exist))
+        raise UserWarning(f"Cannot attach to {name} {node_not_exist}, they do not exist")
 
 
 def _check_branch_element(net, element_name, index, from_node, to_node, node_name="bus",
                           plural="es"):
     if node_name not in net:
-        raise UserWarning("Node table %s does not exist" %node_name)
+        raise UserWarning(f"Node table {node_name} does not exist")
     missing_nodes = {from_node, to_node} - set(net[node_name].index.values)
     if len(missing_nodes) > 0:
         raise UserWarning("%s %d tries to attach to non-existing %s(%s) %s"
@@ -6313,7 +6543,7 @@ def _check_branch_element(net, element_name, index, from_node, to_node, node_nam
 def _check_multiple_branch_elements(net, from_nodes, to_nodes, element_name, node_name="bus",
                                     plural="es"):
     if node_name not in net:
-        raise UserWarning("Node table %s does not exist" %node_name)
+        raise UserWarning(f"Node table {node_name} does not exist")
     all_nodes = set(from_nodes) | set(to_nodes)
     node_not_exist = all_nodes - set(net[node_name].index)
     if len(node_not_exist) > 0:
@@ -6482,27 +6712,27 @@ def _set_multiple_entries(net, table, index, preserve_dtypes=True, defaults_to_f
 
 
 def _set_const_percent_values(const_percent_values_list, kwargs_input):
-    const_percent_values_default_initials = all(value==0 for value in const_percent_values_list) 
-    if ('const_z_percent' in kwargs_input and 'const_i_percent' in kwargs_input) and \
-        const_percent_values_default_initials:
-            const_z_p_percent = kwargs_input['const_z_percent']
-            const_z_q_percent = kwargs_input['const_z_percent']
-            const_i_p_percent = kwargs_input['const_i_percent']
-            const_i_q_percent = kwargs_input['const_i_percent']
-            del kwargs_input['const_z_percent']
-            del kwargs_input['const_i_percent']
-            msg = ("Parameters const_z_percent and const_i_percent will be deprecated in further " 
-                "pandapower version. For now the values were transfered in " 
-                "const_z_p_percent and const_i_p_percent for you.")
-            warnings.warn(msg, DeprecationWarning)
-            return const_z_p_percent, const_i_p_percent, const_z_q_percent, const_i_q_percent, kwargs_input
-    elif ('const_z_percent' in kwargs_input or 'const_i_percent' in kwargs_input) and \
-        const_percent_values_default_initials==False:
-            raise UserWarning('Definition of voltage dependecies is faulty, please check the parameters again.')
-    elif (('const_z_percent' in kwargs_input or 'const_i_percent' not in kwargs_input) or \
+    const_percent_values_default_initials = all(value == 0 for value in const_percent_values_list)
+    if (('const_z_percent' in kwargs_input and 'const_i_percent' in kwargs_input) and
+            const_percent_values_default_initials):
+        const_z_p_percent = kwargs_input['const_z_percent']
+        const_z_q_percent = kwargs_input['const_z_percent']
+        const_i_p_percent = kwargs_input['const_i_percent']
+        const_i_q_percent = kwargs_input['const_i_percent']
+        del kwargs_input['const_z_percent']
+        del kwargs_input['const_i_percent']
+        msg = ("Parameters const_z_percent and const_i_percent will be deprecated in further "
+               "pandapower version. For now the values were transfered in "
+               "const_z_p_percent and const_i_p_percent for you.")
+        warnings.warn(msg, DeprecationWarning)
+        return const_z_p_percent, const_i_p_percent, const_z_q_percent, const_i_q_percent, kwargs_input
+    elif (('const_z_percent' in kwargs_input or 'const_i_percent' in kwargs_input) and
+          (const_percent_values_default_initials == False)):
+        raise UserWarning('Definition of voltage dependecies is faulty, please check the parameters again.')
+    elif (('const_z_percent' in kwargs_input or 'const_i_percent' not in kwargs_input) or
           ('const_z_percent' not in kwargs_input or 'const_i_percent' in kwargs_input)):
-            raise UserWarning('Definition of voltage dependecies is faulty, please check the parameters again.')    
-    
+        raise UserWarning('Definition of voltage dependecies is faulty, please check the parameters again.')
+
 
 if __name__ == "__main__":
     net = create_empty_network()
