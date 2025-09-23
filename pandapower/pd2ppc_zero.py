@@ -315,13 +315,15 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
             ppc["branch"][ppc_idx, BR_B] = y.imag
 
         elif vector_group.lower() == "ynyn":
-            #ppc["branch"][ppc_idx, BR_STATUS] = in_service
             # Need to update this.
             # zc = ZAB
             ppc["branch"][ppc_idx, BR_R] = zc.real
             ppc["branch"][ppc_idx, BR_X] = zc.imag
-            ppc["branch"][ppc_idx, BR_G] = (YAN.real + YBN.real)
-            ppc["branch"][ppc_idx, BR_B] = (YAN.imag + YBN.imag)
+            asym_y = (YAN-YBN).astype(complex)
+            ppc["branch"][ppc_idx, BR_G] = YBN.real
+            ppc["branch"][ppc_idx, BR_B] = YBN.imag
+            ppc["branch"][ppc_idx, BR_G_ASYM] = asym_y.real
+            ppc["branch"][ppc_idx, BR_B_ASYM] = asym_y.real
 
         elif vector_group.lower() == "yny":
             if trafo_model == "pi":
