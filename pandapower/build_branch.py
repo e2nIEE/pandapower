@@ -346,7 +346,7 @@ def _calc_line_dc_parameter(net, ppc, elm="line_dc", ppc_elm="branch_dc"):
         branch_dc[f:t, DC_RATE_A] = 0. if mode == "opf" else 100.
 
 
-def _calc_trafo_parameter(net, ppc, sequence):
+def _calc_trafo_parameter(net, ppc, sequence=1):
     """
     Calculates the transformer parameter in per unit.
 
