@@ -290,8 +290,8 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
             else:
                 y = (YAB + YBN).astype(complex) * ppc["baseMVA"]  # T model
             if mode != "sc":
-                ppc["branch"][ppc_idx, BR_G] = y.real
-                ppc["branch"][ppc_idx, BR_B] = y.imag
+                ppc["branch"][ppc_idx, BR_G_ASYM] = y.real
+                ppc["branch"][ppc_idx, BR_B_ASYM] = y.imag
             gs_all = np.hstack([gs_all, y.real * in_service])
             bs_all = np.hstack([bs_all, y.imag * in_service])
 
@@ -308,8 +308,8 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
             else:
                 y = (YAB_BN + YAN).astype(complex) * ppc["baseMVA"]  # T model
             if mode != "sc":
-                ppc["branch"][ppc_idx, BR_G] = y.real
-                ppc["branch"][ppc_idx, BR_B] = y.imag
+                ppc["branch"][ppc_idx, BR_G_ASYM] = y.real
+                ppc["branch"][ppc_idx, BR_B_ASYM] = y.imag
             gs_all = np.hstack([gs_all, y.real * in_service])
             bs_all = np.hstack([bs_all, y.imag * in_service])
 
