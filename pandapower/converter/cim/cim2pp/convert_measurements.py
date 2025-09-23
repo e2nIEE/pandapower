@@ -24,7 +24,7 @@ class CreateMeasurements:
     def _copy_to_measurement(self, input_df: pd.DataFrame):
         pp_type = 'measurement'
         self.logger.debug("Copy %s datasets to pandapower network with type %s" % (input_df.index.size, pp_type))
-        if pp_type not in self.net.keys():
+        if pp_type not in self.net:
             self.logger.warning("Missing pandapower type %s in the pandapower network!" % pp_type)
             return
         if input_df.empty:
@@ -38,7 +38,7 @@ class CreateMeasurements:
         time_start = time.time()
         sc = cim_tools.get_pp_net_special_columns_dict()
         # join the Analogs with the AnalogValues and MeasurementValueSources
-        analogs_prf = 'op' if 'op' in self.cim.keys() else 'eq'
+        analogs_prf = 'op' if 'op' in self.cim else 'eq'
         analogs = pd.merge(
             self.cim[analogs_prf]['Analog'][['rdfId', 'name', 'description', 'measurementType', 'unitSymbol',
                                              'unitMultiplier', 'Terminal', 'PowerSystemResource', 'positiveFlowIn']],

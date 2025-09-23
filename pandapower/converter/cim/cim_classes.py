@@ -84,23 +84,23 @@ class CimParser:
         bool_type = pd.BooleanDtype()
         data_types_map = {'Float': float_type, 'Integer': int_type, 'Boolean': bool_type}
         cim_schema = get_cim_schema(self.cgmes_version)
-        for profile in self.cim.keys():
+        for profile in self.cim:
             for cim_element_type, item in self.cim[profile].items():
                 for col in item.columns:
                     # skip elements which are not available in the schema like FullModel
                     if cim_element_type not in cim_schema[profile]:
                         self.logger.debug("Skipping CIM element type %s from profile %s." % (cim_element_type, profile))
                         continue
-                    if col in cim_schema[profile][cim_element_type]['fields'].keys() and \
-                            'data_type_prim' in cim_schema[profile][cim_element_type]['fields'][col].keys():
+                    if col in cim_schema[profile][cim_element_type]['fields'] and \
+                            'data_type_prim' in cim_schema[profile][cim_element_type]['fields'][col]:
                         data_type_col_str = cim_schema[profile][cim_element_type]['fields'][col]['data_type_prim']
-                        if data_type_col_str in data_types_map.keys():
+                        if data_type_col_str in data_types_map:
                             data_type_col = data_types_map[data_type_col_str]
                         else:
                             continue
                         self.logger.debug("Setting data type of %s from CIM element %s as type %s" %
                                           (col, cim_element_type, data_type_col_str))
-                        if col in default_values.keys():  # todo deprecated due to repair function?
+                        if col in default_values:  # todo deprecated due to repair function?
                             self.cim[profile][cim_element_type][col] = self.cim[profile][cim_element_type][col].fillna(
                                 value=default_values[col])
                         if data_type_col == bool_type:
@@ -130,15 +130,15 @@ class CimParser:
         """
         self.logger.info("Start preparing the cim data.")
         cim_data_structure = self.get_cim_data_structure()
-        for profile in list(self.cim.keys()):
-            if profile not in cim_data_structure.keys():
+        for profile in list(self.cim):
+            if profile not in cim_data_structure:
                 # this profile is not used by the converter, drop it
                 del self.cim[profile]
                 continue
-            for cim_element_type in self.cim[profile].keys():
+            for cim_element_type in self.cim[profile]:
                 # check if the CIM element type is a pd.DataFrame
                 if not isinstance(self.cim[profile][cim_element_type], pd.DataFrame):
-                    if profile in cim_data_structure.keys() and cim_element_type in cim_data_structure[profile].keys():
+                    if profile in cim_data_structure and cim_element_type in cim_data_structure[profile]:
                         # replace the cim element type with the default empty DataFrame from the cim_data_structure
                         self.cim[profile][cim_element_type] = cim_data_structure[profile][cim_element_type]
                     else:
@@ -147,12 +147,12 @@ class CimParser:
                     self.logger.warning("%s isn't a DataFrame! The data won't be used!" % cim_element_type)
 
         # append missing columns to the CIM net
-        for profile in cim_data_structure.keys():
-            if profile not in self.cim.keys():
+        for profile in cim_data_structure:
+            if profile not in self.cim:
                 self.cim[profile] = cim_data_structure[profile]
                 continue
             for cim_element_type, item in cim_data_structure[profile].items():
-                if cim_element_type not in self.cim[profile].keys():
+                if cim_element_type not in self.cim[profile]:
                     self.cim[profile][cim_element_type] = cim_data_structure[profile][cim_element_type]
                     continue
                 for column in item.columns:
@@ -161,8 +161,8 @@ class CimParser:
                         self.cim[profile][cim_element_type][column] = np.nan
 
         # now remove columns which are not needed by the converter (to avoid renaming problems when merging DataFrames)
-        for profile in cim_data_structure.keys():
-            for cim_element_type in cim_data_structure[profile].keys():
+        for profile in cim_data_structure:
+            for cim_element_type in cim_data_structure[profile]:
                 self.cim[profile][cim_element_type] = \
                     self.cim[profile][cim_element_type][cim_data_structure[profile][cim_element_type].columns]
         self.logger.info("Finished preparing the cim data.")
@@ -509,7 +509,7 @@ class CimParser:
         prf_content: Dict[str, pd.DataFrame] = {}
         ns_dict = {}
         prf = profile_name
-        if prf not in ns_dict.keys():
+        if prf not in ns_dict:
             ns_dict[prf] = {}
         for _, element_type in element_types.items():
             if not isinstance(element_type, str):
@@ -517,7 +517,7 @@ class CimParser:
             element_type_c = re.sub('{.*}', '', element_type)
             prf_content[element_type_c] = self._get_df(xml_tree.findall(element_type))
             # rename the columns (remove the namespaces)
-            if element_type_c not in ns_dict[prf].keys():
+            if element_type_c not in ns_dict[prf]:
                 ns_dict[prf][element_type_c] = {}
             for col in prf_content[element_type_c].columns:
                 col_new = re.sub('[{].*?[}]', '', col)
@@ -544,11 +544,11 @@ class CimParser:
                     col_new = 'rdfId'
                 ns_dict[prf][element_type_c][col] = col_new
             prf_content[element_type_c] = prf_content[element_type_c].rename(columns={**ns_dict[prf][element_type_c]})
-        if prf not in output.keys():
+        if prf not in output:
             output[prf] = prf_content
         else:
             for ele, df in prf_content.items():
-                if ele not in output[prf].keys():
+                if ele not in output[prf]:
                     concat_list = [prf_content[ele]]
                 else:
                     concat_list = [output[prf][ele], prf_content[ele]]

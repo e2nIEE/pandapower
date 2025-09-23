@@ -56,7 +56,7 @@ class PandapowerDiagnostic:
         elif isinstance(input_obj, dict):
             return_obj = {}
             for key, item in input_obj.items():
-                if isinstance(item, list) or isinstance(item, dict) and key in element_mapping.keys():
+                if isinstance(item, list) or isinstance(item, dict) and key in element_mapping:
                     element_type = element_mapping[key]
                     return_obj[key] = self._rec_replace_pp_diagnostic_with_cim_ids(item, element_type)
                 else:

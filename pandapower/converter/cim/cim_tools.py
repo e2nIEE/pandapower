@@ -130,9 +130,9 @@ def extend_pp_net_cim(net: pandapowerNet, override: bool = True) -> pandapowerNe
         net['CGMES'] = {}
         net['CGMES']['BaseVoltage'] = pd.DataFrame(None, columns=['rdfId', 'nominalVoltage'])
     else:
-        if 'CGMES' not in net.keys():
+        if 'CGMES' not in net:
             net['CGMES'] = {}
-        if 'BaseVoltage' not in net['CGMES'].keys():
+        if 'BaseVoltage' not in net['CGMES']:
             net['CGMES']['BaseVoltage'] = pd.DataFrame(None, columns=['rdfId', 'nominalVoltage'])
 
     return net
