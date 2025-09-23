@@ -4435,7 +4435,7 @@ def create_transformers3w_from_parameters( # no index ?
 def create_switch(
     net: pandapowerNet,
     bus: Int,
-    element: int,
+    element: Int,
     et: SwitchElementType,
     closed: bool = True,
     type: Optional[SwitchType] = None,
