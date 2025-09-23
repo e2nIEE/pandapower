@@ -49,8 +49,7 @@ class ConnectivityNodesCim16:
         # check the model: Bus-Branch or Node-Breaker: In the Bus-Branch model are no ConnectivityNodes
         node_breaker = True if self.cimConverter.cim['eq']['ConnectivityNode'].index.size > 0 else False
         # use this dictionary to store the source profile from the element (normal or boundary profile)
-        cn_dict = dict({'eq': {sc['o_prf']: 'eq'}, 'eq_bd': {sc['o_prf']: 'eq_bd'},
-                        'tp': {sc['o_prf']: 'tp'}})
+        cn_dict = {'eq': {sc['o_prf']: 'eq'}, 'eq_bd': {sc['o_prf']: 'eq_bd'}, 'tp': {sc['o_prf']: 'tp'}}
         if 'tp_bd' in self.cimConverter.cim.keys():  # check because tp_bd was removed in cgmes 3.0
             cn_dict['tp_bd'] = {sc['o_prf']: 'tp_bd'}
         if node_breaker:

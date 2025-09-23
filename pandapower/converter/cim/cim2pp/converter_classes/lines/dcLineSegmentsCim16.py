@@ -84,7 +84,7 @@ class DcLineSegmentsCim16:
         t = t.rename(columns={'DCNode': 'ConnectivityNode', 'DCConductingEquipment': 'ConductingEquipment'})
 
         def search_converter(cn_ids: Dict[str, str], visited_cns: List[str]) -> str:
-            new_cn_dict = dict()
+            new_cn_dict = {}
             for one_cn, from_dev in cn_ids.items():
                 # get the Terminals
                 t_temp = t.loc[t['ConnectivityNode'] == one_cn, :]
@@ -106,7 +106,7 @@ class DcLineSegmentsCim16:
                 return search_converter(cn_ids=new_cn_dict, visited_cns=visited_cns)
 
         for row_index, row in dc_line_segments[dc_line_segments['converters'].isna()].iterrows():
-            conv = search_converter(cn_ids=dict({row['ConnectivityNode']: row['rdfId']}),
+            conv = search_converter(cn_ids={row['ConnectivityNode']: row['rdfId']},
                                     visited_cns=[row['ConnectivityNode']])
             dc_line_segments.loc[row_index, 'converters'] = conv
             if conv is None:

@@ -54,17 +54,16 @@ class CreateMeasurements:
         analogs = analogs.rename(columns={'name': sc['src']})
         # collect all the assets (line, trafo, trafo3w) and its connections
         assets = pd.DataFrame(None, columns=['element_type', 'side'])
-        append_dict = dict({'line': {'from_bus': 'from', 'to_bus': 'to'},
-                            'trafo': {'hv_bus': 'hv', 'lv_bus': 'lv'},
-                            'trafo3w': {'hv_bus': 'hv', 'mv_bus': 'mv', 'lv_bus': 'lv'},
-                            'load': {'bus': None},
-                            'sgen': {'bus': None},
-                            'gen': {'bus': None},
-                            'shunt': {'bus': None},
-                            'ext_grid': {'bus': None},
-                            'ward': {'bus': None},
-                            'xward': {'bus': None}
-                            })
+        append_dict = {'line': {'from_bus': 'from', 'to_bus': 'to'},
+                       'trafo': {'hv_bus': 'hv', 'lv_bus': 'lv'},
+                       'trafo3w': {'hv_bus': 'hv', 'mv_bus': 'mv', 'lv_bus': 'lv'},
+                       'load': {'bus': None},
+                       'sgen': {'bus': None},
+                       'gen': {'bus': None},
+                       'shunt': {'bus': None},
+                       'ext_grid': {'bus': None},
+                       'ward': {'bus': None},
+                       'xward': {'bus': None}}
         for element_type, sides in append_dict.items():
             for side_name, side in sides.items():
                 temp = self.net[element_type][[sc['o_id'], side_name, sc[side_name]]]. \

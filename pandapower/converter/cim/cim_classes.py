@@ -31,11 +31,11 @@ class CimParser:
         self.cgmes_version = '2.4.15' if cgmes_version is None else cgmes_version
         self.__cim_blueprint = self._initialize_cim_data_structure(self.cgmes_version)
         self.cim: Dict[str, Dict[str, pd.DataFrame]] = cim if cim is not None else self.get_cim_data_structure()
-        self.file_names: Dict[str, str] = dict()
+        self.file_names: Dict[str, str] = {}
         self.report_container = ReportContainer()
         self.ignore_errors = bool(kwargs.get("ignore_errors", False))
 
-    def parse_files(self, file_list: List[str] or str = None, encoding: str = None, prepare_cim_net: bool = False,
+    def parse_files(self, file_list: List[str] | str = None, encoding: str = None, prepare_cim_net: bool = False,
                     set_data_types: bool = False) -> CimParser:
         """
         Parse CIM XML files from a storage.
@@ -74,16 +74,15 @@ class CimParser:
         only elements required for the CGMES converter are set.
         """
         self.logger.info("Setting the cim data types.")
-        default_values = dict(
-            {'positiveFlowIn': True, 'connected': True, 'length': 1., 'sections': 1, 'maximumSections': 1,
-             'referencePriority': 999999, 'gch': 0., 'g0ch': 0.})  # todo check gch g0ch sections maximumSections
-        to_bool = dict({'True': True, 'true': True, 'TRUE': True, True: True,
-                        'False': False, 'false': False, 'FALSE': False, False: False,
-                        'nan': False, 'NaN': False, 'NAN': False, 'Nan': False, np.nan: False})
+        default_values = {'positiveFlowIn': True, 'connected': True, 'length': 1., 'sections': 1, 'maximumSections': 1,
+                          'referencePriority': 999999, 'gch': 0., 'g0ch': 0.}  # todo check gch g0ch sections maximumSections
+        to_bool = {'True': True, 'true': True, 'TRUE': True, True: True,
+                   'False': False, 'false': False, 'FALSE': False, False: False,
+                   'nan': False, 'NaN': False, 'NAN': False, 'Nan': False, np.nan: False}
         float_type = float
         int_type = pd.Int64Dtype()
         bool_type = pd.BooleanDtype()
-        data_types_map = dict({'Float': float_type, 'Integer': int_type, 'Boolean': bool_type})
+        data_types_map = {'Float': float_type, 'Integer': int_type, 'Boolean': bool_type}
         cim_schema = get_cim_schema(self.cgmes_version)
         for profile in self.cim.keys():
             for cim_element_type, item in self.cim[profile].items():
@@ -136,7 +135,7 @@ class CimParser:
                 # this profile is not used by the converter, drop it
                 del self.cim[profile]
                 continue
-            for cim_element_type in list(self.cim[profile].keys()):
+            for cim_element_type in self.cim[profile].keys():
                 # check if the CIM element type is a pd.DataFrame
                 if not isinstance(self.cim[profile][cim_element_type], pd.DataFrame):
                     if profile in cim_data_structure.keys() and cim_element_type in cim_data_structure[profile].keys():
@@ -379,7 +378,7 @@ class CimParser:
 
     def _parse_element(self, element, parsed=None):
         if parsed is None:
-            parsed = dict()
+            parsed = {}
         for key in element.keys():
             combined_key = element.tag + '-' + key
             if combined_key not in parsed:
@@ -390,7 +389,7 @@ class CimParser:
                 parsed[combined_key].append(element.attrib.get(key))
         if element.tag not in parsed and element.text is not None and element.text.strip(' \t\n\r'):
             parsed[element.tag] = element.text
-        for child in list(element):
+        for child in element:
             self._parse_element(child, parsed)
         return parsed
 
@@ -408,7 +407,7 @@ class CimParser:
         'ssh' for SteadyStateHypothesis, 'sv' for StateVariables,
         'tp' for Topology, 'tp_bd' for TopologyBoundary
         """
-        element_types = pd.Series([ele.tag for ele in list(root)])
+        element_types = pd.Series([ele.tag for ele in root])
         element_types = element_types.drop_duplicates()
         full_model = element_types.str.find('FullModel')
         if full_model.max() >= 0:
@@ -505,13 +504,13 @@ class CimParser:
     def _parse_xml_tree(self, xml_tree: etree.ElementTree, profile_name: str, output: Dict | None = None):
         output = self.cim if output is None else output
         # get all CIM elements to parse
-        element_types = pd.Series([ele.tag for ele in list(xml_tree)])
+        element_types = pd.Series([ele.tag for ele in xml_tree])
         element_types = element_types.drop_duplicates()
-        prf_content: Dict[str, pd.DataFrame] = dict()
-        ns_dict = dict()
+        prf_content: Dict[str, pd.DataFrame] = {}
+        ns_dict = {}
         prf = profile_name
         if prf not in ns_dict.keys():
-            ns_dict[prf] = dict()
+            ns_dict[prf] = {}
         for _, element_type in element_types.items():
             if not isinstance(element_type, str):
                 continue
@@ -519,7 +518,7 @@ class CimParser:
             prf_content[element_type_c] = self._get_df(xml_tree.findall(element_type))
             # rename the columns (remove the namespaces)
             if element_type_c not in ns_dict[prf].keys():
-                ns_dict[prf][element_type_c] = dict()
+                ns_dict[prf][element_type_c] = {}
             for col in prf_content[element_type_c].columns:
                 col_new = re.sub('[{].*?[}]', '', col)
                 col_new = col_new.split('.')[-1]
