@@ -3228,10 +3228,10 @@ def create_transformer(
     parallel: int = 1,
     df: float = 1.,
     tap_changer_type: Optional[str] = None,
-    tap_dependency_table: bool | float = nan,
-    id_characteristic_table: int | float = nan,
+    tap_dependency_table: bool = False,
+    id_characteristic_table: Optional[int] = None,
     pt_percent: float = nan,
-    oltc: bool | float = nan,
+    oltc: bool = False,
     xn_ohm: float = nan,
     tap2_pos: int | float = nan,
     **kwargs
@@ -3288,7 +3288,7 @@ def create_transformer(
             SplineCharacteristic objects in the net.trafo_characteristic_spline table and add the additional column \
             "id_characteristic_spline" to set up the reference to the spline characteristics.
 
-        **id_characteristic_table** (int, nan) - references the index of the characteristic from the lookup table \
+        **id_characteristic_table** (int, None) - references the index of the characteristic from the lookup table \
                                                  net.trafo_characteristic_table
 
         **tap_changer_type** (str, None) - specifies the phase shifter type ("Ratio", "Symmetrical", "Ideal", \
@@ -3403,7 +3403,7 @@ def create_transformer_from_parameters(
     tap_step_degree: float = nan,
     tap_pos: int | float = nan,
     tap_changer_type: Optional[TapChangerWithTabularType] = None,
-    id_characteristic_table: int | float = nan,
+    id_characteristic_table: Optional[int] = None,
     in_service: bool = True,
     name: Optional[str] = None,
     vector_group: Optional[str] = None,
@@ -3417,8 +3417,8 @@ def create_transformer_from_parameters(
     mag0_rx: float = nan,
     si0_hv_partial: float = nan,
     pt_percent: float = nan,
-    oltc: bool | float = nan,
-    tap_dependency_table: bool | float = False,
+    oltc: bool = False,
+    tap_dependency_table: bool = False,
     xn_ohm: float = nan,
     tap2_side: Optional[HVLVType] = None,
     tap2_neutral: int | float = nan,
@@ -3512,7 +3512,7 @@ def create_transformer_from_parameters(
             SplineCharacteristic objects in the net.trafo_characteristic_spline table and add the additional column \
             "id_characteristic_spline" to set up the reference to the spline characteristics.
 
-        **id_characteristic_table** (int, nan) - references the index of the characteristic from the lookup table \
+        **id_characteristic_table** (int, None) - references the index of the characteristic from the lookup table \
                                                  net.trafo_characteristic_table
 
         **pt_percent** (float, nan) - (short circuit only)
@@ -3659,7 +3659,7 @@ def create_transformers_from_parameters( # index missing ?
     tap_step_degree: float | Iterable[float] = nan,
     tap_pos: int | Iterable[int] | float = nan,
     tap_changer_type: Optional[TapChangerWithTabularType | Iterable[str]] = None,
-    id_characteristic_table: int | Iterable[int] | float = nan,
+    id_characteristic_table: Optional[int] | Iterable[Optional[int]] = None,
     in_service: bool | Iterable[bool] = True,
     name: Optional[Iterable[str]] = None,
     vector_group: Optional[str | Iterable[str]] = None,
@@ -3673,7 +3673,7 @@ def create_transformers_from_parameters( # index missing ?
     mag0_rx: float | Iterable[float] = nan,
     si0_hv_partial: float | Iterable[float] = nan,
     pt_percent: float | Iterable[float] = nan,
-    oltc: bool | Iterable[bool] | float = nan,
+    oltc: bool | Iterable[bool] = False,
     tap_dependency_table: bool | Iterable[bool] = False,
     xn_ohm: float | Iterable[float] = nan,
     tap2_side: Optional[HVLVType | Iterable[str]] = None,
@@ -3769,7 +3769,7 @@ def create_transformers_from_parameters( # index missing ?
             SplineCharacteristic objects in the net.trafo_characteristic_spline table and add the additional column \
             "id_characteristic_spline" to set up the reference to the spline characteristics.
 
-        **id_characteristic_table** (list of int, nan) - references the index of the characteristic from the lookup \
+        **id_characteristic_table** (list of int, None) - references the index of the characteristic from the lookup \
             table net.trafo_characteristic_table
 
         **pt_percent** (list of float, nan) - (short circuit only)
@@ -3885,8 +3885,8 @@ def create_transformer3w(
     max_loading_percent: float = nan,
     tap_changer_type: Optional[TapChangerWithTabularType] = None,
     tap_at_star_point: bool = False,
-    tap_dependency_table: bool | float = nan,
-    id_characteristic_table: int | float = nan,
+    tap_dependency_table: bool = False,
+    id_characteristic_table: Optional[int] = None,
     **kwargs
 ) -> Int:
     """
@@ -3932,7 +3932,7 @@ def create_transformer3w(
             SplineCharacteristic objects in the net.trafo_characteristic_spline table and add the additional column \
             "id_characteristic_spline" to set up the reference to the spline characteristics.
 
-        **id_characteristic_table** (int, nan) - references the index of the characteristic from the lookup table \
+        **id_characteristic_table** (int, None) - references the index of the characteristic from the lookup table \
                                                  net.trafo_characteristic_table
 
     OUTPUT:
@@ -4056,7 +4056,7 @@ def create_transformer3w_from_parameters(
         vkr0_lv_percent: float = nan,
         vector_group: Optional[str] = None,
         tap_dependency_table: bool = False,
-        id_characteristic_table: int | float = nan,
+        id_characteristic_table: Optional[int] = None,
         **kwargs) -> Int:
     """
     Adds a three-winding transformer in table net.trafo3w with the specified parameters.
@@ -4138,7 +4138,7 @@ def create_transformer3w_from_parameters(
             SplineCharacteristic objects in the net.trafo_characteristic_spline table and add the additional column \
             "id_characteristic_spline" to set up the reference to the spline characteristics.
 
-        **id_characteristic_table** (int, nan) - references the index of the characteristic from the lookup table \
+        **id_characteristic_table** (int, None) - references the index of the characteristic from the lookup table \
                                                  net.trafo_characteristic_table
 
         **vk0_hv_percent** (float) - zero sequence short circuit voltage from high to medium voltage
@@ -4258,7 +4258,7 @@ def create_transformers3w_from_parameters( # no index ?
         vkr0_lv_percent: float | Iterable[float] = nan,
         vector_group: Optional[str | Iterable[str]] = None,
         tap_dependency_table: bool | Iterable[bool] = False,
-        id_characteristic_table: int | Iterable[int] | float = nan,
+        id_characteristic_table: Optional[int] | Iterable[Optional[int]] = None,
         **kwargs) -> npt.NDArray[np.integer]:
     """
     Adds multiple three-winding transformers in table net.trafo3w with the specified parameters.
@@ -4644,7 +4644,7 @@ def create_shunt(
     max_step: int = 1,
     name: Optional[str] = None,
     step_dependency_table: bool = False,
-    id_characteristic_table: int | float = nan,
+    id_characteristic_table: Optional[int] = None,
     in_service: bool = True,
     index: Optional[Int] = None,
     **kwargs
@@ -4679,7 +4679,7 @@ def create_shunt(
             SplineCharacteristic objects in the net.shunt_characteristic_spline table and add the additional column \
             "id_characteristic_spline" to set up the reference to the spline characteristics.
 
-        **id_characteristic_table** (int, nan) - references the index of the characteristic from the lookup table \
+        **id_characteristic_table** (int, None) - references the index of the characteristic from the lookup table \
                                                  net.shunt_characteristic_table
 
         **in_service** (boolean, True) - True for in_service or False for out of service
@@ -4722,7 +4722,7 @@ def create_shunts(
     max_step: int | Iterable[int] = 1,
     name: Optional[Iterable[str]] = None,
     step_dependency_table: bool | Iterable[bool] = False,
-    id_characteristic_table: int | Iterable[int] | float = nan,
+    id_characteristic_table: Optional[int] | Iterable[Optional[int]] = None,
     in_service: bool | Iterable[bool] = True,
     index = None,
     **kwargs
@@ -4757,7 +4757,7 @@ def create_shunts(
             SplineCharacteristic objects in the net.shunt_characteristic_spline table and add the additional column \
             "id_characteristic_spline" to set up the reference to the spline characteristics.
 
-        **id_characteristic_table** (list of ints, nan) - references the index of the characteristic from the lookup \
+        **id_characteristic_table** (list of ints, None) - references the index of the characteristic from the lookup \
                                                           table net.shunt_characteristic_table
 
         **in_service** (list of booleans, True) - True for in_service or False for out of service
