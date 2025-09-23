@@ -839,7 +839,7 @@ def create_sgen(
     controllable: bool | float = nan,
     k: float = nan,
     rx: float = nan,
-    id_q_capability_characteristic = None,
+    id_q_capability_characteristic: Optional[int] = None,
     reactive_capability_curve: bool = False,
     curve_style = None,
     current_source: bool = True,
