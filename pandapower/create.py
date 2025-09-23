@@ -6097,7 +6097,7 @@ def create_measurement(
 
 def create_pwl_cost(
     net: pandapowerNet,
-    element, #TODO: type unclear
+    element: Int | Iterable[Int],
     et: CostElementType,
     points: list[list[float]],
     power_type: PWLPowerType = "p",
@@ -6231,7 +6231,7 @@ def create_pwl_costs(
 
 def create_poly_cost(
     net: pandapowerNet,
-    element, #TODO: type unclear
+    element: Int | Iterable[Int],
     et: CostElementType,
     cp1_eur_per_mw: float,
     cp0_eur: float = 0,
