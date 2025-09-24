@@ -6144,9 +6144,10 @@ def create_pwl_cost(
 
         create_pwl_cost(net, 0, "gen", [[0, 20, 1], [20, 30, 2]])
     """
-    element = element if not hasattr(element, "__iter__") else element[0]
+    if isinstance(element, (list, tuple)):
+        element = element[0]
     if check and _cost_existance_check(net, element, et, power_type=power_type):
-        raise UserWarning("There already exist costs for %s %i" % (et, element))
+        raise UserWarning(f"There already exist costs for {et} {element}")
 
     index = _get_index_with_check(net, "pwl_cost", index, "piecewise_linear_cost")
 
@@ -6285,9 +6286,10 @@ def create_poly_cost(
 
         create_poly_cost(net, 0, "load", cp1_eur_per_mw=0.1)
     """
-    element = element if not hasattr(element, "__iter__") else element[0]
+    if isinstance(element, (list, tuple)):
+        element = element[0]
     if check and _cost_existance_check(net, element, et):
-        raise UserWarning("There already exist costs for %s %i" % (et, element))
+        raise UserWarning(f"There already exist costs for {et} {element}")
 
     index = _get_index_with_check(net, "poly_cost", index)
     columns = ["element", "et", "cp0_eur", "cp1_eur_per_mw", "cq0_eur", "cq1_eur_per_mvar",
