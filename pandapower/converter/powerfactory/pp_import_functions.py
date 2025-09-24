@@ -1810,7 +1810,7 @@ def create_pp_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
         if parent_class == 'ElmLodlv':
             # set parent load out of service
             net.load.loc[net.load.name==parent.loc_name, 'in_service'] = False
-            params['parent_load'] = parent.loc_name
+            params['parent_load_index'] = net.load.loc[net.load.name == parent.loc_name].index.tolist()[0]
             bus_is_known = True
             params['bus'] = net.load.loc[net.load.name==parent.loc_name, 'bus'].values[0]
         
