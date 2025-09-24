@@ -466,6 +466,14 @@ def test_trafo_asym():
         assert net['converged']
         check_results(net, trafo_vector_group, get_PF_Results(trafo_vector_group))
 
+def test_trafo_asym__with_shift():
+    nw_dir = os.path.abspath(os.path.join(pp_dir, "test/loadflow"))
+    net = from_json(nw_dir + '/runpp_3ph Validation.json')
+    net['trafo'].vector_group = "Dyn"
+    net['trafo'].shift_degree = -30
+    runpp_3ph_with_consistency_checks(net)
+    assert net['converged']
+
 
 def test_2trafos():
     net = create_empty_network()

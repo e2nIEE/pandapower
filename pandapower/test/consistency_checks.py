@@ -6,8 +6,10 @@
 
 import pandas as pd
 from numpy import allclose, isclose
+import numpy as np
 
 from pandapower import runpp, rundcpp, runpp_pgm
+from pandapower.build_branch import _calc_tap_from_dataframe
 from pandapower.pf.runpp_3ph import runpp_3ph
 from pandapower.results import get_relevant_elements
 
@@ -168,6 +170,7 @@ def consistency_checks_3ph(net, rtol=2e-3):
     indices_consistent_3ph(net)
     branch_loss_consistent_with_bus_feed_in_3ph(net, rtol)
     element_power_consistent_with_bus_power_3ph(net, rtol)
+    trafo_currents_consistent_3ph(net)
 
 def indices_consistent_3ph(net):
     elements = get_relevant_elements("pf_3ph")
@@ -262,3 +265,65 @@ def element_power_consistent_with_bus_power_3ph(net, rtol=1e-2):
     assert allclose(net.res_bus_3ph.q_b_mvar.values, bus_q_b.values, equal_nan=True, rtol=rtol)
     assert allclose(net.res_bus_3ph.p_c_mw.values, bus_p_c.values, equal_nan=True, rtol=rtol)
     assert allclose(net.res_bus_3ph.q_c_mvar.values, bus_q_c.values, equal_nan=True, rtol=rtol)
+
+def trafo_currents_consistent_3ph(net):
+    """
+    The HV and LV currents of the transformer has to be related in accordance with trafo vector_group
+    For Dyn: i_a_hv = (i_a_lv - i_c_lv) / turn_ratio
+             i_b_hv = (i_b_lv - i_a_lv) / turn_ratio
+             i_c_hv = (i_c_lv - i_b_lv) / turn_ratio
+    For YNyn: i_a_hv = i_a_lv / turn_ratio
+              i_b_hv = i_b_lv / turn_ratio
+              i_c_hv = i_c_lv / turn_ratio
+    For Yzn: Not Implemented
+    """
+    rtol = 3e-2
+    for vector_group, trafo_df in net.trafo.groupby('vector_group'):
+        if vector_group not in ["Dyn", "YNyn", "Yzn"]:
+            continue
+        ### Yzn need to be implemented
+        if vector_group == "Yzn":
+            continue
+        ###############################
+        vnh, vnl, shift = _calc_tap_from_dataframe(net, trafo_df)
+        ratio = vnh / vnl
+        #nom_ratio = net.bus.vn_kv[trafo_df.hv_bus].values / net.bus.vn_kv[trafo_df.lv_bus].values
+        #ratio /= nom_ratio
+        for index, trafo in trafo_df.iterrows():
+            s_hv = np.array([
+                (net.res_trafo_3ph.loc[index, "p_"+ph+"_hv_mw"]+
+                 1j * net.res_trafo_3ph.loc[index, "q_"+ph+"_hv_mvar"])
+                for ph in ["a", "b", "c"]
+                ])
+            hv_bus = trafo["hv_bus"]
+            v_hv = np.array([
+                (net.res_bus_3ph.loc[hv_bus, "vm_"+ph+"_pu"] * net.bus.vn_kv[hv_bus] *
+                 np.exp(1j * np.deg2rad(net.res_bus_3ph.loc[hv_bus, "va_"+ph+"_degree"])))
+                for ph in ["a", "b", "c"]
+                ]) / np.sqrt(3)
+            s_lv = np.array([
+                (0 - net.res_trafo_3ph.loc[index, "p_"+ph+"_lv_mw"]+
+                 1j * (0 - net.res_trafo_3ph.loc[index, "q_"+ph+"_lv_mvar"]))
+                for ph in ["a", "b", "c"]
+                ])
+            lv_bus = trafo["lv_bus"]
+            v_lv = np.array([
+                (net.res_bus_3ph.loc[lv_bus, "vm_"+ph+"_pu"] * net.bus.vn_kv[lv_bus] *
+                 np.exp(1j * np.deg2rad(net.res_bus_3ph.loc[lv_bus, "va_"+ph+"_degree"])))
+                for ph in ["a", "b", "c"]
+                ]) / np.sqrt(3)
+            i_hv = np.conjugate(s_hv / v_hv)
+            i_lv = np.conjugate(s_lv / v_lv)
+            if vector_group == "Dyn":
+                # Disabled for now, as all test cases have validation results without shift
+                # However, Dyn transformers have standard shift of -30 degree
+                if trafo['shift_degree'] != -30:
+                    continue
+                assert isclose(i_hv[0], (i_lv[0] - i_lv[2])/(ratio[index] * np.sqrt(3)), rtol)
+                assert isclose(i_hv[1], (i_lv[1] - i_lv[0])/(ratio[index] * np.sqrt(3)), rtol)
+                assert isclose(i_hv[2], (i_lv[2] - i_lv[1])/(ratio[index] * np.sqrt(3)), rtol)
+
+            if vector_group == "YNyn":
+                assert isclose(i_hv[0], i_lv[0] /(ratio[index]), rtol)
+                assert isclose(i_hv[1], i_lv[1] /(ratio[index]), rtol)
+                assert isclose(i_hv[2], i_lv[2] /(ratio[index]), rtol)
