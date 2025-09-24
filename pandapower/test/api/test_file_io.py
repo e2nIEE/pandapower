@@ -188,7 +188,7 @@ def test_json(net_in, tmp_path):
 def test_encrypted_json(net_in, tmp_path):
     filename = os.path.abspath(str(tmp_path)) + "testfile.json"
     to_json(net_in, filename, encryption_key="verysecret")
-    with pytest.raises(json.JSONDecodeError):
+    with pytest.raises(UserWarning):
         from_json(filename)
     with pytest.raises(cryptography.fernet.InvalidToken):
         from_json(filename, encryption_key="wrong")
@@ -516,13 +516,13 @@ def test_replace_elements_json_string(net_in):
 
 
 def test_json_generalized():
-    general_net0 = pandapowerNet({
+    general_net0 = pandapowerNet(pandapowerNet.create_dataframes({
         # structure data
-        "df1": [('col1', np.dtype(object)),
-                ('col2', 'f8'), ],
-        "df2": [("col3", 'bool'),
-                ("col4", "i8")]
-    })
+        "df1": {'col1': np.dtype(object),
+                'col2': 'f8'},
+        "df2": {"col3": 'bool',
+                "col4": "i8"}
+    }))
     general_net1 = copy.deepcopy(general_net0)
     general_net1.df1.loc[0] = ["hey", 1.2]
     general_net1.df2.loc[2] = [False, 2]

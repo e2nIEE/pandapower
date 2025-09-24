@@ -3,6 +3,33 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [ADDED] Station Controller for local voltage control with droop, adjusted powerfactory import
+- [FIXED] Case5 tests, now the calculated values are compared to results from powerfactory
+- [FIXED] FACTS tests through restructuring all of the tests
+- [ADDED] Load_dc and Source_dc, which represent a conventional load and a generator in dc
+- [ADDED] DMR controller, which calculates the current on metallic return lines
+- [ADDED] Back2Back VSC converter, including extensive tests
+- [FIXED] Setting the correct Dtype in io_utils for sql databases
+- [ADDED] std_types as a dict to be fetched from the network_structure
+- [ADDED] Station controller support for measurements on trafo3w and impedance
+- [CHANGED] Station controller with measurements at switches: added a topological search to find nearby line or transformer and relocated measurement to avoid small impedances on switches
+- [FIXED] Station controller bug with Q(U) (wrong sign in equation for droop calculation)
+- [ADDED] python: support for version 3.13 added to the test pipelines
+- [FIXED] create_buses_dc: incorrect handling of geodata
+- [ADDED] postgresql: support for setting a port for the connection
+- [FIXED] ensure proper handling of `indent` parameter for PPJSONEncoder, fixing compatibility with Python3.13
+- [FIXED] Case5 tests, now the calculated values are compared to results from powerfactory
+- [FIXED] FACTS tests through restructuring all of the tests
+- [ADDED] Load_dc and Source_dc, which represent a conventional load and a generator in dc
+- [ADDED] DMR controller, which calculates the current on metallic return lines
+- [ADDED] Back2Back VSC converter, including extensive tests
+- [ADDED] description for `slack` argument in docstring of create_gen function
+- [FIXED] pf2pp: dc-lines geodata error is fixed, outdated line_dc_geodata field replaced by newer geo-column
+- [FIXED] pf2pp: zip load import error fixed by replacing unknown ga() function with actual GetAttribute-function
+- [FIXED] pf2pp: Ipython tutorial converter_powerfactory import statements (pf) corrected by directly importing powerfactory as pf
+- [ADDED] pf2pp: Ipython tutorial converter_powerfactory now has additional text description and uses a standard 14-bus network example network
+- [REMOVED] kwargs in basic controller class
+- [ADDED] name attribute in basic controller class
 - [FIXED] remove print statement from results_bus.py
 - [FIXED] cim2pp: Make sure that the controllable flag is never nan for any generators
 - [CHANGED] move pandapower network pandas structure dict from create_empty_network to its own file
@@ -17,6 +44,16 @@ Change Log
 - [FIXED] fixed convert_format for missing information (in gen, sgen, shunt) and tables (q_capability_characteristic, q_capability_curve_table, id_characteristic_table, step_dependency_table)
 - [ADDED] added tests for q_capability_curve_table in cim2pp and convert_format.py for format_version 3.1.0
 - [FIXED] deserialising q_capability_characteristic in from_excel and added test for it
+- [FIXED] make network structure more accessible, including needed adaptation in pandapowerNet constructor
+- [FIXED] cim2pp: add more dtype parameters, fix some tests
+- [FIXED] convert_format fix check when net version is below format version
+- [FIXED] json io test with new network structure dict
+- [FIXED] DC OPF bug if verbose = True
+- [CHANGED] cim2pp conversion of SVC parameter active power: p is set to 0, instead of using the p-value from the SV-profile
+- [FIXED] type annotations in create methods
+- [CHANGED] drop_inactive_elements performance improvements: using pandas methods instead of looping
+- [ADDED] add a few more tests for the grid modification functions
+- [FIXED] cim2pp: minor speed increase through faster dict creation and removal of not needed .keys() call
 
 [3.1.2] - 2025-06-16
 -------------------------------
