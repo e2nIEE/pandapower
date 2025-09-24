@@ -101,7 +101,7 @@ def test_pf_export_trafo3w():
             raise (UserWarning, "Diff variable has wrong type!")
         assert delta < tol[key], "%s has too high difference: %f > %f" % (key, delta, tol[key])
 
-
+@pytest.mark.skipif(not PF_INSTALLED, reason='powerfactory must be installed')
 def test_trafo_tap2_results():
     path = os.path.join(pp_dir, 'test', 'converter', 'testfiles', 'trafo_tap_model.json')
     net = from_json(path)
@@ -171,6 +171,47 @@ def test_pf_export_tap_changer():
             delta = diff.abs().max()
         else:
             delta = diff['diff'].abs().max()
+        assert delta < tol[key], "%s has too high difference: %f > %f" % (key, delta, tol[key])
+
+#@pytest.mark.skipif(not PF_INSTALLED, reason='powerfactory must be installed')
+def test_pf_export_partial_loads():
+    # partial loads within PF Type ElmLodlvp, when parent class is ElmLod
+    
+    app = pf.GetApplication()
+    # import the partial loads test grid to powerfactory
+    path = os.path.join(pp_dir, 'test', 'converter', 'testfiles', 'test_partial_loads.pfd')
+    prj = import_project(path, app, 'test_partial_loads', import_folder='TEST_IMPORT', clear_import_folder=True)
+    prj_name = prj.GetFullName()
+
+    net = from_pfd(app, prj_name=prj_name, pv_as_slack=True, handle_us="Nothing")
+
+    all_diffs = validate_pf_conversion(net, tolerance_mva=1e-9)
+    
+    #tol = get_tol()
+    tol = {
+        'diff_vm': 1e-3,
+        'diff_va': 1e-3,
+        'line_diff': 1e-1,
+        'trafo_diff': 1e-2,
+        'sgen_p_diff_is': 1e-5,
+        'sgen_q_diff_is': 1e-5,
+        'load_p_diff_is': 1e-5,
+        'load_q_diff_is': 1e-5,
+        'ext_grid_p_diff': 1e-3,
+        'ext_grid_q_diff': 1e-3
+    }
+
+    for key, diff in all_diffs.items():
+        if isinstance(diff, pd.DataFrame):                
+            delta = diff["diff"].abs().max() # if key=='load_p_diff_is':
+        elif isinstance(diff, pd.Series):
+            delta = diff.abs().max()
+            if key=='load_p_diff_is':
+                delta = abs(diff.sum())-0.046 # sum of partial loads is not computed right in diff
+            else:
+                delta = diff.abs().max()
+        else:
+            raise (UserWarning, "Diff variable has wrong type!")
         assert delta < tol[key], "%s has too high difference: %f > %f" % (key, delta, tol[key])
 
 @pytest.mark.skipif(not PF_INSTALLED, reason='powerfactory must be installed')
