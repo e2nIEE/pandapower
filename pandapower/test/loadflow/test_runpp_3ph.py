@@ -468,11 +468,12 @@ def test_trafo_asym():
 
 def test_trafo_asym__with_shift():
     nw_dir = os.path.abspath(os.path.join(pp_dir, "test/loadflow"))
-    net = from_json(nw_dir + '/runpp_3ph Validation.json')
-    net['trafo'].vector_group = "Dyn"
-    net['trafo'].shift_degree = -30
-    runpp_3ph_with_consistency_checks(net)
-    assert net['converged']
+    for clock in [-30, 30]:
+        net = from_json(nw_dir + '/runpp_3ph Validation.json')
+        net['trafo'].vector_group = "Dyn"
+        net['trafo'].shift_degree = clock
+        runpp_3ph_with_consistency_checks(net)
+        assert net['converged']
 
 
 def test_2trafos():

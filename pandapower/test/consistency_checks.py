@@ -316,17 +316,19 @@ def trafo_currents_consistent_3ph(net):
             i_lv = np.conjugate(s_lv / v_lv)
             tf_index = net.trafo.index.get_loc(index)
             if vector_group == "Dyn":
-                # Disabled for now, as all test cases have validation results without shift
-                # However, Dyn transformers have standard shift of -30 degree
-                if trafo['shift_degree'] != -30:
-                    continue
-                assert isclose(i_hv[0], (i_lv[0] - i_lv[2])/(ratio[tf_index] * np.sqrt(3)), rtol)
-                assert isclose(i_hv[1], (i_lv[1] - i_lv[0])/(ratio[tf_index] * np.sqrt(3)), rtol)
-                assert isclose(i_hv[2], (i_lv[2] - i_lv[1])/(ratio[tf_index] * np.sqrt(3)), rtol)
+                # HV and LV Currents are related depending on clock (shift)
+                if trafo['shift_degree'] == -30:
+                    assert isclose(i_hv[0], (i_lv[0] - i_lv[2])/(ratio[tf_index] * np.sqrt(3)), rtol)
+                    assert isclose(i_hv[1], (i_lv[1] - i_lv[0])/(ratio[tf_index] * np.sqrt(3)), rtol)
+                    assert isclose(i_hv[2], (i_lv[2] - i_lv[1])/(ratio[tf_index] * np.sqrt(3)), rtol)
+                elif trafo['shift_degree'] == 30:
+                    assert isclose(i_hv[0], (i_lv[0] - i_lv[1])/(ratio[tf_index] * np.sqrt(3)), rtol)
+                    assert isclose(i_hv[1], (i_lv[1] - i_lv[2])/(ratio[tf_index] * np.sqrt(3)), rtol)
+                    assert isclose(i_hv[2], (i_lv[2] - i_lv[0])/(ratio[tf_index] * np.sqrt(3)), rtol)
+
 
             if vector_group == "YNyn":
-                if trafo['shift_degree'] != 0:
-                    continue
-                assert isclose(i_hv[0], i_lv[0] /(ratio[tf_index]), rtol)
-                assert isclose(i_hv[1], i_lv[1] /(ratio[tf_index]), rtol)
-                assert isclose(i_hv[2], i_lv[2] /(ratio[tf_index]), rtol)
+                if trafo['shift_degree'] == 0:
+                    assert isclose(i_hv[0], i_lv[0] /(ratio[tf_index]), rtol)
+                    assert isclose(i_hv[1], i_lv[1] /(ratio[tf_index]), rtol)
+                    assert isclose(i_hv[2], i_lv[2] /(ratio[tf_index]), rtol)
