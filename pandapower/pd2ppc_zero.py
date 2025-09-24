@@ -283,22 +283,22 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
         YAB_BN = 1 / (zc + zb).astype(complex)  # Series conn YAB and YBN
 
         # y0_k = 1 / z0_k #adding admittance for "pi" model
-        if vector_group.lower() == "dyn":
-            buses_all = np.hstack([buses_all, lv_buses_ppc])
+        if vector_group.lower() == "dyn":            
             if trafo_model == "pi":
-                y = y0_k * ppc["baseMVA"]  # pi model
+                y = y0_k  # pi model
             else:
-                y = (YAB + YBN).astype(complex) * ppc["baseMVA"]  # T model
-            if mode != "sc":
-                ppc["branch"][ppc_idx, BR_G_ASYM] = y.real
-                ppc["branch"][ppc_idx, BR_B_ASYM] = y.imag
-            gs_all = np.hstack([gs_all, y.real * in_service])
-            bs_all = np.hstack([bs_all, y.imag * in_service])
+                y = (YAB + YBN).astype(complex)  # T model
+            if mode == "sc":
+                buses_all = np.hstack([buses_all, lv_buses_ppc])
+                gs_all = np.hstack([gs_all, y.real * in_service * ppc["baseMVA"]])
+                bs_all = np.hstack([bs_all, y.imag * in_service * ppc["baseMVA"]])
+            else:
+                ppc["branch"][ppc_idx, BR_G_ASYM] = y.real * in_service * 2
+                ppc["branch"][ppc_idx, BR_B_ASYM] = y.imag * in_service * 2
 
         elif vector_group.lower() == "ynd":
-            buses_all = np.hstack([buses_all, hv_buses_ppc])
             if trafo_model == "pi":
-                y = y0_k * ppc["baseMVA"]  # pi model
+                y = y0_k  # pi model
                 # y = 1/0.99598 * 1 / (1/(y0_k * ppc["baseMVA"]) + 1/0.99598 * (1j * 3 * 22 /( (110 ** 2) / 1))) # pi
                 # y = 1/0.99598 * 1 / (1/(y0_k * ppc["baseMVA"]) + 1/0.99598 * (1j * 3 * 22 /( (110 ** 2) / 1))) # pi
 
@@ -306,69 +306,79 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
                 # print(z0_k_k)
                 # y = 1 / z0_k_k # pi model
             else:
-                y = (YAB_BN + YAN).astype(complex) * ppc["baseMVA"]  # T model
-            if mode != "sc":
-                ppc["branch"][ppc_idx, BR_G_ASYM] = y.real
-                ppc["branch"][ppc_idx, BR_B_ASYM] = y.imag
-            gs_all = np.hstack([gs_all, y.real * in_service])
-            bs_all = np.hstack([bs_all, y.imag * in_service])
+                y = (YAB_BN + YAN).astype(complex)  # T model
+            if mode == "sc":
+                buses_all = np.hstack([buses_all, hv_buses_ppc])
+                gs_all = np.hstack([gs_all, y.real * in_service * ppc["baseMVA"]])
+                bs_all = np.hstack([bs_all, y.imag * in_service * ppc["baseMVA"]])
+            else:
+                ppc["branch"][ppc_idx, BR_G] = y.real * in_service * 2
+                ppc["branch"][ppc_idx, BR_B] = y.imag * in_service * 2
+                ppc["branch"][ppc_idx, BR_G_ASYM] = y.real * in_service * (-2)
+                ppc["branch"][ppc_idx, BR_B_ASYM] = y.imag * in_service * (-2)
+            
 
         elif vector_group.lower() == "yyn":
-            buses_all = np.hstack([buses_all, lv_buses_ppc])
             if trafo_model == "pi":
-                y = 1/(z0_mag+z0_k).astype(complex) * ppc["baseMVA"]  # pi model
+                y = 1/(z0_mag+z0_k).astype(complex)  # pi model
             else:
                 # y = (YAB_AN + YBN).astype(complex)  # T model
-                y = (YAB + YAB_BN + YBN).astype(complex) * ppc["baseMVA"]  # T model
-            if mode != "sc":
-                ppc["branch"][ppc_idx, BR_G] = y.real
-                ppc["branch"][ppc_idx, BR_B] = y.imag
-            gs_all = np.hstack([gs_all, y.real * in_service])
-            bs_all = np.hstack([bs_all, y.imag * in_service])
-
+                y = (YAB + YAB_BN + YBN).astype(complex)  # T model
+            if mode == "sc":
+                buses_all = np.hstack([buses_all, lv_buses_ppc])
+                gs_all = np.hstack([gs_all, y.real * in_service * ppc["baseMVA"]])
+                bs_all = np.hstack([bs_all, y.imag * in_service * ppc["baseMVA"]])
+            else:
+                ppc["branch"][ppc_idx, BR_G_ASYM] = y.real * in_service * 2
+                ppc["branch"][ppc_idx, BR_B_ASYM] = y.imag * in_service * 2
+        
         elif vector_group.lower() == "ynyn":
             ppc["branch"][ppc_idx, BR_STATUS] = in_service
             # Need to update this.
             # zc = ZAB
             ppc["branch"][ppc_idx, BR_R] = zc.real
             ppc["branch"][ppc_idx, BR_X] = zc.imag
-            if mode != "sc":
-                asym_y = (YBN-YAN).astype(complex)
-                ppc["branch"][ppc_idx, BR_G] = YAN.real
-                ppc["branch"][ppc_idx, BR_B] = YAN.imag
-                ppc["branch"][ppc_idx, BR_G_ASYM] = asym_y.real
-                ppc["branch"][ppc_idx, BR_B_ASYM] = asym_y.real
+            if mode == "sc":
+                buses_all = np.hstack([buses_all, hv_buses_ppc])
+                gs_all = np.hstack([gs_all, YAN.real * in_service * ppc["baseMVA"] * tap_lv / tap_hv])
+                bs_all = np.hstack([bs_all, YAN.imag * in_service * ppc["baseMVA"] * tap_lv / tap_hv])
 
-            buses_all = np.hstack([buses_all, hv_buses_ppc])
-            gs_all = np.hstack([gs_all, YAN.real * in_service * ppc["baseMVA"] * tap_lv / tap_hv])
-            bs_all = np.hstack([bs_all, YAN.imag * in_service * ppc["baseMVA"] * tap_lv / tap_hv])
-
-            buses_all = np.hstack([buses_all, lv_buses_ppc])
-            gs_all = np.hstack([gs_all, YBN.real * in_service * ppc["baseMVA"]])
-            bs_all = np.hstack([bs_all, YBN.imag * in_service * ppc["baseMVA"]])
+                buses_all = np.hstack([buses_all, lv_buses_ppc])
+                gs_all = np.hstack([gs_all, YBN.real * in_service * ppc["baseMVA"]])
+                bs_all = np.hstack([bs_all, YBN.imag * in_service * ppc["baseMVA"]])
+            else:
+                ppc["branch"][ppc_idx, BR_G] = YAN.real * in_service * 2 * tap_lv / tap_hv
+                ppc["branch"][ppc_idx, BR_B] = YAN.imag * in_service * 2 * tap_lv / tap_hv
+                ppc["branch"][ppc_idx, BR_G_ASYM] = YBN.real * in_service * 2 - ppc["branch"][ppc_idx, BR_G]
+                ppc["branch"][ppc_idx, BR_B_ASYM] = YBN.imag * in_service * 2 - ppc["branch"][ppc_idx, BR_B]
 
         elif vector_group.lower() == "yny":
-            buses_all = np.hstack([buses_all, hv_buses_ppc])
             if trafo_model == "pi":
-                y = 1/(z0_mag+z0_k).astype(complex) * ppc["baseMVA"]  # pi model
+                y = 1/(z0_mag+z0_k).astype(complex)  # pi model
             else:
-                y = (YAB_BN + YAN).astype(complex) * ppc["baseMVA"]  # T model
-            if mode != "sc":
-                ppc["branch"][ppc_idx, BR_G] = y.real
-                ppc["branch"][ppc_idx, BR_B] = y.imag
-            gs_all = np.hstack([gs_all, y.real * in_service])
-            bs_all = np.hstack([bs_all, y.imag * in_service])
+                y = (YAB_BN + YAN).astype(complex)  # T model
+            if mode == "sc":
+                buses_all = np.hstack([buses_all, hv_buses_ppc])
+                gs_all = np.hstack([gs_all, y.real * in_service * ppc["baseMVA"]])
+                bs_all = np.hstack([bs_all, y.imag * in_service * ppc["baseMVA"]])
+            else:
+                ppc["branch"][ppc_idx, BR_G] = y.real * in_service * 2
+                ppc["branch"][ppc_idx, BR_B] = y.imag * in_service * 2
+                ppc["branch"][ppc_idx, BR_G_ASYM] = y.real * in_service * (-2)
+                ppc["branch"][ppc_idx, BR_B_ASYM] = y.imag * in_service * (-2)
 
         elif vector_group.lower() == "yzn":
-            buses_all = np.hstack([buses_all, lv_buses_ppc])
             #            y = 1/(z0_mag+z0_k).astype(complex)* int(ppc["baseMVA"])#T model
             #            y= (za+zb+zc)/((za+zc)*zb).astype(complex)* int(ppc["baseMVA"])#pi model
-            y = (YAB_AN + YBN).astype(complex) * ppc["baseMVA"] ** 2  # T model # why sn_mva squared here?
-            if mode != "sc":
-                ppc["branch"][ppc_idx, BR_G] = y.real
-                ppc["branch"][ppc_idx, BR_B] = y.imag
-            gs_all = np.hstack([gs_all, (1.1547) * y.real * in_service])  # what's the 1.1547 value?
-            bs_all = np.hstack([bs_all, (1.1547) * y.imag * in_service])
+            y = (YAB_AN + YBN).astype(complex)
+            if mode == "sc":
+                buses_all = np.hstack([buses_all, lv_buses_ppc])
+                gs_all = np.hstack([gs_all, (1.1547) * y.real * in_service * ppc["baseMVA"] ** 2])  # what's the 1.1547 value? T model # why sn_mva squared here?
+                bs_all = np.hstack([bs_all, (1.1547) * y.imag * in_service * ppc["baseMVA"] ** 2])  # T model # why sn_mva squared here?
+            else:
+                ppc["branch"][ppc_idx, BR_G_ASYM] = (1.1547) * y.real * in_service * ppc["baseMVA"] * 2
+                ppc["branch"][ppc_idx, BR_B_ASYM] = (1.1547) * y.imag * in_service * ppc["baseMVA"] * 2
+            
 
         elif vector_group[-1].isdigit():
             raise ValueError("Unknown transformer vector group %s - "
