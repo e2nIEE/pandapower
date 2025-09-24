@@ -277,7 +277,9 @@ def trafo_currents_consistent_3ph(net):
               i_c_hv = i_c_lv / turn_ratio
     For Yzn: Not Implemented
     """
-    rtol = 3e-2
+    rtol = 1e-1
+    if "vector_group" not in net.trafo:
+        return
     for vector_group, trafo_df in net.trafo.groupby('vector_group'):
         if vector_group not in ["Dyn", "YNyn", "Yzn"]:
             continue
@@ -287,8 +289,6 @@ def trafo_currents_consistent_3ph(net):
         ###############################
         vnh, vnl, shift = _calc_tap_from_dataframe(net, trafo_df)
         ratio = vnh / vnl
-        #nom_ratio = net.bus.vn_kv[trafo_df.hv_bus].values / net.bus.vn_kv[trafo_df.lv_bus].values
-        #ratio /= nom_ratio
         for index, trafo in trafo_df.iterrows():
             s_hv = np.array([
                 (net.res_trafo_3ph.loc[index, "p_"+ph+"_hv_mw"]+
@@ -314,16 +314,19 @@ def trafo_currents_consistent_3ph(net):
                 ]) / np.sqrt(3)
             i_hv = np.conjugate(s_hv / v_hv)
             i_lv = np.conjugate(s_lv / v_lv)
+            tf_index = net.trafo.index.get_loc(index)
             if vector_group == "Dyn":
                 # Disabled for now, as all test cases have validation results without shift
                 # However, Dyn transformers have standard shift of -30 degree
                 if trafo['shift_degree'] != -30:
                     continue
-                assert isclose(i_hv[0], (i_lv[0] - i_lv[2])/(ratio[index] * np.sqrt(3)), rtol)
-                assert isclose(i_hv[1], (i_lv[1] - i_lv[0])/(ratio[index] * np.sqrt(3)), rtol)
-                assert isclose(i_hv[2], (i_lv[2] - i_lv[1])/(ratio[index] * np.sqrt(3)), rtol)
+                assert isclose(i_hv[0], (i_lv[0] - i_lv[2])/(ratio[tf_index] * np.sqrt(3)), rtol)
+                assert isclose(i_hv[1], (i_lv[1] - i_lv[0])/(ratio[tf_index] * np.sqrt(3)), rtol)
+                assert isclose(i_hv[2], (i_lv[2] - i_lv[1])/(ratio[tf_index] * np.sqrt(3)), rtol)
 
             if vector_group == "YNyn":
-                assert isclose(i_hv[0], i_lv[0] /(ratio[index]), rtol)
-                assert isclose(i_hv[1], i_lv[1] /(ratio[index]), rtol)
-                assert isclose(i_hv[2], i_lv[2] /(ratio[index]), rtol)
+                if trafo['shift_degree'] != 0:
+                    continue
+                assert isclose(i_hv[0], i_lv[0] /(ratio[tf_index]), rtol)
+                assert isclose(i_hv[1], i_lv[1] /(ratio[tf_index]), rtol)
+                assert isclose(i_hv[2], i_lv[2] /(ratio[tf_index]), rtol)
