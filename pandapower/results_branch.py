@@ -61,7 +61,7 @@ def _get_branch_results_3ph(net, ppc0, ppc1, ppc2, bus_lookup_aranged, pq_buses)
     """
     I012_f, S012_f, V012_f, I012_t, S012_t, V012_t = _get_branch_flows_3ph(ppc0, ppc1, ppc2)
     _get_line_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t)
-    _get_trafo_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t)
+    _get_trafo_results_3ph(net, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t)
     # _get_trafo3w_results(net, ppc, s_ft, i_ft)
     # _get_impedance_results(net, ppc, i_ft)
     # _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses)
@@ -363,7 +363,7 @@ def _get_trafo_results(net, ppc, s_ft, i_ft, suffix=None):
     res_trafo_df["loading_percent"].values[:] = loading_percent
 
 
-def _get_trafo_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t):
+def _get_trafo_results_3ph(net, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t):
     ac = net["_options"]["ac"]
     trafo_loading = net["_options"]["trafo_loading"]
 
