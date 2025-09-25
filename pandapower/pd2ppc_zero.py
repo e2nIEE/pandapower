@@ -195,7 +195,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
             )
         vk0_percent = (
             trafos["vk0_percent"].values.astype(float)
-            if trafos["vk0_percent"].values.astype(float).all() != 0.0
+            if not np.isclose(trafos["vk0_percent"].values.astype(float).all(), 0.0)
             else trafos["vk_percent"].values.astype(float)
         )
         # Just put pos seq parameter if zero seq parameter is zero
@@ -206,7 +206,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
             )
         vkr0_percent = (
             trafos["vkr0_percent"].values.astype(float)
-            if trafos["vkr0_percent"].values.astype(float).all() != 0.0
+            if not np.isclose(trafos["vkr0_percent"].values.astype(float).all(), 0.0)
             else trafos["vkr_percent"].values.astype(float)
         )
         lv_buses = trafos["lv_bus"].values.astype(np.int64)
@@ -291,15 +291,15 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
             z0_k *= kt
 
             # different formula must be applied for power station unit transformers:
-            # z_0THV is for power station block unit transformer -> page 20 of IEC60909-4:2021 (example 4.4.2):
+            # z_othv is for power station block unit transformer -> page 20 of IEC60909-4:2021 (example 4.4.2):
             # todo: check if sn_mva must be included here?
             vkx0_percent = np.sqrt(np.square(vk0_percent) - np.square(vkr0_percent))
-            z_0THV = (
+            z_othv = (
                 (vkr0_percent / 100 + 1j * vkx0_percent / 100)
                 * (np.square(vn_trafo_hv) / sn_trafo_mva)
                 / parallel
             )
-            z0_k_psu = (z_0THV * k_st_tr + 3j * z_n_ohm) / ((vn_bus_hv**2) / net.sn_mva)
+            z0_k_psu = (z_othv * k_st_tr + 3j * z_n_ohm) / ((vn_bus_hv**2) / net.sn_mva)
             z0_k = np.where(power_station_unit, z0_k_psu, z0_k)
 
         y0_k = 1 / z0_k  # adding admittance for "pi" model
@@ -599,9 +599,7 @@ def _add_trafo3w_sc_impedance_zero(net, ppc):
     for t3_ix in np.arange(n_t3):
         t3 = net.trafo3w.iloc[t3_ix, :]
 
-        if t3.vector_group.lower() in set(
-            map(lambda vg: "".join(vg), product("dy", repeat=3))
-        ):
+        if t3.vector_group.lower() in {"".join(vg) for vg in product("dy", repeat=3)}:
             x[[t3_ix, t3_ix + n_t3, t3_ix + n_t3 * 2]] = BIG_NUMBER
             r[[t3_ix, t3_ix + n_t3, t3_ix + n_t3 * 2]] = BIG_NUMBER
         elif t3.vector_group.lower() == "ynyd":
