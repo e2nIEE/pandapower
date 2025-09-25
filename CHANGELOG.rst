@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [ADDED] pf2pp: ElmLodlvp partial loads in lv loads inkl. night heat storage is implemented for conversion to pp
 - [ADDED] Station Controller for local voltage control with droop, adjusted powerfactory import
 - [FIXED] Case5 tests, now the calculated values are compared to results from powerfactory
 - [FIXED] FACTS tests through restructuring all of the tests
