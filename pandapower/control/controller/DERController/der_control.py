@@ -111,7 +111,7 @@ class DERController(PQController):
         self.q_model = q_model
         self.pqv_area = pqv_area
         self.saturate_sn_mva = np.array(ensure_iterability(saturate_sn_mva))
-        self.saturate_sn_mva_active = isinstance(self.saturate_sn_mva, np.ndarray) 
+        self.saturate_sn_mva_activated = isinstance(self.saturate_sn_mva, np.ndarray) 
         self.q_prio = q_prio
         self.damping_coef = damping_coef
 
@@ -123,7 +123,7 @@ class DERController(PQController):
         if n_nan_sn := sum(self.sn_mva.isnull()):
             logger.error(f"The DERController relates to sn_mva, but for {n_nan_sn} elements "
                          "sn_mva is NaN.")
-        if self.saturate_sn_mva_active and (self.saturate_sn_mva <= 0).any():
+        if self.saturate_sn_mva_activated and (self.saturate_sn_mva <= 0).any():
             raise ValueError(f"saturate_sn_mva cannot be <= 0 but is {self.saturate_sn_mva}")
         if self.q_model is not None and not isinstance(self.q_model, QModel):
             logger.warning(f"The Q model is expected of type QModel, however {type(self.q_model)} "
@@ -172,7 +172,7 @@ class DERController(PQController):
         q_pu = self._step_q(p_series_mw=p_series_mw, q_series_mvar=q_series_mvar, vm_pu=vm_pu)
 
         # --- Second Step: Saturates P, Q according to SnMVA and PQV_AREA
-        if self.saturate_sn_mva_active or (self.pqv_area is not None):
+        if self.saturate_sn_mva_activated or (self.pqv_area is not None):
             p_pu, q_pu = self._saturate(p_pu, q_pu, vm_pu)
 
         # --- Third Step: Convert relative P, Q to p_mw, q_mvar
@@ -207,7 +207,7 @@ class DERController(PQController):
                 q_pu[~in_area] = np.minimum(np.maximum(
                     q_pu[~in_area], min_max_q_pu[:, 0]), min_max_q_pu[:, 1])
 
-        if self.saturate_sn_mva_active:
+        if self.saturate_sn_mva_activated:
             p_pu, q_pu = self._saturate_sn_mva_step(p_pu, q_pu, vm_pu)
         return p_pu, q_pu
 
