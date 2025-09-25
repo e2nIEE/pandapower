@@ -279,11 +279,10 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
 #        YAB_BN = (zc + zb) / (zc * zb).astype(complex)  # Series conn YAB and YBN
 
         YAB_AN = 1 / (zc + za).astype(complex)  # Series conn YAB and YAN
-        YAB_BN = 1 / (zc + zb).astype(complex)  # Series conn YAB and YBN
-        
+        YAB_BN = 1 / (zc + zb).astype(complex)  # Series conn YAB and YBN        
         y_sym = np.zeros(len(trafos), dtype=np.complex128)
         # y0_k = 1 / z0_k #adding admittance for "pi" model
-        if vector_group.lower() == "dyn":            
+        if vector_group.lower() == "dyn":
             if trafo_model == "pi":
                 y = y0_k  # pi model
             else:
