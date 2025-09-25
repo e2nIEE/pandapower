@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [FIXED] Fixed res_line_3ph, including converter since it was wrong in code and did not adhere to documentation: 'p_a_l_mw' is now 'pl_a_mw', same for ql and all phases.
 - [FIXED] Transformer Phase shift in negative sequence is reversed.
 - [FIXED] Transformer LV currents in result table are now taken from ppc isntead of adding load currents, as transformers are no more out-of-service in zero sequence
 - [FIXED] In zero-sequence transformers are no more out-of-service, but having very large impedance
