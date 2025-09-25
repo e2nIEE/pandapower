@@ -324,6 +324,17 @@ def _rename_columns(net, elements_to_deserialize):
                 'q_c_l_mvar': 'ql_c_mvar',
             })
 
+    if _check_elements_to_deserialize('res_trafo_3ph', elements_to_deserialize):
+        if "p_a_l_mw" in net.res_trafo_3ph:
+            net['res_trafo_3ph'].rename(columns={
+                'p_a_l_mw': 'pl_a_mw',
+                'p_b_l_mw': 'pl_b_mw',
+                'p_c_l_mw': 'pl_c_mw',
+                'q_a_l_mvar': 'ql_a_mvar',
+                'q_b_l_mvar': 'ql_b_mvar',
+                'q_c_l_mvar': 'ql_c_mvar',
+            })
+
     if "options" in net:
         if "recycle" in net["options"]:
             if "Ybus" in net["options"]["recycle"]:

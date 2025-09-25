@@ -23,4 +23,6 @@ i_b_hv_ka;float;current at the high voltage side of the transformer : Phase B [k
 i_b_lv_ka;float;current at the low voltage side of the transformer : Phase B [kA]
 i_c_hv_ka;float;current at the high voltage side of the transformer : Phase C [kA]
 i_c_lv_ka;float;current at the low voltage side of the transformer : Phase C [kA]
-loading_percent;float;load utilization relative to rated power [%]
+loading_a_percent;float;load utilization relative to rated power: Phase A [%]
+loading_b_percent;float;load utilization relative to rated power: Phase B [%]
+loading_c_percent;float;load utilization relative to rated power: Phase C [%]
