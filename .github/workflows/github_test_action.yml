@@ -94,7 +94,7 @@ jobs:
         run: |
           julia -e 'using Pkg; Pkg.add("PandaModels")'
           julia -e 'using Pkg; Pkg.add("PyCall")'
-          python -c "import julia; julia.install(color=True)"
+          uv run python -c "import julia; julia.install(color=True)"
       - name: List of installed packages
         run: |
           uv pip list
