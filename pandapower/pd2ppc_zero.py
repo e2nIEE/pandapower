@@ -195,7 +195,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
             )
         vk0_percent = (
             trafos["vk0_percent"].values.astype(float)
-            if not np.isclose(trafos["vk0_percent"].values.astype(float).all(), 0.0)
+            if np.abs(trafos["vk0_percent"].values.astype(float)).max() > 1e-8
             else trafos["vk_percent"].values.astype(float)
         )
         # Just put pos seq parameter if zero seq parameter is zero
@@ -206,7 +206,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
             )
         vkr0_percent = (
             trafos["vkr0_percent"].values.astype(float)
-            if not np.isclose(trafos["vkr0_percent"].values.astype(float).all(), 0.0)
+            if np.abs(trafos["vkr0_percent"].values.astype(float)).max() > 1e-8
             else trafos["vkr_percent"].values.astype(float)
         )
         lv_buses = trafos["lv_bus"].values.astype(np.int64)
