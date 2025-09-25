@@ -3,6 +3,11 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [FIXED] Transformer Phase shift in negative sequence is reversed.
+- [FIXED] Transformer LV currents in result table are now taken from ppc isntead of adding load currents, as transformers are no more out-of-service in zero sequence
+- [FIXED] In zero-sequence transformers are no more out-of-service, but having very large impedance
+- [FIXED] Zero-Sequence parameters of traformers added to "branch" in ppc instead of bus for loadflow
+- [FIXED] Added "p_c_mw" attribute in res_line_3ph in network_structure.py
 - [ADDED] pf2pp: ElmLodlvp partial loads in lv loads inkl. night heat storage is implemented for conversion to pp
 - [ADDED] Station Controller for local voltage control with droop, adjusted powerfactory import
 - [FIXED] Case5 tests, now the calculated values are compared to results from powerfactory
