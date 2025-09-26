@@ -289,7 +289,7 @@ if __name__ == "__main__":
         line_trace_vlev = create_line_trace(
             net,
             lines=vlev_lines,
-            use_line_geodata=use_line_geodata,
+            use_line_geo=use_line_geodata,
             respect_switches=respect_switches,
             legendgroup=str(vn_kv),
             color="r",

@@ -244,7 +244,7 @@ def test_const_control_write_to_object_attribute(simple_test_net):
 
     run_timeseries(net, time_steps, verbose=False)
 
-    assert np.all(profiles["load1"].values * 0.85 == ow.output["load.p_mw"][0].values)
+    assert np.all(np.isclose(profiles["load1"].values * 0.85, ow.output["load.p_mw"][0].values))
     assert np.all(profiles["slack_v"].values == ow.output["res_bus.vm_pu"][0].values)
     assert np.allclose(
         profiles["trafo_v"].values,

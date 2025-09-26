@@ -817,7 +817,7 @@ def test_init_slack_with_multiple_transformers():
     runpp(net, calculate_voltage_angles=True)
     for bus, row in net.res_bus[net.bus.in_service].iterrows():
         create_measurement(net, "v", "bus", row.vm_pu * r(0.01), 0.01, bus)
-        if row.p_mw != 0.0:
+        if ~np.isclose(row.p_mw, 0.0):
             continue
         create_measurement(
             net, "p", "bus", row.p_mw * r(), max(0.001, abs(0.03 * row.p_mw)), bus
