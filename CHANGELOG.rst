@@ -40,6 +40,7 @@ Change Log
 - [ADDED] name attribute in basic controller class
 - [FIXED] remove print statement from results_bus.py
 - [FIXED] cim2pp: Make sure that the controllable flag is never nan for any generators
+- [FIXED] saturate_sn_mva parameter in DER controller
 - [CHANGED] move pandapower network pandas structure dict from create_empty_network to its own file
 - [FIXED] cim2pp: use pandapower network pandas structure dict to set needed dtypes instead of hardcoded values
 - [ADDED] cim2pp: export trafo `tap_step_degree` parameter
@@ -65,6 +66,7 @@ Change Log
 - [Fixed] JAO converter: rename_locnames table updated to suit newest JAO network, _multi_str_repl function was refactored
 - [CHANGED] file_io.to_json: allow passing through sort_keys argument
 - [FIXED] create.py: remove needlessly slow dict(zip) constructs in favor of fast literal dict creation, some other small code refactoring
+- [ADDED] cim2pp: new shema files, added Junctions and shorcuts for busbars
 
 [3.1.2] - 2025-06-16
 -------------------------------
