@@ -65,6 +65,7 @@ Change Log
 - [FIXED] cim2pp: minor speed increase through faster dict creation and removal of not needed .keys() call
 - [Fixed] JAO converter: rename_locnames table updated to suit newest JAO network, _multi_str_repl function was refactored
 - [CHANGED] file_io.to_json: allow passing through sort_keys argument
+- [FIXED] create.py: remove needlessly slow dict(zip) constructs in favor of fast literal dict creation, some other small code refactoring
 - [ADDED] cim2pp: new shema files, added Junctions and shorcuts for busbars
 
 [3.1.2] - 2025-06-16
