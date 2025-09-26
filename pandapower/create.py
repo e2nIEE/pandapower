@@ -2115,6 +2115,12 @@ def create_line(
 
     index = _get_index_with_check(net, "line", index)
 
+    tdpf_columns = ("wind_speed_m_per_s", "wind_angle_degree", "conductor_outer_diameter_m",
+                    "air_temperature_degree_celsius", "reference_temperature_degree_celsius",
+                    "solar_radiation_w_per_sq_m", "solar_absorptivity", "emissivity",
+                    "r_theta_kelvin_per_mw", "mc_joule_per_m_k")
+    tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
+
     entries = {
         "name": name, "length_km": length_km, "from_bus": from_bus,
         "to_bus": to_bus, "in_service": in_service, "std_type": std_type,
@@ -2137,12 +2143,6 @@ def create_line(
     # if net.line column already has alpha, add it from std_type
     if "alpha" in net.line.columns and "alpha" in lineparam:
         entries["alpha"] = lineparam["alpha"]
-
-    tdpf_columns = ("wind_speed_m_per_s", "wind_angle_degree", "conductor_outer_diameter_m",
-                    "air_temperature_degree_celsius", "reference_temperature_degree_celsius",
-                    "solar_radiation_w_per_sq_m", "solar_absorptivity", "emissivity",
-                    "r_theta_kelvin_per_mw", "mc_joule_per_m_k")
-    tdpf_parameters = {c: entries.pop(c) for c in tdpf_columns if c in entries}
 
     _set_entries(net, "line", index, entries=entries)
 
@@ -2290,7 +2290,7 @@ def create_line_dc(
                     "air_temperature_degree_celsius", "reference_temperature_degree_celsius",
                     "solar_radiation_w_per_sq_m", "solar_absorptivity", "emissivity",
                     "r_theta_kelvin_per_mw", "mc_joule_per_m_k")
-    tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
+    tdpf_parameters = {c: en.pop(c) for c in tdpf_columns if c in kwargs}
     _set_entries(net, "line_dc", index, entries=entries)
 
 
@@ -2867,19 +2867,17 @@ def create_line_dc_from_parameters(
 
     index = _get_index_with_check(net, "line_dc", index)
 
-    entries = {
-        "name": name, "length_km": length_km, "from_bus_dc": from_bus_dc,
-        "to_bus_dc": to_bus_dc, "in_service": in_service, "std_type": None,
-        "df": df, "r_ohm_per_km": r_ohm_per_km, "max_i_ka": max_i_ka, "parallel": parallel, "type": type,
-        "g_us_per_km": g_us_per_km, **kwargs
-    }
-
     tdpf_columns = ("wind_speed_m_per_s", "wind_angle_degree", "conductor_outer_diameter_m",
                     "air_temperature_degree_celsius", "reference_temperature_degree_celsius",
                     "solar_radiation_w_per_sq_m", "solar_absorptivity", "emissivity", "r_theta_kelvin_per_mw",
                     "mc_joule_per_m_k")
     tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
 
+    entries = {
+        "name": name, "length_km": length_km, "from_bus_dc": from_bus_dc, "to_bus_dc": to_bus_dc,
+        "in_service": in_service, "std_type": None, "df": df, "r_ohm_per_km": r_ohm_per_km, "max_i_ka": max_i_ka,
+        "parallel": parallel, "type": type, "g_us_per_km": g_us_per_km, **kwargs
+    }
     _set_entries(net, "line_dc", index, entries=entries)
 
 
