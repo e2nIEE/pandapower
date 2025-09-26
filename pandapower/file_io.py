@@ -9,7 +9,7 @@ import pickle
 import os
 import sys
 import json
-from typing import Union
+from typing import Union, TextIO, overload
 from warnings import warn
 import numpy
 import pandas as pd
@@ -90,15 +90,25 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
         for item, table in dict_net.items():
             table.to_excel(writer, sheet_name=item)
 
+@overload
+def to_json(net: pandapowerNet, filename: None = ..., encryption_key: Union[str, None] = ...,
+            indent: Union[int, str, None] = ..., sort_keys: bool = ...) -> str: ...
+
+@overload
+def to_json(net: pandapowerNet, filename: str, encryption_key: Union[str, None] = ...,
+            indent: Union[int, str, None] = ..., sort_keys: bool = ...) -> None: ...
+
+@overload
+def to_json(net: pandapowerNet, filename: TextIO, encryption_key: Union[str, None] = ...,
+            indent: Union[int, str, None] = ..., sort_keys: bool = ...) -> None: ...
 
 def to_json(
     net: pandapowerNet,
-    filename: Union[str, None] = None,
+    filename: Union[str, TextIO, None] = None,
     encryption_key: Union[str, None] = None,
-    store_index_names: Union[bool, None] = None,
     indent: Union[int, str, None] = 2,
     sort_keys: bool = False,
-):
+)-> str | None:
     """
         Saves a pandapower Network in JSON format. The index columns of all pandas DataFrames will
         be saved in ascending order. net elements which name begins with "_" (internal elements)
@@ -119,13 +129,6 @@ def to_json(
              >>> from pandapower.file_io import to_json
              >>> to_json(net, "example.json")
     """
-    # --- store index names
-    if store_index_names is not None:
-        msg = "The input parameter 'store_index_names' of function 'to_json()' is deprecated."
-        if Version(pp_version) < Version("2.15"):
-            warn(msg)
-        else:
-            raise DeprecationWarning(msg)
 
     json_string = json.dumps(net, cls=PPJSONEncoder, indent=indent, sort_keys=sort_keys)
     if encryption_key is not None:
@@ -139,6 +142,7 @@ def to_json(
     else:
         with open(filename, "w") as fp:
             fp.write(json_string)
+    return None
 
 
 def from_pickle(filename, convert=True):
