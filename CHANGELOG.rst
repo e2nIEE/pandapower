@@ -3,6 +3,22 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [FIXED] Fixed res_trafo_3ph, including converter since it was wrong in code and did not adhere to documentation: 'p_a_l_mw' is now 'pl_a_mw', same for ql and all phases.
+- [FIXED] Fixed res_line_3ph, including converter since it was wrong in code and did not adhere to documentation: 'p_a_l_mw' is now 'pl_a_mw', same for ql and all phases.
+- [FIXED] Transformer Phase shift in negative sequence is reversed.
+- [FIXED] Transformer LV currents in result table are now taken from ppc isntead of adding load currents, as transformers are no more out-of-service in zero sequence
+- [FIXED] In zero-sequence transformers are no more out-of-service, but having very large impedance
+- [FIXED] Zero-Sequence parameters of traformers added to "branch" in ppc instead of bus for loadflow
+- [FIXED] Added "p_c_mw" attribute in res_line_3ph in network_structure.py
+- [ADDED] pf2pp: ElmLodlvp partial loads in lv loads inkl. night heat storage is implemented for conversion to pp
+- [ADDED] Station Controller for local voltage control with droop, adjusted powerfactory import
+- [FIXED] Case5 tests, now the calculated values are compared to results from powerfactory
+- [FIXED] FACTS tests through restructuring all of the tests
+- [ADDED] Load_dc and Source_dc, which represent a conventional load and a generator in dc
+- [ADDED] DMR controller, which calculates the current on metallic return lines
+- [ADDED] Back2Back VSC converter, including extensive tests
+- [FIXED] Setting the correct Dtype in io_utils for sql databases
+- [ADDED] std_types as a dict to be fetched from the network_structure
 - [ADDED] Station controller support for measurements on trafo3w and impedance
 - [CHANGED] Station controller with measurements at switches: added a topological search to find nearby line or transformer and relocated measurement to avoid small impedances on switches
 - [FIXED] Station controller bug with Q(U) (wrong sign in equation for droop calculation)
@@ -10,6 +26,11 @@ Change Log
 - [FIXED] create_buses_dc: incorrect handling of geodata
 - [ADDED] postgresql: support for setting a port for the connection
 - [FIXED] ensure proper handling of `indent` parameter for PPJSONEncoder, fixing compatibility with Python3.13
+- [FIXED] Case5 tests, now the calculated values are compared to results from powerfactory
+- [FIXED] FACTS tests through restructuring all of the tests
+- [ADDED] Load_dc and Source_dc, which represent a conventional load and a generator in dc
+- [ADDED] DMR controller, which calculates the current on metallic return lines
+- [ADDED] Back2Back VSC converter, including extensive tests
 - [ADDED] description for `slack` argument in docstring of create_gen function
 - [FIXED] pf2pp: dc-lines geodata error is fixed, outdated line_dc_geodata field replaced by newer geo-column
 - [FIXED] pf2pp: zip load import error fixed by replacing unknown ga() function with actual GetAttribute-function
@@ -37,6 +58,12 @@ Change Log
 - [FIXED] json io test with new network structure dict
 - [FIXED] DC OPF bug if verbose = True
 - [CHANGED] cim2pp conversion of SVC parameter active power: p is set to 0, instead of using the p-value from the SV-profile
+- [FIXED] type annotations in create methods
+- [CHANGED] drop_inactive_elements performance improvements: using pandas methods instead of looping
+- [ADDED] add a few more tests for the grid modification functions
+- [FIXED] cim2pp: minor speed increase through faster dict creation and removal of not needed .keys() call
+- [Fixed] JAO converter: rename_locnames table updated to suit newest JAO network, _multi_str_repl function was refactored
+- [CHANGED] file_io.to_json: allow passing through sort_keys argument
 
 [3.1.2] - 2025-06-16
 -------------------------------
@@ -91,6 +118,7 @@ Change Log
 - [ADDED] cim2pp: add normalSections for shunts at CIM100 and removed old schema
 - [ADDED] cim2pp: add DCLine component to cim16 and cim100 datastructures
 - [FIXED] cim2pp: fix deprecation warning in cim_classes.py and fix bug in measurements
+- [ADDED] possibility to directly compare "geo" columns of dataframes (not assume geojson strings)
 
 [3.0.0] - 2025-03-06
 -------------------------------

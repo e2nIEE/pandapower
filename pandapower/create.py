@@ -30,10 +30,12 @@ from pandapower.pp_types import BusType, GeneratorType, HVMVLVType, HVLVType, In
 logger = logging.getLogger(__name__)
 
 
-def create_empty_network(name: str = "",
-                         f_hz: float = 50.,
-                         sn_mva: float = 1,
-                         add_stdtypes: bool = True) -> pandapowerNet:
+def create_empty_network(
+        name: str = "",
+        f_hz: float = 50.,
+        sn_mva: float = 1,
+        add_stdtypes: bool = True
+) -> pandapowerNet:
     """
     This function initializes the pandapower datastructure.
 
@@ -53,7 +55,6 @@ def create_empty_network(name: str = "",
         net = create_empty_network()
 
     """
-
     network_structure_dict = get_structure_dict()
     network_structure_dict['name'] = name
     network_structure_dict['f_hz'] = f_hz
@@ -79,7 +80,7 @@ def create_bus(
     net: pandapowerNet,
     vn_kv: float,
     name: Optional[str] = None,
-    index = None,
+    index: Optional[Int] = None,
     geodata: Optional[tuple[float, float]] = None,
     type: BusType = "b",
     zone: Optional[str] = None,
@@ -158,7 +159,7 @@ def create_bus_dc(
     net: pandapowerNet,
     vn_kv: float,
     name: Optional[str] = None,
-    index = None,
+    index: Optional[Int] = None,
     geodata: Optional[tuple[float, float]] = None,
     type: BusType = "b",
     zone: Optional[str] = None,
@@ -255,9 +256,9 @@ def create_buses(
     net: pandapowerNet,
     nr_buses: int,
     vn_kv: float | Iterable[float],
-    index = None,
+    index: Optional[Int] | Iterable[Int] = None,
     name: Optional[Iterable[str]] = None,
-    type: BusType = "b",
+    type: BusType | Iterable[BusType] = "b",
     geodata: Optional[Iterable[tuple[float, float]]] = None,
     zone: Optional[str | Iterable[str]] = None,
     in_service: bool | Iterable[bool] = True,
@@ -335,9 +336,9 @@ def create_buses_dc(
     net: pandapowerNet,
     nr_buses_dc: int,
     vn_kv: float | Iterable[float],
-    index = None,
+    index: Optional[Int] | Iterable[Int]  = None,
     name: Optional[Iterable[str]] = None,
-    type: BusType = "b",
+    type: BusType | Iterable[BusType] = "b",
     geodata: Optional[Iterable[tuple[float, float]]] = None,
     zone: Optional[str] = None,
     in_service: bool | Iterable[bool] = True,
@@ -415,7 +416,7 @@ def create_buses_dc(
 
 def create_load(
     net: pandapowerNet,
-    bus,
+    bus: Int,
     p_mw: float,
     q_mvar: float = 0,
     const_z_p_percent: float = 0,
@@ -425,7 +426,7 @@ def create_load(
     sn_mva: float = nan,
     name: Optional[str] = None,
     scaling: float = 1.,
-    index = None,
+    index: Optional[Int] = None,
     in_service: bool = True,
     type: WyeDeltaType = 'wye',
     max_p_mw: float = nan,
@@ -460,7 +461,7 @@ def create_load(
 
         **const_i_p_percent** (float, default 0) - percentage of p_mw that will be \
             associated to constant current load at rated voltage
-        
+
         **const_z_q_percent** (float, default 0) - percentage of q_mvar that will be \
             associated to constant impedance load at rated voltage
 
@@ -543,7 +544,7 @@ def create_loads(
     sn_mva: float | Iterable[float] = nan,
     name: Optional[Iterable[str]] = None,
     scaling: float | Iterable[float] = 1.,
-    index = None,
+    index: Optional[Int] | Iterable[Int]  = None,
     in_service: bool | Iterable[bool] = True,
     type: WyeDeltaType = 'wye',
     max_p_mw: float | Iterable[float] = nan,
@@ -578,7 +579,7 @@ def create_loads(
 
         **const_i_p_percent** (list of floats, default 0) - percentage of p_mw that will \
             be associated to constant current load at rated voltage
-        
+
         **const_z_q_percent** (list of floats, default 0) - percentage of q_mvar that will \
             be associated to constant impedance loads at rated voltage
 
@@ -653,7 +654,7 @@ def create_loads(
 
 def create_asymmetric_load(
     net: pandapowerNet,
-    bus,
+    bus: Int,
     p_a_mw: float = 0,
     p_b_mw: float = 0,
     p_c_mw: float = 0,
@@ -663,7 +664,7 @@ def create_asymmetric_load(
     sn_mva: float = nan,
     name: Optional[str] = None,
     scaling: float = 1.,
-    index = None,
+    index: Optional[Int] = None,
     in_service: bool = True,
     type: WyeDeltaType = "wye",
     **kwargs
@@ -784,9 +785,9 @@ def create_asymmetric_load(
 # =============================================================================
 
 
-def create_load_from_cosphi(
+def create_load_from_cosphi( # no index ?
     net: pandapowerNet,
-    bus,
+    bus: Int,
     sn_mva: float,
     cos_phi: float,
     mode: UnderOverExcitedType,
@@ -824,12 +825,12 @@ def create_load_from_cosphi(
 
 def create_sgen(
     net: pandapowerNet,
-    bus,
+    bus: Int,
     p_mw: float,
     q_mvar: float = 0,
     sn_mva: float = nan,
     name: Optional[str] = None,
-    index = None,
+    index: Optional[Int] = None,
     scaling: float = 1.,
     type: WyeDeltaType= 'wye',
     in_service: bool = True,
@@ -840,7 +841,7 @@ def create_sgen(
     controllable: bool | float = nan,
     k: float = nan,
     rx: float = nan,
-    id_q_capability_characteristic = None,
+    id_q_capability_characteristic: Optional[int] = None,
     reactive_capability_curve: bool = False,
     curve_style = None,
     current_source: bool = True,
@@ -998,7 +999,7 @@ def create_sgens(
     q_mvar: float | Iterable[float] = 0,
     sn_mva: float | Iterable[float] = nan,
     name: Optional[Iterable[str]] = None,
-    index = None,
+    index: Optional[Int] | Iterable[Int] = None,
     scaling: float | Iterable[float] = 1.,
     type: WyeDeltaType = 'wye',
     in_service: bool | Iterable[bool] = True,
@@ -1009,9 +1010,9 @@ def create_sgens(
     controllable: bool | Iterable[bool] | float = nan,
     k: float | Iterable[float] = nan,
     rx: float = nan,
-    id_q_capability_characteristic = nan,
-    reactive_capability_curve = False,
-    curve_style = None,
+    id_q_capability_characteristic: Optional[Int] | Iterable[Int] = None,
+    reactive_capability_curve: bool | Iterable[bool] = False,
+    curve_style: Optional[str] | Optional[Iterable[str]] = None,
     current_source: bool | Iterable[bool] = True,
     generator_type: GeneratorType = "current_source",
     max_ik_ka: float = nan,
@@ -1164,7 +1165,7 @@ def create_sgens(
 
 def create_asymmetric_sgen(
     net: pandapowerNet,
-    bus,
+    bus: Int,
     p_a_mw: float = 0,
     p_b_mw: float = 0,
     p_c_mw: float = 0,
@@ -1173,7 +1174,7 @@ def create_asymmetric_sgen(
     q_c_mvar: float = 0,
     sn_mva: float = nan,
     name: Optional[str] = None,
-    index = None,
+    index: Optional[Int] = None,
     scaling: float = 1.,
     type: WyeDeltaType = 'wye',
     in_service: bool = True,
@@ -1241,9 +1242,9 @@ def create_asymmetric_sgen(
     return index
 
 
-def create_sgen_from_cosphi(
+def create_sgen_from_cosphi( # no index ?
         net: pandapowerNet,
-        bus,
+        bus: Int,
         sn_mva: float,
         cos_phi: float,
         mode: UnderOverExcitedType,
@@ -1279,7 +1280,7 @@ def create_sgen_from_cosphi(
 
 def create_storage(
     net: pandapowerNet,
-    bus,
+    bus: Int,
     p_mw: float,
     max_e_mwh: float,
     q_mvar: float = 0,
@@ -1287,7 +1288,7 @@ def create_storage(
     soc_percent: float = nan,
     min_e_mwh: float = 0.0,
     name: Optional[str] = None,
-    index = None,
+    index: Optional[Int] = None,
     scaling: float = 1.,
     type: Optional[str] = None,
     in_service: bool = True,
@@ -1400,11 +1401,11 @@ def create_storages(
     soc_percent: float | Iterable[float] = nan,
     min_e_mwh: float | Iterable[float] = 0.0,
     name: Optional[Iterable[str]] = None,
-    index = None,
+    index: Optional[Int] | Iterable[Int]  = None,
     scaling: float | Iterable[float] = 1.,
     type: Optional[str | Iterable[str]] = None,
     in_service: bool | Iterable[bool] = True,
-    max_p_mw=nan,
+    max_p_mw: float | Iterable[float] = nan,
     min_p_mw: float | Iterable[float] = nan,
     max_q_mvar: float | Iterable[float] = nan,
     min_q_mvar: float | Iterable[float] = nan,
@@ -1505,12 +1506,12 @@ def create_storages(
 
 def create_gen(
     net: pandapowerNet,
-    bus,
+    bus: Int,
     p_mw: float,
     vm_pu: float = 1.,
     sn_mva: float = nan,
     name: Optional[str] = None,
-    index = None,
+    index: Optional[Int] = None,
     max_q_mvar: float = nan,
     min_q_mvar: float = nan,
     min_p_mw: float = nan,
@@ -1520,9 +1521,9 @@ def create_gen(
     scaling: float = 1.,
     type: Optional[str] = None,
     slack: bool = False,
-    id_q_capability_characteristic = None,
+    id_q_capability_characteristic: Optional[int] = None,
     reactive_capability_curve: bool = False,
-    curve_style = None,
+    curve_style: Optional[str] = None,
     controllable: bool | float = nan,
     vn_kv: float = nan,
     xdss_pu: float = nan,
@@ -1672,7 +1673,7 @@ def create_gens(
     vm_pu: float | Iterable[float] = 1.,
     sn_mva: float | Iterable[float] = nan,
     name: Optional[Iterable[str]] = None,
-    index = None,
+    index: Optional[Int] | Iterable[Int] = None,
     max_q_mvar: float | Iterable[float] = nan,
     min_q_mvar: float | Iterable[float] = nan,
     min_p_mw: float | Iterable[float] = nan,
@@ -1682,9 +1683,9 @@ def create_gens(
     scaling: float | Iterable[float] = 1.,
     type: Optional[str | Iterable[str]] = None,
     slack: bool | Iterable[bool] = False,
-    id_q_capability_characteristic = nan,
-    reactive_capability_curve: bool = False,
-    curve_style = None,
+    id_q_capability_characteristic: Optional[Int] | Iterable[Int] = None,
+    reactive_capability_curve: bool | Iterable[bool] = False,
+    curve_style: Optional[str] | Optional[Iterable[str]] = None,
     controllable: bool | float = nan,
     vn_kv: float | Iterable[float] = nan,
     xdss_pu: float | Iterable[float] = nan,
@@ -1832,7 +1833,7 @@ def create_gens(
 
 def create_motor(
     net: pandapowerNet,
-    bus,
+    bus: Int,
     pn_mech_mw: float,
     cos_phi: float,
     efficiency_percent: float = 100.,
@@ -1842,7 +1843,7 @@ def create_motor(
     scaling: float = 1.0,
     vn_kv: float = nan,
     rx: float = nan,
-    index = None,
+    index: Optional[Int] = None,
     in_service: bool = True,
     cos_phi_n: float = nan,
     efficiency_n_percent: float = nan,
@@ -1913,7 +1914,7 @@ def create_motor(
 
 def create_ext_grid(
     net: pandapowerNet,
-    bus,
+    bus: Int,
     vm_pu: float = 1.0,
     va_degree: float = 0.,
     name: Optional[str] = None,
@@ -1926,7 +1927,7 @@ def create_ext_grid(
     min_p_mw: float = nan,
     max_q_mvar: float = nan,
     min_q_mvar: float = nan,
-    index = None,
+    index: Optional[Int] = None,
     r0x0_max: float = nan,
     x0x_max: float = nan,
     controllable: bool | float = nan,
@@ -2031,12 +2032,12 @@ def create_ext_grid(
 
 def create_line(
     net: pandapowerNet,
-    from_bus,
-    to_bus,
+    from_bus: Int,
+    to_bus: Int,
     length_km: float,
     std_type: str,
     name: Optional[str] = None,
-    index = None,
+    index: Optional[Int] = None,
     geodata: Optional[Iterable[tuple[float, float]]]= None,
     df: float = 1.,
     parallel: int = 1,
@@ -2181,12 +2182,12 @@ def create_line(
 
 def create_line_dc(
     net: pandapowerNet,
-    from_bus_dc,
-    to_bus_dc,
+    from_bus_dc: Int,
+    to_bus_dc: Int,
     length_km: float,
     std_type: str,
     name: Optional[str] = None,
-    index = None,
+    index: Optional[Int] = None,
     geodata: Optional[Iterable[tuple[float, float]]] = None,
     df: float = 1.,
     parallel: int = 1,
@@ -2310,9 +2311,11 @@ def create_line_dc(
     tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
     _set_entries(net, "line_dc", index, **v, **kwargs)
 
+
     if geodata and hasattr(geodata, '__iter__'):
         geo = [[x, y] for x, y in geodata]
         net.line_dc.at[index, "geo"] = f'{{"coordinates": {geo}, "type": "LineString"}}'
+
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "line_dc")
     _set_value_if_not_nan(net, index, alpha, "alpha", "line_dc")
@@ -2333,7 +2336,7 @@ def create_lines(
     length_km: float | Iterable[float],
     std_type: str,
     name: Optional[Iterable[str]] = None,
-    index = None,
+    index: Optional[Int] | Iterable[Int] = None,
     geodata: Optional[Iterable[Iterable[tuple[float, float]]]] = None,
     df: float | Iterable[float] = 1.,
     parallel: int | Iterable[int] = 1,
@@ -2477,7 +2480,7 @@ def create_lines_dc(
     length_km: float | Iterable[float],
     std_type: str | Sequence[str],
     name: Optional[Iterable[str]] = None,
-    index = None,
+    index: Optional[Int] | Iterable[Int] = None,
     geodata: Optional[Iterable[Iterable[tuple[float, float]]]] = None,
     df: float | Iterable[float] = 1.,
     parallel: int | Iterable[int] = 1,
@@ -2610,15 +2613,15 @@ def create_lines_dc(
 
 def create_line_from_parameters(
     net: pandapowerNet,
-    from_bus,
-    to_bus,
+    from_bus: Int,
+    to_bus: Int,
     length_km: float,
     r_ohm_per_km: float,
     x_ohm_per_km: float,
     c_nf_per_km: float,
     max_i_ka: float,
     name: Optional[str] = None,
-    index = None,
+    index: Optional[Int] = None,
     type: Optional[LineType] = None,
     geodata: Optional[Iterable[tuple[float, float]]] = None,
     in_service: bool = True,
@@ -2778,13 +2781,13 @@ def create_line_from_parameters(
 
 def create_line_dc_from_parameters(
     net: pandapowerNet,
-    from_bus_dc,
-    to_bus_dc,
+    from_bus_dc: Int,
+    to_bus_dc: Int,
     length_km: float,
     r_ohm_per_km: float,
     max_i_ka: float,
     name: Optional[str] = None,
-    index = None,
+    index: Optional[Int] = None,
     type: Optional[LineType] = None,
     geodata: Optional[Iterable[tuple[float, float]]] = None,
     in_service: bool = True,
@@ -2898,9 +2901,11 @@ def create_line_dc_from_parameters(
 
     _set_entries(net, "line_dc", index, **v, **kwargs)
 
+
     if geodata and hasattr(geodata, '__iter__'):
         geo = [[x, y] for x, y in geodata]
         net.line_dc.at[index, "geo"] = f'{{"coordinates": {geo}, "type": "LineString"}}'
+
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "line_dc")
     _set_value_if_not_nan(net, index, alpha, "alpha", "line_dc")
@@ -2925,7 +2930,7 @@ def create_lines_from_parameters(
     c_nf_per_km: float | Iterable[float],
     max_i_ka: float | Iterable[float],
     name: Optional[Iterable[str]] = None,
-    index = None,
+    index: Optional[Int] | Iterable[Int] = None,
     type: Optional[LineType | Iterable[str]] = None,
     geodata: Optional[Iterable[Iterable[tuple[float, float]]]] = None,
     in_service: bool | Iterable[bool] = True,
@@ -3083,7 +3088,7 @@ def create_lines_dc_from_parameters(
     r_ohm_per_km: float | Iterable[float],
     max_i_ka: float | Iterable[float],
     name: Optional[Iterable[str]] = None,
-    index = None,
+    index: Optional[Int] | Iterable[Int] = None,
     type: Optional[LineType | Iterable[str]] = None,
     geodata: Optional[Iterable[Iterable[tuple[float, float]]]] = None,
     in_service: bool | Iterable[bool] = True,
@@ -3214,21 +3219,21 @@ def create_lines_dc_from_parameters(
 
 def create_transformer(
     net: pandapowerNet,
-    hv_bus,
-    lv_bus,
+    hv_bus: Int,
+    lv_bus: Int,
     std_type: str,
     name: Optional[str] = None,
     tap_pos: int | float = nan,
     in_service: bool = True,
-    index = None,
+    index: Optional[Int] = None,
     max_loading_percent: float = nan,
     parallel: int = 1,
     df: float = 1.,
     tap_changer_type: Optional[str] = None,
-    tap_dependency_table: bool | float = nan,
-    id_characteristic_table: int | float = nan,
+    tap_dependency_table: bool = False,
+    id_characteristic_table: Optional[int] = None,
     pt_percent: float = nan,
-    oltc: bool | float = nan,
+    oltc: bool = False,
     xn_ohm: float = nan,
     tap2_pos: int | float = nan,
     **kwargs
@@ -3285,7 +3290,7 @@ def create_transformer(
             SplineCharacteristic objects in the net.trafo_characteristic_spline table and add the additional column \
             "id_characteristic_spline" to set up the reference to the spline characteristics.
 
-        **id_characteristic_table** (int, nan) - references the index of the characteristic from the lookup table \
+        **id_characteristic_table** (int, None) - references the index of the characteristic from the lookup table \
                                                  net.trafo_characteristic_table
 
         **tap_changer_type** (str, None) - specifies the phase shifter type ("Ratio", "Symmetrical", "Ideal", \
@@ -3313,7 +3318,7 @@ def create_transformer(
     if df <= 0:
         raise UserWarning("derating factor df must be positive: df = %.3f" % df)
 
-    v = {
+    v: dict[str, str | None | Int | bool | float] = {
         "name": name, "hv_bus": hv_bus, "lv_bus": lv_bus,
         "in_service": bool(in_service), "std_type": std_type
     }
@@ -3382,8 +3387,8 @@ def create_transformer(
 
 def create_transformer_from_parameters(
     net: pandapowerNet,
-    hv_bus,
-    lv_bus,
+    hv_bus: Int,
+    lv_bus: Int,
     sn_mva: float,
     vn_hv_kv: float,
     vn_lv_kv: float,
@@ -3400,11 +3405,11 @@ def create_transformer_from_parameters(
     tap_step_degree: float = nan,
     tap_pos: int | float = nan,
     tap_changer_type: Optional[TapChangerWithTabularType] = None,
-    id_characteristic_table: int | float = nan,
+    id_characteristic_table: Optional[int] = None,
     in_service: bool = True,
     name: Optional[str] = None,
     vector_group: Optional[str] = None,
-    index = None,
+    index: Optional[Int] = None,
     max_loading_percent: float = nan,
     parallel: int = 1,
     df: float = 1.,
@@ -3414,8 +3419,8 @@ def create_transformer_from_parameters(
     mag0_rx: float = nan,
     si0_hv_partial: float = nan,
     pt_percent: float = nan,
-    oltc: bool | float = nan,
-    tap_dependency_table: bool | float = False,
+    oltc: bool = False,
+    tap_dependency_table: bool = False,
     xn_ohm: float = nan,
     tap2_side: Optional[HVLVType] = None,
     tap2_neutral: int | float = nan,
@@ -3509,7 +3514,7 @@ def create_transformer_from_parameters(
             SplineCharacteristic objects in the net.trafo_characteristic_spline table and add the additional column \
             "id_characteristic_spline" to set up the reference to the spline characteristics.
 
-        **id_characteristic_table** (int, nan) - references the index of the characteristic from the lookup table \
+        **id_characteristic_table** (int, None) - references the index of the characteristic from the lookup table \
                                                  net.trafo_characteristic_table
 
         **pt_percent** (float, nan) - (short circuit only)
@@ -3636,7 +3641,7 @@ def create_transformer_from_parameters(
     return index
 
 
-def create_transformers_from_parameters(
+def create_transformers_from_parameters( # index missing ?
     net: pandapowerNet,
     hv_buses: Sequence,
     lv_buses: Sequence,
@@ -3656,11 +3661,11 @@ def create_transformers_from_parameters(
     tap_step_degree: float | Iterable[float] = nan,
     tap_pos: int | Iterable[int] | float = nan,
     tap_changer_type: Optional[TapChangerWithTabularType | Iterable[str]] = None,
-    id_characteristic_table: int | Iterable[int] | float = nan,
+    id_characteristic_table: Optional[int] | Iterable[Optional[int]] = None,
     in_service: bool | Iterable[bool] = True,
     name: Optional[Iterable[str]] = None,
     vector_group: Optional[str | Iterable[str]] = None,
-    index = None,
+    index: Optional[Int] | Iterable[Int] = None,
     max_loading_percent: float | Iterable[float] = nan,
     parallel: int | Iterable[int] = 1,
     df: float | Iterable[float] = 1.,
@@ -3670,7 +3675,7 @@ def create_transformers_from_parameters(
     mag0_rx: float | Iterable[float] = nan,
     si0_hv_partial: float | Iterable[float] = nan,
     pt_percent: float | Iterable[float] = nan,
-    oltc: bool | Iterable[bool] | float = nan,
+    oltc: bool | Iterable[bool] = False,
     tap_dependency_table: bool | Iterable[bool] = False,
     xn_ohm: float | Iterable[float] = nan,
     tap2_side: Optional[HVLVType | Iterable[str]] = None,
@@ -3766,7 +3771,7 @@ def create_transformers_from_parameters(
             SplineCharacteristic objects in the net.trafo_characteristic_spline table and add the additional column \
             "id_characteristic_spline" to set up the reference to the spline characteristics.
 
-        **id_characteristic_table** (list of int, nan) - references the index of the characteristic from the lookup \
+        **id_characteristic_table** (list of int, None) - references the index of the characteristic from the lookup \
             table net.trafo_characteristic_table
 
         **pt_percent** (list of float, nan) - (short circuit only)
@@ -3871,19 +3876,19 @@ def create_transformers_from_parameters(
 
 def create_transformer3w(
     net: pandapowerNet,
-    hv_bus,
-    mv_bus,
-    lv_bus,
+    hv_bus: Int,
+    mv_bus: Int,
+    lv_bus: Int,
     std_type: str,
     name: Optional[str] = None,
     tap_pos: int | float = nan,
     in_service: bool = True,
-    index = None,
+    index: Optional[Int] = None,
     max_loading_percent: float = nan,
     tap_changer_type: Optional[TapChangerWithTabularType] = None,
     tap_at_star_point: bool = False,
-    tap_dependency_table: bool | float = nan,
-    id_characteristic_table: int | float = nan,
+    tap_dependency_table: bool = False,
+    id_characteristic_table: Optional[int] = None,
     **kwargs
 ) -> Int:
     """
@@ -3929,7 +3934,7 @@ def create_transformer3w(
             SplineCharacteristic objects in the net.trafo_characteristic_spline table and add the additional column \
             "id_characteristic_spline" to set up the reference to the spline characteristics.
 
-        **id_characteristic_table** (int, nan) - references the index of the characteristic from the lookup table \
+        **id_characteristic_table** (int, None) - references the index of the characteristic from the lookup table \
                                                  net.trafo_characteristic_table
 
     OUTPUT:
@@ -3944,7 +3949,7 @@ def create_transformer3w(
         if b not in net["bus"].index.values:
             raise UserWarning("Trafo tries to attach to bus %s" % b)
 
-    v = {
+    v: dict[str, str | None | Int | bool | float] = {
         "name": name, "hv_bus": hv_bus, "mv_bus": mv_bus, "lv_bus": lv_bus,
         "in_service": bool(in_service), "std_type": std_type
     }
@@ -4013,9 +4018,9 @@ def create_transformer3w(
 
 def create_transformer3w_from_parameters(
         net: pandapowerNet,
-        hv_bus,
-        mv_bus,
-        lv_bus,
+        hv_bus: Int,
+        mv_bus: Int,
+        lv_bus: Int,
         vn_hv_kv: float,
         vn_mv_kv: float,
         vn_lv_kv: float,
@@ -4042,7 +4047,7 @@ def create_transformer3w_from_parameters(
         tap_min: Optional[float] = nan,
         name: Optional[str] = None,
         in_service: bool = True,
-        index = None,
+        index: Optional[Int] = None,
         max_loading_percent: float = nan,
         tap_at_star_point: bool = False,
         vk0_hv_percent: float = nan,
@@ -4053,7 +4058,7 @@ def create_transformer3w_from_parameters(
         vkr0_lv_percent: float = nan,
         vector_group: Optional[str] = None,
         tap_dependency_table: bool = False,
-        id_characteristic_table: int | float = nan,
+        id_characteristic_table: Optional[int] = None,
         **kwargs) -> Int:
     """
     Adds a three-winding transformer in table net.trafo3w with the specified parameters.
@@ -4135,7 +4140,7 @@ def create_transformer3w_from_parameters(
             SplineCharacteristic objects in the net.trafo_characteristic_spline table and add the additional column \
             "id_characteristic_spline" to set up the reference to the spline characteristics.
 
-        **id_characteristic_table** (int, nan) - references the index of the characteristic from the lookup table \
+        **id_characteristic_table** (int, None) - references the index of the characteristic from the lookup table \
                                                  net.trafo_characteristic_table
 
         **vk0_hv_percent** (float) - zero sequence short circuit voltage from high to medium voltage
@@ -4213,7 +4218,7 @@ def create_transformer3w_from_parameters(
     return index
 
 
-def create_transformers3w_from_parameters(
+def create_transformers3w_from_parameters( # no index ?
         net: pandapowerNet,
         hv_buses: Sequence,
         mv_buses: Sequence,
@@ -4243,7 +4248,7 @@ def create_transformers3w_from_parameters(
         tap_min: int | Iterable[int] | float = nan,
         name: Optional[Iterable[str]] = None,
         in_service: bool | Iterable[bool] = True,
-        index = None,
+        index: Optional[Int] | Iterable[Int] = None,
         max_loading_percent: float | Iterable[float] = nan,
         tap_at_star_point: bool | Iterable[bool] = False,
         tap_changer_type: Optional[float | Iterable[float]] = None,
@@ -4255,7 +4260,7 @@ def create_transformers3w_from_parameters(
         vkr0_lv_percent: float | Iterable[float] = nan,
         vector_group: Optional[str | Iterable[str]] = None,
         tap_dependency_table: bool | Iterable[bool] = False,
-        id_characteristic_table: int | Iterable[int] | float = nan,
+        id_characteristic_table: Optional[int] | Iterable[Optional[int]] = None,
         **kwargs) -> npt.NDArray[np.integer]:
     """
     Adds multiple three-winding transformers in table net.trafo3w with the specified parameters.
@@ -4431,13 +4436,13 @@ def create_transformers3w_from_parameters(
 
 def create_switch(
     net: pandapowerNet,
-    bus,
-    element,
+    bus: Int,
+    element: Int,
     et: SwitchElementType,
     closed: bool = True,
     type: Optional[SwitchType] = None,
     name: Optional[str] = None,
-    index = None,
+    index: Optional[Int] = None,
     z_ohm: float = 0,
     in_ka: float = nan,
     **kwargs
@@ -4530,12 +4535,12 @@ def create_switch(
 def create_switches(
     net: pandapowerNet,
     buses: Sequence,
-    elements,
+    elements: Sequence,
     et: SwitchElementType | Sequence[str],
     closed: bool = True,
     type: Optional[SwitchType] = None,
     name: Optional[Iterable[str]] = None,
-    index = None,
+    index: Optional[Int] | Iterable[Int] = None,
     z_ohm: float = 0,
     in_ka: float = nan,
     **kwargs
@@ -4633,7 +4638,7 @@ def create_switches(
 
 def create_shunt(
     net: pandapowerNet,
-    bus,
+    bus: Int,
     q_mvar: float,
     p_mw: float = 0.,
     vn_kv: Optional[float] = None,
@@ -4641,9 +4646,9 @@ def create_shunt(
     max_step: int = 1,
     name: Optional[str] = None,
     step_dependency_table: bool = False,
-    id_characteristic_table: int | float = nan,
+    id_characteristic_table: Optional[int] = None,
     in_service: bool = True,
-    index = None,
+    index: Optional[Int] = None,
     **kwargs
 ) -> Int:
     """
@@ -4676,7 +4681,7 @@ def create_shunt(
             SplineCharacteristic objects in the net.shunt_characteristic_spline table and add the additional column \
             "id_characteristic_spline" to set up the reference to the spline characteristics.
 
-        **id_characteristic_table** (int, nan) - references the index of the characteristic from the lookup table \
+        **id_characteristic_table** (int, None) - references the index of the characteristic from the lookup table \
                                                  net.shunt_characteristic_table
 
         **in_service** (boolean, True) - True for in_service or False for out of service
@@ -4711,7 +4716,7 @@ def create_shunt(
 
 def create_shunts(
     net: pandapowerNet,
-    buses,
+    buses: Sequence,
     q_mvar: float | Iterable[float],
     p_mw: float | Iterable[float] = 0.,
     vn_kv: Optional[float | Iterable[float]] = None,
@@ -4719,7 +4724,7 @@ def create_shunts(
     max_step: int | Iterable[int] = 1,
     name: Optional[Iterable[str]] = None,
     step_dependency_table: bool | Iterable[bool] = False,
-    id_characteristic_table: int | Iterable[int] | float = nan,
+    id_characteristic_table: Optional[int] | Iterable[Optional[int]] = None,
     in_service: bool | Iterable[bool] = True,
     index = None,
     **kwargs
@@ -4754,7 +4759,7 @@ def create_shunts(
             SplineCharacteristic objects in the net.shunt_characteristic_spline table and add the additional column \
             "id_characteristic_spline" to set up the reference to the spline characteristics.
 
-        **id_characteristic_table** (list of ints, nan) - references the index of the characteristic from the lookup \
+        **id_characteristic_table** (list of ints, None) - references the index of the characteristic from the lookup \
                                                           table net.shunt_characteristic_table
 
         **in_service** (list of booleans, True) - True for in_service or False for out of service
@@ -4786,7 +4791,7 @@ def create_shunts(
 
 def create_shunt_as_capacitor(
     net: pandapowerNet,
-    bus,
+    bus: Int,
     q_mvar: float,
     loss_factor: float,
     **kwargs
@@ -4815,9 +4820,107 @@ def create_shunt_as_capacitor(
     return create_shunt(net, bus, q_mvar=q_mvar, p_mw=p_mw, **kwargs)
 
 
+def create_source_dc(
+        net: pandapowerNet,
+        bus_dc: Int,
+        vm_pu: float = 1.0,
+        index: Optional[Int] = None,
+        name: str | None = None,
+        in_service: bool = True,
+        type: str | None = None,
+        **kwargs):
+    """
+    Creates a dc voltage source in a dc grid with an adjustable set point
+    INPUT:
+
+        **net** (pandapowerNet) - The pandapower network in which the element is created
+
+        **bus** (int) - index of the bus the shunt is connected to
+
+        **vm_pu** (float) - set-point for the bus voltage magnitude at the connection bus
+
+    OPTIONAL:
+        **name** (str, None) - element name
+
+        **index** (int, None) - Force a specified ID if it is available. If None, the index one \
+            higher than the highest already existing index is selected.
+
+        **in_service** (bool, True) - True for in_service or False for out of service
+
+        **type** (str) - A string describing the type.
+
+    OUTPUT:
+        **index** (int) - The unique ID of the created svc
+
+    """
+    _check_element(net, bus_dc, element='bus_dc')
+
+    index = _get_index_with_check(net, "source_dc", index)
+
+    entries = dict(zip(["name", "bus_dc", "vm_pu", "in_service", "type"],
+                       [name, bus_dc, vm_pu, bool(in_service), type]))
+
+    _set_entries(net, "source_dc", index, True, **entries, **kwargs)
+
+    return index
+
+
+def create_load_dc(
+        net: pandapowerNet,
+        bus_dc: Int,
+        p_dc_mw: float,
+        scaling: float = 1.0,
+        type: Optional[str] = None,
+        index: Optional[Int] = None,
+        name: Optional[str] = None,
+        in_service: bool = True,
+        controllable: bool = False,
+        **kwargs
+    ):
+    """
+    Creates a dc voltage source in a dc grid with an adjustable set point
+    INPUT:
+
+        **net** (pandapowerNet) - The pandapower network in which the element is created
+
+        **bus_dc** (int) - index of the dc bus the dc load is connected to
+
+        **p_dc_mw** (float) - The power of the load
+
+    OPTIONAL:
+        **name** (str, None) - element name
+
+        **index** (int, None) - Force a specified ID if it is available. If None, the index one \
+            higher than the highest already existing index is selected.
+
+        **in_service** (bool, True) - True for in service or False for out of service.
+
+        **scaling** (float, default 1.) - An OPTIONAL scaling factor, is multiplied with p_dc_mw.
+
+        **type** (str) - A string describing the type.
+
+        **controllable** (boolean, default NaN) - States, whether a load is controllable or not. \
+            Only respected for OPF; defaults to False if "controllable" column exists in DataFrame
+
+    OUTPUT:
+        **index** (int) - The unique ID of the created svc
+
+    """
+    _check_element(net, bus_dc, element='bus_dc')
+
+    index = _get_index_with_check(net, "source_dc", index=index)
+
+    entries = dict(zip(["name", "bus_dc", "p_dc_mw", "in_service", "scaling", "type", "controllable"],
+                       [name, bus_dc, p_dc_mw, bool(in_service), scaling, type, controllable]))
+
+    _set_entries(net, "load_dc", index, True, **entries, **kwargs)
+
+    return index
+
+
 def create_svc(
     net: pandapowerNet,
-    bus,
+    bus: Int,
     x_l_ohm: float,
     x_cvar_ohm: float,
     set_vm_pu: float,
@@ -4825,7 +4928,7 @@ def create_svc(
     name: Optional[str] = None,
     controllable: bool = True,
     in_service: bool = True,
-    index = None,
+    index: Optional[Int] = None,
     min_angle_degree: float = 90,
     max_angle_degree: float = 180,
     **kwargs
@@ -4889,7 +4992,7 @@ def create_svc(
 
 def create_ssc(
     net: pandapowerNet,
-    bus,
+    bus: Int,
     r_ohm: float,
     x_ohm: float,
     set_vm_pu: float = 1.,
@@ -4898,7 +5001,7 @@ def create_ssc(
     name: Optional[str] = None,
     controllable: bool = True,
     in_service: bool = True,
-    index = None,
+    index: Optional[Int] = None,
     **kwargs
 ) -> Int:
     """
@@ -4957,10 +5060,172 @@ def create_ssc(
     return index
 
 
+def create_b2b_vsc(
+        net: pandapowerNet,
+        bus: Int,
+        bus_dc_plus: Int,
+        bus_dc_minus: Int,
+        r_ohm: float,
+        x_ohm: float,
+        r_dc_ohm: float,
+        pl_dc_mw: float = 0.,
+        control_mode_ac: str = "vm_pu",
+        control_value_ac: float = 1.,
+        control_mode_dc: str = "p_mw",
+        control_value_dc: float = 0.,
+        name: Optional[str] = None,
+        controllable: bool = True,
+        in_service: bool = True,
+        index: Optional[Int] = None,
+        **kwargs
+) -> Int:
+    """
+    Creates an VSC converter element - a shunt element with adjustable VSC internal voltage used to connect the \
+    AC grid and the DC grid. The element implements several control modes.
+
+    Does not work if connected to "PV" bus (gen bus, ext_grid bus)
+
+    INPUT:
+        **net** (pandapowerNet) - The pandapower network in which the element is created
+
+        **bus** (int) - AC connection of the B2B VSC
+
+        **bus_dc_plus** (int) - connection bus of the plus side of the B2B VSC
+
+        **bus_dc_minus** (int) - connection bus of the minus side of the B2B VSC
+
+        **r_ohm** (float) - resistance of the coupling transformer component of B2B VSC
+
+        **x_ohm** (float) - reactance of the coupling transformer component of B2B VSC
+
+        **r_dc_ohm** (float) - resistance of the internal dc resistance component of B2B VSC
+
+        **pl_dc_mw** (float) - no-load losses of the B2B VSC on the DC side for the shunt R representing the no load losses
+
+        **control_mode_ac** (string) - the control mode of the ac side of the VSC. it could be "vm_pu", "q_mvar" or "slack"
+
+        **control_value_ac** (float) - the value of the controlled parameter at the ac bus in "p.u." or "MVAr"
+
+        **control_mode_dc** (string) - the control mode of the dc side of the B2B VSC. it could be "vm_pu" or "p_mw"
+
+        **control_value_dc** (float) - the value of the controlled parameter at the dc bus in "p.u." or "MW"
+
+    OPTIONAL:
+        **name** (list of strs, None) - element name
+
+        **controllable** (bool, True) - whether the element is considered as actively controlling or
+            as a fixed voltage source connected via shunt impedance
+
+        **in_service** (bool, True) - True for in_service or False for out of service
+
+        **index** (int, None) - Force a specified ID if it is available. If None, the
+            index one higher than the highest already existing index is selected.
+
+    OUTPUT:
+        **index** (int) - The unique ID of the created ssc
+
+    """
+
+    _check_element(net, bus)
+    _check_element(net, bus_dc_plus, "bus_dc")
+    _check_element(net, bus_dc_minus, "bus_dc")
+
+    index = _get_index_with_check(net, "b2b_vsc", index)
+
+    entries = dict(zip([
+        "name", "bus", "bus_dc_plus", "bus_dc_minus", "r_ohm", "x_ohm", "r_dc_ohm", "pl_dc_mw", "control_mode_ac",
+        "control_value_ac", "control_mode_dc", "control_value_dc", "controllable", "in_service"],
+        [name, bus, bus_dc_plus, bus_dc_minus, r_ohm, x_ohm, r_dc_ohm, pl_dc_mw, control_mode_ac, control_value_ac,
+         control_mode_dc, control_value_dc, controllable, in_service]))
+    _set_entries(net, "b2b_vsc", index, **entries, **kwargs)
+
+    return index
+
+
+def create_bi_vsc(
+        net: pandapowerNet,
+        bus: Int,
+        bus_dc_plus: Int,
+        bus_dc_minus: Int,
+        r_ohm: float,
+        x_ohm: float,
+        r_dc_ohm: float,
+        pl_dc_mw: float = 0.,
+        control_mode_ac: str = "vm_pu",
+        control_value_ac: float = 1.,
+        control_mode_dc: str = "p_mw",
+        control_value_dc: float = 0.,
+        name: Optional[str] = None,
+        controllable: bool = True,
+        in_service: bool = True,
+        index: Optional[Int] = None,
+        **kwargs
+) -> Int:
+    """
+    Creates an VSC converter element - a shunt element with adjustable VSC internal voltage used to connect the \
+    AC grid and the DC grid. The element implements several control modes.
+
+    Does not work if connected to "PV" bus (gen bus, ext_grid bus)
+
+    INPUT:
+        **net** (pandapowerNet) - The pandapower network in which the element is created
+
+        **bus** (int) - connection bus of the VSC
+
+        **bus_dc** (int) - connection bus of the VSC
+
+        **r_ohm** (float) - resistance of the coupling transformer component of VSC
+
+        **x_ohm** (float) - reactance of the coupling transformer component of VSC
+
+        **r_dc_ohm** (float) - resistance of the internal dc resistance component of VSC
+
+        **pl_dc_mw** (float) - no-load losses of the VSC on the DC side for the shunt R representing the no load losses
+
+        **control_mode_ac** (string) - the control mode of the ac side of the VSC. it could be "vm_pu", "q_mvar" or "slack"
+
+        **control_value_ac** (float) - the value of the controlled parameter at the ac bus in "p.u." or "MVAr"
+
+        **control_mode_dc** (string) - the control mode of the dc side of the VSC. it could be "vm_pu" or "p_mw"
+
+        **control_value_dc** (float) - the value of the controlled parameter at the dc bus in "p.u." or "MW"
+
+    OPTIONAL:
+        **name** (list of strs, None) - element name
+
+        **controllable** (bool, True) - whether the element is considered as actively controlling or
+            as a fixed voltage source connected via shunt impedance
+
+        **in_service** (bool, True) - True for in_service or False for out of service
+
+        **index** (int, None) - Force a specified ID if it is available. If None, the
+            index one higher than the highest already existing index is selected.
+
+    OUTPUT:
+        **index** (int) - The unique ID of the created ssc
+
+    """
+
+    _check_element(net, bus)
+    _check_element(net, bus_dc_plus, "bus_dc")
+    _check_element(net, bus_dc_minus, "bus_dc")
+
+    index = _get_index_with_check(net, "bi_vsc", index)
+
+    entries = dict(zip([
+        "name", "bus", "bus_dc_plus", "bus_dc_minus", "r_ohm", "x_ohm", "r_dc_ohm", "pl_dc_mw", "control_mode_ac",
+        "control_value_ac", "control_mode_dc", "control_value_dc", "controllable", "in_service"],
+        [name, bus, bus_dc_plus, bus_dc_minus, r_ohm, x_ohm, r_dc_ohm, pl_dc_mw, control_mode_ac, control_value_ac,
+         control_mode_dc, control_value_dc, controllable, in_service]))
+    _set_entries(net, "bi_vsc", index, **entries, **kwargs)
+
+    return index
+
+
 def create_vsc(
     net: pandapowerNet,
-    bus,
-    bus_dc,
+    bus: Int,
+    bus_dc: Int,
     r_ohm: float,
     x_ohm: float,
     r_dc_ohm: float,
@@ -4972,7 +5237,8 @@ def create_vsc(
     name: Optional[str] = None,
     controllable: bool = True,
     in_service: bool = True,
-    index = None,
+    index: Optional[Int] = None,
+    ref_bus = None,
     **kwargs
 ) -> Int:
     """
@@ -4996,7 +5262,7 @@ def create_vsc(
 
         **pl_dc_mw** (float) - no-load losses of the VSC on the DC side for the shunt R representing the no load losses
 
-        **control_mode_ac** (string) - the control mode of the ac side of the VSC. it could be "vm_pu" or "q_mvar"
+        **control_mode_ac** (string) - the control mode of the ac side of the VSC. it could be "vm_pu", "q_mvar" or "slack"
 
         **control_value_ac** (float) - the value of the controlled parameter at the ac bus in "p.u." or "MVAr"
 
@@ -5027,9 +5293,9 @@ def create_vsc(
 
     entries = dict(zip([
         "name", "bus", "bus_dc", "r_ohm", "x_ohm", "r_dc_ohm", "pl_dc_mw", "control_mode_ac", "control_value_ac",
-        "control_mode_dc", "control_value_dc", "controllable", "in_service"],
+        "control_mode_dc", "control_value_dc", "controllable", "in_service", "ref_bus"],
         [name, bus, bus_dc, r_ohm, x_ohm, r_dc_ohm, pl_dc_mw, control_mode_ac, control_value_ac,
-         control_mode_dc, control_value_dc, controllable, in_service]))
+         control_mode_dc, control_value_dc, controllable, in_service, ref_bus]))
     _set_entries(net, "vsc", index, **entries, **kwargs)
 
     return index
@@ -5037,27 +5303,28 @@ def create_vsc(
 
 def create_impedance(
     net: pandapowerNet,
-    from_bus,
-    to_bus, rft_pu: float,
+    from_bus: Int,
+    to_bus: Int,
+    rft_pu: float,
     xft_pu: float,
     sn_mva: float,
     rtf_pu: Optional[float] = None,
     xtf_pu: Optional[float] = None,
     name: Optional[str] = None,
     in_service: bool = True,
-    index = None,
+    index: Optional[Int] = None,
     rft0_pu: Optional[float] = None,
     xft0_pu: Optional[float] = None,
     rtf0_pu: Optional[float] = None,
     xtf0_pu: Optional[float] = None,
-    gf_pu: Optional[float] =0,
+    gf_pu: Optional[float] = 0,
     bf_pu: Optional[float] = 0,
     gt_pu: Optional[float] = None,
     bt_pu: Optional[float] = None,
     gf0_pu: Optional[float] = None,
     bf0_pu: Optional[float] = None,
     gt0_pu: Optional[float] = None,
-    bt0_pu: Optional[float] =None,
+    bt0_pu: Optional[float] = None,
     **kwargs
 ) -> Int:
     """
@@ -5202,8 +5469,8 @@ def create_impedance(
 
 def create_impedances(
     net: pandapowerNet,
-    from_buses,
-    to_buses,
+    from_buses: Sequence,
+    to_buses: Sequence,
     rft_pu: float | Iterable[float],
     xft_pu: float | Iterable[float],
     sn_mva: float | Iterable[float],
@@ -5211,7 +5478,7 @@ def create_impedances(
     xtf_pu: Optional[float | Iterable[float]] = None,
     name: Optional[Iterable[str]] = None,
     in_service: bool | Iterable[str] = True,
-    index = None,
+    index: Optional[Int] | Iterable[Int] = None,
     rft0_pu: Optional[float | Iterable[float]] = None,
     xft0_pu: Optional[float | Iterable[float]] = None,
     rtf0_pu: Optional[float | Iterable[float]] = None,
@@ -5368,8 +5635,8 @@ def create_impedances(
 
 def create_tcsc(
     net: pandapowerNet,
-    from_bus,
-    to_bus,
+    from_bus: Int,
+    to_bus: Int,
     x_l_ohm: float,
     x_cvar_ohm: float,
     set_p_to_mw: float,
@@ -5377,7 +5644,7 @@ def create_tcsc(
     name: Optional[str] = None,
     controllable: bool = True,
     in_service: bool = True,
-    index = None,
+    index: Optional[Int] = None,
     min_angle_degree: float = 90,
     max_angle_degree: float = 180,
     **kwargs
@@ -5449,14 +5716,14 @@ def create_tcsc(
 
 def create_series_reactor_as_impedance(
     net: pandapowerNet,
-    from_bus,
-    to_bus,
+    from_bus: Int,
+    to_bus: Int,
     r_ohm: float,
     x_ohm: float,
     sn_mva: float,
     name: Optional[str] = None,
     in_service: bool = True,
-    index = None,
+    index: Optional[int] = None,
     r0_ohm: Optional[float] = None,
     x0_ohm: Optional[float] = None,
     **kwargs
@@ -5499,14 +5766,14 @@ def create_series_reactor_as_impedance(
 
 def create_ward(
     net: pandapowerNet,
-    bus,
+    bus: Int,
     ps_mw: float,
     qs_mvar: float,
     pz_mw: float,
     qz_mvar: float,
     name: Optional[str] = None,
     in_service: bool = True,
-    index = None,
+    index: Optional[Int] = None,
     **kwargs
 ) -> Int:
     """
@@ -5550,7 +5817,7 @@ def create_wards(
     qz_mvar: float | Iterable[float],
     name: Optional[Iterable[str]] = None,
     in_service: bool | Iterable[bool] = True,
-    index = None,
+    index: Optional[int] = None,
     **kwargs
 ) -> npt.NDArray[np.array]:
     """
@@ -5588,7 +5855,7 @@ def create_wards(
 
 def create_xward(
     net: pandapowerNet,
-    bus,
+    bus: Int,
     ps_mw: float,
     qs_mvar: float,
     pz_mw: float,
@@ -5598,7 +5865,7 @@ def create_xward(
     vm_pu: float,
     in_service: bool = True,
     name: Optional[str] = None,
-    index = None,
+    index: Optional[Int] = None,
     slack_weight: float = 0.0,
     **kwargs
 ):
@@ -5648,14 +5915,14 @@ def create_xward(
 
 def create_dcline(
     net: pandapowerNet,
-    from_bus,
-    to_bus,
+    from_bus: Int,
+    to_bus: Int,
     p_mw: float,
     loss_percent: float,
     loss_mw: float,
     vm_from_pu: float,
     vm_to_pu: float,
-    index = None,
+    index: Optional[Int] = None,
     name: Optional[str] = None,
     max_p_mw: float = nan,
     min_q_from_mvar: float = nan,
@@ -5729,10 +5996,10 @@ def create_measurement(
     element_type: MeasurementElementType,
     value: Literal["MW", "MVAr", "p.u.", "kA"],
     std_dev: float,
-    element,
-    side=None,
-    check_existing: bool =False,
-    index = None,
+    element: int,
+    side: Optional[int | str] = None,
+    check_existing: bool = False,
+    index: Optional[Int] = None,
     name: Optional[str] = None,
     **kwargs
 ) -> Int:
@@ -5830,11 +6097,11 @@ def create_measurement(
 
 def create_pwl_cost(
     net: pandapowerNet,
-    element,
+    element: Int | Iterable[Int],
     et: CostElementType,
     points: list[list[float]],
     power_type: PWLPowerType = "p",
-    index = None,
+    index: Optional[int] = None,
     check: bool = True,
     **kwargs
 ) -> Int:
@@ -5877,9 +6144,10 @@ def create_pwl_cost(
 
         create_pwl_cost(net, 0, "gen", [[0, 20, 1], [20, 30, 2]])
     """
-    element = element if not hasattr(element, "__iter__") else element[0]
+    if isinstance(element, (list, tuple)):
+        element = element[0]
     if check and _cost_existance_check(net, element, et, power_type=power_type):
-        raise UserWarning("There already exist costs for %s %i" % (et, element))
+        raise UserWarning(f"There already exist costs for {et} {element}")
 
     index = _get_index_with_check(net, "pwl_cost", index, "piecewise_linear_cost")
 
@@ -5895,7 +6163,7 @@ def create_pwl_costs(
     et: CostElementType | Iterable[str],
     points: list[list[list[float]]],
     power_type: PWLPowerType | Iterable[str] = "p",
-    index = None,
+    index: Optional[int] = None,
     check: bool = True,
     **kwargs
 ) -> npt.NDArray[np.integer]:
@@ -5964,7 +6232,7 @@ def create_pwl_costs(
 
 def create_poly_cost(
     net: pandapowerNet,
-    element,
+    element: Int | Iterable[Int],
     et: CostElementType,
     cp1_eur_per_mw: float,
     cp0_eur: float = 0,
@@ -5972,7 +6240,7 @@ def create_poly_cost(
     cq0_eur: float = 0,
     cp2_eur_per_mw2: float = 0,
     cq2_eur_per_mvar2: float = 0,
-    index = None,
+    index: Optional[int] = None,
     check: bool = True,
     **kwargs
 ) -> Int:
@@ -6018,9 +6286,10 @@ def create_poly_cost(
 
         create_poly_cost(net, 0, "load", cp1_eur_per_mw=0.1)
     """
-    element = element if not hasattr(element, "__iter__") else element[0]
+    if isinstance(element, (list, tuple)):
+        element = element[0]
     if check and _cost_existance_check(net, element, et):
-        raise UserWarning("There already exist costs for %s %i" % (et, element))
+        raise UserWarning(f"There already exist costs for {et} {element}")
 
     index = _get_index_with_check(net, "poly_cost", index)
     columns = ["element", "et", "cp0_eur", "cp1_eur_per_mw", "cq0_eur", "cq1_eur_per_mvar",
@@ -6041,7 +6310,7 @@ def create_poly_costs(
     cq0_eur: float | Iterable[float] = 0,
     cp2_eur_per_mw2: float | Iterable[float]= 0,
     cq2_eur_per_mvar2: float | Iterable[float] = 0,
-    index = None,
+    index: Optional[int] = None,
     check: bool = True,
     **kwargs
 ) -> npt.NDArray[np.array]:
@@ -6141,9 +6410,9 @@ def create_group(
     net: pandapowerNet,
     element_types,
     element_indices,
-    name="",
+    name: str = "",
     reference_columns=None,
-    index = None,
+    index: Optional[int] = None,
     **kwargs
 ):
     """Add a new group to net['group'] dataframe.
@@ -6200,9 +6469,9 @@ def create_group(
 def create_group_from_dict(
     net,
     elements_dict,
-    name="",
+    name: str = "",
     reference_column=None,
-    index = None,
+    index: Optional[int] = None,
     **kwargs
 ):
     """ Wrapper function of create_group(). """
@@ -6221,7 +6490,7 @@ def _get_index_with_check(
     if index is None:
         index = get_free_id(net[table])
     if index in net[table].index:
-        raise UserWarning("A %s with the id %s already exists" % (name, index))
+        raise UserWarning(f"A {name} with the id {index} already exists")
     return index
 
 
